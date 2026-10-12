@@ -32,6 +32,12 @@ def normalize(raw: Any) -> dict[str, Any]:
         s = dict(s)
         if "id" in s and not s.get("file"):
             s["file"] = f"{s['id']}.m4a"
+        genre = s.pop("genre", None)
+        tags = list(s.get("tags") or [])
+        if isinstance(genre, str) and genre.strip():
+            tags.append(f"genre:{genre}")
+        if "tags" in s or genre:
+            s["tags"] = clean_tags(tags)
         songs.append(s)
     return {"settings": settings, "songs": songs}
 
@@ -100,11 +106,20 @@ def resolve_music_root(root: str, hosts: dict[str, str] | None = None) -> Path:
     return Path(hosts[name]) / rest.strip("/")
 
 
+def clean_tag(tag: str) -> str:
+    """Trim and collapse spaces; `key:value` is lowercased, a plain tag keeps its case."""
+    key, sep, value = tag.partition(":")
+    key, value = " ".join(key.split()), " ".join(value.split())
+    if sep and key and value:
+        return f"{key}:{value}".lower()
+    return " ".join(tag.replace(":", " ").split())
+
+
 def clean_tags(tags: list[str]) -> list[str]:
     seen: set[str] = set()
     out: list[str] = []
     for t in tags:
-        t = " ".join(t.split())
+        t = clean_tag(str(t))
         if t and t.casefold() not in seen:
             seen.add(t.casefold())
             out.append(t)

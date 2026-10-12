@@ -4,7 +4,7 @@ import json
 import pytest
 from fastapi.testclient import TestClient
 
-from app import extractor, library, main
+from app import bpm, extractor, library, main
 
 VID = "dQw4w9WgXcQ"
 VID2 = "9bZkp7q19f0"
@@ -31,6 +31,7 @@ def client(tmp_path, monkeypatch):
 
     monkeypatch.setattr(extractor, "download_audio", fake_download)
     monkeypatch.setattr(extractor, "fetch_cover", fake_cover)
+    monkeypatch.setattr(bpm, "detect_bpm", lambda path: 123.4)
     monkeypatch.setattr(
         extractor,
         "preview",
@@ -41,7 +42,7 @@ def client(tmp_path, monkeypatch):
             "artist": "A",
             "album": None,
             "year": 1987,
-            "genre": None,
+            "tags": [],
             "duration": 9,
             "thumbnail": extractor.cover_url(vid),
         },
@@ -216,3 +217,121 @@ def test_static_ui_served_without_shadowing_api(tmp_path, monkeypatch):
     finally:
         monkeypatch.delenv("AUDIO_WEB_DIR")
         importlib.reload(main)
+
+
+def test_clean_tags_normalises_namespaced():
+    assert library.clean_tags(["Genre: Synth  Wave", "genre:synth wave", " Mood:Chill ", "80s", "80S", "a:", ":b", " "]) == [
+        "genre:synth wave", "mood:chill", "80s", "a", "b",
+    ]
+
+
+def test_old_genre_migrated_on_load(tmp_path):
+    p = tmp_path / "library.json"
+    p.write_text(json.dumps({"songs": [
+        {"id": "a", "title": "A", "genre": "Synthwave", "tags": ["80s", "Genre:synthwave"]},
+        {"id": "b", "title": "B", "genre": None},
+        {"id": "c", "title": "C", "genre": " Pop ", "tags": []},
+    ]}))
+    a, b, c = library.load(p)
+    assert a["tags"] == ["80s", "genre:synthwave"] and "genre" not in a
+    assert "genre" not in b and "tags" not in b
+    assert c["tags"] == ["genre:pop"]
+    library.save(p, [a, b, c])
+    assert all("genre" not in s for s in json.loads(p.read_text())["songs"])
+
+
+def test_patch_normalises_and_ignores_genre(client):
+    add(client)
+    r = client.patch(f"/songs/{VID}", json={"genre": "Pop", "tags": ["Genre:Pop", "Mood: Chill", "genre:pop"]}, headers=H)
+    assert r.status_code == 200 and "genre" not in r.json()
+    assert r.json()["tags"] == ["genre:pop", "mood:chill"]
+    assert client.get("/tags", headers=H).json() == [
+        {"tag": "genre:pop", "count": 1},
+        {"tag": "mood:chill", "count": 1},
+    ]
+
+
+def test_suggest_tags_from_ytdlp_metadata():
+    assert extractor.suggest_tags({"genre": "Synth Pop"}) == ["genre:synth pop"]
+    assert extractor.suggest_tags({"genre": "Rock, Pop"}) == ["genre:rock", "genre:pop"]
+    assert extractor.suggest_tags({"categories": ["Music", "Entertainment"]}) == ["genre:entertainment"]
+    assert extractor.suggest_tags({"categories": ["Music"]}) == []
+    assert extractor.suggest_tags({}) == []
+
+
+def test_preview_suggests_genre_tag_with_mocked_ytdlp(monkeypatch):
+    class FakeYDL:
+        def __init__(self, opts):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def extract_info(self, url, download=False):
+            return {"title": "T", "uploader": "U", "genre": "Synthwave", "release_year": 2020, "duration": 5}
+
+    monkeypatch.setattr(extractor.yt_dlp, "YoutubeDL", FakeYDL)
+    meta = extractor.preview(VID)
+    assert meta["tags"] == ["genre:synthwave"] and "genre" not in meta
+
+
+def test_bpm_detected_on_add(client):
+    add(client)
+    assert client.get("/library", headers=H).json()["songs"][0]["bpm"] == 123.4
+
+
+def test_bpm_from_add_form_skips_detection(client, monkeypatch):
+    monkeypatch.setattr(bpm, "detect_bpm", lambda path: pytest.fail("must not run"))
+    add(client, metadata={"title": "Song", "bpm": 98.55})
+    assert client.get("/library", headers=H).json()["songs"][0]["bpm"] == 98.55
+
+
+def test_bpm_detection_crash_does_not_fail_download(client, monkeypatch):
+    def boom(path):
+        raise RuntimeError("aubio exploded")
+
+    monkeypatch.setattr(bpm, "detect_bpm", boom)
+    add(client)
+    st = client.get(f"/songs/{VID}/status", headers=H).json()
+    assert st["status"] == "done"
+    assert client.get("/library", headers=H).json()["songs"][0]["bpm"] is None
+
+
+def test_bpm_none_when_undetectable(client, monkeypatch):
+    monkeypatch.setattr(bpm, "detect_bpm", lambda path: None)
+    add(client)
+    assert client.get("/library", headers=H).json()["songs"][0]["bpm"] is None
+
+
+def test_patch_bpm_validation(client):
+    add(client)
+    url = f"/songs/{VID}"
+    assert client.patch(url, json={"bpm": 19.9}, headers=H).status_code == 422
+    assert client.patch(url, json={"bpm": 300.1}, headers=H).status_code == 422
+    assert client.patch(url, json={"bpm": "fast"}, headers=H).status_code == 422
+    r = client.patch(url, json={"bpm": 128.04}, headers=H)
+    assert r.status_code == 200 and r.json()["bpm"] == 128.0
+    assert client.patch(url, json={"title": "X"}, headers=H).json()["bpm"] == 128.0
+    assert client.patch(url, json={"bpm": None}, headers=H).json()["bpm"] is None
+
+
+def test_redetect_bpm(client, monkeypatch):
+    add(client)
+    client.patch(f"/songs/{VID}", json={"bpm": 60}, headers=H)
+    r = client.post(f"/songs/{VID}/bpm/detect", headers=H)
+    assert r.status_code == 200 and r.json()["bpm"] == 123.4
+    assert client.get("/library", headers=H).json()["songs"][0]["bpm"] == 123.4
+    monkeypatch.setattr(bpm, "detect_bpm", lambda path: None)
+    assert client.post(f"/songs/{VID}/bpm/detect", headers=H).status_code == 422
+    assert client.get("/library", headers=H).json()["songs"][0]["bpm"] == 123.4
+    assert client.post(f"/songs/{VID2}/bpm/detect", headers=H).status_code == 404
+
+
+def test_old_song_without_bpm_loads(client, tmp_path):
+    (tmp_path / "library.json").write_text(json.dumps({"songs": [{"id": VID, "title": "Old"}]}))
+    songs = client.get("/library", headers=H).json()["songs"]
+    assert songs[0]["id"] == VID and "bpm" not in songs[0]
+    assert client.patch(f"/songs/{VID}", json={"bpm": 100}, headers=H).json()["bpm"] == 100

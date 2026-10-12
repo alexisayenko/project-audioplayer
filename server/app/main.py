@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hmac
+import logging
 import os
 import re
 from contextlib import contextmanager
@@ -16,6 +17,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from . import bpm as bpm_detect
 from . import extractor, gitstore, library
 
 DOWNLOAD_DIR = Path(os.environ.get("AUDIO_DOWNLOAD_DIR", "downloads"))
@@ -25,6 +27,8 @@ WEB_DIR = Path(os.environ.get("AUDIO_WEB_DIR", Path(__file__).resolve().parents[
 SYNC = gitstore.from_env()
 
 app = FastAPI(title="audioplayer-server")
+
+log = logging.getLogger(__name__)
 
 JOBS: dict[str, dict[str, Any]] = {}
 
@@ -127,7 +131,7 @@ class SongMeta(BaseModel):
     artist: str | None = None
     album: str | None = None
     year: int | None = Field(default=None, ge=0, le=3000)
-    genre: str | None = None
+    bpm: float | None = Field(default=None, ge=20, le=300)
 
 
 class CreateSongRequest(BaseModel):
@@ -222,13 +226,19 @@ def _run_download(vid: str, meta: dict[str, Any], tags: list[str]) -> None:
             cover = f"covers/{vid}.jpg"
         except Exception:
             pass
+        value = meta.get("bpm")
+        if value is None:
+            try:
+                value = bpm_detect.detect_bpm(music_dir() / f"{vid}.m4a")
+            except Exception as exc:
+                log.warning("bpm detection failed for %s: %s", vid, exc)
         song = {
             "id": vid,
             "title": meta.get("title") or info.get("title") or vid,
             "artist": meta.get("artist") or info.get("artist"),
             "album": meta.get("album"),
             "year": meta.get("year"),
-            "genre": meta.get("genre"),
+            "bpm": value,
             "source_url": extractor.watch_url(vid),
             "file": f"{vid}.m4a",
             "cover": cover,
@@ -289,16 +299,45 @@ def patch_song(video_id: str, req: PatchSongRequest):
         if song is None:
             raise HTTPException(status_code=404, detail="unknown song")
         updated = dict(song)
-        for key in ("title", "artist", "album", "genre"):
+        for key in ("title", "artist", "album"):
             if key in changes:
                 updated[key] = _clean_text(changes[key])
         if "year" in changes:
             updated["year"] = changes["year"]
+        if "bpm" in changes:
+            updated["bpm"] = round(changes["bpm"], 1) if changes["bpm"] is not None else None
         if changes.get("tags") is not None:
             updated["tags"] = library.clean_tags(changes["tags"])
         if not updated.get("title"):
             raise HTTPException(status_code=422, detail="title must not be empty")
         song.update(updated)
+        _save(songs)
+        return song
+
+
+@app.post("/songs/{video_id}/bpm/detect", dependencies=[Depends(require_token)])
+async def detect_song_bpm(video_id: str):
+    _vid(video_id)
+    with library.LOCK:
+        song = next((s for s in library.load(library_path()) if s["id"] == video_id), None)
+    if song is None:
+        raise HTTPException(status_code=404, detail="unknown song")
+    path = music_dir() / library.file_name(song)
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="not downloaded")
+    value = await run_in_threadpool(bpm_detect.detect_bpm, path)
+    if value is None:
+        raise HTTPException(status_code=422, detail="could not detect BPM")
+    return await run_in_threadpool(_store_bpm, video_id, value)
+
+
+def _store_bpm(video_id: str, value: float) -> dict[str, Any]:
+    with _tx(f"audioplayer: bpm {video_id}"):
+        songs = library.load(library_path())
+        song = next((s for s in songs if s["id"] == video_id), None)
+        if song is None:
+            raise HTTPException(status_code=404, detail="unknown song")
+        song["bpm"] = value
         _save(songs)
         return song
 
