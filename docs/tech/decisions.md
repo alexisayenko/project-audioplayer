@@ -79,6 +79,8 @@ Status: Accepted · 2026-10-12
 
 - Sub-decision (tag editor, 2026-10-12): Add and the Library Edit dialog share one tag editor (`web/js/tag-editor.js`): removable chips for the current tags, a Suggested row, and the known tags grouped by prefix, filtered by the text typed. Enter or comma commits typed text as a tag, and so does Save, but only a complete tag: `mood:` and `:x` are ignored in the UI and dropped by the server (`clean_tag`), never saved as `mood`. The pure check is `web/js/tag-input.js`, with a node test.
 
+- Sub-decision (clean source URLs, 2026-10-12): `source_url` is always the canonical `https://www.youtube.com/watch?v=<id>`; share parameters (`si`, `t`, `list`, `utm_*`, `fbclid`, `gclid`, `pp`, `feature`) are dropped, the `t` start offset included. The same rules live in `server/app/urlclean.py` and `web/js/url-clean.js` (cleaned on paste, blur and submit); old records are cleaned on load.
+
 - Sub-decision (BPM): `bpm` (integer or `null`) is detected automatically
   when a song is added and is user-editable. `server/app/bpm.py` decodes
   the saved m4a with ffmpeg to mono 44.1 kHz PCM, feeds it to aubio's

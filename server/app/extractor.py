@@ -9,12 +9,7 @@ from typing import Any
 import yt_dlp
 
 from . import langcodes, library
-
-VIDEO_ID_RE = re.compile(r"^[A-Za-z0-9_-]{11}$")
-
-
-def is_valid_video_id(video_id: str) -> bool:
-    return bool(VIDEO_ID_RE.fullmatch(video_id))
+from .urlclean import is_valid_video_id, parse_video_id, watch_url  # noqa: F401
 
 
 def search(query: str, limit: int) -> list[dict[str, Any]]:
@@ -56,29 +51,6 @@ def download(video_id: str, out_dir: Path) -> dict[str, Any]:
         "duration": info.get("duration"),
         "thumbnail": f"https://i.ytimg.com/vi/{video_id}/hqdefault.jpg",
     }
-
-
-_URL_ID_RES = [
-    re.compile(r"^(?:https?://)?(?:www\.|m\.|music\.)?youtube\.com/watch\?(?:.*&)?v=([A-Za-z0-9_-]{11})(?:[&#].*)?$"),
-    re.compile(r"^(?:https?://)?(?:www\.|m\.|music\.)?youtube\.com/(?:shorts|embed|live)/([A-Za-z0-9_-]{11})(?:[/?#].*)?$"),
-    re.compile(r"^(?:https?://)?youtu\.be/([A-Za-z0-9_-]{11})(?:[/?#].*)?$"),
-]
-
-
-def parse_video_id(url_or_id: str) -> str | None:
-    """Extract a YouTube video id from a URL (or accept a bare id)."""
-    text = url_or_id.strip()
-    if is_valid_video_id(text):
-        return text
-    for rx in _URL_ID_RES:
-        m = rx.match(text)
-        if m:
-            return m.group(1)
-    return None
-
-
-def watch_url(video_id: str) -> str:
-    return f"https://www.youtube.com/watch?v={video_id}"
 
 
 def cover_url(video_id: str) -> str:

@@ -36,6 +36,7 @@ Code: `web/js/add.js`, `server/app/main.py` (`preview`, `create_song`,
 - ADD-030 MUST: preview returns `in_library: true` when the id is already stored; the UI shows "This song is already in your library." and disables Save. Status: implemented
 - ADD-031 MUST: `POST /songs` returns 409 `already in library` or `already downloading` (checked under the lock). Status: implemented
 - ADD-032 MUST: the identity of a song is its YouTube video id; two URLs for the same video are the same song. Status: implemented
+- ADD-033 MUST: pasted links are cleaned before use: YouTube forms (`youtu.be/<id>`, `watch?v=`, `m.` and `music.` hosts, `shorts/`, `embed/`, `live/`) become `https://www.youtube.com/watch?v=<id>`, dropping `si`, `t`, `list` and every other parameter; other http(s) links lose only `si`, `feature`, `pp`, `fbclid`, `gclid` and `utm_*`. The web cleans on paste, blur and submit and shows the result in the field (`web/js/url-clean.js`); the server applies the same rules (`server/app/urlclean.py`) and tolerates clean input. Status: implemented
 
 ## Errors shown to the user
 

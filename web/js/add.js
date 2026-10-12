@@ -3,6 +3,7 @@ import { store } from './store.js';
 import { player } from './player.js';
 import { tagEditor } from './tag-editor.js';
 import { el, fmtTime } from './dom.js';
+import { cleanUrl } from './url-clean.js';
 
 export function renderAdd(root) {
   let timer = null;
@@ -17,15 +18,20 @@ export function renderAdd(root) {
 
   const say = (text, kind = '') => message.replaceChildren(text ? el('p', { class: `msg ${kind}` }, text) : '');
 
+  const tidy = () => { url.value = cleanUrl(url.value); };
+  url.addEventListener('paste', () => setTimeout(tidy));
+  url.addEventListener('blur', tidy);
+
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (!url.value.trim()) return;
+    tidy();
+    if (!url.value) return;
     say('');
     card.replaceChildren();
     previewBtn.disabled = true;
     previewBtn.textContent = 'Loading...';
     try {
-      preview = await api.preview(url.value.trim());
+      preview = await api.preview(url.value);
       if (!store.loaded) await store.refresh().catch(() => {});
       renderCard();
       if (preview.in_library) say('This song is already in your library.', 'error');

@@ -10,7 +10,7 @@ import threading
 from pathlib import Path
 from typing import Any
 
-from . import langcodes
+from . import langcodes, urlclean
 
 LOCK = threading.RLock()
 
@@ -36,6 +36,8 @@ def normalize(raw: Any) -> dict[str, Any]:
             s["file"] = f"{s['id']}.m4a"
         if isinstance(s.get("bpm"), (int, float)) and not isinstance(s["bpm"], bool):
             s["bpm"] = round(s["bpm"])
+        if isinstance(s.get("source_url"), str):
+            s["source_url"] = urlclean.clean_url(s["source_url"])
         genre = s.pop("genre", None)
         tags = list(s.get("tags") or [])
         if isinstance(genre, str) and genre.strip():

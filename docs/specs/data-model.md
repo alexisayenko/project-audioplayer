@@ -14,7 +14,7 @@ Code: `server/app/library.py`, `server/app/main.py` (`SongMeta`).
 | `tags` | string[] | yes (may be `[]`) | normalised, see [tags.md](tags.md) |
 | `bpm` | int or null | no | whole beats per minute, 20..300 (422 outside); a typed or PATCHed fraction is rounded; detected values are rounded; fractional values in old files are rounded on load (saved on the next write) |
 | `duration` | number or null | no | seconds, technical, set at download |
-| `source_url` | string | yes | `https://www.youtube.com/watch?v=<id>` |
+| `source_url` | string | yes | canonical `https://www.youtube.com/watch?v=<id>`, no tracking parameters; dirty values in old files are cleaned on load (saved on the next write) |
 | `file` | string | yes | audio file name only, `<id>.m4a`, never a path |
 | `cover` | string or null | no | `covers/<id>.jpg`, or `null` if the thumbnail fetch failed |
 | `added_at` | string | yes | UTC `YYYY-MM-DDTHH:MM:SSZ` |

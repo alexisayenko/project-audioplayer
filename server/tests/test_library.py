@@ -66,6 +66,14 @@ def test_parse_video_id():
     assert p("nonsense") is None
 
 
+def test_dirty_url_is_stored_clean(client):
+    dirty = f"https://youtu.be/{VID}?si=abc123"
+    clean = f"https://www.youtube.com/watch?v={VID}"
+    assert client.post("/preview", json={"url": dirty}, headers=H).json()["source_url"] == clean
+    assert add(client, url=dirty).status_code == 202
+    assert client.get("/library", headers=H).json()["songs"][0]["source_url"] == clean
+
+
 def test_new_endpoints_require_token(client):
     for method, path in [
         ("get", "/library"),
