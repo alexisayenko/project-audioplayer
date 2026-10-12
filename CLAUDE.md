@@ -22,8 +22,9 @@ YouTube's ToS; the app is not for distribution.
 ## Tech stack
 
 `ios/` — SwiftUI app (iOS 17, XcodeGen `project.yml`, AVPlayer). `server/` —
-FastAPI wrapper around `yt-dlp` (Python 3.11+), run on a home server behind
-Tailscale with an `X-API-Token` header. Status: scaffold; the iOS code has
+FastAPI wrapper around `yt-dlp` (Python 3.11+), run on an always-on machine with an
+`X-API-Token` header (Cloudflare Tunnel planned, Tailscale until then;
+see [docs/tech/decisions.md](docs/tech/decisions.md)). Status: scaffold; the iOS code has
 not yet been compiled (no Xcode in the cloud sandbox), server tests pass.
 
 ## Working in a shared checkout

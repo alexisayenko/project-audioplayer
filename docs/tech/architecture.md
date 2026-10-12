@@ -10,8 +10,10 @@ iPhone (SwiftUI)  --http, X-API-Token-->  server (FastAPI + yt-dlp)  -->  YouTub
 ## Why a server
 
 iOS cannot run `yt-dlp`. The server extracts the audio; the app only
-talks to it and plays local files. Run it on a home machine (datacenter
-IPs get bot-challenged by YouTube) and reach it over Tailscale.
+talks to it and plays local files. Run it on an always-on machine (YouTube
+may bot-challenge datacenter IPs). Exposure via Cloudflare Tunnel is
+planned, not set up; until then reach it over Tailscale. See
+[`decisions.md`](decisions.md).
 
 ## Server (`server/`)
 

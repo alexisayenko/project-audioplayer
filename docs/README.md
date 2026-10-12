@@ -133,6 +133,8 @@ and rules):
 - [`tech/README.md`](tech/README.md) — stack + decisions frame
 - [`tech/ci-cd.md`](tech/ci-cd.md) — CI/CD playbook (manual
   workflows, test layers, deploy and release paths)
+- [`tech/decisions.md`](tech/decisions.md) — tech decisions (ADRs):
+  components, server, Cloudflare Tunnel, storage
 - [`ui-ux/README.md`](ui-ux/README.md) — screen + journey spec,
   section glossary
 - [`ui-ux/style-guide.md`](ui-ux/style-guide.md) — visual +
@@ -179,6 +181,8 @@ docs/
 │   ├── README.md
 │   └── task-XXXX.md                    # numbered tasks
 ├── tech/                               # entry: tech/README.md
+│   ├── architecture.md                 # system design
+│   ├── decisions.md                    # tech ADRs
 │   └── ci-cd.md                        # CI/CD playbook
 ├── ui-ux/                              # entry: ui-ux/README.md
 │   ├── style-guide.md                  # visual + interaction standards
