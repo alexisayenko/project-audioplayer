@@ -83,6 +83,14 @@ export const player = {
     render();
   },
 
+  playAt(i) {
+    if (i < 0 || i >= queue.length) return;
+    if (i === index) { player.toggle(); return; }
+    index = i;
+    saveQueue();
+    load(true);
+  },
+
   toggle() {
     if (!player.current) return;
     if (audio.paused) audio.play().catch(fail); else audio.pause();
@@ -126,43 +134,64 @@ function render() {
   $('mini').hidden = !song;
   $('player').classList.toggle('idle', !song);
   $('player-empty').hidden = !!song;
+  $('details-body').hidden = !song;
   const count = $('nav-count');
   count.hidden = !queue.length;
   count.textContent = queue.length;
-  if (!song) { document.title = 'Audio Player'; renderQueue(); return; }
+  $('queue-count').textContent = queue.length ? `(${queue.length})` : '';
+  if (!song) {
+    document.title = 'Audio Player';
+    for (const id of ['p-prev', 'p-next', 'p-play']) $(id).disabled = true;
+    $('p-play').textContent = PLAY;
+    renderQueue();
+    return;
+  }
+  $('p-play').disabled = false;
   const sym = audio.paused ? PLAY : PAUSE;
   $('mini-play').textContent = sym;
   $('p-play').textContent = sym;
   $('mini-title').textContent = song.title;
   $('mini-artist').textContent = song.artist || '';
   $('player-title').textContent = song.title;
-  $('player-artist').textContent = song.artist || '';
+  $('player-sub').textContent = [song.artist, song.album, song.year].filter(Boolean).join(', ');
+  $('player-tags').replaceChildren(...(song.tags || []).map(tagChip));
+  $('player-bpm').textContent = song.bpm != null ? `${Math.round(song.bpm)} BPM` : '';
+  $('player-dur').textContent = song.duration ? fmtTime(song.duration) : '';
+  const src = $('player-source');
+  src.hidden = !/^https?:///i.test(song.source_url || '');
+  if (!src.hidden) src.href = song.source_url;
   setCover($('mini-cover'), song);
   setCover($('player-cover'), song);
   $('p-prev').disabled = false;
   $('p-next').disabled = index + 1 >= queue.length;
   $('mini-next').disabled = $('p-next').disabled;
-  $('queue-info').textContent = `${index + 1} of ${queue.length} in queue`;
   renderQueue();
   document.title = `${song.title} - Audio Player`;
   listeners.forEach((fn) => fn());
 }
 
+function tagChip(t) {
+  const i = t.indexOf(':');
+  return i > 0
+    ? el('span', { class: 'tag ns' }, el('span', { class: 'ns-key' }, t.slice(0, i)), t.slice(i + 1))
+    : el('span', { class: 'tag' }, t);
+}
+
 function renderQueue() {
-  const upcoming = queue.slice(index + 1);
-  $('queue-clear').hidden = !upcoming.length;
-  $('queue-empty').hidden = upcoming.length > 0;
-  $('queue-list').replaceChildren(...upcoming.map((id, k) => {
-    const i = index + 1 + k;
+  $('queue-clear').hidden = queue.length <= index + 1;
+  $('queue-empty').hidden = queue.length > 0;
+  $('queue-list').replaceChildren(...queue.map((id, i) => {
     const s = store.get(id);
     const btn = (label, text, fn, off) => el('button', {
       class: 'icon', type: 'button', title: label, 'aria-label': `${label}: ${s ? s.title : id}`, disabled: off, onclick: fn,
     }, text);
-    return el('li', { class: 'queue-item' },
-      el('span', { class: 'q-name' }, el('b', {}, s ? s.title : id), el('small', {}, s && s.artist ? s.artist : '')),
-      btn('Move up', '↑', () => player.move(i, -1), i - 1 <= index),
-      btn('Move down', '↓', () => player.move(i, 1), i + 1 >= queue.length),
-      btn('Remove', '✕', () => player.removeAt(i)));
+    const past = i <= index;
+    return el('li', { class: `queue-item${i === index ? ' current' : ''}`, 'aria-current': i === index ? 'true' : null },
+      el('button', { class: 'q-name', type: 'button', title: 'Play', onclick: () => player.playAt(i) },
+        el('b', {}, s ? s.title : id), el('small', {}, s && s.artist ? s.artist : '')),
+      btn('Move up', '↑', () => player.move(i, -1), past || i - 1 <= index),
+      btn('Move down', '↓', () => player.move(i, 1), past || i + 1 >= queue.length),
+      btn('Remove', '✕', () => player.removeAt(i), past));
   }));
 }
 
@@ -244,6 +273,8 @@ export function initPlayer() {
     $(id).addEventListener('error', () => { $(id).removeAttribute('src'); $(id).dataset.src = ''; });
   }
 
+  const vol = $('volume');
+  vol.addEventListener('input', () => { audio.volume = vol.value / 100; });
   $('queue-clear').addEventListener('click', () => player.clearUpcoming());
   restoreQueue();
 

@@ -34,21 +34,32 @@
 </div>
 
 <section id="player" class="player" hidden aria-label="Playback">
-  <p class="muted" id="player-empty" hidden>Nothing playing. Use the play button on a song in the Library.</p>
-  <img id="player-cover" alt="" class="cover big">
-  <h2 id="player-title"></h2>
-  <p id="player-artist"></p>
-  <input type="range" id="scrub" min="0" max="1000" value="0" step="1" aria-label="Seek">
-  <div class="times"><span id="t-cur">0:00</span><span id="t-dur">0:00</span></div>
-  <div class="controls">
-    <button class="icon" id="p-prev" aria-label="Previous">&#9198;</button>
-    <button class="icon primary" id="p-play" aria-label="Play or pause"></button>
-    <button class="icon" id="p-next" aria-label="Next">&#9197;</button>
+  <div class="pcard details" id="details">
+    <p class="muted empty-note" id="player-empty" hidden>Nothing playing</p>
+    <div class="details-body" id="details-body">
+      <img id="player-cover" alt="" class="cover big">
+      <div class="details-info">
+        <h2 id="player-title"></h2>
+        <p id="player-sub" class="sub"></p>
+        <div id="player-tags" class="tags"></div>
+        <p class="facts"><span id="player-bpm"></span><span id="player-dur"></span></p>
+        <a id="player-source" class="source" href="#" target="_blank" rel="noopener noreferrer" hidden>Source</a>
+      </div>
+    </div>
   </div>
-  <p class="queue-info" id="queue-info"></p>
-  <div class="queue">
-    <div class="queue-head"><h3>Up next</h3><button class="btn" id="queue-clear" type="button">Clear</button></div>
-    <p class="muted" id="queue-empty">Nothing queued. Use the add button in the Library.</p>
+  <div class="pcard controls-card">
+    <input type="range" id="scrub" min="0" max="1000" value="0" step="1" aria-label="Seek">
+    <div class="times"><span id="t-cur">0:00</span><span id="t-dur">0:00</span></div>
+    <div class="controls">
+      <button class="icon" id="p-prev" aria-label="Previous">&#9198;</button>
+      <button class="icon primary" id="p-play" aria-label="Play or pause"></button>
+      <button class="icon" id="p-next" aria-label="Next">&#9197;</button>
+      <label class="vol" title="Volume"><span aria-hidden="true">&#128265;</span><input type="range" id="volume" min="0" max="100" value="100" aria-label="Volume"></label>
+    </div>
+  </div>
+  <div class="pcard queue">
+    <div class="queue-head"><h3>Current playlist <span class="muted" id="queue-count"></span></h3><button class="btn" id="queue-clear" type="button">Clear</button></div>
+    <p class="muted empty-note" id="queue-empty">Queue is empty - add songs from Library</p>
     <ul id="queue-list" class="queue-list"></ul>
   </div>
 </section>
