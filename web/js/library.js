@@ -2,6 +2,8 @@ import { api } from './api.js';
 import { store } from './store.js';
 import { player } from './player.js';
 import { el, toast, fmtTime } from './dom.js';
+import { tagEditor } from './tag-editor.js';
+import { tagChip, tagGroups, tagLabel, tagSearchText } from './tagname.js';
 
 const prefs = { query: '', tag: '', sort: 'added' };
 
@@ -23,7 +25,7 @@ export function visibleSongs() {
   const list = store.songs.filter((s) => {
     if (tag && !(s.tags || []).some((t) => t.toLocaleLowerCase() === tag)) return false;
     if (!q) return true;
-    const hay = [s.title, s.artist, s.album, ...(s.tags || [])].join('\n').toLocaleLowerCase();
+    const hay = [s.title, s.artist, s.album, ...(s.tags || []).map(tagSearchText)].join('\n').toLocaleLowerCase();
     return hay.includes(q);
   });
   return list.sort(SORTS[prefs.sort][1]);
@@ -48,19 +50,13 @@ export function renderLibrary(root) {
 
   function renderChips() {
     if (prefs.tag && !store.tags.some((t) => t.tag.toLocaleLowerCase() === prefs.tag.toLocaleLowerCase())) prefs.tag = '';
-    const groups = new Map();
-    for (const t of store.tags) {
-      const i = t.tag.indexOf(':');
-      const key = i > 0 ? t.tag.slice(0, i) : '';
-      groups.set(key, [...(groups.get(key) || []), t]);
-    }
-    const order = [...groups.keys()].sort((a, b) => (a === '') - (b === '') || a.localeCompare(b));
-    chips.replaceChildren(...order.map((key) => el('div', { class: 'chip-group' },
-      el('span', { class: 'group-name' }, key ? key[0].toLocaleUpperCase() + key.slice(1) : 'Tags'),
-      ...groups.get(key).map((t) => el('button', {
+    chips.replaceChildren(...tagGroups(store.tags).map((g) => el('div', { class: 'chip-group' },
+      el('span', { class: 'group-name' }, g.name),
+      ...g.tags.map((t) => el('button', {
         class: `chip${t.tag.toLocaleLowerCase() === prefs.tag.toLocaleLowerCase() ? ' on' : ''}`,
+        title: t.tag,
         onclick: () => { prefs.tag = prefs.tag.toLocaleLowerCase() === t.tag.toLocaleLowerCase() ? '' : t.tag; renderChips(); renderList(); },
-      }, key ? t.tag.slice(key.length + 1) : t.tag, el('small', {}, t.count))))));
+      }, tagLabel(t.tag), el('small', {}, t.count))))));
   }
 
   function renderList() {
@@ -113,13 +109,6 @@ function icon(paths) {
 }
 const playIcon = () => icon(['M7 4.5v15l12-7.5z']);
 const addIcon = () => icon(['M4 7h9', 'M4 12h9', 'M4 17h9', 'M18 8v8', 'M14 12h8']);
-
-function tagChip(t) {
-  const i = t.indexOf(':');
-  return i > 0
-    ? el('span', { class: 'tag ns' }, el('span', { class: 'ns-key' }, t.slice(0, i)), t.slice(i + 1))
-    : el('span', { class: 'tag' }, t);
-}
 
 function songCard(s, cur) {
   const sub = [s.artist, s.album, s.year].filter(Boolean).join(', ');
@@ -186,14 +175,14 @@ function removeSong(s) {
 }
 
 function editDialog(song) {
+  const editor = tagEditor({ tags: song.tags || [] });
   const dlg = document.getElementById('edit-dialog');
   const f = {
     title: el('input', { type: 'text', value: song.title || '', required: true }),
     artist: el('input', { type: 'text', value: song.artist || '' }),
     album: el('input', { type: 'text', value: song.album || '' }),
     year: el('input', { type: 'number', value: song.year ?? '', min: 0, max: 3000 }),
-    bpm: el('input', { type: 'number', value: song.bpm ?? '', min: 20, max: 300, step: 0.1, placeholder: 'Unknown' }),
-    tags: el('input', { type: 'text', value: (song.tags || []).join(', '), placeholder: 'comma, separated; e.g. genre:synthwave', list: 'tag-suggestions' }),
+    bpm: el('input', { type: 'number', value: song.bpm != null ? Math.round(song.bpm) : '', min: 20, max: 300, step: 1, placeholder: 'Unknown' }),
   };
   const err = el('p', { class: 'msg error', hidden: true });
   const field = (label, input) => el('div', {}, el('label', {}, label), input);
@@ -203,7 +192,7 @@ function editDialog(song) {
     redetect.textContent = 'Detecting...';
     try {
       const updated = await api.detectBpm(song.id);
-      f.bpm.value = updated.bpm ?? '';
+      f.bpm.value = updated.bpm != null ? Math.round(updated.bpm) : '';
       err.hidden = true;
       await store.refresh();
     } catch (ex) {
@@ -219,8 +208,7 @@ function editDialog(song) {
     field('Title', f.title), field('Artist', f.artist),
     el('div', { class: 'grid2' }, field('Album', f.album), field('Year', f.year)),
     el('div', {}, el('label', {}, 'BPM (heuristic, may be off by half or double)'), el('div', { class: 'row' }, f.bpm, redetect)),
-    field('Tags', f.tags),
-    el('datalist', { id: 'tag-suggestions' }, store.tags.map((t) => el('option', { value: t.tag }))),
+    el('div', {}, el('label', {}, 'Tags'), editor.node),
     err,
     el('div', { class: 'row end' },
       el('button', { type: 'button', class: 'btn danger del-left', onclick: () => removeSong(song) }, 'Delete'),
@@ -234,8 +222,8 @@ function editDialog(song) {
         artist: f.artist.value,
         album: f.album.value,
         year: f.year.value === '' ? null : Number(f.year.value),
-        bpm: f.bpm.value === '' ? null : Number(f.bpm.value),
-        tags: f.tags.value.split(',').map((t) => t.trim()).filter(Boolean),
+        bpm: f.bpm.value === '' ? null : Math.round(Number(f.bpm.value)),
+        tags: editor.getTags(),
       });
       dlg.close();
       await store.refresh();

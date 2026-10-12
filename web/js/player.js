@@ -2,6 +2,7 @@ import { api } from './api.js';
 import { store } from './store.js';
 import { el, fmtTime, toast } from './dom.js';
 import * as Q from './queue-logic.js';
+import { tagChip, tagGroups, tagLabel, tagText } from './tagname.js';
 
 const audio = document.getElementById('audio');
 const $ = (id) => document.getElementById(id);
@@ -234,13 +235,6 @@ function render() {
   listeners.forEach((fn) => fn());
 }
 
-function tagChip(t) {
-  const i = t.indexOf(':');
-  return i > 0
-    ? el('span', { class: 'tag ns' }, el('span', { class: 'ns-key' }, t.slice(0, i)), t.slice(i + 1))
-    : el('span', { class: 'tag' }, t);
-}
-
 function setToggle(id, on, label) {
   const b = $(id);
   b.setAttribute('aria-pressed', String(on));
@@ -254,8 +248,8 @@ function renderPlaylistControls() {
   setToggle('p-loop-one', repeat === 'one', `Loop one song: ${repeat === 'one' ? 'on' : 'off'}`);
   setToggle('p-loop-all', repeat === 'all', `Loop whole list: ${repeat === 'all' ? 'on' : 'off'}`);
   $('queue-clear').disabled = !qs.tags.length;
-  $('fill-tags').replaceChildren(...qs.tags.map((t) => el('span', { class: 'chip on' },
-    t,
+  $('fill-tags').replaceChildren(...qs.tags.map((t) => el('span', { class: 'chip on', title: t },
+    tagText(t),
     el('button', {
       class: 'x', type: 'button', title: `Remove tag: ${t}`, 'aria-label': `Remove tag: ${t}`,
       onclick: () => { const n = player.removeTag(t); toast(n ? `Removed ${n} ${n === 1 ? 'song' : 'songs'}` : 'Tag removed'); },
@@ -324,13 +318,7 @@ function openRowMenu(btn, i) {
 function openTagPicker() {
   const dlg = document.getElementById('edit-dialog');
   const chosen = new Set(qs.tags.map((t) => t.toLocaleLowerCase()));
-  const groups = new Map();
-  for (const t of store.tags) {
-    const i = t.tag.indexOf(':');
-    const key = i > 0 ? t.tag.slice(0, i) : '';
-    groups.set(key, [...(groups.get(key) || []), t]);
-  }
-  const order = [...groups.keys()].sort((a, b) => (a === '') - (b === '') || a.localeCompare(b));
+  const groups = tagGroups(store.tags);
   const apply = el('button', { type: 'button', class: 'btn primary' }, 'Add songs');
   const refresh = () => {
     const fresh = [...chosen].filter((c) => !qs.tags.some((t) => t.toLocaleLowerCase() === c));
@@ -338,9 +326,9 @@ function openTagPicker() {
     apply.disabled = !fresh.length && !drop.length;
     apply.textContent = fresh.length ? `Add songs (${fresh.length} ${fresh.length === 1 ? 'tag' : 'tags'})` : drop.length ? 'Apply' : 'Add songs';
   };
-  const chip = (t, key) => {
-    const b = el('button', { class: 'chip', type: 'button', 'aria-pressed': 'false' },
-      key ? t.tag.slice(key.length + 1) : t.tag, el('small', {}, t.count));
+  const chip = (t) => {
+    const b = el('button', { class: 'chip', type: 'button', 'aria-pressed': 'false', title: t.tag },
+      tagLabel(t.tag), el('small', {}, t.count));
     const sync = () => {
       const on = chosen.has(t.tag.toLocaleLowerCase());
       b.classList.toggle('on', on);
@@ -371,9 +359,9 @@ function openTagPicker() {
   dlg.replaceChildren(el('div', {},
     el('h2', {}, 'Add songs by tag'),
     el('p', { class: 'muted' }, 'Songs with any picked tag are added to the end of the playlist.'),
-    order.length ? el('div', { class: 'chip-groups' }, order.map((key) => el('div', { class: 'chip-group' },
-      el('span', { class: 'group-name' }, key ? key[0].toLocaleUpperCase() + key.slice(1) : 'Tags'),
-      ...groups.get(key).map((t) => chip(t, key))))) : el('p', { class: 'muted' }, 'No tags yet'),
+    groups.length ? el('div', { class: 'chip-groups' }, groups.map((g) => el('div', { class: 'chip-group' },
+      el('span', { class: 'group-name' }, g.name),
+      ...g.tags.map(chip)))) :el('p', { class: 'muted' }, 'No tags yet'),
     el('div', { class: 'row end' }, el('button', { type: 'button', class: 'btn', onclick: () => dlg.close() }, 'Cancel'), apply)));
   refresh();
   dlg.showModal();
