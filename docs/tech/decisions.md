@@ -195,3 +195,30 @@ parts of ADR-0001 and the matching data wording in ADR-0004
   the web UI shows a warning when it is not `ok`.
 - Cost: each save is a git push (~1-2 s), acceptable at a few hundred
   songs; revisit if edits become frequent.
+
+## ADR-0006 Owner-only OAuth sign-in (Apple, Google)
+
+- Decision: besides `X-API-Token`, the server accepts
+  `Authorization: Bearer <OIDC ID token>` from Sign in with Apple or Google,
+  and only for the owner. No accounts, sessions or user table.
+- Verification (`server/app/oauth.py`): signature (RS256) against the
+  provider JWKS (Apple `appleid.apple.com/auth/keys`, Google
+  `googleapis.com/oauth2/v3/certs`, cached 1 h), then `iss`, `aud`
+  (`APPLE_AUDIENCE` / `GOOGLE_CLIENT_ID`), `exp`. Allowed: `email` ==
+  `ALLOWED_EMAIL` (default `alex.isayenko@gmail.com`) with
+  `email_verified`, or an Apple `sub` listed in `ALLOWED_APPLE_SUB`
+  (Apple may hide or relay the email). Bad token 401, other person 403.
+- Why not drop the API token: it stays as a working fallback (web UI,
+  Apple tokens that expired offline). Both go through `require_token` and
+  `require_token_or_query`; the iOS app sends the Bearer header for files
+  and covers, so no token appears in URLs when signed in.
+- iOS: ID token and Google refresh token live in the Keychain. Google
+  signs in with `ASWebAuthenticationSession` (code + PKCE, no SDK) and
+  refreshes silently; Apple cannot refresh without a server-side code
+  exchange, so an expired Apple token shows "sign in again" and the API
+  token is used meanwhile.
+- Reliability: playing downloaded songs reads local files only, so it
+  never needs a sign-in or an unexpired token.
+- Secrets: no client IDs in the repo. Server env vars, and
+  `ios/Config/Secrets.xcconfig` (git-ignored) for the Google iOS client ID.
+

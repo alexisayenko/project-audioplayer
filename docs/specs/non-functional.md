@@ -4,7 +4,7 @@ ADRs: ADR-0003 (web), ADR-0004 (hosting), ADR-0001 (storage scale).
 
 ## Auth
 
-- NFR-001 MUST: one shared secret `AUDIO_API_TOKEN` protects the whole API; no user accounts. Status: implemented
+- NFR-001 MUST: one shared secret `AUDIO_API_TOKEN` protects the whole API; no user accounts; owner-only OAuth ID tokens are accepted as well (ADR-0006). Status: implemented
 - NFR-002 MUST: the web UI stores the token in `localStorage` key `audioplayer.token` and sends it as `X-API-Token`; audio and cover URLs carry it as `?token=`. Status: implemented
 - NFR-003 MUST: without a token the UI routes to Settings; Settings "Save and test" verifies by loading the library. Status: implemented
 - NFR-004 SHOULD: put Cloudflare Access (service token) in front of the tunnel as a second layer. Status: planned

@@ -18,6 +18,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from . import bpm as bpm_detect
+from . import oauth
 from . import extractor, genre_lookup, gitstore, library, wiki_lookup
 
 DOWNLOAD_DIR = Path(os.environ.get("AUDIO_DOWNLOAD_DIR", "downloads"))
@@ -41,14 +42,31 @@ def _check(token: str) -> None:
         raise HTTPException(status_code=401, detail="bad token")
 
 
-def require_token(x_api_token: str = Header(default="")) -> None:
+def _bearer(authorization: str) -> str:
+    scheme, _, value = authorization.partition(" ")
+    return value.strip() if scheme.lower() == "bearer" else ""
+
+
+def require_token(
+    x_api_token: str = Header(default=""), authorization: str = Header(default="")
+) -> None:
+    bearer = _bearer(authorization)
+    if bearer and not x_api_token:
+        oauth.verify_owner(bearer)
+        return
     _check(x_api_token)
 
 
 def require_token_or_query(
-    x_api_token: str = Header(default=""), token: str = Query(default="")
+    x_api_token: str = Header(default=""),
+    authorization: str = Header(default=""),
+    token: str = Query(default=""),
 ) -> None:
     """File/cover GETs: <audio>/<img> cannot send headers, so ?token= works too."""
+    bearer = _bearer(authorization)
+    if bearer and not x_api_token:
+        oauth.verify_owner(bearer)
+        return
     _check(x_api_token or token)
 
 

@@ -5,11 +5,12 @@ are `{"detail": "<message>"}`.
 
 ## Auth
 
-- API-001 MUST: every route except `GET /health` and the static UI requires header `X-API-Token` equal to env `AUDIO_API_TOKEN`, compared with `hmac.compare_digest`. Status: implemented
+- API-001 MUST: every route except `GET /health` and the static UI requires header `X-API-Token` equal to env `AUDIO_API_TOKEN` (compared with `hmac.compare_digest`) or an owner OAuth ID token (API-007). Status: implemented
 - API-002 MUST: `GET /files/{id}` and `GET /covers/{id}` also accept `?token=<token>` (the header wins when both are sent), because `<audio>` and `<img>` cannot send headers. Status: implemented
 - API-003 MUST: wrong or missing token gives 401 `bad token`; `AUDIO_API_TOKEN` unset gives 503 `AUDIO_API_TOKEN is not set` (the API is closed, never open). Status: implemented
 - API-004 MUST: static files at `/` are public, carry no data, and are served with `Cache-Control: no-cache`; API routes are registered first and are never shadowed. Status: implemented
 - API-005 MUST: `{id}` path params must match `^[A-Za-z0-9_-]{11}$`, else 422 `invalid video id` (blocks path traversal and yt-dlp option injection). Status: implemented
+- API-007 MUST: `Authorization: Bearer <ID token>` from Sign in with Apple or Google is accepted on every authenticated route, including `GET /files/{id}` and `GET /covers/{id}`. The server checks the RS256 signature against the provider JWKS (cached), `iss`, `aud` (`APPLE_AUDIENCE` / `GOOGLE_CLIENT_ID`) and `exp`, and allows only a verified `email` equal to `ALLOWED_EMAIL` (default `alex.isayenko@gmail.com`) or an Apple `sub` in `ALLOWED_APPLE_SUB`. Invalid or expired token gives 401 `bad token`; a valid token of anyone else gives 403 `not the owner`. If `X-API-Token` is also sent it decides. Status: implemented
 - API-006 SHOULD: use HTTPS and keep logs private, since `?token=` appears in URLs. Status: implemented (via Cloudflare Tunnel once deployed; see [non-functional.md](non-functional.md))
 
 ## Endpoints

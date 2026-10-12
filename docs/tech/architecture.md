@@ -4,7 +4,7 @@ Status: Accepted · 2026-10-12
 
 ```text
 browser (web UI)  --same origin, X-API-Token-->  server (FastAPI + yt-dlp)  -->  YouTube
-iPhone (SwiftUI, deferred)  --http, X-API-Token-->  same server
+iPhone (SwiftUI)  --http, Bearer ID token or X-API-Token-->  same server
   audio/<id>.m4a  <-- /files/<id> --  downloads/<id>.m4a
   library.json + covers  <-- local clones of data-storage / data-storage-lfs (ADR-0005)
 ```
@@ -67,7 +67,8 @@ relative audio file names only (replaces `AUDIO_DOWNLOAD_DIR`). Each save costs 
 
 Full contract: [`../product/screens.md`](../product/screens.md).
 
-All API routes except `/health` need header `X-API-Token` equal to
+All API routes except `/health` need either an owner OAuth ID token
+(`Authorization: Bearer`, see below) or header `X-API-Token` equal to
 `AUDIO_API_TOKEN`. `/files/{id}` and `/covers/{id}` also accept
 `?token=<token>`, compared with `hmac.compare_digest`, since `<audio>`
 and `<img>` cannot send headers; the token therefore can appear in URLs
@@ -144,3 +145,24 @@ Review). TestFlight builds expire after 90 days; re-upload.
 - `NSAllowsArbitraryLoads` is on because the server is plain http on a
   private address; tighten if the server gets TLS.
 - No CI (template rule: manual workflows only; none added yet).
+
+## Owner-only OAuth sign-in
+
+See ADR-0006. The iOS app signs in with Apple (`SignInWithAppleButton`) or
+Google (`ASWebAuthenticationSession`, code + PKCE) from Settings and sends
+the ID token as `Authorization: Bearer`. `server/app/oauth.py` verifies it
+(JWKS signature, `iss`, `aud`, `exp`) and allows only the owner.
+
+Server env: `ALLOWED_EMAIL` (default `alex.isayenko@gmail.com`),
+`ALLOWED_APPLE_SUB`, `APPLE_AUDIENCE=com.alexisayenko.audioplayer`,
+`GOOGLE_CLIENT_ID`. A provider without its audience set is rejected.
+
+iOS setup: Sign in with Apple capability on the App ID
+`com.alexisayenko.audioplayer` (entitlement is in `project.yml`); a Google
+OAuth client of type iOS with that bundle id; copy
+`ios/Config/Secrets.example.xcconfig` to `Secrets.xcconfig` and fill in the
+client ID and its reversed form, then `xcodegen`.
+
+Apple `sub`: sign in with Apple once in the app, decode the token payload
+(`sub`), or read the 403 case in the server log; put it in
+`ALLOWED_APPLE_SUB` so a hidden or relayed email still passes.
