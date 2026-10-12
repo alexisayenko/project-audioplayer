@@ -19,6 +19,8 @@ struct LibraryView: View {
     @State private var editing: ServerSong?
     @State private var deleting: Track?
     @State private var bytes: Int64 = 0
+    @State private var showAdd = false
+    @StateObject private var addFlow = AddFlow()
 
     private var counts: [(tag: String, count: Int)] {
         var counts: [String: (tag: String, count: Int)] = [:]
@@ -64,7 +66,15 @@ struct LibraryView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: DS.Space.space3) {
                     ScreenHeader(title: "Library") {
-                        Text("\(library.tracks.count) \(library.tracks.count == 1 ? "song" : "songs")").dsCaption().padding(.bottom, DS.Space.space2)
+                        HStack(spacing: DS.Space.space3) {
+                            Text("\(library.tracks.count) \(library.tracks.count == 1 ? "song" : "songs")").dsCaption()
+                            Button { showAdd = true } label: {
+                                Image(systemName: "plus").font(.system(size: 22, weight: .semibold))
+                            }
+                            .buttonStyle(LitCircleButtonStyle())
+                            .accessibilityLabel("Add a song")
+                        }
+                        .padding(.bottom, DS.Space.space1)
                     }
                     searchField
                     chips(counts)
@@ -99,6 +109,10 @@ struct LibraryView: View {
                 }
             }
             .sheet(item: $editing) { SongEditView(song: $0) }
+            .sheet(isPresented: $showAdd) { AddSheet(flow: addFlow) }
+            .onChange(of: server.notice) { _, n in
+                if let n { toast = n; server.notice = nil }
+            }
             .sheet(item: $sheet) { category in
                 FilterSheet(category: category, values: category.values(counts), selection: $selection,
                             resultCount: filtered(selection).count)
@@ -143,7 +157,7 @@ struct LibraryView: View {
     @ViewBuilder
     private func list(_ tracks: [Track]) -> some View {
         if library.tracks.isEmpty && arriving.isEmpty {
-            empty("No songs yet. Use Add to bring one to this iPhone.")
+            empty("No songs yet. Tap + to bring one to this iPhone.")
         } else if tracks.isEmpty && arriving.isEmpty {
             empty("No songs match. Clear the search or the filters.")
         } else {

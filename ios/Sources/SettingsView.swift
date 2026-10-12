@@ -116,10 +116,11 @@ struct SettingsView: View {
         testing = true
         status = nil
         defer { testing = false }
+        let started = Date()
         do {
             try await APIClient(baseURL: settings.serverURL, token: settings.token).verify()
             ok = true
-            status = "Connected, token accepted"
+            status = "Connected · \(Int(Date().timeIntervalSince(started) * 1000)) ms, token accepted"
             server.setReachable(true)
         } catch {
             ok = false

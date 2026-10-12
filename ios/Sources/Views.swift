@@ -1,15 +1,14 @@
 import SwiftUI
 
 enum AppTab: Hashable, CaseIterable {
-    case library, add, playback, settings
+    case library, playback, settings
 
     var title: String {
-        switch self { case .library: "Library"; case .add: "Add"; case .playback: "Playback"; case .settings: "Settings" }
+        switch self { case .library: "Library"; case .playback: "Playback"; case .settings: "Settings" }
     }
     var symbol: String {
         switch self {
         case .library: "music.note.list"
-        case .add: "plus"
         case .playback: "play.fill"
         case .settings: "gearshape"
         }
@@ -25,7 +24,6 @@ struct RootView: View {
     var body: some View {
         ZStack {
             page(.library) { LibraryView() }
-            page(.add) { AddView(openPlayback: { tab = .playback }) }
             page(.playback) { PlaybackView() }
             page(.settings) { SettingsView() }
         }
@@ -43,7 +41,7 @@ struct RootView: View {
 }
 
 extension RootView {
-    /// All four screens stay alive so an Add in progress survives a tab switch.
+    /// All three screens stay alive so a filter or search survives a tab switch.
     fileprivate func page<V: View>(_ t: AppTab, @ViewBuilder _ content: () -> V) -> some View {
         content()
             .opacity(tab == t ? 1 : 0)

@@ -6,11 +6,12 @@ struct PlaybackView: View {
     @State private var showTags = false
     @State private var showQueue = false
     @State private var toast: String?
+    @State private var editing: ServerSong?
 
     private var current: Track? { player.current }
 
     private func subtitle(_ t: Track) -> String {
-        [t.artist, t.album, t.year.map(String.init)].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: ", ")
+        [t.artist, t.album, t.year.map(String.init)].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · ")
     }
 
     private var upNext: [Track] {
@@ -27,7 +28,7 @@ struct PlaybackView: View {
                     Text("Playing from this iPhone").font(T.subhead).foregroundStyle(DS.Color.inkMuted)
                 }
                 .accessibilityElement(children: .combine)
-                Deck()
+                cover
                 details
                 progress
                 TransportTray(playing: player.isPlaying, shuffle: player.shuffle, repeatMode: player.repeatMode,
@@ -55,12 +56,14 @@ struct PlaybackView: View {
             }
         }
         .sheet(isPresented: $showQueue) { QueueSheet() }
+        .sheet(item: $editing) { SongEditView(song: $0) }
     }
 
     private var menu: some View {
         Menu {
             Button { showQueue = true } label: { Label("Queue", systemImage: "list.bullet") }
             Button { showTags = true } label: { Label("Add songs by tag", systemImage: "tag") }
+            if let t = current { Button { editing = ServerSong(t) } label: { Label("Edit song", systemImage: "pencil") } }
             Button { player.skip(by: -5) } label: { Label("Back 5 seconds", systemImage: "gobackward.5") }
             Button { player.skip(by: 5) } label: { Label("Forward 5 seconds", systemImage: "goforward.5") }
             Button(role: .destructive) { player.clearQueue() } label: { Label("Clear queue", systemImage: "trash") }
@@ -72,12 +75,36 @@ struct PlaybackView: View {
         .accessibilityLabel("More")
     }
 
+    /// The song's cover, full width and square, with title and artist · album · year on a bottom gradient.
+    private var cover: some View {
+        Color.clear.aspectRatio(1, contentMode: .fit)
+            .frame(maxWidth: 420).frame(maxWidth: .infinity)
+            .overlay { CoverImage(source: current?.thumbnail).accessibilityHidden(true) }
+            .overlay(alignment: .bottom) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(current?.title ?? "Nothing playing").font(T.title).lineLimit(3)
+                    Text(current.map(subtitle) ?? "Pick a song in Library.").font(T.body).opacity(0.8).lineLimit(2)
+                }
+                .foregroundStyle(DS.Color.surface)
+                .environment(\.colorScheme, .light)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, DS.Space.space4).padding(.bottom, DS.Space.space3).padding(.top, DS.Space.space8 + DS.Space.space4)
+                .background(LinearGradient(stops: [.init(color: DS.Color.vinyl.opacity(0), location: 0),
+                                                   .init(color: DS.Color.vinyl.opacity(0.65), location: 0.4),
+                                                   .init(color: DS.Color.vinyl.opacity(0.9), location: 1)],
+                                           startPoint: .top, endPoint: .bottom))
+            }
+            .clipShape(RoundedRectangle(cornerRadius: DS.Radius.radiusCard, style: .continuous))
+            .shadow(color: DS.Color.vinyl.opacity(0.16), radius: 10, y: 2)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(current.map { "\($0.title), \(subtitle($0))" } ?? "Nothing playing")
+    }
+
+    @ViewBuilder
     private var details: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            if let t = current {
-                Text(t.title).font(T.title).foregroundStyle(DS.Color.ink).lineLimit(3)
-                Text(subtitle(t)).font(T.body).foregroundStyle(DS.Color.inkMuted)
-                if let tags = t.tags, !tags.isEmpty { TagList(tags: tags).padding(.top, DS.Space.space2) }
+        if let t = current, !(t.tags ?? []).isEmpty || t.bpm != nil || !links(t).isEmpty {
+            VStack(alignment: .leading, spacing: DS.Space.space1) {
+                if let tags = t.tags, !tags.isEmpty { TagList(tags: tags) }
                 HStack(spacing: DS.Space.space3) {
                     if let bpm = t.bpm { Text("\(Int(bpm.rounded())) BPM").font(T.time).foregroundStyle(DS.Color.inkMuted) }
                     ForEach(links(t), id: \.0) { label, url in
@@ -85,12 +112,9 @@ struct PlaybackView: View {
                             .frame(minHeight: DS.Space.hit)
                     }
                 }
-            } else {
-                Text("Nothing playing").font(T.title).foregroundStyle(DS.Color.ink)
-                Text("Pick a song in Library.").font(T.body).foregroundStyle(DS.Color.inkMuted)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func links(_ t: Track) -> [(String, URL)] {

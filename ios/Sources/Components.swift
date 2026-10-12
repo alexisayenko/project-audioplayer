@@ -83,39 +83,20 @@ struct LED: View {
     }
 }
 
-/// LED plus a status word, e.g. "Server online".
-struct StatusLine: View {
-    let color: Color
-    let text: String
-
-    var body: some View {
-        HStack(spacing: DS.Space.space2) {
-            LED(color: color, glow: true)
-            Text(text).font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.ink)
-        }
-        .accessibilityElement(children: .combine)
-    }
-}
-
-enum DSButtonKind { case primary, outline, quiet, danger }
+enum DSButtonKind { case outline, quiet, danger }
 
 struct DSButtonStyle: ButtonStyle {
-    var kind: DSButtonKind = .primary
-    var tall = false
-    @Environment(\.colorScheme) private var scheme
+    var kind: DSButtonKind
     @Environment(\.isEnabled) private var enabled
 
     func makeBody(configuration: Configuration) -> some View {
         let label = configuration.label
-            .font(tall ? T.headline : T.subhead.weight(.semibold))
+            .font(T.subhead.weight(.semibold))
             .lineLimit(2).multilineTextAlignment(.center)
             .padding(.horizontal, DS.Space.space4)
-            .frame(maxWidth: tall ? .infinity : nil, minHeight: tall ? 52 : DS.Space.hit)
+            .frame(minHeight: DS.Space.hit)
         return Group {
             switch kind {
-            case .primary:
-                label.foregroundStyle(scheme.onStrong)
-                    .background(Capsule().fill(scheme.strongFill))
             case .outline:
                 label.foregroundStyle(DS.Color.accentInk)
                     .overlay(Capsule().stroke(DS.Color.accentInk, lineWidth: 1.5))
@@ -252,9 +233,12 @@ struct CoverImage: View {
     }
 
     private var placeholder: some View {
-        ZStack {
-            DS.Color.vinyl
-            Circle().fill(DS.Color.accent).frame(width: 14, height: 14)
+        GeometryReader { g in
+            ZStack {
+                DS.Color.vinyl
+                Circle().fill(DS.Color.accent).frame(width: g.size.width * 0.4, height: g.size.width * 0.4)
+                    .position(x: g.size.width / 2, y: g.size.height * (g.size.width > 150 ? 0.42 : 0.5))
+            }
         }
     }
 
@@ -496,4 +480,42 @@ func finalTags(_ tags: [String], pending: String) -> [String] {
 func formatTime(_ seconds: Double) -> String {
     let s = Int(max(seconds, 0))
     return String(format: "%d:%02d", s / 60, s % 60)
+}
+
+/// The 44pt lit round button (accent fill, on-accent glyph, glow): the + in the Library header.
+struct LitCircleButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label.foregroundStyle(DS.Color.onAccent)
+            .frame(width: DS.Space.hit, height: DS.Space.hit)
+            .background(Circle().fill(DS.Color.accent).shadow(color: DS.Color.accent.opacity(0.5), radius: 12))
+            .opacity(configuration.isPressed ? 0.8 : 1)
+    }
+}
+
+/// The server's status LED, shown in the Add sheet and on Settings (never on Library).
+struct ServerStatus: View {
+    @EnvironmentObject var server: ServerLink
+    @EnvironmentObject var settings: Settings
+    var compact = false
+
+    var body: some View {
+        Button { Task { await server.check(settings: settings) } } label: {
+            HStack(spacing: DS.Space.space2) {
+                if server.checking { ProgressView().controlSize(.small) }
+                else { LED(color: color, glow: server.reachable != nil) }
+                Text(text).font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.ink)
+            }
+            .frame(minHeight: compact ? 28 : DS.Space.hit, alignment: .leading)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(text).accessibilityHint("Checks the server again")
+    }
+
+    private var color: Color {
+        switch server.reachable { case true: DS.Color.ok; case false: DS.Color.power; default: DS.Color.inkFaint }
+    }
+
+    private var text: String {
+        switch server.reachable { case true: "Server online"; case false: "Server unavailable"; default: "Server not set up" }
+    }
 }

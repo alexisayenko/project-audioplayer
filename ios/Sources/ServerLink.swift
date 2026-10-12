@@ -39,6 +39,8 @@ final class ServerLink: ObservableObject {
     @Published private(set) var checking = false
     @Published private(set) var transfers: [String: Transfer] = [:]
     @Published private(set) var failed: Set<String> = []
+    /// A failure to tell the person about once (Library shows it as a toast).
+    @Published var notice: String?
 
     func check(settings: Settings) async {
         guard !checking else { return }
@@ -60,16 +62,55 @@ final class ServerLink: ObservableObject {
         guard transfers[track.id] == nil else { return false }
         transfers[track.id] = Transfer(track: track, progress: 0)
         defer { transfers[track.id] = nil }
+        guard await copy(track, settings: settings, from: 0, span: 1) else { failed.insert(track.id); return false }
+        library.add(track)
+        failed.remove(track.id)
+        return true
+    }
+
+    /// A song just saved on the server: the row appears at once, the server's fetch fills the first 80%, the copy to the phone the rest.
+    func startIngest(_ track: Track, settings: Settings, library: LibraryStore, player: PlayerService?, playWhenReady: Bool) {
+        transfers[track.id] = Transfer(track: track, progress: 0)
+        Task { await ingest(track, settings: settings, library: library, player: player, playWhenReady: playWhenReady) }
+    }
+
+    private func ingest(_ track: Track, settings: Settings, library: LibraryStore, player: PlayerService?, playWhenReady: Bool) async {
+        defer { transfers[track.id] = nil }
+        let api = APIClient(baseURL: settings.serverURL, token: settings.token)
+        var misses = 0
+        while true {
+            try? await Task.sleep(for: .seconds(1))
+            do {
+                let st = try await api.status(track.id)
+                misses = 0
+                transfers[track.id]?.progress = 0.8 * (st.progress ?? 0)
+                if st.status == "error" { fail(track, "Download failed: \(st.error ?? "unknown error")"); return }
+                if st.status == "done" { break }
+            } catch {
+                misses += 1
+                if misses >= 8 { fail(track, error.localizedDescription); return }
+            }
+        }
+        guard await copy(track, settings: settings, from: 0.8, span: 0.2) else {
+            fail(track, "Saved on the server, but not copied to this iPhone. Fetch the link again to download it.")
+            return
+        }
+        library.add(track)
+        failed.remove(track.id)
+        if playWhenReady { player?.playNow(track) }
+    }
+
+    private func copy(_ track: Track, settings: Settings, from base: Double, span: Double) async -> Bool {
         do {
             try await APIClient(baseURL: settings.serverURL, token: settings.token).downloadFile(track) { [weak self] p in
-                Task { @MainActor in self?.transfers[track.id]?.progress = p }
+                Task { @MainActor in self?.transfers[track.id]?.progress = base + span * p }
             }
-            library.add(track)
-            failed.remove(track.id)
             return true
-        } catch {
-            failed.insert(track.id)
-            return false
-        }
+        } catch { return false }
+    }
+
+    private func fail(_ track: Track, _ message: String) {
+        failed.insert(track.id)
+        notice = message
     }
 }
