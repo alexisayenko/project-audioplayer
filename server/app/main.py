@@ -20,7 +20,7 @@ from pydantic import BaseModel, Field
 
 from . import bpm as bpm_detect
 from . import oauth, session
-from . import extractor, genre_lookup, gitstore, library, urlclean, wiki_lookup
+from . import extractor, genre_lookup, gitstore, library, spotify, urlclean, wiki_lookup
 
 DOWNLOAD_DIR = Path(os.environ.get("AUDIO_DOWNLOAD_DIR", "downloads"))
 DATA_DIR = Path(os.environ.get("AUDIO_DATA_DIR", "."))
@@ -215,7 +215,8 @@ class _Refused(Exception):
         self.response = response
 
 
-_NOT_A_LINK = "not a YouTube video or SoundCloud track URL"
+_NOT_A_LINK = "not a YouTube video, SoundCloud track or Spotify track URL"
+NO_AUDIO_SAVE_MESSAGE = "Saving a song without audio needs the catalog data model (task-0006); the Spotify preview works, Save does not yet."
 
 
 def _resolve_link(text: str) -> _Resolved:
@@ -223,6 +224,9 @@ def _resolve_link(text: str) -> _Resolved:
     vid = extractor.parse_video_id(text)
     if vid:
         return _Resolved(vid, extractor.watch_url(vid))
+    sp = urlclean.classify_spotify(text)
+    if sp is not None:
+        return _resolve_spotify(sp)
     sc = urlclean.classify_soundcloud(text)
     if sc is None:
         raise _Refused(_error(422, "unsupported", _NOT_A_LINK))
@@ -241,6 +245,28 @@ def _resolve_link(text: str) -> _Resolved:
         raise _Refused(_error(status, code or "failed", f"preview failed: {_short(exc)}")) from exc
     if probe.get("preview_only"):
         raise _Refused(_error(422, "preview_only", extractor.PREVIEW_ONLY_MESSAGE))
+    return _Resolved(probe["id"], probe["source_url"], probe)
+
+
+_SPOTIFY_STATUS = {"not_found": 404, "private": 403, "rate_limited": 429, "unauthorized": 502, "unsupported": 422, "failed": 502}
+
+
+def _resolve_spotify(sp: tuple[str, str]) -> _Resolved:
+    """Spotify track link -> canonical URL, `spotify-<id>` and metadata (never audio, CAT-014)."""
+    kind, url = sp
+    if kind == "unsupported":
+        raise _Refused(_error(422, "unsupported", urlclean.UNSUPPORTED_MESSAGE))
+    try:
+        if kind == "short":
+            url = urlclean.resolve_spotify_short(url)
+        probe = spotify.probe(url)
+    except ValueError as exc:
+        raise _Refused(_error(422, "unsupported", str(exc))) from exc
+    except spotify.SpotifyError as exc:
+        resp = _error(_SPOTIFY_STATUS.get(exc.code, 502), exc.code, str(exc))
+        if exc.retry_after:
+            resp.headers["Retry-After"] = str(exc.retry_after)
+        raise _Refused(resp) from exc
     return _Resolved(probe["id"], probe["source_url"], probe)
 
 
@@ -452,6 +478,8 @@ def create_song(req: CreateSongRequest, background: BackgroundTasks):
     except _Refused as refused:
         return refused.response
     vid = link.vid
+    if link.probe is not None and link.probe.get("audio") == "none":
+        return _error(422, "no_audio", NO_AUDIO_SAVE_MESSAGE)
     with library.LOCK:
         if any(s["id"] == vid for s in library.load(library_path())):
             raise HTTPException(status_code=409, detail="already in library")

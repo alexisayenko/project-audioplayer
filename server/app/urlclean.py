@@ -1,4 +1,4 @@
-"""Canonical, tracking-free song URLs and song ids (YouTube and SoundCloud)."""
+"""Canonical, tracking-free song URLs and song ids (YouTube, SoundCloud and Spotify)."""
 
 from __future__ import annotations
 
@@ -10,6 +10,8 @@ from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 VIDEO_ID_RE = re.compile(r"^[A-Za-z0-9_-]{11}$")
 SOUNDCLOUD_ID_RE = re.compile(r"^soundcloud-[0-9]{1,20}$")
 SOUNDCLOUD_PREFIX = "soundcloud-"
+SPOTIFY_ID_RE = re.compile(r"^spotify-[A-Za-z0-9]{22}$")
+SPOTIFY_PREFIX = "spotify-"
 
 UNSUPPORTED_MESSAGE = "Only single tracks are supported"
 
@@ -24,16 +26,81 @@ _TRACKING = {"si", "feature", "pp", "fbclid", "gclid"}
 
 
 def is_valid_video_id(video_id: str) -> bool:
-    """A song id: an 11-char YouTube id or `soundcloud-<numeric track id>`."""
-    return bool(VIDEO_ID_RE.fullmatch(video_id) or SOUNDCLOUD_ID_RE.fullmatch(video_id))
+    """A song id: an 11-char YouTube id, `soundcloud-<numeric track id>` or `spotify-<22-char track id>`."""
+    return bool(VIDEO_ID_RE.fullmatch(video_id) or SOUNDCLOUD_ID_RE.fullmatch(video_id) or SPOTIFY_ID_RE.fullmatch(video_id))
 
 
 def source_of(song_id: str) -> str:
-    return "soundcloud" if SOUNDCLOUD_ID_RE.fullmatch(song_id) else "youtube"
+    if SOUNDCLOUD_ID_RE.fullmatch(song_id):
+        return "soundcloud"
+    if SPOTIFY_ID_RE.fullmatch(song_id):
+        return "spotify"
+    return "youtube"
 
 
 def soundcloud_song_id(track_id: str | int) -> str:
     return f"{SOUNDCLOUD_PREFIX}{track_id}"
+
+
+def spotify_song_id(track_id: str) -> str:
+    return f"{SPOTIFY_PREFIX}{track_id}"
+
+
+def spotify_track_id(song_id: str) -> str:
+    """The 22-char Spotify track id of a `spotify-<id>` song id."""
+    if not SPOTIFY_ID_RE.fullmatch(song_id):
+        raise ValueError("not a Spotify song id")
+    return song_id[len(SPOTIFY_PREFIX):]
+
+
+_SP_HOSTS = {"open.spotify.com", "play.spotify.com"}
+_SP_SHORT_HOST = "spotify.link"
+_SP_TRACK_ID_RE = re.compile(r"^[A-Za-z0-9]{22}$")
+_SP_SHORT_CODE_RE = re.compile(r"^[A-Za-z0-9]{3,32}$")
+_SP_INTL_RE = re.compile(r"^intl-[a-z]{2,3}(?:-[a-z]{2,4})?$", re.I)
+_SP_OTHER_KINDS = {"album", "playlist", "artist", "episode", "show", "user", "collection", "search", "genre", "concert"}
+_SP_FIND_RE = re.compile(r"(?:(?:https?://)?(?:open|play)\.spotify\.com/[^\s<>\"']+|(?:https?://)?spotify\.link/[^\s<>\"']+|spotify:track:[A-Za-z0-9]{22})", re.I)
+
+
+def classify_spotify(text: str) -> tuple[str, str] | None:
+    """`("track", https://open.spotify.com/track/<id>)`, `("short", https://spotify.link/<code>)`, `("unsupported", "")` or None (not Spotify).
+
+    Accepts open.spotify.com/track/<id>, /intl-xx/track/<id>, spotify:track:<id> and spotify.link short links; the
+    query (?si=...) and fragment are dropped. Albums, playlists, artists and episodes are unsupported.
+    """
+    text = text.strip()
+    m = re.match(r"^spotify:([a-z]+):([A-Za-z0-9]+)$", text, re.I)
+    if m:
+        if m.group(1).lower() == "track" and _SP_TRACK_ID_RE.fullmatch(m.group(2)):
+            return ("track", f"https://open.spotify.com/track/{m.group(2)}")
+        return ("unsupported", "")
+    m = re.match(r"^(?:https?://)?([A-Za-z0-9.-]+)(/[^?#]*)?(?:[?#].*)?$", text, re.I)
+    if not m:
+        return None
+    host, path = m.group(1).lower(), (m.group(2) or "")
+    parts = [p for p in path.split("/") if p]
+    if host == _SP_SHORT_HOST:
+        if len(parts) == 1 and _SP_SHORT_CODE_RE.fullmatch(parts[0]):
+            return ("short", f"https://{_SP_SHORT_HOST}/{parts[0]}")
+        return ("unsupported", "")
+    if host not in _SP_HOSTS:
+        return None
+    if parts and _SP_INTL_RE.fullmatch(parts[0]):
+        parts = parts[1:]
+    if len(parts) == 2 and parts[0].lower() == "track" and _SP_TRACK_ID_RE.fullmatch(parts[1]):
+        return ("track", f"https://open.spotify.com/track/{parts[1]}")
+    return ("unsupported", "")
+
+
+def find_spotify_url(text: str) -> str | None:
+    m = _SP_FIND_RE.search(text)
+    return m.group(0) if m else None
+
+
+def spotify_track_id_of(url: str) -> str | None:
+    """The 22-char track id of a canonical (or any supported) Spotify track link; None otherwise."""
+    c = classify_spotify(url)
+    return c[1].rsplit("/", 1)[1] if c and c[0] == "track" else None
 
 
 _SC_HOSTS = {"soundcloud.com", "www.soundcloud.com", "m.soundcloud.com"}
@@ -123,6 +190,28 @@ def resolve_soundcloud_short(url: str) -> str:
     return target[1]
 
 
+def resolve_spotify_short(url: str) -> str:
+    """Follow a spotify.link short link once (https, open.spotify.com only) and return the canonical track URL.
+
+    Raises ValueError when the link does not lead to a single Spotify track.
+    """
+    kind = classify_spotify(url)
+    if not kind or kind[0] != "short":
+        raise ValueError(UNSUPPORTED_MESSAGE)
+    try:
+        resp = _open_no_redirect(kind[1])
+    except Exception as exc:
+        raise ValueError("could not resolve the Spotify short link") from exc
+    location = (resp.headers.get("Location") or "").strip() if getattr(resp, "headers", None) else ""
+    parts = urlsplit(location)
+    if parts.scheme.lower() != "https" or (parts.hostname or "").lower() not in _SP_HOSTS:
+        raise ValueError("could not resolve the Spotify short link")
+    target = classify_spotify(location)
+    if not target or target[0] != "track":
+        raise ValueError(UNSUPPORTED_MESSAGE)
+    return target[1]
+
+
 def parse_video_id(url_or_id: str) -> str | None:
     """Extract a YouTube video id from a URL (or accept a bare id)."""
     text = url_or_id.strip()
@@ -141,6 +230,8 @@ def watch_url(video_id: str, source_url: str | None = None) -> str:
         if source_url and (c := classify_soundcloud(source_url)) and c[0] == "track":
             return c[1]
         return f"https://api.soundcloud.com/tracks/{video_id[len(SOUNDCLOUD_PREFIX):]}"
+    if source_of(video_id) == "spotify":
+        return f"https://open.spotify.com/track/{video_id[len(SPOTIFY_PREFIX):]}"
     return f"https://www.youtube.com/watch?v={video_id}"
 
 
@@ -150,7 +241,7 @@ def _is_tracking(name: str) -> bool:
 
 
 def clean_url(text: str) -> str:
-    """YouTube links become https://www.youtube.com/watch?v=<id>, SoundCloud track links https://soundcloud.com/<artist>/<track>; other http(s) links lose tracking params."""
+    """YouTube links become https://www.youtube.com/watch?v=<id>, SoundCloud track links https://soundcloud.com/<artist>/<track>, Spotify track links https://open.spotify.com/track/<id>; other http(s) links lose tracking params."""
     text = text.strip()
     vid = parse_video_id(text)
     if vid:
@@ -158,6 +249,9 @@ def clean_url(text: str) -> str:
     sc = classify_soundcloud(text)
     if sc and sc[0] in ("track", "short"):
         return sc[1]
+    sp = classify_spotify(text)
+    if sp and sp[0] in ("track", "short"):
+        return sp[1]
     parts = urlsplit(text)
     if parts.scheme.lower() not in ("http", "https") or not parts.netloc or not parts.query:
         return text

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { cleanUrl, cleanPasted, classifySoundcloud, sourceOf, sourceLabel } from './url-clean.js';
+import { cleanUrl, cleanPasted, classifySoundcloud, classifySpotify, sourceOf, sourceLabel } from './url-clean.js';
 
 const V = 'jNQXAC9IVRw';
 const C = `https://www.youtube.com/watch?v=${V}`;
@@ -68,3 +68,41 @@ assert.equal(sourceOf('soundcloud-abc'), 'youtube');
 assert.equal(sourceLabel('soundcloud'), 'SoundCloud');
 assert.equal(sourceLabel('youtube'), 'YouTube');
 console.log('url-clean tests passed');
+
+// Spotify (task-0007): track links in every form become https://open.spotify.com/track/<id>.
+const SPID = '4cOdK2wGLETKBW3PvgPWqT';
+const SP = `https://open.spotify.com/track/${SPID}`;
+for (const raw of [
+  SP,
+  `http://open.spotify.com/track/${SPID}`,
+  `open.spotify.com/track/${SPID}`,
+  `${SP}?si=AbC123xyz`,
+  `${SP}?si=AbC123xyz&utm_source=copy-link#x`,
+  `https://open.spotify.com/intl-de/track/${SPID}?si=1`,
+  `https://open.spotify.com/intl-pt-br/track/${SPID}`,
+  `https://play.spotify.com/track/${SPID}`,
+  `spotify:track:${SPID}`,
+  `  ${SP}  `,
+]) {
+  assert.deepEqual(classifySpotify(raw), { kind: 'track', url: SP }, raw);
+  assert.equal(cleanUrl(raw), SP, raw);
+}
+assert.deepEqual(classifySpotify('https://spotify.link/AbC123?si=x'), { kind: 'short', url: 'https://spotify.link/AbC123' });
+assert.equal(cleanUrl('spotify.link/AbC123'), 'https://spotify.link/AbC123');
+for (const raw of [
+  'https://open.spotify.com/album/1DFixLWuPkv3KT3TnV35m3',
+  'https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M',
+  'https://open.spotify.com/artist/0q5WvBK5P3cPqBzfKJTVz5',
+  'https://open.spotify.com/episode/4rOoJ6Egrf8K2IrywzwOMk',
+  'spotify:album:1DFixLWuPkv3KT3TnV35m3',
+  'https://open.spotify.com/track/short',
+  'https://spotify.link/',
+]) assert.deepEqual(classifySpotify(raw), { kind: 'unsupported', url: '' }, raw);
+assert.equal(classifySpotify('https://example.com/track/x'), null);
+assert.equal(cleanPasted(`Listen: ${SP}?si=abc nice`), SP);
+assert.equal(cleanPasted(`check spotify:track:${SPID} out`), SP);
+assert.equal(cleanPasted('https://spotify.link/AbC123?si=x'), 'https://spotify.link/AbC123');
+assert.equal(sourceOf(`spotify-${SPID}`), 'spotify');
+assert.equal(sourceOf('spotify-short'), 'youtube');
+assert.equal(sourceLabel('spotify'), 'Spotify');
+assert.equal(sourceLabel(undefined), 'YouTube');

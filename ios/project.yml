@@ -45,3 +45,28 @@ targets:
         DEVELOPMENT_TEAM: L8C7TUQLBM
         TARGETED_DEVICE_FAMILY: "1"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+  AudioPlayerTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [Tests]
+    dependencies:
+      - target: AudioPlayer
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.alexisayenko.audioplayer.tests
+        DEVELOPMENT_TEAM: L8C7TUQLBM
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/AudioPlayer.app/AudioPlayer
+        BUNDLE_LOADER: $(TEST_HOST)
+schemes:
+  AudioPlayer:
+    build:
+      targets:
+        AudioPlayer: all
+        AudioPlayerTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets: [AudioPlayerTests]
+    archive:
+      config: Release

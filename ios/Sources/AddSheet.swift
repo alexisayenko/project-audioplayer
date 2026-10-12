@@ -89,6 +89,11 @@ final class AddFlow: ObservableObject {
         } catch {
             message = error.localizedDescription; phase = .failed; return false
         }
+        if p.hasNoAudio {
+            // Metadata-only record (Spotify): nothing to download. The catalog sync (task-0006) lists it.
+            phase = .saved
+            return true
+        }
         let track = Track(id: p.id, title: title, artist: artist, duration: p.duration,
                           thumbnail: p.thumbnail == nil ? nil : "/covers/\(p.id)",
                           album: album.isEmpty ? nil : album, year: yearValue, tags: finalTagList,
@@ -164,8 +169,8 @@ struct AddSheet: View {
     private var header: some View {
         HStack(alignment: .firstTextBaseline) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("Add from YouTube or SoundCloud").font(T.title).foregroundStyle(DS.Color.ink).accessibilityAddTraits(.isHeader)
-                Text("Downloads to this iPhone through your server").dsCaption()
+                Text("Add a song").font(T.title).foregroundStyle(DS.Color.ink).accessibilityAddTraits(.isHeader)
+                Text("YouTube or SoundCloud download to this iPhone; Spotify gives metadata only").dsCaption()
                 if server.reachable != true { ServerStatus(compact: true) }
             }
             Spacer(minLength: DS.Space.space2)
@@ -178,7 +183,7 @@ struct AddSheet: View {
     private var linkField: some View {
         VStack(alignment: .leading, spacing: DS.Space.space1) {
             HStack(spacing: DS.Space.space2) {
-                TextField("Paste a YouTube or SoundCloud link", text: $flow.url)
+                TextField("Paste a YouTube, SoundCloud or Spotify link", text: $flow.url)
                     .textInputAutocapitalization(.never).autocorrectionDisabled().keyboardType(.URL)
                     .submitLabel(.go).font(T.subhead).frame(minHeight: 44).foregroundStyle(DS.Color.ink)
                     .onSubmit { Task { await flow.loadPreview(api) } }
@@ -239,6 +244,7 @@ struct AddSheet: View {
                 Text(flow.title.isEmpty ? "Untitled" : flow.title).font(T.headline).foregroundStyle(DS.Color.ink).lineLimit(2)
                 if !summary.isEmpty { Text(summary).font(T.subhead).foregroundStyle(DS.Color.inkMuted).lineLimit(1) }
                 if !timing.isEmpty { Text(timing).font(T.time).foregroundStyle(DS.Color.inkMuted) }
+                if p.hasNoAudio { Text("No audio yet").font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.inkMuted) }
             }
             Spacer(minLength: DS.Space.space2)
             Button { withAnimation { editing.toggle() } } label: {
@@ -252,6 +258,11 @@ struct AddSheet: View {
         }
         .accessibilityElement(children: .contain)
 
+        if p.hasNoAudio, p.in_library != true {
+            note(p.partial == true
+                 ? "No audio yet \u{2014} Spotify gives metadata only. The server has no Spotify credentials, so only the title and cover came through."
+                 : "No audio yet \u{2014} Spotify gives metadata only. Get the audio from a YouTube match later.")
+        }
         if p.in_library == true {
             note("This song is already in your library.", error: true)
             if let t = library.tracks.first(where: { $0.id == p.id }) {
@@ -296,15 +307,17 @@ struct AddSheet: View {
         let blocked = p.in_library == true || flow.title.trimmingCharacters(in: .whitespaces).isEmpty || flow.phase == .saving
         Button { Task { _ = await flow.save(settings: settings, library: library, server: server, player: player, playWhenReady: false) } } label: {
             HStack(spacing: DS.Space.space2) {
-                if flow.phase == .saving { ProgressView().tint(DS.Color.onAccent) } else { Image(systemName: "arrow.down.to.line") }
-                Text("Save to iPhone")
+                if flow.phase == .saving { ProgressView().tint(DS.Color.onAccent) } else { Image(systemName: p.hasNoAudio ? "plus" : "arrow.down.to.line") }
+                Text(p.hasNoAudio ? "Save to library (no audio)" : "Save to iPhone")
             }
         }
         .buttonStyle(LitButtonStyle()).disabled(blocked).opacity(blocked ? 0.5 : 1)
-        Button { Task { _ = await flow.save(settings: settings, library: library, server: server, player: player, playWhenReady: true) } } label: {
-            Text("Save and play when ready").font(T.subhead.weight(.semibold)).foregroundStyle(DS.Color.accentInk)
-                .frame(maxWidth: .infinity, minHeight: DS.Space.hit)
+        if !p.hasNoAudio {
+            Button { Task { _ = await flow.save(settings: settings, library: library, server: server, player: player, playWhenReady: true) } } label: {
+                Text("Save and play when ready").font(T.subhead.weight(.semibold)).foregroundStyle(DS.Color.accentInk)
+                    .frame(maxWidth: .infinity, minHeight: DS.Space.hit)
+            }
+            .disabled(blocked).opacity(blocked ? 0.5 : 1)
         }
-        .disabled(blocked).opacity(blocked ? 0.5 : 1)
     }
 }

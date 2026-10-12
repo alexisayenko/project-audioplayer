@@ -22,7 +22,7 @@ Code: `server/app/library.py`, `server/app/main.py` (`SongMeta`).
 | `cover` | string or null | no | `covers/<id>.jpg`, or `null` if the thumbnail fetch failed |
 | `added_at` | string | yes | UTC `YYYY-MM-DDTHH:MM:SSZ` |
 
-- DATA-001 MUST: every song has a unique `id` that is a valid YouTube video id or a `soundcloud-<numeric id>` id (DATA-024). Status: implemented
+- DATA-001 MUST: every song has a unique `id` that is a valid YouTube video id, a `soundcloud-<numeric id>` id (DATA-024) or, for metadata-only records, `spotify-<22-char id>` (CAT-010). Status: implemented (validators; records with `spotify-` ids are written only after task-0006)
 - DATA-024 MUST: `source` is optional; absent means `youtube`; the file is `<id>.m4a` and the cover `covers/<id>.jpg` for both sources; a mixed library round-trips unchanged. Status: implemented
 - DATA-002 MUST: `id`, `source_url`, `file`, `cover`, `duration`, `added_at` are server-set; PATCH accepts only title, artist, album, year, bpm, tags, wikipedia_song, wikipedia_artist. Status: implemented
 - DATA-003 MUST: `file` is reduced to its base name when read; a missing `file` defaults to `<id>.m4a`. Status: implemented

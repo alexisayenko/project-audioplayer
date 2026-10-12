@@ -22,6 +22,7 @@ Code: `web/js/add.js`, `server/app/main.py` (`preview`, `create_song`,
 - ADD-007 MUST: on success the song record is appended and committed (`audioplayer: add <id>`); `added_at` is the UTC completion time. Status: implemented
 - ADD-008 MUST: progress is 0..1 from yt-dlp byte counts, rounded to 3 decimals; it may stay at 0 when the size is unknown. Status: implemented
 - ADD-009 MUST: on any failure the partial `<id>.m4a` is deleted and the job becomes `error` with a short message; the UI shows "Download failed: <message>" and re-enables Save. Status: implemented
+- ADD-010 MUST: a Spotify track link previews like a YouTube one but with `source: "spotify"`, `audio: "none"`, a "No audio yet" note and a Save labelled "(no audio)"; the server never downloads from Spotify (CAT-012..014). Status: implemented (preview; the save itself waits for task-0006)
 
 ## Wikipedia links
 

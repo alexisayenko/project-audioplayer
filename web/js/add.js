@@ -11,13 +11,14 @@ import { dialogHead } from './edit-dialog.js';
 
 const BULK = new Set(['insertFromPaste', 'insertFromPasteAsQuotation', 'insertFromDrop', 'insertReplacementText']);
 const PREVIEW_ONLY = 'Preview only \u2014 SoundCloud Go+ track, can\'t be downloaded in full.';
+const NO_AUDIO = 'No audio yet \u2014 Spotify gives metadata only. Get the audio from a YouTube match later.';
 const field = (label, input) => el('div', { class: 'field' }, el('label', {}, label), input);
 
 export function openAdd() {
   const dlg = document.getElementById('add-dialog');
   let preview = null;
 
-  const url = el('input', { type: 'url', placeholder: 'Paste a YouTube or SoundCloud link', 'aria-label': 'YouTube or SoundCloud link', autocomplete: 'off', inputMode: 'url' });
+  const url = el('input', { type: 'url', placeholder: 'Paste a YouTube, SoundCloud or Spotify link', 'aria-label': 'YouTube, SoundCloud or Spotify link', autocomplete: 'off', inputMode: 'url' });
   const fetchBtn = el('button', { class: 'btn fill small', type: 'submit' }, 'Fetch');
   const form = el('form', { class: 'well' }, url, fetchBtn);
   const message = el('div');
@@ -48,6 +49,7 @@ export function openAdd() {
       if (!store.loaded) await store.refresh().catch(() => {});
       renderPreview();
       if (preview.in_library) say('This song is already in your library.', 'error');
+      else if (preview.audio === 'none') say(preview.partial ? `${NO_AUDIO} Server has no Spotify credentials: title and cover only.` : NO_AUDIO);
     } catch (ex) {
       say(ex.code === 'preview_only' ? PREVIEW_ONLY : ex.message, 'error');
     } finally {
@@ -110,12 +112,15 @@ export function openAdd() {
       details.hidden = !details.hidden;
       edit.setAttribute('aria-expanded', String(!details.hidden));
     });
-    const save = el('button', { class: 'btn primary glow big', type: 'submit', disabled: !!preview.in_library }, icon('download', 20), 'Save to library');
+    const noAudio = preview.audio === 'none';
+    const save = el('button', { class: 'btn primary glow big', type: 'submit', disabled: !!preview.in_library },
+      icon(noAudio ? 'plus' : 'download', 20), noAudio ? 'Save to library (no audio)' : 'Save to library');
     const err = el('div');
 
     const card = el('form', { class: 'add-card' },
       el('div', { class: 'preview-row' }, cover, el('div', { class: 'preview-meta' }, title, sub, facts,
-        el('span', { class: 'chip tint', title: 'Source' }, sourceLabel(preview.source || sourceOf(preview.id)))), edit),
+        el('span', { class: 'chip tint', title: 'Source' }, sourceLabel(preview.source || sourceOf(preview.id))),
+        noAudio ? el('span', { class: 'chip', title: 'Audio' }, 'No audio yet') : ''), edit),
       details, tagRow, editorBox, err,
       el('div', { class: 'row end' }, save));
     body.replaceChildren(card);
@@ -132,9 +137,9 @@ export function openAdd() {
           bpm: f.bpm.value === '' ? null : Math.round(Number(f.bpm.value)),
           ...wiki.values(),
         }, editor.getTags());
-        downloads.track(preview.id, { title: f.title.value, artist: f.artist.value, thumbnail: preview.thumbnail, duration: preview.duration });
+        if (!noAudio) downloads.track(preview.id, { title: f.title.value, artist: f.artist.value, thumbnail: preview.thumbnail, duration: preview.duration });
         dlg.close();
-        toast('Downloading to your library');
+        toast(noAudio ? 'Added to your library (no audio yet)' : 'Downloading to your library');
       } catch (ex) {
         save.disabled = !!preview.in_library;
         err.replaceChildren(el('p', { class: 'msg error' }, ex.message));
@@ -143,7 +148,7 @@ export function openAdd() {
   }
 
   dlg.replaceChildren(
-    dialogHead('Add from YouTube or SoundCloud', 'The server downloads the audio into the library', () => dlg.close()),
+    dialogHead('Add a song', 'YouTube or SoundCloud: the server downloads the audio. Spotify: metadata only, no audio.', () => dlg.close()),
     form, message, body);
   dlg.onclick = (e) => { if (e.target === dlg) dlg.close(); };
   dlg.showModal();

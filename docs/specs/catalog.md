@@ -16,11 +16,11 @@ accepted these are superseded as noted below.
 
 ## Sources and ids
 
-- CAT-010 MUST: ids are the YouTube id (unchanged), `soundcloud-<id>`, or `spotify-<id>` or `applemusic-<id>` (or `shazam-<id>`) for metadata-only songs; attaching audio from another source keeps `id` and appends to `sources`. Status: planned
-- CAT-011 MUST: Add means "add to catalog": a YouTube, SoundCloud or Spotify link, or manual entry, saves a record; audio is not fetched until Get audio, except that a YouTube or SoundCloud add may offer "Save and get audio" in one step. Status: planned
-- CAT-012 MUST: a Spotify track link yields metadata only (title, artist, album, year, cover) via the Spotify Web API with client credentials; the preview shows "No audio yet". Status: planned
-- CAT-013 MUST: the Spotify client id and secret live only in the git-ignored server env and never reach a client or the repos. Status: planned
-- CAT-014 MUST: no audio is ever taken from Spotify. Status: planned
+- CAT-010 MUST: ids are the YouTube id (unchanged), `soundcloud-<id>`, or `spotify-<id>` or `applemusic-<id>` (or `shazam-<id>`) for metadata-only songs; attaching audio from another source keeps `id` and appends to `sources`. Status: in progress (`spotify-<22-char id>` accepted by every id validator and `source_of` on server, web and iOS, task-0007; `sources` waits for task-0006)
+- CAT-011 MUST: Add means "add to catalog": a YouTube, SoundCloud or Spotify link, or manual entry, saves a record; audio is not fetched until Get audio, except that a YouTube or SoundCloud add may offer "Save and get audio" in one step. Status: in progress (Spotify links preview on web and iOS; `POST /songs` refuses a metadata-only save with `no_audio` until task-0006 lands)
+- CAT-012 MUST: a Spotify track link yields metadata only (title, artist, album, year, cover) via the Spotify Web API with client credentials; the preview shows "No audio yet". Status: implemented (`server/app/spotify.py`: /v1/tracks + primary artist genres → `genre:` tags + decade; duration, ISRC, largest cover; 401 refresh, 404, 429 Retry-After; oEmbed fallback `partial: true` without credentials)
+- CAT-013 MUST: the Spotify client id and secret live only in the git-ignored server env and never reach a client or the repos. Status: implemented (`SPOTIFY_CLIENT_ID` / `SPOTIFY_CLIENT_SECRET`, placeholders in `.env.example`; never logged; test asserts no secret in errors or URLs)
+- CAT-014 MUST: no audio is ever taken from Spotify. Status: implemented (the Spotify path has no download; `audio: "none"` on every Spotify preview; `/songs/{id}/file` has nothing to serve)
 - CAT-015 SHOULD: public Spotify playlists import as many records; the user's Liked Songs need a one-time OAuth login, a separate optional step. Status: planned
 
 ## Get audio

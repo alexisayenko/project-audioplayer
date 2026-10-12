@@ -62,8 +62,12 @@ sign-in, Electrophone look, internal TestFlight builds. Spans `ios/`, `server/`
   - Add, edit, download and sign-in flows are not yet tested live on a device.
   - Catalog vs audio (ADR-0010, proposed): a record may have no file, or a stale
     state after a server file is removed; state is derived, never stored.
-  - Spotify Web API and terms: client credentials, rate limits, personal use,
-    secret only in the server env; no audio from Spotify.
+  - Spotify Web API and terms: client credentials (Developer Terms: personal,
+    non-commercial use; no audio, no caching of catalog data beyond the record),
+    rate limits (429 with Retry-After, surfaced as `rate_limited`), the secret
+    only in the server env, never logged (task-0007). Without credentials the
+    keyless oEmbed gives title + cover only (`partial`). A Spotify developer app
+    must be created by the owner (developer.spotify.com/dashboard).
   - ShazamKit (task-0013): needs the App Service enabled on the App ID (manual, Apple Developer portal), the microphone permission and the network; Shazam may not know a song.
   - Apple Music and Shazam facts (keyless Lookup API, ShazamKit limits, history export, SHLibrary) come from memory and are unverified; tasks 0012..0014 start by checking them.
   - Link scraping (SoundHound share links) is fragile; the Houndify platform is commercial with no consumer history export (task-0015, parked).

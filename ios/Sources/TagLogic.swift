@@ -29,6 +29,40 @@ enum SoundcloudLink: Equatable {
     case track(String), short(String), unsupported
 }
 
+private let spotifyHosts: Set<String> = ["open.spotify.com", "play.spotify.com"]
+
+enum SpotifyLink: Equatable {
+    case track(String), short(String), unsupported
+}
+
+/// Port of `classify_spotify` in server/app/urlclean.py; nil when the text is not a Spotify link.
+/// Accepts open.spotify.com/track/<id>, /intl-xx/track/<id>, spotify:track:<id> and spotify.link short links;
+/// albums, playlists, artists and episodes are unsupported (only single tracks).
+func classifySpotify(_ input: String) -> SpotifyLink? {
+    let text = input.trimmingCharacters(in: .whitespacesAndNewlines)
+    if let uri = matches(#"^spotify:([a-z]+):([A-Za-z0-9]+)$"#, text) {
+        if uri[1].lowercased() == "track", matches(#"^[A-Za-z0-9]{22}$"#, uri[2]) != nil {
+            return .track("https://open.spotify.com/track/\(uri[2])")
+        }
+        return .unsupported
+    }
+    guard let m = matches(#"^(?:https?://)?([A-Za-z0-9.-]+)(/[^?#]*)?(?:[?#].*)?$"#, text) else { return nil }
+    let host = m[1].lowercased()
+    var parts = m[2].split(separator: "/").map(String.init)
+    if host == "spotify.link" {
+        if parts.count == 1, matches(#"^[A-Za-z0-9]{3,32}$"#, parts[0]) != nil {
+            return .short("https://spotify.link/\(parts[0])")
+        }
+        return .unsupported
+    }
+    guard spotifyHosts.contains(host) else { return nil }
+    if let first = parts.first, matches(#"^intl-[a-z]{2,3}(?:-[a-z]{2,4})?$"#, first) != nil { parts.removeFirst() }
+    if parts.count == 2, parts[0].lowercased() == "track", matches(#"^[A-Za-z0-9]{22}$"#, parts[1]) != nil {
+        return .track("https://open.spotify.com/track/\(parts[1])")
+    }
+    return .unsupported
+}
+
 /// Port of `classify_soundcloud` in server/app/urlclean.py; nil when the text is not a SoundCloud link.
 func classifySoundcloud(_ input: String) -> SoundcloudLink? {
     let text = input.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -55,12 +89,20 @@ func classifySoundcloud(_ input: String) -> SoundcloudLink? {
     return .track(url)
 }
 
-/// "soundcloud" for `soundcloud-<numeric id>` song ids, else "youtube".
+/// "soundcloud" for `soundcloud-<numeric id>`, "spotify" for `spotify-<22-char id>`, else "youtube".
 func sourceOf(id: String) -> String {
-    matches(#"^soundcloud-[0-9]{1,20}$"#, id) != nil ? "soundcloud" : "youtube"
+    if matches(#"^soundcloud-[0-9]{1,20}$"#, id) != nil { return "soundcloud" }
+    if matches(#"^spotify-[A-Za-z0-9]{22}$"#, id) != nil { return "spotify" }
+    return "youtube"
 }
 
-func sourceLabel(_ source: String?) -> String { source == "soundcloud" ? "SoundCloud" : "YouTube" }
+func sourceLabel(_ source: String?) -> String {
+    switch source {
+    case "soundcloud": return "SoundCloud"
+    case "spotify": return "Spotify"
+    default: return "YouTube"
+    }
+}
 
 extension Track {
     var source: String { sourceOf(id: id) }
@@ -77,6 +119,10 @@ func cleanUrl(_ input: String) -> String {
     case .track(let url), .short(let url): return url
     default: break
     }
+    switch classifySpotify(text) {
+    case .track(let url), .short(let url): return url
+    default: break
+    }
     guard var comps = URLComponents(string: text), let scheme = comps.scheme?.lowercased(),
           scheme == "http" || scheme == "https", comps.percentEncodedQuery?.isEmpty == false else { return text }
     let kept = (comps.percentEncodedQueryItems ?? []).filter {
@@ -89,7 +135,8 @@ func cleanUrl(_ input: String) -> String {
 
 func cleanPasted(_ input: String) -> String {
     let text = input.trimmingCharacters(in: .whitespacesAndNewlines)
-    if let m = matches(#"(?:https?://|(?:www\.|m\.|music\.)?youtu(?:\.be|be\.com)/|(?:www\.|m\.)?soundcloud\.com/|on\.soundcloud\.com/)[^\s<>"']+"#, text) {
+    if let uri = matches(#"spotify:track:[A-Za-z0-9]{22}"#, text) { return cleanUrl(uri[0]) }
+    if let m = matches(#"(?:https?://|(?:www\.|m\.|music\.)?youtu(?:\.be|be\.com)/|(?:www\.|m\.)?soundcloud\.com/|on\.soundcloud\.com/|(?:open|play)\.spotify\.com/|spotify\.link/)[^\s<>"']+"#, text) {
         return cleanUrl(m[0])
     }
     let first = text.components(separatedBy: .newlines).first ?? text

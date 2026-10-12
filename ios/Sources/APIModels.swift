@@ -5,6 +5,10 @@ struct Preview: Codable, Hashable {
     let id: String
     var source: String?
     var source_url: String?
+    /// "none" for a metadata-only record (Spotify); absent for YouTube and SoundCloud previews.
+    var audio: String?
+    /// True when the server had no Spotify credentials and only title + cover came back (oEmbed).
+    var partial: Bool?
     var title: String?
     var artist: String?
     var album: String?
@@ -15,6 +19,8 @@ struct Preview: Codable, Hashable {
     var wikipedia_song: String?
     var wikipedia_artist: String?
     var in_library: Bool?
+
+    var hasNoAudio: Bool { audio == "none" }
 }
 
 /// `GET /songs/{id}/status`.
