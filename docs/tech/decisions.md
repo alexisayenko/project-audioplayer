@@ -14,7 +14,7 @@ Status: Accepted · 2026-10-12
 | iOS app | built | `ios/` |
 | Download server (FastAPI + yt-dlp) | built | `server/` |
 | Web interface | built | `web/`, served by FastAPI (ADR-0003) |
-| Data storage | built | server disk |
+| Data storage | built on server disk; ~~server disk~~ moving to git repos (ADR-0005, planned) | `server/app/library.py` |
 
 ### Backend server is required
 
@@ -34,13 +34,15 @@ replaces Tailscale. Concrete setup: ADR-0004.
 ### Storage
 
 - Audio on server disk: `downloads/<id>.m4a`.
-- One `library.json`: song records with metadata and tags (tags replace
-  playlists), see [`../product/screens.md`](../product/screens.md).
+- ~~One `library.json` on server disk~~ (superseded by ADR-0005, planned;
+  today's implementation still does this): song records with metadata
+  and tags (tags replace playlists), see
+  [`../product/screens.md`](../product/screens.md).
 - No SQLite: a few hundred songs.
 - Writes are atomic (temp file + rename), single writer (the server,
   under a lock). Web and phone go through the API.
 - Revisit at tens of thousands of songs or multi-user.
-- Implemented in `server/app/library.py`: `library.json` and `covers/` live in `AUDIO_DATA_DIR`, audio in `AUDIO_DOWNLOAD_DIR`.
+- Implemented in `server/app/library.py`: `library.json` and `covers/` live in `AUDIO_DATA_DIR`, audio in `AUDIO_DOWNLOAD_DIR`. ~~Covers on server disk~~ move to git LFS under ADR-0005 (planned).
 
 ## ADR-0002 Tags replace playlists; song fields
 
@@ -83,9 +85,45 @@ machine / `alex-hetzner`" wording in ADR-0001
   Tunnel. `isayenko.net` DNS and registrar are at Cloudflare. At cutover
   the interim Pages CNAME `play` -> `play-76g.pages.dev` is replaced by
   the tunnel CNAME.
-- Data: audio, `covers/` and `library.json` live on a ZFS dataset on
-  pool-3 (e.g. `/data/music`), bind-mounted into LXC 106. Pool-3 is a
-  single disk with no redundancy; acceptable because YouTube is the
-  source and audio can be re-downloaded (`library.json` and `covers/`
-  still need a backup).
+- Data: audio lives on a ZFS dataset on pool-3 (e.g. `/data/music`),
+  bind-mounted into LXC 106. Pool-3 is a single disk with no
+  redundancy; acceptable because YouTube is the source and audio can be
+  re-downloaded. ~~`library.json` and `covers/` on the same dataset,
+  needing a backup~~: superseded by ADR-0005, they live in git repos.
 - Tailscale is not used.
+
+## ADR-0005 Library metadata lives in the data-storage git repos
+
+Status: Accepted, implementation planned (not done) · 2026-10-12 ·
+Supersedes the `library.json`-on-server-disk and covers-on-server-disk
+parts of ADR-0001 and the matching data wording in ADR-0004
+
+- Metadata: private repo `alexisayenko/data-storage`, file
+  `audioplayer/library.json`. Every library change (add, edit, tag,
+  delete) is committed directly to that repo; the repo is the live
+  store, not a backup of a file on disk.
+- Covers (jpg): sibling repo `alexisayenko/data-storage-lfs` (Git LFS),
+  `audioplayer/covers/<id>.jpg`. Same project folder name in both repos.
+- Audio (m4a) stays on perkunas (pool-3 dataset bind-mounted into
+  LXC 106); it is in neither repo.
+- The server (LXC 106 `tools`) keeps its own clones of both repos and
+  never touches `C:\Alex\data-storage` on the PC.
+- Single writer with a lock. Write path: lock -> `pull --rebase` ->
+  write `library.json` atomically (temp file + rename) -> commit
+  (`audioplayer: add <id>` / `edit <id>` / `delete <id>`) -> push.
+- Reads are served from the local clone for speed.
+- Push failure: keep the local commit, retry with backoff, show a
+  warning in the UI, never lose the write.
+- Auth: one deploy key per repo with write access, stored outside the
+  repos (`~/.config/<service>/`, `chmod 600`). No credentials in repos.
+- History is permanent: no secrets or personal data in `library.json`.
+- Sub-decision (planned): `library.json` is `{settings:{music_root},
+  songs:[...]}`. `music_root` is `<servername>://<path>/` (e.g.
+  `perkunas://data/music/`); songs reference audio only by relative file
+  name (`<video_id>.m4a`), so relocating the music changes one value.
+  The server resolves `<servername>` through its own local config
+  (name -> mount path/host, outside the repo): no credentials or IPs in
+  the JSON. Migration from the bare `{songs:[...]}` / `AUDIO_DOWNLOAD_DIR`
+  implementation is open.
+- Cost: each save is a git push (~1-2 s), acceptable at a few hundred
+  songs; revisit if edits become frequent.

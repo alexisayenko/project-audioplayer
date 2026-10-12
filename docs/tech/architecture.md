@@ -5,7 +5,8 @@ Status: Accepted · 2026-10-12
 ```text
 browser (web UI)  --same origin, X-API-Token-->  server (FastAPI + yt-dlp)  -->  YouTube
 iPhone (SwiftUI, deferred)  --http, X-API-Token-->  same server
-  library.json + audio/<id>.m4a  <-- /files/<id> --  downloads/<id>.m4a
+  audio/<id>.m4a  <-- /files/<id> --  downloads/<id>.m4a
+  library.json + covers  <-- local clones of data-storage / data-storage-lfs (ADR-0005, planned)
 ```
 
 ## Why a server
@@ -23,10 +24,29 @@ cores max (the CPU throttles at 100 C; the LXC also hosts Immich).
 Public via the perkunas Cloudflare Tunnel: ingress
 `play.isayenko.net` -> `http://192.168.0.10:<port>`; at cutover the
 interim Pages CNAME `play` -> `play-76g.pages.dev` is replaced by the
-tunnel CNAME. Audio, `covers/` and `library.json` sit on a ZFS dataset
-on pool-3 (e.g. `/data/music`, single disk, no redundancy) bind-mounted
-into the LXC. Until cutover a placeholder page sits on Cloudflare Pages.
-See [`decisions.md`](decisions.md) (ADR-0001, ADR-0003, ADR-0004).
+tunnel CNAME. Audio sits on a ZFS dataset on pool-3 (e.g.
+`/data/music`, single disk, no redundancy) bind-mounted into the LXC.
+Until cutover a placeholder page sits on Cloudflare Pages.
+See [`decisions.md`](decisions.md) (ADR-0001, ADR-0003, ADR-0004,
+ADR-0005).
+
+## Library storage (planned, ADR-0005; not implemented)
+
+Today `library.json` and `covers/` sit in `AUDIO_DATA_DIR` on the server
+disk. Planned: the server keeps its own clones of the private repos
+`alexisayenko/data-storage` (`audioplayer/library.json`) and
+`alexisayenko/data-storage-lfs` (`audioplayer/covers/<id>.jpg`, Git LFS).
+Reads come from the local clone. A write takes the single-writer lock,
+runs `pull --rebase`, writes `library.json` atomically, commits
+(`audioplayer: add|edit|delete <id>`) and pushes. If the push fails the
+local commit is kept, retried with backoff, and a warning is shown in
+the UI; the write is never lost. Auth: one write deploy key per repo,
+outside the repos (`~/.config/`, `chmod 600`). History is permanent, so
+`library.json` holds no secrets or personal data. Planned: it carries
+`settings.music_root` (`<servername>://<path>/`), resolved by the server
+via a local name -> mount path/host config outside the repo; songs hold
+relative audio file names only (replaces `AUDIO_DOWNLOAD_DIR`). Each save costs a push
+(~1-2 s). The server never uses `C:\Alex\data-storage` on the PC.
 
 ## Server (`server/`)
 
@@ -65,9 +85,9 @@ pip install -U yt-dlp                    # run daily (cron); YouTube breaks it o
 
 Then open `http://<host>:8000/`, go to Settings, paste the token. Env:
 `AUDIO_API_TOKEN` (required), `AUDIO_DOWNLOAD_DIR` (default `downloads`),
-`AUDIO_DATA_DIR` (default `.`, holds `library.json` and `covers/`),
-`AUDIO_WEB_DIR` (default `../web`). Back up `library.json`, `covers/` and
-the download dir together.
+`AUDIO_DATA_DIR` (default `.`, holds `library.json` and `covers/` until
+ADR-0005 is implemented, after which they live in the git clones),
+`AUDIO_WEB_DIR` (default `../web`).
 
 ## Web UI (`web/`)
 

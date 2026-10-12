@@ -65,7 +65,7 @@ Manages all songs.
 | Year of release | `year` | editable, optional |
 | Style / genre | `genre` | editable, optional |
 | Source URL | `source_url` | where it was downloaded from |
-| Cover image | `cover` | file on server, see below |
+| Cover image | `cover` | jpg file, see below |
 | Tags | `tags[]` | free-form strings |
 | Id | `id` | YouTube video id (technical) |
 | Duration | `duration` | seconds (technical) |
@@ -75,9 +75,13 @@ Manages all songs.
 
 ```json
 {
+  "settings": {
+    "music_root": "perkunas://data/music/"
+  },
   "songs": [
     {
       "id": "dQw4w9WgXcQ",
+      "file": "dQw4w9WgXcQ.m4a",
       "title": "Never Gonna Give You Up",
       "artist": "Rick Astley",
       "album": "Whenever You Need Somebody",
@@ -93,11 +97,26 @@ Manages all songs.
 }
 ```
 
-- Audio stays at `downloads/<id>.m4a`; covers at `covers/<id>.jpg`
-  (downloaded from the yt-dlp thumbnail at save time).
+- `settings.music_root` (planned, ADR-0005): `<servername>://<path>/`,
+  the one place that says where audio lives. Songs reference audio only
+  by relative `file` name (`<video_id>.m4a`); moving the music to another
+  host or path means changing this one value. The server resolves
+  `<servername>` via its own local config (name -> mount path/host,
+  outside the repo), so the JSON holds no credentials or IPs.
+- Open point: the current implementation (`server/app/library.py`)
+  writes a bare `{songs:[...]}` and uses `AUDIO_DOWNLOAD_DIR`; needs
+  migration to `{settings, songs}` and `music_root` resolution.
+- Today audio is at `downloads/<id>.m4a` on the server. Covers are
+  `covers/<id>.jpg` (downloaded from the yt-dlp thumbnail at save time).
+- Storage (ADR-0005, planned; today both files are on server disk):
+  `library.json` is `audioplayer/library.json` in the git repo
+  `alexisayenko/data-storage`, covers are `audioplayer/covers/<id>.jpg`
+  in `alexisayenko/data-storage-lfs`; every change is a commit. Keep
+  secrets and personal data out of the file, history is permanent.
 - Optional fields may be `null`. Tags are stored as typed; compare
   case-insensitively.
-- Storage rules (atomic writes, single writer, no SQLite) are in
+- Storage rules (atomic writes, single writer, no SQLite, git-backed
+  store) are in
   [`../tech/decisions.md`](../tech/decisions.md).
 
 ## API surface the screens need
