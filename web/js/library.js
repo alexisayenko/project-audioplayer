@@ -65,7 +65,6 @@ export function renderLibrary(root) {
 
   function renderList() {
     const songs = visibleSongs();
-    const ids = songs.map((s) => s.id);
     const cur = player.current;
     count.textContent = !store.loaded ? ''
       : store.songs.length
@@ -74,17 +73,7 @@ export function renderLibrary(root) {
     const empty = !songs.length && store.loaded && store.songs.length
       ? [el('li', { class: 'empty muted' }, 'No songs match. Clear the search or the tag filter.')]
       : [];
-    list.replaceChildren(...empty, ...songs.map((s) => el('li', { class: `song${cur && cur.id === s.id ? ' current' : ''}` },
-      el('button', { class: 'main', onclick: () => player.playQueue(ids, s.id), 'aria-label': `Play ${s.title}` },
-        coverImg(s),
-        el('span', { class: 'name' },
-          el('b', {}, s.title),
-          el('small', {}, [s.artist, s.duration ? fmtTime(s.duration) : ''].filter(Boolean).join(' - '),
-            s.bpm != null ? el('span', { class: 'bpm', title: 'Beats per minute' }, `${Math.round(s.bpm)} BPM`) : null),
-          (s.tags || []).length ? el('span', { class: 'tags' }, s.tags.map((t) => `#${t}`).join(' ')) : null)),
-      el('span', { class: 'actions' },
-        el('button', { class: 'icon', title: 'Edit', 'aria-label': `Edit ${s.title}`, onclick: () => editDialog(s) }, '✎'),
-        el('button', { class: 'icon', title: 'Delete', 'aria-label': `Delete ${s.title}`, onclick: () => removeSong(s) }, '✕')))));
+    list.replaceChildren(...empty, ...songs.map((s) => songCard(s, cur)));
   }
 
   function renderAll() { renderChips(); renderList(); }
@@ -101,6 +90,57 @@ export function renderLibrary(root) {
   renderAll();
 
   return () => { unsub(); unsubPlayer(); };
+}
+
+const SVG = 'http://www.w3.org/2000/svg';
+function icon(paths) {
+  const svg = document.createElementNS(SVG, 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('width', '22');
+  svg.setAttribute('height', '22');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.setAttribute('fill', 'none');
+  svg.setAttribute('stroke', 'currentColor');
+  svg.setAttribute('stroke-width', '2');
+  svg.setAttribute('stroke-linecap', 'round');
+  svg.setAttribute('stroke-linejoin', 'round');
+  for (const d of paths) {
+    const p = document.createElementNS(SVG, 'path');
+    p.setAttribute('d', d);
+    svg.append(p);
+  }
+  return svg;
+}
+const playIcon = () => icon(['M7 4.5v15l12-7.5z']);
+const addIcon = () => icon(['M4 7h9', 'M4 12h9', 'M4 17h9', 'M18 8v8', 'M14 12h8']);
+
+function tagChip(t) {
+  const i = t.indexOf(':');
+  return i > 0
+    ? el('span', { class: 'tag ns' }, el('span', { class: 'ns-key' }, t.slice(0, i)), t.slice(i + 1))
+    : el('span', { class: 'tag' }, t);
+}
+
+function songCard(s, cur) {
+  const sub = [s.artist, s.album, s.year].filter(Boolean).join(', ');
+  return el('li', { class: `song${cur && cur.id === s.id ? ' current' : ''}` },
+    coverImg(s),
+    el('div', { class: 'info' },
+      el('button', { class: 'open', type: 'button', 'aria-label': `Edit ${s.title}`, onclick: () => editDialog(s) }, s.title),
+      sub ? el('small', {}, sub) : null),
+    el('div', { class: 'side' },
+      el('div', { class: 'meta' },
+        s.bpm != null ? el('span', { class: 'bpm', title: 'Beats per minute' }, `${Math.round(s.bpm)} BPM`) : null,
+        s.duration ? el('span', { class: 'dur' }, fmtTime(s.duration)) : null),
+      el('div', { class: 'btns' },
+        el('button', { class: 'icon', type: 'button', title: 'Play now', 'aria-label': `Play now: ${s.title}`, onclick: () => player.playNow(s.id) }, playIcon()),
+        el('button', { class: 'icon', type: 'button', title: 'Add to current playlist', 'aria-label': `Add to current playlist: ${s.title}`, onclick: () => addToQueue(s) }, addIcon()))),
+    (s.tags || []).length ? el('div', { class: 'tags' }, s.tags.map(tagChip)) : null);
+}
+
+function addToQueue(s) {
+  const r = player.add(s.id);
+  toast(r === 'duplicate' ? 'Already in queue' : r === 'queued' ? 'Queued' : 'Added');
 }
 
 function coverImg(s) {
@@ -183,6 +223,7 @@ function editDialog(song) {
     el('datalist', { id: 'tag-suggestions' }, store.tags.map((t) => el('option', { value: t.tag }))),
     err,
     el('div', { class: 'row end' },
+      el('button', { type: 'button', class: 'btn danger del-left', onclick: () => removeSong(song) }, 'Delete'),
       el('button', { type: 'button', class: 'btn', onclick: () => dlg.close() }, 'Cancel'),
       el('button', { type: 'submit', class: 'btn primary' }, 'Save')));
   form.addEventListener('submit', async (e) => {

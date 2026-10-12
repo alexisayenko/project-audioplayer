@@ -1,6 +1,6 @@
 import { api } from './api.js';
 import { store } from './store.js';
-import { fmtTime, toast } from './dom.js';
+import { el, fmtTime, toast } from './dom.js';
 
 const audio = document.getElementById('audio');
 const $ = (id) => document.getElementById(id);
@@ -8,20 +8,79 @@ const $ = (id) => document.getElementById(id);
 const PLAY = '▶';
 const PAUSE = '⏸';
 
+const QUEUE_KEY = 'ap2.queue';
+
 let queue = [];
 let index = -1;
 let scrubbing = false;
+let pendingRestore = false;
 const listeners = new Set();
+
+function saveQueue() {
+  try { localStorage.setItem(QUEUE_KEY, JSON.stringify({ ids: queue, index })); } catch { /* storage unavailable */ }
+}
+
+function restoreQueue() {
+  try {
+    const data = JSON.parse(localStorage.getItem(QUEUE_KEY) || 'null');
+    if (data && Array.isArray(data.ids) && data.ids.every((x) => typeof x === 'string')) {
+      queue = [...new Set(data.ids)];
+      index = Number.isInteger(data.index) && data.index >= 0 && data.index < queue.length ? data.index : (queue.length ? 0 : -1);
+      pendingRestore = queue.length > 0;
+    }
+  } catch { /* corrupt or unavailable: start empty */ }
+}
 
 export const player = {
   get current() { return queue[index] ? store.get(queue[index]) || null : null; },
   get playing() { return !audio.paused; },
   onChange(fn) { listeners.add(fn); return () => listeners.delete(fn); },
 
-  playQueue(ids, startId) {
-    queue = [...ids];
-    index = Math.max(0, queue.indexOf(startId));
+  playNow(id) {
+    const at = queue.indexOf(id);
+    if (at >= 0) {
+      queue.splice(at, 1);
+      if (at <= index) index -= 1;
+    }
+    index += 1;
+    queue.splice(index, 0, id);
+    saveQueue();
     load(true);
+  },
+
+  add(id) {
+    if (queue.includes(id)) return 'duplicate';
+    queue.push(id);
+    if (index < 0) {
+      index = 0;
+      saveQueue();
+      load(false);
+      return 'queued';
+    }
+    saveQueue();
+    render();
+    return 'added';
+  },
+
+  removeAt(i) {
+    if (i <= index || i >= queue.length) return;
+    queue.splice(i, 1);
+    saveQueue();
+    render();
+  },
+
+  move(i, delta) {
+    const j = i + delta;
+    if (i <= index || j <= index || j >= queue.length) return;
+    [queue[i], queue[j]] = [queue[j], queue[i]];
+    saveQueue();
+    render();
+  },
+
+  clearUpcoming() {
+    queue = queue.slice(0, index + 1);
+    saveQueue();
+    render();
   },
 
   toggle() {
@@ -30,12 +89,13 @@ export const player = {
   },
 
   next() {
-    if (index + 1 < queue.length) { index += 1; load(true); }
+    if (index + 1 < queue.length) { index += 1; saveQueue(); load(true); }
   },
 
   prev() {
     if (audio.currentTime > 3 || index === 0) { audio.currentTime = 0; return; }
     index -= 1;
+    saveQueue();
     load(true);
   },
 
@@ -64,7 +124,12 @@ function render() {
   const song = player.current;
   document.body.classList.toggle('has-mini', !!song);
   $('mini').hidden = !song;
-  if (!song) { document.title = 'Audio Player'; return; }
+  $('player').classList.toggle('idle', !song);
+  $('player-empty').hidden = !!song;
+  const count = $('nav-count');
+  count.hidden = !queue.length;
+  count.textContent = queue.length;
+  if (!song) { document.title = 'Audio Player'; renderQueue(); return; }
   const sym = audio.paused ? PLAY : PAUSE;
   $('mini-play').textContent = sym;
   $('p-play').textContent = sym;
@@ -78,8 +143,27 @@ function render() {
   $('p-next').disabled = index + 1 >= queue.length;
   $('mini-next').disabled = $('p-next').disabled;
   $('queue-info').textContent = `${index + 1} of ${queue.length} in queue`;
+  renderQueue();
   document.title = `${song.title} - Audio Player`;
   listeners.forEach((fn) => fn());
+}
+
+function renderQueue() {
+  const upcoming = queue.slice(index + 1);
+  $('queue-clear').hidden = !upcoming.length;
+  $('queue-empty').hidden = upcoming.length > 0;
+  $('queue-list').replaceChildren(...upcoming.map((id, k) => {
+    const i = index + 1 + k;
+    const s = store.get(id);
+    const btn = (label, text, fn, off) => el('button', {
+      class: 'icon', type: 'button', title: label, 'aria-label': `${label}: ${s ? s.title : id}`, disabled: off, onclick: fn,
+    }, text);
+    return el('li', { class: 'queue-item' },
+      el('span', { class: 'q-name' }, el('b', {}, s ? s.title : id), el('small', {}, s && s.artist ? s.artist : '')),
+      btn('Move up', '↑', () => player.move(i, -1), i - 1 <= index),
+      btn('Move down', '↓', () => player.move(i, 1), i + 1 >= queue.length),
+      btn('Remove', '✕', () => player.removeAt(i)));
+  }));
 }
 
 function renderProgress() {
@@ -138,10 +222,8 @@ export function initPlayer() {
   $('p-play').addEventListener('click', () => player.toggle());
   $('p-next').addEventListener('click', () => player.next());
   $('p-prev').addEventListener('click', () => player.prev());
-  $('mini-open').addEventListener('click', () => { $('player').hidden = false; });
-  $('player-close').addEventListener('click', () => { $('player').hidden = true; });
+  $('mini-open').addEventListener('click', () => { location.hash = '#/playback'; });
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !$('player').hidden) { $('player').hidden = true; return; }
     if (e.key !== ' ' || e.repeat || e.ctrlKey || e.metaKey || e.altKey || !player.current) return;
     if (e.target.closest && e.target.closest('input, textarea, select, button, a, dialog, [contenteditable]')) return;
     e.preventDefault();
@@ -162,13 +244,28 @@ export function initPlayer() {
     $(id).addEventListener('error', () => { $(id).removeAttribute('src'); $(id).dataset.src = ''; });
   }
 
+  $('queue-clear').addEventListener('click', () => player.clearUpcoming());
+  restoreQueue();
+
   store.subscribe(() => {
-    if (queue[index] && !store.get(queue[index])) {
-      audio.pause();
-      audio.removeAttribute('src');
-      queue = [];
-      index = -1;
-      $('player').hidden = true;
+    const curId = queue[index];
+    const curGone = curId !== undefined && !store.get(curId);
+    const kept = queue.filter((id) => store.get(id));
+    if (kept.length !== queue.length) {
+      const before = queue.slice(0, index).filter((id) => store.get(id)).length;
+      queue = kept;
+      index = kept.length ? Math.min(before, kept.length - 1) : -1;
+      saveQueue();
+      if (curGone) {
+        audio.pause();
+        audio.removeAttribute('src');
+        if (index >= 0) pendingRestore = true;
+      }
+    }
+    if (pendingRestore && player.current) {
+      pendingRestore = false;
+      load(false);
+      return;
     }
     render();
   });

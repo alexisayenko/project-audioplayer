@@ -136,7 +136,7 @@ export function renderAdd(root) {
             progress.hidden = true;
             result.replaceChildren(el('p', { class: 'msg ok' }, 'Saved to your library.'),
               el('div', { class: 'row', style: 'margin-top:12px' },
-                el('button', { type: 'button', class: 'btn primary', onclick: () => player.playQueue([preview.id], preview.id) }, 'Play now'),
+                el('button', { type: 'button', class: 'btn primary', onclick: () => player.playNow(preview.id) }, 'Play now'),
                 el('button', { type: 'button', class: 'btn', onclick: () => { card.replaceChildren(); url.value = ''; url.focus(); } }, 'Add another')));
           }
         } catch (ex) {

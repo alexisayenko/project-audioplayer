@@ -1,10 +1,13 @@
 import { getToken } from './api.js';
 import { initPlayer } from './player.js';
+import { store } from './store.js';
 import { renderLibrary } from './library.js';
 import { renderAdd } from './add.js';
 import { renderSettings } from './settings.js';
 
-const routes = { library: renderLibrary, add: renderAdd, settings: renderSettings };
+const player = document.getElementById('player');
+const renderPlayback = () => { player.hidden = false; return () => { player.hidden = true; }; };
+const routes = { library: renderLibrary, add: renderAdd, playback: renderPlayback, settings: renderSettings };
 const view = document.getElementById('view');
 let cleanup = null;
 
@@ -17,6 +20,7 @@ function route() {
   }
   if (cleanup) cleanup();
   view.replaceChildren();
+  document.body.dataset.route = name;
   cleanup = routes[name](view) || null;
   for (const a of document.querySelectorAll('#nav a')) {
     const on = a.dataset.route === name;
@@ -27,6 +31,7 @@ function route() {
 }
 
 initPlayer();
+if (getToken()) store.refresh().catch(() => {});
 window.addEventListener('hashchange', route);
 route();
 
