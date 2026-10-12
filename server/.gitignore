@@ -2,3 +2,6 @@ downloads/
 .venv/
 __pycache__/
 .pytest_cache/
+library.json
+covers/
+.env
