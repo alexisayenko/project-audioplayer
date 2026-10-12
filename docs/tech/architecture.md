@@ -3,7 +3,8 @@
 Status: Accepted · 2026-10-12
 
 ```text
-iPhone (SwiftUI)  --http, X-API-Token-->  server (FastAPI + yt-dlp)  -->  YouTube
+browser (web UI)  --same origin, X-API-Token-->  server (FastAPI + yt-dlp)  -->  YouTube
+iPhone (SwiftUI, deferred)  --http, X-API-Token-->  same server
   library.json + audio/<id>.m4a  <-- /files/<id> --  downloads/<id>.m4a
 ```
 
@@ -11,9 +12,12 @@ iPhone (SwiftUI)  --http, X-API-Token-->  server (FastAPI + yt-dlp)  -->  YouTub
 
 iOS cannot run `yt-dlp`. The server extracts the audio; the app only
 talks to it and plays local files. Run it on an always-on machine (YouTube
-may bot-challenge datacenter IPs). Exposure via Cloudflare Tunnel is
-planned, not set up; until then reach it over Tailscale. See
-[`decisions.md`](decisions.md).
+may bot-challenge datacenter IPs). The web interface is built
+first and served by FastAPI itself (same origin, no CORS) at
+`play.isayenko.net`. Exposure via Cloudflare Tunnel is planned, not set
+up; until then a placeholder page sits on Cloudflare Pages and the
+server is reached locally or over Tailscale. See
+[`decisions.md`](decisions.md) (ADR-0001, ADR-0003).
 
 ## Server (`server/`)
 
@@ -38,6 +42,8 @@ pip install -U yt-dlp                    # run daily (cron); YouTube breaks it o
 ```
 
 ## App (`ios/`)
+
+Deferred: the web interface comes first. The scaffold below exists.
 
 - `LibraryStore` — tracks as `Documents/library.json`, audio in `Documents/audio/`.
 - `APIClient` — search, download (POST then file fetch).

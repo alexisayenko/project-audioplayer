@@ -13,7 +13,7 @@ Status: Accepted · 2026-10-12
 | --- | --- | --- |
 | iOS app | built | `ios/` |
 | Download server (FastAPI + yt-dlp) | built | `server/` |
-| Web interface | not built | undecided |
+| Web interface | in progress | `web/`, served by FastAPI (ADR-0003) |
 | Data storage | partly built (audio files only) | server disk |
 
 ### Backend server is required
@@ -40,6 +40,27 @@ replaces Tailscale.
 - Revisit at tens of thousands of songs or multi-user.
 - `library.json` on the server is not implemented yet.
 
-### Open: web interface hosting
+## ADR-0002 Tags replace playlists; song fields
 
-Static page on Cloudflare Pages vs served by FastAPI. Undecided.
+Status: Accepted · 2026-10-12
+
+- A song has zero or more free-form tags; a "playlist" is a tag filter.
+  There is no playlist entity.
+- Song fields: `artist`, `title`, optional `album`, `year`, `genre`,
+  plus `source_url`, `cover`, `tags[]` and technical `id`, `duration`,
+  `added_at`.
+- Screens, record layout and API: [`../product/screens.md`](../product/screens.md).
+
+## ADR-0003 Web first, served by FastAPI at play.isayenko.net
+
+Status: Accepted · 2026-10-12
+
+- The web interface is built first; the mobile app is deferred.
+- FastAPI serves the static UI from the same origin as the API, so no
+  CORS. The API stays protected by `AUDIO_API_TOKEN`.
+- Domain: `play.isayenko.net`, reaching FastAPI through Cloudflare
+  Tunnel (see ADR-0001). This resolves the open web-hosting question:
+  FastAPI serves it, not Cloudflare Pages.
+- Interim: a hello-world page is published on `play.isayenko.net` via
+  Cloudflare Pages. When the real UI ships, the DNS record is repointed
+  to the Tunnel and the Pages page is dropped.

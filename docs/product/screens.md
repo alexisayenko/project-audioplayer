@@ -1,8 +1,14 @@
 # Screens and library model
 
-Status: planned, nothing here is implemented yet (2026-10-12). The
-current app has Library, Search and Settings tabs; see
-[`../tech/architecture.md`](../tech/architecture.md).
+Status: planned; being built web-first (2026-10-12), so treat nothing
+here as implemented until marked. The web UI is served by FastAPI from
+the same origin as the API at `play.isayenko.net` (no CORS, token-protected
+API), see ADR-0003 in [`../tech/decisions.md`](../tech/decisions.md). The
+iOS app is deferred; it currently has Library, Search and Settings tabs,
+see [`../tech/architecture.md`](../tech/architecture.md).
+
+The screens below apply to the web UI first; "tab bar" and "mini-player"
+describe the layout to mirror in the app later.
 
 ## Concept: tags replace playlists
 
@@ -116,5 +122,5 @@ All need `X-API-Token`. Planned unless marked existing.
 
 - Does the existing `/search` (YouTube search) endpoint and Search tab
   stay, or is URL paste the only way to add songs?
-- Should the web interface (see [`../tech/decisions.md`](../tech/decisions.md))
-  mirror all three screens, or only Add and Library?
+- Does the web UI mirror all three screens? Assumed yes (Add, Library,
+  Player) since it is the first client.
