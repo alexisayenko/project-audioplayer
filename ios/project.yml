@@ -7,8 +7,8 @@ options:
 settings:
   base:
     SWIFT_VERSION: "5.9"
-    MARKETING_VERSION: "0.1.0"
-    CURRENT_PROJECT_VERSION: "20261012"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "20261013"
 targets:
   AudioPlayer:
     type: application
@@ -25,6 +25,8 @@ targets:
       path: Sources/Info.plist
       properties:
         CFBundleDisplayName: Audio Player
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        CFBundleShortVersionString: $(MARKETING_VERSION)
         UILaunchScreen: {}
         UIBackgroundModes: [audio]
         ITSAppUsesNonExemptEncryption: false
