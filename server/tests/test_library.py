@@ -197,7 +197,7 @@ def test_atomic_save_survives_failure(tmp_path, monkeypatch):
     monkeypatch.setattr(library.json, "dump", boom)
     with pytest.raises(OSError):
         library.save(p, [{"id": "b"}])
-    assert library.load(p) == [{"id": "a"}]
+    assert [s["id"] for s in library.load(p)] == ["a"]
     assert [f.name for f in tmp_path.iterdir()] == ["library.json"]
 
 
@@ -211,7 +211,7 @@ def test_static_ui_served_without_shadowing_api(tmp_path, monkeypatch):
     try:
         c = TestClient(m.app)
         assert "ui" in c.get("/").text
-        assert c.get("/health").json() == {"status": "ok"}
+        assert c.get("/health").json() == {"status": "ok", "sync": "ok"}
         assert c.get("/library").status_code == 401
     finally:
         monkeypatch.delenv("AUDIO_WEB_DIR")

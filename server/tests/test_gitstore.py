@@ -1,0 +1,194 @@
+import json
+import subprocess
+import time
+
+import pytest
+from fastapi.testclient import TestClient
+
+from app import extractor, gitstore, library, main
+
+VID = "dQw4w9WgXcQ"
+VID2 = "9bZkp7q19f0"
+H = {"X-API-Token": "secret"}
+
+
+def git(cwd, *args):
+    return subprocess.run(
+        ["git", "-c", "user.name=t", "-c", "user.email=t@t", *args],
+        cwd=cwd, check=True, capture_output=True, text=True,
+    ).stdout.strip()
+
+
+def make_remote(tmp_path, name):
+    bare = tmp_path / f"{name}.git"
+    git(tmp_path, "init", "--bare", "-b", "main", str(bare))
+    seed = tmp_path / f"{name}-seed"
+    git(tmp_path, "clone", str(bare), str(seed))
+    git(seed, "checkout", "-b", "main")
+    (seed / "README").write_text(name)
+    git(seed, "add", "README")
+    git(seed, "commit", "-m", "init")
+    git(seed, "push", "-u", "origin", "main")
+    clone = tmp_path / name
+    git(tmp_path, "clone", str(bare), str(clone))
+    return bare, clone
+
+
+@pytest.fixture()
+def repos(tmp_path, monkeypatch):
+    monkeypatch.setenv("GIT_AUTHOR_NAME", "t")
+    monkeypatch.setenv("GIT_AUTHOR_EMAIL", "t@t")
+    monkeypatch.setenv("GIT_COMMITTER_NAME", "t")
+    monkeypatch.setenv("GIT_COMMITTER_EMAIL", "t@t")
+    data_bare, data = make_remote(tmp_path, "data")
+    cov_bare, cov = make_remote(tmp_path, "covers")
+    return data_bare, data, cov_bare, cov
+
+
+@pytest.fixture()
+def client(tmp_path, repos, monkeypatch):
+    _, data, _, cov = repos
+    sync = gitstore.GitSync(data, cov, backoff=(0.05, 0.1))
+    monkeypatch.setenv("AUDIO_API_TOKEN", "secret")
+    monkeypatch.setattr(main, "SYNC", sync)
+    monkeypatch.setattr(main, "DOWNLOAD_DIR", tmp_path / "music")
+    monkeypatch.setattr(main, "JOBS", {})
+
+    def fake_download(video_id, out_dir, progress=None):
+        out_dir.mkdir(parents=True, exist_ok=True)
+        (out_dir / f"{video_id}.m4a").write_bytes(b"audio")
+        return {"id": video_id, "title": "Yt", "artist": "A", "duration": 7}
+
+    def fake_cover(video_id, dest):
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_bytes(b"jpg")
+
+    monkeypatch.setattr(extractor, "download_audio", fake_download)
+    monkeypatch.setattr(extractor, "fetch_cover", fake_cover)
+    yield TestClient(main.app)
+    sync.stop()
+
+
+def add(client, vid=VID):
+    body = {"url": f"https://youtu.be/{vid}", "metadata": {"title": "Song"}, "tags": ["a"]}
+    assert client.post("/songs", json=body, headers=H).status_code == 202
+
+
+def log(bare):
+    return git(bare, "log", "main", "--format=%s").splitlines()
+
+
+def wait_ok(client, secs=5):
+    end = time.time() + secs
+    while time.time() < end:
+        if client.get("/health").json()["sync"] == "ok":
+            return True
+        time.sleep(0.05)
+    return False
+
+
+def test_add_edit_delete_commit_and_push(client, repos):
+    data_bare, _, cov_bare, _ = repos
+    add(client)
+    assert client.patch(f"/songs/{VID}", json={"title": "New"}, headers=H).status_code == 200
+    assert log(data_bare)[:2] == [f"audioplayer: edit {VID}", f"audioplayer: add {VID}"]
+    assert log(cov_bare)[0] == f"audioplayer: add {VID}"
+    doc = json.loads(git(data_bare, "show", "main:audioplayer/library.json"))
+    assert doc["songs"][0]["title"] == "New" and doc["songs"][0]["file"] == f"{VID}.m4a"
+    assert doc["settings"]["music_root"]
+    assert git(cov_bare, "show", f"main:audioplayer/covers/{VID}.jpg") == "jpg"
+    assert client.delete(f"/songs/{VID}", headers=H).status_code == 204
+    assert log(data_bare)[0] == f"audioplayer: delete {VID}"
+    assert log(cov_bare)[0] == f"audioplayer: delete {VID}"
+    assert json.loads(git(data_bare, "show", "main:audioplayer/library.json"))["songs"] == []
+    assert client.get("/health").json() == {"status": "ok", "sync": "ok"}
+
+
+def test_pull_rebase_picks_up_remote_changes(client, repos, tmp_path):
+    data_bare, _, _, _ = repos
+    other = tmp_path / "other"
+    git(tmp_path, "clone", str(data_bare), str(other))
+    (other / "audioplayer").mkdir()
+    (other / "audioplayer" / "library.json").write_text(
+        json.dumps({"settings": {}, "songs": [{"id": VID2, "title": "Remote"}]})
+    )
+    git(other, "add", "-A")
+    git(other, "commit", "-m", "remote")
+    git(other, "push")
+    add(client)
+    ids = {s["id"] for s in client.get("/library", headers=H).json()["songs"]}
+    assert ids == {VID, VID2}
+
+
+def test_push_failure_then_recovery(client, repos, tmp_path):
+    data_bare, data, _, _ = repos
+    git(data, "remote", "set-url", "origin", str(tmp_path / "missing.git"))
+    add(client)
+    assert client.get("/health").json()["sync"] in ("pending", "error")
+    assert [s["id"] for s in client.get("/library", headers=H).json()["songs"]] == [VID]
+    assert git(data, "log", "--format=%s", "-1") == f"audioplayer: add {VID}"
+    git(data, "remote", "set-url", "origin", str(data_bare))
+    assert wait_ok(client)
+    assert log(data_bare)[0] == f"audioplayer: add {VID}"
+
+
+def test_persistent_failure_reports_error(client, repos, tmp_path):
+    _, data, _, _ = repos
+    git(data, "remote", "set-url", "origin", str(tmp_path / "missing.git"))
+    add(client)
+    end = time.time() + 10
+    while time.time() < end and client.get("/health").json()["sync"] != "error":
+        time.sleep(0.05)
+    assert client.get("/health").json()["sync"] == "error"
+
+
+def test_resync_pushes_leftover_commits(repos):
+    data_bare, data, _, cov = repos
+    (data / "audioplayer").mkdir()
+    (data / "audioplayer" / "library.json").write_text("{}")
+    git(data, "add", "-A")
+    git(data, "commit", "-m", "left over")
+    sync = gitstore.GitSync(data, cov, backoff=(0.05, 0.1))
+    sync.resync()
+    end = time.time() + 5
+    while time.time() < end and sync.status() != "ok":
+        time.sleep(0.05)
+    sync.stop()
+    assert log(data_bare)[0] == "left over"
+
+
+def test_migrates_old_bare_format(tmp_path):
+    p = tmp_path / "library.json"
+    p.write_text(json.dumps({"songs": [{"id": VID, "title": "Old"}]}))
+    doc = library.load_doc(p)
+    assert doc["settings"] == {}
+    assert doc["songs"][0]["file"] == f"{VID}.m4a"
+    library.save(p, doc["songs"], default_music_root="perkunas://data/music/")
+    saved = json.loads(p.read_text())
+    assert saved["settings"] == {"music_root": "perkunas://data/music/"}
+    assert saved["songs"][0]["file"] == f"{VID}.m4a"
+
+
+def test_music_root_resolution(tmp_path, monkeypatch):
+    r = library.resolve_music_root
+    assert r("perkunas://data/music/", {"perkunas": "/mnt/p"}).as_posix() == "/mnt/p/data/music"
+    assert r(str(tmp_path)) == tmp_path
+    with pytest.raises(LookupError):
+        r("nope://x/", {})
+    monkeypatch.setenv("AUDIO_HOSTS", "a=/one;b=/two")
+    assert library.load_hosts() == {"a": "/one", "b": "/two"}
+    f = tmp_path / "h.json"
+    f.write_text('{"c": "/three"}')
+    monkeypatch.setenv("AUDIO_HOSTS_FILE", str(f))
+    assert library.load_hosts()["c"] == "/three"
+
+
+def test_audio_served_via_music_root_host(client, tmp_path, monkeypatch):
+    mount = tmp_path / "mount"
+    (mount / "data" / "music").mkdir(parents=True)
+    (mount / "data" / "music" / f"{VID}.m4a").write_bytes(b"x")
+    monkeypatch.setenv("AUDIO_HOSTS", f"perkunas={mount.as_posix()}")
+    monkeypatch.setenv("AUDIO_MUSIC_ROOT", "perkunas://data/music/")
+    assert client.get(f"/files/{VID}", headers=H).content == b"x"
+    monkeypatch.setenv("AUDIO_MUSIC_ROOT", "unknown://a/")
+    assert client.get(f"/files/{VID}", headers=H).status_code == 503

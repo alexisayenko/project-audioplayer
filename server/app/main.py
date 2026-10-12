@@ -5,6 +5,7 @@ from __future__ import annotations
 import hmac
 import os
 import re
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -15,11 +16,13 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import extractor, library
+from . import extractor, gitstore, library
 
 DOWNLOAD_DIR = Path(os.environ.get("AUDIO_DOWNLOAD_DIR", "downloads"))
 DATA_DIR = Path(os.environ.get("AUDIO_DATA_DIR", "."))
 WEB_DIR = Path(os.environ.get("AUDIO_WEB_DIR", Path(__file__).resolve().parents[2] / "web"))
+
+SYNC = gitstore.from_env()
 
 app = FastAPI(title="audioplayer-server")
 
@@ -46,11 +49,51 @@ def require_token_or_query(
 
 
 def library_path() -> Path:
-    return DATA_DIR / "library.json"
+    return SYNC.library_path if SYNC else DATA_DIR / "library.json"
 
 
 def covers_dir() -> Path:
+    if SYNC and SYNC.covers_dir:
+        return SYNC.covers_dir
     return DATA_DIR / "covers"
+
+
+def music_root() -> str:
+    """AUDIO_MUSIC_ROOT overrides settings.music_root; default is the local download dir."""
+    return (
+        os.environ.get("AUDIO_MUSIC_ROOT")
+        or library.load_doc(library_path())["settings"].get("music_root")
+        or str(DOWNLOAD_DIR)
+    )
+
+
+def music_dir() -> Path:
+    try:
+        return library.resolve_music_root(music_root())
+    except LookupError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
+def _save(songs: list[dict[str, Any]]) -> None:
+    library.save(library_path(), songs, default_music_root=music_root())
+
+
+@contextmanager
+def _tx(message: str):
+    """Single writer: lock -> pull --rebase -> body (writes) -> commit -> push."""
+    with library.LOCK:
+        if SYNC is None:
+            yield
+            return
+        with SYNC.transaction():
+            yield
+            SYNC.commit(message)
+
+
+@app.on_event("startup")
+def _startup() -> None:
+    if SYNC:
+        SYNC.resync()
 
 
 def _vid(video_id: str) -> str:
@@ -96,7 +139,7 @@ class PatchSongRequest(SongMeta):
 
 @app.get("/health")
 def health() -> dict[str, str]:
-    return {"status": "ok"}
+    return {"status": "ok", "sync": SYNC.status() if SYNC else "ok"}
 
 
 @app.get("/search", dependencies=[Depends(require_token)])
@@ -118,7 +161,10 @@ async def download(req: DownloadRequest):
 @app.get("/files/{video_id}", dependencies=[Depends(require_token_or_query)])
 def get_file(video_id: str):
     _vid(video_id)
-    path = DOWNLOAD_DIR / f"{video_id}.m4a"
+    with library.LOCK:
+        song = next((s for s in library.load(library_path()) if s["id"] == video_id), None)
+    name = library.file_name(song) if song else f"{video_id}.m4a"
+    path = music_dir() / name
     if not path.is_file():
         raise HTTPException(status_code=404, detail="not downloaded")
     return FileResponse(path, media_type="audio/mp4", filename=path.name)
@@ -166,7 +212,7 @@ def _run_download(vid: str, meta: dict[str, Any], tags: list[str]) -> None:
         job["progress"] = round(p, 3)
 
     try:
-        info = extractor.download_audio(vid, DOWNLOAD_DIR, progress)
+        info = extractor.download_audio(vid, music_dir(), progress)
         cover = None
         try:
             extractor.fetch_cover(vid, covers_dir() / f"{vid}.jpg")
@@ -181,17 +227,21 @@ def _run_download(vid: str, meta: dict[str, Any], tags: list[str]) -> None:
             "year": meta.get("year"),
             "genre": meta.get("genre"),
             "source_url": extractor.watch_url(vid),
+            "file": f"{vid}.m4a",
             "cover": cover,
             "duration": info.get("duration"),
             "added_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "tags": tags,
         }
-        with library.LOCK:
+        with _tx(f"audioplayer: add {vid}"):
             songs = [s for s in library.load(library_path()) if s["id"] != vid]
-            library.save(library_path(), songs + [song])
+            _save(songs + [song])
         job.update(status="done", progress=1.0)
     except Exception as exc:
-        (DOWNLOAD_DIR / f"{vid}.m4a").unlink(missing_ok=True)
+        try:
+            (music_dir() / f"{vid}.m4a").unlink(missing_ok=True)
+        except HTTPException:
+            pass
         job.update(status="error", error=_short(exc))
 
 
@@ -230,7 +280,7 @@ def song_status(video_id: str):
 def patch_song(video_id: str, req: PatchSongRequest):
     _vid(video_id)
     changes = req.model_dump(exclude_unset=True)
-    with library.LOCK:
+    with _tx(f"audioplayer: edit {video_id}"):
         songs = library.load(library_path())
         song = next((s for s in songs if s["id"] == video_id), None)
         if song is None:
@@ -246,20 +296,24 @@ def patch_song(video_id: str, req: PatchSongRequest):
         if not updated.get("title"):
             raise HTTPException(status_code=422, detail="title must not be empty")
         song.update(updated)
-        library.save(library_path(), songs)
+        _save(songs)
         return song
 
 
 @app.delete("/songs/{video_id}", status_code=204, dependencies=[Depends(require_token)])
 def delete_song(video_id: str):
     _vid(video_id)
-    with library.LOCK:
+    with _tx(f"audioplayer: delete {video_id}"):
         songs = library.load(library_path())
-        if not any(s["id"] == video_id for s in songs):
+        song = next((s for s in songs if s["id"] == video_id), None)
+        if song is None:
             raise HTTPException(status_code=404, detail="unknown song")
-        library.save(library_path(), [s for s in songs if s["id"] != video_id])
-        (DOWNLOAD_DIR / f"{video_id}.m4a").unlink(missing_ok=True)
+        _save([s for s in songs if s["id"] != video_id])
         (covers_dir() / f"{video_id}.jpg").unlink(missing_ok=True)
+        try:
+            (music_dir() / library.file_name(song)).unlink(missing_ok=True)
+        except HTTPException:
+            pass
         JOBS.pop(video_id, None)
 
 
