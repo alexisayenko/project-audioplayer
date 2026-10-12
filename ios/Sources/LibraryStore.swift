@@ -14,6 +14,12 @@ final class LibraryStore: ObservableObject {
         if let data = try? Data(contentsOf: Self.indexURL),
            let decoded = try? JSONDecoder().decode([Track].self, from: data) {
             tracks = decoded
+            var changed = false
+            for i in tracks.indices {
+                let clean = CoverURL.scrubbed(tracks[i].thumbnail)
+                if clean != tracks[i].thumbnail { tracks[i].thumbnail = clean; changed = true }
+            }
+            if changed { save() }
         }
     }
 
@@ -22,6 +28,14 @@ final class LibraryStore: ObservableObject {
     func add(_ track: Track) {
         tracks.removeAll { $0.id == track.id }
         tracks.insert(track, at: 0)
+        save()
+    }
+
+    func update(_ track: Track) {
+        guard let i = tracks.firstIndex(where: { $0.id == track.id }) else { return }
+        var merged = track
+        merged.thumbnail = track.thumbnail ?? tracks[i].thumbnail
+        tracks[i] = merged
         save()
     }
 

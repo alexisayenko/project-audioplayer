@@ -61,3 +61,13 @@ rationale per rule so future-us can revisit.
 ## Open questions
 
 - [TODO: open style decisions awaiting resolution.]
+
+## Look: Vega 108 turntable
+
+The app is styled after the Soviet "Vega 108 Stereo" turntable: walnut veneer
+bars (navigation), matte black panel rows, chrome bezels, rectangular piano
+keys (one lit cyan, a red power key), ridged volume knob with min/max ticks,
+small-caps labels with Cyrillic accompaniments. All tokens and components
+live in `ios/Sources/Theme.swift`. Now Playing shows a rotating platter and a
+tonearm that follows playback progress. The app icon is the whole turntable
+seen from above.

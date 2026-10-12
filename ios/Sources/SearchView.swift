@@ -21,23 +21,29 @@ struct SearchView: View {
                              thumbnail: result.thumbnail)
                     Spacer()
                     if library.contains(result.id) {
-                        Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
+                        Image(systemName: "checkmark.circle.fill").foregroundStyle(Theme.green)
                     } else if downloading.contains(result.id) {
                         ProgressView()
                     } else {
                         Button { Task { await download(result) } } label: {
                             Image(systemName: failed[result.id] == nil ? "arrow.down.circle" : "exclamationmark.arrow.circlepath")
-                                .foregroundStyle(failed[result.id] == nil ? Color.accentColor : .red)
+                                .foregroundStyle(failed[result.id] == nil ? Theme.cyan : .red)
                         }
                         .buttonStyle(.borderless)
                     }
                 }
+                .panelRow()
             }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .panelBackground()
             .overlay {
-                if searching { ProgressView() }
-                else if results.isEmpty { Text("Search YouTube for a song").foregroundStyle(.secondary) }
+                if searching { ProgressView().tint(.white) }
+                else if results.isEmpty { Text("Search YouTube for a song").foregroundStyle(Theme.labelDim) }
             }
             .navigationTitle("Search")
+            .navigationBarTitleDisplayMode(.inline)
+            .woodBar(.navigationBar)
             .searchable(text: $query, prompt: "Songs, artists")
             .onSubmit(of: .search) { Task { await search() } }
             .alert("Error", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {

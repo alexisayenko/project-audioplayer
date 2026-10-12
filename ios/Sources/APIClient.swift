@@ -7,7 +7,9 @@ enum APIError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .badURL: return "Invalid server URL"
-        case .http(let code, let detail): return "Server error \(code): \(detail)"
+        case .http(let code, let detail):
+            if code == 401 { return "Wrong or missing API token (see Settings)" }
+            return detail.isEmpty ? "Server error \(code)" : detail
         }
     }
 }
@@ -38,7 +40,13 @@ struct APIClient {
     private func check(_ response: URLResponse, data: Data? = nil) throws {
         guard let http = response as? HTTPURLResponse else { return }
         guard (200..<300).contains(http.statusCode) else {
-            let detail = data.flatMap { String(data: $0, encoding: .utf8) } ?? ""
+            var detail = data.flatMap { String(data: $0, encoding: .utf8) } ?? ""
+            if let data, let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                if let d = obj["detail"] as? String { detail = d }
+                else if let list = obj["detail"] as? [[String: Any]] {
+                    detail = list.compactMap { $0["msg"] as? String }.joined(separator: "; ")
+                }
+            }
             throw APIError.http(http.statusCode, detail)
         }
     }
@@ -55,6 +63,22 @@ struct APIClient {
         return try JSONDecoder().decode([SearchResult].self, from: data)
     }
 
+    func library() async throws -> [ServerSong] {
+        var req = try request("/library")
+        req.timeoutInterval = 15
+        let (data, response) = try await URLSession.shared.data(for: req)
+        try check(response, data: data)
+        return try JSONDecoder().decode(ServerLibraryResponse.self, from: data).songs
+    }
+
+    /// Copies an audio file that is already on the server into the app.
+    func downloadFile(_ track: Track) async throws {
+        let (tmp, response) = try await URLSession.shared.download(for: request("/files/\(track.id)"))
+        try check(response)
+        try? FileManager.default.removeItem(at: track.fileURL)
+        try FileManager.default.moveItem(at: tmp, to: track.fileURL)
+    }
+
     /// Asks the server to fetch the audio, then copies the file into the app.
     func download(_ result: SearchResult) async throws -> Track {
         struct Body: Encodable { let video_id: String }
@@ -69,5 +93,50 @@ struct APIClient {
         try? FileManager.default.removeItem(at: dest)
         try FileManager.default.moveItem(at: tmp, to: dest)
         return track
+    }
+
+    // MARK: Add and edit
+
+    private func send(_ path: String, method: String, body: [String: Any]? = nil,
+                      timeout: TimeInterval = 30) async throws -> Data {
+        let data = try body.map { try JSONSerialization.data(withJSONObject: $0) }
+        var req = try request(path, method: method, body: data)
+        req.timeoutInterval = timeout
+        do {
+            let (out, response) = try await URLSession.shared.data(for: req)
+            try check(response, data: out)
+            return out
+        } catch let e as URLError {
+            throw APIError.http(0, e.code == .timedOut ? "Server timed out" : "Server unreachable")
+        }
+    }
+
+    func preview(url: String) async throws -> Preview {
+        try JSONDecoder().decode(Preview.self, from: await send("/preview", method: "POST", body: ["url": url], timeout: 90))
+    }
+
+    func addSong(url: String, metadata: [String: Any], tags: [String]) async throws {
+        _ = try await send("/songs", method: "POST", body: ["url": url, "metadata": metadata, "tags": tags])
+    }
+
+    func status(_ id: String) async throws -> SongStatus {
+        try JSONDecoder().decode(SongStatus.self, from: await send("/songs/\(id)/status", method: "GET", timeout: 15))
+    }
+
+    func patch(_ id: String, changes: [String: Any]) async throws -> ServerSong {
+        try JSONDecoder().decode(ServerSong.self, from: await send("/songs/\(id)", method: "PATCH", body: changes))
+    }
+
+    func detectBpm(_ id: String) async throws -> ServerSong {
+        try JSONDecoder().decode(ServerSong.self, from: await send("/songs/\(id)/bpm/detect", method: "POST", timeout: 120))
+    }
+
+    func lookupWikipedia(song: String?, artist: String?) async throws -> WikiLookup {
+        let body: [String: Any] = ["wikipedia_song": song as Any? ?? NSNull(), "wikipedia_artist": artist as Any? ?? NSNull()]
+        return try JSONDecoder().decode(WikiLookup.self, from: await send("/lookup/wikipedia", method: "POST", body: body, timeout: 60))
+    }
+
+    func delete(_ id: String) async throws {
+        _ = try await send("/songs/\(id)", method: "DELETE")
     }
 }

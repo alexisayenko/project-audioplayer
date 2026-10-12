@@ -10,7 +10,7 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Server") {
+                Section {
                     TextField("https://play.isayenko.net", text: $settings.serverURL)
                         .textInputAutocapitalization(.never)
                         .keyboardType(.URL)
@@ -29,14 +29,25 @@ struct SettingsView: View {
                     }
                     .disabled(testing)
                     if let status {
-                        Label(status, systemImage: ok ? "checkmark.circle.fill" : "xmark.octagon.fill")
-                            .foregroundStyle(ok ? .green : .red)
+                        HStack {
+                            LED(on: true, color: ok ? Theme.green : Theme.red, size: 12)
+                            Label(status, systemImage: ok ? "checkmark.circle.fill" : "xmark.octagon.fill")
+                                .foregroundStyle(ok ? Theme.green : Theme.red)
+                        }
                     }
-                }
-                Section("Storage") {
+                } header: { Text("Server · ВХОД").panelLabel() }
+                .listRowBackground(Theme.panelRaised)
+                Section {
                     LabeledContent("Downloaded songs", value: "\(library.tracks.count)")
-                }
+                } header: { Text("Storage · ХРАНИЛИЩЕ").panelLabel() }
+                .listRowBackground(Theme.panelRaised)
             }
+            .scrollContentBackground(.hidden)
+            .panelBackground()
+            .tint(Theme.cyan)
+            .foregroundStyle(Theme.label)
+            .navigationBarTitleDisplayMode(.inline)
+            .woodBar(.navigationBar)
             .navigationTitle("Settings")
         }
     }

@@ -6,10 +6,14 @@ struct Track: Codable, Identifiable, Hashable {
     var title: String
     var artist: String
     var duration: Double?
-    var thumbnail: String?
+    var thumbnail: String?   // absolute image URL or server path /covers/<id>; never holds a token
     var album: String?
     var year: Int?
     var tags: [String]?
+    var bpm: Double?
+    var sourceURL: String?
+    var wikipediaSong: String?
+    var wikipediaArtist: String?
 
     /// Audio file inside the app's Documents directory.
     var fileURL: URL { LibraryStore.audioDirectory.appendingPathComponent("\(id).m4a") }

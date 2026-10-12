@@ -10,6 +10,8 @@ final class PlayerService: ObservableObject {
     @Published private(set) var position: Double = 0
     @Published private(set) var duration: Double = 0
 
+    @Published var volume: Double = 1 { didSet { player.volume = Float(volume) } }
+
     private let player = AVPlayer()
     private var timeObserver: Any?
     private var endObserver: NSObjectProtocol?
