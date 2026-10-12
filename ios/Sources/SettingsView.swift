@@ -5,6 +5,7 @@ struct SettingsView: View {
     @EnvironmentObject var library: LibraryStore
     @State private var status: String?
     @State private var testing = false
+    @State private var ok = false
 
     var body: some View {
         NavigationStack {
@@ -15,6 +16,11 @@ struct SettingsView: View {
                         .keyboardType(.URL)
                         .autocorrectionDisabled()
                     SecureField("API token", text: $settings.token)
+                    Button("Paste token from clipboard") {
+                        if let s = UIPasteboard.general.string {
+                            settings.token = s.trimmingCharacters(in: .whitespacesAndNewlines)
+                        }
+                    }
                     Button { Task { await test() } } label: {
                         HStack {
                             Text("Test connection")
@@ -22,7 +28,10 @@ struct SettingsView: View {
                         }
                     }
                     .disabled(testing)
-                    if let status { Text(status).font(.footnote).foregroundStyle(.secondary) }
+                    if let status {
+                        Label(status, systemImage: ok ? "checkmark.circle.fill" : "xmark.octagon.fill")
+                            .foregroundStyle(ok ? .green : .red)
+                    }
                 }
                 Section("Storage") {
                     LabeledContent("Downloaded songs", value: "\(library.tracks.count)")
@@ -34,10 +43,15 @@ struct SettingsView: View {
 
     private func test() async {
         testing = true
+        status = nil
         defer { testing = false }
         do {
-            try await APIClient(baseURL: settings.serverURL, token: settings.token).health()
-            status = "Server reachable"
-        } catch { status = error.localizedDescription }
+            try await APIClient(baseURL: settings.serverURL, token: settings.token).verify()
+            ok = true
+            status = "Connected, token accepted"
+        } catch {
+            ok = false
+            status = error.localizedDescription
+        }
     }
 }

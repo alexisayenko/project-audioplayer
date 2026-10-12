@@ -27,4 +27,4 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.alexisayenko.audioplayer
-        # DEVELOPMENT_TEAM: set your Apple team id here
+        DEVELOPMENT_TEAM: L8C7TUQLBM

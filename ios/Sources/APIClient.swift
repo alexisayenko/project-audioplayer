@@ -43,8 +43,8 @@ struct APIClient {
         }
     }
 
-    func health() async throws {
-        let (data, response) = try await URLSession.shared.data(for: request("/health"))
+    func verify() async throws {
+        let (data, response) = try await URLSession.shared.data(for: request("/tags"))
         try check(response, data: data)
     }
 
