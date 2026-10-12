@@ -316,6 +316,13 @@ Status: Accepted · 2026-10-12 · Supersedes the look part of ADR-0007
 - Library is the phone (supersedes the Phone / Server switch of ADR-0007):
   the server is only the download pipe behind Add; the phone never browses
   a server library. The web UI keeps `GET /library`.
+- Three destinations, not four: Library, Playback, Settings. Add is an
+  action on Library (a + button opening a sheet), not a tab, on both
+  surfaces.
+- Playback shows the song's cover with its title on it; the decorative
+  deck (platter, tonearm, LED) is dropped.
+- The web UI follows the same system (supersedes "the web UI keeps its
+  plain style" in ADR-0007): sidebar rail, table library, bottom player bar.
 - Why: one place to decide the look, shared by iOS and web, editable without
   touching code; the previous look was defined only in `Theme.swift`, so docs,
   mockups and code drifted within a day.

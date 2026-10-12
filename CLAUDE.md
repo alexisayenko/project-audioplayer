@@ -28,7 +28,7 @@ FastAPI wrapper around `yt-dlp` (Python 3.11+), run on the home server `perkunas
 Tunnel (planned, not yet deployed; Tailscale is not used) with an `X-API-Token` header or owner-only
 Apple/Google sign-in; see [docs/tech/decisions.md](docs/tech/decisions.md). Web UI in `web/`.
 Status: the iOS app (tabs Library, Add, Playback, Settings; Vega 108 look, migrating to the
-Warm analog design system, task-0005) is on internal
+Warm analog design system with three tabs, task-0005) is on internal
 TestFlight; its server flows are not yet tested on a device; server tests pass.
 
 ## Design: single source of truth
