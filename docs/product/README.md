@@ -6,6 +6,8 @@ value to the user. State the load-bearing tension in plain terms.]
 [TODO: one line — purpose. What this product enables that wasn't
 possible (or wasn't easy) before.]
 
+Catalog vs audio (proposed, ADR-0010): [`concept-catalog-and-audio.md`](concept-catalog-and-audio.md).
+
 For the wider docs/ map and what-lives-where, see
 [`../README.md`](../README.md).
 

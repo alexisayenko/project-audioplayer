@@ -60,6 +60,14 @@ sign-in, Electrophone look, internal TestFlight builds. Spans `ios/`, `server/`
     App Store Connect rejects a repeated or lower one (ADR-0008).
   - TestFlight builds expire after 90 days.
   - Add, edit, download and sign-in flows are not yet tested live on a device.
+  - Catalog vs audio (ADR-0010, proposed): a record may have no file, or a stale
+    state after a server file is removed; state is derived, never stored.
+  - Spotify Web API and terms: client credentials, rate limits, personal use,
+    secret only in the server env; no audio from Spotify.
+  - Mismatched YouTube matches (live, remix, lyric video): the owner confirms each.
+  - SoundCloud Go+ previews (ADR-0011): yt-dlp may only see the 30 s snippet; the server refuses it (`preview_only`) from the format list, and again after download if the file is under 35 s for a much longer track. The heuristic is unverified against live Go+ tracks.
+  - SoundCloud artist vs label: with no `artists` metadata the uploader name is used, which may be a label or a re-uploader; the owner edits it in the preview. Wikipedia/MusicBrainz suggestions run on that name and usually find nothing.
+  - SoundCloud downloads are unverified live (yt-dlp extractor changes, client-id rotation, private links) and may violate SoundCloud's terms like the YouTube path.
 
 ## C2 — Server, library and web UI
 

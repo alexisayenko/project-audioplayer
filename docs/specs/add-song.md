@@ -13,7 +13,7 @@ Code: `web/js/add.js`, `server/app/main.py` (`preview`, `create_song`,
 
 ## Requirements
 
-- ADD-001 MUST: the Add screen accepts a YouTube URL and shows a preview card with cover (YouTube thumbnail), title, duration, and editable Title, Artist, Album, Year, BPM and Tags. Status: implemented
+- ADD-001 MUST (Add becomes "add to catalog" when ADR-0010 is accepted, see CAT-011): the Add screen accepts a YouTube URL and shows a preview card with cover (YouTube thumbnail), title, duration, and editable Title, Artist, Album, Year, BPM and Tags. Status: implemented
 - ADD-002 MUST: preview prefills `title` from yt-dlp `track` else `title`; `artist` from `artist`, `creator`, `uploader`; `year` from `release_year`, else `release_date`/`upload_date`; `tags` per [tags.md](tags.md) (genre, country and language suggestions). Status: implemented
 - ADD-003 MUST: preview downloads nothing and writes nothing. Status: implemented
 - ADD-004 MUST: the user may edit every field and tag before saving using the shared tag editor (LIB-055): current tags as removable chips, a "Suggested" row with the preview's tags (toggle), all library tags as toggle chips, a text input (Enter or comma adds, accepts `key:value`). Status: implemented
@@ -41,12 +41,23 @@ Code: `web/js/add.js`, `server/app/main.py` (`preview`, `create_song`,
 
 - ADD-030 MUST: preview returns `in_library: true` when the id is already stored; the UI shows "This song is already in your library." and disables Save. Status: implemented
 - ADD-031 MUST: `POST /songs` returns 409 `already in library` or `already downloading` (checked under the lock). Status: implemented
-- ADD-032 MUST: the identity of a song is its YouTube video id; two URLs for the same video are the same song. Status: implemented
+- ADD-032 MUST: the identity of a song is its id (YouTube video id or `soundcloud-<track id>`); two URLs for the same video or track are the same song. Status: implemented
 - ADD-033 MUST: pasted links are cleaned before use: YouTube forms (`youtu.be/<id>`, `watch?v=`, `m.` and `music.` hosts, `shorts/`, `embed/`, `live/`) become `https://www.youtube.com/watch?v=<id>`, dropping `si`, `t`, `list` and every other parameter; other http(s) links lose only `si`, `feature`, `pp`, `fbclid`, `gclid` and `utm_*`. The web cleans on paste, drop, bulk input (paste/drop/replacement input events or multi-character insertions; single keystrokes are left alone), blur and submit, moves the caret to the end, extracts the first YouTube or http(s) link from surrounding text (otherwise the first line) and shows the result in the field (`cleanPasted` in `web/js/url-clean.js`); the server applies the same rules (`server/app/urlclean.py`) and tolerates clean input. Status: implemented
+
+## SoundCloud
+
+- ADD-060 MUST: Add also accepts a SoundCloud track link (no search): `soundcloud.com/<artist>/<track>` with `www.`/`m.` hosts, an optional private `/s-<secret>` segment, and `on.soundcloud.com/<code>` short links. Cleaning (web `cleanPasted`, iOS port, server `urlclean.py`) gives `https://soundcloud.com/<artist>/<track>[/s-<secret>]`, dropping the query and fragment; the server resolves a short link by following its redirect once (https only, host `soundcloud.com`/`www.`/`m.`). Status: implemented (live SoundCloud download not verified)
+- ADD-061 MUST: playlists, sets, albums, likes and profile links are refused with 422 `{"error":"unsupported"}` and the message "Only single tracks are supported". Status: implemented
+- ADD-062 MUST: the song id is `soundcloud-<numeric track id>` (known only after the server resolves the link, so preview returns it); the record gets `source: "soundcloud"`; YouTube ids and records are unchanged ([ADR-0011](../tech/decisions.md)). Status: implemented
+- ADD-063 MUST: SoundCloud preview uses yt-dlp metadata without downloading: `title` (`track`, else `title`), `artist` from `artists`/`artist`/`creator`, else the uploader (which may be a label, see [concerns](../concerns.md)), `thumbnail` the artwork upgraded to `-t500x500`, `duration`, `genres` as suggested `genre:` tags, `year` only from `release_year`/`release_date`. Status: implemented
+- ADD-064 MUST: save downloads the best audio and re-encodes it to `<id>.m4a` (ffmpeg `FFmpegExtractAudio` m4a), then fetches the artwork (https `*.sndcdn.com` only) to `covers/<id>.jpg`; a cover failure does not fail the add. Status: implemented (live download not verified)
+- ADD-065 MUST: SoundCloud Go+ tracks that only offer the 30 s preview are refused with 422 `{"error":"preview_only","detail":"Preview only — SoundCloud Go+ track, can't be downloaded in full."}` at `POST /preview` and `POST /songs`; detection is a yt-dlp format id containing `preview` with no full format, or at download time a chosen preview format or a file under 35 s while the page duration exceeds it by over 60 s (partial file deleted, job `error` with `code: "preview_only"`). Clients show "Preview only — SoundCloud Go+ track, can't be downloaded in full." Status: implemented
+- ADD-066 MUST: the preview card shows a small source tag ("YouTube" / "SoundCloud"). Status: implemented
 
 ## Errors shown to the user
 
-- ADD-040 MUST: not a YouTube video URL gives 422 `not a YouTube video URL`. Status: implemented
+- ADD-040 MUST: not a YouTube video or SoundCloud track URL gives 422 `{"error":"unsupported","detail":"not a YouTube video or SoundCloud track URL"}`. Status: implemented
+- ADD-044 MUST: SoundCloud failures: a missing track gives 404 `{"error":"not_found"}`, a private track without its secret link 403 `{"error":"private"}`, anything else 502 `{"error":"failed"}`; the message is `preview failed: <short yt-dlp message>`. Status: implemented
 - ADD-041 MUST: unavailable or blocked video gives 502 `preview failed: <short yt-dlp message>` at preview, or a job `error` at download. Status: implemented
 - ADD-042 MUST: server unreachable shows "Server unreachable"; 401 shows "Wrong or missing API token (see Settings)". Status: implemented
 - ADD-043 SHOULD: leaving the Add screen mid-download stops polling but not the server job; reopening Add does not resume the progress view. Status: to-confirm

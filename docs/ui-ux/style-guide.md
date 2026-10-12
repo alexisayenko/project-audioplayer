@@ -91,7 +91,7 @@ Colours, text roles, spacing and radii are `DS.Color` / `DS.Font` / `DS.Space` /
 `DS.Radius` from the generated `ios/Sources/DesignTokens.swift`; `Components.swift`
 holds the shared pieces (SongRow, category and value chips, FilterSheet is in
 `LibraryFilter.swift`, transport tray, buttons; the tab bar and mini-player in `Views.swift`; the Add flow in
-`AddSheet.swift`; `ServerStatus` and `LED` in `Components.swift`). Text uses scalable Dynamic Type styles (`T.*`) with the same roles as
+`AddSheet.swift`; `ServerStatus` and `LED` in `Components.swift`). Screen titles stand alone: the eyebrow is web only (design system 1791840724-5234). Sheets (Add, filters, song) are sized to their content, so they do not change height when the keyboard opens; the last tag pill wraps together with the "+". Text uses scalable Dynamic Type styles (`T.*`) with the same roles as
 `DS.Font`; the layout caps at accessibility size 2. Day and night follow the system.
 
 Contrast: every text pair is held at 4.5:1 in both themes. Where the system's own
@@ -100,7 +100,7 @@ pair falls short the app deviates: the primary button and selected chips use
 (`accent-strong` with white is 3.4:1, with `on-accent` 4.4:1); `ok` and `power` are
 dots and icons, their words are `ink`; secondary text on `accent-tint` rows is `ink`
 (`ink-muted` is 4.0:1 there at night); `ink-faint` never carries a control. These
-are gaps to close in the design system.
+are gaps to close in the design system. The playing row's ⋯ is `accent-ink` and the other rows' ⋯ is `ink-muted` (the design's `ink-faint` is 2.4:1); the version line on Settings is `ink-muted`; the danger buttons keep `ink` text with a `power` border.
 
 ## Look: Vega 108 turntable (retired, history only)
 

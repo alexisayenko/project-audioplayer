@@ -6,7 +6,8 @@ Code: `server/app/library.py`, `server/app/main.py` (`SongMeta`).
 
 | Field | Type | Required | Validation / rule |
 | --- | --- | --- | --- |
-| `id` | string | yes | YouTube video id, `^[A-Za-z0-9_-]{11}$`; immutable; unique |
+| `id` | string | yes | YouTube video id `^[A-Za-z0-9_-]{11}$`, or `soundcloud-<numeric track id>` `^soundcloud-[0-9]{1,20}$`; immutable; unique |
+| `source` | string | no | `youtube` (default when absent; old records are not migrated) or `soundcloud`; set by the server on new SoundCloud songs |
 | `title` | string | yes | non-empty after trim (PATCH: 422 if empty; Add: falls back to yt-dlp title, then id) |
 | `artist` | string or null | no | trimmed; empty becomes `null` |
 | `album` | string or null | no | trimmed; empty becomes `null` |
@@ -14,18 +15,19 @@ Code: `server/app/library.py`, `server/app/main.py` (`SongMeta`).
 | `tags` | string[] | yes (may be `[]`) | normalised, see [tags.md](tags.md); `decade:<NN>s` is derived from `year` (TAG-050..052) |
 | `bpm` | int or null | no | whole beats per minute, 20..300 (422 outside); a typed or PATCHed fraction is rounded; detected values are rounded; fractional values in old files are rounded on load (saved on the next write) |
 | `duration` | number or null | no | seconds, technical, set at download |
-| `source_url` | string | yes | canonical `https://www.youtube.com/watch?v=<id>`, no tracking parameters; dirty values in old files are cleaned on load (saved on the next write) |
+| `source_url` | string | yes | canonical `https://www.youtube.com/watch?v=<id>`, or `https://soundcloud.com/<artist>/<track>[/s-<secret>]`, no tracking parameters; dirty values in old files are cleaned on load (saved on the next write) |
 | `wikipedia_song` | string or null | no | `https://<lang>.wikipedia.org/wiki/<title>` or `https://www.wikidata.org/wiki/Q<id>`; any other host or shape is dropped to `null` (also on load); absent = `null` |
 | `wikipedia_artist` | string or null | no | same rule, for the band/artist |
 | `file` | string | yes | audio file name only, `<id>.m4a`, never a path |
 | `cover` | string or null | no | `covers/<id>.jpg`, or `null` if the thumbnail fetch failed |
 | `added_at` | string | yes | UTC `YYYY-MM-DDTHH:MM:SSZ` |
 
-- DATA-001 MUST: every song has a unique `id` that is a valid YouTube video id. Status: implemented
+- DATA-001 MUST: every song has a unique `id` that is a valid YouTube video id or a `soundcloud-<numeric id>` id (DATA-024). Status: implemented
+- DATA-024 MUST: `source` is optional; absent means `youtube`; the file is `<id>.m4a` and the cover `covers/<id>.jpg` for both sources; a mixed library round-trips unchanged. Status: implemented
 - DATA-002 MUST: `id`, `source_url`, `file`, `cover`, `duration`, `added_at` are server-set; PATCH accepts only title, artist, album, year, bpm, tags, wikipedia_song, wikipedia_artist. Status: implemented
 - DATA-003 MUST: `file` is reduced to its base name when read; a missing `file` defaults to `<id>.m4a`. Status: implemented
 - DATA-004 MUST: optional fields may be `null`; old records lacking `bpm` or other optional fields load without error. Status: implemented
-- DATA-005 MUST: a song record exists only after its audio download succeeded (the library lists playable songs only). Status: implemented
+- DATA-005 MUST (superseded when ADR-0010 is accepted, see CAT-001): a song record exists only after its audio download succeeded (the library lists playable songs only). Status: implemented
 - DATA-006 MUST: the API rejects `bpm` outside 20..300 and `year` outside 0..3000 with 422. Status: implemented
 - DATA-008 MUST: `wikipedia_song` and `wikipedia_artist` are validated by `wiki_lookup.clean_link` on POST, PATCH and load: https only (http is upgraded), host `*.wikipedia.org` with a `/wiki/<title>` path or `wikidata.org/wiki/Q<id>`, no credentials or odd ports, query and fragment dropped for Wikidata; anything else becomes `null`, never a 422. Status: implemented
 - DATA-007 MUST: `POST /songs` and PATCH round a typed `bpm` to an integer; `library.normalize` rounds stored fractions on load. Status: implemented

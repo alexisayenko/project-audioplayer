@@ -16,10 +16,12 @@ exception: owner-only OAuth sign-in (Apple/Google) next to the API token
 ## Product
 
 Electrophone: a personal iOS app, one user (the owner), distributed via TestFlight
-internal testing only. Search YouTube, download a song's audio through a
-private server, keep it in an on-device library, play it with background
+internal testing only. Search YouTube (or paste a YouTube or SoundCloud track
+link), download a song's audio through a private server, keep it in an on-device library, play it with background
 audio and lock-screen controls. No monetization. Downloading may violate
 YouTube's ToS; the app is not for distribution.
+
+Proposed ([ADR-0010](docs/tech/decisions.md)): the catalog (metadata: YouTube, SoundCloud, Spotify links; in git) is separate from audio (fetched on demand, state none/server/phone). Library lists the whole catalog; downloaded songs still play offline without the server. See [concept](docs/product/concept-catalog-and-audio.md).
 
 ## Tech stack
 

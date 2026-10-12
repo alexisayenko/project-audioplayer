@@ -160,6 +160,7 @@ machine / `alex-hetzner`" wording in ADR-0001
 Status: Accepted, implemented in `server/` (git store, `music_root`, sync status; not yet deployed) · 2026-10-12 ·
 Supersedes the `library.json`-on-server-disk and covers-on-server-disk
 parts of ADR-0001 and the matching data wording in ADR-0004
+Amended by ADR-0010 (Proposed): the store also holds catalog records that have no audio yet.
 
 - Metadata: private repo `alexisayenko/data-storage`, file
   `audioplayer/library.json`. Every library change (add, edit, tag,
@@ -294,6 +295,7 @@ Status: Accepted, in use · 2026-10-12
 ## ADR-0009 Look: the Electrophone design system is the single source of truth
 
 Status: Accepted · 2026-10-12 · Supersedes the look part of ADR-0007
+Partly superseded (the "Library is the phone" bullet) by ADR-0010 once accepted.
 
 - Direction: "Warm analog / Quiet glass" (origin: `docs/ui-ux/mockups2/`, prompt B
   in `docs/ui-ux/design-prompts.md`): warm paper and charcoal grounds, a copper
@@ -336,3 +338,61 @@ download continues as a "Downloading NN%" row. Playback leads with the cover;
 the deck, tonearm and LED are gone. Contrast substitutes for the system's failing
 pairs are listed in `docs/ui-ux/style-guide.md`. Web assets are served under
 `/_v/<version>/` so a deploy is a new URL (WEB-017); the page itself revalidates.
+
+## ADR-0010 The catalog and the audio are separate: Library lists every song, audio is fetched on demand
+
+Status: Proposed · 2026-10-13 · Supersedes the "Library is the phone" part of
+ADR-0009 and the matching IOS-030..032 wording; amends ADR-0005 (what the store
+holds). Concept: [`docs/product/concept-catalog-and-audio.md`](../product/concept-catalog-and-audio.md).
+
+- Two parts. The **catalog** is metadata only (title, artist, album, year, tags,
+  cover, source links; a few KB per song) and stays in the git store of ADR-0005.
+  The **audio** is files, fetched on demand, kept on the server and on the phone.
+- Two activities: populate the catalog from any source (YouTube, SoundCloud and
+  Spotify links, text search, manual entry; playlists later) and get audio + listen.
+- Audio state per song: `none` -> `server` -> `phone`. It is derived (server: file
+  present; phone: local copy present), not hand-edited. Library lists the whole
+  catalog, rows show the state, a filter "On phone" narrows it.
+- The catalog is synced to the phone (tiny) so Library works offline. Downloaded
+  songs play offline and never depend on the server (key principle unchanged).
+- Add becomes "add to catalog". A Spotify track link yields metadata only via the
+  Spotify Web API (free developer app, client credentials; client id and secret
+  only in the git-ignored server env). Audio is never taken from Spotify (DRM).
+  Public playlists later; the user's Liked Songs needs a one-time OAuth login,
+  a separate optional step.
+- "Get audio" is a separate action, per song or in bulk. For a Spotify-only song
+  the server proposes a YouTube match, the user confirms (live, remix and lyric
+  videos are the usual wrong matches), then it downloads like any YouTube song.
+  SoundCloud Go+ preview-only tracks are refused.
+- IDs: YouTube ids unchanged; SoundCloud `soundcloud-<id>` (ADR-0011);
+  metadata-only Spotify songs `spotify-<id>`. When audio is attached
+  the record keeps both ids and source urls.
+- Reverses: ADR-0009 "the phone never browses a server library" and "no Download
+  all"; revives the earlier server-library idea in a better form. Also touches
+  the Add flow (ADR-0007/0009 screens), to be redrawn in the design system.
+- Why: the owner's favourites are a list he wants to grow from anywhere (a
+  Spotify link, a friend's tip) without paying the download and storage cost up
+  front; the catalog is worth keeping even when audio is missing.
+- Cost: a record can exist without a file (DATA-005 changes), a Spotify developer
+  app and its terms become a dependency, wrong YouTube matches need a human
+  confirm, and catalog vs audio can drift (see concerns).
+- Open until accepted: specs are `planned` (CAT-*), tasks task-0006.. (phases P1..P6).
+
+## ADR-0011 Multi-source song ids: YouTube unchanged, SoundCloud as `soundcloud-<track id>`
+
+Status: Accepted · 2026-10-13 · Extends ADR-0001 (yt-dlp server) and DATA-001.
+
+- Context: Add must take SoundCloud track links next to YouTube. A song id is
+  also its file name (`<id>.m4a`), cover name and URL path parameter.
+- Decision: YouTube ids stay exactly as they are (no migration of
+  `library.json`). SoundCloud songs use `soundcloud-<numeric track id>`; at 12+
+  characters it cannot collide with an 11-character YouTube id. An optional
+  `source` field (`youtube` default when absent, `soundcloud`) is written on new
+  SoundCloud records; `source_of(id)` derives it from the id everywhere else
+  (server, web, iOS). Every id validator accepts both forms.
+- The numeric track id is only known after yt-dlp resolves the link, so the
+  server resolves it at preview and at save. Short `on.soundcloud.com` links are
+  followed once server-side (https, `soundcloud.com` hosts only).
+- Go+ tracks that only offer the 30 s preview are refused (`preview_only`).
+- Cost: SoundCloud covers come from `*.sndcdn.com` artwork instead of a derivable
+  URL, and the artist may be the uploading label. See [concerns](../concerns.md).

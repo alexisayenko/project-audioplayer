@@ -54,3 +54,17 @@ Constraints: it must be buildable in SwiftUI with vector shapes, gradients and s
 
 Output: the seven images, then the palette (hex, light and dark), the typefaces (prefer system or free fonts), spacing and corner-radius scale, and a short list of the signature elements a developer should reproduce.
 ```
+
+## C. Catalog and audio changes (for the Electrophone design-system session; ADR-0010)
+
+```
+Update the Electrophone Screens artboards (iOS and web). Tokens only, no new colours.
+1. Library lists the whole catalog. Each row shows an audio state (No audio, On server, On phone) with an icon plus a label, and a source mark (YouTube, SoundCloud, Spotify). Add the filter "On phone".
+2. Get audio: a row action, plus a bulk mode (select rows, "Get audio" bar) with per-row progress.
+3. Add becomes "Add to catalog": one field accepting YouTube, SoundCloud or Spotify links, text search, and manual entry.
+4. Spotify preview: metadata only (cover, title, artist, album, year), a "No audio yet" state, then Save. Optionally "Save and get audio".
+5. YouTube-match confirmation sheet: the proposed video (thumbnail, title, channel, duration vs the song's), "Use this", "Pick another", "Cancel"; warn on live, remix and lyric versions.
+6. Error and empty states: Spotify unavailable or rate-limited, no match found, SoundCloud preview-only refused, offline with only the catalog, Library with no audio on the phone.
+7. Playback: songs without a phone copy show Get audio instead of Play.
+Output: updated artboards and a changelog of components touched.
+```
