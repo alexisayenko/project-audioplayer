@@ -3,7 +3,6 @@ import SwiftUI
 /// Edit a song's metadata and tags on the server (the web Edit dialog).
 struct SongEditView: View {
     @EnvironmentObject var settings: Settings
-    @EnvironmentObject var server: ServerLibrary
     @EnvironmentObject var library: LibraryStore
     @Environment(\.dismiss) private var dismiss
 
@@ -39,7 +38,7 @@ struct SongEditView: View {
 
     private var api: APIClient { APIClient(baseURL: settings.serverURL, token: settings.token) }
     private var yearValue: Int? { Int(year.trimmingCharacters(in: .whitespaces)) }
-    private var pool: [(tag: String, count: Int)] { tagCounts(server.songs.map { $0.tags ?? [] }) }
+    private var pool: [(tag: String, count: Int)] { tagCounts(library.tracks.map { $0.tags ?? [] }) }
     private var busy: Bool { saving || detecting || wikiBusy }
 
     private func link(_ s: String) -> Any {
@@ -47,83 +46,86 @@ struct SongEditView: View {
         return t.isEmpty ? NSNull() : t
     }
 
+    private func card<C: View>(_ label: String, footer: String? = nil, @ViewBuilder _ content: () -> C) -> some View {
+        VStack(alignment: .leading, spacing: DS.Space.space2) {
+            SectionLabel(label)
+            VStack(alignment: .leading, spacing: DS.Space.space3, content: content)
+                .padding(DS.Space.space4).frame(maxWidth: .infinity, alignment: .leading).dsSlab()
+            if let footer { Text(footer).dsCaption().padding(.horizontal, DS.Space.space1) }
+        }
+    }
+
+    private func field(_ label: String, _ text: Binding<String>, keyboard: UIKeyboardType = .default, url: Bool = false) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label).dsCaption()
+            TextField(label, text: text).keyboardType(keyboard)
+                .textInputAutocapitalization(url ? .never : .sentences).autocorrectionDisabled(url).dsField()
+        }
+    }
+
     var body: some View {
         NavigationStack {
-            Form {
-                Section {
-                    TextField("Title", text: $title)
-                    TextField("Artist", text: $artist)
-                    TextField("Album", text: $album)
-                    TextField("Year", text: $year).keyboardType(.numberPad)
-                        .onChange(of: year) { _, _ in
-                            tags = withDecade(tags, yearValue)
-                            suggested = withDecade(suggested, yearValue)
+            ScrollView {
+                VStack(alignment: .leading, spacing: DS.Space.space4) {
+                    card("Details") {
+                        field("Title", $title)
+                        field("Artist", $artist)
+                        field("Album", $album)
+                        field("Year", $year, keyboard: .numberPad)
+                            .onChange(of: year) { _, _ in
+                                tags = withDecade(tags, yearValue)
+                                suggested = withDecade(suggested, yearValue)
+                            }
+                        HStack(alignment: .bottom) {
+                            field("BPM", $bpm, keyboard: .numberPad)
+                            Button { Task { await detect() } } label: {
+                                if detecting { ProgressView() } else { Text("Re-detect") }
+                            }
+                            .buttonStyle(DSButtonStyle(kind: .quiet)).disabled(busy)
                         }
-                    HStack {
-                        TextField("BPM", text: $bpm).keyboardType(.numberPad)
-                        Button { Task { await detect() } } label: {
-                            if detecting { ProgressView() } else { Text("Re-detect") }
+                    }
+                    card("Wikipedia") {
+                        field("Wikipedia: song", $wikiSong, keyboard: .URL, url: true)
+                        field("Wikipedia: band", $wikiArtist, keyboard: .URL, url: true)
+                        Button { Task { await lookup() } } label: {
+                            HStack { Text("Fill from Wikipedia links"); if wikiBusy { ProgressView() } }
                         }
-                        .buttonStyle(.borderless).disabled(busy)
+                        .buttonStyle(DSButtonStyle(kind: .quiet)).disabled(busy)
                     }
-                } header: { Text("Details · ДАННЫЕ").panelLabel() }
-                .listRowBackground(Theme.panelRaised)
-
-                Section {
-                    TextField("Wikipedia: song", text: $wikiSong)
-                        .textInputAutocapitalization(.never).autocorrectionDisabled().keyboardType(.URL)
-                    TextField("Wikipedia: band", text: $wikiArtist)
-                        .textInputAutocapitalization(.never).autocorrectionDisabled().keyboardType(.URL)
-                    Button { Task { await lookup() } } label: {
-                        HStack { Text("Fill from Wikipedia links"); if wikiBusy { Spacer(); ProgressView() } }
+                    card("Tags") { TagEditor(tags: $tags, suggested: $suggested, pool: pool, input: $pending) }
+                    if let note {
+                        Label {
+                            Text(note).font(T.caption).foregroundStyle(noteIsError ? DS.Color.ink : DS.Color.inkMuted)
+                        } icon: {
+                            Image(systemName: noteIsError ? "exclamationmark.circle.fill" : "info.circle")
+                                .foregroundStyle(noteIsError ? DS.Color.power : DS.Color.inkMuted)
+                        }
                     }
-                    .disabled(busy)
-                } header: { Text("Wikipedia").panelLabel() }
-                .listRowBackground(Theme.panelRaised)
-
-                Section {
-                    TagEditor(tags: $tags, suggested: $suggested, pool: pool, input: $pending)
-                } header: { Text("Tags · ТЕГИ").panelLabel() }
-                .listRowBackground(Theme.panelRaised)
-
-                if let note {
-                    Section {
-                        Label(note, systemImage: noteIsError ? "exclamationmark.circle" : "info.circle")
-                            .font(.footnote).foregroundStyle(noteIsError ? Theme.red : Theme.labelDim)
+                    VStack(alignment: .leading, spacing: DS.Space.space2) {
+                        Button("Delete from library") { confirmDelete = true }
+                            .buttonStyle(DSButtonStyle(kind: .danger)).disabled(busy)
+                        Text("Removes the song, its audio and cover from the server and from this iPhone.").dsCaption()
                     }
-                    .listRowBackground(Theme.panelRaised)
                 }
-
-                Section {
-                    Button("Delete from server", role: .destructive) { confirmDelete = true }.disabled(busy)
-                } footer: {
-                    Text("Removes the song, its audio and cover from the server. A copy already on the phone stays.")
-                        .foregroundStyle(Theme.labelDim)
-                }
-                .listRowBackground(Theme.panelRaised)
+                .padding(DS.Space.space4)
             }
-            .scrollContentBackground(.hidden)
-            .panelBackground()
-            .tint(Theme.cyan)
-            .foregroundStyle(Theme.label)
             .scrollDismissesKeyboard(.interactively)
+            .dsGround()
             .navigationTitle("Edit song")
             .navigationBarTitleDisplayMode(.inline)
-            .woodBar(.navigationBar)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.tint(.white) }
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.foregroundStyle(DS.Color.accentInk) }
                 ToolbarItem(placement: .confirmationAction) {
                     Button { Task { await save() } } label: {
-                        if saving { ProgressView().tint(.white) } else { Text("Save") }
+                        if saving { ProgressView() } else { Text("Save").fontWeight(.semibold) }
                     }
-                    .tint(.white).disabled(busy || title.trimmingCharacters(in: .whitespaces).isEmpty)
+                    .foregroundStyle(DS.Color.accentInk).disabled(busy || title.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
-            .confirmationDialog("Delete \"\(song.title)\" from the server?", isPresented: $confirmDelete, titleVisibility: .visible) {
-                Button("Delete", role: .destructive) { Task { await remove() } }
+            .confirmationDialog("Delete \"\(song.title)\" from the library?", isPresented: $confirmDelete, titleVisibility: .visible) {
+                Button("Delete from library", role: .destructive) { Task { await remove() } }
             }
         }
-        .preferredColorScheme(.dark)
     }
 
     private func fail(_ error: Error) { note = error.localizedDescription; noteIsError = true }
@@ -140,8 +142,7 @@ struct SongEditView: View {
         ]
         do {
             let updated = try await api.patch(song.id, changes: changes)
-            server.apply(updated)
-            if library.contains(song.id) { library.update(updated.track) }
+            library.update(updated.track)
             dismiss()
         } catch { fail(error) }
     }
@@ -152,8 +153,7 @@ struct SongEditView: View {
         do {
             let updated = try await api.detectBpm(song.id)
             bpm = updated.bpm.map { String(Int($0.rounded())) } ?? ""
-            server.apply(updated)
-            if library.contains(song.id) { library.update(updated.track) }
+            library.update(updated.track)
         } catch { fail(error) }
     }
 
@@ -176,10 +176,10 @@ struct SongEditView: View {
         defer { saving = false }
         do {
             try await api.delete(song.id)
-            server.forget(song.id)
+            library.remove(song.id)
             dismiss()
         } catch let e as APIError {
-            if case .http(404, _) = e { server.forget(song.id); dismiss() } else { fail(e) }
+            if case .http(404, _) = e { library.remove(song.id); dismiss() } else { fail(e) }
         } catch { fail(error) }
     }
 }

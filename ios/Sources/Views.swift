@@ -1,203 +1,128 @@
 import SwiftUI
 
-enum AppTab: Hashable { case library, add, playback, settings }
+enum AppTab: Hashable, CaseIterable {
+    case library, add, playback, settings
+
+    var title: String {
+        switch self { case .library: "Library"; case .add: "Add"; case .playback: "Playback"; case .settings: "Settings" }
+    }
+    var symbol: String {
+        switch self {
+        case .library: "music.note.list"
+        case .add: "plus"
+        case .playback: "play.fill"
+        case .settings: "gearshape"
+        }
+    }
+}
 
 struct RootView: View {
     @EnvironmentObject var player: PlayerService
+    @EnvironmentObject var settings: Settings
+    @EnvironmentObject var server: ServerLink
     @State private var tab = AppTab.library
 
     var body: some View {
-        TabView(selection: $tab) {
-            LibraryView().miniPlayerInset(show: true) { tab = .playback }
-                .tabItem { Label("Library", systemImage: "music.note.list") }.tag(AppTab.library)
-            AddView(openPlayback: { tab = .playback }).miniPlayerInset(show: true) { tab = .playback }
-                .tabItem { Label("Add", systemImage: "plus.circle") }.tag(AppTab.add)
-            PlaybackView()
-                .tabItem { Label("Playback", systemImage: "play.circle") }.tag(AppTab.playback)
-                .badge(player.queue.count)
-            SettingsView().miniPlayerInset(show: true) { tab = .playback }
-                .tabItem { Label("Settings", systemImage: "gear") }.tag(AppTab.settings)
+        ZStack {
+            page(.library) { LibraryView() }
+            page(.add) { AddView(openPlayback: { tab = .playback }) }
+            page(.playback) { PlaybackView() }
+            page(.settings) { SettingsView() }
         }
-        .tint(Theme.cyan)
-        .preferredColorScheme(.dark)
-        .toolbarBackground(Theme.panel, for: .tabBar)
-        .toolbarBackground(.visible, for: .tabBar)
-    }
-}
-
-private struct MiniPlayerInset: ViewModifier {
-    @EnvironmentObject var player: PlayerService
-    let show: Bool
-    let onTap: () -> Void
-
-    func body(content: Content) -> some View {
-        content.safeAreaInset(edge: .bottom, spacing: 0) {
-            if show, player.current != nil {
-                MiniPlayer().onTapGesture(perform: onTap).padding(.bottom, 20)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            VStack(spacing: DS.Space.space2) {
+                if tab != .playback, player.current != nil { MiniPlayer { tab = .playback } }
+                DSTabBar(selection: $tab)
             }
+            .padding(.horizontal, DS.Space.space4).padding(.top, DS.Space.space2).padding(.bottom, DS.Space.space2)
+            .ignoresSafeArea(.keyboard)
         }
+        .dynamicTypeSize(...DynamicTypeSize.accessibility2)
+        .task { await server.check(settings: settings) }
     }
 }
 
-extension View {
-    func miniPlayerInset(show: Bool, onTap: @escaping () -> Void) -> some View { modifier(MiniPlayerInset(show: show, onTap: onTap)) }
+extension RootView {
+    /// All four screens stay alive so an Add in progress survives a tab switch.
+    fileprivate func page<V: View>(_ t: AppTab, @ViewBuilder _ content: () -> V) -> some View {
+        content()
+            .opacity(tab == t ? 1 : 0)
+            .allowsHitTesting(tab == t)
+            .accessibilityHidden(tab != t)
+            .zIndex(tab == t ? 1 : 0)
+    }
 }
 
-struct TrackRow: View {
-    let title: String
-    let subtitle: String
-    let thumbnail: String?
-    var highlighted = false
+/// Floating tab bar: a surface slab with the active item in an accent-tint pill.
+struct DSTabBar: View {
+    @Binding var selection: AppTab
 
     var body: some View {
-        HStack(spacing: 12) {
-            CoverImage(source: thumbnail)
-            .frame(width: 48, height: 48)
-            .clipShape(RoundedRectangle(cornerRadius: 3))
-            .overlay(RoundedRectangle(cornerRadius: 3).stroke(Theme.chromeEdge, lineWidth: 1))
-            VStack(alignment: .leading) {
-                Text(title).lineLimit(1).foregroundStyle(highlighted ? Theme.cyan : Theme.label)
-                Text(subtitle).font(.caption).foregroundStyle(Theme.labelDim).lineLimit(1)
+        HStack(spacing: 0) {
+            ForEach(AppTab.allCases, id: \.self) { tab in
+                let active = tab == selection
+                Button { selection = tab } label: {
+                    VStack(spacing: DS.Space.space1) {
+                        Image(systemName: tab.symbol).font(.system(size: 22, weight: active ? .semibold : .regular))
+                            .foregroundStyle(active ? DS.Color.accent : DS.Color.inkMuted)
+                            .frame(height: 24)
+                        Text(tab.title).font(.caption.weight(.medium)).lineLimit(1).minimumScaleFactor(0.7)
+                            .foregroundStyle(active ? DS.Color.accentInk : DS.Color.inkMuted)
+                    }
+                    .frame(maxWidth: .infinity, minHeight: DS.Space.hit + DS.Space.space2)
+                    .background(RoundedRectangle(cornerRadius: DS.Radius.radiusCard, style: .continuous)
+                        .fill(active ? DS.Color.accentTint : Color.clear))
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(tab.title)
+                .accessibilityAddTraits(active ? [.isSelected, .isButton] : .isButton)
             }
-            if highlighted { Spacer(minLength: 0); LED(on: true, color: Theme.cyan) }
         }
+        .padding(6)
+        .dsSlab(radius: DS.Radius.radiusTray)
     }
-}
-
-func formatTime(_ seconds: Double) -> String {
-    let s = Int(max(seconds, 0))
-    return String(format: "%d:%02d", s / 60, s % 60)
 }
 
 struct MiniPlayer: View {
     @EnvironmentObject var player: PlayerService
+    let open: () -> Void
 
     var body: some View {
-        VStack(spacing: 0) {
-            Rectangle().fill(Theme.chromeEdge).frame(height: 1.5)
-            GeometryReader { geo in
-                Rectangle().fill(Theme.cyan)
-                    .frame(width: geo.size.width * min(1, player.position / max(player.duration, 1)))
+        HStack(spacing: DS.Space.space3) {
+            CoverImage(source: player.current?.thumbnail)
+                .frame(width: 44, height: 44)
+                .clipShape(RoundedRectangle(cornerRadius: DS.Radius.radiusSm, style: .continuous))
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 0) {
+                Text(player.current?.title ?? "").font(T.headline).foregroundStyle(DS.Color.ink).lineLimit(1)
+                Text(player.current?.artist ?? "").font(T.caption).foregroundStyle(DS.Color.inkMuted).lineLimit(1)
             }
-            .frame(height: 2).background(Color.white.opacity(0.1)).accessibilityHidden(true)
-            HStack(spacing: 10) {
-                LED(on: player.isPlaying, color: Theme.red)
-                VStack(alignment: .leading) {
-                    Text(player.current?.title ?? "").lineLimit(1).foregroundStyle(Theme.label)
-                    Text(player.current?.artist ?? "").font(.caption).foregroundStyle(Theme.labelDim).lineLimit(1)
-                }
-                Spacer(minLength: 0)
-                PianoButton(action: { player.previous() }) { Image(systemName: "backward.fill") }
-                    .accessibilityLabel("Previous")
-                PianoButton(lit: player.isPlaying, action: { player.toggle() }) {
-                    Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
-                }
-                .accessibilityLabel(player.isPlaying ? "Pause" : "Play")
-                PianoButton(action: { player.next() }) { Image(systemName: "forward.fill") }
-                    .accessibilityLabel("Next")
+            Spacer(minLength: 0)
+            Button { player.toggle() } label: {
+                Image(systemName: player.isPlaying ? "pause.fill" : "play.fill").font(.system(size: 22))
+                    .foregroundStyle(DS.Color.ink).frame(width: DS.Space.hit, height: DS.Space.hit)
             }
-            .padding(.horizontal).padding(.vertical, 6)
+            .accessibilityLabel(player.isPlaying ? "Pause" : "Play")
+            Button { player.next() } label: {
+                Image(systemName: "forward.end.fill").font(.system(size: 22))
+                    .foregroundStyle(DS.Color.ink).frame(width: DS.Space.hit, height: DS.Space.hit)
+            }
+            .accessibilityLabel("Next song")
         }
-        .background(Theme.panel)
+        .padding(.horizontal, DS.Space.space3).padding(.vertical, DS.Space.space2)
         .contentShape(Rectangle())
-    }
-}
-
-private struct Tonearm: View {
-    let angle: Double
-
-    var body: some View {
-        GeometryReader { geo in
-            let w = geo.size.width
-            let pivot = CGPoint(x: w * 0.92, y: w * 0.08)
-            let len = w * 0.78
-            ZStack {
-                Canvas { ctx, _ in
-                    var arm = Path()
-                    arm.move(to: pivot)
-                    arm.addLine(to: CGPoint(x: pivot.x, y: pivot.y + len))
-                    ctx.stroke(arm, with: .color(.black.opacity(0.4)), lineWidth: w * 0.03)
-                    ctx.stroke(arm, with: .linearGradient(Gradient(colors: [.white, Color(white: 0.5), .white]),
-                                                          startPoint: CGPoint(x: pivot.x - 4, y: 0),
-                                                          endPoint: CGPoint(x: pivot.x + 4, y: 0)), lineWidth: w * 0.018)
-                    let head = CGRect(x: pivot.x - w * 0.03, y: pivot.y + len - w * 0.02, width: w * 0.06, height: w * 0.1)
-                    ctx.fill(Path(roundedRect: head, cornerRadius: 2), with: .color(Color(white: 0.12)))
-                    ctx.stroke(Path(roundedRect: head, cornerRadius: 2), with: .color(.white.opacity(0.8)), lineWidth: 1)
-                    let base = CGRect(x: pivot.x - w * 0.07, y: pivot.y - w * 0.07, width: w * 0.14, height: w * 0.14)
-                    ctx.fill(Path(ellipseIn: base), with: .color(Color(white: 0.1)))
-                    ctx.stroke(Path(ellipseIn: base), with: .color(.white.opacity(0.85)), lineWidth: 2)
-                    let cap = base.insetBy(dx: w * 0.04, dy: w * 0.04)
-                    ctx.fill(Path(ellipseIn: cap), with: .linearGradient(Gradient(colors: [.white, Color(white: 0.4)]),
-                                                                          startPoint: cap.origin, endPoint: CGPoint(x: cap.maxX, y: cap.maxY)))
-                }
-                .frame(width: w, height: w)
-                .rotationEffect(.degrees(angle), anchor: UnitPoint(x: 0.92, y: 0.08))
-                .animation(.easeInOut(duration: 0.9), value: angle)
-            }
-        }
-        .accessibilityHidden(true)
-    }
-}
-
-struct Turntable: View {
-    @EnvironmentObject var player: PlayerService
-    @State private var base = 0.0
-    @State private var started: Date?
-    private let rpm = 33.3 * 360 / 60
-
-    private func angle(at date: Date) -> Double {
-        base + (started.map { date.timeIntervalSince($0) } ?? 0) * rpm
-    }
-
-    var body: some View {
-        let progress = min(1, player.position / max(player.duration, 1))
-        let arm = player.isPlaying ? 20 + 14 * progress : 0
-        ZStack {
-            RoundedRectangle(cornerRadius: 6).fill(Theme.panel)
-                .overlay(RoundedRectangle(cornerRadius: 6).stroke(Theme.chromeEdge, lineWidth: 2))
+        .onTapGesture(perform: open)
+        .overlay(alignment: .bottomLeading) {
             GeometryReader { geo in
-                let d = geo.size.width * 0.86
-                TimelineView(.animation(paused: started == nil)) { ctx in
-                    Platter(art: player.current?.thumbnail)
-                        .frame(width: d, height: d)
-                        .rotationEffect(.degrees(angle(at: ctx.date)))
-                }
-                .position(x: geo.size.width * 0.5, y: geo.size.height * 0.5)
+                Rectangle().fill(DS.Color.accent)
+                    .frame(width: geo.size.width * min(1, player.position / max(player.duration, 1)), height: 3)
+                    .frame(maxHeight: .infinity, alignment: .bottom)
             }
-            Tonearm(angle: arm)
+            .accessibilityHidden(true)
         }
-        .aspectRatio(1, contentMode: .fit)
-        .frame(maxWidth: 340)
-        .onAppear { if player.isPlaying { started = Date() } }
-        .onChange(of: player.isPlaying) { _, playing in
-            if playing { started = Date() }
-            else { base = angle(at: Date()).truncatingRemainder(dividingBy: 360); started = nil }
-        }
-        .accessibilityHidden(true)
-    }
-}
-
-private struct Platter: View {
-    let art: String?
-
-    var body: some View {
-        GeometryReader { geo in
-            let d = geo.size.width
-            ZStack {
-                Circle().fill(Theme.chrome)
-                Circle().stroke(style: StrokeStyle(lineWidth: d * 0.025, dash: [1.5, 2.5]))
-                    .foregroundStyle(.black.opacity(0.6)).padding(d * 0.0125)
-                Circle().fill(Color(white: 0.09)).padding(d * 0.03)
-                ForEach(0..<9, id: \.self) { i in
-                    Circle().stroke(Color.white.opacity(0.05), lineWidth: 1).padding(d * (0.06 + 0.04 * Double(i)))
-                }
-                Circle().fill(AngularGradient(colors: [.white.opacity(0.0), .white.opacity(0.1), .white.opacity(0.0),
-                                                       .white.opacity(0.1), .white.opacity(0.0)], center: .center))
-                    .padding(d * 0.05)
-                CoverImage(source: art)
-                .frame(width: d * 0.34, height: d * 0.34).clipShape(Circle())
-                Circle().fill(Theme.chrome).frame(width: d * 0.04, height: d * 0.04)
-            }
-        }
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.radiusCard, style: .continuous))
+        .dsSlab()
+        .accessibilityElement(children: .contain)
     }
 }

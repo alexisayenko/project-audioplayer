@@ -73,17 +73,10 @@ struct APIClient {
         return try JSONDecoder().decode([SearchResult].self, from: data)
     }
 
-    func library() async throws -> [ServerSong] {
-        var req = try await request("/library")
-        req.timeoutInterval = 15
-        let (data, response) = try await URLSession.shared.data(for: req)
-        try check(response, data: data)
-        return try JSONDecoder().decode(ServerLibraryResponse.self, from: data).songs
-    }
-
-    /// Copies an audio file that is already on the server into the app.
-    func downloadFile(_ track: Track) async throws {
-        let (tmp, response) = try await URLSession.shared.download(for: try await request("/files/\(track.id)"))
+    /// Copies an audio file that is already on the server into the app, reporting 0...1 as it arrives.
+    func downloadFile(_ track: Track, onProgress: @escaping @Sendable (Double) -> Void = { _ in }) async throws {
+        let (tmp, response) = try await URLSession.shared.download(for: try await request("/files/\(track.id)"),
+                                                                   delegate: ProgressDelegate(onProgress))
         try check(response)
         try? FileManager.default.removeItem(at: track.fileURL)
         try FileManager.default.moveItem(at: tmp, to: track.fileURL)
@@ -150,4 +143,17 @@ struct APIClient {
     func delete(_ id: String) async throws {
         _ = try await send("/songs/\(id)", method: "DELETE")
     }
+}
+
+private final class ProgressDelegate: NSObject, URLSessionDownloadDelegate, @unchecked Sendable {
+    private let onProgress: @Sendable (Double) -> Void
+    init(_ onProgress: @escaping @Sendable (Double) -> Void) { self.onProgress = onProgress }
+
+    func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didWriteData bytesWritten: Int64,
+                    totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
+        guard totalBytesExpectedToWrite > 0 else { return }
+        onProgress(Double(totalBytesWritten) / Double(totalBytesExpectedToWrite))
+    }
+
+    func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {}
 }

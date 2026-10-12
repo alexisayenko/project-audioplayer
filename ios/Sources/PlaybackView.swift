@@ -4,6 +4,7 @@ struct PlaybackView: View {
     @EnvironmentObject var player: PlayerService
     @EnvironmentObject var library: LibraryStore
     @State private var showTags = false
+    @State private var showQueue = false
     @State private var toast: String?
 
     private var current: Track? { player.current }
@@ -12,92 +13,84 @@ struct PlaybackView: View {
         [t.artist, t.album, t.year.map(String.init)].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: ", ")
     }
 
+    private var upNext: [Track] {
+        guard let i = player.index, i + 1 < player.queue.count else { return [] }
+        return Array(player.queue[(i + 1)...].prefix(2))
+    }
+
     var body: some View {
-        NavigationStack {
-            List {
-                Group {
-                    VStack(spacing: 12) {
-                        Turntable()
-                        details
-                        VStack(spacing: 2) {
-                            Slider(value: Binding(get: { player.position }, set: { player.seek(to: $0) }),
-                                   in: 0...max(player.duration, 1))
-                                .tint(Theme.cyan).disabled(current == nil)
-                            HStack {
-                                Text(formatTime(player.position))
-                                Spacer()
-                                Text(formatTime(player.duration))
-                            }
-                            .font(.caption.monospacedDigit()).foregroundStyle(Theme.labelDim)
-                        }
-                        controlPanel
-                        playlistPanel
-                    }
+        ScrollView {
+            VStack(alignment: .leading, spacing: DS.Space.space4) {
+                ScreenHeader(title: "Now playing", subtitle: nil) { menu }
+                HStack(spacing: DS.Space.space2) {
+                    Image(systemName: "checkmark").font(T.caption.weight(.bold)).foregroundStyle(DS.Color.accentInk)
+                    Text("Playing from this iPhone").font(T.subhead).foregroundStyle(DS.Color.inkMuted)
                 }
-                .listRowBackground(Color.clear).listRowSeparator(.hidden)
-                Section {
-                    if player.queue.isEmpty {
-                        Text("Queue is empty. Add songs from Library.").foregroundStyle(Theme.labelDim)
-                            .listRowBackground(Color.clear)
-                    }
-                    ForEach(Array(player.queue.enumerated()), id: \.element.id) { i, track in
-                        Button { player.jump(to: i) } label: {
-                            VStack(alignment: .leading, spacing: 4) {
-                                HStack {
-                                    TrackRow(title: track.title, subtitle: subtitle(track), thumbnail: track.thumbnail,
-                                             highlighted: i == player.index)
-                                    Spacer(minLength: 0)
-                                    if let d = track.duration {
-                                        Text(formatTime(d)).font(.caption.monospacedDigit()).foregroundStyle(Theme.labelDim)
-                                    }
-                                }
-                                if let tags = track.tags, !tags.isEmpty { TagList(tags: tags) }
-                            }
-                        }
-                        .panelRow()
-                    }
-                    .onDelete { player.removeFromQueue(at: $0) }
-                } header: { Text("Queue · ОЧЕРЕДЬ").panelLabel() }
+                .accessibilityElement(children: .combine)
+                Deck()
+                details
+                progress
+                TransportTray(playing: player.isPlaying, shuffle: player.shuffle, repeatMode: player.repeatMode,
+                              onShuffle: { player.shuffle.toggle() }, onPrevious: { player.previous() },
+                              onToggle: { player.toggle() }, onNext: { player.next() },
+                              onRepeat: { player.repeatMode = player.repeatMode == .off ? .all : player.repeatMode == .all ? .one : .off })
+                volume
+                upNextCard
             }
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
-            .background(WoodBackground())
-            .navigationTitle("Playback")
-            .navigationBarTitleDisplayMode(.inline)
-            .woodBar(.navigationBar)
-            .overlay(alignment: .top) {
-                if let toast {
-                    Text(toast).font(.footnote).padding(8).foregroundStyle(Theme.label).background(Theme.panelRaised)
-                        .clipShape(Capsule()).overlay(Capsule().stroke(Theme.chromeEdge, lineWidth: 1))
-                        .task(id: toast) { try? await Task.sleep(for: .seconds(2)); self.toast = nil }
-                }
-            }
-            .sheet(isPresented: $showTags) {
-                TagPickerSheet { picks in
-                    let n = player.addTagged(picks, from: library.tracks)
-                    toast = n == 0 ? "No new songs for these tags" : "Added \(n) \(n == 1 ? "song" : "songs")"
-                }
+            .padding(.horizontal, DS.Space.space4).padding(.top, DS.Space.space2).padding(.bottom, DS.Space.space4)
+        }
+        .dsGround()
+        .overlay(alignment: .top) {
+            if let toast {
+                Text(toast).font(T.caption).foregroundStyle(DS.Color.ink)
+                    .padding(.horizontal, DS.Space.space3).padding(.vertical, DS.Space.space2)
+                    .dsSlab(radius: DS.Radius.radiusPill)
+                    .task(id: toast) { try? await Task.sleep(for: .seconds(2)); self.toast = nil }
             }
         }
+        .sheet(isPresented: $showTags) {
+            TagPickerSheet { picks in
+                let n = player.addTagged(picks, from: library.tracks)
+                toast = n == 0 ? "No new songs for these tags" : "Added \(n) \(n == 1 ? "song" : "songs")"
+            }
+        }
+        .sheet(isPresented: $showQueue) { QueueSheet() }
+    }
+
+    private var menu: some View {
+        Menu {
+            Button { showQueue = true } label: { Label("Queue", systemImage: "list.bullet") }
+            Button { showTags = true } label: { Label("Add songs by tag", systemImage: "tag") }
+            Button { player.skip(by: -5) } label: { Label("Back 5 seconds", systemImage: "gobackward.5") }
+            Button { player.skip(by: 5) } label: { Label("Forward 5 seconds", systemImage: "goforward.5") }
+            Button(role: .destructive) { player.clearQueue() } label: { Label("Clear queue", systemImage: "trash") }
+        } label: {
+            Image(systemName: "ellipsis").font(.system(size: 20)).foregroundStyle(DS.Color.ink)
+                .frame(width: DS.Space.hit, height: DS.Space.hit)
+                .dsSlab(radius: DS.Radius.radiusPill)
+        }
+        .accessibilityLabel("More")
     }
 
     private var details: some View {
-        VStack(spacing: 6) {
+        VStack(alignment: .leading, spacing: 2) {
             if let t = current {
-                Text(t.title).font(.title3.bold()).lineLimit(2).foregroundStyle(Theme.label)
-                Text(subtitle(t)).foregroundStyle(Theme.labelDim)
-                if let tags = t.tags, !tags.isEmpty { TagList(tags: tags).frame(maxWidth: .infinity, alignment: .center) }
-                HStack(spacing: 12) {
-                    if let bpm = t.bpm { Text("\(Int(bpm.rounded())) BPM").font(.caption.weight(.semibold)).foregroundStyle(Theme.labelDim) }
+                Text(t.title).font(T.title).foregroundStyle(DS.Color.ink).lineLimit(3)
+                Text(subtitle(t)).font(T.body).foregroundStyle(DS.Color.inkMuted)
+                if let tags = t.tags, !tags.isEmpty { TagList(tags: tags).padding(.top, DS.Space.space2) }
+                HStack(spacing: DS.Space.space3) {
+                    if let bpm = t.bpm { Text("\(Int(bpm.rounded())) BPM").font(T.time).foregroundStyle(DS.Color.inkMuted) }
                     ForEach(links(t), id: \.0) { label, url in
-                        Link(label, destination: url).font(.caption.weight(.semibold)).foregroundStyle(Theme.cyan)
+                        Link(label, destination: url).font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.accentInk)
+                            .frame(minHeight: DS.Space.hit)
                     }
                 }
             } else {
-                Text("Nothing playing").foregroundStyle(Theme.labelDim)
+                Text("Nothing playing").font(T.title).foregroundStyle(DS.Color.ink)
+                Text("Pick a song in Library.").font(T.body).foregroundStyle(DS.Color.inkMuted)
             }
         }
-        .multilineTextAlignment(.center)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func links(_ t: Track) -> [(String, URL)] {
@@ -108,71 +101,112 @@ struct PlaybackView: View {
             }
     }
 
-    private var controlPanel: some View {
-        HStack(alignment: .center, spacing: 16) {
-            RotaryKnob(value: Binding(get: { player.volume }, set: { player.volume = $0 }),
-                       title: "Volume", cyrillic: "ГРОМКОСТЬ")
-            VStack(spacing: 6) {
-                HStack(spacing: 6) {
-                    LED(on: player.isPlaying, color: Theme.red)
-                    Text("Play · СЕТЬ").font(.system(size: 10, weight: .semibold, design: .rounded)).foregroundStyle(Theme.labelDim)
-                    Spacer(minLength: 0)
-                }
-                HStack(spacing: 6) {
-                    PianoButton(action: { player.previous() }) { Image(systemName: "backward.fill") }
-                        .accessibilityLabel("Previous song")
-                    PianoButton(tint: Theme.red, action: { player.toggle() }) {
-                        Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
-                    }
-                    .accessibilityLabel(player.isPlaying ? "Pause" : "Play")
-                    PianoButton(action: { player.next() }) { Image(systemName: "forward.fill") }
-                        .accessibilityLabel("Next song")
-                }
-                HStack(spacing: 6) {
-                    PianoButton(action: { player.skip(by: -5) }) { Image(systemName: "gobackward.5") }
-                        .accessibilityLabel("Back 5 seconds")
-                    PianoButton(action: { player.skip(by: 5) }) { Image(systemName: "goforward.5") }
-                        .accessibilityLabel("Forward 5 seconds")
-                }
+    private var progress: some View {
+        VStack(spacing: 0) {
+            DSSlider(value: Binding(get: { player.position }, set: { player.seek(to: $0) }),
+                     range: 0...max(player.duration, 1), label: "Position", disabled: current == nil) { formatTime($0) }
+            HStack {
+                Text(formatTime(player.position))
+                Spacer()
+                Text("-" + formatTime(max(player.duration - player.position, 0)))
             }
+            .font(T.time).foregroundStyle(DS.Color.inkMuted).accessibilityHidden(true)
         }
-        .padding(12)
-        .background(RoundedRectangle(cornerRadius: 6).fill(Theme.panel))
-        .overlay(RoundedRectangle(cornerRadius: 6).stroke(Theme.chromeEdge, lineWidth: 1.5))
     }
 
-    private var playlistPanel: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 6) {
-                PianoButton(lit: player.shuffle, action: { player.shuffle.toggle() }) { Image(systemName: "shuffle") }
-                    .accessibilityLabel("Shuffle: \(player.shuffle ? "on" : "off")")
-                PianoButton(lit: player.repeatMode == .one, action: { player.repeatMode = player.repeatMode == .one ? .off : .one }) {
-                    Image(systemName: "repeat.1")
-                }
-                .accessibilityLabel("Loop one song: \(player.repeatMode == .one ? "on" : "off")")
-                PianoButton(lit: player.repeatMode == .all, action: { player.repeatMode = player.repeatMode == .all ? .off : .all }) {
-                    Image(systemName: "repeat")
-                }
-                .accessibilityLabel("Loop whole list: \(player.repeatMode == .all ? "on" : "off")")
-                PianoButton(action: { player.clearQueue() }) { Text("Clean").font(.caption.smallCaps().weight(.semibold)) }
-                    .accessibilityLabel("Clean playlist")
-                PianoButton(action: { showTags = true }) { Image(systemName: "tag") }
-                    .accessibilityLabel("Add songs by tag")
-                Spacer(minLength: 0)
+    private var volume: some View {
+        HStack(spacing: DS.Space.space3) {
+            ZStack {
+                Circle().fill(DS.Color.chrome)
+                Circle().strokeBorder(DS.Color.surfaceSunken, lineWidth: 3)
+                Capsule().fill(DS.Color.ink).frame(width: 2, height: 12).offset(y: -10)
+                    .rotationEffect(.degrees(-135 + player.volume * 270))
             }
-            if !player.queueTags.isEmpty {
-                FlowLayout {
-                    ForEach(player.queueTags, id: \.self) { t in
-                        TagChip(text: tagLabel(t), on: true, removable: true) { player.removeQueueTag(t) }
-                    }
-                }
+            .frame(width: 40, height: 40).accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 0) {
+                Text("Volume").dsCaption()
+                Text("\(Int(player.volume * 100))%").font(T.headline).foregroundStyle(DS.Color.ink)
             }
-            Text("\(player.queue.count) \(player.queue.count == 1 ? "song" : "songs")").panelLabel()
+            .fixedSize()
+            DSSlider(value: Binding(get: { player.volume }, set: { player.volume = $0 }), label: "Volume")
         }
-        .padding(12)
+    }
+
+    private var upNextCard: some View {
+        VStack(alignment: .leading, spacing: DS.Space.space2) {
+            HStack {
+                Text("Up next").font(T.headline).foregroundStyle(DS.Color.ink)
+                Spacer()
+                Button { showQueue = true } label: {
+                    Text("Queue (\(player.queue.count))").font(T.subhead.weight(.semibold)).foregroundStyle(DS.Color.accentInk)
+                        .frame(minHeight: DS.Space.hit)
+                }
+            }
+            if upNext.isEmpty {
+                Text(player.queue.isEmpty ? "Queue is empty. Add songs from Library." : "Nothing after this song.")
+                    .font(T.subhead).foregroundStyle(DS.Color.inkMuted)
+            }
+            ForEach(upNext) { t in
+                HStack(spacing: DS.Space.space3) {
+                    CoverImage(source: t.thumbnail).frame(width: 40, height: 40)
+                        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.radiusSm, style: .continuous))
+                        .accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text(t.title).font(T.subhead.weight(.semibold)).foregroundStyle(DS.Color.ink).lineLimit(1)
+                        Text(t.artist).font(T.caption).foregroundStyle(DS.Color.inkMuted).lineLimit(1)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .accessibilityElement(children: .combine)
+            }
+        }
+        .padding(.horizontal, DS.Space.space4).padding(.vertical, DS.Space.space3)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 6).fill(Theme.panel))
-        .overlay(RoundedRectangle(cornerRadius: 6).stroke(Theme.chromeEdge, lineWidth: 1.5))
+        .dsSlab()
+    }
+}
+
+/// The whole queue: jump to a song, swipe to remove, clear.
+private struct QueueSheet: View {
+    @EnvironmentObject var player: PlayerService
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                if player.queue.isEmpty {
+                    Text("Queue is empty. Add songs from Library.").font(T.body).foregroundStyle(DS.Color.inkMuted)
+                        .listRowBackground(Color.clear)
+                }
+                if !player.queueTags.isEmpty {
+                    FlowLayout {
+                        ForEach(player.queueTags, id: \.self) { t in
+                            TagChip(text: tagLabel(t), on: true, removable: true) { player.removeQueueTag(t) }
+                        }
+                    }
+                    .listRowBackground(Color.clear)
+                }
+                ForEach(Array(player.queue.enumerated()), id: \.element.id) { i, track in
+                    Button { player.jump(to: i) } label: {
+                        SongRow(title: track.title, subtitle: track.artist, thumbnail: track.thumbnail, duration: track.duration,
+                                playing: i == player.index, coverSize: 48)
+                    }
+                    .buttonStyle(.plain)
+                    .listRowInsets(EdgeInsets()).listRowBackground(i == player.index ? DS.Color.accentTint : DS.Color.surface)
+                    .listRowSeparatorTint(DS.Color.line)
+                }
+                .onDelete { player.removeFromQueue(at: $0) }
+            }
+            .listStyle(.plain).scrollContentBackground(.hidden).dsGround()
+            .navigationTitle("Queue").navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Clear") { player.clearQueue() }.foregroundStyle(DS.Color.accentInk).disabled(player.queue.isEmpty)
+                }
+                ToolbarItem(placement: .topBarTrailing) { Button("Done") { dismiss() }.foregroundStyle(DS.Color.accentInk) }
+            }
+        }
+        .presentationDetents([.medium, .large])
     }
 }
 
@@ -188,10 +222,10 @@ private struct TagPickerSheet: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 12) {
-                    if groups.isEmpty { Text("No tags on the phone yet.").foregroundStyle(Theme.labelDim) }
+                VStack(alignment: .leading, spacing: DS.Space.space3) {
+                    if groups.isEmpty { Text("No tags on the phone yet.").font(T.body).foregroundStyle(DS.Color.inkMuted) }
                     ForEach(groups) { g in
-                        Text(g.name).panelLabel()
+                        SectionLabel(g.name)
                         FlowLayout {
                             ForEach(g.tags, id: \.tag) { t in
                                 let on = picks.contains { $0.lowercased() == t.tag.lowercased() }
@@ -202,21 +236,18 @@ private struct TagPickerSheet: View {
                         }
                     }
                 }
-                .padding()
+                .padding(DS.Space.space4)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .panelBackground()
-            .navigationTitle("Add songs by tag")
-            .navigationBarTitleDisplayMode(.inline)
-            .woodBar(.navigationBar)
+            .dsGround()
+            .navigationTitle("Add songs by tag").navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.tint(.white) }
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.foregroundStyle(DS.Color.accentInk) }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Add") { onAdd(picks); dismiss() }.tint(.white).disabled(picks.isEmpty)
+                    Button("Add") { onAdd(picks); dismiss() }.foregroundStyle(DS.Color.accentInk).disabled(picks.isEmpty)
                 }
             }
         }
-        .preferredColorScheme(.dark)
         .presentationDetents([.medium, .large])
     }
 }

@@ -39,6 +39,11 @@ final class LibraryStore: ObservableObject {
         save()
     }
 
+    func remove(_ id: String) {
+        guard let i = tracks.firstIndex(where: { $0.id == id }) else { return }
+        remove(at: IndexSet(integer: i))
+    }
+
     func remove(at offsets: IndexSet) {
         for index in offsets {
             try? FileManager.default.removeItem(at: tracks[index].fileURL)

@@ -30,23 +30,23 @@ device unless a line says so.
 
 ## Library
 
-- IOS-030 MUST: Library has a Phone / Server switch. Phone lists downloaded songs; Server lists `GET /library`, cached for offline viewing, with a reachability line. Status: implemented
-- IOS-031 MUST: on the Server list a song can be downloaded per song (swipe) or all missing ones with "Download all N" (progress shown). Status: implemented
-- IOS-032 MUST: tag chips filter, search and sort as in LIB specs; with a filter or search active "Add all N" appends the listed songs to the queue. Status: implemented
-- IOS-033 MUST: swipe offers Play next, Queue, Edit and, for a downloaded song, Delete (removes the phone copy only). Status: implemented
-- IOS-034 MUST: the song edit screen saves with `PATCH /songs/{id}`, re-detects BPM, fills from Wikipedia links and deletes the song from the server (`DELETE`); a phone copy stays. Status: implemented (not yet tested live on a device)
+- IOS-030 MUST: Library is the phone only: it lists the downloaded songs, with no Phone / Server switch and no server list; the phone never browses `GET /library` (that stays for the web UI). A row shows the duration, or "Downloading NN%" while its file arrives from the server. The server status LED lives on Add and Settings, not on Library. Status: implemented
+- IOS-031 MUST: the server is only the download pipe behind Add (save, then copy to the phone with progress). There is no "Download all", no per-row On iPhone / Download state. Status: implemented
+- IOS-032 MUST: Library filters with four category chips in one row (Tags, Genres, Years, Countries; plain, `genre:`, `decade:`, `country:`; `lang:` and other keys fold into Tags). A chip opens a bottom filter sheet with that category's values and counts, multi-select (any of within a category, all across categories), Clear, and a button "Show N songs"; a chip with a selection shows the selected count. Search and sort (recently added, title, artist, year) as in LIB specs. Status: implemented
+- IOS-033 MUST: a row's ⋯ menu offers Edit, Play next, Add to queue and Delete from library (removes the phone copy only, after a confirmation). Status: implemented
+- IOS-034 MUST: the song edit screen saves with `PATCH /songs/{id}`, re-detects BPM, fills from Wikipedia links and deletes the song (`DELETE` on the server, then the phone copy). Status: implemented (not yet tested live on a device)
 
 ## Playback and offline
 
 - IOS-040 MUST: playback uses local files only, with `AVPlayer`, background audio and lock-screen controls (`MPNowPlayingInfoCenter`, `MPRemoteCommandCenter`). Status: implemented
-- IOS-041 MUST: Playback shows a rotating platter and a tonearm that follows progress, shuffle, repeat off/all/one, and the queue with tag chips (add by tag, remove by tag, Clean), as in PLY specs. Status: implemented
+- IOS-041 MUST: Playback shows the deck (rotating platter, tonearm that follows progress, red LED), a transport tray (shuffle, previous, play/pause, next, repeat off/all/one), position, volume and an Up next card; the full queue (jump, remove, tag chips, clear) and add-by-tag open from the Queue link and the ⋯ menu. Status: implemented
 - IOS-042 MUST: downloaded songs live in `Documents/audio/` and `Documents/library.json`; cover tokens are never persisted, the auth header is added at request time and stored values are scrubbed on load. Status: implemented
 - IOS-043 SHOULD: server covers show offline. Status: planned (covers are fetched on demand and held only in a memory cache, so they are blank offline after a relaunch)
 
 ## Look
 
-- IOS-050 MUST: the UI follows the Vega 108 look in [`../ui-ux/style-guide.md`](../ui-ux/style-guide.md) (ADR-0007); tokens in `Theme.swift`, components in `Components.swift`. Status: implemented
-- IOS-051 MUST: the app icon is the whole turntable seen from above. Status: implemented
+- IOS-050 MUST: the UI follows the Electrophone design system (ADR-0009, [`../ui-ux/style-guide.md`](../ui-ux/style-guide.md)); all colours, sizes and radii come from `DS.*` in the generated `DesignTokens.swift`, components are in `Components.swift`, no hex or literal colour in other files; day and night follow the system appearance. Status: implemented
+- IOS-051 MUST: the app icon is the record on the platter from the design system (cyan label with teal stripes on a vinyl disc, paper frame, copper rim), 1024 x 1024 without alpha. Status: implemented
 
 ## Distribution
 

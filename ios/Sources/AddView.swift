@@ -70,7 +70,7 @@ final class AddFlow: ObservableObject {
         } catch { wikiNote = error.localizedDescription }
     }
 
-    func save(settings: Settings, library: LibraryStore, server: ServerLibrary) async {
+    func save(settings: Settings, library: LibraryStore, server: ServerLink) async {
         guard let p = preview, phase == .ready || phase == .failed else { return }
         let api = APIClient(baseURL: settings.serverURL, token: settings.token)
         phase = .saving; progress = 0; message = nil
@@ -101,17 +101,18 @@ final class AddFlow: ObservableObject {
             }
         }
         progress = 1
-        await server.refresh(settings: settings)
-        var track = server.songs.first { $0.id == p.id }?.track
-            ?? Track(id: p.id, title: title, artist: artist, duration: p.duration, thumbnail: p.thumbnail,
-                     album: album.isEmpty ? nil : album, year: yearValue, tags: tags, sourceURL: p.source_url)
-        if track.thumbnail == nil { track.thumbnail = p.thumbnail }
+        let wikiS = wikiSong.trimmingCharacters(in: .whitespaces), wikiA = wikiArtist.trimmingCharacters(in: .whitespaces)
+        let track = Track(id: p.id, title: title, artist: artist, duration: p.duration,
+                          thumbnail: p.thumbnail == nil ? nil : "/covers/\(p.id)",
+                          album: album.isEmpty ? nil : album, year: yearValue, tags: finalTags(tags, pending: pendingTag),
+                          bpm: Int(bpm.trimmingCharacters(in: .whitespaces)).map(Double.init), sourceURL: p.source_url,
+                          wikipediaSong: wikiS.isEmpty ? nil : wikiS, wikipediaArtist: wikiA.isEmpty ? nil : wikiA)
         savedTrack = track
         onPhone = await server.download(track, settings: settings, into: library)
         phase = .saved
     }
 
-    func fetchToPhone(settings: Settings, library: LibraryStore, server: ServerLibrary) async {
+    func fetchToPhone(settings: Settings, library: LibraryStore, server: ServerLink) async {
         guard let track = savedTrack else { return }
         onPhone = await server.download(track, settings: settings, into: library)
         if !onPhone { message = "Could not copy to the phone. Try again from Library." }
@@ -130,35 +131,30 @@ struct AddView: View {
     @EnvironmentObject var library: LibraryStore
     @EnvironmentObject var player: PlayerService
     @EnvironmentObject var settings: Settings
-    @EnvironmentObject var server: ServerLibrary
+    @EnvironmentObject var server: ServerLink
     @StateObject private var flow = AddFlow()
     @State private var path: [String] = []
     let openPlayback: () -> Void
 
     private var api: APIClient { APIClient(baseURL: settings.serverURL, token: settings.token) }
-    private var pool: [(tag: String, count: Int)] { tagCounts(server.songs.map { $0.tags ?? [] } + library.tracks.map { $0.tags ?? [] }) }
+    private var pool: [(tag: String, count: Int)] { tagCounts(library.tracks.map { $0.tags ?? [] }) }
     private var busy: Bool { flow.phase == .loading || flow.phase == .saving }
+    private var locked: Bool { flow.phase == .saving || flow.phase == .saved }
 
     var body: some View {
         NavigationStack(path: $path) {
-            Form {
-                linkSection
-                if let p = flow.preview, flow.phase != .idle, flow.phase != .loading { previewSections(p) }
-            }
-            .scrollContentBackground(.hidden)
-            .panelBackground()
-            .tint(Theme.cyan)
-            .foregroundStyle(Theme.label)
-            .scrollDismissesKeyboard(.interactively)
-            .navigationTitle("Add")
-            .navigationBarTitleDisplayMode(.inline)
-            .woodBar(.navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    NavigationLink(value: "search") { Image(systemName: "magnifyingglass") }
-                        .accessibilityLabel("Search YouTube")
+            ScrollView {
+                VStack(alignment: .leading, spacing: DS.Space.space4) {
+                    ScreenHeader(title: "Add music", subtitle: "From a link to your iPhone.")
+                    ServerStatus()
+                    linkSection
+                    if let p = flow.preview, flow.phase != .idle, flow.phase != .loading { previewSections(p) }
                 }
+                .padding(.horizontal, DS.Space.space4).padding(.top, DS.Space.space2).padding(.bottom, DS.Space.space4)
             }
+            .scrollDismissesKeyboard(.interactively)
+            .dsGround()
+            .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(for: String.self) { _ in
                 SearchView { result in
                     flow.url = "https://www.youtube.com/watch?v=\(result.id)"
@@ -166,124 +162,191 @@ struct AddView: View {
                     Task { await flow.loadPreview(api) }
                 }
             }
+            .task { await server.check(settings: settings) }
         }
     }
 
     private var linkSection: some View {
-        Section {
-            TextField("Paste a YouTube link", text: $flow.url)
-                .textInputAutocapitalization(.never).autocorrectionDisabled().keyboardType(.URL)
-                .submitLabel(.go)
-                .onSubmit { Task { await flow.loadPreview(api) } }
-                .onChange(of: flow.url) { old, new in
-                    if new.count - old.count > 1 { let c = cleanPasted(new); if c != new { flow.url = c } }
-                }
-            HStack(spacing: 10) {
-                PianoButton(action: {
+        VStack(alignment: .leading, spacing: DS.Space.space2) {
+            SectionLabel("YouTube link")
+            HStack(spacing: DS.Space.space2) {
+                TextField("Paste a YouTube link", text: $flow.url)
+                    .textInputAutocapitalization(.never).autocorrectionDisabled().keyboardType(.URL)
+                    .submitLabel(.go).font(T.subhead).foregroundStyle(DS.Color.ink)
+                    .onSubmit { Task { await flow.loadPreview(api) } }
+                    .onChange(of: flow.url) { old, new in
+                        if new.count - old.count > 1 { let c = cleanPasted(new); if c != new { flow.url = c } }
+                    }
+                Button {
                     if let s = UIPasteboard.general.string { flow.url = cleanPasted(s) }
-                }) { Label("Paste", systemImage: "doc.on.clipboard") }
-                PianoButton(lit: true, action: { Task { await flow.loadPreview(api) } }) {
-                    if flow.phase == .loading { ProgressView().tint(.black) } else { Text("Preview") }
+                } label: {
+                    Image(systemName: "doc.on.clipboard").foregroundStyle(DS.Color.accentInk)
+                        .frame(width: DS.Space.hit, height: DS.Space.hit)
                 }
+                .accessibilityLabel("Paste")
+                Button { Task { await flow.loadPreview(api) } } label: {
+                    if flow.phase == .loading { ProgressView().tint(DS.Color.ink) } else { Text("Fetch") }
+                }
+                .buttonStyle(DSButtonStyle(kind: .primary))
                 .disabled(busy || flow.url.trimmingCharacters(in: .whitespaces).isEmpty)
             }
-            .buttonStyle(.borderless)
+            .padding(.leading, DS.Space.space4).padding(.trailing, DS.Space.space1).frame(minHeight: 52)
+            .dsSlab(radius: 16)
+            NavigationLink(value: "search") {
+                Label("Search YouTube", systemImage: "magnifyingglass")
+                    .font(T.subhead.weight(.semibold)).foregroundStyle(DS.Color.accentInk).frame(minHeight: DS.Space.hit)
+            }
             if flow.phase == .idle, let m = flow.message { quiet(m, error: true) }
-        } header: { Text("YouTube link · ССЫЛКА").panelLabel() }
-        .listRowBackground(Theme.panelRaised)
+        }
     }
 
     private func quiet(_ text: String, error: Bool = false) -> some View {
-        Label(text, systemImage: error ? "exclamationmark.circle" : "info.circle")
-            .font(.footnote).foregroundStyle(error ? Theme.red : Theme.labelDim)
+        Label {
+            Text(text).font(T.caption).foregroundStyle(error ? DS.Color.ink : DS.Color.inkMuted)
+        } icon: {
+            Image(systemName: error ? "exclamationmark.circle.fill" : "info.circle").foregroundStyle(error ? DS.Color.power : DS.Color.inkMuted)
+        }
+    }
+
+    private func card<C: View>(_ label: String? = nil, @ViewBuilder _ content: () -> C) -> some View {
+        VStack(alignment: .leading, spacing: DS.Space.space2) {
+            if let label { SectionLabel(label) }
+            VStack(alignment: .leading, spacing: DS.Space.space3, content: content)
+                .padding(DS.Space.space4).frame(maxWidth: .infinity, alignment: .leading).dsSlab()
+        }
+    }
+
+    private func labeled(_ label: String, _ text: Binding<String>, keyboard: UIKeyboardType = .default, url: Bool = false) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label).font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.inkMuted)
+            TextField(label, text: text).keyboardType(keyboard)
+                .textInputAutocapitalization(url ? .never : .sentences).autocorrectionDisabled(url).dsField()
+        }
     }
 
     @ViewBuilder
     private func previewSections(_ p: Preview) -> some View {
-        Section {
-            HStack(spacing: 12) {
+        card {
+            HStack(spacing: DS.Space.space3) {
                 CoverImage(source: p.thumbnail).frame(width: 72, height: 72)
-                    .clipShape(RoundedRectangle(cornerRadius: 3))
-                    .overlay(RoundedRectangle(cornerRadius: 3).stroke(Theme.chromeEdge, lineWidth: 1))
-                VStack(alignment: .leading) {
-                    Text(p.title ?? "Untitled").bold().lineLimit(2)
-                    if let d = p.duration { Text(formatTime(d)).font(.caption).foregroundStyle(Theme.labelDim) }
+                    .clipShape(RoundedRectangle(cornerRadius: DS.Radius.radiusSm, style: .continuous))
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(p.title ?? "Untitled").font(T.title).foregroundStyle(DS.Color.ink).lineLimit(3)
+                    if let a = p.artist { Text([a, p.year.map(String.init)].compactMap { $0 }.joined(separator: " · "))
+                        .font(T.subhead).foregroundStyle(DS.Color.inkMuted) }
+                    if let d = p.duration { Text(formatTime(d)).font(T.time).foregroundStyle(DS.Color.inkMuted) }
                 }
             }
             if p.in_library == true {
                 quiet("This song is already in your library.", error: true)
-                if !library.contains(p.id), let s = server.songs.first(where: { $0.id == p.id }) {
-                    Button("Download to phone") {
-                        Task { _ = await server.download(s.track, settings: settings, into: library) }
+                if library.contains(p.id) {
+                    Label("On iPhone", systemImage: "checkmark.circle.fill").font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.ink)
+                } else {
+                    Button("Download to iPhone") {
+                        Task { _ = await server.download(Track(id: p.id, title: p.title ?? "", artist: p.artist ?? "",
+                                                                 duration: p.duration, thumbnail: p.thumbnail == nil ? nil : "/covers/\(p.id)",
+                                                                 album: p.album, year: p.year, tags: p.tags, sourceURL: p.source_url),
+                                                        settings: settings, into: library) }
                     }
-                    .buttonStyle(.borderless)
-                } else if library.contains(p.id) {
-                    Label("On phone", systemImage: "checkmark.circle.fill").foregroundStyle(Theme.green).font(.footnote)
+                    .buttonStyle(DSButtonStyle(kind: .outline))
                 }
-            }
-        } header: { Text("Preview · ПРОСМОТР").panelLabel() }
-        .listRowBackground(Theme.panelRaised)
-
-        Section {
-            TextField("Title", text: $flow.title)
-            TextField("Artist", text: $flow.artist)
-            TextField("Album", text: $flow.album)
-            TextField("Year", text: $flow.year).keyboardType(.numberPad)
-            TextField("BPM (optional, detected after saving)", text: $flow.bpm).keyboardType(.numberPad)
-        } header: { Text("Details · ДАННЫЕ").panelLabel() }
-        .listRowBackground(Theme.panelRaised).disabled(flow.phase == .saving || flow.phase == .saved)
-
-        Section {
-            TextField("Wikipedia: song", text: $flow.wikiSong).wikiField()
-            TextField("Wikipedia: band", text: $flow.wikiArtist).wikiField()
-            Button { Task { await flow.lookupWiki(api) } } label: {
-                HStack { Text("Fill from Wikipedia links"); if flow.wikiBusy { Spacer(); ProgressView() } }
-            }
-            .disabled(flow.wikiBusy)
-            if let n = flow.wikiNote { quiet(n) }
-        } header: { Text("Wikipedia").panelLabel() }
-        .listRowBackground(Theme.panelRaised).disabled(flow.phase == .saving || flow.phase == .saved)
-
-        Section {
-            TagEditor(tags: $flow.tags, suggested: $flow.suggested, pool: pool, input: $flow.pendingTag)
-        } header: { Text("Tags · ТЕГИ").panelLabel() }
-        .listRowBackground(Theme.panelRaised).disabled(flow.phase == .saving || flow.phase == .saved)
-
-        Section {
-            switch flow.phase {
-            case .saving:
-                ProgressView(value: flow.progress).tint(Theme.cyan)
-                quiet("Downloading on the server, \(Int(flow.progress * 100))%")
-            case .saved:
-                Label("Saved to your library.", systemImage: "checkmark.circle.fill").foregroundStyle(Theme.green)
-                if !flow.onPhone {
-                    quiet("Saved on the server; not yet on the phone.", error: true)
-                    Button("Download to phone") {
-                        Task { await flow.fetchToPhone(settings: settings, library: library, server: server) }
-                    }.buttonStyle(.borderless)
-                } else if let t = flow.savedTrack {
-                    HStack(spacing: 10) {
-                        PianoButton(lit: true, action: { player.playNow(t) }) { Label("Play now", systemImage: "play.fill") }
-                        PianoButton(action: openPlayback) { Text("Playback") }
-                        PianoButton(action: { flow.reset() }) { Text("Add another") }
-                    }
-                    .buttonStyle(.borderless)
-                }
-            default:
-                if let m = flow.message { quiet(m, error: true) }
-                PianoButton(lit: true, action: {
-                    Task { await flow.save(settings: settings, library: library, server: server) }
-                }) { Text("Save and download") }
-                .disabled(flow.preview?.in_library == true || flow.title.trimmingCharacters(in: .whitespaces).isEmpty)
-                .buttonStyle(.borderless)
             }
         }
-        .listRowBackground(Theme.panelRaised)
+
+        card("Details") {
+            labeled("Title", $flow.title)
+            labeled("Artist", $flow.artist)
+            labeled("Album", $flow.album)
+            labeled("Year", $flow.year, keyboard: .numberPad)
+            labeled("BPM (optional, detected after saving)", $flow.bpm, keyboard: .numberPad)
+        }
+        .disabled(locked)
+
+        card("Wikipedia") {
+            labeled("Wikipedia: song", $flow.wikiSong, keyboard: .URL, url: true)
+            labeled("Wikipedia: band", $flow.wikiArtist, keyboard: .URL, url: true)
+            Button { Task { await flow.lookupWiki(api) } } label: {
+                HStack { Text("Fill from Wikipedia links"); if flow.wikiBusy { ProgressView() } }
+            }
+            .buttonStyle(DSButtonStyle(kind: .quiet)).disabled(flow.wikiBusy)
+            if let n = flow.wikiNote { quiet(n) }
+        }
+        .disabled(locked)
+
+        card("Tags") {
+            TagEditor(tags: $flow.tags, suggested: $flow.suggested, pool: pool, input: $flow.pendingTag)
+        }
+        .disabled(locked)
+
+        actions
+    }
+
+    @ViewBuilder
+    private var actions: some View {
+        switch flow.phase {
+        case .saving:
+            card {
+                HStack {
+                    Text("Downloading").font(T.headline).foregroundStyle(DS.Color.ink)
+                    Spacer()
+                    Text("\(Int(flow.progress * 100))%").font(T.time).foregroundStyle(DS.Color.accentInk)
+                }
+                ProgressView(value: flow.progress).tint(DS.Color.accent)
+                Text("The server is fetching \(flow.title). It then copies to this iPhone.").dsCaption()
+            }
+        case .saved:
+            card {
+                Label("Saved to your library.", systemImage: "checkmark.circle.fill").font(T.headline).foregroundStyle(DS.Color.ink)
+                if !flow.onPhone {
+                    quiet("Saved on the server; not yet on the phone.", error: true)
+                    Button("Download to iPhone") {
+                        Task { await flow.fetchToPhone(settings: settings, library: library, server: server) }
+                    }
+                    .buttonStyle(DSButtonStyle(kind: .primary))
+                } else if let t = flow.savedTrack {
+                    Button { player.playNow(t) } label: { Label("Play now", systemImage: "play.fill") }
+                        .buttonStyle(DSButtonStyle(kind: .primary, tall: true))
+                    HStack {
+                        Button("Playback", action: openPlayback).buttonStyle(DSButtonStyle(kind: .outline))
+                        Button("Add another") { flow.reset() }.buttonStyle(DSButtonStyle(kind: .outline))
+                    }
+                }
+            }
+        default:
+            if let m = flow.message { quiet(m, error: true) }
+            Button { Task { await flow.save(settings: settings, library: library, server: server) } } label: {
+                Label("Save to iPhone", systemImage: "arrow.down.to.line")
+            }
+            .buttonStyle(DSButtonStyle(kind: .primary, tall: true))
+            .disabled(flow.preview?.in_library == true || flow.title.trimmingCharacters(in: .whitespaces).isEmpty)
+        }
     }
 }
 
-private extension View {
-    func wikiField() -> some View {
-        textInputAutocapitalization(.never).autocorrectionDisabled().keyboardType(.URL)
+/// The server's status LED, shown on Add and Settings (never on Library).
+struct ServerStatus: View {
+    @EnvironmentObject var server: ServerLink
+    @EnvironmentObject var settings: Settings
+
+    var body: some View {
+        Button { Task { await server.check(settings: settings) } } label: {
+            HStack(spacing: DS.Space.space2) {
+                if server.checking { ProgressView().controlSize(.small) }
+                else { LED(color: color, glow: server.reachable != nil) }
+                Text(text).font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.ink)
+            }
+            .frame(minHeight: DS.Space.hit, alignment: .leading)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(text).accessibilityHint("Checks the server again")
+    }
+
+    private var color: Color {
+        switch server.reachable { case true: DS.Color.ok; case false: DS.Color.power; default: DS.Color.inkFaint }
+    }
+
+    private var text: String {
+        switch server.reachable { case true: "Server online"; case false: "Server unavailable"; default: "Server not set up" }
     }
 }

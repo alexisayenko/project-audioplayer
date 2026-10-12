@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum LibrarySort: String, CaseIterable, Identifiable {
-    case newest = "Newest first", title = "Title", artist = "Artist", year = "Year"
+    case newest = "Recently added", title = "Title", artist = "Artist", year = "Year"
     var id: String { rawValue }
 }
 
@@ -9,27 +9,28 @@ struct LibraryView: View {
     @EnvironmentObject var library: LibraryStore
     @EnvironmentObject var player: PlayerService
     @EnvironmentObject var settings: Settings
-    @EnvironmentObject var server: ServerLibrary
-    @State private var onServer = false
+    @EnvironmentObject var server: ServerLink
+    @Environment(\.dynamicTypeSize) private var typeSize
     @State private var search = ""
     @State private var sort = LibrarySort.newest
-    @State private var tag: String?
+    @State private var selection: Set<String> = []
+    @State private var sheet: FilterCategory?
     @State private var toast: String?
     @State private var editing: ServerSong?
+    @State private var deleting: Track?
+    @State private var bytes: Int64 = 0
 
-    private var source: [Track] {
-        onServer ? server.songs.map(\.track) : library.tracks
+    private var counts: [(tag: String, count: Int)] {
+        var counts: [String: (tag: String, count: Int)] = [:]
+        for t in library.tracks { for tag in t.tags ?? [] {
+            let k = tag.lowercased()
+            counts[k] = (counts[k]?.tag ?? tag, (counts[k]?.count ?? 0) + 1)
+        } }
+        return Array(counts.values)
     }
 
-    private var allTags: [(tag: String, count: Int)] {
-        var counts: [String: Int] = [:]
-        for t in source { for tag in t.tags ?? [] { counts[tag, default: 0] += 1 } }
-        return counts.map { ($0.key, $0.value) }.sorted { $0.count != $1.count ? $0.count > $1.count : $0.tag < $1.tag }
-    }
-
-    private var shown: [Track] {
-        var list = source
-        if let tag { list = list.filter { ($0.tags ?? []).contains(tag) } }
+    private func filtered(_ selection: Set<String>) -> [Track] {
+        var list = library.tracks.filter { tagFilterMatches($0, selection: selection) }
         let q = search.trimmingCharacters(in: .whitespaces).lowercased()
         if !q.isEmpty {
             list = list.filter { t in
@@ -50,180 +51,154 @@ struct LibraryView: View {
         return list
     }
 
-    private func subtitle(_ t: Track) -> String {
-        [t.artist, t.album, t.year.map(String.init)].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: ", ")
+    private var arriving: [Track] {
+        server.transfers.values.map(\.track).filter { !library.contains($0.id) }.sorted { $0.title < $1.title }
     }
 
-    private func stateIcon(_ track: Track) -> some View {
-        Group {
-            if library.contains(track.id) {
-                Image(systemName: "checkmark.circle.fill").foregroundStyle(Theme.green)
-                    .accessibilityLabel("On phone")
-            } else if server.downloading.contains(track.id) {
-                ProgressView().tint(.white)
-            } else {
-                Button { Task { await fetch(track) } } label: {
-                    Image(systemName: server.failed.contains(track.id) ? "exclamationmark.arrow.circlepath" : "arrow.down.circle")
-                        .foregroundStyle(server.failed.contains(track.id) ? Color.red : Theme.cyan)
-                }
-                .buttonStyle(.borderless).accessibilityLabel("Download")
-            }
-        }
-    }
-
-    private func serverBar(_ tracks: [Track]) -> some View {
-        let missing = tracks.filter { !library.contains($0.id) }
-        return HStack {
-            LED(on: server.reachable != nil, color: server.reachable == true ? Theme.green : Theme.red)
-            Text(server.reachable == false ? "Server unreachable" : server.reachable == nil ? "Server not checked" : server.refreshing ? "Refreshing" : "Server online")
-                .panelLabel()
-            Spacer()
-            if let b = server.batch {
-                Text("\(b.done)/\(b.total)").font(.caption.monospacedDigit()).foregroundStyle(Theme.cyan)
-                ProgressView().tint(.white)
-            } else if !missing.isEmpty {
-                PianoButton(lit: true, action: { Task { await server.downloadAll(missing, settings: settings, into: library) } }) {
-                    Text("Download all \(missing.count)").font(.caption.smallCaps().weight(.semibold))
-                }
-            }
-        }
-        .listRowBackground(Color.clear).listRowSeparator(.hidden)
-    }
-
-    private func serverSong(for track: Track) -> ServerSong {
-        server.songs.first { $0.id == track.id } ?? ServerSong(track)
-    }
-
-    private func fetch(_ track: Track) async {
-        if !(await server.download(track, settings: settings, into: library)) { toast = "Download failed" }
-    }
-
-    private func open(_ track: Track, in tracks: [Track]) async {
-        if onServer && !library.contains(track.id) {
-            guard await server.download(track, settings: settings, into: library) else { toast = "Download failed"; return }
-        }
-        let playable = onServer ? tracks.filter { library.contains($0.id) } : tracks
-        player.play(playable, startAt: playable.firstIndex(of: track) ?? 0)
-    }
+    private func subtitle(_ t: Track) -> String { t.artist }
 
     var body: some View {
+        let tracks = filtered(selection)
+        let counts = counts
         NavigationStack {
-            let tracks = shown
-            List {
-                Picker("Source", selection: $onServer) {
-                    Text("On phone · ТЕЛЕФОН").tag(false)
-                    Text("Server · СЕРВЕР").tag(true)
-                }
-                .pickerStyle(.segmented)
-                .listRowBackground(Color.clear).listRowSeparator(.hidden)
-                if onServer { serverBar(tracks) }
-                if !allTags.isEmpty {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack {
-                            ForEach(allTags, id: \.tag) { item in
-                                PianoButton(lit: tag == item.tag, action: { tag = tag == item.tag ? nil : item.tag }) {
-                                    Text("\(tagLabel(item.tag)) \(item.count)").font(.caption.smallCaps().weight(.semibold))
-                                }
-                            }
-                        }
+            ScrollView {
+                VStack(alignment: .leading, spacing: DS.Space.space3) {
+                    ScreenHeader(title: "Library") {
+                        Text("\(library.tracks.count) \(library.tracks.count == 1 ? "song" : "songs")").dsCaption().padding(.bottom, DS.Space.space2)
                     }
-                    .listRowSeparator(.hidden).listRowBackground(Color.clear)
-                }
-                if !source.isEmpty {
+                    searchField
+                    chips(counts)
                     HStack {
-                        Text("\(tracks.count) of \(source.count) songs").panelLabel()
+                        Menu {
+                            Picker("Sort", selection: $sort) { ForEach(LibrarySort.allCases) { Text($0.rawValue).tag($0) } }
+                        } label: {
+                            HStack(spacing: 6) {
+                                Text(sort.rawValue); Image(systemName: "chevron.down").font(T.caption.weight(.semibold))
+                            }
+                            .font(T.headline).foregroundStyle(DS.Color.accentInk).frame(minHeight: DS.Space.hit)
+                        }
+                        .accessibilityLabel("Sort: \(sort.rawValue)")
                         Spacer()
-                        if (tag != nil || !search.isEmpty) && !tracks.isEmpty {
-                            Button("Add all \(tracks.count)") {
-                                let added = player.enqueue(tracks)
-                                toast = "Added \(added) songs (\(tracks.count - added) already in queue)"
-                            }
-                            .font(.caption).buttonStyle(.borderless).tint(Theme.cyan)
+                        if bytes > 0 {
+                            Text("\(ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)) on iPhone").dsCaption()
                         }
                     }
-                    .listRowSeparator(.hidden).listRowBackground(Color.clear)
+                    list(tracks)
                 }
-                ForEach(tracks) { track in
-                    Button { Task { await open(track, in: tracks) } } label: {
-                        HStack {
-                            TrackRow(title: track.title, subtitle: subtitle(track), thumbnail: track.thumbnail,
-                                     highlighted: player.current?.id == track.id)
-                            if onServer { Spacer(minLength: 0); stateIcon(track) }
-                        }
-                    }
-                    .tint(.primary)
-                    .panelRow()
-                    .contextMenu {
-                        Button { editing = serverSong(for: track) } label: { Label("Edit", systemImage: "pencil") }
-                        if library.contains(track.id) {
-                            Button { player.playNext(track); toast = "Plays next" } label: { Label("Play next", systemImage: "text.insert") }
-                            Button { toast = player.enqueue([track]) == 1 ? "Added" : "Already in queue" } label: {
-                                Label("Add to playlist", systemImage: "text.badge.plus")
-                            }
-                        }
-                    }
-                    .swipeActions(edge: .leading) {
-                        if onServer && !library.contains(track.id) {
-                            Button { Task { await fetch(track) } } label: {
-                                Label("Download", systemImage: "arrow.down.circle")
-                            }.tint(Theme.cyan)
-                        }
-                        if library.contains(track.id) {
-                        Button { player.playNext(track); toast = "Plays next" } label: {
-                            Label("Play next", systemImage: "text.insert")
-                        }.tint(.blue)
-                        Button { toast = player.enqueue([track]) == 1 ? "Added" : "Already in queue" } label: {
-                            Label("Queue", systemImage: "text.badge.plus")
-                        }.tint(.green)
-                        }
-                    }
-                    .swipeActions(edge: .trailing) {
-                        Button { editing = serverSong(for: track) } label: { Label("Edit", systemImage: "pencil") }.tint(.orange)
-                        if library.contains(track.id) {
-                        Button(role: .destructive) {
-                            if let i = library.tracks.firstIndex(of: track) { library.remove(at: IndexSet(integer: i)) }
-                        } label: { Label("Delete", systemImage: "trash") }
-                        }
-                    }
-                }
+                .padding(.horizontal, DS.Space.space4).padding(.top, DS.Space.space2).padding(.bottom, DS.Space.space4)
             }
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
-            .panelBackground()
-            .overlay {
-                if source.isEmpty && onServer {
-                    Text(server.reachable == false ? "Server unreachable. No songs cached yet." : "No songs on the server.")
-                        .foregroundStyle(Theme.labelDim).multilineTextAlignment(.center).padding()
-                } else if source.isEmpty {
-                    Text("No songs yet. Use Add to import one.").foregroundStyle(Theme.labelDim)
-                } else if tracks.isEmpty {
-                    Text("No songs match. Clear the search or the tag filter.").foregroundStyle(Theme.labelDim)
-                        .multilineTextAlignment(.center).padding()
-                }
-            }
+            .scrollDismissesKeyboard(.interactively)
+            .dsGround()
+            .toolbar(.hidden, for: .navigationBar)
             .overlay(alignment: .top) {
                 if let toast {
-                    Text(toast).font(.footnote).padding(8).foregroundStyle(Theme.label).background(Theme.panelRaised).clipShape(Capsule())
-                        .overlay(Capsule().stroke(Theme.chromeEdge, lineWidth: 1))
+                    Text(toast).font(T.caption).foregroundStyle(DS.Color.ink)
+                        .padding(.horizontal, DS.Space.space3).padding(.vertical, DS.Space.space2)
+                        .dsSlab(radius: DS.Radius.radiusPill)
                         .task(id: toast) { try? await Task.sleep(for: .seconds(2)); self.toast = nil }
                 }
             }
             .sheet(item: $editing) { SongEditView(song: $0) }
-            .refreshable { await server.refresh(settings: settings) }
-            .task { await server.refresh(settings: settings) }
-            .navigationTitle("Library")
-            .navigationBarTitleDisplayMode(.inline)
-            .woodBar(.navigationBar)
-            .searchable(text: $search, placement: .navigationBarDrawer(displayMode: .always), prompt: "Title, artist, tag")
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Menu {
-                        Picker("Sort", selection: $sort) {
-                            ForEach(LibrarySort.allCases) { Text($0.rawValue).tag($0) }
-                        }
-                    } label: { Image(systemName: "arrow.up.arrow.down") }
+            .sheet(item: $sheet) { category in
+                FilterSheet(category: category, values: category.values(counts), selection: $selection,
+                            resultCount: filtered(selection).count)
+            }
+            .confirmationDialog("Delete \"\(deleting?.title ?? "")\" from the library?", isPresented: Binding(
+                get: { deleting != nil }, set: { if !$0 { deleting = nil } }), titleVisibility: .visible) {
+                Button("Delete from library", role: .destructive) {
+                    if let t = deleting { library.remove(t.id) }
+                    deleting = nil
                 }
+            } message: { Text("Removes the audio from this iPhone.") }
+            .task(id: library.tracks.count) { bytes = await Self.diskSize(library.tracks) }
+        }
+    }
+
+    private var searchField: some View {
+        HStack(spacing: DS.Space.space3) {
+            Image(systemName: "magnifyingglass").foregroundStyle(DS.Color.inkMuted).accessibilityHidden(true)
+            TextField("Search songs or artists", text: $search)
+                .font(T.body).foregroundStyle(DS.Color.ink).submitLabel(.search)
+                .autocorrectionDisabled()
+            if !search.isEmpty {
+                Button { search = "" } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(DS.Color.inkMuted) }
+                    .accessibilityLabel("Clear search")
             }
         }
+        .padding(.horizontal, DS.Space.space4).frame(minHeight: 48)
+        .dsSlab(radius: 16)
+    }
+
+    private func chips(_ counts: [(tag: String, count: Int)]) -> some View {
+        let cols = typeSize.isAccessibilitySize ? 2 : 4
+        return LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: DS.Space.space2), count: cols), spacing: DS.Space.space2) {
+            ForEach(FilterCategory.allCases) { c in
+                let values = c.values(counts)
+                CategoryChip(title: c.rawValue, count: values.count,
+                             selected: values.filter { selection.contains($0.tag.lowercased()) }.count) { sheet = c }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func list(_ tracks: [Track]) -> some View {
+        if library.tracks.isEmpty && arriving.isEmpty {
+            empty("No songs yet. Use Add to bring one to this iPhone.")
+        } else if tracks.isEmpty && arriving.isEmpty {
+            empty("No songs match. Clear the search or the filters.")
+        } else {
+            LazyVStack(spacing: 0) {
+                ForEach(arriving) { t in
+                    SongRow(title: t.title, subtitle: subtitle(t), thumbnail: t.thumbnail,
+                            downloading: server.transfers[t.id]?.progress ?? 0)
+                    divider
+                }
+                ForEach(Array(tracks.enumerated()), id: \.element.id) { i, track in
+                    row(track, in: tracks)
+                    if i < tracks.count - 1 { divider }
+                }
+            }
+            .dsSlab()
+            .clipShape(RoundedRectangle(cornerRadius: DS.Radius.radiusCard, style: .continuous))
+        }
+    }
+
+    private var divider: some View {
+        Rectangle().fill(DS.Color.line).frame(height: 1).padding(.horizontal, DS.Space.space3)
+    }
+
+    private func empty(_ text: String) -> some View {
+        Text(text).font(T.body).foregroundStyle(DS.Color.inkMuted).multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity).padding(DS.Space.space6)
+    }
+
+    private func row(_ track: Track, in tracks: [Track]) -> some View {
+        let playing = player.current?.id == track.id
+        return SongRow(title: track.title, subtitle: subtitle(track), thumbnail: track.thumbnail, duration: track.duration,
+                    playing: playing) {
+                Menu {
+                    Button { editing = ServerSong(track) } label: { Label("Edit", systemImage: "pencil") }
+                    Button { player.playNext(track); toast = "Plays next" } label: { Label("Play next", systemImage: "text.insert") }
+                    Button { toast = player.enqueue([track]) == 1 ? "Added to queue" : "Already in queue" } label: {
+                        Label("Add to queue", systemImage: "text.badge.plus")
+                    }
+                    Button(role: .destructive) { deleting = track } label: { Label("Delete from library", systemImage: "trash") }
+                } label: {
+                    Image(systemName: "ellipsis").font(.system(size: 18)).foregroundStyle(playing ? DS.Color.accentInk : DS.Color.inkMuted)
+                        .frame(width: DS.Space.hit, height: DS.Space.hit)
+                }
+                .accessibilityLabel("More actions for \(track.title)")
+            }
+        .onTapGesture { player.play(tracks, startAt: tracks.firstIndex(of: track) ?? 0) }
+        .accessibilityAddTraits(.isButton)
+        .accessibilityAction(named: "Play") { player.play(tracks, startAt: tracks.firstIndex(of: track) ?? 0) }
+    }
+
+    private static func diskSize(_ tracks: [Track]) async -> Int64 {
+        await Task.detached(priority: .utility) {
+            tracks.reduce(Int64(0)) { sum, t in
+                sum + Int64((try? FileManager.default.attributesOfItem(atPath: t.fileURL.path)[.size] as? Int) ?? 0)
+            }
+        }.value
     }
 }
