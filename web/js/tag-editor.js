@@ -7,6 +7,7 @@ const same = (a, b) => a.toLocaleLowerCase() === b.toLocaleLowerCase();
 
 export function tagEditor({ tags = [], suggested = [] } = {}) {
   let current = [...tags];
+  let sug = [...suggested];
   const input = el('input', { type: 'text', placeholder: 'Type a tag (plain or key:value), Enter or comma to add', enterKeyHint: 'done', autocomplete: 'off' });
   const chosen = el('div', { class: 'chips' });
   const sugBox = el('div', { class: 'chip-group' });
@@ -34,7 +35,6 @@ export function tagEditor({ tags = [], suggested = [] } = {}) {
     const q = input.value.trim().toLocaleLowerCase();
     chosen.replaceChildren(...current.map((t) => el('span', { class: 'chip on', title: t }, tagText(t),
       el('button', { type: 'button', class: 'x', 'aria-label': `Remove ${t}`, onclick: () => toggle(t) }, '×'))));
-    const sug = suggested;
     sugBox.hidden = !sug.length;
     sugBox.replaceChildren(...(sug.length ? [el('span', { class: 'group-name' }, 'Suggested'), ...sug.map((t) => chip(t))] : []));
     const shown = store.tags.filter((t) => !q || tagSearchText(t.tag).toLocaleLowerCase().includes(q));
@@ -49,5 +49,12 @@ export function tagEditor({ tags = [], suggested = [] } = {}) {
   input.addEventListener('input', render);
   render();
 
-  return { node, getTags() { add(input.value); return [...current]; } };
+  return {
+    node,
+    getTags() { add(input.value); return [...current]; },
+    setSuggested(list) {
+      for (const t of list) if (!sug.some((x) => same(x, t))) sug.push(t);
+      render();
+    },
+  };
 }

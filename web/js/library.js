@@ -3,6 +3,7 @@ import { store } from './store.js';
 import { player } from './player.js';
 import { el, toast, fmtTime } from './dom.js';
 import { tagEditor } from './tag-editor.js';
+import { wikiFields } from './wiki-links.js';
 import { tagChip, tagGroups, tagLabel, tagSearchText } from './tagname.js';
 
 const prefs = { query: '', tag: '', sort: 'added' };
@@ -185,6 +186,11 @@ function editDialog(song) {
     bpm: el('input', { type: 'number', value: song.bpm != null ? Math.round(song.bpm) : '', min: 20, max: 300, step: 1, placeholder: 'Unknown' }),
   };
   const err = el('p', { class: 'msg error', hidden: true });
+  const wikiMsg = el('div');
+  const wiki = wikiFields({
+    song: song.wikipedia_song, artist: song.wikipedia_artist, year: f.year, editor,
+    onMessage: (text, kind) => wikiMsg.replaceChildren(el('p', { class: `msg ${kind}` }, text)),
+  });
   const field = (label, input) => el('div', {}, el('label', {}, label), input);
   const redetect = el('button', { type: 'button', class: 'btn' }, 'Re-detect');
   redetect.addEventListener('click', async () => {
@@ -208,6 +214,7 @@ function editDialog(song) {
     field('Title', f.title), field('Artist', f.artist),
     el('div', { class: 'grid2' }, field('Album', f.album), field('Year', f.year)),
     el('div', {}, el('label', {}, 'BPM (heuristic, may be off by half or double)'), el('div', { class: 'row' }, f.bpm, redetect)),
+    wiki.node, wikiMsg,
     el('div', {}, el('label', {}, 'Tags'), editor.node),
     err,
     el('div', { class: 'row end' },
@@ -224,6 +231,7 @@ function editDialog(song) {
         year: f.year.value === '' ? null : Number(f.year.value),
         bpm: f.bpm.value === '' ? null : Math.round(Number(f.bpm.value)),
         tags: editor.getTags(),
+        ...wiki.values(),
       });
       dlg.close();
       await store.refresh();

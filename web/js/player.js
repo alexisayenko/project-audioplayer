@@ -3,6 +3,7 @@ import { store } from './store.js';
 import { el, fmtTime, toast } from './dom.js';
 import * as Q from './queue-logic.js';
 import { tagChip, tagGroups, tagLabel, tagText } from './tagname.js';
+import { songLinks } from './wiki-links.js';
 
 const audio = document.getElementById('audio');
 const $ = (id) => document.getElementById(id);
@@ -223,9 +224,7 @@ function render() {
   $('player-sub').textContent = [song.artist, song.album, song.year].filter(Boolean).join(', ');
   $('player-tags').replaceChildren(...(song.tags || []).map(tagChip));
   $('player-bpm').textContent = song.bpm != null ? `${Math.round(song.bpm)} BPM` : '';
-  const src = $('player-source');
-  src.hidden = !/^https?:\/\//i.test(song.source_url || '');
-  if (!src.hidden) src.href = song.source_url;
+  $('player-links').replaceChildren(...songLinks(song).map((l) => el('a', { class: 'source', href: l.href, target: '_blank', rel: 'noopener noreferrer' }, l.label)));
   setCover($('mini-cover'), song);
   setCover($('player-cover'), song);
   $('p-next').disabled = !Q.hasNext(logic());

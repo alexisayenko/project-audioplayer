@@ -3,7 +3,8 @@ import { store } from './store.js';
 import { player } from './player.js';
 import { tagEditor } from './tag-editor.js';
 import { el, fmtTime } from './dom.js';
-import { cleanUrl } from './url-clean.js';
+import { cleanPasted } from './url-clean.js';
+import { wikiFields } from './wiki-links.js';
 
 export function renderAdd(root) {
   let timer = null;
@@ -18,8 +19,16 @@ export function renderAdd(root) {
 
   const say = (text, kind = '') => message.replaceChildren(text ? el('p', { class: `msg ${kind}` }, text) : '');
 
-  const tidy = () => { url.value = cleanUrl(url.value); };
+  const tidy = () => {
+    const clean = cleanPasted(url.value);
+    if (clean === url.value) return;
+    url.value = clean;
+    url.setSelectionRange(clean.length, clean.length);
+  };
+  const BULK = new Set(['insertFromPaste', 'insertFromPasteAsQuotation', 'insertFromDrop', 'insertReplacementText']);
+  url.addEventListener('input', (e) => { if (BULK.has(e.inputType) || (e.data && e.data.length > 1)) tidy(); });
   url.addEventListener('paste', () => setTimeout(tidy));
+  url.addEventListener('drop', () => setTimeout(tidy));
   url.addEventListener('blur', tidy);
 
   form.addEventListener('submit', async (e) => {
@@ -52,6 +61,11 @@ export function renderAdd(root) {
       bpm: el('input', { type: 'number', min: 20, max: 300, step: 1, placeholder: 'Detected after saving' }),
     };
     const editor = tagEditor({ tags: preview.tags || [], suggested: preview.tags || [] });
+    const wikiMsg = el('div');
+    const wiki = wikiFields({
+      song: preview.wikipedia_song, artist: preview.wikipedia_artist, year: f.year, editor,
+      onMessage: (text, kind) => wikiMsg.replaceChildren(el('p', { class: `msg ${kind}` }, text)),
+    });
     const saveBtn = el('button', { class: 'btn primary', type: 'submit', disabled: preview.in_library }, 'Save and download');
     const progress = el('div', { class: 'progress', hidden: true }, el('div'));
     const result = el('div');
@@ -69,6 +83,7 @@ export function renderAdd(root) {
       field('Title', f.title), field('Artist', f.artist),
       el('div', { class: 'grid2' }, field('Album', f.album), field('Year', f.year)),
       field('BPM (optional)', f.bpm),
+      wiki.node, wikiMsg,
       el('label', {}, 'Tags'), editor.node,
       el('div', { class: 'row', style: 'margin-top:16px' }, saveBtn),
       progress, result);
@@ -87,6 +102,7 @@ export function renderAdd(root) {
           album: f.album.value,
           year: f.year.value === '' ? null : Number(f.year.value),
           bpm: f.bpm.value === '' ? null : Math.round(Number(f.bpm.value)),
+          ...wiki.values(),
         }, editor.getTags());
         poll();
       } catch (ex) {

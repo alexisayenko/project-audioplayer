@@ -223,6 +223,11 @@ body[data-route="playback"] .mini { display: none; }
 .det-over h2 { font-size: 1.35rem; overflow-wrap: anywhere; text-shadow: 0 1px 3px rgba(0, 0, 0, .6); }
 .det-over .sub, .det-over .facts { color: rgba(255, 255, 255, .85); }
 .facts { display: flex; gap: 12px; font-size: .85rem; }
+#player-bpm { white-space: nowrap; }
+.links { display: flex; flex-wrap: wrap; gap: 2px 12px; }
+.wiki-fields { margin-top: 4px; }
+.wiki-fields .row { margin: 4px 0 8px; }
+input[aria-invalid="true"] { border-color: var(--danger); }
 .det-over .source { font-size: .85rem; color: #cfe0ff; overflow-wrap: anywhere; }
 .det-over .tags { display: flex; flex-wrap: wrap; gap: 6px; max-height: 4.6em; overflow: hidden; }
 .det-over .tag { background: rgba(255, 255, 255, .16); border-color: rgba(255, 255, 255, .35); color: #fff; }
