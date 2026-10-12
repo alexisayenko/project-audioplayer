@@ -16,7 +16,7 @@ accepted these are superseded as noted below.
 
 ## Sources and ids
 
-- CAT-010 MUST: ids are the YouTube id (unchanged), `soundcloud-<id>`, or `spotify-<id>` for metadata-only songs; attaching audio from another source keeps `id` and appends to `sources`. Status: planned
+- CAT-010 MUST: ids are the YouTube id (unchanged), `soundcloud-<id>`, or `spotify-<id>` or `applemusic-<id>` (or `shazam-<id>`) for metadata-only songs; attaching audio from another source keeps `id` and appends to `sources`. Status: planned
 - CAT-011 MUST: Add means "add to catalog": a YouTube, SoundCloud or Spotify link, or manual entry, saves a record; audio is not fetched until Get audio, except that a YouTube or SoundCloud add may offer "Save and get audio" in one step. Status: planned
 - CAT-012 MUST: a Spotify track link yields metadata only (title, artist, album, year, cover) via the Spotify Web API with client credentials; the preview shows "No audio yet". Status: planned
 - CAT-013 MUST: the Spotify client id and secret live only in the git-ignored server env and never reach a client or the repos. Status: planned
@@ -38,3 +38,17 @@ accepted these are superseded as noted below.
 - CAT-031 MUST: a filter "On phone" shows only songs with a local copy. Status: planned
 - CAT-032 MUST: Play is available only for state `phone` on the phone (and `server` on the web); other rows offer Get audio. Status: planned
 - CAT-033 MUST: Delete from library removes the catalog record; a separate "Remove download" frees the phone copy and keeps the record. Status: planned
+
+## More sources
+
+Order: YouTube/SoundCloud (done) -> Spotify -> Apple Music -> ShazamKit Listen -> Shazam import. All produce metadata-only records; Get audio finds the YouTube match. Facts are unverified; each task starts by checking them (task-0012..0015).
+
+- CAT-040 SHOULD: an Apple Music song or album link yields metadata only (title, artist, album, year, genre, large artwork, duration) via the keyless iTunes Lookup API; id `applemusic-<id>`. Status: proposal
+- CAT-041 MUST: no audio is ever taken from Apple Music. Status: proposal
+- CAT-042 SHOULD: the Apple Music preview and Save work like the Spotify ones ("No audio yet"). Status: proposal
+- CAT-043 SHOULD: the iOS Add sheet has a Listen button that records through the microphone and shows a result card (title, artist, artwork, genres) from ShazamKit. Status: proposal
+- CAT-044 MUST: a Listen match saves a metadata-only record; no audio is taken or stored, and the recording is not kept. Status: proposal
+- CAT-045 MUST: Listen needs the microphone permission and the network; denied permission, offline and no match each show a clear message. Status: proposal
+- CAT-046 MUST: the ShazamKit App Service is enabled on the App ID in the Apple Developer portal (manual step) before Listen ships. Status: proposal
+- CAT-047 COULD: Shazam history imports once as metadata-only records, duplicates skipped; the format is decided by research first. Status: proposal
+- CAT-048 MUST: the import keeps no Shazam or Apple credentials in the repos. Status: proposal

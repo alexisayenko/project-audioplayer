@@ -64,6 +64,10 @@ sign-in, Electrophone look, internal TestFlight builds. Spans `ios/`, `server/`
     state after a server file is removed; state is derived, never stored.
   - Spotify Web API and terms: client credentials, rate limits, personal use,
     secret only in the server env; no audio from Spotify.
+  - ShazamKit (task-0013): needs the App Service enabled on the App ID (manual, Apple Developer portal), the microphone permission and the network; Shazam may not know a song.
+  - Apple Music and Shazam facts (keyless Lookup API, ShazamKit limits, history export, SHLibrary) come from memory and are unverified; tasks 0012..0014 start by checking them.
+  - Link scraping (SoundHound share links) is fragile; the Houndify platform is commercial with no consumer history export (task-0015, parked).
+  - Third-party recognition (AudD, ACRCloud) uploads audio clips and costs money; not recommended.
   - Mismatched YouTube matches (live, remix, lyric video): the owner confirms each.
   - SoundCloud Go+ previews (ADR-0011): yt-dlp may only see the 30 s snippet; the server refuses it (`preview_only`) from the format list, and again after download if the file is under 35 s for a much longer track. The heuristic is unverified against live Go+ tracks.
   - SoundCloud artist vs label: with no `artists` metadata the uploader name is used, which may be a label or a re-uploader; the owner edits it in the preview. Wikipedia/MusicBrainz suggestions run on that name and usually find nothing.

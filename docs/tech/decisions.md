@@ -370,6 +370,7 @@ holds). Concept: [`docs/product/concept-catalog-and-audio.md`](../product/concep
 - Reverses: ADR-0009 "the phone never browses a server library" and "no Download
   all"; revives the earlier server-library idea in a better form. Also touches
   the Add flow (ADR-0007/0009 screens), to be redrawn in the design system.
+- Sources considered later (proposal tasks, unverified facts): Apple Music links, ShazamKit Listen, Shazam history import, SoundHound; order after Spotify: Apple Music -> ShazamKit Listen -> Shazam import (task-0012..0015, CAT-040..048).
 - Why: the owner's favourites are a list he wants to grow from anywhere (a
   Spotify link, a friend's tip) without paying the download and storage cost up
   front; the catalog is worth keeping even when audio is missing.

@@ -16,7 +16,7 @@ the detail. Newest first; several events on one date are fine.
 
 - 2026-10-13 — concept "catalog and audio" proposed (ADR-0010): Library lists every
   song, audio is fetched on demand; see
-  [concept](product/concept-catalog-and-audio.md), task-0006 to task-0011.
+  [concept](product/concept-catalog-and-audio.md), task-0006 to task-0015.
 - 2026-10-12 — iOS app uploaded to internal TestFlight (builds 20261012
   and 20261013, record "Gramophone Offline" (now Electrophone), group "Alex"), after the app
   was restyled as the Vega 108 turntable, rebuilt to match the web flow

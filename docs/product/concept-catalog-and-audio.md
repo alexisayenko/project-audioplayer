@@ -1,7 +1,7 @@
 # Concept: catalog and audio
 
 Status: proposed ([ADR-0010](../tech/decisions.md)). Specs: [`../specs/catalog.md`](../specs/catalog.md).
-Tasks: task-0006 to task-0011.
+Tasks: task-0006 to task-0015.
 
 ## The idea
 
@@ -40,6 +40,10 @@ offline, with the screen locked. A downloaded song never depends on the server.
 | Spotify track link | yes (Web API, client credentials) | never (DRM) | id `spotify-<id>`; audio via a confirmed YouTube match |
 | Text search | yes (YouTube results) | yes | becomes a YouTube record |
 | Manual entry | yes (typed) | none until a match or link is attached | id `manual-<n>` or later attached |
+| Apple Music link | yes (iTunes Lookup API, keyless) | never (DRM) | id `applemusic-<id>`; unverified, task-0012 |
+| Shazam listen (ShazamKit) | yes (title, artist, ISRC, artwork) | never | needs mic and network; iOS only; task-0013 |
+| Shazam import | yes (history) | never | format by research; task-0014 |
+| SoundHound | share-link page metadata only | never | parked, fragile; task-0015 |
 | Playlists (later) | yes, many records | per song | public Spotify playlists first |
 | Spotify Liked Songs | yes | via match | needs one-time OAuth; optional |
 
@@ -49,6 +53,10 @@ offline, with the screen locked. A downloaded song never depends on the server.
 server reads title, artist, album, year, cover from the Spotify Web API -> preview
 with "No audio yet" -> edit tags -> Save. The record appears in Library with state
 `none`. Nothing is downloaded.
+
+**Populate by listening.** Add -> Listen -> a song plays nearby -> ShazamKit returns a match -> result card -> Save. The record has state `none`. Apple Music links follow the Spotify journey; Shazam history imports once.
+
+Order of sources: YouTube/SoundCloud (done) -> Spotify -> Apple Music -> ShazamKit Listen -> Shazam import.
 
 **Get audio for one song.** Row or song screen -> Get audio. A YouTube song downloads
 at once. A Spotify-only song first shows the server's best YouTube match (title,
