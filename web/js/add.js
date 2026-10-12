@@ -26,7 +26,7 @@ export function renderAdd(root) {
     previewBtn.textContent = 'Loading...';
     try {
       preview = await api.preview(url.value.trim());
-      tags = [];
+      tags = [...(preview.tags || [])];
       if (!store.loaded) await store.refresh().catch(() => {});
       renderCard();
       if (preview.in_library) say('This song is already in your library.', 'error');
@@ -44,9 +44,9 @@ export function renderAdd(root) {
       artist: el('input', { type: 'text', value: preview.artist || '' }),
       album: el('input', { type: 'text', value: preview.album || '' }),
       year: el('input', { type: 'number', value: preview.year ?? '', min: 0, max: 3000 }),
-      genre: el('input', { type: 'text', value: preview.genre || '' }),
+      bpm: el('input', { type: 'number', min: 20, max: 300, step: 0.1, placeholder: 'Detected after saving' }),
     };
-    const tagInput = el('input', { type: 'text', placeholder: 'Add a tag and press Enter', list: 'add-tag-suggestions', enterKeyHint: 'done' });
+    const tagInput = el('input', { type: 'text', placeholder: 'Add a tag (plain or key:value) and press Enter', list: 'add-tag-suggestions', enterKeyHint: 'done' });
     const chipBox = el('div', { class: 'chips' });
     const suggest = el('div', { class: 'chips' });
     const saveBtn = el('button', { class: 'btn primary', type: 'submit', disabled: preview.in_library }, 'Save and download');
@@ -83,7 +83,7 @@ export function renderAdd(root) {
           el('div', { class: 'muted' }, preview.duration ? fmtTime(preview.duration) : ''))),
       field('Title', f.title), field('Artist', f.artist),
       el('div', { class: 'grid2' }, field('Album', f.album), field('Year', f.year)),
-      field('Genre', f.genre),
+      field('BPM (optional)', f.bpm),
       el('label', {}, 'Tags'), tagInput,
       el('datalist', { id: 'add-tag-suggestions' }, store.tags.map((t) => el('option', { value: t.tag }))),
       chipBox, suggest,
@@ -105,7 +105,7 @@ export function renderAdd(root) {
           artist: f.artist.value,
           album: f.album.value,
           year: f.year.value === '' ? null : Number(f.year.value),
-          genre: f.genre.value,
+          bpm: f.bpm.value === '' ? null : Number(f.bpm.value),
         }, tags);
         poll();
       } catch (ex) {

@@ -54,6 +54,7 @@ export const api = {
   addSong: (url, metadata, tags) => request('POST', '/songs', { url, metadata, tags }),
   status: (id) => request('GET', `/songs/${q(id)}/status`),
   patch: (id, changes) => request('PATCH', `/songs/${q(id)}`, changes),
+  detectBpm: (id) => request('POST', `/songs/${q(id)}/bpm/detect`),
   remove: (id) => request('DELETE', `/songs/${q(id)}`),
   fileUrl: (id) => `/files/${q(id)}${tokenQuery()}`,
   coverUrl: (id) => `/covers/${q(id)}${tokenQuery()}`,

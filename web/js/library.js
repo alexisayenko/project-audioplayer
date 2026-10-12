@@ -10,6 +10,7 @@ const SORTS = {
   title: ['Title', (a, b) => cmp(a.title, b.title)],
   artist: ['Artist', (a, b) => cmp(a.artist, b.artist) || cmp(a.title, b.title)],
   year: ['Year', (a, b) => (b.year || 0) - (a.year || 0)],
+  bpm: ['BPM', (a, b) => (a.bpm == null) - (b.bpm == null) || (a.bpm || 0) - (b.bpm || 0)],
 };
 
 function cmp(a, b) {
@@ -38,7 +39,7 @@ export function renderLibrary(root) {
     'aria-label': 'Sort',
     onchange: (e) => { prefs.sort = e.target.value; renderList(); },
   }, Object.entries(SORTS).map(([k, [label]]) => el('option', { value: k, selected: k === prefs.sort }, label)));
-  const chips = el('div', { class: 'chips' });
+  const chips = el('div', { class: 'chip-groups' });
   const count = el('p', { class: 'muted' });
   const list = el('ul', { class: 'songs' });
   const status = el('div');
@@ -47,10 +48,19 @@ export function renderLibrary(root) {
 
   function renderChips() {
     if (prefs.tag && !store.tags.some((t) => t.tag.toLocaleLowerCase() === prefs.tag.toLocaleLowerCase())) prefs.tag = '';
-    chips.replaceChildren(...store.tags.map((t) => el('button', {
-      class: `chip${t.tag.toLocaleLowerCase() === prefs.tag.toLocaleLowerCase() ? ' on' : ''}`,
-      onclick: () => { prefs.tag = prefs.tag.toLocaleLowerCase() === t.tag.toLocaleLowerCase() ? '' : t.tag; renderChips(); renderList(); },
-    }, t.tag, el('small', {}, t.count))));
+    const groups = new Map();
+    for (const t of store.tags) {
+      const i = t.tag.indexOf(':');
+      const key = i > 0 ? t.tag.slice(0, i) : '';
+      groups.set(key, [...(groups.get(key) || []), t]);
+    }
+    const order = [...groups.keys()].sort((a, b) => (a === '') - (b === '') || a.localeCompare(b));
+    chips.replaceChildren(...order.map((key) => el('div', { class: 'chip-group' },
+      el('span', { class: 'group-name' }, key ? key[0].toLocaleUpperCase() + key.slice(1) : 'Tags'),
+      ...groups.get(key).map((t) => el('button', {
+        class: `chip${t.tag.toLocaleLowerCase() === prefs.tag.toLocaleLowerCase() ? ' on' : ''}`,
+        onclick: () => { prefs.tag = prefs.tag.toLocaleLowerCase() === t.tag.toLocaleLowerCase() ? '' : t.tag; renderChips(); renderList(); },
+      }, key ? t.tag.slice(key.length + 1) : t.tag, el('small', {}, t.count))))));
   }
 
   function renderList() {
@@ -69,7 +79,8 @@ export function renderLibrary(root) {
         coverImg(s),
         el('span', { class: 'name' },
           el('b', {}, s.title),
-          el('small', {}, [s.artist, s.duration ? fmtTime(s.duration) : ''].filter(Boolean).join(' - ')),
+          el('small', {}, [s.artist, s.duration ? fmtTime(s.duration) : ''].filter(Boolean).join(' - '),
+            s.bpm != null ? el('span', { class: 'bpm', title: 'Beats per minute' }, `${Math.round(s.bpm)} BPM`) : null),
           (s.tags || []).length ? el('span', { class: 'tags' }, s.tags.map((t) => `#${t}`).join(' ')) : null)),
       el('span', { class: 'actions' },
         el('button', { class: 'icon', title: 'Edit', 'aria-label': `Edit ${s.title}`, onclick: () => editDialog(s) }, '✎'),
@@ -141,16 +152,34 @@ function editDialog(song) {
     artist: el('input', { type: 'text', value: song.artist || '' }),
     album: el('input', { type: 'text', value: song.album || '' }),
     year: el('input', { type: 'number', value: song.year ?? '', min: 0, max: 3000 }),
-    genre: el('input', { type: 'text', value: song.genre || '' }),
-    tags: el('input', { type: 'text', value: (song.tags || []).join(', '), placeholder: 'comma, separated', list: 'tag-suggestions' }),
+    bpm: el('input', { type: 'number', value: song.bpm ?? '', min: 20, max: 300, step: 0.1, placeholder: 'Unknown' }),
+    tags: el('input', { type: 'text', value: (song.tags || []).join(', '), placeholder: 'comma, separated; e.g. genre:synthwave', list: 'tag-suggestions' }),
   };
   const err = el('p', { class: 'msg error', hidden: true });
   const field = (label, input) => el('div', {}, el('label', {}, label), input);
+  const redetect = el('button', { type: 'button', class: 'btn' }, 'Re-detect');
+  redetect.addEventListener('click', async () => {
+    redetect.disabled = true;
+    redetect.textContent = 'Detecting...';
+    try {
+      const updated = await api.detectBpm(song.id);
+      f.bpm.value = updated.bpm ?? '';
+      err.hidden = true;
+      await store.refresh();
+    } catch (ex) {
+      err.textContent = ex.message;
+      err.hidden = false;
+    } finally {
+      redetect.disabled = false;
+      redetect.textContent = 'Re-detect';
+    }
+  });
   const form = el('form', { method: 'dialog' },
     el('h2', {}, 'Edit song'),
     field('Title', f.title), field('Artist', f.artist),
     el('div', { class: 'grid2' }, field('Album', f.album), field('Year', f.year)),
-    field('Genre', f.genre), field('Tags', f.tags),
+    el('div', {}, el('label', {}, 'BPM (heuristic, may be off by half or double)'), el('div', { class: 'row' }, f.bpm, redetect)),
+    field('Tags', f.tags),
     el('datalist', { id: 'tag-suggestions' }, store.tags.map((t) => el('option', { value: t.tag }))),
     err,
     el('div', { class: 'row end' },
@@ -164,7 +193,7 @@ function editDialog(song) {
         artist: f.artist.value,
         album: f.album.value,
         year: f.year.value === '' ? null : Number(f.year.value),
-        genre: f.genre.value,
+        bpm: f.bpm.value === '' ? null : Number(f.bpm.value),
         tags: f.tags.value.split(',').map((t) => t.trim()).filter(Boolean),
       });
       dlg.close();
