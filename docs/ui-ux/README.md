@@ -10,6 +10,8 @@ ui-ux/
 ├── README.md             # this file — UI section entry + glossary
 ├── style-guide.md        # visual + interaction standards
 ├── performance-guide.md  # end-to-end UX performance standards
+├── design-prompts.md     # prompts for graphical iOS sketches (A Vega 108, B open style)
+├── vega-108/             # nine Vega 108 turntable sketches (sketch-1..9.png)
 ├── screens/              # one file per screen (page) — where the user is
 │   └── README.md         # entry: screens section
 └── journeys.md           # one section per multi-screen path — the sequence
@@ -61,6 +63,9 @@ crystallize.
   standards. External refs (iOS HIG / Material 3 / WCAG 2.2)
   plus in-project conventions (color use, motion timings,
   popup dismissal, voice & copy).
+- [`design-prompts.md`](design-prompts.md) — prompts used to generate the
+  iOS sketches; [`vega-108/`](vega-108/) holds the nine results for the
+  chosen direction (ADR-0007; "Look: Vega 108 turntable" in the style guide).
 - [`performance-guide.md`](performance-guide.md) — end-to-end
   UX performance standards. Metrics, thresholds, tools,
   cadence — framed as the chain (frontend ↔ backend ↔ db)

@@ -11,11 +11,16 @@ or open questions — see
 For the journey concept and how it relates to screens, see
 [`README.md`](README.md).
 
-## [TODO: journey name]
+## Add a song and play it offline (iPhone)
 
-[TODO: one-line definition — entry point → exit / success state.]
+Paste a link, keep the song on the phone, play it with no network.
 
-- **Entry:** [TODO]
-- **Screens (in order):** [TODO: link to `screens/<name>.md`]
-- **Branches:** [TODO: condition → alternate path]
-- **Exit / success:** [TODO]
+- **Entry:** Add tab (or Search under Add).
+- **Screens (in order):** Add (paste, preview, edit tags, save) -> status
+  polling -> Playback (mini-player on other tabs); later Library with the
+  Phone / Server switch; Settings first when no token or sign-in exists.
+- **Branches:** no token or unreachable server -> error on Preview, go to
+  Settings; song already in library -> 409 message; song added elsewhere
+  (web) -> Library Server list, swipe Download or "Download all".
+- **Exit / success:** the song plays from the phone with the screen locked
+  and no connection (`../specs/ios.md`).

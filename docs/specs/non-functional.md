@@ -35,4 +35,4 @@ ADRs: ADR-0003 (web), ADR-0004 (hosting), ADR-0001 (storage scale).
 - NFR-040 MUST: the web UI is plain HTML, CSS and ES modules, no build step, no framework, no CDN; it targets current evergreen browsers incl. iOS Safari (uses `<dialog>`, ES modules, Media Session). Status: implemented
 - NFR-041 MUST: the web UI is online only: no service worker, no offline storage, no audio cache. Offline listening is an iOS-app feature. Status: implemented
 - NFR-042 MUST: the layout works at phone width. Status: to-confirm (not verified in this pass)
-- NFR-043 MUST: the iOS app (`ios/`, SwiftUI) is deferred; its scaffold does not use the library endpoints. Status: planned
+- NFR-043 MUST: the iOS app (`ios/`, SwiftUI) uses the same API and plays downloaded songs offline; its requirements are in [ios.md](ios.md). Status: implemented

@@ -68,6 +68,11 @@ The app is styled after the Soviet "Vega 108 Stereo" turntable: walnut veneer
 bars (navigation), matte black panel rows, chrome bezels, rectangular piano
 keys (one lit cyan, a red power key), ridged volume knob with min/max ticks,
 small-caps labels with Cyrillic accompaniments. All tokens and components
-live in `ios/Sources/Theme.swift`. Now Playing shows a rotating platter and a
+live in `ios/Sources/Theme.swift` (tokens) and `Components.swift` (piano
+buttons, LEDs, knob, platter). Playback shows a rotating platter and a
 tonearm that follows playback progress. The app icon is the whole turntable
 seen from above.
+Decision: ADR-0007 in [`../tech/decisions.md`](../tech/decisions.md). Sketches:
+[`vega-108/`](vega-108/) (`sketch-1.png` to `sketch-9.png`), generated from the
+prompts in [`design-prompts.md`](design-prompts.md). The web UI keeps its
+plain style.

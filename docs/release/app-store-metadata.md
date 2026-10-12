@@ -1,11 +1,16 @@
 # App store metadata
 
 Draft of the store listing for [TODO: release number]. Re-verify
-against the submitted build.
+against the submitted build. There is no store listing yet: the app is
+internal TestFlight only (ADR-0008), so no listing is needed until a public
+release is decided.
+
+App Store Connect record (exists): name Gramophone Offline, bundle
+`com.alexisayenko.audioplayer`, SKU `gramophone-ios`, iPhone only.
 
 ## Listing
 
-- **Name:** [TODO: name]
+- **Name:** Gramophone Offline
 - **Subtitle (≤30 characters):** [TODO: subtitle]
 - **Promotional text:** [TODO: promotional text]
 - **Description:** [TODO: description]

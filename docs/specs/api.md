@@ -41,5 +41,5 @@ are `{"detail": "<message>"}`.
 - API-015 MUST: `PATCH` applies only the keys sent; `title`/`artist`/`album` are trimmed (empty becomes `null`, empty title is 422); `tags` is normalised; `tags: null` is ignored. Status: implemented
 - API-016 MUST: `DELETE` removes the record, the cover and the audio file, and drops the job entry. Status: implemented
 - API-017 MUST: every write endpoint (`POST /songs` job, PATCH, DELETE, bpm/detect) runs under the single-writer lock and, with the git store, commits `audioplayer: add|edit|delete|bpm <id>`. Status: implemented
-- API-018 SHOULD: `/search` and `/download` be removed or kept only for the iOS scaffold; the web UI does not use them. Status: to-confirm
+- API-018 SHOULD: keep `/search` and `/download` only for the iOS secondary text search (IOS-023); the web UI does not use them. `/download` bypasses the library and tags, so the row download should be replaced by the preview flow. Status: to-confirm
 - API-019 MUST: `/health` reports `sync` as `ok` whenever no git store is configured. Status: implemented

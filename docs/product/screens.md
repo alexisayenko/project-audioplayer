@@ -1,18 +1,18 @@
 # Screens and library model
 
 Status: web UI and the server endpoints below are implemented
-(2026-10-12, `web/`, `server/`); the iOS tab flow follows the web. The web UI is served by FastAPI from
+(2026-10-12, `web/`, `server/`); the iOS app (`ios/`) implements the same tab flow (ADR-0007, [`../specs/ios.md`](../specs/ios.md)). The web UI is served by FastAPI from
 the same origin as the API at `play.isayenko.net` (no CORS, token-protected
 API), see ADR-0003 in [`../tech/decisions.md`](../tech/decisions.md). The
 iOS app mirrors the web flow with Library, Add, Playback (queue badge) and
-Settings tabs (YouTube text search is a secondary screen under Add), see [`../tech/architecture.md`](../tech/architecture.md).
+Settings tabs (YouTube text search is a secondary screen under Add; Library has a Phone / Server switch), see [`../tech/architecture.md`](../tech/architecture.md).
 
 Scope: the web UI is for managing the library and listening online only,
 with no offline storage or audio cache. Offline listening ("download to
-device") is an iOS-app feature, built later against the same API.
-
-The screens below apply to the web UI first; "tab bar" and "mini-player"
-describe the layout to mirror in the app later.
+device") is the iOS app: Add and Library work as below, plus downloads to
+the phone, a Phone / Server switch in Library, and the Vega 108 look
+([style guide](../ui-ux/style-guide.md)). iOS differences are listed in
+[`../specs/ios.md`](../specs/ios.md); layouts below are the web's.
 
 ## Concept: tags replace playlists
 
@@ -256,11 +256,12 @@ contain no data.
 when the download succeeds, so the library lists playable songs only.
 Duplicates return 409. BPM detection runs after the file is saved; if it fails the song is saved with `bpm: null`. Old records without `bpm` load fine. If the cover fetch fails the song is still saved
 with `cover: null`. `POST /download` and `GET /search` still exist for the
-iOS scaffold; the web UI does not use them.
+iOS secondary text search; the web UI does not use them.
 
 ## Open questions
 
-- Does the existing `/search` (YouTube search) endpoint and Search tab
-  stay, or is URL paste the only way to add songs?
+- (Resolved for iOS) `/search` stays as a secondary text search under Add;
+  the web UI is paste-only. Open: the row download there still uses the
+  legacy `/download` (API-018).
 - (Resolved) The web UI mirrors all three screens: Add, Library, Player
   (the Playback tab, also opened from the persistent mini-player bar).

@@ -221,6 +221,17 @@ Two paths to TestFlight, same steps: `expo prebuild`, `pod install`,
   API key with the right role; sign in to Xcode; accept new
   Apple agreements.
 
+### This project (audioplayer)
+
+Native SwiftUI via XcodeGen, no CI workflows yet; only the local path is
+used (ADR-0008, steps in [`architecture.md`](architecture.md#testflight)).
+`xcodebuild archive`, then `xcodebuild -exportArchive` with
+`destination=upload` in the export options, signed by Xcode's signed-in
+account; no `altool`, no ASC API key. Build number: date-based
+`CURRENT_PROJECT_VERSION` in `ios/project.yml`, strictly higher than the
+last upload (20261012, 20261013 so far). `ios/Config/Secrets.xcconfig`
+(Google client IDs, git-ignored) must exist before `xcodegen`.
+
 ## Secrets and credentials
 
 - **Locally:** one file per credential,

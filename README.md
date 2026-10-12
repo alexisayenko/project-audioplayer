@@ -8,7 +8,8 @@ runtime dependency.
 
 Personal audio player: search YouTube, download a song's audio via a
 private server, manage the library and play online in the web UI. The
-iOS app (built later) adds offline listening via "download to device".
+The iOS app adds offline listening via "download to device"
+(Library, Add, Playback, Settings; Vega 108 turntable look).
 TestFlight internal testing only.
 
 - [`ios/`](ios/) — SwiftUI app

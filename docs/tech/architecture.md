@@ -121,29 +121,54 @@ is kept in `localStorage` (`audioplayer.token`). Mounted by FastAPI at
 
 ## App (`ios/`)
 
-Deferred: the web interface comes first. The scaffold below exists and does not yet use the library endpoints.
+SwiftUI, iOS 17, iPhone only, XcodeGen (`project.yml`). Tabs Library, Add,
+Playback, Settings, like the web (ADR-0007, spec [`../specs/ios.md`](../specs/ios.md)).
+Sources in `ios/Sources/`:
 
-- `LibraryStore` — tracks as `Documents/library.json`, audio in `Documents/audio/`.
-- `APIClient` — search, download (POST then file fetch).
-- `PlayerService` — `AVPlayer`, `.playback` audio session, `MPNowPlayingInfoCenter`
-  and `MPRemoteCommandCenter`; `UIBackgroundModes: audio`.
-- Server URL and token are entered in the Settings tab.
+- `Views` (tab shell, mini-player), `LibraryView`, `AddView` (+ `SearchView`
+  as secondary text search), `SongEditView`, `PlaybackView`, `SettingsView`.
+- `Theme`, `Components` — Vega 108 look (walnut bars, panel rows, piano
+  buttons, LEDs, platter and tonearm); see
+  [`../ui-ux/style-guide.md`](../ui-ux/style-guide.md).
+- `LibraryStore` — phone library, `Documents/library.json` and `Documents/audio/`.
+  `ServerLibrary` — cached `GET /library`, per-song and "Download all".
+- `APIClient` — preview, `POST /songs` + status polling, `/files`, PATCH,
+  BPM detect, Wikipedia lookup, delete; auth header added per request.
+- `AuthService`, `Keychain` — Sign in with Apple / Google (ADR-0006) and
+  token storage.
+- `PlayerService` — `AVPlayer`, `.playback` audio session, queue, shuffle and
+  repeat, `MPNowPlayingInfoCenter`, `MPRemoteCommandCenter`;
+  `UIBackgroundModes: audio`.
+- Server URL (default `https://play.isayenko.net`) and token are set in Settings.
 
 ```sh
 brew install xcodegen
-cd ios && xcodegen && open AudioPlayer.xcodeproj
+cd ios && cp Config/Secrets.example.xcconfig Config/Secrets.xcconfig  # fill in, git-ignored
+xcodegen && open AudioPlayer.xcodeproj
 ```
 
-Set `DEVELOPMENT_TEAM` in `ios/project.yml`, then Product → Archive →
-upload to App Store Connect. Use **internal** testers (no Beta App
-Review). TestFlight builds expire after 90 days; re-upload.
+### TestFlight
+
+ADR-0008. App Store Connect record "Gramophone Offline" (bundle
+`com.alexisayenko.audioplayer`, SKU `gramophone-ios`), internal group "Alex".
+
+1. Raise `CURRENT_PROJECT_VERSION` in `ios/project.yml` above every build
+   already uploaded (date-based; last uploaded 20261013), then `xcodegen`.
+2. `xcodebuild archive` the `AudioPlayer` scheme (Release, generic iOS device).
+3. `xcodebuild -exportArchive` with export options `method=app-store-connect`,
+   `destination=upload`; it signs and uploads with the account signed in to
+   Xcode (Settings > Accounts), cloud-managed signing, no API key.
+4. Wait for processing in App Store Connect, add the build to the group.
+
+Builds expire after 90 days; re-upload.
 
 ## Known gaps
 
-- iOS code was written without compiling; expect small build fixes on
-  first open in Xcode (2026-10-12).
-- `NSAllowsArbitraryLoads` is on because the server is plain http on a
-  private address; tighten if the server gets TLS.
+- The iOS app builds and has been uploaded to TestFlight; Add, edit, download
+  and sign-in flows against the live server are not yet tested on a device.
+- Server covers are not stored on the phone: blank offline after a relaunch.
+- `NSAllowsArbitraryLoads` is on in `project.yml`; the server is now HTTPS
+  at `play.isayenko.net`, so it can be tightened once that is deployed.
 - No CI (template rule: manual workflows only; none added yet).
 
 ## Owner-only OAuth sign-in
@@ -157,7 +182,7 @@ Server env: `ALLOWED_EMAIL` (default `alex.isayenko@gmail.com`),
 `ALLOWED_APPLE_SUB`, `APPLE_AUDIENCE=com.alexisayenko.audioplayer`,
 `GOOGLE_CLIENT_ID`. A provider without its audience set is rejected.
 
-iOS setup: Sign in with Apple capability on the App ID
+iOS setup (done): Sign in with Apple capability on the App ID
 `com.alexisayenko.audioplayer` (entitlement is in `project.yml`); a Google
 OAuth client of type iOS with that bundle id; copy
 `ios/Config/Secrets.example.xcconfig` to `Secrets.xcconfig` and fill in the
@@ -166,3 +191,7 @@ client ID and its reversed form, then `xcodegen`.
 Apple `sub`: sign in with Apple once in the app, decode the token payload
 (`sub`), or read the 403 case in the server log; put it in
 `ALLOWED_APPLE_SUB` so a hidden or relayed email still passes.
+
+Google Cloud project `gramophone-offline`: OAuth consent screen External in
+Testing with the owner as the only test user, one OAuth client of type iOS.
+A new client can take hours to start working. Values stay out of the repo.

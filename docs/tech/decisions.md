@@ -18,8 +18,9 @@ Status: Accepted · 2026-10-12
 
 ### Backend server is required
 
-The phone cannot run yt-dlp. The app calls the server for `/search`,
-`/download` and `/files`. ~~The server runs on an always-on machine (e.g.
+The phone cannot run yt-dlp. The app calls the server for `/preview`,
+`/songs`, `/library`, `/files` and the other library endpoints (~~`/search`,
+`/download` only~~: that was the scaffold; see ADR-0007). ~~The server runs on an always-on machine (e.g.
 `alex-hetzner`).~~ Superseded by ADR-0004: it runs on the home server
 `perkunas`. Known risk: YouTube may block datacenter IPs (a home IP
 avoids this).
@@ -103,7 +104,7 @@ Status: Accepted · 2026-10-12
 
 Status: Accepted · 2026-10-12
 
-- The web interface is built first; the mobile app is deferred.
+- The web interface is built first; the mobile app is deferred. ~~Deferred~~: the iOS app now exists and matches the web flow (ADR-0007).
 - FastAPI serves the static UI from the same origin as the API, so no
   CORS. The API stays protected by `AUDIO_API_TOKEN`.
 - Domain: `play.isayenko.net`, reaching FastAPI through Cloudflare
@@ -198,6 +199,8 @@ parts of ADR-0001 and the matching data wording in ADR-0004
 
 ## ADR-0006 Owner-only OAuth sign-in (Apple, Google)
 
+Status: Accepted, implemented in `server/` and `ios/`; not yet tested live on a device · 2026-10-12
+
 - Decision: besides `X-API-Token`, the server accepts
   `Authorization: Bearer <OIDC ID token>` from Sign in with Apple or Google,
   and only for the owner. No accounts, sessions or user table.
@@ -222,3 +225,48 @@ parts of ADR-0001 and the matching data wording in ADR-0004
 - Secrets: no client IDs in the repo. Server env vars, and
   `ios/Config/Secrets.xcconfig` (git-ignored) for the Google iOS client ID.
 
+## ADR-0007 iOS app: Vega 108 look, web-matching screen flow
+
+Status: Accepted, implemented in `ios/`; not yet run on a device · 2026-10-12 ·
+Supersedes the scaffold app (Library, Search, Settings, Now Playing, no
+library endpoints) and the "mobile app deferred" part of ADR-0003
+
+- Screen flow: the app mirrors the web UI, one tab per hash route:
+  Library, Add, Playback, Settings. The mini-player opens Playback. Text
+  search (`/search`) survives only as a secondary screen under Add. Same
+  endpoints and library model as the web, so a song added on either shows
+  on both. Spec: [`../specs/ios.md`](../specs/ios.md).
+- Offline model: the phone keeps its own copy (`Documents/audio/`,
+  `Documents/library.json`); Library has a Phone / Server switch, the server
+  list is `GET /library` with per-song and "Download all" fetches. Playing
+  never touches the network.
+- Look: skeuomorphic, after the Soviet Vega 108 Stereo turntable: walnut
+  bars, black panel, chrome knobs, piano keys, LEDs, Cyrillic panel labels,
+  rotating platter and a tonearm that follows progress; the icon is the
+  whole turntable. Tokens in `Theme.swift`, components in `Components.swift`;
+  sketches and prompts in `docs/ui-ux/`.
+- Why: one mental model across web and phone, and a distinctive look for a
+  one-user app. Cost: custom components need their own accessibility and
+  Dynamic Type care; the web UI keeps its plain style (no cross-platform
+  visual parity).
+- Cover tokens are never persisted: server covers are stored as
+  `/covers/<id>` and fetched with the auth header at request time; old
+  stored `?token=` values are scrubbed on load.
+
+## ADR-0008 Distribution: internal TestFlight
+
+Status: Accepted, in use · 2026-10-12
+
+- App Store Connect record "Gramophone Offline", bundle
+  `com.alexisayenko.audioplayer`, SKU `gramophone-ios`, iPhone only, one
+  internal TestFlight group ("Alex"). Internal testers need no Beta App
+  Review. No public release; the app may break YouTube's ToS.
+- Build numbers are date-based (`CURRENT_PROJECT_VERSION` = `YYYYMMDD`,
+  uploaded so far: 20261012, 20261013). App Store Connect rejects a repeated
+  or lower number, so the next upload needs a strictly higher one: the
+  next day's date, or the last number plus one for a second build in a day.
+- Upload: `xcodebuild archive`, then `xcodebuild -exportArchive` with
+  `destination=upload` in the export options, using the account signed in to
+  Xcode (cloud-managed signing, team in `project.yml`). No ASC API key, no
+  CI workflow (manual only; see `ci-cd.md`).
+- TestFlight builds expire after 90 days; re-upload.

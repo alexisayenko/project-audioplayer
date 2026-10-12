@@ -24,10 +24,11 @@ YouTube's ToS; the app is not for distribution.
 ## Tech stack
 
 `ios/` — SwiftUI app (iOS 17, XcodeGen `project.yml`, AVPlayer). `server/` —
-FastAPI wrapper around `yt-dlp` (Python 3.11+), run on an always-on machine with an
-`X-API-Token` header (Cloudflare Tunnel planned, Tailscale until then;
-see [docs/tech/decisions.md](docs/tech/decisions.md)). Status: scaffold; the iOS app builds for the Simulator but has
-not yet run on a device; server tests pass.
+FastAPI wrapper around `yt-dlp` (Python 3.11+), run on the home server `perkunas` behind a Cloudflare
+Tunnel (planned, not yet deployed; Tailscale is not used) with an `X-API-Token` header or owner-only
+Apple/Google sign-in; see [docs/tech/decisions.md](docs/tech/decisions.md). Web UI in `web/`.
+Status: the iOS app (tabs Library, Add, Playback, Settings; Vega 108 look) is on internal
+TestFlight; its server flows are not yet tested on a device; server tests pass.
 
 ## Working in a shared checkout
 

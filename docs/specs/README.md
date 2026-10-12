@@ -1,6 +1,6 @@
 # Specs
 
-What the product MUST do, derived from the code (`server/app/`, `web/js/`)
+What the product MUST do, derived from the code (`server/app/`, `web/js/`, `ios/Sources/`)
 and checked against [`../product/screens.md`](../product/screens.md),
 [`../tech/decisions.md`](../tech/decisions.md) and
 [`../tech/architecture.md`](../tech/architecture.md).
@@ -20,7 +20,7 @@ Each requirement is one line:
 `ID MUST|SHOULD: statement. Status: implemented | planned | to-confirm`
 
 - IDs are `<AREA>-<NNN>`, stable, never reused. Areas: `DATA`, `API`,
-  `TAG`, `ADD`, `LIB`, `STO`, `PLY`, `NFR`.
+  `TAG`, `ADD`, `LIB`, `STO`, `PLY`, `IOS`, `NFR`.
 - **MUST** is mandatory; **SHOULD** is desirable and may be waived with a reason.
 - **implemented**: verified in code on 2026-10-12. **planned**: decided, not
   built. **to-confirm**: behaviour exists or is proposed but nobody has
@@ -37,4 +37,5 @@ Each requirement is one line:
 | [library.md](library.md) | LIB | Library screen and song card |
 | [storage-and-sync.md](storage-and-sync.md) | STO | Git store, audio location, write path, sync states, env vars |
 | [playback.md](playback.md) | PLY | Playback screen, play queue, persistence, mini-player, Media Session |
+| [ios.md](ios.md) | IOS | iOS app: tabs, Settings and sign-in, Add, Library Phone/Server, offline playback, look, build number |
 | [non-functional.md](non-functional.md) | NFR | Auth, hosting, scale, browsers, offline, CPU |

@@ -1,10 +1,10 @@
 # Design prompts
 
 Prompts for an image-capable assistant to produce graphical sketches of the
-iOS app. Attach the current Now Playing screenshot as a starting point; for
+iOS app. Attach the current Playback screenshot as a starting point; for
 prompt A also attach the Vega 108 photo.
 
-## A. Vega 108 turntable
+## A. Vega 108 turntable (chosen: ADR-0007; results in `vega-108/`)
 
 ```
 You are a senior iOS product designer. Design graphical sketches (high-fidelity mockups) for "Gramophone Offline", a personal iPhone music player.
@@ -37,7 +37,7 @@ Product: one user (the owner), no social features, no accounts. He searches YouT
 
 Visual direction: your call. Choose the style that fits this product best in 2026 and commit to it fully. Think about what feels current, distinctive and still timeless in a year (for example: iOS 26 Liquid Glass done tastefully, editorial/typographic, tactile hardware-inspired, brutalist-minimal, warm analog). Do not default to generic dark-mode-with-purple-gradient. Briefly justify the choice in three sentences before showing the screens.
 
-Platform: portrait iPhone 16 Pro proportions, iOS conventions (status bar, Dynamic Island, home indicator, safe areas), thumb-reachable controls, accessible contrast, text that survives Dynamic Type. Light and dark variants of Now Playing.
+Platform: portrait iPhone 16 Pro proportions, iOS conventions (status bar, Dynamic Island, home indicator, safe areas), thumb-reachable controls, accessible contrast, text that survives Dynamic Type. Light and dark variants of Playback.
 
 Screens (one image each, same device frame):
 1. Library: search, sort, tag chips (genre and decade), song rows, a Phone / Server toggle, a small indicator that the server is reachable, "Add all".

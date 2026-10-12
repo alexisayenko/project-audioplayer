@@ -14,5 +14,11 @@ One bullet per event: ISO date, an em dash, what happened in a
 sentence or two, and a link to the task or artifact that carries
 the detail. Newest first; several events on one date are fine.
 
-- [TODO: YYYY-MM-DD] — [TODO: one-line summary; link to the task,
-  artifact, post, or release].
+- 2026-10-12 — iOS app uploaded to internal TestFlight (builds 20261012
+  and 20261013, record "Gramophone Offline", group "Alex"), after the app
+  was restyled as the Vega 108 turntable, rebuilt to match the web flow
+  and given owner-only Apple and Google sign-in; see
+  [task-0001](tasks/task-0001.md), [task-0002](tasks/task-0002.md).
+- 2026-10-12 — web UI, server (git-backed library, Wikipedia links, BPM,
+  decade tags) and iOS scaffold built; specs and ADRs written; not yet
+  deployed to `play.isayenko.net`.
