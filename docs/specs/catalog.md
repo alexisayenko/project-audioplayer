@@ -1,23 +1,23 @@
 # Catalog and audio
 
-Planned, pending acceptance of ADR-0010. Concept:
+ADR-0010 is Accepted. Server side (CAT-001..004, CAT-010 ids, CAT-033 server part) is implemented (task-0006); clients and later sources are planned. Concept:
 [`../product/concept-catalog-and-audio.md`](../product/concept-catalog-and-audio.md).
 Related, not rewritten: DATA-005, ADD-001..009, IOS-030..032. When ADR-0010 is
-accepted these are superseded as noted below.
+accepted (now) these are superseded as noted below.
 
 ## Catalog and audio state
 
-- CAT-001 MUST: the catalog holds every song record, with or without audio; this supersedes DATA-005 when ADR-0010 is accepted. Status: planned
-- CAT-002 MUST: audio state is derived: `none` (no `file` or file missing on the server), `server` (file on the server), `phone` (local copy on the device); it is never written to `library.json`. Status: planned
-- CAT-003 MUST: the song record has `sources` (list of `{source, id, url}`, first is primary) and `file` may be `null`. Status: planned
-- CAT-004 MUST: `GET /library` returns every catalog record with its server-side audio state. Status: planned
-- CAT-005 MUST: the phone syncs the whole catalog on launch and on refresh and keeps the last copy for offline use. Status: planned
+- CAT-001 MUST: the catalog holds every song record, with or without audio; this supersedes DATA-005. Status: implemented (server)
+- CAT-002 MUST: audio state is derived: `none` (no `file` or file missing on the server), `server` (file on the server), `phone` (local copy on the device); it is never written to `library.json`; the server derives `none`/`server`, `phone` is client-side. Status: implemented (server)
+- CAT-003 MUST: the song record has `sources` (list of `{source, id, url}`, first is primary) and `file` may be `null`; old records without `sources` get one derived at read time. Status: implemented (server)
+- CAT-004 MUST: `GET /library` returns every catalog record with its server-side audio state; `GET /catalog` is the metadata-only sync endpoint (ETag, `since`). Status: implemented (server)
+- CAT-005 MUST: the phone syncs the whole catalog on launch and on refresh and keeps the last copy for offline use. Status: planned (server endpoint `GET /catalog` is ready)
 - CAT-006 MUST: a downloaded song plays offline and never depends on the server. Status: planned
 
 ## Sources and ids
 
-- CAT-010 MUST: ids are the YouTube id (unchanged), `soundcloud-<id>`, or `spotify-<id>` or `applemusic-<id>` (or `shazam-<id>`) for metadata-only songs; attaching audio from another source keeps `id` and appends to `sources`. Status: planned
-- CAT-011 MUST: Add means "add to catalog": a YouTube, SoundCloud or Spotify link, or manual entry, saves a record; audio is not fetched until Get audio, except that a YouTube or SoundCloud add may offer "Save and get audio" in one step. Status: planned
+- CAT-010 MUST: ids are the YouTube id (unchanged), `soundcloud-<id>`, or `spotify-<id>` or `applemusic-<id>` (or `shazam-<id>`) for metadata-only songs; attaching audio from another source keeps `id` and appends to `sources`. Status: implemented (id validation and `sources`; attaching is task-0009)
+- CAT-011 MUST: Add means "add to catalog": a YouTube, SoundCloud or Spotify link, or manual entry, saves a record; audio is not fetched until Get audio, except that a YouTube or SoundCloud add may offer "Save and get audio" in one step. Status: implemented for YouTube and SoundCloud (`POST /songs` with `audio:false`); Spotify and manual entry planned
 - CAT-012 MUST: a Spotify track link yields metadata only (title, artist, album, year, cover) via the Spotify Web API with client credentials; the preview shows "No audio yet". Status: planned
 - CAT-013 MUST: the Spotify client id and secret live only in the git-ignored server env and never reach a client or the repos. Status: planned
 - CAT-014 MUST: no audio is ever taken from Spotify. Status: planned
@@ -37,7 +37,7 @@ accepted these are superseded as noted below.
 - CAT-030 MUST: Library lists the whole catalog; each row shows its audio state; this supersedes IOS-030 and IOS-031 (phone-only list, no Download all) when ADR-0010 is accepted. Status: planned
 - CAT-031 MUST: a filter "On phone" shows only songs with a local copy. Status: planned
 - CAT-032 MUST: Play is available only for state `phone` on the phone (and `server` on the web); other rows offer Get audio. Status: planned
-- CAT-033 MUST: Delete from library removes the catalog record; a separate "Remove download" frees the phone copy and keeps the record. Status: planned
+- CAT-033 MUST: Delete from library removes the catalog record; a separate "Remove download" frees the phone copy and keeps the record. Status: implemented (server: `DELETE /songs/{id}` and `DELETE /songs/{id}/audio`); the phone action is planned
 
 ## More sources
 

@@ -160,7 +160,7 @@ machine / `alex-hetzner`" wording in ADR-0001
 Status: Accepted, implemented in `server/` (git store, `music_root`, sync status; not yet deployed) · 2026-10-12 ·
 Supersedes the `library.json`-on-server-disk and covers-on-server-disk
 parts of ADR-0001 and the matching data wording in ADR-0004
-Amended by ADR-0010 (Proposed): the store also holds catalog records that have no audio yet.
+Amended by ADR-0010 (Accepted): the store also holds catalog records that have no audio yet.
 
 - Metadata: private repo `alexisayenko/data-storage`, file
   `audioplayer/library.json`. Every library change (add, edit, tag,
@@ -295,7 +295,7 @@ Status: Accepted, in use · 2026-10-12
 ## ADR-0009 Look: the Electrophone design system is the single source of truth
 
 Status: Accepted · 2026-10-12 · Supersedes the look part of ADR-0007
-Partly superseded (the "Library is the phone" bullet) by ADR-0010 once accepted.
+Partly superseded by ADR-0010 (Accepted 2026-10-13): the "Library is the phone" bullet (phone-only Library, no Download all) is replaced; the rest stands. The text below is kept as history.
 
 - Direction: "Warm analog / Quiet glass" (origin: `docs/ui-ux/mockups2/`, prompt B
   in `docs/ui-ux/design-prompts.md`): warm paper and charcoal grounds, a copper
@@ -315,7 +315,7 @@ Partly superseded (the "Library is the phone" bullet) by ADR-0010 once accepted.
   Screens" Design artifact before they are built.
 - Library filtering changes with the look: four category chips (Tags, Genres,
   Years, Countries) open a filter sheet; no flat scrolling tag row.
-- Library is the phone (supersedes the Phone / Server switch of ADR-0007):
+- Library is the phone (superseded by ADR-0010; was: supersedes the Phone / Server switch of ADR-0007):
   the server is only the download pipe behind Add; the phone never browses
   a server library. The web UI keeps `GET /library`.
 - Three destinations, not four: Library, Playback, Settings. Add is an
@@ -341,7 +341,7 @@ pairs are listed in `docs/ui-ux/style-guide.md`. Web assets are served under
 
 ## ADR-0010 The catalog and the audio are separate: Library lists every song, audio is fetched on demand
 
-Status: Proposed · 2026-10-13 · Supersedes the "Library is the phone" part of
+Status: Accepted · 2026-10-13 (Alex decided to start the work; server side implemented in task-0006) · Supersedes the "Library is the phone" part of
 ADR-0009 and the matching IOS-030..032 wording; amends ADR-0005 (what the store
 holds). Concept: [`docs/product/concept-catalog-and-audio.md`](../product/concept-catalog-and-audio.md).
 
@@ -377,7 +377,7 @@ holds). Concept: [`docs/product/concept-catalog-and-audio.md`](../product/concep
 - Cost: a record can exist without a file (DATA-005 changes), a Spotify developer
   app and its terms become a dependency, wrong YouTube matches need a human
   confirm, and catalog vs audio can drift (see concerns).
-- Open until accepted: specs are `planned` (CAT-*), tasks task-0006.. (phases P1..P6).
+- Implementation: server P1 (task-0006) is implemented: `file` may be `null`, `sources` list, derived `audio_state` (`none`/`server`), `GET /catalog`, metadata-only `POST /songs`, `DELETE /songs/{id}/audio`. Old records are not migrated; state is derived at read time. Remaining specs are `planned` (CAT-*), tasks task-0007.. (phases P2..P6).
 
 ## ADR-0011 Multi-source song ids: YouTube unchanged, SoundCloud as `soundcloud-<track id>`
 

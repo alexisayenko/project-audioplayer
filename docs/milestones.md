@@ -14,6 +14,7 @@ One bullet per event: ISO date, an em dash, what happened in a
 sentence or two, and a link to the task or artifact that carries
 the detail. Newest first; several events on one date are fine.
 
+- 2026-10-13 — ADR-0010 accepted; server side of the catalog (task-0006: audio state, `/catalog`, metadata-only add) built and tested.
 - 2026-10-13 — concept "catalog and audio" proposed (ADR-0010): Library lists every
   song, audio is fetched on demand; see
   [concept](product/concept-catalog-and-audio.md), task-0006 to task-0015.
