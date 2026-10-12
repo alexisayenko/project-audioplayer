@@ -21,7 +21,7 @@ description: [`../product/screens.md`](../product/screens.md) section 3.
 - PLY-015 MUST: the overlay shows a links row after the BPM with up to three links, in order "Source" (`source_url`, `http(s)`), "Wikipedia (song)" (`wikipedia_song`) and "Wikipedia (band)" (`wikipedia_artist`, `https`), only those present, each `target=_blank rel="noopener noreferrer"` (`songLinks` in `web/js/wiki-links.js`, node test). Status: implemented
 - PLY-012 SHOULD: tag chips on the overlay are clipped to about three lines. Status: implemented
 - PLY-013 MUST: a missing or failing cover is blanked, not shown as a broken image. Status: implemented
-- PLY-014 MUST: chips on the overlay, queue rows, selected-tag chips and the tag picker use the same display names as Library (LIB-016); picker groups are Genre, Country, Language, other keys, Tags. Status: implemented
+- PLY-014 MUST: chips on the overlay, queue rows, selected-tag chips and the tag picker use the same display names as Library (LIB-016); picker groups are Genre, Decade, Country, Language, other keys, Tags. Status: implemented
 
 ## Block 2: play controls
 
@@ -55,6 +55,7 @@ description: [`../product/screens.md`](../product/screens.md) section 3.
 
 ## Queue source rules
 
+- PLY-057 MUST: the Library "Add all N to playlist" button (LIB-031) calls `player.addListed` (`addListed` in `queue-logic.js`), which for a tag filter reuses `addTags` (the tag-picker logic): the tag becomes a chip and the listed songs are added as tag-derived; with search only they are added as manual. Nothing starts playing unless the queue was empty, and then the first song is only loaded (as PLY-035). Status: implemented
 - PLY-050 MUST: every queue entry is either manual (added one by one with Library Add or Play now) or tag-derived (brought in by one or more selected tags); a tag-derived entry records which tags brought it. Status: implemented
 - PLY-051 MUST: manual wins: a song added manually stays in the queue when its tags are removed or cleaned; adding a song that is already tag-derived makes it manual (result "added"), adding a manual duplicate is ignored ("Already in queue"). Status: implemented
 - PLY-052 MUST: removing tags drops a song only if it comes after the current song, is not manual and has no other selected tag left; songs already played, the current one and manual ones stay. Status: implemented

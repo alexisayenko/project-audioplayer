@@ -53,8 +53,9 @@ Manages all songs.
   playlist; a row of tag chips along the bottom (`key:value` tags keep a
   highlighted key prefix). Clicking the card body opens the Edit dialog,
   which also holds Delete. Play now keeps the user on Library.
-- Search box (title, artist, album, tags).
-- Filter by tag (chips grouped by prefix: Genre, Country, Language, then others; plain tags under Tags; `country:` and `lang:` values show as names, e.g. Lithuania, Russian); sort (added date, title, artist, year, BPM; songs without BPM last).
+- Search box (title, artist, album, tags). With a tag filter or search text active, an "Add all N to playlist" button appends all listed songs to the queue (toast "Added X songs (Y already in queue)"; a tag filter becomes a playlist chip, search-only adds are manual); hidden when nothing is filtered.
+- `decade:` tags are derived from Year by the server and show as "the 90s"; the tag editor previews the chip as Year changes.
+- Filter by tag (chips grouped by prefix: Genre, Decade, Country, Language, then others; plain tags under Tags; `country:` and `lang:` values show as names, e.g. Lithuania, Russian); sort (added date, title, artist, year, BPM; songs without BPM last).
 - Edit dialog has the two Wikipedia inputs and "Fill from Wikipedia links" (same behaviour as Add), uses the same tag editor and has a BPM input (whole numbers) and a Re-detect button (re-runs detection on the stored file).
 - Edit metadata and tags of a song; Delete a song (server file, cover and
   record) from the Edit dialog.

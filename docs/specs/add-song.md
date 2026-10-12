@@ -25,6 +25,7 @@ Code: `web/js/add.js`, `server/app/main.py` (`preview`, `create_song`,
 
 ## Wikipedia links
 
+- ADD-005 MUST: the year of the preview (including `suggested_year` when yt-dlp gave none) produces the `decade:` chip in the tag editor, and editing Year updates it (TAG-038); the server derives the stored tag on save (TAG-051). Status: implemented
 - ADD-050 MUST: the preview card has two optional URL inputs, "Wikipedia: song" and "Wikipedia: band", pre-filled from `preview.wikipedia_song` / `wikipedia_artist` (MusicBrainz url-rels, see [tags.md](tags.md) TAG-040); they are saved with the song (`metadata.wikipedia_song`, `wikipedia_artist`); an input that is not a Wikipedia/Wikidata link is outlined red and dropped by the server. Status: implemented
 - ADD-051 MUST: "Fill from Wikipedia links" calls `POST /lookup/wikipedia` with the two inputs; the suggested year fills Year when it is empty, or after a confirm when it differs; suggested tags go to the Suggested row, not onto the song. Status: implemented
 

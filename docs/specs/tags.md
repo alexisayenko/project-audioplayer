@@ -19,6 +19,9 @@ Code: `server/app/library.py` (`clean_tag`, `clean_tags`, `tag_counts`),
 - TAG-017 MUST: the tag editor commits leftover input text on Save only if it is a complete tag (non-empty; for `key:value` both parts non-empty); an incomplete `mood:` or `:x` is ignored. Status: implemented
 - TAG-014 MUST: empty tags are dropped; duplicates are removed case-insensitively, first occurrence wins, order preserved. Status: implemented
 - TAG-016 MUST: namespaces `country:` (ISO 3166-1 alpha-2, e.g. `country:lt`) and `lang:` (ISO 639-1, e.g. `lang:ru`) are ordinary tags with normalised values: lowercase; for `lang:` a 3-letter code with a 2-letter equivalent is mapped (`rus` to `ru`) and a region suffix is dropped (`ru-RU` to `ru`); unknown shapes are kept as plain lowercase tags, never rejected. Status: implemented
+- TAG-050 MUST: decade tags: the server derives `decade:<NN>s` from `year` for 1950-2029 (`decade:50s`, `60s`, `70s`, `80s`, `90s`, `00s`, `10s`, `20s`; 1994 gives `decade:90s`, 2007 `decade:00s`, 2013 `decade:10s`); a year outside that range or missing derives nothing. Status: implemented
+- TAG-051 MUST: on every create, PATCH and load, when `year` is in range the song's `decade:*` tags are replaced by exactly the derived one (a manually typed or stale decade tag is overwritten, so changing the year updates it); when the year is missing or out of range existing `decade:` tags are left untouched. Existing songs with a year are migrated on load and saved on the next write. Status: implemented
+- TAG-052 MUST: the `decade:` value is lowercased like any `key:value`; a value not matching `^\d{2}s$` is kept as a plain-normalised tag, never rejected. Status: implemented
 - TAG-015 SHOULD: limit tag count and length (today none is enforced; only preview suggestions are capped: genre 3, country 1, lang 2). Status: to-confirm
 
 ## Tag suggestions (Add preview only)
@@ -44,9 +47,10 @@ Code: `server/app/library.py` (`clean_tag`, `clean_tags`, `tag_counts`),
 
 - TAG-030 MUST: `GET /tags` returns `[{tag, count}]` sorted case-insensitively; tags equal case-insensitively are one entry (first spelling shown). Status: implemented
 - TAG-031 MUST: the web UI computes the same counts client-side from the loaded library (`store.tagCounts`), not from `/tags`. Status: implemented
-- TAG-032 MUST: the Library filter groups chips by key: Genre, Country (`country`), Language (`lang`), then other keys (title-cased, alphabetical), plain tags in group "Tags" last; a chip shows the value only (`pop`, not `genre:pop`) plus the count. Status: implemented
+- TAG-032 MUST: the Library filter groups chips by key: Genre, Decade (`decade`, chronological), Country (`country`), Language (`lang`), then other keys (title-cased, alphabetical), plain tags in group "Tags" last; a chip shows the value only (`pop`, not `genre:pop`) plus the count. Status: implemented
 - TAG-033 MUST: filtering is single-select, exact case-insensitive match on the full tag; clicking the active chip clears it; a filter whose tag no longer exists is cleared. Status: implemented
 - TAG-034 MUST: a song card shows `key:value` tags with the key as a highlighted prefix. Status: implemented
 - TAG-036 MUST: `country:` and `lang:` values display as names via `Intl.DisplayNames` (`web/js/tagname.js`; raw value as fallback, raw tag in the tooltip); search matches code and name; editing always uses the raw `key:value` tags. Status: implemented
+- TAG-038 MUST: `decade:90s` displays as "the 90s" (raw tag in the tooltip, `web/js/tagname.js`); search matches "90s"; the tag editor previews the derived decade chip as soon as the Year input changes (the server is authoritative on save). Status: implemented
 - TAG-037 MUST: tags are edited with the shared tag editor (LIB-055, ADD-004). Status: implemented
 - TAG-035 SHOULD: multi-tag filtering (AND/OR). Status: planned

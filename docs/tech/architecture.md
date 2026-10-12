@@ -103,7 +103,7 @@ disables the outbound HTTPS tag and link lookups to `musicbrainz.org`, `wikidata
 and `*.wikipedia.org`), `AUDIO_MB_USER_AGENT` (default
 `audioplayer/0.1 (alex.isayenko@gmail.com)`, sent to all three hosts; Wikimedia requires a descriptive one).
 
-Server modules (`server/app/`): `main` (routes, jobs), `library` (records,
+Server modules (`server/app/`): `main` (routes, jobs), `library` (records, derived `decade:` tags,
 tag normalisation), `extractor` (yt-dlp), `genre_lookup` (MusicBrainz
 suggestions), `wiki_lookup` (Wikipedia links, Wikidata facts, link validation), `langcodes` (ISO 639 mapping), `bpm` (aubio), `gitstore`
 (git sync).

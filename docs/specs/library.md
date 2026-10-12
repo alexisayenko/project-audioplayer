@@ -19,6 +19,7 @@ in `docs/product/wireframes/` yet; add a link here when it lands).
 - LIB-013 MUST: the currently playing song's card is highlighted. Status: implemented
 - LIB-014 MUST: clicking the title (card body) opens the Edit dialog; there is no separate edit or delete button on the card. Status: implemented
 - LIB-015 MUST: `key:value` tags render with the key as a highlighted prefix. Status: implemented
+- LIB-017 MUST: `decade:` tags show as "the 90s" on chips and in filter groups (group "Decade" after Genre); search matches "90s". Status: implemented
 - LIB-016 MUST: `country:` and `lang:` tags show a human name on chips and in filter groups ("Lithuania", "Russian", via `Intl.DisplayNames`, raw value as fallback, raw tag in the tooltip); search matches both the code and the name. Status: implemented
 
 ## Search
@@ -28,6 +29,8 @@ in `docs/product/wireframes/` yet; add a link here when it lands).
 ## Tag filter
 
 - LIB-030 MUST: chips grouped by key, plain tags under "Tags", with counts, single-select; see TAG-032, TAG-033. Status: implemented
+
+- LIB-031 MUST: when a tag filter and/or search text is active and at least one song is listed, an "Add all N to playlist" button (N = songs currently listed) sits next to the count line; it is hidden when neither is active (no "add entire library"). Click appends all listed songs to the queue, de-duplicated, at the end, without starting playback (same as per-song Add), toast "Added X songs (Y already in queue)". With a tag filter the tag becomes a chip in the playlist controls (as in PLY-035, only the listed songs are added) so Clean playlist removes them; with search only, the songs are added as manual. Status: implemented
 
 ## Sort
 
@@ -41,7 +44,7 @@ in `docs/product/wireframes/` yet; add a link here when it lands).
 - LIB-052 MUST: Re-detect calls `POST /songs/{id}/bpm/detect`, fills the BPM field and saves the new value immediately (independent of the Save button); a failure shows inline. Status: implemented
 - LIB-053 MUST: Delete is inside the Edit dialog and asks for confirmation ("Delete song?"); it removes the record, audio file and cover; a 404 (already gone) just closes and refreshes. Status: implemented
 - LIB-054 SHOULD: the label say BPM is a heuristic that may be off by half or double. Status: implemented
-- LIB-055 MUST: the Tags field is the shared tag editor (`web/js/tag-editor.js`, also used by Add, ADD-004): a text input (Enter or comma adds a chip, accepts `key:value`, filters the list below as you type, matches code and display name), the song's current tags as chips with an x, and below them every library tag as a toggle chip (assigned ones selected) grouped Genre, Country, Language, other keys, Tags, most-used first with counts; the list scrolls inside the dialog (max height). Save sends the same tag array as before. Status: implemented
+- LIB-055 MUST: the Tags field is the shared tag editor (`web/js/tag-editor.js`, also used by Add, ADD-004): a text input (Enter or comma adds a chip, accepts `key:value`, filters the list below as you type, matches code and display name), the song's current tags as chips with an x, and below them every library tag as a toggle chip (assigned ones selected) grouped Genre, Decade, Country, Language, other keys, Tags, most-used first with counts; the list scrolls inside the dialog (max height). Changing the Year input immediately shows the derived decade chip (preview only, TAG-038). Save sends the same tag array as before. Status: implemented
 
 - LIB-056 MUST: the Edit dialog has "Wikipedia: song" and "Wikipedia: band" URL inputs (empty clears the link) and a "Fill from Wikipedia links" button with the same behaviour as ADD-051; Save sends `wikipedia_song` and `wikipedia_artist` with the other fields. Library cards do not show the links. Status: implemented
 
