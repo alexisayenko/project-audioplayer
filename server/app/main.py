@@ -108,7 +108,10 @@ def _clean_text(v: str | None) -> str | None:
 
 
 def _short(exc: Exception) -> str:
-    return re.sub(r"\x1b\[[0-9;]*m", "", str(exc)).strip()[:300]
+    text = re.sub(r"\x1b\[[0-9;]*m", "", str(exc)).strip()
+    text = re.sub(r"^ERROR:\s*(\[\w+\]\s*[\w-]+:\s*)?", "", text)
+    text = re.split(r"\s+(?:Use --cookies|See\s+https?://)", text)[0]
+    return text.strip()[:300]
 
 
 class DownloadRequest(BaseModel):
@@ -317,6 +320,15 @@ def delete_song(video_id: str):
         JOBS.pop(video_id, None)
 
 
+class NoCacheStaticFiles(StaticFiles):
+    """Revalidate on every load so UI edits show up without a hard refresh."""
+
+    async def get_response(self, path, scope):
+        response = await super().get_response(path, scope)
+        response.headers["Cache-Control"] = "no-cache"
+        return response
+
+
 # Mounted last so API routes above always win.
 if WEB_DIR.is_dir():
-    app.mount("/", StaticFiles(directory=WEB_DIR, html=True), name="web")
+    app.mount("/", NoCacheStaticFiles(directory=WEB_DIR, html=True), name="web")
