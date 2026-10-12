@@ -22,7 +22,7 @@ are `{"detail": "<message>"}`.
 | `POST /preview` | header | `{url}` | 200 `{id, source_url, title, artist, album, year, tags, duration, thumbnail, in_library}` | 422 `not a YouTube video URL`; 502 `preview failed: <short>` |
 | `POST /songs` | header | `{url, metadata:{title,artist,album,year,bpm}, tags:[]}` | 202 `{id, status:"downloading"}` | 422 bad URL or field range; 409 `already in library` / `already downloading` |
 | `GET /songs/{id}/status` | header | - | 200 `{id, status:"downloading"\|"done"\|"error", progress:0..1, error}` | 404 `unknown song` |
-| `PATCH /songs/{id}` | header | any of `title, artist, album, year, bpm, tags` | 200 the updated song | 404 `unknown song`; 422 `title must not be empty` or field range |
+| `PATCH /songs/{id}` | header | any of `title, artist, album, year, bpm (integer; fractions rounded), tags` | 200 the updated song | 404 `unknown song`; 422 `title must not be empty` or field range |
 | `POST /songs/{id}/bpm/detect` | header | - | 200 the updated song | 404 `unknown song` / `not downloaded`; 422 `could not detect BPM`; 503 music_root server not configured |
 | `DELETE /songs/{id}` | header | - | 204 | 404 `unknown song` |
 | `GET /files/{id}` | header or `?token=` | - | 200 audio (`audio/mp4`, Range supported via `FileResponse`) | 404 `not downloaded`; 503 music_root server not configured |

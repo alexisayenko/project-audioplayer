@@ -12,7 +12,7 @@ Code: `server/app/library.py`, `server/app/main.py` (`SongMeta`).
 | `album` | string or null | no | trimmed; empty becomes `null` |
 | `year` | int or null | no | 0..3000 (422 outside) |
 | `tags` | string[] | yes (may be `[]`) | normalised, see [tags.md](tags.md) |
-| `bpm` | number or null | no | 20..300 (422 outside); PATCH rounds to 1 decimal; detected values are 1 decimal |
+| `bpm` | int or null | no | whole beats per minute, 20..300 (422 outside); a typed or PATCHed fraction is rounded; detected values are rounded; fractional values in old files are rounded on load (saved on the next write) |
 | `duration` | number or null | no | seconds, technical, set at download |
 | `source_url` | string | yes | `https://www.youtube.com/watch?v=<id>` |
 | `file` | string | yes | audio file name only, `<id>.m4a`, never a path |
@@ -25,14 +25,14 @@ Code: `server/app/library.py`, `server/app/main.py` (`SongMeta`).
 - DATA-004 MUST: optional fields may be `null`; old records lacking `bpm` or other optional fields load without error. Status: implemented
 - DATA-005 MUST: a song record exists only after its audio download succeeded (the library lists playable songs only). Status: implemented
 - DATA-006 MUST: the API rejects `bpm` outside 20..300 and `year` outside 0..3000 with 422. Status: implemented
-- DATA-007 SHOULD: `POST /songs` round a typed `bpm` to 1 decimal like PATCH does (today it is stored as given). Status: to-confirm
+- DATA-007 MUST: `POST /songs` and PATCH round a typed `bpm` to an integer; `library.normalize` rounds stored fractions on load. Status: implemented
 
 ## `library.json`
 
 ```json
 { "settings": { "music_root": "perkunas://data/music/" },
   "songs": [ { "id": "dQw4w9WgXcQ", "file": "dQw4w9WgXcQ.m4a", "title": "...",
-               "artist": "...", "album": null, "year": null, "bpm": 113.0,
+               "artist": "...", "album": null, "year": null, "bpm": 113,
                "source_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
                "cover": "covers/dQw4w9WgXcQ.jpg", "duration": 213,
                "added_at": "2026-10-12T09:30:00Z", "tags": ["genre:pop"] } ] }
@@ -50,4 +50,6 @@ Code: `server/app/library.py`, `server/app/main.py` (`SongMeta`).
 - DATA-020 MUST: a bare `[...]` or `{songs:[...]}` file is accepted and rewritten as `{settings, songs}` on the next save. Status: implemented
 - DATA-021 MUST: a song with `id` but no `file` gets `file = <id>.m4a`. Status: implemented
 - DATA-022 MUST: a legacy `genre` field is removed and becomes the tag `genre:<value>`; tags are re-normalised. Status: implemented
+
+Tag namespaces in use (see [tags.md](tags.md)): `genre:<name>`, `country:<ISO 3166-1 alpha-2>` (e.g. `country:lt`), `lang:<ISO 639-1>` (e.g. `lang:ru`; ISO 639-3 only when no 2-letter code exists), `mood:<name>`; any other `key:value` or plain tag is allowed.
 - DATA-023 MUST: migration runs in memory at load and persists on the next write (no separate migration job). Status: implemented

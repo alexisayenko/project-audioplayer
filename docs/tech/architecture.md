@@ -38,7 +38,7 @@ plain files in `AUDIO_DATA_DIR`. Otherwise the server keeps its own clones of th
 `alexisayenko/data-storage-lfs` (`audioplayer/covers/<id>.jpg`, Git LFS).
 Reads come from the local clone. A write takes the single-writer lock,
 runs `pull --rebase`, writes `library.json` atomically, commits
-(`audioplayer: add|edit|delete <id>`) and pushes. If the push fails the
+(`audioplayer: add|edit|delete|bpm <id>`) and pushes. If the push fails the
 local commit is kept, retried with backoff, and a warning is shown in
 the UI; the write is never lost. Auth: one write deploy key per repo,
 outside the repos (`~/.config/`, `chmod 600`). History is permanent, so
@@ -57,7 +57,7 @@ relative audio file names only (replaces `AUDIO_DOWNLOAD_DIR`). Each save costs 
 | `POST /download {video_id}` | fetch m4a (itag 140, no ffmpeg needed), return metadata |
 | `GET /files/{video_id}` | stream the stored m4a |
 | `GET /library`, `GET /tags` | songs with tags; tag counts |
-| `POST /preview {url}` | yt-dlp metadata, no download |
+| `POST /preview {url}` | yt-dlp metadata plus suggested genre/country/lang tags (MusicBrainz), no download |
 | `POST /songs`, `GET /songs/{id}/status` | add song (background download), poll progress |
 | `PATCH /songs/{id}`, `DELETE /songs/{id}` | edit metadata/tags/bpm; remove record, audio, cover |
 | `POST /songs/{id}/bpm/detect` | re-detect BPM (aubio) from the stored m4a |
@@ -93,17 +93,24 @@ pip install -U yt-dlp                    # run daily (cron); YouTube breaks it o
 
 Then open `http://<host>:8000/`, go to Settings, paste the token. Env:
 `AUDIO_API_TOKEN` (required), `AUDIO_DOWNLOAD_DIR` (default `downloads`),
-`AUDIO_DATA_DIR` (default `.`, holds `library.json` and `covers/` until
-ADR-0005 is implemented, after which they live in the git clones),
-`AUDIO_WEB_DIR` (default `../web`), `AUDIO_GENRE_LOOKUP` (default on, `0`
-disables the outbound HTTPS genre lookup to `musicbrainz.org`),
+`AUDIO_DATA_DIR` (default `.`, plain-file `library.json` and `covers/` when
+`AUDIO_DATA_REPO` is unset), `AUDIO_DATA_REPO` / `AUDIO_COVERS_REPO` /
+`AUDIO_GIT_SSH_KEY` (git store, ADR-0005), `AUDIO_MUSIC_ROOT` /
+`AUDIO_HOSTS` / `AUDIO_HOSTS_FILE` (audio location),
+`AUDIO_WEB_DIR` (default `../web`), `AUDIO_TAG_LOOKUP` / `AUDIO_GENRE_LOOKUP` (default on, `0`
+disables the outbound HTTPS tag lookup to `musicbrainz.org`),
 `AUDIO_MB_USER_AGENT` (default `audioplayer/0.1 (alex.isayenko@gmail.com)`).
+
+Server modules (`server/app/`): `main` (routes, jobs), `library` (records,
+tag normalisation), `extractor` (yt-dlp), `genre_lookup` (MusicBrainz
+suggestions), `langcodes` (ISO 639 mapping), `bpm` (aubio), `gitstore`
+(git sync).
 
 ## Web UI (`web/`)
 
 Plain HTML, CSS and ES modules; no build step, no framework, no CDN.
-`index.html` + `style.css` + `js/` (`api`, `store`, `player`, `library`,
-`queue-logic`, `add`, `settings`, `app`). Hash routes `#/library`, `#/add`,
+`index.html` + `style.css` + `js/` (`api`, `store`, `dom`, `player`, `library`,
+`queue-logic`, `tagname`, `tag-editor`, `tag-input`, `add`, `settings`, `app`). Hash routes `#/library`, `#/add`,
 `#/playback`, `#/settings`. One `<audio>` element drives the mini-player, the
 Playback tab and the Media Session lock-screen controls. The token
 is kept in `localStorage` (`audioplayer.token`). Mounted by FastAPI at

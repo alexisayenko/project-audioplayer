@@ -13,12 +13,13 @@ in `docs/product/wireframes/` yet; add a link here when it lands).
 
 ## Song card
 
-- LIB-010 MUST: a card shows, in order: square cover (lazy-loaded, blank if missing); title; one line "Artist, Album, year" with missing parts omitted; duration (m:ss) and a BPM badge (`<rounded> BPM`) when known; two icon buttons; a row of tag chips. Status: implemented
+- LIB-010 MUST: a card shows, in order: square cover (lazy-loaded, blank if missing); title; one line "Artist, Album, year" with missing parts omitted; duration (m:ss) and a BPM badge (`<bpm> BPM`, whole number) when known; two icon buttons; a row of tag chips. Status: implemented
 - LIB-011 MUST: icon button Play now (`player.playNow`) inserts the song after the current one and plays it, keeping the user on Library. Status: implemented
 - LIB-012 MUST: icon button Add to current playlist (`player.add`) appends to the queue; toast "Queued" (queue was empty, not played), "Added", or "Already in queue" (duplicate ignored). Status: implemented
 - LIB-013 MUST: the currently playing song's card is highlighted. Status: implemented
 - LIB-014 MUST: clicking the title (card body) opens the Edit dialog; there is no separate edit or delete button on the card. Status: implemented
 - LIB-015 MUST: `key:value` tags render with the key as a highlighted prefix. Status: implemented
+- LIB-016 MUST: `country:` and `lang:` tags show a human name on chips and in filter groups ("Lithuania", "Russian", via `Intl.DisplayNames`, raw value as fallback, raw tag in the tooltip); search matches both the code and the name. Status: implemented
 
 ## Search
 
@@ -35,11 +36,12 @@ in `docs/product/wireframes/` yet; add a link here when it lands).
 
 ## Edit dialog
 
-- LIB-050 MUST: fields: Title (required), Artist, Album, Year (0..3000), BPM (20..300, step 0.1, placeholder "Unknown") with a Re-detect button, Tags (comma-separated text with suggestions from existing tags). Status: implemented
+- LIB-050 MUST: fields: Title (required), Artist, Album, Year (0..3000), BPM (20..300, whole numbers, step 1, placeholder "Unknown") with a Re-detect button, Tags (shared tag editor, LIB-055). Status: implemented
 - LIB-051 MUST: Save sends `PATCH` with all fields (empty year or BPM becomes `null`), closes, refreshes, toast "Saved"; a server error shows inline and keeps the dialog open. Status: implemented
 - LIB-052 MUST: Re-detect calls `POST /songs/{id}/bpm/detect`, fills the BPM field and saves the new value immediately (independent of the Save button); a failure shows inline. Status: implemented
 - LIB-053 MUST: Delete is inside the Edit dialog and asks for confirmation ("Delete song?"); it removes the record, audio file and cover; a 404 (already gone) just closes and refreshes. Status: implemented
 - LIB-054 SHOULD: the label say BPM is a heuristic that may be off by half or double. Status: implemented
+- LIB-055 MUST: the Tags field is the shared tag editor (`web/js/tag-editor.js`, also used by Add, ADD-004): a text input (Enter or comma adds a chip, accepts `key:value`, filters the list below as you type, matches code and display name), the song's current tags as chips with an x, and below them every library tag as a toggle chip (assigned ones selected) grouped Genre, Country, Language, other keys, Tags, most-used first with counts; the list scrolls inside the dialog (max height). Save sends the same tag array as before. Status: implemented
 
 ## Not in scope
 

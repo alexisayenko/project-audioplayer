@@ -34,8 +34,8 @@ bar sits above the tab bar on the other tabs and opens Playback on tap.
 
 1. User pastes a YouTube URL.
 2. App asks the server for a metadata preview (cover, title, artist,
-   album, year, and a suggested `genre:` tag, from yt-dlp where available).
-3. User edits any field and assigns tags (existing tags suggested; `key:value` allowed).
+   album, year, and suggested `genre:`, `country:` and `lang:` tags from yt-dlp and MusicBrainz).
+3. User edits any field and assigns tags in the shared tag editor (suggested tags, existing tags grouped by prefix, `key:value` allowed; incomplete leftover text such as `mood:` is ignored).
    BPM is optional: left empty it is detected on the server after the
    download (placeholder "Detected after saving"); a typed value is kept as is.
 4. Save starts the download on the server, then the app fetches the file.
@@ -53,8 +53,8 @@ Manages all songs.
   highlighted key prefix). Clicking the card body opens the Edit dialog,
   which also holds Delete. Play now keeps the user on Library.
 - Search box (title, artist, album, tags).
-- Filter by tag (chips grouped by prefix: Genre, Mood, ...; plain tags under Tags); sort (added date, title, artist, year, BPM; songs without BPM last).
-- Edit dialog has a BPM input and a Re-detect button (re-runs detection on the stored file).
+- Filter by tag (chips grouped by prefix: Genre, Country, Language, then others; plain tags under Tags; `country:` and `lang:` values show as names, e.g. Lithuania, Russian); sort (added date, title, artist, year, BPM; songs without BPM last).
+- Edit dialog uses the same tag editor and has a BPM input (whole numbers) and a Re-detect button (re-runs detection on the stored file).
 - Edit metadata and tags of a song; Delete a song (server file, cover and
   record) from the Edit dialog.
 
@@ -167,10 +167,10 @@ drafts, both SUPERSEDED:
 | Composition name | `title` | editable |
 | Album | `album` | editable, optional |
 | Year of release | `year` | editable, optional |
-| Tempo | `bpm` | number 20-300 with 1 decimal, or `null`; auto-detected with aubio on add, editable, heuristic (ADR-0002) |
+| Tempo | `bpm` | whole number 20-300, or `null`; auto-detected with aubio on add, editable, heuristic (ADR-0002) |
 | Source URL | `source_url` | where it was downloaded from |
 | Cover image | `cover` | jpg file, see below |
-| Tags | `tags[]` | plain or namespaced `key:value` strings (genre is `genre:<name>`) |
+| Tags | `tags[]` | plain or namespaced `key:value` strings (`genre:<name>`, `country:<code>`, `lang:<code>`) |
 | Id | `id` | YouTube video id (technical) |
 | Duration | `duration` | seconds (technical) |
 | Added at | `added_at` | ISO 8601 UTC (technical) |
@@ -190,7 +190,7 @@ drafts, both SUPERSEDED:
       "artist": "Rick Astley",
       "album": "Whenever You Need Somebody",
       "year": 1987,
-      "bpm": 113.0,
+      "bpm": 113,
       "source_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
       "cover": "covers/dQw4w9WgXcQ.jpg",
       "duration": 213,
@@ -219,7 +219,7 @@ drafts, both SUPERSEDED:
   secrets and personal data out of the file, history is permanent.
 - Optional fields may be `null`. Tags are trimmed and deduplicated
   case-insensitively; `key:value` tags are stored lowercased, plain tags
-  keep their case. There is no `genre` field: an old `genre` value is
+  keep their case; a half-empty `key:` or `:value` is dropped. There is no `genre` field: an old `genre` value is
   migrated on load to the tag `genre:<value>`.
 - Storage rules (atomic writes, single writer, no SQLite, git-backed
   store) are in

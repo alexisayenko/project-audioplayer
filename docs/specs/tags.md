@@ -2,7 +2,7 @@
 
 Code: `server/app/library.py` (`clean_tag`, `clean_tags`, `tag_counts`),
 `server/app/extractor.py` (`suggest_tags`), `server/app/genre_lookup.py`,
-`web/js/library.js`, `web/js/store.js`. ADR: ADR-0002.
+`web/js/library.js`, `web/js/store.js`, `web/js/tagname.js`, `web/js/tag-editor.js`, `server/app/langcodes.py`. ADR: ADR-0002.
 
 ## Semantics
 
@@ -15,25 +15,30 @@ Code: `server/app/library.py` (`clean_tag`, `clean_tags`, `tag_counts`),
 - TAG-010 MUST: whitespace is trimmed and runs of spaces collapsed. Status: implemented
 - TAG-011 MUST: a valid `key:value` (both parts non-empty) is stored lowercased. Status: implemented
 - TAG-012 MUST: a plain tag keeps its case. Status: implemented
-- TAG-013 MUST: a tag with `:` but an empty key or value is not namespaced; each `:` becomes a space (`a:` becomes `a`). Status: implemented
+- TAG-013 MUST: a tag with `:` but an empty key or value is dropped, never saved as a plain tag (`mood:` and `:x` vanish). Status: implemented
+- TAG-017 MUST: the tag editor commits leftover input text on Save only if it is a complete tag (non-empty; for `key:value` both parts non-empty); an incomplete `mood:` or `:x` is ignored. Status: implemented
 - TAG-014 MUST: empty tags are dropped; duplicates are removed case-insensitively, first occurrence wins, order preserved. Status: implemented
-- TAG-015 SHOULD: limit tag count and length (today none is enforced; only preview suggestions are capped at 4). Status: to-confirm
+- TAG-016 MUST: namespaces `country:` (ISO 3166-1 alpha-2, e.g. `country:lt`) and `lang:` (ISO 639-1, e.g. `lang:ru`) are ordinary tags with normalised values: lowercase; for `lang:` a 3-letter code with a 2-letter equivalent is mapped (`rus` to `ru`) and a region suffix is dropped (`ru-RU` to `ru`); unknown shapes are kept as plain lowercase tags, never rejected. Status: implemented
+- TAG-015 SHOULD: limit tag count and length (today none is enforced; only preview suggestions are capped: genre 3, country 1, lang 2). Status: to-confirm
 
-## Genre suggestions (Add preview only)
+## Tag suggestions (Add preview only)
 
 - TAG-020 MUST: suggested `genre:` tags come from exactly two sources: yt-dlp's real `genre` field and MusicBrainz. YouTube categories are never used. Status: implemented
 - TAG-021 MUST: yt-dlp `genre` (string or list; strings split on `,` and `;`) becomes `genre:<value>` tags. Status: implemented
 - TAG-022 MUST: the MusicBrainz lookup runs in `/preview` only, never at save. Artist and title are cleaned of noise (`Official Video`, `feat.`, `- Topic`, `VEVO`); a recording is accepted at score >= 90 with a loosely matching artist; genres and tags of the recording (else of the artist) are ranked by votes; top 3 are returned. Status: implemented
-- TAG-023 MUST: yt-dlp and MusicBrainz tags are merged, normalised, de-duplicated and capped at 4 in `preview.tags`; the user can edit them before saving. Status: implemented
-- TAG-024 MUST: a lookup failure, timeout (5 s), no match, or `AUDIO_GENRE_LOOKUP` in `0|false|no|off` yields no tags and never fails `/preview`. Status: implemented
+- TAG-023 MUST: yt-dlp and MusicBrainz tags are merged, normalised, de-duplicated and capped per namespace in `preview.tags` (genre 3, country 1, lang 2); the user can edit them before saving. Status: implemented
+- TAG-024 MUST: a lookup failure, timeout (5 s), no match, or `AUDIO_TAG_LOOKUP` or `AUDIO_GENRE_LOOKUP` (alias) in `0|false|no|off` yields no tags and never fails `/preview`. Status: implemented
 - TAG-025 MUST: MusicBrainz calls are limited to ~1 request/s globally and cached in memory per (artist, title). Status: implemented
 - TAG-026 MUST: suggestions are written to a song only when the user saves the Add form. Status: implemented
+- TAG-027 MUST: the same MusicBrainz lookup also suggests `country:<code>` from the matched artist's `country` (nothing when missing) and up to 2 `lang:<code>` from the languages of the recording's linked works (ISO 639-3 mapped to 639-1, kept as 639-3 when no 2-letter code exists; `mul`, `zxx`, `und` ignored); yt-dlp's `language` field also yields a `lang:` tag. A failing artist call keeps the recording's tags. Status: implemented
 
 ## Counts and filtering
 
 - TAG-030 MUST: `GET /tags` returns `[{tag, count}]` sorted case-insensitively; tags equal case-insensitively are one entry (first spelling shown). Status: implemented
 - TAG-031 MUST: the web UI computes the same counts client-side from the loaded library (`store.tagCounts`), not from `/tags`. Status: implemented
-- TAG-032 MUST: the Library filter groups chips by key: one group per key (title-cased, sorted alphabetically), plain tags in group "Tags" last; a chip shows the value only (`pop`, not `genre:pop`) plus the count. Status: implemented
+- TAG-032 MUST: the Library filter groups chips by key: Genre, Country (`country`), Language (`lang`), then other keys (title-cased, alphabetical), plain tags in group "Tags" last; a chip shows the value only (`pop`, not `genre:pop`) plus the count. Status: implemented
 - TAG-033 MUST: filtering is single-select, exact case-insensitive match on the full tag; clicking the active chip clears it; a filter whose tag no longer exists is cleared. Status: implemented
 - TAG-034 MUST: a song card shows `key:value` tags with the key as a highlighted prefix. Status: implemented
+- TAG-036 MUST: `country:` and `lang:` values display as names via `Intl.DisplayNames` (`web/js/tagname.js`; raw value as fallback, raw tag in the tooltip); search matches code and name; editing always uses the raw `key:value` tags. Status: implemented
+- TAG-037 MUST: tags are edited with the shared tag editor (LIB-055, ADD-004). Status: implemented
 - TAG-035 SHOULD: multi-tag filtering (AND/OR). Status: planned

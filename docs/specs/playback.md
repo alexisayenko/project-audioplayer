@@ -20,6 +20,7 @@ description: [`../product/screens.md`](../product/screens.md) section 3.
 - PLY-011 MUST: the Source link opens `source_url` in a new tab and is shown only for `http(s)` URLs. Status: implemented
 - PLY-012 SHOULD: tag chips on the overlay are clipped to about three lines. Status: implemented
 - PLY-013 MUST: a missing or failing cover is blanked, not shown as a broken image. Status: implemented
+- PLY-014 MUST: chips on the overlay, queue rows, selected-tag chips and the tag picker use the same display names as Library (LIB-016); picker groups are Genre, Country, Language, other keys, Tags. Status: implemented
 
 ## Block 2: play controls
 

@@ -42,7 +42,7 @@ replaces Tailscale. Concrete setup: ADR-0004.
 - Writes are atomic (temp file + rename), single writer (the server,
   under a lock). Web and phone go through the API.
 - Revisit at tens of thousands of songs or multi-user.
-- Implemented in `server/app/library.py`: `library.json` and `covers/` live in `AUDIO_DATA_DIR`, audio in `AUDIO_DOWNLOAD_DIR`. ~~Covers on server disk~~ live in the git LFS repo under ADR-0005 (needs `git-lfs` installed on the server; the repo's `.gitattributes` decides tracking).
+- Implemented in `server/app/library.py`: in plain-file mode (no `AUDIO_DATA_REPO`) `library.json` and `covers/` live in `AUDIO_DATA_DIR`, audio in `AUDIO_DOWNLOAD_DIR`. ~~Covers on server disk~~ live in the git LFS repo under ADR-0005 (needs `git-lfs` installed on the server; the repo's `.gitattributes` decides tracking).
 
 ## ADR-0002 Tags replace playlists; song fields
 
@@ -68,17 +68,22 @@ Status: Accepted · 2026-10-12
   artist/title noise, accepts a recording match only at score >= 90 with a
   loosely matching artist, reads recording genres+tags (falling back to the
   artist's), and returns the top 3 by votes as `genre:<name>`. These merge
-  with the yt-dlp suggestion, de-duplicated, max 4 tags; the Add screen
-  pre-fills them. Limits: global ~1 request/s, 5 s timeout, in-memory cache,
+  with the yt-dlp suggestion, de-duplicated, ~~max 4 tags~~ (superseded by the
+  per-namespace caps in the country and language sub-decision); the Add
+  screen pre-fills them. Limits: global ~1 request/s, 5 s timeout, in-memory cache,
   any error gives no tags (never breaks `/preview`). `AUDIO_GENRE_LOOKUP=0`
   disables it. Caveat: MusicBrainz tags are community-voted and sparse for
   obscure tracks; treat them as suggestions.
 
-- Sub-decision (BPM): `bpm` (number or `null`) is detected automatically
+- Sub-decision (country and language, 2026-10-12): country and language are namespaced tags, not fields: `country:<ISO 3166-1 alpha-2>` and `lang:<ISO 639-1>` (639-3 only when no 2-letter code exists), normalised lowercase on the server (`langcodes.py` maps 639-3 to 639-1; unknown shapes are kept). The MusicBrainz lookup also suggests country (matched artist) and language (linked works; `mul`, `zxx`, `und` ignored), as does yt-dlp `language`; preview caps are genre 3, country 1, lang 2. The web shows names via `Intl.DisplayNames` with the raw tag in the tooltip. `AUDIO_TAG_LOOKUP` is the switch, `AUDIO_GENRE_LOOKUP` stays as an alias. Cost: one extra MusicBrainz call (artist) per uncached preview.
+
+- Sub-decision (tag editor, 2026-10-12): Add and the Library Edit dialog share one tag editor (`web/js/tag-editor.js`): removable chips for the current tags, a Suggested row, and the known tags grouped by prefix, filtered by the text typed. Enter or comma commits typed text as a tag, and so does Save, but only a complete tag: `mood:` and `:x` are ignored in the UI and dropped by the server (`clean_tag`), never saved as `mood`. The pure check is `web/js/tag-input.js`, with a node test.
+
+- Sub-decision (BPM): `bpm` (integer or `null`) is detected automatically
   when a song is added and is user-editable. `server/app/bpm.py` decodes
   the saved m4a with ffmpeg to mono 44.1 kHz PCM, feeds it to aubio's
   tempo tracker and takes the median of aubio's running BPM estimate at
-  each detected beat, rounded to 1 decimal and folded into 70-180 BPM.
+  each detected beat, folded into 70-180 BPM and rounded to a whole number (BPM is stored as an integer; old fractional values are rounded on load).
   Detection runs in the download job after the file is saved; any failure
   is logged and stored as `bpm: null`, the download never fails. Re-detect
   via `POST /songs/{id}/bpm/detect`; `PATCH` accepts 20-300 or `null`; a
@@ -162,7 +167,7 @@ parts of ADR-0001 and the matching data wording in ADR-0004
   never touches `C:\Alex\data-storage` on the PC.
 - Single writer with a lock. Write path: lock -> `pull --rebase` ->
   write `library.json` atomically (temp file + rename) -> commit
-  (`audioplayer: add <id>` / `edit <id>` / `delete <id>`) -> push.
+  (`audioplayer: add <id>` / `edit <id>` / `delete <id>` / `bpm <id>`) -> push.
 - Reads are served from the local clone for speed.
 - Push failure: keep the local commit, retry with backoff, show a
   warning in the UI, never lose the write.

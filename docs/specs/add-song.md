@@ -14,9 +14,9 @@ Code: `web/js/add.js`, `server/app/main.py` (`preview`, `create_song`,
 ## Requirements
 
 - ADD-001 MUST: the Add screen accepts a YouTube URL and shows a preview card with cover (YouTube thumbnail), title, duration, and editable Title, Artist, Album, Year, BPM and Tags. Status: implemented
-- ADD-002 MUST: preview prefills `title` from yt-dlp `track` else `title`; `artist` from `artist`, `creator`, `uploader`; `year` from `release_year`, else `release_date`/`upload_date`; `tags` per [tags.md](tags.md). Status: implemented
+- ADD-002 MUST: preview prefills `title` from yt-dlp `track` else `title`; `artist` from `artist`, `creator`, `uploader`; `year` from `release_year`, else `release_date`/`upload_date`; `tags` per [tags.md](tags.md) (genre, country and language suggestions). Status: implemented
 - ADD-003 MUST: preview downloads nothing and writes nothing. Status: implemented
-- ADD-004 MUST: the user may edit every field and tag before saving; tags are added with Enter, comma or blur, existing library tags are offered as suggestions. Status: implemented
+- ADD-004 MUST: the user may edit every field and tag before saving using the shared tag editor (LIB-055): current tags as removable chips, a "Suggested" row with the preview's tags (toggle), all library tags as toggle chips, a text input (Enter or comma adds, accepts `key:value`). Status: implemented
 - ADD-005 MUST: Save starts a background download of the best m4a audio (`bestaudio[ext=m4a]/140`) to the music directory as `<id>.m4a`, one video only (no playlists). Status: implemented
 - ADD-006 MUST: after the audio is saved the server fetches the cover from `https://i.ytimg.com/vi/<id>/hqdefault.jpg` to `covers/<id>.jpg`; a failed fetch leaves `cover: null` and does not fail the add. Status: implemented
 - ADD-007 MUST: on success the song record is appended and committed (`audioplayer: add <id>`); `added_at` is the UTC completion time. Status: implemented
@@ -25,8 +25,8 @@ Code: `web/js/add.js`, `server/app/main.py` (`preview`, `create_song`,
 
 ## BPM
 
-- ADD-020 MUST: BPM is optional; empty means auto-detect after download (placeholder "Detected after saving"); a typed value (20..300) is kept and skips detection. Status: implemented
-- ADD-021 MUST: detection decodes the saved file with `ffmpeg` to mono 44.1 kHz float PCM (120 s timeout), runs aubio tempo, takes the median of per-beat estimates (needs >= 4 beats), folds into 70..180 and rounds to 1 decimal. Status: implemented
+- ADD-020 MUST: BPM is optional; empty means auto-detect after download (placeholder "Detected after saving"); a typed value (20..300, whole number, fractions rounded) is kept and skips detection. Status: implemented
+- ADD-021 MUST: detection decodes the saved file with `ffmpeg` to mono 44.1 kHz float PCM (120 s timeout), runs aubio tempo, takes the median of per-beat estimates (needs >= 4 beats), folds into 70..180 and rounds to a whole number. Status: implemented
 - ADD-022 MUST: any detection failure (no ffmpeg, no aubio, too few beats) is logged and stored as `bpm: null`; it never fails the download. Status: implemented
 - ADD-023 MUST: BPM is a heuristic and may be off by half or double; the UI says so and lets the user edit it or re-detect from the Edit dialog (`POST /songs/{id}/bpm/detect`). Status: implemented
 - ADD-024 SHOULD: detection run off the request path for slow files. Status: implemented (the job runs in a background task; re-detect runs in a thread pool)
