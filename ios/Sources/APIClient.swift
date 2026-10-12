@@ -132,7 +132,8 @@ struct APIClient {
     }
 
     func lookupWikipedia(song: String?, artist: String?) async throws -> WikiLookup {
-        let body: [String: Any] = ["wikipedia_song": song as Any? ?? NSNull(), "wikipedia_artist": artist as Any? ?? NSNull()]
+        let body: [String: Any] = ["wikipedia_song": song.map { $0 as Any } ?? NSNull(),
+                                  "wikipedia_artist": artist.map { $0 as Any } ?? NSNull()]
         return try JSONDecoder().decode(WikiLookup.self, from: await send("/lookup/wikipedia", method: "POST", body: body, timeout: 60))
     }
 

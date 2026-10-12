@@ -1,12 +1,11 @@
 # Screens and library model
 
 Status: web UI and the server endpoints below are implemented
-(2026-10-12, `web/`, `server/`); the iOS app is not updated and is
-deferred. The web UI is served by FastAPI from
+(2026-10-12, `web/`, `server/`); the iOS tab flow follows the web. The web UI is served by FastAPI from
 the same origin as the API at `play.isayenko.net` (no CORS, token-protected
 API), see ADR-0003 in [`../tech/decisions.md`](../tech/decisions.md). The
-iOS app is deferred; it currently has Library, Search and Settings tabs,
-see [`../tech/architecture.md`](../tech/architecture.md).
+iOS app mirrors the web flow with Library, Add, Playback (queue badge) and
+Settings tabs (YouTube text search is a secondary screen under Add), see [`../tech/architecture.md`](../tech/architecture.md).
 
 Scope: the web UI is for managing the library and listening online only,
 with no offline storage or audio cache. Offline listening ("download to

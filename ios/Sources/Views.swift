@@ -1,33 +1,38 @@
 import SwiftUI
 
+enum AppTab: Hashable { case library, add, playback, settings }
+
 struct RootView: View {
     @EnvironmentObject var player: PlayerService
-    @State private var showNowPlaying = false
+    @State private var tab = AppTab.library
 
     var body: some View {
-        TabView {
-            LibraryView().miniPlayerInset { showNowPlaying = true }
-                .tabItem { Label("Library", systemImage: "music.note.list") }
-            SearchView().miniPlayerInset { showNowPlaying = true }
-                .tabItem { Label("Search", systemImage: "magnifyingglass") }
-            SettingsView().miniPlayerInset { showNowPlaying = true }
-                .tabItem { Label("Settings", systemImage: "gear") }
+        TabView(selection: $tab) {
+            LibraryView().miniPlayerInset(show: true) { tab = .playback }
+                .tabItem { Label("Library", systemImage: "music.note.list") }.tag(AppTab.library)
+            AddView(openPlayback: { tab = .playback }).miniPlayerInset(show: true) { tab = .playback }
+                .tabItem { Label("Add", systemImage: "plus.circle") }.tag(AppTab.add)
+            PlaybackView()
+                .tabItem { Label("Playback", systemImage: "play.circle") }.tag(AppTab.playback)
+                .badge(player.queue.count)
+            SettingsView().miniPlayerInset(show: true) { tab = .playback }
+                .tabItem { Label("Settings", systemImage: "gear") }.tag(AppTab.settings)
         }
         .tint(Theme.cyan)
         .preferredColorScheme(.dark)
         .toolbarBackground(Theme.panel, for: .tabBar)
         .toolbarBackground(.visible, for: .tabBar)
-        .sheet(isPresented: $showNowPlaying) { NowPlayingView() }
     }
 }
 
 private struct MiniPlayerInset: ViewModifier {
     @EnvironmentObject var player: PlayerService
+    let show: Bool
     let onTap: () -> Void
 
     func body(content: Content) -> some View {
         content.safeAreaInset(edge: .bottom, spacing: 0) {
-            if player.current != nil {
+            if show, player.current != nil {
                 MiniPlayer().onTapGesture(perform: onTap).padding(.bottom, 20)
             }
         }
@@ -35,7 +40,7 @@ private struct MiniPlayerInset: ViewModifier {
 }
 
 extension View {
-    func miniPlayerInset(onTap: @escaping () -> Void) -> some View { modifier(MiniPlayerInset(onTap: onTap)) }
+    func miniPlayerInset(show: Bool, onTap: @escaping () -> Void) -> some View { modifier(MiniPlayerInset(show: show, onTap: onTap)) }
 }
 
 struct TrackRow: View {
@@ -46,9 +51,7 @@ struct TrackRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            AsyncImage(url: thumbnail.flatMap(URL.init(string:))) { image in
-                image.resizable().scaledToFill()
-            } placeholder: { Theme.panel }
+            CoverImage(source: thumbnail)
             .frame(width: 48, height: 48)
             .clipShape(RoundedRectangle(cornerRadius: 3))
             .overlay(RoundedRectangle(cornerRadius: 3).stroke(Theme.chromeEdge, lineWidth: 1))
@@ -64,20 +67,6 @@ struct TrackRow: View {
 func formatTime(_ seconds: Double) -> String {
     let s = Int(max(seconds, 0))
     return String(format: "%d:%02d", s / 60, s % 60)
-}
-
-func tagLabel(_ tag: String) -> String {
-    guard let colon = tag.firstIndex(of: ":") else { return tag }
-    let key = String(tag[..<colon]), value = String(tag[tag.index(after: colon)...])
-    switch key {
-    case "decade": return "the \(value)"
-    case "country", "lang":
-        let name = key == "country"
-            ? Locale.current.localizedString(forRegionCode: value)
-            : Locale.current.localizedString(forLanguageCode: value)
-        return name ?? value
-    default: return value
-    }
 }
 
 struct MiniPlayer: View {
@@ -205,97 +194,10 @@ private struct Platter: View {
                 Circle().fill(AngularGradient(colors: [.white.opacity(0.0), .white.opacity(0.1), .white.opacity(0.0),
                                                        .white.opacity(0.1), .white.opacity(0.0)], center: .center))
                     .padding(d * 0.05)
-                AsyncImage(url: art.flatMap(URL.init(string:))) { img in
-                    img.resizable().scaledToFill()
-                } placeholder: { Theme.walnut }
+                CoverImage(source: art)
                 .frame(width: d * 0.34, height: d * 0.34).clipShape(Circle())
                 Circle().fill(Theme.chrome).frame(width: d * 0.04, height: d * 0.04)
             }
         }
-    }
-}
-
-struct NowPlayingView: View {
-    @EnvironmentObject var player: PlayerService
-    @Environment(\.dismiss) private var dismiss
-    @State private var showQueue = true
-
-    var body: some View {
-        NavigationStack {
-            List {
-                Group {
-                    VStack(spacing: 12) {
-                        Turntable()
-                        VStack(spacing: 2) {
-                            Text(player.current?.title ?? "").font(.title3.bold()).lineLimit(2).foregroundStyle(Theme.label)
-                            Text(player.current?.artist ?? "").foregroundStyle(Theme.labelDim)
-                        }
-                        .multilineTextAlignment(.center)
-                        VStack(spacing: 2) {
-                            Slider(value: Binding(get: { player.position }, set: { player.seek(to: $0) }),
-                                   in: 0...max(player.duration, 1))
-                                .tint(Theme.cyan)
-                            HStack {
-                                Text(formatTime(player.position))
-                                Spacer()
-                                Text(formatTime(player.duration))
-                            }
-                            .font(.caption.monospacedDigit()).foregroundStyle(Theme.labelDim)
-                        }
-                        controlPanel
-                    }
-                }
-                .listRowBackground(Color.clear).listRowSeparator(.hidden)
-                if showQueue {
-                    Section {
-                        ForEach(Array(player.queue.enumerated()), id: \.element.id) { i, track in
-                            Button { player.jump(to: i) } label: {
-                                TrackRow(title: track.title, subtitle: track.artist, thumbnail: track.thumbnail,
-                                         highlighted: i == player.index)
-                            }
-                            .panelRow()
-                        }
-                        .onDelete { player.removeFromQueue(at: $0) }
-                    } header: { Text("Queue · ОЧЕРЕДЬ").panelLabel() }
-                }
-            }
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
-            .background(WoodBackground())
-            .navigationTitle("Now Playing")
-            .navigationBarTitleDisplayMode(.inline)
-            .woodBar(.navigationBar)
-            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() }.tint(.white) } }
-        }
-        .preferredColorScheme(.dark)
-    }
-
-    private var controlPanel: some View {
-        HStack(alignment: .center, spacing: 16) {
-            RotaryKnob(value: Binding(get: { player.volume }, set: { player.volume = $0 }),
-                       title: "Volume", cyrillic: "ГРОМКОСТЬ")
-            VStack(spacing: 6) {
-                HStack(spacing: 6) {
-                    LED(on: player.isPlaying, color: Theme.red)
-                    Text("Play · СЕТЬ").font(.system(size: 10, weight: .semibold, design: .rounded)).foregroundStyle(Theme.labelDim)
-                    Spacer(minLength: 0)
-                }
-                HStack(spacing: 6) {
-                    PianoButton(action: { player.previous() }) { Image(systemName: "backward.fill") }
-                        .accessibilityLabel("Previous")
-                    PianoButton(tint: Theme.red, action: { player.toggle() }) {
-                        Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
-                    }
-                    .accessibilityLabel(player.isPlaying ? "Pause" : "Play")
-                    PianoButton(action: { player.next() }) { Image(systemName: "forward.fill") }
-                        .accessibilityLabel("Next")
-                    PianoButton(lit: showQueue, action: { showQueue.toggle() }) { Image(systemName: "list.bullet") }
-                        .accessibilityLabel(showQueue ? "Hide queue" : "Show queue")
-                }
-            }
-        }
-        .padding(12)
-        .background(RoundedRectangle(cornerRadius: 6).fill(Theme.panel))
-        .overlay(RoundedRectangle(cornerRadius: 6).stroke(Theme.chromeEdge, lineWidth: 1.5))
     }
 }

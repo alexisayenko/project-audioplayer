@@ -15,9 +15,10 @@ struct LibraryView: View {
     @State private var sort = LibrarySort.newest
     @State private var tag: String?
     @State private var toast: String?
+    @State private var editing: ServerSong?
 
     private var source: [Track] {
-        onServer ? server.songs.map { $0.track(baseURL: settings.serverURL, token: settings.token) } : library.tracks
+        onServer ? server.songs.map(\.track) : library.tracks
     }
 
     private var allTags: [(tag: String, count: Int)] {
@@ -89,6 +90,10 @@ struct LibraryView: View {
         .listRowBackground(Color.clear).listRowSeparator(.hidden)
     }
 
+    private func serverSong(for track: Track) -> ServerSong {
+        server.songs.first { $0.id == track.id } ?? ServerSong(track)
+    }
+
     private func fetch(_ track: Track) async {
         if !(await server.download(track, settings: settings, into: library)) { toast = "Download failed" }
     }
@@ -148,6 +153,15 @@ struct LibraryView: View {
                     }
                     .tint(.primary)
                     .panelRow()
+                    .contextMenu {
+                        Button { editing = serverSong(for: track) } label: { Label("Edit", systemImage: "pencil") }
+                        if library.contains(track.id) {
+                            Button { player.playNext(track); toast = "Plays next" } label: { Label("Play next", systemImage: "text.insert") }
+                            Button { toast = player.enqueue([track]) == 1 ? "Added" : "Already in queue" } label: {
+                                Label("Add to playlist", systemImage: "text.badge.plus")
+                            }
+                        }
+                    }
                     .swipeActions(edge: .leading) {
                         if onServer && !library.contains(track.id) {
                             Button { Task { await fetch(track) } } label: {
@@ -164,6 +178,7 @@ struct LibraryView: View {
                         }
                     }
                     .swipeActions(edge: .trailing) {
+                        Button { editing = serverSong(for: track) } label: { Label("Edit", systemImage: "pencil") }.tint(.orange)
                         if library.contains(track.id) {
                         Button(role: .destructive) {
                             if let i = library.tracks.firstIndex(of: track) { library.remove(at: IndexSet(integer: i)) }
@@ -180,7 +195,7 @@ struct LibraryView: View {
                     Text(server.reachable == false ? "Server unreachable. No songs cached yet." : "No songs on the server.")
                         .foregroundStyle(Theme.labelDim).multilineTextAlignment(.center).padding()
                 } else if source.isEmpty {
-                    Text("No songs yet. Use Search to download one.").foregroundStyle(Theme.labelDim)
+                    Text("No songs yet. Use Add to import one.").foregroundStyle(Theme.labelDim)
                 } else if tracks.isEmpty {
                     Text("No songs match. Clear the search or the tag filter.").foregroundStyle(Theme.labelDim)
                         .multilineTextAlignment(.center).padding()
@@ -193,6 +208,7 @@ struct LibraryView: View {
                         .task(id: toast) { try? await Task.sleep(for: .seconds(2)); self.toast = nil }
                 }
             }
+            .sheet(item: $editing) { SongEditView(song: $0) }
             .refreshable { await server.refresh(settings: settings) }
             .task { await server.refresh(settings: settings) }
             .navigationTitle("Library")

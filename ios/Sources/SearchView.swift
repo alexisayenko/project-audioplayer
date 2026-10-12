@@ -9,16 +9,19 @@ struct SearchView: View {
     @State private var downloading: Set<String> = []
     @State private var failed: [String: String] = [:]
     @State private var error: String?
+    var onPick: ((SearchResult) -> Void)?
 
     private var api: APIClient { APIClient(baseURL: settings.serverURL, token: settings.token) }
 
     var body: some View {
-        NavigationStack {
-            List(results) { result in
+        List(results) { result in
                 HStack {
+                    Button { onPick?(result) } label: {
                     TrackRow(title: result.title,
                              subtitle: [result.artist, result.duration.map(formatTime)].compactMap { $0 }.joined(separator: " · "),
                              thumbnail: result.thumbnail)
+                    }
+                    .buttonStyle(.plain)
                     Spacer()
                     if library.contains(result.id) {
                         Image(systemName: "checkmark.circle.fill").foregroundStyle(Theme.green)
@@ -39,9 +42,9 @@ struct SearchView: View {
             .panelBackground()
             .overlay {
                 if searching { ProgressView().tint(.white) }
-                else if results.isEmpty { Text("Search YouTube for a song").foregroundStyle(Theme.labelDim) }
+                else if results.isEmpty { Text("Search YouTube by title; tap a result to preview it").foregroundStyle(Theme.labelDim) }
             }
-            .navigationTitle("Search")
+            .navigationTitle("Search YouTube")
             .navigationBarTitleDisplayMode(.inline)
             .woodBar(.navigationBar)
             .searchable(text: $query, prompt: "Songs, artists")
@@ -49,7 +52,6 @@ struct SearchView: View {
             .alert("Error", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
                 Button("OK", role: .cancel) {}
             } message: { Text(error ?? "") }
-        }
     }
 
     private func search() async {
