@@ -215,7 +215,7 @@ function render() {
   $('queue-count').textContent = n ? `${n} ${n === 1 ? 'song' : 'songs'}` : '';
   renderPlaylistControls();
   if (!song) {
-    document.title = 'Audio Player';
+    document.title = 'Electrophone';
     for (const id of ['p-prev', 'p-back', 'p-fwd', 'p-next', 'p-play']) $(id).disabled = true;
     setIcon('p-play', 'play', 30);
     renderQueue();
@@ -236,7 +236,7 @@ function render() {
   $('p-next').disabled = !Q.hasNext(logic());
   $('mini-next').disabled = $('p-next').disabled;
   renderQueue();
-  document.title = `${song.title} - Audio Player`;
+  document.title = `${song.title} - Electrophone`;
   listeners.forEach((fn) => fn());
 }
 

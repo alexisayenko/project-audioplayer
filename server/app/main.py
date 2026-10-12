@@ -27,7 +27,7 @@ WEB_DIR = Path(os.environ.get("AUDIO_WEB_DIR", Path(__file__).resolve().parents[
 
 SYNC = gitstore.from_env()
 
-app = FastAPI(title="audioplayer-server")
+app = FastAPI(title="Electrophone")
 
 log = logging.getLogger(__name__)
 

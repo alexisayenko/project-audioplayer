@@ -289,3 +289,4 @@ Status: Accepted, in use · 2026-10-12
   Xcode (cloud-managed signing, team in `project.yml`). No ASC API key, no
   CI workflow (manual only; see `ci-cd.md`).
 - TestFlight builds expire after 90 days; re-upload.
+- Rename (2026-10-12): the user-facing app name is now "Electrophone" (display name, web UI, docs). The ASC record, Google Cloud project `gramophone-offline` and SKU `gramophone-ios` keep their original names as external resources; bundle id, target and scheme names are unchanged.

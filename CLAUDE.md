@@ -15,7 +15,7 @@ exception: owner-only OAuth sign-in (Apple/Google) next to the API token
 
 ## Product
 
-A personal iOS app, one user (the owner), distributed via TestFlight
+Electrophone (styled after the Vega 108): a personal iOS app, one user (the owner), distributed via TestFlight
 internal testing only. Search YouTube, download a song's audio through a
 private server, keep it in an on-device library, play it with background
 audio and lock-screen controls. No monetization. Downloading may violate

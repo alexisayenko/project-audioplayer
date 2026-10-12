@@ -152,7 +152,7 @@ xcodegen && open AudioPlayer.xcodeproj
 
 ### TestFlight
 
-ADR-0008. App Store Connect record "Gramophone Offline" (bundle
+ADR-0008. App Store Connect record "Gramophone Offline" (now Electrophone) (bundle
 `com.alexisayenko.audioplayer`, SKU `gramophone-ios`), internal group "Alex".
 
 1. Raise `CURRENT_PROJECT_VERSION` in `ios/project.yml` above every build
@@ -195,6 +195,6 @@ Apple `sub`: sign in with Apple once in the app, decode the token payload
 (`sub`), or read the 403 case in the server log; put it in
 `ALLOWED_APPLE_SUB` so a hidden or relayed email still passes.
 
-Google Cloud project `gramophone-offline`: OAuth consent screen External in
+Google Cloud project `gramophone-offline` (external name, pre-rename): OAuth consent screen External in
 Testing with the owner as the only test user, one OAuth client of type iOS.
 A new client can take hours to start working. Values stay out of the repo.

@@ -7,7 +7,7 @@ prompt A also attach the Vega 108 photo.
 ## A. Vega 108 turntable (chosen: ADR-0007; results in `vega-108/`)
 
 ```
-You are a senior iOS product designer. Design graphical sketches (high-fidelity mockups) for "Gramophone Offline", a personal iPhone music player.
+You are a senior iOS product designer. Design graphical sketches (high-fidelity mockups) for "Electrophone", a personal iPhone music player.
 
 Concept: a skeuomorphic homage to the Soviet turntable-receiver "Vega 108 Stereo" (Вега-108-стерео); I attached a photo. Capture its look: glossy walnut/orange-brown wood veneer frame, matte black control panel, chrome ridged knobs with min/max ticks, a row of rectangular piano-style push buttons (one lit cyan-blue), a red power key with a small red LED, small white Cyrillic panel labels (ГРОМКОСТЬ, БАЛАНС, ВХОД, СЕТЬ, ОЧЕРЕДЬ), a black platter with a record, a chrome tonearm with a headshell, smoked-glass dust cover.
 
@@ -31,7 +31,7 @@ Output: the six images, then a short palette (hex values), the fonts you used, a
 ## B. Open style, best fit for 2026
 
 ```
-You are a senior iOS product designer with a strong point of view. Design graphical sketches (high-fidelity mockups) for "Gramophone Offline", a personal iPhone music player.
+You are a senior iOS product designer with a strong point of view. Design graphical sketches (high-fidelity mockups) for "Electrophone", a personal iPhone music player.
 
 Product: one user (the owner), no social features, no accounts. He searches YouTube, downloads a song's audio through his own private server, keeps it in an on-device library, and plays it offline with the screen locked. The core promise: songs I picked are on my phone and play reliably. Playback and offline reliability beat features. A friendly, personal tool, not a streaming service.
 

@@ -74,7 +74,7 @@ description: [`../product/screens.md`](../product/screens.md) section 3.
 ## Mini-player
 
 - PLY-070 MUST: while a song is loaded a mini-player bar (cover, title, artist, play/pause, next, thin progress bar) shows on every tab; tapping its left part opens `#/playback`. Status: implemented
-- PLY-071 MUST: the browser tab title is "<title> - Audio Player", else "Audio Player". Status: implemented
+- PLY-071 MUST: the browser tab title is "<title> - Electrophone", else "Electrophone". Status: implemented
 
 ## Media Session
 

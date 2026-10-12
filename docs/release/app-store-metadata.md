@@ -5,12 +5,12 @@ against the submitted build. There is no store listing yet: the app is
 internal TestFlight only (ADR-0008), so no listing is needed until a public
 release is decided.
 
-App Store Connect record (exists): name Gramophone Offline, bundle
+App Store Connect record (exists): name Electrophone (ASC record still named Gramophone Offline until renamed there), bundle
 `com.alexisayenko.audioplayer`, SKU `gramophone-ios`, iPhone only.
 
 ## Listing
 
-- **Name:** Gramophone Offline
+- **Name:** Electrophone
 - **Subtitle (≤30 characters):** [TODO: subtitle]
 - **Promotional text:** [TODO: promotional text]
 - **Description:** [TODO: description]
