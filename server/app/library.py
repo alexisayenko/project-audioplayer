@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
 import tempfile
 import threading
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -25,6 +27,78 @@ def file_name(song: dict[str, Any]) -> str:
     return Path(str(song.get("file") or default)).name or default
 
 
+def has_file(song: dict[str, Any]) -> bool:
+    """True when the record names an audio file; an explicit `file: null` is a metadata-only song."""
+    return bool(song.get("file"))
+
+
+def clean_sources(raw: Any) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
+    for e in raw if isinstance(raw, list) else []:
+        if not isinstance(e, dict) or not isinstance(e.get("source"), str) or not e.get("id"):
+            continue
+        url = urlclean.clean_url(e["url"]) if isinstance(e.get("url"), str) else None
+        out.append({"source": e["source"], "id": str(e["id"]), "url": url})
+    return out
+
+
+def sources_of(song: dict[str, Any]) -> list[dict[str, Any]]:
+    """Stored `sources`, or the single source derived from the id and `source_url` (old records)."""
+    stored = song.get("sources")
+    if isinstance(stored, list) and stored:
+        return stored
+    sid = str(song.get("id", ""))
+    return [{"source": urlclean.source_of(sid), "id": sid, "url": song.get("source_url")}]
+
+
+def audio_state(song: dict[str, Any], root: Path | None) -> str:
+    """`server` when the audio file is on the server, else `none`; never stored. `phone` is client-side.
+
+    `root` None (music_root server not configured) trusts the record's `file`."""
+    if not has_file(song):
+        return "none"
+    if root is None:
+        return "server"
+    return "server" if (root / file_name(song)).is_file() else "none"
+
+
+def public_song(song: dict[str, Any], root: Path | None) -> dict[str, Any]:
+    """The record plus derived, additive fields: `audio_state`, `sources`, and `audio` when a file exists."""
+    out = dict(song)
+    state = audio_state(song, root)
+    out["audio_state"] = state
+    out["sources"] = sources_of(song)
+    if state == "server":
+        name = file_name(song)
+        size = None
+        if root is not None:
+            try:
+                size = (root / name).stat().st_size
+            except OSError:
+                pass
+        out["audio"] = {
+            "file": name,
+            "format": Path(name).suffix.lstrip(".").lower() or None,
+            "size": size,
+            "duration": song.get("duration"),
+        }
+    return out
+
+
+def updated_at(song: dict[str, Any]) -> str:
+    return str(song.get("updated_at") or song.get("added_at") or "")
+
+
+def now_utc() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def catalog_revision(songs: list[dict[str, Any]]) -> str:
+    """Content hash of the public catalog; changes on any add, edit, delete or audio-state change."""
+    blob = json.dumps(songs, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+    return hashlib.sha1(blob.encode("utf-8")).hexdigest()[:16]
+
+
 def normalize(raw: Any) -> dict[str, Any]:
     """Accept the old bare {songs:[...]} shape and return {settings, songs}."""
     if isinstance(raw, list):
@@ -34,8 +108,10 @@ def normalize(raw: Any) -> dict[str, Any]:
     songs = []
     for s in raw.get("songs") or []:
         s = dict(s)
-        if "id" in s and not s.get("file"):
+        if "id" in s and (s.get("file") == "" or "file" not in s):
             s["file"] = f"{s['id']}.m4a"
+        if "sources" in s:
+            s["sources"] = clean_sources(s["sources"])
         if isinstance(s.get("bpm"), (int, float)) and not isinstance(s["bpm"], bool):
             s["bpm"] = round(s["bpm"])
         if isinstance(s.get("source_url"), str):

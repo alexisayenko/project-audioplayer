@@ -171,6 +171,19 @@ def music_dir() -> Path:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
 
+def _root() -> Path | None:
+    """The audio directory, or None when its music_root server is not configured (state then trusts `file`)."""
+    try:
+        return library.resolve_music_root(music_root())
+    except LookupError:
+        return None
+
+
+def _public(songs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    root = _root()
+    return [library.public_song(s, root) for s in songs]
+
+
 def _save(songs: list[dict[str, Any]]) -> None:
     library.save(library_path(), songs, default_music_root=music_root())
 
@@ -276,6 +289,7 @@ class SongMeta(BaseModel):
 
 class CreateSongRequest(BaseModel):
     url: str
+    audio: bool = True
     metadata: SongMeta = SongMeta()
     tags: list[str] = []
 
@@ -310,6 +324,8 @@ def get_file(video_id: str):
     _vid(video_id)
     with library.LOCK:
         song = next((s for s in library.load(library_path()) if s["id"] == video_id), None)
+    if song is not None and not library.has_file(song):
+        raise HTTPException(status_code=404, detail="not downloaded")
     name = library.file_name(song) if song else f"{video_id}.m4a"
     path = music_dir() / name
     if not path.is_file():
@@ -330,7 +346,38 @@ def get_cover(video_id: str):
 @app.get("/library", dependencies=[Depends(require_token)])
 def get_library():
     with library.LOCK:
-        return {"songs": library.load(library_path())}
+        songs = library.load(library_path())
+    return {"songs": _public(songs)}
+
+
+def _etag_matches(header: str, etag: str) -> bool:
+    return any(t.strip() in ("*", etag, f"W/{etag}") for t in header.split(","))
+
+
+_SINCE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
+
+
+@app.get("/catalog", dependencies=[Depends(require_token)])
+def get_catalog(request: Request, since: str | None = Query(default=None)):
+    """Metadata-only catalog for clients to poll: `revision`, every id, and the songs changed `>= since`."""
+    if since is not None and not _SINCE_RE.match(since):
+        raise HTTPException(status_code=422, detail="since must be UTC YYYY-MM-DDTHH:MM:SSZ")
+    with library.LOCK:
+        songs = library.load(library_path())
+    public = _public(songs)
+    revision = library.catalog_revision(public)
+    etag = f'"{revision}"' if since is None else f'"{revision}.{hashlib.sha1(since.encode()).hexdigest()[:8]}"'
+    headers = {"ETag": etag, "Cache-Control": "no-cache"}
+    if _etag_matches(request.headers.get("if-none-match", ""), etag):
+        return Response(status_code=304, headers=headers)
+    changed = [s for s in public if since is None or library.updated_at(s) >= since]
+    body = {
+        "revision": revision,
+        "total": len(public),
+        "ids": [s["id"] for s in public],
+        "songs": changed,
+    }
+    return JSONResponse(body, headers=headers)
 
 
 @app.get("/tags", dependencies=[Depends(require_token)])
@@ -424,6 +471,7 @@ def _run_download(vid: str, meta: dict[str, Any], tags: list[str], source_url: s
             "wikipedia_artist": wiki_lookup.clean_link(meta.get("wikipedia_artist")),
             **({"source": "soundcloud"} if extractor.source_of(vid) == "soundcloud" else {}),
             "source_url": extractor.watch_url(vid, source_url),
+            "sources": [{"source": extractor.source_of(vid), "id": vid, "url": extractor.watch_url(vid, source_url)}],
             "file": f"{vid}.m4a",
             "cover": cover,
             "duration": info.get("duration"),
@@ -462,8 +510,57 @@ def create_song(req: CreateSongRequest, background: BackgroundTasks):
         k: (v.strip() if isinstance(v, str) else v) or None
         for k, v in req.metadata.model_dump().items()
     }
+    if not req.audio:
+        return _add_metadata_only(vid, link, meta, library.clean_tags(req.tags))
     background.add_task(_run_download, vid, meta, library.clean_tags(req.tags), link.url)
     return {"id": vid, "status": "downloading"}
+
+
+def _add_metadata_only(vid: str, link: _Resolved, meta: dict[str, Any], tags: list[str]) -> JSONResponse:
+    """Catalog entry without audio: `file: null`, state `none`. Gaps in the metadata are filled from the link."""
+    try:
+        try:
+            found = link.probe if link.probe is not None else extractor.preview(vid)
+        except Exception as exc:
+            log.warning("preview failed for %s: %s", vid, exc)
+            found = {}
+        cover = None
+        try:
+            extractor.fetch_cover(vid, covers_dir() / f"{vid}.jpg", found.get("thumbnail"))
+            cover = f"covers/{vid}.jpg"
+        except Exception:
+            pass
+        url = extractor.watch_url(vid, link.url)
+        now = library.now_utc()
+        song = {
+            "id": vid,
+            "title": meta.get("title") or found.get("title") or vid,
+            "artist": meta.get("artist") or found.get("artist") or None,
+            "album": meta.get("album") or found.get("album"),
+            "year": meta["year"] if meta.get("year") is not None else found.get("year"),
+            "bpm": round(meta["bpm"]) if meta.get("bpm") is not None else None,
+            "wikipedia_song": wiki_lookup.clean_link(meta.get("wikipedia_song")),
+            "wikipedia_artist": wiki_lookup.clean_link(meta.get("wikipedia_artist")),
+            **({"source": "soundcloud"} if extractor.source_of(vid) == "soundcloud" else {}),
+            "source_url": url,
+            "sources": [{"source": extractor.source_of(vid), "id": vid, "url": url}],
+            "file": None,
+            "cover": cover,
+            "duration": found.get("duration"),
+            "added_at": now,
+            "tags": library.with_decade(tags or library.clean_tags(found.get("tags") or []), meta.get("year") or found.get("year")),
+        }
+        with _tx(f"audioplayer: add {vid}"):
+            songs = library.load(library_path())
+            if any(s["id"] == vid for s in songs):
+                raise HTTPException(status_code=409, detail="already in library")
+            _save(songs + [song])
+    finally:
+        JOBS.pop(vid, None)
+    return JSONResponse(
+        {"id": vid, "status": "done", "audio_state": "none", "song": library.public_song(song, _root())},
+        status_code=201,
+    )
 
 
 @app.get("/songs/{video_id}/status", dependencies=[Depends(require_token)])
@@ -503,9 +600,10 @@ def patch_song(video_id: str, req: PatchSongRequest):
         if not updated.get("title"):
             raise HTTPException(status_code=422, detail="title must not be empty")
         updated["tags"] = library.with_decade(updated.get("tags") or [], updated.get("year"))
+        updated["updated_at"] = library.now_utc()
         song.update(updated)
         _save(songs)
-        return song
+        return library.public_song(song, _root())
 
 
 @app.post("/songs/{video_id}/bpm/detect", dependencies=[Depends(require_token)])
@@ -516,7 +614,7 @@ async def detect_song_bpm(video_id: str):
     if song is None:
         raise HTTPException(status_code=404, detail="unknown song")
     path = music_dir() / library.file_name(song)
-    if not path.is_file():
+    if not library.has_file(song) or not path.is_file():
         raise HTTPException(status_code=404, detail="not downloaded")
     value = await run_in_threadpool(bpm_detect.detect_bpm, path)
     if value is None:
@@ -531,8 +629,9 @@ def _store_bpm(video_id: str, value: float) -> dict[str, Any]:
         if song is None:
             raise HTTPException(status_code=404, detail="unknown song")
         song["bpm"] = round(value)
+        song["updated_at"] = library.now_utc()
         _save(songs)
-        return song
+        return library.public_song(song, _root())
 
 
 @app.delete("/songs/{video_id}", status_code=204, dependencies=[Depends(require_token)])
@@ -545,10 +644,28 @@ def delete_song(video_id: str):
             raise HTTPException(status_code=404, detail="unknown song")
         _save([s for s in songs if s["id"] != video_id])
         (covers_dir() / f"{video_id}.jpg").unlink(missing_ok=True)
-        try:
+        if library.has_file(song):
+            try:
+                (music_dir() / library.file_name(song)).unlink(missing_ok=True)
+            except HTTPException:
+                pass
+        JOBS.pop(video_id, None)
+
+
+@app.delete("/songs/{video_id}/audio", status_code=204, dependencies=[Depends(require_token)])
+def delete_song_audio(video_id: str):
+    """Remove the audio file only; the catalog entry stays (state becomes `none`). Idempotent."""
+    _vid(video_id)
+    with _tx(f"audioplayer: delete audio {video_id}"):
+        songs = library.load(library_path())
+        song = next((s for s in songs if s["id"] == video_id), None)
+        if song is None:
+            raise HTTPException(status_code=404, detail="unknown song")
+        if library.has_file(song):
             (music_dir() / library.file_name(song)).unlink(missing_ok=True)
-        except HTTPException:
-            pass
+            song["file"] = None
+            song["updated_at"] = library.now_utc()
+            _save(songs)
         JOBS.pop(video_id, None)
 
 

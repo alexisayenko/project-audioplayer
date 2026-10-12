@@ -192,3 +192,20 @@ def test_audio_served_via_music_root_host(client, tmp_path, monkeypatch):
     assert client.get(f"/files/{VID}", headers=H).content == b"x"
     monkeypatch.setenv("AUDIO_MUSIC_ROOT", "unknown://a/")
     assert client.get(f"/files/{VID}", headers=H).status_code == 503
+
+
+def test_metadata_only_and_audio_removal_round_trip_through_git(client, repos):
+    data_bare, _, cov_bare, _ = repos
+    body = {"url": f"https://youtu.be/{VID}", "metadata": {"title": "Song"}, "audio": False}
+    assert client.post("/songs", json=body, headers=H).status_code == 201
+    assert log(data_bare)[0] == f"audioplayer: add {VID}"
+    doc = json.loads(git(data_bare, "show", "main:audioplayer/library.json"))
+    assert doc["songs"][0]["file"] is None and "audio_state" not in doc["songs"][0]
+    assert client.get("/library", headers=H).json()["songs"][0]["audio_state"] == "none"
+    add(client, VID2)
+    assert client.delete(f"/songs/{VID2}/audio", headers=H).status_code == 204
+    assert log(data_bare)[0] == f"audioplayer: delete audio {VID2}"
+    doc = json.loads(git(data_bare, "show", "main:audioplayer/library.json"))
+    assert [s["file"] for s in doc["songs"]] == [None, None]
+    assert len(json.dumps(doc)) < 5000
+    assert client.get("/catalog", headers=H).json()["total"] == 2

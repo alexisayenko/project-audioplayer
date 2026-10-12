@@ -10,6 +10,7 @@ from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 VIDEO_ID_RE = re.compile(r"^[A-Za-z0-9_-]{11}$")
 SOUNDCLOUD_ID_RE = re.compile(r"^soundcloud-[0-9]{1,20}$")
 SOUNDCLOUD_PREFIX = "soundcloud-"
+CATALOG_ID_RE = re.compile(r"^(spotify|applemusic|shazam)-[A-Za-z0-9_-]{1,64}$")
 
 UNSUPPORTED_MESSAGE = "Only single tracks are supported"
 
@@ -24,12 +25,19 @@ _TRACKING = {"si", "feature", "pp", "fbclid", "gclid"}
 
 
 def is_valid_video_id(video_id: str) -> bool:
-    """A song id: an 11-char YouTube id or `soundcloud-<numeric track id>`."""
-    return bool(VIDEO_ID_RE.fullmatch(video_id) or SOUNDCLOUD_ID_RE.fullmatch(video_id))
+    """A song id: an 11-char YouTube id, `soundcloud-<numeric track id>`, or a metadata-only `spotify-`/`applemusic-`/`shazam-` id."""
+    return bool(
+        VIDEO_ID_RE.fullmatch(video_id)
+        or SOUNDCLOUD_ID_RE.fullmatch(video_id)
+        or CATALOG_ID_RE.fullmatch(video_id)
+    )
 
 
 def source_of(song_id: str) -> str:
-    return "soundcloud" if SOUNDCLOUD_ID_RE.fullmatch(song_id) else "youtube"
+    if SOUNDCLOUD_ID_RE.fullmatch(song_id):
+        return "soundcloud"
+    m = CATALOG_ID_RE.fullmatch(song_id)
+    return m.group(1) if m else "youtube"
 
 
 def soundcloud_song_id(track_id: str | int) -> str:
@@ -137,6 +145,8 @@ def parse_video_id(url_or_id: str) -> str | None:
 
 def watch_url(video_id: str, source_url: str | None = None) -> str:
     """Page URL of a song: YouTube from the id; SoundCloud from its stored link, else the track API URL."""
+    if source_of(video_id) not in ("youtube", "soundcloud"):
+        return source_url or ""
     if source_of(video_id) == "soundcloud":
         if source_url and (c := classify_soundcloud(source_url)) and c[0] == "track":
             return c[1]
