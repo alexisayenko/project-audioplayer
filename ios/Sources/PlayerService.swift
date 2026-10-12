@@ -28,11 +28,44 @@ final class PlayerService: ObservableObject {
             }
         }
         setupRemoteCommands()
+        NotificationCenter.default.addObserver(
+            forName: AVAudioSession.interruptionNotification, object: nil, queue: .main
+        ) { [weak self] note in
+            let raw = note.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt
+            let opts = note.userInfo?[AVAudioSessionInterruptionOptionKey] as? UInt ?? 0
+            Task { @MainActor in
+                guard let self, let raw, let type = AVAudioSession.InterruptionType(rawValue: raw) else { return }
+                if type == .began { self.isPlaying = false }
+                else if AVAudioSession.InterruptionOptions(rawValue: opts).contains(.shouldResume) { self.resume() }
+            }
+        }
     }
 
     func play(_ tracks: [Track], startAt start: Int) {
         queue = tracks
         load(start)
+    }
+
+    func playNext(_ track: Track) {
+        guard let index else { return play([track], startAt: 0) }
+        queue.removeAll { $0.id == track.id && $0.id != current?.id }
+        let at = (queue.firstIndex { $0.id == current?.id } ?? index) + 1
+        queue.insert(track, at: min(at, queue.count))
+    }
+
+    @discardableResult
+    func enqueue(_ tracks: [Track]) -> Int {
+        let fresh = tracks.filter { t in !queue.contains { $0.id == t.id } }
+        queue.append(contentsOf: fresh)
+        return fresh.count
+    }
+
+    func jump(to i: Int) { load(i) }
+
+    func removeFromQueue(at offsets: IndexSet) {
+        let playingID = current?.id
+        queue.remove(atOffsets: offsets)
+        if let playingID, let i = queue.firstIndex(where: { $0.id == playingID }) { index = i }
     }
 
     func toggle() { isPlaying ? pause() : resume() }

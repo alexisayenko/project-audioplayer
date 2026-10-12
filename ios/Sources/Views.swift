@@ -2,111 +2,43 @@ import SwiftUI
 
 struct RootView: View {
     @EnvironmentObject var player: PlayerService
+    @State private var showNowPlaying = false
 
     var body: some View {
         TabView {
-            LibraryView().tabItem { Label("Library", systemImage: "music.note.list") }
-            SearchView().tabItem { Label("Search", systemImage: "magnifyingglass") }
-            SettingsView().tabItem { Label("Settings", systemImage: "gear") }
+            LibraryView().miniPlayerInset { showNowPlaying = true }
+                .tabItem { Label("Library", systemImage: "music.note.list") }
+            SearchView().miniPlayerInset { showNowPlaying = true }
+                .tabItem { Label("Search", systemImage: "magnifyingglass") }
+            SettingsView().miniPlayerInset { showNowPlaying = true }
+                .tabItem { Label("Settings", systemImage: "gear") }
         }
-        .safeAreaInset(edge: .bottom, spacing: 49) {
-            if player.current != nil { MiniPlayer() }
-        }
+        .sheet(isPresented: $showNowPlaying) { NowPlayingView() }
     }
 }
 
-struct LibraryView: View {
-    @EnvironmentObject var library: LibraryStore
+private struct MiniPlayerInset: ViewModifier {
     @EnvironmentObject var player: PlayerService
+    let onTap: () -> Void
 
-    var body: some View {
-        NavigationStack {
-            List {
-                ForEach(Array(library.tracks.enumerated()), id: \.element.id) { i, track in
-                    Button { player.play(library.tracks, startAt: i) } label: {
-                        TrackRow(title: track.title, artist: track.artist, thumbnail: track.thumbnail)
-                    }
-                    .tint(.primary)
-                }
-                .onDelete { library.remove(at: $0) }
+    func body(content: Content) -> some View {
+        content.safeAreaInset(edge: .bottom, spacing: 0) {
+            if player.current != nil {
+                MiniPlayer().onTapGesture(perform: onTap).padding(.bottom, 20)
             }
-            .overlay { if library.tracks.isEmpty { Text("No downloads yet").foregroundStyle(.secondary) } }
-            .navigationTitle("Library")
         }
     }
 }
 
-struct SearchView: View {
-    @EnvironmentObject var library: LibraryStore
-    @EnvironmentObject var settings: Settings
-    @State private var query = ""
-    @State private var results: [SearchResult] = []
-    @State private var downloading: Set<String> = []
-    @State private var error: String?
-
-    private var api: APIClient { APIClient(baseURL: settings.serverURL, token: settings.token) }
-
-    var body: some View {
-        NavigationStack {
-            List(results) { result in
-                HStack {
-                    TrackRow(title: result.title, artist: result.artist, thumbnail: result.thumbnail)
-                    Spacer()
-                    if library.contains(result.id) {
-                        Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
-                    } else if downloading.contains(result.id) {
-                        ProgressView()
-                    } else {
-                        Button { Task { await download(result) } } label: {
-                            Image(systemName: "arrow.down.circle")
-                        }
-                        .buttonStyle(.borderless)
-                    }
-                }
-            }
-            .navigationTitle("Search")
-            .searchable(text: $query, prompt: "Songs, artists")
-            .onSubmit(of: .search) { Task { await search() } }
-            .alert("Error", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
-                Button("OK", role: .cancel) {}
-            } message: { Text(error ?? "") }
-        }
-    }
-
-    private func search() async {
-        do { results = try await api.search(query) } catch { self.error = error.localizedDescription }
-    }
-
-    private func download(_ result: SearchResult) async {
-        downloading.insert(result.id)
-        defer { downloading.remove(result.id) }
-        do { library.add(try await api.download(result)) } catch { self.error = error.localizedDescription }
-    }
-}
-
-struct SettingsView: View {
-    @EnvironmentObject var settings: Settings
-
-    var body: some View {
-        NavigationStack {
-            Form {
-                Section("Server") {
-                    TextField("http://host:8000", text: $settings.serverURL)
-                        .textInputAutocapitalization(.never)
-                        .keyboardType(.URL)
-                        .autocorrectionDisabled()
-                    SecureField("API token", text: $settings.token)
-                }
-            }
-            .navigationTitle("Settings")
-        }
-    }
+extension View {
+    func miniPlayerInset(onTap: @escaping () -> Void) -> some View { modifier(MiniPlayerInset(onTap: onTap)) }
 }
 
 struct TrackRow: View {
     let title: String
-    let artist: String
+    let subtitle: String
     let thumbnail: String?
+    var highlighted = false
 
     var body: some View {
         HStack(spacing: 12) {
@@ -116,10 +48,29 @@ struct TrackRow: View {
             .frame(width: 48, height: 48)
             .clipShape(RoundedRectangle(cornerRadius: 6))
             VStack(alignment: .leading) {
-                Text(title).lineLimit(1)
-                Text(artist).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                Text(title).lineLimit(1).foregroundStyle(highlighted ? Color.accentColor : .primary)
+                Text(subtitle).font(.caption).foregroundStyle(.secondary).lineLimit(1)
             }
         }
+    }
+}
+
+func formatTime(_ seconds: Double) -> String {
+    let s = Int(max(seconds, 0))
+    return String(format: "%d:%02d", s / 60, s % 60)
+}
+
+func tagLabel(_ tag: String) -> String {
+    guard let colon = tag.firstIndex(of: ":") else { return tag }
+    let key = String(tag[..<colon]), value = String(tag[tag.index(after: colon)...])
+    switch key {
+    case "decade": return "the \(value)"
+    case "country", "lang":
+        let name = key == "country"
+            ? Locale.current.localizedString(forRegionCode: value)
+            : Locale.current.localizedString(forLanguageCode: value)
+        return name ?? value
+    default: return value
     }
 }
 
@@ -128,12 +79,11 @@ struct MiniPlayer: View {
 
     var body: some View {
         VStack(spacing: 4) {
-            Slider(value: Binding(get: { player.position }, set: { player.seek(to: $0) }),
-                   in: 0...max(player.duration, 1))
+            ProgressView(value: min(player.position, max(player.duration, 1)), total: max(player.duration, 1))
             HStack {
                 VStack(alignment: .leading) {
                     Text(player.current?.title ?? "").lineLimit(1)
-                    Text(player.current?.artist ?? "").font(.caption).foregroundStyle(.secondary)
+                    Text(player.current?.artist ?? "").font(.caption).foregroundStyle(.secondary).lineLimit(1)
                 }
                 Spacer()
                 Button { player.previous() } label: { Image(systemName: "backward.fill") }
@@ -143,9 +93,68 @@ struct MiniPlayer: View {
                 Button { player.next() } label: { Image(systemName: "forward.fill") }
             }
             .font(.title3)
+            .buttonStyle(.borderless)
         }
         .padding(.horizontal)
         .padding(.vertical, 8)
         .background(.ultraThinMaterial)
+        .contentShape(Rectangle())
+    }
+}
+
+struct NowPlayingView: View {
+    @EnvironmentObject var player: PlayerService
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 16) {
+                AsyncImage(url: player.current?.thumbnail.flatMap(URL.init(string:))) { image in
+                    image.resizable().scaledToFit()
+                } placeholder: { Color.gray.opacity(0.2) }
+                .frame(maxHeight: 260)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                VStack(spacing: 2) {
+                    Text(player.current?.title ?? "").font(.title3.bold()).lineLimit(2)
+                    Text(player.current?.artist ?? "").foregroundStyle(.secondary)
+                }
+                .multilineTextAlignment(.center)
+                VStack(spacing: 2) {
+                    Slider(value: Binding(get: { player.position }, set: { player.seek(to: $0) }),
+                           in: 0...max(player.duration, 1))
+                    HStack {
+                        Text(formatTime(player.position))
+                        Spacer()
+                        Text(formatTime(player.duration))
+                    }
+                    .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                }
+                HStack(spacing: 40) {
+                    Button { player.previous() } label: { Image(systemName: "backward.fill") }
+                    Button { player.toggle() } label: {
+                        Image(systemName: player.isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                            .font(.system(size: 56))
+                    }
+                    Button { player.next() } label: { Image(systemName: "forward.fill") }
+                }
+                .font(.title)
+                List {
+                    Section("Queue") {
+                        ForEach(Array(player.queue.enumerated()), id: \.element.id) { i, track in
+                            Button { player.jump(to: i) } label: {
+                                TrackRow(title: track.title, subtitle: track.artist, thumbnail: track.thumbnail,
+                                         highlighted: i == player.index)
+                            }
+                        }
+                        .onDelete { player.removeFromQueue(at: $0) }
+                    }
+                }
+                .listStyle(.plain)
+            }
+            .padding(.horizontal)
+            .navigationTitle("Now Playing")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
+        }
     }
 }

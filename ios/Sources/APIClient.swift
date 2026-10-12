@@ -43,6 +43,11 @@ struct APIClient {
         }
     }
 
+    func health() async throws {
+        let (data, response) = try await URLSession.shared.data(for: request("/health"))
+        try check(response, data: data)
+    }
+
     func search(_ query: String) async throws -> [SearchResult] {
         let req = try request("/search", query: [.init(name: "q", value: query)])
         let (data, response) = try await URLSession.shared.data(for: req)

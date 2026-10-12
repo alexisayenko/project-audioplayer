@@ -11,7 +11,7 @@ final class Settings: ObservableObject {
     }
 
     init() {
-        serverURL = UserDefaults.standard.string(forKey: "serverURL") ?? "http://100.0.0.1:8000"
+        serverURL = UserDefaults.standard.string(forKey: "serverURL") ?? "https://play.isayenko.net"
         token = UserDefaults.standard.string(forKey: "token") ?? ""
     }
 }
