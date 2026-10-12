@@ -61,7 +61,7 @@ final class ServerLibrary: ObservableObject {
     }
 
     func refresh(settings: Settings) async {
-        guard !refreshing, !settings.token.isEmpty else { return }
+        guard !refreshing, !settings.token.isEmpty || AuthService.shared.isSignedIn else { return }
         refreshing = true
         defer { refreshing = false }
         do {

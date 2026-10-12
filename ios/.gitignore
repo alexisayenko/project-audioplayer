@@ -3,3 +3,6 @@ AudioPlayer.xcodeproj/
 xcuserdata/
 DerivedData/
 Sources/Info.plist
+
+# Real OAuth client IDs
+Config/Secrets.xcconfig

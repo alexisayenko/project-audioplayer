@@ -8,7 +8,7 @@ enum APIError: LocalizedError {
         switch self {
         case .badURL: return "Invalid server URL"
         case .http(let code, let detail):
-            if code == 401 { return "Wrong or missing API token (see Settings)" }
+            if code == 401 { return "Not signed in or wrong API token (see Settings)" }
             return detail.isEmpty ? "Server error \(code)" : detail
         }
     }
@@ -20,14 +20,18 @@ struct APIClient {
     let token: String
 
     private func request(_ path: String, query: [URLQueryItem] = [], method: String = "GET",
-                         body: Data? = nil) throws -> URLRequest {
+                         body: Data? = nil) async throws -> URLRequest {
         guard var comps = URLComponents(string: baseURL) else { throw APIError.badURL }
         comps.path = path
         comps.queryItems = query.isEmpty ? nil : query
         guard let url = comps.url else { throw APIError.badURL }
         var req = URLRequest(url: url)
         req.httpMethod = method
-        req.setValue(token, forHTTPHeaderField: "X-API-Token")
+        if let bearer = await AuthService.shared.validToken() {
+            req.setValue("Bearer \(bearer)", forHTTPHeaderField: "Authorization")
+        } else if !token.isEmpty {
+            req.setValue(token, forHTTPHeaderField: "X-API-Token")
+        }
         if let body {
             req.httpBody = body
             req.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -52,19 +56,25 @@ struct APIClient {
     }
 
     func verify() async throws {
-        let (data, response) = try await URLSession.shared.data(for: request("/tags"))
+        let (data, response) = try await URLSession.shared.data(for: try await request("/tags"))
         try check(response, data: data)
     }
 
+    func fetch(_ path: String) async throws -> Data {
+        let (data, response) = try await URLSession.shared.data(for: try await request(path))
+        try check(response, data: data)
+        return data
+    }
+
     func search(_ query: String) async throws -> [SearchResult] {
-        let req = try request("/search", query: [.init(name: "q", value: query)])
+        let req = try await request("/search", query: [.init(name: "q", value: query)])
         let (data, response) = try await URLSession.shared.data(for: req)
         try check(response, data: data)
         return try JSONDecoder().decode([SearchResult].self, from: data)
     }
 
     func library() async throws -> [ServerSong] {
-        var req = try request("/library")
+        var req = try await request("/library")
         req.timeoutInterval = 15
         let (data, response) = try await URLSession.shared.data(for: req)
         try check(response, data: data)
@@ -73,7 +83,7 @@ struct APIClient {
 
     /// Copies an audio file that is already on the server into the app.
     func downloadFile(_ track: Track) async throws {
-        let (tmp, response) = try await URLSession.shared.download(for: request("/files/\(track.id)"))
+        let (tmp, response) = try await URLSession.shared.download(for: try await request("/files/\(track.id)"))
         try check(response)
         try? FileManager.default.removeItem(at: track.fileURL)
         try FileManager.default.moveItem(at: tmp, to: track.fileURL)
@@ -82,12 +92,12 @@ struct APIClient {
     /// Asks the server to fetch the audio, then copies the file into the app.
     func download(_ result: SearchResult) async throws -> Track {
         struct Body: Encodable { let video_id: String }
-        let post = try request("/download", method: "POST", body: JSONEncoder().encode(Body(video_id: result.id)))
+        let post = try await request("/download", method: "POST", body: JSONEncoder().encode(Body(video_id: result.id)))
         let (data, response) = try await URLSession.shared.data(for: post)
         try check(response, data: data)
         let track = try JSONDecoder().decode(Track.self, from: data)
 
-        let (tmp, fileResponse) = try await URLSession.shared.download(for: request("/files/\(track.id)"))
+        let (tmp, fileResponse) = try await URLSession.shared.download(for: try await request("/files/\(track.id)"))
         try check(fileResponse)
         let dest = track.fileURL
         try? FileManager.default.removeItem(at: dest)
@@ -100,7 +110,7 @@ struct APIClient {
     private func send(_ path: String, method: String, body: [String: Any]? = nil,
                       timeout: TimeInterval = 30) async throws -> Data {
         let data = try body.map { try JSONSerialization.data(withJSONObject: $0) }
-        var req = try request(path, method: method, body: data)
+        var req = try await request(path, method: method, body: data)
         req.timeoutInterval = timeout
         do {
             let (out, response) = try await URLSession.shared.data(for: req)

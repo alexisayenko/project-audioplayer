@@ -1,0 +1,4 @@
+// Placeholders only. Put the real values in Config/Secrets.xcconfig (git-ignored; copy Secrets.example.xcconfig).
+GOOGLE_CLIENT_ID = REPLACE_ME.apps.googleusercontent.com
+GOOGLE_REVERSED_CLIENT_ID = com.googleusercontent.apps.REPLACE_ME
+#include? "Secrets.xcconfig"

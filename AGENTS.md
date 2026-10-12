@@ -10,8 +10,10 @@ Fast-path context for Claude Code. Full human-oriented docs:
 > Songs I pick are on my phone and play reliably, offline, with the screen locked.
 
 Playback and offline reliability beat features. Anything that does not
-make downloading, storing or playing a song more dependable (accounts,
-social, recommendations, a public release) is cut.
+make downloading, storing or playing a song more dependable (social,
+recommendations, a public release, multi-user accounts) is cut. The one
+exception: owner-only OAuth sign-in (Apple/Google) next to the API token
+([ADR-0006](docs/tech/decisions.md)); offline playback never depends on it.
 
 ## Product
 

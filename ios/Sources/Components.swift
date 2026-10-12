@@ -72,11 +72,31 @@ struct TagList: View {
 struct CoverImage: View {
     let source: String?
     @EnvironmentObject var settings: Settings
+    @State private var image: UIImage?
+
+    private static let cache = NSCache<NSString, UIImage>()
 
     var body: some View {
-        AsyncImage(url: CoverURL.resolve(source, baseURL: settings.serverURL, token: settings.token)) { image in
-            image.resizable().scaledToFill()
-        } placeholder: { Theme.panel }
+        Group {
+            if let image {
+                Image(uiImage: image).resizable().scaledToFill()
+            } else if let url = CoverURL.resolve(source, baseURL: settings.serverURL, token: "") , source?.hasPrefix("/") != true {
+                AsyncImage(url: url) { $0.resizable().scaledToFill() } placeholder: { Theme.panel }
+            } else {
+                Theme.panel
+            }
+        }
+        .task(id: source) { await load() }
+    }
+
+    /// Server covers are fetched with the auth header, never with a token in the URL.
+    private func load() async {
+        guard let source, source.hasPrefix("/") else { image = nil; return }
+        if let hit = Self.cache.object(forKey: source as NSString) { image = hit; return }
+        guard let data = try? await APIClient(baseURL: settings.serverURL, token: settings.token).fetch(source),
+              let img = UIImage(data: data) else { return }
+        Self.cache.setObject(img, forKey: source as NSString)
+        image = img
     }
 }
 
