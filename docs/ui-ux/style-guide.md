@@ -100,7 +100,7 @@ pair falls short the app deviates: the primary button and selected chips use
 (`accent-strong` with white is 3.4:1, with `on-accent` 4.4:1); `ok` and `power` are
 dots and icons, their words are `ink`; secondary text on `accent-tint` rows is `ink`
 (`ink-muted` is 4.0:1 there at night); `ink-faint` never carries a control. These
-are gaps to close in the design system. The playing row's ⋯ is `accent-ink` and the other rows' ⋯ is `ink-muted` (the design's `ink-faint` is 2.4:1); the version line on Settings is `ink-muted`; the danger buttons keep `ink` text with a `power` border.
+are gaps to close in the design system. The playing row's ⋯ is `accent-ink` and the other rows' ⋯ is `ink-muted` (the design's `ink-faint` is 2.4:1); the version line on Settings is `ink-muted`; the danger buttons keep `ink` text with a `power` border. Link errors in the Add sheet use `ink` text with a `power` icon and ring (red text is 3.9:1 by day). The "Fetch" button follows the primary-button pair above. The switch is 48 x 28: `accent-strong` track when on, `surface-sunken` when off, a 24pt thumb (`surface` by day, `ink` by night). Settings rows are 48pt with a `line` hairline between them; cards are `surface` slabs with 16pt side padding. A song row's second line keeps the source mark ("· YouTube") whole in `ink-faint` and truncates the artist first; at accessibility sizes the mark moves to its own line. The row's "⋯" is 24pt wide with a 44pt hit area; "Downloading NN%" wraps in an 84pt column so the artist keeps room.
 
 ## Look: Vega 108 turntable (retired, history only)
 

@@ -36,7 +36,7 @@ tap; on Playback itself it is hidden. Library is a table of the server library
 to left on narrower screens until it is the phone song row) with four category chips (Tags, Genres,
 Years, Countries) that open a filter sheet. Playback leads with the cover
 (title and artist on it), a seek bar, the transport tray, a volume row and the
-queue card beside it. The iOS app has its own tab bar with the same three destinations (its Playback has no volume row and its titles carry no eyebrow) (see
+queue card beside it. The iOS Settings screen shows Account, Downloads (read-only audio quality, "Download new songs automatically", "Use mobile data"), Storage and a collapsed "Private server" row, then the version line; the iOS Add sheet ends with "Add to library" and "Add and download to iPhone". The iOS app has its own tab bar with the same three destinations (its Playback has no volume row and its titles carry no eyebrow) (see
 [`../specs/ios.md`](../specs/ios.md)).
 
 ## Screens
