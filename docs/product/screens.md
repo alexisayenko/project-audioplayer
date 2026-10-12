@@ -4,8 +4,8 @@ Status: web UI and the server endpoints below are implemented
 (2026-10-12, `web/`, `server/`); the iOS app (`ios/`) implements the same tab flow (ADR-0007, [`../specs/ios.md`](../specs/ios.md)). The web UI is served by FastAPI from
 the same origin as the API at `play.isayenko.net` (no CORS, token-protected
 API), see ADR-0003 in [`../tech/decisions.md`](../tech/decisions.md). The
-iOS app mirrors the web flow with Library, Add, Playback (queue badge) and
-Settings tabs (YouTube text search is a secondary screen under Add; Library is the phone only, filtered by four category chips and a bottom sheet), see [`../tech/architecture.md`](../tech/architecture.md).
+iOS app mirrors the web flow with Library, Playback and
+Settings tabs (Add is a sheet from the Library header; YouTube text search is a secondary screen inside it; Library is the phone only, filtered by four category chips and a bottom sheet), see [`../tech/architecture.md`](../tech/architecture.md).
 
 Scope: the web UI is for managing the library and listening online only,
 with no offline storage or audio cache. Offline listening ("download to
@@ -36,8 +36,8 @@ tap; on Playback itself it is hidden. Library is a table of the server library
 to left on narrower screens until it is the phone song row) with four category chips (Tags, Genres,
 Years, Countries) that open a filter sheet. Playback leads with the cover
 (title and artist on it), a seek bar, the transport tray, a volume row and the
-queue card beside it. The iOS app keeps its own tab bar (see
-[`../specs/ios.md`](../specs/ios.md)); it is to follow the same three destinations.
+queue card beside it. The iOS app has its own tab bar with the same three destinations (see
+[`../specs/ios.md`](../specs/ios.md)).
 
 ## Screens
 

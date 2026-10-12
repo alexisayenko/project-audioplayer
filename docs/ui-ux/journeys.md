@@ -15,12 +15,11 @@ For the journey concept and how it relates to screens, see
 
 Paste a link, keep the song on the phone, play it with no network.
 
-- **Entry:** Add tab (or Search under Add).
-- **Screens (in order):** Add (paste, preview, edit tags, save) -> status
-  polling -> Playback (mini-player on other tabs); later Library with the
-  Phone / Server switch; Settings first when no token or sign-in exists.
+- **Entry:** the + button in the Library header (or Search inside the Add sheet).
+- **Screens (in order):** Add sheet (paste, preview, edit tags, Save to iPhone) -> sheet closes, Library row
+  shows "Downloading NN%" -> Playback (mini-player on other tabs); Settings first when no token or sign-in exists.
 - **Branches:** no token or unreachable server -> error on Preview, go to
   Settings; song already in library -> 409 message; song added elsewhere
-  (web) -> Library Server list, swipe Download or "Download all".
+  (web) -> not listed on the phone; paste its link in Add again.
 - **Exit / success:** the song plays from the phone with the screen locked
   and no connection (`../specs/ios.md`).

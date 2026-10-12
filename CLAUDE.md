@@ -27,8 +27,7 @@ YouTube's ToS; the app is not for distribution.
 FastAPI wrapper around `yt-dlp` (Python 3.11+), run on the home server `perkunas` behind a Cloudflare
 Tunnel (planned, not yet deployed; Tailscale is not used) with an `X-API-Token` header or owner-only
 Apple/Google sign-in; see [docs/tech/decisions.md](docs/tech/decisions.md). Web UI in `web/`.
-Status: the iOS app (tabs Library, Add, Playback, Settings; Vega 108 look, migrating to the
-Warm analog design system with three tabs, task-0005) is on internal
+Status: the iOS app (tabs Library, Playback, Settings, Add as a sheet; Electrophone look, task-0005) is on internal
 TestFlight; its server flows are not yet tested on a device; server tests pass.
 
 ## Design: single source of truth

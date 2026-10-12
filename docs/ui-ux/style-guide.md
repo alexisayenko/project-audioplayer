@@ -77,7 +77,7 @@ Web: `web/style.css` uses only the `tokens.css` variables and the `.t-*` text
 styles (no hex, no literal colours). Layout: a 236px nav rail (64px icon rail
 below 720px, floating tab bar below 480px), the library as a table (columns
 collapse below 1200 / 1000px), the player bar docked at the bottom, Playback as
-deck + queue side by side from 900px. Text pairs are held at 4.5:1 in both
+cover + queue side by side from 900px. Text pairs are held at 4.5:1 in both
 themes; where the system's own pair falls short, the web deviates:
 selected chips and the primary button use `accent` with `on-accent` text
 (`accent-strong` + white is 3.3:1; `on-accent` on it 4.45:1), danger buttons
@@ -90,8 +90,8 @@ text on `accent-tint` rows is `ink` (`ink-muted` is 4.0:1 there at night).
 Colours, text roles, spacing and radii are `DS.Color` / `DS.Font` / `DS.Space` /
 `DS.Radius` from the generated `ios/Sources/DesignTokens.swift`; `Components.swift`
 holds the shared pieces (SongRow, category and value chips, FilterSheet is in
-`LibraryFilter.swift`, transport tray, buttons, tab bar in `Views.swift`, deck in
-`Deck.swift`). Text uses scalable Dynamic Type styles (`T.*`) with the same roles as
+`LibraryFilter.swift`, transport tray, buttons; the tab bar and mini-player in `Views.swift`; the Add flow in
+`AddSheet.swift`; `ServerStatus` and `LED` in `Components.swift`). Text uses scalable Dynamic Type styles (`T.*`) with the same roles as
 `DS.Font`; the layout caps at accessibility size 2. Day and night follow the system.
 
 Contrast: every text pair is held at 4.5:1 in both themes. Where the system's own
@@ -106,7 +106,7 @@ are gaps to close in the design system.
 
 The app was styled after the Soviet "Vega 108 Stereo" turntable: walnut veneer
 bars, matte black panel rows, chrome bezels, piano keys and a ridged knob. That
-code (`Theme.swift`, piano buttons, wood background) is deleted.
+code (`Theme.swift`, piano buttons, wood background, the deck) is deleted.
 Decision: ADR-0007 in [`../tech/decisions.md`](../tech/decisions.md). Sketches:
 [`vega-108/`](vega-108/) (`sketch-1.png` to `sketch-9.png`), generated from the
 prompts in [`design-prompts.md`](design-prompts.md).

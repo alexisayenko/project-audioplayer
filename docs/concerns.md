@@ -42,8 +42,8 @@ against it.
 
 ## C1 — iOS app and TestFlight
 
-The iPhone app: tabs matching the web, offline playback, owner-only
-sign-in, Vega 108 look, internal TestFlight builds. Spans `ios/`, `server/`
+The iPhone app: three tabs like the web, offline playback, owner-only
+sign-in, Electrophone look, internal TestFlight builds. Spans `ios/`, `server/`
 (OAuth, library endpoints), `docs/ui-ux/`, `docs/release/`.
 
 - Lives in: `ios/`, `server/app/oauth.py`, `docs/ui-ux/`, `docs/specs/ios.md`

@@ -124,17 +124,18 @@ is kept in `localStorage` (`audioplayer.token`). Mounted by FastAPI at
 
 ## App (`ios/`)
 
-SwiftUI, iOS 17, iPhone only, XcodeGen (`project.yml`). Tabs Library, Add,
-Playback, Settings, like the web (ADR-0007, spec [`../specs/ios.md`](../specs/ios.md)).
+SwiftUI, iOS 17, iPhone only, XcodeGen (`project.yml`). Three tabs, Library, Playback,
+Settings; Add is a sheet from the Library header (ADR-0009, spec [`../specs/ios.md`](../specs/ios.md)).
 Sources in `ios/Sources/`:
 
-- `Views` (tab shell, mini-player), `LibraryView`, `AddView` (+ `SearchView`
-  as secondary text search), `SongEditView`, `PlaybackView`, `SettingsView`.
-- `Theme`, `Components` — Vega 108 look (walnut bars, panel rows, piano
-  buttons, LEDs, platter and tonearm); see
+- `Views` (`AppTab`, tab shell, mini-player), `LibraryView`, `LibraryFilter`
+  (category chips + filter sheet), `AddSheet` (+ `SearchView` as secondary text
+  search), `SongEditView`, `PlaybackView`, `SettingsView`.
+- `DesignTokens` (generated `DS.*`), `Components` — Electrophone look; see
   [`../ui-ux/style-guide.md`](../ui-ux/style-guide.md).
+- `ServerLink` — server reachability, `ServerSong`, and downloads that outlive
+  the Add sheet (progress shown on the Library row).
 - `LibraryStore` — phone library, `Documents/library.json` and `Documents/audio/`.
-  `ServerLibrary` — cached `GET /library`, per-song and "Download all".
 - `APIClient` — preview, `POST /songs` + status polling, `/files`, PATCH,
   BPM detect, Wikipedia lookup, delete; auth header added per request.
 - `AuthService`, `Keychain` — Sign in with Apple / Google (ADR-0006) and
