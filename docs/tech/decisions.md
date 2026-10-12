@@ -14,7 +14,7 @@ Status: Accepted · 2026-10-12
 | iOS app | built | `ios/` |
 | Download server (FastAPI + yt-dlp) | built | `server/` |
 | Web interface | built | `web/`, served by FastAPI (ADR-0003) |
-| Data storage | built on server disk; ~~server disk~~ moving to git repos (ADR-0005, planned) | `server/app/library.py` |
+| Data storage | git repos (ADR-0005); plain files only when `AUDIO_DATA_REPO` is unset | `server/app/library.py` |
 
 ### Backend server is required
 
@@ -42,7 +42,7 @@ replaces Tailscale. Concrete setup: ADR-0004.
 - Writes are atomic (temp file + rename), single writer (the server,
   under a lock). Web and phone go through the API.
 - Revisit at tens of thousands of songs or multi-user.
-- Implemented in `server/app/library.py`: `library.json` and `covers/` live in `AUDIO_DATA_DIR`, audio in `AUDIO_DOWNLOAD_DIR`. ~~Covers on server disk~~ move to git LFS under ADR-0005 (planned).
+- Implemented in `server/app/library.py`: `library.json` and `covers/` live in `AUDIO_DATA_DIR`, audio in `AUDIO_DOWNLOAD_DIR`. ~~Covers on server disk~~ live in the git LFS repo under ADR-0005 (needs `git-lfs` installed on the server; the repo's `.gitattributes` decides tracking).
 
 ## ADR-0002 Tags replace playlists; song fields
 
@@ -94,7 +94,7 @@ machine / `alex-hetzner`" wording in ADR-0001
 
 ## ADR-0005 Library metadata lives in the data-storage git repos
 
-Status: Accepted, implementation planned (not done) · 2026-10-12 ·
+Status: Accepted, implemented in `server/` (git store, `music_root`, sync status; not yet deployed) · 2026-10-12 ·
 Supersedes the `library.json`-on-server-disk and covers-on-server-disk
 parts of ADR-0001 and the matching data wording in ADR-0004
 
@@ -117,13 +117,19 @@ parts of ADR-0001 and the matching data wording in ADR-0004
 - Auth: one deploy key per repo with write access, stored outside the
   repos (`~/.config/<service>/`, `chmod 600`). No credentials in repos.
 - History is permanent: no secrets or personal data in `library.json`.
-- Sub-decision (planned): `library.json` is `{settings:{music_root},
+- Sub-decision (implemented): `library.json` is `{settings:{music_root},
   songs:[...]}`. `music_root` is `<servername>://<path>/` (e.g.
   `perkunas://data/music/`); songs reference audio only by relative file
   name (`<video_id>.m4a`), so relocating the music changes one value.
   The server resolves `<servername>` through its own local config
   (name -> mount path/host, outside the repo): no credentials or IPs in
-  the JSON. Migration from the bare `{songs:[...]}` / `AUDIO_DOWNLOAD_DIR`
-  implementation is open.
+  the JSON. A bare `{songs:[...]}` file is migrated on load (per-song
+  `file` filled in; `music_root` seeded from `AUDIO_DOWNLOAD_DIR` on the
+  next save). A plain local path also works as `music_root` (dev).
+- Implementation: `server/app/gitstore.py` (env `AUDIO_DATA_REPO`,
+  `AUDIO_COVERS_REPO`, `AUDIO_GIT_SSH_KEY`; unset repo = plain files for
+  dev/tests), hosts map via `AUDIO_HOSTS` / `AUDIO_HOSTS_FILE`.
+  Sync state `ok` / `pending` / `error` is in `GET /health` (`sync`);
+  the web UI shows a warning when it is not `ok`.
 - Cost: each save is a git push (~1-2 s), acceptable at a few hundred
   songs; revisit if edits become frequent.

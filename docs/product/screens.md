@@ -97,18 +97,18 @@ Manages all songs.
 }
 ```
 
-- `settings.music_root` (planned, ADR-0005): `<servername>://<path>/`,
+- `settings.music_root` (implemented, ADR-0005): `<servername>://<path>/`,
   the one place that says where audio lives. Songs reference audio only
   by relative `file` name (`<video_id>.m4a`); moving the music to another
   host or path means changing this one value. The server resolves
   `<servername>` via its own local config (name -> mount path/host,
   outside the repo), so the JSON holds no credentials or IPs.
-- Open point: the current implementation (`server/app/library.py`)
-  writes a bare `{songs:[...]}` and uses `AUDIO_DOWNLOAD_DIR`; needs
-  migration to `{settings, songs}` and `music_root` resolution.
+- An old bare `{songs:[...]}` file is migrated on load; `AUDIO_DOWNLOAD_DIR`
+  is only the fallback when no `music_root` is set. `AUDIO_MUSIC_ROOT`
+  overrides it locally.
 - Today audio is at `downloads/<id>.m4a` on the server. Covers are
   `covers/<id>.jpg` (downloaded from the yt-dlp thumbnail at save time).
-- Storage (ADR-0005, planned; today both files are on server disk):
+- Storage (ADR-0005, implemented; plain files when `AUDIO_DATA_REPO` is unset):
   `library.json` is `audioplayer/library.json` in the git repo
   `alexisayenko/data-storage`, covers are `audioplayer/covers/<id>.jpg`
   in `alexisayenko/data-storage-lfs`; every change is a commit. Keep

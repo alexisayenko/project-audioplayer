@@ -6,7 +6,7 @@ Status: Accepted · 2026-10-12
 browser (web UI)  --same origin, X-API-Token-->  server (FastAPI + yt-dlp)  -->  YouTube
 iPhone (SwiftUI, deferred)  --http, X-API-Token-->  same server
   audio/<id>.m4a  <-- /files/<id> --  downloads/<id>.m4a
-  library.json + covers  <-- local clones of data-storage / data-storage-lfs (ADR-0005, planned)
+  library.json + covers  <-- local clones of data-storage / data-storage-lfs (ADR-0005)
 ```
 
 ## Why a server
@@ -30,10 +30,10 @@ Until cutover a placeholder page sits on Cloudflare Pages.
 See [`decisions.md`](decisions.md) (ADR-0001, ADR-0003, ADR-0004,
 ADR-0005).
 
-## Library storage (planned, ADR-0005; not implemented)
+## Library storage (ADR-0005, implemented; not deployed)
 
-Today `library.json` and `covers/` sit in `AUDIO_DATA_DIR` on the server
-disk. Planned: the server keeps its own clones of the private repos
+Without `AUDIO_DATA_REPO` (dev/tests) `library.json` and `covers/` are
+plain files in `AUDIO_DATA_DIR`. Otherwise the server keeps its own clones of the private repos
 `alexisayenko/data-storage` (`audioplayer/library.json`) and
 `alexisayenko/data-storage-lfs` (`audioplayer/covers/<id>.jpg`, Git LFS).
 Reads come from the local clone. A write takes the single-writer lock,
@@ -42,7 +42,7 @@ runs `pull --rebase`, writes `library.json` atomically, commits
 local commit is kept, retried with backoff, and a warning is shown in
 the UI; the write is never lost. Auth: one write deploy key per repo,
 outside the repos (`~/.config/`, `chmod 600`). History is permanent, so
-`library.json` holds no secrets or personal data. Planned: it carries
+`library.json` holds no secrets or personal data. It carries
 `settings.music_root` (`<servername>://<path>/`), resolved by the server
 via a local name -> mount path/host config outside the repo; songs hold
 relative audio file names only (replaces `AUDIO_DOWNLOAD_DIR`). Each save costs a push
@@ -52,7 +52,7 @@ relative audio file names only (replaces `AUDIO_DOWNLOAD_DIR`). Each save costs 
 
 | Endpoint | Purpose |
 | --- | --- |
-| `GET /health` | liveness, no auth |
+| `GET /health` | liveness + git `sync` state (`ok`/`pending`/`error`), no auth |
 | `GET /search?q=&limit=` | `ytsearch` via yt-dlp, flat results |
 | `POST /download {video_id}` | fetch m4a (itag 140, no ffmpeg needed), return metadata |
 | `GET /files/{video_id}` | stream the stored m4a |
