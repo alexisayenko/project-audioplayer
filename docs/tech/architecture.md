@@ -59,7 +59,8 @@ relative audio file names only (replaces `AUDIO_DOWNLOAD_DIR`). Each save costs 
 | `GET /library`, `GET /tags` | songs with tags; tag counts |
 | `POST /preview {url}` | yt-dlp metadata, no download |
 | `POST /songs`, `GET /songs/{id}/status` | add song (background download), poll progress |
-| `PATCH /songs/{id}`, `DELETE /songs/{id}` | edit metadata/tags; remove record, audio, cover |
+| `PATCH /songs/{id}`, `DELETE /songs/{id}` | edit metadata/tags/bpm; remove record, audio, cover |
+| `POST /songs/{id}/bpm/detect` | re-detect BPM (aubio) from the stored m4a |
 | `GET /covers/{video_id}` | cover jpg (`covers/<id>.jpg`) |
 | `GET /` | web UI (`web/`, static, public) |
 
@@ -73,6 +74,13 @@ and access logs, so keep logs private and use HTTPS. The static UI
 files are served without auth.
 Video ids are validated against `^[A-Za-z0-9_-]{11}$` (blocks path
 traversal and yt-dlp option injection).
+
+System dependencies (BPM detection, ADR-0002): `ffmpeg` on PATH (decodes m4a
+to PCM) and, because `aubio==0.4.9` has no wheel for current Python, a C
+toolchain with Python headers to build it (Debian: `apt install ffmpeg
+python3-dev build-essential`). With GCC 14 (Debian 13) the build needs
+`CFLAGS="-Wno-error=incompatible-pointer-types" pip install -r requirements.txt`.
+If ffmpeg or aubio is missing, BPM stays `null` and downloads still work.
 
 ```sh
 cd server

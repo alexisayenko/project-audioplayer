@@ -50,10 +50,33 @@ Status: Accepted · 2026-10-12
 
 - A song has zero or more free-form tags; a "playlist" is a tag filter.
   There is no playlist entity.
-- Song fields: `artist`, `title`, optional `album`, `year`, `genre`,
+- Song fields: `artist`, `title`, optional `album`, `year`,
   plus `source_url`, `cover`, `tags[]` and technical `id`, `duration`,
   `added_at`.
+- Sub-decision (2026-10-12): there is no dedicated `genre` field. Tags
+  may be namespaced `key:value` (`genre:synthwave`, `mood:chill`) or
+  plain; genre is the tag `genre:<name>`. `key:value` tags are
+  lowercased and trimmed, tags dedupe case-insensitively, and the UI
+  groups filter chips by prefix. An old `genre` value migrates on load
+  to `genre:<value>`. yt-dlp genre/categories become a suggested
+  `genre:` tag at preview. One mechanism covers any future facet
+  without a schema change.
 - Screens, record layout and API: [`../product/screens.md`](../product/screens.md).
+
+- Sub-decision (BPM): `bpm` (number or `null`) is detected automatically
+  when a song is added and is user-editable. `server/app/bpm.py` decodes
+  the saved m4a with ffmpeg to mono 44.1 kHz PCM, feeds it to aubio's
+  tempo tracker and takes the median of aubio's running BPM estimate at
+  each detected beat, rounded to 1 decimal and folded into 70-180 BPM.
+  Detection runs in the download job after the file is saved; any failure
+  is logged and stored as `bpm: null`, the download never fails. Re-detect
+  via `POST /songs/{id}/bpm/detect`; `PATCH` accepts 20-300 or `null`; a
+  BPM typed in Add is kept and skips detection. Caveat: BPM is a
+  heuristic. Octave errors (half or double tempo) are possible and the
+  70-180 folding can be wrong for very slow or very fast songs; a pure
+  click track measured within ~2.5 BPM. Treat the value as a hint and
+  correct it by hand. Cost: new runtime deps `aubio`, `numpy` and the
+  `ffmpeg` binary (see `architecture.md`).
 
 ## ADR-0003 Web first, served by FastAPI at play.isayenko.net
 

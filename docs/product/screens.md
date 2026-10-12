@@ -34,8 +34,10 @@ Chosen as the simplest iOS-native option.
 
 1. User pastes a YouTube URL.
 2. App asks the server for a metadata preview (cover, title, artist,
-   album, year, genre, from yt-dlp where available).
-3. User edits any field and assigns tags (existing tags suggested).
+   album, year, and a suggested `genre:` tag, from yt-dlp where available).
+3. User edits any field and assigns tags (existing tags suggested; `key:value` allowed).
+   BPM is optional: left empty it is detected on the server after the
+   download (placeholder "Detected after saving"); a typed value is kept as is.
 4. Save starts the download on the server, then the app fetches the file.
 5. Shows progress while downloading and a clear error on failure
    (bad URL, unavailable video, server unreachable, already in library).
@@ -44,9 +46,10 @@ Chosen as the simplest iOS-native option.
 
 Manages all songs.
 
-- List rows: cover, title, artist.
+- List rows: cover, title, artist, BPM badge when known.
 - Search box (title, artist, album, tags).
-- Filter by tag; sort (added date, title, artist, year).
+- Filter by tag (chips grouped by prefix: Genre, Mood, ...; plain tags under Tags); sort (added date, title, artist, year, BPM; songs without BPM last).
+- Edit dialog has a BPM input and a Re-detect button (re-runs detection on the stored file).
 - Tap = play, queue is the current filtered and sorted list.
 - Edit metadata and tags of a song.
 - Delete a song (server file, cover and record).
@@ -67,10 +70,10 @@ Manages all songs.
 | Composition name | `title` | editable |
 | Album | `album` | editable, optional |
 | Year of release | `year` | editable, optional |
-| Style / genre | `genre` | editable, optional |
+| Tempo | `bpm` | number 20-300 with 1 decimal, or `null`; auto-detected with aubio on add, editable, heuristic (ADR-0002) |
 | Source URL | `source_url` | where it was downloaded from |
 | Cover image | `cover` | jpg file, see below |
-| Tags | `tags[]` | free-form strings |
+| Tags | `tags[]` | plain or namespaced `key:value` strings (genre is `genre:<name>`) |
 | Id | `id` | YouTube video id (technical) |
 | Duration | `duration` | seconds (technical) |
 | Added at | `added_at` | ISO 8601 UTC (technical) |
@@ -90,12 +93,12 @@ Manages all songs.
       "artist": "Rick Astley",
       "album": "Whenever You Need Somebody",
       "year": 1987,
-      "genre": "Pop",
+      "bpm": 113.0,
       "source_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
       "cover": "covers/dQw4w9WgXcQ.jpg",
       "duration": 213,
       "added_at": "2026-10-12T09:30:00Z",
-      "tags": ["80s", "workout"]
+      "tags": ["80s", "workout", "genre:pop", "mood:chill"]
     }
   ]
 }
@@ -117,8 +120,10 @@ Manages all songs.
   `alexisayenko/data-storage`, covers are `audioplayer/covers/<id>.jpg`
   in `alexisayenko/data-storage-lfs`; every change is a commit. Keep
   secrets and personal data out of the file, history is permanent.
-- Optional fields may be `null`. Tags are stored as typed; compare
-  case-insensitively.
+- Optional fields may be `null`. Tags are trimmed and deduplicated
+  case-insensitively; `key:value` tags are stored lowercased, plain tags
+  keep their case. There is no `genre` field: an old `genre` value is
+  migrated on load to the tag `genre:<value>`.
 - Storage rules (atomic writes, single writer, no SQLite, git-backed
   store) are in
   [`../tech/decisions.md`](../tech/decisions.md).
@@ -136,7 +141,8 @@ contain no data.
 | `POST /preview {url}` | yt-dlp metadata, no download | Add |
 | `POST /songs {url, metadata, tags}` | save metadata and start download | Add |
 | `GET /songs/{id}/status` | download progress or error | Add |
-| `PATCH /songs/{id}` | update metadata and tags | Library |
+| `PATCH /songs/{id}` | update metadata, tags, `bpm` (20-300 or `null`) | Library |
+| `POST /songs/{id}/bpm/detect` | re-detect BPM from the stored file, returns the song (422 if undetectable) | Library |
 | `DELETE /songs/{id}` | remove record, audio, cover | Library |
 | `GET /files/{id}` | stream m4a (Range supported) | Player |
 | `GET /covers/{id}` | cover image | all |
@@ -146,7 +152,7 @@ contain no data.
 `GET /songs/{id}/status` (`downloading` with `progress` 0..1, `done`, or
 `error` with a message). The record is written to `library.json` only
 when the download succeeds, so the library lists playable songs only.
-Duplicates return 409. If the cover fetch fails the song is still saved
+Duplicates return 409. BPM detection runs after the file is saved; if it fails the song is saved with `bpm: null`. Old records without `bpm` load fine. If the cover fetch fails the song is still saved
 with `cover: null`. `POST /download` and `GET /search` still exist for the
 iOS scaffold; the web UI does not use them.
 
