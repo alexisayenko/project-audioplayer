@@ -29,3 +29,20 @@ function route() {
 initPlayer();
 window.addEventListener('hashchange', route);
 route();
+
+const warn = document.getElementById('sync-warn');
+
+async function checkSync() {
+  let state = 'ok';
+  try {
+    const res = await fetch('/health');
+    if (res.ok) state = (await res.json()).sync || 'ok';
+  } catch { /* server unreachable: api calls report that */ }
+  warn.hidden = state === 'ok';
+  warn.textContent = state === 'error'
+    ? 'Library changes are not reaching git (retrying). Check the server.'
+    : 'Library changes are waiting to sync to git.';
+}
+
+checkSync();
+setInterval(checkSync, 30000);

@@ -161,3 +161,13 @@ dialog .row.end { justify-content: flex-end; margin-top: 16px; }
   nav { width: 100%; justify-content: space-around; }
   .grid2 { grid-template-columns: 1fr; }
 }
+
+.sync-warn {
+  margin: 0;
+  padding: 6px 12px;
+  background: #fef3c7;
+  color: #78350f;
+  font-size: 0.85rem;
+  text-align: center;
+}
+.sync-warn[hidden] { display: none; }
