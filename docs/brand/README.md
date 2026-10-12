@@ -9,8 +9,10 @@ committed export and the workflow. Decision: ADR-0009 in
 - **Design system** (SSOT): tokens, text styles, spacing, radii, shadows,
   component guidelines with previews, the brand book, mockups as assets.
   Artifact: `claude.ai/code/artifact/0389e2c5-e8e8-49c9-935a-f1c324194457`.
-- **Screens**: the "Electrophone Screens" Design artifact — Library, Add,
-  Playback (day, night), Settings, Library filter sheet, built on the system.
+- **Screens**: the "Electrophone Screens" Design artifact, two pages —
+  iOS (Library, Library · Add sheet, Playback day/night, Settings, Library ·
+  Genres sheet) and Web (Library, Library · Add dialog, Playback, Settings),
+  built on the system.
   Artifact: `claude.ai/artifact/5K2BS7LFpb9qsKX7TtNyBm`.
 
 ## Workflow
