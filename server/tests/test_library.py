@@ -18,14 +18,14 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setattr(main, "DATA_DIR", tmp_path)
     monkeypatch.setattr(main, "JOBS", {})
 
-    def fake_download(video_id, out_dir, progress=None):
+    def fake_download(video_id, out_dir, progress=None, source_url=None):
         out_dir.mkdir(parents=True, exist_ok=True)
         (out_dir / f"{video_id}.m4a").write_bytes(b"audio")
         if progress:
             progress(0.5)
         return {"id": video_id, "title": "Yt Title", "artist": "Yt Artist", "duration": 7}
 
-    def fake_cover(video_id, dest):
+    def fake_cover(video_id, dest, artwork=None):
         dest.parent.mkdir(parents=True, exist_ok=True)
         dest.write_bytes(b"jpg")
 
@@ -150,7 +150,7 @@ def test_download_error_status(client, monkeypatch):
 
 
 def test_cover_failure_is_not_fatal(client, monkeypatch):
-    def boom(vid, dest):
+    def boom(vid, dest, artwork=None):
         raise OSError("no network")
 
     monkeypatch.setattr(extractor, "fetch_cover", boom)

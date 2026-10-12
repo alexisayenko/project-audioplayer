@@ -5,18 +5,19 @@ import { tagEditor } from './tag-editor.js';
 import { el, fmtTime, toast } from './dom.js';
 import { icon } from './icons.js';
 import { tagLabel } from './tagname.js';
-import { cleanPasted } from './url-clean.js';
+import { cleanPasted, sourceOf, sourceLabel } from './url-clean.js';
 import { wikiFields } from './wiki-links.js';
 import { dialogHead } from './edit-dialog.js';
 
 const BULK = new Set(['insertFromPaste', 'insertFromPasteAsQuotation', 'insertFromDrop', 'insertReplacementText']);
+const PREVIEW_ONLY = 'Preview only \u2014 SoundCloud Go+ track, can\'t be downloaded in full.';
 const field = (label, input) => el('div', { class: 'field' }, el('label', {}, label), input);
 
 export function openAdd() {
   const dlg = document.getElementById('add-dialog');
   let preview = null;
 
-  const url = el('input', { type: 'url', placeholder: 'Paste a YouTube link', 'aria-label': 'YouTube link', autocomplete: 'off', inputMode: 'url' });
+  const url = el('input', { type: 'url', placeholder: 'Paste a YouTube or SoundCloud link', 'aria-label': 'YouTube or SoundCloud link', autocomplete: 'off', inputMode: 'url' });
   const fetchBtn = el('button', { class: 'btn fill small', type: 'submit' }, 'Fetch');
   const form = el('form', { class: 'well' }, url, fetchBtn);
   const message = el('div');
@@ -48,7 +49,7 @@ export function openAdd() {
       renderPreview();
       if (preview.in_library) say('This song is already in your library.', 'error');
     } catch (ex) {
-      say(ex.message, 'error');
+      say(ex.code === 'preview_only' ? PREVIEW_ONLY : ex.message, 'error');
     } finally {
       fetchBtn.disabled = false;
       fetchBtn.textContent = 'Fetch';
@@ -113,7 +114,8 @@ export function openAdd() {
     const err = el('div');
 
     const card = el('form', { class: 'add-card' },
-      el('div', { class: 'preview-row' }, cover, el('div', { class: 'preview-meta' }, title, sub, facts), edit),
+      el('div', { class: 'preview-row' }, cover, el('div', { class: 'preview-meta' }, title, sub, facts,
+        el('span', { class: 'chip tint', title: 'Source' }, sourceLabel(preview.source || sourceOf(preview.id)))), edit),
       details, tagRow, editorBox, err,
       el('div', { class: 'row end' }, save));
     body.replaceChildren(card);
@@ -141,7 +143,7 @@ export function openAdd() {
   }
 
   dlg.replaceChildren(
-    dialogHead('Add from YouTube', 'The server downloads the audio into the library', () => dlg.close()),
+    dialogHead('Add from YouTube or SoundCloud', 'The server downloads the audio into the library', () => dlg.close()),
     form, message, body);
   dlg.onclick = (e) => { if (e.target === dlg) dlg.close(); };
   dlg.showModal();

@@ -27,9 +27,10 @@ function lostSession() {
 }
 
 export class ApiError extends Error {
-  constructor(status, message) {
+  constructor(status, message, code = '') {
     super(message);
     this.status = status;
+    this.code = code;
   }
 }
 
@@ -58,7 +59,7 @@ async function request(method, path, body) {
       lostSession();
     }
     if (res.status === 503) detail = 'Server has no AUDIO_API_TOKEN configured';
-    throw new ApiError(res.status, detail || `Request failed (${res.status})`);
+    throw new ApiError(res.status, detail || `Request failed (${res.status})`, (data && data.error) || '');
   }
   return data;
 }

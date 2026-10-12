@@ -54,12 +54,12 @@ def client(tmp_path, repos, monkeypatch):
     monkeypatch.setattr(main, "DOWNLOAD_DIR", tmp_path / "music")
     monkeypatch.setattr(main, "JOBS", {})
 
-    def fake_download(video_id, out_dir, progress=None):
+    def fake_download(video_id, out_dir, progress=None, source_url=None):
         out_dir.mkdir(parents=True, exist_ok=True)
         (out_dir / f"{video_id}.m4a").write_bytes(b"audio")
         return {"id": video_id, "title": "Yt", "artist": "A", "duration": 7}
 
-    def fake_cover(video_id, dest):
+    def fake_cover(video_id, dest, artwork=None):
         dest.parent.mkdir(parents=True, exist_ok=True)
         dest.write_bytes(b"jpg")
 

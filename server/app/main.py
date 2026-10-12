@@ -14,13 +14,13 @@ from typing import Any
 
 from fastapi import BackgroundTasks, Depends, FastAPI, Header, HTTPException, Query, Request, Response
 from fastapi.concurrency import run_in_threadpool
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from . import bpm as bpm_detect
 from . import oauth, session
-from . import extractor, genre_lookup, gitstore, library, wiki_lookup
+from . import extractor, genre_lookup, gitstore, library, urlclean, wiki_lookup
 
 DOWNLOAD_DIR = Path(os.environ.get("AUDIO_DOWNLOAD_DIR", "downloads"))
 DATA_DIR = Path(os.environ.get("AUDIO_DATA_DIR", "."))
@@ -199,6 +199,51 @@ def _vid(video_id: str) -> str:
     return video_id
 
 
+def _error(status: int, code: str, detail: str) -> JSONResponse:
+    return JSONResponse({"error": code, "detail": detail}, status_code=status)
+
+
+class _Resolved:
+    """A pasted link resolved to a song id (and, for SoundCloud, its probed metadata)."""
+
+    def __init__(self, vid: str, url: str, probe: dict[str, Any] | None = None):
+        self.vid, self.url, self.probe = vid, url, probe
+
+
+class _Refused(Exception):
+    def __init__(self, response: JSONResponse):
+        self.response = response
+
+
+_NOT_A_LINK = "not a YouTube video or SoundCloud track URL"
+
+
+def _resolve_link(text: str) -> _Resolved:
+    """YouTube link -> id; SoundCloud link -> canonical URL, id and probe. Raises _Refused with the JSON error."""
+    vid = extractor.parse_video_id(text)
+    if vid:
+        return _Resolved(vid, extractor.watch_url(vid))
+    sc = urlclean.classify_soundcloud(text)
+    if sc is None:
+        raise _Refused(_error(422, "unsupported", _NOT_A_LINK))
+    kind, url = sc
+    if kind == "unsupported":
+        raise _Refused(_error(422, "unsupported", urlclean.UNSUPPORTED_MESSAGE))
+    try:
+        if kind == "short":
+            url = urlclean.resolve_soundcloud_short(url)
+        probe = extractor.soundcloud_probe(url)
+    except ValueError as exc:
+        raise _Refused(_error(422, "unsupported", str(exc))) from exc
+    except Exception as exc:
+        code = extractor.error_code(exc)
+        status = {"not_found": 404, "private": 403}.get(code or "", 502)
+        raise _Refused(_error(status, code or "failed", f"preview failed: {_short(exc)}")) from exc
+    if probe.get("preview_only"):
+        raise _Refused(_error(422, "preview_only", extractor.PREVIEW_ONLY_MESSAGE))
+    return _Resolved(probe["id"], probe["source_url"], probe)
+
+
 def _clean_text(v: str | None) -> str | None:
     v = (v or "").strip()
     return v or None
@@ -251,7 +296,7 @@ async def search(q: str = Query(min_length=1), limit: int = Query(10, ge=1, le=2
 
 @app.post("/download", dependencies=[Depends(require_token)])
 async def download(req: DownloadRequest):
-    if not extractor.is_valid_video_id(req.video_id):
+    if not extractor.is_valid_video_id(req.video_id) or extractor.source_of(req.video_id) != "youtube":
         raise HTTPException(status_code=422, detail="invalid video id")
     try:
         meta = await run_in_threadpool(extractor.download, req.video_id, DOWNLOAD_DIR)
@@ -317,13 +362,18 @@ class WikipediaLookupRequest(BaseModel):
 
 @app.post("/preview", dependencies=[Depends(require_token)])
 async def preview(req: PreviewRequest):
-    vid = extractor.parse_video_id(req.url)
-    if not vid:
-        raise HTTPException(status_code=422, detail="not a YouTube video URL")
     try:
-        meta = await run_in_threadpool(extractor.preview, vid)
-    except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"preview failed: {_short(exc)}") from exc
+        link = await run_in_threadpool(_resolve_link, req.url)
+    except _Refused as refused:
+        return refused.response
+    vid = link.vid
+    if link.probe is not None:
+        meta = {k: v for k, v in link.probe.items() if k != "preview_only"}
+    else:
+        try:
+            meta = await run_in_threadpool(extractor.preview, vid)
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"preview failed: {_short(exc)}") from exc
     found = await run_in_threadpool(genre_lookup.suggest_tags, meta.get("artist", ""), meta.get("title", ""))
     wiki = await run_in_threadpool(wiki_lookup.suggest, meta.get("artist", ""), meta.get("title", ""))
     meta["tags"] = _cap_suggestions(library.clean_tags([*meta.get("tags", []), *found, *wiki["tags"]]))
@@ -343,17 +393,17 @@ async def lookup_wikipedia(req: WikipediaLookupRequest):
     return {"tags": _cap_suggestions(library.clean_tags(found["tags"])), "year": found["year"]}
 
 
-def _run_download(vid: str, meta: dict[str, Any], tags: list[str]) -> None:
+def _run_download(vid: str, meta: dict[str, Any], tags: list[str], source_url: str | None = None) -> None:
     job = JOBS[vid]
 
     def progress(p: float) -> None:
         job["progress"] = round(p, 3)
 
     try:
-        info = extractor.download_audio(vid, music_dir(), progress)
+        info = extractor.download_audio(vid, music_dir(), progress, source_url)
         cover = None
         try:
-            extractor.fetch_cover(vid, covers_dir() / f"{vid}.jpg")
+            extractor.fetch_cover(vid, covers_dir() / f"{vid}.jpg", info.get("thumbnail"))
             cover = f"covers/{vid}.jpg"
         except Exception:
             pass
@@ -372,7 +422,8 @@ def _run_download(vid: str, meta: dict[str, Any], tags: list[str]) -> None:
             "bpm": value,
             "wikipedia_song": wiki_lookup.clean_link(meta.get("wikipedia_song")),
             "wikipedia_artist": wiki_lookup.clean_link(meta.get("wikipedia_artist")),
-            "source_url": extractor.watch_url(vid),
+            **({"source": "soundcloud"} if extractor.source_of(vid) == "soundcloud" else {}),
+            "source_url": extractor.watch_url(vid, source_url),
             "file": f"{vid}.m4a",
             "cover": cover,
             "duration": info.get("duration"),
@@ -383,6 +434,9 @@ def _run_download(vid: str, meta: dict[str, Any], tags: list[str]) -> None:
             songs = [s for s in library.load(library_path()) if s["id"] != vid]
             _save(songs + [song])
         job.update(status="done", progress=1.0)
+    except extractor.PreviewOnly as exc:
+        (music_dir() / f"{vid}.m4a").unlink(missing_ok=True)
+        job.update(status="error", error=str(exc), code="preview_only")
     except Exception as exc:
         try:
             (music_dir() / f"{vid}.m4a").unlink(missing_ok=True)
@@ -393,9 +447,11 @@ def _run_download(vid: str, meta: dict[str, Any], tags: list[str]) -> None:
 
 @app.post("/songs", status_code=202, dependencies=[Depends(require_token)])
 def create_song(req: CreateSongRequest, background: BackgroundTasks):
-    vid = extractor.parse_video_id(req.url)
-    if not vid:
-        raise HTTPException(status_code=422, detail="not a YouTube video URL")
+    try:
+        link = _resolve_link(req.url)
+    except _Refused as refused:
+        return refused.response
+    vid = link.vid
     with library.LOCK:
         if any(s["id"] == vid for s in library.load(library_path())):
             raise HTTPException(status_code=409, detail="already in library")
@@ -406,7 +462,7 @@ def create_song(req: CreateSongRequest, background: BackgroundTasks):
         k: (v.strip() if isinstance(v, str) else v) or None
         for k, v in req.metadata.model_dump().items()
     }
-    background.add_task(_run_download, vid, meta, library.clean_tags(req.tags))
+    background.add_task(_run_download, vid, meta, library.clean_tags(req.tags), link.url)
     return {"id": vid, "status": "downloading"}
 
 

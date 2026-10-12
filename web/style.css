@@ -462,3 +462,4 @@ body[data-route="playback"] main, body[data-route="playback"] .mini { display: n
   .tray { gap: 6px; padding: var(--space-2); flex: 1 1 100%; justify-content: space-between; }
   .pb-controls { gap: var(--space-3); }
 }
+.preview-meta > .chip { align-self: flex-start; }

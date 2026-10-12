@@ -197,7 +197,7 @@ export function renderLibrary(root) {
     } else if (nothing) {
       status.replaceChildren(el('div', { class: 'state card' },
         el('p', { class: 't-headline' }, 'No songs yet'),
-        el('p', { class: 'muted t-subhead' }, 'Paste a YouTube link and the server downloads the audio into your library.'),
+        el('p', { class: 'muted t-subhead' }, 'Paste a YouTube or SoundCloud link and the server downloads the audio into your library.'),
         el('button', { class: 'btn primary glow', type: 'button', onclick: openAdd }, icon('plus', 18), 'Add song')));
     } else {
       status.replaceChildren();

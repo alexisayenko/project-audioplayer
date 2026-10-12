@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { cleanUrl, cleanPasted } from './url-clean.js';
+import { cleanUrl, cleanPasted, classifySoundcloud, sourceOf, sourceLabel } from './url-clean.js';
 
 const V = 'jNQXAC9IVRw';
 const C = `https://www.youtube.com/watch?v=${V}`;
@@ -37,4 +37,34 @@ for (const raw of [
 ]) assert.equal(cleanPasted(raw), PC, raw);
 assert.equal(cleanPasted('some words'), 'some words');
 assert.equal(cleanPasted(''), '');
+const SC = 'https://soundcloud.com/some-artist/some-track';
+for (const raw of [
+  SC,
+  'http://soundcloud.com/some-artist/some-track',
+  'https://www.soundcloud.com/some-artist/some-track',
+  'https://m.soundcloud.com/some-artist/some-track',
+  'soundcloud.com/some-artist/some-track',
+  `  ${SC}?si=abc&utm_source=clipboard&utm_medium=text  `,
+  `${SC}/?ref=x#t=10`,
+]) assert.equal(cleanUrl(raw), SC, raw);
+assert.equal(cleanUrl(`${SC}/s-AbC123?si=zzz`), `${SC}/s-AbC123`);
+assert.equal(cleanUrl('https://on.soundcloud.com/AbC123?si=x'), 'https://on.soundcloud.com/AbC123');
+assert.equal(cleanPasted(`Check this out ${SC}?si=abc&utm_source=clipboard thanks`), SC);
+assert.equal(cleanPasted('https://on.soundcloud.com/AbC123?si=x'), 'https://on.soundcloud.com/AbC123');
+assert.equal(cleanPasted('soundcloud.com/some-artist/some-track?si=1'), SC);
+for (const raw of [
+  'https://soundcloud.com/some-artist',
+  'https://soundcloud.com/some-artist/sets/my-set',
+  'https://soundcloud.com/some-artist/likes',
+  'https://soundcloud.com/discover/sets/x',
+  `${SC}/albums`,
+  'https://on.soundcloud.com/a/b',
+]) assert.equal(classifySoundcloud(raw).kind, 'unsupported', raw);
+for (const raw of ['https://evilsoundcloud.com/a/b', 'https://soundcloud.com.evil.example/a/b', 'nonsense', '']) assert.equal(classifySoundcloud(raw), null, raw);
+assert.equal(cleanUrl('https://soundcloud.com/some-artist/sets/my-set?si=1'), 'https://soundcloud.com/some-artist/sets/my-set?si=1'.replace('?si=1', ''));
+assert.equal(sourceOf('soundcloud-1234567890'), 'soundcloud');
+assert.equal(sourceOf('dQw4w9WgXcQ'), 'youtube');
+assert.equal(sourceOf('soundcloud-abc'), 'youtube');
+assert.equal(sourceLabel('soundcloud'), 'SoundCloud');
+assert.equal(sourceLabel('youtube'), 'YouTube');
 console.log('url-clean tests passed');

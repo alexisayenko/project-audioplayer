@@ -1,11 +1,17 @@
-"""Canonical, tracking-free song URLs."""
+"""Canonical, tracking-free song URLs and song ids (YouTube and SoundCloud)."""
 
 from __future__ import annotations
 
 import re
+import urllib.error
+import urllib.request
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 VIDEO_ID_RE = re.compile(r"^[A-Za-z0-9_-]{11}$")
+SOUNDCLOUD_ID_RE = re.compile(r"^soundcloud-[0-9]{1,20}$")
+SOUNDCLOUD_PREFIX = "soundcloud-"
+
+UNSUPPORTED_MESSAGE = "Only single tracks are supported"
 
 _ID = r"([A-Za-z0-9_-]{11})"
 _URL_ID_RES = [
@@ -18,7 +24,103 @@ _TRACKING = {"si", "feature", "pp", "fbclid", "gclid"}
 
 
 def is_valid_video_id(video_id: str) -> bool:
-    return bool(VIDEO_ID_RE.fullmatch(video_id))
+    """A song id: an 11-char YouTube id or `soundcloud-<numeric track id>`."""
+    return bool(VIDEO_ID_RE.fullmatch(video_id) or SOUNDCLOUD_ID_RE.fullmatch(video_id))
+
+
+def source_of(song_id: str) -> str:
+    return "soundcloud" if SOUNDCLOUD_ID_RE.fullmatch(song_id) else "youtube"
+
+
+def soundcloud_song_id(track_id: str | int) -> str:
+    return f"{SOUNDCLOUD_PREFIX}{track_id}"
+
+
+_SC_HOSTS = {"soundcloud.com", "www.soundcloud.com", "m.soundcloud.com"}
+_SC_SHORT_HOST = "on.soundcloud.com"
+_SC_NAME = r"[A-Za-z0-9_-]+"
+_SC_RESERVED_USERS = {
+    "discover", "stations", "you", "charts", "search", "upload", "feed", "pages", "popular",
+    "mobile", "settings", "notifications", "messages", "jobs", "terms-of-use", "creators", "go",
+}
+_SC_RESERVED_SECOND = {"tracks", "albums", "sets", "reposts", "likes", "spotlight", "comments", "popular-tracks", "following", "followers", "playlists"}
+_SC_PRIVATE_RE = re.compile(r"^s-[A-Za-z0-9]+$")
+_SC_SHORT_CODE_RE = re.compile(r"^[A-Za-z0-9]{3,32}$")
+_SC_FIND_RE = re.compile(r"(?:https?://)?(?:(?:www\.|m\.)?soundcloud\.com|on\.soundcloud\.com)/[^\s<>\"']+", re.I)
+
+
+def classify_soundcloud(text: str) -> tuple[str, str] | None:
+    """`("track", canonical)`, `("short", https://on.soundcloud.com/<code>)`, `("unsupported", "")` or None (not SoundCloud).
+
+    A track is soundcloud.com/<artist>/<track>[/s-<secret>]; the query and fragment are dropped.
+    """
+    text = text.strip()
+    m = re.match(r"^(?:https?://)?([A-Za-z0-9.-]+)(/[^?#]*)?(?:[?#].*)?$", text, re.I)
+    if not m:
+        return None
+    host, path = m.group(1).lower(), (m.group(2) or "")
+    parts = [p for p in path.split("/") if p]
+    if host == _SC_SHORT_HOST:
+        if len(parts) == 1 and _SC_SHORT_CODE_RE.fullmatch(parts[0]):
+            return ("short", f"https://{_SC_SHORT_HOST}/{parts[0]}")
+        return ("unsupported", "")
+    if host not in _SC_HOSTS:
+        return None
+    if len(parts) < 2 or len(parts) > 3:
+        return ("unsupported", "")
+    user, track = parts[0], parts[1]
+    if user.lower() in _SC_RESERVED_USERS or track.lower() in _SC_RESERVED_SECOND:
+        return ("unsupported", "")
+    if not re.fullmatch(_SC_NAME, user) or not re.fullmatch(_SC_NAME, track):
+        return ("unsupported", "")
+    url = f"https://soundcloud.com/{user}/{track}"
+    if len(parts) == 3:
+        if not _SC_PRIVATE_RE.fullmatch(parts[2]):
+            return ("unsupported", "")
+        url += f"/{parts[2]}"
+    return ("track", url)
+
+
+def find_soundcloud_url(text: str) -> str | None:
+    m = _SC_FIND_RE.search(text)
+    return m.group(0) if m else None
+
+
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, *args, **kwargs):
+        return None
+
+
+def _open_no_redirect(url: str):
+    """HEAD without following redirects; returns the HTTPError (or response) carrying the Location header."""
+    opener = urllib.request.build_opener(_NoRedirect)
+    req = urllib.request.Request(url, method="HEAD", headers={"User-Agent": "Mozilla/5.0"})
+    try:
+        return opener.open(req, timeout=15)
+    except urllib.error.HTTPError as exc:
+        return exc
+
+
+def resolve_soundcloud_short(url: str) -> str:
+    """Follow an on.soundcloud.com link once (https, soundcloud.com only) and return the canonical track URL.
+
+    Raises ValueError when the link does not lead to a single SoundCloud track.
+    """
+    kind = classify_soundcloud(url)
+    if not kind or kind[0] != "short":
+        raise ValueError(UNSUPPORTED_MESSAGE)
+    try:
+        resp = _open_no_redirect(kind[1])
+    except Exception as exc:
+        raise ValueError("could not resolve the SoundCloud short link") from exc
+    location = (resp.headers.get("Location") or "").strip() if getattr(resp, "headers", None) else ""
+    parts = urlsplit(location)
+    if parts.scheme.lower() != "https" or (parts.hostname or "").lower() not in _SC_HOSTS:
+        raise ValueError("could not resolve the SoundCloud short link")
+    target = classify_soundcloud(location)
+    if not target or target[0] != "track":
+        raise ValueError(UNSUPPORTED_MESSAGE)
+    return target[1]
 
 
 def parse_video_id(url_or_id: str) -> str | None:
@@ -33,7 +135,12 @@ def parse_video_id(url_or_id: str) -> str | None:
     return None
 
 
-def watch_url(video_id: str) -> str:
+def watch_url(video_id: str, source_url: str | None = None) -> str:
+    """Page URL of a song: YouTube from the id; SoundCloud from its stored link, else the track API URL."""
+    if source_of(video_id) == "soundcloud":
+        if source_url and (c := classify_soundcloud(source_url)) and c[0] == "track":
+            return c[1]
+        return f"https://api.soundcloud.com/tracks/{video_id[len(SOUNDCLOUD_PREFIX):]}"
     return f"https://www.youtube.com/watch?v={video_id}"
 
 
@@ -43,11 +150,14 @@ def _is_tracking(name: str) -> bool:
 
 
 def clean_url(text: str) -> str:
-    """YouTube links become https://www.youtube.com/watch?v=<id>; other http(s) links lose tracking params."""
+    """YouTube links become https://www.youtube.com/watch?v=<id>, SoundCloud track links https://soundcloud.com/<artist>/<track>; other http(s) links lose tracking params."""
     text = text.strip()
     vid = parse_video_id(text)
     if vid:
         return watch_url(vid)
+    sc = classify_soundcloud(text)
+    if sc and sc[0] in ("track", "short"):
+        return sc[1]
     parts = urlsplit(text)
     if parts.scheme.lower() not in ("http", "https") or not parts.netloc or not parts.query:
         return text

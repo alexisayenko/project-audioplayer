@@ -282,13 +282,13 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setattr(main, "DATA_DIR", tmp_path)
     monkeypatch.setattr(main, "JOBS", {})
 
-    def fake_download(video_id, out_dir, progress=None):
+    def fake_download(video_id, out_dir, progress=None, source_url=None):
         out_dir.mkdir(parents=True, exist_ok=True)
         (out_dir / f"{video_id}.m4a").write_bytes(b"audio")
         return {"id": video_id, "title": "Yt", "artist": "A", "duration": 7}
 
     monkeypatch.setattr(extractor, "download_audio", fake_download)
-    monkeypatch.setattr(extractor, "fetch_cover", lambda v, d: None)
+    monkeypatch.setattr(extractor, "fetch_cover", lambda v, d, a=None: None)
     monkeypatch.setattr(main.bpm_detect, "detect_bpm", lambda p: 100.0)
     monkeypatch.setattr(
         extractor, "preview",
