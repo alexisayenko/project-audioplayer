@@ -11,13 +11,22 @@ iPhone (SwiftUI, deferred)  --http, X-API-Token-->  same server
 ## Why a server
 
 iOS cannot run `yt-dlp`. The server extracts the audio; the app only
-talks to it and plays local files. Run it on an always-on machine (YouTube
-may bot-challenge datacenter IPs). The web interface is built
+talks to it and plays local files. The web interface is built
 first and served by FastAPI itself (same origin, no CORS) at
-`play.isayenko.net`. Exposure via Cloudflare Tunnel is planned, not set
-up; until then a placeholder page sits on Cloudflare Pages and the
-server is reached locally or over Tailscale. See
-[`decisions.md`](decisions.md) (ADR-0001, ADR-0003).
+`play.isayenko.net`.
+
+## Deployment (planned, not deployed)
+
+Runs as a systemd service in the existing `tools` LXC 106 (Debian 13,
+`192.168.0.10`) on home server `perkunas`: no new LXC, no Docker, ~2
+cores max (the CPU throttles at 100 C; the LXC also hosts Immich).
+Public via the perkunas Cloudflare Tunnel: ingress
+`play.isayenko.net` -> `http://192.168.0.10:<port>`; at cutover the
+interim Pages CNAME `play` -> `play-76g.pages.dev` is replaced by the
+tunnel CNAME. Audio, `covers/` and `library.json` sit on a ZFS dataset
+on pool-3 (e.g. `/data/music`, single disk, no redundancy) bind-mounted
+into the LXC. Until cutover a placeholder page sits on Cloudflare Pages.
+See [`decisions.md`](decisions.md) (ADR-0001, ADR-0003, ADR-0004).
 
 ## Server (`server/`)
 
@@ -27,8 +36,21 @@ server is reached locally or over Tailscale. See
 | `GET /search?q=&limit=` | `ytsearch` via yt-dlp, flat results |
 | `POST /download {video_id}` | fetch m4a (itag 140, no ffmpeg needed), return metadata |
 | `GET /files/{video_id}` | stream the stored m4a |
+| `GET /library`, `GET /tags` | songs with tags; tag counts |
+| `POST /preview {url}` | yt-dlp metadata, no download |
+| `POST /songs`, `GET /songs/{id}/status` | add song (background download), poll progress |
+| `PATCH /songs/{id}`, `DELETE /songs/{id}` | edit metadata/tags; remove record, audio, cover |
+| `GET /covers/{video_id}` | cover jpg (`covers/<id>.jpg`) |
+| `GET /` | web UI (`web/`, static, public) |
 
-All but `/health` need header `X-API-Token` equal to `AUDIO_API_TOKEN`.
+Full contract: [`../product/screens.md`](../product/screens.md).
+
+All API routes except `/health` need header `X-API-Token` equal to
+`AUDIO_API_TOKEN`. `/files/{id}` and `/covers/{id}` also accept
+`?token=<token>`, compared with `hmac.compare_digest`, since `<audio>`
+and `<img>` cannot send headers; the token therefore can appear in URLs
+and access logs, so keep logs private and use HTTPS. The static UI
+files are served without auth.
 Video ids are validated against `^[A-Za-z0-9_-]{11}$` (blocks path
 traversal and yt-dlp option injection).
 
@@ -41,9 +63,25 @@ AUDIO_API_TOKEN=$(openssl rand -hex 32) uvicorn app.main:app --host 0.0.0.0
 pip install -U yt-dlp                    # run daily (cron); YouTube breaks it often
 ```
 
+Then open `http://<host>:8000/`, go to Settings, paste the token. Env:
+`AUDIO_API_TOKEN` (required), `AUDIO_DOWNLOAD_DIR` (default `downloads`),
+`AUDIO_DATA_DIR` (default `.`, holds `library.json` and `covers/`),
+`AUDIO_WEB_DIR` (default `../web`). Back up `library.json`, `covers/` and
+the download dir together.
+
+## Web UI (`web/`)
+
+Plain HTML, CSS and ES modules; no build step, no framework, no CDN.
+`index.html` + `style.css` + `js/` (`api`, `store`, `player`, `library`,
+`add`, `settings`, `app`). Hash routes `#/library`, `#/add`,
+`#/settings`. One `<audio>` element drives the mini-player, the
+full-screen Player and the Media Session lock-screen controls. The token
+is kept in `localStorage` (`audioplayer.token`). Mounted by FastAPI at
+`/` after all API routes, so it never shadows them.
+
 ## App (`ios/`)
 
-Deferred: the web interface comes first. The scaffold below exists.
+Deferred: the web interface comes first. The scaffold below exists and does not yet use the library endpoints.
 
 - `LibraryStore` — tracks as `Documents/library.json`, audio in `Documents/audio/`.
 - `APIClient` — search, download (POST then file fetch).

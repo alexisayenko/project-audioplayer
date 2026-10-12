@@ -1,7 +1,8 @@
 # Screens and library model
 
-Status: planned; being built web-first (2026-10-12), so treat nothing
-here as implemented until marked. The web UI is served by FastAPI from
+Status: web UI and the server endpoints below are implemented
+(2026-10-12, `web/`, `server/`); the iOS app is not updated and is
+deferred. The web UI is served by FastAPI from
 the same origin as the API at `play.isayenko.net` (no CORS, token-protected
 API), see ADR-0003 in [`../tech/decisions.md`](../tech/decisions.md). The
 iOS app is deferred; it currently has Library, Search and Settings tabs,
@@ -101,7 +102,10 @@ Manages all songs.
 
 ## API surface the screens need
 
-All need `X-API-Token`. Planned unless marked existing.
+Implemented. All need `X-API-Token` (header), except that `/files/{id}`
+and `/covers/{id}` also accept `?token=` because `<audio>` and `<img>`
+cannot send headers. The static web UI files at `/` are public; they
+contain no data.
 
 | Endpoint | Purpose | Screen |
 | --- | --- | --- |
@@ -111,16 +115,21 @@ All need `X-API-Token`. Planned unless marked existing.
 | `GET /songs/{id}/status` | download progress or error | Add |
 | `PATCH /songs/{id}` | update metadata and tags | Library |
 | `DELETE /songs/{id}` | remove record, audio, cover | Library |
-| `GET /files/{id}` (existing) | stream m4a | Player |
+| `GET /files/{id}` | stream m4a (Range supported) | Player |
 | `GET /covers/{id}` | cover image | all |
-| `GET /tags` | known tags with counts (optional; derivable from `/library`) | Add, Library |
+| `GET /tags` | known tags with counts | Add, Library |
 
-`POST /download {video_id}` exists today and is superseded by
-`POST /songs`.
+`POST /songs` returns 202 and downloads in the background; poll
+`GET /songs/{id}/status` (`downloading` with `progress` 0..1, `done`, or
+`error` with a message). The record is written to `library.json` only
+when the download succeeds, so the library lists playable songs only.
+Duplicates return 409. If the cover fetch fails the song is still saved
+with `cover: null`. `POST /download` and `GET /search` still exist for the
+iOS scaffold; the web UI does not use them.
 
 ## Open questions
 
 - Does the existing `/search` (YouTube search) endpoint and Search tab
   stay, or is URL paste the only way to add songs?
-- Does the web UI mirror all three screens? Assumed yes (Add, Library,
-  Player) since it is the first client.
+- (Resolved) The web UI mirrors all three screens: Add, Library, Player
+  (full-screen overlay opened from the persistent mini-player bar).

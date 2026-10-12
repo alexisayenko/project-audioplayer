@@ -10,7 +10,8 @@ Personal iOS audio player: search YouTube, download a song's audio via
 a private server, play it offline. TestFlight internal testing only.
 
 - [`ios/`](ios/) — SwiftUI app
-- [`server/`](server/) — FastAPI + `yt-dlp` download API
+- [`server/`](server/) — FastAPI + `yt-dlp` API; also serves the web UI
+- [`web/`](web/) — web UI (plain HTML/CSS/JS, no build step)
 
 Setup and release steps: [`docs/tech/architecture.md`](docs/tech/architecture.md).
 
