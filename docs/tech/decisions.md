@@ -58,7 +58,7 @@ Status: Accepted · 2026-10-12
   plain; genre is the tag `genre:<name>`. `key:value` tags are
   lowercased and trimmed, tags dedupe case-insensitively, and the UI
   groups filter chips by prefix. An old `genre` value migrates on load
-  to `genre:<value>`. yt-dlp genre/categories become a suggested
+  to `genre:<value>`. yt-dlp's `genre` (never YouTube categories) becomes a suggested
   `genre:` tag at preview. One mechanism covers any future facet
   without a schema change.
 - Screens, record layout and API: [`../product/screens.md`](../product/screens.md).

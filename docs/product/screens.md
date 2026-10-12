@@ -60,8 +60,17 @@ Manages all songs.
 
 ### 3. Player
 
-- Playback tab: cover, title, artist, scrubber, play/pause, prev/next, and
-  an "Up next" queue list.
+- Playback tab: three stacked cards in a centered column (max 720px), the
+  page itself does not scroll:
+  1. **Song details**: cover, title, "Author, Album, year", tag chips, BPM,
+     duration, and a Source link (`source_url`, new tab). Empty: "Nothing
+     playing".
+  2. **Playback controls**: scrubber with elapsed/total time, prev,
+     play/pause (also space), next, volume slider.
+  3. **Current playlist**: takes the remaining height and scrolls inside
+     its card; header shows the queue count and Clear. Shows the whole
+     queue with the current song highlighted; tap a song to play it.
+     Empty: "Queue is empty - add songs from Library".
 - The queue is the "current playlist", client-side only (ids in
   `localStorage`, restored on reload without auto-play; songs deleted from
   the library are dropped). It is no longer the filtered list.
@@ -69,9 +78,9 @@ Manages all songs.
     already queued it is moved there. The rest of the queue continues after it.
   - Add: appends to the end; a duplicate is ignored (toast "Already in
     queue"). If the queue was empty the song is queued but not played.
-  - Up next rows have move up/down and remove; Clear drops all upcoming
-    songs (the current song keeps playing). Prev/next and the mini-player
-    follow the queue.
+  - Upcoming rows have move up/down and remove (disabled for the current
+    and earlier songs); Clear drops all upcoming songs (the current song
+    keeps playing). Prev/next and the mini-player follow the queue.
 - Mini-player bar over Library, Add and Settings with short controls; tap
     opens Playback.
 
