@@ -198,6 +198,22 @@ def get_tags():
         return library.tag_counts(library.load(library_path()))
 
 
+_SUGGEST_CAPS = {"genre": 3, "country": 1, "lang": 2}
+
+
+def _cap_suggestions(tags: list[str]) -> list[str]:
+    used: dict[str, int] = {}
+    out = []
+    for t in tags:
+        key = t.partition(":")[0] if ":" in t else ""
+        if key in _SUGGEST_CAPS:
+            if used.get(key, 0) >= _SUGGEST_CAPS[key]:
+                continue
+            used[key] = used.get(key, 0) + 1
+        out.append(t)
+    return out
+
+
 @app.post("/preview", dependencies=[Depends(require_token)])
 async def preview(req: PreviewRequest):
     vid = extractor.parse_video_id(req.url)
@@ -207,8 +223,8 @@ async def preview(req: PreviewRequest):
         meta = await run_in_threadpool(extractor.preview, vid)
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"preview failed: {_short(exc)}") from exc
-    found = await run_in_threadpool(genre_lookup.suggest_genres, meta.get("artist", ""), meta.get("title", ""))
-    meta["tags"] = library.clean_tags([*meta.get("tags", []), *found])[:4]
+    found = await run_in_threadpool(genre_lookup.suggest_tags, meta.get("artist", ""), meta.get("title", ""))
+    meta["tags"] = _cap_suggestions(library.clean_tags([*meta.get("tags", []), *found]))
     with library.LOCK:
         meta["in_library"] = any(s["id"] == vid for s in library.load(library_path()))
     return meta
@@ -228,7 +244,7 @@ def _run_download(vid: str, meta: dict[str, Any], tags: list[str]) -> None:
             cover = f"covers/{vid}.jpg"
         except Exception:
             pass
-        value = meta.get("bpm")
+        value = round(meta["bpm"]) if meta.get("bpm") is not None else None
         if value is None:
             try:
                 value = bpm_detect.detect_bpm(music_dir() / f"{vid}.m4a")
@@ -307,7 +323,7 @@ def patch_song(video_id: str, req: PatchSongRequest):
         if "year" in changes:
             updated["year"] = changes["year"]
         if "bpm" in changes:
-            updated["bpm"] = round(changes["bpm"], 1) if changes["bpm"] is not None else None
+            updated["bpm"] = round(changes["bpm"]) if changes["bpm"] is not None else None
         if changes.get("tags") is not None:
             updated["tags"] = library.clean_tags(changes["tags"])
         if not updated.get("title"):
@@ -339,7 +355,7 @@ def _store_bpm(video_id: str, value: float) -> dict[str, Any]:
         song = next((s for s in songs if s["id"] == video_id), None)
         if song is None:
             raise HTTPException(status_code=404, detail="unknown song")
-        song["bpm"] = value
+        song["bpm"] = round(value)
         _save(songs)
         return song
 

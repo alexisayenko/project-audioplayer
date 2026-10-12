@@ -33,7 +33,7 @@ def decode(path: Path) -> np.ndarray:
     return np.frombuffer(out, dtype=np.float32)
 
 
-def bpm_from_samples(samples: np.ndarray) -> float | None:
+def bpm_from_samples(samples: np.ndarray) -> int | None:
     import aubio
 
     tempo = aubio.tempo("default", WIN_SIZE, HOP_SIZE, SAMPLE_RATE)
@@ -45,10 +45,10 @@ def bpm_from_samples(samples: np.ndarray) -> float | None:
                 per_beat.append(value)
     if len(per_beat) < 4:
         return None
-    return round(fold(statistics.median(per_beat)), 1)
+    return round(fold(statistics.median(per_beat)))
 
 
-def detect_bpm(path: Path) -> float | None:
+def detect_bpm(path: Path) -> int | None:
     """BPM of an audio file, or None when it cannot be determined; never raises."""
     try:
         return bpm_from_samples(decode(path))

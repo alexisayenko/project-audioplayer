@@ -8,7 +8,7 @@ from typing import Any
 
 import yt_dlp
 
-from . import library
+from . import langcodes, library
 
 VIDEO_ID_RE = re.compile(r"^[A-Za-z0-9_-]{11}$")
 
@@ -93,10 +93,14 @@ def _year(info: dict[str, Any]) -> int | None:
 
 
 def suggest_tags(info: dict[str, Any]) -> list[str]:
-    """yt-dlp's real `genre` value -> suggested `genre:` tags."""
+    """yt-dlp's real `genre` and `language` values -> suggested `genre:` and `lang:` tags."""
     raw = info.get("genre")
     values = raw if isinstance(raw, list) else re.split(r"[,;]", str(raw)) if raw else []
-    return library.clean_tags([f"genre:{v}" for v in values if str(v).strip()])
+    tags = [f"genre:{v}" for v in values if str(v).strip()]
+    lang = langcodes.to_lang_code(str(info.get("language") or ""))
+    if lang:
+        tags.append(f"lang:{lang}")
+    return library.clean_tags(tags)
 
 
 def preview(video_id: str) -> dict[str, Any]:

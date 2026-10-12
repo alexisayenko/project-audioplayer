@@ -10,6 +10,8 @@ import threading
 from pathlib import Path
 from typing import Any
 
+from . import langcodes
+
 LOCK = threading.RLock()
 
 _ROOT_RE = re.compile(r"^([A-Za-z][A-Za-z0-9_.-]+)://(.*)$")
@@ -32,6 +34,8 @@ def normalize(raw: Any) -> dict[str, Any]:
         s = dict(s)
         if "id" in s and not s.get("file"):
             s["file"] = f"{s['id']}.m4a"
+        if isinstance(s.get("bpm"), (int, float)) and not isinstance(s["bpm"], bool):
+            s["bpm"] = round(s["bpm"])
         genre = s.pop("genre", None)
         tags = list(s.get("tags") or [])
         if isinstance(genre, str) and genre.strip():
@@ -107,12 +111,17 @@ def resolve_music_root(root: str, hosts: dict[str, str] | None = None) -> Path:
 
 
 def clean_tag(tag: str) -> str:
-    """Trim and collapse spaces; `key:value` is lowercased, a plain tag keeps its case."""
+    """Trim and collapse spaces; `key:value` is lowercased, a plain tag keeps its case; a half-empty `key:` or `:value` is dropped."""
     key, sep, value = tag.partition(":")
     key, value = " ".join(key.split()), " ".join(value.split())
     if sep and key and value:
-        return f"{key}:{value}".lower()
-    return " ".join(tag.replace(":", " ").split())
+        key, value = key.lower(), value.lower()
+        if key == "lang":
+            value = langcodes.to_lang_code(value) or value
+        return f"{key}:{value}"
+    if sep:
+        return ""
+    return " ".join(tag.split())
 
 
 def clean_tags(tags: list[str]) -> list[str]:

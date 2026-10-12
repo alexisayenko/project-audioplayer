@@ -220,8 +220,8 @@ def test_static_ui_served_without_shadowing_api(tmp_path, monkeypatch):
 
 
 def test_clean_tags_normalises_namespaced():
-    assert library.clean_tags(["Genre: Synth  Wave", "genre:synth wave", " Mood:Chill ", "80s", "80S", "a:", ":b", " "]) == [
-        "genre:synth wave", "mood:chill", "80s", "a", "b",
+    assert library.clean_tags(["Genre: Synth  Wave", "genre:synth wave", " Mood:Chill ", "80s", "80S", "a:", ":b", "mood:", " : ", " "]) == [
+        "genre:synth wave", "mood:chill", "80s",
     ]
 
 
@@ -279,13 +279,13 @@ def test_preview_suggests_genre_tag_with_mocked_ytdlp(monkeypatch):
 
 def test_bpm_detected_on_add(client):
     add(client)
-    assert client.get("/library", headers=H).json()["songs"][0]["bpm"] == 123.4
+    assert client.get("/library", headers=H).json()["songs"][0]["bpm"] == 123
 
 
 def test_bpm_from_add_form_skips_detection(client, monkeypatch):
     monkeypatch.setattr(bpm, "detect_bpm", lambda path: pytest.fail("must not run"))
     add(client, metadata={"title": "Song", "bpm": 98.55})
-    assert client.get("/library", headers=H).json()["songs"][0]["bpm"] == 98.55
+    assert client.get("/library", headers=H).json()["songs"][0]["bpm"] == 99
 
 
 def test_bpm_detection_crash_does_not_fail_download(client, monkeypatch):
@@ -312,8 +312,8 @@ def test_patch_bpm_validation(client):
     assert client.patch(url, json={"bpm": 300.1}, headers=H).status_code == 422
     assert client.patch(url, json={"bpm": "fast"}, headers=H).status_code == 422
     r = client.patch(url, json={"bpm": 128.04}, headers=H)
-    assert r.status_code == 200 and r.json()["bpm"] == 128.0
-    assert client.patch(url, json={"title": "X"}, headers=H).json()["bpm"] == 128.0
+    assert r.status_code == 200 and r.json()["bpm"] == 128
+    assert client.patch(url, json={"title": "X"}, headers=H).json()["bpm"] == 128
     assert client.patch(url, json={"bpm": None}, headers=H).json()["bpm"] is None
 
 
@@ -321,11 +321,11 @@ def test_redetect_bpm(client, monkeypatch):
     add(client)
     client.patch(f"/songs/{VID}", json={"bpm": 60}, headers=H)
     r = client.post(f"/songs/{VID}/bpm/detect", headers=H)
-    assert r.status_code == 200 and r.json()["bpm"] == 123.4
-    assert client.get("/library", headers=H).json()["songs"][0]["bpm"] == 123.4
+    assert r.status_code == 200 and r.json()["bpm"] == 123
+    assert client.get("/library", headers=H).json()["songs"][0]["bpm"] == 123
     monkeypatch.setattr(bpm, "detect_bpm", lambda path: None)
     assert client.post(f"/songs/{VID}/bpm/detect", headers=H).status_code == 422
-    assert client.get("/library", headers=H).json()["songs"][0]["bpm"] == 123.4
+    assert client.get("/library", headers=H).json()["songs"][0]["bpm"] == 123
     assert client.post(f"/songs/{VID2}/bpm/detect", headers=H).status_code == 404
 
 
@@ -334,3 +334,9 @@ def test_old_song_without_bpm_loads(client, tmp_path):
     songs = client.get("/library", headers=H).json()["songs"]
     assert songs[0]["id"] == VID and "bpm" not in songs[0]
     assert client.patch(f"/songs/{VID}", json={"bpm": 100}, headers=H).json()["bpm"] == 100
+
+
+def test_fractional_bpm_migrated_on_load():
+    doc = library.normalize({"songs": [{"id": "a", "bpm": 132.1}, {"id": "b", "bpm": None}, {"id": "c"}]})
+    assert [s.get("bpm") for s in doc["songs"]] == [132, None, None]
+    assert isinstance(doc["songs"][0]["bpm"], int)

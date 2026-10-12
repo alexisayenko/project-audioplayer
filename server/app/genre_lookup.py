@@ -1,4 +1,4 @@
-"""Genre suggestions from MusicBrainz (free, no API key)."""
+"""Genre, country and language tag suggestions from MusicBrainz (free, no API key)."""
 
 from __future__ import annotations
 
@@ -12,12 +12,15 @@ import urllib.parse
 import urllib.request
 from typing import Any
 
+from . import langcodes
+
 log = logging.getLogger(__name__)
 
 API = "https://musicbrainz.org/ws/2"
 DEFAULT_UA = "audioplayer/0.1 (alex.isayenko@gmail.com)"
 MIN_SCORE = 90
 MAX_GENRES = 3
+MAX_LANGS = 2
 TIMEOUT = 5
 MIN_INTERVAL = 1.1
 
@@ -32,8 +35,12 @@ _NOISE = re.compile(
 _FEAT = re.compile(r"\s*[\(\[]?\b(?:feat\.?|ft\.?|featuring)\s.*$", re.I)
 
 
+_OFF = {"0", "false", "no", "off"}
+
+
 def enabled() -> bool:
-    return os.environ.get("AUDIO_GENRE_LOOKUP", "1").strip().lower() not in {"0", "false", "no", "off"}
+    """AUDIO_TAG_LOOKUP is the preferred switch, AUDIO_GENRE_LOOKUP its older alias; either one off disables the lookup."""
+    return all(os.environ.get(v, "1").strip().lower() not in _OFF for v in ("AUDIO_TAG_LOOKUP", "AUDIO_GENRE_LOOKUP"))
 
 
 def clean_artist(artist: str) -> str:
@@ -97,6 +104,22 @@ def _top(entity: dict[str, Any]) -> list[str]:
     return [f"genre:{n}" for n in ranked[:MAX_GENRES]]
 
 
+def _languages(rec: dict[str, Any]) -> list[str]:
+    codes: list[str] = []
+    for rel in rec.get("relations") or []:
+        work = rel.get("work") or {}
+        for raw in [*(work.get("languages") or []), work.get("language")]:
+            code = langcodes.to_lang_code(raw) if raw else None
+            if code and f"lang:{code}" not in codes:
+                codes.append(f"lang:{code}")
+    return codes[:MAX_LANGS]
+
+
+def _country(artist: dict[str, Any]) -> list[str]:
+    code = str(artist.get("country") or "").strip().lower()
+    return [f"country:{code}"] if re.fullmatch(r"[a-z]{2}", code) else []
+
+
 def _lookup(artist: str, title: str) -> list[str]:
     query = f'recording:"{title}" AND artist:"{artist}"'
     data = _get("recording/", {"query": query, "fmt": "json", "limit": "5"})
@@ -107,19 +130,30 @@ def _lookup(artist: str, title: str) -> list[str]:
         names = [c.get("name", "") for c in credits] + [c.get("artist", {}).get("name", "") for c in credits]
         if not any(_artist_match(artist, n) for n in names):
             continue
-        found = _top(_get(f"recording/{rec['id']}", {"inc": "genres+tags", "fmt": "json"}))
-        if found:
-            return found
-        for c in credits:
-            aid = c.get("artist", {}).get("id")
-            if aid and _artist_match(artist, c.get("artist", {}).get("name", "")):
-                return _top(_get(f"artist/{aid}", {"inc": "genres+tags", "fmt": "json"}))
-        return []
+        full = _get(f"recording/{rec['id']}", {"inc": "genres+tags+work-rels", "fmt": "json"})
+        genres, langs = _top(full), _languages(full)
+        country: list[str] = []
+        aid = next(
+            (
+                c["artist"]["id"]
+                for c in credits
+                if c.get("artist", {}).get("id") and _artist_match(artist, c["artist"].get("name", ""))
+            ),
+            None,
+        )
+        if aid:
+            try:
+                art = _get(f"artist/{aid}", {"inc": "genres+tags", "fmt": "json"})
+                country = _country(art)
+                genres = genres or _top(art)
+            except Exception as exc:
+                log.warning("artist lookup failed for %r: %s", artist, exc)
+        return [*genres, *country, *langs]
     return []
 
 
-def suggest_genres(artist: str, title: str) -> list[str]:
-    """Up to 3 `genre:<name>` tags for a track; [] when disabled, unmatched or on any error."""
+def suggest_tags(artist: str, title: str) -> list[str]:
+    """`genre:` (up to 3), `country:` (up to 1) and `lang:` (up to 2) tags for a track; [] when disabled, unmatched or on any error."""
     if not enabled():
         return []
     try:
@@ -133,5 +167,5 @@ def suggest_genres(artist: str, title: str) -> list[str]:
         _cache[key] = result
         return list(result)
     except Exception as exc:
-        log.warning("genre lookup failed for %r - %r: %s", artist, title, exc)
+        log.warning("tag lookup failed for %r - %r: %s", artist, title, exc)
         return []
