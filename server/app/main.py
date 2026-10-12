@@ -18,7 +18,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from . import bpm as bpm_detect
-from . import extractor, gitstore, library
+from . import extractor, genre_lookup, gitstore, library
 
 DOWNLOAD_DIR = Path(os.environ.get("AUDIO_DOWNLOAD_DIR", "downloads"))
 DATA_DIR = Path(os.environ.get("AUDIO_DATA_DIR", "."))
@@ -207,6 +207,8 @@ async def preview(req: PreviewRequest):
         meta = await run_in_threadpool(extractor.preview, vid)
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"preview failed: {_short(exc)}") from exc
+    found = await run_in_threadpool(genre_lookup.suggest_genres, meta.get("artist", ""), meta.get("title", ""))
+    meta["tags"] = library.clean_tags([*meta.get("tags", []), *found])[:4]
     with library.LOCK:
         meta["in_library"] = any(s["id"] == vid for s in library.load(library_path()))
     return meta
