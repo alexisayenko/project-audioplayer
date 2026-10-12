@@ -8,9 +8,6 @@ import { songLinks } from './wiki-links.js';
 const audio = document.getElementById('audio');
 const $ = (id) => document.getElementById(id);
 
-const PLAY = '▶';
-const PAUSE = '⏸';
-
 const QUEUE_KEY = 'ap2.queue';
 const SHUFFLE_KEY = 'ap2.shuffle';
 const REPEAT_KEY = 'ap2.repeat';
@@ -29,7 +26,7 @@ const ICONS = {
   loopAll: LOOP,
   loopOne: `${LOOP}<text x="12" y="15" font-size="8" text-anchor="middle" fill="currentColor" stroke="none" font-weight="700">1</text>`,
   plus: '<path d="M12 5v14M5 12h14"/>',
-  menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
+  more: '<circle cx="5" cy="12" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="19" cy="12" r="1.4" fill="currentColor"/>',
 };
 function icon(name, size = 22) {
   const svg = document.createElementNS(SVG_NS, 'svg');
@@ -217,20 +214,21 @@ function render() {
   if (!song) {
     document.title = 'Electrophone';
     for (const id of ['p-prev', 'p-back', 'p-fwd', 'p-next', 'p-play']) $(id).disabled = true;
-    setIcon('p-play', 'play', 30);
+    setIcon('p-play', 'play', 26);
+    setIcon('mini-play', 'play', 20);
     renderQueue();
     return;
   }
   for (const id of ['p-prev', 'p-back', 'p-fwd', 'p-play']) $(id).disabled = false;
-  $('mini-play').textContent = audio.paused ? PLAY : PAUSE;
-  setIcon('p-play', audio.paused ? 'play' : 'pause', 30);
+  setIcon('mini-play', audio.paused ? 'play' : 'pause', 20);
+  setIcon('p-play', audio.paused ? 'play' : 'pause', 26);
   $('mini-title').textContent = song.title;
   $('mini-artist').textContent = song.artist || '';
   $('player-title').textContent = song.title;
   $('player-sub').textContent = [song.artist, song.album, song.year].filter(Boolean).join(', ');
   $('player-tags').replaceChildren(...(song.tags || []).map(tagChip));
   $('player-bpm').textContent = song.bpm != null ? `${Math.round(song.bpm)} BPM` : '';
-  $('player-links').replaceChildren(...songLinks(song).map((l) => el('a', { class: 'source', href: l.href, target: '_blank', rel: 'noopener noreferrer' }, l.label)));
+  $('player-links').replaceChildren(...songLinks(song).map((l) => el('a', { class: 'source t-caption', href: l.href, target: '_blank', rel: 'noopener noreferrer' }, l.label)));
   setCover($('mini-cover'), song);
   setCover($('player-cover'), song);
   $('p-next').disabled = !Q.hasNext(logic());
@@ -272,19 +270,18 @@ function songRow(item, i) {
   return el('li', { class: `song${i === qs.index ? ' current' : ''}`, 'aria-current': i === qs.index ? 'true' : null },
     cover,
     el('div', { class: 'info' },
-      el('button', { class: 'open', type: 'button', title: 'Play', onclick: () => player.playAt(i) }, title),
-      sub ? el('small', {}, sub) : null),
-    el('div', { class: 'side' },
-      el('div', { class: 'meta' }, s && s.duration ? el('span', { class: 'dur' }, fmtTime(s.duration)) : null),
-      el('div', { class: 'btns' },
-        el('button', {
-          class: 'icon', type: 'button', title: now ? 'Pause' : 'Play', 'aria-label': `${now ? 'Pause' : 'Play'}: ${title}`,
-          onclick: () => player.playAt(i),
-        }, icon(now ? 'pause' : 'play')),
-        el('button', {
-          class: 'icon', type: 'button', title: 'Song menu', 'aria-label': `Song menu: ${title}`, 'aria-haspopup': 'menu', 'aria-expanded': 'false',
-          onclick: (e) => openRowMenu(e.currentTarget, i),
-        }, icon('menu')))),
+      el('button', { class: 'open t-headline', type: 'button', title: 'Play', onclick: () => player.playAt(i) }, title),
+      s && s.artist ? el('small', { class: 'artist t-subhead' }, s.artist) : null),
+    el('div', { class: 'meta' }, s && s.duration ? el('span', { class: 'dur t-time' }, fmtTime(s.duration)) : null),
+    el('div', { class: 'btns' },
+      el('button', {
+        class: 'icon', type: 'button', title: now ? 'Pause' : 'Play', 'aria-label': `${now ? 'Pause' : 'Play'}: ${title}`,
+        onclick: () => player.playAt(i),
+      }, icon(now ? 'pause' : 'play', 20)),
+      el('button', {
+        class: 'icon', type: 'button', title: 'Song menu', 'aria-label': `Song menu: ${title}`, 'aria-haspopup': 'menu', 'aria-expanded': 'false',
+        onclick: (e) => openRowMenu(e.currentTarget, i),
+      }, icon('more', 20))),
     s && (s.tags || []).length ? el('div', { class: 'tags' }, s.tags.map(tagChip)) : null);
 }
 
@@ -383,6 +380,7 @@ function renderProgress() {
   const cur = audio.currentTime;
   const frac = Number.isFinite(dur) && dur > 0 ? cur / dur : 0;
   $('mini-bar').style.width = `${frac * 100}%`;
+  $('player').style.setProperty('--progress', frac.toFixed(4));
   $('t-dur').textContent = fmtTime(dur);
   if (!scrubbing) {
     $('scrub').value = Math.round(frac * 1000);
@@ -431,12 +429,12 @@ export function initPlayer() {
 
   setIcon('p-prev', 'prev');
   setIcon('p-next', 'next');
-  setIcon('p-back', 'back5', 26);
-  setIcon('p-fwd', 'fwd5', 26);
+  setIcon('p-back', 'back5', 24);
+  setIcon('p-fwd', 'fwd5', 24);
   setIcon('p-shuffle', 'shuffle');
   setIcon('p-loop-one', 'loopOne');
   setIcon('p-loop-all', 'loopAll');
-  setIcon('tag-add', 'plus');
+  setIcon('mini-next', 'next', 20);
 
   $('mini-play').addEventListener('click', () => player.toggle());
   $('mini-next').addEventListener('click', () => player.next());

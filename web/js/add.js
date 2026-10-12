@@ -2,7 +2,7 @@ import { api } from './api.js';
 import { store } from './store.js';
 import { player } from './player.js';
 import { tagEditor } from './tag-editor.js';
-import { el, fmtTime } from './dom.js';
+import { el, fmtTime, pageHead } from './dom.js';
 import { cleanPasted } from './url-clean.js';
 import { wikiFields } from './wiki-links.js';
 
@@ -12,10 +12,10 @@ export function renderAdd(root) {
 
   const url = el('input', { type: 'text', placeholder: 'Paste a YouTube link', 'aria-label': 'YouTube URL', autocomplete: 'off', inputMode: 'url' });
   const previewBtn = el('button', { class: 'btn primary', type: 'submit' }, 'Preview');
-  const form = el('form', { class: 'row' }, url, previewBtn);
+  const form = el('form', { class: 'row search-row' }, url, previewBtn);
   const message = el('div');
   const card = el('div');
-  root.append(form, message, card);
+  root.append(pageHead('Add', 'Paste a YouTube link to download audio via your server'), form, message, card);
 
   const say = (text, kind = '') => message.replaceChildren(text ? el('p', { class: `msg ${kind}` }, text) : '');
 

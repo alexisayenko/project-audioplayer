@@ -1,6 +1,6 @@
 import { auth, getToken, setToken, session } from './api.js';
 import { store } from './store.js';
-import { el } from './dom.js';
+import { el, pageHead } from './dom.js';
 
 const GSI = 'https://accounts.google.com/gsi/client';
 const APPLE = 'https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js';
@@ -69,7 +69,7 @@ async function setupProviders(box, out) {
     }).catch((ex) => btn.replaceWith(el('p', { class: 'msg error' }, ex.message)));
   }
   if (!cfg.google_client_id && !cfg.apple_client_id) {
-    box.append(el('p', { class: 'muted' }, 'Sign-in is not configured on the server. Use the API token below.'));
+    box.append(el('p', { class: 'muted t-subhead' }, 'Sign-in is not configured on the server. Use the API token below.'));
   }
 }
 
@@ -77,7 +77,7 @@ function renderAccount() {
   const out = el('div');
   if (auth.email) {
     return el('div', { class: 'card' },
-      el('p', { style: 'margin:0' }, 'Signed in as ', el('b', {}, auth.email)),
+      el('p', { class: 'signed-as t-body' }, 'Signed in as ', el('b', {}, auth.email)),
       el('div', { class: 'row', style: 'margin-top:16px' },
         el('button', {
           class: 'btn',
@@ -92,7 +92,7 @@ function renderAccount() {
   }
   const box = el('div', { class: 'signin-box' });
   const card = el('div', { class: 'card' },
-    el('p', { style: 'margin:0 0 12px' }, 'Sign in (owner only)'), box, out);
+    el('h2', { class: 'card-title' }, 'Sign in (owner only)'), box, out);
   setupProviders(box, out);
   return card;
 }
@@ -101,13 +101,13 @@ export function renderSettings(root) {
   const input = el('input', { type: 'password', value: getToken(), autocomplete: 'off', placeholder: 'API token', 'aria-label': 'API token' });
   const out = el('div');
   const form = el('form', { class: 'card' },
-    el('label', { style: 'margin-top:0' }, 'API token (fallback; same value as AUDIO_API_TOKEN on the server)'),
+    el('label', { class: 'first' }, 'API token (fallback; same value as AUDIO_API_TOKEN on the server)'),
     input,
     el('div', { class: 'row', style: 'margin-top:16px' },
       el('button', { class: 'btn primary', type: 'submit' }, 'Save and test'),
       el('button', { class: 'btn', type: 'button', onclick: () => { setToken(''); input.value = ''; out.replaceChildren(el('p', { class: 'msg' }, 'Token cleared.')); window.dispatchEvent(new Event('auth-changed')); } }, 'Clear')),
     out,
-    el('p', { class: 'muted' }, 'The token is stored in this browser only (localStorage) and sent as X-API-Token. Signing in above uses a session cookie instead and keeps tokens out of URLs.'));
+    el('p', { class: 'muted t-subhead' }, 'The token is stored in this browser only (localStorage) and sent as X-API-Token. Signing in above uses a session cookie instead and keeps tokens out of URLs.'));
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     setToken(input.value.trim());
@@ -119,5 +119,5 @@ export function renderSettings(root) {
       out.replaceChildren(el('p', { class: 'msg error' }, ex.message));
     }
   });
-  root.append(renderAccount(), form);
+  root.append(pageHead('Settings'), renderAccount(), form);
 }

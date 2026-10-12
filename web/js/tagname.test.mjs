@@ -19,3 +19,9 @@ assert.equal(groupName('decade'), 'Decade');
 const g = tagGroups([{ tag: 'x', count: 1 }, { tag: 'lang:ru', count: 1 }, { tag: 'decade:10s', count: 1 }, { tag: 'decade:90s', count: 1 }, { tag: 'decade:00s', count: 1 }, { tag: 'country:lt', count: 1 }, { tag: 'genre:pop', count: 1 }]);
 assert.deepEqual(g.map((x) => x.key), ['genre', 'decade', 'country', 'lang', '']);
 assert.deepEqual(g[1].tags.map((t) => t.tag), ['decade:90s', 'decade:00s', 'decade:10s']);
+
+import { categoryOf, categoryTags, CATEGORIES } from './tagname.js';
+assert.deepEqual(['x', 'genre:Rock', 'decade:90s', 'country:GB', 'lang:en', 'mood:calm'].map(categoryOf), ['tags', 'genres', 'years', 'countries', 'tags', 'tags']);
+assert.equal(CATEGORIES.length, 4);
+assert.deepEqual(categoryTags([{ tag: 'decade:00s', count: 1 }, { tag: 'decade:90s', count: 5 }, { tag: 'genre:rock', count: 2 }], 'years').map((t) => t.tag), ['decade:90s', 'decade:00s']);
+assert.deepEqual(categoryTags([{ tag: 'a', count: 1 }, { tag: 'b', count: 3 }, { tag: 'lang:en', count: 2 }], 'tags').map((t) => t.tag), ['b', 'lang:en', 'a']);

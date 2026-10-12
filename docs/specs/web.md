@@ -13,3 +13,7 @@ on 2026-10-12; none has been tried live with Google or Apple yet.
 - WEB-007 MUST: a 401 on a signed-in session returns the UI to the sign-in screen. Status: implemented
 - WEB-008 MUST: no service worker or cache stores authenticated data (NFR-041, API-024). Status: implemented
 - WEB-009 SHOULD: checks for the URL rules live in `web/js/api.test.mjs` (`node web/js/api.test.mjs`); the sign-in flow itself is manual. Status: implemented
+- WEB-010 MUST: the web UI is styled only from `web/tokens.css` (generated, ADR-0009) and `web/style.css`; no hex or rgb literal appears in `web/style.css`, `web/js` or `index.html`. Day and night follow `prefers-color-scheme`. Status: implemented
+- WEB-011 MUST: Library offers four category chips (Tags, Genres, Years, Countries; plain, `genre:`, `decade:`, `country:`; other keys such as `lang:` fold into Tags) that open a filter sheet with multi-select values and counts, Clear, and a "Show N songs" button; values in one category are OR, categories are AND; Escape or the scrim closes without applying. Status: implemented
+- WEB-012 MUST: navigation is a rail (>= 720px), icon rail (480-719px) or floating tab bar (< 480px); the layout works from 360px up; every control has a visible focus ring, a 44px target (chips 36px) and an accessible name. Status: implemented
+- WEB-013 SHOULD: every text/ground pair holds 4.5:1 in both themes (see the style guide for the deviations from the system's own pairs). Status: implemented (checked by computation, not by an automated test)

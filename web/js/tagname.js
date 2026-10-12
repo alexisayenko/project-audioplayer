@@ -83,9 +83,30 @@ export function tagGroups(tagCounts) {
   }));
 }
 
+export const CATEGORIES = [
+  { id: 'tags', name: 'Tags', keys: null },
+  { id: 'genres', name: 'Genres', keys: ['genre'] },
+  { id: 'years', name: 'Years', keys: ['decade'] },
+  { id: 'countries', name: 'Countries', keys: ['country'] },
+];
+
+export function categoryOf(tag) {
+  const { key } = splitTag(tag);
+  const k = key.toLocaleLowerCase();
+  const hit = CATEGORIES.find((c) => c.keys && c.keys.includes(k));
+  return hit ? hit.id : 'tags';
+}
+
+export function categoryTags(tagCounts, id) {
+  const list = tagCounts.filter((t) => categoryOf(t.tag) === id);
+  return id === 'years'
+    ? list.sort((a, b) => decadeRank(a.tag) - decadeRank(b.tag) || a.tag.localeCompare(b.tag))
+    : list.sort((a, b) => b.count - a.count || tagLabel(a.tag).localeCompare(tagLabel(b.tag)));
+}
+
 export function tagChip(t) {
   const { key, value } = splitTag(t);
   return key
-    ? el('span', { class: 'tag ns', title: t }, el('span', { class: 'ns-key' }, key), valueLabel(key, value))
-    : el('span', { class: 'tag' }, t);
+    ? el('span', { class: 'tag ns t-caption', title: t }, el('span', { class: 'ns-key' }, key), valueLabel(key, value))
+    : el('span', { class: 'tag t-caption' }, t);
 }

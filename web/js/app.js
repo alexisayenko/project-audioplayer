@@ -44,13 +44,19 @@ session.restore().then(() => {
 });
 
 const warn = document.getElementById('sync-warn');
+const led = document.getElementById('server-led');
+const ledText = document.getElementById('server-text');
 
 async function checkSync() {
   let state = 'ok';
+  let online = false;
   try {
     const res = await fetch('/health');
+    online = res.ok;
     if (res.ok) state = (await res.json()).sync || 'ok';
   } catch { /* server unreachable: api calls report that */ }
+  led.classList.toggle('down', !online);
+  ledText.textContent = online ? `Server online \u00b7 ${location.host}` : 'Server unavailable';
   warn.hidden = state === 'ok';
   warn.textContent = state === 'error'
     ? 'Library changes are not reaching git (retrying). Check the server.'
