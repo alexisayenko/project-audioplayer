@@ -118,6 +118,12 @@ export const player = {
     return added;
   },
 
+  addListed(songs, tag) {
+    const { state, added, already } = Q.addListed(qs, songs, tag);
+    commit(state);
+    return { added, already };
+  },
+
   removeTag(tag) {
     const { state, removed } = Q.removeTags(qs, [tag]);
     commit(state);

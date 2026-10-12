@@ -45,9 +45,15 @@ export function renderLibrary(root) {
   const chips = el('div', { class: 'chip-groups' });
   const count = el('p', { class: 'muted' });
   const list = el('ul', { class: 'songs' });
+  const addAll = el('button', { class: 'btn', type: 'button', hidden: true });
+  addAll.addEventListener('click', () => {
+    const songs = visibleSongs();
+    const { added, already } = player.addListed(songs, prefs.tag);
+    toast(`Added ${added} ${added === 1 ? 'song' : 'songs'}${already ? ` (${already} already in queue)` : ''}`);
+  });
   const status = el('div');
 
-  root.append(el('div', { class: 'toolbar' }, el('div', { class: 'row' }, search, sort), chips), count, list, status);
+  root.append(el('div', { class: 'toolbar' }, el('div', { class: 'row' }, search, sort), chips), el('div', { class: 'row count-row' }, count, addAll), list, status);
 
   function renderChips() {
     if (prefs.tag && !store.tags.some((t) => t.tag.toLocaleLowerCase() === prefs.tag.toLocaleLowerCase())) prefs.tag = '';
@@ -67,6 +73,9 @@ export function renderLibrary(root) {
       : store.songs.length
         ? `${songs.length} of ${store.songs.length} songs`
         : 'No songs yet. Use Add to import one from a YouTube link.';
+    const filtered = !!(prefs.tag || prefs.query.trim());
+    addAll.hidden = !(store.loaded && filtered && songs.length);
+    addAll.textContent = `Add all ${songs.length} to playlist`;
     const empty = !songs.length && store.loaded && store.songs.length
       ? [el('li', { class: 'empty muted' }, 'No songs match. Clear the search or the tag filter.')]
       : [];
@@ -176,7 +185,6 @@ function removeSong(s) {
 }
 
 function editDialog(song) {
-  const editor = tagEditor({ tags: song.tags || [] });
   const dlg = document.getElementById('edit-dialog');
   const f = {
     title: el('input', { type: 'text', value: song.title || '', required: true }),
@@ -185,6 +193,7 @@ function editDialog(song) {
     year: el('input', { type: 'number', value: song.year ?? '', min: 0, max: 3000 }),
     bpm: el('input', { type: 'number', value: song.bpm != null ? Math.round(song.bpm) : '', min: 20, max: 300, step: 1, placeholder: 'Unknown' }),
   };
+  const editor = tagEditor({ tags: song.tags || [], year: f.year });
   const err = el('p', { class: 'msg error', hidden: true });
   const wikiMsg = el('div');
   const wiki = wikiFields({

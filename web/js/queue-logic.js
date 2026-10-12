@@ -105,6 +105,25 @@ export function addTags(state, picks, songs) {
   return { state: { items, index: state.index < 0 && items.length ? 0 : state.index, tags }, added };
 }
 
+// Library "Add all": the listed songs go in deduped at the end. With a tag filter the tag becomes a chip (as addTags);
+// without one (search only) they are added as manual. `already` counts listed songs that were in the queue before.
+export function addListed(state, songs, tag = '') {
+  const before = new Set(state.items.map((it) => it.id));
+  const already = songs.filter((s) => before.has(s.id)).length;
+  if (tag) {
+    const r = addTags(state, [tag], songs);
+    return { state: r.state, added: r.added, already };
+  }
+  let next = state;
+  let added = 0;
+  for (const s of songs) {
+    if (before.has(s.id)) continue;
+    next = addManual(next, s.id).state;
+    added += 1;
+  }
+  return { state: next, added, already };
+}
+
 // Drops chips and the not-yet-started, non-manual songs that only those chips contributed.
 export function removeTags(state, remove) {
   const rm = remove.map(lc);

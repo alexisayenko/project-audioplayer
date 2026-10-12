@@ -117,3 +117,20 @@ assert.equal(nextStep({ ...ql, repeat: 'one', index: 3 }, false).index, 3);
 const sh = nextStep({ ...ql, shuffle: true, repeat: 'off' }, true, () => 0);
 assert.equal(sh.index, 1);
 console.log('queue-logic: ok');
+
+{
+  const songs = [{ id: 'a', tags: ['decade:90s'] }, { id: 'b', tags: ['decade:90s'] }, { id: 'c', tags: ['decade:90s'] }];
+  let r = Q.addListed(Q.emptyState(), songs, 'decade:90s');
+  assert.deepEqual([r.added, r.already, r.state.tags, r.state.index], [3, 0, ['decade:90s'], 0]);
+  assert.ok(r.state.items.every((it) => !it.manual && it.tags[0] === 'decade:90s'));
+  r = Q.addListed(r.state, songs.slice(1), 'decade:90s');
+  assert.deepEqual([r.added, r.already, r.state.items.length], [0, 2, 3]);
+  assert.equal(Q.clean(r.state).state.items.length, 1, 'chip removal drops tag-added songs after the current one');
+
+  let m = Q.addManual(Q.emptyState(), 'a').state;
+  r = Q.addListed(m, songs, '');
+  assert.deepEqual([r.added, r.already, r.state.tags, r.state.items.map((it) => it.id)], [2, 1, [], ['a', 'b', 'c']]);
+  assert.ok(r.state.items.every((it) => it.manual));
+  assert.equal(Q.clean(r.state).state.items.length, 3, 'search-only adds are manual and survive Clean');
+  assert.equal(r.state.index, 0);
+}
