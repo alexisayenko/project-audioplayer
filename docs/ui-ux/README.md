@@ -65,7 +65,8 @@ crystallize.
   popup dismissal, voice & copy).
 - [`design-prompts.md`](design-prompts.md) — prompts used to generate the
   iOS sketches; [`vega-108/`](vega-108/) holds the nine results for the
-  chosen direction (ADR-0007; "Look: Vega 108 turntable" in the style guide).
+  first direction (ADR-0007), superseded by the Warm analog design system (ADR-0009;
+  `mockups2/` was its origin).
 - [`performance-guide.md`](performance-guide.md) — end-to-end
   UX performance standards. Metrics, thresholds, tools,
   cadence — framed as the chain (frontend ↔ backend ↔ db)

@@ -290,3 +290,31 @@ Status: Accepted, in use · 2026-10-12
   CI workflow (manual only; see `ci-cd.md`).
 - TestFlight builds expire after 90 days; re-upload.
 - Rename (2026-10-12): the user-facing app name is now "Electrophone" (display name, web UI, docs). The ASC record, Google Cloud project `gramophone-offline` and SKU `gramophone-ios` keep their original names as external resources; bundle id, target and scheme names are unchanged.
+
+## ADR-0009 Look: the Electrophone design system is the single source of truth
+
+Status: Accepted · 2026-10-12 · Supersedes the look part of ADR-0007
+
+- Direction: "Warm analog / Quiet glass" (origin: `docs/ui-ux/mockups2/`, prompt B
+  in `docs/ui-ux/design-prompts.md`): warm paper and charcoal grounds, a copper
+  rim, flat glass slabs for controls, one cyan accent, day and night themes. The
+  Vega 108 skeuomorphic look (ADR-0007) is retired; its sketches stay in
+  `docs/ui-ux/vega-108/` as history.
+- Source of truth: the "Electrophone" Design System artifact on claude.ai
+  (`docs/brand/README.md` has the link). Every colour, text style, spacing
+  step, radius, shadow and component guideline lives there. The repository
+  holds a committed export, `docs/brand/tokens.json`, and generated consumers:
+  `ios/Sources/DesignTokens.swift` and `web/tokens.css`, produced by
+  `scripts/sync-design-system.py`. Generated files are never edited by hand;
+  code never defines its own colour, size or radius.
+- Workflow: change the system → export `project/tokens.json` to
+  `docs/brand/tokens.json` → `python3 scripts/sync-design-system.py` → commit
+  the three files together. Screens are designed in the "Electrophone
+  Screens" Design artifact before they are built.
+- Library filtering changes with the look: four category chips (Tags, Genres,
+  Years, Countries) open a filter sheet; no flat scrolling tag row.
+- Why: one place to decide the look, shared by iOS and web, editable without
+  touching code; the previous look was defined only in `Theme.swift`, so docs,
+  mockups and code drifted within a day.
+- Cost: the artifact is outside the repo (no CI pull; the export is manual),
+  and `Theme.swift`/`Components.swift`/views must be migrated (task-0005).

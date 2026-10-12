@@ -62,7 +62,18 @@ rationale per rule so future-us can revisit.
 
 - [TODO: open style decisions awaiting resolution.]
 
-## Look: Vega 108 turntable
+## Look: Warm analog / Quiet glass (current)
+
+Single source of truth: the "Electrophone" Design System artifact
+([`../brand/README.md`](../brand/README.md)). Warm paper / charcoal grounds,
+a copper rim, flat glass slabs, one cyan accent, day and night. Tokens are
+generated into `ios/Sources/DesignTokens.swift` and `web/tokens.css`; the
+components (Transport, Chip + FilterSheet, Segment, TabBar, SongRow, Button)
+are specified in the system and built in SwiftUI from it. Library shows four
+category chips (Tags, Genres, Years, Countries) that open a filter sheet.
+Decision: ADR-0009. Migration from the Vega 108 code: task-0005.
+
+## Look: Vega 108 turntable (superseded by ADR-0009)
 
 The app is styled after the Soviet "Vega 108 Stereo" turntable: walnut veneer
 bars (navigation), matte black panel rows, chrome bezels, rectangular piano

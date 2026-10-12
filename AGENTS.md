@@ -17,7 +17,7 @@ exception: owner-only OAuth sign-in (Apple/Google) next to the API token
 
 ## Product
 
-Electrophone (styled after the Vega 108): a personal iOS app, one user (the owner), distributed via TestFlight
+Electrophone: a personal iOS app, one user (the owner), distributed via TestFlight
 internal testing only. Search YouTube, download a song's audio through a
 private server, keep it in an on-device library, play it with background
 audio and lock-screen controls. No monetization. Downloading may violate
@@ -29,8 +29,18 @@ YouTube's ToS; the app is not for distribution.
 FastAPI wrapper around `yt-dlp` (Python 3.11+), run on the home server `perkunas` behind a Cloudflare
 Tunnel (planned, not yet deployed; Tailscale is not used) with an `X-API-Token` header or owner-only
 Apple/Google sign-in; see [docs/tech/decisions.md](docs/tech/decisions.md). Web UI in `web/`.
-Status: the iOS app (tabs Library, Add, Playback, Settings; Vega 108 look) is on internal
+Status: the iOS app (tabs Library, Add, Playback, Settings; Vega 108 look, migrating to the
+Warm analog design system, task-0005) is on internal
 TestFlight; its server flows are not yet tested on a device; server tests pass.
+
+## Design: single source of truth
+
+The look is defined ONLY in the "Electrophone" Design System artifact on claude.ai
+([docs/brand/README.md](docs/brand/README.md) has the link and workflow). Its `tokens.json` is
+committed at `docs/brand/tokens.json`; `scripts/sync-design-system.py` generates
+`ios/Sources/DesignTokens.swift` and `web/tokens.css` from it. Never hand-edit the generated
+files or invent a colour, size or radius in code: change the system, re-export, re-run the script.
+Screens: the "Electrophone Screens" Design artifact (same README). ADR-0009.
 
 ## Working in a shared checkout
 
