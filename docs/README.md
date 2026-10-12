@@ -178,6 +178,7 @@ docs/
 ├── release/                            # entry: release/README.md
 │   ├── app-store-metadata.md           # store listing draft
 │   └── legal-draft.md                  # legal-page draft
+├── specs/                              # entry: specs/README.md (what the system does)
 ├── tasks/                              # entry: tasks/README.md
 │   ├── README.md
 │   └── task-XXXX.md                    # numbered tasks

@@ -58,31 +58,106 @@ Manages all songs.
 - Edit metadata and tags of a song; Delete a song (server file, cover and
   record) from the Edit dialog.
 
-### 3. Player
+### 3. Player (Playback tab)
 
-- Playback tab: three stacked cards in a centered column (max 720px), the
-  page itself does not scroll:
-  1. **Song details**: cover, title, "Author, Album, year", tag chips, BPM,
-     duration, and a Source link (`source_url`, new tab). Empty: "Nothing
-     playing".
-  2. **Playback controls**: scrubber with elapsed/total time, prev,
-     play/pause (also space), next, volume slider.
-  3. **Current playlist**: takes the remaining height and scrolls inside
-     its card; header shows the queue count and Clear. Shows the whole
-     queue with the current song highlighted; tap a song to play it.
-     Empty: "Queue is empty - add songs from Library".
-- The queue is the "current playlist", client-side only (ids in
-  `localStorage`, restored on reload without auto-play; songs deleted from
-  the library are dropped). It is no longer the filtered list.
+Four stacked blocks in a centered column (max 720px). The page itself does
+not scroll; block 4 takes the remaining height and scrolls inside.
+
+```
++--------------------------------------------+
+| 1. SONG DETAILS                            |
+|  large cover fills the card                |
+|                                            |
+|  ......................................    |
+|  Title of the composition   (on a scrim)   |
+|  Author, Album, year                       |
+|  [tag] [tag] [tag] ...  BPM  Source link   |
++--------------------------------------------+
+| 2. SONG PLAY CONTROLS                      |
+|  |<   (<5)   [ > ]   (5>)   >|    1:05 / 3:33
+|  ---o------------------------ (thin scrub) |
++--------------------------------------------+
+| 3. PLAYLIST CONTROLS                       |
+|  [shuffle] [loop 1] [loop all] Clean playlist
+|  (tag1 x) (tag2 x)  [+]         N songs    |
++--------------------------------------------+
+| 4. CURRENT PLAYLIST          (scrolls) |###|
+|  [cover] Title              M:SS  [>] [=]  |
+|          Author, Album, year               |
+|          [tags ...]                        |
+|  [cover] ... (current row highlighted)     |
+|  ...                                       |
++--------------------------------------------+
+```
+
+Wireframes (`wireframes/`): current is the detailed v3
+([whole screen](wireframes/playback-v3-detailed.png),
+[controls](wireframes/playback-v3-controls.png),
+[rows](wireframes/playback-v3-rows.png),
+[scrollbar](wireframes/playback-v3-scrollbar.png)); the row mirrors the
+Library card ([`library-row.png`](wireframes/library-row.png)). Earlier
+drafts, both SUPERSEDED:
+[v1 three blocks](wireframes/playback-v1-three-blocks.png),
+[v2 four blocks](wireframes/playback-v2-four-blocks.png).
+
+![Playback v3, current](wireframes/playback-v3-detailed.png)
+
+1. **Song details**: the cover fills the whole card (placeholder colour when
+   there is none); title, "Author, Album, year", tag chips, BPM and a Source
+   link (`source_url`, new tab) are overlaid at the bottom on a dark gradient
+   scrim (legible in light and dark). Empty: "Nothing playing".
+2. **Song play controls**, one row: previous song, back 5 s, play/pause
+   (also space), forward 5 s, next song, and "M:SS / M:SS" on the right. A
+   thin scrubber under the row keeps seeking possible. No volume slider
+   (device volume is used).
+3. **Playlist controls**, one row (wraps on narrow screens):
+   - Shuffle toggle (`aria-pressed`).
+   - Loop one song toggle and loop whole list toggle, mutually exclusive
+     (turning one on turns the other off; both off = stop at the end).
+   - **Clean playlist**: removes all selected tags (chips) together with the
+     songs those tags contributed; see rules below.
+   - Chips = the currently selected tags, each with an x; **+** opens the tag
+     picker; song count on the right.
+4. **Current playlist**: rows look like Library cards (cover, title,
+   "Author, Album, year", duration, play button, tags line) plus a menu
+   button (Move up, Move down, Remove). Tap a row to play it; the current
+   song is highlighted. The list has a persistent, slim, styled scrollbar
+   ([wireframe](wireframes/playback-v3-scrollbar.png)). Empty: "Queue is
+   empty - add songs from Library".
+
+#### Queue and tag rules
+
+- The queue is the "current playlist", client-side only (`localStorage`,
+  restored on reload without auto-play; songs deleted from the library are
+  dropped). Each item records `manual` (added one by one) and the tags that
+  brought it in.
   - Play now: inserts the song right after the current one and plays it; if
-    already queued it is moved there. The rest of the queue continues after it.
-  - Add: appends to the end; a duplicate is ignored (toast "Already in
-    queue"). If the queue was empty the song is queued but not played.
-  - Upcoming rows have move up/down and remove (disabled for the current
-    and earlier songs); Clear drops all upcoming songs (the current song
-    keeps playing). Prev/next and the mini-player follow the queue.
+    already queued it is moved there. It counts as manual.
+  - Add (Library): appends to the end; a manual duplicate is ignored (toast
+    "Already in queue"). A song already queued only via a tag becomes manual.
+    If the queue was empty the song is queued but not played.
+  - Move/Remove apply to upcoming rows only (disabled for the current and
+    earlier songs).
+- **Tag picker** (+): all tags grouped by prefix with counts, multi-select;
+  already selected tags show as selected. Confirming adds every song that has
+  ANY picked tag (union) to the end of the queue, dedupes, and shows the
+  picked tags as chips. Deselecting a selected tag in the picker removes it
+  like the chip's x.
+- **Removing a tag** (chip x, or Clean playlist for all chips) removes the
+  songs it contributed only if they are upcoming (after the current song),
+  not manual, and not held by another remaining chip. The current song keeps
+  playing; played songs and songs added manually stay. Manual wins if a song
+  is both manual and tag-derived.
+- **Order of play**: sequential by default. Shuffle on: next picks a random
+  song not yet played in this round; when all have played it stops, or with
+  loop whole list reshuffles; previous walks back through the songs actually
+  played. Shuffle off restores sequential order from the current song.
+  Loop one song replays the current song when it ends (the Next button still
+  advances). Loop whole list wraps from the last song to the first. Shuffle
+  and loop state persist in `localStorage`. The logic is pure and tested:
+  `web/js/queue-logic.js`, `node web/js/queue-logic.test.mjs`.
 - Mini-player bar over Library, Add and Settings with short controls; tap
-    opens Playback.
+  opens Playback.
 
 ## Song fields
 
@@ -183,4 +258,4 @@ iOS scaffold; the web UI does not use them.
 - Does the existing `/search` (YouTube search) endpoint and Search tab
   stay, or is URL paste the only way to add songs?
 - (Resolved) The web UI mirrors all three screens: Add, Library, Player
-  (full-screen overlay opened from the persistent mini-player bar).
+  (the Playback tab, also opened from the persistent mini-player bar).

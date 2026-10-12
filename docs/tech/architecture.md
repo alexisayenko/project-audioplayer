@@ -103,9 +103,9 @@ disables the outbound HTTPS genre lookup to `musicbrainz.org`),
 
 Plain HTML, CSS and ES modules; no build step, no framework, no CDN.
 `index.html` + `style.css` + `js/` (`api`, `store`, `player`, `library`,
-`add`, `settings`, `app`). Hash routes `#/library`, `#/add`,
-`#/settings`. One `<audio>` element drives the mini-player, the
-full-screen Player and the Media Session lock-screen controls. The token
+`queue-logic`, `add`, `settings`, `app`). Hash routes `#/library`, `#/add`,
+`#/playback`, `#/settings`. One `<audio>` element drives the mini-player, the
+Playback tab and the Media Session lock-screen controls. The token
 is kept in `localStorage` (`audioplayer.token`). Mounted by FastAPI at
 `/` after all API routes, so it never shadows them.
 

@@ -1,0 +1,43 @@
+# API
+
+Code: `server/app/main.py`. Same origin as the web UI; JSON bodies; errors
+are `{"detail": "<message>"}`.
+
+## Auth
+
+- API-001 MUST: every route except `GET /health` and the static UI requires header `X-API-Token` equal to env `AUDIO_API_TOKEN`, compared with `hmac.compare_digest`. Status: implemented
+- API-002 MUST: `GET /files/{id}` and `GET /covers/{id}` also accept `?token=<token>` (the header wins when both are sent), because `<audio>` and `<img>` cannot send headers. Status: implemented
+- API-003 MUST: wrong or missing token gives 401 `bad token`; `AUDIO_API_TOKEN` unset gives 503 `AUDIO_API_TOKEN is not set` (the API is closed, never open). Status: implemented
+- API-004 MUST: static files at `/` are public, carry no data, and are served with `Cache-Control: no-cache`; API routes are registered first and are never shadowed. Status: implemented
+- API-005 MUST: `{id}` path params must match `^[A-Za-z0-9_-]{11}$`, else 422 `invalid video id` (blocks path traversal and yt-dlp option injection). Status: implemented
+- API-006 SHOULD: use HTTPS and keep logs private, since `?token=` appears in URLs. Status: implemented (via Cloudflare Tunnel once deployed; see [non-functional.md](non-functional.md))
+
+## Endpoints
+
+| Method and path | Auth | Request | Success | Errors |
+| --- | --- | --- | --- | --- |
+| `GET /health` | none | - | 200 `{status:"ok", sync:"ok"\|"pending"\|"error"}` | - |
+| `GET /library` | header | - | 200 `{songs:[song]}` | 401/503 |
+| `GET /tags` | header | - | 200 `[{tag,count}]` | 401/503 |
+| `POST /preview` | header | `{url}` | 200 `{id, source_url, title, artist, album, year, tags, duration, thumbnail, in_library}` | 422 `not a YouTube video URL`; 502 `preview failed: <short>` |
+| `POST /songs` | header | `{url, metadata:{title,artist,album,year,bpm}, tags:[]}` | 202 `{id, status:"downloading"}` | 422 bad URL or field range; 409 `already in library` / `already downloading` |
+| `GET /songs/{id}/status` | header | - | 200 `{id, status:"downloading"\|"done"\|"error", progress:0..1, error}` | 404 `unknown song` |
+| `PATCH /songs/{id}` | header | any of `title, artist, album, year, bpm, tags` | 200 the updated song | 404 `unknown song`; 422 `title must not be empty` or field range |
+| `POST /songs/{id}/bpm/detect` | header | - | 200 the updated song | 404 `unknown song` / `not downloaded`; 422 `could not detect BPM`; 503 music_root server not configured |
+| `DELETE /songs/{id}` | header | - | 204 | 404 `unknown song` |
+| `GET /files/{id}` | header or `?token=` | - | 200 audio (`audio/mp4`, Range supported via `FileResponse`) | 404 `not downloaded`; 503 music_root server not configured |
+| `GET /covers/{id}` | header or `?token=` | - | 200 `image/jpeg` | 404 `no cover` |
+| `GET /search?q=&limit=` | header | `q` min 1 char, `limit` 1..25 (default 10) | 200 `[{id,title,artist,duration,thumbnail}]` | 422 |
+| `POST /download` | header | `{video_id}` | 200 metadata plus `file_url` (synchronous download to `AUDIO_DOWNLOAD_DIR`, does not touch the library) | 422 invalid id; 502 `download failed: ...` |
+| `GET /` and static | none | - | web UI | - |
+
+- API-010 MUST: `POST /songs` returns 202 immediately and downloads in the background; the song is written to `library.json` only when the download succeeds. Status: implemented
+- API-011 MUST: `POST /songs` accepts any YouTube watch, `youtu.be`, shorts, embed, live or `music.` URL, or a bare 11-char id. Status: implemented
+- API-012 MUST: `GET /songs/{id}/status` answers from the in-memory job first, else `done` if the song is in the library, else 404. Status: implemented
+- API-013 MUST: job state is in memory; a server restart forgets in-flight jobs and past errors. Status: implemented
+- API-014 MUST: a failed job (`status:"error"`, message with yt-dlp noise stripped, max 300 chars) can be retried with a new `POST /songs`. Status: implemented
+- API-015 MUST: `PATCH` applies only the keys sent; `title`/`artist`/`album` are trimmed (empty becomes `null`, empty title is 422); `tags` is normalised; `tags: null` is ignored. Status: implemented
+- API-016 MUST: `DELETE` removes the record, the cover and the audio file, and drops the job entry. Status: implemented
+- API-017 MUST: every write endpoint (`POST /songs` job, PATCH, DELETE, bpm/detect) runs under the single-writer lock and, with the git store, commits `audioplayer: add|edit|delete|bpm <id>`. Status: implemented
+- API-018 SHOULD: `/search` and `/download` be removed or kept only for the iOS scaffold; the web UI does not use them. Status: to-confirm
+- API-019 MUST: `/health` reports `sync` as `ok` whenever no git store is configured. Status: implemented

@@ -113,6 +113,13 @@ Status: Accepted · 2026-10-12
   current song, or move it there) and Add (append, duplicates ignored). The
   Player is a regular Playback tab with an "Up next" list. Revisit if the
   queue must sync across devices.
+- Sub-decision (Playback layout): Playback is four stacked blocks (song
+  details, song play controls, playlist controls, current playlist), see
+  [`../product/screens.md`](../product/screens.md). Shuffle, loop-one,
+  loop-all and the tag selection are client-side: flags and the queue
+  (each item remembers whether it was added manually or by which tags) live
+  in `localStorage`; the pure logic is `web/js/queue-logic.js` with a node
+  test. No server state or endpoints.
 
 ## ADR-0004 Hosting on perkunas, LXC 106 `tools`
 
