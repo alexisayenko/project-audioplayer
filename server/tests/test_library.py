@@ -254,8 +254,7 @@ def test_patch_normalises_and_ignores_genre(client):
 def test_suggest_tags_from_ytdlp_metadata():
     assert extractor.suggest_tags({"genre": "Synth Pop"}) == ["genre:synth pop"]
     assert extractor.suggest_tags({"genre": "Rock, Pop"}) == ["genre:rock", "genre:pop"]
-    assert extractor.suggest_tags({"categories": ["Music", "Entertainment"]}) == ["genre:entertainment"]
-    assert extractor.suggest_tags({"categories": ["Music"]}) == []
+    assert extractor.suggest_tags({"categories": ["Music", "Film & Animation"]}) == []
     assert extractor.suggest_tags({}) == []
 
 

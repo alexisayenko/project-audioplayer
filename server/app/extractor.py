@@ -93,11 +93,9 @@ def _year(info: dict[str, Any]) -> int | None:
 
 
 def suggest_tags(info: dict[str, Any]) -> list[str]:
-    """yt-dlp genre (else categories, minus generic 'Music') -> suggested `genre:` tags."""
+    """yt-dlp's real `genre` value -> suggested `genre:` tags."""
     raw = info.get("genre")
     values = raw if isinstance(raw, list) else re.split(r"[,;]", str(raw)) if raw else []
-    if not values:
-        values = [c for c in info.get("categories") or [] if str(c).strip().casefold() != "music"]
     return library.clean_tags([f"genre:{v}" for v in values if str(v).strip()])
 
 
