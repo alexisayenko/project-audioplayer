@@ -313,6 +313,9 @@ Status: Accepted · 2026-10-12 · Supersedes the look part of ADR-0007
   Screens" Design artifact before they are built.
 - Library filtering changes with the look: four category chips (Tags, Genres,
   Years, Countries) open a filter sheet; no flat scrolling tag row.
+- Library is the phone (supersedes the Phone / Server switch of ADR-0007):
+  the server is only the download pipe behind Add; the phone never browses
+  a server library. The web UI keeps `GET /library`.
 - Why: one place to decide the look, shared by iOS and web, editable without
   touching code; the previous look was defined only in `Theme.swift`, so docs,
   mockups and code drifted within a day.
