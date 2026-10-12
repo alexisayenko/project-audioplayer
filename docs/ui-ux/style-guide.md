@@ -73,17 +73,40 @@ are specified in the system and built in SwiftUI from it. Library shows four
 category chips (Tags, Genres, Years, Countries) that open a filter sheet.
 Decision: ADR-0009. Migration from the Vega 108 code: task-0005.
 
-## Look: Vega 108 turntable (superseded by ADR-0009)
+Web: `web/style.css` uses only the `tokens.css` variables and the `.t-*` text
+styles (no hex, no literal colours). Layout: a 236px nav rail (64px icon rail
+below 720px, floating tab bar below 480px), the library as a table (columns
+collapse below 1200 / 1000px), the player bar docked at the bottom, Playback as
+deck + queue side by side from 900px. Text pairs are held at 4.5:1 in both
+themes; where the system's own pair falls short, the web deviates:
+selected chips and the primary button use `accent` with `on-accent` text
+(`accent-strong` + white is 3.3:1; `on-accent` on it 4.45:1), danger buttons
+and error messages use `ink` text with a `power` border (`power` text is 3.8:1
+on `surface` by day), `ink-faint` is never used for controls, and secondary
+text on `accent-tint` rows is `ink` (`ink-muted` is 4.0:1 there at night).
 
-The app is styled after the Soviet "Vega 108 Stereo" turntable: walnut veneer
-bars (navigation), matte black panel rows, chrome bezels, rectangular piano
-keys (one lit cyan, a red power key), ridged volume knob with min/max ticks,
-small-caps labels with Cyrillic accompaniments. All tokens and components
-live in `ios/Sources/Theme.swift` (tokens) and `Components.swift` (piano
-buttons, LEDs, knob, platter). Playback shows a rotating platter and a
-tonearm that follows playback progress. The app icon is the whole turntable
-seen from above.
+## iOS implementation of the Electrophone look
+
+Colours, text roles, spacing and radii are `DS.Color` / `DS.Font` / `DS.Space` /
+`DS.Radius` from the generated `ios/Sources/DesignTokens.swift`; `Components.swift`
+holds the shared pieces (SongRow, category and value chips, FilterSheet is in
+`LibraryFilter.swift`, transport tray, buttons, tab bar in `Views.swift`, deck in
+`Deck.swift`). Text uses scalable Dynamic Type styles (`T.*`) with the same roles as
+`DS.Font`; the layout caps at accessibility size 2. Day and night follow the system.
+
+Contrast: every text pair is held at 4.5:1 in both themes. Where the system's own
+pair falls short the app deviates: the primary button and selected chips use
+`accent-strong` + `ink` by day (4.8:1) and `accent` + `on-accent` by night
+(`accent-strong` with white is 3.4:1, with `on-accent` 4.4:1); `ok` and `power` are
+dots and icons, their words are `ink`; secondary text on `accent-tint` rows is `ink`
+(`ink-muted` is 4.0:1 there at night); `ink-faint` never carries a control. These
+are gaps to close in the design system.
+
+## Look: Vega 108 turntable (retired, history only)
+
+The app was styled after the Soviet "Vega 108 Stereo" turntable: walnut veneer
+bars, matte black panel rows, chrome bezels, piano keys and a ridged knob. That
+code (`Theme.swift`, piano buttons, wood background) is deleted.
 Decision: ADR-0007 in [`../tech/decisions.md`](../tech/decisions.md). Sketches:
 [`vega-108/`](vega-108/) (`sketch-1.png` to `sketch-9.png`), generated from the
-prompts in [`design-prompts.md`](design-prompts.md). The web UI keeps its
-plain style.
+prompts in [`design-prompts.md`](design-prompts.md).

@@ -45,5 +45,5 @@ component used on a screen must exist in the system.
 | --- | --- |
 | iOS tokens | `ios/Sources/DesignTokens.swift` (generated) |
 | Web tokens | `web/tokens.css` (generated) |
-| iOS app icon | `ios/Sources/Assets.xcassets/AppIcon.appiconset/` (still the Vega icon; task-0005) |
-| Web favicon / social cards | not yet |
+| iOS app icon | `ios/Sources/Assets.xcassets/AppIcon.appiconset/` (the record on the platter, drawn programmatically) |
+| Web favicon | `web/favicon.svg` (hand-drawn record mark; social cards not yet) |

@@ -5,12 +5,12 @@ Status: web UI and the server endpoints below are implemented
 the same origin as the API at `play.isayenko.net` (no CORS, token-protected
 API), see ADR-0003 in [`../tech/decisions.md`](../tech/decisions.md). The
 iOS app mirrors the web flow with Library, Add, Playback (queue badge) and
-Settings tabs (YouTube text search is a secondary screen under Add; Library has a Phone / Server switch), see [`../tech/architecture.md`](../tech/architecture.md).
+Settings tabs (YouTube text search is a secondary screen under Add; Library is the phone only, filtered by four category chips and a bottom sheet), see [`../tech/architecture.md`](../tech/architecture.md).
 
 Scope: the web UI is for managing the library and listening online only,
 with no offline storage or audio cache. Offline listening ("download to
 device") is the iOS app: Add and Library work as below, plus downloads to
-the phone, a Phone / Server switch in Library, and the Vega 108 look
+the phone, a phone-only Library (no server list; the server is the download pipe behind Add), and the Electrophone look
 ([style guide](../ui-ux/style-guide.md)). iOS differences are listed in
 [`../specs/ios.md`](../specs/ios.md); layouts below are the web's.
 
@@ -27,7 +27,10 @@ token are still needed). On the web, a signed-out visitor sees only Settings
 (Sign in with Google, Sign in with Apple, API token fallback); once signed in,
 Settings shows the email and Sign out. Playback is the Player screen as a regular tab; it
 shows the queue length as a badge when the queue is non-empty. A mini-player
-bar sits above the tab bar on the other tabs and opens Playback on tap.
+bar sits above the tab bar on the other tabs and opens Playback on tap. The web
+lays the same four destinations out as a side rail (Electrophone look, ADR-0009):
+Library is a table of the server library with four category chips (Tags, Genres,
+Years, Countries) that open a filter sheet, Playback is the deck beside the queue.
 
 ## Screens
 
