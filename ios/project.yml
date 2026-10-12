@@ -21,6 +21,8 @@ targets:
         UILaunchScreen: {}
         UIBackgroundModes: [audio]
         ITSAppUsesNonExemptEncryption: false
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        CFBundleIconName: AppIcon
         # The server is reached over a private Tailscale/LAN address via plain http.
         NSAppTransportSecurity:
           NSAllowsArbitraryLoads: true
@@ -28,3 +30,5 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.alexisayenko.audioplayer
         DEVELOPMENT_TEAM: L8C7TUQLBM
+        TARGETED_DEVICE_FAMILY: "1"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
