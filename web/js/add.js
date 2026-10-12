@@ -60,7 +60,7 @@ export function renderAdd(root) {
       year: el('input', { type: 'number', value: preview.year ?? '', min: 0, max: 3000 }),
       bpm: el('input', { type: 'number', min: 20, max: 300, step: 1, placeholder: 'Detected after saving' }),
     };
-    const editor = tagEditor({ tags: preview.tags || [], suggested: preview.tags || [] });
+    const editor = tagEditor({ tags: preview.tags || [], suggested: preview.tags || [], year: f.year });
     const wikiMsg = el('div');
     const wiki = wikiFields({
       song: preview.wikipedia_song, artist: preview.wikipedia_artist, year: f.year, editor,

@@ -1,13 +1,14 @@
 import { el } from './dom.js';
 import { store } from './store.js';
 import { splitInput } from './tag-input.js';
-import { tagGroups, tagLabel, tagText, tagSearchText } from './tagname.js';
+import { tagGroups, tagLabel, tagText, tagSearchText, withDecade, decadeRank } from './tagname.js';
 
 const same = (a, b) => a.toLocaleLowerCase() === b.toLocaleLowerCase();
 
-export function tagEditor({ tags = [], suggested = [] } = {}) {
-  let current = [...tags];
-  let sug = [...suggested];
+export function tagEditor({ tags = [], suggested = [], year = null } = {}) {
+  const yearValue = () => (year && year.value !== '' ? Number(year.value) : null);
+  let current = withDecade(tags, yearValue());
+  let sug = withDecade(suggested, yearValue());
   const input = el('input', { type: 'text', placeholder: 'Type a tag (plain or key:value), Enter or comma to add', enterKeyHint: 'done', autocomplete: 'off' });
   const chosen = el('div', { class: 'chips' });
   const sugBox = el('div', { class: 'chip-group' });
@@ -40,13 +41,20 @@ export function tagEditor({ tags = [], suggested = [] } = {}) {
     const shown = store.tags.filter((t) => !q || tagSearchText(t.tag).toLocaleLowerCase().includes(q));
     pool.replaceChildren(...tagGroups(shown).map((g) => el('div', { class: 'chip-group' },
       el('span', { class: 'group-name' }, g.name),
-      ...[...g.tags].sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag)).map((t) => chip(t.tag, t.count)))));
+      ...[...g.tags].sort(g.key === 'decade' ? (a, b) => decadeRank(a.tag) - decadeRank(b.tag) : (a, b) => b.count - a.count || a.tag.localeCompare(b.tag)).map((t) => chip(t.tag, t.count)))));
   }
 
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); add(input.value); }
   });
   input.addEventListener('input', render);
+  if (year) {
+    year.addEventListener('input', () => {
+      current = withDecade(current, yearValue());
+      sug = withDecade(sug, yearValue());
+      render();
+    });
+  }
   render();
 
   return {

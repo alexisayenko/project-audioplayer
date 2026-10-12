@@ -6,15 +6,37 @@ try {
   namers.lang = new Intl.DisplayNames(['en'], { type: 'language' });
 } catch { /* no Intl.DisplayNames: raw codes are shown */ }
 
-const GROUP_NAMES = { country: 'Country', lang: 'Language' };
-const FIRST = ['genre', 'country', 'lang'];
+const GROUP_NAMES = { decade: 'Decade', country: 'Country', lang: 'Language' };
+const FIRST = ['genre', 'decade', 'country', 'lang'];
+const DECADE = /^\d{2}s$/;
 
 export function splitTag(tag) {
   const i = tag.indexOf(':');
   return i > 0 ? { key: tag.slice(0, i), value: tag.slice(i + 1) } : { key: '', value: tag };
 }
 
+export function decadeTag(year) {
+  return Number.isInteger(year) && year >= 1950 && year <= 2029 ? `decade:${String(year % 100 - (year % 10)).padStart(2, '0')}s` : null;
+}
+
+export function withDecade(tags, year) {
+  const derived = decadeTag(year);
+  if (!derived) return [...tags];
+  const out = [];
+  let placed = false;
+  for (const t of tags) {
+    if (/^decade:/i.test(t)) {
+      if (!placed) out.push(derived);
+      placed = true;
+    } else out.push(t);
+  }
+  return placed ? out : [...out, derived];
+}
+
+export const decadeRank = (tag) => { const n = Number(splitTag(tag).value.slice(0, 2)); return Number.isNaN(n) ? 999 : n < 50 ? n + 100 : n; };
+
 export function valueLabel(key, value) {
+  if (key === 'decade' && DECADE.test(value)) return `the ${value}`;
   const namer = namers[key];
   if (!namer) return value;
   try {
@@ -55,7 +77,9 @@ export function tagGroups(tagCounts) {
   return order.map((key) => ({
     key,
     name: groupName(key),
-    tags: groups.get(key).sort((a, b) => tagLabel(a.tag).localeCompare(tagLabel(b.tag))),
+    tags: groups.get(key).sort(key === 'decade'
+      ? (a, b) => decadeRank(a.tag) - decadeRank(b.tag) || a.tag.localeCompare(b.tag)
+      : (a, b) => tagLabel(a.tag).localeCompare(tagLabel(b.tag))),
   }));
 }
 

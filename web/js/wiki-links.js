@@ -44,6 +44,7 @@ export function wikiFields({ song = '', artist = '', year, editor, onMessage }) 
         const current = year.value === '' ? null : Number(year.value);
         if (current == null || (current !== found.year && window.confirm(`Replace year ${current} with ${found.year}?`))) {
           year.value = found.year;
+          year.dispatchEvent(new Event('input'));
           applied = found.year;
         }
       }
