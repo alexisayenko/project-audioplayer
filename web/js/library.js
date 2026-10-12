@@ -57,10 +57,14 @@ export function renderLibrary(root) {
     const songs = visibleSongs();
     const ids = songs.map((s) => s.id);
     const cur = player.current;
-    count.textContent = store.songs.length
-      ? `${songs.length} of ${store.songs.length} songs`
-      : 'No songs yet. Use Add to import one from a YouTube link.';
-    list.replaceChildren(...songs.map((s) => el('li', { class: `song${cur && cur.id === s.id ? ' current' : ''}` },
+    count.textContent = !store.loaded ? ''
+      : store.songs.length
+        ? `${songs.length} of ${store.songs.length} songs`
+        : 'No songs yet. Use Add to import one from a YouTube link.';
+    const empty = !songs.length && store.loaded && store.songs.length
+      ? [el('li', { class: 'empty muted' }, 'No songs match. Clear the search or the tag filter.')]
+      : [];
+    list.replaceChildren(...empty, ...songs.map((s) => el('li', { class: `song${cur && cur.id === s.id ? ' current' : ''}` },
       el('button', { class: 'main', onclick: () => player.playQueue(ids, s.id), 'aria-label': `Play ${s.title}` },
         coverImg(s),
         el('span', { class: 'name' },
@@ -78,9 +82,11 @@ export function renderLibrary(root) {
   const unsubPlayer = player.onChange(renderList);
 
   if (!store.loaded) status.append(el('p', { class: 'muted' }, 'Loading...'));
-  store.refresh().then(() => status.replaceChildren()).catch((e) => {
-    status.replaceChildren(el('p', { class: 'msg error' }, e.message));
+  const load = () => store.refresh().then(() => status.replaceChildren()).catch((e) => {
+    status.replaceChildren(el('p', { class: 'msg error' }, e.message),
+      el('button', { class: 'btn', type: 'button', onclick: () => { status.replaceChildren(el('p', { class: 'muted' }, 'Loading...')); load(); } }, 'Retry'));
   });
+  load();
   renderAll();
 
   return () => { unsub(); unsubPlayer(); };
@@ -93,15 +99,39 @@ function coverImg(s) {
   return img;
 }
 
-async function removeSong(s) {
-  if (!confirm(`Delete "${s.title}"? The audio file and cover are removed from the server.`)) return;
-  try {
-    await api.remove(s.id);
-    await store.refresh();
-    toast('Deleted');
-  } catch (e) {
-    toast(e.message);
-  }
+function removeSong(s) {
+  const dlg = document.getElementById('edit-dialog');
+  const err = el('p', { class: 'msg error', hidden: true });
+  const del = el('button', { type: 'submit', class: 'btn danger' }, 'Delete');
+  const form = el('form', { method: 'dialog' },
+    el('h2', {}, 'Delete song?'),
+    el('p', {}, `"${s.title}" will be removed from the library. The audio file and cover are deleted from the server.`),
+    err,
+    el('div', { class: 'row end' },
+      el('button', { type: 'button', class: 'btn', onclick: () => dlg.close() }, 'Cancel'),
+      del));
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    del.disabled = true;
+    try {
+      await api.remove(s.id);
+      dlg.close();
+      await store.refresh();
+      toast('Deleted');
+    } catch (ex) {
+      if (ex.status === 404) {
+        dlg.close();
+        await store.refresh().catch(() => {});
+        return;
+      }
+      err.textContent = ex.message;
+      err.hidden = false;
+      del.disabled = false;
+    }
+  });
+  dlg.replaceChildren(form);
+  dlg.showModal();
+  del.focus();
 }
 
 function editDialog(song) {

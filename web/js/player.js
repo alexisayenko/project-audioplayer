@@ -64,7 +64,7 @@ function render() {
   const song = player.current;
   document.body.classList.toggle('has-mini', !!song);
   $('mini').hidden = !song;
-  if (!song) return;
+  if (!song) { document.title = 'Audio Player'; return; }
   const sym = audio.paused ? PLAY : PAUSE;
   $('mini-play').textContent = sym;
   $('p-play').textContent = sym;
@@ -141,7 +141,11 @@ export function initPlayer() {
   $('mini-open').addEventListener('click', () => { $('player').hidden = false; });
   $('player-close').addEventListener('click', () => { $('player').hidden = true; });
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !$('player').hidden) $('player').hidden = true;
+    if (e.key === 'Escape' && !$('player').hidden) { $('player').hidden = true; return; }
+    if (e.key !== ' ' || e.repeat || e.ctrlKey || e.metaKey || e.altKey || !player.current) return;
+    if (e.target.closest && e.target.closest('input, textarea, select, button, a, dialog, [contenteditable]')) return;
+    e.preventDefault();
+    player.toggle();
   });
 
   const scrub = $('scrub');

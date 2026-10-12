@@ -171,3 +171,5 @@ dialog .row.end { justify-content: flex-end; margin-top: 16px; }
   text-align: center;
 }
 .sync-warn[hidden] { display: none; }
+
+.songs .empty { padding: 16px 0; text-align: center; }
