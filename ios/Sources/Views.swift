@@ -28,7 +28,7 @@ struct RootView: View {
             page(.settings) { SettingsView() }
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            VStack(spacing: DS.Space.space2) {
+            VStack(spacing: 12) {
                 if tab != .playback, player.current != nil { MiniPlayer { tab = .playback } }
                 DSTabBar(selection: $tab)
             }
@@ -108,7 +108,7 @@ struct MiniPlayer: View {
             }
             .accessibilityLabel("Next song")
         }
-        .padding(.horizontal, DS.Space.space3).padding(.vertical, DS.Space.space2)
+        .padding(.horizontal, DS.Space.space3).padding(.vertical, 10)
         .contentShape(Rectangle())
         .onTapGesture(perform: open)
         .overlay(alignment: .bottomLeading) {

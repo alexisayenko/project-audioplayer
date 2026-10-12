@@ -11,21 +11,24 @@ struct SettingsView: View {
     @State private var testing = false
     @State private var ok = false
     @State private var bytes: Int64 = 0
+    @State private var confirmRemoveAll = false
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: DS.Space.space4) {
-                ScreenHeader(title: "Settings", subtitle: "One server. Songs stay on this iPhone.")
-                serverCard
+                ScreenHeader(title: "Settings")
                 accountCard
                 storageCard
-                Text("Electrophone \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "") (\(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? ""))")
-                    .dsCaption().padding(.horizontal, DS.Space.space1)
+                serverCard
+                Text(versionLine).dsCaption().frame(maxWidth: .infinity)
             }
             .padding(.horizontal, DS.Space.space4).padding(.top, DS.Space.space2).padding(.bottom, DS.Space.space4)
         }
         .scrollDismissesKeyboard(.interactively)
         .dsGround()
+        .confirmationDialog("Remove all \(library.tracks.count) songs from this iPhone?", isPresented: $confirmRemoveAll, titleVisibility: .visible) {
+            Button("Remove all downloads", role: .destructive) { library.remove(at: IndexSet(library.tracks.indices)) }
+        } message: { Text("Your server keeps them. Add a song again to download it.") }
         .task { await server.check(settings: settings) }
         .task(id: library.tracks.count) {
             bytes = await Task.detached(priority: .utility) { [tracks = library.tracks] in
@@ -34,11 +37,20 @@ struct SettingsView: View {
         }
     }
 
+    private var versionLine: String {
+        let info = Bundle.main
+        let v = info.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
+        let b = info.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? ""
+        let testFlight = info.appStoreReceiptURL?.lastPathComponent == "sandboxReceipt"
+        return "Electrophone \(v) (\(b))" + (testFlight ? " · TestFlight" : "")
+    }
+
     private func card<C: View>(_ label: String, footer: String? = nil, @ViewBuilder _ content: () -> C) -> some View {
-        VStack(alignment: .leading, spacing: DS.Space.space2) {
+        VStack(alignment: .leading, spacing: 6) {
             SectionLabel(label)
             VStack(alignment: .leading, spacing: DS.Space.space3, content: content)
-                .padding(DS.Space.space4).frame(maxWidth: .infinity, alignment: .leading).dsSlab()
+                .padding(.horizontal, DS.Space.space4).padding(.vertical, DS.Space.space3)
+                .frame(maxWidth: .infinity, alignment: .leading).dsSlab()
             if let footer { Text(footer).dsCaption().padding(.horizontal, DS.Space.space1) }
         }
     }
@@ -75,7 +87,7 @@ struct SettingsView: View {
     }
 
     private var accountCard: some View {
-        card("Account", footer: "Owner only. Downloaded songs play offline without signing in.") {
+        card("Account") {
             if let session = auth.session {
                 HStack(spacing: DS.Space.space3) {
                     LED(color: auth.expired ? DS.Color.power : DS.Color.ok, size: 10, glow: true)
@@ -88,10 +100,12 @@ struct SettingsView: View {
                 Button("Sign out") { auth.signOut() }.buttonStyle(DSButtonStyle(kind: .danger))
             }
             if !auth.isSignedIn || auth.expired {
-                SignInWithAppleButton(.signIn) { $0.requestedScopes = [.email] } onCompletion: { auth.apple($0) }
-                    .signInWithAppleButtonStyle(scheme == .dark ? .white : .black)
-                    .frame(height: 48).clipShape(Capsule())
-                GoogleSignInButton { Task { await auth.signInWithGoogle() } }.disabled(auth.busy)
+                VStack(spacing: DS.Space.space2) {
+                    SignInWithAppleButton(.signIn) { $0.requestedScopes = [.email] } onCompletion: { auth.apple($0) }
+                        .signInWithAppleButtonStyle(scheme == .dark ? .white : .black)
+                        .frame(height: DS.Space.hit).clipShape(Capsule())
+                    GoogleSignInButton { Task { await auth.signInWithGoogle() } }.disabled(auth.busy)
+                }
             }
             if let e = auth.error {
                 Label { Text(e).font(T.caption).foregroundStyle(DS.Color.ink) } icon: {
@@ -101,14 +115,34 @@ struct SettingsView: View {
         }
     }
 
+    private var capacity: Int64 {
+        let v = try? URL(fileURLWithPath: NSHomeDirectory()).resourceValues(forKeys: [.volumeTotalCapacityKey]).volumeTotalCapacity
+        return Int64(v ?? 0)
+    }
+
     private var storageCard: some View {
         card("Storage") {
-            HStack(alignment: .firstTextBaseline) {
-                Text(ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)).font(T.title).foregroundStyle(DS.Color.ink)
-                Spacer()
-                Text("\(library.tracks.count) \(library.tracks.count == 1 ? "song" : "songs") on iPhone").dsCaption()
+            VStack(alignment: .leading, spacing: DS.Space.space2) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)).font(T.title).foregroundStyle(DS.Color.ink)
+                    Spacer()
+                    Text("\(library.tracks.count) \(library.tracks.count == 1 ? "song" : "songs") on iPhone").dsCaption()
+                }
+                if capacity > 0 {
+                    GeometryReader { g in
+                        ZStack(alignment: .leading) {
+                            Capsule().fill(DS.Color.surfaceSunken)
+                            Capsule().fill(DS.Color.accent).frame(width: max(6, g.size.width * min(1, Double(bytes) / Double(capacity))))
+                        }
+                    }
+                    .frame(height: 6).accessibilityHidden(true)
+                    Text("of \(ByteCountFormatter.string(fromByteCount: capacity, countStyle: .file)) on this iPhone").dsCaption()
+                }
+                Button("Remove all downloads") { confirmRemoveAll = true }
+                    .buttonStyle(DSButtonStyle(kind: .danger)).disabled(library.tracks.isEmpty)
+                    .padding(.top, DS.Space.space1)
             }
-            .accessibilityElement(children: .combine)
+            .accessibilityElement(children: .contain)
         }
     }
 
@@ -130,19 +164,19 @@ struct SettingsView: View {
     }
 }
 
-/// Google sign-in as a quiet outlined pill: surface key, ink label.
+/// Google sign-in as an outlined pill: line border, ink label.
 struct GoogleSignInButton: View {
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: DS.Space.space3) {
-                Text("G").font(.system(size: 20, weight: .bold, design: .rounded)).foregroundStyle(DS.Color.accentInk)
-                Text("Sign in with Google").font(T.headline).foregroundStyle(DS.Color.ink)
+            HStack(spacing: DS.Space.space2) {
+                Text("G").font(.system(size: 17, weight: .bold, design: .rounded)).foregroundStyle(DS.Color.accentInk)
+                Text("Sign in with Google").font(T.subhead.weight(.semibold)).foregroundStyle(DS.Color.ink)
             }
-            .frame(maxWidth: .infinity, minHeight: 48)
-            .background(Capsule().fill(DS.Color.surfaceKey))
+            .frame(maxWidth: .infinity, minHeight: DS.Space.hit)
             .overlay(Capsule().stroke(DS.Color.line, lineWidth: 1.5))
+            .contentShape(Capsule())
         }
         .buttonStyle(.plain)
     }

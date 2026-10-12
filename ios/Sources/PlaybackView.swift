@@ -22,20 +22,13 @@ struct PlaybackView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: DS.Space.space4) {
-                ScreenHeader(title: "Now playing", subtitle: nil) { menu }
-                HStack(spacing: DS.Space.space2) {
-                    Image(systemName: "checkmark").font(T.caption.weight(.bold)).foregroundStyle(DS.Color.accentInk)
-                    Text("Playing from this iPhone").font(T.subhead).foregroundStyle(DS.Color.inkMuted)
-                }
-                .accessibilityElement(children: .combine)
+                ScreenHeader(title: "Now playing", align: .top) { menu.padding(.top, DS.Space.space2) }
                 cover
-                details
                 progress
                 TransportTray(playing: player.isPlaying, shuffle: player.shuffle, repeatMode: player.repeatMode,
                               onShuffle: { player.shuffle.toggle() }, onPrevious: { player.previous() },
                               onToggle: { player.toggle() }, onNext: { player.next() },
                               onRepeat: { player.repeatMode = player.repeatMode == .off ? .all : player.repeatMode == .all ? .one : .off })
-                volume
                 upNextCard
             }
             .padding(.horizontal, DS.Space.space4).padding(.top, DS.Space.space2).padding(.bottom, DS.Space.space4)
@@ -63,7 +56,7 @@ struct PlaybackView: View {
         Menu {
             Button { showQueue = true } label: { Label("Queue", systemImage: "list.bullet") }
             Button { showTags = true } label: { Label("Add songs by tag", systemImage: "tag") }
-            if let t = current { Button { editing = ServerSong(t) } label: { Label("Edit song", systemImage: "pencil") } }
+            if let t = current { Button { editing = ServerSong(t) } label: { Label("Song details", systemImage: "info.circle") } }
             Button { player.skip(by: -5) } label: { Label("Back 5 seconds", systemImage: "gobackward.5") }
             Button { player.skip(by: 5) } label: { Label("Forward 5 seconds", systemImage: "goforward.5") }
             Button(role: .destructive) { player.clearQueue() } label: { Label("Clear queue", systemImage: "trash") }
@@ -77,8 +70,7 @@ struct PlaybackView: View {
 
     /// The song's cover, full width and square, with title and artist · album · year on a bottom gradient.
     private var cover: some View {
-        Color.clear.aspectRatio(1, contentMode: .fit)
-            .frame(maxWidth: 420).frame(maxWidth: .infinity)
+        Color.clear.frame(maxWidth: .infinity).frame(height: 300)
             .overlay { CoverImage(source: current?.thumbnail).accessibilityHidden(true) }
             .overlay(alignment: .bottom) {
                 VStack(alignment: .leading, spacing: 2) {
@@ -88,7 +80,7 @@ struct PlaybackView: View {
                 .foregroundStyle(DS.Color.surface)
                 .environment(\.colorScheme, .light)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, DS.Space.space4).padding(.bottom, DS.Space.space3).padding(.top, DS.Space.space8 + DS.Space.space4)
+                .padding(.horizontal, DS.Space.space4).padding(.bottom, 14).padding(.top, 56)
                 .background(LinearGradient(stops: [.init(color: DS.Color.vinyl.opacity(0), location: 0),
                                                    .init(color: DS.Color.vinyl.opacity(0.65), location: 0.4),
                                                    .init(color: DS.Color.vinyl.opacity(0.9), location: 1)],
@@ -100,35 +92,11 @@ struct PlaybackView: View {
             .accessibilityLabel(current.map { "\($0.title), \(subtitle($0))" } ?? "Nothing playing")
     }
 
-    @ViewBuilder
-    private var details: some View {
-        if let t = current, !(t.tags ?? []).isEmpty || t.bpm != nil || !links(t).isEmpty {
-            VStack(alignment: .leading, spacing: DS.Space.space1) {
-                if let tags = t.tags, !tags.isEmpty { TagList(tags: tags) }
-                HStack(spacing: DS.Space.space3) {
-                    if let bpm = t.bpm { Text("\(Int(bpm.rounded())) BPM").font(T.time).foregroundStyle(DS.Color.inkMuted) }
-                    ForEach(links(t), id: \.0) { label, url in
-                        Link(label, destination: url).font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.accentInk)
-                            .frame(minHeight: DS.Space.hit)
-                    }
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-    }
-
-    private func links(_ t: Track) -> [(String, URL)] {
-        [("Source", t.sourceURL), ("Wikipedia (song)", t.wikipediaSong), ("Wikipedia (band)", t.wikipediaArtist)]
-            .compactMap { label, s in
-                guard let s, s.lowercased().hasPrefix("http"), let u = URL(string: s) else { return nil }
-                return (label, u)
-            }
-    }
-
     private var progress: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: 6) {
             DSSlider(value: Binding(get: { player.position }, set: { player.seek(to: $0) }),
                      range: 0...max(player.duration, 1), label: "Position", disabled: current == nil) { formatTime($0) }
+                .padding(.vertical, -19)
             HStack {
                 Text(formatTime(player.position))
                 Spacer()
@@ -138,32 +106,15 @@ struct PlaybackView: View {
         }
     }
 
-    private var volume: some View {
-        HStack(spacing: DS.Space.space3) {
-            ZStack {
-                Circle().fill(DS.Color.chrome)
-                Circle().strokeBorder(DS.Color.surfaceSunken, lineWidth: 3)
-                Capsule().fill(DS.Color.ink).frame(width: 2, height: 12).offset(y: -10)
-                    .rotationEffect(.degrees(-135 + player.volume * 270))
-            }
-            .frame(width: 40, height: 40).accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 0) {
-                Text("Volume").dsCaption()
-                Text("\(Int(player.volume * 100))%").font(T.headline).foregroundStyle(DS.Color.ink)
-            }
-            .fixedSize()
-            DSSlider(value: Binding(get: { player.volume }, set: { player.volume = $0 }), label: "Volume")
-        }
-    }
-
     private var upNextCard: some View {
-        VStack(alignment: .leading, spacing: DS.Space.space2) {
+        VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text("Up next").font(T.headline).foregroundStyle(DS.Color.ink)
                 Spacer()
                 Button { showQueue = true } label: {
                     Text("Queue (\(player.queue.count))").font(T.subhead.weight(.semibold)).foregroundStyle(DS.Color.accentInk)
-                        .frame(minHeight: DS.Space.hit)
+                        .frame(minHeight: 22)
+                        .contentShape(Rectangle().inset(by: -11))
                 }
             }
             if upNext.isEmpty {
@@ -180,6 +131,7 @@ struct PlaybackView: View {
                         Text(t.artist).font(T.caption).foregroundStyle(DS.Color.inkMuted).lineLimit(1)
                     }
                     Spacer(minLength: 0)
+                    Text("\u{22EE}\u{22EE}").font(.system(size: 16)).foregroundStyle(DS.Color.inkFaint).accessibilityHidden(true)
                 }
                 .accessibilityElement(children: .combine)
             }

@@ -118,7 +118,7 @@ struct AddSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var scheme
     @State private var path: [String] = []
-    @State private var detent = PresentationDetent.medium
+    @State private var contentHeight: CGFloat = 0
     @State private var editing = false
     @State private var addingTags = false
 
@@ -136,8 +136,10 @@ struct AddSheet: View {
                     if flow.phase == .idle, let m = flow.message { note(m, error: true) }
                     if let p = flow.preview, hasPreview { previewSections(p) }
                 }
-                .padding(.horizontal, DS.Space.space4).padding(.top, DS.Space.space6).padding(.bottom, DS.Space.space6)
+                .padding(.horizontal, DS.Space.space4).padding(.top, DS.Space.space6).padding(.bottom, DS.Space.space4)
+                .measuredHeight($contentHeight)
             }
+            .scrollBounceBehavior(.basedOnSize)
             .scrollDismissesKeyboard(.interactively)
             .background(DS.Color.surface.ignoresSafeArea())
             .toolbar(.hidden, for: .navigationBar)
@@ -150,22 +152,21 @@ struct AddSheet: View {
             }
             .task { await server.check(settings: settings) }
         }
-        .presentationDetents([.medium, .large], selection: $detent)
+        .presentationDetents(path.isEmpty && contentHeight > 0 ? [.height(contentHeight + 12)] : [.large])
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(DS.Radius.radiusTray)
         .presentationBackground(DS.Color.surface)
-        .onChange(of: hasPreview) { _, on in if on { detent = .large } }
         .onChange(of: flow.phase) { _, phase in
-            if phase == .saved { dismiss(); Task { flow.reset(); editing = false; addingTags = false; detent = .medium } }
+            if phase == .saved { dismiss(); Task { flow.reset(); editing = false; addingTags = false } }
         }
     }
 
     private var header: some View {
         HStack(alignment: .firstTextBaseline) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("Add from YouTube").font(T.title).foregroundStyle(DS.Color.ink).accessibilityAddTraits(.isHeader)
+                Text("Add from YouTube or SoundCloud").font(T.title).foregroundStyle(DS.Color.ink).accessibilityAddTraits(.isHeader)
                 Text("Downloads to this iPhone through your server").dsCaption()
-                ServerStatus(compact: true)
+                if server.reachable != true { ServerStatus(compact: true) }
             }
             Spacer(minLength: DS.Space.space2)
             Button("Cancel") { dismiss() }
@@ -177,32 +178,24 @@ struct AddSheet: View {
     private var linkField: some View {
         VStack(alignment: .leading, spacing: DS.Space.space1) {
             HStack(spacing: DS.Space.space2) {
-                TextField("Paste a YouTube link", text: $flow.url)
+                TextField("Paste a YouTube or SoundCloud link", text: $flow.url)
                     .textInputAutocapitalization(.never).autocorrectionDisabled().keyboardType(.URL)
-                    .submitLabel(.go).font(T.subhead).foregroundStyle(DS.Color.ink)
+                    .submitLabel(.go).font(T.subhead).frame(minHeight: 44).foregroundStyle(DS.Color.ink)
                     .onSubmit { Task { await flow.loadPreview(api) } }
                     .onChange(of: flow.url) { old, new in
                         if new.count - old.count > 1 { let c = cleanPasted(new); if c != new { flow.url = c } }
                     }
-                Button {
-                    if let s = UIPasteboard.general.string { flow.url = cleanPasted(s) }
-                } label: {
-                    Image(systemName: "doc.on.clipboard").foregroundStyle(DS.Color.accentInk)
-                        .frame(width: DS.Space.hit, height: DS.Space.hit)
-                }
-                .accessibilityLabel("Paste")
                 Button { Task { await flow.loadPreview(api) } } label: {
                     Group { if flow.phase == .loading { ProgressView().tint(scheme.onStrong) } else { Text("Fetch") } }
                         .font(T.subhead.weight(.semibold)).foregroundStyle(scheme.onStrong)
                         .padding(.horizontal, 14).frame(minWidth: 64, minHeight: 36)
                         .background(Capsule().fill(scheme.strongFill))
-                        .frame(minHeight: DS.Space.hit)
                 }
                 .buttonStyle(.plain)
                 .disabled(busy || flow.url.trimmingCharacters(in: .whitespaces).isEmpty)
                 .opacity(busy || flow.url.trimmingCharacters(in: .whitespaces).isEmpty ? 0.5 : 1)
             }
-            .padding(.leading, DS.Space.space4).padding(.trailing, DS.Space.space1).frame(minHeight: 48)
+            .padding(.leading, DS.Space.space4).padding(.trailing, DS.Space.space2).frame(minHeight: 48)
             .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(DS.Color.surfaceSunken))
             NavigationLink(value: "search") {
                 Label("Search YouTube by title", systemImage: "magnifyingglass")
@@ -232,7 +225,8 @@ struct AddSheet: View {
     }
 
     private var timing: String {
-        [flow.preview?.duration.map(formatTime), Int(flow.bpm).map { "\($0) BPM" }].compactMap { $0 }.joined(separator: " · ")
+        [flow.preview.map { sourceLabel($0.source ?? sourceOf(id: $0.id)) }, flow.preview?.duration.map(formatTime),
+         Int(flow.bpm).map { "\($0) BPM" }].compactMap { $0 }.joined(separator: " · ")
     }
 
     @ViewBuilder
@@ -243,7 +237,7 @@ struct AddSheet: View {
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(flow.title.isEmpty ? "Untitled" : flow.title).font(T.headline).foregroundStyle(DS.Color.ink).lineLimit(2)
-                if !summary.isEmpty { Text(summary).font(T.body).foregroundStyle(DS.Color.inkMuted).lineLimit(1) }
+                if !summary.isEmpty { Text(summary).font(T.subhead).foregroundStyle(DS.Color.inkMuted).lineLimit(1) }
                 if !timing.isEmpty { Text(timing).font(T.time).foregroundStyle(DS.Color.inkMuted) }
             }
             Spacer(minLength: DS.Space.space2)
@@ -252,7 +246,7 @@ struct AddSheet: View {
                     .foregroundStyle(DS.Color.accentInk)
                     .frame(width: 40, height: 40)
                     .overlay(Circle().stroke(editing ? DS.Color.accentInk : DS.Color.line, lineWidth: 1.5))
-                    .frame(width: DS.Space.hit, height: DS.Space.hit)
+                    .contentShape(Rectangle().inset(by: -2))
             }
             .accessibilityLabel("Edit details").accessibilityAddTraits(editing ? .isSelected : [])
         }
@@ -291,27 +285,8 @@ struct AddSheet: View {
             }
         }
 
-        FlowLayout {
-            ForEach(flow.tags, id: \.self) { t in
-                Button { flow.tags.removeAll { $0 == t } } label: {
-                    HStack(spacing: DS.Space.space1) {
-                        Text(tagLabel(t)).lineLimit(1)
-                        Image(systemName: "xmark").font(.system(size: 10, weight: .bold)).foregroundStyle(DS.Color.inkMuted)
-                    }
-                    .font(T.subhead.weight(.medium)).foregroundStyle(DS.Color.ink)
-                    .padding(.horizontal, DS.Space.space3).frame(minHeight: 32)
-                    .background(Capsule().fill(DS.Color.accentTint))
-                    .frame(minHeight: DS.Space.hit)
-                }
-                .buttonStyle(.plain).accessibilityLabel("Remove \(tagLabel(t))")
-            }
-            Button { withAnimation { addingTags.toggle() } } label: {
-                Image(systemName: addingTags ? "chevron.up" : "plus").font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(DS.Color.accentInk)
-                    .frame(width: 32, height: 32).overlay(Circle().stroke(DS.Color.line, lineWidth: 1.5))
-                    .frame(width: DS.Space.hit, height: DS.Space.hit)
-            }
-            .accessibilityLabel(addingTags ? "Hide tag editor" : "Add tag")
+        TagFlow(tags: flow.tags, adding: addingTags, onRemove: { t in flow.tags.removeAll { $0 == t } }) {
+            withAnimation { addingTags.toggle() }
         }
         if addingTags {
             TagEditor(tags: $flow.tags, suggested: $flow.suggested, pool: pool, input: $flow.pendingTag)

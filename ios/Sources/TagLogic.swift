@@ -15,12 +15,67 @@ private let youtubePatterns = [
 ]
 private let trackingParams: Set<String> = ["si", "feature", "pp", "fbclid", "gclid"]
 
+private let soundcloudHosts: Set<String> = ["soundcloud.com", "www.soundcloud.com", "m.soundcloud.com"]
+private let soundcloudReservedUsers: Set<String> = [
+    "discover", "stations", "you", "charts", "search", "upload", "feed", "pages", "popular",
+    "mobile", "settings", "notifications", "messages", "jobs", "terms-of-use", "creators", "go",
+]
+private let soundcloudReservedSecond: Set<String> = [
+    "tracks", "albums", "sets", "reposts", "likes", "spotlight", "comments", "popular-tracks",
+    "following", "followers", "playlists",
+]
+
+enum SoundcloudLink: Equatable {
+    case track(String), short(String), unsupported
+}
+
+/// Port of `classify_soundcloud` in server/app/urlclean.py; nil when the text is not a SoundCloud link.
+func classifySoundcloud(_ input: String) -> SoundcloudLink? {
+    let text = input.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard let m = matches(#"^(?:https?://)?([A-Za-z0-9.-]+)(/[^?#]*)?(?:[?#].*)?$"#, text) else { return nil }
+    let host = m[1].lowercased()
+    let parts = m[2].split(separator: "/").map(String.init)
+    if host == "on.soundcloud.com" {
+        if parts.count == 1, matches(#"^[A-Za-z0-9]{3,32}$"#, parts[0]) != nil {
+            return .short("https://on.soundcloud.com/\(parts[0])")
+        }
+        return .unsupported
+    }
+    guard soundcloudHosts.contains(host) else { return nil }
+    guard parts.count == 2 || parts.count == 3 else { return .unsupported }
+    let name = #"^[A-Za-z0-9_-]+$"#
+    guard !soundcloudReservedUsers.contains(parts[0].lowercased()),
+          !soundcloudReservedSecond.contains(parts[1].lowercased()),
+          matches(name, parts[0]) != nil, matches(name, parts[1]) != nil else { return .unsupported }
+    var url = "https://soundcloud.com/\(parts[0])/\(parts[1])"
+    if parts.count == 3 {
+        guard matches(#"^s-[A-Za-z0-9]+$"#, parts[2]) != nil else { return .unsupported }
+        url += "/\(parts[2])"
+    }
+    return .track(url)
+}
+
+/// "soundcloud" for `soundcloud-<numeric id>` song ids, else "youtube".
+func sourceOf(id: String) -> String {
+    matches(#"^soundcloud-[0-9]{1,20}$"#, id) != nil ? "soundcloud" : "youtube"
+}
+
+func sourceLabel(_ source: String?) -> String { source == "soundcloud" ? "SoundCloud" : "YouTube" }
+
+extension Track {
+    var source: String { sourceOf(id: id) }
+}
+
 /// Port of web/js/url-clean.js.
 func cleanUrl(_ input: String) -> String {
     let text = input.trimmingCharacters(in: .whitespacesAndNewlines)
     if matches(#"^[A-Za-z0-9_-]{11}$"#, text) != nil { return "https://www.youtube.com/watch?v=\(text)" }
     for p in youtubePatterns {
         if let m = matches(p, text) { return "https://www.youtube.com/watch?v=\(m[1])" }
+    }
+    switch classifySoundcloud(text) {
+    case .track(let url), .short(let url): return url
+    default: break
     }
     guard var comps = URLComponents(string: text), let scheme = comps.scheme?.lowercased(),
           scheme == "http" || scheme == "https", comps.percentEncodedQuery?.isEmpty == false else { return text }
@@ -34,7 +89,7 @@ func cleanUrl(_ input: String) -> String {
 
 func cleanPasted(_ input: String) -> String {
     let text = input.trimmingCharacters(in: .whitespacesAndNewlines)
-    if let m = matches(#"(?:https?://|(?:www\.|m\.|music\.)?youtu(?:\.be|be\.com)/)[^\s<>"']+"#, text) {
+    if let m = matches(#"(?:https?://|(?:www\.|m\.|music\.)?youtu(?:\.be|be\.com)/|(?:www\.|m\.)?soundcloud\.com/|on\.soundcloud\.com/)[^\s<>"']+"#, text) {
         return cleanUrl(m[0])
     }
     let first = text.components(separatedBy: .newlines).first ?? text

@@ -14,6 +14,7 @@ struct Track: Codable, Identifiable, Hashable {
     var sourceURL: String?
     var wikipediaSong: String?
     var wikipediaArtist: String?
+    var addedAt: Date?
 
     /// Audio file inside the app's Documents directory.
     var fileURL: URL { LibraryStore.audioDirectory.appendingPathComponent("\(id).m4a") }

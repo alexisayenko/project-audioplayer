@@ -8,7 +8,6 @@ enum T {
     static let body = Font.body
     static let subhead = Font.subheadline
     static let caption = Font.footnote
-    static let eyebrow = Font.caption.weight(.semibold)
     static let time = Font.footnote.monospaced().weight(.medium)
 }
 
@@ -39,18 +38,13 @@ extension View {
 
 struct ScreenHeader<Trailing: View>: View {
     let title: String
-    var subtitle: String?
+    var align: VerticalAlignment = .center
     @ViewBuilder var trailing: () -> Trailing
 
     var body: some View {
-        HStack(alignment: .bottom) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Electrophone".uppercased()).font(T.eyebrow).tracking(DS.Font.eyebrowTracking)
-                    .foregroundStyle(DS.Color.inkMuted)
-                Text(title).font(T.display).foregroundStyle(DS.Color.ink).lineLimit(2).minimumScaleFactor(0.7)
-                    .accessibilityAddTraits(.isHeader)
-                if let subtitle { Text(subtitle).font(T.subhead).foregroundStyle(DS.Color.inkMuted) }
-            }
+        HStack(alignment: align) {
+            Text(title).font(T.display).foregroundStyle(DS.Color.ink).lineLimit(2).minimumScaleFactor(0.7)
+                .accessibilityAddTraits(.isHeader)
             Spacer(minLength: DS.Space.space2)
             trailing()
         }
@@ -58,7 +52,7 @@ struct ScreenHeader<Trailing: View>: View {
 }
 
 extension ScreenHeader where Trailing == EmptyView {
-    init(title: String, subtitle: String? = nil) { self.init(title: title, subtitle: subtitle) { EmptyView() } }
+    init(title: String) { self.init(title: title) { EmptyView() } }
 }
 
 struct SectionLabel: View {
@@ -94,7 +88,7 @@ struct DSButtonStyle: ButtonStyle {
             .font(T.subhead.weight(.semibold))
             .lineLimit(2).multilineTextAlignment(.center)
             .padding(.horizontal, DS.Space.space4)
-            .frame(minHeight: DS.Space.hit)
+            .frame(minHeight: kind == .danger ? 40 : DS.Space.hit)
         return Group {
             switch kind {
             case .outline:
@@ -108,6 +102,7 @@ struct DSButtonStyle: ButtonStyle {
                     .overlay(Capsule().stroke(DS.Color.power, lineWidth: 1.5))
             }
         }
+        .frame(minHeight: DS.Space.hit)
         .contentShape(Capsule())
         .opacity(enabled ? (configuration.isPressed ? 0.7 : 1) : 0.4)
     }
@@ -124,16 +119,17 @@ struct CategoryChip: View {
         let on = selected > 0
         Button(action: action) {
             HStack(spacing: DS.Space.space1) {
-                Text(title).font(T.subhead.weight(on ? .semibold : .medium)).lineLimit(1).minimumScaleFactor(0.7)
+                Text(title).font(T.subhead.weight(on ? .semibold : .medium)).lineLimit(1).minimumScaleFactor(0.85)
                 Text("\(on ? selected : count)").font(T.caption)
                     .foregroundStyle(on ? scheme.onStrong : DS.Color.inkMuted)
             }
             .foregroundStyle(on ? scheme.onStrong : DS.Color.ink)
-            .padding(.horizontal, DS.Space.space2).frame(maxWidth: .infinity, minHeight: DS.Space.hit)
+            .padding(.horizontal, 6).frame(maxWidth: .infinity, minHeight: 36)
             .background {
                 if on { Capsule().fill(scheme.strongFill) }
                 else { Capsule().fill(DS.Color.surface).shadow(color: DS.Color.vinyl.opacity(0.16), radius: 10, y: 2) }
             }
+            .contentShape(Rectangle().inset(by: -4))
         }
         .buttonStyle(.plain)
         .accessibilityLabel("\(title), \(on ? "\(selected) selected" : "\(count)")")
@@ -141,7 +137,7 @@ struct CategoryChip: View {
     }
 }
 
-/// Value chip: off is a sunken pill, on is the strong fill. Used in the filter sheet, on Add and in the tag editor.
+/// Value chip: off is a sunken pill, on is the strong fill. Used in the filter sheet and the tag pickers.
 struct TagChip: View {
     let text: String
     var count: Int?
@@ -152,20 +148,59 @@ struct TagChip: View {
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: DS.Space.space1) {
+            HStack(spacing: 6) {
                 Text(text).lineLimit(1)
-                if let count { Text("\(count)").font(T.caption).foregroundStyle(on ? scheme.onStrong : DS.Color.inkMuted) }
+                if let count { Text("\(count)").font(T.caption.weight(.medium)).foregroundStyle(on ? scheme.onStrong : DS.Color.inkMuted) }
                 if removable { Image(systemName: "xmark").font(T.caption.weight(.bold)) }
             }
             .font(T.subhead.weight(on ? .semibold : .medium))
             .foregroundStyle(on ? scheme.onStrong : DS.Color.ink)
-            .padding(.horizontal, DS.Space.space3).frame(minHeight: 36)
+            .padding(.horizontal, 14).frame(minHeight: 36)
             .background(Capsule().fill(on ? scheme.strongFill : DS.Color.surfaceSunken))
-            .frame(minHeight: DS.Space.hit)
+            .contentShape(Rectangle().inset(by: -4))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(removable ? "Remove \(text)" : text)
         .accessibilityAddTraits(on ? .isSelected : [])
+    }
+}
+
+/// Tag on a song (Add sheet, song sheet): accent-tint pill, ink label, optional remove glyph.
+struct TagPill: View {
+    let text: String
+    var removable = false
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Text(text).lineLimit(1)
+                if removable { Image(systemName: "xmark").font(.system(size: 11, weight: .bold)).foregroundStyle(DS.Color.accentInk) }
+            }
+            .font(T.subhead.weight(.medium)).foregroundStyle(DS.Color.ink)
+            .padding(.horizontal, DS.Space.space3).frame(minHeight: 32)
+            .background(Capsule().fill(DS.Color.accentTint))
+            .contentShape(Rectangle().inset(by: -6))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Remove \(text)")
+    }
+}
+
+/// The outlined round "+" that opens the tag editor.
+struct AddTagButton: View {
+    var open: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: open ? "chevron.up" : "plus").font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(DS.Color.accentInk)
+                .frame(width: 32, height: 32).overlay(Circle().stroke(DS.Color.line, lineWidth: 1.5))
+                .contentShape(Rectangle().inset(by: -6))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(open ? "Hide tag editor" : "Add tag")
     }
 }
 
@@ -194,21 +229,6 @@ struct FlowLayout: Layout {
             maxX = max(maxX, x - spacing)
         }
         return (points, CGSize(width: maxX, height: y + row))
-    }
-}
-
-/// Read-only tag pills (accent-tint wash, ink text).
-struct TagList: View {
-    let tags: [String]
-
-    var body: some View {
-        FlowLayout(spacing: DS.Space.space1) {
-            ForEach(tags, id: \.self) { t in
-                Text(tagLabel(t)).font(T.caption.weight(.medium)).foregroundStyle(DS.Color.ink)
-                    .padding(.horizontal, DS.Space.space2).padding(.vertical, DS.Space.space1)
-                    .background(Capsule().fill(DS.Color.accentTint))
-            }
-        }
     }
 }
 
@@ -272,7 +292,7 @@ struct SongRow<Menu: View>: View {
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 0) {
                 Text(title).font(T.headline).foregroundStyle(DS.Color.ink).lineLimit(2)
-                Text(subtitle).font(T.body).foregroundStyle(playing ? DS.Color.ink : DS.Color.inkMuted).lineLimit(1)
+                Text(subtitle).font(T.subhead).foregroundStyle(playing ? DS.Color.ink : DS.Color.inkMuted).lineLimit(1)
             }
             Spacer(minLength: DS.Space.space1)
             if let downloading {
@@ -304,11 +324,12 @@ struct TransportKeyStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         let lit: Bool = { if case .lit = kind { return true }; return false }()
+        let ghost: Bool = { if case .ghost = kind { return true }; return false }()
         let ghostOn: Bool = { if case .ghost(let on) = kind { return on }; return false }()
-        let size = lit ? CGSize(width: 56, height: 48) : CGSize(width: 52, height: DS.Space.hit)
+        let size = lit ? CGSize(width: 64, height: 48) : CGSize(width: ghost ? DS.Space.hit : 56, height: DS.Space.hit)
         return configuration.label
             .font(.system(size: lit ? 22 : 20))
-            .foregroundStyle(lit ? DS.Color.onAccent : ghostOn ? DS.Color.accentInk : DS.Color.ink)
+            .foregroundStyle(lit ? DS.Color.onAccent : ghostOn ? DS.Color.accentInk : ghost ? DS.Color.inkMuted : DS.Color.ink)
             .frame(width: size.width, height: size.height)
             .background {
                 switch kind {
@@ -339,18 +360,20 @@ struct TransportTray: View {
     let onRepeat: () -> Void
 
     var body: some View {
-        HStack(spacing: DS.Space.space2) {
+        HStack(spacing: 0) {
             Button(action: onShuffle) { Image(systemName: "shuffle") }
                 .buttonStyle(TransportKeyStyle(kind: .ghost(on: shuffle)))
                 .accessibilityLabel("Shuffle").accessibilityValue(shuffle ? "on" : "off")
-            Spacer(minLength: 0)
+            Spacer(minLength: DS.Space.space2)
             Button(action: onPrevious) { Image(systemName: "backward.end.fill") }
                 .buttonStyle(TransportKeyStyle(kind: .key)).accessibilityLabel("Previous song")
+            Spacer(minLength: DS.Space.space2)
             Button(action: onToggle) { Image(systemName: playing ? "pause.fill" : "play.fill") }
                 .buttonStyle(TransportKeyStyle(kind: .lit)).accessibilityLabel(playing ? "Pause" : "Play")
+            Spacer(minLength: DS.Space.space2)
             Button(action: onNext) { Image(systemName: "forward.end.fill") }
                 .buttonStyle(TransportKeyStyle(kind: .key)).accessibilityLabel("Next song")
-            Spacer(minLength: 0)
+            Spacer(minLength: DS.Space.space2)
             Button(action: onRepeat) { Image(systemName: repeatMode == .one ? "repeat.1" : "repeat") }
                 .buttonStyle(TransportKeyStyle(kind: .ghost(on: repeatMode != .off)))
                 .accessibilityLabel("Repeat").accessibilityValue(repeatMode == .off ? "off" : repeatMode == .all ? "whole list" : "one song")
@@ -373,12 +396,12 @@ struct DSSlider: View {
         GeometryReader { geo in
             let span = max(range.upperBound - range.lowerBound, 0.0001)
             let frac = min(1, max(0, (value - range.lowerBound) / span))
-            let track = max(geo.size.width - 18, 1)
+            let track = max(geo.size.width - 16, 1)
             let x = track * frac
             ZStack(alignment: .leading) {
                 Capsule().fill(DS.Color.surfaceSunken).frame(height: 6)
-                Capsule().fill(DS.Color.accent).frame(width: x + 9, height: 6)
-                Circle().fill(scheme == .dark ? DS.Color.ink : DS.Color.surface).frame(width: 18, height: 18)
+                Capsule().fill(DS.Color.accent).frame(width: x + 8, height: 6)
+                Circle().fill(scheme == .dark ? DS.Color.ink : DS.Color.surface).frame(width: 16, height: 16)
                     .shadow(color: DS.Color.vinyl.opacity(0.3), radius: 2, y: 1)
                     .offset(x: x)
             }
@@ -386,7 +409,7 @@ struct DSSlider: View {
             .contentShape(Rectangle())
             .gesture(DragGesture(minimumDistance: 0).onChanged { g in
                 guard !disabled, geo.size.width > 0 else { return }
-                value = range.lowerBound + span * min(1, max(0, (g.location.x - 9) / track))
+                value = range.lowerBound + span * min(1, max(0, (g.location.x - 8) / track))
             })
         }
         .frame(height: DS.Space.hit)
@@ -517,5 +540,37 @@ struct ServerStatus: View {
 
     private var text: String {
         switch server.reachable { case true: "Server online"; case false: "Server unavailable"; default: "Server not set up" }
+    }
+}
+
+private struct ContentHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
+}
+
+extension View {
+    /// Reports this view's height, so a sheet can be sized to its content and stay put when the keyboard opens.
+    func measuredHeight(_ height: Binding<CGFloat>) -> some View {
+        background(GeometryReader { Color.clear.preference(key: ContentHeightKey.self, value: $0.size.height) })
+            .onPreferenceChange(ContentHeightKey.self) { height.wrappedValue = $0 }
+    }
+}
+
+/// A song's tags as removable pills with the "+" after them; the last pill and the "+" wrap together, so the "+" is never alone on a line.
+struct TagFlow: View {
+    let tags: [String]
+    var removable = false
+    var adding: Bool
+    let onRemove: (String) -> Void
+    let onAdd: () -> Void
+
+    var body: some View {
+        FlowLayout {
+            ForEach(tags.dropLast(), id: \.self) { t in TagPill(text: tagLabel(t), removable: removable) { onRemove(t) } }
+            HStack(spacing: DS.Space.space2) {
+                if let last = tags.last { TagPill(text: tagLabel(last), removable: removable) { onRemove(last) } }
+                AddTagButton(open: adding, action: onAdd)
+            }
+        }
     }
 }

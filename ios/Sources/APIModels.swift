@@ -3,6 +3,7 @@ import Foundation
 /// `POST /preview`.
 struct Preview: Codable, Hashable {
     let id: String
+    var source: String?
     var source_url: String?
     var title: String?
     var artist: String?

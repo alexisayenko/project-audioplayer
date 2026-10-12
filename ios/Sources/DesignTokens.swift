@@ -60,7 +60,7 @@ enum DS {
         static let subhead = SwiftUI.Font.system(size: 15, weight: .regular, design: .default)
         /// Counts, 'On iPhone', helper text (.footnote).
         static let caption = SwiftUI.Font.system(size: 13, weight: .regular, design: .default)
-        /// The app name over every screen title, UPPERCASE, in ink-muted. The one place letterspacing is allowed.
+        /// Small uppercase label, +2px tracking, in ink-muted. Web only: the Sidebar's wordmark subtitle and section labels. Never on iOS screens — the app name does not sit above a screen title.
         static let eyebrow = SwiftUI.Font.system(size: 12, weight: .semibold, design: .default)
         static let eyebrowTracking: CGFloat = 2
         /// Elapsed / remaining time, durations in rows, the lock-screen clock scale. Monospaced so digits don't jitter.

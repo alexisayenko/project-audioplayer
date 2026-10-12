@@ -64,7 +64,7 @@ struct LibraryView: View {
         let counts = counts
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: DS.Space.space3) {
+                VStack(alignment: .leading, spacing: 14) {
                     ScreenHeader(title: "Library") {
                         HStack(spacing: DS.Space.space3) {
                             Text("\(library.tracks.count) \(library.tracks.count == 1 ? "song" : "songs")").dsCaption()
@@ -74,7 +74,6 @@ struct LibraryView: View {
                             .buttonStyle(LitCircleButtonStyle())
                             .accessibilityLabel("Add a song")
                         }
-                        .padding(.bottom, DS.Space.space1)
                     }
                     searchField
                     chips(counts)
@@ -129,7 +128,7 @@ struct LibraryView: View {
     }
 
     private var searchField: some View {
-        HStack(spacing: DS.Space.space3) {
+        HStack(spacing: 10) {
             Image(systemName: "magnifyingglass").foregroundStyle(DS.Color.inkMuted).accessibilityHidden(true)
             TextField("Search songs or artists", text: $search)
                 .font(T.body).foregroundStyle(DS.Color.ink).submitLabel(.search)
@@ -169,7 +168,7 @@ struct LibraryView: View {
                 }
                 ForEach(Array(tracks.enumerated()), id: \.element.id) { i, track in
                     row(track, in: tracks)
-                    if i < tracks.count - 1 { divider }
+                    if i < tracks.count - 1, player.current?.id != track.id, player.current?.id != tracks[i + 1].id { divider }
                 }
             }
             .dsSlab()

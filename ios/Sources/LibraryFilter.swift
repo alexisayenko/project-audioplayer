@@ -43,6 +43,8 @@ struct FilterSheet: View {
     let resultCount: Int
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var scheme
+    @State private var chipsHeight: CGFloat = 0
+    @State private var contentHeight: CGFloat = 0
 
     private var selectedHere: Int { values.filter { selection.contains($0.tag.lowercased()) }.count }
 
@@ -73,16 +75,21 @@ struct FilterSheet: View {
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    .measuredHeight($chipsHeight)
                 }
             }
+            .frame(height: chipsHeight > 0 ? min(chipsHeight, 360) : nil)
+            .scrollBounceBehavior(.basedOnSize)
             Button { dismiss() } label: {
                 Text("Show \(resultCount) \(resultCount == 1 ? "song" : "songs")")
             }
             .buttonStyle(LitButtonStyle())
         }
         .padding(.horizontal, DS.Space.space4).padding(.top, DS.Space.space6).padding(.bottom, DS.Space.space4)
+        .measuredHeight($contentHeight)
+        .frame(maxHeight: .infinity, alignment: .top)
         .background(DS.Color.surface.ignoresSafeArea())
-        .presentationDetents([.medium, .large])
+        .presentationDetents([.height(contentHeight > 0 ? contentHeight + 12 : 240)])
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(DS.Radius.radiusTray)
         .presentationBackground(DS.Color.surface)

@@ -26,6 +26,8 @@ final class LibraryStore: ObservableObject {
     func contains(_ id: String) -> Bool { tracks.contains { $0.id == id } }
 
     func add(_ track: Track) {
+        var track = track
+        track.addedAt = tracks.first { $0.id == track.id }?.addedAt ?? track.addedAt ?? Date()
         tracks.removeAll { $0.id == track.id }
         tracks.insert(track, at: 0)
         save()
@@ -35,6 +37,7 @@ final class LibraryStore: ObservableObject {
         guard let i = tracks.firstIndex(where: { $0.id == track.id }) else { return }
         var merged = track
         merged.thumbnail = track.thumbnail ?? tracks[i].thumbnail
+        merged.addedAt = track.addedAt ?? tracks[i].addedAt
         tracks[i] = merged
         save()
     }
