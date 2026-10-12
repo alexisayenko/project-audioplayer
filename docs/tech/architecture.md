@@ -95,7 +95,9 @@ Then open `http://<host>:8000/`, go to Settings, paste the token. Env:
 `AUDIO_API_TOKEN` (required), `AUDIO_DOWNLOAD_DIR` (default `downloads`),
 `AUDIO_DATA_DIR` (default `.`, holds `library.json` and `covers/` until
 ADR-0005 is implemented, after which they live in the git clones),
-`AUDIO_WEB_DIR` (default `../web`).
+`AUDIO_WEB_DIR` (default `../web`), `AUDIO_GENRE_LOOKUP` (default on, `0`
+disables the outbound HTTPS genre lookup to `musicbrainz.org`),
+`AUDIO_MB_USER_AGENT` (default `audioplayer/0.1 (alex.isayenko@gmail.com)`).
 
 ## Web UI (`web/`)
 

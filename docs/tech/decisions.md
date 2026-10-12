@@ -63,6 +63,17 @@ Status: Accepted · 2026-10-12
   without a schema change.
 - Screens, record layout and API: [`../product/screens.md`](../product/screens.md).
 
+- Sub-decision (genre lookup): `/preview` also asks MusicBrainz
+  (`server/app/genre_lookup.py`, free, no key) for genres. It cleans
+  artist/title noise, accepts a recording match only at score >= 90 with a
+  loosely matching artist, reads recording genres+tags (falling back to the
+  artist's), and returns the top 3 by votes as `genre:<name>`. These merge
+  with the yt-dlp suggestion, de-duplicated, max 4 tags; the Add screen
+  pre-fills them. Limits: global ~1 request/s, 5 s timeout, in-memory cache,
+  any error gives no tags (never breaks `/preview`). `AUDIO_GENRE_LOOKUP=0`
+  disables it. Caveat: MusicBrainz tags are community-voted and sparse for
+  obscure tracks; treat them as suggestions.
+
 - Sub-decision (BPM): `bpm` (number or `null`) is detected automatically
   when a song is added and is user-editable. `server/app/bpm.py` decodes
   the saved m4a with ffmpeg to mono 44.1 kHz PCM, feeds it to aubio's
@@ -96,6 +107,12 @@ Status: Accepted · 2026-10-12
   evicts it and limits quota). Offline listening belongs to the iOS app
   (`ios/`, SwiftUI), built later against the same API, with a "download
   to device" option.
+- Sub-decision (queue): the "current playlist" is a client-side play
+  queue (song ids + current index in `localStorage`, no server state), not
+  the filtered library list. Library cards offer Play now (insert after the
+  current song, or move it there) and Add (append, duplicates ignored). The
+  Player is a regular Playback tab with an "Up next" list. Revisit if the
+  queue must sync across devices.
 
 ## ADR-0004 Hosting on perkunas, LXC 106 `tools`
 

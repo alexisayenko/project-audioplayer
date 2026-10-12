@@ -23,10 +23,10 @@ library. There is no separate playlist entity.
 
 ## Navigation
 
-Tab bar with **Library** and **Add**, plus **Settings** (server URL and
-token are still needed). The Player is not a tab: a mini-player bar sits
-above the tab bar on every tab and opens the full-screen Player on tap.
-Chosen as the simplest iOS-native option.
+Tab bar with **Library**, **Add**, **Playback** and **Settings** (server URL and
+token are still needed). Playback is the Player screen as a regular tab; it
+shows the queue length as a badge when the queue is non-empty. A mini-player
+bar sits above the tab bar on the other tabs and opens Playback on tap.
 
 ## Screens
 
@@ -46,21 +46,34 @@ Chosen as the simplest iOS-native option.
 
 Manages all songs.
 
-- List rows: cover, title, artist, BPM badge when known.
+- One card per song: square cover on the left; title, then one line
+  "Author, Album, year" (missing parts omitted); duration top-right with a
+  BPM badge when known; two icon buttons, Play now and Add to current
+  playlist; a row of tag chips along the bottom (`key:value` tags keep a
+  highlighted key prefix). Clicking the card body opens the Edit dialog,
+  which also holds Delete. Play now keeps the user on Library.
 - Search box (title, artist, album, tags).
 - Filter by tag (chips grouped by prefix: Genre, Mood, ...; plain tags under Tags); sort (added date, title, artist, year, BPM; songs without BPM last).
 - Edit dialog has a BPM input and a Re-detect button (re-runs detection on the stored file).
-- Tap = play, queue is the current filtered and sorted list.
-- Edit metadata and tags of a song.
-- Delete a song (server file, cover and record).
+- Edit metadata and tags of a song; Delete a song (server file, cover and
+  record) from the Edit dialog.
 
 ### 3. Player
 
-- Full screen: cover, title, artist, scrubber, play/pause, prev/next.
-- Queue = the list that was filtered when playback started (for example
-  one tag).
-- Mini-player bar over Library (and Add) with the same controls in short
-  form; tap opens the full Player.
+- Playback tab: cover, title, artist, scrubber, play/pause, prev/next, and
+  an "Up next" queue list.
+- The queue is the "current playlist", client-side only (ids in
+  `localStorage`, restored on reload without auto-play; songs deleted from
+  the library are dropped). It is no longer the filtered list.
+  - Play now: inserts the song right after the current one and plays it; if
+    already queued it is moved there. The rest of the queue continues after it.
+  - Add: appends to the end; a duplicate is ignored (toast "Already in
+    queue"). If the queue was empty the song is queued but not played.
+  - Up next rows have move up/down and remove; Clear drops all upcoming
+    songs (the current song keeps playing). Prev/next and the mini-player
+    follow the queue.
+- Mini-player bar over Library, Add and Settings with short controls; tap
+    opens Playback.
 
 ## Song fields
 
