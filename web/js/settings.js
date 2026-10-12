@@ -1,6 +1,7 @@
 import { auth, getToken, setToken, session } from './api.js';
 import { store } from './store.js';
 import { el, pageHead } from './dom.js';
+import { icon } from './icons.js';
 
 const GSI = 'https://accounts.google.com/gsi/client';
 const APPLE = 'https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js';
@@ -36,20 +37,21 @@ async function setupProviders(box, out) {
     return;
   }
   box.replaceChildren();
+  const row = (label, control) => el('div', { class: 'cell' }, el('span', { class: 't-subhead' }, label), control);
   if (cfg.google_client_id) {
     const slot = el('div', { class: 'signin-slot' });
-    box.append(slot);
+    box.append(row('Sign in with Google', slot));
     loadScript(GSI).then(() => {
       window.google.accounts.id.initialize({
         client_id: cfg.google_client_id,
         callback: (r) => finish(r.credential, out),
       });
-      window.google.accounts.id.renderButton(slot, { theme: 'outline', size: 'large', text: 'signin_with', width: 260 });
+      window.google.accounts.id.renderButton(slot, { theme: 'outline', size: 'medium', text: 'signin', shape: 'pill' });
     }).catch((ex) => slot.replaceChildren(el('p', { class: 'msg error' }, ex.message)));
   }
   if (cfg.apple_client_id) {
-    const btn = el('button', { class: 'btn apple-btn', type: 'button', disabled: true }, ' Sign in with Apple');
-    box.append(btn);
+    const btn = el('button', { class: 'btn outline small', type: 'button', disabled: true }, 'Sign in');
+    box.append(row('Sign in with Apple', btn));
     loadScript(APPLE).then(() => {
       window.AppleID.auth.init({
         clientId: cfg.apple_client_id,
@@ -69,18 +71,18 @@ async function setupProviders(box, out) {
     }).catch((ex) => btn.replaceWith(el('p', { class: 'msg error' }, ex.message)));
   }
   if (!cfg.google_client_id && !cfg.apple_client_id) {
-    box.append(el('p', { class: 'muted t-subhead' }, 'Sign-in is not configured on the server. Use the API token below.'));
+    box.append(el('p', { class: 'muted t-subhead' }, 'Sign-in is not configured on the server. Use the API token above.'));
   }
 }
 
-function renderAccount() {
+function accountSection() {
   const out = el('div');
   if (auth.email) {
-    return el('div', { class: 'card' },
-      el('p', { class: 'signed-as t-body' }, 'Signed in as ', el('b', {}, auth.email)),
-      el('div', { class: 'row', style: 'margin-top:16px' },
+    return el('div', { class: 'account' },
+      el('div', { class: 'cell' },
+        el('span', { class: 't-subhead' }, 'Signed in as ', el('b', {}, auth.email)),
         el('button', {
-          class: 'btn',
+          class: 'btn outline small',
           type: 'button',
           onclick: async () => {
             try { await session.end(); } catch { /* cookie expires on its own */ }
@@ -91,33 +93,73 @@ function renderAccount() {
         }, 'Sign out')));
   }
   const box = el('div', { class: 'signin-box' });
-  const card = el('div', { class: 'card' },
-    el('h2', { class: 'card-title' }, 'Sign in (owner only)'), box, out);
   setupProviders(box, out);
-  return card;
+  return el('div', { class: 'account' }, box, out);
 }
 
-export function renderSettings(root) {
-  const input = el('input', { type: 'password', value: getToken(), autocomplete: 'off', placeholder: 'API token', 'aria-label': 'API token' });
-  const out = el('div');
+function serverCard() {
+  const url = el('input', { id: 's-url', type: 'url', value: location.origin, readOnly: true, 'aria-label': 'Server URL' });
+  const input = el('input', { id: 's-tok', type: 'password', value: getToken(), autocomplete: 'off', placeholder: 'Optional when signed in', 'aria-label': 'API token' });
+  const eye = el('button', { class: 'eye', type: 'button', 'aria-label': 'Show token', 'aria-pressed': 'false' }, icon('eye', 18));
+  eye.addEventListener('click', () => {
+    const show = input.type === 'password';
+    input.type = show ? 'text' : 'password';
+    eye.setAttribute('aria-pressed', String(show));
+    eye.setAttribute('aria-label', show ? 'Hide token' : 'Show token');
+  });
+  const out = el('p', { class: 'status t-caption', role: 'status' });
+  const test = el('button', { class: 'btn quiet small', type: 'submit' }, 'Test connection');
+  const clear = el('button', { class: 'link-btn t-subhead', type: 'button' }, 'Clear token');
+  const say = (ok, text) => out.replaceChildren(el('span', { class: `dot${ok ? '' : ' down'}` }), text);
   const form = el('form', { class: 'card' },
-    el('label', { class: 'first' }, 'API token (fallback; same value as AUDIO_API_TOKEN on the server)'),
-    input,
-    el('div', { class: 'row', style: 'margin-top:16px' },
-      el('button', { class: 'btn primary', type: 'submit' }, 'Save and test'),
-      el('button', { class: 'btn', type: 'button', onclick: () => { setToken(''); input.value = ''; out.replaceChildren(el('p', { class: 'msg' }, 'Token cleared.')); window.dispatchEvent(new Event('auth-changed')); } }, 'Clear')),
-    out,
-    el('p', { class: 'muted t-subhead' }, 'The token is stored in this browser only (localStorage) and sent as X-API-Token. Signing in above uses a session cookie instead and keeps tokens out of URLs.'));
+    el('h2', { class: 't-headline' }, 'Server'),
+    el('div', { class: 'field' }, el('label', { for: 's-url' }, 'Server URL'), url),
+    el('div', { class: 'field' }, el('label', { for: 's-tok' }, 'API token (fallback; same value as AUDIO_API_TOKEN on the server)'),
+      el('div', { class: 'well' }, input, eye)),
+    el('div', { class: 'cell wrap' }, el('div', { class: 'row' }, test, clear), out),
+    el('p', { class: 'muted t-caption' }, 'The token is stored in this browser only (localStorage) and sent as X-API-Token. Signing in below uses a session cookie instead and keeps tokens out of URLs.'),
+    el('div', { class: 'divider' }),
+    accountSection());
+  clear.addEventListener('click', () => { setToken(''); input.value = ''; say(false, 'Token cleared'); window.dispatchEvent(new Event('auth-changed')); });
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     setToken(input.value.trim());
+    test.disabled = true;
+    const t0 = performance.now();
     try {
       await store.refresh();
-      out.replaceChildren(el('p', { class: 'msg ok' }, `Connected. ${store.songs.length} songs in library.`));
+      say(true, `Connected · ${Math.round(performance.now() - t0)} ms · ${store.songs.length} songs`);
       window.dispatchEvent(new Event('auth-changed'));
     } catch (ex) {
-      out.replaceChildren(el('p', { class: 'msg error' }, ex.message));
+      say(false, ex.message);
+    } finally {
+      test.disabled = false;
     }
   });
-  root.append(pageHead('Settings'), renderAccount(), form);
+  return form;
+}
+
+function libraryCard() {
+  const songs = store.songs.length;
+  const secs = store.songs.reduce((n, s) => n + (s.duration || 0), 0);
+  const hours = secs >= 3600 ? `${(secs / 3600).toFixed(1)} h of music` : `${Math.round(secs / 60)} min of music`;
+  const sync = el('span', {}, 'Checking...');
+  fetch('/health').then((r) => r.json()).then((h) => {
+    sync.textContent = h.sync === 'ok' ? 'In sync with git' : h.sync === 'error' ? 'Not reaching git (retrying)' : 'Waiting to sync to git';
+  }).catch(() => { sync.textContent = 'Server unreachable'; });
+  return el('section', { class: 'card' },
+    el('h2', { class: 't-headline' }, 'Library on the server'),
+    el('div', { class: 'cell' },
+      el('span', { class: 't-title' }, `${songs} ${songs === 1 ? 'song' : 'songs'}`),
+      el('span', { class: 'muted t-caption' }, songs ? hours : '')),
+    el('div', { class: 'divider' }),
+    el('div', { class: 'cell' }, el('span', { class: 'muted t-caption' }, 'Sync'), el('span', { class: 't-caption' }, sync)),
+    el('div', { class: 'cell' }, el('span', { class: 'muted t-caption' }, 'Server'), el('span', { class: 't-caption' }, location.host)));
+}
+
+export function renderSettings(root) {
+  let card = libraryCard();
+  const unsub = store.subscribe(() => { const next = libraryCard(); card.replaceWith(next); card = next; });
+  root.append(pageHead('Settings', 'One server. No account.'), el('div', { class: 'settings-grid' }, serverCard(), ...(auth.email || getToken() ? [card] : [])));
+  return unsub;
 }

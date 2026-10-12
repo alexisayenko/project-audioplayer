@@ -2,17 +2,22 @@ import { isSignedIn, session } from './api.js';
 import { initPlayer, pausePlayer } from './player.js';
 import { store } from './store.js';
 import { renderLibrary } from './library.js';
-import { renderAdd } from './add.js';
+import { openAdd } from './add.js';
 import { renderSettings } from './settings.js';
 
 const player = document.getElementById('player');
 const renderPlayback = () => { player.hidden = false; return () => { player.hidden = true; }; };
-const routes = { library: renderLibrary, add: renderAdd, playback: renderPlayback, settings: renderSettings };
+const routes = { library: renderLibrary, playback: renderPlayback, settings: renderSettings };
 const view = document.getElementById('view');
 let cleanup = null;
 
 function route() {
   let name = location.hash.replace(/^#\/?/, '') || 'library';
+  const wantsAdd = name === 'add';
+  if (wantsAdd) {
+    name = 'library';
+    history.replaceState(null, '', '#/library');
+  }
   if (!routes[name]) name = 'library';
   if (!isSignedIn() && name !== 'settings') {
     location.hash = '#/settings';
@@ -29,6 +34,7 @@ function route() {
     if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
   }
   window.scrollTo(0, 0);
+  if (wantsAdd) openAdd();
 }
 
 initPlayer();

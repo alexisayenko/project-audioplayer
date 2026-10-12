@@ -4,6 +4,9 @@ import { el, fmtTime, toast } from './dom.js';
 import * as Q from './queue-logic.js';
 import { tagChip, tagGroups, tagLabel, tagText } from './tagname.js';
 import { songLinks } from './wiki-links.js';
+import { icon } from './icons.js';
+import { openMenu, closeMenu, initMenus } from './menu.js';
+import { editDialog, dialogHead } from './edit-dialog.js';
 
 const audio = document.getElementById('audio');
 const $ = (id) => document.getElementById(id);
@@ -11,37 +14,8 @@ const $ = (id) => document.getElementById(id);
 const QUEUE_KEY = 'ap2.queue';
 const SHUFFLE_KEY = 'ap2.shuffle';
 const REPEAT_KEY = 'ap2.repeat';
+const VOLUME_KEY = 'ap2.volume';
 
-const SVG_NS = 'http://www.w3.org/2000/svg';
-const NUM5 = '<text x="12" y="15.6" font-size="8.5" text-anchor="middle" fill="currentColor" stroke="none" font-weight="700">5</text>';
-const LOOP = '<path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/>';
-const ICONS = {
-  prev: '<path d="M6 5v14"/><path d="M19 5.5v13L9 12z" fill="currentColor"/>',
-  next: '<path d="M18 5v14"/><path d="M5 5.5v13L15 12z" fill="currentColor"/>',
-  play: '<path d="M7 4.5v15l12-7.5z" fill="currentColor"/>',
-  pause: '<path d="M8 5v14M16 5v14" stroke-width="3.2"/>',
-  back5: `<path d="M5 12a7 7 0 1 0 2-4.9"/><path d="M5 4.5v3.7h3.7"/>${NUM5}`,
-  fwd5: `<path d="M19 12a7 7 0 1 1-2-4.9"/><path d="M19 4.5v3.7h-3.7"/>${NUM5}`,
-  shuffle: '<path d="M3 7h3c5 0 7 10 12 10h3"/><path d="M3 17h3c1.7 0 3-.9 4-2.2"/><path d="M13.5 9c1.2-1.3 2.4-2 4.5-2h3"/><path d="M18 4l3 3-3 3"/><path d="M18 14l3 3-3 3"/>',
-  loopAll: LOOP,
-  loopOne: `${LOOP}<text x="12" y="15" font-size="8" text-anchor="middle" fill="currentColor" stroke="none" font-weight="700">1</text>`,
-  plus: '<path d="M12 5v14M5 12h14"/>',
-  more: '<circle cx="5" cy="12" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="19" cy="12" r="1.4" fill="currentColor"/>',
-};
-function icon(name, size = 22) {
-  const svg = document.createElementNS(SVG_NS, 'svg');
-  svg.setAttribute('viewBox', '0 0 24 24');
-  svg.setAttribute('width', size);
-  svg.setAttribute('height', size);
-  svg.setAttribute('aria-hidden', 'true');
-  svg.setAttribute('fill', 'none');
-  svg.setAttribute('stroke', 'currentColor');
-  svg.setAttribute('stroke-width', '2');
-  svg.setAttribute('stroke-linecap', 'round');
-  svg.setAttribute('stroke-linejoin', 'round');
-  svg.innerHTML = ICONS[name];
-  return svg;
-}
 const setIcon = (id, name, size) => $(id).replaceChildren(icon(name, size));
 
 let qs = Q.emptyState();
@@ -150,6 +124,12 @@ export const player = {
     render();
   },
 
+  cycleRepeat() {
+    repeat = repeat === 'off' ? 'all' : repeat === 'all' ? 'one' : 'off';
+    savePrefs();
+    render();
+  },
+
   playAt(i) {
     if (i < 0 || i >= qs.items.length) return;
     if (i === qs.index) { player.toggle(); return; }
@@ -205,53 +185,59 @@ function render() {
   $('player').classList.toggle('idle', !song);
   $('player-empty').hidden = !!song;
   $('details-body').hidden = !song;
-  $('player-cover').hidden = !song;
-  const count = $('nav-count');
-  count.hidden = !n;
-  count.textContent = n;
+  $('cover-text').hidden = !song;
+  $('p-more').hidden = !song;
   $('queue-count').textContent = n ? `${n} ${n === 1 ? 'song' : 'songs'}` : '';
   renderPlaylistControls();
+  const playing = !audio.paused;
+  setIcon('p-play', playing ? 'pause' : 'play', 22);
+  setIcon('mini-play', playing ? 'pause' : 'play', 20);
+  $('p-play').setAttribute('aria-label', playing ? 'Pause' : 'Play');
+  $('mini-play').setAttribute('aria-label', playing ? 'Pause' : 'Play');
   if (!song) {
     document.title = 'Electrophone';
-    for (const id of ['p-prev', 'p-back', 'p-fwd', 'p-next', 'p-play']) $(id).disabled = true;
-    setIcon('p-play', 'play', 26);
-    setIcon('mini-play', 'play', 20);
+    for (const id of ['p-prev', 'p-next', 'p-play', 'mini-prev', 'mini-next']) $(id).disabled = true;
+    $('player-cover').removeAttribute('src');
+    $('player-cover').dataset.src = '';
+    $('cover-art').classList.add('noart');
     renderQueue();
     return;
   }
-  for (const id of ['p-prev', 'p-back', 'p-fwd', 'p-play']) $(id).disabled = false;
-  setIcon('mini-play', audio.paused ? 'play' : 'pause', 20);
-  setIcon('p-play', audio.paused ? 'play' : 'pause', 26);
+  const noNext = !Q.hasNext(logic());
+  for (const id of ['p-prev', 'p-play', 'mini-prev']) $(id).disabled = false;
+  $('p-next').disabled = noNext;
+  $('mini-next').disabled = noNext;
   $('mini-title').textContent = song.title;
   $('mini-artist').textContent = song.artist || '';
   $('player-title').textContent = song.title;
-  $('player-sub').textContent = [song.artist, song.album, song.year].filter(Boolean).join(', ');
+  $('player-sub').textContent = [song.artist, song.album, song.year].filter(Boolean).join(' · ');
   $('player-tags').replaceChildren(...(song.tags || []).map(tagChip));
   $('player-bpm').textContent = song.bpm != null ? `${Math.round(song.bpm)} BPM` : '';
   $('player-links').replaceChildren(...songLinks(song).map((l) => el('a', { class: 'source t-caption', href: l.href, target: '_blank', rel: 'noopener noreferrer' }, l.label)));
   setCover($('mini-cover'), song);
   setCover($('player-cover'), song);
-  $('p-next').disabled = !Q.hasNext(logic());
-  $('mini-next').disabled = $('p-next').disabled;
+  $('cover-art').classList.toggle('noart', !song.cover);
   renderQueue();
   document.title = `${song.title} - Electrophone`;
   listeners.forEach((fn) => fn());
 }
 
-function setToggle(id, on, label) {
-  const b = $(id);
-  b.setAttribute('aria-pressed', String(on));
-  b.setAttribute('aria-label', label);
-  b.title = label;
-  b.classList.toggle('on', on);
+function setToggle(ids, on, label, iconName) {
+  for (const id of ids) {
+    const b = $(id);
+    b.setAttribute('aria-pressed', String(on));
+    b.setAttribute('aria-label', label);
+    b.title = label;
+    b.classList.toggle('on', on);
+    if (iconName) b.replaceChildren(icon(iconName, id.startsWith('mini') ? 18 : 20));
+  }
 }
 
 function renderPlaylistControls() {
-  setToggle('p-shuffle', shuffle, `Shuffle: ${shuffle ? 'on' : 'off'}`);
-  setToggle('p-loop-one', repeat === 'one', `Loop one song: ${repeat === 'one' ? 'on' : 'off'}`);
-  setToggle('p-loop-all', repeat === 'all', `Loop whole list: ${repeat === 'all' ? 'on' : 'off'}`);
+  setToggle(['p-shuffle', 'mini-shuffle'], shuffle, `Shuffle: ${shuffle ? 'on' : 'off'}`);
+  setToggle(['p-repeat', 'mini-repeat'], repeat !== 'off', `Repeat: ${repeat === 'one' ? 'one song' : repeat === 'all' ? 'whole list' : 'off'}`, repeat === 'one' ? 'repeatOne' : 'repeat');
   $('queue-clear').disabled = !qs.tags.length;
-  $('fill-tags').replaceChildren(...qs.tags.map((t) => el('span', { class: 'chip on', title: t },
+  $('fill-tags').replaceChildren(...qs.tags.map((t) => el('span', { class: 'chip tint', title: t },
     tagText(t),
     el('button', {
       class: 'x', type: 'button', title: `Remove tag: ${t}`, 'aria-label': `Remove tag: ${t}`,
@@ -261,67 +247,34 @@ function renderPlaylistControls() {
 
 function songRow(item, i) {
   const s = store.get(item.id);
-  const sub = s ? [s.artist, s.album, s.year].filter(Boolean).join(', ') : '';
   const cover = el('img', { class: 'cover', alt: '', loading: 'lazy' });
   if (s && s.cover) cover.src = api.coverUrl(s.id);
   cover.addEventListener('error', () => cover.removeAttribute('src'));
   const title = s ? s.title : item.id;
-  const now = i === qs.index && !audio.paused;
-  return el('li', { class: `song${i === qs.index ? ' current' : ''}`, 'aria-current': i === qs.index ? 'true' : null },
+  const past = i <= qs.index;
+  const more = el('button', {
+    class: 'more', type: 'button', title: 'Song menu', 'aria-label': `Song menu: ${title}`, 'aria-haspopup': 'menu', 'aria-expanded': 'false',
+  }, icon('more', 20));
+  more.addEventListener('click', () => openMenu(more, [
+    { label: 'Move up', disabled: past || i - 1 <= qs.index, run: () => player.move(i, -1) },
+    { label: 'Move down', disabled: past || i + 1 >= qs.items.length, run: () => player.move(i, 1) },
+    { label: 'Remove', disabled: past, run: () => player.removeAt(i) },
+  ]));
+  return el('li', { class: `qrow${i === qs.index ? ' current' : ''}`, 'aria-current': i === qs.index ? 'true' : null },
+    el('span', { class: 'c-idx t-time' }, i + 1),
     cover,
     el('div', { class: 'info' },
-      el('button', { class: 'open t-headline', type: 'button', title: 'Play', onclick: () => player.playAt(i) }, title),
-      s && s.artist ? el('small', { class: 'artist t-subhead' }, s.artist) : null),
-    el('div', { class: 'meta' }, s && s.duration ? el('span', { class: 'dur t-time' }, fmtTime(s.duration)) : null),
-    el('div', { class: 'btns' },
-      el('button', {
-        class: 'icon', type: 'button', title: now ? 'Pause' : 'Play', 'aria-label': `${now ? 'Pause' : 'Play'}: ${title}`,
-        onclick: () => player.playAt(i),
-      }, icon(now ? 'pause' : 'play', 20)),
-      el('button', {
-        class: 'icon', type: 'button', title: 'Song menu', 'aria-label': `Song menu: ${title}`, 'aria-haspopup': 'menu', 'aria-expanded': 'false',
-        onclick: (e) => openRowMenu(e.currentTarget, i),
-      }, icon('more', 20))),
-    s && (s.tags || []).length ? el('div', { class: 'tags' }, s.tags.map(tagChip)) : null);
-}
-
-let openMenu = null;
-function closeMenu() {
-  if (!openMenu) return;
-  openMenu.btn.setAttribute('aria-expanded', 'false');
-  openMenu.node.remove();
-  openMenu = null;
-}
-
-function openRowMenu(btn, i) {
-  const again = openMenu && openMenu.btn === btn;
-  closeMenu();
-  if (again) return;
-  const past = i <= qs.index;
-  const item = (label, off, fn) => el('button', {
-    class: 'menu-item', type: 'button', role: 'menuitem', disabled: off,
-    onclick: () => { closeMenu(); fn(); },
-  }, label);
-  const node = el('div', { class: 'menu', role: 'menu' },
-    item('Move up', past || i - 1 <= qs.index, () => player.move(i, -1)),
-    item('Move down', past || i + 1 >= qs.items.length, () => player.move(i, 1)),
-    item('Remove', past, () => player.removeAt(i)));
-  document.body.append(node);
-  btn.setAttribute('aria-expanded', 'true');
-  openMenu = { node, btn };
-  const r = btn.getBoundingClientRect();
-  const h = node.offsetHeight;
-  node.style.top = `${r.bottom + h + 8 > window.innerHeight ? Math.max(8, r.top - h - 4) : r.bottom + 4}px`;
-  node.style.left = `${Math.max(8, Math.min(r.right - node.offsetWidth, window.innerWidth - node.offsetWidth - 8))}px`;
-  const first = node.querySelector('button:not(:disabled)');
-  if (first) first.focus();
+      el('button', { class: 'open t-subhead', type: 'button', title: 'Play', onclick: () => player.playAt(i) }, title),
+      s && s.artist ? el('small', { class: 'sub t-caption' }, s.artist) : null),
+    el('span', { class: 'c-dur t-time' }, s && s.duration ? fmtTime(s.duration) : ''),
+    more);
 }
 
 function openTagPicker() {
   const dlg = document.getElementById('edit-dialog');
   const chosen = new Set(qs.tags.map((t) => t.toLocaleLowerCase()));
   const groups = tagGroups(store.tags);
-  const apply = el('button', { type: 'button', class: 'btn primary' }, 'Add songs');
+  const apply = el('button', { type: 'button', class: 'btn primary glow' }, 'Add songs');
   const refresh = () => {
     const fresh = [...chosen].filter((c) => !qs.tags.some((t) => t.toLocaleLowerCase() === c));
     const drop = qs.tags.filter((t) => !chosen.has(t.toLocaleLowerCase()));
@@ -359,12 +312,11 @@ function openTagPicker() {
     toast(parts.join(', ').replace(/^./, (c) => c.toUpperCase()));
   });
   dlg.replaceChildren(el('div', {},
-    el('h2', {}, 'Add songs by tag'),
-    el('p', { class: 'muted' }, 'Songs with any picked tag are added to the end of the playlist.'),
+    dialogHead('Add songs by tag', 'Songs with any picked tag are added to the end of the playlist.', () => dlg.close()),
     groups.length ? el('div', { class: 'chip-groups' }, groups.map((g) => el('div', { class: 'chip-group' },
       el('span', { class: 'group-name' }, g.name),
-      ...g.tags.map(chip)))) :el('p', { class: 'muted' }, 'No tags yet'),
-    el('div', { class: 'row end' }, el('button', { type: 'button', class: 'btn', onclick: () => dlg.close() }, 'Cancel'), apply)));
+      ...g.tags.map(chip)))) : el('p', { class: 'muted' }, 'No tags yet'),
+    el('div', { class: 'row end' }, apply)));
   refresh();
   dlg.showModal();
 }
@@ -380,8 +332,9 @@ function renderProgress() {
   const cur = audio.currentTime;
   const frac = Number.isFinite(dur) && dur > 0 ? cur / dur : 0;
   $('mini-bar').style.width = `${frac * 100}%`;
-  $('player').style.setProperty('--progress', frac.toFixed(4));
-  $('t-dur').textContent = fmtTime(dur);
+  $('scrub').style.setProperty('--p', frac.toFixed(4));
+  $('mini-time').textContent = `${fmtTime(cur)} / ${fmtTime(dur)}`;
+  $('t-dur').textContent = `-${fmtTime(Number.isFinite(dur) ? Math.max(0, dur - cur) : 0)}`;
   if (!scrubbing) {
     $('scrub').value = Math.round(frac * 1000);
     $('t-cur').textContent = fmtTime(cur);
@@ -418,8 +371,22 @@ function setupMediaSession() {
   set('seekforward', (d) => player.seek(audio.currentTime + (d.seekOffset || 10)));
 }
 
+function setVolume(v, save = true) {
+  const vol = Math.max(0, Math.min(1, v));
+  audio.volume = vol;
+  for (const id of ['p-volume', 'mini-volume']) {
+    $(id).value = Math.round(vol * 100);
+    $(id).style.setProperty('--p', vol.toFixed(3));
+  }
+  $('p-volume-pct').textContent = `${Math.round(vol * 100)}%`;
+  $('p-knob').style.setProperty('--vol', vol.toFixed(3));
+  if (!save) return;
+  try { localStorage.setItem(VOLUME_KEY, String(vol)); } catch { /* storage unavailable */ }
+}
+
 export function initPlayer() {
   setupMediaSession();
+  initMenus();
   audio.addEventListener('play', render);
   audio.addEventListener('pause', render);
   audio.addEventListener('timeupdate', renderProgress);
@@ -429,52 +396,54 @@ export function initPlayer() {
 
   setIcon('p-prev', 'prev');
   setIcon('p-next', 'next');
-  setIcon('p-back', 'back5', 24);
-  setIcon('p-fwd', 'fwd5', 24);
   setIcon('p-shuffle', 'shuffle');
-  setIcon('p-loop-one', 'loopOne');
-  setIcon('p-loop-all', 'loopAll');
-  setIcon('mini-next', 'next', 20);
+  setIcon('mini-prev', 'prev', 18);
+  setIcon('mini-next', 'next', 18);
+  setIcon('mini-shuffle', 'shuffle', 18);
+  setIcon('p-more', 'more', 20);
 
-  $('mini-play').addEventListener('click', () => player.toggle());
-  $('mini-next').addEventListener('click', () => player.next());
-  $('p-play').addEventListener('click', () => player.toggle());
-  $('p-next').addEventListener('click', () => player.next());
-  $('p-prev').addEventListener('click', () => player.prev());
-  $('p-back').addEventListener('click', () => player.seek(audio.currentTime - 5));
-  $('p-fwd').addEventListener('click', () => player.seek(audio.currentTime + 5));
-  $('p-shuffle').addEventListener('click', () => player.setShuffle(!shuffle));
-  $('p-loop-one').addEventListener('click', () => player.toggleRepeat('one'));
-  $('p-loop-all').addEventListener('click', () => player.toggleRepeat('all'));
+  for (const p of ['mini', 'p']) {
+    $(`${p}-play`).addEventListener('click', () => player.toggle());
+    $(`${p}-next`).addEventListener('click', () => player.next());
+    $(`${p}-prev`).addEventListener('click', () => player.prev());
+    $(`${p}-shuffle`).addEventListener('click', () => player.setShuffle(!shuffle));
+    $(`${p}-repeat`).addEventListener('click', () => player.cycleRepeat());
+  }
   $('tag-add').addEventListener('click', openTagPicker);
   $('queue-clear').addEventListener('click', () => {
     const n = player.clean();
     toast(n ? `Removed ${n} ${n === 1 ? 'song' : 'songs'}` : 'Tags cleared');
   });
   $('mini-open').addEventListener('click', () => { location.hash = '#/playback'; });
+  $('p-more').addEventListener('click', () => {
+    const song = player.current;
+    if (song) openMenu($('p-more'), [{ label: 'Edit song', run: () => editDialog(song) }]);
+  });
 
-  document.addEventListener('click', (e) => {
-    if (openMenu && !openMenu.node.contains(e.target) && !openMenu.btn.contains(e.target)) closeMenu();
-  });
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && openMenu) { const b = openMenu.btn; closeMenu(); b.focus(); return; }
-    if (e.key !== ' ' || e.repeat || e.ctrlKey || e.metaKey || e.altKey || !player.current) return;
+    if (e.repeat || e.ctrlKey || e.metaKey || e.altKey || !player.current) return;
     if (e.target.closest && e.target.closest('input, textarea, select, button, a, dialog, [contenteditable]')) return;
-    e.preventDefault();
-    player.toggle();
+    if (e.key === ' ') { e.preventDefault(); player.toggle(); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); player.seek(audio.currentTime - 5); }
+    else if (e.key === 'ArrowRight') { e.preventDefault(); player.seek(audio.currentTime + 5); }
   });
-  window.addEventListener('resize', closeMenu);
   $('queue-list').addEventListener('scroll', closeMenu);
 
   const scrub = $('scrub');
   scrub.addEventListener('input', () => {
     scrubbing = true;
+    scrub.style.setProperty('--p', (scrub.value / 1000).toFixed(4));
     $('t-cur').textContent = fmtTime((scrub.value / 1000) * (audio.duration || 0));
   });
   scrub.addEventListener('change', () => {
     player.seek((scrub.value / 1000) * (audio.duration || 0));
     scrubbing = false;
   });
+
+  let stored = 1;
+  try { const v = parseFloat(localStorage.getItem(VOLUME_KEY)); if (Number.isFinite(v)) stored = v; } catch { /* storage unavailable */ }
+  setVolume(stored, false);
+  for (const id of ['p-volume', 'mini-volume']) $(id).addEventListener('input', (e) => setVolume(e.target.value / 100));
 
   for (const id of ['mini-cover', 'player-cover']) {
     $(id).addEventListener('error', () => { $(id).removeAttribute('src'); $(id).dataset.src = ''; });
@@ -500,6 +469,7 @@ export function initPlayer() {
     }
     render();
   });
+  render();
 }
 
 export function pausePlayer() {

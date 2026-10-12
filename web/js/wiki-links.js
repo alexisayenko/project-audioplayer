@@ -31,7 +31,7 @@ export function wikiFields({ song = '', artist = '', year, editor, onMessage }) 
     inp.setAttribute('aria-invalid', String(!!v && !isWikiLink(v)));
   };
   for (const inp of Object.values(fields)) inp.addEventListener('input', () => mark(inp));
-  const button = el('button', { type: 'button', class: 'btn' }, 'Fill from Wikipedia links');
+  const button = el('button', { type: 'button', class: 'btn quiet small' }, 'Fill from Wikipedia links');
   button.addEventListener('click', async () => {
     const body = { wikipedia_song: fields.song.value.trim() || null, wikipedia_artist: fields.artist.value.trim() || null };
     if (!body.wikipedia_song && !body.wikipedia_artist) { onMessage('Add a Wikipedia link first.', 'error'); return; }

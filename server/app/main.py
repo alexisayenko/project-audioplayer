@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import hmac
 import logging
 import os
@@ -13,7 +14,7 @@ from typing import Any
 
 from fastapi import BackgroundTasks, Depends, FastAPI, Header, HTTPException, Query, Request, Response
 from fastapi.concurrency import run_in_threadpool
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -504,6 +505,49 @@ class NoCacheStaticFiles(StaticFiles):
         return response
 
 
+_ASSET_REF = re.compile(r'(href|src)="(tokens\.css|style\.css|favicon\.svg|js/app\.js)"')
+_IMMUTABLE = "public, max-age=31536000, immutable"
+
+
+def web_version() -> str:
+    """Short fingerprint of the web files; it changes whenever any of them is deployed."""
+    digest = hashlib.sha1()
+    for path in sorted(WEB_DIR.rglob("*")):
+        if path.is_file():
+            info = path.stat()
+            digest.update(f"{path.relative_to(WEB_DIR)}:{info.st_mtime_ns}:{info.st_size}".encode())
+    return digest.hexdigest()[:10]
+
+
+def _index_response(request: Request) -> Response:
+    """index.html with every asset under /_v/<version>/, so a deploy is a new URL.
+
+    Browsers and CDNs may keep the versioned files for a year; the page that names
+    them is always revalidated (ETag), so users pick up a deploy on the next load.
+    """
+    version = web_version()
+    etag = f'"{version}"'
+    headers = {"Cache-Control": "no-cache", "ETag": etag}
+    if request.headers.get("if-none-match") == etag:
+        return Response(status_code=304, headers=headers)
+    page = (WEB_DIR / "index.html").read_text(encoding="utf-8")
+    page = _ASSET_REF.sub(lambda m: f'{m.group(1)}="_v/{version}/{m.group(2)}"', page)
+    return HTMLResponse(page, headers=headers)
+
+
+def _versioned_file(version: str, path: str) -> FileResponse:
+    root = WEB_DIR.resolve()
+    target = (root / path).resolve()
+    if not target.is_relative_to(root) or not target.is_file():
+        raise HTTPException(status_code=404, detail="not found")
+    cache = _IMMUTABLE if version == web_version() else "no-cache"
+    return FileResponse(target, headers={"Cache-Control": cache})
+
+
 # Mounted last so API routes above always win.
 if WEB_DIR.is_dir():
+    if (WEB_DIR / "index.html").is_file():
+        app.add_api_route("/", _index_response, methods=["GET"], include_in_schema=False)
+        app.add_api_route("/index.html", _index_response, methods=["GET"], include_in_schema=False)
+    app.add_api_route("/_v/{version}/{path:path}", _versioned_file, methods=["GET"], include_in_schema=False)
     app.mount("/", NoCacheStaticFiles(directory=WEB_DIR, html=True), name="web")

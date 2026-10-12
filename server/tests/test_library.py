@@ -401,3 +401,44 @@ def test_decade_on_create_and_year_change(client):
     assert r.json()["tags"] == ["x", "decade:10s"]
     r = client.patch(f"/songs/{VID}", json={"year": None}, headers=H)
     assert r.json()["tags"] == ["x", "decade:10s"]
+
+
+def test_web_assets_are_versioned_and_revalidated(tmp_path, monkeypatch):
+    web = tmp_path / "web"
+    (web / "js").mkdir(parents=True)
+    (web / "index.html").write_text(
+        '<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="style.css">'
+        '<script type="module" src="js/app.js"></script><a href="https://example.com/style.css">x</a>'
+    )
+    (web / "tokens.css").write_text(":root{}")
+    (web / "style.css").write_text("body{}")
+    (web / "js" / "app.js").write_text("import './lib.js';")
+    (web / "js" / "lib.js").write_text("export {};")
+    (tmp_path / "secret.txt").write_text("secret")
+    monkeypatch.setenv("AUDIO_API_TOKEN", "secret")
+    monkeypatch.setenv("AUDIO_WEB_DIR", str(web))
+    m = importlib.reload(main)
+    try:
+        c = TestClient(m.app)
+        page = c.get("/")
+        version = m.web_version()
+        assert page.headers["cache-control"] == "no-cache"
+        assert page.headers["etag"] == f'"{version}"'
+        for name in ("tokens.css", "style.css", "js/app.js"):
+            assert f'"_v/{version}/{name}"' in page.text
+        assert 'href="https://example.com/style.css"' in page.text
+        assert c.get("/", headers={"If-None-Match": f'"{version}"'}).status_code == 304
+
+        asset = c.get(f"/_v/{version}/js/lib.js")
+        assert asset.status_code == 200 and "immutable" in asset.headers["cache-control"]
+        assert c.get("/_v/old/js/lib.js").headers["cache-control"] == "no-cache"
+        assert c.get(f"/_v/{version}/%2e%2e/secret.txt").status_code == 404
+        assert c.get(f"/_v/{version}/js/missing.js").status_code == 404
+        assert "no-cache" in c.get("/style.css").headers["cache-control"]
+
+        (web / "style.css").write_text("body{color:red}")
+        assert m.web_version() != version
+        assert c.get(f"/_v/{version}/style.css").headers["cache-control"] == "no-cache"
+    finally:
+        monkeypatch.delenv("AUDIO_WEB_DIR")
+        importlib.reload(main)

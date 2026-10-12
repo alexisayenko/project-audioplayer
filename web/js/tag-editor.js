@@ -5,7 +5,7 @@ import { tagGroups, tagLabel, tagText, tagSearchText, withDecade, decadeRank } f
 
 const same = (a, b) => a.toLocaleLowerCase() === b.toLocaleLowerCase();
 
-export function tagEditor({ tags = [], suggested = [], year = null } = {}) {
+export function tagEditor({ tags = [], suggested = [], year = null, onChange = null } = {}) {
   const yearValue = () => (year && year.value !== '' ? Number(year.value) : null);
   let current = withDecade(tags, yearValue());
   let sug = withDecade(suggested, yearValue());
@@ -42,6 +42,7 @@ export function tagEditor({ tags = [], suggested = [], year = null } = {}) {
     pool.replaceChildren(...tagGroups(shown).map((g) => el('div', { class: 'chip-group' },
       el('span', { class: 'group-name' }, g.name),
       ...[...g.tags].sort(g.key === 'decade' ? (a, b) => decadeRank(a.tag) - decadeRank(b.tag) : (a, b) => b.count - a.count || a.tag.localeCompare(b.tag)).map((t) => chip(t.tag, t.count)))));
+    if (onChange) onChange([...current]);
   }
 
   input.addEventListener('keydown', (e) => {
@@ -60,6 +61,7 @@ export function tagEditor({ tags = [], suggested = [], year = null } = {}) {
   return {
     node,
     getTags() { add(input.value); return [...current]; },
+    peek() { return [...current]; },
     setSuggested(list) {
       for (const t of list) if (!sug.some((x) => same(x, t))) sug.push(t);
       render();
