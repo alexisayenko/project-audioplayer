@@ -283,7 +283,7 @@ def _run_download(vid: str, meta: dict[str, Any], tags: list[str]) -> None:
             "cover": cover,
             "duration": info.get("duration"),
             "added_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-            "tags": tags,
+            "tags": library.with_decade(tags, meta.get("year")),
         }
         with _tx(f"audioplayer: add {vid}"):
             songs = [s for s in library.load(library_path()) if s["id"] != vid]
@@ -352,6 +352,7 @@ def patch_song(video_id: str, req: PatchSongRequest):
             updated["tags"] = library.clean_tags(changes["tags"])
         if not updated.get("title"):
             raise HTTPException(status_code=422, detail="title must not be empty")
+        updated["tags"] = library.with_decade(updated.get("tags") or [], updated.get("year"))
         song.update(updated)
         _save(songs)
         return song

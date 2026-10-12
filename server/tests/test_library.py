@@ -171,7 +171,7 @@ def test_patch(client):
     assert r.status_code == 200
     s = r.json()
     assert s["artist"] == "New" and s["year"] == 1999 and s["album"] is None
-    assert s["tags"] == ["x", "y"] and s["title"] == "Song"
+    assert s["tags"] == ["x", "y", "decade:90s"] and s["title"] == "Song"
     assert client.get("/library", headers=H).json()["songs"][0]["artist"] == "New"
     assert client.patch(f"/songs/{VID}", json={"title": " "}, headers=H).status_code == 422
     assert client.patch(f"/songs/{VID2}", json={"title": "x"}, headers=H).status_code == 404
@@ -348,3 +348,56 @@ def test_fractional_bpm_migrated_on_load():
     doc = library.normalize({"songs": [{"id": "a", "bpm": 132.1}, {"id": "b", "bpm": None}, {"id": "c"}]})
     assert [s.get("bpm") for s in doc["songs"]] == [132, None, None]
     assert isinstance(doc["songs"][0]["bpm"], int)
+
+
+@pytest.mark.parametrize("year,tag", [
+    (1949, None), (1950, "decade:50s"), (1994, "decade:90s"), (1999, "decade:90s"),
+    (2000, "decade:00s"), (2007, "decade:00s"), (2013, "decade:10s"),
+    (2029, "decade:20s"), (2030, None), (None, None), (True, None),
+])
+def test_decade_tag_derivation(year, tag):
+    assert library.decade_tag(year) == tag
+
+
+def test_with_decade_replaces_and_leaves_alone():
+    assert library.with_decade(["rock", "decade:80s", "decade:70s"], 1994) == ["rock", "decade:90s"]
+    assert library.with_decade(["rock"], 2007) == ["rock", "decade:00s"]
+    assert library.with_decade(["decade:80s"], 1949) == ["decade:80s"]
+    assert library.with_decade(["decade:80s"], None) == ["decade:80s"]
+
+
+def test_decade_value_normalised_never_rejected():
+    assert library.clean_tag("Decade:90S") == "decade:90s"
+    assert library.clean_tag("decade:the 90s") == "decade:the90s"
+
+
+def test_decade_migration_on_load(tmp_path):
+    p = tmp_path / "library.json"
+    p.write_text(json.dumps({"songs": [
+        {"id": "a", "title": "A", "year": 1994},
+        {"id": "b", "title": "B", "year": 2007, "tags": ["x", "decade:80s"]},
+        {"id": "c", "title": "C", "year": 1949, "tags": ["decade:80s"]},
+        {"id": "d", "title": "D"},
+    ]}))
+    a, b, c, d = library.load(p)
+    assert a["tags"] == ["decade:90s"]
+    assert b["tags"] == ["x", "decade:00s"]
+    assert c["tags"] == ["decade:80s"]
+    assert "tags" not in d
+
+
+def test_decade_on_create_and_year_change(client):
+    add(client, vid=VID2, metadata={"title": "Song", "year": 1994})
+    assert client.get("/library", headers=H).json()["songs"][0]["tags"] == ["80s", "decade:90s"]
+    add(client)
+    assert client.get("/library", headers=H).json()["songs"][1]["tags"] == ["80s"]
+    r = client.patch(f"/songs/{VID}", json={"year": 1994, "tags": ["x"]}, headers=H)
+    assert r.json()["tags"] == ["x", "decade:90s"]
+    r = client.patch(f"/songs/{VID}", json={"year": 2013}, headers=H)
+    assert r.json()["tags"] == ["x", "decade:10s"]
+    r = client.patch(f"/songs/{VID}", json={"tags": ["x", "decade:60s"]}, headers=H)
+    assert r.json()["tags"] == ["x", "decade:10s"]
+    r = client.patch(f"/songs/{VID}", json={"year": 2030}, headers=H)
+    assert r.json()["tags"] == ["x", "decade:10s"]
+    r = client.patch(f"/songs/{VID}", json={"year": None}, headers=H)
+    assert r.json()["tags"] == ["x", "decade:10s"]

@@ -15,6 +15,8 @@ from . import langcodes, urlclean, wiki_lookup
 LOCK = threading.RLock()
 
 _ROOT_RE = re.compile(r"^([A-Za-z][A-Za-z0-9_.-]+)://(.*)$")
+_DECADE_RE = re.compile(r"^\d{2}s$")
+DECADE_MIN, DECADE_MAX = 1950, 2029
 
 
 def file_name(song: dict[str, Any]) -> str:
@@ -46,8 +48,36 @@ def normalize(raw: Any) -> dict[str, Any]:
             tags.append(f"genre:{genre}")
         if "tags" in s or genre:
             s["tags"] = clean_tags(tags)
+        if decade_tag(s.get("year")):
+            s["tags"] = with_decade(s.get("tags") or [], s["year"])
         songs.append(s)
     return {"settings": settings, "songs": songs}
+
+
+def decade_tag(year: Any) -> str | None:
+    """`decade:90s` for 1950-2029, else None."""
+    if isinstance(year, bool) or not isinstance(year, int) or not DECADE_MIN <= year <= DECADE_MAX:
+        return None
+    return f"decade:{year % 100 // 10 * 10:02d}s"
+
+
+def with_decade(tags: list[str], year: Any) -> list[str]:
+    """Replace every `decade:*` tag by the one derived from `year`; untouched when the year gives none."""
+    derived = decade_tag(year)
+    if derived is None:
+        return list(tags)
+    out: list[str] = []
+    placed = False
+    for t in tags:
+        if t.casefold().startswith("decade:"):
+            if not placed:
+                out.append(derived)
+                placed = True
+        else:
+            out.append(t)
+    if not placed:
+        out.append(derived)
+    return out
 
 
 def load_doc(path: Path) -> dict[str, Any]:
@@ -122,6 +152,8 @@ def clean_tag(tag: str) -> str:
         key, value = key.lower(), value.lower()
         if key == "lang":
             value = langcodes.to_lang_code(value) or value
+        elif key == "decade" and not _DECADE_RE.match(value):
+            value = value.replace(" ", "")
         return f"{key}:{value}"
     if sep:
         return ""
