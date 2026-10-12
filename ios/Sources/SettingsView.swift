@@ -12,12 +12,14 @@ struct SettingsView: View {
     @State private var ok = false
     @State private var bytes: Int64 = 0
     @State private var confirmRemoveAll = false
+    @State private var serverOpen = false
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: DS.Space.space4) {
                 ScreenHeader(title: "Settings")
                 accountCard
+                downloadsCard
                 storageCard
                 serverCard
                 Text(versionLine).dsCaption().frame(maxWidth: .infinity)
@@ -41,77 +43,149 @@ struct SettingsView: View {
         let info = Bundle.main
         let v = info.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
         let b = info.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? ""
-        let testFlight = info.appStoreReceiptURL?.lastPathComponent == "sandboxReceipt"
-        return "Electrophone \(v) (\(b))" + (testFlight ? " · TestFlight" : "")
+        var line = "Electrophone \(v) (\(b))"
+        if info.appStoreReceiptURL?.lastPathComponent == "sandboxReceipt" {
+            line += " \u{00B7} TestFlight"
+        } else {
+            #if DEBUG
+            line += " \u{00B7} Debug"
+            #endif
+        }
+        return line
     }
 
-    private func card<C: View>(_ label: String, footer: String? = nil, @ViewBuilder _ content: () -> C) -> some View {
+    /// A grouped card: section label above, surface slab with 16pt side padding, rows or content inside.
+    private func card<C: View>(_ label: String, @ViewBuilder _ content: () -> C) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             SectionLabel(label)
-            VStack(alignment: .leading, spacing: DS.Space.space3, content: content)
-                .padding(.horizontal, DS.Space.space4).padding(.vertical, DS.Space.space3)
+            VStack(alignment: .leading, spacing: 0, content: content)
+                .padding(.horizontal, DS.Space.space4)
                 .frame(maxWidth: .infinity, alignment: .leading).dsSlab()
-            if let footer { Text(footer).dsCaption().padding(.horizontal, DS.Space.space1) }
         }
     }
 
-    private var serverCard: some View {
-        card("Private server") {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Server URL").dsCaption()
-                TextField("https://play.isayenko.net", text: $settings.serverURL)
-                    .textInputAutocapitalization(.never).keyboardType(.URL).autocorrectionDisabled().dsField()
+    private var rule: some View { Rectangle().fill(DS.Color.line).frame(height: 1) }
+
+    /// A 48pt settings row: label on the left, value or control on the right.
+    private func row<Trail: View>(_ label: String, @ViewBuilder trailing: () -> Trail) -> some View {
+        HStack(spacing: DS.Space.space3) {
+            Text(label).font(T.subhead).foregroundStyle(DS.Color.ink)
+            Spacer(minLength: DS.Space.space2)
+            trailing()
+        }
+        .frame(minHeight: 48)
+    }
+
+    private var downloadsCard: some View {
+        card("Downloads") {
+            row("Audio quality") {
+                Text("High \u{00B7} 192 kbps").font(T.subhead).foregroundStyle(DS.Color.inkMuted)
             }
-            VStack(alignment: .leading, spacing: 2) {
-                Text("API token").dsCaption()
-                SecureField("API token", text: $settings.token).dsField()
+            .accessibilityElement(children: .combine)
+            rule
+            row("Download new songs automatically") {
+                Toggle("Download new songs automatically", isOn: $settings.downloadNewAutomatically)
+                    .labelsHidden().toggleStyle(DSSwitchStyle())
             }
-            Button("Paste token from clipboard") {
-                if let s = UIPasteboard.general.string { settings.token = s.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .accessibilityElement(children: .combine)
+            rule
+            row("Use mobile data") {
+                Toggle("Use mobile data", isOn: $settings.useMobileData).labelsHidden().toggleStyle(DSSwitchStyle())
             }
-            .font(T.subhead.weight(.semibold)).foregroundStyle(DS.Color.accentInk).frame(minHeight: DS.Space.hit)
-            Button { Task { await test() } } label: {
-                HStack { Text("Test connection"); if testing { ProgressView() } }
-            }
-            .buttonStyle(DSButtonStyle(kind: .quiet)).disabled(testing)
-            ServerStatus()
-            if let status {
-                Label {
-                    Text(status).font(T.caption).foregroundStyle(DS.Color.ink)
-                } icon: {
-                    Image(systemName: ok ? "checkmark.circle.fill" : "xmark.octagon.fill")
-                        .foregroundStyle(ok ? DS.Color.ok : DS.Color.power)
-                }
-            }
+            .accessibilityElement(children: .combine)
         }
     }
 
     private var accountCard: some View {
         card("Account") {
-            if let session = auth.session {
-                HStack(spacing: DS.Space.space3) {
-                    LED(color: auth.expired ? DS.Color.power : DS.Color.ok, size: 10, glow: true)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(session.email ?? "Signed in").font(T.body).foregroundStyle(DS.Color.ink)
-                        Text(auth.expired ? "Expired, sign in again" : "via \(session.provider == .apple ? "Apple" : "Google")").dsCaption()
+            VStack(alignment: .leading, spacing: DS.Space.space3) {
+                if let session = auth.session {
+                    HStack(spacing: DS.Space.space3) {
+                        LED(color: auth.expired ? DS.Color.power : DS.Color.ok, size: 10, glow: true)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(session.email ?? "Signed in").font(T.body).foregroundStyle(DS.Color.ink)
+                            Text(auth.expired ? "Expired, sign in again" : "via \(session.provider == .apple ? "Apple" : "Google")").dsCaption()
+                        }
+                    }
+                    .accessibilityElement(children: .combine)
+                    Button("Sign out") { auth.signOut() }.buttonStyle(DSButtonStyle(kind: .danger))
+                }
+                if !auth.isSignedIn || auth.expired {
+                    VStack(spacing: DS.Space.space2) {
+                        SignInWithAppleButton(.signIn) { $0.requestedScopes = [.email] } onCompletion: { auth.apple($0) }
+                            .signInWithAppleButtonStyle(scheme == .dark ? .white : .black)
+                            .id(scheme)
+                            .frame(height: DS.Space.hit).clipShape(Capsule())
+                        GoogleSignInButton { Task { await auth.signInWithGoogle() } }.disabled(auth.busy)
                     }
                 }
-                .accessibilityElement(children: .combine)
-                Button("Sign out") { auth.signOut() }.buttonStyle(DSButtonStyle(kind: .danger))
-            }
-            if !auth.isSignedIn || auth.expired {
-                VStack(spacing: DS.Space.space2) {
-                    SignInWithAppleButton(.signIn) { $0.requestedScopes = [.email] } onCompletion: { auth.apple($0) }
-                        .signInWithAppleButtonStyle(scheme == .dark ? .white : .black)
-                        .frame(height: DS.Space.hit).clipShape(Capsule())
-                    GoogleSignInButton { Task { await auth.signInWithGoogle() } }.disabled(auth.busy)
+                if let e = auth.error {
+                    Label { Text(e).font(T.caption).foregroundStyle(DS.Color.ink) } icon: {
+                        Image(systemName: "exclamationmark.circle.fill").foregroundStyle(DS.Color.power)
+                    }
                 }
             }
-            if let e = auth.error {
-                Label { Text(e).font(T.caption).foregroundStyle(DS.Color.ink) } icon: {
-                    Image(systemName: "exclamationmark.circle.fill").foregroundStyle(DS.Color.power)
+            .padding(.vertical, DS.Space.space3)
+        }
+    }
+
+    private var serverCard: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            SectionLabel("Private server")
+            VStack(alignment: .leading, spacing: 0) {
+                Button { withAnimation { serverOpen.toggle() } } label: {
+                    row("Server and token") {
+                        HStack(spacing: DS.Space.space2) {
+                            ServerLED()
+                            Image(systemName: serverOpen ? "chevron.up" : "chevron.down")
+                                .font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.inkMuted)
+                        }
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(.isButton).accessibilityValue(serverOpen ? "expanded" : "collapsed")
+                if serverOpen {
+                    rule
+                    row("Server URL") {
+                        TextField("https://play.isayenko.net", text: $settings.serverURL)
+                            .textInputAutocapitalization(.never).keyboardType(.URL).autocorrectionDisabled()
+                            .multilineTextAlignment(.trailing).font(T.subhead).foregroundStyle(DS.Color.inkMuted)
+                    }
+                    rule
+                    row("API token") {
+                        SecureField("Token", text: $settings.token).multilineTextAlignment(.trailing)
+                            .font(T.subhead).foregroundStyle(DS.Color.inkMuted)
+                    }
+                    rule
+                    Button("Paste token from clipboard") {
+                        if let s = UIPasteboard.general.string { settings.token = s.trimmingCharacters(in: .whitespacesAndNewlines) }
+                    }
+                    .font(T.subhead.weight(.semibold)).foregroundStyle(DS.Color.accentInk)
+                    .frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
+                    rule
+                    HStack(spacing: DS.Space.space3) {
+                        Button { Task { await test() } } label: {
+                            HStack(spacing: DS.Space.space2) { Text("Test connection"); if testing { ProgressView() } }
+                        }
+                        .font(T.subhead.weight(.semibold)).foregroundStyle(DS.Color.accentInk).disabled(testing)
+                        Spacer(minLength: DS.Space.space2)
+                        ServerStatus(compact: true)
+                    }
+                    .frame(minHeight: 48)
+                    if let status {
+                        Label {
+                            Text(status).font(T.caption).foregroundStyle(DS.Color.ink)
+                        } icon: {
+                            Image(systemName: ok ? "checkmark.circle.fill" : "xmark.octagon.fill")
+                                .foregroundStyle(ok ? DS.Color.ok : DS.Color.power)
+                        }
+                        .padding(.bottom, DS.Space.space3)
+                    }
                 }
             }
+            .padding(.horizontal, DS.Space.space4)
+            .frame(maxWidth: .infinity, alignment: .leading).dsSlab()
         }
     }
 
@@ -138,10 +212,11 @@ struct SettingsView: View {
                     .frame(height: 6).accessibilityHidden(true)
                     Text("of \(ByteCountFormatter.string(fromByteCount: capacity, countStyle: .file)) on this iPhone").dsCaption()
                 }
-                Button("Remove all downloads") { confirmRemoveAll = true }
+                Button { confirmRemoveAll = true } label: { Text("Remove all downloads").frame(maxWidth: .infinity) }
                     .buttonStyle(DSButtonStyle(kind: .danger)).disabled(library.tracks.isEmpty)
                     .padding(.top, DS.Space.space1)
             }
+            .padding(.vertical, DS.Space.space3)
             .accessibilityElement(children: .contain)
         }
     }

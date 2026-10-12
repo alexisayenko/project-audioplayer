@@ -162,7 +162,7 @@ struct LibraryView: View {
         } else {
             LazyVStack(spacing: 0) {
                 ForEach(arriving) { t in
-                    SongRow(title: t.title, subtitle: subtitle(t), thumbnail: t.thumbnail,
+                    SongRow(title: t.title, subtitle: subtitle(t), source: t.source, thumbnail: t.thumbnail,
                             downloading: server.transfers[t.id]?.progress ?? 0)
                     divider
                 }
@@ -187,7 +187,7 @@ struct LibraryView: View {
 
     private func row(_ track: Track, in tracks: [Track]) -> some View {
         let playing = player.current?.id == track.id
-        return SongRow(title: track.title, subtitle: subtitle(track), thumbnail: track.thumbnail, duration: track.duration,
+        return SongRow(title: track.title, subtitle: subtitle(track), source: track.source, thumbnail: track.thumbnail, duration: track.duration,
                     playing: playing) {
                 Menu {
                     Button { editing = ServerSong(track) } label: { Label("Edit", systemImage: "pencil") }
@@ -197,8 +197,9 @@ struct LibraryView: View {
                     }
                     Button(role: .destructive) { deleting = track } label: { Label("Delete from library", systemImage: "trash") }
                 } label: {
-                    Image(systemName: "ellipsis").font(.system(size: 18)).foregroundStyle(playing ? DS.Color.accentInk : DS.Color.inkMuted)
-                        .frame(width: DS.Space.hit, height: DS.Space.hit)
+                    Image(systemName: "ellipsis").font(.system(size: 18)).foregroundStyle(playing ? DS.Color.accentInk : DS.Color.inkFaint)
+                        .frame(width: 24, height: DS.Space.hit)
+                        .contentShape(Rectangle().inset(by: -10))
                 }
                 .accessibilityLabel("More actions for \(track.title)")
             }

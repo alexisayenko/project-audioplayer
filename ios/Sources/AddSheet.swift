@@ -8,6 +8,7 @@ final class AddFlow: ObservableObject {
     @Published var phase = Phase.idle
     @Published var preview: Preview?
     @Published var message: String?
+    @Published var errorCode: String?
     @Published var wikiNote: String?
     @Published var wikiBusy = false
 
@@ -30,7 +31,7 @@ final class AddFlow: ObservableObject {
     }
 
     func reset() {
-        phase = .idle; preview = nil; message = nil; url = ""; wikiNote = nil
+        phase = .idle; preview = nil; message = nil; errorCode = nil; url = ""; wikiNote = nil
         title = ""; artist = ""; album = ""; year = ""; bpm = ""; wikiSong = ""; wikiArtist = ""
         tags = []; suggested = []; pendingTag = ""
     }
@@ -39,7 +40,7 @@ final class AddFlow: ObservableObject {
         let clean = cleanPasted(url)
         url = clean
         guard !clean.isEmpty, phase != .loading, phase != .saving else { return }
-        phase = .loading; message = nil; wikiNote = nil
+        phase = .loading; message = nil; errorCode = nil; wikiNote = nil
         do {
             let p = try await api.preview(url: clean)
             preview = p
@@ -52,6 +53,7 @@ final class AddFlow: ObservableObject {
         } catch {
             preview = nil
             message = error.localizedDescription
+            if case APIError.refused(let code, _) = error { errorCode = code }
             phase = .idle
         }
     }
@@ -70,7 +72,7 @@ final class AddFlow: ObservableObject {
     }
 
     /// Saves on the server, then hands the download to `ServerLink` so it outlives the sheet. True when the sheet may close.
-    func save(settings: Settings, library: LibraryStore, server: ServerLink, player: PlayerService, playWhenReady: Bool) async -> Bool {
+    func save(settings: Settings, library: LibraryStore, server: ServerLink, player: PlayerService, download: Bool) async -> Bool {
         guard let p = preview, phase == .ready || phase == .failed else { return false }
         let api = APIClient(baseURL: settings.serverURL, token: settings.token)
         phase = .saving; message = nil
@@ -94,9 +96,23 @@ final class AddFlow: ObservableObject {
                           album: album.isEmpty ? nil : album, year: yearValue, tags: finalTagList,
                           bpm: bpmValue.map(Double.init), sourceURL: p.source_url,
                           wikipediaSong: wikiS.isEmpty ? nil : wikiS, wikipediaArtist: wikiA.isEmpty ? nil : wikiA)
-        server.startIngest(track, settings: settings, library: library, player: player, playWhenReady: playWhenReady)
+        if download {
+            server.startIngest(track, settings: settings, library: library, player: player, playWhenReady: false)
+        } else {
+            server.notice = "Saved. Not downloaded to this iPhone"
+        }
         phase = .saved
         return true
+    }
+}
+
+/// The Add sheet's one-line link errors: a bold lead and a plain explanation, keyed by the server's error code.
+func linkErrorCopy(code: String?, detail: String) -> (lead: String, rest: String) {
+    switch code {
+    case "unsupported": return ("Unsupported link.", "Electrophone takes YouTube and SoundCloud links only.")
+    case "private": return ("Private track.", "The server can't reach it. Make it public or use a secret share link.")
+    case "not_found": return ("Track not found.", "The link may be wrong or the track was removed.")
+    default: return ("", detail)
     }
 }
 
@@ -133,8 +149,9 @@ struct AddSheet: View {
                 VStack(alignment: .leading, spacing: DS.Space.space4) {
                     header
                     linkField
-                    if flow.phase == .idle, let m = flow.message { note(m, error: true) }
+                    if flow.phase == .idle, flow.message != nil, flow.errorCode == "preview_only" { previewOnlyNotice }
                     if let p = flow.preview, hasPreview { previewSections(p) }
+                    else if flow.phase == .idle, flow.message != nil { disabledSave }
                 }
                 .padding(.horizontal, DS.Space.space4).padding(.top, DS.Space.space6).padding(.bottom, DS.Space.space4)
                 .measuredHeight($contentHeight)
@@ -162,30 +179,36 @@ struct AddSheet: View {
     }
 
     private var header: some View {
-        HStack(alignment: .firstTextBaseline) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Add from YouTube or SoundCloud").font(T.title).foregroundStyle(DS.Color.ink).accessibilityAddTraits(.isHeader)
-                Text("Downloads to this iPhone through your server").dsCaption()
-                if server.reachable != true { ServerStatus(compact: true) }
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Add a song").font(T.title).foregroundStyle(DS.Color.ink).accessibilityAddTraits(.isHeader)
+                Spacer(minLength: DS.Space.space2)
+                Button("Cancel") { dismiss() }
+                    .font(T.subhead.weight(.semibold)).foregroundStyle(DS.Color.accentInk)
+                    .frame(minWidth: DS.Space.hit, minHeight: DS.Space.hit)
             }
-            Spacer(minLength: DS.Space.space2)
-            Button("Cancel") { dismiss() }
-                .font(T.subhead.weight(.semibold)).foregroundStyle(DS.Color.accentInk)
-                .frame(minWidth: DS.Space.hit, minHeight: DS.Space.hit)
+            .padding(.bottom, -DS.Space.space2)
+            Text("YouTube or SoundCloud, downloaded to this iPhone").dsCaption()
+            if server.reachable != true { ServerStatus(compact: true) }
         }
+    }
+
+    private func fetch() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        Task { await flow.loadPreview(api) }
     }
 
     private var linkField: some View {
         VStack(alignment: .leading, spacing: DS.Space.space1) {
             HStack(spacing: DS.Space.space2) {
-                TextField("Paste a YouTube or SoundCloud link", text: $flow.url)
+                TextField("YouTube or SoundCloud link", text: $flow.url)
                     .textInputAutocapitalization(.never).autocorrectionDisabled().keyboardType(.URL)
                     .submitLabel(.go).font(T.subhead).frame(minHeight: 44).foregroundStyle(DS.Color.ink)
-                    .onSubmit { Task { await flow.loadPreview(api) } }
+                    .onSubmit { fetch() }
                     .onChange(of: flow.url) { old, new in
                         if new.count - old.count > 1 { let c = cleanPasted(new); if c != new { flow.url = c } }
                     }
-                Button { Task { await flow.loadPreview(api) } } label: {
+                Button { fetch() } label: {
                     Group { if flow.phase == .loading { ProgressView().tint(scheme.onStrong) } else { Text("Fetch") } }
                         .font(T.subhead.weight(.semibold)).foregroundStyle(scheme.onStrong)
                         .padding(.horizontal, 14).frame(minWidth: 64, minHeight: 36)
@@ -197,11 +220,52 @@ struct AddSheet: View {
             }
             .padding(.leading, DS.Space.space4).padding(.trailing, DS.Space.space2).frame(minHeight: 48)
             .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(DS.Color.surfaceSunken))
+            .overlay {
+                if linkFailed { RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(DS.Color.power, lineWidth: 1.5) }
+            }
+            if linkFailed, let m = flow.message {
+                let copy = linkErrorCopy(code: flow.errorCode, detail: m)
+                HStack(alignment: .top, spacing: DS.Space.space2) {
+                    Image(systemName: "exclamationmark.circle").font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(DS.Color.power).padding(.top, 2).accessibilityHidden(true)
+                    (copy.lead.isEmpty ? Text(copy.rest) : Text(copy.lead).font(T.caption.weight(.semibold)) + Text(" " + copy.rest))
+                        .font(T.caption).foregroundStyle(DS.Color.ink)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .padding(.top, DS.Space.space2)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Error: \(copy.lead) \(copy.rest)")
+            }
             NavigationLink(value: "search") {
                 Label("Search YouTube by title", systemImage: "magnifyingglass")
                     .font(T.subhead.weight(.semibold)).foregroundStyle(DS.Color.accentInk).frame(minHeight: DS.Space.hit)
             }
         }
+    }
+
+    private var linkFailed: Bool {
+        flow.phase == .idle && flow.message != nil && flow.errorCode != "preview_only"
+    }
+
+    private var previewOnlyNotice: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(DS.Color.power).accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Preview only").font(T.subhead.weight(.semibold)).foregroundStyle(DS.Color.ink)
+                Text("This is a SoundCloud Go+ track. Only its 30-second preview is available, so it can't be saved as a full song.")
+                    .font(T.caption).foregroundStyle(DS.Color.inkMuted)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading).padding(DS.Space.space3)
+        .background(RoundedRectangle(cornerRadius: DS.Radius.radiusKey, style: .continuous).fill(DS.Color.surfaceSunken))
+        .accessibilityElement(children: .combine)
+    }
+
+    private var disabledSave: some View {
+        Button {} label: {
+            HStack(spacing: DS.Space.space2) { Image(systemName: "plus"); Text("Add to library") }
+        }
+        .buttonStyle(LitButtonStyle()).disabled(true)
     }
 
     private func note(_ text: String, error: Bool = false) -> some View {
@@ -225,8 +289,7 @@ struct AddSheet: View {
     }
 
     private var timing: String {
-        [flow.preview.map { sourceLabel($0.source ?? sourceOf(id: $0.id)) }, flow.preview?.duration.map(formatTime),
-         Int(flow.bpm).map { "\($0) BPM" }].compactMap { $0 }.joined(separator: " · ")
+        [flow.preview?.duration.map(formatTime), Int(flow.bpm).map { "\($0) BPM" }].compactMap { $0 }.joined(separator: " · ")
     }
 
     @ViewBuilder
@@ -238,7 +301,12 @@ struct AddSheet: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(flow.title.isEmpty ? "Untitled" : flow.title).font(T.headline).foregroundStyle(DS.Color.ink).lineLimit(2)
                 if !summary.isEmpty { Text(summary).font(T.subhead).foregroundStyle(DS.Color.inkMuted).lineLimit(1) }
-                if !timing.isEmpty { Text(timing).font(T.time).foregroundStyle(DS.Color.inkMuted) }
+                HStack(spacing: DS.Space.space2) {
+                    if !timing.isEmpty { Text(timing).font(T.time).foregroundStyle(DS.Color.inkMuted) }
+                    Text(sourceLabel(p.source ?? sourceOf(id: p.id))).font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(DS.Color.inkMuted).padding(.horizontal, DS.Space.space2).frame(height: 20)
+                        .background(Capsule().fill(DS.Color.surfaceSunken))
+                }
             }
             Spacer(minLength: DS.Space.space2)
             Button { withAnimation { editing.toggle() } } label: {
@@ -294,15 +362,16 @@ struct AddSheet: View {
 
         if let m = flow.message { note(m, error: true) }
         let blocked = p.in_library == true || flow.title.trimmingCharacters(in: .whitespaces).isEmpty || flow.phase == .saving
-        Button { Task { _ = await flow.save(settings: settings, library: library, server: server, player: player, playWhenReady: false) } } label: {
+        Button { Task { _ = await flow.save(settings: settings, library: library, server: server, player: player, download: settings.downloadNewAutomatically) } } label: {
             HStack(spacing: DS.Space.space2) {
-                if flow.phase == .saving { ProgressView().tint(DS.Color.onAccent) } else { Image(systemName: "arrow.down.to.line") }
-                Text("Save to iPhone")
+                if flow.phase == .saving { ProgressView().tint(DS.Color.onAccent) } else { Image(systemName: "plus") }
+                Text("Add to library")
             }
         }
-        .buttonStyle(LitButtonStyle()).disabled(blocked).opacity(blocked ? 0.5 : 1)
-        Button { Task { _ = await flow.save(settings: settings, library: library, server: server, player: player, playWhenReady: true) } } label: {
-            Text("Save and play when ready").font(T.subhead.weight(.semibold)).foregroundStyle(DS.Color.accentInk)
+        .buttonStyle(LitButtonStyle()).disabled(blocked)
+        Button { Task { _ = await flow.save(settings: settings, library: library, server: server, player: player, download: true) } } label: {
+            Label("Add and download to iPhone", systemImage: "arrow.down.to.line")
+                .font(T.subhead.weight(.semibold)).foregroundStyle(DS.Color.accentInk)
                 .frame(maxWidth: .infinity, minHeight: DS.Space.hit)
         }
         .disabled(blocked).opacity(blocked ? 0.5 : 1)

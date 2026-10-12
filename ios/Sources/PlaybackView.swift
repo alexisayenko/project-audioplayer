@@ -75,7 +75,9 @@ struct PlaybackView: View {
             .overlay(alignment: .bottom) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(current?.title ?? "Nothing playing").font(T.title).lineLimit(3)
-                    Text(current.map(subtitle) ?? "Pick a song in Library.").font(T.body).opacity(0.8).lineLimit(2)
+                    (Text(current.map(subtitle) ?? "Pick a song in Library.").foregroundStyle(DS.Color.surface.opacity(0.8))
+                        + Text(current.map { " · " + sourceLabel($0.source) } ?? "").foregroundStyle(DS.Color.surface.opacity(0.6)))
+                        .font(T.body).lineLimit(2)
                 }
                 .foregroundStyle(DS.Color.surface)
                 .environment(\.colorScheme, .light)
@@ -89,7 +91,7 @@ struct PlaybackView: View {
             .clipShape(RoundedRectangle(cornerRadius: DS.Radius.radiusCard, style: .continuous))
             .shadow(color: DS.Color.vinyl.opacity(0.16), radius: 10, y: 2)
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel(current.map { "\($0.title), \(subtitle($0))" } ?? "Nothing playing")
+            .accessibilityLabel(current.map { "\($0.title), \(subtitle($0)), \(sourceLabel($0.source))" } ?? "Nothing playing")
     }
 
     private var progress: some View {
@@ -164,7 +166,7 @@ private struct QueueSheet: View {
                 }
                 ForEach(Array(player.queue.enumerated()), id: \.element.id) { i, track in
                     Button { player.jump(to: i) } label: {
-                        SongRow(title: track.title, subtitle: track.artist, thumbnail: track.thumbnail, duration: track.duration,
+                        SongRow(title: track.title, subtitle: track.artist, source: track.source, thumbnail: track.thumbnail, duration: track.duration,
                                 playing: i == player.index, coverSize: 48)
                     }
                     .buttonStyle(.plain)

@@ -59,6 +59,7 @@ struct SongEditView: View {
             parts.append(ByteCountFormatter.string(fromByteCount: Int64(size), countStyle: .file))
             parts.append(t.fileURL.pathExtension.uppercased())
         }
+        parts.append(sourceLabel(sourceOf(id: song.id)))
         return parts.joined(separator: " · ")
     }
 
@@ -66,16 +67,31 @@ struct SongEditView: View {
         track?.addedAt.map { "Added " + $0.formatted(.dateTime.day().month(.abbreviated).year()) }
     }
 
-    private var links: [(String, URL)] {
-        let who = artist.trimmingCharacters(in: .whitespaces)
-        let what = album.trimmingCharacters(in: .whitespaces).isEmpty ? "Song" : "Album"
-        return [(who.isEmpty ? "Artist · Wikipedia" : "\(who) · Wikipedia", wikiArtist),
-                ("\(what) · Wikipedia", wikiSong), ("YouTube", song.source_url ?? "")]
-            .compactMap { label, s in
-                let t = s.trimmingCharacters(in: .whitespaces)
-                guard t.lowercased().hasPrefix("http"), let u = URL(string: t) else { return nil }
-                return (label, u)
-            }
+    private struct SourceLink: Identifiable {
+        let id: String
+        let symbol: String
+        let label: String
+        let url: URL?
+    }
+
+    private func webURL(_ s: String?) -> URL? {
+        let t = (s ?? "").trimmingCharacters(in: .whitespaces)
+        return t.lowercased().hasPrefix("http") ? URL(string: t) : nil
+    }
+
+    /// Always YouTube, SoundCloud, Spotify, Wikipedia; a source without a link stays in the row, dimmed and inert.
+    private var links: [SourceLink] {
+        let own = sourceOf(id: song.id)
+        let wiki = webURL(wikiSong) ?? webURL(wikiArtist)
+        let wikiLabel = webURL(wikiSong) != nil ? "Wikipedia: song" : webURL(wikiArtist) != nil ? "Wikipedia: artist" : "Not on Wikipedia"
+        return [
+            SourceLink(id: "yt", symbol: "play.rectangle.fill", label: own == "youtube" && webURL(song.source_url) != nil ? "Open on YouTube" : "Not on YouTube",
+                       url: own == "youtube" ? webURL(song.source_url) : nil),
+            SourceLink(id: "sc", symbol: "waveform", label: own == "soundcloud" && webURL(song.source_url) != nil ? "Open on SoundCloud" : "Not on SoundCloud",
+                       url: own == "soundcloud" ? webURL(song.source_url) : nil),
+            SourceLink(id: "sp", symbol: "music.note", label: "Not on Spotify", url: nil),
+            SourceLink(id: "wiki", symbol: "book.closed.fill", label: wikiLabel, url: wiki),
+        ]
     }
 
     private func row(_ label: String, _ text: Binding<String>, keyboard: UIKeyboardType = .default) -> some View {
@@ -144,17 +160,23 @@ struct SongEditView: View {
     }
 
     private var linkRow: some View {
-        FlowLayout {
-            ForEach(links, id: \.0) { label, url in
-                Link(label, destination: url).font(T.caption.weight(.medium)).foregroundStyle(DS.Color.accentInk)
-                    .padding(.horizontal, DS.Space.space3).frame(minHeight: 32)
-                    .overlay(Capsule().stroke(DS.Color.line, lineWidth: 1.5))
-                    .contentShape(Rectangle().inset(by: -6))
+        VStack(alignment: .leading, spacing: DS.Space.space2) {
+            HStack(spacing: DS.Space.space2) {
+                ForEach(links) { l in
+                    let glyph = Image(systemName: l.symbol).font(.system(size: 18, weight: .semibold))
+                        .frame(width: DS.Space.hit, height: DS.Space.hit)
+                        .background(Circle().fill(DS.Color.surfaceSunken))
+                    if let url = l.url {
+                        Link(destination: url) { glyph.foregroundStyle(DS.Color.accentInk) }.accessibilityLabel(l.label)
+                    } else {
+                        glyph.foregroundStyle(DS.Color.inkFaint).opacity(0.6)
+                            .accessibilityElement().accessibilityLabel(l.label).accessibilityAddTraits(.isStaticText)
+                    }
+                }
             }
             Button { withAnimation { editingLinks.toggle() } } label: {
                 Text(editingLinks ? "Hide link editor" : "Edit links").font(T.caption.weight(.medium)).foregroundStyle(DS.Color.inkMuted)
-                    .padding(.horizontal, DS.Space.space3).frame(minHeight: 32)
-                    .contentShape(Rectangle().inset(by: -6))
+                    .frame(minHeight: DS.Space.hit, alignment: .leading)
             }
             .buttonStyle(.plain)
         }

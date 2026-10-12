@@ -41,6 +41,7 @@ final class ServerLink: ObservableObject {
     @Published private(set) var failed: Set<String> = []
     /// A failure to tell the person about once (Library shows it as a toast).
     @Published var notice: String?
+    private var copyError: String?
 
     func check(settings: Settings) async {
         guard !checking else { return }
@@ -92,7 +93,7 @@ final class ServerLink: ObservableObject {
             }
         }
         guard await copy(track, settings: settings, from: 0.8, span: 0.2) else {
-            fail(track, "Saved on the server, but not copied to this iPhone. Fetch the link again to download it.")
+            fail(track, copyError ?? "Saved on the server, but not copied to this iPhone. Fetch the link again to download it.")
             return
         }
         library.add(track)
@@ -106,7 +107,10 @@ final class ServerLink: ObservableObject {
                 Task { @MainActor in self?.transfers[track.id]?.progress = base + span * p }
             }
             return true
-        } catch { return false }
+        } catch {
+            copyError = error.localizedDescription.hasPrefix("Mobile data") ? error.localizedDescription : nil
+            return false
+        }
     }
 
     private func fail(_ track: Track, _ message: String) {

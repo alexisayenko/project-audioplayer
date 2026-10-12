@@ -277,11 +277,13 @@ struct CoverImage: View {
 struct SongRow<Menu: View>: View {
     let title: String
     let subtitle: String
+    var source: String?
     let thumbnail: String?
     var duration: Double?
     var downloading: Double?
     var playing = false
     var coverSize: CGFloat = 56
+    @Environment(\.dynamicTypeSize) private var typeSize
     @ViewBuilder var menu: () -> Menu
 
     var body: some View {
@@ -292,12 +294,28 @@ struct SongRow<Menu: View>: View {
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 0) {
                 Text(title).font(T.headline).foregroundStyle(DS.Color.ink).lineLimit(2)
-                Text(subtitle).font(T.subhead).foregroundStyle(playing ? DS.Color.ink : DS.Color.inkMuted).lineLimit(1)
+                let artist = Text(subtitle).foregroundStyle(playing ? DS.Color.ink : DS.Color.inkMuted).lineLimit(1)
+                if typeSize.isAccessibilitySize {
+                    VStack(alignment: .leading, spacing: 0) {
+                        artist
+                        if let source { Text(sourceLabel(source)).foregroundStyle(DS.Color.inkFaint).lineLimit(1).minimumScaleFactor(0.7) }
+                    }
+                    .font(T.subhead)
+                } else {
+                    HStack(spacing: 0) {
+                        artist
+                        if let source {
+                            Text(" \u{00B7} " + sourceLabel(source)).foregroundStyle(DS.Color.inkFaint).lineLimit(1)
+                                .fixedSize(horizontal: true, vertical: false).layoutPriority(1)
+                        }
+                    }
+                    .font(T.subhead)
+                }
             }
-            Spacer(minLength: DS.Space.space1)
+            Spacer(minLength: 0)
             if let downloading {
                 Text("Downloading \(Int(downloading * 100))%").font(T.caption).foregroundStyle(DS.Color.accentInk)
-                    .multilineTextAlignment(.trailing)
+                    .multilineTextAlignment(.trailing).frame(maxWidth: 84, alignment: .trailing).fixedSize(horizontal: false, vertical: true)
             } else if let duration {
                 Text(formatTime(duration)).font(T.time).foregroundStyle(playing ? DS.Color.ink : DS.Color.inkMuted)
             }
@@ -311,9 +329,9 @@ struct SongRow<Menu: View>: View {
 }
 
 extension SongRow where Menu == EmptyView {
-    init(title: String, subtitle: String, thumbnail: String?, duration: Double? = nil, downloading: Double? = nil,
-         playing: Bool = false, coverSize: CGFloat = 56) {
-        self.init(title: title, subtitle: subtitle, thumbnail: thumbnail, duration: duration, downloading: downloading,
+    init(title: String, subtitle: String, source: String? = nil, thumbnail: String?, duration: Double? = nil,
+         downloading: Double? = nil, playing: Bool = false, coverSize: CGFloat = 56) {
+        self.init(title: title, subtitle: subtitle, source: source, thumbnail: thumbnail, duration: duration, downloading: downloading,
                   playing: playing, coverSize: coverSize) { EmptyView() }
     }
 }
@@ -572,5 +590,36 @@ struct TagFlow: View {
                 AddTagButton(open: adding, action: onAdd)
             }
         }
+    }
+}
+
+/// The 48 x 28 switch: accent-strong track when on, sunken track when off, round paper thumb.
+struct DSSwitchStyle: ToggleStyle {
+    @Environment(\.colorScheme) private var scheme
+
+    func makeBody(configuration: Configuration) -> some View {
+        Button { configuration.isOn.toggle() } label: {
+            Capsule().fill(configuration.isOn ? DS.Color.accentStrong : DS.Color.surfaceSunken)
+                .frame(width: 48, height: 28)
+                .overlay(alignment: configuration.isOn ? .trailing : .leading) {
+                    Circle().fill(scheme == .dark ? DS.Color.ink : DS.Color.surface).frame(width: 24, height: 24).padding(2)
+                        .shadow(color: DS.Color.vinyl.opacity(0.2), radius: 1, y: 1)
+                }
+                .animation(.easeOut(duration: 0.15), value: configuration.isOn)
+                .frame(minWidth: DS.Space.hit, minHeight: DS.Space.hit)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityRepresentation { Toggle(isOn: configuration.$isOn) { configuration.label } }
+    }
+}
+
+/// Just the LED of the server's state, for a collapsed row.
+struct ServerLED: View {
+    @EnvironmentObject var server: ServerLink
+
+    var body: some View {
+        LED(color: server.reachable == true ? DS.Color.ok : server.reachable == false ? DS.Color.power : DS.Color.inkFaint,
+            glow: server.reachable != nil)
     }
 }

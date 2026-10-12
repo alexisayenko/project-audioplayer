@@ -3,10 +3,12 @@ import Foundation
 enum APIError: LocalizedError {
     case badURL
     case http(Int, String)
+    case refused(String, String)
 
     var errorDescription: String? {
         switch self {
         case .badURL: return "Invalid server URL"
+        case .refused(_, let detail): return detail
         case .http(let code, let detail):
             if code == 401 { return "Not signed in or wrong API token (see Settings)" }
             return detail.isEmpty ? "Server error \(code)" : detail
@@ -46,6 +48,7 @@ struct APIClient {
         guard (200..<300).contains(http.statusCode) else {
             var detail = data.flatMap { String(data: $0, encoding: .utf8) } ?? ""
             if let data, let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                if let code = obj["error"] as? String, let d = obj["detail"] as? String { throw APIError.refused(code, d) }
                 if let d = obj["detail"] as? String { detail = d }
                 else if let list = obj["detail"] as? [[String: Any]] {
                     detail = list.compactMap { $0["msg"] as? String }.joined(separator: "; ")
@@ -53,6 +56,16 @@ struct APIClient {
             }
             throw APIError.http(http.statusCode, detail)
         }
+    }
+
+    /// File downloads honour Settings > Use mobile data; the small API calls always go through.
+    private static func downloadSession() -> URLSession {
+        let cellular = UserDefaults.standard.bool(forKey: Settings.useMobileDataKey)
+        let c = URLSessionConfiguration.default
+        c.allowsCellularAccess = cellular
+        c.allowsExpensiveNetworkAccess = cellular
+        c.allowsConstrainedNetworkAccess = cellular
+        return URLSession(configuration: c)
     }
 
     func verify() async throws {
@@ -75,8 +88,15 @@ struct APIClient {
 
     /// Copies an audio file that is already on the server into the app, reporting 0...1 as it arrives.
     func downloadFile(_ track: Track, onProgress: @escaping @Sendable (Double) -> Void = { _ in }) async throws {
-        let (tmp, response) = try await URLSession.shared.download(for: try await request("/files/\(track.id)"),
-                                                                   delegate: ProgressDelegate(onProgress))
+        let session = Self.downloadSession()
+        defer { session.finishTasksAndInvalidate() }
+        let tmp: URL, response: URLResponse
+        do {
+            (tmp, response) = try await session.download(for: try await request("/files/\(track.id)"),
+                                                         delegate: ProgressDelegate(onProgress))
+        } catch let e as URLError where e.code == .dataNotAllowed || e.code == .internationalRoamingOff {
+            throw APIError.http(0, "Mobile data is off for downloads. Turn on Use mobile data in Settings.")
+        }
         try check(response)
         try? FileManager.default.removeItem(at: track.fileURL)
         try FileManager.default.moveItem(at: tmp, to: track.fileURL)
@@ -90,7 +110,9 @@ struct APIClient {
         try check(response, data: data)
         let track = try JSONDecoder().decode(Track.self, from: data)
 
-        let (tmp, fileResponse) = try await URLSession.shared.download(for: try await request("/files/\(track.id)"))
+        let session = Self.downloadSession()
+        defer { session.finishTasksAndInvalidate() }
+        let (tmp, fileResponse) = try await session.download(for: try await request("/files/\(track.id)"))
         try check(fileResponse)
         let dest = track.fileURL
         try? FileManager.default.removeItem(at: dest)
