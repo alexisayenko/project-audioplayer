@@ -16,8 +16,9 @@ description: [`../product/screens.md`](../product/screens.md) section 3.
 
 ## Block 1: song details
 
-- PLY-010 MUST: the card shows the current song's cover as the card background, with a dark scrim overlay carrying, in order: title, "Artist, Album, year" (missing parts omitted), tag chips, BPM (`<rounded> BPM`) and a Source link. Status: implemented
+- PLY-010 MUST: the card shows the current song's cover as the card background, with a dark scrim overlay carrying, in order: title, "Artist, Album, year" (missing parts omitted), tag chips, BPM (`<rounded> BPM`) and the links row (PLY-015). Status: implemented
 - PLY-011 MUST: the Source link opens `source_url` in a new tab and is shown only for `http(s)` URLs. Status: implemented
+- PLY-015 MUST: the overlay shows a links row after the BPM with up to three links, in order "Source" (`source_url`, `http(s)`), "Wikipedia (song)" (`wikipedia_song`) and "Wikipedia (band)" (`wikipedia_artist`, `https`), only those present, each `target=_blank rel="noopener noreferrer"` (`songLinks` in `web/js/wiki-links.js`, node test). Status: implemented
 - PLY-012 SHOULD: tag chips on the overlay are clipped to about three lines. Status: implemented
 - PLY-013 MUST: a missing or failing cover is blanked, not shown as a broken image. Status: implemented
 - PLY-014 MUST: chips on the overlay, queue rows, selected-tag chips and the tag picker use the same display names as Library (LIB-016); picker groups are Genre, Country, Language, other keys, Tags. Status: implemented

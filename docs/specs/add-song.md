@@ -23,6 +23,11 @@ Code: `web/js/add.js`, `server/app/main.py` (`preview`, `create_song`,
 - ADD-008 MUST: progress is 0..1 from yt-dlp byte counts, rounded to 3 decimals; it may stay at 0 when the size is unknown. Status: implemented
 - ADD-009 MUST: on any failure the partial `<id>.m4a` is deleted and the job becomes `error` with a short message; the UI shows "Download failed: <message>" and re-enables Save. Status: implemented
 
+## Wikipedia links
+
+- ADD-050 MUST: the preview card has two optional URL inputs, "Wikipedia: song" and "Wikipedia: band", pre-filled from `preview.wikipedia_song` / `wikipedia_artist` (MusicBrainz url-rels, see [tags.md](tags.md) TAG-040); they are saved with the song (`metadata.wikipedia_song`, `wikipedia_artist`); an input that is not a Wikipedia/Wikidata link is outlined red and dropped by the server. Status: implemented
+- ADD-051 MUST: "Fill from Wikipedia links" calls `POST /lookup/wikipedia` with the two inputs; the suggested year fills Year when it is empty, or after a confirm when it differs; suggested tags go to the Suggested row, not onto the song. Status: implemented
+
 ## BPM
 
 - ADD-020 MUST: BPM is optional; empty means auto-detect after download (placeholder "Detected after saving"); a typed value (20..300, whole number, fractions rounded) is kept and skips detection. Status: implemented
@@ -36,7 +41,7 @@ Code: `web/js/add.js`, `server/app/main.py` (`preview`, `create_song`,
 - ADD-030 MUST: preview returns `in_library: true` when the id is already stored; the UI shows "This song is already in your library." and disables Save. Status: implemented
 - ADD-031 MUST: `POST /songs` returns 409 `already in library` or `already downloading` (checked under the lock). Status: implemented
 - ADD-032 MUST: the identity of a song is its YouTube video id; two URLs for the same video are the same song. Status: implemented
-- ADD-033 MUST: pasted links are cleaned before use: YouTube forms (`youtu.be/<id>`, `watch?v=`, `m.` and `music.` hosts, `shorts/`, `embed/`, `live/`) become `https://www.youtube.com/watch?v=<id>`, dropping `si`, `t`, `list` and every other parameter; other http(s) links lose only `si`, `feature`, `pp`, `fbclid`, `gclid` and `utm_*`. The web cleans on paste, blur and submit and shows the result in the field (`web/js/url-clean.js`); the server applies the same rules (`server/app/urlclean.py`) and tolerates clean input. Status: implemented
+- ADD-033 MUST: pasted links are cleaned before use: YouTube forms (`youtu.be/<id>`, `watch?v=`, `m.` and `music.` hosts, `shorts/`, `embed/`, `live/`) become `https://www.youtube.com/watch?v=<id>`, dropping `si`, `t`, `list` and every other parameter; other http(s) links lose only `si`, `feature`, `pp`, `fbclid`, `gclid` and `utm_*`. The web cleans on paste, drop, bulk input (paste/drop/replacement input events or multi-character insertions; single keystrokes are left alone), blur and submit, moves the caret to the end, extracts the first YouTube or http(s) link from surrounding text (otherwise the first line) and shows the result in the field (`cleanPasted` in `web/js/url-clean.js`); the server applies the same rules (`server/app/urlclean.py`) and tolerates clean input. Status: implemented
 
 ## Errors shown to the user
 

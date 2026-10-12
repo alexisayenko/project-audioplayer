@@ -19,10 +19,11 @@ are `{"detail": "<message>"}`.
 | `GET /health` | none | - | 200 `{status:"ok", sync:"ok"\|"pending"\|"error"}` | - |
 | `GET /library` | header | - | 200 `{songs:[song]}` | 401/503 |
 | `GET /tags` | header | - | 200 `[{tag,count}]` | 401/503 |
-| `POST /preview` | header | `{url}` | 200 `{id, source_url, title, artist, album, year, tags, duration, thumbnail, in_library}` | 422 `not a YouTube video URL`; 502 `preview failed: <short>` |
-| `POST /songs` | header | `{url, metadata:{title,artist,album,year,bpm}, tags:[]}` | 202 `{id, status:"downloading"}` | 422 bad URL or field range; 409 `already in library` / `already downloading` |
+| `POST /preview` | header | `{url}` | 200 `{id, source_url, title, artist, album, year, tags, duration, thumbnail, in_library, wikipedia_song, wikipedia_artist, suggested_year}` (links and `suggested_year` are `null` when unknown; `year` is filled from `suggested_year` only when yt-dlp gave none) | 422 `not a YouTube video URL`; 502 `preview failed: <short>` |
+| `POST /lookup/wikipedia` | header | `{wikipedia_song?, wikipedia_artist?}` (user-edited links) | 200 `{tags:[...], year:int\|null}` suggestions from Wikidata, never applied server-side; empty on invalid links, lookup off or any failure | 401/503 |
+| `POST /songs` | header | `{url, metadata:{title,artist,album,year,bpm,wikipedia_song,wikipedia_artist}, tags:[]}` | 202 `{id, status:"downloading"}` | 422 bad URL or field range; 409 `already in library` / `already downloading` |
 | `GET /songs/{id}/status` | header | - | 200 `{id, status:"downloading"\|"done"\|"error", progress:0..1, error}` | 404 `unknown song` |
-| `PATCH /songs/{id}` | header | any of `title, artist, album, year, bpm (integer; fractions rounded), tags` | 200 the updated song | 404 `unknown song`; 422 `title must not be empty` or field range |
+| `PATCH /songs/{id}` | header | any of `title, artist, album, year, bpm (integer; fractions rounded), tags, wikipedia_song, wikipedia_artist` (invalid links become `null`) | 200 the updated song | 404 `unknown song`; 422 `title must not be empty` or field range |
 | `POST /songs/{id}/bpm/detect` | header | - | 200 the updated song | 404 `unknown song` / `not downloaded`; 422 `could not detect BPM`; 503 music_root server not configured |
 | `DELETE /songs/{id}` | header | - | 204 | 404 `unknown song` |
 | `GET /files/{id}` | header or `?token=` | - | 200 audio (`audio/mp4`, Range supported via `FileResponse`) | 404 `not downloaded`; 503 music_root server not configured |

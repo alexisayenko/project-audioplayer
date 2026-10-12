@@ -32,6 +32,14 @@ Code: `server/app/library.py` (`clean_tag`, `clean_tags`, `tag_counts`),
 - TAG-026 MUST: suggestions are written to a song only when the user saves the Add form. Status: implemented
 - TAG-027 MUST: the same MusicBrainz lookup also suggests `country:<code>` from the matched artist's `country` (nothing when missing) and up to 2 `lang:<code>` from the languages of the recording's linked works (ISO 639-3 mapped to 639-1, kept as 639-3 when no 2-letter code exists; `mul`, `zxx`, `und` ignored); yt-dlp's `language` field also yields a `lang:` tag. A failing artist call keeps the recording's tags. Status: implemented
 
+## Suggestions from Wikipedia and Wikidata
+
+- TAG-040 MUST: the MusicBrainz lookup also requests `url-rels` (recording, artist; the first linked work when the recording has none) and picks the `wikipedia` relation, English preferred, else the `wikidata` one resolved to an English (else any) Wikipedia sitelink via `Special:EntityData/Q<id>.json`, else kept as the Wikidata URL. They go to `preview.wikipedia_song` / `wikipedia_artist`. Status: implemented
+- TAG-041 MUST: facts come from structured Wikidata claims, never from article text: genre `P136` (English label, max 3, song first then artist; one batched `wbgetentities` call), country from the artist's `P495`, else `P27`, else `P740` via the place's `P17`, else the song's `P495`, mapped through `P297` to `country:xx`; language from the song's `P407` through `P218` (else `P220`) to `lang:xx` (max 2); year from the song's `P577` (earliest, precision year or finer), else MusicBrainz `first-release-date`; the artist's inception `P571` is never a song year. Status: implemented
+- TAG-042 MUST: these merge into `preview.tags` after the MusicBrainz and yt-dlp tags (dedupe, per-namespace caps of TAG-023); `preview.suggested_year` carries the year and fills `year` only when yt-dlp gave none. Status: implemented
+- TAG-043 MUST: `POST /lookup/wikipedia` derives the same tags and year from user-edited links (Wikipedia URL to Wikidata id via the `pageprops` API); the UI puts the tags in the Suggested row only. Status: implemented
+- TAG-044 MUST: all Wikimedia calls use `AUDIO_MB_USER_AGENT`, a 5 s timeout and in-memory caches by Wikidata id; the `AUDIO_TAG_LOOKUP` switch disables them; any failure gives no suggestions and never breaks `/preview`. Status: implemented
+
 ## Counts and filtering
 
 - TAG-030 MUST: `GET /tags` returns `[{tag, count}]` sorted case-insensitively; tags equal case-insensitively are one entry (first spelling shown). Status: implemented

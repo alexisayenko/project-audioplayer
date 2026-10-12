@@ -57,7 +57,7 @@ Code: `server/app/gitstore.py`, `server/app/library.py`, `server/app/main.py`,
 | `AUDIO_DOWNLOAD_DIR` | `downloads` | fallback audio dir |
 | `AUDIO_DATA_DIR` | `.` | plain-file `library.json` and `covers/` (no git store) |
 | `AUDIO_WEB_DIR` | `<repo>/web` | static UI dir |
-| `AUDIO_TAG_LOOKUP`, `AUDIO_GENRE_LOOKUP` | on | `0/false/no/off` on either disables MusicBrainz tag suggestions (genre, country, language) |
-| `AUDIO_MB_USER_AGENT` | `audioplayer/0.1 (...)` | MusicBrainz User-Agent |
+| `AUDIO_TAG_LOOKUP`, `AUDIO_GENRE_LOOKUP` | on | `0/false/no/off` on either disables MusicBrainz and Wikidata/Wikipedia suggestions (tags, year, links) |
+| `AUDIO_MB_USER_AGENT` | `audioplayer/0.1 (...)` | User-Agent for MusicBrainz, Wikidata and Wikipedia |
 
 - STO-040 MUST: no credential or token is stored in either repo. Status: implemented

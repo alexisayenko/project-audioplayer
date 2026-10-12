@@ -43,6 +43,8 @@ in `docs/product/wireframes/` yet; add a link here when it lands).
 - LIB-054 SHOULD: the label say BPM is a heuristic that may be off by half or double. Status: implemented
 - LIB-055 MUST: the Tags field is the shared tag editor (`web/js/tag-editor.js`, also used by Add, ADD-004): a text input (Enter or comma adds a chip, accepts `key:value`, filters the list below as you type, matches code and display name), the song's current tags as chips with an x, and below them every library tag as a toggle chip (assigned ones selected) grouped Genre, Country, Language, other keys, Tags, most-used first with counts; the list scrolls inside the dialog (max height). Save sends the same tag array as before. Status: implemented
 
+- LIB-056 MUST: the Edit dialog has "Wikipedia: song" and "Wikipedia: band" URL inputs (empty clears the link) and a "Fill from Wikipedia links" button with the same behaviour as ADD-051; Save sends `wikipedia_song` and `wikipedia_artist` with the other fields. Library cards do not show the links. Status: implemented
+
 ## Not in scope
 
 - LIB-060 SHOULD: bulk edit, multi-select, drag-reorder. Status: planned

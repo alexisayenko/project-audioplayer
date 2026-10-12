@@ -57,7 +57,8 @@ relative audio file names only (replaces `AUDIO_DOWNLOAD_DIR`). Each save costs 
 | `POST /download {video_id}` | fetch m4a (itag 140, no ffmpeg needed), return metadata |
 | `GET /files/{video_id}` | stream the stored m4a |
 | `GET /library`, `GET /tags` | songs with tags; tag counts |
-| `POST /preview {url}` | yt-dlp metadata plus suggested genre/country/lang tags (MusicBrainz), no download |
+| `POST /preview {url}` | yt-dlp metadata plus suggested genre/country/lang tags, year and Wikipedia links (MusicBrainz, Wikidata), no download |
+| `POST /lookup/wikipedia` | suggested tags and year from user-edited Wikipedia links |
 | `POST /songs`, `GET /songs/{id}/status` | add song (background download), poll progress |
 | `PATCH /songs/{id}`, `DELETE /songs/{id}` | edit metadata/tags/bpm; remove record, audio, cover |
 | `POST /songs/{id}/bpm/detect` | re-detect BPM (aubio) from the stored m4a |
@@ -98,19 +99,20 @@ Then open `http://<host>:8000/`, go to Settings, paste the token. Env:
 `AUDIO_GIT_SSH_KEY` (git store, ADR-0005), `AUDIO_MUSIC_ROOT` /
 `AUDIO_HOSTS` / `AUDIO_HOSTS_FILE` (audio location),
 `AUDIO_WEB_DIR` (default `../web`), `AUDIO_TAG_LOOKUP` / `AUDIO_GENRE_LOOKUP` (default on, `0`
-disables the outbound HTTPS tag lookup to `musicbrainz.org`),
-`AUDIO_MB_USER_AGENT` (default `audioplayer/0.1 (alex.isayenko@gmail.com)`).
+disables the outbound HTTPS tag and link lookups to `musicbrainz.org`, `wikidata.org`
+and `*.wikipedia.org`), `AUDIO_MB_USER_AGENT` (default
+`audioplayer/0.1 (alex.isayenko@gmail.com)`, sent to all three hosts; Wikimedia requires a descriptive one).
 
 Server modules (`server/app/`): `main` (routes, jobs), `library` (records,
 tag normalisation), `extractor` (yt-dlp), `genre_lookup` (MusicBrainz
-suggestions), `langcodes` (ISO 639 mapping), `bpm` (aubio), `gitstore`
+suggestions), `wiki_lookup` (Wikipedia links, Wikidata facts, link validation), `langcodes` (ISO 639 mapping), `bpm` (aubio), `gitstore`
 (git sync).
 
 ## Web UI (`web/`)
 
 Plain HTML, CSS and ES modules; no build step, no framework, no CDN.
 `index.html` + `style.css` + `js/` (`api`, `store`, `dom`, `player`, `library`,
-`queue-logic`, `tagname`, `tag-editor`, `tag-input`, `add`, `settings`, `app`). Hash routes `#/library`, `#/add`,
+`queue-logic`, `tagname`, `tag-editor`, `wiki-links`, `url-clean`, `tag-input`, `add`, `settings`, `app`). Hash routes `#/library`, `#/add`,
 `#/playback`, `#/settings`. One `<audio>` element drives the mini-player, the
 Playback tab and the Media Session lock-screen controls. The token
 is kept in `localStorage` (`audioplayer.token`). Mounted by FastAPI at

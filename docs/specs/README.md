@@ -32,8 +32,8 @@ Each requirement is one line:
 | --- | --- | --- |
 | [data-model.md](data-model.md) | DATA | Song record, `library.json`, validation, migration |
 | [api.md](api.md) | API | Every HTTP endpoint, auth, errors |
-| [tags.md](tags.md) | TAG | Tag semantics, normalisation, genre suggestions, filter grouping |
-| [add-song.md](add-song.md) | ADD | URL, preview, save, download, BPM, duplicates, errors |
+| [tags.md](tags.md) | TAG | Tag semantics, normalisation, genre and Wikipedia/Wikidata suggestions, filter grouping |
+| [add-song.md](add-song.md) | ADD | URL and paste cleaning, preview, Wikipedia links, save, download, BPM, duplicates, errors |
 | [library.md](library.md) | LIB | Library screen and song card |
 | [storage-and-sync.md](storage-and-sync.md) | STO | Git store, audio location, write path, sync states, env vars |
 | [playback.md](playback.md) | PLY | Playback screen, play queue, persistence, mini-player, Media Session |

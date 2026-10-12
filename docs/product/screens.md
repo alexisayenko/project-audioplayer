@@ -32,12 +32,13 @@ bar sits above the tab bar on the other tabs and opens Playback on tap.
 
 ### 1. Add song
 
-1. User pastes a YouTube URL.
+1. User pastes a YouTube URL (cleaned to the canonical link on paste, drop, bulk input and blur; surrounding text is dropped).
 2. App asks the server for a metadata preview (cover, title, artist,
-   album, year, and suggested `genre:`, `country:` and `lang:` tags from yt-dlp and MusicBrainz).
+   album, year, and suggested `genre:`, `country:` and `lang:` tags from yt-dlp, MusicBrainz and Wikidata, plus suggested Wikipedia links for the song and the band).
 3. User edits any field and assigns tags in the shared tag editor (suggested tags, existing tags grouped by prefix, `key:value` allowed; incomplete leftover text such as `mood:` is ignored).
    BPM is optional: left empty it is detected on the server after the
    download (placeholder "Detected after saving"); a typed value is kept as is.
+   Two optional inputs, Wikipedia (song) and Wikipedia (band), hold the links; "Fill from Wikipedia links" suggests tags and the year from them (year fills an empty Year, or asks first when it differs).
 4. Save starts the download on the server, then the app fetches the file.
 5. Shows progress while downloading and a clear error on failure
    (bad URL, unavailable video, server unreachable, already in library).
@@ -54,7 +55,7 @@ Manages all songs.
   which also holds Delete. Play now keeps the user on Library.
 - Search box (title, artist, album, tags).
 - Filter by tag (chips grouped by prefix: Genre, Country, Language, then others; plain tags under Tags; `country:` and `lang:` values show as names, e.g. Lithuania, Russian); sort (added date, title, artist, year, BPM; songs without BPM last).
-- Edit dialog uses the same tag editor and has a BPM input (whole numbers) and a Re-detect button (re-runs detection on the stored file).
+- Edit dialog has the two Wikipedia inputs and "Fill from Wikipedia links" (same behaviour as Add), uses the same tag editor and has a BPM input (whole numbers) and a Re-detect button (re-runs detection on the stored file).
 - Edit metadata and tags of a song; Delete a song (server file, cover and
   record) from the Edit dialog.
 
@@ -71,7 +72,7 @@ not scroll; block 4 takes the remaining height and scrolls inside.
 |  ......................................    |
 |  Title of the composition   (on a scrim)   |
 |  Author, Album, year                       |
-|  [tag] [tag] [tag] ...  BPM  Source link   |
+|  [tag] [tag] ...  BPM  Source Wikipedia(s) |
 +--------------------------------------------+
 | 2. SONG PLAY CONTROLS                      |
 |  |<   (<5)   [ > ]   (5>)   >|    1:05 / 3:33
@@ -103,9 +104,9 @@ drafts, both SUPERSEDED:
 ![Playback v3, current](wireframes/playback-v3-detailed.png)
 
 1. **Song details**: the cover fills the whole card (placeholder colour when
-   there is none); title, "Author, Album, year", tag chips, BPM and a Source
-   link (`source_url`, new tab) are overlaid at the bottom on a dark gradient
-   scrim (legible in light and dark). Empty: "Nothing playing".
+   there is none); title, "Author, Album, year", tag chips, BPM and up to three
+   links (new tab) are overlaid at the bottom on a dark gradient
+   scrim (legible in light and dark). Links: Source (`source_url`), Wikipedia (song) and Wikipedia (band) (`wikipedia_song`, `wikipedia_artist`); each shows only when set. Empty: "Nothing playing".
 2. **Song play controls**, one row: previous song, back 5 s, play/pause
    (also space), forward 5 s, next song, and "M:SS / M:SS" on the right. A
    thin scrubber under the row keeps seeking possible. No volume slider
@@ -169,6 +170,8 @@ drafts, both SUPERSEDED:
 | Year of release | `year` | editable, optional |
 | Tempo | `bpm` | whole number 20-300, or `null`; auto-detected with aubio on add, editable, heuristic (ADR-0002) |
 | Source URL | `source_url` | where it was downloaded from |
+| Wikipedia (song) | `wikipedia_song` | optional Wikipedia/Wikidata link, editable |
+| Wikipedia (band) | `wikipedia_artist` | optional, same rule |
 | Cover image | `cover` | jpg file, see below |
 | Tags | `tags[]` | plain or namespaced `key:value` strings (`genre:<name>`, `country:<code>`, `lang:<code>`) |
 | Id | `id` | YouTube video id (technical) |
@@ -192,6 +195,8 @@ drafts, both SUPERSEDED:
       "year": 1987,
       "bpm": 113,
       "source_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+      "wikipedia_song": "https://en.wikipedia.org/wiki/Never_Gonna_Give_You_Up",
+      "wikipedia_artist": "https://en.wikipedia.org/wiki/Rick_Astley",
       "cover": "covers/dQw4w9WgXcQ.jpg",
       "duration": 213,
       "added_at": "2026-10-12T09:30:00Z",
