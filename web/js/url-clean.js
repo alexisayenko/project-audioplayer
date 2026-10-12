@@ -21,3 +21,10 @@ export function cleanUrl(input) {
   u.hash = hash;
   return u.href;
 }
+
+export function cleanPasted(input) {
+  const text = String(input ?? '').trim();
+  const found = /(?:https?:\/\/|(?:www\.|m\.|music\.)?youtu(?:\.be|be\.com)\/)[^\s<>"']+/i.exec(text);
+  if (found) return cleanUrl(found[0]);
+  return cleanUrl(text.split(/\s*[\r\n]+\s*/)[0]);
+}

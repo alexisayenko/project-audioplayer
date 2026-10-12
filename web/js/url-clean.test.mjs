@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { cleanUrl } from './url-clean.js';
+import { cleanUrl, cleanPasted } from './url-clean.js';
 
 const V = 'jNQXAC9IVRw';
 const C = `https://www.youtube.com/watch?v=${V}`;
@@ -26,4 +26,15 @@ assert.equal(cleanUrl('https://example.com/a?id=7#frag'), 'https://example.com/a
 assert.equal(cleanUrl('nonsense'), 'nonsense');
 assert.equal(cleanUrl('ftp://example.com/a?si=1'), 'ftp://example.com/a?si=1');
 assert.equal(cleanUrl(''), '');
+const P = 'S-u6qdeaPoE';
+const PC = `https://www.youtube.com/watch?v=${P}`;
+for (const raw of [
+  `https://youtu.be/${P}?si=CHT3sdfIXci1E7k-`,
+  `\n  https://youtu.be/${P}?si=CHT3sdfIXci1E7k-  \r\n`,
+  `https://youtu.be/${P}?si=a\nhttps://youtu.be/AAAAAAAAAAA`,
+  `listen to this: https://youtu.be/${P}?si=abc, nice`,
+  `youtu.be/${P}?si=abc`,
+]) assert.equal(cleanPasted(raw), PC, raw);
+assert.equal(cleanPasted('some words'), 'some words');
+assert.equal(cleanPasted(''), '');
 console.log('url-clean tests passed');
