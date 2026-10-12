@@ -19,10 +19,17 @@ extension ColorScheme {
 }
 
 extension View {
-    /// A flat glass slab: surface, soft ambient shadow, no border.
+    /// A flat glass slab: surface, soft ambient shadow, no border (`shadow-card`).
     func dsSlab(radius: CGFloat = DS.Radius.radiusCard, fill: Color = DS.Color.surface) -> some View {
         background(RoundedRectangle(cornerRadius: radius, style: .continuous).fill(fill)
-            .shadow(color: DS.Color.vinyl.opacity(0.16), radius: 10, y: 2))
+            .dsShadow(DS.Shadow.shadowCard, shape: RoundedRectangle(cornerRadius: radius, style: .continuous)))
+    }
+
+    /// A slab that floats over other content (mini player, tab bar, transport tray, sheets): `shadow-float`,
+    /// a stronger lift plus a 1px line ring so it never melts into a card of the same surface by night.
+    func dsFloatingSlab(radius: CGFloat = DS.Radius.radiusCard, fill: Color = DS.Color.surface) -> some View {
+        background(RoundedRectangle(cornerRadius: radius, style: .continuous).fill(fill)
+            .dsShadow(DS.Shadow.shadowFloat, shape: RoundedRectangle(cornerRadius: radius, style: .continuous)))
     }
 
     func dsGround() -> some View { background(DS.Color.ground.ignoresSafeArea()) }
@@ -379,7 +386,7 @@ struct TransportTray: View {
                 .accessibilityLabel("Repeat").accessibilityValue(repeatMode == .off ? "off" : repeatMode == .all ? "whole list" : "one song")
         }
         .padding(.horizontal, DS.Space.space3).padding(.vertical, DS.Space.space2)
-        .dsSlab(radius: DS.Radius.radiusTray)
+        .dsFloatingSlab(radius: DS.Radius.radiusTray)
     }
 }
 

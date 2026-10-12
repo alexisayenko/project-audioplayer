@@ -78,7 +78,7 @@ struct DSTabBar: View {
             }
         }
         .padding(6)
-        .dsSlab(radius: DS.Radius.radiusTray)
+        .dsFloatingSlab(radius: DS.Radius.radiusTray)
     }
 }
 
@@ -120,7 +120,7 @@ struct MiniPlayer: View {
             .accessibilityHidden(true)
         }
         .clipShape(RoundedRectangle(cornerRadius: DS.Radius.radiusCard, style: .continuous))
-        .dsSlab()
+        .dsFloatingSlab()
         .accessibilityElement(children: .contain)
     }
 }

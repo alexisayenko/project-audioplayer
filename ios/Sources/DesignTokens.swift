@@ -99,6 +99,60 @@ enum DS {
         static let radiusPill: CGFloat = 999
     }
 
+    // MARK: Shadows (outer layers only; inset highlights are a web detail)
+    enum Shadow {
+        /// Cards, list groups and other slabs that sit on ground. Not for anything floating over other cards: use shadow-float.
+        static let shadowCard = ShadowSpec(light: (drop: ShadowLayer(color: (0.106, 0.125, 0.141, 0.078), x: 0, y: 2, blur: 10), ring: nil), dark: (drop: ShadowLayer(color: (0.000, 0.000, 0.000, 0.400), x: 0, y: 2, blur: 10), ring: nil))
+        /// Floating slabs that sit over content: the mini player, the tab bar, the transport tray, sheets. A stronger lift than shadow-card plus a 1px line ring, so a slab never melts into a card of the same surface — by night especially.
+        static let shadowFloat = ShadowSpec(light: (drop: ShadowLayer(color: (0.106, 0.125, 0.141, 0.161), x: 0, y: 8, blur: 24), ring: ShadowLayer(color: (0.867, 0.835, 0.776, 1.000), x: 0, y: 0, blur: 1)), dark: (drop: ShadowLayer(color: (0.000, 0.000, 0.000, 0.702), x: 0, y: 8, blur: 24), ring: ShadowLayer(color: (0.208, 0.231, 0.247, 1.000), x: 0, y: 0, blur: 1)))
+        /// An unlit transport key: barely raised.
+        static let shadowKey = ShadowSpec(light: (drop: ShadowLayer(color: (0.106, 0.125, 0.141, 0.102), x: 0, y: 1, blur: 2), ring: nil), dark: (drop: ShadowLayer(color: (0.000, 0.000, 0.000, 0.502), x: 0, y: 1, blur: 2), ring: nil))
+        /// The lit play/pause key only.
+        static let glowAccent = ShadowSpec(light: (drop: ShadowLayer(color: (0.341, 0.827, 0.914, 0.502), x: 0, y: 0, blur: 12), ring: nil), dark: (drop: ShadowLayer(color: (0.341, 0.827, 0.914, 0.502), x: 0, y: 0, blur: 12), ring: nil))
+    }
+
+}
+
+/// One theme's outer shadow: the first drop layer plus an optional 1px ring layer (`0 0 0 1px <color>`).
+struct ShadowLayer {
+    let color: (Double, Double, Double, Double)
+    let x: CGFloat, y: CGFloat, blur: CGFloat
+}
+
+struct ShadowSpec {
+    let light: (drop: ShadowLayer?, ring: ShadowLayer?)
+    let dark: (drop: ShadowLayer?, ring: ShadowLayer?)
+}
+
+extension View {
+    /// Applies a token shadow: the drop layer as a SwiftUI shadow and the ring layer as a 1px stroke of `shape`.
+    func dsShadow<S: InsettableShape>(_ spec: ShadowSpec, shape: S) -> some View {
+        modifier(DSShadowModifier(spec: spec, shape: AnyInsettableShape(shape)))
+    }
+}
+
+struct DSShadowModifier: ViewModifier {
+    let spec: ShadowSpec
+    let shape: AnyInsettableShape
+    @Environment(\.colorScheme) private var scheme
+    func body(content: Content) -> some View {
+        let layers = scheme == .dark ? spec.dark : spec.light
+        content
+            .shadow(color: layers.drop.map { SwiftUI.Color(red: $0.color.0, green: $0.color.1, blue: $0.color.2, opacity: $0.color.3) } ?? .clear,
+                    radius: (layers.drop?.blur ?? 0) / 2, x: layers.drop?.x ?? 0, y: layers.drop?.y ?? 0)
+            .overlay(shape.strokeBorder(layers.ring.map { SwiftUI.Color(red: $0.color.0, green: $0.color.1, blue: $0.color.2, opacity: $0.color.3) } ?? .clear, lineWidth: layers.ring?.blur ?? 0))
+    }
+}
+
+struct AnyInsettableShape: InsettableShape {
+    private let _path: (CGRect) -> Path
+    private let _inset: (CGFloat) -> AnyInsettableShape
+    init<S: InsettableShape>(_ shape: S) {
+        _path = { shape.path(in: $0) }
+        _inset = { AnyInsettableShape(shape.inset(by: $0)) }
+    }
+    func path(in rect: CGRect) -> Path { _path(rect) }
+    func inset(by amount: CGFloat) -> AnyInsettableShape { _inset(amount) }
 }
 
 extension SwiftUI.Color {

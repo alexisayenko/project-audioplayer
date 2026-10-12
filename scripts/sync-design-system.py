@@ -5,7 +5,7 @@ Source of truth: the "Electrophone" Design System artifact on claude.ai
 (see docs/brand/README.md). Its project/tokens.json is committed as
 docs/brand/tokens.json; this script turns that file into
 
-  ios/Sources/DesignTokens.swift   (SwiftUI: colours per theme, type, spacing, radius)
+  ios/Sources/DesignTokens.swift   (SwiftUI: colours per theme, type, spacing, radius, shadows)
   web/tokens.css                   (CSS custom properties, light + dark)
 
 Never edit the generated files. Change the design system, re-export
@@ -64,6 +64,44 @@ def px(value) -> str:
     return str(int(n)) if n.is_integer() else str(n)
 
 
+def _split_layers(value: str) -> list[str]:
+    """Split a box-shadow value on top-level commas (none of the layers use functions with commas)."""
+    return [p.strip() for p in value.split(",") if p.strip()]
+
+
+def parse_shadow(value: str) -> dict:
+    """{'drop': (color, x, y, blur) | None, 'ring': (color, width) | None} from a box-shadow string (outer layers only)."""
+    drop = ring = None
+    for layer in _split_layers(value):
+        parts = layer.split()
+        if not parts or parts[0] == "inset" or parts[0] == "none":
+            continue
+        color = next((p for p in parts if p.startswith("#")), None)
+        nums = [p for p in parts if not p.startswith("#")]
+        if not color:
+            continue
+        x, y = float(px(nums[0])), float(px(nums[1]))
+        blur = float(px(nums[2])) if len(nums) > 2 else 0.0
+        spread = float(px(nums[3])) if len(nums) > 3 else 0.0
+        if x == 0 and y == 0 and blur == 0 and spread > 0:
+            ring = ring or (color, spread)
+        else:
+            drop = drop or (color, x, y, blur)
+    return {"drop": drop, "ring": ring}
+
+
+def swift_shadow(parsed: dict) -> str:
+    def layer(color: str, x: float, y: float, blur: float) -> str:
+        r, g, b, a = hex_to_rgba(color)
+        return f"ShadowLayer(color: ({r:.3f}, {g:.3f}, {b:.3f}, {a:.3f}), x: {x:g}, y: {y:g}, blur: {blur:g})"
+
+    d = parsed["drop"]
+    rg = parsed["ring"]
+    drop = layer(*d) if d else "nil"
+    ring = layer(rg[0], 0, 0, rg[1]) if rg else "nil"
+    return f"(drop: {drop}, ring: {ring})"
+
+
 def swift(tokens: dict) -> str:
     themes = [t["id"] for t in tokens["color"]["themes"]]
     light, dark = themes[0], (themes[1] if len(themes) > 1 else themes[0])
@@ -114,6 +152,62 @@ def swift(tokens: dict) -> str:
         out.append("    }")
         out.append("")
 
+    shadows = tokens.get("shadow", {}).get("tokens", [])
+    if shadows:
+        out.append("    // MARK: Shadows (outer layers only; inset highlights are a web detail)")
+        out.append("    enum Shadow {")
+        for tok in shadows:
+            vals = theme_values(tok, themes)
+            lt, dk = parse_shadow(vals[light]), parse_shadow(vals[dark])
+            usage = tok.get("usage", "").replace("\n", " ")
+            out.append(f"        /// {usage}")
+            out.append(
+                f"        static let {camel(tok['name'])} = ShadowSpec(light: {swift_shadow(lt)}, dark: {swift_shadow(dk)})"
+            )
+        out.append("    }")
+        out.append("")
+    out.append("}")
+    out.append("")
+    out.append("/// One theme's outer shadow: the first drop layer plus an optional 1px ring layer (`0 0 0 1px <color>`).")
+    out.append("struct ShadowLayer {")
+    out.append("    let color: (Double, Double, Double, Double)")
+    out.append("    let x: CGFloat, y: CGFloat, blur: CGFloat")
+    out.append("}")
+    out.append("")
+    out.append("struct ShadowSpec {")
+    out.append("    let light: (drop: ShadowLayer?, ring: ShadowLayer?)")
+    out.append("    let dark: (drop: ShadowLayer?, ring: ShadowLayer?)")
+    out.append("}")
+    out.append("")
+    out.append("extension View {")
+    out.append("    /// Applies a token shadow: the drop layer as a SwiftUI shadow and the ring layer as a 1px stroke of `shape`.")
+    out.append("    func dsShadow<S: InsettableShape>(_ spec: ShadowSpec, shape: S) -> some View {")
+    out.append("        modifier(DSShadowModifier(spec: spec, shape: AnyInsettableShape(shape)))")
+    out.append("    }")
+    out.append("}")
+    out.append("")
+    out.append("struct DSShadowModifier: ViewModifier {")
+    out.append("    let spec: ShadowSpec")
+    out.append("    let shape: AnyInsettableShape")
+    out.append("    @Environment(\\.colorScheme) private var scheme")
+    out.append("    func body(content: Content) -> some View {")
+    out.append("        let layers = scheme == .dark ? spec.dark : spec.light")
+    out.append("        content")
+    out.append("            .shadow(color: layers.drop.map { SwiftUI.Color(red: $0.color.0, green: $0.color.1, blue: $0.color.2, opacity: $0.color.3) } ?? .clear,")
+    out.append("                    radius: (layers.drop?.blur ?? 0) / 2, x: layers.drop?.x ?? 0, y: layers.drop?.y ?? 0)")
+    out.append("            .overlay(shape.strokeBorder(layers.ring.map { SwiftUI.Color(red: $0.color.0, green: $0.color.1, blue: $0.color.2, opacity: $0.color.3) } ?? .clear, lineWidth: layers.ring?.blur ?? 0))")
+    out.append("    }")
+    out.append("}")
+    out.append("")
+    out.append("struct AnyInsettableShape: InsettableShape {")
+    out.append("    private let _path: (CGRect) -> Path")
+    out.append("    private let _inset: (CGFloat) -> AnyInsettableShape")
+    out.append("    init<S: InsettableShape>(_ shape: S) {")
+    out.append("        _path = { shape.path(in: $0) }")
+    out.append("        _inset = { AnyInsettableShape(shape.inset(by: $0)) }")
+    out.append("    }")
+    out.append("    func path(in rect: CGRect) -> Path { _path(rect) }")
+    out.append("    func inset(by amount: CGFloat) -> AnyInsettableShape { _inset(amount) }")
     out.append("}")
     out.append("")
     out.append("extension SwiftUI.Color {")
