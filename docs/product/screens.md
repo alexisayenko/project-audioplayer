@@ -8,6 +8,10 @@ API), see ADR-0003 in [`../tech/decisions.md`](../tech/decisions.md). The
 iOS app is deferred; it currently has Library, Search and Settings tabs,
 see [`../tech/architecture.md`](../tech/architecture.md).
 
+Scope: the web UI is for managing the library and listening online only,
+with no offline storage or audio cache. Offline listening ("download to
+device") is an iOS-app feature, built later against the same API.
+
 The screens below apply to the web UI first; "tab bar" and "mini-player"
 describe the layout to mirror in the app later.
 

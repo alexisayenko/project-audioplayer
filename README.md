@@ -6,8 +6,10 @@ runtime dependency.
 
 ## Overview
 
-Personal iOS audio player: search YouTube, download a song's audio via
-a private server, play it offline. TestFlight internal testing only.
+Personal audio player: search YouTube, download a song's audio via a
+private server, manage the library and play online in the web UI. The
+iOS app (built later) adds offline listening via "download to device".
+TestFlight internal testing only.
 
 - [`ios/`](ios/) — SwiftUI app
 - [`server/`](server/) — FastAPI + `yt-dlp` API; also serves the web UI

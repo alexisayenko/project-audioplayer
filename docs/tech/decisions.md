@@ -68,6 +68,11 @@ Status: Accepted · 2026-10-12
 - Interim: a hello-world page is published on `play.isayenko.net` via
   Cloudflare Pages. When the real UI ships, the DNS record is repointed
   to the Tunnel and the Pages page is dropped.
+- Scope: the web build manages the library and plays online only. No
+  offline or local storage and no service-worker audio cache (iOS Safari
+  evicts it and limits quota). Offline listening belongs to the iOS app
+  (`ios/`, SwiftUI), built later against the same API, with a "download
+  to device" option.
 
 ## ADR-0004 Hosting on perkunas, LXC 106 `tools`
 
