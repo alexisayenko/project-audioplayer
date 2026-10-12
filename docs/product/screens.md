@@ -22,19 +22,28 @@ library. There is no separate playlist entity.
 
 ## Navigation
 
-Tab bar with **Library**, **Add**, **Playback** and **Settings** (server URL and
-token are still needed). On the web, a signed-out visitor sees only Settings
-(Sign in with Google, Sign in with Apple, API token fallback); once signed in,
-Settings shows the email and Sign out. Playback is the Player screen as a regular tab; it
-shows the queue length as a badge when the queue is non-empty. A mini-player
-bar sits above the tab bar on the other tabs and opens Playback on tap. The web
-lays the same four destinations out as a side rail (Electrophone look, ADR-0009):
-Library is a table of the server library with four category chips (Tags, Genres,
-Years, Countries) that open a filter sheet, Playback is the deck beside the queue.
+Web (Electrophone screens, web v16 artboards, ADR-0009 amendment): three
+destinations, **Library**, **Playback** and **Settings**; adding a song is the
+accent "Add song" button in the Library header, which opens the Add dialog
+(`#/add` still works and opens Library with the dialog). A signed-out visitor sees
+only Settings (Sign in with Google, Sign in with Apple, API token fallback); once
+signed in, Settings shows the email and Sign out. Navigation is a 220px rail
+(>= 720px), a 64px icon rail (480-719px) or a floating tab bar (< 480px). A
+persistent player bar (cover, title, shuffle, previous, play/pause, next, repeat,
+time, volume) sits at the bottom of Library and Settings and opens Playback on
+tap; on Playback itself it is hidden. Library is a table of the server library
+(index, cover, title, artist, album, year, time, a "..." menu; columns drop right
+to left on narrower screens until it is the phone song row) with four category chips (Tags, Genres,
+Years, Countries) that open a filter sheet. Playback leads with the cover
+(title and artist on it), a seek bar, the transport tray, a volume row and the
+queue card beside it. The iOS app keeps its own tab bar (see
+[`../specs/ios.md`](../specs/ios.md)); it is to follow the same three destinations.
 
 ## Screens
 
 ### 1. Add song
+
+Web: a centred 560px dialog over Library (bottom-aligned sheet on phones): title "Add from YouTube", Cancel, a link field with a Fetch button, then the preview (88px cover, title, artist, album, year, duration), an "Edit details" button that expands the fields, the suggested tags as chips with a + chip that opens the tag editor, and one "Save to library" button. Saving closes the dialog; the download continues as a row "Downloading NN%" at the top of Library (and a toast when it is saved or fails).
 
 1. User pastes a YouTube URL (cleaned to the canonical link on paste, drop, bulk input and blur; surrounding text is dropped).
 2. App asks the server for a metadata preview (cover, title, artist,
@@ -51,12 +60,7 @@ Years, Countries) that open a filter sheet, Playback is the deck beside the queu
 
 Manages all songs.
 
-- One card per song: square cover on the left; title, then one line
-  "Author, Album, year" (missing parts omitted); duration top-right with a
-  BPM badge when known; two icon buttons, Play now and Add to current
-  playlist; a row of tag chips along the bottom (`key:value` tags keep a
-  highlighted key prefix). Clicking the card body opens the Edit dialog,
-  which also holds Delete. Play now keeps the user on Library.
+- One row per song in a single list card (web: table with a header row): index, cover, title, artist, album, year, duration and a "..." menu with Play now, Add to playlist and Edit song (the Edit dialog also holds Delete). Clicking the title plays the song and keeps the user on Library. The playing row has an accent wash. Tags and BPM are not shown in rows (filter by tag chips; BPM is on Playback and in Edit). Sort is the text button under the chips ("Recently added", Title, Artist, Year, BPM); a line on the right reads "N songs match · selected tags" when filtered.
 - Search box (title, artist, album, tags). With a tag filter or search text active, an "Add all N to playlist" button appends all listed songs to the queue (toast "Added X songs (Y already in queue)"; a tag filter becomes a playlist chip, search-only adds are manual); hidden when nothing is filtered.
 - `decade:` tags are derived from Year by the server and show as "the 90s"; the tag editor previews the chip as Year changes.
 - Filter by tag (chips grouped by prefix: Genre, Decade, Country, Language, then others; plain tags under Tags; `country:` and `lang:` values show as names, e.g. Lithuania, Russian); sort (added date, title, artist, year, BPM; songs without BPM last).
@@ -162,8 +166,8 @@ drafts, both SUPERSEDED:
   advances). Loop whole list wraps from the last song to the first. Shuffle
   and loop state persist in `localStorage`. The logic is pure and tested:
   `web/js/queue-logic.js`, `node web/js/queue-logic.test.mjs`.
-- Mini-player bar over Library, Add and Settings with short controls; tap
-  opens Playback.
+- Player bar over Library and Settings with short controls; tap
+  opens Playback. Web Playback has no 5-second skip keys (Left/Right arrow keys seek 5 s); the repeat key cycles off, whole list, one song; the favourite button of the artboard is not built (no such feature).
 
 ## Song fields
 

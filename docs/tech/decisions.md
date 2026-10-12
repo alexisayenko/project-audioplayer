@@ -321,3 +321,11 @@ Status: Accepted · 2026-10-12 · Supersedes the look part of ADR-0007
   mockups and code drifted within a day.
 - Cost: the artifact is outside the repo (no CI pull; the export is manual),
   and `Theme.swift`/`Components.swift`/views must be migrated (task-0005).
+
+Amendment 2026-10-13 (web v16): navigation is three destinations, Library,
+Playback, Settings, on both platforms; adding a song is an accent action on
+Library that opens an Add sheet (a dialog on the web), not a tab, and its
+download continues as a "Downloading NN%" row. Playback leads with the cover;
+the deck, tonearm and LED are gone. Contrast substitutes for the system's failing
+pairs are listed in `docs/ui-ux/style-guide.md`. Web assets are served under
+`/_v/<version>/` so a deploy is a new URL (WEB-017); the page itself revalidates.
