@@ -10,7 +10,7 @@ import threading
 from pathlib import Path
 from typing import Any
 
-from . import langcodes, urlclean
+from . import langcodes, urlclean, wiki_lookup
 
 LOCK = threading.RLock()
 
@@ -38,6 +38,8 @@ def normalize(raw: Any) -> dict[str, Any]:
             s["bpm"] = round(s["bpm"])
         if isinstance(s.get("source_url"), str):
             s["source_url"] = urlclean.clean_url(s["source_url"])
+        for key in ("wikipedia_song", "wikipedia_artist"):
+            s[key] = wiki_lookup.clean_link(s.get(key))
         genre = s.pop("genre", None)
         tags = list(s.get("tags") or [])
         if isinstance(genre, str) and genre.strip():

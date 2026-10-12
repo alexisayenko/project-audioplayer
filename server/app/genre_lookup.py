@@ -26,7 +26,7 @@ MIN_INTERVAL = 1.1
 
 _rate_lock = threading.Lock()
 _last_call = 0.0
-_cache: dict[tuple[str, str], list[str]] = {}
+_cache: dict[tuple[str, str], dict[str, Any]] = {}
 
 _NOISE = re.compile(
     r"[\(\[][^\)\]]*\b(official|video|audio|lyrics?|visuali[sz]er|remaster(ed)?|hd|hq|4k|live|clip|mv)\b[^\)\]]*[\)\]]",
@@ -120,7 +120,40 @@ def _country(artist: dict[str, Any]) -> list[str]:
     return [f"country:{code}"] if re.fullmatch(r"[a-z]{2}", code) else []
 
 
-def _lookup(artist: str, title: str) -> list[str]:
+def _url_rels(entity: dict[str, Any]) -> list[str]:
+    """`wikipedia` and `wikidata` URL relations of a MusicBrainz entity."""
+    out = []
+    for rel in entity.get("relations") or []:
+        if rel.get("type") in ("wikipedia", "wikidata"):
+            res = (rel.get("url") or {}).get("resource")
+            if res:
+                out.append(str(res))
+    return out
+
+
+def _first_year(full: dict[str, Any]) -> int | None:
+    m = re.match(r"^(\d{4})", str(full.get("first-release-date") or ""))
+    return int(m.group(1)) if m else None
+
+
+def _work_rels(full: dict[str, Any]) -> list[str]:
+    """URL relations of the first linked work (one extra call), used when the recording has none."""
+    for rel in full.get("relations") or []:
+        wid = (rel.get("work") or {}).get("id")
+        if wid:
+            try:
+                return _url_rels(_get(f"work/{wid}", {"inc": "url-rels", "fmt": "json"}))
+            except Exception as exc:
+                log.warning("work lookup failed for %s: %s", wid, exc)
+            break
+    return []
+
+
+def _empty() -> dict[str, Any]:
+    return {"tags": [], "song_rels": [], "artist_rels": [], "year": None}
+
+
+def _lookup(artist: str, title: str) -> dict[str, Any]:
     query = f'recording:"{title}" AND artist:"{artist}"'
     data = _get("recording/", {"query": query, "fmt": "json", "limit": "5"})
     for rec in data.get("recordings") or []:
@@ -130,9 +163,11 @@ def _lookup(artist: str, title: str) -> list[str]:
         names = [c.get("name", "") for c in credits] + [c.get("artist", {}).get("name", "") for c in credits]
         if not any(_artist_match(artist, n) for n in names):
             continue
-        full = _get(f"recording/{rec['id']}", {"inc": "genres+tags+work-rels", "fmt": "json"})
+        full = _get(f"recording/{rec['id']}", {"inc": "genres+tags+work-rels+url-rels", "fmt": "json"})
         genres, langs = _top(full), _languages(full)
         country: list[str] = []
+        song_rels = _url_rels(full) or _work_rels(full)
+        artist_rels: list[str] = []
         aid = next(
             (
                 c["artist"]["id"]
@@ -143,29 +178,38 @@ def _lookup(artist: str, title: str) -> list[str]:
         )
         if aid:
             try:
-                art = _get(f"artist/{aid}", {"inc": "genres+tags", "fmt": "json"})
+                art = _get(f"artist/{aid}", {"inc": "genres+tags+url-rels", "fmt": "json"})
                 country = _country(art)
                 genres = genres or _top(art)
+                artist_rels = _url_rels(art)
             except Exception as exc:
                 log.warning("artist lookup failed for %r: %s", artist, exc)
-        return [*genres, *country, *langs]
-    return []
+        return {
+            "tags": [*genres, *country, *langs],
+            "song_rels": song_rels,
+            "artist_rels": artist_rels,
+            "year": _first_year(full),
+        }
+    return _empty()
+
+
+def lookup(artist: str, title: str) -> dict[str, Any]:
+    """Tags, Wikipedia/Wikidata URL relations (song, artist) and first release year; empty when disabled, unmatched or on any error."""
+    if not enabled():
+        return _empty()
+    try:
+        artist, title = split_artist_title(artist, title)
+        if not artist or not title:
+            return _empty()
+        key = (artist.casefold(), title.casefold())
+        if key not in _cache:
+            _cache[key] = _lookup(artist, title)
+        return {**_cache[key], "tags": list(_cache[key]["tags"])}
+    except Exception as exc:
+        log.warning("tag lookup failed for %r - %r: %s", artist, title, exc)
+        return _empty()
 
 
 def suggest_tags(artist: str, title: str) -> list[str]:
     """`genre:` (up to 3), `country:` (up to 1) and `lang:` (up to 2) tags for a track; [] when disabled, unmatched or on any error."""
-    if not enabled():
-        return []
-    try:
-        artist, title = split_artist_title(artist, title)
-        if not artist or not title:
-            return []
-        key = (artist.casefold(), title.casefold())
-        if key in _cache:
-            return list(_cache[key])
-        result = _lookup(artist, title)
-        _cache[key] = result
-        return list(result)
-    except Exception as exc:
-        log.warning("tag lookup failed for %r - %r: %s", artist, title, exc)
-        return []
+    return lookup(artist, title)["tags"]

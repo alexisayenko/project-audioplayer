@@ -18,7 +18,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from . import bpm as bpm_detect
-from . import extractor, genre_lookup, gitstore, library
+from . import extractor, genre_lookup, gitstore, library, wiki_lookup
 
 DOWNLOAD_DIR = Path(os.environ.get("AUDIO_DOWNLOAD_DIR", "downloads"))
 DATA_DIR = Path(os.environ.get("AUDIO_DATA_DIR", "."))
@@ -132,6 +132,8 @@ class SongMeta(BaseModel):
     album: str | None = None
     year: int | None = Field(default=None, ge=0, le=3000)
     bpm: float | None = Field(default=None, ge=20, le=300)
+    wikipedia_song: str | None = None
+    wikipedia_artist: str | None = None
 
 
 class CreateSongRequest(BaseModel):
@@ -214,6 +216,11 @@ def _cap_suggestions(tags: list[str]) -> list[str]:
     return out
 
 
+class WikipediaLookupRequest(BaseModel):
+    wikipedia_song: str | None = None
+    wikipedia_artist: str | None = None
+
+
 @app.post("/preview", dependencies=[Depends(require_token)])
 async def preview(req: PreviewRequest):
     vid = extractor.parse_video_id(req.url)
@@ -224,10 +231,22 @@ async def preview(req: PreviewRequest):
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"preview failed: {_short(exc)}") from exc
     found = await run_in_threadpool(genre_lookup.suggest_tags, meta.get("artist", ""), meta.get("title", ""))
-    meta["tags"] = _cap_suggestions(library.clean_tags([*meta.get("tags", []), *found]))
+    wiki = await run_in_threadpool(wiki_lookup.suggest, meta.get("artist", ""), meta.get("title", ""))
+    meta["tags"] = _cap_suggestions(library.clean_tags([*meta.get("tags", []), *found, *wiki["tags"]]))
+    meta["wikipedia_song"] = wiki["wikipedia_song"]
+    meta["wikipedia_artist"] = wiki["wikipedia_artist"]
+    meta["suggested_year"] = wiki["year"]
+    if meta.get("year") is None:
+        meta["year"] = wiki["year"]
     with library.LOCK:
         meta["in_library"] = any(s["id"] == vid for s in library.load(library_path()))
     return meta
+
+
+@app.post("/lookup/wikipedia", dependencies=[Depends(require_token)])
+async def lookup_wikipedia(req: WikipediaLookupRequest):
+    found = await run_in_threadpool(wiki_lookup.from_links, req.wikipedia_song, req.wikipedia_artist)
+    return {"tags": _cap_suggestions(library.clean_tags(found["tags"])), "year": found["year"]}
 
 
 def _run_download(vid: str, meta: dict[str, Any], tags: list[str]) -> None:
@@ -257,6 +276,8 @@ def _run_download(vid: str, meta: dict[str, Any], tags: list[str]) -> None:
             "album": meta.get("album"),
             "year": meta.get("year"),
             "bpm": value,
+            "wikipedia_song": wiki_lookup.clean_link(meta.get("wikipedia_song")),
+            "wikipedia_artist": wiki_lookup.clean_link(meta.get("wikipedia_artist")),
             "source_url": extractor.watch_url(vid),
             "file": f"{vid}.m4a",
             "cover": cover,
@@ -324,6 +345,9 @@ def patch_song(video_id: str, req: PatchSongRequest):
             updated["year"] = changes["year"]
         if "bpm" in changes:
             updated["bpm"] = round(changes["bpm"]) if changes["bpm"] is not None else None
+        for key in ("wikipedia_song", "wikipedia_artist"):
+            if key in changes:
+                updated[key] = wiki_lookup.clean_link(changes[key])
         if changes.get("tags") is not None:
             updated["tags"] = library.clean_tags(changes["tags"])
         if not updated.get("title"):
