@@ -8,7 +8,8 @@ Product / business / UX live in their own sections.
 
 Don't pre-create — extract on first real entry. See
 [Section, file, folder](../README.md#section-file-folder).
-([`ci-cd.md`](ci-cd.md) is the one scaffolded file here.)
+([`ci-cd.md`](ci-cd.md) is the one scaffolded file here;
+[`architecture.md`](architecture.md) holds the system design.)
 
 - **`stack.md`** — the v1 stack: framework, hosting, storage,
   payments, language, etc., with rationale per pick.

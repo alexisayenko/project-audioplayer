@@ -1,0 +1,5 @@
+AudioPlayer.xcodeproj/
+*.xcuserstate
+xcuserdata/
+DerivedData/
+Sources/Info.plist

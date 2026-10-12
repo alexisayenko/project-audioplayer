@@ -7,24 +7,29 @@ Fast-path context for Claude Code. Full human-oriented docs:
 
 ## Key principle
 
-> [TODO: one-line principle that governs every product decision]
+> Songs I pick are on my phone and play reliably, offline, with the screen locked.
 
-[TODO: one paragraph elaborating how this principle applies — what
-decisions are weighed against it, what gets cut when it doesn't
-reinforce the principle.]
+Playback and offline reliability beat features. Anything that does not
+make downloading, storing or playing a song more dependable (accounts,
+social, recommendations, a public release) is cut.
 
 ## Product
 
-[TODO: one paragraph — what it is, who uses it, mechanic,
-monetization.]
+A personal iOS app, one user (the owner), distributed via TestFlight
+internal testing only. Search YouTube, download a song's audio through a
+private server, keep it in an on-device library, play it with background
+audio and lock-screen controls. No monetization. Downloading may violate
+YouTube's ToS; the app is not for distribution.
 
 ## Tech stack
 
-[TODO: one paragraph — stack, deploy targets, current status.]
+`ios/` — SwiftUI app (iOS 17, XcodeGen `project.yml`, AVPlayer). `server/` —
+FastAPI wrapper around `yt-dlp` (Python 3.11+), run on a home server behind
+Tailscale with an `X-API-Token` header. Status: scaffold; the iOS code has
+not yet been compiled (no Xcode in the cloud sandbox), server tests pass.
 
 ## Working in a shared checkout
 
-[TODO: delete if only one session ever works in this checkout.]
 Several sessions may work in this one checkout at once:
 
 - Run `git status` first; files already modified or untracked belong
@@ -42,12 +47,12 @@ Task-file updates ship with the work they describe
 
 ## Repo
 
-[TODO: `[owner/repo](https://github.com/owner/repo)` (private/public).
-Auth notes if any (HTTPS, fine-grained PAT, etc.).]
+[alexisayenko/project-audioplayer2](https://github.com/alexisayenko/project-audioplayer2)
+(public — consider making it private).
 
 ## Where to look for more
 
 - [README.md](README.md) — repo entry point + structure
 - [docs/README.md](docs/README.md) — docs subtree map
 - [docs/tech/ci-cd.md](docs/tech/ci-cd.md) — CI/CD playbook
-- [TODO: add project-specific docs as they land]
+- [docs/tech/architecture.md](docs/tech/architecture.md) — server/app design, setup, TestFlight

@@ -6,26 +6,13 @@ runtime dependency.
 
 ## Overview
 
-This template assumes **one product, delivered through one or
-more top-level code folders** at the repo root. Each folder is a
-deployment target — name it by what it is (`mobile/`, `web/`,
-`workers/`, `marketing-site/`, etc.). Avoid generic names like
-`app/` that don't say which one.
+Personal iOS audio player: search YouTube, download a song's audio via
+a private server, play it offline. TestFlight internal testing only.
 
-Multi-product is rare; see
-[`docs/README.md`](docs/README.md#multi-product-split) for the
-split path if/when it happens.
+- [`ios/`](ios/) — SwiftUI app
+- [`server/`](server/) — FastAPI + `yt-dlp` download API
 
-## Quick start
-
-1. Click **Use this template** on GitHub (or `git clone` and
-   remove `.git/` to start fresh).
-2. Replace this Overview and Quick start with content for the
-   new project.
-3. Keep the [Structure](#structure) section — that's the
-   canonical convention.
-4. Fill in [`docs/README.md`](docs/README.md) with the project's
-   product and docs subtree.
+Setup and release steps: [`docs/tech/architecture.md`](docs/tech/architecture.md).
 
 ## Structure
 
