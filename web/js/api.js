@@ -11,6 +11,21 @@ export function setToken(value) {
   } catch { /* storage unavailable */ }
 }
 
+export const auth = { email: '', provider: '' };
+
+export function isSignedIn() {
+  return !!(auth.email || getToken());
+}
+
+const CSRF = { 'X-Requested-With': 'audioplayer' };
+
+function lostSession() {
+  if (!auth.email) return;
+  auth.email = '';
+  auth.provider = '';
+  window.dispatchEvent(new Event('auth-changed'));
+}
+
 export class ApiError extends Error {
   constructor(status, message) {
     super(message);
@@ -19,7 +34,8 @@ export class ApiError extends Error {
 }
 
 async function request(method, path, body) {
-  const headers = { 'X-API-Token': getToken() };
+  const headers = { ...CSRF };
+  if (getToken()) headers['X-API-Token'] = getToken();
   if (body !== undefined) headers['Content-Type'] = 'application/json';
   let res;
   try {
@@ -37,7 +53,10 @@ async function request(method, path, body) {
   if (!res.ok) {
     let detail = data && data.detail;
     if (Array.isArray(detail)) detail = detail.map((d) => d.msg).join('; ');
-    if (res.status === 401) detail = 'Wrong or missing API token (see Settings)';
+    if (res.status === 401) {
+      detail = 'Not signed in (see Settings)';
+      lostSession();
+    }
     if (res.status === 503) detail = 'Server has no AUDIO_API_TOKEN configured';
     throw new ApiError(res.status, detail || `Request failed (${res.status})`);
   }
@@ -45,7 +64,46 @@ async function request(method, path, body) {
 }
 
 const q = (id) => encodeURIComponent(id);
-const tokenQuery = () => `?token=${encodeURIComponent(getToken())}`;
+const tokenQuery = () => (auth.email || !getToken() ? '' : `?token=${encodeURIComponent(getToken())}`);
+
+async function authCall(method, path, body) {
+  const headers = { ...CSRF };
+  if (body !== undefined) headers['Content-Type'] = 'application/json';
+  let res;
+  try {
+    res = await fetch(path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
+  } catch {
+    throw new ApiError(0, 'Server unreachable');
+  }
+  let data = null;
+  try { data = await res.json(); } catch { /* no body */ }
+  if (!res.ok) throw new ApiError(res.status, (data && data.detail) || `Request failed (${res.status})`);
+  return data;
+}
+
+export const session = {
+  config: () => authCall('GET', '/auth/config'),
+  start: async (idToken) => {
+    const who = await authCall('POST', '/auth/session', { id_token: idToken });
+    auth.email = who.email || who.provider;
+    auth.provider = who.provider;
+    return who;
+  },
+  end: async () => {
+    await authCall('POST', '/auth/logout');
+    auth.email = '';
+    auth.provider = '';
+  },
+  restore: async () => {
+    try {
+      const who = await authCall('GET', '/auth/me', undefined);
+      if (who.method === 'session') {
+        auth.email = who.email || who.provider || 'owner';
+        auth.provider = who.provider || '';
+      }
+    } catch { /* signed out or unreachable */ }
+  },
+};
 
 export const api = {
   library: () => request('GET', '/library').then((d) => d.songs),

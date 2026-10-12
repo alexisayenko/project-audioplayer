@@ -17,6 +17,7 @@ device unless a line says so.
 - IOS-011 MUST: the API token is kept in the Keychain and never appears in a stored URL or in the library file. Status: implemented
 - IOS-012 MUST: Settings offers Sign in with Apple and Sign in with Google (owner only, ADR-0006); the ID token goes as `Authorization: Bearer`, the Google refresh token is kept in the Keychain and refreshes silently. Status: implemented (not yet tested live on a device)
 - IOS-013 MUST: an expired Apple token cannot refresh silently; Settings shows "Expired, sign in again" and the API token is the fallback. Status: implemented
+- IOS-016 MUST: the app's Google client id is a separate OAuth client from the web one; the server accepts both (API-007). Status: implemented
 - IOS-014 MUST: signing in is never required to play downloaded songs. Status: implemented
 - IOS-015 MUST: client IDs come from the git-ignored `ios/Config/Secrets.xcconfig`; none is in the repo. Status: implemented
 

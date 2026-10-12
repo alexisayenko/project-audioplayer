@@ -5,8 +5,8 @@ ADRs: ADR-0003 (web), ADR-0004 (hosting), ADR-0001 (storage scale).
 ## Auth
 
 - NFR-001 MUST: one shared secret `AUDIO_API_TOKEN` protects the whole API; no user accounts; owner-only OAuth ID tokens are accepted as well (ADR-0006). Status: implemented
-- NFR-002 MUST: the web UI stores the token in `localStorage` key `audioplayer.token` and sends it as `X-API-Token`; audio and cover URLs carry it as `?token=`. Status: implemented
-- NFR-003 MUST: without a token the UI routes to Settings; Settings "Save and test" verifies by loading the library. Status: implemented
+- NFR-002 MUST: the web UI, when not signed in with OAuth, stores the API token in `localStorage` key `audioplayer.token` and sends it as `X-API-Token`; audio and cover URLs then carry it as `?token=`. Status: implemented
+- NFR-003 MUST: without a session or token the UI routes to Settings; Settings "Save and test" verifies by loading the library. Status: implemented
 - NFR-004 SHOULD: put Cloudflare Access (service token) in front of the tunnel as a second layer. Status: planned
 - NFR-005 MUST: the token is never logged by the app; operators keep access logs private (token appears in `?token=` URLs). Status: implemented
 
@@ -32,7 +32,7 @@ ADRs: ADR-0003 (web), ADR-0004 (hosting), ADR-0001 (storage scale).
 
 ## Browsers and offline
 
-- NFR-040 MUST: the web UI is plain HTML, CSS and ES modules, no build step, no framework, no CDN; it targets current evergreen browsers incl. iOS Safari (uses `<dialog>`, ES modules, Media Session). Status: implemented
-- NFR-041 MUST: the web UI is online only: no service worker, no offline storage, no audio cache. Offline listening is an iOS-app feature. Status: implemented
+- NFR-040 MUST: the web UI is plain HTML, CSS and ES modules, no build step, no framework; the only external scripts are Google Identity Services and the Apple JS SDK, loaded on Settings for sign-in (WEB-002); it targets current evergreen browsers incl. iOS Safari (uses `<dialog>`, ES modules, Media Session). Status: implemented
+- NFR-041 MUST: the web UI is online only: no service worker, no offline storage, no audio cache (so nothing authenticated outlives sign-out, API-024). Offline listening is an iOS-app feature. Status: implemented
 - NFR-042 MUST: the layout works at phone width. Status: to-confirm (not verified in this pass)
 - NFR-043 MUST: the iOS app (`ios/`, SwiftUI) uses the same API and plays downloaded songs offline; its requirements are in [ios.md](ios.md). Status: implemented

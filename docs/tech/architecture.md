@@ -3,7 +3,7 @@
 Status: Accepted · 2026-10-12
 
 ```text
-browser (web UI)  --same origin, X-API-Token-->  server (FastAPI + yt-dlp)  -->  YouTube
+browser (web UI)  --same origin, session cookie or X-API-Token-->  server (FastAPI + yt-dlp)  -->  YouTube
 iPhone (SwiftUI)  --http, Bearer ID token or X-API-Token-->  same server
   audio/<id>.m4a  <-- /files/<id> --  downloads/<id>.m4a
   library.json + covers  <-- local clones of data-storage / data-storage-lfs (ADR-0005)
@@ -74,6 +74,9 @@ All API routes except `/health` need either an owner OAuth ID token
 and `<img>` cannot send headers; the token therefore can appear in URLs
 and access logs, so keep logs private and use HTTPS. The static UI
 files are served without auth.
+The web UI signs in with Google or Apple (ID token to `POST /auth/session`,
+then an HttpOnly `__Host-session` cookie, 12 h; ADR-0006, API-020..024), so
+its audio and cover URLs carry no token; cookie writes need `X-Requested-With`.
 Video ids are validated against `^[A-Za-z0-9_-]{11}$` (blocks path
 traversal and yt-dlp option injection).
 

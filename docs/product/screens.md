@@ -23,7 +23,9 @@ library. There is no separate playlist entity.
 ## Navigation
 
 Tab bar with **Library**, **Add**, **Playback** and **Settings** (server URL and
-token are still needed). Playback is the Player screen as a regular tab; it
+token are still needed). On the web, a signed-out visitor sees only Settings
+(Sign in with Google, Sign in with Apple, API token fallback); once signed in,
+Settings shows the email and Sign out. Playback is the Player screen as a regular tab; it
 shows the queue length as a badge when the queue is non-empty. A mini-player
 bar sits above the tab bar on the other tabs and opens Playback on tap.
 

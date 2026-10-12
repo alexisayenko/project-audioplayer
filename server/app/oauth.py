@@ -36,7 +36,18 @@ def _csv(name: str) -> set[str]:
     return {v.strip().lower() for v in os.environ.get(name, "").split(",") if v.strip()}
 
 
-def _verify(token: str, provider: str, audience: str) -> dict:
+def _list(name: str) -> list[str]:
+    return [v.strip() for v in os.environ.get(name, "").split(",") if v.strip()]
+
+
+def audiences(provider: str) -> list[str]:
+    """Accepted `aud` values: the comma list plus the web client id (case-sensitive, not secret)."""
+    if provider == "apple":
+        return _list("APPLE_AUDIENCE") + _list("APPLE_WEB_CLIENT_ID")
+    return _list("GOOGLE_CLIENT_ID") + _list("GOOGLE_WEB_CLIENT_ID")
+
+
+def _verify(token: str, provider: str, audience: list[str]) -> dict:
     key = _jwks(provider).get_signing_key_from_jwt(token).key
     return jwt.decode(
         token,
@@ -49,15 +60,15 @@ def _verify(token: str, provider: str, audience: str) -> dict:
     )
 
 
-def verify_owner(token: str) -> None:
-    """Raise 401 unless `token` is a valid ID token of a configured owner identity."""
+def verify_owner(token: str) -> dict:
+    """Raise 401/403 unless `token` is a valid ID token of the owner; return {provider, email, sub}."""
     try:
         provider = jwt.decode(token, options={"verify_signature": False}).get("iss", "")
     except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="bad token")
     name = "apple" if provider.startswith("https://appleid.apple.com") else (
         "google" if "accounts.google.com" in provider else "")
-    audience = os.environ.get("APPLE_AUDIENCE" if name == "apple" else "GOOGLE_CLIENT_ID", "")
+    audience = audiences(name) if name else []
     if not name or not audience:
         raise HTTPException(status_code=401, detail="bad token")
     try:
@@ -73,3 +84,4 @@ def verify_owner(token: str) -> None:
     if not ok:
         log.warning("rejected %s sign-in: sub=%s", name, claims["sub"])
         raise HTTPException(status_code=403, detail="not the owner")
+    return {"provider": name, "email": email, "sub": str(claims["sub"])}

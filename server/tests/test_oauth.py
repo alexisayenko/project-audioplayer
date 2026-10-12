@@ -112,3 +112,133 @@ def test_file_get_accepts_bearer_and_query_token(client, key, tmp_path):
     assert client.get(url, headers={"Authorization": f"Bearer {make(key)}"}).status_code == 200
     assert client.get(url, params={"token": "secret"}).status_code == 200
     assert client.get(url).status_code == 401
+
+
+WEB_GOOGLE = "web.apps.googleusercontent.com"
+WEB_APPLE = "com.example.web"
+CSRF = {"X-Requested-With": "audioplayer"}
+
+
+@pytest.fixture()
+def web(client, monkeypatch):
+    monkeypatch.setenv("GOOGLE_CLIENT_ID", f"{GOOGLE_AUD}, {WEB_GOOGLE}")
+    monkeypatch.setenv("APPLE_AUDIENCE", f"{APPLE_AUD},{WEB_APPLE}")
+    return TestClient(main.app, base_url="https://testserver")
+
+
+def sign_in(web, key, **over):
+    return web.post("/auth/session", json={"id_token": make(key, **over)}, headers=CSRF)
+
+
+def test_multi_audience(client, key, monkeypatch):
+    monkeypatch.setenv("GOOGLE_CLIENT_ID", f"{GOOGLE_AUD},{WEB_GOOGLE}")
+    monkeypatch.setenv("APPLE_AUDIENCE", f"{APPLE_AUD},{WEB_APPLE}")
+    assert get(client, make(key)) == 200
+    assert get(client, make(key, aud=WEB_GOOGLE)) == 200
+    assert get(client, make(key, "apple", aud=WEB_APPLE)) == 200
+    assert get(client, make(key, aud="other")) == 401
+
+
+def test_web_client_id_env_is_an_audience(client, key, monkeypatch):
+    monkeypatch.setenv("GOOGLE_WEB_CLIENT_ID", WEB_GOOGLE)
+    assert get(client, make(key, aud=WEB_GOOGLE)) == 200
+
+
+def test_auth_config_is_public(client, monkeypatch):
+    monkeypatch.setenv("GOOGLE_WEB_CLIENT_ID", WEB_GOOGLE)
+    monkeypatch.setenv("APPLE_WEB_CLIENT_ID", WEB_APPLE)
+    body = client.get("/auth/config").json()
+    assert body["google_client_id"] == WEB_GOOGLE
+    assert body["apple_client_id"] == WEB_APPLE
+    assert body["apple_redirect"] == "https://testserver/"
+
+
+def test_session_cookie_flags_and_use(web, key, tmp_path):
+    res = sign_in(web, key, aud=WEB_GOOGLE)
+    assert res.status_code == 200 and res.json()["email"] == OWNER
+    cookie = res.headers["set-cookie"]
+    for part in ("HttpOnly", "Secure", "SameSite=strict", "Max-Age=43200", "Path=/"):
+        assert part.lower() in cookie.lower()
+    assert "__Host-session=" in cookie
+    assert web.get("/tags").status_code == 200
+    assert web.get("/auth/me").json()["email"] == OWNER
+
+
+def test_cookie_authenticated_file_get_without_token_in_url(web, key, tmp_path):
+    (tmp_path / "dQw4w9WgXcQ.m4a").write_bytes(b"audio")
+    assert web.get("/files/dQw4w9WgXcQ").status_code == 401
+    sign_in(web, key)
+    res = web.get("/files/dQw4w9WgXcQ")
+    assert res.status_code == 200 and res.content == b"audio"
+    assert "no-cache" in res.headers["cache-control"]
+
+
+def test_session_rejects_bad_id_token_and_non_owner(web, key):
+    assert sign_in(web, key, email="eve@gmail.com").status_code == 403
+    assert sign_in(web, key, aud="other").status_code == 401
+    assert web.post("/auth/session", json={"id_token": "junk"}, headers=CSRF).status_code == 401
+    assert web.get("/tags").status_code == 401
+
+
+def test_tampered_or_expired_cookie_rejected(web, key, monkeypatch):
+    from app import session
+
+    sign_in(web, key)
+    value = web.cookies.get("__Host-session")
+    web.cookies.clear()
+    web.cookies.set("__Host-session", value[:-2] + "xx", domain="testserver")
+    assert web.get("/tags").status_code == 401
+    old = session.issue({"provider": "google", "email": OWNER}, now=time.time() - 2 * session.LIFETIME)
+    web.cookies.clear()
+    web.cookies.set("__Host-session", old, domain="testserver")
+    assert web.get("/tags").status_code == 401
+
+
+def test_csrf_on_cookie_authenticated_writes(web, key):
+    sign_in(web, key)
+    assert web.delete("/songs/dQw4w9WgXcQ").status_code == 403
+    assert web.delete("/songs/dQw4w9WgXcQ", headers={**CSRF, "Origin": "https://evil.example"}).status_code == 403
+    assert web.delete("/songs/dQw4w9WgXcQ", headers={**CSRF, "Origin": "https://testserver"}).status_code == 404
+    assert web.delete("/songs/dQw4w9WgXcQ", headers=CSRF).status_code == 404
+
+
+def test_csrf_not_needed_for_header_auth(web):
+    assert web.delete("/songs/dQw4w9WgXcQ", headers={"X-API-Token": "secret"}).status_code == 404
+
+
+def test_session_and_logout_require_csrf_header(web, key):
+    assert web.post("/auth/session", json={"id_token": make(key)}).status_code == 403
+    assert web.post("/auth/logout").status_code == 403
+
+
+def test_logout_clears_cookie(web, key):
+    sign_in(web, key)
+    res = web.post("/auth/logout", headers=CSRF)
+    assert res.status_code == 204
+    assert 'max-age=0' in res.headers["set-cookie"].lower()
+    assert web.get("/tags").status_code == 401
+
+
+def test_api_token_fallback_with_session_routes(web, key):
+    assert web.get("/tags", headers={"X-API-Token": "secret"}).status_code == 200
+    sign_in(web, key)
+    assert web.get("/tags", headers={"X-API-Token": "wrong"}).status_code == 401
+    assert web.get("/auth/me", headers={"X-API-Token": "secret"}).json()["method"] == "token"
+
+
+def test_session_secret_signs_cookie(web, key, monkeypatch):
+    sign_in(web, key)
+    value = web.cookies.get("__Host-session")
+    monkeypatch.setenv("AUDIO_SESSION_SECRET", "another-secret")
+    assert web.get("/tags").status_code == 401
+    web.cookies.clear()
+    sign_in(web, key)
+    assert web.get("/tags").status_code == 200
+    monkeypatch.delenv("AUDIO_SESSION_SECRET")
+    assert web.get("/tags").status_code == 401
+    assert value
+
+
+def test_api_responses_are_not_cached(web):
+    assert web.get("/tags", headers={"X-API-Token": "secret"}).headers["cache-control"] == "no-store"
+    assert web.get("/auth/config").headers["cache-control"] == "no-store"

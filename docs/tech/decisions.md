@@ -224,6 +224,25 @@ Status: Accepted, implemented in `server/` and `ios/`; not yet tested live on a 
   never needs a sign-in or an unexpired token.
 - Secrets: no client IDs in the repo. Server env vars, and
   `ios/Config/Secrets.xcconfig` (git-ignored) for the Google iOS client ID.
+- Amendment 2026-10-12, web sign-in: the web UI signs in with Google Identity
+  Services and the Apple JS SDK (popup), loaded from their CDNs on the
+  Settings screen only. The ID token is sent once to `POST /auth/session`;
+  the server verifies it as above and sets an HttpOnly, Secure,
+  SameSite=Strict cookie `__Host-session` (HMAC-signed, 12 h, key from
+  `AUDIO_SESSION_SECRET` or derived from `AUDIO_API_TOKEN`). The cookie is
+  accepted by `require_token` and `require_token_or_query`, so `<audio>` and
+  `<img>` work with no token in any URL; ID tokens never go in query strings.
+  Cookie-authenticated unsafe methods need header `X-Requested-With:
+  audioplayer` and a same-host `Origin` (CSRF). Sessions are stateless, so
+  logout deletes the cookie but cannot revoke a copy; rotate the secret to
+  revoke all. `GOOGLE_CLIENT_ID` and `APPLE_AUDIENCE` are now comma lists
+  (iOS client plus web client; bundle id plus Services ID); the web client
+  ids may also be given as `GOOGLE_WEB_CLIENT_ID` / `APPLE_WEB_CLIENT_ID`,
+  which `GET /auth/config` publishes (public, not secret). Signed-out
+  visitors see only Settings. No service worker or cache exists; API
+  responses carry `Cache-Control: no-store`, files and covers `private,
+  no-cache`, so nothing authenticated survives sign-out. The web client must
+  not reuse the iOS client id.
 
 ## ADR-0007 iOS app: Vega 108 look, web-matching screen flow
 

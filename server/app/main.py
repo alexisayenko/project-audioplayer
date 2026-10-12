@@ -11,14 +11,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from fastapi import BackgroundTasks, Depends, FastAPI, Header, HTTPException, Query
+from fastapi import BackgroundTasks, Depends, FastAPI, Header, HTTPException, Query, Request, Response
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from . import bpm as bpm_detect
-from . import oauth
+from . import oauth, session
 from . import extractor, genre_lookup, gitstore, library, wiki_lookup
 
 DOWNLOAD_DIR = Path(os.environ.get("AUDIO_DOWNLOAD_DIR", "downloads"))
@@ -47,27 +47,101 @@ def _bearer(authorization: str) -> str:
     return value.strip() if scheme.lower() == "bearer" else ""
 
 
-def require_token(
-    x_api_token: str = Header(default=""), authorization: str = Header(default="")
-) -> None:
+SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
+
+
+def authenticate(request: Request, x_api_token: str, authorization: str, query_token: str = "") -> dict:
+    """X-API-Token wins, then Bearer ID token, then session cookie, then (files only) ?token=."""
     bearer = _bearer(authorization)
-    if bearer and not x_api_token:
-        oauth.verify_owner(bearer)
-        return
-    _check(x_api_token)
+    if x_api_token:
+        _check(x_api_token)
+        return {"method": "token", "email": ""}
+    if bearer:
+        who = oauth.verify_owner(bearer)
+        return {"method": "bearer", "email": who["email"]}
+    who = session.read(request.cookies.get(session.COOKIE, ""))
+    if who:
+        if request.method not in SAFE_METHODS and not session.csrf_ok(
+            request.headers, request.headers.get("host", "")
+        ):
+            raise HTTPException(status_code=403, detail="missing or foreign CSRF header")
+        return {"method": "session", "email": who["email"]}
+    _check(query_token)
+    return {"method": "token", "email": ""}
+
+
+def require_token(
+    request: Request,
+    x_api_token: str = Header(default=""),
+    authorization: str = Header(default=""),
+) -> None:
+    authenticate(request, x_api_token, authorization)
 
 
 def require_token_or_query(
+    request: Request,
     x_api_token: str = Header(default=""),
     authorization: str = Header(default=""),
     token: str = Query(default=""),
 ) -> None:
-    """File/cover GETs: <audio>/<img> cannot send headers, so ?token= works too."""
-    bearer = _bearer(authorization)
-    if bearer and not x_api_token:
-        oauth.verify_owner(bearer)
-        return
-    _check(x_api_token or token)
+    """File/cover GETs: <audio>/<img> cannot send headers, so the session cookie (or ?token=) works too."""
+    authenticate(request, x_api_token, authorization, token)
+
+
+class SessionRequest(BaseModel):
+    id_token: str = Field(min_length=1, max_length=8192)
+
+
+def _public_origin(request: Request) -> str:
+    return f"https://{request.headers.get('host', request.url.netloc)}"
+
+
+@app.get("/auth/config")
+def auth_config(request: Request) -> dict[str, str]:
+    """Non-secret client ids the web UI needs to start Google / Apple sign-in."""
+    return {
+        "google_client_id": os.environ.get("GOOGLE_WEB_CLIENT_ID", ""),
+        "apple_client_id": os.environ.get("APPLE_WEB_CLIENT_ID", ""),
+        "apple_redirect": os.environ.get("APPLE_WEB_REDIRECT_URI", "") or _public_origin(request) + "/",
+    }
+
+
+@app.post("/auth/session")
+def auth_session(req: SessionRequest, request: Request, response: Response) -> dict[str, str]:
+    if not session.csrf_ok(request.headers, request.headers.get("host", "")):
+        raise HTTPException(status_code=403, detail="missing or foreign CSRF header")
+    if not session.available():
+        raise HTTPException(status_code=503, detail="AUDIO_SESSION_SECRET or AUDIO_API_TOKEN is not set")
+    who = oauth.verify_owner(req.id_token)
+    response.set_cookie(
+        session.COOKIE, session.issue(who), max_age=session.LIFETIME, path="/",
+        httponly=True, secure=True, samesite="strict",
+    )
+    return {"email": who["email"], "provider": who["provider"]}
+
+
+@app.post("/auth/logout", status_code=204)
+def auth_logout(request: Request) -> Response:
+    if not session.csrf_ok(request.headers, request.headers.get("host", "")):
+        raise HTTPException(status_code=403, detail="missing or foreign CSRF header")
+    out = Response(status_code=204)
+    out.delete_cookie(session.COOKIE, path="/", httponly=True, secure=True, samesite="strict")
+    return out
+
+
+@app.get("/auth/me")
+def auth_me(
+    request: Request, x_api_token: str = Header(default=""), authorization: str = Header(default="")
+) -> dict[str, str]:
+    return authenticate(request, x_api_token, authorization)
+
+
+@app.middleware("http")
+async def _no_store(request: Request, call_next):
+    response = await call_next(request)
+    if "cache-control" not in response.headers:
+        response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 def library_path() -> Path:
@@ -194,7 +268,8 @@ def get_file(video_id: str):
     path = music_dir() / name
     if not path.is_file():
         raise HTTPException(status_code=404, detail="not downloaded")
-    return FileResponse(path, media_type="audio/mp4", filename=path.name)
+    return FileResponse(path, media_type="audio/mp4", filename=path.name,
+                        headers={"Cache-Control": "private, no-cache"})
 
 
 @app.get("/covers/{video_id}", dependencies=[Depends(require_token_or_query)])
@@ -203,7 +278,7 @@ def get_cover(video_id: str):
     path = covers_dir() / f"{video_id}.jpg"
     if not path.is_file():
         raise HTTPException(status_code=404, detail="no cover")
-    return FileResponse(path, media_type="image/jpeg")
+    return FileResponse(path, media_type="image/jpeg", headers={"Cache-Control": "private, no-cache"})
 
 
 @app.get("/library", dependencies=[Depends(require_token)])

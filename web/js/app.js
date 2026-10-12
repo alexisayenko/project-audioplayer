@@ -1,5 +1,5 @@
-import { getToken } from './api.js';
-import { initPlayer } from './player.js';
+import { isSignedIn, session } from './api.js';
+import { initPlayer, pausePlayer } from './player.js';
 import { store } from './store.js';
 import { renderLibrary } from './library.js';
 import { renderAdd } from './add.js';
@@ -14,10 +14,11 @@ let cleanup = null;
 function route() {
   let name = location.hash.replace(/^#\/?/, '') || 'library';
   if (!routes[name]) name = 'library';
-  if (!getToken() && name !== 'settings') {
+  if (!isSignedIn() && name !== 'settings') {
     location.hash = '#/settings';
     return;
   }
+  document.body.classList.toggle('signed-out', !isSignedIn());
   if (cleanup) cleanup();
   view.replaceChildren();
   document.body.dataset.route = name;
@@ -31,9 +32,16 @@ function route() {
 }
 
 initPlayer();
-if (getToken()) store.refresh().catch(() => {});
 window.addEventListener('hashchange', route);
-route();
+window.addEventListener('auth-changed', () => {
+  if (!isSignedIn()) pausePlayer();
+  route();
+});
+
+session.restore().then(() => {
+  if (isSignedIn()) store.refresh().catch(() => {});
+  route();
+});
 
 const warn = document.getElementById('sync-warn');
 

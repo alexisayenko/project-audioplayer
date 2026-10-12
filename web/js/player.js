@@ -503,3 +503,9 @@ export function initPlayer() {
     render();
   });
 }
+
+export function pausePlayer() {
+  audio.pause();
+  audio.removeAttribute('src');
+  audio.load();
+}

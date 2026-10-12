@@ -295,3 +295,8 @@ dialog { max-height: 92vh; overflow-y: auto; }
 .count-row p { margin: 8px 0; }
 .count-row .btn { min-height: 36px; }
 .count-row [hidden] { display: none; }
+
+.signin-box { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
+.apple-btn { background: #000; color: #fff; border-color: #000; width: 260px; height: 40px; padding: 0 16px; }
+@media (prefers-color-scheme: dark) { .apple-btn { background: #fff; color: #000; border-color: #fff; } }
+body.signed-out #nav a:not([data-route="settings"]), body.signed-out #mini { display: none; }
