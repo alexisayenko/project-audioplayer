@@ -1,0 +1,150 @@
+import { api } from './api.js';
+import { store } from './store.js';
+import { player } from './player.js';
+import { el, toast, fmtTime } from './dom.js';
+
+const prefs = { query: '', tag: '', sort: 'added' };
+
+const SORTS = {
+  added: ['Newest first', (a, b) => (b.added_at || '').localeCompare(a.added_at || '')],
+  title: ['Title', (a, b) => cmp(a.title, b.title)],
+  artist: ['Artist', (a, b) => cmp(a.artist, b.artist) || cmp(a.title, b.title)],
+  year: ['Year', (a, b) => (b.year || 0) - (a.year || 0)],
+};
+
+function cmp(a, b) {
+  return (a || '').localeCompare(b || '', undefined, { sensitivity: 'base' });
+}
+
+export function visibleSongs() {
+  const q = prefs.query.trim().toLocaleLowerCase();
+  const tag = prefs.tag.toLocaleLowerCase();
+  const list = store.songs.filter((s) => {
+    if (tag && !(s.tags || []).some((t) => t.toLocaleLowerCase() === tag)) return false;
+    if (!q) return true;
+    const hay = [s.title, s.artist, s.album, ...(s.tags || [])].join('\n').toLocaleLowerCase();
+    return hay.includes(q);
+  });
+  return list.sort(SORTS[prefs.sort][1]);
+}
+
+export function renderLibrary(root) {
+  const search = el('input', {
+    type: 'search', placeholder: 'Search title, artist, album, tags', value: prefs.query,
+    'aria-label': 'Search',
+    oninput: (e) => { prefs.query = e.target.value; renderList(); },
+  });
+  const sort = el('select', {
+    'aria-label': 'Sort',
+    onchange: (e) => { prefs.sort = e.target.value; renderList(); },
+  }, Object.entries(SORTS).map(([k, [label]]) => el('option', { value: k, selected: k === prefs.sort }, label)));
+  const chips = el('div', { class: 'chips' });
+  const count = el('p', { class: 'muted' });
+  const list = el('ul', { class: 'songs' });
+  const status = el('div');
+
+  root.append(el('div', { class: 'toolbar' }, el('div', { class: 'row' }, search, sort), chips), count, list, status);
+
+  function renderChips() {
+    if (prefs.tag && !store.tags.some((t) => t.tag.toLocaleLowerCase() === prefs.tag.toLocaleLowerCase())) prefs.tag = '';
+    chips.replaceChildren(...store.tags.map((t) => el('button', {
+      class: `chip${t.tag.toLocaleLowerCase() === prefs.tag.toLocaleLowerCase() ? ' on' : ''}`,
+      onclick: () => { prefs.tag = prefs.tag.toLocaleLowerCase() === t.tag.toLocaleLowerCase() ? '' : t.tag; renderChips(); renderList(); },
+    }, t.tag, el('small', {}, t.count))));
+  }
+
+  function renderList() {
+    const songs = visibleSongs();
+    const ids = songs.map((s) => s.id);
+    const cur = player.current;
+    count.textContent = store.songs.length
+      ? `${songs.length} of ${store.songs.length} songs`
+      : 'No songs yet. Use Add to import one from a YouTube link.';
+    list.replaceChildren(...songs.map((s) => el('li', { class: `song${cur && cur.id === s.id ? ' current' : ''}` },
+      el('button', { class: 'main', onclick: () => player.playQueue(ids, s.id), 'aria-label': `Play ${s.title}` },
+        coverImg(s),
+        el('span', { class: 'name' },
+          el('b', {}, s.title),
+          el('small', {}, [s.artist, s.duration ? fmtTime(s.duration) : ''].filter(Boolean).join(' - ')),
+          (s.tags || []).length ? el('span', { class: 'tags' }, s.tags.map((t) => `#${t}`).join(' ')) : null)),
+      el('span', { class: 'actions' },
+        el('button', { class: 'icon', title: 'Edit', 'aria-label': `Edit ${s.title}`, onclick: () => editDialog(s) }, '✎'),
+        el('button', { class: 'icon', title: 'Delete', 'aria-label': `Delete ${s.title}`, onclick: () => removeSong(s) }, '✕')))));
+  }
+
+  function renderAll() { renderChips(); renderList(); }
+
+  const unsub = store.subscribe(renderAll);
+  const unsubPlayer = player.onChange(renderList);
+
+  if (!store.loaded) status.append(el('p', { class: 'muted' }, 'Loading...'));
+  store.refresh().then(() => status.replaceChildren()).catch((e) => {
+    status.replaceChildren(el('p', { class: 'msg error' }, e.message));
+  });
+  renderAll();
+
+  return () => { unsub(); unsubPlayer(); };
+}
+
+function coverImg(s) {
+  const img = el('img', { class: 'cover', alt: '', loading: 'lazy' });
+  if (s.cover) img.src = api.coverUrl(s.id);
+  img.addEventListener('error', () => img.removeAttribute('src'));
+  return img;
+}
+
+async function removeSong(s) {
+  if (!confirm(`Delete "${s.title}"? The audio file and cover are removed from the server.`)) return;
+  try {
+    await api.remove(s.id);
+    await store.refresh();
+    toast('Deleted');
+  } catch (e) {
+    toast(e.message);
+  }
+}
+
+function editDialog(song) {
+  const dlg = document.getElementById('edit-dialog');
+  const f = {
+    title: el('input', { type: 'text', value: song.title || '', required: true }),
+    artist: el('input', { type: 'text', value: song.artist || '' }),
+    album: el('input', { type: 'text', value: song.album || '' }),
+    year: el('input', { type: 'number', value: song.year ?? '', min: 0, max: 3000 }),
+    genre: el('input', { type: 'text', value: song.genre || '' }),
+    tags: el('input', { type: 'text', value: (song.tags || []).join(', '), placeholder: 'comma, separated', list: 'tag-suggestions' }),
+  };
+  const err = el('p', { class: 'msg error', hidden: true });
+  const field = (label, input) => el('div', {}, el('label', {}, label), input);
+  const form = el('form', { method: 'dialog' },
+    el('h2', {}, 'Edit song'),
+    field('Title', f.title), field('Artist', f.artist),
+    el('div', { class: 'grid2' }, field('Album', f.album), field('Year', f.year)),
+    field('Genre', f.genre), field('Tags', f.tags),
+    el('datalist', { id: 'tag-suggestions' }, store.tags.map((t) => el('option', { value: t.tag }))),
+    err,
+    el('div', { class: 'row end' },
+      el('button', { type: 'button', class: 'btn', onclick: () => dlg.close() }, 'Cancel'),
+      el('button', { type: 'submit', class: 'btn primary' }, 'Save')));
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    try {
+      await api.patch(song.id, {
+        title: f.title.value,
+        artist: f.artist.value,
+        album: f.album.value,
+        year: f.year.value === '' ? null : Number(f.year.value),
+        genre: f.genre.value,
+        tags: f.tags.value.split(',').map((t) => t.trim()).filter(Boolean),
+      });
+      dlg.close();
+      await store.refresh();
+      toast('Saved');
+    } catch (ex) {
+      err.textContent = ex.message;
+      err.hidden = false;
+    }
+  });
+  dlg.replaceChildren(form);
+  dlg.showModal();
+}
