@@ -173,6 +173,7 @@ docs/
 ├── product/                            # entry: product/README.md
 │   ├── concepts/                       # entry: concepts/README.md
 │   ├── features/                       # entry: features/README.md
+│   ├── screens.md                      # planned screens, library model, API
 │   └── README.md
 ├── release/                            # entry: release/README.md
 │   ├── app-store-metadata.md           # store listing draft

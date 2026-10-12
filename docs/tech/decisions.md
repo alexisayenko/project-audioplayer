@@ -32,8 +32,8 @@ replaces Tailscale.
 ### Storage
 
 - Audio on server disk: `downloads/<id>.m4a`.
-- One `library.json`: id, title, artist, duration, added date
-  (playlists later).
+- One `library.json`: song records with metadata and tags (tags replace
+  playlists), see [`../product/screens.md`](../product/screens.md).
 - No SQLite: a few hundred songs.
 - Writes are atomic (temp file + rename), single writer (the server,
   under a lock). Web and phone go through the API.
