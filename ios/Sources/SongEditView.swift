@@ -204,8 +204,8 @@ struct SongEditView: View {
 
     private var linkEditor: some View {
         VStack(alignment: .leading, spacing: DS.Space.space2) {
-            DSTextField(label: "Wikipedia: song", text: $wikiSong, keyboard: .URL, plainURL: true)
-            DSTextField(label: "Wikipedia: band", text: $wikiArtist, keyboard: .URL, plainURL: true)
+            WikiLinkField(title: "Wikipedia: song", value: $wikiSong)
+            WikiLinkField(title: "Wikipedia: band", value: $wikiArtist)
             HStack(spacing: DS.Space.space2) {
                 Button { Task { await lookup() } } label: {
                     HStack { Text("Fill from Wikipedia"); if wikiBusy { ProgressView() } }
