@@ -20,7 +20,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from . import bpm as bpm_detect
-from . import jobs, limits, migrate, oauth, session, users
+from . import jobs, limits, oauth, session, users
 from . import extractor, genre_lookup, gitstore, library, urlclean, wiki_lookup
 from .problems import Problem
 
@@ -305,25 +305,6 @@ async def _no_store(request: Request, call_next):
 def _startup() -> None:
     if SYNC:
         SYNC.resync()
-    migrate_legacy()
-
-
-def migrate_legacy() -> str:
-    """Move a single-user layout under the owner (once). Never raises: a failed migration only logs."""
-    try:
-        try:
-            root = library.resolve_music_root(music_root())
-        except LookupError as exc:
-            log.warning("legacy migration skipped: %s", exc)
-            return "skipped"
-        result = migrate.run(data_root=data_root(), covers_root=covers_root(), music_dir=root,
-                             owner_email=users.owner_email(), sync=SYNC)
-    except Exception:
-        log.exception("legacy migration failed")
-        return "failed"
-    if result not in ("done", "nothing"):
-        log.warning("legacy migration: %s", result)
-    return result
 
 
 def _vid(video_id: str) -> str:

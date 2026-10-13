@@ -445,13 +445,7 @@ Status: Accepted, implemented in `server/` and `web/` (iOS client changes listed
   pull --rebase / commit / push cycle; commit messages `audioplayer: <uid8>
   add|edit|delete|delete audio|bpm <id>` and `audioplayer: <uid8> signup`.
   Retry and backoff on failed pushes are unchanged.
-- Migration (`server/app/migrate.py`, at startup, once): the legacy library,
-  covers and loose audio move under the owner's uid in one commit per repo
-  `audioplayer: migrate legacy library to per-user layout`; the marker
-  `audioplayer/migrations/legacy-to-per-user.json` (no personal data) stops a
-  second run. Any inconsistency (legacy and per-user library both present, a
-  file at both locations, unreadable JSON) aborts before the first move; a
-  crash midway is resumed by the next start; a failed commit is rolled back.
+- Migration: the legacy single-user layout was migrated once on 2026-10-13; the migration code and its marker were then removed.
 - Guardrails (env, owner exempt from the per-user ones, not from the pool):
   `USER_MAX_SONGS=500`, `USER_MAX_BYTES=5GB` (real file sizes),
   `USER_ADDS_PER_HOUR=20`, `USER_MAX_CONCURRENT_DOWNLOADS=1` (extra adds get

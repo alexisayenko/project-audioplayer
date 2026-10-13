@@ -57,7 +57,7 @@ Code: `server/app/gitstore.py`, `server/app/library.py`, `server/app/main.py`,
 | `AUDIO_DOWNLOAD_DIR` | `downloads` | fallback audio dir |
 | `AUDIO_DATA_DIR` | `.` | plain-file `library.json` and `covers/` (no git store) |
 | `AUDIO_WEB_DIR` | `<repo>/web` | static UI dir |
-| `OWNER_EMAIL` (alias `ALLOWED_EMAIL`) | `alex.isayenko@gmail.com` | the owner: quota-exempt, owns the migrated legacy library |
+| `OWNER_EMAIL` (alias `ALLOWED_EMAIL`) | `alex.isayenko@gmail.com` | the owner: quota-exempt, owns the first library |
 | `SIGNUP_OPEN` | `1` | `0`: only existing users and the owner may sign in |
 | `USER_MAX_SONGS`, `USER_MAX_BYTES`, `USER_ADDS_PER_HOUR` | `500`, `5368709120`, `20` | per-user limits (owner exempt) |
 | `USER_MAX_CONCURRENT_DOWNLOADS`, `GLOBAL_MAX_CONCURRENT_DOWNLOADS` | `1`, `2` | downloads running at once; extra adds are `queued` |
@@ -67,10 +67,9 @@ Code: `server/app/gitstore.py`, `server/app/library.py`, `server/app/main.py`,
 
 - STO-040 MUST: no credential or token is stored in either repo. Status: implemented
 
-## Per-user layout and migration (ADR-0012)
+## Per-user layout (ADR-0012)
 
 - STO-050 MUST: every user has `audioplayer/users/<uid>/profile.json` (`email`, `provider`, `created_at`, `subs`) and `library.json` in the data repo, `audioplayer/users/<uid>/covers/<id>.jpg` in the covers repo and `<music_root>/users/<uid>/<id>.m4a` for audio; `uid` is the first 16 hex of `sha256(lowercased email)` (Apple without email: of `sub`). The email appears only inside `profile.json`, never in a path, file name or commit message. Status: implemented
 - STO-051 MUST: there is no shared audio pool: the same song in two libraries is two files; a request only ever resolves paths under its own `uid`, which the server derives from the credential. Status: implemented
 - STO-052 MUST: library writes are serialised per user; the git pull/commit/push cycle is serialised across all users by one lock; a user's usage (bytes) is the sum of the real files in their audio directory. Status: implemented
-- STO-053 MUST: at startup, if `audioplayer/library.json` (legacy) exists and the per-user owner library does not, the legacy library, `covers/*.jpg` and the loose audio files in `music_root` are moved under the owner's uid and committed as `audioplayer: migrate legacy library to per-user layout` (both repos), plus the marker `audioplayer/migrations/legacy-to-per-user.json`. Status: implemented
-- STO-054 MUST: the migration is idempotent and safe: the marker stops a second run; a conflict (legacy and per-user library both present, a file at both locations, unreadable JSON) aborts before any change; a crash midway is resumed by the next start; a failure while committing rolls the moves back. Status: implemented
+- STO-053 (removed): the one-time legacy-to-per-user migration ran on 2026-10-13; the migration code and its marker were then removed. Status: removed

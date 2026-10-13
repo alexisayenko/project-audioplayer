@@ -37,8 +37,8 @@ Layout since ADR-0012 (one library per user, `<uid>` = first 16 hex of
 (email, provider, created_at: the only place an email is stored) and
 `library.json`; LFS repo `audioplayer/users/<uid>/covers/<id>.jpg`; audio
 `<music_root>/users/<uid>/<id>.m4a`. ~~`audioplayer/library.json`,
-`audioplayer/covers/<id>.jpg`, `downloads/<id>.m4a`~~ (single-user layout; the
-startup migration moves it under the owner, once).
+`audioplayer/covers/<id>.jpg`, `downloads/<id>.m4a`~~ (single-user layout; migrated
+under the owner once on 2026-10-13, code removed).
 
 Without `AUDIO_DATA_REPO` (dev/tests) the same `users/<uid>/...` tree is plain
 files in `AUDIO_DATA_DIR`. Otherwise the server keeps its own clones of the private repos
@@ -216,6 +216,5 @@ Env (all optional): `USER_MAX_SONGS` (500), `USER_MAX_BYTES` (5 GB),
 `USER_ADDS_PER_HOUR` (20), `USER_MAX_CONCURRENT_DOWNLOADS` (1),
 `GLOBAL_MAX_CONCURRENT_DOWNLOADS` (2), `POOL_MAX_BYTES` (150 GB), `SIGNUP_OPEN` (1),
 `OWNER_EMAIL`. Code: `server/app/limits.py` (checks), `jobs.py` (download
-queue), `users.py` (identity, owner, locks), `migrate.py` (one-time move of the
-legacy library). Details and error codes: [`../specs/api.md`](../specs/api.md)
+queue), `users.py` (identity, owner, locks). Details and error codes: [`../specs/api.md`](../specs/api.md)
 API-040..047, [`../specs/non-functional.md`](../specs/non-functional.md) NFR-050..055.
