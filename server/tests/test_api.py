@@ -7,7 +7,7 @@ VID = "dQw4w9WgXcQ"
 HEADERS = {"X-API-Token": "secret"}
 
 
-@pytest.fixture()
+@pytest.fixture
 def client(tmp_path, monkeypatch):
     monkeypatch.setenv("AUDIO_API_TOKEN", "secret")
     monkeypatch.setattr(main, "DOWNLOAD_DIR", tmp_path)
@@ -28,7 +28,8 @@ def test_unconfigured_token_is_refused(client, monkeypatch):
 def test_search(client, monkeypatch):
     monkeypatch.setattr(extractor, "search", lambda q, n: [{"id": VID, "title": q}])
     r = client.get("/search", params={"q": "song"}, headers=HEADERS)
-    assert r.status_code == 200 and r.json()[0]["id"] == VID
+    assert r.status_code == 200
+    assert r.json()[0]["id"] == VID
 
 
 def test_download_then_fetch(client, monkeypatch, tmp_path):
@@ -38,9 +39,11 @@ def test_download_then_fetch(client, monkeypatch, tmp_path):
 
     monkeypatch.setattr(extractor, "download", fake_download)
     r = client.post("/download", json={"video_id": VID}, headers=HEADERS)
-    assert r.status_code == 200 and r.json()["file_url"] == f"/files/{VID}"
+    assert r.status_code == 200
+    assert r.json()["file_url"] == f"/files/{VID}"
     f = client.get(f"/files/{VID}", headers=HEADERS)
-    assert f.status_code == 200 and f.content == b"audio"
+    assert f.status_code == 200
+    assert f.content == b"audio"
 
 
 def test_rejects_bad_video_id(client):

@@ -142,7 +142,9 @@ def test_qid_of_page_via_pageprops(monkeypatch):
     monkeypatch.setattr(wl, "_fetch_json", fake_fetch(calls, pages={"Daft+Punk": "Q200"}))
     assert wl.qid_of_page("https://en.wikipedia.org/wiki/Daft_Punk") == "Q200"
     assert wl.qid_of_page("https://en.wikipedia.org/wiki/Daft_Punk") == "Q200"
-    assert len(calls) == 1 and calls[0].startswith("https://en.wikipedia.org/w/api.php?") and "wikibase_item" in calls[0]
+    assert len(calls) == 1
+    assert calls[0].startswith("https://en.wikipedia.org/w/api.php?")
+    assert "wikibase_item" in calls[0]
     assert wl.qid_of_page("https://en.wikipedia.org/wiki/Nope") is None
     assert wl.qid_of_page("https://www.wikidata.org/wiki/Q7") == "Q7"
     assert wl.qid_of_page("https://evil.example/wiki/X") is None
@@ -154,7 +156,8 @@ def test_facts_mapping(monkeypatch):
     out = wl.facts("Q100", "Q200")
     assert out == {"tags": ["genre:house music", "genre:electronic", "genre:disco", "country:fr"], "year": 1997}
     label_calls = [c for c in calls if "props=labels" in c]
-    assert len(label_calls) == 1 and "languages=en" in label_calls[0]
+    assert len(label_calls) == 1
+    assert "languages=en" in label_calls[0]
 
 
 def test_facts_cache_by_qid(monkeypatch):
@@ -247,7 +250,8 @@ def test_suggest_from_musicbrainz_relations(monkeypatch):
     out = wl.suggest("Daft Punk", "Around the World")
     assert out["wikipedia_song"] == "https://en.wikipedia.org/wiki/Around_the_World_(Daft_Punk_song)"
     assert out["wikipedia_artist"] == "https://de.wikipedia.org/wiki/Daft_Punk"
-    assert out["year"] == 1997 and "country:fr" in out["tags"]
+    assert out["year"] == 1997
+    assert "country:fr" in out["tags"]
     needed = ("tags", "work-rels", "releases", "release-groups", "artist-credits")
     assert any(c[0] == "recording/r1" and all(p in c[1].split("+") for p in needed) for c in calls)
     assert ("artist/a1", "genres+tags+url-rels") in calls
@@ -280,7 +284,7 @@ def test_suggest_disabled(monkeypatch):
     }
 
 
-@pytest.fixture()
+@pytest.fixture
 def client(tmp_path, monkeypatch):
     monkeypatch.setenv("AUDIO_API_TOKEN", "secret")
     monkeypatch.setattr(main, "DOWNLOAD_DIR", tmp_path / "downloads")
@@ -311,21 +315,25 @@ def test_preview_returns_links_tags_and_year(client, monkeypatch):
     body = client.post("/preview", json={"url": VID}, headers=H).json()
     assert body["wikipedia_song"].endswith("Around_the_World_(Daft_Punk_song)")
     assert body["wikipedia_artist"] == "https://en.wikipedia.org/wiki/Daft_Punk"
-    assert body["suggested_year"] == 1997 and body["year"] == 1997
+    assert body["suggested_year"] == 1997
+    assert body["year"] == 1997
     assert body["tags"] == ["genre:house music", "genre:electronic", "genre:disco", "country:fr"]
 
 
 def test_preview_survives_total_failure(client):
     body = client.post("/preview", json={"url": VID}, headers=H).json()
-    assert body["wikipedia_song"] is None and body["wikipedia_artist"] is None
-    assert body["tags"] == [] and body["suggested_year"] is None
+    assert body["wikipedia_song"] is None
+    assert body["wikipedia_artist"] is None
+    assert body["tags"] == []
+    assert body["suggested_year"] is None
 
 
 def test_preview_keeps_existing_year(client, monkeypatch):
     monkeypatch.setattr(extractor, "preview", lambda vid: {"id": vid, "title": "T", "artist": "A", "year": 2010, "tags": []})
     monkeypatch.setattr(gl, "_get", fake_mb({"first-release-date": "1997-01-01"}, {}))
     body = client.post("/preview", json={"url": VID}, headers=H).json()
-    assert body["year"] == 2010 and body["suggested_year"] == 1997
+    assert body["year"] == 2010
+    assert body["suggested_year"] == 1997
 
 
 def test_post_songs_persists_and_validates_links(client):
@@ -345,7 +353,8 @@ def test_patch_sets_clears_and_drops_links(client):
     r = client.patch(url, json={"title": "Renamed"}, headers=H)
     assert r.json()["wikipedia_artist"] == "https://de.wikipedia.org/wiki/Daft_Punk"
     r = client.patch(url, json={"wikipedia_song": None, "wikipedia_artist": "https://evil.example/x"}, headers=H)
-    assert r.json()["wikipedia_song"] is None and r.json()["wikipedia_artist"] is None
+    assert r.json()["wikipedia_song"] is None
+    assert r.json()["wikipedia_artist"] is None
     assert client.get("/library", headers=H).json()["songs"][0]["wikipedia_artist"] is None
 
 
@@ -353,7 +362,8 @@ def test_old_records_load_with_null_links(tmp_path):
     path = tmp_path / "library.json"
     path.write_text('{"songs":[{"id":"%s","title":"Old","wikipedia_song":"https://evil.example/x"}]}' % VID, encoding="utf-8")
     song = library.load(path)[0]
-    assert song["wikipedia_song"] is None and song["wikipedia_artist"] is None
+    assert song["wikipedia_song"] is None
+    assert song["wikipedia_artist"] is None
 
 
 def test_lookup_endpoint(client, monkeypatch):

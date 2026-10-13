@@ -22,7 +22,7 @@ def ADIR(tmp_path):
     return tmp_path / "downloads" / "users" / OWNER_UID
 
 
-@pytest.fixture()
+@pytest.fixture
 def client(tmp_path, monkeypatch):
     monkeypatch.setenv("AUDIO_API_TOKEN", "secret")
     monkeypatch.setattr(main, "DOWNLOAD_DIR", tmp_path / "downloads")
@@ -105,7 +105,8 @@ def test_empty_library(client):
 def test_preview(client):
     r = client.post("/preview", json={"url": f"https://youtu.be/{VID}"}, headers=H)
     assert r.status_code == 200
-    assert r.json()["title"] == "T" and r.json()["in_library"] is False
+    assert r.json()["title"] == "T"
+    assert r.json()["in_library"] is False
     assert client.post("/preview", json={"url": "http://x.y"}, headers=H).status_code == 422
 
 
@@ -115,7 +116,8 @@ def test_preview_failure_is_502(client, monkeypatch):
 
     monkeypatch.setattr(extractor, "preview", boom)
     r = client.post("/preview", json={"url": VID}, headers=H)
-    assert r.status_code == 502 and "unavailable" in r.json()["detail"]
+    assert r.status_code == 502
+    assert "unavailable" in r.json()["detail"]
 
 
 def test_add_song_full_flow(client, tmp_path):
@@ -126,10 +128,14 @@ def test_add_song_full_flow(client, tmp_path):
     songs = client.get("/library", headers=H).json()["songs"]
     assert len(songs) == 1
     s = songs[0]
-    assert s["id"] == VID and s["title"] == "Song" and s["artist"] == "Yt Artist"
-    assert s["cover"] == f"covers/{VID}.jpg" and s["duration"] == 7
+    assert s["id"] == VID
+    assert s["title"] == "Song"
+    assert s["artist"] == "Yt Artist"
+    assert s["cover"] == f"covers/{VID}.jpg"
+    assert s["duration"] == 7
     assert s["tags"] == ["80s", "Workout"]
-    assert s["source_url"].endswith(VID) and s["added_at"].endswith("Z")
+    assert s["source_url"].endswith(VID)
+    assert s["added_at"].endswith("Z")
     assert json.loads((ODIR(tmp_path) / "library.json").read_text())["songs"][0]["id"] == VID
     assert client.get(f"/files/{VID}", headers=H).content == b"audio"
     assert client.get(f"/covers/{VID}", headers=H).content == b"jpg"
@@ -155,7 +161,8 @@ def test_download_error_status(client, monkeypatch):
     monkeypatch.setattr(extractor, "download_audio", boom)
     assert add(client).status_code == 202
     st = client.get(f"/songs/{VID}/status", headers=H).json()
-    assert st["status"] == "error" and "Video unavailable" in st["error"]
+    assert st["status"] == "error"
+    assert "Video unavailable" in st["error"]
     assert "\x1b" not in st["error"]
     assert client.get("/library", headers=H).json() == {"songs": []}
 
@@ -181,8 +188,11 @@ def test_patch(client):
     r = client.patch(f"/songs/{VID}", json=body, headers=H)
     assert r.status_code == 200
     s = r.json()
-    assert s["artist"] == "New" and s["year"] == 1999 and s["album"] is None
-    assert s["tags"] == ["x", "y", "decade:90s"] and s["title"] == "Song"
+    assert s["artist"] == "New"
+    assert s["year"] == 1999
+    assert s["album"] is None
+    assert s["tags"] == ["x", "y", "decade:90s"]
+    assert s["title"] == "Song"
     assert client.get("/library", headers=H).json()["songs"][0]["artist"] == "New"
     assert client.patch(f"/songs/{VID}", json={"title": " "}, headers=H).status_code == 422
     assert client.patch(f"/songs/{VID2}", json={"title": "x"}, headers=H).status_code == 404
@@ -252,8 +262,10 @@ def test_old_genre_migrated_on_load(tmp_path):
         {"id": "c", "title": "C", "genre": " Pop ", "tags": []},
     ]}))
     a, b, c = library.load(p)
-    assert a["tags"] == ["80s", "genre:synthwave"] and "genre" not in a
-    assert "genre" not in b and "tags" not in b
+    assert a["tags"] == ["80s", "genre:synthwave"]
+    assert "genre" not in a
+    assert "genre" not in b
+    assert "tags" not in b
     assert c["tags"] == ["genre:pop"]
     library.save(p, [a, b, c])
     assert all("genre" not in s for s in json.loads(p.read_text())["songs"])
@@ -262,7 +274,8 @@ def test_old_genre_migrated_on_load(tmp_path):
 def test_patch_normalises_and_ignores_genre(client):
     add(client)
     r = client.patch(f"/songs/{VID}", json={"genre": "Pop", "tags": ["Genre:Pop", "Mood: Chill", "genre:pop"]}, headers=H)
-    assert r.status_code == 200 and "genre" not in r.json()
+    assert r.status_code == 200
+    assert "genre" not in r.json()
     assert r.json()["tags"] == ["genre:pop", "mood:chill"]
     assert client.get("/tags", headers=H).json() == [
         {"tag": "genre:pop", "count": 1},
@@ -293,7 +306,8 @@ def test_preview_suggests_genre_tag_with_mocked_ytdlp(monkeypatch):
 
     monkeypatch.setattr(extractor.yt_dlp, "YoutubeDL", FakeYDL)
     meta = extractor.preview(VID)
-    assert meta["tags"] == ["genre:synthwave"] and "genre" not in meta
+    assert meta["tags"] == ["genre:synthwave"]
+    assert "genre" not in meta
 
 
 def test_bpm_detected_on_add(client):
@@ -331,7 +345,8 @@ def test_patch_bpm_validation(client):
     assert client.patch(url, json={"bpm": 300.1}, headers=H).status_code == 422
     assert client.patch(url, json={"bpm": "fast"}, headers=H).status_code == 422
     r = client.patch(url, json={"bpm": 128.04}, headers=H)
-    assert r.status_code == 200 and r.json()["bpm"] == 128
+    assert r.status_code == 200
+    assert r.json()["bpm"] == 128
     assert client.patch(url, json={"title": "X"}, headers=H).json()["bpm"] == 128
     assert client.patch(url, json={"bpm": None}, headers=H).json()["bpm"] is None
 
@@ -340,7 +355,8 @@ def test_redetect_bpm(client, monkeypatch):
     add(client)
     client.patch(f"/songs/{VID}", json={"bpm": 60}, headers=H)
     r = client.post(f"/songs/{VID}/bpm/detect", headers=H)
-    assert r.status_code == 200 and r.json()["bpm"] == 123
+    assert r.status_code == 200
+    assert r.json()["bpm"] == 123
     assert client.get("/library", headers=H).json()["songs"][0]["bpm"] == 123
     monkeypatch.setattr(bpm, "detect_bpm", lambda path: None)
     assert client.post(f"/songs/{VID}/bpm/detect", headers=H).status_code == 422
@@ -352,7 +368,8 @@ def test_old_song_without_bpm_loads(client, tmp_path):
     ODIR(tmp_path).mkdir(parents=True, exist_ok=True)
     (ODIR(tmp_path) / "library.json").write_text(json.dumps({"songs": [{"id": VID, "title": "Old"}]}))
     songs = client.get("/library", headers=H).json()["songs"]
-    assert songs[0]["id"] == VID and "bpm" not in songs[0]
+    assert songs[0]["id"] == VID
+    assert "bpm" not in songs[0]
     assert client.patch(f"/songs/{VID}", json={"bpm": 100}, headers=H).json()["bpm"] == 100
 
 
@@ -442,7 +459,8 @@ def test_web_assets_are_versioned_and_revalidated(tmp_path, monkeypatch):
         assert c.get("/", headers={"If-None-Match": f'"{version}"'}).status_code == 304
 
         asset = c.get(f"/_v/{version}/js/lib.js")
-        assert asset.status_code == 200 and "immutable" in asset.headers["cache-control"]
+        assert asset.status_code == 200
+        assert "immutable" in asset.headers["cache-control"]
         assert c.get("/_v/old/js/lib.js").headers["cache-control"] == "no-cache"
         assert c.get(f"/_v/{version}/%2e%2e/secret.txt").status_code == 404
         assert c.get(f"/_v/{version}/js/missing.js").status_code == 404

@@ -99,7 +99,8 @@ def test_id_validation_and_source():
     bad = ["soundcloud-abc", "soundcloud-12x", "SoundCloud-1", "soundcloud_1", "../etc", "soundcloud-1/../x", "--exec=rm", "", "a" * 12]
     assert all(urlclean.is_valid_video_id(i) for i in ok)
     assert not any(urlclean.is_valid_video_id(i) for i in bad)
-    assert urlclean.source_of(YT) == "youtube" and urlclean.source_of(SC_ID) == "soundcloud"
+    assert urlclean.source_of(YT) == "youtube"
+    assert urlclean.source_of(SC_ID) == "soundcloud"
     assert urlclean.soundcloud_song_id(42) == "soundcloud-42"
     assert len(SC_ID) > 11
 
@@ -154,7 +155,7 @@ def sc_info(**over):
     return info
 
 
-@pytest.fixture()
+@pytest.fixture
 def ydl(monkeypatch):
     FakeYDL.calls = []
     monkeypatch.setattr(extractor.yt_dlp, "YoutubeDL", FakeYDL)
@@ -164,20 +165,27 @@ def ydl(monkeypatch):
 def test_soundcloud_probe_fields(ydl):
     ydl.info = sc_info()
     p = extractor.soundcloud_probe(SC_URL)
-    assert p["id"] == SC_ID and p["source"] == "soundcloud" and p["source_url"] == SC_URL
-    assert p["title"] == "Some Track" and p["artist"] == "Some Artist"
-    assert p["year"] == 2019 and p["duration"] == 215.5
+    assert p["id"] == SC_ID
+    assert p["source"] == "soundcloud"
+    assert p["source_url"] == SC_URL
+    assert p["title"] == "Some Track"
+    assert p["artist"] == "Some Artist"
+    assert p["year"] == 2019
+    assert p["duration"] == 215.5
     assert p["tags"] == ["genre:dance & edm"]
     assert p["thumbnail"] == "https://i1.sndcdn.com/artworks-abc-t500x500.jpg"
     assert p["preview_only"] is False
     url, download, opts = ydl.calls[0]
-    assert url == SC_URL and download is False and opts["skip_download"] is True
+    assert url == SC_URL
+    assert download is False
+    assert opts["skip_download"] is True
 
 
 def test_soundcloud_probe_uploader_fallback_and_no_upload_year(ydl):
     ydl.info = sc_info(artists=None, release_year=None, upload_date="20240101", thumbnails=[], thumbnail=ART)
     p = extractor.soundcloud_probe(SC_URL)
-    assert p["artist"] == "Some Label" and p["year"] is None
+    assert p["artist"] == "Some Label"
+    assert p["year"] is None
     assert p["thumbnail"].endswith("-t500x500.jpg")
 
 
@@ -198,10 +206,12 @@ def test_download_soundcloud_reencodes_to_m4a_and_names_by_id(ydl, tmp_path, mon
     seen = []
     out = extractor.download_audio(SC_ID, tmp_path, seen.append, SC_URL)
     url, download, opts = ydl.calls[0]
-    assert url == SC_URL and download is True
+    assert url == SC_URL
+    assert download is True
     assert opts["outtmpl"] == str(tmp_path / f"{SC_ID}.%(ext)s")
     assert opts["postprocessors"][0]["preferredcodec"] == "m4a"
-    assert out["artist"] == "Some Artist" and out["thumbnail"].endswith("-t500x500.jpg")
+    assert out["artist"] == "Some Artist"
+    assert out["thumbnail"].endswith("-t500x500.jpg")
 
 
 def test_download_refuses_preview_format_and_removes_file(ydl, tmp_path):
@@ -251,7 +261,7 @@ def test_fetch_cover_soundcloud_fixed_host(tmp_path, monkeypatch):
     assert asked[-1:] == ["https://i1.sndcdn.com/artworks-abc-t500x500.jpg"]
 
 
-@pytest.fixture()
+@pytest.fixture
 def client(tmp_path, monkeypatch):
     monkeypatch.setenv("AUDIO_API_TOKEN", "secret")
     monkeypatch.setattr(main, "DOWNLOAD_DIR", tmp_path / "downloads")
@@ -293,15 +303,19 @@ def test_preview_soundcloud(client):
     r = client.post("/preview", json={"url": f"{SC_URL}?si=abc"}, headers=H)
     assert r.status_code == 200
     j = r.json()
-    assert j["id"] == SC_ID and j["source"] == "soundcloud" and j["source_url"] == SC_URL
-    assert "preview_only" not in j and j["in_library"] is False
+    assert j["id"] == SC_ID
+    assert j["source"] == "soundcloud"
+    assert j["source_url"] == SC_URL
+    assert "preview_only" not in j
+    assert j["in_library"] is False
     assert j["tags"] == ["genre:house"]
 
 
 def test_preview_short_link_resolved(client, monkeypatch):
     monkeypatch.setattr(urlclean, "resolve_soundcloud_short", lambda u: SC_URL)
     r = client.post("/preview", json={"url": "https://on.soundcloud.com/AbC123"}, headers=H)
-    assert r.status_code == 200 and r.json()["id"] == SC_ID
+    assert r.status_code == 200
+    assert r.json()["id"] == SC_ID
 
 
 def test_preview_short_link_failure_is_unsupported(client, monkeypatch):
@@ -310,7 +324,8 @@ def test_preview_short_link_failure_is_unsupported(client, monkeypatch):
 
     monkeypatch.setattr(urlclean, "resolve_soundcloud_short", boom)
     r = client.post("/preview", json={"url": "https://on.soundcloud.com/AbC123"}, headers=H)
-    assert r.status_code == 422 and r.json()["error"] == "unsupported"
+    assert r.status_code == 422
+    assert r.json()["error"] == "unsupported"
 
 
 def test_preview_set_is_refused(client):
@@ -319,16 +334,19 @@ def test_preview_set_is_refused(client):
     assert r.json() == {"error": "unsupported", "detail": "Only single tracks are supported"}
     assert client.post("/preview", json={"url": "https://soundcloud.com/a"}, headers=H).json()["error"] == "unsupported"
     r = client.post("/preview", json={"url": "http://x.y"}, headers=H)
-    assert r.status_code == 422 and r.json()["error"] == "unsupported"
+    assert r.status_code == 422
+    assert r.json()["error"] == "unsupported"
 
 
 def test_preview_only_is_422_structured(client):
     client.state["probe"]["preview_only"] = True
     r = client.post("/preview", json={"url": SC_URL}, headers=H)
-    assert r.status_code == 422 and r.json()["error"] == "preview_only"
+    assert r.status_code == 422
+    assert r.json()["error"] == "preview_only"
     assert "Go+" in r.json()["detail"]
     r = client.post("/songs", json={"url": SC_URL}, headers=H)
-    assert r.status_code == 422 and r.json()["error"] == "preview_only"
+    assert r.status_code == 422
+    assert r.json()["error"] == "preview_only"
     assert client.get("/library", headers=H).json() == {"songs": []}
 
 
@@ -342,21 +360,28 @@ def test_preview_extractor_errors(client, monkeypatch, message, status, code):
 
     monkeypatch.setattr(extractor, "soundcloud_probe", boom)
     r = client.post("/preview", json={"url": SC_URL}, headers=H)
-    assert r.status_code == status and r.json()["error"] == code
+    assert r.status_code == status
+    assert r.json()["error"] == code
 
 
 def test_save_soundcloud_song_and_mixed_library(client, tmp_path):
     r = client.post("/songs", json={"url": SC_URL, "metadata": {"title": "Mine", "artist": "Me"}, "tags": ["genre:house"]}, headers=H)
-    assert r.status_code == 202 and r.json()["id"] == SC_ID
+    assert r.status_code == 202
+    assert r.json()["id"] == SC_ID
     assert client.get(f"/songs/{SC_ID}/status", headers=H).json()["status"] == "done"
-    assert client.state["source_url"] == SC_URL and client.state["artwork"] == ART
+    assert client.state["source_url"] == SC_URL
+    assert client.state["artwork"] == ART
     assert client.post("/songs", json={"url": f"{SC_URL}?si=x"}, headers=H).status_code == 409
     assert client.post("/songs", json={"url": f"https://youtu.be/{YT}"}, headers=H).status_code == 202
     songs = {s["id"]: s for s in client.get("/library", headers=H).json()["songs"]}
     sc, yt = songs[SC_ID], songs[YT]
-    assert sc["source"] == "soundcloud" and sc["source_url"] == SC_URL and sc["file"] == f"{SC_ID}.m4a"
-    assert sc["title"] == "Mine" and sc["cover"] == f"covers/{SC_ID}.jpg"
-    assert "source" not in yt and yt["file"] == f"{YT}.m4a"
+    assert sc["source"] == "soundcloud"
+    assert sc["source_url"] == SC_URL
+    assert sc["file"] == f"{SC_ID}.m4a"
+    assert sc["title"] == "Mine"
+    assert sc["cover"] == f"covers/{SC_ID}.jpg"
+    assert "source" not in yt
+    assert yt["file"] == f"{YT}.m4a"
     on_disk = json.loads((ODIR(tmp_path) / "library.json").read_text())["songs"]
     assert {s["id"] for s in on_disk} == {SC_ID, YT}
     assert library.load(ODIR(tmp_path) / "library.json")[0]["id"] in (SC_ID, YT)
@@ -375,7 +400,9 @@ def test_download_time_preview_only_reports_code(client, monkeypatch):
     monkeypatch.setattr(extractor, "download_audio", boom)
     assert client.post("/songs", json={"url": SC_URL}, headers=H).status_code == 202
     st = client.get(f"/songs/{SC_ID}/status", headers=H).json()
-    assert st["status"] == "error" and st["code"] == "preview_only" and "Go+" in st["error"]
+    assert st["status"] == "error"
+    assert st["code"] == "preview_only"
+    assert "Go+" in st["error"]
     assert client.get("/library", headers=H).json() == {"songs": []}
 
 

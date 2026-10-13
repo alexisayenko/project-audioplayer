@@ -1,3 +1,4 @@
+import threading
 import time
 
 import pytest
@@ -85,14 +86,18 @@ def test_services_soundcloud_wikidata_fallback_and_failed_source():
 
 
 def test_gather_timeout_returns_what_finished(upstream):
+    release = threading.Event()
+
     def slow():
-        time.sleep(2)
+        release.wait(2)
         return {"album": "Late", "tags": ["genre:late"]}
 
     start = time.monotonic()
     out = metadata.gather("T", "A", [slow], timeout=0.3)
+    release.set()
     assert time.monotonic() - start < 1.5
-    assert out["album"] == "Highway to Hell" and "genre:late" not in out["tags"]
+    assert out["album"] == "Highway to Hell"
+    assert "genre:late" not in out["tags"]
     assert out["services"]["youtube"]["found"] is False
 
 

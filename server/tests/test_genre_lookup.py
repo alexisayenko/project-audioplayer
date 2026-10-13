@@ -91,7 +91,8 @@ def test_rate_limiter_and_user_agent(monkeypatch):
     monkeypatch.setenv("AUDIO_MB_USER_AGENT", "test/1 (x@y.z)")
     monkeypatch.setattr(gl, "_last_call", 100.0)
     gl._get("recording/", {"query": "q"})
-    assert sleeps and abs(sleeps[0] - gl.MIN_INTERVAL) < 1e-6
+    assert sleeps
+    assert abs(sleeps[0] - gl.MIN_INTERVAL) < 1e-6
     assert seen == {"ua": "test/1 (x@y.z)", "timeout": 5}
 
 

@@ -430,7 +430,7 @@ def _scheduled(uid: str, owner: bool, fn):
     def run() -> None:
         try:
             box["value"] = fn()
-        except BaseException as exc:
+        except Exception as exc:
             box["error"] = exc
         finally:
             done.set()
@@ -439,6 +439,8 @@ def _scheduled(uid: str, owner: bool, fn):
     done.wait()
     if "error" in box:
         raise box["error"]
+    if "value" not in box:
+        raise RuntimeError("download worker stopped before finishing")
     return box["value"]
 
 
@@ -882,7 +884,7 @@ _IMMUTABLE = "public, max-age=31536000, immutable"
 
 def web_version() -> str:
     """Short fingerprint of the web files; it changes whenever any of them is deployed."""
-    digest = hashlib.sha1()
+    digest = hashlib.sha256()
     for path in sorted(WEB_DIR.rglob("*")):
         if path.is_file():
             info = path.stat()

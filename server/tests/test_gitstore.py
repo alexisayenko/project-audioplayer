@@ -37,7 +37,7 @@ def make_remote(tmp_path, name):
     return bare, clone
 
 
-@pytest.fixture()
+@pytest.fixture
 def repos(tmp_path, monkeypatch):
     monkeypatch.setenv("GIT_AUTHOR_NAME", "t")
     monkeypatch.setenv("GIT_AUTHOR_EMAIL", "t@t")
@@ -48,7 +48,7 @@ def repos(tmp_path, monkeypatch):
     return data_bare, data, cov_bare, cov
 
 
-@pytest.fixture()
+@pytest.fixture
 def client(tmp_path, repos, monkeypatch):
     _, data, _, cov = repos
     sync = gitstore.GitSync(data, cov, backoff=(0.05, 0.1))
@@ -97,7 +97,8 @@ def test_add_edit_delete_commit_and_push(client, repos):
     assert log(data_bare)[:2] == [f"audioplayer: {U8} edit {VID}", f"audioplayer: {U8} add {VID}"]
     assert log(cov_bare)[0] == f"audioplayer: {U8} add {VID}"
     doc = json.loads(git(data_bare, "show", LIBP))
-    assert doc["songs"][0]["title"] == "New" and doc["songs"][0]["file"] == f"{VID}.m4a"
+    assert doc["songs"][0]["title"] == "New"
+    assert doc["songs"][0]["file"] == f"{VID}.m4a"
     assert doc["settings"]["music_root"]
     assert git(cov_bare, "show", f"main:audioplayer/users/{OWNER_UID}/covers/{VID}.jpg") == "jpg"
     assert client.delete(f"/songs/{VID}", headers=H).status_code == 204
@@ -203,7 +204,8 @@ def test_metadata_only_and_audio_removal_round_trip_through_git(client, repos):
     assert client.post("/songs", json=body, headers=H).status_code == 201
     assert log(data_bare)[0] == f"audioplayer: {U8} add {VID}"
     doc = json.loads(git(data_bare, "show", LIBP))
-    assert doc["songs"][0]["file"] is None and "audio_state" not in doc["songs"][0]
+    assert doc["songs"][0]["file"] is None
+    assert "audio_state" not in doc["songs"][0]
     assert client.get("/library", headers=H).json()["songs"][0]["audio_state"] == "none"
     add(client, VID2)
     assert client.delete(f"/songs/{VID2}/audio", headers=H).status_code == 204

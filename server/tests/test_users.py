@@ -22,7 +22,7 @@ def key():
     return rsa.generate_private_key(public_exponent=65537, key_size=2048)
 
 
-@pytest.fixture()
+@pytest.fixture
 def multi(client, key, monkeypatch):
     """The plain-file API client plus Google sign-in for any email."""
     monkeypatch.setenv("GOOGLE_CLIENT_ID", AUD)
@@ -60,7 +60,8 @@ ALICE, BOB = "alice@example.com", "bob@example.com"
 
 
 def test_uid_is_a_hash_of_the_lowercased_email():
-    assert len(uid(ALICE)) == 16 and uid(ALICE) == uid(" Alice@Example.com ")
+    assert len(uid(ALICE)) == 16
+    assert uid(ALICE) == uid(" Alice@Example.com ")
     assert uid(ALICE) != uid(BOB)
     assert "alice" not in uid(ALICE)
 
@@ -92,9 +93,11 @@ def test_same_song_in_two_libraries_is_independent(multi, tmp_path):
     assert add(multi, a).status_code == 202
     assert add(multi, b).status_code == 202
     ua, ub = tmp_path / "downloads" / "users" / uid(ALICE), tmp_path / "downloads" / "users" / uid(BOB)
-    assert (ua / f"{VID}.m4a").is_file() and (ub / f"{VID}.m4a").is_file()
+    assert (ua / f"{VID}.m4a").is_file()
+    assert (ub / f"{VID}.m4a").is_file()
     assert multi.delete(f"/songs/{VID}", headers=b).status_code == 204
-    assert not (ub / f"{VID}.m4a").exists() and (ua / f"{VID}.m4a").is_file()
+    assert not (ub / f"{VID}.m4a").exists()
+    assert (ua / f"{VID}.m4a").is_file()
     assert multi.get(f"/files/{VID}", headers=a).status_code == 200
     assert add(multi, a).status_code == 409
 
@@ -131,7 +134,8 @@ def test_cookie_sessions_are_per_user(key, multi, monkeypatch, tmp_path):
     cb = TestClient(main.app, base_url="https://testserver")
     for c, email in ((ca, ALICE), (cb, BOB)):
         res = c.post("/auth/session", json={"id_token": token(key, email)}, headers=CSRF)
-        assert res.status_code == 200 and res.json()["email"] == email
+        assert res.status_code == 200
+        assert res.json()["email"] == email
     assert ca.post("/songs", json={"url": VID, "metadata": {"title": "S"}}, headers=CSRF).status_code == 202
     assert ca.get(f"/files/{VID}").status_code == 200
     assert cb.get(f"/files/{VID}").status_code == 404
@@ -146,19 +150,25 @@ def test_cookie_sessions_are_per_user(key, multi, monkeypatch, tmp_path):
 def test_open_signup_creates_profile_without_email_in_paths(multi, tmp_path):
     h = who(multi, ALICE)
     me = multi.get("/me", headers=h).json()
-    assert me["email"] == ALICE and me["provider"] == "google" and me["owner"] is False
+    assert me["email"] == ALICE
+    assert me["provider"] == "google"
+    assert me["owner"] is False
     profile = json.loads((tmp_path / "users" / uid(ALICE) / "profile.json").read_text())
-    assert profile["email"] == ALICE and profile["provider"] == "google" and profile["created_at"].endswith("Z")
+    assert profile["email"] == ALICE
+    assert profile["provider"] == "google"
+    assert profile["created_at"].endswith("Z")
     add(multi, h)
     names = [str(p.relative_to(tmp_path)).lower() for p in tmp_path.rglob("*")]
-    assert names and not any("alice" in n or "@" in n for n in names)
+    assert names
+    assert not any("alice" in n or "@" in n for n in names)
 
 
 def test_signup_closed_blocks_new_users_not_existing_or_owner(multi, monkeypatch):
     assert multi.get("/me", headers=who(multi, ALICE)).status_code == 200
     monkeypatch.setenv("SIGNUP_OPEN", "0")
     r = multi.get("/library", headers=who(multi, BOB))
-    assert r.status_code == 403 and r.json()["error"] == "signup_closed"
+    assert r.status_code == 403
+    assert r.json()["error"] == "signup_closed"
     assert multi.get("/library", headers=who(multi, ALICE)).status_code == 200
     assert multi.get("/library", headers=who(multi, "alex.isayenko@gmail.com")).status_code == 200
     assert multi.get("/library", headers=H).status_code == 200
@@ -197,7 +207,8 @@ def test_owner_is_exempt_from_user_limits_but_users_are_not(multi, monkeypatch):
     a = who(multi, ALICE)
     assert add(multi, a, VID).status_code == 202
     r = add(multi, a, VID2)
-    assert r.status_code == 403 and r.json()["error"] == "library_full_songs"
+    assert r.status_code == 403
+    assert r.json()["error"] == "library_full_songs"
     assert multi.get("/me", headers=H).json()["owner"] is True
 
 
@@ -208,11 +219,14 @@ def test_hourly_limit_429_with_retry_minutes(multi, monkeypatch):
     assert add(multi, a, VID2).status_code == 202
     r = add(multi, a, VID3)
     body = r.json()
-    assert r.status_code == 429 and body["error"] == "hourly_limit"
-    assert 1 <= body["retry_after_minutes"] <= 60 and "min" in body["detail"]
+    assert r.status_code == 429
+    assert body["error"] == "hourly_limit"
+    assert 1 <= body["retry_after_minutes"] <= 60
+    assert "min" in body["detail"]
     assert r.headers["retry-after"] == str(body["retry_after_minutes"] * 60)
     assert add(multi, b, VID3).status_code == 202
-    assert add(multi, H, VID3).status_code == 202 and add(multi, H, VID4).status_code == 202
+    assert add(multi, H, VID3).status_code == 202
+    assert add(multi, H, VID4).status_code == 202
 
 
 def test_hourly_window_slides(multi, monkeypatch):
@@ -221,7 +235,8 @@ def test_hourly_window_slides(multi, monkeypatch):
     now = time.time()
     limits.RATE.record(uid(ALICE), [], now=now - 3600 + 150)
     r = add(multi, a, VID)
-    assert r.status_code == 429 and r.json()["retry_after_minutes"] == 3
+    assert r.status_code == 429
+    assert r.json()["retry_after_minutes"] == 3
     limits.RATE.reset()
     limits.RATE.record(uid(ALICE), [], now=now - 3601)
     assert add(multi, a, VID).status_code == 202
@@ -241,7 +256,8 @@ def test_library_full_by_bytes_and_metadata_only_still_allowed(multi, monkeypatc
     assert add(multi, a, VID).status_code == 202
     assert add(multi, a, VID2).status_code == 202
     r = add(multi, a, VID3)
-    assert r.status_code == 403 and r.json()["error"] == "library_full_bytes"
+    assert r.status_code == 403
+    assert r.json()["error"] == "library_full_bytes"
     assert add(multi, a, VID3, audio=False).status_code == 201
     assert add(multi, H, VID4).status_code == 202
 
@@ -251,7 +267,8 @@ def test_server_full_503_applies_to_owner_too(multi, monkeypatch):
     assert add(multi, H, VID).status_code == 202
     for headers in (H, who(multi, ALICE)):
         r = add(multi, headers, VID2)
-        assert r.status_code == 503 and r.json()["error"] == "server_full"
+        assert r.status_code == 503
+        assert r.json()["error"] == "server_full"
     assert add(multi, H, VID2, audio=False).status_code == 201
     assert multi.post("/download", json={"video_id": VID3}, headers=H).status_code == 503
 
@@ -278,11 +295,14 @@ def test_delete_frees_quota_and_usage_reports_it(multi, monkeypatch):
     add(multi, a, VID)
     add(multi, a, VID2)
     use = multi.get("/me/usage", headers=a).json()
-    assert use["songs"] == 2 and use["bytes"] == 10 and use["adds_last_hour"] == 2
+    assert use["songs"] == 2
+    assert use["bytes"] == 10
+    assert use["adds_last_hour"] == 2
     assert add(multi, a, VID3).json()["error"] == "library_full_songs"
     assert multi.delete(f"/songs/{VID}", headers=a).status_code == 204
     use = multi.get("/me/usage", headers=a).json()
-    assert use["songs"] == 1 and use["bytes"] == 5
+    assert use["songs"] == 1
+    assert use["bytes"] == 5
     monkeypatch.setenv("USER_ADDS_PER_HOUR", "50")
     assert add(multi, a, VID3).status_code == 202
     assert multi.delete(f"/songs/{VID2}/audio", headers=a).status_code == 204
@@ -299,7 +319,9 @@ def test_usage_counts_real_files_not_the_library(multi, tmp_path, monkeypatch):
 
 def test_usage_for_owner_has_no_limits(multi):
     use = multi.get("/me/usage", headers=H).json()
-    assert use["max_songs"] is None and use["max_bytes"] is None and use["max_adds"] is None
+    assert use["max_songs"] is None
+    assert use["max_bytes"] is None
+    assert use["max_adds"] is None
     assert set(use) == {"songs", "max_songs", "bytes", "max_bytes", "adds_last_hour", "max_adds"}
     assert multi.get("/me/usage").status_code == 401
 
@@ -337,7 +359,8 @@ def test_owner_env_and_deprecated_alias(monkeypatch):
     monkeypatch.setenv("ALLOWED_EMAIL", "Old@Example.com")
     assert users.owner_email() == "old@example.com"
     monkeypatch.setenv("OWNER_EMAIL", "new@example.com")
-    assert users.owner_email() == "new@example.com" and users.is_owner(uid("new@example.com"))
+    assert users.owner_email() == "new@example.com"
+    assert users.is_owner(uid("new@example.com"))
 
 
 def wait_for(client, headers, vid, status, secs=10):
@@ -350,7 +373,7 @@ def wait_for(client, headers, vid, status, secs=10):
     raise AssertionError(f"{vid} never became {status}: {r.text}")
 
 
-@pytest.fixture()
+@pytest.fixture
 def slow(multi, monkeypatch):
     """Real worker threads; each download waits for its own gate."""
     monkeypatch.setattr(main.SCHED, "inline", False)
@@ -380,7 +403,8 @@ def test_extra_adds_queue_per_user(slow):
     a = who(slow, ALICE)
     assert add(slow, a, VID).json() == {"id": VID, "status": "downloading"}
     r = add(slow, a, VID2)
-    assert r.status_code == 202 and r.json() == {"id": VID2, "status": "queued"}
+    assert r.status_code == 202
+    assert r.json() == {"id": VID2, "status": "queued"}
     assert slow.get(f"/songs/{VID2}/status", headers=a).json()["status"] == "queued"
     assert add(slow, a, VID2).status_code == 409
     time.sleep(0.2)
@@ -428,4 +452,5 @@ def test_queued_adds_count_against_the_songs_quota(slow, monkeypatch):
     add(slow, a, VID)
     add(slow, a, VID2)
     r = add(slow, a, VID3)
-    assert r.status_code == 403 and r.json()["error"] == "library_full_songs"
+    assert r.status_code == 403
+    assert r.json()["error"] == "library_full_songs"

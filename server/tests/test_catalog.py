@@ -37,8 +37,10 @@ def test_legacy_record_unchanged_on_disk_and_derived_at_read(client, tmp_path):
 def test_state_none_without_file_and_with_missing_file(client, tmp_path):
     seed(tmp_path, [LEGACY, meta_only(VID2)])
     songs = {s["id"]: s for s in client.get("/library", headers=H).json()["songs"]}
-    assert songs[VID]["audio_state"] == "none" and "audio" not in songs[VID]
-    assert songs[VID2]["audio_state"] == "none" and songs[VID2]["file"] is None
+    assert songs[VID]["audio_state"] == "none"
+    assert "audio" not in songs[VID]
+    assert songs[VID2]["audio_state"] == "none"
+    assert songs[VID2]["file"] is None
     assert client.get(f"/files/{VID2}", headers=H).status_code == 404
 
 
@@ -51,13 +53,19 @@ def test_metadata_only_add(client, tmp_path):
     r = add(client, audio=False)
     assert r.status_code == 201
     body = r.json()
-    assert body["audio_state"] == "none" and body["status"] == "done"
+    assert body["audio_state"] == "none"
+    assert body["status"] == "done"
     song = client.get("/library", headers=H).json()["songs"][0]
-    assert song["title"] == "Song" and song["file"] is None and song["audio_state"] == "none"
-    assert song["sources"][0]["source"] == "youtube" and song["year"] == 1987
+    assert song["title"] == "Song"
+    assert song["file"] is None
+    assert song["audio_state"] == "none"
+    assert song["sources"][0]["source"] == "youtube"
+    assert song["year"] == 1987
     assert not (ADIR(tmp_path) / f"{VID}.m4a").exists()
     stored = json.loads((ODIR(tmp_path) / "library.json").read_text())["songs"][0]
-    assert "audio_state" not in stored and "audio" not in stored and stored["file"] is None
+    assert "audio_state" not in stored
+    assert "audio" not in stored
+    assert stored["file"] is None
     assert add(client, audio=False).status_code == 409
     assert add(client).status_code == 409
 
@@ -74,7 +82,9 @@ def test_delete_audio_keeps_entry_then_delete_song(client, tmp_path):
     assert client.delete(f"/songs/{VID}/audio", headers=H).status_code == 204
     assert not (ADIR(tmp_path) / f"{VID}.m4a").exists()
     song = client.get("/library", headers=H).json()["songs"][0]
-    assert song["audio_state"] == "none" and song["file"] is None and song["title"] == "Song"
+    assert song["audio_state"] == "none"
+    assert song["file"] is None
+    assert song["title"] == "Song"
     assert client.get(f"/files/{VID}", headers=H).status_code == 404
     assert client.delete(f"/songs/{VID}/audio", headers=H).status_code == 204
     assert client.delete(f"/songs/{VID2}/audio", headers=H).status_code == 404
@@ -100,13 +110,17 @@ def test_catalog_etag_and_304(client):
     r = client.get("/catalog", headers=H)
     assert r.status_code == 200
     body = r.json()
-    assert body["total"] == 1 and body["ids"] == [VID] and body["songs"][0]["audio_state"] == "server"
+    assert body["total"] == 1
+    assert body["ids"] == [VID]
+    assert body["songs"][0]["audio_state"] == "server"
     assert r.headers["etag"] == f'"{body["revision"]}"'
     again = client.get("/catalog", headers={**H, "If-None-Match": r.headers["etag"]})
-    assert again.status_code == 304 and again.content == b""
+    assert again.status_code == 304
+    assert again.content == b""
     client.patch(f"/songs/{VID}", json={"title": "Changed"}, headers=H)
     changed = client.get("/catalog", headers={**H, "If-None-Match": r.headers["etag"]})
-    assert changed.status_code == 200 and changed.json()["revision"] != body["revision"]
+    assert changed.status_code == 200
+    assert changed.json()["revision"] != body["revision"]
     add(client, VID2)
     assert client.get("/catalog", headers=H).json()["revision"] != changed.json()["revision"]
 
@@ -123,7 +137,8 @@ def test_catalog_since(client, tmp_path):
     new = meta_only(VID2, added_at="2026-10-10T00:00:00Z")
     seed(tmp_path, [old, new])
     body = client.get("/catalog", params={"since": "2026-06-01T00:00:00Z"}, headers=H).json()
-    assert [s["id"] for s in body["songs"]] == [VID2] and body["ids"] == [VID, VID2]
+    assert [s["id"] for s in body["songs"]] == [VID2]
+    assert body["ids"] == [VID, VID2]
     r = client.get("/catalog", params={"since": "2026-06-01T00:00:00Z"}, headers=H)
     assert client.get(
         "/catalog", params={"since": "2026-06-01T00:00:00Z"}, headers={**H, "If-None-Match": r.headers["etag"]}
@@ -152,7 +167,8 @@ def test_mixed_source_ids(client, tmp_path):
     assert songs[2]["sources"][0]["source"] == "spotify"
     assert client.patch(f"/songs/{sp}", json={"title": "Edited"}, headers=H).json()["title"] == "Edited"
     assert client.delete(f"/songs/{sp}", headers=H).status_code == 204
-    assert urlclean.source_of(sp) == "spotify" and urlclean.source_of(sc) == "soundcloud"
+    assert urlclean.source_of(sp) == "spotify"
+    assert urlclean.source_of(sc) == "soundcloud"
     assert urlclean.source_of(VID) == "youtube"
     assert not urlclean.is_valid_video_id("spotify-")
     assert not urlclean.is_valid_video_id("spotify-../x")
