@@ -2,6 +2,7 @@ import { api } from './api.js';
 import { store } from './store.js';
 import { el, toast } from './dom.js';
 import { tagEditor } from './tag-editor.js';
+import { chipField } from './chip-field.js';
 import { wikiFields } from './wiki-links.js';
 
 const field = (label, input) => el('div', { class: 'field' }, el('label', {}, label), input);
@@ -54,7 +55,9 @@ export function editDialog(song) {
     year: el('input', { type: 'number', value: song.year ?? '', min: 0, max: 3000 }),
     bpm: el('input', { type: 'number', value: song.bpm != null ? Math.round(song.bpm) : '', min: 20, max: 300, step: 1, placeholder: 'Unknown' }),
   };
-  const editor = tagEditor({ tags: song.tags || [], year: f.year });
+  const editor = tagEditor({ tags: song.tags || [], year: f.year, hideNs: true });
+  const genres = chipField('genre', editor);
+  const countries = chipField('country', editor);
   const err = el('p', { class: 'msg error', hidden: true });
   const wiki = wikiFields({
     song: song.wikipedia_song, artist: song.wikipedia_artist,
@@ -82,6 +85,7 @@ export function editDialog(song) {
     el('div', { class: 'grid2' }, field('Album', f.album), field('Year', f.year)),
     el('div', { class: 'field' }, el('label', {}, 'BPM (heuristic, may be off by half or double)'), el('div', { class: 'row' }, f.bpm, redetect)),
     wiki.node,
+    genres.node, countries.node,
     el('div', { class: 'field' }, el('label', {}, 'Tags'), editor.node),
     err,
     el('div', { class: 'row end' },
@@ -89,6 +93,8 @@ export function editDialog(song) {
       el('button', { type: 'submit', class: 'btn primary glow' }, 'Save')));
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
+    genres.commit();
+    countries.commit();
     try {
       await api.patch(song.id, {
         title: f.title.value,

@@ -5,10 +5,13 @@ import { isHiddenTag, visibleTags, tagGroups, tagLabel, tagText, tagSearchText, 
 
 const same = (a, b) => a.toLocaleLowerCase() === b.toLocaleLowerCase();
 
-export function tagEditor({ tags = [], suggested = [], year = null, onChange = null } = {}) {
+export function tagEditor({ tags = [], suggested = [], year = null, onChange = null, hideNs = false } = {}) {
+  const listeners = onChange ? [onChange] : [];
+  const hidden = (t) => isHiddenTag(t) || (hideNs && /^(genre|country):/i.test(t));
+  const shown = (list) => list.filter((t) => !hidden(t));
   const yearValue = () => (year && year.value !== '' ? Number(year.value) : null);
   let current = withDecade(tags, yearValue());
-  let sug = visibleTags(withDecade(suggested, yearValue()));
+  let sug = shown(withDecade(suggested, yearValue()));
   const input = el('input', { type: 'text', placeholder: 'Type a tag (plain or key:value), Enter or comma to add', enterKeyHint: 'done', autocomplete: 'off' });
   const chosen = el('div', { class: 'chips' });
   const sugBox = el('div', { class: 'chip-group' });
@@ -34,15 +37,15 @@ export function tagEditor({ tags = [], suggested = [], year = null, onChange = n
 
   function render() {
     const q = input.value.trim().toLocaleLowerCase();
-    chosen.replaceChildren(...visibleTags(current).map((t) => el('span', { class: 'chip on', title: t }, tagText(t),
+    chosen.replaceChildren(...shown(current).map((t) => el('span', { class: 'chip on', title: t }, tagText(t),
       el('button', { type: 'button', class: 'x', 'aria-label': `Remove ${t}`, onclick: () => toggle(t) }, '×'))));
     sugBox.hidden = !sug.length;
     sugBox.replaceChildren(...(sug.length ? [el('span', { class: 'group-name' }, 'Suggested'), ...sug.map((t) => chip(t))] : []));
-    const shown = store.tags.filter((t) => !q || tagSearchText(t.tag).toLocaleLowerCase().includes(q));
-    pool.replaceChildren(...tagGroups(shown).map((g) => el('div', { class: 'chip-group' },
+    const matches = store.tags.filter((t) => !hidden(t.tag) && !q || tagSearchText(t.tag).toLocaleLowerCase().includes(q));
+    pool.replaceChildren(...tagGroups(matches).map((g) => el('div', { class: 'chip-group' },
       el('span', { class: 'group-name' }, g.name),
       ...[...g.tags].sort(g.key === 'decade' ? (a, b) => decadeRank(a.tag) - decadeRank(b.tag) : (a, b) => b.count - a.count || a.tag.localeCompare(b.tag)).map((t) => chip(t.tag, t.count)))));
-    if (onChange) onChange([...current]);
+    for (const fn of listeners) fn([...current]);
   }
 
   input.addEventListener('keydown', (e) => {
@@ -62,8 +65,17 @@ export function tagEditor({ tags = [], suggested = [], year = null, onChange = n
     node,
     getTags() { add(input.value); return [...current]; },
     peek() { return [...current]; },
+    subscribe(fn) { listeners.push(fn); fn([...current]); },
+    addTags(list) {
+      for (const t of list) if (!isHiddenTag(t) && !has(t)) current.push(t);
+      render();
+    },
+    removeTag(t) {
+      current = current.filter((x) => !same(x, t));
+      render();
+    },
     setSuggested(list) {
-      for (const t of visibleTags(list)) if (!sug.some((x) => same(x, t))) sug.push(t);
+      for (const t of shown(list)) if (!sug.some((x) => same(x, t))) sug.push(t);
       render();
     },
   };

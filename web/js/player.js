@@ -1,5 +1,6 @@
 import { api } from './api.js';
 import { store } from './store.js';
+import { hasAudio } from './playable.js';
 import { el, fmtTime, toast, plural } from './dom.js';
 import * as Q from './queue-logic.js';
 import { visibleTags, tagChip, tagGroups, tagLabel, tagText } from './tagname.js';
@@ -80,25 +81,27 @@ export const player = {
   onChange(fn) { listeners.add(fn); return () => listeners.delete(fn); },
 
   playNow(id) {
+    if (!hasAudio(store.get(id))) return;
     qs = Q.playNow(qs, id);
     saveQueue();
     load(true);
   },
 
   add(id) {
+    if (!hasAudio(store.get(id))) return 'unavailable';
     const { state, result } = Q.addManual(qs, id);
     commit(state);
     return result;
   },
 
   addTags(tags) {
-    const { state, added } = Q.addTags(qs, tags, store.songs);
+    const { state, added } = Q.addTags(qs, tags, store.songs.filter(hasAudio));
     commit(state);
     return added;
   },
 
   addListed(songs, tag) {
-    const { state, added, already } = Q.addListed(qs, songs, tag);
+    const { state, added, already } = Q.addListed(qs, songs.filter(hasAudio), tag);
     commit(state);
     return { added, already };
   },

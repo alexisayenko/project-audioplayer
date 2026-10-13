@@ -4,7 +4,7 @@ import { player } from './player.js';
 import { el, toast, fmtTime, plural } from './dom.js';
 import { icon } from './icons.js';
 import { openMenu } from './menu.js';
-import { downloads } from './downloads.js';
+import { hasAudio, sourceLink } from './playable.js';
 import { openAdd } from './add.js';
 import { editDialog } from './edit-dialog.js';
 import { visibleTags, tagLabel, tagSearchText, categoryOf, categoryTags, CATEGORIES } from './tagname.js';
@@ -67,7 +67,7 @@ export function renderLibrary(root) {
   addAll.addEventListener('click', () => {
     const songs = visibleSongs();
     const only = prefs.sel.size === 1 ? store.tags.find((t) => prefs.sel.has(t.tag.toLocaleLowerCase())) : null;
-    const { added, already } = player.addListed(songs, only ? only.tag : '');
+    const { added, already } = player.addListed(songs.filter(hasAudio), only ? only.tag : '');
     const note = already ? ` (${already} already in queue)` : '';
     toast(`Added ${added} ${plural(added, 'song', 'songs')}${note}`);
   });
@@ -166,23 +166,19 @@ export function renderLibrary(root) {
   function renderList() {
     const songs = visibleSongs();
     const cur = player.current;
-    const pending = downloads.list();
     const filtered = !!(prefs.sel.size || prefs.query.trim());
     total.textContent = store.loaded ? `${store.songs.length} ${plural(store.songs.length, 'song', 'songs')}` : '';
     summary.textContent = store.loaded && store.songs.length && filtered ? matchSummary(songs.length) : '';
     addAll.hidden = !(store.loaded && filtered && songs.length);
     addAll.textContent = `Add all ${songs.length} to playlist`;
-    const nothing = store.loaded && !store.songs.length && !pending.length;
-    group.hidden = nothing || (!store.loaded && !pending.length);
+    const nothing = store.loaded && !store.songs.length;
+    group.hidden = nothing || !store.loaded;
     paintStatus(nothing);
     const empty = !songs.length && store.loaded && store.songs.length
       ? [el('li', { class: 'empty muted t-subhead' }, 'No songs match. Clear the search or the filters.')]
       : [];
     let n = 0;
-    list.replaceChildren(
-      ...(filtered ? [] : pending.map((d) => pendingRow(d, ++n))),
-      ...empty,
-      ...songs.map((s) => songRow(s, cur, ++n)));
+    list.replaceChildren(...empty, ...songs.map((s) => songRow(s, cur, ++n)));
   }
 
   function matchSummary(count) {
@@ -194,7 +190,6 @@ export function renderLibrary(root) {
 
   const unsub = store.subscribe(renderAll);
   const unsubPlayer = player.onChange(renderList);
-  const unsubDownloads = downloads.onChange(renderList);
 
   let loadError = null;
   function paintStatus(nothing) {
@@ -207,7 +202,7 @@ export function renderLibrary(root) {
     } else if (nothing) {
       status.replaceChildren(el('div', { class: 'state card' },
         el('p', { class: 't-headline' }, 'No songs yet'),
-        el('p', { class: 'muted t-subhead' }, 'Paste a YouTube or SoundCloud link and the server downloads the audio into your library.'),
+        el('p', { class: 'muted t-subhead' }, 'Paste a YouTube or SoundCloud link to save the song to your library.'),
         el('button', { class: 'btn primary glow', type: 'button', onclick: openAdd }, icon('plus', 18), 'Add song')));
     } else {
       status.replaceChildren();
@@ -217,7 +212,7 @@ export function renderLibrary(root) {
   void load();
   renderAll();
 
-  return () => { unsub(); unsubPlayer(); unsubDownloads(); const d = document.getElementById('filter-sheet'); if (d.open) d.close(); };
+  return () => { unsub(); unsubPlayer(); const d = document.getElementById('filter-sheet'); if (d.open) d.close(); };
 }
 
 function cover(s) {
@@ -228,42 +223,35 @@ function cover(s) {
 }
 
 function songRow(s, cur, n) {
-  const here = cur && cur.id === s.id;
+  const audio = hasAudio(s);
+  const link = audio ? null : sourceLink(s);
+  const here = audio && cur && cur.id === s.id;
   const more = el('button', { class: 'more', type: 'button', 'aria-label': `More: ${s.title}`, 'aria-haspopup': 'menu', 'aria-expanded': 'false' }, icon('more', 20));
   more.addEventListener('click', () => openMenu(more, [
-    { label: 'Play now', run: () => player.playNow(s.id) },
-    { label: 'Add to playlist', run: () => addToQueue(s) },
+    ...(audio ? [
+      { label: 'Play now', run: () => player.playNow(s.id) },
+      { label: 'Add to playlist', run: () => addToQueue(s) },
+    ] : []),
     { label: 'Edit song', run: () => editDialog(s) },
   ]));
-  return el('li', { class: `song${here ? ' current' : ''}`, 'aria-current': here ? 'true' : null },
+  const open = audio
+    ? el('button', { class: 'open t-headline', type: 'button', title: 'Play now', onclick: () => player.playNow(s.id) }, s.title)
+    : el('span', { class: 'open t-headline' }, s.title);
+  const dur = audio
+    ? el('span', { class: 'c-dur t-time' }, s.duration ? fmtTime(s.duration) : '')
+    : el('span', { class: 'c-dur t-caption' },
+      link ? el('a', { class: 'src-link', href: link.url, target: '_blank', rel: 'noopener' }, link.label) : '');
+  return el('li', { class: `song${here ? ' current' : ''}${audio ? '' : ' no-audio'}`, 'aria-current': here ? 'true' : null },
     el('span', { class: 'c-idx t-time' }, n),
     cover(s),
-    el('div', { class: 'info' },
-      el('button', { class: 'open t-headline', type: 'button', title: 'Play now', onclick: () => player.playNow(s.id) }, s.title),
-      s.artist ? el('small', { class: 'sub t-subhead' }, s.artist) : null),
+    el('div', { class: 'info' }, open,
+      s.artist ? el('small', { class: 'sub t-subhead' }, s.artist) : null,
+      audio ? null : el('small', { class: 'off-server t-caption' }, 'Not on the server')),
     el('span', { class: 'c-artist t-subhead' }, s.artist || ''),
     el('span', { class: 'c-album t-subhead' }, s.album || ''),
     el('span', { class: 'c-year t-subhead' }, s.year || ''),
-    el('span', { class: 'c-dur t-time' }, s.duration ? fmtTime(s.duration) : ''),
+    dur,
     more);
-}
-
-function pendingRow(d, n) {
-  const pct = `Downloading ${Math.round((d.progress || 0) * 100)}%`;
-  const img = el('img', { class: 'cover', alt: '', loading: 'lazy' });
-  if (d.thumbnail) img.src = d.thumbnail;
-  img.addEventListener('error', () => img.removeAttribute('src'));
-  return el('li', { class: 'song pending' },
-    el('span', { class: 'c-idx t-time' }, n),
-    img,
-    el('div', { class: 'info' },
-      el('span', { class: 'open t-headline' }, d.title),
-      d.artist ? el('small', { class: 'sub t-subhead' }, d.artist) : null),
-    el('span', { class: 'c-artist t-subhead' }, d.artist || ''),
-    el('span', { class: 'c-album' }),
-    el('span', { class: 'c-year' }),
-    el('span', { class: 'c-dur t-subhead dl', role: 'status' }, pct),
-    el('span'));
 }
 
 function addToQueue(s) {

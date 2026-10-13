@@ -25,7 +25,7 @@ export class ApiError extends Error {
   }
 }
 
-async function request(method, path, body) {
+async function request(method, path, body, signal) {
   const headers = { ...CSRF };
   if (body !== undefined) headers['Content-Type'] = 'application/json';
   let res;
@@ -34,6 +34,7 @@ async function request(method, path, body) {
       method,
       headers,
       body: body === undefined ? undefined : JSON.stringify(body),
+      signal,
     });
   } catch {
     throw new ApiError(0, 'Server unreachable');
@@ -103,9 +104,9 @@ export const api = {
   usage: () => request('GET', '/me/usage'),
   library: () => request('GET', '/library').then((d) => d.songs),
   tags: () => request('GET', '/tags'),
-  preview: (url) => request('POST', '/preview', { url }),
-  addSong: (url, metadata, tags) => request('POST', '/songs', { url, metadata, tags }),
-  status: (id) => request('GET', `/songs/${q(id)}/status`),
+  preview: (url, signal) => request('POST', '/preview', { url }, signal),
+  metadata: (body, signal) => request('POST', '/metadata', body, signal),
+  addSong: (url, metadata, tags) => request('POST', '/songs', { url, metadata, tags, audio: false }),
   patch: (id, changes) => request('PATCH', `/songs/${q(id)}`, changes),
   detectBpm: (id) => request('POST', `/songs/${q(id)}/bpm/detect`),
   remove: (id) => request('DELETE', `/songs/${q(id)}`),
