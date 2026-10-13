@@ -49,8 +49,7 @@ Web: a centred 560px dialog over Library (bottom-aligned sheet on phones): title
 2. App asks the server for a metadata preview (cover, title, artist,
    album, year, and suggested `genre:` and `country:` tags from yt-dlp, MusicBrainz and Wikidata, plus suggested Wikipedia links for the song and the band).
 3. User edits any field and assigns tags in the shared tag editor ("Get metadata" after Title and Artist fills empty Album and Year and suggests genres and a country, and offers a tappable "Wikipedia says: artist / title" hint under Artist when it differs (never auto-filled; a Remix & additional production field sits under Artist, IOS-063; Title, Artist and Remix fields show their text as pills with a pencil menu and an X, IOS-065, and pills can be dragged to another field or reordered, IOS-066); four service icons beside it (YouTube, SoundCloud, Wikipedia, Spotify) are grey by default, pulse while the request runs, and turn brand-coloured and tappable (opening the found page) for each service that returned a match; Spotify always stays grey; separate Genres and Countries fields hold the `genre:` and `country:` tags (Genres suggests up to 6 matching genres as chips while typing, IOS-067); suggested tags, existing tags grouped by prefix, `key:value` allowed; incomplete leftover text such as `mood:` is ignored).
-   BPM is optional: left empty it is detected on the server after the
-   download (placeholder "Detected after saving"); a typed value is kept as is.
+   BPM is not entered on iOS: the form shows only the line "BPM is detected after saving" (web: optional field, detected after the download when left empty).
    Two optional inputs, Wikipedia (song) and Wikipedia (band), hold the links (shown as the article name, a bare name is accepted on the web); they are saved with the song and feed "Get metadata" (the iOS Add form does not show them for now).
 4. Save starts the download on the server, then the app fetches the file.
 5. Shows progress while downloading and a clear error on failure
@@ -66,7 +65,7 @@ Manages all songs.
 - `decade:` tags are derived from Year by the server and show as "the 90s"; the tag editor previews the chip as Year changes.
 - Filter by tag (chips grouped by prefix: Genre, Decade, Country, then others; plain tags under Tags; `country:` values show as names, e.g. Lithuania; languages are not shown or filterable); sort (added date, title, artist, year, BPM; songs without BPM last).
 - The iOS song sheet has the same separate Genres and Countries fields as Add; its generic tag editor hides `genre:`, `country:` and `lang:` tags.
-- Edit dialog has the two Wikipedia inputs and "Fill from Wikipedia links" (same behaviour as Add), uses the same tag editor and has a BPM input (whole numbers) and a Re-detect button (re-runs detection on the stored file).
+- Edit dialog has the two Wikipedia inputs and "Fill from Wikipedia links" (same behaviour as Add), uses the same tag editor and shows BPM as a read-only label ("128 BPM" or "Not detected yet") with a Re-detect button (re-runs detection on the stored file).
 - Edit metadata and tags of a song; Delete a song (server file, cover and
   record) from the Edit dialog.
 

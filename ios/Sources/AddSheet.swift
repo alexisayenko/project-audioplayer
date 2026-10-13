@@ -19,7 +19,6 @@ final class AddFlow: ObservableObject {
     @Published var album = ""
     @Published var remixer = ""
     @Published var year = "" { didSet { applyDecade() } }
-    @Published var bpm = ""
     @Published var wikiSong = ""
     @Published var wikiArtist = ""
     @Published var tags: [String] = []
@@ -70,7 +69,7 @@ final class AddFlow: ObservableObject {
             preview = p
             title = p.title ?? ""; artist = p.artist ?? ""; album = p.album ?? ""
             remixer = p.remixer ?? ""
-            year = p.year.map(String.init) ?? ""; bpm = ""
+            year = p.year.map(String.init) ?? ""
             wikiSong = p.wikipedia_song ?? ""; wikiArtist = p.wikipedia_artist ?? ""
             let sug = p.tags ?? []
             tags = withDecade(sug, p.year); suggested = withDecade(sug, p.year); pendingTag = ""; pendingGenre = ""; pendingCountry = ""
@@ -114,7 +113,6 @@ final class AddFlow: ObservableObject {
         phase = .saving; message = nil
         let wikiS = wikiSong.trimmingCharacters(in: .whitespaces)
         let wikiA = wikiArtist.trimmingCharacters(in: .whitespaces)
-        let bpmValue = Int(bpm.trimmingCharacters(in: .whitespaces))
         commitNamespaced(&tags, key: "genre", cap: genreCap, input: &pendingGenre)
         commitNamespaced(&tags, key: "country", cap: countryCap, input: &pendingCountry)
         let finalTagList = finalTags(tags, pending: pendingTag)
@@ -124,7 +122,6 @@ final class AddFlow: ObservableObject {
             "year": yearValue.map { $0 as Any } ?? NSNull(),
             "wikipedia_song": wikiS.isEmpty ? NSNull() : wikiS,
             "wikipedia_artist": wikiA.isEmpty ? NSNull() : wikiA,
-            "bpm": bpmValue.map { $0 as Any } ?? NSNull(),
         ]
         do {
             try await api.addSong(url: p.source_url ?? url, metadata: meta, tags: finalTagList)
@@ -134,7 +131,7 @@ final class AddFlow: ObservableObject {
         let track = Track(id: p.id, title: title, artist: artist, duration: p.duration,
                           thumbnail: p.thumbnail == nil ? nil : "/covers/\(p.id)",
                           album: album.isEmpty ? nil : album, remixer: remixerValue, year: yearValue, tags: finalTagList,
-                          bpm: bpmValue.map(Double.init), sourceURL: p.source_url,
+                          bpm: nil, sourceURL: p.source_url,
                           wikipediaSong: wikiS.isEmpty ? nil : wikiS, wikipediaArtist: wikiA.isEmpty ? nil : wikiA)
         if download {
             server.startIngest(track, settings: settings, library: library, player: player, playWhenReady: false)
@@ -373,7 +370,7 @@ struct AddSheet: View {
     }
 
     private var timing: String {
-        [flow.preview?.duration.map(formatTime), Int(flow.bpm).map { "\($0) BPM" }].compactMap { $0 }.joined(separator: " · ")
+        [flow.preview?.duration.map(formatTime)].compactMap { $0 }.joined(separator: " · ")
     }
 
     @ViewBuilder
@@ -427,7 +424,7 @@ struct AddSheet: View {
                 if let n = flow.metaNote { note(n, error: n == "Couldn't load metadata") }
                 labeled("Album", $flow.album)
                 labeled("Year", $flow.year, keyboard: .numberPad)
-                labeled("BPM (optional, detected after saving)", $flow.bpm, keyboard: .numberPad)
+                Text("BPM is detected after saving").font(T.caption).foregroundStyle(DS.Color.inkMuted)
         }
 
         NamespaceField(title: "Genres", key: "genre", cap: genreCap, tags: $flow.tags, input: $flow.pendingGenre)

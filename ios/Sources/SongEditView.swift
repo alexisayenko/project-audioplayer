@@ -12,7 +12,7 @@ struct SongEditView: View {
     @State private var album: String
     @State private var remixer: String
     @State private var year: String
-    @State private var bpm: String
+    @State private var bpm: Int?
     @State private var wikiSong: String
     @State private var wikiArtist: String
     @State private var tags: [String]
@@ -37,7 +37,7 @@ struct SongEditView: View {
         _album = State(initialValue: song.album ?? "")
         _remixer = State(initialValue: song.remixer ?? "")
         _year = State(initialValue: song.year.map(String.init) ?? "")
-        _bpm = State(initialValue: song.bpm.map { String(Int($0.rounded())) } ?? "")
+        _bpm = State(initialValue: song.bpm.map { Int($0.rounded()) })
         _wikiSong = State(initialValue: song.wikipedia_song ?? "")
         _wikiArtist = State(initialValue: song.wikipedia_artist ?? "")
         _tags = State(initialValue: song.tags ?? [])
@@ -58,7 +58,7 @@ struct SongEditView: View {
     private var facts: String {
         var parts: [String] = []
         if let d = song.duration { parts.append(formatTime(d)) }
-        if let b = Int(bpm.trimmingCharacters(in: .whitespaces)) { parts.append("\(b) BPM") }
+        if let b = bpm { parts.append("\(b) BPM") }
         if let t = track, let size = try? FileManager.default.attributesOfItem(atPath: t.fileURL.path)[.size] as? Int {
             parts.append(ByteCountFormatter.string(fromByteCount: Int64(size), countStyle: .file))
             parts.append(t.fileURL.pathExtension.uppercased())
@@ -158,9 +158,11 @@ struct SongEditView: View {
                             tags = withDecade(tags, yearValue)
                             suggested = withDecade(suggested, yearValue)
                         }
-                    Text("BPM").font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.inkMuted)
-                    DSTextField(label: "BPM", text: $bpm, keyboard: .numberPad).frame(width: 72)
                 }
+            }
+            GridRow {
+                Text("BPM").font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.inkMuted)
+                Text(bpm.map { "\($0) BPM" } ?? "Not detected yet").font(T.body).foregroundStyle(bpm == nil ? DS.Color.inkMuted : DS.Color.ink)
             }
         }
     }
@@ -267,7 +269,6 @@ struct SongEditView: View {
             "title": title, "artist": artist, "album": album,
             "remixer": link(remixer),
             "year": yearValue.map { $0 as Any } ?? NSNull(),
-            "bpm": Int(bpm.trimmingCharacters(in: .whitespaces)).map { $0 as Any } ?? NSNull(),
             "wikipedia_song": link(wikiSong), "wikipedia_artist": link(wikiArtist),
             "tags": finalTags(tags, pending: pending),
         ]
@@ -283,7 +284,7 @@ struct SongEditView: View {
         defer { detecting = false }
         do {
             let updated = try await api.detectBpm(song.id)
-            bpm = updated.bpm.map { String(Int($0.rounded())) } ?? ""
+            bpm = updated.bpm.map { Int($0.rounded()) }
             library.update(updated.track)
         } catch { fail(error) }
     }

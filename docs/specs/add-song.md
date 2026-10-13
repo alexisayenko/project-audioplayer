@@ -11,7 +11,7 @@ Code: `web/js/add.js`, `server/app/main.py` (`preview`, `create_song`,
 
 ## Requirements
 
-- ADD-001 MUST (Add becomes "add to catalog" when ADR-0010 is accepted, see CAT-011): the Add screen accepts a YouTube URL and shows a preview card with cover (YouTube thumbnail), title, duration, and editable Title, Artist, Album, Year, BPM and Tags. Status: implemented
+- ADD-001 MUST (Add becomes "add to catalog" when ADR-0010 is accepted, see CAT-011): the Add screen accepts a YouTube URL and shows a preview card with cover (YouTube thumbnail), title, duration, and editable Title, Artist, Album, Year and Tags (web: BPM is not editable, a muted line says "BPM is detected after saving"). Status: implemented
 - ADD-002 MUST: preview prefills `title` from yt-dlp `track` else `title` (for YouTube, cut by `server/app/titles.py` `split_artist_title`: when the channel name starts the video title it is the artist, separators " - " and " ●● ", and noise such as "(Official Video)" or "(Remastered 2009)" is stripped, but version info such as "(Live from the Royal Albert Hall)" or "(Acoustic)" stays, see ADD-073; "feat."/"ft."/"featuring" credits are kept in the saved title and artist and stripped only for lookups, see ADD-075; applied in search, preview and download); `artist` from `artist`, `creator`, `uploader`; `year` from `release_year`, else `release_date`/`upload_date`; `tags` per [tags.md](tags.md) (genre and country suggestions; no language tag is suggested). Status: implemented
 - ADD-003 MUST: preview downloads nothing and writes nothing. Status: implemented
 - ADD-004 MUST: the user may edit every field and tag before saving using the shared tag editor (LIB-055): current tags as removable chips, a "Suggested" row with the preview's tags (toggle), all library tags as toggle chips, a text input (Enter or comma adds, accepts `key:value`). Status: implemented
@@ -30,7 +30,7 @@ Code: `web/js/add.js`, `server/app/main.py` (`preview`, `create_song`,
 
 ## BPM
 
-- ADD-020 MUST: BPM is optional; empty means auto-detect after download (placeholder "Detected after saving"); a typed value (20..300, whole number, fractions rounded) is kept and skips detection. Status: implemented
+- ADD-020 MUST: BPM is optional; empty means auto-detect after download (web: no BPM input, a muted line "BPM is detected after saving"; iOS: placeholder "Detected after saving"); a supplied value (20..300, whole number, fractions rounded) is kept and skips detection. Status: implemented
 - ADD-021 MUST: detection decodes the saved file with `ffmpeg` to mono 44.1 kHz float PCM (120 s timeout), runs aubio tempo, takes the median of per-beat estimates (needs >= 4 beats), folds into 70..180 and rounds to a whole number. Status: implemented
 - ADD-022 MUST: any detection failure (no ffmpeg, no aubio, too few beats) is logged and stored as `bpm: null`; it never fails the download. Status: implemented
 - ADD-023 MUST: BPM is a heuristic and may be off by half or double; the UI says so and lets the user edit it or re-detect from the Edit dialog (`POST /songs/{id}/bpm/detect`). Status: implemented
