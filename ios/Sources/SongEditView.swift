@@ -101,10 +101,10 @@ struct SongEditView: View {
         ]
     }
 
-    private func row(_ label: String, _ text: Binding<String>, keyboard: UIKeyboardType = .default) -> some View {
+    private func row(_ label: String, _ text: Binding<String>, keyboard: UIKeyboardType = .default, clearable: Bool = false) -> some View {
         Group {
             Text(label).font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.inkMuted)
-            DSTextField(label: label, text: text, keyboard: keyboard)
+            DSTextField(label: label, text: text, keyboard: keyboard, clearable: clearable)
         }
     }
 
@@ -139,20 +139,20 @@ struct SongEditView: View {
 
     private var fields: some View {
         Grid(alignment: .leading, horizontalSpacing: DS.Space.space3, verticalSpacing: DS.Space.space2) {
-            GridRow { row("Title", $title) }
-            GridRow { row("Artist", $artist) }
-            GridRow { row("Remix & additional production", $remixer) }
+            GridRow { row("Title", $title, clearable: true) }
+            GridRow { row("Artist", $artist, clearable: true) }
+            GridRow { row("Remix & additional production", $remixer, clearable: true) }
             GridRow { row("Album", $album) }
             GridRow {
                 Text("Year").font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.inkMuted)
                 HStack(spacing: 10) {
-                    DSTextField(label: "Year", text: $year, keyboard: .numberPad).frame(width: 120)
+                    DSTextField(label: "Year", text: $year, keyboard: .numberPad).frame(width: 80)
                         .onChange(of: year) { _, _ in
                             tags = withDecade(tags, yearValue)
                             suggested = withDecade(suggested, yearValue)
                         }
                     Text("BPM").font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.inkMuted)
-                    DSTextField(label: "BPM", text: $bpm, keyboard: .numberPad).frame(width: 110)
+                    DSTextField(label: "BPM", text: $bpm, keyboard: .numberPad).frame(width: 72)
                 }
             }
         }

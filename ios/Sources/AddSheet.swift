@@ -339,10 +339,10 @@ struct AddSheet: View {
         }
     }
 
-    private func labeled(_ label: String, _ text: Binding<String>, keyboard: UIKeyboardType = .default) -> some View {
+    private func labeled(_ label: String, _ text: Binding<String>, keyboard: UIKeyboardType = .default, clearable: Bool = false) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(label).font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.inkMuted)
-            DSTextField(label: label, text: text, keyboard: keyboard)
+            DSTextField(label: label, text: text, keyboard: keyboard, clearable: clearable)
         }
     }
 
@@ -406,9 +406,9 @@ struct AddSheet: View {
         }
 
         VStack(alignment: .leading, spacing: DS.Space.space3) {
-                labeled("Title", $flow.title)
-                labeled("Artist", $flow.artist)
-                labeled("Remix & additional production", $flow.remixer)
+                labeled("Title", $flow.title, clearable: true)
+                labeled("Artist", $flow.artist, clearable: true)
+                labeled("Remix & additional production", $flow.remixer, clearable: true)
                 if let h = flow.hint { suggestionHint(h) }
                 FlowLayout {
                     Button { flow.launch { await flow.getMetadata(api) } } label: {
