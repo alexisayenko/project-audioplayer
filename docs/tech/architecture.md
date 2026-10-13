@@ -176,7 +176,7 @@ ADR-0008. App Store Connect record "Gramophone Offline" (now Electrophone) (bund
 `com.alexisayenko.audioplayer`, SKU `gramophone-ios`), internal group "Alex".
 
 1. Raise `CURRENT_PROJECT_VERSION` in `ios/project.yml` above every build
-   already uploaded (date-based; last uploaded 20261013), then `xcodegen`.
+   already uploaded (date-based; last uploaded 20261020), then `xcodegen`.
 2. `xcodebuild archive` the `AudioPlayer` scheme (Release, generic iOS device).
 3. `xcodebuild -exportArchive` with export options `method=app-store-connect`,
    `destination=upload`; it signs and uploads with the account signed in to
