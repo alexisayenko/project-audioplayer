@@ -32,7 +32,7 @@ FastAPI wrapper around `yt-dlp` (Python 3.11+), run on the home server `perkunas
 Tunnel (live at https://play.isayenko.net, LXC 106 `tools`, deploy in [architecture.md](docs/tech/architecture.md#deploy); Tailscale is not used) with Apple/Google sign-in only in the apps (open signup,
 per-user storage; the owner's `X-API-Token` stays server-side for scripts); see [docs/tech/decisions.md](docs/tech/decisions.md). Web UI in `web/`.
 Status 2026-10-13: the server and web are live at https://play.isayenko.net (perkunas LXC `tools`; `scripts/deploy.sh`, `scripts/check.sh`). The iOS app (tabs Library, Playback, Settings, Add as a sheet; shared song form; Electrophone look, task-0005) is on internal
-TestFlight (build 20261021); its server flows are not yet tested on a device; check script and server tests pass.
+TestFlight (build 20261022); its server flows are not yet tested on a device; check script and server tests pass.
 
 ## Design: single source of truth
 
