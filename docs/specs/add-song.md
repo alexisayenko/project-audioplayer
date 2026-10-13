@@ -59,7 +59,7 @@ Code: `web/js/add.js`, `server/app/main.py` (`preview`, `create_song`,
 - ADD-040 MUST: not a YouTube video or SoundCloud track URL gives 422 `{"error":"unsupported","detail":"not a YouTube video or SoundCloud track URL"}`. Status: implemented
 - ADD-044 MUST: SoundCloud failures: a missing track gives 404 `{"error":"not_found"}`, a private track without its secret link 403 `{"error":"private"}`, anything else 502 `{"error":"failed"}`; the message is `preview failed: <short yt-dlp message>`. Status: implemented
 - ADD-041 MUST: unavailable or blocked video gives 502 `preview failed: <short yt-dlp message>` at preview, or a job `error` at download. Status: implemented
-- ADD-042 MUST: server unreachable shows "Server unreachable"; 401 shows "Wrong or missing API token (see Settings)". Status: implemented
+- ADD-042 MUST: server unreachable shows "Server unreachable"; 401 shows "Not signed in. Sign in in Settings". Status: implemented
 - ADD-043 SHOULD: leaving the Add screen mid-download stops polling but not the server job; reopening Add does not resume the progress view. Status: to-confirm
 
 ## Limits (ADR-0012)

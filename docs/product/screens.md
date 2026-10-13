@@ -26,7 +26,7 @@ Web (Electrophone screens, web v16 artboards, ADR-0009 amendment): three
 destinations, **Library**, **Playback** and **Settings**; adding a song is the
 accent "Add song" button in the Library header, which opens the Add dialog
 (`#/add` still works and opens Library with the dialog). A signed-out visitor sees
-only Settings (Sign in with Google, Sign in with Apple, API token fallback); once
+only Settings (Sign in with Google, Sign in with Apple; no token field); once
 signed in, Settings shows the email and Sign out. Navigation is a 220px rail
 (>= 720px), a 64px icon rail (480-719px) or a floating tab bar (< 480px). A
 persistent player bar (cover, title, shuffle, previous, play/pause, next, repeat,
@@ -36,7 +36,7 @@ tap; on Playback itself it is hidden. Library is a table of the server library
 to left on narrower screens until it is the phone song row) with four category chips (Tags, Genres,
 Years, Countries) that open a filter sheet. Playback leads with the cover
 (title and artist on it), a seek bar, the transport tray, a volume row and the
-queue card beside it. The iOS Settings screen shows Account, Downloads (read-only audio quality, "Download new songs automatically", "Use mobile data"), Storage and a collapsed "Private server" row, then the version line; the iOS Add sheet ends with "Add to library" and "Add and download to iPhone". The iOS app has its own tab bar with the same three destinations (its Playback has no volume row and its titles carry no eyebrow) (see
+queue card beside it. The iOS Settings screen shows Account, Downloads (read-only audio quality, "Download new songs automatically", "Use mobile data"), and Storage, then the version line; the iOS Add sheet ends with "Add to library" and "Add and download to iPhone". The iOS app has its own tab bar with the same three destinations (its Playback has no volume row and its titles carry no eyebrow) (see
 [`../specs/ios.md`](../specs/ios.md)).
 
 ## Screens
@@ -241,7 +241,7 @@ drafts, both SUPERSEDED:
 
 ## API surface the screens need
 
-Implemented. All need `X-API-Token` (header), except that `/files/{id}`
+Implemented. The web UI uses only the session cookie; the owner's iOS app and scripts use `X-API-Token` (header), except that `/files/{id}`
 and `/covers/{id}` also accept `?token=` because `<audio>` and `<img>`
 cannot send headers. The static web UI files at `/` are public; they
 contain no data.

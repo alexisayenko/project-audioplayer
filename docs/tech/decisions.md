@@ -203,6 +203,10 @@ Amended by ADR-0012 (Accepted): the file layout below is per user (`audioplayer/
 
 Amended by ADR-0012: the "only for the owner" gate is replaced by open signup with per-user storage; the token verification below stands.
 
+Amended: the iOS token UI is removed (Settings has no server or token fields). The server still accepts the API token for the owner and for scripts and `-serverURL`/`-token` launch-argument testing; iOS users authenticate by Sign in with Apple or Google.
+
+Amended: the web token fallback is removed (WEB-005). The web UI authenticates with the session cookie only; the API token remains for the owner on iOS and scripts.
+
 Status: Accepted, implemented in `server/` and `ios/`; not yet tested live on a device · 2026-10-12
 
 - Decision: besides `X-API-Token`, the server accepts
