@@ -50,3 +50,21 @@ enum CoverURL {
         return c.string
     }
 }
+
+/// `GET /catalog`: every song id and the song records (metadata only).
+struct CatalogResponse: Decodable {
+    let ids: [String]
+    let songs: [ServerSong]
+
+    private enum Keys: String, CodingKey { case ids, songs }
+    private struct Lossy: Decodable {
+        let song: ServerSong?
+        init(from decoder: Decoder) throws { song = try? ServerSong(from: decoder) }
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: Keys.self)
+        ids = try c.decodeIfPresent([String].self, forKey: .ids) ?? []
+        songs = (try c.decodeIfPresent([Lossy].self, forKey: .songs) ?? []).compactMap(\.song)
+    }
+}

@@ -15,22 +15,26 @@ struct ServerSong: Codable, Identifiable, Hashable {
     var wikipedia_song: String?
     var wikipedia_artist: String?
     var added_at: String?
+    var audio_state: String?
+    var sources: [SongSource]?
 
     init(_ t: Track) {
         id = t.id; title = t.title; artist = t.artist; album = t.album; year = t.year; duration = t.duration
         tags = t.tags; bpm = t.bpm; source_url = t.sourceURL; wikipedia_song = t.wikipediaSong
-        wikipedia_artist = t.wikipediaArtist
+        wikipedia_artist = t.wikipediaArtist; sources = t.sources
     }
 
     var track: Track {
         Track(id: id, title: title, artist: artist ?? "", duration: duration,
               thumbnail: cover != nil ? "/covers/\(id)" : nil, album: album, year: year, tags: tags, bpm: bpm,
-              sourceURL: source_url, wikipediaSong: wikipedia_song, wikipediaArtist: wikipedia_artist)
+              sourceURL: source_url, wikipediaSong: wikipedia_song, wikipediaArtist: wikipedia_artist,
+              addedAt: added_at.flatMap(Self.parseDate), sources: sources, onServer: audio_state.map { $0 == "server" })
     }
+
+    private static func parseDate(_ s: String) -> Date? { ISO8601DateFormatter().date(from: s) }
 }
 
-/// The server as a download pipe: its reachability and the songs now arriving on the phone.
-/// The phone never lists the server's library; only the web UI does.
+/// The server link: its reachability, the catalog sync and the songs now arriving on the phone.
 @MainActor
 final class ServerLink: ObservableObject {
     struct Transfer { var track: Track; var progress: Double }
@@ -42,6 +46,57 @@ final class ServerLink: ObservableObject {
     /// A failure to tell the person about once (Library shows it as a toast).
     @Published var notice: String?
     private var copyError: String?
+    @Published private(set) var syncing = false
+    /// True once a catalog has been fetched (or confirmed unchanged) since launch.
+    @Published private(set) var synced = false
+    private var autoRunning = false
+
+    static func hasCredentials(_ settings: Settings) -> Bool {
+        !settings.token.isEmpty || AuthService.shared.isSignedIn
+    }
+
+    /// Fetches the catalog with the stored ETag and merges it. Failures are quiet: the status LED turns off and the cached catalog stays.
+    func syncCatalog(settings: Settings, library: LibraryStore, auto: Bool = true) async {
+        guard !syncing, Self.hasCredentials(settings) else { return }
+        syncing = true
+        defer { syncing = false }
+        do {
+            let api = APIClient(baseURL: settings.serverURL, token: settings.token)
+            if let (catalog, tag) = try await api.catalog(etag: library.etag) {
+                let appeared = library.merge(catalog, etag: tag)
+                if auto, settings.downloadNewAutomatically, !appeared.isEmpty {
+                    autoDownload(appeared, settings: settings, library: library)
+                }
+            }
+            synced = true
+            reachable = true
+        } catch {
+            reachable = false
+        }
+    }
+
+    private func autoDownload(_ tracks: [Track], settings: Settings, library: LibraryStore) {
+        guard !autoRunning else { return }
+        autoRunning = true
+        Task {
+            for t in tracks { _ = await download(t, settings: settings, into: library, quiet: true) }
+            autoRunning = false
+        }
+    }
+
+    /// A song just saved from the Add sheet but not copied to the phone: lists it once the server has finished it.
+    func listWhenSaved(_ id: String, settings: Settings, library: LibraryStore) {
+        Task {
+            let api = APIClient(baseURL: settings.serverURL, token: settings.token)
+            for _ in 0..<120 {
+                try? await Task.sleep(for: .seconds(2))
+                if let st = try? await api.status(id) {
+                    if st.status == "done" { await syncCatalog(settings: settings, library: library, auto: false); return }
+                    if st.status == "error" { return }
+                }
+            }
+        }
+    }
 
     func check(settings: Settings) async {
         guard !checking else { return }
@@ -58,12 +113,16 @@ final class ServerLink: ObservableObject {
 
     /// Copies a song that is on the server onto the phone; the Library shows it as "Downloading NN%" meanwhile.
     @discardableResult
-    func download(_ track: Track, settings: Settings, into library: LibraryStore) async -> Bool {
+    func download(_ track: Track, settings: Settings, into library: LibraryStore, quiet: Bool = false) async -> Bool {
         if library.contains(track.id) { return true }
         guard transfers[track.id] == nil else { return false }
         transfers[track.id] = Transfer(track: track, progress: 0)
         defer { transfers[track.id] = nil }
-        guard await copy(track, settings: settings, from: 0, span: 1) else { failed.insert(track.id); return false }
+        guard await copy(track, settings: settings, from: 0, span: 1) else {
+            failed.insert(track.id)
+            if !quiet { notice = copyError ?? "Couldn't download \"\(track.title)\". Check the server and try again." }
+            return false
+        }
         library.add(track)
         failed.remove(track.id)
         return true

@@ -100,6 +100,7 @@ final class AddFlow: ObservableObject {
             server.startIngest(track, settings: settings, library: library, player: player, playWhenReady: false)
         } else {
             server.notice = "Saved. Not downloaded to this iPhone"
+            server.listWhenSaved(p.id, settings: settings, library: library)
         }
         phase = .saved
         return true
@@ -139,7 +140,7 @@ struct AddSheet: View {
     @State private var addingTags = false
 
     private var api: APIClient { APIClient(baseURL: settings.serverURL, token: settings.token) }
-    private var pool: [(tag: String, count: Int)] { tagCounts(library.tracks.map { $0.tags ?? [] }) }
+    private var pool: [(tag: String, count: Int)] { tagCounts(library.songs.map { $0.tags ?? [] }) }
     private var busy: Bool { flow.phase == .loading || flow.phase == .saving }
     private var hasPreview: Bool { flow.preview != nil && flow.phase != .idle && flow.phase != .loading }
 

@@ -55,12 +55,22 @@ func classifySoundcloud(_ input: String) -> SoundcloudLink? {
     return .track(url)
 }
 
-/// "soundcloud" for `soundcloud-<numeric id>` song ids, else "youtube".
+/// The source named by a song id: `soundcloud-<id>`, `spotify-<id>`, `applemusic-<id>`, `shazam-<id>`, else "youtube".
 func sourceOf(id: String) -> String {
-    matches(#"^soundcloud-[0-9]{1,20}$"#, id) != nil ? "soundcloud" : "youtube"
+    if matches(#"^soundcloud-[0-9]{1,20}$"#, id) != nil { return "soundcloud" }
+    for s in ["spotify", "applemusic", "shazam"] where id.hasPrefix(s + "-") { return s }
+    return "youtube"
 }
 
-func sourceLabel(_ source: String?) -> String { source == "soundcloud" ? "SoundCloud" : "YouTube" }
+func sourceLabel(_ source: String?) -> String {
+    switch source {
+    case "soundcloud": return "SoundCloud"
+    case "spotify": return "Spotify"
+    case "applemusic": return "Apple Music"
+    case "shazam": return "Shazam"
+    default: return "YouTube"
+    }
+}
 
 extension Track {
     var source: String { sourceOf(id: id) }

@@ -11,7 +11,7 @@ struct PlaybackView: View {
     private var current: Track? { player.current }
 
     private func subtitle(_ t: Track) -> String {
-        [t.artist, t.album, t.year.map(String.init)].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · ")
+        [t.artist, t.year.map(String.init), sourceLabel(t.source)].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · ")
     }
 
     private var upNext: [Track] {

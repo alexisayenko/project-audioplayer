@@ -19,6 +19,8 @@ struct RootView: View {
     @EnvironmentObject var player: PlayerService
     @EnvironmentObject var settings: Settings
     @EnvironmentObject var server: ServerLink
+    @EnvironmentObject var library: LibraryStore
+    @Environment(\.scenePhase) private var scenePhase
     @State private var tab = AppTab.library
 
     var body: some View {
@@ -36,7 +38,10 @@ struct RootView: View {
             .ignoresSafeArea(.keyboard)
         }
         .dynamicTypeSize(...DynamicTypeSize.accessibility2)
-        .task { await server.check(settings: settings) }
+        .task { await server.check(settings: settings); await server.syncCatalog(settings: settings, library: library) }
+        .onChange(of: scenePhase) { _, p in
+            if p == .active { Task { await server.syncCatalog(settings: settings, library: library) } }
+        }
     }
 }
 
@@ -78,7 +83,7 @@ struct DSTabBar: View {
             }
         }
         .padding(6)
-        .dsSlab(radius: DS.Radius.radiusTray)
+        .dsFloat(radius: DS.Radius.radiusTray)
     }
 }
 
@@ -120,7 +125,7 @@ struct MiniPlayer: View {
             .accessibilityHidden(true)
         }
         .clipShape(RoundedRectangle(cornerRadius: DS.Radius.radiusCard, style: .continuous))
-        .dsSlab()
+        .dsFloat(radius: DS.Radius.radiusCard)
         .accessibilityElement(children: .contain)
     }
 }

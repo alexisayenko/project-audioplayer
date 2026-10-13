@@ -1,6 +1,13 @@
 import Foundation
 
-/// A song that is downloaded and stored on the device.
+/// One place a song comes from (`sources` of a catalog song).
+struct SongSource: Codable, Hashable {
+    var source: String?
+    var id: String?
+    var url: String?
+}
+
+/// A song in the catalog. Its audio may be on the phone (`Documents/audio/<id>.m4a`), on the server only, or nowhere yet.
 struct Track: Codable, Identifiable, Hashable {
     let id: String          // YouTube video id
     var title: String
@@ -15,6 +22,11 @@ struct Track: Codable, Identifiable, Hashable {
     var wikipediaSong: String?
     var wikipediaArtist: String?
     var addedAt: Date?
+    var sources: [SongSource]?
+    /// The server holds the audio (`audio_state` "server"). Nil means unknown, treated as yes.
+    var onServer: Bool?
+    /// The server dropped this song from the catalog while its audio is still on the phone.
+    var localOnly: Bool?
 
     /// Audio file inside the app's Documents directory.
     var fileURL: URL { LibraryStore.audioDirectory.appendingPathComponent("\(id).m4a") }

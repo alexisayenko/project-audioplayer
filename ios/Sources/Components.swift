@@ -25,6 +25,9 @@ extension View {
             .shadow(color: DS.Color.vinyl.opacity(0.16), radius: 10, y: 2))
     }
 
+    /// A floating slab (mini player, tab bar, transport tray): stronger lift and a 1px line ring (`shadow-float`).
+    func dsFloat(radius: CGFloat = DS.Radius.radiusTray) -> some View { modifier(FloatSlab(radius: radius)) }
+
     func dsGround() -> some View { background(DS.Color.ground.ignoresSafeArea()) }
 
     func dsField() -> some View {
@@ -34,6 +37,18 @@ extension View {
     }
 
     func dsCaption() -> some View { font(T.caption).foregroundStyle(DS.Color.inkMuted) }
+}
+
+private struct FloatSlab: ViewModifier {
+    let radius: CGFloat
+    @Environment(\.colorScheme) private var scheme
+
+    func body(content: Content) -> some View {
+        content
+            .background(RoundedRectangle(cornerRadius: radius, style: .continuous).fill(DS.Color.surface)
+                .shadow(color: DS.Color.vinyl.opacity(scheme == .dark ? 0.7 : 0.16), radius: 12, y: 8))
+            .overlay(RoundedRectangle(cornerRadius: radius, style: .continuous).strokeBorder(DS.Color.line, lineWidth: 1))
+    }
 }
 
 struct ScreenHeader<Trailing: View>: View {
@@ -281,6 +296,8 @@ struct SongRow<Menu: View>: View {
     let thumbnail: String?
     var duration: Double?
     var downloading: Double?
+    var onDownload: (() -> Void)?
+    var noAudio = false
     var playing = false
     var coverSize: CGFloat = 56
     @Environment(\.dynamicTypeSize) private var typeSize
@@ -291,6 +308,7 @@ struct SongRow<Menu: View>: View {
             CoverImage(source: thumbnail)
                 .frame(width: coverSize, height: coverSize)
                 .clipShape(RoundedRectangle(cornerRadius: DS.Radius.radiusSm, style: .continuous))
+                .opacity(noAudio ? 0.55 : 1)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 0) {
                 Text(title).font(T.headline).foregroundStyle(DS.Color.ink).lineLimit(2)
@@ -303,19 +321,32 @@ struct SongRow<Menu: View>: View {
                     .font(T.subhead)
                 } else {
                     HStack(spacing: 0) {
-                        artist
+                        artist.layoutPriority(1)
                         if let source {
                             Text(" \u{00B7} " + sourceLabel(source)).foregroundStyle(DS.Color.inkFaint).lineLimit(1)
-                                .fixedSize(horizontal: true, vertical: false).layoutPriority(1)
                         }
                     }
                     .font(T.subhead)
                 }
             }
+            .opacity(noAudio ? 0.55 : 1)
             Spacer(minLength: 0)
-            if let downloading {
-                Text("Downloading \(Int(downloading * 100))%").font(T.caption).foregroundStyle(DS.Color.accentInk)
+            if let onDownload {
+                Button(action: onDownload) {
+                    Text("Download").font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.accentInk)
+                        .padding(.horizontal, DS.Space.space3).frame(minHeight: 32)
+                        .overlay(Capsule().stroke(DS.Color.accentInk, lineWidth: 1.5))
+                        .contentShape(Capsule().inset(by: -6))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Download \(title)")
+            } else if noAudio {
+                Text("No audio yet").font(T.caption).foregroundStyle(DS.Color.inkMuted)
                     .multilineTextAlignment(.trailing).frame(maxWidth: 84, alignment: .trailing).fixedSize(horizontal: false, vertical: true)
+            } else if let downloading {
+                Text("Downloading \(Int(downloading * 100))%").font(T.caption).foregroundStyle(DS.Color.accentInk)
+                    .lineLimit(typeSize.isAccessibilitySize ? 2 : 1).multilineTextAlignment(.trailing)
+                    .fixedSize(horizontal: !typeSize.isAccessibilitySize, vertical: true)
             } else if let duration {
                 Text(formatTime(duration)).font(T.time).foregroundStyle(playing ? DS.Color.ink : DS.Color.inkMuted)
             }
@@ -330,9 +361,10 @@ struct SongRow<Menu: View>: View {
 
 extension SongRow where Menu == EmptyView {
     init(title: String, subtitle: String, source: String? = nil, thumbnail: String?, duration: Double? = nil,
-         downloading: Double? = nil, playing: Bool = false, coverSize: CGFloat = 56) {
+         downloading: Double? = nil, onDownload: (() -> Void)? = nil, noAudio: Bool = false, playing: Bool = false,
+         coverSize: CGFloat = 56) {
         self.init(title: title, subtitle: subtitle, source: source, thumbnail: thumbnail, duration: duration, downloading: downloading,
-                  playing: playing, coverSize: coverSize) { EmptyView() }
+                  onDownload: onDownload, noAudio: noAudio, playing: playing, coverSize: coverSize) { EmptyView() }
     }
 }
 
@@ -397,7 +429,7 @@ struct TransportTray: View {
                 .accessibilityLabel("Repeat").accessibilityValue(repeatMode == .off ? "off" : repeatMode == .all ? "whole list" : "one song")
         }
         .padding(.horizontal, DS.Space.space3).padding(.vertical, DS.Space.space2)
-        .dsSlab(radius: DS.Radius.radiusTray)
+        .dsFloat(radius: DS.Radius.radiusTray)
     }
 }
 
@@ -621,5 +653,29 @@ struct ServerLED: View {
     var body: some View {
         LED(color: server.reachable == true ? DS.Color.ok : server.reachable == false ? DS.Color.power : DS.Color.inkFaint,
             glow: server.reachable != nil)
+    }
+}
+
+/// The "Downloaded N" toggle beside the sort control: an outlined pill, tinted when on.
+struct ToggleChip: View {
+    let title: String
+    let count: Int
+    let on: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Text(title).font(T.caption.weight(.medium)).foregroundStyle(on ? DS.Color.accentInk : DS.Color.ink)
+                Text("\(count)").font(T.caption).foregroundStyle(on ? DS.Color.accentInk : DS.Color.inkMuted)
+            }
+            .padding(.horizontal, DS.Space.space3).frame(minHeight: 32)
+            .background(Capsule().fill(on ? DS.Color.accentTint : Color.clear))
+            .overlay(Capsule().stroke(on ? DS.Color.accentInk : DS.Color.line, lineWidth: 1.5))
+            .contentShape(Capsule().inset(by: -6))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(title), \(count) songs")
+        .accessibilityAddTraits(on ? [.isSelected, .isButton] : .isButton)
     }
 }

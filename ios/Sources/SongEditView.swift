@@ -41,7 +41,7 @@ struct SongEditView: View {
 
     private var api: APIClient { APIClient(baseURL: settings.serverURL, token: settings.token) }
     private var yearValue: Int? { Int(year.trimmingCharacters(in: .whitespaces)) }
-    private var pool: [(tag: String, count: Int)] { tagCounts(library.tracks.map { $0.tags ?? [] }) }
+    private var pool: [(tag: String, count: Int)] { tagCounts(library.songs.map { $0.tags ?? [] }) }
     private var busy: Bool { saving || detecting || wikiBusy }
 
     private func link(_ s: String) -> Any {
@@ -49,7 +49,7 @@ struct SongEditView: View {
         return t.isEmpty ? NSNull() : t
     }
 
-    private var track: Track? { library.tracks.first { $0.id == song.id } }
+    private var track: Track? { library.songs.first { $0.id == song.id } }
 
     private var facts: String {
         var parts: [String] = []
@@ -137,13 +137,13 @@ struct SongEditView: View {
             GridRow {
                 Text("Year").font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.inkMuted)
                 HStack(spacing: 10) {
-                    TextField("Year", text: $year).keyboardType(.numberPad).dsField().frame(width: 92)
+                    TextField("Year", text: $year).keyboardType(.numberPad).dsField().frame(width: 80)
                         .onChange(of: year) { _, _ in
                             tags = withDecade(tags, yearValue)
                             suggested = withDecade(suggested, yearValue)
                         }
                     Text("BPM").font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.inkMuted)
-                    TextField("BPM", text: $bpm).keyboardType(.numberPad).dsField().frame(width: 84)
+                    TextField("BPM", text: $bpm).keyboardType(.numberPad).dsField().frame(width: 72)
                 }
             }
         }
@@ -218,8 +218,10 @@ struct SongEditView: View {
                             .foregroundStyle(noteIsError ? DS.Color.power : DS.Color.inkMuted)
                     }
                 }
-                Button("Remove from iPhone") { confirmDelete = true }
-                    .buttonStyle(DSButtonStyle(kind: .danger)).disabled(busy)
+                if library.contains(song.id), track?.localOnly != true {
+                    Button("Remove from iPhone") { confirmDelete = true }
+                        .buttonStyle(DSButtonStyle(kind: .danger)).disabled(busy)
+                }
             }
             .padding(.horizontal, DS.Space.space4).padding(.top, DS.Space.space4).padding(.bottom, DS.Space.space4)
             .measuredHeight($contentHeight)
@@ -232,7 +234,7 @@ struct SongEditView: View {
         .presentationCornerRadius(DS.Radius.radiusTray)
         .presentationBackground(DS.Color.surface)
         .confirmationDialog("Remove \"\(song.title)\" from this iPhone?", isPresented: $confirmDelete, titleVisibility: .visible) {
-            Button("Remove from iPhone", role: .destructive) { library.remove(song.id); dismiss() }
+            Button("Remove from iPhone", role: .destructive) { library.removeAudio(song.id); dismiss() }
         } message: { Text("The song stays on your server.") }
     }
 

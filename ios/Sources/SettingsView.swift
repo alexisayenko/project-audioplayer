@@ -28,9 +28,9 @@ struct SettingsView: View {
         }
         .scrollDismissesKeyboard(.interactively)
         .dsGround()
-        .confirmationDialog("Remove all \(library.tracks.count) songs from this iPhone?", isPresented: $confirmRemoveAll, titleVisibility: .visible) {
-            Button("Remove all downloads", role: .destructive) { library.remove(at: IndexSet(library.tracks.indices)) }
-        } message: { Text("Your server keeps them. Add a song again to download it.") }
+        .confirmationDialog("Remove all \(library.tracks.filter { $0.localOnly != true }.count) downloads from this iPhone?", isPresented: $confirmRemoveAll, titleVisibility: .visible) {
+            Button("Remove all downloads", role: .destructive) { library.removeAllAudio() }
+        } message: { Text("The songs stay in your library. Tap Download to get one back.") }
         .task { await server.check(settings: settings) }
         .task(id: library.tracks.count) {
             bytes = await Task.detached(priority: .utility) { [tracks = library.tracks] in
@@ -79,7 +79,11 @@ struct SettingsView: View {
     private var downloadsCard: some View {
         card("Downloads") {
             row("Audio quality") {
-                Text("High \u{00B7} 192 kbps").font(T.subhead).foregroundStyle(DS.Color.inkMuted)
+                HStack(spacing: 6) {
+                    Text("High \u{00B7} 192 kbps").font(T.subhead).foregroundStyle(DS.Color.inkMuted)
+                    Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(DS.Color.inkFaint)
+                        .accessibilityHidden(true)
+                }
             }
             .accessibilityElement(children: .combine)
             rule

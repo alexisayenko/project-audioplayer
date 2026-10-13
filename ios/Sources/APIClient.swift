@@ -59,13 +59,13 @@ struct APIClient {
     }
 
     /// File downloads honour Settings > Use mobile data; the small API calls always go through.
-    private static func downloadSession() -> URLSession {
+    private static func downloadSession(delegate: URLSessionDelegate? = nil) -> URLSession {
         let cellular = UserDefaults.standard.bool(forKey: Settings.useMobileDataKey)
         let c = URLSessionConfiguration.default
         c.allowsCellularAccess = cellular
         c.allowsExpensiveNetworkAccess = cellular
         c.allowsConstrainedNetworkAccess = cellular
-        return URLSession(configuration: c)
+        return URLSession(configuration: c, delegate: delegate, delegateQueue: nil)
     }
 
     func verify() async throws {
@@ -79,6 +79,19 @@ struct APIClient {
         return data
     }
 
+    /// The whole catalog, or nil when the server answers 304 to the stored ETag.
+    func catalog(etag: String?) async throws -> (catalog: CatalogResponse, etag: String?)? {
+        var req = try await request("/catalog")
+        req.timeoutInterval = 20
+        req.cachePolicy = .reloadIgnoringLocalCacheData
+        if let etag { req.setValue(etag, forHTTPHeaderField: "If-None-Match") }
+        let (data, response) = try await URLSession.shared.data(for: req)
+        if (response as? HTTPURLResponse)?.statusCode == 304 { return nil }
+        try check(response, data: data)
+        let tag = (response as? HTTPURLResponse)?.value(forHTTPHeaderField: "ETag")
+        return (try JSONDecoder().decode(CatalogResponse.self, from: data), tag)
+    }
+
     func search(_ query: String) async throws -> [SearchResult] {
         let req = try await request("/search", query: [.init(name: "q", value: query)])
         let (data, response) = try await URLSession.shared.data(for: req)
@@ -88,12 +101,12 @@ struct APIClient {
 
     /// Copies an audio file that is already on the server into the app, reporting 0...1 as it arrives.
     func downloadFile(_ track: Track, onProgress: @escaping @Sendable (Double) -> Void = { _ in }) async throws {
-        let session = Self.downloadSession()
+        let fetcher = FileFetcher(onProgress)
+        let session = Self.downloadSession(delegate: fetcher)
         defer { session.finishTasksAndInvalidate() }
         let tmp: URL, response: URLResponse
         do {
-            (tmp, response) = try await session.download(for: try await request("/files/\(track.id)"),
-                                                         delegate: ProgressDelegate(onProgress))
+            (tmp, response) = try await fetcher.run(session, try await request("/files/\(track.id)"))
         } catch let e as URLError where e.code == .dataNotAllowed || e.code == .internationalRoamingOff {
             throw APIError.http(0, "Mobile data is off for downloads. Turn on Use mobile data in Settings.")
         }
@@ -167,9 +180,20 @@ struct APIClient {
     }
 }
 
-private final class ProgressDelegate: NSObject, URLSessionDownloadDelegate, @unchecked Sendable {
+/// Runs one download task and reports 0...1 as bytes arrive; hands back a temp copy the caller owns.
+private final class FileFetcher: NSObject, URLSessionDownloadDelegate, @unchecked Sendable {
     private let onProgress: @Sendable (Double) -> Void
+    private var continuation: CheckedContinuation<(URL, URLResponse), Error>?
+    private var result: URL?
+
     init(_ onProgress: @escaping @Sendable (Double) -> Void) { self.onProgress = onProgress }
+
+    func run(_ session: URLSession, _ request: URLRequest) async throws -> (URL, URLResponse) {
+        try await withCheckedThrowingContinuation { cont in
+            continuation = cont
+            session.downloadTask(with: request).resume()
+        }
+    }
 
     func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didWriteData bytesWritten: Int64,
                     totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
@@ -177,5 +201,16 @@ private final class ProgressDelegate: NSObject, URLSessionDownloadDelegate, @unc
         onProgress(Double(totalBytesWritten) / Double(totalBytesExpectedToWrite))
     }
 
-    func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {}
+    func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
+        let keep = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try? FileManager.default.moveItem(at: location, to: keep)
+        result = keep
+    }
+
+    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        defer { continuation = nil }
+        if let error { continuation?.resume(throwing: error) }
+        else if let result, let response = task.response { continuation?.resume(returning: (result, response)) }
+        else { continuation?.resume(throwing: URLError(.unknown)) }
+    }
 }

@@ -18,13 +18,13 @@ struct LibraryView: View {
     @State private var toast: String?
     @State private var editing: ServerSong?
     @State private var deleting: Track?
-    @State private var bytes: Int64 = 0
+    @State private var onlyPhone = false
     @State private var showAdd = false
     @StateObject private var addFlow = AddFlow()
 
     private var counts: [(tag: String, count: Int)] {
         var counts: [String: (tag: String, count: Int)] = [:]
-        for t in library.tracks { for tag in t.tags ?? [] {
+        for t in library.songs { for tag in t.tags ?? [] {
             let k = tag.lowercased()
             counts[k] = (counts[k]?.tag ?? tag, (counts[k]?.count ?? 0) + 1)
         } }
@@ -32,7 +32,7 @@ struct LibraryView: View {
     }
 
     private func filtered(_ selection: Set<String>) -> [Track] {
-        var list = library.tracks.filter { tagFilterMatches($0, selection: selection) }
+        var list = library.songs.filter { tagFilterMatches($0, selection: selection) && (!onlyPhone || library.contains($0.id)) }
         let q = search.trimmingCharacters(in: .whitespaces).lowercased()
         if !q.isEmpty {
             list = list.filter { t in
@@ -41,7 +41,12 @@ struct LibraryView: View {
             }
         }
         switch sort {
-        case .newest: break
+        case .newest:
+            let order = Dictionary(uniqueKeysWithValues: list.enumerated().map { ($1.id, $0) })
+            list.sort {
+                let a = $0.addedAt ?? .distantPast, b = $1.addedAt ?? .distantPast
+                return a == b ? order[$0.id, default: 0] < order[$1.id, default: 0] : a > b
+            }
         case .title: list.sort { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
         case .artist:
             list.sort {
@@ -54,7 +59,7 @@ struct LibraryView: View {
     }
 
     private var arriving: [Track] {
-        server.transfers.values.map(\.track).filter { !library.contains($0.id) }.sorted { $0.title < $1.title }
+        server.transfers.values.map(\.track).filter { t in !library.songs.contains { $0.id == t.id } }.sorted { $0.title < $1.title }
     }
 
     private func subtitle(_ t: Track) -> String { t.artist }
@@ -67,7 +72,7 @@ struct LibraryView: View {
                 VStack(alignment: .leading, spacing: 14) {
                     ScreenHeader(title: "Library") {
                         HStack(spacing: DS.Space.space3) {
-                            Text("\(library.tracks.count) \(library.tracks.count == 1 ? "song" : "songs")").dsCaption()
+                            Text("\(library.songs.count) \(library.songs.count == 1 ? "song" : "songs")").dsCaption()
                             Button { showAdd = true } label: {
                                 Image(systemName: "plus").font(.system(size: 22, weight: .semibold))
                             }
@@ -88,15 +93,14 @@ struct LibraryView: View {
                         }
                         .accessibilityLabel("Sort: \(sort.rawValue)")
                         Spacer()
-                        if bytes > 0 {
-                            Text("\(ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)) on iPhone").dsCaption()
-                        }
+                        ToggleChip(title: "Downloaded", count: library.tracks.count, on: onlyPhone) { onlyPhone.toggle() }
                     }
                     list(tracks)
                 }
                 .padding(.horizontal, DS.Space.space4).padding(.top, DS.Space.space2).padding(.bottom, DS.Space.space4)
             }
             .scrollDismissesKeyboard(.interactively)
+            .refreshable { await server.syncCatalog(settings: settings, library: library) }
             .dsGround()
             .toolbar(.hidden, for: .navigationBar)
             .overlay(alignment: .top) {
@@ -119,11 +123,10 @@ struct LibraryView: View {
             .confirmationDialog("Delete \"\(deleting?.title ?? "")\" from the library?", isPresented: Binding(
                 get: { deleting != nil }, set: { if !$0 { deleting = nil } }), titleVisibility: .visible) {
                 Button("Delete from library", role: .destructive) {
-                    if let t = deleting { library.remove(t.id) }
+                    if let t = deleting { Task { await delete(t) } }
                     deleting = nil
                 }
-            } message: { Text("Removes the audio from this iPhone.") }
-            .task(id: library.tracks.count) { bytes = await Self.diskSize(library.tracks) }
+            } message: { Text("Removes the song from your library, on the server and on this iPhone.") }
         }
     }
 
@@ -155,10 +158,20 @@ struct LibraryView: View {
 
     @ViewBuilder
     private func list(_ tracks: [Track]) -> some View {
-        if library.tracks.isEmpty && arriving.isEmpty {
-            empty("No songs yet. Tap + to bring one to this iPhone.")
+        if library.songs.isEmpty && arriving.isEmpty {
+            if !ServerLink.hasCredentials(settings) {
+                empty("Sign in or add your token in Settings to load your library.")
+            } else if server.syncing || !server.synced && server.reachable != false {
+                empty("Loading your library\u{2026}")
+            } else if !server.synced {
+                empty("Can't reach the server. Pull down to try again.")
+            } else {
+                empty("No songs yet. Tap + to add one.")
+            }
         } else if tracks.isEmpty && arriving.isEmpty {
-            empty("No songs match. Clear the search or the filters.")
+            empty(onlyPhone && selection.isEmpty && search.isEmpty
+                  ? "Nothing is on this iPhone yet. Tap Downloaded to see every song."
+                  : "No songs match. Clear the search or the filters.")
         } else {
             LazyVStack(spacing: 0) {
                 ForEach(arriving) { t in
@@ -187,13 +200,32 @@ struct LibraryView: View {
 
     private func row(_ track: Track, in tracks: [Track]) -> some View {
         let playing = player.current?.id == track.id
-        return SongRow(title: track.title, subtitle: subtitle(track), source: track.source, thumbnail: track.thumbnail, duration: track.duration,
-                    playing: playing) {
+        let onPhone = library.contains(track.id)
+        let progress = server.transfers[track.id]?.progress
+        let hasAudio = onPhone || (track.onServer ?? true)
+        let playable = tracks.filter { library.contains($0.id) }
+        let start = { player.play(playable, startAt: playable.firstIndex(of: track) ?? 0) }
+        let fetch = { Task { if await server.download(track, settings: settings, into: library) { player.playNow(track) } } }
+        return SongRow(title: track.title, subtitle: subtitle(track), source: track.source, thumbnail: track.thumbnail,
+                       duration: onPhone ? track.duration : nil,
+                       downloading: onPhone ? nil : progress,
+                       onDownload: !onPhone && progress == nil && hasAudio ? { fetch() } : nil,
+                       noAudio: !onPhone && !hasAudio,
+                       playing: playing) {
                 Menu {
                     Button { editing = ServerSong(track) } label: { Label("Edit", systemImage: "pencil") }
-                    Button { player.playNext(track); toast = "Plays next" } label: { Label("Play next", systemImage: "text.insert") }
-                    Button { toast = player.enqueue([track]) == 1 ? "Added to queue" : "Already in queue" } label: {
-                        Label("Add to queue", systemImage: "text.badge.plus")
+                    if onPhone {
+                        Button { player.playNext(track); toast = "Plays next" } label: { Label("Play next", systemImage: "text.insert") }
+                        Button { toast = player.enqueue([track]) == 1 ? "Added to queue" : "Already in queue" } label: {
+                            Label("Add to queue", systemImage: "text.badge.plus")
+                        }
+                        if track.localOnly != true {
+                            Button { library.removeAudio(track.id); toast = "Removed from this iPhone" } label: {
+                                Label("Remove from iPhone", systemImage: "iphone.slash")
+                            }
+                        }
+                    } else if hasAudio, progress == nil {
+                        Button { fetch() } label: { Label("Download", systemImage: "arrow.down.circle") }
                     }
                     Button(role: .destructive) { deleting = track } label: { Label("Delete from library", systemImage: "trash") }
                 } label: {
@@ -203,16 +235,23 @@ struct LibraryView: View {
                 }
                 .accessibilityLabel("More actions for \(track.title)")
             }
-        .onTapGesture { player.play(tracks, startAt: tracks.firstIndex(of: track) ?? 0) }
+        .onTapGesture {
+            if onPhone { start() }
+            else if !hasAudio { toast = "No audio yet" }
+            else if progress == nil { fetch() }
+        }
         .accessibilityAddTraits(.isButton)
-        .accessibilityAction(named: "Play") { player.play(tracks, startAt: tracks.firstIndex(of: track) ?? 0) }
+        .accessibilityAction(named: onPhone ? "Play" : "Download") {
+            if onPhone { start() } else if hasAudio, progress == nil { fetch() }
+        }
     }
 
-    private static func diskSize(_ tracks: [Track]) async -> Int64 {
-        await Task.detached(priority: .utility) {
-            tracks.reduce(Int64(0)) { sum, t in
-                sum + Int64((try? FileManager.default.attributesOfItem(atPath: t.fileURL.path)[.size] as? Int) ?? 0)
-            }
-        }.value
+    private func delete(_ t: Track) async {
+        if t.localOnly != true {
+            do { try await APIClient(baseURL: settings.serverURL, token: settings.token).delete(t.id) }
+            catch APIError.http(404, _) {}
+            catch { toast = "Couldn't delete. Check the server and try again."; return }
+        }
+        library.delete(t.id)
     }
 }
