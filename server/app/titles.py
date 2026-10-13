@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 
 _NOISE = re.compile(
-    r"[\(\[][^\)\]]*\b(official|video|audio|lyrics?|visuali[sz]er|remaster(ed)?|hd|hq|4k|clip|mv)\b[^\)\]]*[\)\]]",
+    r"[\(\[][^\)\]]*\b(official|video|audio|lyrics?|visuali[sz]er|remaster(ed)?|h[dq]|4k|clip|mv)\b[^\)\]]*[\)\]]",
     re.I,
 )
 _FEAT_KEY = re.compile(r"\b(?:featuring|feat\.?|ft\.?)\s", re.I)
@@ -53,10 +53,10 @@ def clean_title(title: str) -> str:
 
 
 _VERSION_BRACKET = re.compile(
-    r"[\(\[]\s*(?:(?:live|acoustic|unplugged|sessions?|in concert|at)\b|(?:[^\)\]]*\b(?:live|unplugged|in concert)\b))[^\)\]]*[\)\]]",
+    r"[\(\[](?=[^)\]]*\b(?:live|unplugged|in concert)\b|\s*(?:acoustic|sessions?|at)\b)[^)\]]*[\)\]]",
     re.I,
 )
-_VERSION_TAIL = re.compile(r"\s+-\s+(?:live|acoustic|unplugged|sessions?|in concert)\b.*$|\s+live (?:at|from|in|on)\b.*$", re.I)
+_VERSION_TAIL = re.compile(r"(?<!\s)\s+(?:-\s+(?:live|acoustic|unplugged|sessions?|in concert)|live (?:at|from|in|on))\b.*$", re.I)
 
 
 def lookup_artist(artist: str) -> str:
@@ -111,7 +111,7 @@ _REMIX_WORD = re.compile(r"\bremix\b", re.I)
 _SEGMENT_SEP = re.compile(r"( \| | - | \u2013 | \u2014 )")
 _CUE_DASH = re.compile(r" [-\u2013\u2014] ")
 _FEAT_NORM = re.compile(r"\b(?:featuring|feat|ft)\b(\.?)", re.I)
-_NUMBER = re.compile(r"[0-9][0-9.,'\"\u2032\u2033]*")
+_NUMBER = re.compile(r"\d[\d.,'\"\u2032\u2033]*", re.ASCII)
 
 
 def _prev_is_number(text: str, end: int) -> bool:

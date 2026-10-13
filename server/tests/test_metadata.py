@@ -202,7 +202,8 @@ def _gather_with_box(monkeypatch, text, **kw):
 def test_gather_suggest_from_song_infobox(monkeypatch):
     out = _gather_with_box(monkeypatch, "{{Infobox song\n| name = Warrior's Dance\n| artist = [[the Prodigy]]\n| album = X\n}}")
     assert out["suggest"] == {"artist": "The Prodigy", "title": "Warrior's Dance"}
-    assert out["album"] == "X" and set(out) == {"album", "year", "tags", "suggest", "services"}
+    assert out["album"] == "X"
+    assert set(out) == {"album", "year", "tags", "suggest", "services"}
 
 
 def test_gather_suggest_nulls_without_name_artist_or_infobox(monkeypatch):

@@ -22,6 +22,9 @@ def test_genres_library_first_then_builtin(client):
     assert r.status_code == 200
     out = r.json()["genres"]
     assert out[:2] == ["techno", "house"]
-    assert len(out) == len(set(out)) and len(out) <= 1000
-    assert "mood:calm" not in out and "calm" not in out
-    assert "deep house" in out and "trance" in out
+    assert len(out) == len(set(out))
+    assert len(out) <= 1000
+    assert "mood:calm" not in out
+    assert "calm" not in out
+    assert "deep house" in out
+    assert "trance" in out

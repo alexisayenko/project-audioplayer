@@ -442,7 +442,9 @@ def test_infobox_genres_fetch_only_enwiki(monkeypatch):
     monkeypatch.setattr(wl, "_fetch_json", fetch)
     monkeypatch.setattr(wl, "_infobox_cache", {})
     assert wl.infobox_genres("https://en.wikipedia.org/wiki/Crazy_(Gnarls_Barkley_song)") == CRAZY_GENRES
-    assert "page=Crazy_%28Gnarls_Barkley_song%29" in urls[0] and "section=0" in urls[0] and "redirects=1" in urls[0]
+    assert "page=Crazy_%28Gnarls_Barkley_song%29" in urls[0]
+    assert "section=0" in urls[0]
+    assert "redirects=1" in urls[0]
     assert wl.infobox_genres("https://de.wikipedia.org/wiki/X") == []
     assert wl.infobox_genres("https://www.wikidata.org/wiki/Q1") == []
     assert wl.infobox_genres(None) == []
@@ -506,7 +508,9 @@ def test_parse_infobox_warriors_dance():
 
 def test_parse_infobox_single_without_album():
     out = wl.parse_infobox("{{Infobox song\n| name = Solo\n| type = single\n| released = 1999\n| genre = [[Pop]]\n}}")
-    assert out["album"] is None and out["year"] == 1999 and out["genres"] == ["pop"]
+    assert out["album"] is None
+    assert out["year"] == 1999
+    assert out["genres"] == ["pop"]
 
 
 def test_parse_infobox_album_shapes():
@@ -628,7 +632,8 @@ def test_suggest_artist_infobox_fallback_when_song_page_absent(monkeypatch):
     monkeypatch.setattr(wl, "_fetch_json", lambda url: {"parse": {"wikitext": "{{Infobox musical artist\n| genre = {{hlist|[[House music|House]]|[[Dance music|dance]]|[[hip-hop]]}}\n}}"}})
     out = wl.suggest("Kato feat. Jon", "Turn The Lights Off")
     assert out["tags"][:3] == ["genre:house", "genre:dance", "genre:hip-hop"]
-    assert out["year"] == 2010 and gl.lookup("Kato feat. Jon", "Turn The Lights Off")["tags"] == ["country:dk"]
+    assert out["year"] == 2010
+    assert gl.lookup("Kato feat. Jon", "Turn The Lights Off")["tags"] == ["country:dk"]
 
 
 def test_suggest_ignores_song_page_of_another_artist(monkeypatch):
@@ -645,5 +650,6 @@ def test_suggest_ignores_song_page_of_another_artist(monkeypatch):
     monkeypatch.setattr(wl, "_fetch_json", fetch)
     out = wl.suggest("Kato feat. Jon", "Turn The Lights Off")
     assert out["wikipedia_song"] is None
-    assert "genre:tech house" not in out["tags"] and "genre:house" in out["tags"]
+    assert "genre:tech house" not in out["tags"]
+    assert "genre:house" in out["tags"]
     assert out["infobox_suggest"] is None

@@ -182,7 +182,8 @@ def _genre_tags(ids: list[str], labels: dict[str, str]) -> list[str]:
 _REF_PAIR = re.compile(r"<ref\b[^>]*?(?<!/)>.*?</ref\s*>", re.S | re.I)
 _REF_SELF = re.compile(r"<ref\b[^>]*/\s*>", re.I)
 _COMMENT = re.compile(r"<!--.*?-->", re.S)
-_BR = re.compile(r"<br\s*/?\s*>", re.I)
+_WIKI_PATH = "/wiki/"
+_BR = re.compile(r"<br\s*(?:/\s*)?>", re.I)
 _TAG = re.compile(r"<[^>]+>")
 _LINK = re.compile(r"\[\[([^\[\]|]*)(?:\|([^\[\]]*))?\]\]")
 _INNER_TPL = re.compile(r"\{\{([^{}]*)\}\}")
@@ -201,7 +202,7 @@ def _link_text(m: re.Match[str]) -> str:
 def _template(m: re.Match[str]) -> str:
     parts = m.group(1).split("|")
     name = parts[0].strip().casefold().replace("_", " ")
-    args = [a for a in parts[1:] if not re.match(r"\s*[\w ]+=", a)]
+    args = [a for a in parts[1:] if not re.match(r"\s*\w[\w ]*=", a)]
     if name in _LIST_TPLS:
         return "\n" + "\n".join(args) + "\n"
     if name in _UNWRAP_TPLS:
@@ -373,9 +374,9 @@ def infobox(page_url: str | None) -> dict[str, Any]:
     """Infobox facts of an en.wikipedia.org article (lead section wikitext); empty on any failure or other hosts."""
     try:
         parts = urllib.parse.urlsplit(page_url or "")
-        if (parts.hostname or "").lower() != "en.wikipedia.org" or not parts.path.startswith("/wiki/"):
+        if (parts.hostname or "").lower() != "en.wikipedia.org" or not parts.path.startswith(_WIKI_PATH):
             return _empty_infobox()
-        title = urllib.parse.unquote(parts.path[len("/wiki/") :])
+        title = urllib.parse.unquote(parts.path[len(_WIKI_PATH) :])
         if title not in _infobox_cache:
             api = (
                 "https://en.wikipedia.org/w/api.php?action=parse&prop=wikitext&section=0&format=json&formatversion=2&redirects=1&page="
@@ -466,7 +467,7 @@ def qid_of_page(url: str) -> str | None:
     if url not in _qid_of_page:
         try:
             parts = urllib.parse.urlsplit(url)
-            title = urllib.parse.unquote(parts.path[len("/wiki/") :]).replace("_", " ")
+            title = urllib.parse.unquote(parts.path[len(_WIKI_PATH) :]).replace("_", " ")
             query = urllib.parse.urlencode(
                 {"action": "query", "prop": "pageprops", "ppprop": "wikibase_item", "titles": title, "redirects": "1", "format": "json"}
             )

@@ -258,7 +258,8 @@ def test_preview_and_metadata_give_same_tags(monkeypatch):
     monkeypatch.setattr(gl, "lookup", lambda a, t: {"tags": [], "year": None, "album": None})
     meta = c.post("/metadata", json={"title": "T", "artist": "A", "sources": [{"url": "https://youtu.be/dQw4w9WgXcQ"}]}, headers=h).json()["tags"]
     assert prev == meta
-    assert prev[:2] == ["genre:z1", "genre:z2"] and len([t for t in prev if t.startswith("genre:")]) == 8
+    assert prev[:2] == ["genre:z1", "genre:z2"]
+    assert len([t for t in prev if t.startswith("genre:")]) == 8
 
 
 def test_lookup_wikipedia_uses_same_rule(monkeypatch):
@@ -356,7 +357,9 @@ def test_featured_names_pick_the_right_artist(monkeypatch):
     out = gl.lookup("Kato feat. Jon", "Turn The Lights Off")
     assert out["tags"] == ["genre:house", "country:dk"]
     assert out["year"] == 2010
-    assert "recording/r-dk" in calls and "artist/a-dk" in calls and "artist/a-us" not in calls
+    assert "recording/r-dk" in calls
+    assert "artist/a-dk" in calls
+    assert "artist/a-us" not in calls
 
 
 def test_without_featured_names_first_match_unchanged(monkeypatch):

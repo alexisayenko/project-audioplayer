@@ -33,12 +33,6 @@ SCHED = jobs.Scheduler()
 
 app = FastAPI(title="Electrophone")
 
-R403 = {403: {"description": "Forbidden"}}
-R404 = {404: {"description": "Not found"}}
-R409 = {409: {"description": "Conflict"}}
-R422 = {422: {"description": "Unprocessable"}}
-R502 = {502: {"description": "Upstream failure"}}
-R503 = {503: {"description": "Not configured"}}
 _NOT_DOWNLOADED = "not downloaded"
 _UNKNOWN_SONG = "unknown song"
 _CSRF_DETAIL = "missing or foreign CSRF header"
@@ -260,7 +254,7 @@ def auth_config(request: Request) -> dict[str, str]:
     }
 
 
-@app.post("/auth/session", responses={**R403, **R503})
+@app.post("/auth/session", responses={403: {"description": "Forbidden"}, 503: {"description": "Not configured"}})
 def auth_session(req: SessionRequest, request: Request, response: Response) -> dict[str, str]:
     if not session.csrf_ok(request.headers, request.headers.get("host", "")):
         raise HTTPException(status_code=403, detail=_CSRF_DETAIL)
@@ -275,7 +269,7 @@ def auth_session(req: SessionRequest, request: Request, response: Response) -> d
     return {"email": identity["email"], "provider": identity["provider"]}
 
 
-@app.post("/auth/logout", status_code=204, responses=R403)
+@app.post("/auth/logout", status_code=204, responses={403: {"description": "Forbidden"}})
 def auth_logout(request: Request) -> Response:
     if not session.csrf_ok(request.headers, request.headers.get("host", "")):
         raise HTTPException(status_code=403, detail=_CSRF_DETAIL)
@@ -474,7 +468,7 @@ def _scheduled(uid: str, owner: bool, fn):
     return box["value"]
 
 
-@app.post("/download", responses={**R422, **R502})
+@app.post("/download", responses={422: {"description": "Unprocessable"}, 502: {"description": "Upstream failure"}})
 async def download(req: DownloadRequest, user: dict[str, Any] = Depends(require_token)):
     if not extractor.is_valid_video_id(req.video_id) or extractor.source_of(req.video_id) != "youtube":
         raise HTTPException(status_code=422, detail="invalid video id")
@@ -495,7 +489,7 @@ async def download(req: DownloadRequest, user: dict[str, Any] = Depends(require_
     return {**meta, "file_url": f"/files/{req.video_id}"}
 
 
-@app.get("/files/{video_id}", responses={**R404, **R422, **R503})
+@app.get("/files/{video_id}", responses={404: {"description": "Not found"}, 422: {"description": "Unprocessable"}, 503: {"description": "Not configured"}})
 def get_file(video_id: str, user: dict[str, Any] = Depends(require_token_or_query)):
     _vid(video_id)
     uid = user["uid"]
@@ -511,7 +505,7 @@ def get_file(video_id: str, user: dict[str, Any] = Depends(require_token_or_quer
                         headers={"Cache-Control": "private, no-cache"})
 
 
-@app.get("/covers/{video_id}", responses={**R404, **R422})
+@app.get("/covers/{video_id}", responses={404: {"description": "Not found"}, 422: {"description": "Unprocessable"}})
 def get_cover(video_id: str, user: dict[str, Any] = Depends(require_token_or_query)):
     _vid(video_id)
     path = covers_dir(user["uid"]) / f"{video_id}.jpg"
@@ -533,7 +527,7 @@ def _etag_matches(header: str, etag: str) -> bool:
 _SINCE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
 
 
-@app.get("/catalog", responses=R422)
+@app.get("/catalog", responses={422: {"description": "Unprocessable"}})
 def get_catalog(request: Request, since: str | None = Query(default=None),
                 user: dict[str, Any] = Depends(require_token)):
     """Metadata-only catalog for clients to poll: `revision`, every id, and the songs changed `>= since`."""
@@ -584,7 +578,7 @@ class WikipediaLookupRequest(BaseModel):
     wikipedia_artist: str | None = None
 
 
-@app.post("/preview", responses=R502)
+@app.post("/preview", responses={502: {"description": "Upstream failure"}})
 async def preview(req: PreviewRequest, user: dict[str, Any] = Depends(require_token)):
     try:
         link = await run_in_threadpool(_resolve_link, req.url)
@@ -710,7 +704,7 @@ def _run_download(uid: str, owner: bool, vid: str, meta: dict[str, Any], tags: l
         job.update(status="error", error=_short(exc))
 
 
-@app.post("/songs", status_code=202, responses=R409)
+@app.post("/songs", status_code=202, responses={409: {"description": "Conflict"}})
 def create_song(req: CreateSongRequest, user: dict[str, Any] = Depends(require_token)):
     uid, owner = user["uid"], user["owner"]
     _guard_add(uid, owner, req.audio)
@@ -794,7 +788,7 @@ def _add_metadata_only(uid: str, vid: str, link: _Resolved, meta: dict[str, Any]
     )
 
 
-@app.get("/songs/{video_id}/status", responses={**R404, **R422})
+@app.get("/songs/{video_id}/status", responses={404: {"description": "Not found"}, 422: {"description": "Unprocessable"}})
 def song_status(video_id: str, user: dict[str, Any] = Depends(require_token)):
     _vid(video_id)
     uid = user["uid"]
@@ -806,7 +800,7 @@ def song_status(video_id: str, user: dict[str, Any] = Depends(require_token)):
     raise HTTPException(status_code=404, detail=_UNKNOWN_SONG)
 
 
-@app.patch("/songs/{video_id}", responses={**R404, **R422})
+@app.patch("/songs/{video_id}", responses={404: {"description": "Not found"}, 422: {"description": "Unprocessable"}})
 def patch_song(video_id: str, req: PatchSongRequest, user: dict[str, Any] = Depends(require_token)):
     _vid(video_id)
     uid = user["uid"]
@@ -838,7 +832,7 @@ def patch_song(video_id: str, req: PatchSongRequest, user: dict[str, Any] = Depe
         return library.public_song(song, _root(uid))
 
 
-@app.post("/songs/{video_id}/bpm/detect", responses={**R404, **R422})
+@app.post("/songs/{video_id}/bpm/detect", responses={404: {"description": "Not found"}, 422: {"description": "Unprocessable"}})
 async def detect_song_bpm(video_id: str, user: dict[str, Any] = Depends(require_token)):
     _vid(video_id)
     uid = user["uid"]
@@ -866,7 +860,7 @@ def _store_bpm(uid: str, video_id: str, value: float) -> dict[str, Any]:
         return library.public_song(song, _root(uid))
 
 
-@app.delete("/songs/{video_id}", status_code=204, responses={**R404, **R422})
+@app.delete("/songs/{video_id}", status_code=204, responses={404: {"description": "Not found"}, 422: {"description": "Unprocessable"}})
 def delete_song(video_id: str, user: dict[str, Any] = Depends(require_token)):
     _vid(video_id)
     uid = user["uid"]
@@ -885,7 +879,7 @@ def delete_song(video_id: str, user: dict[str, Any] = Depends(require_token)):
         JOBS.pop((uid, video_id), None)
 
 
-@app.delete("/songs/{video_id}/audio", status_code=204, responses={**R404, **R422})
+@app.delete("/songs/{video_id}/audio", status_code=204, responses={404: {"description": "Not found"}, 422: {"description": "Unprocessable"}})
 def delete_song_audio(video_id: str, user: dict[str, Any] = Depends(require_token)):
     """Remove the audio file only; the catalog entry stays (state becomes `none`). Idempotent."""
     _vid(video_id)
