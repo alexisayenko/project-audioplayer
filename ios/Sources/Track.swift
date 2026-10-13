@@ -15,6 +15,8 @@ struct Track: Codable, Identifiable, Hashable {
     var duration: Double?
     var thumbnail: String?   // absolute image URL or server path /covers/<id>; never holds a token
     var album: String?
+    var original: String?
+    var remixer: String?
     var year: Int?
     var tags: [String]?
     var bpm: Double?

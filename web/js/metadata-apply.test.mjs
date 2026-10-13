@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { addNamespaced, planMetadata, statusText, serviceState, suggestion, suggestionText, countryCode } from './metadata-apply.js';
+import { addNamespaced, planMetadata, statusText, serviceState, suggestion, suggestionText, countryCode, remixSuggestion, remixHintText } from './metadata-apply.js';
 
 test('fills only empty album and year', () => {
   const r = { album: 'A', year: 1999, tags: [] };
@@ -53,4 +53,16 @@ test('countryCode', () => {
   assert.equal(countryCode('Atlantis'), null);
   assert.equal(countryCode(''), null);
   console.log('metadata-apply tests passed');
+});
+
+test('remix hint fills only empty or differing fields, never when matching', () => {
+  const h = { original: 'Delerium - Innocente', remixer: 'Sadrican' };
+  assert.deepEqual(remixSuggestion(h, { original: '', remixer: '' }), h);
+  assert.deepEqual(remixSuggestion(h, { original: ' delerium - innocente ', remixer: '' }), { remixer: 'Sadrican' });
+  assert.equal(remixSuggestion(h, { original: 'DELERIUM - INNOCENTE', remixer: 'sadrican' }), null);
+  assert.equal(remixSuggestion(null, { original: '', remixer: '' }), null);
+  assert.equal(remixSuggestion({ original: null, remixer: ' ' }, {}), null);
+  assert.deepEqual(remixSuggestion({ remixer: 'X' }, {}), { remixer: 'X' });
+  assert.equal(remixHintText(h), 'Looks like a remix: Sadrican · original Delerium - Innocente');
+  assert.equal(remixHintText({ remixer: 'X' }), 'Looks like a remix: X');
 });
