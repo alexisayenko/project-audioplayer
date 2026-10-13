@@ -188,7 +188,7 @@ label { display: block; color: var(--ink-muted); font-size: 13px; line-height: 1
 .cat-chip.on { background: var(--fill); color: var(--on-fill); box-shadow: none; font-weight: 600; }
 .cat-chip.on small { color: var(--on-fill); font-weight: 500; }
 .cat-chip:disabled { opacity: .5; cursor: default; }
-.sortbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-2); margin: var(--space-5, 20px) 0 var(--space-3); min-height: 36px; }
+.sortbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-2); margin: var(--space-4) 0 var(--space-3); min-height: 36px; }
 .sort { position: relative; display: inline-flex; align-items: center; gap: 6px; margin: 0; color: var(--accent-ink); font-weight: 600; }
 .sort select { appearance: none; -webkit-appearance: none; width: auto; min-height: var(--hit); padding: 0 22px 0 0; background: transparent; color: var(--accent-ink); font: inherit; font-weight: 600; cursor: pointer; }
 .sort select option { color: var(--ink); background: var(--surface); }
@@ -504,4 +504,4 @@ input[type=text].token-edit { background: var(--surface); box-shadow: inset 0 0 
 .token-pill.dragging { opacity: 0.4; }
 .token-pill.drop-before::before { content: ""; position: absolute; left: -3px; top: 2px; bottom: 2px; width: 2px; border-radius: 1px; background: var(--accent-ink); }
 .token-field.drop-over { box-shadow: inset 0 0 0 1.5px var(--accent-ink); }
-.token-drag-clone { position: fixed; z-index: 100; pointer-events: none; opacity: 0.85; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25); }
+.token-drag-clone { position: fixed; z-index: 100; pointer-events: none; opacity: 0.85; box-shadow: var(--shadow-float); }

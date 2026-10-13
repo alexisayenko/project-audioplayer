@@ -73,26 +73,28 @@ relative audio file names only (replaces `AUDIO_DOWNLOAD_DIR`). Each save costs 
 | --- | --- |
 | `GET /health` | liveness + git `sync` state (`ok`/`pending`/`error`), no auth |
 | `GET /search?q=&limit=` | `ytsearch` via yt-dlp, flat results |
-| `POST /download {video_id}` | fetch m4a (itag 140, no ffmpeg needed), return metadata |
+| `POST /download {video_id}` | synchronous YouTube-only m4a fetch (`bestaudio[ext=m4a]`, fallback itag 140; no ffmpeg), under the download caps; returns metadata, does not touch the library |
 | `GET /files/{video_id}` | stream the stored m4a |
 | `GET /library`, `GET /catalog`, `GET /tags` | songs with tags; catalog with derived `audio_state`; tag counts |
 | `GET /genres` | genre autocomplete list: the user's own genres, then built-ins |
-| `POST /preview {url}` | yt-dlp metadata plus suggested genre/country tags, year, Wikipedia links (MusicBrainz, Wikidata) and `remixer` (the title comes back already cut of its remix bracket), no download |
+| `POST /preview {url}` | YouTube or SoundCloud link: yt-dlp metadata plus suggested genre/country tags, year, Wikipedia links (MusicBrainz, Wikidata) and `remixer` (the title comes back already cut of its remix bracket), no download |
 | `POST /metadata` | album, year and `genre:`/`country:` tags from source links, MusicBrainz, the Wikipedia infobox and Wikidata, plus `suggest` (infobox artist and title hint) and per-service `services` for the Add form icons (API-048); response keys: album, year, tags, suggest, services |
 | `POST /lookup/wikipedia` | suggested tags and year from user-edited Wikipedia links |
 | `POST /songs`, `GET /songs/{id}/status` | add song: with `audio:true` (default) a background download, with `audio:false` a catalog-only entry (what the web sends); poll progress |
 | `PATCH /songs/{id}`, `DELETE /songs/{id}`, `DELETE /songs/{id}/audio` | edit metadata/tags/bpm/remixer; remove record, audio, cover; remove only the audio |
 | `POST /songs/{id}/bpm/detect` | re-detect BPM (aubio) from the stored m4a |
 | `GET /covers/{video_id}` | cover jpg (`covers/<id>.jpg`) |
-| `GET /` | web UI (`web/`, static, public) |
+| `GET /auth/config`, `POST /auth/session`, `POST /auth/logout`, `GET /auth/me` | web sign-in: public client ids; ID token to session cookie; clear cookie; current credentials |
+| `GET /me`, `GET /me/usage` | profile (`email`, `provider`, `owner`, `created_at`); quota usage (`max_*` null for the owner) |
+| `GET /`, `GET /_v/<version>/...` | web UI (`web/`, static, public): `index.html` with assets rewritten to a content-versioned URL (API-051) |
 
 Full contract: [`../product/screens.md`](../product/screens.md).
 
-All API routes except `/health` need either an OAuth ID token of any verified
+All API routes except `/health` and `/auth/config`, `/auth/session`, `/auth/logout` (the last two need only the CSRF header) need either an OAuth ID token of any verified
 user (`Authorization: Bearer`, see below; open signup, ADR-0012) or header
 `X-API-Token` equal to `AUDIO_API_TOKEN` (the owner). Every route resolves to one
 user and touches only that user's data. `/files/{id}` and `/covers/{id}` also accept
-`?token=<token>`, compared with `hmac.compare_digest`, since `<audio>`
+`?token=<token>` (the owner's `AUDIO_API_TOKEN` only), compared with `hmac.compare_digest`, since `<audio>`
 and `<img>` cannot send headers; the token therefore can appear in URLs
 and access logs, so keep logs private and use HTTPS. The static UI
 files are served without auth.
@@ -102,12 +104,11 @@ its audio and cover URLs carry no token; cookie writes need `X-Requested-With`.
 Video ids are validated against `^[A-Za-z0-9_-]{11}$` (blocks path
 traversal and yt-dlp option injection).
 
-System dependencies (BPM detection, ADR-0002): `ffmpeg` on PATH (decodes m4a
-to PCM) and, because `aubio==0.4.9` has no wheel for current Python, a C
+System dependencies: `ffmpeg` on PATH (SoundCloud downloads are transcoded to m4a with it; BPM detection, ADR-0002, decodes m4a to PCM with it) and, because `aubio==0.4.9` has no wheel for current Python, a C
 toolchain with Python headers to build it (Debian: `apt install ffmpeg
 python3-dev build-essential`). With GCC 14 (Debian 13) the build needs
 `CFLAGS="-Wno-error=incompatible-pointer-types" pip install -r requirements.txt`.
-If ffmpeg or aubio is missing, BPM stays `null` and downloads still work.
+If ffmpeg or aubio is missing, BPM stays `null` and YouTube downloads still work (SoundCloud downloads need ffmpeg).
 
 ```sh
 cd server
@@ -124,15 +125,15 @@ Then open `http://<host>:8000/`, sign in with Google or Apple (scripts send `X-A
 `AUDIO_DATA_REPO` is unset), `AUDIO_DATA_REPO` / `AUDIO_COVERS_REPO` /
 `AUDIO_GIT_SSH_KEY` (git store, ADR-0005), `AUDIO_MUSIC_ROOT` /
 `AUDIO_HOSTS` / `AUDIO_HOSTS_FILE` (audio location),
-`AUDIO_WEB_DIR` (default `../web`), `AUDIO_TAG_LOOKUP` / `AUDIO_GENRE_LOOKUP` (default on, `0`
+`AUDIO_WEB_DIR` (default `../web`), `AUDIO_SESSION_SECRET` (cookie signing key; else derived from `AUDIO_API_TOKEN`), `GOOGLE_WEB_CLIENT_ID` / `APPLE_WEB_CLIENT_ID` / `APPLE_WEB_REDIRECT_URI` (web sign-in, served by `/auth/config`; the two client ids are also accepted as token audiences), `AUDIO_TAG_LOOKUP` / `AUDIO_GENRE_LOOKUP` (default on, `0`
 disables the outbound HTTPS tag and link lookups to `musicbrainz.org`, `wikidata.org`
 and `*.wikipedia.org`), `AUDIO_MB_USER_AGENT` (default
 `audioplayer/0.1 (alex.isayenko@gmail.com)`, sent to all three hosts; Wikimedia requires a descriptive one).
 
 Server modules (`server/app/`): `main` (routes, jobs), `library` (records, derived `decade:` tags,
 tag normalisation), `extractor` (yt-dlp), `genre_lookup` (MusicBrainz
-suggestions), `wiki_lookup` (Wikipedia links, Wikidata facts, link validation), `titles` (title cut: channel prefix, remix to `remixer`, feat normalisation, lookup strings), `genre_filter` (deny-list and canonical genre tags), `genres` (built-in genre list for `GET /genres`), `metadata` (`POST /metadata`), `langcodes` (ISO 639 mapping, stored `lang:` tags only), `bpm` (aubio), `gitstore`
-(git sync), `oauth`, `session`, `users`, `limits`, `jobs` (ADR-0006, ADR-0012).
+suggestions), `wiki_lookup` (Wikipedia links, Wikidata facts, link validation), `titles` (title cut: channel prefix, remix to `remixer`, feat normalisation, lookup strings), `genre_filter` (deny-list and canonical genre tags), `genres` (built-in genre list for `GET /genres`), `metadata` (`POST /metadata`), `langcodes` (ISO 639 mapping, stored `lang:` tags only), `bpm` (aubio), `urlclean` (link cleaning, SoundCloud and catalog-id classification), `gitstore`
+(git sync), `oauth`, `session`, `users`, `limits`, `jobs`, `problems` (coded refusals) (ADR-0006, ADR-0012).
 
 ## Web UI (`web/`)
 
@@ -165,7 +166,7 @@ Sources in `ios/Sources/`:
 - `PlayerService` — `AVPlayer`, `.playback` audio session, queue, shuffle and
   repeat, `MPNowPlayingInfoCenter`, `MPRemoteCommandCenter`;
   `UIBackgroundModes: audio`.
-- The server URL defaults to `https://play.isayenko.net`; Settings has sign-in only (a legacy-token Reset row shows only when a stale token is saved).
+- The server URL defaults to `https://play.isayenko.net`; Settings has cards Account (Apple/Google sign-in), Downloads (read-only quality, auto-download and mobile-data switches; a "Custom server · Reset" row only for a non-default server or a stale token) and Storage, then the version line; no server or token field.
 
 ```sh
 brew install xcodegen

@@ -14,6 +14,7 @@ One bullet per event: ISO date, an em dash, what happened in a
 sentence or two, and a link to the task or artifact that carries
 the detail. Newest first; several events on one date are fine.
 
+- 2026-10-13 — server and web UI deployed live at https://play.isayenko.net (perkunas LXC `tools`, ADR-0004).
 - 2026-10-13 — ADR-0010 accepted; server side of the catalog (task-0006: audio state, `/catalog`, metadata-only add) built and tested.
 - 2026-10-13 — concept "catalog and audio" proposed (ADR-0010): Library lists every
   song, audio is fetched on demand; see
@@ -24,5 +25,5 @@ the detail. Newest first; several events on one date are fine.
   and given owner-only Apple and Google sign-in; see
   [task-0001](tasks/task-0001.md), [task-0002](tasks/task-0002.md).
 - 2026-10-12 — web UI, server (git-backed library, Wikipedia links, BPM,
-  decade tags) and iOS scaffold built; specs and ADRs written; not yet
-  deployed to `play.isayenko.net`.
+  decade tags) and iOS scaffold built; specs and ADRs written;
+  deployed to `play.isayenko.net` on 2026-10-13.

@@ -25,7 +25,7 @@ The phone cannot run yt-dlp. The app calls the server for `/preview`,
 `perkunas`. Known risk: YouTube may block datacenter IPs (a home IP
 avoids this).
 
-### Network exposure: Cloudflare Tunnel (planned, not set up)
+### Network exposure: Cloudflare Tunnel (live since 2026-10-13, ADR-0004)
 
 Cloudflare Workers cannot run yt-dlp. Expose the server at an HTTPS URL
 with Cloudflare Tunnel (`cloudflared`), optionally behind a Cloudflare
@@ -295,7 +295,7 @@ Status: Accepted, in use · 2026-10-12
   internal TestFlight group ("Alex"). Internal testers need no Beta App
   Review. No public release; the app may break YouTube's ToS.
 - Build numbers are date-based (`CURRENT_PROJECT_VERSION` = `YYYYMMDD`,
-  uploaded so far: 20261012, 20261013). App Store Connect rejects a repeated
+  uploaded so far: 20261012, 20261013, 20261021). App Store Connect rejects a repeated
   or lower number, so the next upload needs a strictly higher one: the
   next day's date, or the last number plus one for a second build in a day.
 - Upload: `xcodebuild archive`, then `xcodebuild -exportArchive` with

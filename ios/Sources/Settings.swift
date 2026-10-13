@@ -1,7 +1,6 @@
 import Foundation
 
-/// Server location and token. Kept in UserDefaults: this is a single-user
-/// TestFlight app and the token only guards a private server.
+/// Server location, a legacy API token (sign-in is Google or Apple, IOS-011) and the download switches. Kept in UserDefaults.
 final class Settings: ObservableObject {
     @Published var serverURL: String {
         didSet { UserDefaults.standard.set(serverURL, forKey: "serverURL") }

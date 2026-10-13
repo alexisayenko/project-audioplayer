@@ -20,6 +20,8 @@ Setup and release steps: [`docs/tech/architecture.md`](docs/tech/architecture.md
 
 ## Structure
 
+This repo today: `docs/`, `ios/`, `scripts/` (`check.sh`, `deploy.sh`, `sync-design-system.py`), `server/`, `web/`, plus `AGENTS.md`, `CLAUDE.md`, `README.md`, `LICENSE`. There is no `archive/` or `.github/` yet; the tree below is the general convention.
+
 ### Top-level layout
 
 Folders sort first (alphabetically), then files — VS Code

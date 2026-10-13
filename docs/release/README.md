@@ -4,8 +4,8 @@ Per-release launch material. One release = one checklist task in
 [`../tasks/`](../tasks/README.md) (`target: release-N`, where
 release 1 is the first public release).
 
-Current state: internal TestFlight only, group "Alex", builds 20261012 and
-20261013 uploaded; see [ADR-0008](../tech/decisions.md) and
+Current state: internal TestFlight only, group "Alex", builds 20261012,
+20261013 and 20261021 uploaded; see [ADR-0008](../tech/decisions.md) and
 [`../tech/architecture.md`](../tech/architecture.md#testflight).
 The files below are templates for a public release that is not planned.
 

@@ -60,7 +60,7 @@ are `{"detail": "<message>"}`, or `{"error": <code>, "detail": <message>, ...}` 
 - API-014 MUST: a failed job (`status:"error"`, message with yt-dlp noise stripped, max 300 chars) can be retried with a new `POST /songs`. Status: implemented
 - API-015 MUST: `PATCH` applies only the keys sent; `title`/`artist`/`album`/`remixer` are trimmed (empty becomes `null`, empty title is 422); `tags` is normalised; `tags: null` is ignored. Status: implemented
 - API-016 MUST: `DELETE` removes the record, the cover and the audio file, and drops the job entry. Status: implemented
-- API-017 MUST: every write endpoint (`POST /songs` job, PATCH, DELETE, bpm/detect) runs under the single-writer lock and, with the git store, commits `audioplayer: add|edit|delete|bpm <id>`. Status: implemented
+- API-017 MUST: every write endpoint (`POST /songs` job, PATCH, DELETE, bpm/detect) runs under the single-writer lock and, with the git store, commits `audioplayer: <uid8> add|edit|delete|bpm <id>` (`<uid8>` = first 8 characters of the user id). Status: implemented
 - API-025 MUST: song ids are `^[A-Za-z0-9_-]{11}$` (YouTube) or `soundcloud-<numeric track id>` (SoundCloud, always longer than 11 characters, so no collision); `source_of(id)` gives `youtube`/`soundcloud`; `POST /download` stays YouTube-only. Status: implemented
 - API-026 MUST: refusals of `POST /preview` and `POST /songs` for links are JSON `{"error": <code>, "detail": <message>}` with codes `unsupported` (422), `preview_only` (422), `not_found` (404), `private` (403), `failed` (502); clients show `detail`. Status: implemented
 - API-018 SHOULD: keep `/search` and `/download` only for the iOS secondary text search (IOS-023); the web UI does not use them. `/download` bypasses the library and tags, so the row download should be replaced by the preview flow. Status: to-confirm
@@ -68,7 +68,7 @@ are `{"detail": "<message>"}`, or `{"error": <code>, "detail": <message>, ...}` 
 - API-030 MUST: `GET /library` and `PATCH` responses add `audio_state`, `sources` and `audio` without removing or renaming any field, so old web and iOS clients keep working. Status: implemented
 - API-031 MUST: `GET /catalog` returns the same song objects (metadata only, no audio bytes) plus `revision` (content hash of the catalog, audio state included), `total` and `ids` (every id, so a client can drop deleted songs). `songs` holds all songs, or with `since` those whose `updated_at` (else `added_at`) is `>= since`; clients dedupe by id. An unchanged catalog answers 304 to a matching `If-None-Match`. Status: implemented
 - API-032 MUST: `POST /songs` with `audio:false` saves a catalog entry (`file: null`, `sources` from the link, missing fields filled from the link's metadata and cover) without downloading; 409 if the id exists. Status: implemented
-- API-033 MUST: `DELETE /songs/{id}/audio` removes only the file; `DELETE /songs/{id}` removes record, cover and file. Commits: `audioplayer: delete audio <id>` and `audioplayer: delete <id>`. Status: implemented
+- API-033 MUST: `DELETE /songs/{id}/audio` removes only the file; `DELETE /songs/{id}` removes record, cover and file. Commits: `audioplayer: <uid8> delete audio <id>` and `audioplayer: <uid8> delete <id>`. Status: implemented
 - API-034 MUST: song ids also accept `spotify-`, `applemusic-` and `shazam-<id>` (metadata-only sources), in every `{id}` path. Status: implemented (ids; adding from these sources is planned)
 
 ## Users, quotas and limits (ADR-0012)

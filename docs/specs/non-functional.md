@@ -12,8 +12,8 @@ ADRs: ADR-0003 (web), ADR-0004 (hosting), ADR-0001 (storage scale).
 
 ## Hosting
 
-- NFR-010 MUST: run as a plain systemd service (FastAPI, yt-dlp, ffmpeg, aubio) in LXC 106 `tools` on `perkunas`; no Docker, no new LXC. Status: planned (not deployed)
-- NFR-011 MUST: public at `https://play.isayenko.net` through the existing Cloudflare Tunnel ingress to `http://192.168.0.10:<port>`; the web UI is served by FastAPI from the same origin (no CORS). Status: planned (UI served same-origin: implemented)
+- NFR-010 MUST: run as a plain systemd service (FastAPI, yt-dlp, ffmpeg, aubio) in LXC 106 `tools` on `perkunas`; no Docker, no new LXC. Status: implemented (deployed 2026-10-13)
+- NFR-011 MUST: public at `https://play.isayenko.net` through the existing Cloudflare Tunnel ingress to `http://192.168.0.10:<port>`; the web UI is served by FastAPI from the same origin (no CORS). Status: implemented
 - NFR-012 MUST: Tailscale is not used. Status: implemented
 - NFR-013 SHOULD: run `pip install -U yt-dlp` on a daily schedule (YouTube breaks it often). Status: planned
 
