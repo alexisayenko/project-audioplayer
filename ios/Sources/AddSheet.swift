@@ -290,11 +290,11 @@ struct AddSheet: View {
         }
     }
 
-    private func labeled(_ label: String, _ text: Binding<String>, keyboard: UIKeyboardType = .default, url: Bool = false) -> some View {
+    private func labeled(_ label: String, _ text: Binding<String>, keyboard: UIKeyboardType = .default) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(label).font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.inkMuted)
             TextField(label, text: text).keyboardType(keyboard)
-                .textInputAutocapitalization(url ? .never : .sentences).autocorrectionDisabled(url).dsField()
+                .dsField()
         }
     }
 
@@ -356,8 +356,6 @@ struct AddSheet: View {
                 labeled("Album", $flow.album)
                 labeled("Year", $flow.year, keyboard: .numberPad)
                 labeled("BPM (optional, detected after saving)", $flow.bpm, keyboard: .numberPad)
-                labeled("Wikipedia: song", $flow.wikiSong, keyboard: .URL, url: true)
-                labeled("Wikipedia: band", $flow.wikiArtist, keyboard: .URL, url: true)
         }
 
         NamespaceField(title: "Genres", key: "genre", cap: genreCap, tags: $flow.tags)

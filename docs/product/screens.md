@@ -51,7 +51,7 @@ Web: a centred 560px dialog over Library (bottom-aligned sheet on phones): title
 3. User edits any field and assigns tags in the shared tag editor ("Get metadata" after Title and Artist fills empty Album and Year and suggests genres and a country; four service icons beside it (YouTube, SoundCloud, Wikipedia, Spotify) are grey by default, pulse while the request runs, and turn brand-coloured and tappable (opening the found page) for each service that returned a match; Spotify always stays grey; separate Genres and Countries fields hold the `genre:` and `country:` tags; suggested tags, existing tags grouped by prefix, `key:value` allowed; incomplete leftover text such as `mood:` is ignored).
    BPM is optional: left empty it is detected on the server after the
    download (placeholder "Detected after saving"); a typed value is kept as is.
-   Two optional inputs, Wikipedia (song) and Wikipedia (band), hold the links; they are saved with the song and feed "Get metadata".
+   Two optional inputs, Wikipedia (song) and Wikipedia (band), hold the links; they are saved with the song and feed "Get metadata" (the iOS Add form does not show them for now).
 4. Save starts the download on the server, then the app fetches the file.
 5. Shows progress while downloading and a clear error on failure
    (bad URL, unavailable video, server unreachable, already in library).
