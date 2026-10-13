@@ -4,10 +4,12 @@ enum APIError: LocalizedError {
     case badURL
     case http(Int, String)
     case refused(String, String)
+    case unreachable
 
     var errorDescription: String? {
         switch self {
         case .badURL: return "Invalid server URL"
+        case .unreachable: return "Can't reach the server"
         case .refused(_, let detail): return detail
         case .http(let code, let detail):
             if code == 401 { return "Not signed in. Sign in in Settings" }
@@ -50,6 +52,7 @@ struct APIClient {
             if let data, let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
                 if let code = obj["error"] as? String, let d = obj["detail"] as? String { throw APIError.refused(code, d) }
                 if let d = obj["detail"] as? String { detail = d }
+                else if let e = obj["error"] as? String { detail = e }
                 else if let list = obj["detail"] as? [[String: Any]] {
                     detail = list.compactMap { $0["msg"] as? String }.joined(separator: "; ")
                 }
@@ -93,8 +96,11 @@ struct APIClient {
     }
 
     func search(_ query: String) async throws -> [SearchResult] {
-        let req = try await request("/search", query: [.init(name: "q", value: query)])
-        let (data, response) = try await URLSession.shared.data(for: req)
+        var req = try await request("/search", query: [.init(name: "q", value: query)])
+        req.timeoutInterval = 30
+        let data: Data, response: URLResponse
+        do { (data, response) = try await URLSession.shared.data(for: req) }
+        catch let e as URLError where e.code != .cancelled { throw APIError.unreachable }
         try check(response, data: data)
         return try JSONDecoder().decode([SearchResult].self, from: data)
     }
@@ -145,7 +151,8 @@ struct APIClient {
             try check(response, data: out)
             return out
         } catch let e as URLError {
-            throw APIError.http(0, e.code == .timedOut ? "Server timed out" : "Server unreachable")
+            if e.code == .cancelled { throw e }
+            throw e.code == .timedOut ? APIError.http(0, "Server timed out") : APIError.unreachable
         }
     }
 

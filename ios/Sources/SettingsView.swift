@@ -9,6 +9,7 @@ struct SettingsView: View {
     @Environment(\.colorScheme) private var scheme
     @State private var bytes: Int64 = 0
     @State private var confirmRemoveAll = false
+    @State private var confirmReset = false
 
     var body: some View {
         ScrollView {
@@ -26,6 +27,9 @@ struct SettingsView: View {
         .confirmationDialog("Remove all \(library.tracks.filter { $0.localOnly != true }.count) downloads from this iPhone?", isPresented: $confirmRemoveAll, titleVisibility: .visible) {
             Button("Remove all downloads", role: .destructive) { library.removeAllAudio() }
         } message: { Text("The songs stay in your library. Tap Download to get one back.") }
+        .confirmationDialog("Reset to the default server?", isPresented: $confirmReset, titleVisibility: .visible) {
+            Button("Reset", role: .destructive) { settings.resetConnection(); Task { await server.check(settings: settings) } }
+        } message: { Text("This clears the saved server address and token. Your songs stay.") }
         .task { await server.check(settings: settings) }
         .task(id: library.tracks.count) {
             bytes = await Task.detached(priority: .utility) { [tracks = library.tracks] in
@@ -92,6 +96,14 @@ struct SettingsView: View {
                 Toggle("Use mobile data", isOn: $settings.useMobileData).labelsHidden().toggleStyle(DSSwitchStyle())
             }
             .accessibilityElement(children: .combine)
+            if settings.hasCustomConnection {
+                rule
+                row("Custom server: \(settings.customServerLabel)") {
+                    Button("Reset") { confirmReset = true }.font(T.subhead.weight(.semibold)).foregroundStyle(DS.Color.accentInk)
+                        .frame(minHeight: DS.Space.hit)
+                }
+                .accessibilityElement(children: .combine)
+            }
         }
     }
 

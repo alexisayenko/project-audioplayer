@@ -9,6 +9,9 @@ struct SearchView: View {
     @State private var downloading: Set<String> = []
     @State private var failed: [String: String] = [:]
     @State private var error: String?
+    @State private var searchError: SearchFailure?
+    @State private var searched = false
+    @State private var lastQuery = ""
     var onPick: ((SearchResult) -> Void)?
 
     private var api: APIClient { APIClient(baseURL: settings.serverURL, token: settings.token) }
@@ -41,27 +44,63 @@ struct SearchView: View {
         .scrollContentBackground(.hidden)
         .dsGround()
         .overlay {
-            if searching { ProgressView() }
+            if searching { ProgressView().accessibilityLabel("Searching") }
+            else if let f = searchError { failureView(f) }
             else if results.isEmpty {
-                Text("Search YouTube by title; tap a result to preview it").font(T.body).foregroundStyle(DS.Color.inkMuted)
+                Text(searched ? "No results" : "Search YouTube by title; tap a result to preview it")
+                    .font(T.body).foregroundStyle(DS.Color.inkMuted)
                     .multilineTextAlignment(.center).padding()
             }
         }
         .navigationTitle("Search YouTube")
         .navigationBarTitleDisplayMode(.inline)
         .searchable(text: $query, prompt: "Songs, artists")
-        .onSubmit(of: .search) { Task { await search() } }
+        .onSubmit(of: .search) { Task { await search(force: true) } }
+        .task(id: query) {
+            guard !query.trimmingCharacters(in: .whitespaces).isEmpty else { searching = false; return }
+            try? await Task.sleep(nanoseconds: 600_000_000)
+            if !Task.isCancelled { await search() }
+        }
         .alert("Error", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
             Button("OK", role: .cancel) {}
         } message: { Text(error ?? "") }
     }
 
-    private func search() async {
+    struct SearchFailure { let message: String; let canRetry: Bool }
+
+    private func failureView(_ f: SearchFailure) -> some View {
+        VStack(spacing: DS.Space.space3) {
+            Label { Text(f.message).font(T.body).foregroundStyle(DS.Color.ink) } icon: {
+                Image(systemName: "exclamationmark.circle.fill").foregroundStyle(DS.Color.power)
+            }
+            if f.canRetry {
+                Button("Retry") { Task { await search(force: true) } }.buttonStyle(DSButtonStyle(kind: .outline))
+            }
+        }
+        .multilineTextAlignment(.center).padding()
+    }
+
+    private func search(force: Bool = false) async {
         let q = query.trimmingCharacters(in: .whitespaces)
         guard !q.isEmpty else { return }
+        if !force, q == lastQuery, searchError == nil { return }
+        lastQuery = q
         searching = true
-        defer { searching = false }
-        do { results = try await api.search(q) } catch { self.error = error.localizedDescription }
+        searchError = nil
+        do {
+            let r = try await api.search(q)
+            guard q == lastQuery else { return }
+            results = r; searched = true
+        } catch is CancellationError { return
+        } catch let e as URLError where e.code == .cancelled { return
+        } catch {
+            guard q == lastQuery else { return }
+            results = []
+            var canRetry = true
+            if case APIError.http(401, _) = error { canRetry = false }
+            searchError = SearchFailure(message: error.localizedDescription, canRetry: canRetry)
+        }
+        searching = false
     }
 
     private func download(_ result: SearchResult) async {

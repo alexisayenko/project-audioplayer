@@ -10,6 +10,19 @@ final class Settings: ObservableObject {
         didSet { UserDefaults.standard.set(token, forKey: "token") }
     }
 
+    static let defaultServerURL = "https://play.isayenko.net"
+
+    var hasCustomConnection: Bool { serverURL != Self.defaultServerURL || !token.isEmpty }
+
+    var customServerLabel: String {
+        serverURL == Self.defaultServerURL ? "legacy token" : (URL(string: serverURL)?.host(percentEncoded: false) ?? serverURL)
+    }
+
+    func resetConnection() {
+        serverURL = Self.defaultServerURL
+        token = ""
+    }
+
     static let useMobileDataKey = "useMobileData"
 
     /// Downloads over cellular. Off by default: songs copy over Wi-Fi unless this is on.
@@ -25,7 +38,7 @@ final class Settings: ObservableObject {
     init() {
         downloadNewAutomatically = UserDefaults.standard.object(forKey: "downloadNewAutomatically") as? Bool ?? true
         useMobileData = UserDefaults.standard.bool(forKey: Self.useMobileDataKey)
-        serverURL = UserDefaults.standard.string(forKey: "serverURL") ?? "https://play.isayenko.net"
+        serverURL = UserDefaults.standard.string(forKey: "serverURL") ?? Self.defaultServerURL
         token = UserDefaults.standard.string(forKey: "token") ?? ""
         UserDefaults.standard.set(token, forKey: "token")
     }
