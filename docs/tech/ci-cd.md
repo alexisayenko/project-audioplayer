@@ -238,7 +238,7 @@ Two paths to TestFlight, same steps: `expo prebuild`, `pod install`,
 
 Code quality: the SonarCloud project `alexisayenko_project-audioplayer`
 analyses every push to `main` automatically; there is no CI workflow for
-it. Status 2026-10-13: about 100 open issues after the cleanup. Won't-fix,
+it. Status 2026-10-13 (read from the SonarCloud API): 87 open issues (about 821 minutes of debt); quality gate ERROR, failing only on `new_security_rating` (3, threshold 1); reliability, maintainability, duplication and hotspot review conditions pass. Won't-fix,
 resolved in the SonarCloud UI by the owner: `pythonsecurity:S2083` (sync
 script constants), `python:S5659` (`oauth.py` unverified `iss` read),
 `python:S5332` (`wiki_lookup` http-to-https check), Swift protocol-fixed
@@ -250,7 +250,7 @@ used (ADR-0008, steps in [`architecture.md`](architecture.md#testflight)).
 `destination=upload` in the export options, signed by Xcode's signed-in
 account; no `altool`, no ASC API key. Build number: date-based
 `CURRENT_PROJECT_VERSION` in `ios/project.yml`, strictly higher than the
-last upload (20261012, 20261013 so far). `ios/Config/Secrets.xcconfig`
+last upload (20261020 on 2026-10-13). `ios/Config/Secrets.xcconfig`
 (Google client IDs, git-ignored) must exist before `xcodegen`.
 
 ## Secrets and credentials

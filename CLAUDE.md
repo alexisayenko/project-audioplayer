@@ -23,7 +23,7 @@ link), download a song's audio through a private server (iOS only; the web UI sa
 audio and lock-screen controls. No monetization. Downloading may violate
 YouTube's ToS; the app is not for distribution.
 
-Proposed ([ADR-0010](docs/tech/decisions.md)): the catalog (metadata: YouTube, SoundCloud, Spotify links; in git) is separate from audio (fetched on demand, state none/server/phone). Library lists the whole catalog; downloaded songs still play offline without the server. See [concept](docs/product/concept-catalog-and-audio.md).
+Catalog and audio are separate ([ADR-0010](docs/tech/decisions.md), server side done): the catalog (metadata: YouTube and SoundCloud links; in git) lists every song, audio is fetched on demand (state none/server/phone). The web is catalog-only (saves metadata, plays audio already on the server); audio reaches the server only through the iOS download. Add and Edit use one shared song form with Title, Artist and Remix token pills on both platforms. Spotify is not used for now. See [concept](docs/product/concept-catalog-and-audio.md).
 
 ## Tech stack
 
@@ -31,8 +31,8 @@ Proposed ([ADR-0010](docs/tech/decisions.md)): the catalog (metadata: YouTube, S
 FastAPI wrapper around `yt-dlp` (Python 3.11+), run on the home server `perkunas` behind a Cloudflare
 Tunnel (live at https://play.isayenko.net, LXC 106 `tools`, deploy in [architecture.md](docs/tech/architecture.md#deploy); Tailscale is not used) with Apple/Google sign-in only in the apps (open signup,
 per-user storage; the owner's `X-API-Token` stays server-side for scripts); see [docs/tech/decisions.md](docs/tech/decisions.md). Web UI in `web/`.
-Status: the iOS app (tabs Library, Playback, Settings, Add as a sheet that opens the edit form after Fetch; Electrophone look, task-0005) is on internal
-TestFlight; its server flows are not yet tested on a device; server tests pass.
+Status 2026-10-13: the server and web are live at https://play.isayenko.net (perkunas LXC `tools`; `scripts/deploy.sh`, `scripts/check.sh`). The iOS app (tabs Library, Playback, Settings, Add as a sheet; shared song form; Electrophone look, task-0005) is on internal
+TestFlight (build 20261020); its server flows are not yet tested on a device; check script and server tests pass.
 
 ## Design: single source of truth
 

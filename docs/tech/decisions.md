@@ -85,6 +85,7 @@ Status: Accepted · 2026-10-12
 - Sub-decision (decade tags, 2026-10-12): the decade is the derived namespaced tag `decade:<NN>s` (`decade:90s`) for years 1950-2029, not a field. The server replaces a song's `decade:*` tags with the derived one on create, PATCH and load (migration) whenever the year is in range, and leaves them untouched otherwise, so the rule is deterministic and the year stays the single source. UI shows "the 90s" in a Decade group after Genre; the editor previews the chip, the server decides. Cost: manually typed decade tags on songs with a year are overwritten.
 - Sub-decision (Wikipedia links, 2026-10-12): a song has up to three links on the Playback card: Source (`source_url`), Wikipedia of the song (`wikipedia_song`) and of the band (`wikipedia_artist`), both optional URL fields validated by host (`*.wikipedia.org`, `wikidata.org/wiki/Q..`; others dropped). They are suggested from MusicBrainz url-rels at preview and editable in Add and Edit. Wikidata over scraping: genre, country, language and year come from structured Wikidata claims (`Special:EntityData`, one batched `wbgetentities` for English labels), not from parsing article text, because claims are stable, licensed CC0, language-independent and need no fragile HTML heuristics. `POST /lookup/wikipedia` re-derives suggestions from user-edited links; suggestions never auto-assign. Cost: 2-6 extra outbound calls per uncached preview, all failure-tolerant and behind `AUDIO_TAG_LOOKUP`. The same fetch also reads the song page's `album` and `released` year (TAG-048); a single has no `album` parameter, so the infobox gives no album (the song's own title is never used as one).
 - Sub-decision (infobox genres, 2026-10-13): the one exception to "claims, not article text" is the infobox `genre` parameter of the song's (else the artist's) English Wikipedia page, read by a deterministic wikitext parser (no AI), because Wikidata `P136` is often missing or coarser than the infobox (Crazy by Gnarls Barkley lists seven genres). Its genres come first and are all kept; everything else still comes from claims (TAG-045 to TAG-047). Cost: one extra Wikipedia API call per uncached page, failure-tolerant and behind `AUDIO_TAG_LOOKUP`. The same fetch also gives `POST /metadata` a `suggest` hint (song page's infobox artist and name, TAG-049); Artist and Title are never auto-filled.
+- Sub-decision (one tag rule, 2026-10-13): `POST /preview` and `POST /lookup/wikipedia` now use the same genre filter and caps as `POST /metadata` (`metadata.finalize_tags`: 8 genres, 1 country, song's own genres first) instead of the old 3-genre cap without filter (TAG-023, TAG-055).
 
 - Sub-decision (BPM): `bpm` (integer or `null`) is detected automatically
   when a song is added and is user-editable. `server/app/bpm.py` decodes
@@ -352,7 +353,7 @@ pairs are listed in `docs/ui-ux/style-guide.md`. Web assets are served under
 
 ## ADR-0010 The catalog and the audio are separate: Library lists every song, audio is fetched on demand
 
-Status: Accepted · 2026-10-13 (Alex decided to start the work; server side implemented in task-0006) · Supersedes the "Library is the phone" part of
+Status: Accepted, implemented: server (task-0006), web (catalog-only) and the iOS Library (task-0009 client part) · 2026-10-13 · Supersedes the "Library is the phone" part of
 ADR-0009 and the matching IOS-030..032 wording; amends ADR-0005 (what the store
 holds). Concept: [`docs/product/concept-catalog-and-audio.md`](../product/concept-catalog-and-audio.md).
 
@@ -412,7 +413,7 @@ Status: Accepted · 2026-10-13 · Extends ADR-0001 (yt-dlp server) and DATA-001.
 
 ## ADR-0012 Open signup and per-user storage
 
-Status: Accepted, implemented in `server/` and `web/` (iOS client changes listed in [task-0016](../tasks/task-0016.md), not done) · 2026-10-13 · Supersedes the single-library layout of ADR-0001 and ADR-0005, and the owner-only gate of ADR-0006
+Status: Accepted, implemented in `server/` and `web/` (live; iOS client mostly done, the `queued` job status remains: [task-0016](../tasks/task-0016.md)) · 2026-10-13 · Supersedes the single-library layout of ADR-0001 and ADR-0005, and the owner-only gate of ADR-0006
 
 - Decision (Alex): anyone who signs in with a verified Google or Apple
   identity gets their own library and storage on Alex's server, in Alex's
@@ -477,26 +478,29 @@ Status: Accepted, implemented in `server/` and `web/` (iOS client changes listed
   - The shared server holds everyone's session secret; sessions are
     stateless (ADR-0006 amendment).
 
-## Note 2026-10-13: languages dropped, Spotify skipped for now
+## 2026-10-13 decisions: shared song form, token pills, title cut, metadata
 
-`lang:` tags are no longer suggested by `/preview`, `/lookup/wikipedia` or the new `POST /metadata` (API-048) and the web UI no longer shows them; stored `lang:` tags are kept and still normalised. Spotify is not used as a metadata source for now.
+Consolidated from the notes written during the day; where an earlier note was reversed, only the final decision is kept. Rules: specs under `docs/specs/`.
 
-Sub-decision 2026-10-13: the Add form shows four service icons (YouTube, SoundCloud, Wikipedia, Spotify) beside "Get metadata". Their brand colours are `brand-*` tokens in the design system (version 19), not hard-coded. One `POST /metadata` call returns per-service `services.<name>.{found,url}` for the UI. Spotify is shown but permanently inactive until an integration exists.
+Add and Edit
 
-Note 2026-10-13: web saves metadata only; audio reaches the server only through the iOS download flow; existing server audio keeps playing and deleting on the web.
+- One shared song form on both platforms, not separate Add and Edit forms and not a compact preview card: after Fetch the full form opens. Reason: one set of rules to test and no drift between Add and Edit. Web WEB-033, WEB-022, LIB-050; iOS IOS-070, IOS-020. Only the BPM row and the Get metadata sources differ.
+- The web is catalog-only: it saves entries with `audio:false` and plays or deletes only audio already on the server; audio reaches the server only through the iOS "Add and download to iPhone" flow (ADR-0010; WEB-015, WEB-023, IOS-030, IOS-035).
+- The Add link field also accepts a bare 11-character YouTube video id (WEB-018, IOS-062).
+- Four service icons (YouTube, SoundCloud, Wikipedia, Spotify) sit beside "Get metadata"; their brand colours are `brand-*` tokens (design system v19). One `POST /metadata` call returns per-service `services.<name>.{found,url}` (API-048). Spotify is shown but permanently inactive: it is not a metadata source for now.
+- "Fill from Wikipedia links" button removed: the two Wikipedia link inputs feed "Get metadata" (ADD-051, ADD-055). "Wikipedia says" is a hint, never auto-filled (artist and title are never auto-filled).
+- Languages dropped: `lang:` tags are not suggested by `/preview`, `/lookup/wikipedia` or `/metadata` and the UIs do not show them; stored `lang:` tags are kept and still normalised.
+- BPM is a read-only label on web and iOS (LIB-052, IOS-069); it is detected on the server after the download or by Re-detect.
 
-Decision 2026-10-13 (amended): songs get an optional free-text `remixer` ("remix & additional production"). A strict deterministic cut (ADD-070, API-049) replaces the earlier tap-to-apply hint: the first bracket containing the word remix is removed from the title and its text becomes `remixer`. The `original` (Original track) field is dropped. MusicBrainz was rejected for this: remixes are not linked or catalogued there and name matching hits the wrong artist (Sadrican finds Sadrican Sagdur).
+Title, Artist, Remix
 
-Decision 2026-10-13: version info such as "(Live from the Royal Albert Hall)" stays in the saved and shown title and is stripped only from metadata lookup queries (`titles.lookup_title`); there is no separate Version field.
+- `remixer` is an optional free-text field ("Remix & additional production", data-model, API-049). It replaces the earlier tap-to-apply remix hint and the "Original track" field (dropped): a strict deterministic cut (ADD-070) removes the first bracket containing "remix" from the title and puts its text in `remixer`; with no such bracket, the first non-first segment split by a spaced " | ", " - ", " – ", " — " that contains "remix" is cut verbatim, and only when at least two segments remain ("Daft Punk - Around The World Remix" keeps its title). MusicBrainz is not used for remix or remixer: remixes are not linked there and name matching hits the wrong artist.
+- Title, Artist and Remix are shown as token pills (view of the one plain string, saved unchanged) instead of an X clear button on every field (web WEB-028, ADD-071/072, iOS IOS-065). Pills move between the three fields and within one by drag and drop, using the standard system drag (WEB-029, ADD-074, IOS-066); the clear-button rules (WEB-027, IOS-064) are superseded.
+- Version info such as "(Live from the Royal Albert Hall)" stays in the saved and shown title; it is stripped only from lookup queries (`titles.lookup_title`); there is no Version field (ADD-073).
+- feat/ft/featuring credits are kept in the saved title and artist and normalised to "feat." (`titles.normalize_feat`; not after a number, bare ft/feat only before a capital or digit), and stripped only for lookups (ADD-075). A credit's cut stops at its own separator (closing bracket, " - ", " | ", a bullet or the next bracket), so the rest of the title survives (`titles._strip_feat`, linear scan). Deterministic cue: with no channel-prefix split, a feat word left of the first spaced dash makes the left part the artist (ADD-075).
+- feat names take part in the MusicBrainz artist match (TAG-054, `titles.lookup_credits`): the recording credited to the primary artist and all featured names wins; a Wikipedia song page whose infobox artist differs is ignored in `wiki_lookup.suggest`.
 
-Decision 2026-10-13: the genre autocomplete list is served by the server (`GET /genres`, API-050) so web and iOS share one source.
+Genres
 
-Decision 2026-10-13: a feat/ft/featuring credit cut stops at its own separator (closing bracket, " - ", " | ", " ●● ", " • " or the next bracket); the rest of the title is kept, so "Kato Feat. Jon - Turn The Lights Off | ..." no longer loses the song name (`titles._strip_feat`, linear scan, no regex backtracking).
-Decision 2026-10-13: feat/ft/featuring credits are no longer stripped from the saved title or artist (kept like Live, ADD-073); they are stripped only for lookups (`titles.lookup_title`, `titles.lookup_artist`, using `_strip_feat`, same boundary logic).
-Decision 2026-10-13: when no bracket carries "remix", the first non-first segment split by spaced " | ", " - ", " – ", " — " that contains the word "remix" is cut into the remixer field verbatim (ADD-070).
-Decision 2026-10-13: deterministic feat cue: with no channel-prefix split, a feat word left of the first spaced dash makes that left part the artist and the rest the title (ADD-075); without it nothing is split.
-Decision 2026-10-13: the segment-level remix cut (ADD-070) needs at least two segments remaining after the cut, so "Daft Punk - Around The World Remix" keeps its title.
-Decision 2026-10-13: the saved artist and title normalise the feat keyword (feat, ft, featuring, any case) to "feat." (`titles.normalize_feat`, ADD-075); lookups handle both forms. Not rewritten after a number ("5 ft tall"); bare ft/feat only before a capital or digit; the feat cue uses the same test.
-
-Decision 2026-10-13: feat names take part in the MusicBrainz artist match (TAG-054, `titles.lookup_credits`, optional `featured` argument of `genre_lookup.lookup`, derived from the saved artist by default): the recording credited to the primary artist and all featured names wins and its primary artist id gives country, genres and links; a song page whose infobox artist differs from the primary artist is ignored in `wiki_lookup.suggest`.
-Decision 2026-10-13: suggested `genre:` tags pass a deterministic deny-list and canonicalisation (`genre_filter`, TAG-055) before the caps: nationalities, roles, MusicBrainz meta tags, years/decades, languages, places and filler words are dropped, " music" is stripped and built-in genre spellings win; stored user tags are never touched.
+- The genre autocomplete list is served by the server, `GET /genres` (API-050, TAG-053): the user's own genres, then built-ins, so web and iOS share one source (web WEB-024, iOS IOS-067).
+- In `POST /metadata`, suggested `genre:` tags (caps 8 genres, 1 country; the form shows 12/1) pass a deterministic deny-list and canonicalisation (`genre_filter`, TAG-055) before the caps (`/preview` and `/lookup/wikipedia` keep the simpler cap of 3 genres, no filter): nationalities, roles, MusicBrainz meta tags, years and decades, languages, places and filler words are dropped, " music" is stripped and built-in spellings win. Stored user tags are never touched.

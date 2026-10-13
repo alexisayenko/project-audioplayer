@@ -4,7 +4,7 @@ ADRs: ADR-0003 (web), ADR-0004 (hosting), ADR-0001 (storage scale).
 
 ## Auth
 
-- NFR-001 MUST: `AUDIO_API_TOKEN` is the owner's credential (dev/legacy); every other caller is a user who signed in with a verified Google or Apple identity (open signup, ADR-0012; token verification ADR-0006). ~~One shared secret, no user accounts, owner-only OAuth.~~ Status: implemented
+- NFR-001 MUST: `AUDIO_API_TOKEN` is the owner's credential (Alex's; it acts as the owner user, `OWNER_EMAIL`, quota-exempt); every other caller is a user who signed in with a verified Google or Apple identity (open signup, ADR-0012; token verification ADR-0006). ~~One shared secret, no user accounts, owner-only OAuth.~~ Status: implemented
 - NFR-002 MUST: the web UI authenticates with the session cookie only and never stores or sends the API token (WEB-005); it deletes a leftover `localStorage` key `audioplayer.token` on load. Status: implemented
 - NFR-003 MUST: without a session the UI routes to Settings, where Sign in with Google or Apple is the only way in. Status: implemented
 - NFR-004 SHOULD: put Cloudflare Access (service token) in front of the tunnel as a second layer. Status: planned

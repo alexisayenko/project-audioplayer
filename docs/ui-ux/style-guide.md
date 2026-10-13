@@ -74,9 +74,8 @@ category chips (Tags, Genres, Years, Countries) that open a filter sheet.
 Decision: ADR-0009. Migration from the Vega 108 code: task-0005.
 
 Web: `web/style.css` uses only the `tokens.css` variables and the `.t-*` text
-styles (no hex, no literal colours). Layout: a 236px nav rail (64px icon rail
-below 720px, floating tab bar below 480px), the library as a table (columns
-collapse below 1200 / 1000px), the player bar docked at the bottom, Playback as
+styles (no hex, no literal colours). Layout: a 220px nav rail (64px icon rail
+below 720px, floating tab bar below 480px), the library as a table (cover, Track, Genres, Time, menu; Genres drops below 900px, then the phone row below 720px), the player bar docked at the bottom, Playback as
 cover + queue side by side from 900px. Text pairs are held at 4.5:1 in both
 themes; where the system's own pair falls short, the web deviates:
 selected chips and the primary button use `accent` with `on-accent` text
@@ -111,17 +110,17 @@ Decision: ADR-0007 in [`../tech/decisions.md`](../tech/decisions.md). Sketches:
 [`vega-108/`](vega-108/) (`sketch-1.png` to `sketch-9.png`), generated from the
 prompts in [`design-prompts.md`](design-prompts.md).
 
-## Web UI (Electrophone, web v16)
+## Web UI (Electrophone, web; updated 2026-10-13)
 
 Source of truth for the look is the Electrophone Design System
 ([brand README](../brand/README.md)); the web screens follow the "Electrophone
 Screens" web artboards. No hex or rgb value appears in `web/style.css`,
 `web/js` or `web/index.html`; everything comes from `web/tokens.css`.
 
-- Navigation: Library, Playback, Settings. 220px rail, 64px icon rail, floating tab bar below 480px; the server LED sits at the bottom of the rail.
-- Library: table card (cover, title with a muted "Artist · Year" line, genres, time, menu; no album column), 56px rows, playing row in `accent-tint`; four category chips; sort as accent-ink text button. Columns drop right to left (genres below 900px, then the phone song row below 720px).
-- Add: dialog from the accent "Add song" button; one accent button with glow per surface.
-- Playback: cover first, transport tray, volume row, queue card; no deck, tonearm or LED.
+- Navigation: Library, Playback, Settings. 220px rail, 64px icon rail, floating tab bar below 480px; the server LED sits at the bottom of the rail. Signed out, only Settings is reachable; there is no token field (WEB-001, WEB-005).
+- Library: table card (cover, Track = title with a muted "Artist · Year" line, Genres, Time, menu; no row number, Album, Artist or Year column), 56px rows, playing row in `accent-tint`; four category chips; sort as accent-ink text button. Columns drop right to left (genres below 900px, then the phone song row below 720px). A song without server audio is greyed (title in muted ink, cover at 60%), has no play action and shows its service logo (YouTube / SoundCloud in brand colour, neutral glyph otherwise) as a link next to the menu; there is no "Not on the server" label (WEB-023, WEB-031).
+- Add and Edit: one shared form in a dialog (WEB-033). Add opens from the accent "Add song" button with only the link field; the form appears after Fetch and the "Save to library" button sits in a sticky footer. Title, Artist and Remix & additional production are token pills (pencil menu, X, drag and drop; WEB-028, WEB-029); Genres and Countries are chip fields (Genres with autocomplete); the BPM is a read-only label (Re-detect in Edit only); "Get metadata" shows four service icons (grey, pulsing while running, brand colour as a link when found, Spotify always grey) and a "Wikipedia says" hint; the two Wikipedia inputs show the article name only. One accent button with glow per surface.
+- Playback: cover first with title and artist on it, seek bar, transport tray, volume row, details, queue card; no deck, tonearm or LED.
 - Buttons: primary = `accent` + `on-accent` + `glow-accent`; "fill" = see substitutions; outline = `accent-ink` text and border; quiet = `ground` slab with `shadow-key`; danger = `ink` text with a `power` border.
 
 ### Contrast substitutions (4.5:1 for text)

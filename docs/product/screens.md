@@ -5,12 +5,12 @@ Status: web UI and the server endpoints below are implemented
 the same origin as the API at `play.isayenko.net` (no CORS, token-protected
 API), see ADR-0003 in [`../tech/decisions.md`](../tech/decisions.md). The
 iOS app mirrors the web flow with Library, Playback and
-Settings tabs (iOS search states: spinner, "No results", and inline errors for 401, 403 (account not allowed), unreachable and server failures, see IOS-023; Settings shows a "Custom server · Reset" row only for a non-default connection, IOS-010; Add is a sheet from the Library header; YouTube text search is a secondary screen inside it, with an opaque bottom search bar, an inner clear X (only with text) and no Cancel, back is the "<" button; Library is the phone only, filtered by four category chips and a bottom sheet), see [`../tech/architecture.md`](../tech/architecture.md).
+Settings tabs (iOS search states: spinner, "No results", and inline errors for 401, 403 (account not allowed), unreachable and server failures, see IOS-023; Settings shows a "Custom server · Reset" row only for a non-default connection, IOS-010; Add is a sheet from the Library header; YouTube text search is a secondary screen inside it, with an opaque bottom search bar, an inner clear X (only with text) and no Cancel, back is the "<" button; Library lists the whole catalog, with a "Downloaded" toggle and four category chips that open a bottom sheet), see [`../tech/architecture.md`](../tech/architecture.md).
 
 Scope: the web UI is for managing the library and listening online only (it saves catalog entries without audio; songs not on the server show the YouTube/SoundCloud logo as a link instead of play; only existing server audio plays),
 with no offline storage or audio cache. Offline listening ("download to
 device") is the iOS app: Add and Library work as below, plus downloads to
-the phone, a phone-only Library (no server list; the server is the download pipe behind Add), and the Electrophone look
+the phone, a Library over the whole catalog with the audio state per row (on the iPhone, downloadable, or no audio yet; ADR-0010, IOS-030), and the Electrophone look
 ([style guide](../ui-ux/style-guide.md)). iOS differences are listed in
 [`../specs/ios.md`](../specs/ios.md); layouts below are the web's.
 
@@ -31,27 +31,24 @@ signed in, Settings shows the email and Sign out. Navigation is a 220px rail
 (>= 720px), a 64px icon rail (480-719px) or a floating tab bar (< 480px). A
 persistent player bar (cover, title, shuffle, previous, play/pause, next, repeat,
 time, volume) sits at the bottom of Library and Settings and opens Playback on
-tap; on Playback itself it is hidden. Library is a table of the server library
-(cover, track (title with a muted "Artist · Year" line below; web header "Track"; the web has no separate Artist or Year column), genres, time, a "..." menu, no album column; columns drop right
-to left on narrower screens until it is the phone song row) with four category chips (Tags, Genres,
-Years, Countries) that open a filter sheet. Playback leads with the cover
-(title and artist on it), a seek bar, the transport tray, a volume row and the
-queue card beside it. The iOS Settings screen shows Account (a quiet "Not allowed on this server" under the email when the server answers 403), Downloads (read-only audio quality, "Download new songs automatically", "Use mobile data"), and Storage, then the version line; the iOS Add sheet opens the edit form right after Fetch (link field, Fetch and the search link hidden) and pins "Add to library" and "Add and download to iPhone" at the bottom. The iOS app has its own tab bar with the same three destinations (its Playback has no volume row and its titles carry no eyebrow) (see
+tap; on Playback itself it is hidden. Library is a table of the catalog
+(cover, Track (title with a muted "Artist · Year" line below), Genres (from 900px), Time, a "..." menu; no #, Album, Artist or Year column; Genres drops first on narrower screens). A song without server audio is greyed, shows its YouTube or SoundCloud logo as a link next to the menu instead of the time, has only "Edit song" in its menu and never enters the queue (WEB-023). Above the list, four category chips (Tags, Genres,
+Years, Countries) open a multi-select filter sheet (WEB-011). Web Playback is two columns (below 900px the queue card sits under the player): the player column has the cover (title and artist on it), a seek bar, the transport tray (Shuffle, Previous, Play, Next, Repeat), a volume row and the details; the queue card beside it has "Add by tag" and "Clear" and no tab badge (the queue length shows in its header; PLY-001, PLY-002). The iOS Settings screen shows Account (a quiet "Not allowed on this server" under the email when the server answers 403), Downloads (read-only audio quality, "Download new songs automatically", "Use mobile data"), and Storage, then the version line; the iOS Add sheet opens the edit form right after Fetch (link field, Fetch and the search link hidden) and pins "Add to library" and "Add and download to iPhone" at the bottom. The iOS app has its own tab bar with the same three destinations (its Playback has no volume row and its titles carry no eyebrow) (see
 [`../specs/ios.md`](../specs/ios.md)).
 
 ## Screens
 
 ### 1. Add song
 
-Web: a centred 560px dialog over Library (bottom-aligned sheet on phones): title "Add from YouTube", Cancel, a link field with a Fetch button, then the preview (88px cover, title, artist, album, year, duration), an "Edit details" button that expands the fields, the suggested tags as chips with a + chip that opens the tag editor, and one "Save to library" button. The form after Fetch is the same control as the Edit dialog (WEB-033, `web/js/song-form.js`): same fields in the same order, including Get metadata, the hint and the two Wikipedia inputs; only the BPM row (Add: muted "BPM is detected after saving") and the preview header differ. Update (WEB-022): after Fetch the full form opens at once (no "Edit details"), with "Get metadata" and four service icons after Title and Artist, Genres and Countries chip fields (the Genres field suggests up to 6 genres as you type, WEB-030), and a sticky Save footer. A Remix & additional production field follows Artist (also in the edit dialog); Title, Artist and Remix show their text as pills with a pencil menu and an X (WEB-028); pills can also be dragged to another field or reordered (WEB-029, ADD-074); the Remix field is prefilled from the fetched link when its title had a remix bracket (WEB-026). A link already in the library is flagged under the field as soon as it is pasted ("Already in your library: title · artist", Show in library, Fetch disabled; WEB-025). Title, Artist and Remix & additional production show their text as pills ([pencil] text [X]; the pencil menu edits, removes or moves a pill to another of the three fields, and a pill can be dragged onto another pill or field or reordered; WEB-028, ADD-071, IOS-066). Saving closes the dialog and saves the catalog entry only (toast "Saved to library"; the web starts no download, WEB-015); the "Downloading NN%" row appears for downloads started from the iOS app.
+Web: a centred 560px dialog over Library (bottom-aligned sheet on phones): title "Add from YouTube or SoundCloud", Cancel, a link field (YouTube or SoundCloud link, or a bare YouTube video id) with a Fetch button, then the one shared song form with a sticky "Save to library" button. The form after Fetch is the same control as the Edit dialog (WEB-033, `web/js/song-form.js`): same fields in the same order, including Get metadata, the hint and the two Wikipedia inputs; only the BPM row (Add: muted "BPM is detected after saving") and the preview header differ. After Fetch (WEB-022) the full form opens at once, with "Get metadata" and four service icons after Title and Artist, Genres and Countries chip fields (the Genres field suggests up to 6 genres as you type, WEB-030), and a sticky Save footer. A Remix & additional production field follows Artist (also in the edit dialog); Title, Artist and Remix show their text as pills with a pencil menu and an X (WEB-028); pills can also be dragged to another field or reordered (WEB-029, ADD-074); the Remix field is prefilled from the fetched link when the server cut a remix bracket or a title segment containing "remix" out of the title (WEB-026, IOS-063). A link already in the library is flagged under the field as soon as it is pasted ("Already in your library: title · artist", Show in library, Fetch disabled; WEB-025). The pencil menu edits, removes or moves a pill to another of the three fields (WEB-028, ADD-071, IOS-065). Saving closes the dialog and saves the catalog entry only, without audio (toast "Saved to library"; the web starts no download, WEB-015). On iOS the Add sheet opens the same form right after Fetch and pins "Add to library" (also downloads when "Download new songs automatically" is on) and "Add and download to iPhone" at the bottom; that is the only path that puts audio on the phone, and the "Downloading NN%" row appears for it. Closing the sheet by any route clears the form (IOS-020).
 
 1. User pastes a YouTube URL or a bare 11-character video id (cleaned to the canonical link on paste, drop, bulk input and blur; surrounding text is dropped).
 2. App asks the server for a metadata preview (cover, title, artist,
    album, year, and suggested `genre:` and `country:` tags from yt-dlp, MusicBrainz and Wikidata, plus suggested Wikipedia links for the song and the band).
-3. User edits any field and assigns tags in the shared tag editor ("Get metadata" after Title and Artist fills empty Album and Year and suggests genres and a country, and offers a tappable "Wikipedia says: artist / title" hint under Artist when it differs (never auto-filled; a Remix & additional production field sits under Artist, IOS-063; Title, Artist and Remix fields show their text as pills with a pencil menu and an X, IOS-065, and pills can be dragged to another field or reordered, IOS-066); four service icons beside it (YouTube, SoundCloud, Wikipedia, Spotify) are grey by default, pulse while the request runs, and turn brand-coloured and tappable (opening the found page) for each service that returned a match; Spotify always stays grey; separate Genres and Countries fields hold the `genre:` and `country:` tags (Genres suggests up to 6 matching genres as chips while typing, IOS-067); suggested tags, existing tags grouped by prefix, `key:value` allowed; incomplete leftover text such as `mood:` is ignored).
+3. User edits any field and assigns tags in the shared tag editor ("Get metadata" after Title and Artist fills empty Album and Year and suggests genres and a country, and offers a tappable "Wikipedia says: artist / title" hint under Artist when it differs (never auto-filled; a Remix & additional production field sits under Artist, IOS-063; Title, Artist and Remix fields hold pills with a pencil menu, an X, drag and drop and move, IOS-065, IOS-066); four service icons beside it (YouTube, SoundCloud, Wikipedia, Spotify) are grey by default, pulse while the request runs, and turn brand-coloured and tappable (opening the found page) for each service that returned a match; Spotify always stays grey; separate Genres and Countries fields hold the `genre:` and `country:` tags (Genres suggests up to 6 matching genres as chips while typing, IOS-067); suggested tags, existing tags grouped by prefix, `key:value` allowed; incomplete leftover text such as `mood:` is ignored).
    BPM is not entered on iOS: the form shows only the line "BPM is detected after saving" (web: optional field, detected after the download when left empty).
-   Two optional inputs, Wikipedia (song) and Wikipedia (band), hold the links (shown as the article name, a bare name is accepted on the web); they are saved with the song and feed "Get metadata" (the iOS Add form does not show them for now).
-4. Save starts the download on the server, then the app fetches the file.
+   Two optional inputs, Wikipedia (song) and Wikipedia (band), hold the links (shown as the article name, a bare name is accepted on the web); they are saved with the song and feed "Get metadata"; iOS shows them in the same form, side by side, with only the article name displayed (IOS-068). "Wikipedia says" is a hint, never auto-filled. There is no "Original track" field. The server normalises feat. credits to "feat." in the saved artist and title and keeps "Live" in the title.
+4. Save writes the catalog entry; on iOS the app then downloads the audio through the server (IOS-022), on the web no audio is fetched.
 5. Shows progress while downloading and a clear error on failure
    (bad URL, unavailable video, server unreachable, already in library).
    The Add sheet flags a link already in the library as soon as it is pasted, before Fetch (no network), with a Play action.
@@ -60,7 +57,7 @@ Web: a centred 560px dialog over Library (bottom-aligned sheet on phones): title
 
 Manages all songs.
 
-- One row per song in a single list card (web: table with a header row): cover, title, artist, genres (web: no album column, and artist and year only in the title cell's muted line), year, duration and a "..." menu with Play now, Add to playlist and Edit song (the Edit dialog also holds Delete). Clicking the title plays the song and keeps the user on Library. The playing row has an accent wash. Tags and BPM are not shown in rows (filter by tag chips; BPM is on Playback and in Edit). Sort is the text button under the chips ("Recently added", Title, Artist, Year, BPM); a line on the right reads "N songs match · selected tags" when filtered.
+- One row per song in a single list card (web: table with a header row, LIB-010; columns cover / Track / Genres / Time / menu, with artist and year only in the Track cell's muted "Artist · Year" line and no #, Album, Artist or Year column, LIB-018): cover, title, genres, duration and a "..." menu with Play now, Add to playlist and Edit song (the Edit dialog also holds Delete; a song without server audio has only Edit song). On the web, clicking the title of a song with audio plays it and keeps the user on Library. The playing row has an accent wash. Tags and BPM are not shown in rows (filter by the category chips; BPM is on Playback and in Edit). Sort is the text button under the chips ("Recently added", Title, Artist, Year, BPM); a line on the right reads "N songs match · selected values" when filtered.
 - Search box (title, artist, album, tags). With a tag filter or search text active, an "Add all N to playlist" button appends all listed songs to the queue (toast "Added X songs (Y already in queue)"; a tag filter becomes a playlist chip, search-only adds are manual); hidden when nothing is filtered.
 - `decade:` tags are derived from Year by the server and show as "the 90s"; the tag editor previews the chip as Year changes.
 - Filter by tag (chips grouped by prefix: Genre, Decade, Country, then others; plain tags under Tags; `country:` values show as names, e.g. Lithuania; languages are not shown or filterable); sort (added date, title, artist, year, BPM; songs without BPM last).
@@ -70,6 +67,8 @@ Manages all songs.
   record) from the Edit dialog.
 
 ### 3. Player (Playback tab)
+
+SUPERSEDED for the web by the two-column layout in Navigation above (PLY-001); the four-block layout below is the older design, kept for reference only.
 
 Four stacked blocks in a centered column (max 720px). The page itself does
 not scroll; block 4 takes the remaining height and scrolls inside.
@@ -242,7 +241,7 @@ drafts, both SUPERSEDED:
 
 ## API surface the screens need
 
-Implemented. The web UI uses only the session cookie; the owner's iOS app and scripts use `X-API-Token` (header), except that `/files/{id}`
+Implemented. The web UI uses only the session cookie; the iOS app uses Google or Apple sign-in (Bearer ID token; a legacy saved token is still sent until Reset, IOS-011) and the owner's scripts use `X-API-Token` (header), except that `/files/{id}`
 and `/covers/{id}` also accept `?token=` because `<audio>` and `<img>`
 cannot send headers. The static web UI files at `/` are public; they
 contain no data.
@@ -259,6 +258,9 @@ contain no data.
 | `GET /files/{id}` | stream m4a (Range supported) | Player |
 | `GET /covers/{id}` | cover image | all |
 | `GET /tags` | known tags with counts | Add, Library |
+| `GET /catalog` | the whole catalog with ETag (iOS Library sync, IOS-035) | Library |
+| `GET /genres` | known genres for the Genres suggestions (IOS-067) | Add, Library |
+| `POST /metadata` | Get metadata: album, year, genre and country tags, Wikipedia hint, services | Add, Library |
 
 `POST /songs` returns 202 and downloads in the background; poll
 `GET /songs/{id}/status` (`downloading` with `progress` 0..1, `done`, or

@@ -37,7 +37,7 @@ inside LXC 106 `tools` (`192.168.0.10`). Deploy with:
 ssh claude@192.168.0.10 'sudo /usr/local/sbin/audioplayer-deploy'
 ```
 
-Or run `scripts/deploy.sh`.
+Or run `scripts/deploy.sh` (same command, then prints the deployed revision and the HTTP status of the web index). `scripts/check.sh` runs the web tests, the rule-ID check and the server tests first.
 
 The script runs `git pull --ff-only`, `pip install`, restarts the
 service and checks `/health`.
@@ -75,13 +75,13 @@ relative audio file names only (replaces `AUDIO_DOWNLOAD_DIR`). Each save costs 
 | `GET /search?q=&limit=` | `ytsearch` via yt-dlp, flat results |
 | `POST /download {video_id}` | fetch m4a (itag 140, no ffmpeg needed), return metadata |
 | `GET /files/{video_id}` | stream the stored m4a |
-| `GET /library`, `GET /tags` | songs with tags; tag counts |
+| `GET /library`, `GET /catalog`, `GET /tags` | songs with tags; catalog with derived `audio_state`; tag counts |
 | `GET /genres` | genre autocomplete list: the user's own genres, then built-ins |
 | `POST /preview {url}` | yt-dlp metadata plus suggested genre/country tags, year, Wikipedia links (MusicBrainz, Wikidata) and `remixer` (the title comes back already cut of its remix bracket), no download |
 | `POST /metadata` | album, year and `genre:`/`country:` tags from source links, MusicBrainz, the Wikipedia infobox and Wikidata, plus `suggest` (infobox artist and title hint) and per-service `services` for the Add form icons (API-048); response keys: album, year, tags, suggest, services |
 | `POST /lookup/wikipedia` | suggested tags and year from user-edited Wikipedia links |
-| `POST /songs`, `GET /songs/{id}/status` | add song (background download), poll progress |
-| `PATCH /songs/{id}`, `DELETE /songs/{id}` | edit metadata/tags/bpm; remove record, audio, cover |
+| `POST /songs`, `GET /songs/{id}/status` | add song: with `audio:true` (default) a background download, with `audio:false` a catalog-only entry (what the web sends); poll progress |
+| `PATCH /songs/{id}`, `DELETE /songs/{id}`, `DELETE /songs/{id}/audio` | edit metadata/tags/bpm/remixer; remove record, audio, cover; remove only the audio |
 | `POST /songs/{id}/bpm/detect` | re-detect BPM (aubio) from the stored m4a |
 | `GET /covers/{video_id}` | cover jpg (`covers/<id>.jpg`) |
 | `GET /` | web UI (`web/`, static, public) |
@@ -131,15 +131,15 @@ and `*.wikipedia.org`), `AUDIO_MB_USER_AGENT` (default
 
 Server modules (`server/app/`): `main` (routes, jobs), `library` (records, derived `decade:` tags,
 tag normalisation), `extractor` (yt-dlp), `genre_lookup` (MusicBrainz
-suggestions), `wiki_lookup` (Wikipedia links, Wikidata facts, link validation), `langcodes` (ISO 639 mapping), `bpm` (aubio), `gitstore`
-(git sync).
+suggestions), `wiki_lookup` (Wikipedia links, Wikidata facts, link validation), `titles` (title cut: channel prefix, remix to `remixer`, feat normalisation, lookup strings), `genre_filter` (deny-list and canonical genre tags), `genres` (built-in genre list for `GET /genres`), `metadata` (`POST /metadata`), `langcodes` (ISO 639 mapping, stored `lang:` tags only), `bpm` (aubio), `gitstore`
+(git sync), `oauth`, `session`, `users`, `limits`, `jobs` (ADR-0006, ADR-0012).
 
 ## Web UI (`web/`)
 
 Plain HTML, CSS and ES modules; no build step, no framework, no CDN.
 `index.html` + `style.css` + `js/` (`api`, `store`, `dom`, `player`, `library`,
-`queue-logic`, `tagname`, `tag-editor`, `wiki-links`, `url-clean`, `tag-input`, `add`, `settings`, `app`). Hash routes `#/library`, `#/add`,
-`#/playback`, `#/settings`. One `<audio>` element drives the mini-player, the
+`queue-logic`, `tagname`, `tag-editor`, `wiki-links`, `url-clean`, `tag-input`, `song-form` (the one form of the Add and Edit dialogs), `song-payload`, `token-field` + `tokens` (Title, Artist and Remix token pills), `chip-field`, `chip-split`, `genre-suggest`, `genre-cell`, `metadata-apply`, `service-icons`, `track-sub`, `library-match`, `limits`, `add`, `edit-dialog`, `settings`, `app`; most have a `*.test.mjs`). Hash routes `#/library`,
+`#/playback`, `#/settings` (a signed-out visitor is sent to `#/settings`) and `#/add` (opens Library with the Add dialog over it; `wantsAdd` in `web/js/app.js`); Add and Edit are dialogs. The web is catalog-only: it saves entries with `audio:false` and plays and deletes only audio already on the server (ADR-0010). One `<audio>` element drives the mini-player, the
 Playback tab and the Media Session lock-screen controls. The web UI uses the session cookie only. Mounted by FastAPI at
 `/` after all API routes, so it never shadows them.
 
@@ -152,6 +152,7 @@ Sources in `ios/Sources/`:
 - `Views` (`AppTab`, tab shell, mini-player), `LibraryView`, `LibraryFilter`
   (category chips + filter sheet), `AddSheet` (+ `SearchView` as secondary text
   search), `SongEditView`, `PlaybackView`, `SettingsView`.
+- `SongFormView` + `SongFormState` (the one song form of the Add sheet and `SongEditView`), `TokenField` + `Tokens` (token pills), `GenreSuggest`, `TagLogic`, `WikiLink`, `ServiceIcons`.
 - `DesignTokens` (generated `DS.*`), `Components` — Electrophone look; see
   [`../ui-ux/style-guide.md`](../ui-ux/style-guide.md).
 - `ServerLink` — server reachability, `ServerSong`, and downloads that outlive
@@ -178,7 +179,7 @@ ADR-0008. App Store Connect record "Gramophone Offline" (now Electrophone) (bund
 `com.alexisayenko.audioplayer`, SKU `gramophone-ios`), internal group "Alex".
 
 1. Raise `CURRENT_PROJECT_VERSION` in `ios/project.yml` above every build
-   already uploaded (date-based; last uploaded 20261020), then `xcodegen`.
+   already uploaded (date-based; last uploaded 20261020, 2026-10-13, matches `ios/project.yml`), then `xcodegen`.
 2. `xcodebuild archive` the `AudioPlayer` scheme (Release, generic iOS device).
 3. `xcodebuild -exportArchive` with export options `method=app-store-connect`,
    `destination=upload`; it signs and uploads with the account signed in to
@@ -189,12 +190,13 @@ Builds expire after 90 days; re-upload.
 
 ## Known gaps
 
-- The iOS app builds and has been uploaded to TestFlight; Add, edit, download
-  and sign-in flows against the live server are not yet tested on a device.
+- The iOS app is on TestFlight (build 20261020); its server flows (Add and download, edit with the shared form, sign-in, token-pill drag) are not yet tested on a device. The web token-pill drag and the shared form are tested by node unit tests, not in a real browser.
+- iOS handling of the ADR-0012 `queued` job status is not done: [task-0016](../tasks/task-0016.md).
 - Server covers are not stored on the phone: blank offline after a relaunch.
 - `NSAllowsArbitraryLoads` is on in `project.yml`; the server is now HTTPS
   at `play.isayenko.net`, so it can be tightened.
-- No CI (template rule: manual workflows only; none added yet).
+- No CI workflows (SonarCloud analyses `main` itself); local `scripts/check.sh` and `scripts/deploy.sh` ([ci-cd.md](ci-cd.md)).
+- Open signup for Google still needs the consent screen published (see below).
 
 ## OAuth sign-in and per-user storage
 

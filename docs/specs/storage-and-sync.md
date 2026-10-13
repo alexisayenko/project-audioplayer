@@ -57,7 +57,8 @@ Code: `server/app/gitstore.py`, `server/app/library.py`, `server/app/main.py`,
 | `AUDIO_DOWNLOAD_DIR` | `downloads` | fallback audio dir |
 | `AUDIO_DATA_DIR` | `.` | plain-file `library.json` and `covers/` (no git store) |
 | `AUDIO_WEB_DIR` | `<repo>/web` | static UI dir |
-| `OWNER_EMAIL` (alias `ALLOWED_EMAIL`) | `alex.isayenko@gmail.com` | the owner: quota-exempt, owns the first library |
+| `OWNER_EMAIL` (alias `ALLOWED_EMAIL`) | `alex.isayenko@gmail.com` | the owner: quota-exempt; the `X-API-Token` and `?token=` act as this user |
+| `ALLOWED_APPLE_SUB` | unset | Apple `sub` values (comma list) mapped to the owner when Apple hides the email |
 | `SIGNUP_OPEN` | `1` | `0`: only existing users and the owner may sign in |
 | `USER_MAX_SONGS`, `USER_MAX_BYTES`, `USER_ADDS_PER_HOUR` | `500`, `5368709120`, `20` | per-user limits (owner exempt) |
 | `USER_MAX_CONCURRENT_DOWNLOADS`, `GLOBAL_MAX_CONCURRENT_DOWNLOADS` | `1`, `2` | downloads running at once; extra adds are `queued` |

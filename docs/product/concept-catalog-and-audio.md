@@ -1,6 +1,6 @@
 # Concept: catalog and audio
 
-Status: proposed ([ADR-0010](../tech/decisions.md)). Specs: [`../specs/catalog.md`](../specs/catalog.md).
+Status: accepted 2026-10-13, server side implemented, iOS Library partly ([ADR-0010](../tech/decisions.md)). Specs: [`../specs/catalog.md`](../specs/catalog.md).
 Tasks: task-0006 to task-0015.
 
 ## The idea

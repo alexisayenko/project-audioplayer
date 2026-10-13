@@ -22,7 +22,7 @@ Each requirement is one line:
 - IDs are `<AREA>-<NNN>`, stable, never reused. Areas: `DATA`, `API`,
   `TAG`, `ADD`, `LIB`, `STO`, `PLY`, `IOS`, `WEB`, `NFR`, `CAT`.
 - **MUST** is mandatory; **SHOULD** is desirable and may be waived with a reason.
-- **implemented**: verified in code on 2026-10-12. **planned**: decided, not
+- **implemented**: verified in code on 2026-10-13. **planned**: decided, not
   built. **to-confirm**: behaviour exists or is proposed but nobody has
   decided it is intended.
 
