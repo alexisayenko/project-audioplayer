@@ -1,3 +1,5 @@
+import { icon } from './icons.js';
+
 const TAG_STYLE = { label: 't-caption', small: 't-caption', h2: 't-title' };
 
 function setProp(node, k, v) {
@@ -46,3 +48,28 @@ export function pageHead(title, sub) {
     el('h1', { class: 't-display' }, title),
     sub ? el('p', { class: 'muted t-subhead' }, sub) : null);
 }
+
+export function clearable(input, name) {
+  const btn = el('button', { type: 'button', class: 'clear-btn', 'aria-label': `Clear ${name}`, hidden: true }, icon('clear', 16));
+  const sync = () => { btn.hidden = !input.value; };
+  const desc = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(input), 'value');
+  if (desc && desc.set) {
+    Object.defineProperty(input, 'value', {
+      configurable: true,
+      get() { return desc.get.call(this); },
+      set(v) { desc.set.call(this, v); sync(); },
+    });
+  }
+  input.addEventListener('input', sync);
+  btn.addEventListener('click', () => {
+    input.value = '';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.focus();
+  });
+  const wrap = el('div', { class: 'input-wrap' });
+  wrap.append(input, btn);
+  sync();
+  return wrap;
+}
+
+export const field = (label, input) => el('div', { class: 'field' }, el('label', {}, label), clearable(input, label));

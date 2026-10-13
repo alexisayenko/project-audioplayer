@@ -1,4 +1,4 @@
-import { el } from './dom.js';
+import { el, clearable } from './dom.js';
 
 const WP = /^https:\/\/(?:[a-z0-9-]+\.)+wikipedia\.org\/wiki\/\S+$/i;
 const WD = /^https:\/\/(?:www\.|m\.)?wikidata\.org\/wiki\/Q[1-9]\d*$/i;
@@ -22,7 +22,7 @@ export function wikiFields({ song = '', artist = '' }) {
     inp.setAttribute('aria-invalid', String(!!v && !isWikiLink(v)));
   };
   for (const inp of Object.values(fields)) inp.addEventListener('input', () => mark(inp));
-  const field = (label, inp) => el('div', {}, el('label', {}, label), inp);
+  const field = (label, inp) => el('div', {}, el('label', {}, label), clearable(inp, label));
   return {
     node: el('div', { class: 'wiki-fields' },
       el('div', { class: 'grid2' }, field('Wikipedia: song', fields.song), field('Wikipedia: band', fields.artist))),

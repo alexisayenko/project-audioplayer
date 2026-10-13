@@ -1,7 +1,7 @@
 import { api } from './api.js';
 import { store } from './store.js';
 import { tagEditor } from './tag-editor.js';
-import { el, fmtTime, toast } from './dom.js';
+import { el, fmtTime, toast, field } from './dom.js';
 import { icon } from './icons.js';
 import { cleanPasted, sourceOf, sourceLabel } from './url-clean.js';
 import { findInLibrary } from './library-match.js';
@@ -13,7 +13,6 @@ import { planMetadata, statusText, serviceState, suggestion, suggestionText } fr
 
 const BULK = new Set(['insertFromPaste', 'insertFromPasteAsQuotation', 'insertFromDrop', 'insertReplacementText']);
 const PREVIEW_ONLY = 'Preview only \u2014 SoundCloud Go+ track, can\'t be downloaded in full.';
-const field = (label, input) => el('div', { class: 'field' }, el('label', {}, label), input);
 
 export function openAdd() {
   const dlg = document.getElementById('add-dialog');
@@ -203,10 +202,10 @@ export function openAdd() {
         el('span', { class: 'chip tint', title: 'Source' }, sourceLabel(preview.source || sourceOf(preview.id))))),
       el('div', { class: 'add-fields' },
         field('Title', f.title), field('Artist', f.artist),
+        field('Remix & additional production', f.remixer),
         el('div', { class: 'meta-row' }, metaBtn, icons.node),
         metaMsg, hint,
         el('div', { class: 'grid2' }, field('Album', f.album), field('Year', f.year)),
-        field('Remix & additional production', f.remixer),
         field('BPM (optional)', f.bpm),
         genres.node, countries.node,
         el('div', { class: 'field' }, el('label', {}, 'Tags'), editor.node),
