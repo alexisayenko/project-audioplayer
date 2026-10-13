@@ -44,6 +44,14 @@ enum DS {
         static let vinyl = SwiftUI.Color(light: (0.063, 0.078, 0.090, 1.000), dark: (0.063, 0.078, 0.090, 1.000))
         /// Tonearm, spindle, the small volume knob. Flat metal, no gradient in UI code; the mockups' brushed look is for the deck only.
         static let chrome = SwiftUI.Color(light: (0.788, 0.800, 0.792, 1.000), dark: (0.604, 0.627, 0.639, 1.000))
+        /// Service icon next to Get metadata once that service returned data; icons only, never text or surfaces; inactive state uses ink-faint.
+        static let brandYoutube = SwiftUI.Color(light: (1.000, 0.000, 0.000, 1.000), dark: (1.000, 0.000, 0.000, 1.000))
+        /// Service icon next to Get metadata once that service returned data; icons only, never text or surfaces; inactive state uses ink-faint.
+        static let brandSoundcloud = SwiftUI.Color(light: (1.000, 0.333, 0.000, 1.000), dark: (1.000, 0.333, 0.000, 1.000))
+        /// Service icon next to Get metadata once that service returned data; icons only, never text or surfaces; inactive state uses ink-faint.
+        static let brandSpotify = SwiftUI.Color(light: (0.114, 0.725, 0.329, 1.000), dark: (0.114, 0.725, 0.329, 1.000))
+        /// Service icon next to Get metadata once that service returned data; icons only, never text or surfaces; inactive state uses ink-faint.
+        static let brandWikipedia = SwiftUI.Color(light: (0.106, 0.125, 0.141, 1.000), dark: (0.925, 0.910, 0.875, 1.000))
     }
 
     // MARK: Type
