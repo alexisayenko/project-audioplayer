@@ -32,6 +32,10 @@ targets:
         ITSAppUsesNonExemptEncryption: false
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         CFBundleIconName: AppIcon
+        UTExportedTypeDeclarations:
+          - UTTypeIdentifier: com.alexisayenko.audioplayer.token-pill
+            UTTypeDescription: Token pill
+            UTTypeConformsTo: [public.data]
         GoogleClientID: $(GOOGLE_CLIENT_ID)
         CFBundleURLTypes:
           - CFBundleURLName: google-oauth

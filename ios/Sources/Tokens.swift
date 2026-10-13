@@ -143,6 +143,31 @@ enum Tokens {
         return (removeToken(src, i), appendToken(dst, toks[i].text, dstDefaultSep))
     }
 
+    static func insertToken(_ text: String, at index: Int, token: String, defaultSep: String) -> String {
+        let t = trim(token)
+        if t.isEmpty { return text }
+        if trim(text).isEmpty { return t }
+        var toks = tokenize(text)
+        var at = max(0, index)
+        if at == 0 && isBlank(toks[0]) { at = 1 }
+        if at >= toks.count || (at == toks.count - 1 && isBlank(toks[at])) { return appendToken(text, t, defaultSep) }
+        toks.insert(Token(text: t, sep: defaultSep), at: at)
+        return compose(toks)
+    }
+
+    static func moveTokenTo(src: String, index i: Int, dst: String, dstIndex: Int, dstDefaultSep: String, sameField: Bool? = nil) -> (src: String, dst: String) {
+        let same = sameField ?? (src == dst)
+        let toks = tokenize(src)
+        guard i >= 0, i < toks.count, !isBlank(toks[i]) else { return (src, dst) }
+        let at = min(dstIndex, tokenize(dst).count)
+        if same {
+            if at == i || at == i + 1 { return (src, src) }
+            let out = insertToken(removeToken(src, i), at: at > i ? at - 1 : at, token: toks[i].text, defaultSep: dstDefaultSep)
+            return (out, out)
+        }
+        return (removeToken(src, i), insertToken(dst, at: at, token: toks[i].text, defaultSep: dstDefaultSep))
+    }
+
     static func stripEdges(_ text: String) -> String {
         var toks = tokenize(text)
         while toks.count > 1 && isBlank(toks[toks.count - 1]) {
@@ -236,6 +261,35 @@ func tokensSelfCheck() -> [String] {
     eq(m2.src, "", "move only src"); eq(m2.dst, "Only", "move only dst")
     let m3 = Tokens.moveToken("A |", 1, "X", " ")
     eq(m3.src, "A |", "move blank src"); eq(m3.dst, "X", "move blank dst")
+    func ins(_ t: String, _ i: Int, _ x: String, _ sep: String) -> String { Tokens.insertToken(t, at: i, token: x, defaultSep: sep) }
+    eq(ins("", 0, "Foo", ", "), "Foo", "insert blank text")
+    eq(ins("A, B", 0, "Foo", ", "), "Foo, A, B", "insert first")
+    eq(ins("A, B", 1, "Foo", " - "), "A, Foo - B", "insert middle")
+    eq(ins("A - B | C", 2, "X", ", "), "A - B | X, C", "insert before last")
+    eq(ins("A, B", 2, "Foo", " - "), Tokens.appendToken("A, B", "Foo", " - "), "insert at end is append")
+    eq(ins("A, B", 99, "Foo", ", "), "A, B, Foo", "insert past end")
+    eq(ins("A", 0, "  ", ", "), "A", "insert blank token")
+    eq(ins("| A", 0, "X", ", "), "| X, A", "insert after leading blank")
+    eq(ins("A, ", 1, "X", ", "), "A, X", "insert before trailing blank")
+    for str in ["A, B", "A - B | C", "X"] {
+        let r = ins(str, 1, "Foo", ", ")
+        eq(Tokens.tokenize(r).contains { $0.text == "Foo" }, true, "insert keeps token \(str)")
+    }
+    func mt(_ s: String, _ i: Int, _ d: String, _ di: Int, _ sep: String, _ same: Bool? = nil) -> [String] {
+        let r = Tokens.moveTokenTo(src: s, index: i, dst: d, dstIndex: di, dstDefaultSep: sep, sameField: same)
+        return [r.src, r.dst]
+    }
+    eq(mt("Gala - Remix Guy", 1, "Sadrican, X", 0, ", "), ["Gala", "Remix Guy, Sadrican, X"], "moveTo across front")
+    eq(mt("Gala - Guy", 0, "S, X", 1, ", "), ["Guy", "S, Gala, X"], "moveTo across middle")
+    eq(mt("Only", 0, "", 5, " "), ["", "Only"], "moveTo into empty")
+    eq(mt("A, B, C", 0, "A, B, C", 3, ", "), ["B, C, A", "B, C, A"], "moveTo same to end")
+    eq(mt("A, B, C", 2, "A, B, C", 0, ", "), ["C, A, B", "C, A, B"], "moveTo same to front")
+    eq(mt("A, B, C", 0, "A, B, C", 2, ", "), ["B, A, C", "B, A, C"], "moveTo same forward")
+    eq(mt("A, B, C", 1, "A, B, C", 1, " - "), ["A, B, C", "A, B, C"], "moveTo same position no-op")
+    eq(mt("A, B, C", 1, "A, B, C", 2, " - "), ["A, B, C", "A, B, C"], "moveTo gap after no-op")
+    eq(mt("A, B", 1, "A, B", 99, " - "), ["A, B", "A, B"], "moveTo last to end no-op")
+    eq(mt("A", 0, "A", 0, ", ", false), ["", "A, A"], "moveTo explicit across")
+    eq(mt("A |", 1, "X", 0, " "), ["A |", "X"], "moveTo blank token no-op")
     eq(Tokens.stripEdges("Mix, "), "Mix", "strip trailing")
     eq(Tokens.stripEdges("| A |"), "A", "strip both")
     eq(Tokens.stripEdges("A - B"), "A - B", "strip none")

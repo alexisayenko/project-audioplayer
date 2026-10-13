@@ -237,6 +237,15 @@ struct AddTagButton: View {
     }
 }
 
+struct FlowFillKey: LayoutValueKey {
+    static let defaultValue: CGFloat? = nil
+}
+
+extension View {
+    /// In a `FlowLayout`: take the rest of the line (at least `minWidth`), else wrap and take the whole line.
+    func flowFill(minWidth: CGFloat) -> some View { layoutValue(key: FlowFillKey.self, value: minWidth) }
+}
+
 struct FlowLayout: Layout {
     var spacing: CGFloat = DS.Space.space2
 
@@ -245,26 +254,34 @@ struct FlowLayout: Layout {
     }
 
     func placeSubviews(in bounds: CGRect, proposal _: ProposedViewSize, subviews: Subviews, cache _: inout ()) {
-        for (i, p) in arrange(bounds.width, subviews).points.enumerated() {
-            subviews[i].place(at: CGPoint(x: bounds.minX + p.x, y: bounds.minY + p.y), proposal: .unspecified)
+        let a = arrange(bounds.width, subviews)
+        for (i, p) in a.points.enumerated() {
+            let fill = subviews[i][FlowFillKey.self] != nil
+            subviews[i].place(at: CGPoint(x: bounds.minX + p.x, y: bounds.minY + p.y),
+                              proposal: fill ? ProposedViewSize(width: a.widths[i], height: nil) : .unspecified)
         }
     }
 
-    private func arrange(_ width: CGFloat, _ subviews: Subviews) -> (points: [CGPoint], size: CGSize) {
+    private func arrange(_ width: CGFloat, _ subviews: Subviews) -> (points: [CGPoint], widths: [CGFloat], size: CGSize) {
         var points: [CGPoint] = []
+        var widths: [CGFloat] = []
         var x: CGFloat = 0
         var y: CGFloat = 0
         var row: CGFloat = 0
         var maxX: CGFloat = 0
         for s in subviews {
-            let sz = s.sizeThatFits(.init(width: width.isFinite ? width : nil, height: nil))
-            if x > 0 && x + sz.width > width { x = 0; y += row + spacing; row = 0 }
+            var sz = s.sizeThatFits(.init(width: width.isFinite ? width : nil, height: nil))
+            if let minW = s[FlowFillKey.self] {
+                if x > 0 && x + minW > width { x = 0; y += row + spacing; row = 0 }
+                sz.width = width.isFinite ? max(minW, width - x) : minW
+            } else if x > 0 && x + sz.width > width { x = 0; y += row + spacing; row = 0 }
             points.append(CGPoint(x: x, y: y))
+            widths.append(sz.width)
             x += sz.width + spacing
             row = max(row, sz.height)
             maxX = max(maxX, x - spacing)
         }
-        return (points, CGSize(width: maxX, height: y + row))
+        return (points, widths, CGSize(width: maxX, height: y + row))
     }
 }
 
