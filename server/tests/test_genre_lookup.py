@@ -190,3 +190,16 @@ def test_preview_caps_per_namespace(monkeypatch):
     monkeypatch.setattr(gl, "suggest_tags", lambda a, t: ["genre:a", "genre:b", "genre:c", "genre:d", "country:lt", "country:lv", "lang:en", "lang:de"])
     r = TestClient(main.app).post("/preview", json={"url": "https://youtu.be/dQw4w9WgXcQ"}, headers={"X-API-Token": "secret"})
     assert r.json()["tags"] == ["lang:ru", "genre:a", "genre:b", "genre:c", "country:lt", "lang:en"]
+
+
+@pytest.mark.parametrize(
+    "channel,title,expected",
+    [
+        ("RÜFÜS DU SOL", "RÜFÜS DU SOL ●● Innerbloom (Official Video)", ("RÜFÜS DU SOL", "Innerbloom")),
+        ("Daft Punk", "Daft Punk - Around the World [Official Video]", ("Daft Punk", "Around the World")),
+        ("", "Daft Punk - Around the World (Official Video)", ("Daft Punk", "Around the World")),
+        ("Some Label", "Daft Punk - Around the World", ("Some Label", "Daft Punk - Around the World")),
+    ],
+)
+def test_split_artist_title_cases(channel, title, expected):
+    assert gl.split_artist_title(channel, title) == expected

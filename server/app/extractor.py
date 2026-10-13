@@ -11,6 +11,7 @@ from urllib.parse import urlparse
 import yt_dlp
 
 from . import langcodes, library, urlclean
+from .titles import split_artist_title
 from .urlclean import is_valid_video_id, parse_video_id, source_of, watch_url  # noqa: F401
 
 PREVIEW_ONLY_MESSAGE = "Preview only \u2014 SoundCloud Go+ track, can't be downloaded in full."
@@ -34,11 +35,12 @@ def search(query: str, limit: int) -> list[dict[str, Any]]:
     for entry in info.get("entries", []):
         if not entry or not is_valid_video_id(entry.get("id", "")):
             continue
+        artist, title = split_artist_title(entry.get("uploader") or entry.get("channel") or "", entry.get("title") or "")
         results.append(
             {
                 "id": entry["id"],
-                "title": entry.get("title") or "",
-                "artist": entry.get("uploader") or entry.get("channel") or "",
+                "title": title,
+                "artist": artist,
                 "duration": entry.get("duration"),
                 "thumbnail": f"https://i.ytimg.com/vi/{entry['id']}/hqdefault.jpg",
             }
@@ -156,12 +158,16 @@ def preview(video_id: str) -> dict[str, Any]:
     opts = {"quiet": True, "noplaylist": True, "skip_download": True}
     with yt_dlp.YoutubeDL(opts) as ydl:
         info = ydl.extract_info(watch_url(video_id), download=False)
+    artist, title = split_artist_title(
+        info.get("artist") or info.get("creator") or info.get("uploader") or "",
+        info.get("track") or info.get("title") or "",
+    )
     return {
         "id": video_id,
         "source": "youtube",
         "source_url": watch_url(video_id),
-        "title": info.get("track") or info.get("title") or "",
-        "artist": info.get("artist") or info.get("creator") or info.get("uploader") or "",
+        "title": title,
+        "artist": artist,
         "album": info.get("album"),
         "year": _year(info),
         "tags": suggest_tags(info),
@@ -207,12 +213,11 @@ def download_audio(video_id: str, out_dir: Path, progress=None, source_url: str 
     }
     with yt_dlp.YoutubeDL(opts) as ydl:
         info = ydl.extract_info(watch_url(video_id), download=True)
-    return {
-        "id": video_id,
-        "title": info.get("track") or info.get("title") or "",
-        "artist": info.get("artist") or info.get("creator") or info.get("uploader") or "",
-        "duration": info.get("duration"),
-    }
+    artist, title = split_artist_title(
+        info.get("artist") or info.get("creator") or info.get("uploader") or "",
+        info.get("track") or info.get("title") or "",
+    )
+    return {"id": video_id, "title": title, "artist": artist, "duration": info.get("duration")}
 
 
 def _download_soundcloud(video_id: str, out_dir: Path, hook, source_url: str | None) -> dict[str, Any]:

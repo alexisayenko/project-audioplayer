@@ -13,6 +13,7 @@ import urllib.request
 from typing import Any
 
 from . import langcodes
+from .titles import clean_artist, clean_title, split_artist_title  # noqa: F401
 
 log = logging.getLogger(__name__)
 
@@ -28,43 +29,12 @@ _rate_lock = threading.Lock()
 _last_call = 0.0
 _cache: dict[tuple[str, str], dict[str, Any]] = {}
 
-_NOISE = re.compile(
-    r"[\(\[][^\)\]]*\b(official|video|audio|lyrics?|visuali[sz]er|remaster(ed)?|hd|hq|4k|live|clip|mv)\b[^\)\]]*[\)\]]",
-    re.I,
-)
-_FEAT = re.compile(r"\s*[\(\[]?\b(?:feat\.?|ft\.?|featuring)\s.*$", re.I)
-
-
 _OFF = {"0", "false", "no", "off"}
 
 
 def enabled() -> bool:
     """AUDIO_TAG_LOOKUP is the preferred switch, AUDIO_GENRE_LOOKUP its older alias; either one off disables the lookup."""
     return all(os.environ.get(v, "1").strip().lower() not in _OFF for v in ("AUDIO_TAG_LOOKUP", "AUDIO_GENRE_LOOKUP"))
-
-
-def clean_artist(artist: str) -> str:
-    a = re.sub(r"\s*-\s*Topic\s*$", "", artist or "", flags=re.I)
-    a = re.sub(r"VEVO\s*$", "", a, flags=re.I)
-    a = _FEAT.sub("", a)
-    return re.sub(r"\s+", " ", a).strip()
-
-
-def clean_title(title: str) -> str:
-    t = _NOISE.sub("", title or "")
-    t = _FEAT.sub("", t)
-    t = re.sub(r"[\(\[]\s*[\)\]]", "", t)
-    return re.sub(r"\s+", " ", t).strip(" -|")
-
-
-def split_artist_title(artist: str, title: str) -> tuple[str, str]:
-    artist, title = clean_artist(artist), clean_title(title)
-    if not artist and " - " in title:
-        a, _, t = title.partition(" - ")
-        return clean_artist(a), clean_title(t)
-    if artist and title.casefold().startswith(artist.casefold() + " - "):
-        title = title[len(artist) + 3 :].strip()
-    return artist, title
 
 
 def _norm(s: str) -> str:
