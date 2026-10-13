@@ -21,7 +21,7 @@ from pydantic import BaseModel, Field
 
 from . import bpm as bpm_detect
 from . import jobs, limits, oauth, session, users
-from . import extractor, genre_lookup, gitstore, library, metadata, urlclean, wiki_lookup
+from . import extractor, genre_lookup, genres, gitstore, library, metadata, urlclean, wiki_lookup
 from .problems import Problem
 
 DOWNLOAD_DIR = Path(os.environ.get("AUDIO_DOWNLOAD_DIR", "downloads"))
@@ -559,6 +559,24 @@ def get_catalog(request: Request, since: str | None = Query(default=None),
 @app.get("/tags")
 def get_tags(user: dict[str, Any] = Depends(require_token)):
     return library.tag_counts(_load(user["uid"]))
+
+
+GENRES_MAX = 1000
+
+
+@app.get("/genres")
+def get_genres(user: dict[str, Any] = Depends(require_token)):
+    counts: dict[str, int] = {}
+    for s in _load(user["uid"]):
+        for t in s.get("tags", []):
+            key, sep, value = t.partition(":")
+            if sep and key.casefold() == "genre":
+                n = genres.normalise(value)
+                if n:
+                    counts[n] = counts.get(n, 0) + 1
+    used = sorted(counts, key=lambda g: (-counts[g], g))
+    rest = [g for g in genres.BUILTIN if g not in counts]
+    return {"genres": [*used, *rest][:GENRES_MAX]}
 
 
 _SUGGEST_CAPS = {"genre": 3, "country": 1}

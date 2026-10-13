@@ -1,0 +1,27 @@
+from app import genres
+from tests.test_library import H, add, client  # noqa: F401
+
+
+def test_builtin_list_is_clean():
+    g = genres.BUILTIN
+    assert len(g) >= 250
+    assert len(g) == len(set(g))
+    assert all(x and x == x.lower() and x == genres.normalise(x) for x in g)
+    assert {"techno", "melodic techno", "progressive trance", "drum and bass"} <= set(g)
+
+
+def test_genres_requires_token(client):
+    assert client.get("/genres").status_code == 401
+
+
+def test_genres_library_first_then_builtin(client):
+    add(client, "dQw4w9WgXcQ", tags=["genre:techno", "genre:house", "mood:calm"])
+    add(client, "9bZkp7q19f0", tags=["genre:Techno", "genre:house"])
+    add(client, "aaaaaaaaaaa", tags=["genre:techno"])
+    r = client.get("/genres", headers=H)
+    assert r.status_code == 200
+    out = r.json()["genres"]
+    assert out[:2] == ["techno", "house"]
+    assert len(out) == len(set(out)) and len(out) <= 1000
+    assert "mood:calm" not in out and "calm" not in out
+    assert "deep house" in out and "trance" in out
