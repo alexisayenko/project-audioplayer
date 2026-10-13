@@ -8,7 +8,7 @@ import urllib.request
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 VIDEO_ID_RE = re.compile(r"^[A-Za-z0-9_-]{11}$")
-SOUNDCLOUD_ID_RE = re.compile(r"^soundcloud-[0-9]{1,20}$")
+SOUNDCLOUD_ID_RE = re.compile(r"^soundcloud-\d{1,20}$", re.ASCII)
 SOUNDCLOUD_PREFIX = "soundcloud-"
 CATALOG_ID_RE = re.compile(r"^(spotify|applemusic|shazam)-[A-Za-z0-9_-]{1,64}$")
 
@@ -63,7 +63,7 @@ def classify_soundcloud(text: str) -> tuple[str, str] | None:
     A track is soundcloud.com/<artist>/<track>[/s-<secret>]; the query and fragment are dropped.
     """
     text = text.strip()
-    m = re.match(r"^(?:https?://)?([A-Za-z0-9.-]+)(/[^?#]*)?(?:[?#].*)?$", text, re.I)
+    m = re.match(r"^(?:https?://)?([a-z0-9.-]+)(/[^?#]*)?(?:[?#].*)?$", text, re.I)
     if not m:
         return None
     host, path = m.group(1).lower(), (m.group(2) or "")
@@ -76,17 +76,20 @@ def classify_soundcloud(text: str) -> tuple[str, str] | None:
         return None
     if len(parts) < 2 or len(parts) > 3:
         return ("unsupported", "")
+    url = _soundcloud_track_url(parts)
+    return ("track", url) if url else ("unsupported", "")
+
+
+def _soundcloud_track_url(parts: list[str]) -> str:
     user, track = parts[0], parts[1]
     if user.lower() in _SC_RESERVED_USERS or track.lower() in _SC_RESERVED_SECOND:
-        return ("unsupported", "")
+        return ""
     if not re.fullmatch(_SC_NAME, user) or not re.fullmatch(_SC_NAME, track):
-        return ("unsupported", "")
+        return ""
     url = f"https://soundcloud.com/{user}/{track}"
     if len(parts) == 3:
-        if not _SC_PRIVATE_RE.fullmatch(parts[2]):
-            return ("unsupported", "")
-        url += f"/{parts[2]}"
-    return ("track", url)
+        return f"{url}/{parts[2]}" if _SC_PRIVATE_RE.fullmatch(parts[2]) else ""
+    return url
 
 
 def find_soundcloud_url(text: str) -> str | None:

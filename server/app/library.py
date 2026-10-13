@@ -99,34 +99,40 @@ def catalog_revision(songs: list[dict[str, Any]]) -> str:
     return hashlib.sha1(blob.encode("utf-8")).hexdigest()[:16]
 
 
+def normalize_song(song: dict[str, Any]) -> dict[str, Any]:
+    s = dict(song)
+    if "id" in s and (s.get("file") == "" or "file" not in s):
+        s["file"] = f"{s['id']}.m4a"
+    if "sources" in s:
+        s["sources"] = clean_sources(s["sources"])
+    if isinstance(s.get("bpm"), (int, float)) and not isinstance(s["bpm"], bool):
+        s["bpm"] = round(s["bpm"])
+    if isinstance(s.get("source_url"), str):
+        s["source_url"] = urlclean.clean_url(s["source_url"])
+    for key in ("wikipedia_song", "wikipedia_artist"):
+        s[key] = wiki_lookup.clean_link(s.get(key))
+    normalize_tags(s)
+    return s
+
+
+def normalize_tags(s: dict[str, Any]) -> None:
+    genre = s.pop("genre", None)
+    tags = list(s.get("tags") or [])
+    if isinstance(genre, str) and genre.strip():
+        tags.append(f"genre:{genre}")
+    if "tags" in s or genre:
+        s["tags"] = clean_tags(tags)
+    if decade_tag(s.get("year")):
+        s["tags"] = with_decade(s.get("tags") or [], s["year"])
+
+
 def normalize(raw: Any) -> dict[str, Any]:
     """Accept the old bare {songs:[...]} shape and return {settings, songs}."""
     if isinstance(raw, list):
         raw = {"songs": raw}
     raw = raw if isinstance(raw, dict) else {}
     settings = dict(raw.get("settings") or {})
-    songs = []
-    for s in raw.get("songs") or []:
-        s = dict(s)
-        if "id" in s and (s.get("file") == "" or "file" not in s):
-            s["file"] = f"{s['id']}.m4a"
-        if "sources" in s:
-            s["sources"] = clean_sources(s["sources"])
-        if isinstance(s.get("bpm"), (int, float)) and not isinstance(s["bpm"], bool):
-            s["bpm"] = round(s["bpm"])
-        if isinstance(s.get("source_url"), str):
-            s["source_url"] = urlclean.clean_url(s["source_url"])
-        for key in ("wikipedia_song", "wikipedia_artist"):
-            s[key] = wiki_lookup.clean_link(s.get(key))
-        genre = s.pop("genre", None)
-        tags = list(s.get("tags") or [])
-        if isinstance(genre, str) and genre.strip():
-            tags.append(f"genre:{genre}")
-        if "tags" in s or genre:
-            s["tags"] = clean_tags(tags)
-        if decade_tag(s.get("year")):
-            s["tags"] = with_decade(s.get("tags") or [], s["year"])
-        songs.append(s)
+    songs = [normalize_song(s) for s in raw.get("songs") or []]
     return {"settings": settings, "songs": songs}
 
 

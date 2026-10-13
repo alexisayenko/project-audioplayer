@@ -146,6 +146,25 @@ def swift(tokens: dict) -> str:
     return "\n".join(out) + "\n"
 
 
+def css_dark_overrides(tokens: dict, themes: list, light: str, dark: str) -> list:
+    lines = ["@media (prefers-color-scheme: dark) {", "  :root {"]
+    for tok in tokens["color"]["tokens"] + tokens.get("shadow", {}).get("tokens", []):
+        v = theme_values(tok, themes)
+        if v[dark] != v[light]:
+            lines.append(f"    --{tok['name']}: {v[dark]};")
+    lines.extend(["  }", "}"])
+    return lines
+
+
+def css_text_style(st: dict, fam: str) -> str:
+    decl = [f"font-family: var(--font-{fam})", f"font-size: {st['fontSize']}", f"font-weight: {st.get('fontWeight', 400)}"]
+    if st.get("lineHeight"):
+        decl.append(f"line-height: {st['lineHeight']}")
+    if st.get("letterSpacing"):
+        decl.append(f"letter-spacing: {st['letterSpacing']}")
+    return f".t-{st['name']} {{ {'; '.join(decl)}; }}"
+
+
 def css(tokens: dict) -> str:
     themes = [t["id"] for t in tokens["color"]["themes"]]
     light, dark = themes[0], (themes[1] if len(themes) > 1 else themes[0])
@@ -161,27 +180,10 @@ def css(tokens: dict) -> str:
         lines.append(f"  --{tok['name']}: {theme_values(tok, themes)[light]};")
     lines.append("}")
     if dark != light:
-        lines.append("@media (prefers-color-scheme: dark) {")
-        lines.append("  :root {")
-        for tok in tokens["color"]["tokens"]:
-            v = theme_values(tok, themes)
-            if v[dark] != v[light]:
-                lines.append(f"    --{tok['name']}: {v[dark]};")
-        for tok in tokens.get("shadow", {}).get("tokens", []):
-            v = theme_values(tok, themes)
-            if v[dark] != v[light]:
-                lines.append(f"    --{tok['name']}: {v[dark]};")
-        lines.append("  }")
-        lines.append("}")
+        lines.extend(css_dark_overrides(tokens, themes, light, dark))
     for group in tokens["type"].get("groups", []):
         fam = group.get("family", "sans")
-        for st in group["styles"]:
-            decl = [f"font-family: var(--font-{fam})", f"font-size: {st['fontSize']}", f"font-weight: {st.get('fontWeight', 400)}"]
-            if st.get("lineHeight"):
-                decl.append(f"line-height: {st['lineHeight']}")
-            if st.get("letterSpacing"):
-                decl.append(f"letter-spacing: {st['letterSpacing']}")
-            lines.append(f".t-{st['name']} {{ {'; '.join(decl)}; }}")
+        lines.extend(css_text_style(st, fam) for st in group["styles"])
     return "\n".join(lines) + "\n"
 
 

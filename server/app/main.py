@@ -373,11 +373,30 @@ def _clean_text(v: str | None) -> str | None:
     return v or None
 
 
+def _cut_hint(text: str) -> str:
+    cut = len(text)
+    i = text.find("Use --cookies", 1)
+    while i > 0:
+        if text[i - 1].isspace():
+            cut = i
+            break
+        i = text.find("Use --cookies", i + 1)
+    i = text.find("See", 1, cut)
+    while i > 0:
+        if text[i - 1].isspace():
+            rest = text[i + 3 :]
+            tail = rest.lstrip()
+            if len(tail) < len(rest) and tail.startswith(("http://", "https://")):
+                cut = i
+                break
+        i = text.find("See", i + 1, cut)
+    return text[:cut].rstrip()
+
+
 def _short(exc: Exception) -> str:
     text = re.sub(r"\x1b\[[0-9;]*m", "", str(exc)).strip()
     text = re.sub(r"^ERROR:\s*(\[\w+\]\s*[\w-]+:\s*)?", "", text)
-    text = re.split(r"\s+(?:Use --cookies|See\s+https?://)", text)[0]
-    return text.strip()[:300]
+    return _cut_hint(text).strip()[:300]
 
 
 class DownloadRequest(BaseModel):

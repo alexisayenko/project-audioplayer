@@ -13,7 +13,7 @@ from . import genre_lookup, library, wiki_lookup
 log = logging.getLogger(__name__)
 
 TIMEOUT = 15
-CAPS = {"genre": 3, "country": 1}
+CAPS = {"genre": 8, "country": 1}
 DROPPED = {"lang"}
 
 
@@ -21,8 +21,10 @@ def _namespace(tag: str) -> str:
     return tag.partition(":")[0] if ":" in tag else ""
 
 
-def cap_tags(tags: list[str]) -> list[str]:
-    """Normalise and dedupe; drop `lang:` tags; keep at most 3 `genre:` and 1 `country:`."""
+def cap_tags(tags: list[str], priority_genres: int = 0) -> list[str]:
+    """Normalise and dedupe; drop `lang:` tags; keep at most 8 `genre:` and 1 `country:`.
+
+    The first `priority_genres` distinct genres are always kept (they may exceed the cap)."""
     used: dict[str, int] = {}
     out: list[str] = []
     for t in library.clean_tags(tags):
@@ -30,9 +32,10 @@ def cap_tags(tags: list[str]) -> list[str]:
         if ns in DROPPED:
             continue
         if ns in CAPS:
-            if used.get(ns, 0) >= CAPS[ns]:
+            n = used.get(ns, 0)
+            if n >= CAPS[ns] and not (ns == "genre" and n < priority_genres):
                 continue
-            used[ns] = used.get(ns, 0) + 1
+            used[ns] = n + 1
         out.append(t)
     return out
 
@@ -44,14 +47,15 @@ def _year(value: Any) -> int | None:
 def merge(sources: list[dict[str, Any]], mb: dict[str, Any] | None, links: dict[str, Any] | None, guess: dict[str, Any] | None) -> dict[str, Any]:
     """Merge per-source results into {album, year, tags}.
 
-    Precedence: tags yt-dlp sources, MusicBrainz, user-given wiki links, wiki guess (country: MusicBrainz first);
+    Precedence: tags the song's own Wikidata genres (all, links else guess), yt-dlp sources, MusicBrainz, user-given wiki links, wiki guess (country: MusicBrainz first);
     year links, guess, MusicBrainz, sources; album sources, then MusicBrainz.
     """
     mb, links, guess = mb or {}, links or {}, guess or {}
-    tags = [t for r in (*sources, mb, links, guess) for t in r.get("tags") or []]
+    song_genres = links.get("song_genres") or guess.get("song_genres") or []
+    tags = [*song_genres, *(t for r in (*sources, mb, links, guess) for t in r.get("tags") or [])]
     album = next((str(a).strip() for a in (*(s.get("album") for s in sources), mb.get("album")) if a and str(a).strip()), None)
     year = next((y for y in (_year(r.get("year")) for r in (links, guess, mb, *sources)) if y), None)
-    return {"album": album, "year": year, "tags": cap_tags(tags)}
+    return {"album": album, "year": year, "tags": cap_tags(tags, len(library.clean_tags(song_genres)))}
 
 
 def _service_of(url: str) -> str | None:

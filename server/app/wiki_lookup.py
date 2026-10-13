@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import html
 import json
 import logging
 import os
@@ -16,13 +17,14 @@ log = logging.getLogger(__name__)
 
 WIKIDATA = "https://www.wikidata.org"
 TIMEOUT = 5
-MAX_GENRES = 3
+MAX_GENRES = 12
 
 _WP_HOST = re.compile(r"^(?:[a-z0-9-]+\.)+wikipedia\.org$")
 _WD_HOST = re.compile(r"^(?:www\.|m\.)?wikidata\.org$")
 _QID = re.compile(r"^Q[1-9]\d*$")
 _SITE = re.compile(r"^([a-z]{2,3}(?:-[a-z]+)?)wiki$")
 
+_infobox_cache: dict[str, list[str]] = {}
 _entities: dict[str, dict[str, Any] | None] = {}
 _claims: dict[str, dict[str, Any]] = {}
 _labels: dict[str, str] = {}
@@ -166,28 +168,180 @@ def _country_tags(artist_claims: dict[str, Any], song_claims: dict[str, Any]) ->
     return []
 
 
-def _genre_tags(*claim_sets: dict[str, Any]) -> list[str]:
-    ids: list[str] = []
-    for cs in claim_sets:
-        ids += [i for i in _ids(cs, "P136") if i not in ids]
-    ids = ids[:6]
-    labels = _label_map(ids) if ids else {}
+def _genre_tags(ids: list[str], labels: dict[str, str]) -> list[str]:
     out: list[str] = []
     for i in ids:
         tag = f"genre:{labels[i].strip().casefold()}" if i in labels else ""
         if tag and tag not in out:
             out.append(tag)
+    return out
+
+
+_REF_PAIR = re.compile(r"<ref\b[^>]*?(?<!/)>.*?</ref\s*>", re.S | re.I)
+_REF_SELF = re.compile(r"<ref\b[^>]*/\s*>", re.I)
+_COMMENT = re.compile(r"<!--.*?-->", re.S)
+_BR = re.compile(r"<br\s*/?\s*>", re.I)
+_TAG = re.compile(r"<[^>]+>")
+_LINK = re.compile(r"\[\[([^\[\]|]*)(?:\|([^\[\]]*))?\]\]")
+_INNER_TPL = re.compile(r"\{\{([^{}]*)\}\}")
+_FOOTNOTE = re.compile(r"\[(?:\d+|note\s*\d+|[a-z])\]", re.I)
+_LIST_TPLS = {"hlist", "flatlist", "plainlist", "ubl", "unbulleted list", "bulleted list", "ulist", "collapsible list"}
+_UNWRAP_TPLS = {"nowrap", "small", "nobr", "lang"}
+
+
+def _link_text(m: re.Match[str]) -> str:
+    target, text = m.group(1).strip(), m.group(2)
+    if re.match(r"(?:file|image|category):", target, re.I):
+        return ""
+    return (text if text is not None else target).strip()
+
+
+def _template(m: re.Match[str]) -> str:
+    parts = m.group(1).split("|")
+    name = parts[0].strip().casefold().replace("_", " ")
+    args = [a for a in parts[1:] if not re.match(r"\s*[\w ]+=", a)]
+    if name in _LIST_TPLS:
+        return "\n" + "\n".join(args) + "\n"
+    if name in _UNWRAP_TPLS:
+        return args[-1] if args else ""
+    return ""
+
+
+def _split_top(body: str) -> list[str]:
+    parts: list[str] = []
+    depth, cur, i = 0, [], 0
+    while i < len(body):
+        two = body[i : i + 2]
+        if two in ("{{", "[["):
+            depth += 1
+            cur.append(two)
+            i += 2
+        elif two in ("}}", "]]"):
+            depth -= 1
+            cur.append(two)
+            i += 2
+        elif body[i] == "|" and depth == 0:
+            parts.append("".join(cur))
+            cur = []
+            i += 1
+        else:
+            cur.append(body[i])
+            i += 1
+    parts.append("".join(cur))
+    return parts
+
+
+def _infobox_body(wikitext: str) -> str | None:
+    m = re.search(r"\{\{\s*infobox\b", wikitext, re.I)
+    if not m:
+        return None
+    depth, i = 0, m.start()
+    while i < len(wikitext):
+        two = wikitext[i : i + 2]
+        if two == "{{":
+            depth += 1
+            i += 2
+        elif two == "}}":
+            depth -= 1
+            i += 2
+            if depth == 0:
+                return wikitext[m.start() + 2 : i - 2]
+        else:
+            i += 1
+    return None
+
+
+def _clean_genre_value(value: str) -> list[str]:
+    value = _COMMENT.sub("", value)
+    value = _REF_PAIR.sub("", value)
+    value = _REF_SELF.sub("", value)
+    value = _LINK.sub(_link_text, value)
+    for _ in range(10):
+        value, n = _INNER_TPL.subn(_template, value)
+        if not n:
+            break
+    value = value.replace("{{", "").replace("}}", "")
+    value = _TAG.sub("\n", _BR.sub("\n", value))
+    out: list[str] = []
+    for line in value.split("\n"):
+        line = line.strip().lstrip("*#:;").strip()
+        for item in line.split(","):
+            item = html.unescape(item).replace("\xa0", " ")
+            item = _FOOTNOTE.sub("", item).replace("'" * 3, "").replace("''", "")
+            item = re.sub(r"\s+", " ", item).strip(" .;").casefold()
+            if item and item not in out:
+                out.append(item)
     return out[:MAX_GENRES]
 
 
+def parse_infobox_genres(wikitext: str) -> list[str]:
+    """Lowercase genre names from the `genre`/`genres` parameter of the first {{Infobox ...}}; [] when absent or malformed."""
+    try:
+        body = _infobox_body(wikitext or "")
+        if body is None:
+            return []
+        for part in _split_top(body)[1:]:
+            key, eq, value = part.partition("=")
+            if eq and key.strip().casefold() in ("genre", "genres"):
+                return _clean_genre_value(value)
+    except Exception as exc:
+        log.warning("infobox parse failed: %s", exc)
+    return []
+
+
+def infobox_genres(page_url: str | None) -> list[str]:
+    """Genres from the infobox of an en.wikipedia.org article (lead section wikitext); [] on any failure or other hosts."""
+    try:
+        parts = urllib.parse.urlsplit(page_url or "")
+        if (parts.hostname or "").lower() != "en.wikipedia.org" or not parts.path.startswith("/wiki/"):
+            return []
+        title = urllib.parse.unquote(parts.path[len("/wiki/") :])
+        if title not in _infobox_cache:
+            api = (
+                "https://en.wikipedia.org/w/api.php?action=parse&prop=wikitext&section=0&format=json&formatversion=2&redirects=1&page="
+                + urllib.parse.quote(title, safe="")
+            )
+            text = (_fetch_json(api).get("parse") or {}).get("wikitext") or ""
+            _infobox_cache[title] = parse_infobox_genres(text if isinstance(text, str) else "")
+        return list(_infobox_cache[title])
+    except Exception as exc:
+        log.warning("infobox fetch failed: %s", exc)
+        return []
+
+
+def _norm(tag: str) -> str:
+    return re.sub(r"\s+", " ", tag.partition(":")[2] or tag).strip().casefold()
+
+
+def _with_infobox(found: dict[str, Any], song_page: str | None, artist_page: str | None) -> None:
+    """Put the song page's infobox genres (else the artist page's) first in `song_genres` and `tags`, deduplicated against Wikidata's."""
+    box = infobox_genres(song_page) or infobox_genres(artist_page)
+    if not box:
+        return
+    first = [f"genre:{g}" for g in box]
+    seen = {_norm(t) for t in first}
+    song = [*first, *(t for t in found["song_genres"] if _norm(t) not in seen)]
+    in_song = {_norm(t) for t in song}
+    found["tags"] = [*song, *(t for t in found["tags"] if not t.startswith("genre:") or _norm(t) not in in_song)]
+    found["song_genres"] = song
+
+
 def facts(song_qid: str | None, artist_qid: str | None) -> dict[str, Any]:
-    """Tag suggestions and the song's publication year from Wikidata; empty on any failure."""
-    result: dict[str, Any] = {"tags": [], "year": None}
+    """Tag suggestions and the song's publication year from Wikidata; empty on any failure.
+
+    `song_genres` are the song entity's own genres (all of them); `tags` are those, then the artist's, then the country."""
+    result: dict[str, Any] = {"tags": [], "song_genres": [], "year": None}
     try:
         song = (_entity(song_qid) or {}).get("claims") or {} if song_qid else {}
         artist = (_entity(artist_qid) or {}).get("claims") or {} if artist_qid else {}
-        tags = [*_genre_tags(song, artist), *_country_tags(artist, song)]
-        result["tags"] = tags
+        song_ids = list(dict.fromkeys(_ids(song, "P136")))[:MAX_GENRES]
+        artist_ids = [i for i in dict.fromkeys(_ids(artist, "P136")) if i not in song_ids][:MAX_GENRES]
+        all_ids = [*song_ids, *artist_ids]
+        labels = _label_map(all_ids) if all_ids else {}
+        song_genres = _genre_tags(song_ids, labels)
+        artist_genres = [t for t in _genre_tags(artist_ids, labels) if t not in song_genres]
+        result["song_genres"] = song_genres
+        result["tags"] = [*song_genres, *artist_genres, *_country_tags(artist, song)]
         result["year"] = _year(song)
     except Exception as exc:
         log.warning("wikidata facts failed: %s", exc)
@@ -250,7 +404,7 @@ def _pick(rels: list[str]) -> tuple[str | None, str | None]:
 
 def suggest(artist: str, title: str) -> dict[str, Any]:
     """{wikipedia_song, wikipedia_artist, tags, year} for a track via MusicBrainz + Wikidata; empty values on any failure."""
-    out: dict[str, Any] = {"wikipedia_song": None, "wikipedia_artist": None, "tags": [], "year": None}
+    out: dict[str, Any] = {"wikipedia_song": None, "wikipedia_artist": None, "tags": [], "song_genres": [], "year": None}
     if not genre_lookup.enabled():
         return out
     try:
@@ -263,7 +417,9 @@ def suggest(artist: str, title: str) -> dict[str, Any]:
         artist_q = artist_q or qid_of_page(artist_link or "")
         found = facts(song_q, artist_q)
         out["tags"] = found["tags"]
+        out["song_genres"] = found["song_genres"]
         out["year"] = found["year"] or mb["year"]
+        _with_infobox(out, song_link, artist_link)
     except Exception as exc:
         log.warning("wikipedia suggestion failed for %r - %r: %s", artist, title, exc)
     return out
@@ -277,7 +433,7 @@ def _page_url(url: str | None) -> str | None:
 
 def from_links(song_link: Any, artist_link: Any) -> dict[str, Any]:
     """Tags, year and page URLs (`wikipedia_song`, `wikipedia_artist`) for user-edited Wikipedia/Wikidata links; empty when disabled or on any failure."""
-    out: dict[str, Any] = {"tags": [], "year": None, "wikipedia_song": None, "wikipedia_artist": None}
+    out: dict[str, Any] = {"tags": [], "song_genres": [], "year": None, "wikipedia_song": None, "wikipedia_artist": None}
     if not genre_lookup.enabled():
         return out
     try:
@@ -286,6 +442,7 @@ def from_links(song_link: Any, artist_link: Any) -> dict[str, Any]:
         out.update(facts(song_q, artist_q))
         out["wikipedia_song"] = _page_url(song_url)
         out["wikipedia_artist"] = _page_url(artist_url)
+        _with_infobox(out, out["wikipedia_song"], out["wikipedia_artist"])
         return out
     except Exception as exc:
         log.warning("wikipedia link lookup failed: %s", exc)

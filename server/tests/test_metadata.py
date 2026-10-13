@@ -7,8 +7,9 @@ from app import genre_lookup as gl, metadata, wiki_lookup as wl
 
 
 def test_cap_tags_dedupes_normalises_and_drops_lang():
-    tags = ["genre:Rock", "genre:rock", "genre:a", "genre:b", "genre:c", "country:AU", "country:fr", "lang:en", "Plain", "decade:1990s"]
-    assert metadata.cap_tags(tags) == ["genre:rock", "genre:a", "genre:b", "country:au", "Plain", "decade:1990s"]
+    gs = [f"genre:g{i}" for i in range(9)]
+    tags = ["genre:Rock", "genre:rock", *gs, "country:AU", "country:fr", "lang:en", "Plain", "decade:1990s"]
+    assert metadata.cap_tags(tags) == ["genre:rock", *gs[:7], "country:au", "Plain", "decade:1990s"]
 
 
 def test_merge_precedence():
@@ -18,7 +19,7 @@ def test_merge_precedence():
         links={"year": 1997, "tags": ["genre:disco", "country:fr"]},
         guess={"year": 1980, "tags": ["genre:soul"]},
     )
-    assert out == {"album": "Src Album", "year": 1997, "tags": ["genre:pop", "genre:house", "genre:funk", "country:au"]}
+    assert out == {"album": "Src Album", "year": 1997, "tags": ["genre:pop", "genre:house", "genre:funk", "country:au", "genre:disco", "genre:soul"]}
 
 
 def test_merge_falls_back_through_sources():
@@ -121,3 +122,38 @@ def test_metadata_endpoint(monkeypatch):
     assert body_out["services"]["spotify"] == {"found": False, "url": None}
     empty = client.post("/metadata", json={}, headers={"X-API-Token": "secret"}).json()
     assert (empty["album"], empty["year"], empty["tags"]) == (None, None, [])
+
+
+def test_merge_song_genres_first_and_all_artist_after():
+    song = [f"genre:s{i}" for i in range(7)]
+    out = metadata.merge(
+        sources=[{"tags": ["genre:src"]}],
+        mb={"tags": ["genre:hip hop", "genre:alt hip hop", "genre:exp hip hop", "country:us"]},
+        links={"tags": [*song, "genre:art1", "genre:art2"], "song_genres": song},
+        guess=None,
+    )
+    assert out["tags"][:7] == song
+    assert out["tags"][7] == "genre:src"
+    assert len([t for t in out["tags"] if t.startswith("genre:")]) == 8
+    assert "genre:art1" not in out["tags"]
+
+
+def test_merge_song_genres_exceed_cap_up_to_all():
+    song = [f"genre:s{i}" for i in range(10)]
+    out = metadata.merge([{"tags": ["genre:src"]}], None, None, {"tags": song, "song_genres": song})
+    assert out["tags"] == song
+
+
+def test_services_wikipedia_found_from_infobox_genres(monkeypatch):
+    monkeypatch.setattr(wl, "qid_of_page", lambda u: None)
+    monkeypatch.setattr(wl, "_infobox_cache", {})
+    monkeypatch.setattr(wl, "_fetch_json", lambda url: {"parse": {"wikitext": "{{Infobox song\n| genre = [[Neo soul]], [[funk]]\n}}"}})
+    out = metadata.gather("T", "", [], "https://en.wikipedia.org/wiki/Crazy_(Gnarls_Barkley_song)", None)
+    assert out["tags"] == ["genre:neo soul", "genre:funk"]
+    assert out["services"]["wikipedia"] == {"found": True, "url": "https://en.wikipedia.org/wiki/Crazy_(Gnarls_Barkley_song)"}
+
+
+def test_infobox_genres_beyond_cap_kept():
+    song = [f"genre:g{i}" for i in range(11)]
+    out = metadata.merge([{"tags": ["genre:x"]}], None, {"song_genres": song, "tags": song}, None)
+    assert out["tags"] == song

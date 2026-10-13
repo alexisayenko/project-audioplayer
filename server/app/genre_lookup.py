@@ -87,26 +87,31 @@ _PRIMARY_OK = {"album", "ep", "single"}
 _SECONDARY_BAD = {"compilation", "mixtape/street", "mixtape", "dj-mix", "live", "remix"}
 
 
+def _credited_names(credited: list[dict[str, Any]]) -> list[str]:
+    return [c.get("name", "") for c in credited] + [(c.get("artist") or {}).get("name", "") for c in credited]
+
+
+def _release_key(r: dict[str, Any], artist: str) -> tuple[bool, bool, str] | None:
+    if not str(r.get("title") or "").strip():
+        return None
+    if not any(_artist_match(artist, n) for n in _credited_names(r.get("artist-credit") or [])):
+        return None
+    rg = r.get("release-group") or {}
+    primary = str(rg.get("primary-type") or "").casefold()
+    secondary = {str(t).casefold() for t in rg.get("secondary-types") or []}
+    if primary not in _PRIMARY_OK or secondary & _SECONDARY_BAD:
+        return None
+    return (primary != "album", r.get("status") != "Official", str(r.get("date") or "9999"))
+
+
 def _album(full: dict[str, Any], artist: str = "") -> str | None:
     """Title of the best release of a recording: credited to `artist`, an Album/EP/Single without
     Compilation/Mixtape/DJ-mix/Live/Remix types; Albums first, then official, then earliest date."""
     best: tuple[Any, str] | None = None
     for r in full.get("releases") or []:
-        title = str(r.get("title") or "").strip()
-        if not title:
-            continue
-        credited = r.get("artist-credit") or []
-        names = [c.get("name", "") for c in credited] + [(c.get("artist") or {}).get("name", "") for c in credited]
-        if not any(_artist_match(artist, n) for n in names):
-            continue
-        rg = r.get("release-group") or {}
-        primary = str(rg.get("primary-type") or "").casefold()
-        secondary = {str(t).casefold() for t in rg.get("secondary-types") or []}
-        if primary not in _PRIMARY_OK or secondary & _SECONDARY_BAD:
-            continue
-        key = (primary != "album", r.get("status") != "Official", str(r.get("date") or "9999"))
-        if best is None or key < best[0]:
-            best = (key, title)
+        key = _release_key(r, artist)
+        if key is not None and (best is None or key < best[0]):
+            best = (key, str(r.get("title") or "").strip())
     return best[1] if best else None
 
 
@@ -148,6 +153,25 @@ def _empty() -> dict[str, Any]:
     return {"tags": [], "song_rels": [], "artist_rels": [], "year": None, "album": None}
 
 
+def _artist_info(artist: str, credited: list[dict[str, Any]], genres: list[str]) -> tuple[list[str], list[str], list[str]]:
+    aid = next(
+        (
+            c["artist"]["id"]
+            for c in credited
+            if c.get("artist", {}).get("id") and _artist_match(artist, c["artist"].get("name", ""))
+        ),
+        None,
+    )
+    if not aid:
+        return genres, [], []
+    try:
+        art = _get(f"artist/{aid}", {"inc": "genres+tags+url-rels", "fmt": "json"})
+        return genres or _top(art), _country(art), _url_rels(art)
+    except Exception as exc:
+        log.warning("artist lookup failed for %r: %s", artist, exc)
+        return genres, [], []
+
+
 def _lookup(artist: str, title: str) -> dict[str, Any]:
     query = f'recording:"{title}" AND artist:"{artist}"'
     data = _get("recording/", {"query": query, "fmt": "json", "limit": "5"})
@@ -159,26 +183,8 @@ def _lookup(artist: str, title: str) -> dict[str, Any]:
         if not any(_artist_match(artist, n) for n in names):
             continue
         full = _get(f"recording/{rec['id']}", {"inc": "genres+tags+work-rels+url-rels+releases+release-groups+artist-credits", "fmt": "json"})
-        genres = _top(full)
-        country: list[str] = []
         song_rels = _url_rels(full) or _work_rels(full)
-        artist_rels: list[str] = []
-        aid = next(
-            (
-                c["artist"]["id"]
-                for c in credited
-                if c.get("artist", {}).get("id") and _artist_match(artist, c["artist"].get("name", ""))
-            ),
-            None,
-        )
-        if aid:
-            try:
-                art = _get(f"artist/{aid}", {"inc": "genres+tags+url-rels", "fmt": "json"})
-                country = _country(art)
-                genres = genres or _top(art)
-                artist_rels = _url_rels(art)
-            except Exception as exc:
-                log.warning("artist lookup failed for %r: %s", artist, exc)
+        genres, country, artist_rels = _artist_info(artist, credited, _top(full))
         return {
             "tags": [*genres, *country],
             "song_rels": song_rels,

@@ -54,3 +54,19 @@ def test_rejects_bad_video_id(client):
 
 def test_missing_file_404(client):
     assert client.get(f"/files/{VID}", headers=HEADERS).status_code == 404
+
+
+@pytest.mark.parametrize(
+    "msg,expected",
+    [
+        ("ERROR: [youtube] abc: Sign in to confirm. Use --cookies-from-browser or --cookies for auth", "Sign in to confirm."),
+        ("ERROR: Video unavailable. See https://example.com/faq for more", "Video unavailable."),
+        ("Seeing things. See   http://x.y", "Seeing things."),
+        ("See https://x.y at start", "See https://x.y at start"),
+        ("Use --cookies first", "Use --cookies first"),
+        ("See the docs. Use --cookies", "See the docs."),
+        ("plain\x1b[31m red\x1b[0m", "plain red"),
+    ],
+)
+def test_short_cuts_hints(msg, expected):
+    assert main._short(Exception(msg)) == expected

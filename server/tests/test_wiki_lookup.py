@@ -154,7 +154,7 @@ def test_facts_mapping(monkeypatch):
     calls = []
     monkeypatch.setattr(wl, "_fetch_json", fake_fetch(calls))
     out = wl.facts("Q100", "Q200")
-    assert out == {"tags": ["genre:house music", "genre:electronic", "genre:disco", "country:fr"], "year": 1997}
+    assert out == {"tags": ["genre:house music", "genre:electronic", "genre:disco", "country:fr"], "song_genres": ["genre:house music", "genre:electronic"], "year": 1997}
     label_calls = [c for c in calls if "props=labels" in c]
     assert len(label_calls) == 1
     assert "languages=en" in label_calls[0]
@@ -207,10 +207,12 @@ def test_preferred_rank_wins(monkeypatch):
     assert wl.facts("QS", None)["year"] == 1995
 
 
-def test_genre_cap_three(monkeypatch):
-    ents = {"QS": {"claims": {"P136": [item("Q1"), item("Q2"), item("Q3"), item("Q4")]}}}
-    monkeypatch.setattr(wl, "_fetch_json", fake_fetch(entities=ents))
-    assert wl.facts("QS", None)["tags"] == ["genre:house music", "genre:electronic", "genre:disco"]
+def test_song_genres_all_taken_then_artist(monkeypatch):
+    ents = {"QS": {"claims": {"P136": [item("Q1"), item("Q2"), item("Q3"), item("Q4")]}}, "QA": {"claims": {"P136": [item("Q4"), item("Q5")]}}}
+    monkeypatch.setattr(wl, "_fetch_json", fake_fetch(entities=ents, labels={**LABELS, "Q5": "Rock"}))
+    out = wl.facts("QS", "QA")
+    assert out["song_genres"] == ["genre:house music", "genre:electronic", "genre:disco", "genre:funk"]
+    assert out["tags"] == [*out["song_genres"], "genre:rock"]
 
 
 def test_failures_give_nothing(monkeypatch):
@@ -218,9 +220,9 @@ def test_failures_give_nothing(monkeypatch):
         raise OSError("down")
 
     monkeypatch.setattr(wl, "_fetch_json", boom)
-    assert wl.facts("Q100", "Q200") == {"tags": [], "year": None}
+    assert wl.facts("Q100", "Q200") == {"tags": [], "song_genres": [], "year": None}
     assert wl.from_links("https://en.wikipedia.org/wiki/X", None) == {
-        "tags": [], "year": None, "wikipedia_song": "https://en.wikipedia.org/wiki/X", "wikipedia_artist": None
+        "tags": [], "song_genres": [], "year": None, "wikipedia_song": "https://en.wikipedia.org/wiki/X", "wikipedia_artist": None
     }
     monkeypatch.setattr(gl, "_get", fake_mb({}, {}))
     assert wl.suggest("Daft Punk", "X")["tags"] == []
@@ -235,7 +237,7 @@ def test_labels_failure_keeps_other_facts(monkeypatch):
         return base(url)
 
     monkeypatch.setattr(wl, "_fetch_json", partial)
-    assert wl.facts("Q100", "Q200") == {"tags": ["country:fr"], "year": 1997}
+    assert wl.facts("Q100", "Q200") == {"tags": ["country:fr"], "song_genres": [], "year": 1997}
 
 
 def test_suggest_from_musicbrainz_relations(monkeypatch):
@@ -278,9 +280,9 @@ def test_year_falls_back_to_musicbrainz_first_release(monkeypatch):
 def test_suggest_disabled(monkeypatch):
     monkeypatch.setenv("AUDIO_TAG_LOOKUP", "0")
     monkeypatch.setattr(wl, "_fetch_json", lambda u: pytest.fail("called"))
-    assert wl.suggest("Daft Punk", "X") == {"wikipedia_song": None, "wikipedia_artist": None, "tags": [], "year": None}
+    assert wl.suggest("Daft Punk", "X") == {"wikipedia_song": None, "wikipedia_artist": None, "tags": [], "song_genres": [], "year": None}
     assert wl.from_links("https://en.wikipedia.org/wiki/X", None) == {
-        "tags": [], "year": None, "wikipedia_song": None, "wikipedia_artist": None
+        "tags": [], "song_genres": [], "year": None, "wikipedia_song": None, "wikipedia_artist": None
     }
 
 
@@ -381,3 +383,100 @@ def test_lookup_endpoint_empty_bad_and_failing(client):
     ok = {"wikipedia_song": "https://en.wikipedia.org/wiki/X"}
     assert client.post("/lookup/wikipedia", json=ok, headers=H).json() == {"tags": [], "year": None}
     assert client.post("/lookup/wikipedia", json={}).status_code == 401
+
+
+CRAZY = """{{Short description|2006 song by Gnarls Barkley}}
+{{Infobox song
+| name       = Crazy
+| artist     = [[Gnarls Barkley]]
+| genre      = {{flatlist|
+* [[Neo soul]]<ref name="a">{{cite web|url=https://example.com|title=x}}</ref>
+* [[psychedelic soul]]
+* [[electronica]]<!-- comment -->
+* [[funk]]
+* [[R&B]]
+* [[alternative R&B]]
+* [[pop music|pop]]{{efn|note}}
+}}
+| length     = 2:58
+}}
+'''Crazy''' is a song."""
+CRAZY_GENRES = ["neo soul", "psychedelic soul", "electronica", "funk", "r&b", "alternative r&b", "pop"]
+
+
+def box(genre):
+    return "{{Infobox musical artist\n| name = X\n| genre = " + genre + "\n| years_active = 1990\n}}\nLead."
+
+
+def test_parse_flatlist_fixture():
+    assert wl.parse_infobox_genres(CRAZY) == CRAZY_GENRES
+
+
+def test_parse_hlist_br_plain_and_bulleted():
+    assert wl.parse_infobox_genres(box("{{hlist|[[Rock music|Rock]]|[[blues]]<ref>x</ref>|Pop|rock}}")) == ["rock", "blues", "pop"]
+    assert wl.parse_infobox_genres(box("[[House music|house]]<br />[[Techno]]<br>disco<small>[1]</small>")) == ["house", "techno", "disco"]
+    assert wl.parse_infobox_genres(box("[[Soul music|soul]], [[funk]]<ref name=a />, {{citation needed}}jazz")) == ["soul", "funk", "jazz"]
+    assert wl.parse_infobox_genres(box("\n* [[Folk]]\n* [[Country]]")) == ["folk", "country"]
+
+
+def test_parse_caps_at_12():
+    assert len(wl.parse_infobox_genres(box(", ".join(f"g{i}" for i in range(20))))) == 12
+
+
+def test_parse_no_infobox_or_malformed():
+    assert wl.parse_infobox_genres("'''Crazy''' is a song with genre = pop.") == []
+    assert wl.parse_infobox_genres("{{Infobox song\n| genre = {{flatlist|* [[funk]]\n| length = 1") == []
+    assert wl.parse_infobox_genres(box("")) == []
+    assert wl.parse_infobox_genres("") == []
+
+
+def test_infobox_genres_fetch_only_enwiki(monkeypatch):
+    urls = []
+
+    def fetch(url):
+        urls.append(url)
+        return {"parse": {"title": "Crazy", "wikitext": CRAZY}}
+
+    monkeypatch.setattr(wl, "_fetch_json", fetch)
+    monkeypatch.setattr(wl, "_infobox_cache", {})
+    assert wl.infobox_genres("https://en.wikipedia.org/wiki/Crazy_(Gnarls_Barkley_song)") == CRAZY_GENRES
+    assert "page=Crazy_%28Gnarls_Barkley_song%29" in urls[0] and "section=0" in urls[0] and "redirects=1" in urls[0]
+    assert wl.infobox_genres("https://de.wikipedia.org/wiki/X") == []
+    assert wl.infobox_genres("https://www.wikidata.org/wiki/Q1") == []
+    assert wl.infobox_genres(None) == []
+    assert len(urls) == 1
+
+
+def test_infobox_genres_failure(monkeypatch):
+    def boom(url):
+        raise OSError("down")
+
+    monkeypatch.setattr(wl, "_fetch_json", boom)
+    monkeypatch.setattr(wl, "_infobox_cache", {})
+    assert wl.infobox_genres("https://en.wikipedia.org/wiki/X") == []
+
+
+def test_from_links_infobox_first_and_deduped(monkeypatch):
+    monkeypatch.setattr(wl, "_infobox_cache", {})
+    monkeypatch.setattr(wl, "qid_of_page", lambda u: {"https://en.wikipedia.org/wiki/S": "QS"}.get(u))
+    ents = {"QS": {"claims": {"P136": [item("Q1"), item("Q2")]}}}
+    base = fake_fetch(entities=ents)
+
+    def fetch(url):
+        return {"parse": {"wikitext": box("[[Funk]], [[Soul]]")}} if "action=parse" in url else base(url)
+
+    monkeypatch.setattr(wl, "_fetch_json", fetch)
+    out = wl.from_links("https://en.wikipedia.org/wiki/S", "https://en.wikipedia.org/wiki/A")
+    assert out["song_genres"][:2] == ["genre:funk", "genre:soul"]
+    assert len(out["song_genres"]) == len(set(out["song_genres"]))
+    assert out["tags"][:2] == ["genre:funk", "genre:soul"]
+
+
+def test_from_links_artist_infobox_fallback(monkeypatch):
+    monkeypatch.setattr(wl, "_infobox_cache", {})
+    monkeypatch.setattr(wl, "qid_of_page", lambda u: None)
+    monkeypatch.setattr(
+        wl, "_fetch_json", lambda url: {"parse": {"wikitext": box("[[Trip hop]]") if "page=A" in url else "no box"}}
+    )
+    out = wl.from_links("https://en.wikipedia.org/wiki/S", "https://en.wikipedia.org/wiki/A")
+    assert out["tags"] == ["genre:trip hop"]

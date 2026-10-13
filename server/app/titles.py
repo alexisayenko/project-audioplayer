@@ -8,16 +8,16 @@ _NOISE = re.compile(
     r"[\(\[][^\)\]]*\b(official|video|audio|lyrics?|visuali[sz]er|remaster(ed)?|hd|hq|4k|live|clip|mv)\b[^\)\]]*[\)\]]",
     re.I,
 )
-_FEAT = re.compile(r"\s*[\(\[]?\b(?:feat\.?|ft\.?|featuring)\s.*$", re.I)
+_FEAT = re.compile(r"[\(\[]?\b(?:feat\.?|ft\.?|featuring)\s.*$", re.I)
 _SEP = re.compile(r"\s+(?:-|●●)\s+")
 
 
 def clean_artist(artist: str) -> str:
-    a = re.sub(r"\s*-\s*Topic\s*$", "", artist or "", flags=re.I)
+    a = re.sub(r"-\s*Topic$", "", (artist or "").rstrip(), flags=re.I)
     a = re.sub(r"VEVO\s*$", "", a, flags=re.I)
     a = _FEAT.sub("", a)
     a = re.sub(r"\s+", " ", a).strip()
-    stripped = re.sub(r"\s+Official\s*$", "", a, flags=re.I)
+    stripped = a[: -len(" official")] if a.casefold().endswith(" official") else a
     return stripped.strip() or a
 
 
