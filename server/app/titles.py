@@ -65,6 +65,25 @@ def lookup_artist(artist: str) -> str:
     return a or clean_artist(artist)
 
 
+_FEAT_SPLIT = re.compile(r"\s*[,&]\s*|\s+(?:and|x)\s+", re.I)
+
+
+def lookup_credits(artist: str) -> tuple[str, list[str]]:
+    """(primary artist, featured names) of a saved artist for lookups: "A feat. B & C" gives ("A", ["B", "C"]); names split on ",", "&", " and ", " x "."""
+    primary = lookup_artist(artist)
+    a = clean_artist(artist)
+    m = _FEAT_KEY.search(a)
+    if not m:
+        return primary, []
+    opener = a[m.start() - 1] if m.start() else ""
+    if opener in _CLOSERS:
+        close = a.find(_CLOSERS[opener], m.end())
+        text = a[m.end() : len(a) if close < 0 else close]
+    else:
+        text = a[m.end() : _feat_end(a, m.end())]
+    return primary, [n for n in (p.strip(" -|") for p in _FEAT_SPLIT.split(text)) if n]
+
+
 def lookup_title(title: str) -> str:
     """The title for external lookups only: clean_title plus feat credits and version info (live, acoustic, unplugged, session, venue) removed; never shown or saved."""
     base = re.sub(r"\s+", " ", re.sub(r"[\(\[]\s*[\)\]]", "", _strip_feat(clean_title(title)))).strip(" -|")

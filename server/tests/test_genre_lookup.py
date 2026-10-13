@@ -292,3 +292,52 @@ def test_concurrent_lookups_of_one_track_share_one_fetch(monkeypatch):
     [t.start() for t in threads]
     [t.join() for t in threads]
     assert calls == ["recording/"]
+
+
+def _feat_get(calls):
+    recs = [
+        {"id": "r-us", "score": 100, "artist-credit": [{"name": "KATO", "artist": {"id": "a-us", "name": "KATO"}}]},
+        {
+            "id": "r-dk",
+            "score": 100,
+            "artist-credit": [
+                {"name": "Kato", "joinphrase": ", ", "artist": {"id": "a-dk", "name": "Kato"}},
+                {"name": "Jon", "artist": {"id": "a-jon", "name": "Jon"}},
+            ],
+        },
+    ]
+    arts = {
+        "a-us": {"country": "US", "genres": [{"name": "metal", "count": 3}]},
+        "a-dk": {"country": "DK", "genres": [{"name": "house", "count": 3}]},
+    }
+
+    def _get(path, params):
+        calls.append(path)
+        if path == "recording/":
+            return {"recordings": recs}
+        if path.startswith("recording/"):
+            return {"first-release-date": "2010-05-01"}
+        return arts[path.split("/")[1]]
+
+    return _get
+
+
+def test_featured_names_pick_the_right_artist(monkeypatch):
+    calls = []
+    monkeypatch.setattr(gl, "_get", _feat_get(calls))
+    out = gl.lookup("Kato feat. Jon", "Turn The Lights Off")
+    assert out["tags"] == ["genre:house", "country:dk"]
+    assert out["year"] == 2010
+    assert "recording/r-dk" in calls and "artist/a-dk" in calls and "artist/a-us" not in calls
+
+
+def test_without_featured_names_first_match_unchanged(monkeypatch):
+    monkeypatch.setattr(gl, "_get", _feat_get([]))
+    assert gl.lookup("Kato", "Turn The Lights Off")["tags"] == ["genre:metal", "country:us"]
+
+
+def test_featured_argument_and_fallback(monkeypatch):
+    monkeypatch.setattr(gl, "_get", _feat_get([]))
+    assert gl.lookup("Kato", "Turn The Lights Off", ["Jon"])["tags"] == ["genre:house", "country:dk"]
+    gl._cache.clear()
+    assert gl.lookup("Kato feat. Nobody", "Turn The Lights Off")["tags"] == ["genre:metal", "country:us"]

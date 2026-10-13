@@ -605,3 +605,45 @@ def test_parse_infobox_name_cleaning_and_missing():
     assert wl.parse_infobox(_song_box("\"''Crazy''\"<ref>r</ref>", "[[Gnarls Barkley]]"))["name"] == "Crazy"
     out = wl.parse_infobox(_song_box(None, "[[Gnarls Barkley]]"))
     assert (out["name"], out["artist"]) == (None, "Gnarls Barkley")
+
+
+def _kato_mb(song_rels, artist_rels):
+    rec = {"first-release-date": "2010-01-01", "relations": song_rels}
+    art = {"country": "DK", "relations": artist_rels}
+    kato = {"id": "r2", "score": 100, "artist-credit": [{"name": "Kato", "artist": {"id": "a2", "name": "Kato"}}, {"name": "Jon", "artist": {"id": "a3", "name": "Jon"}}]}
+    gl._cache.clear()
+
+    def _get(path, params):
+        if path == "recording/":
+            return {"recordings": [kato]}
+        return rec if path.startswith("recording/") else art
+
+    return _get
+
+
+def test_suggest_artist_infobox_fallback_when_song_page_absent(monkeypatch):
+    monkeypatch.setattr(wl, "_infobox_cache", {})
+    monkeypatch.setattr(gl, "_get", _kato_mb([], [urlrel("wikipedia", "https://en.wikipedia.org/wiki/Kato_(DJ)")]))
+    monkeypatch.setattr(wl, "qid_of_page", lambda u: None)
+    monkeypatch.setattr(wl, "_fetch_json", lambda url: {"parse": {"wikitext": "{{Infobox musical artist\n| genre = {{hlist|[[House music|House]]|[[Dance music|dance]]|[[hip-hop]]}}\n}}"}})
+    out = wl.suggest("Kato feat. Jon", "Turn The Lights Off")
+    assert out["tags"][:3] == ["genre:house", "genre:dance", "genre:hip-hop"]
+    assert out["year"] == 2010 and gl.lookup("Kato feat. Jon", "Turn The Lights Off")["tags"] == ["country:dk"]
+
+
+def test_suggest_ignores_song_page_of_another_artist(monkeypatch):
+    monkeypatch.setattr(wl, "_infobox_cache", {})
+    song = "https://en.wikipedia.org/wiki/Turn_the_Lights_Off"
+    monkeypatch.setattr(gl, "_get", _kato_mb([urlrel("wikipedia", song)], [urlrel("wikipedia", "https://en.wikipedia.org/wiki/Kato_(DJ)")]))
+    monkeypatch.setattr(wl, "qid_of_page", lambda u: None)
+
+    def fetch(url):
+        if "page=Turn" in url:
+            return {"parse": {"wikitext": "{{Infobox song\n| name = Turn the Lights Off\n| artist = [[DJ Jose]]\n| genre = [[Tech house]]\n}}"}}
+        return {"parse": {"wikitext": "{{Infobox musical artist\n| genre = [[House music|House]]\n}}"}}
+
+    monkeypatch.setattr(wl, "_fetch_json", fetch)
+    out = wl.suggest("Kato feat. Jon", "Turn The Lights Off")
+    assert out["wikipedia_song"] is None
+    assert "genre:tech house" not in out["tags"] and "genre:house" in out["tags"]
+    assert out["infobox_suggest"] is None

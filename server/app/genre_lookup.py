@@ -13,7 +13,7 @@ import urllib.parse
 import urllib.request
 from typing import Any
 
-from .titles import clean_artist, clean_title, lookup_artist, lookup_title, split_artist_title  # noqa: F401
+from .titles import clean_artist, clean_title, lookup_credits, lookup_title, split_artist_title  # noqa: F401
 
 log = logging.getLogger(__name__)
 
@@ -27,8 +27,8 @@ RETRY_DELAY = 1.0
 
 _rate_lock = threading.Lock()
 _last_call = 0.0
-_cache: dict[tuple[str, str], dict[str, Any]] = {}
-_key_locks: dict[tuple[str, str], threading.Lock] = {}
+_cache: dict[tuple[str, str, tuple[str, ...]], dict[str, Any]] = {}
+_key_locks: dict[tuple[str, str, tuple[str, ...]], threading.Lock] = {}
 _key_locks_guard = threading.Lock()
 
 _OFF = {"0", "false", "no", "off"}
@@ -154,14 +154,11 @@ def _empty() -> dict[str, Any]:
 
 
 def _artist_info(artist: str, credited: list[dict[str, Any]], genres: list[str]) -> tuple[list[str], list[str], list[str]]:
+    with_id = [c for c in credited if c.get("artist", {}).get("id")]
     aid = next(
-        (
-            c["artist"]["id"]
-            for c in credited
-            if c.get("artist", {}).get("id") and _artist_match(artist, c["artist"].get("name", ""))
-        ),
+        (c["artist"]["id"] for c in with_id if _norm(artist) == _norm(c["artist"].get("name", "")) or _norm(artist) == _norm(c.get("name", ""))),
         None,
-    )
+    ) or next((c["artist"]["id"] for c in with_id if _artist_match(artist, c["artist"].get("name", ""))), None)
     if not aid:
         return genres, [], []
     try:
@@ -172,16 +169,31 @@ def _artist_info(artist: str, credited: list[dict[str, Any]], genres: list[str])
         return genres, [], []
 
 
-def _lookup(artist: str, title: str) -> dict[str, Any]:
-    query = f'recording:"{title}" AND artist:"{artist}"'
-    data = _get("recording/", {"query": query, "fmt": "json", "limit": "5"})
-    for rec in data.get("recordings") or []:
+def _credits_all(names: list[str], wanted: list[str]) -> bool:
+    return all(any(_artist_match(w, n) for n in names) for w in wanted)
+
+
+def _pick_recording(recs: list[dict[str, Any]], artist: str, featured: list[str]) -> dict[str, Any] | None:
+    """First good-score recording credited to `artist`; with featured names, the first one whose credit also has every one of them, else that first one."""
+    first = None
+    for rec in recs:
         if int(rec.get("score") or 0) < MIN_SCORE:
             continue
-        credited = rec.get("artist-credit") or []
-        names = [c.get("name", "") for c in credited] + [c.get("artist", {}).get("name", "") for c in credited]
+        names = _credited_names(rec.get("artist-credit") or [])
         if not any(_artist_match(artist, n) for n in names):
             continue
+        if not featured or _credits_all(names, featured):
+            return rec
+        first = first or rec
+    return first
+
+
+def _lookup(artist: str, title: str, featured: list[str]) -> dict[str, Any]:
+    query = f'recording:"{title}" AND artist:"{artist}"'
+    data = _get("recording/", {"query": query, "fmt": "json", "limit": "10" if featured else "5"})
+    rec = _pick_recording(data.get("recordings") or [], artist, featured)
+    if rec:
+        credited = rec.get("artist-credit") or []
         full = _get(f"recording/{rec['id']}", {"inc": "genres+tags+work-rels+url-rels+releases+release-groups+artist-credits", "fmt": "json"})
         song_rels = _url_rels(full) or _work_rels(full)
         genres, country, artist_rels = _artist_info(artist, credited, _top(full))
@@ -195,22 +207,26 @@ def _lookup(artist: str, title: str) -> dict[str, Any]:
     return _empty()
 
 
-def lookup(artist: str, title: str) -> dict[str, Any]:
-    """Tags, Wikipedia/Wikidata URL relations (song, artist), first release year and album; empty when disabled, unmatched or on any error."""
+def lookup(artist: str, title: str, featured: list[str] | None = None) -> dict[str, Any]:
+    """Tags, Wikipedia/Wikidata URL relations (song, artist), first release year and album; empty when disabled, unmatched or on any error.
+
+    `featured` names (default: those of a "feat." credit in `artist`) make the recording credited to the primary artist and all of them win; the primary artist's own id then gives country, genres and links."""
     if not enabled():
         return _empty()
     try:
         artist, title = split_artist_title(artist, title)
-        artist, title = lookup_artist(artist), lookup_title(title)
+        artist, credited_feats = lookup_credits(artist)
+        title = lookup_title(title)
+        feats = credited_feats if featured is None else [f for f in featured if f and f.strip()]
         if not artist or not title:
             return _empty()
-        key = (artist.casefold(), title.casefold())
+        key = (artist.casefold(), title.casefold(), tuple(f.casefold() for f in feats))
         if key not in _cache:
             with _key_locks_guard:
                 lock = _key_locks.setdefault(key, threading.Lock())
             with lock:
                 if key not in _cache:
-                    _cache[key] = _lookup(artist, title)
+                    _cache[key] = _lookup(artist, title, feats)
         return {**_cache[key], "tags": list(_cache[key]["tags"])}
     except Exception as exc:
         log.warning("tag lookup failed for %r - %r: %s", artist, title, exc)

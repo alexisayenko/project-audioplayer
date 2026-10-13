@@ -61,3 +61,20 @@ def test_musicbrainz_query_has_no_live(monkeypatch):
 def test_lookup_title_drops_feat_credit_boundary():
     raw = "Kato Feat. Jon - Turn The Lights Off | Jon Hamm Club Dance Scene | DEEPO Remix Long Version"
     assert lookup_title(raw).startswith("Kato - Turn The Lights Off")
+
+
+@pytest.mark.parametrize(
+    "artist,expected",
+    [
+        ("Kato feat. Jon", ("Kato", ["Jon"])),
+        ("A feat. B & C", ("A", ["B", "C"])),
+        ("A ft. B and C", ("A", ["B", "C"])),
+        ("A featuring B, C x D", ("A", ["B", "C", "D"])),
+        ("A (feat. B)", ("A", ["B"])),
+        ("Daft Punk", ("Daft Punk", [])),
+    ],
+)
+def test_lookup_credits(artist, expected):
+    from app.titles import lookup_credits
+
+    assert lookup_credits(artist) == expected

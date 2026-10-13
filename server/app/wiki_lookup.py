@@ -13,6 +13,7 @@ import urllib.request
 from typing import Any
 
 from . import genre_lookup
+from .titles import lookup_credits
 
 log = logging.getLogger(__name__)
 
@@ -500,6 +501,10 @@ def suggest(artist: str, title: str) -> dict[str, Any]:
         song_link, song_q = _pick(mb["song_rels"])
         artist_link, artist_q = _pick(mb["artist_rels"])
         out["wikipedia_song"], out["wikipedia_artist"] = song_link, artist_link
+        box_artist = infobox(song_link)["artist"] if song_link else None
+        if box_artist and not genre_lookup._artist_match(lookup_credits(artist)[0], box_artist):
+            song_link, song_q = None, None
+            out["wikipedia_song"] = None
         song_q = song_q or qid_of_page(song_link or "")
         artist_q = artist_q or qid_of_page(artist_link or "")
         found = facts(song_q, artist_q)
