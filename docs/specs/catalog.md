@@ -11,8 +11,8 @@ accepted (now) these are superseded as noted below.
 - CAT-002 MUST: audio state is derived: `none` (no `file` or file missing on the server), `server` (file on the server), `phone` (local copy on the device); it is never written to `library.json`; the server derives `none`/`server`, `phone` is client-side. Status: implemented (server)
 - CAT-003 MUST: the song record has `sources` (list of `{source, id, url}`, first is primary) and `file` may be `null`; old records without `sources` get one derived at read time. Status: implemented (server)
 - CAT-004 MUST: `GET /library` returns every catalog record with its server-side audio state; `GET /catalog` is the metadata-only sync endpoint (ETag, `since`). Status: implemented (server)
-- CAT-005 MUST: the phone syncs the whole catalog on launch and on refresh and keeps the last copy for offline use. Status: planned (server endpoint `GET /catalog` is ready)
-- CAT-006 MUST: a downloaded song plays offline and never depends on the server. Status: planned
+- CAT-005 MUST: the phone syncs the whole catalog on launch and on refresh and keeps the last copy for offline use. Status: implemented (iOS, IOS-035; web already lists the library)
+- CAT-006 MUST: a downloaded song plays offline and never depends on the server. Status: implemented (iOS: the cached catalog lists every song offline and phone audio plays; verified with the server stopped)
 
 ## Sources and ids
 
@@ -34,10 +34,10 @@ accepted (now) these are superseded as noted below.
 
 ## Library
 
-- CAT-030 MUST: Library lists the whole catalog; each row shows its audio state; this supersedes IOS-030 and IOS-031 (phone-only list, no Download all) when ADR-0010 is accepted. Status: planned
-- CAT-031 MUST: a filter "On phone" shows only songs with a local copy. Status: planned
-- CAT-032 MUST: Play is available only for state `phone` on the phone (and `server` on the web); other rows offer Get audio. Status: planned
-- CAT-033 MUST: Delete from library removes the catalog record; a separate "Remove download" frees the phone copy and keeps the record. Status: implemented (server: `DELETE /songs/{id}` and `DELETE /songs/{id}/audio`); the phone action is planned
+- CAT-030 MUST: Library lists the whole catalog; each row shows its audio state; this supersedes the phone-only list of ADR-0009 (IOS-030..032 are rewritten). Status: implemented (iOS)
+- CAT-031 MUST: a filter shows only songs with a local copy; on iOS it is the "Downloaded N" toggle of the design. Status: implemented (iOS)
+- CAT-032 MUST: Play is available only for state `phone` on the phone (and `server` on the web); other rows offer Download (server audio) or "No audio yet"; Get audio is task-0009. Status: implemented (iOS, except Get audio)
+- CAT-033 MUST: Delete from library removes the catalog record; a separate "Remove download" frees the phone copy and keeps the record. Status: implemented (server: `DELETE /songs/{id}` and `DELETE /songs/{id}/audio`); the iOS actions are "Delete from library" (server delete, then the phone) and "Remove from iPhone" (frees the audio, keeps the record)
 
 ## More sources
 
