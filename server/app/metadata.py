@@ -82,8 +82,8 @@ def _useful(info: dict[str, Any]) -> bool:
 
 
 def services(source_urls: list[str], src_by_index: dict[int, dict[str, Any]], links: dict[str, Any] | None, guess: dict[str, Any] | None) -> dict[str, Any]:
-    """Per-service outcome for the UI's icons: {youtube, soundcloud, wikipedia, spotify: {found, url}}."""
-    out: dict[str, Any] = {k: {"found": False, "url": None} for k in ("youtube", "soundcloud", "wikipedia", "spotify")}
+    """Per-service outcome for the UI's icons: {youtube, soundcloud, wikipedia, spotify, musicbrainz, discogs: {found, url}}."""
+    out: dict[str, Any] = {k: {"found": False, "url": None} for k in ("youtube", "soundcloud", "wikipedia", "spotify", "musicbrainz", "discogs")}
     for i, url in enumerate(source_urls):
         svc = _service_of(url)
         if svc and not out[svc]["found"] and i in src_by_index and _useful(src_by_index[i]):

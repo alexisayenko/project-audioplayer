@@ -60,7 +60,7 @@ struct SongEditView: View {
         return t.lowercased().hasPrefix("http") ? URL(string: t) : nil
     }
 
-    /// Always YouTube, SoundCloud, Spotify, Wikipedia; a source without a link stays in the row, dimmed and inert.
+    /// Always YouTube, SoundCloud, Spotify, Wikipedia, MusicBrainz, Discogs; a source without a link stays in the row, dimmed and inert.
     private var links: [SourceLink] {
         let own = sourceOf(id: song.id)
         let wiki = webURL(form.wikiSong) ?? webURL(form.wikiArtist)
@@ -75,6 +75,8 @@ struct SongEditView: View {
                        url: own == "soundcloud" ? webURL(song.source_url) : nil),
             SourceLink(id: "sp", symbol: "music.note", label: "Not on Spotify", url: nil),
             SourceLink(id: "wiki", symbol: "book.closed.fill", label: wikiLabel, url: wiki),
+            SourceLink(id: "mb", symbol: "music.note.list", label: "Not on MusicBrainz", url: nil),
+            SourceLink(id: "dc", symbol: "opticaldisc.fill", label: "Not on Discogs", url: nil),
         ]
     }
 

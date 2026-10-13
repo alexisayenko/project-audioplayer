@@ -1,7 +1,9 @@
 import SwiftUI
 
 enum ServiceKind: CaseIterable {
-    case youtube, soundcloud, wikipedia, spotify
+    case youtube, soundcloud, wikipedia, spotify, musicbrainz, discogs
+
+    var inert: Bool { self == .spotify || self == .musicbrainz || self == .discogs }
 
     var label: String {
         switch self {
@@ -9,6 +11,8 @@ enum ServiceKind: CaseIterable {
         case .soundcloud: "SoundCloud"
         case .wikipedia: "Wikipedia"
         case .spotify: "Spotify"
+        case .musicbrainz: "MusicBrainz"
+        case .discogs: "Discogs"
         }
     }
 
@@ -18,6 +22,7 @@ enum ServiceKind: CaseIterable {
         case .soundcloud: DS.Color.brandSoundcloud
         case .wikipedia: DS.Color.brandWikipedia
         case .spotify: DS.Color.brandSpotify
+        case .musicbrainz, .discogs: DS.Color.inkFaint
         }
     }
 }
@@ -82,6 +87,32 @@ private struct SpotifyArcs: Shape {
     }
 }
 
+private struct MusicBrainzShape: Shape {
+    func path(in r: CGRect) -> Path {
+        var p = Path()
+        for scale in [1.0, 0.62] {
+            for i in 0..<6 {
+                let a = Double(i) * .pi / 3 - .pi / 2
+                let pt = CGPoint(x: r.midX + cos(a) * r.width * 0.5 * scale, y: r.midY + sin(a) * r.height * 0.5 * scale)
+                if i == 0 { p.move(to: pt) } else { p.addLine(to: pt) }
+            }
+            p.closeSubpath()
+        }
+        p.addEllipse(in: r.insetBy(dx: r.width * 0.358, dy: r.height * 0.358))
+        return p
+    }
+}
+
+private struct DiscogsShape: Shape {
+    func path(in r: CGRect) -> Path {
+        var p = Path()
+        p.addEllipse(in: r)
+        p.addEllipse(in: r.insetBy(dx: r.width * 0.133, dy: r.height * 0.133))
+        p.addEllipse(in: r.insetBy(dx: r.width * 0.375, dy: r.height * 0.375))
+        return p
+    }
+}
+
 struct ServiceIcon: View {
     let kind: ServiceKind
     var active: Bool
@@ -106,6 +137,10 @@ struct ServiceIcon: View {
         case .spotify:
             SpotifyShape().fill(color)
                 .overlay(SpotifyArcs().stroke(DS.Color.surface, style: StrokeStyle(lineWidth: size * 0.08, lineCap: .round)).padding(size * 0.1))
+        case .musicbrainz:
+            MusicBrainzShape().fill(color, style: FillStyle(eoFill: true))
+        case .discogs:
+            DiscogsShape().fill(color, style: FillStyle(eoFill: true))
         }
     }
 
@@ -141,9 +176,9 @@ struct ServiceIconRow: View {
     var body: some View {
         HStack(spacing: DS.Space.space1) {
             ForEach(ServiceKind.allCases, id: \.self) { kind in
-                let hit = kind != .spotify && found[kind] != nil
+                let hit = !kind.inert && found[kind] != nil
                 ServiceIcon(kind: kind, active: hit, url: found[kind] ?? nil,
-                            pulsing: busy && kind != .spotify)
+                            pulsing: busy && !kind.inert)
             }
         }
     }

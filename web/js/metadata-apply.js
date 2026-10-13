@@ -1,7 +1,8 @@
 export const GENRE_CAP = 12;
 export const COUNTRY_CAP = 1;
 const CAPS = { genre: GENRE_CAP, country: COUNTRY_CAP };
-export const SERVICES = ['youtube', 'soundcloud', 'wikipedia', 'spotify'];
+export const SERVICES = ['youtube', 'soundcloud', 'wikipedia', 'spotify', 'musicbrainz', 'discogs'];
+export const INERT = new Set(['spotify', 'musicbrainz', 'discogs']);
 
 const tagKey = (t) => { const i = t.indexOf(':'); return i > 0 ? t.slice(0, i).trim().toLowerCase() : ''; };
 const hasTag = (tags, t) => tags.some((x) => x.toLowerCase() === t.toLowerCase());
@@ -42,7 +43,7 @@ export function serviceState(services) {
   const out = {};
   for (const name of SERVICES) {
     const s = services && typeof services === 'object' ? services[name] : null;
-    const on = name !== 'spotify' && !!s && s.found === true;
+    const on = !INERT.has(name) && !!s && s.found === true;
     out[name] = { on, url: on && typeof s.url === 'string' && /^https?:\/\//i.test(s.url) ? s.url : null };
   }
   return out;

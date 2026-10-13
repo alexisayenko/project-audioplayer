@@ -51,6 +51,8 @@ def test_gather_merges_all_sources(upstream):
             "soundcloud": {"found": False, "url": None},
             "wikipedia": {"found": True, "url": "https://en.wikipedia.org/wiki/X"},
             "spotify": {"found": False, "url": None},
+            "musicbrainz": {"found": False, "url": None},
+            "discogs": {"found": False, "url": None},
         },
     }
 
@@ -120,7 +122,8 @@ def test_metadata_endpoint(monkeypatch):
     body_out = r.json()
     assert {k: body_out[k] for k in ("album", "year", "tags")} == {"album": "Yt Album", "year": 2001, "tags": ["genre:pop", "country:au"]}
     assert body_out["services"]["youtube"] == {"found": True, "url": "https://youtu.be/dQw4w9WgXcQ"}
-    assert body_out["services"]["spotify"] == {"found": False, "url": None}
+    for inert in ("spotify", "musicbrainz", "discogs"):
+        assert body_out["services"][inert] == {"found": False, "url": None}
     empty = client.post("/metadata", json={}, headers={"X-API-Token": "secret"}).json()
     assert (empty["album"], empty["year"], empty["tags"]) == (None, None, [])
 

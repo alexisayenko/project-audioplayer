@@ -31,11 +31,13 @@ test('adds genre and country tags within caps, never lang', () => {
 });
 
 test('services', () => {
-  const s = serviceState({ youtube: { found: true, url: 'https://y.example/x' }, soundcloud: { found: true, url: null }, wikipedia: { found: false, url: 'https://w' }, spotify: { found: true, url: 'https://s' } });
+  const s = serviceState({ youtube: { found: true, url: 'https://y.example/x' }, soundcloud: { found: true, url: null }, wikipedia: { found: false, url: 'https://w' }, spotify: { found: true, url: 'https://s' }, musicbrainz: { found: true, url: 'https://m' }, discogs: { found: true, url: 'https://d' } });
   assert.deepEqual(s.youtube, { on: true, url: 'https://y.example/x' });
   assert.deepEqual(s.soundcloud, { on: true, url: null });
   assert.equal(s.wikipedia.on, false);
   assert.equal(s.spotify.on, false);
+  assert.equal(s.musicbrainz.on, false);
+  assert.equal(s.discogs.on, false);
   assert.equal(serviceState(undefined).youtube.on, false);
   assert.equal(serviceState({ youtube: { found: true, url: 'javascript:alert(1)' } }).youtube.url, null);
 });

@@ -1,3 +1,5 @@
+import { INERT } from './metadata-apply.js';
+
 const NS = 'http://www.w3.org/2000/svg';
 
 const SHAPES = {
@@ -5,9 +7,11 @@ const SHAPES = {
   soundcloud: '<path d="M3 18.7A3.4 3.4 0 0 1 3 11.9A5.3 5.3 0 0 1 10.6 8.2A7.6 7.6 0 0 1 19 11.1A3.8 3.8 0 0 1 19 18.7z"/>',
   wikipedia: '<text x="12" y="20" font-size="23" font-weight="600" font-family="Georgia, \'Times New Roman\', serif" text-anchor="middle">W</text>',
   spotify: '<circle cx="12" cy="12" r="12"/><g fill="none" stroke="var(--surface)" stroke-width="1.9" stroke-linecap="round"><path d="M6.2 9.1Q12 6.8 17.8 9.1"/><path d="M7.4 12Q12 10 16.6 12"/><path d="M8.5 14.9Q12 13.3 15.5 14.9"/></g>',
+  musicbrainz: '<path fill-rule="evenodd" d="M12 0 22.4 6v12L12 24 1.6 18V6zM12 5.2 6.2 8.5v7L12 18.8l5.8-3.3v-7zM12 8.6a3.4 3.4 0 1 1 0 6.8 3.4 3.4 0 0 1 0-6.8z"/>',
+  discogs: '<path fill-rule="evenodd" d="M12 0a12 12 0 1 1 0 24 12 12 0 0 1 0-24zm0 3.2a8.8 8.8 0 1 0 0 17.6 8.8 8.8 0 0 0 0-17.6zm0 5.8a3 3 0 1 1 0 6 3 3 0 0 1 0-6z"/>',
 };
-export const LABELS = { youtube: 'YouTube', soundcloud: 'SoundCloud', wikipedia: 'Wikipedia', spotify: 'Spotify' };
-const ORDER = ['youtube', 'soundcloud', 'wikipedia', 'spotify'];
+export const LABELS = { youtube: 'YouTube', soundcloud: 'SoundCloud', wikipedia: 'Wikipedia', spotify: 'Spotify', musicbrainz: 'MusicBrainz', discogs: 'Discogs' };
+const ORDER = ['youtube', 'soundcloud', 'wikipedia', 'spotify', 'musicbrainz', 'discogs'];
 
 function glyph(name) {
   const svg = document.createElementNS(NS, 'svg');
@@ -35,7 +39,7 @@ export function serviceIcon(kind, { size = 22 } = {}) {
 
 function make(name, st, busy) {
   const on = !!st?.on;
-  const cls = `svc svc-${name}${on ? ' on' : ''}${busy && name !== 'spotify' ? ' pulse' : ''}`;
+  const cls = `svc svc-${name}${on ? ' on' : ''}${busy && !INERT.has(name) ? ' pulse' : ''}`;
   const link = on && st.url;
   const node = document.createElement(link ? 'a' : 'span');
   node.className = cls;

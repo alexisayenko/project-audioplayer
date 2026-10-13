@@ -59,6 +59,8 @@ struct MetadataResult: Decodable {
         var soundcloud: Service?
         var wikipedia: Service?
         var spotify: Service?
+        var musicbrainz: Service?
+        var discogs: Service?
     }
 }
 
