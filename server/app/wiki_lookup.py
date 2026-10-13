@@ -288,6 +288,20 @@ def _clean_text(value: str) -> str | None:
     return (lines[0].strip(' "\u201c\u201d;') or None) if lines else None
 
 
+def _clean_artist(value: str) -> str | None:
+    names: list[str] = []
+    value = re.sub(r"\[\[[^\[\]]*\]\]", lambda m: m.group(0).replace(",", "\x00"), value)
+    for line in _clean_lines(value):
+        for part in line.split(","):
+            part = part.replace("\x00", ",")
+            name = part.strip(' "\u201c\u201d;.')
+            if name[:4].casefold() == "the " and name[0] == "t":
+                name = "T" + name[1:]
+            if name and name not in names:
+                names.append(name)
+    return ", ".join(names) or None
+
+
 _DATE_TPLS = ("start date", "start date and age", "release date", "release date and age", "film date", "start-date")
 _YEAR = re.compile(r"(?<!\d)(\d{4})(?!\d)")
 
@@ -336,7 +350,9 @@ def parse_infobox(wikitext: str) -> dict[str, Any]:
                 out["album"] = _clean_text(value)
             elif key in ("released", "release"):
                 out["year"] = _clean_year(value)
-            elif key in ("type", "name", "artist"):
+            elif key == "artist":
+                out[key] = _clean_artist(value)
+            elif key in ("type", "name"):
                 out[key] = _clean_text(value)
             else:
                 continue
@@ -384,6 +400,8 @@ def _with_infobox(found: dict[str, Any], song_page: str | None, artist_page: str
     """Record the song page's infobox album and year; put its genres (else the artist page's) first in `song_genres` and `tags`, deduplicated against Wikidata's."""
     song_box = infobox(song_page)
     found["infobox_album"], found["infobox_year"] = song_box["album"], song_box["year"]
+    has_both = bool(song_box["name"] and song_box["artist"])
+    found["infobox_suggest"] = {"artist": song_box["artist"], "title": song_box["name"]} if has_both else None
     box = song_box["genres"] or infobox_genres(artist_page)
     if not box:
         return
@@ -473,7 +491,7 @@ def _pick(rels: list[str]) -> tuple[str | None, str | None]:
 
 def suggest(artist: str, title: str) -> dict[str, Any]:
     """{wikipedia_song, wikipedia_artist, tags, year} for a track via MusicBrainz + Wikidata; empty values on any failure."""
-    out: dict[str, Any] = {"wikipedia_song": None, "wikipedia_artist": None, "tags": [], "song_genres": [], "year": None, "infobox_album": None, "infobox_year": None}
+    out: dict[str, Any] = {"wikipedia_song": None, "wikipedia_artist": None, "tags": [], "song_genres": [], "year": None, "infobox_album": None, "infobox_year": None, "infobox_suggest": None}
     if not genre_lookup.enabled():
         return out
     try:
@@ -502,7 +520,7 @@ def _page_url(url: str | None) -> str | None:
 
 def from_links(song_link: Any, artist_link: Any) -> dict[str, Any]:
     """Tags, year and page URLs (`wikipedia_song`, `wikipedia_artist`) for user-edited Wikipedia/Wikidata links; empty when disabled or on any failure."""
-    out: dict[str, Any] = {"tags": [], "song_genres": [], "year": None, "infobox_album": None, "infobox_year": None, "wikipedia_song": None, "wikipedia_artist": None}
+    out: dict[str, Any] = {"tags": [], "song_genres": [], "year": None, "infobox_album": None, "infobox_year": None, "infobox_suggest": None, "wikipedia_song": None, "wikipedia_artist": None}
     if not genre_lookup.enabled():
         return out
     try:

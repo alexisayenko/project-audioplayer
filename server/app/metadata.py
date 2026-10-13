@@ -102,7 +102,7 @@ def gather(
 ) -> dict[str, Any]:
     """Run every source concurrently under one overall timeout; a failing or late source is skipped.
 
-    Returns {album, year, tags, services}; `services` only tells the UI which sources answered."""
+    Returns {album, year, tags, suggest, services}; `suggest` is the song infobox's artist and title hint (never auto-filled); `services` only tells the UI which sources answered."""
     lock = threading.Lock()
     found: dict[str, Any] = {}
     src_results: dict[int, dict[str, Any]] = {}
@@ -139,5 +139,7 @@ def gather(
         snapshot = dict(found)
         by_index = dict(src_results)
     out = merge(sources, snapshot.get("mb"), snapshot.get("links"), snapshot.get("guess"))
+    box = (snapshot.get("links") or {}).get("infobox_suggest") or (snapshot.get("guess") or {}).get("infobox_suggest")
+    out["suggest"] = {"artist": box["artist"], "title": box["title"]} if box else {"artist": None, "title": None}
     out["services"] = services(source_urls or [], by_index, snapshot.get("links"), snapshot.get("guess"))
     return out

@@ -42,6 +42,7 @@ def upstream(monkeypatch):
 def test_gather_merges_all_sources(upstream):
     out = metadata.gather("T", "A", [lambda: {"album": None, "year": 2015, "tags": ["genre:Rock", "lang:en"]}], "https://en.wikipedia.org/wiki/X", None, source_urls=["https://youtu.be/dQw4w9WgXcQ"])
     assert out == {
+        "suggest": {"artist": None, "title": None},
         "album": "Highway to Hell",
         "year": 1980,
         "tags": ["genre:rock", "country:au", "genre:blues rock", "genre:hard rock"],
@@ -189,3 +190,24 @@ def test_gather_infobox_album_and_year_end_to_end(monkeypatch):
     out = metadata.gather("T", "", [], "https://en.wikipedia.org/wiki/Warrior%27s_Dance", None)
     assert (out["album"], out["year"], out["tags"]) == ("Invaders Must Die", 2009, ["genre:big beat"])
     assert out["services"]["wikipedia"]["found"] is True
+
+
+def _gather_with_box(monkeypatch, text, **kw):
+    monkeypatch.setattr(wl, "qid_of_page", lambda u: None)
+    monkeypatch.setattr(wl, "_infobox_cache", {})
+    monkeypatch.setattr(wl, "_fetch_json", lambda url: {"parse": {"wikitext": text}})
+    return metadata.gather("T", "", [], "https://en.wikipedia.org/wiki/Warrior%27s_Dance", None, **kw)
+
+
+def test_gather_suggest_from_song_infobox(monkeypatch):
+    out = _gather_with_box(monkeypatch, "{{Infobox song\n| name = Warrior's Dance\n| artist = [[the Prodigy]]\n| album = X\n}}")
+    assert out["suggest"] == {"artist": "The Prodigy", "title": "Warrior's Dance"}
+    assert out["album"] == "X" and set(out) == {"album", "year", "tags", "suggest", "services"}
+
+
+def test_gather_suggest_nulls_without_name_artist_or_infobox(monkeypatch):
+    nulls = {"artist": None, "title": None}
+    assert _gather_with_box(monkeypatch, "{{Infobox song\n| artist = [[the Prodigy]]\n}}")["suggest"] == nulls
+    assert _gather_with_box(monkeypatch, "{{Infobox song\n| name = Only\n}}")["suggest"] == nulls
+    assert _gather_with_box(monkeypatch, "no infobox here")["suggest"] == nulls
+    assert metadata.gather("T", "", [], None, None)["suggest"] == nulls
