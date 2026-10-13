@@ -78,7 +78,7 @@ struct APIClient {
     }
 
     func verify() async throws {
-        let (data, response) = try await URLSession.shared.data(for: try await request("/tags"))
+        let (data, response) = try await URLSession.shared.data(for: try await request(Endpoints.tags))
         try check(response, data: data)
     }
 
@@ -90,7 +90,7 @@ struct APIClient {
 
     /// The whole catalog, or nil when the server answers 304 to the stored ETag.
     func catalog(etag: String?) async throws -> (catalog: CatalogResponse, etag: String?)? {
-        var req = try await request("/catalog")
+        var req = try await request(Endpoints.catalog)
         req.timeoutInterval = 20
         req.cachePolicy = .reloadIgnoringLocalCacheData
         if let etag { req.setValue(etag, forHTTPHeaderField: "If-None-Match") }
@@ -102,7 +102,7 @@ struct APIClient {
     }
 
     func search(_ query: String) async throws -> [SearchResult] {
-        var req = try await request("/search", query: [.init(name: "q", value: query)])
+        var req = try await request(Endpoints.search, query: [.init(name: "q", value: query)])
         req.timeoutInterval = 30
         let data: Data, response: URLResponse
         do { (data, response) = try await URLSession.shared.data(for: req) }
@@ -118,7 +118,7 @@ struct APIClient {
         defer { session.finishTasksAndInvalidate() }
         let tmp: URL, response: URLResponse
         do {
-            (tmp, response) = try await fetcher.run(session, try await request("/files/\(track.id)"))
+            (tmp, response) = try await fetcher.run(session, try await request(Endpoints.file(track.id)))
         } catch let e as URLError where e.code == .dataNotAllowed || e.code == .internationalRoamingOff {
             throw APIError.http(0, "Mobile data is off for downloads. Turn on Use mobile data in Settings.")
         }
@@ -130,14 +130,14 @@ struct APIClient {
     /// Asks the server to fetch the audio, then copies the file into the app.
     func download(_ result: SearchResult) async throws -> Track {
         struct Body: Encodable { let video_id: String }
-        let post = try await request("/download", method: "POST", body: JSONEncoder().encode(Body(video_id: result.id)))
+        let post = try await request(Endpoints.download, method: "POST", body: JSONEncoder().encode(Body(video_id: result.id)))
         let (data, response) = try await URLSession.shared.data(for: post)
         try check(response, data: data)
         let track = try JSONDecoder().decode(Track.self, from: data)
 
         let session = Self.downloadSession()
         defer { session.finishTasksAndInvalidate() }
-        let (tmp, fileResponse) = try await session.download(for: try await request("/files/\(track.id)"))
+        let (tmp, fileResponse) = try await session.download(for: try await request(Endpoints.file(track.id)))
         try check(fileResponse)
         let dest = track.fileURL
         try? FileManager.default.removeItem(at: dest)
@@ -163,40 +163,40 @@ struct APIClient {
     }
 
     func preview(url: String) async throws -> Preview {
-        try JSONDecoder().decode(Preview.self, from: await send("/preview", method: "POST", body: ["url": url], timeout: 90))
+        try JSONDecoder().decode(Preview.self, from: await send(Endpoints.preview, method: "POST", body: ["url": url], timeout: 90))
     }
 
     func addSong(url: String, metadata: [String: Any], tags: [String]) async throws {
-        _ = try await send("/songs", method: "POST", body: ["url": url, "metadata": metadata, "tags": tags])
+        _ = try await send(Endpoints.songs, method: "POST", body: ["url": url, "metadata": metadata, "tags": tags])
     }
 
     func status(_ id: String) async throws -> SongStatus {
-        try JSONDecoder().decode(SongStatus.self, from: await send("/songs/\(id)/status", method: "GET", timeout: 15))
+        try JSONDecoder().decode(SongStatus.self, from: await send(Endpoints.songStatus(id), method: "GET", timeout: 15))
     }
 
     func patch(_ id: String, changes: [String: Any]) async throws -> ServerSong {
-        try JSONDecoder().decode(ServerSong.self, from: await send("/songs/\(id)", method: "PATCH", body: changes))
+        try JSONDecoder().decode(ServerSong.self, from: await send(Endpoints.song(id), method: "PATCH", body: changes))
     }
 
     func detectBpm(_ id: String) async throws -> ServerSong {
-        try JSONDecoder().decode(ServerSong.self, from: await send("/songs/\(id)/bpm/detect", method: "POST", timeout: 120))
+        try JSONDecoder().decode(ServerSong.self, from: await send(Endpoints.songBPMDetect(id), method: "POST", timeout: 120))
     }
 
     func lookupWikipedia(song: String?, artist: String?) async throws -> WikiLookup {
         let body: [String: Any] = ["wikipedia_song": song.map { $0 as Any } ?? NSNull(),
                                   "wikipedia_artist": artist.map { $0 as Any } ?? NSNull()]
-        return try JSONDecoder().decode(WikiLookup.self, from: await send("/lookup/wikipedia", method: "POST", body: body, timeout: 60))
+        return try JSONDecoder().decode(WikiLookup.self, from: await send(Endpoints.lookupWikipedia, method: "POST", body: body, timeout: 60))
     }
 
     func metadata(title: String, artist: String, sourceURLs: [String], wikiSong: String, wikiArtist: String) async throws -> MetadataResult {
         let body: [String: Any] = ["title": title, "artist": artist, "sources": sourceURLs.map { ["url": $0] },
                                   "wiki_song": wikiSong.isEmpty ? NSNull() : wikiSong,
                                   "wiki_artist": wikiArtist.isEmpty ? NSNull() : wikiArtist]
-        return try JSONDecoder().decode(MetadataResult.self, from: await send("/metadata", method: "POST", body: body, timeout: 60))
+        return try JSONDecoder().decode(MetadataResult.self, from: await send(Endpoints.metadata, method: "POST", body: body, timeout: 60))
     }
 
     func delete(_ id: String) async throws {
-        _ = try await send("/songs/\(id)", method: "DELETE")
+        _ = try await send(Endpoints.song(id), method: "DELETE")
     }
 }
 
@@ -215,19 +215,19 @@ private final class FileFetcher: NSObject, URLSessionDownloadDelegate, @unchecke
         }
     }
 
-    func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didWriteData bytesWritten: Int64,
+    func urlSession(_: URLSession, downloadTask _: URLSessionDownloadTask, didWriteData _: Int64,
                     totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
         guard totalBytesExpectedToWrite > 0 else { return }
         onProgress(Double(totalBytesWritten) / Double(totalBytesExpectedToWrite))
     }
 
-    func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
+    func urlSession(_: URLSession, downloadTask _: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
         let keep = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try? FileManager.default.moveItem(at: location, to: keep)
         result = keep
     }
 
-    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+    func urlSession(_: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
         defer { continuation = nil }
         if let error { continuation?.resume(throwing: error) }
         else if let result, let response = task.response { continuation?.resume(returning: (result, response)) }

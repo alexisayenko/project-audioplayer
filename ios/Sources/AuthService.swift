@@ -89,7 +89,7 @@ final class AuthService: NSObject, ObservableObject {
         let verifier = Self.randomString()
         let challenge = Self.base64url(Data(SHA256.hash(data: Data(verifier.utf8))))
         let state = Self.randomString()
-        var c = URLComponents(string: "https://accounts.google.com/o/oauth2/v2/auth")!
+        var c = URLComponents(string: Endpoints.googleAuth)!
         c.queryItems = [
             .init(name: "client_id", value: googleClientID), .init(name: "redirect_uri", value: googleRedirect),
             .init(name: "response_type", value: "code"), .init(name: "scope", value: "openid email"),
@@ -127,7 +127,7 @@ final class AuthService: NSObject, ObservableObject {
     }
 
     private func exchangeGoogle(_ form: [String: String], keepRefresh: String? = nil) async throws {
-        var req = URLRequest(url: URL(string: "https://oauth2.googleapis.com/token")!)
+        var req = URLRequest(url: URL(string: Endpoints.googleToken)!)
         req.httpMethod = "POST"
         req.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
         var allowed = CharacterSet.alphanumerics
@@ -169,7 +169,7 @@ final class AuthService: NSObject, ObservableObject {
 }
 
 extension AuthService: ASWebAuthenticationPresentationContextProviding {
-    func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+    func presentationAnchor(for _: ASWebAuthenticationSession) -> ASPresentationAnchor {
         UIApplication.shared.connectedScenes.compactMap { ($0 as? UIWindowScene)?.keyWindow }.first ?? ASPresentationAnchor()
     }
 }

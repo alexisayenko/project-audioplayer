@@ -63,7 +63,7 @@ enum CoverURL {
     /// Drops a `token` query from a stored cover; server covers collapse to their path.
     static func scrubbed(_ source: String?) -> String? {
         guard let source, source.contains("token="), var c = URLComponents(string: source) else { return source }
-        if c.path.hasPrefix("/covers/") { return c.path }
+        if c.path.hasPrefix(Endpoints.coversPrefix) { return c.path }
         c.queryItems = c.queryItems?.filter { $0.name != "token" }
         if c.queryItems?.isEmpty == true { c.queryItems = nil }
         return c.string

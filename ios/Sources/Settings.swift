@@ -10,7 +10,7 @@ final class Settings: ObservableObject {
         didSet { UserDefaults.standard.set(token, forKey: "token") }
     }
 
-    static let defaultServerURL = "https://play.isayenko.net"
+    static let defaultServerURL = Endpoints.defaultServer
 
     var hasCustomConnection: Bool { serverURL != Self.defaultServerURL || !token.isEmpty }
 
