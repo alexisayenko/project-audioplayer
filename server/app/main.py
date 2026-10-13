@@ -419,6 +419,7 @@ class SongMeta(BaseModel):
     bpm: float | None = Field(default=None, ge=20, le=300)
     wikipedia_song: str | None = None
     wikipedia_artist: str | None = None
+    musicbrainz_url: str | None = None
 
 
 class CreateSongRequest(BaseModel):
@@ -689,6 +690,7 @@ def _run_download(uid: str, owner: bool, vid: str, meta: dict[str, Any], tags: l
             "bpm": value,
             "wikipedia_song": wiki_lookup.clean_link(meta.get("wikipedia_song")),
             "wikipedia_artist": wiki_lookup.clean_link(meta.get("wikipedia_artist")),
+            "musicbrainz_url": genre_lookup.clean_recording_url(meta.get("musicbrainz_url")),
             **({"source": "soundcloud"} if extractor.source_of(vid) == "soundcloud" else {}),
             "source_url": extractor.watch_url(vid, source_url),
             "sources": [{"source": extractor.source_of(vid), "id": vid, "url": extractor.watch_url(vid, source_url)}],
@@ -775,6 +777,7 @@ def _add_metadata_only(uid: str, vid: str, link: _Resolved, meta: dict[str, Any]
             "bpm": round(meta["bpm"]) if meta.get("bpm") is not None else None,
             "wikipedia_song": wiki_lookup.clean_link(meta.get("wikipedia_song")),
             "wikipedia_artist": wiki_lookup.clean_link(meta.get("wikipedia_artist")),
+            "musicbrainz_url": genre_lookup.clean_recording_url(meta.get("musicbrainz_url")),
             **({"source": "soundcloud"} if extractor.source_of(vid) == "soundcloud" else {}),
             "source_url": url,
             "sources": [{"source": extractor.source_of(vid), "id": vid, "url": url}],
@@ -830,6 +833,8 @@ def patch_song(video_id: str, req: PatchSongRequest, user: dict[str, Any] = Depe
         for key in ("wikipedia_song", "wikipedia_artist"):
             if key in changes:
                 updated[key] = wiki_lookup.clean_link(changes[key])
+        if "musicbrainz_url" in changes:
+            updated["musicbrainz_url"] = genre_lookup.clean_recording_url(changes["musicbrainz_url"])
         if changes.get("tags") is not None:
             updated["tags"] = library.clean_tags(changes["tags"])
         if not updated.get("title"):

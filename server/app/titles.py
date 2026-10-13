@@ -129,7 +129,7 @@ def split_artist_title(artist: str, title: str) -> tuple[str, str]:
 
 
 _BRACKET = re.compile(r"[\(\[]([^\)\]]*)[\)\]]")
-_REMIX_WORD = re.compile(r"\bremix\b|\bmixed\s+by\b", re.I)
+_REMIX_WORD = re.compile(r"\bremix\b|\bmashup\b|\bmixed\s+by\b", re.I)
 
 
 _SEGMENT_SEP = re.compile(r"( \| | - | \u2013 | \u2014 )")
@@ -180,7 +180,7 @@ def _cut_remix_segment(title: str) -> tuple[str, str | None]:
 
 
 def cut_remix(title: str) -> tuple[str, str | None]:
-    """Cut the remix out of a title: the first bracket whose text has the word "remix" or "mixed by", else the first later segment (split by spaced | - \u2013 \u2014) that has it; return (title without it, its text)."""
+    """Cut the remix out of a title: the first bracket whose text has the word "remix" or "mashup" or the phrase "mixed by", else the first later segment (split by spaced | - \u2013 \u2014) that has it; return (title without it, its text)."""
     if not isinstance(title, str):
         return "", None
     for m in _BRACKET.finditer(title):

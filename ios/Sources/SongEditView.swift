@@ -177,6 +177,7 @@ struct SongEditView: View {
             "remixer": link(form.remixer),
             "year": form.yearValue.map { $0 as Any } ?? NSNull(),
             "wikipedia_song": link(form.wikiSong), "wikipedia_artist": link(form.wikiArtist),
+            "musicbrainz_url": link(form.musicbrainzURL),
             "tags": finalTagList,
         ]
         do {

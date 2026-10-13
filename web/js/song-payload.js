@@ -32,7 +32,7 @@ export function songFields(v) {
   };
 }
 
-export const wikiFieldsOf = (v) => ({ wikipedia_song: v.wikipedia_song ?? null, wikipedia_artist: v.wikipedia_artist ?? null });
+export const wikiFieldsOf = (v) => ({ wikipedia_song: v.wikipedia_song ?? null, wikipedia_artist: v.wikipedia_artist ?? null, musicbrainz_url: v.musicbrainz_url ?? null });
 
 export function addBody(v) {
   return { ...songFields(v), ...wikiFieldsOf(v) };

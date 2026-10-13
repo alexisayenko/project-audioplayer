@@ -42,6 +42,14 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
   };
 
   const icons = serviceIcons();
+  const initialMb = () => serviceState({ musicbrainz: { found: true, url: initial.musicbrainz_url } }).musicbrainz.url;
+  let mbUrl = initialMb();
+  const storedIcons = () => (mbUrl ? { musicbrainz: { on: true, url: mbUrl } } : {});
+  const resetIcons = () => {
+    icons.reset();
+    icons.setState(storedIcons());
+  };
+  resetIcons();
   const metaBtn = el('button', { class: 'btn outline small', type: 'button' }, 'Get metadata');
   const metaMsg = el('p', { class: 't-caption muted', role: 'status' });
   const hint = el('button', { class: 'link-btn t-caption wiki-hint', type: 'button', hidden: true });
@@ -66,7 +74,7 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
 
   const resetMeta = () => {
     suggest = null;
-    icons.reset();
+    resetIcons();
     metaMsg.textContent = '';
     paintHint();
   };
@@ -94,13 +102,15 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
       const resp = await api.metadata(body, req.signal);
       if (!req.live()) return;
       icons.setBusy(false);
-      icons.setState(serviceState(resp?.services));
+      const states = serviceState(resp?.services);
+      if (states.musicbrainz.url) mbUrl = states.musicbrainz.url;
+      icons.setState({ ...states, ...storedIcons() });
       suggest = resp?.suggest || null;
       applyMeta(resp);
       paintHint();
     } catch {
       if (!req.live()) return;
-      icons.reset();
+      resetIcons();
       metaMsg.textContent = 'Couldn\'t load metadata';
     } finally {
       req.done();
@@ -163,6 +173,7 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
       year: f.year.value,
       tags: editor.getTags(),
       ...wiki.values(),
+      musicbrainz_url: mbUrl,
     };
   };
   const setValues = (p = {}) => {
@@ -179,6 +190,7 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
     focus: () => f.title.focus(),
     reset() {
       abortAll();
+      mbUrl = initialMb();
       resetMeta();
       metaBtn.disabled = false;
       metaBtn.textContent = 'Get metadata';

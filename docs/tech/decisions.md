@@ -520,7 +520,7 @@ Status: Accepted for MusicBrainz (already live as a source, now the named policy
   - Optional suggestions on Add/Edit. Playback and offline reliability never depend on them (key principle); a failure or timeout is skipped silently and the result is what we return today.
   - Results cached per query and requests rate-limited per source, so the limits above hold.
   - Nothing is applied server-side; the user confirms in the form.
-- The MusicBrainz icon in the song link row (web and iOS) is lit by the same lookup and links to the matched recording (`services.musicbrainz`, API-048); it is not stored on the song. The Discogs icon stays inert with no API call and no token.
+- The MusicBrainz icon in the song link row (web and iOS) is lit by the same lookup and links to the matched recording (`services.musicbrainz`, API-048); the link is stored on the song as the optional `musicbrainz_url` (DATA-009), like the Wikipedia links, so the icon stays lit when the song is reopened. The Discogs icon stays inert with no API call and no token.
 - Consequences:
   - One more optional external dependency and a per-source cache and limiter to maintain; Discogs adds a secret to deploy.
   - Suggested tags can be wrong or noisy; the confirm step carries the quality, not the source.

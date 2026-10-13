@@ -62,3 +62,15 @@ def test_patch_keeps_user_entered_genre_tags(client):
     r = client.patch(f"/songs/{VID}", json={"tags": tags}, headers=H)
     assert r.json()["tags"] == tags
     assert client.get("/library", headers=H).json()["songs"][0]["tags"] == tags
+
+
+def test_musicbrainz_url_is_stored_cleaned_and_listed(client):
+    from tests.test_library import H, VID, add
+
+    mbid = "5f1e7d9a-0b2c-4d3e-8f4a-6b7c8d9e0f1a"
+    url = f"https://musicbrainz.org/recording/{mbid}"
+    add(client, metadata={"title": "Song", "musicbrainz_url": f"http://musicbrainz.org/recording/{mbid}"})
+    assert client.get("/library", headers=H).json()["songs"][0]["musicbrainz_url"] == url
+    assert client.patch(f"/songs/{VID}", json={"musicbrainz_url": "https://evil.example/x"}, headers=H).json()["musicbrainz_url"] is None
+    assert client.patch(f"/songs/{VID}", json={"musicbrainz_url": url}, headers=H).json()["musicbrainz_url"] == url
+    assert client.patch(f"/songs/{VID}", json={"title": "Other"}, headers=H).json()["musicbrainz_url"] == url

@@ -140,6 +140,15 @@ def recording_url(mbid: Any) -> str | None:
     return f"https://musicbrainz.org/recording/{text}" if _MBID.fullmatch(text) else None
 
 
+_MB_RECORDING_URL = re.compile(r"https?://(?:www\.)?musicbrainz\.org/recording/([0-9a-fA-F-]{36})/?")
+
+
+def clean_recording_url(value: Any) -> str | None:
+    """A stored MusicBrainz recording link normalised to https://musicbrainz.org/recording/<mbid>; anything else is None."""
+    match = _MB_RECORDING_URL.fullmatch(value.strip()) if isinstance(value, str) else None
+    return recording_url(match.group(1)) if match else None
+
+
 def _first_year(full: dict[str, Any]) -> int | None:
     m = re.match(r"^(\d{4})", str(full.get("first-release-date") or ""))
     return int(m.group(1)) if m else None

@@ -10,6 +10,7 @@ class SongFormState: ObservableObject {
     @Published var year = "" { didSet { applyDecade() } }
     @Published var wikiSong = ""
     @Published var wikiArtist = ""
+    @Published var musicbrainzURL = ""
     @Published var tags: [String] = []
     @Published var suggested: [String] = []
     @Published var pendingTag = ""
@@ -31,6 +32,8 @@ class SongFormState: ObservableObject {
         year = song.year.map(String.init) ?? ""
         wikiSong = song.wikipedia_song ?? ""
         wikiArtist = song.wikipedia_artist ?? ""
+        musicbrainzURL = song.musicbrainz_url ?? ""
+        services = storedServices
         tags = song.tags ?? []
     }
 
@@ -63,7 +66,15 @@ class SongFormState: ObservableObject {
         suggested = withDecade(suggested, yearValue)
     }
 
-    func resetMetadata() { suggest = nil; metaNote = nil; services = [:] }
+    /// The MusicBrainz link saved with the song keeps its icon lit until a lookup finds another one.
+    private var storedServices: [ServiceKind: URL?] {
+        guard let url = URL(string: musicbrainzURL), !musicbrainzURL.isEmpty else { return [:] }
+        return [.musicbrainz: url]
+    }
+
+    var musicbrainzValue: String? { musicbrainzURL.isEmpty ? nil : musicbrainzURL }
+
+    func resetMetadata() { suggest = nil; metaNote = nil; services = storedServices }
 
     func resetPending() { pendingTag = ""; pendingGenre = ""; pendingCountry = "" }
 
@@ -83,7 +94,7 @@ class SongFormState: ObservableObject {
     /// Fills only empty fields from the server's metadata; the Wikipedia hint and found services are kept for display.
     func getMetadata(api: APIClient, sources: [String]) async {
         guard !metaBusy else { return }
-        metaBusy = true; metaNote = nil; services = [:]; suggest = nil; defer { metaBusy = false }
+        metaBusy = true; metaNote = nil; services = storedServices; suggest = nil; defer { metaBusy = false }
         do {
             let r = try await api.metadata(title: title, artist: artist, sourceURLs: sources,
                                            wikiSong: wikiSong.trimmingCharacters(in: .whitespaces),
@@ -92,7 +103,8 @@ class SongFormState: ObservableObject {
             for (kind, svc) in [(ServiceKind.youtube, r.services?.youtube), (.soundcloud, r.services?.soundcloud), (.wikipedia, r.services?.wikipedia), (.musicbrainz, r.services?.musicbrainz)] where svc?.found == true {
                 found[kind] = svc?.url.flatMap { URL(string: $0) }
             }
-            services = found
+            if let mb = found[.musicbrainz] ?? nil { musicbrainzURL = mb.absoluteString }
+            services = found.merging(storedServices) { _, stored in stored }
             suggest = r.suggest
             var changed = false
             let returned = !(r.album ?? "").isEmpty || r.year != nil || !(r.tags ?? []).isEmpty

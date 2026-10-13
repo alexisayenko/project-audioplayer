@@ -394,3 +394,13 @@ def test_lookup_without_match_or_with_odd_id_has_no_url(monkeypatch):
     monkeypatch.setattr(gl, "_get", fake_get([REC], {"genres": [{"name": "x", "count": 1}]}))
     assert gl.lookup("Daft Punk", "Odd")["mb_url"] is None
     assert gl.recording_url(None) is None
+
+
+@pytest.mark.parametrize("value", [f"https://musicbrainz.org/recording/{MBID}", f"http://www.musicbrainz.org/recording/{MBID.upper()}/", f"  https://musicbrainz.org/recording/{MBID}  "])
+def test_clean_recording_url_normalises(value):
+    assert gl.clean_recording_url(value) == f"https://musicbrainz.org/recording/{MBID}"
+
+
+@pytest.mark.parametrize("value", [None, 5, "", "https://musicbrainz.org/artist/" + MBID, "https://evil.example/recording/" + MBID, "https://musicbrainz.org/recording/nope", "javascript:alert(1)"])
+def test_clean_recording_url_rejects_others(value):
+    assert gl.clean_recording_url(value) is None

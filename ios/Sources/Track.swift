@@ -22,6 +22,7 @@ struct Track: Codable, Identifiable, Hashable {
     var sourceURL: String?
     var wikipediaSong: String?
     var wikipediaArtist: String?
+    var musicbrainzURL: String?
     var addedAt: Date?
     var sources: [SongSource]?
     /// The server holds the audio (`audio_state` "server"). Nil means unknown, treated as yes.

@@ -14,7 +14,7 @@ final class AddFlow: SongFormState {
         let clean = cleanPasted(url)
         url = clean
         guard !clean.isEmpty, phase != .loading, phase != .saving else { return }
-        phase = .loading; message = nil; errorCode = nil; resetMetadata()
+        phase = .loading; message = nil; errorCode = nil; musicbrainzURL = ""; resetMetadata()
         do {
             let p = try await api.preview(url: clean)
             preview = p
@@ -47,6 +47,7 @@ final class AddFlow: SongFormState {
             "year": yearValue.map { $0 as Any } ?? NSNull(),
             "wikipedia_song": wikiS.isEmpty ? NSNull() : wikiS,
             "wikipedia_artist": wikiA.isEmpty ? NSNull() : wikiA,
+            "musicbrainz_url": musicbrainzValue.map { $0 as Any } ?? NSNull(),
         ]
         do {
             try await api.addSong(url: p.source_url ?? url, metadata: meta, tags: finalTagList)
@@ -57,7 +58,7 @@ final class AddFlow: SongFormState {
                           thumbnail: p.thumbnail == nil ? nil : "/covers/\(p.id)",
                           album: album.isEmpty ? nil : album, remixer: remixerValue, year: yearValue, tags: finalTagList,
                           bpm: nil, sourceURL: p.source_url,
-                          wikipediaSong: wikiS.isEmpty ? nil : wikiS, wikipediaArtist: wikiA.isEmpty ? nil : wikiA)
+                          wikipediaSong: wikiS.isEmpty ? nil : wikiS, wikipediaArtist: wikiA.isEmpty ? nil : wikiA, musicbrainzURL: musicbrainzValue)
         if download {
             server.startIngest(track, settings: settings, library: library, player: player, playWhenReady: false)
         } else {

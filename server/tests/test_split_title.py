@@ -182,6 +182,20 @@ def test_mixed_by_bracket(t):
     assert split_title("", t) == ("", "Song", t[6:-1])
 
 
+@pytest.mark.parametrize("t", ["Song (DJ X Mashup)", "Song [DJ X MASHUP]"])
+def test_mashup_bracket(t):
+    assert split_title("", t) == ("", "Song", t[6:-1])
+
+
+def test_mashup_segment_after_pipe():
+    assert split_title("", "A - B | DJ X Mashup") == ("A", "B", "DJ X Mashup")
+
+
+@pytest.mark.parametrize("t", ["A - B (Mashups)", "A - Mashupper"])
+def test_mashup_inside_word_untouched(t):
+    assert not split_title("", t)[2]
+
+
 def test_mixed_by_segment_after_pipe():
     assert split_title("", "A - B | Mixed By DJ Gvozd") == ("A", "B", "Mixed By DJ Gvozd")
 
