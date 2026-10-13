@@ -1,22 +1,11 @@
 import { friendly } from './limits.js';
 
-const KEY = 'audioplayer.token';
-
-export function getToken() {
-  try { return localStorage.getItem(KEY) || ''; } catch { return ''; }
-}
-
-export function setToken(value) {
-  try {
-    if (value) localStorage.setItem(KEY, value);
-    else localStorage.removeItem(KEY);
-  } catch { /* storage unavailable */ }
-}
+try { localStorage.removeItem('audioplayer.token'); } catch { /* storage unavailable */ }
 
 export const auth = { email: '', provider: '' };
 
 export function isSignedIn() {
-  return !!(auth.email || getToken());
+  return !!auth.email;
 }
 
 const CSRF = { 'X-Requested-With': 'audioplayer' };
@@ -38,7 +27,6 @@ export class ApiError extends Error {
 
 async function request(method, path, body) {
   const headers = { ...CSRF };
-  if (getToken()) headers['X-API-Token'] = getToken();
   if (body !== undefined) headers['Content-Type'] = 'application/json';
   let res;
   try {
@@ -61,14 +49,12 @@ async function request(method, path, body) {
       lostSession();
     }
     const code = (data && data.error) || '';
-    if (res.status === 503 && !code) detail = 'Server has no AUDIO_API_TOKEN configured';
     throw new ApiError(res.status, friendly(code, data, detail) || `Request failed (${res.status})`, code);
   }
   return data;
 }
 
 const q = (id) => encodeURIComponent(id);
-const tokenQuery = () => (auth.email || !getToken() ? '' : `?token=${encodeURIComponent(getToken())}`);
 
 async function authCall(method, path, body) {
   const headers = { ...CSRF };
@@ -124,6 +110,6 @@ export const api = {
   patch: (id, changes) => request('PATCH', `/songs/${q(id)}`, changes),
   detectBpm: (id) => request('POST', `/songs/${q(id)}/bpm/detect`),
   remove: (id) => request('DELETE', `/songs/${q(id)}`),
-  fileUrl: (id) => `/files/${q(id)}${tokenQuery()}`,
-  coverUrl: (id) => `/covers/${q(id)}${tokenQuery()}`,
+  fileUrl: (id) => `/files/${q(id)}`,
+  coverUrl: (id) => `/covers/${q(id)}`,
 };

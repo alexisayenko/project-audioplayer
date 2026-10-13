@@ -148,8 +148,6 @@ label { display: block; color: var(--ink-muted); font-size: 13px; line-height: 1
   border-radius: 16px; background: var(--surface-sunken);
 }
 .well input { flex: 1; min-width: 0; background: transparent; padding: 0; border-radius: 0; min-height: 44px; outline-offset: 4px; }
-.eye { width: 36px; height: 36px; border: 0; background: transparent; color: var(--ink-muted); display: grid; place-items: center; border-radius: var(--radius-pill); padding: 0; }
-.eye[aria-pressed="true"] { color: var(--accent-ink); }
 .card { background: var(--surface); border-radius: var(--radius-card); box-shadow: var(--shadow-card); padding: var(--space-4) 20px 20px; display: flex; flex-direction: column; gap: 14px; }
 .state { padding: var(--space-4) 0; }
 .card.state { align-items: flex-start; padding: var(--space-4) 20px 20px; }
@@ -162,9 +160,6 @@ label { display: block; color: var(--ink-muted); font-size: 13px; line-height: 1
 .divider { border-top: 1px solid var(--line); }
 .cell { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); min-height: 36px; }
 .cell.wrap { flex-wrap: wrap; }
-.status { display: flex; align-items: center; gap: 6px; font-weight: 600; color: var(--ink); }
-.dot { width: 8px; height: 8px; border-radius: var(--radius-pill); background: var(--ok); flex: none; }
-.dot.down { background: var(--power); }
 .signin-box, .account { display: flex; flex-direction: column; gap: var(--space-3); }
 .signin-slot { min-height: 32px; }
 .settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; align-items: start; }
