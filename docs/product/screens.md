@@ -5,7 +5,7 @@ Status: web UI and the server endpoints below are implemented
 the same origin as the API at `play.isayenko.net` (no CORS, token-protected
 API), see ADR-0003 in [`../tech/decisions.md`](../tech/decisions.md). The
 iOS app mirrors the web flow with Library, Playback and
-Settings tabs (iOS search states: spinner, "No results", and inline errors for 401, unreachable and server failures, see IOS-023; Settings shows a "Custom server · Reset" row only for a non-default connection, IOS-010; Add is a sheet from the Library header; YouTube text search is a secondary screen inside it; Library is the phone only, filtered by four category chips and a bottom sheet), see [`../tech/architecture.md`](../tech/architecture.md).
+Settings tabs (iOS search states: spinner, "No results", and inline errors for 401, 403 (account not allowed), unreachable and server failures, see IOS-023; Settings shows a "Custom server · Reset" row only for a non-default connection, IOS-010; Add is a sheet from the Library header; YouTube text search is a secondary screen inside it, with an opaque bottom search bar, an inner clear X (only with text) and no Cancel, back is the "<" button; Library is the phone only, filtered by four category chips and a bottom sheet), see [`../tech/architecture.md`](../tech/architecture.md).
 
 Scope: the web UI is for managing the library and listening online only,
 with no offline storage or audio cache. Offline listening ("download to
@@ -36,7 +36,7 @@ tap; on Playback itself it is hidden. Library is a table of the server library
 to left on narrower screens until it is the phone song row) with four category chips (Tags, Genres,
 Years, Countries) that open a filter sheet. Playback leads with the cover
 (title and artist on it), a seek bar, the transport tray, a volume row and the
-queue card beside it. The iOS Settings screen shows Account, Downloads (read-only audio quality, "Download new songs automatically", "Use mobile data"), and Storage, then the version line; the iOS Add sheet ends with "Add to library" and "Add and download to iPhone". The iOS app has its own tab bar with the same three destinations (its Playback has no volume row and its titles carry no eyebrow) (see
+queue card beside it. The iOS Settings screen shows Account (a quiet "Not allowed on this server" under the email when the server answers 403), Downloads (read-only audio quality, "Download new songs automatically", "Use mobile data"), and Storage, then the version line; the iOS Add sheet opens the edit form right after Fetch (link field, Fetch and the search link hidden) and pins "Add to library" and "Add and download to iPhone" at the bottom. The iOS app has its own tab bar with the same three destinations (its Playback has no volume row and its titles carry no eyebrow) (see
 [`../specs/ios.md`](../specs/ios.md)).
 
 ## Screens

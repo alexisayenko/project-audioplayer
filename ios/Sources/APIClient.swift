@@ -5,11 +5,16 @@ enum APIError: LocalizedError {
     case http(Int, String)
     case refused(String, String)
     case unreachable
+    case forbidden
+
+    static let forbiddenMessage = "This account isn't allowed on this server. Sign out and use another account."
+    static let forbiddenCodes: Set<String> = ["forbidden", "not_allowed", "signup_closed", "unverified_email", "no_email"]
 
     var errorDescription: String? {
         switch self {
         case .badURL: return "Invalid server URL"
         case .unreachable: return "Can't reach the server"
+        case .forbidden: return Self.forbiddenMessage
         case .refused(_, let detail): return detail
         case .http(let code, let detail):
             if code == 401 { return "Not signed in. Sign in in Settings" }
@@ -50,6 +55,7 @@ struct APIClient {
         guard (200..<300).contains(http.statusCode) else {
             var detail = data.flatMap { String(data: $0, encoding: .utf8) } ?? ""
             if let data, let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                if http.statusCode == 403, let code = obj["error"] as? String, APIError.forbiddenCodes.contains(code) { throw APIError.forbidden }
                 if let code = obj["error"] as? String, let d = obj["detail"] as? String { throw APIError.refused(code, d) }
                 if let d = obj["detail"] as? String { detail = d }
                 else if let e = obj["error"] as? String { detail = e }

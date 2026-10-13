@@ -136,7 +136,6 @@ struct AddSheet: View {
     @Environment(\.colorScheme) private var scheme
     @State private var path: [String] = []
     @State private var contentHeight: CGFloat = 0
-    @State private var editing = false
     @State private var addingTags = false
 
     private var api: APIClient { APIClient(baseURL: settings.serverURL, token: settings.token) }
@@ -149,7 +148,7 @@ struct AddSheet: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: DS.Space.space4) {
                     header
-                    linkField
+                    if !hasPreview { linkField }
                     if flow.phase == .idle, flow.message != nil, flow.errorCode == "preview_only" { previewOnlyNotice }
                     if let p = flow.preview, hasPreview { previewSections(p) }
                     else if flow.phase == .idle, flow.message != nil { disabledSave }
@@ -158,6 +157,9 @@ struct AddSheet: View {
                 .measuredHeight($contentHeight)
             }
             .scrollBounceBehavior(.basedOnSize)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if let p = flow.preview, hasPreview { pinnedActions(p) }
+            }
             .scrollDismissesKeyboard(.interactively)
             .background(DS.Color.surface.ignoresSafeArea())
             .toolbar(.hidden, for: .navigationBar)
@@ -170,12 +172,12 @@ struct AddSheet: View {
             }
             .task { await server.check(settings: settings) }
         }
-        .presentationDetents(path.isEmpty && contentHeight > 0 ? [.height(contentHeight + 12)] : [.large])
+        .presentationDetents(path.isEmpty && !hasPreview && contentHeight > 0 ? [.height(contentHeight + 12)] : [.large])
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(DS.Radius.radiusTray)
         .presentationBackground(DS.Color.surface)
         .onChange(of: flow.phase) { _, phase in
-            if phase == .saved { dismiss(); Task { flow.reset(); editing = false; addingTags = false } }
+            if phase == .saved { dismiss(); Task { flow.reset(); addingTags = false } }
         }
     }
 
@@ -310,14 +312,6 @@ struct AddSheet: View {
                 }
             }
             Spacer(minLength: DS.Space.space2)
-            Button { withAnimation { editing.toggle() } } label: {
-                Image(systemName: "pencil").font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(DS.Color.accentInk)
-                    .frame(width: 40, height: 40)
-                    .overlay(Circle().stroke(editing ? DS.Color.accentInk : DS.Color.line, lineWidth: 1.5))
-                    .contentShape(Rectangle().inset(by: -2))
-            }
-            .accessibilityLabel("Edit details").accessibilityAddTraits(editing ? .isSelected : [])
         }
         .accessibilityElement(children: .contain)
 
@@ -337,8 +331,7 @@ struct AddSheet: View {
             }
         }
 
-        if editing {
-            VStack(alignment: .leading, spacing: DS.Space.space3) {
+        VStack(alignment: .leading, spacing: DS.Space.space3) {
                 labeled("Title", $flow.title)
                 labeled("Artist", $flow.artist)
                 labeled("Album", $flow.album)
@@ -351,7 +344,6 @@ struct AddSheet: View {
                 }
                 .buttonStyle(DSButtonStyle(kind: .quiet)).disabled(flow.wikiBusy)
                 if let n = flow.wikiNote { note(n) }
-            }
         }
 
         TagFlow(tags: flow.tags, adding: addingTags, onRemove: { t in flow.tags.removeAll { $0 == t } }) {
@@ -362,7 +354,11 @@ struct AddSheet: View {
         }
 
         if let m = flow.message { note(m, error: true) }
+    }
+
+    private func pinnedActions(_ p: Preview) -> some View {
         let blocked = p.in_library == true || flow.title.trimmingCharacters(in: .whitespaces).isEmpty || flow.phase == .saving
+        return VStack(spacing: DS.Space.space1) {
         Button { Task { _ = await flow.save(settings: settings, library: library, server: server, player: player, download: settings.downloadNewAutomatically) } } label: {
             HStack(spacing: DS.Space.space2) {
                 if flow.phase == .saving { ProgressView().tint(DS.Color.onAccent) } else { Image(systemName: "plus") }
@@ -376,5 +372,10 @@ struct AddSheet: View {
                 .frame(maxWidth: .infinity, minHeight: DS.Space.hit)
         }
         .disabled(blocked).opacity(blocked ? 0.5 : 1)
+        }
+        .padding(DS.Space.space3)
+        .background(DS.Color.surface)
+        .dsFloat(radius: DS.Radius.radiusTray)
+        .padding(.horizontal, DS.Space.space2)
     }
 }

@@ -31,6 +31,7 @@ struct SettingsView: View {
             Button("Reset", role: .destructive) { settings.resetConnection(); Task { await server.check(settings: settings) } }
         } message: { Text("This clears the saved server address and token. Your songs stay.") }
         .task { await server.check(settings: settings) }
+        .onChange(of: auth.session?.email) { _, _ in server.clearForbidden(); Task { await server.check(settings: settings) } }
         .task(id: library.tracks.count) {
             bytes = await Task.detached(priority: .utility) { [tracks = library.tracks] in
                 tracks.reduce(Int64(0)) { $0 + Int64((try? FileManager.default.attributesOfItem(atPath: $1.fileURL.path)[.size] as? Int) ?? 0) }
@@ -112,14 +113,14 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: DS.Space.space3) {
                 if let session = auth.session {
                     HStack(spacing: DS.Space.space3) {
-                        LED(color: auth.expired ? DS.Color.power : DS.Color.ok, size: 10, glow: true)
+                        LED(color: auth.expired || server.forbidden ? DS.Color.power : server.reachable == true ? DS.Color.ok : DS.Color.inkFaint, size: 10, glow: server.reachable != nil)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(session.email ?? "Signed in").font(T.body).foregroundStyle(DS.Color.ink)
-                            Text(auth.expired ? "Expired, sign in again" : "via \(session.provider == .apple ? "Apple" : "Google")").dsCaption()
+                            Text(auth.expired ? "Expired, sign in again" : server.forbidden ? "Not allowed on this server" : "via \(session.provider == .apple ? "Apple" : "Google")").dsCaption()
                         }
                     }
                     .accessibilityElement(children: .combine)
-                    Button("Sign out") { auth.signOut() }.buttonStyle(DSButtonStyle(kind: .danger))
+                    Button("Sign out") { auth.signOut(); server.clearForbidden() }.buttonStyle(DSButtonStyle(kind: .danger))
                 }
                 if !auth.isSignedIn || auth.expired {
                     VStack(spacing: DS.Space.space2) {

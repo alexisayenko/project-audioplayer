@@ -159,7 +159,9 @@ struct LibraryView: View {
     @ViewBuilder
     private func list(_ tracks: [Track]) -> some View {
         if library.songs.isEmpty && arriving.isEmpty {
-            if !ServerLink.hasCredentials(settings) {
+            if server.forbidden {
+                empty(APIError.forbiddenMessage)
+            } else if !ServerLink.hasCredentials(settings) {
                 empty("Sign in in Settings to load your library.")
             } else if server.syncing || !server.synced && server.reachable != false {
                 empty("Loading your library\u{2026}")

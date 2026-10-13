@@ -589,7 +589,8 @@ struct ServerStatus: View {
     }
 
     private var text: String {
-        switch server.reachable { case true: "Server online"; case false: "Server unavailable"; default: "Server not set up" }
+        if server.forbidden { return "Not allowed on this server" }
+        switch server.reachable { case true: return "Server online"; case false: return "Server unavailable"; default: return "Server not set up" }
     }
 }
 

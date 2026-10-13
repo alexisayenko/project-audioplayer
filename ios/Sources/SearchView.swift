@@ -54,8 +54,7 @@ struct SearchView: View {
         }
         .navigationTitle("Search YouTube")
         .navigationBarTitleDisplayMode(.inline)
-        .searchable(text: $query, prompt: "Songs, artists")
-        .onSubmit(of: .search) { Task { await search(force: true) } }
+        .safeAreaInset(edge: .bottom) { searchBar }
         .task(id: query) {
             guard !query.trimmingCharacters(in: .whitespaces).isEmpty else { searching = false; return }
             try? await Task.sleep(nanoseconds: 600_000_000)
@@ -64,6 +63,27 @@ struct SearchView: View {
         .alert("Error", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
             Button("OK", role: .cancel) {}
         } message: { Text(error ?? "") }
+    }
+
+    @FocusState private var focused: Bool
+
+    private var searchBar: some View {
+        HStack(spacing: DS.Space.space3) {
+            HStack(spacing: 10) {
+                Image(systemName: "magnifyingglass").foregroundStyle(DS.Color.inkMuted).accessibilityHidden(true)
+                TextField("Songs, artists", text: $query)
+                    .font(T.body).foregroundStyle(DS.Color.ink).submitLabel(.search)
+                    .autocorrectionDisabled().focused($focused)
+                    .onSubmit { Task { await search(force: true) } }
+                if !query.isEmpty {
+                    Button { query = "" } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(DS.Color.inkMuted) }
+                        .accessibilityLabel("Clear search")
+                }
+            }
+            .padding(.horizontal, DS.Space.space4).frame(minHeight: 48)
+            .dsFloat(radius: 16)
+        }
+        .padding(.horizontal, DS.Space.space4).padding(.vertical, DS.Space.space2)
     }
 
     struct SearchFailure { let message: String; let canRetry: Bool }
@@ -98,6 +118,7 @@ struct SearchView: View {
             results = []
             var canRetry = true
             if case APIError.http(401, _) = error { canRetry = false }
+            if case APIError.forbidden = error { canRetry = false }
             searchError = SearchFailure(message: error.localizedDescription, canRetry: canRetry)
         }
         searching = false

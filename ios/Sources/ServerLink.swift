@@ -41,6 +41,8 @@ final class ServerLink: ObservableObject {
 
     @Published private(set) var reachable: Bool?
     @Published private(set) var checking = false
+    /// The server answered 403: signed in, but this account isn't allowed. Cleared by the next successful request.
+    @Published private(set) var forbidden = false
     @Published private(set) var transfers: [String: Transfer] = [:]
     @Published private(set) var failed: Set<String> = []
     /// A failure to tell the person about once (Library shows it as a toast).
@@ -70,8 +72,10 @@ final class ServerLink: ObservableObject {
             }
             synced = true
             reachable = true
+            forbidden = false
         } catch {
             reachable = false
+            if case APIError.forbidden = error { forbidden = true }
         }
     }
 
@@ -106,8 +110,14 @@ final class ServerLink: ObservableObject {
         do {
             try await APIClient(baseURL: settings.serverURL, token: settings.token).verify()
             reachable = true
-        } catch { reachable = false }
+            forbidden = false
+        } catch {
+            reachable = false
+            if case APIError.forbidden = error { forbidden = true }
+        }
     }
+
+    func clearForbidden() { forbidden = false }
 
     func setReachable(_ value: Bool) { reachable = value }
 
