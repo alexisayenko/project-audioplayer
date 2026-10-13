@@ -36,6 +36,8 @@ Code: `server/app/library.py`, `server/app/main.py` (`SongMeta`).
 
 ## `library.json`
 
+One file per user: `audioplayer/users/<uid>/library.json` (ADR-0012; ~~`audioplayer/library.json`~~). Next to it `profile.json`: `{"email": "...", "provider": "google"|"apple"|"migrated", "created_at": "...Z", "subs": {"apple": "<sub>"}}` (DATA-040). `uid` = first 16 hex of `sha256(lowercased email)`.
+
 ```json
 { "settings": { "music_root": "perkunas://data/music/" },
   "songs": [ { "id": "dQw4w9WgXcQ", "file": "dQw4w9WgXcQ.m4a", "title": "...",
@@ -49,7 +51,7 @@ Code: `server/app/library.py`, `server/app/main.py` (`SongMeta`).
 - DATA-011 MUST: writes are atomic (temp file in the same dir, fsync, `os.replace`). Status: implemented
 - DATA-012 MUST: a missing file reads as an empty library. Status: implemented
 - DATA-013 MUST: `settings.music_root` is `<servername>://<path>/` (resolved via the hosts map, see [storage-and-sync.md](storage-and-sync.md)) or a plain local path; it is seeded on the first save if absent. Status: implemented
-- DATA-014 MUST: the file holds no secrets, credentials, IPs or personal data (git history is permanent). Status: implemented
+- DATA-014 MUST: `library.json` holds no secrets, credentials, IPs or personal data (git history is permanent); the user's email is only in `profile.json` (DATA-040). Status: implemented
 - DATA-015 MUST: songs are stored in insertion order (new songs appended); display order is a client concern. Status: implemented
 
 ## Migration (on every load)
@@ -68,3 +70,9 @@ Tag namespaces in use (see [tags.md](tags.md)): `genre:<name>`, `country:<ISO 31
 - DATA-031 MUST: API song objects add, without removing anything: `audio_state`, `sources` (derived if absent) and, when state is `server`, `audio: {file, format, size, duration}`. These are not written to `library.json`. Status: implemented
 - DATA-032 MUST: the git store holds catalog metadata only (a few KB per song); audio stays on the music server. Status: implemented
 - DATA-033 MUST: if `music_root` cannot be resolved, state falls back to the record's `file` (`server` when set) instead of failing the listing. Status: implemented
+
+## Users (ADR-0012)
+
+- DATA-040 MUST: each user has `profile.json` (`email` or `null`, `provider`, `created_at`, optional `subs`) written once at the first sign-in (or by the legacy migration for the owner); the email is the only personal data and lives only there, never in a path. Status: implemented
+- DATA-041 MUST: `uid` is the first 16 hex chars of `sha256(lowercased email)`; for an Apple token without email, of `sha256(sub)`, and a later token without email finds the profile through `subs`. Status: implemented
+- DATA-042 MUST: `settings.music_root` stays one server-wide value (the owner's, or `AUDIO_MUSIC_ROOT`); each user's audio is below `<music_root>/users/<uid>/`. Status: implemented

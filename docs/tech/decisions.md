@@ -34,15 +34,15 @@ replaces Tailscale. Concrete setup: ADR-0004.
 
 ### Storage
 
-- Audio on server disk: `downloads/<id>.m4a`.
-- ~~One `library.json` on server disk~~ (superseded by ADR-0005, planned;
+- ~~Audio on server disk: `downloads/<id>.m4a`.~~ Per user since ADR-0012: `<music_root>/users/<uid>/<id>.m4a`.
+- ~~One `library.json` on server disk~~ (superseded by ADR-0005, then ADR-0012: one library per user;
   today's implementation still does this): song records with metadata
   and tags (tags replace playlists), see
   [`../product/screens.md`](../product/screens.md).
 - No SQLite: a few hundred songs.
 - Writes are atomic (temp file + rename), single writer (the server,
   under a lock). Web and phone go through the API.
-- Revisit at tens of thousands of songs or multi-user.
+- ~~Revisit at tens of thousands of songs or multi-user.~~ Multi-user arrived with ADR-0012 (per-user libraries, quotas); revisit the JSON store at tens of thousands of songs overall.
 - Implemented in `server/app/library.py`: in plain-file mode (no `AUDIO_DATA_REPO`) `library.json` and `covers/` live in `AUDIO_DATA_DIR`, audio in `AUDIO_DOWNLOAD_DIR`. ~~Covers on server disk~~ live in the git LFS repo under ADR-0005 (needs `git-lfs` installed on the server; the repo's `.gitattributes` decides tracking).
 
 ## ADR-0002 Tags replace playlists; song fields
@@ -161,13 +161,14 @@ Status: Accepted, implemented in `server/` (git store, `music_root`, sync status
 Supersedes the `library.json`-on-server-disk and covers-on-server-disk
 parts of ADR-0001 and the matching data wording in ADR-0004
 Amended by ADR-0010 (Accepted): the store also holds catalog records that have no audio yet.
+Amended by ADR-0012 (Accepted): the file layout below is per user (`audioplayer/users/<uid>/...`); the rest (git as live store, lock, retry, no secrets) stands.
 
-- Metadata: private repo `alexisayenko/data-storage`, file
-  `audioplayer/library.json`. Every library change (add, edit, tag,
+- Metadata: private repo `alexisayenko/data-storage`, ~~file~~
+  ~~`audioplayer/library.json`~~ `audioplayer/users/<uid>/library.json` (ADR-0012). Every library change (add, edit, tag,
   delete) is committed directly to that repo; the repo is the live
   store, not a backup of a file on disk.
 - Covers (jpg): sibling repo `alexisayenko/data-storage-lfs` (Git LFS),
-  `audioplayer/covers/<id>.jpg`. Same project folder name in both repos.
+  ~~`audioplayer/covers/<id>.jpg`~~ `audioplayer/users/<uid>/covers/<id>.jpg`. Same project folder name in both repos.
 - Audio (m4a) stays on perkunas (pool-3 dataset bind-mounted into
   LXC 106); it is in neither repo.
 - The server (LXC 106 `tools`) keeps its own clones of both repos and
@@ -200,18 +201,23 @@ Amended by ADR-0010 (Accepted): the store also holds catalog records that have n
 
 ## ADR-0006 Owner-only OAuth sign-in (Apple, Google)
 
+Amended by ADR-0012: the "only for the owner" gate is replaced by open signup with per-user storage; the token verification below stands.
+
 Status: Accepted, implemented in `server/` and `ios/`; not yet tested live on a device · 2026-10-12
 
 - Decision: besides `X-API-Token`, the server accepts
   `Authorization: Bearer <OIDC ID token>` from Sign in with Apple or Google,
-  and only for the owner. No accounts, sessions or user table.
+  ~~and only for the owner. No accounts, sessions or user table.~~ (ADR-0012: any verified identity is a user; the owner is Alex.)
 - Verification (`server/app/oauth.py`): signature (RS256) against the
   provider JWKS (Apple `appleid.apple.com/auth/keys`, Google
   `googleapis.com/oauth2/v3/certs`, cached 1 h), then `iss`, `aud`
-  (`APPLE_AUDIENCE` / `GOOGLE_CLIENT_ID`), `exp`. Allowed: `email` ==
+  (`APPLE_AUDIENCE` / `GOOGLE_CLIENT_ID`), `exp`. ~~Allowed: `email` ==
   `ALLOWED_EMAIL` (default `alex.isayenko@gmail.com`) with
   `email_verified`, or an Apple `sub` listed in `ALLOWED_APPLE_SUB`
-  (Apple may hide or relay the email). Bad token 401, other person 403.
+  (Apple may hide or relay the email). Bad token 401, other person 403.~~
+  ADR-0012: any `email_verified` identity is admitted (bad token 401);
+  `OWNER_EMAIL` (alias `ALLOWED_EMAIL`) and `ALLOWED_APPLE_SUB` now only mark
+  the owner.
 - Why not drop the API token: it stays as a working fallback (web UI,
   Apple tokens that expired offline). Both go through `require_token` and
   `require_token_or_query`; the iOS app sends the Bearer header for files
@@ -397,3 +403,76 @@ Status: Accepted · 2026-10-13 · Extends ADR-0001 (yt-dlp server) and DATA-001.
 - Go+ tracks that only offer the 30 s preview are refused (`preview_only`).
 - Cost: SoundCloud covers come from `*.sndcdn.com` artwork instead of a derivable
   URL, and the artist may be the uploading label. See [concerns](../concerns.md).
+
+## ADR-0012 Open signup and per-user storage
+
+Status: Accepted, implemented in `server/` and `web/` (iOS client changes listed in [task-0016](../tasks/task-0016.md), not done) · 2026-10-13 · Supersedes the single-library layout of ADR-0001 and ADR-0005, and the owner-only gate of ADR-0006
+
+- Decision (Alex): anyone who signs in with a verified Google or Apple
+  identity gets their own library and storage on Alex's server, in Alex's
+  private data repos. Alex stays the owner: exempt from the per-user
+  quotas, owner of the legacy library. The key principle is unchanged:
+  playback and offline reliability beat features. Still no social,
+  sharing, recommendations or public release; the iOS app stays on
+  TestFlight internal testing, the web UI is the open front door.
+- Identity: the verified ID token (ADR-0006 verification is unchanged).
+  `uid` = first 16 hex of `sha256(lowercased email)`; Apple tokens without
+  an `email` claim use `sha256(sub)` (the profile records the Apple `sub`,
+  so a later token without email maps to the same user). Apple private-relay
+  emails are fine. An email must be `email_verified`. The uid is always
+  computed server-side from the token or the signed session cookie, never
+  taken from a request.
+- Owner: `OWNER_EMAIL` (`ALLOWED_EMAIL` is a deprecated alias, default
+  `alex.isayenko@gmail.com`; first entry only), plus an Apple `sub` in
+  `ALLOWED_APPLE_SUB`. The static `X-API-Token` (and `?token=` on files and
+  covers) authenticates as the owner only.
+- Signup: `SIGNUP_OPEN=1` (default) creates the profile on first sign-in;
+  `SIGNUP_OPEN=0` admits only existing users and the owner (403
+  `signup_closed`).
+- ~~`audioplayer/library.json`, `audioplayer/covers/<id>.jpg`, audio at
+  `<music_root>/<id>.m4a`~~ (ADR-0001, ADR-0005) become, per user:
+  data repo `audioplayer/users/<uid>/profile.json` (email, provider,
+  created_at, Apple sub) and `.../library.json` (same shape, ADR-0010
+  catalog model unchanged); LFS repo `audioplayer/users/<uid>/covers/<id>.jpg`;
+  audio `<music_root>/users/<uid>/<id>.m4a`. No shared pool: the same song
+  in two libraries is two files. `music_root` stays one server-wide value
+  (env `AUDIO_MUSIC_ROOT`, else the owner's `settings.music_root`).
+- Writes: one lock per user for library writes, one global lock for the git
+  pull --rebase / commit / push cycle; commit messages `audioplayer: <uid8>
+  add|edit|delete|delete audio|bpm <id>` and `audioplayer: <uid8> signup`.
+  Retry and backoff on failed pushes are unchanged.
+- Migration (`server/app/migrate.py`, at startup, once): the legacy library,
+  covers and loose audio move under the owner's uid in one commit per repo
+  `audioplayer: migrate legacy library to per-user layout`; the marker
+  `audioplayer/migrations/legacy-to-per-user.json` (no personal data) stops a
+  second run. Any inconsistency (legacy and per-user library both present, a
+  file at both locations, unreadable JSON) aborts before the first move; a
+  crash midway is resumed by the next start; a failed commit is rolled back.
+- Guardrails (env, owner exempt from the per-user ones, not from the pool):
+  `USER_MAX_SONGS=500`, `USER_MAX_BYTES=5GB` (real file sizes),
+  `USER_ADDS_PER_HOUR=20`, `USER_MAX_CONCURRENT_DOWNLOADS=1` (extra adds get
+  status `queued`), `GLOBAL_MAX_CONCURRENT_DOWNLOADS=2`, `POOL_MAX_BYTES=150GB`
+  (audio under `music_root/users`), `SIGNUP_OPEN`. Checked before anything
+  is downloaded (queued jobs count against the song limit and re-check bytes
+  when they start); deleting a song frees its quota. Errors:
+  429 `hourly_limit` (+`retry_after_minutes`, `Retry-After`), 403
+  `library_full_songs` / `library_full_bytes`, 503 `server_full`, 403
+  `signup_closed`. `GET /me` and `GET /me/usage` report profile and usage.
+- Risks and costs:
+  - Strangers' emails are stored in `profile.json` in the private data repo;
+    git history is permanent, so removing a user later leaves the email in
+    history (paths never contain it). See privacy in
+    [non-functional](../specs/non-functional.md).
+  - Legal exposure of the YouTube/SoundCloud downloads (ToS) now extends to
+    other people's use of Alex's server and IP; a ban of the home IP would
+    hit the owner's playback too.
+  - Disk: bounded by `POOL_MAX_BYTES`, but a full pool also blocks the
+    owner's new downloads. Open signup is limited by a verified identity
+    only; many throwaway Google accounts can each take 5 GB, so the pool cap
+    is the real ceiling. `SIGNUP_OPEN=0` is the kill switch.
+  - Each new user and each write is a git commit and push: repo growth and
+    push latency scale with users. `/search`, `/preview` and `/lookup/wikipedia`
+    are not rate limited per user (they cost external requests, not storage).
+  - Hourly counters are in memory (re-learned from `added_at` after a restart).
+  - The shared server holds everyone's session secret; sessions are
+    stateless (ADR-0006 amendment).

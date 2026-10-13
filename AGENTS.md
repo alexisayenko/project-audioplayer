@@ -11,14 +11,16 @@ Fast-path context for Claude Code. Full human-oriented docs:
 
 Playback and offline reliability beat features. Anything that does not
 make downloading, storing or playing a song more dependable (social,
-recommendations, a public release, multi-user accounts) is cut. The one
-exception: owner-only OAuth sign-in (Apple/Google) next to the API token
-([ADR-0006](docs/tech/decisions.md)); offline playback never depends on it.
+recommendations, a public release) is cut. Accounts are limited to what storage needs:
+open signup with per-user storage ([ADR-0012](docs/tech/decisions.md)), anyone with a
+verified Google or Apple identity gets their own library within quotas, Alex is the owner
+(exempt from quotas; the API token is his). Offline playback never depends on sign-in.
 
 ## Product
 
-Electrophone: a personal iOS app, one user (the owner), distributed via TestFlight
-internal testing only. Search YouTube (or paste a YouTube or SoundCloud track
+Electrophone: an iOS app (owner: Alex; distributed via TestFlight internal testing only) and a web UI
+open to anyone with a Google or Apple sign-in, each user with their own library and storage on
+Alex's server (ADR-0012). Search YouTube (or paste a YouTube or SoundCloud track
 link), download a song's audio through a private server, keep it in an on-device library, play it with background
 audio and lock-screen controls. No monetization. Downloading may violate
 YouTube's ToS; the app is not for distribution.
@@ -29,8 +31,8 @@ Proposed ([ADR-0010](docs/tech/decisions.md)): the catalog (metadata: YouTube, S
 
 `ios/` — SwiftUI app (iOS 17, XcodeGen `project.yml`, AVPlayer). `server/` —
 FastAPI wrapper around `yt-dlp` (Python 3.11+), run on the home server `perkunas` behind a Cloudflare
-Tunnel (planned, not yet deployed; Tailscale is not used) with an `X-API-Token` header or owner-only
-Apple/Google sign-in; see [docs/tech/decisions.md](docs/tech/decisions.md). Web UI in `web/`.
+Tunnel (planned, not yet deployed; Tailscale is not used) with an `X-API-Token` header (owner) or Apple/Google sign-in
+(open signup, per-user storage); see [docs/tech/decisions.md](docs/tech/decisions.md). Web UI in `web/`.
 Status: the iOS app (tabs Library, Playback, Settings, Add as a sheet; Electrophone look, task-0005) is on internal
 TestFlight; its server flows are not yet tested on a device; server tests pass.
 

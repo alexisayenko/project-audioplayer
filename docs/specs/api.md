@@ -1,26 +1,26 @@
 # API
 
 Code: `server/app/main.py`. Same origin as the web UI; JSON bodies; errors
-are `{"detail": "<message>"}`.
+are `{"detail": "<message>"}`, or `{"error": <code>, "detail": <message>, ...}` for coded refusals (API-026, API-040..046). Every data route works on the caller's own library only (ADR-0012).
 
 ## Auth
 
-- API-001 MUST: every route except `GET /health` and the static UI requires header `X-API-Token` equal to env `AUDIO_API_TOKEN` (compared with `hmac.compare_digest`) or an owner OAuth ID token (API-007). Status: implemented
+- API-001 MUST: every route except `GET /health` and the static UI requires header `X-API-Token` equal to env `AUDIO_API_TOKEN` (compared with `hmac.compare_digest`) (owner) or an OAuth ID token (API-007). Status: implemented
 - API-002 MUST: `GET /files/{id}` and `GET /covers/{id}` also accept `?token=<token>` (the header wins when both are sent), because `<audio>` and `<img>` cannot send headers. Status: implemented
 - API-003 MUST: wrong or missing token gives 401 `bad token`; `AUDIO_API_TOKEN` unset gives 503 `AUDIO_API_TOKEN is not set` (the API is closed, never open). Status: implemented
 - API-004 MUST: static files at `/` are public, carry no data, and are served with `Cache-Control: no-cache`; API routes are registered first and are never shadowed. Status: implemented
 - API-005 MUST: `{id}` path params must match `^[A-Za-z0-9_-]{11}$` (YouTube), `^soundcloud-[0-9]{1,20}$` (SoundCloud) or API-034, else 422 `invalid video id` (blocks path traversal and yt-dlp option injection). Status: implemented
-- API-007 MUST: `Authorization: Bearer <ID token>` from Sign in with Apple or Google is accepted on every authenticated route, including `GET /files/{id}` and `GET /covers/{id}`. The server checks the RS256 signature against the provider JWKS (cached), `iss`, `aud` (`APPLE_AUDIENCE` / `GOOGLE_CLIENT_ID`, each a comma-separated list; `APPLE_WEB_CLIENT_ID` and `GOOGLE_WEB_CLIENT_ID` count too) and `exp`, and allows only a verified `email` equal to `ALLOWED_EMAIL` (default `alex.isayenko@gmail.com`) or an Apple `sub` in `ALLOWED_APPLE_SUB`. Invalid or expired token gives 401 `bad token`; a valid token of anyone else gives 403 `not the owner`. If `X-API-Token` is also sent it decides. Status: implemented
+- API-007 MUST: `Authorization: Bearer <ID token>` from Sign in with Apple or Google is accepted on every authenticated route, including `GET /files/{id}` and `GET /covers/{id}`. The server checks the RS256 signature against the provider JWKS (cached), `iss`, `aud` (`APPLE_AUDIENCE` / `GOOGLE_CLIENT_ID`, each a comma-separated list; `APPLE_WEB_CLIENT_ID` and `GOOGLE_WEB_CLIENT_ID` count too) and `exp`, and admits any verified `email` (Apple without email: the `sub`) as a user (API-040). ~~Only `ALLOWED_EMAIL` or an Apple `sub` in `ALLOWED_APPLE_SUB`; anyone else 403 `not the owner`.~~ Invalid or expired token gives 401 `bad token`; an unverified email 403 `unverified_email`; a new user while `SIGNUP_OPEN=0` 403 `signup_closed`. If `X-API-Token` is also sent it decides. Status: implemented
 - API-008 MUST: a valid session cookie `__Host-session` (API-020) authenticates every route that accepts a header token, including `GET /files/{id}` and `GET /covers/{id}`, so no token is needed in a URL. Order: `X-API-Token`, then Bearer ID token, then cookie, then `?token=` (files and covers only). Status: implemented
 - API-009 MUST: `GET`, `HEAD` and `OPTIONS` need nothing more; a cookie-authenticated `POST`, `PATCH` or `DELETE` needs header `X-Requested-With: audioplayer` and, when `Origin` is sent, an `Origin` host equal to `Host`, else 403 `missing or foreign CSRF header`. Header-authenticated requests are exempt. Status: implemented
 - API-006 SHOULD: use HTTPS and keep logs private, since `?token=` appears in URLs. Status: implemented (via Cloudflare Tunnel once deployed; see [non-functional.md](non-functional.md))
 
 ## Web session
 
-- API-020 MUST: `POST /auth/session` `{id_token}` verifies the ID token exactly as API-007, then answers 200 `{email, provider}` and sets cookie `__Host-session` (`HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=43200`), a payload `{provider, email, exp}` signed with HMAC-SHA256. The key is env `AUDIO_SESSION_SECRET`, else derived from `AUDIO_API_TOKEN`; neither set gives 503. Errors: 401 `bad token`, 403 `not the owner`, 403 CSRF (API-009 applies). Status: implemented (not yet tested live with Google or Apple)
+- API-020 MUST: `POST /auth/session` `{id_token}` verifies the ID token exactly as API-007, then answers 200 `{email, provider}` and sets cookie `__Host-session` (`HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=43200`), a payload `{provider, email, exp}` signed with HMAC-SHA256 (the payload also carries the server-derived `uid`). The key is env `AUDIO_SESSION_SECRET`, else derived from `AUDIO_API_TOKEN`; neither set gives 503. Errors: 401 `bad token`, 403 `unverified_email`, 403 `signup_closed`, 403 CSRF (API-009 applies). Status: implemented (not yet tested live with Google or Apple)
 - API-021 MUST: `POST /auth/logout` deletes the cookie and answers 204 (CSRF header required). Sessions are stateless: a stolen cookie stays valid until it expires or the secret changes. Status: implemented
 - API-022 MUST: `GET /auth/config` is public and returns `{google_client_id, apple_client_id, apple_redirect}` from `GOOGLE_WEB_CLIENT_ID`, `APPLE_WEB_CLIENT_ID` and `APPLE_WEB_REDIRECT_URI` (default `https://<Host>/`); empty string when unset. Client ids are not secrets. Status: implemented
-- API-023 MUST: `GET /auth/me` returns `{method:"session"|"bearer"|"token", email}` for the current credentials, else 401. Status: implemented
+- API-023 MUST: `GET /auth/me` returns `{method:"session"|"bearer"|"token", email, provider, owner}` for the current credentials, else 401. Status: implemented
 - API-024 MUST: API responses carry `Cache-Control: no-store`; `/files` and `/covers` carry `private, no-cache`; static files `no-cache`. Status: implemented
 
 ## Endpoints
@@ -34,22 +34,24 @@ are `{"detail": "<message>"}`.
 | `GET /tags` | header | - | 200 `[{tag,count}]` | 401/503 |
 | `POST /preview` | header | `{url}` | 200 `{id, source, source_url, title, artist, album, year, tags, duration, thumbnail, in_library, wikipedia_song, wikipedia_artist, suggested_year}` (links and `suggested_year` are `null` when unknown; `year` is filled from `suggested_year` only when yt-dlp gave none) | 422 `{error:"unsupported"\|"preview_only", detail}`; 403 `{error:"private"}`; 404 `{error:"not_found"}`; 502 `preview failed: <short>` |
 | `POST /lookup/wikipedia` | header | `{wikipedia_song?, wikipedia_artist?}` (user-edited links) | 200 `{tags:[...], year:int\|null}` suggestions from Wikidata, never applied server-side; empty on invalid links, lookup off or any failure | 401/503 |
-| `POST /songs` | header | `{url, metadata:{title,artist,album,year,bpm,wikipedia_song,wikipedia_artist}, tags:[], audio?:true}` | 202 `{id, status:"downloading"}`; with `audio:false` 201 `{id, status:"done", audio_state:"none", song}` (catalog entry, no download) | 422 bad URL, `unsupported` / `preview_only` (same bodies as preview) or field range; 409 `already in library` / `already downloading` |
-| `GET /songs/{id}/status` | header | - | 200 `{id, status:"downloading"\|"done"\|"error", progress:0..1, error}` | 404 `unknown song` |
+| `POST /songs` | header | `{url, metadata:{title,artist,album,year,bpm,wikipedia_song,wikipedia_artist}, tags:[], audio?:true}` | 202 `{id, status:"downloading"}`; with `audio:false` 201 `{id, status:"done", audio_state:"none", song}` (catalog entry, no download) | 422 bad URL, `unsupported` / `preview_only` (same bodies as preview) or field range; 409 `already in library` / `already downloading`; 429 `hourly_limit`; 403 `library_full_songs` / `library_full_bytes`; 503 `server_full` (API-041..045) |
+| `GET /songs/{id}/status` | header | - | 200 `{id, status:"queued"\|"downloading"\|"done"\|"error", progress:0..1, error, code?}` | 404 `unknown song` |
 | `PATCH /songs/{id}` | header | any of `title, artist, album, year, bpm (integer; fractions rounded), tags, wikipedia_song, wikipedia_artist` (invalid links become `null`) | 200 the updated song | 404 `unknown song`; 422 `title must not be empty` or field range |
 | `POST /songs/{id}/bpm/detect` | header | - | 200 the updated song | 404 `unknown song` / `not downloaded`; 422 `could not detect BPM`; 503 music_root server not configured |
 | `DELETE /songs/{id}` | header | - | 204 removes record, cover and audio | 404 `unknown song` |
 | `GET /files/{id}` | header, cookie or `?token=` | - | 200 audio (`audio/mp4`, Range supported via `FileResponse`) | 404 `not downloaded` (also for a metadata-only song); 503 music_root server not configured |
 | `GET /covers/{id}` | header, cookie or `?token=` | - | 200 `image/jpeg` | 404 `no cover` |
 | `GET /search?q=&limit=` | header | `q` min 1 char, `limit` 1..25 (default 10) | 200 `[{id,title,artist,duration,thumbnail}]` | 422 |
-| `POST /download` | header | `{video_id}` | 200 metadata plus `file_url` (synchronous download to `AUDIO_DOWNLOAD_DIR`, does not touch the library) | 422 invalid id; 502 `download failed: ...` |
+| `POST /download` | header | `{video_id}` | 200 metadata plus `file_url` (synchronous download into the caller's audio directory, does not touch the library; same quotas as `POST /songs`) | 422 invalid id; 502 `download failed: ...` |
 | `GET /auth/config` | none | - | 200 `{google_client_id, apple_client_id, apple_redirect}` | - |
 | `POST /auth/session` | CSRF header | `{id_token}` | 200 `{email, provider}` + cookie | 401, 403, 503 |
 | `POST /auth/logout` | CSRF header | - | 204, cookie deleted | 403 |
-| `GET /auth/me` | any | - | 200 `{method, email}` | 401 |
+| `GET /auth/me` | any | - | 200 `{method, email, provider, owner}` | 401 |
+| `GET /me` | any | - | 200 `{email, provider, owner, created_at}` | 401 |
+| `GET /me/usage` | any | - | 200 `{songs, max_songs, bytes, max_bytes, adds_last_hour, max_adds}` (`max_*` are `null` for the owner) | 401 |
 | `GET /` and static | none | - | web UI | - |
 
-- API-010 MUST: `POST /songs` returns 202 immediately and downloads in the background; the song is written to `library.json` only when the download succeeds. Status: implemented
+- API-010 MUST: `POST /songs` returns 202 immediately (`status` `downloading`, or `queued` when the user or the server is at its download cap) and downloads in the background; the song is written to `library.json` only when the download succeeds. Status: implemented
 - API-011 MUST: `POST /songs` accepts any YouTube watch, `youtu.be`, shorts, embed, live or `music.` URL, or a bare 11-char id, and a SoundCloud track link (`soundcloud.com/<artist>/<track>`, private `/s-<secret>`, `on.soundcloud.com/<code>`). Status: implemented
 - API-012 MUST: `GET /songs/{id}/status` answers from the in-memory job first, else `done` if the song is in the library, else 404. Status: implemented
 - API-013 MUST: job state is in memory; a server restart forgets in-flight jobs and past errors. Status: implemented
@@ -66,3 +68,14 @@ are `{"detail": "<message>"}`.
 - API-032 MUST: `POST /songs` with `audio:false` saves a catalog entry (`file: null`, `sources` from the link, missing fields filled from the link's metadata and cover) without downloading; 409 if the id exists. Status: implemented
 - API-033 MUST: `DELETE /songs/{id}/audio` removes only the file; `DELETE /songs/{id}` removes record, cover and file. Commits: `audioplayer: delete audio <id>` and `audioplayer: delete <id>`. Status: implemented
 - API-034 MUST: song ids also accept `spotify-`, `applemusic-` and `shazam-<id>` (metadata-only sources), in every `{id}` path. Status: implemented (ids; adding from these sources is planned)
+
+## Users, quotas and limits (ADR-0012)
+
+- API-040 MUST: every authenticated request resolves to one user: `X-API-Token` and `?token=` are the owner; a Bearer ID token or the session cookie is the user whose `uid` the server computes from the verified identity (`sha256(lowercased email)[:16]`, Apple without email: `sha256(sub)[:16]`). A `uid` sent by the client (path, query, header, body) is never read. The first sign-in creates the profile (`SIGNUP_OPEN=1`, default); with `SIGNUP_OPEN=0` only existing users and the owner get in, others get 403 `{"error":"signup_closed"}`. Status: implemented
+- API-041 MUST: before anything is downloaded `POST /songs` (and `POST /download`) checks, in this order: songs (`USER_MAX_SONGS`, queued adds included), adds in the last hour (`USER_ADDS_PER_HOUR`), the user's audio bytes (`USER_MAX_BYTES`, audio adds only), the server pool (`POOL_MAX_BYTES`, audio adds only). The owner skips the per-user checks, not the pool. Status: implemented
+- API-042 MUST: 429 `{"error":"hourly_limit","detail":"...","retry_after_minutes":N}` with header `Retry-After: <seconds>`; N is the time until the oldest add of the last hour expires, at least 1. Status: implemented
+- API-043 MUST: 403 `{"error":"library_full_songs"}` or `{"error":"library_full_bytes"}`; deleting a song (or only its audio, for bytes) frees the quota at once because bytes are the real file sizes. A metadata-only add (`audio:false`) is not blocked by bytes or the pool. Status: implemented
+- API-044 MUST: 503 `{"error":"server_full"}` when the audio under `music_root/users` has reached `POOL_MAX_BYTES`; applies to the owner too. Status: implemented
+- API-045 MUST: downloads run under `GLOBAL_MAX_CONCURRENT_DOWNLOADS` (default 2) and `USER_MAX_CONCURRENT_DOWNLOADS` (default 1, owner exempt); a job waiting for a slot has status `queued`, starts in order, and re-checks bytes and pool when it starts (a refusal ends as `status:"error"` with `code`). Status: implemented
+- API-046 MUST: `GET /me/usage` counts `songs`, real `bytes`, and `adds_last_hour` (adds accepted in the last 60 min; after a restart relearned from `added_at`). Status: implemented
+- API-047 MUST: `GET /files/{id}`, `GET /covers/{id}` and `GET /songs/{id}/status` of another user's id answer 404 as if the song did not exist; the file path is always `<music_root>/users/<own uid>/<name>` and is checked to stay inside it. Status: implemented

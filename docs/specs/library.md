@@ -52,3 +52,8 @@ in `docs/product/wireframes/` yet; add a link here when it lands).
 
 - LIB-060 SHOULD: bulk edit, multi-select, drag-reorder. Status: planned
 - LIB-061 SHOULD: multi-tag filter. Status: planned (TAG-035)
+
+## Per-user library (ADR-0012)
+
+- LIB-090 MUST: the Library, Tags, catalog and every song action work on the signed-in user's own library only; a new user starts empty ("No songs yet..."). Status: implemented
+- LIB-091 MUST: Settings shows the signed-in email and the meter "N / 500 songs · X / 5 GB" from `GET /me/usage` (for the owner, who has no limits: "N songs · X"). Status: implemented

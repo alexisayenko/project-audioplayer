@@ -4,7 +4,7 @@ ADRs: ADR-0003 (web), ADR-0004 (hosting), ADR-0001 (storage scale).
 
 ## Auth
 
-- NFR-001 MUST: one shared secret `AUDIO_API_TOKEN` protects the whole API; no user accounts; owner-only OAuth ID tokens are accepted as well (ADR-0006). Status: implemented
+- NFR-001 MUST: `AUDIO_API_TOKEN` is the owner's credential (dev/legacy); every other caller is a user who signed in with a verified Google or Apple identity (open signup, ADR-0012; token verification ADR-0006). ~~One shared secret, no user accounts, owner-only OAuth.~~ Status: implemented
 - NFR-002 MUST: the web UI, when not signed in with OAuth, stores the API token in `localStorage` key `audioplayer.token` and sends it as `X-API-Token`; audio and cover URLs then carry it as `?token=`. Status: implemented
 - NFR-003 MUST: without a session or token the UI routes to Settings; Settings "Save and test" verifies by loading the library. Status: implemented
 - NFR-004 SHOULD: put Cloudflare Access (service token) in front of the tunnel as a second layer. Status: planned
@@ -25,10 +25,10 @@ ADRs: ADR-0003 (web), ADR-0004 (hosting), ADR-0001 (storage scale).
 
 ## Scale and performance
 
-- NFR-030 MUST: designed for a few hundred songs, one user; no database, the whole library is one JSON file loaded per request and returned whole by `GET /library`. Status: implemented
-- NFR-031 SHOULD: revisit storage at tens of thousands of songs or multiple users. Status: planned
+- NFR-030 MUST: designed for a few hundred songs per user and tens of users; no database, a user's library is one JSON file loaded per request and returned whole by `GET /library` (~~one user~~, ADR-0012). Status: implemented
+- NFR-031 SHOULD: revisit storage at tens of thousands of songs in total or hundreds of users (a git commit per write, one repo for all users). Status: planned
 - NFR-032 MUST: the Library list renders the full filtered set client-side with lazy-loaded covers (no pagination). Status: implemented
-- NFR-033 MUST: concurrent writes are serialised; read endpoints take the same lock briefly. Status: implemented
+- NFR-033 MUST: concurrent writes of one user are serialised by a per-user lock and the git cycle of all users by one global lock; read endpoints take the user lock briefly. Status: implemented
 
 ## Browsers and offline
 
@@ -36,3 +36,12 @@ ADRs: ADR-0003 (web), ADR-0004 (hosting), ADR-0001 (storage scale).
 - NFR-041 MUST: the web UI is online only: no service worker, no offline storage, no audio cache (so nothing authenticated outlives sign-out, API-024). Offline listening is an iOS-app feature. Status: implemented
 - NFR-042 MUST: the layout works at phone width. Status: to-confirm (not verified in this pass)
 - NFR-043 MUST: the iOS app (`ios/`, SwiftUI) uses the same API and plays downloaded songs offline; its requirements are in [ios.md](ios.md). Status: implemented
+
+## Quotas, limits and privacy (ADR-0012)
+
+- NFR-050 MUST: per-user limits, enforced before a download starts: `USER_MAX_SONGS` 500, `USER_MAX_BYTES` 5 GB (real file sizes), `USER_ADDS_PER_HOUR` 20, `USER_MAX_CONCURRENT_DOWNLOADS` 1; server-wide `GLOBAL_MAX_CONCURRENT_DOWNLOADS` 2 and `POOL_MAX_BYTES` 150 GB (audio under `music_root/users`). The owner is exempt from the per-user limits, not from the pool and global caps. Refusals and codes: API-041..045. Status: implemented
+- NFR-051 MUST: `SIGNUP_OPEN=0` stops new accounts at once (existing users and the owner keep working). Status: implemented
+- NFR-052 MUST: a user can read, change, stream and delete only their own songs, covers and job status; another user's id answers 404; the user id is never taken from the client (API-040, API-047). Status: implemented
+- NFR-053 MUST: privacy: a user's email is stored only inside `audioplayer/users/<uid>/profile.json` of the private data repo (with provider, creation time and, for Apple, the opaque `sub`); it is never in a path, file name or commit message. Git history is permanent: deleting a user later does not erase the email from history. The operator (Alex) can read every user's library and profile. Status: implemented
+- NFR-054 SHOULD: `/search`, `/preview` and `/lookup/wikipedia` are not limited per user (they use external services, not storage); add a limit if abused. Status: planned
+- NFR-055 MUST: hourly counters live in memory; a restart relearns them from `added_at` of the current songs. Status: implemented

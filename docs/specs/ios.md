@@ -16,7 +16,7 @@ device unless a line says so.
 - IOS-010 MUST: Settings has the artboard's cards in order, Account (Sign in with Apple and Google; signed in: the email, the provider and Sign out), Downloads (Audio quality as a read-only "High · 192 kbps", the server's fixed bitrate, with the design's chevron although there is no choice yet; "Download new songs automatically" switch, default on; "Use mobile data" switch, default off), Storage (size of `Documents/audio`, song count, a bar against the phone's capacity, "Remove all downloads" after a confirmation, phone copies only), then a "Private server" disclosure row (collapsed; URL, API token with a Paste row, Test connection against `GET /tags` showing "Connected · N ms, token accepted" and the server status LED), then the version line from the bundle ("· TestFlight" on TestFlight builds, "· Debug" in debug builds). The design has no server card; the disclosure is the one addition. Status: implemented (not verified on a device)
 - IOS-017 MUST: "Use mobile data" (UserDefaults `useMobileData`) governs file downloads only: with it off, `GET /files/{id}` uses a session with cellular, expensive and constrained access disabled and the Library toast says "Mobile data is off for downloads. Turn on Use mobile data in Settings." API calls are never blocked. "Download new songs automatically" (`downloadNewAutomatically`) decides whether "Add to library" also copies the song to the phone and whether songs that appear in a later catalog sync are copied on their own (IOS-035); off saves it on the server only, with the toast "Saved. Not downloaded to this iPhone", and the song is listed in Library as soon as the server has finished it. Status: implemented
 - IOS-011 MUST: the API token is kept in the Keychain and never appears in a stored URL or in the library file. Status: implemented
-- IOS-012 MUST: Settings offers Sign in with Apple and Sign in with Google (owner only, ADR-0006); the ID token goes as `Authorization: Bearer`, the Google refresh token is kept in the Keychain and refreshes silently. Status: implemented (not yet tested live on a device)
+- IOS-012 MUST: Settings offers Sign in with Apple and Sign in with Google (any verified account, ADR-0012; ~~owner only, ADR-0006~~); the ID token goes as `Authorization: Bearer`, the Google refresh token is kept in the Keychain and refreshes silently. Status: implemented (not yet tested live on a device)
 - IOS-013 MUST: an expired Apple token cannot refresh silently; Settings shows "Expired, sign in again" and the API token is the fallback. Status: implemented
 - IOS-016 MUST: the app's Google client id is a separate OAuth client from the web one; the server accepts both (API-007). Status: implemented
 - IOS-014 MUST: signing in is never required to play downloaded songs. Status: implemented
@@ -54,3 +54,7 @@ device unless a line says so.
 ## Distribution
 
 - IOS-060 MUST: the build number (`CURRENT_PROJECT_VERSION` in `ios/project.yml`) is date-based and strictly higher than any build already uploaded to App Store Connect (ADR-0008). Status: implemented
+
+## Per-user storage (ADR-0012)
+
+The server is open to any signed-in user and every user has their own library. The iOS client needs the changes listed in [task-0016](../tasks/task-0016.md); until they land an iOS user gets correct data but raw error texts.

@@ -17,9 +17,9 @@ Code: `web/js/add.js`, `server/app/main.py` (`preview`, `create_song`,
 - ADD-002 MUST: preview prefills `title` from yt-dlp `track` else `title`; `artist` from `artist`, `creator`, `uploader`; `year` from `release_year`, else `release_date`/`upload_date`; `tags` per [tags.md](tags.md) (genre, country and language suggestions). Status: implemented
 - ADD-003 MUST: preview downloads nothing and writes nothing. Status: implemented
 - ADD-004 MUST: the user may edit every field and tag before saving using the shared tag editor (LIB-055): current tags as removable chips, a "Suggested" row with the preview's tags (toggle), all library tags as toggle chips, a text input (Enter or comma adds, accepts `key:value`). Status: implemented
-- ADD-005 MUST: Save starts a background download of the best m4a audio (`bestaudio[ext=m4a]/140`) to the music directory as `<id>.m4a`, one video only (no playlists). Status: implemented
+- ADD-005 MUST: Save starts a background download of the best m4a audio (`bestaudio[ext=m4a]/140`) to the user's audio directory (`<music_root>/users/<uid>/`) as `<id>.m4a`, one video only (no playlists). Status: implemented
 - ADD-006 MUST: after the audio is saved the server fetches the cover from `https://i.ytimg.com/vi/<id>/hqdefault.jpg` to `covers/<id>.jpg`; a failed fetch leaves `cover: null` and does not fail the add. Status: implemented
-- ADD-007 MUST: on success the song record is appended and committed (`audioplayer: add <id>`); `added_at` is the UTC completion time. Status: implemented
+- ADD-007 MUST: on success the song record is appended and committed (`audioplayer: <uid8> add <id>`); `added_at` is the UTC completion time. Status: implemented
 - ADD-008 MUST: progress is 0..1 from yt-dlp byte counts, rounded to 3 decimals; it may stay at 0 when the size is unknown. Status: implemented
 - ADD-009 MUST: on any failure the partial `<id>.m4a` is deleted and the job becomes `error` with a short message; the UI shows "Download failed: <message>" and re-enables Save. Status: implemented
 
@@ -61,3 +61,9 @@ Code: `web/js/add.js`, `server/app/main.py` (`preview`, `create_song`,
 - ADD-041 MUST: unavailable or blocked video gives 502 `preview failed: <short yt-dlp message>` at preview, or a job `error` at download. Status: implemented
 - ADD-042 MUST: server unreachable shows "Server unreachable"; 401 shows "Wrong or missing API token (see Settings)". Status: implemented
 - ADD-043 SHOULD: leaving the Add screen mid-download stops polling but not the server job; reopening Add does not resume the progress view. Status: to-confirm
+
+## Limits (ADR-0012)
+
+- ADD-050 MUST: the server checks the user's quotas before it resolves or downloads the link (API-041); the Add dialog shows a readable message for each refusal and keeps the form: 429 "Hourly limit reached. Try again in N minutes.", 403 `library_full_songs` "Your library is full. Delete some songs to add more.", 403 `library_full_bytes` "Your storage is full. Delete some songs to free space.", 503 `server_full` "The server is out of storage right now. Try again later." (`web/js/limits.js` `friendly`, tested). Status: implemented
+- ADD-051 MUST: when the user or the server is at its download cap the add is accepted with status `queued` and starts in order; the Library row shows the usual progress once it runs. Status: implemented
+- ADD-052 MUST: a sign-in refused because signup is closed shows "Sign-up is closed on this server." on Settings (403 `signup_closed`). Status: implemented

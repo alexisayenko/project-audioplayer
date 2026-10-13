@@ -5,8 +5,8 @@ Status: Accepted · 2026-10-12
 ```text
 browser (web UI)  --same origin, session cookie or X-API-Token-->  server (FastAPI + yt-dlp)  -->  YouTube
 iPhone (SwiftUI)  --http, Bearer ID token or X-API-Token-->  same server
-  audio/<id>.m4a  <-- /files/<id> --  downloads/<id>.m4a
-  library.json + covers  <-- local clones of data-storage / data-storage-lfs (ADR-0005)
+  audio/<id>.m4a  <-- /files/<id> --  <music_root>/users/<uid>/<id>.m4a   (per user, ADR-0012)
+  users/<uid>/{profile,library}.json + covers  <-- local clones of data-storage / data-storage-lfs (ADR-0005, ADR-0012)
 ```
 
 ## Why a server
@@ -32,13 +32,20 @@ ADR-0005).
 
 ## Library storage (ADR-0005, implemented; not deployed)
 
-Without `AUDIO_DATA_REPO` (dev/tests) `library.json` and `covers/` are
-plain files in `AUDIO_DATA_DIR`. Otherwise the server keeps its own clones of the private repos
-`alexisayenko/data-storage` (`audioplayer/library.json`) and
-`alexisayenko/data-storage-lfs` (`audioplayer/covers/<id>.jpg`, Git LFS).
-Reads come from the local clone. A write takes the single-writer lock,
-runs `pull --rebase`, writes `library.json` atomically, commits
-(`audioplayer: add|edit|delete|bpm <id>`) and pushes. If the push fails the
+Layout since ADR-0012 (one library per user, `<uid>` = first 16 hex of
+`sha256(lowercased email)`): data repo `audioplayer/users/<uid>/profile.json`
+(email, provider, created_at: the only place an email is stored) and
+`library.json`; LFS repo `audioplayer/users/<uid>/covers/<id>.jpg`; audio
+`<music_root>/users/<uid>/<id>.m4a`. ~~`audioplayer/library.json`,
+`audioplayer/covers/<id>.jpg`, `downloads/<id>.m4a`~~ (single-user layout; the
+startup migration moves it under the owner, once).
+
+Without `AUDIO_DATA_REPO` (dev/tests) the same `users/<uid>/...` tree is plain
+files in `AUDIO_DATA_DIR`. Otherwise the server keeps its own clones of the private repos
+`alexisayenko/data-storage` and `alexisayenko/data-storage-lfs` (Git LFS).
+Reads come from the local clone. A write takes the user's lock, then the one
+global git lock, runs `pull --rebase`, writes `library.json` atomically, commits
+(`audioplayer: <uid8> add|edit|delete|bpm <id>`) and pushes. If the push fails the
 local commit is kept, retried with backoff, and a warning is shown in
 the UI; the write is never lost. Auth: one write deploy key per repo,
 outside the repos (`~/.config/`, `chmod 600`). History is permanent, so
@@ -67,9 +74,10 @@ relative audio file names only (replaces `AUDIO_DOWNLOAD_DIR`). Each save costs 
 
 Full contract: [`../product/screens.md`](../product/screens.md).
 
-All API routes except `/health` need either an owner OAuth ID token
-(`Authorization: Bearer`, see below) or header `X-API-Token` equal to
-`AUDIO_API_TOKEN`. `/files/{id}` and `/covers/{id}` also accept
+All API routes except `/health` need either an OAuth ID token of any verified
+user (`Authorization: Bearer`, see below; open signup, ADR-0012) or header
+`X-API-Token` equal to `AUDIO_API_TOKEN` (the owner). Every route resolves to one
+user and touches only that user's data. `/files/{id}` and `/covers/{id}` also accept
 `?token=<token>`, compared with `hmac.compare_digest`, since `<audio>`
 and `<img>` cannot send headers; the token therefore can appear in URLs
 and access logs, so keep logs private and use HTTPS. The static UI
@@ -175,15 +183,17 @@ Builds expire after 90 days; re-upload.
   at `play.isayenko.net`, so it can be tightened once that is deployed.
 - No CI (template rule: manual workflows only; none added yet).
 
-## Owner-only OAuth sign-in
+## OAuth sign-in and per-user storage
 
-See ADR-0006. The iOS app signs in with Apple (`SignInWithAppleButton`) or
+See ADR-0006 (verification) and ADR-0012 (open signup). The iOS app signs in with Apple (`SignInWithAppleButton`) or
 Google (`ASWebAuthenticationSession`, code + PKCE) from Settings and sends
 the ID token as `Authorization: Bearer`. `server/app/oauth.py` verifies it
-(JWKS signature, `iss`, `aud`, `exp`) and allows only the owner.
+(JWKS signature, `iss`, `aud`, `exp`, verified email) and admits any user;
+the first sign-in creates the profile (`SIGNUP_OPEN=0` closes that).
 
-Server env: `ALLOWED_EMAIL` (default `alex.isayenko@gmail.com`),
-`ALLOWED_APPLE_SUB`, `APPLE_AUDIENCE=com.alexisayenko.audioplayer`,
+Server env: `OWNER_EMAIL` (alias `ALLOWED_EMAIL`, default `alex.isayenko@gmail.com`;
+the owner is exempt from quotas), `SIGNUP_OPEN` (default `1`),
+`ALLOWED_APPLE_SUB` (an Apple `sub` that is the owner), `APPLE_AUDIENCE=com.alexisayenko.audioplayer`,
 `GOOGLE_CLIENT_ID`. A provider without its audience set is rejected.
 
 iOS setup (done): Sign in with Apple capability on the App ID
@@ -193,9 +203,19 @@ OAuth client of type iOS with that bundle id; copy
 client ID and its reversed form, then `xcodegen`.
 
 Apple `sub`: sign in with Apple once in the app, decode the token payload
-(`sub`), or read the 403 case in the server log; put it in
-`ALLOWED_APPLE_SUB` so a hidden or relayed email still passes.
+(`sub`) and put it in `ALLOWED_APPLE_SUB` so a hidden or relayed email still
+maps to the owner. Other users with a relay email are ordinary users.
 
 Google Cloud project `gramophone-offline` (external name, pre-rename): OAuth consent screen External in
-Testing with the owner as the only test user, one OAuth client of type iOS.
+Testing with the owner as the only test user, one OAuth client of type iOS. Open signup for strangers needs the consent screen published (In production) and the web OAuth client; until then only listed test users can sign in with Google.
 A new client can take hours to start working. Values stay out of the repo.
+
+## Limits and environment (ADR-0012)
+
+Env (all optional): `USER_MAX_SONGS` (500), `USER_MAX_BYTES` (5 GB),
+`USER_ADDS_PER_HOUR` (20), `USER_MAX_CONCURRENT_DOWNLOADS` (1),
+`GLOBAL_MAX_CONCURRENT_DOWNLOADS` (2), `POOL_MAX_BYTES` (150 GB), `SIGNUP_OPEN` (1),
+`OWNER_EMAIL`. Code: `server/app/limits.py` (checks), `jobs.py` (download
+queue), `users.py` (identity, owner, locks), `migrate.py` (one-time move of the
+legacy library). Details and error codes: [`../specs/api.md`](../specs/api.md)
+API-040..047, [`../specs/non-functional.md`](../specs/non-functional.md) NFR-050..055.

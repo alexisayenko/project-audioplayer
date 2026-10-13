@@ -10,7 +10,7 @@ Electrophone, a personal audio player: search YouTube (or paste a YouTube or Sou
 private server, manage the library and play online in the web UI. The
 The iOS app adds offline listening via "download to device"
 (Library, Add, Playback, Settings). Look: the Electrophone design system ([`docs/brand/`](docs/brand/)).
-TestFlight internal testing only.
+iOS: TestFlight internal testing only. Web: open signup (Google or Apple), per-user library and storage, quotas ([ADR-0012](docs/tech/decisions.md)).
 
 - [`ios/`](ios/) — SwiftUI app
 - [`server/`](server/) — FastAPI + `yt-dlp` API; also serves the web UI

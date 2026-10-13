@@ -224,7 +224,7 @@ drafts, both SUPERSEDED:
 - An old bare `{songs:[...]}` file is migrated on load; `AUDIO_DOWNLOAD_DIR`
   is only the fallback when no `music_root` is set. `AUDIO_MUSIC_ROOT`
   overrides it locally.
-- Today audio is at `downloads/<id>.m4a` on the server. Covers are
+- ~~Today audio is at `downloads/<id>.m4a` on the server.~~ Per user since ADR-0012: `<music_root>/users/<uid>/<id>.m4a`. Covers are
   `covers/<id>.jpg` (downloaded from the yt-dlp thumbnail at save time).
 - Storage (ADR-0005, implemented; plain files when `AUDIO_DATA_REPO` is unset):
   `library.json` is `audioplayer/library.json` in the git repo
