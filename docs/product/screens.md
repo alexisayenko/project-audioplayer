@@ -5,7 +5,7 @@ Status: web UI and the server endpoints below are implemented
 the same origin as the API at `play.isayenko.net` (no CORS, token-protected
 API), see ADR-0003 in [`../tech/decisions.md`](../tech/decisions.md). The
 iOS app mirrors the web flow with Library, Playback and
-Settings tabs (Add is a sheet from the Library header; YouTube text search is a secondary screen inside it; Library is the phone only, filtered by four category chips and a bottom sheet), see [`../tech/architecture.md`](../tech/architecture.md).
+Settings tabs (iOS search states: spinner, "No results", and inline errors for 401, unreachable and server failures, see IOS-023; Settings shows a "Custom server · Reset" row only for a non-default connection, IOS-010; Add is a sheet from the Library header; YouTube text search is a secondary screen inside it; Library is the phone only, filtered by four category chips and a bottom sheet), see [`../tech/architecture.md`](../tech/architecture.md).
 
 Scope: the web UI is for managing the library and listening online only,
 with no offline storage or audio cache. Offline listening ("download to
