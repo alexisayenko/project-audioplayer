@@ -579,24 +579,6 @@ def get_genres(user: dict[str, Any] = Depends(require_token)):
     return {"genres": [*used, *rest][:GENRES_MAX]}
 
 
-_SUGGEST_CAPS = {"genre": 3, "country": 1}
-
-
-def _cap_suggestions(tags: list[str]) -> list[str]:
-    used: dict[str, int] = {}
-    out = []
-    for t in tags:
-        key = t.partition(":")[0] if ":" in t else ""
-        if key == "lang":
-            continue
-        if key in _SUGGEST_CAPS:
-            if used.get(key, 0) >= _SUGGEST_CAPS[key]:
-                continue
-            used[key] = used.get(key, 0) + 1
-        out.append(t)
-    return out
-
-
 class WikipediaLookupRequest(BaseModel):
     wikipedia_song: str | None = None
     wikipedia_artist: str | None = None
@@ -618,7 +600,7 @@ async def preview(req: PreviewRequest, user: dict[str, Any] = Depends(require_to
             raise HTTPException(status_code=502, detail=f"preview failed: {_short(exc)}") from exc
     found = await run_in_threadpool(genre_lookup.suggest_tags, meta.get("artist", ""), meta.get("title", ""))
     wiki = await run_in_threadpool(wiki_lookup.suggest, meta.get("artist", ""), meta.get("title", ""))
-    meta["tags"] = _cap_suggestions(library.clean_tags([*meta.get("tags", []), *found, *wiki["tags"]]))
+    meta["tags"] = metadata.finalize_tags([*meta.get("tags", []), *found, *wiki["tags"]], wiki.get("song_genres"))
     meta["wikipedia_song"] = wiki["wikipedia_song"]
     meta["wikipedia_artist"] = wiki["wikipedia_artist"]
     meta["suggested_year"] = wiki["year"]
@@ -662,7 +644,7 @@ async def get_metadata(req: MetadataRequest):
 @app.post("/lookup/wikipedia", dependencies=[Depends(require_token)])
 async def lookup_wikipedia(req: WikipediaLookupRequest):
     found = await run_in_threadpool(wiki_lookup.from_links, req.wikipedia_song, req.wikipedia_artist)
-    return {"tags": _cap_suggestions(library.clean_tags(found["tags"])), "year": found["year"]}
+    return {"tags": metadata.finalize_tags(found["tags"], found.get("song_genres")), "year": found["year"]}
 
 
 def _drop_partial(out: Path | None, vid: str) -> None:

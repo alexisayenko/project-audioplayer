@@ -40,6 +40,13 @@ def cap_tags(tags: list[str], priority_genres: int = 0) -> list[str]:
     return out
 
 
+def finalize_tags(tags: list[str], song_genres: list[str] | None = None) -> list[str]:
+    """The one rule for suggested tags (/metadata, /preview, /lookup/wikipedia): the song's own genres first, non-genre `genre:` tags filtered, `lang:` dropped, 8 genres and 1 country."""
+    song = genre_filter.filter_tags([f"genre:{g}" if ":" not in str(g) else str(g) for g in song_genres or []])
+    merged = genre_filter.filter_tags([*song, *tags])
+    return cap_tags(merged, len(library.clean_tags(song)))
+
+
 def _year(value: Any) -> int | None:
     return value if isinstance(value, int) and not isinstance(value, bool) and 0 < value < 10000 else None
 
@@ -51,15 +58,14 @@ def merge(sources: list[dict[str, Any]], mb: dict[str, Any] | None, links: dict[
     year links, song-page infobox, guess, MusicBrainz, sources; album sources, song-page infobox, then MusicBrainz.
     """
     mb, links, guess = mb or {}, links or {}, guess or {}
-    song_genres = genre_filter.filter_tags([f"genre:{g}" if ":" not in str(g) else str(g) for g in links.get("song_genres") or guess.get("song_genres") or []])
-    tags = genre_filter.filter_tags([*song_genres, *(t for r in (*sources, mb, links, guess) for t in r.get("tags") or [])])
+    tags = finalize_tags([t for r in (*sources, mb, links, guess) for t in r.get("tags") or []], links.get("song_genres") or guess.get("song_genres"))
     box_album = links.get("infobox_album") or guess.get("infobox_album")
     box_year = links.get("infobox_year") or guess.get("infobox_year")
     albums = (*(s.get("album") for s in sources), box_album, mb.get("album"))
     album = next((str(a).strip() for a in albums if a and str(a).strip()), None)
     years = (links.get("year"), box_year, guess.get("year"), mb.get("year"), *(s.get("year") for s in sources))
     year = next((y for y in map(_year, years) if y), None)
-    return {"album": album, "year": year, "tags": cap_tags(tags, len(library.clean_tags(song_genres)))}
+    return {"album": album, "year": year, "tags": tags}
 
 
 def _service_of(url: str) -> str | None:

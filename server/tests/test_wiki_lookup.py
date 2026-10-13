@@ -321,7 +321,7 @@ def test_preview_returns_links_tags_and_year(client, monkeypatch):
     assert body["wikipedia_artist"] == "https://en.wikipedia.org/wiki/Daft_Punk"
     assert body["suggested_year"] == 1997
     assert body["year"] == 1997
-    assert body["tags"] == ["genre:house music", "genre:electronic", "genre:disco", "country:fr"]
+    assert body["tags"] == ["genre:house", "genre:electronic", "genre:disco", "country:fr"]
 
 
 def test_preview_survives_total_failure(client):
@@ -375,7 +375,7 @@ def test_lookup_endpoint(client, monkeypatch):
     body = {"wikipedia_song": "https://en.wikipedia.org/wiki/Around_the_World_(Daft_Punk_song)", "wikipedia_artist": "https://www.wikidata.org/wiki/Q200"}
     r = client.post("/lookup/wikipedia", json=body, headers=H)
     assert r.status_code == 200
-    assert r.json() == {"tags": ["genre:house music", "genre:electronic", "genre:disco", "country:fr"], "year": 1997}
+    assert r.json() == {"tags": ["genre:house", "genre:electronic", "genre:disco", "country:fr"], "year": 1997}
 
 
 def test_lookup_endpoint_empty_bad_and_failing(client):

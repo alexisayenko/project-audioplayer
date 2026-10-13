@@ -1,7 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from app import extractor, genre_lookup as gl, main
+from app import extractor, genre_lookup as gl, main, wiki_lookup as wl
 
 
 @pytest.fixture(autouse=True)
@@ -117,7 +117,7 @@ def test_preview_merges_tags(monkeypatch):
     monkeypatch.setattr(gl, "suggest_tags", lambda a, t: ["genre:Pop", "genre:house", "genre:disco", "genre:funk"])
     r = TestClient(main.app).post("/preview", json={"url": "https://youtu.be/dQw4w9WgXcQ"}, headers={"X-API-Token": "secret"})
     assert r.status_code == 200
-    assert r.json()["tags"] == ["genre:pop", "genre:rock", "genre:house"]
+    assert r.json()["tags"] == ["genre:pop", "genre:rock", "genre:house", "genre:disco", "genre:funk"]
 
 
 def work(*langs, language=None):
@@ -232,12 +232,40 @@ def test_clean_tag_namespaces():
     assert library.clean_tag("country:Lithuania") == "country:lithuania"
 
 
-def test_preview_caps_per_namespace_and_drops_lang(monkeypatch):
+_MIXED = ["genre:danish", "genre:dj", "genre:house music", "genre:house", *[f"genre:g{i}" for i in range(9)], "country:lt", "country:lv", "lang:en", "lang:de"]
+_EXPECTED = ["genre:house", *[f"genre:g{i}" for i in range(7)], "country:lt"]
+
+
+def _mock_preview(monkeypatch, found, wiki_tags=(), song_genres=()):
     monkeypatch.setenv("AUDIO_API_TOKEN", "secret")
     monkeypatch.setattr(extractor, "preview", lambda v: {"id": "dQw4w9WgXcQ", "title": "T", "artist": "A", "tags": ["lang:ru"]})
-    monkeypatch.setattr(gl, "suggest_tags", lambda a, t: ["genre:a", "genre:b", "genre:c", "genre:d", "country:lt", "country:lv", "lang:en", "lang:de"])
+    monkeypatch.setattr(gl, "suggest_tags", lambda a, t: list(found))
+    monkeypatch.setattr(wl, "suggest", lambda a, t: {"tags": list(wiki_tags), "song_genres": list(song_genres), "year": None, "wikipedia_song": None, "wikipedia_artist": None})
+
+
+def test_preview_filters_caps_and_drops_lang(monkeypatch):
+    _mock_preview(monkeypatch, _MIXED)
     r = TestClient(main.app).post("/preview", json={"url": "https://youtu.be/dQw4w9WgXcQ"}, headers={"X-API-Token": "secret"})
-    assert r.json()["tags"] == ["genre:a", "genre:b", "genre:c", "country:lt"]
+    assert r.json()["tags"] == _EXPECTED
+
+
+def test_preview_and_metadata_give_same_tags(monkeypatch):
+    _mock_preview(monkeypatch, [], wiki_tags=_MIXED, song_genres=["genre:z1", "genre:z2"])
+    c = TestClient(main.app)
+    h = {"X-API-Token": "secret"}
+    prev = c.post("/preview", json={"url": "https://youtu.be/dQw4w9WgXcQ"}, headers=h).json()["tags"]
+    monkeypatch.setattr(extractor, "preview", lambda v: {"id": v, "title": "T", "artist": "A", "tags": ["lang:ru"], "year": None, "album": None})
+    monkeypatch.setattr(gl, "lookup", lambda a, t: {"tags": [], "year": None, "album": None})
+    meta = c.post("/metadata", json={"title": "T", "artist": "A", "sources": [{"url": "https://youtu.be/dQw4w9WgXcQ"}]}, headers=h).json()["tags"]
+    assert prev == meta
+    assert prev[:2] == ["genre:z1", "genre:z2"] and len([t for t in prev if t.startswith("genre:")]) == 8
+
+
+def test_lookup_wikipedia_uses_same_rule(monkeypatch):
+    monkeypatch.setenv("AUDIO_API_TOKEN", "secret")
+    monkeypatch.setattr(wl, "from_links", lambda s, a: {"tags": _MIXED, "song_genres": [], "year": 1999})
+    r = TestClient(main.app).post("/lookup/wikipedia", json={"wikipedia_song": "https://en.wikipedia.org/wiki/X"}, headers={"X-API-Token": "secret"})
+    assert r.json() == {"tags": _EXPECTED, "year": 1999}
 
 
 @pytest.mark.parametrize(
