@@ -1,6 +1,6 @@
 import { api } from './api.js';
 import { store } from './store.js';
-import { el, toast, field, clearable } from './dom.js';
+import { el, toast, field, clearField } from './dom.js';
 import { tagEditor } from './tag-editor.js';
 import { chipField } from './chip-field.js';
 import { wikiFields } from './wiki-links.js';
@@ -80,10 +80,10 @@ export function editDialog(song) {
   });
   const form = el('form', { method: 'dialog' },
     dialogHead('Edit song', null, () => dlg.close()),
-    field('Title', f.title), field('Artist', f.artist),
-    field('Remix & additional production', f.remixer),
+    clearField('Title', f.title), clearField('Artist', f.artist),
+    clearField('Remix & additional production', f.remixer),
     el('div', { class: 'grid2' }, field('Album', f.album), field('Year', f.year)),
-    el('div', { class: 'field' }, el('label', {}, 'BPM (heuristic, may be off by half or double)'), el('div', { class: 'row' }, clearable(f.bpm, 'BPM'), redetect)),
+    el('div', { class: 'field' }, el('label', {}, 'BPM (heuristic, may be off by half or double)'), el('div', { class: 'row' }, f.bpm, redetect)),
     wiki.node,
     genres.node, countries.node,
     el('div', { class: 'field' }, el('label', {}, 'Tags'), editor.node),

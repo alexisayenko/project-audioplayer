@@ -139,9 +139,7 @@ label { display: block; color: var(--ink-muted); font-size: 13px; line-height: 1
 .field:first-child { margin-top: 0; }
 .row { display: flex; gap: var(--space-2); align-items: center; }
 .input-wrap { position: relative; }
-.row > .input-wrap { flex: 1; min-width: 0; }
-.input-wrap input { padding-right: 36px; -moz-appearance: textfield; appearance: textfield; }
-.input-wrap input::-webkit-outer-spin-button, .input-wrap input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.input-wrap input { padding-right: 36px; }
 .clear-btn { position: absolute; top: 50%; right: 2px; transform: translateY(-50%); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--ink-muted); cursor: pointer; }
 .clear-btn[hidden] { display: none; }
 .clear-btn:hover { color: var(--ink); }

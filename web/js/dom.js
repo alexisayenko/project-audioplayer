@@ -72,4 +72,5 @@ export function clearable(input, name) {
   return wrap;
 }
 
-export const field = (label, input) => el('div', { class: 'field' }, el('label', {}, label), clearable(input, label));
+export const field = (label, input) => el('div', { class: 'field' }, el('label', {}, label), input);
+export const clearField = (label, input) => el('div', { class: 'field' }, el('label', {}, label), clearable(input, label));

@@ -1,7 +1,7 @@
 import { api } from './api.js';
 import { store } from './store.js';
 import { tagEditor } from './tag-editor.js';
-import { el, fmtTime, toast, field } from './dom.js';
+import { el, fmtTime, toast, field, clearField } from './dom.js';
 import { icon } from './icons.js';
 import { cleanPasted, sourceOf, sourceLabel } from './url-clean.js';
 import { findInLibrary } from './library-match.js';
@@ -201,8 +201,8 @@ export function openAdd() {
       el('div', { class: 'preview-row' }, cover, el('div', { class: 'preview-meta' }, title, sub, facts,
         el('span', { class: 'chip tint', title: 'Source' }, sourceLabel(preview.source || sourceOf(preview.id))))),
       el('div', { class: 'add-fields' },
-        field('Title', f.title), field('Artist', f.artist),
-        field('Remix & additional production', f.remixer),
+        clearField('Title', f.title), clearField('Artist', f.artist),
+        clearField('Remix & additional production', f.remixer),
         el('div', { class: 'meta-row' }, metaBtn, icons.node),
         metaMsg, hint,
         el('div', { class: 'grid2' }, field('Album', f.album), field('Year', f.year)),
