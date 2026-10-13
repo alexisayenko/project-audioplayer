@@ -34,12 +34,22 @@ def test_merge_ignores_bad_years():
 def upstream(monkeypatch):
     monkeypatch.setattr(gl, "lookup", lambda a, t: {"tags": ["genre:rock", "country:au"], "year": 1979, "album": "Highway to Hell"})
     monkeypatch.setattr(wl, "suggest", lambda a, t: {"tags": ["genre:hard rock", "country:gb"], "year": 1979})
-    monkeypatch.setattr(wl, "from_links", lambda s, a: {"tags": ["genre:blues rock"], "year": 1980})
+    monkeypatch.setattr(wl, "from_links", lambda s, a: {"tags": ["genre:blues rock"], "year": 1980, "wikipedia_song": "https://en.wikipedia.org/wiki/X", "wikipedia_artist": None})
 
 
 def test_gather_merges_all_sources(upstream):
-    out = metadata.gather("T", "A", [lambda: {"album": None, "year": 2015, "tags": ["genre:Rock", "lang:en"]}], "https://en.wikipedia.org/wiki/X", None)
-    assert out == {"album": "Highway to Hell", "year": 1980, "tags": ["genre:rock", "country:au", "genre:blues rock", "genre:hard rock"]}
+    out = metadata.gather("T", "A", [lambda: {"album": None, "year": 2015, "tags": ["genre:Rock", "lang:en"]}], "https://en.wikipedia.org/wiki/X", None, source_urls=["https://youtu.be/dQw4w9WgXcQ"])
+    assert out == {
+        "album": "Highway to Hell",
+        "year": 1980,
+        "tags": ["genre:rock", "country:au", "genre:blues rock", "genre:hard rock"],
+        "services": {
+            "youtube": {"found": True, "url": "https://youtu.be/dQw4w9WgXcQ"},
+            "soundcloud": {"found": False, "url": None},
+            "wikipedia": {"found": True, "url": "https://en.wikipedia.org/wiki/X"},
+            "spotify": {"found": False, "url": None},
+        },
+    }
 
 
 def test_gather_skips_failing_sources(monkeypatch):
@@ -50,13 +60,28 @@ def test_gather_skips_failing_sources(monkeypatch):
     monkeypatch.setattr(wl, "suggest", boom)
     monkeypatch.setattr(wl, "from_links", boom)
     out = metadata.gather("T", "A", [boom, lambda: {"album": "Alb", "year": 2000, "tags": ["genre:pop"]}], "x", "y")
-    assert out == {"album": "Alb", "year": 2000, "tags": ["genre:pop"]}
+    assert {k: out[k] for k in ("album", "year", "tags")} == {"album": "Alb", "year": 2000, "tags": ["genre:pop"]}
+    assert out["services"]["wikipedia"] == {"found": False, "url": None}
 
 
 def test_gather_without_artist_or_links_skips_lookups(monkeypatch):
     for mod, name in ((gl, "lookup"), (wl, "suggest"), (wl, "from_links")):
         monkeypatch.setattr(mod, name, lambda *a: pytest.fail("called"))
-    assert metadata.gather("", "", [], None, None) == {"album": None, "year": None, "tags": []}
+    out = metadata.gather("", "", [], None, None)
+    assert {k: out[k] for k in ("album", "year", "tags")} == {"album": None, "year": None, "tags": []}
+    assert all(v == {"found": False, "url": None} for v in out["services"].values())
+
+
+def test_services_soundcloud_wikidata_fallback_and_failed_source():
+    svc = metadata.services(
+        ["https://soundcloud.com/a/b", "https://youtu.be/xxxxxxxxxxx", "https://on.soundcloud.com/z"],
+        {0: {"tags": ["genre:pop"]}, 1: {"album": None, "year": None, "tags": []}},
+        None,
+        {"tags": [], "year": None, "wikipedia_song": None, "wikipedia_artist": "https://www.wikidata.org/wiki/Q42"},
+    )
+    assert svc["soundcloud"] == {"found": True, "url": "https://soundcloud.com/a/b"}
+    assert svc["youtube"] == {"found": False, "url": None}
+    assert svc["wikipedia"] == {"found": True, "url": "https://www.wikidata.org/wiki/Q42"}
 
 
 def test_gather_timeout_returns_what_finished(upstream):
@@ -68,6 +93,7 @@ def test_gather_timeout_returns_what_finished(upstream):
     out = metadata.gather("T", "A", [slow], timeout=0.3)
     assert time.monotonic() - start < 1.5
     assert out["album"] == "Highway to Hell" and "genre:late" not in out["tags"]
+    assert out["services"]["youtube"]["found"] is False
 
 
 def test_metadata_endpoint(monkeypatch):
@@ -84,5 +110,9 @@ def test_metadata_endpoint(monkeypatch):
     assert client.post("/metadata", json=body).status_code in (401, 403)
     r = client.post("/metadata", json=body, headers={"X-API-Token": "secret"})
     assert r.status_code == 200
-    assert r.json() == {"album": "Yt Album", "year": 2001, "tags": ["genre:pop", "country:au"]}
-    assert client.post("/metadata", json={}, headers={"X-API-Token": "secret"}).json() == {"album": None, "year": None, "tags": []}
+    body_out = r.json()
+    assert {k: body_out[k] for k in ("album", "year", "tags")} == {"album": "Yt Album", "year": 2001, "tags": ["genre:pop", "country:au"]}
+    assert body_out["services"]["youtube"] == {"found": True, "url": "https://youtu.be/dQw4w9WgXcQ"}
+    assert body_out["services"]["spotify"] == {"found": False, "url": None}
+    empty = client.post("/metadata", json={}, headers={"X-API-Token": "secret"}).json()
+    assert (empty["album"], empty["year"], empty["tags"]) == (None, None, [])

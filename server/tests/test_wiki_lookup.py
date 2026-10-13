@@ -216,7 +216,9 @@ def test_failures_give_nothing(monkeypatch):
 
     monkeypatch.setattr(wl, "_fetch_json", boom)
     assert wl.facts("Q100", "Q200") == {"tags": [], "year": None}
-    assert wl.from_links("https://en.wikipedia.org/wiki/X", None) == {"tags": [], "year": None}
+    assert wl.from_links("https://en.wikipedia.org/wiki/X", None) == {
+        "tags": [], "year": None, "wikipedia_song": "https://en.wikipedia.org/wiki/X", "wikipedia_artist": None
+    }
     monkeypatch.setattr(gl, "_get", fake_mb({}, {}))
     assert wl.suggest("Daft Punk", "X")["tags"] == []
 
@@ -246,7 +248,8 @@ def test_suggest_from_musicbrainz_relations(monkeypatch):
     assert out["wikipedia_song"] == "https://en.wikipedia.org/wiki/Around_the_World_(Daft_Punk_song)"
     assert out["wikipedia_artist"] == "https://de.wikipedia.org/wiki/Daft_Punk"
     assert out["year"] == 1997 and "country:fr" in out["tags"]
-    assert ("recording/r1", "genres+tags+work-rels+url-rels+releases") in calls
+    needed = ("tags", "work-rels", "releases", "release-groups", "artist-credits")
+    assert any(c[0] == "recording/r1" and all(p in c[1].split("+") for p in needed) for c in calls)
     assert ("artist/a1", "genres+tags+url-rels") in calls
 
 
@@ -272,7 +275,9 @@ def test_suggest_disabled(monkeypatch):
     monkeypatch.setenv("AUDIO_TAG_LOOKUP", "0")
     monkeypatch.setattr(wl, "_fetch_json", lambda u: pytest.fail("called"))
     assert wl.suggest("Daft Punk", "X") == {"wikipedia_song": None, "wikipedia_artist": None, "tags": [], "year": None}
-    assert wl.from_links("https://en.wikipedia.org/wiki/X", None) == {"tags": [], "year": None}
+    assert wl.from_links("https://en.wikipedia.org/wiki/X", None) == {
+        "tags": [], "year": None, "wikipedia_song": None, "wikipedia_artist": None
+    }
 
 
 @pytest.fixture()

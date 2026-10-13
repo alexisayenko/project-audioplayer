@@ -269,15 +269,24 @@ def suggest(artist: str, title: str) -> dict[str, Any]:
     return out
 
 
+def _page_url(url: str | None) -> str | None:
+    """A Wikipedia page for a cleaned link; a Wikidata link becomes its sitelink, else stays the Wikidata URL."""
+    qid = qid_of(url)
+    return (sitelink(qid) or url) if qid else url
+
+
 def from_links(song_link: Any, artist_link: Any) -> dict[str, Any]:
-    """Tag suggestions and year for user-edited Wikipedia/Wikidata links; empty when disabled or on any failure."""
-    out: dict[str, Any] = {"tags": [], "year": None}
+    """Tags, year and page URLs (`wikipedia_song`, `wikipedia_artist`) for user-edited Wikipedia/Wikidata links; empty when disabled or on any failure."""
+    out: dict[str, Any] = {"tags": [], "year": None, "wikipedia_song": None, "wikipedia_artist": None}
     if not genre_lookup.enabled():
         return out
     try:
-        song_q = qid_of_page(clean_link(song_link) or "")
-        artist_q = qid_of_page(clean_link(artist_link) or "")
-        return facts(song_q, artist_q)
+        song_url, artist_url = clean_link(song_link), clean_link(artist_link)
+        song_q, artist_q = qid_of_page(song_url or ""), qid_of_page(artist_url or "")
+        out.update(facts(song_q, artist_q))
+        out["wikipedia_song"] = _page_url(song_url)
+        out["wikipedia_artist"] = _page_url(artist_url)
+        return out
     except Exception as exc:
         log.warning("wikipedia link lookup failed: %s", exc)
         return out

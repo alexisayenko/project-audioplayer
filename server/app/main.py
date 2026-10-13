@@ -600,9 +600,10 @@ def _source_info(url: str) -> dict[str, Any]:
 
 @app.post("/metadata", dependencies=[Depends(require_token)])
 async def get_metadata(req: MetadataRequest):
-    fetchers = [(lambda u=src.url: _source_info(u)) for src in req.sources[:5] if src.url.strip()]
+    urls = [src.url.strip() for src in req.sources[:5] if src.url.strip()]
+    fetchers = [(lambda u=u: _source_info(u)) for u in urls]
     return await run_in_threadpool(
-        metadata.gather, req.title.strip(), req.artist.strip(), fetchers, req.wiki_song, req.wiki_artist
+        metadata.gather, req.title.strip(), req.artist.strip(), fetchers, req.wiki_song, req.wiki_artist, metadata.TIMEOUT, urls
     )
 
 

@@ -28,6 +28,8 @@ RETRY_DELAY = 1.0
 _rate_lock = threading.Lock()
 _last_call = 0.0
 _cache: dict[tuple[str, str], dict[str, Any]] = {}
+_key_locks: dict[tuple[str, str], threading.Lock] = {}
+_key_locks_guard = threading.Lock()
 
 _OFF = {"0", "false", "no", "off"}
 
@@ -197,7 +199,11 @@ def lookup(artist: str, title: str) -> dict[str, Any]:
             return _empty()
         key = (artist.casefold(), title.casefold())
         if key not in _cache:
-            _cache[key] = _lookup(artist, title)
+            with _key_locks_guard:
+                lock = _key_locks.setdefault(key, threading.Lock())
+            with lock:
+                if key not in _cache:
+                    _cache[key] = _lookup(artist, title)
         return {**_cache[key], "tags": list(_cache[key]["tags"])}
     except Exception as exc:
         log.warning("tag lookup failed for %r - %r: %s", artist, title, exc)

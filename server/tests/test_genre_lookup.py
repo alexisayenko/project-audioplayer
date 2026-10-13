@@ -244,3 +244,21 @@ def test_preview_caps_per_namespace_and_drops_lang(monkeypatch):
 )
 def test_split_artist_title_cases(channel, title, expected):
     assert gl.split_artist_title(channel, title) == expected
+
+
+def test_concurrent_lookups_of_one_track_share_one_fetch(monkeypatch):
+    import threading
+    import time as _time
+
+    calls = []
+
+    def slow(path, params):
+        calls.append(path)
+        _time.sleep(0.05)
+        return {"recordings": []}
+
+    monkeypatch.setattr(gl, "_get", slow)
+    threads = [threading.Thread(target=gl.lookup, args=("Daft Punk", "Around the World")) for _ in range(3)]
+    [t.start() for t in threads]
+    [t.join() for t in threads]
+    assert calls == ["recording/"]
