@@ -9,8 +9,6 @@ final class AddFlow: ObservableObject {
     @Published var preview: Preview?
     @Published var message: String?
     @Published var errorCode: String?
-    @Published var wikiNote: String?
-    @Published var wikiBusy = false
     @Published var metaBusy = false
     @Published var metaNote: String?
 
@@ -33,7 +31,7 @@ final class AddFlow: ObservableObject {
     }
 
     func reset() {
-        phase = .idle; preview = nil; message = nil; errorCode = nil; url = ""; wikiNote = nil
+        phase = .idle; preview = nil; message = nil; errorCode = nil; url = ""
         title = ""; artist = ""; album = ""; year = ""; bpm = ""; wikiSong = ""; wikiArtist = ""
         tags = []; suggested = []; pendingTag = ""; metaNote = nil
     }
@@ -42,7 +40,7 @@ final class AddFlow: ObservableObject {
         let clean = cleanPasted(url)
         url = clean
         guard !clean.isEmpty, phase != .loading, phase != .saving else { return }
-        phase = .loading; message = nil; errorCode = nil; wikiNote = nil
+        phase = .loading; message = nil; errorCode = nil
         do {
             let p = try await api.preview(url: clean)
             preview = p
@@ -60,19 +58,6 @@ final class AddFlow: ObservableObject {
         }
     }
 
-    func lookupWiki(_ api: APIClient) async {
-        let s = wikiSong.trimmingCharacters(in: .whitespaces), a = wikiArtist.trimmingCharacters(in: .whitespaces)
-        guard !s.isEmpty || !a.isEmpty else { wikiNote = "Add a Wikipedia link first."; return }
-        wikiBusy = true; defer { wikiBusy = false }
-        do {
-            let found = try await api.lookupWikipedia(song: s.isEmpty ? nil : s, artist: a.isEmpty ? nil : a)
-            var appliedYear: Int?
-            if let y = found.year, yearValue == nil { year = String(y); appliedYear = y }
-            for t in found.tags ?? [] where !suggested.contains(where: { $0.lowercased() == t.lowercased() }) { suggested.append(t) }
-            wikiNote = lookupSummary(found, appliedYear)
-        } catch { wikiNote = error.localizedDescription }
-    }
-
     func getMetadata(_ api: APIClient) async {
         guard !metaBusy else { return }
         metaBusy = true; metaNote = nil; defer { metaBusy = false }
@@ -82,11 +67,12 @@ final class AddFlow: ObservableObject {
                                            wikiSong: wikiSong.trimmingCharacters(in: .whitespaces),
                                            wikiArtist: wikiArtist.trimmingCharacters(in: .whitespaces))
             var changed = false
+            let returned = !(r.album ?? "").isEmpty || r.year != nil || !(r.tags ?? []).isEmpty
             if let a = r.album, !a.isEmpty, album.trimmingCharacters(in: .whitespaces).isEmpty { album = a; changed = true }
             if let y = r.year, yearValue == nil { year = String(y); changed = true }
             if addNamespaced(&tags, r.tags ?? []) > 0 { changed = true }
             for t in r.tags ?? [] where ["genre", "country"].contains(tagKey(t)) && !hasTag(suggested, t) { suggested.append(t) }
-            metaNote = changed ? nil : "Nothing found"
+            metaNote = changed ? nil : (returned ? "Already up to date" : "Nothing found")
         } catch { metaNote = "Couldn't load metadata" }
     }
 
@@ -357,17 +343,12 @@ struct AddSheet: View {
                     HStack { Text("Get metadata"); if flow.metaBusy { ProgressView() } }
                 }
                 .buttonStyle(DSButtonStyle(kind: .quiet)).disabled(flow.metaBusy)
-                if let n = flow.metaNote { note(n, error: n != "Nothing found") }
+                if let n = flow.metaNote { note(n, error: n == "Couldn't load metadata") }
                 labeled("Album", $flow.album)
                 labeled("Year", $flow.year, keyboard: .numberPad)
                 labeled("BPM (optional, detected after saving)", $flow.bpm, keyboard: .numberPad)
                 labeled("Wikipedia: song", $flow.wikiSong, keyboard: .URL, url: true)
                 labeled("Wikipedia: band", $flow.wikiArtist, keyboard: .URL, url: true)
-                Button { Task { await flow.lookupWiki(api) } } label: {
-                    HStack { Text("Fill from Wikipedia links"); if flow.wikiBusy { ProgressView() } }
-                }
-                .buttonStyle(DSButtonStyle(kind: .quiet)).disabled(flow.wikiBusy)
-                if let n = flow.wikiNote { note(n) }
         }
 
         NamespaceField(title: "Genres", key: "genre", cap: genreCap, tags: $flow.tags)

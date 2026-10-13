@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { isWikiLink, songLinks, lookupSummary } from './wiki-links.js';
+import { isWikiLink, songLinks } from './wiki-links.js';
 
 assert.ok(isWikiLink('https://en.wikipedia.org/wiki/Daft_Punk'));
 assert.ok(isWikiLink('https://www.wikidata.org/wiki/Q42'));
@@ -14,7 +14,4 @@ assert.deepEqual(songLinks({ ...full, wikipedia_song: null }).map((l) => l.label
 assert.deepEqual(songLinks({ source_url: 'javascript:alert(1)', wikipedia_song: 'javascript:alert(1)' }), []);
 assert.deepEqual(songLinks({}), []);
 
-assert.equal(lookupSummary({ tags: ['a', 'b'] }, 1997), 'Found: year 1997, 2 suggested tags.');
-assert.equal(lookupSummary({ tags: ['a'] }, null), 'Found: 1 suggested tag.');
-assert.equal(lookupSummary({ tags: [] }, null), 'Nothing found for these links.');
 console.log('wiki-links ok');

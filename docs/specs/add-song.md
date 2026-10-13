@@ -27,7 +27,7 @@ Code: `web/js/add.js`, `server/app/main.py` (`preview`, `create_song`,
 
 - ADD-005 MUST: the year of the preview (including `suggested_year` when yt-dlp gave none) produces the `decade:` chip in the tag editor, and editing Year updates it (TAG-038); the server derives the stored tag on save (TAG-051). Status: implemented
 - ADD-050 MUST: the preview card has two optional URL inputs, "Wikipedia: song" and "Wikipedia: band", pre-filled from `preview.wikipedia_song` / `wikipedia_artist` (MusicBrainz url-rels, see [tags.md](tags.md) TAG-040); they are saved with the song (`metadata.wikipedia_song`, `wikipedia_artist`); an input that is not a Wikipedia/Wikidata link is outlined red and dropped by the server. Status: implemented
-- ADD-051 MUST: "Fill from Wikipedia links" calls `POST /lookup/wikipedia` with the two inputs; the suggested year fills Year when it is empty, or after a confirm when it differs; suggested tags go to the Suggested row, not onto the song. Status: implemented
+- ADD-051 MUST: the Add form has no "Fill from Wikipedia links" button; the two link inputs feed "Get metadata" (`POST /metadata`); `POST /lookup/wikipedia` remains for the song edit sheet. Status: implemented
 
 ## BPM
 
@@ -65,5 +65,5 @@ Code: `web/js/add.js`, `server/app/main.py` (`preview`, `create_song`,
 ## Limits (ADR-0012)
 
 - ADD-050 MUST: the server checks the user's quotas before it resolves or downloads the link (API-041); the Add dialog shows a readable message for each refusal and keeps the form: 429 "Hourly limit reached. Try again in N minutes.", 403 `library_full_songs` "Your library is full. Delete some songs to add more.", 403 `library_full_bytes` "Your storage is full. Delete some songs to free space.", 503 `server_full` "The server is out of storage right now. Try again later." (`web/js/limits.js` `friendly`, tested). Status: implemented
-- ADD-051 MUST: when the user or the server is at its download cap the add is accepted with status `queued` and starts in order; the Library row shows the usual progress once it runs. Status: implemented
+- ADD-051 MUST: there is no "Fill from Wikipedia links" button on the web; the song and band Wikipedia link inputs stay and are saved with the song. Status: implemented
 - ADD-052 MUST: a sign-in refused because signup is closed shows "Sign-up is closed on this server." on Settings (403 `signup_closed`). Status: implemented

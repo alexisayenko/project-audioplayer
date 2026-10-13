@@ -105,7 +105,6 @@ export const api = {
   tags: () => request('GET', '/tags'),
   preview: (url) => request('POST', '/preview', { url }),
   addSong: (url, metadata, tags) => request('POST', '/songs', { url, metadata, tags }),
-  lookupWikipedia: (links) => request('POST', '/lookup/wikipedia', links),
   status: (id) => request('GET', `/songs/${q(id)}/status`),
   patch: (id, changes) => request('PATCH', `/songs/${q(id)}`, changes),
   detectBpm: (id) => request('POST', `/songs/${q(id)}/bpm/detect`),

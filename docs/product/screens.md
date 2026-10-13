@@ -51,7 +51,7 @@ Web: a centred 560px dialog over Library (bottom-aligned sheet on phones): title
 3. User edits any field and assigns tags in the shared tag editor ("Get metadata" after Title and Artist fills empty Album and Year and suggests genres and a country; separate Genres and Countries fields hold the `genre:` and `country:` tags; suggested tags, existing tags grouped by prefix, `key:value` allowed; incomplete leftover text such as `mood:` is ignored).
    BPM is optional: left empty it is detected on the server after the
    download (placeholder "Detected after saving"); a typed value is kept as is.
-   Two optional inputs, Wikipedia (song) and Wikipedia (band), hold the links; "Fill from Wikipedia links" suggests tags and the year from them (year fills an empty Year, or asks first when it differs).
+   Two optional inputs, Wikipedia (song) and Wikipedia (band), hold the links; they are saved with the song and feed "Get metadata".
 4. Save starts the download on the server, then the app fetches the file.
 5. Shows progress while downloading and a clear error on failure
    (bad URL, unavailable video, server unreachable, already in library).

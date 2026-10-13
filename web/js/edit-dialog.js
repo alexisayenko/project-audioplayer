@@ -56,10 +56,8 @@ export function editDialog(song) {
   };
   const editor = tagEditor({ tags: song.tags || [], year: f.year });
   const err = el('p', { class: 'msg error', hidden: true });
-  const wikiMsg = el('div');
   const wiki = wikiFields({
-    song: song.wikipedia_song, artist: song.wikipedia_artist, year: f.year, editor,
-    onMessage: (text, kind) => wikiMsg.replaceChildren(el('p', { class: `msg ${kind}` }, text)),
+    song: song.wikipedia_song, artist: song.wikipedia_artist,
   });
   const redetect = el('button', { type: 'button', class: 'btn outline small' }, 'Re-detect');
   redetect.addEventListener('click', async () => {
@@ -83,7 +81,7 @@ export function editDialog(song) {
     field('Title', f.title), field('Artist', f.artist),
     el('div', { class: 'grid2' }, field('Album', f.album), field('Year', f.year)),
     el('div', { class: 'field' }, el('label', {}, 'BPM (heuristic, may be off by half or double)'), el('div', { class: 'row' }, f.bpm, redetect)),
-    wiki.node, wikiMsg,
+    wiki.node,
     el('div', { class: 'field' }, el('label', {}, 'Tags'), editor.node),
     err,
     el('div', { class: 'row end' },

@@ -70,10 +70,8 @@ export function openAdd() {
       tags: preview.tags || [], suggested: preview.tags || [], year: f.year,
       onChange: (tags) => { if (ready) paintTags(tags); },
     });
-    const wikiMsg = el('div');
     const wiki = wikiFields({
-      song: preview.wikipedia_song, artist: preview.wikipedia_artist, year: f.year, editor,
-      onMessage: (text, kind) => wikiMsg.replaceChildren(el('p', { class: `msg ${kind}` }, text)),
+      song: preview.wikipedia_song, artist: preview.wikipedia_artist,
     });
     const addTag = el('button', { class: 'chip-add', type: 'button', 'aria-label': 'Add tag', 'aria-expanded': 'false' }, icon('plus', 16));
     const editorBox = el('div', { class: 'details', hidden: true }, editor.node);
@@ -104,7 +102,7 @@ export function openAdd() {
       field('Title', f.title), field('Artist', f.artist),
       el('div', { class: 'grid2' }, field('Album', f.album), field('Year', f.year)),
       field('BPM (optional)', f.bpm),
-      wiki.node, wikiMsg);
+      wiki.node);
     const edit = el('button', { class: 'btn outline small', type: 'button', 'aria-expanded': 'false' }, 'Edit details');
     edit.addEventListener('click', () => {
       details.hidden = !details.hidden;
