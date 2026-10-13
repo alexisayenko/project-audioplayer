@@ -22,6 +22,8 @@ PROVIDERS = {
     },
 }
 
+PROVIDER_ORDER = ("google", "apple")
+
 log = logging.getLogger(__name__)
 
 _clients: dict[str, PyJWKClient] = {}
@@ -61,22 +63,18 @@ def verify_identity(token: str) -> dict:
     """Verify an ID token; return {provider, email, sub} (email is "" when Apple sends none).
 
     Raises 401 for an invalid token and 403 `unverified_email` when an email is present but not verified."""
-    try:
-        provider = jwt.decode(token, options={"verify_signature": False}).get("iss", "")
-    except jwt.PyJWTError:
-        raise Problem(401, "bad_token", _BAD_TOKEN)
-    if provider.startswith("https://appleid.apple.com"):
-        name = "apple"
-    elif "accounts.google.com" in provider:
-        name = "google"
-    else:
-        name = ""
-    audience = audiences(name) if name else []
-    if not name or not audience:
-        raise Problem(401, "bad_token", _BAD_TOKEN)
-    try:
-        claims = _verify(token, name, audience)
-    except Exception:
+    claims = name = None
+    for candidate in PROVIDER_ORDER:
+        audience = audiences(candidate)
+        if not audience:
+            continue
+        try:
+            claims = _verify(token, candidate, audience)
+        except Exception:
+            continue
+        name = candidate
+        break
+    if claims is None or name is None:
         raise Problem(401, "bad_token", _BAD_TOKEN)
     email = str(claims.get("email", "")).strip().lower()
     verified = claims.get("email_verified") in (True, "true")

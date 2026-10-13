@@ -48,10 +48,10 @@ def clean_link(value: Any) -> str | None:
     raw = value.strip()
     if not raw:
         return None
-    if raw.startswith("http://"):
-        raw = "https://" + raw[len("http://") :]
     try:
         parts = urllib.parse.urlsplit(raw)
+        if parts.scheme == "http":
+            parts = parts._replace(scheme="https")
         host = (parts.hostname or "").lower()
         port = parts.port
     except ValueError:

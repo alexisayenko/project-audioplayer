@@ -203,7 +203,7 @@ Builds expire after 90 days; re-upload.
 See ADR-0006 (verification) and ADR-0012 (open signup). The iOS app signs in with Apple (`SignInWithAppleButton`) or
 Google (`ASWebAuthenticationSession`, code + PKCE) from Settings and sends
 the ID token as `Authorization: Bearer`. `server/app/oauth.py` verifies it
-(JWKS signature, `iss`, `aud`, `exp`, verified email) and admits any user;
+(tries Google, then Apple: JWKS signature, `iss`, `aud`, `exp`, verified email) and admits any user;
 the first sign-in creates the profile (`SIGNUP_OPEN=0` closes that).
 
 Server env: `OWNER_EMAIL` (alias `ALLOWED_EMAIL`, default `alex.isayenko@gmail.com`;

@@ -238,10 +238,8 @@ Two paths to TestFlight, same steps: `expo prebuild`, `pod install`,
 
 Code quality: the SonarCloud project `alexisayenko_project-audioplayer`
 analyses every push to `main` automatically; there is no CI workflow for
-it. Status 2026-10-13 (read from the SonarCloud API): 87 open issues (about 821 minutes of debt); quality gate ERROR, failing only on `new_security_rating` (3, threshold 1); reliability, maintainability, duplication and hotspot review conditions pass. Won't-fix,
-resolved in the SonarCloud UI by the owner: `pythonsecurity:S2083` (sync
-script constants), `python:S5659` (`oauth.py` unverified `iss` read),
-`python:S5332` (`wiki_lookup` http-to-https check), Swift protocol-fixed
+it. Status 2026-10-13 (read from the SonarCloud API): 87 open issues (about 821 minutes of debt); quality gate ERROR, failing only on `new_security_rating` (3, threshold 1); reliability, maintainability, duplication and hotspot review conditions pass. The five vulnerabilities (`javascript:S2245`, `pythonsecurity:S2083`, `python:S5659`, `python:S5332`) were fixed in code on 2026-10-13. Won't-fix,
+resolved in the SonarCloud UI by the owner: Swift protocol-fixed
 parameters, `javascript:S7785` (top-level await).
 
 Native SwiftUI via XcodeGen, no CI workflows yet; only the local path is

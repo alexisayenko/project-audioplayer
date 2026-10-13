@@ -259,3 +259,30 @@ def test_session_secret_signs_cookie(web, key, monkeypatch):
 def test_api_responses_are_not_cached(web):
     assert web.get("/tags", headers={"X-API-Token": "secret"}).headers["cache-control"] == "no-store"
     assert web.get("/auth/config").headers["cache-control"] == "no-store"
+
+
+def test_apple_token_with_only_apple_configured(client, key, monkeypatch):
+    monkeypatch.delenv("GOOGLE_CLIENT_ID")
+    assert get(client, make(key, "apple")) == 200
+
+
+def test_google_token_with_only_google_configured(client, key, monkeypatch):
+    monkeypatch.delenv("APPLE_AUDIENCE")
+    assert get(client, make(key)) == 200
+
+
+def test_tampered_signature(client, key):
+    head, body, sig = make(key).split(".")
+    flipped = ("A" if sig[0] != "A" else "B") + sig[1:]
+    assert get(client, ".".join([head, body, flipped])) == 401
+
+
+def test_unverified_claims_are_not_decoded(client, key, monkeypatch):
+    real = jwt.decode
+
+    def guard(token, *a, **kw):
+        assert (kw.get("options") or {}).get("verify_signature", True) is not False
+        return real(token, *a, **kw)
+
+    monkeypatch.setattr(oauth.jwt, "decode", guard)
+    assert get(client, make(key, "apple")) == 200

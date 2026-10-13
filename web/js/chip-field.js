@@ -40,13 +40,15 @@ function loadGenres() {
   return genreLoading;
 }
 
+let listSeq = 0;
+
 export function chipField(ns, editor) {
   const kind = KINDS[ns];
   const prefix = `${ns}:`;
   const mine = () => editor.peek().filter((t) => t.toLowerCase().startsWith(prefix));
   const input = el('input', { type: 'text', placeholder: kind.placeholder, 'aria-label': kind.label, enterKeyHint: 'done', autocomplete: 'off' });
   const chips = el('div', { class: 'chips' });
-  const list = el('div', { class: 'chips', role: 'listbox', id: `sg-${ns}-${Math.random().toString(36).slice(2, 8)}`, 'aria-label': `${kind.label} suggestions` });
+  const list = el('div', { class: 'chips', role: 'listbox', id: `sg-${ns}-${++listSeq}`, 'aria-label': `${kind.label} suggestions` });
   list.style.display = 'none';
   const node = el('div', { class: 'field' }, el('label', {}, kind.label), el('div', { class: 'chip-field' }, chips, input), list);
   let known = [];
