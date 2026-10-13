@@ -1,0 +1,196 @@
+import SwiftUI
+
+enum TokenKind: CaseIterable {
+    case title, artist, remixer
+
+    var label: String {
+        switch self {
+        case .title: "Title"
+        case .artist: "Artist"
+        case .remixer: "Remix & additional production"
+        }
+    }
+
+    var moveName: String {
+        switch self {
+        case .title: "Title"
+        case .artist: "Artist"
+        case .remixer: "Remix"
+        }
+    }
+
+    var sep: String {
+        switch self {
+        case .title: " - "
+        case .artist: ", "
+        case .remixer: " "
+        }
+    }
+}
+
+struct TokenMove {
+    let kind: TokenKind
+    let text: Binding<String>
+}
+
+/// Title, Artist or Remix as wrapped pills over ONE plain string (ADD-071, ADD-072, IOS-065).
+struct TokenField: View {
+    let kind: TokenKind
+    @Binding var text: String
+    let moves: [TokenMove]
+
+    @State private var committed: String
+    @State private var pending = ""
+    @State private var tail = false
+    @State private var lastWritten: String
+    @State private var editing: Int?
+    @State private var editOriginal = ""
+    @State private var editText = ""
+
+    private enum Focus: Hashable { case entry, edit }
+    @FocusState private var focus: Focus?
+
+    init(kind: TokenKind, text: Binding<String>, moves: [TokenMove]) {
+        self.kind = kind
+        _text = text
+        self.moves = moves
+        _committed = State(initialValue: text.wrappedValue)
+        _lastWritten = State(initialValue: text.wrappedValue)
+    }
+
+    private var shown: [(index: Int, text: String)] {
+        Tokens.tokenize(committed).enumerated().compactMap { i, t in
+            Tokens.isBlank(t) ? nil : (i, t.text.trimmingCharacters(in: .whitespacesAndNewlines))
+        }
+    }
+
+    private func read() -> String {
+        let blank = pending.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        let t = blank ? committed : Tokens.appendToken(committed, pending, kind.sep)
+        return tail && blank ? Tokens.stripEdges(t) : t
+    }
+
+    private func push() {
+        let v = read()
+        lastWritten = v
+        text = v
+    }
+
+    private func commitPending() {
+        guard !pending.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        committed = Tokens.appendToken(committed, pending, kind.sep)
+        pending = ""
+        tail = false
+        push()
+    }
+
+    private func finishEdit() {
+        guard let i = editing else { return }
+        editing = nil
+        if editText.trimmingCharacters(in: .whitespacesAndNewlines) != editOriginal {
+            committed = Tokens.replaceToken(committed, i, editText)
+            tail = false
+            push()
+        }
+    }
+
+    private func startEdit(_ i: Int, _ label: String) {
+        commitPending()
+        editOriginal = label
+        editText = label
+        editing = i
+        focus = .edit
+    }
+
+    private func remove(_ i: Int) {
+        editing = nil
+        committed = Tokens.removeToken(committed, i)
+        tail = false
+        push()
+    }
+
+    private func move(_ i: Int, to target: TokenMove) {
+        let r = Tokens.moveToken(committed, i, target.text.wrappedValue, target.kind.sep)
+        committed = r.src
+        tail = false
+        push()
+        target.text.wrappedValue = r.dst
+    }
+
+    var body: some View {
+        FlowLayout(spacing: DS.Space.space2) {
+            ForEach(shown, id: \.index) { item in
+                if editing == item.index { editor } else { pill(item.index, item.text) }
+            }
+            TextField("", text: $pending, prompt: shown.isEmpty && editing == nil ? Text(kind.label) : nil)
+                .accessibilityLabel(kind.label)
+                .focused($focus, equals: .entry)
+                .frame(minHeight: 36)
+                .frame(width: shown.isEmpty && editing == nil ? nil : 120)
+                .onSubmit { commitPending(); focus = .entry }
+        }
+        .padding(.vertical, DS.Space.space1)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .dsField()
+        .contentShape(Rectangle())
+        .onTapGesture { focus = .entry }
+        .accessibilityElement(children: .contain)
+        .onChange(of: text) { _, new in
+            guard new != lastWritten else { return }
+            committed = new
+            pending = ""
+            tail = false
+            editing = nil
+            lastWritten = new
+        }
+        .onChange(of: pending) { _, new in
+            let r = Tokens.commitTyped(committed, new, kind.sep)
+            if r.rest != new {
+                committed = r.value
+                tail = true
+                pending = r.rest
+            }
+            push()
+        }
+        .onChange(of: focus) { old, new in
+            if old == .edit && new != .edit { finishEdit() }
+            if old == .entry && new != .entry {
+                commitPending()
+                if tail { committed = Tokens.stripEdges(committed); tail = false; push() }
+            }
+        }
+    }
+
+    private var editor: some View {
+        TextField("", text: $editText)
+            .accessibilityLabel("Edit \(editOriginal)")
+            .focused($focus, equals: .edit)
+            .padding(.horizontal, DS.Space.space3).frame(minHeight: 36, maxHeight: 36)
+            .frame(minWidth: 120)
+            .background(Capsule().fill(DS.Color.accentTint))
+            .onSubmit { finishEdit(); focus = .entry }
+    }
+
+    private func pill(_ i: Int, _ label: String) -> some View {
+        HStack(spacing: 0) {
+            Menu {
+                Button("Edit text") { startEdit(i, label) }
+                ForEach(moves, id: \.kind) { m in
+                    Button("Move to \(m.kind.moveName)") { move(i, to: m) }
+                }
+                Button("Remove", role: .destructive) { remove(i) }
+            } label: {
+                Image(systemName: "pencil").font(.system(size: 12, weight: .semibold)).foregroundStyle(DS.Color.accentInk)
+                    .frame(width: 30, height: 36).contentShape(Rectangle())
+            }
+            .accessibilityLabel("Edit \(label)")
+            Text(label).font(T.subhead.weight(.medium)).foregroundStyle(DS.Color.ink).lineLimit(1)
+            Button { remove(i) } label: {
+                Image(systemName: "xmark").font(.system(size: 11, weight: .bold)).foregroundStyle(DS.Color.accentInk)
+                    .frame(width: 30, height: 36).contentShape(Rectangle())
+            }
+            .buttonStyle(.plain).accessibilityLabel("Remove \(label)")
+        }
+        .background(Capsule().fill(DS.Color.accentTint))
+    }
+}

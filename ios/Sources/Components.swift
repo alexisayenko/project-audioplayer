@@ -44,24 +44,11 @@ struct DSTextField: View {
     @Binding var text: String
     var keyboard: UIKeyboardType = .default
     var plainURL = false
-    var clearable = false
-    @FocusState private var focused: Bool
 
     var body: some View {
         TextField(label, text: $text).keyboardType(keyboard)
             .textInputAutocapitalization(plainURL ? .never : nil).autocorrectionDisabled(plainURL)
-            .focused($focused)
-            .padding(.trailing, clearable ? DS.Space.hit - DS.Space.space3 : 0)
             .dsField()
-            .overlay(alignment: .trailing) {
-                if clearable && !text.isEmpty {
-                    Button { text = ""; focused = true } label: {
-                        Image(systemName: "xmark.circle.fill").foregroundStyle(DS.Color.inkFaint)
-                            .frame(width: DS.Space.hit, height: DS.Space.hit)
-                    }
-                    .buttonStyle(.plain).accessibilityLabel("Clear \(label)")
-                }
-            }
     }
 }
 

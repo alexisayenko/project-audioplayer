@@ -101,10 +101,17 @@ struct SongEditView: View {
         ]
     }
 
-    private func row(_ label: String, _ text: Binding<String>, keyboard: UIKeyboardType = .default, clearable: Bool = false) -> some View {
+    private func row(_ label: String, _ text: Binding<String>, keyboard: UIKeyboardType = .default) -> some View {
         Group {
             Text(label).font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.inkMuted)
-            DSTextField(label: label, text: text, keyboard: keyboard, clearable: clearable)
+            DSTextField(label: label, text: text, keyboard: keyboard)
+        }
+    }
+
+    private func tokenRow(_ kind: TokenKind, _ text: Binding<String>, _ moves: [TokenMove]) -> some View {
+        Group {
+            Text(kind.label).font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.inkMuted)
+            TokenField(kind: kind, text: text, moves: moves)
         }
     }
 
@@ -139,9 +146,9 @@ struct SongEditView: View {
 
     private var fields: some View {
         Grid(alignment: .leading, horizontalSpacing: DS.Space.space3, verticalSpacing: DS.Space.space2) {
-            GridRow { row("Title", $title, clearable: true) }
-            GridRow { row("Artist", $artist, clearable: true) }
-            GridRow { row("Remix & additional production", $remixer, clearable: true) }
+            GridRow { tokenRow(.title, $title, [TokenMove(kind: .artist, text: $artist), TokenMove(kind: .remixer, text: $remixer)]) }
+            GridRow { tokenRow(.artist, $artist, [TokenMove(kind: .title, text: $title), TokenMove(kind: .remixer, text: $remixer)]) }
+            GridRow { tokenRow(.remixer, $remixer, [TokenMove(kind: .title, text: $title), TokenMove(kind: .artist, text: $artist)]) }
             GridRow { row("Album", $album) }
             GridRow {
                 Text("Year").font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.inkMuted)

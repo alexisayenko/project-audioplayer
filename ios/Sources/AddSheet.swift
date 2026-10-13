@@ -339,10 +339,17 @@ struct AddSheet: View {
         }
     }
 
-    private func labeled(_ label: String, _ text: Binding<String>, keyboard: UIKeyboardType = .default, clearable: Bool = false) -> some View {
+    private func labeled(_ label: String, _ text: Binding<String>, keyboard: UIKeyboardType = .default) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(label).font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.inkMuted)
-            DSTextField(label: label, text: text, keyboard: keyboard, clearable: clearable)
+            DSTextField(label: label, text: text, keyboard: keyboard)
+        }
+    }
+
+    private func tokenField(_ kind: TokenKind, _ text: Binding<String>, _ moves: [TokenMove]) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(kind.label).font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.inkMuted)
+            TokenField(kind: kind, text: text, moves: moves)
         }
     }
 
@@ -406,9 +413,9 @@ struct AddSheet: View {
         }
 
         VStack(alignment: .leading, spacing: DS.Space.space3) {
-                labeled("Title", $flow.title, clearable: true)
-                labeled("Artist", $flow.artist, clearable: true)
-                labeled("Remix & additional production", $flow.remixer, clearable: true)
+                tokenField(.title, $flow.title, [TokenMove(kind: .artist, text: $flow.artist), TokenMove(kind: .remixer, text: $flow.remixer)])
+                tokenField(.artist, $flow.artist, [TokenMove(kind: .title, text: $flow.title), TokenMove(kind: .remixer, text: $flow.remixer)])
+                tokenField(.remixer, $flow.remixer, [TokenMove(kind: .title, text: $flow.title), TokenMove(kind: .artist, text: $flow.artist)])
                 if let h = flow.hint { suggestionHint(h) }
                 FlowLayout {
                     Button { flow.launch { await flow.getMetadata(api) } } label: {
