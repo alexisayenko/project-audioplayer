@@ -64,3 +64,13 @@ def test_download_audio_cuts_remix(monkeypatch):
     monkeypatch.setattr(FakeYDL, "info", {"title": "A - B (Sadrican Remix)", "uploader": "X"})
     d = extractor.download_audio(YT, Path("."))
     assert (d["title"], d["remixer"]) == ("A - B", "Sadrican Remix")
+
+
+LIVE = "Dua Lipa and Elton John - Cold Heart (Live from the Royal Albert Hall)"
+
+
+def test_preview_keeps_live_in_title(monkeypatch):
+    monkeypatch.setattr(extractor.yt_dlp, "YoutubeDL", FakeYDL)
+    monkeypatch.setattr(FakeYDL, "info", {"title": LIVE, "uploader": "Dua Lipa", "duration": 200})
+    p = extractor.preview(YT)
+    assert p["title"].endswith("(Live from the Royal Albert Hall)")

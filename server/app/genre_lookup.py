@@ -13,7 +13,7 @@ import urllib.parse
 import urllib.request
 from typing import Any
 
-from .titles import clean_artist, clean_title, split_artist_title  # noqa: F401
+from .titles import clean_artist, clean_title, lookup_title, split_artist_title  # noqa: F401
 
 log = logging.getLogger(__name__)
 
@@ -201,6 +201,7 @@ def lookup(artist: str, title: str) -> dict[str, Any]:
         return _empty()
     try:
         artist, title = split_artist_title(artist, title)
+        title = lookup_title(title)
         if not artist or not title:
             return _empty()
         key = (artist.casefold(), title.casefold())

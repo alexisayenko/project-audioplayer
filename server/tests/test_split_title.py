@@ -39,7 +39,7 @@ def test_non_remix_untouched(t):
 
 
 def test_noise_bracket_still_stripped_when_remix_is_elsewhere():
-    assert split_title("", "A - B (Live) [Foo Remix]") == ("A", "B", "Foo Remix")
+    assert split_title("", "A - B (Live) [Foo Remix]") == ("A", "B (Live)", "Foo Remix")
 
 
 def test_empty_input():

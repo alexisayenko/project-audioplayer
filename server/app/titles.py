@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 
 _NOISE = re.compile(
-    r"[\(\[][^\)\]]*\b(official|video|audio|lyrics?|visuali[sz]er|remaster(ed)?|hd|hq|4k|live|clip|mv)\b[^\)\]]*[\)\]]",
+    r"[\(\[][^\)\]]*\b(official|video|audio|lyrics?|visuali[sz]er|remaster(ed)?|hd|hq|4k|clip|mv)\b[^\)\]]*[\)\]]",
     re.I,
 )
 _FEAT = re.compile(r"[\(\[]?\b(?:feat\.?|ft\.?|featuring)\s.*$", re.I)
@@ -26,6 +26,20 @@ def clean_title(title: str) -> str:
     t = _FEAT.sub("", t)
     t = re.sub(r"[\(\[]\s*[\)\]]", "", t)
     return re.sub(r"\s+", " ", t).strip(" -|")
+
+
+_VERSION_BRACKET = re.compile(
+    r"[\(\[]\s*(?:(?:live|acoustic|unplugged|sessions?|in concert|at)\b|(?:[^\)\]]*\b(?:live|unplugged|in concert)\b))[^\)\]]*[\)\]]",
+    re.I,
+)
+_VERSION_TAIL = re.compile(r"\s+-\s+(?:live|acoustic|unplugged|sessions?|in concert)\b.*$|\s+live (?:at|from|in|on)\b.*$", re.I)
+
+
+def lookup_title(title: str) -> str:
+    """The title for external lookups only: clean_title plus version info (live, acoustic, unplugged, session, venue) removed; never shown or saved."""
+    t = _VERSION_BRACKET.sub("", clean_title(title))
+    t = _VERSION_TAIL.sub("", t)
+    return re.sub(r"\s+", " ", t).strip(" -|") or clean_title(title)
 
 
 def split_artist_title(artist: str, title: str) -> tuple[str, str]:
