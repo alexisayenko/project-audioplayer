@@ -3,11 +3,39 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
 
-_NOISE = re.compile(
-    r"[\(\[][^\)\]]*\b(official|video|audio|lyrics?|visuali[sz]er|remaster(ed)?|h[dq]|4k|clip|mv)\b[^\)\]]*[\)\]]",
-    re.I,
-)
+_BRACKETED = re.compile(r"[\(\[][^\)\]]*[\)\]]")
+_NOISE_WORD = re.compile(r"\b(?:official|video|audio|lyrics?|visuali[sz]er|remaster(?:ed)?|h[dq]|4k|clip|mv)\b", re.I)
+_LIVE_WORD = re.compile(r"\b(?:live|unplugged|in concert)\b", re.I)
+_VERSION_LEAD = re.compile(r"\s*(?:acoustic|sessions?|at)\b", re.I)
+
+
+def _drop_brackets(text: str, doomed: Callable[[str], bool]) -> str:
+    out: list[str] = []
+    pos = 0
+    start = 0
+    while True:
+        m = _BRACKETED.search(text, start)
+        if not m:
+            break
+        if doomed(m.group()):
+            out.append(text[pos : m.start()])
+            pos = start = m.end()
+        else:
+            start = m.start() + 1
+    out.append(text[pos:])
+    return "".join(out)
+
+
+def _is_noise(bracket: str) -> bool:
+    return bool(_NOISE_WORD.search(bracket))
+
+
+def _is_version(bracket: str) -> bool:
+    return bool(_LIVE_WORD.search(bracket, 1) or _VERSION_LEAD.match(bracket, 1))
+
+
 _FEAT_KEY = re.compile(r"\b(?:featuring|feat\.?|ft\.?)\s", re.I)
 _FEAT_STOPS = (" - ", " \u2013 ", " \u2014 ", " | ", " \u25cf\u25cf ", " \u2022 ", ")", "]", "(", "[")
 _CLOSERS = {"(": ")", "[": "]"}
@@ -47,16 +75,12 @@ def clean_artist(artist: str) -> str:
 
 
 def clean_title(title: str) -> str:
-    t = _NOISE.sub("", title or "")
+    t = _drop_brackets(title or "", _is_noise)
     t = re.sub(r"[\(\[]\s*[\)\]]", "", t)
     return re.sub(r"\s+", " ", t).strip(" -|")
 
 
-_VERSION_BRACKET = re.compile(
-    r"[\(\[](?=[^)\]]*\b(?:live|unplugged|in concert)\b|\s*(?:acoustic|sessions?|at)\b)[^)\]]*[\)\]]",
-    re.I,
-)
-_VERSION_TAIL = re.compile(r"(?<!\s)\s+(?:-\s+(?:live|acoustic|unplugged|sessions?|in concert)|live (?:at|from|in|on))\b.*$", re.I)
+_VERSION_TAIL = re.compile(r"(?<!\s)\s++(?:-\s+(?:live|acoustic|unplugged|sessions?|in concert)|live (?:at|from|in|on))\b.*+$", re.I)
 
 
 def lookup_artist(artist: str) -> str:
@@ -65,7 +89,7 @@ def lookup_artist(artist: str) -> str:
     return a or clean_artist(artist)
 
 
-_FEAT_SPLIT = re.compile(r"\s*[,&]\s*|\s+(?:and|x)\s+", re.I)
+_FEAT_SPLIT = re.compile(r"\s*+[,&]\s*+|\s++(?:and|x)\s++", re.I)
 
 
 def lookup_credits(artist: str) -> tuple[str, list[str]]:
@@ -87,7 +111,7 @@ def lookup_credits(artist: str) -> tuple[str, list[str]]:
 def lookup_title(title: str) -> str:
     """The title for external lookups only: clean_title plus feat credits and version info (live, acoustic, unplugged, session, venue) removed; never shown or saved."""
     base = re.sub(r"\s+", " ", re.sub(r"[\(\[]\s*[\)\]]", "", _strip_feat(clean_title(title)))).strip(" -|")
-    t = _VERSION_BRACKET.sub("", base)
+    t = _drop_brackets(base, _is_version)
     t = _VERSION_TAIL.sub("", t)
     return re.sub(r"\s+", " ", t).strip(" -|") or base or clean_title(title)
 

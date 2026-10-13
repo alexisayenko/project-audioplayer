@@ -1,5 +1,10 @@
 export const yearValue = (v) => (v === '' || v == null ? null : Number(v));
 
+const sourceUrl = (s) => {
+  if (typeof s === 'string') return s;
+  return typeof s?.url === 'string' ? s.url : '';
+};
+
 export function sourceList(source) {
   let raw = [];
   if (Array.isArray(source)) raw = source;
@@ -7,7 +12,7 @@ export function sourceList(source) {
   const seen = new Set();
   const out = [];
   for (const s of raw) {
-    const url = typeof s === 'string' ? s : (typeof s?.url === 'string' ? s.url : '');
+    const url = sourceUrl(s);
     if (!url || seen.has(url)) continue;
     seen.add(url);
     out.push({ url });

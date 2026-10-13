@@ -43,6 +43,15 @@ JOBS: dict[tuple[str, str], dict[str, Any]] = {}
 ACTIVE = ("queued", "downloading")
 
 
+class MusicRootUnavailable(Exception):
+    pass
+
+
+@app.exception_handler(MusicRootUnavailable)
+async def _music_root_unavailable(request: Request, exc: MusicRootUnavailable) -> JSONResponse:
+    return JSONResponse({"detail": str(exc)}, status_code=503)
+
+
 @app.exception_handler(Problem)
 async def _problem(request: Request, exc: Problem) -> JSONResponse:
     return JSONResponse(exc.body(), status_code=exc.status, headers=exc.headers)
@@ -101,7 +110,7 @@ def music_dir() -> Path:
     try:
         return library.resolve_music_root(music_root())
     except LookupError as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
+        raise MusicRootUnavailable(str(exc)) from exc
 
 
 def pool_dir() -> Path:
@@ -874,7 +883,7 @@ def delete_song(video_id: str, user: dict[str, Any] = Depends(require_token)):
         if library.has_file(song):
             try:
                 (audio_dir(uid) / library.file_name(song)).unlink(missing_ok=True)
-            except HTTPException:
+            except MusicRootUnavailable:
                 pass
         JOBS.pop((uid, video_id), None)
 

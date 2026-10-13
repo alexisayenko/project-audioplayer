@@ -46,7 +46,9 @@ window.addEventListener('auth-changed', () => {
 
 try {
   await session.restore();
-  if (isSignedIn()) store.refresh().catch(() => {});
+  if (isSignedIn()) {
+    try { await store.refresh(); } catch { /* refresh failure keeps the cached library */ }
+  }
 } catch { /* restore failure leaves the app signed out */ }
 route();
 

@@ -2,12 +2,13 @@ import SwiftUI
 
 private let wikiScheme = "https"
 private let wikiHost = "en.wikipedia.org"
-private let wikiPattern = "^\(wikiScheme)?://(m\\.)?en\\.wikipedia\\.org/wiki/(.+)$"
-private let wikiPrefix = "\(wikiScheme)://\(wikiHost)/wiki/"
+private let wikiSection = "wiki"
+private let wikiPattern = "^\(wikiScheme)?://(m\\.)?en\\.wikipedia\\.org/\(wikiSection)/(.+)$"
+private let wikiPrefix = "\(wikiScheme)://\(wikiHost)/\(wikiSection)/"
 
 func wikiDisplay(_ url: String) -> String {
     guard let r = url.range(of: wikiPattern, options: [.regularExpression, .caseInsensitive]),
-          let slash = url[r].range(of: "/wiki/", options: .caseInsensitive) else { return url }
+          let slash = url[r].range(of: "/\(wikiSection)/", options: .caseInsensitive) else { return url }
     var title = String(url[slash.upperBound...])
     if let cut = title.firstIndex(where: { $0 == "#" || $0 == "?" }) { title = String(title[..<cut]) }
     guard !title.isEmpty else { return url }

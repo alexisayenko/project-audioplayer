@@ -59,9 +59,22 @@ export function cleanUrl(input) {
   return u.href;
 }
 
+const ABSOLUTE_URL = /https?:\/\/[^\s<>"']+/i;
+const YOUTUBE_URL = /(?:www\.|m\.|music\.)?youtu(?:\.be|be\.com)\/[^\s<>"']+/i;
+const SOUNDCLOUD_URL = /(?:www\.|m\.|on\.)?soundcloud\.com\/[^\s<>"']+/i;
+
+function firstMatch(text, patterns) {
+  let best = null;
+  for (const re of patterns) {
+    const m = re.exec(text);
+    if (m && (!best || m.index < best.index)) best = m;
+  }
+  return best?.[0];
+}
+
 export function cleanPasted(input) {
   const text = String(input ?? '').trim();
-  const found = /(?:https?:\/\/|(?:(?:www\.|m\.|music\.)?youtu(?:\.be|be\.com)|(?:www\.|m\.|on\.)?soundcloud\.com)\/)[^\s<>"']+/i.exec(text);
-  if (found) return cleanUrl(found[0]);
+  const found = firstMatch(text, [ABSOLUTE_URL, YOUTUBE_URL, SOUNDCLOUD_URL]);
+  if (found) return cleanUrl(found);
   return cleanUrl(text.split(/\s*[\r\n]+\s*/)[0]);
 }
