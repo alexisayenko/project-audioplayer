@@ -103,7 +103,6 @@ export function openAdd() {
       remixer: tg.field('remixer', preview.remixer || ''),
       album: el('input', { type: 'text', value: preview.album || '' }),
       year: el('input', { type: 'number', value: preview.year ?? '', min: 0, max: 3000 }),
-      bpm: el('input', { type: 'number', min: 20, max: 300, step: 1, placeholder: 'Detected after saving' }),
     };
     const editor = tagEditor({ tags: preview.tags || [], suggested: preview.tags || [], year: f.year, hideNs: true });
     const genres = chipField('genre', editor);
@@ -118,7 +117,7 @@ export function openAdd() {
     const paintMeta = () => {
       title.textContent = f.title.value || 'Untitled';
       sub.textContent = [f.artist.value, f.album.value, f.year.value].filter(Boolean).join(' · ');
-      facts.textContent = [preview.duration ? fmtTime(preview.duration) : '', f.bpm.value ? `${f.bpm.value} BPM` : ''].filter(Boolean).join(' · ');
+      facts.textContent = preview.duration ? fmtTime(preview.duration) : '';
     };
     for (const i of Object.values(f)) i.addEventListener('input', paintMeta);
     paintMeta();
@@ -208,7 +207,7 @@ export function openAdd() {
         el('div', { class: 'meta-row' }, metaBtn, icons.node),
         metaMsg, hint,
         el('div', { class: 'grid2' }, field('Album', f.album), field('Year', f.year)),
-        field('BPM (optional)', f.bpm),
+        el('p', { class: 't-caption muted' }, 'BPM is detected after saving'),
         genres.node, countries.node,
         el('div', { class: 'field' }, el('label', {}, 'Tags'), editor.node),
         wiki.node),
@@ -229,7 +228,6 @@ export function openAdd() {
           album: f.album.value,
           remixer: f.remixer.value,
           year: f.year.value === '' ? null : Number(f.year.value),
-          bpm: f.bpm.value === '' ? null : Math.round(Number(f.bpm.value)),
           ...wiki.values(),
         }, tags);
         await store.refresh().catch(() => {});

@@ -40,11 +40,11 @@ in `docs/product/wireframes/` yet; add a link here when it lands).
 
 ## Edit dialog
 
-- LIB-050 MUST: fields: Title (required), Artist, Album, Year (0..3000), BPM (20..300, whole numbers, step 1, placeholder "Unknown") with a Re-detect button, Genres and Countries chip fields (WEB-024), Tags (shared tag editor, LIB-055). Status: implemented
-- LIB-051 MUST: Save sends `PATCH` with all fields (empty year or BPM becomes `null`), closes, refreshes, toast "Saved"; a server error shows inline and keeps the dialog open. Status: implemented
-- LIB-052 MUST: Re-detect calls `POST /songs/{id}/bpm/detect`, fills the BPM field and saves the new value immediately (independent of the Save button); a failure shows inline. Status: implemented
+- LIB-050 MUST: fields: Title (required), Artist, Album, Year (0..3000), a read-only BPM label ("<n> BPM" rounded, or "Not detected yet") with a Re-detect button (no manual entry), Genres and Countries chip fields (WEB-024), Tags (shared tag editor, LIB-055). Status: implemented
+- LIB-051 MUST: Save sends `PATCH` with all fields except `bpm` (empty year becomes `null`), closes, refreshes, toast "Saved"; a server error shows inline and keeps the dialog open. Status: implemented
+- LIB-052 MUST: Re-detect calls `POST /songs/{id}/bpm/detect`, updates the BPM label (the server saves the new value immediately, independent of the Save button); a failure shows inline. Status: implemented
 - LIB-053 MUST: Delete is inside the Edit dialog and asks for confirmation ("Delete song?"); it removes the record, audio file and cover; a 404 (already gone) just closes and refreshes. Status: implemented
-- LIB-054 SHOULD: the label say BPM is a heuristic that may be off by half or double. Status: implemented
+- LIB-054 SHOULD: the BPM value carries a tooltip saying BPM is a heuristic that may be off by half or double. Status: implemented
 - LIB-055 MUST: the Tags field is the shared tag editor (`web/js/tag-editor.js`, also used by Add, ADD-004): a text input (Enter or comma adds a chip, accepts `key:value`, filters the list below as you type, matches code and display name), the song's current tags as chips with an x, and below them every library tag as a toggle chip (assigned ones selected) grouped Genre, Decade, Country, other keys, Tags, most-used first with counts; the list scrolls inside the dialog (max height). Changing the Year input immediately shows the derived decade chip (preview only, TAG-038). Save sends the same tag array as before. Status: implemented
 
 - LIB-056 MUST: the Edit dialog has "Wikipedia: song" and "Wikipedia: band" URL inputs (empty clears the link) (no fill button, see ADD-051); Save sends `wikipedia_song` and `wikipedia_artist` with the other fields. Library cards do not show the links. Status: implemented

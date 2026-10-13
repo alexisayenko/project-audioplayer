@@ -54,8 +54,9 @@ export function editDialog(song) {
     remixer: tg.field('remixer', song.remixer || ''),
     album: el('input', { type: 'text', value: song.album || '' }),
     year: el('input', { type: 'number', value: song.year ?? '', min: 0, max: 3000 }),
-    bpm: el('input', { type: 'number', value: song.bpm != null ? Math.round(song.bpm) : '', min: 20, max: 300, step: 1, placeholder: 'Unknown' }),
   };
+  const bpmText = (v) => (v != null ? `${Math.round(v)} BPM` : 'Not detected yet');
+  const bpmValue = el('span', { title: 'Heuristic, may be off by half or double' }, bpmText(song.bpm));
   const editor = tagEditor({ tags: song.tags || [], year: f.year, hideNs: true });
   const genres = chipField('genre', editor);
   const countries = chipField('country', editor);
@@ -69,7 +70,7 @@ export function editDialog(song) {
     redetect.textContent = 'Detecting...';
     try {
       const updated = await api.detectBpm(song.id);
-      f.bpm.value = updated.bpm != null ? Math.round(updated.bpm) : '';
+      bpmValue.textContent = bpmText(updated.bpm);
       err.hidden = true;
       await store.refresh();
     } catch (ex) {
@@ -85,7 +86,7 @@ export function editDialog(song) {
     field('Title', f.title), field('Artist', f.artist),
     field('Remix & additional production', f.remixer),
     el('div', { class: 'grid2' }, field('Album', f.album), field('Year', f.year)),
-    el('div', { class: 'field' }, el('label', {}, 'BPM (heuristic, may be off by half or double)'), el('div', { class: 'row' }, f.bpm, redetect)),
+    el('div', { class: 'field' }, el('label', {}, 'BPM'), el('div', { class: 'row' }, bpmValue, redetect)),
     wiki.node,
     genres.node, countries.node,
     el('div', { class: 'field' }, el('label', {}, 'Tags'), editor.node),
@@ -110,7 +111,6 @@ export function editDialog(song) {
         album: f.album.value,
         remixer: f.remixer.value,
         year: f.year.value === '' ? null : Number(f.year.value),
-        bpm: f.bpm.value === '' ? null : Math.round(Number(f.bpm.value)),
         tags: editor.getTags(),
         ...wiki.values(),
       });
