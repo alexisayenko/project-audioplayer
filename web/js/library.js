@@ -6,6 +6,7 @@ import { el, toast, fmtTime, plural } from './dom.js';
 import { icon } from './icons.js';
 import { openMenu } from './menu.js';
 import { hasAudio, sourceLink } from './playable.js';
+import { serviceIcon } from './service-icons.js';
 import { openAdd } from './add.js';
 import { editDialog } from './edit-dialog.js';
 import { visibleTags, tagLabel, tagSearchText, categoryOf, categoryTags, CATEGORIES } from './tagname.js';
@@ -223,6 +224,13 @@ function cover(s) {
   return img;
 }
 
+function srcLogo(link) {
+  const kind = link.source in { youtube: 1, soundcloud: 1 } ? link.source : 'other';
+  const a = el('a', { class: `src-logo src-${kind}`, href: link.url, target: '_blank', rel: 'noopener', 'aria-label': link.label, title: link.label }, serviceIcon(kind, { size: 22 }));
+  a.addEventListener('click', (e) => e.stopPropagation());
+  return a;
+}
+
 function songRow(s, cur, n) {
   const audio = hasAudio(s);
   const link = audio ? null : sourceLink(s);
@@ -242,7 +250,7 @@ function songRow(s, cur, n) {
   const dur = audio
     ? el('span', { class: 'c-dur t-time' }, s.duration ? fmtTime(s.duration) : '')
     : el('span', { class: 'c-dur t-caption' },
-      link ? el('a', { class: 'src-link', href: link.url, target: '_blank', rel: 'noopener' }, link.label) : '');
+      link ? srcLogo(link) : '');
   return el('li', { class: `song${here ? ' current' : ''}${audio ? '' : ' no-audio'}`, 'aria-current': here ? 'true' : null, 'data-id': s.id },
     el('span', { class: 'c-idx t-time' }, n),
     cover(s),

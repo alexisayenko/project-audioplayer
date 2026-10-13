@@ -20,6 +20,19 @@ function glyph(name) {
   return svg;
 }
 
+const EXTERNAL = '<path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>';
+
+export function serviceIcon(kind, { size = 22 } = {}) {
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('width', String(size));
+  svg.setAttribute('height', String(size));
+  svg.setAttribute('fill', 'currentColor');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.innerHTML = SHAPES[kind] || EXTERNAL;
+  return svg;
+}
+
 function make(name, st, busy) {
   const on = !!st?.on;
   const cls = `svc svc-${name}${on ? ' on' : ''}${busy && name !== 'spotify' ? ' pulse' : ''}`;

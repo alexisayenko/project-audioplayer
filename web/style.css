@@ -223,7 +223,10 @@ label { display: block; color: var(--ink-muted); font-size: 13px; line-height: 1
 .song.current .more:hover { background: var(--surface); }
 .song.no-audio .open { cursor: default; color: var(--muted); }
 .song.no-audio .cover { opacity: 0.6; }
-.song .src-link { color: var(--accent-ink); white-space: nowrap; text-decoration: underline; }
+.song .src-logo { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: var(--radius-sm); color: var(--ink-muted); transition: transform .12s; }
+.song .src-logo:hover, .song .src-logo:focus-visible { transform: scale(1.12); }
+.song .src-youtube { color: var(--brand-youtube); }
+.song .src-soundcloud { color: var(--brand-soundcloud); }
 .song.no-audio .c-dur { white-space: nowrap; }
 .songs .empty { padding: var(--space-4) 0; text-align: center; }
 .ns-key { margin-right: var(--space-1); font-weight: 600; }

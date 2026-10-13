@@ -11,5 +11,5 @@ export function sourceLink(song) {
   const src = list.find((s) => s && /^https?:\/\//i.test(s.url || ''));
   if (!src) return null;
   const name = PROVIDERS[src.source] || (src.source ? src.source[0].toUpperCase() + src.source.slice(1) : '');
-  return { url: src.url, label: name ? `Open on ${name}` : 'Open original link' };
+  return { url: src.url, source: src.source || '', label: name ? `Open on ${name}` : 'Open original link' };
 }
