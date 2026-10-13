@@ -175,3 +175,17 @@ def test_normalize_feat_skips_feet_and_lowercase_bare_forms(raw, want):
     from app.titles import normalize_feat
 
     assert normalize_feat(raw) == want
+
+
+@pytest.mark.parametrize("t", ["Song (Mixed By DJ Gvozd)", "Song [mixed by DJ Gvozd]", "Song (MIXED BY DJ Gvozd)"])
+def test_mixed_by_bracket(t):
+    assert split_title("", t) == ("", "Song", t[6:-1])
+
+
+def test_mixed_by_segment_after_pipe():
+    assert split_title("", "A - B | Mixed By DJ Gvozd") == ("A", "B", "Mixed By DJ Gvozd")
+
+
+@pytest.mark.parametrize("t", ["A - B (Mixed)", "A - B (Mixed Version)", "A - B (Extended Mix)"])
+def test_mixed_without_by_untouched(t):
+    assert split_title("", t)[2] is None
