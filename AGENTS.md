@@ -55,6 +55,9 @@ Several sessions may work in this one checkout at once:
   or `git add .`.
 - Never `git stash pop` / `apply` blindly — an old, unrelated stash
   may sit in the list.
+- Pushing commits to `origin/main` of this repo is pre-approved by the
+  owner (2026-10-13); never force-push, never push another repo without
+  asking.
 
 ## Docs change with code
 
