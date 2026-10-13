@@ -83,12 +83,26 @@ def test_lookup_artist_drops_feat():
 EXAMPLE = "Kato Feat. Jon - Turn The Lights Off | Jon Hamm Club Dance Scene | DEEPO Remix Long Version"
 
 
-def test_example_feat_noise_and_segment_remix():
-    assert split_title("DEEPO Music", EXAMPLE) == (
-        "Kato Feat. Jon",
-        "Turn The Lights Off | Jon Hamm Club Dance Scene",
-        "DEEPO Remix Long Version",
-    )
+@pytest.mark.parametrize(
+    "channel,raw,want",
+    [
+        ("RÜFÜS DU SOL", "RÜFÜS DU SOL ●● Innerbloom (Official Video)", ("RÜFÜS DU SOL", "Innerbloom", None)),
+        ("Gnarls Barkley Official", "Gnarls Barkley - Crazy (Official Video)", ("Gnarls Barkley", "Crazy", None)),
+        (
+            "DEEPO Music",
+            EXAMPLE,
+            ("Kato feat. Jon", "Turn The Lights Off | Jon Hamm Club Dance Scene", "DEEPO Remix Long Version"),
+        ),
+    ],
+    ids=["example_1", "example_2", "example_3"],
+)
+def test_reference_examples(channel, raw, want):
+    assert split_title(channel, raw) == want
+
+
+def test_two_segments_remix_word_stays_in_title():
+    assert split_title("", "Daft Punk - Around The World Remix") == ("Daft Punk", "Around The World Remix", None)
+    assert split_title("Chan", "Daft Punk - Around The World Remix") == ("Chan", "Daft Punk - Around The World Remix", None)
 
 
 def test_remix_segment_after_pipe():
@@ -102,7 +116,7 @@ def test_first_segment_remix_not_cut():
 
 
 def test_feat_cue_with_bracket_remix():
-    assert split_title("Chan", "Artist ft. X - Title (Y Remix)") == ("Artist ft. X", "Title", "Y Remix")
+    assert split_title("Chan", "Artist ft. X - Title (Y Remix)") == ("Artist feat. X", "Title", "Y Remix")
 
 
 def test_no_cue_no_split():
@@ -112,3 +126,52 @@ def test_no_cue_no_split():
 
 def test_song_feat_bracket_kept_in_title():
     assert split_title("Chan", "Song (feat. X)") == ("Chan", "Song (feat. X)", None)
+
+
+@pytest.mark.parametrize(
+    "raw,want",
+    [
+        ("Kato Feat. Jon - Song", ("Kato feat. Jon", "Song")),
+        ("Kato FEAT Jon - Song", ("Kato feat. Jon", "Song")),
+        ("Kato feat Jon - Song", ("Kato feat. Jon", "Song")),
+        ("Kato Ft. Jon - Song", ("Kato feat. Jon", "Song")),
+        ("Kato ft Jon - Song", ("Kato feat. Jon", "Song")),
+        ("Kato FT. Jon - Song", ("Kato feat. Jon", "Song")),
+        ("Kato featuring Jon - Song", ("Kato feat. Jon", "Song")),
+        ("Kato Featuring Jon - Song", ("Kato feat. Jon", "Song")),
+        ("Kato feat. Jon - Song", ("Kato feat. Jon", "Song")),
+    ],
+)
+def test_feat_keyword_normalised_in_artist(raw, want):
+    assert split_title("Chan", raw)[:2] == want
+
+
+def test_feat_keyword_normalised_in_title_and_whole_word_only():
+    assert split_title("Chan", "Song (Ft. X)")[1] == "Song (feat. X)"
+    assert split_title("Chan", "Artist featuring X")[1] == "Artist feat. X"
+    assert split_title("Chan", "Defeat Fifth Softly")[1] == "Defeat Fifth Softly"
+
+
+def test_lookup_handles_both_feat_forms():
+    from app.titles import lookup_artist
+
+    assert lookup_artist("Kato feat. Jon") == lookup_artist("Kato Feat. Jon") == "Kato"
+
+
+@pytest.mark.parametrize(
+    "raw,want",
+    [
+        ("5 ft tall", "5 ft tall"),
+        ("6.5 ft Jon", "6.5 ft Jon"),
+        ("5 ft. tall", "5 ft. tall"),
+        ("Kato ft Jon", "Kato feat. Jon"),
+        ("Kato ft jon", "Kato ft jon"),
+        ("Song (ft X)", "Song (feat. X)"),
+        ("Artist ft. x", "Artist feat. x"),
+        ("Artist Feat 2Pac", "Artist feat. 2Pac"),
+    ],
+)
+def test_normalize_feat_skips_feet_and_lowercase_bare_forms(raw, want):
+    from app.titles import normalize_feat
+
+    assert normalize_feat(raw) == want

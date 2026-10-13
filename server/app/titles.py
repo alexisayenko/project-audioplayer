@@ -90,12 +90,45 @@ _REMIX_WORD = re.compile(r"\bremix\b", re.I)
 
 
 _SEGMENT_SEP = re.compile(r"( \| | - | \u2013 | \u2014 )")
-_FEAT_WORD = re.compile(r"\b(?:featuring|feat|ft)\b", re.I)
 _CUE_DASH = re.compile(r" [-\u2013\u2014] ")
+_FEAT_NORM = re.compile(r"\b(?:featuring|feat|ft)\b(\.?)", re.I)
+_NUMBER = re.compile(r"[0-9][0-9.,'\"\u2032\u2033]*")
+
+
+def _prev_is_number(text: str, end: int) -> bool:
+    i = end
+    while i > 0 and text[i - 1] in " \t":
+        i -= 1
+    j = i
+    while j > 0 and not text[j - 1].isspace():
+        j -= 1
+    return j < i and _NUMBER.fullmatch(text, j, i) is not None
+
+
+def _is_feat_keyword(text: str, m: re.Match) -> bool:
+    if _prev_is_number(text, m.start()):
+        return False
+    if m.group(1) or m.group(0).lower() == "featuring":
+        return True
+    i = m.end()
+    while i < len(text) and text[i].isspace():
+        i += 1
+    return i < len(text) and (text[i].isupper() or text[i].isdigit())
+
+
+def _has_feat_keyword(text: str) -> bool:
+    return any(_is_feat_keyword(text, m) for m in _FEAT_NORM.finditer(text))
+
+
+def normalize_feat(text: str) -> str:
+    """Rewrite each feat/ft/featuring keyword to "feat."; not after a number ("5 ft tall"), and bare feat/ft only before a capital or digit; names and the rest stay verbatim."""
+    return _FEAT_NORM.sub(lambda m: "feat." if _is_feat_keyword(text, m) else m.group(0), text)
 
 
 def _cut_remix_segment(title: str) -> tuple[str, str | None]:
     parts = _SEGMENT_SEP.split(title)
+    if len(parts) < 5:
+        return title, None
     for i in range(2, len(parts), 2):
         seg = parts[i].strip()
         if seg and _REMIX_WORD.search(seg):
@@ -121,6 +154,6 @@ def split_title(artist: str, title: str) -> tuple[str, str, str | None]:
     a, t = split_artist_title(artist, cut)
     if a == clean_artist(artist) and t == clean_title(cut):
         m = _CUE_DASH.search(t)
-        if m and _FEAT_WORD.search(t[: m.start()]) and t[m.end() :].strip():
+        if m and _has_feat_keyword(t[: m.start()]) and t[m.end() :].strip():
             a, t = t[: m.start()].strip(), clean_title(t[m.end() :])
-    return a, t, remix
+    return normalize_feat(a), normalize_feat(t), remix

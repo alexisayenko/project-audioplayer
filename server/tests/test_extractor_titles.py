@@ -84,6 +84,6 @@ def test_preview_example_keeps_feat_and_cuts_remix_segment(monkeypatch):
         {"title": "Kato Feat. Jon - Turn The Lights Off | Jon Hamm Club Dance Scene | DEEPO Remix Long Version", "uploader": "DEEPO Music"},
     )
     p = extractor.preview(YT)
-    assert p["artist"] == "Kato Feat. Jon"
+    assert p["artist"] == "Kato feat. Jon"
     assert p["title"] == "Turn The Lights Off | Jon Hamm Club Dance Scene"
     assert p["remixer"] == "DEEPO Remix Long Version"
