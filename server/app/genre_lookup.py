@@ -8,6 +8,7 @@ import os
 import re
 import threading
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from typing import Any
@@ -22,6 +23,7 @@ MIN_SCORE = 90
 MAX_GENRES = 3
 TIMEOUT = 5
 MIN_INTERVAL = 1.1
+RETRY_DELAY = 1.0
 
 _rate_lock = threading.Lock()
 _last_call = 0.0
@@ -55,8 +57,15 @@ def _get(path: str, params: dict[str, str]) -> dict[str, Any]:
         if wait > 0:
             time.sleep(wait)
         try:
-            with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
-                return json.loads(resp.read().decode("utf-8"))
+            try:
+                with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
+                    return json.loads(resp.read().decode("utf-8"))
+            except urllib.error.HTTPError as exc:
+                if exc.code != 503:
+                    raise
+                time.sleep(RETRY_DELAY)
+                with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
+                    return json.loads(resp.read().decode("utf-8"))
         finally:
             _last_call = time.monotonic()
 
@@ -72,13 +81,31 @@ def _top(entity: dict[str, Any]) -> list[str]:
     return [f"genre:{n}" for n in ranked[:MAX_GENRES]]
 
 
-def _album(full: dict[str, Any]) -> str | None:
-    """Title of the earliest dated release of a recording (official ones first)."""
-    rels = [r for r in full.get("releases") or [] if str(r.get("title") or "").strip()]
-    if not rels:
-        return None
-    best = min(rels, key=lambda r: (r.get("status") != "Official", str(r.get("date") or "9999")))
-    return str(best["title"]).strip()
+_PRIMARY_OK = {"album", "ep", "single"}
+_SECONDARY_BAD = {"compilation", "mixtape/street", "mixtape", "dj-mix", "live", "remix"}
+
+
+def _album(full: dict[str, Any], artist: str = "") -> str | None:
+    """Title of the best release of a recording: credited to `artist`, an Album/EP/Single without
+    Compilation/Mixtape/DJ-mix/Live/Remix types; Albums first, then official, then earliest date."""
+    best: tuple[Any, str] | None = None
+    for r in full.get("releases") or []:
+        title = str(r.get("title") or "").strip()
+        if not title:
+            continue
+        credits = r.get("artist-credit") or []
+        names = [c.get("name", "") for c in credits] + [(c.get("artist") or {}).get("name", "") for c in credits]
+        if not any(_artist_match(artist, n) for n in names):
+            continue
+        rg = r.get("release-group") or {}
+        primary = str(rg.get("primary-type") or "").casefold()
+        secondary = {str(t).casefold() for t in rg.get("secondary-types") or []}
+        if primary not in _PRIMARY_OK or secondary & _SECONDARY_BAD:
+            continue
+        key = (primary != "album", r.get("status") != "Official", str(r.get("date") or "9999"))
+        if best is None or key < best[0]:
+            best = (key, title)
+    return best[1] if best else None
 
 
 def _country(artist: dict[str, Any]) -> list[str]:
@@ -129,7 +156,7 @@ def _lookup(artist: str, title: str) -> dict[str, Any]:
         names = [c.get("name", "") for c in credits] + [c.get("artist", {}).get("name", "") for c in credits]
         if not any(_artist_match(artist, n) for n in names):
             continue
-        full = _get(f"recording/{rec['id']}", {"inc": "genres+tags+work-rels+url-rels+releases", "fmt": "json"})
+        full = _get(f"recording/{rec['id']}", {"inc": "genres+tags+work-rels+url-rels+releases+release-groups+artist-credits", "fmt": "json"})
         genres = _top(full)
         country: list[str] = []
         song_rels = _url_rels(full) or _work_rels(full)
@@ -155,7 +182,7 @@ def _lookup(artist: str, title: str) -> dict[str, Any]:
             "song_rels": song_rels,
             "artist_rels": artist_rels,
             "year": _first_year(full),
-            "album": _album(full),
+            "album": _album(full, artist),
         }
     return _empty()
 

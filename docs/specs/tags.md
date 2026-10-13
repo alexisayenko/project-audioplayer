@@ -33,7 +33,7 @@ Code: `server/app/library.py` (`clean_tag`, `clean_tags`, `tag_counts`),
 - TAG-024 MUST: a lookup failure, timeout (5 s), no match, or `AUDIO_TAG_LOOKUP` or `AUDIO_GENRE_LOOKUP` (alias) in `0|false|no|off` yields no tags and never fails `/preview`. Status: implemented
 - TAG-025 MUST: MusicBrainz calls are limited to ~1 request/s globally and cached in memory per (artist, title). Status: implemented
 - TAG-026 MUST: suggestions are written to a song only when the user saves the Add form. Status: implemented
-- TAG-027 MUST: the same MusicBrainz lookup also suggests `country:<code>` from the matched artist's `country` (nothing when missing); no `lang:` tag is suggested from work languages or from yt-dlp's `language` field (languages dropped). The lookup also returns the earliest official release title as `album` (used by `POST /metadata`). A failing artist call keeps the recording's tags. Status: implemented
+- TAG-027 MUST: the same MusicBrainz lookup also suggests `country:<code>` from the matched artist's `country` (nothing when missing); no `lang:` tag is suggested from work languages or from yt-dlp's `language` field (languages dropped). The lookup also returns an `album` (used by `POST /metadata`): the release credited to the matched artist whose release group is an Album/EP/Single without Compilation/Mixtape/DJ-mix/Live/Remix types, Albums first, then the earliest date; none otherwise. One retry after 1 s on HTTP 503. A failing artist call keeps the recording's tags. Status: implemented
 
 ## Suggestions from Wikipedia and Wikidata
 

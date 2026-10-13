@@ -129,14 +129,52 @@ def test_country_mapping_ignores_work_languages(monkeypatch):
     assert gl.suggest_tags("Daft Punk", "X") == ["genre:pop", "country:lt"]
 
 
-def test_album_is_earliest_official_release(monkeypatch):
+def rel(title, date, primary="Album", secondary=(), artist="Daft Punk", status="Official"):
+    return {"title": title, "status": status, "date": date,
+            "artist-credit": [{"name": artist, "artist": {"name": artist}}],
+            "release-group": {"primary-type": primary, "secondary-types": list(secondary)}}
+
+
+def test_album_prefers_album_then_earliest(monkeypatch):
     full = {"releases": [
-        {"title": "Reissue", "status": "Official", "date": "2010"},
-        {"title": "Bootleg", "status": "Bootleg", "date": "1990"},
-        {"title": "Homework", "status": "Official", "date": "1997-01-20"},
+        rel("Single X", "1996", primary="Single"),
+        rel("Reissue", "2010"),
+        rel("Homework", "1997-01-20"),
     ]}
     monkeypatch.setattr(gl, "_get", fake_get([REC], full))
     assert gl.lookup("Daft Punk", "X")["album"] == "Homework"
+
+
+def test_album_skips_other_artist_and_mixtapes(monkeypatch):
+    full = {"releases": [
+        rel("Lane 8 Winter 2015 Mixtape", "2015", artist="Lane 8"),
+        rel("Mix", "2014", secondary=["Mixtape/Street"]),
+        rel("Best Of", "2015", secondary=["Compilation"]),
+        rel("Live!", "2016", secondary=["Live"]),
+        rel("Bootleg", "1990", primary="Broadcast"),
+    ]}
+    monkeypatch.setattr(gl, "_get", fake_get([REC], full))
+    assert gl.lookup("Daft Punk", "X")["album"] is None
+
+
+def test_retries_once_on_503(monkeypatch):
+    import urllib.error
+    calls = []
+
+    class Resp:
+        def __enter__(self): return self
+        def __exit__(self, *a): return False
+        def read(self): return b'{"ok": 1}'
+
+    def fake_open(req, timeout=None):
+        calls.append(1)
+        if len(calls) == 1:
+            raise urllib.error.HTTPError(req.full_url, 503, "busy", {}, None)
+        return Resp()
+
+    monkeypatch.setattr(gl.urllib.request, "urlopen", fake_open)
+    assert gl._get("recording/", {}) == {"ok": 1}
+    assert len(calls) == 2
 
 
 def test_album_missing_is_none(monkeypatch):
