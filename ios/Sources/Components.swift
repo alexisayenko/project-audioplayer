@@ -598,13 +598,39 @@ struct NamespaceField: View {
     @Binding var tags: [String]
     @Binding var input: String
     @State private var note: String?
+    @State private var serverGenres: [String] = []
     @FocusState private var focused: Bool
+    @EnvironmentObject private var settings: Settings
+    @EnvironmentObject private var library: LibraryStore
 
     private var mine: [String] { tags.filter { tagKey($0) == key } }
     private var placeholder: String { key == "country" ? "Add a country" : "Add a genre" }
 
     private func commit(final: Bool = true) {
         note = commitNamespaced(&tags, key: key, cap: cap, input: &input, final: final)
+    }
+
+    private var suggestions: [String] {
+        guard key == "genre" else { return [] }
+        let typed = input.split(omittingEmptySubsequences: false, whereSeparator: { $0 == "," || $0 == "/" }).last.map(String.init) ?? ""
+        let pool = serverGenres.isEmpty ? genresFromTags(library.songs.map { $0.tags ?? [] }) : serverGenres
+        return suggestGenres(query: typed, genres: pool, chosen: mine.map(tagLabel))
+    }
+
+    private func pick(_ genre: String) {
+        var parts = input.split(omittingEmptySubsequences: false, whereSeparator: { $0 == "," || $0 == "/" }).map(String.init)
+        if parts.isEmpty { parts = [genre] } else { parts[parts.count - 1] = genre }
+        input = parts.joined(separator: ",")
+        commit()
+        focused = true
+    }
+
+    private func loadGenres() async {
+        guard key == "genre" else { return }
+        if let cached = GenreCache.value(for: library.songs.count) { serverGenres = cached; return }
+        let list = (try? await APIClient(baseURL: settings.serverURL, token: settings.token).genres()) ?? []
+        GenreCache.store(list, for: library.songs.count)
+        serverGenres = list
     }
 
     var body: some View {
@@ -626,10 +652,29 @@ struct NamespaceField: View {
                     .onChange(of: input) { _, v in if v.contains(where: { $0 == "," || $0 == "/" }) { commit(final: false) } }
                     .onChange(of: focused) { _, f in if !f { commit() } }
                     .dsField()
+                let hints = suggestions
+                if !hints.isEmpty {
+                    FlowLayout { ForEach(hints, id: \.self) { g in TagChip(text: g) { pick(g) } } }
+                        .padding(.top, DS.Space.space1)
+                }
             }
             if let note { Text(note).font(T.caption).foregroundStyle(DS.Color.inkMuted) }
         }
+        .task(id: library.songs.count) { await loadGenres() }
         .onDisappear { commit() }
+    }
+}
+
+@MainActor
+enum GenreCache {
+    private static var list: [String] = []
+    private static var songCount = -1
+
+    static func value(for count: Int) -> [String]? { songCount == count && !list.isEmpty ? list : nil }
+
+    static func store(_ genres: [String], for count: Int) {
+        list = genres
+        songCount = genres.isEmpty ? -1 : count
     }
 }
 

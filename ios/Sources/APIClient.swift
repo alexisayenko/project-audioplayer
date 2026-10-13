@@ -101,6 +101,15 @@ struct APIClient {
         return (try JSONDecoder().decode(CatalogResponse.self, from: data), tag)
     }
 
+    func genres() async throws -> [String] {
+        var req = try await request(Endpoints.genres)
+        req.timeoutInterval = 15
+        let (data, response) = try await URLSession.shared.data(for: req)
+        try check(response, data: data)
+        guard let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any], let list = obj["genres"] as? [Any] else { return [] }
+        return list.compactMap { $0 as? String }
+    }
+
     func search(_ query: String) async throws -> [SearchResult] {
         var req = try await request(Endpoints.search, query: [.init(name: "q", value: query)])
         req.timeoutInterval = 30

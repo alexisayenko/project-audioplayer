@@ -13,6 +13,7 @@ enum Endpoints {
     static let songs = path("songs")
     static let lookupWikipedia = path("lookup", "wikipedia")
     static let metadata = path("metadata")
+    static let genres = path("genres")
     static let coversPrefix = path("covers") + "/"
 
     static func file(_ id: String) -> String { path("files", id) }
