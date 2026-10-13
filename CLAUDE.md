@@ -19,7 +19,7 @@ verified Google or Apple identity gets their own library within quotas, Alex is 
 Electrophone: an iOS app (owner: Alex; distributed via TestFlight internal testing only) and a web UI
 open to anyone with a Google or Apple sign-in, each user with their own library and storage on
 Alex's server (ADR-0012). Search YouTube (or paste a YouTube or SoundCloud track
-link), download a song's audio through a private server, keep it in an on-device library, play it with background
+link), download a song's audio through a private server (iOS only; the web UI saves catalog entries without audio and plays only audio already on the server), keep it in an on-device library, play it with background
 audio and lock-screen controls. No monetization. Downloading may violate
 YouTube's ToS; the app is not for distribution.
 

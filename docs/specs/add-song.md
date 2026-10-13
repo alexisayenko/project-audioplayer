@@ -7,9 +7,7 @@ Code: `web/js/add.js`, `server/app/main.py` (`preview`, `create_song`,
 
 1. Paste a YouTube URL, press Preview (`POST /preview`).
 2. Edit fields and tags in the preview card.
-3. Save and download (`POST /songs`, 202).
-4. Poll `GET /songs/{id}/status` every 1 s; progress bar.
-5. On `done`: library refreshes, "Saved to your library." with Play now and Add another.
+3. Web: "Save to library" saves metadata only (`POST /songs` with `audio:false`, 201, no download, no polling); toast "Saved to library". Audio reaches the server only through the iOS download flow (2026-10-13). The steps below describe the iOS/server download path (`audio` omitted: 202, poll `GET /songs/{id}/status`).
 
 ## Requirements
 
@@ -17,7 +15,7 @@ Code: `web/js/add.js`, `server/app/main.py` (`preview`, `create_song`,
 - ADD-002 MUST: preview prefills `title` from yt-dlp `track` else `title` (for YouTube, cut by `server/app/titles.py` `split_artist_title`: when the channel name starts the video title it is the artist, separators " - " and " ●● ", and noise such as "(Official Video)" is stripped; applied in search, preview and download); `artist` from `artist`, `creator`, `uploader`; `year` from `release_year`, else `release_date`/`upload_date`; `tags` per [tags.md](tags.md) (genre and country suggestions; no language tag is suggested). Status: implemented
 - ADD-003 MUST: preview downloads nothing and writes nothing. Status: implemented
 - ADD-004 MUST: the user may edit every field and tag before saving using the shared tag editor (LIB-055): current tags as removable chips, a "Suggested" row with the preview's tags (toggle), all library tags as toggle chips, a text input (Enter or comma adds, accepts `key:value`). Status: implemented
-- ADD-005 MUST: Save starts a background download of the best m4a audio (`bestaudio[ext=m4a]/140`) to the user's audio directory (`<music_root>/users/<uid>/`) as `<id>.m4a`, one video only (no playlists). Status: implemented
+- ADD-005 MUST: on iOS ("Add and download to iPhone"; the web saves metadata only, ADD-053), Save starts a background download of the best m4a audio (`bestaudio[ext=m4a]/140`) to the user's audio directory (`<music_root>/users/<uid>/`) as `<id>.m4a`, one video only (no playlists). Status: implemented
 - ADD-006 MUST: after the audio is saved the server fetches the cover from `https://i.ytimg.com/vi/<id>/hqdefault.jpg` to `covers/<id>.jpg`; a failed fetch leaves `cover: null` and does not fail the add. Status: implemented
 - ADD-007 MUST: on success the song record is appended and committed (`audioplayer: <uid8> add <id>`); `added_at` is the UTC completion time. Status: implemented
 - ADD-008 MUST: progress is 0..1 from yt-dlp byte counts, rounded to 3 decimals; it may stay at 0 when the size is unknown. Status: implemented
@@ -25,9 +23,10 @@ Code: `web/js/add.js`, `server/app/main.py` (`preview`, `create_song`,
 
 ## Wikipedia links
 
-- ADD-005 MUST: the year of the preview (including `suggested_year` when yt-dlp gave none) produces the `decade:` chip in the tag editor, and editing Year updates it (TAG-038); the server derives the stored tag on save (TAG-051). Status: implemented
+- ADD-010 MUST: the year of the preview (including `suggested_year` when yt-dlp gave none) produces the `decade:` chip in the tag editor, and editing Year updates it (TAG-038); the server derives the stored tag on save (TAG-051). Status: implemented
 - ADD-050 MUST: the web preview card has two optional URL inputs (the iOS Add form keeps and saves the links but does not show them for now), "Wikipedia: song" and "Wikipedia: band", pre-filled from `preview.wikipedia_song` / `wikipedia_artist` (MusicBrainz url-rels, see [tags.md](tags.md) TAG-040); they are saved with the song (`metadata.wikipedia_song`, `wikipedia_artist`); an input that is not a Wikipedia/Wikidata link is outlined red and dropped by the server. Status: implemented
-- ADD-051 MUST: the Add form has no "Fill from Wikipedia links" button; the two link inputs feed "Get metadata" (`POST /metadata`); `POST /lookup/wikipedia` remains for the song edit sheet. In the iOS form the two link inputs are not shown for now (the links are still kept, saved and sent); four service icons beside the button reflect `services` from the response (inactive, pulsing, found and tappable; Spotify always inactive), see IOS-021. Status: implemented
+- ADD-051 MUST: the Add form has no "Fill from Wikipedia links" button; the two link inputs feed "Get metadata" (`POST /metadata`; a differing `suggest` artist/title is offered as a tappable hint, never auto-filled); `POST /lookup/wikipedia` remains for the song edit sheet. In the iOS form the two link inputs are not shown for now (the links are still kept, saved and sent); four service icons beside the button reflect `services` from the response (inactive, pulsing, found and tappable; Spotify always inactive), see IOS-021. Status: implemented
+- ADD-053 MUST: the web Add dialog has the same "Get metadata" button, service icons, "Wikipedia says" hint and Genres/Countries chip fields as iOS (WEB-022), and shows the full edit form straight after Fetch. Status: implemented
 
 ## BPM
 
@@ -64,6 +63,6 @@ Code: `web/js/add.js`, `server/app/main.py` (`preview`, `create_song`,
 
 ## Limits (ADR-0012)
 
-- ADD-050 MUST: the server checks the user's quotas before it resolves or downloads the link (API-041); the Add dialog shows a readable message for each refusal and keeps the form: 429 "Hourly limit reached. Try again in N minutes.", 403 `library_full_songs` "Your library is full. Delete some songs to add more.", 403 `library_full_bytes` "Your storage is full. Delete some songs to free space.", 503 `server_full` "The server is out of storage right now. Try again later." (`web/js/limits.js` `friendly`, tested). Status: implemented
-- ADD-051 MUST: there is no "Fill from Wikipedia links" button on the web; the song and band Wikipedia link inputs stay and are saved with the song. Status: implemented
+- ADD-054 MUST: the server checks the user's quotas before it resolves or downloads the link (API-041); the Add dialog shows a readable message for each refusal and keeps the form: 429 "Hourly limit reached. Try again in N minutes.", 403 `library_full_songs` "Your library is full. Delete some songs to add more.", 403 `library_full_bytes` "Your storage is full. Delete some songs to free space.", 503 `server_full` "The server is out of storage right now. Try again later." (`web/js/limits.js` `friendly`, tested). Status: implemented
+- ADD-055 MUST: there is no "Fill from Wikipedia links" button on the web; the song and band Wikipedia link inputs stay and are saved with the song. Status: implemented
 - ADD-052 MUST: a sign-in refused because signup is closed shows "Sign-up is closed on this server." on Settings (403 `signup_closed`). Status: implemented

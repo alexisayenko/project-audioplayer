@@ -7,7 +7,7 @@ API), see ADR-0003 in [`../tech/decisions.md`](../tech/decisions.md). The
 iOS app mirrors the web flow with Library, Playback and
 Settings tabs (iOS search states: spinner, "No results", and inline errors for 401, 403 (account not allowed), unreachable and server failures, see IOS-023; Settings shows a "Custom server · Reset" row only for a non-default connection, IOS-010; Add is a sheet from the Library header; YouTube text search is a secondary screen inside it, with an opaque bottom search bar, an inner clear X (only with text) and no Cancel, back is the "<" button; Library is the phone only, filtered by four category chips and a bottom sheet), see [`../tech/architecture.md`](../tech/architecture.md).
 
-Scope: the web UI is for managing the library and listening online only,
+Scope: the web UI is for managing the library and listening online only (it saves catalog entries without audio; songs not on the server show an "Open on YouTube/SoundCloud" link instead of play; only existing server audio plays),
 with no offline storage or audio cache. Offline listening ("download to
 device") is the iOS app: Add and Library work as below, plus downloads to
 the phone, a phone-only Library (no server list; the server is the download pipe behind Add), and the Electrophone look
@@ -43,12 +43,12 @@ queue card beside it. The iOS Settings screen shows Account (a quiet "Not allowe
 
 ### 1. Add song
 
-Web: a centred 560px dialog over Library (bottom-aligned sheet on phones): title "Add from YouTube", Cancel, a link field with a Fetch button, then the preview (88px cover, title, artist, album, year, duration), an "Edit details" button that expands the fields, the suggested tags as chips with a + chip that opens the tag editor, and one "Save to library" button. Saving closes the dialog; the download continues as a row "Downloading NN%" at the top of Library (and a toast when it is saved or fails).
+Web: a centred 560px dialog over Library (bottom-aligned sheet on phones): title "Add from YouTube", Cancel, a link field with a Fetch button, then the preview (88px cover, title, artist, album, year, duration), an "Edit details" button that expands the fields, the suggested tags as chips with a + chip that opens the tag editor, and one "Save to library" button. Update (WEB-022): after Fetch the full form opens at once (no "Edit details"), with "Get metadata" and four service icons after Title and Artist, Genres and Countries chip fields, and a sticky Save footer. Saving closes the dialog and saves the catalog entry only (toast "Saved to library"; the web starts no download, WEB-015); the "Downloading NN%" row appears for downloads started from the iOS app.
 
 1. User pastes a YouTube URL (cleaned to the canonical link on paste, drop, bulk input and blur; surrounding text is dropped).
 2. App asks the server for a metadata preview (cover, title, artist,
    album, year, and suggested `genre:` and `country:` tags from yt-dlp, MusicBrainz and Wikidata, plus suggested Wikipedia links for the song and the band).
-3. User edits any field and assigns tags in the shared tag editor ("Get metadata" after Title and Artist fills empty Album and Year and suggests genres and a country; four service icons beside it (YouTube, SoundCloud, Wikipedia, Spotify) are grey by default, pulse while the request runs, and turn brand-coloured and tappable (opening the found page) for each service that returned a match; Spotify always stays grey; separate Genres and Countries fields hold the `genre:` and `country:` tags; suggested tags, existing tags grouped by prefix, `key:value` allowed; incomplete leftover text such as `mood:` is ignored).
+3. User edits any field and assigns tags in the shared tag editor ("Get metadata" after Title and Artist fills empty Album and Year and suggests genres and a country, and offers a tappable "Wikipedia says: artist / title" hint under Artist when it differs (never auto-filled); four service icons beside it (YouTube, SoundCloud, Wikipedia, Spotify) are grey by default, pulse while the request runs, and turn brand-coloured and tappable (opening the found page) for each service that returned a match; Spotify always stays grey; separate Genres and Countries fields hold the `genre:` and `country:` tags; suggested tags, existing tags grouped by prefix, `key:value` allowed; incomplete leftover text such as `mood:` is ignored).
    BPM is optional: left empty it is detected on the server after the
    download (placeholder "Detected after saving"); a typed value is kept as is.
    Two optional inputs, Wikipedia (song) and Wikipedia (band), hold the links; they are saved with the song and feed "Get metadata" (the iOS Add form does not show them for now).
@@ -64,6 +64,7 @@ Manages all songs.
 - Search box (title, artist, album, tags). With a tag filter or search text active, an "Add all N to playlist" button appends all listed songs to the queue (toast "Added X songs (Y already in queue)"; a tag filter becomes a playlist chip, search-only adds are manual); hidden when nothing is filtered.
 - `decade:` tags are derived from Year by the server and show as "the 90s"; the tag editor previews the chip as Year changes.
 - Filter by tag (chips grouped by prefix: Genre, Decade, Country, then others; plain tags under Tags; `country:` values show as names, e.g. Lithuania; languages are not shown or filterable); sort (added date, title, artist, year, BPM; songs without BPM last).
+- The iOS song sheet has the same separate Genres and Countries fields as Add; its generic tag editor hides `genre:`, `country:` and `lang:` tags.
 - Edit dialog has the two Wikipedia inputs and "Fill from Wikipedia links" (same behaviour as Add), uses the same tag editor and has a BPM input (whole numbers) and a Re-detect button (re-runs detection on the stored file).
 - Edit metadata and tags of a song; Delete a song (server file, cover and
   record) from the Edit dialog.

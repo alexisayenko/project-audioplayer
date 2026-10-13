@@ -86,4 +86,4 @@ description: [`../product/screens.md`](../product/screens.md) section 3.
 
 ## Offline
 
-- PLY-100 MUST: the web player is online only: audio, covers and the library are fetched from the server; there is no offline cache. Status: implemented
+- PLY-100 MUST: the web player is online only: audio, covers and the library are fetched from the server; there is no offline cache; songs without server audio are never queued or played on the web (they link to their source, WEB-023). Status: implemented

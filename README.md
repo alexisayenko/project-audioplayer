@@ -7,7 +7,7 @@ rules and docs subtree, described under Structure below.
 ## Overview
 
 Electrophone, a personal audio player: search YouTube (or paste a YouTube or SoundCloud link), download a song's audio via a
-private server, manage the library and play online in the web UI. The
+private server (from the iOS app), manage the catalog and play audio already on the server in the web UI (the web saves metadata only). The
 iOS app adds offline listening via "download to device"
 (Library, Add, Playback, Settings). Look: the Electrophone design system ([`docs/brand/`](docs/brand/)).
 iOS: TestFlight internal testing only. Web: open signup (Google or Apple), per-user library and storage, quotas ([ADR-0012](docs/tech/decisions.md)).

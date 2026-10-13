@@ -39,7 +39,7 @@ in `docs/product/wireframes/` yet; add a link here when it lands).
 
 ## Edit dialog
 
-- LIB-050 MUST: fields: Title (required), Artist, Album, Year (0..3000), BPM (20..300, whole numbers, step 1, placeholder "Unknown") with a Re-detect button, Tags (shared tag editor, LIB-055). Status: implemented
+- LIB-050 MUST: fields: Title (required), Artist, Album, Year (0..3000), BPM (20..300, whole numbers, step 1, placeholder "Unknown") with a Re-detect button, Genres and Countries chip fields (WEB-024), Tags (shared tag editor, LIB-055). Status: implemented
 - LIB-051 MUST: Save sends `PATCH` with all fields (empty year or BPM becomes `null`), closes, refreshes, toast "Saved"; a server error shows inline and keeps the dialog open. Status: implemented
 - LIB-052 MUST: Re-detect calls `POST /songs/{id}/bpm/detect`, fills the BPM field and saves the new value immediately (independent of the Save button); a failure shows inline. Status: implemented
 - LIB-053 MUST: Delete is inside the Edit dialog and asks for confirmation ("Delete song?"); it removes the record, audio file and cover; a 404 (already gone) just closes and refreshes. Status: implemented
