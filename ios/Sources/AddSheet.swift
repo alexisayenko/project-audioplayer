@@ -31,11 +31,11 @@ final class AddFlow: ObservableObject {
         suggested = withDecade(suggested, yearValue)
     }
 
-    func reset() {
-        phase = .idle; preview = nil; message = nil; errorCode = nil; url = ""
-        title = ""; artist = ""; album = ""; year = ""; bpm = ""; wikiSong = ""; wikiArtist = ""
-        tags = []; suggested = []; pendingTag = ""; metaNote = nil; services = [:]
-    }
+    private var lookups: [Task<Void, Never>] = []
+
+    func launch(_ work: @escaping () async -> Void) { lookups.append(Task { await work() }) }
+
+    func cancelLookups() { lookups.forEach { $0.cancel() }; lookups = [] }
 
     func loadPreview(_ api: APIClient) async {
         let clean = cleanPasted(url)
@@ -78,7 +78,7 @@ final class AddFlow: ObservableObject {
             if let y = r.year, yearValue == nil { year = String(y); changed = true }
             if addNamespaced(&tags, r.tags ?? []) > 0 { changed = true }
             for t in r.tags ?? [] where ["genre", "country"].contains(tagKey(t)) && !hasTag(suggested, t) { suggested.append(t) }
-            metaNote = changed ? nil : (returned ? "Already up to date" : "Nothing found")
+            if changed { metaNote = nil } else if returned { metaNote = "Already up to date" } else { metaNote = "Nothing found" }
         } catch { metaNote = "Couldn't load metadata" }
     }
 
@@ -87,7 +87,8 @@ final class AddFlow: ObservableObject {
         guard let p = preview, phase == .ready || phase == .failed else { return false }
         let api = APIClient(baseURL: settings.serverURL, token: settings.token)
         phase = .saving; message = nil
-        let wikiS = wikiSong.trimmingCharacters(in: .whitespaces), wikiA = wikiArtist.trimmingCharacters(in: .whitespaces)
+        let wikiS = wikiSong.trimmingCharacters(in: .whitespaces)
+        let wikiA = wikiArtist.trimmingCharacters(in: .whitespaces)
         let bpmValue = Int(bpm.trimmingCharacters(in: .whitespaces))
         let finalTagList = finalTags(tags, pending: pendingTag)
         let meta: [String: Any] = [
@@ -138,7 +139,7 @@ func lookupSummary(_ found: WikiLookup, _ appliedYear: Int?) -> String {
 
 /// The Add flow as a sheet over Library: link, Fetch, preview, edit, Save. The download continues on the song's Library row.
 struct AddSheet: View {
-    @ObservedObject var flow: AddFlow
+    @StateObject private var flow = AddFlow()
     @EnvironmentObject var library: LibraryStore
     @EnvironmentObject var player: PlayerService
     @EnvironmentObject var settings: Settings
@@ -178,7 +179,7 @@ struct AddSheet: View {
                 SearchView { result in
                     flow.url = "https://www.youtube.com/watch?v=\(result.id)"
                     path = []
-                    Task { await flow.loadPreview(api) }
+                    flow.launch { await flow.loadPreview(api) }
                 }
             }
             .task { await server.check(settings: settings) }
@@ -188,8 +189,9 @@ struct AddSheet: View {
         .presentationCornerRadius(DS.Radius.radiusTray)
         .presentationBackground(DS.Color.surface)
         .onChange(of: flow.phase) { _, phase in
-            if phase == .saved { dismiss(); Task { flow.reset(); addingTags = false } }
+            if phase == .saved { dismiss() }
         }
+        .onDisappear { flow.cancelLookups() }
     }
 
     private var header: some View {
@@ -209,7 +211,7 @@ struct AddSheet: View {
 
     private func fetch() {
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-        Task { await flow.loadPreview(api) }
+        flow.launch { await flow.loadPreview(api) }
     }
 
     private var linkField: some View {
@@ -276,7 +278,7 @@ struct AddSheet: View {
     }
 
     private var disabledSave: some View {
-        Button {} label: {
+        Button { () } label: {
             HStack(spacing: DS.Space.space2) { Image(systemName: "plus"); Text("Add to library") }
         }
         .buttonStyle(LitButtonStyle()).disabled(true)
@@ -346,7 +348,7 @@ struct AddSheet: View {
                 labeled("Title", $flow.title)
                 labeled("Artist", $flow.artist)
                 FlowLayout {
-                    Button { Task { await flow.getMetadata(api) } } label: {
+                    Button { flow.launch { await flow.getMetadata(api) } } label: {
                         HStack { Text("Get metadata"); if flow.metaBusy { ProgressView() } }
                     }
                     .buttonStyle(DSButtonStyle(kind: .quiet)).disabled(flow.metaBusy)

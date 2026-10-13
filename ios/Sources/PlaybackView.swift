@@ -28,7 +28,7 @@ struct PlaybackView: View {
                 TransportTray(playing: player.isPlaying, shuffle: player.shuffle, repeatMode: player.repeatMode,
                               onShuffle: { player.shuffle.toggle() }, onPrevious: { player.previous() },
                               onToggle: { player.toggle() }, onNext: { player.next() },
-                              onRepeat: { player.repeatMode = player.repeatMode == .off ? .all : player.repeatMode == .all ? .one : .off })
+                              onRepeat: { player.repeatMode = player.repeatMode.next })
                 upNextCard
             }
             .padding(.horizontal, DS.Space.space4).padding(.top, DS.Space.space2).padding(.bottom, DS.Space.space4)

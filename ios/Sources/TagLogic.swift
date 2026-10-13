@@ -168,17 +168,21 @@ func tagGroups(_ counts: [(tag: String, count: Int)]) -> [TagGroup] {
     let first = ["genre", "decade", "country"]
     var groups: [String: [(tag: String, count: Int)]] = [:]
     for c in counts { groups[splitTag(c.tag).key, default: []].append(c) }
-    func rank(_ k: String) -> Int { k.isEmpty ? 2 : first.contains(k) ? 0 : 1 }
+    func rank(_ k: String) -> Int {
+        if k.isEmpty { return 2 }
+        return first.contains(k) ? 0 : 1
+    }
     let order = groups.keys.sorted {
-        rank($0) != rank($1) ? rank($0) < rank($1)
-            : rank($0) == 0 ? first.firstIndex(of: $0)! < first.firstIndex(of: $1)! : $0 < $1
+        if rank($0) != rank($1) { return rank($0) < rank($1) }
+        if rank($0) == 0 { return first.firstIndex(of: $0)! < first.firstIndex(of: $1)! }
+        return $0 < $1
     }
     return order.map { key in
         let name = key.isEmpty ? "Tags" : names[key] ?? key.prefix(1).uppercased() + key.dropFirst()
         let sorted = groups[key]!.sorted {
-            key == "decade"
-                ? decadeRank($0.tag) != decadeRank($1.tag) ? decadeRank($0.tag) < decadeRank($1.tag) : $0.tag < $1.tag
-                : tagLabel($0.tag).localizedCompare(tagLabel($1.tag)) == .orderedAscending
+            if key != "decade" { return tagLabel($0.tag).localizedCompare(tagLabel($1.tag)) == .orderedAscending }
+            if decadeRank($0.tag) != decadeRank($1.tag) { return decadeRank($0.tag) < decadeRank($1.tag) }
+            return $0.tag < $1.tag
         }
         return TagGroup(key: key, name: name, tags: sorted)
     }
@@ -208,7 +212,7 @@ func tagLabel(_ tag: String) -> String {
 
 func tagKey(_ tag: String) -> String { splitTag(tag).key.lowercased() }
 
-let genreCap = 3
+let genreCap = 12
 let countryCap = 1
 
 /// ISO alpha-2 code for a typed country name or code; nil when unknown.

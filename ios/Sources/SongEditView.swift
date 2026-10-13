@@ -83,7 +83,10 @@ struct SongEditView: View {
     private var links: [SourceLink] {
         let own = sourceOf(id: song.id)
         let wiki = webURL(wikiSong) ?? webURL(wikiArtist)
-        let wikiLabel = webURL(wikiSong) != nil ? "Wikipedia: song" : webURL(wikiArtist) != nil ? "Wikipedia: artist" : "Not on Wikipedia"
+        let wikiLabel: String
+        if webURL(wikiSong) != nil { wikiLabel = "Wikipedia: song" }
+        else if webURL(wikiArtist) != nil { wikiLabel = "Wikipedia: artist" }
+        else { wikiLabel = "Not on Wikipedia" }
         return [
             SourceLink(id: "yt", symbol: "play.rectangle.fill", label: own == "youtube" && webURL(song.source_url) != nil ? "Open on YouTube" : "Not on YouTube",
                        url: own == "youtube" ? webURL(song.source_url) : nil),
@@ -268,7 +271,8 @@ struct SongEditView: View {
     }
 
     private func lookup() async {
-        let s = wikiSong.trimmingCharacters(in: .whitespaces), a = wikiArtist.trimmingCharacters(in: .whitespaces)
+        let s = wikiSong.trimmingCharacters(in: .whitespaces)
+        let a = wikiArtist.trimmingCharacters(in: .whitespaces)
         guard !s.isEmpty || !a.isEmpty else { note = "Add a Wikipedia link first."; noteIsError = true; return }
         wikiBusy = true; note = nil
         defer { wikiBusy = false }

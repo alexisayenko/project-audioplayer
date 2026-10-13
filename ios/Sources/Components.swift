@@ -98,6 +98,11 @@ struct DSButtonStyle: ButtonStyle {
     var kind: DSButtonKind
     @Environment(\.isEnabled) private var enabled
 
+    private func opacity(pressed: Bool) -> Double {
+        if !enabled { return 0.4 }
+        return pressed ? 0.7 : 1
+    }
+
     func makeBody(configuration: Configuration) -> some View {
         let label = configuration.label
             .font(T.subhead.weight(.semibold))
@@ -119,7 +124,7 @@ struct DSButtonStyle: ButtonStyle {
         }
         .frame(minHeight: DS.Space.hit)
         .contentShape(Capsule())
-        .opacity(enabled ? (configuration.isPressed ? 0.7 : 1) : 0.4)
+        .opacity(opacity(pressed: configuration.isPressed))
     }
 }
 
@@ -234,7 +239,10 @@ struct FlowLayout: Layout {
 
     private func arrange(_ width: CGFloat, _ subviews: Subviews) -> (points: [CGPoint], size: CGSize) {
         var points: [CGPoint] = []
-        var x: CGFloat = 0, y: CGFloat = 0, row: CGFloat = 0, maxX: CGFloat = 0
+        var x: CGFloat = 0
+        var y: CGFloat = 0
+        var row: CGFloat = 0
+        var maxX: CGFloat = 0
         for s in subviews {
             let sz = s.sizeThatFits(.init(width: width.isFinite ? width : nil, height: nil))
             if x > 0 && x + sz.width > width { x = 0; y += row + spacing; row = 0 }
@@ -372,14 +380,21 @@ struct TransportKeyStyle: ButtonStyle {
     enum Kind { case key, lit, ghost(on: Bool) }
     var kind: Kind
 
+    private var foreground: Color {
+        switch kind {
+        case .lit: return DS.Color.onAccent
+        case .ghost(let on): return on ? DS.Color.accentInk : DS.Color.inkMuted
+        case .key: return DS.Color.ink
+        }
+    }
+
     func makeBody(configuration: Configuration) -> some View {
         let lit: Bool = { if case .lit = kind { return true }; return false }()
         let ghost: Bool = { if case .ghost = kind { return true }; return false }()
-        let ghostOn: Bool = { if case .ghost(let on) = kind { return on }; return false }()
         let size = lit ? CGSize(width: 64, height: 48) : CGSize(width: ghost ? DS.Space.hit : 56, height: DS.Space.hit)
         return configuration.label
             .font(.system(size: lit ? 22 : 20))
-            .foregroundStyle(lit ? DS.Color.onAccent : ghostOn ? DS.Color.accentInk : ghost ? DS.Color.inkMuted : DS.Color.ink)
+            .foregroundStyle(foreground)
             .frame(width: size.width, height: size.height)
             .background {
                 switch kind {
@@ -426,7 +441,7 @@ struct TransportTray: View {
             Spacer(minLength: DS.Space.space2)
             Button(action: onRepeat) { Image(systemName: repeatMode == .one ? "repeat.1" : "repeat") }
                 .buttonStyle(TransportKeyStyle(kind: .ghost(on: repeatMode != .off)))
-                .accessibilityLabel("Repeat").accessibilityValue(repeatMode == .off ? "off" : repeatMode == .all ? "whole list" : "one song")
+                .accessibilityLabel("Repeat").accessibilityValue(repeatMode.spokenName)
         }
         .padding(.horizontal, DS.Space.space3).padding(.vertical, DS.Space.space2)
         .dsFloat(radius: DS.Radius.radiusTray)
@@ -696,13 +711,22 @@ struct DSSwitchStyle: ToggleStyle {
     }
 }
 
+extension ServerLink {
+    var ledColor: Color {
+        switch reachable {
+        case .some(true): return DS.Color.ok
+        case .some(false): return DS.Color.power
+        case .none: return DS.Color.inkFaint
+        }
+    }
+}
+
 /// Just the LED of the server's state, for a collapsed row.
 struct ServerLED: View {
     @EnvironmentObject var server: ServerLink
 
     var body: some View {
-        LED(color: server.reachable == true ? DS.Color.ok : server.reachable == false ? DS.Color.power : DS.Color.inkFaint,
-            glow: server.reachable != nil)
+        LED(color: server.ledColor, glow: server.reachable != nil)
     }
 }
 

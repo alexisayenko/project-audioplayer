@@ -112,6 +112,7 @@ final class AuthService: NSObject, ObservableObject {
                                       "client_id": googleClientID, "redirect_uri": googleRedirect])
             error = nil
         } catch let e as ASWebAuthenticationSessionError where e.code == .canceledLogin {
+            error = nil
         } catch {
             self.error = error.localizedDescription
         }

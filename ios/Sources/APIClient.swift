@@ -104,7 +104,8 @@ struct APIClient {
     func search(_ query: String) async throws -> [SearchResult] {
         var req = try await request(Endpoints.search, query: [.init(name: "q", value: query)])
         req.timeoutInterval = 30
-        let data: Data, response: URLResponse
+        let data: Data
+        let response: URLResponse
         do { (data, response) = try await URLSession.shared.data(for: req) }
         catch let e as URLError where e.code != .cancelled { throw APIError.unreachable }
         try check(response, data: data)
@@ -112,11 +113,12 @@ struct APIClient {
     }
 
     /// Copies an audio file that is already on the server into the app, reporting 0...1 as it arrives.
-    func downloadFile(_ track: Track, onProgress: @escaping @Sendable (Double) -> Void = { _ in }) async throws {
+    func downloadFile(_ track: Track, onProgress: (@Sendable (Double) -> Void)? = nil) async throws {
         let fetcher = FileFetcher(onProgress)
         let session = Self.downloadSession(delegate: fetcher)
         defer { session.finishTasksAndInvalidate() }
-        let tmp: URL, response: URLResponse
+        let tmp: URL
+        let response: URLResponse
         do {
             (tmp, response) = try await fetcher.run(session, try await request(Endpoints.file(track.id)))
         } catch let e as URLError where e.code == .dataNotAllowed || e.code == .internationalRoamingOff {
@@ -129,8 +131,11 @@ struct APIClient {
 
     /// Asks the server to fetch the audio, then copies the file into the app.
     func download(_ result: SearchResult) async throws -> Track {
-        struct Body: Encodable { let video_id: String }
-        let post = try await request(Endpoints.download, method: "POST", body: JSONEncoder().encode(Body(video_id: result.id)))
+        struct Body: Encodable {
+            let videoID: String
+            enum CodingKeys: String, CodingKey { case videoID = "video_id" }
+        }
+        let post = try await request(Endpoints.download, method: "POST", body: JSONEncoder().encode(Body(videoID: result.id)))
         let (data, response) = try await URLSession.shared.data(for: post)
         try check(response, data: data)
         let track = try JSONDecoder().decode(Track.self, from: data)
@@ -202,11 +207,11 @@ struct APIClient {
 
 /// Runs one download task and reports 0...1 as bytes arrive; hands back a temp copy the caller owns.
 private final class FileFetcher: NSObject, URLSessionDownloadDelegate, @unchecked Sendable {
-    private let onProgress: @Sendable (Double) -> Void
+    private let onProgress: (@Sendable (Double) -> Void)?
     private var continuation: CheckedContinuation<(URL, URLResponse), Error>?
     private var result: URL?
 
-    init(_ onProgress: @escaping @Sendable (Double) -> Void) { self.onProgress = onProgress }
+    init(_ onProgress: (@Sendable (Double) -> Void)?) { self.onProgress = onProgress }
 
     func run(_ session: URLSession, _ request: URLRequest) async throws -> (URL, URLResponse) {
         try await withCheckedThrowingContinuation { cont in
@@ -218,7 +223,7 @@ private final class FileFetcher: NSObject, URLSessionDownloadDelegate, @unchecke
     func urlSession(_: URLSession, downloadTask _: URLSessionDownloadTask, didWriteData _: Int64,
                     totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
         guard totalBytesExpectedToWrite > 0 else { return }
-        onProgress(Double(totalBytesWritten) / Double(totalBytesExpectedToWrite))
+        onProgress?(Double(totalBytesWritten) / Double(totalBytesExpectedToWrite))
     }
 
     func urlSession(_: URLSession, downloadTask _: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {

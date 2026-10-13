@@ -61,7 +61,7 @@ struct SearchView: View {
             if !Task.isCancelled { await search() }
         }
         .alert("Error", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
-            Button("OK", role: .cancel) {}
+            Button("OK", role: .cancel) { error = nil }
         } message: { Text(error ?? "") }
     }
 

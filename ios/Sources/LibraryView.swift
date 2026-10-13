@@ -20,7 +20,6 @@ struct LibraryView: View {
     @State private var deleting: Track?
     @State private var onlyPhone = false
     @State private var showAdd = false
-    @StateObject private var addFlow = AddFlow()
 
     private var counts: [(tag: String, count: Int)] {
         var counts: [String: (tag: String, count: Int)] = [:]
@@ -44,7 +43,8 @@ struct LibraryView: View {
         case .newest:
             let order = Dictionary(uniqueKeysWithValues: list.enumerated().map { ($1.id, $0) })
             list.sort {
-                let a = $0.addedAt ?? .distantPast, b = $1.addedAt ?? .distantPast
+                let a = $0.addedAt ?? .distantPast
+                let b = $1.addedAt ?? .distantPast
                 return a == b ? order[$0.id, default: 0] < order[$1.id, default: 0] : a > b
             }
         case .title: list.sort { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
@@ -112,7 +112,7 @@ struct LibraryView: View {
                 }
             }
             .sheet(item: $editing) { SongEditView(song: $0) }
-            .sheet(isPresented: $showAdd) { AddSheet(flow: addFlow) }
+            .sheet(isPresented: $showAdd) { AddSheet() }
             .onChange(of: server.notice) { _, n in
                 if let n { toast = n; server.notice = nil }
             }
@@ -251,7 +251,7 @@ struct LibraryView: View {
     private func delete(_ t: Track) async {
         if t.localOnly != true {
             do { try await APIClient(baseURL: settings.serverURL, token: settings.token).delete(t.id) }
-            catch APIError.http(404, _) {}
+            catch APIError.http(404, _) { library.delete(t.id); return }
             catch { toast = "Couldn't delete. Check the server and try again."; return }
         }
         library.delete(t.id)

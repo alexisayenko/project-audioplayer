@@ -18,7 +18,25 @@ final class PlayerService: ObservableObject {
         didSet { UserDefaults.standard.set(repeatMode.rawValue, forKey: "repeat") }
     }
 
-    enum RepeatMode: String { case off, all, one }
+    enum RepeatMode: String {
+        case off, all, one
+
+        var next: RepeatMode {
+            switch self {
+            case .off: return .all
+            case .all: return .one
+            case .one: return .off
+            }
+        }
+
+        var spokenName: String {
+            switch self {
+            case .off: return "off"
+            case .all: return "whole list"
+            case .one: return "one song"
+            }
+        }
+    }
 
     @Published var volume: Double = 1 { didSet { player.volume = Float(volume) } }
 

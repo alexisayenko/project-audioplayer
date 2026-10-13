@@ -108,15 +108,25 @@ struct SettingsView: View {
         }
     }
 
+    private var accountLEDColor: Color {
+        auth.expired || server.forbidden ? DS.Color.power : server.ledColor
+    }
+
+    private func accountStatus(_ session: AuthService.Session) -> String {
+        if auth.expired { return "Expired, sign in again" }
+        if server.forbidden { return "Not allowed on this server" }
+        return "via \(session.provider == .apple ? "Apple" : "Google")"
+    }
+
     private var accountCard: some View {
         card("Account") {
             VStack(alignment: .leading, spacing: DS.Space.space3) {
                 if let session = auth.session {
                     HStack(spacing: DS.Space.space3) {
-                        LED(color: auth.expired || server.forbidden ? DS.Color.power : server.reachable == true ? DS.Color.ok : DS.Color.inkFaint, size: 10, glow: server.reachable != nil)
+                        LED(color: accountLEDColor, size: 10, glow: server.reachable != nil)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(session.email ?? "Signed in").font(T.body).foregroundStyle(DS.Color.ink)
-                            Text(auth.expired ? "Expired, sign in again" : server.forbidden ? "Not allowed on this server" : "via \(session.provider == .apple ? "Apple" : "Google")").dsCaption()
+                            Text(accountStatus(session)).dsCaption()
                         }
                     }
                     .accessibilityElement(children: .combine)

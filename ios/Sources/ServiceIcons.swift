@@ -27,7 +27,10 @@ private struct YouTubeShape: Shape {
         var p = Path()
         let body = CGRect(x: r.minX, y: r.minY + r.height * 0.18, width: r.width, height: r.height * 0.64)
         p.addRoundedRect(in: body, cornerSize: CGSize(width: r.width * 0.2, height: r.width * 0.2))
-        let cx = r.midX, cy = r.midY, w = r.width * 0.12, h = r.height * 0.17
+        let cx = r.midX
+        let cy = r.midY
+        let w = r.width * 0.12
+        let h = r.height * 0.17
         p.move(to: CGPoint(x: cx - w, y: cy - h))
         p.addLine(to: CGPoint(x: cx + w * 1.4, y: cy))
         p.addLine(to: CGPoint(x: cx - w, y: cy + h))
@@ -39,7 +42,8 @@ private struct YouTubeShape: Shape {
 private struct SoundCloudShape: Shape {
     func path(in r: CGRect) -> Path {
         var p = Path()
-        let w = r.width, h = r.height
+        let w = r.width
+        let h = r.height
         let base = r.minY + h * 0.78
         p.move(to: CGPoint(x: r.minX + w * 0.12, y: base))
         p.addArc(center: CGPoint(x: r.minX + w * 0.12, y: base - h * 0.14), radius: h * 0.14,
@@ -66,7 +70,8 @@ private struct SpotifyShape: Shape {
 private struct SpotifyArcs: Shape {
     func path(in r: CGRect) -> Path {
         var p = Path()
-        let w = r.width, h = r.height
+        let w = r.width
+        let h = r.height
         for (y, half) in [(0.34, 0.30), (0.50, 0.24), (0.65, 0.18)] {
             let cy = r.minY + h * y
             p.move(to: CGPoint(x: r.midX - w * half, y: cy))
@@ -104,10 +109,16 @@ struct ServiceIcon: View {
         }
     }
 
+    private var glyphOpacity: Double {
+        guard pulsing else { return 1 }
+        if reduceMotion { return 0.5 }
+        return dim ? 0.35 : 1
+    }
+
     var body: some View {
         let icon = glyph
             .frame(width: size, height: size)
-            .opacity(pulsing ? (reduceMotion ? 0.5 : (dim ? 0.35 : 1)) : 1)
+            .opacity(glyphOpacity)
             .scaleEffect(pulsing && !reduceMotion && dim ? 0.9 : 1)
             .animation(pulsing && !reduceMotion ? .easeInOut(duration: 0.8).repeatForever(autoreverses: true) : .default, value: dim)
             .onChange(of: pulsing) { _, on in dim = on && !reduceMotion }
