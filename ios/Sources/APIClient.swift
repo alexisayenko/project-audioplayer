@@ -188,6 +188,13 @@ struct APIClient {
         return try JSONDecoder().decode(WikiLookup.self, from: await send("/lookup/wikipedia", method: "POST", body: body, timeout: 60))
     }
 
+    func metadata(title: String, artist: String, sourceURLs: [String], wikiSong: String, wikiArtist: String) async throws -> MetadataResult {
+        let body: [String: Any] = ["title": title, "artist": artist, "sources": sourceURLs.map { ["url": $0] },
+                                  "wiki_song": wikiSong.isEmpty ? NSNull() : wikiSong,
+                                  "wiki_artist": wikiArtist.isEmpty ? NSNull() : wikiArtist]
+        return try JSONDecoder().decode(MetadataResult.self, from: await send("/metadata", method: "POST", body: body, timeout: 60))
+    }
+
     func delete(_ id: String) async throws {
         _ = try await send("/songs/\(id)", method: "DELETE")
     }

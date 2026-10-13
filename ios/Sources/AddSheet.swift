@@ -11,6 +11,8 @@ final class AddFlow: ObservableObject {
     @Published var errorCode: String?
     @Published var wikiNote: String?
     @Published var wikiBusy = false
+    @Published var metaBusy = false
+    @Published var metaNote: String?
 
     @Published var title = ""
     @Published var artist = ""
@@ -33,7 +35,7 @@ final class AddFlow: ObservableObject {
     func reset() {
         phase = .idle; preview = nil; message = nil; errorCode = nil; url = ""; wikiNote = nil
         title = ""; artist = ""; album = ""; year = ""; bpm = ""; wikiSong = ""; wikiArtist = ""
-        tags = []; suggested = []; pendingTag = ""
+        tags = []; suggested = []; pendingTag = ""; metaNote = nil
     }
 
     func loadPreview(_ api: APIClient) async {
@@ -69,6 +71,23 @@ final class AddFlow: ObservableObject {
             for t in found.tags ?? [] where !suggested.contains(where: { $0.lowercased() == t.lowercased() }) { suggested.append(t) }
             wikiNote = lookupSummary(found, appliedYear)
         } catch { wikiNote = error.localizedDescription }
+    }
+
+    func getMetadata(_ api: APIClient) async {
+        guard !metaBusy else { return }
+        metaBusy = true; metaNote = nil; defer { metaBusy = false }
+        let src = preview?.source_url ?? url
+        do {
+            let r = try await api.metadata(title: title, artist: artist, sourceURLs: src.isEmpty ? [] : [src],
+                                           wikiSong: wikiSong.trimmingCharacters(in: .whitespaces),
+                                           wikiArtist: wikiArtist.trimmingCharacters(in: .whitespaces))
+            var changed = false
+            if let a = r.album, !a.isEmpty, album.trimmingCharacters(in: .whitespaces).isEmpty { album = a; changed = true }
+            if let y = r.year, yearValue == nil { year = String(y); changed = true }
+            if addNamespaced(&tags, r.tags ?? []) > 0 { changed = true }
+            for t in r.tags ?? [] where ["genre", "country"].contains(tagKey(t)) && !hasTag(suggested, t) { suggested.append(t) }
+            metaNote = changed ? nil : "Nothing found"
+        } catch { metaNote = "Couldn't load metadata" }
     }
 
     /// Saves on the server, then hands the download to `ServerLink` so it outlives the sheet. True when the sheet may close.
@@ -334,6 +353,11 @@ struct AddSheet: View {
         VStack(alignment: .leading, spacing: DS.Space.space3) {
                 labeled("Title", $flow.title)
                 labeled("Artist", $flow.artist)
+                Button { Task { await flow.getMetadata(api) } } label: {
+                    HStack { Text("Get metadata"); if flow.metaBusy { ProgressView() } }
+                }
+                .buttonStyle(DSButtonStyle(kind: .quiet)).disabled(flow.metaBusy)
+                if let n = flow.metaNote { note(n, error: n != "Nothing found") }
                 labeled("Album", $flow.album)
                 labeled("Year", $flow.year, keyboard: .numberPad)
                 labeled("BPM (optional, detected after saving)", $flow.bpm, keyboard: .numberPad)
@@ -346,11 +370,14 @@ struct AddSheet: View {
                 if let n = flow.wikiNote { note(n) }
         }
 
-        TagFlow(tags: flow.tags, adding: addingTags, onRemove: { t in flow.tags.removeAll { $0 == t } }) {
+        NamespaceField(title: "Genres", key: "genre", cap: genreCap, tags: $flow.tags)
+        NamespaceField(title: "Countries", key: "country", cap: countryCap, tags: $flow.tags)
+
+        TagFlow(tags: flow.tags.filter { !["lang", "genre", "country"].contains(tagKey($0)) }, adding: addingTags, onRemove: { t in flow.tags.removeAll { $0 == t } }) {
             withAnimation { addingTags.toggle() }
         }
         if addingTags {
-            TagEditor(tags: $flow.tags, suggested: $flow.suggested, pool: pool, input: $flow.pendingTag)
+            TagEditor(tags: $flow.tags, suggested: $flow.suggested, pool: pool, input: $flow.pendingTag, hiddenKeys: ["lang", "genre", "country"])
         }
 
         if let m = flow.message { note(m, error: true) }

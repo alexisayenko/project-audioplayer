@@ -7,7 +7,7 @@ import { openMenu } from './menu.js';
 import { downloads } from './downloads.js';
 import { openAdd } from './add.js';
 import { editDialog } from './edit-dialog.js';
-import { tagLabel, tagSearchText, categoryOf, categoryTags, CATEGORIES } from './tagname.js';
+import { visibleTags, tagLabel, tagSearchText, categoryOf, categoryTags, CATEGORIES } from './tagname.js';
 
 const prefs = { query: '', sel: new Set(), sort: 'added' };
 
@@ -39,7 +39,7 @@ export function visibleSongs(sel = prefs.sel) {
   const list = store.songs.filter((s) => {
     if (!matchesSelection(s, sel)) return false;
     if (!q) return true;
-    const hay = [s.title, s.artist, s.album, ...(s.tags || []).map(tagSearchText)].join('\n').toLocaleLowerCase();
+    const hay = [s.title, s.artist, s.album, ...visibleTags(s.tags).map(tagSearchText)].join('\n').toLocaleLowerCase();
     return hay.includes(q);
   });
   return list.sort(SORTS[prefs.sort][1]);

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The four category chips on Library. Plain tags and `lang:` fold into Tags.
+/// The four category chips on Library. Plain tags fold into Tags; `lang:` tags are never shown.
 enum FilterCategory: String, CaseIterable, Identifiable {
     case tags = "Tags", genres = "Genres", years = "Years", countries = "Countries"
     var id: String { rawValue }
@@ -11,7 +11,7 @@ enum FilterCategory: String, CaseIterable, Identifiable {
         case .genres: return key == "genre"
         case .years: return key == "decade"
         case .countries: return key == "country"
-        case .tags: return !["genre", "decade", "country"].contains(key)
+        case .tags: return !["genre", "decade", "country", "lang"].contains(key)
         }
     }
 

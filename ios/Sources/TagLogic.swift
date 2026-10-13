@@ -163,8 +163,9 @@ struct TagGroup: Identifiable {
 }
 
 func tagGroups(_ counts: [(tag: String, count: Int)]) -> [TagGroup] {
-    let names = ["decade": "Decade", "country": "Country", "lang": "Language"]
-    let first = ["genre", "decade", "country", "lang"]
+    let counts = counts.filter { splitTag($0.tag).key.lowercased() != "lang" }
+    let names = ["decade": "Decade", "country": "Country"]
+    let first = ["genre", "decade", "country"]
     var groups: [String: [(tag: String, count: Int)]] = [:]
     for c in counts { groups[splitTag(c.tag).key, default: []].append(c) }
     func rank(_ k: String) -> Int { k.isEmpty ? 2 : first.contains(k) ? 0 : 1 }
@@ -203,4 +204,35 @@ func tagLabel(_ tag: String) -> String {
     case "lang": return Locale(identifier: "en").localizedString(forLanguageCode: value) ?? value
     default: return value
     }
+}
+
+func tagKey(_ tag: String) -> String { splitTag(tag).key.lowercased() }
+
+let genreCap = 3
+let countryCap = 1
+
+/// ISO alpha-2 code for a typed country name or code; nil when unknown.
+func countryCode(_ raw: String) -> String? {
+    let t = raw.trimmingCharacters(in: .whitespaces)
+    guard !t.isEmpty else { return nil }
+    let en = Locale(identifier: "en")
+    let codes = Locale.Region.isoRegions.map(\.identifier).filter { $0.count == 2 }
+    if t.count == 2, codes.contains(t.uppercased()) { return t.lowercased() }
+    return codes.first { en.localizedString(forRegionCode: $0)?.caseInsensitiveCompare(t) == .orderedSame }?.lowercased()
+}
+
+func hasTag(_ tags: [String], _ tag: String) -> Bool { tags.contains { $0.lowercased() == tag.lowercased() } }
+
+/// Adds `genre:`/`country:` tags within the caps, skipping duplicates; returns how many were added.
+@discardableResult
+func addNamespaced(_ tags: inout [String], _ candidates: [String]) -> Int {
+    var added = 0
+    for t in candidates {
+        let k = tagKey(t)
+        guard k == "genre" || k == "country", !hasTag(tags, t) else { continue }
+        let have = tags.filter { tagKey($0) == k }.count
+        guard have < (k == "genre" ? genreCap : countryCap) else { continue }
+        tags.append(t.lowercased()); added += 1
+    }
+    return added
 }

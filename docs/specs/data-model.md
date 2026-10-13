@@ -36,7 +36,7 @@ Code: `server/app/library.py`, `server/app/main.py` (`SongMeta`).
 
 ## `library.json`
 
-One file per user: `audioplayer/users/<uid>/library.json` (ADR-0012; ~~`audioplayer/library.json`~~). Next to it `profile.json`: `{"email": "...", "provider": "google"|"apple"|"migrated", "created_at": "...Z", "subs": {"apple": "<sub>"}}` (DATA-040). `uid` = first 16 hex of `sha256(lowercased email)`.
+One file per user: `audioplayer/users/<uid>/library.json` (ADR-0012; ~~`audioplayer/library.json`~~). Next to it `profile.json`: `{"email": "...", "provider": "google"|"apple", "created_at": "...Z", "subs": {"apple": "<sub>"}}` (DATA-040). `uid` = first 16 hex of `sha256(lowercased email)`.
 
 ```json
 { "settings": { "music_root": "perkunas://data/music/" },
@@ -73,6 +73,6 @@ Tag namespaces in use (see [tags.md](tags.md)): `genre:<name>`, `country:<ISO 31
 
 ## Users (ADR-0012)
 
-- DATA-040 MUST: each user has `profile.json` (`email` or `null`, `provider`, `created_at`, optional `subs`) written once at the first sign-in (or by the legacy migration for the owner); the email is the only personal data and lives only there, never in a path. Status: implemented
+- DATA-040 MUST: each user has `profile.json` (`email` or `null`, `provider`, `created_at`, optional `subs`) written once at the first sign-in; the email is the only personal data and lives only there, never in a path. Status: implemented
 - DATA-041 MUST: `uid` is the first 16 hex chars of `sha256(lowercased email)`; for an Apple token without email, of `sha256(sub)`, and a later token without email finds the profile through `subs`. Status: implemented
 - DATA-042 MUST: `settings.music_root` stays one server-wide value (the owner's, or `AUDIO_MUSIC_ROOT`); each user's audio is below `<music_root>/users/<uid>/`. Status: implemented

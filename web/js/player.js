@@ -2,7 +2,7 @@ import { api } from './api.js';
 import { store } from './store.js';
 import { el, fmtTime, toast } from './dom.js';
 import * as Q from './queue-logic.js';
-import { tagChip, tagGroups, tagLabel, tagText } from './tagname.js';
+import { visibleTags, tagChip, tagGroups, tagLabel, tagText } from './tagname.js';
 import { songLinks } from './wiki-links.js';
 import { icon } from './icons.js';
 import { openMenu, closeMenu, initMenus } from './menu.js';
@@ -211,7 +211,7 @@ function render() {
   $('mini-artist').textContent = song.artist || '';
   $('player-title').textContent = song.title;
   $('player-sub').textContent = [song.artist, song.album, song.year].filter(Boolean).join(' · ');
-  $('player-tags').replaceChildren(...(song.tags || []).map(tagChip));
+  $('player-tags').replaceChildren(...visibleTags(song.tags).map(tagChip));
   $('player-bpm').textContent = song.bpm != null ? `${Math.round(song.bpm)} BPM` : '';
   $('player-links').replaceChildren(...songLinks(song).map((l) => el('a', { class: 'source t-caption', href: l.href, target: '_blank', rel: 'noopener noreferrer' }, l.label)));
   setCover($('mini-cover'), song);

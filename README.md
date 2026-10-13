@@ -1,14 +1,14 @@
-# project-template
+# Electrophone
 
-Seed repo for new projects. Defines a standard folder layout,
-naming rules, and docs subtree. Copy on init; not used as a
-runtime dependency.
+A personal audio player: an iOS app and a web UI over a private
+FastAPI server. The repo also follows a standard folder layout, naming
+rules and docs subtree, described under Structure below.
 
 ## Overview
 
 Electrophone, a personal audio player: search YouTube (or paste a YouTube or SoundCloud link), download a song's audio via a
 private server, manage the library and play online in the web UI. The
-The iOS app adds offline listening via "download to device"
+iOS app adds offline listening via "download to device"
 (Library, Add, Playback, Settings). Look: the Electrophone design system ([`docs/brand/`](docs/brand/)).
 iOS: TestFlight internal testing only. Web: open signup (Google or Apple), per-user library and storage, quotas ([ADR-0012](docs/tech/decisions.md)).
 

@@ -3,12 +3,14 @@ import { el } from './dom.js';
 const namers = {};
 try {
   namers.country = new Intl.DisplayNames(['en'], { type: 'region' });
-  namers.lang = new Intl.DisplayNames(['en'], { type: 'language' });
 } catch { /* no Intl.DisplayNames: raw codes are shown */ }
 
-const GROUP_NAMES = { decade: 'Decade', country: 'Country', lang: 'Language' };
-const FIRST = ['genre', 'decade', 'country', 'lang'];
+const GROUP_NAMES = { decade: 'Decade', country: 'Country' };
+const FIRST = ['genre', 'decade', 'country'];
 const DECADE = /^\d{2}s$/;
+
+export const isHiddenTag = (tag) => /^lang:/i.test(tag);
+export const visibleTags = (tags) => (tags || []).filter((t) => !isHiddenTag(t));
 
 export function splitTag(tag) {
   const i = tag.indexOf(':');

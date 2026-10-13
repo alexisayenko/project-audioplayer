@@ -64,7 +64,8 @@ relative audio file names only (replaces `AUDIO_DOWNLOAD_DIR`). Each save costs 
 | `POST /download {video_id}` | fetch m4a (itag 140, no ffmpeg needed), return metadata |
 | `GET /files/{video_id}` | stream the stored m4a |
 | `GET /library`, `GET /tags` | songs with tags; tag counts |
-| `POST /preview {url}` | yt-dlp metadata plus suggested genre/country/lang tags, year and Wikipedia links (MusicBrainz, Wikidata), no download |
+| `POST /preview {url}` | yt-dlp metadata plus suggested genre/country tags, year and Wikipedia links (MusicBrainz, Wikidata), no download |
+| `POST /metadata` | fill empty album and year and suggest `genre:`/`country:` tags from title and artist |
 | `POST /lookup/wikipedia` | suggested tags and year from user-edited Wikipedia links |
 | `POST /songs`, `GET /songs/{id}/status` | add song (background download), poll progress |
 | `PATCH /songs/{id}`, `DELETE /songs/{id}` | edit metadata/tags/bpm; remove record, audio, cover |
@@ -104,7 +105,7 @@ AUDIO_API_TOKEN=$(openssl rand -hex 32) uvicorn app.main:app --host 0.0.0.0
 pip install -U yt-dlp                    # run daily (cron); YouTube breaks it often
 ```
 
-Then open `http://<host>:8000/`, go to Settings, paste the token. Env:
+Then open `http://<host>:8000/`, sign in with Google or Apple (scripts send `X-API-Token`). Env:
 `AUDIO_API_TOKEN` (required), `AUDIO_DOWNLOAD_DIR` (default `downloads`),
 `AUDIO_DATA_DIR` (default `.`, plain-file `library.json` and `covers/` when
 `AUDIO_DATA_REPO` is unset), `AUDIO_DATA_REPO` / `AUDIO_COVERS_REPO` /
@@ -126,8 +127,7 @@ Plain HTML, CSS and ES modules; no build step, no framework, no CDN.
 `index.html` + `style.css` + `js/` (`api`, `store`, `dom`, `player`, `library`,
 `queue-logic`, `tagname`, `tag-editor`, `wiki-links`, `url-clean`, `tag-input`, `add`, `settings`, `app`). Hash routes `#/library`, `#/add`,
 `#/playback`, `#/settings`. One `<audio>` element drives the mini-player, the
-Playback tab and the Media Session lock-screen controls. The token
-is kept in `localStorage` (`audioplayer.token`). Mounted by FastAPI at
+Playback tab and the Media Session lock-screen controls. The web UI uses the session cookie only. Mounted by FastAPI at
 `/` after all API routes, so it never shadows them.
 
 ## App (`ios/`)
@@ -151,7 +151,7 @@ Sources in `ios/Sources/`:
 - `PlayerService` — `AVPlayer`, `.playback` audio session, queue, shuffle and
   repeat, `MPNowPlayingInfoCenter`, `MPRemoteCommandCenter`;
   `UIBackgroundModes: audio`.
-- Server URL (default `https://play.isayenko.net`) and token are set in Settings.
+- The server URL defaults to `https://play.isayenko.net`; Settings has sign-in only (a legacy-token Reset row shows only when a stale token is saved).
 
 ```sh
 brew install xcodegen

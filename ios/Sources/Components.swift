@@ -484,6 +484,7 @@ struct TagEditor: View {
     @Binding var suggested: [String]
     let pool: [(tag: String, count: Int)]
     @Binding var input: String
+    var hiddenKeys: Set<String> = ["lang"]
     @State private var showPool = false
 
     private func has(_ t: String) -> Bool { tags.contains { $0.lowercased() == t.lowercased() } }
@@ -493,13 +494,13 @@ struct TagEditor: View {
 
     private func commit() {
         let r = splitTagInput(input)
-        for t in r.tags where !has(t) { tags.append(t) }
+        for t in r.tags where !has(t) && !hiddenKeys.contains(tagKey(t)) { tags.append(t) }
         input = r.rest
     }
 
     private var filtered: [TagGroup] {
         let q = input.trimmingCharacters(in: .whitespaces).lowercased()
-        return tagGroups(pool.filter { q.isEmpty || $0.tag.lowercased().contains(q) || tagLabel($0.tag).lowercased().contains(q) })
+        return tagGroups(pool.filter { !hiddenKeys.contains(tagKey($0.tag)) }.filter { q.isEmpty || $0.tag.lowercased().contains(q) || tagLabel($0.tag).lowercased().contains(q) })
     }
 
     var body: some View {
@@ -510,12 +511,13 @@ struct TagEditor: View {
                 .onSubmit(commit)
                 .onChange(of: input) { _, v in if v.contains(",") { commit() } }
                 .dsField()
-            if !tags.isEmpty {
+            let shown = tags.filter { !hiddenKeys.contains(tagKey($0)) }
+            if !shown.isEmpty {
                 FlowLayout {
-                    ForEach(tags, id: \.self) { t in TagChip(text: tagLabel(t), on: true, removable: true) { toggle(t) } }
+                    ForEach(shown, id: \.self) { t in TagChip(text: tagLabel(t), on: true, removable: true) { toggle(t) } }
                 }
             }
-            let open = suggested.filter { !has($0) }
+            let open = suggested.filter { !has($0) && !hiddenKeys.contains(tagKey($0)) }
             if !open.isEmpty {
                 SectionLabel("Suggested")
                 FlowLayout { ForEach(open, id: \.self) { t in TagChip(text: tagLabel(t)) { toggle(t) } } }
@@ -539,6 +541,53 @@ struct TagEditor: View {
                     }
                 }
             }
+        }
+    }
+}
+
+/// A chip field that is a view over one namespaced tag (`genre:`, `country:`), capped.
+struct NamespaceField: View {
+    let title: String
+    let key: String
+    let cap: Int
+    @Binding var tags: [String]
+    @State private var input = ""
+    @State private var note: String?
+
+    private var mine: [String] { tags.filter { tagKey($0) == key } }
+    private var placeholder: String { key == "country" ? "Add a country" : "Add a genre" }
+
+    private func commit() {
+        let raw = input.trimmingCharacters(in: .whitespaces)
+        guard !raw.isEmpty else { return }
+        let value: String? = key == "country" ? countryCode(raw) : raw.lowercased()
+        note = nil
+        guard let value else { note = "Unknown country"; return }
+        let tag = "\(key):\(value)"
+        if hasTag(tags, tag) { input = ""; return }
+        guard mine.count < cap else { note = "Up to \(cap)"; return }
+        tags.append(tag); input = ""
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title).font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.inkMuted)
+            if !mine.isEmpty {
+                FlowLayout {
+                    ForEach(mine, id: \.self) { t in
+                        TagChip(text: tagLabel(t), on: true, removable: true) { tags.removeAll { $0 == t } }
+                    }
+                }
+                .padding(.vertical, DS.Space.space1)
+            }
+            if mine.count < cap {
+                TextField(placeholder, text: $input)
+                    .textInputAutocapitalization(key == "country" ? .words : .never).autocorrectionDisabled()
+                    .submitLabel(.done).onSubmit(commit)
+                    .onChange(of: input) { _, v in if v.contains(",") { input = v.replacingOccurrences(of: ",", with: ""); commit() } }
+                    .dsField()
+            }
+            if let note { Text(note).font(T.caption).foregroundStyle(DS.Color.inkMuted) }
         }
     }
 }

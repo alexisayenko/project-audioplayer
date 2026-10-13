@@ -47,8 +47,8 @@ Web: a centred 560px dialog over Library (bottom-aligned sheet on phones): title
 
 1. User pastes a YouTube URL (cleaned to the canonical link on paste, drop, bulk input and blur; surrounding text is dropped).
 2. App asks the server for a metadata preview (cover, title, artist,
-   album, year, and suggested `genre:`, `country:` and `lang:` tags from yt-dlp, MusicBrainz and Wikidata, plus suggested Wikipedia links for the song and the band).
-3. User edits any field and assigns tags in the shared tag editor (suggested tags, existing tags grouped by prefix, `key:value` allowed; incomplete leftover text such as `mood:` is ignored).
+   album, year, and suggested `genre:` and `country:` tags from yt-dlp, MusicBrainz and Wikidata, plus suggested Wikipedia links for the song and the band).
+3. User edits any field and assigns tags in the shared tag editor ("Get metadata" after Title and Artist fills empty Album and Year and suggests genres and a country; separate Genres and Countries fields hold the `genre:` and `country:` tags; suggested tags, existing tags grouped by prefix, `key:value` allowed; incomplete leftover text such as `mood:` is ignored).
    BPM is optional: left empty it is detected on the server after the
    download (placeholder "Detected after saving"); a typed value is kept as is.
    Two optional inputs, Wikipedia (song) and Wikipedia (band), hold the links; "Fill from Wikipedia links" suggests tags and the year from them (year fills an empty Year, or asks first when it differs).
@@ -63,7 +63,7 @@ Manages all songs.
 - One row per song in a single list card (web: table with a header row): index, cover, title, artist, album, year, duration and a "..." menu with Play now, Add to playlist and Edit song (the Edit dialog also holds Delete). Clicking the title plays the song and keeps the user on Library. The playing row has an accent wash. Tags and BPM are not shown in rows (filter by tag chips; BPM is on Playback and in Edit). Sort is the text button under the chips ("Recently added", Title, Artist, Year, BPM); a line on the right reads "N songs match · selected tags" when filtered.
 - Search box (title, artist, album, tags). With a tag filter or search text active, an "Add all N to playlist" button appends all listed songs to the queue (toast "Added X songs (Y already in queue)"; a tag filter becomes a playlist chip, search-only adds are manual); hidden when nothing is filtered.
 - `decade:` tags are derived from Year by the server and show as "the 90s"; the tag editor previews the chip as Year changes.
-- Filter by tag (chips grouped by prefix: Genre, Decade, Country, Language, then others; plain tags under Tags; `country:` and `lang:` values show as names, e.g. Lithuania, Russian); sort (added date, title, artist, year, BPM; songs without BPM last).
+- Filter by tag (chips grouped by prefix: Genre, Decade, Country, then others; plain tags under Tags; `country:` values show as names, e.g. Lithuania; languages are not shown or filterable); sort (added date, title, artist, year, BPM; songs without BPM last).
 - Edit dialog has the two Wikipedia inputs and "Fill from Wikipedia links" (same behaviour as Add), uses the same tag editor and has a BPM input (whole numbers) and a Re-detect button (re-runs detection on the stored file).
 - Edit metadata and tags of a song; Delete a song (server file, cover and
   record) from the Edit dialog.

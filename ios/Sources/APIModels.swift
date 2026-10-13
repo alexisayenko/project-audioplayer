@@ -25,6 +25,12 @@ struct SongStatus: Codable {
 }
 
 /// `POST /lookup/wikipedia`.
+struct MetadataResult: Decodable {
+    var album: String?
+    var year: Int?
+    var tags: [String]?
+}
+
 struct WikiLookup: Codable {
     var tags: [String]?
     var year: Int?

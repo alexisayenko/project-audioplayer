@@ -21,7 +21,7 @@ This template assumes **one product, delivered through one or
 more top-level code folders** (`mobile/`, `web/`, `workers/`,
 `marketing-site/`, etc.). Name each folder by what it is.
 
-- [TODO: product name] — [TODO: one-line description].
+- Electrophone — a personal audio player (iOS app and web UI) that downloads songs from YouTube or SoundCloud to a private server and keeps them playable offline.
 
 If a second product ever appears (rare), see
 [Multi-product split](#multi-product-split).

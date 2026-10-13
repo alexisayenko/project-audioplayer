@@ -4,7 +4,7 @@ import { downloads } from './downloads.js';
 import { tagEditor } from './tag-editor.js';
 import { el, fmtTime, toast } from './dom.js';
 import { icon } from './icons.js';
-import { tagLabel } from './tagname.js';
+import { tagLabel, visibleTags } from './tagname.js';
 import { cleanPasted, sourceOf, sourceLabel } from './url-clean.js';
 import { wikiFields } from './wiki-links.js';
 import { dialogHead } from './edit-dialog.js';
@@ -82,7 +82,7 @@ export function openAdd() {
       addTag.setAttribute('aria-expanded', String(!editorBox.hidden));
     });
     function paintTags(tags) {
-      tagRow.replaceChildren(...tags.map((t) => el('span', { class: 'chip tint', title: t }, tagLabel(t))), addTag);
+      tagRow.replaceChildren(...visibleTags(tags).map((t) => el('span', { class: 'chip tint', title: t }, tagLabel(t))), addTag);
     }
     paintTags(editor.peek());
     ready = true;

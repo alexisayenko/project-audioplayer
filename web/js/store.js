@@ -1,3 +1,4 @@
+import { visibleTags } from './tagname.js';
 import { api } from './api.js';
 
 export const store = {
@@ -26,7 +27,7 @@ export const store = {
 export function tagCounts(songs) {
   const map = new Map();
   for (const s of songs) {
-    for (const t of s.tags || []) {
+    for (const t of visibleTags(s.tags)) {
       const key = t.toLocaleLowerCase();
       const e = map.get(key) || { tag: t, count: 0 };
       e.count += 1;
