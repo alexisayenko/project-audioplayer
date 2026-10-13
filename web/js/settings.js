@@ -1,4 +1,5 @@
-import { auth, getToken, setToken, session } from './api.js';
+import { api, auth, getToken, setToken, session } from './api.js';
+import { usageText } from './limits.js';
 import { store } from './store.js';
 import { el, pageHead } from './dom.js';
 import { icon } from './icons.js';
@@ -26,7 +27,7 @@ async function finish(idToken, out) {
     await store.refresh();
     location.hash = '#/library';
   } catch (ex) {
-    out.replaceChildren(el('p', { class: 'msg error' }, ex.status === 403 ? 'This account is not the owner.' : ex.message));
+    out.replaceChildren(el('p', { class: 'msg error' }, ex.message));
   }
 }
 
@@ -143,6 +144,8 @@ function libraryCard() {
   const songs = store.songs.length;
   const secs = store.songs.reduce((n, s) => n + (s.duration || 0), 0);
   const hours = secs >= 3600 ? `${(secs / 3600).toFixed(1)} h of music` : `${Math.round(secs / 60)} min of music`;
+  const meter = el('span', { class: 't-caption' }, '');
+  api.usage().then((u) => { meter.textContent = usageText(u); }).catch(() => { meter.textContent = ''; });
   const sync = el('span', {}, 'Checking...');
   fetch('/health').then((r) => r.json()).then((h) => {
     sync.textContent = h.sync === 'ok' ? 'In sync with git' : h.sync === 'error' ? 'Not reaching git (retrying)' : 'Waiting to sync to git';
@@ -153,6 +156,7 @@ function libraryCard() {
       el('span', { class: 't-title' }, `${songs} ${songs === 1 ? 'song' : 'songs'}`),
       el('span', { class: 'muted t-caption' }, songs ? hours : '')),
     el('div', { class: 'divider' }),
+    el('div', { class: 'cell' }, el('span', { class: 'muted t-caption' }, 'Storage'), meter),
     el('div', { class: 'cell' }, el('span', { class: 'muted t-caption' }, 'Sync'), el('span', { class: 't-caption' }, sync)),
     el('div', { class: 'cell' }, el('span', { class: 'muted t-caption' }, 'Server'), el('span', { class: 't-caption' }, location.host)));
 }
@@ -160,6 +164,6 @@ function libraryCard() {
 export function renderSettings(root) {
   let card = libraryCard();
   const unsub = store.subscribe(() => { const next = libraryCard(); card.replaceWith(next); card = next; });
-  root.append(pageHead('Settings', 'One server. No account.'), el('div', { class: 'settings-grid' }, serverCard(), ...(auth.email || getToken() ? [card] : [])));
+  root.append(pageHead('Settings', 'Your library and storage on this server.'), el('div', { class: 'settings-grid' }, serverCard(), ...(auth.email || getToken() ? [card] : [])));
   return unsub;
 }

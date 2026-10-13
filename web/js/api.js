@@ -1,3 +1,5 @@
+import { friendly } from './limits.js';
+
 const KEY = 'audioplayer.token';
 
 export function getToken() {
@@ -58,8 +60,9 @@ async function request(method, path, body) {
       detail = 'Not signed in (see Settings)';
       lostSession();
     }
-    if (res.status === 503) detail = 'Server has no AUDIO_API_TOKEN configured';
-    throw new ApiError(res.status, detail || `Request failed (${res.status})`, (data && data.error) || '');
+    const code = (data && data.error) || '';
+    if (res.status === 503 && !code) detail = 'Server has no AUDIO_API_TOKEN configured';
+    throw new ApiError(res.status, friendly(code, data, detail) || `Request failed (${res.status})`, code);
   }
   return data;
 }
@@ -78,7 +81,10 @@ async function authCall(method, path, body) {
   }
   let data = null;
   try { data = await res.json(); } catch { /* no body */ }
-  if (!res.ok) throw new ApiError(res.status, (data && data.detail) || `Request failed (${res.status})`);
+  if (!res.ok) {
+    const code = (data && data.error) || '';
+    throw new ApiError(res.status, friendly(code, data, data && data.detail) || `Request failed (${res.status})`, code);
+  }
   return data;
 }
 
@@ -107,6 +113,8 @@ export const session = {
 };
 
 export const api = {
+  me: () => request('GET', '/me'),
+  usage: () => request('GET', '/me/usage'),
   library: () => request('GET', '/library').then((d) => d.songs),
   tags: () => request('GET', '/tags'),
   preview: (url) => request('POST', '/preview', { url }),
