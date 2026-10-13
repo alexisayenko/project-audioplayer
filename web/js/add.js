@@ -1,16 +1,12 @@
 import { api } from './api.js';
 import { store } from './store.js';
-import { tagEditor } from './tag-editor.js';
-import { el, fmtTime, toast, field } from './dom.js';
+import { el, fmtTime, toast } from './dom.js';
 import { icon } from './icons.js';
-import { tokenGroup } from './token-field.js';
 import { cleanPasted, sourceOf, sourceLabel } from './url-clean.js';
 import { findInLibrary } from './library-match.js';
-import { wikiFields } from './wiki-links.js';
 import { dialogHead } from './edit-dialog.js';
-import { chipField } from './chip-field.js';
-import { serviceIcons } from './service-icons.js';
-import { planMetadata, statusText, serviceState, suggestion, suggestionText } from './metadata-apply.js';
+import { songForm } from './song-form.js';
+import { addBody } from './song-payload.js';
 
 const BULK = new Set(['insertFromPaste', 'insertFromPasteAsQuotation', 'insertFromDrop', 'insertReplacementText']);
 const PREVIEW_ONLY = 'Preview only \u2014 SoundCloud Go+ track, can\'t be downloaded in full.';
@@ -18,6 +14,7 @@ const PREVIEW_ONLY = 'Preview only \u2014 SoundCloud Go+ track, can\'t be downlo
 export function openAdd() {
   const dlg = document.getElementById('add-dialog');
   let preview = null;
+  let sf = null;
   let gen = 0;
   const pending = new Set();
   const begin = () => {
@@ -96,18 +93,12 @@ export function openAdd() {
   });
 
   function renderPreview() {
-    const tg = tokenGroup();
-    const f = {
-      title: tg.field('title', preview.title || ''),
-      artist: tg.field('artist', preview.artist || ''),
-      remixer: tg.field('remixer', preview.remixer || ''),
-      album: el('input', { type: 'text', value: preview.album || '' }),
-      year: el('input', { type: 'number', value: preview.year ?? '', min: 0, max: 3000 }),
-    };
-    const editor = tagEditor({ tags: preview.tags || [], suggested: preview.tags || [], year: f.year, hideNs: true });
-    const genres = chipField('genre', editor);
-    const countries = chipField('country', editor);
-    const wiki = wikiFields({ song: preview.wikipedia_song, artist: preview.wikipedia_artist });
+    if (sf) sf.destroy();
+    sf = songForm({
+      mode: 'add',
+      song: { ...preview, wikipedia_song: preview.wikipedia_song, wikipedia_artist: preview.wikipedia_artist },
+      source: () => preview?.source_url || null,
+    });
 
     const cover = el('img', { class: 'cover xl', alt: '', src: preview.thumbnail });
     cover.addEventListener('error', () => cover.removeAttribute('src'));
@@ -115,85 +106,13 @@ export function openAdd() {
     const sub = el('div', { class: 't-subhead muted' });
     const facts = el('div', { class: 't-time muted' });
     const paintMeta = () => {
-      title.textContent = f.title.value || 'Untitled';
-      sub.textContent = [f.artist.value, f.album.value, f.year.value].filter(Boolean).join(' · ');
+      const v = sf.values({ commit: false });
+      title.textContent = v.title || 'Untitled';
+      sub.textContent = [v.artist, v.album, v.year].filter(Boolean).join(' \u00b7 ');
       facts.textContent = preview.duration ? fmtTime(preview.duration) : '';
     };
-    for (const i of Object.values(f)) i.addEventListener('input', paintMeta);
+    sf.node.addEventListener('input', paintMeta);
     paintMeta();
-
-    const icons = serviceIcons();
-    const metaBtn = el('button', { class: 'btn outline small', type: 'button' }, 'Get metadata');
-    const metaMsg = el('p', { class: 't-caption muted', role: 'status' });
-    const hint = el('button', { class: 'link-btn t-caption wiki-hint', type: 'button', hidden: true });
-    let suggest = null;
-    const cur = () => ({ title: f.title.value, artist: f.artist.value });
-    const paintHint = () => {
-      const sug = suggest ? suggestion(suggest, cur()) : null;
-      hint.hidden = !sug;
-      hint.textContent = sug ? `Wikipedia says: ${suggestionText(sug, cur())}` : '';
-    };
-    hint.addEventListener('click', () => {
-      const sug = suggestion(suggest, cur());
-      if (!sug) return;
-      if (sug.artist) f.artist.value = sug.artist;
-      if (sug.title) f.title.value = sug.title;
-      paintMeta();
-      paintHint();
-    });
-    f.title.addEventListener('input', paintHint);
-    f.artist.addEventListener('input', paintHint);
-
-    const applyMeta = (resp) => {
-      const plan = planMetadata(resp, { album: f.album.value, year: f.year.value, tags: editor.peek() });
-      if (plan.album != null) f.album.value = plan.album;
-      if (plan.year != null) {
-        f.year.value = plan.year;
-        f.year.dispatchEvent(new Event('input'));
-      }
-      if (plan.tags.length) editor.addTags(plan.tags);
-      paintMeta();
-      metaMsg.textContent = statusText(plan);
-    };
-    const resetMeta = () => {
-      suggest = null;
-      icons.reset();
-      metaMsg.textContent = '';
-      paintHint();
-    };
-    metaBtn.addEventListener('click', async () => {
-      const wv = wiki.values();
-      const req = begin();
-      resetMeta();
-      metaBtn.disabled = true;
-      metaBtn.replaceChildren(el('span', { class: 'spin', 'aria-hidden': 'true' }), 'Getting metadata...');
-      icons.setBusy(true);
-      try {
-        const resp = await api.metadata({
-          title: f.title.value.trim(),
-          artist: f.artist.value.trim(),
-          sources: preview.source_url ? [{ url: preview.source_url }] : [],
-          ...(wv.wikipedia_song ? { wiki_song: wv.wikipedia_song } : {}),
-          ...(wv.wikipedia_artist ? { wiki_artist: wv.wikipedia_artist } : {}),
-        }, req.signal);
-        if (!req.live()) return;
-        icons.setBusy(false);
-        icons.setState(serviceState(resp?.services));
-        suggest = resp?.suggest || null;
-        applyMeta(resp);
-        paintHint();
-      } catch {
-        if (!req.live()) return;
-        icons.reset();
-        metaMsg.textContent = 'Couldn\'t load metadata';
-      } finally {
-        req.done();
-        if (req.live()) {
-          metaBtn.disabled = false;
-          metaBtn.textContent = 'Get metadata';
-        }
-      }
-    });
 
     const save = el('button', { class: 'btn primary glow big', type: 'submit', disabled: !!preview.in_library }, icon('plus', 20), 'Save to library');
     const err = el('div');
@@ -201,16 +120,7 @@ export function openAdd() {
     const card = el('form', { class: 'add-card' },
       el('div', { class: 'preview-row' }, cover, el('div', { class: 'preview-meta' }, title, sub, facts,
         el('span', { class: 'chip tint', title: 'Source' }, sourceLabel(preview.source || sourceOf(preview.id))))),
-      el('div', { class: 'add-fields' },
-        field('Title', f.title), field('Artist', f.artist),
-        field('Remix & additional production', f.remixer),
-        el('div', { class: 'meta-row' }, metaBtn, icons.node),
-        metaMsg, hint,
-        el('div', { class: 'grid2' }, field('Album', f.album), field('Year', f.year)),
-        el('p', { class: 't-caption muted' }, 'BPM is detected after saving'),
-        genres.node, countries.node,
-        el('div', { class: 'field' }, el('label', {}, 'Tags'), editor.node),
-        wiki.node),
+      sf.node,
       err,
       el('div', { class: 'add-foot' }, save));
     body.replaceChildren(card);
@@ -218,18 +128,9 @@ export function openAdd() {
     card.addEventListener('submit', async (e) => {
       e.preventDefault();
       save.disabled = true;
-      genres.commit();
-      countries.commit();
-      const tags = editor.getTags();
+      const v = sf.values();
       try {
-        await api.addSong(preview.source_url, {
-          title: f.title.value,
-          artist: f.artist.value,
-          album: f.album.value,
-          remixer: f.remixer.value,
-          year: f.year.value === '' ? null : Number(f.year.value),
-          ...wiki.values(),
-        }, tags);
+        await api.addSong(preview.source_url, addBody(v), v.tags);
         await store.refresh().catch(() => {});
         dlg.close();
         toast('Saved to library');
@@ -245,6 +146,8 @@ export function openAdd() {
     for (const ctl of pending) ctl.abort();
     pending.clear();
     preview = null;
+    if (sf) sf.destroy();
+    sf = null;
     dlg.replaceChildren();
     dlg.onclose = null;
     dlg.onclick = null;

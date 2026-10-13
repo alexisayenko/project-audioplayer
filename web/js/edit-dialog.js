@@ -1,10 +1,8 @@
 import { api } from './api.js';
 import { store } from './store.js';
-import { el, toast, field } from './dom.js';
-import { tokenGroup } from './token-field.js';
-import { tagEditor } from './tag-editor.js';
-import { chipField } from './chip-field.js';
-import { wikiFields } from './wiki-links.js';
+import { el, toast } from './dom.js';
+import { songForm } from './song-form.js';
+import { patchBody, songSources } from './song-payload.js';
 
 export function dialogHead(title, sub, onCancel) {
   return el('div', { class: 'dlg-head' },
@@ -47,73 +45,26 @@ export function removeSong(s) {
 
 export function editDialog(song) {
   const dlg = document.getElementById('edit-dialog');
-  const tg = tokenGroup();
-  const f = {
-    title: tg.field('title', song.title || ''),
-    artist: tg.field('artist', song.artist || ''),
-    remixer: tg.field('remixer', song.remixer || ''),
-    album: el('input', { type: 'text', value: song.album || '' }),
-    year: el('input', { type: 'number', value: song.year ?? '', min: 0, max: 3000 }),
-  };
-  const bpmText = (v) => (v != null ? `${Math.round(v)} BPM` : 'Not detected yet');
-  const bpmValue = el('span', { title: 'Heuristic, may be off by half or double' }, bpmText(song.bpm));
-  const editor = tagEditor({ tags: song.tags || [], year: f.year, hideNs: true });
-  const genres = chipField('genre', editor);
-  const countries = chipField('country', editor);
+  const sf = songForm({ mode: 'edit', song, source: () => songSources(song) });
   const err = el('p', { class: 'msg error', hidden: true });
-  const wiki = wikiFields({
-    song: song.wikipedia_song, artist: song.wikipedia_artist,
-  });
-  const redetect = el('button', { type: 'button', class: 'btn outline small' }, 'Re-detect');
-  redetect.addEventListener('click', async () => {
-    redetect.disabled = true;
-    redetect.textContent = 'Detecting...';
-    try {
-      const updated = await api.detectBpm(song.id);
-      bpmValue.textContent = bpmText(updated.bpm);
-      err.hidden = true;
-      await store.refresh();
-    } catch (ex) {
-      err.textContent = ex.message;
-      err.hidden = false;
-    } finally {
-      redetect.disabled = false;
-      redetect.textContent = 'Re-detect';
-    }
-  });
   const form = el('form', { method: 'dialog' },
     dialogHead('Edit song', null, () => dlg.close()),
-    field('Title', f.title), field('Artist', f.artist),
-    field('Remix & additional production', f.remixer),
-    el('div', { class: 'grid2' }, field('Album', f.album), field('Year', f.year)),
-    el('div', { class: 'field' }, el('label', {}, 'BPM'), el('div', { class: 'row' }, bpmValue, redetect)),
-    wiki.node,
-    genres.node, countries.node,
-    el('div', { class: 'field' }, el('label', {}, 'Tags'), editor.node),
+    sf.node,
     err,
     el('div', { class: 'row end' },
       el('button', { type: 'button', class: 'btn danger del-left', onclick: () => removeSong(song) }, 'Delete from library'),
       el('button', { type: 'submit', class: 'btn primary glow' }, 'Save')));
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (!f.title.value.trim()) {
+    const v = sf.values();
+    if (!v.title.trim()) {
       err.textContent = 'Title is required';
       err.hidden = false;
-      f.title.focus();
+      sf.focus();
       return;
     }
-    genres.commit();
-    countries.commit();
     try {
-      await api.patch(song.id, {
-        title: f.title.value,
-        artist: f.artist.value,
-        album: f.album.value,
-        remixer: f.remixer.value,
-        year: f.year.value === '' ? null : Number(f.year.value),
-        tags: editor.getTags(),
-        ...wiki.values(),
-      });
+      await api.patch(song.id, patchBody(v));
       dlg.close();
       await store.refresh();
       toast('Saved');
@@ -122,6 +73,7 @@ export function editDialog(song) {
       err.hidden = false;
     }
   });
+  dlg.addEventListener('close', () => sf.destroy(), { once: true });
   dlg.replaceChildren(form);
   dlg.showModal();
 }

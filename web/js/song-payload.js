@@ -1,0 +1,46 @@
+export const yearValue = (v) => (v === '' || v == null ? null : Number(v));
+
+export function sourceList(source) {
+  const raw = Array.isArray(source) ? source : source ? [source] : [];
+  const seen = new Set();
+  const out = [];
+  for (const s of raw) {
+    const url = typeof s === 'string' ? s : s && typeof s.url === 'string' ? s.url : '';
+    if (!url || seen.has(url)) continue;
+    seen.add(url);
+    out.push({ url });
+  }
+  return out;
+}
+
+export const songSources = (song) => sourceList([...(Array.isArray(song?.sources) ? song.sources : []), song?.source_url]);
+
+export function songFields(v) {
+  return {
+    title: v.title,
+    artist: v.artist,
+    album: v.album,
+    remixer: v.remixer,
+    year: yearValue(v.year),
+  };
+}
+
+export const wikiFieldsOf = (v) => ({ wikipedia_song: v.wikipedia_song ?? null, wikipedia_artist: v.wikipedia_artist ?? null });
+
+export function addBody(v) {
+  return { ...songFields(v), ...wikiFieldsOf(v) };
+}
+
+export function patchBody(v) {
+  return { ...songFields(v), tags: v.tags, ...wikiFieldsOf(v) };
+}
+
+export function metadataBody(v, sources) {
+  return {
+    title: String(v.title ?? '').trim(),
+    artist: String(v.artist ?? '').trim(),
+    sources: sourceList(sources),
+    ...(v.wikipedia_song ? { wiki_song: v.wikipedia_song } : {}),
+    ...(v.wikipedia_artist ? { wiki_artist: v.wikipedia_artist } : {}),
+  };
+}
