@@ -110,6 +110,31 @@ export function moveToken(srcText, i, dstText, dstDefaultSep) {
   return { src: removeToken(srcText, i), dst: appendToken(dstText, t.text, dstDefaultSep) };
 }
 
+export function insertToken(text, index, tokenText, defaultSep) {
+  const t = String(tokenText ?? '').trim();
+  const base = String(text ?? '');
+  if (!t) return base;
+  if (base.trim() === '') return t;
+  const toks = tokenize(base);
+  let at = Number.isInteger(index) ? Math.max(0, index) : toks.length;
+  if (at === 0 && isBlankToken(toks[0])) at = 1;
+  if (at >= toks.length || (at === toks.length - 1 && isBlankToken(toks[at]))) return appendToken(base, t, defaultSep);
+  toks.splice(at, 0, { text: t, sep: defaultSep });
+  return compose(toks);
+}
+
+export function moveTokenTo(srcText, i, dstText, dstIndex, dstDefaultSep, sameField = srcText === dstText) {
+  const tok = tokenize(srcText)[i];
+  if (!tok || isBlankToken(tok)) return { src: srcText, dst: dstText };
+  const at = Math.min(Number.isInteger(dstIndex) ? dstIndex : Infinity, tokenize(dstText).length);
+  if (sameField) {
+    if (at === i || at === i + 1) return { src: srcText, dst: srcText };
+    const out = insertToken(removeToken(srcText, i), at > i ? at - 1 : at, tok.text, dstDefaultSep);
+    return { src: out, dst: out };
+  }
+  return { src: removeToken(srcText, i), dst: insertToken(dstText, at, tok.text, dstDefaultSep) };
+}
+
 export function stripEdges(text) {
   const toks = tokenize(text);
   while (toks.length > 1 && isBlankToken(toks[toks.length - 1])) {

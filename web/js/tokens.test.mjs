@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { tokenize, compose, removeToken, replaceToken, appendToken, moveToken, stripEdges, commitTyped, endsWithSeparator } from './tokens.js';
+import { tokenize, compose, removeToken, replaceToken, appendToken, moveToken, insertToken, moveTokenTo, stripEdges, commitTyped, endsWithSeparator } from './tokens.js';
 
 const texts = (s) => tokenize(s).map((t) => t.text);
 const seps = (s) => tokenize(s).map((t) => t.sep);
@@ -105,4 +105,34 @@ test('stripEdges and commitTyped', () => {
   assert.deepEqual(commitTyped('A', 'Foo, Ba', ', '), { value: 'A, Foo, ', rest: 'Ba' });
   assert.deepEqual(commitTyped('A', 'Foo', ', '), { value: 'A', rest: 'Foo' });
   assert.deepEqual(commitTyped('A, ', ' | x', ', '), { value: 'A, ', rest: 'x' });
+});
+
+test('insertToken puts the token before index', () => {
+  assert.equal(insertToken('', 0, 'Foo', ', '), 'Foo');
+  assert.equal(insertToken('A, B', 0, 'Foo', ', '), 'Foo, A, B');
+  assert.equal(insertToken('A, B', 1, 'Foo', ' - '), 'A, Foo - B');
+  assert.equal(insertToken('A - B | C', 2, 'X', ', '), 'A - B | X, C');
+  assert.equal(insertToken('A, B', 2, 'Foo', ' - '), appendToken('A, B', 'Foo', ' - '));
+  assert.equal(insertToken('A, B', 99, 'Foo', ', '), 'A, B, Foo');
+  assert.equal(insertToken('A', 0, '  ', ', '), 'A');
+  assert.equal(insertToken('| A', 0, 'X', ', '), '| X, A');
+  assert.equal(insertToken('A, ', 1, 'X', ', '), 'A, X');
+  for (const s of ['A, B', '| A |', 'A - B | C', ' x ']) {
+    const r = insertToken(s, 1, 'Foo', ', ');
+    assert.equal(compose(tokenize(r)), r);
+  }
+});
+
+test('moveTokenTo across and within fields', () => {
+  assert.deepEqual(moveTokenTo('Gala - Remix Guy', 1, 'Sadrican, X', 0, ', '), { src: 'Gala', dst: 'Remix Guy, Sadrican, X' });
+  assert.deepEqual(moveTokenTo('Gala - Guy', 0, 'S, X', 1, ', '), { src: 'Guy', dst: 'S, Gala, X' });
+  assert.deepEqual(moveTokenTo('Only', 0, '', 5, ' '), { src: '', dst: 'Only' });
+  assert.deepEqual(moveTokenTo('A, B, C', 0, 'A, B, C', 3, ', '), { src: 'B, C, A', dst: 'B, C, A' });
+  assert.deepEqual(moveTokenTo('A, B, C', 2, 'A, B, C', 0, ', '), { src: 'C, A, B', dst: 'C, A, B' });
+  assert.deepEqual(moveTokenTo('A, B, C', 0, 'A, B, C', 2, ', '), { src: 'B, A, C', dst: 'B, A, C' });
+  assert.deepEqual(moveTokenTo('A, B, C', 1, 'A, B, C', 1, ' - '), { src: 'A, B, C', dst: 'A, B, C' });
+  assert.deepEqual(moveTokenTo('A, B, C', 1, 'A, B, C', 2, ' - '), { src: 'A, B, C', dst: 'A, B, C' });
+  assert.deepEqual(moveTokenTo('A, B', 1, 'A, B', 99, ' - '), { src: 'A, B', dst: 'A, B' });
+  assert.deepEqual(moveTokenTo('A', 0, 'A', 0, ', ', false), { src: '', dst: 'A, A' });
+  assert.deepEqual(moveTokenTo('A |', 1, 'X', 0, ' '), { src: 'A |', dst: 'X' });
 });
