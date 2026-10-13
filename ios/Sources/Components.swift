@@ -39,6 +39,31 @@ extension View {
     func dsCaption() -> some View { font(T.caption).foregroundStyle(DS.Color.inkMuted) }
 }
 
+struct DSTextField: View {
+    let label: String
+    @Binding var text: String
+    var keyboard: UIKeyboardType = .default
+    var plainURL = false
+    @FocusState private var focused: Bool
+
+    var body: some View {
+        TextField(label, text: $text).keyboardType(keyboard)
+            .textInputAutocapitalization(plainURL ? .never : nil).autocorrectionDisabled(plainURL)
+            .focused($focused)
+            .padding(.trailing, DS.Space.hit - DS.Space.space3)
+            .dsField()
+            .overlay(alignment: .trailing) {
+                if focused && !text.isEmpty {
+                    Button { text = ""; focused = true } label: {
+                        Image(systemName: "xmark.circle.fill").foregroundStyle(DS.Color.inkFaint)
+                            .frame(width: DS.Space.hit, height: DS.Space.hit)
+                    }
+                    .buttonStyle(.plain).accessibilityLabel("Clear \(label)")
+                }
+            }
+    }
+}
+
 private struct FloatSlab: ViewModifier {
     let radius: CGFloat
     @Environment(\.colorScheme) private var scheme

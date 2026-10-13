@@ -104,7 +104,7 @@ struct SongEditView: View {
     private func row(_ label: String, _ text: Binding<String>, keyboard: UIKeyboardType = .default) -> some View {
         Group {
             Text(label).font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.inkMuted)
-            TextField(label, text: text).keyboardType(keyboard).dsField()
+            DSTextField(label: label, text: text, keyboard: keyboard)
         }
     }
 
@@ -141,18 +141,18 @@ struct SongEditView: View {
         Grid(alignment: .leading, horizontalSpacing: DS.Space.space3, verticalSpacing: DS.Space.space2) {
             GridRow { row("Title", $title) }
             GridRow { row("Artist", $artist) }
-            GridRow { row("Album", $album) }
             GridRow { row("Remix & additional production", $remixer) }
+            GridRow { row("Album", $album) }
             GridRow {
                 Text("Year").font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.inkMuted)
                 HStack(spacing: 10) {
-                    TextField("Year", text: $year).keyboardType(.numberPad).dsField().frame(width: 80)
+                    DSTextField(label: "Year", text: $year, keyboard: .numberPad).frame(width: 120)
                         .onChange(of: year) { _, _ in
                             tags = withDecade(tags, yearValue)
                             suggested = withDecade(suggested, yearValue)
                         }
                     Text("BPM").font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.inkMuted)
-                    TextField("BPM", text: $bpm).keyboardType(.numberPad).dsField().frame(width: 72)
+                    DSTextField(label: "BPM", text: $bpm, keyboard: .numberPad).frame(width: 110)
                 }
             }
         }
@@ -197,10 +197,8 @@ struct SongEditView: View {
 
     private var linkEditor: some View {
         VStack(alignment: .leading, spacing: DS.Space.space2) {
-            TextField("Wikipedia: song", text: $wikiSong).keyboardType(.URL)
-                .textInputAutocapitalization(.never).autocorrectionDisabled().dsField()
-            TextField("Wikipedia: band", text: $wikiArtist).keyboardType(.URL)
-                .textInputAutocapitalization(.never).autocorrectionDisabled().dsField()
+            DSTextField(label: "Wikipedia: song", text: $wikiSong, keyboard: .URL, plainURL: true)
+            DSTextField(label: "Wikipedia: band", text: $wikiArtist, keyboard: .URL, plainURL: true)
             HStack(spacing: DS.Space.space2) {
                 Button { Task { await lookup() } } label: {
                     HStack { Text("Fill from Wikipedia"); if wikiBusy { ProgressView() } }

@@ -342,8 +342,7 @@ struct AddSheet: View {
     private func labeled(_ label: String, _ text: Binding<String>, keyboard: UIKeyboardType = .default) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(label).font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.inkMuted)
-            TextField(label, text: text).keyboardType(keyboard)
-                .dsField()
+            DSTextField(label: label, text: text, keyboard: keyboard)
         }
     }
 
@@ -409,6 +408,7 @@ struct AddSheet: View {
         VStack(alignment: .leading, spacing: DS.Space.space3) {
                 labeled("Title", $flow.title)
                 labeled("Artist", $flow.artist)
+                labeled("Remix & additional production", $flow.remixer)
                 if let h = flow.hint { suggestionHint(h) }
                 FlowLayout {
                     Button { flow.launch { await flow.getMetadata(api) } } label: {
@@ -419,7 +419,6 @@ struct AddSheet: View {
                 }
                 if let n = flow.metaNote { note(n, error: n == "Couldn't load metadata") }
                 labeled("Album", $flow.album)
-                labeled("Remix & additional production", $flow.remixer)
                 labeled("Year", $flow.year, keyboard: .numberPad)
                 labeled("BPM (optional, detected after saving)", $flow.bpm, keyboard: .numberPad)
         }
