@@ -32,7 +32,7 @@ signed in, Settings shows the email and Sign out. Navigation is a 220px rail
 persistent player bar (cover, title, shuffle, previous, play/pause, next, repeat,
 time, volume) sits at the bottom of Library and Settings and opens Playback on
 tap; on Playback itself it is hidden. Library is a table of the server library
-(index, cover, track (title with a muted "Artist · Year" line below; web header "Track"), artist, genres, year, time, a "..." menu, no album column; columns drop right
+(cover, track (title with a muted "Artist · Year" line below; web header "Track"; the web has no separate Artist or Year column), genres, time, a "..." menu, no album column; columns drop right
 to left on narrower screens until it is the phone song row) with four category chips (Tags, Genres,
 Years, Countries) that open a filter sheet. Playback leads with the cover
 (title and artist on it), a seek bar, the transport tray, a volume row and the
@@ -61,7 +61,7 @@ Web: a centred 560px dialog over Library (bottom-aligned sheet on phones): title
 
 Manages all songs.
 
-- One row per song in a single list card (web: table with a header row): index, cover, title, artist, genres (web: no album column), year, duration and a "..." menu with Play now, Add to playlist and Edit song (the Edit dialog also holds Delete). Clicking the title plays the song and keeps the user on Library. The playing row has an accent wash. Tags and BPM are not shown in rows (filter by tag chips; BPM is on Playback and in Edit). Sort is the text button under the chips ("Recently added", Title, Artist, Year, BPM); a line on the right reads "N songs match · selected tags" when filtered.
+- One row per song in a single list card (web: table with a header row): cover, title, artist, genres (web: no album column, and artist and year only in the title cell's muted line), year, duration and a "..." menu with Play now, Add to playlist and Edit song (the Edit dialog also holds Delete). Clicking the title plays the song and keeps the user on Library. The playing row has an accent wash. Tags and BPM are not shown in rows (filter by tag chips; BPM is on Playback and in Edit). Sort is the text button under the chips ("Recently added", Title, Artist, Year, BPM); a line on the right reads "N songs match · selected tags" when filtered.
 - Search box (title, artist, album, tags). With a tag filter or search text active, an "Add all N to playlist" button appends all listed songs to the queue (toast "Added X songs (Y already in queue)"; a tag filter becomes a playlist chip, search-only adds are manual); hidden when nothing is filtered.
 - `decade:` tags are derived from Year by the server and show as "the 90s"; the tag editor previews the chip as Year changes.
 - Filter by tag (chips grouped by prefix: Genre, Decade, Country, then others; plain tags under Tags; `country:` values show as names, e.g. Lithuania; languages are not shown or filterable); sort (added date, title, artist, year, BPM; songs without BPM last).

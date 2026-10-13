@@ -76,7 +76,7 @@ export function renderLibrary(root) {
   });
   const status = el('div');
   const head = el('div', { class: 'table-head', 'aria-hidden': 'true' },
-    el('span', {}, '#'), el('span'), el('span', {}, 'Track'), el('span', {}, 'Artist'), el('span', { class: 'c-genres' }, 'Genres'), el('span', { class: 'c-year' }, 'Year'), el('span', { class: 'c-dur' }, 'Time'), el('span'));
+    el('span'), el('span', {}, 'Track'), el('span', { class: 'c-genres' }, 'Genres'), el('span', { class: 'c-dur' }, 'Time'), el('span'));
   const group = el('div', { class: 'group' }, head, list);
 
   root.append(
@@ -180,8 +180,7 @@ export function renderLibrary(root) {
     const empty = !songs.length && store.loaded && store.songs.length
       ? [el('li', { class: 'empty muted t-subhead' }, 'No songs match. Clear the search or the filters.')]
       : [];
-    let n = 0;
-    list.replaceChildren(...empty, ...songs.map((s) => songRow(s, cur, ++n)));
+    list.replaceChildren(...empty, ...songs.map((s) => songRow(s, cur)));
   }
 
   function matchSummary(count) {
@@ -232,7 +231,7 @@ function srcLogo(link) {
   return a;
 }
 
-function songRow(s, cur, n) {
+function songRow(s, cur) {
   const audio = hasAudio(s);
   const link = audio ? null : sourceLink(s);
   const here = audio && cur && cur.id === s.id;
@@ -253,13 +252,10 @@ function songRow(s, cur, n) {
     : el('span', { class: 'c-dur t-caption' },
       link ? srcLogo(link) : '');
   return el('li', { class: `song${here ? ' current' : ''}${audio ? '' : ' no-audio'}`, 'aria-current': here ? 'true' : null, 'data-id': s.id },
-    el('span', { class: 'c-idx t-time' }, n),
     cover(s),
     el('div', { class: 'info' }, open,
       trackSub(s) ? el('small', { class: 'sub t-subhead' }, trackSub(s)) : null),
-    el('span', { class: 'c-artist t-subhead' }, s.artist || ''),
     el('span', { class: 'c-genres t-subhead', title: genres || null }, genres),
-    el('span', { class: 'c-year t-subhead' }, s.year || ''),
     dur,
     more);
 }
