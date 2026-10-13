@@ -123,20 +123,25 @@ def work(*langs, language=None):
     return {"relations": [{"work": {"languages": list(langs), "language": language}}]}
 
 
-def test_country_and_language_mapping(monkeypatch):
+def test_country_mapping_ignores_work_languages(monkeypatch):
     full = {"genres": [{"name": "pop", "count": 1}], **work("rus", "eng", "lit")}
     monkeypatch.setattr(gl, "_get", fake_get([REC], full, {"country": "LT"}))
-    assert gl.suggest_tags("Daft Punk", "X") == ["genre:pop", "country:lt", "lang:ru", "lang:en"]
+    assert gl.suggest_tags("Daft Punk", "X") == ["genre:pop", "country:lt"]
 
 
-def test_language_keeps_unmapped_639_3_and_ignores_mul_zxx(monkeypatch):
-    monkeypatch.setattr(gl, "_get", fake_get([REC], work("mul", "zxx", "und", "xyz")))
-    assert gl.suggest_tags("Daft Punk", "X") == ["lang:xyz"]
+def test_album_is_earliest_official_release(monkeypatch):
+    full = {"releases": [
+        {"title": "Reissue", "status": "Official", "date": "2010"},
+        {"title": "Bootleg", "status": "Bootleg", "date": "1990"},
+        {"title": "Homework", "status": "Official", "date": "1997-01-20"},
+    ]}
+    monkeypatch.setattr(gl, "_get", fake_get([REC], full))
+    assert gl.lookup("Daft Punk", "X")["album"] == "Homework"
 
 
-def test_work_single_language_field(monkeypatch):
-    monkeypatch.setattr(gl, "_get", fake_get([REC], work(language="fra")))
-    assert gl.suggest_tags("Daft Punk", "X") == ["lang:fr"]
+def test_album_missing_is_none(monkeypatch):
+    monkeypatch.setattr(gl, "_get", fake_get([REC], {}))
+    assert gl.lookup("Daft Punk", "X")["album"] is None
 
 
 def test_missing_or_bad_country_is_nothing(monkeypatch):
@@ -151,11 +156,11 @@ def test_artist_call_failure_keeps_recording_tags(monkeypatch):
         if path == "recording/":
             return {"recordings": [REC]}
         if path.startswith("recording/"):
-            return {"genres": [{"name": "house", "count": 1}], **work("eng")}
+            return {"genres": [{"name": "house", "count": 1}]}
         raise OSError("down")
 
     monkeypatch.setattr(gl, "_get", _get)
-    assert gl.suggest_tags("Daft Punk", "X") == ["genre:house", "lang:en"]
+    assert gl.suggest_tags("Daft Punk", "X") == ["genre:house"]
 
 
 def test_either_switch_disables(monkeypatch):
@@ -166,11 +171,9 @@ def test_either_switch_disables(monkeypatch):
         monkeypatch.delenv(var)
 
 
-def test_yt_dlp_language_tag():
-    assert extractor.suggest_tags({"genre": "Pop", "language": "ru"}) == ["genre:pop", "lang:ru"]
-    assert extractor.suggest_tags({"language": "en-US"}) == ["lang:en"]
-    assert extractor.suggest_tags({"language": "eng"}) == ["lang:en"]
-    assert extractor.suggest_tags({"language": "mul"}) == []
+def test_yt_dlp_language_is_not_suggested():
+    assert extractor.suggest_tags({"genre": "Pop", "language": "ru"}) == ["genre:pop"]
+    assert extractor.suggest_tags({"language": "en-US"}) == []
     assert extractor.suggest_tags({}) == []
 
 
@@ -184,12 +187,12 @@ def test_clean_tag_namespaces():
     assert library.clean_tag("country:Lithuania") == "country:lithuania"
 
 
-def test_preview_caps_per_namespace(monkeypatch):
+def test_preview_caps_per_namespace_and_drops_lang(monkeypatch):
     monkeypatch.setenv("AUDIO_API_TOKEN", "secret")
     monkeypatch.setattr(extractor, "preview", lambda v: {"id": "dQw4w9WgXcQ", "title": "T", "artist": "A", "tags": ["lang:ru"]})
     monkeypatch.setattr(gl, "suggest_tags", lambda a, t: ["genre:a", "genre:b", "genre:c", "genre:d", "country:lt", "country:lv", "lang:en", "lang:de"])
     r = TestClient(main.app).post("/preview", json={"url": "https://youtu.be/dQw4w9WgXcQ"}, headers={"X-API-Token": "secret"})
-    assert r.json()["tags"] == ["lang:ru", "genre:a", "genre:b", "genre:c", "country:lt", "lang:en"]
+    assert r.json()["tags"] == ["genre:a", "genre:b", "genre:c", "country:lt"]
 
 
 @pytest.mark.parametrize(

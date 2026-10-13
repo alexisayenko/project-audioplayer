@@ -1,4 +1,4 @@
-"""Genre, country and language tag suggestions from MusicBrainz (free, no API key)."""
+"""Genre and country tag suggestions, first release year and album from MusicBrainz (free, no API key)."""
 
 from __future__ import annotations
 
@@ -12,7 +12,6 @@ import urllib.parse
 import urllib.request
 from typing import Any
 
-from . import langcodes
 from .titles import clean_artist, clean_title, split_artist_title  # noqa: F401
 
 log = logging.getLogger(__name__)
@@ -21,7 +20,6 @@ API = "https://musicbrainz.org/ws/2"
 DEFAULT_UA = "audioplayer/0.1 (alex.isayenko@gmail.com)"
 MIN_SCORE = 90
 MAX_GENRES = 3
-MAX_LANGS = 2
 TIMEOUT = 5
 MIN_INTERVAL = 1.1
 
@@ -74,15 +72,13 @@ def _top(entity: dict[str, Any]) -> list[str]:
     return [f"genre:{n}" for n in ranked[:MAX_GENRES]]
 
 
-def _languages(rec: dict[str, Any]) -> list[str]:
-    codes: list[str] = []
-    for rel in rec.get("relations") or []:
-        work = rel.get("work") or {}
-        for raw in [*(work.get("languages") or []), work.get("language")]:
-            code = langcodes.to_lang_code(raw) if raw else None
-            if code and f"lang:{code}" not in codes:
-                codes.append(f"lang:{code}")
-    return codes[:MAX_LANGS]
+def _album(full: dict[str, Any]) -> str | None:
+    """Title of the earliest dated release of a recording (official ones first)."""
+    rels = [r for r in full.get("releases") or [] if str(r.get("title") or "").strip()]
+    if not rels:
+        return None
+    best = min(rels, key=lambda r: (r.get("status") != "Official", str(r.get("date") or "9999")))
+    return str(best["title"]).strip()
 
 
 def _country(artist: dict[str, Any]) -> list[str]:
@@ -120,7 +116,7 @@ def _work_rels(full: dict[str, Any]) -> list[str]:
 
 
 def _empty() -> dict[str, Any]:
-    return {"tags": [], "song_rels": [], "artist_rels": [], "year": None}
+    return {"tags": [], "song_rels": [], "artist_rels": [], "year": None, "album": None}
 
 
 def _lookup(artist: str, title: str) -> dict[str, Any]:
@@ -133,8 +129,8 @@ def _lookup(artist: str, title: str) -> dict[str, Any]:
         names = [c.get("name", "") for c in credits] + [c.get("artist", {}).get("name", "") for c in credits]
         if not any(_artist_match(artist, n) for n in names):
             continue
-        full = _get(f"recording/{rec['id']}", {"inc": "genres+tags+work-rels+url-rels", "fmt": "json"})
-        genres, langs = _top(full), _languages(full)
+        full = _get(f"recording/{rec['id']}", {"inc": "genres+tags+work-rels+url-rels+releases", "fmt": "json"})
+        genres = _top(full)
         country: list[str] = []
         song_rels = _url_rels(full) or _work_rels(full)
         artist_rels: list[str] = []
@@ -155,16 +151,17 @@ def _lookup(artist: str, title: str) -> dict[str, Any]:
             except Exception as exc:
                 log.warning("artist lookup failed for %r: %s", artist, exc)
         return {
-            "tags": [*genres, *country, *langs],
+            "tags": [*genres, *country],
             "song_rels": song_rels,
             "artist_rels": artist_rels,
             "year": _first_year(full),
+            "album": _album(full),
         }
     return _empty()
 
 
 def lookup(artist: str, title: str) -> dict[str, Any]:
-    """Tags, Wikipedia/Wikidata URL relations (song, artist) and first release year; empty when disabled, unmatched or on any error."""
+    """Tags, Wikipedia/Wikidata URL relations (song, artist), first release year and album; empty when disabled, unmatched or on any error."""
     if not enabled():
         return _empty()
     try:
@@ -181,5 +178,5 @@ def lookup(artist: str, title: str) -> dict[str, Any]:
 
 
 def suggest_tags(artist: str, title: str) -> list[str]:
-    """`genre:` (up to 3), `country:` (up to 1) and `lang:` (up to 2) tags for a track; [] when disabled, unmatched or on any error."""
+    """`genre:` (up to 3), and `country:` (up to 1) tags for a track; [] when disabled, unmatched or on any error."""
     return lookup(artist, title)["tags"]

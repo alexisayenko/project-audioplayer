@@ -152,7 +152,7 @@ def test_facts_mapping(monkeypatch):
     calls = []
     monkeypatch.setattr(wl, "_fetch_json", fake_fetch(calls))
     out = wl.facts("Q100", "Q200")
-    assert out == {"tags": ["genre:house music", "genre:electronic", "genre:disco", "country:fr", "lang:fr"], "year": 1997}
+    assert out == {"tags": ["genre:house music", "genre:electronic", "genre:disco", "country:fr"], "year": 1997}
     label_calls = [c for c in calls if "props=labels" in c]
     assert len(label_calls) == 1 and "languages=en" in label_calls[0]
 
@@ -179,10 +179,10 @@ def test_country_fallbacks(monkeypatch):
     assert wl.facts("QS", "QC")["tags"] == ["country:fr"]
 
 
-def test_language_639_3_fallback_and_cap(monkeypatch):
-    ents = {"QS": {"claims": {"P407": [item("Q10"), item("Q11"), item("Q10")]}}}
+def test_wikidata_language_is_ignored(monkeypatch):
+    ents = {"QS": {"claims": {"P407": [item("Q10"), item("Q11")]}}}
     monkeypatch.setattr(wl, "_fetch_json", fake_fetch(entities=ents))
-    assert wl.facts("QS", None)["tags"] == ["lang:fr", "lang:en"]
+    assert wl.facts("QS", None)["tags"] == []
 
 
 def test_year_rules(monkeypatch):
@@ -230,7 +230,7 @@ def test_labels_failure_keeps_other_facts(monkeypatch):
         return base(url)
 
     monkeypatch.setattr(wl, "_fetch_json", partial)
-    assert wl.facts("Q100", "Q200") == {"tags": ["country:fr", "lang:fr"], "year": 1997}
+    assert wl.facts("Q100", "Q200") == {"tags": ["country:fr"], "year": 1997}
 
 
 def test_suggest_from_musicbrainz_relations(monkeypatch):
@@ -246,7 +246,7 @@ def test_suggest_from_musicbrainz_relations(monkeypatch):
     assert out["wikipedia_song"] == "https://en.wikipedia.org/wiki/Around_the_World_(Daft_Punk_song)"
     assert out["wikipedia_artist"] == "https://de.wikipedia.org/wiki/Daft_Punk"
     assert out["year"] == 1997 and "country:fr" in out["tags"]
-    assert ("recording/r1", "genres+tags+work-rels+url-rels") in calls
+    assert ("recording/r1", "genres+tags+work-rels+url-rels+releases") in calls
     assert ("artist/a1", "genres+tags+url-rels") in calls
 
 
@@ -307,7 +307,7 @@ def test_preview_returns_links_tags_and_year(client, monkeypatch):
     assert body["wikipedia_song"].endswith("Around_the_World_(Daft_Punk_song)")
     assert body["wikipedia_artist"] == "https://en.wikipedia.org/wiki/Daft_Punk"
     assert body["suggested_year"] == 1997 and body["year"] == 1997
-    assert body["tags"] == ["genre:house music", "genre:electronic", "genre:disco", "country:fr", "lang:fr"]
+    assert body["tags"] == ["genre:house music", "genre:electronic", "genre:disco", "country:fr"]
 
 
 def test_preview_survives_total_failure(client):
@@ -356,7 +356,7 @@ def test_lookup_endpoint(client, monkeypatch):
     body = {"wikipedia_song": "https://en.wikipedia.org/wiki/Around_the_World_(Daft_Punk_song)", "wikipedia_artist": "https://www.wikidata.org/wiki/Q200"}
     r = client.post("/lookup/wikipedia", json=body, headers=H)
     assert r.status_code == 200
-    assert r.json() == {"tags": ["genre:house music", "genre:electronic", "genre:disco", "country:fr", "lang:fr"], "year": 1997}
+    assert r.json() == {"tags": ["genre:house music", "genre:electronic", "genre:disco", "country:fr"], "year": 1997}
 
 
 def test_lookup_endpoint_empty_bad_and_failing(client):

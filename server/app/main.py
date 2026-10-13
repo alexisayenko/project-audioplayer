@@ -21,7 +21,7 @@ from pydantic import BaseModel, Field
 
 from . import bpm as bpm_detect
 from . import jobs, limits, oauth, session, users
-from . import extractor, genre_lookup, gitstore, library, urlclean, wiki_lookup
+from . import extractor, genre_lookup, gitstore, library, metadata, urlclean, wiki_lookup
 from .problems import Problem
 
 DOWNLOAD_DIR = Path(os.environ.get("AUDIO_DOWNLOAD_DIR", "downloads"))
@@ -529,7 +529,7 @@ def get_tags(user: dict[str, Any] = Depends(require_token)):
     return library.tag_counts(_load(user["uid"]))
 
 
-_SUGGEST_CAPS = {"genre": 3, "country": 1, "lang": 2}
+_SUGGEST_CAPS = {"genre": 3, "country": 1}
 
 
 def _cap_suggestions(tags: list[str]) -> list[str]:
@@ -537,6 +537,8 @@ def _cap_suggestions(tags: list[str]) -> list[str]:
     out = []
     for t in tags:
         key = t.partition(":")[0] if ":" in t else ""
+        if key == "lang":
+            continue
         if key in _SUGGEST_CAPS:
             if used.get(key, 0) >= _SUGGEST_CAPS[key]:
                 continue
@@ -574,6 +576,34 @@ async def preview(req: PreviewRequest, user: dict[str, Any] = Depends(require_to
         meta["year"] = wiki["year"]
     meta["in_library"] = any(s["id"] == vid for s in _load(user["uid"]))
     return meta
+
+
+class MetadataSource(BaseModel):
+    url: str = ""
+
+
+class MetadataRequest(BaseModel):
+    title: str = ""
+    artist: str = ""
+    sources: list[MetadataSource] = Field(default_factory=list)
+    wiki_song: str | None = None
+    wiki_artist: str | None = None
+
+
+def _source_info(url: str) -> dict[str, Any]:
+    """album, year and tags yt-dlp reports for one YouTube/SoundCloud link; raises when the link is unusable."""
+    link = _resolve_link(url)
+    if link.probe is not None:
+        return link.probe
+    return extractor.preview(link.vid)
+
+
+@app.post("/metadata", dependencies=[Depends(require_token)])
+async def get_metadata(req: MetadataRequest):
+    fetchers = [(lambda u=src.url: _source_info(u)) for src in req.sources[:5] if src.url.strip()]
+    return await run_in_threadpool(
+        metadata.gather, req.title.strip(), req.artist.strip(), fetchers, req.wiki_song, req.wiki_artist
+    )
 
 
 @app.post("/lookup/wikipedia", dependencies=[Depends(require_token)])

@@ -10,7 +10,7 @@ from urllib.parse import urlparse
 
 import yt_dlp
 
-from . import langcodes, library, urlclean
+from . import library, urlclean
 from .titles import split_artist_title
 from .urlclean import is_valid_video_id, parse_video_id, source_of, watch_url  # noqa: F401
 
@@ -97,13 +97,10 @@ def _year(info: dict[str, Any]) -> int | None:
 
 
 def suggest_tags(info: dict[str, Any]) -> list[str]:
-    """yt-dlp's real `genre` and `language` values -> suggested `genre:` and `lang:` tags."""
+    """yt-dlp's real `genre` value -> suggested `genre:` tags."""
     raw = info.get("genre")
     values = raw if isinstance(raw, list) else re.split(r"[,;]", str(raw)) if raw else []
     tags = [f"genre:{v}" for v in values if str(v).strip()]
-    lang = langcodes.to_lang_code(str(info.get("language") or ""))
-    if lang:
-        tags.append(f"lang:{lang}")
     return library.clean_tags(tags)
 
 

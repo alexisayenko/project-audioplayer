@@ -474,3 +474,7 @@ Status: Accepted, implemented in `server/` and `web/` (iOS client changes listed
   - Hourly counters are in memory (re-learned from `added_at` after a restart).
   - The shared server holds everyone's session secret; sessions are
     stateless (ADR-0006 amendment).
+
+## Note 2026-10-13: languages dropped, Spotify skipped for now
+
+`lang:` tags are no longer suggested by `/preview`, `/lookup/wikipedia` or the new `POST /metadata` (API-048) and the web UI no longer shows them; stored `lang:` tags are kept and still normalised. Spotify is not used as a metadata source for now.

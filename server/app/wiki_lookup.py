@@ -1,4 +1,4 @@
-"""Wikipedia links and structured facts (genre, country, language, year) from MusicBrainz relations and Wikidata."""
+"""Wikipedia links and structured facts (genre, country, year) from MusicBrainz relations and Wikidata."""
 
 from __future__ import annotations
 
@@ -10,14 +10,13 @@ import urllib.parse
 import urllib.request
 from typing import Any
 
-from . import genre_lookup, langcodes
+from . import genre_lookup
 
 log = logging.getLogger(__name__)
 
 WIKIDATA = "https://www.wikidata.org"
 TIMEOUT = 5
 MAX_GENRES = 3
-MAX_LANGS = 2
 
 _WP_HOST = re.compile(r"^(?:[a-z0-9-]+\.)+wikipedia\.org$")
 _WD_HOST = re.compile(r"^(?:www\.|m\.)?wikidata\.org$")
@@ -167,20 +166,6 @@ def _country_tags(artist_claims: dict[str, Any], song_claims: dict[str, Any]) ->
     return []
 
 
-def _language_tags(song_claims: dict[str, Any]) -> list[str]:
-    langs = _ids(song_claims, "P407")[:4]
-    if not langs:
-        return []
-    lc = _claims_map(langs)
-    out: list[str] = []
-    for q in langs:
-        codes = _strings(lc.get(q, {}), "P218") or _strings(lc.get(q, {}), "P220")
-        code = langcodes.to_lang_code(codes[0]) if codes else None
-        if code and f"lang:{code}" not in out:
-            out.append(f"lang:{code}")
-    return out[:MAX_LANGS]
-
-
 def _genre_tags(*claim_sets: dict[str, Any]) -> list[str]:
     ids: list[str] = []
     for cs in claim_sets:
@@ -201,7 +186,7 @@ def facts(song_qid: str | None, artist_qid: str | None) -> dict[str, Any]:
     try:
         song = (_entity(song_qid) or {}).get("claims") or {} if song_qid else {}
         artist = (_entity(artist_qid) or {}).get("claims") or {} if artist_qid else {}
-        tags = [*_genre_tags(song, artist), *_country_tags(artist, song), *_language_tags(song)]
+        tags = [*_genre_tags(song, artist), *_country_tags(artist, song)]
         result["tags"] = tags
         result["year"] = _year(song)
     except Exception as exc:
