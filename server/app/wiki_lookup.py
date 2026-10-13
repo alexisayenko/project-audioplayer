@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime
 import html
 import json
 import logging
@@ -24,7 +25,7 @@ _WD_HOST = re.compile(r"^(?:www\.|m\.)?wikidata\.org$")
 _QID = re.compile(r"^Q[1-9]\d*$")
 _SITE = re.compile(r"^([a-z]{2,3}(?:-[a-z]+)?)wiki$")
 
-_infobox_cache: dict[str, list[str]] = {}
+_infobox_cache: dict[str, dict[str, Any]] = {}
 _entities: dict[str, dict[str, Any] | None] = {}
 _claims: dict[str, dict[str, Any]] = {}
 _labels: dict[str, str] = {}
@@ -251,7 +252,7 @@ def _infobox_body(wikitext: str) -> str | None:
     return None
 
 
-def _clean_genre_value(value: str) -> list[str]:
+def _clean_lines(value: str) -> list[str]:
     value = _COMMENT.sub("", value)
     value = _REF_PAIR.sub("", value)
     value = _REF_SELF.sub("", value)
@@ -262,39 +263,101 @@ def _clean_genre_value(value: str) -> list[str]:
             break
     value = value.replace("{{", "").replace("}}", "")
     value = _TAG.sub("\n", _BR.sub("\n", value))
-    out: list[str] = []
+    out = []
     for line in value.split("\n"):
-        line = line.strip().lstrip("*#:;").strip()
+        line = html.unescape(line.strip().lstrip("*#:;").strip()).replace("\xa0", " ")
+        line = _FOOTNOTE.sub("", line).replace("'" * 3, "").replace("''", "")
+        line = re.sub(r"\s+", " ", line).strip()
+        if line:
+            out.append(line)
+    return out
+
+
+def _clean_genre_value(value: str) -> list[str]:
+    out: list[str] = []
+    for line in _clean_lines(value):
         for item in line.split(","):
-            item = html.unescape(item).replace("\xa0", " ")
-            item = _FOOTNOTE.sub("", item).replace("'" * 3, "").replace("''", "")
-            item = re.sub(r"\s+", " ", item).strip(" .;").casefold()
+            item = item.strip(" .;").casefold()
             if item and item not in out:
                 out.append(item)
     return out[:MAX_GENRES]
 
 
-def parse_infobox_genres(wikitext: str) -> list[str]:
-    """Lowercase genre names from the `genre`/`genres` parameter of the first {{Infobox ...}}; [] when absent or malformed."""
+def _clean_text(value: str) -> str | None:
+    lines = _clean_lines(value)
+    return (lines[0].strip(' "\u201c\u201d;') or None) if lines else None
+
+
+_DATE_TPLS = ("start date", "start date and age", "release date", "release date and age", "film date", "start-date")
+_YEAR = re.compile(r"(?<!\d)(\d{4})(?!\d)")
+
+
+def _in_range(year: int) -> bool:
+    return 1900 <= year <= datetime.date.today().year + 1
+
+
+def _clean_year(value: str) -> int | None:
+    value = _REF_SELF.sub("", _REF_PAIR.sub("", _COMMENT.sub("", value)))
+    for m in re.finditer(r"\{\{([^{}]*)\}\}", value):
+        parts = m.group(1).split("|")
+        if parts[0].strip().casefold().replace("_", " ") in _DATE_TPLS:
+            args = [a.strip() for a in parts[1:] if "=" not in a]
+            if args and re.fullmatch(r"\d{4}", args[0]) and _in_range(int(args[0])):
+                return int(args[0])
+    for line in _clean_lines(value):
+        for m in _YEAR.finditer(line):
+            if _in_range(int(m.group(1))):
+                return int(m.group(1))
+    return None
+
+
+def _empty_infobox() -> dict[str, Any]:
+    return {"genres": [], "album": None, "year": None, "type": None, "name": None, "artist": None}
+
+
+def parse_infobox(wikitext: str) -> dict[str, Any]:
+    """{genres, album, year, type, name, artist} from the first {{Infobox ...}}; empty values when absent or malformed.
+
+    `album` is the infobox `album` parameter only (a standalone single has none, so it stays None)."""
+    out = _empty_infobox()
     try:
         body = _infobox_body(wikitext or "")
         if body is None:
-            return []
+            return out
+        seen: set[str] = set()
         for part in _split_top(body)[1:]:
             key, eq, value = part.partition("=")
-            if eq and key.strip().casefold() in ("genre", "genres"):
-                return _clean_genre_value(value)
+            key = key.strip().casefold()
+            if not eq or key in seen:
+                continue
+            if key in ("genre", "genres") and not out["genres"]:
+                out["genres"] = _clean_genre_value(value)
+            elif key == "album":
+                out["album"] = _clean_text(value)
+            elif key in ("released", "release"):
+                out["year"] = _clean_year(value)
+            elif key in ("type", "name", "artist"):
+                out[key] = _clean_text(value)
+            else:
+                continue
+            seen.add(key)
     except Exception as exc:
         log.warning("infobox parse failed: %s", exc)
-    return []
+        return _empty_infobox()
+    return out
 
 
-def infobox_genres(page_url: str | None) -> list[str]:
-    """Genres from the infobox of an en.wikipedia.org article (lead section wikitext); [] on any failure or other hosts."""
+def parse_infobox_genres(wikitext: str) -> list[str]:
+    """Lowercase genre names from the `genre`/`genres` parameter of the first {{Infobox ...}}; [] when absent or malformed."""
+    return parse_infobox(wikitext)["genres"]
+
+
+def infobox(page_url: str | None) -> dict[str, Any]:
+    """Infobox facts of an en.wikipedia.org article (lead section wikitext); empty on any failure or other hosts."""
     try:
         parts = urllib.parse.urlsplit(page_url or "")
         if (parts.hostname or "").lower() != "en.wikipedia.org" or not parts.path.startswith("/wiki/"):
-            return []
+            return _empty_infobox()
         title = urllib.parse.unquote(parts.path[len("/wiki/") :])
         if title not in _infobox_cache:
             api = (
@@ -302,11 +365,15 @@ def infobox_genres(page_url: str | None) -> list[str]:
                 + urllib.parse.quote(title, safe="")
             )
             text = (_fetch_json(api).get("parse") or {}).get("wikitext") or ""
-            _infobox_cache[title] = parse_infobox_genres(text if isinstance(text, str) else "")
-        return list(_infobox_cache[title])
+            _infobox_cache[title] = parse_infobox(text if isinstance(text, str) else "")
+        return {**_infobox_cache[title], "genres": list(_infobox_cache[title]["genres"])}
     except Exception as exc:
         log.warning("infobox fetch failed: %s", exc)
-        return []
+        return _empty_infobox()
+
+
+def infobox_genres(page_url: str | None) -> list[str]:
+    return infobox(page_url)["genres"]
 
 
 def _norm(tag: str) -> str:
@@ -314,8 +381,10 @@ def _norm(tag: str) -> str:
 
 
 def _with_infobox(found: dict[str, Any], song_page: str | None, artist_page: str | None) -> None:
-    """Put the song page's infobox genres (else the artist page's) first in `song_genres` and `tags`, deduplicated against Wikidata's."""
-    box = infobox_genres(song_page) or infobox_genres(artist_page)
+    """Record the song page's infobox album and year; put its genres (else the artist page's) first in `song_genres` and `tags`, deduplicated against Wikidata's."""
+    song_box = infobox(song_page)
+    found["infobox_album"], found["infobox_year"] = song_box["album"], song_box["year"]
+    box = song_box["genres"] or infobox_genres(artist_page)
     if not box:
         return
     first = [f"genre:{g}" for g in box]
@@ -404,7 +473,7 @@ def _pick(rels: list[str]) -> tuple[str | None, str | None]:
 
 def suggest(artist: str, title: str) -> dict[str, Any]:
     """{wikipedia_song, wikipedia_artist, tags, year} for a track via MusicBrainz + Wikidata; empty values on any failure."""
-    out: dict[str, Any] = {"wikipedia_song": None, "wikipedia_artist": None, "tags": [], "song_genres": [], "year": None}
+    out: dict[str, Any] = {"wikipedia_song": None, "wikipedia_artist": None, "tags": [], "song_genres": [], "year": None, "infobox_album": None, "infobox_year": None}
     if not genre_lookup.enabled():
         return out
     try:
@@ -433,7 +502,7 @@ def _page_url(url: str | None) -> str | None:
 
 def from_links(song_link: Any, artist_link: Any) -> dict[str, Any]:
     """Tags, year and page URLs (`wikipedia_song`, `wikipedia_artist`) for user-edited Wikipedia/Wikidata links; empty when disabled or on any failure."""
-    out: dict[str, Any] = {"tags": [], "song_genres": [], "year": None, "wikipedia_song": None, "wikipedia_artist": None}
+    out: dict[str, Any] = {"tags": [], "song_genres": [], "year": None, "infobox_album": None, "infobox_year": None, "wikipedia_song": None, "wikipedia_artist": None}
     if not genre_lookup.enabled():
         return out
     try:

@@ -146,6 +146,12 @@ def test_album_prefers_album_then_earliest(monkeypatch):
     assert gl.lookup("Daft Punk", "X")["album"] == "Homework"
 
 
+def test_album_never_a_single(monkeypatch):
+    full = {"releases": [rel("Warrior's Dance", "2009", primary="Single")]}
+    monkeypatch.setattr(gl, "_get", fake_get([REC], full))
+    assert gl.lookup("Daft Punk", "X")["album"] is None
+
+
 def test_album_skips_other_artist_and_mixtapes(monkeypatch):
     full = {"releases": [
         rel("Lane 8 Winter 2015 Mixtape", "2015", artist="Lane 8"),

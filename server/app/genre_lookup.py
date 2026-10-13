@@ -83,7 +83,7 @@ def _top(entity: dict[str, Any]) -> list[str]:
     return [f"genre:{n}" for n in ranked[:MAX_GENRES]]
 
 
-_PRIMARY_OK = {"album", "ep", "single"}
+_PRIMARY_OK = {"album", "ep"}
 _SECONDARY_BAD = {"compilation", "mixtape/street", "mixtape", "dj-mix", "live", "remix"}
 
 
@@ -105,7 +105,7 @@ def _release_key(r: dict[str, Any], artist: str) -> tuple[bool, bool, str] | Non
 
 
 def _album(full: dict[str, Any], artist: str = "") -> str | None:
-    """Title of the best release of a recording: credited to `artist`, an Album/EP/Single without
+    """Title of the best release of a recording: credited to `artist`, an Album or EP without
     Compilation/Mixtape/DJ-mix/Live/Remix types; Albums first, then official, then earliest date."""
     best: tuple[Any, str] | None = None
     for r in full.get("releases") or []:

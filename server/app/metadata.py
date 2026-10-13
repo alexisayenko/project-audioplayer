@@ -48,13 +48,17 @@ def merge(sources: list[dict[str, Any]], mb: dict[str, Any] | None, links: dict[
     """Merge per-source results into {album, year, tags}.
 
     Precedence: tags the song's own Wikidata genres (all, links else guess), yt-dlp sources, MusicBrainz, user-given wiki links, wiki guess (country: MusicBrainz first);
-    year links, guess, MusicBrainz, sources; album sources, then MusicBrainz.
+    year links, song-page infobox, guess, MusicBrainz, sources; album sources, song-page infobox, then MusicBrainz.
     """
     mb, links, guess = mb or {}, links or {}, guess or {}
     song_genres = links.get("song_genres") or guess.get("song_genres") or []
     tags = [*song_genres, *(t for r in (*sources, mb, links, guess) for t in r.get("tags") or [])]
-    album = next((str(a).strip() for a in (*(s.get("album") for s in sources), mb.get("album")) if a and str(a).strip()), None)
-    year = next((y for y in (_year(r.get("year")) for r in (links, guess, mb, *sources)) if y), None)
+    box_album = links.get("infobox_album") or guess.get("infobox_album")
+    box_year = links.get("infobox_year") or guess.get("infobox_year")
+    albums = (*(s.get("album") for s in sources), box_album, mb.get("album"))
+    album = next((str(a).strip() for a in albums if a and str(a).strip()), None)
+    years = (links.get("year"), box_year, guess.get("year"), mb.get("year"), *(s.get("year") for s in sources))
+    year = next((y for y in map(_year, years) if y), None)
     return {"album": album, "year": year, "tags": cap_tags(tags, len(library.clean_tags(song_genres)))}
 
 
@@ -79,10 +83,10 @@ def services(source_urls: list[str], src_by_index: dict[int, dict[str, Any]], li
         if svc and not out[svc]["found"] and i in src_by_index and _useful(src_by_index[i]):
             out[svc] = {"found": True, "url": url.strip()}
     links, guess = links or {}, guess or {}
-    links_hit = bool(links.get("tags") or links.get("year"))
+    links_hit = bool(links.get("tags") or links.get("year") or links.get("infobox_album") or links.get("infobox_year"))
     urls = [links.get("wikipedia_song") if links_hit else None, guess.get("wikipedia_song"), links.get("wikipedia_artist") if links_hit else None, guess.get("wikipedia_artist")]
     page = next((u for u in urls if u), None)
-    if page or links_hit or guess.get("tags") or guess.get("year"):
+    if page or links_hit or guess.get("tags") or guess.get("year") or guess.get("infobox_album") or guess.get("infobox_year"):
         out["wikipedia"] = {"found": True, "url": page}
     return out
 

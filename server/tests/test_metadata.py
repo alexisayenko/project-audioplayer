@@ -157,3 +157,35 @@ def test_infobox_genres_beyond_cap_kept():
     song = [f"genre:g{i}" for i in range(11)]
     out = metadata.merge([{"tags": ["genre:x"]}], None, {"song_genres": song, "tags": song}, None)
     assert out["tags"] == song
+
+
+def test_merge_album_infobox_between_ytdlp_and_musicbrainz():
+    links = {"infobox_album": "Box Album"}
+    assert metadata.merge([{"album": "Yt"}], {"album": "MB"}, links, None)["album"] == "Yt"
+    assert metadata.merge([{}], {"album": "MB"}, links, None)["album"] == "Box Album"
+    assert metadata.merge([], {"album": "MB"}, None, {"infobox_album": "Guess Box"})["album"] == "Guess Box"
+    assert metadata.merge([], {"album": "MB"}, {"infobox_album": None}, None)["album"] == "MB"
+
+
+def test_merge_year_infobox_after_wikidata_links():
+    box = {"infobox_year": 2009, "year": None}
+    assert metadata.merge([{"year": 2001}], {"year": 1999}, {**box, "year": 2010}, {"year": 1980})["year"] == 2010
+    assert metadata.merge([{"year": 2001}], {"year": 1999}, box, {"year": 1980})["year"] == 2009
+    assert metadata.merge([{"year": 2001}], {"year": 1999}, None, {"infobox_year": 2009, "year": 1980})["year"] == 2009
+    assert metadata.merge([{"year": 2001}], {"year": 1999}, {"year": None, "infobox_year": None}, None)["year"] == 1999
+
+
+def test_services_wikipedia_found_from_infobox_album_or_year():
+    for key, val in (("infobox_album", "A"), ("infobox_year", 2009)):
+        out = metadata.services([], {}, {key: val, "wikipedia_song": "https://en.wikipedia.org/wiki/S"}, None)
+        assert out["wikipedia"] == {"found": True, "url": "https://en.wikipedia.org/wiki/S"}
+
+
+def test_gather_infobox_album_and_year_end_to_end(monkeypatch):
+    monkeypatch.setattr(wl, "qid_of_page", lambda u: None)
+    monkeypatch.setattr(wl, "_infobox_cache", {})
+    text = "{{Infobox song\n| album = [[Invaders Must Die]]\n| released = {{Start date|df=yes|2009|5|11}}\n| genre = [[Big beat]]\n}}"
+    monkeypatch.setattr(wl, "_fetch_json", lambda url: {"parse": {"wikitext": text}})
+    out = metadata.gather("T", "", [], "https://en.wikipedia.org/wiki/Warrior%27s_Dance", None)
+    assert (out["album"], out["year"], out["tags"]) == ("Invaders Must Die", 2009, ["genre:big beat"])
+    assert out["services"]["wikipedia"]["found"] is True

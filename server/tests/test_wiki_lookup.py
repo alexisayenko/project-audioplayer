@@ -222,7 +222,8 @@ def test_failures_give_nothing(monkeypatch):
     monkeypatch.setattr(wl, "_fetch_json", boom)
     assert wl.facts("Q100", "Q200") == {"tags": [], "song_genres": [], "year": None}
     assert wl.from_links("https://en.wikipedia.org/wiki/X", None) == {
-        "tags": [], "song_genres": [], "year": None, "wikipedia_song": "https://en.wikipedia.org/wiki/X", "wikipedia_artist": None
+        "tags": [], "song_genres": [], "year": None, "infobox_album": None, "infobox_year": None,
+        "wikipedia_song": "https://en.wikipedia.org/wiki/X", "wikipedia_artist": None
     }
     monkeypatch.setattr(gl, "_get", fake_mb({}, {}))
     assert wl.suggest("Daft Punk", "X")["tags"] == []
@@ -280,9 +281,10 @@ def test_year_falls_back_to_musicbrainz_first_release(monkeypatch):
 def test_suggest_disabled(monkeypatch):
     monkeypatch.setenv("AUDIO_TAG_LOOKUP", "0")
     monkeypatch.setattr(wl, "_fetch_json", lambda u: pytest.fail("called"))
-    assert wl.suggest("Daft Punk", "X") == {"wikipedia_song": None, "wikipedia_artist": None, "tags": [], "song_genres": [], "year": None}
+    assert wl.suggest("Daft Punk", "X") == {"wikipedia_song": None, "wikipedia_artist": None, "tags": [], "song_genres": [], "year": None, "infobox_album": None, "infobox_year": None}
     assert wl.from_links("https://en.wikipedia.org/wiki/X", None) == {
-        "tags": [], "song_genres": [], "year": None, "wikipedia_song": None, "wikipedia_artist": None
+        "tags": [], "song_genres": [], "year": None, "infobox_album": None, "infobox_year": None,
+        "wikipedia_song": None, "wikipedia_artist": None
     }
 
 
@@ -480,3 +482,95 @@ def test_from_links_artist_infobox_fallback(monkeypatch):
     )
     out = wl.from_links("https://en.wikipedia.org/wiki/S", "https://en.wikipedia.org/wiki/A")
     assert out["tags"] == ["genre:trip hop"]
+
+
+WARRIOR = """{{Short description|2009 single by the Prodigy}}
+{{Infobox song
+| name = Warrior's Dance
+| type = single
+| artist = [[the Prodigy]]
+| album = [[Invaders Must Die]]
+| released = {{Start date|df=yes|2009|5|11}}
+| genre = [[Big beat]], [[Electronic music|electronic]]
+| length = * 5:12 (album version) * 2:55 (edit)
+| label = [[Take Me to the Hospital]]
+}}
+'''Warrior's Dance''' is a song."""
+
+
+def test_parse_infobox_warriors_dance():
+    out = wl.parse_infobox(WARRIOR)
+    assert (out["album"], out["year"], out["genres"]) == ("Invaders Must Die", 2009, ["big beat", "electronic"])
+    assert (out["type"], out["name"], out["artist"]) == ("single", "Warrior's Dance", "the Prodigy")
+
+
+def test_parse_infobox_single_without_album():
+    out = wl.parse_infobox("{{Infobox song\n| name = Solo\n| type = single\n| released = 1999\n| genre = [[Pop]]\n}}")
+    assert out["album"] is None and out["year"] == 1999 and out["genres"] == ["pop"]
+
+
+def test_parse_infobox_album_shapes():
+    def album(v):
+        return wl.parse_infobox("{{Infobox song\n| album = " + v + "\n}}")["album"]
+
+    assert album("{{hlist|[[A]]|[[B]]}}") == "A"
+    assert album("''[[Big Album|Big]]''<ref>x</ref>") == "Big"
+    assert album('"[[Quoted]]"{{efn|n}}') == "Quoted"
+    assert album("\n* [[First]]\n* [[Second]]") == "First"
+    assert album("") is None
+
+
+@pytest.mark.parametrize(
+    "released, year",
+    [
+        ("{{Start date|2009|5|11}}", 2009),
+        ("{{start date and age|1994|6|1|df=y}}", 1994),
+        ("{{Release date|df=y|1985|3|4}}", 1985),
+        ("11 May 2009", 2009),
+        ("May 2009", 2009),
+        ("2009", 2009),
+        ("{{hlist|{{Start date|2001|1|2}}|{{Start date|2002|3|4}}}}", 2001),
+        ("{{Start date|2009}}<ref>x</ref> (UK)", 2009),
+        ("1850", None),
+        ("{{Start date|3000|1|1}}", None),
+        ("soon", None),
+        ("", None),
+    ],
+)
+def test_parse_infobox_year_shapes(released, year):
+    assert wl.parse_infobox("{{Infobox song\n| released = " + released + "\n}}")["year"] == year
+
+
+def test_parse_infobox_malformed_and_missing():
+    empty = {"genres": [], "album": None, "year": None, "type": None, "name": None, "artist": None}
+    assert wl.parse_infobox("{{Infobox song\n| album = [[X]]\n| released = 2009") == empty
+    assert wl.parse_infobox("plain text") == empty
+    assert wl.parse_infobox("") == empty
+
+
+def test_infobox_fetch_returns_all_fields_and_is_cached(monkeypatch):
+    calls = []
+
+    def fetch(url):
+        calls.append(url)
+        return {"parse": {"wikitext": WARRIOR}}
+
+    monkeypatch.setattr(wl, "_fetch_json", fetch)
+    monkeypatch.setattr(wl, "_infobox_cache", {})
+    got = wl.infobox("https://en.wikipedia.org/wiki/Warrior%27s_Dance")
+    assert (got["album"], got["year"]) == ("Invaders Must Die", 2009)
+    assert wl.infobox_genres("https://en.wikipedia.org/wiki/Warrior%27s_Dance") == ["big beat", "electronic"]
+    assert len(calls) == 1
+    assert wl.infobox("https://de.wikipedia.org/wiki/X")["album"] is None
+
+
+def test_from_links_carries_infobox_album_and_year(monkeypatch):
+    monkeypatch.setattr(wl, "_infobox_cache", {})
+    monkeypatch.setattr(wl, "qid_of_page", lambda u: None)
+    monkeypatch.setattr(
+        wl, "_fetch_json", lambda url: {"parse": {"wikitext": WARRIOR if "page=S" in url else "{{Infobox musical artist\n| album = [[Nope]]\n| released = 1990\n}}"}}
+    )
+    out = wl.from_links("https://en.wikipedia.org/wiki/S", "https://en.wikipedia.org/wiki/A")
+    assert (out["infobox_album"], out["infobox_year"]) == ("Invaders Must Die", 2009)
+    only_artist = wl.from_links(None, "https://en.wikipedia.org/wiki/A")
+    assert (only_artist["infobox_album"], only_artist["infobox_year"]) == (None, None)
