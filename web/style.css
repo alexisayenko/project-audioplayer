@@ -250,7 +250,6 @@ label { display: block; color: var(--ink-muted); font-size: 13px; line-height: 1
   .songs .song .cover { width: 40px; height: 40px; }
   .songs .song .info { display: block; }
   .songs .song .info .open { display: block; max-width: 100%; font-size: 15px; line-height: 20px; font-weight: 600; }
-  .songs .song .info .sub { display: none; }
   .songs .song .more { width: 28px; height: 28px; }
   .songs .song.current { height: 56px; padding: 0 var(--row-pad); border-radius: var(--radius-key); }
 }

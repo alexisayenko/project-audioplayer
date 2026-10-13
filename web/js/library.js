@@ -7,6 +7,7 @@ import { icon } from './icons.js';
 import { openMenu } from './menu.js';
 import { hasAudio, sourceLink } from './playable.js';
 import { serviceIcon } from './service-icons.js';
+import { trackSub } from './track-sub.js';
 import { openAdd } from './add.js';
 import { editDialog } from './edit-dialog.js';
 import { visibleTags, tagLabel, tagSearchText, categoryOf, categoryTags, CATEGORIES } from './tagname.js';
@@ -75,7 +76,7 @@ export function renderLibrary(root) {
   });
   const status = el('div');
   const head = el('div', { class: 'table-head', 'aria-hidden': 'true' },
-    el('span', {}, '#'), el('span'), el('span', {}, 'Title'), el('span', {}, 'Artist'), el('span', { class: 'c-genres' }, 'Genres'), el('span', { class: 'c-year' }, 'Year'), el('span', { class: 'c-dur' }, 'Time'), el('span'));
+    el('span', {}, '#'), el('span'), el('span', {}, 'Track'), el('span', {}, 'Artist'), el('span', { class: 'c-genres' }, 'Genres'), el('span', { class: 'c-year' }, 'Year'), el('span', { class: 'c-dur' }, 'Time'), el('span'));
   const group = el('div', { class: 'group' }, head, list);
 
   root.append(
@@ -255,7 +256,7 @@ function songRow(s, cur, n) {
     el('span', { class: 'c-idx t-time' }, n),
     cover(s),
     el('div', { class: 'info' }, open,
-      s.artist ? el('small', { class: 'sub t-subhead' }, s.artist) : null),
+      trackSub(s) ? el('small', { class: 'sub t-subhead' }, trackSub(s)) : null),
     el('span', { class: 'c-artist t-subhead' }, s.artist || ''),
     el('span', { class: 'c-genres t-subhead', title: genres || null }, genres),
     el('span', { class: 'c-year t-subhead' }, s.year || ''),

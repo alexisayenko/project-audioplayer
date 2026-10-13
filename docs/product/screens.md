@@ -32,7 +32,7 @@ signed in, Settings shows the email and Sign out. Navigation is a 220px rail
 persistent player bar (cover, title, shuffle, previous, play/pause, next, repeat,
 time, volume) sits at the bottom of Library and Settings and opens Playback on
 tap; on Playback itself it is hidden. Library is a table of the server library
-(index, cover, title, artist, genres, year, time, a "..." menu, no album column; columns drop right
+(index, cover, track (title with a muted "Artist · Year" line below; web header "Track"), artist, genres, year, time, a "..." menu, no album column; columns drop right
 to left on narrower screens until it is the phone song row) with four category chips (Tags, Genres,
 Years, Countries) that open a filter sheet. Playback leads with the cover
 (title and artist on it), a seek bar, the transport tray, a volume row and the

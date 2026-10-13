@@ -21,7 +21,7 @@ in `docs/product/wireframes/` yet; add a link here when it lands).
 - LIB-015 MUST: `key:value` tags render with the key as a highlighted prefix. Status: implemented
 - LIB-017 MUST: `decade:` tags show as "the 90s" on chips and in filter groups (group "Decade" after Genre); search matches "90s". Status: implemented
 - LIB-016 MUST: `country:` tags show a human name on chips and in filter groups ("Lithuania", via `Intl.DisplayNames`, raw value as fallback, raw tag in the tooltip); search matches both the code and the name. Status: implemented
-- LIB-018 MUST: on the web the list columns are # / cover / Title / Artist / Genres / Year / Time, with no Album column (WEB-031); the iOS list is unchanged. Status: implemented
+- LIB-018 MUST: on the web the list columns are # / cover / Track / Artist / Genres / Year / Time (Track = title plus a muted "Artist · Year" line, WEB-031), with no Album column (WEB-031); the iOS list is unchanged. Status: implemented
 
 ## Search
 
