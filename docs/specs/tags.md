@@ -22,6 +22,7 @@ Code: `server/app/library.py` (`clean_tag`, `clean_tags`, `tag_counts`),
 - TAG-050 MUST: decade tags: the server derives `decade:<NN>s` from `year` for 1950-2029 (`decade:50s`, `60s`, `70s`, `80s`, `90s`, `00s`, `10s`, `20s`; 1994 gives `decade:90s`, 2007 `decade:00s`, 2013 `decade:10s`); a year outside that range or missing derives nothing. Status: implemented
 - TAG-051 MUST: on every create, PATCH and load, when `year` is in range the song's `decade:*` tags are replaced by exactly the derived one (a manually typed or stale decade tag is overwritten, so changing the year updates it); when the year is missing or out of range existing `decade:` tags are left untouched. Existing songs with a year are migrated on load and saved on the next write. Status: implemented
 - TAG-052 MUST: the `decade:` value is lowercased like any `key:value`; a value not matching `^\d{2}s$` is kept as a plain-normalised tag, never rejected. Status: implemented
+- TAG-053 MUST: the Genres field suggests values from `GET /genres` (API-050) while typing: the user's own genres first, then common ones; a suggestion is added as a `genre:<value>` tag, free text stays allowed. Status: implemented (server, WEB-030, IOS-067)
 - TAG-015 SHOULD: limit tag count and length (today none is enforced; only suggestions are capped: genre 8, country 1). Status: to-confirm
 
 ## Tag suggestions (Add preview only)

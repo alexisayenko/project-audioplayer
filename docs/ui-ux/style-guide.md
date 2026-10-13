@@ -119,7 +119,7 @@ Screens" web artboards. No hex or rgb value appears in `web/style.css`,
 `web/js` or `web/index.html`; everything comes from `web/tokens.css`.
 
 - Navigation: Library, Playback, Settings. 220px rail, 64px icon rail, floating tab bar below 480px; the server LED sits at the bottom of the rail.
-- Library: table card (index, cover, title, artist, album, year, time, menu), 56px rows, playing row in `accent-tint`; four category chips; sort as accent-ink text button. Columns drop right to left (year below 1100px, album below 900px, then the phone song row below 720px).
+- Library: table card (index, cover, title, artist, genres, year, time, menu; no album column), 56px rows, playing row in `accent-tint`; four category chips; sort as accent-ink text button. Columns drop right to left (year below 1100px, genres below 900px, then the phone song row below 720px).
 - Add: dialog from the accent "Add song" button; one accent button with glow per surface.
 - Playback: cover first, transport tray, volume row, queue card; no deck, tonearm or LED.
 - Buttons: primary = `accent` + `on-accent` + `glow-accent`; "fill" = see substitutions; outline = `accent-ink` text and border; quiet = `ground` slab with `shadow-key`; danger = `ink` text with a `power` border.

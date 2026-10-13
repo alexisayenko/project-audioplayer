@@ -74,6 +74,7 @@ relative audio file names only (replaces `AUDIO_DOWNLOAD_DIR`). Each save costs 
 | `POST /download {video_id}` | fetch m4a (itag 140, no ffmpeg needed), return metadata |
 | `GET /files/{video_id}` | stream the stored m4a |
 | `GET /library`, `GET /tags` | songs with tags; tag counts |
+| `GET /genres` | genre autocomplete list: the user's own genres, then built-ins |
 | `POST /preview {url}` | yt-dlp metadata plus suggested genre/country tags, year, Wikipedia links (MusicBrainz, Wikidata) and `remixer` (the title comes back already cut of its remix bracket), no download |
 | `POST /metadata` | album, year and `genre:`/`country:` tags from source links, MusicBrainz, the Wikipedia infobox and Wikidata, plus `suggest` (infobox artist and title hint) and per-service `services` for the Add form icons (API-048); response keys: album, year, tags, suggest, services |
 | `POST /lookup/wikipedia` | suggested tags and year from user-edited Wikipedia links |

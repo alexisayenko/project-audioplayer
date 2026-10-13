@@ -388,7 +388,7 @@ holds). Concept: [`docs/product/concept-catalog-and-audio.md`](../product/concep
 - Cost: a record can exist without a file (DATA-005 changes), a Spotify developer
   app and its terms become a dependency, wrong YouTube matches need a human
   confirm, and catalog vs audio can drift (see concerns).
-- Web (2026-10-13): the web UI is catalog-only: it saves entries with `audio:false`, shows songs without server audio as "Not on the server" with an Open on YouTube/SoundCloud link, never queues them, and plays/deletes only audio already on the server (WEB-015, WEB-023); the iOS "Add and download to iPhone" is the only path that puts audio on the server.
+- Web (2026-10-13): the web UI is catalog-only: it saves entries with `audio:false`, shows songs without server audio as a greyed row with an Open on YouTube/SoundCloud link (no "Not on the server" label), never queues them, and plays/deletes only audio already on the server (WEB-015, WEB-023); the iOS "Add and download to iPhone" is the only path that puts audio on the server.
 - Implementation: server P1 (task-0006) is implemented: `file` may be `null`, `sources` list, derived `audio_state` (`none`/`server`), `GET /catalog`, metadata-only `POST /songs`, `DELETE /songs/{id}/audio`. Old records are not migrated; state is derived at read time. Remaining specs are `planned` (CAT-*), tasks task-0007.. (phases P2..P6).
 
 ## ADR-0011 Multi-source song ids: YouTube unchanged, SoundCloud as `soundcloud-<track id>`
@@ -488,3 +488,5 @@ Note 2026-10-13: web saves metadata only; audio reaches the server only through 
 Decision 2026-10-13 (amended): songs get an optional free-text `remixer` ("remix & additional production"). A strict deterministic cut (ADD-070, API-049) replaces the earlier tap-to-apply hint: the first bracket containing the word remix is removed from the title and its text becomes `remixer`. The `original` (Original track) field is dropped. MusicBrainz was rejected for this: remixes are not linked or catalogued there and name matching hits the wrong artist (Sadrican finds Sadrican Sagdur).
 
 Decision 2026-10-13: version info such as "(Live from the Royal Albert Hall)" stays in the saved and shown title and is stripped only from metadata lookup queries (`titles.lookup_title`); there is no separate Version field.
+
+Decision 2026-10-13: the genre autocomplete list is served by the server (`GET /genres`, API-050) so web and iOS share one source.
