@@ -11,7 +11,7 @@ from urllib.parse import urlparse
 import yt_dlp
 
 from . import library, urlclean
-from .titles import remix_hint, split_artist_title
+from .titles import cut_remix, split_artist_title, split_title
 from .urlclean import is_valid_video_id, parse_video_id, source_of, watch_url  # noqa: F401
 
 PREVIEW_ONLY_MESSAGE = "Preview only \u2014 SoundCloud Go+ track, can't be downloaded in full."
@@ -140,14 +140,15 @@ def _soundcloud_info(url: str, download: bool = False, opts: dict[str, Any] | No
 def soundcloud_probe(url: str) -> dict[str, Any]:
     """Resolve a canonical SoundCloud track URL to its id, metadata and preview-only flag (no download)."""
     info = _soundcloud_info(url)
+    title, remixer = cut_remix(info.get("track") or info.get("title") or "")
     return {
         "id": urlclean.soundcloud_song_id(info["id"]),
         "source_url": urlclean.watch_url(urlclean.soundcloud_song_id(info["id"]), url),
         "source": "soundcloud",
-        "title": info.get("track") or info.get("title") or "",
+        "title": title,
         "artist": _first(info.get("artists")) or info.get("artist") or info.get("creator") or info.get("uploader") or "",
         "album": info.get("album"),
-        "remix_hint": remix_hint(info.get("title") or ""),
+        "remixer": remixer,
         "year": _year({k: info.get(k) for k in ("release_year", "release_date")}),
         "tags": suggest_tags({**info, "genre": info.get("genre") or info.get("genres")}),
         "duration": info.get("duration"),
@@ -161,7 +162,7 @@ def preview(video_id: str) -> dict[str, Any]:
     opts = {"quiet": True, "noplaylist": True, "skip_download": True}
     with yt_dlp.YoutubeDL(opts) as ydl:
         info = ydl.extract_info(watch_url(video_id), download=False)
-    artist, title = split_artist_title(
+    artist, title, remixer = split_title(
         info.get("artist") or info.get("creator") or info.get("uploader") or "",
         info.get("track") or info.get("title") or "",
     )
@@ -172,7 +173,7 @@ def preview(video_id: str) -> dict[str, Any]:
         "title": title,
         "artist": artist,
         "album": info.get("album"),
-        "remix_hint": remix_hint(info.get("title") or ""),
+        "remixer": remixer,
         "year": _year(info),
         "tags": suggest_tags(info),
         "duration": info.get("duration"),
@@ -217,11 +218,11 @@ def download_audio(video_id: str, out_dir: Path, progress=None, source_url: str 
     }
     with yt_dlp.YoutubeDL(opts) as ydl:
         info = ydl.extract_info(watch_url(video_id), download=True)
-    artist, title = split_artist_title(
+    artist, title, remixer = split_title(
         info.get("artist") or info.get("creator") or info.get("uploader") or "",
         info.get("track") or info.get("title") or "",
     )
-    return {"id": video_id, "title": title, "artist": artist, "duration": info.get("duration")}
+    return {"id": video_id, "title": title, "artist": artist, "remixer": remixer, "duration": info.get("duration")}
 
 
 def _download_soundcloud(video_id: str, out_dir: Path, hook, source_url: str | None) -> dict[str, Any]:
@@ -237,9 +238,11 @@ def _download_soundcloud(video_id: str, out_dir: Path, hook, source_url: str | N
     if "preview" in chosen or _looks_like_preview(info.get("duration"), _file_seconds(target)):
         target.unlink(missing_ok=True)
         raise PreviewOnly()
+    title, remixer = cut_remix(info.get("track") or info.get("title") or "")
     return {
         "id": video_id,
-        "title": info.get("track") or info.get("title") or "",
+        "title": title,
+        "remixer": remixer,
         "artist": _first(info.get("artists")) or info.get("artist") or info.get("creator") or info.get("uploader") or "",
         "duration": info.get("duration"),
         "thumbnail": _artwork_of(info),

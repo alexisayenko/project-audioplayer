@@ -31,3 +31,36 @@ def test_preview_cuts_channel_prefix_from_title(monkeypatch):
     monkeypatch.setattr(FakeYDL, "info", {"title": "RÜFÜS DU SOL ●● Innerbloom (Official Video)", "uploader": "RÜFÜS DU SOL", "duration": 579})
     p = extractor.preview(YT)
     assert (p["artist"], p["title"]) == ("RÜFÜS DU SOL", "Innerbloom")
+
+
+CH = "Melodic Techno & Progressive Trance Anthem Rework | Sadrican"
+
+
+def test_preview_cuts_remix_into_remixer(monkeypatch):
+    monkeypatch.setattr(extractor.yt_dlp, "YoutubeDL", FakeYDL)
+    monkeypatch.setattr(FakeYDL, "info", {"title": "Delerium - Innocente (Sadrican 2026 Remix)", "uploader": CH})
+    p = extractor.preview(YT)
+    assert (p["title"], p["remixer"]) == ("Delerium - Innocente", "Sadrican 2026 Remix")
+    assert p["artist"] == CH
+
+
+def test_preview_remixer_is_none_without_remix(monkeypatch):
+    monkeypatch.setattr(extractor.yt_dlp, "YoutubeDL", FakeYDL)
+    monkeypatch.setattr(FakeYDL, "info", {"title": "A - B (Extended Mix)", "uploader": "X"})
+    assert extractor.preview(YT)["remixer"] is None
+
+
+def test_search_keeps_full_title_with_remix(monkeypatch):
+    monkeypatch.setattr(extractor.yt_dlp, "YoutubeDL", FakeYDL)
+    monkeypatch.setattr(FakeYDL, "info", {"entries": [{"id": YT, "title": "A - B (Sadrican Remix)", "uploader": "X"}]})
+    [r] = extractor.search("b", 1)
+    assert "Sadrican Remix" in r["title"]
+
+
+def test_download_audio_cuts_remix(monkeypatch):
+    from pathlib import Path
+
+    monkeypatch.setattr(extractor.yt_dlp, "YoutubeDL", FakeYDL)
+    monkeypatch.setattr(FakeYDL, "info", {"title": "A - B (Sadrican Remix)", "uploader": "X"})
+    d = extractor.download_audio(YT, Path("."))
+    assert (d["title"], d["remixer"]) == ("A - B", "Sadrican Remix")

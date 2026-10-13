@@ -111,10 +111,10 @@ def normalize_song(song: dict[str, Any]) -> dict[str, Any]:
         s["source_url"] = urlclean.clean_url(s["source_url"])
     for key in ("wikipedia_song", "wikipedia_artist"):
         s[key] = wiki_lookup.clean_link(s.get(key))
-    for key in ("original", "remixer"):
-        if key in s:
-            v = s[key].strip() if isinstance(s[key], str) else ""
-            s[key] = v or None
+    s.pop("original", None)
+    if "remixer" in s:
+        v = s["remixer"].strip() if isinstance(s["remixer"], str) else ""
+        s["remixer"] = v or None
     normalize_tags(s)
     return s
 
