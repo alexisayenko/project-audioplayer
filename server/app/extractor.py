@@ -99,7 +99,12 @@ def _year(info: dict[str, Any]) -> int | None:
 def suggest_tags(info: dict[str, Any]) -> list[str]:
     """yt-dlp's real `genre` value -> suggested `genre:` tags."""
     raw = info.get("genre")
-    values = raw if isinstance(raw, list) else re.split(r"[,;]", str(raw)) if raw else []
+    if isinstance(raw, list):
+        values = raw
+    elif raw:
+        values = re.split(r"[,;]", str(raw))
+    else:
+        values = []
     tags = [f"genre:{v}" for v in values if str(v).strip()]
     return library.clean_tags(tags)
 

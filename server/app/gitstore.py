@@ -119,7 +119,7 @@ class GitSync:
 
     def _push_all(self) -> bool:
         with self.lock:
-            for repo in list(self._dirty):
+            for repo in self._dirty.copy():
                 try:
                     self._git(repo, "push")
                 except GitError as exc:

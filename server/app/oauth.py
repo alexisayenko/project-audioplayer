@@ -9,6 +9,8 @@ from jwt import PyJWKClient
 
 from .problems import Problem
 
+_BAD_TOKEN = "bad token"
+
 PROVIDERS = {
     "apple": {
         "issuers": ("https://appleid.apple.com",),
@@ -62,16 +64,20 @@ def verify_identity(token: str) -> dict:
     try:
         provider = jwt.decode(token, options={"verify_signature": False}).get("iss", "")
     except jwt.PyJWTError:
-        raise Problem(401, "bad_token", "bad token")
-    name = "apple" if provider.startswith("https://appleid.apple.com") else (
-        "google" if "accounts.google.com" in provider else "")
+        raise Problem(401, "bad_token", _BAD_TOKEN)
+    if provider.startswith("https://appleid.apple.com"):
+        name = "apple"
+    elif "accounts.google.com" in provider:
+        name = "google"
+    else:
+        name = ""
     audience = audiences(name) if name else []
     if not name or not audience:
-        raise Problem(401, "bad_token", "bad token")
+        raise Problem(401, "bad_token", _BAD_TOKEN)
     try:
         claims = _verify(token, name, audience)
     except Exception:
-        raise Problem(401, "bad_token", "bad token")
+        raise Problem(401, "bad_token", _BAD_TOKEN)
     email = str(claims.get("email", "")).strip().lower()
     verified = claims.get("email_verified") in (True, "true")
     if email and not verified:

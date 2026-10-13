@@ -95,8 +95,8 @@ def _album(full: dict[str, Any], artist: str = "") -> str | None:
         title = str(r.get("title") or "").strip()
         if not title:
             continue
-        credits = r.get("artist-credit") or []
-        names = [c.get("name", "") for c in credits] + [(c.get("artist") or {}).get("name", "") for c in credits]
+        credited = r.get("artist-credit") or []
+        names = [c.get("name", "") for c in credited] + [(c.get("artist") or {}).get("name", "") for c in credited]
         if not any(_artist_match(artist, n) for n in names):
             continue
         rg = r.get("release-group") or {}
@@ -154,8 +154,8 @@ def _lookup(artist: str, title: str) -> dict[str, Any]:
     for rec in data.get("recordings") or []:
         if int(rec.get("score") or 0) < MIN_SCORE:
             continue
-        credits = rec.get("artist-credit") or []
-        names = [c.get("name", "") for c in credits] + [c.get("artist", {}).get("name", "") for c in credits]
+        credited = rec.get("artist-credit") or []
+        names = [c.get("name", "") for c in credited] + [c.get("artist", {}).get("name", "") for c in credited]
         if not any(_artist_match(artist, n) for n in names):
             continue
         full = _get(f"recording/{rec['id']}", {"inc": "genres+tags+work-rels+url-rels+releases+release-groups+artist-credits", "fmt": "json"})
@@ -166,7 +166,7 @@ def _lookup(artist: str, title: str) -> dict[str, Any]:
         aid = next(
             (
                 c["artist"]["id"]
-                for c in credits
+                for c in credited
                 if c.get("artist", {}).get("id") and _artist_match(artist, c["artist"].get("name", ""))
             ),
             None,

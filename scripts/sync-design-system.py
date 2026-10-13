@@ -46,7 +46,7 @@ def hex_to_rgba(value: str) -> tuple[float, float, float, float]:
 def theme_values(token: dict, themes: list[str]) -> dict[str, str]:
     val = token["value"]
     if isinstance(val, str):
-        return {t: val for t in themes}
+        return dict.fromkeys(themes, val)
     first = themes[0]
     return {t: val.get(t, val[first]) for t in themes}
 
@@ -69,8 +69,10 @@ def swift(tokens: dict) -> str:
     light, dark = themes[0], (themes[1] if len(themes) > 1 else themes[0])
     out = [f"// {HEADER}", "", "import SwiftUI", "", "/// Electrophone design tokens. Colours adapt to light/dark automatically.", "enum DS {"]
 
-    out.append("    // MARK: Colours")
-    out.append("    enum Color {")
+    out.extend([
+        "    // MARK: Colours",
+        "    enum Color {",
+    ])
     for tok in tokens["color"]["tokens"]:
         vals = theme_values(tok, themes)
         lr, lg, lb, la = hex_to_rgba(vals[light])
@@ -80,11 +82,15 @@ def swift(tokens: dict) -> str:
         out.append(
             f"        static let {camel(tok['name'])} = SwiftUI.Color(light: ({lr:.3f}, {lg:.3f}, {lb:.3f}, {la:.3f}), dark: ({dr:.3f}, {dg:.3f}, {db:.3f}, {da:.3f}))"
         )
-    out.append("    }")
-    out.append("")
+    out.extend([
+        "    }",
+        "",
+    ])
 
-    out.append("    // MARK: Type")
-    out.append("    enum Font {")
+    out.extend([
+        "    // MARK: Type",
+        "    enum Font {",
+    ])
     families = tokens["type"].get("families", {})
     for group in tokens["type"].get("groups", []):
         fam = group.get("family", "sans")
@@ -94,37 +100,49 @@ def swift(tokens: dict) -> str:
             weight = st.get("fontWeight", 400)
             wname = {100: "ultraLight", 200: "thin", 300: "light", 400: "regular", 500: "medium", 600: "semibold", 700: "bold", 800: "heavy", 900: "black"}.get(int(weight), "regular")
             usage = st.get("usage", "").replace("\n", " ")
-            out.append(f"        /// {usage}")
-            out.append(f"        static let {camel(st['name'])} = SwiftUI.Font.system(size: {size}, weight: .{wname}, design: {design})")
+            out.extend([
+                f"        /// {usage}",
+                f"        static let {camel(st['name'])} = SwiftUI.Font.system(size: {size}, weight: .{wname}, design: {design})",
+            ])
             if st.get("letterSpacing"):
                 out.append(f"        static let {camel(st['name'])}Tracking: CGFloat = {px(st['letterSpacing'])}")
-    out.append("    }")
-    out.append("")
+    out.extend([
+        "    }",
+        "",
+    ])
 
     for family, enum_name in (("spacing", "Space"), ("radius", "Radius"), ("stroke", "Stroke")):
         fam = tokens.get(family)
         if not fam:
             continue
-        out.append(f"    // MARK: {enum_name}")
-        out.append(f"    enum {enum_name} {{")
+        out.extend([
+            f"    // MARK: {enum_name}",
+            f"    enum {enum_name} {{",
+        ])
         for tok in fam["tokens"]:
             usage = tok.get("usage", "").replace("\n", " ")
-            out.append(f"        /// {usage}")
-            out.append(f"        static let {camel(tok['name'])}: CGFloat = {px(tok['value'])}")
-        out.append("    }")
-        out.append("")
+            out.extend([
+                f"        /// {usage}",
+                f"        static let {camel(tok['name'])}: CGFloat = {px(tok['value'])}",
+            ])
+        out.extend([
+            "    }",
+            "",
+        ])
 
-    out.append("}")
-    out.append("")
-    out.append("extension SwiftUI.Color {")
-    out.append("    /// A colour with separate light and dark values, resolved by the system appearance.")
-    out.append("    init(light: (Double, Double, Double, Double), dark: (Double, Double, Double, Double)) {")
-    out.append("        self.init(uiColor: UIColor { trait in")
-    out.append("            let c = trait.userInterfaceStyle == .dark ? dark : light")
-    out.append("            return UIColor(red: c.0, green: c.1, blue: c.2, alpha: c.3)")
-    out.append("        })")
-    out.append("    }")
-    out.append("}")
+    out.extend([
+        "}",
+        "",
+        "extension SwiftUI.Color {",
+        "    /// A colour with separate light and dark values, resolved by the system appearance.",
+        "    init(light: (Double, Double, Double, Double), dark: (Double, Double, Double, Double)) {",
+        "        self.init(uiColor: UIColor { trait in",
+        "            let c = trait.userInterfaceStyle == .dark ? dark : light",
+        "            return UIColor(red: c.0, green: c.1, blue: c.2, alpha: c.3)",
+        "        })",
+        "    }",
+        "}",
+    ])
     return "\n".join(out) + "\n"
 
 
