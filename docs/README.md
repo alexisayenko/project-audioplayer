@@ -111,6 +111,7 @@ and rules):
 
 - [`brand/README.md`](brand/README.md) — brand identity
   vocabulary
+- [`brand/domains.md`](brand/domains.md) — domain name candidates
 - [`business/README.md`](business/README.md) — audience, scope,
   monetization, non-goals
 - [`business/compliance.md`](business/compliance.md) —
@@ -165,6 +166,7 @@ with a UI has more than one screen).
 ```text
 docs/
 ├── brand/                              # entry: brand/README.md
+│   └── domains.md                      # domain candidates
 ├── business/                           # entry: business/README.md
 │   ├── compliance.md                   # external obligations
 │   └── budget.md                       # out-of-pocket costs
