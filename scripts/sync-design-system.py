@@ -187,17 +187,12 @@ def css(tokens: dict) -> str:
     return "\n".join(lines) + "\n"
 
 
-def write_inside_root(path: Path, text: str) -> None:
-    resolved = path.resolve()
-    if not resolved.is_relative_to(ROOT):
-        raise SystemExit(f"refusing to write outside the repo: {resolved}")
-    resolved.write_text(text)
-
-
 def main() -> int:
     tokens = json.loads(SRC.read_text())
-    write_inside_root(SWIFT_OUT, swift(tokens))
-    write_inside_root(CSS_OUT, css(tokens))
+    swift_text = swift(tokens)
+    css_text = css(tokens)
+    SWIFT_OUT.write_text(swift_text)
+    CSS_OUT.write_text(css_text)
     n = len(tokens["color"]["tokens"])
     print(f"wrote {SWIFT_OUT.relative_to(ROOT)} and {CSS_OUT.relative_to(ROOT)} ({n} colours, {sum(len(g['styles']) for g in tokens['type']['groups'])} text styles)")
     return 0
