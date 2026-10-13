@@ -45,3 +45,32 @@ def test_noise_bracket_still_stripped_when_remix_is_elsewhere():
 def test_empty_input():
     assert split_title("", "") == ("", "", None)
     assert split_title(None, None) == ("", "", None)
+
+
+@pytest.mark.parametrize(
+    "raw,want",
+    [
+        ("Song (feat. X)", "Song"),
+        ("Song [ft. X]", "Song"),
+        ("Song feat. X", "Song"),
+        ("Song featuring X Y", "Song"),
+        ("Artist Feat. Jon - Title", "Artist - Title"),
+        ("Song ft. X (Remix by Y)", "Song (Remix by Y)"),
+        ("Song ft. X | Live", "Song | Live"),
+        ("Defeat Of The Day", "Defeat Of The Day"),
+        (
+            "Kato Feat. Jon - Turn The Lights Off | Jon Hamm Club Dance Scene | DEEPO Remix Long Version",
+            "Kato - Turn The Lights Off | Jon Hamm Club Dance Scene | DEEPO Remix Long Version",
+        ),
+    ],
+)
+def test_feat_credit_stops_at_its_own_boundary(raw, want):
+    from app.titles import clean_title
+
+    assert clean_title(raw) == want
+
+
+def test_clean_artist_drops_feat():
+    from app.titles import clean_artist
+
+    assert clean_artist("Kato feat. Jon") == "Kato"

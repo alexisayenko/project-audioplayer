@@ -74,3 +74,16 @@ def test_preview_keeps_live_in_title(monkeypatch):
     monkeypatch.setattr(FakeYDL, "info", {"title": LIVE, "uploader": "Dua Lipa", "duration": 200})
     p = extractor.preview(YT)
     assert p["title"].endswith("(Live from the Royal Albert Hall)")
+
+
+def test_preview_keeps_song_name_after_feat_credit(monkeypatch):
+    monkeypatch.setattr(extractor.yt_dlp, "YoutubeDL", FakeYDL)
+    monkeypatch.setattr(
+        FakeYDL,
+        "info",
+        {"title": "Kato Feat. Jon - Turn The Lights Off | Jon Hamm Club Dance Scene | DEEPO Remix Long Version", "uploader": "DEEPO Music"},
+    )
+    p = extractor.preview(YT)
+    assert "Turn The Lights Off" in p["title"]
+    assert p["artist"] == "DEEPO Music"
+    assert p["remixer"] is None

@@ -490,3 +490,5 @@ Decision 2026-10-13 (amended): songs get an optional free-text `remixer` ("remix
 Decision 2026-10-13: version info such as "(Live from the Royal Albert Hall)" stays in the saved and shown title and is stripped only from metadata lookup queries (`titles.lookup_title`); there is no separate Version field.
 
 Decision 2026-10-13: the genre autocomplete list is served by the server (`GET /genres`, API-050) so web and iOS share one source.
+
+Decision 2026-10-13: a feat/ft/featuring credit cut stops at its own separator (closing bracket, " - ", " | ", " ●● ", " • " or the next bracket); the rest of the title is kept, so "Kato Feat. Jon - Turn The Lights Off | ..." no longer loses the song name (`titles._strip_feat`, linear scan, no regex backtracking).

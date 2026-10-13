@@ -56,3 +56,8 @@ def test_musicbrainz_query_has_no_live(monkeypatch):
     monkeypatch.setattr(gl, "_get", fake_get)
     gl.lookup("Dua Lipa", "Cold Heart (Live from the Royal Albert Hall)")
     assert queries == ['recording:"Cold Heart" AND artist:"Dua Lipa"']
+
+
+def test_lookup_keeps_song_name_after_feat_credit():
+    raw = "Kato Feat. Jon - Turn The Lights Off | Jon Hamm Club Dance Scene | DEEPO Remix Long Version"
+    assert lookup_title(raw).startswith("Kato - Turn The Lights Off")
