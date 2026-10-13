@@ -19,7 +19,12 @@
       "Bash(xcodebuild:*)",
       "Bash(xcrun simctl:*)",
       "Bash(python3 scripts/sync-design-system.py)",
-      "Bash(git show:*)"
+      "Bash(git show:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(wc:*)",
+      "Bash(grep:*)",
+      "Bash(ls:*)"
     ],
     "deny": [
       "Bash(rm -rf /*)",
