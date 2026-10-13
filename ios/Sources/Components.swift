@@ -53,7 +53,7 @@ struct DSTextField: View {
             .padding(.trailing, DS.Space.hit - DS.Space.space3)
             .dsField()
             .overlay(alignment: .trailing) {
-                if focused && !text.isEmpty {
+                if !text.isEmpty {
                     Button { text = ""; focused = true } label: {
                         Image(systemName: "xmark.circle.fill").foregroundStyle(DS.Color.inkFaint)
                             .frame(width: DS.Space.hit, height: DS.Space.hit)
