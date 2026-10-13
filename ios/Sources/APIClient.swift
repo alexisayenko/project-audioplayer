@@ -196,12 +196,6 @@ struct APIClient {
         try JSONDecoder().decode(ServerSong.self, from: await send(Endpoints.songBPMDetect(id), method: "POST", timeout: 120))
     }
 
-    func lookupWikipedia(song: String?, artist: String?) async throws -> WikiLookup {
-        let body: [String: Any] = ["wikipedia_song": song.map { $0 as Any } ?? NSNull(),
-                                  "wikipedia_artist": artist.map { $0 as Any } ?? NSNull()]
-        return try JSONDecoder().decode(WikiLookup.self, from: await send(Endpoints.lookupWikipedia, method: "POST", body: body, timeout: 60))
-    }
-
     func metadata(title: String, artist: String, sourceURLs: [String], wikiSong: String, wikiArtist: String) async throws -> MetadataResult {
         let body: [String: Any] = ["title": title, "artist": artist, "sources": sourceURLs.map { ["url": $0] },
                                   "wiki_song": wikiSong.isEmpty ? NSNull() : wikiSong,

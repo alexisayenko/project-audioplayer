@@ -11,7 +11,6 @@ enum Endpoints {
     static let download = path("download")
     static let preview = path("preview")
     static let songs = path("songs")
-    static let lookupWikipedia = path("lookup", "wikipedia")
     static let metadata = path("metadata")
     static let genres = path("genres")
     static let coversPrefix = path("covers") + "/"

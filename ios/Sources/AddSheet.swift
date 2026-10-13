@@ -1,7 +1,7 @@
 import SwiftUI
 
 @MainActor
-final class AddFlow: ObservableObject {
+final class AddFlow: SongFormState {
     enum Phase: Equatable { case idle, loading, ready, saving, saved, failed }
 
     @Published var url = ""
@@ -9,61 +9,12 @@ final class AddFlow: ObservableObject {
     @Published var preview: Preview?
     @Published var message: String?
     @Published var errorCode: String?
-    @Published var metaBusy = false
-    @Published var metaNote: String?
-    @Published var services: [ServiceKind: URL?] = [:]
-    @Published var suggest: MetadataResult.Suggest?
-
-    @Published var title = ""
-    @Published var artist = ""
-    @Published var album = ""
-    @Published var remixer = ""
-    @Published var year = "" { didSet { applyDecade() } }
-    @Published var wikiSong = ""
-    @Published var wikiArtist = ""
-    @Published var tags: [String] = []
-    @Published var suggested: [String] = []
-    @Published var pendingTag = ""
-    @Published var pendingGenre = ""
-    @Published var pendingCountry = ""
-
-    var remixerValue: String? { let t = remixer.trimmingCharacters(in: .whitespacesAndNewlines); return t.isEmpty ? nil : t }
-    var yearValue: Int? { Int(year.trimmingCharacters(in: .whitespaces)) }
-
-    private static func differs(_ suggested: String?, _ current: String) -> String? {
-        guard let s = suggested?.trimmingCharacters(in: .whitespacesAndNewlines), !s.isEmpty else { return nil }
-        return s.caseInsensitiveCompare(current.trimmingCharacters(in: .whitespacesAndNewlines)) == .orderedSame ? nil : s
-    }
-
-    /// The Wikipedia artist and title that still differ from the fields; nil when there is nothing to offer.
-    var hint: (artist: String?, title: String?)? {
-        let a = Self.differs(suggest?.artist, artist), t = Self.differs(suggest?.title, title)
-        return a == nil && t == nil ? nil : (a, t)
-    }
-
-    func applyHint() {
-        guard let h = hint else { return }
-        if let a = h.artist { artist = a }
-        if let t = h.title { title = t }
-        suggest = nil
-    }
-
-    private func applyDecade() {
-        tags = withDecade(tags, yearValue)
-        suggested = withDecade(suggested, yearValue)
-    }
-
-    private var lookups: [Task<Void, Never>] = []
-
-    func launch(_ work: @escaping () async -> Void) { lookups.append(Task { await work() }) }
-
-    func cancelLookups() { lookups.forEach { $0.cancel() }; lookups = [] }
 
     func loadPreview(_ api: APIClient) async {
         let clean = cleanPasted(url)
         url = clean
         guard !clean.isEmpty, phase != .loading, phase != .saving else { return }
-        phase = .loading; message = nil; errorCode = nil; suggest = nil; metaNote = nil; services = [:]
+        phase = .loading; message = nil; errorCode = nil; resetMetadata()
         do {
             let p = try await api.preview(url: clean)
             preview = p
@@ -72,7 +23,7 @@ final class AddFlow: ObservableObject {
             year = p.year.map(String.init) ?? ""
             wikiSong = p.wikipedia_song ?? ""; wikiArtist = p.wikipedia_artist ?? ""
             let sug = p.tags ?? []
-            tags = withDecade(sug, p.year); suggested = withDecade(sug, p.year); pendingTag = ""; pendingGenre = ""; pendingCountry = ""
+            tags = withDecade(sug, p.year); suggested = withDecade(sug, p.year); resetPending()
             phase = .ready
         } catch {
             preview = nil
@@ -82,40 +33,13 @@ final class AddFlow: ObservableObject {
         }
     }
 
-    func getMetadata(_ api: APIClient) async {
-        guard !metaBusy else { return }
-        metaBusy = true; metaNote = nil; services = [:]; suggest = nil; defer { metaBusy = false }
-        let src = preview?.source_url ?? url
-        do {
-            let r = try await api.metadata(title: title, artist: artist, sourceURLs: src.isEmpty ? [] : [src],
-                                           wikiSong: wikiSong.trimmingCharacters(in: .whitespaces),
-                                           wikiArtist: wikiArtist.trimmingCharacters(in: .whitespaces))
-            var found: [ServiceKind: URL?] = [:]
-            for (kind, svc) in [(ServiceKind.youtube, r.services?.youtube), (.soundcloud, r.services?.soundcloud), (.wikipedia, r.services?.wikipedia)] where svc?.found == true {
-                found[kind] = svc?.url.flatMap { URL(string: $0) }
-            }
-            services = found
-            suggest = r.suggest
-            var changed = false
-            let returned = !(r.album ?? "").isEmpty || r.year != nil || !(r.tags ?? []).isEmpty
-            if let a = r.album, !a.isEmpty, album.trimmingCharacters(in: .whitespaces).isEmpty { album = a; changed = true }
-            if let y = r.year, yearValue == nil { year = String(y); changed = true }
-            if addNamespaced(&tags, r.tags ?? []) > 0 { changed = true }
-            for t in r.tags ?? [] where ["genre", "country"].contains(tagKey(t)) && !hasTag(suggested, t) { suggested.append(t) }
-            if changed { metaNote = nil } else if returned { metaNote = "Already up to date" } else { metaNote = "Nothing found" }
-        } catch { metaNote = "Couldn't load metadata" }
-    }
-
     /// Saves on the server, then hands the download to `ServerLink` so it outlives the sheet. True when the sheet may close.
     func save(settings: Settings, library: LibraryStore, server: ServerLink, player: PlayerService, download: Bool) async -> Bool {
         guard let p = preview, phase == .ready || phase == .failed else { return false }
         let api = APIClient(baseURL: settings.serverURL, token: settings.token)
         phase = .saving; message = nil
-        let wikiS = wikiSong.trimmingCharacters(in: .whitespaces)
-        let wikiA = wikiArtist.trimmingCharacters(in: .whitespaces)
-        commitNamespaced(&tags, key: "genre", cap: genreCap, input: &pendingGenre)
-        commitNamespaced(&tags, key: "country", cap: countryCap, input: &pendingCountry)
-        let finalTagList = finalTags(tags, pending: pendingTag)
+        let wikiS = wikiSongValue ?? "", wikiA = wikiArtistValue ?? ""
+        let finalTagList = commitPending()
         let meta: [String: Any] = [
             "title": title, "artist": artist, "album": album,
             "remixer": remixerValue.map { $0 as Any } ?? NSNull(),
@@ -154,14 +78,6 @@ func linkErrorCopy(code: String?, detail: String) -> (lead: String, rest: String
     }
 }
 
-func lookupSummary(_ found: WikiLookup, _ appliedYear: Int?) -> String {
-    var parts: [String] = []
-    if let y = appliedYear { parts.append("year \(y)") }
-    let n = found.tags?.count ?? 0
-    if n > 0 { parts.append("\(n) suggested \(n == 1 ? "tag" : "tags")") }
-    return parts.isEmpty ? "Nothing found for these links." : "Found: \(parts.joined(separator: ", "))."
-}
-
 /// The Add flow as a sheet over Library: link, Fetch, preview, edit, Save. The download continues on the song's Library row.
 struct AddSheet: View {
     @StateObject private var flow = AddFlow()
@@ -173,10 +89,8 @@ struct AddSheet: View {
     @Environment(\.colorScheme) private var scheme
     @State private var path: [String] = []
     @State private var contentHeight: CGFloat = 0
-    @State private var addingTags = false
 
     private var api: APIClient { APIClient(baseURL: settings.serverURL, token: settings.token) }
-    private var pool: [(tag: String, count: Int)] { tagCounts(library.songs.map { $0.tags ?? [] }) }
     private var knownSong: Track? { flow.phase == .idle || flow.phase == .loading ? libraryMatch(link: flow.url, in: library.songs) : nil }
     private var busy: Bool { flow.phase == .loading || flow.phase == .saving }
     private var hasPreview: Bool { flow.preview != nil && flow.phase != .idle && flow.phase != .loading }
@@ -328,43 +242,6 @@ struct AddSheet: View {
         .buttonStyle(LitButtonStyle()).disabled(true)
     }
 
-    private func note(_ text: String, error: Bool = false) -> some View {
-        Label {
-            Text(text).font(T.caption).foregroundStyle(error ? DS.Color.ink : DS.Color.inkMuted)
-        } icon: {
-            Image(systemName: error ? "exclamationmark.circle.fill" : "info.circle").foregroundStyle(error ? DS.Color.power : DS.Color.inkMuted)
-        }
-    }
-
-    private func labeled(_ label: String, _ text: Binding<String>, keyboard: UIKeyboardType = .default) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(label).font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.inkMuted)
-            DSTextField(label: label, text: text, keyboard: keyboard)
-        }
-    }
-
-    private func tokenField(_ kind: TokenKind, _ text: Binding<String>, _ moves: [TokenMove]) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(kind.label).font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.inkMuted)
-            TokenField(kind: kind, text: text, moves: moves)
-        }
-    }
-
-    private func suggestionHint(_ h: (artist: String?, title: String?)) -> some View {
-        let text = [h.artist, h.title].compactMap { $0 }.joined(separator: " / ")
-        let spoken = [h.artist, h.title].compactMap { $0 }.joined(separator: " - ")
-        return Button { flow.applyHint() } label: {
-            HStack(alignment: .firstTextBaseline, spacing: DS.Space.space2) {
-                Image(systemName: "lightbulb").accessibilityHidden(true)
-                Text("Wikipedia says: \(text)").multilineTextAlignment(.leading)
-            }
-            .font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.accentInk)
-            .frame(maxWidth: .infinity, minHeight: DS.Space.hit, alignment: .leading)
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Use Wikipedia's artist and title: \(spoken)")
-    }
-
     private var summary: String {
         [flow.artist, flow.year].filter { !$0.isEmpty }.joined(separator: " · ")
     }
@@ -394,7 +271,7 @@ struct AddSheet: View {
         .accessibilityElement(children: .contain)
 
         if p.in_library == true {
-            note("This song is already in your library.", error: true)
+            FormNote(text: "This song is already in your library.", error: true)
             if let t = library.tracks.first(where: { $0.id == p.id }) {
                 Button { player.playNow(t); dismiss() } label: { Label("Play now", systemImage: "play.fill") }
                     .buttonStyle(LitButtonStyle())
@@ -409,35 +286,11 @@ struct AddSheet: View {
             }
         }
 
-        VStack(alignment: .leading, spacing: DS.Space.space3) {
-                tokenField(.title, $flow.title, [TokenMove(kind: .artist, text: $flow.artist), TokenMove(kind: .remixer, text: $flow.remixer)])
-                tokenField(.artist, $flow.artist, [TokenMove(kind: .title, text: $flow.title), TokenMove(kind: .remixer, text: $flow.remixer)])
-                tokenField(.remixer, $flow.remixer, [TokenMove(kind: .title, text: $flow.title), TokenMove(kind: .artist, text: $flow.artist)])
-                if let h = flow.hint { suggestionHint(h) }
-                FlowLayout {
-                    Button { flow.launch { await flow.getMetadata(api) } } label: {
-                        HStack { Text("Get metadata"); if flow.metaBusy { ProgressView() } }
-                    }
-                    .buttonStyle(DSButtonStyle(kind: .quiet)).disabled(flow.metaBusy)
-                    ServiceIconRow(busy: flow.metaBusy, found: flow.services)
-                }
-                if let n = flow.metaNote { note(n, error: n == "Couldn't load metadata") }
-                labeled("Album", $flow.album)
-                labeled("Year", $flow.year, keyboard: .numberPad)
-                Text("BPM is detected after saving").font(T.caption).foregroundStyle(DS.Color.inkMuted)
+        SongFormView(form: flow, api: api, sources: { [p.source_url ?? flow.url].filter { !$0.isEmpty } }) {
+            Text("BPM is detected after saving").font(T.caption).foregroundStyle(DS.Color.inkMuted)
         }
 
-        NamespaceField(title: "Genres", key: "genre", cap: genreCap, tags: $flow.tags, input: $flow.pendingGenre)
-        NamespaceField(title: "Countries", key: "country", cap: countryCap, tags: $flow.tags, input: $flow.pendingCountry)
-
-        TagFlow(tags: flow.tags.filter { !["lang", "genre", "country"].contains(tagKey($0)) }, adding: addingTags, onRemove: { t in flow.tags.removeAll { $0 == t } }) {
-            withAnimation { addingTags.toggle() }
-        }
-        if addingTags {
-            TagEditor(tags: $flow.tags, suggested: $flow.suggested, pool: pool, input: $flow.pendingTag, hiddenKeys: ["lang", "genre", "country"])
-        }
-
-        if let m = flow.message { note(m, error: true) }
+        if let m = flow.message { FormNote(text: m, error: true) }
     }
 
     private func pinnedActions(_ p: Preview) -> some View {

@@ -62,11 +62,6 @@ struct MetadataResult: Decodable {
     }
 }
 
-struct WikiLookup: Codable {
-    var tags: [String]?
-    var year: Int?
-}
-
 /// Cover references are stored as a server path (`/covers/<id>`) or an absolute image URL, never with a token.
 enum CoverURL {
     static func resolve(_ source: String?, baseURL: String, token: String) -> URL? {
