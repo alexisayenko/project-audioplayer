@@ -4,11 +4,22 @@ import json
 import pytest
 from fastapi.testclient import TestClient
 
-from app import bpm, extractor, library, main
+from app import bpm, extractor, library, main, users
 
 VID = "dQw4w9WgXcQ"
 VID2 = "9bZkp7q19f0"
 H = {"X-API-Token": "secret"}
+OWNER_UID = users.uid_for_email("alex.isayenko@gmail.com")
+
+
+def ODIR(tmp_path):
+    """The owner's data dir in the plain-file layout."""
+    return tmp_path / "users" / OWNER_UID
+
+
+def ADIR(tmp_path):
+    """The owner's audio dir under the default music root (tmp_path / downloads)."""
+    return tmp_path / "downloads" / "users" / OWNER_UID
 
 
 @pytest.fixture()
@@ -119,7 +130,7 @@ def test_add_song_full_flow(client, tmp_path):
     assert s["cover"] == f"covers/{VID}.jpg" and s["duration"] == 7
     assert s["tags"] == ["80s", "Workout"]
     assert s["source_url"].endswith(VID) and s["added_at"].endswith("Z")
-    assert json.loads((tmp_path / "library.json").read_text())["songs"][0]["id"] == VID
+    assert json.loads((ODIR(tmp_path) / "library.json").read_text())["songs"][0]["id"] == VID
     assert client.get(f"/files/{VID}", headers=H).content == b"audio"
     assert client.get(f"/covers/{VID}", headers=H).content == b"jpg"
     assert client.get("/tags", headers=H).json() == [
@@ -181,8 +192,8 @@ def test_delete(client, tmp_path):
     add(client)
     assert client.delete(f"/songs/{VID}", headers=H).status_code == 204
     assert client.get("/library", headers=H).json() == {"songs": []}
-    assert not (tmp_path / "downloads" / f"{VID}.m4a").exists()
-    assert not (tmp_path / "covers" / f"{VID}.jpg").exists()
+    assert not (ADIR(tmp_path) / f"{VID}.m4a").exists()
+    assert not (ODIR(tmp_path) / "covers" / f"{VID}.jpg").exists()
     assert client.delete(f"/songs/{VID}", headers=H).status_code == 404
     assert add(client).status_code == 202
 
@@ -338,7 +349,8 @@ def test_redetect_bpm(client, monkeypatch):
 
 
 def test_old_song_without_bpm_loads(client, tmp_path):
-    (tmp_path / "library.json").write_text(json.dumps({"songs": [{"id": VID, "title": "Old"}]}))
+    ODIR(tmp_path).mkdir(parents=True, exist_ok=True)
+    (ODIR(tmp_path) / "library.json").write_text(json.dumps({"songs": [{"id": VID, "title": "Old"}]}))
     songs = client.get("/library", headers=H).json()["songs"]
     assert songs[0]["id"] == VID and "bpm" not in songs[0]
     assert client.patch(f"/songs/{VID}", json={"bpm": 100}, headers=H).json()["bpm"] == 100

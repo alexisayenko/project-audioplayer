@@ -39,12 +39,14 @@ class GitSync:
         self._stop = threading.Event()
 
     @property
-    def library_path(self) -> Path:
-        return self.data_repo / "audioplayer" / "library.json"
+    def data_root(self) -> Path:
+        """`audioplayer/` in the data repo: `users/<uid>/{profile,library}.json` live below it."""
+        return self.data_repo / "audioplayer"
 
     @property
-    def covers_dir(self) -> Path | None:
-        return self.covers_repo / "audioplayer" / "covers" if self.covers_repo else None
+    def covers_root(self) -> Path | None:
+        """`audioplayer/` in the covers repo: `users/<uid>/covers/<id>.jpg` live below it."""
+        return self.covers_repo / "audioplayer" if self.covers_repo else None
 
     def _repos(self) -> list[Path]:
         return [self.data_repo] + ([self.covers_repo] if self.covers_repo else [])
@@ -106,7 +108,9 @@ class GitSync:
         """Commit changes under audioplayer/ in every repo, then push; a failed push keeps the commit."""
         with self.lock:
             for repo in self._repos():
-                self._git(repo, "add", "-A", "--", "audioplayer")
+                added = self._git(repo, "add", "-A", "--", "audioplayer", check=False)
+                if added.returncode != 0 and "did not match any files" not in added.stderr:
+                    raise GitError(f"git add failed: {added.stderr.strip()[:300]}")
                 if self._git(repo, "diff", "--cached", "--quiet", check=False).returncode != 0:
                     self._git(repo, "commit", "-m", message)
                     with self._state:

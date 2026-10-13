@@ -39,7 +39,7 @@ def available() -> bool:
 
 def issue(identity: dict, now: float | None = None) -> str:
     body = _b64(json.dumps(
-        {"p": identity["provider"], "e": identity["email"], "x": int((now or time.time()) + LIFETIME)},
+        {"p": identity["provider"], "e": identity["email"], "u": identity.get("uid", ""), "x": int((now or time.time()) + LIFETIME)},
         separators=(",", ":")).encode())
     sig = _b64(hmac.new(_key(), body.encode(), hashlib.sha256).digest())
     return f"{body}.{sig}"
@@ -57,7 +57,7 @@ def read(value: str, now: float | None = None) -> dict | None:
         data = json.loads(_unb64(body))
         if int(data["x"]) < (now or time.time()):
             return None
-        return {"provider": data["p"], "email": data["e"]}
+        return {"provider": data["p"], "email": data["e"], "uid": data.get("u", "")}
     except Exception:
         return None
 

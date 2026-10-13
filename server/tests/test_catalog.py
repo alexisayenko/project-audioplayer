@@ -1,7 +1,7 @@
 import json
 
 from app import extractor, library, main, urlclean
-from tests.test_library import H, VID, VID2, add, client  # noqa: F401
+from tests.test_library import ADIR, H, ODIR, VID, VID2, add, client  # noqa: F401
 
 LEGACY = {
     "id": VID, "file": f"{VID}.m4a", "title": "Old", "artist": "A", "album": None, "year": 1987,
@@ -11,9 +11,10 @@ LEGACY = {
 
 
 def seed(tmp_path, songs, audio=()):
-    (tmp_path / "library.json").write_text(json.dumps({"settings": {}, "songs": songs}))
-    music = tmp_path / "downloads"
-    music.mkdir(exist_ok=True)
+    ODIR(tmp_path).mkdir(parents=True, exist_ok=True)
+    (ODIR(tmp_path) / "library.json").write_text(json.dumps({"settings": {}, "songs": songs}))
+    music = ADIR(tmp_path)
+    music.mkdir(parents=True, exist_ok=True)
     for name in audio:
         (music / name).write_bytes(b"audio")
 
@@ -24,9 +25,9 @@ def meta_only(vid, **kw):
 
 def test_legacy_record_unchanged_on_disk_and_derived_at_read(client, tmp_path):
     seed(tmp_path, [LEGACY], audio=[f"{VID}.m4a"])
-    before = (tmp_path / "library.json").read_bytes()
+    before = (ODIR(tmp_path) / "library.json").read_bytes()
     song = client.get("/library", headers=H).json()["songs"][0]
-    assert (tmp_path / "library.json").read_bytes() == before
+    assert (ODIR(tmp_path) / "library.json").read_bytes() == before
     assert song["audio_state"] == "server"
     assert song["sources"] == [{"source": "youtube", "id": VID, "url": LEGACY["source_url"]}]
     assert song["audio"] == {"file": f"{VID}.m4a", "format": "m4a", "size": 5, "duration": 213}
@@ -43,7 +44,7 @@ def test_state_none_without_file_and_with_missing_file(client, tmp_path):
 
 def test_old_record_without_file_key_still_defaults(tmp_path):
     seed(tmp_path, [{k: v for k, v in LEGACY.items() if k != "file"}])
-    assert library.load(tmp_path / "library.json")[0]["file"] == f"{VID}.m4a"
+    assert library.load(ODIR(tmp_path) / "library.json")[0]["file"] == f"{VID}.m4a"
 
 
 def test_metadata_only_add(client, tmp_path):
@@ -54,8 +55,8 @@ def test_metadata_only_add(client, tmp_path):
     song = client.get("/library", headers=H).json()["songs"][0]
     assert song["title"] == "Song" and song["file"] is None and song["audio_state"] == "none"
     assert song["sources"][0]["source"] == "youtube" and song["year"] == 1987
-    assert not (tmp_path / "downloads" / f"{VID}.m4a").exists()
-    stored = json.loads((tmp_path / "library.json").read_text())["songs"][0]
+    assert not (ADIR(tmp_path) / f"{VID}.m4a").exists()
+    stored = json.loads((ODIR(tmp_path) / "library.json").read_text())["songs"][0]
     assert "audio_state" not in stored and "audio" not in stored and stored["file"] is None
     assert add(client, audio=False).status_code == 409
     assert add(client).status_code == 409
@@ -63,7 +64,7 @@ def test_metadata_only_add(client, tmp_path):
 
 def test_default_add_still_downloads_and_records_sources(client, tmp_path):
     assert add(client).status_code == 202
-    stored = json.loads((tmp_path / "library.json").read_text())["songs"][0]
+    stored = json.loads((ODIR(tmp_path) / "library.json").read_text())["songs"][0]
     assert stored["sources"] == [{"source": "youtube", "id": VID, "url": stored["source_url"]}]
     assert client.get("/library", headers=H).json()["songs"][0]["audio_state"] == "server"
 
@@ -71,7 +72,7 @@ def test_default_add_still_downloads_and_records_sources(client, tmp_path):
 def test_delete_audio_keeps_entry_then_delete_song(client, tmp_path):
     add(client)
     assert client.delete(f"/songs/{VID}/audio", headers=H).status_code == 204
-    assert not (tmp_path / "downloads" / f"{VID}.m4a").exists()
+    assert not (ADIR(tmp_path) / f"{VID}.m4a").exists()
     song = client.get("/library", headers=H).json()["songs"][0]
     assert song["audio_state"] == "none" and song["file"] is None and song["title"] == "Song"
     assert client.get(f"/files/{VID}", headers=H).status_code == 404
@@ -84,13 +85,13 @@ def test_delete_audio_keeps_entry_then_delete_song(client, tmp_path):
 def test_delete_song_removes_both(client, tmp_path):
     add(client)
     assert client.delete(f"/songs/{VID}", headers=H).status_code == 204
-    assert not (tmp_path / "downloads" / f"{VID}.m4a").exists()
+    assert not (ADIR(tmp_path) / f"{VID}.m4a").exists()
     assert client.get("/library", headers=H).json()["songs"] == []
 
 
 def test_file_removed_outside_the_api_turns_state_none(client, tmp_path):
     add(client)
-    (tmp_path / "downloads" / f"{VID}.m4a").unlink()
+    (ADIR(tmp_path) / f"{VID}.m4a").unlink()
     assert client.get("/library", headers=H).json()["songs"][0]["audio_state"] == "none"
 
 
@@ -167,7 +168,7 @@ def test_one_song_carries_several_sources(client, tmp_path):
     out = client.get("/library", headers=H).json()["songs"][0]
     assert [s["source"] for s in out["sources"]] == ["youtube", "spotify", "soundcloud"]
     client.patch(f"/songs/{VID}", json={"title": "X"}, headers=H)
-    assert len(json.loads((tmp_path / "library.json").read_text())["songs"][0]["sources"]) == 3
+    assert len(json.loads((ODIR(tmp_path) / "library.json").read_text())["songs"][0]["sources"]) == 3
 
 
 def test_unconfigured_music_root_does_not_break_library(client, tmp_path, monkeypatch):

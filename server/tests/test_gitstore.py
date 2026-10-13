@@ -5,11 +5,14 @@ import time
 import pytest
 from fastapi.testclient import TestClient
 
-from app import extractor, gitstore, library, main
+from app import extractor, gitstore, library, main, users
 
 VID = "dQw4w9WgXcQ"
 VID2 = "9bZkp7q19f0"
 H = {"X-API-Token": "secret"}
+OWNER_UID = users.uid_for_email("alex.isayenko@gmail.com")
+U8 = OWNER_UID[:8]
+LIBP = f"main:audioplayer/users/{OWNER_UID}/library.json"
 
 
 def git(cwd, *args):
@@ -91,16 +94,16 @@ def test_add_edit_delete_commit_and_push(client, repos):
     data_bare, _, cov_bare, _ = repos
     add(client)
     assert client.patch(f"/songs/{VID}", json={"title": "New"}, headers=H).status_code == 200
-    assert log(data_bare)[:2] == [f"audioplayer: edit {VID}", f"audioplayer: add {VID}"]
-    assert log(cov_bare)[0] == f"audioplayer: add {VID}"
-    doc = json.loads(git(data_bare, "show", "main:audioplayer/library.json"))
+    assert log(data_bare)[:2] == [f"audioplayer: {U8} edit {VID}", f"audioplayer: {U8} add {VID}"]
+    assert log(cov_bare)[0] == f"audioplayer: {U8} add {VID}"
+    doc = json.loads(git(data_bare, "show", LIBP))
     assert doc["songs"][0]["title"] == "New" and doc["songs"][0]["file"] == f"{VID}.m4a"
     assert doc["settings"]["music_root"]
-    assert git(cov_bare, "show", f"main:audioplayer/covers/{VID}.jpg") == "jpg"
+    assert git(cov_bare, "show", f"main:audioplayer/users/{OWNER_UID}/covers/{VID}.jpg") == "jpg"
     assert client.delete(f"/songs/{VID}", headers=H).status_code == 204
-    assert log(data_bare)[0] == f"audioplayer: delete {VID}"
-    assert log(cov_bare)[0] == f"audioplayer: delete {VID}"
-    assert json.loads(git(data_bare, "show", "main:audioplayer/library.json"))["songs"] == []
+    assert log(data_bare)[0] == f"audioplayer: {U8} delete {VID}"
+    assert log(cov_bare)[0] == f"audioplayer: {U8} delete {VID}"
+    assert json.loads(git(data_bare, "show", LIBP))["songs"] == []
     assert client.get("/health").json() == {"status": "ok", "sync": "ok"}
 
 
@@ -108,8 +111,8 @@ def test_pull_rebase_picks_up_remote_changes(client, repos, tmp_path):
     data_bare, _, _, _ = repos
     other = tmp_path / "other"
     git(tmp_path, "clone", str(data_bare), str(other))
-    (other / "audioplayer").mkdir()
-    (other / "audioplayer" / "library.json").write_text(
+    (other / "audioplayer" / "users" / OWNER_UID).mkdir(parents=True)
+    (other / "audioplayer" / "users" / OWNER_UID / "library.json").write_text(
         json.dumps({"settings": {}, "songs": [{"id": VID2, "title": "Remote"}]})
     )
     git(other, "add", "-A")
@@ -126,10 +129,10 @@ def test_push_failure_then_recovery(client, repos, tmp_path):
     add(client)
     assert client.get("/health").json()["sync"] in ("pending", "error")
     assert [s["id"] for s in client.get("/library", headers=H).json()["songs"]] == [VID]
-    assert git(data, "log", "--format=%s", "-1") == f"audioplayer: add {VID}"
+    assert git(data, "log", "--format=%s", "-1") == f"audioplayer: {U8} add {VID}"
     git(data, "remote", "set-url", "origin", str(data_bare))
     assert wait_ok(client)
-    assert log(data_bare)[0] == f"audioplayer: add {VID}"
+    assert log(data_bare)[0] == f"audioplayer: {U8} add {VID}"
 
 
 def test_persistent_failure_reports_error(client, repos, tmp_path):
@@ -185,8 +188,8 @@ def test_music_root_resolution(tmp_path, monkeypatch):
 
 def test_audio_served_via_music_root_host(client, tmp_path, monkeypatch):
     mount = tmp_path / "mount"
-    (mount / "data" / "music").mkdir(parents=True)
-    (mount / "data" / "music" / f"{VID}.m4a").write_bytes(b"x")
+    (mount / "data" / "music" / "users" / OWNER_UID).mkdir(parents=True)
+    (mount / "data" / "music" / "users" / OWNER_UID / f"{VID}.m4a").write_bytes(b"x")
     monkeypatch.setenv("AUDIO_HOSTS", f"perkunas={mount.as_posix()}")
     monkeypatch.setenv("AUDIO_MUSIC_ROOT", "perkunas://data/music/")
     assert client.get(f"/files/{VID}", headers=H).content == b"x"
@@ -198,14 +201,14 @@ def test_metadata_only_and_audio_removal_round_trip_through_git(client, repos):
     data_bare, _, cov_bare, _ = repos
     body = {"url": f"https://youtu.be/{VID}", "metadata": {"title": "Song"}, "audio": False}
     assert client.post("/songs", json=body, headers=H).status_code == 201
-    assert log(data_bare)[0] == f"audioplayer: add {VID}"
-    doc = json.loads(git(data_bare, "show", "main:audioplayer/library.json"))
+    assert log(data_bare)[0] == f"audioplayer: {U8} add {VID}"
+    doc = json.loads(git(data_bare, "show", LIBP))
     assert doc["songs"][0]["file"] is None and "audio_state" not in doc["songs"][0]
     assert client.get("/library", headers=H).json()["songs"][0]["audio_state"] == "none"
     add(client, VID2)
     assert client.delete(f"/songs/{VID2}/audio", headers=H).status_code == 204
-    assert log(data_bare)[0] == f"audioplayer: delete audio {VID2}"
-    doc = json.loads(git(data_bare, "show", "main:audioplayer/library.json"))
+    assert log(data_bare)[0] == f"audioplayer: {U8} delete audio {VID2}"
+    doc = json.loads(git(data_bare, "show", LIBP))
     assert [s["file"] for s in doc["songs"]] == [None, None]
     assert len(json.dumps(doc)) < 5000
     assert client.get("/catalog", headers=H).json()["total"] == 2

@@ -11,6 +11,7 @@ HEADERS = {"X-API-Token": "secret"}
 def client(tmp_path, monkeypatch):
     monkeypatch.setenv("AUDIO_API_TOKEN", "secret")
     monkeypatch.setattr(main, "DOWNLOAD_DIR", tmp_path)
+    monkeypatch.setattr(main, "DATA_DIR", tmp_path / "data")
     return TestClient(main.app)
 
 

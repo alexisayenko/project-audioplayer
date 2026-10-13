@@ -1,6 +1,11 @@
 import pytest
 
-from app import genre_lookup, wiki_lookup
+from app import genre_lookup, limits, main, wiki_lookup
+
+ENV = (
+    "OWNER_EMAIL", "ALLOWED_EMAIL", "ALLOWED_APPLE_SUB", "SIGNUP_OPEN", "USER_MAX_SONGS", "USER_MAX_BYTES",
+    "USER_ADDS_PER_HOUR", "USER_MAX_CONCURRENT_DOWNLOADS", "GLOBAL_MAX_CONCURRENT_DOWNLOADS", "POOL_MAX_BYTES",
+)
 
 
 def _no_network(*args, **kwargs):
@@ -14,3 +19,8 @@ def _hermetic(monkeypatch):
     genre_lookup._cache.clear()
     for cache in (wiki_lookup._entities, wiki_lookup._claims, wiki_lookup._labels, wiki_lookup._qid_of_page):
         cache.clear()
+    for name in ENV:
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setattr(main.SCHED, "inline", True)
+    limits.RATE.reset()
+    main._subs.clear()

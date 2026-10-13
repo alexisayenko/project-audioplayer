@@ -1,4 +1,4 @@
-"""Personal audio player API: library, YouTube import, file serving, web UI."""
+"""Audio player API: per-user library, YouTube/SoundCloud import, file serving, web UI."""
 
 from __future__ import annotations
 
@@ -7,32 +7,41 @@ import hmac
 import logging
 import os
 import re
+import threading
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from fastapi import BackgroundTasks, Depends, FastAPI, Header, HTTPException, Query, Request, Response
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request, Response
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from . import bpm as bpm_detect
-from . import oauth, session
+from . import jobs, limits, migrate, oauth, session, users
 from . import extractor, genre_lookup, gitstore, library, urlclean, wiki_lookup
+from .problems import Problem
 
 DOWNLOAD_DIR = Path(os.environ.get("AUDIO_DOWNLOAD_DIR", "downloads"))
 DATA_DIR = Path(os.environ.get("AUDIO_DATA_DIR", "."))
 WEB_DIR = Path(os.environ.get("AUDIO_WEB_DIR", Path(__file__).resolve().parents[2] / "web"))
 
 SYNC = gitstore.from_env()
+SCHED = jobs.Scheduler()
 
 app = FastAPI(title="Electrophone")
 
 log = logging.getLogger(__name__)
 
-JOBS: dict[str, dict[str, Any]] = {}
+JOBS: dict[tuple[str, str], dict[str, Any]] = {}
+ACTIVE = ("queued", "downloading")
+
+
+@app.exception_handler(Problem)
+async def _problem(request: Request, exc: Problem) -> JSONResponse:
+    return JSONResponse(exc.body(), status_code=exc.status, headers=exc.headers)
 
 
 def _check(token: str) -> None:
@@ -51,32 +60,166 @@ def _bearer(authorization: str) -> str:
 SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
 
 
-def authenticate(request: Request, x_api_token: str, authorization: str, query_token: str = "") -> dict:
-    """X-API-Token wins, then Bearer ID token, then session cookie, then (files only) ?token=."""
+# --- storage layout: users/<uid>/... in both repos, music_root/users/<uid>/ for audio -------------
+
+def data_root() -> Path:
+    return SYNC.data_root if SYNC else DATA_DIR
+
+
+def covers_root() -> Path:
+    return SYNC.covers_root if SYNC and SYNC.covers_root else DATA_DIR
+
+
+def library_path(uid: str) -> Path:
+    return data_root() / "users" / uid / "library.json"
+
+
+def profile_path(uid: str) -> Path:
+    return data_root() / "users" / uid / "profile.json"
+
+
+def covers_dir(uid: str) -> Path:
+    return covers_root() / "users" / uid / "covers"
+
+
+def music_root() -> str:
+    """AUDIO_MUSIC_ROOT overrides the owner's settings.music_root (or the legacy library's); else the download dir."""
+    if os.environ.get("AUDIO_MUSIC_ROOT"):
+        return os.environ["AUDIO_MUSIC_ROOT"]
+    for path in (library_path(users.owner_uid()), data_root() / "library.json"):
+        found = library.load_doc(path)["settings"].get("music_root")
+        if found:
+            return found
+    return str(DOWNLOAD_DIR)
+
+
+def music_dir() -> Path:
+    try:
+        return library.resolve_music_root(music_root())
+    except LookupError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
+def pool_dir() -> Path:
+    return music_dir() / "users"
+
+
+def audio_dir(uid: str) -> Path:
+    return pool_dir() / uid
+
+
+def _root(uid: str) -> Path | None:
+    """The user's audio directory, or None when its music_root server is not configured (state then trusts `file`)."""
+    try:
+        return library.resolve_music_root(music_root()) / "users" / uid
+    except LookupError:
+        return None
+
+
+def _public(uid: str, songs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    root = _root(uid)
+    return [library.public_song(s, root) for s in songs]
+
+
+def _load(uid: str) -> list[dict[str, Any]]:
+    with users.user_lock(uid):
+        return library.load(library_path(uid))
+
+
+def _save(uid: str, songs: list[dict[str, Any]]) -> None:
+    library.save(library_path(uid), songs, default_music_root=music_root())
+
+
+@contextmanager
+def _tx(uid: str, verb: str):
+    """One writer per user, one git writer overall: user lock -> pull --rebase -> body -> commit -> push."""
+    with users.user_lock(uid):
+        if SYNC is None:
+            yield
+            return
+        with SYNC.transaction():
+            yield
+            SYNC.commit(f"audioplayer: {uid[:8]} {verb}")
+
+
+# --- who is calling --------------------------------------------------------------------------
+
+_subs: dict[tuple[str, str], str] = {}
+
+
+def _find_uid_by_sub(provider: str, sub: str) -> str | None:
+    """Apple may omit the email: find the profile that recorded this Apple user id."""
+    if (provider, sub) in _subs:
+        return _subs[(provider, sub)]
+    for profile in sorted((data_root() / "users").glob("*/profile.json")):
+        data = users.read_profile(profile) or {}
+        if (data.get("subs") or {}).get(provider) == sub:
+            _subs[(provider, sub)] = profile.parent.name
+            return profile.parent.name
+    return None
+
+
+def _identity(who: dict[str, str]) -> dict[str, str]:
+    """oauth.verify_identity result -> {provider, email, sub, uid}. Never takes a uid from the client."""
+    email = who["email"]
+    if who["provider"] == "apple" and who["sub"].lower() in users.pinned_apple_subs():
+        email = users.owner_email()
+    if email:
+        uid = users.uid_for_email(email)
+    else:
+        uid = _find_uid_by_sub(who["provider"], who["sub"]) or users.uid_for_sub(who["sub"])
+    return {"provider": who["provider"], "email": email, "sub": who["sub"], "uid": uid}
+
+
+def _principal(method: str, identity: dict[str, str]) -> dict[str, Any]:
+    uid = identity["uid"]
+    return {"method": method, "uid": uid, "email": identity["email"], "provider": identity["provider"],
+            "owner": users.is_owner(uid)}
+
+
+def _admit(method: str, identity: dict[str, str]) -> dict[str, Any]:
+    """Create the user's profile on first sign-in (open signup), or refuse when signup is closed."""
+    uid = identity["uid"]
+    if users.read_profile(profile_path(uid)) is None:
+        if not users.is_owner(uid) and not users.signup_open():
+            raise Problem(403, "signup_closed", "Sign-up is closed.")
+        with _tx(uid, "signup"):
+            if users.read_profile(profile_path(uid)) is None:
+                users.write_profile(profile_path(uid), users.new_profile(identity))
+    return _principal(method, identity)
+
+
+def _owner_principal(method: str) -> dict[str, Any]:
+    return _principal(method, {"provider": "token", "email": users.owner_email(), "sub": "",
+                               "uid": users.owner_uid()})
+
+
+def authenticate(request: Request, x_api_token: str, authorization: str, query_token: str = "") -> dict[str, Any]:
+    """X-API-Token (owner) wins, then Bearer ID token, then session cookie, then (files only) ?token= (owner)."""
     bearer = _bearer(authorization)
     if x_api_token:
         _check(x_api_token)
-        return {"method": "token", "email": ""}
+        return _owner_principal("token")
     if bearer:
-        who = oauth.verify_owner(bearer)
-        return {"method": "bearer", "email": who["email"]}
+        return _admit("bearer", _identity(oauth.verify_identity(bearer)))
     who = session.read(request.cookies.get(session.COOKIE, ""))
     if who:
         if request.method not in SAFE_METHODS and not session.csrf_ok(
             request.headers, request.headers.get("host", "")
         ):
             raise HTTPException(status_code=403, detail="missing or foreign CSRF header")
-        return {"method": "session", "email": who["email"]}
+        uid = who["uid"] or users.uid_for_email(who["email"])
+        return _admit("session", {"provider": who["provider"], "email": who["email"], "sub": "", "uid": uid})
     _check(query_token)
-    return {"method": "token", "email": ""}
+    return _owner_principal("token")
 
 
 def require_token(
     request: Request,
     x_api_token: str = Header(default=""),
     authorization: str = Header(default=""),
-) -> None:
-    authenticate(request, x_api_token, authorization)
+) -> dict[str, Any]:
+    return authenticate(request, x_api_token, authorization)
 
 
 def require_token_or_query(
@@ -84,9 +227,9 @@ def require_token_or_query(
     x_api_token: str = Header(default=""),
     authorization: str = Header(default=""),
     token: str = Query(default=""),
-) -> None:
-    """File/cover GETs: <audio>/<img> cannot send headers, so the session cookie (or ?token=) works too."""
-    authenticate(request, x_api_token, authorization, token)
+) -> dict[str, Any]:
+    """File/cover GETs: <audio>/<img> cannot send headers, so the session cookie (or ?token=, owner only) works too."""
+    return authenticate(request, x_api_token, authorization, token)
 
 
 class SessionRequest(BaseModel):
@@ -113,12 +256,13 @@ def auth_session(req: SessionRequest, request: Request, response: Response) -> d
         raise HTTPException(status_code=403, detail="missing or foreign CSRF header")
     if not session.available():
         raise HTTPException(status_code=503, detail="AUDIO_SESSION_SECRET or AUDIO_API_TOKEN is not set")
-    who = oauth.verify_owner(req.id_token)
+    identity = _identity(oauth.verify_identity(req.id_token))
+    _admit("session", identity)
     response.set_cookie(
-        session.COOKIE, session.issue(who), max_age=session.LIFETIME, path="/",
+        session.COOKIE, session.issue(identity), max_age=session.LIFETIME, path="/",
         httponly=True, secure=True, samesite="strict",
     )
-    return {"email": who["email"], "provider": who["provider"]}
+    return {"email": identity["email"], "provider": identity["provider"]}
 
 
 @app.post("/auth/logout", status_code=204)
@@ -131,10 +275,22 @@ def auth_logout(request: Request) -> Response:
 
 
 @app.get("/auth/me")
-def auth_me(
-    request: Request, x_api_token: str = Header(default=""), authorization: str = Header(default="")
-) -> dict[str, str]:
-    return authenticate(request, x_api_token, authorization)
+def auth_me(user: dict[str, Any] = Depends(require_token)) -> dict[str, Any]:
+    return {k: user[k] for k in ("method", "email", "provider", "owner")}
+
+
+@app.get("/me")
+def me(user: dict[str, Any] = Depends(require_token)) -> dict[str, Any]:
+    profile = users.read_profile(profile_path(user["uid"])) or {}
+    return {"email": user["email"], "provider": user["provider"], "owner": user["owner"],
+            "created_at": profile.get("created_at")}
+
+
+@app.get("/me/usage")
+def me_usage(user: dict[str, Any] = Depends(require_token)) -> dict[str, Any]:
+    uid = user["uid"]
+    root = _root(uid)
+    return limits.usage(uid, user["owner"], _load(uid), root if root is not None else Path(os.devnull))
 
 
 @app.middleware("http")
@@ -145,65 +301,29 @@ async def _no_store(request: Request, call_next):
     return response
 
 
-def library_path() -> Path:
-    return SYNC.library_path if SYNC else DATA_DIR / "library.json"
-
-
-def covers_dir() -> Path:
-    if SYNC and SYNC.covers_dir:
-        return SYNC.covers_dir
-    return DATA_DIR / "covers"
-
-
-def music_root() -> str:
-    """AUDIO_MUSIC_ROOT overrides settings.music_root; default is the local download dir."""
-    return (
-        os.environ.get("AUDIO_MUSIC_ROOT")
-        or library.load_doc(library_path())["settings"].get("music_root")
-        or str(DOWNLOAD_DIR)
-    )
-
-
-def music_dir() -> Path:
-    try:
-        return library.resolve_music_root(music_root())
-    except LookupError as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
-
-
-def _root() -> Path | None:
-    """The audio directory, or None when its music_root server is not configured (state then trusts `file`)."""
-    try:
-        return library.resolve_music_root(music_root())
-    except LookupError:
-        return None
-
-
-def _public(songs: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    root = _root()
-    return [library.public_song(s, root) for s in songs]
-
-
-def _save(songs: list[dict[str, Any]]) -> None:
-    library.save(library_path(), songs, default_music_root=music_root())
-
-
-@contextmanager
-def _tx(message: str):
-    """Single writer: lock -> pull --rebase -> body (writes) -> commit -> push."""
-    with library.LOCK:
-        if SYNC is None:
-            yield
-            return
-        with SYNC.transaction():
-            yield
-            SYNC.commit(message)
-
-
 @app.on_event("startup")
 def _startup() -> None:
     if SYNC:
         SYNC.resync()
+    migrate_legacy()
+
+
+def migrate_legacy() -> str:
+    """Move a single-user layout under the owner (once). Never raises: a failed migration only logs."""
+    try:
+        try:
+            root = library.resolve_music_root(music_root())
+        except LookupError as exc:
+            log.warning("legacy migration skipped: %s", exc)
+            return "skipped"
+        result = migrate.run(data_root=data_root(), covers_root=covers_root(), music_dir=root,
+                             owner_email=users.owner_email(), sync=SYNC)
+    except Exception:
+        log.exception("legacy migration failed")
+        return "failed"
+    if result not in ("done", "nothing"):
+        log.warning("legacy migration: %s", result)
+    return result
 
 
 def _vid(video_id: str) -> str:
@@ -308,46 +428,89 @@ async def search(q: str = Query(min_length=1), limit: int = Query(10, ge=1, le=2
     return await run_in_threadpool(extractor.search, q, limit)
 
 
-@app.post("/download", dependencies=[Depends(require_token)])
-async def download(req: DownloadRequest):
+def _inflight(uid: str) -> int:
+    return sum(1 for (u, _), job in list(JOBS.items()) if u == uid and job.get("status") in ACTIVE)
+
+
+def _guard_add(uid: str, owner: bool, with_audio: bool) -> list[dict[str, Any]]:
+    """Quota checks before anything is downloaded; returns the user's songs."""
+    songs = _load(uid)
+    null = Path(os.devnull)
+    limits.check_add(uid, owner, songs, audio_dir(uid) if with_audio else null,
+                     pool_dir() if with_audio else null, inflight=_inflight(uid), with_audio=with_audio)
+    return songs
+
+
+def _scheduled(uid: str, owner: bool, fn):
+    """Run `fn` under the download caps and wait for its result (for the synchronous /download)."""
+    done = threading.Event()
+    box: dict[str, Any] = {}
+
+    def run() -> None:
+        try:
+            box["value"] = fn()
+        except BaseException as exc:
+            box["error"] = exc
+        finally:
+            done.set()
+
+    SCHED.submit(uid, owner, run, lambda: None)
+    done.wait()
+    if "error" in box:
+        raise box["error"]
+    return box["value"]
+
+
+@app.post("/download")
+async def download(req: DownloadRequest, user: dict[str, Any] = Depends(require_token)):
     if not extractor.is_valid_video_id(req.video_id) or extractor.source_of(req.video_id) != "youtube":
         raise HTTPException(status_code=422, detail="invalid video id")
+    uid, owner = user["uid"], user["owner"]
+    with users.user_lock(uid):
+        songs = _guard_add(uid, owner, True)
+        limits.RATE.record(uid, songs)
+    out = audio_dir(uid)
+
+    def fetch():
+        out.mkdir(parents=True, exist_ok=True)
+        return extractor.download(req.video_id, out)
+
     try:
-        meta = await run_in_threadpool(extractor.download, req.video_id, DOWNLOAD_DIR)
+        meta = await run_in_threadpool(_scheduled, uid, owner, fetch)
     except Exception as exc:  # yt-dlp raises many types; surface as 502
         raise HTTPException(status_code=502, detail=f"download failed: {exc}") from exc
     return {**meta, "file_url": f"/files/{req.video_id}"}
 
 
-@app.get("/files/{video_id}", dependencies=[Depends(require_token_or_query)])
-def get_file(video_id: str):
+@app.get("/files/{video_id}")
+def get_file(video_id: str, user: dict[str, Any] = Depends(require_token_or_query)):
     _vid(video_id)
-    with library.LOCK:
-        song = next((s for s in library.load(library_path()) if s["id"] == video_id), None)
+    uid = user["uid"]
+    song = next((s for s in _load(uid) if s["id"] == video_id), None)
     if song is not None and not library.has_file(song):
         raise HTTPException(status_code=404, detail="not downloaded")
     name = library.file_name(song) if song else f"{video_id}.m4a"
-    path = music_dir() / name
-    if not path.is_file():
+    base = audio_dir(uid)
+    path = base / name
+    if not path.resolve().is_relative_to(base.resolve()) or not path.is_file():
         raise HTTPException(status_code=404, detail="not downloaded")
     return FileResponse(path, media_type="audio/mp4", filename=path.name,
                         headers={"Cache-Control": "private, no-cache"})
 
 
-@app.get("/covers/{video_id}", dependencies=[Depends(require_token_or_query)])
-def get_cover(video_id: str):
+@app.get("/covers/{video_id}")
+def get_cover(video_id: str, user: dict[str, Any] = Depends(require_token_or_query)):
     _vid(video_id)
-    path = covers_dir() / f"{video_id}.jpg"
+    path = covers_dir(user["uid"]) / f"{video_id}.jpg"
     if not path.is_file():
         raise HTTPException(status_code=404, detail="no cover")
     return FileResponse(path, media_type="image/jpeg", headers={"Cache-Control": "private, no-cache"})
 
 
-@app.get("/library", dependencies=[Depends(require_token)])
-def get_library():
-    with library.LOCK:
-        songs = library.load(library_path())
-    return {"songs": _public(songs)}
+@app.get("/library")
+def get_library(user: dict[str, Any] = Depends(require_token)):
+    uid = user["uid"]
+    return {"songs": _public(uid, _load(uid))}
 
 
 def _etag_matches(header: str, etag: str) -> bool:
@@ -357,14 +520,14 @@ def _etag_matches(header: str, etag: str) -> bool:
 _SINCE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
 
 
-@app.get("/catalog", dependencies=[Depends(require_token)])
-def get_catalog(request: Request, since: str | None = Query(default=None)):
+@app.get("/catalog")
+def get_catalog(request: Request, since: str | None = Query(default=None),
+                user: dict[str, Any] = Depends(require_token)):
     """Metadata-only catalog for clients to poll: `revision`, every id, and the songs changed `>= since`."""
     if since is not None and not _SINCE_RE.match(since):
         raise HTTPException(status_code=422, detail="since must be UTC YYYY-MM-DDTHH:MM:SSZ")
-    with library.LOCK:
-        songs = library.load(library_path())
-    public = _public(songs)
+    uid = user["uid"]
+    public = _public(uid, _load(uid))
     revision = library.catalog_revision(public)
     etag = f'"{revision}"' if since is None else f'"{revision}.{hashlib.sha1(since.encode()).hexdigest()[:8]}"'
     headers = {"ETag": etag, "Cache-Control": "no-cache"}
@@ -380,10 +543,9 @@ def get_catalog(request: Request, since: str | None = Query(default=None)):
     return JSONResponse(body, headers=headers)
 
 
-@app.get("/tags", dependencies=[Depends(require_token)])
-def get_tags():
-    with library.LOCK:
-        return library.tag_counts(library.load(library_path()))
+@app.get("/tags")
+def get_tags(user: dict[str, Any] = Depends(require_token)):
+    return library.tag_counts(_load(user["uid"]))
 
 
 _SUGGEST_CAPS = {"genre": 3, "country": 1, "lang": 2}
@@ -407,8 +569,8 @@ class WikipediaLookupRequest(BaseModel):
     wikipedia_artist: str | None = None
 
 
-@app.post("/preview", dependencies=[Depends(require_token)])
-async def preview(req: PreviewRequest):
+@app.post("/preview")
+async def preview(req: PreviewRequest, user: dict[str, Any] = Depends(require_token)):
     try:
         link = await run_in_threadpool(_resolve_link, req.url)
     except _Refused as refused:
@@ -429,8 +591,7 @@ async def preview(req: PreviewRequest):
     meta["suggested_year"] = wiki["year"]
     if meta.get("year") is None:
         meta["year"] = wiki["year"]
-    with library.LOCK:
-        meta["in_library"] = any(s["id"] == vid for s in library.load(library_path()))
+    meta["in_library"] = any(s["id"] == vid for s in _load(user["uid"]))
     return meta
 
 
@@ -440,24 +601,33 @@ async def lookup_wikipedia(req: WikipediaLookupRequest):
     return {"tags": _cap_suggestions(library.clean_tags(found["tags"])), "year": found["year"]}
 
 
-def _run_download(vid: str, meta: dict[str, Any], tags: list[str], source_url: str | None = None) -> None:
-    job = JOBS[vid]
+def _drop_partial(out: Path | None, vid: str) -> None:
+    if out is not None:
+        (out / f"{vid}.m4a").unlink(missing_ok=True)
+
+
+def _run_download(uid: str, owner: bool, vid: str, meta: dict[str, Any], tags: list[str],
+                  source_url: str | None = None) -> None:
+    job = JOBS[(uid, vid)]
+    out: Path | None = None
 
     def progress(p: float) -> None:
         job["progress"] = round(p, 3)
 
     try:
-        info = extractor.download_audio(vid, music_dir(), progress, source_url)
+        out = audio_dir(uid)
+        limits.check_capacity(owner, out, pool_dir())
+        info = extractor.download_audio(vid, out, progress, source_url)
         cover = None
         try:
-            extractor.fetch_cover(vid, covers_dir() / f"{vid}.jpg", info.get("thumbnail"))
+            extractor.fetch_cover(vid, covers_dir(uid) / f"{vid}.jpg", info.get("thumbnail"))
             cover = f"covers/{vid}.jpg"
         except Exception:
             pass
         value = round(meta["bpm"]) if meta.get("bpm") is not None else None
         if value is None:
             try:
-                value = bpm_detect.detect_bpm(music_dir() / f"{vid}.m4a")
+                value = bpm_detect.detect_bpm(out / f"{vid}.m4a")
             except Exception as exc:
                 log.warning("bpm detection failed for %s: %s", vid, exc)
         song = {
@@ -478,45 +648,58 @@ def _run_download(vid: str, meta: dict[str, Any], tags: list[str], source_url: s
             "added_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "tags": library.with_decade(tags, meta.get("year")),
         }
-        with _tx(f"audioplayer: add {vid}"):
-            songs = [s for s in library.load(library_path()) if s["id"] != vid]
-            _save(songs + [song])
+        with _tx(uid, f"add {vid}"):
+            songs = [s for s in library.load(library_path(uid)) if s["id"] != vid]
+            _save(uid, songs + [song])
         job.update(status="done", progress=1.0)
     except extractor.PreviewOnly as exc:
-        (music_dir() / f"{vid}.m4a").unlink(missing_ok=True)
+        _drop_partial(out, vid)
         job.update(status="error", error=str(exc), code="preview_only")
+    except Problem as exc:
+        _drop_partial(out, vid)
+        job.update(status="error", error=exc.detail, code=exc.code)
     except Exception as exc:
-        try:
-            (music_dir() / f"{vid}.m4a").unlink(missing_ok=True)
-        except HTTPException:
-            pass
+        _drop_partial(out, vid)
         job.update(status="error", error=_short(exc))
 
 
-@app.post("/songs", status_code=202, dependencies=[Depends(require_token)])
-def create_song(req: CreateSongRequest, background: BackgroundTasks):
+@app.post("/songs", status_code=202)
+def create_song(req: CreateSongRequest, user: dict[str, Any] = Depends(require_token)):
+    uid, owner = user["uid"], user["owner"]
+    _guard_add(uid, owner, req.audio)
     try:
         link = _resolve_link(req.url)
     except _Refused as refused:
         return refused.response
     vid = link.vid
-    with library.LOCK:
-        if any(s["id"] == vid for s in library.load(library_path())):
+    key = (uid, vid)
+    with users.user_lock(uid):
+        songs = _guard_add(uid, owner, req.audio)
+        if any(s["id"] == vid for s in songs):
             raise HTTPException(status_code=409, detail="already in library")
-        if JOBS.get(vid, {}).get("status") == "downloading":
+        if JOBS.get(key, {}).get("status") in ACTIVE:
             raise HTTPException(status_code=409, detail="already downloading")
-        JOBS[vid] = {"status": "downloading", "progress": 0.0, "error": None}
+        limits.RATE.record(uid, songs)
+        JOBS[key] = {"status": "queued", "progress": 0.0, "error": None}
     meta = {
         k: (v.strip() if isinstance(v, str) else v) or None
         for k, v in req.metadata.model_dump().items()
     }
     if not req.audio:
-        return _add_metadata_only(vid, link, meta, library.clean_tags(req.tags))
-    background.add_task(_run_download, vid, meta, library.clean_tags(req.tags), link.url)
-    return {"id": vid, "status": "downloading"}
+        return _add_metadata_only(uid, vid, link, meta, library.clean_tags(req.tags))
+
+    def started() -> None:
+        job = JOBS.get(key)
+        if job is not None:
+            job["status"] = "downloading"
+
+    began = SCHED.submit(
+        uid, owner,
+        lambda: _run_download(uid, owner, vid, meta, library.clean_tags(req.tags), link.url), started)
+    return {"id": vid, "status": "downloading" if began else "queued"}
 
 
-def _add_metadata_only(vid: str, link: _Resolved, meta: dict[str, Any], tags: list[str]) -> JSONResponse:
+def _add_metadata_only(uid: str, vid: str, link: _Resolved, meta: dict[str, Any], tags: list[str]) -> JSONResponse:
     """Catalog entry without audio: `file: null`, state `none`. Gaps in the metadata are filled from the link."""
     try:
         try:
@@ -526,7 +709,7 @@ def _add_metadata_only(vid: str, link: _Resolved, meta: dict[str, Any], tags: li
             found = {}
         cover = None
         try:
-            extractor.fetch_cover(vid, covers_dir() / f"{vid}.jpg", found.get("thumbnail"))
+            extractor.fetch_cover(vid, covers_dir(uid) / f"{vid}.jpg", found.get("thumbnail"))
             cover = f"covers/{vid}.jpg"
         except Exception:
             pass
@@ -550,37 +733,38 @@ def _add_metadata_only(vid: str, link: _Resolved, meta: dict[str, Any], tags: li
             "added_at": now,
             "tags": library.with_decade(tags or library.clean_tags(found.get("tags") or []), meta.get("year") or found.get("year")),
         }
-        with _tx(f"audioplayer: add {vid}"):
-            songs = library.load(library_path())
+        with _tx(uid, f"add {vid}"):
+            songs = library.load(library_path(uid))
             if any(s["id"] == vid for s in songs):
                 raise HTTPException(status_code=409, detail="already in library")
-            _save(songs + [song])
+            _save(uid, songs + [song])
     finally:
-        JOBS.pop(vid, None)
+        JOBS.pop((uid, vid), None)
     return JSONResponse(
-        {"id": vid, "status": "done", "audio_state": "none", "song": library.public_song(song, _root())},
+        {"id": vid, "status": "done", "audio_state": "none", "song": library.public_song(song, _root(uid))},
         status_code=201,
     )
 
 
-@app.get("/songs/{video_id}/status", dependencies=[Depends(require_token)])
-def song_status(video_id: str):
+@app.get("/songs/{video_id}/status")
+def song_status(video_id: str, user: dict[str, Any] = Depends(require_token)):
     _vid(video_id)
-    job = JOBS.get(video_id)
+    uid = user["uid"]
+    job = JOBS.get((uid, video_id))
     if job:
         return {"id": video_id, **job}
-    with library.LOCK:
-        if any(s["id"] == video_id for s in library.load(library_path())):
-            return {"id": video_id, "status": "done", "progress": 1.0, "error": None}
+    if any(s["id"] == video_id for s in _load(uid)):
+        return {"id": video_id, "status": "done", "progress": 1.0, "error": None}
     raise HTTPException(status_code=404, detail="unknown song")
 
 
-@app.patch("/songs/{video_id}", dependencies=[Depends(require_token)])
-def patch_song(video_id: str, req: PatchSongRequest):
+@app.patch("/songs/{video_id}")
+def patch_song(video_id: str, req: PatchSongRequest, user: dict[str, Any] = Depends(require_token)):
     _vid(video_id)
+    uid = user["uid"]
     changes = req.model_dump(exclude_unset=True)
-    with _tx(f"audioplayer: edit {video_id}"):
-        songs = library.load(library_path())
+    with _tx(uid, f"edit {video_id}"):
+        songs = library.load(library_path(uid))
         song = next((s for s in songs if s["id"] == video_id), None)
         if song is None:
             raise HTTPException(status_code=404, detail="unknown song")
@@ -602,71 +786,73 @@ def patch_song(video_id: str, req: PatchSongRequest):
         updated["tags"] = library.with_decade(updated.get("tags") or [], updated.get("year"))
         updated["updated_at"] = library.now_utc()
         song.update(updated)
-        _save(songs)
-        return library.public_song(song, _root())
+        _save(uid, songs)
+        return library.public_song(song, _root(uid))
 
 
-@app.post("/songs/{video_id}/bpm/detect", dependencies=[Depends(require_token)])
-async def detect_song_bpm(video_id: str):
+@app.post("/songs/{video_id}/bpm/detect")
+async def detect_song_bpm(video_id: str, user: dict[str, Any] = Depends(require_token)):
     _vid(video_id)
-    with library.LOCK:
-        song = next((s for s in library.load(library_path()) if s["id"] == video_id), None)
+    uid = user["uid"]
+    song = next((s for s in _load(uid) if s["id"] == video_id), None)
     if song is None:
         raise HTTPException(status_code=404, detail="unknown song")
-    path = music_dir() / library.file_name(song)
+    path = audio_dir(uid) / library.file_name(song)
     if not library.has_file(song) or not path.is_file():
         raise HTTPException(status_code=404, detail="not downloaded")
     value = await run_in_threadpool(bpm_detect.detect_bpm, path)
     if value is None:
         raise HTTPException(status_code=422, detail="could not detect BPM")
-    return await run_in_threadpool(_store_bpm, video_id, value)
+    return await run_in_threadpool(_store_bpm, uid, video_id, value)
 
 
-def _store_bpm(video_id: str, value: float) -> dict[str, Any]:
-    with _tx(f"audioplayer: bpm {video_id}"):
-        songs = library.load(library_path())
+def _store_bpm(uid: str, video_id: str, value: float) -> dict[str, Any]:
+    with _tx(uid, f"bpm {video_id}"):
+        songs = library.load(library_path(uid))
         song = next((s for s in songs if s["id"] == video_id), None)
         if song is None:
             raise HTTPException(status_code=404, detail="unknown song")
         song["bpm"] = round(value)
         song["updated_at"] = library.now_utc()
-        _save(songs)
-        return library.public_song(song, _root())
+        _save(uid, songs)
+        return library.public_song(song, _root(uid))
 
 
-@app.delete("/songs/{video_id}", status_code=204, dependencies=[Depends(require_token)])
-def delete_song(video_id: str):
+@app.delete("/songs/{video_id}", status_code=204)
+def delete_song(video_id: str, user: dict[str, Any] = Depends(require_token)):
     _vid(video_id)
-    with _tx(f"audioplayer: delete {video_id}"):
-        songs = library.load(library_path())
+    uid = user["uid"]
+    with _tx(uid, f"delete {video_id}"):
+        songs = library.load(library_path(uid))
         song = next((s for s in songs if s["id"] == video_id), None)
         if song is None:
             raise HTTPException(status_code=404, detail="unknown song")
-        _save([s for s in songs if s["id"] != video_id])
-        (covers_dir() / f"{video_id}.jpg").unlink(missing_ok=True)
+        _save(uid, [s for s in songs if s["id"] != video_id])
+        (covers_dir(uid) / f"{video_id}.jpg").unlink(missing_ok=True)
         if library.has_file(song):
             try:
-                (music_dir() / library.file_name(song)).unlink(missing_ok=True)
+                (audio_dir(uid) / library.file_name(song)).unlink(missing_ok=True)
             except HTTPException:
                 pass
-        JOBS.pop(video_id, None)
+        JOBS.pop((uid, video_id), None)
 
 
-@app.delete("/songs/{video_id}/audio", status_code=204, dependencies=[Depends(require_token)])
-def delete_song_audio(video_id: str):
+@app.delete("/songs/{video_id}/audio", status_code=204)
+def delete_song_audio(video_id: str, user: dict[str, Any] = Depends(require_token)):
     """Remove the audio file only; the catalog entry stays (state becomes `none`). Idempotent."""
     _vid(video_id)
-    with _tx(f"audioplayer: delete audio {video_id}"):
-        songs = library.load(library_path())
+    uid = user["uid"]
+    with _tx(uid, f"delete audio {video_id}"):
+        songs = library.load(library_path(uid))
         song = next((s for s in songs if s["id"] == video_id), None)
         if song is None:
             raise HTTPException(status_code=404, detail="unknown song")
         if library.has_file(song):
-            (music_dir() / library.file_name(song)).unlink(missing_ok=True)
+            (audio_dir(uid) / library.file_name(song)).unlink(missing_ok=True)
             song["file"] = None
             song["updated_at"] = library.now_utc()
-            _save(songs)
-        JOBS.pop(video_id, None)
+            _save(uid, songs)
+        JOBS.pop((uid, video_id), None)
 
 
 class NoCacheStaticFiles(StaticFiles):

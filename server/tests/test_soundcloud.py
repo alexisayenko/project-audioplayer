@@ -5,6 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app import bpm, extractor, library, main, urlclean
+from tests.test_library import ADIR, ODIR
 
 H = {"X-API-Token": "secret"}
 YT = "dQw4w9WgXcQ"
@@ -356,14 +357,14 @@ def test_save_soundcloud_song_and_mixed_library(client, tmp_path):
     assert sc["source"] == "soundcloud" and sc["source_url"] == SC_URL and sc["file"] == f"{SC_ID}.m4a"
     assert sc["title"] == "Mine" and sc["cover"] == f"covers/{SC_ID}.jpg"
     assert "source" not in yt and yt["file"] == f"{YT}.m4a"
-    on_disk = json.loads((tmp_path / "library.json").read_text())["songs"]
+    on_disk = json.loads((ODIR(tmp_path) / "library.json").read_text())["songs"]
     assert {s["id"] for s in on_disk} == {SC_ID, YT}
-    assert library.load(tmp_path / "library.json")[0]["id"] in (SC_ID, YT)
+    assert library.load(ODIR(tmp_path) / "library.json")[0]["id"] in (SC_ID, YT)
     assert client.get(f"/files/{SC_ID}", headers=H).content == b"audio"
     assert client.get(f"/covers/{SC_ID}", headers=H).content == b"jpg"
     assert client.patch(f"/songs/{SC_ID}", json={"title": "New"}, headers=H).json()["title"] == "New"
     assert client.delete(f"/songs/{SC_ID}", headers=H).status_code == 204
-    assert not (tmp_path / "covers" / f"{SC_ID}.jpg").exists()
+    assert not (ODIR(tmp_path) / "covers" / f"{SC_ID}.jpg").exists()
     assert client.get(f"/files/{SC_ID}", headers=H).status_code == 404
 
 

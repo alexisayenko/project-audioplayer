@@ -6,11 +6,18 @@ import pytest
 from cryptography.hazmat.primitives.asymmetric import rsa
 from fastapi.testclient import TestClient
 
-from app import main, oauth
+from app import main, oauth, users
 
 APPLE_AUD = "com.example.app"
 GOOGLE_AUD = "client.apps.googleusercontent.com"
 OWNER = "alex.isayenko@gmail.com"
+OWNER_UID = users.uid_for_email(OWNER)
+
+
+def put_audio(tmp_path, uid=OWNER_UID):
+    d = tmp_path / "users" / uid
+    d.mkdir(parents=True, exist_ok=True)
+    (d / "dQw4w9WgXcQ.m4a").write_bytes(b"audio")
 
 
 @pytest.fixture(scope="module")
@@ -26,6 +33,7 @@ def client(key, tmp_path, monkeypatch):
     monkeypatch.delenv("ALLOWED_EMAIL", raising=False)
     monkeypatch.delenv("ALLOWED_APPLE_SUB", raising=False)
     monkeypatch.setattr(main, "DOWNLOAD_DIR", tmp_path)
+    monkeypatch.setattr(main, "DATA_DIR", tmp_path / "data")
     fake = SimpleNamespace(get_signing_key_from_jwt=lambda t: SimpleNamespace(key=key.public_key()))
     monkeypatch.setattr(oauth, "_jwks", lambda provider: fake)
     return TestClient(main.app)
@@ -69,8 +77,10 @@ def test_wrong_issuer(client, key):
     assert get(client, make(key, iss="https://evil.example")) == 401
 
 
-def test_wrong_email(client, key):
-    assert get(client, make(key, email="eve@gmail.com")) == 403
+def test_other_verified_email_is_a_new_user_not_the_owner(client, key):
+    tok = make(key, email="eve@gmail.com")
+    assert get(client, tok) == 200
+    assert client.get("/me", headers={"Authorization": f"Bearer {tok}"}).json()["owner"] is False
 
 
 def test_unverified_email(client, key):
@@ -93,11 +103,12 @@ def test_unconfigured_audience(client, key, monkeypatch):
     assert get(client, make(key)) == 401
 
 
-def test_apple_sub_pin(client, key, monkeypatch):
+def test_apple_sub_pin_maps_to_owner(client, key, monkeypatch, tmp_path):
     tok = make(key, "apple", email="relay@privaterelay.appleid.com", sub="001.abc")
-    assert get(client, tok) == 403
+    assert client.get("/me", headers={"Authorization": f"Bearer {tok}"}).json()["owner"] is False
     monkeypatch.setenv("ALLOWED_APPLE_SUB", "001.abc")
-    assert get(client, tok) == 200
+    me = client.get("/me", headers={"Authorization": f"Bearer {tok}"}).json()
+    assert me["owner"] is True and me["email"] == OWNER
 
 
 def test_api_token_fallback(client):
@@ -107,7 +118,7 @@ def test_api_token_fallback(client):
 
 
 def test_file_get_accepts_bearer_and_query_token(client, key, tmp_path):
-    (tmp_path / "dQw4w9WgXcQ.m4a").write_bytes(b"audio")
+    put_audio(tmp_path)
     url = "/files/dQw4w9WgXcQ"
     assert client.get(url, headers={"Authorization": f"Bearer {make(key)}"}).status_code == 200
     assert client.get(url, params={"token": "secret"}).status_code == 200
@@ -165,7 +176,7 @@ def test_session_cookie_flags_and_use(web, key, tmp_path):
 
 
 def test_cookie_authenticated_file_get_without_token_in_url(web, key, tmp_path):
-    (tmp_path / "dQw4w9WgXcQ.m4a").write_bytes(b"audio")
+    put_audio(tmp_path)
     assert web.get("/files/dQw4w9WgXcQ").status_code == 401
     sign_in(web, key)
     res = web.get("/files/dQw4w9WgXcQ")
@@ -173,8 +184,10 @@ def test_cookie_authenticated_file_get_without_token_in_url(web, key, tmp_path):
     assert "no-cache" in res.headers["cache-control"]
 
 
-def test_session_rejects_bad_id_token_and_non_owner(web, key):
-    assert sign_in(web, key, email="eve@gmail.com").status_code == 403
+def test_session_rejects_bad_id_token_and_closed_signup(web, key, monkeypatch):
+    monkeypatch.setenv("SIGNUP_OPEN", "0")
+    res = sign_in(web, key, email="eve@gmail.com")
+    assert res.status_code == 403 and res.json()["error"] == "signup_closed"
     assert sign_in(web, key, aud="other").status_code == 401
     assert web.post("/auth/session", json={"id_token": "junk"}, headers=CSRF).status_code == 401
     assert web.get("/tags").status_code == 401

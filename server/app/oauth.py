@@ -1,12 +1,13 @@
-"""Owner-only Sign in with Apple / Google: verify an OIDC ID token against the provider JWKS."""
+"""Sign in with Apple / Google: verify an OIDC ID token against the provider JWKS."""
 from __future__ import annotations
 
 import logging
 import os
 
 import jwt
-from fastapi import HTTPException
 from jwt import PyJWKClient
+
+from .problems import Problem
 
 PROVIDERS = {
     "apple": {
@@ -19,8 +20,6 @@ PROVIDERS = {
     },
 }
 
-DEFAULT_EMAIL = "alex.isayenko@gmail.com"
-
 log = logging.getLogger(__name__)
 
 _clients: dict[str, PyJWKClient] = {}
@@ -30,10 +29,6 @@ def _jwks(provider: str) -> PyJWKClient:
     if provider not in _clients:
         _clients[provider] = PyJWKClient(PROVIDERS[provider]["jwks"], cache_keys=True, lifespan=3600)
     return _clients[provider]
-
-
-def _csv(name: str) -> set[str]:
-    return {v.strip().lower() for v in os.environ.get(name, "").split(",") if v.strip()}
 
 
 def _list(name: str) -> list[str]:
@@ -60,28 +55,28 @@ def _verify(token: str, provider: str, audience: list[str]) -> dict:
     )
 
 
-def verify_owner(token: str) -> dict:
-    """Raise 401/403 unless `token` is a valid ID token of the owner; return {provider, email, sub}."""
+def verify_identity(token: str) -> dict:
+    """Verify an ID token; return {provider, email, sub} (email is "" when Apple sends none).
+
+    Raises 401 for an invalid token and 403 `unverified_email` when an email is present but not verified."""
     try:
         provider = jwt.decode(token, options={"verify_signature": False}).get("iss", "")
     except jwt.PyJWTError:
-        raise HTTPException(status_code=401, detail="bad token")
+        raise Problem(401, "bad_token", "bad token")
     name = "apple" if provider.startswith("https://appleid.apple.com") else (
         "google" if "accounts.google.com" in provider else "")
     audience = audiences(name) if name else []
     if not name or not audience:
-        raise HTTPException(status_code=401, detail="bad token")
+        raise Problem(401, "bad_token", "bad token")
     try:
         claims = _verify(token, name, audience)
     except Exception:
-        raise HTTPException(status_code=401, detail="bad token")
-    email = str(claims.get("email", "")).lower()
+        raise Problem(401, "bad_token", "bad token")
+    email = str(claims.get("email", "")).strip().lower()
     verified = claims.get("email_verified") in (True, "true")
-    allowed = _csv("ALLOWED_EMAIL") or {DEFAULT_EMAIL}
-    ok = verified and email in allowed
-    if name == "apple" and claims["sub"].lower() in _csv("ALLOWED_APPLE_SUB"):
-        ok = True
-    if not ok:
-        log.warning("rejected %s sign-in: sub=%s", name, claims["sub"])
-        raise HTTPException(status_code=403, detail="not the owner")
+    if email and not verified:
+        log.warning("rejected %s sign-in: unverified email, sub=%s", name, claims["sub"])
+        raise Problem(403, "unverified_email", "email is not verified")
+    if not email and name != "apple":
+        raise Problem(403, "no_email", "the account has no email")
     return {"provider": name, "email": email, "sub": str(claims["sub"])}
