@@ -135,7 +135,7 @@ and rules):
 - [`tech/ci-cd.md`](tech/ci-cd.md) — CI/CD playbook (manual
   workflows, test layers, deploy and release paths)
 - [`tech/decisions.md`](tech/decisions.md) — tech decisions (ADRs):
-  components, server, Cloudflare Tunnel, storage
+  components, server, Cloudflare Tunnel, storage, music-database lookups (ADR-0013)
 - [`ui-ux/README.md`](ui-ux/README.md) — screen + journey spec,
   section glossary
 - [`ui-ux/style-guide.md`](ui-ux/style-guide.md) — visual +
