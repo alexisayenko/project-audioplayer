@@ -252,9 +252,9 @@ label { display: block; color: var(--ink-muted); font-size: 13px; line-height: 1
   .songs .song.current { height: 56px; padding: 0 var(--row-pad); border-radius: var(--radius-key); }
 }
 @media (min-width: 900px) {
-  .songs .song, .table-head { --cols: 40px minmax(0, 1.6fr) minmax(0, 1.2fr) 56px 28px; }
-  .table-head .c-genres, .songs .song .c-genres { display: block; }
-  .songs .song .c-genres { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .songs .song, .table-head { --cols: 40px minmax(0, 1fr) minmax(0, 1.5fr) 56px 28px; }
+  .table-head .c-genres { display: block; }
+  .songs .song .c-genres { display: -webkit-box; color: var(--muted); overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; }
 }
 
 /* sheets and dialogs */
