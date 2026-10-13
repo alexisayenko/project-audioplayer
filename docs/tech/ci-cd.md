@@ -223,6 +223,14 @@ Two paths to TestFlight, same steps: `expo prebuild`, `pod install`,
 
 ### This project (audioplayer)
 
+Code quality: the SonarCloud project `alexisayenko_project-audioplayer`
+analyses every push to `main` automatically; there is no CI workflow for
+it. Status 2026-10-13: about 100 open issues after the cleanup. Won't-fix,
+resolved in the SonarCloud UI by the owner: `pythonsecurity:S2083` (sync
+script constants), `python:S5659` (`oauth.py` unverified `iss` read),
+`python:S5332` (`wiki_lookup` http-to-https check), Swift protocol-fixed
+parameters, `javascript:S7785` (top-level await).
+
 Native SwiftUI via XcodeGen, no CI workflows yet; only the local path is
 used (ADR-0008, steps in [`architecture.md`](architecture.md#testflight)).
 `xcodebuild archive`, then `xcodebuild -exportArchive` with

@@ -16,21 +16,31 @@ talks to it and plays local files. The web interface is built
 first and served by FastAPI itself (same origin, no CORS) at
 `play.isayenko.net`.
 
-## Deployment (planned, not deployed)
+## Deployment
 
 Runs as a systemd service in the existing `tools` LXC 106 (Debian 13,
 `192.168.0.10`) on home server `perkunas`: no new LXC, no Docker, ~2
 cores max (the CPU throttles at 100 C; the LXC also hosts Immich).
 Public via the perkunas Cloudflare Tunnel: ingress
-`play.isayenko.net` -> `http://192.168.0.10:<port>`; at cutover the
-interim Pages CNAME `play` -> `play-76g.pages.dev` is replaced by the
-tunnel CNAME. Audio sits on a ZFS dataset on pool-3 (e.g.
-`/data/music`, single disk, no redundancy) bind-mounted into the LXC.
-Until cutover a placeholder page sits on Cloudflare Pages.
+`play.isayenko.net` -> `http://192.168.0.10:<port>`; live at
+`https://play.isayenko.net`. Audio sits on a ZFS dataset on pool-3
+(e.g. `/data/music`, single disk, no redundancy) bind-mounted into the LXC.
 See [`decisions.md`](decisions.md) (ADR-0001, ADR-0003, ADR-0004,
 ADR-0005).
 
-## Library storage (ADR-0005, implemented; not deployed)
+### Deploy
+
+The service is `audioplayer.service`, running from `/opt/audioplayer`
+inside LXC 106 `tools` (`192.168.0.10`). Deploy with:
+
+```sh
+ssh claude@192.168.0.10 'sudo /usr/local/sbin/audioplayer-deploy'
+```
+
+The script runs `git pull --ff-only`, `pip install`, restarts the
+service and checks `/health`.
+
+## Library storage (ADR-0005, implemented)
 
 Layout since ADR-0012 (one library per user, `<uid>` = first 16 hex of
 `sha256(lowercased email)`): data repo `audioplayer/users/<uid>/profile.json`
@@ -65,7 +75,7 @@ relative audio file names only (replaces `AUDIO_DOWNLOAD_DIR`). Each save costs 
 | `GET /files/{video_id}` | stream the stored m4a |
 | `GET /library`, `GET /tags` | songs with tags; tag counts |
 | `POST /preview {url}` | yt-dlp metadata plus suggested genre/country tags, year and Wikipedia links (MusicBrainz, Wikidata), no download |
-| `POST /metadata` | fill empty album and year and suggest `genre:`/`country:` tags from title and artist |
+| `POST /metadata` | album, year and `genre:`/`country:` tags from source links, MusicBrainz, the Wikipedia infobox and Wikidata, plus per-service `services` for the Add form icons (API-048) |
 | `POST /lookup/wikipedia` | suggested tags and year from user-edited Wikipedia links |
 | `POST /songs`, `GET /songs/{id}/status` | add song (background download), poll progress |
 | `PATCH /songs/{id}`, `DELETE /songs/{id}` | edit metadata/tags/bpm; remove record, audio, cover |
@@ -180,7 +190,7 @@ Builds expire after 90 days; re-upload.
   and sign-in flows against the live server are not yet tested on a device.
 - Server covers are not stored on the phone: blank offline after a relaunch.
 - `NSAllowsArbitraryLoads` is on in `project.yml`; the server is now HTTPS
-  at `play.isayenko.net`, so it can be tightened once that is deployed.
+  at `play.isayenko.net`, so it can be tightened.
 - No CI (template rule: manual workflows only; none added yet).
 
 ## OAuth sign-in and per-user storage

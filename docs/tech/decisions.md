@@ -135,7 +135,7 @@ Status: Accepted · 2026-10-12
 
 ## ADR-0004 Hosting on perkunas, LXC 106 `tools`
 
-Status: Planned, not deployed · 2026-10-12 · Supersedes the "always-on
+Status: Accepted, deployed 2026-10-13 · 2026-10-12 · Supersedes the "always-on
 machine / `alex-hetzner`" wording in ADR-0001
 
 - Host: home server `perkunas` (Proxmox NUC), inside the existing
@@ -158,7 +158,7 @@ machine / `alex-hetzner`" wording in ADR-0001
 
 ## ADR-0005 Library metadata lives in the data-storage git repos
 
-Status: Accepted, implemented in `server/` (git store, `music_root`, sync status; not yet deployed) · 2026-10-12 ·
+Status: Accepted, implemented in `server/` (git store, `music_root`, sync status; deployed 2026-10-13) · 2026-10-12 ·
 Supersedes the `library.json`-on-server-disk and covers-on-server-disk
 parts of ADR-0001 and the matching data wording in ADR-0004
 Amended by ADR-0010 (Accepted): the store also holds catalog records that have no audio yet.

@@ -29,7 +29,7 @@ Proposed ([ADR-0010](docs/tech/decisions.md)): the catalog (metadata: YouTube, S
 
 `ios/` — SwiftUI app (iOS 17, XcodeGen `project.yml`, AVPlayer). `server/` —
 FastAPI wrapper around `yt-dlp` (Python 3.11+), run on the home server `perkunas` behind a Cloudflare
-Tunnel (planned, not yet deployed; Tailscale is not used) with Apple/Google sign-in only in the apps (open signup,
+Tunnel (live at https://play.isayenko.net, LXC 106 `tools`, deploy in [architecture.md](docs/tech/architecture.md#deploy); Tailscale is not used) with Apple/Google sign-in only in the apps (open signup,
 per-user storage; the owner's `X-API-Token` stays server-side for scripts); see [docs/tech/decisions.md](docs/tech/decisions.md). Web UI in `web/`.
 Status: the iOS app (tabs Library, Playback, Settings, Add as a sheet that opens the edit form after Fetch; Electrophone look, task-0005) is on internal
 TestFlight; its server flows are not yet tested on a device; server tests pass.
