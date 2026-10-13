@@ -30,6 +30,23 @@ struct MetadataResult: Decodable {
     var year: Int?
     var tags: [String]?
     var services: Services?
+    var suggest: Suggest?
+
+    enum CodingKeys: String, CodingKey { case album, year, tags, services, suggest }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        album = try? c.decode(String.self, forKey: .album)
+        year = try? c.decode(Int.self, forKey: .year)
+        tags = try? c.decode([String].self, forKey: .tags)
+        services = try? c.decode(Services.self, forKey: .services)
+        suggest = try? c.decode(Suggest.self, forKey: .suggest)
+    }
+
+    struct Suggest: Decodable, Equatable {
+        var artist: String?
+        var title: String?
+    }
 
     struct Service: Decodable {
         var found: Bool?

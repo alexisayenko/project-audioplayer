@@ -17,6 +17,8 @@ struct SongEditView: View {
     @State private var tags: [String]
     @State private var suggested: [String] = []
     @State private var pending = ""
+    @State private var pendingGenre = ""
+    @State private var pendingCountry = ""
     @State private var note: String?
     @State private var noteIsError = false
     @State private var saving = false
@@ -152,13 +154,17 @@ struct SongEditView: View {
         }
     }
 
+    private let hiddenTagKeys: Set<String> = ["lang", "genre", "country"]
+
     private var tagSection: some View {
         VStack(alignment: .leading, spacing: DS.Space.space2) {
+            NamespaceField(title: "Genres", key: "genre", cap: genreCap, tags: $tags, input: $pendingGenre)
+            NamespaceField(title: "Countries", key: "country", cap: countryCap, tags: $tags, input: $pendingCountry)
             Text("Tags").font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.inkMuted)
-            TagFlow(tags: tags, removable: true, adding: addingTags, onRemove: { t in tags.removeAll { $0 == t } }) {
+            TagFlow(tags: tags.filter { !hiddenTagKeys.contains(tagKey($0)) }, removable: true, adding: addingTags, onRemove: { t in tags.removeAll { $0 == t } }) {
                 withAnimation { addingTags.toggle() }
             }
-            if addingTags { TagEditor(tags: $tags, suggested: $suggested, pool: pool, input: $pending) }
+            if addingTags { TagEditor(tags: $tags, suggested: $suggested, pool: pool, input: $pending, hiddenKeys: hiddenTagKeys) }
         }
     }
 
@@ -246,6 +252,8 @@ struct SongEditView: View {
     private func save() async {
         saving = true; note = nil
         defer { saving = false }
+        commitNamespaced(&tags, key: "genre", cap: genreCap, input: &pendingGenre)
+        commitNamespaced(&tags, key: "country", cap: countryCap, input: &pendingCountry)
         let changes: [String: Any] = [
             "title": title, "artist": artist, "album": album,
             "year": yearValue.map { $0 as Any } ?? NSNull(),

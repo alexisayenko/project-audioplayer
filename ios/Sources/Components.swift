@@ -566,22 +566,15 @@ struct NamespaceField: View {
     let key: String
     let cap: Int
     @Binding var tags: [String]
-    @State private var input = ""
+    @Binding var input: String
     @State private var note: String?
+    @FocusState private var focused: Bool
 
     private var mine: [String] { tags.filter { tagKey($0) == key } }
     private var placeholder: String { key == "country" ? "Add a country" : "Add a genre" }
 
-    private func commit() {
-        let raw = input.trimmingCharacters(in: .whitespaces)
-        guard !raw.isEmpty else { return }
-        let value: String? = key == "country" ? countryCode(raw) : raw.lowercased()
-        note = nil
-        guard let value else { note = "Unknown country"; return }
-        let tag = "\(key):\(value)"
-        if hasTag(tags, tag) { input = ""; return }
-        guard mine.count < cap else { note = "Up to \(cap)"; return }
-        tags.append(tag); input = ""
+    private func commit(final: Bool = true) {
+        note = commitNamespaced(&tags, key: key, cap: cap, input: &input, final: final)
     }
 
     var body: some View {
@@ -598,13 +591,34 @@ struct NamespaceField: View {
             if mine.count < cap {
                 TextField(placeholder, text: $input)
                     .textInputAutocapitalization(key == "country" ? .words : .never).autocorrectionDisabled()
-                    .submitLabel(.done).onSubmit(commit)
-                    .onChange(of: input) { _, v in if v.contains(",") { input = v.replacingOccurrences(of: ",", with: ""); commit() } }
+                    .submitLabel(.done).onSubmit { commit() }
+                    .focused($focused)
+                    .onChange(of: input) { _, v in if v.contains(where: { $0 == "," || $0 == "/" }) { commit(final: false) } }
+                    .onChange(of: focused) { _, f in if !f { commit() } }
                     .dsField()
             }
             if let note { Text(note).font(T.caption).foregroundStyle(DS.Color.inkMuted) }
         }
+        .onDisappear { commit() }
     }
+}
+
+/// Splits `input` on commas and slashes into `key:` tags (genres lowercased, countries via `countryCode`), skipping duplicates and unknown countries; returns a note when something was refused. Unless `final`, the text after the last separator stays in `input`.
+@discardableResult
+func commitNamespaced(_ tags: inout [String], key: String, cap: Int, input: inout String, final: Bool = true) -> String? {
+    var parts = input.split(omittingEmptySubsequences: false, whereSeparator: { $0 == "," || $0 == "/" }).map { $0.trimmingCharacters(in: .whitespaces) }
+    let rest = final ? "" : (parts.popLast() ?? "")
+    var note: String?
+    for raw in parts where !raw.isEmpty {
+        let value: String? = key == "country" ? countryCode(raw) : raw.lowercased()
+        guard let value else { note = "Unknown country"; continue }
+        let tag = "\(key):\(value)"
+        if hasTag(tags, tag) { continue }
+        guard tags.filter({ tagKey($0) == key }).count < cap else { note = "Up to \(cap)"; break }
+        tags.append(tag)
+    }
+    input = rest
+    return note
 }
 
 /// Tags plus whatever is still typed in the tag field.

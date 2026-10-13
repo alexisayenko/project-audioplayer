@@ -12,6 +12,7 @@ final class AddFlow: ObservableObject {
     @Published var metaBusy = false
     @Published var metaNote: String?
     @Published var services: [ServiceKind: URL?] = [:]
+    @Published var suggest: MetadataResult.Suggest?
 
     @Published var title = ""
     @Published var artist = ""
@@ -23,8 +24,28 @@ final class AddFlow: ObservableObject {
     @Published var tags: [String] = []
     @Published var suggested: [String] = []
     @Published var pendingTag = ""
+    @Published var pendingGenre = ""
+    @Published var pendingCountry = ""
 
     var yearValue: Int? { Int(year.trimmingCharacters(in: .whitespaces)) }
+
+    private static func differs(_ suggested: String?, _ current: String) -> String? {
+        guard let s = suggested?.trimmingCharacters(in: .whitespacesAndNewlines), !s.isEmpty else { return nil }
+        return s.caseInsensitiveCompare(current.trimmingCharacters(in: .whitespacesAndNewlines)) == .orderedSame ? nil : s
+    }
+
+    /// The Wikipedia artist and title that still differ from the fields; nil when there is nothing to offer.
+    var hint: (artist: String?, title: String?)? {
+        let a = Self.differs(suggest?.artist, artist), t = Self.differs(suggest?.title, title)
+        return a == nil && t == nil ? nil : (a, t)
+    }
+
+    func applyHint() {
+        guard let h = hint else { return }
+        if let a = h.artist { artist = a }
+        if let t = h.title { title = t }
+        suggest = nil
+    }
 
     private func applyDecade() {
         tags = withDecade(tags, yearValue)
@@ -41,7 +62,7 @@ final class AddFlow: ObservableObject {
         let clean = cleanPasted(url)
         url = clean
         guard !clean.isEmpty, phase != .loading, phase != .saving else { return }
-        phase = .loading; message = nil; errorCode = nil
+        phase = .loading; message = nil; errorCode = nil; suggest = nil; metaNote = nil; services = [:]
         do {
             let p = try await api.preview(url: clean)
             preview = p
@@ -49,7 +70,7 @@ final class AddFlow: ObservableObject {
             year = p.year.map(String.init) ?? ""; bpm = ""
             wikiSong = p.wikipedia_song ?? ""; wikiArtist = p.wikipedia_artist ?? ""
             let sug = p.tags ?? []
-            tags = withDecade(sug, p.year); suggested = withDecade(sug, p.year); pendingTag = ""
+            tags = withDecade(sug, p.year); suggested = withDecade(sug, p.year); pendingTag = ""; pendingGenre = ""; pendingCountry = ""
             phase = .ready
         } catch {
             preview = nil
@@ -61,7 +82,7 @@ final class AddFlow: ObservableObject {
 
     func getMetadata(_ api: APIClient) async {
         guard !metaBusy else { return }
-        metaBusy = true; metaNote = nil; services = [:]; defer { metaBusy = false }
+        metaBusy = true; metaNote = nil; services = [:]; suggest = nil; defer { metaBusy = false }
         let src = preview?.source_url ?? url
         do {
             let r = try await api.metadata(title: title, artist: artist, sourceURLs: src.isEmpty ? [] : [src],
@@ -72,6 +93,7 @@ final class AddFlow: ObservableObject {
                 found[kind] = svc?.url.flatMap { URL(string: $0) }
             }
             services = found
+            suggest = r.suggest
             var changed = false
             let returned = !(r.album ?? "").isEmpty || r.year != nil || !(r.tags ?? []).isEmpty
             if let a = r.album, !a.isEmpty, album.trimmingCharacters(in: .whitespaces).isEmpty { album = a; changed = true }
@@ -90,6 +112,8 @@ final class AddFlow: ObservableObject {
         let wikiS = wikiSong.trimmingCharacters(in: .whitespaces)
         let wikiA = wikiArtist.trimmingCharacters(in: .whitespaces)
         let bpmValue = Int(bpm.trimmingCharacters(in: .whitespaces))
+        commitNamespaced(&tags, key: "genre", cap: genreCap, input: &pendingGenre)
+        commitNamespaced(&tags, key: "country", cap: countryCap, input: &pendingCountry)
         let finalTagList = finalTags(tags, pending: pendingTag)
         let meta: [String: Any] = [
             "title": title, "artist": artist, "album": album,
@@ -300,6 +324,21 @@ struct AddSheet: View {
         }
     }
 
+    private func suggestionHint(_ h: (artist: String?, title: String?)) -> some View {
+        let text = [h.artist, h.title].compactMap { $0 }.joined(separator: " / ")
+        let spoken = [h.artist, h.title].compactMap { $0 }.joined(separator: " - ")
+        return Button { flow.applyHint() } label: {
+            HStack(alignment: .firstTextBaseline, spacing: DS.Space.space2) {
+                Image(systemName: "lightbulb").accessibilityHidden(true)
+                Text("Wikipedia says: \(text)").multilineTextAlignment(.leading)
+            }
+            .font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.accentInk)
+            .frame(maxWidth: .infinity, minHeight: DS.Space.hit, alignment: .leading)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Use Wikipedia's artist and title: \(spoken)")
+    }
+
     private var summary: String {
         [flow.artist, flow.year].filter { !$0.isEmpty }.joined(separator: " · ")
     }
@@ -347,6 +386,7 @@ struct AddSheet: View {
         VStack(alignment: .leading, spacing: DS.Space.space3) {
                 labeled("Title", $flow.title)
                 labeled("Artist", $flow.artist)
+                if let h = flow.hint { suggestionHint(h) }
                 FlowLayout {
                     Button { flow.launch { await flow.getMetadata(api) } } label: {
                         HStack { Text("Get metadata"); if flow.metaBusy { ProgressView() } }
@@ -360,8 +400,8 @@ struct AddSheet: View {
                 labeled("BPM (optional, detected after saving)", $flow.bpm, keyboard: .numberPad)
         }
 
-        NamespaceField(title: "Genres", key: "genre", cap: genreCap, tags: $flow.tags)
-        NamespaceField(title: "Countries", key: "country", cap: countryCap, tags: $flow.tags)
+        NamespaceField(title: "Genres", key: "genre", cap: genreCap, tags: $flow.tags, input: $flow.pendingGenre)
+        NamespaceField(title: "Countries", key: "country", cap: countryCap, tags: $flow.tags, input: $flow.pendingCountry)
 
         TagFlow(tags: flow.tags.filter { !["lang", "genre", "country"].contains(tagKey($0)) }, adding: addingTags, onRemove: { t in flow.tags.removeAll { $0 == t } }) {
             withAnimation { addingTags.toggle() }
