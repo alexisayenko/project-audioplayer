@@ -484,3 +484,5 @@ Status: Accepted, implemented in `server/` and `web/` (iOS client changes listed
 Sub-decision 2026-10-13: the Add form shows four service icons (YouTube, SoundCloud, Wikipedia, Spotify) beside "Get metadata". Their brand colours are `brand-*` tokens in the design system (version 19), not hard-coded. One `POST /metadata` call returns per-service `services.<name>.{found,url}` for the UI. Spotify is shown but permanently inactive until an integration exists.
 
 Note 2026-10-13: web saves metadata only; audio reaches the server only through the iOS download flow; existing server audio keeps playing and deleting on the web.
+
+Decision 2026-10-13: songs get optional free-text `original` and `remixer` fields; the Add and Edit forms get a deterministic, strict hint from the title (ADD-070, API-049), offered on tap and never auto-filled. MusicBrainz was rejected for this: remixes are not linked or catalogued there and name matching hits the wrong artist (Sadrican finds Sadrican Sagdur).
