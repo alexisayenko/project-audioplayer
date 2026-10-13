@@ -36,7 +36,8 @@ test('services', () => {
   assert.deepEqual(s.soundcloud, { on: true, url: null });
   assert.equal(s.wikipedia.on, false);
   assert.equal(s.spotify.on, false);
-  assert.equal(s.musicbrainz.on, false);
+  assert.deepEqual(s.musicbrainz, { on: true, url: 'https://m' });
+  assert.equal(serviceState({ musicbrainz: { found: false, url: null } }).musicbrainz.on, false);
   assert.equal(s.discogs.on, false);
   assert.equal(serviceState(undefined).youtube.on, false);
   assert.equal(serviceState({ youtube: { found: true, url: 'javascript:alert(1)' } }).youtube.url, null);

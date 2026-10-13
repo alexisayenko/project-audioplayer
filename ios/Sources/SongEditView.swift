@@ -68,6 +68,7 @@ struct SongEditView: View {
         if webURL(form.wikiSong) != nil { wikiLabel = "Wikipedia: song" }
         else if webURL(form.wikiArtist) != nil { wikiLabel = "Wikipedia: artist" }
         else { wikiLabel = "Not on Wikipedia" }
+        let mb = form.services[.musicbrainz] ?? nil
         return [
             SourceLink(id: "yt", symbol: "play.rectangle.fill", label: own == "youtube" && webURL(song.source_url) != nil ? "Open on YouTube" : "Not on YouTube",
                        url: own == "youtube" ? webURL(song.source_url) : nil),
@@ -75,7 +76,7 @@ struct SongEditView: View {
                        url: own == "soundcloud" ? webURL(song.source_url) : nil),
             SourceLink(id: "sp", symbol: "music.note", label: "Not on Spotify", url: nil),
             SourceLink(id: "wiki", symbol: "book.closed.fill", label: wikiLabel, url: wiki),
-            SourceLink(id: "mb", symbol: "music.note.list", label: "Not on MusicBrainz", url: nil),
+            SourceLink(id: "mb", symbol: "music.note.list", label: mb == nil ? "Not on MusicBrainz" : "Open on MusicBrainz", url: mb),
             SourceLink(id: "dc", symbol: "opticaldisc.fill", label: "Not on Discogs", url: nil),
         ]
     }

@@ -3,7 +3,7 @@ import SwiftUI
 enum ServiceKind: CaseIterable {
     case youtube, soundcloud, wikipedia, spotify, musicbrainz, discogs
 
-    var inert: Bool { self == .spotify || self == .musicbrainz || self == .discogs }
+    var inert: Bool { self == .spotify || self == .discogs }
 
     var label: String {
         switch self {
@@ -20,9 +20,9 @@ enum ServiceKind: CaseIterable {
         switch self {
         case .youtube: DS.Color.brandYoutube
         case .soundcloud: DS.Color.brandSoundcloud
-        case .wikipedia: DS.Color.brandWikipedia
+        case .wikipedia, .musicbrainz: DS.Color.brandWikipedia
         case .spotify: DS.Color.brandSpotify
-        case .musicbrainz, .discogs: DS.Color.inkFaint
+        case .discogs: DS.Color.inkFaint
         }
     }
 }

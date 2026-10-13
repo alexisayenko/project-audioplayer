@@ -81,7 +81,7 @@ def _useful(info: dict[str, Any]) -> bool:
     return bool(info.get("album") or _year(info.get("year")) or info.get("tags"))
 
 
-def services(source_urls: list[str], src_by_index: dict[int, dict[str, Any]], links: dict[str, Any] | None, guess: dict[str, Any] | None) -> dict[str, Any]:
+def services(source_urls: list[str], src_by_index: dict[int, dict[str, Any]], links: dict[str, Any] | None, guess: dict[str, Any] | None, mb: dict[str, Any] | None = None) -> dict[str, Any]:
     """Per-service outcome for the UI's icons: {youtube, soundcloud, wikipedia, spotify, musicbrainz, discogs: {found, url}}."""
     out: dict[str, Any] = {k: {"found": False, "url": None} for k in ("youtube", "soundcloud", "wikipedia", "spotify", "musicbrainz", "discogs")}
     for i, url in enumerate(source_urls):
@@ -94,6 +94,9 @@ def services(source_urls: list[str], src_by_index: dict[int, dict[str, Any]], li
     page = next((u for u in urls if u), None)
     if page or links_hit or guess.get("tags") or guess.get("year") or guess.get("infobox_album") or guess.get("infobox_year"):
         out["wikipedia"] = {"found": True, "url": page}
+    mb_url = (mb or {}).get("mb_url")
+    if mb_url:
+        out["musicbrainz"] = {"found": True, "url": mb_url}
     return out
 
 
@@ -147,5 +150,5 @@ def gather(
     out = merge(sources, snapshot.get("mb"), snapshot.get("links"), snapshot.get("guess"))
     box = (snapshot.get("links") or {}).get("infobox_suggest") or (snapshot.get("guess") or {}).get("infobox_suggest")
     out["suggest"] = {"artist": box["artist"], "title": box["title"]} if box else {"artist": None, "title": None}
-    out["services"] = services(source_urls or [], by_index, snapshot.get("links"), snapshot.get("guess"))
+    out["services"] = services(source_urls or [], by_index, snapshot.get("links"), snapshot.get("guess"), snapshot.get("mb"))
     return out

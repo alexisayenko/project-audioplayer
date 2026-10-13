@@ -372,3 +372,25 @@ def test_featured_argument_and_fallback(monkeypatch):
     assert gl.lookup("Kato", "Turn The Lights Off", ["Jon"])["tags"] == ["genre:house", "country:dk"]
     gl._cache.clear()
     assert gl.lookup("Kato feat. Nobody", "Turn The Lights Off")["tags"] == ["genre:metal", "country:us"]
+
+
+MBID = "5f1e7d9a-0b2c-4d3e-8f4a-6b7c8d9e0f1a"
+
+
+def test_lookup_exposes_matched_recording_url_and_caches_it(monkeypatch):
+    calls = []
+    monkeypatch.setattr(gl, "_get", fake_get([{**REC, "id": MBID}], {"genres": [{"name": "house", "count": 1}]}, None, calls))
+    first = gl.lookup("Daft Punk", "Around the World")
+    assert first["mb_url"] == f"https://musicbrainz.org/recording/{MBID}"
+    n = len(calls)
+    assert gl.lookup("Daft Punk", "Around the World")["mb_url"] == first["mb_url"]
+    assert len(calls) == n
+
+
+def test_lookup_without_match_or_with_odd_id_has_no_url(monkeypatch):
+    monkeypatch.setattr(gl, "_get", fake_get([]))
+    assert gl.lookup("A", "B")["mb_url"] is None
+    gl._cache.clear()
+    monkeypatch.setattr(gl, "_get", fake_get([REC], {"genres": [{"name": "x", "count": 1}]}))
+    assert gl.lookup("Daft Punk", "Odd")["mb_url"] is None
+    assert gl.recording_url(None) is None

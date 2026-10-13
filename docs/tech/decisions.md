@@ -510,7 +510,7 @@ Genres
 
 Status: Accepted for MusicBrainz (already live as a source, now the named policy); Proposed for Discogs · 2026-10-14
 
-- Current state: `POST /metadata` ([API-048](../specs/api.md)) merges, under one 15 s cap, yt-dlp source info, a MusicBrainz match of artist+title (`server/app/genre_lookup.py`: genres, artist country, first release year, album; score >= 90, at most 3 genres, descriptive `User-Agent` from `AUDIO_MB_USER_AGENT`, one request per 1.1 s, per-query cache), the English Wikipedia infobox and Wikidata (`server/app/wiki_lookup.py`). `POST /preview` applies the same genre filter, `GET /genres` (API-050) serves the user's own genres plus a built-in list, and BPM is detected locally from the audio (ADR-0002). Spotify is not used. The Add and Edit form never auto-fills from a lookup beyond the preview prefill; "Get metadata" results are suggestions ([add-song](../specs/add-song.md)).
+- Current state: `POST /metadata` ([API-048](../specs/api.md)) merges, under one 15 s cap, yt-dlp source info, a MusicBrainz match of artist+title (`server/app/genre_lookup.py`: genres, artist country, first release year, album, the matched recording's page for the MusicBrainz icon; score >= 90, at most 3 genres, descriptive `User-Agent` from `AUDIO_MB_USER_AGENT`, one request per 1.1 s, per-query cache), the English Wikipedia infobox and Wikidata (`server/app/wiki_lookup.py`). `POST /preview` applies the same genre filter, `GET /genres` (API-050) serves the user's own genres plus a built-in list, and BPM is detected locally from the audio (ADR-0002). Spotify is not used. The Add and Edit form never auto-fills from a lookup beyond the preview prefill; "Get metadata" results are suggestions ([add-song](../specs/add-song.md)).
 - Decision (Alex): MusicBrainz is the standing music-database source for metadata suggestions; Discogs is added later as a second source for genre, style and year.
 - MusicBrainz: free, no key, only a descriptive `User-Agent` (app name and contact) and about 1 request/second. Core data is CC0. Tags are community-voted and noisy, so they stay suggestions the user confirms in the shared song form.
 - Discogs (later): free personal access token, about 60 requests/minute with it. It returns genres plus finer styles (progressive house, vocal trance), which fits the electronic catalog. Its terms restrict reuse of images and bulk data, so use it only to suggest genre, style and year; no image caching, no stored dumps.
@@ -520,7 +520,7 @@ Status: Accepted for MusicBrainz (already live as a source, now the named policy
   - Optional suggestions on Add/Edit. Playback and offline reliability never depend on them (key principle); a failure or timeout is skipped silently and the result is what we return today.
   - Results cached per query and requests rate-limited per source, so the limits above hold.
   - Nothing is applied server-side; the user confirms in the form.
-- Separate and already in progress: MusicBrainz and Discogs link icons in the song link row (web and iOS). They only search or link out, with no API call and no token.
+- The MusicBrainz icon in the song link row (web and iOS) is lit by the same lookup and links to the matched recording (`services.musicbrainz`, API-048); it is not stored on the song. The Discogs icon stays inert with no API call and no token.
 - Consequences:
   - One more optional external dependency and a per-source cache and limiter to maintain; Discogs adds a secret to deploy.
   - Suggested tags can be wrong or noisy; the confirm step carries the quality, not the source.

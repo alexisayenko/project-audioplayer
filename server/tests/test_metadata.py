@@ -215,3 +215,21 @@ def test_gather_suggest_nulls_without_name_artist_or_infobox(monkeypatch):
     assert _gather_with_box(monkeypatch, "{{Infobox song\n| name = Only\n}}")["suggest"] == nulls
     assert _gather_with_box(monkeypatch, "no infobox here")["suggest"] == nulls
     assert metadata.gather("T", "", [], None, None)["suggest"] == nulls
+
+
+MBID = "5f1e7d9a-0b2c-4d3e-8f4a-6b7c8d9e0f1a"
+
+
+def test_services_musicbrainz_lit_by_matched_recording():
+    url = f"https://musicbrainz.org/recording/{MBID}"
+    assert metadata.services([], {}, None, None, {"mb_url": url})["musicbrainz"] == {"found": True, "url": url}
+    for mb in (None, {}, {"mb_url": None}):
+        assert metadata.services([], {}, None, None, mb)["musicbrainz"] == {"found": False, "url": None}
+
+
+def test_gather_reports_musicbrainz_match(monkeypatch, upstream):
+    url = f"https://musicbrainz.org/recording/{MBID}"
+    monkeypatch.setattr(gl, "lookup", lambda a, t: {"tags": [], "year": None, "album": None, "mb_url": url})
+    out = metadata.gather("T", "A", [], None, None)
+    assert out["services"]["musicbrainz"] == {"found": True, "url": url}
+    assert out["services"]["discogs"] == {"found": False, "url": None}

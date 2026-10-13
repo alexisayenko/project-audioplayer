@@ -89,7 +89,7 @@ class SongFormState: ObservableObject {
                                            wikiSong: wikiSong.trimmingCharacters(in: .whitespaces),
                                            wikiArtist: wikiArtist.trimmingCharacters(in: .whitespaces))
             var found: [ServiceKind: URL?] = [:]
-            for (kind, svc) in [(ServiceKind.youtube, r.services?.youtube), (.soundcloud, r.services?.soundcloud), (.wikipedia, r.services?.wikipedia)] where svc?.found == true {
+            for (kind, svc) in [(ServiceKind.youtube, r.services?.youtube), (.soundcloud, r.services?.soundcloud), (.wikipedia, r.services?.wikipedia), (.musicbrainz, r.services?.musicbrainz)] where svc?.found == true {
                 found[kind] = svc?.url.flatMap { URL(string: $0) }
             }
             services = found

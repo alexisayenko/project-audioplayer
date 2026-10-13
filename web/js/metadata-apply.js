@@ -2,7 +2,7 @@ export const GENRE_CAP = 12;
 export const COUNTRY_CAP = 1;
 const CAPS = { genre: GENRE_CAP, country: COUNTRY_CAP };
 export const SERVICES = ['youtube', 'soundcloud', 'wikipedia', 'spotify', 'musicbrainz', 'discogs'];
-export const INERT = new Set(['spotify', 'musicbrainz', 'discogs']);
+export const INERT = new Set(['spotify', 'discogs']);
 
 const tagKey = (t) => { const i = t.indexOf(':'); return i > 0 ? t.slice(0, i).trim().toLowerCase() : ''; };
 const hasTag = (tags, t) => tags.some((x) => x.toLowerCase() === t.toLowerCase());

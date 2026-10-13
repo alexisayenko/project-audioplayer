@@ -131,6 +131,15 @@ def _url_rels(entity: dict[str, Any]) -> list[str]:
     return out
 
 
+_MBID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
+
+
+def recording_url(mbid: Any) -> str | None:
+    """The MusicBrainz page of a recording id; None unless it is a well-formed MBID."""
+    text = str(mbid or "").strip().lower()
+    return f"https://musicbrainz.org/recording/{text}" if _MBID.fullmatch(text) else None
+
+
 def _first_year(full: dict[str, Any]) -> int | None:
     m = re.match(r"^(\d{4})", str(full.get("first-release-date") or ""))
     return int(m.group(1)) if m else None
@@ -150,7 +159,7 @@ def _work_rels(full: dict[str, Any]) -> list[str]:
 
 
 def _empty() -> dict[str, Any]:
-    return {"tags": [], "song_rels": [], "artist_rels": [], "year": None, "album": None}
+    return {"tags": [], "song_rels": [], "artist_rels": [], "year": None, "album": None, "mb_url": None}
 
 
 def _artist_info(artist: str, credited: list[dict[str, Any]], genres: list[str]) -> tuple[list[str], list[str], list[str]]:
@@ -203,12 +212,13 @@ def _lookup(artist: str, title: str, featured: list[str]) -> dict[str, Any]:
             "artist_rels": artist_rels,
             "year": _first_year(full),
             "album": _album(full, artist),
+            "mb_url": recording_url(rec.get("id")),
         }
     return _empty()
 
 
 def lookup(artist: str, title: str, featured: list[str] | None = None) -> dict[str, Any]:
-    """Tags, Wikipedia/Wikidata URL relations (song, artist), first release year and album; empty when disabled, unmatched or on any error.
+    """Tags, Wikipedia/Wikidata URL relations (song, artist), first release year, album and the matched recording page (`mb_url`); empty when disabled, unmatched or on any error.
 
     `featured` names (default: those of a "feat." credit in `artist`) make the recording credited to the primary artist and all of them win; the primary artist's own id then gives country, genres and links."""
     if not enabled():
