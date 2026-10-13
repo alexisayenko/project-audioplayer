@@ -247,10 +247,10 @@ function songRow(s, cur) {
     ? el('button', { class: 'open t-headline', type: 'button', title: 'Play now', onclick: () => player.playNow(s.id) }, s.title)
     : el('span', { class: 'open t-headline' }, s.title);
   const genres = genreText(s.tags);
-  const dur = audio
-    ? el('span', { class: 'c-dur t-time' }, s.duration ? fmtTime(s.duration) : '')
-    : el('span', { class: 'c-dur t-caption' },
-      link ? srcLogo(link) : '');
+  let durText = '';
+  if (audio) durText = s.duration ? fmtTime(s.duration) : '';
+  else if (link) durText = srcLogo(link);
+  const dur = el('span', { class: audio ? 'c-dur t-time' : 'c-dur t-caption' }, durText);
   return el('li', { class: `song${here ? ' current' : ''}${audio ? '' : ' no-audio'}`, 'aria-current': here ? 'true' : null, 'data-id': s.id },
     cover(s),
     el('div', { class: 'info' }, open,

@@ -10,7 +10,9 @@ func suggestGenres(query: String, genres: [String], chosen: [String] = [], max: 
     let q = foldGenre(query)
     guard !q.isEmpty else { return [] }
     var taken = Set(chosen.map(foldGenre))
-    var starts: [String] = [], words: [String] = [], inside: [String] = []
+    var starts: [String] = []
+    var words: [String] = []
+    var inside: [String] = []
     for g in genres {
         let f = foldGenre(g)
         guard !f.isEmpty, !taken.contains(f) else { continue }

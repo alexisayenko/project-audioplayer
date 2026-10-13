@@ -38,7 +38,8 @@ final class AddFlow: SongFormState {
         guard let p = preview, phase == .ready || phase == .failed else { return false }
         let api = APIClient(baseURL: settings.serverURL, token: settings.token)
         phase = .saving; message = nil
-        let wikiS = wikiSongValue ?? "", wikiA = wikiArtistValue ?? ""
+        let wikiS = wikiSongValue ?? ""
+        let wikiA = wikiArtistValue ?? ""
         let finalTagList = commitPending()
         let meta: [String: Any] = [
             "title": title, "artist": artist, "album": album,

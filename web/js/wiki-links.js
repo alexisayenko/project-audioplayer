@@ -23,7 +23,7 @@ export function wikiDisplay(url) {
   if (!m) return v;
   let t = m[1];
   try { t = decodeURIComponent(t); } catch { /* keep escapes */ }
-  return t.replace(/_/g, ' ');
+  return t.replaceAll('_', ' ');
 }
 
 export function wikiNormalize(text) {
@@ -52,6 +52,9 @@ export function wikiFields({ song = '', artist = '' }) {
     node: el('div', { class: 'wiki-fields' },
       el('div', { class: 'grid2' }, field('Wikipedia: song', fields.song), field('Wikipedia: band', fields.artist))),
     values: () => ({ wikipedia_song: fields.song.get() || null, wikipedia_artist: fields.artist.get() || null }),
-    set: ({ song: s, artist: a }) => { if (s !== undefined) fields.song.set(s); if (a !== undefined) fields.artist.set(a); },
+    set: ({ song: s, artist: a }) => {
+      if (s !== undefined) fields.song.set(s);
+      if (a !== undefined) fields.artist.set(a);
+    },
   };
 }

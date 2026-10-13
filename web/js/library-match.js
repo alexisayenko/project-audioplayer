@@ -10,7 +10,7 @@ export function linkKey(input) {
   const yt = YT_ID.exec(clean);
   if (yt) return { kind: 'youtube', key: yt[1] };
   const sc = classifySoundcloud(clean);
-  if (sc && sc.kind === 'track') return { kind: 'soundcloud', key: sc.url.toLowerCase() };
+  if (sc?.kind === 'track') return { kind: 'soundcloud', key: sc.url.toLowerCase() };
   return null;
 }
 
@@ -23,7 +23,7 @@ export function findInLibrary(input, songs) {
     const list = Array.isArray(s.sources) ? s.sources : [];
     for (const src of list) {
       const other = src && linkKey(src.url);
-      if (other && other.kind === k.kind && other.key === k.key) return s;
+      if (other?.kind === k.kind && other?.key === k.key) return s;
     }
   }
   return null;

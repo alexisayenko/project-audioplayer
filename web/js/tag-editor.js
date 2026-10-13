@@ -1,7 +1,7 @@
 import { el } from './dom.js';
 import { store } from './store.js';
 import { splitInput } from './tag-input.js';
-import { isHiddenTag, visibleTags, tagGroups, tagLabel, tagText, tagSearchText, withDecade, decadeRank } from './tagname.js';
+import { isHiddenTag, tagGroups, tagLabel, tagText, tagSearchText, withDecade, decadeRank } from './tagname.js';
 
 const same = (a, b) => a.toLocaleLowerCase() === b.toLocaleLowerCase();
 

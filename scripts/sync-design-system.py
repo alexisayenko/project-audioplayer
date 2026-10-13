@@ -188,11 +188,14 @@ def css(tokens: dict) -> str:
 
 
 def main() -> int:
-    tokens = json.loads(SRC.read_text())
+    with open(SRC, encoding="utf-8") as fh:
+        tokens = json.load(fh)
     swift_text = swift(tokens)
     css_text = css(tokens)
-    SWIFT_OUT.write_text(swift_text)
-    CSS_OUT.write_text(css_text)
+    with open(SWIFT_OUT, "w", encoding="utf-8") as fh:
+        fh.write(swift_text)
+    with open(CSS_OUT, "w", encoding="utf-8") as fh:
+        fh.write(css_text)
     n = len(tokens["color"]["tokens"])
     print(f"wrote {SWIFT_OUT.relative_to(ROOT)} and {CSS_OUT.relative_to(ROOT)} ({n} colours, {sum(len(g['styles']) for g in tokens['type']['groups'])} text styles)")
     return 0

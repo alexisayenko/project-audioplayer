@@ -17,8 +17,8 @@ function clearMarks() {
 }
 
 function locate(target) {
-  const node = target && target.closest ? target.closest('.token-field') : null;
-  if (!node || !node.acceptDrop) return null;
+  const node = target?.closest ? target.closest('.token-field') : null;
+  if (!node?.acceptDrop) return null;
   const pill = target.closest('.token-pill');
   const own = pill && node.contains(pill);
   return { node, pill: own && !pill.classList.contains('dragging') ? pill : null, index: own ? Number(pill.dataset.i) : END };
@@ -238,7 +238,7 @@ function tokenField(kind, fields) {
 
   function render() {
     closeMenu();
-    for (const p of [...node.querySelectorAll('.token-pill')]) p.remove();
+    for (const p of node.querySelectorAll('.token-pill')) p.remove();
     tokenize(text).forEach((t, i) => {
       if (isBlankToken(t)) return;
       const label = t.text.trim();
@@ -257,7 +257,7 @@ function tokenField(kind, fields) {
       pill.addEventListener('pointerdown', (e) => { if (!pill.classList.contains('editing')) startTouchDrag(pill, i, e); });
       pencil.addEventListener('click', () => openMenu(pencil, pill, i, label));
       x.addEventListener('click', () => removeAt(i));
-      node.insertBefore(pill, entry);
+      entry.before(pill);
     });
   }
 
@@ -278,7 +278,7 @@ function tokenField(kind, fields) {
     if (tail) { text = stripEdges(text); tail = false; render(); fire(); }
   });
   node.addEventListener('dragover', (e) => {
-    if (!e.dataTransfer || !e.dataTransfer.types.includes(MIME)) return;
+    if (!e.dataTransfer?.types.includes(MIME)) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     mark(locate(e.target));
@@ -287,7 +287,7 @@ function tokenField(kind, fields) {
     if (!node.contains(e.relatedTarget)) { node.classList.remove('drop-over'); for (const p of node.querySelectorAll('.drop-before')) p.classList.remove('drop-before'); }
   });
   node.addEventListener('drop', (e) => {
-    if (!e.dataTransfer || !e.dataTransfer.types.includes(MIME)) return;
+    if (!e.dataTransfer?.types.includes(MIME)) return;
     e.preventDefault();
     let src = null;
     try { src = JSON.parse(e.dataTransfer.getData(MIME)); } catch { src = drag; }

@@ -1,11 +1,13 @@
 export const yearValue = (v) => (v === '' || v == null ? null : Number(v));
 
 export function sourceList(source) {
-  const raw = Array.isArray(source) ? source : source ? [source] : [];
+  let raw = [];
+  if (Array.isArray(source)) raw = source;
+  else if (source) raw = [source];
   const seen = new Set();
   const out = [];
   for (const s of raw) {
-    const url = typeof s === 'string' ? s : s && typeof s.url === 'string' ? s.url : '';
+    const url = typeof s === 'string' ? s : (typeof s?.url === 'string' ? s.url : '');
     if (!url || seen.has(url)) continue;
     seen.add(url);
     out.push({ url });

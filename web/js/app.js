@@ -44,12 +44,11 @@ window.addEventListener('auth-changed', () => {
   route();
 });
 
-session.restore()
-  .then(() => {
-    if (isSignedIn()) store.refresh().catch(() => {});
-  })
-  .catch(() => {})
-  .finally(route);
+try {
+  await session.restore();
+  if (isSignedIn()) store.refresh().catch(() => {});
+} catch { /* restore failure leaves the app signed out */ }
+route();
 
 const warn = document.getElementById('sync-warn');
 const led = document.getElementById('server-led');
@@ -71,5 +70,5 @@ async function checkSync() {
     : 'Library changes are waiting to sync to git.';
 }
 
-checkSync().catch(() => {});
+await checkSync().catch(() => {});
 setInterval(() => checkSync().catch(() => {}), 30000);

@@ -46,7 +46,8 @@ class SongFormState: ObservableObject {
 
     /// The Wikipedia artist and title that still differ from the fields; nil when there is nothing to offer.
     var hint: (artist: String?, title: String?)? {
-        let a = Self.differs(suggest?.artist, artist), t = Self.differs(suggest?.title, title)
+        let a = Self.differs(suggest?.artist, artist)
+        let t = Self.differs(suggest?.title, title)
         return a == nil && t == nil ? nil : (a, t)
     }
 

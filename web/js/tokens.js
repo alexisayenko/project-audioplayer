@@ -17,22 +17,39 @@ function periodSplits(s, i) {
   return word.length >= 3 && !STOP.has(word.toLowerCase());
 }
 
+function bulletLength(s, i, prevWs) {
+  let j = i;
+  while (j < s.length && BULLETS.has(s[j])) j += 1;
+  return prevWs && isWs(s[j]) ? j - i : 0;
+}
+
 function coreLength(s, i) {
   const c = s[i];
   const prevWs = i > 0 && isWs(s[i - 1]);
   const nextWs = isWs(s[i + 1]);
   const atEnd = i + 1 === s.length;
   if (c === '|') return 1;
-  if (c === ',' || c === ';') return prevWs || nextWs || atEnd ? 1 : 0;
-  if (c === ':') return i > 0 && !prevWs && (nextWs || atEnd) ? 1 : 0;
-  if (c === '/' || DASHES.has(c)) return prevWs && nextWs ? 1 : 0;
-  if (BULLETS.has(c)) {
-    let j = i;
-    while (j < s.length && BULLETS.has(s[j])) j += 1;
-    return prevWs && isWs(s[j]) ? j - i : 0;
-  }
-  if (c === '.') return periodSplits(s, i) ? 1 : 0;
+  if (c === ',' || c === ';') return Number(prevWs || nextWs || atEnd);
+  if (c === ':') return Number(i > 0 && !prevWs && (nextWs || atEnd));
+  return spacedLength(s, i, prevWs, nextWs);
+}
+
+function spacedLength(s, i, prevWs, nextWs) {
+  const c = s[i];
+  if (c === '/' || DASHES.has(c)) return Number(prevWs && nextWs);
+  if (BULLETS.has(c)) return bulletLength(s, i, prevWs);
+  if (c === '.') return Number(periodSplits(s, i));
   return 0;
+}
+
+function separatorEnd(s, from, len) {
+  let end = from + len;
+  for (;;) {
+    while (end < s.length && isWs(s[end])) end += 1;
+    const more = end < s.length ? coreLength(s, end) : 0;
+    if (!more) return end;
+    end += more;
+  }
 }
 
 export function tokenize(text) {
@@ -45,13 +62,7 @@ export function tokenize(text) {
     if (!len) { i += 1; continue; }
     let sepStart = i;
     while (sepStart > start && isWs(s[sepStart - 1])) sepStart -= 1;
-    let end = i + len;
-    for (;;) {
-      while (end < s.length && isWs(s[end])) end += 1;
-      const more = end < s.length ? coreLength(s, end) : 0;
-      if (!more) break;
-      end += more;
-    }
+    const end = separatorEnd(s, i, len);
     out.push({ text: s.slice(start, sepStart), sep: s.slice(sepStart, end) });
     start = end;
     i = end;
@@ -70,7 +81,7 @@ export function removeToken(text, i) {
   if (toks.length === 1) return '';
   if (i === toks.length - 1) {
     toks.pop();
-    toks[toks.length - 1].sep = '';
+    toks.at(-1).sep = '';
   } else {
     toks.splice(i, 1);
   }
@@ -88,7 +99,7 @@ export function replaceToken(text, i, newText) {
 
 export function endsWithSeparator(text) {
   const toks = tokenize(text);
-  return toks.length > 1 && isBlankToken(toks[toks.length - 1]);
+  return toks.length > 1 && isBlankToken(toks.at(-1));
 }
 
 export function appendToken(text, token, defaultSep) {
@@ -137,9 +148,9 @@ export function moveTokenTo(srcText, i, dstText, dstIndex, dstDefaultSep, sameFi
 
 export function stripEdges(text) {
   const toks = tokenize(text);
-  while (toks.length > 1 && isBlankToken(toks[toks.length - 1])) {
+  while (toks.length > 1 && isBlankToken(toks.at(-1))) {
     toks.pop();
-    toks[toks.length - 1].sep = '';
+    toks.at(-1).sep = '';
   }
   while (toks.length > 1 && isBlankToken(toks[0])) toks.shift();
   return compose(toks).trim();

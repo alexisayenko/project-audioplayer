@@ -61,7 +61,7 @@ export function cleanUrl(input) {
 
 export function cleanPasted(input) {
   const text = String(input ?? '').trim();
-  const found = /(?:https?:\/\/|(?:www\.|m\.|music\.)?youtu(?:\.be|be\.com)\/|(?:www\.|m\.)?soundcloud\.com\/|on\.soundcloud\.com\/)[^\s<>"']+/i.exec(text);
+  const found = /(?:https?:\/\/|(?:(?:www\.|m\.|music\.)?youtu(?:\.be|be\.com)|(?:www\.|m\.|on\.)?soundcloud\.com)\/)[^\s<>"']+/i.exec(text);
   if (found) return cleanUrl(found[0]);
   return cleanUrl(text.split(/\s*[\r\n]+\s*/)[0]);
 }

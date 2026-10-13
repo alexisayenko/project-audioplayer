@@ -31,7 +31,8 @@ export function planMetadata(resp, cur) {
   if (year != null && String(cur.year ?? '').trim() === '') plan.year = year;
   const returned = !!album || year != null || returnedTags.length > 0;
   const filled = plan.album != null || plan.year != null || plan.tags.length > 0;
-  plan.status = filled ? 'filled' : returned ? 'current' : 'empty';
+  if (filled) plan.status = 'filled';
+  else plan.status = returned ? 'current' : 'empty';
   return plan;
 }
 
@@ -69,7 +70,7 @@ function regionNames() {
     const A = 65;
     for (let i = 0; i < 26; i++) {
       for (let j = 0; j < 26; j++) {
-        const code = String.fromCharCode(A + i, A + j);
+        const code = String.fromCodePoint(A + i, A + j);
         const n = dn.of(code);
         if (n && n !== code) names.set(code.toLowerCase(), n.toLowerCase());
       }
