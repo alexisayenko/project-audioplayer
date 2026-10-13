@@ -1,6 +1,7 @@
 import { api } from './api.js';
 import { store } from './store.js';
-import { el, toast, field, clearField } from './dom.js';
+import { el, toast, field } from './dom.js';
+import { tokenGroup } from './token-field.js';
 import { tagEditor } from './tag-editor.js';
 import { chipField } from './chip-field.js';
 import { wikiFields } from './wiki-links.js';
@@ -46,11 +47,12 @@ export function removeSong(s) {
 
 export function editDialog(song) {
   const dlg = document.getElementById('edit-dialog');
+  const tg = tokenGroup();
   const f = {
-    title: el('input', { type: 'text', value: song.title || '', required: true }),
-    artist: el('input', { type: 'text', value: song.artist || '' }),
+    title: tg.field('title', song.title || ''),
+    artist: tg.field('artist', song.artist || ''),
+    remixer: tg.field('remixer', song.remixer || ''),
     album: el('input', { type: 'text', value: song.album || '' }),
-    remixer: el('input', { type: 'text', value: song.remixer || '' }),
     year: el('input', { type: 'number', value: song.year ?? '', min: 0, max: 3000 }),
     bpm: el('input', { type: 'number', value: song.bpm != null ? Math.round(song.bpm) : '', min: 20, max: 300, step: 1, placeholder: 'Unknown' }),
   };
@@ -80,8 +82,8 @@ export function editDialog(song) {
   });
   const form = el('form', { method: 'dialog' },
     dialogHead('Edit song', null, () => dlg.close()),
-    clearField('Title', f.title), clearField('Artist', f.artist),
-    clearField('Remix & additional production', f.remixer),
+    field('Title', f.title), field('Artist', f.artist),
+    field('Remix & additional production', f.remixer),
     el('div', { class: 'grid2' }, field('Album', f.album), field('Year', f.year)),
     el('div', { class: 'field' }, el('label', {}, 'BPM (heuristic, may be off by half or double)'), el('div', { class: 'row' }, f.bpm, redetect)),
     wiki.node,
@@ -93,6 +95,12 @@ export function editDialog(song) {
       el('button', { type: 'submit', class: 'btn primary glow' }, 'Save')));
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
+    if (!f.title.value.trim()) {
+      err.textContent = 'Title is required';
+      err.hidden = false;
+      f.title.focus();
+      return;
+    }
     genres.commit();
     countries.commit();
     try {

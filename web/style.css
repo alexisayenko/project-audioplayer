@@ -138,12 +138,6 @@ label { display: block; color: var(--ink-muted); font-size: 13px; line-height: 1
 .field { margin-top: var(--space-3); }
 .field:first-child { margin-top: 0; }
 .row { display: flex; gap: var(--space-2); align-items: center; }
-.input-wrap { position: relative; }
-.input-wrap input { padding-right: 36px; }
-.clear-btn { position: absolute; top: 50%; right: 2px; transform: translateY(-50%); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--ink-muted); cursor: pointer; }
-.clear-btn[hidden] { display: none; }
-.clear-btn:hover { color: var(--ink); }
-.clear-btn:focus-visible { outline: 2px solid var(--accent-ink); }
 .row > input { flex: 1; min-width: 0; }
 .row.end { justify-content: flex-end; margin-top: var(--space-4); }
 .well {
@@ -488,3 +482,27 @@ a.svc { cursor: pointer; }
 .chip-field input { flex: 1; min-width: 10rem; }
 .add-foot { position: sticky; bottom: 0; z-index: 1; display: flex; justify-content: flex-end; margin: 0 calc(-1 * var(--space-6)); padding: var(--space-3) var(--space-6); background: var(--surface); border-top: 1px solid var(--line); }
 @media (max-width: 719px) { .add-foot { margin: 0 calc(-1 * var(--space-6)); } }
+
+.token-field {
+  position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); width: 100%; min-height: 40px;
+  padding: var(--space-1) var(--space-2); border-radius: var(--radius-key); background: var(--surface-sunken); cursor: text;
+}
+.token-field:focus-within { box-shadow: inset 0 0 0 1.5px var(--accent-ink); }
+.token-pill {
+  position: relative; display: inline-flex; align-items: center; gap: 2px; max-width: 100%; min-height: 30px; padding: 0 2px;
+  border-radius: var(--radius-pill); background: var(--accent-tint); color: var(--ink); font-size: 14px;
+}
+.token-text { padding: 0 2px; overflow-wrap: anywhere; }
+.token-btn {
+  display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; padding: 0; border: 0;
+  border-radius: 50%; background: transparent; color: var(--ink-muted); cursor: pointer;
+}
+.token-btn:hover { color: var(--ink); }
+.token-btn:focus-visible { outline: 2px solid var(--accent-ink); }
+.token-pill.editing { padding: 0; background: transparent; }
+input[type=text].token-entry, input[type=text].token-edit {
+  width: auto; min-height: 30px; padding: 0 var(--space-2); background: transparent; box-shadow: none; outline: 0;
+}
+input[type=text].token-entry { flex: 1 1 8rem; min-width: 6rem; }
+input[type=text].token-edit { background: var(--surface); box-shadow: inset 0 0 0 1.5px var(--accent-ink); border-radius: var(--radius-pill); }
+.token-menu { position: absolute; top: calc(100% + 4px); left: 0; z-index: 30; }

@@ -1,8 +1,9 @@
 import { api } from './api.js';
 import { store } from './store.js';
 import { tagEditor } from './tag-editor.js';
-import { el, fmtTime, toast, field, clearField } from './dom.js';
+import { el, fmtTime, toast, field } from './dom.js';
 import { icon } from './icons.js';
+import { tokenGroup } from './token-field.js';
 import { cleanPasted, sourceOf, sourceLabel } from './url-clean.js';
 import { findInLibrary } from './library-match.js';
 import { wikiFields } from './wiki-links.js';
@@ -95,11 +96,12 @@ export function openAdd() {
   });
 
   function renderPreview() {
+    const tg = tokenGroup();
     const f = {
-      title: el('input', { type: 'text', value: preview.title || '' }),
-      artist: el('input', { type: 'text', value: preview.artist || '' }),
+      title: tg.field('title', preview.title || ''),
+      artist: tg.field('artist', preview.artist || ''),
+      remixer: tg.field('remixer', preview.remixer || ''),
       album: el('input', { type: 'text', value: preview.album || '' }),
-      remixer: el('input', { type: 'text', value: preview.remixer || '' }),
       year: el('input', { type: 'number', value: preview.year ?? '', min: 0, max: 3000 }),
       bpm: el('input', { type: 'number', min: 20, max: 300, step: 1, placeholder: 'Detected after saving' }),
     };
@@ -201,8 +203,8 @@ export function openAdd() {
       el('div', { class: 'preview-row' }, cover, el('div', { class: 'preview-meta' }, title, sub, facts,
         el('span', { class: 'chip tint', title: 'Source' }, sourceLabel(preview.source || sourceOf(preview.id))))),
       el('div', { class: 'add-fields' },
-        clearField('Title', f.title), clearField('Artist', f.artist),
-        clearField('Remix & additional production', f.remixer),
+        field('Title', f.title), field('Artist', f.artist),
+        field('Remix & additional production', f.remixer),
         el('div', { class: 'meta-row' }, metaBtn, icons.node),
         metaMsg, hint,
         el('div', { class: 'grid2' }, field('Album', f.album), field('Year', f.year)),
