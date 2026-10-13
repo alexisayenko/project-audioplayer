@@ -86,20 +86,3 @@ export function countryCode(raw) {
   for (const [code, n] of map) if (n === t) return code;
   return null;
 }
-
-export function remixSuggestion(hint, cur) {
-  const h = hint && typeof hint === 'object' ? hint : {};
-  const out = {};
-  for (const k of ['original', 'remixer']) {
-    if (typeof h[k] === 'string' && h[k].trim() && norm(h[k]) !== norm(cur[k])) out[k] = h[k].trim();
-  }
-  return Object.keys(out).length ? out : null;
-}
-
-export function remixHintText(hint) {
-  const h = hint && typeof hint === 'object' ? hint : {};
-  const parts = [];
-  if (typeof h.remixer === 'string' && h.remixer.trim()) parts.push(h.remixer.trim());
-  if (typeof h.original === 'string' && h.original.trim()) parts.push(`original ${h.original.trim()}`);
-  return `Looks like a remix: ${parts.join(' · ')}`;
-}

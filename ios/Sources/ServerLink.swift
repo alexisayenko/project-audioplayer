@@ -6,7 +6,6 @@ struct ServerSong: Codable, Identifiable, Hashable {
     var title: String
     var artist: String?
     var album: String?
-    var original: String?
     var remixer: String?
     var year: Int?
     var duration: Double?
@@ -21,14 +20,14 @@ struct ServerSong: Codable, Identifiable, Hashable {
     var sources: [SongSource]?
 
     init(_ t: Track) {
-        id = t.id; title = t.title; artist = t.artist; album = t.album; original = t.original; remixer = t.remixer; year = t.year; duration = t.duration
+        id = t.id; title = t.title; artist = t.artist; album = t.album; remixer = t.remixer; year = t.year; duration = t.duration
         tags = t.tags; bpm = t.bpm; source_url = t.sourceURL; wikipedia_song = t.wikipediaSong
         wikipedia_artist = t.wikipediaArtist; sources = t.sources
     }
 
     var track: Track {
         Track(id: id, title: title, artist: artist ?? "", duration: duration,
-              thumbnail: cover != nil ? "/covers/\(id)" : nil, album: album, original: original, remixer: remixer, year: year, tags: tags, bpm: bpm,
+              thumbnail: cover != nil ? "/covers/\(id)" : nil, album: album, remixer: remixer, year: year, tags: tags, bpm: bpm,
               sourceURL: source_url, wikipediaSong: wikipedia_song, wikipediaArtist: wikipedia_artist,
               addedAt: added_at.flatMap(Self.parseDate), sources: sources, onServer: audio_state.map { $0 == "server" })
     }

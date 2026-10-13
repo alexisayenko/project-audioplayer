@@ -222,7 +222,7 @@ function render() {
   $('mini-artist').textContent = song.artist || '';
   $('player-title').textContent = song.title;
   $('player-sub').textContent = [song.artist, song.album, song.year].filter(Boolean).join(' · ');
-  const remixLine = [song.original ? `Original: ${song.original}` : '', song.remixer ? `Remix: ${song.remixer}` : ''].filter(Boolean).join(' · ');
+  const remixLine = [song.remixer ? `Remix: ${song.remixer}` : ''].filter(Boolean).join(' · ');
   if (remixLine) $('player-sub').textContent += ($('player-sub').textContent ? ' · ' : '') + remixLine;
   $('player-tags').replaceChildren(...visibleTags(song.tags).map(tagChip));
   $('player-bpm').textContent = song.bpm != null ? `${Math.round(song.bpm)} BPM` : '';

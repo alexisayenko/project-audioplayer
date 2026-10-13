@@ -9,7 +9,7 @@ import { wikiFields } from './wiki-links.js';
 import { dialogHead } from './edit-dialog.js';
 import { chipField } from './chip-field.js';
 import { serviceIcons } from './service-icons.js';
-import { planMetadata, statusText, serviceState, suggestion, suggestionText, remixSuggestion, remixHintText } from './metadata-apply.js';
+import { planMetadata, statusText, serviceState, suggestion, suggestionText } from './metadata-apply.js';
 
 const BULK = new Set(['insertFromPaste', 'insertFromPasteAsQuotation', 'insertFromDrop', 'insertReplacementText']);
 const PREVIEW_ONLY = 'Preview only \u2014 SoundCloud Go+ track, can\'t be downloaded in full.';
@@ -100,7 +100,6 @@ export function openAdd() {
       title: el('input', { type: 'text', value: preview.title || '' }),
       artist: el('input', { type: 'text', value: preview.artist || '' }),
       album: el('input', { type: 'text', value: preview.album || '' }),
-      original: el('input', { type: 'text', value: preview.original || '' }),
       remixer: el('input', { type: 'text', value: preview.remixer || '' }),
       year: el('input', { type: 'number', value: preview.year ?? '', min: 0, max: 3000 }),
       bpm: el('input', { type: 'number', min: 20, max: 300, step: 1, placeholder: 'Detected after saving' }),
@@ -145,26 +144,6 @@ export function openAdd() {
     f.title.addEventListener('input', paintHint);
     f.artist.addEventListener('input', paintHint);
 
-    const remixHint = el('button', { class: 'link-btn t-caption wiki-hint', type: 'button', hidden: true });
-    let remix = preview.remix_hint || null;
-    const remixCur = () => ({ original: f.original.value, remixer: f.remixer.value });
-    const paintRemix = () => {
-      const sug = remix ? remixSuggestion(remix, remixCur()) : null;
-      remixHint.hidden = !sug;
-      remixHint.textContent = sug ? remixHintText(remix) : '';
-    };
-    remixHint.addEventListener('click', () => {
-      const sug = remixSuggestion(remix, remixCur());
-      if (!sug) return;
-      if (sug.original) f.original.value = sug.original;
-      if (sug.remixer) f.remixer.value = sug.remixer;
-      paintMeta();
-      paintRemix();
-    });
-    f.original.addEventListener('input', paintRemix);
-    f.remixer.addEventListener('input', paintRemix);
-    paintRemix();
-
     const applyMeta = (resp) => {
       const plan = planMetadata(resp, { album: f.album.value, year: f.year.value, tags: editor.peek() });
       if (plan.album != null) f.album.value = plan.album;
@@ -201,10 +180,8 @@ export function openAdd() {
         icons.setBusy(false);
         icons.setState(serviceState(resp?.services));
         suggest = resp?.suggest || null;
-        if (resp?.remix_hint) remix = resp.remix_hint;
         applyMeta(resp);
         paintHint();
-        paintRemix();
       } catch {
         if (!req.live()) return;
         icons.reset();
@@ -229,7 +206,7 @@ export function openAdd() {
         el('div', { class: 'meta-row' }, metaBtn, icons.node),
         metaMsg, hint,
         el('div', { class: 'grid2' }, field('Album', f.album), field('Year', f.year)),
-        field('Original track', f.original), field('Remix & additional production', f.remixer), remixHint,
+        field('Remix & additional production', f.remixer),
         field('BPM (optional)', f.bpm),
         genres.node, countries.node,
         el('div', { class: 'field' }, el('label', {}, 'Tags'), editor.node),
@@ -249,7 +226,6 @@ export function openAdd() {
           title: f.title.value,
           artist: f.artist.value,
           album: f.album.value,
-          original: f.original.value,
           remixer: f.remixer.value,
           year: f.year.value === '' ? null : Number(f.year.value),
           bpm: f.bpm.value === '' ? null : Math.round(Number(f.bpm.value)),

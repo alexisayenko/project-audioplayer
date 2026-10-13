@@ -8,7 +8,6 @@ struct Preview: Codable, Hashable {
     var title: String?
     var artist: String?
     var album: String?
-    var original: String?
     var remixer: String?
     var year: Int?
     var duration: Double?
@@ -17,18 +16,6 @@ struct Preview: Codable, Hashable {
     var wikipedia_song: String?
     var wikipedia_artist: String?
     var in_library: Bool?
-    var remix_hint: RemixHint?
-}
-
-struct RemixHint: Codable, Hashable {
-    var original: String?
-    var remixer: String?
-
-    init(from decoder: Decoder) throws {
-        let c = try decoder.container(keyedBy: CodingKeys.self)
-        original = try? c.decodeIfPresent(String.self, forKey: .original)
-        remixer = try? c.decodeIfPresent(String.self, forKey: .remixer)
-    }
 }
 
 /// `GET /songs/{id}/status`.
@@ -45,9 +32,8 @@ struct MetadataResult: Decodable {
     var tags: [String]?
     var services: Services?
     var suggest: Suggest?
-    var remix_hint: RemixHint?
 
-    enum CodingKeys: String, CodingKey { case album, year, tags, services, suggest, remix_hint }
+    enum CodingKeys: String, CodingKey { case album, year, tags, services, suggest }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -56,7 +42,6 @@ struct MetadataResult: Decodable {
         tags = try? c.decode([String].self, forKey: .tags)
         services = try? c.decode(Services.self, forKey: .services)
         suggest = try? c.decode(Suggest.self, forKey: .suggest)
-        remix_hint = try? c.decode(RemixHint.self, forKey: .remix_hint)
     }
 
     struct Suggest: Decodable, Equatable {

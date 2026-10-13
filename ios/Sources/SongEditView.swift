@@ -10,7 +10,6 @@ struct SongEditView: View {
     @State private var title: String
     @State private var artist: String
     @State private var album: String
-    @State private var original: String
     @State private var remixer: String
     @State private var year: String
     @State private var bpm: String
@@ -36,7 +35,6 @@ struct SongEditView: View {
         _title = State(initialValue: song.title)
         _artist = State(initialValue: song.artist ?? "")
         _album = State(initialValue: song.album ?? "")
-        _original = State(initialValue: song.original ?? "")
         _remixer = State(initialValue: song.remixer ?? "")
         _year = State(initialValue: song.year.map(String.init) ?? "")
         _bpm = State(initialValue: song.bpm.map { String(Int($0.rounded())) } ?? "")
@@ -131,7 +129,6 @@ struct SongEditView: View {
                 .clipShape(RoundedRectangle(cornerRadius: DS.Radius.radiusSm, style: .continuous))
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 6) {
-                if let o = (track?.original ?? song.original), !o.isEmpty { Text("Original: \(o)").font(T.caption).foregroundStyle(DS.Color.inkMuted).lineLimit(2) }
                 if let r = (track?.remixer ?? song.remixer), !r.isEmpty { Text("Remix: \(r)").font(T.caption).foregroundStyle(DS.Color.inkMuted).lineLimit(2) }
                 if !facts.isEmpty { Text(facts).font(T.time).foregroundStyle(DS.Color.inkMuted) }
                 if let added { Text(added).dsCaption() }
@@ -145,7 +142,6 @@ struct SongEditView: View {
             GridRow { row("Title", $title) }
             GridRow { row("Artist", $artist) }
             GridRow { row("Album", $album) }
-            GridRow { row("Original track", $original) }
             GridRow { row("Remix & additional production", $remixer) }
             GridRow {
                 Text("Year").font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.inkMuted)
@@ -264,7 +260,7 @@ struct SongEditView: View {
         commitNamespaced(&tags, key: "country", cap: countryCap, input: &pendingCountry)
         let changes: [String: Any] = [
             "title": title, "artist": artist, "album": album,
-            "original": link(original), "remixer": link(remixer),
+            "remixer": link(remixer),
             "year": yearValue.map { $0 as Any } ?? NSNull(),
             "bpm": Int(bpm.trimmingCharacters(in: .whitespaces)).map { $0 as Any } ?? NSNull(),
             "wikipedia_song": link(wikiSong), "wikipedia_artist": link(wikiArtist),

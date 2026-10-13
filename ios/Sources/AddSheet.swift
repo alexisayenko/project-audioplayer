@@ -13,12 +13,10 @@ final class AddFlow: ObservableObject {
     @Published var metaNote: String?
     @Published var services: [ServiceKind: URL?] = [:]
     @Published var suggest: MetadataResult.Suggest?
-    @Published var remixHint: RemixHint?
 
     @Published var title = ""
     @Published var artist = ""
     @Published var album = ""
-    @Published var original = ""
     @Published var remixer = ""
     @Published var year = "" { didSet { applyDecade() } }
     @Published var bpm = ""
@@ -30,7 +28,6 @@ final class AddFlow: ObservableObject {
     @Published var pendingGenre = ""
     @Published var pendingCountry = ""
 
-    var originalValue: String? { let t = original.trimmingCharacters(in: .whitespacesAndNewlines); return t.isEmpty ? nil : t }
     var remixerValue: String? { let t = remixer.trimmingCharacters(in: .whitespacesAndNewlines); return t.isEmpty ? nil : t }
     var yearValue: Int? { Int(year.trimmingCharacters(in: .whitespaces)) }
 
@@ -52,18 +49,6 @@ final class AddFlow: ObservableObject {
         suggest = nil
     }
 
-    var remixOffer: (original: String?, remixer: String?)? {
-        let o = Self.differs(remixHint?.original, original), r = Self.differs(remixHint?.remixer, remixer)
-        return o == nil && r == nil ? nil : (o, r)
-    }
-
-    func applyRemixHint() {
-        guard let h = remixOffer else { return }
-        if let o = h.original { original = o }
-        if let r = h.remixer { remixer = r }
-        remixHint = nil
-    }
-
     private func applyDecade() {
         tags = withDecade(tags, yearValue)
         suggested = withDecade(suggested, yearValue)
@@ -79,12 +64,12 @@ final class AddFlow: ObservableObject {
         let clean = cleanPasted(url)
         url = clean
         guard !clean.isEmpty, phase != .loading, phase != .saving else { return }
-        phase = .loading; message = nil; errorCode = nil; suggest = nil; remixHint = nil; metaNote = nil; services = [:]
+        phase = .loading; message = nil; errorCode = nil; suggest = nil; metaNote = nil; services = [:]
         do {
             let p = try await api.preview(url: clean)
             preview = p
             title = p.title ?? ""; artist = p.artist ?? ""; album = p.album ?? ""
-            original = p.original ?? ""; remixer = p.remixer ?? ""; remixHint = p.remix_hint
+            remixer = p.remixer ?? ""
             year = p.year.map(String.init) ?? ""; bpm = ""
             wikiSong = p.wikipedia_song ?? ""; wikiArtist = p.wikipedia_artist ?? ""
             let sug = p.tags ?? []
@@ -112,7 +97,6 @@ final class AddFlow: ObservableObject {
             }
             services = found
             suggest = r.suggest
-            if let h = r.remix_hint { remixHint = h }
             var changed = false
             let returned = !(r.album ?? "").isEmpty || r.year != nil || !(r.tags ?? []).isEmpty
             if let a = r.album, !a.isEmpty, album.trimmingCharacters(in: .whitespaces).isEmpty { album = a; changed = true }
@@ -136,7 +120,6 @@ final class AddFlow: ObservableObject {
         let finalTagList = finalTags(tags, pending: pendingTag)
         let meta: [String: Any] = [
             "title": title, "artist": artist, "album": album,
-            "original": originalValue.map { $0 as Any } ?? NSNull(),
             "remixer": remixerValue.map { $0 as Any } ?? NSNull(),
             "year": yearValue.map { $0 as Any } ?? NSNull(),
             "wikipedia_song": wikiS.isEmpty ? NSNull() : wikiS,
@@ -150,7 +133,7 @@ final class AddFlow: ObservableObject {
         }
         let track = Track(id: p.id, title: title, artist: artist, duration: p.duration,
                           thumbnail: p.thumbnail == nil ? nil : "/covers/\(p.id)",
-                          album: album.isEmpty ? nil : album, original: originalValue, remixer: remixerValue, year: yearValue, tags: finalTagList,
+                          album: album.isEmpty ? nil : album, remixer: remixerValue, year: yearValue, tags: finalTagList,
                           bpm: bpmValue.map(Double.init), sourceURL: p.source_url,
                           wikipediaSong: wikiS.isEmpty ? nil : wikiS, wikipediaArtist: wikiA.isEmpty ? nil : wikiA)
         if download {
@@ -379,23 +362,6 @@ struct AddSheet: View {
         .accessibilityLabel("Use Wikipedia's artist and title: \(spoken)")
     }
 
-    private func remixHintRow(_ h: (original: String?, remixer: String?)) -> some View {
-        var parts: [String] = []
-        if let r = h.remixer { parts.append(r) }
-        if let o = h.original { parts.append("original \(o)") }
-        let text = parts.joined(separator: " · ")
-        return Button { flow.applyRemixHint() } label: {
-            HStack(alignment: .firstTextBaseline, spacing: DS.Space.space2) {
-                Image(systemName: "lightbulb").accessibilityHidden(true)
-                Text("Looks like a remix: \(text)").multilineTextAlignment(.leading)
-            }
-            .font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.accentInk)
-            .frame(maxWidth: .infinity, minHeight: DS.Space.hit, alignment: .leading)
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Fill the remix fields: \(text)")
-    }
-
     private var summary: String {
         [flow.artist, flow.year].filter { !$0.isEmpty }.joined(separator: " · ")
     }
@@ -433,7 +399,7 @@ struct AddSheet: View {
                 Button("Download to iPhone") {
                     Task { _ = await server.download(Track(id: p.id, title: p.title ?? "", artist: p.artist ?? "",
                                                              duration: p.duration, thumbnail: p.thumbnail == nil ? nil : "/covers/\(p.id)",
-                                                             album: p.album, original: p.original, remixer: p.remixer, year: p.year, tags: p.tags, sourceURL: p.source_url),
+                                                             album: p.album, remixer: p.remixer, year: p.year, tags: p.tags, sourceURL: p.source_url),
                                                     settings: settings, into: library) }
                 }
                 .buttonStyle(DSButtonStyle(kind: .outline))
@@ -453,9 +419,7 @@ struct AddSheet: View {
                 }
                 if let n = flow.metaNote { note(n, error: n == "Couldn't load metadata") }
                 labeled("Album", $flow.album)
-                labeled("Original track", $flow.original)
                 labeled("Remix & additional production", $flow.remixer)
-                if let h = flow.remixOffer { remixHintRow(h) }
                 labeled("Year", $flow.year, keyboard: .numberPad)
                 labeled("BPM (optional, detected after saving)", $flow.bpm, keyboard: .numberPad)
         }
