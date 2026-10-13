@@ -486,3 +486,5 @@ Sub-decision 2026-10-13: the Add form shows four service icons (YouTube, SoundCl
 Note 2026-10-13: web saves metadata only; audio reaches the server only through the iOS download flow; existing server audio keeps playing and deleting on the web.
 
 Decision 2026-10-13 (amended): songs get an optional free-text `remixer` ("remix & additional production"). A strict deterministic cut (ADD-070, API-049) replaces the earlier tap-to-apply hint: the first bracket containing the word remix is removed from the title and its text becomes `remixer`. The `original` (Original track) field is dropped. MusicBrainz was rejected for this: remixes are not linked or catalogued there and name matching hits the wrong artist (Sadrican finds Sadrican Sagdur).
+
+Decision 2026-10-13: version info such as "(Live from the Royal Albert Hall)" stays in the saved and shown title and is stripped only from metadata lookup queries (`titles.lookup_title`); there is no separate Version field.
