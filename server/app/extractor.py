@@ -11,7 +11,7 @@ from urllib.parse import urlparse
 import yt_dlp
 
 from . import library, urlclean
-from .titles import split_artist_title
+from .titles import remix_hint, split_artist_title
 from .urlclean import is_valid_video_id, parse_video_id, source_of, watch_url  # noqa: F401
 
 PREVIEW_ONLY_MESSAGE = "Preview only \u2014 SoundCloud Go+ track, can't be downloaded in full."
@@ -147,6 +147,7 @@ def soundcloud_probe(url: str) -> dict[str, Any]:
         "title": info.get("track") or info.get("title") or "",
         "artist": _first(info.get("artists")) or info.get("artist") or info.get("creator") or info.get("uploader") or "",
         "album": info.get("album"),
+        "remix_hint": remix_hint(info.get("title") or ""),
         "year": _year({k: info.get(k) for k in ("release_year", "release_date")}),
         "tags": suggest_tags({**info, "genre": info.get("genre") or info.get("genres")}),
         "duration": info.get("duration"),
@@ -171,6 +172,7 @@ def preview(video_id: str) -> dict[str, Any]:
         "title": title,
         "artist": artist,
         "album": info.get("album"),
+        "remix_hint": remix_hint(info.get("title") or ""),
         "year": _year(info),
         "tags": suggest_tags(info),
         "duration": info.get("duration"),

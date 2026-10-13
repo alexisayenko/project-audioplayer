@@ -38,3 +38,28 @@ def split_artist_title(artist: str, title: str) -> tuple[str, str]:
         if m and title[m.end() :].strip():
             title = title[m.end() :].strip()
     return artist, title
+
+
+_BRACKET = re.compile(r"[\(\[]([^\)\]]*)[\)\]]")
+_REMIX_WORDS = {"remix", "bootleg", "rework", "flip", "refix", "vip"}
+_GENERIC = {"official", "extended", "radio", "club", "original", "edit", "mix", "dub", "instrumental", "the", "a"}
+
+
+def remix_hint(title: str, artist: str = "") -> dict[str, str | None] | None:
+    """Suggest {original, remixer} from a bracketed "(Name Remix)" credit; None unless a strict keyword ends a bracket."""
+    if not isinstance(title, str):
+        return None
+    for m in _BRACKET.finditer(title):
+        words = m.group(1).split()
+        if len(words) < 2 or words[-1].strip(".,;:!").casefold() not in _REMIX_WORDS:
+            continue
+        names = [w for w in words[:-1] if not re.fullmatch(r"\d{4}", w)]
+        if names:
+            names[-1] = re.sub(r"['’]s$", "", names[-1])
+        remixer = " ".join(names).strip()
+        if not remixer or all(w.casefold() in _GENERIC for w in names):
+            continue
+        head = _NOISE.sub("", title[: m.start()])
+        head = re.sub(r"\s+", " ", head).strip(" -|")
+        return {"original": head if " - " in head else None, "remixer": remixer}
+    return None

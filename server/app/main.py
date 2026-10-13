@@ -21,7 +21,7 @@ from pydantic import BaseModel, Field
 
 from . import bpm as bpm_detect
 from . import jobs, limits, oauth, session, users
-from . import extractor, genre_lookup, gitstore, library, metadata, urlclean, wiki_lookup
+from . import extractor, genre_lookup, gitstore, library, metadata, titles, urlclean, wiki_lookup
 from .problems import Problem
 
 DOWNLOAD_DIR = Path(os.environ.get("AUDIO_DOWNLOAD_DIR", "downloads"))
@@ -411,6 +411,8 @@ class SongMeta(BaseModel):
     title: str | None = None
     artist: str | None = None
     album: str | None = None
+    original: str | None = None
+    remixer: str | None = None
     year: int | None = Field(default=None, ge=0, le=3000)
     bpm: float | None = Field(default=None, ge=20, le=300)
     wikipedia_song: str | None = None
@@ -603,6 +605,7 @@ async def preview(req: PreviewRequest, user: dict[str, Any] = Depends(require_to
     meta["wikipedia_song"] = wiki["wikipedia_song"]
     meta["wikipedia_artist"] = wiki["wikipedia_artist"]
     meta["suggested_year"] = wiki["year"]
+    meta["remix_hint"] = meta.get("remix_hint")
     if meta.get("year") is None:
         meta["year"] = wiki["year"]
     meta["in_library"] = any(s["id"] == vid for s in _load(user["uid"]))
@@ -633,9 +636,10 @@ def _source_info(url: str) -> dict[str, Any]:
 async def get_metadata(req: MetadataRequest):
     urls = [src.url.strip() for src in req.sources[:5] if src.url.strip()]
     fetchers = [(lambda u=u: _source_info(u)) for u in urls]
-    return await run_in_threadpool(
+    out = await run_in_threadpool(
         metadata.gather, req.title.strip(), req.artist.strip(), fetchers, req.wiki_song, req.wiki_artist, metadata.TIMEOUT, urls
     )
+    return {**out, "remix_hint": titles.remix_hint(req.title)}
 
 
 @app.post("/lookup/wikipedia", dependencies=[Depends(require_token)])
@@ -678,6 +682,8 @@ def _run_download(uid: str, owner: bool, vid: str, meta: dict[str, Any], tags: l
             "title": meta.get("title") or info.get("title") or vid,
             "artist": meta.get("artist") or info.get("artist"),
             "album": meta.get("album"),
+            "original": meta.get("original"),
+            "remixer": meta.get("remixer"),
             "year": meta.get("year"),
             "bpm": value,
             "wikipedia_song": wiki_lookup.clean_link(meta.get("wikipedia_song")),
@@ -763,6 +769,8 @@ def _add_metadata_only(uid: str, vid: str, link: _Resolved, meta: dict[str, Any]
             "title": meta.get("title") or found.get("title") or vid,
             "artist": meta.get("artist") or found.get("artist") or None,
             "album": meta.get("album") or found.get("album"),
+            "original": meta.get("original"),
+            "remixer": meta.get("remixer"),
             "year": meta["year"] if meta.get("year") is not None else found.get("year"),
             "bpm": round(meta["bpm"]) if meta.get("bpm") is not None else None,
             "wikipedia_song": wiki_lookup.clean_link(meta.get("wikipedia_song")),
@@ -812,7 +820,7 @@ def patch_song(video_id: str, req: PatchSongRequest, user: dict[str, Any] = Depe
         if song is None:
             raise HTTPException(status_code=404, detail=_UNKNOWN_SONG)
         updated = dict(song)
-        for key in ("title", "artist", "album"):
+        for key in ("title", "artist", "album", "original", "remixer"):
             if key in changes:
                 updated[key] = _clean_text(changes[key])
         if "year" in changes:
