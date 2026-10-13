@@ -68,7 +68,7 @@ export function addManual(state, id) {
     return { state: { ...state, items }, result: 'added' };
   }
   const items = [...state.items, { id, manual: true, tags: [] }];
-  return { state: { ...state, items, index: state.index < 0 ? 0 : state.index }, result: state.index < 0 ? 'queued' : 'added' };
+  return { state: { ...state, items, index: Math.max(state.index, 0) }, result: state.index < 0 ? 'queued' : 'added' };
 }
 
 export function playNow(state, id) {
@@ -126,12 +126,12 @@ export function addListed(state, songs, tag = '') {
 
 // Drops chips and the not-yet-started, non-manual songs that only those chips contributed.
 export function removeTags(state, remove) {
-  const rm = remove.map(lc);
-  const tags = state.tags.filter((t) => !rm.includes(lc(t)));
+  const rm = new Set(remove.map(lc));
+  const tags = state.tags.filter((t) => !rm.has(lc(t)));
   let removed = 0;
   const items = [];
   state.items.forEach((it, i) => {
-    const left = it.tags.filter((t) => !rm.includes(lc(t)));
+    const left = it.tags.filter((t) => !rm.has(lc(t)));
     if (i > state.index && !it.manual && left.length === 0) { removed += 1; return; }
     items.push({ ...it, tags: left });
   });
@@ -174,6 +174,8 @@ export function parseSaved(data) {
   }
   items = items.filter((it, i) => items.findIndex((x) => x.id === it.id) === i);
   const tags = Array.isArray(data.tags) ? data.tags.filter((t) => typeof t === 'string') : [];
-  const index = Number.isInteger(data.index) && data.index >= 0 && data.index < items.length ? data.index : (items.length ? 0 : -1);
+  const valid = Number.isInteger(data.index) && data.index >= 0 && data.index < items.length;
+  const fallback = items.length ? 0 : -1;
+  const index = valid ? data.index : fallback;
   return { items, index, tags };
 }

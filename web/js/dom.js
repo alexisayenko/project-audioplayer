@@ -26,6 +26,8 @@ export function fmtTime(sec) {
   return h ? `${h}:${String(m).padStart(2, '0')}:${r}` : `${m}:${r}`;
 }
 
+export const plural = (n, one, other) => (n === 1 ? one : other);
+
 let toastTimer;
 export function toast(text) {
   const t = document.getElementById('toast');

@@ -1,6 +1,6 @@
 import { api } from './api.js';
 import { store } from './store.js';
-import { el, fmtTime, toast } from './dom.js';
+import { el, fmtTime, toast, plural } from './dom.js';
 import * as Q from './queue-logic.js';
 import { visibleTags, tagChip, tagGroups, tagLabel, tagText } from './tagname.js';
 import { songLinks } from './wiki-links.js';
@@ -10,6 +10,14 @@ import { editDialog, dialogHead } from './edit-dialog.js';
 
 const audio = document.getElementById('audio');
 const $ = (id) => document.getElementById(id);
+
+const REPEAT_NEXT = { off: 'all', all: 'one' };
+const REPEAT_LABEL = { one: 'one song', all: 'whole list' };
+
+function applyLabel(fresh, drop) {
+  if (fresh) return `Add songs (${fresh} ${plural(fresh, 'tag', 'tags')})`;
+  return drop ? 'Apply' : 'Add songs';
+}
 
 const QUEUE_KEY = 'ap2.queue';
 const SHUFFLE_KEY = 'ap2.shuffle';
@@ -125,7 +133,7 @@ export const player = {
   },
 
   cycleRepeat() {
-    repeat = repeat === 'off' ? 'all' : repeat === 'all' ? 'one' : 'off';
+    repeat = REPEAT_NEXT[repeat] || 'off';
     savePrefs();
     render();
   },
@@ -171,7 +179,7 @@ function load(autoplay) {
 }
 
 function setCover(img, song) {
-  const src = song && song.cover ? api.coverUrl(song.id) : '';
+  const src = song?.cover ? api.coverUrl(song.id) : '';
   if (img.dataset.src === src) return;
   img.dataset.src = src;
   if (src) img.src = src; else img.removeAttribute('src');
@@ -187,7 +195,7 @@ function render() {
   $('details-body').hidden = !song;
   $('cover-text').hidden = !song;
   $('p-more').hidden = !song;
-  $('queue-count').textContent = n ? `${n} ${n === 1 ? 'song' : 'songs'}` : '';
+  $('queue-count').textContent = n ? `${n} ${plural(n, 'song', 'songs')}` : '';
   renderPlaylistControls();
   const playing = !audio.paused;
   setIcon('p-play', playing ? 'pause' : 'play', 22);
@@ -235,20 +243,20 @@ function setToggle(ids, on, label, iconName) {
 
 function renderPlaylistControls() {
   setToggle(['p-shuffle', 'mini-shuffle'], shuffle, `Shuffle: ${shuffle ? 'on' : 'off'}`);
-  setToggle(['p-repeat', 'mini-repeat'], repeat !== 'off', `Repeat: ${repeat === 'one' ? 'one song' : repeat === 'all' ? 'whole list' : 'off'}`, repeat === 'one' ? 'repeatOne' : 'repeat');
+  setToggle(['p-repeat', 'mini-repeat'], repeat !== 'off', `Repeat: ${REPEAT_LABEL[repeat] || 'off'}`, repeat === 'one' ? 'repeatOne' : 'repeat');
   $('queue-clear').disabled = !qs.tags.length;
   $('fill-tags').replaceChildren(...qs.tags.map((t) => el('span', { class: 'chip tint', title: t },
     tagText(t),
     el('button', {
       class: 'x', type: 'button', title: `Remove tag: ${t}`, 'aria-label': `Remove tag: ${t}`,
-      onclick: () => { const n = player.removeTag(t); toast(n ? `Removed ${n} ${n === 1 ? 'song' : 'songs'}` : 'Tag removed'); },
+      onclick: () => { const n = player.removeTag(t); toast(n ? `Removed ${n} ${plural(n, 'song', 'songs')}` : 'Tag removed'); },
     }, '×'))));
 }
 
 function songRow(item, i) {
   const s = store.get(item.id);
   const cover = el('img', { class: 'cover', alt: '', loading: 'lazy' });
-  if (s && s.cover) cover.src = api.coverUrl(s.id);
+  if (s?.cover) cover.src = api.coverUrl(s.id);
   cover.addEventListener('error', () => cover.removeAttribute('src'));
   const title = s ? s.title : item.id;
   const past = i <= qs.index;
@@ -265,8 +273,8 @@ function songRow(item, i) {
     cover,
     el('div', { class: 'info' },
       el('button', { class: 'open t-subhead', type: 'button', title: 'Play', onclick: () => player.playAt(i) }, title),
-      s && s.artist ? el('small', { class: 'sub t-caption' }, s.artist) : null),
-    el('span', { class: 'c-dur t-time' }, s && s.duration ? fmtTime(s.duration) : ''),
+      s?.artist ? el('small', { class: 'sub t-caption' }, s.artist) : null),
+    el('span', { class: 'c-dur t-time' }, s?.duration ? fmtTime(s.duration) : ''),
     more);
 }
 
@@ -279,7 +287,7 @@ function openTagPicker() {
     const fresh = [...chosen].filter((c) => !qs.tags.some((t) => t.toLocaleLowerCase() === c));
     const drop = qs.tags.filter((t) => !chosen.has(t.toLocaleLowerCase()));
     apply.disabled = !fresh.length && !drop.length;
-    apply.textContent = fresh.length ? `Add songs (${fresh.length} ${fresh.length === 1 ? 'tag' : 'tags'})` : drop.length ? 'Apply' : 'Add songs';
+    apply.textContent = applyLabel(fresh.length, drop.length);
   };
   const chip = (t) => {
     const b = el('button', { class: 'chip', type: 'button', 'aria-pressed': 'false', title: t.tag },
@@ -324,7 +332,7 @@ function openTagPicker() {
 function renderQueue() {
   closeMenu();
   $('queue-empty').hidden = qs.items.length > 0;
-  $('queue-list').replaceChildren(...qs.items.map(songRow));
+  $('queue-list').replaceChildren(...qs.items.map((item, i) => songRow(item, i)));
 }
 
 function renderProgress() {
@@ -412,7 +420,7 @@ export function initPlayer() {
   $('tag-add').addEventListener('click', openTagPicker);
   $('queue-clear').addEventListener('click', () => {
     const n = player.clean();
-    toast(n ? `Removed ${n} ${n === 1 ? 'song' : 'songs'}` : 'Tags cleared');
+    toast(n ? `Removed ${n} ${plural(n, 'song', 'songs')}` : 'Tags cleared');
   });
   $('mini-open').addEventListener('click', () => { location.hash = '#/playback'; });
   $('p-more').addEventListener('click', () => {
@@ -422,7 +430,7 @@ export function initPlayer() {
 
   document.addEventListener('keydown', (e) => {
     if (e.repeat || e.ctrlKey || e.metaKey || e.altKey || !player.current) return;
-    if (e.target.closest && e.target.closest('input, textarea, select, button, a, dialog, [contenteditable]')) return;
+    if (e.target.closest?.('input, textarea, select, button, a, dialog, [contenteditable]')) return;
     if (e.key === ' ') { e.preventDefault(); player.toggle(); }
     else if (e.key === 'ArrowLeft') { e.preventDefault(); player.seek(audio.currentTime - 5); }
     else if (e.key === 'ArrowRight') { e.preventDefault(); player.seek(audio.currentTime + 5); }
@@ -441,7 +449,7 @@ export function initPlayer() {
   });
 
   let stored = 1;
-  try { const v = parseFloat(localStorage.getItem(VOLUME_KEY)); if (Number.isFinite(v)) stored = v; } catch { /* storage unavailable */ }
+  try { const v = Number.parseFloat(localStorage.getItem(VOLUME_KEY)); if (Number.isFinite(v)) stored = v; } catch { /* storage unavailable */ }
   setVolume(stored, false);
   for (const id of ['p-volume', 'mini-volume']) $(id).addEventListener('input', (e) => setVolume(e.target.value / 100));
 

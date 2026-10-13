@@ -35,7 +35,7 @@ export function withDecade(tags, year) {
   return placed ? out : [...out, derived];
 }
 
-export const decadeRank = (tag) => { const n = Number(splitTag(tag).value.slice(0, 2)); return Number.isNaN(n) ? 999 : n < 50 ? n + 100 : n; };
+export const decadeRank = (tag) => { const n = Number(splitTag(tag).value.slice(0, 2)); if (Number.isNaN(n)) return 999; return n < 50 ? n + 100 : n; };
 
 export function valueLabel(key, value) {
   if (key === 'decade' && DECADE.test(value)) return `the ${value}`;
@@ -73,7 +73,10 @@ export function tagGroups(tagCounts) {
     const { key } = splitTag(t.tag);
     groups.set(key, [...(groups.get(key) || []), t]);
   }
-  const rank = (k) => (k === '' ? 2 : FIRST.includes(k) ? 0 : 1);
+  const rank = (k) => {
+    if (k === '') return 2;
+    return FIRST.includes(k) ? 0 : 1;
+  };
   const order = [...groups.keys()].sort((a, b) => rank(a) - rank(b)
     || (rank(a) === 0 ? FIRST.indexOf(a) - FIRST.indexOf(b) : a.localeCompare(b)));
   return order.map((key) => ({
@@ -95,7 +98,7 @@ export const CATEGORIES = [
 export function categoryOf(tag) {
   const { key } = splitTag(tag);
   const k = key.toLocaleLowerCase();
-  const hit = CATEGORIES.find((c) => c.keys && c.keys.includes(k));
+  const hit = CATEGORIES.find((c) => c.keys?.includes(k));
   return hit ? hit.id : 'tags';
 }
 

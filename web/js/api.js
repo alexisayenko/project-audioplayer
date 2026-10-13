@@ -42,13 +42,13 @@ async function request(method, path, body) {
   let data = null;
   try { data = await res.json(); } catch { /* no body */ }
   if (!res.ok) {
-    let detail = data && data.detail;
+    let detail = data?.detail;
     if (Array.isArray(detail)) detail = detail.map((d) => d.msg).join('; ');
     if (res.status === 401) {
       detail = 'Not signed in (see Settings)';
       lostSession();
     }
-    const code = (data && data.error) || '';
+    const code = data?.error || '';
     throw new ApiError(res.status, friendly(code, data, detail) || `Request failed (${res.status})`, code);
   }
   return data;
@@ -68,8 +68,8 @@ async function authCall(method, path, body) {
   let data = null;
   try { data = await res.json(); } catch { /* no body */ }
   if (!res.ok) {
-    const code = (data && data.error) || '';
-    throw new ApiError(res.status, friendly(code, data, data && data.detail) || `Request failed (${res.status})`, code);
+    const code = data?.error || '';
+    throw new ApiError(res.status, friendly(code, data, data?.detail) || `Request failed (${res.status})`, code);
   }
   return data;
 }

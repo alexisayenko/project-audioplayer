@@ -93,9 +93,11 @@ function accountSection() {
         }, 'Sign out')));
   }
   const box = el('div', { class: 'signin-box' });
-  setupProviders(box, out);
+  void setupProviders(box, out);
   return el('div', { class: 'account' }, el('p', { class: 'muted t-subhead' }, 'Sign in to see your library, add songs and play them.'), box, out);
 }
+
+const SYNC_TEXT = { ok: 'In sync with git', error: 'Not reaching git (retrying)' };
 
 function accountCard() {
   return el('section', { class: 'card' }, el('h2', { class: 't-headline' }, 'Account'), accountSection());
@@ -109,7 +111,7 @@ function libraryCard() {
   api.usage().then((u) => { meter.textContent = usageText(u); }).catch(() => { meter.textContent = ''; });
   const sync = el('span', {}, 'Checking...');
   fetch('/health').then((r) => r.json()).then((h) => {
-    sync.textContent = h.sync === 'ok' ? 'In sync with git' : h.sync === 'error' ? 'Not reaching git (retrying)' : 'Waiting to sync to git';
+    sync.textContent = SYNC_TEXT[h.sync] || 'Waiting to sync to git';
   }).catch(() => { sync.textContent = 'Server unreachable'; });
   return el('section', { class: 'card' },
     el('h2', { class: 't-headline' }, 'Library on the server'),

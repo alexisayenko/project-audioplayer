@@ -1,7 +1,7 @@
 import { api } from './api.js';
 import { store } from './store.js';
 import { player } from './player.js';
-import { el, toast, fmtTime } from './dom.js';
+import { el, toast, fmtTime, plural } from './dom.js';
 import { icon } from './icons.js';
 import { openMenu } from './menu.js';
 import { downloads } from './downloads.js';
@@ -68,7 +68,8 @@ export function renderLibrary(root) {
     const songs = visibleSongs();
     const only = prefs.sel.size === 1 ? store.tags.find((t) => prefs.sel.has(t.tag.toLocaleLowerCase())) : null;
     const { added, already } = player.addListed(songs, only ? only.tag : '');
-    toast(`Added ${added} ${added === 1 ? 'song' : 'songs'}${already ? ` (${already} already in queue)` : ''}`);
+    const note = already ? ` (${already} already in queue)` : '';
+    toast(`Added ${added} ${plural(added, 'song', 'songs')}${note}`);
   });
   const status = el('div');
   const head = el('div', { class: 'table-head', 'aria-hidden': 'true' },
@@ -92,7 +93,7 @@ export function renderLibrary(root) {
     status);
 
   function renderChips() {
-    for (const t of [...prefs.sel]) if (!store.tags.some((x) => x.tag.toLocaleLowerCase() === t)) prefs.sel.delete(t);
+    for (const t of prefs.sel) if (!store.tags.some((x) => x.tag.toLocaleLowerCase() === t)) prefs.sel.delete(t);
     cats.replaceChildren(...CATEGORIES.map((c) => {
       const values = store.tags.filter((t) => categoryOf(t.tag) === c.id).length;
       const n = selectedIn(c.id);
@@ -127,7 +128,11 @@ export function renderLibrary(root) {
       const key = v.tag.toLocaleLowerCase();
       return el('button', {
         class: 'chip t-subhead', type: 'button', title: v.tag, 'data-key': key, 'aria-pressed': 'false',
-        onclick: () => { if (draft.has(key)) draft.delete(key); else draft.add(key); refresh(); },
+        onclick: () => {
+          if (draft.has(key)) draft.delete(key);
+          else draft.add(key);
+          refresh();
+        },
       }, tagLabel(v.tag), el('small', { class: 't-caption' }, v.count));
     }));
     result.addEventListener('click', () => {
@@ -136,7 +141,10 @@ export function renderLibrary(root) {
       dlg.close();
       renderAll();
     });
-    const clear = el('button', { class: 'link-btn t-subhead strong', type: 'button', onclick: () => { for (const v of values) draft.delete(v.tag.toLocaleLowerCase()); refresh(); } }, 'Clear');
+    const clear = el('button', { class: 'link-btn t-subhead strong', type: 'button', onclick: () => {
+      for (const v of values) draft.delete(v.tag.toLocaleLowerCase());
+      refresh();
+    } }, 'Clear');
     dlg.replaceChildren(
       el('span', { class: 'grab', 'aria-hidden': 'true' }),
       el('div', { class: 'sheet-head' },
@@ -160,11 +168,8 @@ export function renderLibrary(root) {
     const cur = player.current;
     const pending = downloads.list();
     const filtered = !!(prefs.sel.size || prefs.query.trim());
-    total.textContent = store.loaded ? `${store.songs.length} ${store.songs.length === 1 ? 'song' : 'songs'}` : '';
-    summary.textContent = !store.loaded ? ''
-      : !store.songs.length ? ''
-        : filtered ? `${songs.length} ${songs.length === 1 ? 'song matches' : 'songs match'}${prefs.sel.size ? ` · ${selectedNames().join(', ')}` : ''}`
-          : '';
+    total.textContent = store.loaded ? `${store.songs.length} ${plural(store.songs.length, 'song', 'songs')}` : '';
+    summary.textContent = store.loaded && store.songs.length && filtered ? matchSummary(songs.length) : '';
     addAll.hidden = !(store.loaded && filtered && songs.length);
     addAll.textContent = `Add all ${songs.length} to playlist`;
     const nothing = store.loaded && !store.songs.length && !pending.length;
@@ -180,6 +185,11 @@ export function renderLibrary(root) {
       ...songs.map((s) => songRow(s, cur, ++n)));
   }
 
+  function matchSummary(count) {
+    const names = prefs.sel.size ? ` · ${selectedNames().join(', ')}` : '';
+    return `${count} ${plural(count, 'song matches', 'songs match')}${names}`;
+  }
+
   function renderAll() { renderChips(); renderList(); }
 
   const unsub = store.subscribe(renderAll);
@@ -191,7 +201,7 @@ export function renderLibrary(root) {
     if (loadError) {
       status.replaceChildren(el('div', { class: 'state card' },
         el('p', { class: 'msg error' }, loadError),
-        el('button', { class: 'btn', type: 'button', onclick: () => { loadError = null; load(); renderList(); } }, 'Retry')));
+        el('button', { class: 'btn', type: 'button', onclick: () => { loadError = null; void load(); renderList(); } }, 'Retry')));
     } else if (!store.loaded) {
       status.replaceChildren(el('p', { class: 'muted t-subhead state', role: 'status' }, 'Loading your library...'));
     } else if (nothing) {
@@ -204,7 +214,7 @@ export function renderLibrary(root) {
     }
   }
   const load = () => store.refresh().catch((e) => { loadError = e.message; renderList(); });
-  load();
+  void load();
   renderAll();
 
   return () => { unsub(); unsubPlayer(); unsubDownloads(); const d = document.getElementById('filter-sheet'); if (d.open) d.close(); };
@@ -212,7 +222,7 @@ export function renderLibrary(root) {
 
 function cover(s) {
   const img = el('img', { class: 'cover', alt: '', loading: 'lazy' });
-  if (s && s.cover) img.src = api.coverUrl(s.id);
+  if (s?.cover) img.src = api.coverUrl(s.id);
   img.addEventListener('error', () => img.removeAttribute('src'));
   return img;
 }
@@ -258,5 +268,6 @@ function pendingRow(d, n) {
 
 function addToQueue(s) {
   const r = player.add(s.id);
-  toast(r === 'duplicate' ? 'Already in queue' : r === 'queued' ? 'Queued' : 'Added');
+  const messages = { duplicate: 'Already in queue', queued: 'Queued' };
+  toast(messages[r] || 'Added');
 }
