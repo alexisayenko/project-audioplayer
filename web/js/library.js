@@ -1,3 +1,4 @@
+import { genreText } from './genre-cell.js';
 import { api } from './api.js';
 import { store } from './store.js';
 import { player } from './player.js';
@@ -73,7 +74,7 @@ export function renderLibrary(root) {
   });
   const status = el('div');
   const head = el('div', { class: 'table-head', 'aria-hidden': 'true' },
-    el('span', {}, '#'), el('span'), el('span', {}, 'Title'), el('span', {}, 'Artist'), el('span', { class: 'c-album' }, 'Album'), el('span', { class: 'c-year' }, 'Year'), el('span', { class: 'c-dur' }, 'Time'), el('span'));
+    el('span', {}, '#'), el('span'), el('span', {}, 'Title'), el('span', {}, 'Artist'), el('span', { class: 'c-genres' }, 'Genres'), el('span', { class: 'c-year' }, 'Year'), el('span', { class: 'c-dur' }, 'Time'), el('span'));
   const group = el('div', { class: 'group' }, head, list);
 
   root.append(
@@ -237,6 +238,7 @@ function songRow(s, cur, n) {
   const open = audio
     ? el('button', { class: 'open t-headline', type: 'button', title: 'Play now', onclick: () => player.playNow(s.id) }, s.title)
     : el('span', { class: 'open t-headline' }, s.title);
+  const genres = genreText(s.tags);
   const dur = audio
     ? el('span', { class: 'c-dur t-time' }, s.duration ? fmtTime(s.duration) : '')
     : el('span', { class: 'c-dur t-caption' },
@@ -245,10 +247,9 @@ function songRow(s, cur, n) {
     el('span', { class: 'c-idx t-time' }, n),
     cover(s),
     el('div', { class: 'info' }, open,
-      s.artist ? el('small', { class: 'sub t-subhead' }, s.artist) : null,
-      audio ? null : el('small', { class: 'off-server t-caption' }, 'Not on the server')),
+      s.artist ? el('small', { class: 'sub t-subhead' }, s.artist) : null),
     el('span', { class: 'c-artist t-subhead' }, s.artist || ''),
-    el('span', { class: 'c-album t-subhead' }, s.album || ''),
+    el('span', { class: 'c-genres t-subhead', title: genres || null }, genres),
     el('span', { class: 'c-year t-subhead' }, s.year || ''),
     dur,
     more);

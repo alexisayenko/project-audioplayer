@@ -104,6 +104,7 @@ export const api = {
   usage: () => request('GET', '/me/usage'),
   library: () => request('GET', '/library').then((d) => d.songs),
   tags: () => request('GET', '/tags'),
+  genres: () => request('GET', '/genres').then((d) => (Array.isArray(d?.genres) ? d.genres : [])),
   preview: (url, signal) => request('POST', '/preview', { url }, signal),
   metadata: (body, signal) => request('POST', '/metadata', body, signal),
   addSong: (url, metadata, tags) => request('POST', '/songs', { url, metadata, tags, audio: false }),
