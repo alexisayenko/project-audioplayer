@@ -2,7 +2,24 @@
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": {
     "allow": [
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git fetch:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(scripts/check.sh)",
+      "Bash(./scripts/check.sh)",
+      "Bash(node --test:*)",
+      "Bash(node web/js/*)",
+      "Bash(node --check:*)",
+      "Bash(xcodegen generate)",
+      "Bash(xcodebuild:*)",
+      "Bash(xcrun simctl:*)",
+      "Bash(python3 scripts/sync-design-system.py)",
+      "Bash(git show:*)"
     ],
     "deny": [
       "Bash(rm -rf /*)",

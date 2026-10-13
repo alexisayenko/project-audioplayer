@@ -37,6 +37,8 @@ inside LXC 106 `tools` (`192.168.0.10`). Deploy with:
 ssh claude@192.168.0.10 'sudo /usr/local/sbin/audioplayer-deploy'
 ```
 
+Or run `scripts/deploy.sh`.
+
 The script runs `git pull --ff-only`, `pip install`, restarts the
 service and checks `/health`.
 

@@ -158,6 +158,19 @@ Notes per layer:
   Public repos are free on standard runners; making a private repo
   public is not a cost fix for a project with private data.
 
+## Local checks and deploy
+
+- `scripts/check.sh` runs from the repo root: web tests
+  (`node --test web/js` and each `web/js/*.test.mjs`), the
+  duplicate rule-ID check over `docs/specs/*.md`, and the server
+  pytest suite (prints the summary line). It ends with `check ok`
+  and exits non-zero on any failure.
+- `scripts/deploy.sh` runs the server deploy over SSH, prints the
+  deployed revision and the web index HTTP status.
+- The allowlist in `.claude/settings.json` covers git
+  add/commit/push, the checks and the iOS build tools, but not the
+  deploy, `ssh`, `sudo` or `curl`: a deploy always prompts.
+
 ## Manual deploy fallback
 
 Same build as CI, from a developer machine. The example is a
