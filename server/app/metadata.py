@@ -8,7 +8,7 @@ import urllib.parse
 from concurrent.futures import ThreadPoolExecutor, wait
 from typing import Any, Callable
 
-from . import genre_lookup, library, wiki_lookup
+from . import genre_filter, genre_lookup, library, wiki_lookup
 
 log = logging.getLogger(__name__)
 
@@ -51,8 +51,8 @@ def merge(sources: list[dict[str, Any]], mb: dict[str, Any] | None, links: dict[
     year links, song-page infobox, guess, MusicBrainz, sources; album sources, song-page infobox, then MusicBrainz.
     """
     mb, links, guess = mb or {}, links or {}, guess or {}
-    song_genres = links.get("song_genres") or guess.get("song_genres") or []
-    tags = [*song_genres, *(t for r in (*sources, mb, links, guess) for t in r.get("tags") or [])]
+    song_genres = genre_filter.filter_tags([f"genre:{g}" if ":" not in str(g) else str(g) for g in links.get("song_genres") or guess.get("song_genres") or []])
+    tags = genre_filter.filter_tags([*song_genres, *(t for r in (*sources, mb, links, guess) for t in r.get("tags") or [])])
     box_album = links.get("infobox_album") or guess.get("infobox_album")
     box_year = links.get("infobox_year") or guess.get("infobox_year")
     albums = (*(s.get("album") for s in sources), box_album, mb.get("album"))
