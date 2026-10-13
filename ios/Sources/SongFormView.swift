@@ -39,6 +39,13 @@ struct SongFormView<BPMRow: View>: View {
         }
     }
 
+    private var metadataButton: some View {
+        Button { form.launch { await form.getMetadata(api: api, sources: sources()) } } label: {
+            HStack { Text("Get metadata"); if form.metaBusy { ProgressView() } }
+        }
+        .buttonStyle(DSButtonStyle(kind: .quiet)).disabled(form.metaBusy)
+    }
+
     private func suggestionHint(_ h: (artist: String?, title: String?)) -> some View {
         let text = [h.artist, h.title].compactMap { $0 }.joined(separator: " / ")
         let spoken = [h.artist, h.title].compactMap { $0 }.joined(separator: " - ")
@@ -60,16 +67,15 @@ struct SongFormView<BPMRow: View>: View {
             tokenField(.artist, $form.artist, [TokenMove(kind: .title, text: $form.title), TokenMove(kind: .remixer, text: $form.remixer)])
             tokenField(.remixer, $form.remixer, [TokenMove(kind: .title, text: $form.title), TokenMove(kind: .artist, text: $form.artist)])
             if let h = form.hint { suggestionHint(h) }
-            FlowLayout {
-                Button { form.launch { await form.getMetadata(api: api, sources: sources()) } } label: {
-                    HStack { Text("Get metadata"); if form.metaBusy { ProgressView() } }
-                }
-                .buttonStyle(DSButtonStyle(kind: .quiet)).disabled(form.metaBusy)
-                ServiceIconRow(busy: form.metaBusy, found: form.services)
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: DS.Space.space3) { metadataButton; Spacer(minLength: DS.Space.space2); ServiceIconRow(busy: form.metaBusy, found: form.services) }
+                FlowLayout { metadataButton; ServiceIconRow(busy: form.metaBusy, found: form.services) }
             }
             if let n = form.metaNote { FormNote(text: n, error: n == "Couldn't load metadata") }
-            labeled("Album", $form.album)
-            labeled("Year", $form.year, keyboard: .numberPad)
+            HStack(alignment: .top, spacing: DS.Space.space3) {
+                labeled("Album", $form.album)
+                labeled("Year", $form.year, keyboard: .numberPad).frame(width: 96)
+            }
             bpmRow()
         }
 
@@ -86,9 +92,16 @@ struct SongFormView<BPMRow: View>: View {
             }
         }
 
-        VStack(alignment: .leading, spacing: DS.Space.space2) {
-            WikiLinkField(title: "Wikipedia: song", value: $form.wikiSong)
-            WikiLinkField(title: "Wikipedia: band", value: $form.wikiArtist)
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .top, spacing: DS.Space.space3) {
+                WikiLinkField(title: "Wikipedia: song", value: $form.wikiSong).frame(maxWidth: .infinity)
+                WikiLinkField(title: "Wikipedia: band", value: $form.wikiArtist).frame(maxWidth: .infinity)
+            }
+            .frame(minWidth: 300)
+            VStack(alignment: .leading, spacing: DS.Space.space2) {
+                WikiLinkField(title: "Wikipedia: song", value: $form.wikiSong)
+                WikiLinkField(title: "Wikipedia: band", value: $form.wikiArtist)
+            }
         }
     }
 }
