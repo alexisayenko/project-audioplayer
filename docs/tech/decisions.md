@@ -478,3 +478,5 @@ Status: Accepted, implemented in `server/` and `web/` (iOS client changes listed
 ## Note 2026-10-13: languages dropped, Spotify skipped for now
 
 `lang:` tags are no longer suggested by `/preview`, `/lookup/wikipedia` or the new `POST /metadata` (API-048) and the web UI no longer shows them; stored `lang:` tags are kept and still normalised. Spotify is not used as a metadata source for now.
+
+Sub-decision 2026-10-13: the Add form shows four service icons (YouTube, SoundCloud, Wikipedia, Spotify) beside "Get metadata". Their brand colours are `brand-*` tokens in the design system (version 19), not hard-coded. One `POST /metadata` call returns per-service `services.<name>.{found,url}` for the UI. Spotify is shown but permanently inactive until an integration exists.

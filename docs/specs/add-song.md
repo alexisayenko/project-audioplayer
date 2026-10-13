@@ -27,7 +27,7 @@ Code: `web/js/add.js`, `server/app/main.py` (`preview`, `create_song`,
 
 - ADD-005 MUST: the year of the preview (including `suggested_year` when yt-dlp gave none) produces the `decade:` chip in the tag editor, and editing Year updates it (TAG-038); the server derives the stored tag on save (TAG-051). Status: implemented
 - ADD-050 MUST: the preview card has two optional URL inputs, "Wikipedia: song" and "Wikipedia: band", pre-filled from `preview.wikipedia_song` / `wikipedia_artist` (MusicBrainz url-rels, see [tags.md](tags.md) TAG-040); they are saved with the song (`metadata.wikipedia_song`, `wikipedia_artist`); an input that is not a Wikipedia/Wikidata link is outlined red and dropped by the server. Status: implemented
-- ADD-051 MUST: the Add form has no "Fill from Wikipedia links" button; the two link inputs feed "Get metadata" (`POST /metadata`); `POST /lookup/wikipedia` remains for the song edit sheet. Status: implemented
+- ADD-051 MUST: the Add form has no "Fill from Wikipedia links" button; the two link inputs feed "Get metadata" (`POST /metadata`); `POST /lookup/wikipedia` remains for the song edit sheet. In the iOS form, four service icons beside the button reflect `services` from the response (inactive, pulsing, found and tappable; Spotify always inactive), see IOS-021. Status: implemented
 
 ## BPM
 

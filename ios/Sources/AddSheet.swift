@@ -11,6 +11,7 @@ final class AddFlow: ObservableObject {
     @Published var errorCode: String?
     @Published var metaBusy = false
     @Published var metaNote: String?
+    @Published var services: [ServiceKind: URL?] = [:]
 
     @Published var title = ""
     @Published var artist = ""
@@ -33,7 +34,7 @@ final class AddFlow: ObservableObject {
     func reset() {
         phase = .idle; preview = nil; message = nil; errorCode = nil; url = ""
         title = ""; artist = ""; album = ""; year = ""; bpm = ""; wikiSong = ""; wikiArtist = ""
-        tags = []; suggested = []; pendingTag = ""; metaNote = nil
+        tags = []; suggested = []; pendingTag = ""; metaNote = nil; services = [:]
     }
 
     func loadPreview(_ api: APIClient) async {
@@ -60,12 +61,17 @@ final class AddFlow: ObservableObject {
 
     func getMetadata(_ api: APIClient) async {
         guard !metaBusy else { return }
-        metaBusy = true; metaNote = nil; defer { metaBusy = false }
+        metaBusy = true; metaNote = nil; services = [:]; defer { metaBusy = false }
         let src = preview?.source_url ?? url
         do {
             let r = try await api.metadata(title: title, artist: artist, sourceURLs: src.isEmpty ? [] : [src],
                                            wikiSong: wikiSong.trimmingCharacters(in: .whitespaces),
                                            wikiArtist: wikiArtist.trimmingCharacters(in: .whitespaces))
+            var found: [ServiceKind: URL?] = [:]
+            for (kind, svc) in [(ServiceKind.youtube, r.services?.youtube), (.soundcloud, r.services?.soundcloud), (.wikipedia, r.services?.wikipedia)] where svc?.found == true {
+                found[kind] = svc?.url.flatMap { URL(string: $0) }
+            }
+            services = found
             var changed = false
             let returned = !(r.album ?? "").isEmpty || r.year != nil || !(r.tags ?? []).isEmpty
             if let a = r.album, !a.isEmpty, album.trimmingCharacters(in: .whitespaces).isEmpty { album = a; changed = true }
@@ -339,10 +345,13 @@ struct AddSheet: View {
         VStack(alignment: .leading, spacing: DS.Space.space3) {
                 labeled("Title", $flow.title)
                 labeled("Artist", $flow.artist)
-                Button { Task { await flow.getMetadata(api) } } label: {
-                    HStack { Text("Get metadata"); if flow.metaBusy { ProgressView() } }
+                FlowLayout {
+                    Button { Task { await flow.getMetadata(api) } } label: {
+                        HStack { Text("Get metadata"); if flow.metaBusy { ProgressView() } }
+                    }
+                    .buttonStyle(DSButtonStyle(kind: .quiet)).disabled(flow.metaBusy)
+                    ServiceIconRow(busy: flow.metaBusy, found: flow.services)
                 }
-                .buttonStyle(DSButtonStyle(kind: .quiet)).disabled(flow.metaBusy)
                 if let n = flow.metaNote { note(n, error: n == "Couldn't load metadata") }
                 labeled("Album", $flow.album)
                 labeled("Year", $flow.year, keyboard: .numberPad)

@@ -29,6 +29,19 @@ struct MetadataResult: Decodable {
     var album: String?
     var year: Int?
     var tags: [String]?
+    var services: Services?
+
+    struct Service: Decodable {
+        var found: Bool?
+        var url: String?
+    }
+
+    struct Services: Decodable {
+        var youtube: Service?
+        var soundcloud: Service?
+        var wikipedia: Service?
+        var spotify: Service?
+    }
 }
 
 struct WikiLookup: Codable {
