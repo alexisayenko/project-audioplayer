@@ -176,6 +176,7 @@ struct AddSheet: View {
 
     private var api: APIClient { APIClient(baseURL: settings.serverURL, token: settings.token) }
     private var pool: [(tag: String, count: Int)] { tagCounts(library.songs.map { $0.tags ?? [] }) }
+    private var knownSong: Track? { flow.phase == .idle || flow.phase == .loading ? libraryMatch(link: flow.url, in: library.songs) : nil }
     private var busy: Bool { flow.phase == .loading || flow.phase == .saving }
     private var hasPreview: Bool { flow.preview != nil && flow.phase != .idle && flow.phase != .loading }
 
@@ -255,13 +256,29 @@ struct AddSheet: View {
                         .background(Capsule().fill(scheme.strongFill))
                 }
                 .buttonStyle(.plain)
-                .disabled(busy || flow.url.trimmingCharacters(in: .whitespaces).isEmpty)
-                .opacity(busy || flow.url.trimmingCharacters(in: .whitespaces).isEmpty ? 0.5 : 1)
+                .disabled(fetchOff)
+                .opacity(fetchOff ? 0.5 : 1)
             }
             .padding(.leading, DS.Space.space4).padding(.trailing, DS.Space.space2).frame(minHeight: 48)
             .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(DS.Color.surfaceSunken))
             .overlay {
                 if linkFailed { RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(DS.Color.power, lineWidth: 1.5) }
+            }
+            if let known = knownSong {
+                HStack(alignment: .center, spacing: DS.Space.space2) {
+                    Image(systemName: "checkmark.circle.fill").font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(DS.Color.accentInk).accessibilityHidden(true)
+                    Text("Already in your library: \(known.title) · \(known.artist)")
+                        .font(T.caption).foregroundStyle(DS.Color.ink).lineLimit(2)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    if library.tracks.contains(where: { $0.id == known.id }) {
+                        Button("Play") { player.playNow(known); dismiss() }
+                            .font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.accentInk)
+                            .frame(minWidth: DS.Space.hit, minHeight: DS.Space.hit)
+                    }
+                }
+                .padding(.top, DS.Space.space2)
+                .accessibilityElement(children: .combine)
             }
             if linkFailed, let m = flow.message {
                 let copy = linkErrorCopy(code: flow.errorCode, detail: m)
@@ -282,6 +299,8 @@ struct AddSheet: View {
             }
         }
     }
+
+    private var fetchOff: Bool { busy || flow.url.trimmingCharacters(in: .whitespaces).isEmpty || knownSong != nil }
 
     private var linkFailed: Bool {
         flow.phase == .idle && flow.message != nil && flow.errorCode != "preview_only"

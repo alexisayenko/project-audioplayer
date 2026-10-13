@@ -240,3 +240,24 @@ func addNamespaced(_ tags: inout [String], _ candidates: [String]) -> Int {
     }
     return added
 }
+
+private func canonicalSoundcloud(_ text: String) -> String? {
+    guard case .track(let u)? = classifySoundcloud(text) else { return nil }
+    return u.lowercased()
+}
+
+/// The library song a pasted link points at, found without the network: YouTube by video id, SoundCloud by canonical URL.
+func libraryMatch(link: String, in songs: [Track]) -> Track? {
+    let text = cleanPasted(link)
+    guard !text.isEmpty else { return nil }
+    for p in youtubePatterns {
+        if let m = matches(p, text) {
+            let vid = m[1]
+            return songs.first { s in s.id == vid || (s.sources ?? []).contains { $0.source == "youtube" && $0.id == vid } }
+        }
+    }
+    guard let want = canonicalSoundcloud(text) else { return nil }
+    return songs.first { s in
+        ([s.sourceURL] + (s.sources ?? []).map(\.url)).contains { $0.flatMap(canonicalSoundcloud) == want }
+    }
+}

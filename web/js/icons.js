@@ -11,6 +11,7 @@ export const ICONS = {
   library: { d: '<path d="M5 4v16M10 4v16M15 4v16M20 4v16"/>' },
   settings: { d: '<circle cx="12" cy="12" r="3"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6L7 7M17 17l1.4 1.4M18.4 5.6L17 7M7 17l-1.4 1.4"/>' },
   search: { d: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>' },
+  check: { d: '<path d="M5 12.5l4.5 4.5L19 7"/>', width: 2.2 },
   plus: { d: '<path d="M12 5v14M5 12h14"/>', width: 2.2 },
   chevron: { d: '<path d="M6 9l6 6 6-6"/>', width: 2 },
   download: { d: '<path d="M12 4v11M7 10l5 5 5-5M5 19h14"/>', width: 2 },

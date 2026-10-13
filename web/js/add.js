@@ -4,6 +4,7 @@ import { tagEditor } from './tag-editor.js';
 import { el, fmtTime, toast } from './dom.js';
 import { icon } from './icons.js';
 import { cleanPasted, sourceOf, sourceLabel } from './url-clean.js';
+import { findInLibrary } from './library-match.js';
 import { wikiFields } from './wiki-links.js';
 import { dialogHead } from './edit-dialog.js';
 import { chipField } from './chip-field.js';
@@ -29,6 +30,7 @@ export function openAdd() {
   const url = el('input', { type: 'url', placeholder: 'Paste a YouTube or SoundCloud link', 'aria-label': 'YouTube or SoundCloud link', autocomplete: 'off', inputMode: 'url' });
   const fetchBtn = el('button', { class: 'btn fill small', type: 'submit' }, 'Fetch');
   const form = el('form', { class: 'well' }, url, fetchBtn);
+  const known = el('div', { class: 't-caption', role: 'status' });
   const message = el('div');
   const body = el('div', { class: 'add-body' });
   const say = (text, kind = '') => message.replaceChildren(text ? el('p', { class: `msg ${kind}` }, text) : '');
@@ -37,8 +39,26 @@ export function openAdd() {
     const clean = cleanPasted(url.value);
     if (clean === url.value) return;
     url.value = clean;
+    checkKnown();
     url.setSelectionRange(clean.length, clean.length);
   };
+  const showInLibrary = (song) => {
+    dlg.close();
+    const row = document.querySelector(`li.song[data-id="${CSS.escape(song.id)}"]`);
+    if (!row) { toast('Clear the search or filters to see it'); return; }
+    row.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    row.style.outline = '2px solid var(--accent-ink)';
+    setTimeout(() => { row.style.outline = ''; }, 2500);
+  };
+  const checkKnown = () => {
+    const song = store.loaded ? findInLibrary(url.value, store.songs) : null;
+    fetchBtn.disabled = !!song;
+    if (!song) { known.replaceChildren(); return; }
+    const where = el('button', { class: 'link-btn t-caption', type: 'button' }, 'Show in library');
+    where.addEventListener('click', () => showInLibrary(song));
+    known.replaceChildren(icon('check', 16), ` Already in your library: ${[song.title, song.artist].filter(Boolean).join(' · ')} `, where);
+  };
+  url.addEventListener('input', checkKnown);
   url.addEventListener('input', (e) => { if (BULK.has(e.inputType) || (e.data && e.data.length > 1)) tidy(); });
   url.addEventListener('paste', () => setTimeout(tidy));
   url.addEventListener('drop', () => setTimeout(tidy));
@@ -47,7 +67,7 @@ export function openAdd() {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     tidy();
-    if (!url.value) return;
+    if (!url.value || fetchBtn.disabled) return;
     say('');
     body.replaceChildren();
     fetchBtn.disabled = true;
@@ -70,6 +90,7 @@ export function openAdd() {
       if (req.live()) {
         fetchBtn.disabled = false;
         fetchBtn.textContent = 'Fetch';
+        checkKnown();
       }
     }
   });
@@ -228,8 +249,9 @@ export function openAdd() {
   };
   dlg.replaceChildren(
     dialogHead('Add from YouTube or SoundCloud', 'Save the song\'s details; play it from the original link or on your iPhone.', () => dlg.close()),
-    form, message, body);
+    form, known, message, body);
   dlg.onclick = (e) => { if (e.target === dlg) dlg.close(); };
   dlg.showModal();
   url.focus();
+  if (!store.loaded) store.refresh().then(checkKnown).catch(() => {});
 }

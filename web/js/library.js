@@ -241,7 +241,7 @@ function songRow(s, cur, n) {
     ? el('span', { class: 'c-dur t-time' }, s.duration ? fmtTime(s.duration) : '')
     : el('span', { class: 'c-dur t-caption' },
       link ? el('a', { class: 'src-link', href: link.url, target: '_blank', rel: 'noopener' }, link.label) : '');
-  return el('li', { class: `song${here ? ' current' : ''}${audio ? '' : ' no-audio'}`, 'aria-current': here ? 'true' : null },
+  return el('li', { class: `song${here ? ' current' : ''}${audio ? '' : ' no-audio'}`, 'aria-current': here ? 'true' : null, 'data-id': s.id },
     el('span', { class: 'c-idx t-time' }, n),
     cover(s),
     el('div', { class: 'info' }, open,

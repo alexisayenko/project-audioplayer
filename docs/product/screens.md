@@ -43,7 +43,7 @@ queue card beside it. The iOS Settings screen shows Account (a quiet "Not allowe
 
 ### 1. Add song
 
-Web: a centred 560px dialog over Library (bottom-aligned sheet on phones): title "Add from YouTube", Cancel, a link field with a Fetch button, then the preview (88px cover, title, artist, album, year, duration), an "Edit details" button that expands the fields, the suggested tags as chips with a + chip that opens the tag editor, and one "Save to library" button. Update (WEB-022): after Fetch the full form opens at once (no "Edit details"), with "Get metadata" and four service icons after Title and Artist, Genres and Countries chip fields, and a sticky Save footer. Saving closes the dialog and saves the catalog entry only (toast "Saved to library"; the web starts no download, WEB-015); the "Downloading NN%" row appears for downloads started from the iOS app.
+Web: a centred 560px dialog over Library (bottom-aligned sheet on phones): title "Add from YouTube", Cancel, a link field with a Fetch button, then the preview (88px cover, title, artist, album, year, duration), an "Edit details" button that expands the fields, the suggested tags as chips with a + chip that opens the tag editor, and one "Save to library" button. Update (WEB-022): after Fetch the full form opens at once (no "Edit details"), with "Get metadata" and four service icons after Title and Artist, Genres and Countries chip fields, and a sticky Save footer. A link already in the library is flagged under the field as soon as it is pasted ("Already in your library: title · artist", Show in library, Fetch disabled; WEB-025). Saving closes the dialog and saves the catalog entry only (toast "Saved to library"; the web starts no download, WEB-015); the "Downloading NN%" row appears for downloads started from the iOS app.
 
 1. User pastes a YouTube URL (cleaned to the canonical link on paste, drop, bulk input and blur; surrounding text is dropped).
 2. App asks the server for a metadata preview (cover, title, artist,
@@ -55,6 +55,7 @@ Web: a centred 560px dialog over Library (bottom-aligned sheet on phones): title
 4. Save starts the download on the server, then the app fetches the file.
 5. Shows progress while downloading and a clear error on failure
    (bad URL, unavailable video, server unreachable, already in library).
+   The Add sheet flags a link already in the library as soon as it is pasted, before Fetch (no network), with a Play action.
 
 ### 2. Library
 

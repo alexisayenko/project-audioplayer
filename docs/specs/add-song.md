@@ -39,6 +39,7 @@ Code: `web/js/add.js`, `server/app/main.py` (`preview`, `create_song`,
 ## Duplicates
 
 - ADD-030 MUST: preview returns `in_library: true` when the id is already stored; the UI shows "This song is already in your library." and disables Save. Status: implemented
+- ADD-068 MUST: the iOS Add sheet checks the pasted link against the on-device library before Fetch (no network): "Already in your library: <title> · <artist>" with a Play action, and Fetch is disabled until the link changes. Status: implemented
 - ADD-031 MUST: `POST /songs` returns 409 `already in library` or `already downloading` (checked under the lock). Status: implemented
 - ADD-032 MUST: the identity of a song is its id (YouTube video id or `soundcloud-<track id>`); two URLs for the same video or track are the same song. Status: implemented
 - ADD-033 MUST: pasted links are cleaned before use: YouTube forms (`youtu.be/<id>`, `watch?v=`, `m.` and `music.` hosts, `shorts/`, `embed/`, `live/`) become `https://www.youtube.com/watch?v=<id>`, dropping `si`, `t`, `list` and every other parameter; other http(s) links lose only `si`, `feature`, `pp`, `fbclid`, `gclid` and `utm_*`. The web cleans on paste, drop, bulk input (paste/drop/replacement input events or multi-character insertions; single keystrokes are left alone), blur and submit, moves the caret to the end, extracts the first YouTube or http(s) link from surrounding text (otherwise the first line) and shows the result in the field (`cleanPasted` in `web/js/url-clean.js`); the server applies the same rules (`server/app/urlclean.py`) and tolerates clean input. Status: implemented
@@ -52,6 +53,7 @@ Code: `web/js/add.js`, `server/app/main.py` (`preview`, `create_song`,
 - ADD-064 MUST: save downloads the best audio and re-encodes it to `<id>.m4a` (ffmpeg `FFmpegExtractAudio` m4a), then fetches the artwork (https `*.sndcdn.com` only) to `covers/<id>.jpg`; a cover failure does not fail the add. Status: implemented (live download not verified)
 - ADD-065 MUST: SoundCloud Go+ tracks that only offer the 30 s preview are refused with 422 `{"error":"preview_only","detail":"Preview only — SoundCloud Go+ track, can't be downloaded in full."}` at `POST /preview` and `POST /songs`; detection is a yt-dlp format id containing `preview` with no full format, or at download time a chosen preview format or a file under 35 s while the page duration exceeds it by over 60 s (partial file deleted, job `error` with `code: "preview_only"`). Clients show "Preview only — SoundCloud Go+ track, can't be downloaded in full." Status: implemented
 - ADD-066 MUST: the preview card shows a small source tag ("YouTube" / "SoundCloud"). Status: implemented
+- ADD-067 MUST: the web Add dialog says at once, before Fetch, when the pasted link is already in the loaded library and disables Fetch for it (WEB-025); the disabled Save after a preview whose `in_library` is true stays as the fallback. Status: implemented (web, not checked in a browser)
 
 ## Errors shown to the user
 
