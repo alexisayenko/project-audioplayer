@@ -261,3 +261,23 @@ func libraryMatch(link: String, in songs: [Track]) -> Track? {
         ([s.sourceURL] + (s.sources ?? []).map(\.url)).contains { $0.flatMap(canonicalSoundcloud) == want }
     }
 }
+
+#if DEBUG
+func linkInputSelfCheck() -> [String] {
+    var fails: [String] = []
+    func check(_ name: String, _ got: String, _ want: String) { if got != want { fails.append("\(name): \(got) != \(want)") } }
+    let w = "https://www.youtube.com/watch?v="
+    check("id", cleanPasted("QCuUAClm-hQ"), w + "QCuUAClm-hQ")
+    check("idTrim", cleanPasted("  QCuUAClm-hQ\n"), w + "QCuUAClm-hQ")
+    check("idDashUnderscore", cleanUrl("-_abc_-1234"), w + "-_abc_-1234")
+    check("ten", cleanPasted("QCuUAClm-h"), "QCuUAClm-h")
+    check("twelve", cleanPasted("QCuUAClm-hQQ"), "QCuUAClm-hQQ")
+    check("spaces", cleanPasted("QCuUAClm hQ"), "QCuUAClm hQ")
+    check("url", cleanPasted("https://youtu.be/QCuUAClm-hQ?si=6jgIDG70_QgTAZ4t"), w + "QCuUAClm-hQ")
+    let song = Track(id: "QCuUAClm-hQ", title: "T", artist: "A")
+    check("matchId", libraryMatch(link: "QCuUAClm-hQ", in: [song])?.id ?? "", "QCuUAClm-hQ")
+    check("matchUrl", libraryMatch(link: "https://youtu.be/QCuUAClm-hQ", in: [song])?.id ?? "", "QCuUAClm-hQ")
+    check("matchTen", libraryMatch(link: "QCuUAClm-h", in: [song])?.id ?? "", "")
+    return fails
+}
+#endif

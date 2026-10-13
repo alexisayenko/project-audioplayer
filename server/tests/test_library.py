@@ -110,6 +110,24 @@ def test_preview(client):
     assert client.post("/preview", json={"url": "http://x.y"}, headers=H).status_code == 422
 
 
+def test_preview_accepts_bare_video_id(client):
+    full = client.post("/preview", json={"url": f"https://www.youtube.com/watch?v={VID}"}, headers=H)
+    for text in (VID, f"  {VID} "):
+        r = client.post("/preview", json={"url": text}, headers=H)
+        assert r.status_code == 200
+        assert r.json() == full.json()
+    for bad in (VID[:10], VID + "x", "hello world", "abc def ghij"):
+        assert client.post("/preview", json={"url": bad}, headers=H).status_code == 422
+
+
+def test_add_song_accepts_bare_video_id(client):
+    r = client.post("/songs", json={"url": VID, "metadata": {"title": "Song"}, "tags": []}, headers=H)
+    assert r.status_code == 202
+    assert r.json()["id"] == VID
+    assert client.get("/library", headers=H).json()["songs"][0]["id"] == VID
+    assert client.post("/songs", json={"url": VID[:10], "metadata": {}}, headers=H).status_code == 422
+
+
 def test_preview_failure_is_502(client, monkeypatch):
     def boom(vid):
         raise RuntimeError("Video unavailable")

@@ -24,7 +24,7 @@ export function openAdd() {
     return { signal: ctl.signal, live: () => mine === gen && dlg.open, done: () => pending.delete(ctl) };
   };
 
-  const url = el('input', { type: 'url', placeholder: 'Paste a YouTube or SoundCloud link', 'aria-label': 'YouTube or SoundCloud link', autocomplete: 'off', inputMode: 'url' });
+  const url = el('input', { type: 'text', placeholder: 'YouTube or SoundCloud link, or a YouTube video id', 'aria-label': 'YouTube or SoundCloud link, or a YouTube video id', autocomplete: 'off', inputMode: 'url' });
   const fetchBtn = el('button', { class: 'btn fill small', type: 'submit' }, 'Fetch');
   const form = el('form', { class: 'well' }, url, fetchBtn);
   const known = el('div', { class: 't-caption', role: 'status' });

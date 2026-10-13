@@ -5,7 +5,7 @@ const YT_ID = /^https:\/\/www\.youtube\.com\/watch\?v=([A-Za-z0-9_-]{11})$/;
 /** `{kind: 'youtube'|'soundcloud', key}` for a pasted link, else null. No network. */
 export function linkKey(input) {
   const text = String(input ?? '').trim();
-  if (!text || /^[A-Za-z0-9_-]{11}$/.test(text)) return null;
+  if (!text) return null;
   const clean = cleanPasted(text);
   const yt = YT_ID.exec(clean);
   if (yt) return { kind: 'youtube', key: yt[1] };

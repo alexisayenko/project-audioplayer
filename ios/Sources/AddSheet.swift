@@ -144,7 +144,7 @@ struct AddSheet: View {
                     .frame(minWidth: DS.Space.hit, minHeight: DS.Space.hit)
             }
             .padding(.bottom, -DS.Space.space2)
-            Text("YouTube or SoundCloud, downloaded to this iPhone").dsCaption()
+            Text("YouTube link or video id, or SoundCloud link; downloaded to this iPhone").dsCaption()
             if server.reachable != true { ServerStatus(compact: true) }
         }
     }
@@ -157,7 +157,7 @@ struct AddSheet: View {
     private var linkField: some View {
         VStack(alignment: .leading, spacing: DS.Space.space1) {
             HStack(spacing: DS.Space.space2) {
-                TextField("YouTube or SoundCloud link", text: $flow.url)
+                TextField("YouTube or SoundCloud link, or YouTube video id", text: $flow.url)
                     .textInputAutocapitalization(.never).autocorrectionDisabled().keyboardType(.URL)
                     .submitLabel(.go).font(T.subhead).frame(minHeight: 44).foregroundStyle(DS.Color.ink)
                     .onSubmit { fetch() }

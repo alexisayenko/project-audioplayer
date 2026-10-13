@@ -71,3 +71,11 @@ test('url-clean', () => {
   assert.equal(sourceLabel('youtube'), 'YouTube');
   console.log('url-clean tests passed');
 });
+
+test('a bare YouTube video id becomes the watch URL', () => {
+  assert.equal(cleanUrl('QCuUAClm-hQ'), 'https://www.youtube.com/watch?v=QCuUAClm-hQ');
+  assert.equal(cleanUrl('  a_b-c_d-e_f \n'), 'https://www.youtube.com/watch?v=a_b-c_d-e_f');
+  assert.equal(cleanPasted('QCuUAClm-hQ'), 'https://www.youtube.com/watch?v=QCuUAClm-hQ');
+  for (const bad of ['QCuUAClm-h', 'QCuUAClm-hQx', 'QCuUA lm-hQ', 'hello world']) assert.equal(cleanUrl(bad), bad);
+  assert.equal(cleanUrl('https://youtu.be/QCuUAClm-hQ?si=6jgIDG70_QgTAZ4t'), 'https://www.youtube.com/watch?v=QCuUAClm-hQ');
+});
