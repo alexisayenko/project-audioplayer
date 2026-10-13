@@ -58,6 +58,6 @@ def test_musicbrainz_query_has_no_live(monkeypatch):
     assert queries == ['recording:"Cold Heart" AND artist:"Dua Lipa"']
 
 
-def test_lookup_keeps_song_name_after_feat_credit():
+def test_lookup_title_drops_feat_credit_boundary():
     raw = "Kato Feat. Jon - Turn The Lights Off | Jon Hamm Club Dance Scene | DEEPO Remix Long Version"
     assert lookup_title(raw).startswith("Kato - Turn The Lights Off")

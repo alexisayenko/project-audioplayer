@@ -492,3 +492,6 @@ Decision 2026-10-13: version info such as "(Live from the Royal Albert Hall)" st
 Decision 2026-10-13: the genre autocomplete list is served by the server (`GET /genres`, API-050) so web and iOS share one source.
 
 Decision 2026-10-13: a feat/ft/featuring credit cut stops at its own separator (closing bracket, " - ", " | ", " ●● ", " • " or the next bracket); the rest of the title is kept, so "Kato Feat. Jon - Turn The Lights Off | ..." no longer loses the song name (`titles._strip_feat`, linear scan, no regex backtracking).
+Decision 2026-10-13: feat/ft/featuring credits are no longer stripped from the saved title or artist (kept like Live, ADD-073); they are stripped only for lookups (`titles.lookup_title`, `titles.lookup_artist`, using `_strip_feat`, same boundary logic).
+Decision 2026-10-13: when no bracket carries "remix", the first non-first segment split by spaced " | ", " - ", " – ", " — " that contains the word "remix" is cut into the remixer field verbatim (ADD-070).
+Decision 2026-10-13: deterministic feat cue: with no channel-prefix split, a feat word left of the first spaced dash makes that left part the artist and the rest the title (ADD-075); without it nothing is split.

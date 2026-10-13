@@ -52,7 +52,7 @@ def test_no_match_low_score_wrong_artist(monkeypatch):
 
 
 def test_noise_cleaning():
-    assert gl.split_artist_title("Daft Punk - Topic", "Around the World (Official Video) ft. X") == ("Daft Punk", "Around the World")
+    assert gl.split_artist_title("Daft Punk - Topic", "Around the World (Official Video) ft. X") == ("Daft Punk", "Around the World ft. X")
     assert gl.split_artist_title("", "Daft Punk - Around the World [Official Audio]") == ("Daft Punk", "Around the World")
     assert gl.split_artist_title("Daft Punk", "Daft Punk - Around the World") == ("Daft Punk", "Around the World")
 
@@ -257,6 +257,23 @@ def test_preview_caps_per_namespace_and_drops_lang(monkeypatch):
 )
 def test_split_artist_title_cases(channel, title, expected):
     assert gl.split_artist_title(channel, title) == expected
+
+
+def test_musicbrainz_query_drops_feat_and_remix_text(monkeypatch):
+    monkeypatch.setattr(gl.time, "sleep", lambda s: None)
+    monkeypatch.delenv("AUDIO_GENRE_LOOKUP", raising=False)
+    monkeypatch.delenv("AUDIO_TAG_LOOKUP", raising=False)
+    gl._cache.clear()
+    queries = []
+
+    def fake_get(path, params):
+        queries.append(params.get("query"))
+        return {"recordings": []}
+
+    monkeypatch.setattr(gl, "_get", fake_get)
+    gl.lookup("Kato Feat. Jon", "Turn The Lights Off")
+    assert queries == ['recording:"Turn The Lights Off" AND artist:"Kato"']
+    assert "Remix Long Version" not in queries[0]
 
 
 def test_concurrent_lookups_of_one_track_share_one_fetch(monkeypatch):

@@ -41,7 +41,6 @@ _SEP = re.compile(r"\s+(?:-|●●)\s+")
 def clean_artist(artist: str) -> str:
     a = re.sub(r"-\s*Topic$", "", (artist or "").rstrip(), flags=re.I)
     a = re.sub(r"VEVO\s*$", "", a, flags=re.I)
-    a = _strip_feat(a)
     a = re.sub(r"\s+", " ", a).strip()
     stripped = a[: -len(" official")] if a.casefold().endswith(" official") else a
     return stripped.strip() or a
@@ -49,7 +48,6 @@ def clean_artist(artist: str) -> str:
 
 def clean_title(title: str) -> str:
     t = _NOISE.sub("", title or "")
-    t = _strip_feat(t)
     t = re.sub(r"[\(\[]\s*[\)\]]", "", t)
     return re.sub(r"\s+", " ", t).strip(" -|")
 
@@ -61,11 +59,18 @@ _VERSION_BRACKET = re.compile(
 _VERSION_TAIL = re.compile(r"\s+-\s+(?:live|acoustic|unplugged|sessions?|in concert)\b.*$|\s+live (?:at|from|in|on)\b.*$", re.I)
 
 
+def lookup_artist(artist: str) -> str:
+    """The artist for external lookups only: clean_artist without feat/ft/featuring credits; never shown or saved."""
+    a = re.sub(r"\s+", " ", _strip_feat(clean_artist(artist))).strip(" -|")
+    return a or clean_artist(artist)
+
+
 def lookup_title(title: str) -> str:
-    """The title for external lookups only: clean_title plus version info (live, acoustic, unplugged, session, venue) removed; never shown or saved."""
-    t = _VERSION_BRACKET.sub("", clean_title(title))
+    """The title for external lookups only: clean_title plus feat credits and version info (live, acoustic, unplugged, session, venue) removed; never shown or saved."""
+    base = re.sub(r"\s+", " ", re.sub(r"[\(\[]\s*[\)\]]", "", _strip_feat(clean_title(title)))).strip(" -|")
+    t = _VERSION_BRACKET.sub("", base)
     t = _VERSION_TAIL.sub("", t)
-    return re.sub(r"\s+", " ", t).strip(" -|") or clean_title(title)
+    return re.sub(r"\s+", " ", t).strip(" -|") or base or clean_title(title)
 
 
 def split_artist_title(artist: str, title: str) -> tuple[str, str]:
@@ -84,8 +89,22 @@ _BRACKET = re.compile(r"[\(\[]([^\)\]]*)[\)\]]")
 _REMIX_WORD = re.compile(r"\bremix\b", re.I)
 
 
+_SEGMENT_SEP = re.compile(r"( \| | - | \u2013 | \u2014 )")
+_FEAT_WORD = re.compile(r"\b(?:featuring|feat|ft)\b", re.I)
+_CUE_DASH = re.compile(r" [-\u2013\u2014] ")
+
+
+def _cut_remix_segment(title: str) -> tuple[str, str | None]:
+    parts = _SEGMENT_SEP.split(title)
+    for i in range(2, len(parts), 2):
+        seg = parts[i].strip()
+        if seg and _REMIX_WORD.search(seg):
+            return "".join(parts[: i - 1] + parts[i + 1 :]).strip(), seg
+    return title, None
+
+
 def cut_remix(title: str) -> tuple[str, str | None]:
-    """Cut the first bracket whose text contains the word "remix"; return (title without it, its inner text)."""
+    """Cut the remix out of a title: the first bracket whose text has the word "remix", else the first later segment (split by spaced | - \u2013 \u2014) that has it; return (title without it, its text)."""
     if not isinstance(title, str):
         return "", None
     for m in _BRACKET.finditer(title):
@@ -93,11 +112,15 @@ def cut_remix(title: str) -> tuple[str, str | None]:
         if inner and _REMIX_WORD.search(inner):
             rest = f"{title[: m.start()]} {title[m.end() :]}"
             return re.sub(r"\s+", " ", rest).strip(" -|"), inner
-    return title, None
+    return _cut_remix_segment(title)
 
 
 def split_title(artist: str, title: str) -> tuple[str, str, str | None]:
-    """Cut the remix bracket out of the title, then split artist and title as split_artist_title does."""
+    """Cut the remix out of the title, then split artist and title as split_artist_title does; a feat credit left of the first spaced dash makes that left part the artist when nothing else split."""
     cut, remix = cut_remix(title)
     a, t = split_artist_title(artist, cut)
+    if a == clean_artist(artist) and t == clean_title(cut):
+        m = _CUE_DASH.search(t)
+        if m and _FEAT_WORD.search(t[: m.start()]) and t[m.end() :].strip():
+            a, t = t[: m.start()].strip(), clean_title(t[m.end() :])
     return a, t, remix
