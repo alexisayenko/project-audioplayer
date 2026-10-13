@@ -16,7 +16,9 @@ def clean_artist(artist: str) -> str:
     a = re.sub(r"\s*-\s*Topic\s*$", "", artist or "", flags=re.I)
     a = re.sub(r"VEVO\s*$", "", a, flags=re.I)
     a = _FEAT.sub("", a)
-    return re.sub(r"\s+", " ", a).strip()
+    a = re.sub(r"\s+", " ", a).strip()
+    stripped = re.sub(r"\s+Official\s*$", "", a, flags=re.I)
+    return stripped.strip() or a
 
 
 def clean_title(title: str) -> str:

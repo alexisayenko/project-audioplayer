@@ -241,6 +241,12 @@ def test_preview_caps_per_namespace_and_drops_lang(monkeypatch):
         ("Daft Punk", "Daft Punk - Around the World [Official Video]", ("Daft Punk", "Around the World")),
         ("", "Daft Punk - Around the World (Official Video)", ("Daft Punk", "Around the World")),
         ("Some Label", "Daft Punk - Around the World", ("Some Label", "Daft Punk - Around the World")),
+        ("Gnarls Barkley Official", "Gnarls Barkley - Crazy (Official Video)", ("Gnarls Barkley", "Crazy")),
+        ("Gnarls Barkley Official", "Gnarls Barkley - Crazy", ("Gnarls Barkley", "Crazy")),
+        ("gnarls barkley OFFICIAL", "GNARLS BARKLEY ●● Crazy", ("gnarls barkley", "Crazy")),
+        ("Gnarls Barkley", "Gnarls Barkley - Crazy (Official Video)", ("Gnarls Barkley", "Crazy")),
+        ("Official", "Official - Crazy", ("Official", "Crazy")),
+        ("The Official Band", "The Official Band - Crazy", ("The Official Band", "Crazy")),
     ],
 )
 def test_split_artist_title_cases(channel, title, expected):
