@@ -242,6 +242,14 @@ it. Status 2026-10-13 (read from the SonarCloud API): 87 open issues (about 821 
 resolved in the SonarCloud UI by the owner: Swift protocol-fixed
 parameters, `javascript:S7785` (top-level await).
 
+Update 2026-10-14: the `pythonsecurity:S2083` finding in
+`scripts/sync-design-system.py` was fixed in code (reads and writes via
+`open()`), and further smells in server, web, iOS and the script were
+cleared (commits 96f7779, 36fcd12). Not yet re-scanned, so the gate is
+unconfirmed. One false positive remains: `Web:S6850` at
+`web/index.html:40` (heading `#player-title` is empty in the markup and
+filled by script).
+
 Native SwiftUI via XcodeGen, no CI workflows yet; only the local path is
 used (ADR-0008, steps in [`architecture.md`](architecture.md#testflight)).
 `xcodebuild archive`, then `xcodebuild -exportArchive` with
