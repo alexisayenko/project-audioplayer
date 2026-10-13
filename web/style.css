@@ -35,17 +35,18 @@ a { color: var(--accent-ink); }
 .side {
   position: fixed; z-index: 8; background: var(--surface); box-shadow: var(--shadow-card);
   display: flex; flex-direction: column; gap: var(--space-2);
+  left: var(--space-4); right: var(--space-4); bottom: var(--dock-b); height: var(--tab-h); border-radius: var(--radius-tray);
 }
 .brand { display: none; flex-direction: column; padding: var(--space-1) var(--space-3) var(--space-4); }
 .brand-name { font-size: 20px; line-height: 24px; font-weight: 700; }
 .brand-sub { color: var(--ink-muted); }
-#nav { display: flex; }
+#nav { display: flex; height: 100%; justify-content: space-around; align-items: stretch; padding: 6px; gap: var(--space-1); }
 #nav a {
-  position: relative; display: flex; align-items: center; gap: 10px; min-height: var(--hit);
-  padding: 0 var(--space-3); border-radius: var(--radius-key);
+  position: relative; display: flex; align-items: center; min-height: var(--hit);
+  flex: 1; flex-direction: column; justify-content: center; gap: var(--space-1); padding: 0; min-width: 0; border-radius: var(--radius-card);
   color: var(--ink-muted); text-decoration: none; font-size: 15px; line-height: 20px; font-weight: 500;
 }
-#nav a svg { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+#nav a svg { width: 22px; height: 22px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 #nav a svg.solid { fill: currentColor; stroke: none; }
 #nav a.active { background: var(--accent-tint); color: var(--accent-ink); }
 #nav a.active svg { stroke: var(--accent); }
@@ -55,10 +56,6 @@ a { color: var(--accent-ink); }
 .led { width: 8px; height: 8px; border-radius: var(--radius-pill); background: var(--ok); flex: none; }
 .led.down { background: var(--power); }
 
-.side { left: var(--space-4); right: var(--space-4); bottom: var(--dock-b); height: var(--tab-h); border-radius: var(--radius-tray); }
-#nav { height: 100%; justify-content: space-around; align-items: stretch; padding: 6px; gap: var(--space-1); }
-#nav a { flex: 1; flex-direction: column; justify-content: center; gap: var(--space-1); padding: 0; min-width: 0; border-radius: var(--radius-card); }
-#nav a svg { width: 22px; height: 22px; }
 #nav a .nav-label { font-size: 12px; line-height: 14px; }
 
 .stage { margin-left: var(--rail-w); min-height: 100dvh; }
@@ -320,7 +317,7 @@ dialog .row.end .btn + .btn { margin-left: 0; }
   background: var(--ink); color: var(--ground); padding: var(--space-3) var(--space-4); border-radius: var(--radius-key);
 }
 @media (min-width: 480px) { .toast { bottom: calc(var(--dock-b) + var(--mini-h) + var(--space-4)); } }
-.sync-warn { padding: var(--space-2) var(--space-4); background: color-mix(in srgb, var(--power) 14%, var(--surface)); color: var(--ink); text-align: center; }
+.sync-warn { display: block; padding: var(--space-2) var(--space-4); background: color-mix(in srgb, var(--power) 14%, var(--surface)); color: var(--ink); text-align: center; }
 body.signed-out #nav a:not([data-route="settings"]), body.signed-out #mini { display: none; }
 
 /* mini player (PlayerBar) */
@@ -389,7 +386,7 @@ body.signed-out #nav a:not([data-route="settings"]), body.signed-out #mini { dis
 .pb-progress .slider { flex: none; width: 100%; height: 28px; }
 .times { display: flex; justify-content: space-between; color: var(--ink-muted); }
 .pb-controls { display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; }
-.tray { display: inline-flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); border-radius: var(--radius-tray); background: var(--surface); box-shadow: var(--shadow-card); }
+.tray { margin: 0; border: 0; min-width: 0; display: inline-flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); border-radius: var(--radius-tray); background: var(--surface); box-shadow: var(--shadow-card); }
 .tray .key { height: var(--hit); }
 .tray .key.wide { width: 56px; }
 .tray .key.lit { width: 64px; height: 48px; }

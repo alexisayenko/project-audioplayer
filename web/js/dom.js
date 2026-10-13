@@ -1,13 +1,16 @@
 const TAG_STYLE = { label: 't-caption', small: 't-caption', h2: 't-title' };
 
+function setProp(node, k, v) {
+  if (k === 'class') node.className = v;
+  else if (k.startsWith('on')) node.addEventListener(k.slice(2), v);
+  else if (k in node && k !== 'list') node[k] = v;
+  else node.setAttribute(k, v === true ? '' : v);
+}
+
 export function el(tag, props = {}, ...children) {
   const node = document.createElement(tag);
   for (const [k, v] of Object.entries(props)) {
-    if (v == null || v === false) continue;
-    if (k === 'class') node.className = v;
-    else if (k.startsWith('on')) node.addEventListener(k.slice(2), v);
-    else if (k in node && k !== 'list') node[k] = v;
-    else node.setAttribute(k, v === true ? '' : v);
+    if (v != null && v !== false) setProp(node, k, v);
   }
   if (TAG_STYLE[tag] && !/\bt-/.test(node.className)) node.classList.add(TAG_STYLE[tag]);
   for (const c of children.flat()) {

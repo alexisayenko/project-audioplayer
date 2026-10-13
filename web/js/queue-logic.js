@@ -85,6 +85,10 @@ export function playNow(state, id) {
   return { ...state, items, index };
 }
 
+function mergeTags(item, tags) {
+  for (const m of tags) if (!item.tags.some((t) => lc(t) === lc(m))) item.tags.push(m);
+}
+
 // Union add: every song carrying ANY picked tag is appended (deduped); picked tags become chips.
 export function addTags(state, picks, songs) {
   const tags = [...state.tags];
@@ -95,9 +99,8 @@ export function addTags(state, picks, songs) {
     const matched = picks.filter((p) => hasTag(s, p));
     if (!matched.length) continue;
     const it = items.find((x) => x.id === s.id);
-    if (it) {
-      for (const m of matched) if (!it.tags.some((t) => lc(t) === lc(m))) it.tags.push(m);
-    } else {
+    if (it) mergeTags(it, matched);
+    else {
       items.push({ id: s.id, manual: false, tags: matched });
       added += 1;
     }

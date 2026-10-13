@@ -1,7 +1,7 @@
 const YT = [
-  /^(?:https?:\/\/)?(?:www\.|m\.|music\.)?youtube\.com\/watch\?(?:.*&)?v=([A-Za-z0-9_-]{11})(?:[&#].*)?$/i,
-  /^(?:https?:\/\/)?(?:www\.|m\.|music\.)?youtube\.com\/(?:shorts|embed|live)\/([A-Za-z0-9_-]{11})(?:[/?#].*)?$/i,
-  /^(?:https?:\/\/)?youtu\.be\/([A-Za-z0-9_-]{11})(?:[/?#].*)?$/i,
+  /^(?:https?:\/\/)?(?:www\.|m\.|music\.)?youtube\.com\/watch\?(?:.*&)?v=([a-z0-9_-]{11})(?:[&#].*)?$/i,
+  /^(?:https?:\/\/)?(?:www\.|m\.|music\.)?youtube\.com\/(?:shorts|embed|live)\/([a-z0-9_-]{11})(?:[/?#].*)?$/i,
+  /^(?:https?:\/\/)?youtu\.be\/([a-z0-9_-]{11})(?:[/?#].*)?$/i,
 ];
 const SC_USER_RESERVED = new Set(['discover', 'stations', 'you', 'charts', 'search', 'upload', 'feed', 'pages', 'popular', 'mobile', 'settings', 'notifications', 'messages', 'jobs', 'terms-of-use', 'creators', 'go']);
 const SC_SECOND_RESERVED = new Set(['tracks', 'albums', 'sets', 'reposts', 'likes', 'spotlight', 'comments', 'popular-tracks', 'following', 'followers', 'playlists']);
@@ -10,7 +10,7 @@ const TRACKING = new Set(['si', 'feature', 'pp', 'fbclid', 'gclid']);
 
 /** `{kind: 'track'|'short'|'unsupported', url}` for SoundCloud links, else null. Port of server/app/urlclean.py. */
 export function classifySoundcloud(input) {
-  const m = /^(?:https?:\/\/)?([A-Za-z0-9.-]+)(\/[^?#]*)?(?:[?#].*)?$/i.exec(String(input ?? '').trim());
+  const m = /^(?:https?:\/\/)?([a-z0-9.-]+)(\/[^?#]*)?(?:[?#].*)?$/i.exec(String(input ?? '').trim());
   if (!m) return null;
   const host = m[1].toLowerCase();
   const parts = (m[2] || '').split('/').filter(Boolean);
@@ -22,19 +22,20 @@ export function classifySoundcloud(input) {
   if (!SC_HOSTS.has(host)) return null;
   const unsupported = { kind: 'unsupported', url: '' };
   if (parts.length < 2 || parts.length > 3) return unsupported;
-  const [user, track, secret] = parts;
-  if (SC_USER_RESERVED.has(user.toLowerCase()) || SC_SECOND_RESERVED.has(track.toLowerCase())) return unsupported;
-  if (!/^[A-Za-z0-9_-]+$/.test(user) || !/^[A-Za-z0-9_-]+$/.test(track)) return unsupported;
-  let url = `https://soundcloud.com/${user}/${track}`;
-  if (parts.length === 3) {
-    if (!/^s-[A-Za-z0-9]+$/.test(secret)) return unsupported;
-    url += `/${secret}`;
-  }
-  return { kind: 'track', url };
+  const url = soundcloudTrackUrl(parts);
+  return url ? { kind: 'track', url } : unsupported;
+}
+
+function soundcloudTrackUrl([user, track, secret]) {
+  if (SC_USER_RESERVED.has(user.toLowerCase()) || SC_SECOND_RESERVED.has(track.toLowerCase())) return '';
+  if (!/^[A-Za-z0-9_-]+$/.test(user) || !/^[A-Za-z0-9_-]+$/.test(track)) return '';
+  const url = `https://soundcloud.com/${user}/${track}`;
+  if (secret === undefined) return url;
+  return /^s-[A-Za-z0-9]+$/.test(secret) ? `${url}/${secret}` : '';
 }
 
 export function sourceOf(id) {
-  return /^soundcloud-[0-9]{1,20}$/.test(String(id ?? '')) ? 'soundcloud' : 'youtube';
+  return /^soundcloud-\d{1,20}$/.test(String(id ?? '')) ? 'soundcloud' : 'youtube';
 }
 
 export const sourceLabel = (source) => (source === 'soundcloud' ? 'SoundCloud' : 'YouTube');
