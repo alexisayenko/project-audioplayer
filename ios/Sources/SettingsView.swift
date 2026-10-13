@@ -7,12 +7,8 @@ struct SettingsView: View {
     @EnvironmentObject var server: ServerLink
     @ObservedObject private var auth = AuthService.shared
     @Environment(\.colorScheme) private var scheme
-    @State private var status: String?
-    @State private var testing = false
-    @State private var ok = false
     @State private var bytes: Int64 = 0
     @State private var confirmRemoveAll = false
-    @State private var serverOpen = false
 
     var body: some View {
         ScrollView {
@@ -21,7 +17,6 @@ struct SettingsView: View {
                 accountCard
                 downloadsCard
                 storageCard
-                serverCard
                 Text(versionLine).dsCaption().frame(maxWidth: .infinity)
             }
             .padding(.horizontal, DS.Space.space4).padding(.top, DS.Space.space2).padding(.bottom, DS.Space.space4)
@@ -133,66 +128,6 @@ struct SettingsView: View {
         }
     }
 
-    private var serverCard: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            SectionLabel("Private server")
-            VStack(alignment: .leading, spacing: 0) {
-                Button { withAnimation { serverOpen.toggle() } } label: {
-                    row("Server and token") {
-                        HStack(spacing: DS.Space.space2) {
-                            ServerLED()
-                            Image(systemName: serverOpen ? "chevron.up" : "chevron.down")
-                                .font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.inkMuted)
-                        }
-                    }
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityAddTraits(.isButton).accessibilityValue(serverOpen ? "expanded" : "collapsed")
-                if serverOpen {
-                    rule
-                    row("Server URL") {
-                        TextField("https://play.isayenko.net", text: $settings.serverURL)
-                            .textInputAutocapitalization(.never).keyboardType(.URL).autocorrectionDisabled()
-                            .multilineTextAlignment(.trailing).font(T.subhead).foregroundStyle(DS.Color.inkMuted)
-                    }
-                    rule
-                    row("API token") {
-                        SecureField("Token", text: $settings.token).multilineTextAlignment(.trailing)
-                            .font(T.subhead).foregroundStyle(DS.Color.inkMuted)
-                    }
-                    rule
-                    Button("Paste token from clipboard") {
-                        if let s = UIPasteboard.general.string { settings.token = s.trimmingCharacters(in: .whitespacesAndNewlines) }
-                    }
-                    .font(T.subhead.weight(.semibold)).foregroundStyle(DS.Color.accentInk)
-                    .frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
-                    rule
-                    HStack(spacing: DS.Space.space3) {
-                        Button { Task { await test() } } label: {
-                            HStack(spacing: DS.Space.space2) { Text("Test connection"); if testing { ProgressView() } }
-                        }
-                        .font(T.subhead.weight(.semibold)).foregroundStyle(DS.Color.accentInk).disabled(testing)
-                        Spacer(minLength: DS.Space.space2)
-                        ServerStatus(compact: true)
-                    }
-                    .frame(minHeight: 48)
-                    if let status {
-                        Label {
-                            Text(status).font(T.caption).foregroundStyle(DS.Color.ink)
-                        } icon: {
-                            Image(systemName: ok ? "checkmark.circle.fill" : "xmark.octagon.fill")
-                                .foregroundStyle(ok ? DS.Color.ok : DS.Color.power)
-                        }
-                        .padding(.bottom, DS.Space.space3)
-                    }
-                }
-            }
-            .padding(.horizontal, DS.Space.space4)
-            .frame(maxWidth: .infinity, alignment: .leading).dsSlab()
-        }
-    }
-
     private var capacity: Int64 {
         let v = try? URL(fileURLWithPath: NSHomeDirectory()).resourceValues(forKeys: [.volumeTotalCapacityKey]).volumeTotalCapacity
         return Int64(v ?? 0)
@@ -222,23 +157,6 @@ struct SettingsView: View {
             }
             .padding(.vertical, DS.Space.space3)
             .accessibilityElement(children: .contain)
-        }
-    }
-
-    private func test() async {
-        testing = true
-        status = nil
-        defer { testing = false }
-        let started = Date()
-        do {
-            try await APIClient(baseURL: settings.serverURL, token: settings.token).verify()
-            ok = true
-            status = "Connected · \(Int(Date().timeIntervalSince(started) * 1000)) ms, token accepted"
-            server.setReachable(true)
-        } catch {
-            ok = false
-            status = error.localizedDescription
-            server.setReachable(false)
         }
     }
 }

@@ -160,7 +160,7 @@ struct LibraryView: View {
     private func list(_ tracks: [Track]) -> some View {
         if library.songs.isEmpty && arriving.isEmpty {
             if !ServerLink.hasCredentials(settings) {
-                empty("Sign in or add your token in Settings to load your library.")
+                empty("Sign in in Settings to load your library.")
             } else if server.syncing || !server.synced && server.reachable != false {
                 empty("Loading your library\u{2026}")
             } else if !server.synced {

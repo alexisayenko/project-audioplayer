@@ -10,7 +10,7 @@ enum APIError: LocalizedError {
         case .badURL: return "Invalid server URL"
         case .refused(_, let detail): return detail
         case .http(let code, let detail):
-            if code == 401 { return "Not signed in or wrong API token (see Settings)" }
+            if code == 401 { return "Not signed in. Sign in in Settings" }
             return detail.isEmpty ? "Server error \(code)" : detail
         }
     }
