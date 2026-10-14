@@ -134,6 +134,8 @@ and rules):
 - [`tech/README.md`](tech/README.md) — stack + decisions frame
 - [`tech/deploy.md`](tech/deploy.md) — deploy runbook for the live
   server (where things live, deploy, rollback, verify, signup off)
+- [`tech/domain-migration.md`](tech/domain-migration.md) — runbook for moving
+  the site from play.isayenko.net to electrophone.cc
 - [`specs/README.md`](specs/README.md) — testable requirements per area
   (API, data model, tags, library, playback, web, genres, iOS, non-functional)
 - [`CHANGELOG.md`](CHANGELOG.md) — what shipped, newest first

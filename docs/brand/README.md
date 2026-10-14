@@ -29,7 +29,7 @@ committed export and the workflow. Decision: ADR-0009 in
 
 ### Domain candidates
 
-No domain is bought yet; the primary pick is `vega108.app` (runner-up `vega-108.com`), pending Alex's decision.
+Chosen: `electrophone.cc` (purchased 2026-10-14; EUR 2.80 first year, then EUR 7.43 per year; expires about 2027-10-14, verify at the registrar; auto-renew unknown; invoice in the private project-meta repo, `audioplayer/invoices/`).
 Prices, assessment, follow-up steps and the checks history: [`domains.md`](domains.md).
 
 ## Workflow

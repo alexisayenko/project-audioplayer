@@ -34,7 +34,26 @@ Registrar: check Cloudflare Registrar first (at-cost pricing, no renewal markup;
 
 ## Status and follow-up
 
-**Not purchased yet; decision pending.** Once a domain is chosen:
+**PURCHASED: `electrophone.cc` (2026-10-14).** The earlier recommendation
+(`vega108.app`) was not followed.
+
+## Purchased
+
+| Field | Value |
+| --- | --- |
+| Domain name | `electrophone.cc` |
+| Price paid | EUR 2.80 (first year; list price EUR 7.43, saved EUR 4.63) |
+| Date of purchase | 2026-10-14 |
+| Future price | EUR 7.43 per year (renewal; the first-year promo ends after year 1) |
+| Expires / renews | about 2027-10-14 (typical 1-year term; verify the exact expiry at the registrar, it is not stated on the invoice) |
+| Auto-renew | unknown, check at the registrar |
+| Registrar | Spaceship |
+| Status | PURCHASED |
+| Invoice | stored in the private project-meta repo: `audioplayer/invoices/2026-10-14-electrophone.cc-invoice.pdf` |
+
+**Migration status:** Cloudflare zone active; both hostnames serve the app; Google and Apple sign-in verified on electrophone.cc (2026-10-14). Open: iOS default URL, cutover, decommission. See [tech/domain-migration.md](../tech/domain-migration.md) and [task-0026](../tasks/task-0026.md).
+
+Next steps for the domain:
 
 - add a tunnel hostname for it in the cloudflared ingress on perkunas, plus
   DNS records;

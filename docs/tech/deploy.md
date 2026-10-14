@@ -10,7 +10,7 @@ Status: Accepted · 2026-10-14. Live at https://play.isayenko.net since 2026-10-
 | Service | systemd `audioplayer.service`, user `audioplayer`, code in `/opt/audioplayer` (git clone of this repo, branch `main`) |
 | Public URL | Cloudflare Tunnel ingress `play.isayenko.net` -> the service on `192.168.0.10:8000` (uvicorn `--host 0.0.0.0 --port 8000`). `cloudflared` does not run on LXC 106; its host, config path and ingress line are not verified. Tailscale is not used |
 | Venv | `/opt/audioplayer/venv` (`ExecStart=/opt/audioplayer/venv/bin/uvicorn app.main:app`, working dir `/opt/audioplayer/server`) |
-| Env file | `/etc/audioplayer/env`, loaded by the unit (secrets; never in a repo, never printed). Keys present: `AUDIO_API_TOKEN`, `AUDIO_DATA_REPO`, `AUDIO_COVERS_REPO`, `AUDIO_HOSTS`, `AUDIO_DATA_DIR`, `ALLOWED_EMAIL`, `GOOGLE_WEB_CLIENT_ID`, `APPLE_WEB_CLIENT_ID`, `APPLE_AUDIENCE`, `GOOGLE_CLIENT_ID`, `AUDIO_SESSION_SECRET`; no limit keys are set, so the defaults apply |
+| Env file | `/etc/audioplayer/env`, loaded by the unit (secrets; never in a repo, never printed). Keys present: `AUDIO_API_TOKEN`, `AUDIO_DATA_REPO`, `AUDIO_COVERS_REPO`, `AUDIO_HOSTS`, `AUDIO_DATA_DIR`, `ALLOWED_EMAIL`, `GOOGLE_WEB_CLIENT_ID`, `APPLE_WEB_CLIENT_ID`, `APPLE_AUDIENCE`, `GOOGLE_CLIENT_ID`, `AUDIO_SESSION_SECRET`; optional host keys `PUBLIC_HOSTS`, `CANONICAL_HOST`, `OAUTH_REDIRECT_URIS` (ADR-0019, see [Hostnames](#hostnames)); no limit keys are set, so the defaults apply |
 | Audio | ZFS dataset `pool-3/music` (single disk, no redundancy), mounted in the LXC at `/srv/music` (`AUDIO_DATA_DIR`); files under `/srv/music/users/<uid>/` |
 | Metadata | the server's own clones, in `/var/lib/audioplayer/`, of `data-storage` (`audioplayer/users/<uid>/{profile,library}.json`) and `data-storage-lfs` (covers), pushed on every write (ADR-0005, ADR-0012) |
 | yt-dlp | `audioplayer-ytdlp-update.timer` (`OnCalendar=weekly`, Mondays 00:00 UTC, `Persistent=true`) starts `audioplayer-ytdlp-update.service`: `venv/bin/pip install -q -U yt-dlp`, then restarts `audioplayer` (NFR-013) |
@@ -67,3 +67,14 @@ Then repeat the checklist below. To return to `main` later: `git checkout main &
 - Anonymous visitors see the owner's library read-only (ADR-0018, API-090..094). Env in `/etc/audioplayer/env`, then `sudo systemctl restart audioplayer`: `PUBLIC_VIEW` (default 1; `0` = off, anonymous gets 401 everywhere), `PUBLIC_AUDIO` (default 1; `0` = guests get metadata only, no audio), `PUBLIC_VIEW_EMAIL` (default the owner), `GUEST_REQ_PER_MIN` (240), `GUEST_AUDIO_MB_PER_HOUR` (1024), `GUEST_MAX_STREAMS` (3), all per client IP.
 - The client IP is `CF-Connecting-IP` when the TCP peer is loopback or a private LAN address (cloudflared runs on the same host), else the socket address. Never expose uvicorn directly to the internet, or behind another proxy on a LAN address, or the header can be spoofed.
 - Emergency off: `PUBLIC_VIEW=0` (everything) or `PUBLIC_AUDIO=0` (audio only). Cloudflare's terms restrict large media through the proxy; if traffic grows, switch `PUBLIC_AUDIO` off.
+
+## Hostnames
+
+| Variable | Default | Effect |
+| --- | --- | --- |
+| `PUBLIC_HOSTS` | unset (any host) | Comma list of hosts the app answers on; absolute URLs are only built from these (a Host outside the list falls back to `CANONICAL_HOST` or the first entry) |
+| `CANONICAL_HOST` | unset (no redirect) | GET/HEAD on any other host get a 308 to `https://<CANONICAL_HOST><path+query>`; `/health`, `/robots.txt`, `/legal` and writes are exempt |
+| `OAUTH_REDIRECT_URIS` | unset | Comma list of Apple web redirect URIs; the one matching the request host is served by `GET /auth/config`, else the first. Beats `APPLE_WEB_REDIRECT_URI` |
+| `LEGAL_CONTACT` | unset | Optional email address or `https://` URL shown as the contact for song removal in the copyright note (`GET /legal`). Use a dedicated alias, not a personal address; invalid values are ignored with a startup warning |
+
+`X-Forwarded-Host` is trusted only from a loopback or LAN peer. Sessions are host-only cookies: sign in again on each host. Steps: [domain-migration.md](domain-migration.md).

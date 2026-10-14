@@ -22,6 +22,8 @@ ADRs: ADR-0003 (web), ADR-0004 (hosting), ADR-0001 (storage scale).
 - NFR-020 MUST: the service is limited to about 2 cores (perkunas throttles at 100 C under sustained all-core load; LXC 106 also hosts Immich). Status: planned
 - NFR-021 SHOULD: heavy work (yt-dlp, ffmpeg and aubio BPM decode) runs off the request path (background task or thread pool) and is bounded by timeouts (ffmpeg 120 s, git 120 s, MusicBrainz 5 s). Status: implemented
 - NFR-022 MUST: BPM detection works without crashing the server if `ffmpeg` or `aubio` is missing (BPM stays `null`). Status: implemented
+- NFR-023 SHOULD: the WebGL terrain visualizer ([task-0023](../tasks/task-0023.md) phase 2) stays within about 8% CPU on a mid-range phone and keeps the GPU light (default 72x56 grid, about 8k line segments, DPR cap 2, bloom only at the top quality level); it falls back to the 2D bars and ring without WebGL. Status: planned
+- NFR-024 SHOULD: the 2D visualizer ([visualizer.md](visualizer.md)) stays below about 8% CPU on a mid-range phone at 30 fps: the loop runs only while enabled, playing, visible and on screen, DPR is capped at 2 and a frame governor lowers quality; reduced motion turns it off and the beat pulse is limited to 3 flashes per second (WCAG 2.3.1). Status: implemented (not measured)
 
 ## Scale and performance
 
@@ -55,3 +57,13 @@ ADRs: ADR-0003 (web), ADR-0004 (hosting), ADR-0001 (storage scale).
 - NFR-081 MUST: privacy: guests get no email, uid, provider, quota data, server path or other user's data (API-091); the owner's profile stays private. The anonymous allow-list is fixed and tested (API-090). Status: implemented
 - NFR-082 MUST: kill switches: `PUBLIC_VIEW=0` (no anonymous access at all) and `PUBLIC_AUDIO=0` (metadata only); both take effect on restart (ADR-0018, [deploy.md](../tech/deploy.md)). Status: implemented
 - NFR-083 SHOULD: watch the copyright, bandwidth and Cloudflare-terms exposure of public audio streaming (ADR-0018); turn `PUBLIC_AUDIO` off first. Status: planned
+
+## Hostnames (ADR-0019)
+
+- NFR-090 MUST: the app is hostname-agnostic: the web uses relative URLs and `location.origin`; no code embeds a hostname. `PUBLIC_HOSTS` (default any host), `CANONICAL_HOST` (default unset) and `OAUTH_REDIRECT_URIS` configure the migration to electrophone.cc.
+- NFR-091 MUST: with `CANONICAL_HOST` set, GET and HEAD on another host answer 308 to `https://<CANONICAL_HOST><path+query>`; `/health`, `/robots.txt`, `/legal` and non-GET/HEAD methods are never redirected. Unset: no redirect.
+- NFR-092 MUST: absolute URLs (the Apple web redirect in `GET /auth/config`) come from `OAUTH_REDIRECT_URIS`, `APPLE_WEB_REDIRECT_URI`, or a Host listed in `PUBLIC_HOSTS`; a Host outside `PUBLIC_HOSTS` is replaced by the canonical or first public host. `X-Forwarded-Host` counts only from a loopback or LAN peer.
+- NFR-093 MUST: the session cookie stays host-only (no `Domain`, `Secure`, `HttpOnly`, `SameSite=Strict`); a new host needs a new sign-in.
+- NFR-094 MUST: the public site is not indexed: every response sends `X-Robots-Tag: noindex, nofollow, noarchive`, `GET /robots.txt` answers `User-agent: *` and `Disallow: /`, `index.html` has `<meta name="robots" content="noindex,nofollow">`; `/health`, `/robots.txt` and `/legal` are never redirected to the canonical host. Status: implemented
+- NFR-095 MUST: a fixed copyright note ("A private personal library. All music and artwork belong to their authors and rights holders, who are credited on each song. Audio is streamed for private listening and cannot be downloaded. To have a song removed, contact the owner.") is shown in the guest view and in Settings; text in `server/app/legal.py`, not configurable; env `LEGAL_CONTACT` (optional email or https URL) turns the last sentence into a link. Status: implemented
+- NFR-110 MUST: BPM backfill is gentle on the box: one job server-wide, songs one after another in a background thread at `nice` 10 (so its ffmpeg runs niced too) with `AUDIO_BACKFILL_SLEEP` seconds (default 0.2) between songs, 60 s per song, one library write per `AUDIO_BACKFILL_BATCH` songs (default 10). Status: implemented (real CPU and thermal effect on perkunas not measured)
