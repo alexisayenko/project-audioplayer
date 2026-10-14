@@ -1,3 +1,4 @@
+import { openShareDialog } from './share-ui.js';
 import { api } from './api.js';
 import { player } from './player.js';
 import { el, fmtTime } from './dom.js';
@@ -57,6 +58,7 @@ function moreButton(s, full, { audio, queueable, queued }) {
     ] : []),
     ...(audio && can('download') ? [{ label: 'Download', run: () => downloadSong(s) }] : []),
     ...(!audio && can('fetch') && autodl.view(s.id).kind === 'none' ? [{ label: 'Download to server', run: () => fetchAudio(s) }] : []),
+    { label: 'Share link', run: () => openShareDialog(s) },
     ...(can('edit') ? [{ label: 'Edit song', run: () => editDialog(s) }] : []),
   ];
   if (!items.length) return el('span', { class: 'more ph', 'aria-hidden': 'true' });

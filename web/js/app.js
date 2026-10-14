@@ -3,6 +3,9 @@ import { isGuest, setGuest, streamable, syncBanner } from './guest.js';
 import { toast } from './dom.js';
 import { player as playerApi, initPlayer, pausePlayer } from './player.js';
 import { initVisualizer } from './viz-ui.js';
+import { isShareHash, parseShareParams } from './share.js';
+import { openShared, setShareHost } from './share-open.js';
+import { initShare } from './share-ui.js';
 import { loadLegal, syncLegal } from './legal.js';
 import { store } from './store.js';
 import { renderLibrary } from './library.js';
@@ -22,6 +25,11 @@ let cleanup = null;
 function route() {
   let name = location.hash.replace(/^#\/?/, '') || 'library';
   const wantsAdd = name === 'add';
+  const shared = isShareHash(location.hash) ? parseShareParams(location.hash) ?? 'bad' : null;
+  if (shared) {
+    name = 'library';
+    history.replaceState(null, '', '#/library');
+  }
   if (wantsAdd) {
     name = 'library';
     history.replaceState(null, '', '#/library');
@@ -44,10 +52,13 @@ function route() {
   }
   window.scrollTo(0, 0);
   if (wantsAdd) openAdd();
+  if (shared) openShared(shared);
 }
 
 initPlayer();
-initVisualizer({ player: playerApi });
+const viz = initVisualizer({ player: playerApi });
+setShareHost({ openFull: () => viz.full.open() });
+initShare();
 const sideToggle = document.getElementById('side-toggle');
 function setCollapsed(collapsed) {
   document.body.classList.toggle('side-collapsed', collapsed);

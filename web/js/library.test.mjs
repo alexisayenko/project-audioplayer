@@ -256,7 +256,7 @@ test('row menu: Play now, queue toggle and Edit song', async () => {
   assert.equal(document.getElementById('toast').textContent, 'Queued');
   rows().find((r) => r.dataset.id === 'b').querySelector('.more').click();
   const labels = document.body.querySelectorAll('.menu button').map((b) => b.textContent);
-  assert.deepEqual(labels, ['Play now', 'Remove from playlist', 'Download', 'Edit song']);
+  assert.deepEqual(labels, ['Play now', 'Remove from playlist', 'Download', 'Share link', 'Edit song']);
   document.body.querySelectorAll('.menu button').find((b) => b.textContent === 'Edit song').click();
   assert.equal(document.getElementById('edit-dialog').open, true);
   assert.equal(document.getElementById('edit-dialog').querySelector('h2').textContent, 'Edit song');

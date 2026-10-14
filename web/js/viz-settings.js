@@ -9,9 +9,17 @@ const heightListeners = new Set();
 const partsListeners = new Set();
 let caps = null;
 
-export const vizBackgroundOn = () => storeGet(BG_STORAGE_KEY) === '1';
+let bgSession = null;
+
+export const vizBackgroundOn = () => (bgSession ?? storeGet(BG_STORAGE_KEY) === '1');
+
+export function setVizBackgroundSession(on) {
+  bgSession = on === null ? null : !!on;
+  for (const cb of listeners) cb(vizBackgroundOn());
+}
 
 export function setVizBackground(on) {
+  bgSession = null;
   storeSet(BG_STORAGE_KEY, on ? '1' : '0');
   for (const cb of listeners) cb(!!on);
 }
