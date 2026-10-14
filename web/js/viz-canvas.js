@@ -189,12 +189,14 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
     });
   }
 
+  const glScale = () => (mode === 'full' ? 1 : heightScale);
+
   function layoutGL() {
     if (!glCanvas?.style) return;
-    const s = heightScale;
+    const s = glScale();
     if (mode === 'full') {
-      glCanvas.style.height = `${s * 100}%`;
-      glCanvas.style.top = `${((1 - s) / 2) * 100}%`;
+      glCanvas.style.height = '100%';
+      glCanvas.style.top = '0%';
     } else {
       glCanvas.style.height = `calc(100dvh * ${s})`;
       glCanvas.style.top = `calc(50dvh * ${1 - s})`;
@@ -218,7 +220,7 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
       if (glCanvas) glObserver = watch(glCanvas);
     }
     renderer = createModeRenderer(vizMode, canvas, glCanvas, { draw2d, createTerrain: d.createTerrain });
-    if (view.w > 0) renderer.resize(view.w, renderer.usesGL ? view.h * heightScale : view.h, view.dpr);
+    if (view.w > 0) renderer.resize(view.w, renderer.usesGL ? view.h * glScale() : view.h, view.dpr);
     if (renderer.usesGL) canvas.hidden = true;
     return renderer;
   }
@@ -373,7 +375,7 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
     setHeightScale(s) {
       heightScale = s;
       layoutGL();
-      if (renderer?.usesGL) renderer.resize(view.w, view.h * s, view.dpr);
+      if (renderer?.usesGL) renderer.resize(view.w, view.h * glScale(), view.dpr);
       if (raf == null) evaluate();
     },
     effectiveMode: () => renderer?.id ?? vizMode,

@@ -4,6 +4,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## 2026-10-14
 
+- Web: in the full-screen overlay the Terrain visualizer now fills the whole viewport instead of a thin band set by "Visualizer height"; the setting still scales Terrain in the Playback background and the bars and ring everywhere (VIZ-041, VIZ-043).
 - Web: the Terrain visualizer now links in Chrome -- the shader failed with "Precisions of uniform u_mode differ" and the silent fallback showed Mirrored spectrum; the vertex shader now declares `precision mediump float;` like the fragment shader (VIZ-043).
 - Web: the Library row "..." menu button is hidden when a row has no menu items (guest on a song without audio); a hidden placeholder keeps the column aligned (WEB-061).
 - Infra and docs: `play.isayenko.net` removed with no redirect (DNS record deleted, ingress rule to remove by hand on perkunas); electrophone.cc is the only host; defaults, examples, scripts and docs updated (ADR-0019 amendment).

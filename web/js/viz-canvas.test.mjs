@@ -206,7 +206,7 @@ function glSetup(over = {}) {
   const glc = { style: {}, hidden: true, removed: false, remove() { this.removed = true; } };
   const made = { gl: 0, terrain: 0 };
   const o = setup({
-    mode: 'full',
+    mode: over.mode || 'full',
     deps: {
       createGLCanvas: () => { made.gl += 1; return glc; },
       createTerrain: () => { made.terrain += 1; return over.nullTerrain ? null : fakeTerrain(log); },
@@ -228,8 +228,8 @@ test('GL canvas and terrain are created lazily: never in bars or ring mode', () 
   assert.equal(g.viz.effectiveMode(), 'ring');
 });
 
-test('terrain mode draws only on the GL canvas, hides the 2D one, sizes the GL canvas by height scale', () => {
-  const g = glSetup();
+test('terrain mode draws only on the GL canvas, hides the 2D one, sizes the GL canvas by height scale in the background', () => {
+  const g = glSetup({ mode: 'background' });
   g.viz.setHeightScale(1 / 3);
   g.viz.setVizMode('terrain');
   g.viz.setEnabled(true);
@@ -242,9 +242,23 @@ test('terrain mode draws only on the GL canvas, hides the 2D one, sizes the GL c
   assert.ok(!g.ctx.calls.includes('rect'));
   assert.ok(!g.ctx.calls.includes('arc'));
   assert.equal(g.viz.effectiveMode(), 'terrain');
-  assert.ok(g.glc.style.height.startsWith('33.3'));
+  assert.ok(g.glc.style.height.includes('0.333'));
   const resize = g.log.find((e) => e[0] === 'resize');
   assert.ok(Math.abs(resize[2] - 200 / 3) < 1);
+});
+
+test('full-screen terrain fills the whole canvas whatever the height scale', () => {
+  const g = glSetup();
+  g.viz.setHeightScale(1 / 6);
+  g.viz.setVizMode('terrain');
+  g.viz.setEnabled(true);
+  g.tick(40);
+  assert.equal(g.glc.style.height, '100%');
+  assert.equal(g.glc.style.top, '0%');
+  const resize = g.log.filter((e) => e[0] === 'resize').pop();
+  assert.equal(resize[2], 200);
+  g.viz.setHeightScale(1 / 3);
+  assert.equal(g.glc.style.height, '100%');
 });
 
 test('switching away from terrain disposes the renderer and removes the GL canvas; only one renderer is active', () => {
