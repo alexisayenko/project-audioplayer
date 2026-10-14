@@ -139,3 +139,12 @@ test('resume brings a suspended context back, and is a no-op without a graph', a
   log.last.resume = () => Promise.reject(new Error('blocked'));
   assert.equal(await graph.resume(), false);
 });
+
+test('getContext exposes the context state for diagnostics, null without a graph', async () => {
+  assert.equal(graph.getContext(), null);
+  const { win, log } = makeWin();
+  await graph.enable(audio, { win });
+  assert.equal(graph.getContext(), log.last);
+  log.last.emit('interrupted');
+  assert.equal(graph.getContext().state, 'interrupted');
+});

@@ -29,6 +29,7 @@ function vizDeps(audio, graph, extra) {
   return {
     getAnalyser: () => graph.getAnalyser(),
     isPlaying: () => !audio.paused && !audio.ended,
+    getDiag: () => ({ audio, graphState: graph.getState?.(), ctxState: graph.getContext?.()?.state }),
     ...extra,
   };
 }
@@ -102,7 +103,9 @@ export function initVisualizer({
   const syncSwitchVisibility = () => { $('p-viz-switch').hidden = modes.length < 2 || !(supported && vizBackgroundOn()); };
 
   function enableGraph() {
-    if (supported) void graph.enable(audio, { win }).then(refreshAll);
+    if (!supported) return;
+    void graph.resume();
+    void graph.enable(audio, { win }).then(refreshAll);
   }
 
   const scrubber = attachScrubber($('viz-scrub'), {

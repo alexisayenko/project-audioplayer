@@ -4,6 +4,7 @@ import {
 import {
   barsDb, unitBars, makeReference, bassEnergy, smoothBars, idleBars, maxOf, makePulse, makePacer, makeGovernor, capDpr, pickSpokes, barCount, shapeBars,
 } from './viz-spectrum.js';
+import { createTracker, diagnose, debugLines, byteMax, createStatusEl, userAgentFamily, audioOrigin } from './viz-signal.js';
 import { createGlow } from './viz-glow.js';
 import { readVizColors, FALLBACK_COLORS } from './viz-color.js';
 import { drawBars } from './viz-bars.js';
@@ -29,6 +30,7 @@ function defaults() {
     isCoarse: () => !!win.matchMedia?.('(pointer: coarse)')?.matches,
     getColors: () => readVizColors(win.getComputedStyle?.(win.document.documentElement), FALLBACK_COLORS),
     getAnchor: () => null,
+    getDiag: () => ({}),
     raf: (fn) => win.requestAnimationFrame(fn),
     caf: (id) => win.cancelAnimationFrame?.(id),
     createGLCanvas,
@@ -82,6 +84,8 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
   const dprCap = () => (startMode === 'full' && !coarse ? DPR_CAP : VIZ_DPR_CAP);
   const pulse = makePulse();
   const ref = makeReference();
+  const tracker = createTracker();
+  const status = d.status ?? createStatusEl(d.doc);
   const st = { bars: new Float32Array(0), buf: null, rot: 0, last: 0, colors: null, colorAt: -Infinity, anchor: null, anchorAt: -Infinity };
   const view = { w: 0, h: 0, dpr: 1 };
   let enabled = false;
@@ -122,13 +126,38 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
   function read(an, n, dt) {
     if (!st.buf || st.buf.length !== an.frequencyBinCount) st.buf = new Float32Array(an.frequencyBinCount);
     an.getFloatFrequencyData(st.buf);
+    if (tracker.record(st.buf).silent) return { target: new Float32Array(n), bass: 0 };
     const o = spectrumOpts(an);
     const levels = barsDb(st.buf, n, { ...o, tilt: TILT_DB_PER_OCT });
     const win = ref.update(levels, dt);
     return { target: unitBars(levels, { ...win }), bass: bassEnergy(st.buf, { ...o, ...win }) };
   }
 
-  function step(ts, dt) {
+  function snapshot(playing, an) {
+    const diag = d.getDiag();
+    const win = globalThis;
+    const t = tracker.t;
+    let bytes = null;
+    if (an && d.debug) {
+      if (!st.bytes || st.bytes.length !== an.frequencyBinCount) st.bytes = new Uint8Array(an.frequencyBinCount);
+      an.getByteFrequencyData(st.bytes);
+      bytes = byteMax(st.bytes);
+    }
+    return {
+      ...t, ...audioOrigin(diag.audio, win.location), playing, paused: !!diag.audio?.paused, graphState: diag.graphState ?? 'n/a', ctxState: diag.ctxState ?? 'none',
+      hasAnalyser: !!an, fftSize: an?.fftSize, byteMax: bytes, pageOrigin: win.location?.origin, ua: userAgentFamily(win.navigator?.userAgent), frameMs: `${avgMs.toFixed(1)} ms`,
+    };
+  }
+
+  function publishStatus(playing, an) {
+    if (d.debug) { status.set(debugLines(snapshot(playing, an)).join('\n')); return; }
+    const diag = d.getDiag();
+    status.set(diagnose({
+      playing, graphState: diag.graphState, ctxState: diag.ctxState, hasAnalyser: !!an, silentRun: tracker.t.silentRun,
+    }).text);
+  }
+
+  function step(dt) {
     const n = ensureBands();
     const playing = d.isPlaying();
     const an = playing ? d.getAnalyser() : null;
@@ -137,8 +166,9 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
     if (an) ({ target, bass } = read(an, n, dt));
     else {
       ref.reset();
-      if (playing) target = idleBars(n, ts);
+      tracker.lost();
     }
+    publishStatus(playing, an);
     smoothBars(st.bars, target, ATTACK, RELEASE, dt * 60);
     pulse.step(bass, dt);
     st.rot += dt * 0.12;
@@ -249,6 +279,8 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
     if (!enabled || !d.isVisible() || !onScreen) { clear(); return; }
     st.bars = new Float32Array(st.bars.length);
     pulse.reset();
+    tracker.lost();
+    status.set(d.debug ? debugLines(snapshot(false, null)).join('\n') : '');
     paint(d.now(), true);
   }
 
@@ -268,7 +300,7 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
       const t0 = d.now();
       const dt = st.last ? Math.min(0.1, Math.max(0.001, (ts - st.last) / 1000)) : 1 / 60;
       st.last = ts;
-      step(ts, dt);
+      step(dt);
       paint(t0, false);
       const work = d.now() - t0;
       avgMs = avgMs ? avgMs * 0.9 + work * 0.1 : work;
