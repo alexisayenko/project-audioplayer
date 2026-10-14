@@ -28,7 +28,7 @@ accent "Add song" button in the Library header, which opens the Add dialog
 (`#/add` still works and opens Library with the dialog). A signed-out visitor sees
 only Settings (Sign in with Google, Sign in with Apple; no token field); once
 signed in, Settings shows the email and Sign out. Navigation is a 220px rail
-(>= 720px), a 64px icon rail (480-719px) or a floating tab bar (< 480px). A
+(>= 720px, collapsible to the 64px icon rail with a toggle button, WEB-037), a 64px icon rail (480-719px) or a floating tab bar (< 480px). A
 persistent player bar (cover, title, shuffle, previous, play/pause, next, repeat,
 time, volume) sits at the bottom of Library and Settings and opens Playback on
 tap; on Playback itself it is hidden. Library is a table of the catalog
@@ -59,6 +59,7 @@ Manages all songs.
 
 - One row per song in a single list card (web: table with a header row, LIB-010; columns cover / Track / Genres / Time / menu, with artist and year only in the Track cell's muted "Artist · Year" line and no #, Album, Artist or Year column, LIB-018): cover, title, genres, duration and a "..." menu with Play now, Add to playlist, Download and Edit song (the Edit dialog also holds Delete; a song without server audio has only Edit song). On the web, clicking the title of a song with audio plays it and keeps the user on Library. The playing row has an accent wash. Tags are not shown in rows (filter by the category chips); BPM is a small outlined badge at the right end of the title line (LIB-019), also on Playback and in Edit. Sort is the text button under the chips ("Recently added", Title, Artist, Year, BPM); a line on the right reads "N songs match · selected values" when filtered.
 - Search box (title, artist, album, tags). With a tag filter or search text active, an "Add all N to playlist" button appends all listed songs to the queue (toast "Added X songs (Y already in queue)"; a tag filter becomes a playlist chip, search-only adds are manual); hidden when nothing is filtered. A "Play all N" button next to it (always shown when songs are listed) replaces the queue with the listed songs and starts playing (toast "Playing N songs (queue replaced)"). Playback and Edit have a Download button (plain file save, WEB-034).
+- Rows stretch over the whole width right of the sidebar. Each row has a playlist toggle (selected when the song is in the queue; click adds or removes, LIB-095). The bottom mini-player is a fixed 720px bar (raised surface, border, shadow) with Edit details, Show in list (scrolls to and flashes the playing song's row, LIB-097) and Add to current playlist (toggle, PLY-119).
 - `decade:` tags are derived from Year by the server and show as "the 90s"; the tag editor previews the chip as Year changes.
 - Filter by tag (chips grouped by prefix: Genre, Decade, Country, then others; plain tags under Tags; `country:` values show as names, e.g. Lithuania; languages are not shown or filterable); sort (added date, title, artist, year, BPM; songs without BPM last).
 - The iOS song sheet and the Add form share one form (`SongFormView`, IOS-070): same fields in the same order (Album and Year, and the two Wikipedia fields, side by side), Get metadata, service icons and both Wikipedia link fields; only the BPM row differs. The song sheet has the same separate Genres and Countries fields as Add; its generic tag editor hides `genre:`, `country:` and `lang:` tags.
@@ -68,7 +69,7 @@ Manages all songs.
 
 ### 3. Player (Playback tab)
 
-Web updates (2026-10-14): the cover is a play/pause button with a translucent icon overlay (PLY-016); the queue "Clear" button drops every upcoming song and all chips and is disabled with a tooltip when there is nothing to clear (PLY-034); with Settings > Playback > "Auto-download songs" on, songs without audio can be queued and show Queued / Downloading N% / limit-pause / Failed-Retry states in the queue and in a banner under the cover, off shows "Not downloaded" with a Download button (PLY-110..116).
+Web updates (2026-10-14): the song-details card has no "..." menu, only two round icon buttons, Download (hidden when the song has no server audio) and Edit song (PLY-072, PLY-102); the cover is a play/pause button with a translucent icon overlay (PLY-016); the queue "Clear" button drops every upcoming song and all chips and is disabled with a tooltip when there is nothing to clear (PLY-034); with Settings > Playback > "Auto-download songs" on, songs without audio can be queued and show Queued / Downloading N% / limit-pause / Failed-Retry states in the queue and in a banner under the cover, off shows "Not downloaded" with a Download button (PLY-110..116).
 
 SUPERSEDED for the web by the two-column layout in Navigation above (PLY-001); the four-block layout below is the older design, kept for reference only.
 
@@ -133,7 +134,8 @@ drafts, both SUPERSEDED:
      picker; song count on the right.
 4. **Current playlist**: rows look like Library cards (cover, title,
    "Author, Album, year", duration, play button, tags line) plus a menu
-   button (Move up, Move down, Remove). Tap a row to play it; the current
+   button (Edit song, Download when the song has server audio, Move up, Move
+   down, Remove; PLY-042). Tap a row to play it; the current
    song is highlighted. The list has a persistent, slim, styled scrollbar
    ([wireframe](wireframes/playback-v3-scrollbar.png)). Empty: "Queue is
    empty - add songs from Library".
@@ -149,8 +151,9 @@ drafts, both SUPERSEDED:
   - Add (Library): appends to the end; a manual duplicate is ignored (toast
     "Already in queue"). A song already queued only via a tag becomes manual.
     If the queue was empty the song is queued but not played.
-  - Move/Remove apply to upcoming rows only (disabled for the current and
-    earlier songs).
+  - Move/Remove apply to every row, played and current included; the current
+    song stays current (followed by identity). Removing the current song
+    plays the next playable one, or stops when none is left (PLY-046).
 - **Tag picker** (+): all tags grouped by prefix with counts, multi-select;
   already selected tags show as selected. Confirming adds every song that has
   ANY picked tag (union) to the end of the queue, dedupes, and shows the

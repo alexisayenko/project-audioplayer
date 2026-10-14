@@ -4,6 +4,10 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## 2026-10-14
 
+- Web: mini-player bar is a fixed 720px, visually separated from the list, with Edit details, Show in list and an Add to current playlist toggle; Library rows stretch full width and show a playlist toggle that reflects the queue (LIB-095..097, PLY-117..119, WEB-038). On phones (< 480px) the mini-player keeps only the playlist toggle and Library rows (< 720px) keep their old columns, the toggle being reachable through the row menu.
+- Web: the desktop sidebar can be collapsed to a thin icon rail with a toggle button; the choice is remembered (WEB-037).
+- Web: the queue row menu now works on every row (Move up/down and Remove for played and current songs too, the current song stays current) and gains Edit song and Download (PLY-042, PLY-046).
+- Web: Playback song details show Download and Edit song icon buttons instead of a "..." menu that duplicated Download (PLY-072, PLY-102).
 - Web: BPM badge on the Library title line (LIB-019).
 - Web: canonical country picker; the Soviet Union is a predefined historical country (`country:su`), shown by name; unknown countries are refused with 422 `unknown_country` (TAG-056..058).
 - Web: "Auto-download songs" setting (Settings > Playback) fetches audio for catalog songs on demand through `POST /songs/{id}/audio`, bounded by the hourly add limit (ADR-0010, PLY-110..116).
