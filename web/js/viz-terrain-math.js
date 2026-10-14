@@ -1,8 +1,12 @@
 export const QUALITY = [
-  { spacing: 1, bloom: false, smoke: 0, mist: 0, passes: 1, soft: 0 },
-  { spacing: 0.6, bloom: false, smoke: 2, mist: 1, passes: 1, soft: 1 },
-  { spacing: 0.4, bloom: true, smoke: 3, mist: 2, passes: 1, soft: 2 },
+  { spacing: 1, cell: 0.35, bloom: false, smoke: 0, mist: 0, passes: 1, soft: 0 },
+  { spacing: 0.6, cell: 0.2, bloom: false, smoke: 2, mist: 1, passes: 1, soft: 1 },
+  { spacing: 0.4, cell: 0.12, bloom: true, smoke: 3, mist: 2, passes: 1, soft: 2 },
 ];
+export const LOD_ROW_PX = 900;
+export const LOD_FOOT = 2;
+export const LOD_MERGE = 0.9;
+export const LOD_MAX_SPACING = 1.4;
 export const GRID_MAX_VERTICES = 30000;
 export const HISTORY_BINS = 64;
 export const ROWS_PER_SECOND = 16;
@@ -79,6 +83,100 @@ export function gridDims(level, aspect) {
     sp *= 1.06;
   }
   return { rows, cols, spacing: sp, dz: GRID_DEPTH / (rows - 1), dx: (2 * hw) / (cols - 1) };
+}
+
+export function tierHalfWidth(zEnd, aspect) {
+  const a = Math.min(3.6, Math.max(0.4, Number.isFinite(aspect) ? aspect : 1.78));
+  return Math.min(gridHalfWidth(a), Math.tan(COVER_HALF_FOV) * a * COVER_MARGIN * (zEnd + LOD_FOOT));
+}
+
+export function lodTiers(level, aspect, nowZ = NOW_Z) {
+  const base = qualityFor(level).cell;
+  const tiers = [];
+  let z0 = 0;
+  for (let k = 0; z0 < GRID_DEPTH - 1e-6 && k < 12; k += 1) {
+    const nominal = base * 2 ** k;
+    let z1 = Math.sqrt(nominal * LOD_ROW_PX);
+    if (z1 >= LOD_MERGE * GRID_DEPTH || nominal * 2 > LOD_MAX_SPACING) z1 = GRID_DEPTH;
+    z1 = Math.max(z1, Math.min(GRID_DEPTH, z0 + nominal));
+    const want = tierHalfWidth(z1, aspect);
+    let sp = nominal;
+    let half = 0;
+    let rows = 0;
+    let cols = 0;
+    let jz0 = 0;
+    for (let i = 0; i < 80; i += 1) {
+      half = Math.ceil(want / sp);
+      cols = 2 * half + 1;
+      jz0 = Math.floor((z0 - nowZ) / sp);
+      rows = Math.ceil((z1 - nowZ) / sp) - jz0 + 2;
+      if (rows * cols <= GRID_MAX_VERTICES) break;
+      sp *= 1.06;
+    }
+    tiers.push({ k, z0, z1, spacing: sp, dz: sp, dx: sp, hw: half * sp, rows, cols, jz0 });
+    z0 = z1;
+  }
+  return tiers;
+}
+
+export function catmull(t, out, o = 0) {
+  const t2 = t * t;
+  const t3 = t2 * t;
+  out[o] = -0.5 * t3 + t2 - 0.5 * t;
+  out[o + 1] = 1.5 * t3 - 2.5 * t2 + 1;
+  out[o + 2] = -1.5 * t3 + 2 * t2 + 0.5 * t;
+  out[o + 3] = 0.5 * t3 - 0.5 * t2;
+  return out;
+}
+
+export function makeTierPlan(lat, tier, nowZ) {
+  const cols = tier.cols;
+  const idx = new Int32Array(cols * 4);
+  const wt = new Float32Array(cols * 4);
+  const last = lat.cols - 1;
+  for (let c = 0; c < cols; c += 1) {
+    const u = ((c / (cols - 1)) * 2 - 1) * tier.hw;
+    const p = Math.min(last, Math.max(0, (u / lat.hw * 0.5 + 0.5) * last));
+    const i = Math.min(last - 1, Math.floor(p));
+    catmull(p - i, wt, c * 4);
+    for (let k = 0; k < 4; k += 1) idx[c * 4 + k] = Math.min(last, Math.max(0, i - 1 + k));
+  }
+  const span = Math.ceil(((tier.rows + 2) * tier.dz) / lat.dz) + 6;
+  return { lat, tier, nowZ, idx, wt, span, buf: new Float32Array(span * cols), rw: new Float32Array(4) };
+}
+
+export function resampleTier(plan, src, dst, fracL, fracT, lo = 0, hi = Infinity) {
+  const { lat, tier, idx, wt, buf, rw } = plan;
+  const cols = tier.cols;
+  const lc = lat.cols;
+  const lr = lat.rows - 1;
+  const rAt = (j) => Math.min(lr, Math.max(0, (plan.nowZ + (j + tier.jz0 - fracT) * tier.dz) / lat.dz + fracL));
+  const first = Math.max(0, Math.floor(rAt(0)) - 1);
+  const last = Math.min(lr, Math.floor(rAt(tier.rows - 1)) + 2, first + plan.span - 1);
+  for (let r = first; r <= last; r += 1) {
+    const so = r * lc;
+    const bo = (r - first) * cols;
+    for (let c = 0; c < cols; c += 1) {
+      const k = c * 4;
+      buf[bo + c] = src[so + idx[k]] * wt[k] + src[so + idx[k + 1]] * wt[k + 1] + src[so + idx[k + 2]] * wt[k + 2] + src[so + idx[k + 3]] * wt[k + 3];
+    }
+  }
+  const at = (r) => (Math.min(last, Math.max(first, r)) - first) * cols;
+  for (let j = 0; j < tier.rows; j += 1) {
+    const p = rAt(j);
+    const i = Math.min(Math.max(0, lr - 1), Math.floor(p));
+    catmull(p - i, rw);
+    const a = at(i - 1);
+    const b = at(i);
+    const c2 = at(i + 1);
+    const d = at(i + 2);
+    const o = j * cols;
+    for (let c = 0; c < cols; c += 1) {
+      const v = buf[a + c] * rw[0] + buf[b + c] * rw[1] + buf[c2 + c] * rw[2] + buf[d + c] * rw[3];
+      dst[o + c] = v < lo ? lo : v > hi ? hi : v;
+    }
+  }
+  return dst;
 }
 
 export function resample(bins, n) {

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  gridDims, GRID_MAX_VERTICES, QUALITY, clamp01, smoothstep, qualityFor, resample, createHistory, columnBin, edgeFalloff, heightAt, fillHeights,
+  gridDims, GRID_MAX_VERTICES, lodTiers, makeTierPlan, resampleTier, tierHalfWidth, LOD_MAX_SPACING, QUALITY, clamp01, smoothstep, qualityFor, resample, createHistory, columnBin, edgeFalloff, heightAt, fillHeights,
   gridCounts, buildGridVertices, buildLineIndices, buildDepthIndices, buildCrossIndices, energyOf, easeEnergy, GRID_DEPTH, colorRamp, fillColors, horizonGlow, makeStars, cameraAt, horizonY,
   camClamp, camFormat, camParse, defaultPitchDeg, smoothHeights, CAM_LIMITS, nearEnvelope, rowZ, halfWidthAt, columnX, EYE_HEIGHT,
   mat4Perspective, mat4LookAt, mat4Multiply, transformPoint, makeRowClock, SHAKE_MAX, RAMP,
@@ -10,6 +10,7 @@ import {
 import { createTerrain, isWebGLAvailable, linkProgram } from './viz-terrain-gl.js';
 import { MODES, pickMode, nextMode, availableModes, createModeRenderer, modeLabel } from './viz-modes.js';
 
+const DEFAULT_PITCH_ABS = 13.5;
 const near = (a, b, eps = 1e-5) => assert.ok(Math.abs(a - b) < eps, `${a} vs ${b}`);
 
 test('smoothstep and clamp01 are bounded and NaN safe', () => {
@@ -244,24 +245,27 @@ function fakeCanvas() {
   };
 }
 
+const tiersOf = (l, aspect) => lodTiers(l, aspect, nowZOf(gridDims(l, aspect).rows));
 const count = (gl, name) => gl.calls.filter((c) => c[0] === name).length;
 
 test('createTerrain compiles programs, creates buffers and draws expected counts', () => {
   const gl = fakeGL();
   const t = createTerrain(fakeCanvas(), { gl, quality: 1 });
+  const tiers = tiersOf(1, 2);
   assert.equal(count(gl, 'createProgram'), 4);
-  assert.equal(count(gl, 'createBuffer'), 13);
+  assert.equal(count(gl, 'createBuffer'), 2 + 11 * tiers.length);
   assert.equal(t.bloomActive, false);
   t.draw(new Array(64).fill(0.6), 1000);
-  const { rows, cols } = gridDims(1, 2);
   const elems = gl.calls.filter((c) => c[0] === 'drawElements');
-  assert.equal(elems.length, 2);
-  assert.equal(elems[0][2], cols * (rows - 1) * 6);
-  assert.equal(elems[1][2], rows * (cols - 1) * 6);
+  assert.equal(elems.length, 2 * tiers.length);
+  tiers.forEach((tr, i) => {
+    assert.equal(elems[2 * i][2], tr.cols * (tr.rows - 1) * 6);
+    assert.equal(elems[2 * i + 1][2], tr.rows * (tr.cols - 1) * 6);
+  });
   const arrays = gl.calls.filter((c) => c[0] === 'drawArrays');
-  assert.ok(arrays.some((c) => c[1] === gl.POINTS && c[3] === rows * cols));
+  tiers.forEach((tr) => assert.ok(arrays.some((c) => c[1] === gl.POINTS && c[3] === tr.rows * tr.cols)));
   assert.ok(arrays.some((c) => c[1] === gl.POINTS && c[3] === 90));
-  assert.equal(count(gl, 'bufferSubData'), 4);
+  assert.equal(count(gl, 'bufferSubData'), 4 * tiers.length);
 });
 
 test('segments are about 8k at the default quality', () => {
@@ -273,16 +277,18 @@ test('quality switch rebuilds the grid and bloom only at level 2', () => {
   const gl = fakeGL();
   const t = createTerrain(fakeCanvas(), { gl, quality: 0 });
   t.draw([], 0);
-  assert.equal(count(gl, 'drawElements'), 2);
-  assert.equal(gl.calls.find((c) => c[0] === 'drawElements')[2], gridDims(0, 2).cols * (gridDims(0, 2).rows - 1) * 2);
+  const t0 = tiersOf(0, 2);
+  assert.equal(count(gl, 'drawElements'), 2 * t0.length);
+  assert.equal(gl.calls.find((c) => c[0] === 'drawElements')[2], t0[0].cols * (t0[0].rows - 1) * 2);
   t.setQuality(2);
   assert.equal(t.quality, 2);
   assert.equal(t.bloomActive, true);
   assert.equal(count(gl, 'createFramebuffer'), 2);
   gl.calls.length = 0;
   t.draw([0.5], 50);
-  assert.equal(count(gl, 'drawElements'), 4);
-  assert.ok(gl.calls.some((c) => c[0] === 'drawElements' && c[2] === gridDims(2, 2).cols * (gridDims(2, 2).rows - 1) * 6));
+  const t2 = tiersOf(2, 2);
+  assert.equal(count(gl, 'drawElements'), 4 * t2.length);
+  assert.ok(gl.calls.some((c) => c[0] === 'drawElements' && c[2] === t2[0].cols * (t2[0].rows - 1) * 6));
   t.setQuality(0);
   assert.equal(t.bloomActive, false);
   t.dispose();
@@ -293,7 +299,7 @@ test('bloom is skipped when the framebuffer is incomplete', () => {
   const t = createTerrain(fakeCanvas(), { gl, quality: 2 });
   assert.equal(t.bloomActive, false);
   t.draw([0.5], 0);
-  assert.equal(count(gl, 'drawElements'), 2);
+  assert.equal(count(gl, 'drawElements'), 2 * tiersOf(2, 2).length);
 });
 
 test('dispose deletes every GL object and ignores later draws', () => {
@@ -326,7 +332,7 @@ test('context loss stops drawing and restore recreates resources', () => {
   assert.equal(t.lost, false);
   assert.equal(count(gl, 'createProgram'), before + 4);
   t.draw([1], 100);
-  assert.equal(count(gl, 'drawElements'), 2);
+  assert.equal(count(gl, 'drawElements'), 2 * tiersOf(1, 2).length);
 });
 
 test('resize caps dpr at 2', () => {
@@ -396,9 +402,12 @@ test('mode renderer facade dispatches and falls back', () => {
   const only = createModeRenderer('terrain', c2, cg, deps);
   only.draw([], 1);
   only.setQuality(3);
+  only.setQuality(0);
+  only.setQuality(1);
+  only.setQuality(2);
   only.resize(10, 20, 2);
   only.dispose();
-  assert.deepEqual(log, [['gl', 1], ['q', 0], ['resize', 10, 20, 2], ['dispose']]);
+  assert.deepEqual(log, [['gl', 1], ['q', 0], ['q', 2], ['q', 1], ['q', 1], ['resize', 10, 20, 2], ['dispose']]);
   assert.equal(c2.hidden, true);
   assert.equal(cg.hidden, false);
 
@@ -687,4 +696,102 @@ test('bass shake is kept but disabled by default and moves only the camera', () 
   const shaken = cameraAt(1, 1);
   assert.ok(Math.abs(shaken.eye[1] - still.eye[1]) <= SHAKE_MAX * 1.01 + 1e-9);
   assert.deepEqual(shaken.eye.filter((_, i) => i !== 1), still.eye.filter((_, i) => i !== 1));
+});
+
+test('LOD tiers: square cells, exact doubling, contiguous depth and bounded vertices at every level and aspect', () => {
+  for (const aspect of [0.46, 1, 1.78, 2.4, 3.5]) {
+    for (let l = 0; l < QUALITY.length; l += 1) {
+      const tiers = lodTiers(l, aspect);
+      assert.equal(tiers[0].z0, 0);
+      assert.equal(tiers[tiers.length - 1].z1, GRID_DEPTH);
+      tiers.forEach((t, i) => {
+        assert.equal(t.dx, t.dz);
+        assert.ok(t.rows * t.cols <= GRID_MAX_VERTICES);
+        assert.ok(t.spacing >= QUALITY[l].cell && t.spacing <= LOD_MAX_SPACING + 1e-9);
+        assert.equal(t.cols % 2, 1);
+        near(t.hw, ((t.cols - 1) / 2) * t.spacing, 1e-9);
+        if (i > 0) {
+          assert.equal(t.z0, tiers[i - 1].z1);
+          assert.ok(t.spacing >= tiers[i - 1].spacing);
+        }
+      });
+    }
+  }
+  assert.deepEqual(QUALITY.map((q) => q.cell), [0.35, 0.2, 0.12]);
+  const t2 = lodTiers(2, 16 / 9);
+  assert.deepEqual(t2.map((t) => t.spacing), [0.12, 0.24, 0.48, 0.96]);
+  const total = t2.reduce((n, t) => n + t.rows * t.cols, 0);
+  assert.ok(total < 40000, String(total));
+  assert.ok(t2.every((t) => t.rows * t.cols * 2 <= 65535));
+});
+
+test('LOD tiers cover the screen width at every depth they draw', () => {
+  const cam = cameraAt(0, 0);
+  const bottomZ = Math.max(0, -(cam.eye[1] / Math.tan((62 / 2 + 10) * (Math.PI / 180)) - cam.eye[2]));
+  for (const aspect of [0.46, 0.8, 1.33, 1.78, 2.4, 3.5]) {
+    for (let l = 0; l < QUALITY.length; l += 1) {
+      for (const t of lodTiers(l, aspect)) {
+        for (const z of [Math.max(t.z0, bottomZ + 0.5), (t.z0 + t.z1) / 2, t.z1]) {
+          if (z < bottomZ + 0.5 || z > 0.9 * GRID_DEPTH) continue;
+          assert.ok(Math.abs(project(aspect, t.hw, z)[0]) > 1, `level ${l} aspect ${aspect} z ${z}`);
+          assert.ok(Math.abs(project(aspect, -t.hw, z)[0]) > 1);
+        }
+      }
+    }
+    assert.ok(tierHalfWidth(10, aspect) <= halfWidthAt(1, aspect));
+  }
+});
+
+test('the nearest screen width holds 60 to 90 cells at quality 2 and fewer at lower levels', () => {
+  const aspect = 16 / 9;
+  const cam = cameraAt(0, 0);
+  const bottomZ = cam.eye[1] / Math.tan((62 / 2 + DEFAULT_PITCH_ABS) * (Math.PI / 180)) - cam.eye[2];
+  const counts = QUALITY.map((_, l) => {
+    const t = lodTiers(l, aspect)[0];
+    let n = 0;
+    for (let c = 0; c < t.cols; c += 1) if (Math.abs(project(aspect, (c - (t.cols - 1) / 2) * t.spacing, bottomZ)[0]) <= 1) n += 1;
+    return n;
+  });
+  assert.ok(counts[0] < counts[1] && counts[1] < counts[2], counts.join());
+  assert.ok(counts[2] >= 60 && counts[2] <= 90, counts.join());
+});
+
+test('tier resampling reproduces a lattice field and keeps tier rows rigid in time', () => {
+  const lat = gridDims(2, 16 / 9);
+  const latInfo = { rows: lat.rows, cols: lat.cols, dz: lat.dz, hw: halfWidthAt(1, 16 / 9) };
+  const nowZ = nowZOf(lat.rows);
+  const field = (u, tAbs) => 0.4 + 0.3 * Math.sin(u * 0.35) * Math.cos(tAbs * 1.1);
+  const fill = (pos) => {
+    const out = new Float32Array(lat.rows * lat.cols);
+    const base = Math.floor(pos);
+    for (let r = 0; r < lat.rows; r += 1) {
+      const tAbs = (base + r - rowLayout(lat.rows).nowRow) * rowLayout(lat.rows).dt;
+      for (let c = 0; c < lat.cols; c += 1) out[r * lat.cols + c] = field(((c / (lat.cols - 1)) * 2 - 1) * latInfo.hw, tAbs);
+    }
+    return { out, frac: pos - base };
+  };
+  const tier = lodTiers(2, 16 / 9, nowZ)[0];
+  const plan = makeTierPlan(latInfo, tier, nowZ);
+  const dtL = rowLayout(lat.rows).dt;
+  const dtT = tier.dz / WORLD_SPEED;
+  const sample = (tSec) => {
+    const lf = fill(tSec / dtL);
+    const p = tSec / dtT;
+    const baseT = Math.floor(p);
+    const fracT = p - baseT;
+    const dst = new Float32Array(tier.rows * tier.cols);
+    resampleTier(plan, lf.out, dst, lf.frac, fracT, -2, 2);
+    return { dst, baseT };
+  };
+  const a = sample(20.0);
+  const b = sample(20.0 + 3.3 * dtT);
+  const j = 40;
+  const jb = j - 3;
+  assert.equal(b.baseT - a.baseT, 3);
+  for (const c of [10, 100, 200]) near(a.dst[j * tier.cols + c], b.dst[jb * tier.cols + c], 0.02);
+  const z = nowZ + (j + tier.jz0 - (20 / dtT - Math.floor(20 / dtT))) * tier.dz;
+  const tRow = 20 + (z - nowZ) / WORLD_SPEED;
+  const c = 130;
+  near(a.dst[j * tier.cols + c], field((c / (tier.cols - 1) * 2 - 1) * tier.hw, tRow), 0.02);
+  assert.ok(a.dst.every((v) => v >= -2 && v <= 2));
 });

@@ -31,7 +31,8 @@ export function nextMode(id, caps) {
 
 export const modeLabel = (id) => MODES.find((m) => m.id === id)?.label ?? MODES[0].label;
 
-const govToTerrain = (g) => (g >= 2 ? 0 : 1);
+const GOV_TO_TERRAIN = [2, 1, 1, 0];
+const govToTerrain = (g) => GOV_TO_TERRAIN[Math.min(GOV_TO_TERRAIN.length - 1, Math.max(0, g | 0))];
 
 export function createModeRenderer(id, canvas2d, canvasGL, deps = {}) {
   const make = deps.createTerrain || defaultCreateTerrain;
