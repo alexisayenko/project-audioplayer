@@ -229,7 +229,8 @@ def test_clean_tag_namespaces():
     assert library.clean_tag("LANG:RUS") == "lang:ru"
     assert library.clean_tag("lang:ru-RU") == "lang:ru"
     assert library.clean_tag("lang:Klingon") == "lang:klingon"
-    assert library.clean_tag("country:Lithuania") == "country:lithuania"
+    assert library.clean_tag("country:Lithuania") == "country:lt"
+    assert library.clean_tag("country:Atlantis") == "country:atlantis"
 
 
 _MIXED = ["genre:danish", "genre:dj", "genre:house music", "genre:house", *[f"genre:g{i}" for i in range(9)], "country:lt", "country:lv", "lang:en", "lang:de"]

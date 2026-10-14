@@ -500,19 +500,26 @@ async def download(req: DownloadRequest, user: dict[str, Any] = Depends(require_
 
 
 @app.get("/files/{video_id}", responses={404: {"description": "Not found"}, 422: {"description": "Unprocessable"}, 503: {"description": "Not configured"}})
-def get_file(video_id: str, user: dict[str, Any] = Depends(require_token_or_query)):
+def get_file(video_id: str, download: bool = Query(default=False), user: dict[str, Any] = Depends(require_token_or_query)):
     _vid(video_id)
     uid = user["uid"]
     song = next((s for s in _load(uid) if s["id"] == video_id), None)
     if song is not None and not library.has_file(song):
+        if download:
+            raise Problem(404, "audio_not_downloaded", "This song's audio is not on the server.")
         raise HTTPException(status_code=404, detail=_NOT_DOWNLOADED)
     name = library.file_name(song) if song else f"{video_id}.m4a"
     base = audio_dir(uid)
     path = base / name
     if not path.resolve().is_relative_to(base.resolve()) or not path.is_file():
+        if download:
+            raise Problem(404, "audio_not_downloaded", "This song's audio is not on the server.")
         raise HTTPException(status_code=404, detail=_NOT_DOWNLOADED)
-    return FileResponse(path, media_type="audio/mp4", filename=path.name,
-                        headers={"Cache-Control": "private, no-cache"})
+    headers = {"Cache-Control": "private, no-cache"}
+    if download:
+        headers["Content-Disposition"] = library.content_disposition(library.download_name(song, video_id))
+        return FileResponse(path, media_type="audio/mp4", headers=headers)
+    return FileResponse(path, media_type="audio/mp4", filename=path.name, headers=headers)
 
 
 @app.get("/covers/{video_id}", responses={404: {"description": "Not found"}, 422: {"description": "Unprocessable"}})
@@ -715,9 +722,23 @@ def _run_download(uid: str, owner: bool, vid: str, meta: dict[str, Any], tags: l
         job.update(status="error", error=_short(exc))
 
 
+def _reject_unknown_country(tags: list[str], existing: list[str] | None = None) -> None:
+    """422 `unknown_country` for a `country:` value outside ISO 3166-1; values the song already carries (legacy) pass."""
+    keep = set(library.unknown_countries(existing or []))
+    for value in library.unknown_countries(tags):
+        if value not in keep:
+            raise Problem(422, "unknown_country", f"Unknown country: {value}", value=value)
+
+
+def _known_country_tags(tags: list[str]) -> list[str]:
+    bad = set(library.unknown_countries(tags))
+    return [t for t in tags if not (t.startswith("country:") and t[8:] in bad)]
+
+
 @app.post("/songs", status_code=202, responses={409: {"description": "Conflict"}})
 def create_song(req: CreateSongRequest, user: dict[str, Any] = Depends(require_token)):
     uid, owner = user["uid"], user["owner"]
+    _reject_unknown_country(library.clean_tags(req.tags))
     _guard_add(uid, owner, req.audio)
     try:
         link = _resolve_link(req.url)
@@ -785,7 +806,7 @@ def _add_metadata_only(uid: str, vid: str, link: _Resolved, meta: dict[str, Any]
             "cover": cover,
             "duration": found.get("duration"),
             "added_at": now,
-            "tags": library.with_decade(tags or library.clean_tags(found.get("tags") or []), meta.get("year") or found.get("year")),
+            "tags": library.with_decade(tags or _known_country_tags(library.clean_tags(found.get("tags") or [])), meta.get("year") or found.get("year")),
         }
         with _tx(uid, f"add {vid}"):
             songs = library.load(library_path(uid))
@@ -798,6 +819,86 @@ def _add_metadata_only(uid: str, vid: str, link: _Resolved, meta: dict[str, Any]
         {"id": vid, "status": "done", "audio_state": "none", "song": library.public_song(song, _root(uid))},
         status_code=201,
     )
+
+
+def _run_fetch_audio(uid: str, owner: bool, vid: str, source_url: str | None) -> None:
+    """Download audio for a song already in the catalog and attach it to the record."""
+    job = JOBS[(uid, vid)]
+    out: Path | None = None
+
+    def progress(p: float) -> None:
+        job["progress"] = round(p, 3)
+
+    try:
+        out = audio_dir(uid)
+        limits.check_capacity(owner, out, pool_dir())
+        info = extractor.download_audio(vid, out, progress, source_url)
+        value = None
+        try:
+            value = bpm_detect.detect_bpm(out / f"{vid}.m4a")
+        except Exception as exc:
+            log.warning("bpm detection failed for %s: %s", vid, exc)
+        cover_ok = (covers_dir(uid) / f"{vid}.jpg").is_file()
+        if not cover_ok:
+            try:
+                extractor.fetch_cover(vid, covers_dir(uid) / f"{vid}.jpg", info.get("thumbnail"))
+                cover_ok = True
+            except Exception:
+                pass
+        with _tx(uid, f"audio {vid}"):
+            songs = library.load(library_path(uid))
+            song = next((s for s in songs if s["id"] == vid), None)
+            if song is None:
+                raise Problem(404, "unknown_song", _UNKNOWN_SONG)
+            song["file"] = f"{vid}.m4a"
+            if info.get("duration") and not song.get("duration"):
+                song["duration"] = info["duration"]
+            if song.get("bpm") is None and value is not None:
+                song["bpm"] = round(value)
+            if cover_ok and not song.get("cover"):
+                song["cover"] = f"covers/{vid}.jpg"
+            song["updated_at"] = library.now_utc()
+            _save(uid, songs)
+        job.update(status="done", progress=1.0)
+    except extractor.PreviewOnly as exc:
+        _drop_partial(out, vid)
+        job.update(status="error", error=str(exc), code="preview_only")
+    except Problem as exc:
+        _drop_partial(out, vid)
+        job.update(status="error", error=exc.detail, code=exc.code)
+    except Exception as exc:
+        _drop_partial(out, vid)
+        job.update(status="error", error=_short(exc))
+
+
+@app.post("/songs/{video_id}/audio", status_code=202, responses={404: {"description": "Not found"}, 422: {"description": "Unprocessable"}})
+def fetch_song_audio(video_id: str, user: dict[str, Any] = Depends(require_token)):
+    """Download the audio of a catalog song that has none (state none -> server). Idempotent while a job runs."""
+    _vid(video_id)
+    uid, owner = user["uid"], user["owner"]
+    key = (uid, video_id)
+    with users.user_lock(uid):
+        songs = _load(uid)
+        song = next((s for s in songs if s["id"] == video_id), None)
+        if song is None:
+            raise HTTPException(status_code=404, detail=_UNKNOWN_SONG)
+        if library.audio_state(song, _root(uid)) == "server":
+            return JSONResponse({"id": video_id, "status": "done"}, status_code=200)
+        active = JOBS.get(key)
+        if active and active.get("status") in ACTIVE:
+            return {"id": video_id, "status": active["status"]}
+        limits.check_fetch(uid, owner, songs, audio_dir(uid), pool_dir())
+        limits.RATE.record(uid, songs)
+        JOBS[key] = {"status": "queued", "progress": 0.0, "error": None}
+    link = next((s.get("url") for s in library.sources_of(song) if s.get("id") == video_id and s.get("url")), None)
+
+    def started() -> None:
+        job = JOBS.get(key)
+        if job is not None:
+            job["status"] = "downloading"
+
+    began = SCHED.submit(uid, owner, lambda: _run_fetch_audio(uid, owner, video_id, link or song.get("source_url")), started)
+    return {"id": video_id, "status": "downloading" if began else "queued"}
 
 
 @app.get("/songs/{video_id}/status", responses={404: {"description": "Not found"}, 422: {"description": "Unprocessable"}})
@@ -837,6 +938,7 @@ def patch_song(video_id: str, req: PatchSongRequest, user: dict[str, Any] = Depe
             updated["musicbrainz_url"] = genre_lookup.clean_recording_url(changes["musicbrainz_url"])
         if changes.get("tags") is not None:
             updated["tags"] = library.clean_tags(changes["tags"])
+            _reject_unknown_country(updated["tags"], library.clean_tags(song.get("tags") or []))
         if not updated.get("title"):
             raise HTTPException(status_code=422, detail="title must not be empty")
         updated["tags"] = library.with_decade(updated.get("tags") or [], updated.get("year"))

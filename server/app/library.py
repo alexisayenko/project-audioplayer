@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import os
 import re
 import tempfile
@@ -12,7 +13,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from . import genre_lookup, langcodes, urlclean, wiki_lookup
+from . import countrycodes, genre_lookup, langcodes, urlclean, wiki_lookup
 
 LOCK = threading.RLock()
 
@@ -171,7 +172,12 @@ def with_decade(tags: list[str], year: Any) -> list[str]:
 def load_doc(path: Path) -> dict[str, Any]:
     try:
         with open(path, encoding="utf-8") as f:
-            return normalize(json.load(f))
+            doc = normalize(json.load(f))
+        for song in doc["songs"]:
+            bad = unknown_countries(song.get("tags") or [])
+            if bad:
+                logging.getLogger(__name__).warning("song %s has unmapped country tags %s", song.get("id"), bad)
+        return doc
     except FileNotFoundError:
         return normalize({})
 
@@ -239,13 +245,25 @@ def clean_tag(tag: str) -> str:
     if sep and key and value:
         key, value = key.lower(), value.lower()
         if key == "lang":
-            value = langcodes.to_lang_code(value) or value
+            value = langcodes.canonical_lang(value) or value
+        elif key == "country":
+            value = countrycodes.canonical_country(value) or value
         elif key == "decade" and not _DECADE_RE.match(value):
             value = value.replace(" ", "")
         return f"{key}:{value}"
     if sep:
         return ""
     return " ".join(tag.split())
+
+
+def unknown_countries(tags: list[str]) -> list[str]:
+    """Values of `country:` tags that do not canonicalise to an ISO 3166-1 alpha-2 code (call on cleaned tags)."""
+    out = []
+    for t in tags:
+        key, _, value = str(t).partition(":")
+        if key.strip().lower() == "country" and value.strip() and countrycodes.canonical_country(value) is None:
+            out.append(" ".join(value.split()))
+    return out
 
 
 def clean_tags(tags: list[str]) -> list[str]:
@@ -266,3 +284,27 @@ def tag_counts(songs: list[dict[str, Any]]) -> list[dict[str, Any]]:
             e = counts.setdefault(t.casefold(), {"tag": t, "count": 0})
             e["count"] += 1
     return sorted(counts.values(), key=lambda e: e["tag"].casefold())
+
+
+_BAD_NAME = re.compile(r'[\x00-\x1f\x7f/\\:*?"<>|]')
+
+
+def download_name(song: dict[str, Any] | None, video_id: str, limit: int = 120) -> str:
+    """`Artist - Title.m4a` for a browser save: no path separators, control chars or quotes; falls back to `<id>.m4a`."""
+    parts = [str((song or {}).get(k) or "") for k in ("artist", "title")]
+    text = " - ".join(p for p in parts if p.strip())
+    text = " ".join(_BAD_NAME.sub(" ", text).split()).strip(" .")
+    text = text[:limit].strip(" .")
+    return f"{text}.m4a" if text else f"{video_id}.m4a"
+
+
+def content_disposition(name: str) -> str:
+    """RFC 6266 attachment header with an ASCII fallback and `filename*` for the real UTF-8 name."""
+    import unicodedata
+    from urllib.parse import quote
+
+    ascii_name = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode().replace("%", "_").replace('"', "_").replace(chr(92), "_")
+    stem, _, ext = ascii_name.rpartition(".")
+    if not stem.strip(" _-."):
+        ascii_name = f"download.{ext or 'm4a'}"
+    return f"attachment; filename=\"{ascii_name}\"; filename*=UTF-8''{quote(name, safe='')}"

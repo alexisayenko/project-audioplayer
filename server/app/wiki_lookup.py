@@ -12,7 +12,7 @@ import urllib.parse
 import urllib.request
 from typing import Any
 
-from . import genre_lookup
+from . import countrycodes, genre_lookup
 from .titles import lookup_credits
 
 log = logging.getLogger(__name__)
@@ -165,8 +165,9 @@ def _country_tags(artist_claims: dict[str, Any], song_claims: dict[str, Any]) ->
     cc = _claims_map(countries[:2])
     for q in countries[:2]:
         for code in _strings(cc.get(q, {}), "P297"):
-            if re.fullmatch(r"[A-Za-z]{2}", code):
-                return [f"country:{code.lower()}"]
+            known = countrycodes.canonical_country(code) if re.fullmatch(r"[A-Za-z]{2}", code) else None
+            if known:
+                return [f"country:{known}"]
     return []
 
 

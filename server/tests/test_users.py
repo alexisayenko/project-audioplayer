@@ -454,3 +454,48 @@ def test_queued_adds_count_against_the_songs_quota(slow, monkeypatch):
     r = add(slow, a, VID3)
     assert r.status_code == 403
     assert r.json()["error"] == "library_full_songs"
+
+
+def test_download_headers_and_names(multi, tmp_path):
+    a, b = who(multi, ALICE), who(multi, BOB)
+    assert add(multi, a).status_code == 202
+    plain = multi.get(f"/files/{VID}", headers=a)
+    assert plain.status_code == 200
+    r = multi.get(f"/files/{VID}", params={"download": 1}, headers=a)
+    assert r.content == b"audio"
+    assert r.headers["content-disposition"].startswith('attachment; filename="')
+    assert r.headers["content-disposition"].endswith(".m4a")
+    ranged = multi.get(f"/files/{VID}", params={"download": 1}, headers={**a, "Range": "bytes=1-2"})
+    assert ranged.status_code == 206 and ranged.content == b"ud"
+    assert multi.get(f"/files/{VID}", headers={**a, "Range": "bytes=0-1"}).status_code == 206
+    r = multi.get(f"/files/{VID}", params={"download": 1}, headers=b)
+    assert r.status_code == 404
+    assert "content-disposition" not in r.headers
+
+
+def test_download_missing_audio_code(multi):
+    a = who(multi, ALICE)
+    assert add(multi, a).status_code == 202
+    assert multi.delete(f"/songs/{VID}/audio", headers=a).status_code == 204
+    r = multi.get(f"/files/{VID}", params={"download": 1}, headers=a)
+    assert r.status_code == 404 and r.json()["error"] == "audio_not_downloaded"
+
+
+def test_download_name_sanitising():
+    from urllib.parse import unquote
+
+    from app import library as lib
+
+    name = lib.download_name({"artist": "AC/DC", "title": 'Back "In" Black?\x00'}, VID)
+    assert name == "AC DC - Back In Black.m4a"
+    assert lib.download_name({"artist": "", "title": ""}, VID) == f"{VID}.m4a"
+    assert lib.download_name({"artist": "Кино", "title": "Группа крови 🎸"}, VID) == "Кино - Группа крови 🎸.m4a"
+    assert lib.download_name(None, VID) == f"{VID}.m4a"
+    assert len(lib.download_name({"title": "x" * 500}, VID)) <= 124
+    assert lib.download_name({"title": "..BS..BSetc".replace("BS", chr(92))}, VID) == "etc.m4a"
+    cd = lib.content_disposition("Кино - Группа.m4a")
+    assert cd.startswith('attachment; filename="download.m4a"')
+    assert unquote(cd.split("UTF-8''")[1]) == "Кино - Группа.m4a"
+    cd = lib.content_disposition("Beyoncé - Halo.m4a")
+    assert 'filename="Beyonce - Halo.m4a"' in cd and "%C3%A9" in cd
+    assert '"' not in lib.content_disposition('a"b.m4a').split("filename=", 1)[1].split(";")[0][1:-1]

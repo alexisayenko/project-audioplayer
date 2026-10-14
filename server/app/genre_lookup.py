@@ -13,6 +13,7 @@ import urllib.parse
 import urllib.request
 from typing import Any
 
+from . import countrycodes
 from .titles import clean_artist, clean_title, lookup_credits, lookup_title, split_artist_title  # noqa: F401
 
 log = logging.getLogger(__name__)
@@ -116,8 +117,8 @@ def _album(full: dict[str, Any], artist: str = "") -> str | None:
 
 
 def _country(artist: dict[str, Any]) -> list[str]:
-    code = str(artist.get("country") or "").strip().lower()
-    return [f"country:{code}"] if re.fullmatch(r"[a-z]{2}", code) else []
+    code = countrycodes.canonical_country(str(artist.get("country") or "")) if re.fullmatch(r"[A-Za-z]{2}", str(artist.get("country") or "").strip()) else None
+    return [f"country:{code}"] if code else []
 
 
 def _url_rels(entity: dict[str, Any]) -> list[str]:

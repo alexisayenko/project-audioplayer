@@ -490,3 +490,62 @@ def test_web_assets_are_versioned_and_revalidated(tmp_path, monkeypatch):
     finally:
         monkeypatch.delenv("AUDIO_WEB_DIR")
         importlib.reload(main)
+
+
+@pytest.mark.parametrize("raw,code", [
+    ("usa", "us"), ("United States", "us"), ("U.S.A.", "us"), ("italy", "it"), ("belgium", "be"), ("russia", "ru"),
+    ("Russia", "ru"), ("netherlands", "nl"), ("ukraine", "ua"), ("norway", "no"), ("germany", "de"),
+    ("Kyrgyzstan", "kg"), ("South Korea", "kr"), ("Brazil", "br"), ("Uruguay", "uy"), ("UK", "gb"),
+    ("England", "gb"), ("Türkiye", "tr"), ("the Netherlands", "nl"), ("RUS", "ru"), ("RU", "ru"),
+])
+def test_country_aliases(raw, code):
+    from app import countrycodes
+    assert countrycodes.canonical_country(raw) == code
+    assert library.clean_tag(f"Country:{raw}") == f"country:{code}"
+
+
+def test_country_unknown_kept_and_dedupe():
+    from app import countrycodes
+    assert len(countrycodes.NAMES) >= 249
+    assert countrycodes.canonical_country("ussr") is None
+    assert library.clean_tag("country:USSR") == "country:ussr"
+    assert library.clean_tags(["country:usa", "country:us", "Country:United States", "x"]) == ["country:us", "x"]
+    assert library.unknown_countries(["country:ussr", "country:us", "genre:x"]) == ["ussr"]
+
+
+def test_lang_aliases():
+    for raw in ("russian", "Russian", "rus", "ru-RU", "русский"):
+        assert library.clean_tag(f"lang:{raw}") == "lang:ru"
+    for raw, code in (("english", "en"), ("deutsch", "de"), ("german", "de")):
+        assert library.clean_tag(f"lang:{raw}") == f"lang:{code}"
+    assert library.clean_tag("lang:klingon") == "lang:klingon"
+
+
+def test_country_migration_on_load_idempotent(tmp_path):
+    p = tmp_path / "lib.json"
+    p.write_text(json.dumps({"songs": [{"id": "a", "title": "A", "tags": ["country:usa", "country:us", "country:ussr"]}]}))
+    first = library.load(p)
+    assert first[0]["tags"] == ["country:us", "country:ussr"]
+    assert library.normalize_song(first[0])["tags"] == first[0]["tags"]
+
+
+def test_write_rejects_unknown_country_but_accepts_alias(client):
+    r = add(client, tags=["country:Atlantis"])
+    assert r.status_code == 422
+    assert r.json()["error"] == "unknown_country" and r.json()["value"] == "atlantis"
+    assert add(client, tags=["country:usa"]).status_code in (200, 202)
+    s = client.get("/library", headers=H).json()["songs"][0]
+    assert "country:us" in s["tags"]
+    bad = client.patch(f"/songs/{VID}", json={"tags": ["country:atlantis"]}, headers=H)
+    assert bad.status_code == 422 and bad.json()["error"] == "unknown_country"
+    assert client.patch(f"/songs/{VID}", json={"tags": ["country:Russia"]}, headers=H).json()["tags"][0] == "country:ru"
+
+
+def test_legacy_unknown_country_survives_patch(client):
+    add(client)
+    p = main.library_path(OWNER_UID)
+    songs = library.load(p)
+    songs[0]["tags"].append("country:ussr")
+    library.save(p, songs)
+    r = client.patch(f"/songs/{VID}", json={"tags": ["country:ussr", "x"]}, headers=H)
+    assert r.status_code == 200 and "country:ussr" in r.json()["tags"]

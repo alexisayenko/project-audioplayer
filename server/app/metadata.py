@@ -31,6 +31,8 @@ def cap_tags(tags: list[str], priority_genres: int = 0) -> list[str]:
         ns = _namespace(t)
         if ns in DROPPED:
             continue
+        if ns == "country" and library.unknown_countries([t]):
+            continue
         if ns in CAPS:
             n = used.get(ns, 0)
             if n >= CAPS[ns] and not (ns == "genre" and n < priority_genres):

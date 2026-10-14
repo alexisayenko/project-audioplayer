@@ -129,6 +129,14 @@ def check_capacity(owner: bool, audio_dir: Path, pool_dir: Path) -> None:
     check_pool(pool_dir)
 
 
+def _check_rate(uid: str, songs: list[dict[str, Any]]) -> None:
+    if RATE.count(uid, songs) >= max_adds():
+        minutes = RATE.retry_minutes(uid, songs)
+        raise Problem(429, "hourly_limit",
+                      f"You can add {max_adds()} songs per hour. Try again in {minutes} min.",
+                      headers={"Retry-After": str(minutes * 60)}, retry_after_minutes=minutes)
+
+
 def check_add(uid: str, owner: bool, songs: list[dict[str, Any]], audio_dir: Path, pool_dir: Path,
               *, inflight: int = 0, with_audio: bool = True) -> None:
     """Raise Problem before anything is downloaded. The owner skips the per-user limits, not the pool ceiling."""
@@ -136,10 +144,13 @@ def check_add(uid: str, owner: bool, songs: list[dict[str, Any]], audio_dir: Pat
         if len(songs) + inflight >= max_songs():
             raise Problem(403, "library_full_songs",
                           f"Your library is full ({max_songs()} songs). Delete some songs to add more.")
-        if RATE.count(uid, songs) >= max_adds():
-            minutes = RATE.retry_minutes(uid, songs)
-            raise Problem(429, "hourly_limit",
-                          f"You can add {max_adds()} songs per hour. Try again in {minutes} min.",
-                          headers={"Retry-After": str(minutes * 60)}, retry_after_minutes=minutes)
+        _check_rate(uid, songs)
     if with_audio:
         check_capacity(owner, audio_dir, pool_dir)
+
+
+def check_fetch(uid: str, owner: bool, songs: list[dict[str, Any]], audio_dir: Path, pool_dir: Path) -> None:
+    """Fetching audio for a song already in the catalog: same hourly counter and storage caps, no song-count check."""
+    if not owner:
+        _check_rate(uid, songs)
+    check_capacity(owner, audio_dir, pool_dir)
