@@ -2,18 +2,21 @@
 """OPTIONAL maintenance: strip promo noise ("[Free Download]") from titles already in a library.
 
 Dry run by default: prints counts and a before/after sample. `--apply` copies each library.json to
-library.json.bak-<timestamp> first, then writes through the same store (app.library.save).
+<backup-dir>/<user>-library.json.bak-<timestamp> first (never next to the library: the data dir is a
+git work tree), then writes through the same store (app.library.save).
 Not part of the app, never run automatically; new songs are cleaned when added.
 
-  scripts/clean-titles.py --library /path/to/library.json [--apply]
-  scripts/clean-titles.py --data-dir /path/to/data [--apply]   # every users/*/library.json
+  scripts/clean-titles.py --library /path/to/library.json [--apply] [--backup-dir DIR]
+  scripts/clean-titles.py --data-dir /path/to/data [--apply] # every users/*/library.json
 """
 
 from __future__ import annotations
 
 import argparse
+import os
 import shutil
 import sys
+import tempfile
 import time
 from pathlib import Path
 
@@ -31,11 +34,30 @@ def plan(songs: list[dict]) -> list[tuple[int, str, str]]:
     return out
 
 
+def default_backup_dir(stamp: str) -> Path:
+    preferred = Path("/var/backups") / f"audioplayer-titles-{stamp}"
+    try:
+        preferred.mkdir(parents=True, exist_ok=True)
+        if os.access(preferred, os.W_OK):
+            return preferred
+    except OSError:
+        pass
+    fallback = Path(tempfile.gettempdir()) / f"audioplayer-titles-{stamp}"
+    fallback.mkdir(parents=True, exist_ok=True)
+    return fallback
+
+
+def backup_path(backup_dir: Path, library_path: Path, stamp: str) -> Path:
+    owner = library_path.resolve().parent.name or "library"
+    return backup_dir / f"{owner}-{library_path.name}.bak-{stamp}"
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--library", type=Path, action="append", default=[])
     ap.add_argument("--data-dir", type=Path)
     ap.add_argument("--apply", action="store_true")
+    ap.add_argument("--backup-dir", type=Path, help="default: /var/backups/audioplayer-titles-<ts>, else system temp")
     ap.add_argument("--sample", type=int, default=15)
     args = ap.parse_args()
     paths = list(args.library)
@@ -44,6 +66,7 @@ def main() -> int:
     if not paths:
         ap.error("give --library or --data-dir")
     stamp = time.strftime("%Y%m%d-%H%M%S")
+    backup_dir = None
     for path in paths:
         songs = library.load(path)
         changes = plan(songs)
@@ -51,7 +74,10 @@ def main() -> int:
         for _, old, new in changes[: args.sample]:
             print(f"  {old!r} -> {new!r}")
         if args.apply and changes:
-            backup = path.with_name(f"{path.name}.bak-{stamp}")
+            if backup_dir is None:
+                backup_dir = args.backup_dir or default_backup_dir(stamp)
+                backup_dir.mkdir(parents=True, exist_ok=True)
+            backup = backup_path(backup_dir, path, stamp)
             shutil.copy2(path, backup)
             for i, _, new in changes:
                 songs[i]["title"] = new
