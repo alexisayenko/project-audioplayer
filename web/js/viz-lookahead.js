@@ -225,6 +225,7 @@ export function createLookahead({
       return;
     }
     cached = !!hit;
+    timeline = hit?.tl ?? null;
     status = 'loading';
     stage = 'fetch';
     error = '';
@@ -294,7 +295,7 @@ export function createLookahead({
     },
     get(nowMs) {
       sync();
-      if (!timeline || (status !== 'ready' && status !== 'building')) return null;
+      if (!timeline || (status !== 'ready' && status !== 'building' && status !== 'loading')) return null;
       const tl = timeline;
       const t = follower.update(audio.currentTime, nowMs, !audio.paused && !audio.ended, audio.playbackRate);
       steer(t, nowMs);

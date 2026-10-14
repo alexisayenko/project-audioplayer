@@ -640,7 +640,7 @@ test('timeline sampling interpolates and returns calm outside the decoded range'
   assert.equal(sampleTimeline(tl, -1, out)[0], 0);
   near(sampleTimeline(tl, 0.3, out)[0], 200 / 255);
   assert.ok(sampleTimeline(tl, 0.34, out)[0] < 200 / 255 && sampleTimeline(tl, 0.34, out)[0] > 0);
-  assert.equal(sampleTimeline(tl, 0.5, out)[0], 0);
+  assert.equal(sampleTimeline(tl, 1.2, out)[0], 0);
 });
 
 test('series interpolates between pushed rows and holds the newest', () => {

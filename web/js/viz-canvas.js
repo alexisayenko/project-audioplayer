@@ -159,7 +159,7 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
     }
     return {
       ...t, ...audioOrigin(diag.audio, win.location), playing, paused: !!diag.audio?.paused, graphState: diag.graphState ?? 'n/a', ctxState: diag.ctxState ?? 'none',
-      hasAnalyser: !!an, fftSize: an?.fftSize, byteMax: bytes, pageOrigin: win.location?.origin, ua: userAgentFamily(win.navigator?.userAgent), frameMs: `${avgMs.toFixed(1)} ms`, pace: paceText(),
+      hasAnalyser: !!an, fftSize: an?.fftSize, byteMax: bytes, pageOrigin: win.location?.origin, ua: userAgentFamily(win.navigator?.userAgent), frameMs: `${avgMs.toFixed(1)} ms`, pace: paceText(), timeline: d.debug ? la?.statusText?.() : undefined,
     };
   }
 

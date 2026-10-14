@@ -4,6 +4,8 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## 2026-10-14
 
+- Web: Terrain lookahead fixes (not deployed) -- a song whose duration was still unknown at `loadstart` was rejected to the live fallback (flat future); now loads fine, failures show a reason in the vizdebug box and `console.warn`, retries twice; the timeline is built around the playhead first, cached per song and kept across mode switches, the next song's first 20 s are built ahead, uncovered rows are filled progressively with a short fade instead of all-or-nothing, the song end fades flat, relief flattens only over the last 8% of the depth (`FAR_FLAT_START` 0.92); VIZ-046, VIZ-048, VIZ-049
+- Web: "Full spectrum" is now Relief with a 1.1x now line (not deployed) -- no beat detection or base relief; label without the "Beat peaks:" prefix; vizdebug Camera panel gets number fields "Now line height" (`nowH`) and "Now line glow" (`nowB`), stored with the camera values; VIZ-044, VIZ-051, VIZ-055
 - Docs: terminology -- new `docs/specs/terminology.md` glossary (now line / "line now", relief vs beat peaks, parts, camera, quality, overlay, share link, baselines) with aliases and requirement ids.
 - Web: the thumbnails in the Now playing list are now cover buttons like the Library rows (not deployed) -- hover or focus shows the play icon, the current row shows Pause or Play at 75%, a click starts that queue item or toggles the current one; play and pause repaint the covers in place without rebuilding the list (PLY-073).
 - Web: the Terrain now line no longer lifts the terrain (not deployed) -- `NOW_LINE_GAIN_H` 2.0 -> 1.0, the brighter glow (`NOW_LINE_GAIN_B` 2.0) stays; VIZ-051.

@@ -1,5 +1,6 @@
 import * as audioGraph from './audio-graph.js';
 import { createViz } from './viz-canvas.js';
+import { api } from './api.js';
 import { createLookahead } from './viz-lookahead.js';
 import { barCount } from './viz-spectrum.js';
 import { createFullscreen, isNearBox, isVizKey, isVizModeKey, isVizStyleKey, isVizFlightKey } from './viz-fullscreen.js';
@@ -135,6 +136,7 @@ export function initVisualizer({
     win,
     getSampleRate: () => graph.getContext?.()?.sampleRate || 44100,
     getBands: () => barCount($('viz-bg').clientWidth || win.innerWidth || 1200),
+    getNextSrc: () => { const id = player?.peekNextId?.(); return id ? new URL(api.fileUrl(id), win.location?.href).href : ''; },
   });
   const bgViz = createViz({ canvas: $('viz-bg'), mode: 'background', deps: vizDeps(audio, graph, { getAnchor: coverAnchor, lookahead, ...deps }) });
   const fullViz = createViz({ canvas: $('viz-full-canvas'), mode: 'full', deps: vizDeps(audio, graph, { lookahead, ...deps }) });

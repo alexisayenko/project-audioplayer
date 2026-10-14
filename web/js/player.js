@@ -230,6 +230,13 @@ export const player = {
     if (audio.paused) audio.play().catch(fail); else audio.pause();
   },
 
+  peekNextId() {
+    if (shuffle || !qs.items.length) return null;
+    const step = Q.nextStep({ ...logic(), played }, false);
+    const id = step ? qs.items[step.index]?.id : null;
+    return id && id !== player.current?.id && hasAudioId(id) ? id : null;
+  },
+
   next(auto = false) {
     if (!autoDownloadOn()) {
       const step = Q.nextPlayable({ ...logic(), played }, !auto, hasAudioId, false);

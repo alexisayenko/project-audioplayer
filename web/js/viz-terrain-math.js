@@ -8,7 +8,7 @@ export const LOD_FOOT = 2;
 export const LOD_MERGE = 0.9;
 export const LOD_MAX_SPACING = 1.4;
 export const LOD_BLEND_CELLS = 3;
-export const FAR_FLAT_START = 0.8;
+export const FAR_FLAT_START = 0.92;
 export const GRID_MAX_VERTICES = 30000;
 export const HISTORY_BINS = 64;
 export const ROWS_PER_SECOND = 16;
@@ -294,8 +294,9 @@ export function camParse(text) {
 
 const nowNum = (x, key) => {
   const lim = NOW_LIMITS[key];
-  const n = typeof x === 'string' ? Number(x.trim().replace(/x$/i, '').replace(',', '.')) : Number(x);
-  return x === null || x === undefined || x === '' || !Number.isFinite(n) ? NOW_DEFAULTS[key] : Math.min(lim[1], Math.max(lim[0], n));
+  const raw = typeof x === 'string' ? x.trim().replace(/x$/i, '').replace(',', '.') : x;
+  const n = Number(raw);
+  return raw === null || raw === undefined || raw === '' || !Number.isFinite(n) ? NOW_DEFAULTS[key] : Math.min(lim[1], Math.max(lim[0], n));
 };
 
 export const nowClamp = (v) => ({ nowH: nowNum(v?.nowH, 'nowH'), nowB: nowNum(v?.nowB, 'nowB') });

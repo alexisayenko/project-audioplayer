@@ -20,6 +20,8 @@ A bright, glowing line across the field, about a third of the way out, is the se
 
 The song is decoded ahead of time, so about 5 s of upcoming relief are visible beyond the now line. When that is not available (guest, huge file, still decoding), the live spectrum is used until the real one is ready, and the two blend smoothly.
 
+Lookahead (2026-10-15): the 5 s of future always come from the timeline for every row it covers. The timeline is built around the playhead first (seek, start mid-song, next track), cached per song, kept across mode switches, and the first 20 s of the next queue song are built ahead; rows not yet built stay live or flat and fade in over half a second, never all-or-nothing. The far end flattens only over the last 8% of the depth so all 5 s are visible, and the end of a song fades to flat smoothly.
+
 ## 5. The ground
 
 - A regular grid of square cells (square in the world, not on screen), wide enough to run off both screen edges and deep enough to reach the horizon.
@@ -35,11 +37,11 @@ Each slice of time takes its height once, from its own moment of the song, and f
 ## 7. Styles
 
 - Relief (default): continuous relief of the song's spectrum, plus a landmark. Every 5 s the loudest moment gets a taller peak around its strongest frequencies (not a wall across the whole width); quiet or flat-sounding stretches get none.
-- Beat peaks: the ground carries a soft base relief of the spectrum (60% of the Relief height, `BEAT_BASE_RELIEF`) and the now line only brightens the glow (height boost 1x, no swell); on each beat a peak grows from the ground in about 0.15 s, to a height set by the beat strength, rides toward the viewer and sinks back to flat over about 5 s. Three variants:
+- Beat peaks: the ground carries a soft base relief of the spectrum (60% of the Relief height, `BEAT_BASE_RELIEF`) and the now line only brightens the glow (height boost 1x, no swell); on each beat a peak grows from the ground in about 0.15 s, to a height set by the beat strength, rides toward the viewer and sinks back to flat over about 5 s. Three variants (Full spectrum is no longer one of them, see below):
   - Single: one narrow peak at the most energetic pitch.
   - Hill: a broad hill around that pitch.
   - Multi: several peaks, one per strong band.
-  - Full spectrum: every column rises to the height of its own pitch's level, so the whole spectrum of the beat stands up across the full width, then rides toward the viewer and sinks back.
+- Full spectrum: exactly Relief (same rows, landmarks and look) with the now-line height boosted 1.1x (`NOW_LINE_GAIN_H_FULL`); no beat detection, no base relief.
 - Melody on beats: the tune is the actor. The ground is a dark navy canvas that glows softly with the beats and ripples a little; noise and effects show as sparks; the tonal part of the mids and highs builds the relief (cyan to white), and the strongest narrow melodic peak turns amber. With a finished analysis a thin ridge follows the lead pitch left and right as the tune moves, its height following the loudness of that voice. Needs the song analysed (server songs); otherwise it works from the live sound without the pitch line.
 - Peaks never get a flat roof: heights saturate smoothly toward the maximum. Beat strength is relative to the song (a quiet intro gives small peaks).
 - Chosen in Settings > Playback > Terrain style, with key T, or in the vizdebug panel.

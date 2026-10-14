@@ -89,6 +89,7 @@ export function debugLines(i) {
     `audio origin ${i.src}  page ${i.pageOrigin}  same-origin ${i.sameOrigin ? 'yes' : 'no'}  crossOrigin ${i.crossOrigin ?? 'null'}`,
     `ua ${i.ua}  ${i.frameMs}`,
     ...(i.pace ? [`pace ${i.pace}`] : []),
+    ...(i.timeline ? [i.timeline] : []),
   ];
 }
 
