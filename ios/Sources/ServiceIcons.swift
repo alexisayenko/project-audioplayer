@@ -20,7 +20,8 @@ enum ServiceKind: CaseIterable {
         switch self {
         case .youtube: DS.Color.brandYoutube
         case .soundcloud: DS.Color.brandSoundcloud
-        case .wikipedia, .musicbrainz: DS.Color.brandWikipedia
+        case .wikipedia: DS.Color.brandWikipedia
+        case .musicbrainz: DS.Color.brandMusicbrainz
         case .spotify: DS.Color.brandSpotify
         case .discogs: DS.Color.inkFaint
         }

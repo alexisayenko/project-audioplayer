@@ -52,6 +52,8 @@ enum DS {
         static let brandSpotify = SwiftUI.Color(light: (0.114, 0.725, 0.329, 1.000), dark: (0.114, 0.725, 0.329, 1.000))
         /// Service icon next to Get metadata once that service returned data; icons only, never text or surfaces; inactive state uses ink-faint.
         static let brandWikipedia = SwiftUI.Color(light: (0.106, 0.125, 0.141, 1.000), dark: (0.925, 0.910, 0.875, 1.000))
+        /// Service icon next to Get metadata once that service returned data; icons only, never text or surfaces; inactive state uses ink-faint. MusicBrainz magenta (not the orange, which would read as SoundCloud): 4.1:1 on day ground, 3.5:1 on night ground, above the 3:1 icon minimum.
+        static let brandMusicbrainz = SwiftUI.Color(light: (0.729, 0.278, 0.561, 1.000), dark: (0.729, 0.278, 0.561, 1.000))
     }
 
     // MARK: Type
