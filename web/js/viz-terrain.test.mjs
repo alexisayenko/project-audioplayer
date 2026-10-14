@@ -247,8 +247,8 @@ const count = (gl, name) => gl.calls.filter((c) => c[0] === name).length;
 test('createTerrain compiles programs, creates buffers and draws expected counts', () => {
   const gl = fakeGL();
   const t = createTerrain(fakeCanvas(), { gl, quality: 1 });
-  assert.equal(count(gl, 'createProgram'), 3);
-  assert.equal(count(gl, 'createBuffer'), 11);
+  assert.equal(count(gl, 'createProgram'), 4);
+  assert.equal(count(gl, 'createBuffer'), 13);
   assert.equal(t.bloomActive, false);
   t.draw(new Array(64).fill(0.6), 1000);
   const elems = gl.calls.filter((c) => c[0] === 'drawElements');
@@ -258,7 +258,7 @@ test('createTerrain compiles programs, creates buffers and draws expected counts
   const arrays = gl.calls.filter((c) => c[0] === 'drawArrays');
   assert.ok(arrays.some((c) => c[1] === gl.POINTS && c[3] === 64 * 144));
   assert.ok(arrays.some((c) => c[1] === gl.POINTS && c[3] === 90));
-  assert.equal(count(gl, 'bufferSubData'), 2);
+  assert.equal(count(gl, 'bufferSubData'), 4);
 });
 
 test('segments are about 8k at the default quality', () => {
@@ -321,7 +321,7 @@ test('context loss stops drawing and restore recreates resources', () => {
   const before = count(gl, 'createProgram');
   c.handlers.webglcontextrestored();
   assert.equal(t.lost, false);
-  assert.equal(count(gl, 'createProgram'), before + 3);
+  assert.equal(count(gl, 'createProgram'), before + 4);
   t.draw([1], 100);
   assert.equal(count(gl, 'drawElements'), 2);
 });
@@ -444,19 +444,19 @@ test('quality levels scale smoke and line passes, smoke off at the lowest', () =
   assert.ok(QUALITY[0].soft < QUALITY[1].soft && QUALITY[1].soft <= QUALITY[2].soft);
 });
 
-test('camera defaults: eye 2, pitch -10, horizon high, no lateral motion', () => {
-  assert.equal(EYE_HEIGHT, 2);
-  assert.equal(defaultPitchDeg(), -10);
+test('camera defaults: eye 3.31, pitch -13.5, horizon high, no lateral motion', () => {
+  assert.equal(EYE_HEIGHT, 3.31);
+  assert.equal(defaultPitchDeg(), -13.5);
   for (const t of [0, 7, 31]) {
     const cam = cameraAt(t, 0);
-    assert.ok(cam.eye[1] > 1.9 && cam.eye[1] < 2.1);
+    assert.ok(cam.eye[1] > 3.2 && cam.eye[1] < 3.4);
     assert.equal(cam.eye[0], 0);
     near(cameraAt(t, 0, { fly: 0 }).eye[2], 0.7);
     const y = horizonY(cam);
-    assert.ok(y > 0.55 && y < 0.8, `horizon ${y}`);
+    assert.ok(y > 0.5 && y < 0.9, `horizon ${y}`);
   }
-  assert.ok(CAM_LIMITS.eye[0] <= 2 && CAM_LIMITS.eye[1] >= 2);
-  assert.ok(CAM_LIMITS.pitch[0] <= -10 && CAM_LIMITS.pitch[1] >= -10);
+  assert.ok(CAM_LIMITS.eye[0] <= 3.31 && CAM_LIMITS.eye[1] >= 3.31);
+  assert.ok(CAM_LIMITS.pitch[0] <= -13.5 && CAM_LIMITS.pitch[1] >= -13.5);
 });
 
 function project(aspect, x, z, y = 0) {

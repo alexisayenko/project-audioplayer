@@ -1,6 +1,6 @@
 import { camClamp, camFormat, camParse, CAM_LIMITS, EYE_HEIGHT, DEFAULT_PITCH_DEG } from './viz-terrain-math.js';
 
-export const CAM_KEY = 'ap2.viz.dbg.cam3';
+export const CAM_KEY = 'ap2.viz.dbg.cam4';
 
 const defaults = () => ({ eye: EYE_HEIGHT, pitch: DEFAULT_PITCH_DEG });
 let cam = defaults();

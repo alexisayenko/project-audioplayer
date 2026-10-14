@@ -143,3 +143,45 @@ test('live fallback marks a row only near the running window maximum and resets 
   s.clear();
   assert.equal(s.boostAt(0.2), 0);
 });
+
+import { lightFactor, fillLight, fogDensity, LIGHT_DIR, LIGHT_GAIN, NODE_GAIN, QUALITY, FOG_LOW_MIN } from './viz-terrain-math.js';
+
+test('light factor: flat ground is neutral, faces toward the light are positive, away negative, within -1..1', () => {
+  assert.ok(Math.abs(lightFactor(0, 0)) < 1e-9);
+  assert.ok(Math.abs(Math.hypot(...LIGHT_DIR) - 1) < 1e-9);
+  assert.ok(lightFactor(-1, 0) > 0.2);
+  assert.ok(lightFactor(1, 0) < -0.2);
+  for (const sx of [-50, -3, 0, 3, 50]) for (const sz of [-50, -3, 0, 3, 50]) {
+    const f = lightFactor(sx, sz);
+    assert.ok(f >= -1 - 1e-9 && f <= 1 + 1e-9);
+  }
+  assert.ok(LIGHT_GAIN > 0 && NODE_GAIN > 1);
+});
+
+test('fillLight lights the slope facing the light and keeps flat rows at zero', () => {
+  const rows = 4;
+  const cols = 21;
+  const h = new Float32Array(rows * cols);
+  for (let r = 0; r < rows; r += 1) for (let c = 0; c < cols; c += 1) h[r * cols + c] = c < 10 ? (10 - c) * 0.05 : 0;
+  const out = fillLight(h, rows, cols, 5, 1, new Float32Array(rows * cols));
+  assert.ok(out[1 * cols + 12] === 0);
+  const flat = fillLight(new Float32Array(rows * cols), rows, cols, 5, 1, new Float32Array(rows * cols));
+  assert.ok(flat.every((v) => v === 0));
+  assert.ok(out[1 * cols + 8] > 0);
+  const mirror = new Float32Array(rows * cols);
+  for (let r = 0; r < rows; r += 1) for (let c = 0; c < cols; c += 1) mirror[r * cols + c] = h[r * cols + (cols - 1 - c)];
+  const lit = fillLight(mirror, rows, cols, 5, 1, new Float32Array(rows * cols));
+  assert.ok(lit[1 * cols + 12] < 0);
+});
+
+test('fog density grows with depth, is denser in valleys and bounded', () => {
+  assert.equal(fogDensity(0, 0), 0);
+  assert.ok(fogDensity(0.9, 0) > fogDensity(0.5, 0));
+  assert.ok(fogDensity(0.8, 0) > fogDensity(0.8, 3));
+  assert.ok(Math.abs(fogDensity(0.8, 9) - fogDensity(1, 9) * 1) <= FOG_LOW_MIN);
+  assert.ok(fogDensity(5, -1) <= 1 + 1e-9);
+});
+
+test('mist is off at quality 0 and has one then two octaves', () => {
+  assert.deepEqual(QUALITY.map((q) => q.mist), [0, 1, 2]);
+});

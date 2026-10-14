@@ -44,8 +44,8 @@ export const CROSS_H0 = 0.4;
 export const CROSS_H1 = 0.6;
 export const crossAlpha = (worldHeight) => smoothstep(CROSS_H0, CROSS_H1, worldHeight);
 export const LIVE_CAP = Math.ceil((GRID_DEPTH / WORLD_SPEED) * ROWS_PER_SECOND) + 8;
-export const EYE_HEIGHT = 2;
-export const DEFAULT_PITCH_DEG = -10;
+export const EYE_HEIGHT = 3.31;
+export const DEFAULT_PITCH_DEG = -13.5;
 export const CAM_LIMITS = { eye: [0.2, 4], pitch: [-30, 15] };
 export const NEAR_CALM = 0.35;
 export const RAMP = [
