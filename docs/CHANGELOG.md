@@ -4,6 +4,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## 2026-10-14
 
+- Web: Terrain landmark ridges -- one tall ridge every 5 s on the loudest row of each 5 s window (anchored at 0 s, so seeks give the same ridges), heights x1.8 + 0.4 clamped to 4.5 world units, baked per row so nothing pulses; quiet windows get none; live fallback boosts new rows within 10% of the window maximum so far (VIZ-050, after baseline c9b18e7).
 - Web: the Ring visualizer is another 2x bigger (4x the original, `RING_SCALE`; 20% of the smaller canvas side at Small); the outer-dot clamp (about 22% of the smaller side when centred) still applies and binds at Medium and Full (VIZ-042).
 - Web: owner-approved Terrain baseline (c9b18e7), tag `terrain-liked-1`; parameters and restore commands in VIZ-043 ("Liked baseline", docs/specs/visualizer.md).
 - Web: the Ring visualizer is twice as big (radius, spokes, halo and dot rings; e.g. 5% to 10% of the smaller canvas side at Small), clamped so the outer dot ring never leaves the canvas (VIZ-042).

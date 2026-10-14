@@ -1,7 +1,7 @@
 export const QUALITY = [
-  { rows: 40, cols: 128, bloom: false, smoke: 0, passes: 1, soft: 0 },
-  { rows: 64, cols: 144, bloom: false, smoke: 2, passes: 1, soft: 1 },
-  { rows: 88, cols: 208, bloom: true, smoke: 3, passes: 1, soft: 2 },
+  { rows: 40, cols: 128, bloom: false, smoke: 0, mist: 0, passes: 1, soft: 0 },
+  { rows: 64, cols: 144, bloom: false, smoke: 2, mist: 1, passes: 1, soft: 1 },
+  { rows: 88, cols: 208, bloom: true, smoke: 3, mist: 2, passes: 1, soft: 2 },
 ];
 export const HISTORY_BINS = 64;
 export const ROWS_PER_SECOND = 16;
@@ -22,6 +22,24 @@ export const NOW_GAIN = 1.6;
 export const AMP_BASE = 1;
 export const AMP_GAIN = 1.9;
 export const AMP_MAX = AMP_BASE + AMP_GAIN;
+const lightLen = Math.hypot(0.6, 0.5, -0.25);
+export const LIGHT_DIR = [0.6 / lightLen, 0.5 / lightLen, -0.25 / lightLen];
+export const LIGHT_GAIN = 1.6;
+export const LIGHT_SPAN = 2;
+export const LIGHT_MIN_DX = 0.5;
+export const NODE_GAIN = 1.6;
+export const FOG_NEAR = 0.15;
+export const FOG_FAR = 0.95;
+export const FOG_LOW_MIN = 0.35;
+export const FOG_H0 = 0.3;
+export const FOG_H1 = 2.2;
+export const LANDMARK_PERIOD_S = 5;
+export const LANDMARK_GAIN = 1.8;
+export const LANDMARK_BONUS = 0.4;
+export const LANDMARK_MAX = 4.5;
+export const LANDMARK_SPREAD_S = 0.25;
+export const LANDMARK_MIN_ENERGY = 0.15;
+export const LANDMARK_LIVE_KEEP = 0.9;
 export const CROSS_H0 = 0.4;
 export const CROSS_H1 = 0.6;
 export const crossAlpha = (worldHeight) => smoothstep(CROSS_H0, CROSS_H1, worldHeight);
@@ -143,23 +161,113 @@ export const nowZOf = (rows) => {
 
 export function createFrame(rows, bins = HISTORY_BINS) {
   const data = new Float32Array(rows * bins);
-  return { rows, bins, data, row: (r) => data.subarray(r * bins, (r + 1) * bins) };
+  return { rows, bins, data, boost: new Float32Array(rows), row: (r) => data.subarray(r * bins, (r + 1) * bins) };
+}
+
+export function landmarkWeight(dt) {
+  const d = Math.abs(dt);
+  if (!(d < LANDMARK_SPREAD_S)) return 0;
+  const sigma = LANDMARK_SPREAD_S / 2;
+  const edge = Math.exp(-0.5 * (LANDMARK_SPREAD_S / sigma) ** 2);
+  return (Math.exp(-0.5 * (d / sigma) ** 2) - edge) / (1 - edge);
+}
+
+function byteRowEnergy(data, offset, bins, tmp) {
+  for (let j = 0; j < bins; j += 1) tmp[j] = data[offset + j] / 255;
+  return energyOf(tmp);
+}
+
+export function timelineLandmarks(tl) {
+  const st = tl.landmarks || (tl.landmarks = { next: 0, times: [] });
+  const span = LANDMARK_PERIOD_S * tl.rps;
+  const windows = Math.ceil(tl.total / span);
+  const tmp = new Float32Array(tl.bins);
+  while (st.next < windows) {
+    const from = Math.round(st.next * span);
+    const to = Math.min(tl.total, Math.round((st.next + 1) * span));
+    if (Math.min(tl.total, tl.done) < to) break;
+    let best = -1;
+    let bestE = LANDMARK_MIN_ENERGY;
+    for (let i = from; i < to; i += 1) {
+      const e = byteRowEnergy(tl.data, i * tl.bins, tl.bins, tmp);
+      if (e > bestE) { bestE = e; best = i; }
+    }
+    st.times.push(best < 0 ? NaN : best / tl.rps);
+    st.next += 1;
+  }
+  return st.times;
+}
+
+export function landmarkBoostAt(tl, t) {
+  if (!(t > -LANDMARK_SPREAD_S)) return 0;
+  const times = timelineLandmarks(tl);
+  const k = Math.floor(t / LANDMARK_PERIOD_S);
+  let w = 0;
+  for (let i = Math.max(0, k - 1); i <= k + 1 && i < times.length; i += 1) {
+    if (times[i] === times[i]) w = Math.max(w, landmarkWeight(t - times[i]));
+  }
+  return w;
+}
+
+export function applyLandmarks(out, rows, cols, boost) {
+  for (let r = 0; r < rows; r += 1) {
+    const w = boost[r];
+    if (!(w > 0)) continue;
+    const o = r * cols;
+    let max = 0;
+    for (let c = 0; c < cols; c += 1) if (out[o + c] > max) max = out[o + c];
+    const world = max * AMP_MAX;
+    if (!(world > 0)) continue;
+    const target = Math.min(LANDMARK_MAX, world * (1 + (LANDMARK_GAIN - 1) * w) + LANDMARK_BONUS * w);
+    const scale = Math.max(1, target / world);
+    for (let c = 0; c < cols; c += 1) out[o + c] *= scale;
+  }
+  return out;
 }
 
 export function createSeries(cap = LIVE_CAP, bins = HISTORY_BINS) {
   const times = new Float64Array(cap);
   const data = new Float32Array(cap * bins);
+  const boosts = new Float32Array(cap);
   let count = 0;
   let head = 0;
+  let winK = NaN;
+  let winMax = 0;
   const phys = (i) => (head - count + i + cap * 2) % cap;
+  const locate = (t) => {
+    const last = phys(count - 1);
+    if (t >= times[last]) return { a: last, b: last, f: 0 };
+    if (t < times[phys(0)]) return null;
+    let lo = 0;
+    let hi = count - 1;
+    while (hi - lo > 1) {
+      const mid = (lo + hi) >> 1;
+      if (times[phys(mid)] <= t) lo = mid; else hi = mid;
+    }
+    const a = phys(lo);
+    const b = phys(hi);
+    return { a, b, f: (t - times[a]) / Math.max(1e-6, times[b] - times[a]) };
+  };
   return {
     bins,
     get count() { return count; },
     push(spectrum, t) {
       times[head] = t;
-      data.set(resample(spectrum, bins), head * bins);
+      const row = resample(spectrum, bins);
+      data.set(row, head * bins);
+      const k = Math.floor(t / LANDMARK_PERIOD_S);
+      if (k !== winK) { winK = k; winMax = 0; }
+      const e = energyOf(row);
+      winMax = Math.max(winMax, e);
+      const keep = LANDMARK_LIVE_KEEP;
+      boosts[head] = e >= LANDMARK_MIN_ENERGY && winMax > 0 ? clamp01((e / winMax - keep) / (1 - keep)) : 0;
       head = (head + 1) % cap;
       count = Math.min(cap, count + 1);
+    },
+    boostAt(t) {
+      if (!count) return 0;
+      const p = locate(t);
+      return p ? boosts[p.a] * (1 - p.f) + boosts[p.b] * p.f : 0;
     },
     sample(t, out) {
       if (!count) { out.fill(0); return out; }
@@ -178,7 +286,7 @@ export function createSeries(cap = LIVE_CAP, bins = HISTORY_BINS) {
       for (let j = 0; j < bins; j += 1) out[j] = data[a * bins + j] * (1 - f) + data[b * bins + j] * f;
       return out;
     },
-    clear() { count = 0; head = 0; },
+    clear() { count = 0; head = 0; winK = NaN; winMax = 0; },
   };
 }
 
@@ -196,27 +304,32 @@ export function sampleTimeline(tl, t, out) {
   return out;
 }
 
-export function fillTimeFrame(frame, tNow, sampler, nowRow) {
+export function fillTimeFrame(frame, tNow, sampler, nowRow, boostFn) {
   const { dt } = rowLayout(frame.rows);
   const pos = tNow / dt;
   const base = Math.floor(pos);
-  for (let r = 0; r < frame.rows; r += 1) sampler((base + r - nowRow) * dt, frame.row(r));
+  for (let r = 0; r < frame.rows; r += 1) {
+    const t = (base + r - nowRow) * dt;
+    sampler(t, frame.row(r));
+    if (frame.boost) frame.boost[r] = boostFn ? boostFn(t) : 0;
+  }
   return { base, frac: pos - base };
 }
 
 export function fillLookFrame(frame, timeline, tNow) {
-  return fillTimeFrame(frame, tNow, (t, out) => sampleTimeline(timeline, t, out), rowLayout(frame.rows).nowRow);
+  return fillTimeFrame(frame, tNow, (t, out) => sampleTimeline(timeline, t, out), rowLayout(frame.rows).nowRow, (t) => landmarkBoostAt(timeline, t));
 }
 
 export function fillLiveFrame(frame, series, tNow) {
   const { nowRow } = rowLayout(frame.rows);
-  return fillTimeFrame(frame, tNow, (t, out) => (t > tNow ? out.fill(0) : series.sample(t, out)), nowRow);
+  return fillTimeFrame(frame, tNow, (t, out) => (t > tNow ? out.fill(0) : series.sample(t, out)), nowRow, (t) => (t > tNow ? 0 : series.boostAt(t)));
 }
 
 export function blendFrames(a, b, k) {
   const out = a.data;
   const o = b.data;
   for (let i = 0; i < out.length; i += 1) out[i] += (o[i] - out[i]) * k;
+  if (a.boost && b.boost) for (let i = 0; i < a.boost.length; i += 1) a.boost[i] += (b.boost[i] - a.boost[i]) * k;
   return a;
 }
 
@@ -269,6 +382,37 @@ export function fillHeights(history, cols, t, out, opts) {
     }
   }
   if (!opts || opts.smooth !== 0) smoothHeights(out, rows, cols, opts?.smooth ?? 2);
+  if (opts?.bakeAmp && history.boost) applyLandmarks(out, rows, cols, history.boost);
+  return out;
+}
+
+export function fogDensity(depthFrac, worldHeight) {
+  const far = smoothstep(FOG_NEAR, FOG_FAR, depthFrac);
+  const low = 1 - smoothstep(FOG_H0, FOG_H1, worldHeight);
+  return far * (FOG_LOW_MIN + (1 - FOG_LOW_MIN) * low);
+}
+
+export function lightFactor(slopeX, slopeZ, dir = LIGHT_DIR) {
+  const inv = 1 / Math.hypot(slopeX, 1, slopeZ);
+  const d = (-slopeX * dir[0] + dir[1] - slopeZ * dir[2]) * inv;
+  const flat = dir[1];
+  return d >= flat ? (d - flat) / (1 - flat) : (d - flat) / (1 + flat);
+}
+
+export function fillLight(heights, rows, cols, halfWidth, dz, out, amp = AMP_MAX) {
+  const xs = new Float32Array(cols);
+  for (let c = 0; c < cols; c += 1) xs[c] = columnX(cols <= 1 ? 0 : c / (cols - 1)) * halfWidth;
+  for (let r = 0; r < rows; r += 1) {
+    const r0 = Math.max(0, r - 1);
+    const r1 = Math.min(rows - 1, r + 1);
+    for (let c = 0; c < cols; c += 1) {
+      const c0 = Math.max(0, c - LIGHT_SPAN);
+      const c1 = Math.min(cols - 1, c + LIGHT_SPAN);
+      const sx = ((heights[r * cols + c1] - heights[r * cols + c0]) * amp) / Math.max(LIGHT_MIN_DX, xs[c1] - xs[c0]);
+      const sr = ((heights[r1 * cols + c] - heights[r0 * cols + c]) * amp) / Math.max(1e-6, (r1 - r0) * dz);
+      out[r * cols + c] = lightFactor(sx, -sr);
+    }
+  }
   return out;
 }
 
