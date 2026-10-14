@@ -74,7 +74,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 - Web: "Play all N" button on the Library sort bar (LIB-092).
 - Web and server: "Download" saves a song as `Artist - Title.m4a` via `GET /files/{id}?download=1` (WEB-034, API-061).
 - Server and web: MusicBrainz and Discogs icons in the song link row, `musicbrainz_url` stored on the song; "mashup" and "mixed by" are cut like "remix".
-- iOS: TestFlight builds 20261020 to 20261024 (latest 20261024).
+- iOS: TestFlight builds 20261020 to 20261025 (latest 20261025).
 
 ## 2026-10-13
 

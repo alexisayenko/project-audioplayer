@@ -56,7 +56,7 @@ sign-in, Electrophone look, internal TestFlight builds. Spans `ios/`, `server/`
     the fallback until the owner signs in again (ADR-0006).
   - A new Google OAuth client may take hours to start working; the consent
     screen is External in Testing with the owner as the only test user.
-  - Build numbers must rise on every upload (date-based, last 20261024);
+  - Build numbers must rise on every upload (date-based, last 20261025);
     App Store Connect rejects a repeated or lower one (ADR-0008).
   - TestFlight builds expire after 90 days.
   - Add, edit, download and sign-in flows are not yet tested live on a device.
