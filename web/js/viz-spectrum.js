@@ -1,6 +1,7 @@
 import {
   MIN_HZ, MAX_HZ, BASS_HZ, NOISE_FLOOR, DPR_CAP, FPS_TOUCH, FPS_DESKTOP, QUALITY_LEVELS, PULSE_MAX_RATE, MIN_TURN_S,
   BAR_PITCH_PX, BAR_COUNT_MIN, BAR_COUNT_MAX, EDGE_FADE, HEIGHT_KNEE, HEIGHT_MAX, BAR_NOISE, NOISE_STEP_MS, BAR_COMPRESSION,
+  RANGE_DB, TILT_DB_PER_OCT, REF_HEADROOM_DB, REF_RISE, REF_FALL_DB_PER_S, REF_MIN_DB,
 } from './viz-constants.js';
 
 const clamp01 = (v) => Math.min(1, Math.max(0, v));
@@ -20,29 +21,61 @@ export function barEdges(n, sampleRate, fftSize, fMin = MIN_HZ, fMax = MAX_HZ) {
   return edges;
 }
 
-function binUnit(db, i, opts) {
-  return dbToUnit(db[Math.min(db.length - 1, Math.max(0, i))], opts.minDb, opts.maxDb);
+function binDb(db, i) {
+  const v = db[Math.min(db.length - 1, Math.max(0, i))];
+  return Number.isFinite(v) ? v : -Infinity;
 }
 
-function barValue(db, lo, hi, binW, opts) {
+function barPeakDb(db, lo, hi, binW) {
   const first = Math.max(1, Math.floor(lo / binW));
   const last = Math.max(first, Math.ceil(hi / binW) - 1);
-  if (last === first) {
-    return binUnit(db, Math.round(Math.sqrt(lo * hi) / binW), opts);
-  }
-  let peak = 0;
-  for (let i = first; i <= last; i += 1) peak = Math.max(peak, binUnit(db, i, opts));
+  if (last === first) return binDb(db, Math.round(Math.sqrt(lo * hi) / binW));
+  let peak = -Infinity;
+  for (let i = first; i <= last; i += 1) peak = Math.max(peak, binDb(db, i));
   return peak;
 }
 
-export function resampleBars(db, n, opts) {
-  const { sampleRate, fftSize, floor = NOISE_FLOOR } = opts;
-  const out = new Float32Array(n);
+export function barsDb(db, n, opts) {
+  const { sampleRate, fftSize, tilt = 0 } = opts;
+  const out = new Float32Array(n).fill(-Infinity);
   if (!db || !db.length || !(n > 0)) return out;
   const edges = barEdges(n, sampleRate, fftSize);
   const binW = sampleRate / fftSize;
-  for (let i = 0; i < n; i += 1) out[i] = gate(barValue(db, edges[i], edges[i + 1], binW, opts), floor);
+  for (let i = 0; i < n; i += 1) {
+    const mid = Math.sqrt(edges[i] * edges[i + 1]);
+    out[i] = barPeakDb(db, edges[i], edges[i + 1], binW) + tilt * Math.log2(mid / 1000);
+  }
   return out;
+}
+
+export function unitBars(dbBars, opts) {
+  const { floor = NOISE_FLOOR, minDb, maxDb } = opts;
+  const out = new Float32Array(dbBars.length);
+  for (let i = 0; i < out.length; i += 1) out[i] = gate(dbToUnit(dbBars[i], minDb, maxDb), floor);
+  return out;
+}
+
+export function resampleBars(db, n, opts) {
+  return unitBars(barsDb(db, n, opts), opts);
+}
+
+export function makeReference({
+  range = RANGE_DB, headroom = REF_HEADROOM_DB, rise = REF_RISE, fall = REF_FALL_DB_PER_S, minRef = REF_MIN_DB,
+} = {}) {
+  let ref = null;
+  const window = () => ({ maxDb: ref + headroom, minDb: ref + headroom - range });
+  return {
+    update(dbBars, dt = 1 / 30) {
+      let peak = -Infinity;
+      for (const v of dbBars) if (v > peak) peak = v;
+      const target = Math.max(minRef, peak);
+      if (ref === null) ref = target;
+      else if (target > ref) ref += (target - ref) * (1 - (1 - rise) ** (dt * 60));
+      else ref = Math.max(target, ref - fall * dt);
+      return window();
+    },
+    reset() { ref = null; },
+  };
 }
 
 export function bassEnergy(db, opts) {
@@ -50,7 +83,7 @@ export function bassEnergy(db, opts) {
   if (!db || !db.length) return 0;
   const last = Math.max(1, Math.min(db.length - 1, Math.floor(maxHz / (sampleRate / fftSize))));
   let sum = 0;
-  for (let i = 1; i <= last; i += 1) sum += binUnit(db, i, opts);
+  for (let i = 1; i <= last; i += 1) sum += dbToUnit(binDb(db, i), opts.minDb, opts.maxDb);
   return gate(sum / last, floor);
 }
 

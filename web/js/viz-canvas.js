@@ -1,8 +1,8 @@
 import {
-  ATTACK, RELEASE, IDLE_EPSILON, VIZ_FPS, VIZ_DPR_CAP, DPR_CAP, VIZ_HEIGHT_SCALE,
+  ATTACK, RELEASE, IDLE_EPSILON, VIZ_FPS, VIZ_DPR_CAP, DPR_CAP, VIZ_HEIGHT_SCALE, TILT_DB_PER_OCT,
 } from './viz-constants.js';
 import {
-  resampleBars, bassEnergy, smoothBars, idleBars, maxOf, makePulse, makePacer, makeGovernor, capDpr, pickSpokes, barCount, shapeBars,
+  barsDb, unitBars, makeReference, bassEnergy, smoothBars, idleBars, maxOf, makePulse, makePacer, makeGovernor, capDpr, pickSpokes, barCount, shapeBars,
 } from './viz-spectrum.js';
 import { createGlow } from './viz-glow.js';
 import { readVizColors, FALLBACK_COLORS } from './viz-color.js';
@@ -81,6 +81,7 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
   const backdrop = createBackdrop(() => d.createOffscreen(canvas));
   const dprCap = () => (startMode === 'full' && !coarse ? DPR_CAP : VIZ_DPR_CAP);
   const pulse = makePulse();
+  const ref = makeReference();
   const st = { bars: new Float32Array(0), buf: null, rot: 0, last: 0, colors: null, colorAt: -Infinity, anchor: null, anchorAt: -Infinity };
   const view = { w: 0, h: 0, dpr: 1 };
   let enabled = false;
@@ -118,11 +119,13 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
     return n;
   }
 
-  function read(an, n) {
+  function read(an, n, dt) {
     if (!st.buf || st.buf.length !== an.frequencyBinCount) st.buf = new Float32Array(an.frequencyBinCount);
     an.getFloatFrequencyData(st.buf);
     const o = spectrumOpts(an);
-    return { target: resampleBars(st.buf, n, o), bass: bassEnergy(st.buf, o) };
+    const levels = barsDb(st.buf, n, { ...o, tilt: TILT_DB_PER_OCT });
+    const win = ref.update(levels, dt);
+    return { target: unitBars(levels, { ...win }), bass: bassEnergy(st.buf, { ...o, ...win }) };
   }
 
   function step(ts, dt) {
@@ -131,8 +134,11 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
     const an = playing ? d.getAnalyser() : null;
     let target = new Float32Array(n);
     let bass = 0;
-    if (an) ({ target, bass } = read(an, n));
-    else if (playing) target = idleBars(n, ts);
+    if (an) ({ target, bass } = read(an, n, dt));
+    else {
+      ref.reset();
+      if (playing) target = idleBars(n, ts);
+    }
     smoothBars(st.bars, target, ATTACK, RELEASE, dt * 60);
     pulse.step(bass, dt);
     st.rot += dt * 0.12;

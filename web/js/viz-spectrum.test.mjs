@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  dbToUnit, barEdges, resampleBars, bassEnergy, smoothBars, updatePeaks, idleBars, makePulse, makePacer, makeGovernor,
+  dbToUnit, barEdges, resampleBars, barsDb, unitBars, makeReference, bassEnergy, smoothBars, updatePeaks, idleBars, makePulse, makePacer, makeGovernor,
   targetFps, capDpr, pickSpokes, maxOf, barCount, barHeight, edgeAlpha, shapeBars, barNoise, noiseStep,
 } from './viz-spectrum.js';
 import { mirror } from './viz-bars.js';
@@ -425,4 +425,43 @@ test('bar rects snap to whole device pixels with one constant width (no moire st
       }
     }
   }
+});
+
+test('adaptive reference: a kick frame and a hat frame give clearly different bars, and loudness scales them', () => {
+  const sr = 48000;
+  const fft = 8192;
+  const binW = sr / fft;
+  const spec = (kick, hat) => Float32Array.from({ length: 4096 }, (_, i) => {
+    const f = Math.max(1, i * binW);
+    let v = -14 - 9 * Math.log2(Math.max(1, f / 60));
+    if (f < 120) v += kick;
+    if (f > 6000) v += hat;
+    return Math.max(-100, v);
+  });
+  const o = { sampleRate: sr, fftSize: fft, tilt: 3 };
+  const run = (frame, ref) => {
+    const l = barsDb(frame, 300, o);
+    return unitBars(l, ref.update(l, 1 / 30));
+  };
+  const ref = makeReference();
+  const bassFrame = run(spec(0, -30), ref);
+  const hatFrame = run(spec(-25, 0), ref);
+  assert.ok(bassFrame[10] - hatFrame[10] > 0.3);
+  assert.ok(bassFrame.filter((v) => v > 0.99).length / 300 < 0.05);
+  const quiet = run(spec(-20, -20).map((v) => v - 20), makeReference());
+  const loud = run(spec(-20, -20), makeReference());
+  assert.ok(Math.abs(quiet[100] - loud[100]) < 0.05);
+  const same = (a, b) => a.every((v, i) => Math.abs(v - b[i]) < 1e-6);
+  const next = run(spec(0, -30), ref);
+  assert.ok(!same(next, hatFrame));
+});
+
+test('makeReference follows loud peaks quickly, falls slowly and never amplifies silence', () => {
+  const ref = makeReference();
+  const w1 = ref.update([-20, -40]);
+  assert.equal(w1.maxDb, -17);
+  const w2 = ref.update([-60, -70], 1);
+  assert.ok(w2.maxDb < w1.maxDb && w2.maxDb > w1.maxDb - 3);
+  const quiet = makeReference();
+  assert.equal(quiet.update([-Infinity, -90]).maxDb, -67);
 });
