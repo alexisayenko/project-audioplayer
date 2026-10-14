@@ -176,3 +176,7 @@ export function loadExpanded(storage) {
 export function saveExpanded(storage, expanded) {
   try { storage.setItem(STORE_KEY, JSON.stringify([...expanded].slice(0, 500))); return true; } catch { return false; }
 }
+
+export function hasStoredExpanded(storage) {
+  try { return storage.getItem(STORE_KEY) !== null; } catch { return true; }
+}

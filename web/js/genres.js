@@ -4,12 +4,12 @@ import { el, plural } from './dom.js';
 import { createGraphView } from './genre-graph.js';
 import {
   FAMILIES, familyIndex, indexGraph, flatGraph, localCounts, filterTags, searchNodes, outlineRows, pathKeys,
-  loadExpanded, saveExpanded,
+  loadExpanded, saveExpanded, hasStoredExpanded,
 } from './genre-data.js';
 import { filterByTags } from './library.js';
+import { BP_WIDE, BP_DESKTOP, GENRES_OUTLINE_INSET } from './constants.js';
+import { POLL_MS, shouldPoll, presentFamilies, toggleHidden, loadOutlineOpen, saveOutlineOpen } from './genre-view.js';
 
-const POLL_MS = 4000;
-const POLL_MAX = 20;
 const CHILD_CHIPS = 12;
 
 const songsText = (n) => `${n} ${plural(n, 'song', 'songs')}`;
@@ -22,15 +22,26 @@ export function renderGenres(root) {
   let pollTimer = 0;
   let polls = 0;
   let dead = false;
+  let hidden = new Set();
+  let outlineOpen = loadOutlineOpen(localStorage, window.innerWidth);
+  let legendOpen = false;
 
-  const note = el('p', { class: 'gm-note muted t-subhead', role: 'status' }, 'Loading genres...');
+  const note = el('p', { class: 'gm-status t-caption', role: 'status' }, 'Loading genres...');
   const canvas = el('canvas', {
     class: 'gm-canvas', tabindex: 0,
     'aria-label': 'Genre graph. Drag to move genres, scroll or pinch to zoom, click a genre to select it. The outline lists the same genres. Keys: plus, minus, arrows, 0 to fit.',
   });
   const tip = el('div', { class: 'gm-tip t-caption', role: 'presentation', hidden: true });
   const panel = el('aside', { class: 'gm-panel', 'aria-label': 'Selected genre', hidden: true });
-  const legend = el('ul', { class: 'gm-legend t-caption', 'aria-label': 'Families' });
+  const legend = el('ul', { class: 'gm-legend t-caption', 'aria-label': 'Families (click to hide or show)', hidden: true });
+  const legendBtn = el('button', {
+    class: 'gm-tbtn', type: 'button', 'aria-expanded': 'false', 'aria-controls': 'gm-legend',
+    onclick: () => { legendOpen = !legendOpen; syncLegend(); },
+  }, 'Legend');
+  legend.id = 'gm-legend';
+  const outlineBtn = el('button', {
+    class: 'gm-tbtn gm-outline-btn', type: 'button', 'aria-controls': 'gm-outline-panel', onclick: () => setOutline(!outlineOpen),
+  }, 'Outline');
   const tree = el('ul', { class: 'gm-tree' });
   const results = el('ul', { class: 'gm-results', role: 'listbox', 'aria-label': 'Matching genres', hidden: true });
   const search = el('input', {
@@ -41,6 +52,12 @@ export function renderGenres(root) {
       if (e.key === 'Escape') { search.value = ''; renderResults(); }
     },
   });
+
+  const outlinePanel = el('section', { class: 'gm-outline', id: 'gm-outline-panel', 'aria-label': 'Outline' },
+    el('div', { class: 'gm-outline-head' },
+      el('h2', { class: 't-headline' }, 'Outline'),
+      el('button', { class: 'gm-x', type: 'button', 'aria-label': 'Close outline', title: 'Close outline', onclick: () => setOutline(false) }, '×')),
+    tree);
 
   const view = createGraphView(canvas, {
     reducedMotion: reduced,
@@ -58,6 +75,23 @@ export function renderGenres(root) {
     el('button', { class: 'gm-zbtn', type: 'button', 'aria-label': 'Zoom in', title: 'Zoom in', onclick: () => view.zoom(1.3) }, '+'),
     el('button', { class: 'gm-zbtn', type: 'button', 'aria-label': 'Zoom out', title: 'Zoom out', onclick: () => view.zoom(1 / 1.3) }, '−'),
     el('button', { class: 'gm-zbtn', type: 'button', 'aria-label': 'Fit all genres', title: 'Fit all', onclick: () => view.fit() }, '□'));
+
+  function syncLegend() {
+    legend.hidden = !legendOpen;
+    legendBtn.setAttribute('aria-expanded', String(legendOpen));
+  }
+
+  function setOutline(open, save = true) {
+    outlineOpen = open;
+    if (save) saveOutlineOpen(localStorage, open);
+    gm.classList.toggle('outline-open', open);
+    outlineBtn.setAttribute('aria-expanded', String(open));
+    outlineBtn.classList.toggle('on', open);
+    outlinePanel.hidden = !open;
+    const w = window.innerWidth;
+    view.setInsets({ r: open && w >= BP_WIDE && w < BP_DESKTOP ? GENRES_OUTLINE_INSET : 0 });
+    if (open) revealInOutline();
+  }
 
   function pick(id) {
     search.value = '';
@@ -114,7 +148,7 @@ export function renderGenres(root) {
         onclick: () => { if (expanded.has(r.key)) expanded.delete(r.key); else expanded.add(r.key); saveOpen(); renderOutline(); },
       }, r.hasChildren ? (r.expanded ? '▾' : '▸') : '');
       const label = el('button', {
-        class: 'gm-lbl', type: 'button',
+        class: 'gm-lbl', type: 'button', 'aria-current': r.id && r.id === selectedId ? 'true' : null,
         onclick: () => {
           if (isFamily) { toggle.click(); return; }
           view.select(r.id, { center: true });
@@ -140,10 +174,16 @@ export function renderGenres(root) {
   }
 
   function renderLegend() {
-    const present = new Map();
-    for (const n of g?.nodes || []) present.set(n.family, (present.get(n.family) || 0) + 1);
-    legend.replaceChildren(...FAMILIES.filter((f) => present.has(f)).map((f) => el('li', {},
-      el('span', { class: `gm-dot f${familyIndex(f)}`, 'aria-hidden': 'true' }), f)));
+    const rows = presentFamilies(g?.nodes || []);
+    legend.replaceChildren(...rows.map(({ family, count }) => el('li', {},
+      el('button', {
+        class: `gm-key${hidden.has(family) ? ' off' : ''}`, type: 'button', 'aria-pressed': String(!hidden.has(family)),
+        title: hidden.has(family) ? `Show ${family}` : `Hide ${family}`,
+        onclick: () => { hidden = toggleHidden(hidden, family); view.setHiddenFamilies(hidden); renderLegend(); },
+      }, el('span', { class: `gm-dot f${familyIndex(family)}`, 'aria-hidden': 'true' }), family, el('small', {}, String(count))))));
+    if (hidden.size) legend.append(el('li', {}, el('button', {
+      class: 'gm-key', type: 'button', onclick: () => { hidden = new Set(); view.setHiddenFamilies(hidden); renderLegend(); },
+    }, 'Show all')));
   }
 
   function apply(data, message) {
@@ -154,7 +194,7 @@ export function renderGenres(root) {
     }
     note.textContent = message;
     note.hidden = !message;
-    view.setData({ nodes: g.nodes, edges: g.edges });
+    view.update({ nodes: g.nodes, edges: g.edges });
     if (selectedId && !g.byId.has(selectedId)) selectedId = null;
     renderLegend();
     renderPanel();
@@ -173,9 +213,9 @@ export function renderGenres(root) {
     try { data = await api.genreGraph(); } catch { failed = true; }
     if (dead) return;
     if (!failed && data && Array.isArray(data.nodes) && data.nodes.length) {
-      const pending = !!data.pending && polls < POLL_MAX;
+      const pending = shouldPoll(data.pending, polls);
       const message = !data.ontology ? 'Genre data unavailable - showing your tags only'
-        : pending ? 'Looking up genre families...' : '';
+        : pending ? 'Resolving genre families...' : '';
       apply(data, message);
       if (pending) { polls += 1; pollTimer = setTimeout(load, POLL_MS); }
       return;
@@ -191,24 +231,27 @@ export function renderGenres(root) {
     if (!g) return;
     const counts = localCounts(g, store.songs);
     for (const n of g.nodes) { const c = counts.get(n.id); if (c) { n.count = c.count; n.ownCount = c.ownCount; } }
-    view.setData({ nodes: g.nodes, edges: g.edges });
+    view.update({ nodes: g.nodes, edges: g.edges });
     renderPanel();
     renderOutline();
   });
 
-  root.append(
-    el('header', { class: 'page-head' },
-      el('p', { class: 't-eyebrow' }, 'ELECTROPHONE'),
-      el('h1', { class: 't-display' }, 'Genres map'),
-      el('p', { class: 'muted t-subhead' }, 'Your genres and how they relate. Click a genre for its songs.')),
-    el('div', { class: 'gm-toolbar' }, el('div', { class: 'gm-find' }, search, results), note),
-    el('div', { class: 'gm' },
-      el('div', { class: 'gm-main' },
-        el('div', { class: 'gm-stage' }, canvas, tip, zoomBar, panel),
-        legend),
-      el('section', { class: 'gm-outline', 'aria-label': 'Outline' },
-        el('h2', { class: 't-headline' }, 'Outline'),
-        tree)));
+  const gm = el('div', { class: 'gm' },
+    el('div', { class: 'gm-stage' }, canvas, tip),
+    el('div', { class: 'gm-bar' },
+      el('div', { class: 'gm-bar-row' },
+        el('h1', { class: 'gm-title' }, 'Genres map'),
+        note,
+        legendBtn),
+      el('div', { class: 'gm-find' }, search, results),
+      legend),
+    outlineBtn,
+    zoomBar,
+    panel,
+    outlinePanel);
+  root.append(gm);
+  if (!hasStoredExpanded(localStorage)) for (const f of FAMILIES) expanded.add(`f:${f}`);
+  setOutline(outlineOpen, false);
 
   load();
 

@@ -1,5 +1,6 @@
 import { createSim } from './genre-sim.js';
 import { familyIndex, nodeRadius, FAMILIES } from './genre-data.js';
+import { fitTransform, recenterOnResize, placeLabels, diffGraph, mixColor } from './genre-view.js';
 
 const MIN_K = 0.15;
 const MAX_K = 6;
@@ -24,7 +25,14 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
   let drag = null;
   const pointers = new Map();
   let pinch = null;
-  let fitted = false;
+  let needFit = true;
+  let autoFitAt = 0;
+  let userMoved = false;
+  let insets = { t: 56, r: 0, b: 16, l: 16 };
+  let hiddenIdx = new Set();
+  let order = [];
+  let lastGraph = null;
+  const widths = new Map();
 
   function readColors() {
     const cs = getComputedStyle(canvas);
@@ -42,10 +50,17 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
 
   function resize() {
     dpr = window.devicePixelRatio || 1;
+    const ow = W;
+    const oh = H;
     W = Math.max(1, canvas.clientWidth);
     H = Math.max(1, canvas.clientHeight);
     canvas.width = Math.round(W * dpr);
     canvas.height = Math.round(H * dpr);
+    colors = readColors();
+    widths.clear();
+    const laidOut = canvas.clientWidth > 10 && canvas.clientHeight > 10;
+    if (laidOut && needFit && nodes.length) { fit(); needFit = false; autoFitAt = performance.now() + 700; }
+    else if (laidOut && ow > 10 && oh > 10) { tf = recenterOnResize(tf, ow, oh, W, H); anim = null; }
     request();
   }
 
@@ -59,9 +74,27 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
     let again = false;
     if (sim && !reducedMotion) { sim.tick(); again = true; }
     if (anim) { stepAnim(); again = true; }
+    if (autoFitAt && performance.now() > autoFitAt) {
+      autoFitAt = 0;
+      if (!userMoved) fitTo(nodes.filter(visible));
+    }
+    if (autoFitAt) again = true;
+    if (mixStep()) again = true;
     draw();
     if (again) request();
   }
+
+  const visible = (n) => !hiddenIdx.has(n.fi);
+
+  function mixStep() {
+    let busy = false;
+    for (const n of nodes) {
+      if (n.mix < 1) { n.mix = Math.min(1, n.mix + 0.04); busy = true; }
+    }
+    return busy;
+  }
+
+  const nodeColor = (n) => (n.mix < 1 ? mixColor(colors.fam[n.fiPrev], colors.fam[n.fi], n.mix) : colors.fam[n.fi]);
 
   function toWorld(sx, sy) { return [(sx - tf.x) / tf.k, (sy - tf.y) / tf.k]; }
 
@@ -70,6 +103,7 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
     const slack = 3 / tf.k;
     for (let i = nodes.length - 1; i >= 0; i--) {
       const n = nodes[i];
+      if (!visible(n)) continue;
       const dx = n.x - wx;
       const dy = n.y - wy;
       const rr = n.r + slack;
@@ -87,13 +121,9 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
     return { x0, y0, x1, y1 };
   }
 
-  function fitTo(list, { pad = 48, maxK = 2.2, animate = true } = {}) {
+  function fitTo(list, { pad = 32, maxK = 2.2, animate = true } = {}) {
     if (!list.length) return;
-    const b = bbox(list);
-    const bw = Math.max(b.x1 - b.x0, 40);
-    const bh = Math.max(b.y1 - b.y0, 40);
-    const k = Math.min(maxK, Math.max(MIN_K, Math.min((W - 2 * pad) / bw, (H - 2 * pad) / bh)));
-    const to = { k, x: W / 2 - ((b.x0 + b.x1) / 2) * k, y: H / 2 - ((b.y0 + b.y1) / 2) * k };
+    const to = fitTransform(bbox(list), W, H, { insets, pad, maxK, minK: MIN_K });
     if (animate && !reducedMotion) anim = { from: { ...tf }, to, t: 0 };
     else { tf = to; anim = null; }
     request();
@@ -115,6 +145,7 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
     const f = k / tf.k;
     tf = { k, x: sx - (sx - tf.x) * f, y: sy - (sy - tf.y) * f };
     anim = null;
+    userMoved = true;
     request();
   }
 
@@ -128,6 +159,7 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
     const near = focus ? nbr.get(focus.id) : null;
     const isOn = (n) => !focus || n === focus || near.has(n.id);
     for (const l of links) {
+      if (!visible(l.s) || !visible(l.t)) continue;
       const on = !focus || l.s === focus || l.t === focus;
       ctx.globalAlpha = on ? (focus ? 0.95 : 0.5) : 0.06;
       ctx.strokeStyle = on && focus ? colors.hi : colors.edge;
@@ -158,10 +190,11 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
     }
     ctx.setLineDash([]);
     for (const n of nodes) {
+      if (!visible(n)) continue;
       ctx.globalAlpha = isOn(n) ? 1 : 0.16;
       ctx.beginPath();
       ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
-      ctx.fillStyle = colors.fam[n.fi];
+      ctx.fillStyle = nodeColor(n);
       ctx.fill();
       ctx.lineWidth = 1.5 / k;
       ctx.strokeStyle = colors.halo;
@@ -175,19 +208,40 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
       }
     }
     ctx.globalAlpha = 1;
-    ctx.font = `${12 / k}px ${colors.font}`;
+    drawLabels(focus, isOn);
+  }
+
+  function labelWidth(text) {
+    let w = widths.get(text);
+    if (w === undefined) { w = ctx.measureText(text).width; widths.set(text, w); }
+    return w;
+  }
+
+  function drawLabels(focus, isOn) {
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.font = `12px ${colors.font}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     ctx.lineJoin = 'round';
-    for (const n of nodes) {
-      const show = focus ? isOn(n) : n.r >= 10 || k >= 1.5;
-      if (!show && n !== selected) continue;
-      const y = n.y + n.r + 3 / k;
-      ctx.lineWidth = 3 / k;
+    const cands = [];
+    for (const n of order) {
+      if (!visible(n)) continue;
+      const force = !!focus && isOn(n);
+      if (focus && !force) continue;
+      const sx = n.x * tf.k + tf.x;
+      const sy = n.y * tf.k + tf.y;
+      if (sx < -80 || sx > W + 80 || sy < -40 || sy > H + 40) continue;
+      if (!force && n.r * tf.k < 2.5) continue;
+      cands.push({ id: n.id, n, x: sx, y: sy + n.r * tf.k + 3, w: labelWidth(n.label), h: 14, force });
+    }
+    const shown = placeLabels(cands);
+    for (const c of cands) {
+      if (!shown.has(c.id)) continue;
+      ctx.lineWidth = 3;
       ctx.strokeStyle = colors.halo;
-      ctx.strokeText(n.label, n.x, y);
+      ctx.strokeText(c.n.label, c.x, c.y);
       ctx.fillStyle = colors.label;
-      ctx.fillText(n.label, n.x, y);
+      ctx.fillText(c.n.label, c.x, c.y);
     }
   }
 
@@ -248,6 +302,7 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
       setHover(drag.node, null);
     } else {
       tf = { ...tf, x: tf.x + sx - drag.lastX, y: tf.y + sy - drag.lastY };
+      userMoved = true;
       canvas.style.cursor = 'grabbing';
     }
     drag.lastX = sx; drag.lastY = sy;
@@ -291,7 +346,7 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
       ArrowUp: () => { tf = { ...tf, y: tf.y + step }; }, ArrowDown: () => { tf = { ...tf, y: tf.y - step }; },
       0: () => fit(), Escape: () => select(null),
     };
-    if (keys[ev.key]) { ev.preventDefault(); keys[ev.key](); request(); }
+    if (keys[ev.key]) { ev.preventDefault(); userMoved = true; keys[ev.key](); request(); }
   });
 
   function select(id, { center = false } = {}) {
@@ -309,7 +364,7 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
     fitTo(group, { maxK: 2.4 });
   }
 
-  function fit() { fitTo(nodes, { animate: false }); }
+  function fit() { userMoved = false; fitTo(nodes.filter(visible), { animate: false }); }
 
   function setData(graph) {
     const old = byId;
@@ -317,9 +372,11 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
       const prev = old.get(d.id);
       return {
         id: d.id, label: d.label, data: d, r: nodeRadius(d.count), fi: familyIndex(d.family),
-        x: prev?.x, y: prev?.y, vx: prev?.vx || 0, vy: prev?.vy || 0,
+        x: prev?.x, y: prev?.y, vx: prev?.vx || 0, vy: prev?.vy || 0, fiPrev: prev?.fi ?? familyIndex(d.family), mix: 1,
       };
     });
+    order = [...nodes].sort((a, b) => b.r - a.r || a.id.localeCompare(b.id));
+    lastGraph = graph;
     byId = new Map(nodes.map((n) => [n.id, n]));
     nbr = new Map(nodes.map((n) => [n.id, new Set()]));
     const raw = graph.edges.map((e) => ({ source: e.source, target: e.target, kind: e.kind }));
@@ -330,7 +387,37 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
     selected = selected ? byId.get(selected.id) || null : null;
     hover = null;
     if (!old.size) sim.settle(reducedMotion ? 500 : 240); else sim.reheat(0.4);
-    if (!fitted && nodes.length) { fit(); fitted = true; }
+    if (needFit && nodes.length && canvas.clientWidth > 10 && canvas.clientHeight > 10) {
+      fit();
+      needFit = false;
+      autoFitAt = performance.now() + 700;
+    }
+    request();
+  }
+
+  function update(graph) {
+    const diff = diffGraph(lastGraph, graph);
+    if (!nodes.length || !diff.sameTopology) { setData(graph); return; }
+    for (const d of graph.nodes) {
+      const n = byId.get(d.id);
+      n.data = d;
+      n.r = nodeRadius(d.count);
+      const fi = familyIndex(d.family);
+      if (fi !== n.fi) { n.fiPrev = n.fi; n.fi = fi; n.mix = reducedMotion ? 1 : 0; }
+    }
+    order = [...nodes].sort((a, b) => b.r - a.r || a.id.localeCompare(b.id));
+    lastGraph = graph;
+    request();
+  }
+
+  function setInsets(next) {
+    insets = { ...insets, ...next };
+    if (!userMoved && nodes.length) fitTo(nodes.filter(visible));
+  }
+
+  function setHiddenFamilies(names) {
+    hiddenIdx = new Set([...names].map(familyIndex));
+    if (selected && !visible(selected)) select(null);
     request();
   }
 
@@ -351,7 +438,7 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
   canvas.style.cursor = 'grab';
 
   return {
-    setData, select, focus, fit, setActive, resize, refreshColors: onScheme,
+    setData, update, setInsets, setHiddenFamilies, select, focus, fit, setActive, resize, refreshColors: onScheme,
     zoom: (f) => zoomAt(f, W / 2, H / 2),
     nodeCount: () => nodes.length,
     destroy() {
