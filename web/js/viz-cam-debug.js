@@ -1,3 +1,4 @@
+import { TERRAIN_STYLES, getStyle, setStyle, onStyle } from './viz-terrain-style.js';
 import { camClamp, camFormat, camParse, CAM_LIMITS, EYE_HEIGHT, DEFAULT_PITCH_DEG } from './viz-terrain-math.js';
 
 export const CAM_KEY = 'ap2.viz.dbg.cam4';
@@ -54,6 +55,22 @@ export function createCamPanel(doc = document) {
   };
   mk('eye', 'Eye', 0.01);
   mk('pitch', 'Pitch', 0.1);
+  const styleRow = doc.createElement('label');
+  const styleName = doc.createElement('span');
+  styleName.textContent = 'Style';
+  const styleSel = doc.createElement('select');
+  styleSel.setAttribute('aria-label', 'Terrain style');
+  for (const st of TERRAIN_STYLES) {
+    const o = doc.createElement('option');
+    o.value = st.id;
+    o.textContent = st.label;
+    styleSel.append(o);
+  }
+  styleSel.value = getStyle();
+  styleSel.addEventListener('change', () => setStyle(styleSel.value));
+  const offStyle = onStyle((id) => { styleSel.value = id; });
+  styleRow.append(styleName, styleSel);
+  root.append(styleRow);
   const line = doc.createElement('input');
   line.type = 'text';
   line.setAttribute('aria-label', 'Camera values');
@@ -81,5 +98,5 @@ export function createCamPanel(doc = document) {
   };
   listeners.add(paint);
   paint(cam);
-  return { el: root, dispose() { listeners.delete(paint); root.remove(); } };
+  return { el: root, dispose() { listeners.delete(paint); offStyle(); root.remove(); } };
 }

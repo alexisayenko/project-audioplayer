@@ -12,6 +12,7 @@ import {
   vizBackgroundOn, setVizBackground, vizCaps, vizMode, setVizMode, vizHeightId, setVizHeight,
 } from './viz-settings.js';
 import { availableModes } from './viz-modes.js';
+import { TERRAIN_STYLES, getStyle, setStyle } from './viz-terrain-style.js';
 import { HEIGHT_OPTIONS } from './viz-constants.js';
 
 const GSI = 'https://accounts.google.com/gsi/client';
@@ -172,6 +173,15 @@ function vizRows() {
       disabled: !supported,
       onChange: setVizMode,
     }),
+    ...(modes.some((m) => m.id === 'terrain') ? [vizSelect({
+      id: 'viz-terrain-style-select',
+      label: 'Terrain style',
+      note: 'Relief follows the spectrum; Beat peaks grow a peak from flat ground on each beat. Press T while Terrain is shown to cycle.',
+      options: TERRAIN_STYLES,
+      value: getStyle(),
+      disabled: !supported,
+      onChange: setStyle,
+    })] : []),
     vizSelect({
       id: 'viz-height-select',
       label: 'Visualizer height',

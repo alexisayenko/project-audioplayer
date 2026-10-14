@@ -2,9 +2,11 @@ import {
   QUALITY, HISTORY_BINS, STAR_VISIBLE, buildDepthIndices, buildCrossIndices, buildRibbonVertices, buildRibbonIndices, energyOf, easeEnergy, GRID_DEPTH, WORLD_SPEED, NOW_FALLOFF_S, NOW_GAIN, CROSS_H0, CROSS_H1, AMP_MAX, SHAKE_ENABLED,
   gridHalfWidth, RAMP, qualityFor, createFrame, createSeries, fillHeights, buildGridVertices, rowLayout, nowZOf, fillLiveFrame, fillLookFrame, blendFrames,
   gridCounts, makeStars, cameraAt, horizonY, horizonGlow, mat4Perspective, mat4LookAt, mat4Multiply,
-  makeRowClock, clamp01, ROWS_PER_SECOND, fillLight, LIGHT_GAIN, NODE_GAIN, FOG_NEAR, FOG_FAR, FOG_LOW_MIN, FOG_H0, FOG_H1,
+  makeRowClock, clamp01, resample, ROWS_PER_SECOND, gridDims, fillLight, LIGHT_GAIN, NODE_GAIN, FOG_NEAR, FOG_FAR, FOG_LOW_MIN, FOG_H0, FOG_H1,
 } from './viz-terrain-math.js';
 import { getCam } from './viz-cam-debug.js';
+import { getStyle, isBeatStyle } from './viz-terrain-style.js';
+import { fillBeatHeights, timelineBeats, createLiveBeats } from './viz-beats.js';
 
 const DPR_CAP = 2;
 const STAR_COUNT = STAR_VISIBLE[STAR_VISIBLE.length - 1];
@@ -331,6 +333,9 @@ export function createTerrain(canvas, opts = {}) {
     disposed: false,
     res: null,
     series: createSeries(),
+    liveBeats: createLiveBeats(),
+    dims: null,
+    beatB: null,
     liveFrame: null,
     lookFrame: null,
     lookAt: null,
@@ -358,17 +363,20 @@ export function createTerrain(canvas, opts = {}) {
 
   function buildGrid() {
     const q = QUALITY[s.level];
-    const depth = buildDepthIndices(q.rows, q.cols);
-    const cross = buildCrossIndices(q.rows, q.cols);
-    const counts = gridCounts(q.rows, q.cols);
-    s.liveFrame = createFrame(q.rows, HISTORY_BINS);
-    s.lookFrame = createFrame(q.rows, HISTORY_BINS);
-    s.heights = new Float32Array(q.rows * q.cols);
-    s.heights2 = q.soft ? new Float32Array(q.rows * q.cols * 2) : null;
-    s.light = new Float32Array(q.rows * q.cols);
-    s.light2 = q.soft ? new Float32Array(q.rows * q.cols * 2) : null;
+    s.dims = gridDims(s.level, view.w / view.h);
+    const { rows, cols } = s.dims;
+    const depth = buildDepthIndices(rows, cols);
+    const cross = buildCrossIndices(rows, cols);
+    const counts = gridCounts(rows, cols);
+    s.liveFrame = createFrame(rows, HISTORY_BINS);
+    s.lookFrame = createFrame(rows, HISTORY_BINS);
+    s.heights = new Float32Array(rows * cols);
+    s.beatB = new Float32Array(rows * cols);
+    s.heights2 = q.soft ? new Float32Array(rows * cols * 2) : null;
+    s.light = new Float32Array(rows * cols);
+    s.light2 = q.soft ? new Float32Array(rows * cols * 2) : null;
     s.res.grid = {
-      xz: buffer(gl.ARRAY_BUFFER, buildGridVertices(q.rows, q.cols), gl.STATIC_DRAW),
+      xz: buffer(gl.ARRAY_BUFFER, buildGridVertices(rows, cols), gl.STATIC_DRAW),
       h: buffer(gl.ARRAY_BUFFER, s.heights, gl.DYNAMIC_DRAW),
       l: buffer(gl.ARRAY_BUFFER, s.light, gl.DYNAMIC_DRAW),
       depth: buffer(gl.ELEMENT_ARRAY_BUFFER, depth, gl.STATIC_DRAW),
@@ -377,13 +385,13 @@ export function createTerrain(canvas, opts = {}) {
       depthCount: depth.length,
       crossCount: cross.length,
       vertices: counts.vertices,
-      rows: q.rows,
+      rows,
       ribbon: null,
     };
     if (q.soft) {
-      const rv = buildRibbonVertices(q.rows, q.cols);
-      const rd = buildRibbonIndices(q.rows, q.cols, true);
-      const rc = buildRibbonIndices(q.rows, q.cols, false);
+      const rv = buildRibbonVertices(rows, cols);
+      const rd = buildRibbonIndices(rows, cols, true);
+      const rc = buildRibbonIndices(rows, cols, false);
       s.res.grid.ribbon = {
         xz: buffer(gl.ARRAY_BUFFER, rv.xz, gl.STATIC_DRAW),
         side: buffer(gl.ARRAY_BUFFER, rv.side, gl.STATIC_DRAW),
@@ -491,7 +499,7 @@ export function createTerrain(canvas, opts = {}) {
 
   function gridUniforms(p, mode, glow) {
     const q = QUALITY[s.level];
-    const lay = rowLayout(q.rows);
+    const lay = rowLayout(s.dims.rows);
     gl.useProgram(p.prog);
     gl.uniformMatrix4fv(uni(gl, p, 'u_vp'), false, mvp);
     gl.uniform1f(uni(gl, p, 'u_hw'), gridHalfWidth(view.w / view.h));
@@ -504,7 +512,7 @@ export function createTerrain(canvas, opts = {}) {
     gl.uniform1f(uni(gl, p, 'u_crossLo'), CROSS_H0);
     gl.uniform1f(uni(gl, p, 'u_crossHi'), CROSS_H1);
     gl.uniform1f(uni(gl, p, 'u_base'), s.base % 256);
-    gl.uniform1f(uni(gl, p, 'u_cols'), q.cols);
+    gl.uniform1f(uni(gl, p, 'u_cols'), s.dims.cols);
     gl.uniform1f(uni(gl, p, 'u_lw'), LINE_PX[q.soft] || 0);
     gl.uniform1f(uni(gl, p, 'u_soft'), q.soft ? 1 : 0);
     gl.uniform1f(uni(gl, p, 'u_axis'), 0);
@@ -628,8 +636,19 @@ export function createTerrain(canvas, opts = {}) {
     blurPass(b, a, 0, 1 / a.h, 1, false);
   }
 
+  function fillBeatStyle(style, sec, ahead, k, rows, cols) {
+    const dt = rowLayout(rows).dt;
+    fillBeatHeights({ beats: s.liveBeats.beats, style, tNow: sec, base: Math.floor(sec / dt), rows, cols, out: s.heights });
+    if (!ahead?.timeline || !(k > 0)) return;
+    fillBeatHeights({ beats: timelineBeats(ahead.timeline), style, tNow: ahead.time, base: Math.floor(ahead.time / dt), rows, cols, out: s.beatB });
+    const h = s.heights;
+    const b = s.beatB;
+    for (let i = 0; i < h.length; i += 1) h[i] += (b[i] - h[i]) * k;
+  }
+
   function updateHeights(sec, ahead) {
-    const q = QUALITY[s.level];
+    const { rows, cols } = s.dims;
+    const style = getStyle();
     let info = fillLiveFrame(s.liveFrame, s.series, sec);
     let k = 0;
     if (ahead?.timeline) {
@@ -641,10 +660,11 @@ export function createTerrain(canvas, opts = {}) {
     } else s.lookAt = null;
     s.scroll = info.frac;
     s.base = info.base;
-    fillHeights(s.liveFrame, q.cols, sec, s.heights, { swellAmp: 0, bakeAmp: true });
+    if (isBeatStyle(style)) fillBeatStyle(style, sec, ahead, k, rows, cols);
+    else fillHeights(s.liveFrame, cols, sec, s.heights, { swellAmp: 0, bakeAmp: true });
     gl.bindBuffer(gl.ARRAY_BUFFER, s.res.grid.h);
     gl.bufferSubData(gl.ARRAY_BUFFER, 0, s.heights);
-    fillLight(s.heights, q.rows, q.cols, gridHalfWidth(view.w / view.h), rowLayout(q.rows).dz, s.light);
+    fillLight(s.heights, rows, cols, gridHalfWidth(view.w / view.h), rowLayout(rows).dz, s.light);
     gl.bindBuffer(gl.ARRAY_BUFFER, s.res.grid.l);
     gl.bufferSubData(gl.ARRAY_BUFFER, 0, s.light);
     const rb = s.res.grid.ribbon;
@@ -666,7 +686,11 @@ export function createTerrain(canvas, opts = {}) {
     const sp = spectrum || [];
     const step = s.clock.advance(t);
     const gap = 1000 / ROWS_PER_SECOND;
-    for (let i = 0; i < step.pushes; i += 1) s.series.push(sp, (t - (step.pushes - 1 - i) * gap) / 1000);
+    for (let i = 0; i < step.pushes; i += 1) {
+      const ts = (t - (step.pushes - 1 - i) * gap) / 1000;
+      s.series.push(sp, ts);
+      s.liveBeats.push(resample(sp, HISTORY_BINS), ts);
+    }
     let bass = 0;
     const n = Math.min(BASS_BINS, sp.length);
     for (let i = 0; i < n; i += 1) bass += clamp01(sp[i]);
@@ -703,7 +727,11 @@ export function createTerrain(canvas, opts = {}) {
     view.h = Math.max(1, Math.round(h * view.dpr));
     canvas.width = view.w;
     canvas.height = view.h;
-    if (s.res && !s.lost) buildBloom();
+    if (s.res && !s.lost) {
+      buildBloom();
+      const d = gridDims(s.level, view.w / view.h);
+      if (s.dims && (d.rows !== s.dims.rows || d.cols !== s.dims.cols)) { freeGrid(); buildGrid(); s.clock.reset(); }
+    }
   }
 
   function setQuality(level) {

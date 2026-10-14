@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  QUALITY, clamp01, smoothstep, qualityFor, resample, createHistory, columnBin, edgeFalloff, heightAt, fillHeights,
+  gridDims, GRID_MAX_VERTICES, QUALITY, clamp01, smoothstep, qualityFor, resample, createHistory, columnBin, edgeFalloff, heightAt, fillHeights,
   gridCounts, buildGridVertices, buildLineIndices, buildDepthIndices, buildCrossIndices, energyOf, easeEnergy, GRID_DEPTH, colorRamp, fillColors, horizonGlow, makeStars, cameraAt, horizonY,
   camClamp, camFormat, camParse, defaultPitchDeg, smoothHeights, CAM_LIMITS, nearEnvelope, rowZ, halfWidthAt, columnX, EYE_HEIGHT,
   mat4Perspective, mat4LookAt, mat4Multiply, transformPoint, makeRowClock, SHAKE_MAX, RAMP,
@@ -24,7 +24,8 @@ test('qualityFor clamps and defaults', () => {
   assert.equal(qualityFor(0), QUALITY[0]);
   assert.equal(qualityFor(9), QUALITY[2]);
   assert.equal(qualityFor(NaN), QUALITY[1]);
-  assert.deepEqual([QUALITY[0].rows, QUALITY[1].cols, QUALITY[2].rows], [40, 144, 88]);
+  assert.deepEqual(QUALITY.map((q) => q.spacing), [1, 0.6, 0.4]);
+  assert.deepEqual([40, 59, 101].map((r, i) => gridDims(i, 16 / 9).rows), [41, 68, 101]);
 });
 
 test('resample interpolates and handles empties', () => {
@@ -94,10 +95,11 @@ test('fillHeights writes rows x cols values in range', () => {
 });
 
 test('grid vertex and index counts per quality', () => {
-  for (const q of QUALITY) {
-    const c = gridCounts(q.rows, q.cols);
-    assert.equal(buildGridVertices(q.rows, q.cols).length, c.vertices * 2);
-    assert.equal(buildLineIndices(q.rows, q.cols).length, c.segments * 2);
+  for (let l = 0; l < QUALITY.length; l += 1) {
+    const { rows, cols } = gridDims(l, 16 / 9);
+    const c = gridCounts(rows, cols);
+    assert.equal(buildGridVertices(rows, cols).length, c.vertices * 2);
+    assert.equal(buildLineIndices(rows, cols).length, c.segments * 2);
   }
   assert.equal(gridCounts(72, 56).segments, 72 * 55 + 56 * 71);
 });
@@ -251,12 +253,13 @@ test('createTerrain compiles programs, creates buffers and draws expected counts
   assert.equal(count(gl, 'createBuffer'), 13);
   assert.equal(t.bloomActive, false);
   t.draw(new Array(64).fill(0.6), 1000);
+  const { rows, cols } = gridDims(1, 2);
   const elems = gl.calls.filter((c) => c[0] === 'drawElements');
   assert.equal(elems.length, 2);
-  assert.equal(elems[0][2], 144 * 63 * 6);
-  assert.equal(elems[1][2], 64 * 143 * 6);
+  assert.equal(elems[0][2], cols * (rows - 1) * 6);
+  assert.equal(elems[1][2], rows * (cols - 1) * 6);
   const arrays = gl.calls.filter((c) => c[0] === 'drawArrays');
-  assert.ok(arrays.some((c) => c[1] === gl.POINTS && c[3] === 64 * 144));
+  assert.ok(arrays.some((c) => c[1] === gl.POINTS && c[3] === rows * cols));
   assert.ok(arrays.some((c) => c[1] === gl.POINTS && c[3] === 90));
   assert.equal(count(gl, 'bufferSubData'), 4);
 });
@@ -271,7 +274,7 @@ test('quality switch rebuilds the grid and bloom only at level 2', () => {
   const t = createTerrain(fakeCanvas(), { gl, quality: 0 });
   t.draw([], 0);
   assert.equal(count(gl, 'drawElements'), 2);
-  assert.equal(gl.calls.find((c) => c[0] === 'drawElements')[2], 128 * 39 * 2);
+  assert.equal(gl.calls.find((c) => c[0] === 'drawElements')[2], gridDims(0, 2).cols * (gridDims(0, 2).rows - 1) * 2);
   t.setQuality(2);
   assert.equal(t.quality, 2);
   assert.equal(t.bloomActive, true);
@@ -279,7 +282,7 @@ test('quality switch rebuilds the grid and bloom only at level 2', () => {
   gl.calls.length = 0;
   t.draw([0.5], 50);
   assert.equal(count(gl, 'drawElements'), 4);
-  assert.ok(gl.calls.some((c) => c[0] === 'drawElements' && c[2] === 208 * 87 * 6));
+  assert.ok(gl.calls.some((c) => c[0] === 'drawElements' && c[2] === gridDims(2, 2).cols * (gridDims(2, 2).rows - 1) * 6));
   t.setQuality(0);
   assert.equal(t.bloomActive, false);
   t.dispose();
@@ -488,26 +491,39 @@ test('the grid has a constant world width that covers the whole screen width at 
       }
 });
 
-test('columns are denser at the center and the edges are monotone', () => {
+test('columns are uniform across the width and monotone', () => {
   assert.equal(columnX(0), -1);
   assert.equal(columnX(1), 1);
   assert.ok(Math.abs(columnX(0.5)) < 1e-12);
-  const near = columnX(0.5 + 1 / 100) - columnX(0.5);
-  const edge = columnX(1) - columnX(1 - 1 / 100);
-  assert.ok(edge / near > 5);
-  for (let i = 1; i <= 100; i += 1) assert.ok(columnX(i / 100) > columnX((i - 1) / 100));
+  const step = columnX(0.01) - columnX(0);
+  for (let i = 1; i <= 100; i += 1) assert.ok(Math.abs(columnX(i / 100) - columnX((i - 1) / 100) - step) < 1e-9);
 });
 
-test('near columns stay fine: at least 16 columns across the nearest screen width at every quality level', () => {
+test('grid cells are square in world units at every level and aspect', () => {
+  for (const aspect of [0.46, 1, 1.78, 2.4, 3.5]) {
+    for (let l = 0; l < QUALITY.length; l += 1) {
+      const d = gridDims(l, aspect);
+      assert.ok(Math.abs(d.dx / d.dz - 1) < 0.04, `level ${l} aspect ${aspect}: dx ${d.dx} dz ${d.dz}`);
+      assert.ok(d.rows * d.cols <= GRID_MAX_VERTICES);
+      assert.ok(d.spacing >= QUALITY[l].spacing);
+    }
+  }
+  assert.equal(gridDims(2, 16 / 9).spacing, 0.4);
+  assert.ok(gridDims(0, 1.78).dz > gridDims(2, 1.78).dz);
+});
+
+test('uniform square cells: the nearest screen width holds more columns at each higher quality level', () => {
   const aspect = 1.78;
   const w = halfWidthAt(1, aspect);
   const cam = cameraAt(0, 0);
   const bottomZ = Math.max(0, -(cam.eye[1] / Math.tan((62 / 2 + 10) * (Math.PI / 180)) - cam.eye[2])) + 0.3;
-  for (const q of QUALITY) {
+  const counts = QUALITY.map((_, l) => {
+    const { cols } = gridDims(l, aspect);
     let n = 0;
-    for (let c = 0; c < q.cols; c += 1) if (Math.abs(project(aspect, columnX(c / (q.cols - 1)) * w, bottomZ)[0]) <= 1) n += 1;
-    assert.ok(n >= 16, `cols ${q.cols}: ${n}`);
-  }
+    for (let c = 0; c < cols; c += 1) if (Math.abs(project(aspect, columnX(c / (cols - 1)) * w, bottomZ)[0]) <= 1) n += 1;
+    return n;
+  });
+  assert.ok(counts[0] >= 3 && counts[0] < counts[1] && counts[1] < counts[2], counts.join());
 });
 
 test('a ridge advances in world z linearly with time and keeps its height', () => {

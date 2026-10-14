@@ -16,6 +16,14 @@ export function isVizModeKey(e, { open, route, background }) {
   return open || (route === 'playback' && !!background);
 }
 
+export function isVizStyleKey(e, { open, route, background, mode }) {
+  if (mode !== 'terrain') return false;
+  if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return false;
+  if (String(e.key).toLowerCase() !== 't') return false;
+  if (e.target?.closest?.(SKIP_KEY_TARGETS)) return false;
+  return open || (route === 'playback' && !!background);
+}
+
 export function makeAutoHide({ delay = HIDE_CONTROLS_MS, setTimer = setTimeout, clearTimer = clearTimeout, onChange }) {
   let idle = false;
   let timer = null;

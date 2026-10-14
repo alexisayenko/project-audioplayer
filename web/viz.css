@@ -80,3 +80,4 @@ body.viz-full-open .mini { display: none !important; }
 .viz-cam-panel input[type=text] { width: 100%; box-sizing: border-box; font: inherit; color: inherit; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(120, 170, 230, 0.3); border-radius: 4px; padding: 3px 5px; }
 .viz-cam-panel div { display: flex; gap: 6px; }
 .viz-cam-panel button { flex: 1; font: inherit; color: inherit; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(120, 170, 230, 0.3); border-radius: 4px; padding: 4px; cursor: pointer; }
+.viz-cam-panel select { grid-column: 2 / 4; font: inherit; color: inherit; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(120, 170, 230, 0.3); border-radius: 4px; padding: 3px; }

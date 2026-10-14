@@ -1,8 +1,9 @@
 export const QUALITY = [
-  { rows: 40, cols: 128, bloom: false, smoke: 0, mist: 0, passes: 1, soft: 0 },
-  { rows: 64, cols: 144, bloom: false, smoke: 2, mist: 1, passes: 1, soft: 1 },
-  { rows: 88, cols: 208, bloom: true, smoke: 3, mist: 2, passes: 1, soft: 2 },
+  { spacing: 1, bloom: false, smoke: 0, mist: 0, passes: 1, soft: 0 },
+  { spacing: 0.6, bloom: false, smoke: 2, mist: 1, passes: 1, soft: 1 },
+  { spacing: 0.4, bloom: true, smoke: 3, mist: 2, passes: 1, soft: 2 },
 ];
+export const GRID_MAX_VERTICES = 30000;
 export const HISTORY_BINS = 64;
 export const ROWS_PER_SECOND = 16;
 export const SHAKE_MAX = 0.03;
@@ -12,7 +13,7 @@ export const CALM_DEPTH = 12;
 export const COVER_DEPTH = 0.9 * GRID_DEPTH;
 export const COVER_MARGIN = 1.1;
 export const COVER_HALF_FOV = 32.5 * (Math.PI / 180);
-export const COL_SHAPE = 0.25;
+export const COL_SHAPE = 1;
 export const WIDTH_PER_ASPECT = Math.tan(COVER_HALF_FOV) * COVER_DEPTH * COVER_MARGIN;
 export const WORLD_SPEED = 5.5;
 export const LOOK_S = 5;
@@ -64,6 +65,20 @@ export function smoothstep(a, b, v) {
 export function qualityFor(level) {
   const i = Number.isFinite(level) ? Math.min(QUALITY.length - 1, Math.max(0, Math.round(level))) : 1;
   return QUALITY[i];
+}
+
+export function gridDims(level, aspect) {
+  const hw = gridHalfWidth(aspect);
+  let sp = qualityFor(level).spacing;
+  let rows = 0;
+  let cols = 0;
+  for (let i = 0; i < 80; i += 1) {
+    rows = Math.round(GRID_DEPTH / sp) + 1;
+    cols = Math.round((2 * hw) / sp) + 1;
+    if (rows * cols <= GRID_MAX_VERTICES) break;
+    sp *= 1.06;
+  }
+  return { rows, cols, spacing: sp, dz: GRID_DEPTH / (rows - 1), dx: (2 * hw) / (cols - 1) };
 }
 
 export function resample(bins, n) {

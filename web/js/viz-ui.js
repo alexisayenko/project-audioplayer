@@ -2,7 +2,7 @@ import * as audioGraph from './audio-graph.js';
 import { createViz } from './viz-canvas.js';
 import { createLookahead } from './viz-lookahead.js';
 import { barCount } from './viz-spectrum.js';
-import { createFullscreen, isVizKey, isVizModeKey } from './viz-fullscreen.js';
+import { createFullscreen, isVizKey, isVizModeKey, isVizStyleKey } from './viz-fullscreen.js';
 import { createModeSwitch } from './viz-switch.js';
 import { availableModes, nextMode, modeLabel } from './viz-modes.js';
 import {
@@ -12,6 +12,7 @@ import { attachScrubber } from './scrubber.js';
 import { titleNodes } from './display-title.js';
 import { $, setIcon } from './player-ui.js';
 import { createCamPanel, loadCam } from './viz-cam-debug.js';
+import { getStyle, setStyle, nextStyle, styleLabel } from './viz-terrain-style.js';
 
 const REDUCED = '(prefers-reduced-motion: reduce)';
 const NO_AUDIO_TIP = 'Visualizer needs Web Audio, which this browser does not offer';
@@ -193,6 +194,14 @@ export function initVisualizer({
     if (!isVizModeKey(e, { open: full.isOpen(), route: document.body.dataset.route, background: vizBackgroundOn() })) return;
     e.preventDefault();
     setVizMode(nextMode(currentMode, caps));
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (!supported) return;
+    if (!isVizStyleKey(e, { open: full.isOpen(), route: document.body.dataset.route, background: vizBackgroundOn(), mode: currentMode })) return;
+    e.preventDefault();
+    const next = setStyle(nextStyle(getStyle()));
+    if (live) live.textContent = `Terrain style: ${styleLabel(next)}`;
   });
 
   for (const type of ['play', 'pause', 'ended', 'emptied']) {
