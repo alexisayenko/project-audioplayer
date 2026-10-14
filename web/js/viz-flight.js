@@ -1,11 +1,12 @@
 import { storeGet, storeSet } from './storage.js';
 import {
-  CAM_LIMITS, COVER_HALF_FOV, YAW_COVER_MAX_DEG, mulberry32, smoothstep,
+  CAM_LIMITS, COVER_HALF_FOV, YAW_COVER_MAX_DEG, ASPECT_MAX, mulberry32, smoothstep,
 } from './viz-terrain-math.js';
 
 export const FLIGHT_KEY = 'ap2.viz.flight';
 export const FLIGHT_EYE_AMP_REL = 0.4;
 export const FLIGHT_YAW_AMP_DEG = 16;
+export const FLIGHT_YAW_MIN_DEG = 8;
 export const FLIGHT_PITCH_COUPLING_DEG = 1.5;
 export const FLIGHT_EASE_IN_S = 3;
 export const FLIGHT_EASE_OUT_S = 2;
@@ -19,7 +20,7 @@ export const REDUCED_QUERY = '(prefers-reduced-motion: reduce)';
 const TAU = Math.PI * 2;
 
 export const yawCoverDeg = (aspect = 16 / 9) => {
-  const a = Math.min(3.6, Math.max(0.4, Number.isFinite(aspect) ? aspect : 16 / 9));
+  const a = Math.min(ASPECT_MAX, Math.max(0.4, Number.isFinite(aspect) ? aspect : 16 / 9));
   return Math.max(0, YAW_COVER_MAX_DEG - Math.atan(Math.tan(COVER_HALF_FOV) * a) * (180 / Math.PI));
 };
 
@@ -28,7 +29,17 @@ export const flightEyeAmp = (baseEye) => {
   return Math.max(0, Math.min(FLIGHT_EYE_AMP_REL * baseEye, baseEye - lo, hi - baseEye));
 };
 
-export const flightYawAmp = (baseYaw, aspect = 16 / 9) => Math.max(0, Math.min(FLIGHT_YAW_AMP_DEG, yawCoverDeg(aspect) - Math.abs(baseYaw)));
+export function flightYawPlan(baseYaw, aspect = 16 / 9) {
+  const cover = yawCoverDeg(aspect);
+  const mag = Math.abs(baseYaw);
+  const room = cover - mag;
+  const amp = Math.max(FLIGHT_YAW_MIN_DEG, Math.min(FLIGHT_YAW_AMP_DEG, room));
+  const over = Math.max(0, Math.min(mag, mag + amp - cover));
+  const shift = over > 0 ? -Math.sign(baseYaw) * over : 0;
+  return { amp, shift, limited: amp < FLIGHT_YAW_AMP_DEG - 1e-9 || shift !== 0, cover };
+}
+
+export const flightYawAmp = (baseYaw, aspect = 16 / 9) => flightYawPlan(baseYaw, aspect).amp;
 
 function makeNoise(rnd, periods) {
   const phases = periods.map(() => rnd() * TAU);
@@ -43,7 +54,7 @@ export function createFlight({ seed = 1 } = {}) {
   const rnd = mulberry32(seed >>> 0);
   const eyeNoise = makeNoise(rnd, FLIGHT_EYE_PERIODS_S);
   const yawNoise = makeNoise(rnd, FLIGHT_YAW_PERIODS_S);
-  const s = { on: false, prog: 0, time: 0, last: null, eyeN: 0, yawN: 0, playing: false, applied: { eye: 0, yaw: 0, pitch: 0 } };
+  const s = { on: false, prog: 0, time: 0, last: null, eyeN: 0, yawN: 0, playing: false, applied: { eye: 0, yaw: 0, pitch: 0 }, aspect: 16 / 9 };
   const amount = () => smoothstep(0, 1, s.prog);
   return {
     setOn(v) { s.on = !!v; },
@@ -52,7 +63,11 @@ export function createFlight({ seed = 1 } = {}) {
     amount,
     time: () => s.time,
     isPlaying: () => s.playing,
-    report(o) { s.applied = o; },
+    report(o, aspect) {
+      s.applied = o;
+      if (Number.isFinite(aspect)) s.aspect = aspect;
+    },
+    aspect: () => s.aspect,
     applied: () => s.applied,
     tick(tMs, playing) {
       const prev = s.last;
@@ -69,7 +84,8 @@ export function createFlight({ seed = 1 } = {}) {
       const k = amount();
       if (!(k > 0)) return { eye: 0, yaw: 0, pitch: 0 };
       const eye = s.eyeN * flightEyeAmp(base.eye) * k;
-      const yaw = s.yawN * flightYawAmp(base.yaw, aspect) * k;
+      const plan = flightYawPlan(base.yaw, aspect);
+      const yaw = (plan.shift + s.yawN * plan.amp) * k;
       const rel = flightEyeAmp(base.eye) > 0 ? eye / flightEyeAmp(base.eye) : 0;
       return { eye, yaw, pitch: -FLIGHT_PITCH_COUPLING_DEG * rel };
     },

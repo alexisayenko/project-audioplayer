@@ -22,7 +22,8 @@ One name per thing. "Also called" lists informal names the owner or the code use
 | Relief (style) | Default Terrain style: continuous relief of the song's spectrum plus landmark ridges. | Not: base relief, relief (the generic word for terrain height) | VIZ-051; terrain-concept 7 |
 | Beat peaks | Terrain styles where a peak grows on each beat (about 0.15 s up, sinks over about 5 s). Variants: single, hill, multi. | Also called: "alive" beat styles. Not: landmark ridge | VIZ-051, VIZ-052, VIZ-053 |
 | Single / Hill / Multi | Beat-peak variants: one narrow peak at the strongest pitch; a broad hill there; several peaks, one per strong band. | | VIZ-054; terrain-concept 7 |
-| Full spectrum | Terrain style identical to Relief except for a 1.1x taller now line (key `full`). | Not: a beat-peak variant | VIZ-051; terrain-concept 7 |
+| Full spectrum | Terrain style: Relief at 1x, smoothed over time, with Multi beat peaks on top and a 1.1x now line (key `full`). | | VIZ-051; terrain-concept 7 |
+| Lava | Terrain style: exactly the old Full spectrum, Relief with a 2.2x tall, 4x bright now line (key `lava`). | | VIZ-051; terrain-concept 7 |
 | Melody on beats (melody style) | Style where the tune is the actor: navy canvas glowing with the beats, melodic relief cyan to white, strongest peak amber, pitch line on a finished timeline. | Also called: melody. Not: Melody part toggle | VIZ-066 |
 | Base relief | Soft spectrum relief under the beat peaks, 60% of the Relief height (`BEAT_BASE_RELIEF` 0.6). | Not: relief style | VIZ-051; terrain-concept 7 |
 | Landmark ridge | One tall peak (not a wall across the width) every `LANDMARK_PERIOD_S` 5 s, at the loudest moment, around its strongest frequencies; none in quiet stretches. | Also called: landmark | VIZ-050 |
@@ -64,7 +65,7 @@ One name per thing. "Also called" lists informal names the owner or the code use
 | Eye | Camera height (defaults 3.31; liked-2: 3.70). | Also called: camera height | VIZ-044 |
 | Pitch | Camera tilt in degrees (default -13.5; liked-2: -13.0). | | VIZ-044 |
 | Yaw | Looking left and right. | | VIZ-044 |
-| Camera flight | Drift of eye and yaw like a gliding spaceship (periods 6 to 20 s, tuned by `FLIGHT_SPEED`); off by default, key F, off with reduced motion, shared as `fl=1`. | Also called: flight, drift | VIZ-074, SHARE-017 |
+| Camera flight | Drift of eye and yaw like a gliding spaceship (periods 6 to 20 s, tuned by `FLIGHT_SPEED`); off by default, key F, off with reduced motion, shared as `fl=1`; yaw amplitude 16 deg, never below 8 deg, recentres toward 0 on very wide views. | Also called: flight, drift | VIZ-074, SHARE-017 |
 | Shake | Bass shake of the camera; disabled (`SHAKE_ENABLED` false). | Not: camera flight | VIZ-043 |
 
 ## Performance

@@ -60,8 +60,11 @@ export const LIVE_CAP = Math.ceil((GRID_DEPTH / WORLD_SPEED) * ROWS_PER_SECOND) 
 export const EYE_HEIGHT = 3.31;
 export const DEFAULT_PITCH_DEG = -13.5;
 export const CAM_LIMITS = { eye: [0.2, 10], pitch: [-30, 15], yaw: [-45, 45], sync: [-1000, 1000] };
-export const YAW_COVER_MAX_DEG = 70;
+export const YAW_COVER_MAX_DEG = 85;
+export const NEAR_YAW_COVER_MAX_DEG = 70;
 export const YAW_WIDTH_MAX = 3;
+export const FAR_WIDTH_MAX = 8;
+export const ASPECT_MAX = 4.2;
 export const YAW_STEP_DEG = 5;
 export const NEAR_CALM = 0.35;
 export const RAMP = [
@@ -104,14 +107,17 @@ export function gridDims(level, aspect) {
   return { rows, cols, spacing: sp, dz: GRID_DEPTH / (rows - 1), dx: (2 * hw) / (cols - 1) };
 }
 
-export function tierHalfWidth(zEnd, aspect, yawDeg = 0) {
-  const a = Math.min(3.6, Math.max(0.4, Number.isFinite(aspect) ? aspect : 1.78));
-  const base = Math.min(gridHalfWidth(a), Math.tan(COVER_HALF_FOV) * a * COVER_MARGIN * (zEnd + LOD_FOOT));
+export function tierHalfWidth(zEnd, aspect, yawDeg = 0, near = false) {
+  const a = Math.min(near ? 3.6 : ASPECT_MAX, Math.max(0.4, Number.isFinite(aspect) ? aspect : 1.78));
+  const gw = gridHalfWidth(a);
+  const reach = COVER_MARGIN * (zEnd + LOD_FOOT);
+  const base = Math.min(near ? gw : gw * FAR_WIDTH_MAX, Math.tan(COVER_HALF_FOV) * a * reach);
   const y = Math.abs(Number.isFinite(yawDeg) ? yawDeg : 0);
   if (!(y > 0)) return base;
-  const ang = Math.min(Math.atan(Math.tan(COVER_HALF_FOV) * a) + y * (Math.PI / 180), YAW_COVER_MAX_DEG * (Math.PI / 180));
-  const wide = Math.tan(ang) * COVER_MARGIN * (zEnd + LOD_FOOT);
-  return Math.min(Math.max(base, wide), gridHalfWidth(a) * YAW_WIDTH_MAX);
+  const capDeg = near ? NEAR_YAW_COVER_MAX_DEG : YAW_COVER_MAX_DEG;
+  const ang = Math.min(Math.atan(Math.tan(COVER_HALF_FOV) * a) + y * (Math.PI / 180), capDeg * (Math.PI / 180));
+  const wide = Math.tan(ang) * reach;
+  return Math.min(Math.max(base, wide), gw * (near ? YAW_WIDTH_MAX : FAR_WIDTH_MAX));
 }
 
 export const yawStepOf = (yawDeg) => (Number.isFinite(yawDeg) ? Math.ceil(Math.abs(yawDeg) / YAW_STEP_DEG - 1e-9) * YAW_STEP_DEG : 0);
@@ -130,7 +136,7 @@ export function lodTiers(level, aspect, nowZ = NOW_Z, yawDeg = 0) {
     const wIn = k === 0 ? 0 : LOD_BLEND_CELLS * nominal;
     const zA = k === 0 ? 0 : Math.max(0, z0 - wIn);
     const zB = Math.min(GRID_DEPTH, z1 + wOut);
-    const want = tierHalfWidth(zB, aspect, yawDeg);
+    const want = tierHalfWidth(zB, aspect, yawDeg, k === 0);
     let sp = nominal;
     let half = 0;
     let rows = 0;
@@ -992,11 +998,16 @@ export function makeRowClock(rate = ROWS_PER_SECOND, maxCatchUp = 4) {
 export const NOW_LINE_GAIN_H = 1.0;
 export const NOW_LINE_GAIN_B = 2.0;
 export const NOW_LINE_GAIN_H_FULL = 1.1;
+export const NOW_LINE_GAIN_H_LAVA = 2.2;
+export const NOW_LINE_GAIN_B_LAVA = 4.0;
 export const NOW_LIMITS = { nowH: [1, 3], nowB: [0.5, 4] };
 export const NOW_DEFAULTS = { nowH: NOW_LINE_GAIN_H_FULL, nowB: NOW_LINE_GAIN_B };
 export const NOW_LINE_SIGMA_S = NOW_FALLOFF_S / Math.SQRT2;
 export const NOW_LINE_REACH_S = 3 * NOW_LINE_SIGMA_S;
 export const BEAT_BASE_RELIEF = 0.6;
+export const FULL_BASE_RELIEF = 1.0;
+export const FULL_RELIEF_SMOOTH_S = 0.35;
+export const FULL_RELIEF_TAU_S = 0.2;
 const NOW_LINE_EDGE = Math.exp(-((NOW_LINE_REACH_S / NOW_FALLOFF_S) ** 2));
 
 export function nowLineWeight(dtSec) {
@@ -1024,4 +1035,55 @@ export function applyNowLine(out, rows, cols, frac, cap = HEIGHT_CAP, gain = NOW
 export function addBaseRelief(out, relief, k = BEAT_BASE_RELIEF, cap = HEIGHT_CAP) {
   for (let i = 0; i < out.length; i += 1) out[i] = softKnee(out[i] + relief[i] * k, cap);
   return out;
+}
+
+let gaussScratch = new Float32Array(0);
+
+export function gaussKernel(sigmaRows) {
+  const half = Math.max(1, Math.ceil(3 * sigmaRows));
+  const k = new Float32Array(2 * half + 1);
+  for (let j = -half; j <= half; j += 1) k[j + half] = Math.exp(-0.5 * (j / sigmaRows) ** 2);
+  return k;
+}
+
+export function smoothRowsGauss(buf, rows, cols, kernel) {
+  if (gaussScratch.length < buf.length) gaussScratch = new Float32Array(buf.length);
+  const tmp = gaussScratch;
+  const half = (kernel.length - 1) >> 1;
+  for (let r = 0; r < rows; r += 1) {
+    const lo = Math.max(0, r - half);
+    const hi = Math.min(rows - 1, r + half);
+    let wsum = 0;
+    for (let q = lo; q <= hi; q += 1) wsum += kernel[q - r + half];
+    const o = r * cols;
+    for (let c = 0; c < cols; c += 1) {
+      let acc = 0;
+      for (let q = lo; q <= hi; q += 1) acc += kernel[q - r + half] * buf[q * cols + c];
+      tmp[o + c] = acc / wsum;
+    }
+  }
+  buf.set(tmp.subarray(0, rows * cols));
+  return buf;
+}
+
+export function smoothRowsExp(buf, rows, cols, alpha, lastRow = rows - 1) {
+  const end = Math.min(rows - 1, lastRow);
+  for (let r = 1; r <= end; r += 1) {
+    const o = r * cols;
+    const p = o - cols;
+    for (let c = 0; c < cols; c += 1) buf[o + c] = buf[p + c] + alpha * (buf[o + c] - buf[p + c]);
+  }
+  return buf;
+}
+
+export function nowGains(cam, style) {
+  const lava = style === 'lava';
+  const dh = lava ? NOW_LINE_GAIN_H_LAVA : style === 'full' ? NOW_LINE_GAIN_H_FULL : NOW_LINE_GAIN_H;
+  const db = lava ? NOW_LINE_GAIN_B_LAVA : NOW_LINE_GAIN_B;
+  const h = cam?.nowH;
+  const b = cam?.nowB;
+  return {
+    h: Number.isFinite(h) && h !== NOW_DEFAULTS.nowH ? h : dh,
+    b: Number.isFinite(b) && b !== NOW_DEFAULTS.nowB ? b : db,
+  };
 }

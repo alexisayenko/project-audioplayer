@@ -1,5 +1,5 @@
 import {
-  HISTORY_BINS, AMP_MAX, LANDMARK_MAX, clamp01, smoothstep, rowLayout, edgeFalloff, softKnee,
+  HISTORY_BINS, AMP_MAX, LANDMARK_MAX, clamp01, smoothstep, rowLayout, softKnee,
 } from './viz-terrain-math.js';
 
 export const BEAT_BINS = 32;
@@ -232,26 +232,9 @@ export function multiShape(spectrum, cols, out = new Float32Array(cols)) {
   return out;
 }
 
-export const FULL_SMOOTH_PASSES = 2;
+export const BEAT_SHAPES = { single: singleShape, hill: hillShape, multi: multiShape, full: multiShape };
 
-export function fullShape(spectrum, cols, out = new Float32Array(cols)) {
-  out.fill(0);
-  if (!spectrum?.length) return out;
-  for (let c = 0; c < cols; c += 1) out[c] = clamp01(levelAt(spectrum, colU(c, cols))) * edgeFalloff(colU(c, cols) * 2 - 1);
-  const tmp = new Float32Array(cols);
-  for (let p = 0; p < FULL_SMOOTH_PASSES; p += 1) {
-    for (let c = 0; c < cols; c += 1) tmp[c] = (out[Math.max(0, c - 1)] + 2 * out[c] + out[Math.min(cols - 1, c + 1)]) / 4;
-    out.set(tmp);
-  }
-  let max = 0;
-  for (let c = 0; c < cols; c += 1) if (out[c] > max) max = out[c];
-  if (max > 0) for (let c = 0; c < cols; c += 1) out[c] /= max;
-  return out;
-}
-
-export const BEAT_SHAPES = { single: singleShape, hill: hillShape, multi: multiShape, full: fullShape };
-
-export const beatCols = (style, cols) => (style === 'full' ? cols : visibleCols(cols));
+export const beatCols = (style, cols) => visibleCols(cols);
 
 function shapeOf(beat, style, cols) {
   const cache = beat.shapes || (beat.shapes = new Map());

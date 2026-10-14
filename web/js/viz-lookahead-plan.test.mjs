@@ -7,9 +7,9 @@ import {
 import { createLookahead, decodeBuffer } from './viz-lookahead.js';
 import {
   createFrame, fillLookFrame, fillLiveFrame, createSeries, blendFrames, sampleTimeline, rowLayout, nowLineWeight, applyNowLine,
-  NOW_LINE_GAIN_H_FULL, NOW_LINE_GAIN_H, NOW_LINE_REACH_S, FAR_FLAT_START, nowParse, nowFormat, nowClamp, parseNowField, NOW_DEFAULTS,
+  NOW_LINE_GAIN_H_FULL, NOW_LINE_GAIN_H, NOW_LINE_GAIN_H_LAVA, NOW_LINE_GAIN_B_LAVA, nowGains, FULL_BASE_RELIEF, BEAT_BASE_RELIEF, FULL_RELIEF_SMOOTH_S, gaussKernel, smoothRowsGauss, smoothRowsExp, softKnee, HEIGHT_CAP, NOW_LINE_REACH_S, FAR_FLAT_START, nowParse, nowFormat, nowClamp, parseNowField, NOW_DEFAULTS,
 } from './viz-terrain-math.js';
-import { getStyle, setStyle, resetStyleForTests, styleLabel, isBeatStyle, isFullStyle, TERRAIN_STYLES } from './viz-terrain-style.js';
+import { getStyle, setStyle, resetStyleForTests, styleLabel, isBeatStyle, isFullStyle, isLavaStyle, TERRAIN_STYLES } from './viz-terrain-style.js';
 
 const SR = 8000;
 const pcmOf = (s) => Float32Array.from({ length: s * SR }, (_, i) => 0.4 * Math.sin(i * 0.2) * (1 + Math.sin(i / 4000)));
@@ -253,11 +253,18 @@ test('decodeBuffer supports callback-only decodeAudioData', async () => {
   await assert.rejects(decodeBuffer(bad, new ArrayBuffer(1)));
 });
 
-test('Full spectrum is Relief with only a 1.1x now line', () => {
+test('Lava is the old Relief with a tall now line; Full spectrum is a beat style', () => {
   assert.equal(styleLabel('full'), 'Full spectrum');
-  assert.ok(isFullStyle('full') && !isBeatStyle('full') && isBeatStyle('hill'));
-  assert.deepEqual(TERRAIN_STYLES.map((s) => s.id), ['relief', 'single', 'hill', 'multi', 'full', 'melody']);
+  assert.equal(styleLabel('lava'), 'Lava');
+  assert.ok(isFullStyle('full') && isBeatStyle('full') && isBeatStyle('hill') && isLavaStyle('lava') && !isBeatStyle('lava'));
+  assert.deepEqual(TERRAIN_STYLES.map((s) => s.id), ['relief', 'single', 'hill', 'multi', 'full', 'lava', 'melody']);
   assert.equal(NOW_LINE_GAIN_H_FULL, 1.1);
+  assert.equal(NOW_LINE_GAIN_H_LAVA, 2.2);
+  assert.equal(NOW_LINE_GAIN_B_LAVA, 4);
+  assert.deepEqual(nowGains({ ...NOW_DEFAULTS }, 'lava'), { h: 2.2, b: 4 });
+  assert.deepEqual(nowGains({ ...NOW_DEFAULTS }, 'full'), { h: 1.1, b: 2 });
+  assert.deepEqual(nowGains({ ...NOW_DEFAULTS }, 'multi'), { h: 1, b: 2 });
+  assert.deepEqual(nowGains({ nowH: 1.6, nowB: 3 }, 'lava'), { h: 1.6, b: 3 });
   const rows = 40;
   const cols = 3;
   const { nowRow, dt } = rowLayout(rows);
@@ -268,6 +275,31 @@ test('Full spectrum is Relief with only a 1.1x now line', () => {
   assert.ok(Math.abs(boosted[beyond * cols] - 0.4) < 1e-6);
   const plain = applyNowLine(flat.slice(), rows, cols, 0, 99, NOW_LINE_GAIN_H);
   assert.ok(Math.abs(plain[nowRow * cols] - 0.4) < 1e-6);
+  const lava = applyNowLine(flat.slice(), rows, cols, 0, 99, NOW_LINE_GAIN_H_LAVA);
+  assert.ok(Math.abs(lava[nowRow * cols] - 0.88) < 1e-6);
+  assert.ok(Math.abs(lava[beyond * cols] - 0.4) < 1e-6);
+});
+
+test('Full spectrum relief smoothing lowers row-to-row variance and keeps the mean', () => {
+  const rows = 88;
+  const cols = 4;
+  const { dt } = rowLayout(rows);
+  const noisy = new Float32Array(rows * cols);
+  for (let r = 0; r < rows; r += 1) for (let c = 0; c < cols; c += 1) noisy[r * cols + c] = 0.5 + 0.3 * (r % 2 ? 1 : -1);
+  const rough = (a) => { let s = 0; for (let r = 1; r < rows; r += 1) s += (a[r * cols] - a[(r - 1) * cols]) ** 2; return s; };
+  const mean = (a) => a.reduce((x, y) => x + y, 0) / a.length;
+  const g = smoothRowsGauss(noisy.slice(), rows, cols, gaussKernel(FULL_RELIEF_SMOOTH_S / dt));
+  assert.ok(rough(g) < 0.05 * rough(noisy));
+  assert.ok(Math.abs(mean(g) - mean(noisy)) < 0.03);
+  const step = new Float32Array(rows * cols).fill(0.6);
+  const same = smoothRowsGauss(step.slice(), rows, cols, gaussKernel(FULL_RELIEF_SMOOTH_S / dt));
+  assert.ok(same.every((v) => Math.abs(v - 0.6) < 1e-5));
+  const e = smoothRowsExp(noisy.slice(), rows, cols, 1 - Math.exp(-dt / 0.2), 60);
+  assert.ok(rough(e) < rough(noisy));
+  for (let i = 61 * cols; i < noisy.length; i += 1) assert.equal(e[i], noisy[i]);
+  assert.equal(FULL_BASE_RELIEF, 1);
+  assert.ok(BEAT_BASE_RELIEF < FULL_BASE_RELIEF);
+  assert.ok(softKnee(HEIGHT_CAP * 5 + 1) < HEIGHT_CAP);
 });
 
 test('now-line debug fields: parse, clamp, format and typed values', () => {

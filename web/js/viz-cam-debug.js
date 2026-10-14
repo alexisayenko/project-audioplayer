@@ -1,6 +1,7 @@
-import { camClamp, camFormat, camParse, nowClamp, nowFormat, nowParse, parseNowField, NOW_LIMITS, NOW_DEFAULTS, CAM_LIMITS, EYE_HEIGHT, DEFAULT_PITCH_DEG, YAW_COVER_MAX_DEG } from './viz-terrain-math.js';
+import { camClamp, camFormat, camParse, nowClamp, nowFormat, nowParse, nowGains, parseNowField, NOW_LIMITS, NOW_DEFAULTS, CAM_LIMITS, EYE_HEIGHT, DEFAULT_PITCH_DEG, YAW_COVER_MAX_DEG } from './viz-terrain-math.js';
 
-import { flight } from './viz-flight.js';
+import { getStyle, onStyle } from './viz-terrain-style.js';
+import { flight, flightYawPlan } from './viz-flight.js';
 
 export const CAM_KEY = 'ap2.viz.dbg.cam5';
 
@@ -99,9 +100,11 @@ export function createCamPanel(doc = document) {
     input.inputMode = 'decimal';
     const out = doc.createElement('output');
     const apply = () => {
-      const v = parseNowField(input.value, key, cam[key]);
+      const eff = nowGains(cam, getStyle());
+      const v = parseNowField(input.value, key, key === 'nowH' ? eff.h : eff.b);
       setCam({ [key]: v });
-      input.value = cam[key].toFixed(step < 0.1 ? 2 : 1);
+      const g = nowGains(cam, getStyle());
+      input.value = (key === 'nowH' ? g.h : g.b).toFixed(step < 0.1 ? 2 : 1);
     };
     input.addEventListener('input', () => { const v = parseNowField(input.value, key, null); if (v !== null && input.value.trim() !== '') setCam({ [key]: v }); });
     input.addEventListener('change', apply);
@@ -147,7 +150,7 @@ export function createCamPanel(doc = document) {
     try { void globalThis.navigator?.clipboard?.writeText(`${camFormat(cam)} ${nowFormat(cam)}`); } catch { /* clipboard unavailable */ }
   });
   const note = doc.createElement('small');
-  note.textContent = `Yaw is fully covered up to about +-${yawCoverNote()} deg at 16:9; beyond that the far side of the grid can show bare edge. Sync is a trim added to the automatic output-latency estimate (positive = visuals earlier).`;
+  note.textContent = `Yaw is fully covered up to about +-${yawCoverNote()} deg at 16:9; beyond that the side of the grid fades out instead of showing a bare edge. Sync is a trim added to the automatic output-latency estimate (positive = visuals earlier).`;
   btns.append(reset, copy);
   const flightLine = doc.createElement('small');
   flightLine.className = 'viz-flight-line';
@@ -156,8 +159,9 @@ export function createCamPanel(doc = document) {
     const on = flight.active();
     flightLine.hidden = !on;
     if (!on) return;
-    const o = flight.offsets(cam);
-    flightLine.textContent = `flight offset: eye ${o.eye >= 0 ? '+' : ''}${o.eye.toFixed(1)} yaw ${o.yaw >= 0 ? '+' : ''}${o.yaw.toFixed(1)}deg`;
+    const o = flight.offsets(cam, flight.aspect());
+    const plan = flightYawPlan(cam.yaw, flight.aspect());
+    flightLine.textContent = `flight offset: eye ${o.eye >= 0 ? '+' : ''}${o.eye.toFixed(1)} yaw ${o.yaw >= 0 ? '+' : ''}${o.yaw.toFixed(1)}deg, yaw amplitude +-${plan.amp.toFixed(1)}deg${plan.limited ? ' (yaw limited by view width)' : ''}`;
   };
   const flightTimer = globalThis.setInterval?.(paintFlight, 250);
   body.append(line, flightLine, btns, note);
@@ -170,13 +174,15 @@ export function createCamPanel(doc = document) {
     rows.yaw.out.textContent = `${c.yaw.toFixed(1)}°`;
     rows.sync.input.value = c.sync;
     rows.sync.out.textContent = `${c.sync > 0 ? '+' : ''}${c.sync} ms`;
-    rows.nowH.input.value = c.nowH.toFixed(2);
+    const g = nowGains(c, getStyle());
+    rows.nowH.input.value = g.h.toFixed(2);
     rows.nowH.out.textContent = 'x';
-    rows.nowB.input.value = c.nowB.toFixed(1);
+    rows.nowB.input.value = g.b.toFixed(1);
     rows.nowB.out.textContent = 'x';
-    line.value = `${camFormat(c)} ${nowFormat(c)}`;
+    line.value = `${camFormat(c)} ${nowFormat({ nowH: g.h, nowB: g.b })}`;
   };
   listeners.add(paint);
+  const offStyle = onStyle(() => paint(cam));
   paint(cam);
-  return { el: root, dispose() { globalThis.clearInterval?.(flightTimer); listeners.delete(paint); root.remove(); } };
+  return { el: root, dispose() { globalThis.clearInterval?.(flightTimer); listeners.delete(paint); offStyle(); root.remove(); } };
 }

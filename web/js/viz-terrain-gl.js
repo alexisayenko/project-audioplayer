@@ -2,11 +2,11 @@ import {
   QUALITY, HISTORY_BINS, STAR_VISIBLE, buildDepthIndices, buildCrossIndices, buildRibbonVertices, buildRibbonIndices, energyOf, easeEnergy, GRID_DEPTH, WORLD_SPEED, NOW_FALLOFF_S, NOW_GAIN, CROSS_H0, CROSS_H1, AMP_MAX, SHAKE_ENABLED,
   gridHalfWidth, FAR_FLAT_START, RAMP, qualityFor, createFrame, createSeries, fillHeights, buildGridVertices, rowLayout, nowZOf, fillLiveFrame, fillLookFrame, blendFrames,
   gridCounts, makeStars, lodTiers, makeTierPlan, resampleTier, cameraAt, horizonY, horizonGlow, mat4Perspective, mat4LookAt, mat4Multiply,
-  makeRowClock, clamp01, LOOK_S, timelineCovers, applyNowLine, addBaseRelief, NOW_LINE_GAIN_B, NOW_LINE_GAIN_H_FULL, HEIGHT_CAP, resample, yawStepOf, smoothHeights, HEIGHT_RESAMPLE_CAP, ROWS_PER_SECOND, gridDims, fillLight, LIGHT_GAIN, NODE_GAIN, FOG_NEAR, FOG_FAR, FOG_LOW_MIN, FOG_H0, FOG_H1,
+  makeRowClock, clamp01, LOOK_S, timelineCovers, applyNowLine, addBaseRelief, BEAT_BASE_RELIEF, FULL_BASE_RELIEF, FULL_RELIEF_SMOOTH_S, FULL_RELIEF_TAU_S, gaussKernel, smoothRowsGauss, smoothRowsExp, NOW_LINE_GAIN_H, nowGains, HEIGHT_CAP, resample, yawStepOf, smoothHeights, HEIGHT_RESAMPLE_CAP, ROWS_PER_SECOND, gridDims, fillLight, LIGHT_GAIN, NODE_GAIN, FOG_NEAR, FOG_FAR, FOG_LOW_MIN, FOG_H0, FOG_H1,
 } from './viz-terrain-math.js';
 import { getCam } from './viz-cam-debug.js';
 import { flight } from './viz-flight.js';
-import { getStyle, isBeatStyle, isFullStyle, isMelodyStyle } from './viz-terrain-style.js';
+import { getStyle, isBeatStyle, isFullStyle, isLavaStyle, isMelodyStyle } from './viz-terrain-style.js';
 import {
   createPartsFrames, createLiveParts, fillLiveParts, fillTimelineParts, blendParts, melodyHeights, fillMelodyAttrs, fillLeadRidge, ACCENT_LUT,
 } from './viz-melody.js';
@@ -53,6 +53,7 @@ varying float v_dof;
 varying float v_wh;
 varying float v_l;
 varying float v_fogH;
+varying float v_edge;
 varying float v_tier;
 varying vec3 v_m;
 void main() {
@@ -61,6 +62,7 @@ void main() {
   v_h = a_h;
   v_l = a_l;
   v_fogH = 0.0;
+  v_edge = 1.0 - smoothstep(0.8, 1.0, abs(a_p.x));
   v_wh = 0.0;
   v_end = 1.0;
   v_now = 0.0;
@@ -121,6 +123,7 @@ varying float v_dof;
 varying float v_wh;
 varying float v_l;
 varying float v_fogH;
+varying float v_edge;
 varying float v_tier;
 varying vec3 v_m;
 vec3 ramp(float h) {
@@ -168,7 +171,7 @@ void main() {
     }
     col += vec3(0.3, 0.55, 0.9) * max(lf, 0.0) * 0.35;
     col = mix(col, u_fog, v_fogH * 0.5);
-    a *= 1.0 - 0.4 * v_fogH;
+    a *= (1.0 - 0.4 * v_fogH) * v_edge;
     float nowK = v_now * (0.45 + 0.55 * smoothstep(0.1, 0.8, v_h));
     a *= 1.0 + u_nowGain * nowK;
     col = mix(col, vec3(1.0), 0.8 * nowK);
@@ -412,7 +415,7 @@ export function createTerrain(canvas, opts = {}) {
     css: null,
     hVer: 0,
     hs: { style: null, done: -1, v: -1, pd: -1, kd: -1, dims: null },
-    rk: { dims: null, base: NaN, done: -1, v: -1, ver: -1 },
+    rk: { dims: null, base: NaN, done: -1, v: -1, ver: -1, mode: 0, kernel: null, kRows: 0 },
     liveVer: 0,
     xs: null,
     static: false,
@@ -618,7 +621,7 @@ export function createTerrain(canvas, opts = {}) {
     u1(p, 'u_scroll', g.scroll);
     u1(p, 'u_nowZ', s.nowZ);
     u1(p, 'u_nowW', NOW_FALLOFF_S * WORLD_SPEED);
-    u1(p, 'u_nowGain', NOW_GAIN * (0.7 + 0.6 * s.pulse) * (s.beatNow ? (getCam().nowB ?? NOW_LINE_GAIN_B) : 1));
+    u1(p, 'u_nowGain', NOW_GAIN * (0.7 + 0.6 * s.pulse) * (s.beatNow ? nowGains(getCam(), getStyle()).b : 1));
     u1(p, 'u_crossLo', CROSS_H0);
     u1(p, 'u_crossHi', CROSS_H1);
     u1(p, 'u_base', g.base % 256);
@@ -828,7 +831,7 @@ export function createTerrain(canvas, opts = {}) {
       k = clamp01((sec - s.lookAt) / LOOK_BLEND_S);
     } else s.lookAt = null;
     const lay = rowLayout(rows);
-    const eligible = !!tl && k >= 1 && !isBeatStyle(style) && !isFullStyle(style) && timelineCovers(tl, ahead.time - 3, ahead.time + LOOK_S + 0.5) && (style !== 'melody' || !!tl.parts);
+    const eligible = !!tl && k >= 1 && !isBeatStyle(style) && timelineCovers(tl, ahead.time - 3, ahead.time + LOOK_S + 0.5) && (style !== 'melody' || !!tl.parts);
     s.static = eligible;
     if (s.static) {
       const at = ahead.time;
@@ -854,23 +857,32 @@ export function createTerrain(canvas, opts = {}) {
       info = { base: k >= 1 ? li.base : info.base, frac: info.frac + (li.frac - info.frac) * k };
     }
     s.melodyOn = isMelodyStyle(style);
-    s.beatNow = isBeatStyle(style) || isFullStyle(style);
+    s.beatNow = isBeatStyle(style) || isLavaStyle(style);
     if (s.melodyOn) fillMelodyStyle(sec, ahead, k, info.base, cols);
     else if (isBeatStyle(style)) {
       fillBeatStyle(style, sec, ahead, k, rows, cols);
       const rk = s.rk;
       const settled = !tl || k >= 1;
       const done = tl ? tl.done : -1;
-      if (!settled || rk.dims !== s.dims || rk.base !== info.base || rk.done !== done || rk.v !== (tl ? tl.ver : -1) || rk.ver !== s.liveVer) {
+      const full = isFullStyle(style);
+      const mode = full ? (tl && settled ? 1 : 2) : 0;
+      if (!settled || rk.dims !== s.dims || rk.base !== info.base || rk.done !== done || rk.v !== (tl ? tl.ver : -1) || rk.ver !== s.liveVer || rk.mode !== mode) {
         fillHeights(s.liveFrame, cols, sec, s.relief, { swellAmp: 0, bakeAmp: true, landmarks: false });
-        rk.dims = s.dims; rk.base = info.base; rk.done = done; rk.v = tl ? tl.ver : -1; rk.ver = s.liveVer;
+        if (mode === 1) {
+          if (!rk.kernel || rk.kRows !== rows) { rk.kernel = gaussKernel(FULL_RELIEF_SMOOTH_S / rowLayout(rows).dt); rk.kRows = rows; }
+          smoothRowsGauss(s.relief, rows, cols, rk.kernel);
+        } else if (mode === 2) {
+          const l = rowLayout(rows);
+          smoothRowsExp(s.relief, rows, cols, 1 - Math.exp(-l.dt / FULL_RELIEF_TAU_S), l.nowRow);
+        }
+        rk.dims = s.dims; rk.base = info.base; rk.done = done; rk.v = tl ? tl.ver : -1; rk.ver = s.liveVer; rk.mode = mode;
       }
-      addBaseRelief(s.heights, s.relief);
-      applyNowLine(s.heights, rows, cols, info.frac);
+      addBaseRelief(s.heights, s.relief, full ? FULL_BASE_RELIEF : BEAT_BASE_RELIEF);
+      applyNowLine(s.heights, rows, cols, info.frac, HEIGHT_CAP, full ? nowGains(getCam(), style).h : NOW_LINE_GAIN_H);
     }
     else {
       fillHeights(s.liveFrame, cols, sec, s.heights, { swellAmp: 0, bakeAmp: true });
-      if (isFullStyle(style)) applyNowLine(s.heights, rows, cols, info.frac, HEIGHT_CAP, getCam().nowH ?? NOW_LINE_GAIN_H_FULL);
+      if (isLavaStyle(style)) applyNowLine(s.heights, rows, cols, info.frac, HEIGHT_CAP, nowGains(getCam(), style).h);
     }
     fillLight(s.heights, rows, cols, gridHalfWidth(view.w / view.h), lay.dz, s.light, undefined, s.xs);
     const pos = (info.base + info.frac) * lay.dt;
@@ -934,7 +946,7 @@ export function createTerrain(canvas, opts = {}) {
     for (let i = 0; i < step.pushes; i += 1) {
       const ts = (t - (step.pushes - 1 - i) * gap) / 1000;
       s.series.push(sp, ts);
-      if (!isFullStyle(getStyle())) s.liveBeats.push(resample(sp, HISTORY_BINS), ts);
+      s.liveBeats.push(resample(sp, HISTORY_BINS), ts);
       if (isMelodyStyle(getStyle())) s.liveParts.push(resample(sp, HISTORY_BINS), ts);
     }
     let bass = 0;
@@ -953,7 +965,7 @@ export function createTerrain(canvas, opts = {}) {
     s.frameId += 1;
     updateHeights(t / 1000 - lat, ahead);
     const fo = flight.offsets(cc, view.w / view.h);
-    flight.report(fo);
+    flight.report(fo, view.w / view.h);
     const cam = cameraAt(t / 1000, SHAKE_ENABLED ? s.pulse : 0, { eye: cc.eye + fo.eye, pitchDeg: cc.pitch + fo.pitch, yawDeg: cc.yaw + fo.yaw, fly: 0 });
     s.focalPx = view.h / (2 * Math.tan(cam.fov / 2));
     mat4Perspective(cam.fov, view.w / view.h, NEAR, FAR, proj);

@@ -3,7 +3,7 @@ import { camClamp } from './viz-terrain-math.js';
 export const SHARE_VERSION = 1;
 export const SHARE_MAX_T = 86400;
 export const SHARE_MODES = ['bars', 'ring', 'terrain'];
-export const SHARE_STYLES = ['relief', 'single', 'hill', 'multi', 'full', 'melody'];
+export const SHARE_STYLES = ['relief', 'single', 'hill', 'multi', 'full', 'lava', 'melody'];
 
 const ID_RE = /^[A-Za-z0-9._-]{1,80}$/;
 const ROUTE_RE = /^#\/?play\/([^?#]*)(?:\?(.*))?$/;

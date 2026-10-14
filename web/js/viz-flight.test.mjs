@@ -35,13 +35,63 @@ test('offsets stay inside the eye limits and the yaw coverage', () => {
   }
 });
 
-test('large base yaw scales the offset down to nothing', () => {
-  assert.equal(F.flightYawAmp(40), 0);
-  assert.equal(F.flightYawAmp(-40), 0);
-  assert.ok(F.flightYawAmp(10) > 0 && F.flightYawAmp(10) < F.FLIGHT_YAW_AMP_DEG);
+test('yaw amplitude scales down with view width but never below the floor', () => {
+  assert.equal(F.FLIGHT_YAW_MIN_DEG, 8);
+  for (const asp of [1.78, 2.4, 3.3, 4.0]) {
+    for (const base of [0, -5.2, 5.2, 20, -40]) {
+      const plan = F.flightYawPlan(base, asp);
+      assert.ok(plan.amp >= 8 && plan.amp <= 16, `${asp} ${base} ${plan.amp}`);
+      assert.ok(Math.abs(base + plan.shift) + plan.amp <= Math.max(F.yawCoverDeg(asp), Math.abs(base)) + 1e-9 || Math.abs(base + plan.shift) < 1e-9);
+    }
+    assert.ok(F.flightYawAmp(0, asp) >= 14, `${asp}`);
+    assert.ok(F.flightYawAmp(-5.2, asp) >= 10, `${asp}`);
+  }
   assert.equal(F.flightYawAmp(0), F.FLIGHT_YAW_AMP_DEG);
-  assert.ok(F.yawCoverDeg(16 / 9) > 20 && F.yawCoverDeg(16 / 9) < 23);
+  assert.equal(F.flightYawPlan(0, 4).shift, 0);
+});
+
+test('base yaw near the limit shifts the centre toward 0 smoothly', () => {
+  let prev = F.flightYawPlan(0, 4);
+  for (let b = 0; b >= -45; b -= 0.5) {
+    const p = F.flightYawPlan(b, 4);
+    assert.ok(p.shift >= 0 && Math.abs(p.shift - prev.shift) < 0.8 && Math.abs(p.amp - prev.amp) < 0.8);
+    prev = p;
+  }
+  assert.ok(F.flightYawPlan(-30, 4).shift > 0);
+});
+
+test('yaw coverage shrinks monotonically with aspect and grows with narrower views', () => {
+  let prev = Infinity;
+  for (const a of [1, 1.5, 1.78, 2.4, 3.3, 4, 4.2]) {
+    const c = F.yawCoverDeg(a);
+    assert.ok(c <= prev);
+    prev = c;
+  }
+  assert.ok(F.yawCoverDeg(4.0) >= 14);
   assert.ok(F.yawCoverDeg(1) > F.yawCoverDeg(16 / 9));
+});
+
+test('yaw offset swings at least +-8 deg over 60 s at wide aspects', () => {
+  for (const asp of [1.78, 2.4, 3.3, 4.0]) {
+    for (const yaw of [0, -5.2]) {
+      let lo = 0;
+      let hi = 0;
+      for (const seed of [1, 2, 3]) {
+        const fl = F.createFlight({ seed });
+        fl.setOn(true);
+        let t = 0;
+        for (let i = 0; i < 4000; i += 1) {
+          t += 16;
+          fl.tick(t, true);
+          const y = fl.offsets({ eye: 3.7, yaw }, asp).yaw;
+          lo = Math.min(lo, y);
+          hi = Math.max(hi, y);
+        }
+      }
+      assert.ok(hi - lo >= 16 * 0.8 || hi - lo >= 8, `${asp} ${yaw} ${lo} ${hi}`);
+      assert.ok(Math.max(-lo, hi) >= 8, `${asp} ${yaw} ${lo} ${hi}`);
+    }
+  }
 });
 
 test('the drift uses the whole amplitude over time', () => {

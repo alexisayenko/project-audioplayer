@@ -8,13 +8,15 @@ export const TERRAIN_STYLES = [
   { id: 'hill', label: 'Beat peaks: hill' },
   { id: 'multi', label: 'Beat peaks: multi' },
   { id: 'full', label: 'Full spectrum' },
+  { id: 'lava', label: 'Lava' },
   { id: 'melody', label: 'Melody on beats' },
 ];
 
 export const normaliseStyle = (v) => (TERRAIN_STYLES.some((s) => s.id === v) ? v : DEFAULT_STYLE);
 export const styleLabel = (id) => TERRAIN_STYLES.find((s) => s.id === id)?.label ?? TERRAIN_STYLES[0].label;
 export const isMelodyStyle = (id) => id === 'melody';
-export const isBeatStyle = (id) => id === 'single' || id === 'hill' || id === 'multi';
+export const isBeatStyle = (id) => id === 'single' || id === 'hill' || id === 'multi' || id === 'full';
+export const isLavaStyle = (id) => id === 'lava';
 export const isFullStyle = (id) => id === 'full';
 
 export function nextStyle(id) {

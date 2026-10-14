@@ -206,7 +206,7 @@ test('heights are a pure function of the beat list and time (seek-invariant), no
 });
 
 test('style validation, persistence and cycling', () => {
-  assert.deepEqual(S.TERRAIN_STYLES.map((s) => s.id), ['relief', 'single', 'hill', 'multi', 'full', 'melody']);
+  assert.deepEqual(S.TERRAIN_STYLES.map((s) => s.id), ['relief', 'single', 'hill', 'multi', 'full', 'lava', 'melody']);
   assert.equal(S.normaliseStyle('nope'), 'relief');
   assert.equal(S.normaliseStyle(null), 'relief');
   assert.equal(S.normaliseStyle('hill'), 'hill');
@@ -224,12 +224,14 @@ test('style validation, persistence and cycling', () => {
   assert.equal(S.getStyle(), 'single');
   let id = 'relief';
   const order = [];
-  for (let i = 0; i < 6; i += 1) { id = S.nextStyle(id); order.push(id); }
-  assert.deepEqual(order, ['single', 'hill', 'multi', 'full', 'melody', 'relief']);
+  for (let i = 0; i < 7; i += 1) { id = S.nextStyle(id); order.push(id); }
+  assert.deepEqual(order, ['single', 'hill', 'multi', 'full', 'lava', 'melody', 'relief']);
   assert.equal(S.normaliseStyle('full'), 'full');
   assert.equal(S.normaliseStyle('melody'), 'melody');
   assert.equal(S.styleLabel('full'), 'Full spectrum');
-  assert.ok(!S.isBeatStyle('full') && S.isFullStyle('full') && !S.isBeatStyle('melody') && S.isMelodyStyle('melody'));
+  assert.equal(S.styleLabel('lava'), 'Lava');
+  assert.equal(S.normaliseStyle('lava'), 'lava');
+  assert.ok(S.isBeatStyle('full') && S.isFullStyle('full') && S.isLavaStyle('lava') && !S.isBeatStyle('lava') && !S.isBeatStyle('melody') && S.isMelodyStyle('melody'));
   assert.equal(S.styleLabel('hill'), 'Beat peaks: hill');
   assert.deepEqual(seen, ['multi', 'relief']);
 });
@@ -258,40 +260,42 @@ test('beat detector keeps a bounded live list', () => {
   assert.ok(live.beats.length > 5 && live.beats.length < 20);
 });
 
-test('full gives every column the height of its own bin, normalised to the loudest', () => {
+const multiRow = Float32Array.from({ length: BINS }, (_, i) => 0.1 + 0.8 * Math.max(Math.exp(-0.5 * ((i - 12) / 1.5) ** 2), Math.exp(-0.5 * ((i - 40) / 1.5) ** 2)));
+
+test('full uses the multi peak shape on the central columns', () => {
   const cols = 200;
-  const s = Float32Array.from({ length: BINS }, (_, i) => 0.2 + 0.6 * (i / (BINS - 1)));
-  const out = B.fullShape(s, cols);
-  assert.ok(Math.abs(Math.max(...out) - 1) < 1e-9);
-  const a = Math.round(cols * 0.2);
-  const b = Math.round(cols * 0.7);
-  for (let c = a + 1; c <= b; c += 1) assert.ok(out[c] >= out[c - 1] - 1e-9);
-  assert.ok(out[Math.round(cols * 0.3)] / out[Math.round(cols * 0.6)] < 0.9);
-  let jump = 0;
-  for (let c = 1; c < cols; c += 1) jump = Math.max(jump, Math.abs(out[c] - out[c - 1]));
-  assert.ok(jump < 0.1);
-  assert.equal(B.beatCols('full', 100), 100);
-  assert.ok(B.beatCols('hill', 100) < 100);
-  assert.ok(B.fullShape(new Float32Array(BINS), cols).every((v) => v === 0));
+  assert.equal(B.BEAT_SHAPES.full, B.BEAT_SHAPES.multi);
+  assert.equal(B.beatCols('full', 100), B.beatCols('multi', 100));
+  assert.ok(B.beatCols('full', 100) < 100);
+  assert.deepEqual(Array.from(B.BEAT_SHAPES.full(multiRow, cols)), Array.from(B.multiShape(multiRow, cols)));
 });
 
-test('full: flat before the beat, rises on it, flat after DECAY_S', () => {
+test('full: flat spectrum gives no peaks, a beat rises and is flat after DECAY_S', () => {
   const rows = 88;
   const cols = 120;
   const { dt } = rowLayout(rows);
-  const s = Float32Array.from({ length: BINS }, (_, i) => 0.3 + 0.5 * Math.sin((i / BINS) * Math.PI * 3) ** 2);
-  const beats = [{ t: 10, strength: 0.8, spectrum: s }];
-  const run = (tNow) => {
+  const run = (beats, tNow) => {
     const out = new Float32Array(rows * cols);
     B.fillBeatHeights({ beats, style: 'full', tNow, base: Math.floor(tNow / dt), rows, cols, out });
     return out;
   };
-  assert.ok(run(9).every((v) => v === 0));
-  const during = run(10.3);
-  assert.ok(Math.max(...during) > 0.3);
-  const wide = Array.from({ length: cols }, (_, c) => Math.max(...Array.from({ length: rows }, (_, r) => during[r * cols + c])));
-  assert.ok(wide.filter((v) => v > 0.1).length > cols * 0.6);
-  assert.ok(run(10 + B.BEAT_DECAY_S + B.BEAT_SPREAD_S + 0.1).every((v) => v === 0));
+  const beats = [{ t: 10, strength: 0.8, spectrum: multiRow }];
+  assert.ok(run(beats, 9).every((v) => v === 0));
+  assert.ok(Math.max(...run(beats, 10.3)) > 0.3);
+  assert.ok(run(beats, 10 + B.BEAT_DECAY_S + B.BEAT_SPREAD_S + 0.1).every((v) => v === 0));
+  assert.ok(run([], 10.3).every((v) => v === 0));
+  const flat = [{ t: 10, strength: 0.8, spectrum: new Float32Array(BINS) }];
+  assert.ok(run(flat, 10.3).every((v) => v === 0));
+});
+
+test('full: no energy spike outside beats (heights stay zero between beats)', () => {
+  const rows = 88;
+  const cols = 120;
+  const { dt } = rowLayout(rows);
+  const beats = [{ t: 10, strength: 0.9, spectrum: multiRow }];
+  const out = new Float32Array(rows * cols);
+  B.fillBeatHeights({ beats, style: 'full', tNow: 8, base: Math.floor(8 / dt), rows, cols, out });
+  assert.ok(out.every((v) => v === 0));
 });
 
 test('beat onset: timeline beats sit at the row of the flux maximum plus the calibrated shift, live beats before it', () => {

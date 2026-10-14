@@ -906,7 +906,10 @@ test('tier width grows with |yaw| and is unchanged at yaw 0', () => {
   assert.equal(tierHalfWidth(30, 1.78, 0), tierHalfWidth(30, 1.78));
   assert.ok(tierHalfWidth(30, 1.78, 20) > tierHalfWidth(30, 1.78, 0));
   assert.equal(tierHalfWidth(30, 1.78, -20), tierHalfWidth(30, 1.78, 20));
-  assert.ok(tierHalfWidth(40, 1.78, 45) <= gridHalfWidth(1.78) * 3 + 1e-9);
+  assert.ok(tierHalfWidth(40, 1.78, 45, true) <= gridHalfWidth(1.78) * 3 + 1e-9);
+  assert.ok(tierHalfWidth(40, 4, 15) > tierHalfWidth(40, 3.3, 15) && tierHalfWidth(40, 4, 15) >= Math.tan(83 * Math.PI / 180) * 1.1 * 42 * 0.99);
+  assert.ok(tierHalfWidth(40, 4, 15) <= gridHalfWidth(4.2) * 8 + 1e-9);
+  for (const a of [1.78, 3.3, 4]) for (const lv of [0, 1, 2]) for (const t of lodTiers(lv, a, undefined, 15)) assert.ok(t.rows * t.cols <= 30000 && t.rows * t.cols < 65535);
   assert.equal(yawStepOf(0) + 0, 0);
   assert.equal(yawStepOf(-7), 10);
   assert.deepEqual(lodTiers(2, 1.78, undefined, 0), lodTiers(2, 1.78));
