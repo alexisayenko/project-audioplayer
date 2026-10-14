@@ -4,6 +4,8 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## 2026-10-14
 
+- Web: the Terrain visualizer now links in Chrome -- the shader failed with "Precisions of uniform u_mode differ" and the silent fallback showed Mirrored spectrum; the vertex shader now declares `precision mediump float;` like the fragment shader (VIZ-043).
+- Web: the Library row "..." menu button is hidden when a row has no menu items (guest on a song without audio); a hidden placeholder keeps the column aligned (WEB-061).
 - Infra and docs: `play.isayenko.net` removed with no redirect (DNS record deleted, ingress rule to remove by hand on perkunas); electrophone.cc is the only host; defaults, examples, scripts and docs updated (ADR-0019 amendment).
 - Web: the visualizer no longer draws a fake animated envelope when the analyser is missing or silent (flat idle line plus a status naming the cause), resumes the audio context on V, button and play, and `?vizdebug=1` shows context state, analyser data and same-origin checks for Safari (VIZ-036); server tests added for `/files/<id>` Range 206 and `Accept-Ranges` (owner and guest).
 - Server and web: guest scrub no longer exposes the top-level `file` and guest streaming 404s for ids outside the owner's catalog; metadata-only `POST /songs` no longer counts against `USER_ADDS_PER_HOUR` (only the audio fetch does); the sign-in error text no longer hardcodes `play.isayenko.net`; coverage measured (server about 99%, web about 96%) (NFR-056, NFR-081, NFR-090, ADR-0010, ADR-0017, ADR-0018).
