@@ -276,7 +276,7 @@ label { display: block; color: var(--ink-muted); font-size: 13px; line-height: 1
 .pl-toggle { width: 32px; height: 32px; border: 0; border-radius: var(--radius-pill); padding: 0; display: inline-grid; place-items: center; background: transparent; color: var(--ink-muted); }
 .pl-toggle:hover { background: var(--surface-sunken); color: var(--ink); }
 .pl-toggle.on { background: var(--accent); color: var(--on-accent); }
-.pl-toggle.ph { visibility: hidden; }
+.pl-toggle.ph, .more.ph { visibility: hidden; }
 @media (max-width: 719px) { .song > .pl-toggle { display: none; } }
 .song.flash { outline: 2px solid var(--accent-ink); outline-offset: -2px; border-radius: var(--radius-key); animation: song-flash 1.5s ease-out; }
 @keyframes song-flash { from { background: var(--accent-tint); } to { background: transparent; } }

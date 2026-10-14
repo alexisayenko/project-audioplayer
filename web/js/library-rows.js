@@ -50,8 +50,7 @@ function bpmBadge(s) {
 }
 
 function moreButton(s, full, { audio, queueable, queued }) {
-  const more = el('button', { class: 'more', type: 'button', 'aria-label': `More: ${full}`, 'aria-haspopup': 'menu', 'aria-expanded': 'false' }, icon('more', 20));
-  more.addEventListener('click', () => openMenu(more, [
+  const items = [
     ...(queueable ? [
       { label: 'Play now', run: () => player.playNow(s.id) },
       { label: queued ? 'Remove from playlist' : 'Add to playlist', run: () => toggleQueue(s) },
@@ -59,7 +58,10 @@ function moreButton(s, full, { audio, queueable, queued }) {
     ...(audio && can('download') ? [{ label: 'Download', run: () => downloadSong(s) }] : []),
     ...(!audio && can('fetch') && autodl.view(s.id).kind === 'none' ? [{ label: 'Download to server', run: () => fetchAudio(s) }] : []),
     ...(can('edit') ? [{ label: 'Edit song', run: () => editDialog(s) }] : []),
-  ]));
+  ];
+  if (!items.length) return el('span', { class: 'more ph', 'aria-hidden': 'true' });
+  const more = el('button', { class: 'more', type: 'button', 'aria-label': `More: ${full}`, 'aria-haspopup': 'menu', 'aria-expanded': 'false' }, icon('more', 20));
+  more.addEventListener('click', () => openMenu(more, items));
   return more;
 }
 
