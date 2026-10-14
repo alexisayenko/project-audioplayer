@@ -7,8 +7,8 @@ import {
   mat4Perspective, mat4LookAt, mat4Multiply, transformPoint, makeRowClock, SHAKE_MAX, RAMP,
   SHAKE_ENABLED, CROSS_H0, CROSS_H1, crossAlpha, WORLD_SPEED, NOW_Z, NOW_GAIN, NOW_FALLOFF_S, rowLayout, nowZOf, ridgeZ, createFrame, createSeries, fillLookFrame, fillLiveFrame, sampleTimeline, blendFrames,
 } from './viz-terrain-math.js';
-import { FAR_FLAT_START } from './viz-terrain-math.js';
-import { createTerrain, isWebGLAvailable, linkProgram } from './viz-terrain-gl.js';
+import { FAR_FLAT_START, gridHalfWidth, yawStepOf } from './viz-terrain-math.js';
+import { createTerrain, isWebGLAvailable, linkProgram, TERRAIN_MAX_DPR } from './viz-terrain-gl.js';
 import { MODES, pickMode, nextMode, availableModes, createModeRenderer, modeLabel } from './viz-modes.js';
 
 const DEFAULT_PITCH_ABS = 13.5;
@@ -336,13 +336,57 @@ test('context loss stops drawing and restore recreates resources', () => {
   assert.equal(count(gl, 'drawElements'), 2 * tiersOf(1, 2).length);
 });
 
-test('resize caps dpr at 2', () => {
+test('resize caps dpr at TERRAIN_MAX_DPR and allows 2 only after setDprCap', () => {
   const gl = fakeGL();
   const c = fakeCanvas();
   const t = createTerrain(c, { gl });
   t.resize(400, 200, 3);
+  assert.equal(c.width, 600);
+  assert.equal(c.height, 300);
+  assert.equal(t.stats.dpr, TERRAIN_MAX_DPR);
+  t.setDprCap(true);
   assert.equal(c.width, 800);
-  assert.equal(c.height, 400);
+  assert.equal(t.stats.dpr, 2);
+  t.setDprCap(false);
+  assert.equal(c.width, 600);
+});
+
+const timelineOf = (secs) => ({ bins: 64, rps: 16, total: 16 * secs, done: 16 * secs, data: new Uint8Array(16 * secs * 64).fill(120) });
+
+test('with a finished timeline the heights are uploaded only when a row boundary is crossed', () => {
+  const gl = fakeGL();
+  const t = createTerrain(fakeCanvas(), { gl, quality: 1 });
+  const tl = timelineOf(60);
+  const dtRow = 40 / (gridDims(1, 2).rows - 1) / 5.5;
+  assert.ok(dtRow > 0);
+  for (let i = 0; i < 40; i += 1) t.draw(new Array(64).fill(0.3), i * 33, { timeline: tl, time: 20.013 });
+  gl.calls.length = 0;
+  for (let i = 0; i < 5; i += 1) t.draw(new Array(64).fill(0.3), 2000 + i * 33, { timeline: tl, time: 20.013 + i * 0.00002 });
+  assert.equal(count(gl, 'bufferSubData'), 0);
+  t.draw(new Array(64).fill(0.3), 3000, { timeline: tl, time: 20.013 + 3 * dtRow });
+  assert.ok(count(gl, 'bufferSubData') > 0);
+});
+
+test('lite mode skips the bloom and mist passes, and uniforms are not re-sent when unchanged', () => {
+  const gl = fakeGL();
+  const t = createTerrain(fakeCanvas(), { gl, quality: 2 });
+  t.draw(new Array(64).fill(0.5), 1000);
+  const full = count(gl, 'drawArrays');
+  gl.calls.length = 0;
+  t.draw(new Array(64).fill(0.5), 1033);
+  const second = count(gl, 'uniform1f');
+  const fullAgain = count(gl, 'drawArrays');
+  t.setLite(true);
+  gl.calls.length = 0;
+  t.draw(new Array(64).fill(0.5), 1066);
+  assert.ok(count(gl, 'drawArrays') < fullAgain);
+  assert.ok(full > 0 && second > 0);
+  gl.calls.length = 0;
+  t.draw(new Array(64).fill(0.5), 1099);
+  const third = count(gl, 'uniform1f');
+  assert.ok(third < second);
+  assert.equal(t.stats.lite, true);
+  assert.ok(t.stats.tiers >= 3 && t.stats.vertices > 1000);
 });
 
 test('link failure reports an error and returns null', () => {
@@ -640,8 +684,17 @@ test('camClamp, camFormat and camParse round-trip and clamp', () => {
   const c = camClamp({ eye: 99, pitch: -99 });
   assert.deepEqual([c.eye, c.pitch], [CAM_LIMITS.eye[1], CAM_LIMITS.pitch[0]]);
   assert.equal(camClamp({ eye: 'x' }).eye, camClamp({}).eye);
-  assert.equal(camFormat({ eye: 0.62, pitch: -4.5 }), 'eye=0.62 pitch=-4.5deg');
-  assert.deepEqual(camParse('eye=0.62 pitch=-4.5deg'), { eye: 0.62, pitch: -4.5 });
+  assert.equal(camFormat({ eye: 0.62, pitch: -4.5 }), 'eye=0.62 pitch=-4.5deg yaw=0.0deg sync=0ms');
+  assert.equal(camFormat({ eye: 3.31, pitch: -13.5, yaw: 12.34 }), 'eye=3.31 pitch=-13.5deg yaw=12.3deg sync=0ms');
+  assert.deepEqual(camParse('eye=0.62 pitch=-4.5deg'), { eye: 0.62, pitch: -4.5, yaw: 0, sync: 0 });
+  assert.deepEqual(camParse('eye=0.62 pitch=-4.5deg yaw=-12.5deg'), { eye: 0.62, pitch: -4.5, yaw: -12.5, sync: 0 });
+  assert.equal(camClamp({ yaw: 99 }).yaw, 45);
+  assert.equal(camClamp({ yaw: -99 }).yaw, -45);
+  assert.equal(camClamp({ yaw: 'x' }).yaw, 0);
+  assert.equal(camFormat({ eye: 3.31, pitch: -13.5, yaw: 0, sync: 120.4 }), 'eye=3.31 pitch=-13.5deg yaw=0.0deg sync=120ms');
+  assert.equal(camParse('eye=3.31 pitch=-13.5deg yaw=0.0deg sync=-80ms').sync, -80);
+  assert.equal(camParse('sync = 999').sync, 300);
+  assert.equal(camParse('eye=3.31 pitch=-13.5deg yaw=1deg').sync, 0);
   assert.deepEqual(camParse('junk'), camClamp({}));
 });
 
@@ -682,7 +735,7 @@ test('changing the live spectrum or energy does not change rows that already exi
     const t = createTerrain(fakeCanvas(), { gl, quality: 1 });
     for (let i = 0; i < 80; i += 1) t.draw(new Array(64).fill(0), i * 33, { timeline: tl, time: 10 });
     gl.calls.length = 0;
-    t.draw(live, 3000, { timeline: tl, time: 10 });
+    t.draw(live, 3000, { timeline: tl, time: 10.6 });
     return capture(gl)[0];
   };
   const quiet = run(new Array(64).fill(0));
@@ -817,4 +870,95 @@ test('LOD tiers cross-fade: nested columns, ordered fade ranges, last tier never
 
 test('the far end flattens to ground before the grid ends', () => {
   assert.ok(FAR_FLAT_START > 0.5 && FAR_FLAT_START < 1);
+});
+
+test('yaw rotates the view about the vertical axis and keeps position and pitch', () => {
+  const a = cameraAt(0, 0, { yawDeg: 0 });
+  const b = cameraAt(0, 0, { yawDeg: 30 });
+  assert.deepEqual(b.eye, a.eye);
+  assert.deepEqual(cameraAt(0, 0).target, a.target);
+  near(horizonY(b), horizonY(a), 1e-9);
+  assert.ok(b.target[0] > 0);
+  assert.ok(cameraAt(0, 0, { yawDeg: -30 }).target[0] < 0);
+  near(b.target[1], a.target[1], 1e-9);
+  const m = mat4LookAt(b.eye, b.target, b.up);
+  const d = [b.target[0] - b.eye[0], 0, b.target[2] - b.eye[2]];
+  const p = transformPoint(m, [b.eye[0] + d[0], b.eye[1], b.eye[2] + d[2]]);
+  near(p[0], 0, 1e-4);
+  near(Math.atan2(d[0], -d[2]) * 180 / Math.PI, 30, 1e-6);
+});
+
+test('tier width grows with |yaw| and is unchanged at yaw 0', () => {
+  assert.equal(tierHalfWidth(30, 1.78, 0), tierHalfWidth(30, 1.78));
+  assert.ok(tierHalfWidth(30, 1.78, 20) > tierHalfWidth(30, 1.78, 0));
+  assert.equal(tierHalfWidth(30, 1.78, -20), tierHalfWidth(30, 1.78, 20));
+  assert.ok(tierHalfWidth(40, 1.78, 45) <= gridHalfWidth(1.78) * 3 + 1e-9);
+  assert.equal(yawStepOf(0) + 0, 0);
+  assert.equal(yawStepOf(-7), 10);
+  assert.deepEqual(lodTiers(2, 1.78, undefined, 0), lodTiers(2, 1.78));
+});
+
+test('mode renderer maps governor level, pace cap, force, lite and hi-dpr onto the terrain', () => {
+  const calls = [];
+  const terrain = {
+    draw() {}, resize() {}, dispose() {}, stats: { level: 2 },
+    setQuality: (l) => calls.push(['q', l]), setLite: (v) => calls.push(['lite', v]), setDprCap: (v) => calls.push(['dpr', v]),
+  };
+  const r = createModeRenderer('terrain', { hidden: false }, { hidden: false }, { createTerrain: () => terrain });
+  r.setQuality(0, { cap: 2, lite: false, hiDpr: true });
+  assert.deepEqual(calls.splice(0), [['q', 2], ['lite', false], ['dpr', true]]);
+  r.setQuality(0, { cap: 1, lite: true, hiDpr: false });
+  assert.deepEqual(calls.splice(0), [['q', 1], ['lite', true], ['dpr', false]]);
+  r.setQuality(3, { cap: 2 });
+  assert.equal(calls.splice(0)[0][1], 0);
+  r.setQuality(0, { cap: 0, lite: true, hiDpr: true, force: 2 });
+  assert.deepEqual(calls.splice(0), [['q', 2], ['lite', false], ['dpr', false]]);
+  assert.deepEqual(r.stats, { level: 2 });
+});
+
+test('draw applies the latency compensation to the look-ahead time: time T with latency L equals time T-L', () => {
+  const tl = { bins: 64, rps: 16, total: 16 * 60, done: 16 * 60, data: Uint8Array.from({ length: 16 * 60 * 64 }, (_, i) => 40 + ((i * 37) % 160)) };
+  const run = (time, lat) => {
+    const gl = fakeGL();
+    const t = createTerrain(fakeCanvas(), { gl, quality: 1 });
+    for (let i = 0; i < 40; i += 1) t.draw(new Array(64).fill(0), i * 33, { timeline: tl, time }, lat);
+    gl.calls.length = 0;
+    t.draw(new Array(64).fill(0), 5000, { timeline: tl, time: time + 0.5 }, lat);
+    return capture(gl)[0];
+  };
+  assert.deepEqual(Array.from(run(20.013, 0.25)), Array.from(run(19.763, 0)));
+  assert.notDeepEqual(Array.from(run(20.013, 0.25)), Array.from(run(20.013, 0)));
+});
+
+test('softKnee: identity below the knee, monotonic, strictly increasing above it, bounded, C1 at the knee', async () => {
+  const { softKnee, KNEE, HEIGHT_CAP, AMP_MAX } = await import('./viz-terrain-math.js');
+  const max = 4.5;
+  const knee = KNEE * max;
+  for (const h of [0, 0.5, 1, 2, knee - 1e-9, knee]) assert.equal(softKnee(h, max), h);
+  let prev = -1;
+  for (let h = 0; h <= 12; h += 0.01) {
+    const v = softKnee(h, max);
+    assert.ok(v < max + 1e-12);
+    if (h > knee + 0.02) assert.ok(v > prev, `${h}`);
+    assert.ok(v >= prev - 1e-12);
+    prev = v;
+  }
+  assert.ok(softKnee(7, max) !== softKnee(7.5, max));
+  assert.ok(softKnee(50, max) < max + 1e-12);
+  const d = (h) => (softKnee(h + 1e-6, max) - softKnee(h - 1e-6, max)) / 2e-6;
+  assert.ok(Math.abs(d(knee - 0.01) - d(knee + 0.01)) < 0.02);
+  assert.ok(Math.abs(d(knee + 1e-4) - 1) < 1e-3);
+  assert.equal(softKnee(NaN, max) !== softKnee(NaN, max), true);
+  assert.ok(Math.abs(HEIGHT_CAP - 4.5 / AMP_MAX) < 1e-12);
+});
+
+test('tall crests are not flattened: resampling keeps lattice values above 1 up to the cap, and sums of overlapping beats stay round', async () => {
+  const { HEIGHT_RESAMPLE_CAP, HEIGHT_CAP } = await import('./viz-terrain-math.js');
+  const lat = { rows: 20, cols: 21, dz: 2, hw: 10 };
+  const tier = { rows: 10, cols: 11, dz: 2, hw: 10, jz0: 0 };
+  const plan = makeTierPlan(lat, tier, 0);
+  const src = new Float32Array(lat.rows * lat.cols).fill(1.4);
+  const dst = new Float32Array(tier.rows * tier.cols);
+  resampleTier(plan, src, dst, 0, 0, 0, HEIGHT_RESAMPLE_CAP);
+  assert.ok(dst.every((v) => Math.abs(v - 1.4) < 1e-4));
 });

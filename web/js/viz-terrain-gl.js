@@ -2,13 +2,19 @@ import {
   QUALITY, HISTORY_BINS, STAR_VISIBLE, buildDepthIndices, buildCrossIndices, buildRibbonVertices, buildRibbonIndices, energyOf, easeEnergy, GRID_DEPTH, WORLD_SPEED, NOW_FALLOFF_S, NOW_GAIN, CROSS_H0, CROSS_H1, AMP_MAX, SHAKE_ENABLED,
   gridHalfWidth, FAR_FLAT_START, RAMP, qualityFor, createFrame, createSeries, fillHeights, buildGridVertices, rowLayout, nowZOf, fillLiveFrame, fillLookFrame, blendFrames,
   gridCounts, makeStars, lodTiers, makeTierPlan, resampleTier, cameraAt, horizonY, horizonGlow, mat4Perspective, mat4LookAt, mat4Multiply,
-  makeRowClock, clamp01, resample, ROWS_PER_SECOND, gridDims, fillLight, LIGHT_GAIN, NODE_GAIN, FOG_NEAR, FOG_FAR, FOG_LOW_MIN, FOG_H0, FOG_H1,
+  makeRowClock, clamp01, resample, yawStepOf, smoothHeights, HEIGHT_RESAMPLE_CAP, ROWS_PER_SECOND, gridDims, fillLight, LIGHT_GAIN, NODE_GAIN, FOG_NEAR, FOG_FAR, FOG_LOW_MIN, FOG_H0, FOG_H1,
 } from './viz-terrain-math.js';
 import { getCam } from './viz-cam-debug.js';
-import { getStyle, isBeatStyle } from './viz-terrain-style.js';
+import { getStyle, isBeatStyle, isMelodyStyle } from './viz-terrain-style.js';
+import {
+  createPartsFrames, createLiveParts, fillLiveParts, fillTimelineParts, blendParts, melodyHeights, fillMelodyAttrs, fillLeadRidge, ACCENT_LUT,
+} from './viz-melody.js';
 import { fillBeatHeights, timelineBeats, createLiveBeats } from './viz-beats.js';
 
 const DPR_CAP = 2;
+const BEAT_SMOOTH_PASSES = 1;
+export const TERRAIN_MAX_DPR = 1.5;
+const ACC_NAMES = ['u_acc0', 'u_acc1', 'u_acc2', 'u_acc3'];
 const STAR_COUNT = STAR_VISIBLE[STAR_VISIBLE.length - 1];
 const STAR_SEED = 20261014;
 const NEAR = 0.3;
@@ -25,6 +31,7 @@ attribute vec2 a_p;
 attribute float a_h;
 attribute float a_s;
 attribute float a_l;
+attribute vec3 a_m;
 uniform mat4 u_vp;
 uniform vec4 u_fogA;
 uniform vec2 u_fogB;
@@ -43,8 +50,10 @@ varying float v_wh;
 varying float v_l;
 varying float v_fogH;
 varying float v_tier;
+varying vec3 v_m;
 void main() {
   v_tier = 1.0;
+  v_m = a_m;
   v_h = a_h;
   v_l = a_l;
   v_fogH = 0.0;
@@ -95,8 +104,8 @@ void main() {
 
 const GRID_FS = `
 precision mediump float;
-uniform float u_mode, u_glow, u_energy, u_ab, u_soft, u_nowGain, u_crossLo, u_crossHi, u_light, u_node;
-uniform vec3 u_c0, u_c1, u_c2, u_fog;
+uniform float u_mode, u_glow, u_energy, u_ab, u_soft, u_nowGain, u_crossLo, u_crossHi, u_light, u_node, u_mel;
+uniform vec3 u_c0, u_c1, u_c2, u_fog, u_acc0, u_acc1, u_acc2, u_acc3;
 varying float v_h;
 varying float v_fog;
 varying float v_near;
@@ -109,6 +118,7 @@ varying float v_wh;
 varying float v_l;
 varying float v_fogH;
 varying float v_tier;
+varying vec3 v_m;
 vec3 ramp(float h) {
   return h < 0.45 ? mix(u_c0, u_c1, smoothstep(0.0, 0.45, h)) : mix(u_c1, u_c2, smoothstep(0.45, 1.0, h));
 }
@@ -123,6 +133,8 @@ void main() {
     float lum = 0.5 + 0.6 * u_energy;
     float far = 1.0 - 0.8 * v_fog;
     col = mix(vec3(0.45, 0.72, 0.95), ramp(1.0), smoothstep(0.25, 1.0, v_h));
+    float low = 1.0 - smoothstep(0.04, 0.45, v_h);
+    if (u_mel > 0.5) col = mix(col, vec3(0.1, 0.24, 0.55), 0.85 * low);
     if (u_mode < 0.5) {
       a = (0.3 + 0.6 * smoothstep(0.0, 0.9, v_h)) * far * lum * 1.0 * u_ab;
     } else if (u_mode < 1.5) {
@@ -138,6 +150,18 @@ void main() {
     col = mix(col, u_fog, v_fog * 0.6) * (0.85 + 0.6 * u_glow * v_h) + vec3(0.5, 0.7, 1.0) * smoothstep(0.7, 1.0, v_h) * 0.3;
     float lf = v_l > 0.0 ? pow(v_l, 1.5) * u_light : 0.4 * v_l;
     a *= max(0.0, 1.0 + lf);
+    if (u_mel > 0.5) {
+      float cv = v_m.x * low;
+      a *= (1.0 - 0.45 * low) + 2.2 * cv;
+      col = mix(col, vec3(0.16, 0.34, 0.8), 0.5 * cv);
+      a *= 1.0 + 3.0 * v_m.y;
+      col = mix(col, vec3(0.92, 0.98, 1.0), 0.7 * v_m.y);
+      float t3 = v_m.z * 3.0;
+      vec3 ac = t3 < 1.0 ? mix(u_acc0, u_acc1, t3) : (t3 < 2.0 ? mix(u_acc1, u_acc2, t3 - 1.0) : mix(u_acc2, u_acc3, t3 - 2.0));
+      float ak = smoothstep(0.02, 0.5, v_m.z) * smoothstep(0.08, 0.4, v_h);
+      col = mix(col, ac, ak);
+      a *= 1.0 + 0.8 * ak;
+    }
     col += vec3(0.3, 0.55, 0.9) * max(lf, 0.0) * 0.35;
     col = mix(col, u_fog, v_fogH * 0.5);
     a *= 1.0 - 0.4 * v_fogH;
@@ -294,12 +318,24 @@ export function linkProgram(gl, vsSrc, fsSrc, attribs) {
     gl.deleteProgram(prog);
     throw new Error(`program link failed: ${log}`);
   }
-  return { prog, locs: new Map() };
+  return { prog, locs: new Map(), vals: new Map(), mvpV: -1 };
 }
 
 function uni(gl, p, name) {
   if (!p.locs.has(name)) p.locs.set(name, gl.getUniformLocation(p.prog, name));
   return p.locs.get(name);
+}
+
+function setU(gl, p, name, a, b, c, d, n) {
+  let cur = p.vals.get(name);
+  if (!cur) { cur = [NaN, NaN, NaN, NaN]; p.vals.set(name, cur); }
+  if (cur[0] === a && cur[1] === b && cur[2] === c && cur[3] === d) return;
+  cur[0] = a; cur[1] = b; cur[2] = c; cur[3] = d;
+  const loc = uni(gl, p, name);
+  if (n === 1) gl.uniform1f(loc, a);
+  else if (n === 2) gl.uniform2f(loc, a, b);
+  else if (n === 3) gl.uniform3f(loc, a, b, c);
+  else gl.uniform4f(loc, a, b, c, d);
 }
 
 function getContext(canvas) {
@@ -329,9 +365,9 @@ function freeTarget(gl, t) {
   gl.deleteTexture(t.tex);
 }
 
-function layoutSig(level, aspect) {
+function layoutSig(level, aspect, yaw = 0) {
   const d = gridDims(level, aspect);
-  return `${d.rows}x${d.cols};${lodTiers(level, aspect, nowZOf(d.rows)).map((t) => `${t.rows}x${t.cols}@${t.spacing.toFixed(4)}`).join()}`;
+  return `${d.rows}x${d.cols}y${yaw};${lodTiers(level, aspect, nowZOf(d.rows), yaw).map((t) => `${t.rows}x${t.cols}@${t.spacing.toFixed(4)}`).join()}`;
 }
 
 export function createTerrain(canvas, opts = {}) {
@@ -346,6 +382,9 @@ export function createTerrain(canvas, opts = {}) {
     res: null,
     series: createSeries(),
     liveBeats: createLiveBeats(),
+    liveParts: createLiveParts(),
+    melody: null,
+    melodyOn: false,
     dims: null,
     tiers: [],
     beatB: null,
@@ -362,10 +401,24 @@ export function createTerrain(canvas, opts = {}) {
     lastT: null,
     time: 0,
     bloomOk: true,
+    frameId: 0,
+    ah: { timeline: null, time: 0 },
+    lite: false,
+    hiDpr: false,
+    css: null,
+    hVer: 0,
+    hs: { style: null, base: NaN, done: -1, pd: -1, kd: -1, dims: null },
+    xs: null,
+    static: false,
   };
   const mvp = new Float32Array(16);
   const proj = new Float32Array(16);
   const look = new Float32Array(16);
+
+  const u1 = (p, n, a) => setU(gl, p, n, a, 0, 0, 0, 1);
+  const u2 = (p, n, a, b) => setU(gl, p, n, a, b, 0, 0, 2);
+  const u3 = (p, n, a, b, c) => setU(gl, p, n, a, b, c, 0, 3);
+  const u4 = (p, n, a, b, c, d) => setU(gl, p, n, a, b, c, d, 4);
 
   function buffer(target, data, usage) {
     const b = gl.createBuffer();
@@ -430,14 +483,22 @@ export function createTerrain(canvas, opts = {}) {
     s.heights = new Float32Array(rows * cols);
     s.beatB = new Float32Array(rows * cols);
     s.light = new Float32Array(rows * cols);
-    s.sig = layoutSig(s.level, aspect);
-    s.tiers = lodTiers(s.level, aspect, s.nowZ).map(buildTier);
+    s.xs = new Float32Array(cols);
+    s.hs.dims = null;
+    s.melody = {
+      live: createPartsFrames(rows, HISTORY_BINS),
+      look: createPartsFrames(rows, HISTORY_BINS),
+      attrs: { canvas: new Float32Array(rows * cols), spark: new Float32Array(rows * cols), accent: new Float32Array(rows * cols) },
+    };
+    s.yaw = yawStepOf(getCam().yaw);
+    s.sig = layoutSig(s.level, aspect, s.yaw);
+    s.tiers = lodTiers(s.level, aspect, s.nowZ, s.yaw).map(buildTier);
     s.res.tiers = s.tiers;
   }
 
   function freeTier(g) {
-    for (const k of ['xz', 'h', 'l', 'depth', 'cross']) gl.deleteBuffer(g[k]);
-    if (g.ribbon) for (const k of ['xz', 'side', 'h', 'l', 'depth', 'cross']) gl.deleteBuffer(g.ribbon[k]);
+    for (const k of ['xz', 'h', 'l', 'depth', 'cross', 'mBuf']) if (g[k]) gl.deleteBuffer(g[k]);
+    if (g.ribbon) for (const k of ['xz', 'side', 'h', 'l', 'depth', 'cross', 'm']) if (g.ribbon[k]) gl.deleteBuffer(g.ribbon[k]);
   }
 
   function freeGrid() {
@@ -481,7 +542,7 @@ export function createTerrain(canvas, opts = {}) {
 
   function init() {
     s.res = { tiers: null, bloom: null };
-    s.res.grid_p = linkProgram(gl, GRID_VS, GRID_FS, ['a_p', 'a_h', 'a_s', 'a_l']);
+    s.res.grid_p = linkProgram(gl, GRID_VS, GRID_FS, ['a_p', 'a_h', 'a_s', 'a_l', 'a_m']);
     buildBg();
     s.res.post_p = linkProgram(gl, QUAD_VS, POST_FS, ['a_pos']);
     s.res.quad = buffer(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
@@ -526,47 +587,59 @@ export function createTerrain(canvas, opts = {}) {
     }
   }
 
+  function setMel(buf) {
+    if (buf && s.melodyOn) {
+      gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+      attrib(4, 3, 0, 0);
+    } else {
+      gl.disableVertexAttribArray(4);
+      gl.vertexAttrib3f(4, 0, 0, 0);
+    }
+  }
+
   function gridUniforms(p, mode, glow, g = s.tiers[0]) {
     const q = QUALITY[s.level];
     const t = g.t;
     gl.useProgram(p.prog);
-    gl.uniformMatrix4fv(uni(gl, p, 'u_vp'), false, mvp);
-    gl.uniform1f(uni(gl, p, 'u_hw'), t.hw);
-    gl.uniform1f(uni(gl, p, 'u_dz'), t.dz);
-    gl.uniform1f(uni(gl, p, 'u_depth'), GRID_DEPTH);
-    gl.uniform1f(uni(gl, p, 'u_scroll'), g.scroll);
-    gl.uniform1f(uni(gl, p, 'u_nowZ'), s.nowZ);
-    gl.uniform1f(uni(gl, p, 'u_nowW'), NOW_FALLOFF_S * WORLD_SPEED);
-    gl.uniform1f(uni(gl, p, 'u_nowGain'), NOW_GAIN * (0.7 + 0.6 * s.pulse));
-    gl.uniform1f(uni(gl, p, 'u_crossLo'), CROSS_H0);
-    gl.uniform1f(uni(gl, p, 'u_crossHi'), CROSS_H1);
-    gl.uniform1f(uni(gl, p, 'u_base'), g.base % 256);
-    gl.uniform1f(uni(gl, p, 'u_cols'), t.cols);
-    gl.uniform1f(uni(gl, p, 'u_unit'), s.tiers[0].t.spacing);
-    gl.uniform1f(uni(gl, p, 'u_cell'), t.spacing);
-    gl.uniform1f(uni(gl, p, 'u_focal'), s.focalPx || 1);
-    gl.uniform2f(uni(gl, p, 'u_flat'), FAR_FLAT_START * GRID_DEPTH, GRID_DEPTH);
-    gl.uniform4f(uni(gl, p, 'u_tf'), t.fade[0], t.fade[1], t.fade[2], t.fade[3]);
-    gl.uniform1f(uni(gl, p, 'u_lw'), LINE_PX[q.soft] || 0);
-    gl.uniform1f(uni(gl, p, 'u_soft'), q.soft ? 1 : 0);
-    gl.uniform1f(uni(gl, p, 'u_axis'), 0);
-    gl.uniform1f(uni(gl, p, 'u_amp'), AMP_MAX);
-    gl.uniform1f(uni(gl, p, 'u_pt'), 3);
-    gl.uniform1f(uni(gl, p, 'u_light'), LIGHT_GAIN);
-    gl.uniform1f(uni(gl, p, 'u_node'), NODE_GAIN);
-    gl.uniform4f(uni(gl, p, 'u_fogA'), FOG_NEAR, FOG_FAR, FOG_LOW_MIN, 0);
-    gl.uniform2f(uni(gl, p, 'u_fogB'), FOG_H0, FOG_H1);
-    gl.uniform1f(uni(gl, p, 'u_viewW'), view.w);
-    gl.uniform1f(uni(gl, p, 'u_viewH'), view.h);
-    gl.uniform1f(uni(gl, p, 'u_energy'), s.energy);
-    gl.uniform1f(uni(gl, p, 'u_ab'), q.soft ? 1 : 2);
-    gl.uniform1f(uni(gl, p, 'u_dpr'), view.dpr);
-    gl.uniform1f(uni(gl, p, 'u_mode'), mode);
-    gl.uniform1f(uni(gl, p, 'u_glow'), glow);
-    gl.uniform3fv(uni(gl, p, 'u_c0'), RAMP[0].c);
-    gl.uniform3fv(uni(gl, p, 'u_c1'), RAMP[1].c);
-    gl.uniform3fv(uni(gl, p, 'u_c2'), RAMP[2].c);
-    gl.uniform3f(uni(gl, p, 'u_fog'), 0.04, 0.16, 0.31);
+    if (p.mvpV !== s.frameId) { gl.uniformMatrix4fv(uni(gl, p, 'u_vp'), false, mvp); p.mvpV = s.frameId; }
+    u1(p, 'u_hw', t.hw);
+    u1(p, 'u_dz', t.dz);
+    u1(p, 'u_depth', GRID_DEPTH);
+    u1(p, 'u_scroll', g.scroll);
+    u1(p, 'u_nowZ', s.nowZ);
+    u1(p, 'u_nowW', NOW_FALLOFF_S * WORLD_SPEED);
+    u1(p, 'u_nowGain', NOW_GAIN * (0.7 + 0.6 * s.pulse));
+    u1(p, 'u_crossLo', CROSS_H0);
+    u1(p, 'u_crossHi', CROSS_H1);
+    u1(p, 'u_base', g.base % 256);
+    u1(p, 'u_cols', t.cols);
+    u1(p, 'u_unit', s.tiers[0].t.spacing);
+    u1(p, 'u_cell', t.spacing);
+    u1(p, 'u_focal', s.focalPx || 1);
+    u2(p, 'u_flat', FAR_FLAT_START * GRID_DEPTH, GRID_DEPTH);
+    u4(p, 'u_tf', t.fade[0], t.fade[1], t.fade[2], t.fade[3]);
+    u1(p, 'u_lw', LINE_PX[q.soft] || 0);
+    u1(p, 'u_soft', q.soft ? 1 : 0);
+    u1(p, 'u_axis', 0);
+    u1(p, 'u_amp', AMP_MAX);
+    u1(p, 'u_pt', 3);
+    u1(p, 'u_light', LIGHT_GAIN);
+    u1(p, 'u_node', NODE_GAIN);
+    u4(p, 'u_fogA', FOG_NEAR, FOG_FAR, FOG_LOW_MIN, 0);
+    u2(p, 'u_fogB', FOG_H0, FOG_H1);
+    u1(p, 'u_viewW', view.w);
+    u1(p, 'u_viewH', view.h);
+    u1(p, 'u_energy', s.energy);
+    u1(p, 'u_ab', q.soft ? 1 : 2);
+    u1(p, 'u_dpr', view.dpr);
+    u1(p, 'u_mode', mode);
+    u1(p, 'u_glow', glow);
+    u3(p, 'u_c0', ...RAMP[0].c);
+    u3(p, 'u_c1', ...RAMP[1].c);
+    u3(p, 'u_c2', ...RAMP[2].c);
+    u3(p, 'u_fog', 0.04, 0.16, 0.31);
+    u1(p, 'u_mel', s.melodyOn ? 1 : 0);
+    ACCENT_LUT.forEach((c, i) => u3(p, ACC_NAMES[i], c[0], c[1], c[2]));
   }
 
   function drawGrid() {
@@ -584,14 +657,15 @@ export function createTerrain(canvas, opts = {}) {
       attrib(1, 1, 0, 0);
       gl.bindBuffer(gl.ARRAY_BUFFER, rb.l);
       attrib(3, 1, 0, 0);
+      setMel(rb.m);
       setSide(rb.side);
       gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, rb.depth);
       gl.drawElements(gl.TRIANGLES, rb.depthCount, rb.indexType, 0);
-      gl.uniform1f(uni(gl, p, 'u_mode'), 3);
-      gl.uniform1f(uni(gl, p, 'u_axis'), 1);
+      u1(p, 'u_mode', 3);
+      u1(p, 'u_axis', 1);
       gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, rb.cross);
       gl.drawElements(gl.TRIANGLES, rb.crossCount, rb.indexType, 0);
-      gl.uniform1f(uni(gl, p, 'u_axis'), 0);
+      u1(p, 'u_axis', 0);
     }
     gl.bindBuffer(gl.ARRAY_BUFFER, g.xz);
     attrib(0, 2, 0, 0);
@@ -599,15 +673,16 @@ export function createTerrain(canvas, opts = {}) {
     attrib(1, 1, 0, 0);
     gl.bindBuffer(gl.ARRAY_BUFFER, g.l);
     attrib(3, 1, 0, 0);
+    setMel(g.mBuf);
     setSide(null);
     if (!rb) {
       gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, g.depth);
       gl.drawElements(gl.LINES, g.depthCount, g.indexType, 0);
-      gl.uniform1f(uni(gl, p, 'u_mode'), 3);
+      u1(p, 'u_mode', 3);
       gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, g.cross);
       gl.drawElements(gl.LINES, g.crossCount, g.indexType, 0);
     }
-    gl.uniform1f(uni(gl, p, 'u_mode'), 1);
+    u1(p, 'u_mode', 1);
     gl.drawArrays(gl.POINTS, 0, g.vertices);
   }
 
@@ -619,6 +694,7 @@ export function createTerrain(canvas, opts = {}) {
     attrib(1, 1, 12, 8);
     gl.disableVertexAttribArray(3);
     gl.vertexAttrib1f(3, 0);
+    setMel(null);
     setSide(null);
     gl.drawArrays(gl.POINTS, 0, STAR_VISIBLE[s.level]);
   }
@@ -627,11 +703,11 @@ export function createTerrain(canvas, opts = {}) {
     const p = s.res.bg_p;
     gl.useProgram(p.prog);
     s.horizon = horizonY(cam);
-    gl.uniform1f(uni(gl, p, 'u_horizon'), s.horizon);
-    gl.uniform1f(uni(gl, p, 'u_glow'), horizonGlow(s.bass));
-    gl.uniform1f(uni(gl, p, 'u_energy'), s.energy);
-    gl.uniform1f(uni(gl, p, 'u_time'), s.time);
-    gl.uniform1f(uni(gl, p, 'u_aspect'), view.w / view.h);
+    u1(p, 'u_horizon', s.horizon);
+    u1(p, 'u_glow', horizonGlow(s.bass));
+    u1(p, 'u_energy', s.energy);
+    u1(p, 'u_time', s.time);
+    u1(p, 'u_aspect', view.w / view.h);
     gl.disable(gl.BLEND);
     drawQuadWith(p);
     gl.enable(gl.BLEND);
@@ -641,10 +717,10 @@ export function createTerrain(canvas, opts = {}) {
     const p = s.res.mist_p;
     if (!p) return;
     gl.useProgram(p.prog);
-    gl.uniform1f(uni(gl, p, 'u_horizon'), s.horizon);
-    gl.uniform1f(uni(gl, p, 'u_energy'), s.energy);
-    gl.uniform1f(uni(gl, p, 'u_time'), s.time);
-    gl.uniform1f(uni(gl, p, 'u_aspect'), view.w / view.h);
+    u1(p, 'u_horizon', s.horizon);
+    u1(p, 'u_energy', s.energy);
+    u1(p, 'u_time', s.time);
+    u1(p, 'u_aspect', view.w / view.h);
     drawQuadWith(p);
   }
 
@@ -656,8 +732,8 @@ export function createTerrain(canvas, opts = {}) {
     gl.bindTexture(gl.TEXTURE_2D, src.tex);
     gl.useProgram(p.prog);
     gl.uniform1i(uni(gl, p, 'u_tex'), 0);
-    gl.uniform2f(uni(gl, p, 'u_dir'), dx, dy);
-    gl.uniform1f(uni(gl, p, 'u_gain'), gain);
+    u2(p, 'u_dir', dx, dy);
+    u1(p, 'u_gain', gain);
     if (!toScreen) gl.clear(gl.COLOR_BUFFER_BIT);
     drawQuadWith(p);
   }
@@ -676,29 +752,95 @@ export function createTerrain(canvas, opts = {}) {
   function fillBeatStyle(style, sec, ahead, k, rows, cols) {
     const dt = rowLayout(rows).dt;
     fillBeatHeights({ beats: s.liveBeats.beats, style, tNow: sec, base: Math.floor(sec / dt), rows, cols, out: s.heights });
-    if (!ahead?.timeline || !(k > 0)) return;
-    fillBeatHeights({ beats: timelineBeats(ahead.timeline), style, tNow: ahead.time, base: Math.floor(ahead.time / dt), rows, cols, out: s.beatB });
-    const h = s.heights;
-    const b = s.beatB;
-    for (let i = 0; i < h.length; i += 1) h[i] += (b[i] - h[i]) * k;
+    if (ahead?.timeline && k > 0) {
+      fillBeatHeights({ beats: timelineBeats(ahead.timeline), style, tNow: ahead.time, base: Math.floor(ahead.time / dt), rows, cols, out: s.beatB });
+      const h = s.heights;
+      const b = s.beatB;
+      for (let i = 0; i < h.length; i += 1) h[i] += (b[i] - h[i]) * k;
+    }
+    smoothHeights(s.heights, rows, cols, BEAT_SMOOTH_PASSES);
+  }
+
+  function fillMelodyStyle(sec, ahead, k, base, cols) {
+    const m = s.melody;
+    fillLiveParts(m.live, s.liveParts, sec);
+    let look = null;
+    if (ahead?.timeline?.parts && k > 0) {
+      look = fillTimelineParts(m.look, ahead.timeline, ahead.time);
+      blendParts(m.live, m.look, k);
+    }
+    melodyHeights(m.live.mel, m.live.can, cols, s.heights, base);
+    fillMelodyAttrs(m.attrs, m.live.mel, m.live.can, m.live.oth, cols);
+    if (look && ahead.timeline.pitch) fillLeadRidge(ahead.timeline, look.base, s.dims.rows, cols, s.heights, m.attrs.accent, k);
+  }
+
+  function uploadMelodyTier(g) {
+    const t = g.t;
+    const n = t.rows * t.cols;
+    if (!g.m) {
+      g.m = new Float32Array(n * 3);
+      g.mt = [new Float32Array(n), new Float32Array(n), new Float32Array(n)];
+      g.mBuf = buffer(gl.ARRAY_BUFFER, g.m, gl.DYNAMIC_DRAW);
+      if (g.ribbon) {
+        g.m2 = new Float32Array(n * 6);
+        g.ribbon.m = buffer(gl.ARRAY_BUFFER, g.m2, gl.DYNAMIC_DRAW);
+      }
+    }
+    const a = s.melody.attrs;
+    const src = [a.canvas, a.spark, a.accent];
+    for (let c = 0; c < 3; c += 1) resampleTier(g.plan, src[c], g.mt[c], g.fracL, g.fracT, 0, 1);
+    const [c0, c1, c2] = g.mt;
+    for (let i = 0; i < n; i += 1) {
+      g.m[3 * i] = c0[i]; g.m[3 * i + 1] = c1[i]; g.m[3 * i + 2] = c2[i];
+    }
+    gl.bindBuffer(gl.ARRAY_BUFFER, g.mBuf);
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, g.m);
+    if (g.ribbon) {
+      const m2 = g.m2;
+      for (let i = 0; i < n; i += 1) {
+        for (let c = 0; c < 3; c += 1) { m2[6 * i + c] = g.m[3 * i + c]; m2[6 * i + 3 + c] = g.m[3 * i + c]; }
+      }
+      gl.bindBuffer(gl.ARRAY_BUFFER, g.ribbon.m);
+      gl.bufferSubData(gl.ARRAY_BUFFER, 0, m2);
+    }
   }
 
   function updateHeights(sec, ahead) {
     const { rows, cols } = s.dims;
     const style = getStyle();
-    let info = fillLiveFrame(s.liveFrame, s.series, sec);
+    const tl = ahead?.timeline;
     let k = 0;
-    if (ahead?.timeline) {
+    if (tl) {
       if (s.lookAt === null) s.lookAt = sec;
       k = clamp01((sec - s.lookAt) / LOOK_BLEND_S);
-      const li = fillLookFrame(s.lookFrame, ahead.timeline, ahead.time);
+    } else s.lookAt = null;
+    const lay = rowLayout(rows);
+    const eligible = !!tl && k >= 1 && !isBeatStyle(style) && (style !== 'melody' || !!tl.parts);
+    s.static = eligible;
+    if (eligible) {
+      const pos = ahead.time / lay.dt;
+      const base = Math.floor(pos);
+      const hs = s.hs;
+      const same = hs.style === style && hs.base === base && hs.done === tl.done && hs.pd === (tl.partsDone ?? 0) && hs.kd === (tl.pitchDone ?? 0) && hs.dims === s.dims;
+      if (same) {
+        for (const g of s.tiers) uploadTier(g, ahead.time, pos - base);
+        return;
+      }
+      hs.style = style; hs.base = base; hs.done = tl.done; hs.pd = tl.partsDone ?? 0; hs.kd = tl.pitchDone ?? 0; hs.dims = s.dims;
+      s.hVer += 1;
+    }
+    let info = fillLiveFrame(s.liveFrame, s.series, sec);
+    if (tl) {
+      const li = fillLookFrame(s.lookFrame, tl, ahead.time);
       blendFrames(s.liveFrame, s.lookFrame, k);
       info = { base: k >= 1 ? li.base : info.base, frac: info.frac + (li.frac - info.frac) * k };
-    } else s.lookAt = null;
-    if (isBeatStyle(style)) fillBeatStyle(style, sec, ahead, k, rows, cols);
+    }
+    s.melodyOn = isMelodyStyle(style);
+    if (s.melodyOn) fillMelodyStyle(sec, ahead, k, info.base, cols);
+    else if (isBeatStyle(style)) fillBeatStyle(style, sec, ahead, k, rows, cols);
     else fillHeights(s.liveFrame, cols, sec, s.heights, { swellAmp: 0, bakeAmp: true });
-    fillLight(s.heights, rows, cols, gridHalfWidth(view.w / view.h), rowLayout(rows).dz, s.light);
-    const pos = (info.base + info.frac) * rowLayout(rows).dt;
+    fillLight(s.heights, rows, cols, gridHalfWidth(view.w / view.h), lay.dz, s.light, undefined, s.xs);
+    const pos = (info.base + info.frac) * lay.dt;
     for (const g of s.tiers) uploadTier(g, pos, info.frac);
   }
 
@@ -709,8 +851,14 @@ export function createTerrain(canvas, opts = {}) {
     const fracT = p - base;
     g.base = base;
     g.scroll = fracT - t.jz0 - s.nowZ / t.dz;
-    resampleTier(g.plan, s.heights, g.heights, fracL, fracT, 0, 1);
+    if (s.static && g.upVer === s.hVer && g.upBase === base) return;
+    g.upVer = s.hVer;
+    g.upBase = base;
+    resampleTier(g.plan, s.heights, g.heights, fracL, fracT, 0, HEIGHT_RESAMPLE_CAP);
     resampleTier(g.plan, s.light, g.light, fracL, fracT, -1, 1);
+    g.fracL = fracL;
+    g.fracT = fracT;
+    if (s.melodyOn) uploadMelodyTier(g);
     gl.bindBuffer(gl.ARRAY_BUFFER, g.h);
     gl.bufferSubData(gl.ARRAY_BUFFER, 0, g.heights);
     gl.bindBuffer(gl.ARRAY_BUFFER, g.l);
@@ -728,8 +876,15 @@ export function createTerrain(canvas, opts = {}) {
     gl.bufferSubData(gl.ARRAY_BUFFER, 0, l2);
   }
 
-  function draw(spectrum, t = 0, ahead = null) {
+  function draw(spectrum, t = 0, aheadIn = null, latS = 0) {
     if (s.lost || s.disposed || !s.res) return;
+    const lat = Number.isFinite(latS) ? latS : 0;
+    let ahead = aheadIn;
+    if (aheadIn?.timeline) {
+      s.ah.timeline = aheadIn.timeline;
+      s.ah.time = aheadIn.time - lat;
+      ahead = s.ah;
+    }
     const sp = spectrum || [];
     const step = s.clock.advance(t);
     const gap = 1000 / ROWS_PER_SECOND;
@@ -737,6 +892,7 @@ export function createTerrain(canvas, opts = {}) {
       const ts = (t - (step.pushes - 1 - i) * gap) / 1000;
       s.series.push(sp, ts);
       s.liveBeats.push(resample(sp, HISTORY_BINS), ts);
+      if (isMelodyStyle(getStyle())) s.liveParts.push(resample(sp, HISTORY_BINS), ts);
     }
     let bass = 0;
     const n = Math.min(BASS_BINS, sp.length);
@@ -749,37 +905,49 @@ export function createTerrain(canvas, opts = {}) {
     s.pulse = easeEnergy(s.pulse, rawEnergy, dtS);
     s.lastT = t;
     s.time = (t / 1000) % 600;
-    updateHeights(t / 1000, ahead);
     const cc = getCam();
-    const cam = cameraAt(t / 1000, SHAKE_ENABLED ? s.pulse : 0, { eye: cc.eye, pitchDeg: cc.pitch, fly: 0 });
+    if (yawStepOf(cc.yaw) !== s.yaw) { freeGrid(); buildGrid(); s.clock.reset(); }
+    s.frameId += 1;
+    updateHeights(t / 1000 - lat, ahead);
+    const cam = cameraAt(t / 1000, SHAKE_ENABLED ? s.pulse : 0, { eye: cc.eye, pitchDeg: cc.pitch, yawDeg: cc.yaw, fly: 0 });
     s.focalPx = view.h / (2 * Math.tan(cam.fov / 2));
     mat4Perspective(cam.fov, view.w / view.h, NEAR, FAR, proj);
     mat4LookAt(cam.eye, cam.target, cam.up, look);
     mat4Multiply(proj, look, mvp);
-    if (s.res.bloom) renderBloom();
+    if (s.res.bloom && !s.lite) renderBloom();
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0, 0, view.w, view.h);
     drawBackground(cam);
     drawStars();
     drawGrid();
-    drawMist();
-    if (s.res.bloom) {
+    if (!s.lite) drawMist();
+    if (s.res.bloom && !s.lite) {
       gl.viewport(0, 0, view.w, view.h);
       blurPass(s.res.bloom.a, null, 0, 0, 0.9, true);
     }
   }
 
   function resize(w, h, dpr = 1) {
-    view.dpr = Math.min(DPR_CAP, Math.max(1, Number.isFinite(dpr) ? dpr : 1));
+    s.css = { w, h, dpr };
+    view.dpr = Math.min(s.hiDpr ? DPR_CAP : TERRAIN_MAX_DPR, Math.max(1, Number.isFinite(dpr) ? dpr : 1));
     view.w = Math.max(1, Math.round(w * view.dpr));
     view.h = Math.max(1, Math.round(h * view.dpr));
     canvas.width = view.w;
     canvas.height = view.h;
     if (s.res && !s.lost) {
       buildBloom();
-      if (s.dims && layoutSig(s.level, view.w / view.h) !== s.sig) { freeGrid(); buildGrid(); s.clock.reset(); }
+      if (s.dims && layoutSig(s.level, view.w / view.h, s.yaw) !== s.sig) { freeGrid(); buildGrid(); s.clock.reset(); }
     }
   }
+
+  function setDprCap(hi) {
+    const on = !!hi;
+    if (on === s.hiDpr) return;
+    s.hiDpr = on;
+    if (s.css) resize(s.css.w, s.css.h, s.css.dpr);
+  }
+
+  function setLite(on) { s.lite = !!on; }
 
   function setQuality(level) {
     const next = Math.min(QUALITY.length - 1, Math.max(0, Math.round(Number.isFinite(level) ? level : 1)));
@@ -835,7 +1003,14 @@ export function createTerrain(canvas, opts = {}) {
     draw,
     setQuality,
     dispose,
+    setDprCap,
+    setLite,
     get quality() { return s.level; },
+    get stats() {
+      let vertices = 0;
+      for (const g of s.tiers) vertices += g.vertices;
+      return { level: s.level, tiers: s.tiers.length, vertices, dpr: view.dpr, lite: s.lite, w: view.w, h: view.h };
+    },
     get lost() { return s.lost; },
     get bloomActive() { return !!s.res?.bloom; },
   };

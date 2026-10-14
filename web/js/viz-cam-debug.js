@@ -1,11 +1,17 @@
 import { TERRAIN_STYLES, getStyle, setStyle, onStyle } from './viz-terrain-style.js';
-import { camClamp, camFormat, camParse, CAM_LIMITS, EYE_HEIGHT, DEFAULT_PITCH_DEG } from './viz-terrain-math.js';
+import { camClamp, camFormat, camParse, CAM_LIMITS, EYE_HEIGHT, DEFAULT_PITCH_DEG, YAW_COVER_MAX_DEG } from './viz-terrain-math.js';
 
-export const CAM_KEY = 'ap2.viz.dbg.cam4';
+export const CAM_KEY = 'ap2.viz.dbg.cam5';
 
-const defaults = () => ({ eye: EYE_HEIGHT, pitch: DEFAULT_PITCH_DEG });
+let qualityForce = null;
+export const getQualityForce = () => qualityForce;
+export function setQualityForce(v) { qualityForce = Number.isInteger(v) && v >= 0 && v <= 2 ? v : null; return qualityForce; }
+
+const defaults = () => ({ eye: EYE_HEIGHT, pitch: DEFAULT_PITCH_DEG, yaw: 0, sync: 0 });
 let cam = defaults();
 const listeners = new Set();
+
+const yawCoverNote = () => Math.max(0, Math.round(YAW_COVER_MAX_DEG - Math.atan(Math.tan(32.5 * (Math.PI / 180)) * 1.78) * (180 / Math.PI)));
 
 export function getCam() { return cam; }
 
@@ -55,6 +61,8 @@ export function createCamPanel(doc = document) {
   };
   mk('eye', 'Eye', 0.01);
   mk('pitch', 'Pitch', 0.1);
+  mk('yaw', 'Yaw', 0.1);
+  mk('sync', 'Sync', 1);
   const styleRow = doc.createElement('label');
   const styleName = doc.createElement('span');
   styleName.textContent = 'Style';
@@ -71,6 +79,21 @@ export function createCamPanel(doc = document) {
   const offStyle = onStyle((id) => { styleSel.value = id; });
   styleRow.append(styleName, styleSel);
   root.append(styleRow);
+  const qRow = doc.createElement('label');
+  const qName = doc.createElement('span');
+  qName.textContent = 'Quality';
+  const qSel = doc.createElement('select');
+  qSel.setAttribute('aria-label', 'Terrain quality');
+  for (const [v, label] of [['auto', 'Auto'], ['0', '0'], ['1', '1'], ['2', '2']]) {
+    const o = doc.createElement('option');
+    o.value = v;
+    o.textContent = label;
+    qSel.append(o);
+  }
+  qSel.value = qualityForce === null ? 'auto' : String(qualityForce);
+  qSel.addEventListener('change', () => setQualityForce(qSel.value === 'auto' ? null : +qSel.value));
+  qRow.append(qName, qSel);
+  root.append(qRow);
   const line = doc.createElement('input');
   line.type = 'text';
   line.setAttribute('aria-label', 'Camera values');
@@ -87,13 +110,19 @@ export function createCamPanel(doc = document) {
     line.select?.();
     try { void globalThis.navigator?.clipboard?.writeText(camFormat(cam)); } catch { /* clipboard unavailable */ }
   });
+  const note = doc.createElement('small');
+  note.textContent = `Yaw is fully covered up to about +-${yawCoverNote()} deg at 16:9; beyond that the far side of the grid can show bare edge. Sync is a trim added to the automatic output-latency estimate (positive = visuals earlier).`;
   btns.append(reset, copy);
-  root.append(line, btns);
+  root.append(line, btns, note);
   const paint = (c) => {
     rows.eye.input.value = c.eye;
     rows.eye.out.textContent = c.eye.toFixed(2);
     rows.pitch.input.value = c.pitch;
     rows.pitch.out.textContent = `${c.pitch.toFixed(1)}°`;
+    rows.yaw.input.value = c.yaw;
+    rows.yaw.out.textContent = `${c.yaw.toFixed(1)}°`;
+    rows.sync.input.value = c.sync;
+    rows.sync.out.textContent = `${c.sync > 0 ? '+' : ''}${c.sync} ms`;
     line.value = camFormat(c);
   };
   listeners.add(paint);

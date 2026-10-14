@@ -44,6 +44,9 @@ export const LANDMARK_PERIOD_S = 5;
 export const LANDMARK_GAIN = 1.8;
 export const LANDMARK_BONUS = 0.4;
 export const LANDMARK_MAX = 4.5;
+export const KNEE = 0.7;
+export const HEIGHT_CAP = LANDMARK_MAX / AMP_MAX;
+export const HEIGHT_RESAMPLE_CAP = HEIGHT_CAP * 1.08;
 export const LANDMARK_SPREAD_S = 0.25;
 export const LANDMARK_MIN_ENERGY = 0.15;
 export const LANDMARK_LIVE_KEEP = 0.9;
@@ -56,7 +59,10 @@ export const crossAlpha = (worldHeight) => smoothstep(CROSS_H0, CROSS_H1, worldH
 export const LIVE_CAP = Math.ceil((GRID_DEPTH / WORLD_SPEED) * ROWS_PER_SECOND) + 8;
 export const EYE_HEIGHT = 3.31;
 export const DEFAULT_PITCH_DEG = -13.5;
-export const CAM_LIMITS = { eye: [0.2, 4], pitch: [-30, 15] };
+export const CAM_LIMITS = { eye: [0.2, 4], pitch: [-30, 15], yaw: [-45, 45], sync: [-300, 300] };
+export const YAW_COVER_MAX_DEG = 70;
+export const YAW_WIDTH_MAX = 3;
+export const YAW_STEP_DEG = 5;
 export const NEAR_CALM = 0.35;
 export const RAMP = [
   { at: 0, c: [0.02, 0.05, 0.14] },
@@ -65,6 +71,14 @@ export const RAMP = [
 ];
 
 export const clamp01 = (v) => (Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : 0);
+
+export function softKnee(h, max = HEIGHT_CAP, k = KNEE) {
+  const knee = k * max;
+  if (!(h > knee)) return h;
+  const span = (1 - k) * max;
+  const x = (h - knee) / span;
+  return knee + (span * x) / (1 + x);
+}
 
 export function smoothstep(a, b, v) {
   const t = clamp01((v - a) / (b - a));
@@ -90,12 +104,19 @@ export function gridDims(level, aspect) {
   return { rows, cols, spacing: sp, dz: GRID_DEPTH / (rows - 1), dx: (2 * hw) / (cols - 1) };
 }
 
-export function tierHalfWidth(zEnd, aspect) {
+export function tierHalfWidth(zEnd, aspect, yawDeg = 0) {
   const a = Math.min(3.6, Math.max(0.4, Number.isFinite(aspect) ? aspect : 1.78));
-  return Math.min(gridHalfWidth(a), Math.tan(COVER_HALF_FOV) * a * COVER_MARGIN * (zEnd + LOD_FOOT));
+  const base = Math.min(gridHalfWidth(a), Math.tan(COVER_HALF_FOV) * a * COVER_MARGIN * (zEnd + LOD_FOOT));
+  const y = Math.abs(Number.isFinite(yawDeg) ? yawDeg : 0);
+  if (!(y > 0)) return base;
+  const ang = Math.min(Math.atan(Math.tan(COVER_HALF_FOV) * a) + y * (Math.PI / 180), YAW_COVER_MAX_DEG * (Math.PI / 180));
+  const wide = Math.tan(ang) * COVER_MARGIN * (zEnd + LOD_FOOT);
+  return Math.min(Math.max(base, wide), gridHalfWidth(a) * YAW_WIDTH_MAX);
 }
 
-export function lodTiers(level, aspect, nowZ = NOW_Z) {
+export const yawStepOf = (yawDeg) => (Number.isFinite(yawDeg) ? Math.ceil(Math.abs(yawDeg) / YAW_STEP_DEG - 1e-9) * YAW_STEP_DEG : 0);
+
+export function lodTiers(level, aspect, nowZ = NOW_Z, yawDeg = 0) {
   const base = qualityFor(level).cell;
   const tiers = [];
   let z0 = 0;
@@ -109,7 +130,7 @@ export function lodTiers(level, aspect, nowZ = NOW_Z) {
     const wIn = k === 0 ? 0 : LOD_BLEND_CELLS * nominal;
     const zA = k === 0 ? 0 : Math.max(0, z0 - wIn);
     const zB = Math.min(GRID_DEPTH, z1 + wOut);
-    const want = tierHalfWidth(zB, aspect);
+    const want = tierHalfWidth(zB, aspect, yawDeg);
     let sp = nominal;
     let half = 0;
     let rows = 0;
@@ -253,18 +274,22 @@ export function camClamp(v) {
   return {
     eye: num(v?.eye, CAM_LIMITS.eye, EYE_HEIGHT),
     pitch: num(v?.pitch, CAM_LIMITS.pitch, defaultPitchDeg()),
+    yaw: num(v?.yaw, CAM_LIMITS.yaw, 0),
+    sync: Math.round(num(v?.sync, CAM_LIMITS.sync, 0)),
   };
 }
 
 export function camFormat(v) {
   const c = camClamp(v);
-  return `eye=${c.eye.toFixed(2)} pitch=${c.pitch.toFixed(1)}deg`;
+  return `eye=${c.eye.toFixed(2)} pitch=${c.pitch.toFixed(1)}deg yaw=${c.yaw.toFixed(1)}deg sync=${c.sync}ms`;
 }
 
 export function camParse(text) {
   const e = /eye\s*=\s*(-?[\d.]+)/.exec(text || '');
   const p = /pitch\s*=\s*(-?[\d.]+)/.exec(text || '');
-  return camClamp({ eye: e ? e[1] : null, pitch: p ? p[1] : null });
+  const sy = /sync\s*=\s*(-?[\d.]+)/.exec(text || '');
+  const w = /yaw\s*=\s*(-?[\d.]+)/.exec(text || '');
+  return camClamp({ eye: e ? e[1] : null, pitch: p ? p[1] : null, yaw: w ? w[1] : null, sync: sy ? sy[1] : null });
 }
 
 export const defaultPitchDeg = () => DEFAULT_PITCH_DEG;
@@ -368,7 +393,7 @@ export function applyLandmarks(out, rows, cols, boost) {
     for (let c = 0; c < cols; c += 1) if (out[o + c] > max) max = out[o + c];
     const world = max * AMP_MAX;
     if (!(world > 0)) continue;
-    const target = Math.min(LANDMARK_MAX, world * (1 + (LANDMARK_GAIN - 1) * w) + LANDMARK_BONUS * w);
+    const target = softKnee(world * (1 + (LANDMARK_GAIN - 1) * w) + LANDMARK_BONUS * w, LANDMARK_MAX);
     const lift = Math.max(1, target / world) - 1;
     const x0 = rowPeak(out.subarray(o, o + cols), cols).x;
     for (let c = 0; c < cols; c += 1) out[o + c] *= 1 + lift * landmarkShape(cols <= 1 ? 0 : c / (cols - 1), x0);
@@ -495,8 +520,11 @@ export function nearEnvelope(depthFrac) {
   return 0.12 + 0.88 * t;
 }
 
+let smoothScratch = new Float32Array(0);
+
 export function smoothHeights(out, rows, cols, passes = 2) {
-  const tmp = new Float32Array(out.length);
+  if (smoothScratch.length < out.length) smoothScratch = new Float32Array(out.length);
+  const tmp = smoothScratch;
   for (let n = 0; n < passes; n += 1) {
     for (let r = 0; r < rows; r += 1) {
       const o = r * cols;
@@ -550,8 +578,8 @@ export function lightFactor(slopeX, slopeZ, dir = LIGHT_DIR) {
   return d >= flat ? (d - flat) / (1 - flat) : (d - flat) / (1 + flat);
 }
 
-export function fillLight(heights, rows, cols, halfWidth, dz, out, amp = AMP_MAX) {
-  const xs = new Float32Array(cols);
+export function fillLight(heights, rows, cols, halfWidth, dz, out, amp = AMP_MAX, scratch = null) {
+  const xs = scratch && scratch.length >= cols ? scratch : new Float32Array(cols);
   for (let c = 0; c < cols; c += 1) xs[c] = columnX(cols <= 1 ? 0 : c / (cols - 1)) * halfWidth;
   for (let r = 0; r < rows; r += 1) {
     const r0 = Math.max(0, r - 1);
@@ -722,6 +750,7 @@ export function cameraAt(t, bass = 0, opts = {}) {
   const { fly = 0.4, period = 60 } = opts;
   const camEye = Number.isFinite(opts.eye) ? opts.eye : EYE_HEIGHT;
   const pitchDeg = Number.isFinite(opts.pitchDeg) ? opts.pitchDeg : null;
+  const yaw = (Number.isFinite(opts.yawDeg) ? opts.yawDeg : 0) * (Math.PI / 180);
   const shakeAmp = Math.min(SHAKE_MAX, clamp01(bass) * SHAKE_MAX);
   const shakeY = Math.sin(t * 41.7 + 1.3) * shakeAmp;
   const phase = (t / period) * Math.PI * 2;
@@ -733,7 +762,9 @@ export function cameraAt(t, bass = 0, opts = {}) {
   const slope = Math.tan((basePitch + 0.1 * Math.sin(t * 0.05)) * (Math.PI / 180));
   return {
     eye,
-    target: [0, eye[1] + slope * (eye[2] - targetZ), targetZ],
+    target: yaw === 0
+      ? [0, eye[1] + slope * (eye[2] - targetZ), targetZ]
+      : [eye[0] + Math.sin(yaw) * (eye[2] - targetZ), eye[1] + slope * (eye[2] - targetZ), eye[2] - Math.cos(yaw) * (eye[2] - targetZ)],
     up: [0, 1, 0],
     fov,
   };

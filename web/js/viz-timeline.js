@@ -2,10 +2,13 @@ import { FFT_SIZE, ANALYSER_SMOOTHING, ATTACK, RELEASE, TILT_DB_PER_OCT } from '
 import { barsDb, unitBars, makeReference, smoothBars } from './viz-spectrum.js';
 import { resample, HISTORY_BINS, ROWS_PER_SECOND } from './viz-terrain-math.js';
 import { SILENT_DB } from './viz-signal.js';
+import { createPartsBaker, PLANES } from './viz-melody.js';
 
+export const ANALYSIS_CENTRE = 0.5;
 export const LOOKAHEAD_MAX_S = 480;
 export const LOOKAHEAD_MAX_BYTES = 64 * 1024 * 1024;
-const TIME_SNAP_S = 0.35;
+const TIME_SNAP_S = 0.25;
+const TIME_PULL = 0.3;
 
 export function makeFft(n) {
   const levels = Math.log2(n);
@@ -63,11 +66,11 @@ export function timelineRows(durationS, rps = ROWS_PER_SECOND) {
 
 export function createTimeline(durationS, bins = HISTORY_BINS, rps = ROWS_PER_SECOND) {
   const total = timelineRows(durationS, rps);
-  return { total, done: 0, bins, rps, data: new Uint8Array(total * bins) };
+  return { total, done: 0, bins, rps, data: new Uint8Array(total * bins), parts: new Uint8Array(total * bins * PLANES), partsDone: 0, pitch: new Uint8Array(total * 2), pitchDone: 0 };
 }
 
 export function makeTimelineBuilder({
-  pcm, sampleRate, bands, bins = HISTORY_BINS, rps = ROWS_PER_SECOND, fftSize = FFT_SIZE, smoothing = ANALYSER_SMOOTHING,
+  pcm, sampleRate, bands, bins = HISTORY_BINS, rps = ROWS_PER_SECOND, fftSize = FFT_SIZE, smoothing = ANALYSER_SMOOTHING, centre = ANALYSIS_CENTRE,
 }) {
   const total = timelineRows(pcm.length / sampleRate, rps);
   const half = fftSize / 2;
@@ -81,6 +84,8 @@ export function makeTimelineBuilder({
   const state = new Float32Array(bands);
   const dt = 1 / rps;
   const out = new Uint8Array(total * bins);
+  const baker = createPartsBaker({ total, bins, rps, sampleRate, fftSize });
+  const rowF = new Float32Array(bins);
   let done = 0;
   return {
     total,
@@ -88,12 +93,18 @@ export function makeTimelineBuilder({
     rps,
     get done() { return done; },
     get data() { return out; },
+    get parts() { return baker.parts; },
+    get partsDone() { return baker.done; },
+    get pitch() { return baker.pitch; },
+    get pitchDone() { return baker.pitchDone; },
     step(maxRows) {
       const end = Math.min(total, done + maxRows);
       const from = done;
+      const pFrom = baker.done;
+      const kFrom = baker.pitchDone;
       for (; done < end; done += 1) {
         const last = Math.round(done * dt * sampleRate);
-        const first = last - fftSize;
+        const first = last - Math.round(fftSize * (1 - centre));
         for (let i = 0; i < fftSize; i += 1) {
           const idx = first + i;
           re[i] = idx >= 0 && idx < pcm.length ? pcm[idx] * win[i] : 0;
@@ -115,9 +126,14 @@ export function makeTimelineBuilder({
         }
         smoothBars(state, target, ATTACK, RELEASE, dt * 60);
         const row = resample(state, bins);
-        for (let j = 0; j < bins; j += 1) out[done * bins + j] = Math.round(row[j] * 255);
+        for (let j = 0; j < bins; j += 1) {
+          out[done * bins + j] = Math.round(row[j] * 255);
+          rowF[j] = out[done * bins + j] / 255;
+        }
+        baker.add(rowF, mag);
       }
-      return { from, to: done };
+      if (done >= total) baker.finish();
+      return { from, to: done, pFrom, pTo: baker.done, kFrom, kTo: baker.pitchDone };
     },
   };
 }
@@ -145,7 +161,7 @@ export function makeTimeFollower() {
       last = nowMs;
       t += dt * (Number.isFinite(rate) && rate > 0 ? rate : 1);
       if (Math.abs(t - a) > TIME_SNAP_S) t = a;
-      else t += (a - t) * 0.15;
+      else t += (a - t) * TIME_PULL;
       return t;
     },
     reset() { last = null; },
@@ -164,6 +180,8 @@ export function createInlineRunner({ schedule = (fn) => setTimeout(fn, 0), now =
           while (b.done < b.total && now() - t0 < sliceMs) {
             const r = b.step(4);
             cb.onRows(r.from, b.data.subarray(r.from * b.bins, r.to * b.bins));
+            if (r.pTo > r.pFrom) cb.onParts?.(r.pFrom, b.parts.subarray(r.pFrom * b.bins * PLANES, r.pTo * b.bins * PLANES));
+            if (r.kTo > r.kFrom) cb.onPitch?.(r.kFrom, b.pitch.subarray(r.kFrom * 2, r.kTo * 2));
           }
         } catch (err) { cb.onError(err); return; }
         if (b.done >= b.total) cb.onDone(); else schedule(tick);
@@ -184,6 +202,8 @@ export function createWorkerRunner(make) {
         if (dead) return;
         const m = e.data;
         if (m.type === 'rows') cb.onRows(m.from, new Uint8Array(m.data));
+        else if (m.type === 'parts') cb.onParts?.(m.from, new Uint8Array(m.data));
+        else if (m.type === 'pitch') cb.onPitch?.(m.from, new Uint8Array(m.data));
         else if (m.type === 'done') cb.onDone();
         else if (m.type === 'error') cb.onError(new Error(m.message));
       };

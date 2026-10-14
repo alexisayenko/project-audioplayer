@@ -1,6 +1,7 @@
 import { createTimeline, downmixMono, makeTimeFollower, createWorkerRunner, createInlineRunner, LOOKAHEAD_MAX_S, LOOKAHEAD_MAX_BYTES } from './viz-timeline.js';
 import { LOOK_S, HISTORY_BINS, ROWS_PER_SECOND } from './viz-terrain-math.js';
 
+export const LOOK_MARGIN_S = 1.2;
 const srcOf = (audio) => audio?.currentSrc || audio?.src || '';
 
 function defaultRunner(win) {
@@ -66,6 +67,16 @@ export function createLookahead({
             tl.data.set(rows, from * tl.bins);
             tl.done = Math.min(tl.total, from + rows.length / tl.bins);
           },
+          onParts(from, rows) {
+            if (mine !== gen) return;
+            tl.parts.set(rows, from * tl.bins * 3);
+            tl.partsDone = Math.min(tl.total, from + rows.length / (tl.bins * 3));
+          },
+          onPitch(from, rows) {
+            if (mine !== gen) return;
+            tl.pitch.set(rows, from * 2);
+            tl.pitchDone = Math.min(tl.total, from + rows.length / 2);
+          },
           onDone() { if (mine === gen) { tl.done = tl.total; status = 'ready'; job = null; emit(); } },
           onError() { if (mine === gen) { timeline = null; fail(); } },
         },
@@ -101,7 +112,7 @@ export function createLookahead({
       sync();
       if (!timeline || (status !== 'ready' && status !== 'building')) return null;
       const t = follower.update(audio.currentTime, nowMs, !audio.paused && !audio.ended, audio.playbackRate);
-      if (status === 'building' && timeline.done / timeline.rps < t + LOOK_S + 0.5) return null;
+      if (status === 'building' && timeline.done / timeline.rps < t + LOOK_S + LOOK_MARGIN_S) return null;
       return { timeline, time: t };
     },
     onChange(fn) { listeners.add(fn); return () => listeners.delete(fn); },

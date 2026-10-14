@@ -1,3 +1,5 @@
+import { makeFrameMeter, makePaceGovernor } from './viz-pacing.js';
+import { getQualityForce, getCam } from './viz-cam-debug.js';
 import {
   ATTACK, RELEASE, IDLE_EPSILON, VIZ_FPS, VIZ_DPR_CAP, DPR_CAP, VIZ_HEIGHT_SCALE, TILT_DB_PER_OCT,
 } from './viz-constants.js';
@@ -32,6 +34,7 @@ function defaults() {
     getColors: () => readVizColors(win.getComputedStyle?.(win.document.documentElement), FALLBACK_COLORS),
     getAnchor: () => null,
     getDiag: () => ({}),
+    getOutputLatency: () => 0,
     raf: (fn) => win.requestAnimationFrame(fn),
     caf: (id) => win.cancelAnimationFrame?.(id),
     createGLCanvas,
@@ -80,6 +83,8 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
   const coarse = d.isCoarse();
   const pacer = makePacer(VIZ_FPS);
   const gov = makeGovernor({ fps: VIZ_FPS });
+  const meter = makeFrameMeter();
+  const pace = makePaceGovernor();
   const glow = createGlow(() => d.createOffscreen(canvas));
   const backdrop = createBackdrop(() => d.createOffscreen(canvas));
   const dprCap = () => (startMode === 'full' && !coarse ? DPR_CAP : VIZ_DPR_CAP);
@@ -150,7 +155,7 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
     }
     return {
       ...t, ...audioOrigin(diag.audio, win.location), playing, paused: !!diag.audio?.paused, graphState: diag.graphState ?? 'n/a', ctxState: diag.ctxState ?? 'none',
-      hasAnalyser: !!an, fftSize: an?.fftSize, byteMax: bytes, pageOrigin: win.location?.origin, ua: userAgentFamily(win.navigator?.userAgent), frameMs: `${avgMs.toFixed(1)} ms`,
+      hasAnalyser: !!an, fftSize: an?.fftSize, byteMax: bytes, pageOrigin: win.location?.origin, ua: userAgentFamily(win.navigator?.userAgent), frameMs: `${avgMs.toFixed(1)} ms`, pace: paceText(),
     };
   }
 
@@ -254,9 +259,9 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
     f.spokes = pickSpokes(bars, SPOKES);
     f.shaped = shapeBars(bars, still ? 0 : now, undefined, f.shaped);
     const r = ensureRenderer();
-    r.setQuality(gov.level);
+    r.setQuality(gov.level, { cap: pace.level, lite: pace.lite, hiDpr: pace.hiDpr, force: getQualityForce() });
     la?.request(laKey, enabled && r.id === 'terrain');
-    r.draw(bars, now, r.id === 'terrain' ? la?.get(now) ?? null : null);
+    r.draw(bars, now, r.id === 'terrain' ? la?.get(now) ?? null : null, r.id === 'terrain' ? d.getOutputLatency() + getCam().sync / 1000 : 0);
     if (!r.usesGL) glow.apply(ctx, canvas, w, h, q.glow);
     if (d.debug) paintDebug(bars.length);
   }
@@ -306,8 +311,22 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
     }
   }
 
+  function paceStep(ts) {
+    meter.tick(ts);
+    if (renderer?.id !== 'terrain') return;
+    if (pace.update(ts, meter.ema, meter.refresh, meter.valid)) meter.hold();
+  }
+
+  function paceText() {
+    const st = renderer?.stats;
+    const fps = meter.fps ? `${meter.fps.toFixed(0)} fps ${meter.ema.toFixed(1)} ms (display ${(1000 / meter.refresh).toFixed(0)} Hz)` : 'fps n/a';
+    if (!st) return fps;
+    return `${fps}  terrain L${st.level} cap ${pace.cap}${pace.lite ? ' lite' : ''} tiers ${st.tiers} verts ${st.vertices} dpr ${st.dpr} ${st.w}x${st.h}`;
+  }
+
   function frame(ts) {
     raf = null;
+    paceStep(ts);
     if (pacer.due(ts)) {
       const t0 = d.now();
       const dt = st.last ? Math.min(0.1, Math.max(0.001, (ts - st.last) / 1000)) : 1 / 60;
@@ -379,6 +398,8 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
     setVizMode(id) {
       if (id === vizMode) return;
       vizMode = id;
+      meter.hold();
+      pace.reset();
       dropRenderer();
       if (raf == null) evaluate();
     },

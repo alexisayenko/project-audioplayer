@@ -48,16 +48,21 @@ export function createModeRenderer(id, canvas2d, canvasGL, deps = {}) {
   return {
     id: effective,
     usesGL: showGL,
-    draw(spectrum, t, look) {
-      if (showGL) terrain.draw(spectrum, t, look);
+    draw(spectrum, t, look, latS = 0) {
+      if (showGL) terrain.draw(spectrum, t, look, latS);
       if (showBars) draw2d(spectrum, t);
     },
     resize(w, h, dpr) {
       terrain?.resize(w, h, dpr);
     },
-    setQuality(governorLevel) {
-      terrain?.setQuality(govToTerrain(governorLevel));
+    setQuality(governorLevel, o = {}) {
+      if (!terrain) return;
+      const forced = Number.isInteger(o.force) ? o.force : null;
+      terrain.setQuality(forced ?? Math.min(govToTerrain(governorLevel), Number.isInteger(o.cap) ? o.cap : 2));
+      terrain.setLite?.(forced === null && !!o.lite);
+      terrain.setDprCap?.(forced === null && !!o.hiDpr);
     },
+    get stats() { return terrain?.stats ?? null; },
     dispose() {
       terrain?.dispose();
       terrain = null;

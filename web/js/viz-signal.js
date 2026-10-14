@@ -88,6 +88,7 @@ export function debugLines(i) {
     `all-zero ${i.allZero ? 'yes' : 'no'}  frames ${i.frames}  nonzero ${i.live}  silent run ${i.silentRun}`,
     `audio origin ${i.src}  page ${i.pageOrigin}  same-origin ${i.sameOrigin ? 'yes' : 'no'}  crossOrigin ${i.crossOrigin ?? 'null'}`,
     `ua ${i.ua}  ${i.frameMs}`,
+    ...(i.pace ? [`pace ${i.pace}`] : []),
   ];
 }
 

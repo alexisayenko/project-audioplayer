@@ -13,6 +13,7 @@ import { attachScrubber } from './scrubber.js';
 import { titleNodes } from './display-title.js';
 import { $, setIcon } from './player-ui.js';
 import { createCamPanel, loadCam } from './viz-cam-debug.js';
+import { outputLatencyS } from './viz-latency.js';
 import { getStyle, setStyle, nextStyle, styleLabel } from './viz-terrain-style.js';
 
 const REDUCED = '(prefers-reduced-motion: reduce)';
@@ -34,6 +35,7 @@ function vizDeps(audio, graph, extra) {
   return {
     getAnalyser: () => graph.getAnalyser(),
     isPlaying: () => !audio.paused && !audio.ended,
+    getOutputLatency: () => outputLatencyS(graph.getContext?.()),
     getDiag: () => ({ audio, graphState: graph.getState?.(), ctxState: graph.getContext?.()?.state }),
     ...extra,
   };

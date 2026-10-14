@@ -258,3 +258,24 @@ test('failures fall back to live: http error, too long, oversized, decode error'
   await settle();
   assert.equal(la.status, 'failed');
 });
+
+test('the analysis window is centred on the row time: an onset shows up about half a window earlier than with a trailing window', () => {
+  const mk = (centre) => {
+    const b = makeTimelineBuilder({ pcm: tone(3, 1000, 0.5, 1.5), sampleRate: SR, bands: 48, bins: 16, rps: 16, fftSize: 1024, centre });
+    b.step(1e9);
+    return b.data;
+  };
+  const first = (data) => { for (let r = 0; r < 48; r += 1) { let s = 0; for (let j = 0; j < 16; j += 1) s += data[r * 16 + j]; if (s > 0) return r; } return -1; };
+  const trailing = first(mk(0));
+  const centred = first(mk(0.5));
+  assert.ok(centred < trailing, `${centred} vs ${trailing}`);
+  assert.ok(centred >= 22 && trailing >= 23);
+});
+
+test('the time follower converges on currentTime within a few frames', () => {
+  const f = makeTimeFollower();
+  f.update(10, 0, true);
+  let t = 0;
+  for (let i = 1; i <= 8; i += 1) { t = f.update(10 + i * 0.0333 + 0.05, i * 33.3, true); }
+  assert.ok(Math.abs(t - (10 + 8 * 0.0333 + 0.05)) < 0.03);
+});

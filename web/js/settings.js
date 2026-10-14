@@ -176,7 +176,7 @@ function vizRows() {
     ...(modes.some((m) => m.id === 'terrain') ? [vizSelect({
       id: 'viz-terrain-style-select',
       label: 'Terrain style',
-      note: 'Relief follows the spectrum; Beat peaks grow a peak from flat ground on each beat. Press T while Terrain is shown to cycle.',
+      note: 'Relief follows the spectrum; Beat peaks grow peaks from flat ground on each beat (one peak, a hill, several, or the whole spectrum); Melody on beats lets the tune build the relief over a beat texture. Press T while Terrain is shown to cycle.',
       options: TERRAIN_STYLES,
       value: getStyle(),
       disabled: !supported,

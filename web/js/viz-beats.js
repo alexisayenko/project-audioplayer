@@ -1,5 +1,5 @@
 import {
-  HISTORY_BINS, AMP_MAX, LANDMARK_MAX, clamp01, smoothstep, rowLayout,
+  HISTORY_BINS, AMP_MAX, LANDMARK_MAX, clamp01, smoothstep, rowLayout, edgeFalloff, softKnee,
 } from './viz-terrain-math.js';
 
 export const BEAT_BINS = 32;
@@ -7,13 +7,22 @@ export const BEAT_WINDOW_ROWS = 16;
 export const BEAT_MAD_K = 3;
 export const BEAT_MIN_FLUX = 0.03;
 export const BEAT_FLUX_FULL = 0.22;
+export const BEAT_REF_FLOOR = 0.15;
+export const BEAT_REF_HALF_LIFE_S = 20;
+export const BEAT_LOUD_REF = 0.45;
+export const BEAT_COLD_S = 0.3;
+export const BEAT_COLD_FLUX = 0.12;
+export const BEAT_MIN_HIST = 6;
 export const BEAT_MIN_GAP_S = 0.18;
 export const BEAT_RISE_S = 0.15;
 export const BEAT_DECAY_S = 5;
 export const BEAT_SPREAD_S = 0.4;
 export const BEAT_AHEAD_FADE_S = 0.1;
+export const BEAT_LEAD_S = 0.03;
+export const BEAT_SHIFT_TIMELINE_S = 0.03;
+export const BEAT_SHIFT_LIVE_S = -0.06;
 export const BEAT_AMP_MIN = 1;
-export const BEAT_AMP_MAX = LANDMARK_MAX;
+export const BEAT_AMP_MAX = 0.75 * LANDMARK_MAX;
 export const BEAT_AMP_EXP = 1.5;
 export const BEAT_CAP = LANDMARK_MAX / AMP_MAX;
 export const SINGLE_SIGMA_COLS = 1.5;
@@ -50,27 +59,43 @@ function median(values) {
 export function beatThreshold(history) {
   const med = median(history);
   const mad = median(Array.from(history, (v) => Math.abs(v - med)));
-  return Math.max(BEAT_MIN_FLUX, med + BEAT_MAD_K * mad);
+  const base = Math.max(BEAT_MIN_FLUX, med + BEAT_MAD_K * mad);
+  return history.length < BEAT_MIN_HIST ? Math.max(base, BEAT_COLD_FLUX) : base;
 }
 
-export function createBeatDetector({ bins = HISTORY_BINS } = {}) {
+export function beatLoudness(spectrum, bins = BEAT_BINS) {
+  const n = Math.min(bins, spectrum.length);
+  if (!n) return 0;
+  let sum = 0;
+  for (let j = 0; j < n; j += 1) sum += spectrum[j];
+  return clamp01(sum / n / BEAT_LOUD_REF);
+}
+
+export function createBeatDetector({ bins = HISTORY_BINS, shift = 0 } = {}) {
   let prev = null;
   let prevT = 0;
   let prevFlux = 0;
   let hist = [];
   let lastBeat = -Infinity;
+  let ref = BEAT_REF_FLOOR;
+  let refT = null;
+  let firstT = null;
   return {
     push(row, t) {
       const cur = new Float32Array(bins);
       for (let j = 0; j < bins; j += 1) cur[j] = clamp01(row[j]);
-      if (!prev) { prev = cur; prevT = t; return null; }
+      if (!prev) { prev = cur; prevT = t; firstT = t; return null; }
+      if (refT !== null && t > refT) ref = Math.max(BEAT_REF_FLOOR, ref * 0.5 ** ((t - refT) / BEAT_REF_HALF_LIFE_S));
+      refT = t;
       const f = beatFlux(cur, prev);
       const f2 = hist.length ? hist[hist.length - 1] : 0;
       let beat = null;
-      if (prevFlux > beatThreshold(hist) && prevFlux >= f2 && prevFlux > f && prevT - lastBeat >= BEAT_MIN_GAP_S) {
+      const cold = prevT - firstT < BEAT_COLD_S && prevFlux < BEAT_COLD_FLUX;
+      if (!cold && prevFlux > beatThreshold(hist) && prevFlux >= f2 && prevFlux > f && prevT - lastBeat >= BEAT_MIN_GAP_S) {
         const spectrum = new Float32Array(bins);
         for (let j = 0; j < bins; j += 1) spectrum[j] = Math.max(prev[j], cur[j]);
-        beat = { t: prevT, strength: clamp01(prevFlux / BEAT_FLUX_FULL), spectrum };
+        ref = Math.max(ref, prevFlux);
+        beat = { t: prevT + shift, strength: clamp01(prevFlux / ref) * beatLoudness(spectrum), spectrum };
         lastBeat = prevT;
       }
       hist.push(prevFlux);
@@ -84,7 +109,7 @@ export function createBeatDetector({ bins = HISTORY_BINS } = {}) {
 }
 
 export function timelineBeats(tl) {
-  const st = tl.beatState || (tl.beatState = { det: createBeatDetector({ bins: tl.bins }), next: 0, beats: [] });
+  const st = tl.beatState || (tl.beatState = { det: createBeatDetector({ bins: tl.bins, shift: BEAT_SHIFT_TIMELINE_S }), next: 0, beats: [] });
   const last = Math.min(tl.total, tl.done);
   const row = new Float32Array(tl.bins);
   while (st.next < last) {
@@ -98,7 +123,7 @@ export function timelineBeats(tl) {
 }
 
 export function createLiveBeats() {
-  const det = createBeatDetector();
+  const det = createBeatDetector({ shift: BEAT_SHIFT_LIVE_S });
   const beats = [];
   return {
     beats,
@@ -207,7 +232,26 @@ export function multiShape(spectrum, cols, out = new Float32Array(cols)) {
   return out;
 }
 
-export const BEAT_SHAPES = { single: singleShape, hill: hillShape, multi: multiShape };
+export const FULL_SMOOTH_PASSES = 2;
+
+export function fullShape(spectrum, cols, out = new Float32Array(cols)) {
+  out.fill(0);
+  if (!spectrum?.length) return out;
+  for (let c = 0; c < cols; c += 1) out[c] = clamp01(levelAt(spectrum, colU(c, cols))) * edgeFalloff(colU(c, cols) * 2 - 1);
+  const tmp = new Float32Array(cols);
+  for (let p = 0; p < FULL_SMOOTH_PASSES; p += 1) {
+    for (let c = 0; c < cols; c += 1) tmp[c] = (out[Math.max(0, c - 1)] + 2 * out[c] + out[Math.min(cols - 1, c + 1)]) / 4;
+    out.set(tmp);
+  }
+  let max = 0;
+  for (let c = 0; c < cols; c += 1) if (out[c] > max) max = out[c];
+  if (max > 0) for (let c = 0; c < cols; c += 1) out[c] /= max;
+  return out;
+}
+
+export const BEAT_SHAPES = { single: singleShape, hill: hillShape, multi: multiShape, full: fullShape };
+
+export const beatCols = (style, cols) => (style === 'full' ? cols : visibleCols(cols));
 
 function shapeOf(beat, style, cols) {
   const cache = beat.shapes || (beat.shapes = new Map());
@@ -236,9 +280,9 @@ export function fillBeatHeights({ beats, style, tNow, base, rows, cols, out }) {
   const { dt, nowRow } = rowLayout(rows);
   const active = beatsBetween(beats, tNow - BEAT_DECAY_S - BEAT_SPREAD_S, tNow + BEAT_SPREAD_S);
   if (!active.length) return out;
-  const n = visibleCols(cols);
+  const n = beatCols(style, cols);
   const off = (cols - n) >> 1;
-  const live = active.map((b) => ({ b, env: beatEnv(tNow - b.t), a: beatAmp(b.strength) / AMP_MAX }));
+  const live = active.map((b) => ({ b, env: beatEnv(tNow - b.t + BEAT_LEAD_S), a: beatAmp(b.strength) / AMP_MAX }));
   for (let r = 0; r < rows; r += 1) {
     const T = (base + r - nowRow) * dt;
     const mask = 1 - smoothstep(0, BEAT_AHEAD_FADE_S, T - tNow);
@@ -251,7 +295,7 @@ export function fillBeatHeights({ beats, style, tNow, base, rows, cols, out }) {
       const s = shapeOf(b, style, n);
       for (let c = 0; c < n; c += 1) out[o + off + c] += w * s[c];
     }
-    for (let c = off; c < off + n; c += 1) if (out[o + c] > BEAT_CAP) out[o + c] = BEAT_CAP;
+    for (let c = off; c < off + n; c += 1) out[o + c] = softKnee(out[o + c], BEAT_CAP);
   }
   return out;
 }

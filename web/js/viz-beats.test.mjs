@@ -74,7 +74,8 @@ test('the live detector matches the timeline detector on the same rows', () => {
   const tl = synth(8, [1, 1.5, 2, 3, 4.5]);
   const live = B.createLiveBeats();
   for (let i = 0; i < tl.total; i += 1) live.push(Array.from(tl.data.subarray(i * BINS, (i + 1) * BINS), (v) => v / 255), i / RPS);
-  assert.deepEqual(live.beats.map((b) => b.t), B.timelineBeats(tl).map((b) => b.t));
+  const shift = B.BEAT_SHIFT_TIMELINE_S - B.BEAT_SHIFT_LIVE_S;
+  assert.deepEqual(live.beats.map((b) => Math.round((b.t + shift) * 1e6)), B.timelineBeats(tl).map((b) => Math.round(b.t * 1e6)));
 });
 
 test('beatEnv is 0 before the beat, rises over RISE_S, then decays to 0 at DECAY_S', () => {
@@ -96,8 +97,9 @@ test('beatEnv is 0 before the beat, rises over RISE_S, then decays to 0 at DECAY
 test('amplitude scales with strength and stays within the landmark cap', () => {
   assert.ok(B.beatAmp(0) >= 1 && B.beatAmp(0) < B.beatAmp(0.5));
   assert.ok(B.beatAmp(0.6) > 1.5 && B.beatAmp(0.6) < AMP_MAX + 0.5);
-  assert.equal(B.beatAmp(1), LANDMARK_MAX);
-  assert.equal(B.beatAmp(9), LANDMARK_MAX);
+  assert.equal(B.beatAmp(1), B.BEAT_AMP_MAX);
+  assert.equal(B.beatAmp(9), B.BEAT_AMP_MAX);
+  assert.ok(B.BEAT_AMP_MAX / LANDMARK_MAX >= 0.6 && B.BEAT_AMP_MAX / LANDMARK_MAX <= 0.8);
 });
 
 const width = (shape, frac = 0.5) => {
@@ -204,7 +206,7 @@ test('heights are a pure function of the beat list and time (seek-invariant), no
 });
 
 test('style validation, persistence and cycling', () => {
-  assert.deepEqual(S.TERRAIN_STYLES.map((s) => s.id), ['relief', 'single', 'hill', 'multi']);
+  assert.deepEqual(S.TERRAIN_STYLES.map((s) => s.id), ['relief', 'single', 'hill', 'multi', 'full', 'melody']);
   assert.equal(S.normaliseStyle('nope'), 'relief');
   assert.equal(S.normaliseStyle(null), 'relief');
   assert.equal(S.normaliseStyle('hill'), 'hill');
@@ -222,8 +224,12 @@ test('style validation, persistence and cycling', () => {
   assert.equal(S.getStyle(), 'single');
   let id = 'relief';
   const order = [];
-  for (let i = 0; i < 4; i += 1) { id = S.nextStyle(id); order.push(id); }
-  assert.deepEqual(order, ['single', 'hill', 'multi', 'relief']);
+  for (let i = 0; i < 6; i += 1) { id = S.nextStyle(id); order.push(id); }
+  assert.deepEqual(order, ['single', 'hill', 'multi', 'full', 'melody', 'relief']);
+  assert.equal(S.normaliseStyle('full'), 'full');
+  assert.equal(S.normaliseStyle('melody'), 'melody');
+  assert.equal(S.styleLabel('full'), 'Beat peaks: full spectrum');
+  assert.ok(S.isBeatStyle('full') && !S.isBeatStyle('melody') && S.isMelodyStyle('melody'));
   assert.equal(S.styleLabel('hill'), 'Beat peaks: hill');
   assert.deepEqual(seen, ['multi', 'relief']);
 });
@@ -250,4 +256,131 @@ test('beat detector keeps a bounded live list', () => {
     live.push(new Float32Array(BINS).fill(k), i / 16);
   }
   assert.ok(live.beats.length > 5 && live.beats.length < 20);
+});
+
+test('full gives every column the height of its own bin, normalised to the loudest', () => {
+  const cols = 200;
+  const s = Float32Array.from({ length: BINS }, (_, i) => 0.2 + 0.6 * (i / (BINS - 1)));
+  const out = B.fullShape(s, cols);
+  assert.ok(Math.abs(Math.max(...out) - 1) < 1e-9);
+  const a = Math.round(cols * 0.2);
+  const b = Math.round(cols * 0.7);
+  for (let c = a + 1; c <= b; c += 1) assert.ok(out[c] >= out[c - 1] - 1e-9);
+  assert.ok(out[Math.round(cols * 0.3)] / out[Math.round(cols * 0.6)] < 0.9);
+  let jump = 0;
+  for (let c = 1; c < cols; c += 1) jump = Math.max(jump, Math.abs(out[c] - out[c - 1]));
+  assert.ok(jump < 0.1);
+  assert.equal(B.beatCols('full', 100), 100);
+  assert.ok(B.beatCols('hill', 100) < 100);
+  assert.ok(B.fullShape(new Float32Array(BINS), cols).every((v) => v === 0));
+});
+
+test('full: flat before the beat, rises on it, flat after DECAY_S', () => {
+  const rows = 88;
+  const cols = 120;
+  const { dt } = rowLayout(rows);
+  const s = Float32Array.from({ length: BINS }, (_, i) => 0.3 + 0.5 * Math.sin((i / BINS) * Math.PI * 3) ** 2);
+  const beats = [{ t: 10, strength: 0.8, spectrum: s }];
+  const run = (tNow) => {
+    const out = new Float32Array(rows * cols);
+    B.fillBeatHeights({ beats, style: 'full', tNow, base: Math.floor(tNow / dt), rows, cols, out });
+    return out;
+  };
+  assert.ok(run(9).every((v) => v === 0));
+  const during = run(10.3);
+  assert.ok(Math.max(...during) > 0.3);
+  const wide = Array.from({ length: cols }, (_, c) => Math.max(...Array.from({ length: rows }, (_, r) => during[r * cols + c])));
+  assert.ok(wide.filter((v) => v > 0.1).length > cols * 0.6);
+  assert.ok(run(10 + B.BEAT_DECAY_S + B.BEAT_SPREAD_S + 0.1).every((v) => v === 0));
+});
+
+test('beat onset: timeline beats sit at the row of the flux maximum plus the calibrated shift, live beats before it', () => {
+  const tl = synth(8, [2]);
+  const [b] = B.timelineBeats(tl);
+  const live = B.createLiveBeats();
+  for (let i = 0; i < tl.total; i += 1) live.push(Array.from(tl.data.subarray(i * BINS, (i + 1) * BINS), (v) => v / 255), i / RPS);
+  assert.ok(Math.abs(b.t - (2 + B.BEAT_SHIFT_TIMELINE_S)) <= 1 / RPS);
+  assert.ok(live.beats[0].t < b.t);
+  assert.ok(B.BEAT_SHIFT_LIVE_S < 0 && B.BEAT_SHIFT_TIMELINE_S > 0);
+});
+
+test('lead: the rise starts BEAT_LEAD_S before the beat, so the peak is already growing at the beat time', () => {
+  const rows = 88;
+  const cols = 120;
+  const { dt } = rowLayout(rows);
+  const beats = [{ t: 10, strength: 0.8, spectrum: Float32Array.from({ length: BINS }, () => 0.8) }];
+  const peak = (tNow) => {
+    const out = new Float32Array(rows * cols);
+    B.fillBeatHeights({ beats, style: 'full', tNow, base: Math.floor(tNow / dt), rows, cols, out });
+    return Math.max(...out);
+  };
+  assert.equal(peak(10 - B.BEAT_LEAD_S - 0.01), 0);
+  assert.ok(peak(10 - B.BEAT_LEAD_S / 2) > 0);
+  const atBeat = peak(10);
+  const lateStart = B.beatEnv(0);
+  assert.ok(atBeat > 0 && lateStart === 0);
+  assert.ok(peak(10 + 0.1) > atBeat);
+});
+
+const spectrumRow = (v) => Float32Array.from({ length: BINS }, (_, j) => (j < 24 ? v : v * 0.3));
+
+function songTimeline(plan) {
+  const tl = createTimeline(plan.seconds, BINS, RPS);
+  for (let i = 0; i < tl.total; i += 1) {
+    let v = plan.floor ?? 0.02;
+    for (const [t, lvl] of plan.kicks) {
+      const d = i - Math.round(t * RPS);
+      if (d >= 0 && d < 6) v = Math.max(v, lvl * (1 - d * 0.18));
+    }
+    for (let j = 0; j < BINS; j += 1) tl.data[i * BINS + j] = Math.round(255 * spectrumRow(v)[j]);
+  }
+  tl.done = tl.total;
+  return tl;
+}
+
+test('a quiet intro gets small strengths; a loud passage later reaches the typical strong range', () => {
+  const kicks = [[1, 0.25], [2, 0.25], [3, 0.25], [4, 0.3], [8, 0.9], [9, 0.9], [10, 0.9], [11, 0.9]];
+  const beats = B.timelineBeats(songTimeline({ seconds: 14, kicks }));
+  const quiet = beats.filter((b) => b.t < 6);
+  const loud = beats.filter((b) => b.t > 7);
+  assert.ok(quiet.length >= 3 && loud.length >= 3);
+  assert.ok(quiet.every((b) => b.strength < 0.6), JSON.stringify(quiet.map((b) => b.strength)));
+  assert.ok(loud.every((b) => b.strength > 0.6 && b.strength <= 1));
+  const typical = B.beatAmp(Math.max(...loud.map((b) => b.strength)));
+  assert.ok(typical / LANDMARK_MAX >= 0.6 && typical / LANDMARK_MAX <= 0.8);
+});
+
+test('strengths are seek-invariant: the same song gives identical beats however the build progresses', () => {
+  const kicks = [[1, 0.3], [2, 0.5], [3, 0.9], [5, 0.9], [7, 0.4]];
+  const full = B.timelineBeats(songTimeline({ seconds: 10, kicks })).map((b) => [b.t, b.strength]);
+  const tl = songTimeline({ seconds: 10, kicks });
+  const total = tl.done;
+  const parts = [];
+  for (const d of [40, 90, total]) { tl.done = d; parts.push(B.timelineBeats(tl).map((b) => [b.t, b.strength])); }
+  assert.deepEqual(parts[2], full);
+  assert.deepEqual(parts[0], full.slice(0, parts[0].length));
+});
+
+test('cold start: a tiny flux in the first rows is no beat, and the threshold has a floor before enough history exists', () => {
+  assert.ok(B.beatThreshold([]) >= B.BEAT_COLD_FLUX);
+  assert.ok(B.beatThreshold([0, 0, 0]) >= B.BEAT_COLD_FLUX);
+  const full = Array.from({ length: B.BEAT_WINDOW_ROWS }, () => 0);
+  assert.equal(B.beatThreshold(full), B.BEAT_MIN_FLUX);
+  const early = B.timelineBeats(songTimeline({ seconds: 4, kicks: [[0.2, 0.06]], floor: 0 }));
+  assert.equal(early.length, 0);
+});
+
+test('beat sums above the cap stay round: overlapping beats are soft-limited, not flattened', () => {
+  const rows = 88;
+  const cols = 120;
+  const { dt } = rowLayout(rows);
+  const hump = Float32Array.from({ length: BINS }, (_, i) => 0.2 + 0.8 * Math.exp(-0.5 * ((i - 32) / 10) ** 2));
+  const beats = Array.from({ length: 8 }, (_, i) => ({ t: 10 + i * 0.01, strength: 1, spectrum: hump }));
+  const out = new Float32Array(rows * cols);
+  B.fillBeatHeights({ beats, style: 'full', tNow: 10.4, base: Math.floor(10.4 / dt), rows, cols, out });
+  const cap = LANDMARK_MAX / AMP_MAX;
+  assert.ok(Math.max(...out) <= cap + 1e-6);
+  const top = Array.from(out).filter((v) => v > 0.8 * cap);
+  assert.ok(top.length > 20);
+  assert.ok(new Set(top.map((v) => v.toFixed(7))).size > top.length * 0.5);
 });

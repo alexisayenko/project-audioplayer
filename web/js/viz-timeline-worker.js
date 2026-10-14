@@ -11,6 +11,15 @@ self.onmessage = (e) => {
       const r = b.step(CHUNK_ROWS);
       const copy = b.data.slice(r.from * b.bins, r.to * b.bins);
       self.postMessage({ type: 'rows', from: r.from, data: copy.buffer }, [copy.buffer]);
+      if (r.pTo > r.pFrom) {
+        const stride = b.bins * 3;
+        const pc = b.parts.slice(r.pFrom * stride, r.pTo * stride);
+        self.postMessage({ type: 'parts', from: r.pFrom, data: pc.buffer }, [pc.buffer]);
+      }
+      if (r.kTo > r.kFrom) {
+        const kc = b.pitch.slice(r.kFrom * 2, r.kTo * 2);
+        self.postMessage({ type: 'pitch', from: r.kFrom, data: kc.buffer }, [kc.buffer]);
+      }
     }
     self.postMessage({ type: 'done' });
   } catch (err) {

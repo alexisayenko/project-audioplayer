@@ -39,6 +39,9 @@ Each slice of time takes its height once, from its own moment of the song, and f
   - Single: one narrow peak at the most energetic pitch.
   - Hill: a broad hill around that pitch.
   - Multi: several peaks, one per strong band.
+  - Full spectrum: every column rises to the height of its own pitch's level, so the whole spectrum of the beat stands up across the full width, then rides toward the viewer and sinks back.
+- Melody on beats: the tune is the actor. The ground is a dark navy canvas that glows softly with the beats and ripples a little; noise and effects show as sparks; the tonal part of the mids and highs builds the relief (cyan to white), and the strongest narrow melodic peak turns amber. With a finished analysis a thin ridge follows the lead pitch left and right as the tune moves, its height following the loudness of that voice. Needs the song analysed (server songs); otherwise it works from the live sound without the pitch line.
+- Peaks never get a flat roof: heights saturate smoothly toward the maximum. Beat strength is relative to the song (a quiet intro gives small peaks).
 - Chosen in Settings > Playback > Terrain style, with key T, or in the vizdebug panel.
 
 ## 8. Atmosphere
@@ -52,7 +55,7 @@ Each slice of time takes its height once, from its own moment of the song, and f
 
 - A low camera looks slightly down toward the horizon. Defaults: eye 3.31, pitch -13.5 deg.
 - V: full-screen. M: switch visualizer. T: cycle Terrain style.
-- `?vizdebug=1` opens a panel with camera height, pitch and style.
+- `?vizdebug=1` opens a panel with camera height, pitch, yaw (look left and right), a sync trim for audio-to-visual delay, style and a quality override, and shows fps, level and mesh size.
 - Quality levels: simple and crisp on weak devices; soft beaded lines, mist and bloom on strong ones. It steps down by itself when frames get slow.
 
 ## 10. History and baselines
