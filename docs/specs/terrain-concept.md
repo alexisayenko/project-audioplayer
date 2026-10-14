@@ -1,6 +1,6 @@
 # Terrain visualizer: the concept
 
-A plain-language description of what Terrain is meant to be, for designers. The exact, testable rules are the numbered requirements [VIZ-043 to VIZ-055](visualizer.md).
+A plain-language description of what Terrain is meant to be, for designers. The exact, testable rules are the numbered requirements [VIZ-043 to VIZ-055](visualizer.md). Names and aliases of every term used here: [terminology.md](terminology.md).
 
 ## 1. The idea
 
@@ -14,7 +14,7 @@ Terrain is a landscape that is the song. The music is laid out as a field you fl
 
 ## 3. The "now" slice
 
-A bright, glowing line across the field, about a third of the way out, is the second playing right now. It pulses with the beat. It is the only thing in the scene that pulses. Glossary: this is the "now line".
+A bright, glowing line across the field, about a third of the way out, is the second playing right now. It pulses with the beat. It is the only thing in the scene that pulses. Glossary: this is the "now line" (brighter only; it does not make the terrain taller).
 
 ## 4. The future
 
@@ -35,7 +35,7 @@ Each slice of time takes its height once, from its own moment of the song, and f
 ## 7. Styles
 
 - Relief (default): continuous relief of the song's spectrum, plus a landmark. Every 5 s the loudest moment gets a taller peak around its strongest frequencies (not a wall across the whole width); quiet or flat-sounding stretches get none.
-- Beat peaks: the ground carries a soft base relief of the spectrum (60% of the Relief height, `BEAT_BASE_RELIEF`) and the now line swells it (and the peaks on it) to 2x height with a 0.3 s gaussian falloff each side, so a wavefront travels through the field; on each beat a peak grows from the ground in about 0.15 s, to a height set by the beat strength, rides toward the viewer and sinks back to flat over about 5 s. Three variants:
+- Beat peaks: the ground carries a soft base relief of the spectrum (60% of the Relief height, `BEAT_BASE_RELIEF`) and the now line only brightens the glow (height boost 1x, no swell); on each beat a peak grows from the ground in about 0.15 s, to a height set by the beat strength, rides toward the viewer and sinks back to flat over about 5 s. Three variants:
   - Single: one narrow peak at the most energetic pitch.
   - Hill: a broad hill around that pitch.
   - Multi: several peaks, one per strong band.

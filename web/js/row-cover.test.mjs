@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { installDom } from './test-dom.mjs';
 
 installDom();
-const { coverModel, coverLabel, coverButton, touchOnly, isRowControl, coverAttrs, currentCoverModel } = await import('./row-cover.js');
+const { coverModel, coverLabel, coverButton, touchOnly, isRowControl, coverAttrs, currentCoverModel, queueCoverModel, paintQueueCovers } = await import('./row-cover.js');
 const { el } = await import('./dom.js');
 
 const base = { audio: true, queueable: true, here: false, playing: false, dl: 'none' };
@@ -90,4 +90,25 @@ test('coverAttrs gives label, class and tooltip (none on touch)', () => {
   assert.equal(a.cls, 'row-cover cover-btn act-pause persist');
   assert.equal(a.disabled, false);
   assert.equal(coverAttrs(currentCoverModel(false), 'Alpha', true).title, null);
+});
+
+test('Now playing covers: the current row follows play/pause, others start that item', () => {
+  const cur = queueCoverModel(true, true);
+  assert.deepEqual([cur.action, cur.persistent, cur.icon], ['pause', true, 'pause']);
+  assert.equal(queueCoverModel(true, false).action, 'resume');
+  const other = queueCoverModel(false, true);
+  assert.deepEqual([other.action, other.persistent, other.icon], ['play', false, 'play']);
+  assert.equal(coverLabel(other, 'Song A'), 'Play Song A');
+  assert.equal(coverLabel(cur, 'Song A'), 'Pause Song A');
+});
+
+test('paintQueueCovers repaints rows in place and keeps the same buttons', () => {
+  const mk = (n) => { const b = el('button', { class: 'row-cover', 'aria-label': 'x' }, el('span', { class: 'rc-ov' })); b.dataset.title = n; return el('li', { class: 'qrow' }, b); };
+  const list = el('ul', {}, mk('A'), mk('B'));
+  const before = list.querySelectorAll('.row-cover');
+  paintQueueCovers(list, 1, true, (r) => r.querySelector('.row-cover').dataset.title);
+  const after = list.querySelectorAll('.row-cover');
+  assert.equal(before[1], after[1]);
+  assert.equal(after[1].getAttribute('aria-label'), 'Pause B');
+  assert.equal(after[0].getAttribute('aria-label'), 'Play A');
 });

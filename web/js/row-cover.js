@@ -62,3 +62,16 @@ export function coverButton(img, model, name, { run, touch = touchOnly() }) {
     onclick: () => run(model.action),
   }, img, el('span', { class: 'rc-ov', 'aria-hidden': 'true' }, icon(model.icon, 20)));
 }
+
+// Cover button of a Now playing row: the current row follows play/pause, any other row starts that queue item.
+export const queueCoverModel = (isCurrent, playing) => (isCurrent
+  ? currentCoverModel(playing)
+  : coverModel({ audio: true, queueable: true, here: false }));
+
+export function paintQueueCovers(list, index, playing, nameOf) {
+  const rows = list.querySelectorAll('li.qrow');
+  rows.forEach((row, i) => {
+    const btn = row.querySelector('.row-cover');
+    if (btn) paintCover(btn, queueCoverModel(i === index, playing), nameOf(row), { size: 18 });
+  });
+}

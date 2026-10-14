@@ -13,7 +13,7 @@ import { editDialog } from './edit-dialog.js';
 import { requestReveal } from './reveal.js';
 import { attachScrubber } from './scrubber.js';
 import { storeGet, storeSet } from './storage.js';
-import { paintCover, currentCoverModel } from './row-cover.js';
+import { paintCover, currentCoverModel, paintQueueCovers } from './row-cover.js';
 import { $, setIcon, setToggle, setCover, queueRow, updateDl, paintTimes } from './player-ui.js';
 import { updateMediaSession, setupMediaSession, updatePositionState, setVolume, storedVolume } from './player-media.js';
 import { canSetVolume } from './volume-logic.js';
@@ -418,7 +418,7 @@ function renderDetails(song) {
   $('cover-art').classList.toggle('noart', !song.cover);
 }
 
-function render() {
+function render(coversOnly = false) {
   const song = player.current;
   const n = qs.items.length;
   document.body.classList.toggle('has-mini', !!song);
@@ -431,7 +431,8 @@ function render() {
   }
   renderMini(song);
   renderDetails(song);
-  renderQueue();
+  if (coversOnly) paintQueueCovers($('queue-list'), qs.index, !audio.paused, (row) => row.querySelector('.row-cover').dataset.title);
+  else renderQueue();
   document.title = `${displayString(song)} - Electrophone`;
   renderProgress();
   listeners.forEach((fn) => fn());
@@ -457,13 +458,16 @@ const queueCtx = () => ({
   move: (i, d) => player.move(i, d),
   removeAt: (i) => player.removeAt(i),
   playAt: (i) => player.playAt(i),
+  playing: !audio.paused,
 });
 
 function renderQueue() {
   closeMenu();
   $('queue-empty').hidden = qs.items.length > 0;
   disposeAll($('queue-list'));
+  const focused = document.activeElement?.closest?.('#queue-list .row-cover') ? [...$('queue-list').children].indexOf(document.activeElement.closest('li')) : -1;
   $('queue-list').replaceChildren(...qs.items.map((item, i) => queueRow(item, i, queueCtx())));
+  if (focused >= 0) $('queue-list').children[focused]?.querySelector('.row-cover')?.focus();
   updateDl(player.current);
 }
 
@@ -492,8 +496,8 @@ export function initPlayer() {
     seekforward: (d) => player.seek(audio.currentTime + (d.seekOffset || 10)),
   });
   initMenus();
-  audio.addEventListener('play', render);
-  audio.addEventListener('pause', render);
+  audio.addEventListener('play', () => render(true));
+  audio.addEventListener('pause', () => render(true));
   audio.addEventListener('timeupdate', renderProgress);
   audio.addEventListener('durationchange', renderProgress);
   audio.addEventListener('ended', () => player.next(true));

@@ -850,7 +850,7 @@ export function makeRowClock(rate = ROWS_PER_SECOND, maxCatchUp = 4) {
   };
 }
 
-export const NOW_LINE_GAIN_H = 2.0;
+export const NOW_LINE_GAIN_H = 1.0;
 export const NOW_LINE_GAIN_B = 2.0;
 export const NOW_LINE_SIGMA_S = NOW_FALLOFF_S / Math.SQRT2;
 export const NOW_LINE_REACH_S = 3 * NOW_LINE_SIGMA_S;
@@ -865,13 +865,13 @@ export function nowLineWeight(dtSec) {
 
 export const nowLineBoost = (dtSec, gain = NOW_LINE_GAIN_H) => 1 + (gain - 1) * nowLineWeight(dtSec);
 
-export function applyNowLine(out, rows, cols, frac, cap = HEIGHT_CAP) {
+export function applyNowLine(out, rows, cols, frac, cap = HEIGHT_CAP, gain = NOW_LINE_GAIN_H) {
   const { dt, nowRow } = rowLayout(rows);
   const centre = nowRow + frac;
   const lo = Math.max(0, Math.floor(centre - NOW_LINE_REACH_S / dt));
   const hi = Math.min(rows - 1, Math.ceil(centre + NOW_LINE_REACH_S / dt));
   for (let r = lo; r <= hi; r += 1) {
-    const g = nowLineBoost((r - centre) * dt);
+    const g = nowLineBoost((r - centre) * dt, gain);
     if (g === 1) continue;
     const o = r * cols;
     for (let c = 0; c < cols; c += 1) out[o + c] = softKnee(out[o + c] * g, cap);

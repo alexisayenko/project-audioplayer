@@ -4,6 +4,9 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## 2026-10-14
 
+- Docs: terminology -- new `docs/specs/terminology.md` glossary (now line / "line now", relief vs beat peaks, parts, camera, quality, overlay, share link, baselines) with aliases and requirement ids.
+- Web: the thumbnails in the Now playing list are now cover buttons like the Library rows (not deployed) -- hover or focus shows the play icon, the current row shows Pause or Play at 75%, a click starts that queue item or toggles the current one; play and pause repaint the covers in place without rebuilding the list (PLY-073).
+- Web: the Terrain now line no longer lifts the terrain (not deployed) -- `NOW_LINE_GAIN_H` 2.0 -> 1.0, the brighter glow (`NOW_LINE_GAIN_B` 2.0) stays; VIZ-051.
 - Web: the full-screen left style dock (Visualizer style and the debug Camera panel) now auto-hides with the bottom controls (not deployed) -- same idle timer and reveal events, fade without layout shift, instant under reduced motion; neither the dock nor the controls hide while the pointer is over them, focus is inside the dock or on a select or slider, or a drag is in progress; Playback's background placement is unchanged (VIZ-022, VIZ-073).
 - Web: fixed a dead toggle pill at the right of the full-screen controls row (not deployed) -- the mode dropdown container shared the class `viz-switch` with the Camera flight switch, so it picked up the pill-and-knob `::after` style; the flight switch is now `viz-flag-switch` and the pill exists only in the left Visualizer style panel (VIZ-073).
 - Web: the full-screen volume slider no longer moves the other controls (not deployed) -- it used to grow from 0 to 96 px on hover or focus and the centred control row shifted (Shuffle to Repeat and the mode dropdown moved 48 px); its width is now always reserved and only the opacity changes (VIZ-071).

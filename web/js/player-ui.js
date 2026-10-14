@@ -11,6 +11,7 @@ import { editDialog } from './edit-dialog.js';
 import { displayString, titleNodes } from './display-title.js';
 import { marquee } from './marquee.js';
 import { can } from './guest.js';
+import { coverButton, queueCoverModel } from './row-cover.js';
 
 export const $ = (id) => document.getElementById(id);
 
@@ -34,7 +35,7 @@ export function setCover(img, song) {
   if (src) img.src = src; else img.removeAttribute('src');
 }
 
-export function queueRow(item, i, { count, index, move, removeAt, playAt }) {
+export function queueRow(item, i, { count, index, move, removeAt, playAt, playing = false }) {
   const s = store.get(item.id);
   const cover = el('img', { class: 'cover', alt: '', loading: 'lazy' });
   if (s?.cover) cover.src = api.coverUrl(s.id);
@@ -50,9 +51,11 @@ export function queueRow(item, i, { count, index, move, removeAt, playAt }) {
     { label: 'Move down', disabled: i === count - 1, run: () => move(i, 1) },
     { label: 'Remove', run: () => removeAt(i) },
   ]));
+  const coverBtn = coverButton(cover, queueCoverModel(i === index, playing), title, { run: () => playAt(i) });
+  coverBtn.dataset.title = title;
   const row = el('li', { class: `qrow${i === index ? ' current' : ''}${s && !hasAudio(s) ? ' no-audio' : ''}`, 'aria-current': i === index ? 'true' : null },
     el('span', { class: 'c-idx t-time' }, i + 1),
-    cover,
+    coverBtn,
     el('div', { class: 'info' },
       el('button', { class: 'open t-subhead', type: 'button', title: `Play: ${title}`, onclick: () => playAt(i) }, s ? titleNodes(s) : title),
       s?.artist ? el('small', { class: 'sub t-caption' }, s.artist) : null,

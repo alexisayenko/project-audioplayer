@@ -7,42 +7,45 @@ import {
 import { createTerrain, strideOf, padTier, UPLOAD_MIN_S } from './viz-terrain-gl.js';
 import { setStyle, resetStyleForTests } from './viz-terrain-style.js';
 
-test('now line: 2x at the now row, 1x beyond 3 sigma, monotonic and symmetric', () => {
-  assert.equal(NOW_LINE_GAIN_H, 2);
+test('now line: gain 1 is a no-op; with gain 2, 2x at the now row, 1x beyond 3 sigma, monotonic and symmetric', () => {
+  assert.equal(NOW_LINE_GAIN_H, 1);
   assert.equal(NOW_LINE_GAIN_B, 2);
+  assert.equal(nowLineBoost(0), 1);
+  for (let d = -1; d <= 1; d += 0.01) assert.equal(nowLineBoost(d), 1);
   assert.ok(Math.abs(NOW_LINE_SIGMA_S - NOW_FALLOFF_S / Math.SQRT2) < 1e-12);
-  assert.equal(nowLineBoost(0), 2);
-  assert.equal(nowLineBoost(NOW_LINE_REACH_S), 1);
-  assert.equal(nowLineBoost(NOW_LINE_REACH_S * 3), 1);
-  assert.equal(nowLineBoost(0.1), nowLineBoost(-0.1));
+  assert.equal(nowLineBoost(0, 2), 2);
+  assert.equal(nowLineBoost(NOW_LINE_REACH_S, 2), 1);
+  assert.equal(nowLineBoost(NOW_LINE_REACH_S * 3, 2), 1);
+  assert.equal(nowLineBoost(0.1, 2), nowLineBoost(-0.1, 2));
   let prev = Infinity;
   for (let d = 0; d <= NOW_LINE_REACH_S + 0.1; d += 0.005) {
-    const b = nowLineBoost(d);
+    const b = nowLineBoost(d, 2);
     assert.ok(b <= prev + 1e-12 && b >= 1 && b <= 2, `${d} ${b}`);
     prev = b;
   }
   assert.ok(nowLineWeight(NOW_FALLOFF_S) > 0.3 && nowLineWeight(NOW_FALLOFF_S) < 0.4);
 });
 
-test('now line on a grid: the now row doubles, rows beyond reach are untouched, the soft knee bounds peaks', () => {
+test('now line on a grid: the now row doubles with gain 2 (default 1x leaves it alone), rows beyond reach are untouched, the soft knee bounds peaks', () => {
   const rows = 40;
   const cols = 5;
   const { nowRow } = rowLayout(rows);
   const mk = (v) => new Float32Array(rows * cols).fill(v);
-  const a = applyNowLine(mk(0.1), rows, cols, 0);
+  const a = applyNowLine(mk(0.1), rows, cols, 0, HEIGHT_CAP, 2);
+  assert.deepEqual(applyNowLine(mk(0.1), rows, cols, 0), mk(0.1));
   assert.ok(Math.abs(a[nowRow * cols] - 0.2) < 1e-6);
   assert.ok(Math.abs(a[0] - 0.1) < 1e-6);
   assert.ok(Math.abs(a[(rows - 1) * cols] - 0.1) < 1e-6);
-  const half = applyNowLine(mk(0.1), rows, cols, 0.5);
+  const half = applyNowLine(mk(0.1), rows, cols, 0.5, HEIGHT_CAP, 2);
   assert.ok(half[nowRow * cols] > 0.1 && half[nowRow * cols] < 0.2);
   assert.ok(Math.abs(half[nowRow * cols] - half[(nowRow + 1) * cols]) < 1e-6);
-  const tall = applyNowLine(mk(HEIGHT_CAP * 0.95), rows, cols, 0);
+  const tall = applyNowLine(mk(HEIGHT_CAP * 0.95), rows, cols, 0, HEIGHT_CAP, 2);
   for (const v of tall) assert.ok(v <= HEIGHT_CAP + 1e-9);
   const ramp = new Float32Array(rows * cols);
   const outs = [];
   for (let i = 0; i <= 20; i += 1) {
     ramp.fill(i / 20 * HEIGHT_CAP * 0.9);
-    outs.push(applyNowLine(ramp.slice(), rows, cols, 0)[nowRow * cols]);
+    outs.push(applyNowLine(ramp.slice(), rows, cols, 0, HEIGHT_CAP, 2)[nowRow * cols]);
   }
   for (let i = 1; i < outs.length; i += 1) assert.ok(outs[i] > outs[i - 1], 'no plateau');
 });
