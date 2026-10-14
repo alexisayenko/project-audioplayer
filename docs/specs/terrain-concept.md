@@ -58,5 +58,6 @@ Each slice of time takes its height once, from its own moment of the song, and f
 ## 10. History and baselines
 
 - Tag `terrain-liked-1` (commit c9b18e7) is the owner-approved look.
+- Tag `terrain-liked-2` (commit edd86a8) is the second owner-approved look: fine square cells in level-of-detail tiers, light, mist; favourite camera eye 3.70, pitch -13.0.
 - Changes since then: camera defaults, landmark ridges, light and mist, the beat-peak styles, square cells (and smaller cells, in progress).
 - Exact rules: [VIZ-043 to VIZ-055](visualizer.md).
