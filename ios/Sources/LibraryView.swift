@@ -59,7 +59,7 @@ struct LibraryView: View {
     }
 
     private var arriving: [Track] {
-        server.transfers.values.map(\.track).filter { t in !library.songs.contains { $0.id == t.id } }.sorted { $0.title < $1.title }
+        server.transfers.values.map(\.track).filter { t in !library.contains(t.id) && !library.songs.contains { $0.id == t.id } }.sorted { $0.title < $1.title }
     }
 
     private func subtitle(_ t: Track) -> String { t.artist }
@@ -113,6 +113,7 @@ struct LibraryView: View {
             }
             .sheet(item: $editing) { SongEditView(song: $0) }
             .sheet(isPresented: $showAdd) { AddSheet() }
+            .onChange(of: library.phoneIDs) { _, _ in server.reconcile(library) }
             .onChange(of: server.notice) { _, n in
                 if let n { toast = n; server.notice = nil }
             }

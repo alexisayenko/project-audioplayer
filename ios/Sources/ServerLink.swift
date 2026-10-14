@@ -1,4 +1,7 @@
 import Foundation
+import os
+
+private let transferLog = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.alexisayenko.audioplayer", category: "transfer")
 
 /// A song as returned by the server's song endpoints (`PATCH /songs/{id}` and friends).
 struct ServerSong: Codable, Identifiable, Hashable {
@@ -39,13 +42,12 @@ struct ServerSong: Codable, Identifiable, Hashable {
 /// The server link: its reachability, the catalog sync and the songs now arriving on the phone.
 @MainActor
 final class ServerLink: ObservableObject {
-    struct Transfer { var track: Track; var progress: Double }
-
     @Published private(set) var reachable: Bool?
     @Published private(set) var checking = false
     /// The server answered 403: signed in, but this account isn't allowed. Cleared by the next successful request.
     @Published private(set) var forbidden = false
-    @Published private(set) var transfers: [String: Transfer] = [:]
+    @Published private var book = TransferBook()
+    var transfers: [String: Transfer] { book.items }
     @Published private(set) var failed: Set<String> = []
     /// A failure to tell the person about once (Library shows it as a toast).
     @Published var notice: String?
@@ -127,44 +129,48 @@ final class ServerLink: ObservableObject {
     @discardableResult
     func download(_ track: Track, settings: Settings, into library: LibraryStore, quiet: Bool = false) async -> Bool {
         if library.contains(track.id) { return true }
-        guard transfers[track.id] == nil else { return false }
-        transfers[track.id] = Transfer(track: track, progress: 0)
-        defer { transfers[track.id] = nil }
+        guard !book.contains(track.id) else { return false }
+        let gen = begin(track)
+        defer { end(track.id, generation: gen) }
         guard await copy(track, settings: settings, from: 0, span: 1) else {
             failed.insert(track.id)
             if !quiet { notice = copyError ?? "Couldn't download \"\(track.title)\". Check the server and try again." }
             return false
         }
-        library.add(track)
+        add(track, to: library)
         failed.remove(track.id)
         return true
     }
 
     /// A song just saved on the server: the row appears at once, the server's fetch fills the first 80%, the copy to the phone the rest.
     func startIngest(_ track: Track, settings: Settings, library: LibraryStore, player: PlayerService?, playWhenReady: Bool) {
-        transfers[track.id] = Transfer(track: track, progress: 0)
-        Task { await ingest(track, settings: settings, library: library, player: player, playWhenReady: playWhenReady) }
+        let gen = begin(track)
+        Task { await ingest(track, generation: gen, settings: settings, library: library, player: player, playWhenReady: playWhenReady) }
     }
 
     /// A catalog song with no audio anywhere: the server fetches it from the song's link, then the copy to the phone follows.
     func getAudio(_ track: Track, settings: Settings, library: LibraryStore, player: PlayerService?, playWhenReady: Bool) {
-        guard transfers[track.id] == nil, !library.contains(track.id) else { return }
-        transfers[track.id] = Transfer(track: track, progress: 0)
+        guard !book.contains(track.id), !library.contains(track.id) else { return }
+        let gen = begin(track)
         Task {
             do {
                 try await APIClient(baseURL: settings.serverURL, token: settings.token).fetchAudio(track.id)
             } catch {
-                transfers[track.id] = nil
+                end(track.id, generation: gen)
                 failed.insert(track.id)
                 notice = error.localizedDescription
                 return
             }
-            await ingest(track, settings: settings, library: library, player: player, playWhenReady: playWhenReady)
+            await ingest(track, generation: gen, settings: settings, library: library, player: player, playWhenReady: playWhenReady)
         }
     }
 
-    private func ingest(_ track: Track, settings: Settings, library: LibraryStore, player: PlayerService?, playWhenReady: Bool) async {
-        defer { transfers[track.id] = nil }
+    private func ingest(_ track: Track, generation gen: Int, settings: Settings, library: LibraryStore, player: PlayerService?, playWhenReady: Bool) async {
+        transferLog.debug("ingest begin \(track.id, privacy: .public)")
+        defer {
+            end(track.id, generation: gen)
+            transferLog.debug("ingest end \(track.id, privacy: .public)")
+        }
         let api = APIClient(baseURL: settings.serverURL, token: settings.token)
         var misses = 0
         while true {
@@ -172,7 +178,7 @@ final class ServerLink: ObservableObject {
             do {
                 let st = try await api.status(track.id)
                 misses = 0
-                transfers[track.id]?.progress = 0.8 * (st.progress ?? 0)
+                book.setProgress(track.id, generation: gen, 0.8 * (st.progress ?? 0))
                 if st.status == "error" { fail(track, "Download failed: \(st.error ?? "unknown error")"); return }
                 if st.status == "done" { break }
             } catch {
@@ -184,20 +190,49 @@ final class ServerLink: ObservableObject {
             fail(track, copyError ?? "Saved on the server, but not copied to this iPhone. Fetch the link again to download it.")
             return
         }
-        library.add(track)
+        add(track, to: library)
         failed.remove(track.id)
         if playWhenReady { player?.playNow(track) }
     }
 
     private func copy(_ track: Track, settings: Settings, from base: Double, span: Double) async -> Bool {
+        let gen = book.generation(track.id)
         do {
             try await APIClient(baseURL: settings.serverURL, token: settings.token).downloadFile(track) { [weak self] p in
-                Task { @MainActor in self?.transfers[track.id]?.progress = base + span * p }
+                Task { @MainActor in self?.progress(track.id, generation: gen, base + span * p) }
             }
             return true
         } catch {
             copyError = error.localizedDescription.hasPrefix("Mobile data") ? error.localizedDescription : nil
             return false
+        }
+    }
+
+    private func begin(_ track: Track) -> Int {
+        transferLog.debug("transfer start \(track.id, privacy: .public)")
+        return book.start(track)
+    }
+
+    private func end(_ id: String, generation: Int) {
+        book.finish(id, generation: generation)
+        transferLog.debug("transfer cleared \(id, privacy: .public)")
+    }
+
+    private func progress(_ id: String, generation: Int?, _ value: Double) {
+        if value >= 1 { transferLog.debug("transfer progress 100% \(id, privacy: .public)") }
+        book.setProgress(id, generation: generation, value)
+    }
+
+    private func add(_ track: Track, to library: LibraryStore) {
+        library.add(track)
+        transferLog.debug("library.add \(track.id, privacy: .public) onPhone=\(library.contains(track.id))")
+        reconcile(library)
+    }
+
+    /// Drops transfers whose song is already on the phone, so a finished row can never linger.
+    func reconcile(_ library: LibraryStore) {
+        for id in book.reconcile(onPhone: library.contains) {
+            transferLog.debug("transfer cleared by reconcile \(id, privacy: .public)")
         }
     }
 
