@@ -53,7 +53,8 @@
 .viz-ctl .scrubber { width: min(640px, 100%); }
 .viz-ctl .scrub-rail { background: #ffffff33; }
 .viz-keys { display: flex; align-items: center; gap: var(--space-3); }
-.viz-keys .key { color: #f2f4f8; }
+.viz-keys .key.ghost { color: #f2f4f8; }
+.viz-keys .key:not(.lit):not(.ghost) { color: var(--ink); }
 .viz-keys .key.lit { color: var(--on-accent); }
 .viz-keys .key.ghost { background: transparent; box-shadow: none; }
 body.viz-full-open { overflow: hidden; }
