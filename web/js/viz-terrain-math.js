@@ -1,14 +1,16 @@
 export const QUALITY = [
-  { rows: 36, cols: 28, bloom: false, smoke: 0, passes: 1 },
-  { rows: 72, cols: 56, bloom: false, smoke: 2, passes: 3 },
-  { rows: 96, cols: 72, bloom: true, smoke: 3, passes: 3 },
+  { rows: 48, cols: 72, bloom: false, smoke: 0, passes: 1 },
+  { rows: 80, cols: 120, bloom: false, smoke: 2, passes: 3 },
+  { rows: 104, cols: 160, bloom: true, smoke: 3, passes: 3 },
 ];
 export const HISTORY_BINS = 64;
 export const ROWS_PER_SECOND = 16;
 export const SHAKE_MAX = 0.03;
 export const GRID_DEPTH = 12;
 export const HORIZON_TARGET = 0.57;
-export const EYE_HEIGHT = 0.4;
+export const EYE_HEIGHT = 1.6;
+export const CAM_LIMITS = { eye: [0.2, 4], pitch: [-30, 15] };
+export const NEAR_CALM = 0.35;
 export const GRID_HALF_WIDTH = 4.5;
 export const RAMP = [
   { at: 0, c: [0.02, 0.05, 0.14] },
@@ -86,6 +88,57 @@ export function heightAt(v, x, row = 0, t = 0, opts = {}) {
   return clamp01(base + swell(x, row, t, swellAmp) * (1 - base));
 }
 
+export function camClamp(v) {
+  const num = (x, lim, d) => Math.min(lim[1], Math.max(lim[0], Number.isFinite(+x) && x !== null && x !== '' ? +x : d));
+  return {
+    eye: num(v?.eye, CAM_LIMITS.eye, EYE_HEIGHT),
+    pitch: num(v?.pitch, CAM_LIMITS.pitch, defaultPitchDeg()),
+  };
+}
+
+export function camFormat(v) {
+  const c = camClamp(v);
+  return `eye=${c.eye.toFixed(2)} pitch=${c.pitch.toFixed(1)}deg`;
+}
+
+export function camParse(text) {
+  const e = /eye\s*=\s*(-?[\d.]+)/.exec(text || '');
+  const p = /pitch\s*=\s*(-?[\d.]+)/.exec(text || '');
+  return camClamp({ eye: e ? e[1] : null, pitch: p ? p[1] : null });
+}
+
+export function defaultPitchDeg(fovDeg = 62) {
+  const ndc = (HORIZON_TARGET - 0.5) * 2;
+  return -Math.atan(ndc * Math.tan((fovDeg * Math.PI) / 360)) * (180 / Math.PI);
+}
+
+export function nearEnvelope(depthFrac) {
+  const t = smoothstep(0, NEAR_CALM, clamp01(depthFrac));
+  return 0.12 + 0.88 * t;
+}
+
+export function smoothHeights(out, rows, cols, passes = 2) {
+  const tmp = new Float32Array(out.length);
+  for (let n = 0; n < passes; n += 1) {
+    for (let r = 0; r < rows; r += 1) {
+      const o = r * cols;
+      for (let c = 0; c < cols; c += 1) {
+        const a = out[o + Math.max(0, c - 1)];
+        const b = out[o + c];
+        const d = out[o + Math.min(cols - 1, c + 1)];
+        tmp[o + c] = (a + 2 * b + d) / 4;
+      }
+    }
+    for (let r = 0; r < rows; r += 1) {
+      const o = r * cols;
+      const up = Math.max(0, r - 1) * cols;
+      const dn = Math.min(rows - 1, r + 1) * cols;
+      for (let c = 0; c < cols; c += 1) out[o + c] = (tmp[up + c] + 2 * tmp[o + c] + tmp[dn + c]) / 4;
+    }
+  }
+  return out;
+}
+
 export function fillHeights(history, cols, t, out, opts) {
   const rows = history.rows;
   const bins = history.bins;
@@ -100,6 +153,7 @@ export function fillHeights(history, cols, t, out, opts) {
       out[r * cols + c] = heightAt(v, x, r, t, opts);
     }
   }
+  if (!opts || opts.smooth !== 0) smoothHeights(out, rows, cols, opts?.smooth ?? 2);
   return out;
 }
 
@@ -217,6 +271,8 @@ export function makeStars(seed, n) {
 
 export function cameraAt(t, bass = 0, opts = {}) {
   const { fly = 0.4, period = 60 } = opts;
+  const camEye = Number.isFinite(opts.eye) ? opts.eye : EYE_HEIGHT;
+  const pitchDeg = Number.isFinite(opts.pitchDeg) ? opts.pitchDeg : null;
   const shakeAmp = Math.min(SHAKE_MAX, clamp01(bass) * SHAKE_MAX);
   const shakeX = Math.sin(t * 37.1) * shakeAmp;
   const shakeY = Math.sin(t * 41.7 + 1.3) * shakeAmp;
@@ -224,12 +280,13 @@ export function cameraAt(t, bass = 0, opts = {}) {
   const forward = fly * (0.5 - 0.5 * Math.cos(phase));
   const drift = 0.6 * Math.sin(t * 0.07);
   const fov = (62 + 3 * clamp01(bass)) * (Math.PI / 180);
-  const eye = [drift + shakeX, EYE_HEIGHT + 0.04 * Math.sin(t * 0.11) + shakeY, 0.7 - forward];
+  const eye = [drift + shakeX, camEye + 0.04 * Math.sin(t * 0.11) + shakeY, 0.7 - forward];
   const targetZ = -GRID_DEPTH * 0.75;
-  const pitch = ((HORIZON_TARGET - 0.5) * 2 + 0.02 * Math.sin(t * 0.05)) * Math.tan(fov / 2);
+  const basePitch = pitchDeg === null ? defaultPitchDeg(fov * (180 / Math.PI)) : pitchDeg;
+  const slope = Math.tan((basePitch + 0.1 * Math.sin(t * 0.05)) * (Math.PI / 180));
   return {
     eye,
-    target: [drift * 0.4, eye[1] - pitch * (eye[2] - targetZ), targetZ],
+    target: [drift * 0.4, eye[1] + slope * (eye[2] - targetZ), targetZ],
     up: [0, 1, 0],
     fov,
   };

@@ -9,6 +9,7 @@ import {
 import { attachScrubber } from './scrubber.js';
 import { titleNodes } from './display-title.js';
 import { $, setIcon } from './player-ui.js';
+import { createCamPanel, loadCam } from './viz-cam-debug.js';
 
 const REDUCED = '(prefers-reduced-motion: reduce)';
 const NO_AUDIO_TIP = 'Visualizer needs Web Audio, which this browser does not offer';
@@ -81,6 +82,10 @@ export function initVisualizer({
   player, audio = $('audio'), graph = audioGraph, win = globalThis, deps = {}, caps = vizCaps(),
 }) {
   const supported = graph.isSupported(win);
+  const camPanel = /[#?&]vizdebug=1\b/.test(`${win.location?.search ?? ''}${win.location?.hash ?? ''}`)
+    ? (loadCam(), createCamPanel(document))
+    : null;
+  if (camPanel) document.body.append(camPanel.el);
   const button = $('p-viz');
   const reducedMql = win.matchMedia?.(REDUCED) ?? null;
   setIcon('p-viz', 'equalizer', 20);
@@ -140,6 +145,7 @@ export function initVisualizer({
     onOpen() {
       enableGraph();
       placeStatus(true);
+      if (camPanel) $('viz-full').append(camPanel.el);
       paintMeta(player.current);
       paintPlayButton(audio);
       scrubber.sync();
@@ -148,6 +154,7 @@ export function initVisualizer({
     },
     onClose() {
       placeStatus(false);
+      if (camPanel) document.body.append(camPanel.el);
       fullViz.setEnabled(false);
       syncBackground();
     },

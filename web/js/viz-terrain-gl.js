@@ -3,11 +3,12 @@ import {
   gridCounts, makeStars, cameraAt, horizonY, horizonGlow, mat4Perspective, mat4LookAt, mat4Multiply,
   makeRowClock, clamp01,
 } from './viz-terrain-math.js';
+import { getCam } from './viz-cam-debug.js';
 
 const DPR_CAP = 2;
 const STAR_COUNT = STAR_VISIBLE[STAR_VISIBLE.length - 1];
 const STAR_SEED = 20261014;
-const NEAR = 0.05;
+const NEAR = 0.3;
 const FAR = 40;
 const BLOOM_SCALE = 0.5;
 const BASS_BINS = 6;
@@ -17,24 +18,28 @@ precision mediump float;
 attribute vec2 a_p;
 attribute float a_h;
 uniform mat4 u_vp;
-uniform float u_halfW, u_dz, u_scroll, u_amp, u_pt, u_dpr, u_mode, u_time, u_off, u_viewW, u_energy;
+uniform float u_halfW, u_dz, u_scroll, u_amp, u_pt, u_dpr, u_mode, u_time, u_off, u_viewW, u_energy, u_depth;
 varying float v_h;
 varying float v_fog;
+varying float v_near;
 void main() {
   v_h = a_h;
   if (u_mode > 3.5) {
     gl_Position = vec4(a_p, 0.999, 1.0);
     gl_PointSize = (1.0 + a_h * 1.6) * u_dpr;
     v_fog = 0.0;
+    v_near = 1.0;
     return;
   }
   float row = a_p.y - u_scroll;
   float sway = sin(row * 0.45 + a_p.x * 2.3 + u_time * 0.5) * 0.1 * smoothstep(0.0, 10.0, row);
-  vec3 pos = vec3(a_p.x * u_halfW + sway, a_h * u_amp, -row * u_dz);
+  float env = 0.12 + 0.88 * smoothstep(0.0, 0.35, row * u_dz / u_depth);
+  vec3 pos = vec3(a_p.x * u_halfW + sway, a_h * u_amp * env, -row * u_dz);
   vec4 clip = u_vp * vec4(pos, 1.0);
   float near = clamp(3.0 / max(clip.w, 0.1), 0.0, 1.0);
   v_fog = smoothstep(3.0, 15.0, clip.w);
   clip.x += u_off * near * (0.7 + 0.5 * u_energy) * 2.0 * u_dpr / u_viewW * clip.w;
+  v_near = smoothstep(0.4, 2.2, clip.w);
   gl_Position = clip;
   gl_PointSize = u_pt * u_dpr * clamp(3.5 / max(clip.w, 0.1), 0.35, 2.2) * (1.0 + 2.2 * smoothstep(0.6, 1.0, a_h));
 }`;
@@ -45,6 +50,7 @@ uniform float u_mode, u_glow, u_energy, u_ab;
 uniform vec3 u_c0, u_c1, u_c2, u_fog;
 varying float v_h;
 varying float v_fog;
+varying float v_near;
 vec3 ramp(float h) {
   return h < 0.45 ? mix(u_c0, u_c1, smoothstep(0.0, 0.45, h)) : mix(u_c1, u_c2, smoothstep(0.45, 1.0, h));
 }
@@ -60,7 +66,7 @@ void main() {
     float far = 1.0 - 0.8 * v_fog;
     col = mix(vec3(0.45, 0.72, 0.95), ramp(1.0), smoothstep(0.25, 1.0, v_h));
     if (u_mode < 0.5) {
-      a = (0.2 + 0.6 * smoothstep(0.0, 0.9, v_h)) * far * lum * 0.95 * u_ab;
+      a = (0.3 + 0.6 * smoothstep(0.0, 0.9, v_h)) * far * lum * 1.1 * u_ab;
     } else if (u_mode < 1.5) {
       float soft = 1.0 - smoothstep(0.0, 0.5, length(gl_PointCoord - 0.5));
       a = soft * soft * (0.25 * (1.0 - 0.5 * u_energy) + 1.2 * smoothstep(0.55, 1.0, v_h)) * far * lum;
@@ -69,6 +75,7 @@ void main() {
     }
     col = mix(col, u_fog, v_fog * 0.6) * (0.85 + 0.6 * u_glow * v_h) + vec3(0.5, 0.7, 1.0) * smoothstep(0.7, 1.0, v_h) * 0.3;
   }
+  a *= v_near;
   gl_FragColor = vec4(col * a, a);
 }`;
 
@@ -354,8 +361,9 @@ export function createTerrain(canvas, opts = {}) {
     gl.uniformMatrix4fv(uni(gl, p, 'u_vp'), false, mvp);
     gl.uniform1f(uni(gl, p, 'u_halfW'), GRID_HALF_WIDTH);
     gl.uniform1f(uni(gl, p, 'u_dz'), g.dz);
+    gl.uniform1f(uni(gl, p, 'u_depth'), GRID_DEPTH);
     gl.uniform1f(uni(gl, p, 'u_scroll'), s.scroll);
-    gl.uniform1f(uni(gl, p, 'u_amp'), 0.8 + 1.4 * s.energy);
+    gl.uniform1f(uni(gl, p, 'u_amp'), 1.0 + 1.9 * s.energy);
     gl.uniform1f(uni(gl, p, 'u_pt'), 2.5);
     gl.uniform1f(uni(gl, p, 'u_time'), s.time);
     gl.uniform1f(uni(gl, p, 'u_off'), 0);
@@ -461,7 +469,8 @@ export function createTerrain(canvas, opts = {}) {
     s.lastT = t;
     s.time = (t / 1000) % 600;
     updateHeights(t);
-    const cam = cameraAt(t / 1000, s.bass);
+    const cc = getCam();
+    const cam = cameraAt(t / 1000, s.bass, { eye: cc.eye, pitchDeg: cc.pitch });
     mat4Perspective(cam.fov, view.w / view.h, NEAR, FAR, proj);
     mat4LookAt(cam.eye, cam.target, cam.up, look);
     mat4Multiply(proj, look, mvp);

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   QUALITY, clamp01, smoothstep, qualityFor, resample, createHistory, columnBin, edgeFalloff, heightAt, fillHeights,
   gridCounts, buildGridVertices, buildLineIndices, buildDepthIndices, buildCrossIndices, energyOf, easeEnergy, GRID_DEPTH, colorRamp, fillColors, horizonGlow, makeStars, cameraAt, horizonY,
+  camClamp, camFormat, camParse, defaultPitchDeg, smoothHeights, CAM_LIMITS, nearEnvelope,
   mat4Perspective, mat4LookAt, mat4Multiply, transformPoint, makeRowClock, SHAKE_MAX, RAMP,
 } from './viz-terrain-math.js';
 import { createTerrain, isWebGLAvailable, linkProgram } from './viz-terrain-gl.js';
@@ -22,7 +23,7 @@ test('qualityFor clamps and defaults', () => {
   assert.equal(qualityFor(0), QUALITY[0]);
   assert.equal(qualityFor(9), QUALITY[2]);
   assert.equal(qualityFor(NaN), QUALITY[1]);
-  assert.deepEqual([QUALITY[0].rows, QUALITY[1].cols, QUALITY[2].rows], [36, 56, 96]);
+  assert.deepEqual([QUALITY[0].rows, QUALITY[1].cols, QUALITY[2].rows], [48, 120, 104]);
 });
 
 test('resample interpolates and handles empties', () => {
@@ -249,10 +250,10 @@ test('createTerrain compiles programs, creates buffers and draws expected counts
   t.draw(new Array(64).fill(0.6), 1000);
   const elems = gl.calls.filter((c) => c[0] === 'drawElements');
   assert.equal(elems.length, 4);
-  assert.equal(elems[0][2], 72 * 55 * 0 + 56 * 71 * 2);
-  assert.equal(elems[3][2], 72 * 55 * 2);
+  assert.equal(elems[0][2], 120 * 79 * 2);
+  assert.equal(elems[3][2], 80 * 119 * 2);
   const arrays = gl.calls.filter((c) => c[0] === 'drawArrays');
-  assert.ok(arrays.some((c) => c[1] === gl.POINTS && c[3] === 72 * 56));
+  assert.ok(arrays.some((c) => c[1] === gl.POINTS && c[3] === 80 * 120));
   assert.ok(arrays.some((c) => c[1] === gl.POINTS && c[3] === 90));
   assert.equal(count(gl, 'bufferSubData'), 1);
   assert.equal(count(gl, 'drawElements'), 4);
@@ -268,7 +269,7 @@ test('quality switch rebuilds the grid and bloom only at level 2', () => {
   const t = createTerrain(fakeCanvas(), { gl, quality: 0 });
   t.draw([], 0);
   assert.equal(count(gl, 'drawElements'), 2);
-  assert.equal(gl.calls.find((c) => c[0] === 'drawElements')[2], 28 * 35 * 2);
+  assert.equal(gl.calls.find((c) => c[0] === 'drawElements')[2], 72 * 47 * 2);
   t.setQuality(2);
   assert.equal(t.quality, 2);
   assert.equal(t.bloomActive, true);
@@ -276,7 +277,7 @@ test('quality switch rebuilds the grid and bloom only at level 2', () => {
   gl.calls.length = 0;
   t.draw([0.5], 50);
   assert.equal(count(gl, 'drawElements'), 8);
-  assert.ok(gl.calls.some((c) => c[0] === 'drawElements' && c[2] === 72 * 95 * 2));
+  assert.ok(gl.calls.some((c) => c[0] === 'drawElements' && c[2] === 160 * 103 * 2));
   t.setQuality(0);
   assert.equal(t.bloomActive, false);
   t.dispose();
@@ -441,11 +442,41 @@ test('quality levels scale smoke and line passes, smoke off at the lowest', () =
   assert.ok(QUALITY[0].passes < QUALITY[1].passes);
 });
 
-test('camera sits low and the horizon is near 57% from the bottom', () => {
+test('camera sits above the near terrain and the horizon is near 57% from the bottom', () => {
   for (const t of [0, 7, 31]) {
     const cam = cameraAt(t, 0);
-    assert.ok(cam.eye[1] < 0.6);
+    assert.ok(cam.eye[1] > 1.2);
     near(horizonY(cam), 0.57, 0.04);
   }
   assert.ok(GRID_DEPTH >= 10);
+});
+
+test('camera overrides: eye and pitch move the camera and the horizon', () => {
+  const base = cameraAt(5, 0);
+  const high = cameraAt(5, 0, { eye: 2.5, pitchDeg: -10 });
+  assert.ok(high.eye[1] > base.eye[1] + 0.8);
+  assert.ok(horizonY(high) > horizonY(base));
+  near(horizonY(cameraAt(5, 0, { pitchDeg: defaultPitchDeg() })), 0.57, 0.04);
+});
+
+test('camClamp, camFormat and camParse round-trip and clamp', () => {
+  const c = camClamp({ eye: 99, pitch: -99 });
+  assert.deepEqual([c.eye, c.pitch], [CAM_LIMITS.eye[1], CAM_LIMITS.pitch[0]]);
+  assert.equal(camClamp({ eye: 'x' }).eye, camClamp({}).eye);
+  assert.equal(camFormat({ eye: 0.62, pitch: -4.5 }), 'eye=0.62 pitch=-4.5deg');
+  assert.deepEqual(camParse('eye=0.62 pitch=-4.5deg'), { eye: 0.62, pitch: -4.5 });
+  assert.deepEqual(camParse('junk'), camClamp({}));
+});
+
+test('smoothHeights rounds a spike and keeps the mean roughly', () => {
+  const a = new Float32Array(25);
+  a[12] = 1;
+  smoothHeights(a, 5, 5, 1);
+  assert.ok(a[12] < 0.5 && a[11] > 0);
+  assert.ok(Math.abs(a.reduce((x, y) => x + y) - 1) < 1e-5);
+});
+
+test('nearEnvelope calms the near field and reaches 1', () => {
+  assert.ok(nearEnvelope(0) < 0.2);
+  near(nearEnvelope(1), 1);
 });
