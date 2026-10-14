@@ -1,6 +1,6 @@
 import { api } from './api.js';
 import { player } from './player.js';
-import { el, toast, fmtTime } from './dom.js';
+import { el, fmtTime } from './dom.js';
 import { icon } from './icons.js';
 import { openMenu } from './menu.js';
 import { downloadSong } from './download.js';
@@ -13,6 +13,8 @@ import { serviceIcon } from './service-icons.js';
 import { trackSub } from './track-sub.js';
 import { bpmLabel } from './bpm-label.js';
 import { genreText } from './genre-cell.js';
+import { toggleQueue } from './queue-toggle.js';
+import { coverModel, coverButton } from './row-cover.js';
 import { editDialog } from './edit-dialog.js';
 import { displayString, titleNodes } from './display-title.js';
 
@@ -66,9 +68,19 @@ function playlistToggle(s, full, queued, queueable) {
   return el('button', { class: `pl-toggle${queued ? ' on' : ''}`, type: 'button', title: label, 'aria-label': `${label}: ${full}`, 'aria-pressed': String(queued), onclick: () => toggleQueue(s) }, icon(glyph, 18));
 }
 
-function openTitle(s, full, tip, queueable) {
-  if (!queueable) return el('span', { class: 'open t-headline', title: tip }, titleNodes(s));
-  return el('button', { class: 'open t-headline', type: 'button', title: `Play now: ${tip}`, 'aria-label': `Play now: ${full}`, onclick: () => player.playNow(s.id) }, titleNodes(s));
+function openTitle(s, full, tip) {
+  return el('button', { class: 'open t-headline', type: 'button', title: tip, 'aria-label': `Open: ${full}` }, titleNodes(s));
+}
+
+function runCover(s, action) {
+  if (action === 'play') player.playNow(s.id);
+  else if (action === 'pause' || action === 'resume') player.toggle();
+  else if (action === 'download') fetchAudio(s);
+}
+
+function coverCell(s, full, { audio, queueable, here }) {
+  const model = coverModel({ audio, queueable, here, playing: player.playing, dl: autodl.view(s.id).kind });
+  return coverButton(cover(s), model, full, { run: (action) => runCover(s, action) });
 }
 
 function durationContent(s, audio, link, dl) {
@@ -88,13 +100,13 @@ export function songRow(s, cur, flashId) {
   const queued = player.inQueue(s.id);
   const more = moreButton(s, full, { audio, queueable, queued });
   const pl = playlistToggle(s, full, queued, queueable);
-  const open = openTitle(s, full, tip, queueable);
+  const open = openTitle(s, full, tip);
   const genres = genreText(s.tags);
   const dl = audio ? null : ringModel(autodl.view(s.id));
   const durText = durationContent(s, audio, link, dl);
   const dur = el('span', { class: audio ? 'c-dur t-time' : 'c-dur t-caption' }, durText);
   return el('li', { class: `song${here ? ' current' : ''}${audio ? '' : ' no-audio'}${flashId === s.id ? ' flash' : ''}`, 'aria-current': here ? 'true' : null, 'data-id': s.id },
-    cover(s),
+    coverCell(s, full, { audio, queueable, here }),
     el('div', { class: 'info' },
       el('div', { class: 'title-line' }, open, bpmBadge(s)),
       trackSub(s) ? el('small', { class: 'sub t-subhead' }, trackSub(s)) : null),
@@ -103,10 +115,4 @@ export function songRow(s, cur, flashId) {
     pl,
     more,
     dl ? lineNode(dl) : null);
-}
-
-function toggleQueue(s) {
-  const r = player.toggleInPlaylist(s.id);
-  const messages = { duplicate: 'Already in queue', queued: 'Queued', removed: 'Removed from playlist' };
-  toast(messages[r] || 'Added');
 }

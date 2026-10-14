@@ -11,6 +11,8 @@ import { findRowIndex, scrollTarget, registerRevealer } from './reveal.js';
 import { tagLabel, categoryOf, CATEGORIES } from './tagname.js';
 import { prefs, SORTS, visibleSongs, selectedIn } from './library-data.js';
 import { songRow } from './library-rows.js';
+import { isRowControl } from './row-cover.js';
+import { openSongCard } from './song-card.js';
 import { openFilterSheet } from './library-toolbar.js';
 
 export { filterByTags, visibleSongs } from './library-data.js';
@@ -52,6 +54,11 @@ export function renderLibrary(root) {
   const status = el('div');
   const head = el('div', { class: 'table-head', 'aria-hidden': 'true' },
     el('span'), el('span', {}, 'Track'), el('span', { class: 'c-genres' }, 'Genres'), el('span', { class: 'c-dur' }, 'Time'), el('span'), el('span'));
+  list.addEventListener('click', (e) => {
+    const row = e.target.closest('li.song');
+    const song = row && !isRowControl(e.target) ? store.get(row.dataset.id) : null;
+    if (song) openSongCard(song, row.querySelector('.open'));
+  });
   const group = el('div', { class: 'group' }, head, list);
 
   root.append(
@@ -105,7 +112,9 @@ export function renderLibrary(root) {
     const empty = !songs.length && store.loaded && store.songs.length
       ? [el('li', { class: 'empty muted t-subhead' }, 'No songs match. Clear the search or the filters.')]
       : [];
+    const focusedId = document.activeElement?.classList?.contains('row-cover') ? document.activeElement.closest('li.song')?.dataset.id : null;
     list.replaceChildren(...empty, ...songs.map((s) => songRow(s, cur, flashId)));
+    if (focusedId) list.querySelectorAll('li.song').find((r) => r.dataset.id === focusedId)?.querySelector('.row-cover')?.focus();
   }
 
   // Progress ticks update the rings in place; a row gaining or losing its indicator rebuilds the list.

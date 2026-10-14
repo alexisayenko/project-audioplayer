@@ -592,6 +592,7 @@ Status: Accepted (Alex, 2026-10-14) · implemented on the web, layout not yet ch
 - Queue menu: every row, played and current included, offers Edit song, Download, Move up/down and Remove; edits keep the current song current by identity, not position, and removing the playing song advances. Spec: PLY-042, PLY-046. Playback song details drop the "..." menu for Download and Edit icon buttons (PLY-072, PLY-102).
 - Sidebar: collapsible to a 64px icon rail, remembered per browser (`web/js/sidebar-state.js`). Spec: WEB-037.
 - Scrubber: the Playback seek bar and the mini-player progress are one pointer-event slider (`scrubber.js`, pure maths in `scrub.js`), drag with a time bubble, keyboard and `role="slider"`, disabled until a duration is known. Spec: PLY-120..122.
+- Library row interactions (sub-note): the row is a button-and-card pair instead of a play target. The title button and any empty part of the row open a read-only song card (native `<dialog>`, so focus trap, Esc and inert background come for free; the Edit dialog stacks on top of it and the card repaints from the store). Play moved to the cover, a native button whose pure state model (`row-cover.js`) picks play, pause, resume or download; the current song's state is persistent and semi-opaque, other rows reveal it on hover or focus, and `@media (hover: none)` hides it so a touch tap on the cover plays and a tap elsewhere opens the card. One list-level click handler decides, no per-row listeners. Spec: LIB-120..124, PLY-131, ADD-100.
 
 
 ## ADR-0017 Server module structure and test strategy

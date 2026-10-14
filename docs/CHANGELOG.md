@@ -4,6 +4,8 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## 2026-10-14
 
+- Web: tapping a Library row opens a read-only song card (cover, title, tags, BPM, links, download state; Play now, Add to playlist, Download, Edit); the row cover is now a play/pause button that shows Pause or Play on the current song (LIB-120..124, PLY-131, ADR-0016).
+- Web: the service icons in the Add and Edit forms light up from every stored link (YouTube, SoundCloud, Spotify, Wikipedia, MusicBrainz, Discogs) instead of only after "Get metadata" (ADD-100).
 - Quality: SonarCloud cleanup -- split high-complexity functions, linear-time regexes, split test assertions, `Annotated` FastAPI dependencies, sha1 ETag marked non-security, `clean-titles.py` accepts only `library.json` paths; behaviour unchanged.
 - Web: Library, queue, mini-player, Playback details, page title and Media Session show the Remix & additional production value in parentheses after the title (LIB-112, PLY-130); the Library Track column is 300px wide (220-300px at 900-1099px, LIB-110); build artefacts (`__pycache__`, `.coverage`, `*.bak*`) are git-ignored.
 - Web and server: title cleaning also removes 'Original Mix', 'Original Version' and 'Original' when they are a whole segment ('Rover (Original Mix)' gives 'Rover'); with other words ('(Tiësto Original Mix)') and for Extended Mix, Radio Edit, Remix and the like nothing changes (ADD-077, ADR-0015).

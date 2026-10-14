@@ -11,7 +11,8 @@ const calls = stubFetch((url, o) => {
 });
 const { store } = await import('./store.js');
 const { renderLibrary, visibleSongs, filterByTags } = await import('./library.js');
-const { player } = await import('./player.js');
+const { player, initPlayer } = await import('./player.js');
+initPlayer();
 const { requestReveal } = await import('./reveal.js');
 const { setAutoDownload } = await import('./autodl.js');
 
@@ -191,7 +192,8 @@ test('no-audio rows show the source logo and a Download button; clicking request
   assert.ok(row.classList.contains('no-audio'));
   assert.ok(row.querySelector('a.src-youtube'));
   assert.equal(row.querySelector('a.src-youtube').getAttribute('href'), 'https://youtu.be/x');
-  assert.equal(row.querySelector('.open').localName, 'span', 'cannot be played while not downloaded');
+  assert.equal(row.querySelector('.open').localName, 'button', 'the title opens the song card');
+  assert.equal(row.querySelector('.row-cover').getAttribute('aria-label'), 'Download Offline', 'with Auto-download off the cover downloads');
   row.querySelector('.row-dl').click();
   await flush();
   assert.ok(c.some((x) => x.url === '/songs/n1/audio' && x.opts.method === 'POST'));
@@ -229,6 +231,58 @@ test('row menu: Play now, queue toggle and Edit song', async () => {
   document.body.querySelectorAll('.menu button').find((b) => b.textContent === 'Edit song').click();
   assert.equal(document.getElementById('edit-dialog').open, true);
   assert.equal(document.getElementById('edit-dialog').querySelector('h2').textContent, 'Edit song');
+  cleanup();
+});
+
+test('tapping a row opens the song card, but not the cover, toggle, menu or links', async () => {
+  setStore(SONGS);
+  filterByTags([]);
+  stubFetch(() => ({ body: { songs: SONGS } }));
+  const { rows, cleanup } = mount();
+  await flush();
+  const card = document.getElementById('song-card');
+  const row = () => rows().find((r) => r.dataset.id === 'a');
+  for (const sel of ['.pl-toggle', '.more', '.row-cover']) {
+    row().querySelector(sel).click();
+    assert.equal(card.open, false, sel);
+    document.body.querySelectorAll('.menu').forEach((m) => m.remove());
+    while (player.current) player.removeAt(0);
+  }
+  row().querySelector('.info').dispatchEvent(makeEvent('click', { bubbles: true }));
+  assert.equal(card.open, true);
+  assert.equal(card.querySelector('h2').textContent, 'Alpha');
+  card.close();
+  row().querySelector('.open').click();
+  assert.equal(card.open, true, 'the title button opens it too');
+  card.close();
+  rows().find((r) => r.dataset.id === 'n1').querySelector('a.src-youtube').click();
+  assert.equal(card.open, false);
+  cleanup();
+});
+
+test('the cover button plays now, shows Pause on the playing song and Play when paused', async () => {
+  setStore(SONGS);
+  filterByTags([]);
+  stubFetch(() => ({ body: { songs: SONGS } }));
+  const { rows, cleanup } = mount();
+  await flush();
+  while (player.current) player.removeAt(0);
+  const cover = (id) => rows().find((r) => r.dataset.id === id).querySelector('.row-cover');
+  assert.equal(cover('b').getAttribute('aria-label'), 'Play beta');
+  assert.equal(cover('b').classList.contains('persist'), false);
+  cover('b').focus();
+  cover('b').click();
+  assert.equal(player.current.id, 'b');
+  assert.equal(player.playing, true);
+  assert.equal(cover('b').getAttribute('aria-label'), 'Pause beta');
+  assert.equal(cover('b').classList.contains('persist'), true);
+  assert.equal(cover('a').getAttribute('aria-label'), 'Play Alpha');
+  assert.ok(document.activeElement === cover('b'), 'the rebuilt cover keeps keyboard focus');
+  cover('b').click();
+  assert.equal(player.playing, false);
+  assert.equal(cover('b').getAttribute('aria-label'), 'Play beta');
+  assert.equal(cover('b').classList.contains('persist'), true);
+  while (player.current) player.removeAt(0);
   cleanup();
 });
 
