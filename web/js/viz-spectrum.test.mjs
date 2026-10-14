@@ -273,12 +273,12 @@ test('colour helpers parse hex, rgb and fall back', () => {
   assert.deepEqual(mixColor([0, 0, 0], [100, 200, 50], 0.5), [50, 100, 25]);
 });
 
-test('barCount: pitch 4.5 px, clamped to 96..480', () => {
-  assert.equal(barCount(1200), 267);
-  assert.equal(barCount(1900), 422);
+test('barCount: pitch 4 px, clamped to 96..480', () => {
+  assert.equal(barCount(1200), 300);
+  assert.equal(barCount(1900), 475);
   assert.equal(barCount(100), 96);
   assert.equal(barCount(5000), 480);
-  assert.equal(barCount(1200, 0.5), 133);
+  assert.equal(barCount(1200, 0.5), 150);
   assert.equal(barCount(NaN), 96);
 });
 

@@ -4,6 +4,8 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## 2026-10-14
 
+- Web: Mirrored spectrum bar pitch is a whole 4 px (was 4.5), still 60% width on whole device pixels with gaps of at least 1 device px (VIZ-010).
+- Web: Selected Shuffle and Repeat toggles keep the transparent interior and 1px accent ring and gain a faint outer-only glow at 25% strength (PLY-132).
 - Web: Mirrored spectrum no longer shows striped dark gaps between bars -- bar edges snap to whole device pixels with one constant width, for any DPR and width (VIZ-010).
 - Web: Mirrored spectrum fixes -- bar density no longer drifts (the governor no longer lowers the bar count), no extra lighter ghost bars (glow is skipped without canvas blur support and the cheap level is blurred), lower half dimmer (alpha 0.35), and the visualizer is 2x shorter (Small 1/6 default, Medium 1/3) (VIZ-010, VIZ-011, VIZ-013, VIZ-017, VIZ-041).
 - Web: Shuffle, Repeat and Repeat-one icons redrawn as crisp 2-unit stroked arrows; Repeat-one now has a bold, legible numeral 1 (PLY-134).
