@@ -16,7 +16,7 @@ iOS: TestFlight internal testing only. Web: open signup (Google or Apple), per-u
 - [`server/`](server/) — FastAPI + `yt-dlp` API; also serves the web UI
 - [`web/`](web/) — web UI (plain HTML/CSS/JS, no build step)
 
-Setup and release steps: [`docs/tech/architecture.md`](docs/tech/architecture.md). Live at https://play.isayenko.net; deploy and rollback: [`docs/tech/deploy.md`](docs/tech/deploy.md) (`scripts/check.sh`, `scripts/deploy.sh`); what shipped: [`docs/CHANGELOG.md`](docs/CHANGELOG.md); requirements: [`docs/specs/`](docs/specs/README.md). Web pages: Library, Playback, Genres map, Song stats, Settings.
+Setup and release steps: [`docs/tech/architecture.md`](docs/tech/architecture.md). Live at https://electrophone.cc; deploy and rollback: [`docs/tech/deploy.md`](docs/tech/deploy.md) (`scripts/check.sh`, `scripts/deploy.sh`); what shipped: [`docs/CHANGELOG.md`](docs/CHANGELOG.md); requirements: [`docs/specs/`](docs/specs/README.md). Web pages: Library, Playback, Genres map, Song stats, Settings.
 
 ## Structure
 

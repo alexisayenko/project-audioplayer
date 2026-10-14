@@ -2,7 +2,7 @@
 
 Status: web UI and the server endpoints below are implemented
 (2026-10-12, `web/`, `server/`); the iOS app (`ios/`) implements the same tab flow (ADR-0007, [`../specs/ios.md`](../specs/ios.md)). The web UI is served by FastAPI from
-the same origin as the API at `play.isayenko.net` (no CORS, token-protected
+the same origin as the API at `electrophone.cc` (no CORS, token-protected
 API), see ADR-0003 in [`../tech/decisions.md`](../tech/decisions.md). The
 iOS app mirrors the web flow with Library, Playback and
 Settings tabs (iOS search states: spinner, "No results", and inline errors for 401, 403 (account not allowed), unreachable and server failures, see IOS-023; Settings shows a "Custom server · Reset" row only for a non-default connection, IOS-010; Add is a sheet from the Library header; YouTube text search is a secondary screen inside it, with an opaque bottom search bar, an inner clear X (only with text) and no Cancel, back is the "<" button; Library lists the whole catalog, with a "Downloaded" toggle and four category chips that open a bottom sheet), see [`../tech/architecture.md`](../tech/architecture.md).

@@ -2,7 +2,7 @@
 
 Possible domains for the brand **Electrophone Vega 108** (see
 [Name and domain](README.md#name-and-domain)). The app is live today at
-https://play.isayenko.net ([architecture](../tech/architecture.md)); a
+https://electrophone.cc ([architecture](../tech/architecture.md)); a
 dedicated domain is optional and not decided. This file holds the detailed
 domain data and the checks history.
 
@@ -57,7 +57,7 @@ Next steps for the domain:
 
 - add a tunnel hostname for it in the cloudflared ingress on perkunas, plus
   DNS records;
-- redirect `play.isayenko.net` to the new domain;
+- remove `play.isayenko.net` (done 2026-10-14, no redirect, ADR-0019);
 - update OAuth redirect URIs and allowed origins for Google and Apple sign-in;
 - update the iOS app's default server URL;
 - update `docs/tech/deploy.md` and `CLAUDE.md` / `AGENTS.md` (keep the two

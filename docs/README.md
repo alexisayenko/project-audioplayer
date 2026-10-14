@@ -135,7 +135,7 @@ and rules):
 - [`tech/deploy.md`](tech/deploy.md) — deploy runbook for the live
   server (where things live, deploy, rollback, verify, signup off)
 - [`tech/domain-migration.md`](tech/domain-migration.md) — runbook for moving
-  the site from play.isayenko.net to electrophone.cc
+  the site from play.isayenko.net to electrophone.cc (the old host is removed, ADR-0019)
 - [`specs/README.md`](specs/README.md) — testable requirements per area
   (API, data model, tags, library, playback, web, genres, stats, visualizer, iOS, non-functional)
 - [`CHANGELOG.md`](CHANGELOG.md) — what shipped, newest first
@@ -232,7 +232,7 @@ Obsolete docs go to `archive/docs/` at repo root, not inside
 | Project milestones (launches, releases, evidence) | [`milestones.md`](milestones.md) | Looking up when an event happened, or what shipped in a release |
 | Product core idea + section glossary | [`product/README.md`](product/README.md) | Orienting on what the product is at the conceptual level |
 | Product entities (one file per noun) | [`product/concepts/`](product/concepts/) | Modeling a stable noun the product reasons about |
-| Deploy, rollback, signup switch of the live server | [`tech/deploy.md`](tech/deploy.md) | Shipping a change or operating play.isayenko.net |
+| Deploy, rollback, signup switch of the live server | [`tech/deploy.md`](tech/deploy.md) | Shipping a change or operating electrophone.cc |
 | Cross-folder feature specs (one file per verb) | [`product/features/`](product/features/) | Implementing or scoping a specific user-facing capability |
 | Per-release checklist, store metadata, legal drafts | [`release/`](release/) | Preparing or submitting a release |
 | Tasks (numbered, frontmatter-tagged) | [`tasks/`](tasks/) | Creating or closing a task; orienting at session start |

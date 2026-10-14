@@ -1,5 +1,7 @@
 # Domain migration: play.isayenko.net to electrophone.cc
 
+Update 2026-10-14 (owner): `play.isayenko.net` is removed with no redirect; the redirect and 12-month keep steps below are superseded (ADR-0019 amendment). Its DNS record is deleted; the cloudflared ingress rule is still to be removed on perkunas.
+
 Runbook for moving the live site from `https://play.isayenko.net` to
 `https://electrophone.cc` (bought 2026-10-14, see
 [brand/domains.md](../brand/domains.md)). Same server (LXC 106 `tools` on

@@ -76,7 +76,7 @@ sign-in, Electrophone look, internal TestFlight builds. Spans `ios/`, `server/`
 ## C2 — Server, library and web UI
 
 The FastAPI server, the git-backed library, the web UI and their deployment
-at `play.isayenko.net`.
+at `electrophone.cc`.
 
 - Lives in: `server/`, `web/`
 - Source spec: [`specs/README.md`](specs/README.md) (API, DATA, TAG, ADD,

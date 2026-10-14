@@ -40,7 +40,7 @@ targets:
         CFBundleURLTypes:
           - CFBundleURLName: google-oauth
             CFBundleURLSchemes: [$(GOOGLE_REVERSED_CLIENT_ID)]
-        # The server is HTTPS (play.isayenko.net); this blanket exception is a known gap and can be tightened (architecture.md, Known gaps).
+        # The server is HTTPS (electrophone.cc); this blanket exception is a known gap and can be tightened (architecture.md, Known gaps).
         NSAppTransportSecurity:
           NSAllowsArbitraryLoads: true
     settings:

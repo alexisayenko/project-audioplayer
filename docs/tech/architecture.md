@@ -14,7 +14,7 @@ iPhone (SwiftUI)  --http, Bearer ID token or X-API-Token-->  same server
 iOS cannot run `yt-dlp`. The server extracts the audio; the app only
 talks to it and plays local files. The web interface is built
 first and served by FastAPI itself (same origin, no CORS) at
-`play.isayenko.net`.
+`electrophone.cc`.
 
 ## Deployment
 
@@ -22,8 +22,8 @@ Runs as a systemd service in the existing `tools` LXC 106 (Debian 13,
 `192.168.0.10`) on home server `perkunas`: no new LXC, no Docker, ~2
 cores max (the CPU throttles at 100 C; the LXC also hosts Immich).
 Public via the perkunas Cloudflare Tunnel: ingress
-`play.isayenko.net` -> `http://192.168.0.10:<port>`; live at
-`https://play.isayenko.net`. Audio sits on a ZFS dataset on pool-3
+`electrophone.cc` -> `http://192.168.0.10:<port>`; live at
+`https://electrophone.cc`. Audio sits on a ZFS dataset on pool-3
 (e.g. `/data/music`, single disk, no redundancy) bind-mounted into the LXC.
 See [`decisions.md`](decisions.md) (ADR-0001, ADR-0003, ADR-0004,
 ADR-0005).
@@ -173,7 +173,7 @@ Sources in `ios/Sources/`:
 - `PlayerService` — `AVPlayer`, `.playback` audio session, queue, shuffle and
   repeat, `MPNowPlayingInfoCenter`, `MPRemoteCommandCenter`;
   `UIBackgroundModes: audio`.
-- The server URL defaults to `https://play.isayenko.net`; Settings has cards Account (Apple/Google sign-in), Downloads (read-only quality, auto-download and mobile-data switches; a "Custom server · Reset" row only for a non-default server or a stale token) and Storage, then the version line; no server or token field.
+- The server URL defaults to `https://electrophone.cc`; Settings has cards Account (Apple/Google sign-in), Downloads (read-only quality, auto-download and mobile-data switches; a "Custom server · Reset" row only for a non-default server or a stale token) and Storage, then the version line; no server or token field.
 
 ```sh
 brew install xcodegen
@@ -202,7 +202,7 @@ Builds expire after 90 days; re-upload.
 - iOS handling of the ADR-0012 `queued` job status is not done: [task-0016](../tasks/task-0016.md).
 - Server covers are not stored on the phone: blank offline after a relaunch.
 - `NSAllowsArbitraryLoads` is on in `project.yml`; the server is now HTTPS
-  at `play.isayenko.net`, so it can be tightened.
+  at `electrophone.cc`, so it can be tightened.
 - No CI workflows (SonarCloud analyses `main` itself); local `scripts/check.sh` and `scripts/deploy.sh` ([ci-cd.md](ci-cd.md)).
 - Open signup for Google still needs the consent screen published (see below).
 

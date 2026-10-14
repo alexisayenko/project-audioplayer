@@ -1,9 +1,10 @@
 # Changelog
 
-What shipped, newest first. One line each; the web UI and server are live at https://play.isayenko.net. Not yet deployed: the 2026-10-14 entries below (guest view, visualizer, BPM backfill, `PUBLIC_HOSTS` and the rest) are in code on `origin/main` but not on the live server; the deploy is blocked on SSH access ([task-0027](tasks/task-0027.md)). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
+What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Not yet deployed: the 2026-10-14 entries below (guest view, visualizer, BPM backfill, `PUBLIC_HOSTS` and the rest) are in code on `origin/main` but not on the live server; the deploy is blocked on SSH access ([task-0027](tasks/task-0027.md)). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
 ## 2026-10-14
 
+- Infra and docs: `play.isayenko.net` removed with no redirect (DNS record deleted, ingress rule to remove by hand on perkunas); electrophone.cc is the only host; defaults, examples, scripts and docs updated (ADR-0019 amendment).
 - Web: the visualizer no longer draws a fake animated envelope when the analyser is missing or silent (flat idle line plus a status naming the cause), resumes the audio context on V, button and play, and `?vizdebug=1` shows context state, analyser data and same-origin checks for Safari (VIZ-036); server tests added for `/files/<id>` Range 206 and `Accept-Ranges` (owner and guest).
 - Server and web: guest scrub no longer exposes the top-level `file` and guest streaming 404s for ids outside the owner's catalog; metadata-only `POST /songs` no longer counts against `USER_ADDS_PER_HOUR` (only the audio fetch does); the sign-in error text no longer hardcodes `play.isayenko.net`; coverage measured (server about 99%, web about 96%) (NFR-056, NFR-081, NFR-090, ADR-0010, ADR-0017, ADR-0018).
 - Web: the visualizer now works in Safari -- the Web Audio context and media source are created synchronously inside the first click or key press (V, the Visualizer button, Play, Next, Previous), a blocked context retries on the next gesture, and auto-advance only resumes it; verified on macOS Safari with `?vizdebug=1` (state ok, live analyser data) (VIZ-036).

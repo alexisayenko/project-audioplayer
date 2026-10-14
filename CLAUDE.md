@@ -30,9 +30,9 @@ Catalog and audio are separate ([ADR-0010](docs/tech/decisions.md), server side 
 
 `ios/` — SwiftUI app (iOS 17, XcodeGen `project.yml`, AVPlayer). `server/` —
 FastAPI wrapper around `yt-dlp` (Python 3.11+), run on the home server `perkunas` behind a Cloudflare
-Tunnel (live at https://play.isayenko.net, LXC 106 `tools`, deploy runbook [docs/tech/deploy.md](docs/tech/deploy.md); Tailscale is not used) with Apple/Google sign-in in the apps and the web UI (open signup,
+Tunnel (live at https://electrophone.cc, LXC 106 `tools`, deploy runbook [docs/tech/deploy.md](docs/tech/deploy.md); Tailscale is not used) with Apple/Google sign-in in the apps and the web UI (open signup,
 per-user storage; the owner's `X-API-Token` stays server-side for scripts); see [docs/tech/decisions.md](docs/tech/decisions.md). Web UI in `web/`.
-Status 2026-10-14: the server and web UI are live at https://play.isayenko.net (perkunas LXC `tools`; `scripts/deploy.sh`, `scripts/check.sh`; what shipped: [docs/CHANGELOG.md](docs/CHANGELOG.md)). The iOS app (tabs Library, Playback, Settings, Add as a sheet; shared song form; Electrophone look, task-0005) is on internal
+Status 2026-10-14: the server and web UI are live at https://electrophone.cc (perkunas LXC `tools`; `scripts/deploy.sh`, `scripts/check.sh`; what shipped: [docs/CHANGELOG.md](docs/CHANGELOG.md)). The iOS app (tabs Library, Playback, Settings, Add as a sheet; shared song form; Electrophone look, task-0005) is on internal
 TestFlight (build 20261024); its server flows are not yet tested on a device; check script and server tests pass (server about 99% line coverage, web about 96%, measured manually; module structure: ADR-0017). Web pages: Library, Playback, Genres map, Song stats, Settings; "Identify from audio" (AcoustID, Discogs) is implemented but needs `ACOUSTID_API_KEY`, `DISCOGS_TOKEN` and `fpcalc` on the server ([deploy](docs/tech/deploy.md#identification-keys)).
 
 ## Design: single source of truth

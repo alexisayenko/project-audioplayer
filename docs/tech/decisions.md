@@ -641,3 +641,4 @@ Status: Accepted (Alex, 2026-10-14)
 - Sessions: the cookie has no `Domain`, so it is host-only and each host has its own sign-in; users sign in again on the new host. The CSRF check (custom header plus an Origin equal to the Host) holds on every host.
 - Sign-in: Google and Apple consoles must list the new origin and return URL (add, never replace); a rejected address shows "This address is not registered with ... sign-in yet".
 - Rejected: a cookie `Domain` shared across both hosts (not possible across different registrable domains); a redirect on every method (it would break a POST in flight).
+- Amendment 2026-10-14 (owner): `play.isayenko.net` is removed entirely, with no redirect. Its DNS record is deleted and electrophone.cc is the only hostname; the dual-host and redirect steps above are historical. Installed iOS builds that still store the old URL are rewritten to the default by `Settings.init`.

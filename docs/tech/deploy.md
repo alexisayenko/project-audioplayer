@@ -1,6 +1,6 @@
 # Deploy runbook
 
-Status: Accepted · 2026-10-14. Live at https://play.isayenko.net since 2026-10-13 (ADR-0004). Design background: [architecture.md](architecture.md); env vars and limits: [architecture.md](architecture.md#limits-and-environment-adr-0012).
+Status: Accepted · 2026-10-14. Live at https://electrophone.cc since 2026-10-13 (ADR-0004). Design background: [architecture.md](architecture.md); env vars and limits: [architecture.md](architecture.md#limits-and-environment-adr-0012).
 
 ## Where things live
 
@@ -8,7 +8,7 @@ Status: Accepted · 2026-10-14. Live at https://play.isayenko.net since 2026-10-
 | --- | --- |
 | Host | `perkunas` (Proxmox), LXC 106 `tools` (Debian 13, `192.168.0.10`), shared with Immich |
 | Service | systemd `audioplayer.service`, user `audioplayer`, code in `/opt/audioplayer` (git clone of this repo, branch `main`) |
-| Public URL | Cloudflare Tunnel ingress `play.isayenko.net` -> the service on `192.168.0.10:8000` (uvicorn `--host 0.0.0.0 --port 8000`). `cloudflared` does not run on LXC 106; its host, config path and ingress line are not verified. Tailscale is not used |
+| Public URL | Cloudflare Tunnel ingress `electrophone.cc` -> the service on `192.168.0.10:8000` (uvicorn `--host 0.0.0.0 --port 8000`). `cloudflared` does not run on LXC 106; its host, config path and ingress line are not verified. Tailscale is not used |
 | Venv | `/opt/audioplayer/venv` (`ExecStart=/opt/audioplayer/venv/bin/uvicorn app.main:app`, working dir `/opt/audioplayer/server`) |
 | Env file | `/etc/audioplayer/env`, loaded by the unit (secrets; never in a repo, never printed). Keys present: `AUDIO_API_TOKEN`, `AUDIO_DATA_REPO`, `AUDIO_COVERS_REPO`, `AUDIO_HOSTS`, `AUDIO_DATA_DIR`, `ALLOWED_EMAIL`, `GOOGLE_WEB_CLIENT_ID`, `APPLE_WEB_CLIENT_ID`, `APPLE_AUDIENCE`, `GOOGLE_CLIENT_ID`, `AUDIO_SESSION_SECRET`; optional host keys `PUBLIC_HOSTS`, `CANONICAL_HOST`, `OAUTH_REDIRECT_URIS` (ADR-0019, see [Hostnames](#hostnames)); no limit keys are set, so the defaults apply |
 | Audio | ZFS dataset `pool-3/music` (single disk, no redundancy), mounted in the LXC at `/srv/music`; audio resolves via `AUDIO_MUSIC_ROOT` / `AUDIO_HOSTS` (STO-010; `AUDIO_DATA_DIR` holds only `library.json`, `covers/` and `genre-ontology.json`); files under `/srv/music/users/<uid>/` |
@@ -49,7 +49,7 @@ Then repeat the checklist below. To return to `main` later: `git checkout main &
 ## Verify
 
 1. `scripts/deploy.sh` ends with the new short SHA and `web index: 200`.
-2. `curl -s https://play.isayenko.net/health` gives `{"status":"ok","sync":"ok"}`.
+2. `curl -s https://electrophone.cc/health` gives `{"status":"ok","sync":"ok"}`.
 3. `systemctl status audioplayer` is active, `journalctl -u audioplayer -n 50` has no traceback.
 4. Open the site signed in: Library lists songs, one song plays, cover loads.
 5. The page `<script>` URLs start with `/_v/<version>/` and the version changed (API-051).

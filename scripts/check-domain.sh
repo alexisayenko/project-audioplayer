@@ -3,7 +3,7 @@
 # Usage: bash scripts/check-domain.sh [HOST] [--old OLD_HOST]
 #   HOST      host to check (default: electrophone.cc)
 #   --old H   previous host, compared with HOST (default: none; with no
-#             --old only HOST is checked). Example: --old play.isayenko.net
+#             --old only HOST is checked). Example: --old old.example.net
 # Checks: DNS (NS/A/AAAA/CNAME), TLS (certificate, HSTS), app (/health, /,
 # guest /me, /library, unauthenticated write, audio Range, cache header),
 # the old host's redirect behaviour, and equal song counts on both hosts.

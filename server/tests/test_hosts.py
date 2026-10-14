@@ -18,11 +18,11 @@ def client(peer="203.0.113.9"):
             scope = {**scope, "client": (peer, 5000)}
         await main.app(scope, receive, send)
 
-    return TestClient(app, base_url="https://play.isayenko.net", follow_redirects=False)
+    return TestClient(app, base_url="https://old.example.net", follow_redirects=False)
 
 
 def test_unset_means_no_redirect():
-    r = client().get("/health", headers={"host": "play.isayenko.net"})
+    r = client().get("/health", headers={"host": "old.example.net"})
     assert r.status_code == 200
     assert client().get("/auth/config").status_code == 200
 
@@ -67,29 +67,29 @@ def test_invalid_canonical_is_ignored(monkeypatch):
 
 def test_public_hosts_validation(monkeypatch):
     monkeypatch.setenv("PUBLIC_HOSTS", " Play.Isayenko.net, electrophone.cc ,bad host,,x/y,-a.com")
-    assert hosts.public_hosts() == ["play.isayenko.net", "electrophone.cc"]
+    assert hosts.public_hosts() == ["old.example.net", "electrophone.cc"]
 
 
 def test_apple_redirect_follows_host_by_default():
-    assert client().get("/auth/config").json()["apple_redirect"] == "https://play.isayenko.net/"
+    assert client().get("/auth/config").json()["apple_redirect"] == "https://old.example.net/"
     r = client().get("/auth/config", headers={"host": "electrophone.cc"})
     assert r.json()["apple_redirect"] == "https://electrophone.cc/"
 
 
 def test_unknown_host_never_leaks_into_redirect_uri(monkeypatch):
-    monkeypatch.setenv("PUBLIC_HOSTS", "play.isayenko.net,electrophone.cc")
+    monkeypatch.setenv("PUBLIC_HOSTS", "old.example.net,electrophone.cc")
     monkeypatch.setenv("CANONICAL_HOST", "electrophone.cc")
     cfg = client("127.0.0.1").get("/auth/config", headers={"host": "evil.example", "x-forwarded-host": "evil.example"})
     assert cfg.status_code == 308 or cfg.json()["apple_redirect"] == "https://electrophone.cc/"
     monkeypatch.delenv("CANONICAL_HOST")
     cfg = client().get("/auth/config", headers={"host": "evil.example"})
-    assert cfg.json()["apple_redirect"] == "https://play.isayenko.net/"
+    assert cfg.json()["apple_redirect"] == "https://old.example.net/"
 
 
 def test_explicit_redirect_uris(monkeypatch):
-    monkeypatch.setenv("OAUTH_REDIRECT_URIS", "https://play.isayenko.net/,https://electrophone.cc/cb")
+    monkeypatch.setenv("OAUTH_REDIRECT_URIS", "https://old.example.net/,https://electrophone.cc/cb")
     assert client().get("/auth/config", headers={"host": "electrophone.cc"}).json()["apple_redirect"] == "https://electrophone.cc/cb"
-    assert client().get("/auth/config", headers={"host": "evil.example"}).json()["apple_redirect"] == "https://play.isayenko.net/"
+    assert client().get("/auth/config", headers={"host": "evil.example"}).json()["apple_redirect"] == "https://old.example.net/"
 
 
 def test_explicit_single_redirect_uri_still_wins(monkeypatch):
@@ -106,4 +106,4 @@ def test_cookie_scope_unchanged_host_only(monkeypatch):
 
 def test_csrf_origin_must_match_each_host():
     assert session.csrf_ok({**CSRF, "origin": "https://electrophone.cc"}, "electrophone.cc")
-    assert not session.csrf_ok({**CSRF, "origin": "https://electrophone.cc"}, "play.isayenko.net")
+    assert not session.csrf_ok({**CSRF, "origin": "https://electrophone.cc"}, "old.example.net")
