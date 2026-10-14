@@ -47,7 +47,7 @@
       <div class="dl-note" id="player-dl" role="status" hidden><span class="t-subhead" id="player-dl-text"></span><button class="btn outline small" id="player-dl-btn" type="button" hidden>Download</button></div>
       <div class="pb-actions"><button class="icon round" id="p-download" type="button" title="Download" aria-label="Download" hidden></button><button class="icon round" id="p-edit" type="button" title="Edit song" aria-label="Edit song" hidden></button></div>
       <div class="pb-progress">
-        <input type="range" id="scrub" class="slider" min="0" max="1000" value="0" step="1" aria-label="Seek">
+        <div id="scrub" class="scrubber" role="slider" tabindex="-1" aria-label="Seek" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0" aria-valuetext="0:00 of 0:00" aria-disabled="true"><span class="scrub-rail"><span class="scrub-fill"></span></span><span class="scrub-thumb"></span><span class="scrub-bubble" aria-hidden="true">0:00</span></div>
         <div class="times t-time"><span id="t-cur">0:00</span><span id="t-dur">-0:00</span></div>
       </div>
       <div class="pb-controls">
@@ -107,7 +107,7 @@
   </div>
   <div class="mini-foot">
     <span class="t-time" id="mini-time">0:00 / 0:00</span>
-    <div class="mini-progress"><div id="mini-bar"></div></div>
+    <div id="mini-scrub" class="scrubber mini-progress" role="slider" tabindex="-1" aria-label="Seek" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0" aria-valuetext="0:00 of 0:00" aria-disabled="true"><span class="scrub-rail"><span class="scrub-fill"></span></span><span class="scrub-thumb"></span><span class="scrub-bubble" aria-hidden="true">0:00</span></div>
     <input type="range" id="mini-volume" class="slider" min="0" max="100" value="100" step="1" aria-label="Volume">
   </div>
 </section>

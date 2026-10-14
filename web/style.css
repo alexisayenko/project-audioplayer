@@ -371,8 +371,24 @@ body.signed-out #nav a:not([data-route="settings"]), body.signed-out #mini { dis
 .mini-actions .key.on { background: var(--accent); color: var(--on-accent); box-shadow: var(--glow-accent); }
 .mini-foot { display: contents; }
 .mini-foot > :not(.mini-progress) { display: none; }
-.mini-progress { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; }
-.mini-progress > div { height: 100%; width: 0; background: var(--accent); }
+.scrubber {
+  --p: 0; position: relative; display: block; height: 28px; touch-action: none; cursor: pointer;
+  user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; outline: none;
+}
+.scrub-rail { position: absolute; left: 0; right: 0; top: 50%; height: 6px; margin-top: -3px; border-radius: var(--radius-pill); background: var(--surface-sunken); overflow: hidden; }
+.scrub-fill { display: block; height: 100%; width: calc(var(--p) * 100%); background: var(--accent); }
+.scrub-thumb { position: absolute; top: 50%; left: calc(var(--p) * 100%); width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 50%; background: var(--surface); box-shadow: var(--shadow-key); }
+.scrubber:focus-visible .scrub-thumb { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
+.scrubber.dragging .scrub-thumb { transform: scale(1.25); }
+.scrub-bubble {
+  position: absolute; bottom: calc(100% + 2px); left: clamp(22px, calc(var(--p) * 100%), calc(100% - 22px)); transform: translateX(-50%); display: none; pointer-events: none;
+  padding: 2px 8px; border-radius: var(--radius-pill); background: var(--surface-key); border: 1px solid var(--line); box-shadow: var(--shadow-float); color: var(--ink); font-variant-numeric: tabular-nums; font-size: 12px; line-height: 18px; white-space: nowrap; z-index: 2;
+}
+.scrubber.dragging .scrub-bubble { display: block; }
+.scrubber[aria-disabled=true] { opacity: 0.5; cursor: default; }
+.mini-progress { position: absolute; left: 0; right: 0; bottom: 0; height: 24px; }
+.mini-progress .scrub-rail { top: auto; bottom: 0; margin: 0; height: 3px; border-radius: 0; }
+.mini-progress .scrub-thumb { display: none; }
 @media (min-width: 480px) {
   .mini {
     left: var(--rail-w); right: 0; margin: 0 auto; width: var(--mini-w); max-width: calc(100% - var(--rail-w) - 2 * var(--space-4));
@@ -384,8 +400,9 @@ body.signed-out #nav a:not([data-route="settings"]), body.signed-out #mini { dis
   .mini-foot > :not(.mini-progress) { display: revert; }
   .mini-foot > .slider { display: block; flex: none; width: 110px; height: 28px; }
   .mini-foot .t-time { flex: none; min-width: 84px; }
-  .mini-progress { position: relative; flex: 1; left: auto; right: auto; bottom: auto; height: 6px; border-radius: var(--radius-pill); background: var(--surface-sunken); overflow: hidden; }
-  .mini-progress > div { border-radius: var(--radius-pill); }
+  .mini-progress { position: relative; flex: 1; left: auto; right: auto; bottom: auto; height: 28px; }
+  .mini-progress .scrub-rail { top: 50%; bottom: auto; margin-top: -3px; height: 6px; border-radius: var(--radius-pill); }
+  .mini-progress .scrub-thumb { display: block; }
 }
 @media (min-width: 640px) { .mini .opt { display: inline-grid; } }
 
@@ -449,7 +466,7 @@ body.signed-out #nav a:not([data-route="settings"]), body.signed-out #mini { dis
 .pb-actions { display: flex; justify-content: flex-end; gap: var(--space-2); }
 .pb-actions:not(:has(:not([hidden]))) { display: none; }
 .pb-progress { display: flex; flex-direction: column; gap: 0; }
-.pb-progress .slider { flex: none; width: 100%; height: 28px; }
+.pb-progress .scrubber { width: 100%; }
 .times { display: flex; justify-content: space-between; color: var(--ink-muted); }
 .pb-controls { display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; }
 .tray { margin: 0; border: 0; min-width: 0; display: inline-flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); border-radius: var(--radius-tray); background: var(--surface); box-shadow: var(--shadow-card); }

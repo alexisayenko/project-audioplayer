@@ -11,6 +11,7 @@ import { downloadSong } from './download.js';
 import { autodl, autoDownloadOn } from './autodl.js';
 import { editDialog, dialogHead } from './edit-dialog.js';
 import { requestReveal } from './reveal.js';
+import { attachScrubber } from './scrubber.js';
 
 const audio = document.getElementById('audio');
 const $ = (id) => document.getElementById(id);
@@ -35,7 +36,7 @@ let shuffle = false;
 let repeat = 'off';
 let played = [];
 let history = [];
-let scrubbing = false;
+const scrubbers = [];
 let pendingRestore = false;
 let awaiting = null;
 const listeners = new Set();
@@ -349,6 +350,7 @@ function render() {
     $('player-cover').removeAttribute('src');
     $('player-cover').dataset.src = '';
     $('cover-art').classList.add('noart');
+    renderProgress();
     $('player-dl').hidden = true;
     renderQueue();
     listeners.forEach((fn) => fn());
@@ -380,6 +382,7 @@ function render() {
   $('cover-art').classList.toggle('noart', !song.cover);
   renderQueue();
   document.title = `${song.title} - Electrophone`;
+  renderProgress();
   listeners.forEach((fn) => fn());
 }
 
@@ -527,16 +530,23 @@ function updateDl() {
   for (const node of $('queue-list').querySelectorAll('[data-dl]')) paintDl(node, node.dataset.dl);
 }
 
+const isScrubbing = () => scrubbers.some((x) => x.dragging);
+
+function previewTime(t) {
+  if (t == null) return;
+  const dur = audio.duration;
+  $('mini-time').textContent = `${fmtTime(t)} / ${fmtTime(dur)}`;
+  $('t-cur').textContent = fmtTime(t);
+  $('t-dur').textContent = `-${fmtTime(Number.isFinite(dur) ? Math.max(0, dur - t) : 0)}`;
+}
+
 function renderProgress() {
   const dur = audio.duration;
   const cur = audio.currentTime;
-  const frac = Number.isFinite(dur) && dur > 0 ? cur / dur : 0;
-  $('mini-bar').style.width = `${frac * 100}%`;
-  $('scrub').style.setProperty('--p', frac.toFixed(4));
-  $('mini-time').textContent = `${fmtTime(cur)} / ${fmtTime(dur)}`;
-  $('t-dur').textContent = `-${fmtTime(Number.isFinite(dur) ? Math.max(0, dur - cur) : 0)}`;
-  if (!scrubbing) {
-    $('scrub').value = Math.round(frac * 1000);
+  for (const x of scrubbers) x.sync();
+  if (!isScrubbing()) {
+    $('mini-time').textContent = `${fmtTime(cur)} / ${fmtTime(dur)}`;
+    $('t-dur').textContent = `-${fmtTime(Number.isFinite(dur) ? Math.max(0, dur - cur) : 0)}`;
     $('t-cur').textContent = fmtTime(cur);
   }
   if ('mediaSession' in navigator && Number.isFinite(dur) && dur > 0) {
@@ -652,16 +662,14 @@ export function initPlayer() {
   });
   $('queue-list').addEventListener('scroll', closeMenu);
 
-  const scrub = $('scrub');
-  scrub.addEventListener('input', () => {
-    scrubbing = true;
-    scrub.style.setProperty('--p', (scrub.value / 1000).toFixed(4));
-    $('t-cur').textContent = fmtTime((scrub.value / 1000) * (audio.duration || 0));
-  });
-  scrub.addEventListener('change', () => {
-    player.seek((scrub.value / 1000) * (audio.duration || 0));
-    scrubbing = false;
-  });
+  for (const id of ['scrub', 'mini-scrub']) {
+    scrubbers.push(attachScrubber($(id), {
+      duration: () => audio.duration,
+      time: () => audio.currentTime,
+      onSeek: (t) => { player.seek(t); renderProgress(); },
+      onPreview: previewTime,
+    }));
+  }
 
   let stored = 1;
   try { const v = Number.parseFloat(localStorage.getItem(VOLUME_KEY)); if (Number.isFinite(v)) stored = v; } catch { /* storage unavailable */ }
