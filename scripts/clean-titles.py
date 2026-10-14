@@ -25,6 +25,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "server"))
 from app import library, titleclean  # noqa: E402
 
 
+LIBRARY_NAME = "library.json"
+
+
 def plan(songs: list[dict]) -> list[tuple[int, str, str]]:
     out = []
     for i, song in enumerate(songs):
@@ -60,30 +63,37 @@ def main() -> int:
     ap.add_argument("--backup-dir", type=Path, help="default: /var/backups/audioplayer-titles-<ts>, else system temp")
     ap.add_argument("--sample", type=int, default=15)
     args = ap.parse_args()
-    paths = list(args.library)
+    paths = [p.resolve() for p in args.library]
     if args.data_dir:
-        paths += sorted(args.data_dir.glob("users/*/library.json"))
+        paths += sorted(args.data_dir.resolve().glob("users/*/library.json"))
     if not paths:
         ap.error("give --library or --data-dir")
+    if bad := [p for p in paths if p.name != LIBRARY_NAME]:
+        ap.error(f"not a {LIBRARY_NAME}: {bad[0]}")
     stamp = time.strftime("%Y%m%d-%H%M%S")
     backup_dir = None
     for path in paths:
-        songs = library.load(path)
-        changes = plan(songs)
-        print(f"{path}: {len(songs)} songs, {len(changes)} titles would change" + ("" if args.apply else " (dry run)"))
-        for _, old, new in changes[: args.sample]:
-            print(f"  {old!r} -> {new!r}")
-        if args.apply and changes:
-            if backup_dir is None:
-                backup_dir = args.backup_dir or default_backup_dir(stamp)
-                backup_dir.mkdir(parents=True, exist_ok=True)
-            backup = backup_path(backup_dir, path, stamp)
-            shutil.copy2(path, backup)
-            for i, _, new in changes:
-                songs[i]["title"] = new
-            library.save(path, songs)
-            print(f"  applied; backup at {backup}")
+        backup_dir = process(path, args, stamp, backup_dir)
     return 0
+
+
+def process(path: Path, args: argparse.Namespace, stamp: str, backup_dir: Path | None) -> Path | None:
+    songs = library.load(path)
+    changes = plan(songs)
+    print(f"{path}: {len(songs)} songs, {len(changes)} titles would change" + ("" if args.apply else " (dry run)"))
+    for _, old, new in changes[: args.sample]:
+        print(f"  {old!r} -> {new!r}")
+    if args.apply and changes:
+        if backup_dir is None:
+            backup_dir = args.backup_dir or default_backup_dir(stamp)
+            backup_dir.mkdir(parents=True, exist_ok=True)
+        backup = backup_path(backup_dir, path, stamp)
+        shutil.copy2(path, backup)
+        for i, _, new in changes:
+            songs[i]["title"] = new
+        library.save(path, songs)
+        print(f"  applied; backup at {backup}")
+    return backup_dir
 
 
 if __name__ == "__main__":
