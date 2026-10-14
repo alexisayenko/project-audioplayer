@@ -373,6 +373,17 @@ def wait_for(client, headers, vid, status, secs=10):
     raise AssertionError(f"{vid} never became {status}: {r.text}")
 
 
+def drain_scheduler(timeout=10):
+    """Wait until no download thread runs or waits, so none outlives its test."""
+    end = time.time() + timeout
+    while time.time() < end:
+        with deps.SCHED._lock:
+            idle = deps.SCHED._running == 0 and not deps.SCHED._pending
+        if idle:
+            return
+        time.sleep(0.01)
+
+
 @pytest.fixture
 def slow(multi, monkeypatch):
     """Real worker threads; each download waits for its own gate."""
@@ -392,7 +403,7 @@ def slow(multi, monkeypatch):
     yield multi
     for gate in gates.values():
         gate.set()
-    time.sleep(0.2)
+    drain_scheduler()
 
 
 def open_gate(c, vid):
