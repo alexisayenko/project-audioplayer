@@ -66,7 +66,7 @@ def test_invalid_canonical_is_ignored(monkeypatch):
 
 
 def test_public_hosts_validation(monkeypatch):
-    monkeypatch.setenv("PUBLIC_HOSTS", " Play.Isayenko.net, electrophone.cc ,bad host,,x/y,-a.com")
+    monkeypatch.setenv("PUBLIC_HOSTS", " Old.Example.net, electrophone.cc ,bad host,,x/y,-a.com")
     assert hosts.public_hosts() == ["old.example.net", "electrophone.cc"]
 
 
