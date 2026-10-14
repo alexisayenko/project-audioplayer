@@ -13,6 +13,7 @@ const BLOOM_SCALE = 0.5;
 const BASS_BINS = 6;
 
 const GRID_VS = `
+precision mediump float;
 attribute vec2 a_p;
 attribute float a_h;
 uniform mat4 u_vp;
