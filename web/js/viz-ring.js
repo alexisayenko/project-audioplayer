@@ -7,6 +7,14 @@ const DOT_RINGS = [
   { scale: 2.1, count: 72, alpha: 0.12, speed: 0.5 },
 ];
 
+export const RING_SIZE_FACTOR = 2;
+const RING_REACH = 2.1 * 1.08;
+
+export function ringRadius(w, h, cx, cy, base) {
+  const room = Math.min(cx, w - cx, cy, h - cy);
+  return Math.max(0, Math.min(base * RING_SIZE_FACTOR, room / RING_REACH));
+}
+
 export function spokeAngles(m) {
   const out = new Float32Array(m);
   for (let i = 0; i < m; i += 1) out[i] = -Math.PI / 2 + ((i + 0.5) * Math.PI) / m;

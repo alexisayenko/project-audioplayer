@@ -1,7 +1,7 @@
 export const QUALITY = [
-  { rows: 40, cols: 36, bloom: false, smoke: 0, passes: 1, soft: 0 },
-  { rows: 64, cols: 52, bloom: false, smoke: 2, passes: 1, soft: 1 },
-  { rows: 88, cols: 72, bloom: true, smoke: 3, passes: 1, soft: 2 },
+  { rows: 40, cols: 128, bloom: false, smoke: 0, passes: 1, soft: 0 },
+  { rows: 64, cols: 144, bloom: false, smoke: 2, passes: 1, soft: 1 },
+  { rows: 88, cols: 208, bloom: true, smoke: 3, passes: 1, soft: 2 },
 ];
 export const HISTORY_BINS = 64;
 export const ROWS_PER_SECOND = 16;
@@ -9,7 +9,11 @@ export const SHAKE_MAX = 0.03;
 export const SHAKE_ENABLED = false;
 export const GRID_DEPTH = 40;
 export const CALM_DEPTH = 12;
-export const WIDTH_PER_ASPECT = 3.2;
+export const COVER_DEPTH = 0.9 * GRID_DEPTH;
+export const COVER_MARGIN = 1.1;
+export const COVER_HALF_FOV = 32.5 * (Math.PI / 180);
+export const COL_SHAPE = 0.25;
+export const WIDTH_PER_ASPECT = Math.tan(COVER_HALF_FOV) * COVER_DEPTH * COVER_MARGIN;
 export const WORLD_SPEED = 5.5;
 export const LOOK_S = 5;
 export const NOW_Z = GRID_DEPTH - LOOK_S * WORLD_SPEED;
@@ -275,12 +279,17 @@ export function gridCounts(rows, cols) {
   };
 }
 
+export function columnX(t) {
+  const u = t * 2 - 1;
+  return COL_SHAPE * u + (1 - COL_SHAPE) * u * u * u;
+}
+
 export function buildGridVertices(rows, cols) {
   const out = new Float32Array(rows * cols * 2);
   let k = 0;
   for (let r = 0; r < rows; r += 1) {
     for (let c = 0; c < cols; c += 1) {
-      out[k++] = cols <= 1 ? 0 : (c / (cols - 1)) * 2 - 1;
+      out[k++] = cols <= 1 ? 0 : columnX(c / (cols - 1));
       out[k++] = r;
     }
   }

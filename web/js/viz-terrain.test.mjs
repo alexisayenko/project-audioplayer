@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   QUALITY, clamp01, smoothstep, qualityFor, resample, createHistory, columnBin, edgeFalloff, heightAt, fillHeights,
   gridCounts, buildGridVertices, buildLineIndices, buildDepthIndices, buildCrossIndices, energyOf, easeEnergy, GRID_DEPTH, colorRamp, fillColors, horizonGlow, makeStars, cameraAt, horizonY,
-  camClamp, camFormat, camParse, defaultPitchDeg, smoothHeights, CAM_LIMITS, nearEnvelope, rowZ, halfWidthAt, EYE_HEIGHT,
+  camClamp, camFormat, camParse, defaultPitchDeg, smoothHeights, CAM_LIMITS, nearEnvelope, rowZ, halfWidthAt, columnX, EYE_HEIGHT,
   mat4Perspective, mat4LookAt, mat4Multiply, transformPoint, makeRowClock, SHAKE_MAX, RAMP,
   SHAKE_ENABLED, CROSS_H0, CROSS_H1, crossAlpha, WORLD_SPEED, NOW_Z, NOW_GAIN, NOW_FALLOFF_S, rowLayout, nowZOf, ridgeZ, createFrame, createSeries, fillLookFrame, fillLiveFrame, sampleTimeline, blendFrames,
 } from './viz-terrain-math.js';
@@ -24,7 +24,7 @@ test('qualityFor clamps and defaults', () => {
   assert.equal(qualityFor(0), QUALITY[0]);
   assert.equal(qualityFor(9), QUALITY[2]);
   assert.equal(qualityFor(NaN), QUALITY[1]);
-  assert.deepEqual([QUALITY[0].rows, QUALITY[1].cols, QUALITY[2].rows], [40, 52, 88]);
+  assert.deepEqual([QUALITY[0].rows, QUALITY[1].cols, QUALITY[2].rows], [40, 144, 88]);
 });
 
 test('resample interpolates and handles empties', () => {
@@ -253,10 +253,10 @@ test('createTerrain compiles programs, creates buffers and draws expected counts
   t.draw(new Array(64).fill(0.6), 1000);
   const elems = gl.calls.filter((c) => c[0] === 'drawElements');
   assert.equal(elems.length, 2);
-  assert.equal(elems[0][2], 52 * 63 * 6);
-  assert.equal(elems[1][2], 64 * 51 * 6);
+  assert.equal(elems[0][2], 144 * 63 * 6);
+  assert.equal(elems[1][2], 64 * 143 * 6);
   const arrays = gl.calls.filter((c) => c[0] === 'drawArrays');
-  assert.ok(arrays.some((c) => c[1] === gl.POINTS && c[3] === 64 * 52));
+  assert.ok(arrays.some((c) => c[1] === gl.POINTS && c[3] === 64 * 144));
   assert.ok(arrays.some((c) => c[1] === gl.POINTS && c[3] === 90));
   assert.equal(count(gl, 'bufferSubData'), 2);
 });
@@ -271,7 +271,7 @@ test('quality switch rebuilds the grid and bloom only at level 2', () => {
   const t = createTerrain(fakeCanvas(), { gl, quality: 0 });
   t.draw([], 0);
   assert.equal(count(gl, 'drawElements'), 2);
-  assert.equal(gl.calls.find((c) => c[0] === 'drawElements')[2], 36 * 39 * 2);
+  assert.equal(gl.calls.find((c) => c[0] === 'drawElements')[2], 128 * 39 * 2);
   t.setQuality(2);
   assert.equal(t.quality, 2);
   assert.equal(t.bloomActive, true);
@@ -279,7 +279,7 @@ test('quality switch rebuilds the grid and bloom only at level 2', () => {
   gl.calls.length = 0;
   t.draw([0.5], 50);
   assert.equal(count(gl, 'drawElements'), 4);
-  assert.ok(gl.calls.some((c) => c[0] === 'drawElements' && c[2] === 72 * 87 * 6));
+  assert.ok(gl.calls.some((c) => c[0] === 'drawElements' && c[2] === 208 * 87 * 6));
   t.setQuality(0);
   assert.equal(t.bloomActive, false);
   t.dispose();
@@ -475,30 +475,39 @@ test('rows are uniformly spaced in world units and reach the horizon depth', () 
   }
 });
 
-test('the grid has a constant world width: outer columns leave the screen at the nearest visible row and converge toward the horizon', () => {
-  for (const aspect of [0.46, 1.78, 2.4, 3.5]) {
+test('the grid has a constant world width that covers the whole screen width at every visible depth', () => {
+  const cam = cameraAt(0, 0);
+  const bottomZ = Math.max(0, -(cam.eye[1] / Math.tan((62 / 2 + 10) * (Math.PI / 180)) - cam.eye[2]));
+  for (const aspect of [0.46, 0.8, 1.33, 1.78, 2.4, 3.5]) {
     const w = halfWidthAt(1, aspect);
     assert.equal(halfWidthAt(30, aspect), w);
-    const cam = cameraAt(0, 0);
-    const bottomZ = cam.eye[1] / Math.tan((62 / 2 + 10) * (Math.PI / 180)) - cam.eye[2];
-    const edge = project(aspect, w, Math.max(0, -bottomZ) + 2.6);
-    assert.ok(Math.abs(edge[0]) > 1, `aspect ${aspect} edge ${edge[0]}`);
-    assert.ok(Math.abs(project(aspect, w, 30)[0]) < 0.45);
-  }
+    for (const z of [bottomZ + 0.5, 3, 8, 14, 20, 28, 0.9 * GRID_DEPTH]) {
+      assert.ok(Math.abs(project(aspect, w, z)[0]) > 1, `aspect ${aspect} z ${z} edge ${project(aspect, w, z)[0]}`);
+      assert.ok(Math.abs(project(aspect, -w, z)[0]) > 1);
+    }
+      }
 });
 
-test('on-screen spacing of adjacent columns is much wider near the camera than far away', () => {
+test('columns are denser at the center and the edges are monotone', () => {
+  assert.equal(columnX(0), -1);
+  assert.equal(columnX(1), 1);
+  assert.ok(Math.abs(columnX(0.5)) < 1e-12);
+  const near = columnX(0.5 + 1 / 100) - columnX(0.5);
+  const edge = columnX(1) - columnX(1 - 1 / 100);
+  assert.ok(edge / near > 5);
+  for (let i = 1; i <= 100; i += 1) assert.ok(columnX(i / 100) > columnX((i - 1) / 100));
+});
+
+test('near columns stay fine: at least 16 columns across the nearest screen width at every quality level', () => {
   const aspect = 1.78;
-  const step = (z) => {
-    const w = halfWidthAt(z, aspect);
-    const a = project(aspect, 0, z)[0];
-    const b = project(aspect, (2 * w) / 100, z)[0];
-    return Math.abs(b - a);
-  };
-  const nearStep = step(1.6);
-  const farStep = step(20);
-  assert.ok(nearStep / farStep > 6, `${nearStep / farStep}`);
-  assert.ok(nearStep / farStep < 20 * 1.5);
+  const w = halfWidthAt(1, aspect);
+  const cam = cameraAt(0, 0);
+  const bottomZ = Math.max(0, -(cam.eye[1] / Math.tan((62 / 2 + 10) * (Math.PI / 180)) - cam.eye[2])) + 0.3;
+  for (const q of QUALITY) {
+    let n = 0;
+    for (let c = 0; c < q.cols; c += 1) if (Math.abs(project(aspect, columnX(c / (q.cols - 1)) * w, bottomZ)[0]) <= 1) n += 1;
+    assert.ok(n >= 16, `cols ${q.cols}: ${n}`);
+  }
 });
 
 test('a ridge advances in world z linearly with time and keeps its height', () => {

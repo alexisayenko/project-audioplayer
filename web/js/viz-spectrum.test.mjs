@@ -5,7 +5,7 @@ import {
   targetFps, capDpr, pickSpokes, maxOf, barCount, barHeight, edgeAlpha, shapeBars, barNoise, noiseStep,
 } from './viz-spectrum.js';
 import { mirror } from './viz-bars.js';
-import { spokeAngles, pulseRadius } from './viz-ring.js';
+import { spokeAngles, pulseRadius, ringRadius } from './viz-ring.js';
 import { parseColor, rgba, mixColor, barStops, lighten, sampleGradient, FALLBACK_COLORS } from './viz-color.js';
 import { barGeometry } from './viz-bars.js';
 
@@ -464,4 +464,12 @@ test('makeReference follows loud peaks quickly, falls slowly and never amplifies
   assert.ok(w2.maxDb < w1.maxDb && w2.maxDb > w1.maxDb - 3);
   const quiet = makeReference();
   assert.equal(quiet.update([-Infinity, -90]).maxDb, -67);
+});
+
+test('ringRadius doubles the base radius, clamped so the outer dots and halo stay on the canvas', () => {
+  assert.equal(ringRadius(1000, 1000, 500, 500, 50), 100);
+  const r = ringRadius(1000, 1000, 500, 500, 300);
+  assert.ok(r < 600 && Math.abs(r * 2.1 * 1.08 - 500) < 1e-9);
+  assert.ok(ringRadius(1000, 400, 500, 100, 300) * 2.1 * 1.08 <= 100 + 1e-9);
+  assert.equal(ringRadius(100, 100, 0, 50, 10), 0);
 });

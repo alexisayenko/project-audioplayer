@@ -9,7 +9,7 @@ import { createGlow } from './viz-glow.js';
 import { readVizColors, FALLBACK_COLORS } from './viz-color.js';
 import { drawBars } from './viz-bars.js';
 import { createBackdrop } from './viz-backdrop.js';
-import { drawRing } from './viz-ring.js';
+import { drawRing, ringRadius } from './viz-ring.js';
 import { createModeRenderer, MODES, DEFAULT_MODE } from './viz-modes.js';
 
 const SPOKES = 48;
@@ -182,8 +182,10 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
     const { c, shaped, spokes, bass, rotation, now } = f;
     if (renderer.id === 'ring') {
       const a = mode === 'full' ? null : anchor(now);
-      const r = Math.min(w, h) * RING_FRACTION * heightScale;
-      drawRing(ctx, a ? a.x : w / 2, a ? a.y : h / 2, r, spokes, { colors: c, bass, rotation, glow: false, alpha: mode === 'full' ? 1 : 0.5 });
+      const cx = a ? a.x : w / 2;
+      const cy = a ? a.y : h / 2;
+      const r = ringRadius(w, h, cx, cy, Math.min(w, h) * RING_FRACTION * heightScale);
+      drawRing(ctx, cx, cy, r, spokes, { colors: c, bass, rotation, glow: false, alpha: mode === 'full' ? 1 : 0.5 });
       return;
     }
     if (mode === 'full' && f.q?.backdrop) backdrop.draw(ctx, w, h, c, bass);
