@@ -85,8 +85,7 @@ export function renderGenres(root) {
     onHover: (h) => {
       if (!h) { tip.hidden = true; return; }
       tip.textContent = `${h.node.label} - ${songsText(h.node.count)}`;
-      tip.style.left = `${h.x + 14}px`;
-      tip.style.top = `${h.y + 14}px`;
+      tip.style.transform = `translate(${Math.round(h.x + 14)}px, ${Math.round(h.y + 14)}px)`;
       tip.hidden = false;
     },
   });
@@ -114,7 +113,7 @@ export function renderGenres(root) {
     const song = player.current;
     const items = g ? mapToNodes(songGenres(song), g) : songGenres(song).map((x) => ({ ...x, id: null }));
     const st = nowPlayingState(song, items);
-    nowBtn.disabled = st.kind !== 'ready';
+    nowBtn.disabled = st.kind === 'idle';
     nowBtn.title = st.hint;
     if (nowBtn.disabled && nowOpen) { nowOpen = false; nowBtn.setAttribute('aria-expanded', 'false'); nowBtn.classList.remove('on'); }
     nowPop.hidden = !nowOpen;
@@ -126,9 +125,12 @@ export function renderGenres(root) {
     nowPop.replaceChildren(
       el('div', { class: 'gm-now-head' }, cover,
         el('div', { class: 'gm-now-text' }, el('b', { class: 'gm-now-title' }, titleNodes(song)), el('small', { class: 'muted' }, song.artist || ''))),
-      el('div', { class: 'gm-chips' }, items.map((x) => (x.id
-        ? el('button', { class: 'gm-chip', type: 'button', onclick: () => view.select(x.id, { center: true }) }, x.label)
-        : el('span', { class: 'gm-chip gm-chip-off', title: 'Not in the map yet' }, x.label)))),
+      el('div', { class: 'gm-chips' }, items.length ? items.map((x) => (x.id
+        ? el('button', {
+          class: 'gm-chip', type: 'button', onclick: () => view.select(x.id, { center: true }),
+          onpointerenter: () => view.hoverId(x.id), onpointerleave: () => view.hoverId(null),
+        }, x.label)
+        : el('span', { class: 'gm-chip gm-chip-off', title: 'Not in the map yet' }, x.label))) : el('span', { class: 'muted t-caption gm-now-none' }, 'This song has no genres')),
       el('button', { class: 'gm-tbtn gm-now-all', type: 'button', disabled: !ids.length, onclick: () => view.fitIds(ids) }, 'Show all'));
   }
 
@@ -204,6 +206,7 @@ export function renderGenres(root) {
       }, toggleGlyph(r));
       const label = el('button', {
         class: 'gm-lbl', type: 'button', 'aria-current': r.id && r.id === selectedId ? 'true' : null,
+        onpointerenter: () => view.hoverId(isFamily ? null : r.id), onpointerleave: () => view.hoverId(null),
         onclick: () => {
           if (isFamily) { toggle.click(); return; }
           view.select(r.id, { center: true });

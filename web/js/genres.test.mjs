@@ -73,6 +73,9 @@ test('Now playing is disabled with nothing playing or without genres', async () 
   current = { ...song, tags: ['decade:90s'] };
   const b = await mount();
   assert.equal(btn(b.root, 'Now playing').getAttribute('title'), 'This song has no genres');
+  assert.equal(btn(b.root, 'Now playing').disabled, false);
+  fire(btn(b.root, 'Now playing'), 'click');
+  assert.match(b.root.querySelector('#gm-now').textContent, /This song has no genres/);
   b.cleanup();
   current = song;
 });
@@ -85,5 +88,31 @@ test('toggling the outline leaves the canvas size alone', async () => {
   fire(out, 'click');
   fire(out, 'click');
   assert.equal(`${canvas.width}x${canvas.height}`, before);
+  cleanup();
+});
+
+test('Now playing follows song changes while mounted and works for a paused or restored song', async () => {
+  current = null;
+  const a = await mount();
+  const b0 = btn(a.root, 'Now playing');
+  assert.equal(b0.disabled, true);
+  current = { ...song, paused: true };
+  store.set ? store.set({}) : store.listeners.forEach((fn) => fn());
+  assert.equal(b0.disabled, false);
+  current = null;
+  store.listeners.forEach((fn) => fn());
+  assert.equal(b0.disabled, true);
+  a.cleanup();
+  current = song;
+});
+
+test('hovering an outline row or a chip only hovers, never selects', async () => {
+  const { root, cleanup } = await mount();
+  fire(root.querySelector('.gm-tw'), 'click');
+  const row = root.querySelectorAll('.gm-row').filter((r) => !r.className.includes('fam')).map((r) => r.querySelector('.gm-lbl'))[0];
+  assert.ok(row, root.querySelector('.gm-tree').textContent);
+  fire(row, 'pointerenter');
+  fire(row, 'pointerleave');
+  assert.equal(root.querySelector('.gm-panel').hidden, true);
   cleanup();
 });

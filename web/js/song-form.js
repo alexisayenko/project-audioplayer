@@ -1,4 +1,5 @@
 import { api } from './api.js';
+import { MIN_YEAR, maxYear } from './constants.js';
 import { tagEditor } from './tag-editor.js';
 import { el, field } from './dom.js';
 import { tokenGroup } from './token-field.js';
@@ -25,8 +26,8 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
     artist: tg.field('artist', initial.artist || ''),
     remixer: tg.field('remixer', initial.remixer || ''),
     album: el('input', { type: 'text', value: initial.album || '' }),
-    year: el('input', { type: 'number', value: initial.year ?? '', min: 0, max: 3000 }),
-    remixYear: el('input', { type: 'number', value: initial.remix_year ?? '', min: 1900, max: 2100 }),
+    year: el('input', { type: 'number', value: initial.year ?? '', min: MIN_YEAR, max: maxYear() }),
+    remixYear: el('input', { type: 'number', value: initial.remix_year ?? '', min: MIN_YEAR, max: maxYear() }),
   };
   const editor = tagEditor({ tags: initial.tags || [], suggested: isAdd ? initial.tags || [] : [], year: f.year, hideNs: true });
   const genres = chipField('genre', editor);

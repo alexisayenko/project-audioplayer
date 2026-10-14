@@ -16,11 +16,21 @@ export function songGenres(song) {
   return out;
 }
 
-export function mapToNodes(genres, g) {
-  const owner = new Map();
+const owners = new WeakMap();
+
+function ownerMap(g) {
+  let owner = g && typeof g === 'object' ? owners.get(g) : null;
+  if (owner) return owner;
+  owner = new Map();
   for (const n of g?.nodes || []) {
     for (const k of n.tags?.length ? n.tags : [n.label.toLowerCase()]) owner.set(normValue(k), n.id);
   }
+  if (g && typeof g === 'object') owners.set(g, owner);
+  return owner;
+}
+
+export function mapToNodes(genres, g) {
+  const owner = ownerMap(g);
   return genres.map((x) => ({ ...x, id: owner.get(x.key) || null }));
 }
 

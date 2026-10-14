@@ -176,6 +176,9 @@ test('remix year input sits in the remix row and round-trips', () => {
   assert.match(row.textContent, /Remix year/);
   const input = row.querySelectorAll('input').find((i) => i.min === 1900 || String(i.min) === '1900');
   assert.ok(input, 'year input with 1900 minimum');
+  const nextYear = new Date().getFullYear() + 1;
+  for (const i of f.node.querySelectorAll('input').filter((x) => x.type === 'number' && String(x.min) === '1900')) assert.equal(String(i.max), String(nextYear));
+  assert.ok(f.node.querySelectorAll('input').some((x) => x.type === 'number' && String(x.max) === String(nextYear) && String(x.min) === '1900'));
   let v = f.values();
   assert.equal(String(v.remix_year), '2024');
   assert.equal(String(v.year), '2003', 'original year untouched');

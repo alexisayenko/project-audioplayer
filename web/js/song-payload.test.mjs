@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { addBody, patchBody, metadataBody, songSources, sourceList, yearValue } from './song-payload.js';
+import { addBody, patchBody, metadataBody, songSources, sourceList, yearValue, yearError } from './song-payload.js';
+import { maxYear } from './constants.js';
 
 const v = { title: 'T', artist: 'A', album: 'Al', remixer: 'R', year: '1999', tags: ['x', 'lang:de'], wikipedia_song: 'https://en.wikipedia.org/wiki/T', wikipedia_artist: null, musicbrainz_url: 'https://musicbrainz.org/recording/11111111-2222-3333-4444-555555555555' };
 
@@ -59,4 +60,21 @@ test('remix year: add sends it only when non-empty, patch sends null to clear', 
   assert.equal(patchBody({ ...v, remix_year: '2024' }).remix_year, 2024);
   assert.equal(patchBody({ ...v, remix_year: '' }).remix_year, null);
   assert.equal(patchBody({ ...v, remix_year: '', year: '1999' }).year, 1999);
+});
+
+test('years outside 1900..next year are dropped and reported, a stored one is kept', () => {
+  const max = new Date().getFullYear() + 1;
+  assert.equal(maxYear(), max);
+  assert.equal(yearError({ year: String(max) }), null);
+  assert.equal(yearError({ year: '1900', remix_year: '' }), null);
+  assert.equal(yearError({ year: String(max + 1) }), `Enter a year from 1900 to ${max}`);
+  assert.equal(yearError({ year: '1899' }), `Enter a year from 1900 to ${max}`);
+  assert.equal(yearError({ year: 'x' }) !== null, true);
+  assert.equal(yearError({ remix_year: String(max + 1) }), `Enter a year from 1900 to ${max}`);
+  assert.equal(yearError({ year: String(max + 1) }, { year: max + 1 }), null);
+  assert.ok(!('year' in addBody({ ...v, year: String(max + 1) })));
+  assert.ok(!('remix_year' in addBody({ ...v, remix_year: '1899' })));
+  assert.ok(!('remix_year' in patchBody({ ...v, remix_year: String(max + 5) })));
+  assert.equal(patchBody({ ...v, year: String(max + 1) }, { year: max + 1 }).year, max + 1);
+  assert.equal(addBody({ ...v, year: String(max) }).year, max);
 });

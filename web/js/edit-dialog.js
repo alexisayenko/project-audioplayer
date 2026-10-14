@@ -5,7 +5,7 @@ import { icon } from './icons.js';
 import { hasAudio } from './playable.js';
 import { downloadSong } from './download.js';
 import { songForm } from './song-form.js';
-import { patchBody, songSources } from './song-payload.js';
+import { patchBody, songSources, yearError } from './song-payload.js';
 import { can } from './guest.js';
 
 export function dialogHead(title, sub, onCancel) {
@@ -69,8 +69,14 @@ export function editDialog(song) {
       sf.focus();
       return;
     }
+    const bad = yearError(v, song);
+    if (bad) {
+      err.textContent = bad;
+      err.hidden = false;
+      return;
+    }
     try {
-      await api.patch(song.id, patchBody(v));
+      await api.patch(song.id, patchBody(v, song));
       dlg.close();
       await store.refresh();
       toast('Saved');

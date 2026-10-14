@@ -1,4 +1,5 @@
 import { el } from './dom.js';
+import { maxYear } from './constants.js';
 import { canonicalCountry, countryName, isHistoricalCountry } from './countries.js';
 
 const namers = {};
@@ -18,8 +19,8 @@ export function splitTag(tag) {
   return i > 0 ? { key: tag.slice(0, i), value: tag.slice(i + 1) } : { key: '', value: tag };
 }
 
-export function decadeTag(year) {
-  return Number.isInteger(year) && year >= 1950 && year <= 2029 ? `decade:${String(year % 100 - (year % 10)).padStart(2, '0')}s` : null;
+export function decadeTag(year, now = new Date()) {
+  return Number.isInteger(year) && year >= 1950 && year <= maxYear(now) ? `decade:${String(Math.floor(year / 10) * 10 % 100).padStart(2, '0')}s` : null;
 }
 
 export function withDecade(tags, year) {

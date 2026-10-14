@@ -1,5 +1,6 @@
 import { hasAudio } from './playable.js';
-import { familyIndex } from './genre-data.js';
+import { familyIndex, FAMILIES } from './genre-data.js';
+import { songGenres, mapToNodes } from './genre-playing.js';
 
 export const BPM_DEFAULT = { lo: 60, hi: 200 };
 export const MIN_YEAR_SPAN = 10;
@@ -8,18 +9,27 @@ export const MIN_ZOOM_BPM = 8;
 export const JITTER_YEAR = 0.34;
 export const JITTER_BPM = 1.4;
 export const PALETTE_SIZE = 12;
+export const FAMILY_PALETTE_SIZE = FAMILIES.length;
+export const DEFAULT_MODE = 'family';
 export const NEUTRAL = -1;
 export const COLOR_MODES = [
-  ['decade', 'Decade'], ['family', 'Genre family'], ['audio', 'Audio on server'], ['none', 'None'],
+  ['family', 'Genre family'], ['decade', 'Decade'], ['audio', 'Audio on server'], ['none', 'None'],
 ];
 
-const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
+export const MIN_BPM = 20;
+export const MAX_BPM = 300;
+export const MIN_YEAR = 1900;
+export const maxYear = () => new Date().getFullYear() + 1;
+
+const inRange = (v, lo, hi) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi;
+export const validBpm = (v) => inRange(v, MIN_BPM, MAX_BPM);
+export const validYear = (v) => inRange(v, MIN_YEAR, maxYear());
 
 export function splitPlottable(songs) {
   const plotted = [];
   let skipped = 0;
   for (const s of songs || []) {
-    if (isNum(s.year) && s.year > 0 && isNum(s.bpm) && s.bpm > 0) plotted.push(s);
+    if (validYear(s.year) && validBpm(s.bpm)) plotted.push(s);
     else skipped += 1;
   }
   return { plotted, skipped };
@@ -77,6 +87,10 @@ export function tickStep(span, maxTicks, minStep = 1) {
   return Math.ceil(want / 100) * 100;
 }
 
+export function clampLo(range, floor = 0) {
+  return range.lo >= floor ? range : { lo: floor, hi: floor + (range.hi - range.lo) };
+}
+
 export function ticks(lo, hi, step) {
   const out = [];
   for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) out.push(Math.round(v));
@@ -95,8 +109,20 @@ export function zoomRange(lo, hi, anchor, factor, { minSpan, maxSpan }) {
   return { lo: nlo, hi: nlo + span };
 }
 
-export function panRange(lo, hi, delta) {
-  return { lo: lo + delta, hi: hi + delta };
+export function centerRange(lo, hi, bounds) {
+  const span = hi - lo;
+  const nlo = (bounds.lo + bounds.hi) / 2 - span / 2;
+  return { lo: nlo, hi: nlo + span };
+}
+
+// With bounds the view centre must stay inside them; nothing else limits the pan.
+export function panRange(lo, hi, delta, bounds) {
+  const span = hi - lo;
+  let nlo = lo + delta;
+  if (bounds) {
+    nlo = Math.min(bounds.hi - span / 2, Math.max(bounds.lo - span / 2, nlo));
+  }
+  return { lo: nlo, hi: nlo + span };
 }
 
 export const decadeOf = (year) => Math.floor(year / 10) * 10;
@@ -117,33 +143,49 @@ function audioGroup(song) {
 
 const OTHER = 'Other';
 
-export function songFamilies(graph, songs) {
-  const owner = new Map();
-  for (const n of graph?.nodes || []) {
-    const keys = n.tags?.length ? n.tags : [String(n.label).toLowerCase()];
-    for (const k of keys) owner.set(String(k).toLowerCase(), n.family);
+const nodeFamilies = new WeakMap();
+
+function familyOfNode(graph, id) {
+  let m = nodeFamilies.get(graph);
+  if (!m) {
+    m = new Map((graph.nodes || []).map((n) => [n.id, n.family]));
+    nodeFamilies.set(graph, m);
   }
+  return m.get(id);
+}
+
+const legacyGenre = (song) => (typeof song?.genre === 'string' && song.genre.trim() ? [`genre:${song.genre}`] : []);
+
+// Family of the first genre (`genre:` tags in tag order, then a legacy plain `genre`) that resolves to a graph node; else 'Other'.
+export function songFamily(song, graph) {
+  if (!song || !graph?.nodes?.length) return OTHER;
+  const genres = songGenres({ tags: [...(song.tags || []), ...legacyGenre(song)] });
+  for (const g of mapToNodes(genres, graph)) {
+    if (!g.id) continue;
+    const fam = familyOfNode(graph, g.id);
+    if (fam) return fam;
+  }
+  return OTHER;
+}
+
+export function songFamilies(graph, songs) {
   const out = new Map();
   for (const s of songs) {
-    for (const t of s.tags || []) {
-      const i = String(t).indexOf(':');
-      if (i <= 0 || t.slice(0, i).trim().toLowerCase() !== 'genre') continue;
-      const fam = owner.get(t.slice(i + 1).trim().toLowerCase().replace(/\s+/g, ' '));
-      if (fam) { out.set(s.id, fam); break; }
-    }
+    const fam = songFamily(s, graph);
+    if (fam !== OTHER) out.set(s.id, fam);
   }
   return out;
 }
 
 function familyGroup(song, families) {
   const fam = families?.get(song.id) || OTHER;
-  const idx = familyIndex(fam);
-  return { key: `f:${fam}`, label: fam, order: idx, neutral: fam === OTHER || idx >= PALETTE_SIZE };
+  return { key: `f:${fam}`, label: fam, order: familyIndex(fam), other: fam === OTHER };
 }
 
 const NONE_GROUP = { key: 'all', label: 'All songs', order: 0 };
 
 export function groupOf(song, mode, families) {
+  if (mode === 'family' && !families) return NONE_GROUP;
   if (mode === 'decade') return decadeGroup(song);
   if (mode === 'audio') return audioGroup(song);
   if (mode === 'family') return familyGroup(song, families);
@@ -159,10 +201,13 @@ export function assignGroups(points, mode, families) {
     e.count += 1;
     p.group = g.key;
   }
-  const list = [...groups.values()].sort((a, b) => a.order - b.order);
+  const byOrder = (a, b) => a.order - b.order;
+  const byCount = (a, b) => (a.other ? 1 : 0) - (b.other ? 1 : 0) || b.count - a.count || byOrder(a, b);
+  const pending = mode === 'family' && !families;
+  const list = [...groups.values()].sort(mode === 'family' && !pending ? byCount : byOrder);
   let next = 0;
   for (const g of list) {
-    if (mode === 'none' || g.neutral) continue;
+    if (mode === 'none' || g.neutral || pending) continue;
     g.color = mode === 'family' ? g.order : next;
     next += 1;
   }
@@ -171,7 +216,7 @@ export function assignGroups(points, mode, families) {
   return list;
 }
 
-export const colorIndex = (color) => (color < 0 ? NEUTRAL : color % PALETTE_SIZE);
+export const colorIndex = (color, size = PALETTE_SIZE) => (color < 0 ? NEUTRAL : color % size);
 
 export function buildIndex(items, cell = 24) {
   const cells = new Map();

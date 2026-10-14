@@ -49,6 +49,20 @@ export function placeLabels(cands, { cell = 64, gap = 2 } = {}) {
   return shown;
 }
 
+export function hitNode(nodes, wx, wy, slack, isVisible = () => true) {
+  for (let i = nodes.length - 1; i >= 0; i--) {
+    const n = nodes[i];
+    if (!isVisible(n)) continue;
+    const dx = n.x - wx;
+    const dy = n.y - wy;
+    const rr = n.r + slack;
+    if (dx * dx + dy * dy <= rr * rr) return n;
+  }
+  return null;
+}
+
+export const isDragMove = (dx, dy, threshold = 4) => Math.hypot(dx, dy) >= threshold;
+
 export function toggleHidden(hidden, family) {
   const next = new Set(hidden);
   if (next.has(family)) next.delete(family); else next.add(family);

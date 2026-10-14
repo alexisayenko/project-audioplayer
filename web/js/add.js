@@ -8,7 +8,7 @@ import { findInLibrary } from './library-match.js';
 import { dialogHead } from './edit-dialog.js';
 import { songForm } from './song-form.js';
 import { ADD_ROW_OUTLINE_MS } from './constants.js';
-import { addBody } from './song-payload.js';
+import { addBody, yearError } from './song-payload.js';
 import { can } from './guest.js';
 
 const BULK = new Set(['insertFromPaste', 'insertFromPasteAsQuotation', 'insertFromDrop', 'insertReplacementText']);
@@ -131,8 +131,13 @@ export function openAdd() {
 
     card.addEventListener('submit', async (e) => {
       e.preventDefault();
-      save.disabled = true;
       const v = sf.values();
+      const bad = yearError(v);
+      if (bad) {
+        err.replaceChildren(el('p', { class: 'msg error' }, bad));
+        return;
+      }
+      save.disabled = true;
       try {
         const added = await api.addSong(preview.source_url, addBody(v), v.tags, v.keep_title);
         await store.refresh().catch(() => {});

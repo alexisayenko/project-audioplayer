@@ -7,6 +7,9 @@
 export const BP_WIDE = 720;
 export const BP_DESKTOP = 1100;
 
+export const MIN_YEAR = 1900;
+export const maxYear = (now = new Date()) => now.getFullYear() + 1;
+
 export const TOAST_MS = 3000;
 export const TOAST_ACTION_MS = 6000;
 export const SYNC_POLL_MS = 30000;

@@ -1,6 +1,6 @@
 import { createSim } from './genre-sim.js';
 import { familyIndex, nodeRadius, FAMILIES } from './genre-data.js';
-import { fitTransform, recenterOnResize, placeLabels, diffGraph, mixColor } from './genre-view.js';
+import { fitTransform, recenterOnResize, placeLabels, diffGraph, mixColor, hitNode, isDragMove } from './genre-view.js';
 
 const MIN_K = 0.15;
 const MAX_K = 6;
@@ -115,16 +115,7 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
 
   function nodeAt(sx, sy) {
     const [wx, wy] = toWorld(sx, sy);
-    const slack = 3 / tf.k;
-    for (let i = nodes.length - 1; i >= 0; i--) {
-      const n = nodes[i];
-      if (!visible(n)) continue;
-      const dx = n.x - wx;
-      const dy = n.y - wy;
-      const rr = n.r + slack;
-      if (dx * dx + dy * dy <= rr * rr) return n;
-    }
-    return null;
+    return hitNode(nodes, wx, wy, 3 / tf.k, visible);
   }
 
   function fitTo(list, { pad = 32, maxK = 2.2, animate = true } = {}) {
@@ -217,7 +208,7 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
     ctx.translate(tf.x, tf.y);
     ctx.scale(tf.k, tf.k);
     const k = tf.k;
-    const focus = hover || selected;
+    const focus = selected;
     const near = focus ? nbr.get(focus.id) : null;
     const isOn = (n) => !focus || n === focus || near.has(n.id);
     for (const l of links) {
@@ -270,6 +261,28 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
     return drag ? 'grabbing' : 'grab';
   }
 
+  let hoverRaf = 0;
+  let hoverAt = null;
+
+  function flushHover() {
+    hoverRaf = 0;
+    const p = hoverAt;
+    hoverAt = null;
+    if (p) setHover(nodeAt(p.sx, p.sy), p.ev);
+  }
+
+  function queueHover(ev) {
+    const [sx, sy] = local(ev);
+    hoverAt = { sx, sy, ev: { clientX: ev.clientX, clientY: ev.clientY } };
+    if (!hoverRaf) hoverRaf = requestAnimationFrame(flushHover);
+  }
+
+  function cancelHover() {
+    if (hoverRaf) cancelAnimationFrame(hoverRaf);
+    hoverRaf = 0;
+    hoverAt = null;
+  }
+
   function setHover(n, ev) {
     if (n !== hover) { hover = n; canvas.style.cursor = cursorFor(n); request(); }
     if (onHover) {
@@ -297,17 +310,14 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
     }
     const [sx, sy] = local(ev);
     const hit = nodeAt(sx, sy);
+    cancelHover();
     drag = { node: hit, sx, sy, moved: false, lastX: sx, lastY: sy };
-    if (hit) {
-      hit.fx = hit.x; hit.fy = hit.y;
-      if (sim && !reducedMotion) sim.setAlphaTarget(0.3);
-    }
-    setHover(hit, ev);
+    if (ev.pointerType !== 'touch') setHover(hit, ev);
     anim = null;
   });
 
   canvas.addEventListener('pointermove', (ev) => {
-    if (!pointers.has(ev.pointerId)) { setHover(nodeAt(...local(ev)), ev); return; }
+    if (!pointers.has(ev.pointerId)) { if (ev.pointerType !== 'touch') queueHover(ev); return; }
     const [sx, sy] = local(ev);
     pointers.set(ev.pointerId, [sx, sy]);
     if (pinch && pointers.size === 2) {
@@ -318,7 +328,8 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
       return;
     }
     if (!drag) return;
-    if (!drag.moved && Math.hypot(sx - drag.sx, sy - drag.sy) < 4) return;
+    if (!drag.moved && !isDragMove(sx - drag.sx, sy - drag.sy)) return;
+    if (!drag.moved && drag.node && sim && !reducedMotion) sim.setAlphaTarget(0.3);
     drag.moved = true;
     if (drag.node) {
       const [wx, wy] = toWorld(sx, sy);
@@ -342,15 +353,16 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
     drag = null;
     if (d.node) {
       d.node.fx = null; d.node.fy = null;
-      if (sim) sim.setAlphaTarget(sim.restTarget());
+      if (sim && d.moved) sim.setAlphaTarget(sim.restTarget());
       if (!d.moved) { select(d.node.id, { quiet: false }); }
     } else if (!d.moved) select(null);
+    if (ev.pointerType === 'touch') setHover(null);
     canvas.style.cursor = hover ? 'pointer' : 'grab';
     request();
   }
   canvas.addEventListener('pointerup', release);
   canvas.addEventListener('pointercancel', release);
-  canvas.addEventListener('pointerleave', () => { if (!drag) setHover(null); });
+  canvas.addEventListener('pointerleave', () => { cancelHover(); if (!drag) setHover(null); });
 
   canvas.addEventListener('dblclick', (ev) => {
     const n = nodeAt(...local(ev));
@@ -387,6 +399,11 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
     if (!n) return;
     const group = [n, ...[...(nbr.get(id) || [])].map((x) => byId.get(x))];
     fitTo(group, { maxK: 2.4 });
+  }
+
+  function hoverId(id) {
+    const n = id ? byId.get(id) || null : null;
+    if (n !== hover) { hover = n; request(); }
   }
 
   function setMarked(ids) { marked = new Set(ids); request(); }
@@ -470,11 +487,12 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
   canvas.style.cursor = 'grab';
 
   return {
-    setData, update, setInsets, setMarked, fitIds, setHiddenFamilies, select, focus, fit, setActive, resize, refreshColors: onScheme,
+    setData, update, setInsets, setMarked, hoverId, fitIds, setHiddenFamilies, select, focus, fit, setActive, resize, refreshColors: onScheme,
     zoom: (f) => zoomAt(f, W / 2, H / 2),
     nodeCount: () => nodes.length,
     destroy() {
       active = false;
+      cancelHover();
       if (raf) cancelAnimationFrame(raf);
       raf = 0;
       ro?.disconnect();

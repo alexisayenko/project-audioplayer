@@ -1,7 +1,9 @@
 import { api, isSignedIn, session } from './api.js';
 import { isGuest, setGuest, streamable, syncBanner } from './guest.js';
 import { toast } from './dom.js';
-import { initPlayer, pausePlayer } from './player.js';
+import { player as playerApi, initPlayer, pausePlayer } from './player.js';
+import { initVisualizer } from './viz-ui.js';
+import { loadLegal, syncLegal } from './legal.js';
 import { store } from './store.js';
 import { renderLibrary } from './library.js';
 import { openAdd } from './add.js';
@@ -33,6 +35,7 @@ function route() {
   if (cleanup) cleanup();
   view.replaceChildren();
   document.body.dataset.route = name;
+  syncLegal(legalEl, legalCtx());
   cleanup = routes[name](view) || null;
   for (const a of document.querySelectorAll('#nav a')) {
     const on = a.dataset.route === name;
@@ -44,6 +47,7 @@ function route() {
 }
 
 initPlayer();
+initVisualizer({ player: playerApi });
 const sideToggle = document.getElementById('side-toggle');
 function setCollapsed(collapsed) {
   document.body.classList.toggle('side-collapsed', collapsed);
@@ -62,11 +66,17 @@ window.addEventListener('hashchange', route);
 const stage = view.parentNode;
 let shownGuest = false;
 
+const legalEl = document.getElementById('legal');
+function legalCtx() {
+  return { guest: isGuest(), route: document.body.dataset.route, vizFull: document.body.classList.contains("viz-full-open") };
+}
+
 function syncGuestUi() {
   document.body.classList.toggle('guest', isGuest());
   document.body.classList.toggle('guest-noaudio', isGuest() && !streamable());
   syncBanner(stage, stage.firstChild, () => { location.hash = '#/settings'; });
   shownGuest = isGuest();
+  syncLegal(legalEl, legalCtx());
 }
 
 async function enterGuest() {
@@ -111,6 +121,7 @@ try {
 } catch { /* restore failure leaves the app signed out */ }
 syncGuestUi();
 route();
+void loadLegal(legalEl, legalCtx);
 
 const warn = document.getElementById('sync-warn');
 const led = document.getElementById('server-led');

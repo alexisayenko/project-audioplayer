@@ -1,16 +1,10 @@
-/* Song stats (#/stats): year x BPM scatter. Categorical palette is fixed (same hues as the Genres map families), not design tokens. */
+/* Song stats (#/stats): year x BPM scatter. Genre-family colours are the Genres map's --gf-* variables (defined in genres.css for .gm and .st); the decade palette reuses the first twelve. */
 .st {
-  --st-0: #1a8aa6; --st-1: #c8372d; --st-2: #d0549a; --st-3: #7a4fc2; --st-4: #a87400; --st-5: #d2601a;
-  --st-6: #3558c4; --st-7: #2f8f3f; --st-8: #6f8a12; --st-9: #2a6f97; --st-10: #8a5a2b; --st-11: #b03aa8; --st-n: #8a8f93;
+  --st-0: var(--gf-0); --st-1: var(--gf-1); --st-2: var(--gf-2); --st-3: var(--gf-3); --st-4: var(--gf-4); --st-5: var(--gf-5);
+  --st-6: var(--gf-6); --st-7: var(--gf-7); --st-8: var(--gf-8); --st-9: var(--gf-9); --st-10: var(--gf-10); --st-11: var(--gf-11); --st-n: var(--gf-15);
   position: fixed; z-index: 1; top: 0; right: 0; left: var(--rail-w); bottom: calc(var(--tab-h) + var(--dock-b)); overflow: hidden;
   background: var(--surface); transition: left .2s ease;
   --st-card: var(--ground); --st-card-shadow: 0 1px 2px color-mix(in srgb, var(--ink) 28%, transparent), 0 8px 24px color-mix(in srgb, var(--ink) 22%, transparent); --player-h: 0px;
-}
-@media (prefers-color-scheme: dark) {
-  .st {
-    --st-0: #4fc3e0; --st-1: #ff6b5e; --st-2: #f27fbd; --st-3: #a98aff; --st-4: #e6b422; --st-5: #ff9a52;
-    --st-6: #7b9bff; --st-7: #5fcf72; --st-8: #b5d33d; --st-9: #5aa9d6; --st-10: #c99a62; --st-11: #d878d0; --st-n: #9aa0a5;
-  }
 }
 body[data-route="stats"] main { max-width: none; padding: 0; }
 @media (min-width: 480px) {

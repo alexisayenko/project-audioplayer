@@ -4,7 +4,15 @@ import { store } from './store.js';
 import { player } from './player.js';
 import { autoDownloadOn, setAutoDownload } from './autodl.js';
 import { el, pageHead } from './dom.js';
+import { signInErrorText } from './signin-error.js';
 import { isGuest, ownerLabel } from './guest.js';
+import { bpmCard } from './backfill-card.js';
+import { isSupported as vizSupported } from './audio-graph.js';
+import {
+  vizBackgroundOn, setVizBackground, vizCaps, vizMode, setVizMode, vizHeightId, setVizHeight,
+} from './viz-settings.js';
+import { availableModes } from './viz-modes.js';
+import { HEIGHT_OPTIONS } from './viz-constants.js';
 
 const GSI = 'https://accounts.google.com/gsi/client';
 const APPLE = 'https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js';
@@ -68,7 +76,7 @@ async function setupProviders(box, out) {
           const r = await window.AppleID.auth.signIn();
           await finish(r.authorization.id_token, out);
         } catch (ex) {
-          if (ex && ex.error !== 'popup_closed_by_user') out.replaceChildren(el('p', { class: 'msg error' }, 'Apple sign-in failed.'));
+          if (ex && ex.error !== 'popup_closed_by_user') out.replaceChildren(el('p', { class: 'msg error' }, signInErrorText('Apple', ex, location.origin)));
         }
       });
     }).catch((ex) => btn.replaceWith(el('p', { class: 'msg error' }, ex.message)));
@@ -138,7 +146,53 @@ function playbackCard() {
     el('h2', { class: 't-headline' }, 'Playback'),
     el('label', { class: 'switch-row', for: 'auto-dl' }, box,
       el('span', { class: 't-subhead' }, 'Auto-download songs',
-        el('small', { class: 't-caption' }, 'Fetch audio from the server for songs you play or add to the playlist. Each fetch counts toward the hourly add limit.'))));
+        el('small', { class: 't-caption' }, 'Fetch audio from the server for songs you play or add to the playlist. Each fetch counts toward the hourly add limit.'))),
+    ...vizRows());
+}
+
+function vizSelect({ id, label, note, options, value, disabled, onChange }) {
+  const select = el('select', { id, disabled },
+    options.map((o) => el('option', { value: o.id, selected: o.id === value }, o.label)));
+  select.addEventListener('change', () => onChange(select.value));
+  return el('label', { class: 'switch-row', for: id },
+    el('span', { class: 't-subhead' }, label, el('small', { class: 't-caption' }, note)), select);
+}
+
+function vizRows() {
+  const supported = vizSupported();
+  const modes = availableModes(vizCaps());
+  return [
+    vizRow(),
+    vizSelect({
+      id: 'viz-mode-select',
+      label: 'Visualizer mode',
+      note: 'One visualizer at a time. Press M on the Playback screen or in full screen to cycle.',
+      options: modes,
+      value: vizMode(),
+      disabled: !supported,
+      onChange: setVizMode,
+    }),
+    vizSelect({
+      id: 'viz-height-select',
+      label: 'Visualizer height',
+      note: 'How much of the screen height the visualizer fills.',
+      options: HEIGHT_OPTIONS,
+      value: vizHeightId(),
+      disabled: !supported,
+      onChange: setVizHeight,
+    }),
+  ];
+}
+
+function vizRow() {
+  const supported = vizSupported();
+  const box = el('input', { type: 'checkbox', id: 'viz-bg-toggle', checked: supported && vizBackgroundOn(), disabled: !supported });
+  box.addEventListener('change', () => setVizBackground(box.checked));
+  const note = supported
+    ? 'Draw a quiet spectrum behind the Playback screen while music plays. Off when reduced motion is on.'
+    : 'This browser does not offer Web Audio.';
+  return el('label', { class: 'switch-row', for: 'viz-bg-toggle' }, box,
+    el('span', { class: 't-subhead' }, 'Visualizer background', el('small', { class: 't-caption' }, note)));
 }
 
 export function renderSettings(root) {
@@ -148,6 +202,6 @@ export function renderSettings(root) {
   }
   let card = libraryCard();
   const unsub = store.subscribe(() => { const next = libraryCard(); card.replaceWith(next); card = next; });
-  root.append(pageHead('Settings', 'Your library and storage on this server.'), el('div', { class: 'settings-grid' }, accountCard(), playbackCard(), ...(auth.email ? [card] : [])));
+  root.append(pageHead('Settings', 'Your library and storage on this server.'), el('div', { class: 'settings-grid' }, accountCard(), playbackCard(), ...(auth.email ? [card, bpmCard()] : [])));
   return unsub;
 }

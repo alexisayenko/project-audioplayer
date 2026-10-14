@@ -1,6 +1,6 @@
 import {
-  PALETTE_SIZE, MIN_ZOOM_YEARS, MIN_ZOOM_BPM, extentX, extentY, tickStep, ticks, makeScale, zoomRange, panRange,
-  colorIndex, buildIndex, inRect, neighbour, firstItem,
+  PALETTE_SIZE, FAMILY_PALETTE_SIZE, MIN_ZOOM_YEARS, MIN_ZOOM_BPM, extentX, extentY, tickStep, ticks, clampLo, makeScale, zoomRange, panRange,
+  colorIndex, centerRange, buildIndex, inRect, neighbour, firstItem,
 } from './stats-data.js';
 
 const MARGIN = { l: 56, r: 16, t: 84, b: 44 };
@@ -14,6 +14,7 @@ const readColors = (el) => {
   const v = (name, fb) => cs.getPropertyValue(name).trim() || fb;
   return {
     palette: Array.from({ length: PALETTE_SIZE }, (_, i) => v(`--st-${i}`, '#888')),
+    family: Array.from({ length: FAMILY_PALETTE_SIZE }, (_, i) => v(`--gf-${i}`, '#888')),
     neutral: v('--st-n', '#8a8f93'),
     grid: v('--line', '#ddd'),
     text: v('--ink-muted', '#666'),
@@ -33,6 +34,7 @@ export function createChart(base, top, { onHover, onOpen, onSelect, onFocus, onV
   let dpr = 1;
   let points = [];
   let hidden = new Set();
+  let familyPalette = false;
   let full = { x: extentX([]), y: extentY([]) };
   let view = { x: { ...full.x }, y: { ...full.y } };
   let zoomed = false;
@@ -73,8 +75,8 @@ export function createChart(base, top, { onHover, onOpen, onSelect, onFocus, onV
     const order = items.filter(visible).sort((a, b) => a.point.color - b.point.color);
     let cur = null;
     for (const it of order) {
-      const idx = colorIndex(it.point.color);
-      if (idx !== cur) { cur = idx; bctx.fillStyle = idx < 0 ? c.neutral : c.palette[idx]; }
+      const idx = colorIndex(it.point.color, familyPalette ? FAMILY_PALETTE_SIZE : PALETTE_SIZE);
+      if (idx !== cur) { cur = idx; bctx.fillStyle = idx < 0 ? c.neutral : (familyPalette ? c.family : c.palette)[idx]; }
       if (it.px < p.x0 - DOT_R || it.px > p.x1 + DOT_R || it.py < p.y0 - DOT_R || it.py > p.y1 + DOT_R) continue;
       bctx.beginPath();
       bctx.arc(it.px, it.py, DOT_R, 0, Math.PI * 2);
@@ -211,6 +213,14 @@ export function createChart(base, top, { onHover, onOpen, onSelect, onFocus, onV
     redraw();
   }
 
+  function center() {
+    const x = centerRange(view.x.lo, view.x.hi, full.x);
+    const y = clampLo(centerRange(view.y.lo, view.y.hi, full.y));
+    if (Math.abs(x.lo - view.x.lo) < 1e-9 && Math.abs(y.lo - view.y.lo) < 1e-9) return;
+    setView({ x, y });
+  }
+
+  function setFamilyPalette(on) { familyPalette = on; redraw(); }
   function setHidden(next) { hidden = next; hover = -1; redraw(); }
   function setSelected(next) { selected = next; redrawTop(); }
 
@@ -240,14 +250,14 @@ export function createChart(base, top, { onHover, onOpen, onSelect, onFocus, onV
     const factor = Math.exp((ev.deltaY || 0) * 0.0015);
     const xr = zoomRange(view.x.lo, view.x.hi, sx.from(pos.x), factor, { minSpan: MIN_ZOOM_YEARS, maxSpan: (full.x.hi - full.x.lo) * 3 });
     const yr = zoomRange(view.y.lo, view.y.hi, sy.from(pos.y), factor, { minSpan: MIN_ZOOM_BPM, maxSpan: (full.y.hi - full.y.lo) * 3 });
-    setView({ x: xr, y: yr });
+    setView({ x: xr, y: clampLo(yr) });
   }
 
   function down(ev) {
     top.setPointerCapture?.(ev.pointerId);
     top.focus?.();
     const pos = localPos(ev);
-    const pan = ev.button === 1 || ev.shiftKey;
+    const pan = ev.button === 1 || ev.button === 2 || ev.shiftKey;
     drag = { pos, last: pos, pan, moved: false, pointer: ev.pointerId };
     if (pan) top.style.cursor = 'grabbing';
   }
@@ -256,7 +266,7 @@ export function createChart(base, top, { onHover, onOpen, onSelect, onFocus, onV
     const { sx, sy } = scales();
     const dx = sx.from(drag.last.x) - sx.from(pos.x);
     const dy = sy.from(drag.last.y) - sy.from(pos.y);
-    setView({ x: panRange(view.x.lo, view.x.hi, dx), y: panRange(view.y.lo, view.y.hi, dy) });
+    setView({ x: panRange(view.x.lo, view.x.hi, dx, full.x), y: clampLo(panRange(view.y.lo, view.y.hi, dy, full.y)) });
   }
 
   function dragMove(pos) {
@@ -309,6 +319,7 @@ export function createChart(base, top, { onHover, onOpen, onSelect, onFocus, onV
     if (ev.key === 'Enter' && focus >= 0 && items[focus]) { ev.preventDefault(); onOpen?.(items[focus].point); return; }
     if (ev.key === 'Escape') { onSelect?.([]); return; }
     if (ev.key === '0') { reset(); return; }
+    if (ev.key === 'c' || ev.key === 'C') { center(); return; }
     if (!ev.key.startsWith('Arrow')) return;
     ev.preventDefault();
     ensureLayout();
@@ -325,14 +336,16 @@ export function createChart(base, top, { onHover, onOpen, onSelect, onFocus, onV
   top.addEventListener('pointerleave', leave);
   top.addEventListener('dblclick', reset);
   top.addEventListener('keydown', key);
-  top.addEventListener('contextmenu', (ev) => { if (drag?.pan) ev.preventDefault(); });
+  top.addEventListener('contextmenu', (ev) => ev.preventDefault());
+  const scheme = typeof window.matchMedia === 'function' ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+  scheme?.addEventListener?.('change', redraw);
   resize();
 
   return {
-    setData, setHidden, setSelected, reset, resize,
+    setData, setHidden, setFamilyPalette, center, setSelected, reset, resize,
     setInsetBottom(px) { if (px !== insetB) { insetB = px; redraw(); } },
     isZoomed: () => zoomed,
     focusPoint: (id) => { ensureLayout(); setFocus(items.findIndex((it) => it.point.id === id)); },
-    destroy() { dead = true; if (raf) cancelAnimationFrame(raf); ro?.disconnect(); },
+    destroy() { dead = true; if (raf) cancelAnimationFrame(raf); ro?.disconnect(); scheme?.removeEventListener?.('change', redraw); },
   };
 }

@@ -138,8 +138,8 @@ test('canonicalTag is idempotent and case-stable for country codes; chip splitti
 });
 
 test('decade boundaries', () => {
-  const cases = { 1949: null, 1950: 'decade:50s', 1959: 'decade:50s', 1960: 'decade:60s', 1999: 'decade:90s', 2000: 'decade:00s', 2009: 'decade:00s', 2010: 'decade:10s', 2029: 'decade:20s', 2030: null, 1.5: null, NaN: null };
-  for (const [y, tag] of Object.entries(cases)) assert.equal(decadeTag(Number(y)), tag, y);
+  const cases = { 1949: null, 1950: 'decade:50s', 1959: 'decade:50s', 1960: 'decade:60s', 1999: 'decade:90s', 2000: 'decade:00s', 2009: 'decade:00s', 2010: 'decade:10s', 2027: 'decade:20s', 2028: null, 1.5: null, NaN: null };
+  for (const [y, tag] of Object.entries(cases)) assert.equal(decadeTag(Number(y), new Date(2026, 5, 1)), tag, y);
   assert.equal(decadeTag(null), null);
   assert.equal(decadeTag('1999'), null, 'strings are not years');
   assert.deepEqual(withDecade(['decade:80s', 'rock', 'decade:70s'], 1995), ['decade:90s', 'rock']);

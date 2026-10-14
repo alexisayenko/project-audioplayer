@@ -6,7 +6,7 @@ import { installPage, stubFetch, fire} from './test-dom.mjs';
 await installPage();
 globalThis.location = { hash: '', href: 'http://localhost/', host: 'localhost' };
 stubFetch(() => ({ body: {} }));
-const { marqueeMetrics, prefersReduced, marquee, disposeAll, MIN_OVERFLOW } = await import('./marquee.js');
+const { marqueeMetrics, prefersReduced, marquee, disposeAll, MIN_OVERFLOW, PAD, measure } = await import('./marquee.js');
 const { el } = await import('./dom.js');
 const { titleNodes } = await import('./display-title.js');
 const { songRow } = await import('./library-rows.js');
@@ -24,9 +24,10 @@ test('metrics: threshold, distance and duration', () => {
   assert.deepEqual(marqueeMetrics(0), { overflowing: false, dist: 0, dur: 0 });
   assert.equal(marqueeMetrics(MIN_OVERFLOW).overflowing, false);
   assert.equal(marqueeMetrics(MIN_OVERFLOW + 0.5).overflowing, true);
-  assert.deepEqual(marqueeMetrics(100.2), { overflowing: true, dist: 101, dur: 101 / 32 + 3 });
+  assert.deepEqual(marqueeMetrics(100.2), { overflowing: true, dist: 101 + 2 * PAD, dur: (101 + 2 * PAD) / 32 + 3 });
   assert.equal(marqueeMetrics(10).dur, 6);
-  assert.equal(marqueeMetrics(1000).dur, 1000 / 32 + 3);
+  assert.equal(marqueeMetrics(1000).dur, (1000 + 2 * PAD) / 32 + 3);
+  assert.equal(marqueeMetrics(3).dist, 3 + 2 * PAD);
 });
 
 test('metrics: reduced motion disables the animation', () => {
@@ -51,8 +52,11 @@ test('auto: overflowing content gets run class and vars, fitting content none', 
   sized(box, 300, 100);
   await later();
   assert.ok(box.classList.contains('mq-run'));
-  assert.equal(box.style.getPropertyValue('--mq-dist'), '200px');
-  assert.equal(box.style.getPropertyValue('--mq-dur'), `${200 / 32 + 3}s`);
+  assert.equal(box.style.getPropertyValue('--mq-dist'), `${200 + 2 * PAD}px`);
+  assert.equal(box.style.getPropertyValue('--mq-dur'), `${(200 + 2 * PAD) / 32 + 3}s`);
+  sized(box, 300 + 2 * PAD, 100);
+  measure(box);
+  assert.equal(box.style.getPropertyValue('--mq-dist'), `${200 + 2 * PAD}px`);
   const fit = el('div', {}, 'Short');
   marquee(fit, { auto: true });
   sized(fit, 100, 101);
@@ -125,4 +129,19 @@ test('mini-player and playback heading use the module; css has the rules', () =>
   assert.match(css, /\.mq-run \.mq-track \{[^}]*animation: mq var\(--mq-dur/);
   assert.match(css, /prefers-reduced-motion: reduce\) \{ \.mq-run \.mq-track \{ animation: none/);
   assert.match(css, /\.doc-hidden \.mq-track \{ animation-play-state: paused/);
+});
+
+test('css: padding matches PAD, covers the fade, mask sits on the container', () => {
+  const css = readFileSync(new URL('../style.css', import.meta.url), 'utf8');
+  const pad = Number(/--mq-pad: (\d+)px/.exec(css)[1]);
+  const fade = Number(/--mq-fade: (\d+)px/.exec(css)[1]);
+  assert.equal(pad, PAD);
+  assert.ok(pad >= fade);
+  assert.match(css, /\.mq-run \{ -webkit-mask-image: linear-gradient\(90deg, transparent, #000 var\(--mq-fade\), #000 calc\(100% - var\(--mq-fade\)\), transparent\)/);
+  assert.match(css, /\.mq-run \.mq-track \{ padding-inline: var\(--mq-pad\)/);
+  assert.doesNotMatch(css, /\.mq-track \{[^}]*mask-image/);
+  const content = 300;
+  const dist = 200 + 2 * pad;
+  assert.ok(pad >= fade);
+  assert.equal(pad + content - dist, 100 - pad);
 });

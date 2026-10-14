@@ -4,8 +4,8 @@ import { isHiddenTag, visibleTags, decadeTag, withDecade, tagLabel, tagText, tag
 import { categoryOf, categoryTags, CATEGORIES } from './tagname.js';
 
 test('tagname', () => {
-  for (const [y, t] of [[1949, null], [1950, 'decade:50s'], [1994, 'decade:90s'], [2000, 'decade:00s'], [2007, 'decade:00s'], [2013, 'decade:10s'], [2029, 'decade:20s'], [2030, null], [null, null], [NaN, null]]) {
-    assert.equal(decadeTag(y), t, String(y));
+  for (const [y, t] of [[1949, null], [1950, 'decade:50s'], [1994, 'decade:90s'], [2000, 'decade:00s'], [2007, 'decade:00s'], [2013, 'decade:10s'], [2027, 'decade:20s'], [2028, null], [null, null], [NaN, null]]) {
+    assert.equal(decadeTag(y, new Date(2026, 5, 1)), t, String(y));
   }
   assert.deepEqual(withDecade(['x', 'decade:80s'], 1994), ['x', 'decade:90s']);
   assert.deepEqual(withDecade(['x'], 1994), ['x', 'decade:90s']);
@@ -74,4 +74,16 @@ test('historical country su', async () => {
   assert.equal(canonicalCountry('CCCP'), 'su');
   assert.ok(isHistoricalCountry('su') && !isHistoricalCountry('lt'));
   assert.equal(canonicalCountry('atlantis'), null);
+});
+
+test('decade tags follow the clock: 2030 gives the 30s once the next year is 2030', () => {
+  const at = (y) => new Date(y, 5, 1);
+  assert.equal(decadeTag(2030, at(2026)), null);
+  assert.equal(decadeTag(2027, at(2026)), 'decade:20s');
+  assert.equal(decadeTag(2030, at(2029)), 'decade:30s');
+  assert.equal(decadeTag(1949, at(2029)), null);
+  assert.equal(decadeTag(2170, at(2169)), 'decade:70s');
+  assert.equal(tagLabel('decade:30s'), 'the 30s');
+  const g = tagGroups([{ tag: 'decade:30s', count: 1 }, { tag: 'decade:90s', count: 1 }, { tag: 'decade:10s', count: 1 }, { tag: 'decade:00s', count: 1 }]);
+  assert.deepEqual(g.find((x) => x.key === 'decade').tags.map((t) => t.tag), ['decade:90s', 'decade:00s', 'decade:10s', 'decade:30s']);
 });

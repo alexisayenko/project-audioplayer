@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  splitPlottable, jitter, makePoint, extentX, extentY, tickStep, ticks, makeScale, zoomRange, panRange, assignGroups, songFamilies,
+  validBpm, validYear, clampLo, splitPlottable, jitter, makePoint, extentX, extentY, tickStep, ticks, makeScale, zoomRange, panRange, centerRange, assignGroups, songFamilies, songFamily, DEFAULT_MODE,
   buildIndex, inRect, neighbour, firstItem, groupOf, colorIndex, NEUTRAL, countText, skippedText, chartLabel,
   JITTER_YEAR, JITTER_BPM, MIN_YEAR_SPAN,
 } from './stats-data.js';
@@ -86,6 +86,22 @@ test('zoomRange keeps the anchor fixed and clamps the span', () => {
   const big = zoomRange(1990, 2010, 2000, 50, lim);
   assert.equal(big.hi - big.lo, 100);
   assert.deepEqual(panRange(10, 20, 5), { lo: 15, hi: 25 });
+  assert.deepEqual(panRange(10, 20, -3, { lo: 0, hi: 100 }), { lo: 7, hi: 17 });
+  assert.deepEqual(panRange(10, 20, 500, { lo: 0, hi: 100 }), { lo: 95, hi: 105 });
+  assert.deepEqual(panRange(10, 20, -500, { lo: 0, hi: 100 }), { lo: -5, hi: 5 });
+  assert.deepEqual(panRange(0, 300, 40, { lo: 100, hi: 120 }), { lo: -30, hi: 270 });
+  const b = { lo: 1990, hi: 2020 };
+  for (const target of [1990, 2005, 2020]) {
+    const r = panRange(2000, 2010, target - 2005 + 0, b);
+    assert.ok(r.lo + 5 >= b.lo && r.lo + 5 <= b.hi);
+    const toTarget = panRange(2000, 2010, target - 2005, b);
+    assert.equal((toTarget.lo + toTarget.hi) / 2, target);
+  }
+  assert.equal((panRange(2000, 2010, -999, b).lo + 5), 1990);
+  assert.equal((panRange(2000, 2010, 999, b).lo + 5), 2020);
+  const c = centerRange(1995, 2000, b);
+  assert.equal(c.hi - c.lo, 5);
+  assert.equal((c.lo + c.hi) / 2, 2005);
 });
 
 test('grouping by decade, audio, family and none with colour keys and counts', () => {
@@ -99,10 +115,14 @@ test('grouping by decade, audio, family and none with colour keys and counts', (
   const none = assignGroups(pts, 'none');
   assert.equal(none.length, 1);
   assert.equal(pts[0].color, NEUTRAL);
-  const fam = assignGroups(pts, 'family', null);
+  const pending = assignGroups(pts, 'family', null);
+  assert.equal(pending.length, 1);
+  assert.equal(pending[0].label, 'All songs');
+  assert.equal(pending[0].color, NEUTRAL);
+  const fam = assignGroups(pts, 'family', new Map());
   assert.equal(fam.length, 1);
   assert.equal(fam[0].label, 'Other');
-  assert.equal(fam[0].color, NEUTRAL);
+  assert.equal(fam[0].color, 15);
 });
 
 test('family grouping uses the genre graph and falls back to Other', () => {
@@ -116,7 +136,7 @@ test('family grouping uses the genre graph and falls back to Other', () => {
   const groups = assignGroups(songs.map(makePoint), 'family', fams);
   assert.deepEqual(groups.map((g) => g.label), ['Electronic', 'Rock', 'Other']);
   assert.equal(groups[0].color, 0);
-  assert.equal(groups[2].color, NEUTRAL);
+  assert.equal(groups[2].color, 15);
   assert.equal(groupOf(songs[2], 'family', fams).label, 'Other');
 });
 
@@ -168,4 +188,89 @@ test('texts', () => {
   assert.equal(skippedText(7), '7 songs without year or BPM are not shown');
   assert.match(chartLabel(5), /^Scatter plot of 5 songs/);
   assert.match(chartLabel(1), /1 song:/);
+});
+
+const GRAPH = {
+  nodes: [
+    { id: 'q1', label: 'House', family: 'Electronic', tags: ['house'] },
+    { id: 'q2', label: 'Drum and bass', family: 'Electronic', tags: [] },
+    { id: 'q3', label: 'Rock', family: 'Rock', tags: ['rock'] },
+    { id: 'q4', label: 'Jazz', family: 'Jazz', tags: ['jazz'] },
+  ],
+};
+
+test('songFamily takes the family of the first genre tag that resolves', () => {
+  assert.equal(songFamily(S('a', 2000, 1, { tags: ['genre:zouk', 'genre:rock', 'genre:house'] }), GRAPH), 'Rock');
+  assert.equal(songFamily(S('a', 2000, 1, { tags: ['genre:house', 'genre:rock'] }), GRAPH), 'Electronic');
+  assert.equal(songFamily(S('a', 2000, 1, { tags: ['genre:  DRUM   and Bass '] }), GRAPH), 'Electronic');
+  assert.equal(songFamily(S('a', 2000, 1, { tags: ['country:lt', 'rock'] }), GRAPH), 'Other');
+});
+
+test('songFamily accepts a legacy plain genre after the tags, and falls back to Other', () => {
+  assert.equal(songFamily(S('a', 2000, 1, { genre: 'Jazz' }), GRAPH), 'Jazz');
+  assert.equal(songFamily(S('a', 2000, 1, { genre: 'Jazz', tags: ['genre:rock'] }), GRAPH), 'Rock');
+  assert.equal(songFamily(S('a', 2000, 1, { genre: 'nonsense' }), GRAPH), 'Other');
+  assert.equal(songFamily(S('a', 2000, 1), GRAPH), 'Other');
+  assert.equal(songFamily(S('a', 2000, 1, { tags: ['genre:house'] }), null), 'Other');
+  assert.equal(songFamily(null, GRAPH), 'Other');
+});
+
+test('family legend counts sort by count with Other last and colours follow the Genres map family index', () => {
+  const songs = [
+    S('1', 2000, 100, { tags: ['genre:jazz'] }), S('2', 2000, 100, { tags: ['genre:rock'] }), S('3', 2000, 100, { tags: ['genre:rock'] }),
+    S('4', 2000, 100, { tags: ['genre:house'] }), S('5', 2000, 100, { tags: ['genre:house'] }), S('6', 2000, 100, { tags: ['genre:house'] }),
+    S('7', 2000, 100), S('8', 2000, 100), S('9', 2000, 100), S('10', 2000, 100),
+  ];
+  const groups = assignGroups(songs.map(makePoint), 'family', songFamilies(GRAPH, songs));
+  assert.deepEqual(groups.map((g) => [g.label, g.count, g.color]), [['Electronic', 3, 0], ['Rock', 2, 1], ['Jazz', 1, 4], ['Other', 4, 15]]);
+});
+
+test('recolouring keeps point positions and the points array', () => {
+  const pts = [makePoint(S('a', 1995, 100, { tags: ['genre:rock'] })), makePoint(S('b', 2005, 130, { tags: ['genre:jazz'] }))];
+  const before = pts.map((p) => [p.x, p.y]);
+  const ref = pts;
+  assignGroups(pts, 'family', new Map());
+  const colours = pts.map((p) => p.color);
+  assignGroups(pts, 'family', songFamilies(GRAPH, pts.map((p) => p.song)));
+  assert.equal(pts, ref);
+  assert.deepEqual(pts.map((p) => [p.x, p.y]), before);
+  assert.notDeepEqual(pts.map((p) => p.color), colours);
+});
+
+test('the default colour mode is the genre family', () => {
+  assert.equal(DEFAULT_MODE, 'family');
+});
+
+test('validBpm accepts only finite numbers within 20..300', () => {
+  for (const v of [0, -5, 19, 301, NaN, Infinity, null, undefined, '120', [], {}]) assert.equal(validBpm(v), false, String(v));
+  for (const v of [20, 120, 140.5, 300]) assert.equal(validBpm(v), true, String(v));
+});
+
+test('validYear accepts only 1900..next year', () => {
+  const max = new Date().getFullYear() + 1;
+  for (const v of [0, null, undefined, '2000', NaN, 1899, max + 1]) assert.equal(validYear(v), false, String(v));
+  for (const v of [1900, 1999, max]) assert.equal(validYear(v), true, String(v));
+});
+
+test('a song with BPM 0 among valid ones is counted as missing, not plotted', () => {
+  const r = splitPlottable([S('a', 1999, 120), S('z', 2000, 0), S('n', 2001, null), S('s', 2002, '120'), S('lo', 2003, 19), S('hi', 2004, 301), S('b', 2005, 20), S('c', 2006, 300), S('y0', 0, 120)]);
+  assert.deepEqual(r.plotted.map((s) => s.id), ['a', 'b', 'c']);
+  assert.equal(r.skipped, 6);
+  assert.equal(skippedText(r.skipped), '6 songs without year or BPM are not shown');
+  const e = extentY(r.plotted.map((s) => s.bpm));
+  assert.ok(e.lo >= 0);
+});
+
+test('y extent and ticks never go below 0 and start on a multiple of 20', () => {
+  assert.deepEqual(extentY([]), { lo: 60, hi: 200 });
+  assert.equal(extentY([20]).lo, 0);
+  assert.ok(ticks(0, 200, 20)[0] === 0 && ticks(-7, 200, 20)[0] === 0);
+  assert.deepEqual(ticks(5, 100, 20), [20, 40, 60, 80, 100]);
+});
+
+test('clampLo keeps the span and shifts a range that dips below 0', () => {
+  assert.deepEqual(clampLo({ lo: -30, hi: 70 }), { lo: 0, hi: 100 });
+  assert.deepEqual(clampLo({ lo: 10, hi: 70 }), { lo: 10, hi: 70 });
+  const v = clampLo(panRange(20, 120, -500, { lo: 0, hi: 200 }));
+  assert.ok(v.lo >= 0 && v.hi - v.lo === 100);
 });

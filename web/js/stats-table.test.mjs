@@ -21,5 +21,7 @@ test('row values use the remix-aware title and decade', () => {
   assert.equal(rowValue(songs[1], 'title'), 'alpha (DJ X)');
   assert.equal(rowValue(songs[0], 'decade'), 1990);
   assert.equal(decadeLabel(songs[2]), '1980s');
-  assert.deepEqual(COLUMNS.map(([k]) => k), ['title', 'artist', 'year', 'bpm', 'decade']);
+  assert.deepEqual(COLUMNS.map(([k]) => k), ['title', 'artist', 'year', 'bpm', 'decade', 'family']);
+  assert.equal(rowValue(songs[0], 'family', () => 'Rock'), 'Rock');
+  assert.deepEqual(sortRows(songs, 'family', 1, (x) => ({ a: 'Rock', b: 'Jazz', c: 'Pop' })[x.id]).map((x) => x.id), ['b', 'c', 'a']);
 });

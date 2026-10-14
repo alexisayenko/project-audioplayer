@@ -4,12 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
+<meta name="robots" content="noindex,nofollow">
 <title>Electrophone</title>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="tokens.css">
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="genres.css">
 <link rel="stylesheet" href="stats.css">
+<link rel="stylesheet" href="viz.css">
 </head>
 <body class="t-body">
 <div class="app">
@@ -32,6 +34,7 @@
 <main id="view"></main>
 
 <section id="player" class="player" hidden aria-label="Playback">
+  <div class="viz-bg" id="viz-bg-layer" aria-hidden="true"><canvas id="viz-bg" class="viz-canvas"></canvas></div>
   <header class="page-head">
     <p class="t-eyebrow">ELECTROPHONE</p>
     <h1 class="t-display">Now playing</h1>
@@ -67,6 +70,9 @@
           <input type="range" id="p-volume" class="slider" min="0" max="100" value="100" step="1" aria-label="Volume">
           <span class="t-caption muted" id="p-volume-pct">100%</span>
         </div>
+        <button class="key ghost toggle" id="p-viz" type="button" aria-pressed="false" aria-label="Visualizer" title="Visualizer (V)"></button>
+        <div class="viz-switch" id="p-viz-switch" role="radiogroup" aria-label="Visualizer mode" hidden></div>
+        <span class="viz-sr" id="viz-live" role="status" aria-live="polite"></span>
       </div>
       <div class="now" id="details-body" hidden>
         <div id="player-tags" class="tags"></div>
@@ -121,6 +127,21 @@
 <dialog id="song-card" class="sheet card-dlg" aria-labelledby="song-card-title"></dialog>
 <dialog id="filter-sheet" class="sheet" aria-labelledby="sheet-title"></dialog>
 <output id="toast" class="toast t-subhead" hidden></output>
+<div id="viz-full" class="viz-full" role="dialog" aria-label="Visualizer" tabindex="-1" hidden>
+  <canvas id="viz-full-canvas" class="viz-canvas" aria-hidden="true"></canvas>
+  <div class="viz-ctl" id="viz-ctl">
+    <div class="viz-meta"><b id="viz-title" class="t-title"></b><span id="viz-artist" class="t-subhead"></span></div>
+    <div id="viz-scrub" class="scrubber" role="slider" tabindex="-1" aria-label="Seek" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0" aria-valuetext="0:00 of 0:00" aria-disabled="true"><span class="scrub-rail"><span class="scrub-fill"></span></span><span class="scrub-thumb"></span><span class="scrub-bubble" aria-hidden="true">0:00</span></div>
+    <div class="viz-keys">
+      <button class="key wide" id="viz-prev" type="button" aria-label="Previous song"></button>
+      <button class="key lit" id="viz-play" type="button" aria-label="Play"></button>
+      <button class="key wide" id="viz-next" type="button" aria-label="Next song"></button>
+      <div class="viz-switch" id="viz-switch" role="radiogroup" aria-label="Visualizer mode" hidden></div>
+      <button class="key ghost" id="viz-close" type="button" aria-label="Exit visualizer" title="Exit (Esc)"></button>
+    </div>
+  </div>
+</div>
+<footer id="legal" class="legal t-caption" role="contentinfo" hidden></footer>
 <audio id="audio" preload="metadata"></audio>
 <script type="module" src="js/app.js"></script>
 </body>

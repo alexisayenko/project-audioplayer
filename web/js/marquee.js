@@ -1,4 +1,5 @@
 export const MIN_OVERFLOW = 2;
+export const PAD = 14;
 const SPEED = 32;
 const PAUSES = 3;
 const MIN_DUR = 6;
@@ -10,7 +11,7 @@ export function prefersReduced(mm = globalThis.matchMedia) {
 
 export function marqueeMetrics(overflow, reduced = false) {
   if (reduced || !(overflow > MIN_OVERFLOW)) return { overflowing: false, dist: 0, dur: 0 };
-  const dist = Math.ceil(overflow);
+  const dist = Math.ceil(overflow) + 2 * PAD;
   return { overflowing: true, dist, dur: Math.max(MIN_DUR, dist / SPEED + PAUSES) };
 }
 
@@ -37,7 +38,8 @@ export function measure(el) {
   const st = states.get(el);
   if (!st?.track) return;
   const width = el.clientWidth;
-  const m = width > 0 ? marqueeMetrics(st.track.scrollWidth - width, prefersReduced()) : marqueeMetrics(0);
+  const content = st.track.scrollWidth - (el.classList.contains('mq-run') ? 2 * PAD : 0);
+  const m = width > 0 ? marqueeMetrics(content - width, prefersReduced()) : marqueeMetrics(0);
   st.dist = m.dist;
   st.dur = m.dur;
   apply(el, st);
