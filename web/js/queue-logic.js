@@ -254,7 +254,7 @@ export function nextPlayable(state, manual, ok, autoOn, rand = Math.random) {
   let at = index;
   let seen = state.played || [];
   let skipped = 0;
-  for (const _ of queue) {
+  for (let n = queue.length; n > 0; n--) {
     const step = nextStep({ ...state, index: at, played: seen }, true, rand);
     if (!step) return null;
     seen = step.played;
@@ -274,7 +274,7 @@ export function prevPlayable(state, ok, autoOn) {
   let at = state.index;
   let hist = state.history || [];
   let skipped = 0;
-  for (const _ of state.queue) {
+  for (let n = state.queue.length; n > 0; n--) {
     const step = prevStep({ ...state, index: at, history: hist });
     if (!step) return null;
     hist = step.history;

@@ -13,6 +13,10 @@ const ALPHA_DECAY = 1 - Math.pow(ALPHA_MIN, 1 / 300);
 const VELOCITY_DECAY = 0.4;
 const THETA2 = 0.81;
 const MAX_V = 40;
+
+function clampV(v) {
+  return Math.max(-MAX_V, Math.min(MAX_V, v));
+}
 const REST = 0.012;
 
 function quad(x0, y0, size) {
@@ -118,6 +122,10 @@ export function createSim({ nodes, links = [], seed = 1, breathing = true, charg
     }
   }
 
+  function opens(c, d2) {
+    return Boolean(c.kids) && (d2 === 0 || (c.size * c.size) / d2 >= THETA2);
+  }
+
   function chargeOn(n, root) {
     const stack = [root];
     while (stack.length) {
@@ -126,10 +134,8 @@ export function createSim({ nodes, links = [], seed = 1, breathing = true, charg
       const dx = c.cx - n.x;
       const dy = c.cy - n.y;
       let d2 = dx * dx + dy * dy;
-      if (c.kids && (d2 === 0 || (c.size * c.size) / d2 >= THETA2)) {
-        for (const k of c.kids) {
-          if (k) stack.push(k);
-        }
+      if (opens(c, d2)) {
+        stack.push(...c.kids.filter(Boolean));
         continue;
       }
       if (c.leaf) {
@@ -177,23 +183,19 @@ export function createSim({ nodes, links = [], seed = 1, breathing = true, charg
       const list = grid.get(key);
       if (list) list.push(n); else grid.set(key, [n]);
     }
-    for (const a of nodes) {
-      const cx = Math.floor(a.x / cell);
-      const cy = Math.floor(a.y / cell);
-      for (let gx = cx - 1; gx <= cx + 1; gx++) {
-        for (let gy = cy - 1; gy <= cy + 1; gy++) {
-          const list = grid.get(`${gx},${gy}`);
-          if (!list) continue;
-          for (const b of list) {
-            if (b.id > a.id) collidePair(a, b);
-          }
+    for (const a of nodes) collideNear(a, grid, cell);
+  }
+
+  function collideNear(a, grid, cell) {
+    const cx = Math.floor(a.x / cell);
+    const cy = Math.floor(a.y / cell);
+    for (let gx = cx - 1; gx <= cx + 1; gx++) {
+      for (let gy = cy - 1; gy <= cy + 1; gy++) {
+        for (const b of grid.get(`${gx},${gy}`) ?? []) {
+          if (b.id > a.id) collidePair(a, b);
         }
       }
     }
-  }
-
-  function clampV(v) {
-    return Math.max(-MAX_V, Math.min(MAX_V, v));
   }
 
   function integrate(n, amp) {

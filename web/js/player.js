@@ -239,7 +239,7 @@ export const player = {
     let at = qs.index;
     let seen = played;
     let skipped = 0;
-    for (const _ of qs.items) {
+    for (let n = qs.items.length; n > 0; n--) {
       const step = Q.nextStep({ ...logic(), index: at, played: seen }, !auto);
       if (!step) break;
       seen = step.played;
@@ -267,7 +267,7 @@ export const player = {
     let at = qs.index;
     let hist = history;
     let skipped = 0;
-    for (const _ of qs.items) {
+    for (let n = qs.items.length; n > 0; n--) {
       const step = Q.prevStep({ ...logic(), index: at, history: hist });
       if (!step) break;
       hist = step.history;

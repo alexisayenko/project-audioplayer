@@ -41,12 +41,12 @@
         <span class="disc" aria-hidden="true"></span>
         <button class="cover-btn" id="cover-toggle" type="button" aria-label="Play" title="Play" hidden><span class="cover-icon" id="cover-icon" aria-hidden="true"></span></button>
         <div class="cover-text" id="cover-text" hidden>
-          <h2 id="player-title" class="t-title"></h2>
+          <h2 id="player-title" class="t-title">Nothing playing</h2>
           <p id="player-sub" class="t-body"></p>
         </div>
         <p class="empty-note t-subhead" id="player-empty">Nothing playing</p>
       </div>
-      <div class="dl-note" id="player-dl" role="status" hidden><span class="t-subhead" id="player-dl-text"></span><button class="btn outline small" id="player-dl-btn" type="button" hidden>Download</button></div>
+      <output class="dl-note" id="player-dl" hidden><span class="t-subhead" id="player-dl-text"></span><button class="btn outline small" id="player-dl-btn" type="button" hidden>Download</button></output>
       <div class="pb-actions"><button class="icon round" id="p-download" type="button" title="Download" aria-label="Download" hidden></button><button class="icon round" id="p-edit" type="button" title="Edit song" aria-label="Edit song" hidden></button></div>
       <div class="pb-progress">
         <div id="scrub" class="scrubber" role="slider" tabindex="-1" aria-label="Seek" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0" aria-valuetext="0:00 of 0:00" aria-disabled="true"><span class="scrub-rail"><span class="scrub-fill"></span></span><span class="scrub-thumb"></span><span class="scrub-bubble" aria-hidden="true">0:00</span></div>

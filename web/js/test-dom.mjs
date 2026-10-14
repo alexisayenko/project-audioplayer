@@ -56,7 +56,7 @@ const SIMPLE_TOKEN = new RegExp(`^(?:${[
   String.raw`\.([\w-]+)`,
   String.raw`\[([\w-]+)(?:=(?:"([^"]*)"|'([^']*)'|([^\]]*)))?\]`,
   String.raw`:not\((.*?)\)`,
-  String.raw`:(disabled|enabled|checked)`,
+  ":(disabled|enabled|checked)",
 ].join('|')})`);
 
 function parseSimple(s) {
@@ -228,8 +228,15 @@ export class DomElement extends DomNode {
     return on;
   }
 
-  addEventListener(t, fn) { if (!this._ls.has(t)) this._ls.set(t, []); this._ls.get(t).push(fn); }
-  removeEventListener(t, fn) { const a = this._ls.get(t); if (a) { const i = a.indexOf(fn); if (i >= 0) a.splice(i, 1); } }
+  addEventListener(t, fn) {
+    if (!this._ls.has(t)) this._ls.set(t, []);
+    this._ls.get(t).push(fn);
+  }
+  removeEventListener(t, fn) {
+    const a = this._ls.get(t) ?? [];
+    const i = a.indexOf(fn);
+    if (i >= 0) a.splice(i, 1);
+  }
   dispatchEvent(ev) {
     ev.target = ev.target || this;
     for (const n of ancestry(this)) {
@@ -313,7 +320,10 @@ export function installDom({ ids = [] } = {}) {
   const store = new Map();
   const win = {
     innerHeight: 800, innerWidth: 400, scrollY: 0,
-    addEventListener(t, fn) { if (!listeners.has(t)) listeners.set(t, []); listeners.get(t).push(fn); },
+    addEventListener(t, fn) {
+      if (!listeners.has(t)) listeners.set(t, []);
+      listeners.get(t).push(fn);
+    },
     removeEventListener() {},
     dispatchEvent(ev) { this.dispatch(ev.type, ev); return true; },
     dispatch(t, ev = {}) { (listeners.get(t) || []).forEach((fn) => fn({ type: t, ...ev })); },
@@ -344,7 +354,7 @@ export const flush = () => new Promise((r) => setTimeout(r, 0));
 export function stubFetch(handler) {
   const calls = [];
   globalThis.fetch = async (url, opts = {}) => {
-    const u = typeof url === 'string' ? url : url.toString();
+    const u = url instanceof URL ? url.href : url;
     calls.push({ url: u, opts });
     const r = await handler(u, opts);
     const status = r.status ?? 200;

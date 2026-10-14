@@ -14,6 +14,11 @@ function bbox(list) {
   return { x0, y0, x1, y1 };
 }
 
+function linkAlpha(on, focus) {
+  if (!on) return 0.06;
+  return focus ? 0.95 : 0.5;
+}
+
 export function createGraphView(canvas, { onSelect, onHover, reducedMotion = false } = {}) {
   const ctx = canvas.getContext('2d');
   let W = 1;
@@ -165,10 +170,6 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
     ctx.fill();
   }
 
-  function linkAlpha(on, focus) {
-    if (!on) return 0.06;
-    return focus ? 0.95 : 0.5;
-  }
 
   function drawLink(l, focus, k) {
     const on = !focus || l.s === focus || l.t === focus;

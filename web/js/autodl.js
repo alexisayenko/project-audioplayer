@@ -71,17 +71,16 @@ function sleep(ms) {
   });
 }
 
-async function whenVisible() {
-  while (hidden()) {
-    await new Promise((resolve) => {
-      const onShow = () => {
-        if (document.hidden) return;
-        document.removeEventListener('visibilitychange', onShow);
-        resolve();
-      };
-      document.addEventListener('visibilitychange', onShow);
-    });
-  }
+function whenVisible() {
+  if (!hidden()) return Promise.resolve();
+  return new Promise((resolve) => {
+    const onShow = () => {
+      if (hidden()) return;
+      document.removeEventListener('visibilitychange', onShow);
+      resolve();
+    };
+    document.addEventListener('visibilitychange', onShow);
+  });
 }
 
 async function poll(id) {
