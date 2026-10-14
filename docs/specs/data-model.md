@@ -1,6 +1,6 @@
 # Data model
 
-Code: `server/app/library.py`, `server/app/main.py` (`SongMeta`).
+Code: `server/app/library.py`, `server/app/schemas.py` (`SongMeta`).
 
 ## Song record
 
@@ -27,9 +27,9 @@ Code: `server/app/library.py`, `server/app/main.py` (`SongMeta`).
 | `cover` | string or null | no | `covers/<id>.jpg`, or `null` if the thumbnail fetch failed |
 | `added_at` | string | yes | UTC `YYYY-MM-DDTHH:MM:SSZ` |
 
-- DATA-001 MUST: every song has a unique `id` that is a valid YouTube video id or a `soundcloud-<numeric id>` id (DATA-024). Status: implemented
+- DATA-001 MUST: every song has a unique `id` that is a valid YouTube video id or a `soundcloud-<numeric id>` id (DATA-024); the SoundCloud id grammar is `^soundcloud-[0-9]{1,20}$` with ASCII digits only (`urlclean.SOUNDCLOUD_ID_RE`), so `soundcloud-`, `soundcloud-abc` and non-ASCII digits are refused. Status: implemented
 - DATA-024 MUST: `source` is optional; absent means `youtube`; the file is `<id>.m4a` and the cover `covers/<id>.jpg` for both sources; a mixed library round-trips unchanged. Status: implemented
-- DATA-002 MUST: `id`, `source_url`, `file`, `cover`, `duration`, `added_at` are server-set; PATCH accepts only title, artist, album, remixer, year, bpm, tags, wikipedia_song, wikipedia_artist, musicbrainz_url. Status: implemented
+- DATA-002 MUST: `id`, `source_url`, `file`, `cover`, `duration`, `added_at` are server-set; PATCH accepts only title, artist, album, remixer, year, bpm, tags, wikipedia_song, wikipedia_artist, musicbrainz_url, discogs_url. Status: implemented
 - DATA-003 MUST: `file` is reduced to its base name when read; an absent `file` key defaults to `<id>.m4a`; an explicit `null` stays `null` (metadata-only). Status: implemented
 - DATA-004 MUST: optional fields may be `null`; old records lacking `bpm` or other optional fields load without error. Status: implemented
 - DATA-005 (superseded by ADR-0010, see CAT-001): a song record exists only after its audio download succeeded. Status: superseded; a record may now exist without audio (`file: null`). Downloads still write the record only after they succeed.

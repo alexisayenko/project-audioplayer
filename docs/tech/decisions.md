@@ -17,9 +17,13 @@ below, never by deleting.
 | 0010 | Catalog and audio are separate (incl. web auto-download setting) | Accepted, implemented |
 | 0011 | Multi-source song ids | Accepted |
 | 0012 | Open signup and per-user storage | Accepted, live |
-| 0013 | Music-database lookups: MusicBrainz now, Discogs later | Accepted for MusicBrainz; Proposed for Discogs |
+| 0013 | Music-database lookups: MusicBrainz, Discogs, AcoustID fingerprint identification | Accepted; MusicBrainz live, Discogs and AcoustID implemented, awaiting keys on the server |
+| 0014 | Genres map: genre graph from Wikidata with Discogs families | Accepted, implemented |
+| 0015 | Pill separators and promo-noise cleaning | Accepted, implemented on the web |
+| 0016 | Web player chrome: fixed mini-player, queue menu, collapsible sidebar, draggable scrubber | Accepted, implemented |
+| 0017 | Server module structure and test strategy | Accepted, implemented |
 
-The web "Download" file save is a sub-decision of ADR-0003; the web "Auto-download songs" setting is one of ADR-0010. The 2026-10-13 form, token-pill and metadata decisions have no number (section below).
+The web "Download" file save is a sub-decision of ADR-0003; the web "Auto-download songs" setting is one of ADR-0010. The 2026-10-13 form, token-pill and metadata decisions have no number (section "2026-10-13 decisions", above ADR-0013). The identification (AcoustID, Discogs) decision is the sub-decision of ADR-0013; per-user open signup is ADR-0012.
 
 ## ADR-0001 Components, server, hosting, storage
 
@@ -576,3 +580,26 @@ Status: Accepted (Alex, 2026-10-14) · implemented on the web
 - Lookups cope with legacy 'A, B' artists locally (whole string first, then the first part), so no data migration is needed.
 - Promo noise ('[Free Download]', '(Official Video)') is removed by one function with identical rules on server and web, only on Add, with a Restore hint; the server is authoritative. Existing songs are not rewritten; an optional script does it on request.
 - Rejected: a heuristic for artist commas (wrong in both directions); stripping every bracket (it would lose Extended Mix, Remastered, Live).
+- Amendment (2026-10-14, Alex): 'Original Mix', 'Original Version' and 'Original' are noise when they are a whole segment (a bracket group, or a trailing segment under the usual ' - ' rule), so 'Rover (Original Mix)' gives 'Rover'. With any other word or a name ('(Tiësto Original Mix)', '(Original Mix Extended)') they stay, and Extended Mix, Radio Edit, Club Mix, Remix, Live and the like are still never removed.
+
+
+## ADR-0016 Web player chrome: fixed mini-player, queue menu, collapsible sidebar, draggable scrubber
+
+Status: Accepted (Alex, 2026-10-14) · implemented on the web, layout not yet checked in a browser
+
+- Mini-player: a fixed 720px bar (never stretching), centred right of the sidebar, as a raised separate surface (border, shadow, margin) instead of a full-width strip that blended into the list. Two rows: song and transport, then time, progress and volume. It carries icon buttons for the playing song: Edit details, Show in list (scroll and highlight the row, filters kept) and an Add to current playlist toggle. Library is not width-limited. Spec: PLY-117..119, LIB-096, LIB-097, WEB-038.
+- Playlist toggle: Library rows and the mini-player show whether the song is in the queue (selected state, click removes), so the queue is visible from the list. Spec: LIB-095, PLY-119.
+- Queue menu: every row, played and current included, offers Edit song, Download, Move up/down and Remove; edits keep the current song current by identity, not position, and removing the playing song advances. Spec: PLY-042, PLY-046. Playback song details drop the "..." menu for Download and Edit icon buttons (PLY-072, PLY-102).
+- Sidebar: collapsible to a 64px icon rail, remembered per browser (`web/js/sidebar-state.js`). Spec: WEB-037.
+- Scrubber: the Playback seek bar and the mini-player progress are one pointer-event slider (`scrubber.js`, pure maths in `scrub.js`), drag with a time bubble, keyboard and `role="slider"`, disabled until a duration is known. Spec: PLY-120..122.
+
+
+## ADR-0017 Server module structure and test strategy
+
+Status: Accepted (Alex, 2026-10-14) · implemented
+
+- `server/app/main.py` only builds the app (middleware, exception handlers, router includes). Routes live in `server/app/routes/`, one `APIRouter` per area: health, auth, me, legacy, files, catalog, genres, lookup, songs, analyze, removal. Shared state, per-user paths, transactions and the auth and quota dependencies live in `deps.py`; code and tests use `deps.X`, never `main.X`.
+- One helper for each repeated job instead of copies: `jsonio` (crash-safe JSON writes), `httpjson` (JSON over HTTP with User-Agent and timeout), `safepath`, `ratelimit`, `timeutil`, `tags`, `links`, `downloads`, `schemas`, `web`. The web side follows the same rule: `storage.js` (guarded `localStorage`), `constants.js` (breakpoints, timings), and large UI modules split by job (`player-*`, `library-*`, `song-form-*`, `token-drag`, `genre-view`).
+- Tests: server line coverage target 99% (`coverage run -m pytest`, measured over `app/*`); web coverage target 80% or more, with UI modules tested through a small DOM shim (`web/js/test-dom.mjs`) and one `*.test.mjs` per module. The shared title-cleaning fixture drives both the Python and the JavaScript implementation. Network, git, `yt-dlp` and `fpcalc` are always faked; no test reaches a real service.
+- `scripts/check.sh` is the gate: every web test file, duplicate requirement IDs, the server test suite. It never deploys.
+- Rejected: one big `main.py` with tests patching `main` (every refactor broke unrelated tests); a web build step to bundle modules (the no-build rule of ADR-0003 stays).

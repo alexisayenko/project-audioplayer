@@ -135,12 +135,12 @@ and rules):
 - [`tech/deploy.md`](tech/deploy.md) — deploy runbook for the live
   server (where things live, deploy, rollback, verify, signup off)
 - [`specs/README.md`](specs/README.md) — testable requirements per area
-  (API, data model, tags, library, playback, web, iOS, non-functional)
+  (API, data model, tags, library, playback, web, genres, iOS, non-functional)
 - [`CHANGELOG.md`](CHANGELOG.md) — what shipped, newest first
 - [`tech/ci-cd.md`](tech/ci-cd.md) — CI/CD playbook (manual
   workflows, test layers, deploy and release paths)
 - [`tech/decisions.md`](tech/decisions.md) — tech decisions (ADRs):
-  components, server, Cloudflare Tunnel, storage, music-database lookups (ADR-0013)
+  components, server, Cloudflare Tunnel, storage, open signup (ADR-0012), music-database lookups and identification (ADR-0013), Genres map (ADR-0014), pill tokenizer and title cleaning (ADR-0015), web player chrome (ADR-0016), server module structure and test strategy (ADR-0017)
 - [`ui-ux/README.md`](ui-ux/README.md) — screen + journey spec,
   section glossary
 - [`ui-ux/style-guide.md`](ui-ux/style-guide.md) — visual +
@@ -189,8 +189,8 @@ docs/
 │   ├── app-store-metadata.md           # store listing draft
 │   └── legal-draft.md                  # legal-page draft
 ├── specs/                              # entry: specs/README.md (what the system does)
-│   ├── add-song.md api.md catalog.md data-model.md ios.md library.md
-│   └── non-functional.md playback.md storage-and-sync.md tags.md web.md
+│   ├── add-song.md api.md catalog.md data-model.md genres.md ios.md
+│   └── library.md non-functional.md playback.md storage-and-sync.md tags.md web.md
 ├── tasks/                              # entry: tasks/README.md
 │   ├── README.md
 │   ├── C1.md                           # concern C1

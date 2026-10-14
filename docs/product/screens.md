@@ -23,7 +23,7 @@ library. There is no separate playlist entity.
 ## Navigation
 
 Web (Electrophone screens, web v16 artboards, ADR-0009 amendment): four
-destinations, **Library**, **Playback**, **Genres map** (`#/genres`: a movable force graph of the user's genres beside an outline, GEN-010..019) and **Settings**; adding a song is the
+destinations, **Library**, **Playback**, **Genres map** (`#/genres`: a movable force graph of the user's genres filling the whole page, with a translucent toolbar, a legend, a collapsible outline panel and a floating selected-genre card, GEN-010..023) and **Settings**; adding a song is the
 accent "Add song" button in the Library header, which opens the Add dialog
 (`#/add` still works and opens Library with the dialog). A signed-out visitor sees
 only Settings (Sign in with Google, Sign in with Apple; no token field); once

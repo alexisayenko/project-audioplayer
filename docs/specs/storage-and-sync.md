@@ -1,6 +1,6 @@
 # Storage and sync
 
-Code: `server/app/gitstore.py`, `server/app/library.py`, `server/app/main.py`,
+Code: `server/app/gitstore.py`, `server/app/library.py`, `server/app/deps.py`, `server/app/jsonio.py`,
 `web/js/app.js`. ADR: ADR-0005 (and ADR-0004 for audio hosting), ADR-0012 (per-user layout).
 
 ## Where data lives
@@ -56,7 +56,7 @@ Code: `server/app/gitstore.py`, `server/app/library.py`, `server/app/main.py`,
 | `AUDIO_HOSTS`, `AUDIO_HOSTS_FILE` | unset | server name to mount path map |
 | `AUDIO_DOWNLOAD_DIR` | `downloads` | fallback audio dir |
 | `AUDIO_DATA_DIR` | `.` | plain-file `library.json` and `covers/` (no git store) |
-| `AUDIO_WEB_DIR` | `<repo>/web` | static UI dir |
+| `AUDIO_WEB_DIR` | `<repo>/web` | static UI dir, read at call time (`server/app/web.py`), so a test or a restart-free change takes effect |
 | `OWNER_EMAIL` (alias `ALLOWED_EMAIL`) | `alex.isayenko@gmail.com` | the owner: quota-exempt; the `X-API-Token` and `?token=` act as this user |
 | `ALLOWED_APPLE_SUB` | unset | Apple `sub` values (comma list) mapped to the owner when Apple hides the email |
 | `SIGNUP_OPEN` | `1` | `0`: only existing users and the owner may sign in |
