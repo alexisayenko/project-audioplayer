@@ -13,7 +13,7 @@ in `docs/product/wireframes/` yet; add a link here when it lands).
 
 ## Song card
 
-- LIB-010 MUST: a Library row is one line of the table (WEB-031): cover (lazy-loaded, blank if missing); Track (title, with a muted "Artist · Year" line below it); Genres (from 900px); Time (m:ss) or, for a song without server audio, the service logo link (WEB-023); the row menu button. The row shows no album, BPM badge or tag chips. Status: implemented
+- LIB-010 MUST: a Library row is one line of the table (WEB-031): cover (lazy-loaded, blank if missing); Track (title, with a muted "Artist · Year" line below it); Genres (from 900px); Time (m:ss) or, for a song without server audio, the service logo link (WEB-023); the row menu button. The row shows no album or tag chips; BPM is a badge (LIB-019). Status: implemented
 - LIB-011 MUST: Play now (`player.playNow`; the title of a row with server audio, or the row menu item "Play now") inserts the song after the current one and plays it, keeping the user on Library. Rows without server audio have neither (WEB-023). Status: implemented
 - LIB-012 MUST: the row menu item "Add to playlist" (`player.add`; only on rows with server audio) appends to the queue; toast "Queued" (queue was empty, not played), "Added", or "Already in queue" (duplicate ignored). Status: implemented
 - LIB-013 MUST: the currently playing song's card is highlighted. Status: implemented
@@ -21,6 +21,7 @@ in `docs/product/wireframes/` yet; add a link here when it lands).
 - LIB-015 MUST: where tag chips are shown (Playback details, tag editor, tag picker) `key:value` tags render with the key as a highlighted prefix; Library rows show only the genre text (LIB-010). Status: implemented
 - LIB-017 MUST: `decade:` tags show as "the 90s" on chips and in the Years filter sheet (chronological); search matches "90s". Status: implemented
 - LIB-016 MUST: `country:` tags show a human name on chips and in the Countries filter sheet ("Lithuania", via `Intl.DisplayNames`, raw value as fallback, raw tag in the tooltip); search matches both the code and the name. Status: implemented
+- LIB-019 MUST: a song with a BPM shows an outlined pill badge (rounded integer plus a tiny "BPM" caption, monospace tabular digits, tooltip "Beats per minute (estimated)", `aria-label` "BPM 132") in the Track cell on the title line, right-aligned; the title truncates with an ellipsis first; no badge when BPM is null or 0; it is not a column. Status: implemented (layout not browser-verified)
 - LIB-018 MUST: on the web the list columns are cover / Track / Genres / Time (plus the menu button), with no row-number, Album, Artist or Year column (WEB-031, LIB-010); the iOS list is unchanged. Status: implemented
 
 ## Search

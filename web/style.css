@@ -211,6 +211,15 @@ label { display: block; color: var(--ink-muted); font-size: 13px; line-height: 1
   background: none; border: 0; padding: 0; text-align: left; color: var(--ink);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 17px; line-height: 22px;
 }
+.song .title-line { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
+.song .title-line .open { flex: 0 1 auto; min-width: 0; }
+.song .title-line .bpm-badge { margin-left: auto; }
+.bpm-badge {
+  flex: none; display: inline-flex; align-items: baseline; gap: 3px; padding: 0 var(--space-2);
+  border: 1px solid var(--line); border-radius: var(--radius-pill); color: var(--muted);
+  font-family: var(--font-mono); font-size: 12px; line-height: 18px; font-weight: 500; font-variant-numeric: tabular-nums;
+}
+.bpm-badge small { font-size: 9px; line-height: 18px; letter-spacing: .5px; }
 .song .sub { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .song .c-dur { color: var(--muted); text-align: right; }
 .song .more { width: 28px; height: 44px; border-radius: var(--radius-sm); }

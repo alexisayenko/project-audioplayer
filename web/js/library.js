@@ -10,6 +10,7 @@ import { hasAudio, sourceLink } from './playable.js';
 import { autoDownloadOn } from './autodl.js';
 import { serviceIcon } from './service-icons.js';
 import { trackSub } from './track-sub.js';
+import { bpmLabel } from './bpm-label.js';
 import { openAdd } from './add.js';
 import { editDialog } from './edit-dialog.js';
 import { visibleTags, canonicalTag, tagLabel, tagSearchText, categoryOf, categoryTags, CATEGORIES } from './tagname.js';
@@ -244,6 +245,13 @@ function srcLogo(link) {
   return a;
 }
 
+function bpmBadge(s) {
+  const n = bpmLabel(s.bpm);
+  if (!n) return null;
+  return el('span', { class: 'bpm-badge', title: 'Beats per minute (estimated)', 'aria-label': `BPM ${n}` },
+    n, el('small', { 'aria-hidden': 'true' }, 'BPM'));
+}
+
 function songRow(s, cur) {
   const audio = hasAudio(s);
   const queueable = audio || autoDownloadOn();
@@ -268,7 +276,8 @@ function songRow(s, cur) {
   const dur = el('span', { class: audio ? 'c-dur t-time' : 'c-dur t-caption' }, durText);
   return el('li', { class: `song${here ? ' current' : ''}${audio ? '' : ' no-audio'}`, 'aria-current': here ? 'true' : null, 'data-id': s.id },
     cover(s),
-    el('div', { class: 'info' }, open,
+    el('div', { class: 'info' },
+      el('div', { class: 'title-line' }, open, bpmBadge(s)),
       trackSub(s) ? el('small', { class: 'sub t-subhead' }, trackSub(s)) : null),
     el('span', { class: 'c-genres t-subhead', title: genres || null }, genres),
     dur,
