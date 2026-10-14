@@ -56,7 +56,8 @@ def create_song(req: CreateSongRequest, user: dict[str, Any] = Depends(deps.requ
             raise HTTPException(status_code=409, detail="already in library")
         if deps.JOBS.get(key, {}).get("status") in deps.ACTIVE:
             raise HTTPException(status_code=409, detail="already downloading")
-        limits.RATE.record(uid, songs)
+        if req.audio:
+            limits.RATE.record(uid, songs)
         deps.JOBS[key] = new_job()
     meta = {
         k: (v.strip() if isinstance(v, str) else v) or None

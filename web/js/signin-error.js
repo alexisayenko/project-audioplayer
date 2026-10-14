@@ -1,5 +1,3 @@
-export const HOME_ORIGIN = 'https://play.isayenko.net';
-
 const REJECTED_CODES = new Set(['invalid_client', 'invalid_request', 'unauthorized_client', 'invalid_redirect_uri', 'redirect_uri_mismatch', 'origin_mismatch']);
 
 export function isRejectedAddress(ex) {
@@ -10,7 +8,7 @@ export function isRejectedAddress(ex) {
 
 export function signInErrorText(provider, ex, origin) {
   if (isRejectedAddress(ex)) {
-    return `This address is not registered with ${provider} sign-in yet: use ${HOME_ORIGIN} or ask the owner to add ${origin} to the console.`;
+    return `This address is not registered with ${provider} sign-in yet: ask the owner to add ${origin} to the console.`;
   }
   return `${provider} sign-in failed.`;
 }

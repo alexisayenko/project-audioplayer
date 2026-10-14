@@ -22,7 +22,7 @@ READ_PATHS = frozenset({"/library", "/tags", "/genres/graph", "/catalog", "/me"}
 READ_PREFIXES = ("/files/", "/covers/")
 SONG_KEYS = frozenset({
     "id", "source", "title", "artist", "album", "remixer", "year", "remix_year", "tags", "bpm", "duration",
-    "source_url", "musicbrainz_url", "discogs_url", "wikipedia_song", "wikipedia_artist", "file", "sources",
+    "source_url", "musicbrainz_url", "discogs_url", "wikipedia_song", "wikipedia_artist", "sources",
     "updated_at", "cover", "added_at", "audio_state",
 })
 AUDIO_KEYS = ("format", "size", "duration")

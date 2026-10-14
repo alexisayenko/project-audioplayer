@@ -66,6 +66,18 @@ def test_scrub_drops_unknown_fields_and_the_audio_file_name():
     assert guest.scrub_song({"id": "x"}) == {"id": "x"}
 
 
+def test_scrub_does_not_expose_the_top_level_file():
+    assert "file" not in guest.scrub_song({"id": "x", "file": "x.m4a"})
+
+
+def test_guest_gets_404_for_audio_outside_the_catalog(lib, tmp_path):
+    (ADIR(tmp_path) / f"{VID2}.m4a").write_bytes(b"a" * 100)
+    g = web()
+    assert g.get(f"/files/{VID}").status_code == 200
+    assert g.get(f"/files/{VID2}").status_code == 404
+    assert lib.get(f"/files/{VID2}", headers=H).status_code == 200
+
+
 def test_guest_reads_tags_graph_catalog_cover_and_health(lib):
     g = web()
     assert g.get("/tags").status_code == 200

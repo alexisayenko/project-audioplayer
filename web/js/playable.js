@@ -5,7 +5,7 @@ const PROVIDERS = { youtube: 'YouTube', soundcloud: 'SoundCloud', spotify: 'Spot
 export function hasAudio(song) {
   if (!song || !streamable()) return false;
   if (song.audio_state) return song.audio_state === 'server';
-  return song.file !== null;
+  return song.file != null;
 }
 
 export function sourceLink(song) {

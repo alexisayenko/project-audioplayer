@@ -1,6 +1,6 @@
 import pytest
 
-from app import deps, extractor
+from app import deps, extractor, limits
 from tests.test_library import ADIR, H, VID, VID2, client  # noqa: F401
 from tests.test_users import ALICE, BOB, key, multi, who, add as add_as, uid  # noqa: F401
 
@@ -45,7 +45,7 @@ def test_unknown_song_is_404_and_other_users_cannot_fetch(multi):
 
 
 def test_fetch_counts_against_the_hourly_limit(multi, monkeypatch):
-    monkeypatch.setenv("USER_ADDS_PER_HOUR", "3")
+    monkeypatch.setenv("USER_ADDS_PER_HOUR", "1")
     a = who(multi, ALICE)
     add_meta(multi, a, VID)
     add_meta(multi, a, VID2)
@@ -96,3 +96,11 @@ def test_failed_fetch_reports_error_and_can_retry(multi, monkeypatch):
     monkeypatch.setattr(extractor, "download_audio", good)
     assert multi.post(f"/songs/{VID}/audio", headers=a).status_code == 202
     assert state(multi, a) == "server"
+
+
+def test_metadata_only_adds_do_not_count_against_the_hourly_limit(multi, monkeypatch):
+    monkeypatch.setenv("USER_ADDS_PER_HOUR", "1")
+    a = who(multi, ALICE)
+    add_meta(multi, a, VID)
+    add_meta(multi, a, VID2)
+    assert limits.RATE.count(uid(ALICE), []) == 0

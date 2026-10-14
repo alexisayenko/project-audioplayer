@@ -34,6 +34,8 @@ def get_file(request: Request, video_id: str, download: bool = Query(default=Fal
         raise Problem(403, "guest_download_disabled", "Guests cannot download files.")
     uid = user["uid"]
     song = library.find_song(deps.load_songs(uid), video_id)
+    if song is None and visitor:
+        raise _not_downloaded(download)
     if song is not None and not library.has_file(song):
         raise _not_downloaded(download)
     name = library.file_name(song) if song else f"{video_id}.m4a"
