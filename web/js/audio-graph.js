@@ -1,8 +1,7 @@
-import { FFT_SIZE, ANALYSER_SMOOTHING, GRAPH_RESUME_TIMEOUT_MS } from './viz-constants.js';
+import { FFT_SIZE, ANALYSER_SMOOTHING } from './viz-constants.js';
 
 const listeners = new Set();
 let graph = null;
-let pending = null;
 let state = 'off';
 
 function setState(next) {
@@ -25,15 +24,21 @@ export function onState(cb) {
   return () => listeners.delete(cb);
 }
 
-export function resume() {
-  if (!graph || graph.ctx.state === 'running') return Promise.resolve(!!graph);
-  return Promise.resolve(graph.ctx.resume?.()).then(() => graph.ctx.state === 'running', () => false);
+function settle(ctx) {
+  if (graph?.ctx === ctx) setState(ctx.state === 'running' ? 'running' : 'blocked');
 }
 
-function runningWithin(ctx, ms) {
-  const settled = Promise.resolve(ctx.resume?.()).catch(() => {}).then(() => ctx.state === 'running');
-  const timeout = new Promise((r) => { setTimeout(() => r(ctx.state === 'running'), ms); });
-  return Promise.race([settled, timeout]);
+function attempt(ctx) {
+  return Promise.resolve(ctx.resume?.()).then(() => {}, () => {}).then(() => {
+    settle(ctx);
+    return ctx.state === 'running';
+  });
+}
+
+export function resume() {
+  if (!graph) return Promise.resolve(false);
+  if (graph.ctx.state === 'running') return Promise.resolve(true);
+  return attempt(graph.ctx);
 }
 
 function build(ctx, audio) {
@@ -53,41 +58,34 @@ function build(ctx, audio) {
   return { ctx, gain, analyser, source };
 }
 
-async function create(audio, win, timeoutMs) {
+function closeQuietly(ctx) {
+  try { void ctx.close?.(); } catch { /* already closed */ }
+}
+
+export function unlock(audio, { win = globalThis } = {}) {
+  if (graph) {
+    void resume();
+    return graph;
+  }
   const Ctor = ctorOf(win);
   if (typeof Ctor !== 'function' || !audio) { setState('unsupported'); return null; }
   let ctx;
   try {
     ctx = new Ctor();
-  } catch {
-    setState('failed');
-    return null;
-  }
-  if (!(await runningWithin(ctx, timeoutMs))) {
-    try { void ctx.close?.(); } catch { /* already closed */ }
-    setState('blocked');
-    return null;
-  }
-  try {
     graph = build(ctx, audio);
   } catch {
+    if (ctx) closeQuietly(ctx);
     setState('failed');
     return null;
   }
   ctx.addEventListener?.('statechange', () => setState(ctx.state));
   setState(ctx.state);
+  void attempt(ctx);
   return graph;
-}
-
-export function enable(audio, { win = globalThis, timeoutMs = GRAPH_RESUME_TIMEOUT_MS } = {}) {
-  if (graph) return Promise.resolve(graph);
-  if (!pending) pending = create(audio, win, timeoutMs).finally(() => { pending = null; });
-  return pending;
 }
 
 export function resetForTests() {
   graph = null;
-  pending = null;
   state = 'off';
   listeners.clear();
 }

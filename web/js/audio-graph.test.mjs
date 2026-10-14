@@ -46,11 +46,11 @@ test('isSupported is false without AudioContext and true with webkit prefix', ()
   assert.equal(graph.isSupported({ webkitAudioContext: function Ctx() {} }), true);
 });
 
-test('enable builds source -> gain -> analyser -> destination once, after the context runs', async () => {
+test('unlock builds source -> gain -> analyser -> destination synchronously, before resume settles', async () => {
   const { win, log } = makeWin();
   const states = [];
   graph.onState((s) => states.push(s));
-  const g = await graph.enable(audio, { win });
+  const g = graph.unlock(audio, { win });
   assert.ok(g);
   assert.equal(log.ctors, 1);
   assert.equal(log.sources, 1);
@@ -58,70 +58,92 @@ test('enable builds source -> gain -> analyser -> destination once, after the co
   assert.deepEqual(log.connects, [['gain', 'analyser'], ['analyser', 'dest'], ['source', 'gain']]);
   assert.equal(g.analyser.fftSize, 8192);
   assert.equal(g.analyser.smoothingTimeConstant, 0.5);
+  await new Promise((r) => { setTimeout(r, 0); });
   assert.equal(graph.getAnalyser(), g.analyser);
   assert.equal(graph.getGain(), g.gain);
-  assert.deepEqual(states, ['running']);
+  assert.deepEqual(states, ['suspended', 'running']);
 });
 
-test('enable is idempotent, also when called concurrently', async () => {
+test('unlock is idempotent: one context and one MediaElementSource, later calls only resume', async () => {
   const { win, log } = makeWin();
-  const [a, b] = await Promise.all([graph.enable(audio, { win }), graph.enable(audio, { win })]);
-  const c = await graph.enable(audio, { win });
+  const a = graph.unlock(audio, { win });
+  const b = graph.unlock(audio, { win });
   assert.equal(a, b);
-  assert.equal(a, c);
   assert.equal(log.ctors, 1);
+  assert.equal(log.sources, 1);
+  log.last.state = 'suspended';
+  graph.unlock(audio, { win });
+  assert.equal(log.sources, 1);
+  assert.equal(log.resumes, 2);
+});
+
+test('nothing is created unless unlock is called', () => {
+  const { win, log } = makeWin();
+  graph.resume();
+  graph.getAnalyser();
+  assert.equal(log.ctors, 0);
+  assert.equal(graph.hasGraph(), false);
+});
+
+test('a context that stays suspended reports blocked and the next gesture retries it', async () => {
+  const { win, log } = makeWin({ resumeTo: 'suspended' });
+  assert.ok(graph.unlock(audio, { win }));
+  await new Promise((r) => { setTimeout(r, 0); });
+  assert.equal(graph.getState(), 'blocked');
+  assert.equal(graph.getAnalyser(), null);
+  log.last.resume = () => { log.last.state = 'running'; return Promise.resolve(); };
+  graph.unlock(audio, { win });
+  await new Promise((r) => { setTimeout(r, 0); });
+  assert.equal(graph.getState(), 'running');
+  assert.ok(graph.getAnalyser());
   assert.equal(log.sources, 1);
 });
 
-test('a context that stays suspended is closed and the element is never routed', async () => {
-  const { win, log } = makeWin({ resumeTo: 'suspended' });
-  const g = await graph.enable(audio, { win, timeoutMs: 20 });
-  assert.equal(g, null);
-  assert.equal(log.sources, 0);
-  assert.equal(log.closed, 1);
+test('a rejected resume is blocked, not sticky', async () => {
+  const { win, log } = makeWin();
+  const g = graph.unlock(audio, { win });
+  log.last.state = 'suspended';
+  g.ctx.resume = () => Promise.reject(new Error('blocked'));
+  await graph.resume();
   assert.equal(graph.getState(), 'blocked');
-  assert.equal(graph.getAnalyser(), null);
+  g.ctx.resume = () => { g.ctx.state = 'running'; return Promise.resolve(); };
+  assert.equal(await graph.resume(), true);
+  assert.equal(graph.getState(), 'running');
 });
 
-test('a blocked attempt can be retried later', async () => {
-  const blocked = makeWin({ resumeTo: 'suspended' });
-  assert.equal(await graph.enable(audio, { win: blocked.win, timeoutMs: 10 }), null);
-  const ok = makeWin();
-  assert.ok(await graph.enable(audio, { win: ok.win }));
-  assert.equal(ok.log.sources, 1);
-});
-
-test('constructor failure leaves playback untouched', async () => {
+test('constructor failure leaves playback untouched', () => {
   const { win, log } = makeWin({ failCtor: true });
-  assert.equal(await graph.enable(audio, { win }), null);
+  assert.equal(graph.unlock(audio, { win }), null);
   assert.equal(graph.getState(), 'failed');
   assert.equal(log.sources, 0);
 });
 
-test('createMediaElementSource failure is reported, not thrown', async () => {
-  const { win } = makeWin({ failSource: true });
-  assert.equal(await graph.enable(audio, { win }), null);
+test('createMediaElementSource failure is reported, not thrown, and closes the context', () => {
+  const { win, log } = makeWin({ failSource: true });
+  assert.equal(graph.unlock(audio, { win }), null);
   assert.equal(graph.getState(), 'failed');
   assert.equal(graph.getAnalyser(), null);
+  assert.equal(log.closed, 1);
 });
 
-test('no Web Audio or no element reports unsupported', async () => {
-  assert.equal(await graph.enable(audio, { win: {} }), null);
+test('no Web Audio or no element reports unsupported', () => {
+  assert.equal(graph.unlock(audio, { win: {} }), null);
   assert.equal(graph.getState(), 'unsupported');
-  assert.equal(await graph.enable(null, { win: makeWin().win }), null);
+  assert.equal(graph.unlock(null, { win: makeWin().win }), null);
 });
 
 test('state transitions follow the context and the analyser is hidden while not running', async () => {
   const { win, log } = makeWin();
   const states = [];
   const off = graph.onState((s) => states.push(s));
-  await graph.enable(audio, { win });
+  graph.unlock(audio, { win });
+  await Promise.resolve();
   log.last.emit('interrupted');
   assert.equal(graph.getAnalyser(), null);
   log.last.emit('suspended');
   log.last.emit('running');
   assert.ok(graph.getAnalyser());
-  assert.deepEqual(states, ['running', 'interrupted', 'suspended', 'running']);
+  assert.deepEqual(states, ['suspended', 'interrupted', 'suspended', 'running']);
   off();
   log.last.emit('suspended');
   assert.equal(states.length, 4);
@@ -130,7 +152,8 @@ test('state transitions follow the context and the analyser is hidden while not 
 test('resume brings a suspended context back, and is a no-op without a graph', async () => {
   assert.equal(await graph.resume(), false);
   const { win, log } = makeWin();
-  await graph.enable(audio, { win });
+  graph.unlock(audio, { win });
+  await Promise.resolve();
   assert.equal(await graph.resume(), true);
   log.last.state = 'suspended';
   log.last.resume = () => { log.last.state = 'running'; return Promise.resolve(); };
@@ -143,7 +166,8 @@ test('resume brings a suspended context back, and is a no-op without a graph', a
 test('getContext exposes the context state for diagnostics, null without a graph', async () => {
   assert.equal(graph.getContext(), null);
   const { win, log } = makeWin();
-  await graph.enable(audio, { win });
+  graph.unlock(audio, { win });
+  await Promise.resolve();
   assert.equal(graph.getContext(), log.last);
   log.last.emit('interrupted');
   assert.equal(graph.getContext().state, 'interrupted');

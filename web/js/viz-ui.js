@@ -34,6 +34,14 @@ function vizDeps(audio, graph, extra) {
   };
 }
 
+function placeStatus(inFull) {
+  const el = document.getElementById('viz-status');
+  if (!el?.style) return;
+  (inFull ? $('viz-full') : document.body).append(el);
+  el.style.top = inFull ? '24px' : '';
+  el.style.bottom = inFull ? 'auto' : '8px';
+}
+
 function paintPlayButton(audio) {
   const playing = !audio.paused;
   setIcon('viz-play', playing ? 'pause' : 'play', 24);
@@ -58,6 +66,17 @@ function bindOverlayActivity(root, full) {
   });
 }
 
+const GESTURES = ['pointerdown', 'pointerup', 'touchend', 'mousedown', 'click', 'keydown'];
+
+function armGestureUnlock({ supported, graph, wanted, unlock }) {
+  if (!supported) return;
+  const run = () => { if (wanted()) unlock(); };
+  const arm = () => { for (const t of GESTURES) document.addEventListener(t, run, true); };
+  const disarm = () => { for (const t of GESTURES) document.removeEventListener(t, run, true); };
+  graph.onState?.((s) => { if (s === 'running') disarm(); else arm(); });
+  arm();
+}
+
 export function initVisualizer({
   player, audio = $('audio'), graph = audioGraph, win = globalThis, deps = {}, caps = vizCaps(),
 }) {
@@ -78,6 +97,7 @@ export function initVisualizer({
   const bgViz = createViz({ canvas: $('viz-bg'), mode: 'background', deps: vizDeps(audio, graph, { getAnchor: coverAnchor, ...deps }) });
   const fullViz = createViz({ canvas: $('viz-full-canvas'), mode: 'full', deps: vizDeps(audio, graph, deps) });
   const refreshAll = () => { bgViz.refresh(); fullViz.refresh(); };
+  graph.onState?.(refreshAll);
   const modes = availableModes(caps);
   let currentMode = vizMode(() => caps);
   const live = $('viz-live');
@@ -104,8 +124,8 @@ export function initVisualizer({
 
   function enableGraph() {
     if (!supported) return;
-    void graph.resume();
-    void graph.enable(audio, { win }).then(refreshAll);
+    graph.unlock(audio, { win });
+    refreshAll();
   }
 
   const scrubber = attachScrubber($('viz-scrub'), {
@@ -119,6 +139,7 @@ export function initVisualizer({
     opener: button,
     onOpen() {
       enableGraph();
+      placeStatus(true);
       paintMeta(player.current);
       paintPlayButton(audio);
       scrubber.sync();
@@ -126,6 +147,7 @@ export function initVisualizer({
       syncBackground();
     },
     onClose() {
+      placeStatus(false);
       fullViz.setEnabled(false);
       syncBackground();
     },
@@ -168,14 +190,6 @@ export function initVisualizer({
 
   onVizBackground((on) => { syncBackground(); if (on) enableGraph(); });
   syncBackground();
-  if (supported && vizBackgroundOn()) {
-    const arm = () => {
-      document.removeEventListener('pointerdown', arm);
-      document.removeEventListener('keydown', arm);
-      enableGraph();
-    };
-    document.addEventListener('pointerdown', arm);
-    document.addEventListener('keydown', arm);
-  }
+  armGestureUnlock({ supported, graph, wanted: () => vizBackgroundOn() || full.isOpen(), unlock: enableGraph });
   return { full, bgViz, fullViz, syncBackground };
 }
