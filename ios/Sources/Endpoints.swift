@@ -18,6 +18,7 @@ enum Endpoints {
     static func file(_ id: String) -> String { path("files", id) }
     static func song(_ id: String) -> String { path("songs", id) }
     static func songStatus(_ id: String) -> String { path("songs", id, "status") }
+    static func songAudio(_ id: String) -> String { path("songs", id, "audio") }
     static func songBPMDetect(_ id: String) -> String { path("songs", id, "bpm", "detect") }
 
     private static func path(_ segments: String...) -> String {

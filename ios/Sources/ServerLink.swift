@@ -146,6 +146,23 @@ final class ServerLink: ObservableObject {
         Task { await ingest(track, settings: settings, library: library, player: player, playWhenReady: playWhenReady) }
     }
 
+    /// A catalog song with no audio anywhere: the server fetches it from the song's link, then the copy to the phone follows.
+    func getAudio(_ track: Track, settings: Settings, library: LibraryStore, player: PlayerService?, playWhenReady: Bool) {
+        guard transfers[track.id] == nil, !library.contains(track.id) else { return }
+        transfers[track.id] = Transfer(track: track, progress: 0)
+        Task {
+            do {
+                try await APIClient(baseURL: settings.serverURL, token: settings.token).fetchAudio(track.id)
+            } catch {
+                transfers[track.id] = nil
+                failed.insert(track.id)
+                notice = error.localizedDescription
+                return
+            }
+            await ingest(track, settings: settings, library: library, player: player, playWhenReady: playWhenReady)
+        }
+    }
+
     private func ingest(_ track: Track, settings: Settings, library: LibraryStore, player: PlayerService?, playWhenReady: Bool) async {
         defer { transfers[track.id] = nil }
         let api = APIClient(baseURL: settings.serverURL, token: settings.token)

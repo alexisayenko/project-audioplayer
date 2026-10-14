@@ -208,11 +208,12 @@ struct LibraryView: View {
         let playable = tracks.filter { library.contains($0.id) }
         let start = { player.play(playable, startAt: playable.firstIndex(of: track) ?? 0) }
         let fetch = { Task { if await server.download(track, settings: settings, into: library) { player.playNow(track) } } }
+        let getAudio = { server.getAudio(track, settings: settings, library: library, player: player, playWhenReady: false) }
         return SongRow(title: track.title, subtitle: subtitle(track), source: track.source, thumbnail: track.thumbnail,
                        duration: onPhone ? track.duration : nil,
                        downloading: onPhone ? nil : progress,
                        onDownload: !onPhone && progress == nil && hasAudio ? { fetch() } : nil,
-                       noAudio: !onPhone && !hasAudio,
+                       noAudio: !onPhone && !hasAudio && progress == nil,
                        playing: playing) {
                 Menu {
                     Button { editing = ServerSong(track) } label: { Label("Edit", systemImage: "pencil") }
@@ -228,6 +229,8 @@ struct LibraryView: View {
                         }
                     } else if hasAudio, progress == nil {
                         Button { fetch() } label: { Label("Download", systemImage: "arrow.down.circle") }
+                    } else if progress == nil {
+                        Button { getAudio() } label: { Label("Get audio", systemImage: "arrow.down.circle") }
                     }
                     Button(role: .destructive) { deleting = track } label: { Label("Delete from library", systemImage: "trash") }
                 } label: {
@@ -239,7 +242,7 @@ struct LibraryView: View {
             }
         .onTapGesture {
             if onPhone { start() }
-            else if !hasAudio { toast = "No audio yet" }
+            else if !hasAudio { if progress == nil { toast = "No audio yet" } }
             else if progress == nil { fetch() }
         }
         .accessibilityAddTraits(.isButton)

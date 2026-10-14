@@ -30,6 +30,7 @@ are `{"detail": "<message>"}`, or `{"error": <code>, "detail": <message>, ...}` 
 | `GET /health` | none | - | 200 `{status:"ok", sync:"ok"\|"pending"\|"error"}` | - |
 | `GET /library` | header | - | 200 `{songs:[song]}`; each song carries `audio_state` (`none`\|`server`), `sources`, and `audio` when present (additive) | 401/503 |
 | `GET /catalog?since=` | header | optional `since` UTC `YYYY-MM-DDTHH:MM:SSZ`; `If-None-Match` | 200 `{revision, total, ids:[id], songs:[song]}` with header `ETag: "<revision>"` (with `since`: `"<revision>.<hash of since>"`); 304 when `If-None-Match` matches | 422 bad `since` |
+| `POST /songs/{id}/audio` | header | - | 202 `{id, status:"downloading"\|"queued"}`: fetches the audio of a catalog song without audio from its stored YouTube or SoundCloud link, sets `file`, state becomes `server`; progress via `GET /songs/{id}/status` | 404 `unknown song`; 409 `already has audio` / `already downloading`; 422 `{error:"no_link", detail}`; 403 `library_full_bytes`; 503 `server_full`; a failed fetch shows as status `error` |
 | `DELETE /songs/{id}/audio` | header | - | 204 file removed, record kept, `file` becomes `null` (idempotent) | 404 `unknown song` |
 | `GET /tags` | header | - | 200 `[{tag,count}]` | 401/503 |
 | `GET /genres` | header | - | 200 `{genres:[str]}`: the user's own `genre:` values, then built-ins | 401/503 |
@@ -69,6 +70,7 @@ are `{"detail": "<message>"}`, or `{"error": <code>, "detail": <message>, ...}` 
 - API-031 MUST: `GET /catalog` returns the same song objects (metadata only, no audio bytes) plus `revision` (content hash of the catalog, audio state included), `total` and `ids` (every id, so a client can drop deleted songs). `songs` holds all songs, or with `since` those whose `updated_at` (else `added_at`) is `>= since`; clients dedupe by id. An unchanged catalog answers 304 to a matching `If-None-Match`. Status: implemented
 - API-032 MUST: `POST /songs` with `audio:false` saves a catalog entry (`file: null`, `sources` from the link, missing fields filled from the link's metadata and cover) without downloading; 409 if the id exists. Status: implemented
 - API-033 MUST: `DELETE /songs/{id}/audio` removes only the file; `DELETE /songs/{id}` removes record, cover and file. Commits: `audioplayer: <uid8> delete audio <id>` and `audioplayer: <uid8> delete <id>`. Status: implemented
+- API-052 MUST: `POST /songs/{id}/audio` (task-0009) fetches audio for an existing record: same download caps and storage checks as `POST /songs` (`check_capacity`: the user's bytes, the owner exempt, and the pool), no library-size or hourly-add check (the song already exists, so it is not an add); the record's metadata is kept, only `file` (and a missing `duration`) are set; commit `audioplayer: <uid8> audio <id>`. Status: implemented
 - API-034 MUST: song ids also accept `spotify-`, `applemusic-` and `shazam-<id>` (metadata-only sources), in every `{id}` path. Status: implemented (ids; adding from these sources is planned)
 
 ## Users, quotas and limits (ADR-0012)

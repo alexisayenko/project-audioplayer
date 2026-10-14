@@ -800,6 +800,81 @@ def _add_metadata_only(uid: str, vid: str, link: _Resolved, meta: dict[str, Any]
     )
 
 
+def _audio_link(song: dict[str, Any]) -> str | None:
+    """The URL to fetch a song's audio from, or None when it has no YouTube or SoundCloud link."""
+    vid = song["id"]
+    kind = extractor.source_of(vid)
+    if kind == "youtube":
+        return song.get("source_url") or extractor.watch_url(vid)
+    if kind != "soundcloud":
+        return None
+    urls = [song.get("source_url")] + [e.get("url") for e in library.sources_of(song) if e.get("source") == "soundcloud"]
+    return next((u for u in urls if isinstance(u, str) and u), None)
+
+
+def _run_fetch_audio(uid: str, owner: bool, vid: str, url: str) -> None:
+    job = JOBS[(uid, vid)]
+    out: Path | None = None
+
+    def progress(p: float) -> None:
+        job["progress"] = round(p, 3)
+
+    try:
+        out = audio_dir(uid)
+        limits.check_capacity(owner, out, pool_dir())
+        info = extractor.download_audio(vid, out, progress, url)
+        with _tx(uid, f"audio {vid}"):
+            songs = library.load(library_path(uid))
+            song = next((s for s in songs if s["id"] == vid), None)
+            if song is None:
+                _drop_partial(out, vid)
+                job.update(status="error", error=_UNKNOWN_SONG)
+                return
+            song["file"] = f"{vid}.m4a"
+            if song.get("duration") is None:
+                song["duration"] = info.get("duration")
+            song["updated_at"] = library.now_utc()
+            _save(uid, songs)
+        job.update(status="done", progress=1.0)
+    except extractor.PreviewOnly as exc:
+        _drop_partial(out, vid)
+        job.update(status="error", error=str(exc), code="preview_only")
+    except Problem as exc:
+        job.update(status="error", error=exc.detail, code=exc.code)
+    except Exception as exc:
+        _drop_partial(out, vid)
+        job.update(status="error", error=_short(exc))
+
+
+@app.post("/songs/{video_id}/audio", status_code=202, responses={404: {"description": "Not found"}, 409: {"description": "Conflict"}, 422: {"description": "Unprocessable"}})
+def fetch_song_audio(video_id: str, user: dict[str, Any] = Depends(require_token)):
+    """Fetch the audio of a catalog song that has none, from its stored YouTube or SoundCloud link."""
+    _vid(video_id)
+    uid, owner = user["uid"], user["owner"]
+    key = (uid, video_id)
+    with users.user_lock(uid):
+        song = next((s for s in _load(uid) if s["id"] == video_id), None)
+        if song is None:
+            raise HTTPException(status_code=404, detail=_UNKNOWN_SONG)
+        if library.audio_state(song, _root(uid)) == "server":
+            raise HTTPException(status_code=409, detail="already has audio")
+        if JOBS.get(key, {}).get("status") in ACTIVE:
+            raise HTTPException(status_code=409, detail="already downloading")
+        url = _audio_link(song)
+        if url is None:
+            return _error(422, "no_link", "This song has no YouTube or SoundCloud link to get audio from.")
+        limits.check_capacity(owner, audio_dir(uid), pool_dir())
+        JOBS[key] = {"status": "queued", "progress": 0.0, "error": None}
+
+    def started() -> None:
+        job = JOBS.get(key)
+        if job is not None:
+            job["status"] = "downloading"
+
+    began = SCHED.submit(uid, owner, lambda: _run_fetch_audio(uid, owner, video_id, url), started)
+    return {"id": video_id, "status": "downloading" if began else "queued"}
+
+
 @app.get("/songs/{video_id}/status", responses={404: {"description": "Not found"}, 422: {"description": "Unprocessable"}})
 def song_status(video_id: str, user: dict[str, Any] = Depends(require_token)):
     _vid(video_id)

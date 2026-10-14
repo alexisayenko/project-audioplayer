@@ -101,6 +101,14 @@ struct APIClient {
         return (try JSONDecoder().decode(CatalogResponse.self, from: data), tag)
     }
 
+    /// Asks the server to fetch a catalog song's audio from its stored link; progress is then read from the song status.
+    func fetchAudio(_ id: String) async throws {
+        var req = try await request(Endpoints.songAudio(id), method: "POST")
+        req.timeoutInterval = 30
+        let (data, response) = try await URLSession.shared.data(for: req)
+        try check(response, data: data)
+    }
+
     func genres() async throws -> [String] {
         var req = try await request(Endpoints.genres)
         req.timeoutInterval = 15
