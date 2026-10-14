@@ -25,8 +25,8 @@ _PROMO = ("free download", "free dl", "free d/l", "free dl!", "out now", "premie
 _PUNCT = re.compile(r"[\W_]+")
 _PARTS = re.compile(r"[/,&+]")
 _GROUP = re.compile(r"[(\[{【][^()\[\]{}【】]*[)\]}】]")
-_SEG = re.compile(r"((?<!\s)\s+(?:\||｜|//|/|／|-|–|—)\s+)")
-_TAIL = re.compile(r"(?<![\s|/\-–—])[\s|/\-–—]+$")
+_SEP = re.compile(r"(?:\||｜|//|/|／|-|–|—)(?=\s)")
+_SEP_CHARS = "|/-–—"
 _HEAD = re.compile(r"^[\s|/\-–—]+")
 _WS = re.compile(r"\s+")
 
@@ -72,8 +72,32 @@ def _drop_noise_groups(s: str, removed: list[str]) -> str:
     return s
 
 
+def _rstrip_seps(s: str) -> str:
+    end = len(s)
+    while end and (s[end - 1].isspace() or s[end - 1] in _SEP_CHARS):
+        end -= 1
+    return s[:end]
+
+
+def _split_segments(s: str) -> list[str]:
+    """Text and separators alternately: a separator is `|`, `/`, `//`, `-`, an en or em dash set off by whitespace on both sides."""
+    parts: list[str] = []
+    keep = 0
+    for m in _SEP.finditer(s):
+        start = m.start()
+        while start > 0 and s[start - 1].isspace():
+            start -= 1
+        end = m.end()
+        while end < len(s) and s[end].isspace():
+            end += 1
+        if start < m.start() and start >= keep:
+            parts += [s[keep:start], s[start:end]]
+            keep = end
+    return parts + [s[keep:]]
+
+
 def _drop_noise_tail(s: str, removed: list[str]) -> str:
-    parts = _SEG.split(s)
+    parts = _split_segments(s)
     while len(parts) >= 3:
         sep = parts[-2].strip()
         if sep not in ("-", "–", "—"):
@@ -85,7 +109,7 @@ def _drop_noise_tail(s: str, removed: list[str]) -> str:
         removed.append(parts[-1].strip())
         parts = parts[:-2]
     joined = "".join(parts)
-    return _TAIL.sub("", joined) if joined != s else s
+    return _rstrip_seps(joined) if joined != s else s
 
 
 def clean_ex(title: str) -> tuple[str, list[str]]:
@@ -97,7 +121,7 @@ def clean_ex(title: str) -> tuple[str, list[str]]:
         before = s
         s = _drop_noise_groups(s, removed)
         if s != before:
-            s = _HEAD.sub("", _TAIL.sub("", _WS.sub(" ", s).strip()))
+            s = _HEAD.sub("", _rstrip_seps(_WS.sub(" ", s).strip()))
         s = _drop_noise_tail(s, removed)
         s = _WS.sub(" ", s).strip()
         if s == before.strip() or s == _WS.sub(" ", before).strip():

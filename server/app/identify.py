@@ -105,6 +105,13 @@ def _fingerprint(path: Path, artist: str, title: str) -> tuple[str, str, dict[st
     return artist, title, matched, mb
 
 
+def _used(matched: Any, mb: dict[str, Any], wiki: dict[str, Any], disc: dict[str, Any]) -> list[str]:
+    hits = (("acoustid", matched), ("musicbrainz", mb.get("mb_url")),
+            ("wikidata", wiki.get("wikipedia_song") or wiki.get("wikipedia_artist") or wiki.get("tags")),
+            ("discogs", disc.get("url")))
+    return [name for name, hit in hits if hit]
+
+
 def run(song: dict[str, Any], path: Path | None) -> dict[str, Any]:
     """Identify one song from its audio file `path` and its own metadata; never raises."""
     avail = available()
@@ -113,30 +120,21 @@ def run(song: dict[str, Any], path: Path | None) -> dict[str, Any]:
     if not any(avail.values()):
         return base
     artist, title = str(song.get("artist") or ""), str(song.get("title") or "")
-    sources: list[str] = []
     matched = None
     mb: dict[str, Any] = {}
     if avail["acoustid"] and path is not None:
         artist, title, matched, mb = _fingerprint(path, artist, title)
-        if matched:
-            sources.append("acoustid")
     if not matched and artist and title:
         # no fingerprint match: the title-based guess, as /preview does
         mb = _safe(genre_lookup.lookup, artist, title)
-    if mb.get("mb_url"):
-        sources.append("musicbrainz")
     wiki = _safe(wiki_lookup.suggest, artist, title, mb) if mb.get("mb_url") else {}
-    if wiki.get("wikipedia_song") or wiki.get("wikipedia_artist") or wiki.get("tags"):
-        sources.append("wikidata")
     disc = _safe(discogs_lookup.suggest, artist, title) if avail["discogs"] else {}
-    if disc.get("url"):
-        sources.append("discogs")
     tags = merge_tags(mb, disc, wiki)
     year = next((y for y in map(_valid_year, (wiki.get("year"), mb.get("year"), disc.get("year"))) if y), None)
     links = _links(mb, disc, wiki)
     found = bool(matched or tags or year or any(links.values()))
     return {**base, "status": "ok" if found else "no_match", "matched": matched, "suggested_tags": tags,
-            "suggested_year": year, "links": links, "sources": sources}
+            "suggested_year": year, "links": links, "sources": _used(matched, mb, wiki, disc)}
 
 
 def run_cached(uid: str, vid: str, song: dict[str, Any], path: Path | None, refresh: bool = True) -> dict[str, Any]:

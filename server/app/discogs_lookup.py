@@ -59,11 +59,14 @@ def _get(path: str, params: dict[str, str] | None = None) -> dict[str, Any]:
     return httpjson.fetch(req, TIMEOUT)
 
 
-_DISAMBIG = re.compile(r"(?<!\s)\s*\(\d+\)$")
+_DISAMBIG = re.compile(r"\(\d+\)$")
 
 
 def _name(value: str) -> str:
-    return genre_lookup._norm(_DISAMBIG.sub("", str(value or "")))
+    text = str(value or "")
+    if m := _DISAMBIG.search(text):
+        text = text[: m.start()].rstrip()
+    return genre_lookup._norm(text)
 
 
 def _similar(wanted: str, found: str) -> bool:

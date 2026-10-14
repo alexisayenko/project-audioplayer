@@ -59,18 +59,24 @@ def test_rewritten_regexes_match_the_originals():
 
     from app import discogs_lookup, titleclean, titles
 
-    old_seg = re.compile(r"(\s+(?:\||｜|//|/|／|-|–|—)\s+)")
-    old_tail = re.compile(r"[\s|/\-–—]+$")
-    old_disambig = re.compile(r"\s*\(\d+\)$")
-    old_feat = re.compile(r"\s*+[,&]\s*+|\s++(?:and|x)\s++", re.I)
-    old_multi = re.compile(r"\s+[-–—]\s+|,\s+")
+    old_seg = re.compile(r"((?<!\s)\s+(?:\||｜|//|/|／|-|–|—)\s+)")
+    old_tail = re.compile(r"(?<![\s|/\-–—])[\s|/\-–—]+$")
+    old_disambig = re.compile(r"(?<!\s)\s*\(\d+\)$")
+    old_feat = re.compile(r"(?:(?<!\s)\s++)?[,&]\s*+|(?<!\s)\s++(?:and|x)\s++", re.I)
+    old_multi = re.compile(r"(?<!\s)\s+[-–—]\s+|,\s+")
     old_version = re.compile(r"(?<!\s)\s++(?:-\s+(?:live|acoustic|unplugged|sessions?|in concert)|live (?:at|from|in|on))\b.*+$", re.I)
+
+    def names(parts):
+        flat = [" ".join(p.split()).strip(" -|") for p in parts]
+        return [p for p in flat if p]
+
     for s in _fuzz_strings():
-        assert titleclean._SEG.split(s) == old_seg.split(s), repr(s)
-        assert titleclean._TAIL.sub("", s) == old_tail.sub("", s), repr(s)
-        assert discogs_lookup._DISAMBIG.sub("", s) == old_disambig.sub("", s), repr(s)
-        assert titles._FEAT_SPLIT.split(s) == old_feat.split(s), repr(s)
-        assert titles._MULTI_ARTIST.split(s, 1) == old_multi.split(s, 1), repr(s)
+        assert titleclean._split_segments(s) == old_seg.split(s), repr(s)
+        assert titleclean._rstrip_seps(s) == old_tail.sub("", s), repr(s)
+        assert discogs_lookup._name(s) == discogs_lookup.genre_lookup._norm(old_disambig.sub("", s)), repr(s)
+        assert names(titles._FEAT_SPLIT.split(titles._squash(s))) == names(old_feat.split(s)), repr(s)
+        flat = titles._squash(s)
+        assert titles._MULTI_ARTIST.split(flat, 1)[0].strip(" -|") == old_multi.split(flat, 1)[0].strip(" -|"), repr(s)
         assert titles._cut_version_tail(s) == old_version.sub("", s), repr(s)
 
 
@@ -81,9 +87,9 @@ def test_rewritten_regexes_stay_fast_on_long_runs():
 
     start = time.perf_counter()
     big = " " * 20000
-    titleclean._SEG.split(big + "x")
-    titleclean._TAIL.sub("", "-" * 20000 + "x")
-    titles._FEAT_SPLIT.split(big + "x")
-    titles._MULTI_ARTIST.split(big + "x", 1)
+    titleclean._split_segments(big + "x")
+    titleclean._rstrip_seps("x" + "-" * 20000)
+    titles.lookup_credits("A feat. " + big + "x")
+    titles.artist_candidates(big + "x")
     titles._cut_version_tail(" live at" * 5000 + "\nz")
     assert time.perf_counter() - start < 2

@@ -116,8 +116,9 @@ def test_transaction_rolls_back_tracked_changes_when_body_raises(sync):
     with s.transaction():
         write(clone, "a.json", "one")
         s.commit("add a")
+    boom = RuntimeError("boom")
     with pytest.raises(RuntimeError):
-        fail_in_transaction(s, clone, "two", RuntimeError("boom"))
+        fail_in_transaction(s, clone, "two", boom)
     assert (clone / "audioplayer" / "a.json").read_text() == "one"
 
 
@@ -126,8 +127,9 @@ def test_transaction_rollback_also_on_keyboard_interrupt(sync):
     with s.transaction():
         write(clone, "a.json", "one")
         s.commit("add a")
+    interrupt = KeyboardInterrupt()
     with pytest.raises(KeyboardInterrupt):
-        fail_in_transaction(s, clone, "x", KeyboardInterrupt())
+        fail_in_transaction(s, clone, "x", interrupt)
     assert (clone / "audioplayer" / "a.json").read_text() == "one"
 
 
