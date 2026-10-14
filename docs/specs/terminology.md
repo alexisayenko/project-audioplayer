@@ -6,7 +6,7 @@ One name per thing. "Also called" lists informal names the owner or the code use
 
 | Term | Meaning | Also called / not | Where |
 | --- | --- | --- | --- |
-| Now line | The bright glowing line across the Terrain field that marks the audio position playing right now. Fixed depth `NOW_Z` = 12.5 world units (about 30% of the way to the horizon, screen middle). Falls off over `NOW_FALLOFF_S` 0.3 s of rows. Brightness gain `NOW_LINE_GAIN_B` 2.0 (on a beat); height gain `NOW_LINE_GAIN_H` 1.0 (no lift). Pulses with the beat; the only thing in the scene that does. | Also called: line now, current line, now slice, now row. Not: the seek bar, the pitch line | VIZ-047, VIZ-051; terrain-concept 3 |
+| Now line | The bright glowing line across the Terrain field that marks the audio position playing right now. Fixed depth `NOW_Z` = 12.5 world units (about 30% of the way to the horizon, screen middle). Falls off over `NOW_FALLOFF_S` 0.3 s of rows. Brightness gain `NOW_LINE_GAIN_B` 2.0 (on a beat) and height gain `NOW_LINE_GAIN_H` 1.0 (no lift) in the beat styles; Full spectrum lifts 1.1x (`NOW_LINE_GAIN_H_FULL`), Lava 2.2x height and 4.0x glow; Relief and Melody have no boost; the debug fields `nowH` / `nowB` override. Pulses with the beat; the only thing in the scene that does. | Also called: line now, current line, now slice, now row. Not: the seek bar, the pitch line | VIZ-047, VIZ-051; terrain-concept 3 |
 | Time slice / row | One row of the field: one moment of the song, 16 per second (`ROWS_PER_SECOND`), its height taken once and then only travelling toward the viewer at `WORLD_SPEED` 5.5 units/s. | Also called: data row. Not: a grid column | VIZ-043 |
 | Future side | The part of the field beyond the now line, toward the horizon (about 5 s, `LOOK_S`). | Not: past | VIZ-046 |
 | Past side | The part between the now line and the viewer; rows travel there after they have played (about 2.3 s visible). | Not: future | VIZ-046 |
@@ -22,7 +22,7 @@ One name per thing. "Also called" lists informal names the owner or the code use
 | Relief (style) | Default Terrain style: continuous relief of the song's spectrum plus landmark ridges. | Not: base relief, relief (the generic word for terrain height) | VIZ-051; terrain-concept 7 |
 | Beat peaks | Terrain styles where a peak grows on each beat (about 0.15 s up, sinks over about 5 s). Variants: single, hill, multi. | Also called: "alive" beat styles. Not: landmark ridge | VIZ-051, VIZ-052, VIZ-053 |
 | Single / Hill / Multi | Beat-peak variants: one narrow peak at the strongest pitch; a broad hill there; several peaks, one per strong band. | | VIZ-054; terrain-concept 7 |
-| Full spectrum | Terrain style: Relief at 1x, smoothed over time, with Multi beat peaks on top and a 1.1x now line (key `full`). | | VIZ-051; terrain-concept 7 |
+| Full spectrum | Terrain style: plain Relief with Multi beat peaks added on top; the now line boosts only the peaks, 1.1x (key `full`). | | VIZ-051; terrain-concept 7 |
 | Lava | Terrain style: exactly the old Full spectrum, Relief with a 2.2x tall, 4x bright now line (key `lava`). | | VIZ-051; terrain-concept 7 |
 | Melody on beats (melody style) | Style where the tune is the actor: navy canvas glowing with the beats, melodic relief cyan to white, strongest peak amber, pitch line on a finished timeline. | Also called: melody. Not: Melody part toggle | VIZ-066 |
 | Base relief | Soft spectrum relief under the beat peaks, 60% of the Relief height (`BEAT_BASE_RELIEF` 0.6). | Not: relief style | VIZ-051; terrain-concept 7 |
@@ -62,9 +62,9 @@ One name per thing. "Also called" lists informal names the owner or the code use
 
 | Term | Meaning | Also called / not | Where |
 | --- | --- | --- | --- |
-| Eye | Camera height (defaults 3.31; liked-2: 3.70). | Also called: camera height | VIZ-044 |
-| Pitch | Camera tilt in degrees (default -13.5; liked-2: -13.0). | | VIZ-044 |
-| Yaw | Looking left and right. | | VIZ-044 |
+| Eye | Camera height (defaults 3.31, range 0.2..10; liked-2: 3.70). | Also called: camera height | VIZ-075 |
+| Pitch | Camera tilt in degrees (default -13.5; liked-2: -13.0). | | VIZ-075 |
+| Yaw | Looking left and right (debug range -45..45 deg, default 0). | | VIZ-075 |
 | Camera flight | Drift of eye and yaw like a gliding spaceship (periods 6 to 20 s, tuned by `FLIGHT_SPEED`); off by default, key F, off with reduced motion, shared as `fl=1`; yaw amplitude 16 deg, never below 8 deg, recentres toward 0 on very wide views. | Also called: flight, drift | VIZ-074, SHARE-017 |
 | Shake | Bass shake of the camera; disabled (`SHAKE_ENABLED` false). | Not: camera flight | VIZ-043 |
 

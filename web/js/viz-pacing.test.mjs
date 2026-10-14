@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  makeFrameMeter, makePaceGovernor, PACE_UP_S, PACE_BAN_S, PACE_TOP, targetIntervalMs, watchLowPower, TERRAIN_TARGET_FPS,
+  makeFrameMeter, makePaceGovernor, PACE_UP_S, PACE_BAN_S, PACE_TOP, targetIntervalMs, watchLowPower, TERRAIN_TARGET_FPS, PACE_GRACE_S, PACE_BAN_MAX_S,
 } from './viz-pacing.js';
 import { makePacer } from './viz-spectrum.js';
 
@@ -161,7 +161,8 @@ test('half rate: falls to 30 only after level 0 + lite fail, judged against 33 m
   const halfDowns = log.filter((l) => l[1] < 0 && l[2] === -1).map((l) => l[0]);
   for (let i = 1; i < halfDowns.length; i += 1) assert.ok(halfDowns[i] - halfDowns[i - 1] >= 30000);
   const gaps = halfDowns.slice(1).map((v, i) => v - halfDowns[i]);
-  assert.ok(gaps.length < 2 || gaps[gaps.length - 1] > gaps[0], `gaps ${gaps}`);
+  assert.ok(gaps.length < 2 || Math.max(...gaps) > gaps[0], `gaps ${gaps}`);
+  assert.ok(Math.max(...gaps) <= 130000, `gaps ${gaps}`);
 });
 
 test('pacer: set() changes the rate, the slack keeps 60 fps on 60 Hz and 120 Hz', () => {
@@ -242,4 +243,83 @@ test('frame-rate independence: the time follower, bar smoothing, pulse and energ
     return step;
   };
   close(trajectories(energy, at), 0.03);
+});
+
+test('grace: a startup hitch does not downgrade, a sustained slow stretch after the grace does', () => {
+  const g = makePaceGovernor();
+  g.grace(8000);
+  let t = 1000;
+  const log = [];
+  while (t < 1000 + 7900) { t += 33; if (g.update(t, 40, 1000 / 60, true)) log.push(t); }
+  assert.equal(log.length, 0);
+  assert.equal(g.cap, 2);
+  while (t < 1000 + 20000) { t += 33; if (g.update(t, 40, 1000 / 60, true)) log.push(t); }
+  assert.ok(log.length >= 1 && log[0] >= 1000 + PACE_GRACE_S * 1000);
+});
+
+test('grace can be re-armed by events and restarts the slow timer', () => {
+  const g = makePaceGovernor();
+  let t = 0;
+  let downs = 0;
+  for (let i = 0; i < 300; i += 1) {
+    t += 16;
+    if (i % 100 === 0) g.grace(3000);
+    if (g.update(t, 40, 1000 / 60, true)) downs += 1;
+  }
+  assert.equal(downs, 0);
+});
+
+test('recovery from half rate: bans stay under 120 s and reset after 60 s without a downgrade', () => {
+  const g = makePaceGovernor();
+  let t = 0;
+  const step = (secs, dt, target) => { const end = t + secs * 1000; const ch = []; while (t < end) { t += 16; const c = g.update(t, dt, target, true); if (c) ch.push([t, c, g.rung]); } return ch; };
+  step(20, 40, 1000 / 60);
+  assert.equal(g.half, true);
+  for (let i = 0; i < 6; i += 1) {
+    for (let k = 0; k < 40 && g.half; k += 1) step(10, 33.3, 1000 / 30);
+    assert.equal(g.half, false, 'recovers from half rate');
+    step(15, 40, 1000 / 60);
+    assert.equal(g.half, true);
+  }
+  assert.ok(g.info(t).banLeft <= PACE_BAN_MAX_S);
+  step(120, 33.3, 1000 / 30);
+  assert.equal(g.half, false);
+  step(70, 33.3, 1000 / 30);
+  const ch = step(30, 40, 1000 / 60);
+  assert.ok(ch.length === 0 || g.info(t).banLeft <= 31, `ban ${g.info(t).banLeft}`);
+});
+
+test('info() reports the last downgrade reason, its age and the ban', () => {
+  const g = makePaceGovernor();
+  let t = 0;
+  while (t < 20000) { t += 16; g.update(t, 26.1, 1000 / 60, true); }
+  const i = g.info(t);
+  assert.equal(i.note.dir, -1);
+  assert.match(i.note.text, /interval 26\.1 ms > 20\.0 ms for \d\.\d s/);
+  assert.ok(i.ago >= 0 && i.banLeft > 0);
+});
+
+test('meter restart() drops the average and skips the next frames', () => {
+  const m = makeFrameMeter();
+  let t = 0;
+  for (let i = 0; i < 40; i += 1) { t += 120; m.tick(t); }
+  m.restart();
+  assert.equal(m.ema, 0);
+  assert.equal(m.valid, false);
+  for (let i = 0; i < 60; i += 1) { t += 16.7; m.tick(t); }
+  assert.ok(Math.abs(m.ema - 16.7) < 0.5);
+});
+
+test('meter compares like with like at the half-rate pacer: 30 drawn fps on a 60 Hz display is on target, not slow', () => {
+  const pacer = makePacer(30);
+  const m = makeFrameMeter();
+  const g = makePaceGovernor();
+  let t = 0;
+  let downs = 0;
+  for (let i = 0; i < 1500; i += 1) {
+    t += 16.7;
+    if (pacer.due(t, Math.min(4, 16.7 * 0.45))) { m.tick(t); if (g.update(t, m.ema, targetIntervalMs({ terrain: true, half: true }), m.valid) < 0) downs += 1; }
+  }
+  assert.ok(Math.abs(m.fps - 30) < 1, `fps ${m.fps}`);
+  assert.equal(downs, 0);
 });

@@ -134,7 +134,7 @@ export function lodTiers(level, aspect, nowZ = NOW_Z, yawDeg = 0) {
     const last = z1 >= GRID_DEPTH;
     const wOut = last ? 0 : LOD_BLEND_CELLS * nominal * 2;
     const wIn = k === 0 ? 0 : LOD_BLEND_CELLS * nominal;
-    const zA = k === 0 ? 0 : Math.max(0, z0 - wIn);
+    const zA = 0;
     const zB = Math.min(GRID_DEPTH, z1 + wOut);
     const want = tierHalfWidth(zB, aspect, yawDeg, k === 0);
     let sp = nominal;
@@ -151,10 +151,19 @@ export function lodTiers(level, aspect, nowZ = NOW_Z, yawDeg = 0) {
       sp *= 1.06;
     }
     const fade = [k === 0 ? -2 : z0 - wIn, k === 0 ? -1 : z0 + wIn, last ? GRID_DEPTH + 2 : z1 - wOut, last ? GRID_DEPTH + 3 : z1 + wOut];
-    tiers.push({ k, z0, z1, zA, zB, fade, spacing: sp, dz: sp, dx: sp, hw: half * sp, rows, cols, jz0 });
+    tiers.push({ k, z0, z1, zA, zB, fade, phw: k === 0 ? 0 : tiers[k - 1].hw, spacing: sp, dz: sp, dx: sp, hw: half * sp, rows, cols, jz0 });
     z0 = z1;
   }
   return tiers;
+}
+
+const smooth01 = (a, b, v) => { const t = clamp01((v - a) / (b - a)); return t * t * (3 - 2 * t); };
+
+export function tierWeight(t, x, z) {
+  const rho = Math.hypot(x, z);
+  const own = 1 - smooth01(t.fade[2], t.fade[3], rho);
+  const prev = t.phw > 0 ? (1 - smooth01(0.8, 1, Math.abs(x) / t.phw)) * (1 - smooth01(t.fade[0], t.fade[1], rho)) : 0;
+  return Math.max(0, own - prev);
 }
 
 export function catmull(t, out, o = 0) {
@@ -1006,8 +1015,6 @@ export const NOW_LINE_SIGMA_S = NOW_FALLOFF_S / Math.SQRT2;
 export const NOW_LINE_REACH_S = 3 * NOW_LINE_SIGMA_S;
 export const BEAT_BASE_RELIEF = 0.6;
 export const FULL_BASE_RELIEF = 1.0;
-export const FULL_RELIEF_SMOOTH_S = 0.35;
-export const FULL_RELIEF_TAU_S = 0.2;
 const NOW_LINE_EDGE = Math.exp(-((NOW_LINE_REACH_S / NOW_FALLOFF_S) ** 2));
 
 export function nowLineWeight(dtSec) {
@@ -1037,43 +1044,22 @@ export function addBaseRelief(out, relief, k = BEAT_BASE_RELIEF, cap = HEIGHT_CA
   return out;
 }
 
-let gaussScratch = new Float32Array(0);
-
-export function gaussKernel(sigmaRows) {
-  const half = Math.max(1, Math.ceil(3 * sigmaRows));
-  const k = new Float32Array(2 * half + 1);
-  for (let j = -half; j <= half; j += 1) k[j + half] = Math.exp(-0.5 * (j / sigmaRows) ** 2);
-  return k;
-}
-
-export function smoothRowsGauss(buf, rows, cols, kernel) {
-  if (gaussScratch.length < buf.length) gaussScratch = new Float32Array(buf.length);
-  const tmp = gaussScratch;
-  const half = (kernel.length - 1) >> 1;
+export function layerFullRelief(beats, relief, rows, cols, frac, gain = NOW_LINE_GAIN_H_FULL, share = null, cap = HEIGHT_CAP) {
+  const { dt, nowRow } = rowLayout(rows);
+  const centre = nowRow + frac;
   for (let r = 0; r < rows; r += 1) {
-    const lo = Math.max(0, r - half);
-    const hi = Math.min(rows - 1, r + half);
-    let wsum = 0;
-    for (let q = lo; q <= hi; q += 1) wsum += kernel[q - r + half];
+    const d = (r - centre) * dt;
+    const g = Math.abs(d) < NOW_LINE_REACH_S ? nowLineBoost(d, gain) : 1;
     const o = r * cols;
     for (let c = 0; c < cols; c += 1) {
-      let acc = 0;
-      for (let q = lo; q <= hi; q += 1) acc += kernel[q - r + half] * buf[q * cols + c];
-      tmp[o + c] = acc / wsum;
+      const base = relief[o + c];
+      const p = beats[o + c] * g;
+      const out = p > 0 ? Math.min(Math.max(base, cap), base + softKnee(base + p, cap) - softKnee(base, cap)) : base;
+      if (share) share[o + c] = out > base && out > 0 ? (out - base) / out : 0;
+      beats[o + c] = out;
     }
   }
-  buf.set(tmp.subarray(0, rows * cols));
-  return buf;
-}
-
-export function smoothRowsExp(buf, rows, cols, alpha, lastRow = rows - 1) {
-  const end = Math.min(rows - 1, lastRow);
-  for (let r = 1; r <= end; r += 1) {
-    const o = r * cols;
-    const p = o - cols;
-    for (let c = 0; c < cols; c += 1) buf[o + c] = buf[p + c] + alpha * (buf[o + c] - buf[p + c]);
-  }
-  return buf;
+  return beats;
 }
 
 export function nowGains(cam, style) {

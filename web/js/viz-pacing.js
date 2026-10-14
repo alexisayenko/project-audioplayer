@@ -14,7 +14,9 @@ export const PACE_DOWN_S = 2;
 export const PACE_UP_S = 5;
 export const PACE_SETTLE_S = 3;
 export const PACE_BAN_S = 30;
-export const PACE_BAN_MAX_S = 480;
+export const PACE_BAN_MAX_S = 120;
+export const PACE_BAN_RESET_S = 60;
+export const PACE_GRACE_S = 8;
 export const PACE_TOP = 3;
 export const PACE_START = 2;
 export const MIN_VALID_FRAMES = 30;
@@ -78,6 +80,7 @@ export function makeFrameMeter({ frames = FRAME_EMA, hold = HOLD_FRAMES } = {}) 
       return dt;
     },
     hold(frames2 = hold) { skip = frames2; valid = 0; },
+    restart(frames2 = 3) { skip = frames2; valid = 0; ema = 0; },
     reset() { last = null; ema = 0; skip = 0; n = 0; valid = 0; refresh = REFRESH_SLOW_MS; fastUntil = 0; },
     get ema() { return ema; },
     get fps() { return ema > 0 ? 1000 / ema : 0; },
@@ -95,18 +98,31 @@ export function makePaceGovernor({ top = PACE_TOP, start = PACE_START } = {}) {
   const banUntil = new Array(top + 2).fill(0);
   const bans = new Array(top + 2).fill(PACE_BAN_S);
   let liteOkSince = null;
+  let graceUntil = 0;
+  let pendingGrace = null;
+  let stableSince = null;
+  let note = null;
   return {
+    grace(ms = PACE_GRACE_S * 1000) { pendingGrace = Math.max(pendingGrace ?? 0, ms); },
     update(ts, ema, target, valid) {
       let changed = 0;
+      if (pendingGrace !== null) { graceUntil = Math.max(graceUntil, ts + pendingGrace); pendingGrace = null; }
+      if (ts < graceUntil) { overSince = null; okSince = null; liteOkSince = null; stableSince = null; return changed; }
       if (!valid || !(ema > 0)) { overSince = null; okSince = null; liteOkSince = null; return changed; }
       const over = ema > target * PACE_OVER;
       const ok = ema < target * PACE_OK;
+      if (!over) {
+        stableSince ??= ts;
+        if (ts - stableSince >= PACE_BAN_RESET_S * 1000) { bans.fill(PACE_BAN_S); stableSince = ts; }
+      }
       if (over) {
         overSince ??= ts;
         okSince = null;
         liteOkSince = null;
         if (ts - overSince >= PACE_LITE_S * 1000) lite = true;
         if (ts - overSince >= PACE_DOWN_S * 1000 && ts >= lockUntil && cap > -1 && (cap > 0 || lite)) {
+          note = { dir: -1, at: ts, text: `interval ${ema.toFixed(1)} ms > ${(target * PACE_OVER).toFixed(1)} ms for ${((ts - overSince) / 1000).toFixed(1)} s`, banS: bans[cap + 1] };
+          stableSince = null;
           banUntil[cap + 1] = ts + bans[cap + 1] * 1000;
           bans[cap + 1] = Math.min(PACE_BAN_MAX_S, bans[cap + 1] * 2);
           cap -= 1;
@@ -121,6 +137,7 @@ export function makePaceGovernor({ top = PACE_TOP, start = PACE_START } = {}) {
           liteOkSince ??= ts;
           if (lite && ts - liteOkSince >= PACE_LITE_OFF_S * 1000) lite = false;
           if (ts - okSince >= PACE_UP_S * 1000 && cap < top && ts >= banUntil[cap + 2] && ts >= lockUntil) {
+            note = { dir: 1, at: ts, text: `interval ${ema.toFixed(1)} ms < ${(target * PACE_OK).toFixed(1)} ms for ${((ts - okSince) / 1000).toFixed(1)} s`, banS: 0 };
             cap += 1;
             changed = 1;
             okSince = null;
@@ -133,7 +150,12 @@ export function makePaceGovernor({ top = PACE_TOP, start = PACE_START } = {}) {
       }
       return changed;
     },
-    reset() { overSince = null; okSince = null; liteOkSince = null; lite = false; },
+    reset() { overSince = null; okSince = null; liteOkSince = null; stableSince = null; lite = false; },
+    info(ts) {
+      const banLeft = Math.max(0, ...banUntil.map((u) => u - ts)) / 1000;
+      const graceLeft = Math.max(0, graceUntil - ts) / 1000;
+      return { note, ago: note ? (ts - note.at) / 1000 : null, banLeft, graceLeft };
+    },
     get cap() { return Math.max(0, cap); },
     get rung() { return cap; },
     get half() { return cap < 0; },

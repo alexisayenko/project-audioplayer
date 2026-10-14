@@ -97,7 +97,7 @@ function styleStatus(el) {
   el.id = 'viz-status';
   el.setAttribute?.('aria-hidden', 'true');
   Object.assign(el.style ?? {}, {
-    position: 'fixed', left: '8px', bottom: '8px', zIndex: '100', pointerEvents: 'none', font: '11px monospace',
+    position: 'fixed', left: 'max(8px, env(safe-area-inset-left))', bottom: '8px', zIndex: '100', pointerEvents: 'none', font: '11px monospace',
     color: '#fff', background: 'rgba(0,0,0,.65)', padding: '4px 6px', whiteSpace: 'pre-wrap', maxWidth: 'calc(100vw - 16px)', display: 'none',
   });
 }

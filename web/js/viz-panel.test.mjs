@@ -50,3 +50,12 @@ test('panel: header toggles and persists, sections follow the mode, parts refuse
   assert.equal(changes.length, 1);
   assert.equal(changes[0].freq.bass, false);
 });
+
+test('dock and debug status keep at least an 8px left offset (safe-area aware)', async () => {
+  const { readFileSync } = await import('node:fs');
+  const css = readFileSync(new URL('../viz.css', import.meta.url), 'utf8');
+  const dock = css.split('\n').find((l) => l.startsWith('.viz-dock {'));
+  assert.match(dock, /left: max\(8px, env\(safe-area-inset-left\)\)/);
+  const sig = readFileSync(new URL('./viz-signal.js', import.meta.url), 'utf8');
+  assert.match(sig, /left: 'max\(8px, env\(safe-area-inset-left\)\)'/);
+});

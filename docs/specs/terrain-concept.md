@@ -1,6 +1,6 @@
 # Terrain visualizer: the concept
 
-A plain-language description of what Terrain is meant to be, for designers. The exact, testable rules are the numbered requirements [VIZ-043 to VIZ-055](visualizer.md). Names and aliases of every term used here: [terminology.md](terminology.md).
+A plain-language description of what Terrain is meant to be, for designers. The exact, testable rules are the numbered requirements [VIZ-043 to VIZ-067 and VIZ-074](visualizer.md); the keys and buttons are in its controls cheat sheet. Names and aliases of every term used here: [terminology.md](terminology.md).
 
 ## 1. The idea
 
@@ -14,7 +14,7 @@ Terrain is a landscape that is the song. The music is laid out as a field you fl
 
 ## 3. The "now" slice
 
-A bright, glowing line across the field, about a third of the way out, is the second playing right now. It pulses with the beat. It is the only thing in the scene that pulses. Glossary: this is the "now line" (brighter only; it does not make the terrain taller).
+A bright, glowing line across the field, about a third of the way out, is the second playing right now. It pulses with the beat. It is the only thing in the scene that pulses. Glossary: this is the "now line". In the beat styles it only brightens; Full spectrum lifts the terrain under it a little (1.1x) and Lava a lot (2.2x height, 4x glow); Relief and Melody leave it plain.
 
 ## 4. The future
 
@@ -41,11 +41,12 @@ Each slice of time takes its height once, from its own moment of the song, and f
   - Single: one narrow peak at the most energetic pitch.
   - Hill: a broad hill around that pitch.
   - Multi: several peaks, one per strong band.
-- Full spectrum: Relief at 1x (`FULL_BASE_RELIEF`, no landmarks) smoothed over time (gaussian, `FULL_RELIEF_SMOOTH_S` 0.35 s on the lookahead rows; exponential 0.2 s on live rows) so it does not flicker, with the Multi beat peaks on top, only on beats, through the soft knee. The now line lifts the sum 1.1x (`NOW_LINE_GAIN_H_FULL`, debug field `nowH`) and brightens the glow (`nowB`).
+- Full spectrum: the plain Relief style, unchanged (same baked rows, landmarks on, no smoothing), with the Multi beat peaks added on top (up to 5 per beat, rise 0.15 s, decay 5 s) through the soft knee: peaks add to the relief and the sum is capped at the landmark maximum 4.5 units. The now line acts only on the peaks: they get 1.1x height (`NOW_LINE_GAIN_H_FULL`, debug field `nowH`) and the extra glow `nowB`, weighted per vertex by the peak share of the height; the relief under and beside them is not lifted.
 - Lava: the former Full spectrum look: exactly Relief (same rows, landmarks and look), no beat detection, no base relief, with a taller and brighter now line (height 2.2x `NOW_LINE_GAIN_H_LAVA`, glow 4x `NOW_LINE_GAIN_B_LAVA`; debug fields `nowH` / `nowB` show each style's defaults until edited, Reset restores them).
 - Melody on beats: the tune is the actor. The ground is a dark navy canvas that glows softly with the beats and ripples a little; noise and effects show as sparks; the tonal part of the mids and highs builds the relief (cyan to white), and the strongest narrow melodic peak turns amber. With a finished analysis a thin ridge follows the lead pitch left and right as the tune moves, its height following the loudness of that voice. Needs the song analysed (server songs); otherwise it works from the live sound without the pitch line.
 - Peaks never get a flat roof: heights saturate smoothly toward the maximum. Beat strength is relative to the song (a quiet intro gives small peaks).
-- Chosen in Settings > Playback > Terrain style, with key T, or in the vizdebug panel.
+- The cell size grows only with the distance from the camera, never with the left or right position, also while the Camera flight swings the view.
+- Style order (key T): Relief, single, hill, multi, Full spectrum, Lava, Melody on beats. Chosen in Settings > Playback > Terrain style, with key T, or in the left Visualizer style panel.
 
 ## 8. Atmosphere
 
@@ -57,7 +58,7 @@ Each slice of time takes its height once, from its own moment of the song, and f
 ## 9. Camera and controls
 
 - A low camera looks slightly down toward the horizon. Defaults: eye 3.31, pitch -13.5 deg.
-- V: full-screen. M: switch visualizer. T: cycle Terrain style. F: camera flight on/off.
+- V: full-screen. M: switch visualizer. T: cycle Terrain style. F: camera flight on/off. S / R: shuffle / repeat; ArrowUp / ArrowDown: volume; Esc: leave; click the picture: play or pause. Full list: the controls cheat sheet in [visualizer.md](visualizer.md).
 - Camera flight (off by default, switch in the left panel): the camera drifts slowly and smoothly, like a spaceship gliding. Camera height wanders up to about 40% either way (one wander takes 9 to 20 s) and the view turns left and right up to 16 degrees (6 to 15 s per swing), never past where the terrain still fills the screen. It starts and stops gently (3 s in, 2 s out), moves only while the music plays, and is forced off with reduced motion. It adds to your camera settings and never changes them.
 - The left "Terrain style" panel (everyone) holds the style select. `?vizdebug=1` adds a separate "Camera (debug)" panel with camera height, pitch, yaw (look left and right), a sync trim for audio-to-visual delay and a quality override, and shows fps, level and mesh size. Camera flight swings yaw by up to +-16 deg even on wide strips (aspect up to 4): the far grid tiers are widened to cover it, the grid's side edges fade out, and when the view is too wide the swing shrinks to at least +-8 deg and recentres toward 0 instead of stopping.
 - Quality levels: simple and crisp on weak devices; soft beaded lines, mist and bloom on strong ones. It steps down by itself when frames get slow. Terrain draws at 60 fps (display refresh capped at 60; 30 fps on a low battery, with reduced motion, or when even the simplest level cannot keep 60); the Mirrored spectrum and the Ring stay at 30.
@@ -66,5 +67,5 @@ Each slice of time takes its height once, from its own moment of the song, and f
 
 - Tag `terrain-liked-1` (commit c9b18e7) is the owner-approved look.
 - Tag `terrain-liked-2` (commit edd86a8) is the second owner-approved look: fine square cells in level-of-detail tiers, light, mist; favourite camera eye 3.70, pitch -13.0.
-- Changes since then: camera defaults, landmark ridges, light and mist, the beat-peak styles, square cells (and smaller cells, in progress).
-- Exact rules: [VIZ-043 to VIZ-055](visualizer.md).
+- Changes since liked-1: camera defaults, landmark ridges, light and mist, the beat-peak styles, square cells in level-of-detail tiers. Changes since liked-2 (the tag stays put): the Full spectrum redesign and the Lava style, the Melody style with a pitch line, progressive lookahead, Camera flight, Terrain at 60 fps, frame pacing and latency compensation, part toggles, the overlay controls and share links.
+- Exact rules: [VIZ-043 to VIZ-067 and VIZ-074](visualizer.md).

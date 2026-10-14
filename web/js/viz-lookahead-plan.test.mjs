@@ -7,7 +7,7 @@ import {
 import { createLookahead, decodeBuffer } from './viz-lookahead.js';
 import {
   createFrame, fillLookFrame, fillLiveFrame, createSeries, blendFrames, sampleTimeline, rowLayout, nowLineWeight, applyNowLine,
-  NOW_LINE_GAIN_H_FULL, NOW_LINE_GAIN_H, NOW_LINE_GAIN_H_LAVA, NOW_LINE_GAIN_B_LAVA, nowGains, FULL_BASE_RELIEF, BEAT_BASE_RELIEF, FULL_RELIEF_SMOOTH_S, gaussKernel, smoothRowsGauss, smoothRowsExp, softKnee, HEIGHT_CAP, NOW_LINE_REACH_S, FAR_FLAT_START, nowParse, nowFormat, nowClamp, parseNowField, NOW_DEFAULTS,
+  NOW_LINE_GAIN_H_FULL, NOW_LINE_GAIN_H, NOW_LINE_GAIN_H_LAVA, NOW_LINE_GAIN_B_LAVA, nowGains, FULL_BASE_RELIEF, BEAT_BASE_RELIEF, layerFullRelief, softKnee, HEIGHT_CAP, NOW_LINE_REACH_S, FAR_FLAT_START, nowParse, nowFormat, nowClamp, parseNowField, NOW_DEFAULTS,
 } from './viz-terrain-math.js';
 import { getStyle, setStyle, resetStyleForTests, styleLabel, isBeatStyle, isFullStyle, isLavaStyle, TERRAIN_STYLES } from './viz-terrain-style.js';
 
@@ -280,23 +280,32 @@ test('Lava is the old Relief with a tall now line; Full spectrum is a beat style
   assert.ok(Math.abs(lava[beyond * cols] - 0.4) < 1e-6);
 });
 
-test('Full spectrum relief smoothing lowers row-to-row variance and keeps the mean', () => {
+test('Full spectrum layers beat peaks on plain relief; the now line acts only on the peaks', () => {
   const rows = 88;
-  const cols = 4;
-  const { dt } = rowLayout(rows);
-  const noisy = new Float32Array(rows * cols);
-  for (let r = 0; r < rows; r += 1) for (let c = 0; c < cols; c += 1) noisy[r * cols + c] = 0.5 + 0.3 * (r % 2 ? 1 : -1);
-  const rough = (a) => { let s = 0; for (let r = 1; r < rows; r += 1) s += (a[r * cols] - a[(r - 1) * cols]) ** 2; return s; };
-  const mean = (a) => a.reduce((x, y) => x + y, 0) / a.length;
-  const g = smoothRowsGauss(noisy.slice(), rows, cols, gaussKernel(FULL_RELIEF_SMOOTH_S / dt));
-  assert.ok(rough(g) < 0.05 * rough(noisy));
-  assert.ok(Math.abs(mean(g) - mean(noisy)) < 0.03);
-  const step = new Float32Array(rows * cols).fill(0.6);
-  const same = smoothRowsGauss(step.slice(), rows, cols, gaussKernel(FULL_RELIEF_SMOOTH_S / dt));
-  assert.ok(same.every((v) => Math.abs(v - 0.6) < 1e-5));
-  const e = smoothRowsExp(noisy.slice(), rows, cols, 1 - Math.exp(-dt / 0.2), 60);
-  assert.ok(rough(e) < rough(noisy));
-  for (let i = 61 * cols; i < noisy.length; i += 1) assert.equal(e[i], noisy[i]);
+  const cols = 6;
+  const { nowRow } = rowLayout(rows);
+  const relief = new Float32Array(rows * cols);
+  for (let i = 0; i < relief.length; i += 1) relief[i] = 0.2 + 0.3 * ((i * 7) % 5) / 5;
+  const none = layerFullRelief(new Float32Array(rows * cols), relief, rows, cols, 0, 1.1, new Float32Array(rows * cols));
+  for (let i = 0; i < relief.length; i += 1) assert.ok(Math.abs(none[i] - relief[i]) < 1e-9);
+  const beats = new Float32Array(rows * cols);
+  beats[nowRow * cols + 2] = 0.3;
+  beats[(nowRow - 9) * cols + 2] = 0.3;
+  const share = new Float32Array(rows * cols);
+  const out = layerFullRelief(beats.slice(), relief, rows, cols, 0, 1.1, share);
+  for (let i = 0; i < relief.length; i += 1) assert.ok(out[i] >= relief[i] - 1e-9);
+  const i0 = nowRow * cols + 2;
+  const i1 = (nowRow - 9) * cols + 2;
+  relief[i1] = relief[i0];
+  out.set(layerFullRelief(beats.slice(), relief, rows, cols, 0, 1.1, share));
+  assert.ok(out[i0] - relief[i0] > 1.1 * (out[i1] - relief[i1]) * 0.99);
+  assert.ok(out[i1] - relief[i1] > 0.25);
+  for (const c of [0, 1, 3, 4, 5]) {
+    assert.equal(out[nowRow * cols + c], relief[nowRow * cols + c]);
+    assert.equal(share[nowRow * cols + c], 0);
+  }
+  assert.ok(share[i0] > 0.2 && share[i0] < 1);
+  assert.ok(out.every((v) => v <= HEIGHT_CAP + 1e-9));
   assert.equal(FULL_BASE_RELIEF, 1);
   assert.ok(BEAT_BASE_RELIEF < FULL_BASE_RELIEF);
   assert.ok(softKnee(HEIGHT_CAP * 5 + 1) < HEIGHT_CAP);

@@ -14,6 +14,7 @@ import { createBackdrop } from './viz-backdrop.js';
 import { createPartsFilter } from './viz-parts.js';
 import { drawRing, ringRadius } from './viz-ring.js';
 import { flight } from './viz-flight.js';
+import { getStyle } from './viz-terrain-style.js';
 import { createModeRenderer, MODES, DEFAULT_MODE } from './viz-modes.js';
 
 const SPOKES = 48;
@@ -308,7 +309,11 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
 
   function evaluate() {
     if (active()) {
-      if (raf == null) { running = true; raf = d.raf(frame); }
+      if (raf == null) {
+        if (!running) { pace.grace(); drawMeter.restart(); meter.hold(); }
+        running = true;
+        raf = d.raf(frame);
+      }
     } else if (running || raf != null || enabled) {
       settle();
     } else {
@@ -321,10 +326,40 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
     terrain: isTerrain(), refreshMs: meter.refresh, half: pace.half, lowPower: !!power?.low, reduced: reduced(), baseFps: VIZ_FPS,
   });
 
+  let paceKey = '';
+  let paceTs = 0;
+  let lastBuilds = null;
+
+  const timelineBusy = () => /loading|building/.test(la?.statusText?.() ?? '');
+
+  function paceSignature(busy) {
+    return `${isTerrain()}|${getStyle()}|${flight.isOn?.() ? 1 : 0}|${view.w}x${view.h}@${view.dpr}|${busy ? 1 : 0}`;
+  }
+
   function paceDraw(ts) {
+    paceTs = ts;
     drawMeter.tick(ts);
     if (!isTerrain()) return;
-    if (pace.update(ts, drawMeter.ema, targetMs(), drawMeter.valid)) drawMeter.hold();
+    const busy = timelineBusy();
+    if (busy) pace.grace(1000);
+    const key = paceSignature(busy);
+    if (key !== paceKey) {
+      paceKey = key;
+      pace.grace();
+      drawMeter.restart();
+    }
+    const builds = renderer?.stats?.builds ?? null;
+    if (builds !== lastBuilds) {
+      if (lastBuilds !== null) drawMeter.restart();
+      lastBuilds = builds;
+    }
+    if (pace.update(ts, drawMeter.ema, targetMs(), drawMeter.valid)) drawMeter.restart();
+  }
+
+  function paceNote() {
+    const i = pace.info(paceTs);
+    const last = i.note ? `${i.note.dir < 0 ? 'down' : 'up'}: ${i.note.text}, ${i.ago.toFixed(0)} s ago` : 'none';
+    return `last ${last}, ban ${i.banLeft.toFixed(0)} s${i.graceLeft > 0 ? `, grace ${i.graceLeft.toFixed(0)} s` : ''}`;
   }
 
   function paceText() {
@@ -333,7 +368,7 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
     const got = drawMeter.fps ? `${drawMeter.fps.toFixed(0)}` : 'n/a';
     const fps = `fps ${got}/${target.toFixed(0)} (display ${(1000 / meter.refresh).toFixed(0)} Hz)`;
     if (!st) return fps;
-    return `${fps}  terrain L${st.level} cap ${pace.cap}${pace.half ? ' half-rate' : ''}${pace.lite ? ' lite' : ''} tiers ${st.tiers} verts ${st.vertices} dpr ${st.dpr} ${st.w}x${st.h}`;
+    return `${fps}  terrain L${st.level} cap ${pace.cap}${pace.half ? ' half-rate' : ''}${pace.lite ? ' lite' : ''} tiers ${st.tiers} verts ${st.vertices} dpr ${st.dpr} ${st.w}x${st.h}\n  ${paceNote()}`;
   }
 
   function frame(ts) {
@@ -415,6 +450,8 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
       meter.hold();
       drawMeter.hold();
       pace.reset();
+      pace.grace();
+      lastBuilds = null;
       dropRenderer();
       if (raf == null) evaluate();
     },

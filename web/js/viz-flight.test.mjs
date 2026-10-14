@@ -252,3 +252,16 @@ test('F key follows the T rules and only applies in Terrain', () => {
   assert.equal(isVizFlightKey({ key: 'f', target: { closest: () => ({}) } }, ctx), false);
   assert.equal(isVizFlightKey(ev('t'), ctx), false);
 });
+
+test('flight never changes the terrain tier layout: the yaw step depends on the base yaw and aspect only, not on time', async () => {
+  const { yawStepOf } = await import('./viz-terrain-math.js');
+  const fl = F.createFlight({ seed: 7 });
+  fl.setOn(true);
+  const steps = new Set();
+  for (let i = 0; i < 6000; i += 1) {
+    fl.tick(i * 16, true);
+    fl.offsets({ eye: 3.31, pitch: -13.5, yaw: 12 }, 16 / 9);
+    steps.add(yawStepOf(12 + fl.yawRange(12, 16 / 9)));
+  }
+  assert.equal(steps.size, 1);
+});

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  gridDims, GRID_MAX_VERTICES, lodTiers, makeTierPlan, resampleTier, tierHalfWidth, LOD_MAX_SPACING, QUALITY, clamp01, smoothstep, qualityFor, resample, createHistory, columnBin, edgeFalloff, heightAt, fillHeights,
+  gridDims, GRID_MAX_VERTICES, lodTiers, makeTierPlan, resampleTier, tierHalfWidth, tierWeight, LOD_MAX_SPACING, QUALITY, clamp01, smoothstep, qualityFor, resample, createHistory, columnBin, edgeFalloff, heightAt, fillHeights,
   gridCounts, buildGridVertices, buildLineIndices, buildDepthIndices, buildCrossIndices, energyOf, easeEnergy, GRID_DEPTH, colorRamp, fillColors, horizonGlow, makeStars, cameraAt, horizonY,
   camClamp, camFormat, camParse, defaultPitchDeg, smoothHeights, CAM_LIMITS, nearEnvelope, rowZ, halfWidthAt, columnX, EYE_HEIGHT,
   mat4Perspective, mat4LookAt, mat4Multiply, transformPoint, makeRowClock, SHAKE_MAX, RAMP,
@@ -789,7 +789,7 @@ test('LOD tiers: square cells, exact doubling, contiguous depth and bounded vert
   const t2 = lodTiers(2, 16 / 9);
   assert.deepEqual(t2.map((t) => t.spacing), [0.12, 0.24, 0.48, 0.96]);
   const total = t2.reduce((n, t) => n + t.rows * t.cols, 0);
-  assert.ok(total < 40000, String(total));
+  assert.ok(total < 60000, String(total));
   assert.ok(t2.every((t) => t.rows * t.cols * 2 <= 65535));
 });
 
@@ -978,4 +978,33 @@ test('tall crests are not flattened: resampling keeps lattice values above 1 up 
   const dst = new Float32Array(tier.rows * tier.cols);
   resampleTier(plan, src, dst, 0, 0, 0, HEIGHT_RESAMPLE_CAP);
   assert.ok(dst.every((v) => Math.abs(v - 1.4) < 1e-4));
+});
+
+test('LOD tiers are selected by distance from the camera, not by depth alone, under every yaw', () => {
+  for (const [level, aspect] of [[2, 1.6], [2, 3.3], [1, 1.6], [0, 3.3]]) {
+    for (const yaw of [0, 10, 16, 20]) {
+      const tiers = lodTiers(level, aspect, undefined, yaw);
+      let total = 0;
+      for (const t of tiers) { assert.ok(t.rows * t.cols <= GRID_MAX_VERTICES); total += t.rows * t.cols; }
+      if (level === 2) assert.ok(total <= 4 * GRID_MAX_VERTICES);
+      const pts = [];
+      for (let rho = 0.3; rho < GRID_DEPTH - 1; rho += 0.37) {
+        for (let a = -80; a <= 80; a += 4) {
+          const x = rho * Math.sin(a * Math.PI / 180);
+          const z = rho * Math.cos(a * Math.PI / 180);
+          if (Math.abs(x) > tiers[0].hw && Math.abs(x) > 0.8 * tiers[0].hw && rho < tiers[0].z1) continue;
+          const w = tiers.map((t) => tierWeight(t, x, z));
+          const sum = w.reduce((n, v) => n + v, 0);
+          const covered = tiers.every((t, i) => w[i] === 0 || (Math.abs(x) <= t.hw && z >= t.zA && z <= t.zB + t.spacing));
+          assert.ok(covered, `${level} ${aspect} ${yaw} ${x} ${z}`);
+          if (tiers.every((t) => Math.abs(x) <= 0.8 * t.hw)) assert.ok(Math.abs(sum - 1) < 1e-9, `sum ${sum} at ${x},${z}`);
+          pts.push({ rho, spacing: w.reduce((n, v, i) => n + v * tiers[i].spacing, 0) / (sum || 1), sum });
+        }
+      }
+      for (const p of pts) for (const q of pts) if (p.rho + 1e-9 < q.rho - 0.8) assert.ok(p.spacing <= q.spacing + 1e-9, `${p.rho} ${p.spacing} > ${q.rho} ${q.spacing}`);
+      const ring = pts.filter((p) => Math.abs(p.rho - 8.0) < 0.2);
+      const sp = ring.map((p) => p.spacing);
+      assert.ok(Math.max(...sp) - Math.min(...sp) < tiers[1].spacing + 1e-9);
+    }
+  }
 });
