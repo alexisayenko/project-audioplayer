@@ -2,7 +2,7 @@ import * as audioGraph from './audio-graph.js';
 import { createViz } from './viz-canvas.js';
 import { createLookahead } from './viz-lookahead.js';
 import { barCount } from './viz-spectrum.js';
-import { createFullscreen, isNearBox, isVizKey, isVizModeKey, isVizStyleKey } from './viz-fullscreen.js';
+import { createFullscreen, isNearBox, isVizKey, isVizModeKey, isVizStyleKey, isVizFlightKey } from './viz-fullscreen.js';
 import { createStylePanel } from './viz-panel.js';
 import { createModeSwitch } from './viz-switch.js';
 import { initOverlayPlayControls } from './viz-playctl.js';
@@ -15,6 +15,7 @@ import { titleNodes } from './display-title.js';
 import { $, setIcon } from './player-ui.js';
 import { createCamPanel, loadCam } from './viz-cam-debug.js';
 import { outputLatencyS } from './viz-latency.js';
+import { flightOn, flightReduced, setFlightOn, initFlight } from './viz-flight.js';
 import { getStyle, setStyle, nextStyle, styleLabel } from './viz-terrain-style.js';
 
 const REDUCED = '(prefers-reduced-motion: reduce)';
@@ -258,6 +259,15 @@ export function initVisualizer({
     e.preventDefault();
     const next = setStyle(nextStyle(getStyle()));
     if (live) live.textContent = `Terrain style: ${styleLabel(next)}`;
+  });
+
+  initFlight();
+  document.addEventListener('keydown', (e) => {
+    if (!supported) return;
+    if (!isVizFlightKey(e, { open: full.isOpen(), route: document.body.dataset.route, background: vizBackgroundOn(), mode: currentMode })) return;
+    e.preventDefault();
+    const on = flightReduced() ? false : setFlightOn(!flightOn());
+    if (live) live.textContent = flightReduced() ? 'Camera flight is off: reduced motion is on' : `Camera flight ${on ? 'on' : 'off'}`;
   });
 
   for (const type of ['play', 'pause', 'ended', 'emptied']) {

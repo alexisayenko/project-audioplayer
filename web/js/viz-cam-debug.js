@@ -1,5 +1,7 @@
 import { camClamp, camFormat, camParse, CAM_LIMITS, EYE_HEIGHT, DEFAULT_PITCH_DEG, YAW_COVER_MAX_DEG } from './viz-terrain-math.js';
 
+import { flight } from './viz-flight.js';
+
 export const CAM_KEY = 'ap2.viz.dbg.cam5';
 
 let qualityForce = null;
@@ -120,7 +122,18 @@ export function createCamPanel(doc = document) {
   const note = doc.createElement('small');
   note.textContent = `Yaw is fully covered up to about +-${yawCoverNote()} deg at 16:9; beyond that the far side of the grid can show bare edge. Sync is a trim added to the automatic output-latency estimate (positive = visuals earlier).`;
   btns.append(reset, copy);
-  body.append(line, btns, note);
+  const flightLine = doc.createElement('small');
+  flightLine.className = 'viz-flight-line';
+  flightLine.hidden = true;
+  const paintFlight = () => {
+    const on = flight.active();
+    flightLine.hidden = !on;
+    if (!on) return;
+    const o = flight.offsets(cam);
+    flightLine.textContent = `flight offset: eye ${o.eye >= 0 ? '+' : ''}${o.eye.toFixed(1)} yaw ${o.yaw >= 0 ? '+' : ''}${o.yaw.toFixed(1)}deg`;
+  };
+  const flightTimer = globalThis.setInterval?.(paintFlight, 250);
+  body.append(line, flightLine, btns, note);
   const paint = (c) => {
     rows.eye.input.value = c.eye;
     rows.eye.out.textContent = c.eye.toFixed(2);
@@ -134,5 +147,5 @@ export function createCamPanel(doc = document) {
   };
   listeners.add(paint);
   paint(cam);
-  return { el: root, dispose() { listeners.delete(paint); root.remove(); } };
+  return { el: root, dispose() { globalThis.clearInterval?.(flightTimer); listeners.delete(paint); root.remove(); } };
 }

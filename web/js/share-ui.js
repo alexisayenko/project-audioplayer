@@ -6,6 +6,7 @@ import { vizMode, vizBackgroundOn } from './viz-settings.js';
 import { modeLabel } from './viz-modes.js';
 import { getStyle, styleLabel } from './viz-terrain-style.js';
 import { getCam } from './viz-cam-debug.js';
+import { flightOn } from './viz-flight.js';
 import { buildShareUrl, parseClock, fmtClock, camDiffers, clampT } from './share.js';
 
 const $ = (id) => document.getElementById(id);
@@ -36,6 +37,8 @@ export function shareState(song, audio = $('audio')) {
     style: mode === 'terrain' ? getStyle() : null,
     bg: vizBackgroundOn(),
     cam: mode === 'terrain' && camDiffers(getCam()) ? { ...getCam() } : null,
+    fl: mode === 'terrain',
+    flOn: flightOn(),
     t: current && Number.isFinite(audio?.currentTime) ? Math.floor(audio.currentTime) : 0,
     current,
   };
@@ -68,6 +71,8 @@ export function openShareDialog(song, audio = $('audio')) {
   const time = el('input', { type: 'text', id: 'share-time', class: 'share-time', inputMode: 'numeric', autocomplete: 'off', placeholder: '0:00', value: fmtClock(st.t) });
   const fs = el('input', { type: 'checkbox', id: 'share-fs' });
   const cam = st.cam ? el('input', { type: 'checkbox', id: 'share-cam' }) : null;
+  const fl = st.fl ? el('input', { type: 'checkbox', id: 'share-fl' }) : null;
+  if (fl) fl.checked = st.flOn;
   const out = el('input', { type: 'text', id: 'share-url', class: 'share-url', readOnly: true, 'aria-label': 'Share link' });
   const err = el('p', { class: 'msg error', id: 'share-err', hidden: true }, 'Use mm:ss, for example 1:23');
   const live = el('output', { class: 'viz-sr', role: 'status', 'aria-live': 'polite', id: 'share-live' });
@@ -79,7 +84,7 @@ export function openShareDialog(song, audio = $('audio')) {
     const t = seconds();
     if (t === null) return null;
     return buildShareUrl({
-      origin: origin(), id: song.id, t: clampT(t, song.duration), viz: st.mode, style: st.style, bg: st.bg, fs: fs.checked, cam: cam?.checked ? st.cam : null,
+      origin: origin(), id: song.id, t: clampT(t, song.duration), viz: st.mode, style: st.style, bg: st.bg, fs: fs.checked, cam: cam?.checked ? st.cam : null, fl: !!fl?.checked,
     });
   };
   const refresh = () => {
@@ -97,7 +102,7 @@ export function openShareDialog(song, audio = $('audio')) {
   });
   time.addEventListener('input', () => { atCur.checked = false; refresh(); });
   time.addEventListener('blur', () => { const t = seconds(); if (t !== null) time.value = fmtClock(clampT(t, song.duration)); });
-  for (const c of [fs, cam]) c?.addEventListener('change', refresh);
+  for (const c of [fs, cam, fl]) c?.addEventListener('change', refresh);
   out.addEventListener('focus', () => out.select());
   const done = (ok) => {
     live.textContent = '';
@@ -122,6 +127,7 @@ export function openShareDialog(song, audio = $('audio')) {
       el('label', { for: 'share-time' }, 'Start time (mm:ss)'), time, err),
     row(fs, 'Open in full-screen visualizer'),
     cam ? row(cam, 'Include camera') : null,
+    fl ? row(fl, 'Camera flight on') : null,
     el('p', { class: 'muted t-caption' }, summary(st)),
     el('div', { class: 'field' }, el('label', { for: 'share-url' }, 'Link'), out),
     el('p', { class: 'muted t-caption' }, 'Opens only for people who can see this song in the library.'),

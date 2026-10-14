@@ -5,6 +5,7 @@ import {
   makeRowClock, clamp01, applyNowLine, addBaseRelief, NOW_LINE_GAIN_B, resample, yawStepOf, smoothHeights, HEIGHT_RESAMPLE_CAP, ROWS_PER_SECOND, gridDims, fillLight, LIGHT_GAIN, NODE_GAIN, FOG_NEAR, FOG_FAR, FOG_LOW_MIN, FOG_H0, FOG_H1,
 } from './viz-terrain-math.js';
 import { getCam } from './viz-cam-debug.js';
+import { flight } from './viz-flight.js';
 import { getStyle, isBeatStyle, isMelodyStyle } from './viz-terrain-style.js';
 import {
   createPartsFrames, createLiveParts, fillLiveParts, fillTimelineParts, blendParts, melodyHeights, fillMelodyAttrs, fillLeadRidge, ACCENT_LUT,
@@ -499,7 +500,7 @@ export function createTerrain(canvas, opts = {}) {
       look: createPartsFrames(rows, HISTORY_BINS),
       attrs: { canvas: new Float32Array(rows * cols), spark: new Float32Array(rows * cols), accent: new Float32Array(rows * cols) },
     };
-    s.yaw = yawStepOf(getCam().yaw);
+    s.yaw = tierYaw();
     s.sig = layoutSig(s.level, aspect, s.yaw);
     s.tiers = lodTiers(s.level, aspect, s.nowZ, s.yaw).map(buildTier);
     s.res.tiers = s.tiers;
@@ -907,6 +908,10 @@ export function createTerrain(canvas, opts = {}) {
     gl.bufferSubData(gl.ARRAY_BUFFER, 0, l2);
   }
 
+  function tierYaw(cc = getCam()) {
+    return yawStepOf(Math.abs(cc.yaw) + flight.yawRange(cc.yaw, view.w / view.h));
+  }
+
   function draw(spectrum, t = 0, aheadIn = null, latS = 0) {
     if (s.lost || s.disposed || !s.res) return;
     const lat = Number.isFinite(latS) ? latS : 0;
@@ -938,10 +943,11 @@ export function createTerrain(canvas, opts = {}) {
     s.lastT = t;
     s.time = (t / 1000) % 600;
     const cc = getCam();
-    if (yawStepOf(cc.yaw) !== s.yaw) { freeGrid(); buildGrid(); s.clock.reset(); }
+    if (tierYaw(cc) !== s.yaw) { freeGrid(); buildGrid(); s.clock.reset(); }
     s.frameId += 1;
     updateHeights(t / 1000 - lat, ahead);
-    const cam = cameraAt(t / 1000, SHAKE_ENABLED ? s.pulse : 0, { eye: cc.eye, pitchDeg: cc.pitch, yawDeg: cc.yaw, fly: 0 });
+    const fo = flight.offsets(cc, view.w / view.h);
+    const cam = cameraAt(t / 1000, SHAKE_ENABLED ? s.pulse : 0, { eye: cc.eye + fo.eye, pitchDeg: cc.pitch + fo.pitch, yawDeg: cc.yaw + fo.yaw, fly: 0 });
     s.focalPx = view.h / (2 * Math.tan(cam.fov / 2));
     mat4Perspective(cam.fov, view.w / view.h, NEAR, FAR, proj);
     mat4LookAt(cam.eye, cam.target, cam.up, look);

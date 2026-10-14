@@ -24,6 +24,14 @@ export function isVizStyleKey(e, { open, route, background, mode }) {
   return open || (route === 'playback' && !!background);
 }
 
+export function isVizFlightKey(e, { open, route, background, mode }) {
+  if (mode !== 'terrain') return false;
+  if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return false;
+  if (String(e.key).toLowerCase() !== 'f') return false;
+  if (e.target?.closest?.(SKIP_KEY_TARGETS)) return false;
+  return open || (route === 'playback' && !!background);
+}
+
 export function isNearBox(point, box, pad = 0) {
   if (!point || !box) return false;
   return point.x >= box.left - pad && point.x <= box.right + pad && point.y >= box.top - pad && point.y <= box.bottom + pad;

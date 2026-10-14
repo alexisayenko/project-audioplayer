@@ -1,12 +1,13 @@
 import { TERRAIN_STYLES, getStyle, setStyle, onStyle } from './viz-terrain-style.js';
 import { createPartsToggles } from './viz-parts-ui.js';
 import { modeLabel } from './viz-modes.js';
+import { flightOn, flightReduced, setFlightOn, onFlight } from './viz-flight.js';
 
 export const PANEL_COLLAPSED_KEY = 'ap2.viz.panelCollapsed';
 export const NARROW_PX = 480;
 
 export function panelSections(mode) {
-  return { style: mode === 'terrain', parts: mode === 'bars' };
+  return { style: mode === 'terrain', flight: mode === 'terrain', parts: mode === 'bars' };
 }
 
 export function panelTitle(mode) {
@@ -15,7 +16,7 @@ export function panelTitle(mode) {
 
 export function panelHasContent(mode) {
   const s = panelSections(mode);
-  return s.style || s.parts;
+  return s.style || s.flight || s.parts;
 }
 
 export function defaultCollapsed(width) {
@@ -67,16 +68,40 @@ export function createStylePanel({ doc = document, mode, width, parts }) {
   const offStyle = onStyle((id) => { styleSel.value = id; });
   styleRow.append(styleName, styleSel);
 
+  const flightRow = doc.createElement('div');
+  flightRow.className = 'viz-flight-row';
+  const flightBtn = doc.createElement('button');
+  flightBtn.type = 'button';
+  flightBtn.id = 'viz-flight-toggle';
+  flightBtn.className = 'viz-switch';
+  flightBtn.setAttribute('role', 'switch');
+  flightBtn.textContent = 'Camera flight';
+  const flightNote = doc.createElement('small');
+  flightNote.textContent = 'Off: reduced motion is on';
+  const paintFlight = () => {
+    const reduced = flightReduced();
+    flightBtn.setAttribute('aria-checked', String(flightOn()));
+    flightBtn.setAttribute('aria-pressed', String(flightOn()));
+    flightBtn.disabled = reduced;
+    flightNote.hidden = !reduced;
+  };
+  flightBtn.addEventListener('click', () => setFlightOn(!flightOn()));
+  const offFlight = onFlight(paintFlight);
+  paintFlight();
+  flightRow.append(flightBtn, flightNote);
+
   const partsRoot = doc.createElement('div');
   const toggles = createPartsToggles({ root: partsRoot, state: parts.state, onChange: parts.onChange, onRefuse: parts.onRefuse });
 
-  body.append(styleRow, partsRoot);
+  body.append(styleRow, flightRow, partsRoot);
   root.append(head, body);
 
   const setMode = (m) => {
     const s = panelSections(m);
     head.textContent = panelTitle(m);
     styleRow.hidden = !s.style;
+    flightRow.hidden = !s.flight;
+    paintFlight();
     partsRoot.hidden = !s.parts;
     root.dataset.empty = panelHasContent(m) ? '0' : '1';
   };
@@ -87,6 +112,6 @@ export function createStylePanel({ doc = document, mode, width, parts }) {
     setParts: (s) => toggles.set(s),
     toggles,
     isEmpty: () => root.dataset.empty === '1',
-    dispose() { offStyle(); root.remove(); },
+    dispose() { offStyle(); offFlight(); root.remove(); },
   };
 }

@@ -13,6 +13,7 @@ import { drawBars } from './viz-bars.js';
 import { createBackdrop } from './viz-backdrop.js';
 import { createPartsFilter } from './viz-parts.js';
 import { drawRing, ringRadius } from './viz-ring.js';
+import { flight } from './viz-flight.js';
 import { createModeRenderer, MODES, DEFAULT_MODE } from './viz-modes.js';
 
 const SPOKES = 48;
@@ -264,6 +265,7 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
     const r = ensureRenderer();
     r.setQuality(gov.level, { cap: pace.level, lite: pace.lite, hiDpr: pace.hiDpr, force: getQualityForce() });
     la?.request(laKey, enabled && r.id === 'terrain');
+    if (r.id === 'terrain') flight.tick(now, d.isPlaying());
     r.draw(bars, now, r.id === 'terrain' ? la?.get(now) ?? null : null, r.id === 'terrain' ? d.getOutputLatency() + getCam().sync / 1000 : 0);
     if (!r.usesGL) glow.apply(ctx, canvas, w, h, q.glow);
     if (d.debug) paintDebug(bars.length);

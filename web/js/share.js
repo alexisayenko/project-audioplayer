@@ -37,7 +37,7 @@ export function fmtClock(sec) {
 const round = (n, d) => Number(n.toFixed(d));
 
 export function buildShareUrl({
-  origin, id, t = 0, viz = null, style = null, bg = null, fs = false, cam = null, duration = null,
+  origin, id, t = 0, viz = null, style = null, bg = null, fs = false, cam = null, fl = false, duration = null,
 }) {
   if (!ID_RE.test(String(id ?? ''))) return null;
   const q = [`v=${SHARE_VERSION}`];
@@ -49,6 +49,7 @@ export function buildShareUrl({
   }
   if (bg === true || bg === false) q.push(`bg=${bg ? 1 : 0}`);
   if (fs) q.push('fs=1');
+  if (fl && viz === 'terrain') q.push('fl=1');
   if (cam) {
     const c = camClamp(cam);
     q.push(`cam=${[round(c.eye, 2), round(c.pitch, 1), round(c.yaw, 1)].join(',')}`);
@@ -84,6 +85,7 @@ export function parseShareParams(hash) {
     bg: bg === '1' ? true : bg === '0' ? false : null,
     fs: q.get('fs') === '1',
     cam: parseCam(q.get('cam')),
+    fl: q.get('fl') === '1' && viz === 'terrain',
   };
 }
 

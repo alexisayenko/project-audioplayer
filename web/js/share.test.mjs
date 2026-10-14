@@ -23,12 +23,12 @@ test('buildShareUrl matches the documented scheme', () => {
 test('round trip with camera', () => {
   const url = buildShareUrl({ origin: O, id: 'a-b', t: 7, viz: 'terrain', style: 'melody', bg: true, fs: true, cam: { eye: 3.7, pitch: -13, yaw: 5 } });
   const p = parseShareParams(url.slice(O.length + 1));
-  assert.deepEqual(p, { id: 'a-b', t: 7, viz: 'terrain', style: 'melody', bg: true, fs: true, cam: { eye: 3.7, pitch: -13, yaw: 5 } });
+  assert.deepEqual(p, { id: 'a-b', t: 7, viz: 'terrain', style: 'melody', bg: true, fs: true, cam: { eye: 3.7, pitch: -13, yaw: 5 }, fl: false });
 });
 
 test('parse validates, clamps and ignores unknown params', () => {
   const p = parseShareParams('#/play/abc?v=9&t=99999999&viz=evil&style=nope&bg=2&fs=yes&cam=1,2&zzz=1');
-  assert.deepEqual(p, { id: 'abc', t: 0, viz: null, style: null, bg: null, fs: false, cam: null });
+  assert.deepEqual(p, { id: 'abc', t: 0, viz: null, style: null, bg: null, fs: false, cam: null, fl: false });
   assert.equal(parseShareParams('#/play/abc?t=-5').t, 0);
   assert.equal(parseShareParams('#/play/abc?t=1e3').t, 0);
   assert.equal(parseShareParams('#/play/abc?t=1000000').t, 86400);
@@ -63,4 +63,15 @@ test('clock parsing and formatting', () => {
 test('camDiffers is false for the default camera', () => {
   assert.equal(camDiffers({}), false);
   assert.equal(camDiffers({ eye: 1 }), true);
+});
+
+test('fl=1 is built and parsed only for Terrain', () => {
+  const u = buildShareUrl({ origin: O, id: 'abc', viz: 'terrain', style: 'relief', fl: true });
+  assert.match(u, /&fl=1$/);
+  assert.equal(parseShareParams(new URL(u).hash).fl, true);
+  assert.doesNotMatch(buildShareUrl({ origin: O, id: 'abc', viz: 'ring', fl: true }), /fl=/);
+  assert.doesNotMatch(buildShareUrl({ origin: O, id: 'abc', viz: 'terrain' }), /fl=/);
+  assert.equal(parseShareParams('#/play/abc?v=1&viz=ring&fl=1').fl, false);
+  assert.equal(parseShareParams('#/play/abc?v=1&viz=terrain&fl=2').fl, false);
+  assert.doesNotMatch(buildShareUrl({ origin: O, id: 'abc', viz: 'terrain', fl: true, cam: { eye: 4, pitch: -10, yaw: 3 } }), /cam=[^&]*fl/);
 });
