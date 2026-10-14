@@ -59,7 +59,7 @@ def _get(path: str, params: dict[str, str] | None = None) -> dict[str, Any]:
     return httpjson.fetch(req, TIMEOUT)
 
 
-_DISAMBIG = re.compile(r"\s*\(\d+\)$")
+_DISAMBIG = re.compile(r"(?<!\s)\s*\(\d+\)$")
 
 
 def _name(value: str) -> str:
@@ -103,7 +103,10 @@ def rank(results: list[dict[str, Any]], artist: str) -> list[dict[str, Any]]:
         if item.get("type") not in (None, "release") or not item.get("id"):
             continue
         credited = _result_artist(item)
-        (direct if _similar(artist, credited) else various if _is_various(credited) else []).append(item)
+        if _similar(artist, credited):
+            direct.append(item)
+        elif _is_various(credited):
+            various.append(item)
     key = lambda it: (_year(it.get("year")) or 9999, str(it.get("id")))  # noqa: E731
     return sorted(direct, key=key) + sorted(various, key=key)
 

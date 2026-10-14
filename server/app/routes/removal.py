@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -10,7 +10,7 @@ router = APIRouter()
 
 
 @router.delete("/songs/{video_id}", status_code=204, responses=deps.responses(404, 422))
-def delete_song(video_id: str, user: dict[str, Any] = Depends(deps.require_token)):
+def delete_song(video_id: str, user: Annotated[dict[str, Any], Depends(deps.require_token)]):
     deps.valid_id(video_id)
     uid = user["uid"]
     with deps.tx(uid, f"delete {video_id}"):
@@ -30,7 +30,7 @@ def delete_song(video_id: str, user: dict[str, Any] = Depends(deps.require_token
 
 
 @router.delete("/songs/{video_id}/audio", status_code=204, responses=deps.responses(404, 422))
-def delete_song_audio(video_id: str, user: dict[str, Any] = Depends(deps.require_token)):
+def delete_song_audio(video_id: str, user: Annotated[dict[str, Any], Depends(deps.require_token)]):
     """Remove the audio file only; the catalog entry stays (state becomes `none`). Idempotent."""
     deps.valid_id(video_id)
     uid = user["uid"]

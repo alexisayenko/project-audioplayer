@@ -98,6 +98,16 @@ def song_status(video_id: str, user: dict[str, Any] = Depends(deps.require_token
     raise HTTPException(status_code=404, detail=deps.UNKNOWN_SONG)
 
 
+def _apply_links(updated: dict[str, Any], changes: dict[str, Any]) -> None:
+    for key in ("wikipedia_song", "wikipedia_artist"):
+        if key in changes:
+            updated[key] = wiki_lookup.clean_link(changes[key])
+    if "musicbrainz_url" in changes:
+        updated["musicbrainz_url"] = genre_lookup.clean_recording_url(changes["musicbrainz_url"])
+    if "discogs_url" in changes:
+        updated["discogs_url"] = discogs_lookup.clean_url(changes["discogs_url"])
+
+
 def _edited(song: dict[str, Any], changes: dict[str, Any]) -> dict[str, Any]:
     updated = dict(song)
     for key in _TEXT_FIELDS:
@@ -107,13 +117,7 @@ def _edited(song: dict[str, Any], changes: dict[str, Any]) -> dict[str, Any]:
         updated["year"] = changes["year"]
     if "bpm" in changes:
         updated["bpm"] = round(changes["bpm"]) if changes["bpm"] is not None else None
-    for key in ("wikipedia_song", "wikipedia_artist"):
-        if key in changes:
-            updated[key] = wiki_lookup.clean_link(changes[key])
-    if "musicbrainz_url" in changes:
-        updated["musicbrainz_url"] = genre_lookup.clean_recording_url(changes["musicbrainz_url"])
-    if "discogs_url" in changes:
-        updated["discogs_url"] = discogs_lookup.clean_url(changes["discogs_url"])
+    _apply_links(updated, changes)
     if changes.get("tags") is not None:
         updated["tags"] = library.clean_tags(changes["tags"])
         reject_unknown_country(updated["tags"], library.clean_tags(song.get("tags") or []))

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 
@@ -52,5 +52,5 @@ def auth_logout(request: Request) -> Response:
 
 
 @router.get("/auth/me")
-def auth_me(user: dict[str, Any] = Depends(deps.require_token)) -> dict[str, Any]:
+def auth_me(user: Annotated[dict[str, Any], Depends(deps.require_token)]) -> dict[str, Any]:
     return {k: user[k] for k in ("method", "email", "provider", "owner")}

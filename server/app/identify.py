@@ -95,6 +95,16 @@ def _safe(fn: Callable[..., dict[str, Any] | None], *args: Any) -> dict[str, Any
         return {}
 
 
+def _fingerprint(path: Path, artist: str, title: str) -> tuple[str, str, dict[str, Any] | None, dict[str, Any]]:
+    hit = _safe(acoustid_lookup.identify, path, artist, title)
+    if not hit.get("match"):
+        return artist, title, None, {}
+    mb = _safe(genre_lookup.lookup_recording, hit["match"]["mbid"])
+    artist, title = mb.get("artist") or hit["match"]["artist"] or artist, mb.get("title") or hit["match"]["title"] or title
+    matched = {"artist": artist, "title": title, "confidence": hit["match"]["confidence"], "source": "acoustid"}
+    return artist, title, matched, mb
+
+
 def run(song: dict[str, Any], path: Path | None) -> dict[str, Any]:
     """Identify one song from its audio file `path` and its own metadata; never raises."""
     avail = available()
@@ -107,11 +117,8 @@ def run(song: dict[str, Any], path: Path | None) -> dict[str, Any]:
     matched = None
     mb: dict[str, Any] = {}
     if avail["acoustid"] and path is not None:
-        hit = _safe(acoustid_lookup.identify, path, artist, title)
-        if hit.get("match"):
-            mb = _safe(genre_lookup.lookup_recording, hit["match"]["mbid"])
-            artist, title = mb.get("artist") or hit["match"]["artist"] or artist, mb.get("title") or hit["match"]["title"] or title
-            matched = {"artist": artist, "title": title, "confidence": hit["match"]["confidence"], "source": "acoustid"}
+        artist, title, matched, mb = _fingerprint(path, artist, title)
+        if matched:
             sources.append("acoustid")
     if not matched and artist and title:
         # no fingerprint match: the title-based guess, as /preview does

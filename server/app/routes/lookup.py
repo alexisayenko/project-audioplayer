@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.concurrency import run_in_threadpool
@@ -47,7 +47,7 @@ async def _apply_suggestions(meta: dict[str, Any]) -> None:
 
 
 @router.post("/preview", responses=deps.responses(502))
-async def preview(req: PreviewRequest, user: dict[str, Any] = Depends(deps.require_token)):
+async def preview(req: PreviewRequest, user: Annotated[dict[str, Any], Depends(deps.require_token)]):
     try:
         link = await run_in_threadpool(resolve_link, req.url)
     except Refused as refused:

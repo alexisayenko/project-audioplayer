@@ -36,7 +36,7 @@ def get_catalog(request: Request, since: str | None = Query(default=None),
     uid = user["uid"]
     public = deps.public_songs(uid, deps.load_songs(uid))
     revision = library.catalog_revision(public)
-    etag = f'"{revision}"' if since is None else f'"{revision}.{hashlib.sha1(since.encode()).hexdigest()[:_SINCE_ETAG_LEN]}"'
+    etag = f'"{revision}"' if since is None else f'"{revision}.{hashlib.sha1(since.encode(), usedforsecurity=False).hexdigest()[:_SINCE_ETAG_LEN]}"'
     headers = {"ETag": etag, "Cache-Control": "no-cache"}
     if _etag_matches(request.headers.get("if-none-match", ""), etag):
         return Response(status_code=304, headers=headers)

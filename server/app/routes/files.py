@@ -16,7 +16,7 @@ COVER_TYPE = "image/jpeg"
 PRIVATE_NO_CACHE = {"Cache-Control": "private, no-cache"}
 
 
-def _not_downloaded(download: bool) -> Exception:
+def _not_downloaded(download: bool) -> Problem | HTTPException:
     if download:
         return Problem(404, "audio_not_downloaded", "This song's audio is not on the server.")
     return HTTPException(status_code=404, detail=deps.NOT_DOWNLOADED)

@@ -82,7 +82,19 @@ def clean_title(title: str) -> str:
     return re.sub(r"\s+", " ", t).strip(" -|")
 
 
-_VERSION_TAIL = re.compile(r"(?<!\s)\s++(?:-\s+(?:live|acoustic|unplugged|sessions?|in concert)|live (?:at|from|in|on))\b.*+$", re.I)
+_VERSION_HEAD = re.compile(r"(?<!\s)\s++(?:-\s+(?:live|acoustic|unplugged|sessions?|in concert)|live (?:at|from|in|on))\b", re.I)
+
+
+def _cut_version_tail(text: str) -> str:
+    """Drops the first version marker that is followed by no line break (bar one final newline), and everything after it."""
+    limit = len(text) - 1 if text.endswith("\n") else len(text)
+    last_break = text.rfind("\n", 0, limit)
+    pos = 0
+    while (m := _VERSION_HEAD.search(text, pos)) is not None:
+        if m.end() > last_break:
+            return text[: m.start()] + text[limit:]
+        pos = m.start() + 1
+    return text
 
 
 def lookup_artist(artist: str) -> str:
@@ -91,7 +103,7 @@ def lookup_artist(artist: str) -> str:
     return a or clean_artist(artist)
 
 
-_FEAT_SPLIT = re.compile(r"\s*+[,&]\s*+|\s++(?:and|x)\s++", re.I)
+_FEAT_SPLIT = re.compile(r"(?:(?<!\s)\s++)?[,&]\s*+|(?<!\s)\s++(?:and|x)\s++", re.I)
 
 
 def lookup_credits(artist: str) -> tuple[str, list[str]]:
@@ -110,7 +122,7 @@ def lookup_credits(artist: str) -> tuple[str, list[str]]:
     return primary, [n for n in (p.strip(" -|") for p in _FEAT_SPLIT.split(text)) if n]
 
 
-_MULTI_ARTIST = re.compile(r"\s+[-–—]\s+|,\s+")
+_MULTI_ARTIST = re.compile(r"(?<!\s)\s+[-–—]\s+|,\s+")
 
 
 def artist_candidates(artist: str) -> list[str]:
@@ -125,7 +137,7 @@ def lookup_title(title: str) -> str:
     title = titleclean.clean(title or "")
     base = re.sub(r"\s+", " ", re.sub(r"[\(\[]\s*[\)\]]", "", _strip_feat(clean_title(title)))).strip(" -|")
     t = _drop_brackets(base, _is_version)
-    t = _VERSION_TAIL.sub("", t)
+    t = _cut_version_tail(t)
     return re.sub(r"\s+", " ", t).strip(" -|") or base or clean_title(title)
 
 

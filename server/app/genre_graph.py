@@ -138,18 +138,17 @@ def resolve_label(cache: dict[str, Any], key: str) -> str | None:
     need = [h["id"] for h in hits if not _fresh(cache["entities"].get(h["id"]))]
     if need:
         _fetch_entities(cache, need)
-    best: tuple[int, int, str] | None = None
-    for rank, h in enumerate(hits):
-        ent = cache["entities"].get(h["id"])
-        if not ent or not ent.get("genre"):
-            continue
-        match = h.get("match") or {}
-        if norm(str(match.get("text") or h.get("label") or "")) != key and norm(ent.get("label", "")) != key:
-            continue
-        score = (0 if match.get("type") == "label" else 1, rank, h["id"])
-        if best is None or score < best:
-            best = score
-    return best[2] if best else None
+    scores = [s for rank, h in enumerate(hits) if (s := _hit_score(cache["entities"].get(h["id"]), h, rank, key))]
+    return min(scores)[2] if scores else None
+
+
+def _hit_score(ent: dict[str, Any] | None, h: dict[str, Any], rank: int, key: str) -> tuple[int, int, str] | None:
+    if not ent or not ent.get("genre"):
+        return None
+    match = h.get("match") or {}
+    if norm(str(match.get("text") or h.get("label") or "")) != key and norm(ent.get("label", "")) != key:
+        return None
+    return (0 if match.get("type") == "label" else 1, rank, h["id"])
 
 
 def user_genres(songs: list[dict[str, Any]]) -> dict[str, set[str]]:

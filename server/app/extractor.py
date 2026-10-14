@@ -198,10 +198,7 @@ def _looks_like_preview(page_seconds: float | None, file_seconds: float | None) 
                 and page_seconds - file_seconds > _PREVIEW_GAP_SECONDS)
 
 
-def download_audio(video_id: str, out_dir: Path, progress: Callable[[float], None] | None = None, source_url: str | None = None) -> dict[str, Any]:
-    """Download one song's audio (m4a); reports progress (0..1) via the callback."""
-    out_dir.mkdir(parents=True, exist_ok=True)
-
+def _progress_hook(progress: Callable[[float], None] | None) -> Callable[[dict[str, Any]], None]:
     def hook(d: dict[str, Any]) -> None:
         if not progress:
             return
@@ -213,6 +210,14 @@ def download_audio(video_id: str, out_dir: Path, progress: Callable[[float], Non
                 progress(min(d.get("downloaded_bytes", 0) / total, 1.0))
         elif d.get("status") == "finished" and hasattr(progress, "converting"):
             progress.converting()
+
+    return hook
+
+
+def download_audio(video_id: str, out_dir: Path, progress: Callable[[float], None] | None = None, source_url: str | None = None) -> dict[str, Any]:
+    """Download one song's audio (m4a); reports progress (0..1) via the callback."""
+    out_dir.mkdir(parents=True, exist_ok=True)
+    hook = _progress_hook(progress)
 
     if source_of(video_id) == "soundcloud":
         return _download_soundcloud(video_id, out_dir, hook, source_url)

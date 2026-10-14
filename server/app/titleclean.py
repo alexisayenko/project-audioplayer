@@ -25,8 +25,8 @@ _PROMO = ("free download", "free dl", "free d/l", "free dl!", "out now", "premie
 _PUNCT = re.compile(r"[\W_]+")
 _PARTS = re.compile(r"[/,&+]")
 _GROUP = re.compile(r"[(\[{【][^()\[\]{}【】]*[)\]}】]")
-_SEG = re.compile(r"(\s+(?:\||｜|//|/|／|-|–|—)\s+)")
-_TAIL = re.compile(r"[\s|/\-–—]+$")
+_SEG = re.compile(r"((?<!\s)\s+(?:\||｜|//|/|／|-|–|—)\s+)")
+_TAIL = re.compile(r"(?<![\s|/\-–—])[\s|/\-–—]+$")
 _HEAD = re.compile(r"^[\s|/\-–—]+")
 _WS = re.compile(r"\s+")
 
@@ -55,6 +55,39 @@ def _is_noise(text: str, allowed: frozenset[str] = _NOISE_SET) -> bool:
     return False
 
 
+def _drop_noise_groups(s: str, removed: list[str]) -> str:
+    changed = True
+
+    def drop(m: re.Match) -> str:
+        nonlocal changed
+        if _is_noise(m.group()[1:-1]):
+            removed.append(_WS.sub(" ", m.group()))
+            changed = True
+            return " "
+        return m.group()
+
+    while changed:
+        changed = False
+        s = _GROUP.sub(drop, s)
+    return s
+
+
+def _drop_noise_tail(s: str, removed: list[str]) -> str:
+    parts = _SEG.split(s)
+    while len(parts) >= 3:
+        sep = parts[-2].strip()
+        if sep not in ("-", "–", "—"):
+            allowed = _NOISE_SET
+        else:
+            allowed = _NOISE_SET if len(parts) >= 5 else _PROMO_SET
+        if not _is_noise(parts[-1], allowed):
+            break
+        removed.append(parts[-1].strip())
+        parts = parts[:-2]
+    joined = "".join(parts)
+    return _TAIL.sub("", joined) if joined != s else s
+
+
 def clean_ex(title: str) -> tuple[str, list[str]]:
     """(cleaned title, the removed pieces as written). Never empty: when cleaning would empty it the original stays."""
     original = _WS.sub(" ", title or "").strip()
@@ -62,35 +95,10 @@ def clean_ex(title: str) -> tuple[str, list[str]]:
     removed: list[str] = []
     while True:
         before = s
-        changed = True
-        while changed:
-            changed = False
-
-            def drop(m: re.Match) -> str:
-                nonlocal changed
-                if _is_noise(m.group()[1:-1]):
-                    removed.append(_WS.sub(" ", m.group()))
-                    changed = True
-                    return " "
-                return m.group()
-
-            s = _GROUP.sub(drop, s)
+        s = _drop_noise_groups(s, removed)
         if s != before:
             s = _HEAD.sub("", _TAIL.sub("", _WS.sub(" ", s).strip()))
-        parts = _SEG.split(s)
-        while len(parts) >= 3:
-            sep = parts[-2].strip()
-            if sep not in ("-", "–", "—"):
-                allowed = _NOISE_SET
-            else:
-                allowed = _NOISE_SET if len(parts) >= 5 else _PROMO_SET
-            if not _is_noise(parts[-1], allowed):
-                break
-            removed.append(parts[-1].strip())
-            parts = parts[:-2]
-        joined = "".join(parts)
-        if joined != s:
-            s = _TAIL.sub("", joined)
+        s = _drop_noise_tail(s, removed)
         s = _WS.sub(" ", s).strip()
         if s == before.strip() or s == _WS.sub(" ", before).strip():
             break
