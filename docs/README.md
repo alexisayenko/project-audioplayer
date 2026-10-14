@@ -137,7 +137,7 @@ and rules):
 - [`tech/domain-migration.md`](tech/domain-migration.md) — runbook for moving
   the site from play.isayenko.net to electrophone.cc (the old host is removed, ADR-0019)
 - [`specs/README.md`](specs/README.md) — testable requirements per area
-  (API, data model, tags, library, playback, web, genres, stats, visualizer, iOS, non-functional)
+  (API, data model, tags, library, playback, web, genres, stats, visualizer, share link, glossary, iOS, non-functional)
 - [`CHANGELOG.md`](CHANGELOG.md) — what shipped, newest first
 - [`tech/ci-cd.md`](tech/ci-cd.md) — CI/CD playbook (manual
   workflows, test layers, deploy and release paths)
@@ -193,7 +193,8 @@ docs/
 │   └── legal-draft.md                  # legal-page draft
 ├── specs/                              # entry: specs/README.md (what the system does)
 │   ├── add-song.md api.md catalog.md data-model.md genres.md ios.md
-│   └── library.md non-functional.md playback.md stats.md storage-and-sync.md tags.md visualizer.md web.md
+│   └── library.md non-functional.md playback.md share.md stats.md storage-and-sync.md tags.md
+│       terminology.md terrain-concept.md visualizer.md web.md
 ├── tasks/                              # entry: tasks/README.md
 │   ├── README.md
 │   ├── C1.md C2.md                     # concern roll-ups

@@ -14,7 +14,7 @@ One bullet per event: ISO date, an em dash, what happened in a
 sentence or two, and a link to the task or artifact that carries
 the detail. Newest first; several events on one date are fine.
 
-- 2026-10-14 — public read-only guest view ADR-0018, audio visualizer, copyright note and no-index, BPM backfill and year-range changes are in code on `origin/main` but not deployed: SSH to LXC 106 is refused, see [task-0027](tasks/task-0027.md). The live site runs the 2026-10-13 release.
+- 2026-10-14 — public read-only guest view ADR-0018, audio visualizer, copyright note and no-index, BPM backfill and year-range changes deployed to LXC 106 after SSH access was restored, see [task-0027](tasks/task-0027.md); later visualizer and share-link work (task-0028) is live too.
 - 2026-10-14 — domain `electrophone.cc` bought; migration phases 0-3 done (zone active, both hostnames serve the app, Google and Apple sign-in verified); iOS URL, canonical redirect and HSTS open, see [task-0026](tasks/task-0026.md), ADR-0019.
 - 2026-10-14 — iOS TestFlight builds 20261020 to 20261025 uploaded.
 - 2026-10-13 — server and web UI deployed live at https://play.isayenko.net (perkunas LXC `tools`, ADR-0004).

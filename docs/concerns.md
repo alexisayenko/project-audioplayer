@@ -80,4 +80,4 @@ at `electrophone.cc`.
 
 - Lives in: `server/`, `web/`
 - Source spec: [`specs/README.md`](specs/README.md) (API, DATA, TAG, ADD,
-  LIB, STO, PLY, NFR), ADR-0001 to ADR-0005
+  LIB, STO, PLY, WEB, VIZ, SHARE, NFR), ADR-0001 to ADR-0005
