@@ -13,8 +13,8 @@ import urllib.parse
 import urllib.request
 from typing import Any
 
-from . import countrycodes
-from .titles import clean_artist, clean_title, lookup_credits, lookup_title, split_artist_title  # noqa: F401
+from . import countrycodes, langcodes
+from .titles import artist_candidates, clean_artist, clean_title, lookup_credits, lookup_title, split_artist_title  # noqa: F401
 
 log = logging.getLogger(__name__)
 
@@ -212,19 +212,75 @@ def _lookup(artist: str, title: str, featured: list[str]) -> dict[str, Any]:
     data = _get("recording/", {"query": query, "fmt": "json", "limit": "10" if featured else "5"})
     rec = _pick_recording(data.get("recordings") or [], artist, featured)
     if rec:
-        credited = rec.get("artist-credit") or []
-        full = _get(f"recording/{rec['id']}", {"inc": "genres+tags+work-rels+url-rels+releases+release-groups+artist-credits", "fmt": "json"})
-        song_rels = _url_rels(full) or _work_rels(full)
-        genres, country, artist_rels = _artist_info(artist, credited, _top(full))
-        return {
-            "tags": [*genres, *country],
-            "song_rels": song_rels,
-            "artist_rels": artist_rels,
-            "year": _first_year(full),
-            "album": _album(full, artist),
-            "mb_url": recording_url(rec.get("id")),
-        }
+        full = _get(f"recording/{rec['id']}", {"inc": _REC_INC, "fmt": "json"})
+        return _details(rec["id"], full, rec.get("artist-credit") or [], artist)
     return _empty()
+
+
+_REC_INC = "genres+tags+work-rels+url-rels+releases+release-groups+artist-credits"
+
+
+def _details(rec_id: str, full: dict[str, Any], credited: list[dict[str, Any]], artist: str) -> dict[str, Any]:
+    song_rels = _url_rels(full) or _work_rels(full)
+    genres, country, artist_rels = _artist_info(artist, credited, _top(full))
+    return {
+        "tags": [*genres, *country],
+        "song_rels": song_rels,
+        "artist_rels": artist_rels,
+        "year": _first_year(full),
+        "album": _album(full, artist),
+        "mb_url": recording_url(rec_id),
+    }
+
+
+def _credit_name(credited: list[dict[str, Any]]) -> str:
+    return "".join(f"{c.get('name') or (c.get('artist') or {}).get('name') or ''}{c.get('joinphrase') or ''}" for c in credited).strip()
+
+
+def _langs(full: dict[str, Any]) -> list[str]:
+    """ISO 639-1 codes of the releases' text language, most common first (instrumental, multiple and unknown are dropped)."""
+    counts: dict[str, int] = {}
+    for r in full.get("releases") or []:
+        code = langcodes.to_lang_code(str((r.get("text-representation") or {}).get("language") or ""))
+        if code:
+            counts[code] = counts.get(code, 0) + 1
+    return sorted(counts, key=lambda c: -counts[c])
+
+
+_rec_cache: dict[str, dict[str, Any]] = {}
+
+
+def lookup_recording(mbid: str, artist: str = "") -> dict[str, Any]:
+    """Like `lookup`, for a known recording id (e.g. from an audio fingerprint): the same tags, links, year, album and
+    `mb_url`, plus the recording's `artist`, `title` and `langs`; empty when disabled, malformed or on any error."""
+    out = {**_empty(), "artist": "", "title": "", "langs": []}
+    mbid = str(mbid or "").strip().lower()
+    if not enabled() or recording_url(mbid) is None:
+        return out
+    try:
+        if mbid not in _rec_cache:
+            full = _get(f"recording/{mbid}", {"inc": _REC_INC, "fmt": "json"})
+            credited = full.get("artist-credit") or []
+            first = next((c for c in credited if (c.get("artist") or {}).get("name") or c.get("name")), {})
+            name = artist or (first.get("artist") or {}).get("name") or first.get("name") or ""
+            found = _details(mbid, full, credited, name)
+            _rec_cache[mbid] = {**found, "artist": _credit_name(credited), "title": str(full.get("title") or ""), "langs": _langs(full)}
+        hit = _rec_cache[mbid]
+        return {**hit, "tags": list(hit["tags"]), "langs": list(hit["langs"])}
+    except Exception as exc:
+        log.warning("recording lookup failed for %s: %s", mbid, exc)
+        return out
+
+
+def _cached_lookup(artist: str, title: str, feats: list[str]) -> dict[str, Any]:
+    key = (artist.casefold(), title.casefold(), tuple(f.casefold() for f in feats))
+    if key not in _cache:
+        with _key_locks_guard:
+            lock = _key_locks.setdefault(key, threading.Lock())
+        with lock:
+            if key not in _cache:
+                _cache[key] = _lookup(artist, title, feats)
+    return _cache[key]
 
 
 def lookup(artist: str, title: str, featured: list[str] | None = None) -> dict[str, Any]:
@@ -235,19 +291,18 @@ def lookup(artist: str, title: str, featured: list[str] | None = None) -> dict[s
         return _empty()
     try:
         artist, title = split_artist_title(artist, title)
-        artist, credited_feats = lookup_credits(artist)
+        names = artist_candidates(artist)
+        credited_feats = lookup_credits(artist)[1]
         title = lookup_title(title)
         feats = credited_feats if featured is None else [f for f in featured if f and f.strip()]
-        if not artist or not title:
+        if not names[0] or not title:
             return _empty()
-        key = (artist.casefold(), title.casefold(), tuple(f.casefold() for f in feats))
-        if key not in _cache:
-            with _key_locks_guard:
-                lock = _key_locks.setdefault(key, threading.Lock())
-            with lock:
-                if key not in _cache:
-                    _cache[key] = _lookup(artist, title, feats)
-        return {**_cache[key], "tags": list(_cache[key]["tags"])}
+        found = _empty()
+        for name in names:
+            found = _cached_lookup(name, title, feats)
+            if found["mb_url"]:
+                break
+        return {**found, "tags": list(found["tags"])}
     except Exception as exc:
         log.warning("tag lookup failed for %r - %r: %s", artist, title, exc)
         return _empty()

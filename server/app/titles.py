@@ -5,6 +5,8 @@ from __future__ import annotations
 import re
 from collections.abc import Callable
 
+from . import titleclean
+
 _BRACKETED = re.compile(r"[\(\[][^\)\]]*[\)\]]")
 _NOISE_WORD = re.compile(r"\b(?:official|video|audio|lyrics?|visuali[sz]er|remaster(?:ed)?|h[dq]|4k|clip|mv)\b", re.I)
 _LIVE_WORD = re.compile(r"\b(?:live|unplugged|in concert)\b", re.I)
@@ -108,8 +110,19 @@ def lookup_credits(artist: str) -> tuple[str, list[str]]:
     return primary, [n for n in (p.strip(" -|") for p in _FEAT_SPLIT.split(text)) if n]
 
 
+_MULTI_ARTIST = re.compile(r"\s+[-–—]\s+|,\s+")
+
+
+def artist_candidates(artist: str) -> list[str]:
+    """Names to try for a lookup, never saved: the whole lookup artist first, then its first part when the string holds several artists (split on " - " or the legacy ", ")."""
+    whole = lookup_credits(artist)[0]
+    first = _MULTI_ARTIST.split(whole, 1)[0].strip(" -|")
+    return [whole] if not first or first == whole else [whole, first]
+
+
 def lookup_title(title: str) -> str:
     """The title for external lookups only: clean_title plus feat credits and version info (live, acoustic, unplugged, session, venue) removed; never shown or saved."""
+    title = titleclean.clean(title or "")
     base = re.sub(r"\s+", " ", re.sub(r"[\(\[]\s*[\)\]]", "", _strip_feat(clean_title(title)))).strip(" -|")
     t = _drop_brackets(base, _is_version)
     t = _VERSION_TAIL.sub("", t)

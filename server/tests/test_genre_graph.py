@@ -1,0 +1,228 @@
+import time
+
+import pytest
+
+from app import genre_graph as gg
+from tests.test_library import H, VID, client  # noqa: F401
+from tests.test_users import ALICE, BOB, add, key, multi, who  # noqa: F401
+
+GENRE = "Q188451"
+
+# qid -> (label, genre?, parents, related)
+WD = {
+    "Q100": ("electronic music", True, ["Q500"], []),
+    "Q500": ("music", False, [], []),
+    "Q102": ("pop music", True, [], []),
+    "Q101": ("synthpop", True, ["Q100", "Q102"], ["Q105"]),
+    "Q103": ("dark synth", True, ["Q101"], []),
+    "Q104": ("chillsynth", True, ["Q101"], []),
+    "Q105": ("new wave", True, ["Q102"], []),
+    "Q110": ("a-genre", True, ["Q111"], []),
+    "Q111": ("b-genre", True, ["Q110", "Q100"], []),
+    "Q300": ("house", False, [], []),
+    "Q301": ("house music", True, ["Q100"], []),
+    "Q401": ("lvl0", True, ["Q402"], []),
+    "Q402": ("lvl1", True, ["Q403"], []),
+    "Q403": ("lvl2", True, ["Q404"], []),
+    "Q404": ("lvl3", True, ["Q405"], []),
+    "Q405": ("lvl4", True, ["Q406"], []),
+    "Q406": ("lvl5", True, ["Q407"], []),
+    "Q407": ("lvl6", True, [], []),
+}
+ALIASES = {"house": ["Q300", "Q301"]}
+
+
+def claim(qid):
+    return {"mainsnak": {"datavalue": {"value": {"id": qid}}}}
+
+
+def entity(qid):
+    label, genre, parents, related = WD[qid]
+    claims = {"P279": [claim(p) for p in parents], "P737": [claim(r) for r in related]}
+    if genre:
+        claims["P31"] = [claim(GENRE)]
+    return {"labels": {"en": {"value": label}}, "descriptions": {"en": {"value": "a thing"}}, "claims": claims}
+
+
+@pytest.fixture
+def wd(tmp_path, monkeypatch):
+    calls = []
+
+    def fake(params):
+        calls.append(params)
+        if params["action"] == "wbsearchentities":
+            term = params["search"]
+            hits = [{"id": q, "label": v[0], "match": {"type": "label", "text": v[0]}} for q, v in WD.items() if v[0] == term]
+            hits += [{"id": q, "label": WD[q][0], "match": {"type": "alias", "text": term}} for q in ALIASES.get(term, [])]
+            return {"search": hits}
+        ids = params["ids"].split("|")
+        assert len(ids) <= gg.BATCH
+        return {"entities": {i: entity(i) for i in ids if i in WD}}
+
+    monkeypatch.setattr(gg, "_api", fake)
+    monkeypatch.setattr(gg, "INLINE", True)
+    monkeypatch.setattr(gg, "_down_until", 0.0)
+    monkeypatch.setattr(gg, "_running", False)
+    gg._mem.clear()
+    fake.calls = calls
+    fake.path = tmp_path / "ontology.json"
+    return fake
+
+
+def songs(*pairs):
+    return [{"id": sid, "tags": [f"genre:{g}" for g in genres]} for sid, genres in pairs]
+
+
+def by_label(g):
+    return {n["label"]: n for n in g["nodes"]}
+
+
+def boom(params):
+    raise OSError("offline")
+
+
+def test_multi_parent_family_and_edges(wd):
+    g = gg.graph(songs(("s1", ["Synthpop"])), wd.path)
+    n = by_label(g)
+    assert set(n) == {"synthpop", "electronic music", "pop music"}
+    sp = n["synthpop"]
+    assert sorted(sp["parents"]) == sorted([n["electronic music"]["id"], n["pop music"]["id"]])
+    assert sp["family"] == "Electronic" and sp["qid"] == "Q101"
+    assert n["pop music"]["family"] == "Pop"
+    assert {"source": sp["id"], "target": n["pop music"]["id"], "kind": "parent"} in g["edges"]
+    assert g["ontology"] is True and g["pending"] is False
+
+
+def test_related_edge_only_between_present_nodes(wd):
+    g = gg.graph(songs(("s1", ["synthpop"]), ("s2", ["new wave"])), wd.path)
+    n = by_label(g)
+    pair = {n["synthpop"]["id"], n["new wave"]["id"]}
+    assert [e["kind"] for e in g["edges"] if {e["source"], e["target"]} == pair] == ["related"]
+    solo = gg.graph(songs(("s1", ["synthpop"])), wd.path)
+    assert not [e for e in solo["edges"] if e["kind"] == "related"]
+
+
+def test_counts_do_not_double_count(wd):
+    g = gg.graph(songs(("s1", ["dark synth", "chillsynth"]), ("s2", ["dark synth"]), ("s3", ["house music"])), wd.path)
+    n = by_label(g)
+    assert n["dark synth"]["count"] == 2 and n["chillsynth"]["count"] == 1
+    assert n["synthpop"]["count"] == 2 and n["synthpop"]["ownCount"] == 0
+    assert n["electronic music"]["count"] == 3
+    assert n["pop music"]["count"] == 2
+
+
+def test_cycle_is_broken(wd):
+    g = gg.graph(songs(("s1", ["a-genre"])), wd.path)
+    ids = {n["id"]: n["parents"] for n in g["nodes"]}
+    assert len(ids) == 3
+
+    def walk(i, path):
+        assert i not in path
+        for p in ids[i]:
+            walk(p, path | {i})
+
+    for i in ids:
+        walk(i, frozenset())
+
+
+def test_unresolved_tag_is_a_loose_node(wd):
+    g = gg.graph(songs(("s1", ["zzz nothing"]), ("s2", ["synthpop"])), wd.path)
+    z = by_label(g)["zzz nothing"]
+    assert z["qid"] is None and z["family"] == "Other" and z["parents"] == [] and z["count"] == 1
+    assert g["ontology"] is True
+
+
+def test_alias_resolves_and_non_genre_is_rejected(wd):
+    g = gg.graph(songs(("s1", ["house"])), wd.path)
+    assert by_label(g)["house music"]["qid"] == "Q301"
+    assert "house" not in by_label(g)
+
+
+def test_levels_and_node_cap(wd, monkeypatch):
+    g = gg.graph(songs(("s1", ["lvl0"])), wd.path)
+    assert sorted(n["label"] for n in g["nodes"]) == ["lvl0", "lvl1", "lvl2", "lvl3", "lvl4"]
+    monkeypatch.setattr(gg, "MAX_NODES", 3)
+    g = gg.graph(songs(("s1", ["lvl0"])), wd.path)
+    assert sorted(n["label"] for n in g["nodes"]) == ["lvl0", "lvl1", "lvl2"]
+    ids = {n["id"] for n in g["nodes"]}
+    assert all(e["source"] in ids and e["target"] in ids for e in g["edges"])
+    assert all(p in ids for n in g["nodes"] for p in n["parents"])
+
+
+def test_cache_reuse_offline_and_persistence(wd, monkeypatch):
+    first = gg.graph(songs(("s1", ["synthpop"])), wd.path)
+    assert wd.calls
+    n = len(wd.calls)
+    assert gg.graph(songs(("s1", ["synthpop"])), wd.path) == first
+    assert len(wd.calls) == n
+    gg._mem.clear()
+    assert wd.path.exists()
+    monkeypatch.setattr(gg, "_api", boom)
+    assert gg.graph(songs(("s1", ["synthpop"])), wd.path) == first
+
+
+def test_stale_entries_refresh_but_failure_keeps_cache(wd, monkeypatch):
+    first = gg.graph(songs(("s1", ["synthpop"])), wd.path)
+    real = time.time
+    monkeypatch.setattr(gg.time, "time", lambda: real() + gg.TTL + 10)
+    monkeypatch.setattr(gg, "_api", boom)
+    again = gg.graph(songs(("s1", ["synthpop"])), wd.path)
+    assert (again["nodes"], again["edges"]) == (first["nodes"], first["edges"])
+    assert again["pending"] is False
+
+
+def test_network_failure_degrades_to_loose_nodes(wd, monkeypatch):
+    monkeypatch.setattr(gg, "_api", boom)
+    g = gg.graph(songs(("s1", ["synthpop"])), wd.path)
+    assert [n["qid"] for n in g["nodes"]] == [None] and g["ontology"] is False and g["pending"] is False
+
+
+def test_pending_while_fetching_in_background(wd, monkeypatch):
+    started = []
+
+    class FakeThread:
+        def __init__(self, target, args, daemon):
+            started.append((target, args))
+
+        def start(self):
+            pass
+
+    monkeypatch.setattr(gg, "INLINE", False)
+    monkeypatch.setattr(gg.threading, "Thread", FakeThread)
+    g = gg.graph(songs(("s1", ["synthpop"])), wd.path)
+    assert started and g["pending"] is True and g["ontology"] is False
+    gg.graph(songs(("s1", ["synthpop"])), wd.path)
+    assert len(started) == 1
+
+
+def test_batches_of_fifty(wd):
+    names = [f"Q{9000 + i}" for i in range(120)]
+    for q in names:
+        WD[q] = (f"g{q}", True, [], [])
+    try:
+        gg._fetch_entities(gg.load_cache(wd.path), names)
+        sizes = [len(c["ids"].split("|")) for c in wd.calls if c["action"] == "wbgetentities"]
+        assert sizes == [50, 50, 20]
+    finally:
+        for q in names:
+            del WD[q]
+
+
+def test_endpoint_isolated_per_user_and_cache_has_no_user_data(multi, wd, monkeypatch, tmp_path):
+    a, b = who(multi, ALICE), who(multi, BOB)
+    body = {"url": f"https://youtu.be/{VID}", "metadata": {"title": "Private Title"}, "tags": ["genre:synthpop"]}
+    assert multi.post("/songs", json=body, headers=a).status_code == 202
+    ga = multi.get("/genres/graph", headers=a).json()
+    gb = multi.get("/genres/graph", headers=b).json()
+    assert {n["label"] for n in ga["nodes"]} >= {"synthpop", "electronic music"}
+    assert gb["nodes"] == [] and gb["edges"] == []
+    cache_text = (tmp_path / "genre-ontology.json").read_text(encoding="utf-8")
+    assert VID not in cache_text and "Private Title" not in cache_text and "alice" not in cache_text
+    assert multi.get("/genres/graph").status_code == 401
+
+
+def test_nodes_carry_the_user_tags_that_resolve_to_them(wd):
+    g = gg.graph(songs(("s1", ["House"]), ("s2", ["house music"])), wd.path)
+    n = by_label(g)
+    assert n["house music"]["tags"] == ["house", "house music"]
+    assert n["electronic music"]["tags"] == []

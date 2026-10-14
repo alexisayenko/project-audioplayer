@@ -21,7 +21,9 @@ from pydantic import BaseModel, Field
 
 from . import bpm as bpm_detect
 from . import jobs, limits, oauth, session, users
+from . import genre_graph
 from . import extractor, genre_lookup, genres, gitstore, library, metadata, urlclean, wiki_lookup
+from . import discogs_lookup, identify, titleclean
 from .problems import Problem
 
 DOWNLOAD_DIR = Path(os.environ.get("AUDIO_DOWNLOAD_DIR", "downloads"))
@@ -420,6 +422,7 @@ class SongMeta(BaseModel):
     wikipedia_song: str | None = None
     wikipedia_artist: str | None = None
     musicbrainz_url: str | None = None
+    discogs_url: str | None = None
 
 
 class CreateSongRequest(BaseModel):
@@ -427,6 +430,7 @@ class CreateSongRequest(BaseModel):
     audio: bool = True
     metadata: SongMeta = SongMeta()
     tags: list[str] = []
+    keep_title: bool = False
 
 
 class PatchSongRequest(SongMeta):
@@ -590,9 +594,19 @@ def get_genres(user: dict[str, Any] = Depends(require_token)):
     return {"genres": [*used, *rest][:GENRES_MAX]}
 
 
+@app.get("/genres/graph")
+def get_genre_graph(user: dict[str, Any] = Depends(require_token)):
+    return genre_graph.graph(_load(user["uid"]), DATA_DIR / "genre-ontology.json")
+
+
 class WikipediaLookupRequest(BaseModel):
     wikipedia_song: str | None = None
     wikipedia_artist: str | None = None
+
+
+def _clean_preview_title(meta: dict[str, Any]) -> dict[str, str]:
+    raw = str(meta.get("title") or "")
+    return {"title": titleclean.clean(raw), "title_raw": raw}
 
 
 @app.post("/preview", responses={502: {"description": "Upstream failure"}})
@@ -609,12 +623,17 @@ async def preview(req: PreviewRequest, user: dict[str, Any] = Depends(require_to
             meta = await run_in_threadpool(extractor.preview, vid)
         except Exception as exc:
             raise HTTPException(status_code=502, detail=f"preview failed: {_short(exc)}") from exc
+    meta.update(_clean_preview_title(meta))
     found = await run_in_threadpool(genre_lookup.suggest_tags, meta.get("artist", ""), meta.get("title", ""))
     wiki = await run_in_threadpool(wiki_lookup.suggest, meta.get("artist", ""), meta.get("title", ""))
-    meta["tags"] = metadata.finalize_tags([*meta.get("tags", []), *found, *wiki["tags"]], wiki.get("song_genres"))
+    disc = await run_in_threadpool(discogs_lookup.suggest, meta.get("artist", ""), meta.get("title", ""))
+    disc_genres = [t for t in disc["tags"] if t.startswith("genre:")]
+    disc_rest = [t for t in disc["tags"] if not t.startswith("genre:")]
+    meta["tags"] = metadata.finalize_tags([*meta.get("tags", []), *disc_genres, *found, *wiki["tags"], *disc_rest], wiki.get("song_genres"))
     meta["wikipedia_song"] = wiki["wikipedia_song"]
     meta["wikipedia_artist"] = wiki["wikipedia_artist"]
-    meta["suggested_year"] = wiki["year"]
+    meta["discogs_url"] = disc["url"]
+    meta["suggested_year"] = wiki["year"] or disc["year"]
     meta["remixer"] = meta.get("remixer")
     if meta.get("year") is None:
         meta["year"] = wiki["year"]
@@ -658,6 +677,29 @@ async def lookup_wikipedia(req: WikipediaLookupRequest):
     return {"tags": metadata.finalize_tags(found["tags"], found.get("song_genres")), "year": found["year"]}
 
 
+def _identify_song(uid: str, vid: str) -> dict[str, Any] | None:
+    song = next((s for s in _load(uid) if s["id"] == vid), None)
+    if song is None or not library.has_file(song) or not (audio_dir(uid) / library.file_name(song)).is_file():
+        return None
+    return song
+
+
+def _auto_identify(uid: str, vid: str) -> None:
+    """Once after a download: identify in the background. Not an add (no hourly-limit charge); skipped when no source is configured."""
+    try:
+        if not identify.configured():
+            return
+
+        def run() -> None:
+            song = _identify_song(uid, vid)
+            if song is not None:
+                identify.run_cached(uid, vid, song, audio_dir(uid) / library.file_name(song))
+
+        SCHED.submit(uid, True, run, lambda: None)
+    except Exception as exc:
+        log.warning("auto identify skipped for %s: %s", vid, type(exc).__name__)
+
+
 def _drop_partial(out: Path | None, vid: str) -> None:
     if out is not None:
         (out / f"{vid}.m4a").unlink(missing_ok=True)
@@ -668,8 +710,7 @@ def _run_download(uid: str, owner: bool, vid: str, meta: dict[str, Any], tags: l
     job = JOBS[(uid, vid)]
     out: Path | None = None
 
-    def progress(p: float) -> None:
-        job["progress"] = round(p, 3)
+    progress = jobs.Tracker(job)
 
     try:
         out = audio_dir(uid)
@@ -698,6 +739,7 @@ def _run_download(uid: str, owner: bool, vid: str, meta: dict[str, Any], tags: l
             "wikipedia_song": wiki_lookup.clean_link(meta.get("wikipedia_song")),
             "wikipedia_artist": wiki_lookup.clean_link(meta.get("wikipedia_artist")),
             "musicbrainz_url": genre_lookup.clean_recording_url(meta.get("musicbrainz_url")),
+            "discogs_url": discogs_lookup.clean_url(meta.get("discogs_url")),
             **({"source": "soundcloud"} if extractor.source_of(vid) == "soundcloud" else {}),
             "source_url": extractor.watch_url(vid, source_url),
             "sources": [{"source": extractor.source_of(vid), "id": vid, "url": extractor.watch_url(vid, source_url)}],
@@ -711,6 +753,7 @@ def _run_download(uid: str, owner: bool, vid: str, meta: dict[str, Any], tags: l
             songs = [s for s in library.load(library_path(uid)) if s["id"] != vid]
             _save(uid, songs + [song])
         job.update(status="done", progress=1.0)
+        _auto_identify(uid, vid)
     except extractor.PreviewOnly as exc:
         _drop_partial(out, vid)
         job.update(status="error", error=str(exc), code="preview_only")
@@ -758,6 +801,8 @@ def create_song(req: CreateSongRequest, user: dict[str, Any] = Depends(require_t
         k: (v.strip() if isinstance(v, str) else v) or None
         for k, v in req.metadata.model_dump().items()
     }
+    if meta.get("title") and not req.keep_title:
+        meta["title"] = titleclean.clean(meta["title"])
     if not req.audio:
         return _add_metadata_only(uid, vid, link, meta, library.clean_tags(req.tags))
 
@@ -799,6 +844,7 @@ def _add_metadata_only(uid: str, vid: str, link: _Resolved, meta: dict[str, Any]
             "wikipedia_song": wiki_lookup.clean_link(meta.get("wikipedia_song")),
             "wikipedia_artist": wiki_lookup.clean_link(meta.get("wikipedia_artist")),
             "musicbrainz_url": genre_lookup.clean_recording_url(meta.get("musicbrainz_url")),
+            "discogs_url": discogs_lookup.clean_url(meta.get("discogs_url")),
             **({"source": "soundcloud"} if extractor.source_of(vid) == "soundcloud" else {}),
             "source_url": url,
             "sources": [{"source": extractor.source_of(vid), "id": vid, "url": url}],
@@ -826,8 +872,7 @@ def _run_fetch_audio(uid: str, owner: bool, vid: str, source_url: str | None) ->
     job = JOBS[(uid, vid)]
     out: Path | None = None
 
-    def progress(p: float) -> None:
-        job["progress"] = round(p, 3)
+    progress = jobs.Tracker(job)
 
     try:
         out = audio_dir(uid)
@@ -860,6 +905,7 @@ def _run_fetch_audio(uid: str, owner: bool, vid: str, source_url: str | None) ->
             song["updated_at"] = library.now_utc()
             _save(uid, songs)
         job.update(status="done", progress=1.0)
+        _auto_identify(uid, vid)
     except extractor.PreviewOnly as exc:
         _drop_partial(out, vid)
         job.update(status="error", error=str(exc), code="preview_only")
@@ -907,9 +953,9 @@ def song_status(video_id: str, user: dict[str, Any] = Depends(require_token)):
     uid = user["uid"]
     job = JOBS.get((uid, video_id))
     if job:
-        return {"id": video_id, **job}
+        return {"id": video_id, **jobs.public(job)}
     if any(s["id"] == video_id for s in _load(uid)):
-        return {"id": video_id, "status": "done", "progress": 1.0, "error": None}
+        return {"id": video_id, **jobs.public({"status": "done", "progress": 1.0, "error": None})}
     raise HTTPException(status_code=404, detail=_UNKNOWN_SONG)
 
 
@@ -936,6 +982,8 @@ def patch_song(video_id: str, req: PatchSongRequest, user: dict[str, Any] = Depe
                 updated[key] = wiki_lookup.clean_link(changes[key])
         if "musicbrainz_url" in changes:
             updated["musicbrainz_url"] = genre_lookup.clean_recording_url(changes["musicbrainz_url"])
+        if "discogs_url" in changes:
+            updated["discogs_url"] = discogs_lookup.clean_url(changes["discogs_url"])
         if changes.get("tags") is not None:
             updated["tags"] = library.clean_tags(changes["tags"])
             _reject_unknown_country(updated["tags"], library.clean_tags(song.get("tags") or []))
@@ -962,6 +1010,29 @@ async def detect_song_bpm(video_id: str, user: dict[str, Any] = Depends(require_
     if value is None:
         raise HTTPException(status_code=422, detail="could not detect BPM")
     return await run_in_threadpool(_store_bpm, uid, video_id, value)
+
+
+@app.get("/songs/{video_id}/identify", responses={404: {"description": "Not found"}, 422: {"description": "Unprocessable"}})
+def get_identify(video_id: str, user: dict[str, Any] = Depends(require_token)):
+    """The last identification of the song (kept 24 h in memory) or `status: "not_run"`; `available` says which sources are configured."""
+    _vid(video_id)
+    uid = user["uid"]
+    if not any(s["id"] == video_id for s in _load(uid)):
+        raise HTTPException(status_code=404, detail=_UNKNOWN_SONG)
+    return identify.recall(uid, video_id) or {"status": "not_run", "available": identify.available()}
+
+
+@app.post("/songs/{video_id}/identify", responses={404: {"description": "Not found"}, 422: {"description": "Unprocessable"}})
+async def identify_song(video_id: str, user: dict[str, Any] = Depends(require_token)):
+    """Identify a song whose audio is on the server (fingerprint, MusicBrainz, Discogs); suggestions only, nothing is stored. Not an add: no hourly-limit charge."""
+    _vid(video_id)
+    uid = user["uid"]
+    if not any(s["id"] == video_id for s in _load(uid)):
+        raise HTTPException(status_code=404, detail=_UNKNOWN_SONG)
+    song = _identify_song(uid, video_id)
+    if song is None:
+        raise HTTPException(status_code=404, detail=_NOT_DOWNLOADED)
+    return await run_in_threadpool(identify.run_cached, uid, video_id, song, audio_dir(uid) / library.file_name(song))
 
 
 def _store_bpm(uid: str, video_id: str, value: float) -> dict[str, Any]:
@@ -993,6 +1064,7 @@ def delete_song(video_id: str, user: dict[str, Any] = Depends(require_token)):
             except MusicRootUnavailable:
                 pass
         JOBS.pop((uid, video_id), None)
+        identify.forget(uid, video_id)
 
 
 @app.delete("/songs/{video_id}/audio", status_code=204, responses={404: {"description": "Not found"}, 422: {"description": "Unprocessable"}})

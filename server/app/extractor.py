@@ -202,10 +202,16 @@ def download_audio(video_id: str, out_dir: Path, progress=None, source_url: str 
     out_dir.mkdir(parents=True, exist_ok=True)
 
     def hook(d: dict[str, Any]) -> None:
-        if progress and d.get("status") == "downloading":
+        if not progress:
+            return
+        if d.get("status") == "downloading":
+            if hasattr(progress, "detail"):
+                progress.detail(d.get("speed"), d.get("eta"))
             total = d.get("total_bytes") or d.get("total_bytes_estimate")
             if total:
                 progress(min(d.get("downloaded_bytes", 0) / total, 1.0))
+        elif d.get("status") == "finished" and hasattr(progress, "converting"):
+            progress.converting()
 
     if source_of(video_id) == "soundcloud":
         return _download_soundcloud(video_id, out_dir, hook, source_url)

@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from . import countrycodes, genre_lookup, langcodes, urlclean, wiki_lookup
+from . import countrycodes, discogs_lookup, genre_lookup, langcodes, urlclean, wiki_lookup
 
 LOCK = threading.RLock()
 
@@ -114,6 +114,8 @@ def normalize_song(song: dict[str, Any]) -> dict[str, Any]:
         s[key] = wiki_lookup.clean_link(s.get(key))
     if "musicbrainz_url" in s:
         s["musicbrainz_url"] = genre_lookup.clean_recording_url(s["musicbrainz_url"])
+    if "discogs_url" in s:
+        s["discogs_url"] = discogs_lookup.clean_url(s["discogs_url"])
     s.pop("original", None)
     if "remixer" in s:
         v = s["remixer"].strip() if isinstance(s["remixer"], str) else ""

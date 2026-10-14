@@ -1,0 +1,42 @@
+{
+  "families": [
+    "Electronic", "Rock", "Pop", "Hip Hop", "Jazz", "Funk / Soul", "Classical", "Reggae", "Latin",
+    "Blues", "Folk, World, & Country", "Stage & Screen", "Non-Music", "Children's", "Brass & Military"
+  ],
+  "qids": {
+    "Q9778": "Electronic", "Q11399": "Rock", "Q37073": "Pop", "Q11401": "Hip Hop", "Q8341": "Jazz",
+    "Q164444": "Funk / Soul", "Q131272": "Funk / Soul", "Q9730": "Classical", "Q9794": "Reggae",
+    "Q9759": "Blues", "Q43343": "Folk, World, & Country", "Q83440": "Folk, World, & Country",
+    "Q38848": "Rock"
+  },
+  "labels": {
+    "electronic music": "Electronic", "electronic dance music": "Electronic", "edm": "Electronic",
+    "house music": "Electronic", "techno": "Electronic", "trance music": "Electronic", "trance": "Electronic",
+    "drum and bass": "Electronic", "dubstep": "Electronic", "ambient music": "Electronic", "ambient": "Electronic",
+    "synth-pop": "Electronic", "synthpop": "Electronic", "electro": "Electronic", "idm": "Electronic",
+    "downtempo": "Electronic", "breakbeat": "Electronic", "hardstyle": "Electronic", "eurodance": "Electronic",
+    "synthwave": "Electronic", "industrial music": "Electronic", "new wave": "Electronic", "chillout": "Electronic",
+    "rock music": "Rock", "rock": "Rock", "heavy metal": "Rock", "metal": "Rock", "punk rock": "Rock",
+    "punk": "Rock", "hard rock": "Rock", "alternative rock": "Rock", "indie rock": "Rock", "progressive rock": "Rock",
+    "psychedelic rock": "Rock", "pop rock": "Rock", "grunge": "Rock", "post-punk": "Rock", "hardcore punk": "Rock",
+    "pop music": "Pop", "pop": "Pop", "dance-pop": "Pop", "k-pop": "Pop", "j-pop": "Pop", "teen pop": "Pop",
+    "hip hop": "Hip Hop", "hip-hop": "Hip Hop", "hip hop music": "Hip Hop", "rap": "Hip Hop", "trap": "Hip Hop",
+    "jazz": "Jazz", "bebop": "Jazz", "swing": "Jazz", "jazz fusion": "Jazz", "smooth jazz": "Jazz",
+    "funk": "Funk / Soul", "soul music": "Funk / Soul", "soul": "Funk / Soul", "disco": "Funk / Soul",
+    "rhythm and blues": "Funk / Soul", "r&b": "Funk / Soul", "contemporary r&b": "Funk / Soul", "gospel music": "Funk / Soul",
+    "classical music": "Classical", "classical": "Classical", "baroque music": "Classical", "opera": "Classical",
+    "contemporary classical music": "Classical", "chamber music": "Classical", "orchestral music": "Classical",
+    "reggae": "Reggae", "ska": "Reggae", "dub": "Reggae", "dub music": "Reggae", "dancehall": "Reggae", "rocksteady": "Reggae",
+    "latin music": "Latin", "salsa": "Latin", "bossa nova": "Latin", "samba": "Latin", "reggaeton": "Latin",
+    "bachata": "Latin", "cumbia": "Latin", "tango": "Latin", "merengue": "Latin", "latin pop": "Latin",
+    "blues": "Blues", "blues rock": "Blues", "delta blues": "Blues", "chicago blues": "Blues", "electric blues": "Blues",
+    "folk music": "Folk, World, & Country", "country music": "Folk, World, & Country", "country": "Folk, World, & Country",
+    "world music": "Folk, World, & Country", "bluegrass": "Folk, World, & Country", "folk rock": "Folk, World, & Country",
+    "celtic music": "Folk, World, & Country", "americana": "Folk, World, & Country", "afrobeat": "Folk, World, & Country",
+    "film score": "Stage & Screen", "soundtrack": "Stage & Screen", "film music": "Stage & Screen", "video game music": "Stage & Screen",
+    "musical theatre": "Stage & Screen", "show tune": "Stage & Screen",
+    "spoken word": "Non-Music", "comedy": "Non-Music", "field recording": "Non-Music", "audiobook": "Non-Music",
+    "children's music": "Children's", "lullaby": "Children's", "nursery rhyme": "Children's",
+    "march": "Brass & Military", "military music": "Brass & Military", "brass band": "Brass & Military", "marching band": "Brass & Military"
+  }
+}
