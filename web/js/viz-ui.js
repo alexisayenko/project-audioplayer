@@ -1,5 +1,7 @@
 import * as audioGraph from './audio-graph.js';
 import { createViz } from './viz-canvas.js';
+import { createLookahead } from './viz-lookahead.js';
+import { barCount } from './viz-spectrum.js';
 import { createFullscreen, isVizKey, isVizModeKey } from './viz-fullscreen.js';
 import { createModeSwitch } from './viz-switch.js';
 import { availableModes, nextMode, modeLabel } from './viz-modes.js';
@@ -99,8 +101,14 @@ export function initVisualizer({
     button.title = REDUCED_TIP;
   }
 
-  const bgViz = createViz({ canvas: $('viz-bg'), mode: 'background', deps: vizDeps(audio, graph, { getAnchor: coverAnchor, ...deps }) });
-  const fullViz = createViz({ canvas: $('viz-full-canvas'), mode: 'full', deps: vizDeps(audio, graph, deps) });
+  const lookahead = deps.lookahead ?? createLookahead({
+    audio,
+    win,
+    getSampleRate: () => graph.getContext?.()?.sampleRate || 44100,
+    getBands: () => barCount($('viz-bg').clientWidth || win.innerWidth || 1200),
+  });
+  const bgViz = createViz({ canvas: $('viz-bg'), mode: 'background', deps: vizDeps(audio, graph, { getAnchor: coverAnchor, lookahead, ...deps }) });
+  const fullViz = createViz({ canvas: $('viz-full-canvas'), mode: 'full', deps: vizDeps(audio, graph, { lookahead, ...deps }) });
   const refreshAll = () => { bgViz.refresh(); fullViz.refresh(); };
   graph.onState?.(refreshAll);
   const modes = availableModes(caps);

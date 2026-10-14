@@ -1,18 +1,29 @@
 export const QUALITY = [
-  { rows: 48, cols: 72, bloom: false, smoke: 0, passes: 1 },
-  { rows: 80, cols: 120, bloom: false, smoke: 2, passes: 3 },
-  { rows: 104, cols: 160, bloom: true, smoke: 3, passes: 3 },
+  { rows: 40, cols: 36, bloom: false, smoke: 0, passes: 1, soft: 0 },
+  { rows: 64, cols: 52, bloom: false, smoke: 2, passes: 1, soft: 1 },
+  { rows: 88, cols: 72, bloom: true, smoke: 3, passes: 1, soft: 2 },
 ];
 export const HISTORY_BINS = 64;
 export const ROWS_PER_SECOND = 16;
 export const SHAKE_MAX = 0.03;
-export const GRID_DEPTH = 64;
-export const GRID_CURVE = 3;
+export const SHAKE_ENABLED = false;
+export const GRID_DEPTH = 40;
 export const CALM_DEPTH = 12;
-export const GRID_W0 = 2.2;
-export const GRID_W1 = 2;
-export const EYE_HEIGHT = 3.43;
-export const DEFAULT_PITCH_DEG = -22.2;
+export const WIDTH_PER_ASPECT = 3.2;
+export const WORLD_SPEED = 5.5;
+export const LOOK_S = 5;
+export const NOW_Z = GRID_DEPTH - LOOK_S * WORLD_SPEED;
+export const NOW_FALLOFF_S = 0.3;
+export const NOW_GAIN = 1.6;
+export const AMP_BASE = 1;
+export const AMP_GAIN = 1.9;
+export const AMP_MAX = AMP_BASE + AMP_GAIN;
+export const CROSS_H0 = 0.4;
+export const CROSS_H1 = 0.6;
+export const crossAlpha = (worldHeight) => smoothstep(CROSS_H0, CROSS_H1, worldHeight);
+export const LIVE_CAP = Math.ceil((GRID_DEPTH / WORLD_SPEED) * ROWS_PER_SECOND) + 8;
+export const EYE_HEIGHT = 2;
+export const DEFAULT_PITCH_DEG = -10;
 export const CAM_LIMITS = { eye: [0.2, 4], pitch: [-30, 15] };
 export const NEAR_CALM = 0.35;
 export const RAMP = [
@@ -113,13 +124,103 @@ export function camParse(text) {
 export const defaultPitchDeg = () => DEFAULT_PITCH_DEG;
 
 export function rowZ(row, rows) {
-  const u = row / Math.max(1, rows - 1);
-  return (GRID_DEPTH * (Math.exp(GRID_CURVE * u) - 1)) / (Math.exp(GRID_CURVE) - 1);
+  return (GRID_DEPTH * row) / Math.max(1, rows - 1);
 }
 
-export const widthScale = (aspect) => Math.min(1.5, Math.max(0.3, (Number.isFinite(aspect) ? aspect : 1.78) / 2.4));
+export function rowLayout(rows) {
+  const dz = GRID_DEPTH / Math.max(1, rows - 1);
+  return { dz, dt: dz / WORLD_SPEED, nowRow: Math.round(NOW_Z / dz) };
+}
 
-export const halfWidthAt = (z, aspect) => (GRID_W0 + GRID_W1 * Math.max(0, z)) * widthScale(aspect);
+export const nowZOf = (rows) => {
+  const l = rowLayout(rows);
+  return l.nowRow * l.dz;
+};
+
+export function createFrame(rows, bins = HISTORY_BINS) {
+  const data = new Float32Array(rows * bins);
+  return { rows, bins, data, row: (r) => data.subarray(r * bins, (r + 1) * bins) };
+}
+
+export function createSeries(cap = LIVE_CAP, bins = HISTORY_BINS) {
+  const times = new Float64Array(cap);
+  const data = new Float32Array(cap * bins);
+  let count = 0;
+  let head = 0;
+  const phys = (i) => (head - count + i + cap * 2) % cap;
+  return {
+    bins,
+    get count() { return count; },
+    push(spectrum, t) {
+      times[head] = t;
+      data.set(resample(spectrum, bins), head * bins);
+      head = (head + 1) % cap;
+      count = Math.min(cap, count + 1);
+    },
+    sample(t, out) {
+      if (!count) { out.fill(0); return out; }
+      const last = phys(count - 1);
+      if (t >= times[last]) { out.set(data.subarray(last * bins, (last + 1) * bins)); return out; }
+      if (t < times[phys(0)]) { out.fill(0); return out; }
+      let lo = 0;
+      let hi = count - 1;
+      while (hi - lo > 1) {
+        const mid = (lo + hi) >> 1;
+        if (times[phys(mid)] <= t) lo = mid; else hi = mid;
+      }
+      const a = phys(lo);
+      const b = phys(hi);
+      const f = (t - times[a]) / Math.max(1e-6, times[b] - times[a]);
+      for (let j = 0; j < bins; j += 1) out[j] = data[a * bins + j] * (1 - f) + data[b * bins + j] * f;
+      return out;
+    },
+    clear() { count = 0; head = 0; },
+  };
+}
+
+export function sampleTimeline(tl, t, out) {
+  const bins = tl.bins;
+  const x = t * tl.rps;
+  const last = Math.min(tl.total, tl.done) - 1;
+  if (!(x >= 0) || x > last) { out.fill(0); return out; }
+  const i = Math.floor(x);
+  const f = x - i;
+  const a = i * bins;
+  const b = Math.min(last, i + 1) * bins;
+  const d = tl.data;
+  for (let j = 0; j < bins; j += 1) out[j] = (d[a + j] * (1 - f) + d[b + j] * f) / 255;
+  return out;
+}
+
+export function fillTimeFrame(frame, tNow, sampler, nowRow) {
+  const { dt } = rowLayout(frame.rows);
+  const pos = tNow / dt;
+  const base = Math.floor(pos);
+  for (let r = 0; r < frame.rows; r += 1) sampler((base + r - nowRow) * dt, frame.row(r));
+  return { base, frac: pos - base };
+}
+
+export function fillLookFrame(frame, timeline, tNow) {
+  return fillTimeFrame(frame, tNow, (t, out) => sampleTimeline(timeline, t, out), rowLayout(frame.rows).nowRow);
+}
+
+export function fillLiveFrame(frame, series, tNow) {
+  const { nowRow } = rowLayout(frame.rows);
+  return fillTimeFrame(frame, tNow, (t, out) => (t > tNow ? out.fill(0) : series.sample(t, out)), nowRow);
+}
+
+export function blendFrames(a, b, k) {
+  const out = a.data;
+  const o = b.data;
+  for (let i = 0; i < out.length; i += 1) out[i] += (o[i] - out[i]) * k;
+  return a;
+}
+
+export const ridgeZ = (rows, tRidge, tNow) => nowZOf(rows) + (tRidge - tNow) * WORLD_SPEED;
+
+export const gridHalfWidth = (aspect) => WIDTH_PER_ASPECT * Math.min(3.6, Math.max(0.4, Number.isFinite(aspect) ? aspect : 1.78));
+
+export const halfWidthAt = (z, aspect) => gridHalfWidth(aspect);
 
 export function nearEnvelope(depthFrac) {
   const t = smoothstep(0, NEAR_CALM, clamp01(depthFrac));
@@ -153,13 +254,14 @@ export function fillHeights(history, cols, t, out, opts) {
   const bins = history.bins;
   for (let r = 0; r < rows; r += 1) {
     const src = history.row(r);
+    const amp = opts?.bakeAmp ? (AMP_BASE + AMP_GAIN * energyOf(src)) / AMP_MAX : 1;
     for (let c = 0; c < cols; c += 1) {
       const x = cols <= 1 ? 0 : (c / (cols - 1)) * 2 - 1;
       const pos = columnBin(c, cols, bins);
       const a = Math.floor(pos);
       const b = Math.min(bins - 1, a + 1);
       const v = src[a] * (1 - (pos - a)) + src[b] * (pos - a);
-      out[r * cols + c] = heightAt(v, x, r, t, opts);
+      out[r * cols + c] = heightAt(v, x, r, t, opts) * amp;
     }
   }
   if (!opts || opts.smooth !== 0) smoothHeights(out, rows, cols, opts?.smooth ?? 2);
@@ -202,6 +304,40 @@ function lineIndices(rows, cols, depth) {
 
 export const buildDepthIndices = (rows, cols) => lineIndices(rows, cols, true);
 export const buildCrossIndices = (rows, cols) => lineIndices(rows, cols, false);
+
+export function buildRibbonVertices(rows, cols) {
+  const base = buildGridVertices(rows, cols);
+  const n = rows * cols;
+  const xz = new Float32Array(n * 4);
+  const side = new Float32Array(n * 2);
+  for (let i = 0; i < n; i += 1) {
+    xz[i * 4] = base[i * 2];
+    xz[i * 4 + 1] = base[i * 2 + 1];
+    xz[i * 4 + 2] = base[i * 2];
+    xz[i * 4 + 3] = base[i * 2 + 1];
+    side[i * 2] = -1;
+    side[i * 2 + 1] = 1;
+  }
+  return { xz, side };
+}
+
+export function buildRibbonIndices(rows, cols, depth) {
+  const n = depth ? cols * (rows - 1) : rows * (cols - 1);
+  const out = rows * cols * 2 > 65535 ? new Uint32Array(n * 6) : new Uint16Array(n * 6);
+  let k = 0;
+  const quad = (i, j) => {
+    out[k++] = 2 * i; out[k++] = 2 * i + 1; out[k++] = 2 * j;
+    out[k++] = 2 * i + 1; out[k++] = 2 * j + 1; out[k++] = 2 * j;
+  };
+  for (let r = 0; r < rows; r += 1) {
+    for (let c = 0; c < cols; c += 1) {
+      const i = r * cols + c;
+      if (depth && r < rows - 1) quad(i, i + cols);
+      if (!depth && c < cols - 1) quad(i, i + 1);
+    }
+  }
+  return out;
+}
 
 export function buildLineIndices(rows, cols) {
   const d = buildDepthIndices(rows, cols);

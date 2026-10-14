@@ -1,7 +1,8 @@
 import {
-  QUALITY, HISTORY_BINS, STAR_VISIBLE, buildDepthIndices, buildCrossIndices, energyOf, easeEnergy, GRID_DEPTH, GRID_CURVE, CALM_DEPTH, GRID_W0, GRID_W1, widthScale, RAMP, qualityFor, createHistory, fillHeights, buildGridVertices,
+  QUALITY, HISTORY_BINS, STAR_VISIBLE, buildDepthIndices, buildCrossIndices, buildRibbonVertices, buildRibbonIndices, energyOf, easeEnergy, GRID_DEPTH, WORLD_SPEED, NOW_FALLOFF_S, NOW_GAIN, CROSS_H0, CROSS_H1, AMP_MAX, SHAKE_ENABLED,
+  gridHalfWidth, RAMP, qualityFor, createFrame, createSeries, fillHeights, buildGridVertices, rowLayout, nowZOf, fillLiveFrame, fillLookFrame, blendFrames,
   gridCounts, makeStars, cameraAt, horizonY, horizonGlow, mat4Perspective, mat4LookAt, mat4Multiply,
-  makeRowClock, clamp01,
+  makeRowClock, clamp01, ROWS_PER_SECOND,
 } from './viz-terrain-math.js';
 import { getCam } from './viz-cam-debug.js';
 
@@ -12,20 +13,34 @@ const NEAR = 0.3;
 const FAR = 160;
 const BLOOM_SCALE = 0.5;
 const BASS_BINS = 6;
+const LOOK_BLEND_S = 1;
+const SLOW_S = 1.2;
+const LINE_PX = [0, 1.1, 1.5];
 
 const GRID_VS = `
 precision mediump float;
 attribute vec2 a_p;
 attribute float a_h;
+attribute float a_s;
 uniform mat4 u_vp;
-uniform float u_w0, u_w1, u_rows, u_depth, u_curve, u_calm, u_scroll, u_amp, u_pt, u_dpr, u_mode, u_time, u_off, u_viewW, u_energy;
+uniform float u_hw, u_depth, u_dz, u_amp, u_pt, u_dpr, u_mode, u_viewW, u_viewH, u_scroll, u_nowZ, u_nowW, u_base, u_lw, u_axis, u_soft, u_cols;
 varying float v_h;
 varying float v_fog;
 varying float v_near;
 varying float v_end;
+varying float v_now;
+varying float v_side;
+varying float v_bead;
+varying float v_dof;
+varying float v_wh;
 void main() {
   v_h = a_h;
+  v_wh = 0.0;
   v_end = 1.0;
+  v_now = 0.0;
+  v_side = 0.0;
+  v_bead = 1.0;
+  v_dof = 0.0;
   if (u_mode > 3.5) {
     gl_Position = vec4(a_p, 0.999, 1.0);
     gl_PointSize = (1.0 + a_h * 1.6) * u_dpr;
@@ -33,28 +48,46 @@ void main() {
     v_near = 1.0;
     return;
   }
-  float row = a_p.y - u_scroll;
-  float z = u_depth * (exp(u_curve * row / u_rows) - 1.0) / (exp(u_curve) - 1.0);
-  float env = 0.12 + 0.88 * smoothstep(0.0, 0.35, z / u_calm);
-  vec3 pos = vec3(a_p.x * (u_w0 + u_w1 * max(z, 0.0)), a_h * u_amp * env, -z);
+  float z = (a_p.y - u_scroll) * u_dz;
+  vec3 pos = vec3(a_p.x * u_hw, a_h * u_amp, -z);
   vec4 clip = u_vp * vec4(pos, 1.0);
-  float near = clamp(3.0 / max(clip.w, 0.1), 0.0, 1.0);
-  v_fog = smoothstep(4.0, 40.0, clip.w);
-  v_end = 1.0 - smoothstep(0.55 * u_depth, 0.95 * u_depth, clip.w);
-  clip.x += u_off * near * (0.7 + 0.5 * u_energy) * 2.0 * u_dpr / u_viewW * clip.w;
+  float dn = (z - u_nowZ) / u_nowW;
+  v_now = exp(-dn * dn);
+  v_fog = smoothstep(4.0, 0.8 * u_depth, clip.w);
+  v_end = 1.0 - smoothstep(0.6 * u_depth, 1.0 * u_depth, clip.w);
   v_near = smoothstep(0.4, 2.2, clip.w);
+  if (u_soft > 0.5) {
+    float k = mod(a_p.y + u_base, 256.0);
+    float col = (a_p.x * 0.5 + 0.5) * u_cols;
+    float hv = fract(sin(col * 12.9898 + k * 78.233) * 43758.5453);
+    float hl = fract(sin(col * 3.7 + 1.3) * 9371.17);
+    float hr = fract(sin(k * 5.3 + 2.1) * 6143.7);
+    float line = u_axis < 0.5 ? hl : hr;
+    v_bead = (0.5 + 0.5 * hv) * (0.7 + 0.3 * line);
+    v_dof = max(smoothstep(5.0, 1.2, clip.w), smoothstep(0.35 * u_depth, 0.9 * u_depth, clip.w));
+    float px = u_lw * u_dpr * (0.8 + 1.4 * v_dof) * (1.0 + 0.7 * v_now) * clamp(6.0 / max(clip.w, 0.5), 0.8, 1.9);
+    v_side = a_s;
+    if (u_axis < 0.5) clip.x += a_s * px * 2.0 / u_viewW * clip.w;
+    else clip.y += a_s * px * 2.0 / u_viewH * clip.w;
+  }
+  v_wh = a_h * u_amp;
   gl_Position = clip;
-  gl_PointSize = u_pt * u_dpr * clamp(3.5 / max(clip.w, 0.1), 0.35, 2.2) * (1.0 + 2.2 * smoothstep(0.6, 1.0, a_h));
+  gl_PointSize = u_pt * u_dpr * clamp(3.5 / max(clip.w, 0.1), 0.35, 2.2) * (1.0 + 2.2 * smoothstep(0.6, 1.0, a_h)) * (1.0 + 0.8 * v_now);
 }`;
 
 const GRID_FS = `
 precision mediump float;
-uniform float u_mode, u_glow, u_energy, u_ab;
+uniform float u_mode, u_glow, u_energy, u_ab, u_soft, u_nowGain, u_crossLo, u_crossHi;
 uniform vec3 u_c0, u_c1, u_c2, u_fog;
 varying float v_h;
 varying float v_fog;
 varying float v_near;
 varying float v_end;
+varying float v_now;
+varying float v_side;
+varying float v_bead;
+varying float v_dof;
+varying float v_wh;
 vec3 ramp(float h) {
   return h < 0.45 ? mix(u_c0, u_c1, smoothstep(0.0, 0.45, h)) : mix(u_c1, u_c2, smoothstep(0.45, 1.0, h));
 }
@@ -75,9 +108,16 @@ void main() {
       float soft = 1.0 - smoothstep(0.0, 0.5, length(gl_PointCoord - 0.5));
       a = soft * soft * (0.25 * (1.0 - 0.5 * u_energy) + 1.2 * smoothstep(0.55, 1.0, v_h)) * far * lum;
     } else {
-      a = (0.07 + 0.1 * (1.0 - u_energy) + 0.85 * smoothstep(0.12, 0.6, v_h)) * far * lum * 0.8;
+      a = (0.3 + 0.55 * smoothstep(0.12, 0.6, v_h)) * smoothstep(u_crossLo, u_crossHi, v_wh) * far * lum * 0.8;
+    }
+    if (u_soft > 0.5 && u_mode != 1.0) {
+      float prof = exp(-v_side * v_side * mix(3.4, 1.5, v_dof));
+      a *= 1.3 * prof * v_bead * (1.0 - 0.45 * v_dof);
     }
     col = mix(col, u_fog, v_fog * 0.6) * (0.85 + 0.6 * u_glow * v_h) + vec3(0.5, 0.7, 1.0) * smoothstep(0.7, 1.0, v_h) * 0.3;
+    float nowK = v_now * (0.45 + 0.55 * smoothstep(0.1, 0.8, v_h));
+    a *= 1.0 + u_nowGain * nowK;
+    col = mix(col, vec3(1.0), 0.8 * nowK);
   }
   a *= v_near * v_end;
   gl_FragColor = vec4(col * a, a);
@@ -242,12 +282,17 @@ export function createTerrain(canvas, opts = {}) {
     lost: false,
     disposed: false,
     res: null,
-    history: null,
+    series: createSeries(),
+    liveFrame: null,
+    lookFrame: null,
+    lookAt: null,
+    base: 0,
     heights: null,
     clock: makeRowClock(),
     scroll: 0,
     bass: 0,
     energy: 0,
+    pulse: 0,
     lastT: null,
     time: 0,
     bloomOk: true,
@@ -268,8 +313,10 @@ export function createTerrain(canvas, opts = {}) {
     const depth = buildDepthIndices(q.rows, q.cols);
     const cross = buildCrossIndices(q.rows, q.cols);
     const counts = gridCounts(q.rows, q.cols);
-    s.history = createHistory(q.rows, HISTORY_BINS);
+    s.liveFrame = createFrame(q.rows, HISTORY_BINS);
+    s.lookFrame = createFrame(q.rows, HISTORY_BINS);
     s.heights = new Float32Array(q.rows * q.cols);
+    s.heights2 = q.soft ? new Float32Array(q.rows * q.cols * 2) : null;
     s.res.grid = {
       xz: buffer(gl.ARRAY_BUFFER, buildGridVertices(q.rows, q.cols), gl.STATIC_DRAW),
       h: buffer(gl.ARRAY_BUFFER, s.heights, gl.DYNAMIC_DRAW),
@@ -280,7 +327,23 @@ export function createTerrain(canvas, opts = {}) {
       crossCount: cross.length,
       vertices: counts.vertices,
       rows: q.rows,
+      ribbon: null,
     };
+    if (q.soft) {
+      const rv = buildRibbonVertices(q.rows, q.cols);
+      const rd = buildRibbonIndices(q.rows, q.cols, true);
+      const rc = buildRibbonIndices(q.rows, q.cols, false);
+      s.res.grid.ribbon = {
+        xz: buffer(gl.ARRAY_BUFFER, rv.xz, gl.STATIC_DRAW),
+        side: buffer(gl.ARRAY_BUFFER, rv.side, gl.STATIC_DRAW),
+        h: buffer(gl.ARRAY_BUFFER, s.heights2, gl.DYNAMIC_DRAW),
+        depth: buffer(gl.ELEMENT_ARRAY_BUFFER, rd, gl.STATIC_DRAW),
+        cross: buffer(gl.ELEMENT_ARRAY_BUFFER, rc, gl.STATIC_DRAW),
+        indexType: rd instanceof Uint32Array ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT,
+        depthCount: rd.length,
+        crossCount: rc.length,
+      };
+    }
   }
 
   function freeGrid() {
@@ -290,6 +353,7 @@ export function createTerrain(canvas, opts = {}) {
     gl.deleteBuffer(g.h);
     gl.deleteBuffer(g.depth);
     gl.deleteBuffer(g.cross);
+    if (g.ribbon) for (const k of ['xz', 'side', 'h', 'depth', 'cross']) gl.deleteBuffer(g.ribbon[k]);
     s.res.grid = null;
   }
 
@@ -324,7 +388,7 @@ export function createTerrain(canvas, opts = {}) {
 
   function init() {
     s.res = { grid: null, bloom: null };
-    s.res.grid_p = linkProgram(gl, GRID_VS, GRID_FS, ['a_p', 'a_h']);
+    s.res.grid_p = linkProgram(gl, GRID_VS, GRID_FS, ['a_p', 'a_h', 'a_s']);
     buildBg();
     s.res.post_p = linkProgram(gl, QUAD_VS, POST_FS, ['a_pos']);
     s.res.quad = buffer(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
@@ -359,25 +423,41 @@ export function createTerrain(canvas, opts = {}) {
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   }
 
+  function setSide(buf) {
+    if (buf) {
+      gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+      attrib(2, 1, 0, 0);
+    } else {
+      gl.disableVertexAttribArray(2);
+      gl.vertexAttrib1f(2, 0);
+    }
+  }
+
   function gridUniforms(p, mode, glow) {
-    const g = s.res.grid;
+    const q = QUALITY[s.level];
+    const lay = rowLayout(q.rows);
     gl.useProgram(p.prog);
     gl.uniformMatrix4fv(uni(gl, p, 'u_vp'), false, mvp);
-    const ws = widthScale(view.w / view.h);
-    gl.uniform1f(uni(gl, p, 'u_w0'), GRID_W0 * ws);
-    gl.uniform1f(uni(gl, p, 'u_w1'), GRID_W1 * ws);
-    gl.uniform1f(uni(gl, p, 'u_rows'), g.rows - 1);
-    gl.uniform1f(uni(gl, p, 'u_curve'), GRID_CURVE);
-    gl.uniform1f(uni(gl, p, 'u_calm'), CALM_DEPTH);
+    gl.uniform1f(uni(gl, p, 'u_hw'), gridHalfWidth(view.w / view.h));
+    gl.uniform1f(uni(gl, p, 'u_dz'), lay.dz);
     gl.uniform1f(uni(gl, p, 'u_depth'), GRID_DEPTH);
     gl.uniform1f(uni(gl, p, 'u_scroll'), s.scroll);
-    gl.uniform1f(uni(gl, p, 'u_amp'), 1.0 + 1.9 * s.energy);
+    gl.uniform1f(uni(gl, p, 'u_nowZ'), lay.nowRow * lay.dz);
+    gl.uniform1f(uni(gl, p, 'u_nowW'), NOW_FALLOFF_S * WORLD_SPEED);
+    gl.uniform1f(uni(gl, p, 'u_nowGain'), NOW_GAIN * (0.7 + 0.6 * s.pulse));
+    gl.uniform1f(uni(gl, p, 'u_crossLo'), CROSS_H0);
+    gl.uniform1f(uni(gl, p, 'u_crossHi'), CROSS_H1);
+    gl.uniform1f(uni(gl, p, 'u_base'), s.base % 256);
+    gl.uniform1f(uni(gl, p, 'u_cols'), q.cols);
+    gl.uniform1f(uni(gl, p, 'u_lw'), LINE_PX[q.soft] || 0);
+    gl.uniform1f(uni(gl, p, 'u_soft'), q.soft ? 1 : 0);
+    gl.uniform1f(uni(gl, p, 'u_axis'), 0);
+    gl.uniform1f(uni(gl, p, 'u_amp'), AMP_MAX);
     gl.uniform1f(uni(gl, p, 'u_pt'), 2.5);
-    gl.uniform1f(uni(gl, p, 'u_time'), s.time);
-    gl.uniform1f(uni(gl, p, 'u_off'), 0);
     gl.uniform1f(uni(gl, p, 'u_viewW'), view.w);
+    gl.uniform1f(uni(gl, p, 'u_viewH'), view.h);
     gl.uniform1f(uni(gl, p, 'u_energy'), s.energy);
-    gl.uniform1f(uni(gl, p, 'u_ab'), QUALITY[s.level].passes > 1 ? 1 : 2);
+    gl.uniform1f(uni(gl, p, 'u_ab'), q.soft ? 1 : 2);
     gl.uniform1f(uni(gl, p, 'u_dpr'), view.dpr);
     gl.uniform1f(uni(gl, p, 'u_mode'), mode);
     gl.uniform1f(uni(gl, p, 'u_glow'), glow);
@@ -390,21 +470,34 @@ export function createTerrain(canvas, opts = {}) {
   function drawGrid() {
     const p = s.res.grid_p;
     const g = s.res.grid;
+    const rb = g.ribbon;
     gridUniforms(p, 0, s.bass);
+    if (rb) {
+      gl.bindBuffer(gl.ARRAY_BUFFER, rb.xz);
+      attrib(0, 2, 0, 0);
+      gl.bindBuffer(gl.ARRAY_BUFFER, rb.h);
+      attrib(1, 1, 0, 0);
+      setSide(rb.side);
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, rb.depth);
+      gl.drawElements(gl.TRIANGLES, rb.depthCount, rb.indexType, 0);
+      gl.uniform1f(uni(gl, p, 'u_mode'), 3);
+      gl.uniform1f(uni(gl, p, 'u_axis'), 1);
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, rb.cross);
+      gl.drawElements(gl.TRIANGLES, rb.crossCount, rb.indexType, 0);
+      gl.uniform1f(uni(gl, p, 'u_axis'), 0);
+    }
     gl.bindBuffer(gl.ARRAY_BUFFER, g.xz);
     attrib(0, 2, 0, 0);
     gl.bindBuffer(gl.ARRAY_BUFFER, g.h);
     attrib(1, 1, 0, 0);
-    const offsets = QUALITY[s.level].passes > 1 ? [-1, 0, 1] : [0];
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, g.depth);
-    for (const o of offsets) {
-      gl.uniform1f(uni(gl, p, 'u_off'), o);
+    setSide(null);
+    if (!rb) {
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, g.depth);
       gl.drawElements(gl.LINES, g.depthCount, g.indexType, 0);
+      gl.uniform1f(uni(gl, p, 'u_mode'), 3);
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, g.cross);
+      gl.drawElements(gl.LINES, g.crossCount, g.indexType, 0);
     }
-    gl.uniform1f(uni(gl, p, 'u_off'), 0);
-    gl.uniform1f(uni(gl, p, 'u_mode'), 3);
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, g.cross);
-    gl.drawElements(gl.LINES, g.crossCount, g.indexType, 0);
     gl.uniform1f(uni(gl, p, 'u_mode'), 1);
     gl.drawArrays(gl.POINTS, 0, g.vertices);
   }
@@ -415,6 +508,7 @@ export function createTerrain(canvas, opts = {}) {
     gl.bindBuffer(gl.ARRAY_BUFFER, s.res.stars);
     attrib(0, 2, 12, 0);
     attrib(1, 1, 12, 8);
+    setSide(null);
     gl.drawArrays(gl.POINTS, 0, STAR_VISIBLE[s.level]);
   }
 
@@ -456,29 +550,52 @@ export function createTerrain(canvas, opts = {}) {
     blurPass(b, a, 0, 1 / a.h, 1, false);
   }
 
-  function updateHeights(t) {
+  function updateHeights(sec, ahead) {
     const q = QUALITY[s.level];
-    fillHeights(s.history, q.cols, t / 1000, s.heights);
+    let info = fillLiveFrame(s.liveFrame, s.series, sec);
+    let k = 0;
+    if (ahead?.timeline) {
+      if (s.lookAt === null) s.lookAt = sec;
+      k = clamp01((sec - s.lookAt) / LOOK_BLEND_S);
+      const li = fillLookFrame(s.lookFrame, ahead.timeline, ahead.time);
+      blendFrames(s.liveFrame, s.lookFrame, k);
+      info = { base: k >= 1 ? li.base : info.base, frac: info.frac + (li.frac - info.frac) * k };
+    } else s.lookAt = null;
+    s.scroll = info.frac;
+    s.base = info.base;
+    fillHeights(s.liveFrame, q.cols, sec, s.heights, { swellAmp: 0, bakeAmp: true });
     gl.bindBuffer(gl.ARRAY_BUFFER, s.res.grid.h);
     gl.bufferSubData(gl.ARRAY_BUFFER, 0, s.heights);
+    const rb = s.res.grid.ribbon;
+    if (rb) {
+      const h = s.heights;
+      const h2 = s.heights2;
+      for (let i = 0; i < h.length; i += 1) { h2[2 * i] = h[i]; h2[2 * i + 1] = h[i]; }
+      gl.bindBuffer(gl.ARRAY_BUFFER, rb.h);
+      gl.bufferSubData(gl.ARRAY_BUFFER, 0, h2);
+    }
   }
 
-  function draw(spectrum, t = 0) {
+  function draw(spectrum, t = 0, ahead = null) {
     if (s.lost || s.disposed || !s.res) return;
     const sp = spectrum || [];
     const step = s.clock.advance(t);
-    for (let i = 0; i < step.pushes; i += 1) s.history.push(sp);
-    s.scroll = step.frac;
+    const gap = 1000 / ROWS_PER_SECOND;
+    for (let i = 0; i < step.pushes; i += 1) s.series.push(sp, (t - (step.pushes - 1 - i) * gap) / 1000);
     let bass = 0;
     const n = Math.min(BASS_BINS, sp.length);
     for (let i = 0; i < n; i += 1) bass += clamp01(sp[i]);
-    s.bass = n ? bass / n : 0;
-    s.energy = easeEnergy(s.energy, energyOf(sp), s.lastT === null ? 1 : (t - s.lastT) / 1000);
+    const dtS = s.lastT === null ? 1 : Math.max(0, Math.min(0.5, (t - s.lastT) / 1000));
+    const slow = 1 - Math.exp(-dtS / SLOW_S);
+    const rawEnergy = energyOf(sp);
+    s.bass += ((n ? bass / n : 0) - s.bass) * slow;
+    s.energy += (rawEnergy - s.energy) * slow;
+    s.pulse = easeEnergy(s.pulse, rawEnergy, dtS);
     s.lastT = t;
     s.time = (t / 1000) % 600;
-    updateHeights(t);
+    updateHeights(t / 1000, ahead);
     const cc = getCam();
-    const cam = cameraAt(t / 1000, s.bass, { eye: cc.eye, pitchDeg: cc.pitch });
+    const cam = cameraAt(t / 1000, SHAKE_ENABLED ? s.pulse : 0, { eye: cc.eye, pitchDeg: cc.pitch, fly: 0 });
     mat4Perspective(cam.fov, view.w / view.h, NEAR, FAR, proj);
     mat4LookAt(cam.eye, cam.target, cam.up, look);
     mat4Multiply(proj, look, mvp);

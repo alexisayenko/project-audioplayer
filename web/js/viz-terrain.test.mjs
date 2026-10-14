@@ -5,6 +5,7 @@ import {
   gridCounts, buildGridVertices, buildLineIndices, buildDepthIndices, buildCrossIndices, energyOf, easeEnergy, GRID_DEPTH, colorRamp, fillColors, horizonGlow, makeStars, cameraAt, horizonY,
   camClamp, camFormat, camParse, defaultPitchDeg, smoothHeights, CAM_LIMITS, nearEnvelope, rowZ, halfWidthAt, EYE_HEIGHT,
   mat4Perspective, mat4LookAt, mat4Multiply, transformPoint, makeRowClock, SHAKE_MAX, RAMP,
+  SHAKE_ENABLED, CROSS_H0, CROSS_H1, crossAlpha, WORLD_SPEED, NOW_Z, NOW_GAIN, NOW_FALLOFF_S, rowLayout, nowZOf, ridgeZ, createFrame, createSeries, fillLookFrame, fillLiveFrame, sampleTimeline, blendFrames,
 } from './viz-terrain-math.js';
 import { createTerrain, isWebGLAvailable, linkProgram } from './viz-terrain-gl.js';
 import { MODES, pickMode, nextMode, availableModes, createModeRenderer, modeLabel } from './viz-modes.js';
@@ -23,7 +24,7 @@ test('qualityFor clamps and defaults', () => {
   assert.equal(qualityFor(0), QUALITY[0]);
   assert.equal(qualityFor(9), QUALITY[2]);
   assert.equal(qualityFor(NaN), QUALITY[1]);
-  assert.deepEqual([QUALITY[0].rows, QUALITY[1].cols, QUALITY[2].rows], [48, 120, 104]);
+  assert.deepEqual([QUALITY[0].rows, QUALITY[1].cols, QUALITY[2].rows], [40, 52, 88]);
 });
 
 test('resample interpolates and handles empties', () => {
@@ -247,18 +248,17 @@ test('createTerrain compiles programs, creates buffers and draws expected counts
   const gl = fakeGL();
   const t = createTerrain(fakeCanvas(), { gl, quality: 1 });
   assert.equal(count(gl, 'createProgram'), 3);
-  assert.equal(count(gl, 'createBuffer'), 6);
+  assert.equal(count(gl, 'createBuffer'), 11);
   assert.equal(t.bloomActive, false);
   t.draw(new Array(64).fill(0.6), 1000);
   const elems = gl.calls.filter((c) => c[0] === 'drawElements');
-  assert.equal(elems.length, 4);
-  assert.equal(elems[0][2], 120 * 79 * 2);
-  assert.equal(elems[3][2], 80 * 119 * 2);
+  assert.equal(elems.length, 2);
+  assert.equal(elems[0][2], 52 * 63 * 6);
+  assert.equal(elems[1][2], 64 * 51 * 6);
   const arrays = gl.calls.filter((c) => c[0] === 'drawArrays');
-  assert.ok(arrays.some((c) => c[1] === gl.POINTS && c[3] === 80 * 120));
+  assert.ok(arrays.some((c) => c[1] === gl.POINTS && c[3] === 64 * 52));
   assert.ok(arrays.some((c) => c[1] === gl.POINTS && c[3] === 90));
-  assert.equal(count(gl, 'bufferSubData'), 1);
-  assert.equal(count(gl, 'drawElements'), 4);
+  assert.equal(count(gl, 'bufferSubData'), 2);
 });
 
 test('segments are about 8k at the default quality', () => {
@@ -271,15 +271,15 @@ test('quality switch rebuilds the grid and bloom only at level 2', () => {
   const t = createTerrain(fakeCanvas(), { gl, quality: 0 });
   t.draw([], 0);
   assert.equal(count(gl, 'drawElements'), 2);
-  assert.equal(gl.calls.find((c) => c[0] === 'drawElements')[2], 72 * 47 * 2);
+  assert.equal(gl.calls.find((c) => c[0] === 'drawElements')[2], 36 * 39 * 2);
   t.setQuality(2);
   assert.equal(t.quality, 2);
   assert.equal(t.bloomActive, true);
   assert.equal(count(gl, 'createFramebuffer'), 2);
   gl.calls.length = 0;
   t.draw([0.5], 50);
-  assert.equal(count(gl, 'drawElements'), 8);
-  assert.ok(gl.calls.some((c) => c[0] === 'drawElements' && c[2] === 160 * 103 * 2));
+  assert.equal(count(gl, 'drawElements'), 4);
+  assert.ok(gl.calls.some((c) => c[0] === 'drawElements' && c[2] === 72 * 87 * 6));
   t.setQuality(0);
   assert.equal(t.bloomActive, false);
   t.dispose();
@@ -290,7 +290,7 @@ test('bloom is skipped when the framebuffer is incomplete', () => {
   const t = createTerrain(fakeCanvas(), { gl, quality: 2 });
   assert.equal(t.bloomActive, false);
   t.draw([0.5], 0);
-  assert.equal(count(gl, 'drawElements'), 4);
+  assert.equal(count(gl, 'drawElements'), 2);
 });
 
 test('dispose deletes every GL object and ignores later draws', () => {
@@ -323,7 +323,7 @@ test('context loss stops drawing and restore recreates resources', () => {
   assert.equal(t.lost, false);
   assert.equal(count(gl, 'createProgram'), before + 3);
   t.draw([1], 100);
-  assert.equal(count(gl, 'drawElements'), 4);
+  assert.equal(count(gl, 'drawElements'), 2);
 });
 
 test('resize caps dpr at 2', () => {
@@ -441,42 +441,156 @@ test('energy follows loudness, attacks fast and releases slowly', () => {
 test('quality levels scale smoke and line passes, smoke off at the lowest', () => {
   assert.equal(QUALITY[0].smoke, 0);
   assert.ok(QUALITY[1].smoke > 0 && QUALITY[2].smoke >= QUALITY[1].smoke);
-  assert.ok(QUALITY[0].passes < QUALITY[1].passes);
+  assert.ok(QUALITY[0].soft < QUALITY[1].soft && QUALITY[1].soft <= QUALITY[2].soft);
 });
 
-test('camera defaults: eye 3.43, pitch -22.2, horizon high, no lateral motion', () => {
-  assert.equal(EYE_HEIGHT, 3.43);
-  assert.equal(defaultPitchDeg(), -22.2);
+test('camera defaults: eye 2, pitch -10, horizon high, no lateral motion', () => {
+  assert.equal(EYE_HEIGHT, 2);
+  assert.equal(defaultPitchDeg(), -10);
   for (const t of [0, 7, 31]) {
     const cam = cameraAt(t, 0);
-    assert.ok(cam.eye[1] > 3);
+    assert.ok(cam.eye[1] > 1.9 && cam.eye[1] < 2.1);
     assert.equal(cam.eye[0], 0);
+    near(cameraAt(t, 0, { fly: 0 }).eye[2], 0.7);
     const y = horizonY(cam);
-    assert.ok(y > 0.75 && y < 0.9, `horizon ${y}`);
+    assert.ok(y > 0.55 && y < 0.8, `horizon ${y}`);
   }
-  assert.ok(CAM_LIMITS.eye[0] <= 3.43 && CAM_LIMITS.eye[1] >= 3.43);
-  assert.ok(CAM_LIMITS.pitch[0] <= -22.2 && CAM_LIMITS.pitch[1] >= -22.2);
+  assert.ok(CAM_LIMITS.eye[0] <= 2 && CAM_LIMITS.eye[1] >= 2);
+  assert.ok(CAM_LIMITS.pitch[0] <= -10 && CAM_LIMITS.pitch[1] >= -10);
 });
 
-test('grid reaches the horizon and is wider than any viewport at every depth', () => {
-  const rows = 104;
-  near(rowZ(0, rows), 0);
-  near(rowZ(rows - 1, rows), GRID_DEPTH);
-  let prev = 0;
-  for (let r = 1; r < rows; r += 1) {
-    const z = rowZ(r, rows);
-    assert.ok(z > prev);
-    prev = z;
+function project(aspect, x, z, y = 0) {
+  const cam = cameraAt(0, 0);
+  const vp = mat4Multiply(mat4Perspective(cam.fov, aspect, 0.3, 160), mat4LookAt(cam.eye, cam.target, cam.up));
+  const p = transformPoint(vp, [x, y, -z]);
+  return [p[0] / p[3], p[1] / p[3]];
+}
+
+test('rows are uniformly spaced in world units and reach the horizon depth', () => {
+  for (const rows of [40, 64, 88]) {
+    near(rowZ(0, rows), 0);
+    near(rowZ(rows - 1, rows), GRID_DEPTH);
+    const dz = rowZ(1, rows) - rowZ(0, rows);
+    for (let r = 2; r < rows; r += 1) near(rowZ(r, rows) - rowZ(r - 1, rows), dz, 1e-9);
   }
-  const eyeH = EYE_HEIGHT;
-  assert.ok(Math.atan(eyeH / (GRID_DEPTH - 0.7)) * (180 / Math.PI) < 4);
-  const tanH = Math.tan((62 * Math.PI) / 360);
+});
+
+test('the grid has a constant world width: outer columns leave the screen at the nearest visible row and converge toward the horizon', () => {
   for (const aspect of [0.46, 1.78, 2.4, 3.5]) {
-    for (const z of [2, 5, 12, 30, GRID_DEPTH]) {
-      const need = (0.93 * Math.max(0, z - 0.7) + 1.3) * tanH * aspect + 0.1;
-      assert.ok(halfWidthAt(z, aspect) > need, `aspect ${aspect} z ${z}`);
-    }
+    const w = halfWidthAt(1, aspect);
+    assert.equal(halfWidthAt(30, aspect), w);
+    const cam = cameraAt(0, 0);
+    const bottomZ = cam.eye[1] / Math.tan((62 / 2 + 10) * (Math.PI / 180)) - cam.eye[2];
+    const edge = project(aspect, w, Math.max(0, -bottomZ) + 2.6);
+    assert.ok(Math.abs(edge[0]) > 1, `aspect ${aspect} edge ${edge[0]}`);
+    assert.ok(Math.abs(project(aspect, w, 30)[0]) < 0.45);
   }
+});
+
+test('on-screen spacing of adjacent columns is much wider near the camera than far away', () => {
+  const aspect = 1.78;
+  const step = (z) => {
+    const w = halfWidthAt(z, aspect);
+    const a = project(aspect, 0, z)[0];
+    const b = project(aspect, (2 * w) / 100, z)[0];
+    return Math.abs(b - a);
+  };
+  const nearStep = step(1.6);
+  const farStep = step(20);
+  assert.ok(nearStep / farStep > 6, `${nearStep / farStep}`);
+  assert.ok(nearStep / farStep < 20 * 1.5);
+});
+
+test('a ridge advances in world z linearly with time and keeps its height', () => {
+  const rows = 88;
+  const { dt, dz } = rowLayout(rows);
+  const tl = { bins: 4, rps: 16, total: 16 * 60, done: 16 * 60, data: new Uint8Array(16 * 60 * 4) };
+  const ridgeRow = 16 * 30;
+  for (let j = 0; j < 4; j += 1) tl.data[ridgeRow * 4 + j] = 255;
+  const frame = createFrame(rows, 4);
+  const found = [];
+  for (let k = 0; k <= 12; k += 1) {
+    const now = 28 + k * 0.1;
+    const { frac } = fillLookFrame(frame, tl, now);
+    let best = -1;
+    let sum = 0;
+    let wz = 0;
+    for (let r = 0; r < rows; r += 1) {
+      const v = frame.row(r)[0];
+      if (v > 0) { sum += v; wz += v * (r - frac) * dz; best = Math.max(best, v); }
+    }
+    found.push([now, wz / sum]);
+    assert.ok(best > 0.2, `ridge visible at ${now}`);
+  }
+  for (let k = 1; k < found.length; k += 1) {
+    const speed = (found[k][1] - found[k - 1][1]) / (found[k][0] - found[k - 1][0]);
+    near(speed, -WORLD_SPEED, 0.35);
+  }
+  near(dz / dt, WORLD_SPEED, 1e-9);
+});
+
+test('the now row sits at a fixed z and the future is beyond it', () => {
+  for (const rows of [40, 64, 88]) {
+    const lay = rowLayout(rows);
+    near(nowZOf(rows), lay.nowRow * lay.dz);
+    assert.ok(Math.abs(nowZOf(rows) - NOW_Z) <= lay.dz / 2 + 1e-9);
+    assert.ok(GRID_DEPTH - nowZOf(rows) > 4 * WORLD_SPEED - lay.dz);
+  }
+  near(ridgeZ(88, 12, 10), nowZOf(88) + 2 * WORLD_SPEED);
+  near(ridgeZ(88, 10, 10), nowZOf(88));
+});
+
+test('live frame leaves the future flat and puts the newest row at now', () => {
+  const rows = 40;
+  const series = createSeries(256, 4);
+  for (let i = 0; i < 16 * 12; i += 1) series.push([1, 1, 1, 1], i / 16);
+  const frame = createFrame(rows, 4);
+  const { nowRow } = rowLayout(rows);
+  fillLiveFrame(frame, series, 191 / 16);
+  assert.ok(frame.row(nowRow - 1)[0] > 0.9);
+  for (let r = nowRow + 1; r < rows; r += 1) assert.equal(frame.row(r)[0], 0);
+  assert.equal(frame.row(0)[0] > 0.9, true);
+});
+
+test('timeline sampling interpolates and returns calm outside the decoded range', () => {
+  const tl = { bins: 2, rps: 10, total: 4, done: 3, data: new Uint8Array([0, 0, 255, 255, 51, 51, 200, 200]) };
+  const out = new Float32Array(2);
+  near(sampleTimeline(tl, 0.05, out)[0], 0.5);
+  near(sampleTimeline(tl, 0.2, out)[0], 0.2);
+  assert.equal(sampleTimeline(tl, 0.25, out)[0], 0);
+  assert.equal(sampleTimeline(tl, -1, out)[0], 0);
+});
+
+test('series interpolates between pushed rows and holds the newest', () => {
+  const s = createSeries(4, 1);
+  for (let i = 0; i < 6; i += 1) s.push([i / 10], i);
+  assert.equal(s.count, 4);
+  const out = new Float32Array(1);
+  near(s.sample(3.5, out)[0], 0.35);
+  near(s.sample(99, out)[0], 0.5);
+  assert.equal(s.sample(0, out)[0], 0);
+});
+
+test('blending frames moves from live to look', () => {
+  const a = createFrame(1, 2);
+  const b = createFrame(1, 2);
+  b.data.fill(1);
+  near(blendFrames(a, b, 0.25).data[0], 0.25);
+});
+
+test('cross lines appear only above about half a world unit of height', () => {
+  assert.ok(CROSS_H0 < 0.5 && CROSS_H1 > 0.5 && CROSS_H1 - CROSS_H0 <= 0.25);
+  assert.equal(crossAlpha(0), 0);
+  assert.equal(crossAlpha(CROSS_H0), 0);
+  assert.equal(crossAlpha(CROSS_H1), 1);
+  assert.equal(crossAlpha(3), 1);
+  near(crossAlpha(0.5), 0.5);
+  assert.ok(crossAlpha(0.45) < crossAlpha(0.55));
+});
+
+test('the now glow is a named constant and the shader highlights it on every level', () => {
+  assert.ok(NOW_GAIN > 0);
+  assert.ok(NOW_FALLOFF_S > 0.2 && NOW_FALLOFF_S < 0.5);
 });
 
 test('camera overrides: eye and pitch move the camera and the horizon', () => {
@@ -507,4 +621,45 @@ test('smoothHeights rounds a spike and keeps the mean roughly', () => {
 test('nearEnvelope calms the near field and reaches 1', () => {
   assert.ok(nearEnvelope(0) < 0.2);
   near(nearEnvelope(1), 1);
+});
+
+test('amplitude is baked into each row from its own spectrum, not from a global live energy', () => {
+  const h = createFrame(3, 8);
+  h.row(0).fill(0.2);
+  h.row(1).fill(0.9);
+  h.row(2).fill(0.2);
+  const out = new Float32Array(3 * 4);
+  fillHeights(h, 4, 0, out, { swellAmp: 0, smooth: 0, bakeAmp: true });
+  const plain = new Float32Array(3 * 4);
+  fillHeights(h, 4, 0, plain, { swellAmp: 0, smooth: 0 });
+  assert.ok(out[4 + 1] / plain[4 + 1] > out[1] / plain[1]);
+  assert.ok(out.every((v) => v >= 0 && v <= 1));
+});
+
+function capture(gl) {
+  return gl.calls.filter((c) => c[0] === 'bufferSubData').map((c) => Float32Array.from(c[3]));
+}
+
+test('changing the live spectrum or energy does not change rows that already exist', () => {
+  const tl = { bins: 64, rps: 16, total: 16 * 30, done: 16 * 30, data: new Uint8Array(16 * 30 * 64).fill(120) };
+  const run = (live) => {
+    const gl = fakeGL();
+    const t = createTerrain(fakeCanvas(), { gl, quality: 1 });
+    for (let i = 0; i < 80; i += 1) t.draw(new Array(64).fill(0), i * 33, { timeline: tl, time: 10 });
+    gl.calls.length = 0;
+    t.draw(live, 3000, { timeline: tl, time: 10 });
+    return capture(gl)[0];
+  };
+  const quiet = run(new Array(64).fill(0));
+  const loud = run(new Array(64).fill(1));
+  assert.deepEqual(Array.from(quiet), Array.from(loud));
+  assert.ok(quiet.some((v) => v > 0.05));
+});
+
+test('bass shake is kept but disabled by default and moves only the camera', () => {
+  assert.equal(SHAKE_ENABLED, false);
+  const still = cameraAt(1, 0);
+  const shaken = cameraAt(1, 1);
+  assert.ok(Math.abs(shaken.eye[1] - still.eye[1]) <= SHAKE_MAX * 1.01 + 1e-9);
+  assert.deepEqual(shaken.eye.filter((_, i) => i !== 1), still.eye.filter((_, i) => i !== 1));
 });

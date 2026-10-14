@@ -47,8 +47,8 @@ export function createModeRenderer(id, canvas2d, canvasGL, deps = {}) {
   return {
     id: effective,
     usesGL: showGL,
-    draw(spectrum, t) {
-      if (showGL) terrain.draw(spectrum, t);
+    draw(spectrum, t, look) {
+      if (showGL) terrain.draw(spectrum, t, look);
       if (showBars) draw2d(spectrum, t);
     },
     resize(w, h, dpr) {

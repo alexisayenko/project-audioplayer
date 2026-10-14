@@ -88,6 +88,9 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
   const status = d.status ?? createStatusEl(d.doc);
   const st = { bars: new Float32Array(0), buf: null, rot: 0, last: 0, colors: null, colorAt: -Infinity, anchor: null, anchorAt: -Infinity };
   const view = { w: 0, h: 0, dpr: 1 };
+  const laKey = {};
+  const la = d.lookahead ?? null;
+  const laOff = la?.onChange?.(() => { if (raf == null) evaluate(); });
   let enabled = false;
   let mode = startMode;
   let vizMode = DEFAULT_MODE;
@@ -228,6 +231,7 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
   function dropRenderer() {
     renderer?.dispose();
     renderer = null;
+    la?.request(laKey, false);
     if (vizMode !== 'terrain' && glCanvas) removeGL();
   }
 
@@ -246,7 +250,8 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
     f.shaped = shapeBars(bars, still ? 0 : now, undefined, f.shaped);
     const r = ensureRenderer();
     r.setQuality(gov.level);
-    r.draw(bars, now);
+    la?.request(laKey, enabled && r.id === 'terrain');
+    r.draw(bars, now, r.id === 'terrain' ? la?.get(now) ?? null : null);
     if (!r.usesGL) glow.apply(ctx, canvas, w, h, q.glow);
     if (d.debug) paintDebug(bars.length);
   }
@@ -364,7 +369,7 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
 
   observe();
   return {
-    setEnabled(on) { enabled = !!on; evaluate(); },
+    setEnabled(on) { enabled = !!on; if (!enabled) la?.request(laKey, false); evaluate(); },
     setMode(m) { mode = m; st.anchorAt = -Infinity; if (raf == null) evaluate(); },
     setVizMode(id) {
       if (id === vizMode) return;
@@ -387,6 +392,7 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
     get level() { return gov.level; },
     destroy() {
       stop();
+      laOff?.();
       observers.forEach((fn) => fn());
       dropRenderer();
       removeGL();
