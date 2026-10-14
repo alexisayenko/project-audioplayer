@@ -227,7 +227,8 @@ def test_delete(client, tmp_path):
     assert add(client).status_code == 202
 
 
-def test_query_token_on_files_and_covers_only(client):
+def test_query_token_on_files_and_covers_only(client, monkeypatch):
+    monkeypatch.setenv("PUBLIC_VIEW", "0")
     add(client)
     assert client.get(f"/files/{VID}", params={"token": "secret"}).status_code == 200
     assert client.get(f"/covers/{VID}", params={"token": "secret"}).status_code == 200
@@ -256,6 +257,7 @@ def test_static_ui_served_without_shadowing_api(tmp_path, monkeypatch):
     (web / "index.html").write_text("<h1>ui</h1>")
     monkeypatch.setenv("AUDIO_API_TOKEN", "secret")
     monkeypatch.setenv("AUDIO_WEB_DIR", str(web))
+    monkeypatch.setenv("PUBLIC_VIEW", "0")
     m = importlib.reload(main)
     try:
         c = TestClient(m.app)
@@ -465,6 +467,7 @@ def test_web_assets_are_versioned_and_revalidated(tmp_path, monkeypatch):
     (tmp_path / "secret.txt").write_text("secret")
     monkeypatch.setenv("AUDIO_API_TOKEN", "secret")
     monkeypatch.setenv("AUDIO_WEB_DIR", str(web))
+    monkeypatch.setenv("PUBLIC_VIEW", "0")
     m = importlib.reload(main)
     try:
         c = TestClient(m.app)

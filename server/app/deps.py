@@ -10,7 +10,7 @@ from typing import Any, Iterator
 
 from fastapi import Header, HTTPException, Query, Request
 
-from . import extractor, gitstore, jobs, library, limits, oauth, session, users
+from . import extractor, gitstore, guest, jobs, library, limits, oauth, session, users
 from .problems import Problem
 
 DOWNLOAD_DIR = Path(os.environ.get("AUDIO_DOWNLOAD_DIR", "downloads"))
@@ -31,6 +31,7 @@ _STATUS_TEXT = {
     403: "Forbidden",
     404: "Not found",
     409: "Conflict",
+    429: "Guest limit",
     422: "Unprocessable",
     502: "Upstream failure",
     503: "Not configured",
@@ -235,6 +236,25 @@ def require_token_or_query(
 ) -> dict[str, Any]:
     """File/cover GETs: <audio>/<img> cannot send headers, so the session cookie (or ?token=, owner only) works too."""
     return authenticate(request, x_api_token, authorization, token)
+
+
+def _view_exists() -> bool:
+    uid = guest.view_uid()
+    return users.read_profile(profile_path(uid)) is not None or library_path(uid).is_file()
+
+
+def read_user(
+    request: Request,
+    x_api_token: str = Header(default=""),
+    authorization: str = Header(default=""),
+    token: str = Query(default=""),
+) -> dict[str, Any]:
+    """The read-only allow-list (ADR-0018): credentials as usual, else the public view's owner as a limited guest."""
+    has_credentials = x_api_token or _bearer(authorization) or token or session.read(request.cookies.get(session.COOKIE, ""))
+    if has_credentials or not guest.enabled() or not _view_exists():
+        return authenticate(request, x_api_token, authorization, token if request.url.path.startswith(guest.READ_PREFIXES) else "")
+    guest.count_request(guest.client_ip(request))
+    return guest.principal()
 
 
 # --- quotas ----------------------------------------------------------------------------------

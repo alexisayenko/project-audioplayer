@@ -6,13 +6,15 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends
 
-from .. import deps, limits, users
+from .. import deps, guest, limits, users
 
 router = APIRouter()
 
 
 @router.get("/me")
-def me(user: Annotated[dict[str, Any], Depends(deps.require_token)]) -> dict[str, Any]:
+def me(user: Annotated[dict[str, Any], Depends(deps.read_user)]) -> dict[str, Any]:
+    if guest.is_guest(user):
+        return guest.me_payload()
     profile = users.read_profile(deps.profile_path(user["uid"])) or {}
     return {"email": user["email"], "provider": user["provider"], "owner": user["owner"],
             "created_at": profile.get("created_at")}

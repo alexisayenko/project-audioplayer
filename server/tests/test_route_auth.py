@@ -11,7 +11,17 @@ PUBLIC = {
     ("GET", "/index.html"),
     ("GET", "/_v/{version}/{path:path}"),
 }
+GUEST_READABLE = {
+    ("GET", "/library"),
+    ("GET", "/tags"),
+    ("GET", "/genres/graph"),
+    ("GET", "/catalog"),
+    ("GET", "/files/{video_id}"),
+    ("GET", "/covers/{video_id}"),
+    ("GET", "/me"),
+}
 AUTH = {"require_token", "require_token_or_query"}
+GUEST_AUTH = {"read_user"}
 
 
 def _calls(dependant):
@@ -20,14 +30,28 @@ def _calls(dependant):
         yield from _calls(sub)
 
 
+def _routes(names):
+    found = set()
+    for route in main.app.routes:
+        if isinstance(route, APIRoute) and not names.isdisjoint(_calls(route.dependant)):
+            found |= {(m, route.path) for m in route.methods - {"HEAD"}}
+    return found
+
+
 def test_every_api_route_requires_auth_except_the_public_ones():
     open_routes = set()
     for route in main.app.routes:
         if not isinstance(route, APIRoute):
             continue
-        if AUTH.isdisjoint(_calls(route.dependant)):
+        if (AUTH | GUEST_AUTH).isdisjoint(_calls(route.dependant)):
             open_routes |= {(m, route.path) for m in route.methods - {"HEAD"}}
     assert open_routes - PUBLIC == set()
+
+
+def test_only_the_fixed_read_only_allow_list_is_open_to_guests():
+    assert _routes(GUEST_AUTH) == GUEST_READABLE
+    assert all(method == "GET" for method, _ in GUEST_READABLE)
+    assert _routes(AUTH).isdisjoint(GUEST_READABLE)
 
 
 def test_new_routes_are_protected():

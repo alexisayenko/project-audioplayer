@@ -70,6 +70,7 @@ def public_song(song: dict[str, Any], root: Path | None) -> dict[str, Any]:
     state = audio_state(song, root)
     out["audio_state"] = state
     out["sources"] = sources_of(song)
+    out["remix_year"] = song.get("remix_year")
     if state == "server":
         name = file_name(song)
         size = None

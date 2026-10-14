@@ -7,7 +7,7 @@ from collections.abc import Awaitable, Callable
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
 
-from . import deps, web
+from . import deps, guest, web
 from .problems import Problem
 from .routes import analyze, auth, catalog, files, genres, health, legacy, lookup, me, removal, songs
 
@@ -27,7 +27,10 @@ async def _problem(request: Request, exc: Problem) -> JSONResponse:
 @app.middleware("http")
 async def _no_store(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
     response = await call_next(request)
-    if "cache-control" not in response.headers:
+    if request.method in ("GET", "HEAD") and (request.url.path in guest.READ_PATHS or request.url.path.startswith(guest.READ_PREFIXES)):
+        response.headers["Cache-Control"] = "private, no-cache"
+        response.headers["Vary"] = "Cookie, Authorization"
+    elif "cache-control" not in response.headers:
         response.headers["Cache-Control"] = "no-store"
     return response
 

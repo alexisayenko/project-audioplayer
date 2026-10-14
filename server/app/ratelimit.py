@@ -60,3 +60,36 @@ class WindowLimiter:
                 if wait > self.max_wait:
                     raise RuntimeError(f"{self.name} reached")
                 time.sleep(wait)
+
+
+class KeyedWindow:
+    """Non-blocking sliding window per key: `charge` books an amount, or returns the seconds until it would fit."""
+
+    def __init__(self, limit: float, period: float, clock=time.monotonic) -> None:
+        self.limit, self.period, self.clock = limit, period, clock
+        self.hits: dict[str, deque[tuple[float, float]]] = {}
+        self._lock = threading.Lock()
+
+    def charge(self, key: str, amount: float = 1.0) -> float:
+        with self._lock:
+            now = self.clock()
+            window = self.hits.setdefault(key, deque())
+            while window and now - window[0][0] >= self.period:
+                window.popleft()
+            used = sum(a for _, a in window)
+            if used + amount > self.limit:
+                if amount > self.limit:
+                    return self.period
+                freed = 0.0
+                for t, a in window:
+                    freed += a
+                    if used - freed + amount <= self.limit:
+                        return max(t + self.period - now, 1.0)
+            window.append((now, amount))
+            if len(self.hits) > 10000:
+                self.hits = {k: w for k, w in self.hits.items() if w and now - w[-1][0] < self.period}
+            return 0.0
+
+    def reset(self) -> None:
+        with self._lock:
+            self.hits.clear()

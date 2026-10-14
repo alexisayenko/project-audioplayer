@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import FileResponse
 
-from .. import deps, library
+from .. import deps, guest, library
 from ..problems import Problem
 from ..safepath import safe_join
 
@@ -23,9 +24,14 @@ def _not_downloaded(download: bool) -> Problem | HTTPException:
 
 
 @router.head("/files/{video_id}", include_in_schema=False)
-@router.get("/files/{video_id}", responses=deps.responses(404, 422, 503))
-def get_file(video_id: str, download: bool = Query(default=False), user: dict[str, Any] = Depends(deps.require_token_or_query)):
+@router.get("/files/{video_id}", responses=deps.responses(403, 404, 422, 429, 503))
+def get_file(request: Request, video_id: str, download: bool = Query(default=False), user: dict[str, Any] = Depends(deps.read_user)):
     deps.valid_id(video_id)
+    visitor = guest.is_guest(user)
+    if visitor and not guest.audio_enabled():
+        raise Problem(403, "guest_audio_disabled", "Audio is not available to guests.")
+    if visitor and download:
+        raise Problem(403, "guest_download_disabled", "Guests cannot download files.")
     uid = user["uid"]
     song = library.find_song(deps.load_songs(uid), video_id)
     if song is not None and not library.has_file(song):
@@ -39,11 +45,24 @@ def get_file(video_id: str, download: bool = Query(default=False), user: dict[st
     if download:
         headers["Content-Disposition"] = library.content_disposition(library.download_name(song, video_id))
         return FileResponse(path, media_type=AUDIO_TYPE, headers=headers)
+    if visitor and request.method == "GET":
+        return _guest_stream(request, path, headers)
     return FileResponse(path, media_type=AUDIO_TYPE, filename=path.name, headers=headers)
 
 
+def _guest_stream(request: Request, path: Path, headers: dict[str, str]) -> FileResponse:
+    ip = guest.client_ip(request)
+    guest.open_stream(ip)
+    try:
+        guest.charge_audio(ip, guest.range_bytes(request.headers.get("range", ""), path.stat().st_size))
+    except Exception:
+        guest.close_stream(ip)
+        raise
+    return guest.GuestFile(path, media_type=AUDIO_TYPE, filename=path.name, headers=headers, ip=ip)
+
+
 @router.get("/covers/{video_id}", responses=deps.responses(404, 422))
-def get_cover(video_id: str, user: dict[str, Any] = Depends(deps.require_token_or_query)):
+def get_cover(video_id: str, user: dict[str, Any] = Depends(deps.read_user)):
     deps.valid_id(video_id)
     path = deps.covers_dir(user["uid"]) / f"{video_id}.jpg"
     if not path.is_file():

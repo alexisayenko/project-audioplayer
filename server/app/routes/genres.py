@@ -26,5 +26,5 @@ def get_genres(user: Annotated[dict[str, Any], Depends(deps.require_token)]):
 
 
 @router.get("/genres/graph")
-def get_genre_graph(user: Annotated[dict[str, Any], Depends(deps.require_token)]):
+def get_genre_graph(user: Annotated[dict[str, Any], Depends(deps.read_user)]):
     return genre_graph.graph(deps.load_songs(user["uid"]), deps.DATA_DIR / "genre-ontology.json")

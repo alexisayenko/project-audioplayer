@@ -115,6 +115,8 @@ def _edited(song: dict[str, Any], changes: dict[str, Any]) -> dict[str, Any]:
             updated[key] = _clean_text(changes[key])
     if "year" in changes:
         updated["year"] = changes["year"]
+    if "remix_year" in changes:
+        updated["remix_year"] = changes["remix_year"]
     if "bpm" in changes:
         updated["bpm"] = round(changes["bpm"]) if changes["bpm"] is not None else None
     _apply_links(updated, changes)

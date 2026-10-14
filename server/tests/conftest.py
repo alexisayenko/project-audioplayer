@@ -1,10 +1,11 @@
 import pytest
 
-from app import deps, genre_lookup, httpjson, limits, wiki_lookup
+from app import deps, genre_lookup, guest, httpjson, limits, wiki_lookup
 
 ENV = (
     "OWNER_EMAIL", "ALLOWED_EMAIL", "ALLOWED_APPLE_SUB", "SIGNUP_OPEN", "USER_MAX_SONGS", "USER_MAX_BYTES",
     "USER_ADDS_PER_HOUR", "USER_MAX_CONCURRENT_DOWNLOADS", "GLOBAL_MAX_CONCURRENT_DOWNLOADS", "POOL_MAX_BYTES",
+    "PUBLIC_VIEW", "PUBLIC_AUDIO", "PUBLIC_VIEW_EMAIL", "GUEST_REQ_PER_MIN", "GUEST_AUDIO_MB_PER_HOUR", "GUEST_MAX_STREAMS",
 )
 
 
@@ -24,3 +25,4 @@ def _hermetic(monkeypatch):
     monkeypatch.setattr(deps.SCHED, "inline", True)
     limits.RATE.reset()
     deps.SUBS.clear()
+    guest.reset()

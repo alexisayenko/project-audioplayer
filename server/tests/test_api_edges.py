@@ -276,7 +276,7 @@ def test_catalog_etag_revalidation_forms(client):
     first = client.get("/catalog", headers=H)
     etag = first.headers["etag"]
     assert first.status_code == 200
-    assert first.headers["cache-control"] == "no-cache"
+    assert first.headers["cache-control"] == "private, no-cache"
     for sent in (etag, f"W/{etag}", "*", f'"zzz", {etag}'):
         r = client.get("/catalog", headers={**H, "If-None-Match": sent})
         assert r.status_code == 304, sent
@@ -725,7 +725,8 @@ def test_head_files_matches_get_without_a_body(client):
     assert client.head(f"/files/{VID}", params={"token": "secret"}).status_code == 200
 
 
-def test_head_files_requires_auth_and_hides_missing_files(client):
+def test_head_files_requires_auth_and_hides_missing_files(client, monkeypatch):
+    monkeypatch.setenv("PUBLIC_VIEW", "0")
     owner_add(client)
     assert client.head(f"/files/{VID}").status_code == 401
     assert client.head(f"/files/{VID}", headers={"X-API-Token": "bad"}).status_code == 401
