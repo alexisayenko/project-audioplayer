@@ -34,7 +34,9 @@ Don't pre-create — extract on first real entry. See
 
 ## Deploy and CI
 
-[TODO: one row per environment or pipeline — how it is deployed,
+One environment: the live server at https://play.isayenko.net (LXC 106 `tools` on perkunas), deployed by `scripts/deploy.sh`; runbook [`deploy.md`](deploy.md). CI playbook: [`ci-cd.md`](ci-cd.md).
+
+[TODO: one row per further environment or pipeline — how it is deployed,
 which workflow, where secrets live. Playbook:
 [`ci-cd.md`](ci-cd.md).]
 

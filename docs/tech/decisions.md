@@ -3,6 +3,24 @@
 Tech decisions, newest last. Supersede by strikethrough and a new entry
 below, never by deleting.
 
+| ADR | Title | Status |
+| --- | --- | --- |
+| 0001 | Components, server, hosting, storage | Accepted (hosting wording superseded by 0004, storage by 0005 and 0012) |
+| 0002 | Tags replace playlists; song fields (incl. canonical countries, historical `country:su`) | Accepted |
+| 0003 | Web first, served by FastAPI (incl. file download, queue, Playback layout) | Accepted |
+| 0004 | Hosting on perkunas, LXC 106 `tools` | Accepted, deployed 2026-10-13 |
+| 0005 | Library metadata in the data-storage git repos | Accepted, implemented; amended by 0010 and 0012 |
+| 0006 | OAuth sign-in (Apple, Google) | Accepted; owner-only gate superseded by 0012 |
+| 0007 | iOS app look and screen flow | Accepted; look superseded by 0009 |
+| 0008 | Distribution: internal TestFlight | Accepted |
+| 0009 | Electrophone design system as single source of truth | Accepted |
+| 0010 | Catalog and audio are separate (incl. web auto-download setting) | Accepted, implemented |
+| 0011 | Multi-source song ids | Accepted |
+| 0012 | Open signup and per-user storage | Accepted, live |
+| 0013 | Music-database lookups: MusicBrainz now, Discogs later | Accepted for MusicBrainz; Proposed for Discogs |
+
+The web "Download" file save is a sub-decision of ADR-0003; the web "Auto-download songs" setting is one of ADR-0010. The 2026-10-13 form, token-pill and metadata decisions have no number (section below).
+
 ## ADR-0001 Components, server, hosting, storage
 
 Status: Accepted · 2026-10-12

@@ -132,6 +132,11 @@ and rules):
   store metadata and legal-page drafts
 - [`tasks/README.md`](tasks/README.md) — task spec + frontmatter
 - [`tech/README.md`](tech/README.md) — stack + decisions frame
+- [`tech/deploy.md`](tech/deploy.md) — deploy runbook for the live
+  server (where things live, deploy, rollback, verify, signup off)
+- [`specs/README.md`](specs/README.md) — testable requirements per area
+  (API, data model, tags, library, playback, web, iOS, non-functional)
+- [`CHANGELOG.md`](CHANGELOG.md) — what shipped, newest first
 - [`tech/ci-cd.md`](tech/ci-cd.md) — CI/CD playbook (manual
   workflows, test layers, deploy and release paths)
 - [`tech/decisions.md`](tech/decisions.md) — tech decisions (ADRs):
@@ -171,22 +176,29 @@ docs/
 │   ├── compliance.md                   # external obligations
 │   └── budget.md                       # out-of-pocket costs
 ├── content/                            # entry: content/README.md
+├── CHANGELOG.md                        # what shipped, newest first
 ├── milestones.md                       # dated project events
 ├── product/                            # entry: product/README.md
 │   ├── concepts/                       # entry: concepts/README.md
 │   ├── features/                       # entry: features/README.md
-│   ├── screens.md                      # planned screens, library model, API
+│   ├── concept-catalog-and-audio.md    # catalog vs audio (ADR-0010)
+│   ├── screens.md                      # screens, library model, API
+│   ├── wireframes/                     # PNG wireframes (library row, playback)
 │   └── README.md
 ├── release/                            # entry: release/README.md
 │   ├── app-store-metadata.md           # store listing draft
 │   └── legal-draft.md                  # legal-page draft
 ├── specs/                              # entry: specs/README.md (what the system does)
+│   ├── add-song.md api.md catalog.md data-model.md ios.md library.md
+│   └── non-functional.md playback.md storage-and-sync.md tags.md web.md
 ├── tasks/                              # entry: tasks/README.md
 │   ├── README.md
+│   ├── C1.md                           # concern C1
 │   └── task-XXXX.md                    # numbered tasks
 ├── tech/                               # entry: tech/README.md
 │   ├── architecture.md                 # system design
 │   ├── decisions.md                    # tech ADRs
+│   ├── deploy.md                       # deploy runbook (live server)
 │   └── ci-cd.md                        # CI/CD playbook
 ├── ui-ux/                              # entry: ui-ux/README.md
 │   ├── style-guide.md                  # visual + interaction standards
@@ -213,6 +225,7 @@ Obsolete docs go to `archive/docs/` at repo root, not inside
 | Project milestones (launches, releases, evidence) | [`milestones.md`](milestones.md) | Looking up when an event happened, or what shipped in a release |
 | Product core idea + section glossary | [`product/README.md`](product/README.md) | Orienting on what the product is at the conceptual level |
 | Product entities (one file per noun) | [`product/concepts/`](product/concepts/) | Modeling a stable noun the product reasons about |
+| Deploy, rollback, signup switch of the live server | [`tech/deploy.md`](tech/deploy.md) | Shipping a change or operating play.isayenko.net |
 | Cross-folder feature specs (one file per verb) | [`product/features/`](product/features/) | Implementing or scoping a specific user-facing capability |
 | Per-release checklist, store metadata, legal drafts | [`release/`](release/) | Preparing or submitting a release |
 | Tasks (numbered, frontmatter-tagged) | [`tasks/`](tasks/) | Creating or closing a task; orienting at session start |

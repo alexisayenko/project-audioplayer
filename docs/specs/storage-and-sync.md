@@ -11,7 +11,7 @@ Code: `server/app/gitstore.py`, `server/app/library.py`, `server/app/main.py`,
 | covers `<id>.jpg` | git LFS repo `alexisayenko/data-storage-lfs`, ~~`audioplayer/covers/<id>.jpg`~~ `audioplayer/users/<uid>/covers/<id>.jpg` |
 | audio `<id>.m4a` | server disk (perkunas dataset, bind-mounted into LXC 106), in neither repo; ~~`<music_root>/<id>.m4a`~~ `<music_root>/users/<uid>/<id>.m4a` |
 
-- STO-001 MUST: with `AUDIO_DATA_REPO` set, the live library is the server's own clone of the data repo and every library change is a commit; the server never uses the PC's `C:\Alex\data-storage`. Status: implemented (not yet deployed)
+- STO-001 MUST: with `AUDIO_DATA_REPO` set, the live library is the server's own clone of the data repo and every library change is a commit; the server never uses the PC's `C:\Alex\data-storage`. Status: implemented (deployed 2026-10-13)
 - STO-002 MUST: with `AUDIO_DATA_REPO` unset (dev, tests) `users/<uid>/library.json`, `profile.json` and `covers/` are plain files in `AUDIO_DATA_DIR` (default `.`) and `/health` `sync` is always `ok`. Status: implemented
 - STO-003 MUST: covers go to the LFS repo when `AUDIO_COVERS_REPO` is set; LFS tracking is decided by that repo's `.gitattributes` and needs `git-lfs` on the server. Status: implemented
 - STO-004 MUST: reads are served from the local clone (no pull on read). Status: implemented

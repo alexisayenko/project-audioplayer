@@ -39,7 +39,7 @@ ssh claude@192.168.0.10 'sudo /usr/local/sbin/audioplayer-deploy'
 
 Or run `scripts/deploy.sh` (same command, then prints the deployed revision and the HTTP status of the web index). `scripts/check.sh` runs the web tests, the rule-ID check and the server tests first.
 
-The script runs `git pull --ff-only`, `pip install`, restarts the
+Full runbook (paths, backup, rollback, verification): [deploy.md](deploy.md). The script runs `git pull --ff-only`, `pip install`, restarts the
 service and checks `/health`.
 
 ## Library storage (ADR-0005, implemented)
