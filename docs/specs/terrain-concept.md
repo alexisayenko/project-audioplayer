@@ -55,7 +55,7 @@ Each slice of time takes its height once, from its own moment of the song, and f
 
 - A low camera looks slightly down toward the horizon. Defaults: eye 3.31, pitch -13.5 deg.
 - V: full-screen. M: switch visualizer. T: cycle Terrain style.
-- `?vizdebug=1` opens a panel with camera height, pitch, yaw (look left and right), a sync trim for audio-to-visual delay, style and a quality override, and shows fps, level and mesh size.
+- The left "Terrain style" panel (everyone) holds the style select. `?vizdebug=1` adds a separate "Camera (debug)" panel with camera height, pitch, yaw (look left and right), a sync trim for audio-to-visual delay and a quality override, and shows fps, level and mesh size.
 - Quality levels: simple and crisp on weak devices; soft beaded lines, mist and bloom on strong ones. It steps down by itself when frames get slow. Terrain draws at 60 fps (display refresh capped at 60; 30 fps on a low battery, with reduced motion, or when even the simplest level cannot keep 60); the Mirrored spectrum and the Ring stay at 30.
 
 ## 10. History and baselines

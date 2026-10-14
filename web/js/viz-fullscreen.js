@@ -24,6 +24,11 @@ export function isVizStyleKey(e, { open, route, background, mode }) {
   return open || (route === 'playback' && !!background);
 }
 
+export function isNearBox(point, box, pad = 0) {
+  if (!point || !box) return false;
+  return point.x >= box.left - pad && point.x <= box.right + pad && point.y >= box.top - pad && point.y <= box.bottom + pad;
+}
+
 export function makeAutoHide({ delay = HIDE_CONTROLS_MS, setTimer = setTimeout, clearTimer = clearTimeout, onChange }) {
   let idle = false;
   let timer = null;
@@ -39,11 +44,11 @@ export function makeAutoHide({ delay = HIDE_CONTROLS_MS, setTimer = setTimeout, 
   };
 }
 
-export function createFullscreen({ root, opener, doc = document, onOpen, onClose, setTimer, clearTimer, hideMs }) {
+export function createFullscreen({ root, opener, doc = document, onOpen, onClose, onIdle, setTimer, clearTimer, hideMs }) {
   let open = false;
   let native = false;
   const hider = makeAutoHide({
-    delay: hideMs, setTimer, clearTimer, onChange: (idle) => root.classList.toggle('idle', idle),
+    delay: hideMs, setTimer, clearTimer, onChange: (idle) => { root.classList.toggle('idle', idle); if (idle) onIdle?.(); },
   });
 
   async function requestNative() {

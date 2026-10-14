@@ -1,35 +1,30 @@
 import { ROWS, toggleParts } from './viz-parts.js';
 
-const ROW_LABELS = { freq: 'Frequency parts', behav: 'Behaviour parts' };
+const ROW_LABELS = { freq: 'Frequency', behav: 'Behaviour' };
 
 export function createPartsToggles({ root, state, onChange, onRefuse }) {
   let cur = state;
-  let open = false;
   const pills = new Map();
   const group = document.createElement('div');
   group.className = 'viz-parts-rows';
   group.id = `${root.id}-rows`;
-  const opener = document.createElement('button');
-  opener.type = 'button';
-  opener.className = 'viz-parts-open';
-  opener.textContent = 'Parts';
-  opener.setAttribute('aria-expanded', 'false');
-  opener.setAttribute('aria-controls', group.id);
-  opener.title = 'Show or hide musical parts';
   const paint = () => {
     for (const [key, b] of pills) {
       const [row, id] = key.split('.');
       b.setAttribute('aria-pressed', String(!!cur[row][id]));
       b.classList.toggle('on', !!cur[row][id]);
     }
-    root.classList.toggle('open', open);
-    opener.setAttribute('aria-expanded', String(open));
   };
   root.classList.add('viz-parts');
   root.setAttribute('role', 'group');
   root.setAttribute('aria-label', 'Visualizer parts');
-  root.replaceChildren(opener, group);
+  root.replaceChildren(group);
   for (const row of Object.keys(ROWS)) {
+    const line = document.createElement('div');
+    line.className = 'viz-parts-line';
+    const label = document.createElement('span');
+    label.className = 'viz-parts-label';
+    label.textContent = ROW_LABELS[row];
     const el = document.createElement('div');
     el.className = 'viz-parts-row';
     el.setAttribute('role', 'group');
@@ -53,9 +48,9 @@ export function createPartsToggles({ root, state, onChange, onRefuse }) {
       pills.set(`${row}.${part.id}`, b);
       el.append(b);
     }
-    group.append(el);
+    line.append(label, el);
+    group.append(line);
   }
-  opener.addEventListener('click', () => { open = !open; paint(); });
   paint();
   return {
     set(next) { cur = next; paint(); },

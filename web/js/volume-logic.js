@@ -40,7 +40,7 @@ export function nextRepeatLabel(mode) {
 
 export function playHotkey(e, { open }) {
   if (!open || e.repeat || e.ctrlKey || e.metaKey || e.altKey) return null;
-  if (e.target?.closest?.('input, textarea, select, dialog, [contenteditable], [role=radiogroup], [role=slider]')) return null;
+  if (e.target?.closest?.('input, textarea, select, dialog, [contenteditable], [role=radiogroup], [role=listbox], [role=slider]')) return null;
   switch (e.key) {
     case 's': case 'S': return 'shuffle';
     case 'r': case 'R': return 'repeat';

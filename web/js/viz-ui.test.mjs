@@ -7,7 +7,7 @@ globalThis.location = { hash: '', href: 'http://localhost/', host: 'localhost' }
 stubFetch(() => ({ body: {} }));
 const audioGraph = await import('./audio-graph.js');
 const { initVisualizer } = await import('./viz-ui.js');
-const { createFullscreen, makeAutoHide, isVizKey } = await import('./viz-fullscreen.js');
+const { createFullscreen, makeAutoHide, isVizKey, isNearBox } = await import('./viz-fullscreen.js');
 const { setVizBackground, vizBackgroundOn } = await import('./viz-settings.js');
 
 const $ = (id) => document.getElementById(id);
@@ -124,7 +124,7 @@ test('overlay controls drive the player', () => {
   $('viz-prev').click();
   $('viz-next').click();
   assert.deepEqual(calls.splice(0), ['toggle', 'prev', 'next']);
-  $('viz-close').click();
+  fire(document, 'keydown', { key: 'Escape' });
   assert.equal(ui.full.isOpen(), false);
 });
 
@@ -135,14 +135,35 @@ test('play and pause update the overlay button label', () => {
   assert.equal($('viz-play').getAttribute('aria-label'), 'Play');
 });
 
-test('clicking the canvas exits, but a tap that only woke the controls does not', () => {
+test('clicking the canvas toggles play/pause and announces; it never exits', () => {
   $('p-viz').click();
+  calls.length = 0;
+  audio.pause();
   fire($('viz-full'), 'click', { target: $('viz-full-canvas') });
-  assert.equal(ui.full.isOpen(), false);
-  $('p-viz').click();
+  assert.deepEqual(calls.splice(0), ['toggle']);
+  assert.equal($('viz-live').textContent, 'Playing');
+  assert.equal(ui.full.isOpen(), true);
   fire($('viz-full'), 'pointerdown');
   fire($('viz-full'), 'click', { target: $('viz-full-canvas') });
-  assert.equal(ui.full.isOpen(), false, 'visible controls: click exits');
+  assert.deepEqual(calls.splice(0), ['toggle']);
+  assert.equal(ui.full.isOpen(), true);
+  fire($('viz-full'), 'click', { target: $('viz-play') });
+  assert.deepEqual(calls.splice(0), []);
+});
+
+test('the X button exits and returns focus to the Visualizer button', () => {
+  $('viz-close').click();
+  assert.equal(ui.full.isOpen(), false);
+});
+
+test('isNearBox: inside, within the padding, and outside', () => {
+  const box = { left: 100, top: 10, right: 200, bottom: 54 };
+  assert.equal(isNearBox({ x: 150, y: 30 }, box, 48), true);
+  assert.equal(isNearBox({ x: 248, y: 102 }, box, 48), true);
+  assert.equal(isNearBox({ x: 249, y: 30 }, box, 48), false);
+  assert.equal(isNearBox({ x: 150, y: 103 }, box, 48), false);
+  assert.equal(isNearBox({ x: 150, y: 30 }, box), true);
+  assert.equal(isNearBox(null, box, 48), false);
 });
 
 test('Visualizer background setting persists and enables the layer', async () => {

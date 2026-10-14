@@ -2,8 +2,8 @@ import * as audioGraph from './audio-graph.js';
 import { createViz } from './viz-canvas.js';
 import { createLookahead } from './viz-lookahead.js';
 import { barCount } from './viz-spectrum.js';
-import { createFullscreen, isVizKey, isVizModeKey, isVizStyleKey } from './viz-fullscreen.js';
-import { createPartsToggles } from './viz-parts-ui.js';
+import { createFullscreen, isNearBox, isVizKey, isVizModeKey, isVizStyleKey } from './viz-fullscreen.js';
+import { createStylePanel } from './viz-panel.js';
 import { createModeSwitch } from './viz-switch.js';
 import { initOverlayPlayControls } from './viz-playctl.js';
 import { availableModes, nextMode, modeLabel } from './viz-modes.js';
@@ -61,16 +61,22 @@ function paintMeta(song) {
   $('viz-artist').textContent = song?.artist || '';
 }
 
-function bindOverlayActivity(root, full) {
-  let wasIdle = false;
-  root.addEventListener('pointerdown', () => { wasIdle = full.idle; full.poke(); });
-  root.addEventListener('pointermove', () => full.poke());
+const CORNER_PAD = 48;
+
+function bindOverlayActivity(root, full, { onCanvasClick }) {
+  const corner = $('viz-corner');
+  const setNear = (v) => corner.classList.toggle('near', v);
+  root.addEventListener('pointerdown', () => full.poke());
+  root.addEventListener('pointermove', (e) => {
+    full.poke();
+    if (e.pointerType && e.pointerType !== 'mouse') return;
+    setNear(isNearBox({ x: e.clientX, y: e.clientY }, corner.getBoundingClientRect(), CORNER_PAD));
+  });
+  root.addEventListener('pointerleave', () => setNear(false));
   root.addEventListener('keydown', () => full.poke());
   root.addEventListener('focusin', () => full.poke());
   root.addEventListener('click', (e) => {
-    if (!e.target?.classList?.contains('viz-canvas')) return;
-    if (!wasIdle) full.close();
-    wasIdle = false;
+    if (e.target?.classList?.contains('viz-canvas')) onCanvasClick();
   });
 }
 
@@ -92,13 +98,14 @@ export function initVisualizer({
   const camPanel = /[#?&]vizdebug=1\b/.test(`${win.location?.search ?? ''}${win.location?.hash ?? ''}`)
     ? (loadCam(), createCamPanel(document))
     : null;
-  if (camPanel) document.body.append(camPanel.el);
+  const dock = document.createElement('div');
+  dock.className = 'viz-dock';
+  document.body.append(dock);
   const button = $('p-viz');
   const reducedMql = win.matchMedia?.(REDUCED) ?? null;
   setIcon('p-viz', 'equalizer', 20);
   setIcon('viz-prev', 'prev', 22);
   setIcon('viz-next', 'next', 22);
-  setIcon('viz-close', 'clear', 22);
   if (!supported) {
     button.disabled = true;
     button.title = NO_AUDIO_TIP;
@@ -141,23 +148,33 @@ export function initVisualizer({
   fullViz.setVizMode(currentMode);
   const syncSwitchVisibility = () => {
     $('p-viz-switch').hidden = modes.length < 2 || !(supported && vizBackgroundOn());
-    $('p-viz-parts').hidden = !(supported && vizBackgroundOn() && currentMode === 'bars');
-    $('viz-parts').hidden = currentMode !== 'bars';
+    syncDock();
   };
   const partsState = vizParts();
   bgViz.setParts(partsState);
   fullViz.setParts(partsState);
-  const toggles = ['p-viz-parts', 'viz-parts'].map((id) => createPartsToggles({
-    root: $(id),
-    state: partsState,
-    onChange: setVizParts,
-    onRefuse: (row, part) => { if (live) live.textContent = `At least one ${row === 'freq' ? 'frequency' : 'behaviour'} part must stay on: ${part.label} kept on`; },
-  }));
+  const stylePanel = createStylePanel({
+    mode: currentMode,
+    width: win.innerWidth ?? 1200,
+    parts: {
+      state: partsState,
+      onChange: setVizParts,
+      onRefuse: (row, part) => { if (live) live.textContent = `At least one ${row === 'freq' ? 'frequency' : 'behaviour'} part must stay on: ${part.label} kept on`; },
+    },
+  });
+  dock.append(...(camPanel ? [camPanel.el] : []), stylePanel.el);
   onVizParts((s) => {
     bgViz.setParts(s);
     fullViz.setParts(s);
-    for (const t of toggles) t.set(s);
+    stylePanel.setParts(s);
   });
+  const syncDock = () => {
+    const inFull = full?.isOpen?.() ?? false;
+    const bgOn = supported && vizBackgroundOn();
+    stylePanel.setMode(currentMode);
+    stylePanel.el.hidden = stylePanel.isEmpty();
+    dock.hidden = !(supported && (inFull || bgOn)) || (stylePanel.el.hidden && !camPanel);
+  };
 
   function enableGraph() {
     if (!supported) return;
@@ -177,16 +194,19 @@ export function initVisualizer({
     onOpen() {
       enableGraph();
       placeStatus(true);
-      if (camPanel) $('viz-full').append(camPanel.el);
+      $('viz-full').append(dock);
+      dock.style.setProperty('--viz-ctl-h', `${$('viz-ctl').offsetHeight || 112}px`);
       paintMeta(player.current);
       paintPlayButton(audio);
       scrubber.sync();
       fullViz.setEnabled(true);
       syncBackground();
     },
+    onIdle() { for (const sw of switches) sw.close(); },
     onClose() {
+      for (const sw of switches) sw.close();
       placeStatus(false);
-      if (camPanel) document.body.append(camPanel.el);
+      document.body.append(dock);
       fullViz.setEnabled(false);
       syncBackground();
     },
@@ -200,11 +220,23 @@ export function initVisualizer({
   }
 
   button.addEventListener('click', () => { if (supported) full.toggle(); });
-  $('viz-close').addEventListener('click', () => full.close());
   $('viz-play').addEventListener('click', () => player.toggle());
   $('viz-prev').addEventListener('click', () => player.prev());
   $('viz-next').addEventListener('click', () => player.next());
-  bindOverlayActivity($('viz-full'), full);
+  setIcon('viz-close', 'clear', 22);
+  $('viz-close').addEventListener('click', () => full.close());
+  const flash = $('viz-flash');
+  bindOverlayActivity($('viz-full'), full, {
+    onCanvasClick() {
+      const willPlay = audio.paused;
+      player.toggle();
+      setIcon('viz-flash', willPlay ? 'play' : 'pause', 64);
+      flash.classList.remove('go');
+      void flash.offsetWidth;
+      flash.classList.add('go');
+      if (live) live.textContent = willPlay ? 'Playing' : 'Paused';
+    },
+  });
   initOverlayPlayControls({ player, audio, root: $('viz-full'), live, isOpen: () => full.isOpen() });
 
   document.addEventListener('keydown', (e) => {
