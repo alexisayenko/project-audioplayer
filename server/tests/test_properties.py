@@ -8,7 +8,7 @@ import pytest
 
 from app import identify, jsonio, library, titleclean, titles, urlclean
 
-ALPHABET = string.ascii_letters + string.digits + " .-_/\\:*?\"<>|%\t\n\r\x00" + "Жинéü‮​\U0001f3b5"
+ALPHABET = string.ascii_letters + string.digits + " .-_/\\:*?\"<>|%\t\n\r\x00" + "Жинéü\u202e\u200b\U0001f3b5"
 SEEDS = range(12)
 
 
@@ -288,7 +288,7 @@ def test_titleclean_never_empties_never_grows_and_is_deterministic(seed):
     for _ in range(150):
         title = rnd_title(rng)
         out, removed = titleclean.clean_ex(title)
-        assert (out, removed) == titleclean.clean_ex(title)
+        assert titleclean.clean_ex(title) == (out, removed)
         original = " ".join(title.split())
         assert len(out) <= len(original) + 0 or out == original
         if original:

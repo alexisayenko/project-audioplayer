@@ -20,7 +20,8 @@ def test_apply_writes_backup_outside_library_dir(tmp_path, monkeypatch):
     lib = lib_dir / "library.json"
     lib.write_text(json.dumps([{"id": "1", "title": "Song [Free Download]", "artist": "A"}]))
     backups = tmp_path / "bk"
-    monkeypatch.setattr(sys, "argv", ["clean-titles", "--library", str(lib), "--apply", "--backup-dir", str(backups)])
+    monkeypatch.setattr(mod, "default_backup_dir", lambda stamp: backups.mkdir() or backups)
+    monkeypatch.setattr(sys, "argv", ["clean-titles", "--library", str(lib), "--apply"])
     assert mod.main() == 0
     assert [p.name for p in lib_dir.iterdir()] == ["library.json"]
     saved = list(backups.glob("*.bak-*"))

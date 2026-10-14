@@ -6,7 +6,7 @@ Dry run by default: prints counts and a before/after sample. `--apply` copies ea
 git work tree), then writes through the same store (app.library.save).
 Not part of the app, never run automatically; new songs are cleaned when added.
 
-  scripts/clean-titles.py --library /path/to/library.json [--apply] [--backup-dir DIR]
+  scripts/clean-titles.py --library /path/to/library.json [--apply]
   scripts/clean-titles.py --data-dir /path/to/data [--apply] # every users/*/library.json
 """
 
@@ -60,7 +60,6 @@ def main() -> int:
     ap.add_argument("--library", type=Path, action="append", default=[])
     ap.add_argument("--data-dir", type=Path)
     ap.add_argument("--apply", action="store_true")
-    ap.add_argument("--backup-dir", type=Path, help="default: /var/backups/audioplayer-titles-<ts>, else system temp")
     ap.add_argument("--sample", type=int, default=15)
     args = ap.parse_args()
     paths = [p.resolve() for p in args.library]
@@ -85,8 +84,7 @@ def process(path: Path, args: argparse.Namespace, stamp: str, backup_dir: Path |
         print(f"  {old!r} -> {new!r}")
     if args.apply and changes:
         if backup_dir is None:
-            backup_dir = args.backup_dir or default_backup_dir(stamp)
-            backup_dir.mkdir(parents=True, exist_ok=True)
+            backup_dir = default_backup_dir(stamp)
         backup = backup_path(backup_dir, path, stamp)
         shutil.copy2(path, backup)
         for i, _, new in changes:
