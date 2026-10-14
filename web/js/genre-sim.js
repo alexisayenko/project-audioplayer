@@ -14,9 +14,14 @@ const VELOCITY_DECAY = 0.4;
 const THETA2 = 0.81;
 const MAX_V = 40;
 
+function opens(c, d2) {
+  return Boolean(c.kids) && (d2 === 0 || (c.size * c.size) / d2 >= THETA2);
+}
+
 function clampV(v) {
   return Math.max(-MAX_V, Math.min(MAX_V, v));
 }
+
 const REST = 0.012;
 
 function quad(x0, y0, size) {
@@ -120,10 +125,6 @@ export function createSim({ nodes, links = [], seed = 1, breathing = true, charg
       const f = (charge * alpha * c.leaf[i + 1]) / e2;
       n.vx -= ex * f; n.vy -= ey * f;
     }
-  }
-
-  function opens(c, d2) {
-    return Boolean(c.kids) && (d2 === 0 || (c.size * c.size) / d2 >= THETA2);
   }
 
   function chargeOn(n, root) {
