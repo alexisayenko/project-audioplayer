@@ -33,8 +33,8 @@ def test_never_empty():
 
 
 def test_preview_fields(monkeypatch):
-    from app import main
-    assert main._clean_preview_title({"title": "A - B [Free Download]"}) == {"title": "A - B", "title_raw": "A - B [Free Download]"}
+    from app.routes import lookup
+    assert lookup.clean_preview_title({"title": "A - B [Free Download]"}) == {"title": "A - B", "title_raw": "A - B [Free Download]"}
 
 
 def test_lookup_title_uses_it():
