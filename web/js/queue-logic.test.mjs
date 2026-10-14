@@ -136,4 +136,23 @@ test('queue-logic', () => {
     assert.equal(Q.clean(r.state).state.items.length, 3, 'search-only adds are manual and survive Clean');
     assert.equal(r.state.index, 0);
   }
+
+  {
+    const songs = [{ id: 'a', tags: ['x', 'y'] }, { id: 'b', tags: ['x'] }, { id: 'a', tags: ['x', 'y'] }];
+    const old = Q.addManual(Q.addManual(Q.emptyState(), 'q').state, 'r').state;
+    let r = Q.playListed(old, songs, ['x', 'y']);
+    assert.deepEqual([r.count, r.replaced, r.state.index, r.state.tags], [2, true, 0, ['x', 'y']]);
+    assert.deepEqual(r.state.items.map((it) => [it.id, it.manual, it.tags]), [['a', false, ['x', 'y']], ['b', false, ['x']]]);
+    r = Q.playListed(old, songs, [], true, () => 0.99);
+    assert.deepEqual([r.state.index, r.state.items.every((it) => it.manual), r.state.tags], [1, true, []]);
+    r = Q.playListed(Q.emptyState(), songs, [], false);
+    assert.equal(r.replaced, false);
+    assert.equal(Q.playListed(old, [], []).state, old);
+  }
+});
+
+test("tag picks match legacy country spellings", () => {
+  const songs = [{ id: 'a', tags: ['country:usa'] }, { id: 'b', tags: ['country:United States'] }, { id: 'c', tags: ['country:fr'] }];
+  const r = Q.addTags(Q.emptyState(), ["country:us"], songs);
+  assert.deepEqual(r.state.items.map((i) => i.id).sort(), ['a', 'b']);
 });

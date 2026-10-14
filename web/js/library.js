@@ -5,12 +5,14 @@ import { player } from './player.js';
 import { el, toast, fmtTime, plural } from './dom.js';
 import { icon } from './icons.js';
 import { openMenu } from './menu.js';
+import { downloadSong } from './download.js';
 import { hasAudio, sourceLink } from './playable.js';
+import { autoDownloadOn } from './autodl.js';
 import { serviceIcon } from './service-icons.js';
 import { trackSub } from './track-sub.js';
 import { openAdd } from './add.js';
 import { editDialog } from './edit-dialog.js';
-import { visibleTags, tagLabel, tagSearchText, categoryOf, categoryTags, CATEGORIES } from './tagname.js';
+import { visibleTags, canonicalTag, tagLabel, tagSearchText, categoryOf, categoryTags, CATEGORIES } from './tagname.js';
 
 const prefs = { query: '', sel: new Set(), sort: 'added' };
 
@@ -28,7 +30,7 @@ function cmp(a, b) {
 
 function matchesSelection(song, sel) {
   if (!sel.size) return true;
-  const mine = new Set((song.tags || []).map((t) => t.toLocaleLowerCase()));
+  const mine = new Set((song.tags || []).map((t) => canonicalTag(t).toLocaleLowerCase()));
   const byCat = new Map();
   for (const t of sel) {
     const c = categoryOf(t);
@@ -70,9 +72,18 @@ export function renderLibrary(root) {
   addAll.addEventListener('click', () => {
     const songs = visibleSongs();
     const only = prefs.sel.size === 1 ? store.tags.find((t) => prefs.sel.has(t.tag.toLocaleLowerCase())) : null;
-    const { added, already } = player.addListed(songs.filter(hasAudio), only ? only.tag : '');
+    const { added, already, fetching } = player.addListed(songs, only ? only.tag : '');
     const note = already ? ` (${already} already in queue)` : '';
-    toast(`Added ${added} ${plural(added, 'song', 'songs')}${note}`);
+    const dl = fetching ? `, ${fetching} downloading` : '';
+    toast(`Added ${added} ${plural(added, 'song', 'songs')}${dl}${note}`);
+  });
+  const playAll = el('button', { class: 'btn outline small', type: 'button', hidden: true });
+  playAll.addEventListener('click', () => {
+    const tags = [...prefs.sel].map((k) => store.tags.find((t) => t.tag.toLocaleLowerCase() === k)).filter(Boolean).map((t) => t.tag);
+    const { count, skipped, replaced, fetching } = player.playListed(visibleSongs(), tags);
+    if (!count) { toast('Nothing to play'); return; }
+    const note = (fetching ? `, ${fetching} downloading` : '') + (skipped ? `, ${skipped} without audio skipped` : '');
+    toast(`Playing ${count} ${plural(count, 'song', 'songs')}${replaced ? ' (queue replaced)' : ''}${note}`);
   });
   const status = el('div');
   const head = el('div', { class: 'table-head', 'aria-hidden': 'true' },
@@ -91,7 +102,7 @@ export function renderLibrary(root) {
       cats),
     el('div', { class: 'sortbar' },
       el('label', { class: 'sort t-headline' }, sort, icon('chevron', 16)),
-      summary, addAll),
+      summary, playAll, addAll),
     group,
     status);
 
@@ -172,6 +183,8 @@ export function renderLibrary(root) {
     const filtered = !!(prefs.sel.size || prefs.query.trim());
     total.textContent = store.loaded ? `${store.songs.length} ${plural(store.songs.length, 'song', 'songs')}` : '';
     summary.textContent = store.loaded && store.songs.length && filtered ? matchSummary(songs.length) : '';
+    playAll.hidden = !(store.loaded && songs.length);
+    playAll.textContent = `Play all ${songs.length}`;
     addAll.hidden = !(store.loaded && filtered && songs.length);
     addAll.textContent = `Add all ${songs.length} to playlist`;
     const nothing = store.loaded && !store.songs.length;
@@ -233,17 +246,19 @@ function srcLogo(link) {
 
 function songRow(s, cur) {
   const audio = hasAudio(s);
+  const queueable = audio || autoDownloadOn();
   const link = audio ? null : sourceLink(s);
   const here = audio && cur && cur.id === s.id;
   const more = el('button', { class: 'more', type: 'button', 'aria-label': `More: ${s.title}`, 'aria-haspopup': 'menu', 'aria-expanded': 'false' }, icon('more', 20));
   more.addEventListener('click', () => openMenu(more, [
-    ...(audio ? [
+    ...(queueable ? [
       { label: 'Play now', run: () => player.playNow(s.id) },
       { label: 'Add to playlist', run: () => addToQueue(s) },
     ] : []),
+    ...(audio ? [{ label: 'Download', run: () => downloadSong(s) }] : []),
     { label: 'Edit song', run: () => editDialog(s) },
   ]));
-  const open = audio
+  const open = queueable
     ? el('button', { class: 'open t-headline', type: 'button', title: 'Play now', onclick: () => player.playNow(s.id) }, s.title)
     : el('span', { class: 'open t-headline' }, s.title);
   const genres = genreText(s.tags);

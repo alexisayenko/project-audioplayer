@@ -1,3 +1,4 @@
+import { canonicalTag } from './tagname.js';
 
 
 // Returns { index, played } for the song to play next, or null to stop.
@@ -45,7 +46,7 @@ export function prevStep({ queue, index, shuffle, history = [] }) {
 }
 
 const lc = (s) => s.toLocaleLowerCase();
-const hasTag = (song, tag) => (song.tags || []).some((t) => lc(t) === lc(tag));
+const hasTag = (song, tag) => (song.tags || []).some((t) => lc(canonicalTag(t)) === lc(canonicalTag(tag)));
 
 // Queue state: { items: [{ id, manual, tags }], index, tags }.
 // `tags` are the selected tag chips; an item's `tags` are the chips that brought it in.
@@ -127,6 +128,21 @@ export function addListed(state, songs, tag = '') {
   return { state: next, added, already };
 }
 
+// Library "Play all": the queue is REPLACED by the listed songs (deduped, list order). With tag filters the tags become
+// chips and the items tag-derived; search-only gives manual items. Start index is 0, or random when shuffle is on.
+export function playListed(state, songs, tags = [], shuffle = false, rand = Math.random) {
+  const seen = new Set();
+  const list = songs.filter((s) => !seen.has(s.id) && seen.add(s.id));
+  if (!list.length) return { state, count: 0, replaced: false };
+  const items = list.map((s) => {
+    const matched = tags.filter((t) => hasTag(s, t));
+    return matched.length ? { id: s.id, manual: false, tags: matched } : { id: s.id, manual: true, tags: [] };
+  });
+  const index = shuffle ? Math.min(items.length - 1, Math.floor(rand() * items.length)) : 0;
+  const replaced = state.items.length > state.index + 1;
+  return { state: { items, index, tags: [...tags] }, count: items.length, replaced };
+}
+
 // Drops chips and the not-yet-started, non-manual songs that only those chips contributed.
 export function removeTags(state, remove) {
   const rm = new Set(remove.map(lc));
@@ -181,4 +197,14 @@ export function parseSaved(data) {
   const fallback = items.length ? 0 : -1;
   const index = valid ? data.index : fallback;
   return { items, index, tags };
+}
+
+export const upcomingCount = (state) => Math.max(0, state.items.length - Math.max(state.index, -1) - 1);
+
+// Queue "Clear": drops every song after the current one and all tag chips; the current and earlier songs stay.
+export function clearUpcoming(state) {
+  const keep = Math.max(state.index, -1) + 1;
+  const removed = Math.max(0, state.items.length - keep);
+  const items = state.items.slice(0, keep).map((it) => ({ ...it, tags: [] }));
+  return { state: { items, index: state.index, tags: [] }, removed };
 }

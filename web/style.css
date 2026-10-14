@@ -374,6 +374,30 @@ body.signed-out #nav a:not([data-route="settings"]), body.signed-out #mini { dis
 }
 .cover-text h2 { font-size: 26px; line-height: 32px; overflow-wrap: anywhere; }
 .cover-text p { opacity: .8; overflow-wrap: anywhere; }
+.cover-btn {
+  position: absolute; inset: 0; z-index: 1; display: grid; place-items: center; padding: 0; border: 0; border-radius: inherit;
+  background: transparent; color: var(--cover-ink); cursor: pointer;
+}
+.cover-btn[hidden] { display: none; }
+.cover-btn:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: -4px; }
+.cover-icon {
+  display: grid; place-items: center; width: 84px; height: 84px; margin-bottom: 56px; border-radius: 50%;
+  background: color-mix(in srgb, var(--vinyl) 55%, transparent); color: var(--cover-ink);
+  transition: opacity .2s, transform .2s; opacity: 1;
+}
+.cover-btn.is-playing .cover-icon { opacity: 0; transform: scale(.9); }
+.cover-btn.is-playing:hover .cover-icon, .cover-btn.is-playing:focus-visible .cover-icon, .cover-btn.is-playing.flash .cover-icon { opacity: 1; transform: none; }
+@media (hover: none) { .cover-btn.is-playing .cover-icon { opacity: 1; transform: none; } }
+.cover-text { z-index: 2; pointer-events: none; }
+.dl-note { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-radius: var(--radius-card); background: var(--accent-tint); color: var(--ink); }
+.dl-note[hidden] { display: none; }
+.qrow .dl { color: var(--ink-muted); }
+.qrow .dl.failed { color: var(--accent-ink); }
+.qrow .dl-act { background: none; border: 0; padding: 0; color: var(--accent-ink); font: inherit; font-weight: 600; text-decoration: underline; cursor: pointer; }
+.qrow.no-audio .cover { opacity: .6; }
+.switch-row { display: flex; align-items: flex-start; gap: var(--space-3); }
+.switch-row input { width: 22px; height: 22px; margin-top: 2px; accent-color: var(--accent); flex: none; }
+.switch-row .t-caption { display: block; color: var(--ink-muted); }
 .empty-note { text-align: center; padding: var(--space-2) 0; }
 .cover-art .empty-note { position: absolute; left: 0; right: 0; bottom: var(--space-4); color: var(--cover-ink); }
 .pb-actions { display: flex; justify-content: flex-end; gap: var(--space-2); }

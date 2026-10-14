@@ -36,13 +36,15 @@
       <div class="cover-art noart" id="cover-art">
         <img id="player-cover" alt="">
         <span class="disc" aria-hidden="true"></span>
+        <button class="cover-btn" id="cover-toggle" type="button" aria-label="Play" title="Play" hidden><span class="cover-icon" id="cover-icon" aria-hidden="true"></span></button>
         <div class="cover-text" id="cover-text" hidden>
           <h2 id="player-title" class="t-title"></h2>
           <p id="player-sub" class="t-body"></p>
         </div>
         <p class="empty-note t-subhead" id="player-empty">Nothing playing</p>
       </div>
-      <div class="pb-actions"><button class="icon round" id="p-more" type="button" aria-label="More" aria-haspopup="menu" aria-expanded="false" hidden></button></div>
+      <div class="dl-note" id="player-dl" role="status" hidden><span class="t-subhead" id="player-dl-text"></span><button class="btn outline small" id="player-dl-btn" type="button" hidden>Download</button></div>
+      <div class="pb-actions"><button class="icon round" id="p-download" type="button" title="Download" aria-label="Download" hidden></button><button class="icon round" id="p-more" type="button" aria-label="More" aria-haspopup="menu" aria-expanded="false" hidden></button></div>
       <div class="pb-progress">
         <input type="range" id="scrub" class="slider" min="0" max="1000" value="0" step="1" aria-label="Seek">
         <div class="times t-time"><span id="t-cur">0:00</span><span id="t-dur">-0:00</span></div>
@@ -72,7 +74,7 @@
           <div class="qtitle"><span class="t-headline">Queue</span><span class="muted t-caption" id="queue-count"></span></div>
           <div class="qactions">
             <button class="link-btn t-subhead strong" id="tag-add" type="button" title="Add songs by tag">Add by tag</button>
-            <button class="link-btn t-subhead strong" id="queue-clear" type="button" title="Remove the songs added by tags">Clear</button>
+            <button class="link-btn t-subhead strong" id="queue-clear" type="button" title="Remove the upcoming songs and tag chips">Clear</button>
           </div>
         </div>
         <div class="fill-tags" id="fill-tags"></div>

@@ -18,10 +18,11 @@ function lostSession() {
 }
 
 export class ApiError extends Error {
-  constructor(status, message, code = '') {
+  constructor(status, message, code = '', retryMinutes = 0) {
     super(message);
     this.status = status;
     this.code = code;
+    this.retryMinutes = retryMinutes;
   }
 }
 
@@ -50,7 +51,7 @@ async function request(method, path, body, signal) {
       lostSession();
     }
     const code = data?.error || '';
-    throw new ApiError(res.status, friendly(code, data, detail) || `Request failed (${res.status})`, code);
+    throw new ApiError(res.status, friendly(code, data, detail) || `Request failed (${res.status})`, code, Number(data?.retry_after_minutes) || 0);
   }
   return data;
 }
@@ -109,8 +110,11 @@ export const api = {
   metadata: (body, signal) => request('POST', '/metadata', body, signal),
   addSong: (url, metadata, tags) => request('POST', '/songs', { url, metadata, tags, audio: false }),
   patch: (id, changes) => request('PATCH', `/songs/${q(id)}`, changes),
+  fetchAudio: (id) => request('POST', `/songs/${q(id)}/audio`),
+  songStatus: (id) => request('GET', `/songs/${q(id)}/status`),
   detectBpm: (id) => request('POST', `/songs/${q(id)}/bpm/detect`),
   remove: (id) => request('DELETE', `/songs/${q(id)}`),
   fileUrl: (id) => `/files/${q(id)}`,
+  downloadUrl: (id) => `/files/${q(id)}?download=1`,
   coverUrl: (id) => `/covers/${q(id)}`,
 };

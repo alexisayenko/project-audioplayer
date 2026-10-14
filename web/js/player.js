@@ -7,6 +7,8 @@ import { visibleTags, tagChip, tagGroups, tagLabel, tagText } from './tagname.js
 import { songLinks } from './wiki-links.js';
 import { icon } from './icons.js';
 import { openMenu, closeMenu, initMenus } from './menu.js';
+import { downloadSong } from './download.js';
+import { autodl, autoDownloadOn } from './autodl.js';
 import { editDialog, dialogHead } from './edit-dialog.js';
 
 const audio = document.getElementById('audio');
@@ -34,9 +36,15 @@ let played = [];
 let history = [];
 let scrubbing = false;
 let pendingRestore = false;
+let awaiting = null;
 const listeners = new Set();
 
 const ids = () => Q.queueIds(qs);
+const canQueue = (song) => !!song && (hasAudio(song) || autoDownloadOn());
+const usable = (item) => {
+  const s = store.get(item.id);
+  return hasAudio(s) || (!!s && autoDownloadOn() && autodl.view(item.id).kind !== 'failed');
+};
 const logic = () => ({ queue: ids(), index: qs.index, shuffle, repeat, played });
 
 function saveQueue() {
@@ -60,11 +68,21 @@ function restore() {
   } catch { /* corrupt or unavailable: start empty */ }
 }
 
+function syncDownloads() {
+  if (!autoDownloadOn()) return 0;
+  autodl.prune(ids());
+  const need = qs.items.slice(Math.max(qs.index, 0))
+    .filter((it) => store.get(it.id) && !hasAudio(store.get(it.id)) && autodl.view(it.id).kind === 'none')
+    .map((it) => it.id);
+  return need.length ? autodl.request(need) : 0;
+}
+
 function commit(next) {
   const wasEmpty = qs.index < 0;
   qs = next;
   saveQueue();
   if (wasEmpty && qs.index >= 0) load(false); else render();
+  syncDownloads();
 }
 
 function jumpTo(i, remember = true) {
@@ -81,29 +99,42 @@ export const player = {
   onChange(fn) { listeners.add(fn); return () => listeners.delete(fn); },
 
   playNow(id) {
-    if (!hasAudio(store.get(id))) return;
+    if (!canQueue(store.get(id))) return;
     qs = Q.playNow(qs, id);
     saveQueue();
     load(true);
   },
 
   add(id) {
-    if (!hasAudio(store.get(id))) return 'unavailable';
+    if (!canQueue(store.get(id))) return 'unavailable';
     const { state, result } = Q.addManual(qs, id);
     commit(state);
     return result;
   },
 
   addTags(tags) {
-    const { state, added } = Q.addTags(qs, tags, store.songs.filter(hasAudio));
+    const { state, added } = Q.addTags(qs, tags, store.songs.filter(canQueue));
     commit(state);
     return added;
   },
 
   addListed(songs, tag) {
-    const { state, added, already } = Q.addListed(qs, songs.filter(hasAudio), tag);
+    const { state, added, already } = Q.addListed(qs, songs.filter(canQueue), tag);
     commit(state);
-    return { added, already };
+    return { added, already, fetching: pendingDownloads() };
+  },
+
+  playListed(songs, tags) {
+    const playable = songs.filter(canQueue);
+    const r = Q.playListed(qs, playable, tags, shuffle);
+    if (!r.count) return { count: 0, skipped: songs.length, replaced: false };
+    played = [];
+    history = [];
+    qs = r.state;
+    saveQueue();
+    load(true);
+    syncDownloads();
+    return { count: r.count, skipped: songs.length - playable.length, replaced: r.replaced, fetching: pendingDownloads() };
   },
 
   removeTag(tag) {
@@ -112,10 +143,21 @@ export const player = {
     return removed;
   },
 
-  clean() {
-    const { state, removed } = Q.clean(qs);
+  clearUpcoming() {
+    const { state, removed } = Q.clearUpcoming(qs);
     commit(state);
     return removed;
+  },
+
+  autoDownloadChanged() {
+    if (autoDownloadOn()) {
+      syncDownloads();
+      const cur = player.current;
+      if (cur && !hasAudio(cur)) autodl.request([cur.id], { front: true });
+    } else {
+      autodl.prune([]);
+    }
+    render();
   },
 
   removeAt(i) { commit(Q.removeAt(qs, i)); },
@@ -148,23 +190,46 @@ export const player = {
   },
 
   toggle() {
-    if (!player.current) return;
+    const song = player.current;
+    if (!song) return;
+    if (!hasAudio(song)) { wantAudio(song); return; }
     if (audio.paused) audio.play().catch(fail); else audio.pause();
   },
 
   next(auto = false) {
-    const step = Q.nextStep(logic(), !auto);
-    if (!step) { render(); return; }
-    played = step.played;
-    if (step.index === qs.index) { audio.currentTime = 0; audio.play().catch(fail); render(); return; }
-    jumpTo(step.index);
+    let at = qs.index;
+    let seen = played;
+    let skipped = 0;
+    for (let k = 0; k < qs.items.length; k += 1) {
+      const step = Q.nextStep({ ...logic(), index: at, played: seen }, !auto);
+      if (!step) break;
+      seen = step.played;
+      if (step.index === qs.index) { played = seen; audio.currentTime = 0; audio.play().catch(fail); render(); return; }
+      if (usable(qs.items[step.index])) { played = seen; skipNote(skipped); jumpTo(step.index); return; }
+      skipped += 1;
+      at = step.index;
+    }
+    played = seen;
+    skipNote(skipped);
+    render();
   },
 
   prev() {
-    const step = audio.currentTime > 3 ? null : Q.prevStep({ ...logic(), history });
-    if (!step) { audio.currentTime = 0; return; }
-    history = step.history;
-    jumpTo(step.index, false);
+    const back = () => { audio.currentTime = 0; };
+    if (audio.currentTime > 3) { back(); return; }
+    let at = qs.index;
+    let hist = history;
+    let skipped = 0;
+    for (let k = 0; k < qs.items.length; k += 1) {
+      const step = Q.prevStep({ ...logic(), index: at, history: hist });
+      if (!step) break;
+      hist = step.history;
+      if (usable(qs.items[step.index])) { history = hist; skipNote(skipped); jumpTo(step.index, false); return; }
+      skipped += 1;
+      at = step.index;
+    }
+    skipNote(skipped);
+    back();
   },
 
   seek(t) { if (Number.isFinite(audio.duration)) audio.currentTime = Math.max(0, Math.min(t, audio.duration)); },
@@ -172,12 +237,45 @@ export const player = {
 
 function fail() { toast('Cannot play this song'); }
 
+function skipNote(n) {
+  if (n) toast(`Skipped ${n} ${plural(n, 'song', 'songs')} without audio`);
+}
+
+function pendingDownloads() {
+  return qs.items.filter((it) => autodl.view(it.id).kind !== 'none').length;
+}
+
+function wantAudio(song) {
+  awaiting = song.id;
+  if (autoDownloadOn()) {
+    autodl.request([song.id], { front: true });
+    return;
+  }
+  toast('Not downloaded');
+}
+
+function startDownload(song) {
+  awaiting = song.id;
+  const k = autodl.view(song.id).kind;
+  if (k === 'failed') autodl.retry(song.id);
+  else autodl.request([song.id], { front: true });
+}
+
 function load(autoplay) {
   const song = player.current;
   if (!song) return;
+  updateMediaSession(song);
+  if (!hasAudio(song)) {
+    audio.pause();
+    audio.removeAttribute('src');
+    awaiting = autoplay ? song.id : null;
+    if (autoDownloadOn()) autodl.request([song.id], { front: true });
+    render();
+    return;
+  }
+  awaiting = null;
   audio.src = api.fileUrl(song.id);
   if (autoplay) audio.play().catch(fail);
-  updateMediaSession(song);
   render();
 }
 
@@ -198,12 +296,19 @@ function render() {
   $('details-body').hidden = !song;
   $('cover-text').hidden = !song;
   $('p-more').hidden = !song;
+  $('p-download').hidden = !hasAudio(song);
   $('queue-count').textContent = n ? `${n} ${plural(n, 'song', 'songs')}` : '';
   renderPlaylistControls();
   const playing = !audio.paused;
   setIcon('p-play', playing ? 'pause' : 'play', 22);
   setIcon('mini-play', playing ? 'pause' : 'play', 20);
   $('p-play').setAttribute('aria-label', playing ? 'Pause' : 'Play');
+  const cover = $('cover-toggle');
+  cover.hidden = !song;
+  cover.setAttribute('aria-label', playing ? 'Pause' : 'Play');
+  cover.title = playing ? 'Pause' : 'Play';
+  cover.classList.toggle('is-playing', playing);
+  $('cover-icon').replaceChildren(icon(playing ? 'pause' : 'play', 44));
   $('mini-play').setAttribute('aria-label', playing ? 'Pause' : 'Play');
   if (!song) {
     document.title = 'Electrophone';
@@ -211,6 +316,7 @@ function render() {
     $('player-cover').removeAttribute('src');
     $('player-cover').dataset.src = '';
     $('cover-art').classList.add('noart');
+    $('player-dl').hidden = true;
     renderQueue();
     return;
   }
@@ -227,6 +333,7 @@ function render() {
   $('player-tags').replaceChildren(...visibleTags(song.tags).map(tagChip));
   $('player-bpm').textContent = song.bpm != null ? `${Math.round(song.bpm)} BPM` : '';
   $('player-links').replaceChildren(...songLinks(song).map((l) => el('a', { class: 'source t-caption', href: l.href, target: '_blank', rel: 'noopener noreferrer' }, l.label)));
+  updateDl();
   setCover($('mini-cover'), song);
   setCover($('player-cover'), song);
   $('cover-art').classList.toggle('noart', !song.cover);
@@ -249,7 +356,9 @@ function setToggle(ids, on, label, iconName) {
 function renderPlaylistControls() {
   setToggle(['p-shuffle', 'mini-shuffle'], shuffle, `Shuffle: ${shuffle ? 'on' : 'off'}`);
   setToggle(['p-repeat', 'mini-repeat'], repeat !== 'off', `Repeat: ${REPEAT_LABEL[repeat] || 'off'}`, repeat === 'one' ? 'repeatOne' : 'repeat');
-  $('queue-clear').disabled = !qs.tags.length;
+  const nothing = !Q.upcomingCount(qs) && !qs.tags.length;
+  $('queue-clear').disabled = nothing;
+  $('queue-clear').title = nothing ? 'Nothing upcoming to clear' : 'Remove the upcoming songs and tag chips';
   $('fill-tags').replaceChildren(...qs.tags.map((t) => el('span', { class: 'chip tint', title: t },
     tagText(t),
     el('button', {
@@ -273,12 +382,13 @@ function songRow(item, i) {
     { label: 'Move down', disabled: past || i + 1 >= qs.items.length, run: () => player.move(i, 1) },
     { label: 'Remove', disabled: past, run: () => player.removeAt(i) },
   ]));
-  return el('li', { class: `qrow${i === qs.index ? ' current' : ''}`, 'aria-current': i === qs.index ? 'true' : null },
+  return el('li', { class: `qrow${i === qs.index ? ' current' : ''}${s && !hasAudio(s) ? ' no-audio' : ''}`, 'aria-current': i === qs.index ? 'true' : null },
     el('span', { class: 'c-idx t-time' }, i + 1),
     cover,
     el('div', { class: 'info' },
       el('button', { class: 'open t-subhead', type: 'button', title: 'Play', onclick: () => player.playAt(i) }, title),
-      s?.artist ? el('small', { class: 'sub t-caption' }, s.artist) : null),
+      s?.artist ? el('small', { class: 'sub t-caption' }, s.artist) : null,
+      s && !hasAudio(s) ? el('small', { class: 'dl t-caption', 'data-dl': item.id }) : null),
     el('span', { class: 'c-dur t-time' }, s?.duration ? fmtTime(s.duration) : ''),
     more);
 }
@@ -338,6 +448,41 @@ function renderQueue() {
   closeMenu();
   $('queue-empty').hidden = qs.items.length > 0;
   $('queue-list').replaceChildren(...qs.items.map((item, i) => songRow(item, i)));
+  updateDl();
+}
+
+function dlText(v, short) {
+  switch (v.kind) {
+    case 'downloading': return v.progress > 0 ? `Downloading ${Math.round(v.progress * 100)}%` : 'Downloading...';
+    case 'queued': return short ? 'Queued' : 'Queued for download';
+    case 'paused': return `Download limit reached - resumes in ${v.minutes} min`;
+    case 'failed': return short ? 'Download failed' : `Download failed: ${v.error}`;
+    default: return 'Not downloaded';
+  }
+}
+
+function paintDl(node, id) {
+  const v = autodl.view(id);
+  node.classList.toggle('failed', v.kind === 'failed');
+  node.replaceChildren(dlText(v, true));
+  if (v.kind === 'failed') {
+    node.append(' ', el('button', { class: 'dl-act', type: 'button', onclick: () => autodl.retry(id) }, 'Retry'));
+  }
+}
+
+function updateDl() {
+  const song = player.current;
+  const box = $('player-dl');
+  const missing = !!song && !hasAudio(song);
+  box.hidden = !missing;
+  if (missing) {
+    const v = autodl.view(song.id);
+    $('player-dl-text').textContent = dlText(v, false);
+    const btn = $('player-dl-btn');
+    btn.hidden = !(v.kind === 'none' || v.kind === 'failed');
+    btn.textContent = v.kind === 'failed' ? 'Retry' : 'Download';
+  }
+  for (const node of $('queue-list').querySelectorAll('[data-dl]')) paintDl(node, node.dataset.dl);
 }
 
 function renderProgress() {
@@ -414,6 +559,24 @@ export function initPlayer() {
   setIcon('mini-next', 'next', 18);
   setIcon('mini-shuffle', 'shuffle', 18);
   setIcon('p-more', 'more', 20);
+  setIcon('p-download', 'download', 20);
+  $('cover-toggle').addEventListener('click', () => {
+    player.toggle();
+    const b = $('cover-toggle');
+    b.classList.add('flash');
+    setTimeout(() => b.classList.remove('flash'), 1200);
+  });
+  $('player-dl-btn').addEventListener('click', () => { if (player.current) startDownload(player.current); });
+  autodl.onChange(() => {
+    const cur = player.current;
+    if (awaiting && cur && awaiting === cur.id && !hasAudio(cur) && autodl.view(cur.id).kind === 'failed') {
+      awaiting = null;
+      toast(`Could not download "${cur.title}"`);
+      player.next();
+    }
+    updateDl();
+  });
+  $('p-download').addEventListener('click', () => { if (player.current) downloadSong(player.current); });
 
   for (const p of ['mini', 'p']) {
     $(`${p}-play`).addEventListener('click', () => player.toggle());
@@ -424,13 +587,13 @@ export function initPlayer() {
   }
   $('tag-add').addEventListener('click', openTagPicker);
   $('queue-clear').addEventListener('click', () => {
-    const n = player.clean();
-    toast(n ? `Removed ${n} ${plural(n, 'song', 'songs')}` : 'Tags cleared');
+    const n = player.clearUpcoming();
+    toast(n ? `Cleared ${n} ${plural(n, 'song', 'songs')}` : 'Tag chips cleared');
   });
   $('mini-open').addEventListener('click', () => { location.hash = '#/playback'; });
   $('p-more').addEventListener('click', () => {
     const song = player.current;
-    if (song) openMenu($('p-more'), [{ label: 'Edit song', run: () => editDialog(song) }]);
+    if (song) openMenu($('p-more'), [...(hasAudio(song) ? [{ label: 'Download', run: () => downloadSong(song) }] : []), { label: 'Edit song', run: () => editDialog(song) }]);
   });
 
   document.addEventListener('keydown', (e) => {
@@ -478,9 +641,15 @@ export function initPlayer() {
     if (pendingRestore && player.current) {
       pendingRestore = false;
       load(false);
+      syncDownloads();
+      return;
+    }
+    if (awaiting && player.current && player.current.id === awaiting && hasAudio(player.current)) {
+      load(true);
       return;
     }
     render();
+    syncDownloads();
   });
   render();
 }

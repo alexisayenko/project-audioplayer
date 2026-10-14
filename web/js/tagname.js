@@ -1,4 +1,5 @@
 import { el } from './dom.js';
+import { canonicalCountry } from './countries.js';
 
 const namers = {};
 try {
@@ -46,7 +47,9 @@ export function valueLabel(key, value) {
   const namer = namers[key];
   if (!namer) return value;
   try {
-    const name = namer.of(key === 'country' ? value.toUpperCase() : value);
+    const code = key === 'country' ? canonicalCountry(value) : null;
+    if (key === 'country' && !code) return value;
+    const name = namer.of(key === 'country' ? code.toUpperCase() : value);
     return name && name.toLocaleLowerCase() !== value.toLocaleLowerCase() ? name : value;
   } catch {
     return value;
@@ -71,9 +74,29 @@ export function groupName(key) {
   return key ? GROUP_NAMES[key] || key[0].toLocaleUpperCase() + key.slice(1) : 'Tags';
 }
 
+export function canonicalTag(tag) {
+  const { key, value } = splitTag(String(tag));
+  if (key.toLowerCase() === 'country') {
+    const code = canonicalCountry(value);
+    return code ? `country:${code}` : tag;
+  }
+  return tag;
+}
+
+export function mergeTagCounts(tagCounts) {
+  const merged = new Map();
+  for (const t of tagCounts) {
+    const tag = canonicalTag(t.tag);
+    const e = merged.get(tag);
+    if (e) e.count += t.count;
+    else merged.set(tag, { ...t, tag });
+  }
+  return [...merged.values()];
+}
+
 export function tagGroups(tagCounts) {
   const groups = new Map();
-  for (const t of tagCounts) {
+  for (const t of mergeTagCounts(tagCounts)) {
     const { key } = splitTag(t.tag);
     groups.set(key, [...(groups.get(key) || []), t]);
   }
@@ -107,7 +130,7 @@ export function categoryOf(tag) {
 }
 
 export function categoryTags(tagCounts, id) {
-  const list = tagCounts.filter((t) => categoryOf(t.tag) === id);
+  const list = mergeTagCounts(tagCounts).filter((t) => categoryOf(t.tag) === id);
   return id === 'years'
     ? list.sort((a, b) => decadeRank(a.tag) - decadeRank(b.tag) || a.tag.localeCompare(b.tag))
     : list.sort((a, b) => b.count - a.count || tagLabel(a.tag).localeCompare(tagLabel(b.tag)));

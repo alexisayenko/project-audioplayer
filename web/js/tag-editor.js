@@ -1,6 +1,7 @@
 import { el } from './dom.js';
 import { store } from './store.js';
 import { splitInput } from './tag-input.js';
+import { canonicalCountry, filterCountries } from './countries.js';
 import { isHiddenTag, tagGroups, tagLabel, tagText, tagSearchText, withDecade, decadeRank } from './tagname.js';
 
 const same = (a, b) => a.toLocaleLowerCase() === b.toLocaleLowerCase();
@@ -16,7 +17,12 @@ export function tagEditor({ tags = [], suggested = [], year = null, onChange = n
   const chosen = el('div', { class: 'chips' });
   const sugBox = el('div', { class: 'chip-group' });
   const pool = el('div', { class: 'chip-groups tag-pool' });
-  const node = el('div', { class: 'tag-editor' }, input, chosen, sugBox, pool);
+  const picker = el('div', { class: 'chip-group country-picker', hidden: true });
+  const note = el('small', { class: 'country-note', role: 'status', hidden: true }, 'Pick a country from the list');
+  const node = el('div', { class: 'tag-editor' }, input, note, picker, chosen, sugBox, pool);
+  const COUNTRY = /^\s*country\s*:/i;
+  const isCountry = (t) => /^country:/i.test(t);
+  const badCountry = (t) => isCountry(t) && !canonicalCountry(t.slice(8));
 
   const has = (t) => current.some((x) => same(x, t));
   const toggle = (t) => {
@@ -25,8 +31,17 @@ export function tagEditor({ tags = [], suggested = [], year = null, onChange = n
   };
   function add(raw) {
     const { tags: added, rest } = splitInput(raw);
-    for (const t of added) if (!isHiddenTag(t) && !has(t)) current.push(t);
-    input.value = rest;
+    const refused = [];
+    for (let t of added) {
+      if (isCountry(t)) {
+        const code = canonicalCountry(t.slice(t.indexOf(':') + 1));
+        if (!code) { refused.push(t); continue; }
+        t = `country:${code}`;
+      }
+      if (!isHiddenTag(t) && !has(t)) current.push(t);
+    }
+    input.value = [rest, ...refused].filter(Boolean).join(', ');
+    note.hidden = !refused.length;
     render();
   }
 
@@ -37,7 +52,13 @@ export function tagEditor({ tags = [], suggested = [], year = null, onChange = n
 
   function render() {
     const q = input.value.trim().toLocaleLowerCase();
-    chosen.replaceChildren(...shown(current).map((t) => el('span', { class: 'chip on', title: t }, tagText(t),
+    const cq = COUNTRY.test(input.value) ? input.value.replace(COUNTRY, '') : null;
+    picker.hidden = cq === null;
+    picker.replaceChildren(...(cq === null ? [] : filterCountries(cq, 8).map(({ code, name }) => el('button', {
+      type: 'button', class: 'chip', title: `country:${code}`,
+      onclick: () => { current = has(`country:${code}`) ? current : [...current, `country:${code}`]; input.value = ''; note.hidden = true; render(); },
+    }, name, el('small', {}, code.toUpperCase())))));
+    chosen.replaceChildren(...shown(current).map((t) => el('span', { class: 'chip on', style: badCountry(t) ? 'border:1px dashed currentColor' : null, title: badCountry(t) ? `${t}: not a known country, remove it or pick one from the list` : t }, badCountry(t) ? `⚠ ${tagText(t)}` : tagText(t),
       el('button', { type: 'button', class: 'x', 'aria-label': `Remove ${t}`, onclick: () => toggle(t) }, '×'))));
     sugBox.hidden = !sug.length;
     sugBox.replaceChildren(...(sug.length ? [el('span', { class: 'group-name' }, 'Suggested'), ...sug.map((t) => chip(t))] : []));

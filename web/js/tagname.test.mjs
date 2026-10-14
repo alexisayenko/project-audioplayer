@@ -30,3 +30,36 @@ test('tagname', () => {
   assert.ok(isHiddenTag('lang:en') && isHiddenTag('Lang:ru') && !isHiddenTag('genre:pop'));
   assert.deepEqual(visibleTags(['a', 'lang:en', 'country:GB']), ['a', 'country:GB']);
 });
+
+import { mergeTagCounts, canonicalTag } from './tagname.js';
+import { canonicalCountry, filterCountries, isKnownCountry, COUNTRY_CODES } from './countries.js';
+
+test('mergeTagCounts merges country aliases and sums counts', () => {
+  const out = mergeTagCounts([
+    { tag: 'country:us', count: 15 }, { tag: 'country:usa', count: 5 }, { tag: 'country:United States', count: 1 },
+    { tag: 'country:Russia', count: 2 }, { tag: 'country:russia', count: 2 }, { tag: 'country:ru', count: 12 },
+    { tag: 'country:ussr', count: 3 }, { tag: 'genre:rock', count: 4 },
+  ]);
+  assert.deepEqual(out, [
+    { tag: 'country:us', count: 21 }, { tag: 'country:ru', count: 16 },
+    { tag: 'country:ussr', count: 3 }, { tag: 'genre:rock', count: 4 },
+  ]);
+  assert.equal(canonicalTag('Country:usa'), 'country:us');
+  assert.equal(tagLabel('country:usa'), 'United States');
+  assert.equal(tagLabel('country:ussr'), 'ussr');
+  assert.equal(categoryTags([{ tag: 'country:usa', count: 5 }, { tag: 'country:us', count: 1 }], 'countries').length, 1);
+});
+
+test('country list filter and aliases', () => {
+  assert.ok(COUNTRY_CODES.length >= 249);
+  assert.equal(canonicalCountry('U.S.A.'), 'us');
+  assert.equal(canonicalCountry('the Netherlands'), 'nl');
+  assert.equal(canonicalCountry('Atlantis'), null);
+  assert.ok(isKnownCountry('Kyrgyzstan'));
+  assert.equal(filterCountries('usa')[0].code, 'us');
+  assert.equal(filterCountries('ger')[0].code, 'de');
+  assert.equal(filterCountries('rus')[0].code, 'ru');
+  assert.deepEqual(filterCountries('zzzz'), []);
+  assert.ok(filterCountries('united').some((c) => c.code === 'gb'));
+  assert.equal(filterCountries('').length, 12);
+});

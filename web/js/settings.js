@@ -1,6 +1,8 @@
 import { api, auth, session } from './api.js';
 import { usageText } from './limits.js';
 import { store } from './store.js';
+import { player } from './player.js';
+import { autoDownloadOn, setAutoDownload } from './autodl.js';
 import { el, pageHead } from './dom.js';
 
 const GSI = 'https://accounts.google.com/gsi/client';
@@ -124,9 +126,22 @@ function libraryCard() {
     el('div', { class: 'cell' }, el('span', { class: 'muted t-caption' }, 'Server'), el('span', { class: 't-caption' }, location.host)));
 }
 
+function playbackCard() {
+  const box = el('input', { type: 'checkbox', id: 'auto-dl', checked: autoDownloadOn() });
+  box.addEventListener('change', () => {
+    setAutoDownload(box.checked);
+    player.autoDownloadChanged();
+  });
+  return el('section', { class: 'card' },
+    el('h2', { class: 't-headline' }, 'Playback'),
+    el('label', { class: 'switch-row', for: 'auto-dl' }, box,
+      el('span', { class: 't-subhead' }, 'Auto-download songs',
+        el('small', { class: 't-caption' }, 'Fetch audio from the server for songs you play or add to the playlist. Each fetch counts toward the hourly add limit.'))));
+}
+
 export function renderSettings(root) {
   let card = libraryCard();
   const unsub = store.subscribe(() => { const next = libraryCard(); card.replaceWith(next); card = next; });
-  root.append(pageHead('Settings', 'Your library and storage on this server.'), el('div', { class: 'settings-grid' }, accountCard(), ...(auth.email ? [card] : [])));
+  root.append(pageHead('Settings', 'Your library and storage on this server.'), el('div', { class: 'settings-grid' }, accountCard(), playbackCard(), ...(auth.email ? [card] : [])));
   return unsub;
 }
