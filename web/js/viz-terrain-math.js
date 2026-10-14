@@ -1,12 +1,14 @@
 export const QUALITY = [
-  { rows: 36, cols: 28, bloom: false },
-  { rows: 72, cols: 56, bloom: false },
-  { rows: 96, cols: 72, bloom: true },
+  { rows: 36, cols: 28, bloom: false, smoke: 0, passes: 1 },
+  { rows: 72, cols: 56, bloom: false, smoke: 2, passes: 3 },
+  { rows: 96, cols: 72, bloom: true, smoke: 3, passes: 3 },
 ];
 export const HISTORY_BINS = 64;
-export const ROWS_PER_SECOND = 24;
+export const ROWS_PER_SECOND = 16;
 export const SHAKE_MAX = 0.03;
-export const GRID_DEPTH = 8;
+export const GRID_DEPTH = 12;
+export const HORIZON_TARGET = 0.57;
+export const EYE_HEIGHT = 0.4;
 export const GRID_HALF_WIDTH = 4.5;
 export const RAMP = [
   { at: 0, c: [0.02, 0.05, 0.14] },
@@ -62,16 +64,16 @@ export function createHistory(rows, bins = HISTORY_BINS) {
 }
 
 export function columnBin(col, cols, bins) {
-  const x = cols <= 1 ? 0 : Math.abs((col / (cols - 1)) * 2 - 1);
+  const x = cols <= 1 ? 0 : col / (cols - 1);
   return x * (bins - 1);
 }
 
 export function edgeFalloff(x) {
-  return 1 - smoothstep(0.55, 1, Math.abs(x));
+  return 1 - smoothstep(0.82, 1, Math.abs(x));
 }
 
 export function bassGain(x, bassWeight = 0.7) {
-  return 1 + bassWeight * (1 - Math.min(1, Math.abs(x)));
+  return 1 + bassWeight * (1 - clamp01((x + 1) / 2)) ** 2;
 }
 
 export function swell(x, row, t, amp = 0.12) {
@@ -120,19 +122,53 @@ export function buildGridVertices(rows, cols) {
   return out;
 }
 
-export function buildLineIndices(rows, cols) {
-  const { vertices, segments } = gridCounts(rows, cols);
-  const out = vertices > 65535 ? new Uint32Array(segments * 2) : new Uint16Array(segments * 2);
+function lineIndices(rows, cols, depth) {
+  const { vertices } = gridCounts(rows, cols);
+  const n = depth ? cols * (rows - 1) : rows * (cols - 1);
+  const out = vertices > 65535 ? new Uint32Array(n * 2) : new Uint16Array(n * 2);
   let k = 0;
   for (let r = 0; r < rows; r += 1) {
     for (let c = 0; c < cols; c += 1) {
       const i = r * cols + c;
-      if (c < cols - 1) { out[k++] = i; out[k++] = i + 1; }
-      if (r < rows - 1) { out[k++] = i; out[k++] = i + cols; }
+      if (depth && r < rows - 1) { out[k++] = i; out[k++] = i + cols; }
+      if (!depth && c < cols - 1) { out[k++] = i; out[k++] = i + 1; }
     }
   }
   return out;
 }
+
+export const buildDepthIndices = (rows, cols) => lineIndices(rows, cols, true);
+export const buildCrossIndices = (rows, cols) => lineIndices(rows, cols, false);
+
+export function buildLineIndices(rows, cols) {
+  const d = buildDepthIndices(rows, cols);
+  const c = buildCrossIndices(rows, cols);
+  const out = new d.constructor(d.length + c.length);
+  out.set(d);
+  out.set(c, d.length);
+  return out;
+}
+
+export function energyOf(spectrum) {
+  const n = spectrum?.length || 0;
+  if (!n) return 0;
+  const bass = Math.min(6, n);
+  let b = 0;
+  let all = 0;
+  for (let i = 0; i < n; i += 1) {
+    const v = clamp01(spectrum[i]);
+    all += v;
+    if (i < bass) b += v;
+  }
+  return clamp01(0.55 * (b / bass) + 0.9 * (all / n));
+}
+
+export function easeEnergy(prev, target, dtSeconds) {
+  const k = 1 - Math.exp(-(target > prev ? 6 : 1.6) * Math.max(0, Math.min(0.5, dtSeconds || 0)));
+  return clamp01(prev + (target - prev) * k);
+}
+
+export const STAR_VISIBLE = [40, 90, 150];
 
 export function colorRamp(h, out = [0, 0, 0]) {
   const v = clamp01(h);
@@ -180,19 +216,22 @@ export function makeStars(seed, n) {
 }
 
 export function cameraAt(t, bass = 0, opts = {}) {
-  const { fly = 0.5, period = 60 } = opts;
+  const { fly = 0.4, period = 60 } = opts;
   const shakeAmp = Math.min(SHAKE_MAX, clamp01(bass) * SHAKE_MAX);
   const shakeX = Math.sin(t * 37.1) * shakeAmp;
   const shakeY = Math.sin(t * 41.7 + 1.3) * shakeAmp;
   const phase = (t / period) * Math.PI * 2;
   const forward = fly * (0.5 - 0.5 * Math.cos(phase));
-  const tilt = 0.05 * Math.sin(Math.PI * 2 * 0.05 * t);
   const drift = 0.6 * Math.sin(t * 0.07);
+  const fov = (62 + 3 * clamp01(bass)) * (Math.PI / 180);
+  const eye = [drift + shakeX, EYE_HEIGHT + 0.04 * Math.sin(t * 0.11) + shakeY, 0.7 - forward];
+  const targetZ = -GRID_DEPTH * 0.75;
+  const pitch = ((HORIZON_TARGET - 0.5) * 2 + 0.02 * Math.sin(t * 0.05)) * Math.tan(fov / 2);
   return {
-    eye: [drift + shakeX, 0.75 + 0.08 * Math.sin(t * 0.11) + shakeY, 1.2 - forward],
-    target: [drift * 0.4, 0.15 + tilt * 4, -GRID_DEPTH * 0.75],
+    eye,
+    target: [drift * 0.4, eye[1] - pitch * (eye[2] - targetZ), targetZ],
     up: [0, 1, 0],
-    fov: (62 + 3 * clamp01(bass)) * (Math.PI / 180),
+    fov,
   };
 }
 

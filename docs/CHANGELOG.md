@@ -4,6 +4,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## 2026-10-14
 
+- Web: Terrain restyled to match the reference -- long depth-wise ribbons thicker and brighter near the camera, thin cross lines that appear on raised areas (grid on peaks), glowing crests, low camera with the horizon about 57% from the bottom, drifting bluish smoke and sparse stars, and a dark calm state that brightens with the music's energy; the heightmap is no longer mirrored (low frequencies left, highs right); smoke and line passes follow the quality level (VIZ-043; checked in a browser only with a synthetic spectrum at about 2 fps, not on real audio).
 - Web: in the full-screen overlay the Terrain visualizer now fills the whole viewport instead of a thin band set by "Visualizer height"; the setting still scales Terrain in the Playback background and the bars and ring everywhere (VIZ-041, VIZ-043).
 - Web: the Terrain visualizer now links in Chrome -- the shader failed with "Precisions of uniform u_mode differ" and the silent fallback showed Mirrored spectrum; the vertex shader now declares `precision mediump float;` like the fragment shader (VIZ-043).
 - Web: the Library row "..." menu button is hidden when a row has no menu items (guest on a song without audio); a hidden placeholder keeps the column aligned (WEB-061).

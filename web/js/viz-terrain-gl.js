@@ -1,11 +1,11 @@
 import {
-  QUALITY, HISTORY_BINS, GRID_DEPTH, GRID_HALF_WIDTH, RAMP, qualityFor, createHistory, fillHeights, buildGridVertices,
-  buildLineIndices, gridCounts, makeStars, cameraAt, horizonY, horizonGlow, mat4Perspective, mat4LookAt, mat4Multiply,
+  QUALITY, HISTORY_BINS, STAR_VISIBLE, buildDepthIndices, buildCrossIndices, energyOf, easeEnergy, GRID_DEPTH, GRID_HALF_WIDTH, RAMP, qualityFor, createHistory, fillHeights, buildGridVertices,
+  gridCounts, makeStars, cameraAt, horizonY, horizonGlow, mat4Perspective, mat4LookAt, mat4Multiply,
   makeRowClock, clamp01,
 } from './viz-terrain-math.js';
 
 const DPR_CAP = 2;
-const STAR_COUNT = 90;
+const STAR_COUNT = STAR_VISIBLE[STAR_VISIBLE.length - 1];
 const STAR_SEED = 20261014;
 const NEAR = 0.05;
 const FAR = 40;
@@ -17,26 +17,31 @@ precision mediump float;
 attribute vec2 a_p;
 attribute float a_h;
 uniform mat4 u_vp;
-uniform float u_halfW, u_dz, u_scroll, u_amp, u_pt, u_dpr, u_mode;
+uniform float u_halfW, u_dz, u_scroll, u_amp, u_pt, u_dpr, u_mode, u_time, u_off, u_viewW, u_energy;
 varying float v_h;
 varying float v_fog;
 void main() {
   v_h = a_h;
-  if (u_mode > 1.5) {
+  if (u_mode > 3.5) {
     gl_Position = vec4(a_p, 0.999, 1.0);
     gl_PointSize = (1.0 + a_h * 1.6) * u_dpr;
     v_fog = 0.0;
     return;
   }
-  vec3 pos = vec3(a_p.x * u_halfW, a_h * u_amp, -(a_p.y - u_scroll) * u_dz);
-  gl_Position = u_vp * vec4(pos, 1.0);
-  v_fog = smoothstep(2.0, 11.0, gl_Position.w);
-  gl_PointSize = u_pt * u_dpr * clamp(3.5 / max(gl_Position.w, 0.1), 0.35, 2.2);
+  float row = a_p.y - u_scroll;
+  float sway = sin(row * 0.45 + a_p.x * 2.3 + u_time * 0.5) * 0.1 * smoothstep(0.0, 10.0, row);
+  vec3 pos = vec3(a_p.x * u_halfW + sway, a_h * u_amp, -row * u_dz);
+  vec4 clip = u_vp * vec4(pos, 1.0);
+  float near = clamp(3.0 / max(clip.w, 0.1), 0.0, 1.0);
+  v_fog = smoothstep(3.0, 15.0, clip.w);
+  clip.x += u_off * near * (0.7 + 0.5 * u_energy) * 2.0 * u_dpr / u_viewW * clip.w;
+  gl_Position = clip;
+  gl_PointSize = u_pt * u_dpr * clamp(3.5 / max(clip.w, 0.1), 0.35, 2.2) * (1.0 + 2.2 * smoothstep(0.6, 1.0, a_h));
 }`;
 
 const GRID_FS = `
 precision mediump float;
-uniform float u_mode, u_glow;
+uniform float u_mode, u_glow, u_energy, u_ab;
 uniform vec3 u_c0, u_c1, u_c2, u_fog;
 varying float v_h;
 varying float v_fog;
@@ -46,18 +51,23 @@ vec3 ramp(float h) {
 void main() {
   float a;
   vec3 col;
-  if (u_mode > 1.5) {
+  if (u_mode > 3.5) {
     vec2 d = gl_PointCoord - 0.5;
     a = v_h * (1.0 - smoothstep(0.2, 0.5, length(d)));
     col = vec3(0.7, 0.85, 1.0);
   } else {
-    col = ramp(v_h);
-    a = (0.18 + 0.82 * v_h) * (1.0 - v_fog);
-    if (u_mode > 0.5) {
-      vec2 d = gl_PointCoord - 0.5;
-      a *= (1.0 - smoothstep(0.25, 0.5, length(d))) * 1.4;
+    float lum = 0.5 + 0.6 * u_energy;
+    float far = 1.0 - 0.8 * v_fog;
+    col = mix(vec3(0.45, 0.72, 0.95), ramp(1.0), smoothstep(0.25, 1.0, v_h));
+    if (u_mode < 0.5) {
+      a = (0.2 + 0.6 * smoothstep(0.0, 0.9, v_h)) * far * lum * 0.95 * u_ab;
+    } else if (u_mode < 1.5) {
+      float soft = 1.0 - smoothstep(0.0, 0.5, length(gl_PointCoord - 0.5));
+      a = soft * soft * (0.25 * (1.0 - 0.5 * u_energy) + 1.2 * smoothstep(0.55, 1.0, v_h)) * far * lum;
+    } else {
+      a = (0.07 + 0.1 * (1.0 - u_energy) + 0.85 * smoothstep(0.12, 0.6, v_h)) * far * lum * 0.8;
     }
-    col = mix(col, u_fog, v_fog * 0.6) * (0.8 + 0.5 * u_glow * v_h);
+    col = mix(col, u_fog, v_fog * 0.6) * (0.85 + 0.6 * u_glow * v_h) + vec3(0.5, 0.7, 1.0) * smoothstep(0.7, 1.0, v_h) * 0.3;
   }
   gl_FragColor = vec4(col * a, a);
 }`;
@@ -71,19 +81,59 @@ void main() {
 }`;
 
 const BG_FS = `
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
 precision mediump float;
-uniform float u_horizon, u_glow;
+#endif
+uniform float u_horizon, u_glow, u_energy, u_time, u_aspect;
 varying vec2 v_uv;
+#if SMOKE_OCT > 0
+float hash(vec2 p) {
+  p = fract(p * vec2(123.34, 456.21));
+  p += dot(p, p + 45.32);
+  return fract(p.x * p.y);
+}
+float vnoise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
+}
+float fbm(vec2 p) {
+  float a = 0.5;
+  float s = 0.0;
+  for (int i = 0; i < SMOKE_OCT; i++) {
+    s += a * vnoise(p);
+    p = p * 2.03 + 17.1;
+    a *= 0.5;
+  }
+  return s;
+}
+#endif
 void main() {
-  vec3 navy = vec3(0.020, 0.039, 0.102);
-  vec3 blue = vec3(0.039, 0.165, 0.314);
-  float up = max(v_uv.y - u_horizon, 0.0);
-  vec3 col = mix(blue, navy, smoothstep(0.0, 0.7, up));
-  if (v_uv.y < u_horizon) col = mix(blue, navy, smoothstep(0.0, 0.5, u_horizon - v_uv.y));
-  float dy = v_uv.y - u_horizon;
-  float halo = exp(-dy * dy * 40.0) * u_glow * 0.55;
-  float streak = exp(-dy * dy * 4000.0) * exp(-pow((v_uv.x - 0.5) * 1.8, 2.0)) * u_glow;
-  col += vec3(0.20, 0.55, 0.85) * halo + vec3(0.8, 0.95, 1.0) * streak;
+  vec2 uv = v_uv;
+  float e = u_energy;
+  float dy = uv.y - u_horizon;
+  vec3 top = mix(vec3(0.006, 0.014, 0.05), vec3(0.03, 0.15, 0.3), e);
+  vec3 hor = mix(vec3(0.02, 0.07, 0.17), vec3(0.28, 0.5, 0.7), e * 0.9);
+  vec3 col = mix(hor, top, smoothstep(0.0, 0.75, dy));
+  if (dy < 0.0) {
+    vec3 gnd = mix(vec3(0.01, 0.03, 0.09), vec3(0.04, 0.22, 0.4), e);
+    vec3 gndFar = mix(vec3(0.015, 0.05, 0.13), vec3(0.2, 0.42, 0.62), e);
+    col = mix(gndFar, gnd, smoothstep(0.0, 0.55, -dy));
+  }
+  float halo = exp(-dy * dy * 40.0) * u_glow * (0.3 + 0.7 * e) * 0.55;
+  col += vec3(0.2, 0.55, 0.85) * halo;
+#if SMOKE_OCT > 0
+  vec2 p = vec2(uv.x * u_aspect, uv.y) * vec2(1.6, 3.0);
+  float m = smoothstep(0.3, 0.8, fbm(p + vec2(u_time * 0.02, 0.0)));
+#if SMOKE_OCT > 2
+  m = 0.6 * m + 0.6 * smoothstep(0.35, 0.85, fbm(p * 1.7 + vec2(3.1 - u_time * 0.012, 3.1)));
+#endif
+  float smoke = exp(-max(dy, 0.0) * 3.2) * m * (0.15 + 0.85 * e) * smoothstep(-0.08, 0.02, dy);
+  col += vec3(0.5, 0.7, 0.95) * smoke * 0.65;
+#endif
   gl_FragColor = vec4(col, 1.0);
 }`;
 
@@ -186,6 +236,9 @@ export function createTerrain(canvas, opts = {}) {
     clock: makeRowClock(),
     scroll: 0,
     bass: 0,
+    energy: 0,
+    lastT: null,
+    time: 0,
     bloomOk: true,
   };
   const mvp = new Float32Array(16);
@@ -201,16 +254,19 @@ export function createTerrain(canvas, opts = {}) {
 
   function buildGrid() {
     const q = QUALITY[s.level];
-    const idx = buildLineIndices(q.rows, q.cols);
+    const depth = buildDepthIndices(q.rows, q.cols);
+    const cross = buildCrossIndices(q.rows, q.cols);
     const counts = gridCounts(q.rows, q.cols);
     s.history = createHistory(q.rows, HISTORY_BINS);
     s.heights = new Float32Array(q.rows * q.cols);
     s.res.grid = {
       xz: buffer(gl.ARRAY_BUFFER, buildGridVertices(q.rows, q.cols), gl.STATIC_DRAW),
       h: buffer(gl.ARRAY_BUFFER, s.heights, gl.DYNAMIC_DRAW),
-      idx: buffer(gl.ELEMENT_ARRAY_BUFFER, idx, gl.STATIC_DRAW),
-      indexType: idx instanceof Uint32Array ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT,
-      indexCount: idx.length,
+      depth: buffer(gl.ELEMENT_ARRAY_BUFFER, depth, gl.STATIC_DRAW),
+      cross: buffer(gl.ELEMENT_ARRAY_BUFFER, cross, gl.STATIC_DRAW),
+      indexType: depth instanceof Uint32Array ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT,
+      depthCount: depth.length,
+      crossCount: cross.length,
       vertices: counts.vertices,
       dz: GRID_DEPTH / (q.rows - 1),
     };
@@ -221,7 +277,8 @@ export function createTerrain(canvas, opts = {}) {
     if (!g) return;
     gl.deleteBuffer(g.xz);
     gl.deleteBuffer(g.h);
-    gl.deleteBuffer(g.idx);
+    gl.deleteBuffer(g.depth);
+    gl.deleteBuffer(g.cross);
     s.res.grid = null;
   }
 
@@ -249,10 +306,15 @@ export function createTerrain(canvas, opts = {}) {
     s.res.bloom = null;
   }
 
+  function buildBg() {
+    if (s.res.bg_p) gl.deleteProgram(s.res.bg_p.prog);
+    s.res.bg_p = linkProgram(gl, QUAD_VS, `#define SMOKE_OCT ${QUALITY[s.level].smoke}\n${BG_FS}`, ['a_pos']);
+  }
+
   function init() {
     s.res = { grid: null, bloom: null };
     s.res.grid_p = linkProgram(gl, GRID_VS, GRID_FS, ['a_p', 'a_h']);
-    s.res.bg_p = linkProgram(gl, QUAD_VS, BG_FS, ['a_pos']);
+    buildBg();
     s.res.post_p = linkProgram(gl, QUAD_VS, POST_FS, ['a_pos']);
     s.res.quad = buffer(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
     const stars = makeStars(STAR_SEED, STAR_COUNT);
@@ -293,8 +355,13 @@ export function createTerrain(canvas, opts = {}) {
     gl.uniform1f(uni(gl, p, 'u_halfW'), GRID_HALF_WIDTH);
     gl.uniform1f(uni(gl, p, 'u_dz'), g.dz);
     gl.uniform1f(uni(gl, p, 'u_scroll'), s.scroll);
-    gl.uniform1f(uni(gl, p, 'u_amp'), 0.9 + 0.5 * s.bass);
-    gl.uniform1f(uni(gl, p, 'u_pt'), 3);
+    gl.uniform1f(uni(gl, p, 'u_amp'), 0.8 + 1.4 * s.energy);
+    gl.uniform1f(uni(gl, p, 'u_pt'), 2.5);
+    gl.uniform1f(uni(gl, p, 'u_time'), s.time);
+    gl.uniform1f(uni(gl, p, 'u_off'), 0);
+    gl.uniform1f(uni(gl, p, 'u_viewW'), view.w);
+    gl.uniform1f(uni(gl, p, 'u_energy'), s.energy);
+    gl.uniform1f(uni(gl, p, 'u_ab'), QUALITY[s.level].passes > 1 ? 1 : 2);
     gl.uniform1f(uni(gl, p, 'u_dpr'), view.dpr);
     gl.uniform1f(uni(gl, p, 'u_mode'), mode);
     gl.uniform1f(uni(gl, p, 'u_glow'), glow);
@@ -312,19 +379,27 @@ export function createTerrain(canvas, opts = {}) {
     attrib(0, 2, 0, 0);
     gl.bindBuffer(gl.ARRAY_BUFFER, g.h);
     attrib(1, 1, 0, 0);
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, g.idx);
-    gl.drawElements(gl.LINES, g.indexCount, g.indexType, 0);
+    const offsets = QUALITY[s.level].passes > 1 ? [-1, 0, 1] : [0];
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, g.depth);
+    for (const o of offsets) {
+      gl.uniform1f(uni(gl, p, 'u_off'), o);
+      gl.drawElements(gl.LINES, g.depthCount, g.indexType, 0);
+    }
+    gl.uniform1f(uni(gl, p, 'u_off'), 0);
+    gl.uniform1f(uni(gl, p, 'u_mode'), 3);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, g.cross);
+    gl.drawElements(gl.LINES, g.crossCount, g.indexType, 0);
     gl.uniform1f(uni(gl, p, 'u_mode'), 1);
     gl.drawArrays(gl.POINTS, 0, g.vertices);
   }
 
   function drawStars() {
     const p = s.res.grid_p;
-    gridUniforms(p, 2, 0);
+    gridUniforms(p, 4, 0);
     gl.bindBuffer(gl.ARRAY_BUFFER, s.res.stars);
     attrib(0, 2, 12, 0);
     attrib(1, 1, 12, 8);
-    gl.drawArrays(gl.POINTS, 0, STAR_COUNT);
+    gl.drawArrays(gl.POINTS, 0, STAR_VISIBLE[s.level]);
   }
 
   function drawBackground(cam) {
@@ -332,6 +407,9 @@ export function createTerrain(canvas, opts = {}) {
     gl.useProgram(p.prog);
     gl.uniform1f(uni(gl, p, 'u_horizon'), horizonY(cam));
     gl.uniform1f(uni(gl, p, 'u_glow'), horizonGlow(s.bass));
+    gl.uniform1f(uni(gl, p, 'u_energy'), s.energy);
+    gl.uniform1f(uni(gl, p, 'u_time'), s.time);
+    gl.uniform1f(uni(gl, p, 'u_aspect'), view.w / view.h);
     gl.disable(gl.BLEND);
     drawQuadWith(p);
     gl.enable(gl.BLEND);
@@ -379,6 +457,9 @@ export function createTerrain(canvas, opts = {}) {
     const n = Math.min(BASS_BINS, sp.length);
     for (let i = 0; i < n; i += 1) bass += clamp01(sp[i]);
     s.bass = n ? bass / n : 0;
+    s.energy = easeEnergy(s.energy, energyOf(sp), s.lastT === null ? 1 : (t - s.lastT) / 1000);
+    s.lastT = t;
+    s.time = (t / 1000) % 600;
     updateHeights(t);
     const cam = cameraAt(t / 1000, s.bass);
     mat4Perspective(cam.fov, view.w / view.h, NEAR, FAR, proj);
@@ -413,6 +494,7 @@ export function createTerrain(canvas, opts = {}) {
     freeGrid();
     buildGrid();
     buildBloom();
+    buildBg();
     s.clock.reset();
   }
 

@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   QUALITY, clamp01, smoothstep, qualityFor, resample, createHistory, columnBin, edgeFalloff, heightAt, fillHeights,
-  gridCounts, buildGridVertices, buildLineIndices, colorRamp, fillColors, horizonGlow, makeStars, cameraAt, horizonY,
+  gridCounts, buildGridVertices, buildLineIndices, buildDepthIndices, buildCrossIndices, energyOf, easeEnergy, GRID_DEPTH, colorRamp, fillColors, horizonGlow, makeStars, cameraAt, horizonY,
   mat4Perspective, mat4LookAt, mat4Multiply, transformPoint, makeRowClock, SHAKE_MAX, RAMP,
 } from './viz-terrain-math.js';
 import { createTerrain, isWebGLAvailable, linkProgram } from './viz-terrain-gl.js';
@@ -72,10 +72,15 @@ test('silence still rolls gently via the sine swell', () => {
   assert.equal(heightAt(0, 0, 0, 0, { swellAmp: 0 }), 0);
 });
 
-test('column to bin maps centre to bass and edges to highs', () => {
-  assert.equal(columnBin(0, 5, 64), 63);
-  assert.equal(columnBin(2, 5, 64), 0);
+test('column to bin is monotonic from bass on the left to highs on the right, no mirroring', () => {
+  assert.equal(columnBin(0, 5, 64), 0);
   assert.equal(columnBin(4, 5, 64), 63);
+  for (let c = 1; c < 9; c += 1) assert.ok(columnBin(c, 9, 64) > columnBin(c - 1, 9, 64));
+  const hist = createHistory(2, 8);
+  hist.push([1, 0.8, 0.6, 0.4, 0.2, 0.1, 0, 0]);
+  const out = fillHeights(hist, 9, 0, new Float32Array(18), { swellAmp: 0 });
+  assert.ok(out[2 * 9 - 9 + 1] !== out[2 * 9 - 9 + 7]);
+  assert.ok(out[10] > out[16]);
 });
 
 test('fillHeights writes rows x cols values in range', () => {
@@ -239,16 +244,18 @@ test('createTerrain compiles programs, creates buffers and draws expected counts
   const gl = fakeGL();
   const t = createTerrain(fakeCanvas(), { gl, quality: 1 });
   assert.equal(count(gl, 'createProgram'), 3);
-  assert.equal(count(gl, 'createBuffer'), 5);
+  assert.equal(count(gl, 'createBuffer'), 6);
   assert.equal(t.bloomActive, false);
   t.draw(new Array(64).fill(0.6), 1000);
-  const elems = gl.calls.find((c) => c[0] === 'drawElements');
-  assert.equal(elems[2], gridCounts(72, 56).segments * 2);
+  const elems = gl.calls.filter((c) => c[0] === 'drawElements');
+  assert.equal(elems.length, 4);
+  assert.equal(elems[0][2], 72 * 55 * 0 + 56 * 71 * 2);
+  assert.equal(elems[3][2], 72 * 55 * 2);
   const arrays = gl.calls.filter((c) => c[0] === 'drawArrays');
   assert.ok(arrays.some((c) => c[1] === gl.POINTS && c[3] === 72 * 56));
   assert.ok(arrays.some((c) => c[1] === gl.POINTS && c[3] === 90));
   assert.equal(count(gl, 'bufferSubData'), 1);
-  assert.equal(count(gl, 'drawElements'), 1);
+  assert.equal(count(gl, 'drawElements'), 4);
 });
 
 test('segments are about 8k at the default quality', () => {
@@ -260,15 +267,16 @@ test('quality switch rebuilds the grid and bloom only at level 2', () => {
   const gl = fakeGL();
   const t = createTerrain(fakeCanvas(), { gl, quality: 0 });
   t.draw([], 0);
-  assert.equal(gl.calls.find((c) => c[0] === 'drawElements')[2], gridCounts(36, 28).segments * 2);
+  assert.equal(count(gl, 'drawElements'), 2);
+  assert.equal(gl.calls.find((c) => c[0] === 'drawElements')[2], 28 * 35 * 2);
   t.setQuality(2);
   assert.equal(t.quality, 2);
   assert.equal(t.bloomActive, true);
   assert.equal(count(gl, 'createFramebuffer'), 2);
   gl.calls.length = 0;
   t.draw([0.5], 50);
-  assert.equal(count(gl, 'drawElements'), 2);
-  assert.ok(gl.calls.some((c) => c[0] === 'drawElements' && c[2] === gridCounts(96, 72).segments * 2));
+  assert.equal(count(gl, 'drawElements'), 8);
+  assert.ok(gl.calls.some((c) => c[0] === 'drawElements' && c[2] === 72 * 95 * 2));
   t.setQuality(0);
   assert.equal(t.bloomActive, false);
   t.dispose();
@@ -279,7 +287,7 @@ test('bloom is skipped when the framebuffer is incomplete', () => {
   const t = createTerrain(fakeCanvas(), { gl, quality: 2 });
   assert.equal(t.bloomActive, false);
   t.draw([0.5], 0);
-  assert.equal(count(gl, 'drawElements'), 1);
+  assert.equal(count(gl, 'drawElements'), 4);
 });
 
 test('dispose deletes every GL object and ignores later draws', () => {
@@ -312,7 +320,7 @@ test('context loss stops drawing and restore recreates resources', () => {
   assert.equal(t.lost, false);
   assert.equal(count(gl, 'createProgram'), before + 3);
   t.draw([1], 100);
-  assert.equal(count(gl, 'drawElements'), 1);
+  assert.equal(count(gl, 'drawElements'), 4);
 });
 
 test('resize caps dpr at 2', () => {
@@ -407,4 +415,37 @@ test('mode renderer facade dispatches and falls back', () => {
 
   const flat = createModeRenderer('bars', c2, null, { draw2d: () => {} });
   assert.equal(flat.id, 'bars');
+});
+
+test('depth and cross indices split the line set', () => {
+  assert.equal(buildDepthIndices(4, 3).length, 3 * 3 * 2);
+  assert.equal(buildCrossIndices(4, 3).length, 4 * 2 * 2);
+  assert.equal(buildLineIndices(4, 3).length, buildDepthIndices(4, 3).length + buildCrossIndices(4, 3).length);
+  const d = buildDepthIndices(4, 3);
+  for (let i = 0; i < d.length; i += 2) assert.equal(d[i + 1] - d[i], 3);
+});
+
+test('energy follows loudness, attacks fast and releases slowly', () => {
+  assert.equal(energyOf([]), 0);
+  assert.ok(energyOf(new Array(64).fill(0.8)) > energyOf(new Array(64).fill(0.1)));
+  assert.ok(energyOf(new Array(64).fill(5)) <= 1);
+  const up = easeEnergy(0, 1, 0.1);
+  const down = 1 - easeEnergy(1, 0, 0.1);
+  assert.ok(up > down);
+  assert.equal(easeEnergy(0.3, 1, 0), 0.3);
+});
+
+test('quality levels scale smoke and line passes, smoke off at the lowest', () => {
+  assert.equal(QUALITY[0].smoke, 0);
+  assert.ok(QUALITY[1].smoke > 0 && QUALITY[2].smoke >= QUALITY[1].smoke);
+  assert.ok(QUALITY[0].passes < QUALITY[1].passes);
+});
+
+test('camera sits low and the horizon is near 57% from the bottom', () => {
+  for (const t of [0, 7, 31]) {
+    const cam = cameraAt(t, 0);
+    assert.ok(cam.eye[1] < 0.6);
+    near(horizonY(cam), 0.57, 0.04);
+  }
+  assert.ok(GRID_DEPTH >= 10);
 });
