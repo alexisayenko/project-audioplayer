@@ -145,7 +145,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + var(--dock-b) + var(--m
 .key:disabled { opacity: .4; cursor: default; }
 .key.ghost { background: transparent; box-shadow: none; color: var(--ink-muted); }
 .key.lit { background: var(--accent); color: var(--on-accent); box-shadow: var(--glow-accent); }
-.tray .key.ghost.on, .mini-keys .key.ghost.on { background: transparent; background-image: none; color: var(--accent-ink); box-shadow: inset 0 0 0 1px var(--accent); }
+.tray .key.ghost.on, .mini-keys .key.ghost.on { background: transparent; background-image: none; color: var(--accent-ink); box-shadow: inset 0 0 0 1px var(--accent), 0 0 6px color-mix(in srgb, var(--accent) 25%, transparent); }
 .tray .key.ghost.on:hover, .mini-keys .key.ghost.on:hover { background: color-mix(in srgb, var(--accent) 14%, transparent); }
 @media (forced-colors: active) { .tray .key.ghost.on, .mini-keys .key.ghost.on { box-shadow: inset 0 0 0 1px Highlight;  color: ButtonText; } }
 .key.lit { width: 52px; height: var(--hit); }
