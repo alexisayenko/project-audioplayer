@@ -66,7 +66,7 @@ Only in-memory normalisation on load remains (the one-time legacy-to-per-user mi
 - DATA-023 MUST: songs with a `year` in 1950-2029 get their `decade:*` tag derived on load (migration, persisted on the next write), create and PATCH. Status: implemented
 - DATA-022 MUST: a legacy `genre` field is removed and becomes the tag `genre:<value>`; tags are re-normalised. Status: implemented
 
-Tag namespaces in use (see [tags.md](tags.md)): `genre:<name>`, `country:<ISO 3166-1 alpha-2>` (e.g. `country:lt`; names and aliases such as `usa` are mapped to the code on write and load, unknown values are refused on write, TAG-056/057), `lang:<ISO 639-1>` (e.g. `lang:ru`; ISO 639-3 only when no 2-letter code exists), `decade:<NN>s` (derived from `year`, e.g. `decade:90s`), `mood:<name>`; any other `key:value` or plain tag is allowed.
+Tag namespaces in use (see [tags.md](tags.md)): `genre:<name>`, `country:<ISO 3166-1 alpha-2>` (e.g. `country:lt`; plus the historical `country:su`, TAG-058; names and aliases such as `usa` are mapped to the code on write and load, unknown values are refused on write, TAG-056/057), `lang:<ISO 639-1>` (e.g. `lang:ru`; ISO 639-3 only when no 2-letter code exists), `decade:<NN>s` (derived from `year`, e.g. `decade:90s`), `mood:<name>`; any other `key:value` or plain tag is allowed.
 - DATA-025 MUST: migration runs in memory at load and persists on the next write (no separate migration job). Status: implemented
 
 ## Audio state and catalog (ADR-0010)

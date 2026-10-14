@@ -52,6 +52,7 @@ Status: Accepted · 2026-10-12
 - A song has zero or more free-form tags; a "playlist" is a tag filter.
   There is no playlist entity.
 - Sub-decision (2026-10-14): `country:` and `lang:` tag values are canonicalised to ISO codes (alpha-2 / 639-1) from an embedded table with aliases, on write and on load, so `usa`, `United States` and `us` are one filter entry. `country:` accepts only known countries (422 `unknown_country`); legacy unmapped values stay and are flagged; `lang:` unknown values stay free ([tags.md](../specs/tags.md) TAG-056, TAG-057).
+- Sub-decision (historical countries, 2026-10-14): the Soviet Union is a first-class predefined `country:su` (name "Soviet Union", aliases `ussr`, `cccp`, `sssr`), marked `historical` in the country table so future flag assets can be drawn as images (no emoji flag exists for a former state). It is accepted on write and not flagged unknown; MusicBrainz `SU` maps to it, other pseudo-codes (`XU`, `XW`) are still dropped. Candidates, add on request: `yu` Yugoslavia, `cs` Czechoslovakia, `dd` East Germany ([tags.md](../specs/tags.md) TAG-058).
 - Song fields: `artist`, `title`, optional `album`, `year`,
   plus `source_url`, `cover`, `tags[]` and technical `id`, `duration`,
   `added_at`.
