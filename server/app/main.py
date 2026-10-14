@@ -7,9 +7,9 @@ from collections.abc import Awaitable, Callable
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
 
-from . import deps, guest, web
+from . import deps, guest, hosts, legal, web
 from .problems import Problem
-from .routes import analyze, auth, catalog, files, genres, health, legacy, lookup, me, removal, songs
+from .routes import analyze, auth, backfill, catalog, files, genres, health, legacy, legal as legal_routes, lookup, me, removal, songs
 
 app = FastAPI(title="Electrophone")
 
@@ -35,13 +35,26 @@ async def _no_store(request: Request, call_next: Callable[[Request], Awaitable[R
     return response
 
 
+@app.middleware("http")
+async def _canonical_host(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
+    return hosts.canonical_redirect(request) or await call_next(request)
+
+
+@app.middleware("http")
+async def _no_index(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
+    response = await call_next(request)
+    response.headers["X-Robots-Tag"] = legal.ROBOTS_TAG
+    return response
+
+
 @app.on_event("startup")
 def _startup() -> None:
+    legal.check_startup()
     if deps.SYNC:
         deps.SYNC.resync()
 
 
-for _module in (auth, me, health, legacy, files, catalog, genres, lookup, songs, analyze, removal):
+for _module in (auth, me, health, legal_routes, legacy, files, catalog, genres, lookup, songs, analyze, backfill, removal):
     app.include_router(_module.router)
 
 web.mount(app)

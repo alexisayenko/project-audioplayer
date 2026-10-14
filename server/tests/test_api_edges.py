@@ -17,7 +17,7 @@ from tests.test_library import ADIR, H, ODIR, OWNER_UID, VID, VID2, client  # no
 from tests.test_users import ALICE, BOB, CSRF, VID3, VID4, add, key, multi, token, uid, who  # noqa: F401
 
 SC_URL = "https://soundcloud.com/some-artist/some-track"
-PUBLIC = {"/auth/config", "/auth/session", "/auth/logout", "/health", "/", "/index.html", "/_v/{version}/{path:path}"}
+PUBLIC = {"/auth/config", "/auth/session", "/auth/logout", "/health", "/legal", "/robots.txt", "/", "/index.html", "/_v/{version}/{path:path}"}
 
 
 def owner_add(client, vid=VID, **kw):
@@ -520,7 +520,7 @@ def test_add_twice_is_409_and_patch_validations(client):
     assert client.patch(f"/songs/{VID}", json={"year": 1994}, headers=H).json()["tags"].count("decade:90s") == 1
     assert client.patch(f"/songs/{VID}", json={"year": 1999}, headers=H).json()["tags"].count("decade:90s") == 1
     assert "decade:00s" in client.patch(f"/songs/{VID}", json={"year": 2000}, headers=H).json()["tags"]
-    assert not any(t.startswith("decade:") for t in client.patch(f"/songs/{VID}", json={"year": 2030, "tags": []}, headers=H).json()["tags"])
+    assert not any(t.startswith("decade:") for t in client.patch(f"/songs/{VID}", json={"year": 1949, "tags": []}, headers=H).json()["tags"])
 
 
 def test_patch_keeps_a_legacy_unknown_country_the_song_already_has(client, tmp_path):

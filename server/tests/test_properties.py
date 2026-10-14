@@ -110,7 +110,7 @@ def test_tag_normalisation_edge_cases():
 
 @pytest.mark.parametrize("year,tag", [
     (1949, None), (1950, "decade:50s"), (1959, "decade:50s"), (1960, "decade:60s"), (1999, "decade:90s"), (2000, "decade:00s"),
-    (2009, "decade:00s"), (2010, "decade:10s"), (2029, "decade:20s"), (2030, None), (0, None), (-1, None), (1999.0, None), ("1999", None),
+    (2009, "decade:00s"), (2010, "decade:10s"), (2027, "decade:20s"), (2028, None), (0, None), (-1, None), (1999.0, None), ("1999", None),
     (True, None), (None, None),
 ])
 def test_decade_boundaries(year, tag):

@@ -27,7 +27,7 @@ def test_create_without_it_is_null(client):
     assert song(client)["remix_year"] is None
 
 
-@pytest.mark.parametrize("value, ok", [(1899, False), (1900, True), (2100, True), (2101, False), (0, False), (-5, False),
+@pytest.mark.parametrize("value, ok", [(1899, False), (1900, True), (2027, True), (2028, False), (0, False), (-5, False),
                                        ("abc", False), (2024.5, False), ([2024], False)])
 def test_patch_boundaries(client, value, ok):
     add(client, H)
@@ -37,7 +37,7 @@ def test_patch_boundaries(client, value, ok):
     assert song(client)["remix_year"] == (value if ok else None)
 
 
-@pytest.mark.parametrize("value, ok", [(1899, False), (1900, True), (2100, True), (2101, False), ("x", False)])
+@pytest.mark.parametrize("value, ok", [(1899, False), (1900, True), (2027, True), (2028, False), ("x", False)])
 def test_create_boundaries(client, value, ok):
     r = client.post("/songs", json={"url": VID, "metadata": {"title": "S", "remix_year": value}, "tags": []}, headers=H)
     assert (r.status_code == 202) is ok

@@ -11,7 +11,7 @@ from urllib.parse import urlparse
 
 import yt_dlp
 
-from . import library, urlclean
+from . import library, timeutil, urlclean
 from .titles import cut_remix, split_artist_title, split_title
 from .urlclean import is_valid_video_id, parse_video_id, source_of, watch_url  # noqa: F401
 
@@ -92,9 +92,9 @@ def cover_url(video_id: str, artwork: str | None = None) -> str | None:
 
 def _year(info: dict[str, Any]) -> int | None:
     if info.get("release_year"):
-        return int(info["release_year"])
+        return timeutil.valid_year(int(info["release_year"]))
     date = str(info.get("release_date") or info.get("upload_date") or "")
-    return int(date[:4]) if date[:4].isdigit() else None
+    return timeutil.valid_year(int(date[:4])) if date[:4].isdigit() else None
 
 
 def suggest_tags(info: dict[str, Any]) -> list[str]:

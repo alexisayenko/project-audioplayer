@@ -8,7 +8,7 @@ import urllib.parse
 from concurrent.futures import ThreadPoolExecutor, wait
 from typing import Any, Callable
 
-from . import genre_filter, genre_lookup, library, wiki_lookup
+from . import genre_filter, genre_lookup, library, timeutil, wiki_lookup
 from .tags import namespace
 
 log = logging.getLogger(__name__)
@@ -47,7 +47,7 @@ def finalize_tags(tags: list[str], song_genres: list[str] | None = None) -> list
 
 
 def _year(value: Any) -> int | None:
-    return value if isinstance(value, int) and not isinstance(value, bool) and 0 < value < 10000 else None
+    return timeutil.valid_year(value)
 
 
 def merge(sources: list[dict[str, Any]], mb: dict[str, Any] | None, links: dict[str, Any] | None, guess: dict[str, Any] | None) -> dict[str, Any]:

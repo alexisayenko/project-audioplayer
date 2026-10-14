@@ -7,6 +7,8 @@ PUBLIC = {
     ("POST", "/auth/session"),
     ("POST", "/auth/logout"),
     ("GET", "/health"),
+    ("GET", "/legal"),
+    ("GET", "/robots.txt"),
     ("GET", "/"),
     ("GET", "/index.html"),
     ("GET", "/_v/{version}/{path:path}"),

@@ -403,7 +403,7 @@ def test_fractional_bpm_migrated_on_load():
 @pytest.mark.parametrize("year,tag", [
     (1949, None), (1950, "decade:50s"), (1994, "decade:90s"), (1999, "decade:90s"),
     (2000, "decade:00s"), (2007, "decade:00s"), (2013, "decade:10s"),
-    (2029, "decade:20s"), (2030, None), (None, None), (True, None),
+    (2027, "decade:20s"), (2028, None), (None, None), (True, None),
 ])
 def test_decade_tag_derivation(year, tag):
     assert library.decade_tag(year) == tag
@@ -447,8 +447,8 @@ def test_decade_on_create_and_year_change(client):
     assert r.json()["tags"] == ["x", "decade:10s"]
     r = client.patch(f"/songs/{VID}", json={"tags": ["x", "decade:60s"]}, headers=H)
     assert r.json()["tags"] == ["x", "decade:10s"]
-    r = client.patch(f"/songs/{VID}", json={"year": 2030}, headers=H)
-    assert r.json()["tags"] == ["x", "decade:10s"]
+    r = client.patch(f"/songs/{VID}", json={"year": 2028}, headers=H)
+    assert r.status_code == 422
     r = client.patch(f"/songs/{VID}", json={"year": None}, headers=H)
     assert r.json()["tags"] == ["x", "decade:10s"]
 

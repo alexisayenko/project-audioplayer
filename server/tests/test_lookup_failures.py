@@ -161,7 +161,7 @@ def test_discogs_get_sends_token_and_accept_headers(monkeypatch, discogs):
     assert seen["timeout"] == dl.TIMEOUT
 
 
-@pytest.mark.parametrize("value,expected", [("1999", 1999), (1999, 1999), ("x", None), (None, None), ("999", None), ("3000", None), (2999, 2999), ("", None)])
+@pytest.mark.parametrize("value,expected", [("1999", 1999), (1999, 1999), ("x", None), (None, None), ("999", None), ("3000", None), (2027, 2027), (2028, None), (1899, None), ("", None)])
 def test_discogs_year_bounds(value, expected):
     assert dl._year(value) == expected
 

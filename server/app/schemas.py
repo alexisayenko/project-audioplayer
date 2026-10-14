@@ -5,8 +5,6 @@ from __future__ import annotations
 from pydantic import BaseModel, Field
 
 MAX_ID_TOKEN_LEN = 8192
-MIN_YEAR, MAX_YEAR = 0, 3000
-MIN_REMIX_YEAR, MAX_REMIX_YEAR = 1900, 2100
 MIN_BPM, MAX_BPM = 20, 300
 
 
@@ -27,8 +25,8 @@ class SongMeta(BaseModel):
     artist: str | None = None
     album: str | None = None
     remixer: str | None = None
-    year: int | None = Field(default=None, ge=MIN_YEAR, le=MAX_YEAR)
-    remix_year: int | None = Field(default=None, ge=MIN_REMIX_YEAR, le=MAX_REMIX_YEAR)
+    year: int | None = None
+    remix_year: int | None = None
     bpm: float | None = Field(default=None, ge=MIN_BPM, le=MAX_BPM)
     wikipedia_song: str | None = None
     wikipedia_artist: str | None = None

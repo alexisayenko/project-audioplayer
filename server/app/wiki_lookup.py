@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import datetime
 import html
 import logging
 import re
@@ -10,7 +9,7 @@ import urllib.parse
 import urllib.request
 from typing import Any
 
-from . import countrycodes, genre_lookup, httpjson
+from . import countrycodes, genre_lookup, httpjson, timeutil
 from .titles import artist_candidates
 
 log = logging.getLogger(__name__)
@@ -142,6 +141,7 @@ def _year(claims: dict[str, Any]) -> int | None:
         m = re.match(r"^\+?(\d{1,4})-", str((v or {}).get("time", ""))) if isinstance(v, dict) else None
         if m and int((v or {}).get("precision") or 0) >= 9:
             years.append(int(m.group(1)))
+    years = [y for y in years if timeutil.valid_year(y)]
     return min(years) if years else None
 
 
@@ -303,7 +303,7 @@ _YEAR = re.compile(r"(?<!\d)(\d{4})(?!\d)")
 
 
 def _in_range(year: int) -> bool:
-    return 1900 <= year <= datetime.date.today().year + 1
+    return timeutil.valid_year(year) is not None
 
 
 def _clean_year(value: str) -> int | None:

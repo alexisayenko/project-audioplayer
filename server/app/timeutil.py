@@ -6,6 +6,27 @@ from datetime import UTC, datetime
 from typing import Any
 
 STAMP_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+MIN_YEAR = 1900
+
+
+def _utc_now() -> datetime:
+    return datetime.now(UTC)
+
+
+def max_year(now: datetime | None = None) -> int:
+    """Latest allowed release year: the current UTC year plus one."""
+    return (now or _utc_now()).year + 1
+
+
+def valid_year(value: Any, now: datetime | None = None) -> int | None:
+    """The year when it is an integer in MIN_YEAR..max_year, else None (lookups discard, never reject)."""
+    if isinstance(value, bool) or not isinstance(value, int):
+        return None
+    return value if MIN_YEAR <= value <= max_year(now) else None
+
+
+def year_range_text(now: datetime | None = None) -> str:
+    return f"from {MIN_YEAR} to {max_year(now)}"
 
 
 def now_utc() -> str:

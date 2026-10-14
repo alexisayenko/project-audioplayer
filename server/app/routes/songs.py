@@ -7,7 +7,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 
-from .. import deps, discogs_lookup, genre_lookup, jobs, library, limits, titleclean, users, wiki_lookup
+from .. import deps, discogs_lookup, genre_lookup, jobs, library, limits, timeutil, titleclean, users, wiki_lookup
 from ..downloads import (
     add_metadata_only, mark_started, new_job, reject_unknown_country, run_download, run_fetch_audio,
 )
@@ -24,6 +24,16 @@ def _clean_text(v: str | None) -> str | None:
     return v or None
 
 
+def _check_years(changes: dict[str, Any], current: dict[str, Any] | None = None) -> None:
+    """422 for a year or remix_year outside 1900..max_year, except a value equal to the stored one."""
+    for key in ("year", "remix_year"):
+        value = changes.get(key)
+        if value is None or (current is not None and current.get(key) == value):
+            continue
+        if timeutil.valid_year(value) is None:
+            raise HTTPException(status_code=422, detail=f"{key} must be {timeutil.year_range_text()}")
+
+
 def _started_response(vid: str, began: bool) -> dict[str, str]:
     return {"id": vid, "status": "downloading" if began else "queued"}
 
@@ -32,6 +42,7 @@ def _started_response(vid: str, began: bool) -> dict[str, str]:
 def create_song(req: CreateSongRequest, user: dict[str, Any] = Depends(deps.require_token)):
     uid, owner = user["uid"], user["owner"]
     reject_unknown_country(library.clean_tags(req.tags))
+    _check_years(req.metadata.model_dump())
     deps.guard_add(uid, owner, req.audio)
     try:
         link = resolve_link(req.url)
@@ -140,6 +151,7 @@ def patch_song(video_id: str, req: PatchSongRequest, user: dict[str, Any] = Depe
         song = library.find_song(songs, video_id)
         if song is None:
             raise HTTPException(status_code=404, detail=deps.UNKNOWN_SONG)
+        _check_years(changes, song)
         song.update(_edited(song, changes))
         deps.save_songs(uid, songs)
         return library.public_song(song, deps.user_audio_root(uid))

@@ -5,16 +5,12 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 
-from .. import deps, oauth, session
+from .. import deps, hosts, oauth, session
 from ..schemas import SessionRequest
 
 router = APIRouter()
 
 _COOKIE_FLAGS = {"path": "/", "httponly": True, "secure": True, "samesite": "strict"}
-
-
-def _public_origin(request: Request) -> str:
-    return f"https://{request.headers.get('host', request.url.netloc)}"
 
 
 def _require_csrf(request: Request) -> None:
@@ -28,7 +24,7 @@ def auth_config(request: Request) -> dict[str, str]:
     return {
         "google_client_id": os.environ.get("GOOGLE_WEB_CLIENT_ID", ""),
         "apple_client_id": os.environ.get("APPLE_WEB_CLIENT_ID", ""),
-        "apple_redirect": os.environ.get("APPLE_WEB_REDIRECT_URI", "") or _public_origin(request) + "/",
+        "apple_redirect": hosts.oauth_redirect(request),
     }
 
 

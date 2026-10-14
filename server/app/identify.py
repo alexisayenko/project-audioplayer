@@ -11,7 +11,7 @@ from pathlib import Path
 from collections.abc import Callable
 from typing import Any
 
-from . import acoustid_lookup, discogs_lookup, genre_filter, genre_lookup, library, wiki_lookup
+from . import acoustid_lookup, discogs_lookup, genre_filter, genre_lookup, library, timeutil, wiki_lookup
 from .tags import namespace
 
 log = logging.getLogger(__name__)
@@ -59,7 +59,7 @@ def _of(tags: list[str], ns: str) -> list[str]:
 
 
 def _valid_year(value: Any) -> int | None:
-    return value if isinstance(value, int) and not isinstance(value, bool) and 0 < value < 10000 else None
+    return timeutil.valid_year(value)
 
 
 def merge_tags(mb: dict[str, Any], disc: dict[str, Any], wiki: dict[str, Any]) -> list[str]:

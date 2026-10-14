@@ -11,7 +11,7 @@ import re
 import threading
 from typing import Any
 
-from . import countrycodes, genre_lookup, httpjson
+from . import countrycodes, genre_lookup, httpjson, timeutil
 from .ratelimit import WindowLimiter
 from .titles import lookup_query
 
@@ -96,7 +96,7 @@ def _year(value: Any) -> int | None:
         year = int(value)
     except (TypeError, ValueError):
         return None
-    return year if 1000 < year < 3000 else None
+    return timeutil.valid_year(year)
 
 
 def rank(results: list[dict[str, Any]], artist: str) -> list[dict[str, Any]]:

@@ -63,7 +63,7 @@ def is_guest(user: dict[str, Any]) -> bool:
     return bool(user.get("guest"))
 
 
-def _trusted_peer(host: str) -> bool:
+def trusted_peer(host: str) -> bool:
     try:
         addr = ipaddress.ip_address(host)
     except ValueError:
@@ -74,7 +74,7 @@ def _trusted_peer(host: str) -> bool:
 def client_ip(request: Request) -> str:
     """The socket address, or CF-Connecting-IP when the peer is loopback/LAN (the cloudflared host)."""
     peer = request.client.host if request.client else ""
-    if _trusted_peer(peer):
+    if trusted_peer(peer):
         forwarded = request.headers.get("cf-connecting-ip", "").strip()
         try:
             return str(ipaddress.ip_address(forwarded))

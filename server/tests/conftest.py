@@ -1,6 +1,8 @@
 import pytest
 
-from app import deps, genre_lookup, guest, httpjson, limits, wiki_lookup
+from datetime import UTC, datetime
+
+from app import deps, genre_lookup, guest, httpjson, limits, timeutil, wiki_lookup
 
 ENV = (
     "OWNER_EMAIL", "ALLOWED_EMAIL", "ALLOWED_APPLE_SUB", "SIGNUP_OPEN", "USER_MAX_SONGS", "USER_MAX_BYTES",
@@ -22,6 +24,7 @@ def _hermetic(monkeypatch):
         cache.clear()
     for name in ENV:
         monkeypatch.delenv(name, raising=False)
+    monkeypatch.setattr(timeutil, "_utc_now", lambda: datetime(2026, 6, 1, tzinfo=UTC))
     monkeypatch.setattr(deps.SCHED, "inline", True)
     limits.RATE.reset()
     deps.SUBS.clear()

@@ -12,11 +12,11 @@ from typing import Any
 
 from . import countrycodes, discogs_lookup, genre_lookup, langcodes, urlclean, wiki_lookup
 from .jsonio import write_json_atomic
-from .timeutil import now_utc  # noqa: F401
+from .timeutil import max_year, now_utc  # noqa: F401
 
 _ROOT_RE = re.compile(r"^([A-Za-z][A-Za-z0-9_.-]+)://(.*)$")
 _DECADE_RE = re.compile(r"^\d{2}s$")
-DECADE_MIN, DECADE_MAX = 1950, 2029
+DECADE_MIN = 1950
 
 
 def file_name(song: dict[str, Any]) -> str:
@@ -144,10 +144,10 @@ def normalize(raw: Any) -> dict[str, Any]:
 
 
 def decade_tag(year: Any) -> str | None:
-    """`decade:90s` for 1950-2029, else None."""
-    if isinstance(year, bool) or not isinstance(year, int) or not DECADE_MIN <= year <= DECADE_MAX:
+    """`decade:90s` for every year from 1950 up to max_year(), else None."""
+    if isinstance(year, bool) or not isinstance(year, int) or not DECADE_MIN <= year <= max_year():
         return None
-    return f"decade:{year % 100 // 10 * 10:02d}s"
+    return f"decade:{year // 10 * 10 % 100:02d}s"
 
 
 def with_decade(tags: list[str], year: Any) -> list[str]:

@@ -12,7 +12,7 @@ import urllib.parse
 import urllib.request
 from typing import Any
 
-from . import countrycodes, httpjson, langcodes
+from . import countrycodes, httpjson, langcodes, timeutil
 from .ratelimit import RateLimiter
 from .titles import artist_candidates, clean_artist, clean_title, lookup_credits, lookup_query, lookup_title, split_artist_title  # noqa: F401
 
@@ -138,7 +138,7 @@ def clean_recording_url(value: Any) -> str | None:
 
 def _first_year(full: dict[str, Any]) -> int | None:
     m = re.match(r"^(\d{4})", str(full.get("first-release-date") or ""))
-    return int(m.group(1)) if m else None
+    return timeutil.valid_year(int(m.group(1))) if m else None
 
 
 def _work_rels(full: dict[str, Any]) -> list[str]:
