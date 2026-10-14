@@ -31,7 +31,10 @@ export function finalText(s) {
   const tally = `${s.done} detected, ${s.failed} failed, ${s.skipped} skipped`;
   if (s.state === 'done') return `Done: ${tally}. Reload the library to see new BPMs`;
   if (s.state === 'cancelled') return `Cancelled: ${tally}.`;
-  if (s.state === 'error') return `Stopped by an error after ${tally}${s.last_error ? ` (${s.last_error})` : ''}.`;
+  if (s.state === 'error') {
+    const reason = s.last_error ? ` (${s.last_error})` : '';
+    return `Stopped by an error after ${tally}${reason}.`;
+  }
   return '';
 }
 

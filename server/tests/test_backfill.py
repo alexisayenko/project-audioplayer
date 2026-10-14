@@ -62,7 +62,8 @@ def test_idle_and_nothing_to_do(client):
     add(client)
     r = client.post(URL, headers=H)
     assert r.status_code == 200
-    assert r.json()["state"] == "idle" and r.json()["candidates"] == 0
+    assert r.json()["state"] == "idle"
+    assert r.json()["candidates"] == 0
 
 
 def test_candidates_only_null_bpm_with_audio(client, tmp_path):
@@ -86,7 +87,8 @@ def test_run_fills_null_and_keeps_existing(client, monkeypatch):
     monkeypatch.setattr(bpm, "detect_bpm", lambda path: 99)
     r = client.post(URL, headers=H)
     assert r.status_code == 202
-    assert r.json()["state"] == "running" and r.json()["total"] == 1
+    assert r.json()["state"] == "running"
+    assert r.json()["total"] == 1
     wait(OWNER_UID)
     s = client.get(URL, headers=H).json()
     assert (s["state"], s["done"], s["failed"], s["skipped"], s["candidates"]) == ("done", 1, 0, 0, 0)
@@ -148,7 +150,8 @@ def test_conflict_while_running_and_cancel(client, monkeypatch):
     assert client.post(URL, headers=H).status_code == 202
     assert seen.wait(5)
     again = client.post(URL, headers=H)
-    assert again.status_code == 409 and again.json()["error"] == "backfill_running"
+    assert again.status_code == 409
+    assert again.json()["error"] == "backfill_running"
     assert client.get(URL, headers=H).json()["state"] == "running"
     assert client.delete(URL, headers=H).status_code == 200
     gate.set()
@@ -160,7 +163,8 @@ def test_conflict_while_running_and_cancel(client, monkeypatch):
 
 def test_cancel_when_idle_is_harmless(client):
     r = client.delete(URL, headers=H)
-    assert r.status_code == 200 and r.json()["state"] == "idle"
+    assert r.status_code == 200
+    assert r.json()["state"] == "idle"
 
 
 def test_batches_commit_once_per_batch(client, monkeypatch):
@@ -233,7 +237,8 @@ def test_users_are_isolated_and_server_is_serial(multi, monkeypatch):
     assert multi.post(URL, headers=a).status_code == 202
     assert seen.wait(5)
     busy = multi.post(URL, headers=b)
-    assert busy.status_code == 409 and busy.json()["error"] == "backfill_busy"
+    assert busy.status_code == 409
+    assert busy.json()["error"] == "backfill_busy"
     assert multi.get(URL, headers=b).json()["state"] == "idle"
     gate.set()
     wait(ua)
@@ -258,4 +263,5 @@ def test_crash_sets_error_state(client, monkeypatch):
     job = wait(OWNER_UID)
     assert job.state == "error"
     s = client.get(URL, headers=H).json()
-    assert s["state"] == "error" and s["last_error"] == "disk"
+    assert s["state"] == "error"
+    assert s["last_error"] == "disk"

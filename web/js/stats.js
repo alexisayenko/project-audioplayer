@@ -37,7 +37,8 @@ export async function openSong(song, opener = null) {
 const swatch = (color, family) => {
   const i = colorIndex(color, family ? FAMILY_PALETTE_SIZE : PALETTE_SIZE);
   const name = family ? '--gf' : '--st';
-  return el('span', { class: 'st-sw', style: `background: var(${i < 0 ? '--st-n' : `${name}-${i}`})`, 'aria-hidden': 'true' });
+  const token = i < 0 ? '--st-n' : `${name}-${i}`;
+  return el('span', { class: 'st-sw', style: `background: var(${token})`, 'aria-hidden': 'true' });
 };
 
 const countLabel = (n) => `${n} ${plural(n, 'song', 'songs')}`;
@@ -181,7 +182,8 @@ export function renderStats(root) {
   function addSelected() {
     const { added, already, fetching } = player.addListed(selectedSongs(), '');
     const dl = fetching ? `, ${fetching} downloading` : '';
-    toast(`Added ${added} ${plural(added, 'song', 'songs')}${dl}${already ? ` (${already} already in queue)` : ''}`);
+    const queued = already ? ` (${already} already in queue)` : '';
+    toast(`Added ${added} ${plural(added, 'song', 'songs')}${dl}${queued}`);
   }
 
   function playSelected() {

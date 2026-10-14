@@ -56,7 +56,8 @@ def test_null_clears_and_absent_keeps(client):
     add(client, H, metadata={"title": "S", "remix_year": 2020})
     assert client.patch(f"/songs/{VID}", json={"title": "T"}, headers=H).json()["remix_year"] == 2020
     r = client.patch(f"/songs/{VID}", json={"remix_year": None}, headers=H)
-    assert r.status_code == 200 and r.json()["remix_year"] is None
+    assert r.status_code == 200
+    assert r.json()["remix_year"] is None
     assert song(client)["remix_year"] is None
 
 

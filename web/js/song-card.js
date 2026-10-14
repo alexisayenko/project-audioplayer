@@ -75,10 +75,11 @@ function actionRow(song, close) {
   const queued = player.inQueue(song.id);
   const view = autodl.view(song.id);
   const link = sourceLink(song);
+  const queueLabel = queued ? 'Remove from playlist' : 'Add to playlist';
   const btn = (label, run, cls = 'btn outline') => el('button', { class: cls, type: 'button', onclick: run }, label);
   return el('div', { class: 'card-actions' },
     play ? btn(play.label, play.run, 'btn primary glow') : null,
-    queueable ? btn(queued ? 'Remove from playlist' : 'Add to playlist', () => toggleQueue(song)) : null,
+    queueable ? btn(queueLabel, () => toggleQueue(song)) : null,
     audio && can('download') ? btn('Download', () => downloadSong(song)) : null,
     !audio && can('fetch') && (view.kind === 'none' || view.kind === 'failed') ? btn('Download to server', () => autodl.request([song.id], { front: true })) : null,
     can('edit') ? btn('Edit', () => editDialog(song)) : null,

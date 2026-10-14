@@ -11,7 +11,9 @@ from starlette.responses import RedirectResponse
 
 from . import guest
 
-_HOST_RE = re.compile(r"^(?=.{1,253}(:\d{1,5})?$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*(:\d{1,5})?$")
+_LABEL = r"[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?"
+_PORT = r":\d{1,5}"
+_HOST_RE = re.compile(rf"^(?=.{{1,253}}(?:{_PORT})?$){_LABEL}(?:\.{_LABEL})*(?:{_PORT})?$")
 EXEMPT_PATHS = ("/health", "/robots.txt", "/legal")
 
 

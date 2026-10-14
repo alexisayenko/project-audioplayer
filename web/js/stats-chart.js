@@ -76,7 +76,11 @@ export function createChart(base, top, { onHover, onOpen, onSelect, onFocus, onV
     let cur = null;
     for (const it of order) {
       const idx = colorIndex(it.point.color, familyPalette ? FAMILY_PALETTE_SIZE : PALETTE_SIZE);
-      if (idx !== cur) { cur = idx; bctx.fillStyle = idx < 0 ? c.neutral : (familyPalette ? c.family : c.palette)[idx]; }
+      if (idx !== cur) {
+        cur = idx;
+        const pal = familyPalette ? c.family : c.palette;
+        bctx.fillStyle = idx < 0 ? c.neutral : pal[idx];
+      }
       if (it.px < p.x0 - DOT_R || it.px > p.x1 + DOT_R || it.py < p.y0 - DOT_R || it.py > p.y1 + DOT_R) continue;
       bctx.beginPath();
       bctx.arc(it.px, it.py, DOT_R, 0, Math.PI * 2);
@@ -346,6 +350,6 @@ export function createChart(base, top, { onHover, onOpen, onSelect, onFocus, onV
     setInsetBottom(px) { if (px !== insetB) { insetB = px; redraw(); } },
     isZoomed: () => zoomed,
     focusPoint: (id) => { ensureLayout(); setFocus(items.findIndex((it) => it.point.id === id)); },
-    destroy() { dead = true; if (raf) cancelAnimationFrame(raf); ro?.disconnect(); scheme?.removeEventListener?.('change', redraw); },
+    destroy() { dead = true; if (raf) { cancelAnimationFrame(raf); } ro?.disconnect(); scheme?.removeEventListener?.('change', redraw); },
   };
 }

@@ -75,7 +75,7 @@ function install() {
     });
   }
   document.addEventListener?.('visibilitychange', () => document.body?.classList.toggle('doc-hidden', document.hidden === true));
-  document.fonts?.ready?.then(remeasureAutos);
+  void document.fonts?.ready?.then(remeasureAutos);
   document.fonts?.addEventListener?.('loadingdone', remeasureAutos);
 }
 

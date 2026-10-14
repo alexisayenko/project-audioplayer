@@ -297,7 +297,9 @@ export function countText(plotted, total) {
 }
 
 export function skippedText(n) {
-  return n ? `${n} ${n === 1 ? 'song' : 'songs'} without year or BPM ${n === 1 ? 'is' : 'are'} not shown` : '';
+  if (!n) return '';
+  const [noun, verb] = n === 1 ? ['song', 'is'] : ['songs', 'are'];
+  return `${n} ${noun} without year or BPM ${verb} not shown`;
 }
 
 export function chartLabel(n) {

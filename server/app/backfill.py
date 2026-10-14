@@ -99,7 +99,7 @@ def cancel(uid: str) -> dict[str, Any]:
 
 def reset() -> None:
     global _active
-    for job in list(_jobs.values()):
+    for job in _jobs.values():
         job.cancel.set()
         if job.thread is not None:
             job.thread.join(5)
@@ -146,6 +146,20 @@ def _flush(job: Job, results: dict[str, int]) -> None:
     results.clear()
 
 
+def _process(job: Job, uid: str, vid: str) -> int | None:
+    """The detected BPM, -1 when detection failed, None when the song is not eligible."""
+    song = library.find_song(deps.load_songs(uid), vid)
+    path = deps.audio_dir(uid) / library.file_name(song) if song and library.has_file(song) else None
+    if song is None or song.get("bpm") is not None or path is None or not path.is_file():
+        return None
+    try:
+        value = _detect(path)
+    except Exception as exc:
+        log.warning("bpm backfill failed for %s: %s", vid, exc)
+        return -1
+    return -1 if value is None else value
+
+
 def _run(job: Job, ids: list[str]) -> None:
     global _active
     try:
@@ -159,20 +173,14 @@ def _run(job: Job, ids: list[str]) -> None:
         for vid in ids:
             if job.cancel.is_set():
                 break
-            song = library.find_song(deps.load_songs(uid), vid)
-            path = deps.audio_dir(uid) / library.file_name(song) if song and library.has_file(song) else None
-            if song is None or song.get("bpm") is not None or path is None or not path.is_file():
+            outcome = _process(job, uid, vid)
+            if outcome is None:
                 job.skipped += 1
                 continue
-            try:
-                value = _detect(path)
-            except Exception as exc:
-                log.warning("bpm backfill failed for %s: %s", vid, exc)
-                value = None
-            if value is None:
+            if outcome < 0:
                 job.failed += 1
             else:
-                pending[vid] = value
+                pending[vid] = outcome
                 job.done += 1
             if len(pending) >= batch:
                 _flush(job, pending)

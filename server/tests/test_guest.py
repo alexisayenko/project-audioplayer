@@ -56,7 +56,8 @@ def test_guest_sees_the_owners_library_and_nothing_sensitive(lib):
     assert songs[0]["title"] == owner[0]["title"]
     assert set(songs[0]) <= guest.SONG_KEYS | {"audio"}
     assert set(songs[0].get("audio", {})) <= set(guest.AUDIO_KEYS)
-    assert "@" not in seen.text and uid("alex.isayenko@gmail.com") not in seen.text
+    assert "@" not in seen.text
+    assert uid("alex.isayenko@gmail.com") not in seen.text
 
 
 def test_scrub_drops_unknown_fields_and_the_audio_file_name():
@@ -83,7 +84,8 @@ def test_guest_reads_tags_graph_catalog_cover_and_health(lib):
     assert g.get("/tags").status_code == 200
     assert g.get("/genres/graph").status_code == 200
     cat = g.get("/catalog")
-    assert cat.status_code == 200 and cat.json()["total"] == 1
+    assert cat.status_code == 200
+    assert cat.json()["total"] == 1
     assert g.get("/catalog", params={"since": "2020-01-01T00:00:00Z"}).status_code == 200
     assert g.get(f"/covers/{VID2}").status_code == 404
     cdir = deps.covers_dir(users.owner_uid())
@@ -107,7 +109,8 @@ def test_me_reports_audio_flag(lib, monkeypatch):
 
 def test_signed_in_me_is_unchanged(lib):
     body = lib.get("/me", headers=H).json()
-    assert body["owner"] is True and "guest" not in body
+    assert body["owner"] is True
+    assert "guest" not in body
 
 
 def test_guest_cannot_write_or_reach_other_routes(lib):
@@ -167,9 +170,11 @@ def test_public_view_email_selects_another_profile(multi, monkeypatch):
 def test_guest_streams_with_range_and_head(lib):
     g = web()
     full = g.get(f"/files/{VID}")
-    assert full.status_code == 200 and len(full.content) == 10_000
+    assert full.status_code == 200
+    assert len(full.content) == 10_000
     part = g.get(f"/files/{VID}", headers={"Range": "bytes=0-99"})
-    assert part.status_code == 206 and len(part.content) == 100
+    assert part.status_code == 206
+    assert len(part.content) == 100
     head = g.head(f"/files/{VID}")
     assert head.status_code == 200
     assert head.headers["cache-control"] == CACHE
@@ -178,10 +183,12 @@ def test_guest_streams_with_range_and_head(lib):
 def test_guest_download_is_blocked_and_audio_flag(lib, monkeypatch):
     g = web()
     r = g.get(f"/files/{VID}", params={"download": 1})
-    assert r.status_code == 403 and r.json()["error"] == "guest_download_disabled"
+    assert r.status_code == 403
+    assert r.json()["error"] == "guest_download_disabled"
     monkeypatch.setenv("PUBLIC_AUDIO", "0")
     r = g.get(f"/files/{VID}")
-    assert r.status_code == 403 and r.json()["error"] == "guest_audio_disabled"
+    assert r.status_code == 403
+    assert r.json()["error"] == "guest_audio_disabled"
     assert g.head(f"/files/{VID}").status_code == 403
     assert g.get("/library").status_code == 200
 
@@ -218,8 +225,10 @@ def test_request_limit_per_ip_with_rollover(lib, monkeypatch):
     a, b = web("203.0.113.5"), web("203.0.113.6")
     assert [a.get("/me").status_code for _ in range(3)] == [200, 200, 200]
     r = a.get("/me")
-    assert r.status_code == 429 and r.json()["error"] == "guest_limit"
-    assert r.json()["retry_after_minutes"] == 1 and int(r.headers["retry-after"]) >= 1
+    assert r.status_code == 429
+    assert r.json()["error"] == "guest_limit"
+    assert r.json()["retry_after_minutes"] == 1
+    assert int(r.headers["retry-after"]) >= 1
     assert b.get("/me").status_code == 200
     assert lib.get("/me", headers=H).status_code == 200
     clock.now += 61
@@ -235,7 +244,8 @@ def test_audio_budget_counts_range_bytes_and_rolls_over(lib, monkeypatch):
     assert g.get(f"/files/{VID}", headers={"Range": "bytes=0-5999"}).status_code == 206
     assert g.get(f"/files/{VID}", headers={"Range": "bytes=6000-9999"}).status_code == 206
     r = g.get(f"/files/{VID}", headers={"Range": "bytes=0-0"})
-    assert r.status_code == 429 and r.json()["error"] == "guest_limit"
+    assert r.status_code == 429
+    assert r.json()["error"] == "guest_limit"
     assert g.head(f"/files/{VID}").status_code == 200
     assert web("203.0.113.9").get(f"/files/{VID}", headers={"Range": "bytes=0-9"}).status_code == 206
     clock.now += 3601
@@ -248,7 +258,8 @@ def test_concurrent_stream_cap(lib, monkeypatch):
     guest.open_stream("203.0.113.5")
     g = web()
     r = g.get(f"/files/{VID}")
-    assert r.status_code == 429 and r.json()["error"] == "guest_limit"
+    assert r.status_code == 429
+    assert r.json()["error"] == "guest_limit"
     guest.close_stream("203.0.113.5")
     assert g.get(f"/files/{VID}").status_code == 200
     assert g.get(f"/files/{VID}").status_code == 200
@@ -312,7 +323,8 @@ def test_keyed_window_edge_cases():
     now = [0.0]
     w = KeyedWindow(10, 100.0, clock=lambda: now[0])
     assert w.charge("a", 11) == 100.0
-    assert w.charge("a", 4) == 0 and w.charge("a", 4) == 0
+    assert w.charge("a", 4) == 0
+    assert w.charge("a", 4) == 0
     assert w.charge("a", 4) == 100.0
     now[0] = 30
     assert w.charge("a", 4) == 70.0
@@ -321,4 +333,5 @@ def test_keyed_window_edge_cases():
     assert w.charge("a", 10) == 0
     for i in range(10001):
         w.hits[f"k{i}"] = deque()
-    assert w.charge("z", 1) == 0 and len(w.hits) < 10001
+    assert w.charge("z", 1) == 0
+    assert len(w.hits) < 10001

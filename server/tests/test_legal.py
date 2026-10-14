@@ -30,7 +30,8 @@ def test_x_robots_tag_on_api_static_error_and_redirect_responses(monkeypatch):
         assert c.get(path).headers["x-robots-tag"] == tag, path
     monkeypatch.setenv("CANONICAL_HOST", "play.example.net")
     r = c.get("/library", headers={"host": "other.example.net"})
-    assert r.status_code == 308 and r.headers["x-robots-tag"] == tag
+    assert r.status_code == 308
+    assert r.headers["x-robots-tag"] == tag
 
 
 def test_legal_payload_without_contact():

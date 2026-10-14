@@ -29,7 +29,9 @@ def test_create_range(client, field, value, ok):
     r = client.post("/songs", json={"url": VID, "metadata": {"title": "S", field: value}, "tags": []}, headers=H)
     assert (r.status_code == 202) is ok
     if not ok:
-        assert r.status_code == 422 and "1900 to 2027" in r.json()["detail"] and field in r.json()["detail"]
+        assert r.status_code == 422
+        assert "1900 to 2027" in r.json()["detail"]
+        assert field in r.json()["detail"]
 
 
 @pytest.mark.parametrize("field", ["year", "remix_year"])
@@ -55,7 +57,8 @@ def test_stored_year_above_limit_is_kept_and_accepted_unchanged(client, monkeypa
 
 
 def test_decade_tag_follows_the_clock(monkeypatch):
-    assert library.decade_tag(2027) == "decade:20s" and library.decade_tag(2030) is None
+    assert library.decade_tag(2027) == "decade:20s"
+    assert library.decade_tag(2030) is None
     at(monkeypatch, 2029)
     assert library.decade_tag(2030) == "decade:30s"
     assert library.decade_tag(1949) is None
@@ -64,10 +67,13 @@ def test_decade_tag_follows_the_clock(monkeypatch):
 
 
 def test_lookups_discard_out_of_range_years():
-    assert discogs_lookup._year(2028) is None and discogs_lookup._year(1899) is None and discogs_lookup._year(2027) == 2027
+    assert discogs_lookup._year(2028) is None
+    assert discogs_lookup._year(1899) is None
+    assert discogs_lookup._year(2027) == 2027
     assert genre_lookup._first_year({"first-release-date": "2028-01-01"}) is None
     assert genre_lookup._first_year({"first-release-date": "1999-01-01"}) == 1999
     assert extractor._year({"release_year": 2028}) is None
     assert extractor._year({"release_date": "18990101"}) is None
     assert extractor._year({"release_date": "20210101"}) == 2021
-    assert wiki_lookup._in_range(2027) and not wiki_lookup._in_range(2028)
+    assert wiki_lookup._in_range(2027)
+    assert not wiki_lookup._in_range(2028)
