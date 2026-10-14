@@ -131,10 +131,11 @@ Then open `http://<host>:8000/`, sign in with Google or Apple (scripts send `X-A
 disables the outbound HTTPS tag and link lookups to `musicbrainz.org`, `wikidata.org`
 and `*.wikipedia.org`), `AUDIO_MB_USER_AGENT` (default
 `audioplayer/0.1 (alex.isayenko@gmail.com)`, sent to all three hosts; Wikimedia requires a descriptive one).
+Optional identification (API-070): `ACOUSTID_API_KEY`, `ACOUSTID_MIN_SCORE` (default `0.9`), `AUDIO_FPCALC` (path of Chromaprint `fpcalc`, default `fpcalc`) and `DISCOGS_TOKEN`; each source is off while its credential or binary is missing.
 
 Server modules (`server/app/`): `main` (routes, jobs), `library` (records, derived `decade:` tags,
 tag normalisation), `extractor` (yt-dlp), `genre_lookup` (MusicBrainz
-suggestions), `wiki_lookup` (Wikipedia links, Wikidata facts, link validation), `titles` (title cut: channel prefix, remix to `remixer`, feat normalisation, lookup strings), `genre_filter` (deny-list and canonical genre tags), `genres` (built-in genre list for `GET /genres`), `metadata` (`POST /metadata`), `langcodes` (ISO 639 mapping, stored `lang:` tags only), `bpm` (aubio), `urlclean` (link cleaning, SoundCloud and catalog-id classification), `gitstore`
+suggestions), `acoustid_lookup` (fpcalc + AcoustID), `discogs_lookup` (Discogs styles, year), `identify` (merge and 24 h cache), `wiki_lookup` (Wikipedia links, Wikidata facts, link validation), `titles` (title cut: channel prefix, remix to `remixer`, feat normalisation, lookup strings), `genre_filter` (deny-list and canonical genre tags), `genres` (built-in genre list for `GET /genres`), `metadata` (`POST /metadata`), `langcodes` (ISO 639 mapping, stored `lang:` tags only), `bpm` (aubio), `urlclean` (link cleaning, SoundCloud and catalog-id classification), `gitstore`
 (git sync), `oauth`, `session`, `users`, `limits`, `jobs`, `problems` (coded refusals) (ADR-0006, ADR-0012).
 
 ## Web UI (`web/`)

@@ -56,6 +56,7 @@ Then repeat the checklist below. To return to `main` later: `git checkout main &
 
 ## Operations
 
+- <a id="identification-keys"></a>Identification keys (optional, API-070, NFR-070): the keys go only into `/etc/audioplayer/env` (`chmod 600`), never into the repo, a chat or a log. Add `ACOUSTID_API_KEY=<key>` (register an application at https://acoustid.org/new-application; the key is free) and `DISCOGS_TOKEN=<token>` (personal access token from https://www.discogs.com/settings/developers, "Generate new token"); optionally `ACOUSTID_MIN_SCORE` (default `0.9`) and `AUDIO_FPCALC` (default `fpcalc`). The fingerprint source also needs the Chromaprint tool: `sudo apt install libchromaprint-tools` in the LXC (provides `fpcalc`). Then `sudo systemctl restart audioplayer`. Check without printing the keys: `fpcalc -version`, and the song Edit dialog enables "Identify from audio". Either key may be left out; that source stays off.
 - Close signup: set `SIGNUP_OPEN=0` in `/etc/audioplayer/env` and `sudo systemctl restart audioplayer`. Existing users and the owner keep working, new sign-ins get 403 `signup_closed` (NFR-051). Set `1` (or remove the line) to reopen.
 - Change a limit (`USER_MAX_SONGS`, `USER_MAX_BYTES`, `USER_ADDS_PER_HOUR`, `POOL_MAX_BYTES`, ...): same file, same restart.
 - yt-dlp broken: `sudo systemctl start audioplayer-ytdlp-update.service` (upgrades and restarts).

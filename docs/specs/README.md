@@ -20,7 +20,7 @@ Each requirement is one line:
 `ID MUST|SHOULD: statement. Status: implemented | planned | to-confirm`
 
 - IDs are `<AREA>-<NNN>`, stable, never reused. Areas: `DATA`, `API`,
-  `TAG`, `ADD`, `LIB`, `STO`, `PLY`, `IOS`, `WEB`, `NFR`, `CAT`.
+  `TAG`, `ADD`, `LIB`, `STO`, `PLY`, `IOS`, `WEB`, `NFR`, `CAT`, `GEN`.
 - **MUST** is mandatory; **SHOULD** is desirable and may be waived with a reason.
 - **implemented**: verified in code on 2026-10-13. **planned**: decided, not
   built. **to-confirm**: behaviour exists or is proposed but nobody has
@@ -40,4 +40,5 @@ Each requirement is one line:
 | [catalog.md](catalog.md) | CAT | Catalog vs audio (server and web implemented, later sources planned), audio state, Spotify metadata, Get audio with YouTube match (ADR-0010) |
 | [ios.md](ios.md) | IOS | iOS app: tabs, Settings and sign-in, Add, Library Phone/Server, offline playback, look, build number |
 | [web.md](web.md) | WEB | Web UI sign-in with Google and Apple, session cookie, signed-out screen |
+| [genres.md](genres.md) | GEN | Genres map: genre graph from Wikidata with Discogs families, `GET /genres/graph`, force-graph page and outline (ADR-0014) |
 | [non-functional.md](non-functional.md) | NFR | Auth, hosting, scale, browsers, offline, CPU |

@@ -8,7 +8,7 @@ Code: `server/app/library.py`, `server/app/main.py` (`SongMeta`).
 | --- | --- | --- | --- |
 | `id` | string | yes | YouTube video id `^[A-Za-z0-9_-]{11}$`, `soundcloud-<numeric track id>` `^soundcloud-[0-9]{1,20}$`, or a metadata-only `spotify-`/`applemusic-`/`shazam-<id>` `^(spotify\|applemusic\|shazam)-[A-Za-z0-9_-]{1,64}$`; immutable; unique |
 | `source` | string | no | `youtube` (default when absent; old records are not migrated) or `soundcloud`; set by the server on new SoundCloud songs |
-| `title` | string | yes | non-empty after trim (PATCH: 422 if empty; Add: falls back to yt-dlp title, then id) |
+| `title` | string | yes | non-empty after trim (PATCH: 422 if empty; Add: falls back to yt-dlp title, then id; promo noise is cleaned on Add only, ADD-077; stored titles and artists are never rewritten, the web joins edited pills with ' - ', ADD-071) |
 | `artist` | string or null | no | trimmed; empty becomes `null` |
 | `album` | string or null | no | trimmed; empty becomes `null` |
 | `remixer` | string or null | no | free text, the remix and additional production credit, the cut-out remix bracket text ("Sadrican 2026 Remix"; ADD-070); trimmed; empty becomes `null`; absent in old records |
@@ -18,6 +18,7 @@ Code: `server/app/library.py`, `server/app/main.py` (`SongMeta`).
 | `duration` | number or null | no | seconds, technical, set at download |
 | `source_url` | string | yes | canonical `https://www.youtube.com/watch?v=<id>`, or `https://soundcloud.com/<artist>/<track>[/s-<secret>]`, no tracking parameters; dirty values in old files are cleaned on load (saved on the next write) |
 | `musicbrainz_url` | string or null | no | `https://musicbrainz.org/recording/<mbid>` of the matched recording; any other host, path or malformed id is dropped to `null` (also on load); absent = `null` (grey MusicBrainz icon) |
+| `discogs_url` | string or null | no | `https://www.discogs.com/release/<id>` or `/master/<id>` of the matched Discogs release; any other host or path is dropped to `null` (also on load); absent = `null` (grey Discogs icon) |
 | `wikipedia_song` | string or null | no | `https://<lang>.wikipedia.org/wiki/<title>` or `https://www.wikidata.org/wiki/Q<id>`; any other host or shape is dropped to `null` (also on load); absent = `null` |
 | `wikipedia_artist` | string or null | no | same rule, for the band/artist |
 | `file` | string or null | yes | audio file name only, `<id>.m4a`, never a path; `null` = metadata-only song (no audio) |
@@ -35,6 +36,7 @@ Code: `server/app/library.py`, `server/app/main.py` (`SongMeta`).
 - DATA-006 MUST: the API rejects `bpm` outside 20..300 and `year` outside 0..3000 with 422. Status: implemented
 - DATA-008 MUST: `wikipedia_song` and `wikipedia_artist` are validated by `wiki_lookup.clean_link` on POST, PATCH and load: https only (http is upgraded), host `*.wikipedia.org` with a `/wiki/<title>` path or `wikidata.org/wiki/Q<id>`, no credentials or odd ports, query and fragment dropped for Wikidata; anything else becomes `null`, never a 422. Status: implemented
 - DATA-009 MUST: `musicbrainz_url` is validated by `genre_lookup.clean_recording_url` on POST, PATCH and load: http or https on `musicbrainz.org` (optional `www.`) with `/recording/<uuid>`, normalised to `https://musicbrainz.org/recording/<lowercase uuid>`; anything else becomes `null`, never a 422. Clients fill it from `services.musicbrainz.url` of `POST /metadata` so the icon stays lit when the song is reopened; old builds ignore it. Status: implemented
+- DATA-050 MUST: `discogs_url` is validated by `discogs_lookup.clean_url` on POST, PATCH and load: http or https on `discogs.com` (optional `www.` and language prefix) with `/release/<digits>` or `/master/<digits>` (a trailing slug is cut), normalised to `https://www.discogs.com/<kind>/<id>`; anything else becomes `null`, never a 422. It is set only by the user, through "Apply links" after an identification (ADD-090) or a Discogs-matched preview; old builds ignore it. Status: implemented
 - DATA-007 MUST: `POST /songs` and PATCH round a typed `bpm` to an integer; `library.normalize` rounds stored fractions on load. Status: implemented
 
 ## `library.json`
@@ -81,3 +83,8 @@ Tag namespaces in use (see [tags.md](tags.md)): `genre:<name>`, `country:<ISO 31
 - DATA-040 MUST: each user has `profile.json` (`email` or `null`, `provider`, `created_at`, optional `subs`) written once at the first sign-in; the email is the only personal data and lives only there, never in a path. Status: implemented
 - DATA-041 MUST: `uid` is the first 16 hex chars of `sha256(lowercased email)`; for an Apple token without email, of `sha256(sub)`, and a later token without email finds the profile through `subs`. Status: implemented
 - DATA-042 MUST: `settings.music_root` stays one server-wide value (the owner's, or `AUDIO_MUSIC_ROOT`); each user's audio is below `<music_root>/users/<uid>/`. Status: implemented
+
+
+## Genre ontology cache (ADR-0014)
+
+- DATA-060 MUST: the server keeps one server-wide file `genre-ontology.json` in `AUDIO_DATA_DIR` (not in the per-user git repos): `{version, labels: {<lowercase genre>: {qid|null, at}}, entities: {<QID>: {label, parents, related, genre, at}}}` with Unix times, refreshed per entry after 30 days. It is a cache of public Wikidata facts only, rebuildable at any time, and contains no song, tag count, user or email (GEN-004). Status: implemented

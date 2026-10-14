@@ -531,7 +531,7 @@ Genres
 
 ## ADR-0013 Music-database lookups: MusicBrainz now, Discogs later
 
-Status: Accepted for MusicBrainz (already live as a source, now the named policy); Proposed for Discogs · 2026-10-14
+Status: Accepted for MusicBrainz (already live as a source, now the named policy); Discogs and audio fingerprinting implemented, awaiting keys on the server (see Sub-decision) · 2026-10-14
 
 - Current state: `POST /metadata` ([API-048](../specs/api.md)) merges, under one 15 s cap, yt-dlp source info, a MusicBrainz match of artist+title (`server/app/genre_lookup.py`: genres, artist country, first release year, album, the matched recording's page for the MusicBrainz icon; score >= 90, at most 3 genres, descriptive `User-Agent` from `AUDIO_MB_USER_AGENT`, one request per 1.1 s, per-query cache), the English Wikipedia infobox and Wikidata (`server/app/wiki_lookup.py`). `POST /preview` applies the same genre filter, `GET /genres` (API-050) serves the user's own genres plus a built-in list, and BPM is detected locally from the audio (ADR-0002). Spotify is not used. The Add and Edit form never auto-fills from a lookup beyond the preview prefill; "Get metadata" results are suggestions ([add-song](../specs/add-song.md)).
 - Decision (Alex): MusicBrainz is the standing music-database source for metadata suggestions; Discogs is added later as a second source for genre, style and year.
@@ -548,7 +548,31 @@ Status: Accepted for MusicBrainz (already live as a source, now the named policy
   - One more optional external dependency and a per-source cache and limiter to maintain; Discogs adds a secret to deploy.
   - Suggested tags can be wrong or noisy; the confirm step carries the quality, not the source.
   - Sources merge in a fixed precedence, so adding Discogs needs an update to API-048 and the tags spec.
+- Sub-decision (Alex, 2026-10-14): fingerprint-first identification. The most reliable way to name a track is its audio, not its messy title: Chromaprint `fpcalc` fingerprints the saved file and the AcoustID service returns the MusicBrainz recording (`server/app/acoustid_lookup.py`); that recording then supplies genres, country, languages, year and the Wikipedia links, and the title-based MusicBrainz match is only the fallback. Discogs (`server/app/discogs_lookup.py`) is searched with the matched artist and title and its finer styles are preferred for `genre:`. `server/app/identify.py` merges the sources (API-070). Rules: all of it is suggestions, never auto-applied or overwriting user data; every key is optional and a missing key or `fpcalc` switches the source off quietly; only the fingerprint leaves the server; keys stay in the server env file (NFR-070). The Discogs link is stored like the MusicBrainz one (`discogs_url`, DATA-050). Not yet verified against the live services: that needs `ACOUSTID_API_KEY`, `DISCOGS_TOKEN` and `fpcalc` on the server ([deploy](deploy.md#identification-keys)).
 - Rejected:
   - Client-side calls: would put the Discogs token in the app and web bundle and break per-source rate limiting.
   - Spotify API: needs app credentials and is not used (ADR-0010); its terms limit reuse of metadata.
   - Scraping: brittle, against site terms, and not needed while free APIs exist.
+
+
+## ADR-0014 Genres map: genre graph from Wikidata with Discogs families
+
+Status: Accepted (Alex, 2026-10-14) · implemented
+
+- Decision: a "Genres map" page shows the user's `genre:` tags as an Obsidian-style force graph with an outline list beside it. Genres form a directed acyclic graph (many parents, many siblings), not a tree, so the model carries `parents[]` and a separate weaker `related` edge. Spec: [genres.md](../specs/genres.md), endpoint API-080.
+- Source of relations: Wikidata, because it already holds `subclass of` for music genres and the app already uses it for facts ([ADR-0013](#adr-0013-music-database-lookups-musicbrainz-now-discogs-later)). Each tag is resolved by label search (exact English label or alias, restricted to music genres) and its ancestors are fetched by `subclass of` in batches of 50. The resolved slice is cached in one server-wide JSON file for 30 days and never holds user data; requests never wait for Wikidata (a background worker fills the cache, the page polls), so the page works offline from the cache and degrades to the user's own tags when there is none.
+- Families: colours come from the Discogs top-level genres (Electronic, Rock, Pop, Hip Hop, Jazz, Funk / Soul, Classical, Reggae, Latin, Blues, Folk World & Country, Stage & Screen, Non-Music, Children's, Brass & Military, plus "Other"), through a small hand-made map from Wikidata ids and labels in `server/app/data/discogs-families.json`; the closest matching ancestor wins. Discogs itself is not called.
+- Deviations from the brief, kept on purpose: the module is `server/app/genre_graph.py` (`genres.py` already serves the autocomplete list); the weak `related` edge uses `influenced by` (P737), because P7937 is "form of creative work" and Wikidata has no usable "stylistic origin" property; counts are computed per user on the server and recomputed in the browser from the loaded library.
+- Rendering: canvas with a purpose-written simulation, no CDN or library; reduced-motion gets a static layout.
+- Consequences: one more cache file on the server and a background thread on first use; Wikidata labels can differ from the user's wording (the node keeps the user's own values in `tags`, so Library filters stay exact); genres Wikidata does not know stay as loose nodes.
+- Rejected: a tree (a genre such as synthpop has two parents); fetching Wikidata per request (slow, rude to the service); a client-side library such as d3 from a CDN (no external dependencies, ADR-0003); storing the ontology in the per-user git repos (it is not user data).
+
+
+## ADR-0015 Pill separators and promo-noise cleaning
+
+Status: Accepted (Alex, 2026-10-14) · implemented on the web
+
+- Title, Artist and Remix & additional production use ONE tokenizer (`web/js/tokens.js`): pills come from Enter or from the exact separators ' - ' (also en and em dash), ' | ', ' / ', ' // ' with spaces on both sides; commas, semicolons, `&`, `feat.` and unspaced `/`, `|`, `-` never split ('Tyler, The Creator', 'AC/DC', 'A-ha'). Edited pills are joined with ' - '; an unedited stored string is kept verbatim. The tag editor keeps its comma rules. iOS is not changed (gap documented in ADD-071).
+- Lookups cope with legacy 'A, B' artists locally (whole string first, then the first part), so no data migration is needed.
+- Promo noise ('[Free Download]', '(Official Video)') is removed by one function with identical rules on server and web, only on Add, with a Restore hint; the server is authoritative. Existing songs are not rewritten; an optional script does it on request.
+- Rejected: a heuristic for artist commas (wrong in both directions); stripping every bracket (it would lose Extended Mix, Remastered, Live).
