@@ -1,9 +1,10 @@
 # Changelog
 
-What shipped, newest first. One line each; the web UI and server are live at https://play.isayenko.net. Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
+What shipped, newest first. One line each; the web UI and server are live at https://play.isayenko.net. Not yet deployed: the 2026-10-14 entries below (guest view, visualizer, BPM backfill, `PUBLIC_HOSTS` and the rest) are in code on `origin/main` but not on the live server; the deploy is blocked on SSH access ([task-0027](tasks/task-0027.md)). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
 ## 2026-10-14
 
+- Server and web: guest scrub no longer exposes the top-level `file` and guest streaming 404s for ids outside the owner's catalog; metadata-only `POST /songs` no longer counts against `USER_ADDS_PER_HOUR` (only the audio fetch does); the sign-in error text no longer hardcodes `play.isayenko.net`; coverage measured (server about 99%, web about 96%) (NFR-056, NFR-081, NFR-090, ADR-0010, ADR-0017, ADR-0018).
 - Web: Mirrored spectrum bar pitch is a whole 4 px (was 4.5), still 60% width on whole device pixels with gaps of at least 1 device px (VIZ-010).
 - Web: Selected Shuffle and Repeat toggles keep the transparent interior and 1px accent ring and gain a faint outer-only glow at 25% strength (PLY-132).
 - Web: Mirrored spectrum no longer shows striped dark gaps between bars -- bar edges snap to whole device pixels with one constant width, for any DPR and width (VIZ-010).
@@ -66,7 +67,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 - Web: "Play all N" button on the Library sort bar (LIB-092).
 - Web and server: "Download" saves a song as `Artist - Title.m4a` via `GET /files/{id}?download=1` (WEB-034, API-061).
 - Server and web: MusicBrainz and Discogs icons in the song link row, `musicbrainz_url` stored on the song; "mashup" and "mixed by" are cut like "remix".
-- iOS: TestFlight builds 20261022 and 20261023.
+- iOS: TestFlight builds 20261020 to 20261024 (latest 20261024).
 
 ## 2026-10-13
 
