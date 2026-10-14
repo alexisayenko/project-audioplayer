@@ -11,7 +11,7 @@ _NOISE = (
     "exclusive", "out now", "out soon", "available now", "buy", "buy now", "hd", "hq", "4k", "1080p", "720p", "60fps", "official",
     "official video", "official music video", "official audio", "official lyric video", "official visualizer", "official video clip",
     "lyrics", "lyric video", "with lyrics", "video", "audio", "visualizer", "music video", "mv", "clip", "video clip", "full song",
-    "full version", "high quality", "hq audio",
+    "full version", "high quality", "hq audio", "original mix", "original version", "original",
 )
 _WORDS = frozenset(
     "free download dl premiere premiered exclusive hd hq 4k 1080p 720p 480p 360p 60fps official lyrics lyric visualizer mv audio video "
