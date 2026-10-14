@@ -4,17 +4,17 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 import re
 import threading
 import time
-import urllib.parse
-import urllib.request
 from collections import deque
 from pathlib import Path
 from typing import Any
 
-from . import genre_lookup
+from . import httpjson
+from .jsonio import write_json_atomic
+from .ratelimit import RateLimiter
+from .tags import namespaced_values
 
 log = logging.getLogger(__name__)
 
@@ -39,7 +39,7 @@ _lock = threading.RLock()
 _work = threading.Lock()
 _running = False
 _down_until = 0.0
-_last_call = 0.0
+_limiter = RateLimiter(MIN_INTERVAL)
 _mem: dict[str, dict[str, Any]] = {}
 _families: dict[str, Any] | None = None
 
@@ -84,10 +84,7 @@ def save_cache(path: Path) -> None:
         if data is None:
             return
         try:
-            path.parent.mkdir(parents=True, exist_ok=True)
-            tmp = path.with_name(path.name + ".tmp")
-            tmp.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
-            os.replace(tmp, path)
+            write_json_atomic(path, data, compact=True)
         except OSError as e:
             log.warning("genre cache not saved: %s", e)
 
@@ -97,20 +94,8 @@ def _fresh(entry: dict[str, Any] | None) -> bool:
 
 
 def _api(params: dict[str, str]) -> dict[str, Any]:
-    global _last_call
-    with _lock:
-        now = time.monotonic()
-        start = max(now, _last_call + MIN_INTERVAL)
-        _last_call = start
-    if start > now:
-        time.sleep(start - now)
-    query = urllib.parse.urlencode({**params, "format": "json"})
-    req = urllib.request.Request(
-        f"{API}?{query}",
-        headers={"User-Agent": os.environ.get("AUDIO_MB_USER_AGENT", genre_lookup.DEFAULT_UA), "Accept": "application/json"},
-    )
-    with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
-        return json.loads(resp.read().decode("utf-8"))
+    _limiter.reserve()
+    return httpjson.http_json(API, TIMEOUT, params={**params, "format": "json"})
 
 
 def _ids(entity: dict[str, Any], prop: str) -> list[str]:
@@ -170,10 +155,9 @@ def resolve_label(cache: dict[str, Any], key: str) -> str | None:
 def user_genres(songs: list[dict[str, Any]]) -> dict[str, set[str]]:
     own: dict[str, set[str]] = {}
     for s in songs:
-        for t in s.get("tags") or []:
-            k, sep, v = str(t).partition(":")
-            if sep and k.strip().casefold() == "genre" and norm(v):
-                own.setdefault(norm(v), set()).add(s["id"])
+        for value in namespaced_values(s.get("tags") or [], "genre"):
+            if norm(value):
+                own.setdefault(norm(value), set()).add(s["id"])
     return own
 
 
@@ -252,24 +236,46 @@ def _kick(path: Path, keys: list[str]) -> None:
         threading.Thread(target=_background, args=(path, keys), daemon=True).start()
 
 
+_WORD = re.compile(r"[a-z0-9&'/\-]+")
+
+
+def _by_keyword(label: str) -> str | None:
+    """Last-resort family for a label: a known phrase, else the first keyword scanning words from the head noun backwards."""
+    fam = families()
+    text = " ".join(label.lower().split())
+    for phrase, family in fam.get("phrases", {}).items():
+        if phrase in text:
+            return family
+    index = fam.get("_kw_index")
+    if index is None:
+        index = {w: f for f, words in fam.get("keywords", {}).items() for w in words}
+        fam["_kw_index"] = index
+    for word in reversed([w for t in _WORD.findall(text) for w in (t, *re.split(r"[/\-]", t))]):
+        if word in index:
+            return index[word]
+    return None
+
+
 def _family(cache: dict[str, Any], qid: str | None, label: str) -> str:
     fam = families()
     by_label = fam["labels"]
+    own = by_label.get(label.lower())
     if not qid:
-        return by_label.get(label.lower(), "Other")
+        return own or _by_keyword(label) or "Other"
     queue = deque([qid])
     seen = {qid}
     while queue:
         q = queue.popleft()
         ent = cache["entities"].get(q) or {}
-        hit = fam["qids"].get(q) or by_label.get(str(ent.get("label", "")).lower())
+        name = str(ent.get("label", ""))
+        hit = fam["qids"].get(q) or by_label.get(name.lower()) or (_by_keyword(name) if name else None)
         if hit:
             return hit
         for p in ent.get("parents", []):
             if p not in seen:
                 seen.add(p)
                 queue.append(p)
-    return by_label.get(label.lower(), "Other")
+    return own or _by_keyword(label) or "Other"
 
 
 def _break_cycles(parents: dict[str, list[str]]) -> None:
@@ -294,8 +300,7 @@ def _break_cycles(parents: dict[str, list[str]]) -> None:
                 stack.pop()
 
 
-def build(songs: list[dict[str, Any]], cache: dict[str, Any]) -> dict[str, Any]:
-    own_by_label = user_genres(songs)
+def _own_nodes(own_by_label: dict[str, set[str]], cache: dict[str, Any]) -> dict[str, dict[str, Any]]:
     nodes: dict[str, dict[str, Any]] = {}
     for key in sorted(own_by_label):
         entry = cache["labels"].get(key) or {}
@@ -305,8 +310,10 @@ def build(songs: list[dict[str, Any]], cache: dict[str, Any]) -> dict[str, Any]:
         node = nodes.setdefault(nid, {"qid": qid, "label": (ent or {}).get("label") or key, "own": set(), "keys": set(), "level": 0})
         node["own"] |= own_by_label[key]
         node["keys"].add(key)
-    ontology = any(n["qid"] for n in nodes.values())
+    return nodes
 
+
+def _add_ancestors(nodes: dict[str, dict[str, Any]], cache: dict[str, Any]) -> None:
     level = {nid: 0 for nid, n in nodes.items() if n["qid"]}
     queue = deque(level)
     while queue:
@@ -319,12 +326,9 @@ def build(songs: list[dict[str, Any]], cache: dict[str, Any]) -> dict[str, Any]:
                 queue.append(p)
                 nodes[p] = {"qid": p, "label": cache["entities"][p]["label"] or p, "own": set(), "keys": set(), "level": level[p]}
 
-    parents = {
-        nid: [p for p in (cache["entities"].get(n["qid"]) or {}).get("parents", []) if p in nodes and p != nid] if n["qid"] else []
-        for nid, n in nodes.items()
-    }
-    _break_cycles(parents)
 
+def _reach(nodes: dict[str, dict[str, Any]], parents: dict[str, list[str]]) -> dict[str, set[str]]:
+    """For every node the songs of its own genre and of all its descendants."""
     children: dict[str, list[str]] = {nid: [] for nid in nodes}
     for nid, ps in parents.items():
         for p in ps:
@@ -339,14 +343,21 @@ def build(songs: list[dict[str, Any]], cache: dict[str, Any]) -> dict[str, Any]:
             remaining[p] -= 1
             if remaining[p] == 0:
                 ready.append(p)
+    return reach
 
-    if len(nodes) > MAX_NODES:
-        order = sorted(nodes, key=lambda i: (len(nodes[i]["own"]) > 0, -nodes[i]["level"], len(reach[i]), i))
-        for nid in order[:len(nodes) - MAX_NODES]:
-            del nodes[nid]
-        for nid in nodes:
-            parents[nid] = [p for p in parents[nid] if p in nodes]
 
+def _trim(nodes: dict[str, dict[str, Any]], parents: dict[str, list[str]], reach: dict[str, set[str]]) -> None:
+    """Drop the least relevant nodes beyond MAX_NODES (ancestors first, user genres last)."""
+    if len(nodes) <= MAX_NODES:
+        return
+    order = sorted(nodes, key=lambda i: (len(nodes[i]["own"]) > 0, -nodes[i]["level"], len(reach[i]), i))
+    for nid in order[:len(nodes) - MAX_NODES]:
+        del nodes[nid]
+    for nid in nodes:
+        parents[nid] = [p for p in parents[nid] if p in nodes]
+
+
+def _slugs(nodes: dict[str, dict[str, Any]]) -> dict[str, str]:
     ids: dict[str, str] = {}
     used: set[str] = set()
     for nid in sorted(nodes, key=lambda i: (nodes[i]["label"].lower(), i)):
@@ -356,6 +367,37 @@ def build(songs: list[dict[str, Any]], cache: dict[str, Any]) -> dict[str, Any]:
             sid += "-2"
         used.add(sid)
         ids[nid] = sid
+    return ids
+
+
+def _related_edges(nodes: dict[str, dict[str, Any]], parents: dict[str, list[str]], ids: dict[str, str],
+                   cache: dict[str, Any]) -> list[dict[str, str]]:
+    edges: list[dict[str, str]] = []
+    linked = {frozenset((c, p)) for c in nodes for p in parents[c]}
+    related: set[frozenset[str]] = set()
+    for nid, n in nodes.items():
+        for r in (cache["entities"].get(n["qid"]) or {}).get("related", []) if n["qid"] else []:
+            pair = frozenset((nid, r))
+            if r in nodes and r != nid and pair not in linked and pair not in related:
+                related.add(pair)
+                a, b = sorted(pair, key=lambda i: ids[i])
+                edges.append({"source": ids[a], "target": ids[b], "kind": "related"})
+    return edges
+
+
+def build(songs: list[dict[str, Any]], cache: dict[str, Any]) -> dict[str, Any]:
+    nodes = _own_nodes(user_genres(songs), cache)
+    ontology = any(n["qid"] for n in nodes.values())
+    _add_ancestors(nodes, cache)
+
+    parents = {
+        nid: [p for p in (cache["entities"].get(n["qid"]) or {}).get("parents", []) if p in nodes and p != nid] if n["qid"] else []
+        for nid, n in nodes.items()
+    }
+    _break_cycles(parents)
+    reach = _reach(nodes, parents)
+    _trim(nodes, parents, reach)
+    ids = _slugs(nodes)
 
     out_nodes = [
         {
@@ -366,15 +408,7 @@ def build(songs: list[dict[str, Any]], cache: dict[str, Any]) -> dict[str, Any]:
         for nid, n in sorted(nodes.items(), key=lambda kv: ids[kv[0]])
     ]
     edges = [{"source": ids[c], "target": ids[p], "kind": "parent"} for c in sorted(nodes, key=lambda i: ids[i]) for p in sorted(parents[c], key=lambda i: ids[i])]
-    linked = {frozenset((c, p)) for c in nodes for p in parents[c]}
-    related: set[frozenset[str]] = set()
-    for nid, n in nodes.items():
-        for r in (cache["entities"].get(n["qid"]) or {}).get("related", []) if n["qid"] else []:
-            pair = frozenset((nid, r))
-            if r in nodes and r != nid and pair not in linked and pair not in related:
-                related.add(pair)
-                a, b = sorted(pair, key=lambda i: ids[i])
-                edges.append({"source": ids[a], "target": ids[b], "kind": "related"})
+    edges += _related_edges(nodes, parents, ids, cache)
     return {"nodes": out_nodes, "edges": edges, "ontology": ontology}
 
 

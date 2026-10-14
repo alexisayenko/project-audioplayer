@@ -226,3 +226,36 @@ def test_nodes_carry_the_user_tags_that_resolve_to_them(wd):
     n = by_label(g)
     assert n["house music"]["tags"] == ["house", "house music"]
     assert n["electronic music"]["tags"] == []
+
+
+ROOT_CASES = [
+    ("electronic dance music", "Electronic"), ("house music", "Electronic"), ("trance music", "Electronic"),
+    ("dance music", "Electronic"), ("club/dance music", "Electronic"), ("progressive house", "Electronic"),
+    ("drum and bass", "Electronic"), ("tech house", "Electronic"), ("future garage", "Electronic"),
+    ("rock music", "Rock"), ("pop rock", "Rock"), ("alternative rock", "Rock"), ("post-grunge", "Rock"),
+    ("pop music", "Pop"), ("dance-pop", "Pop"), ("indie pop", "Pop"), ("k-pop", "Pop"),
+    ("hip hop music", "Hip Hop"), ("trip hop", "Electronic"), ("gangsta rap", "Hip Hop"),
+    ("jazz fusion", "Jazz"), ("modal jazz", "Jazz"), ("funk music", "Funk / Soul"), ("northern soul", "Funk / Soul"),
+    ("baroque music", "Classical"), ("romantic music", "Classical"), ("reggae fusion", "Reggae"), ("ska punk", "Rock"),
+    ("latin pop", "Latin"), ("mambo", "Latin"), ("delta blues", "Blues"), ("blues rock", "Blues"),
+    ("celtic folk", "Folk, World, & Country"), ("country rock", "Folk, World, & Country"),
+    ("film score", "Stage & Screen"), ("spoken word", "Non-Music"), ("lullaby", "Children's"), ("military march", "Brass & Military"),
+    ("music of europe", "Other"), ("regional music", "Other"), ("alternative music", "Rock"),
+]
+
+
+@pytest.mark.parametrize("label,family", ROOT_CASES)
+def test_common_roots_resolve_to_discogs_families(label, family):
+    assert gg._family({"entities": {}}, None, label) == family
+
+
+def test_family_walks_ancestors_then_falls_back_to_keywords():
+    cache = {"entities": {
+        "Q1": {"label": "zorbo", "parents": ["Q2"]},
+        "Q2": {"label": "club/dance music", "parents": ["Q3"]},
+        "Q3": {"label": "music", "parents": []},
+        "Q4": {"label": "zorbo too", "parents": ["Q3"]},
+    }}
+    assert gg._family(cache, "Q1", "zorbo") == "Electronic"
+    assert gg._family(cache, "Q4", "zorbo too") == "Other"
+    assert gg._family(cache, "Q4", "zorbo trance") == "Electronic"
