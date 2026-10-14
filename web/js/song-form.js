@@ -8,6 +8,10 @@ import { chipField } from './chip-field.js';
 import { serviceIcons } from './service-icons.js';
 import { planMetadata, statusText, serviceState, suggestion, suggestionText } from './metadata-apply.js';
 import { metadataBody, sourceList } from './song-payload.js';
+import { identifyBlock } from './identify-block.js';
+import { hasAudio } from './playable.js';
+import { cleanTitleEx } from './title-clean.js';
+import { splitTokens } from './tokens.js';
 
 const bpmText = (v) => (v != null ? `${Math.round(v)} BPM` : 'Not detected yet');
 
@@ -15,8 +19,10 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
   const isAdd = mode === 'add';
   const initial = { ...song };
   const tg = tokenGroup();
+  const first = isAdd ? cleanTitleEx(initial.title_raw ?? initial.title ?? '') : { title: initial.title || '', removed: [] };
+  const startTitle = first.title;
   const f = {
-    title: el('input', { type: 'text', value: initial.title || '', autocomplete: 'off' }),
+    title: tg.field('title', startTitle),
     artist: tg.field('artist', initial.artist || ''),
     remixer: tg.field('remixer', initial.remixer || ''),
     album: el('input', { type: 'text', value: initial.album || '' }),
@@ -44,8 +50,12 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
   const icons = serviceIcons();
   const initialMb = () => serviceState({ musicbrainz: { found: true, url: initial.musicbrainz_url } }).musicbrainz.url;
   let mbUrl = initialMb();
-  const storedIcons = () => (mbUrl ? { musicbrainz: { on: true, url: mbUrl } } : {});
+  let discogsUrl = initial.discogs_url ?? null;
+  let lastStates = {};
+  const storedIcons = () => ({ ...(mbUrl ? { musicbrainz: { on: true, url: mbUrl } } : {}), ...(discogsUrl ? { discogs: { on: true, url: discogsUrl } } : {}) });
+  const paintIcons = () => icons.setState({ ...lastStates, ...storedIcons() });
   const resetIcons = () => {
+    lastStates = {};
     icons.reset();
     icons.setState(storedIcons());
   };
@@ -54,6 +64,52 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
   const metaMsg = el('p', { class: 't-caption muted', role: 'status' });
   const hint = el('button', { class: 'link-btn t-caption wiki-hint', type: 'button', hidden: true });
   let suggest = null;
+  const titleField = field('Title', f.title);
+  const cleaned = el('p', { class: 't-caption muted', role: 'status', hidden: true });
+  const moveHint = el('button', { class: 'link-btn t-caption', type: 'button', hidden: true });
+  titleField.append(cleaned, moveHint);
+  let before = null;
+  let restoredRaw = null;
+  const paintCleaned = (removed) => {
+    cleaned.replaceChildren();
+    cleaned.hidden = !removed.length;
+    if (!removed.length) return;
+    const undo = el('button', { class: 'link-btn t-caption', type: 'button' }, 'Restore');
+    undo.addEventListener('click', () => {
+      restoredRaw = before;
+      f.title.value = before;
+      paintCleaned([]);
+      emit();
+    });
+    cleaned.append(`Cleaned: removed ${removed.join(' ')} - `, undo);
+  };
+  const applyClean = () => {
+    const now = f.title.value;
+    if (now === restoredRaw) return;
+    const r = cleanTitleEx(now);
+    if (r.title === now) return;
+    before = now;
+    restoredRaw = null;
+    f.title.value = r.title;
+    paintCleaned(r.removed);
+    emit();
+  };
+  const paintMove = () => {
+    const parts = splitTokens(f.title.value);
+    const have = splitTokens(f.artist.value).map((a) => a.toLowerCase());
+    const show = parts.length > 1 && !have.includes(parts[0].toLowerCase());
+    moveHint.hidden = !show;
+    moveHint.textContent = show ? `Move "${parts[0]}" to Artist?` : '';
+  };
+  moveHint.addEventListener('click', () => f.title.moveTo(0, 'artist'));
+  if (isAdd) {
+    f.title.addEventListener('paste', () => setTimeout(applyClean));
+    f.title.addEventListener('focusout', (e) => { if (!f.title.contains(e.relatedTarget)) applyClean(); });
+    if (first.removed.length) { before = String(initial.title_raw ?? initial.title ?? ''); paintCleaned(first.removed); }
+  }
+  f.title.addEventListener('input', paintMove);
+  f.artist.addEventListener('input', paintMove);
+  paintMove();
   const cur = () => ({ title: f.title.value, artist: f.artist.value });
   const emit = () => f.title.dispatchEvent(new Event('input', { bubbles: true }));
   const paintHint = () => {
@@ -104,7 +160,8 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
       icons.setBusy(false);
       const states = serviceState(resp?.services);
       if (states.musicbrainz.url) mbUrl = states.musicbrainz.url;
-      icons.setState({ ...states, ...storedIcons() });
+      lastStates = states;
+      paintIcons();
       suggest = resp?.suggest || null;
       applyMeta(resp);
       paintHint();
@@ -120,6 +177,20 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
       }
     }
   });
+
+  const setYear = (y) => {
+    f.year.value = y;
+    f.year.dispatchEvent(new Event('input', { bubbles: true }));
+  };
+  const applyLinks = (plan) => {
+    const cur = wiki.values();
+    wiki.set({ song: plan.wikipedia_song ?? cur.wikipedia_song, artist: plan.wikipedia_artist ?? cur.wikipedia_artist });
+    if (plan.musicbrainz_url) mbUrl = plan.musicbrainz_url;
+    if (plan.discogs_url) discogsUrl = plan.discogs_url;
+    paintIcons();
+    emit();
+  };
+  const ident = identifyBlock({ id: isAdd ? null : initial.id, audio: !isAdd && hasAudio(initial), editor, getYear: () => f.year.value, setYear, applyLinks });
 
   let bpmRow;
   if (isAdd) {
@@ -148,11 +219,12 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
   }
 
   const node = el('div', { class: 'add-fields' },
-    field('Title', f.title), field('Artist', f.artist),
+    titleField, field('Artist', f.artist),
     field('Remix & additional production', f.remixer),
     hint,
     el('div', { class: 'meta-row' }, metaBtn, icons.node),
     metaMsg,
+    ident.node,
     el('div', { class: 'grid2' }, field('Album', f.album), field('Year', f.year)),
     bpmRow,
     genres.node, countries.node,
@@ -167,6 +239,7 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
     }
     return {
       title: f.title.value,
+      keep_title: restoredRaw !== null && f.title.value === restoredRaw,
       artist: f.artist.value,
       remixer: f.remixer.value,
       album: f.album.value,
@@ -174,6 +247,7 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
       tags: editor.getTags(),
       ...wiki.values(),
       musicbrainz_url: mbUrl,
+      discogs_url: discogsUrl,
     };
   };
   const setValues = (p = {}) => {
@@ -191,11 +265,18 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
     reset() {
       abortAll();
       mbUrl = initialMb();
+      discogsUrl = initial.discogs_url ?? null;
+      ident.reset();
       resetMeta();
       metaBtn.disabled = false;
       metaBtn.textContent = 'Get metadata';
-      setValues({ title: initial.title || '', artist: initial.artist || '', remixer: initial.remixer || '', album: initial.album || '', year: initial.year ?? '', wikipedia_song: initial.wikipedia_song || '', wikipedia_artist: initial.wikipedia_artist || '' });
+      restoredRaw = null;
+      paintCleaned(first.removed);
+      setValues({ title: startTitle, artist: initial.artist || '', remixer: initial.remixer || '', album: initial.album || '', year: initial.year ?? '', wikipedia_song: initial.wikipedia_song || '', wikipedia_artist: initial.wikipedia_artist || '' });
     },
-    destroy: abortAll,
+    destroy() {
+      abortAll();
+      ident.destroy();
+    },
   };
 }

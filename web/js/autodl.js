@@ -6,6 +6,7 @@ const KEY = 'ap2.autodl';
 const MAX_RUNNING = 1;
 const TICK = 30000;
 const POLL_FAILS = 4;
+const FINISH_HOLD = 600;
 
 export function autoDownloadOn() {
   try { return localStorage.getItem(KEY) === '1'; } catch { return false; }
@@ -37,6 +38,8 @@ async function run(id) {
   try {
     const r = await api.fetchAudio(id);
     if (r?.status !== 'done') await poll(id);
+    set(D.finishing(st, id));
+    await new Promise((resolve) => setTimeout(resolve, FINISH_HOLD));
   } catch (ex) {
     if (ex.code === 'hourly_limit') {
       set(D.limited(st, id, Date.now(), ex.retryMinutes || 1));
@@ -46,16 +49,46 @@ async function run(id) {
     pump();
     return;
   }
-  set(D.done(st, id));
   try { await store.refresh(); } catch { /* the next refresh will show it */ }
+  set(D.done(st, id));
   pump();
+}
+
+const hidden = () => typeof document !== 'undefined' && document.hidden;
+
+// Resolves after ms, or at once when the tab becomes visible again (the poll then resumes with a fresh request).
+function sleep(ms) {
+  return new Promise((resolve) => {
+    const finish = () => {
+      clearTimeout(timer);
+      document.removeEventListener('visibilitychange', onShow);
+      resolve();
+    };
+    const onShow = () => { if (!document.hidden) finish(); };
+    const timer = setTimeout(finish, ms);
+    if (typeof document !== 'undefined') document.addEventListener('visibilitychange', onShow);
+  });
+}
+
+async function whenVisible() {
+  while (hidden()) {
+    await new Promise((resolve) => {
+      const onShow = () => {
+        if (document.hidden) return;
+        document.removeEventListener('visibilitychange', onShow);
+        resolve();
+      };
+      document.addEventListener('visibilitychange', onShow);
+    });
+  }
 }
 
 async function poll(id) {
   let calm = 0;
   let fails = 0;
   for (;;) {
-    await new Promise((resolve) => setTimeout(resolve, D.backoff(calm)));
+    await sleep(D.backoff(calm));
+    await whenVisible();
     let s;
     try {
       s = await api.songStatus(id);
@@ -64,11 +97,14 @@ async function poll(id) {
       if (++fails >= POLL_FAILS) throw ex;
       continue;
     }
-    if (s.status === 'done') return;
-    if (s.status === 'error') throw new Error(s.error || 'Download failed');
-    const before = st.jobs.find((j) => j.id === id)?.progress;
-    set(D.progress(st, id, s.progress));
-    calm = st.jobs.find((j) => j.id === id)?.progress === before ? calm + 1 : 0;
+    const remote = s.state || (s.status === 'error' ? 'failed' : s.status);
+    if (remote === 'done') return;
+    if (remote === 'failed') throw new Error(s.error || 'Download failed');
+    const was = st.jobs.find((j) => j.id === id);
+    set(D.progress(st, id, s.progress, { converting: remote === 'converting', remote, speed: s.speed, eta: s.eta }));
+    const now = st.jobs.find((j) => j.id === id);
+    const moved = !was || was.progress !== now.progress || was.remote !== now.remote || was.converting !== now.converting;
+    calm = moved || (remote === 'downloading' && now.speed) ? 0 : calm + 1;
   }
 }
 

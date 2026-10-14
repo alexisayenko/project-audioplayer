@@ -5,17 +5,22 @@ import { addBody, patchBody, metadataBody, songSources, sourceList, yearValue } 
 const v = { title: 'T', artist: 'A', album: 'Al', remixer: 'R', year: '1999', tags: ['x', 'lang:de'], wikipedia_song: 'https://en.wikipedia.org/wiki/T', wikipedia_artist: null, musicbrainz_url: 'https://musicbrainz.org/recording/11111111-2222-3333-4444-555555555555' };
 
 test('addBody has no bpm and no tags', () => {
-  assert.deepEqual(addBody(v), { title: 'T', artist: 'A', album: 'Al', remixer: 'R', year: 1999, wikipedia_song: 'https://en.wikipedia.org/wiki/T', wikipedia_artist: null, musicbrainz_url: v.musicbrainz_url });
+  assert.deepEqual(addBody(v), { title: 'T', artist: 'A', album: 'Al', remixer: 'R', year: 1999, wikipedia_song: 'https://en.wikipedia.org/wiki/T', wikipedia_artist: null, musicbrainz_url: v.musicbrainz_url, discogs_url: null });
   assert.ok(!('bpm' in addBody(v)) && !('tags' in addBody(v)));
 });
 
 test('patchBody keys', () => {
-  assert.deepEqual(Object.keys(patchBody(v)).sort(), ['album', 'artist', 'musicbrainz_url', 'remixer', 'tags', 'title', 'wikipedia_artist', 'wikipedia_song', 'year']);
+  assert.deepEqual(Object.keys(patchBody(v)).sort(), ['album', 'artist', 'discogs_url', 'musicbrainz_url', 'remixer', 'tags', 'title', 'wikipedia_artist', 'wikipedia_song', 'year']);
   assert.deepEqual(patchBody(v).tags, ['x', 'lang:de']);
 });
 
 test('absent musicbrainz_url is sent as null', () => {
   assert.equal(addBody({ ...v, musicbrainz_url: undefined }).musicbrainz_url, null);
+});
+
+test('discogs_url is sent when set and as null when absent', () => {
+  assert.equal(addBody({ ...v, discogs_url: 'https://www.discogs.com/release/1' }).discogs_url, 'https://www.discogs.com/release/1');
+  assert.equal(patchBody(v).discogs_url, null);
 });
 
 test('empty year is null', () => {

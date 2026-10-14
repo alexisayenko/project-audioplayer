@@ -9,6 +9,7 @@ import { icon } from './icons.js';
 import { openMenu, closeMenu, initMenus } from './menu.js';
 import { downloadSong } from './download.js';
 import { autodl, autoDownloadOn } from './autodl.js';
+import { statusText } from './dl-progress.js';
 import { editDialog, dialogHead } from './edit-dialog.js';
 import { requestReveal } from './reveal.js';
 import { attachScrubber } from './scrubber.js';
@@ -47,6 +48,7 @@ const usable = (item) => {
   const s = store.get(item.id);
   return hasAudio(s) || (!!s && autoDownloadOn() && autodl.view(item.id).kind !== 'failed');
 };
+const hasAudioId = (id) => hasAudio(store.get(id));
 const logic = () => ({ queue: ids(), index: qs.index, shuffle, repeat, played });
 
 function saveQueue() {
@@ -231,6 +233,15 @@ export const player = {
   },
 
   next(auto = false) {
+    if (!autoDownloadOn()) {
+      const step = Q.nextPlayable({ ...logic(), played }, !auto, hasAudioId, false);
+      if (!step) { toast(shuffle ? 'No downloaded songs to shuffle' : 'No more downloaded songs in the playlist'); render(); return; }
+      played = step.played;
+      if (step.index === qs.index) { audio.currentTime = 0; audio.play().catch(fail); render(); return; }
+      skipNote(step.skipped);
+      jumpTo(step.index);
+      return;
+    }
     let at = qs.index;
     let seen = played;
     let skipped = 0;
@@ -251,6 +262,14 @@ export const player = {
   prev() {
     const back = () => { audio.currentTime = 0; };
     if (audio.currentTime > 3) { back(); return; }
+    if (!autoDownloadOn()) {
+      const step = Q.prevPlayable({ ...logic(), history }, hasAudioId, false);
+      if (!step) { back(); return; }
+      history = step.history;
+      skipNote(step.skipped);
+      jumpTo(step.index, false);
+      return;
+    }
     let at = qs.index;
     let hist = history;
     let skipped = 0;
@@ -272,7 +291,7 @@ export const player = {
 function fail() { toast('Cannot play this song'); }
 
 function skipNote(n) {
-  if (n) toast(`Skipped ${n} ${plural(n, 'song', 'songs')} without audio`);
+  if (n) toast(autoDownloadOn() ? `Skipped ${n} ${plural(n, 'song', 'songs')} without audio` : `Skipped ${n} not downloaded`);
 }
 
 function pendingDownloads() {
@@ -497,13 +516,8 @@ function renderQueue() {
 }
 
 function dlText(v, short) {
-  switch (v.kind) {
-    case 'downloading': return v.progress > 0 ? `Downloading ${Math.round(v.progress * 100)}%` : 'Downloading...';
-    case 'queued': return short ? 'Queued' : 'Queued for download';
-    case 'paused': return `Download limit reached - resumes in ${v.minutes} min`;
-    case 'failed': return short ? 'Download failed' : `Download failed: ${v.error}`;
-    default: return 'Not downloaded';
-  }
+  if (v.kind === 'paused') return `Download limit reached - resumes in ${v.minutes} min`;
+  return statusText(v, short);
 }
 
 function paintDl(node, id) {
@@ -526,6 +540,9 @@ function updateDl() {
     const btn = $('player-dl-btn');
     btn.hidden = !(v.kind === 'none' || v.kind === 'failed');
     btn.textContent = v.kind === 'failed' ? 'Retry' : 'Download';
+    $('mini-artist').textContent = v.kind === 'none' ? song.artist || '' : dlText(v, true);
+  } else if (song) {
+    $('mini-artist').textContent = song.artist || '';
   }
   for (const node of $('queue-list').querySelectorAll('[data-dl]')) paintDl(node, node.dataset.dl);
 }

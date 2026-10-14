@@ -4,11 +4,12 @@ import { store } from './store.js';
 import { renderLibrary } from './library.js';
 import { openAdd } from './add.js';
 import { renderSettings } from './settings.js';
+import { renderGenres } from './genres.js';
 import { loadCollapsed, saveCollapsed } from './sidebar-state.js';
 
 const player = document.getElementById('player');
 const renderPlayback = () => { player.hidden = false; return () => { player.hidden = true; }; };
-const routes = { library: renderLibrary, playback: renderPlayback, settings: renderSettings };
+const routes = { library: renderLibrary, playback: renderPlayback, genres: renderGenres, settings: renderSettings };
 const view = document.getElementById('view');
 let cleanup = null;
 

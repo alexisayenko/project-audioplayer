@@ -1,4 +1,5 @@
 import { api } from './api.js';
+import { autodl, autoDownloadOn } from './autodl.js';
 import { store } from './store.js';
 import { el, fmtTime, toast } from './dom.js';
 import { icon } from './icons.js';
@@ -130,8 +131,9 @@ export function openAdd() {
       save.disabled = true;
       const v = sf.values();
       try {
-        await api.addSong(preview.source_url, addBody(v), v.tags);
+        const added = await api.addSong(preview.source_url, addBody(v), v.tags, v.keep_title);
         await store.refresh().catch(() => {});
+        if (autoDownloadOn() && added?.id) autodl.request([added.id], { front: true });
         dlg.close();
         toast('Saved to library');
       } catch (ex) {

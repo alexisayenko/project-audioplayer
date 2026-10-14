@@ -4,6 +4,7 @@
 export const empty = () => ({ jobs: [], pausedUntil: 0 });
 
 const find = (s, id) => s.jobs.find((j) => j.id === id);
+const IDLE = { converting: false, remote: '', speed: null, eta: null, finishing: false };
 const patch = (s, id, change) => ({ ...s, jobs: s.jobs.map((j) => (j.id === id ? { ...j, ...change } : j)) });
 
 // New ids join as queued (front puts them ahead of other queued jobs); known ids, failed ones included, are left alone.
@@ -32,7 +33,7 @@ export function prune(s, keepIds) {
 
 export const retry = (s, id) => {
   const j = find(s, id);
-  return j && j.status === 'failed' ? patch(s, id, { status: 'queued', progress: 0, error: '' }) : s;
+  return j && j.status === 'failed' ? patch(s, id, { status: 'queued', progress: 0, error: '', ...IDLE }) : s;
 };
 
 export const active = (s) => s.jobs.filter((j) => j.status === 'downloading').length;
@@ -46,15 +47,24 @@ export function startable(s, now, max = 1) {
   return s.jobs.filter((j) => j.status === 'queued').slice(0, room).map((j) => j.id);
 }
 
-export const started = (s, id) => patch(s, id, { status: 'downloading', progress: 0 });
-export const progress = (s, id, p) => patch(s, id, { progress: Math.max(0, Math.min(1, Number(p) || 0)) });
+export const started = (s, id) => patch(s, id, { status: 'downloading', progress: 0, ...IDLE });
+// extra: what the server reported besides the fraction: { converting, remote: 'queued' | 'downloading' | 'converting', speed, eta }.
+export const progress = (s, id, p, extra = {}) => patch(s, id, {
+  progress: Math.max(0, Math.min(1, Number(p) || 0)),
+  converting: !!extra.converting,
+  remote: extra.remote || '',
+  speed: Number(extra.speed) > 0 ? Number(extra.speed) : null,
+  eta: Number.isFinite(Number(extra.eta)) && extra.eta != null ? Number(extra.eta) : null,
+});
+// The download finished: the job stays one moment at 100% so the ring can complete before the row changes.
+export const finishing = (s, id) => patch(s, id, { progress: 1, converting: false, remote: 'downloading', finishing: true });
 export const done = (s, id) => ({ ...s, jobs: s.jobs.filter((j) => j.id !== id) });
 export const failed = (s, id, error) => patch(s, id, { status: 'failed', error: error || 'Download failed' });
 
 // The hourly add limit answered: the job goes back to the head of the queue and everything waits `minutes`.
 export function limited(s, id, now, minutes) {
   const wait = Math.max(1, Number(minutes) || 1) * 60000;
-  const back = patch(s, id, { status: 'queued', progress: 0 });
+  const back = patch(s, id, { status: 'queued', progress: 0, ...IDLE });
   return { ...prioritize(back, id), pausedUntil: now + wait };
 }
 
@@ -62,12 +72,18 @@ export const resume = (s, now) => (s.pausedUntil && s.pausedUntil <= now ? { ...
 
 export const minutesLeft = (s, now) => Math.ceil(pausedFor(s, now) / 60000);
 
-// What the UI shows for one song: { kind: 'none' | 'queued' | 'downloading' | 'failed' | 'paused', progress, error, minutes }.
+// What the UI shows for one song: { kind: 'none' | 'queued' | 'downloading' | 'converting' | 'done' | 'failed' | 'paused', progress, error, minutes, speed, eta }.
 export function view(s, id, now) {
   const j = find(s, id);
   if (!j) return { kind: 'none', progress: 0, error: '', minutes: 0 };
   if (j.status === 'queued' && pausedFor(s, now) > 0) return { kind: 'paused', progress: 0, error: '', minutes: minutesLeft(s, now) };
-  return { kind: j.status, progress: j.progress, error: j.error, minutes: 0 };
+  let kind = j.status;
+  if (kind === 'downloading') {
+    if (j.finishing) kind = 'done';
+    else if (j.converting) kind = 'converting';
+    else if (j.remote === 'queued') kind = 'queued';
+  }
+  return { kind, progress: j.progress, error: j.error, minutes: 0, speed: j.speed ?? null, eta: j.eta ?? null };
 }
 
 // Poll delay after n unchanged polls: 1s, 2s, 3s, 5s, then every 5s.

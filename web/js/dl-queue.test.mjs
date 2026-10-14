@@ -36,7 +36,7 @@ test('front enqueue goes ahead of queued jobs but not running ones', () => {
 test('progress is clamped and shown while downloading', () => {
   let s = D.started(D.enqueue(D.empty(), ['a']), 'a');
   s = D.progress(s, 'a', 1.7);
-  assert.deepEqual(D.view(s, 'a', T0), { kind: 'downloading', progress: 1, error: '', minutes: 0 });
+  assert.deepEqual(D.view(s, 'a', T0), { kind: 'downloading', progress: 1, error: '', minutes: 0, speed: null, eta: null });
 });
 
 test('hourly limit pauses everything and resumes after the wait', () => {

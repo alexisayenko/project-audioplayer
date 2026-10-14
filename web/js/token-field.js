@@ -1,10 +1,11 @@
 import { el } from './dom.js';
 import { icon } from './icons.js';
-import { tokenize, isBlankToken, removeToken, replaceToken, appendToken, moveToken, moveTokenTo, stripEdges, commitTyped } from './tokens.js';
+import { tokenize, isBlankToken, removeToken, replaceToken, appendToken, moveToken, moveTokenTo, stripEdges, commitTyped, SEPARATOR } from './tokens.js';
 
 const KINDS = {
-  artist: { label: 'Artist', move: 'Artist', sep: ', ' },
-  remixer: { label: 'Remix & additional production', move: 'Remix', sep: ' ' },
+  title: { label: 'Title', move: 'Title', sep: SEPARATOR },
+  artist: { label: 'Artist', move: 'Artist', sep: SEPARATOR },
+  remixer: { label: 'Remix & additional production', move: 'Remix', sep: SEPARATOR },
 };
 
 const MIME = 'application/x-electrophone-token';
@@ -56,6 +57,7 @@ function tokenField(kind, fields) {
     const t = p.trim() ? appendToken(text, p, cfg.sep) : text;
     return tail && !p.trim() ? stripEdges(t) : t;
   };
+  const count = () => tokenize(text).filter((t) => !isBlankToken(t)).length;
   const fire = () => node.dispatchEvent(new Event('input', { bubbles: true }));
   const set = (v) => { text = v; tail = false; render(); };
 
@@ -134,6 +136,7 @@ function tokenField(kind, fields) {
     fire();
   }
   node.acceptDrop = acceptDrop;
+  node.moveTo = (i, target) => { if (kind !== 'title' || count() > 1) moveTo(i, target); };
 
   function startTouchDrag(pill, i, e) {
     if (e.pointerType === 'mouse' || e.button > 0) return;
@@ -202,11 +205,11 @@ function tokenField(kind, fields) {
     if (again) return;
     const items = [{ label: 'Edit text', run: () => editPill(pill, i, label) }];
     for (const k of Object.keys(KINDS)) {
-      if (k !== kind && fields[k]) items.push({ label: `Move to ${KINDS[k].move}`, run: () => moveTo(i, k) });
+      if (k !== kind && fields[k]) items.push({ label: `Move to ${KINDS[k].move}`, disabled: kind === 'title' && count() < 2, run: () => moveTo(i, k) });
     }
     items.push({ label: 'Remove', danger: true, run: () => removeAt(i) });
     const m = el('div', { class: 'menu token-menu', role: 'menu' }, items.map((it) => el('button', {
-      class: `menu-item${it.danger ? ' danger' : ''}`, type: 'button', role: 'menuitem',
+      class: `menu-item${it.danger ? ' danger' : ''}`, type: 'button', role: 'menuitem', disabled: !!it.disabled,
       onclick: () => { closeMenu(); it.run(); },
     }, it.label)));
     m.addEventListener('keydown', (e) => {

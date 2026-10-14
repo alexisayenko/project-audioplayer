@@ -7,7 +7,10 @@ import { icon } from './icons.js';
 import { openMenu } from './menu.js';
 import { downloadSong } from './download.js';
 import { hasAudio, sourceLink } from './playable.js';
-import { autoDownloadOn } from './autodl.js';
+import { autoDownloadOn, autodl } from './autodl.js';
+import { ringModel } from './dl-progress.js';
+import { rowActions } from './row-actions.js';
+import { ringNode, paintRing, lineNode, paintLine } from './dl-ring.js';
 import { serviceIcon } from './service-icons.js';
 import { trackSub } from './track-sub.js';
 import { bpmLabel } from './bpm-label.js';
@@ -19,6 +22,12 @@ import { visibleTags, canonicalTag, tagLabel, tagSearchText, categoryOf, categor
 let flashId = null;
 let flashTimer;
 const prefs = { query: '', sel: new Set(), sort: 'added' };
+
+export function filterByTags(tags) {
+  const have = new Set(store.tags.map((t) => t.tag.toLocaleLowerCase()));
+  prefs.query = '';
+  prefs.sel = new Set(tags.map((t) => canonicalTag(t).toLocaleLowerCase()).filter((t) => have.has(t)));
+}
 
 const SORTS = {
   added: ['Recently added', (a, b) => (b.added_at || '').localeCompare(a.added_at || '')],
@@ -200,6 +209,18 @@ export function renderLibrary(root) {
     list.replaceChildren(...empty, ...songs.map((s) => songRow(s, cur)));
   }
 
+  // Progress ticks update the rings in place; a row gaining or losing its indicator rebuilds the list.
+  function paintDownloads() {
+    for (const row of list.querySelectorAll('li.song.no-audio[data-id]')) {
+      const model = ringModel(autodl.view(row.dataset.id));
+      const ring = row.querySelector('.dl-ring');
+      const line = row.querySelector('.dl-line');
+      if (!model && !ring) continue;
+      if (!model || !ring || !paintRing(ring, model)) { renderList(); return; }
+      if (line) paintLine(line, model);
+    }
+  }
+
   function matchSummary(count) {
     const names = prefs.sel.size ? ` · ${selectedNames().join(', ')}` : '';
     return `${count} ${plural(count, 'song matches', 'songs match')}${names}`;
@@ -243,6 +264,7 @@ export function renderLibrary(root) {
 
   const unsub = store.subscribe(renderAll);
   const unsubPlayer = player.onChange(renderList);
+  const unsubDl = autodl.onChange(paintDownloads);
 
   let loadError = null;
   function paintStatus(nothing) {
@@ -265,7 +287,7 @@ export function renderLibrary(root) {
   void load();
   renderAll();
 
-  return () => { unsub(); unsubPlayer(); unregister(); clearTimeout(flashTimer); flashId = null; const d = document.getElementById('filter-sheet'); if (d.open) d.close(); };
+  return () => { unsub(); unsubPlayer(); unsubDl(); unregister(); clearTimeout(flashTimer); flashId = null; const d = document.getElementById('filter-sheet'); if (d.open) d.close(); };
 }
 
 function cover(s) {
@@ -280,6 +302,14 @@ function srcLogo(link) {
   const a = el('a', { class: `src-logo src-${kind}`, href: link.url, target: '_blank', rel: 'noopener', 'aria-label': link.label, title: link.label }, serviceIcon(kind, { size: 22 }));
   a.addEventListener('click', (e) => e.stopPropagation());
   return a;
+}
+
+function fetchAudio(s) {
+  autodl.request([s.id], { front: true });
+}
+
+function dlButton(s) {
+  return el('button', { class: 'row-dl', type: 'button', title: 'Download to the server', 'aria-label': `Download: ${s.title}`, onclick: (e) => { e.stopPropagation(); fetchAudio(s); } }, icon('download', 18));
 }
 
 function bpmBadge(s) {
@@ -302,6 +332,7 @@ function songRow(s, cur) {
       { label: queued ? 'Remove from playlist' : 'Add to playlist', run: () => toggleQueue(s) },
     ] : []),
     ...(audio ? [{ label: 'Download', run: () => downloadSong(s) }] : []),
+    ...(!audio && autodl.view(s.id).kind === 'none' ? [{ label: 'Download to server', run: () => fetchAudio(s) }] : []),
     { label: 'Edit song', run: () => editDialog(s) },
   ]));
   const label = queued ? 'In playlist - click to remove' : 'Add to playlist';
@@ -314,7 +345,10 @@ function songRow(s, cur) {
   const genres = genreText(s.tags);
   let durText = '';
   if (audio) durText = s.duration ? fmtTime(s.duration) : '';
-  else if (link) durText = srcLogo(link);
+  const dl = audio ? null : ringModel(autodl.view(s.id));
+  const act = rowActions({ audio, link, ring: dl });
+  if (act.ring) durText = ringNode(dl, () => autodl.retry(s.id));
+  else if (!audio) durText = [act.source ? srcLogo(link) : null, act.download ? dlButton(s) : null];
   const dur = el('span', { class: audio ? 'c-dur t-time' : 'c-dur t-caption' }, durText);
   return el('li', { class: `song${here ? ' current' : ''}${audio ? '' : ' no-audio'}${flashId === s.id ? ' flash' : ''}`, 'aria-current': here ? 'true' : null, 'data-id': s.id },
     cover(s),
@@ -324,7 +358,8 @@ function songRow(s, cur) {
     el('span', { class: 'c-genres t-subhead', title: genres || null }, genres),
     dur,
     pl,
-    more);
+    more,
+    dl ? lineNode(dl) : null);
 }
 
 function toggleQueue(s) {

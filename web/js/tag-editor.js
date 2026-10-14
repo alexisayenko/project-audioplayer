@@ -26,7 +26,7 @@ export function tagEditor({ tags = [], suggested = [], year = null, onChange = n
 
   const has = (t) => current.some((x) => same(x, t));
   const toggle = (t) => {
-    current = has(t) ? current.filter((x) => !same(x, t)) : [...current, t];
+    current = has(t) ? current.filter((x) => !same(x, t)) : [...current.filter((x) => !(isCountry(t) && isCountry(x))), t];
     render();
   };
   function add(raw) {
@@ -95,8 +95,8 @@ export function tagEditor({ tags = [], suggested = [], year = null, onChange = n
       current = current.filter((x) => !same(x, t));
       render();
     },
-    setSuggested(list) {
-      for (const t of shown(list)) if (!sug.some((x) => same(x, t))) sug.push(t);
+    setSuggested(list, { all = false } = {}) {
+      for (const t of all ? list.filter((x) => !isHiddenTag(x)) : shown(list)) if (!sug.some((x) => same(x, t))) sug.push(t);
       render();
     },
   };

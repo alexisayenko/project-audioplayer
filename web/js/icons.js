@@ -20,6 +20,7 @@ export const ICONS = {
   locate: { d: '<circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="1.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>', width: 1.8 },
   listAdd: { d: '<path d="M4 7h11M4 12h8M4 17h8M18 12v7M14.5 15.5h7"/>', width: 1.8 },
   listCheck: { d: '<path d="M4 7h11M4 12h6M4 17h6M13 16l3 3 5-6"/>', width: 1.8 },
+  warning: { d: '<path d="M12 4l9.5 16h-19zM12 10v4.5M12 17.3v.2"/>', width: 1.8 },
   more: { fill: true, d: '<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>' },
 };
 
