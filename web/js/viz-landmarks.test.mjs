@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  LANDMARK_PERIOD_S, LANDMARK_MAX, LANDMARK_GAIN, LANDMARK_MIN_ENERGY, AMP_MAX, ROWS_PER_SECOND,
+  LANDMARK_PERIOD_S, LANDMARK_MAX, LANDMARK_GAIN, LANDMARK_MIN_ENERGY, LANDMARK_SIGMA_X, LANDMARK_MIN_PEAKINESS, AMP_MAX, ROWS_PER_SECOND,
   timelineLandmarks, landmarkBoostAt, landmarkWeight, createFrame, createSeries, fillLookFrame, fillHeights, rowLayout,
 } from './viz-terrain-math.js';
 import { createTimeline } from './viz-timeline.js';
@@ -12,7 +12,8 @@ function makeTl(seconds, level) {
   const tl = createTimeline(seconds - 0.01, BINS, ROWS_PER_SECOND);
   for (let i = 0; i < tl.total; i += 1) {
     const v = Math.round(255 * level(i / tl.rps));
-    tl.data.fill(v, i * BINS, (i + 1) * BINS);
+    tl.data.fill(Math.round(v * 0.4), i * BINS, (i + 1) * BINS);
+    tl.data[i * BINS + 2] = v;
   }
   tl.done = tl.total;
   return tl;
@@ -80,12 +81,15 @@ test('seeking gives the same boosted rows regardless of the previous position', 
   assert.deepEqual(Array.from(f1.data), Array.from(f2.data));
 });
 
-test('boosted heights stand above the neighbours, keep the shape and respect LANDMARK_MAX', () => {
+test('boosted heights form a peak around the strongest column and leave the rest of the row alone', () => {
   const rows = 40;
-  const cols = 16;
+  const cols = 101;
   const mk = (level) => {
     const f = createFrame(rows, BINS);
-    f.data.fill(level);
+    for (let r = 0; r < rows; r += 1) {
+      f.data.fill(level * 0.4, r * BINS, (r + 1) * BINS);
+      f.data[r * BINS + 5] = level;
+    }
     return f;
   };
   const plain = mk(0.6);
@@ -94,18 +98,42 @@ test('boosted heights stand above the neighbours, keep the shape and respect LAN
   boosted.boost[r] = 1;
   const a = fillHeights(plain, cols, 0, new Float32Array(rows * cols), { swellAmp: 0, bakeAmp: true });
   const b = fillHeights(boosted, cols, 0, new Float32Array(rows * cols), { swellAmp: 0, bakeAmp: true });
-  const max = (arr, row) => Math.max(...arr.subarray(row * cols, (row + 1) * cols));
-  assert.ok(max(b, r) * AMP_MAX > max(a, r) * AMP_MAX * 1.5);
-  assert.ok(max(b, r - 3) === max(a, r - 3));
-  const k = b[r * cols + 3] / a[r * cols + 3];
-  for (let c = 1; c < cols - 1; c += 1) assert.ok(Math.abs(b[r * cols + c] / a[r * cols + c] - k) < 1e-5);
+  const row = (arr, k) => Array.from(arr.subarray(k * cols, (k + 1) * cols));
+  const argmax = (v) => v.indexOf(Math.max(...v));
+  const ra = row(a, r);
+  const rb = row(b, r);
+  const peak = argmax(ra);
+  assert.equal(argmax(rb), peak);
+  assert.ok(rb[peak] * AMP_MAX > ra[peak] * AMP_MAX * 1.5);
+  assert.deepEqual(row(b, r - 3), row(a, r - 3));
+  const reach = Math.ceil(3 * LANDMARK_SIGMA_X * (cols - 1)) + 1;
+  let far = 0;
+  for (let c = 0; c < cols; c += 1) {
+    if (Math.abs(c - peak) >= reach) {
+      far += 1;
+      assert.equal(rb[c], ra[c]);
+    }
+  }
+  assert.ok(far > 20);
+  assert.ok(rb[peak + 4] / ra[peak + 4] < rb[peak] / ra[peak]);
   assert.ok(LANDMARK_GAIN > 1);
 
   const loud = mk(1);
   loud.boost[r] = 1;
   const c = fillHeights(loud, cols, 0, new Float32Array(rows * cols), { swellAmp: 0, bakeAmp: true });
-  for (let row = 0; row < rows; row += 1) assert.ok(max(c, row) * AMP_MAX <= Math.max(LANDMARK_MAX, 1e-9) + 1e-6 || row !== r);
-  assert.ok(max(c, r) * AMP_MAX <= LANDMARK_MAX + 1e-6);
+  assert.ok(Math.max(...row(c, r)) * AMP_MAX <= LANDMARK_MAX + 1e-6);
+});
+
+test('a flat spectrum has no clear peak and gets no landmark', () => {
+  const tl = createTimeline(9.99, BINS, ROWS_PER_SECOND);
+  tl.data.fill(150);
+  tl.done = tl.total;
+  assert.ok(LANDMARK_MIN_PEAKINESS > 1);
+  assert.ok(timelineLandmarks(tl).every((t) => Number.isNaN(t)));
+  assert.equal(landmarkBoostAt(tl, 3), 0);
+  const s = createSeries(16, 4);
+  s.push([0.6, 0.6, 0.6, 0.6], 1);
+  assert.equal(s.boostAt(1), 0);
 });
 
 test('baked rows ignore live energy: the frame boost comes only from the timeline', () => {
@@ -116,7 +144,7 @@ test('baked rows ignore live energy: the frame boost comes only from the timelin
   const before = Array.from(f.boost);
   assert.ok(before.some((w) => w > 0.9));
   const series = createSeries(64, BINS);
-  for (let i = 0; i < 40; i += 1) series.push(new Array(BINS).fill(1), i / 16);
+  for (let i = 0; i < 40; i += 1) series.push([1, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2], i / 16);
   fillLookFrame(f, tl, 6);
   assert.deepEqual(Array.from(f.boost), before);
   const { nowRow } = rowLayout(rows);
@@ -125,7 +153,7 @@ test('baked rows ignore live energy: the frame boost comes only from the timelin
 
 test('live fallback marks a row only near the running window maximum and resets per 5 s window', () => {
   const s = createSeries(256, 4);
-  const push = (t, v) => s.push([v, v, v, v], t);
+  const push = (t, v) => s.push([v, v * 0.3, v * 0.3, v * 0.3], t);
   push(0.0, 0.3);
   push(0.1, 0.5);
   push(0.2, 0.6);
@@ -135,10 +163,10 @@ test('live fallback marks a row only near the running window maximum and resets 
   assert.ok(out(0.2) > 0.99);
   assert.ok(out(0.3) === 0);
   assert.ok(out(0.4) > 0 && out(0.4) < 1);
-  push(5.0, 0.2);
+  push(5.0, 0.3);
   assert.ok(out(5.0) > 0.99);
   const q = createSeries(16, 4);
-  q.push([0.02, 0.02, 0.02, 0.02], 1);
+  q.push([0.02, 0.006, 0.006, 0.006], 1);
   assert.equal(q.boostAt(1), 0);
   s.clear();
   assert.equal(s.boostAt(0.2), 0);

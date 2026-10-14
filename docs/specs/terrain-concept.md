@@ -34,7 +34,7 @@ Each slice of time takes its height once, from its own moment of the song, and f
 
 ## 7. Styles
 
-- Relief (default): continuous relief of the song's spectrum, plus a landmark. Every 5 s the loudest moment gets a taller ridge; quiet stretches get none.
+- Relief (default): continuous relief of the song's spectrum, plus a landmark. Every 5 s the loudest moment gets a taller peak around its strongest frequencies (not a wall across the whole width); quiet or flat-sounding stretches get none.
 - Beat peaks: the ground is flat. On each beat a peak grows from the ground in about 0.15 s, to a height set by the beat strength, rides toward the viewer and sinks back to flat over about 5 s. Three variants:
   - Single: one narrow peak at the most energetic pitch.
   - Hill: a broad hill around that pitch.

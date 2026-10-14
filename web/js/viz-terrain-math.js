@@ -7,6 +7,8 @@ export const LOD_ROW_PX = 900;
 export const LOD_FOOT = 2;
 export const LOD_MERGE = 0.9;
 export const LOD_MAX_SPACING = 1.4;
+export const LOD_BLEND_CELLS = 3;
+export const FAR_FLAT_START = 0.8;
 export const GRID_MAX_VERTICES = 30000;
 export const HISTORY_BINS = 64;
 export const ROWS_PER_SECOND = 16;
@@ -45,6 +47,9 @@ export const LANDMARK_MAX = 4.5;
 export const LANDMARK_SPREAD_S = 0.25;
 export const LANDMARK_MIN_ENERGY = 0.15;
 export const LANDMARK_LIVE_KEEP = 0.9;
+export const LANDMARK_SIGMA_X = 0.08;
+export const LANDMARK_MIN_PEAKINESS = 1.6;
+const LANDMARK_REACH = 3;
 export const CROSS_H0 = 0.4;
 export const CROSS_H1 = 0.6;
 export const crossAlpha = (worldHeight) => smoothstep(CROSS_H0, CROSS_H1, worldHeight);
@@ -99,7 +104,12 @@ export function lodTiers(level, aspect, nowZ = NOW_Z) {
     let z1 = Math.sqrt(nominal * LOD_ROW_PX);
     if (z1 >= LOD_MERGE * GRID_DEPTH || nominal * 2 > LOD_MAX_SPACING) z1 = GRID_DEPTH;
     z1 = Math.max(z1, Math.min(GRID_DEPTH, z0 + nominal));
-    const want = tierHalfWidth(z1, aspect);
+    const last = z1 >= GRID_DEPTH;
+    const wOut = last ? 0 : LOD_BLEND_CELLS * nominal * 2;
+    const wIn = k === 0 ? 0 : LOD_BLEND_CELLS * nominal;
+    const zA = k === 0 ? 0 : Math.max(0, z0 - wIn);
+    const zB = Math.min(GRID_DEPTH, z1 + wOut);
+    const want = tierHalfWidth(zB, aspect);
     let sp = nominal;
     let half = 0;
     let rows = 0;
@@ -108,12 +118,13 @@ export function lodTiers(level, aspect, nowZ = NOW_Z) {
     for (let i = 0; i < 80; i += 1) {
       half = Math.ceil(want / sp);
       cols = 2 * half + 1;
-      jz0 = Math.floor((z0 - nowZ) / sp);
-      rows = Math.ceil((z1 - nowZ) / sp) - jz0 + 2;
+      jz0 = Math.floor((zA - nowZ) / sp);
+      rows = Math.ceil((zB - nowZ) / sp) - jz0 + 2;
       if (rows * cols <= GRID_MAX_VERTICES) break;
       sp *= 1.06;
     }
-    tiers.push({ k, z0, z1, spacing: sp, dz: sp, dx: sp, hw: half * sp, rows, cols, jz0 });
+    const fade = [k === 0 ? -2 : z0 - wIn, k === 0 ? -1 : z0 + wIn, last ? GRID_DEPTH + 2 : z1 - wOut, last ? GRID_DEPTH + 3 : z1 + wOut];
+    tiers.push({ k, z0, z1, zA, zB, fade, spacing: sp, dz: sp, dx: sp, hw: half * sp, rows, cols, jz0 });
     z0 = z1;
   }
   return tiers;
@@ -285,9 +296,34 @@ export function landmarkWeight(dt) {
   return (Math.exp(-0.5 * (d / sigma) ** 2) - edge) / (1 - edge);
 }
 
-function byteRowEnergy(data, offset, bins, tmp) {
+export function rowPeak(row, n = row.length) {
+  const r = Math.round(0.03 * n);
+  let sum = 0;
+  for (let i = 0; i < n; i += 1) sum += row[i];
+  const mean = sum / n;
+  let best = -1;
+  let at = 0;
+  for (let i = 0; i < n; i += 1) {
+    const a = Math.max(0, i - r);
+    const b = Math.min(n - 1, i + r);
+    let acc = 0;
+    for (let k = a; k <= b; k += 1) acc += row[k];
+    acc /= b - a + 1;
+    if (acc > best) { best = acc; at = i; }
+  }
+  return { at, x: n > 1 ? at / (n - 1) : 0.5, ratio: mean > 0 ? best / mean : 0 };
+}
+
+export function landmarkShape(x, x0) {
+  const z = Math.abs(x - x0) / LANDMARK_SIGMA_X;
+  if (z >= LANDMARK_REACH) return 0;
+  const edge = Math.exp(-0.5 * LANDMARK_REACH * LANDMARK_REACH);
+  return (Math.exp(-0.5 * z * z) - edge) / (1 - edge);
+}
+
+function byteRow(data, offset, bins, tmp) {
   for (let j = 0; j < bins; j += 1) tmp[j] = data[offset + j] / 255;
-  return energyOf(tmp);
+  return tmp;
 }
 
 export function timelineLandmarks(tl) {
@@ -302,9 +338,10 @@ export function timelineLandmarks(tl) {
     let best = -1;
     let bestE = LANDMARK_MIN_ENERGY;
     for (let i = from; i < to; i += 1) {
-      const e = byteRowEnergy(tl.data, i * tl.bins, tl.bins, tmp);
+      const e = energyOf(byteRow(tl.data, i * tl.bins, tl.bins, tmp));
       if (e > bestE) { bestE = e; best = i; }
     }
+    if (best >= 0 && rowPeak(byteRow(tl.data, best * tl.bins, tl.bins, tmp), tl.bins).ratio < LANDMARK_MIN_PEAKINESS) best = -1;
     st.times.push(best < 0 ? NaN : best / tl.rps);
     st.next += 1;
   }
@@ -332,8 +369,9 @@ export function applyLandmarks(out, rows, cols, boost) {
     const world = max * AMP_MAX;
     if (!(world > 0)) continue;
     const target = Math.min(LANDMARK_MAX, world * (1 + (LANDMARK_GAIN - 1) * w) + LANDMARK_BONUS * w);
-    const scale = Math.max(1, target / world);
-    for (let c = 0; c < cols; c += 1) out[o + c] *= scale;
+    const lift = Math.max(1, target / world) - 1;
+    const x0 = rowPeak(out.subarray(o, o + cols), cols).x;
+    for (let c = 0; c < cols; c += 1) out[o + c] *= 1 + lift * landmarkShape(cols <= 1 ? 0 : c / (cols - 1), x0);
   }
   return out;
 }
@@ -373,7 +411,7 @@ export function createSeries(cap = LIVE_CAP, bins = HISTORY_BINS) {
       const e = energyOf(row);
       winMax = Math.max(winMax, e);
       const keep = LANDMARK_LIVE_KEEP;
-      boosts[head] = e >= LANDMARK_MIN_ENERGY && winMax > 0 ? clamp01((e / winMax - keep) / (1 - keep)) : 0;
+      boosts[head] = e >= LANDMARK_MIN_ENERGY && winMax > 0 && rowPeak(row).ratio >= LANDMARK_MIN_PEAKINESS ? clamp01((e / winMax - keep) / (1 - keep)) : 0;
       head = (head + 1) % cap;
       count = Math.min(cap, count + 1);
     },

@@ -7,6 +7,7 @@ import {
   mat4Perspective, mat4LookAt, mat4Multiply, transformPoint, makeRowClock, SHAKE_MAX, RAMP,
   SHAKE_ENABLED, CROSS_H0, CROSS_H1, crossAlpha, WORLD_SPEED, NOW_Z, NOW_GAIN, NOW_FALLOFF_S, rowLayout, nowZOf, ridgeZ, createFrame, createSeries, fillLookFrame, fillLiveFrame, sampleTimeline, blendFrames,
 } from './viz-terrain-math.js';
+import { FAR_FLAT_START } from './viz-terrain-math.js';
 import { createTerrain, isWebGLAvailable, linkProgram } from './viz-terrain-gl.js';
 import { MODES, pickMode, nextMode, availableModes, createModeRenderer, modeLabel } from './viz-modes.js';
 
@@ -794,4 +795,26 @@ test('tier resampling reproduces a lattice field and keeps tier rows rigid in ti
   const c = 130;
   near(a.dst[j * tier.cols + c], field((c / (tier.cols - 1) * 2 - 1) * tier.hw, tRow), 0.02);
   assert.ok(a.dst.every((v) => v >= -2 && v <= 2));
+});
+
+test('LOD tiers cross-fade: nested columns, ordered fade ranges, last tier never fades out', () => {
+  for (const l of [0, 1, 2]) {
+    const tiers = lodTiers(l, 16 / 9);
+    tiers.forEach((t, i) => {
+      assert.ok(t.zA <= t.z0 && t.zB >= t.z1);
+      assert.ok(t.fade[0] <= t.fade[1] && t.fade[1] <= t.fade[2] && t.fade[2] <= t.fade[3]);
+      if (i > 0) {
+        const f = tiers[i - 1];
+        assert.deepEqual(t.fade.slice(0, 2), f.fade.slice(2));
+        assert.ok(t.zA <= f.fade[2] && f.zB >= t.fade[1]);
+        near(t.spacing / f.spacing, 2, 1e-9);
+      }
+    });
+    assert.ok(tiers[tiers.length - 1].fade[2] > GRID_DEPTH);
+    assert.ok(tiers[0].fade[0] < 0);
+  }
+});
+
+test('the far end flattens to ground before the grid ends', () => {
+  assert.ok(FAR_FLAT_START > 0.5 && FAR_FLAT_START < 1);
 });

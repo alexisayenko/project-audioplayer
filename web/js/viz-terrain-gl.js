@@ -1,6 +1,6 @@
 import {
   QUALITY, HISTORY_BINS, STAR_VISIBLE, buildDepthIndices, buildCrossIndices, buildRibbonVertices, buildRibbonIndices, energyOf, easeEnergy, GRID_DEPTH, WORLD_SPEED, NOW_FALLOFF_S, NOW_GAIN, CROSS_H0, CROSS_H1, AMP_MAX, SHAKE_ENABLED,
-  gridHalfWidth, RAMP, qualityFor, createFrame, createSeries, fillHeights, buildGridVertices, rowLayout, nowZOf, fillLiveFrame, fillLookFrame, blendFrames,
+  gridHalfWidth, FAR_FLAT_START, RAMP, qualityFor, createFrame, createSeries, fillHeights, buildGridVertices, rowLayout, nowZOf, fillLiveFrame, fillLookFrame, blendFrames,
   gridCounts, makeStars, lodTiers, makeTierPlan, resampleTier, cameraAt, horizonY, horizonGlow, mat4Perspective, mat4LookAt, mat4Multiply,
   makeRowClock, clamp01, resample, ROWS_PER_SECOND, gridDims, fillLight, LIGHT_GAIN, NODE_GAIN, FOG_NEAR, FOG_FAR, FOG_LOW_MIN, FOG_H0, FOG_H1,
 } from './viz-terrain-math.js';
@@ -28,7 +28,9 @@ attribute float a_l;
 uniform mat4 u_vp;
 uniform vec4 u_fogA;
 uniform vec2 u_fogB;
-uniform float u_hw, u_depth, u_dz, u_amp, u_pt, u_dpr, u_mode, u_viewW, u_viewH, u_scroll, u_nowZ, u_nowW, u_base, u_lw, u_axis, u_soft, u_cols;
+uniform float u_hw, u_depth, u_dz, u_amp, u_pt, u_dpr, u_mode, u_viewW, u_viewH, u_scroll, u_nowZ, u_nowW, u_base, u_lw, u_axis, u_soft, u_cols, u_unit, u_cell, u_focal;
+uniform vec4 u_tf;
+uniform vec2 u_flat;
 varying float v_h;
 varying float v_fog;
 varying float v_near;
@@ -40,7 +42,9 @@ varying float v_dof;
 varying float v_wh;
 varying float v_l;
 varying float v_fogH;
+varying float v_tier;
 void main() {
+  v_tier = 1.0;
   v_h = a_h;
   v_l = a_l;
   v_fogH = 0.0;
@@ -58,8 +62,10 @@ void main() {
     return;
   }
   float z = (a_p.y - u_scroll) * u_dz;
-  vec3 pos = vec3(a_p.x * u_hw, a_h * u_amp, -z);
+  float farK = 1.0 - smoothstep(u_flat.x, u_flat.y, z);
+  vec3 pos = vec3(a_p.x * u_hw, a_h * u_amp * farK, -z);
   vec4 clip = u_vp * vec4(pos, 1.0);
+  v_tier = smoothstep(u_tf.x, u_tf.y, z) * (1.0 - smoothstep(u_tf.z, u_tf.w, z)) * smoothstep(1.0, 3.0, u_cell * u_focal / max(clip.w, 0.1));
   float dn = (z - u_nowZ) / u_nowW;
   v_now = exp(-dn * dn);
   v_fog = smoothstep(4.0, 0.8 * u_depth, clip.w);
@@ -67,7 +73,7 @@ void main() {
   v_near = smoothstep(0.4, 2.2, clip.w);
   if (u_soft > 0.5) {
     float k = mod(a_p.y + u_base, 256.0);
-    float col = (a_p.x * 0.5 + 0.5) * u_cols;
+    float col = a_p.x * u_hw / u_unit;
     float hv = fract(sin(col * 12.9898 + k * 78.233) * 43758.5453);
     float hl = fract(sin(col * 3.7 + 1.3) * 9371.17);
     float hr = fract(sin(k * 5.3 + 2.1) * 6143.7);
@@ -79,7 +85,7 @@ void main() {
     if (u_axis < 0.5) clip.x += a_s * px * 2.0 / u_viewW * clip.w;
     else clip.y += a_s * px * 2.0 / u_viewH * clip.w;
   }
-  v_wh = a_h * u_amp;
+  v_wh = a_h * u_amp * farK;
   float fFar = smoothstep(u_fogA.x, u_fogA.y, clip.w / u_depth);
   float fLow = 1.0 - smoothstep(u_fogB.x, u_fogB.y, v_wh);
   v_fogH = fFar * (u_fogA.z + (1.0 - u_fogA.z) * fLow);
@@ -102,6 +108,7 @@ varying float v_dof;
 varying float v_wh;
 varying float v_l;
 varying float v_fogH;
+varying float v_tier;
 vec3 ramp(float h) {
   return h < 0.45 ? mix(u_c0, u_c1, smoothstep(0.0, 0.45, h)) : mix(u_c1, u_c2, smoothstep(0.45, 1.0, h));
 }
@@ -138,7 +145,7 @@ void main() {
     a *= 1.0 + u_nowGain * nowK;
     col = mix(col, vec3(1.0), 0.8 * nowK);
   }
-  a *= v_near * v_end;
+  a *= v_near * v_end * v_tier;
   gl_FragColor = vec4(col * a, a);
 }`;
 
@@ -535,6 +542,11 @@ export function createTerrain(canvas, opts = {}) {
     gl.uniform1f(uni(gl, p, 'u_crossHi'), CROSS_H1);
     gl.uniform1f(uni(gl, p, 'u_base'), g.base % 256);
     gl.uniform1f(uni(gl, p, 'u_cols'), t.cols);
+    gl.uniform1f(uni(gl, p, 'u_unit'), s.tiers[0].t.spacing);
+    gl.uniform1f(uni(gl, p, 'u_cell'), t.spacing);
+    gl.uniform1f(uni(gl, p, 'u_focal'), s.focalPx || 1);
+    gl.uniform2f(uni(gl, p, 'u_flat'), FAR_FLAT_START * GRID_DEPTH, GRID_DEPTH);
+    gl.uniform4f(uni(gl, p, 'u_tf'), t.fade[0], t.fade[1], t.fade[2], t.fade[3]);
     gl.uniform1f(uni(gl, p, 'u_lw'), LINE_PX[q.soft] || 0);
     gl.uniform1f(uni(gl, p, 'u_soft'), q.soft ? 1 : 0);
     gl.uniform1f(uni(gl, p, 'u_axis'), 0);
@@ -740,6 +752,7 @@ export function createTerrain(canvas, opts = {}) {
     updateHeights(t / 1000, ahead);
     const cc = getCam();
     const cam = cameraAt(t / 1000, SHAKE_ENABLED ? s.pulse : 0, { eye: cc.eye, pitchDeg: cc.pitch, fly: 0 });
+    s.focalPx = view.h / (2 * Math.tan(cam.fov / 2));
     mat4Perspective(cam.fov, view.w / view.h, NEAR, FAR, proj);
     mat4LookAt(cam.eye, cam.target, cam.up, look);
     mat4Multiply(proj, look, mvp);
