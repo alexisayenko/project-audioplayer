@@ -16,7 +16,9 @@ import { genreText } from './genre-cell.js';
 import { toggleQueue } from './queue-toggle.js';
 import { coverModel, coverButton } from './row-cover.js';
 import { editDialog } from './edit-dialog.js';
+import { can } from './guest.js';
 import { displayString, titleNodes } from './display-title.js';
+import { marquee } from './marquee.js';
 
 function cover(s) {
   const img = el('img', { class: 'cover', alt: '', loading: 'lazy' });
@@ -54,9 +56,9 @@ function moreButton(s, full, { audio, queueable, queued }) {
       { label: 'Play now', run: () => player.playNow(s.id) },
       { label: queued ? 'Remove from playlist' : 'Add to playlist', run: () => toggleQueue(s) },
     ] : []),
-    ...(audio ? [{ label: 'Download', run: () => downloadSong(s) }] : []),
-    ...(!audio && autodl.view(s.id).kind === 'none' ? [{ label: 'Download to server', run: () => fetchAudio(s) }] : []),
-    { label: 'Edit song', run: () => editDialog(s) },
+    ...(audio && can('download') ? [{ label: 'Download', run: () => downloadSong(s) }] : []),
+    ...(!audio && can('fetch') && autodl.view(s.id).kind === 'none' ? [{ label: 'Download to server', run: () => fetchAudio(s) }] : []),
+    ...(can('edit') ? [{ label: 'Edit song', run: () => editDialog(s) }] : []),
   ]));
   return more;
 }
@@ -72,15 +74,16 @@ function openTitle(s, full, tip) {
   return el('button', { class: 'open t-headline', type: 'button', title: tip, 'aria-label': `Open: ${full}` }, titleNodes(s));
 }
 
-function runCover(s, action) {
-  if (action === 'play') player.playNow(s.id);
+function runCover(s, action, link) {
+  if (action === 'source') window.open(link.url, '_blank', 'noopener');
+  else if (action === 'play') player.playNow(s.id);
   else if (action === 'pause' || action === 'resume') player.toggle();
   else if (action === 'download') fetchAudio(s);
 }
 
-function coverCell(s, full, { audio, queueable, here }) {
-  const model = coverModel({ audio, queueable, here, playing: player.playing, dl: autodl.view(s.id).kind });
-  return coverButton(cover(s), model, full, { run: (action) => runCover(s, action) });
+function coverCell(s, full, { audio, queueable, here, link }) {
+  const model = coverModel({ audio, queueable, here, playing: player.playing, dl: autodl.view(s.id).kind, source: !!link });
+  return coverButton(cover(s), model, full, { run: (action) => runCover(s, action, link) });
 }
 
 function durationContent(s, audio, link, dl) {
@@ -105,8 +108,8 @@ export function songRow(s, cur, flashId) {
   const dl = audio ? null : ringModel(autodl.view(s.id));
   const durText = durationContent(s, audio, link, dl);
   const dur = el('span', { class: audio ? 'c-dur t-time' : 'c-dur t-caption' }, durText);
-  return el('li', { class: `song${here ? ' current' : ''}${audio ? '' : ' no-audio'}${flashId === s.id ? ' flash' : ''}`, 'aria-current': here ? 'true' : null, 'data-id': s.id },
-    coverCell(s, full, { audio, queueable, here }),
+  const row = el('li', { class: `song${here ? ' current' : ''}${audio ? '' : ' no-audio'}${flashId === s.id ? ' flash' : ''}`, 'aria-current': here ? 'true' : null, 'data-id': s.id },
+    coverCell(s, full, { audio, queueable, here, link }),
     el('div', { class: 'info' },
       el('div', { class: 'title-line' }, open, bpmBadge(s)),
       trackSub(s) ? el('small', { class: 'sub t-subhead' }, trackSub(s)) : null),
@@ -115,4 +118,6 @@ export function songRow(s, cur, flashId) {
     pl,
     more,
     dl ? lineNode(dl) : null);
+  marquee(open, { auto: !!here, host: row });
+  return row;
 }

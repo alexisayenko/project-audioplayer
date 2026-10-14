@@ -11,6 +11,7 @@ test('addBody has no bpm and no tags', () => {
 
 test('patchBody keys', () => {
   assert.deepEqual(Object.keys(patchBody(v)).sort(), ['album', 'artist', 'discogs_url', 'musicbrainz_url', 'remixer', 'tags', 'title', 'wikipedia_artist', 'wikipedia_song', 'year']);
+  assert.ok(!('remix_year' in patchBody(v)), 'absent from the form values stays absent');
   assert.deepEqual(patchBody(v).tags, ['x', 'lang:de']);
 });
 
@@ -50,4 +51,12 @@ test('multi-artist strings are saved verbatim', () => {
   for (const artist of ['A, B', 'CarMan', 'Sadrican, DJ Harley Q., GOLDFISH', 'Земфира, Би-2']) {
     assert.equal(patchBody({ ...v, artist }).artist, artist);
   }
+});
+
+test('remix year: add sends it only when non-empty, patch sends null to clear', () => {
+  assert.equal(addBody({ ...v, remix_year: '2024' }).remix_year, 2024);
+  assert.ok(!('remix_year' in addBody({ ...v, remix_year: '' })));
+  assert.equal(patchBody({ ...v, remix_year: '2024' }).remix_year, 2024);
+  assert.equal(patchBody({ ...v, remix_year: '' }).remix_year, null);
+  assert.equal(patchBody({ ...v, remix_year: '', year: '1999' }).year, 1999);
 });

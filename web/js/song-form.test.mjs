@@ -167,3 +167,21 @@ test('the Add preview seeds the YouTube icon from its source link, and a lookup 
   await flush();
   assert.equal(f.node.querySelector('a.svc-youtube').getAttribute('href'), 'https://youtu.be/jNQXAC9IVRw', 'a lookup without a URL keeps the stored link');
 });
+
+test('remix year input sits in the remix row and round-trips', () => {
+  const f = songForm({ mode: 'edit', song: { id: 's1', title: 'T', remixer: 'R', year: 2003, remix_year: 2024, tags: [] } });
+  const row = f.node.querySelector('.remix-row');
+  assert.ok(row, 'row exists');
+  assert.match(row.textContent, /Remix & additional production/);
+  assert.match(row.textContent, /Remix year/);
+  const input = row.querySelectorAll('input').find((i) => i.min === 1900 || String(i.min) === '1900');
+  assert.ok(input, 'year input with 1900 minimum');
+  let v = f.values();
+  assert.equal(String(v.remix_year), '2024');
+  assert.equal(String(v.year), '2003', 'original year untouched');
+  f.setValues({ remix_year: '' });
+  assert.equal(f.values().remix_year, '');
+  f.setValues({ remix_year: 2011 });
+  assert.equal(String(f.values().remix_year), '2011');
+  assert.equal(String(songForm({ mode: 'add', song: { title: 'T', tags: [] } }).values().remix_year), '');
+});

@@ -144,7 +144,10 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + var(--dock-b) + var(--m
 }
 .key:disabled { opacity: .4; cursor: default; }
 .key.ghost { background: transparent; box-shadow: none; color: var(--ink-muted); }
-.key.ghost.on, .key.lit { background: var(--accent); color: var(--on-accent); box-shadow: var(--glow-accent); }
+.key.lit { background: var(--accent); color: var(--on-accent); box-shadow: var(--glow-accent); }
+.tray .key.ghost.on, .mini-keys .key.ghost.on { background: transparent; color: var(--accent-ink); box-shadow: inset 0 0 0 2px var(--accent-ink); }
+.tray .key.ghost.on:hover, .mini-keys .key.ghost.on:hover { background: color-mix(in srgb, var(--accent-ink) 12%, transparent); }
+@media (forced-colors: active) { .tray .key.ghost.on, .mini-keys .key.ghost.on { box-shadow: inset 0 0 0 2px Highlight; color: ButtonText; } }
 .key.lit { width: 52px; height: var(--hit); }
 
 /* fields */
@@ -248,6 +251,18 @@ label { display: block; color: var(--ink-muted); font-size: 13px; line-height: 1
 .open .ttl, .open .rmx { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .open .ttl { flex: 0 8 auto; }
 .open .rmx { flex: 0 1 auto; margin-left: .3em; font-weight: 400; color: var(--muted); }
+.mq { overflow: hidden; white-space: nowrap; min-width: 0; }
+.mq-track { display: inline-block; max-width: 100%; vertical-align: top; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 0 1 auto; min-width: 0; }
+.mq-track .ttl, .mq-track .rmx { flex: none; overflow: visible; text-overflow: clip; margin-left: 0; }
+.mq-run { -webkit-mask-image: linear-gradient(90deg, transparent, #000 12px, #000 calc(100% - 12px), transparent); mask-image: linear-gradient(90deg, transparent, #000 12px, #000 calc(100% - 12px), transparent); }
+.mq-run .mq-track { max-width: none; overflow: visible; text-overflow: clip; will-change: transform; animation: mq var(--mq-dur, 6s) ease-in-out infinite; }
+.doc-hidden .mq-track { animation-play-state: paused; }
+@keyframes mq {
+  0%, 20% { transform: translateX(0); }
+  50%, 70% { transform: translateX(calc(-1 * var(--mq-dist, 0px))); }
+  100% { transform: translateX(0); }
+}
+@media (prefers-reduced-motion: reduce) { .mq-run .mq-track { animation: none !important; will-change: auto; } .mq-run { -webkit-mask-image: none; mask-image: none; } }
 .song .title-line .bpm-badge { margin-left: auto; }
 .bpm-badge {
   flex: none; display: inline-flex; align-items: baseline; gap: 3px; padding: 0 var(--space-2);
@@ -582,6 +597,11 @@ body[data-route="playback"] main, body[data-route="playback"] .mini { display: n
 
 /* add dialog: metadata, service icons, sticky footer */
 .meta-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-top: var(--space-3); }
+.remix-row { display: flex; flex-wrap: wrap; gap: 0 var(--space-3); margin-top: var(--space-3); }
+.remix-row > .field { margin-top: 0; }
+.remix-row > .field:first-child { flex: 1 1 200px; min-width: 0; }
+.remix-row > .field:last-child { flex: 0 0 110px; }
+@media (max-width: 479px) { .remix-row > .field:last-child { flex: 1 1 100%; margin-top: var(--space-3); } }
 .add-fields > .t-caption { margin-top: var(--space-2); }
 .add-fields > .t-caption:empty { display: none; }
 .add-fields > .field, .add-fields > .grid2 { margin-top: var(--space-3); }
@@ -632,3 +652,11 @@ input[type=text].token-edit { background: var(--surface); box-shadow: inset 0 0 
 .token-pill.drop-before::before { content: ""; position: absolute; left: -3px; top: 2px; bottom: 2px; width: 2px; border-radius: 1px; background: var(--accent-ink); }
 .token-field.drop-over { box-shadow: inset 0 0 0 1.5px var(--accent-ink); }
 .token-drag-clone { position: fixed; z-index: 100; pointer-events: none; opacity: 0.85; box-shadow: var(--shadow-float); }
+
+/* guest (read-only public view) */
+.guest-banner {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;
+  margin: 0 0 var(--space-3); padding: var(--space-2) var(--space-3); border-radius: var(--radius-key);
+  background: var(--accent-tint); color: var(--ink);
+}
+body.guest-noaudio .mini-keys, body.guest-noaudio #p-play, body.guest-noaudio .pb-controls .tray { display: none; }

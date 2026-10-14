@@ -18,6 +18,8 @@ import { $, setIcon, setToggle, setCover, queueRow, updateDl, paintTimes } from 
 import { updateMediaSession, setupMediaSession, updatePositionState, setVolume, storedVolume } from './player-media.js';
 import { openTagPicker } from './player-tag-picker.js';
 import { displayString, titleNodes } from './display-title.js';
+import { marquee, disposeAll } from './marquee.js';
+import { can } from './guest.js';
 
 const audio = document.getElementById('audio');
 
@@ -333,8 +335,9 @@ function renderTransport(song, playing) {
   $('player-empty').hidden = !!song;
   $('details-body').hidden = !song;
   $('cover-text').hidden = !song;
-  $('p-edit').hidden = !song;
-  $('p-download').hidden = !hasAudio(song);
+  $('p-edit').hidden = !song || !can('edit');
+  $('mini-edit').hidden = !can('edit');
+  $('p-download').hidden = !hasAudio(song) || !can('download');
   setIcon('p-play', playing ? 'pause' : 'play', 22);
   setIcon('mini-play', playing ? 'pause' : 'play', 20);
   $('p-play').setAttribute('aria-label', label);
@@ -359,13 +362,16 @@ function renderIdle() {
   listeners.forEach((fn) => fn());
 }
 
+const fullTitle = (song) => (song.artist ? `${displayString(song)} - ${song.artist}` : displayString(song));
+
 function renderMini(song) {
   const noNext = !Q.hasNext(logic());
   for (const id of ['p-prev', 'p-play', 'mini-prev']) $(id).disabled = false;
   $('p-next').disabled = noNext;
   $('mini-next').disabled = noNext;
   $('mini-title').replaceChildren(...titleNodes(song));
-  $('mini-title').title = displayString(song);
+  $('mini-title').title = fullTitle(song);
+  marquee($('mini-title'), { auto: true });
   const inList = player.inQueue(song.id);
   const pl = $('mini-playlist');
   pl.setAttribute('aria-pressed', String(inList));
@@ -378,6 +384,8 @@ function renderMini(song) {
 
 function renderDetails(song) {
   $('player-title').replaceChildren(...titleNodes(song));
+  $('player-title').title = fullTitle(song);
+  marquee($('player-title'), { auto: true });
   $('player-sub').textContent = [song.artist, song.album, song.year].filter(Boolean).join(' · ');
   const remixLine = [song.remixer ? `Remix: ${song.remixer}` : ''].filter(Boolean).join(' · ');
   if (remixLine) $('player-sub').textContent += ($('player-sub').textContent ? ' · ' : '') + remixLine;
@@ -434,6 +442,7 @@ const queueCtx = () => ({
 function renderQueue() {
   closeMenu();
   $('queue-empty').hidden = qs.items.length > 0;
+  disposeAll($('queue-list'));
   $('queue-list').replaceChildren(...qs.items.map((item, i) => queueRow(item, i, queueCtx())));
   updateDl(player.current);
 }

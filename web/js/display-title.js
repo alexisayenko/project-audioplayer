@@ -17,6 +17,13 @@ export function displayString(song) {
   return remix ? `${title} (${remix})` : title;
 }
 
+export function remixTooltip(song) {
+  const { remix } = displayTitle(song);
+  const year = song?.remix_year;
+  if (!remix) return '';
+  return Number.isInteger(year) ? `${remix} (${year})` : remix;
+}
+
 export function titleNodes(song, titleClass = 'ttl', remixClass = 'rmx') {
   const { title, remix } = displayTitle(song);
   const a = document.createElement('span');
@@ -26,5 +33,8 @@ export function titleNodes(song, titleClass = 'ttl', remixClass = 'rmx') {
   const b = document.createElement('span');
   b.className = remixClass;
   b.textContent = `(${remix})`;
-  return [a, b];
+  if (Number.isInteger(song?.remix_year)) {
+    b.title = remixTooltip(song);
+  }
+  return [a, document.createTextNode(' '), b];
 }

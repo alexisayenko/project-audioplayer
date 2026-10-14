@@ -7,7 +7,11 @@ import {
   loadExpanded, saveExpanded, hasStoredExpanded,
 } from './genre-data.js';
 import { filterByTags } from './library.js';
-import { BP_WIDE, BP_DESKTOP, GENRES_OUTLINE_INSET } from './constants.js';
+import { watchPlayerInset } from './player-inset.js';
+import { player } from './player.js';
+import { setCover } from './player-ui.js';
+import { titleNodes } from './display-title.js';
+import { songGenres, mapToNodes, nodeIds, nowPlayingState } from './genre-playing.js';
 import { POLL_MS, shouldPoll, presentFamilies, toggleHidden, loadOutlineOpen, saveOutlineOpen } from './genre-view.js';
 
 const CHILD_CHIPS = 12;
@@ -35,6 +39,7 @@ export function renderGenres(root) {
   let hidden = new Set();
   let outlineOpen = loadOutlineOpen(localStorage, window.innerWidth);
   let legendOpen = false;
+  let nowOpen = false;
 
   const note = el('p', { class: 'gm-status t-caption', role: 'status' }, 'Loading genres...');
   const canvas = el('canvas', {
@@ -49,6 +54,11 @@ export function renderGenres(root) {
     onclick: () => { legendOpen = !legendOpen; syncLegend(); },
   }, 'Legend');
   legend.id = 'gm-legend';
+  const nowBtn = el('button', {
+    class: 'gm-tbtn', type: 'button', 'aria-expanded': 'false', 'aria-controls': 'gm-now',
+    onclick: () => setNow(!nowOpen),
+  }, el('span', { 'aria-hidden': 'true' }, '♪ '), 'Now playing');
+  const nowPop = el('div', { class: 'gm-now', id: 'gm-now', role: 'group', 'aria-label': 'Genres of the playing song', hidden: true });
   const outlineBtn = el('button', {
     class: 'gm-tbtn gm-outline-btn', type: 'button', 'aria-controls': 'gm-outline-panel', onclick: () => setOutline(!outlineOpen),
   }, 'Outline');
@@ -91,6 +101,37 @@ export function renderGenres(root) {
     legendBtn.setAttribute('aria-expanded', String(legendOpen));
   }
 
+  function closeNow() { setNow(false); nowBtn.focus?.(); }
+
+  function setNow(open) {
+    nowOpen = open;
+    nowBtn.setAttribute('aria-expanded', String(open));
+    nowBtn.classList.toggle('on', open);
+    renderNow();
+  }
+
+  function renderNow() {
+    const song = player.current;
+    const items = g ? mapToNodes(songGenres(song), g) : songGenres(song).map((x) => ({ ...x, id: null }));
+    const st = nowPlayingState(song, items);
+    nowBtn.disabled = st.kind !== 'ready';
+    nowBtn.title = st.hint;
+    if (nowBtn.disabled && nowOpen) { nowOpen = false; nowBtn.setAttribute('aria-expanded', 'false'); nowBtn.classList.remove('on'); }
+    nowPop.hidden = !nowOpen;
+    const ids = nowOpen ? nodeIds(items) : [];
+    view.setMarked(ids);
+    if (!nowOpen) { nowPop.replaceChildren(); return; }
+    const cover = el('img', { class: 'cover gm-now-cover', alt: '' });
+    setCover(cover, song);
+    nowPop.replaceChildren(
+      el('div', { class: 'gm-now-head' }, cover,
+        el('div', { class: 'gm-now-text' }, el('b', { class: 'gm-now-title' }, titleNodes(song)), el('small', { class: 'muted' }, song.artist || ''))),
+      el('div', { class: 'gm-chips' }, items.map((x) => (x.id
+        ? el('button', { class: 'gm-chip', type: 'button', onclick: () => view.select(x.id, { center: true }) }, x.label)
+        : el('span', { class: 'gm-chip gm-chip-off', title: 'Not in the map yet' }, x.label)))),
+      el('button', { class: 'gm-tbtn gm-now-all', type: 'button', disabled: !ids.length, onclick: () => view.fitIds(ids) }, 'Show all'));
+  }
+
   function setOutline(open, save = true) {
     outlineOpen = open;
     if (save) saveOutlineOpen(localStorage, open);
@@ -98,8 +139,6 @@ export function renderGenres(root) {
     outlineBtn.setAttribute('aria-expanded', String(open));
     outlineBtn.classList.toggle('on', open);
     outlinePanel.hidden = !open;
-    const w = window.innerWidth;
-    view.setInsets({ r: open && w >= BP_WIDE && w < BP_DESKTOP ? GENRES_OUTLINE_INSET : 0 });
     if (open) revealInOutline();
   }
 
@@ -216,6 +255,7 @@ export function renderGenres(root) {
     renderPanel();
     renderOutline();
     renderResults();
+    renderNow();
   }
 
   function genreTagCount() {
@@ -257,7 +297,8 @@ export function renderGenres(root) {
       el('div', { class: 'gm-bar-row' },
         el('h1', { class: 'gm-title' }, 'Genres map'),
         note,
-        legendBtn),
+        legendBtn, nowBtn),
+      nowPop,
       el('div', { class: 'gm-find' }, search, results),
       legend),
     outlineBtn,
@@ -265,6 +306,15 @@ export function renderGenres(root) {
     panel,
     outlinePanel);
   root.append(gm);
+  const unsubPlayer = player.onChange(renderNow);
+  const unsubNowStore = store.subscribe(renderNow);
+  renderNow();
+  const stopInset = watchPlayerInset(gm, (h) => view.setInsets({ b: 16 + h }));
+  gm.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape' || e.target === search) return;
+    if (nowOpen) closeNow();
+    else if (outlineOpen) setOutline(false);
+  });
   if (!hasStoredExpanded(localStorage)) for (const f of FAMILIES) expanded.add(`f:${f}`);
   setOutline(outlineOpen, false);
 
@@ -272,6 +322,9 @@ export function renderGenres(root) {
 
   return () => {
     dead = true;
+    stopInset();
+    unsubPlayer();
+    unsubNowStore();
     clearTimeout(pollTimer);
     unsub();
     view.destroy();

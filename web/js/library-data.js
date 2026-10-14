@@ -37,7 +37,7 @@ export function visibleSongs(sel = prefs.sel) {
   const list = store.songs.filter((s) => {
     if (!matchesSelection(s, sel)) return false;
     if (!q) return true;
-    const hay = [s.title, s.artist, s.album, ...visibleTags(s.tags).map(tagSearchText)].join('\n').toLocaleLowerCase();
+    const hay = [s.title, s.artist, s.album, s.remixer, ...visibleTags(s.tags).map(tagSearchText)].join('\n').toLocaleLowerCase();
     return hay.includes(q);
   });
   return list.sort(SORTS[prefs.sort][1]);

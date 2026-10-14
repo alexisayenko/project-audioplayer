@@ -65,7 +65,7 @@ test('the card opens read-only with links, actions and returns focus to the row 
   openSongCard(FULL, open);
   const dlg = $('song-card');
   assert.equal(dlg.open, true);
-  assert.equal(dlg.querySelector('h2').textContent, 'Alpha(Kav)');
+  assert.equal(dlg.querySelector('h2').textContent, 'Alpha (Kav)');
   assert.equal(dlg.querySelector('img.card-cover').localName, 'img');
   const hrefs = dlg.querySelectorAll('a.svc').map((a) => a.getAttribute('href'));
   assert.equal(hrefs.length, 3);
@@ -108,7 +108,7 @@ test('the card refreshes after an edit and closes when the song is deleted', () 
   openSongCard(FULL);
   const dlg = $('song-card');
   publish([{ ...FULL, title: 'Alpha 2', album: 'New LP' }]);
-  assert.equal(dlg.querySelector('h2').textContent, 'Alpha 2(Kav)');
+  assert.equal(dlg.querySelector('h2').textContent, 'Alpha 2 (Kav)');
   assert.match(dlg.textContent, /New LP/);
   publish([]);
   assert.equal(dlg.open, false);
@@ -130,4 +130,11 @@ test('songs without audio get Download to server, not Download, and no Play when
   const dlg = $('song-card');
   assert.deepEqual(names(dlg), ['Download to server', 'Edit', 'Close']);
   dlg.close();
+});
+
+test('card shows a Remix year line only when present', () => {
+  assert.equal(cardModel({ ...FULL, remix_year: 2024 }, { kind: 'none' }).remixYear, 'Remix year 2024');
+  assert.equal(cardModel(FULL, { kind: 'none' }).remixYear, '');
+  assert.equal(cardModel({ ...FULL, remix_year: null }, { kind: 'none' }).remixYear, '');
+  assert.equal(cardModel({ ...FULL, remix_year: 2024 }, { kind: 'none' }).sub, 'Zed - LP - 1999', 'sub line keeps the original year');
 });

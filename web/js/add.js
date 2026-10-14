@@ -9,11 +9,13 @@ import { dialogHead } from './edit-dialog.js';
 import { songForm } from './song-form.js';
 import { ADD_ROW_OUTLINE_MS } from './constants.js';
 import { addBody } from './song-payload.js';
+import { can } from './guest.js';
 
 const BULK = new Set(['insertFromPaste', 'insertFromPasteAsQuotation', 'insertFromDrop', 'insertReplacementText']);
 const PREVIEW_ONLY = 'Preview only \u2014 SoundCloud Go+ track, can\'t be downloaded in full.';
 
 export function openAdd() {
+  if (!can('add')) return;
   const dlg = document.getElementById('add-dialog');
   let preview = null;
   let sf = null;

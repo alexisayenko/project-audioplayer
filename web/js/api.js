@@ -1,5 +1,6 @@
 import { storeRemove } from './storage.js';
 import { friendly } from './limits.js';
+import { clearGuest } from './guest.js';
 
 storeRemove('audioplayer.token');
 
@@ -52,7 +53,13 @@ async function request(method, path, body, signal) {
       lostSession();
     }
     const code = data?.error || '';
-    throw new ApiError(res.status, friendly(code, data, detail) || `Request failed (${res.status})`, code, Number(data?.retry_after_minutes) || 0);
+    const err = new ApiError(res.status, friendly(code, data, detail) || `Request failed (${res.status})`, code, Number(data?.retry_after_minutes) || 0);
+    if (code === 'guest_limit') {
+      const ev = new Event('guest-limit');
+      ev.detail = err.message;
+      window.dispatchEvent(ev);
+    }
+    throw err;
   }
   return data;
 }
@@ -83,6 +90,7 @@ export const session = {
     const who = await authCall('POST', '/auth/session', { id_token: idToken });
     auth.email = who.email || who.provider;
     auth.provider = who.provider;
+    clearGuest();
     return who;
   },
   end: async () => {

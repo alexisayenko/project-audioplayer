@@ -2,7 +2,8 @@ import { api } from './api.js';
 import { store } from './store.js';
 import { player } from './player.js';
 import { el, fmtTime } from './dom.js';
-import { hasAudio } from './playable.js';
+import { hasAudio, sourceLink } from './playable.js';
+import { can } from './guest.js';
 import { autodl, autoDownloadOn } from './autodl.js';
 import { statusText } from './dl-progress.js';
 import { downloadSong } from './download.js';
@@ -32,6 +33,7 @@ export function cardModel(song, view) {
     remix,
     sub: [song?.artist, song?.album, song?.year].filter((v) => v != null && String(v).trim() !== '').join(' - '),
     groups: cardTags(song?.tags),
+    remixYear: Number.isInteger(song?.remix_year) ? `Remix year ${song.remix_year}` : '',
     bpm: bpmLabel(song?.bpm),
     duration: song?.duration ? fmtTime(song.duration) : '',
     links: storedLinkStates(song),
@@ -72,13 +74,15 @@ function actionRow(song, close) {
   const play = playControl(song, { cur: player.current, playing: player.playing, queueable });
   const queued = player.inQueue(song.id);
   const view = autodl.view(song.id);
+  const link = sourceLink(song);
   const btn = (label, run, cls = 'btn outline') => el('button', { class: cls, type: 'button', onclick: run }, label);
   return el('div', { class: 'card-actions' },
     play ? btn(play.label, play.run, 'btn primary glow') : null,
     queueable ? btn(queued ? 'Remove from playlist' : 'Add to playlist', () => toggleQueue(song)) : null,
-    audio ? btn('Download', () => downloadSong(song)) : null,
-    !audio && (view.kind === 'none' || view.kind === 'failed') ? btn('Download to server', () => autodl.request([song.id], { front: true })) : null,
-    btn('Edit', () => editDialog(song)),
+    audio && can('download') ? btn('Download', () => downloadSong(song)) : null,
+    !audio && can('fetch') && (view.kind === 'none' || view.kind === 'failed') ? btn('Download to server', () => autodl.request([song.id], { front: true })) : null,
+    can('edit') ? btn('Edit', () => editDialog(song)) : null,
+    !audio && !can('fetch') && link ? btn(link.label, () => window.open(link.url, '_blank', 'noopener')) : null,
     btn('Close', close, 'btn outline card-close'));
 }
 
@@ -93,6 +97,7 @@ function paint(dlg, song, close, m) {
     el('p', { class: 'facts t-caption' },
       m.bpm ? el('span', { class: 'bpm-badge', title: 'Beats per minute (estimated)' }, m.bpm, el('small', { 'aria-hidden': 'true' }, 'BPM')) : null,
       m.duration ? el('span', {}, m.duration) : null,
+      m.remixYear ? el('span', { class: 'remix-year' }, m.remixYear) : null,
       el('span', {}, m.download)),
     linkBlock(m.links),
     actionRow(song, close),

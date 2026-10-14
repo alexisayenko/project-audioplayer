@@ -29,13 +29,15 @@ function songFields(v) {
     album: v.album,
     remixer: v.remixer,
     year: yearValue(v.year),
+    ...(v.remix_year !== undefined ? { remix_year: yearValue(v.remix_year) } : {}),
   };
 }
 
 const wikiFieldsOf = (v) => ({ wikipedia_song: v.wikipedia_song ?? null, wikipedia_artist: v.wikipedia_artist ?? null, musicbrainz_url: v.musicbrainz_url ?? null, discogs_url: v.discogs_url ?? null });
 
 export function addBody(v) {
-  return { ...songFields(v), ...wikiFieldsOf(v) };
+  const { remix_year: remixYear, ...rest } = songFields(v);
+  return { ...rest, ...(remixYear == null ? {} : { remix_year: remixYear }), ...wikiFieldsOf(v) };
 }
 
 export function patchBody(v) {

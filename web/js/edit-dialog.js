@@ -6,6 +6,7 @@ import { hasAudio } from './playable.js';
 import { downloadSong } from './download.js';
 import { songForm } from './song-form.js';
 import { patchBody, songSources } from './song-payload.js';
+import { can } from './guest.js';
 
 export function dialogHead(title, sub, onCancel) {
   return el('div', { class: 'dlg-head' },
@@ -47,6 +48,7 @@ export function removeSong(s) {
 }
 
 export function editDialog(song) {
+  if (!can('edit')) return;
   const dlg = document.getElementById('edit-dialog');
   const sf = songForm({ mode: 'edit', song, source: () => songSources(song) });
   const err = el('p', { class: 'msg error', hidden: true });

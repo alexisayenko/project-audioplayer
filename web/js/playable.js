@@ -1,7 +1,9 @@
+import { streamable } from './guest.js';
+
 const PROVIDERS = { youtube: 'YouTube', soundcloud: 'SoundCloud', spotify: 'Spotify', applemusic: 'Apple Music', shazam: 'Shazam' };
 
 export function hasAudio(song) {
-  if (!song) return false;
+  if (!song || !streamable()) return false;
   if (song.audio_state) return song.audio_state === 'server';
   return song.file !== null;
 }

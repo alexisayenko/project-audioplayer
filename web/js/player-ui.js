@@ -9,6 +9,8 @@ import { autodl } from './autodl.js';
 import { statusText } from './dl-progress.js';
 import { editDialog } from './edit-dialog.js';
 import { displayString, titleNodes } from './display-title.js';
+import { marquee } from './marquee.js';
+import { can } from './guest.js';
 
 export const $ = (id) => document.getElementById(id);
 
@@ -42,13 +44,13 @@ export function queueRow(item, i, { count, index, move, removeAt, playAt }) {
     class: 'more', type: 'button', title: 'Song menu', 'aria-label': `Song menu: ${title}`, 'aria-haspopup': 'menu', 'aria-expanded': 'false',
   }, icon('more', 20));
   more.addEventListener('click', () => openMenu(more, [
-    ...(s ? [{ label: 'Edit song', run: () => editDialog(s) }] : []),
-    ...(hasAudio(s) ? [{ label: 'Download', run: () => downloadSong(s) }] : []),
+    ...(s && can('edit') ? [{ label: 'Edit song', run: () => editDialog(s) }] : []),
+    ...(hasAudio(s) && can('download') ? [{ label: 'Download', run: () => downloadSong(s) }] : []),
     { label: 'Move up', disabled: i === 0, run: () => move(i, -1) },
     { label: 'Move down', disabled: i === count - 1, run: () => move(i, 1) },
     { label: 'Remove', run: () => removeAt(i) },
   ]));
-  return el('li', { class: `qrow${i === index ? ' current' : ''}${s && !hasAudio(s) ? ' no-audio' : ''}`, 'aria-current': i === index ? 'true' : null },
+  const row = el('li', { class: `qrow${i === index ? ' current' : ''}${s && !hasAudio(s) ? ' no-audio' : ''}`, 'aria-current': i === index ? 'true' : null },
     el('span', { class: 'c-idx t-time' }, i + 1),
     cover,
     el('div', { class: 'info' },
@@ -57,6 +59,8 @@ export function queueRow(item, i, { count, index, move, removeAt, playAt }) {
       s && !hasAudio(s) ? el('small', { class: 'dl t-caption', 'data-dl': item.id }) : null),
     el('span', { class: 'c-dur t-time' }, s?.duration ? fmtTime(s.duration) : ''),
     more);
+  marquee(row.querySelector('.open'), { auto: i === index, host: row });
+  return row;
 }
 
 function dlText(v, short) {
@@ -81,7 +85,7 @@ export function updateDl(song) {
     const v = autodl.view(song.id);
     $('player-dl-text').textContent = dlText(v, false);
     const btn = $('player-dl-btn');
-    btn.hidden = !(v.kind === 'none' || v.kind === 'failed');
+    btn.hidden = !(v.kind === 'none' || v.kind === 'failed') || !can('fetch');
     btn.textContent = v.kind === 'failed' ? 'Retry' : 'Download';
     $('mini-artist').textContent = v.kind === 'none' ? song.artist || '' : dlText(v, true);
   } else if (song) {

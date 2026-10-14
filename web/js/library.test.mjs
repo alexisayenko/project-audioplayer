@@ -87,6 +87,35 @@ test('rows are sorted by recently added; counts, durations and BPM are shown', a
   cleanup();
 });
 
+test('search matches the remix field: whole string, each token, case-insensitive; other fields unchanged', async () => {
+  const songs = [
+    { id: 'r1', title: 'One', artist: 'Aa', remixer: 'Tiesto - Armin Van Buuren', file: 'r1.mp3', added_at: '2024-01-01', tags: [] },
+    { id: 'r2', title: 'Two', artist: 'Bb', remixer: '', file: 'r2.mp3', added_at: '2024-01-02', tags: [] },
+    { id: 'r3', title: 'Three', artist: 'Cc', file: 'r3.mp3', added_at: '2024-01-03', tags: ['chill'] },
+  ];
+  setStore(songs);
+  stubFetch(() => ({ body: { songs } }));
+  const { search, cleanup } = mount();
+  await flush();
+  const ids = () => visibleSongs().map((s) => s.id).sort();
+  search('tiesto');
+  assert.deepEqual(ids(), ['r1']);
+  search('ARMIN van');
+  assert.deepEqual(ids(), ['r1']);
+  search('tiesto - armin');
+  assert.deepEqual(ids(), ['r1']);
+  search('remix');
+  assert.deepEqual(ids(), []);
+  search('two');
+  assert.deepEqual(ids(), ['r2']);
+  search('cc');
+  assert.deepEqual(ids(), ['r3']);
+  search('chill');
+  assert.deepEqual(ids(), ['r3']);
+  search('');
+  cleanup();
+});
+
 test('search matches title, artist and tag text case-insensitively; no match shows a hint', async () => {
   setStore(SONGS);
   stubFetch(() => ({ body: { songs: SONGS } }));

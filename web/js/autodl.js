@@ -2,6 +2,7 @@ import { api } from './api.js';
 import { store } from './store.js';
 import * as D from './dl-queue.js';
 import { storeGet, storeSet } from './storage.js';
+import { isGuest } from './guest.js';
 
 const KEY = 'ap2.autodl';
 const MAX_RUNNING = 1;
@@ -10,7 +11,7 @@ const POLL_FAILS = 4;
 const FINISH_HOLD = 600;
 
 export function autoDownloadOn() {
-  return storeGet(KEY) === '1';
+  return !isGuest() && storeGet(KEY) === '1';
 }
 
 export function setAutoDownload(on) {

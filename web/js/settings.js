@@ -4,6 +4,7 @@ import { store } from './store.js';
 import { player } from './player.js';
 import { autoDownloadOn, setAutoDownload } from './autodl.js';
 import { el, pageHead } from './dom.js';
+import { isGuest, ownerLabel } from './guest.js';
 
 const GSI = 'https://accounts.google.com/gsi/client';
 const APPLE = 'https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js';
@@ -96,7 +97,8 @@ function accountSection() {
   }
   const box = el('div', { class: 'signin-box' });
   void setupProviders(box, out);
-  return el('div', { class: 'account' }, el('p', { class: 'muted t-subhead' }, 'Sign in to see your library, add songs and play them.'), box, out);
+  const intro = isGuest() ? `You are viewing ${ownerLabel()}'s library (read-only). Sign in to build your own.` : 'Sign in to see your library, add songs and play them.';
+  return el('div', { class: 'account' }, el('p', { class: 'muted t-subhead' }, intro), box, out);
 }
 
 const SYNC_TEXT = { ok: 'In sync with git', error: 'Not reaching git (retrying)' };
@@ -140,6 +142,10 @@ function playbackCard() {
 }
 
 export function renderSettings(root) {
+  if (isGuest()) {
+    root.append(pageHead('Settings', `You are viewing ${ownerLabel()}'s library.`), el('div', { class: 'settings-grid' }, accountCard()));
+    return null;
+  }
   let card = libraryCard();
   const unsub = store.subscribe(() => { const next = libraryCard(); card.replaceWith(next); card = next; });
   root.append(pageHead('Settings', 'Your library and storage on this server.'), el('div', { class: 'settings-grid' }, accountCard(), playbackCard(), ...(auth.email ? [card] : [])));

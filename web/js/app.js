@@ -1,16 +1,19 @@
-import { isSignedIn, session } from './api.js';
+import { api, isSignedIn, session } from './api.js';
+import { isGuest, setGuest, streamable, syncBanner } from './guest.js';
+import { toast } from './dom.js';
 import { initPlayer, pausePlayer } from './player.js';
 import { store } from './store.js';
 import { renderLibrary } from './library.js';
 import { openAdd } from './add.js';
 import { renderSettings } from './settings.js';
 import { renderGenres } from './genres.js';
+import { renderStats } from './stats.js';
 import { loadCollapsed, saveCollapsed } from './sidebar-state.js';
 import { SYNC_POLL_MS } from './constants.js';
 
 const player = document.getElementById('player');
 const renderPlayback = () => { player.hidden = false; return () => { player.hidden = true; }; };
-const routes = { library: renderLibrary, playback: renderPlayback, genres: renderGenres, settings: renderSettings };
+const routes = { library: renderLibrary, playback: renderPlayback, genres: renderGenres, stats: renderStats, settings: renderSettings };
 const view = document.getElementById('view');
 let cleanup = null;
 
@@ -22,11 +25,11 @@ function route() {
     history.replaceState(null, '', '#/library');
   }
   if (!routes[name]) name = 'library';
-  if (!isSignedIn() && name !== 'settings') {
+  if (!isSignedIn() && !isGuest() && name !== 'settings') {
     location.hash = '#/settings';
     return;
   }
-  document.body.classList.toggle('signed-out', !isSignedIn());
+  document.body.classList.toggle('signed-out', !isSignedIn() && !isGuest());
   if (cleanup) cleanup();
   view.replaceChildren();
   document.body.dataset.route = name;
@@ -56,17 +59,57 @@ sideToggle.addEventListener('click', () => {
   saveCollapsed(localStorage, next);
 });
 window.addEventListener('hashchange', route);
-window.addEventListener('auth-changed', () => {
-  if (!isSignedIn()) pausePlayer();
+const stage = view.parentNode;
+let shownGuest = false;
+
+function syncGuestUi() {
+  document.body.classList.toggle('guest', isGuest());
+  document.body.classList.toggle('guest-noaudio', isGuest() && !streamable());
+  syncBanner(stage, stage.firstChild, () => { location.hash = '#/settings'; });
+  shownGuest = isGuest();
+}
+
+async function enterGuest() {
+  try {
+    const me = await api.me();
+    if (me?.guest) {
+      setGuest(me);
+      await store.refresh();
+    }
+  } catch { /* 401: the public view is off, the sign-in gate stays */ }
+}
+
+async function onAuthChanged() {
+  const wasGuest = shownGuest;
+  if (!isSignedIn()) {
+    pausePlayer();
+    if (!isGuest()) {
+      syncGuestUi();
+      route();
+      await enterGuest();
+    }
+  } else if (wasGuest) {
+    pausePlayer();
+    store.songs = [];
+    store.loaded = false;
+    try { await store.refresh(); } catch { /* the library page shows the retry */ }
+  }
+  syncGuestUi();
   route();
-});
+}
+
+window.addEventListener('auth-changed', () => { void onAuthChanged(); });
+window.addEventListener('guest-limit', (e) => toast(e.detail));
 
 try {
   await session.restore();
   if (isSignedIn()) {
     try { await store.refresh(); } catch { /* refresh failure keeps the cached library */ }
+  } else {
+    await enterGuest();
   }
 } catch { /* restore failure leaves the app signed out */ }
+syncGuestUi();
 route();
 
 const warn = document.getElementById('sync-warn');

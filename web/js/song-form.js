@@ -26,6 +26,7 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
     remixer: tg.field('remixer', initial.remixer || ''),
     album: el('input', { type: 'text', value: initial.album || '' }),
     year: el('input', { type: 'number', value: initial.year ?? '', min: 0, max: 3000 }),
+    remixYear: el('input', { type: 'number', value: initial.remix_year ?? '', min: 1900, max: 2100 }),
   };
   const editor = tagEditor({ tags: initial.tags || [], suggested: isAdd ? initial.tags || [] : [], year: f.year, hideNs: true });
   const genres = chipField('genre', editor);
@@ -159,7 +160,7 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
 
   const node = el('div', { class: 'add-fields' },
     tc.node, field('Artist', f.artist),
-    field('Remix & additional production', f.remixer),
+    el('div', { class: 'remix-row' }, field('Remix & additional production', f.remixer), field('Remix year', f.remixYear)),
     hint,
     el('div', { class: 'meta-row' }, metaBtn, icons.node),
     metaMsg,
@@ -183,6 +184,7 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
       remixer: f.remixer.value,
       album: f.album.value,
       year: f.year.value,
+      remix_year: f.remixYear.value,
       tags: editor.getTags(),
       ...wiki.values(),
       musicbrainz_url: mbUrl,
@@ -192,6 +194,7 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
   const setValues = (p = {}) => {
     for (const k of ['title', 'artist', 'remixer', 'album']) if (p[k] !== undefined) f[k].value = p[k] ?? '';
     if (p.year !== undefined) f.year.value = p.year ?? '';
+    if (p.remix_year !== undefined) f.remixYear.value = p.remix_year ?? '';
     wiki.set({ song: p.wikipedia_song, artist: p.wikipedia_artist });
     emit();
   };
@@ -211,7 +214,7 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
       metaBtn.textContent = 'Get metadata';
       tc.clearRestored();
       tc.paintCleaned(first.removed);
-      setValues({ title: startTitle, artist: initial.artist || '', remixer: initial.remixer || '', album: initial.album || '', year: initial.year ?? '', wikipedia_song: initial.wikipedia_song || '', wikipedia_artist: initial.wikipedia_artist || '' });
+      setValues({ title: startTitle, artist: initial.artist || '', remixer: initial.remixer || '', album: initial.album || '', year: initial.year ?? '', remix_year: initial.remix_year ?? '', wikipedia_song: initial.wikipedia_song || '', wikipedia_artist: initial.wikipedia_artist || '' });
     },
     destroy() {
       abortAll();

@@ -27,6 +27,7 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
   let tf = { k: 1, x: 0, y: 0 };
   let nodes = [];
   let links = [];
+  let marked = new Set();
   let sim = null;
   let byId = new Map();
   let nbr = new Map();
@@ -194,6 +195,13 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
     ctx.lineWidth = 1.5 / k;
     ctx.strokeStyle = colors.halo;
     ctx.stroke();
+    if (marked.has(n.id)) {
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, n.r + 6 / k, 0, Math.PI * 2);
+      ctx.lineWidth = 2 / k;
+      ctx.strokeStyle = colors.ring;
+      ctx.stroke();
+    }
     if (n === selected || n === hover) {
       ctx.beginPath();
       ctx.arc(n.x, n.y, n.r + 3 / k, 0, Math.PI * 2);
@@ -381,6 +389,13 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
     fitTo(group, { maxK: 2.4 });
   }
 
+  function setMarked(ids) { marked = new Set(ids); request(); }
+
+  function fitIds(ids) {
+    const list = ids.map((id) => byId.get(id)).filter(Boolean);
+    if (list.length) { userMoved = true; fitTo(list, { maxK: 2.4 }); }
+  }
+
   function fit() { userMoved = false; fitTo(nodes.filter(visible), { animate: false }); }
 
   function setData(graph) {
@@ -455,7 +470,7 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
   canvas.style.cursor = 'grab';
 
   return {
-    setData, update, setInsets, setHiddenFamilies, select, focus, fit, setActive, resize, refreshColors: onScheme,
+    setData, update, setInsets, setMarked, fitIds, setHiddenFamilies, select, focus, fit, setActive, resize, refreshColors: onScheme,
     zoom: (f) => zoomAt(f, W / 2, H / 2),
     nodeCount: () => nodes.length,
     destroy() {

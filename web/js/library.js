@@ -6,11 +6,13 @@ import { autodl } from './autodl.js';
 import { ringModel } from './dl-progress.js';
 import { paintRing, paintLine } from './dl-ring.js';
 import { openAdd } from './add.js';
+import { can } from './guest.js';
 import { ROW_FLASH_MS } from './constants.js';
 import { findRowIndex, scrollTarget, registerRevealer } from './reveal.js';
 import { tagLabel, categoryOf, CATEGORIES } from './tagname.js';
 import { prefs, SORTS, visibleSongs, selectedIn } from './library-data.js';
 import { songRow } from './library-rows.js';
+import { disposeAll } from './marquee.js';
 import { isRowControl } from './row-cover.js';
 import { openSongCard } from './song-card.js';
 import { openFilterSheet } from './library-toolbar.js';
@@ -22,7 +24,7 @@ let flashTimer;
 
 export function renderLibrary(root) {
   const search = el('input', {
-    type: 'search', placeholder: 'Search songs, artists, albums', value: prefs.query,
+    type: 'search', placeholder: 'Search title, artist, album, remix or tag', value: prefs.query,
     'aria-label': 'Search',
     oninput: (e) => { prefs.query = e.target.value; renderList(); },
   });
@@ -67,7 +69,7 @@ export function renderLibrary(root) {
         el('p', { class: 't-eyebrow' }, 'ELECTROPHONE'),
         el('h1', { class: 't-display' }, 'Library')),
       el('div', { class: 'head-actions' }, total,
-        el('button', { class: 'btn primary glow', type: 'button', onclick: openAdd }, icon('plus', 18), 'Add song'))),
+        can('add') ? el('button', { class: 'btn primary glow', type: 'button', onclick: openAdd }, icon('plus', 18), 'Add song') : null)),
     el('div', { class: 'toolbar' },
       el('label', { class: 'search' }, icon('search', 18), search),
       cats),
@@ -113,6 +115,7 @@ export function renderLibrary(root) {
       ? [el('li', { class: 'empty muted t-subhead' }, 'No songs match. Clear the search or the filters.')]
       : [];
     const focusedId = document.activeElement?.classList?.contains('row-cover') ? document.activeElement.closest('li.song')?.dataset.id : null;
+    disposeAll(list);
     list.replaceChildren(...empty, ...songs.map((s) => songRow(s, cur, flashId)));
     if (focusedId) list.querySelectorAll('li.song').find((r) => r.dataset.id === focusedId)?.querySelector('.row-cover')?.focus();
   }
@@ -186,7 +189,7 @@ export function renderLibrary(root) {
       status.replaceChildren(el('div', { class: 'state card' },
         el('p', { class: 't-headline' }, 'No songs yet'),
         el('p', { class: 'muted t-subhead' }, 'Paste a YouTube or SoundCloud link to save the song to your library.'),
-        el('button', { class: 'btn primary glow', type: 'button', onclick: openAdd }, icon('plus', 18), 'Add song')));
+        can('add') ? el('button', { class: 'btn primary glow', type: 'button', onclick: openAdd }, icon('plus', 18), 'Add song') : null));
     } else {
       status.replaceChildren();
     }
