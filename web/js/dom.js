@@ -32,12 +32,17 @@ export function fmtTime(sec) {
 export const plural = (n, one, other) => (n === 1 ? one : other);
 
 let toastTimer;
-export function toast(text) {
+export function toast(text, action) {
   const t = document.getElementById('toast');
   t.textContent = text;
+  if (action) {
+    const b = el('button', { type: 'button', class: 'toast-act' }, action.label);
+    b.addEventListener('click', () => { t.hidden = true; clearTimeout(toastTimer); action.run(); });
+    t.append(b);
+  }
   t.hidden = false;
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { t.hidden = true; }, 3000);
+  toastTimer = setTimeout(() => { t.hidden = true; }, action ? 6000 : 3000);
 }
 
 export function pageHead(title, sub) {

@@ -159,17 +159,29 @@ export function removeTags(state, remove) {
 
 export const clean = (state) => removeTags(state, state.tags);
 
-export function removeAt(state, i) {
-  if (i <= state.index || i >= state.items.length) return state;
-  return { ...state, items: state.items.filter((_, k) => k !== i) };
+// Removes the row at i. The current song is followed by identity: a row before it shifts the index down.
+// Removing the current row makes the row that slid into its place current (the last row if it was last; -1 if none left)
+// and reports currentRemoved so the caller can advance to a playable song or stop.
+export function removeItem(state, i) {
+  if (!Number.isInteger(i) || i < 0 || i >= state.items.length) return { state, currentRemoved: false };
+  const items = state.items.filter((_, k) => k !== i);
+  const currentRemoved = i === state.index;
+  let index = state.index;
+  if (i < index) index -= 1;
+  else if (currentRemoved) index = Math.min(i, items.length - 1);
+  return { state: { ...state, items, index }, currentRemoved };
 }
 
-export function move(state, i, delta) {
+// Swaps the row at i with its neighbour (delta -1 or +1); the current song stays current wherever it lands.
+export function moveItem(state, i, delta) {
   const j = i + delta;
-  if (i <= state.index || j <= state.index || j >= state.items.length) return state;
+  if (!Number.isInteger(i) || i < 0 || i >= state.items.length || j < 0 || j >= state.items.length) return state;
   const items = [...state.items];
   [items[i], items[j]] = [items[j], items[i]];
-  return { ...state, items };
+  let index = state.index;
+  if (index === i) index = j;
+  else if (index === j) index = i;
+  return { ...state, items, index };
 }
 
 export function syncLibrary(state, exists) {
@@ -207,4 +219,13 @@ export function clearUpcoming(state) {
   const removed = Math.max(0, state.items.length - keep);
   const items = state.items.slice(0, keep).map((it) => ({ ...it, tags: [] }));
   return { state: { items, index: state.index, tags: [] }, removed };
+}
+
+export const queuedSet = (state) => new Set(state.items.map((it) => it.id));
+
+export function toggleQueued(state, id) {
+  const i = state.items.findIndex((it) => it.id === id);
+  if (i >= 0) return { ...removeItem(state, i), action: 'removed' };
+  const { state: next, result } = addManual(state, id);
+  return { state: next, currentRemoved: false, action: result };
 }

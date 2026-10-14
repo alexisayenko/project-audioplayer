@@ -10,6 +10,7 @@ import { openMenu, closeMenu, initMenus } from './menu.js';
 import { downloadSong } from './download.js';
 import { autodl, autoDownloadOn } from './autodl.js';
 import { editDialog, dialogHead } from './edit-dialog.js';
+import { requestReveal } from './reveal.js';
 
 const audio = document.getElementById('audio');
 const $ = (id) => document.getElementById(id);
@@ -93,6 +94,8 @@ function jumpTo(i, remember = true) {
   load(true);
 }
 
+const qsSet = { for: null, ids: new Set() };
+
 export const player = {
   get current() { const it = qs.items[qs.index]; return it ? store.get(it.id) || null : null; },
   get playing() { return !audio.paused; },
@@ -110,6 +113,17 @@ export const player = {
     const { state, result } = Q.addManual(qs, id);
     commit(state);
     return result;
+  },
+
+  inQueue(id) {
+    if (qsSet.for !== qs) { qsSet.for = qs; qsSet.ids = Q.queuedSet(qs); }
+    return qsSet.ids.has(id);
+  },
+
+  toggleInPlaylist(id) {
+    const i = qs.items.findIndex((it) => it.id === id);
+    if (i >= 0) { player.removeAt(i); return 'removed'; }
+    return player.add(id);
   },
 
   addTags(tags) {
@@ -160,8 +174,27 @@ export const player = {
     render();
   },
 
-  removeAt(i) { commit(Q.removeAt(qs, i)); },
-  move(i, delta) { commit(Q.move(qs, i, delta)); },
+  removeAt(i) {
+    const wasPlaying = !audio.paused;
+    const { state, currentRemoved } = Q.removeItem(qs, i);
+    if (state === qs) return;
+    if (!currentRemoved) { commit(state); return; }
+    qs = state;
+    let k = qs.index;
+    while (k >= 0 && k < qs.items.length && !usable(qs.items[k])) k += 1;
+    if (k >= 0 && k < qs.items.length && k >= i) {
+      qs = { ...qs, index: k };
+      saveQueue();
+      load(wasPlaying);
+    } else {
+      awaiting = null;
+      pausePlayer();
+      saveQueue();
+      if (qs.index >= 0) load(false); else render();
+    }
+    syncDownloads();
+  },
+  move(i, delta) { commit(Q.moveItem(qs, i, delta)); },
 
   setShuffle(on) {
     shuffle = !!on;
@@ -295,7 +328,7 @@ function render() {
   $('player-empty').hidden = !!song;
   $('details-body').hidden = !song;
   $('cover-text').hidden = !song;
-  $('p-more').hidden = !song;
+  $('p-edit').hidden = !song;
   $('p-download').hidden = !hasAudio(song);
   $('queue-count').textContent = n ? `${n} ${plural(n, 'song', 'songs')}` : '';
   renderPlaylistControls();
@@ -318,6 +351,7 @@ function render() {
     $('cover-art').classList.add('noart');
     $('player-dl').hidden = true;
     renderQueue();
+    listeners.forEach((fn) => fn());
     return;
   }
   const noNext = !Q.hasNext(logic());
@@ -325,6 +359,13 @@ function render() {
   $('p-next').disabled = noNext;
   $('mini-next').disabled = noNext;
   $('mini-title').textContent = song.title;
+  const inList = player.inQueue(song.id);
+  const pl = $('mini-playlist');
+  pl.setAttribute('aria-pressed', String(inList));
+  pl.classList.toggle('on', inList);
+  pl.title = inList ? 'In playlist - click to remove' : 'Add to current playlist';
+  pl.setAttribute('aria-label', pl.title);
+  pl.replaceChildren(icon(inList ? 'listCheck' : 'listAdd', 18));
   $('mini-artist').textContent = song.artist || '';
   $('player-title').textContent = song.title;
   $('player-sub').textContent = [song.artist, song.album, song.year].filter(Boolean).join(' · ');
@@ -373,14 +414,15 @@ function songRow(item, i) {
   if (s?.cover) cover.src = api.coverUrl(s.id);
   cover.addEventListener('error', () => cover.removeAttribute('src'));
   const title = s ? s.title : item.id;
-  const past = i <= qs.index;
   const more = el('button', {
     class: 'more', type: 'button', title: 'Song menu', 'aria-label': `Song menu: ${title}`, 'aria-haspopup': 'menu', 'aria-expanded': 'false',
   }, icon('more', 20));
   more.addEventListener('click', () => openMenu(more, [
-    { label: 'Move up', disabled: past || i - 1 <= qs.index, run: () => player.move(i, -1) },
-    { label: 'Move down', disabled: past || i + 1 >= qs.items.length, run: () => player.move(i, 1) },
-    { label: 'Remove', disabled: past, run: () => player.removeAt(i) },
+    ...(s ? [{ label: 'Edit song', run: () => editDialog(s) }] : []),
+    ...(hasAudio(s) ? [{ label: 'Download', run: () => downloadSong(s) }] : []),
+    { label: 'Move up', disabled: i === 0, run: () => player.move(i, -1) },
+    { label: 'Move down', disabled: i === qs.items.length - 1, run: () => player.move(i, 1) },
+    { label: 'Remove', run: () => player.removeAt(i) },
   ]));
   return el('li', { class: `qrow${i === qs.index ? ' current' : ''}${s && !hasAudio(s) ? ' no-audio' : ''}`, 'aria-current': i === qs.index ? 'true' : null },
     el('span', { class: 'c-idx t-time' }, i + 1),
@@ -558,7 +600,9 @@ export function initPlayer() {
   setIcon('mini-prev', 'prev', 18);
   setIcon('mini-next', 'next', 18);
   setIcon('mini-shuffle', 'shuffle', 18);
-  setIcon('p-more', 'more', 20);
+  setIcon('p-edit', 'pencil', 20);
+  setIcon('mini-edit', 'pencil', 18);
+  setIcon('mini-locate', 'locate', 18);
   setIcon('p-download', 'download', 20);
   $('cover-toggle').addEventListener('click', () => {
     player.toggle();
@@ -591,10 +635,13 @@ export function initPlayer() {
     toast(n ? `Cleared ${n} ${plural(n, 'song', 'songs')}` : 'Tag chips cleared');
   });
   $('mini-open').addEventListener('click', () => { location.hash = '#/playback'; });
-  $('p-more').addEventListener('click', () => {
-    const song = player.current;
-    if (song) openMenu($('p-more'), [...(hasAudio(song) ? [{ label: 'Download', run: () => downloadSong(song) }] : []), { label: 'Edit song', run: () => editDialog(song) }]);
+  $('mini-edit').addEventListener('click', () => { if (player.current) editDialog(player.current); });
+  $('mini-locate').addEventListener('click', () => { if (player.current) requestReveal(player.current.id); });
+  $('mini-playlist').addEventListener('click', () => {
+    const cur = player.current;
+    if (cur && player.toggleInPlaylist(cur.id) === 'removed') toast('Removed from playlist');
   });
+  $('p-edit').addEventListener('click', () => { if (player.current) editDialog(player.current); });
 
   document.addEventListener('keydown', (e) => {
     if (e.repeat || e.ctrlKey || e.metaKey || e.altKey || !player.current) return;

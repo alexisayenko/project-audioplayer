@@ -4,6 +4,7 @@ import { store } from './store.js';
 import { renderLibrary } from './library.js';
 import { openAdd } from './add.js';
 import { renderSettings } from './settings.js';
+import { loadCollapsed, saveCollapsed } from './sidebar-state.js';
 
 const player = document.getElementById('player');
 const renderPlayback = () => { player.hidden = false; return () => { player.hidden = true; }; };
@@ -38,6 +39,20 @@ function route() {
 }
 
 initPlayer();
+const sideToggle = document.getElementById('side-toggle');
+function setCollapsed(collapsed) {
+  document.body.classList.toggle('side-collapsed', collapsed);
+  const label = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
+  sideToggle.setAttribute('aria-expanded', String(!collapsed));
+  sideToggle.setAttribute('aria-label', label);
+  sideToggle.title = label;
+}
+setCollapsed(loadCollapsed(localStorage));
+sideToggle.addEventListener('click', () => {
+  const next = !document.body.classList.contains('side-collapsed');
+  setCollapsed(next);
+  saveCollapsed(localStorage, next);
+});
 window.addEventListener('hashchange', route);
 window.addEventListener('auth-changed', () => {
   if (!isSignedIn()) pausePlayer();
@@ -65,7 +80,10 @@ async function checkSync() {
     if (res.ok) state = (await res.json()).sync || 'ok';
   } catch { /* server unreachable: api calls report that */ }
   led.classList.toggle('down', !online);
-  ledText.textContent = online ? `Server online \u00b7 ${location.host}` : 'Server unavailable';
+  const serverText = online ? `Server online \u00b7 ${location.host}` : 'Server unavailable';
+  ledText.textContent = serverText;
+  led.parentElement.title = serverText;
+  led.parentElement.setAttribute('aria-label', serverText);
   warn.hidden = state === 'ok';
   warn.textContent = state === 'error'
     ? 'Library changes are not reaching git (retrying). Check the server.'

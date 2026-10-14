@@ -99,9 +99,9 @@ test('queue-logic', () => {
   assert.deepEqual(ids(pn), ['d', 'e', 'a', 'c']);
   assert.equal(pn.index, 1);
   assert.equal(pn.items[1].manual, true);
-  assert.deepEqual(ids(Q.move(a.state, 2, 1)), ['d', 'a', 'e', 'c']);
-  assert.deepEqual(ids(Q.move(a.state, 1, -1)), ids(a.state));
-  assert.deepEqual(ids(Q.removeAt(a.state, 2)), ['d', 'a', 'e']);
+  assert.deepEqual(ids(Q.moveItem(a.state, 2, 1)), ['d', 'a', 'e', 'c']);
+  assert.deepEqual(ids(Q.moveItem(a.state, 1, -1)), ['a', 'd', 'c', 'e']);
+  assert.deepEqual(ids(Q.removeItem(a.state, 2).state), ['d', 'a', 'e']);
   const sy = Q.syncLibrary({ ...a.state, index: 2 }, (id) => id !== 'a');
   assert.deepEqual(ids(sy.state), ['d', 'c', 'e']);
   assert.equal(sy.state.index, 1);
