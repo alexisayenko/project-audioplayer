@@ -82,6 +82,8 @@ relative audio file names only (replaces `AUDIO_DOWNLOAD_DIR`). Each save costs 
 | `POST /lookup/wikipedia` | suggested tags and year from user-edited Wikipedia links |
 | `POST /songs`, `GET /songs/{id}/status` | add song: with `audio:true` (default) a background download, with `audio:false` a catalog-only entry (what the web sends); poll progress |
 | `PATCH /songs/{id}`, `DELETE /songs/{id}`, `DELETE /songs/{id}/audio` | edit metadata/tags/bpm/remixer; remove record, audio, cover; remove only the audio |
+| `POST /songs/{id}/audio` | fetch audio for a catalog song (auto-download, API-060): 202 `downloading`/`queued`, 200 `done` when the audio is already there; same hourly counter and storage caps as add |
+| `GET /files/{id}?download=1` | the audio as a `Content-Disposition: attachment` file named `Artist - Title.m4a` (API-061); Range works |
 | `POST /songs/{id}/bpm/detect` | re-detect BPM (aubio) from the stored m4a |
 | `GET /covers/{video_id}` | cover jpg (`covers/<id>.jpg`) |
 | `GET /auth/config`, `POST /auth/session`, `POST /auth/logout`, `GET /auth/me` | web sign-in: public client ids; ID token to session cookie; clear cookie; current credentials |

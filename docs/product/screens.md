@@ -57,8 +57,8 @@ Web: a centred 560px dialog over Library (bottom-aligned sheet on phones): title
 
 Manages all songs.
 
-- One row per song in a single list card (web: table with a header row, LIB-010; columns cover / Track / Genres / Time / menu, with artist and year only in the Track cell's muted "Artist · Year" line and no #, Album, Artist or Year column, LIB-018): cover, title, genres, duration and a "..." menu with Play now, Add to playlist and Edit song (the Edit dialog also holds Delete; a song without server audio has only Edit song). On the web, clicking the title of a song with audio plays it and keeps the user on Library. The playing row has an accent wash. Tags and BPM are not shown in rows (filter by the category chips; BPM is on Playback and in Edit). Sort is the text button under the chips ("Recently added", Title, Artist, Year, BPM); a line on the right reads "N songs match · selected values" when filtered.
-- Search box (title, artist, album, tags). With a tag filter or search text active, an "Add all N to playlist" button appends all listed songs to the queue (toast "Added X songs (Y already in queue)"; a tag filter becomes a playlist chip, search-only adds are manual); hidden when nothing is filtered.
+- One row per song in a single list card (web: table with a header row, LIB-010; columns cover / Track / Genres / Time / menu, with artist and year only in the Track cell's muted "Artist · Year" line and no #, Album, Artist or Year column, LIB-018): cover, title, genres, duration and a "..." menu with Play now, Add to playlist, Download and Edit song (the Edit dialog also holds Delete; a song without server audio has only Edit song). On the web, clicking the title of a song with audio plays it and keeps the user on Library. The playing row has an accent wash. Tags and BPM are not shown in rows (filter by the category chips; BPM is on Playback and in Edit). Sort is the text button under the chips ("Recently added", Title, Artist, Year, BPM); a line on the right reads "N songs match · selected values" when filtered.
+- Search box (title, artist, album, tags). With a tag filter or search text active, an "Add all N to playlist" button appends all listed songs to the queue (toast "Added X songs (Y already in queue)"; a tag filter becomes a playlist chip, search-only adds are manual); hidden when nothing is filtered. A "Play all N" button next to it (always shown when songs are listed) replaces the queue with the listed songs and starts playing (toast "Playing N songs (queue replaced)"). Playback and Edit have a Download button (plain file save, WEB-034).
 - `decade:` tags are derived from Year by the server and show as "the 90s"; the tag editor previews the chip as Year changes.
 - Filter by tag (chips grouped by prefix: Genre, Decade, Country, then others; plain tags under Tags; `country:` values show as names, e.g. Lithuania; languages are not shown or filterable); sort (added date, title, artist, year, BPM; songs without BPM last).
 - The iOS song sheet and the Add form share one form (`SongFormView`, IOS-070): same fields in the same order (Album and Year, and the two Wikipedia fields, side by side), Get metadata, service icons and both Wikipedia link fields; only the BPM row differs. The song sheet has the same separate Genres and Countries fields as Add; its generic tag editor hides `genre:`, `country:` and `lang:` tags.
@@ -67,6 +67,8 @@ Manages all songs.
   record) from the Edit dialog.
 
 ### 3. Player (Playback tab)
+
+Web updates (2026-10-14): the cover is a play/pause button with a translucent icon overlay (PLY-016); the queue "Clear" button drops every upcoming song and all chips and is disabled with a tooltip when there is nothing to clear (PLY-034); with Settings > Playback > "Auto-download songs" on, songs without audio can be queued and show Queued / Downloading N% / limit-pause / Failed-Retry states in the queue and in a banner under the cover, off shows "Not downloaded" with a Download button (PLY-110..116).
 
 SUPERSEDED for the web by the two-column layout in Navigation above (PLY-001); the four-block layout below is the older design, kept for reference only.
 
@@ -88,7 +90,7 @@ not scroll; block 4 takes the remaining height and scrolls inside.
 |  ---o------------------------ (thin scrub) |
 +--------------------------------------------+
 | 3. PLAYLIST CONTROLS                       |
-|  [shuffle] [loop 1] [loop all] Clean playlist
+|  [shuffle] [loop 1] [loop all]
 |  (tag1 x) (tag2 x)  [+]         N songs    |
 +--------------------------------------------+
 | 4. CURRENT PLAYLIST          (scrolls) |###|
@@ -124,8 +126,9 @@ drafts, both SUPERSEDED:
    - Shuffle toggle (`aria-pressed`).
    - Loop one song toggle and loop whole list toggle, mutually exclusive
      (turning one on turns the other off; both off = stop at the end).
-   - **Clean playlist**: removes all selected tags (chips) together with the
-     songs those tags contributed; see rules below.
+   - The queue card header (not this row) has **Add by tag** and **Clear**: Clear
+     removes every upcoming song and all tag chips; the current and played
+     songs stay (PLY-034).
    - Chips = the currently selected tags, each with an x; **+** opens the tag
      picker; song count on the right.
 4. **Current playlist**: rows look like Library cards (cover, title,
@@ -153,7 +156,7 @@ drafts, both SUPERSEDED:
   ANY picked tag (union) to the end of the queue, dedupes, and shows the
   picked tags as chips. Deselecting a selected tag in the picker removes it
   like the chip's x.
-- **Removing a tag** (chip x, or Clean playlist for all chips) removes the
+- **Removing a tag** (chip x) removes the
   songs it contributed only if they are upcoming (after the current song),
   not manual, and not held by another remaining chip. The current song keeps
   playing; played songs and songs added manually stay. Manual wins if a song

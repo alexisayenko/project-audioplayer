@@ -33,7 +33,7 @@ ADRs: ADR-0003 (web), ADR-0004 (hosting), ADR-0001 (storage scale).
 ## Browsers and offline
 
 - NFR-040 MUST: the web UI is plain HTML, CSS and ES modules, no build step, no framework; the only external scripts are Google Identity Services and the Apple JS SDK, loaded on Settings for sign-in (WEB-002); it targets current evergreen browsers incl. iOS Safari (uses `<dialog>`, ES modules, Media Session). Status: implemented
-- NFR-041 MUST: the web UI is online only: no service worker, no offline storage, no audio cache (so nothing authenticated outlives sign-out, API-024). Offline listening is an iOS-app feature. Status: implemented
+- NFR-041 MUST: the web UI is online only: no service worker, no offline storage, no audio cache (a user-initiated "Download" is a plain browser file save to the device, WEB-034, not an offline cache) (so nothing authenticated outlives sign-out, API-024). Offline listening is an iOS-app feature. Status: implemented
 - NFR-042 MUST: the layout works at phone width. Status: to-confirm (not verified in this pass)
 - NFR-043 MUST: the iOS app (`ios/`, SwiftUI) uses the same API and plays downloaded songs offline; its requirements are in [ios.md](ios.md). Status: implemented
 
@@ -45,3 +45,4 @@ ADRs: ADR-0003 (web), ADR-0004 (hosting), ADR-0001 (storage scale).
 - NFR-053 MUST: privacy: a user's email is stored only inside `audioplayer/users/<uid>/profile.json` of the private data repo (with provider, creation time and, for Apple, the opaque `sub`); it is never in a path, file name or commit message. Git history is permanent: deleting a user later does not erase the email from history. The operator (Alex) can read every user's library and profile. Status: implemented
 - NFR-054 SHOULD: `/search`, `/preview` and `/lookup/wikipedia` are not limited per user (they use external services, not storage); add a limit if abused. Status: planned
 - NFR-055 MUST: hourly counters live in memory; a restart relearns them from `added_at` of the current songs. Status: implemented
+- NFR-056 MUST: audio fetches for songs already in the catalog (`POST /songs/{id}/audio`, API-060, used by the web "Auto-download songs" setting, PLY-110) count against `USER_ADDS_PER_HOUR` like any add, so auto-download cannot exceed the hourly quota; the owner is exempt. The client downloads one song at a time, polls with backoff (1 s, 2 s, 3 s, then 5 s) and on 429 pauses until `retry_after_minutes` has passed before trying again, so a long queue never hammers the server. Status: implemented

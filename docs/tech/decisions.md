@@ -51,6 +51,7 @@ Status: Accepted · 2026-10-12
 
 - A song has zero or more free-form tags; a "playlist" is a tag filter.
   There is no playlist entity.
+- Sub-decision (2026-10-14): `country:` and `lang:` tag values are canonicalised to ISO codes (alpha-2 / 639-1) from an embedded table with aliases, on write and on load, so `usa`, `United States` and `us` are one filter entry. `country:` accepts only known countries (422 `unknown_country`); legacy unmapped values stay and are flagged; `lang:` unknown values stay free ([tags.md](../specs/tags.md) TAG-056, TAG-057).
 - Song fields: `artist`, `title`, optional `album`, `year`,
   plus `source_url`, `cover`, `tags[]` and technical `id`, `duration`,
   `added_at`.
@@ -121,6 +122,7 @@ Status: Accepted · 2026-10-12
   evicts it and limits quota). Offline listening belongs to the iOS app
   (`ios/`, SwiftUI), built later against the same API, with a "download
   to device" option.
+- Sub-decision (2026-10-14, download to device): the web may offer "Download", a normal browser file save of the audio (`GET /files/{id}?download=1`, `Content-Disposition: attachment`, filename `Artist - Title.m4a`), triggered by a plain `<a download>`. It is not an offline cache: no service worker, no stored copy, no change to "online only" playback (API-061, WEB-034).
 - Sub-decision (queue): the "current playlist" is a client-side play
   queue (song ids + current index in `localStorage`, no server state), not
   the filtered library list. Library cards offer Play now (insert after the
@@ -392,6 +394,8 @@ holds). Concept: [`docs/product/concept-catalog-and-audio.md`](../product/concep
   confirm, and catalog vs audio can drift (see concerns).
 - Web (2026-10-13): the web UI is catalog-only: it saves entries with `audio:false`, shows songs without server audio as a greyed row with an Open on YouTube/SoundCloud link (no "Not on the server" label), never queues them, and plays/deletes only audio already on the server (WEB-015, WEB-023); the iOS "Add and download to iPhone" is the only path that puts audio on the server.
 - Implementation: server P1 (task-0006) is implemented: `file` may be `null`, `sources` list, derived `audio_state` (`none`/`server`), `GET /catalog`, metadata-only `POST /songs`, `DELETE /songs/{id}/audio`. Old records are not migrated; state is derived at read time. Remaining specs are `planned` (CAT-*), tasks task-0007.. (phases P2..P6).
+
+- Auto-download on the web (2026-10-14): the web gets a client setting "Auto-download songs" (default off). On, songs without server audio may be queued and their audio is fetched in the background through the new `POST /songs/{id}/audio` (state `none` to `server`; PLY-110..116, API-060); one fetch counts as one add against `USER_ADDS_PER_HOUR` (owner exempt, NFR-056), so the existing quotas still bound the cost; the client runs one download at a time and pauses on `hourly_limit`. Off, nothing is fetched automatically and a song without audio shows "Not downloaded" with a Download button. This amends the Web bullet above ("never queues them") only for the on case.
 
 ## ADR-0011 Multi-source song ids: YouTube unchanged, SoundCloud as `soundcloud-<track id>`
 
