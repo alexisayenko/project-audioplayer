@@ -1,7 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from app import extractor, genre_lookup as gl, main, wiki_lookup as wl
+from app import extractor, genre_lookup as gl, httpjson, main, wiki_lookup as wl
 
 
 @pytest.fixture(autouse=True)
@@ -87,9 +87,9 @@ def test_rate_limiter_and_user_agent(monkeypatch):
         seen["timeout"] = timeout
         return R()
 
-    monkeypatch.setattr(gl.urllib.request, "urlopen", fake_urlopen)
+    monkeypatch.setattr(httpjson.urllib.request, "urlopen", fake_urlopen)
     monkeypatch.setenv("AUDIO_MB_USER_AGENT", "test/1 (x@y.z)")
-    monkeypatch.setattr(gl, "_last_call", 100.0)
+    monkeypatch.setattr(gl._limiter, "last_call", 100.0)
     gl._get("recording/", {"query": "q"})
     assert sleeps
     assert abs(sleeps[0] - gl.MIN_INTERVAL) < 1e-6
@@ -179,7 +179,7 @@ def test_retries_once_on_503(monkeypatch):
             raise urllib.error.HTTPError(req.full_url, 503, "busy", {}, None)
         return Resp()
 
-    monkeypatch.setattr(gl.urllib.request, "urlopen", fake_open)
+    monkeypatch.setattr(httpjson.urllib.request, "urlopen", fake_open)
     assert gl._get("recording/", {}) == {"ok": 1}
     assert len(calls) == 2
 
@@ -229,7 +229,8 @@ def test_clean_tag_namespaces():
     assert library.clean_tag("LANG:RUS") == "lang:ru"
     assert library.clean_tag("lang:ru-RU") == "lang:ru"
     assert library.clean_tag("lang:Klingon") == "lang:klingon"
-    assert library.clean_tag("country:Lithuania") == "country:lithuania"
+    assert library.clean_tag("country:Lithuania") == "country:lt"
+    assert library.clean_tag("country:Atlantis") == "country:atlantis"
 
 
 _MIXED = ["genre:danish", "genre:dj", "genre:house music", "genre:house", *[f"genre:g{i}" for i in range(9)], "country:lt", "country:lv", "lang:en", "lang:de"]
@@ -404,3 +405,13 @@ def test_clean_recording_url_normalises(value):
 @pytest.mark.parametrize("value", [None, 5, "", "https://musicbrainz.org/artist/" + MBID, "https://evil.example/recording/" + MBID, "https://musicbrainz.org/recording/nope", "javascript:alert(1)"])
 def test_clean_recording_url_rejects_others(value):
     assert gl.clean_recording_url(value) is None
+
+
+def test_musicbrainz_su_is_suggested_other_pseudo_codes_dropped(monkeypatch):
+    gl._cache.clear()
+    monkeypatch.setattr(gl, "_get", fake_get([REC], {}, {"country": "SU"}))
+    assert gl.suggest_tags("Daft Punk", "X") == ["country:su"]
+    for code in ("XU", "XW"):
+        gl._cache.clear()
+        monkeypatch.setattr(gl, "_get", fake_get([REC], {}, {"country": code}))
+        assert gl.suggest_tags("Daft Punk", "X") == []

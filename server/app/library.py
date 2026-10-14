@@ -4,27 +4,29 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import os
 import re
-import tempfile
-import threading
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from . import genre_lookup, langcodes, urlclean, wiki_lookup
-
-LOCK = threading.RLock()
+from . import countrycodes, discogs_lookup, genre_lookup, langcodes, urlclean, wiki_lookup
+from .jsonio import write_json_atomic
+from .timeutil import max_year, now_utc  # noqa: F401
 
 _ROOT_RE = re.compile(r"^([A-Za-z][A-Za-z0-9_.-]+)://(.*)$")
 _DECADE_RE = re.compile(r"^\d{2}s$")
-DECADE_MIN, DECADE_MAX = 1950, 2029
+DECADE_MIN = 1950
 
 
 def file_name(song: dict[str, Any]) -> str:
     """Audio file name of a song, never a path."""
     default = f"{song.get('id', '')}.m4a"
     return Path(str(song.get("file") or default)).name or default
+
+
+def find_song(songs: list[dict[str, Any]], song_id: str) -> dict[str, Any] | None:
+    return next((s for s in songs if s["id"] == song_id), None)
 
 
 def has_file(song: dict[str, Any]) -> bool:
@@ -68,6 +70,7 @@ def public_song(song: dict[str, Any], root: Path | None) -> dict[str, Any]:
     state = audio_state(song, root)
     out["audio_state"] = state
     out["sources"] = sources_of(song)
+    out["remix_year"] = song.get("remix_year")
     if state == "server":
         name = file_name(song)
         size = None
@@ -87,10 +90,6 @@ def public_song(song: dict[str, Any], root: Path | None) -> dict[str, Any]:
 
 def updated_at(song: dict[str, Any]) -> str:
     return str(song.get("updated_at") or song.get("added_at") or "")
-
-
-def now_utc() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def catalog_revision(songs: list[dict[str, Any]]) -> str:
@@ -113,6 +112,8 @@ def normalize_song(song: dict[str, Any]) -> dict[str, Any]:
         s[key] = wiki_lookup.clean_link(s.get(key))
     if "musicbrainz_url" in s:
         s["musicbrainz_url"] = genre_lookup.clean_recording_url(s["musicbrainz_url"])
+    if "discogs_url" in s:
+        s["discogs_url"] = discogs_lookup.clean_url(s["discogs_url"])
     s.pop("original", None)
     if "remixer" in s:
         v = s["remixer"].strip() if isinstance(s["remixer"], str) else ""
@@ -143,10 +144,10 @@ def normalize(raw: Any) -> dict[str, Any]:
 
 
 def decade_tag(year: Any) -> str | None:
-    """`decade:90s` for 1950-2029, else None."""
-    if isinstance(year, bool) or not isinstance(year, int) or not DECADE_MIN <= year <= DECADE_MAX:
+    """`decade:90s` for every year from 1950 up to max_year(), else None."""
+    if isinstance(year, bool) or not isinstance(year, int) or not DECADE_MIN <= year <= max_year():
         return None
-    return f"decade:{year % 100 // 10 * 10:02d}s"
+    return f"decade:{year // 10 * 10 % 100:02d}s"
 
 
 def with_decade(tags: list[str], year: Any) -> list[str]:
@@ -171,26 +172,19 @@ def with_decade(tags: list[str], year: Any) -> list[str]:
 def load_doc(path: Path) -> dict[str, Any]:
     try:
         with open(path, encoding="utf-8") as f:
-            return normalize(json.load(f))
+            doc = normalize(json.load(f))
+        for song in doc["songs"]:
+            bad = unknown_countries(song.get("tags") or [])
+            if bad:
+                logging.getLogger(__name__).warning("song %s has unmapped country tags %s", song.get("id"), bad)
+        return doc
     except FileNotFoundError:
         return normalize({})
 
 
 def save_doc(path: Path, doc: dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
     out = {"settings": doc.get("settings") or {}, "songs": doc.get("songs") or []}
-    fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=".library-", suffix=".tmp")
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            json.dump(out, f, ensure_ascii=False, indent=2)
-            f.write("\n")
-            f.flush()
-            os.fsync(f.fileno())
-        os.replace(tmp, path)
-    except BaseException:
-        if os.path.exists(tmp):
-            os.unlink(tmp)
-        raise
+    write_json_atomic(path, out)
 
 
 def load(path: Path) -> list[dict[str, Any]]:
@@ -239,13 +233,25 @@ def clean_tag(tag: str) -> str:
     if sep and key and value:
         key, value = key.lower(), value.lower()
         if key == "lang":
-            value = langcodes.to_lang_code(value) or value
+            value = langcodes.canonical_lang(value) or value
+        elif key == "country":
+            value = countrycodes.canonical_country(value) or value
         elif key == "decade" and not _DECADE_RE.match(value):
             value = value.replace(" ", "")
         return f"{key}:{value}"
     if sep:
         return ""
     return " ".join(tag.split())
+
+
+def unknown_countries(tags: list[str]) -> list[str]:
+    """Values of `country:` tags that do not canonicalise to an ISO 3166-1 alpha-2 code (call on cleaned tags)."""
+    out = []
+    for t in tags:
+        key, _, value = str(t).partition(":")
+        if key.strip().lower() == "country" and value.strip() and countrycodes.canonical_country(value) is None:
+            out.append(" ".join(value.split()))
+    return out
 
 
 def clean_tags(tags: list[str]) -> list[str]:
@@ -266,3 +272,27 @@ def tag_counts(songs: list[dict[str, Any]]) -> list[dict[str, Any]]:
             e = counts.setdefault(t.casefold(), {"tag": t, "count": 0})
             e["count"] += 1
     return sorted(counts.values(), key=lambda e: e["tag"].casefold())
+
+
+_BAD_NAME = re.compile(r'[\x00-\x1f\x7f/\\:*?"<>|]')
+
+
+def download_name(song: dict[str, Any] | None, video_id: str, limit: int = 120) -> str:
+    """`Artist - Title.m4a` for a browser save: no path separators, control chars or quotes; falls back to `<id>.m4a`."""
+    parts = [str((song or {}).get(k) or "") for k in ("artist", "title")]
+    text = " - ".join(p for p in parts if p.strip())
+    text = " ".join(_BAD_NAME.sub(" ", text).split()).strip(" .")
+    text = text[:limit].strip(" .")
+    return f"{text}.m4a" if text else f"{video_id}.m4a"
+
+
+def content_disposition(name: str) -> str:
+    """RFC 6266 attachment header with an ASCII fallback and `filename*` for the real UTF-8 name."""
+    import unicodedata
+    from urllib.parse import quote
+
+    ascii_name = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode().replace("%", "_").replace('"', "_").replace(chr(92), "_")
+    stem, _, ext = ascii_name.rpartition(".")
+    if not stem.strip(" _-."):
+        ascii_name = f"download.{ext or 'm4a'}"
+    return f"attachment; filename=\"{ascii_name}\"; filename*=UTF-8''{quote(name, safe='')}"

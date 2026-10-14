@@ -1,3 +1,4 @@
+import { TOAST_MS, TOAST_ACTION_MS } from './constants.js';
 const TAG_STYLE = { label: 't-caption', small: 't-caption', h2: 't-title' };
 
 function setProp(node, k, v) {
@@ -32,12 +33,17 @@ export function fmtTime(sec) {
 export const plural = (n, one, other) => (n === 1 ? one : other);
 
 let toastTimer;
-export function toast(text) {
+export function toast(text, action) {
   const t = document.getElementById('toast');
   t.textContent = text;
+  if (action) {
+    const b = el('button', { type: 'button', class: 'toast-act' }, action.label);
+    b.addEventListener('click', () => { t.hidden = true; clearTimeout(toastTimer); action.run(); });
+    t.append(b);
+  }
   t.hidden = false;
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { t.hidden = true; }, 3000);
+  toastTimer = setTimeout(() => { t.hidden = true; }, action ? TOAST_ACTION_MS : TOAST_MS);
 }
 
 export function pageHead(title, sub) {

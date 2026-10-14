@@ -8,7 +8,7 @@ import pytest
 from cryptography.hazmat.primitives.asymmetric import rsa
 from fastapi.testclient import TestClient
 
-from app import extractor, limits, main, oauth, session, users
+from app import deps, downloads, extractor, limits, main, oauth, session, users
 from tests.test_library import ADIR, H, ODIR, OWNER_UID, VID, VID2, client  # noqa: F401
 
 AUD = "client.apps.googleusercontent.com"
@@ -194,7 +194,7 @@ def test_apple_sub_found_again_after_email_disappears(multi, tmp_path, monkeypat
     monkeypatch.setenv("APPLE_AUDIENCE", "com.example.app")
     first = {"Authorization": f"Bearer {token(multi.key, 'r@privaterelay.appleid.com', 'apple', sub='001.q')}"}
     add(multi, first)
-    main._subs.clear()
+    deps.SUBS.clear()
     bare = {"Authorization": f"Bearer {token(multi.key, '', 'apple', email=None, sub='001.q')}"}
     assert [s["id"] for s in multi.get("/library", headers=bare).json()["songs"]] == [VID]
 
@@ -276,14 +276,14 @@ def test_server_full_503_applies_to_owner_too(multi, monkeypatch):
 def test_queued_job_rechecks_capacity_when_it_starts(multi, monkeypatch):
     monkeypatch.setenv("POOL_MAX_BYTES", "5")
     key = (uid(ALICE), VID)
-    main.JOBS[key] = {"status": "downloading", "progress": 0.0, "error": None}
-    main._run_download(uid(ALICE), False, VID, {}, [], None)
-    st = main.JOBS[key]
+    deps.JOBS[key] = {"status": "downloading", "progress": 0.0, "error": None}
+    downloads.run_download(uid(ALICE), False, VID, {}, [], None)
+    st = deps.JOBS[key]
     assert st["status"] == "done"
-    main.JOBS[(uid(ALICE), VID2)] = {"status": "downloading", "progress": 0.0, "error": None}
-    main._run_download(uid(ALICE), False, VID2, {}, [], None)
-    assert main.JOBS[(uid(ALICE), VID2)]["status"] == "error"
-    assert main.JOBS[(uid(ALICE), VID2)]["code"] == "server_full"
+    deps.JOBS[(uid(ALICE), VID2)] = {"status": "downloading", "progress": 0.0, "error": None}
+    downloads.run_download(uid(ALICE), False, VID2, {}, [], None)
+    assert deps.JOBS[(uid(ALICE), VID2)]["status"] == "error"
+    assert deps.JOBS[(uid(ALICE), VID2)]["code"] == "server_full"
 
 
 def test_delete_frees_quota_and_usage_reports_it(multi, monkeypatch):
@@ -376,7 +376,7 @@ def wait_for(client, headers, vid, status, secs=10):
 @pytest.fixture
 def slow(multi, monkeypatch):
     """Real worker threads; each download waits for its own gate."""
-    monkeypatch.setattr(main.SCHED, "inline", False)
+    monkeypatch.setattr(deps.SCHED, "inline", False)
     gates: dict[str, threading.Event] = {}
     started: list[tuple[str, str]] = []
 
@@ -454,3 +454,51 @@ def test_queued_adds_count_against_the_songs_quota(slow, monkeypatch):
     r = add(slow, a, VID3)
     assert r.status_code == 403
     assert r.json()["error"] == "library_full_songs"
+
+
+def test_download_headers_and_names(multi, tmp_path):
+    a, b = who(multi, ALICE), who(multi, BOB)
+    assert add(multi, a).status_code == 202
+    plain = multi.get(f"/files/{VID}", headers=a)
+    assert plain.status_code == 200
+    r = multi.get(f"/files/{VID}", params={"download": 1}, headers=a)
+    assert r.content == b"audio"
+    assert r.headers["content-disposition"].startswith('attachment; filename="')
+    assert r.headers["content-disposition"].endswith(".m4a")
+    ranged = multi.get(f"/files/{VID}", params={"download": 1}, headers={**a, "Range": "bytes=1-2"})
+    assert ranged.status_code == 206
+    assert ranged.content == b"ud"
+    assert multi.get(f"/files/{VID}", headers={**a, "Range": "bytes=0-1"}).status_code == 206
+    r = multi.get(f"/files/{VID}", params={"download": 1}, headers=b)
+    assert r.status_code == 404
+    assert "content-disposition" not in r.headers
+
+
+def test_download_missing_audio_code(multi):
+    a = who(multi, ALICE)
+    assert add(multi, a).status_code == 202
+    assert multi.delete(f"/songs/{VID}/audio", headers=a).status_code == 204
+    r = multi.get(f"/files/{VID}", params={"download": 1}, headers=a)
+    assert r.status_code == 404
+    assert r.json()["error"] == "audio_not_downloaded"
+
+
+def test_download_name_sanitising():
+    from urllib.parse import unquote
+
+    from app import library as lib
+
+    name = lib.download_name({"artist": "AC/DC", "title": 'Back "In" Black?\x00'}, VID)
+    assert name == "AC DC - Back In Black.m4a"
+    assert lib.download_name({"artist": "", "title": ""}, VID) == f"{VID}.m4a"
+    assert lib.download_name({"artist": "Кино", "title": "Группа крови 🎸"}, VID) == "Кино - Группа крови 🎸.m4a"
+    assert lib.download_name(None, VID) == f"{VID}.m4a"
+    assert len(lib.download_name({"title": "x" * 500}, VID)) <= 124
+    assert lib.download_name({"title": "..BS..BSetc".replace("BS", chr(92))}, VID) == "etc.m4a"
+    cd = lib.content_disposition("Кино - Группа.m4a")
+    assert cd.startswith('attachment; filename="download.m4a"')
+    assert unquote(cd.split("UTF-8''")[1]) == "Кино - Группа.m4a"
+    cd = lib.content_disposition("Beyoncé - Halo.m4a")
+    assert 'filename="Beyonce - Halo.m4a"' in cd
+    assert "%C3%A9" in cd
+    assert '"' not in lib.content_disposition('a"b.m4a').split("filename=", 1)[1].split(";")[0][1:-1]

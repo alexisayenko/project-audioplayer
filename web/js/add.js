@@ -1,4 +1,5 @@
 import { api } from './api.js';
+import { autodl, autoDownloadOn } from './autodl.js';
 import { store } from './store.js';
 import { el, fmtTime, toast } from './dom.js';
 import { icon } from './icons.js';
@@ -6,12 +7,15 @@ import { cleanPasted, sourceOf, sourceLabel } from './url-clean.js';
 import { findInLibrary } from './library-match.js';
 import { dialogHead } from './edit-dialog.js';
 import { songForm } from './song-form.js';
-import { addBody } from './song-payload.js';
+import { ADD_ROW_OUTLINE_MS } from './constants.js';
+import { addBody, yearError } from './song-payload.js';
+import { can } from './guest.js';
 
 const BULK = new Set(['insertFromPaste', 'insertFromPasteAsQuotation', 'insertFromDrop', 'insertReplacementText']);
 const PREVIEW_ONLY = 'Preview only \u2014 SoundCloud Go+ track, can\'t be downloaded in full.';
 
 export function openAdd() {
+  if (!can('add')) return;
   const dlg = document.getElementById('add-dialog');
   let preview = null;
   let sf = null;
@@ -45,7 +49,7 @@ export function openAdd() {
     if (!row) { toast('Clear the search or filters to see it'); return; }
     row.scrollIntoView({ block: 'center', behavior: 'smooth' });
     row.style.outline = '2px solid var(--accent-ink)';
-    setTimeout(() => { row.style.outline = ''; }, 2500);
+    setTimeout(() => { row.style.outline = ''; }, ADD_ROW_OUTLINE_MS);
   };
   const checkKnown = () => {
     const song = store.loaded ? findInLibrary(url.value, store.songs) : null;
@@ -127,11 +131,17 @@ export function openAdd() {
 
     card.addEventListener('submit', async (e) => {
       e.preventDefault();
-      save.disabled = true;
       const v = sf.values();
+      const bad = yearError(v);
+      if (bad) {
+        err.replaceChildren(el('p', { class: 'msg error' }, bad));
+        return;
+      }
+      save.disabled = true;
       try {
-        await api.addSong(preview.source_url, addBody(v), v.tags);
+        const added = await api.addSong(preview.source_url, addBody(v), v.tags, v.keep_title);
         await store.refresh().catch(() => {});
+        if (autoDownloadOn() && added?.id) autodl.request([added.id], { front: true });
         dlg.close();
         toast('Saved to library');
       } catch (ex) {

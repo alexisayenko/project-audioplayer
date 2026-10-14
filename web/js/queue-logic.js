@@ -1,3 +1,4 @@
+import { canonicalTag } from './tagname.js';
 
 
 // Returns { index, played } for the song to play next, or null to stop.
@@ -45,7 +46,7 @@ export function prevStep({ queue, index, shuffle, history = [] }) {
 }
 
 const lc = (s) => s.toLocaleLowerCase();
-const hasTag = (song, tag) => (song.tags || []).some((t) => lc(t) === lc(tag));
+const hasTag = (song, tag) => (song.tags || []).some((t) => lc(canonicalTag(t)) === lc(canonicalTag(tag)));
 
 // Queue state: { items: [{ id, manual, tags }], index, tags }.
 // `tags` are the selected tag chips; an item's `tags` are the chips that brought it in.
@@ -127,6 +128,21 @@ export function addListed(state, songs, tag = '') {
   return { state: next, added, already };
 }
 
+// Library "Play all": the queue is REPLACED by the listed songs (deduped, list order). With tag filters the tags become
+// chips and the items tag-derived; search-only gives manual items. Start index is 0, or random when shuffle is on.
+export function playListed(state, songs, tags = [], shuffle = false, rand = Math.random) {
+  const seen = new Set();
+  const list = songs.filter((s) => !seen.has(s.id) && seen.add(s.id));
+  if (!list.length) return { state, count: 0, replaced: false };
+  const items = list.map((s) => {
+    const matched = tags.filter((t) => hasTag(s, t));
+    return matched.length ? { id: s.id, manual: false, tags: matched } : { id: s.id, manual: true, tags: [] };
+  });
+  const index = shuffle ? Math.min(items.length - 1, Math.floor(rand() * items.length)) : 0;
+  const replaced = state.items.length > state.index + 1;
+  return { state: { items, index, tags: [...tags] }, count: items.length, replaced };
+}
+
 // Drops chips and the not-yet-started, non-manual songs that only those chips contributed.
 export function removeTags(state, remove) {
   const rm = new Set(remove.map(lc));
@@ -143,17 +159,29 @@ export function removeTags(state, remove) {
 
 export const clean = (state) => removeTags(state, state.tags);
 
-export function removeAt(state, i) {
-  if (i <= state.index || i >= state.items.length) return state;
-  return { ...state, items: state.items.filter((_, k) => k !== i) };
+// Removes the row at i. The current song is followed by identity: a row before it shifts the index down.
+// Removing the current row makes the row that slid into its place current (the last row if it was last; -1 if none left)
+// and reports currentRemoved so the caller can advance to a playable song or stop.
+export function removeItem(state, i) {
+  if (!Number.isInteger(i) || i < 0 || i >= state.items.length) return { state, currentRemoved: false };
+  const items = state.items.filter((_, k) => k !== i);
+  const currentRemoved = i === state.index;
+  let index = state.index;
+  if (i < index) index -= 1;
+  else if (currentRemoved) index = Math.min(i, items.length - 1);
+  return { state: { ...state, items, index }, currentRemoved };
 }
 
-export function move(state, i, delta) {
+// Swaps the row at i with its neighbour (delta -1 or +1); the current song stays current wherever it lands.
+export function moveItem(state, i, delta) {
   const j = i + delta;
-  if (i <= state.index || j <= state.index || j >= state.items.length) return state;
+  if (!Number.isInteger(i) || i < 0 || i >= state.items.length || j < 0 || j >= state.items.length) return state;
   const items = [...state.items];
   [items[i], items[j]] = [items[j], items[i]];
-  return { ...state, items };
+  let index = state.index;
+  if (index === i) index = j;
+  else if (index === j) index = i;
+  return { ...state, items, index };
 }
 
 export function syncLibrary(state, exists) {
@@ -181,4 +209,78 @@ export function parseSaved(data) {
   const fallback = items.length ? 0 : -1;
   const index = valid ? data.index : fallback;
   return { items, index, tags };
+}
+
+export const upcomingCount = (state) => Math.max(0, state.items.length - Math.max(state.index, -1) - 1);
+
+// Queue "Clear": drops every song after the current one and all tag chips; the current and earlier songs stay.
+export function clearUpcoming(state) {
+  const keep = Math.max(state.index, -1) + 1;
+  const removed = Math.max(0, state.items.length - keep);
+  const items = state.items.slice(0, keep).map((it) => ({ ...it, tags: [] }));
+  return { state: { items, index: state.index, tags: [] }, removed };
+}
+
+export const queuedSet = (state) => new Set(state.items.map((it) => it.id));
+
+function shufflePlayable({ queue, index, repeat }, ok, seen0, rand) {
+  const playable = queue.map((id, i) => i).filter((i) => i !== index && ok(queue[i]));
+  let cand = playable.filter((i) => !seen0.includes(queue[i]));
+  let seen = seen0;
+  if (!cand.length) {
+    if (repeat !== 'all' || !playable.length) return null;
+    seen = [queue[index]];
+    cand = playable;
+  }
+  const pick = cand[Math.min(cand.length - 1, Math.floor(rand() * cand.length))];
+  return { index: pick, played: seen, skipped: 0 };
+}
+
+// Next song that can play. `ok(id)` says whether an id has audio; with `autoOn` (Auto-download) every song counts
+// and this is a plain nextStep. Returns { index, played, skipped } or null (no playable song that way: stop).
+// Sequential mode steps over songs without audio and counts them in `skipped`; shuffle only draws playable songs.
+export function nextPlayable(state, manual, ok, autoOn, rand = Math.random) {
+  if (autoOn) {
+    const s = nextStep(state, manual, rand);
+    return s && { ...s, skipped: 0 };
+  }
+  const { queue, index, shuffle, repeat } = state;
+  const n = queue.length;
+  if (n === 0 || index < 0 || index >= n) return null;
+  const cur = queue[index];
+  const seen0 = (state.played || []).includes(cur) ? state.played : [...(state.played || []), cur];
+  if (repeat === 'one' && !manual) return { index, played: seen0, skipped: 0 };
+  if (shuffle) return shufflePlayable(state, ok, seen0, rand);
+  let at = index;
+  let seen = state.played || [];
+  let skipped = 0;
+  for (let n = queue.length; n > 0; n--) {
+    const step = nextStep({ ...state, index: at, played: seen }, true, rand);
+    if (!step) return null;
+    seen = step.played;
+    if (ok(queue[step.index])) return { index: step.index, played: seen, skipped };
+    skipped += 1;
+    at = step.index;
+  }
+  return null;
+}
+
+// Previous playable song: { index, history, skipped } or null (the caller restarts the current song).
+export function prevPlayable(state, ok, autoOn) {
+  if (autoOn) {
+    const s = prevStep(state);
+    return s && { ...s, skipped: 0 };
+  }
+  let at = state.index;
+  let hist = state.history || [];
+  let skipped = 0;
+  for (let n = state.queue.length; n > 0; n--) {
+    const step = prevStep({ ...state, index: at, history: hist });
+    if (!step) return null;
+    hist = step.history;
+    if (ok(state.queue[step.index])) return { index: step.index, history: hist, skipped };
+    skipped += 1;
+    at = step.index;
+  }
+  return null;
 }

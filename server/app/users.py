@@ -5,9 +5,12 @@ import hashlib
 import json
 import os
 import threading
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+from .jsonio import write_json_atomic
+from .timeutil import now_utc
+
 
 DEFAULT_OWNER = "alex.isayenko@gmail.com"
 UID_LEN = 16
@@ -59,10 +62,6 @@ def signup_open() -> bool:
     return os.environ.get("SIGNUP_OPEN", "1").strip().lower() not in ("0", "false", "no", "off")
 
 
-def now_utc() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-
-
 def new_profile(identity: dict[str, Any]) -> dict[str, Any]:
     provider = identity["provider"]
     profile: dict[str, Any] = {
@@ -85,7 +84,4 @@ def read_profile(path: Path) -> dict[str, Any] | None:
 
 
 def write_profile(path: Path, profile: dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_name(path.name + ".tmp")
-    tmp.write_text(json.dumps(profile, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    os.replace(tmp, path)
+    write_json_atomic(path, profile)

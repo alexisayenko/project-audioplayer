@@ -1,0 +1,74 @@
+/* Visualizer (task-0023). Fixed accent hues, same in light and dark: the canvas draws additively over a dark scrim. */
+:root {
+  --viz-s0: #ff1f8e;
+  --viz-s1: #ff3d73;
+  --viz-s2: #ff6a52;
+  --viz-s3: #ff9a3a;
+  --viz-a: var(--viz-s0);
+  --viz-b: var(--viz-s3);
+  --viz-line: #ffffff;
+  --viz-bg-center: #1b0a33;
+  --viz-bg-edge: #07030f;
+  --viz-bg-top: #1a0b33;
+  --viz-bg-mid: #3b1470;
+}
+
+#player { position: relative; isolation: isolate; }
+
+.viz-bg {
+  position: absolute; inset: 0; z-index: -1; overflow: clip; pointer-events: none;
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--viz-bg-top) 60%, transparent), var(--viz-bg-mid));
+  opacity: 0; transition: opacity .25s ease;
+}
+.viz-bg.on { opacity: .35; }
+.viz-canvas { display: block; width: 100%; }
+.viz-canvas[hidden] { display: none; }
+.viz-canvas-gl { position: sticky; z-index: -1; }
+.viz-bg .viz-canvas:not([hidden]) + .viz-canvas-gl { margin-top: -100dvh; }
+.viz-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.viz-bg .viz-canvas { position: sticky; top: 0; height: 100dvh; }
+
+#p-viz.on { background: transparent; color: var(--accent-ink); box-shadow: inset 0 0 0 2px var(--accent); }
+#p-viz[disabled] { cursor: not-allowed; }
+@media (forced-colors: active) { #p-viz.on { box-shadow: inset 0 0 0 2px Highlight; color: ButtonText; } }
+
+.viz-full {
+  position: fixed; inset: 0; z-index: 60; background: radial-gradient(ellipse at center, var(--viz-bg-center), var(--viz-bg-edge)); color: #f2f4f8; outline: none;
+  display: grid; grid-template-rows: 1fr auto;
+}
+.viz-full[hidden] { display: none; }
+.viz-full .viz-canvas, .viz-full .viz-canvas-gl { position: absolute; inset: 0; height: 100%; cursor: pointer; }
+.viz-ctl {
+  position: relative; z-index: 1; display: grid; grid-row: 2; gap: var(--space-3); justify-items: center;
+  padding: var(--space-4) var(--space-4) calc(var(--space-6) + env(safe-area-inset-bottom));
+  background: linear-gradient(to top, color-mix(in srgb, var(--viz-bg-top) 85%, transparent), transparent);
+  transition: opacity .3s ease, visibility .3s;
+}
+.viz-full.idle .viz-ctl { opacity: 0; visibility: hidden; }
+.viz-full.idle .viz-canvas { cursor: none; }
+.viz-meta { display: grid; justify-items: center; text-align: center; max-width: 100%; }
+.viz-meta b, .viz-meta span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.viz-meta #viz-artist, .viz-meta .rmx { color: #b9c0cf; }
+.viz-meta .rmx { font-weight: 400; }
+.viz-ctl .scrubber { width: min(640px, 100%); }
+.viz-ctl .scrub-rail { background: #ffffff33; }
+.viz-keys { display: flex; align-items: center; gap: var(--space-3); }
+.viz-keys .key { color: #f2f4f8; }
+.viz-keys .key.lit { color: var(--on-accent); }
+.viz-keys .key.ghost { background: transparent; box-shadow: none; }
+body.viz-full-open { overflow: hidden; }
+body.viz-full-open .mini { display: none !important; }
+@media (prefers-reduced-motion: reduce) { .viz-ctl, .viz-bg { transition: none; } }
+
+.viz-switch { display: inline-flex; gap: 2px; padding: 2px; border-radius: 999px; box-shadow: inset 0 0 0 1px var(--hairline, #8884); }
+.viz-switch[hidden] { display: none; }
+.viz-radio { display: inline-flex; align-items: center; gap: var(--space-2, .4rem); padding: .35rem .7rem; border: 0; border-radius: 999px; background: transparent; color: inherit; font: inherit; font-size: .8rem; cursor: pointer; }
+.viz-radio.on { background: var(--accent); color: var(--on-accent); }
+.viz-radio:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.viz-full .viz-radio:focus-visible { outline-color: #fff; }
+.viz-full .viz-radio:not(.on) { color: #f2f4f8; }
+@media (max-width: 479px) { .viz-radio-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); } }
+.viz-canvas:not([hidden]) { animation: viz-in .15s ease-out; }
+@keyframes viz-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .viz-canvas:not([hidden]) { animation: none; } }
+@media (forced-colors: active) { .viz-radio.on { forced-color-adjust: none; background: Highlight; color: HighlightText; } }

@@ -1,0 +1,56 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { installDom, flush } from './test-dom.mjs';
+
+installDom();
+globalThis.location = { hash: '' };
+const { registerRevealer, requestReveal, scrollTarget, findRowIndex } = await import('./reveal.js');
+
+test('request before a revealer exists navigates to the library and replays on register', async () => {
+  requestReveal('s1');
+  assert.equal(location.hash, '#/library');
+  const got = [];
+  const off = registerRevealer((id) => got.push(id));
+  await flush();
+  assert.deepEqual(got, ['s1']);
+  const again = [];
+  registerRevealer((id) => again.push(id));
+  await flush();
+  assert.deepEqual(again, [], 'pending request is consumed once');
+  off();
+});
+
+test('with a live revealer the request is delivered at once without navigation', () => {
+  location.hash = '#/queue';
+  const got = [];
+  const off = registerRevealer((id) => got.push(id));
+  requestReveal('s2');
+  assert.deepEqual(got, ['s2']);
+  assert.equal(location.hash, '#/queue');
+  off();
+});
+
+test('unregistering a stale revealer does not remove a newer one', () => {
+  const a = [];
+  const b = [];
+  const offA = registerRevealer((id) => a.push(id));
+  const offB = registerRevealer((id) => b.push(id));
+  offA();
+  requestReveal('s3');
+  assert.deepEqual(b, ['s3']);
+  assert.deepEqual(a, []);
+  offB();
+});
+
+test('scrollTarget centres the row and clamps to the document', () => {
+  const base = { rowTop: 500, rowHeight: 40, scrollY: 0, viewportH: 800, docH: 3000 };
+  assert.equal(scrollTarget(base), 120);
+  assert.equal(scrollTarget({ ...base, rowTop: 0 }), 0);
+  assert.equal(scrollTarget({ ...base, rowTop: 9000 }), 2200);
+  assert.equal(scrollTarget({ ...base, docH: 100 }), 0);
+});
+
+test('findRowIndex', () => {
+  assert.equal(findRowIndex([{ id: 'a' }, { id: 'b' }], 'b'), 1);
+  assert.equal(findRowIndex([], 'b'), -1);
+});

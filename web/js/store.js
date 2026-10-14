@@ -1,4 +1,4 @@
-import { visibleTags } from './tagname.js';
+import { visibleTags, canonicalTag } from './tagname.js';
 import { api } from './api.js';
 
 export const store = {
@@ -27,8 +27,12 @@ export const store = {
 export function tagCounts(songs) {
   const map = new Map();
   for (const s of songs) {
-    for (const t of visibleTags(s.tags)) {
+    const seen = new Set();
+    for (const raw of visibleTags(s.tags)) {
+      const t = canonicalTag(raw);
       const key = t.toLocaleLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
       const e = map.get(key) || { tag: t, count: 0 };
       e.count += 1;
       map.set(key, e);

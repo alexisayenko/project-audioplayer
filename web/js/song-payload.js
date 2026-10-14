@@ -1,4 +1,19 @@
+import { MIN_YEAR, maxYear } from './constants.js';
+
 export const yearValue = (v) => (v === '' || v == null ? null : Number(v));
+
+const YEAR_KEYS = ['year', 'remix_year'];
+const yearOk = (n) => Number.isInteger(n) && n >= MIN_YEAR && n <= maxYear();
+const yearKept = (key, v, stored) => {
+  const n = yearValue(v[key]);
+  return n === null || yearOk(n) || n === stored[key];
+};
+
+export const yearMessage = () => `Enter a year from ${MIN_YEAR} to ${maxYear()}`;
+
+export function yearError(v, stored = {}) {
+  return YEAR_KEYS.every((k) => yearKept(k, v, stored)) ? null : yearMessage();
+}
 
 const sourceUrl = (s) => {
   if (typeof s === 'string') return s;
@@ -22,24 +37,26 @@ export function sourceList(source) {
 
 export const songSources = (song) => sourceList([...(Array.isArray(song?.sources) ? song.sources : []), song?.source_url]);
 
-export function songFields(v) {
+function songFields(v, stored = {}) {
   return {
     title: v.title,
     artist: v.artist,
     album: v.album,
     remixer: v.remixer,
-    year: yearValue(v.year),
+    ...(yearKept('year', v, stored) ? { year: yearValue(v.year) } : {}),
+    ...(v.remix_year !== undefined && yearKept('remix_year', v, stored) ? { remix_year: yearValue(v.remix_year) } : {}),
   };
 }
 
-export const wikiFieldsOf = (v) => ({ wikipedia_song: v.wikipedia_song ?? null, wikipedia_artist: v.wikipedia_artist ?? null, musicbrainz_url: v.musicbrainz_url ?? null });
+const wikiFieldsOf = (v) => ({ wikipedia_song: v.wikipedia_song ?? null, wikipedia_artist: v.wikipedia_artist ?? null, musicbrainz_url: v.musicbrainz_url ?? null, discogs_url: v.discogs_url ?? null });
 
 export function addBody(v) {
-  return { ...songFields(v), ...wikiFieldsOf(v) };
+  const { remix_year: remixYear, ...rest } = songFields(v);
+  return { ...rest, ...(remixYear == null ? {} : { remix_year: remixYear }), ...wikiFieldsOf(v) };
 }
 
-export function patchBody(v) {
-  return { ...songFields(v), tags: v.tags, ...wikiFieldsOf(v) };
+export function patchBody(v, stored = {}) {
+  return { ...songFields(v, stored), tags: v.tags, ...wikiFieldsOf(v) };
 }
 
 export function metadataBody(v, sources) {

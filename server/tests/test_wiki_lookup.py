@@ -1,7 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from app import extractor, genre_lookup as gl, library, main, wiki_lookup as wl
+from app import bpm, deps, extractor, genre_lookup as gl, library, main, wiki_lookup as wl
 
 H = {"X-API-Token": "secret"}
 VID = "dQw4w9WgXcQ"
@@ -291,9 +291,9 @@ def test_suggest_disabled(monkeypatch):
 @pytest.fixture
 def client(tmp_path, monkeypatch):
     monkeypatch.setenv("AUDIO_API_TOKEN", "secret")
-    monkeypatch.setattr(main, "DOWNLOAD_DIR", tmp_path / "downloads")
-    monkeypatch.setattr(main, "DATA_DIR", tmp_path)
-    monkeypatch.setattr(main, "JOBS", {})
+    monkeypatch.setattr(deps, "DOWNLOAD_DIR", tmp_path / "downloads")
+    monkeypatch.setattr(deps, "DATA_DIR", tmp_path)
+    monkeypatch.setattr(deps, "JOBS", {})
 
     def fake_download(video_id, out_dir, progress=None, source_url=None):
         out_dir.mkdir(parents=True, exist_ok=True)
@@ -302,7 +302,7 @@ def client(tmp_path, monkeypatch):
 
     monkeypatch.setattr(extractor, "download_audio", fake_download)
     monkeypatch.setattr(extractor, "fetch_cover", lambda v, d, a=None: None)
-    monkeypatch.setattr(main.bpm_detect, "detect_bpm", lambda p: 100.0)
+    monkeypatch.setattr(bpm, "detect_bpm", lambda p: 100.0)
     monkeypatch.setattr(
         extractor, "preview",
         lambda vid: {"id": vid, "source_url": extractor.watch_url(vid), "title": "Around the World", "artist": "Daft Punk",

@@ -7,6 +7,7 @@ import hmac
 import json
 import os
 import time
+from collections.abc import Mapping
 from urllib.parse import urlparse
 
 COOKIE = "__Host-session"
@@ -62,7 +63,7 @@ def read(value: str, now: float | None = None) -> dict | None:
         return None
 
 
-def csrf_ok(headers, host: str) -> bool:
+def csrf_ok(headers: Mapping[str, str], host: str) -> bool:
     """Unsafe cookie-authenticated requests need the custom header, and a same-host Origin if one is sent."""
     if headers.get(CSRF_HEADER, "") != CSRF_VALUE:
         return False

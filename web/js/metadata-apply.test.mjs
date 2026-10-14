@@ -57,3 +57,9 @@ test('countryCode', () => {
   assert.equal(countryCode(''), null);
   console.log('metadata-apply tests passed');
 });
+
+test('countryCode accepts historical su', () => {
+  assert.equal(countryCode('su'), 'su');
+  assert.equal(countryCode('USSR'), 'su');
+  assert.equal(countryCode('Atlantis'), null);
+});

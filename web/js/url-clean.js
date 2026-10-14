@@ -76,5 +76,5 @@ export function cleanPasted(input) {
   const text = String(input ?? '').trim();
   const found = firstMatch(text, [ABSOLUTE_URL, YOUTUBE_URL, SOUNDCLOUD_URL]);
   if (found) return cleanUrl(found);
-  return cleanUrl(text.split(/\s*[\r\n]+\s*/)[0]);
+  return cleanUrl(text.split(/[\r\n]/)[0].trimEnd());
 }

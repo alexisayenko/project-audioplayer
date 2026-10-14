@@ -24,6 +24,12 @@ export function friendly(code, data, fallback) {
     case 'library_full_bytes': return 'Your storage is full. Delete some songs to free space.';
     case 'server_full': return 'The server is out of storage right now. Try again later.';
     case 'signup_closed': return 'Sign-up is closed on this server.';
+    case 'guest_limit': {
+      const m = Math.max(1, Number(d.retry_after_minutes) || 1);
+      return `Guest limit reached. Sign in or try again in ${m} min`;
+    }
+    case 'guest_audio_disabled': return 'Audio is not available to guests. Sign in to listen.';
+    case 'guest_download_disabled': return 'Guests cannot download files.';
     default: return fallback;
   }
 }

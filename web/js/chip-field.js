@@ -5,6 +5,7 @@ import { store } from './store.js';
 import { api } from './api.js';
 import { suggestGenres, matchRange } from './genre-suggest.js';
 import { countryCode, GENRE_CAP } from './metadata-apply.js';
+import { isKnownCountry } from './countries.js';
 
 const KINDS = {
   genre: { label: 'Genres', placeholder: 'Add a genre', make: (raw) => (raw.includes(',') ? '' : `genre:${raw.toLowerCase()}`), cap: GENRE_CAP },
@@ -156,8 +157,8 @@ export function chipField(ns, editor) {
   input.addEventListener('blur', () => { closeList(); commit(); });
   input.addEventListener('input', () => { input.removeAttribute('aria-invalid'); flushFinished(); wantSuggestions(); });
   editor.subscribe(() => {
-    chips.replaceChildren(...mine().map((t) => el('span', { class: 'chip tint', title: t }, tagLabel(t),
-      el('button', { type: 'button', class: 'x', 'aria-label': `Remove ${tagLabel(t)}`, onclick: () => editor.removeTag(t) }, '×'))));
+    chips.replaceChildren(...mine().map((t) => { const bad = ns === 'country' && !isKnownCountry(t.slice(prefix.length)); return el('span', { class: 'chip tint', title: bad ? `${t}: not a known country, remove it` : t, style: bad ? 'border:1px dashed currentColor' : null }, bad ? `⚠ ${tagLabel(t)}` : tagLabel(t),
+      el('button', { type: 'button', class: 'x', 'aria-label': `Remove ${tagLabel(t)}`, onclick: () => editor.removeTag(t) }, '×')); }));
     chips.hidden = !chips.children.length;
     if (suggesting && list.style.display !== 'none') refreshList();
   });

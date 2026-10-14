@@ -8,17 +8,14 @@ import urllib.parse
 from concurrent.futures import ThreadPoolExecutor, wait
 from typing import Any, Callable
 
-from . import genre_filter, genre_lookup, library, wiki_lookup
+from . import genre_filter, genre_lookup, library, timeutil, wiki_lookup
+from .tags import namespace
 
 log = logging.getLogger(__name__)
 
 TIMEOUT = 15
 CAPS = {"genre": 8, "country": 1}
 DROPPED = {"lang"}
-
-
-def _namespace(tag: str) -> str:
-    return tag.partition(":")[0] if ":" in tag else ""
 
 
 def cap_tags(tags: list[str], priority_genres: int = 0) -> list[str]:
@@ -28,8 +25,10 @@ def cap_tags(tags: list[str], priority_genres: int = 0) -> list[str]:
     used: dict[str, int] = {}
     out: list[str] = []
     for t in library.clean_tags(tags):
-        ns = _namespace(t)
+        ns = namespace(t)
         if ns in DROPPED:
+            continue
+        if ns == "country" and library.unknown_countries([t]):
             continue
         if ns in CAPS:
             n = used.get(ns, 0)
@@ -48,7 +47,7 @@ def finalize_tags(tags: list[str], song_genres: list[str] | None = None) -> list
 
 
 def _year(value: Any) -> int | None:
-    return value if isinstance(value, int) and not isinstance(value, bool) and 0 < value < 10000 else None
+    return timeutil.valid_year(value)
 
 
 def merge(sources: list[dict[str, Any]], mb: dict[str, Any] | None, links: dict[str, Any] | None, guess: dict[str, Any] | None) -> dict[str, Any]:

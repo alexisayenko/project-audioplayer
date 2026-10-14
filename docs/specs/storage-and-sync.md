@@ -1,6 +1,6 @@
 # Storage and sync
 
-Code: `server/app/gitstore.py`, `server/app/library.py`, `server/app/main.py`,
+Code: `server/app/gitstore.py`, `server/app/library.py`, `server/app/deps.py`, `server/app/jsonio.py`,
 `web/js/app.js`. ADR: ADR-0005 (and ADR-0004 for audio hosting), ADR-0012 (per-user layout).
 
 ## Where data lives
@@ -11,7 +11,7 @@ Code: `server/app/gitstore.py`, `server/app/library.py`, `server/app/main.py`,
 | covers `<id>.jpg` | git LFS repo `alexisayenko/data-storage-lfs`, ~~`audioplayer/covers/<id>.jpg`~~ `audioplayer/users/<uid>/covers/<id>.jpg` |
 | audio `<id>.m4a` | server disk (perkunas dataset, bind-mounted into LXC 106), in neither repo; ~~`<music_root>/<id>.m4a`~~ `<music_root>/users/<uid>/<id>.m4a` |
 
-- STO-001 MUST: with `AUDIO_DATA_REPO` set, the live library is the server's own clone of the data repo and every library change is a commit; the server never uses the PC's `C:\Alex\data-storage`. Status: implemented (not yet deployed)
+- STO-001 MUST: with `AUDIO_DATA_REPO` set, the live library is the server's own clone of the data repo and every library change is a commit; the server never uses the PC's `C:\Alex\data-storage`. Status: implemented (deployed 2026-10-13)
 - STO-002 MUST: with `AUDIO_DATA_REPO` unset (dev, tests) `users/<uid>/library.json`, `profile.json` and `covers/` are plain files in `AUDIO_DATA_DIR` (default `.`) and `/health` `sync` is always `ok`. Status: implemented
 - STO-003 MUST: covers go to the LFS repo when `AUDIO_COVERS_REPO` is set; LFS tracking is decided by that repo's `.gitattributes` and needs `git-lfs` on the server. Status: implemented
 - STO-004 MUST: reads are served from the local clone (no pull on read). Status: implemented
@@ -56,7 +56,7 @@ Code: `server/app/gitstore.py`, `server/app/library.py`, `server/app/main.py`,
 | `AUDIO_HOSTS`, `AUDIO_HOSTS_FILE` | unset | server name to mount path map |
 | `AUDIO_DOWNLOAD_DIR` | `downloads` | fallback audio dir |
 | `AUDIO_DATA_DIR` | `.` | plain-file `library.json` and `covers/` (no git store) |
-| `AUDIO_WEB_DIR` | `<repo>/web` | static UI dir |
+| `AUDIO_WEB_DIR` | `<repo>/web` | static UI dir, read at call time (`server/app/web.py`), so a test or a restart-free change takes effect |
 | `OWNER_EMAIL` (alias `ALLOWED_EMAIL`) | `alex.isayenko@gmail.com` | the owner: quota-exempt; the `X-API-Token` and `?token=` act as this user |
 | `ALLOWED_APPLE_SUB` | unset | Apple `sub` values (comma list) mapped to the owner when Apple hides the email |
 | `SIGNUP_OPEN` | `1` | `0`: only existing users and the owner may sign in |

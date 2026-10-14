@@ -6,7 +6,7 @@ import pytest
 from cryptography.hazmat.primitives.asymmetric import rsa
 from fastapi.testclient import TestClient
 
-from app import main, oauth, users
+from app import deps, main, oauth, users
 
 APPLE_AUD = "com.example.app"
 GOOGLE_AUD = "client.apps.googleusercontent.com"
@@ -32,8 +32,8 @@ def client(key, tmp_path, monkeypatch):
     monkeypatch.setenv("GOOGLE_CLIENT_ID", GOOGLE_AUD)
     monkeypatch.delenv("ALLOWED_EMAIL", raising=False)
     monkeypatch.delenv("ALLOWED_APPLE_SUB", raising=False)
-    monkeypatch.setattr(main, "DOWNLOAD_DIR", tmp_path)
-    monkeypatch.setattr(main, "DATA_DIR", tmp_path / "data")
+    monkeypatch.setattr(deps, "DOWNLOAD_DIR", tmp_path)
+    monkeypatch.setattr(deps, "DATA_DIR", tmp_path / "data")
     fake = SimpleNamespace(get_signing_key_from_jwt=lambda t: SimpleNamespace(key=key.public_key()))
     monkeypatch.setattr(oauth, "_jwks", lambda provider: fake)
     return TestClient(main.app)
@@ -118,7 +118,8 @@ def test_api_token_fallback(client):
     assert client.get("/tags", headers={"X-API-Token": "secret", "Authorization": "Bearer junk"}).status_code == 200
 
 
-def test_file_get_accepts_bearer_and_query_token(client, key, tmp_path):
+def test_file_get_accepts_bearer_and_query_token(client, key, tmp_path, monkeypatch):
+    monkeypatch.setenv("PUBLIC_VIEW", "0")
     put_audio(tmp_path)
     url = "/files/dQw4w9WgXcQ"
     assert client.get(url, headers={"Authorization": f"Bearer {make(key)}"}).status_code == 200
@@ -135,6 +136,7 @@ CSRF = {"X-Requested-With": "audioplayer"}
 def web(client, monkeypatch):
     monkeypatch.setenv("GOOGLE_CLIENT_ID", f"{GOOGLE_AUD}, {WEB_GOOGLE}")
     monkeypatch.setenv("APPLE_AUDIENCE", f"{APPLE_AUD},{WEB_APPLE}")
+    monkeypatch.setenv("PUBLIC_VIEW", "0")
     return TestClient(main.app, base_url="https://testserver")
 
 
@@ -145,6 +147,7 @@ def sign_in(web, key, **over):
 def test_multi_audience(client, key, monkeypatch):
     monkeypatch.setenv("GOOGLE_CLIENT_ID", f"{GOOGLE_AUD},{WEB_GOOGLE}")
     monkeypatch.setenv("APPLE_AUDIENCE", f"{APPLE_AUD},{WEB_APPLE}")
+    monkeypatch.setenv("PUBLIC_VIEW", "0")
     assert get(client, make(key)) == 200
     assert get(client, make(key, aud=WEB_GOOGLE)) == 200
     assert get(client, make(key, "apple", aud=WEB_APPLE)) == 200
@@ -257,7 +260,7 @@ def test_session_secret_signs_cookie(web, key, monkeypatch):
 
 
 def test_api_responses_are_not_cached(web):
-    assert web.get("/tags", headers={"X-API-Token": "secret"}).headers["cache-control"] == "no-store"
+    assert web.get("/tags", headers={"X-API-Token": "secret"}).headers["cache-control"] == "private, no-cache"
     assert web.get("/auth/config").headers["cache-control"] == "no-store"
 
 

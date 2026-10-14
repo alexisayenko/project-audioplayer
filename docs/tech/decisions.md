@@ -3,6 +3,28 @@
 Tech decisions, newest last. Supersede by strikethrough and a new entry
 below, never by deleting.
 
+| ADR | Title | Status |
+| --- | --- | --- |
+| 0001 | Components, server, hosting, storage | Accepted (hosting wording superseded by 0004, storage by 0005 and 0012) |
+| 0002 | Tags replace playlists; song fields (incl. canonical countries, historical `country:su`) | Accepted |
+| 0003 | Web first, served by FastAPI (incl. file download, queue, Playback layout) | Accepted |
+| 0004 | Hosting on perkunas, LXC 106 `tools` | Accepted, deployed 2026-10-13 |
+| 0005 | Library metadata in the data-storage git repos | Accepted, implemented; amended by 0010 and 0012 |
+| 0006 | OAuth sign-in (Apple, Google) | Accepted; owner-only gate superseded by 0012 |
+| 0007 | iOS app look and screen flow | Accepted; look superseded by 0009 |
+| 0008 | Distribution: internal TestFlight | Accepted |
+| 0009 | Electrophone design system as single source of truth | Accepted |
+| 0010 | Catalog and audio are separate (incl. web auto-download setting) | Accepted, implemented |
+| 0011 | Multi-source song ids | Accepted |
+| 0012 | Open signup and per-user storage | Accepted, live |
+| 0013 | Music-database lookups: MusicBrainz, Discogs, AcoustID fingerprint identification | Accepted; MusicBrainz live, Discogs and AcoustID implemented, awaiting keys on the server |
+| 0014 | Genres map: genre graph from Wikidata with Discogs families | Accepted, implemented |
+| 0015 | Pill separators and promo-noise cleaning | Accepted, implemented on the web |
+| 0016 | Web player chrome: fixed mini-player, queue menu, collapsible sidebar, draggable scrubber | Accepted, implemented |
+| 0017 | Server module structure and test strategy | Accepted, implemented |
+
+The web "Download" file save is a sub-decision of ADR-0003; the web "Auto-download songs" setting is one of ADR-0010. The 2026-10-13 form, token-pill and metadata decisions have no number (section "2026-10-13 decisions", above ADR-0013). The identification (AcoustID, Discogs) decision is the sub-decision of ADR-0013; per-user open signup is ADR-0012.
+
 ## ADR-0001 Components, server, hosting, storage
 
 Status: Accepted · 2026-10-12
@@ -51,6 +73,8 @@ Status: Accepted · 2026-10-12
 
 - A song has zero or more free-form tags; a "playlist" is a tag filter.
   There is no playlist entity.
+- Sub-decision (2026-10-14): `country:` and `lang:` tag values are canonicalised to ISO codes (alpha-2 / 639-1) from an embedded table with aliases, on write and on load, so `usa`, `United States` and `us` are one filter entry. `country:` accepts only known countries (422 `unknown_country`); legacy unmapped values stay and are flagged; `lang:` unknown values stay free ([tags.md](../specs/tags.md) TAG-056, TAG-057).
+- Sub-decision (historical countries, 2026-10-14): the Soviet Union is a first-class predefined `country:su` (name "Soviet Union", aliases `ussr`, `cccp`, `sssr`), marked `historical` in the country table so future flag assets can be drawn as images (no emoji flag exists for a former state). It is accepted on write and not flagged unknown; MusicBrainz `SU` maps to it, other pseudo-codes (`XU`, `XW`) are still dropped. Candidates, add on request: `yu` Yugoslavia, `cs` Czechoslovakia, `dd` East Germany ([tags.md](../specs/tags.md) TAG-058).
 - Song fields: `artist`, `title`, optional `album`, `year`,
   plus `source_url`, `cover`, `tags[]` and technical `id`, `duration`,
   `added_at`.
@@ -82,7 +106,7 @@ Status: Accepted · 2026-10-12
 
 - Sub-decision (clean source URLs, 2026-10-12): `source_url` is always the canonical `https://www.youtube.com/watch?v=<id>`; share parameters (`si`, `t`, `list`, `utm_*`, `fbclid`, `gclid`, `pp`, `feature`) are dropped, the `t` start offset included. The same rules live in `server/app/urlclean.py` and `web/js/url-clean.js` (cleaned on paste, drop, bulk input, blur and submit; `cleanPasted` extracts the first link from pasted text, so share messages with trailing text work); old records are cleaned on load.
 
-- Sub-decision (decade tags, 2026-10-12): the decade is the derived namespaced tag `decade:<NN>s` (`decade:90s`) for years 1950-2029, not a field. The server replaces a song's `decade:*` tags with the derived one on create, PATCH and load (migration) whenever the year is in range, and leaves them untouched otherwise, so the rule is deterministic and the year stays the single source. UI shows "the 90s" in a Decade group after Genre; the editor previews the chip, the server decides. Cost: manually typed decade tags on songs with a year are overwritten.
+- Sub-decision (decade tags, 2026-10-12): the decade is the derived namespaced tag `decade:<NN>s` (`decade:90s`) for years 1950 up to next year (the range grows with the clock, BJ1: `max_year()`), not a field. The server replaces a song's `decade:*` tags with the derived one on create, PATCH and load (migration) whenever the year is in range, and leaves them untouched otherwise, so the rule is deterministic and the year stays the single source. UI shows "the 90s" in a Decade group after Genre; the editor previews the chip, the server decides. Cost: manually typed decade tags on songs with a year are overwritten.
 - Sub-decision (Wikipedia links, 2026-10-12): a song has up to three links on the Playback card: Source (`source_url`), Wikipedia of the song (`wikipedia_song`) and of the band (`wikipedia_artist`), both optional URL fields validated by host (`*.wikipedia.org`, `wikidata.org/wiki/Q..`; others dropped). They are suggested from MusicBrainz url-rels at preview and editable in Add and Edit. Wikidata over scraping: genre, country, language and year come from structured Wikidata claims (`Special:EntityData`, one batched `wbgetentities` for English labels), not from parsing article text, because claims are stable, licensed CC0, language-independent and need no fragile HTML heuristics. `POST /lookup/wikipedia` re-derives suggestions from user-edited links; suggestions never auto-assign. Cost: 2-6 extra outbound calls per uncached preview, all failure-tolerant and behind `AUDIO_TAG_LOOKUP`. The same fetch also reads the song page's `album` and `released` year (TAG-048); a single has no `album` parameter, so the infobox gives no album (the song's own title is never used as one).
 - Sub-decision (infobox genres, 2026-10-13): the one exception to "claims, not article text" is the infobox `genre` parameter of the song's (else the artist's) English Wikipedia page, read by a deterministic wikitext parser (no AI), because Wikidata `P136` is often missing or coarser than the infobox (Crazy by Gnarls Barkley lists seven genres). Its genres come first and are all kept; everything else still comes from claims (TAG-045 to TAG-047). Cost: one extra Wikipedia API call per uncached page, failure-tolerant and behind `AUDIO_TAG_LOOKUP`. The same fetch also gives `POST /metadata` a `suggest` hint (song page's infobox artist and name, TAG-049); Artist and Title are never auto-filled.
 - Sub-decision (one tag rule, 2026-10-13): `POST /preview` and `POST /lookup/wikipedia` now use the same genre filter and caps as `POST /metadata` (`metadata.finalize_tags`: 8 genres, 1 country, song's own genres first) instead of the old 3-genre cap without filter (TAG-023, TAG-055).
@@ -121,6 +145,7 @@ Status: Accepted · 2026-10-12
   evicts it and limits quota). Offline listening belongs to the iOS app
   (`ios/`, SwiftUI), built later against the same API, with a "download
   to device" option.
+- Sub-decision (2026-10-14, download to device): the web may offer "Download", a normal browser file save of the audio (`GET /files/{id}?download=1`, `Content-Disposition: attachment`, filename `Artist - Title.m4a`), triggered by a plain `<a download>`. It is not an offline cache: no service worker, no stored copy, no change to "online only" playback (API-061, WEB-034).
 - Sub-decision (queue): the "current playlist" is a client-side play
   queue (song ids + current index in `localStorage`, no server state), not
   the filtered library list. Library cards offer Play now (insert after the
@@ -393,6 +418,8 @@ holds). Concept: [`docs/product/concept-catalog-and-audio.md`](../product/concep
 - Web (2026-10-13): the web UI is catalog-only: it saves entries with `audio:false`, shows songs without server audio as a greyed row with an Open on YouTube/SoundCloud link (no "Not on the server" label), never queues them, and plays/deletes only audio already on the server (WEB-015, WEB-023); the iOS "Add and download to iPhone" is the only path that puts audio on the server.
 - Implementation: server P1 (task-0006) is implemented: `file` may be `null`, `sources` list, derived `audio_state` (`none`/`server`), `GET /catalog`, metadata-only `POST /songs`, `DELETE /songs/{id}/audio`. Old records are not migrated; state is derived at read time. Remaining specs are `planned` (CAT-*), tasks task-0007.. (phases P2..P6).
 
+- Auto-download on the web (2026-10-14): the web gets a client setting "Auto-download songs" (default off). On, songs without server audio may be queued and their audio is fetched in the background through the new `POST /songs/{id}/audio` (state `none` to `server`; PLY-110..116, API-060); one fetch counts as one add against `USER_ADDS_PER_HOUR` (owner exempt, NFR-056), so the existing quotas still bound the cost; the client runs one download at a time and pauses on `hourly_limit`. Off, nothing is fetched automatically and a song without audio shows "Not downloaded" with a Download button. This amends the Web bullet above ("never queues them") only for the on case.
+
 ## ADR-0011 Multi-source song ids: YouTube unchanged, SoundCloud as `soundcloud-<track id>`
 
 Status: Accepted · 2026-10-13 · Extends ADR-0001 (yt-dlp server) and DATA-001.
@@ -508,7 +535,7 @@ Genres
 
 ## ADR-0013 Music-database lookups: MusicBrainz now, Discogs later
 
-Status: Accepted for MusicBrainz (already live as a source, now the named policy); Proposed for Discogs · 2026-10-14
+Status: Accepted for MusicBrainz (already live as a source, now the named policy); Discogs and audio fingerprinting implemented, awaiting keys on the server (see Sub-decision) · 2026-10-14
 
 - Current state: `POST /metadata` ([API-048](../specs/api.md)) merges, under one 15 s cap, yt-dlp source info, a MusicBrainz match of artist+title (`server/app/genre_lookup.py`: genres, artist country, first release year, album, the matched recording's page for the MusicBrainz icon; score >= 90, at most 3 genres, descriptive `User-Agent` from `AUDIO_MB_USER_AGENT`, one request per 1.1 s, per-query cache), the English Wikipedia infobox and Wikidata (`server/app/wiki_lookup.py`). `POST /preview` applies the same genre filter, `GET /genres` (API-050) serves the user's own genres plus a built-in list, and BPM is detected locally from the audio (ADR-0002). Spotify is not used. The Add and Edit form never auto-fills from a lookup beyond the preview prefill; "Get metadata" results are suggestions ([add-song](../specs/add-song.md)).
 - Decision (Alex): MusicBrainz is the standing music-database source for metadata suggestions; Discogs is added later as a second source for genre, style and year.
@@ -525,7 +552,85 @@ Status: Accepted for MusicBrainz (already live as a source, now the named policy
   - One more optional external dependency and a per-source cache and limiter to maintain; Discogs adds a secret to deploy.
   - Suggested tags can be wrong or noisy; the confirm step carries the quality, not the source.
   - Sources merge in a fixed precedence, so adding Discogs needs an update to API-048 and the tags spec.
+- Sub-decision (Alex, 2026-10-14): fingerprint-first identification. The most reliable way to name a track is its audio, not its messy title: Chromaprint `fpcalc` fingerprints the saved file and the AcoustID service returns the MusicBrainz recording (`server/app/acoustid_lookup.py`); that recording then supplies genres, country, languages, year and the Wikipedia links, and the title-based MusicBrainz match is only the fallback. Discogs (`server/app/discogs_lookup.py`) is searched with the matched artist and title and its finer styles are preferred for `genre:`. `server/app/identify.py` merges the sources (API-070). Rules: all of it is suggestions, never auto-applied or overwriting user data; every key is optional and a missing key or `fpcalc` switches the source off quietly; only the fingerprint leaves the server; keys stay in the server env file (NFR-070). The Discogs link is stored like the MusicBrainz one (`discogs_url`, DATA-050). Not yet verified against the live services: that needs `ACOUSTID_API_KEY`, `DISCOGS_TOKEN` and `fpcalc` on the server ([deploy](deploy.md#identification-keys)).
 - Rejected:
   - Client-side calls: would put the Discogs token in the app and web bundle and break per-source rate limiting.
   - Spotify API: needs app credentials and is not used (ADR-0010); its terms limit reuse of metadata.
   - Scraping: brittle, against site terms, and not needed while free APIs exist.
+
+
+## ADR-0014 Genres map: genre graph from Wikidata with Discogs families
+
+Status: Accepted (Alex, 2026-10-14) · implemented
+
+- Decision: a "Genres map" page shows the user's `genre:` tags as an Obsidian-style force graph with an outline list beside it. Genres form a directed acyclic graph (many parents, many siblings), not a tree, so the model carries `parents[]` and a separate weaker `related` edge. Spec: [genres.md](../specs/genres.md), endpoint API-080.
+- Source of relations: Wikidata, because it already holds `subclass of` for music genres and the app already uses it for facts ([ADR-0013](#adr-0013-music-database-lookups-musicbrainz-now-discogs-later)). Each tag is resolved by label search (exact English label or alias, restricted to music genres) and its ancestors are fetched by `subclass of` in batches of 50. The resolved slice is cached in one server-wide JSON file for 30 days and never holds user data; requests never wait for Wikidata (a background worker fills the cache, the page polls), so the page works offline from the cache and degrades to the user's own tags when there is none.
+- Families: colours come from the Discogs top-level genres (Electronic, Rock, Pop, Hip Hop, Jazz, Funk / Soul, Classical, Reggae, Latin, Blues, Folk World & Country, Stage & Screen, Non-Music, Children's, Brass & Military, plus "Other"), through a small hand-made map from Wikidata ids and labels in `server/app/data/discogs-families.json`; the closest matching ancestor wins. Discogs itself is not called.
+- Deviations from the brief, kept on purpose: the module is `server/app/genre_graph.py` (`genres.py` already serves the autocomplete list); the weak `related` edge uses `influenced by` (P737), because P7937 is "form of creative work" and Wikidata has no usable "stylistic origin" property; counts are computed per user on the server and recomputed in the browser from the loaded library.
+- Rendering: canvas with a purpose-written simulation, no CDN or library; reduced-motion gets a static layout.
+- Consequences: one more cache file on the server and a background thread on first use; Wikidata labels can differ from the user's wording (the node keeps the user's own values in `tags`, so Library filters stay exact); genres Wikidata does not know stay as loose nodes.
+- Rejected: a tree (a genre such as synthpop has two parents); fetching Wikidata per request (slow, rude to the service); a client-side library such as d3 from a CDN (no external dependencies, ADR-0003); storing the ontology in the per-user git repos (it is not user data).
+
+
+## ADR-0015 Pill separators and promo-noise cleaning
+
+Status: Accepted (Alex, 2026-10-14) · implemented on the web
+
+- Title, Artist and Remix & additional production use ONE tokenizer (`web/js/tokens.js`): pills come from Enter or from the exact separators ' - ' (also en and em dash), ' | ', ' / ', ' // ' with spaces on both sides; commas, semicolons, `&`, `feat.` and unspaced `/`, `|`, `-` never split ('Tyler, The Creator', 'AC/DC', 'A-ha'). Edited pills are joined with ' - '; an unedited stored string is kept verbatim. The tag editor keeps its comma rules. iOS is not changed (gap documented in ADD-071).
+- Lookups cope with legacy 'A, B' artists locally (whole string first, then the first part), so no data migration is needed.
+- Promo noise ('[Free Download]', '(Official Video)') is removed by one function with identical rules on server and web, only on Add, with a Restore hint; the server is authoritative. Existing songs are not rewritten; an optional script does it on request.
+- Rejected: a heuristic for artist commas (wrong in both directions); stripping every bracket (it would lose Extended Mix, Remastered, Live).
+- Amendment (2026-10-14, Alex): 'Original Mix', 'Original Version' and 'Original' are noise when they are a whole segment (a bracket group, or a trailing segment under the usual ' - ' rule), so 'Rover (Original Mix)' gives 'Rover'. With any other word or a name ('(Tiësto Original Mix)', '(Original Mix Extended)') they stay, and Extended Mix, Radio Edit, Club Mix, Remix, Live and the like are still never removed.
+
+
+## ADR-0016 Web player chrome: fixed mini-player, queue menu, collapsible sidebar, draggable scrubber
+
+Status: Accepted (Alex, 2026-10-14) · implemented on the web, layout not yet checked in a browser
+
+- Mini-player: a fixed 720px bar (never stretching), centred right of the sidebar, as a raised separate surface (border, shadow, margin) instead of a full-width strip that blended into the list. Two rows: song and transport, then time, progress and volume. It carries icon buttons for the playing song: Edit details, Show in list (scroll and highlight the row, filters kept) and an Add to current playlist toggle. Library is not width-limited. Spec: PLY-117..119, LIB-096, LIB-097, WEB-038.
+- Playlist toggle: Library rows and the mini-player show whether the song is in the queue (selected state, click removes), so the queue is visible from the list. Spec: LIB-095, PLY-119.
+- Queue menu: every row, played and current included, offers Edit song, Download, Move up/down and Remove; edits keep the current song current by identity, not position, and removing the playing song advances. Spec: PLY-042, PLY-046. Playback song details drop the "..." menu for Download and Edit icon buttons (PLY-072, PLY-102).
+- Sidebar: collapsible to a 64px icon rail, remembered per browser (`web/js/sidebar-state.js`). Spec: WEB-037.
+- Scrubber: the Playback seek bar and the mini-player progress are one pointer-event slider (`scrubber.js`, pure maths in `scrub.js`), drag with a time bubble, keyboard and `role="slider"`, disabled until a duration is known. Spec: PLY-120..122.
+- Song stats page (sub-note): a fifth sidebar destination, `#/stats`, plots year against BPM on a canvas from the songs already in the store (no server change). Two stacked canvases (base redrawn on change, overlay for hover/selection) and a spatial grid keep about 5000 dots smooth without a render loop; a table view is the accessible fallback. Spec: STA-001..030.
+- Library row interactions (sub-note): the row is a button-and-card pair instead of a play target. The title button and any empty part of the row open a read-only song card (native `<dialog>`, so focus trap, Esc and inert background come for free; the Edit dialog stacks on top of it and the card repaints from the store). Play moved to the cover, a native button whose pure state model (`row-cover.js`) picks play, pause, resume or download; the current song's state is persistent and semi-opaque, other rows reveal it on hover or focus, and `@media (hover: none)` hides it so a touch tap on the cover plays and a tap elsewhere opens the card. One list-level click handler decides, no per-row listeners. Spec: LIB-120..124, PLY-131, ADD-100.
+- Visualizer (sub-note): the audio graph is created lazily, on the first user gesture that enables the visualizer, and the element is routed through it only once the context runs, so plain playback never depends on it (`createMediaElementSource` is irreversible); the analyser drives a 2D canvas visualizer (bars and ring, no WebGL in phase 1) whose loop runs only while playing, visible and on screen. Spec: VIZ-001..035.
+
+
+## ADR-0017 Server module structure and test strategy
+
+Status: Accepted (Alex, 2026-10-14) · implemented
+
+- `server/app/main.py` only builds the app (middleware, exception handlers, router includes). Routes live in `server/app/routes/`, one `APIRouter` per area: health, auth, me, legacy, files, catalog, genres, lookup, songs, analyze, removal. Shared state, per-user paths, transactions and the auth and quota dependencies live in `deps.py`; code and tests use `deps.X`, never `main.X`.
+- One helper for each repeated job instead of copies: `jsonio` (crash-safe JSON writes), `httpjson` (JSON over HTTP with User-Agent and timeout), `safepath`, `ratelimit`, `timeutil`, `tags`, `links`, `downloads`, `schemas`, `web`. The web side follows the same rule: `storage.js` (guarded `localStorage`), `constants.js` (breakpoints, timings), and large UI modules split by job (`player-*`, `library-*`, `song-form-*`, `token-drag`, `genre-view`).
+- Tests: server line coverage target 99% (`coverage run -m pytest`, measured over `app/*`); web coverage target 80% or more, with UI modules tested through a small DOM shim (`web/js/test-dom.mjs`) and one `*.test.mjs` per module. The shared title-cleaning fixture drives both the Python and the JavaScript implementation. Network, git, `yt-dlp` and `fpcalc` are always faked; no test reaches a real service.
+- `scripts/check.sh` is the gate: every web test file, duplicate requirement IDs, the server test suite. It never deploys.
+- Rejected: one big `main.py` with tests patching `main` (every refactor broke unrelated tests); a web build step to bundle modules (the no-build rule of ADR-0003 stays).
+
+## ADR-0018 Public read-only guest view
+
+Status: Accepted (Alex, 2026-10-14; BB2: guests may stream the audio)
+
+- Decision: a web visitor who is not signed in sees the owner's library (the account `PUBLIC_VIEW_EMAIL`, default the owner's email) read-only: Library, Playback, Genres map and Song stats, with a banner "Viewing Alex's library (read-only)". Add, edit, delete, download-to-server, identify and the Settings controls are not shown and their routes stay 401 for anonymous callers. Settings shows only sign-in plus a note. Signing in switches the page to the visitor's own library (ADR-0012); an authenticated non-owner never sees the owner's songs.
+- Server: one dependency, `deps.read_user`, is used by a fixed allow-list of GET routes: `/library`, `/tags`, `/genres/graph`, `/catalog`, `/files/{id}` (stream and HEAD only), `/covers/{id}` and `/me` (`/health` was already public). Everything else keeps `require_token`; `test_route_auth.py` pins the allow-list. Guest responses go through `guest.scrub_song` (a whitelist of song fields; `audio.file` and any unknown field are dropped); `/me` answers `{guest, public_view, audio, owner_label}` with no email, uid or usage. Responses on the allow-list carry `Cache-Control: private, no-cache` and `Vary: Cookie, Authorization` for everyone, never `public`.
+- Guardrails (in memory, per client IP): 240 requests/min, 1024 MB of audio/hour (Range requests count the bytes they serve), 3 concurrent streams; refusals are 429 `{"error": "guest_limit", "retry_after_minutes"}` with `Retry-After`. Guests cannot use `?download=1` (403 `guest_download_disabled`). The client IP is `CF-Connecting-IP` only when the TCP peer is loopback or a private LAN address (the cloudflared host); a header from any other peer is ignored.
+- Kill switches: `PUBLIC_VIEW=0` restores the old behaviour (anonymous gets 401 everywhere); `PUBLIC_AUDIO=0` keeps the metadata public but answers 403 for the audio (`guest_audio_disabled`), and the web then opens the song's YouTube or SoundCloud link instead of playing.
+- Risks Alex accepted or must watch: (1) copyright: the audio is downloaded from YouTube, so streaming it to the public widens the ToS and copyright exposure of an app that is not meant for distribution; `PUBLIC_AUDIO=0` is the first step if a complaint arrives. (2) Bandwidth: the home uplink and the Cloudflare Tunnel carry guest audio; the per-IP caps bound one visitor, not a crowd or many IPs. (3) Scraping: a guest can read the whole catalog and stream every file within the caps; the limits slow this down, they do not prevent it. (4) Cloudflare's terms restrict serving large non-HTML media through the proxy on the free plan; heavy guest streaming may breach them, a reason to turn `PUBLIC_AUDIO` off or move audio off the tunnel. (5) IP trust: if the server ever listens publicly, or behind another proxy on a LAN address, `CF-Connecting-IP` could be spoofed to dodge the caps.
+- Rejected: a separate public share link or token (the owner would have to hand it out and rotate it); guest downloads; per-guest accounts; a static export of the catalog (no audio, no live state).
+
+
+### Public guest view: copyright note and no-index (BQ1, 2026-10-14)
+
+- A fixed note (NFR-095) sits in the footer of the guest view and Settings; per-song credit is the artist and source links on the song card. `LEGAL_CONTACT` (optional; a dedicated alias, not a personal address) turns "contact the owner" into a link. `GET /legal` serves it (public, 5 min cache) because the guest `/me` keys are frozen.
+- No-index (NFR-094): `X-Robots-Tag` on every response, `/robots.txt` disallows all, meta robots in `index.html`.
+
+
+## ADR-0019 Domain migration to electrophone.cc: dual host, then a canonical redirect
+
+Status: Accepted (Alex, 2026-10-14)
+
+- Decision: serve the same app on `play.isayenko.net` and `electrophone.cc` (two tunnel hostnames to one service) until the new host is proven, then set `CANONICAL_HOST=electrophone.cc` so GET/HEAD on any other host answer 308 to the same path and query. Runbook: [domain-migration.md](domain-migration.md).
+- Server, all env, defaults unchanged: `PUBLIC_HOSTS` (validated hostnames; absolute URLs are only built from these), `CANONICAL_HOST` (unset = no redirect; `/health` and writes are never redirected), `OAUTH_REDIRECT_URIS` (the Apple web redirect per host). `X-Forwarded-Host` is read only when the peer is loopback or LAN, like `CF-Connecting-IP`.
+- Sessions: the cookie has no `Domain`, so it is host-only and each host has its own sign-in; users sign in again on the new host. The CSRF check (custom header plus an Origin equal to the Host) holds on every host.
+- Sign-in: Google and Apple consoles must list the new origin and return URL (add, never replace); a rejected address shows "This address is not registered with ... sign-in yet".
+- Rejected: a cookie `Domain` shared across both hosts (not possible across different registrable domains); a redirect on every method (it would break a POST in flight).

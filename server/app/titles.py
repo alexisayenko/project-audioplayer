@@ -5,6 +5,8 @@ from __future__ import annotations
 import re
 from collections.abc import Callable
 
+from . import titleclean
+
 _BRACKETED = re.compile(r"[\(\[][^\)\]]*[\)\]]")
 _NOISE_WORD = re.compile(r"\b(?:official|video|audio|lyrics?|visuali[sz]er|remaster(?:ed)?|h[dq]|4k|clip|mv)\b", re.I)
 _LIVE_WORD = re.compile(r"\b(?:live|unplugged|in concert)\b", re.I)
@@ -80,7 +82,19 @@ def clean_title(title: str) -> str:
     return re.sub(r"\s+", " ", t).strip(" -|")
 
 
-_VERSION_TAIL = re.compile(r"(?<!\s)\s++(?:-\s+(?:live|acoustic|unplugged|sessions?|in concert)|live (?:at|from|in|on))\b.*+$", re.I)
+_VERSION_KEY = re.compile(r"(?:-\s+(?:live|acoustic|unplugged|sessions?|in concert)|live (?:at|from|in|on))\b", re.I)
+
+
+def _cut_version_tail(text: str) -> str:
+    """Drops the first version marker that is followed by no line break (bar one final newline), and everything after it."""
+    limit = len(text) - 1 if text.endswith("\n") else len(text)
+    last_break = text.rfind("\n", 0, limit)
+    pos = 0
+    while (m := _VERSION_KEY.search(text, pos)) is not None:
+        if m.start() and text[m.start() - 1].isspace() and m.end() > last_break:
+            return text[: len(text[: m.start()].rstrip())] + text[limit:]
+        pos = m.start() + 1
+    return text
 
 
 def lookup_artist(artist: str) -> str:
@@ -89,7 +103,11 @@ def lookup_artist(artist: str) -> str:
     return a or clean_artist(artist)
 
 
-_FEAT_SPLIT = re.compile(r"\s*+[,&]\s*+|\s++(?:and|x)\s++", re.I)
+def _squash(text: str) -> str:
+    return re.sub(r"\s+", " ", text)
+
+
+_FEAT_SPLIT = re.compile(r" ?[,&] ?| (?:and|x) ", re.I)
 
 
 def lookup_credits(artist: str) -> tuple[str, list[str]]:
@@ -105,14 +123,25 @@ def lookup_credits(artist: str) -> tuple[str, list[str]]:
         text = a[m.end() : len(a) if close < 0 else close]
     else:
         text = a[m.end() : _feat_end(a, m.end())]
-    return primary, [n for n in (p.strip(" -|") for p in _FEAT_SPLIT.split(text)) if n]
+    return primary, [n for n in (p.strip(" -|") for p in _FEAT_SPLIT.split(_squash(text))) if n]
+
+
+_MULTI_ARTIST = re.compile(r" [-–—] |, ")
+
+
+def artist_candidates(artist: str) -> list[str]:
+    """Names to try for a lookup, never saved: the whole lookup artist first, then its first part when the string holds several artists (split on " - " or the legacy ", ")."""
+    whole = lookup_credits(artist)[0]
+    first = _MULTI_ARTIST.split(_squash(whole), 1)[0].strip(" -|")
+    return [whole] if not first or first == whole else [whole, first]
 
 
 def lookup_title(title: str) -> str:
     """The title for external lookups only: clean_title plus feat credits and version info (live, acoustic, unplugged, session, venue) removed; never shown or saved."""
+    title = titleclean.clean(title or "")
     base = re.sub(r"\s+", " ", re.sub(r"[\(\[]\s*[\)\]]", "", _strip_feat(clean_title(title)))).strip(" -|")
     t = _drop_brackets(base, _is_version)
-    t = _VERSION_TAIL.sub("", t)
+    t = _cut_version_tail(t)
     return re.sub(r"\s+", " ", t).strip(" -|") or base or clean_title(title)
 
 
@@ -200,3 +229,9 @@ def split_title(artist: str, title: str) -> tuple[str, str, str | None]:
         if m and _has_feat_keyword(t[: m.start()]) and t[m.end() :].strip():
             a, t = t[: m.start()].strip(), clean_title(t[m.end() :])
     return normalize_feat(a), normalize_feat(t), remix
+
+
+def lookup_query(artist: str, title: str) -> tuple[str, list[str], str]:
+    """(artist, artist names to try, title) as the external lookups should ask for a saved artist and title."""
+    artist, title = split_artist_title(artist, title)
+    return artist, artist_candidates(artist), lookup_title(title)

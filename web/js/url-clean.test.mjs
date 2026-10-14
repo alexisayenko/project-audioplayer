@@ -79,3 +79,8 @@ test('a bare YouTube video id becomes the watch URL', () => {
   for (const bad of ['QCuUAClm-h', 'QCuUAClm-hQx', 'QCuUA lm-hQ', 'hello world']) assert.equal(cleanUrl(bad), bad);
   assert.equal(cleanUrl('https://youtu.be/QCuUAClm-hQ?si=6jgIDG70_QgTAZ4t'), 'https://www.youtube.com/watch?v=QCuUAClm-hQ');
 });
+
+test('cleanPasted takes the first line of multi-line text', () => {
+  assert.equal(cleanPasted('some words  \r\n second line'), 'some words');
+  assert.equal(cleanPasted('a\n\n\nb'), 'a');
+});

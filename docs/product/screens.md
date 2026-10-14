@@ -22,25 +22,25 @@ library. There is no separate playlist entity.
 
 ## Navigation
 
-Web (Electrophone screens, web v16 artboards, ADR-0009 amendment): three
-destinations, **Library**, **Playback** and **Settings**; adding a song is the
+Web (Electrophone screens, web v16 artboards, ADR-0009 amendment): four
+destinations, **Library**, **Playback**, **Genres map** (`#/genres`, with a Now playing popover of the playing song's genres: a movable force graph of the user's genres filling the whole page, with a translucent toolbar, a legend, a collapsible outline panel and a floating selected-genre card, GEN-010..023; hovering a genre only rings it and shows its name, selecting takes a click, GEN-026), **Song stats** (`#/stats`: a full-page year x BPM scatter plot, one dot per song, with a colour-by select, legend, rubber-band selection with a floating action panel, zoom, right-drag pan and centring, dots coloured by genre family by default and a table view, STA-001..021) and **Settings**; adding a song is the
 accent "Add song" button in the Library header, which opens the Add dialog
 (`#/add` still works and opens Library with the dialog). A signed-out visitor sees
 only Settings (Sign in with Google, Sign in with Apple; no token field); once
 signed in, Settings shows the email and Sign out. Navigation is a 220px rail
-(>= 720px), a 64px icon rail (480-719px) or a floating tab bar (< 480px). A
+(>= 720px, collapsible to the 64px icon rail with a toggle button, WEB-037), a 64px icon rail (480-719px) or a floating tab bar (< 480px). A
 persistent player bar (cover, title, shuffle, previous, play/pause, next, repeat,
 time, volume) sits at the bottom of Library and Settings and opens Playback on
-tap; on Playback itself it is hidden. Library is a table of the catalog
-(cover, Track (title with a muted "Artist · Year" line below), Genres (from 900px), Time, a "..." menu; no #, Album, Artist or Year column; Genres drops first on narrower screens). A song without server audio is greyed, shows its YouTube or SoundCloud logo as a link next to the menu instead of the time, has only "Edit song" in its menu and never enters the queue (WEB-023). Above the list, four category chips (Tags, Genres,
-Years, Countries) open a multi-select filter sheet (WEB-011). Web Playback is two columns (below 900px the queue card sits under the player): the player column has the cover (title and artist on it), a seek bar, the transport tray (Shuffle, Previous, Play, Next, Repeat), a volume row and the details; the queue card beside it has "Add by tag" and "Clear" and no tab badge (the queue length shows in its header; PLY-001, PLY-002). The iOS Settings screen shows Account (a quiet "Not allowed on this server" under the email when the server answers 403), Downloads (read-only audio quality, "Download new songs automatically", "Use mobile data"), and Storage, then the version line; the iOS Add sheet opens the edit form right after Fetch (link field, Fetch and the search link hidden) and pins "Add to library" and "Add and download to iPhone" at the bottom. The iOS app has its own tab bar with the same three destinations (its Playback has no volume row and its titles carry no eyebrow) (see
+tap; on Playback itself it is hidden. Tapping a Library row opens a read-only song card (large cover, tags, links, Play now, Add to playlist, Edit); the row cover is a play/pause button (LIB-120..124). Library is a table of the catalog
+(cover, Track (title, followed by a space and the remix and production names in muted parentheses when set (LIB-112); a title too long for its box scrolls left and right on the current row, on hover and focus otherwise (LIB-131), with a muted "Artist · Year" line below), Genres (from 900px; Track is a fixed 300px with the cover, Genres takes all remaining width), Time, a "..." menu; no #, Album, Artist or Year column; Genres drops first on narrower screens). A song without server audio is greyed, shows its YouTube or SoundCloud logo as a link and a Download icon button (fetches the audio to the server; phones use the row menu item "Download to server") next to the menu (while its audio is being fetched, a progress ring with the percent and a thin line along the row's bottom edge instead, LIB-098; a failed fetch shows a warning button that retries) instead of the time, has only "Edit song" in its menu and never enters the queue (WEB-023). Above the list, four category chips (Tags, Genres,
+Years, Countries) open a multi-select filter sheet (WEB-011). Web Playback is two columns (below 900px the queue card sits under the player): the player column has the cover (title and artist on it), a seek bar, the transport tray (Shuffle, Previous, Play, Next, Repeat; a selected Shuffle or Repeat shows an outlined, unfilled button, PLY-132), a volume row and the details; one visualizer at a time (Mirrored spectrum, Ring, or the WebGL Terrain where WebGL exists), chosen with a segmented switch or the `M` key and sized by Settings > Playback > "Visualizer height" (1/3 by default); Playback also has a Visualizer button and the key `V` for a full-screen spectrum overlay with auto-hiding controls, and an optional spectrum background layer (Settings > Playback, VIZ-020..024); the queue card beside it has "Add by tag" and "Clear" and no tab badge (the queue length shows in its header; PLY-001, PLY-002). The iOS Settings screen shows Account (a quiet "Not allowed on this server" under the email when the server answers 403), Downloads (read-only audio quality, "Download new songs automatically", "Use mobile data"), and Storage, then the version line; the iOS Add sheet opens the edit form right after Fetch (link field, Fetch and the search link hidden) and pins "Add to library" and "Add and download to iPhone" at the bottom. The iOS app has its own tab bar with the same three destinations (its Playback has no volume row and its titles carry no eyebrow) (see
 [`../specs/ios.md`](../specs/ios.md)).
 
 ## Screens
 
 ### 1. Add song
 
-Web: a centred 560px dialog over Library (bottom-aligned sheet on phones): title "Add from YouTube or SoundCloud", Cancel, a link field (YouTube or SoundCloud link, or a bare YouTube video id) with a Fetch button, then the one shared song form with a sticky "Save to library" button. The form after Fetch is the same control as the Edit dialog (WEB-033, `web/js/song-form.js`): same fields in the same order, including Get metadata, the hint and the two Wikipedia inputs; only the BPM row (Add: muted "BPM is detected after saving") and the preview header differ. After Fetch (WEB-022) the full form opens at once, with "Get metadata" and four service icons after Title and Artist, Genres and Countries chip fields (the Genres field suggests up to 6 genres as you type, WEB-030), and a sticky Save footer. A Remix & additional production field follows Artist (also in the edit dialog); Title, Artist and Remix show their text as pills with a pencil menu and an X (WEB-028); pills can also be dragged to another field or reordered (WEB-029, ADD-074); the Remix field is prefilled from the fetched link when the server cut a remix bracket or a title segment containing "remix" out of the title (WEB-026, IOS-063). A link already in the library is flagged under the field as soon as it is pasted ("Already in your library: title · artist", Show in library, Fetch disabled; WEB-025). The pencil menu edits, removes or moves a pill to another of the three fields (WEB-028, ADD-071, IOS-065). Saving closes the dialog and saves the catalog entry only, without audio (toast "Saved to library"; the web starts no download, WEB-015). On iOS the Add sheet opens the same form right after Fetch and pins "Add to library" (also downloads when "Download new songs automatically" is on) and "Add and download to iPhone" at the bottom; that is the only path that puts audio on the phone, and the "Downloading NN%" row appears for it. Closing the sheet by any route clears the form (IOS-020).
+Web: a centred 560px dialog over Library (bottom-aligned sheet on phones): title "Add from YouTube or SoundCloud", Cancel, a link field (YouTube or SoundCloud link, or a bare YouTube video id) with a Fetch button, then the one shared song form with a sticky "Save to library" button. The form after Fetch is the same control as the Edit dialog (WEB-033, `web/js/song-form.js`): same fields in the same order (an optional "Remix year" input sits beside Remix & additional production, ADD-101), including Get metadata, the hint and the two Wikipedia inputs; only the BPM row (Add: muted "BPM is detected after saving") and the preview header differ. After Fetch (WEB-022) the full form opens at once, with "Get metadata" and four service icons after Title and Artist, Genres and Countries chip fields (the Genres field suggests up to 6 genres as you type, WEB-030), and a sticky Save footer. A Remix & additional production field follows Artist (also in the edit dialog); Title, Artist and Remix show their text as pills split only on ' - ', ' | ' and ' / ' with spaces (commas and ampersands never split, WEB-039, ADD-071); the Title is first cleaned of promo noise with a "Cleaned: removed [Free Download] - Restore" hint (ADD-077) and offers 'Move "X" to Artist?' with 2+ pills (ADD-080); the pills show with a pencil menu and an X (WEB-028); pills can also be dragged to the other field or reordered (WEB-029, ADD-074); the Remix field is prefilled from the fetched link when the server cut a remix bracket or a title segment containing "remix" out of the title (WEB-026, IOS-063). A link already in the library is flagged under the field as soon as it is pasted ("Already in your library: title · artist", Show in library, Fetch disabled; WEB-025). The pencil menu edits, removes or moves a pill to another of the three fields (WEB-028, ADD-071, IOS-065). Saving closes the dialog and saves the catalog entry only, without audio (toast "Saved to library"; the web starts no download, WEB-015). On iOS the Add sheet opens the same form right after Fetch and pins "Add to library" (also downloads when "Download new songs automatically" is on) and "Add and download to iPhone" at the bottom; that is the only path that puts audio on the phone, and the "Downloading NN%" row appears for it. Closing the sheet by any route clears the form (IOS-020).
 
 1. User pastes a YouTube URL or a bare 11-character video id (cleaned to the canonical link on paste, drop, bulk input and blur; surrounding text is dropped).
 2. App asks the server for a metadata preview (cover, title, artist,
@@ -57,16 +57,19 @@ Web: a centred 560px dialog over Library (bottom-aligned sheet on phones): title
 
 Manages all songs.
 
-- One row per song in a single list card (web: table with a header row, LIB-010; columns cover / Track / Genres / Time / menu, with artist and year only in the Track cell's muted "Artist · Year" line and no #, Album, Artist or Year column, LIB-018): cover, title, genres, duration and a "..." menu with Play now, Add to playlist and Edit song (the Edit dialog also holds Delete; a song without server audio has only Edit song). On the web, clicking the title of a song with audio plays it and keeps the user on Library. The playing row has an accent wash. Tags and BPM are not shown in rows (filter by the category chips; BPM is on Playback and in Edit). Sort is the text button under the chips ("Recently added", Title, Artist, Year, BPM); a line on the right reads "N songs match · selected values" when filtered.
-- Search box (title, artist, album, tags). With a tag filter or search text active, an "Add all N to playlist" button appends all listed songs to the queue (toast "Added X songs (Y already in queue)"; a tag filter becomes a playlist chip, search-only adds are manual); hidden when nothing is filtered.
+- One row per song in a single list card (web: table with a header row, LIB-010; columns cover / Track / Genres / Time / menu, with artist and year only in the Track cell's muted "Artist · Year" line and no #, Album, Artist or Year column, LIB-018): cover, title, genres, duration and a "..." menu with Play now, Add to playlist, Download and Edit song (the Edit dialog also holds Delete; a song without server audio has only Edit song). On the web, clicking the title of a song with audio plays it and keeps the user on Library. The playing row has an accent wash. Tags are not shown in rows (filter by the category chips); BPM is a small outlined badge at the right end of the title line (LIB-019), also on Playback and in Edit. Sort is the text button under the chips ("Recently added", Title, Artist, Year, BPM); a line on the right reads "N songs match · selected values" when filtered.
+- Search box (title, artist, album, tags). With a tag filter or search text active, an "Add all N to playlist" button appends all listed songs to the queue (toast "Added X songs (Y already in queue)"; a tag filter becomes a playlist chip, search-only adds are manual); hidden when nothing is filtered. A "Play all N" button next to it (always shown when songs are listed) replaces the queue with the listed songs and starts playing (toast "Playing N songs (queue replaced)"). Playback and Edit have a Download button (plain file save, WEB-034).
+- Rows stretch over the whole width right of the sidebar. Each row has a playlist toggle (selected when the song is in the queue; click adds or removes, LIB-095). The bottom mini-player is a fixed 720px bar (raised surface, border, shadow) with Edit details, Show in list (scrolls to and flashes the playing song's row, LIB-097) and Add to current playlist (toggle, PLY-119).
 - `decade:` tags are derived from Year by the server and show as "the 90s"; the tag editor previews the chip as Year changes.
 - Filter by tag (chips grouped by prefix: Genre, Decade, Country, then others; plain tags under Tags; `country:` values show as names, e.g. Lithuania; languages are not shown or filterable); sort (added date, title, artist, year, BPM; songs without BPM last).
 - The iOS song sheet and the Add form share one form (`SongFormView`, IOS-070): same fields in the same order (Album and Year, and the two Wikipedia fields, side by side), Get metadata, service icons and both Wikipedia link fields; only the BPM row differs. The song sheet has the same separate Genres and Countries fields as Add; its generic tag editor hides `genre:`, `country:` and `lang:` tags.
-- Edit dialog is the same shared form as Add (WEB-033): Title, Artist, Remix, hint, "Get metadata" with service icons (fills only empty fields), Album, Year, Genres, Countries, the two Wikipedia inputs (always visible), uses the same tag editor and shows BPM as a read-only label ("128 BPM" or "Not detected yet") with a Re-detect button (re-runs detection on the stored file).
+- Edit dialog is the same shared form as Add (WEB-033): Title, Artist, Remix (all pills, WEB-039), hint, "Get metadata" with service icons (fills only empty fields), Album, Year, Genres, Countries, the two Wikipedia inputs (always visible), uses the same tag editor and shows BPM as a read-only label ("128 BPM" or "Not detected yet") with a Re-detect button (re-runs detection on the stored file).
 - Edit metadata and tags of a song; Delete a song (server file, cover and
   record) from the Edit dialog.
 
 ### 3. Player (Playback tab)
+
+Web updates (2026-10-14): the song-details card has no "..." menu, only two round icon buttons, Download (hidden when the song has no server audio) and Edit song (PLY-072, PLY-102); the cover is a play/pause button with a translucent icon overlay (PLY-016); the queue "Clear" button drops every upcoming song and all chips and is disabled with a tooltip when there is nothing to clear (PLY-034); with Settings > Playback > "Auto-download songs" on, songs without audio can be queued and show Queued / Downloading N% / limit-pause / Failed-Retry states in the queue and in a banner under the cover, off shows "Not downloaded" with a Download button (PLY-110..116).
 
 SUPERSEDED for the web by the two-column layout in Navigation above (PLY-001); the four-block layout below is the older design, kept for reference only.
 
@@ -85,10 +88,10 @@ not scroll; block 4 takes the remaining height and scrolls inside.
 +--------------------------------------------+
 | 2. SONG PLAY CONTROLS                      |
 |  |<   (<5)   [ > ]   (5>)   >|    1:05 / 3:33
-|  ---o------------------------ (thin scrub) |
+|  ---o------------------------ (thin scrub; drag, click, arrow keys: PLY-120..122) |
 +--------------------------------------------+
 | 3. PLAYLIST CONTROLS                       |
-|  [shuffle] [loop 1] [loop all] Clean playlist
+|  [shuffle] [loop 1] [loop all]
 |  (tag1 x) (tag2 x)  [+]         N songs    |
 +--------------------------------------------+
 | 4. CURRENT PLAYLIST          (scrolls) |###|
@@ -124,13 +127,15 @@ drafts, both SUPERSEDED:
    - Shuffle toggle (`aria-pressed`).
    - Loop one song toggle and loop whole list toggle, mutually exclusive
      (turning one on turns the other off; both off = stop at the end).
-   - **Clean playlist**: removes all selected tags (chips) together with the
-     songs those tags contributed; see rules below.
+   - The queue card header (not this row) has **Add by tag** and **Clear**: Clear
+     removes every upcoming song and all tag chips; the current and played
+     songs stay (PLY-034).
    - Chips = the currently selected tags, each with an x; **+** opens the tag
      picker; song count on the right.
 4. **Current playlist**: rows look like Library cards (cover, title,
    "Author, Album, year", duration, play button, tags line) plus a menu
-   button (Move up, Move down, Remove). Tap a row to play it; the current
+   button (Edit song, Download when the song has server audio, Move up, Move
+   down, Remove; PLY-042). Tap a row to play it; the current
    song is highlighted. The list has a persistent, slim, styled scrollbar
    ([wireframe](wireframes/playback-v3-scrollbar.png)). Empty: "Queue is
    empty - add songs from Library".
@@ -146,14 +151,15 @@ drafts, both SUPERSEDED:
   - Add (Library): appends to the end; a manual duplicate is ignored (toast
     "Already in queue"). A song already queued only via a tag becomes manual.
     If the queue was empty the song is queued but not played.
-  - Move/Remove apply to upcoming rows only (disabled for the current and
-    earlier songs).
+  - Move/Remove apply to every row, played and current included; the current
+    song stays current (followed by identity). Removing the current song
+    plays the next playable one, or stops when none is left (PLY-046).
 - **Tag picker** (+): all tags grouped by prefix with counts, multi-select;
   already selected tags show as selected. Confirming adds every song that has
   ANY picked tag (union) to the end of the queue, dedupes, and shows the
   picked tags as chips. Deselecting a selected tag in the picker removes it
   like the chip's x.
-- **Removing a tag** (chip x, or Clean playlist for all chips) removes the
+- **Removing a tag** (chip x) removes the
   songs it contributed only if they are upcoming (after the current song),
   not manual, and not held by another remaining chip. The current song keeps
   playing; played songs and songs added manually stay. Manual wins if a song

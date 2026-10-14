@@ -1,8 +1,12 @@
 import { api } from './api.js';
 import { store } from './store.js';
 import { el, toast } from './dom.js';
+import { icon } from './icons.js';
+import { hasAudio } from './playable.js';
+import { downloadSong } from './download.js';
 import { songForm } from './song-form.js';
-import { patchBody, songSources } from './song-payload.js';
+import { patchBody, songSources, yearError } from './song-payload.js';
+import { can } from './guest.js';
 
 export function dialogHead(title, sub, onCancel) {
   return el('div', { class: 'dlg-head' },
@@ -44,6 +48,7 @@ export function removeSong(s) {
 }
 
 export function editDialog(song) {
+  if (!can('edit')) return;
   const dlg = document.getElementById('edit-dialog');
   const sf = songForm({ mode: 'edit', song, source: () => songSources(song) });
   const err = el('p', { class: 'msg error', hidden: true });
@@ -52,6 +57,7 @@ export function editDialog(song) {
     sf.node,
     err,
     el('div', { class: 'row end' },
+      hasAudio(song) ? el('button', { type: 'button', class: 'btn outline', title: 'Download', 'aria-label': 'Download', onclick: () => downloadSong(song) }, icon('download', 18)) : null,
       el('button', { type: 'button', class: 'btn danger del-left', onclick: () => removeSong(song) }, 'Delete from library'),
       el('button', { type: 'submit', class: 'btn primary glow' }, 'Save')));
   form.addEventListener('submit', async (e) => {
@@ -63,8 +69,14 @@ export function editDialog(song) {
       sf.focus();
       return;
     }
+    const bad = yearError(v, song);
+    if (bad) {
+      err.textContent = bad;
+      err.hidden = false;
+      return;
+    }
     try {
-      await api.patch(song.id, patchBody(v));
+      await api.patch(song.id, patchBody(v, song));
       dlg.close();
       await store.refresh();
       toast('Saved');

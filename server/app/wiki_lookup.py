@@ -2,18 +2,15 @@
 
 from __future__ import annotations
 
-import datetime
 import html
-import json
 import logging
-import os
 import re
 import urllib.parse
 import urllib.request
 from typing import Any
 
-from . import genre_lookup
-from .titles import lookup_credits
+from . import countrycodes, genre_lookup, httpjson, timeutil
+from .titles import artist_candidates
 
 log = logging.getLogger(__name__)
 
@@ -71,12 +68,7 @@ def qid_of(link: str | None) -> str | None:
 
 
 def _fetch_json(url: str) -> dict[str, Any]:
-    req = urllib.request.Request(
-        url,
-        headers={"User-Agent": os.environ.get("AUDIO_MB_USER_AGENT", genre_lookup.DEFAULT_UA), "Accept": "application/json"},
-    )
-    with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
-        return json.loads(resp.read().decode("utf-8"))
+    return httpjson.http_json(url, TIMEOUT)
 
 
 def _entity(qid: str) -> dict[str, Any] | None:
@@ -149,6 +141,7 @@ def _year(claims: dict[str, Any]) -> int | None:
         m = re.match(r"^\+?(\d{1,4})-", str((v or {}).get("time", ""))) if isinstance(v, dict) else None
         if m and int((v or {}).get("precision") or 0) >= 9:
             years.append(int(m.group(1)))
+    years = [y for y in years if timeutil.valid_year(y)]
     return min(years) if years else None
 
 
@@ -165,8 +158,9 @@ def _country_tags(artist_claims: dict[str, Any], song_claims: dict[str, Any]) ->
     cc = _claims_map(countries[:2])
     for q in countries[:2]:
         for code in _strings(cc.get(q, {}), "P297"):
-            if re.fullmatch(r"[A-Za-z]{2}", code):
-                return [f"country:{code.lower()}"]
+            known = countrycodes.canonical_country(code) if re.fullmatch(r"[A-Za-z]{2}", code) else None
+            if known:
+                return [f"country:{known}"]
     return []
 
 
@@ -309,7 +303,7 @@ _YEAR = re.compile(r"(?<!\d)(\d{4})(?!\d)")
 
 
 def _in_range(year: int) -> bool:
-    return 1900 <= year <= datetime.date.today().year + 1
+    return timeutil.valid_year(year) is not None
 
 
 def _clean_year(value: str) -> int | None:
@@ -491,19 +485,21 @@ def _pick(rels: list[str]) -> tuple[str | None, str | None]:
     return link, qid
 
 
-def suggest(artist: str, title: str) -> dict[str, Any]:
-    """{wikipedia_song, wikipedia_artist, tags, year} for a track via MusicBrainz + Wikidata; empty values on any failure."""
+def suggest(artist: str, title: str, mb: dict[str, Any] | None = None) -> dict[str, Any]:
+    """{wikipedia_song, wikipedia_artist, tags, year} for a track via MusicBrainz + Wikidata; empty values on any failure.
+
+    `mb` is an already looked-up MusicBrainz result (`lookup` or `lookup_recording`) used instead of searching."""
     out: dict[str, Any] = {"wikipedia_song": None, "wikipedia_artist": None, "tags": [], "song_genres": [], "year": None, "infobox_album": None, "infobox_year": None, "infobox_suggest": None}
     if not genre_lookup.enabled():
         return out
     try:
-        mb = genre_lookup.lookup(artist, title)
+        mb = mb or genre_lookup.lookup(artist, title)
         out["year"] = mb["year"]
         song_link, song_q = _pick(mb["song_rels"])
         artist_link, artist_q = _pick(mb["artist_rels"])
         out["wikipedia_song"], out["wikipedia_artist"] = song_link, artist_link
         box_artist = infobox(song_link)["artist"] if song_link else None
-        if box_artist and not genre_lookup._artist_match(lookup_credits(artist)[0], box_artist):
+        if box_artist and not any(genre_lookup._artist_match(c, box_artist) for c in artist_candidates(artist)):
             song_link, song_q = None, None
             out["wikipedia_song"] = None
         song_q = song_q or qid_of_page(song_link or "")

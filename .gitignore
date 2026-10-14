@@ -27,3 +27,16 @@ out/
 
 # Claude Code local overrides
 .claude/settings.local.json
+
+# Python / tooling artefacts
+__pycache__/
+*.pyc
+.coverage
+.ruff_cache/
+server/.coverage
+scripts/__pycache__/
+*.bak*
+
+# Local-only invoices (personal data)
+docs/brand/invoices/*
+!docs/brand/invoices/README.md

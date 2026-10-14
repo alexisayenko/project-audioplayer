@@ -12,7 +12,7 @@ log = logging.getLogger(__name__)
 
 
 class _Job:
-    def __init__(self, uid: str, exempt: bool, run: Callable[[], None], started: Callable[[], None]):
+    def __init__(self, uid: str, exempt: bool, run: Callable[[], None], started: Callable[[], None]) -> None:
         self.uid, self.exempt, self.run, self.started = uid, exempt, run, started
 
 
@@ -64,3 +64,44 @@ class Scheduler:
                 self._running -= 1
                 self._by_user[job.uid] -= 1
                 self._pump_locked()
+
+
+class Tracker:
+    """Progress callback for one job record: `tracker(p)` keeps the old 0..1 contract; speed, eta and the converting phase are extras."""
+
+    def __init__(self, job: dict) -> None:
+        self.job = job
+
+    def __call__(self, p: float) -> None:
+        self.job["progress"] = round(p, 3)
+
+    def detail(self, speed: float | None, eta: float | None) -> None:
+        self.job["speed"] = int(speed) if speed else None
+        self.job["eta"] = int(eta) if eta is not None else None
+
+    def converting(self) -> None:
+        self.job["progress"] = 1.0
+        self.job["converting"] = True
+        self.job["speed"] = self.job["eta"] = None
+
+
+def public(job: dict) -> dict:
+    """Status body: the original fields plus `state`, `percent`, `speed` (bytes/s), `eta` (s) and `error_code`."""
+    status = job.get("status")
+    if status == "error":
+        state = "failed"
+    elif status == "downloading" and job.get("converting"):
+        state = "converting"
+    else:
+        state = status
+    running = state == "downloading"
+    progress = 1.0 if state in ("converting", "done") else float(job.get("progress") or 0.0)
+    body = {k: v for k, v in job.items() if k not in ("converting", "speed", "eta")}
+    body.update(
+        state=state,
+        percent=max(0, min(100, int(round(progress * 100)))),
+        speed=job.get("speed") if running else None,
+        eta=job.get("eta") if running else None,
+        error_code=job.get("code") if state == "failed" else None,
+    )
+    return body

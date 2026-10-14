@@ -1,7 +1,6 @@
 import json
 
-from app import extractor, library, limits, main, urlclean
-from app.problems import Problem
+from app import extractor, library, urlclean
 from tests.test_library import ADIR, H, ODIR, VID, VID2, add, client  # noqa: F401
 
 LEGACY = {
@@ -196,72 +195,16 @@ def test_unconfigured_music_root_does_not_break_library(client, tmp_path, monkey
     assert states == ["server", "none"]
 
 
-SC_ID = "soundcloud-123456"
-SC_URL = "https://soundcloud.com/artist/track"
-
-
-def test_fetch_audio_for_catalog_song(client, tmp_path):
-    assert add(client, audio=False).status_code == 201
-    r = client.post(f"/songs/{VID}/audio", headers=H)
-    assert r.status_code == 202
-    assert r.json()["id"] == VID
-    assert client.get(f"/songs/{VID}/status", headers=H).json()["status"] == "done"
-    song = client.get("/library", headers=H).json()["songs"][0]
-    assert song["audio_state"] == "server"
-    assert song["file"] == f"{VID}.m4a"
-    assert song["title"] == "Song"
-    assert (ADIR(tmp_path) / f"{VID}.m4a").is_file()
-    assert client.get(f"/files/{VID}", headers=H).status_code == 200
-    assert client.post(f"/songs/{VID}/audio", headers=H).status_code == 409
-
-
-def test_fetch_audio_errors(client, tmp_path):
-    assert client.post(f"/songs/{VID}/audio", headers=H).status_code == 404
-    assert client.post("/songs/bad!/audio", headers=H).status_code == 422
-    seed(tmp_path, [meta_only("spotify-abc123", source_url=None)])
-    r = client.post("/songs/spotify-abc123/audio", headers=H)
-    assert r.status_code == 422
-    assert r.json()["error"] == "no_link"
-    assert client.post(f"/songs/{VID}/audio").status_code == 401
-
-
-def test_fetch_audio_soundcloud_uses_stored_link(client, tmp_path, monkeypatch):
-    seen = {}
-
-    def fake(video_id, out_dir, progress=None, source_url=None):
-        seen["url"] = source_url
-        (out_dir / f"{video_id}.m4a").write_bytes(b"audio")
-        return {"duration": 5}
-
-    monkeypatch.setattr(extractor, "download_audio", fake)
-    seed(tmp_path, [meta_only(SC_ID, source_url=SC_URL)])
-    assert client.post(f"/songs/{SC_ID}/audio", headers=H).status_code == 202
-    assert seen["url"] == SC_URL
-    assert client.get("/library", headers=H).json()["songs"][0]["audio_state"] == "server"
-    seed(tmp_path, [meta_only(SC_ID, source_url=None)])
-    assert client.post(f"/songs/{SC_ID}/audio", headers=H).json()["error"] == "no_link"
-
-
-def test_fetch_audio_failure_is_a_job_error(client, tmp_path, monkeypatch):
-    def boom(*args, **kwargs):
-        raise RuntimeError("blocked")
-
-    monkeypatch.setattr(extractor, "download_audio", boom)
-    add(client, audio=False)
-    assert client.post(f"/songs/{VID}/audio", headers=H).status_code == 202
-    st = client.get(f"/songs/{VID}/status", headers=H).json()
-    assert st["status"] == "error"
-    assert client.get("/library", headers=H).json()["songs"][0]["audio_state"] == "none"
-
-
-def test_fetch_audio_respects_storage_quota(client, monkeypatch):
-    add(client, audio=False)
-
-    def full(owner, audio_dir, pool_dir):
-        raise Problem(403, "library_full_bytes", "Your storage is full.")
-
-    monkeypatch.setattr(limits, "check_capacity", full)
-    r = client.post(f"/songs/{VID}/audio", headers=H)
-    assert r.status_code == 403
-    assert r.json()["error"] == "library_full_bytes"
-    assert client.get("/library", headers=H).json()["songs"][0]["audio_state"] == "none"
+def test_titles_with_commas_are_stored_verbatim(client, tmp_path):
+    title = "Лондон, гуд бай"
+    artist = "Земфира, CarMan"
+    r = add(client, metadata={"title": title, "artist": artist}, audio=False)
+    assert r.status_code == 201
+    stored0 = client.get("/library", headers=H).json()["songs"][0]
+    assert (stored0["title"], stored0["artist"]) == (title, artist)
+    patched = client.patch(f"/songs/{VID}", json={"title": title, "artist": artist, "year": 1999}, headers=H).json()
+    assert (patched["title"], patched["artist"]) == (title, artist)
+    stored = client.get("/library", headers=H).json()["songs"][0]
+    assert (stored["title"], stored["artist"]) == (title, artist)
+    raw = json.loads((ODIR(tmp_path) / "library.json").read_text(encoding="utf-8"))["songs"][0]
+    assert (raw["title"], raw["artist"]) == (title, artist)

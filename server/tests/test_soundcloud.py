@@ -4,7 +4,7 @@ import urllib.error
 import pytest
 from fastapi.testclient import TestClient
 
-from app import bpm, extractor, library, main, urlclean
+from app import bpm, deps, extractor, library, main, urlclean
 from tests.test_library import ADIR, ODIR
 
 H = {"X-API-Token": "secret"}
@@ -264,9 +264,9 @@ def test_fetch_cover_soundcloud_fixed_host(tmp_path, monkeypatch):
 @pytest.fixture
 def client(tmp_path, monkeypatch):
     monkeypatch.setenv("AUDIO_API_TOKEN", "secret")
-    monkeypatch.setattr(main, "DOWNLOAD_DIR", tmp_path / "downloads")
-    monkeypatch.setattr(main, "DATA_DIR", tmp_path)
-    monkeypatch.setattr(main, "JOBS", {})
+    monkeypatch.setattr(deps, "DOWNLOAD_DIR", tmp_path / "downloads")
+    monkeypatch.setattr(deps, "DATA_DIR", tmp_path)
+    monkeypatch.setattr(deps, "JOBS", {})
     state = {"probe": {**{
         "id": SC_ID, "source": "soundcloud", "source_url": SC_URL, "title": "Some Track", "artist": "Some Label",
         "album": None, "year": None, "tags": ["genre:house"], "duration": 215.5,

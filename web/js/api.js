@@ -1,6 +1,8 @@
+import { storeRemove } from './storage.js';
 import { friendly } from './limits.js';
+import { clearGuest } from './guest.js';
 
-try { localStorage.removeItem('audioplayer.token'); } catch { /* storage unavailable */ }
+storeRemove('audioplayer.token');
 
 export const auth = { email: '', provider: '' };
 
@@ -18,10 +20,11 @@ function lostSession() {
 }
 
 export class ApiError extends Error {
-  constructor(status, message, code = '') {
+  constructor(status, message, code = '', retryMinutes = 0) {
     super(message);
     this.status = status;
     this.code = code;
+    this.retryMinutes = retryMinutes;
   }
 }
 
@@ -50,7 +53,13 @@ async function request(method, path, body, signal) {
       lostSession();
     }
     const code = data?.error || '';
-    throw new ApiError(res.status, friendly(code, data, detail) || `Request failed (${res.status})`, code);
+    const err = new ApiError(res.status, friendly(code, data, detail) || `Request failed (${res.status})`, code, Number(data?.retry_after_minutes) || 0);
+    if (code === 'guest_limit') {
+      const ev = new Event('guest-limit');
+      ev.detail = err.message;
+      window.dispatchEvent(ev);
+    }
+    throw err;
   }
   return data;
 }
@@ -81,6 +90,7 @@ export const session = {
     const who = await authCall('POST', '/auth/session', { id_token: idToken });
     auth.email = who.email || who.provider;
     auth.provider = who.provider;
+    clearGuest();
     return who;
   },
   end: async () => {
@@ -104,13 +114,22 @@ export const api = {
   usage: () => request('GET', '/me/usage'),
   library: () => request('GET', '/library').then((d) => d.songs),
   tags: () => request('GET', '/tags'),
+  genreGraph: () => request('GET', '/genres/graph'),
   genres: () => request('GET', '/genres').then((d) => (Array.isArray(d?.genres) ? d.genres : [])),
   preview: (url, signal) => request('POST', '/preview', { url }, signal),
   metadata: (body, signal) => request('POST', '/metadata', body, signal),
-  addSong: (url, metadata, tags) => request('POST', '/songs', { url, metadata, tags, audio: false }),
+  addSong: (url, metadata, tags, keepTitle = false) => request('POST', '/songs', { url, metadata, tags, audio: false, ...(keepTitle ? { keep_title: true } : {}) }),
   patch: (id, changes) => request('PATCH', `/songs/${q(id)}`, changes),
+  fetchAudio: (id) => request('POST', `/songs/${q(id)}/audio`),
+  songStatus: (id) => request('GET', `/songs/${q(id)}/status`),
   detectBpm: (id) => request('POST', `/songs/${q(id)}/bpm/detect`),
+  identify: (id) => request('POST', `/songs/${q(id)}/identify`),
+  identifyState: (id) => request('GET', `/songs/${q(id)}/identify`),
+  backfillBpm: () => request('GET', '/me/backfill/bpm'),
+  startBackfillBpm: () => request('POST', '/me/backfill/bpm'),
+  cancelBackfillBpm: () => request('DELETE', '/me/backfill/bpm'),
   remove: (id) => request('DELETE', `/songs/${q(id)}`),
   fileUrl: (id) => `/files/${q(id)}`,
+  downloadUrl: (id) => `/files/${q(id)}?download=1`,
   coverUrl: (id) => `/covers/${q(id)}`,
 };

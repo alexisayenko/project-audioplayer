@@ -4,7 +4,8 @@ import json
 import pytest
 from fastapi.testclient import TestClient
 
-from app import bpm, extractor, library, main, users
+from app import bpm, deps, extractor, library, main, users
+from app.web import web_version
 
 VID = "dQw4w9WgXcQ"
 VID2 = "9bZkp7q19f0"
@@ -25,9 +26,9 @@ def ADIR(tmp_path):
 @pytest.fixture
 def client(tmp_path, monkeypatch):
     monkeypatch.setenv("AUDIO_API_TOKEN", "secret")
-    monkeypatch.setattr(main, "DOWNLOAD_DIR", tmp_path / "downloads")
-    monkeypatch.setattr(main, "DATA_DIR", tmp_path)
-    monkeypatch.setattr(main, "JOBS", {})
+    monkeypatch.setattr(deps, "DOWNLOAD_DIR", tmp_path / "downloads")
+    monkeypatch.setattr(deps, "DATA_DIR", tmp_path)
+    monkeypatch.setattr(deps, "JOBS", {})
 
     def fake_download(video_id, out_dir, progress=None, source_url=None):
         out_dir.mkdir(parents=True, exist_ok=True)
@@ -226,7 +227,8 @@ def test_delete(client, tmp_path):
     assert add(client).status_code == 202
 
 
-def test_query_token_on_files_and_covers_only(client):
+def test_query_token_on_files_and_covers_only(client, monkeypatch):
+    monkeypatch.setenv("PUBLIC_VIEW", "0")
     add(client)
     assert client.get(f"/files/{VID}", params={"token": "secret"}).status_code == 200
     assert client.get(f"/covers/{VID}", params={"token": "secret"}).status_code == 200
@@ -255,6 +257,7 @@ def test_static_ui_served_without_shadowing_api(tmp_path, monkeypatch):
     (web / "index.html").write_text("<h1>ui</h1>")
     monkeypatch.setenv("AUDIO_API_TOKEN", "secret")
     monkeypatch.setenv("AUDIO_WEB_DIR", str(web))
+    monkeypatch.setenv("PUBLIC_VIEW", "0")
     m = importlib.reload(main)
     try:
         c = TestClient(m.app)
@@ -400,7 +403,7 @@ def test_fractional_bpm_migrated_on_load():
 @pytest.mark.parametrize("year,tag", [
     (1949, None), (1950, "decade:50s"), (1994, "decade:90s"), (1999, "decade:90s"),
     (2000, "decade:00s"), (2007, "decade:00s"), (2013, "decade:10s"),
-    (2029, "decade:20s"), (2030, None), (None, None), (True, None),
+    (2027, "decade:20s"), (2028, None), (None, None), (True, None),
 ])
 def test_decade_tag_derivation(year, tag):
     assert library.decade_tag(year) == tag
@@ -444,8 +447,8 @@ def test_decade_on_create_and_year_change(client):
     assert r.json()["tags"] == ["x", "decade:10s"]
     r = client.patch(f"/songs/{VID}", json={"tags": ["x", "decade:60s"]}, headers=H)
     assert r.json()["tags"] == ["x", "decade:10s"]
-    r = client.patch(f"/songs/{VID}", json={"year": 2030}, headers=H)
-    assert r.json()["tags"] == ["x", "decade:10s"]
+    r = client.patch(f"/songs/{VID}", json={"year": 2028}, headers=H)
+    assert r.status_code == 422
     r = client.patch(f"/songs/{VID}", json={"year": None}, headers=H)
     assert r.json()["tags"] == ["x", "decade:10s"]
 
@@ -464,11 +467,12 @@ def test_web_assets_are_versioned_and_revalidated(tmp_path, monkeypatch):
     (tmp_path / "secret.txt").write_text("secret")
     monkeypatch.setenv("AUDIO_API_TOKEN", "secret")
     monkeypatch.setenv("AUDIO_WEB_DIR", str(web))
+    monkeypatch.setenv("PUBLIC_VIEW", "0")
     m = importlib.reload(main)
     try:
         c = TestClient(m.app)
         page = c.get("/")
-        version = m.web_version()
+        version = web_version()
         assert page.headers["cache-control"] == "no-cache"
         assert page.headers["etag"] == f'"{version}"'
         for name in ("tokens.css", "style.css", "js/app.js"):
@@ -485,8 +489,85 @@ def test_web_assets_are_versioned_and_revalidated(tmp_path, monkeypatch):
         assert "no-cache" in c.get("/style.css").headers["cache-control"]
 
         (web / "style.css").write_text("body{color:red}")
-        assert m.web_version() != version
+        assert web_version() != version
         assert c.get(f"/_v/{version}/style.css").headers["cache-control"] == "no-cache"
     finally:
         monkeypatch.delenv("AUDIO_WEB_DIR")
         importlib.reload(main)
+
+
+@pytest.mark.parametrize("raw,code", [
+    ("usa", "us"), ("United States", "us"), ("U.S.A.", "us"), ("italy", "it"), ("belgium", "be"), ("russia", "ru"),
+    ("Russia", "ru"), ("netherlands", "nl"), ("ukraine", "ua"), ("norway", "no"), ("germany", "de"),
+    ("Kyrgyzstan", "kg"), ("South Korea", "kr"), ("Brazil", "br"), ("Uruguay", "uy"), ("UK", "gb"),
+    ("England", "gb"), ("Türkiye", "tr"), ("the Netherlands", "nl"), ("RUS", "ru"), ("RU", "ru"),
+])
+def test_country_aliases(raw, code):
+    from app import countrycodes
+    assert countrycodes.canonical_country(raw) == code
+    assert library.clean_tag(f"Country:{raw}") == f"country:{code}"
+
+
+def test_country_unknown_kept_and_dedupe():
+    from app import countrycodes
+    assert len(countrycodes.NAMES) >= 249
+    assert countrycodes.canonical_country("yugoslavia") is None
+    assert countrycodes.canonical_country("ussr") == "su"
+    assert library.clean_tag("country:Yugoslavia") == "country:yugoslavia"
+    assert library.clean_tags(["country:usa", "country:us", "Country:United States", "x"]) == ["country:us", "x"]
+    assert library.unknown_countries(["country:yugoslavia", "country:us", "genre:x"]) == ["yugoslavia"]
+
+
+def test_lang_aliases():
+    for raw in ("russian", "Russian", "rus", "ru-RU", "русский"):
+        assert library.clean_tag(f"lang:{raw}") == "lang:ru"
+    for raw, code in (("english", "en"), ("deutsch", "de"), ("german", "de")):
+        assert library.clean_tag(f"lang:{raw}") == f"lang:{code}"
+    assert library.clean_tag("lang:klingon") == "lang:klingon"
+
+
+def test_country_migration_on_load_idempotent(tmp_path):
+    p = tmp_path / "lib.json"
+    p.write_text(json.dumps({"songs": [{"id": "a", "title": "A", "tags": ["country:usa", "country:us", "country:yugoslavia"]}]}))
+    first = library.load(p)
+    assert first[0]["tags"] == ["country:us", "country:yugoslavia"]
+    assert library.normalize_song(first[0])["tags"] == first[0]["tags"]
+
+
+def test_write_rejects_unknown_country_but_accepts_alias(client):
+    r = add(client, tags=["country:Atlantis"])
+    assert r.status_code == 422
+    assert r.json()["error"] == "unknown_country"
+    assert r.json()["value"] == "atlantis"
+    assert add(client, tags=["country:usa"]).status_code in (200, 202)
+    s = client.get("/library", headers=H).json()["songs"][0]
+    assert "country:us" in s["tags"]
+    bad = client.patch(f"/songs/{VID}", json={"tags": ["country:atlantis"]}, headers=H)
+    assert bad.status_code == 422
+    assert bad.json()["error"] == "unknown_country"
+    assert client.patch(f"/songs/{VID}", json={"tags": ["country:Russia"]}, headers=H).json()["tags"][0] == "country:ru"
+
+
+def test_legacy_unknown_country_survives_patch(client):
+    add(client)
+    p = deps.library_path(OWNER_UID)
+    songs = library.load(p)
+    songs[0]["tags"].append("country:yugoslavia")
+    library.save(p, songs)
+    r = client.patch(f"/songs/{VID}", json={"tags": ["country:yugoslavia", "x"]}, headers=H)
+    assert r.status_code == 200
+    assert "country:yugoslavia" in r.json()["tags"]
+
+
+@pytest.mark.parametrize("raw", ["su", "SU", "SUN", "USSR", "U.S.S.R.", "Soviet Union", "the Soviet Union", "CCCP", "SSSR"])
+def test_soviet_union_is_a_first_class_country(client, raw):
+    from app import countrycodes
+    assert countrycodes.canonical_country(raw) == "su"
+    assert countrycodes.NAMES["su"] == "Soviet Union"
+    assert countrycodes.is_historical("su")
+    assert not countrycodes.is_historical("ru")
+    assert not countrycodes.is_historical("zz")
+    assert library.unknown_countries([f"country:{raw}"]) == []
+    r = add(client, tags=[f"country:{raw}"])
+    assert r.status_code in (200, 202)
+    assert "country:su" in client.get("/library", headers=H).json()["songs"][0]["tags"]

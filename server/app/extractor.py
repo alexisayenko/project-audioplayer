@@ -5,12 +5,13 @@ from __future__ import annotations
 import re
 import subprocess
 from pathlib import Path
+from collections.abc import Callable
 from typing import Any
 from urllib.parse import urlparse
 
 import yt_dlp
 
-from . import library, urlclean
+from . import library, timeutil, urlclean
 from .titles import cut_remix, split_artist_title, split_title
 from .urlclean import is_valid_video_id, parse_video_id, source_of, watch_url  # noqa: F401
 
@@ -23,7 +24,7 @@ _SC_ARTWORK_RE = re.compile(r"-(?:large|crop|badge|small|tiny|mini|original|t\d+
 class PreviewOnly(Exception):
     """A SoundCloud Go+ track whose full audio is not available (only the 30 s preview)."""
 
-    def __init__(self, message: str = PREVIEW_ONLY_MESSAGE):
+    def __init__(self, message: str = PREVIEW_ONLY_MESSAGE) -> None:
         super().__init__(message)
 
 
@@ -91,9 +92,9 @@ def cover_url(video_id: str, artwork: str | None = None) -> str | None:
 
 def _year(info: dict[str, Any]) -> int | None:
     if info.get("release_year"):
-        return int(info["release_year"])
+        return timeutil.valid_year(int(info["release_year"]))
     date = str(info.get("release_date") or info.get("upload_date") or "")
-    return int(date[:4]) if date[:4].isdigit() else None
+    return timeutil.valid_year(int(date[:4])) if date[:4].isdigit() else None
 
 
 def suggest_tags(info: dict[str, Any]) -> list[str]:
@@ -197,15 +198,26 @@ def _looks_like_preview(page_seconds: float | None, file_seconds: float | None) 
                 and page_seconds - file_seconds > _PREVIEW_GAP_SECONDS)
 
 
-def download_audio(video_id: str, out_dir: Path, progress=None, source_url: str | None = None) -> dict[str, Any]:
-    """Download one song's audio (m4a); reports progress (0..1) via the callback."""
-    out_dir.mkdir(parents=True, exist_ok=True)
-
+def _progress_hook(progress: Callable[[float], None] | None) -> Callable[[dict[str, Any]], None]:
     def hook(d: dict[str, Any]) -> None:
-        if progress and d.get("status") == "downloading":
+        if not progress:
+            return
+        if d.get("status") == "downloading":
+            if hasattr(progress, "detail"):
+                progress.detail(d.get("speed"), d.get("eta"))
             total = d.get("total_bytes") or d.get("total_bytes_estimate")
             if total:
                 progress(min(d.get("downloaded_bytes", 0) / total, 1.0))
+        elif d.get("status") == "finished" and hasattr(progress, "converting"):
+            progress.converting()
+
+    return hook
+
+
+def download_audio(video_id: str, out_dir: Path, progress: Callable[[float], None] | None = None, source_url: str | None = None) -> dict[str, Any]:
+    """Download one song's audio (m4a); reports progress (0..1) via the callback."""
+    out_dir.mkdir(parents=True, exist_ok=True)
+    hook = _progress_hook(progress)
 
     if source_of(video_id) == "soundcloud":
         return _download_soundcloud(video_id, out_dir, hook, source_url)
@@ -225,7 +237,7 @@ def download_audio(video_id: str, out_dir: Path, progress=None, source_url: str 
     return {"id": video_id, "title": title, "artist": artist, "remixer": remixer, "duration": info.get("duration")}
 
 
-def _download_soundcloud(video_id: str, out_dir: Path, hook, source_url: str | None) -> dict[str, Any]:
+def _download_soundcloud(video_id: str, out_dir: Path, hook: Callable[[dict[str, Any]], None], source_url: str | None) -> dict[str, Any]:
     opts = {
         "format": "bestaudio/best",
         "outtmpl": str(out_dir / f"{video_id}.%(ext)s"),

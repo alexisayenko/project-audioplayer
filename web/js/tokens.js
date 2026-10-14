@@ -1,45 +1,18 @@
-const STOP = new Set(['feat', 'featuring', 'vol', 'vs', 'ft', 'pt', 'mr', 'mrs', 'ms', 'dr', 'jr', 'sr', 'st', 'inc', 'ltd', 'ver', 'prod']);
+export const SEPARATOR = ' - ';
 const DASHES = new Set(['-', '–', '—']);
-const BULLETS = new Set(['●', '•']);
 
 const isWs = (c) => c !== undefined && c.trim() === '';
-const isLetter = (c) => c.toLowerCase() !== c.toUpperCase();
-const isLower = (c) => c.toLowerCase() === c && c.toUpperCase() !== c;
 
-function periodSplits(s, i) {
-  if (!isWs(s[i + 1])) return false;
-  let j = i + 1;
-  while (j < s.length && isWs(s[j])) j += 1;
-  if (j >= s.length || isLower(s[j])) return false;
-  let k = i;
-  while (k > 0 && isLetter(s[k - 1])) k -= 1;
-  const word = s.slice(k, i);
-  return word.length >= 3 && !STOP.has(word.toLowerCase());
-}
-
-function bulletLength(s, i, prevWs) {
-  let j = i;
-  while (j < s.length && BULLETS.has(s[j])) j += 1;
-  return prevWs && isWs(s[j]) ? j - i : 0;
-}
+const SLASHES = new Set(['/', '／']);
+const PIPES = new Set(['|', '｜']);
 
 function coreLength(s, i) {
   const c = s[i];
-  const prevWs = i > 0 && isWs(s[i - 1]);
-  const nextWs = isWs(s[i + 1]);
-  const atEnd = i + 1 === s.length;
-  if (c === '|') return 1;
-  if (c === ',' || c === ';') return Number(prevWs || nextWs || atEnd);
-  if (c === ':') return Number(i > 0 && !prevWs && (nextWs || atEnd));
-  return spacedLength(s, i, prevWs, nextWs);
-}
-
-function spacedLength(s, i, prevWs, nextWs) {
-  const c = s[i];
-  if (c === '/' || DASHES.has(c)) return Number(prevWs && nextWs);
-  if (BULLETS.has(c)) return bulletLength(s, i, prevWs);
-  if (c === '.') return Number(periodSplits(s, i));
-  return 0;
+  if (!(i > 0 && isWs(s[i - 1]))) return 0;
+  if (DASHES.has(c) || PIPES.has(c)) return isWs(s[i + 1]) ? 1 : 0;
+  if (!SLASHES.has(c)) return 0;
+  const len = SLASHES.has(s[i + 1]) ? 2 : 1;
+  return isWs(s[i + len]) ? len : 0;
 }
 
 function separatorEnd(s, from, len) {
@@ -84,6 +57,10 @@ export function removeToken(text, i) {
     toks.at(-1).sep = '';
   } else {
     toks.splice(i, 1);
+    if (toks.length > 1 && isBlankToken(toks.at(-1))) {
+      toks.pop();
+      toks.at(-1).sep = '';
+    }
   }
   return compose(toks).trim();
 }
@@ -171,3 +148,7 @@ export function commitTyped(text, typed, defaultSep) {
   else value = base.trimEnd() + defaultSep + chunk;
   return { value, rest };
 }
+
+export const splitTokens = (text) => tokenize(text).filter((t) => !isBlankToken(t)).map((t) => t.text.trim());
+
+export const joinTokens = (parts) => parts.map((p) => String(p ?? '').trim()).filter(Boolean).join(SEPARATOR);
