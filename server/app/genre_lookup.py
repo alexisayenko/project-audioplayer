@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import logging
 import os
 import re
@@ -13,21 +12,20 @@ import urllib.parse
 import urllib.request
 from typing import Any
 
-from . import countrycodes, langcodes
-from .titles import artist_candidates, clean_artist, clean_title, lookup_credits, lookup_title, split_artist_title  # noqa: F401
+from . import countrycodes, httpjson, langcodes
+from .ratelimit import RateLimiter
+from .titles import artist_candidates, clean_artist, clean_title, lookup_credits, lookup_query, lookup_title, split_artist_title  # noqa: F401
 
 log = logging.getLogger(__name__)
 
 API = "https://musicbrainz.org/ws/2"
-DEFAULT_UA = "audioplayer/0.1 (alex.isayenko@gmail.com)"
 MIN_SCORE = 90
 MAX_GENRES = 3
 TIMEOUT = 5
 MIN_INTERVAL = 1.1
 RETRY_DELAY = 1.0
 
-_rate_lock = threading.Lock()
-_last_call = 0.0
+_limiter = RateLimiter(MIN_INTERVAL)
 _cache: dict[tuple[str, str, tuple[str, ...]], dict[str, Any]] = {}
 _key_locks: dict[tuple[str, str, tuple[str, ...]], threading.Lock] = {}
 _key_locks_guard = threading.Lock()
@@ -50,27 +48,15 @@ def _artist_match(wanted: str, found: str) -> bool:
 
 
 def _get(path: str, params: dict[str, str]) -> dict[str, Any]:
-    global _last_call
-    url = f"{API}/{path}?{urllib.parse.urlencode(params)}"
-    req = urllib.request.Request(
-        url, headers={"User-Agent": os.environ.get("AUDIO_MB_USER_AGENT", DEFAULT_UA), "Accept": "application/json"}
-    )
-    with _rate_lock:
-        wait = _last_call + MIN_INTERVAL - time.monotonic()
-        if wait > 0:
-            time.sleep(wait)
+    req = httpjson.build_request(f"{API}/{path}", params)
+    with _limiter.serialized():
         try:
-            try:
-                with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
-                    return json.loads(resp.read().decode("utf-8"))
-            except urllib.error.HTTPError as exc:
-                if exc.code != 503:
-                    raise
-                time.sleep(RETRY_DELAY)
-                with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
-                    return json.loads(resp.read().decode("utf-8"))
-        finally:
-            _last_call = time.monotonic()
+            return httpjson.fetch(req, TIMEOUT)
+        except urllib.error.HTTPError as exc:
+            if exc.code != 503:
+                raise
+            time.sleep(RETRY_DELAY)
+            return httpjson.fetch(req, TIMEOUT)
 
 
 def _top(entity: dict[str, Any]) -> list[str]:
@@ -290,10 +276,8 @@ def lookup(artist: str, title: str, featured: list[str] | None = None) -> dict[s
     if not enabled():
         return _empty()
     try:
-        artist, title = split_artist_title(artist, title)
-        names = artist_candidates(artist)
+        artist, names, title = lookup_query(artist, title)
         credited_feats = lookup_credits(artist)[1]
-        title = lookup_title(title)
         feats = credited_feats if featured is None else [f for f in featured if f and f.strip()]
         if not names[0] or not title:
             return _empty()

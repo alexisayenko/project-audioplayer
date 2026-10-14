@@ -1,6 +1,7 @@
 import pytest
 
 from app import discogs_lookup as dl
+from app import httpjson, ratelimit
 
 
 def hit(rid, title, year, **kw):
@@ -20,7 +21,7 @@ def fresh(monkeypatch):
     monkeypatch.delenv("AUDIO_TAG_LOOKUP", raising=False)
     monkeypatch.delenv("AUDIO_GENRE_LOOKUP", raising=False)
     dl._cache.clear()
-    dl._window.clear()
+    dl._limiter.window.clear()
 
 
 def fake(results, details, calls=None):
@@ -144,20 +145,20 @@ def test_limiter_never_exceeds_fifty_per_minute(monkeypatch):
         slept.append(s)
         now[0] += s
 
-    monkeypatch.setattr(dl.time, "monotonic", lambda: now[0])
-    monkeypatch.setattr(dl.time, "sleep", sleep)
+    monkeypatch.setattr(ratelimit.time, "monotonic", lambda: now[0])
+    monkeypatch.setattr(ratelimit.time, "sleep", sleep)
     for i in range(50):
         now[0] = 1000.0 + i
         dl._acquire()
     assert slept == []
     dl._acquire()
     assert sum(slept) == pytest.approx(11, abs=0.01)
-    assert len(dl._window) <= 50
+    assert len(dl._limiter.window) <= 50
 
 
 def test_limiter_refuses_instead_of_waiting_too_long(monkeypatch):
-    monkeypatch.setattr(dl.time, "monotonic", lambda: 1000.0)
-    monkeypatch.setattr(dl.time, "sleep", lambda s: None)
+    monkeypatch.setattr(ratelimit.time, "monotonic", lambda: 1000.0)
+    monkeypatch.setattr(ratelimit.time, "sleep", lambda s: None)
     for _ in range(50):
         dl._acquire()
     with pytest.raises(RuntimeError):
@@ -183,7 +184,7 @@ def test_request_carries_the_token_and_a_user_agent(monkeypatch):
         seen["url"] = req.full_url
         return Resp()
 
-    monkeypatch.setattr(dl.urllib.request, "urlopen", urlopen)
+    monkeypatch.setattr(httpjson.urllib.request, "urlopen", urlopen)
     assert dl._get("database/search", {"type": "release"}) == {"results": []}
     assert seen["h"]["Authorization"] == "Discogs token=test-token"
     assert "audioplayer" in seen["h"]["User-agent"] and seen["timeout"] == 8

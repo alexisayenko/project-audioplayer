@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 import subprocess
 from pathlib import Path
+from collections.abc import Callable
 from typing import Any
 from urllib.parse import urlparse
 
@@ -23,7 +24,7 @@ _SC_ARTWORK_RE = re.compile(r"-(?:large|crop|badge|small|tiny|mini|original|t\d+
 class PreviewOnly(Exception):
     """A SoundCloud Go+ track whose full audio is not available (only the 30 s preview)."""
 
-    def __init__(self, message: str = PREVIEW_ONLY_MESSAGE):
+    def __init__(self, message: str = PREVIEW_ONLY_MESSAGE) -> None:
         super().__init__(message)
 
 
@@ -197,7 +198,7 @@ def _looks_like_preview(page_seconds: float | None, file_seconds: float | None) 
                 and page_seconds - file_seconds > _PREVIEW_GAP_SECONDS)
 
 
-def download_audio(video_id: str, out_dir: Path, progress=None, source_url: str | None = None) -> dict[str, Any]:
+def download_audio(video_id: str, out_dir: Path, progress: Callable[[float], None] | None = None, source_url: str | None = None) -> dict[str, Any]:
     """Download one song's audio (m4a); reports progress (0..1) via the callback."""
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -231,7 +232,7 @@ def download_audio(video_id: str, out_dir: Path, progress=None, source_url: str 
     return {"id": video_id, "title": title, "artist": artist, "remixer": remixer, "duration": info.get("duration")}
 
 
-def _download_soundcloud(video_id: str, out_dir: Path, hook, source_url: str | None) -> dict[str, Any]:
+def _download_soundcloud(video_id: str, out_dir: Path, hook: Callable[[dict[str, Any]], None], source_url: str | None) -> dict[str, Any]:
     opts = {
         "format": "bestaudio/best",
         "outtmpl": str(out_dir / f"{video_id}.%(ext)s"),

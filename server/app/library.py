@@ -7,15 +7,12 @@ import json
 import logging
 import os
 import re
-import tempfile
-import threading
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 from . import countrycodes, discogs_lookup, genre_lookup, langcodes, urlclean, wiki_lookup
-
-LOCK = threading.RLock()
+from .jsonio import write_json_atomic
+from .timeutil import now_utc  # noqa: F401
 
 _ROOT_RE = re.compile(r"^([A-Za-z][A-Za-z0-9_.-]+)://(.*)$")
 _DECADE_RE = re.compile(r"^\d{2}s$")
@@ -26,6 +23,10 @@ def file_name(song: dict[str, Any]) -> str:
     """Audio file name of a song, never a path."""
     default = f"{song.get('id', '')}.m4a"
     return Path(str(song.get("file") or default)).name or default
+
+
+def find_song(songs: list[dict[str, Any]], song_id: str) -> dict[str, Any] | None:
+    return next((s for s in songs if s["id"] == song_id), None)
 
 
 def has_file(song: dict[str, Any]) -> bool:
@@ -88,10 +89,6 @@ def public_song(song: dict[str, Any], root: Path | None) -> dict[str, Any]:
 
 def updated_at(song: dict[str, Any]) -> str:
     return str(song.get("updated_at") or song.get("added_at") or "")
-
-
-def now_utc() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def catalog_revision(songs: list[dict[str, Any]]) -> str:
@@ -185,20 +182,8 @@ def load_doc(path: Path) -> dict[str, Any]:
 
 
 def save_doc(path: Path, doc: dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
     out = {"settings": doc.get("settings") or {}, "songs": doc.get("songs") or []}
-    fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=".library-", suffix=".tmp")
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            json.dump(out, f, ensure_ascii=False, indent=2)
-            f.write("\n")
-            f.flush()
-            os.fsync(f.fileno())
-        os.replace(tmp, path)
-    except BaseException:
-        if os.path.exists(tmp):
-            os.unlink(tmp)
-        raise
+    write_json_atomic(path, out)
 
 
 def load(path: Path) -> list[dict[str, Any]]:

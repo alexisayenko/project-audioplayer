@@ -8,7 +8,7 @@ import pytest
 from cryptography.hazmat.primitives.asymmetric import rsa
 from fastapi.testclient import TestClient
 
-from app import extractor, limits, main, oauth, session, users
+from app import deps, downloads, extractor, limits, main, oauth, session, users
 from tests.test_library import ADIR, H, ODIR, OWNER_UID, VID, VID2, client  # noqa: F401
 
 AUD = "client.apps.googleusercontent.com"
@@ -194,7 +194,7 @@ def test_apple_sub_found_again_after_email_disappears(multi, tmp_path, monkeypat
     monkeypatch.setenv("APPLE_AUDIENCE", "com.example.app")
     first = {"Authorization": f"Bearer {token(multi.key, 'r@privaterelay.appleid.com', 'apple', sub='001.q')}"}
     add(multi, first)
-    main._subs.clear()
+    deps.SUBS.clear()
     bare = {"Authorization": f"Bearer {token(multi.key, '', 'apple', email=None, sub='001.q')}"}
     assert [s["id"] for s in multi.get("/library", headers=bare).json()["songs"]] == [VID]
 
@@ -276,14 +276,14 @@ def test_server_full_503_applies_to_owner_too(multi, monkeypatch):
 def test_queued_job_rechecks_capacity_when_it_starts(multi, monkeypatch):
     monkeypatch.setenv("POOL_MAX_BYTES", "5")
     key = (uid(ALICE), VID)
-    main.JOBS[key] = {"status": "downloading", "progress": 0.0, "error": None}
-    main._run_download(uid(ALICE), False, VID, {}, [], None)
-    st = main.JOBS[key]
+    deps.JOBS[key] = {"status": "downloading", "progress": 0.0, "error": None}
+    downloads.run_download(uid(ALICE), False, VID, {}, [], None)
+    st = deps.JOBS[key]
     assert st["status"] == "done"
-    main.JOBS[(uid(ALICE), VID2)] = {"status": "downloading", "progress": 0.0, "error": None}
-    main._run_download(uid(ALICE), False, VID2, {}, [], None)
-    assert main.JOBS[(uid(ALICE), VID2)]["status"] == "error"
-    assert main.JOBS[(uid(ALICE), VID2)]["code"] == "server_full"
+    deps.JOBS[(uid(ALICE), VID2)] = {"status": "downloading", "progress": 0.0, "error": None}
+    downloads.run_download(uid(ALICE), False, VID2, {}, [], None)
+    assert deps.JOBS[(uid(ALICE), VID2)]["status"] == "error"
+    assert deps.JOBS[(uid(ALICE), VID2)]["code"] == "server_full"
 
 
 def test_delete_frees_quota_and_usage_reports_it(multi, monkeypatch):
@@ -376,7 +376,7 @@ def wait_for(client, headers, vid, status, secs=10):
 @pytest.fixture
 def slow(multi, monkeypatch):
     """Real worker threads; each download waits for its own gate."""
-    monkeypatch.setattr(main.SCHED, "inline", False)
+    monkeypatch.setattr(deps.SCHED, "inline", False)
     gates: dict[str, threading.Event] = {}
     started: list[tuple[str, str]] = []
 

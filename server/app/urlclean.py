@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 import urllib.error
 import urllib.request
+from typing import Any
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 VIDEO_ID_RE = re.compile(r"^[A-Za-z0-9_-]{11}$")
@@ -26,11 +27,9 @@ _TRACKING = {"si", "feature", "pp", "fbclid", "gclid"}
 
 def is_valid_video_id(video_id: str) -> bool:
     """A song id: an 11-char YouTube id, `soundcloud-<numeric track id>`, or a metadata-only `spotify-`/`applemusic-`/`shazam-` id."""
-    return bool(
-        VIDEO_ID_RE.fullmatch(video_id)
-        or SOUNDCLOUD_ID_RE.fullmatch(video_id)
-        or CATALOG_ID_RE.fullmatch(video_id)
-    )
+    if video_id.startswith(SOUNDCLOUD_PREFIX):
+        return bool(SOUNDCLOUD_ID_RE.fullmatch(video_id))
+    return bool(VIDEO_ID_RE.fullmatch(video_id) or CATALOG_ID_RE.fullmatch(video_id))
 
 
 def source_of(song_id: str) -> str:
@@ -98,11 +97,11 @@ def find_soundcloud_url(text: str) -> str | None:
 
 
 class _NoRedirect(urllib.request.HTTPRedirectHandler):
-    def redirect_request(self, *args, **kwargs):
+    def redirect_request(self, *args: Any, **kwargs: Any) -> None:
         return None
 
 
-def _open_no_redirect(url: str):
+def _open_no_redirect(url: str) -> Any:
     """HEAD without following redirects; returns the HTTPError (or response) carrying the Location header."""
     opener = urllib.request.build_opener(_NoRedirect)
     req = urllib.request.Request(url, method="HEAD", headers={"User-Agent": "Mozilla/5.0"})

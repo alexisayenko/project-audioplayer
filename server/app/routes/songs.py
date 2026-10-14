@@ -1,0 +1,139 @@
+"""Adding songs, fetching their audio, job status and edits."""
+
+from __future__ import annotations
+
+from typing import Any
+
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import JSONResponse
+
+from .. import deps, discogs_lookup, genre_lookup, jobs, library, limits, titleclean, users, wiki_lookup
+from ..downloads import (
+    add_metadata_only, mark_started, new_job, reject_unknown_country, run_download, run_fetch_audio,
+)
+from ..links import Refused, resolve_link
+from ..schemas import CreateSongRequest, PatchSongRequest
+
+router = APIRouter()
+
+_TEXT_FIELDS = ("title", "artist", "album", "remixer")
+
+
+def _clean_text(v: str | None) -> str | None:
+    v = (v or "").strip()
+    return v or None
+
+
+def _started_response(vid: str, began: bool) -> dict[str, str]:
+    return {"id": vid, "status": "downloading" if began else "queued"}
+
+
+@router.post("/songs", status_code=202, responses=deps.responses(409))
+def create_song(req: CreateSongRequest, user: dict[str, Any] = Depends(deps.require_token)):
+    uid, owner = user["uid"], user["owner"]
+    reject_unknown_country(library.clean_tags(req.tags))
+    deps.guard_add(uid, owner, req.audio)
+    try:
+        link = resolve_link(req.url)
+    except Refused as refused:
+        return refused.response
+    vid = link.vid
+    key = (uid, vid)
+    with users.user_lock(uid):
+        songs = deps.guard_add(uid, owner, req.audio)
+        if library.find_song(songs, vid) is not None:
+            raise HTTPException(status_code=409, detail="already in library")
+        if deps.JOBS.get(key, {}).get("status") in deps.ACTIVE:
+            raise HTTPException(status_code=409, detail="already downloading")
+        limits.RATE.record(uid, songs)
+        deps.JOBS[key] = new_job()
+    meta = {
+        k: (v.strip() if isinstance(v, str) else v) or None
+        for k, v in req.metadata.model_dump().items()
+    }
+    if meta.get("title") and not req.keep_title:
+        meta["title"] = titleclean.clean(meta["title"])
+    if not req.audio:
+        return add_metadata_only(uid, vid, link, meta, library.clean_tags(req.tags))
+    began = deps.SCHED.submit(
+        uid, owner,
+        lambda: run_download(uid, owner, vid, meta, library.clean_tags(req.tags), link.url), mark_started(key))
+    return _started_response(vid, began)
+
+
+@router.post("/songs/{video_id}/audio", status_code=202, responses=deps.responses(404, 422))
+def fetch_song_audio(video_id: str, user: dict[str, Any] = Depends(deps.require_token)):
+    """Download the audio of a catalog song that has none (state none -> server). Idempotent while a job runs."""
+    deps.valid_id(video_id)
+    uid, owner = user["uid"], user["owner"]
+    key = (uid, video_id)
+    with users.user_lock(uid):
+        songs = deps.load_songs(uid)
+        song = library.find_song(songs, video_id)
+        if song is None:
+            raise HTTPException(status_code=404, detail=deps.UNKNOWN_SONG)
+        if library.audio_state(song, deps.user_audio_root(uid)) == "server":
+            return JSONResponse({"id": video_id, "status": "done"}, status_code=200)
+        active = deps.JOBS.get(key)
+        if active and active.get("status") in deps.ACTIVE:
+            return {"id": video_id, "status": active["status"]}
+        limits.check_fetch(uid, owner, songs, deps.audio_dir(uid), deps.pool_dir())
+        limits.RATE.record(uid, songs)
+        deps.JOBS[key] = new_job()
+    link = next((s.get("url") for s in library.sources_of(song) if s.get("id") == video_id and s.get("url")), None)
+    began = deps.SCHED.submit(
+        uid, owner, lambda: run_fetch_audio(uid, owner, video_id, link or song.get("source_url")), mark_started(key))
+    return _started_response(video_id, began)
+
+
+@router.get("/songs/{video_id}/status", responses=deps.responses(404, 422))
+def song_status(video_id: str, user: dict[str, Any] = Depends(deps.require_token)):
+    deps.valid_id(video_id)
+    uid = user["uid"]
+    job = deps.JOBS.get((uid, video_id))
+    if job:
+        return {"id": video_id, **jobs.public(job)}
+    if library.find_song(deps.load_songs(uid), video_id) is not None:
+        return {"id": video_id, **jobs.public({"status": "done", "progress": 1.0, "error": None})}
+    raise HTTPException(status_code=404, detail=deps.UNKNOWN_SONG)
+
+
+def _edited(song: dict[str, Any], changes: dict[str, Any]) -> dict[str, Any]:
+    updated = dict(song)
+    for key in _TEXT_FIELDS:
+        if key in changes:
+            updated[key] = _clean_text(changes[key])
+    if "year" in changes:
+        updated["year"] = changes["year"]
+    if "bpm" in changes:
+        updated["bpm"] = round(changes["bpm"]) if changes["bpm"] is not None else None
+    for key in ("wikipedia_song", "wikipedia_artist"):
+        if key in changes:
+            updated[key] = wiki_lookup.clean_link(changes[key])
+    if "musicbrainz_url" in changes:
+        updated["musicbrainz_url"] = genre_lookup.clean_recording_url(changes["musicbrainz_url"])
+    if "discogs_url" in changes:
+        updated["discogs_url"] = discogs_lookup.clean_url(changes["discogs_url"])
+    if changes.get("tags") is not None:
+        updated["tags"] = library.clean_tags(changes["tags"])
+        reject_unknown_country(updated["tags"], library.clean_tags(song.get("tags") or []))
+    if not updated.get("title"):
+        raise HTTPException(status_code=422, detail="title must not be empty")
+    updated["tags"] = library.with_decade(updated.get("tags") or [], updated.get("year"))
+    updated["updated_at"] = library.now_utc()
+    return updated
+
+
+@router.patch("/songs/{video_id}", responses=deps.responses(404, 422))
+def patch_song(video_id: str, req: PatchSongRequest, user: dict[str, Any] = Depends(deps.require_token)):
+    deps.valid_id(video_id)
+    uid = user["uid"]
+    changes = req.model_dump(exclude_unset=True)
+    with deps.tx(uid, f"edit {video_id}"):
+        songs = library.load(deps.library_path(uid))
+        song = library.find_song(songs, video_id)
+        if song is None:
+            raise HTTPException(status_code=404, detail=deps.UNKNOWN_SONG)
+        song.update(_edited(song, changes))
+        deps.save_songs(uid, songs)
+        return library.public_song(song, deps.user_audio_root(uid))

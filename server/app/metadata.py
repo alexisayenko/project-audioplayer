@@ -9,16 +9,13 @@ from concurrent.futures import ThreadPoolExecutor, wait
 from typing import Any, Callable
 
 from . import genre_filter, genre_lookup, library, wiki_lookup
+from .tags import namespace
 
 log = logging.getLogger(__name__)
 
 TIMEOUT = 15
 CAPS = {"genre": 8, "country": 1}
 DROPPED = {"lang"}
-
-
-def _namespace(tag: str) -> str:
-    return tag.partition(":")[0] if ":" in tag else ""
 
 
 def cap_tags(tags: list[str], priority_genres: int = 0) -> list[str]:
@@ -28,7 +25,7 @@ def cap_tags(tags: list[str], priority_genres: int = 0) -> list[str]:
     used: dict[str, int] = {}
     out: list[str] = []
     for t in library.clean_tags(tags):
-        ns = _namespace(t)
+        ns = namespace(t)
         if ns in DROPPED:
             continue
         if ns == "country" and library.unknown_countries([t]):

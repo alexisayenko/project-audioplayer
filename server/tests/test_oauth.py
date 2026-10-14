@@ -6,7 +6,7 @@ import pytest
 from cryptography.hazmat.primitives.asymmetric import rsa
 from fastapi.testclient import TestClient
 
-from app import main, oauth, users
+from app import deps, main, oauth, users
 
 APPLE_AUD = "com.example.app"
 GOOGLE_AUD = "client.apps.googleusercontent.com"
@@ -32,8 +32,8 @@ def client(key, tmp_path, monkeypatch):
     monkeypatch.setenv("GOOGLE_CLIENT_ID", GOOGLE_AUD)
     monkeypatch.delenv("ALLOWED_EMAIL", raising=False)
     monkeypatch.delenv("ALLOWED_APPLE_SUB", raising=False)
-    monkeypatch.setattr(main, "DOWNLOAD_DIR", tmp_path)
-    monkeypatch.setattr(main, "DATA_DIR", tmp_path / "data")
+    monkeypatch.setattr(deps, "DOWNLOAD_DIR", tmp_path)
+    monkeypatch.setattr(deps, "DATA_DIR", tmp_path / "data")
     fake = SimpleNamespace(get_signing_key_from_jwt=lambda t: SimpleNamespace(key=key.public_key()))
     monkeypatch.setattr(oauth, "_jwks", lambda provider: fake)
     return TestClient(main.app)

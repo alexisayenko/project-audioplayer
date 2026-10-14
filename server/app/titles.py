@@ -213,3 +213,9 @@ def split_title(artist: str, title: str) -> tuple[str, str, str | None]:
         if m and _has_feat_keyword(t[: m.start()]) and t[m.end() :].strip():
             a, t = t[: m.start()].strip(), clean_title(t[m.end() :])
     return normalize_feat(a), normalize_feat(t), remix
+
+
+def lookup_query(artist: str, title: str) -> tuple[str, list[str], str]:
+    """(artist, artist names to try, title) as the external lookups should ask for a saved artist and title."""
+    artist, title = split_artist_title(artist, title)
+    return artist, artist_candidates(artist), lookup_title(title)

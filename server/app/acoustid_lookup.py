@@ -9,14 +9,11 @@ import logging
 import os
 import shutil
 import subprocess
-import threading
-import time
-import urllib.parse
-import urllib.request
 from pathlib import Path
 from typing import Any
 
-from . import genre_lookup
+from . import genre_lookup, httpjson
+from .ratelimit import RateLimiter
 from .titles import artist_candidates
 
 log = logging.getLogger(__name__)
@@ -28,8 +25,7 @@ HTTP_TIMEOUT = 10
 MIN_INTERVAL = 0.4
 DEFAULT_MIN_SCORE = 0.9
 
-_rate_lock = threading.Lock()
-_last_call = 0.0
+_limiter = RateLimiter(MIN_INTERVAL)
 _logged_off = False
 
 
@@ -78,21 +74,9 @@ def fingerprint(path: Path) -> tuple[int, str] | None:
 
 
 def _post(fields: dict[str, str]) -> dict[str, Any]:
-    global _last_call
-    req = urllib.request.Request(
-        API,
-        data=urllib.parse.urlencode(fields).encode("ascii"),
-        headers={"User-Agent": os.environ.get("AUDIO_MB_USER_AGENT", genre_lookup.DEFAULT_UA), "Accept": "application/json"},
-    )
-    with _rate_lock:
-        wait = _last_call + MIN_INTERVAL - time.monotonic()
-        if wait > 0:
-            time.sleep(wait)
-        try:
-            with urllib.request.urlopen(req, timeout=HTTP_TIMEOUT) as resp:
-                return json.loads(resp.read().decode("utf-8"))
-        finally:
-            _last_call = time.monotonic()
+    req = httpjson.build_request(API, form=fields)
+    with _limiter.serialized():
+        return httpjson.fetch(req, HTTP_TIMEOUT)
 
 
 def _candidates(results: list[dict[str, Any]], floor: float) -> list[tuple[float, dict[str, Any]]]:
@@ -142,8 +126,10 @@ def identify(path: Path, artist: str = "", title: str = "") -> dict[str, Any]:
     except Exception as exc:
         log.warning("acoustid lookup failed: %s", type(exc).__name__)
         return {"status": "error", "match": None}
-    if data.get("status") != "ok":
-        log.warning("acoustid lookup refused: %s", str((data.get("error") or {}).get("message") or "")[:80])
+    if not isinstance(data, dict) or data.get("status") != "ok":
+        error = data.get("error") if isinstance(data, dict) else None
+        message = error.get("message") if isinstance(error, dict) else ""
+        log.warning("acoustid lookup refused: %s", str(message or "")[:80])
         return {"status": "error", "match": None}
     match = pick(data.get("results") or [], artist, title)
     return {"status": "ok" if match else "no_match", "match": match}

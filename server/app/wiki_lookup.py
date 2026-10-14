@@ -4,15 +4,13 @@ from __future__ import annotations
 
 import datetime
 import html
-import json
 import logging
-import os
 import re
 import urllib.parse
 import urllib.request
 from typing import Any
 
-from . import countrycodes, genre_lookup
+from . import countrycodes, genre_lookup, httpjson
 from .titles import artist_candidates
 
 log = logging.getLogger(__name__)
@@ -71,12 +69,7 @@ def qid_of(link: str | None) -> str | None:
 
 
 def _fetch_json(url: str) -> dict[str, Any]:
-    req = urllib.request.Request(
-        url,
-        headers={"User-Agent": os.environ.get("AUDIO_MB_USER_AGENT", genre_lookup.DEFAULT_UA), "Accept": "application/json"},
-    )
-    with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
-        return json.loads(resp.read().decode("utf-8"))
+    return httpjson.http_json(url, TIMEOUT)
 
 
 def _entity(qid: str) -> dict[str, Any] | None:

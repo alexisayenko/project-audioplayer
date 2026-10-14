@@ -8,9 +8,11 @@ import logging
 import threading
 import time
 from pathlib import Path
+from collections.abc import Callable
 from typing import Any
 
 from . import acoustid_lookup, discogs_lookup, genre_filter, genre_lookup, library, wiki_lookup
+from .tags import namespace
 
 log = logging.getLogger(__name__)
 
@@ -52,12 +54,8 @@ def forget(uid: str, vid: str) -> None:
         _cache.pop((uid, vid), None)
 
 
-def _ns(tag: str) -> str:
-    return tag.partition(":")[0].strip().casefold() if ":" in tag else ""
-
-
 def _of(tags: list[str], ns: str) -> list[str]:
-    return [t for t in tags if _ns(t) == ns]
+    return [t for t in tags if namespace(t) == ns]
 
 
 def _valid_year(value: Any) -> int | None:
@@ -89,7 +87,7 @@ def _links(mb: dict[str, Any], disc: dict[str, Any], wiki: dict[str, Any]) -> di
     }
 
 
-def _safe(fn, *args) -> dict[str, Any]:
+def _safe(fn: Callable[..., dict[str, Any] | None], *args: Any) -> dict[str, Any]:
     try:
         return fn(*args) or {}
     except Exception as exc:

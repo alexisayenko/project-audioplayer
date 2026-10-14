@@ -1,4 +1,4 @@
-from app import extractor, jobs, main
+from app import deps, extractor, jobs
 from tests.test_fetch_audio import add_meta
 from pathlib import Path
 
@@ -69,7 +69,7 @@ def test_status_endpoint_exposes_progress_per_user(multi, monkeypatch):
     def fake(video_id, out_dir, progress=None, source_url=None):
         out_dir.mkdir(parents=True, exist_ok=True)
         (out_dir / f"{video_id}.m4a").write_bytes(b"audio")
-        job = next(j for (u, v), j in main.JOBS.items() if v == video_id)
+        job = next(j for (u, v), j in deps.JOBS.items() if v == video_id)
         progress(0.42)
         progress.detail(2048.7, 5.2)
         snaps.append(jobs.public(job))

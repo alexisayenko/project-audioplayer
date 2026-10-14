@@ -5,19 +5,15 @@ Terms: suggestions only; no images, no stored dumps. Responses live only in the 
 from __future__ import annotations
 
 import difflib
-import json
 import logging
 import os
 import re
 import threading
-import time
-import urllib.parse
-import urllib.request
-from collections import deque
 from typing import Any
 
-from . import countrycodes, genre_lookup
-from .titles import artist_candidates, lookup_title, split_artist_title
+from . import countrycodes, genre_lookup, httpjson
+from .ratelimit import WindowLimiter
+from .titles import lookup_query
 
 log = logging.getLogger(__name__)
 
@@ -29,9 +25,9 @@ MAX_STYLES = 4
 SEARCH_LIMIT = 10
 VERIFY_TRIES = 3
 FUZZY = 0.85
+MIN_FUZZY_TITLE = 3
 
-_limit_lock = threading.Lock()
-_window: deque[float] = deque()
+_limiter = WindowLimiter(MAX_PER_MINUTE, MAX_WAIT, name="discogs rate limit")
 _cache: dict[tuple[str, str], dict[str, Any]] = {}
 _cache_lock = threading.Lock()
 
@@ -50,33 +46,17 @@ def _empty() -> dict[str, Any]:
 
 def _acquire() -> None:
     """Global limiter: at most MAX_PER_MINUTE requests in any 60 s; waits briefly, else refuses."""
-    with _limit_lock:
-        while True:
-            now = time.monotonic()
-            while _window and now - _window[0] >= 60:
-                _window.popleft()
-            if len(_window) < MAX_PER_MINUTE:
-                _window.append(now)
-                return
-            wait = _window[0] + 60 - now
-            if wait > MAX_WAIT:
-                raise RuntimeError("discogs rate limit reached")
-            time.sleep(wait)
+    _limiter.acquire()
 
 
 def _get(path: str, params: dict[str, str] | None = None) -> dict[str, Any]:
-    url = f"{API}/{path}" + (f"?{urllib.parse.urlencode(params)}" if params else "")
-    req = urllib.request.Request(
-        url,
-        headers={
-            "Authorization": f"Discogs token={_token()}",
-            "User-Agent": os.environ.get("AUDIO_MB_USER_AGENT", genre_lookup.DEFAULT_UA),
-            "Accept": "application/vnd.discogs.v2.discogs+json",
-        },
+    req = httpjson.build_request(
+        f"{API}/{path}",
+        params or None,
+        headers={"Authorization": f"Discogs token={_token()}", "Accept": "application/vnd.discogs.v2.discogs+json"},
     )
     _acquire()
-    with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
-        return json.loads(resp.read().decode("utf-8"))
+    return httpjson.fetch(req, TIMEOUT)
 
 
 _DISAMBIG = re.compile(r"\s*\(\d+\)$")
@@ -91,6 +71,13 @@ def _similar(wanted: str, found: str) -> bool:
     if not w or not f:
         return False
     return w == f or w in f or f in w or difflib.SequenceMatcher(None, w, f).ratio() >= FUZZY
+
+
+def _title_similar(wanted: str, found: str) -> bool:
+    w, f = _name(wanted), _name(found)
+    if min(len(w), len(f)) < MIN_FUZZY_TITLE:
+        return bool(w) and w == f
+    return _similar(wanted, found)
 
 
 def _is_various(artist: str) -> bool:
@@ -127,7 +114,7 @@ def _has_track(detail: dict[str, Any], title: str) -> bool:
         titles.append(str(t.get("title") or ""))
         titles.extend(str(s.get("title") or "") for s in t.get("sub_tracks") or [])
     titles = [t for t in titles if t.strip()]
-    return not titles or any(_similar(title, t) for t in titles)
+    return not titles or any(_title_similar(title, t) for t in titles)
 
 
 def release_url(kind: str, ident: Any) -> str | None:
@@ -196,9 +183,7 @@ def suggest(artist: str, title: str) -> dict[str, Any]:
     if not enabled():
         return _empty()
     try:
-        artist, title = split_artist_title(artist, title)
-        names = artist_candidates(artist)
-        title = lookup_title(title)
+        _, names, title = lookup_query(artist, title)
         if not names[0] or not title:
             return _empty()
         hit = _empty()

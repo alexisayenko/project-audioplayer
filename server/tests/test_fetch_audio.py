@@ -1,6 +1,6 @@
 import pytest
 
-from app import extractor, main
+from app import deps, extractor
 from tests.test_library import ADIR, H, VID, VID2, client  # noqa: F401
 from tests.test_users import ALICE, BOB, key, multi, who, add as add_as, uid  # noqa: F401
 
@@ -69,7 +69,7 @@ def test_fetch_respects_the_storage_cap(multi, monkeypatch):
     monkeypatch.setenv("USER_MAX_BYTES", "1")
     a = who(multi, ALICE)
     add_meta(multi, a)
-    audio = main.audio_dir(uid(ALICE))
+    audio = deps.audio_dir(uid(ALICE))
     audio.mkdir(parents=True, exist_ok=True)
     (audio / "other.m4a").write_bytes(b"xx")
     r = multi.post(f"/songs/{VID}/audio", headers=a)

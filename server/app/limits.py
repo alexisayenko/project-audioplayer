@@ -5,11 +5,11 @@ import math
 import os
 import threading
 import time
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 from .problems import Problem
+from .timeutil import epoch_of
 
 GB = 1024 ** 3
 WINDOW = 3600
@@ -58,13 +58,6 @@ def dir_bytes(path: Path) -> int:
     return total
 
 
-def _epoch(stamp: Any) -> float | None:
-    try:
-        return datetime.strptime(str(stamp), "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc).timestamp()
-    except ValueError:
-        return None
-
-
 class AddRate:
     """Adds accepted per user in the last hour; after a restart it re-learns from the songs' `added_at`."""
 
@@ -74,7 +67,7 @@ class AddRate:
 
     def _fresh(self, uid: str, songs: list[dict[str, Any]], now: float) -> list[float]:
         if uid not in self._stamps:
-            seen = [_epoch(s.get("added_at")) for s in songs]
+            seen = [epoch_of(s.get("added_at")) for s in songs]
             self._stamps[uid] = [t for t in seen if t is not None]
         self._stamps[uid] = [t for t in self._stamps[uid] if now - t < WINDOW]
         return self._stamps[uid]

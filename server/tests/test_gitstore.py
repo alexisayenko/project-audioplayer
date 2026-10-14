@@ -5,7 +5,7 @@ import time
 import pytest
 from fastapi.testclient import TestClient
 
-from app import extractor, gitstore, library, main, users
+from app import deps, extractor, gitstore, library, main, users
 
 VID = "dQw4w9WgXcQ"
 VID2 = "9bZkp7q19f0"
@@ -53,9 +53,9 @@ def client(tmp_path, repos, monkeypatch):
     _, data, _, cov = repos
     sync = gitstore.GitSync(data, cov, backoff=(0.05, 0.1))
     monkeypatch.setenv("AUDIO_API_TOKEN", "secret")
-    monkeypatch.setattr(main, "SYNC", sync)
-    monkeypatch.setattr(main, "DOWNLOAD_DIR", tmp_path / "music")
-    monkeypatch.setattr(main, "JOBS", {})
+    monkeypatch.setattr(deps, "SYNC", sync)
+    monkeypatch.setattr(deps, "DOWNLOAD_DIR", tmp_path / "music")
+    monkeypatch.setattr(deps, "JOBS", {})
 
     def fake_download(video_id, out_dir, progress=None, source_url=None):
         out_dir.mkdir(parents=True, exist_ok=True)

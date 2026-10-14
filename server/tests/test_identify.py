@@ -3,7 +3,7 @@ import pytest
 from app import acoustid_lookup as ac
 from app import discogs_lookup as dl
 from app import genre_lookup as gl
-from app import identify, main, wiki_lookup
+from app import identify, users, wiki_lookup
 from tests.test_library import ADIR, H, VID, VID2, client  # noqa: F401
 from tests.test_users import ALICE, BOB, key, multi, who, add as add_as, uid  # noqa: F401
 
@@ -253,7 +253,7 @@ def test_download_skips_the_run_when_both_keys_are_missing(client, monkeypatch):
     ran = []
     monkeypatch.setattr(identify, "run", lambda s, p: ran.append(1))
     has_audio(client)
-    assert ran == [] and identify.recall(main.users.uid_for_email("alex.isayenko@gmail.com"), VID) is None
+    assert ran == [] and identify.recall(users.uid_for_email("alex.isayenko@gmail.com"), VID) is None
 
 
 def test_deleting_a_song_forgets_its_result(client, monkeypatch):

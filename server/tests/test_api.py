@@ -1,7 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from app import extractor, main
+from app import deps, extractor, links, main
 
 VID = "dQw4w9WgXcQ"
 HEADERS = {"X-API-Token": "secret"}
@@ -10,8 +10,8 @@ HEADERS = {"X-API-Token": "secret"}
 @pytest.fixture
 def client(tmp_path, monkeypatch):
     monkeypatch.setenv("AUDIO_API_TOKEN", "secret")
-    monkeypatch.setattr(main, "DOWNLOAD_DIR", tmp_path)
-    monkeypatch.setattr(main, "DATA_DIR", tmp_path / "data")
+    monkeypatch.setattr(deps, "DOWNLOAD_DIR", tmp_path)
+    monkeypatch.setattr(deps, "DATA_DIR", tmp_path / "data")
     return TestClient(main.app)
 
 
@@ -69,4 +69,4 @@ def test_missing_file_404(client):
     ],
 )
 def test_short_cuts_hints(msg, expected):
-    assert main._short(Exception(msg)) == expected
+    assert links.short_error(Exception(msg)) == expected

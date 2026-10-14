@@ -1,6 +1,6 @@
 import json
 
-from app import extractor, library, main, urlclean
+from app import extractor, library, urlclean
 from tests.test_library import ADIR, H, ODIR, VID, VID2, add, client  # noqa: F401
 
 LEGACY = {

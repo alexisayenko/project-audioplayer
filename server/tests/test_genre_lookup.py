@@ -1,7 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from app import extractor, genre_lookup as gl, main, wiki_lookup as wl
+from app import extractor, genre_lookup as gl, httpjson, main, wiki_lookup as wl
 
 
 @pytest.fixture(autouse=True)
@@ -87,9 +87,9 @@ def test_rate_limiter_and_user_agent(monkeypatch):
         seen["timeout"] = timeout
         return R()
 
-    monkeypatch.setattr(gl.urllib.request, "urlopen", fake_urlopen)
+    monkeypatch.setattr(httpjson.urllib.request, "urlopen", fake_urlopen)
     monkeypatch.setenv("AUDIO_MB_USER_AGENT", "test/1 (x@y.z)")
-    monkeypatch.setattr(gl, "_last_call", 100.0)
+    monkeypatch.setattr(gl._limiter, "last_call", 100.0)
     gl._get("recording/", {"query": "q"})
     assert sleeps
     assert abs(sleeps[0] - gl.MIN_INTERVAL) < 1e-6
@@ -179,7 +179,7 @@ def test_retries_once_on_503(monkeypatch):
             raise urllib.error.HTTPError(req.full_url, 503, "busy", {}, None)
         return Resp()
 
-    monkeypatch.setattr(gl.urllib.request, "urlopen", fake_open)
+    monkeypatch.setattr(httpjson.urllib.request, "urlopen", fake_open)
     assert gl._get("recording/", {}) == {"ok": 1}
     assert len(calls) == 2
 

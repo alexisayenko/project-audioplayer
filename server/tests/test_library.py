@@ -4,7 +4,8 @@ import json
 import pytest
 from fastapi.testclient import TestClient
 
-from app import bpm, extractor, library, main, users
+from app import bpm, deps, extractor, library, main, users
+from app.web import web_version
 
 VID = "dQw4w9WgXcQ"
 VID2 = "9bZkp7q19f0"
@@ -25,9 +26,9 @@ def ADIR(tmp_path):
 @pytest.fixture
 def client(tmp_path, monkeypatch):
     monkeypatch.setenv("AUDIO_API_TOKEN", "secret")
-    monkeypatch.setattr(main, "DOWNLOAD_DIR", tmp_path / "downloads")
-    monkeypatch.setattr(main, "DATA_DIR", tmp_path)
-    monkeypatch.setattr(main, "JOBS", {})
+    monkeypatch.setattr(deps, "DOWNLOAD_DIR", tmp_path / "downloads")
+    monkeypatch.setattr(deps, "DATA_DIR", tmp_path)
+    monkeypatch.setattr(deps, "JOBS", {})
 
     def fake_download(video_id, out_dir, progress=None, source_url=None):
         out_dir.mkdir(parents=True, exist_ok=True)
@@ -468,7 +469,7 @@ def test_web_assets_are_versioned_and_revalidated(tmp_path, monkeypatch):
     try:
         c = TestClient(m.app)
         page = c.get("/")
-        version = m.web_version()
+        version = web_version()
         assert page.headers["cache-control"] == "no-cache"
         assert page.headers["etag"] == f'"{version}"'
         for name in ("tokens.css", "style.css", "js/app.js"):
@@ -485,7 +486,7 @@ def test_web_assets_are_versioned_and_revalidated(tmp_path, monkeypatch):
         assert "no-cache" in c.get("/style.css").headers["cache-control"]
 
         (web / "style.css").write_text("body{color:red}")
-        assert m.web_version() != version
+        assert web_version() != version
         assert c.get(f"/_v/{version}/style.css").headers["cache-control"] == "no-cache"
     finally:
         monkeypatch.delenv("AUDIO_WEB_DIR")
@@ -544,7 +545,7 @@ def test_write_rejects_unknown_country_but_accepts_alias(client):
 
 def test_legacy_unknown_country_survives_patch(client):
     add(client)
-    p = main.library_path(OWNER_UID)
+    p = deps.library_path(OWNER_UID)
     songs = library.load(p)
     songs[0]["tags"].append("country:yugoslavia")
     library.save(p, songs)

@@ -12,7 +12,7 @@ log = logging.getLogger(__name__)
 
 
 class _Job:
-    def __init__(self, uid: str, exempt: bool, run: Callable[[], None], started: Callable[[], None]):
+    def __init__(self, uid: str, exempt: bool, run: Callable[[], None], started: Callable[[], None]) -> None:
         self.uid, self.exempt, self.run, self.started = uid, exempt, run, started
 
 
