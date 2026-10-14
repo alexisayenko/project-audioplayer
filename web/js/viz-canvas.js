@@ -9,6 +9,7 @@ import { createGlow } from './viz-glow.js';
 import { readVizColors, FALLBACK_COLORS } from './viz-color.js';
 import { drawBars } from './viz-bars.js';
 import { createBackdrop } from './viz-backdrop.js';
+import { createPartsFilter } from './viz-parts.js';
 import { drawRing, ringRadius } from './viz-ring.js';
 import { createModeRenderer, MODES, DEFAULT_MODE } from './viz-modes.js';
 
@@ -68,7 +69,7 @@ function spectrumOpts(an) {
 }
 
 const INERT = Object.freeze({
-  setEnabled() {}, setMode() {}, setVizMode() {}, setHeightScale() {}, effectiveMode: () => DEFAULT_MODE, refresh() {}, resize() {}, frame() {}, destroy() {}, isRunning: () => false, isReduced: () => false, level: 0,
+  setEnabled() {}, setMode() {}, setVizMode() {}, setHeightScale() {}, setParts() {}, effectiveMode: () => DEFAULT_MODE, refresh() {}, resize() {}, frame() {}, destroy() {}, isRunning: () => false, isReduced: () => false, level: 0,
 });
 
 export function createViz({ canvas, mode: startMode = 'background', deps = {} }) {
@@ -84,6 +85,7 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
   const dprCap = () => (startMode === 'full' && !coarse ? DPR_CAP : VIZ_DPR_CAP);
   const pulse = makePulse();
   const ref = makeReference();
+  const parts = createPartsFilter();
   const tracker = createTracker();
   const status = d.status ?? createStatusEl(d.doc);
   const st = { bars: new Float32Array(0), buf: null, rot: 0, last: 0, colors: null, colorAt: -Infinity, anchor: null, anchorAt: -Infinity };
@@ -189,7 +191,8 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
       return;
     }
     if (mode === 'full' && f.q?.backdrop) backdrop.draw(ctx, w, h, c, bass);
-    drawBars(ctx, w, h, shaped, {
+    const drawn = parts.apply(st.bars, shaped, now / 1000);
+    drawBars(ctx, w, h, drawn, {
       colors: c, alpha: mode === 'full' ? 1 : 0.85, dpr: view.dpr, horizon: 0.5, span: heightScale,
     });
   }
@@ -385,6 +388,7 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
       if (renderer?.usesGL) renderer.resize(view.w, view.h * glScale(), view.dpr);
       if (raf == null) evaluate();
     },
+    setParts(state) { parts.setState(state); if (raf == null) evaluate(); },
     effectiveMode: () => renderer?.id ?? vizMode,
     refresh: evaluate,
     resize,

@@ -3,10 +3,11 @@ import { createViz } from './viz-canvas.js';
 import { createLookahead } from './viz-lookahead.js';
 import { barCount } from './viz-spectrum.js';
 import { createFullscreen, isVizKey, isVizModeKey, isVizStyleKey } from './viz-fullscreen.js';
+import { createPartsToggles } from './viz-parts-ui.js';
 import { createModeSwitch } from './viz-switch.js';
 import { availableModes, nextMode, modeLabel } from './viz-modes.js';
 import {
-  vizBackgroundOn, onVizBackground, vizCaps, vizMode, setVizMode, onVizMode, vizHeightScale, onVizHeight,
+  vizParts, setVizParts, onVizParts, vizBackgroundOn, onVizBackground, vizCaps, vizMode, setVizMode, onVizMode, vizHeightScale, onVizHeight,
 } from './viz-settings.js';
 import { attachScrubber } from './scrubber.js';
 import { titleNodes } from './display-title.js';
@@ -121,6 +122,7 @@ export function initVisualizer({
     bgViz.setVizMode(id);
     fullViz.setVizMode(id);
     for (const sw of switches) sw.set(id);
+    syncSwitchVisibility();
     if (announce && live) live.textContent = `Visualizer: ${modeLabel(id)}`;
   };
   const pickFromSwitch = (id) => { setVizMode(id); };
@@ -134,7 +136,25 @@ export function initVisualizer({
   onVizHeight((s) => { bgViz.setHeightScale(s); fullViz.setHeightScale(s); });
   bgViz.setVizMode(currentMode);
   fullViz.setVizMode(currentMode);
-  const syncSwitchVisibility = () => { $('p-viz-switch').hidden = modes.length < 2 || !(supported && vizBackgroundOn()); };
+  const syncSwitchVisibility = () => {
+    $('p-viz-switch').hidden = modes.length < 2 || !(supported && vizBackgroundOn());
+    $('p-viz-parts').hidden = !(supported && vizBackgroundOn() && currentMode === 'bars');
+    $('viz-parts').hidden = currentMode !== 'bars';
+  };
+  const partsState = vizParts();
+  bgViz.setParts(partsState);
+  fullViz.setParts(partsState);
+  const toggles = ['p-viz-parts', 'viz-parts'].map((id) => createPartsToggles({
+    root: $(id),
+    state: partsState,
+    onChange: setVizParts,
+    onRefuse: (row, part) => { if (live) live.textContent = `At least one ${row === 'freq' ? 'frequency' : 'behaviour'} part must stay on: ${part.label} kept on`; },
+  }));
+  onVizParts((s) => {
+    bgViz.setParts(s);
+    fullViz.setParts(s);
+    for (const t of toggles) t.set(s);
+  });
 
   function enableGraph() {
     if (!supported) return;

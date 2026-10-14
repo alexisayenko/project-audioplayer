@@ -69,6 +69,22 @@ body.viz-full-open .mini { display: none !important; }
 .viz-full .viz-radio:focus-visible { outline-color: #fff; }
 .viz-full .viz-radio:not(.on) { color: #f2f4f8; }
 @media (max-width: 479px) { .viz-radio-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); } }
+.viz-parts[hidden] { display: none; }
+.viz-parts { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--space-2, .4rem); }
+.viz-parts-rows { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--space-3, .6rem); }
+.viz-parts-row { display: inline-flex; gap: 2px; padding: 2px; border-radius: 999px; box-shadow: inset 0 0 0 1px var(--hairline, #8884); }
+.viz-parts-open { display: none; padding: .35rem .7rem; border: 0; border-radius: 999px; background: transparent; color: inherit; font: inherit; font-size: .8rem; cursor: pointer; box-shadow: inset 0 0 0 1px var(--hairline, #8884); }
+.viz-part { padding: .35rem .7rem; border: 0; border-radius: 999px; background: transparent; color: inherit; font: inherit; font-size: .8rem; cursor: pointer; opacity: .6; text-decoration: line-through; text-decoration-thickness: 1px; }
+.viz-part.on { background: var(--accent); color: var(--on-accent); opacity: 1; text-decoration: none; }
+.viz-part:focus-visible, .viz-parts-open:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.viz-full .viz-part:focus-visible, .viz-full .viz-parts-open:focus-visible { outline-color: #fff; }
+.viz-full .viz-part:not(.on), .viz-full .viz-parts-open { color: #f2f4f8; }
+.viz-full .viz-parts { margin-top: var(--space-3, .6rem); }
+@media (max-width: 479px) {
+  .viz-parts-open { display: inline-flex; }
+  .viz-parts:not(.open) .viz-parts-rows { display: none; }
+}
+@media (forced-colors: active) { .viz-part.on { forced-color-adjust: none; background: Highlight; color: HighlightText; } }
 .viz-canvas:not([hidden]) { animation: viz-in .15s ease-out; }
 @keyframes viz-in { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .viz-canvas:not([hidden]) { animation: none; } }
