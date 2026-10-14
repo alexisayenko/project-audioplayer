@@ -5,6 +5,15 @@ import { fitTransform, recenterOnResize, placeLabels, diffGraph, mixColor } from
 const MIN_K = 0.15;
 const MAX_K = 6;
 
+function bbox(list) {
+  let x0 = Infinity; let y0 = Infinity; let x1 = -Infinity; let y1 = -Infinity;
+  for (const n of list) {
+    x0 = Math.min(x0, n.x - n.r); x1 = Math.max(x1, n.x + n.r);
+    y0 = Math.min(y0, n.y - n.r); y1 = Math.max(y1, n.y + n.r);
+  }
+  return { x0, y0, x1, y1 };
+}
+
 export function createGraphView(canvas, { onSelect, onHover, reducedMotion = false } = {}) {
   const ctx = canvas.getContext('2d');
   let W = 1;
@@ -112,15 +121,6 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
     return null;
   }
 
-  function bbox(list) {
-    let x0 = Infinity; let y0 = Infinity; let x1 = -Infinity; let y1 = -Infinity;
-    for (const n of list) {
-      x0 = Math.min(x0, n.x - n.r); x1 = Math.max(x1, n.x + n.r);
-      y0 = Math.min(y0, n.y - n.r); y1 = Math.max(y1, n.y + n.r);
-    }
-    return { x0, y0, x1, y1 };
-  }
-
   function fitTo(list, { pad = 32, maxK = 2.2, animate = true } = {}) {
     if (!list.length) return;
     const to = fitTransform(bbox(list), W, H, { insets, pad, maxK, minK: MIN_K });
@@ -149,6 +149,59 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
     request();
   }
 
+  function drawArrow(l, k, d) {
+    const ux = (l.t.x - l.s.x) / d;
+    const uy = (l.t.y - l.s.y) / d;
+    const tipX = l.t.x - ux * (l.t.r + 1);
+    const tipY = l.t.y - uy * (l.t.r + 1);
+    const s = 6 / k;
+    ctx.setLineDash([]);
+    ctx.fillStyle = ctx.strokeStyle;
+    ctx.beginPath();
+    ctx.moveTo(tipX, tipY);
+    ctx.lineTo(tipX - ux * s - uy * s * 0.5, tipY - uy * s + ux * s * 0.5);
+    ctx.lineTo(tipX - ux * s + uy * s * 0.5, tipY - uy * s - ux * s * 0.5);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function linkAlpha(on, focus) {
+    if (!on) return 0.06;
+    return focus ? 0.95 : 0.5;
+  }
+
+  function drawLink(l, focus, k) {
+    const on = !focus || l.s === focus || l.t === focus;
+    ctx.globalAlpha = linkAlpha(on, focus);
+    ctx.strokeStyle = on && focus ? colors.hi : colors.edge;
+    ctx.lineWidth = (on && focus ? 1.8 : 1) / k;
+    ctx.setLineDash(l.related ? [4 / k, 4 / k] : []);
+    const d = Math.hypot(l.t.x - l.s.x, l.t.y - l.s.y) || 1;
+    ctx.beginPath();
+    ctx.moveTo(l.s.x, l.s.y);
+    ctx.lineTo(l.t.x, l.t.y);
+    ctx.stroke();
+    if (!l.related && k > 0.45 && d > l.t.r + 10 / k) drawArrow(l, k, d);
+  }
+
+  function drawNode(n, alpha, k) {
+    ctx.globalAlpha = alpha;
+    ctx.beginPath();
+    ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+    ctx.fillStyle = nodeColor(n);
+    ctx.fill();
+    ctx.lineWidth = 1.5 / k;
+    ctx.strokeStyle = colors.halo;
+    ctx.stroke();
+    if (n === selected || n === hover) {
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, n.r + 3 / k, 0, Math.PI * 2);
+      ctx.lineWidth = (n === selected ? 2.5 : 1.5) / k;
+      ctx.strokeStyle = colors.ring;
+      ctx.stroke();
+    }
+  }
+
   function draw() {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, W, H);
@@ -159,53 +212,11 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
     const near = focus ? nbr.get(focus.id) : null;
     const isOn = (n) => !focus || n === focus || near.has(n.id);
     for (const l of links) {
-      if (!visible(l.s) || !visible(l.t)) continue;
-      const on = !focus || l.s === focus || l.t === focus;
-      ctx.globalAlpha = on ? (focus ? 0.95 : 0.5) : 0.06;
-      ctx.strokeStyle = on && focus ? colors.hi : colors.edge;
-      ctx.lineWidth = (on && focus ? 1.8 : 1) / k;
-      ctx.setLineDash(l.related ? [4 / k, 4 / k] : []);
-      const dx = l.t.x - l.s.x;
-      const dy = l.t.y - l.s.y;
-      const d = Math.hypot(dx, dy) || 1;
-      ctx.beginPath();
-      ctx.moveTo(l.s.x, l.s.y);
-      ctx.lineTo(l.t.x, l.t.y);
-      ctx.stroke();
-      if (!l.related && k > 0.45 && d > l.t.r + 10 / k) {
-        const ux = dx / d;
-        const uy = dy / d;
-        const tipX = l.t.x - ux * (l.t.r + 1);
-        const tipY = l.t.y - uy * (l.t.r + 1);
-        const s = 6 / k;
-        ctx.setLineDash([]);
-        ctx.fillStyle = ctx.strokeStyle;
-        ctx.beginPath();
-        ctx.moveTo(tipX, tipY);
-        ctx.lineTo(tipX - ux * s - uy * s * 0.5, tipY - uy * s + ux * s * 0.5);
-        ctx.lineTo(tipX - ux * s + uy * s * 0.5, tipY - uy * s - ux * s * 0.5);
-        ctx.closePath();
-        ctx.fill();
-      }
+      if (visible(l.s) && visible(l.t)) drawLink(l, focus, k);
     }
     ctx.setLineDash([]);
     for (const n of nodes) {
-      if (!visible(n)) continue;
-      ctx.globalAlpha = isOn(n) ? 1 : 0.16;
-      ctx.beginPath();
-      ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
-      ctx.fillStyle = nodeColor(n);
-      ctx.fill();
-      ctx.lineWidth = 1.5 / k;
-      ctx.strokeStyle = colors.halo;
-      ctx.stroke();
-      if (n === selected || n === hover) {
-        ctx.beginPath();
-        ctx.arc(n.x, n.y, n.r + 3 / k, 0, Math.PI * 2);
-        ctx.lineWidth = (n === selected ? 2.5 : 1.5) / k;
-        ctx.strokeStyle = colors.ring;
-        ctx.stroke();
-      }
+      if (visible(n)) drawNode(n, isOn(n) ? 1 : 0.16, k);
     }
     ctx.globalAlpha = 1;
     drawLabels(focus, isOn);
@@ -245,8 +256,13 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
     }
   }
 
+  function cursorFor(n) {
+    if (n) return 'pointer';
+    return drag ? 'grabbing' : 'grab';
+  }
+
   function setHover(n, ev) {
-    if (n !== hover) { hover = n; canvas.style.cursor = n ? 'pointer' : drag ? 'grabbing' : 'grab'; request(); }
+    if (n !== hover) { hover = n; canvas.style.cursor = cursorFor(n); request(); }
     if (onHover) {
       if (n && ev) {
         const r = canvas.getBoundingClientRect();

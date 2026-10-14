@@ -19,7 +19,7 @@ export function enqueue(s, ids, front = false) {
 // Moves an already-known queued job to the head of the line.
 export function prioritize(s, id) {
   const j = find(s, id);
-  if (!j || j.status !== 'queued') return s;
+  if (j?.status !== 'queued') return s;
   const active = s.jobs.filter((x) => x.status === 'downloading');
   return { ...s, jobs: [...active, j, ...s.jobs.filter((x) => x !== j && x.status !== 'downloading')] };
 }
@@ -33,7 +33,7 @@ export function prune(s, keepIds) {
 
 export const retry = (s, id) => {
   const j = find(s, id);
-  return j && j.status === 'failed' ? patch(s, id, { status: 'queued', progress: 0, error: '', ...IDLE }) : s;
+  return j?.status === 'failed' ? patch(s, id, { status: 'queued', progress: 0, error: '', ...IDLE }) : s;
 };
 
 export const active = (s) => s.jobs.filter((j) => j.status === 'downloading').length;

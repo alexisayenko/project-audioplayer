@@ -239,7 +239,7 @@ export const player = {
     let at = qs.index;
     let seen = played;
     let skipped = 0;
-    for (let k = 0; k < qs.items.length; k += 1) {
+    for (const _ of qs.items) {
       const step = Q.nextStep({ ...logic(), index: at, played: seen }, !auto);
       if (!step) break;
       seen = step.played;
@@ -267,7 +267,7 @@ export const player = {
     let at = qs.index;
     let hist = history;
     let skipped = 0;
-    for (let k = 0; k < qs.items.length; k += 1) {
+    for (const _ of qs.items) {
       const step = Q.prevStep({ ...logic(), index: at, history: hist });
       if (!step) break;
       hist = step.history;
@@ -326,10 +326,8 @@ function load(autoplay) {
   render();
 }
 
-function render() {
-  const song = player.current;
-  const n = qs.items.length;
-  document.body.classList.toggle('has-mini', !!song);
+function renderTransport(song, playing) {
+  const label = playing ? 'Pause' : 'Play';
   $('mini').hidden = !song;
   $('player').classList.toggle('idle', !song);
   $('player-empty').hidden = !!song;
@@ -337,31 +335,31 @@ function render() {
   $('cover-text').hidden = !song;
   $('p-edit').hidden = !song;
   $('p-download').hidden = !hasAudio(song);
-  $('queue-count').textContent = n ? `${n} ${plural(n, 'song', 'songs')}` : '';
-  renderPlaylistControls();
-  const playing = !audio.paused;
   setIcon('p-play', playing ? 'pause' : 'play', 22);
   setIcon('mini-play', playing ? 'pause' : 'play', 20);
-  $('p-play').setAttribute('aria-label', playing ? 'Pause' : 'Play');
+  $('p-play').setAttribute('aria-label', label);
   const cover = $('cover-toggle');
   cover.hidden = !song;
-  cover.setAttribute('aria-label', playing ? 'Pause' : 'Play');
-  cover.title = playing ? 'Pause' : 'Play';
+  cover.setAttribute('aria-label', label);
+  cover.title = label;
   cover.classList.toggle('is-playing', playing);
   $('cover-icon').replaceChildren(icon(playing ? 'pause' : 'play', 44));
-  $('mini-play').setAttribute('aria-label', playing ? 'Pause' : 'Play');
-  if (!song) {
-    document.title = 'Electrophone';
-    for (const id of ['p-prev', 'p-next', 'p-play', 'mini-prev', 'mini-next']) $(id).disabled = true;
-    $('player-cover').removeAttribute('src');
-    $('player-cover').dataset.src = '';
-    $('cover-art').classList.add('noart');
-    renderProgress();
-    $('player-dl').hidden = true;
-    renderQueue();
-    listeners.forEach((fn) => fn());
-    return;
-  }
+  $('mini-play').setAttribute('aria-label', label);
+}
+
+function renderIdle() {
+  document.title = 'Electrophone';
+  for (const id of ['p-prev', 'p-next', 'p-play', 'mini-prev', 'mini-next']) $(id).disabled = true;
+  $('player-cover').removeAttribute('src');
+  $('player-cover').dataset.src = '';
+  $('cover-art').classList.add('noart');
+  renderProgress();
+  $('player-dl').hidden = true;
+  renderQueue();
+  listeners.forEach((fn) => fn());
+}
+
+function renderMini(song) {
   const noNext = !Q.hasNext(logic());
   for (const id of ['p-prev', 'p-play', 'mini-prev']) $(id).disabled = false;
   $('p-next').disabled = noNext;
@@ -376,6 +374,9 @@ function render() {
   pl.setAttribute('aria-label', pl.title);
   pl.replaceChildren(icon(inList ? 'listCheck' : 'listAdd', 18));
   $('mini-artist').textContent = song.artist || '';
+}
+
+function renderDetails(song) {
   $('player-title').replaceChildren(...titleNodes(song));
   $('player-sub').textContent = [song.artist, song.album, song.year].filter(Boolean).join(' · ');
   const remixLine = [song.remixer ? `Remix: ${song.remixer}` : ''].filter(Boolean).join(' · ');
@@ -387,6 +388,21 @@ function render() {
   setCover($('mini-cover'), song);
   setCover($('player-cover'), song);
   $('cover-art').classList.toggle('noart', !song.cover);
+}
+
+function render() {
+  const song = player.current;
+  const n = qs.items.length;
+  document.body.classList.toggle('has-mini', !!song);
+  renderTransport(song, !audio.paused);
+  $('queue-count').textContent = n ? `${n} ${plural(n, 'song', 'songs')}` : '';
+  renderPlaylistControls();
+  if (!song) {
+    renderIdle();
+    return;
+  }
+  renderMini(song);
+  renderDetails(song);
   renderQueue();
   document.title = `${displayString(song)} - Electrophone`;
   renderProgress();

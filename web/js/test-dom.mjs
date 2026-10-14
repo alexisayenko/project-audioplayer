@@ -1,18 +1,34 @@
 // Minimal zero-dependency DOM shim for smoke tests. Not a spec-complete DOM.
 const REFLECT = ['id', 'type', 'href', 'src', 'placeholder', 'title', 'name', 'htmlFor', 'autocomplete', 'role', 'download', 'min', 'max', 'step', 'rel', 'target', 'alt', 'lang', 'inputMode'];
 
-export class Node_ {
-  constructor() { this.childNodes = []; this.parentNode = null; }
-  get nodeType() { return this._type; }
-  get parentElement() { return this.parentNode && this.parentNode._type === 1 ? this.parentNode : null; }
-  get firstChild() { return this.childNodes[0] || null; }
-  get lastChild() { return this.childNodes[this.childNodes.length - 1] || null; }
-  get nextSibling() { const p = this.parentNode; return p ? p.childNodes[p.childNodes.indexOf(this) + 1] || null : null; }
-  remove() { if (this.parentNode) { this.parentNode.childNodes.splice(this.parentNode.childNodes.indexOf(this), 1); this.parentNode = null; } }
-  contains(n) { for (let c = n; c; c = c.parentNode) if (c === this) return true; return false; }
+function* ancestry(n) {
+  for (let c = n; c; c = c.parentNode) yield c;
 }
 
-export class Text extends Node_ {
+const dataAttr = (k) => `data-${k.replace(/[A-Z]/g, (c) => '-' + c.toLowerCase())}`;
+
+export class DomNode {
+  constructor() { this.childNodes = []; this.parentNode = null; }
+  get nodeType() { return this._type; }
+  get parentElement() { return this.parentNode?._type === 1 ? this.parentNode : null; }
+  get firstChild() { return this.childNodes[0] || null; }
+  get lastChild() { return this.childNodes.at(-1) || null; }
+  get nextSibling() { const p = this.parentNode; return p ? p.childNodes[p.childNodes.indexOf(this) + 1] || null : null; }
+  remove() {
+    if (this.parentNode) {
+      this.parentNode.childNodes.splice(this.parentNode.childNodes.indexOf(this), 1);
+      this.parentNode = null;
+    }
+  }
+  contains(n) {
+    for (const c of ancestry(n)) {
+      if (c === this) return true;
+    }
+    return false;
+  }
+}
+
+export class Text extends DomNode {
   constructor(t) { super(); this._type = 3; this.data = String(t); }
   get textContent() { return this.data; }
   set textContent(v) { this.data = String(v); }
@@ -34,12 +50,20 @@ class ClassList {
   }
 }
 
+const SIMPLE_TOKEN = new RegExp(`^(?:${[
+  String.raw`([a-zA-Z][\w-]*|\*)`,
+  String.raw`#([\w-]+)`,
+  String.raw`\.([\w-]+)`,
+  String.raw`\[([\w-]+)(?:=(?:"([^"]*)"|'([^']*)'|([^\]]*)))?\]`,
+  String.raw`:not\((.*?)\)`,
+  String.raw`:(disabled|enabled|checked)`,
+].join('|')})`);
+
 function parseSimple(s) {
   const out = { tag: null, id: null, classes: [], attrs: [], nots: [] };
-  const re = /^(?:([a-zA-Z][\w-]*|\*)|#([\w-]+)|\.([\w-]+)|\[([\w-]+)(?:=(?:"([^"]*)"|'([^']*)'|([^\]]*)))?\]|:not\((.*?)\)|:(disabled|enabled|checked))/;
   let rest = s;
   while (rest) {
-    const m = re.exec(rest);
+    const m = SIMPLE_TOKEN.exec(rest);
     if (!m) throw new Error(`test-dom: unsupported selector ${s}`);
     if (m[1] && m[1] !== '*') out.tag = m[1].toLowerCase();
     else if (m[2]) out.id = m[2];
@@ -52,14 +76,21 @@ function parseSimple(s) {
   return out;
 }
 
+function pseudoFails(e, k) {
+  if (k === ':disabled') return !e.disabled;
+  if (k === ':enabled') return !!e.disabled;
+  return !e.checked;
+}
+
 function matchSimple(e, p) {
   if (p.tag && e.localName !== p.tag) return false;
   if (p.id && e.getAttribute('id') !== p.id) return false;
   if (!p.classes.every((c) => e.classList.contains(c))) return false;
   for (const [k, v] of p.attrs) {
-    if (k === ':disabled') { if (!e.disabled) return false; continue; }
-    if (k === ':enabled') { if (e.disabled) return false; continue; }
-    if (k === ':checked') { if (!e.checked) return false; continue; }
+    if (k === ':disabled' || k === ':enabled' || k === ':checked') {
+      if (pseudoFails(e, k)) return false;
+      continue;
+    }
     const a = e.getAttribute(k);
     if (a === null || (v !== null && a !== v)) return false;
   }
@@ -67,7 +98,7 @@ function matchSimple(e, p) {
 }
 
 function parseSelector(sel) {
-  return sel.split(',').map((part) => part.trim().replace(/\s*>\s*/g, ' > ').split(/\s+/).filter(Boolean));
+  return sel.split(',').map((part) => part.replaceAll('>', ' > ').split(/\s+/).filter(Boolean));
 }
 
 function matches(e, chain, root) {
@@ -81,14 +112,17 @@ function matches(e, chain, root) {
     if (t === '>') { direct = true; t = tokens.pop(); }
     const p = parseSimple(t);
     cur = cur.parentElement;
-    if (direct) { if (!cur || cur === root || !matchSimple(cur, p)) return false; continue; }
+    if (direct) {
+      if (!cur || cur === root || !matchSimple(cur, p)) return false;
+      continue;
+    }
     while (cur && cur !== root && !matchSimple(cur, p)) cur = cur.parentElement;
     if (!cur || cur === root) return false;
   }
   return true;
 }
 
-export class Element_ extends Node_ {
+export class DomElement extends DomNode {
   constructor(tag, ns) {
     super();
     this._type = 1;
@@ -100,8 +134,8 @@ export class Element_ extends Node_ {
     this.className = '';
     this.classList = new ClassList(this);
     this.dataset = new Proxy({}, {
-      set: (t, k, v) => { t[k] = String(v); this._attrs.set(`data-${k.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}`, String(v)); return true; },
-      deleteProperty: (t, k) => { delete t[k]; this._attrs.delete(`data-${k.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}`); return true; },
+      set: (t, k, v) => { t[k] = String(v); this._attrs.set(dataAttr(k), String(v)); return true; },
+      deleteProperty: (t, k) => { delete t[k]; this._attrs.delete(dataAttr(k)); return true; },
     });
     this.style = { _p: {}, setProperty(k, v) { this._p[k] = v; }, removeProperty(k) { delete this._p[k]; }, getPropertyValue(k) { return this._p[k] ?? ''; } };
     this.value = '';
@@ -119,9 +153,19 @@ export class Element_ extends Node_ {
   set textContent(v) { this.childNodes.forEach((c) => { c.parentNode = null; }); this.childNodes = []; if (v !== '' && v != null) this.append(new Text(v)); }
   get offsetHeight() { return 40; }
   get offsetWidth() { return 120; }
-  get isConnected() { for (let c = this; c; c = c.parentNode) if (c === globalThis.document) return true; return false; }
+  get isConnected() {
+    for (const c of ancestry(this)) {
+      if (c === globalThis.document) return true;
+    }
+    return false;
+  }
 
-  _adopt(n) { if (typeof n === 'string') n = new Text(n); if (n.parentNode) n.remove(); n.parentNode = this; return n; }
+  _adopt(n) {
+    if (typeof n === 'string') n = new Text(n);
+    if (n.parentNode) n.remove();
+    n.parentNode = this;
+    return n;
+  }
   append(...ns) { for (const n of ns) this.childNodes.push(this._adopt(n)); }
   appendChild(n) { this.append(n); return n; }
   prepend(...ns) { this.childNodes.unshift(...ns.map((n) => this._adopt(n))); }
@@ -132,10 +176,20 @@ export class Element_ extends Node_ {
     if (i < 0) this.childNodes.push(n); else this.childNodes.splice(i, 0, n);
     return n;
   }
-  before(...ns) { const p = this.parentNode; if (p) ns.forEach((n) => p.insertBefore(n, this)); }
-  replaceWith(n) { const p = this.parentNode; if (!p) return; p.insertBefore(n, this); this.remove(); }
+  before(...ns) {
+    const p = this.parentNode;
+    if (p) {
+      ns.forEach((n) => p.insertBefore(n, this));
+    }
+  }
+  replaceWith(n) {
+    const p = this.parentNode;
+    if (!p) return;
+    p.insertBefore(n, this);
+    this.remove();
+  }
   cloneNode(deep) {
-    const c = new Element_(this.localName, this.namespaceURI);
+    const c = new DomElement(this.localName, this.namespaceURI);
     for (const [k, v] of this._attrs) c.setAttribute(k, v);
     c.className = this.className; c.value = this.value; c.checked = this.checked; c.disabled = this.disabled; c.hidden = this.hidden;
     if (deep) this.childNodes.forEach((n) => c.append(n.cloneNode(true)));
@@ -164,29 +218,38 @@ export class Element_ extends Node_ {
     if (k === 'hidden') this.hidden = false;
     if (k === 'class') this.className = '';
   }
-  toggleAttribute(k, force) { const on = force === undefined ? !this.hasAttribute(k) : force; if (on) this.setAttribute(k, ''); else this.removeAttribute(k); return on; }
+  toggleAttribute(k, force) {
+    const on = force === undefined ? !this.hasAttribute(k) : force;
+    if (on) {
+      this.setAttribute(k, '');
+    } else {
+      this.removeAttribute(k);
+    }
+    return on;
+  }
 
   addEventListener(t, fn) { if (!this._ls.has(t)) this._ls.set(t, []); this._ls.get(t).push(fn); }
   removeEventListener(t, fn) { const a = this._ls.get(t); if (a) { const i = a.indexOf(fn); if (i >= 0) a.splice(i, 1); } }
   dispatchEvent(ev) {
     ev.target = ev.target || this;
-    for (let n = this; n && !ev._stop; n = n.parentNode) {
+    for (const n of ancestry(this)) {
+      if (ev._stop) break;
       ev.currentTarget = n;
       const prop = n['on' + ev.type];
       if (typeof prop === 'function') prop.call(n, ev);
-      for (const fn of (n._ls && n._ls.get(ev.type) || []).slice()) fn.call(n, ev);
+      for (const fn of (n._ls?.get(ev.type) || []).slice()) fn.call(n, ev);
       if (!ev.bubbles) break;
     }
     return !ev.defaultPrevented;
   }
   click() { if (!this.disabled) this.dispatchEvent(makeEvent('click', { bubbles: true })); }
   focus() { this.focused += 1; if (globalThis.document) globalThis.document.activeElement = this; }
-  blur() {}
-  select() {}
-  setSelectionRange() {}
-  scrollIntoView() {}
-  setPointerCapture() {}
-  releasePointerCapture() {}
+  blur() { return undefined; }
+  select() { return undefined; }
+  setSelectionRange() { return undefined; }
+  scrollIntoView() { return undefined; }
+  setPointerCapture() { return undefined; }
+  releasePointerCapture() { return undefined; }
   showModal() { this.open = true; }
   show() { this.open = true; }
   close() { if (this.open) { this.open = false; this.dispatchEvent(makeEvent('close')); } }
@@ -194,13 +257,23 @@ export class Element_ extends Node_ {
 
   closest(sel) {
     const chains = parseSelector(sel);
-    for (let n = this; n && n._type === 1; n = n.parentNode) if (chains.some((c) => matches(n, c, null))) return n;
+    for (const n of ancestry(this)) {
+      if (n._type !== 1) break;
+      if (chains.some((c) => matches(n, c, null))) return n;
+    }
     return null;
   }
   querySelectorAll(sel) {
     const chains = parseSelector(sel);
     const out = [];
-    const walk = (n) => { for (const c of n.children) { if (chains.some((ch) => matches(c, ch, this))) out.push(c); walk(c); } };
+    const walk = (n) => {
+      for (const c of n.children) {
+        if (chains.some((ch) => matches(c, ch, this))) {
+          out.push(c);
+        }
+        walk(c);
+      }
+    };
     walk(this);
     return out;
   }
@@ -209,7 +282,7 @@ export class Element_ extends Node_ {
 }
 
 for (const k of REFLECT) {
-  Object.defineProperty(Element_.prototype, k, {
+  Object.defineProperty(DomElement.prototype, k, {
     get() { return this.getAttribute(k === 'htmlFor' ? 'for' : k) ?? ''; },
     set(v) { this.setAttribute(k === 'htmlFor' ? 'for' : k, v); },
     configurable: true,
@@ -222,21 +295,21 @@ export function makeEvent(type, init = {}) {
 
 export function installDom({ ids = [] } = {}) {
   const listeners = new Map();
-  const doc = new Element_('#document');
+  const doc = new DomElement('#document');
   doc.activeElement = null;
   doc.hidden = false;
   doc.title = '';
-  doc.createElement = (t) => new Element_(t);
-  doc.createElementNS = (ns, t) => new Element_(t, ns);
+  doc.createElement = (t) => new DomElement(t);
+  doc.createElementNS = (ns, t) => new DomElement(t, ns);
   doc.createTextNode = (t) => new Text(t);
-  doc.documentElement = new Element_('html');
+  doc.documentElement = new DomElement('html');
   doc.documentElement.scrollHeight = 2000;
-  doc.body = new Element_('body');
-  doc.head = new Element_('head');
-  doc.head.append = (n) => { Element_.prototype.append.call(doc.head, n); if (n.localName === 'script') setTimeout(() => (globalThis.__scriptFail ? n.onerror?.() : n.onload?.()), 0); };
+  doc.body = new DomElement('body');
+  doc.head = new DomElement('head');
+  doc.head.append = (n) => { DomElement.prototype.append.call(doc.head, n); if (n.localName === 'script') setTimeout(() => (globalThis.__scriptFail ? n.onerror?.() : n.onload?.()), 0); };
   doc.append(doc.documentElement);
   doc.documentElement.append(doc.head, doc.body);
-  for (const id of ids) { const e = new Element_(id === 'audio' ? 'audio' : 'div'); e.setAttribute('id', id); doc.body.append(e); }
+  for (const id of ids) { const e = new DomElement(id === 'audio' ? 'audio' : 'div'); e.setAttribute('id', id); doc.body.append(e); }
   const store = new Map();
   const win = {
     innerHeight: 800, innerWidth: 400, scrollY: 0,
@@ -256,11 +329,11 @@ export function installDom({ ids = [] } = {}) {
   };
   const set = (k, v) => Object.defineProperty(globalThis, k, { value: v, configurable: true, writable: true });
   set('document', doc); set('window', win); set('localStorage', storage); set('matchMedia', win.matchMedia);
-  set('CSS', { escape: (s) => String(s).replace(/["\\]/g, '\\$&') });
+  set('CSS', { escape: (s) => String(s).replace(/["\\]/g, String.raw`\$&`) });
   set('requestAnimationFrame', (fn) => setTimeout(fn, 0));
-  set('Event', class { constructor(type, init = {}) { Object.assign(this, makeEvent(type, init)); } });
+  set('Event', function MockEvent(type, init = {}) { Object.assign(this, makeEvent(type, init)); });
   set('CustomEvent', globalThis.Event);
-  doc.addEventListener = Element_.prototype.addEventListener.bind(doc);
+  doc.addEventListener = DomElement.prototype.addEventListener.bind(doc);
   return { document: doc, window: win, storage };
 }
 
@@ -271,11 +344,12 @@ export const flush = () => new Promise((r) => setTimeout(r, 0));
 export function stubFetch(handler) {
   const calls = [];
   globalThis.fetch = async (url, opts = {}) => {
-    calls.push({ url: String(url), opts });
-    const r = await handler(String(url), opts);
+    const u = typeof url === 'string' ? url : url.toString();
+    calls.push({ url: u, opts });
+    const r = await handler(u, opts);
     const status = r.status ?? 200;
     return {
-      ok: status >= 200 && status < 300, status, headers: { get: (k) => (r.headers || {})[k.toLowerCase()] ?? null },
+      ok: status >= 200 && status < 300, status, headers: { get: (k) => r.headers?.[k.toLowerCase()] ?? null },
       json: async () => r.body, text: async () => (typeof r.body === 'string' ? r.body : JSON.stringify(r.body)),
     };
   };
@@ -285,7 +359,7 @@ export function stubFetch(handler) {
 export function makeAudio(e) {
   e.paused = true;
   e.currentTime = 0;
-  e.duration = NaN;
+  e.duration = Number.NaN;
   e.volume = 1;
   e.playbackRate = 1;
   e.plays = 0;
@@ -303,7 +377,7 @@ export async function installPage() {
   const re = /<([a-z0-9]+)\b([^>]*?)\bid="([a-z0-9-]+)"([^>]*)>/gi;
   for (const m of html.matchAll(re)) {
     const [, tag, pre, id, post] = m;
-    const e = new Element_(tag);
+    const e = new DomElement(tag);
     e.setAttribute('id', id);
     const cls = /class="([^"]*)"/.exec(pre + post);
     if (cls) e.setAttribute('class', cls[1]);

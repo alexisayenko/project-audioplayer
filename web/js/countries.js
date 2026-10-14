@@ -21,7 +21,7 @@ export function countryName(code) {
   const c = String(code).toLowerCase();
   if (isHistoricalCountry(c)) return COUNTRY_NAMES[c];
   try {
-    const n = namer && namer.of(c.toUpperCase());
+    const n = namer?.of(c.toUpperCase());
     if (n && n.toLowerCase() !== c) return n;
   } catch { /* fall through */ }
   return COUNTRY_NAMES[c] || code;
@@ -30,7 +30,7 @@ export function countryName(code) {
 export function filterCountries(query, limit = 12) {
   const q = normCountry(query);
   const all = COUNTRY_CODES.map((code) => ({ code, name: countryName(code) }));
-  if (!q) return all.sort((a, b) => a.name.localeCompare(b.name)).slice(0, limit);
+  if (!q) return all.toSorted((a, b) => a.name.localeCompare(b.name)).slice(0, limit);
   const alias = Object.entries(COUNTRY_ALIASES);
   const score = ({ code, name }) => {
     const n = normCountry(name);

@@ -38,7 +38,10 @@ export function placeLabels(cands, { cell = 64, gap = 2 } = {}) {
     if (!c.force) {
       for (const k of keys) for (const o of grid.get(k) || []) if (hit(box, o)) return;
     }
-    for (const k of keys) { if (!grid.has(k)) grid.set(k, []); grid.get(k).push(box); }
+    for (const k of keys) {
+      if (!grid.has(k)) grid.set(k, []);
+      grid.get(k).push(box);
+    }
     shown.add(c.id);
   };
   for (const c of cands) if (c.force) place(c);
@@ -79,7 +82,7 @@ export function diffGraph(prev, next) {
 const parseHex = (c) => {
   const m = /^#([0-9a-f]{6})$/i.exec(String(c).trim());
   if (!m) return null;
-  const n = parseInt(m[1], 16);
+  const n = Number.parseInt(m[1], 16);
   return [n >> 16, (n >> 8) & 255, n & 255];
 };
 

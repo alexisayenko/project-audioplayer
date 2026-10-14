@@ -45,14 +45,7 @@ function bpmBadge(s) {
     n, el('small', { 'aria-hidden': 'true' }, 'BPM'));
 }
 
-export function songRow(s, cur, flashId) {
-  const full = displayString(s);
-  const tip = s.artist ? `${full} - ${s.artist}` : full;
-  const audio = hasAudio(s);
-  const queueable = audio || autoDownloadOn();
-  const link = audio ? null : sourceLink(s);
-  const here = audio && cur && cur.id === s.id;
-  const queued = player.inQueue(s.id);
+function moreButton(s, full, { audio, queueable, queued }) {
   const more = el('button', { class: 'more', type: 'button', 'aria-label': `More: ${full}`, 'aria-haspopup': 'menu', 'aria-expanded': 'false' }, icon('more', 20));
   more.addEventListener('click', () => openMenu(more, [
     ...(queueable ? [
@@ -63,20 +56,42 @@ export function songRow(s, cur, flashId) {
     ...(!audio && autodl.view(s.id).kind === 'none' ? [{ label: 'Download to server', run: () => fetchAudio(s) }] : []),
     { label: 'Edit song', run: () => editDialog(s) },
   ]));
+  return more;
+}
+
+function playlistToggle(s, full, queued, queueable) {
+  if (!queueable) return el('span', { class: 'pl-toggle ph', 'aria-hidden': 'true' });
   const label = queued ? 'In playlist - click to remove' : 'Add to playlist';
-  const pl = queueable
-    ? el('button', { class: `pl-toggle${queued ? ' on' : ''}`, type: 'button', title: label, 'aria-label': `${label}: ${full}`, 'aria-pressed': String(queued), onclick: () => toggleQueue(s) }, icon(queued ? 'listCheck' : 'listAdd', 18))
-    : el('span', { class: 'pl-toggle ph', 'aria-hidden': 'true' });
-  const open = queueable
-    ? el('button', { class: 'open t-headline', type: 'button', title: `Play now: ${tip}`, 'aria-label': `Play now: ${full}`, onclick: () => player.playNow(s.id) }, titleNodes(s))
-    : el('span', { class: 'open t-headline', title: tip }, titleNodes(s));
-  const genres = genreText(s.tags);
-  let durText = '';
-  if (audio) durText = s.duration ? fmtTime(s.duration) : '';
-  const dl = audio ? null : ringModel(autodl.view(s.id));
+  const glyph = queued ? 'listCheck' : 'listAdd';
+  return el('button', { class: `pl-toggle${queued ? ' on' : ''}`, type: 'button', title: label, 'aria-label': `${label}: ${full}`, 'aria-pressed': String(queued), onclick: () => toggleQueue(s) }, icon(glyph, 18));
+}
+
+function openTitle(s, full, tip, queueable) {
+  if (!queueable) return el('span', { class: 'open t-headline', title: tip }, titleNodes(s));
+  return el('button', { class: 'open t-headline', type: 'button', title: `Play now: ${tip}`, 'aria-label': `Play now: ${full}`, onclick: () => player.playNow(s.id) }, titleNodes(s));
+}
+
+function durationContent(s, audio, link, dl) {
   const act = rowActions({ audio, link, ring: dl });
-  if (act.ring) durText = ringNode(dl, () => autodl.retry(s.id));
-  else if (!audio) durText = [act.source ? srcLogo(link) : null, act.download ? dlButton(s) : null];
+  if (act.ring) return ringNode(dl, () => autodl.retry(s.id));
+  if (audio) return s.duration ? fmtTime(s.duration) : '';
+  return [act.source ? srcLogo(link) : null, act.download ? dlButton(s) : null];
+}
+
+export function songRow(s, cur, flashId) {
+  const full = displayString(s);
+  const tip = s.artist ? `${full} - ${s.artist}` : full;
+  const audio = hasAudio(s);
+  const queueable = audio || autoDownloadOn();
+  const link = audio ? null : sourceLink(s);
+  const here = audio && cur && cur.id === s.id;
+  const queued = player.inQueue(s.id);
+  const more = moreButton(s, full, { audio, queueable, queued });
+  const pl = playlistToggle(s, full, queued, queueable);
+  const open = openTitle(s, full, tip, queueable);
+  const genres = genreText(s.tags);
+  const dl = audio ? null : ringModel(autodl.view(s.id));
+  const durText = durationContent(s, audio, link, dl);
   const dur = el('span', { class: audio ? 'c-dur t-time' : 'c-dur t-caption' }, durText);
   return el('li', { class: `song${here ? ' current' : ''}${audio ? '' : ' no-audio'}${flashId === s.id ? ' flash' : ''}`, 'aria-current': here ? 'true' : null, 'data-id': s.id },
     cover(s),

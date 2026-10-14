@@ -8,7 +8,7 @@ export function disabledReason({ id, audio, available }) {
 }
 
 export function matchedText(matched) {
-  if (!matched || !matched.title) return '';
+  if (!matched?.title) return '';
   const who = matched.artist ? `${matched.artist} - ${matched.title}` : matched.title;
   const pct = Number.isFinite(matched.confidence) ? ` (${Math.round(matched.confidence * 100)}%)` : '';
   return `Matched: ${who}${pct}`;

@@ -13,7 +13,7 @@ export function fraction(time, duration) {
 }
 
 export function positionToTime(clientX, rect, duration) {
-  if (!usableDuration(duration) || !rect || !(rect.width > 0) || !Number.isFinite(clientX)) return null;
+  if (!usableDuration(duration) || !rect || !rect.width || rect.width <= 0 || !Number.isFinite(clientX)) return null;
   return clamp((clientX - rect.left) / rect.width, 0, 1) * duration;
 }
 

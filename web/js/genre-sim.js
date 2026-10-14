@@ -1,7 +1,7 @@
 export function mulberry32(seed) {
-  let a = seed | 0;
+  let a = seed >>> 0;
   return () => {
-    a = (a + 0x6D2B79F5) | 0;
+    a = (a + 0x6D2B79F5) >>> 0;
     let t = Math.imul(a ^ (a >>> 15), 1 | a);
     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
@@ -88,7 +88,7 @@ export function createSim({ nodes, links = [], seed = 1, breathing = true, charg
       const { s, t } = l;
       let dx = t.x + t.vx - s.x - s.vx || (rng() - 0.5) * 1e-4;
       let dy = t.y + t.vy - s.y - s.vy || (rng() - 0.5) * 1e-4;
-      const d = Math.sqrt(dx * dx + dy * dy) || 1e-6;
+      const d = Math.hypot(dx, dy) || 1e-6;
       const k = ((d - l.dist) / d) * alpha * l.strength;
       dx *= k; dy *= k;
       t.vx -= dx * (1 - l.bias); t.vy -= dy * (1 - l.bias);
@@ -96,50 +96,80 @@ export function createSim({ nodes, links = [], seed = 1, breathing = true, charg
     }
   }
 
-  function chargeForce() {
-    if (!nodes.length) return;
+  function bounds() {
     let x0 = Infinity; let y0 = Infinity; let x1 = -Infinity; let y1 = -Infinity;
     for (const n of nodes) {
-      if (n.x < x0) x0 = n.x; if (n.x > x1) x1 = n.x;
-      if (n.y < y0) y0 = n.y; if (n.y > y1) y1 = n.y;
+      x0 = Math.min(x0, n.x); x1 = Math.max(x1, n.x);
+      y0 = Math.min(y0, n.y); y1 = Math.max(y1, n.y);
     }
+    return { x0, y0, x1, y1 };
+  }
+
+  function leafForce(n, c) {
+    for (let i = 0; i < c.leaf.length; i += 2) {
+      const o = c.leaf[i];
+      if (o === n) continue;
+      let ex = o.x - n.x; let ey = o.y - n.y;
+      let e2 = ex * ex + ey * ey;
+      if (e2 === 0) { ex = (rng() - 0.5) * 1e-3; ey = (rng() - 0.5) * 1e-3; e2 = ex * ex + ey * ey; }
+      if (e2 < 25) e2 = Math.sqrt(25 * e2);
+      const f = (charge * alpha * c.leaf[i + 1]) / e2;
+      n.vx -= ex * f; n.vy -= ey * f;
+    }
+  }
+
+  function chargeOn(n, root) {
+    const stack = [root];
+    while (stack.length) {
+      const c = stack.pop();
+      if (!c.mass) continue;
+      const dx = c.cx - n.x;
+      const dy = c.cy - n.y;
+      let d2 = dx * dx + dy * dy;
+      if (c.kids && (d2 === 0 || (c.size * c.size) / d2 >= THETA2)) {
+        for (const k of c.kids) {
+          if (k) stack.push(k);
+        }
+        continue;
+      }
+      if (c.leaf) {
+        leafForce(n, c);
+        continue;
+      }
+      if (d2 < 25) d2 = Math.sqrt(25 * d2);
+      const f = (charge * alpha * c.mass) / d2;
+      n.vx -= dx * f; n.vy -= dy * f;
+    }
+  }
+
+  function chargeForce() {
+    if (!nodes.length) return;
+    const { x0, y0, x1, y1 } = bounds();
     const size = Math.max(x1 - x0, y1 - y0, 1) + 1;
     const root = quad(x0, y0, size);
     for (const n of nodes) insert(root, n, weight(n));
-    for (const n of nodes) {
-      const stack = [root];
-      while (stack.length) {
-        const c = stack.pop();
-        if (!c.mass) continue;
-        const dx = c.cx - n.x;
-        const dy = c.cy - n.y;
-        let d2 = dx * dx + dy * dy;
-        if (c.kids) {
-          if (d2 === 0 || (c.size * c.size) / d2 >= THETA2) { for (const k of c.kids) if (k) stack.push(k); continue; }
-        }
-        if (c.leaf) {
-          for (let i = 0; i < c.leaf.length; i += 2) {
-            const o = c.leaf[i];
-            if (o === n) continue;
-            let ex = o.x - n.x; let ey = o.y - n.y;
-            let e2 = ex * ex + ey * ey;
-            if (e2 === 0) { ex = (rng() - 0.5) * 1e-3; ey = (rng() - 0.5) * 1e-3; e2 = ex * ex + ey * ey; }
-            if (e2 < 25) e2 = Math.sqrt(25 * e2);
-            const f = (charge * alpha * c.leaf[i + 1]) / e2;
-            n.vx -= ex * f; n.vy -= ey * f;
-          }
-          continue;
-        }
-        if (d2 < 25) d2 = Math.sqrt(25 * d2);
-        const f = (charge * alpha * c.mass) / d2;
-        n.vx -= dx * f; n.vy -= dy * f;
-      }
-    }
+    for (const n of nodes) chargeOn(n, root);
+  }
+
+  function collidePair(a, b) {
+    let dx = b.x + b.vx - a.x - a.vx;
+    let dy = b.y + b.vy - a.y - a.vy;
+    const min = a.r + b.r + 4;
+    let d2 = dx * dx + dy * dy;
+    if (d2 >= min * min) return;
+    if (d2 === 0) { dx = (rng() - 0.5) * 1e-3; dy = (rng() - 0.5) * 1e-3; d2 = dx * dx + dy * dy; }
+    const d = Math.sqrt(d2);
+    const push = ((min - d) / d) * 0.7;
+    const wa = (b.r * b.r) / (a.r * a.r + b.r * b.r);
+    a.vx -= dx * push * wa; a.vy -= dy * push * wa;
+    b.vx += dx * push * (1 - wa); b.vy += dy * push * (1 - wa);
   }
 
   function collideForce() {
     let maxR = 0;
-    for (const n of nodes) if (n.r > maxR) maxR = n.r;
+    for (const n of nodes) {
+      if (n.r > maxR) maxR = n.r;
+    }
     const cell = 2 * maxR + 8;
     const grid = new Map();
     for (const n of nodes) {
@@ -155,22 +185,33 @@ export function createSim({ nodes, links = [], seed = 1, breathing = true, charg
           const list = grid.get(`${gx},${gy}`);
           if (!list) continue;
           for (const b of list) {
-            if (b.id <= a.id) continue;
-            let dx = b.x + b.vx - a.x - a.vx;
-            let dy = b.y + b.vy - a.y - a.vy;
-            const min = a.r + b.r + 4;
-            let d2 = dx * dx + dy * dy;
-            if (d2 >= min * min) continue;
-            if (d2 === 0) { dx = (rng() - 0.5) * 1e-3; dy = (rng() - 0.5) * 1e-3; d2 = dx * dx + dy * dy; }
-            const d = Math.sqrt(d2);
-            const push = ((min - d) / d) * 0.7;
-            const wa = (b.r * b.r) / (a.r * a.r + b.r * b.r);
-            a.vx -= dx * push * wa; a.vy -= dy * push * wa;
-            b.vx += dx * push * (1 - wa); b.vy += dy * push * (1 - wa);
+            if (b.id > a.id) collidePair(a, b);
           }
         }
       }
     }
+  }
+
+  function clampV(v) {
+    return Math.max(-MAX_V, Math.min(MAX_V, v));
+  }
+
+  function integrate(n, amp) {
+    n.vx -= n.x * gravity * alpha;
+    n.vy -= n.y * gravity * alpha;
+    if (amp) {
+      n.vx += Math.cos(ticks * 0.021 + n.phase) * amp;
+      n.vy += Math.sin(ticks * 0.017 + n.phase * 1.7) * amp;
+    }
+    if (n.fx == null) {
+      n.vx = clampV(n.vx * (1 - VELOCITY_DECAY));
+      n.x += n.vx;
+    } else { n.x = n.fx; n.vx = 0; }
+    if (n.fy == null) {
+      n.vy = clampV(n.vy * (1 - VELOCITY_DECAY));
+      n.y += n.vy;
+    } else { n.y = n.fy; n.vy = 0; }
+    if (!Number.isFinite(n.x) || !Number.isFinite(n.y)) { n.x = (rng() - 0.5) * 10; n.y = (rng() - 0.5) * 10; n.vx = 0; n.vy = 0; }
   }
 
   function tick() {
@@ -181,25 +222,7 @@ export function createSim({ nodes, links = [], seed = 1, breathing = true, charg
     chargeForce();
     collideForce();
     const amp = breathing ? 0.02 : 0;
-    for (const n of nodes) {
-      n.vx -= n.x * gravity * alpha;
-      n.vy -= n.y * gravity * alpha;
-      if (amp) {
-        n.vx += Math.cos(ticks * 0.021 + n.phase) * amp;
-        n.vy += Math.sin(ticks * 0.017 + n.phase * 1.7) * amp;
-      }
-      if (n.fx != null) { n.x = n.fx; n.vx = 0; } else {
-        n.vx *= 1 - VELOCITY_DECAY;
-        if (n.vx > MAX_V) n.vx = MAX_V; else if (n.vx < -MAX_V) n.vx = -MAX_V;
-        n.x += n.vx;
-      }
-      if (n.fy != null) { n.y = n.fy; n.vy = 0; } else {
-        n.vy *= 1 - VELOCITY_DECAY;
-        if (n.vy > MAX_V) n.vy = MAX_V; else if (n.vy < -MAX_V) n.vy = -MAX_V;
-        n.y += n.vy;
-      }
-      if (!Number.isFinite(n.x) || !Number.isFinite(n.y)) { n.x = (rng() - 0.5) * 10; n.y = (rng() - 0.5) * 10; n.vx = 0; n.vy = 0; }
-    }
+    for (const n of nodes) integrate(n, amp);
     return true;
   }
 
@@ -212,7 +235,19 @@ export function createSim({ nodes, links = [], seed = 1, breathing = true, charg
     setAlphaTarget(v) { alphaTarget = v; },
     restTarget: () => (breathing ? REST : 0),
     reheat(a = 0.5) { alpha = Math.max(alpha, a); },
-    settle(n = 300) { const was = alphaTarget; alphaTarget = 0; for (let i = 0; i < n && tick(); i++); alphaTarget = was; if (alphaTarget > 0 && alpha < alphaTarget) alpha = alphaTarget; },
-    energy() { let e = 0; for (const n of nodes) e += n.vx * n.vx + n.vy * n.vy; return e; },
+    settle(n = 300) {
+      const was = alphaTarget;
+      alphaTarget = 0;
+      for (let i = 0; i < n; i++) {
+        if (!tick()) break;
+      }
+      alphaTarget = was;
+      if (alphaTarget > 0 && alpha < alphaTarget) alpha = alphaTarget;
+    },
+    energy() {
+      let e = 0;
+      for (const n of nodes) e += n.vx * n.vx + n.vy * n.vy;
+      return e;
+    },
   };
 }

@@ -18,3 +18,10 @@ test('removed pieces', () => {
   assert.deepEqual(cleanTitleEx('De Hofnar - Zonnestraal [Free Download]'), { title: 'De Hofnar - Zonnestraal', removed: ['[Free Download]'] });
   assert.deepEqual(cleanTitleEx('[Free Download]'), { title: '[Free Download]', removed: [] });
 });
+
+test('trailing and leading separators trimmed, long whitespace runs stay fast', () => {
+  assert.equal(cleanTitle('Artist - Track (Official Video) | - '), 'Artist - Track');
+  const t0 = Date.now();
+  assert.equal(cleanTitle(`Artist${' '.repeat(50000)}x`), 'Artist x');
+  assert.ok(Date.now() - t0 < 1000);
+});

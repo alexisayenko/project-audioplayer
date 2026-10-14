@@ -95,6 +95,12 @@ export function localCounts(g, songs) {
   return out;
 }
 
+function searchRank(label, q, at) {
+  if (label === q) return 0;
+  if (at === 0) return 1;
+  return label.split(/\W+/).includes(q) ? 2 : 3;
+}
+
 export function searchNodes(g, query, limit = 8) {
   const q = query.trim().toLowerCase();
   if (!q) return [];
@@ -103,7 +109,7 @@ export function searchNodes(g, query, limit = 8) {
     const l = n.label.toLowerCase();
     const at = l.indexOf(q);
     if (at < 0) continue;
-    scored.push({ n, rank: l === q ? 0 : at === 0 ? 1 : l.split(/\W+/).includes(q) ? 2 : 3 });
+    scored.push({ n, rank: searchRank(l, q, at) });
   }
   scored.sort((a, b) => a.rank - b.rank || b.n.count - a.n.count || a.n.label.localeCompare(b.n.label));
   return scored.slice(0, limit).map((s) => s.n);
@@ -160,7 +166,7 @@ export function pathKeys(g, id) {
   }
   const top = g.byId.get(chain[0]);
   const keys = [familyKey(top.family)];
-  for (const c of chain) keys.push(`${keys[keys.length - 1]}>${c}`);
+  for (const c of chain) keys.push(`${keys.at(-1)}>${c}`);
   return keys;
 }
 

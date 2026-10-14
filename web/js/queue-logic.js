@@ -223,6 +223,19 @@ export function clearUpcoming(state) {
 
 export const queuedSet = (state) => new Set(state.items.map((it) => it.id));
 
+function shufflePlayable({ queue, index, repeat }, ok, seen0, rand) {
+  const playable = queue.map((id, i) => i).filter((i) => i !== index && ok(queue[i]));
+  let cand = playable.filter((i) => !seen0.includes(queue[i]));
+  let seen = seen0;
+  if (!cand.length) {
+    if (repeat !== 'all' || !playable.length) return null;
+    seen = [queue[index]];
+    cand = playable;
+  }
+  const pick = cand[Math.min(cand.length - 1, Math.floor(rand() * cand.length))];
+  return { index: pick, played: seen, skipped: 0 };
+}
+
 // Next song that can play. `ok(id)` says whether an id has audio; with `autoOn` (Auto-download) every song counts
 // and this is a plain nextStep. Returns { index, played, skipped } or null (no playable song that way: stop).
 // Sequential mode steps over songs without audio and counts them in `skipped`; shuffle only draws playable songs.
@@ -237,22 +250,11 @@ export function nextPlayable(state, manual, ok, autoOn, rand = Math.random) {
   const cur = queue[index];
   const seen0 = (state.played || []).includes(cur) ? state.played : [...(state.played || []), cur];
   if (repeat === 'one' && !manual) return { index, played: seen0, skipped: 0 };
-  if (shuffle) {
-    const playable = queue.map((id, i) => i).filter((i) => i !== index && ok(queue[i]));
-    let cand = playable.filter((i) => !seen0.includes(queue[i]));
-    let seen = seen0;
-    if (!cand.length) {
-      if (repeat !== 'all' || !playable.length) return null;
-      seen = [cur];
-      cand = playable;
-    }
-    const pick = cand[Math.min(cand.length - 1, Math.floor(rand() * cand.length))];
-    return { index: pick, played: seen, skipped: 0 };
-  }
+  if (shuffle) return shufflePlayable(state, ok, seen0, rand);
   let at = index;
   let seen = state.played || [];
   let skipped = 0;
-  for (let k = 0; k < n; k += 1) {
+  for (const _ of queue) {
     const step = nextStep({ ...state, index: at, played: seen }, true, rand);
     if (!step) return null;
     seen = step.played;
@@ -272,7 +274,7 @@ export function prevPlayable(state, ok, autoOn) {
   let at = state.index;
   let hist = state.history || [];
   let skipped = 0;
-  for (let k = 0; k < state.queue.length; k += 1) {
+  for (const _ of state.queue) {
     const step = prevStep({ ...state, index: at, history: hist });
     if (!step) return null;
     hist = step.history;

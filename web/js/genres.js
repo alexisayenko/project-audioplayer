@@ -14,6 +14,16 @@ const CHILD_CHIPS = 12;
 
 const songsText = (n) => `${n} ${plural(n, 'song', 'songs')}`;
 
+function loadMessage(data, pending) {
+  if (!data.ontology) return 'Genre data unavailable - showing your tags only';
+  return pending ? 'Resolving genre families...' : '';
+}
+
+function toggleGlyph(r) {
+  if (!r.hasChildren) return '';
+  return r.expanded ? '▾' : '▸';
+}
+
 export function renderGenres(root) {
   const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
   const expanded = loadExpanded(localStorage);
@@ -118,6 +128,7 @@ export function renderGenres(root) {
     if (!n) { panel.replaceChildren(); return; }
     const kids = g.children.get(n.id) || [];
     const more = kids.length - CHILD_CHIPS;
+    const morePill = more > 0 ? el('span', { class: 'muted t-caption' }, `+${more} more`) : null;
     const exact = n.ownCount !== n.count ? ` (${n.ownCount} tagged exactly)` : '';
     panel.replaceChildren(
       el('div', { class: 'gm-panel-head' },
@@ -127,7 +138,7 @@ export function renderGenres(root) {
       el('p', { class: 'muted t-caption' }, `${n.family} · ${songsText(n.count)}${exact}`),
       n.parents.length ? el('div', { class: 'gm-group' }, el('p', { class: 't-eyebrow' }, 'PARENTS'), el('div', { class: 'gm-chips' }, n.parents.map(chip))) : null,
       kids.length ? el('div', { class: 'gm-group' }, el('p', { class: 't-eyebrow' }, 'SUBGENRES'),
-        el('div', { class: 'gm-chips' }, kids.slice(0, CHILD_CHIPS).map(chip), more > 0 ? el('span', { class: 'muted t-caption' }, `+${more} more`) : null)) : null,
+        el('div', { class: 'gm-chips' }, kids.slice(0, CHILD_CHIPS).map(chip), morePill)) : null,
       el('button', {
         class: 'btn primary small', type: 'button', disabled: !n.count,
         onclick: () => { filterByTags(filterTags(g, n.id)); location.hash = '#/library'; },
@@ -145,8 +156,13 @@ export function renderGenres(root) {
       const toggle = el('button', {
         class: 'gm-tw', type: 'button', disabled: !r.hasChildren, 'aria-expanded': r.hasChildren ? String(r.expanded) : null,
         'aria-label': `${r.expanded ? 'Collapse' : 'Expand'} ${r.label}`,
-        onclick: () => { if (expanded.has(r.key)) expanded.delete(r.key); else expanded.add(r.key); saveOpen(); renderOutline(); },
-      }, r.hasChildren ? (r.expanded ? '▾' : '▸') : '');
+        onclick: () => {
+          if (expanded.has(r.key)) expanded.delete(r.key);
+          else expanded.add(r.key);
+          saveOpen();
+          renderOutline();
+        },
+      }, toggleGlyph(r));
       const label = el('button', {
         class: 'gm-lbl', type: 'button', 'aria-current': r.id && r.id === selectedId ? 'true' : null,
         onclick: () => {
@@ -214,8 +230,7 @@ export function renderGenres(root) {
     if (dead) return;
     if (!failed && data && Array.isArray(data.nodes) && data.nodes.length) {
       const pending = shouldPoll(data.pending, polls);
-      const message = !data.ontology ? 'Genre data unavailable - showing your tags only'
-        : pending ? 'Resolving genre families...' : '';
+      const message = loadMessage(data, pending);
       apply(data, message);
       if (pending) { polls += 1; pollTimer = setTimeout(load, POLL_MS); }
       return;
@@ -253,7 +268,7 @@ export function renderGenres(root) {
   if (!hasStoredExpanded(localStorage)) for (const f of FAMILIES) expanded.add(`f:${f}`);
   setOutline(outlineOpen, false);
 
-  load();
+  void load();
 
   return () => {
     dead = true;

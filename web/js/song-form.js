@@ -1,5 +1,4 @@
 import { api } from './api.js';
-import { store } from './store.js';
 import { tagEditor } from './tag-editor.js';
 import { el, field } from './dom.js';
 import { tokenGroup } from './token-field.js';
