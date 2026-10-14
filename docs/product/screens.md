@@ -22,7 +22,7 @@ library. There is no separate playlist entity.
 
 ## Navigation
 
-Web (Electrophone screens, web v16 artboards, ADR-0009 amendment): four
+Web (Electrophone screens, web v16 artboards, ADR-0009 amendment): five
 destinations, **Library**, **Playback**, **Genres map** (`#/genres`, with a Now playing popover of the playing song's genres: a movable force graph of the user's genres filling the whole page, with a translucent toolbar, a legend, a collapsible outline panel and a floating selected-genre card, GEN-010..023; hovering a genre only rings it and shows its name, selecting takes a click, GEN-026), **Song stats** (`#/stats`: a full-page year x BPM scatter plot, one dot per song, with a colour-by select, legend, rubber-band selection with a floating action panel, zoom, right-drag pan and centring, dots coloured by genre family by default and a table view, STA-001..021) and **Settings**; adding a song is the
 accent "Add song" button in the Library header, which opens the Add dialog
 (`#/add` still works and opens Library with the dialog). A signed-out visitor sees
@@ -45,7 +45,7 @@ Web: a centred 560px dialog over Library (bottom-aligned sheet on phones): title
 1. User pastes a YouTube URL or a bare 11-character video id (cleaned to the canonical link on paste, drop, bulk input and blur; surrounding text is dropped).
 2. App asks the server for a metadata preview (cover, title, artist,
    album, year, and suggested `genre:` and `country:` tags from yt-dlp, MusicBrainz and Wikidata, plus suggested Wikipedia links for the song and the band).
-3. User edits any field and assigns tags in the shared tag editor ("Get metadata" after Title and Artist fills empty Album and Year and suggests genres and a country, and offers a tappable "Wikipedia says: artist / title" hint under Artist when it differs (never auto-filled; a Remix & additional production field sits under Artist, IOS-063; Title, Artist and Remix fields hold pills with a pencil menu, an X, drag and drop and move, IOS-065, IOS-066); four service icons beside it (YouTube, SoundCloud, Wikipedia, Spotify) are grey by default, pulse while the request runs, and turn brand-coloured and tappable (opening the found page) for each service that returned a match; Spotify always stays grey; separate Genres and Countries fields hold the `genre:` and `country:` tags (Genres suggests up to 6 matching genres as chips while typing, IOS-067); suggested tags, existing tags grouped by prefix, `key:value` allowed; incomplete leftover text such as `mood:` is ignored).
+3. User edits any field and assigns tags in the shared tag editor ("Get metadata" after Title and Artist fills empty Album and Year and suggests genres and a country, and offers a tappable "Wikipedia says: artist / title" hint under Artist when it differs (never auto-filled; a Remix & additional production field sits under Artist, IOS-063; Title, Artist and Remix fields hold pills with a pencil menu, an X, drag and drop and move, IOS-065, IOS-066); six service icons beside it (YouTube, SoundCloud, Wikipedia, MusicBrainz, Spotify, Discogs) are grey by default, pulse while the request runs, and turn brand-coloured and tappable (opening the found page) for each service that returned a match (MusicBrainz lights up when matched); only Spotify and Discogs stay grey; separate Genres and Countries fields hold the `genre:` and `country:` tags (Genres suggests up to 6 matching genres as chips while typing, IOS-067); suggested tags, existing tags grouped by prefix, `key:value` allowed; incomplete leftover text such as `mood:` is ignored).
    BPM is not entered on iOS: the form shows only the line "BPM is detected after saving" (web: optional field, detected after the download when left empty).
    Two optional inputs, Wikipedia (song) and Wikipedia (band), hold the links (shown as the article name, a bare name is accepted on the web); they are saved with the song and feed "Get metadata"; iOS shows them in the same form, side by side, with only the article name displayed (IOS-068). "Wikipedia says" is a hint, never auto-filled. There is no "Original track" field. The server normalises feat. credits to "feat." in the saved artist and title and keeps "Live" in the title.
 4. Save writes the catalog entry; on iOS the app then downloads the audio through the server (IOS-022), on the web no audio is fetched.
@@ -57,8 +57,8 @@ Web: a centred 560px dialog over Library (bottom-aligned sheet on phones): title
 
 Manages all songs.
 
-- One row per song in a single list card (web: table with a header row, LIB-010; columns cover / Track / Genres / Time / menu, with artist and year only in the Track cell's muted "Artist · Year" line and no #, Album, Artist or Year column, LIB-018): cover, title, genres, duration and a "..." menu with Play now, Add to playlist, Download and Edit song (the Edit dialog also holds Delete; a song without server audio has only Edit song). On the web, clicking the title of a song with audio plays it and keeps the user on Library. The playing row has an accent wash. Tags are not shown in rows (filter by the category chips); BPM is a small outlined badge at the right end of the title line (LIB-019), also on Playback and in Edit. Sort is the text button under the chips ("Recently added", Title, Artist, Year, BPM); a line on the right reads "N songs match · selected values" when filtered.
-- Search box (title, artist, album, tags). With a tag filter or search text active, an "Add all N to playlist" button appends all listed songs to the queue (toast "Added X songs (Y already in queue)"; a tag filter becomes a playlist chip, search-only adds are manual); hidden when nothing is filtered. A "Play all N" button next to it (always shown when songs are listed) replaces the queue with the listed songs and starts playing (toast "Playing N songs (queue replaced)"). Playback and Edit have a Download button (plain file save, WEB-034).
+- One row per song in a single list card (web: table with a header row, LIB-010; columns cover / Track / Genres / Time / menu, with artist and year only in the Track cell's muted "Artist · Year" line and no #, Album, Artist or Year column, LIB-018): cover, title, genres, duration and a "..." menu with Play now, Add to playlist, Download and Edit song (the Edit dialog also holds Delete; a song without server audio has only Edit song). On the web, clicking the title opens the song card (LIB-014, LIB-120); the cover button plays the song and keeps the user on Library. The playing row has an accent wash. Tags are not shown in rows (filter by the category chips); BPM is a small outlined badge at the right end of the title line (LIB-019), also on Playback and in Edit. Sort is the text button under the chips ("Recently added", Title, Artist, Year, BPM); a line on the right reads "N songs match · selected values" when filtered.
+- Search box (title, artist, album, remix and additional production, tags). With a tag filter or search text active, an "Add all N to playlist" button appends all listed songs to the queue (toast "Added X songs (Y already in queue)"; a tag filter becomes a playlist chip, search-only adds are manual); hidden when nothing is filtered. A "Play all N" button next to it (always shown when songs are listed) replaces the queue with the listed songs and starts playing (toast "Playing N songs (queue replaced)"). Playback and Edit have a Download button (plain file save, WEB-034).
 - Rows stretch over the whole width right of the sidebar. Each row has a playlist toggle (selected when the song is in the queue; click adds or removes, LIB-095). The bottom mini-player is a fixed 720px bar (raised surface, border, shadow) with Edit details, Show in list (scrolls to and flashes the playing song's row, LIB-097) and Add to current playlist (toggle, PLY-119).
 - `decade:` tags are derived from Year by the server and show as "the 90s"; the tag editor previews the chip as Year changes.
 - Filter by tag (chips grouped by prefix: Genre, Decade, Country, then others; plain tags under Tags; `country:` values show as names, e.g. Lithuania; languages are not shown or filterable); sort (added date, title, artist, year, BPM; songs without BPM last).
@@ -71,74 +71,7 @@ Manages all songs.
 
 Web updates (2026-10-14): the song-details card has no "..." menu, only two round icon buttons, Download (hidden when the song has no server audio) and Edit song (PLY-072, PLY-102); the cover is a play/pause button with a translucent icon overlay (PLY-016); the queue "Clear" button drops every upcoming song and all chips and is disabled with a tooltip when there is nothing to clear (PLY-034); with Settings > Playback > "Auto-download songs" on, songs without audio can be queued and show Queued / Downloading N% / limit-pause / Failed-Retry states in the queue and in a banner under the cover, off shows "Not downloaded" with a Download button (PLY-110..116).
 
-SUPERSEDED for the web by the two-column layout in Navigation above (PLY-001); the four-block layout below is the older design, kept for reference only.
-
-Four stacked blocks in a centered column (max 720px). The page itself does
-not scroll; block 4 takes the remaining height and scrolls inside.
-
-```
-+--------------------------------------------+
-| 1. SONG DETAILS                            |
-|  large cover fills the card                |
-|                                            |
-|  ......................................    |
-|  Title of the composition   (on a scrim)   |
-|  Author, Album, year                       |
-|  [tag] [tag] ...  BPM  Source Wikipedia(s) |
-+--------------------------------------------+
-| 2. SONG PLAY CONTROLS                      |
-|  |<   (<5)   [ > ]   (5>)   >|    1:05 / 3:33
-|  ---o------------------------ (thin scrub; drag, click, arrow keys: PLY-120..122) |
-+--------------------------------------------+
-| 3. PLAYLIST CONTROLS                       |
-|  [shuffle] [loop 1] [loop all]
-|  (tag1 x) (tag2 x)  [+]         N songs    |
-+--------------------------------------------+
-| 4. CURRENT PLAYLIST          (scrolls) |###|
-|  [cover] Title              M:SS  [>] [=]  |
-|          Author, Album, year               |
-|          [tags ...]                        |
-|  [cover] ... (current row highlighted)     |
-|  ...                                       |
-+--------------------------------------------+
-```
-
-Wireframes (`wireframes/`): current is the detailed v3
-([whole screen](wireframes/playback-v3-detailed.png),
-[controls](wireframes/playback-v3-controls.png),
-[rows](wireframes/playback-v3-rows.png),
-[scrollbar](wireframes/playback-v3-scrollbar.png)); the row mirrors the
-Library card ([`library-row.png`](wireframes/library-row.png)). Earlier
-drafts, both SUPERSEDED:
-[v1 three blocks](wireframes/playback-v1-three-blocks.png),
-[v2 four blocks](wireframes/playback-v2-four-blocks.png).
-
-![Playback v3, current](wireframes/playback-v3-detailed.png)
-
-1. **Song details**: the cover fills the whole card (placeholder colour when
-   there is none); title, "Author, Album, year", tag chips, BPM and up to three
-   links (new tab) are overlaid at the bottom on a dark gradient
-   scrim (legible in light and dark). Links: Source (`source_url`), Wikipedia (song) and Wikipedia (band) (`wikipedia_song`, `wikipedia_artist`); each shows only when set. Empty: "Nothing playing".
-2. **Song play controls**, one row: previous song, back 5 s, play/pause
-   (also space), forward 5 s, next song, and "M:SS / M:SS" on the right. A
-   thin scrubber under the row keeps seeking possible. No volume slider
-   (device volume is used).
-3. **Playlist controls**, one row (wraps on narrow screens):
-   - Shuffle toggle (`aria-pressed`).
-   - Loop one song toggle and loop whole list toggle, mutually exclusive
-     (turning one on turns the other off; both off = stop at the end).
-   - The queue card header (not this row) has **Add by tag** and **Clear**: Clear
-     removes every upcoming song and all tag chips; the current and played
-     songs stay (PLY-034).
-   - Chips = the currently selected tags, each with an x; **+** opens the tag
-     picker; song count on the right.
-4. **Current playlist**: rows look like Library cards (cover, title,
-   "Author, Album, year", duration, play button, tags line) plus a menu
-   button (Edit song, Download when the song has server audio, Move up, Move
-   down, Remove; PLY-042). Tap a row to play it; the current
-   song is highlighted. The list has a persistent, slim, styled scrollbar
-   ([wireframe](wireframes/playback-v3-scrollbar.png)). Empty: "Queue is
-   empty - add songs from Library".
+The four-block layout (details, play controls, playlist controls, current playlist) that was drawn here is superseded and removed; the live web layout is the two-column Playback in Navigation above (PLY-001, [`../specs/playback.md`](../specs/playback.md)). Not in the code, despite older wording: back/forward 5 s buttons, a volume slider on the details block, separate loop-one and loop-all toggles (the web has one repeat button); the old wireframes under `wireframes/` show that design and are historical.
 
 #### Queue and tag rules
 
@@ -267,6 +200,15 @@ contain no data.
 | `GET /catalog` | the whole catalog with ETag (iOS Library sync, IOS-035) | Library |
 | `GET /genres` | known genres for the Genres suggestions (IOS-067) | Add, Library |
 | `POST /metadata` | Get metadata: album, year, genre and country tags, Wikipedia hint, services | Add, Library |
+| `POST /songs/{id}/audio` | fetch audio for a catalog song (web Auto-download, iOS download) | Library, Playback |
+| `POST /songs/{id}/identify` | Identify from audio (AcoustID, Discogs) | Library |
+| `GET /genres/graph` | genre nodes and edges for the Genres map | Genres map |
+| `POST /me/backfill/bpm` | owner: detect BPM for songs without one | Settings |
+| `GET /me`, `GET /me/usage` | profile and quota usage | Settings |
+| `/auth/*` | `config`, `session`, `logout`, sign-in | Settings |
+| `GET /legal`, `GET /health` | legal pages; server health (the rail LED) | Settings |
+
+Not exhaustive; the full list is in [`../specs/api.md`](../specs/api.md). The web `POST /songs` sends `audio: false` (metadata only; audio is fetched by `POST /songs/{id}/audio`).
 
 `POST /songs` returns 202 and downloads in the background; poll
 `GET /songs/{id}/status` (`downloading` with `progress` 0..1, `done`, or

@@ -5,6 +5,8 @@ plan with a $0 Actions budget. Extracted from moene
 (`project-moodtracker`), which is the worked example throughout;
 swap its commands for the project's own and keep the shape.
 
+Note: most of this file is a generic playbook from another project; the "This project" section is authoritative.
+
 ## Principles
 
 - **Every workflow is manual.** Only `workflow_dispatch`; nothing
@@ -161,7 +163,7 @@ Notes per layer:
 ## Local checks and deploy
 
 - `scripts/check.sh` runs from the repo root: web tests
-  (`node --test web/js` and each `web/js/*.test.mjs`), the
+  (each `web/js/*.test.mjs` run separately with `node --test`; a test file with no tests fails the check), the
   duplicate rule-ID check over `docs/specs/*.md`, and the server
   pytest suite (prints the summary line). It ends with `check ok`
   and exits non-zero on any failure.

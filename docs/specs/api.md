@@ -1,6 +1,6 @@
 # API
 
-Code: `server/app/main.py` (app wiring) and one router per area in `server/app/routes/` (`health`, `auth`, `me`, `legacy`, `files`, `catalog`, `genres`, `lookup`, `songs`, `analyze`, `removal`); shared state and dependencies in `server/app/deps.py`, request bodies in `schemas.py`. Same origin as the web UI; JSON bodies; errors
+Code: `server/app/main.py` (app wiring) and one router per area in `server/app/routes/` (`health`, `auth`, `me`, `legacy`, `files`, `catalog`, `genres`, `lookup`, `songs`, `analyze`, `removal`, `backfill`, `legal`; 13 routers); shared state and dependencies in `server/app/deps.py`, request bodies in `schemas.py`. Same origin as the web UI; JSON bodies; errors
 are `{"detail": "<message>"}`, or `{"error": <code>, "detail": <message>, ...}` for coded refusals (API-026, API-040..046). Every data route works on the caller's own library only (ADR-0012).
 
 ## Auth
@@ -17,9 +17,9 @@ are `{"detail": "<message>"}`, or `{"error": <code>, "detail": <message>, ...}` 
 
 ## Web session
 
-- API-020 MUST: `POST /auth/session` `{id_token}` verifies the ID token exactly as API-007, then answers 200 `{email, provider}` and sets cookie `__Host-session` (`HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=43200`), a payload `{provider, email, exp}` signed with HMAC-SHA256 (the payload also carries the server-derived `uid`). The key is env `AUDIO_SESSION_SECRET`, else derived from `AUDIO_API_TOKEN`; neither set gives 503. Errors: 401 `bad token`, 403 `unverified_email`, 403 `signup_closed`, 403 CSRF (API-009 applies). Status: implemented (seen live: 6 successful `POST /auth/session` in the server journal; provider not recorded)
+- API-020 MUST: `POST /auth/session` `{id_token}` verifies the ID token exactly as API-007, then answers 200 `{email, provider}` and sets cookie `__Host-session` (`HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=43200`), a payload `{provider, email, exp}` signed with HMAC-SHA256 (the payload also carries the server-derived `uid`). The key is env `AUDIO_SESSION_SECRET`, else derived from `AUDIO_API_TOKEN`; neither set gives 503 `AUDIO_SESSION_SECRET or AUDIO_API_TOKEN is not set`. Errors: 401 `bad token`, 403 `unverified_email`, 403 `signup_closed`, 403 `no_email` (the account has no email), 403 CSRF (API-009 applies). Status: implemented (seen live: 6 successful `POST /auth/session` in the server journal; provider not recorded)
 - API-021 MUST: `POST /auth/logout` deletes the cookie and answers 204 (CSRF header required). Sessions are stateless: a stolen cookie stays valid until it expires or the secret changes. Status: implemented
-- API-022 MUST: `GET /auth/config` is public and returns `{google_client_id, apple_client_id, apple_redirect}` from `GOOGLE_WEB_CLIENT_ID`, `APPLE_WEB_CLIENT_ID` and `APPLE_WEB_REDIRECT_URI` (default `https://<Host>/`); empty string when unset. Client ids are not secrets. Status: implemented
+- API-022 MUST: `GET /auth/config` is public and returns `{google_client_id, apple_client_id, apple_redirect}` from `GOOGLE_WEB_CLIENT_ID`, `APPLE_WEB_CLIENT_ID` and `APPLE_WEB_REDIRECT_URI`; empty string when unset. `apple_redirect` resolves in this order (`hosts.oauth_redirect`): the `OAUTH_REDIRECT_URIS` entry whose host matches the request host, else its first entry; then `APPLE_WEB_REDIRECT_URI`; else `https://<origin>/`, the origin from `PUBLIC_HOSTS` / `CANONICAL_HOST` / `X-Forwarded-Host` (trusted peers only). Client ids are not secrets. Status: implemented
 - API-023 MUST: `GET /auth/me` returns `{method:"session"|"bearer"|"token", email, provider, owner}` for the current credentials, else 401. Status: implemented
 - API-024 MUST: API responses carry `Cache-Control: no-store`; `/files` and `/covers` carry `private, no-cache`; static files `no-cache`. Status: implemented
 

@@ -40,7 +40,7 @@ Prices, assessment, follow-up steps and the checks history: [`domains.md`](domai
    `ios/Sources/DesignTokens.swift` and `web/tokens.css`.
 4. Commit the export and the two generated files together. Never edit the
    generated files; never add a colour, size or radius in code that the
-   system does not define — add it to the system first.
+   system does not define — add it to the system first. Partially followed: the web still has literal colours, radii, shadows and px sizes (WEB-010 Known gaps) and the iOS app has hand-built shadows, literal radius 16, literal sizes and `.white`/`.black` on the Sign in with Apple button (IOS-050 Known gaps); `sync-design-system.py` has no `--check` mode and `check.sh` has no literal-colour lint.
 
 Screens are designed in the Screens artifact before they are built; a
 component used on a screen must exist in the system.

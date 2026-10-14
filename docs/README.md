@@ -137,12 +137,12 @@ and rules):
 - [`tech/domain-migration.md`](tech/domain-migration.md) — runbook for moving
   the site from play.isayenko.net to electrophone.cc
 - [`specs/README.md`](specs/README.md) — testable requirements per area
-  (API, data model, tags, library, playback, web, genres, iOS, non-functional)
+  (API, data model, tags, library, playback, web, genres, stats, visualizer, iOS, non-functional)
 - [`CHANGELOG.md`](CHANGELOG.md) — what shipped, newest first
 - [`tech/ci-cd.md`](tech/ci-cd.md) — CI/CD playbook (manual
   workflows, test layers, deploy and release paths)
 - [`tech/decisions.md`](tech/decisions.md) — tech decisions (ADRs):
-  components, server, Cloudflare Tunnel, storage, open signup (ADR-0012), music-database lookups and identification (ADR-0013), Genres map (ADR-0014), pill tokenizer and title cleaning (ADR-0015), web player chrome (ADR-0016), server module structure and test strategy (ADR-0017)
+  components, server, Cloudflare Tunnel, storage, open signup (ADR-0012), music-database lookups and identification (ADR-0013), Genres map (ADR-0014), pill tokenizer and title cleaning (ADR-0015), web player chrome (ADR-0016), server module structure and test strategy (ADR-0017), public read-only guest view (ADR-0018), domain migration to electrophone.cc (ADR-0019)
 - [`ui-ux/README.md`](ui-ux/README.md) — screen + journey spec,
   section glossary
 - [`ui-ux/style-guide.md`](ui-ux/style-guide.md) — visual +
@@ -173,7 +173,8 @@ with a UI has more than one screen).
 ```text
 docs/
 ├── brand/                              # entry: brand/README.md
-│   └── domains.md                      # domain candidates
+│   ├── domains.md                      # domain candidates
+│   └── tokens.json                     # design tokens (generated into iOS and web)
 ├── business/                           # entry: business/README.md
 │   ├── compliance.md                   # external obligations
 │   └── budget.md                       # out-of-pocket costs
@@ -192,20 +193,24 @@ docs/
 │   └── legal-draft.md                  # legal-page draft
 ├── specs/                              # entry: specs/README.md (what the system does)
 │   ├── add-song.md api.md catalog.md data-model.md genres.md ios.md
-│   └── library.md non-functional.md playback.md storage-and-sync.md tags.md web.md
+│   └── library.md non-functional.md playback.md stats.md storage-and-sync.md tags.md visualizer.md web.md
 ├── tasks/                              # entry: tasks/README.md
 │   ├── README.md
-│   ├── C1.md                           # concern C1
+│   ├── C1.md C2.md                     # concern roll-ups
 │   └── task-XXXX.md                    # numbered tasks
 ├── tech/                               # entry: tech/README.md
 │   ├── architecture.md                 # system design
 │   ├── decisions.md                    # tech ADRs
 │   ├── deploy.md                       # deploy runbook (live server)
+│   ├── domain-migration.md             # move to electrophone.cc
 │   └── ci-cd.md                        # CI/CD playbook
 ├── ui-ux/                              # entry: ui-ux/README.md
 │   ├── style-guide.md                  # visual + interaction standards
 │   ├── performance-guide.md            # end-to-end UX performance
 │   ├── screens/                        # entry: screens/README.md
+│   ├── alt-themes/ mockups1/ mockups2/ # PNG theme and mockup explorations
+│   ├── vega-108/                       # PNG turntable sketches
+│   ├── design-prompts.md               # design-tool prompts
 │   └── journeys.md                     # multi-screen paths
 ├── README.md                           # this file
 └── concerns.md                         # cross-cutting axes (C1, C2, …)

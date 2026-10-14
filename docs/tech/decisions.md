@@ -47,6 +47,8 @@ The phone cannot run yt-dlp. The app calls the server for `/preview`,
 `perkunas`. Known risk: YouTube may block datacenter IPs (a home IP
 avoids this).
 
+Known gap: the superseded `/search` and `/download` are still served by `server/app/routes/legacy.py`.
+
 ### Network exposure: Cloudflare Tunnel (live since 2026-10-13, ADR-0004)
 
 Cloudflare Workers cannot run yt-dlp. Expose the server at an HTTPS URL
@@ -141,8 +143,8 @@ Status: Accepted · 2026-10-12
   Cloudflare Pages. When the real UI ships, the DNS record is repointed
   to the Tunnel and the Pages page is dropped.
 - Scope: the web build manages the library and plays online only. No
-  offline or local storage and no service-worker audio cache (iOS Safari
-  evicts it and limits quota). Offline listening belongs to the iOS app
+  offline audio storage in the web and no service-worker audio cache (iOS Safari
+  evicts it and limits quota); `localStorage` holds only UI state, queue and flags (`web/js/storage.js`). Offline listening belongs to the iOS app
   (`ios/`, SwiftUI), built later against the same API, with a "download
   to device" option.
 - Sub-decision (2026-10-14, download to device): the web may offer "Download", a normal browser file save of the audio (`GET /files/{id}?download=1`, `Content-Disposition: attachment`, filename `Artist - Title.m4a`), triggered by a plain `<a download>`. It is not an offline cache: no service worker, no stored copy, no change to "online only" playback (API-061, WEB-034).
@@ -168,6 +170,7 @@ machine / `alex-hetzner`" wording in ADR-0001
 - Host: home server `perkunas` (Proxmox NUC), inside the existing
   `tools` LXC 106 (Debian 13, `192.168.0.10`, privileged). No new LXC,
   no Docker.
+- Known gap: iOS still sets `NSAllowsArbitraryLoads: true` (`ios/project.yml`, `ios/Sources/Info.plist`), though the server is reached over HTTPS only; not yet tightened.
 - Run: FastAPI + yt-dlp + ffmpeg, serving `web/`, as a plain systemd
   service. Limit it to ~2 cores: perkunas CPU throttles at 100 C under
   sustained all-core load. LXC 106 also hosts Immich.
@@ -419,6 +422,7 @@ holds). Concept: [`docs/product/concept-catalog-and-audio.md`](../product/concep
 - Implementation: server P1 (task-0006) is implemented: `file` may be `null`, `sources` list, derived `audio_state` (`none`/`server`), `GET /catalog`, metadata-only `POST /songs`, `DELETE /songs/{id}/audio`. Old records are not migrated; state is derived at read time. Remaining specs are `planned` (CAT-*), tasks task-0007.. (phases P2..P6).
 
 - Auto-download on the web (2026-10-14): the web gets a client setting "Auto-download songs" (default off). On, songs without server audio may be queued and their audio is fetched in the background through the new `POST /songs/{id}/audio` (state `none` to `server`; PLY-110..116, API-060); one fetch counts as one add against `USER_ADDS_PER_HOUR` (owner exempt, NFR-056), so the existing quotas still bound the cost; the client runs one download at a time and pauses on `hourly_limit`. Off, nothing is fetched automatically and a song without audio shows "Not downloaded" with a Download button. This amends the Web bullet above ("never queues them") only for the on case.
+- A metadata-only `POST /songs` (`audio:false`) does not record against `USER_ADDS_PER_HOUR`; only the audio fetch (`POST /songs/{id}/audio`) or an add with audio records, once, so a song never costs two adds. (After a restart the counter re-learns from the songs' `added_at`, which can count metadata-only songs of the last hour.)
 
 ## ADR-0011 Multi-source song ids: YouTube unchanged, SoundCloud as `soundcloud-<track id>`
 
@@ -488,6 +492,7 @@ Status: Accepted, implemented in `server/` and `web/` (live; iOS client mostly d
   `library_full_songs` / `library_full_bytes`, 503 `server_full`, 403
   `signup_closed`. `GET /me` and `GET /me/usage` report profile and usage.
 - Risks and costs:
+  - Business and legal docs (`docs/business/`, `docs/release/legal-draft.md`) are still TODO placeholders while open signup is live.
   - Strangers' emails are stored in `profile.json` in the private data repo;
     git history is permanent, so removing a user later leaves the email in
     history (paths never contain it). See privacy in
@@ -601,9 +606,10 @@ Status: Accepted (Alex, 2026-10-14) · implemented on the web, layout not yet ch
 
 Status: Accepted (Alex, 2026-10-14) · implemented
 
-- `server/app/main.py` only builds the app (middleware, exception handlers, router includes). Routes live in `server/app/routes/`, one `APIRouter` per area: health, auth, me, legacy, files, catalog, genres, lookup, songs, analyze, removal. Shared state, per-user paths, transactions and the auth and quota dependencies live in `deps.py`; code and tests use `deps.X`, never `main.X`.
-- One helper for each repeated job instead of copies: `jsonio` (crash-safe JSON writes), `httpjson` (JSON over HTTP with User-Agent and timeout), `safepath`, `ratelimit`, `timeutil`, `tags`, `links`, `downloads`, `schemas`, `web`. The web side follows the same rule: `storage.js` (guarded `localStorage`), `constants.js` (breakpoints, timings), and large UI modules split by job (`player-*`, `library-*`, `song-form-*`, `token-drag`, `genre-view`).
-- Tests: server line coverage target 99% (`coverage run -m pytest`, measured over `app/*`); web coverage target 80% or more, with UI modules tested through a small DOM shim (`web/js/test-dom.mjs`) and one `*.test.mjs` per module. The shared title-cleaning fixture drives both the Python and the JavaScript implementation. Network, git, `yt-dlp` and `fpcalc` are always faked; no test reaches a real service.
+- `server/app/main.py` only builds the app (middleware, exception handlers, router includes). Routes live in `server/app/routes/`, one `APIRouter` per area: health, auth, me, legacy, files, catalog, genres, lookup, songs, analyze, removal, backfill, legal. Shared state, per-user paths, transactions and the auth and quota dependencies live in `deps.py`; code and tests use `deps.X`, never `main.X`.
+- One helper for each repeated job instead of copies: `jsonio` (crash-safe JSON writes), `httpjson` (JSON over HTTP with User-Agent and timeout), `safepath`, `ratelimit`, `timeutil`, `tags`, `links`, `downloads`, `schemas`, `web`, `guest`, `hosts`, `session`, `legal`, `limits`. The web side follows the same rule: `storage.js` (guarded `localStorage`), `constants.js` (breakpoints, timings), and large UI modules split by job (`player-*`, `library-*`, `song-form-*`, `token-drag`, `genre-view`).
+- Tests: server line coverage about 99% (`coverage run -m pytest`, measured over `app/*`); web line coverage about 96% (`node --experimental-test-coverage --test web/js/*.test.mjs`, test files excluded), with UI modules tested through a small DOM shim (`web/js/test-dom.mjs`) and a `*.test.mjs` for most modules. 28 of 96 `web/js` modules have no same-named test file (e.g. `storage`, `constants`, `token-drag`, `library-*`, `player-media`, `stats-chart`, `viz-*`) but are exercised through other tests. The shared title-cleaning fixture drives both the Python and the JavaScript implementation. Network, git, `yt-dlp` and `fpcalc` are always faked; no test reaches a real service.
+- Coverage is measured manually (last measured 2026-10-14: server about 99%, web about 96%); it is not enforced by `scripts/check.sh`, and `server/requirements-dev.txt` has no coverage tooling (install `coverage` in a throwaway venv).
 - `scripts/check.sh` is the gate: every web test file, duplicate requirement IDs, the server test suite. It never deploys.
 - Rejected: one big `main.py` with tests patching `main` (every refactor broke unrelated tests); a web build step to bundle modules (the no-build rule of ADR-0003 stays).
 
@@ -616,6 +622,7 @@ Status: Accepted (Alex, 2026-10-14; BB2: guests may stream the audio)
 - Guardrails (in memory, per client IP): 240 requests/min, 1024 MB of audio/hour (Range requests count the bytes they serve), 3 concurrent streams; refusals are 429 `{"error": "guest_limit", "retry_after_minutes"}` with `Retry-After`. Guests cannot use `?download=1` (403 `guest_download_disabled`). The client IP is `CF-Connecting-IP` only when the TCP peer is loopback or a private LAN address (the cloudflared host); a header from any other peer is ignored.
 - Kill switches: `PUBLIC_VIEW=0` restores the old behaviour (anonymous gets 401 everywhere); `PUBLIC_AUDIO=0` keeps the metadata public but answers 403 for the audio (`guest_audio_disabled`), and the web then opens the song's YouTube or SoundCloud link instead of playing.
 - Risks Alex accepted or must watch: (1) copyright: the audio is downloaded from YouTube, so streaming it to the public widens the ToS and copyright exposure of an app that is not meant for distribution; `PUBLIC_AUDIO=0` is the first step if a complaint arrives. (2) Bandwidth: the home uplink and the Cloudflare Tunnel carry guest audio; the per-IP caps bound one visitor, not a crowd or many IPs. (3) Scraping: a guest can read the whole catalog and stream every file within the caps; the limits slow this down, they do not prevent it. (4) Cloudflare's terms restrict serving large non-HTML media through the proxy on the free plan; heavy guest streaming may breach them, a reason to turn `PUBLIC_AUDIO` off or move audio off the tunnel. (5) IP trust: if the server ever listens publicly, or behind another proxy on a LAN address, `CF-Connecting-IP` could be spoofed to dodge the caps.
+- The guest scrub drops the top-level `file` name as well as `audio.file`, and guest streaming returns 404 for songs not in the owner's catalog (no `<video_id>.m4a` fallback). Known gap: business and legal docs (`docs/business/`, `docs/release/legal-draft.md`) are still TODO placeholders while guest streaming is live.
 - Rejected: a separate public share link or token (the owner would have to hand it out and rotate it); guest downloads; per-guest accounts; a static export of the catalog (no audio, no live state).
 
 
@@ -630,7 +637,7 @@ Status: Accepted (Alex, 2026-10-14; BB2: guests may stream the audio)
 Status: Accepted (Alex, 2026-10-14)
 
 - Decision: serve the same app on `play.isayenko.net` and `electrophone.cc` (two tunnel hostnames to one service) until the new host is proven, then set `CANONICAL_HOST=electrophone.cc` so GET/HEAD on any other host answer 308 to the same path and query. Runbook: [domain-migration.md](domain-migration.md).
-- Server, all env, defaults unchanged: `PUBLIC_HOSTS` (validated hostnames; absolute URLs are only built from these), `CANONICAL_HOST` (unset = no redirect; `/health` and writes are never redirected), `OAUTH_REDIRECT_URIS` (the Apple web redirect per host). `X-Forwarded-Host` is read only when the peer is loopback or LAN, like `CF-Connecting-IP`.
+- Server, all env, defaults unchanged: `PUBLIC_HOSTS` (validated hostnames; absolute URLs are only built from these), `CANONICAL_HOST` (unset = no redirect; `hosts.EXEMPT_PATHS` = `/health`, `/robots.txt`, `/legal` and non-GET/HEAD methods are never redirected), `OAUTH_REDIRECT_URIS` (the Apple web redirect per host). `X-Forwarded-Host` is read only when the peer is loopback or LAN, like `CF-Connecting-IP`.
 - Sessions: the cookie has no `Domain`, so it is host-only and each host has its own sign-in; users sign in again on the new host. The CSRF check (custom header plus an Origin equal to the Host) holds on every host.
 - Sign-in: Google and Apple consoles must list the new origin and return URL (add, never replace); a rejected address shows "This address is not registered with ... sign-in yet".
 - Rejected: a cookie `Domain` shared across both hosts (not possible across different registrable domains); a redirect on every method (it would break a POST in flight).

@@ -25,7 +25,7 @@ accepted (now) these are superseded as noted below.
 
 ## Get audio
 
-- CAT-020 MUST: Get audio is a separate action per song and in bulk. Status: planned
+- CAT-020 MUST: Get audio is a separate action per song and in bulk. Status: per-song implemented (`POST /songs/{id}/audio`, API-060); bulk planned
 - CAT-021 MUST: for a song with no audio source the server proposes a YouTube match (title, channel, duration, thumbnail); nothing downloads until the user confirms. Status: planned
 - CAT-022 MUST: the user can pick another candidate or reject the match; rejected matches are not proposed again for that song. Status: planned
 - CAT-023 MUST: after confirmation the audio downloads like any YouTube song and the state becomes `server`, then `phone` after the copy. Status: planned
@@ -36,7 +36,7 @@ accepted (now) these are superseded as noted below.
 
 - CAT-030 MUST: Library lists the whole catalog; each row shows its audio state; this supersedes the phone-only list of ADR-0009 (IOS-030..032 are rewritten). Status: implemented (iOS)
 - CAT-031 MUST: a filter shows only songs with a local copy; on iOS it is the "Downloaded N" toggle of the design. Status: implemented (iOS)
-- CAT-032 MUST: Play is available only for state `phone` on the phone (and `server` on the web); other rows offer Download (server audio) or "No audio yet"; Get audio is task-0009. Status: implemented (iOS, except Get audio)
+- CAT-032 MUST: Play is available only for state `phone` on the phone (and `server` on the web); other rows offer Download (server audio) or "No audio yet"; Get audio is per song (API-060); bulk and match proposals (CAT-021..025) are planned. Status: implemented (iOS, except Get audio)
 - CAT-033 MUST: Delete from library removes the catalog record; a separate "Remove download" frees the phone copy and keeps the record. Status: implemented (server: `DELETE /songs/{id}` and `DELETE /songs/{id}/audio`); the iOS actions are "Delete from library" (server delete, then the phone) and "Remove from iPhone" (frees the audio, keeps the record)
 
 ## More sources

@@ -57,7 +57,7 @@ files in `AUDIO_DATA_DIR`. Otherwise the server keeps its own clones of the priv
 `alexisayenko/data-storage` and `alexisayenko/data-storage-lfs` (Git LFS).
 Reads come from the local clone. A write takes the user's lock, then the one
 global git lock, runs `pull --rebase`, writes `library.json` atomically, commits
-(`audioplayer: <uid8> add|edit|delete|bpm <id>`) and pushes. If the push fails the
+(`audioplayer: <uid8> add|edit|delete|bpm <id>`, or `detect bpm for N songs` for the BPM backfill) and pushes. If the push fails the
 local commit is kept, retried with backoff, and a warning is shown in
 the UI; the write is never lost. Auth: one write deploy key per repo,
 outside the repos (`~/.config/`, `chmod 600`). History is permanent, so
@@ -90,13 +90,15 @@ relative audio file names only (replaces `AUDIO_DOWNLOAD_DIR`). Each save costs 
 | `GET /covers/{video_id}` | cover jpg (`covers/<id>.jpg`) |
 | `GET /auth/config`, `POST /auth/session`, `POST /auth/logout`, `GET /auth/me` | web sign-in: public client ids; ID token to session cookie; clear cookie; current credentials |
 | `GET /me`, `GET /me/usage` | profile (`email`, `provider`, `owner`, `created_at`); quota usage (`max_*` null for the owner) |
+| `GET /me/backfill/bpm`, `POST /me/backfill/bpm`, `DELETE /me/backfill/bpm` | BPM detection for the user's songs without one: status, start (202; 409 if already running), cancel |
+| `GET /legal`, `GET /robots.txt` | legal page and robots rules, public |
 | `GET /`, `GET /_v/<version>/...` | web UI (`web/`, static, public): `index.html` with assets rewritten to a content-versioned URL (API-051) |
 
-Full contract: [`../product/screens.md`](../product/screens.md).
+Full contract: [`../specs/api.md`](../specs/api.md).
 
-All API routes except `/health` and `/auth/config`, `/auth/session`, `/auth/logout` (the last two need only the CSRF header) need either an OAuth ID token of any verified
+All API routes except `/health`, `/auth/config`, `/auth/session`, `/auth/logout` (the last two need only the CSRF header), `/legal` and `/robots.txt` need either an OAuth ID token of any verified
 user (`Authorization: Bearer`, see below; open signup, ADR-0012) or header
-`X-API-Token` equal to `AUDIO_API_TOKEN` (the owner). Every route resolves to one
+`X-API-Token` equal to `AUDIO_API_TOKEN` (the owner). Anonymous guests may read `/library`, `/tags`, `/genres/graph`, `/catalog`, `/files`, `/covers` and `/me` through `deps.read_user` (ADR-0018, `guest.READ_PATHS`). Every route resolves to one
 user and touches only that user's data. `/files/{id}` and `/covers/{id}` also accept
 `?token=<token>` (the owner's `AUDIO_API_TOKEN` only), compared with `hmac.compare_digest`, since `<audio>`
 and `<img>` cannot send headers; the token therefore can appear in URLs
@@ -135,10 +137,10 @@ and `*.wikipedia.org`), `AUDIO_MB_USER_AGENT` (default
 `audioplayer/0.1 (alex.isayenko@gmail.com)`, sent to all three hosts; Wikimedia requires a descriptive one).
 Optional identification (API-070): `ACOUSTID_API_KEY`, `ACOUSTID_MIN_SCORE` (default `0.9`), `AUDIO_FPCALC` (path of Chromaprint `fpcalc`, default `fpcalc`) and `DISCOGS_TOKEN`; each source is off while its credential or binary is missing.
 
-Server modules (`server/app/`, structure: ADR-0017): `main` (builds the app: middleware, exception handlers, includes the routers), `routes/` (one `APIRouter` per area: `health`, `auth`, `me`, `legacy`, `files`, `catalog`, `genres`, `lookup`, `songs`, `analyze`, `removal`), `deps` (shared state, per-user paths, transactions, auth and quota dependencies; use `deps.X`, not `main.X`), `schemas` (request bodies), `links` (pasted links to song ids, short upstream error text), `downloads` (job bookkeeping, download workers, metadata-only add), `web` (index.html with versioned asset URLs, static mount; `AUDIO_WEB_DIR` read at call time), `ratelimit` (outbound lookup limiters), `httpjson` (one JSON-over-HTTP helper with User-Agent and timeout), `jsonio` (crash-safe JSON writes), `safepath` (paths that cannot leave their base), `tags` (`namespace:value` helpers), `timeutil` (UTC timestamp format), `library` (records, derived `decade:` tags,
+Server modules (`server/app/`, structure: ADR-0017): `main` (builds the app: middleware, exception handlers, includes the routers), `routes/` (one `APIRouter` per area: `health`, `auth`, `me`, `legacy`, `files`, `catalog`, `genres`, `lookup`, `songs`, `analyze`, `removal`, `backfill`, `legal`; 13 routers), `deps` (shared state, per-user paths, transactions, auth and quota dependencies; use `deps.X`, not `main.X`), `schemas` (request bodies), `links` (pasted links to song ids, short upstream error text), `downloads` (job bookkeeping, download workers, metadata-only add), `web` (index.html with versioned asset URLs, static mount; `AUDIO_WEB_DIR` read at call time), `ratelimit` (outbound lookup limiters), `httpjson` (one JSON-over-HTTP helper with User-Agent and timeout), `jsonio` (crash-safe JSON writes), `safepath` (paths that cannot leave their base), `tags` (`namespace:value` helpers), `timeutil` (UTC timestamp format), `library` (records, derived `decade:` tags,
 tag normalisation), `extractor` (yt-dlp), `genre_lookup` (MusicBrainz
 suggestions), `acoustid_lookup` (fpcalc + AcoustID), `discogs_lookup` (Discogs styles, year), `identify` (merge and 24 h cache), `wiki_lookup` (Wikipedia links, Wikidata facts, link validation), `titles` (title cut: channel prefix, remix to `remixer`, feat normalisation, lookup strings), `genre_filter` (deny-list and canonical genre tags), `genres` (built-in genre list for `GET /genres`), `genre_graph` (Wikidata ontology cache and the user's genre graph, `data/discogs-families.json`), `titleclean` (promo-noise cleaning, same rules as `web/js/title-clean.js`), `countrycodes` (canonical ISO 3166-1 countries and the historical `su`), `metadata` (`POST /metadata`), `langcodes` (ISO 639 mapping, stored `lang:` tags only), `bpm` (aubio), `urlclean` (link cleaning, SoundCloud and catalog-id classification), `gitstore`
-(git sync), `oauth`, `session`, `users`, `limits`, `jobs`, `problems` (coded refusals) (ADR-0006, ADR-0012).
+(git sync), `oauth`, `session`, `users`, `limits`, `jobs`, `problems` (coded refusals), `guest` (anonymous read-only allow-list, ADR-0018), `hosts` (`PUBLIC_HOSTS`, `CANONICAL_HOST`, `OAUTH_REDIRECT_URIS`), `session` (cookie signing), `legal` (`/legal`, `/robots.txt`), `limits` (per-user quotas), `backfill` (BPM detection for a user's songs) (ADR-0006, ADR-0012).
 
 ## Web UI (`web/`)
 
@@ -165,7 +167,7 @@ Sources in `ios/Sources/`:
   the Add sheet (progress shown on the Library row).
 - `LibraryStore` — phone library, `Documents/library.json` and `Documents/audio/`.
 - `APIClient` — preview, `POST /songs` + status polling, `/files`, PATCH,
-  BPM detect, Wikipedia lookup, delete; auth header added per request.
+  BPM detect, delete; auth header added per request.
 - `AuthService`, `Keychain` — Sign in with Apple / Google (ADR-0006) and
   token storage.
 - `PlayerService` — `AVPlayer`, `.playback` audio session, queue, shuffle and

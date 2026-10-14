@@ -28,7 +28,7 @@ Code: `server/app/gitstore.py`, `server/app/library.py`, `server/app/deps.py`, `
 ## Write path
 
 - STO-020 MUST: all writes are single-writer: a per-user lock, then (git store) the one global git lock: `git pull --rebase`, write the user's `library.json` atomically, `git add -A -- audioplayer`, commit, push. Status: implemented
-- STO-021 MUST: commit messages are `audioplayer: <uid8> add <id>`, `edit <id>`, `delete <id>`, `delete audio <id>`, `bpm <id>`, `signup` (`<uid8>` = first 8 hex of the uid); author defaults to `audioplayer-server <audioplayer@localhost>`. Status: implemented
+- STO-021 MUST: commit messages are `audioplayer: <uid8> add <id>`, `edit <id>`, `delete <id>`, `delete audio <id>`, `bpm <id>`, `signup`, `detect bpm for N songs` (BPM backfill) (`<uid8>` = first 8 hex of the uid); author defaults to `audioplayer-server <audioplayer@localhost>`. Status: implemented
 - STO-022 MUST: both repos are committed and pushed in the same write when both are configured. Status: implemented
 - STO-023 MUST: pull is best effort: a failed pull is logged, the rebase is aborted, and the write proceeds (offline must not block writes). Status: implemented
 - STO-024 MUST: if the write body raises, uncommitted tracked changes are reverted (`git checkout -- .`). Status: implemented
