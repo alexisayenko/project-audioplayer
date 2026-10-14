@@ -136,3 +136,11 @@ test('moveTokenTo across and within fields', () => {
   assert.deepEqual(moveTokenTo('A', 0, 'A', 0, ', ', false), { src: '', dst: 'A, A' });
   assert.deepEqual(moveTokenTo('A |', 1, 'X', 0, ' '), { src: 'A |', dst: 'X' });
 });
+
+test('artist strings load and read back unchanged through the token view', () => {
+  for (const s of ['A, B', 'CarMan', 'Sadrican, DJ Harley Q., GOLDFISH', 'Земфира, Би-2', 'Лондон, гуд бай']) {
+    assert.equal(compose(tokenize(s)), s);
+    assert.equal(stripEdges(s), s);
+  }
+  assert.deepEqual(tokenize('A, B').map((t) => t.text), ['A', 'B']);
+});

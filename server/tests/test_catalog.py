@@ -193,3 +193,18 @@ def test_unconfigured_music_root_does_not_break_library(client, tmp_path, monkey
     monkeypatch.setattr(library, "load_hosts", lambda: {})
     states = [s["audio_state"] for s in client.get("/library", headers=H).json()["songs"]]
     assert states == ["server", "none"]
+
+
+def test_titles_with_commas_are_stored_verbatim(client, tmp_path):
+    title = "Лондон, гуд бай"
+    artist = "Земфира, CarMan"
+    r = add(client, metadata={"title": title, "artist": artist}, audio=False)
+    assert r.status_code == 201
+    stored0 = client.get("/library", headers=H).json()["songs"][0]
+    assert (stored0["title"], stored0["artist"]) == (title, artist)
+    patched = client.patch(f"/songs/{VID}", json={"title": title, "artist": artist, "year": 1999}, headers=H).json()
+    assert (patched["title"], patched["artist"]) == (title, artist)
+    stored = client.get("/library", headers=H).json()["songs"][0]
+    assert (stored["title"], stored["artist"]) == (title, artist)
+    raw = json.loads((ODIR(tmp_path) / "library.json").read_text(encoding="utf-8"))["songs"][0]
+    assert (raw["title"], raw["artist"]) == (title, artist)

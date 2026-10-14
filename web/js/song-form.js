@@ -16,7 +16,7 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
   const initial = { ...song };
   const tg = tokenGroup();
   const f = {
-    title: tg.field('title', initial.title || ''),
+    title: el('input', { type: 'text', value: initial.title || '', autocomplete: 'off' }),
     artist: tg.field('artist', initial.artist || ''),
     remixer: tg.field('remixer', initial.remixer || ''),
     album: el('input', { type: 'text', value: initial.album || '' }),

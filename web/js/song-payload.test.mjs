@@ -33,3 +33,16 @@ test('songSources merges sources and source_url without duplicates', () => {
   assert.deepEqual(songSources({}), []);
   assert.deepEqual(sourceList(null), []);
 });
+
+test('titles with commas and Cyrillic are saved verbatim', () => {
+  for (const title of ['Лондон, гуд бай', 'Hello, World - Part 2', '1,000 Ways; Again', 'A / B, C']) {
+    assert.equal(patchBody({ ...v, title }).title, title);
+    assert.equal(addBody({ ...v, title }).title, title);
+  }
+});
+
+test('multi-artist strings are saved verbatim', () => {
+  for (const artist of ['A, B', 'CarMan', 'Sadrican, DJ Harley Q., GOLDFISH', 'Земфира, Би-2']) {
+    assert.equal(patchBody({ ...v, artist }).artist, artist);
+  }
+});

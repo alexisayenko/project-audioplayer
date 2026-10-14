@@ -4,6 +4,8 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## 2026-10-14
 
+- Web: the song Title is a single plain input, so a comma no longer splits it into pills ("Лондон, гуд бай"); Artist keeps pills (WEB-039).
+- Web: the Playback and mini-player progress bars can be dragged, clicked and keyboard-operated with a time bubble while dragging (PLY-120..122).
 - Web: mini-player bar is a fixed 720px, visually separated from the list, with Edit details, Show in list and an Add to current playlist toggle; Library rows stretch full width and show a playlist toggle that reflects the queue (LIB-095..097, PLY-117..119, WEB-038). On phones (< 480px) the mini-player keeps only the playlist toggle and Library rows (< 720px) keep their old columns, the toggle being reachable through the row menu.
 - Web: the desktop sidebar can be collapsed to a thin icon rail with a toggle button; the choice is remembered (WEB-037).
 - Web: the queue row menu now works on every row (Move up/down and Remove for played and current songs too, the current song stays current) and gains Edit song and Download (PLY-042, PLY-046).

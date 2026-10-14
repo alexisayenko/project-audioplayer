@@ -3,7 +3,6 @@ import { icon } from './icons.js';
 import { tokenize, isBlankToken, removeToken, replaceToken, appendToken, moveToken, moveTokenTo, stripEdges, commitTyped } from './tokens.js';
 
 const KINDS = {
-  title: { label: 'Title', move: 'Title', sep: ' - ' },
   artist: { label: 'Artist', move: 'Artist', sep: ', ' },
   remixer: { label: 'Remix & additional production', move: 'Remix', sep: ' ' },
 };

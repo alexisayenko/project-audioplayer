@@ -141,7 +141,7 @@ suggestions), `wiki_lookup` (Wikipedia links, Wikidata facts, link validation), 
 
 Plain HTML, CSS and ES modules; no build step, no framework, no CDN.
 `index.html` + `style.css` + `js/` (`api`, `store`, `dom`, `player`, `library`,
-`queue-logic`, `tagname`, `tag-editor`, `wiki-links`, `url-clean`, `tag-input`, `song-form` (the one form of the Add and Edit dialogs), `song-payload`, `token-field` + `tokens` (Title, Artist and Remix token pills), `chip-field`, `chip-split`, `genre-suggest`, `genre-cell`, `metadata-apply`, `service-icons`, `track-sub`, `library-match`, `limits`, `add`, `edit-dialog`, `settings`, `app`; most have a `*.test.mjs`). Hash routes `#/library`,
+`queue-logic`, `tagname`, `tag-editor`, `wiki-links`, `url-clean`, `tag-input`, `song-form` (the one form of the Add and Edit dialogs), `song-payload`, `token-field` + `tokens` (Artist and Remix token pills), `scrub` + `scrubber` (draggable seek bars), `chip-field`, `chip-split`, `genre-suggest`, `genre-cell`, `metadata-apply`, `service-icons`, `track-sub`, `library-match`, `limits`, `add`, `edit-dialog`, `settings`, `app`; most have a `*.test.mjs`). Hash routes `#/library`,
 `#/playback`, `#/settings` (a signed-out visitor is sent to `#/settings`) and `#/add` (opens Library with the Add dialog over it; `wantsAdd` in `web/js/app.js`); Add and Edit are dialogs. The web is catalog-only: it saves entries with `audio:false` and plays and deletes only audio already on the server (ADR-0010). One `<audio>` element drives the mini-player, the
 Playback tab and the Media Session lock-screen controls. The web UI uses the session cookie only. Mounted by FastAPI at
 `/` after all API routes, so it never shadows them.
