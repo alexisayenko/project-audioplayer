@@ -13,6 +13,13 @@ _NOISE = (
     "lyrics", "lyric video", "with lyrics", "video", "audio", "visualizer", "music video", "mv", "clip", "video clip", "full song",
     "full version", "high quality", "hq audio",
 )
+_WORDS = frozenset(
+    "free download dl premiere premiered exclusive hd hq 4k 1080p 720p 480p 360p 60fps official lyrics lyric visualizer mv audio video "
+    "music clip with out now soon available buy new full song high quality the".split()
+)
+_STRONG = frozenset(
+    "free download dl premiere premiered exclusive hd hq 4k 1080p 720p 480p 360p 60fps official lyrics lyric visualizer mv video audio clip".split()
+)
 _PROMO = ("free download", "free dl", "free d/l", "free dl!", "out now", "premiere")
 
 _PUNCT = re.compile(r"[\W_]+")
@@ -40,7 +47,12 @@ def _is_noise(text: str, allowed: frozenset[str] = _NOISE_SET) -> bool:
         return True
     parts = [_norm(p) for p in _PARTS.split(text)]
     parts = [p for p in parts if p]
-    return len(parts) > 1 and all(p in allowed for p in parts)
+    if len(parts) > 1 and all(p in allowed for p in parts):
+        return True
+    if allowed is _NOISE_SET:
+        words = whole.split()
+        return all(w in _WORDS for w in words) and any(w in _STRONG for w in words)
+    return False
 
 
 def clean_ex(title: str) -> tuple[str, list[str]]:

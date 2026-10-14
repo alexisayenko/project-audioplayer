@@ -4,6 +4,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## 2026-10-14
 
+- Web and server: title cleaning now matches noise word by word, so '[HD 1080p]' and '(Official Music Video HD)' are removed while '(Official Remix)' and '(The New Song)' stay (ADD-077).
 - Web and server: new "Genres map" page (sidebar item after Playback): your genres as a movable, "alive" force graph coloured by Discogs family, with parents and subgenres from Wikidata (cached on the server, works offline), an outline list, search, and "Show N songs in Library" including subgenres; the sidebar brand and collapse toggle now share one line (GEN-001..030, API-080, DATA-060, WEB-050, ADR-0014).
 - Web and server: promo noise such as "[Free Download]" is removed from the title when adding a song (shared rules in `titleclean.py` and `title-clean.js`, hint "Cleaned: removed ... - Restore", `title_raw` in `POST /preview`); the Title offers 'Move "X" to Artist?'; optional `scripts/clean-titles.py` for old titles (ADD-077..080).
 - Server and web: "Identify from audio" in the song form fingerprints the saved audio (Chromaprint `fpcalc`, AcoustID) to find the exact MusicBrainz recording, adds Discogs styles, and offers genres, countries, year and links as suggestions; runs once after each download; off until `ACOUSTID_API_KEY`, `DISCOGS_TOKEN` and `fpcalc` are set on the server; new optional `discogs_url` on the song (API-070, API-071, DATA-050, ADD-090, TAG-070, NFR-070, ADR-0013).

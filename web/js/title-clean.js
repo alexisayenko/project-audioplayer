@@ -6,6 +6,9 @@ const NOISE = [
   'lyrics', 'lyric video', 'with lyrics', 'video', 'audio', 'visualizer', 'music video', 'mv', 'clip', 'video clip', 'full song',
   'full version', 'high quality', 'hq audio',
 ];
+const WORDS = new Set(('free download dl premiere premiered exclusive hd hq 4k 1080p 720p 480p 360p 60fps official lyrics lyric visualizer mv audio video ' +
+  'music clip with out now soon available buy new full song high quality the').split(' '));
+const STRONG = new Set('free download dl premiere premiered exclusive hd hq 4k 1080p 720p 480p 360p 60fps official lyrics lyric visualizer mv video audio clip'.split(' '));
 const PROMO = ['free download', 'free dl', 'free d/l', 'free dl!', 'out now', 'premiere'];
 
 const norm = (s) => s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
@@ -22,7 +25,10 @@ function isNoise(text, allowed = NOISE_SET) {
   if (!whole) return false;
   if (allowed.has(whole)) return true;
   const parts = text.split(/[/,&+]/).map(norm).filter(Boolean);
-  return parts.length > 1 && parts.every((p) => allowed.has(p));
+  if (parts.length > 1 && parts.every((p) => allowed.has(p))) return true;
+  if (allowed !== NOISE_SET) return false;
+  const words = whole.split(' ');
+  return words.every((w) => WORDS.has(w)) && words.some((w) => STRONG.has(w));
 }
 
 export function cleanTitleEx(title) {
