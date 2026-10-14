@@ -527,8 +527,7 @@ body.signed-out #nav a:not([data-route="settings"]), body.signed-out #mini { dis
 .qrow .c-idx { color: var(--muted); }
 .qrow.current .c-idx { color: var(--accent-ink); }
 .qrow .info { min-width: 0; display: flex; flex-direction: column; }
-.qrow .open { display: flex; }
-.qrow .open { background: none; border: 0; padding: 0; text-align: left; color: var(--ink); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.qrow .open { display: flex; background: none; border: 0; padding: 0; text-align: left; color: var(--ink); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .qrow .sub { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .qrow .c-dur { color: var(--muted); text-align: right; }
 .qrow .more { width: 28px; height: 44px; border-radius: var(--radius-sm); }
