@@ -507,10 +507,11 @@ def test_country_aliases(raw, code):
 def test_country_unknown_kept_and_dedupe():
     from app import countrycodes
     assert len(countrycodes.NAMES) >= 249
-    assert countrycodes.canonical_country("ussr") is None
-    assert library.clean_tag("country:USSR") == "country:ussr"
+    assert countrycodes.canonical_country("yugoslavia") is None
+    assert countrycodes.canonical_country("ussr") == "su"
+    assert library.clean_tag("country:Yugoslavia") == "country:yugoslavia"
     assert library.clean_tags(["country:usa", "country:us", "Country:United States", "x"]) == ["country:us", "x"]
-    assert library.unknown_countries(["country:ussr", "country:us", "genre:x"]) == ["ussr"]
+    assert library.unknown_countries(["country:yugoslavia", "country:us", "genre:x"]) == ["yugoslavia"]
 
 
 def test_lang_aliases():
@@ -523,9 +524,9 @@ def test_lang_aliases():
 
 def test_country_migration_on_load_idempotent(tmp_path):
     p = tmp_path / "lib.json"
-    p.write_text(json.dumps({"songs": [{"id": "a", "title": "A", "tags": ["country:usa", "country:us", "country:ussr"]}]}))
+    p.write_text(json.dumps({"songs": [{"id": "a", "title": "A", "tags": ["country:usa", "country:us", "country:yugoslavia"]}]}))
     first = library.load(p)
-    assert first[0]["tags"] == ["country:us", "country:ussr"]
+    assert first[0]["tags"] == ["country:us", "country:yugoslavia"]
     assert library.normalize_song(first[0])["tags"] == first[0]["tags"]
 
 
@@ -545,7 +546,19 @@ def test_legacy_unknown_country_survives_patch(client):
     add(client)
     p = main.library_path(OWNER_UID)
     songs = library.load(p)
-    songs[0]["tags"].append("country:ussr")
+    songs[0]["tags"].append("country:yugoslavia")
     library.save(p, songs)
-    r = client.patch(f"/songs/{VID}", json={"tags": ["country:ussr", "x"]}, headers=H)
-    assert r.status_code == 200 and "country:ussr" in r.json()["tags"]
+    r = client.patch(f"/songs/{VID}", json={"tags": ["country:yugoslavia", "x"]}, headers=H)
+    assert r.status_code == 200 and "country:yugoslavia" in r.json()["tags"]
+
+
+@pytest.mark.parametrize("raw", ["su", "SU", "SUN", "USSR", "U.S.S.R.", "Soviet Union", "the Soviet Union", "CCCP", "SSSR"])
+def test_soviet_union_is_a_first_class_country(client, raw):
+    from app import countrycodes
+    assert countrycodes.canonical_country(raw) == "su"
+    assert countrycodes.NAMES["su"] == "Soviet Union" and countrycodes.is_historical("su")
+    assert not countrycodes.is_historical("ru") and not countrycodes.is_historical("zz")
+    assert library.unknown_countries([f"country:{raw}"]) == []
+    r = add(client, tags=[f"country:{raw}"])
+    assert r.status_code in (200, 202)
+    assert "country:su" in client.get("/library", headers=H).json()["songs"][0]["tags"]

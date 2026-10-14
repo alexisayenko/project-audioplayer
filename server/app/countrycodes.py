@@ -258,6 +258,10 @@ zm|ZMB|Zambia
 zw|ZWE|Zimbabwe
 """
 
+_HISTORICAL_ROWS = """
+su|SUN|Soviet Union|ussr,u s s r,the soviet union,cccp,sssr
+"""
+
 _PUNCT = re.compile(r"[^\w\s]")
 
 
@@ -269,18 +273,25 @@ def _norm(value: str) -> str:
 
 
 NAMES: dict[str, str] = {}
+HISTORICAL: dict[str, bool] = {}
 _LOOKUP: dict[str, str] = {}
-for _row in _ROWS.strip().splitlines():
-    _p = _row.split("|")
-    _code, _a3, _name = _p[0], _p[1], _p[2]
-    NAMES[_code] = _name
-    for _k in (_code, _a3, _name, *(_p[3].split(",") if len(_p) > 3 else [])):
-        _LOOKUP.setdefault(_norm(_k), _code)
-# "in" / "no" / "it" style two-letter words are codes already; USSR and the like are deliberately unmapped.
+for _rows, _hist in ((_ROWS, False), (_HISTORICAL_ROWS, True)):
+    for _row in _rows.strip().splitlines():
+        _p = _row.split("|")
+        _code, _a3, _name = _p[0], _p[1], _p[2]
+        NAMES[_code] = _name
+        HISTORICAL[_code] = _hist
+        for _k in (_code, _a3, _name, *(_p[3].split(",") if len(_p) > 3 else [])):
+            _LOOKUP.setdefault(_norm(_k), _code)
 
 CODES = frozenset(NAMES)
 
 
+def is_historical(code: str) -> bool:
+    """True for a former state kept as a first-class value (ISO 3166-3 code, e.g. `su`); drives flag assets later."""
+    return HISTORICAL.get(str(code or "").lower(), False)
+
+
 def canonical_country(value: str) -> str | None:
-    """ISO 3166-1 alpha-2 (lowercase) for a code, alpha-3, English name or common alias; None when unknown."""
+    """ISO 3166-1 alpha-2 (lowercase) for a code, alpha-3, English name or common alias, or a historical code (`su`); None when unknown."""
     return _LOOKUP.get(_norm(value))

@@ -405,3 +405,13 @@ def test_clean_recording_url_normalises(value):
 @pytest.mark.parametrize("value", [None, 5, "", "https://musicbrainz.org/artist/" + MBID, "https://evil.example/recording/" + MBID, "https://musicbrainz.org/recording/nope", "javascript:alert(1)"])
 def test_clean_recording_url_rejects_others(value):
     assert gl.clean_recording_url(value) is None
+
+
+def test_musicbrainz_su_is_suggested_other_pseudo_codes_dropped(monkeypatch):
+    gl._cache.clear()
+    monkeypatch.setattr(gl, "_get", fake_get([REC], {}, {"country": "SU"}))
+    assert gl.suggest_tags("Daft Punk", "X") == ["country:su"]
+    for code in ("XU", "XW"):
+        gl._cache.clear()
+        monkeypatch.setattr(gl, "_get", fake_get([REC], {}, {"country": code}))
+        assert gl.suggest_tags("Daft Punk", "X") == []
