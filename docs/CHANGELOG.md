@@ -4,6 +4,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## 2026-10-14
 
+- Web: the Ring visualizer is another 2x bigger (4x the original, `RING_SCALE`; 20% of the smaller canvas side at Small); the outer-dot clamp (about 22% of the smaller side when centred) still applies and binds at Medium and Full (VIZ-042).
 - Web: owner-approved Terrain baseline (c9b18e7), tag `terrain-liked-1`; parameters and restore commands in VIZ-043 ("Liked baseline", docs/specs/visualizer.md).
 - Web: the Ring visualizer is twice as big (radius, spokes, halo and dot rings; e.g. 5% to 10% of the smaller canvas side at Small), clamped so the outer dot ring never leaves the canvas (VIZ-042).
 - Web: Terrain now covers the whole screen width at every visible depth -- the constant-width grid is sized from the camera frustum (half-width 25.4 x aspect, was 3.2 x aspect, so the strip was only about 56% of an 800x600 screen), columns are spaced densely in the middle and sparsely toward the far-off edges (`columnX`), grid is now 40x128, 64x144, 88x208 rows x columns (was 40x36, 64x52, 88x72); perspective, peak heights and time direction unchanged (VIZ-043; checked in a browser with a synthetic timeline at 2000x1200, 800x600, 2400x1000 and 430x932, not on real audio).
