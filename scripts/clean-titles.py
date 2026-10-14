@@ -1,0 +1,64 @@
+#!/usr/bin/env python3
+"""OPTIONAL maintenance: strip promo noise ("[Free Download]") from titles already in a library.
+
+Dry run by default: prints counts and a before/after sample. `--apply` copies each library.json to
+library.json.bak-<timestamp> first, then writes through the same store (app.library.save).
+Not part of the app, never run automatically; new songs are cleaned when added.
+
+  scripts/clean-titles.py --library /path/to/library.json [--apply]
+  scripts/clean-titles.py --data-dir /path/to/data [--apply]   # every users/*/library.json
+"""
+
+from __future__ import annotations
+
+import argparse
+import shutil
+import sys
+import time
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "server"))
+
+from app import library, titleclean  # noqa: E402
+
+
+def plan(songs: list[dict]) -> list[tuple[int, str, str]]:
+    out = []
+    for i, song in enumerate(songs):
+        old = song.get("title")
+        if isinstance(old, str) and (new := titleclean.clean(old)) != old.strip() and new:
+            out.append((i, old, new))
+    return out
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--library", type=Path, action="append", default=[])
+    ap.add_argument("--data-dir", type=Path)
+    ap.add_argument("--apply", action="store_true")
+    ap.add_argument("--sample", type=int, default=15)
+    args = ap.parse_args()
+    paths = list(args.library)
+    if args.data_dir:
+        paths += sorted(args.data_dir.glob("users/*/library.json"))
+    if not paths:
+        ap.error("give --library or --data-dir")
+    stamp = time.strftime("%Y%m%d-%H%M%S")
+    for path in paths:
+        songs = library.load(path)
+        changes = plan(songs)
+        print(f"{path}: {len(songs)} songs, {len(changes)} titles would change" + ("" if args.apply else " (dry run)"))
+        for _, old, new in changes[: args.sample]:
+            print(f"  {old!r} -> {new!r}")
+        if args.apply and changes:
+            backup = path.with_name(f"{path.name}.bak-{stamp}")
+            shutil.copy2(path, backup)
+            for i, _, new in changes:
+                songs[i]["title"] = new
+            library.save(path, songs)
+            print(f"  applied; backup at {backup}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
