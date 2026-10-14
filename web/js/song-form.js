@@ -5,6 +5,7 @@ import { tokenGroup } from './token-field.js';
 import { wikiFields } from './wiki-links.js';
 import { chipField } from './chip-field.js';
 import { serviceIcons } from './service-icons.js';
+import { storedLinkStates } from './song-links.js';
 import { planMetadata, statusText, serviceState, suggestion, suggestionText } from './metadata-apply.js';
 import { metadataBody, sourceList } from './song-payload.js';
 import { identifyBlock } from './identify-block.js';
@@ -50,12 +51,21 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
   let mbUrl = initialMb();
   let discogsUrl = initial.discogs_url ?? null;
   let lastStates = {};
-  const storedIcons = () => ({ ...(mbUrl ? { musicbrainz: { on: true, url: mbUrl } } : {}), ...(discogsUrl ? { discogs: { on: true, url: discogsUrl } } : {}) });
-  const paintIcons = () => icons.setState({ ...lastStates, ...storedIcons() });
+  const stored = () => ({
+    ...storedLinkStates(initial),
+    ...(mbUrl ? { musicbrainz: { on: true, url: mbUrl } } : {}),
+    ...(discogsUrl ? { discogs: { on: true, url: discogsUrl } } : {}),
+  });
+  const paintIcons = () => {
+    const base = stored();
+    const out = { ...base };
+    for (const [k, v] of Object.entries(lastStates)) if (v.on) out[k] = { ...base[k], ...v, url: v.url ?? base[k]?.url ?? null };
+    icons.setState(out);
+  };
   const resetIcons = () => {
     lastStates = {};
     icons.reset();
-    icons.setState(storedIcons());
+    paintIcons();
   };
   resetIcons();
   const metaBtn = el('button', { class: 'btn outline small', type: 'button' }, 'Get metadata');

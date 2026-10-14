@@ -142,3 +142,28 @@ test('setValues updates fields and wiki links; focus targets the title entry', (
   assert.equal(v.wikipedia_artist, null);
   f.focus();
 });
+
+test('the icon row is seeded from every stored link, as real links', () => {
+  const f = songForm({ mode: 'edit', song: {
+    id: 'i1', title: 'S', tags: [], file: 'x', source_url: 'https://youtu.be/jNQXAC9IVRw',
+    sources: [{ url: 'https://soundcloud.com/a/b' }], wikipedia_artist: 'https://en.wikipedia.org/wiki/Band', discogs_url: 'https://www.discogs.com/release/1',
+  } });
+  const yt = f.node.querySelector('a.svc-youtube');
+  assert.equal(yt.getAttribute('href'), 'https://youtu.be/jNQXAC9IVRw');
+  assert.equal(yt.getAttribute('target'), '_blank');
+  assert.equal(yt.getAttribute('rel'), 'noopener');
+  assert.ok(f.node.querySelector('a.svc-soundcloud'));
+  assert.equal(f.node.querySelector('a.svc-wikipedia').getAttribute('aria-label'), 'Wikipedia (artist)');
+  assert.ok(f.node.querySelector('a.svc-discogs'));
+  assert.equal(f.node.querySelector('a.svc-spotify'), null);
+  assert.equal(f.node.querySelector('a.svc-musicbrainz'), null);
+});
+
+test('the Add preview seeds the YouTube icon from its source link, and a lookup keeps stored links', async () => {
+  stubFetch(() => ({ body: { services: { youtube: { found: true, url: null }, spotify: { found: true, url: 'https://open.spotify.com/track/1' } } } }));
+  const f = songForm({ mode: 'add', song: { title: 'S', source_url: 'https://youtu.be/jNQXAC9IVRw', tags: [] }, source: 'https://youtu.be/jNQXAC9IVRw' });
+  assert.equal(f.node.querySelector('a.svc-youtube').getAttribute('href'), 'https://youtu.be/jNQXAC9IVRw');
+  btn(f, 'Get metadata').click();
+  await flush();
+  assert.equal(f.node.querySelector('a.svc-youtube').getAttribute('href'), 'https://youtu.be/jNQXAC9IVRw', 'a lookup without a URL keeps the stored link');
+});

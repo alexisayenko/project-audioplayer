@@ -43,8 +43,9 @@ function make(name, st, busy) {
   const link = on && st.url;
   const node = document.createElement(link ? 'a' : 'span');
   node.className = cls;
-  node.setAttribute('aria-label', LABELS[name]);
-  node.title = LABELS[name];
+  const label = st?.label || LABELS[name];
+  node.setAttribute('aria-label', label);
+  node.title = label;
   if (link) {
     node.href = st.url;
     node.target = '_blank';
@@ -56,12 +57,13 @@ function make(name, st, busy) {
   return node;
 }
 
-export function serviceIcons() {
+export function serviceIcons({ onlyOn = false } = {}) {
   const node = document.createElement('div');
   node.className = 'svc-row';
   let state = {};
   let busy = false;
-  const paint = () => node.replaceChildren(...ORDER.map((n) => make(n, state[n], busy)));
+  const shown = () => (onlyOn ? ORDER.filter((n) => state[n]?.on) : ORDER);
+  const paint = () => node.replaceChildren(...shown().map((n) => make(n, state[n], busy)));
   paint();
   return {
     node,
