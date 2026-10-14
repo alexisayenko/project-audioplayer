@@ -2,11 +2,11 @@ import {
   QUALITY, HISTORY_BINS, STAR_VISIBLE, buildDepthIndices, buildCrossIndices, buildRibbonVertices, buildRibbonIndices, energyOf, easeEnergy, GRID_DEPTH, WORLD_SPEED, NOW_FALLOFF_S, NOW_GAIN, CROSS_H0, CROSS_H1, AMP_MAX, SHAKE_ENABLED,
   gridHalfWidth, FAR_FLAT_START, RAMP, qualityFor, createFrame, createSeries, fillHeights, buildGridVertices, rowLayout, nowZOf, fillLiveFrame, fillLookFrame, blendFrames,
   gridCounts, makeStars, lodTiers, makeTierPlan, resampleTier, cameraAt, horizonY, horizonGlow, mat4Perspective, mat4LookAt, mat4Multiply,
-  makeRowClock, clamp01, applyNowLine, addBaseRelief, NOW_LINE_GAIN_B, resample, yawStepOf, smoothHeights, HEIGHT_RESAMPLE_CAP, ROWS_PER_SECOND, gridDims, fillLight, LIGHT_GAIN, NODE_GAIN, FOG_NEAR, FOG_FAR, FOG_LOW_MIN, FOG_H0, FOG_H1,
+  makeRowClock, clamp01, applyNowLine, addBaseRelief, NOW_LINE_GAIN_B, NOW_LINE_GAIN_H_FULL, HEIGHT_CAP, resample, yawStepOf, smoothHeights, HEIGHT_RESAMPLE_CAP, ROWS_PER_SECOND, gridDims, fillLight, LIGHT_GAIN, NODE_GAIN, FOG_NEAR, FOG_FAR, FOG_LOW_MIN, FOG_H0, FOG_H1,
 } from './viz-terrain-math.js';
 import { getCam } from './viz-cam-debug.js';
 import { flight } from './viz-flight.js';
-import { getStyle, isBeatStyle, isMelodyStyle } from './viz-terrain-style.js';
+import { getStyle, isBeatStyle, isFullStyle, isMelodyStyle } from './viz-terrain-style.js';
 import {
   createPartsFrames, createLiveParts, fillLiveParts, fillTimelineParts, blendParts, melodyHeights, fillMelodyAttrs, fillLeadRidge, ACCENT_LUT,
 } from './viz-melody.js';
@@ -411,8 +411,8 @@ export function createTerrain(canvas, opts = {}) {
     hiDpr: false,
     css: null,
     hVer: 0,
-    hs: { style: null, done: -1, pd: -1, kd: -1, dims: null },
-    rk: { dims: null, base: NaN, done: -1, ver: -1 },
+    hs: { style: null, done: -1, v: -1, pd: -1, kd: -1, dims: null },
+    rk: { dims: null, base: NaN, done: -1, v: -1, ver: -1 },
     liveVer: 0,
     xs: null,
     static: false,
@@ -618,7 +618,7 @@ export function createTerrain(canvas, opts = {}) {
     u1(p, 'u_scroll', g.scroll);
     u1(p, 'u_nowZ', s.nowZ);
     u1(p, 'u_nowW', NOW_FALLOFF_S * WORLD_SPEED);
-    u1(p, 'u_nowGain', NOW_GAIN * (0.7 + 0.6 * s.pulse) * (s.beatNow ? NOW_LINE_GAIN_B : 1));
+    u1(p, 'u_nowGain', NOW_GAIN * (0.7 + 0.6 * s.pulse) * (s.beatNow ? (getCam().nowB ?? NOW_LINE_GAIN_B) : 1));
     u1(p, 'u_crossLo', CROSS_H0);
     u1(p, 'u_crossHi', CROSS_H1);
     u1(p, 'u_base', g.base % 256);
@@ -818,20 +818,23 @@ export function createTerrain(canvas, opts = {}) {
   function updateHeights(sec, ahead) {
     const { rows, cols } = s.dims;
     const style = getStyle();
-    const tl = ahead?.timeline;
+    const needsPrefix = isBeatStyle(style) || isMelodyStyle(style);
+    const usable = !!ahead?.timeline && !(ahead.partial && needsPrefix);
+    const tl = usable ? ahead.timeline : null;
+    if (!usable) ahead = null;
     let k = 0;
     if (tl) {
       if (s.lookAt === null) s.lookAt = sec;
       k = clamp01((sec - s.lookAt) / LOOK_BLEND_S);
     } else s.lookAt = null;
     const lay = rowLayout(rows);
-    const eligible = !!tl && k >= 1 && !isBeatStyle(style) && (style !== 'melody' || !!tl.parts);
+    const eligible = !!tl && k >= 1 && !isBeatStyle(style) && !isFullStyle(style) && timelineCovers(tl, ahead.time - 3, ahead.time + LOOK_S + 0.5) && (style !== 'melody' || !!tl.parts);
     s.static = eligible;
     if (s.static) {
       const at = ahead.time;
       const hs = s.hs;
       const done = tl.done;
-      const same = hs.style === style && hs.done === done && hs.pd === (tl.partsDone ?? 0) && hs.kd === (tl.pitchDone ?? 0) && hs.dims === s.dims;
+      const same = hs.style === style && hs.done === done && hs.v === tl.ver && hs.pd === (tl.partsDone ?? 0) && hs.kd === (tl.pitchDone ?? 0) && hs.dims === s.dims;
       if (same) {
         let due = false;
         for (const g of s.tiers) if (g.upVer !== s.hVer || g.upBase !== tierBase(g, at)) due = true;
@@ -840,7 +843,7 @@ export function createTerrain(canvas, opts = {}) {
           return;
         }
       } else {
-        hs.style = style; hs.done = done; hs.pd = tl.partsDone ?? 0; hs.kd = tl.pitchDone ?? 0; hs.dims = s.dims;
+        hs.style = style; hs.done = done; hs.v = tl.ver; hs.pd = tl.partsDone ?? 0; hs.kd = tl.pitchDone ?? 0; hs.dims = s.dims;
         s.hVer += 1;
       }
     }
@@ -851,21 +854,24 @@ export function createTerrain(canvas, opts = {}) {
       info = { base: k >= 1 ? li.base : info.base, frac: info.frac + (li.frac - info.frac) * k };
     }
     s.melodyOn = isMelodyStyle(style);
-    s.beatNow = isBeatStyle(style);
+    s.beatNow = isBeatStyle(style) || isFullStyle(style);
     if (s.melodyOn) fillMelodyStyle(sec, ahead, k, info.base, cols);
     else if (isBeatStyle(style)) {
       fillBeatStyle(style, sec, ahead, k, rows, cols);
       const rk = s.rk;
       const settled = !tl || k >= 1;
       const done = tl ? tl.done : -1;
-      if (!settled || rk.dims !== s.dims || rk.base !== info.base || rk.done !== done || rk.ver !== s.liveVer) {
+      if (!settled || rk.dims !== s.dims || rk.base !== info.base || rk.done !== done || rk.v !== (tl ? tl.ver : -1) || rk.ver !== s.liveVer) {
         fillHeights(s.liveFrame, cols, sec, s.relief, { swellAmp: 0, bakeAmp: true, landmarks: false });
-        rk.dims = s.dims; rk.base = info.base; rk.done = done; rk.ver = s.liveVer;
+        rk.dims = s.dims; rk.base = info.base; rk.done = done; rk.v = tl ? tl.ver : -1; rk.ver = s.liveVer;
       }
       addBaseRelief(s.heights, s.relief);
       applyNowLine(s.heights, rows, cols, info.frac);
     }
-    else fillHeights(s.liveFrame, cols, sec, s.heights, { swellAmp: 0, bakeAmp: true });
+    else {
+      fillHeights(s.liveFrame, cols, sec, s.heights, { swellAmp: 0, bakeAmp: true });
+      if (isFullStyle(style)) applyNowLine(s.heights, rows, cols, info.frac, HEIGHT_CAP, getCam().nowH ?? NOW_LINE_GAIN_H_FULL);
+    }
     fillLight(s.heights, rows, cols, gridHalfWidth(view.w / view.h), lay.dz, s.light, undefined, s.xs);
     const pos = (info.base + info.frac) * lay.dt;
     for (const g of s.tiers) uploadTier(g, pos, info.frac);
@@ -928,7 +934,7 @@ export function createTerrain(canvas, opts = {}) {
     for (let i = 0; i < step.pushes; i += 1) {
       const ts = (t - (step.pushes - 1 - i) * gap) / 1000;
       s.series.push(sp, ts);
-      s.liveBeats.push(resample(sp, HISTORY_BINS), ts);
+      if (!isFullStyle(getStyle())) s.liveBeats.push(resample(sp, HISTORY_BINS), ts);
       if (isMelodyStyle(getStyle())) s.liveParts.push(resample(sp, HISTORY_BINS), ts);
     }
     let bass = 0;
@@ -947,6 +953,7 @@ export function createTerrain(canvas, opts = {}) {
     s.frameId += 1;
     updateHeights(t / 1000 - lat, ahead);
     const fo = flight.offsets(cc, view.w / view.h);
+    flight.report(fo);
     const cam = cameraAt(t / 1000, SHAKE_ENABLED ? s.pulse : 0, { eye: cc.eye + fo.eye, pitchDeg: cc.pitch + fo.pitch, yawDeg: cc.yaw + fo.yaw, fly: 0 });
     s.focalPx = view.h / (2 * Math.tan(cam.fov / 2));
     mat4Perspective(cam.fov, view.w / view.h, NEAR, FAR, proj);

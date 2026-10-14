@@ -4,14 +4,14 @@ import {
 } from './viz-terrain-math.js';
 
 export const FLIGHT_KEY = 'ap2.viz.flight';
-export const FLIGHT_EYE_AMP_REL = 0.35;
-export const FLIGHT_YAW_AMP_DEG = 14;
+export const FLIGHT_EYE_AMP_REL = 0.4;
+export const FLIGHT_YAW_AMP_DEG = 16;
 export const FLIGHT_PITCH_COUPLING_DEG = 1.5;
 export const FLIGHT_EASE_IN_S = 3;
 export const FLIGHT_EASE_OUT_S = 2;
 export const FLIGHT_MAX_DT_S = 0.1;
-export const FLIGHT_EYE_PERIODS_S = [90, 55.6, 40.2];
-export const FLIGHT_YAW_PERIODS_S = [60, 37.1, 26.8];
+export const FLIGHT_EYE_PERIODS_S = [40, 24.7, 17.4];
+export const FLIGHT_YAW_PERIODS_S = [30, 18.5, 13];
 export const FLIGHT_WEIGHTS = [0.55, 0.3, 0.15];
 export const REDUCED_QUERY = '(prefers-reduced-motion: reduce)';
 
@@ -42,7 +42,7 @@ export function createFlight({ seed = 1 } = {}) {
   const rnd = mulberry32(seed >>> 0);
   const eyeNoise = makeNoise(rnd, FLIGHT_EYE_PERIODS_S);
   const yawNoise = makeNoise(rnd, FLIGHT_YAW_PERIODS_S);
-  const s = { on: false, prog: 0, time: 0, last: null, eyeN: 0, yawN: 0 };
+  const s = { on: false, prog: 0, time: 0, last: null, eyeN: 0, yawN: 0, playing: false, applied: { eye: 0, yaw: 0, pitch: 0 } };
   const amount = () => smoothstep(0, 1, s.prog);
   return {
     setOn(v) { s.on = !!v; },
@@ -50,9 +50,13 @@ export function createFlight({ seed = 1 } = {}) {
     active: () => s.on || s.prog > 0,
     amount,
     time: () => s.time,
+    isPlaying: () => s.playing,
+    report(o) { s.applied = o; },
+    applied: () => s.applied,
     tick(tMs, playing) {
       const prev = s.last;
       s.last = tMs;
+      s.playing = !!playing;
       const dt = prev === null || !Number.isFinite(tMs) ? 0 : Math.min(FLIGHT_MAX_DT_S, Math.max(0, (tMs - prev) / 1000));
       if (s.on) s.prog = Math.min(1, s.prog + dt / FLIGHT_EASE_IN_S);
       else s.prog = Math.max(0, s.prog - dt / FLIGHT_EASE_OUT_S);

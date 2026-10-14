@@ -127,6 +127,7 @@ body:not([data-route="playback"]) > .viz-dock { display: none; }
 .viz-panel label > span, .viz-cam-panel label > span { color: #eaf3ff; }
 .viz-cam-panel output { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; color: #eaf3ff; }
 .viz-cam-panel input[type=range] { width: 100%; min-width: 0; height: var(--hit, 44px); margin: 0; padding: 0; background: none; accent-color: var(--accent, #57d3e9); }
+.viz-cam-panel input[type=number] { width: 100%; min-width: 0; min-height: 36px; box-sizing: border-box; padding: 0 var(--space-2); font: inherit; color: #eaf3ff; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(120, 170, 230, 0.4); border-radius: var(--radius-sm, 8px); }
 .viz-panel select, .viz-cam-panel select { grid-column: 2 / 4; width: 100%; min-width: 0; min-height: 36px; padding: 0 var(--space-2); font-size: 13px; color: #eaf3ff; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(120, 170, 230, 0.35); border-radius: 6px; }
 .viz-panel select option, .viz-cam-panel select option { color: #1b2024; }
 .viz-flight-row { display: grid; gap: 2px; }

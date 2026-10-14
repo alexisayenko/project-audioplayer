@@ -1,27 +1,36 @@
-import { makeTimelineBuilder } from './viz-timeline.js';
+import { makeBuildScheduler } from './viz-timeline.js';
 
 const CHUNK_ROWS = 64;
+let sch = null;
+
+const send = (type, from, view, win) => {
+  const copy = view.slice();
+  self.postMessage({ type, from, win, data: copy.buffer }, [copy.buffer]);
+};
+
+const sink = {
+  rows: (from, v, win) => send('rows', from, v, win),
+  parts: (from, v) => send('parts', from, v),
+  pitch: (from, v) => send('pitch', from, v),
+};
+
+function tick() {
+  if (!sch) return;
+  try {
+    if (sch.step(CHUNK_ROWS, sink)) setTimeout(tick, 0);
+    else self.postMessage({ type: 'done' });
+  } catch (err) {
+    self.postMessage({ type: 'error', message: String(err?.message || err) });
+  }
+}
 
 self.onmessage = (e) => {
   const m = e.data;
+  if (m?.type === 'focus') { sch?.focus(m.row); return; }
   if (m?.type !== 'build') return;
   try {
-    const b = makeTimelineBuilder({ pcm: m.pcm, sampleRate: m.sampleRate, bands: m.bands, bins: m.bins, rps: m.rps });
-    while (b.done < b.total) {
-      const r = b.step(CHUNK_ROWS);
-      const copy = b.data.slice(r.from * b.bins, r.to * b.bins);
-      self.postMessage({ type: 'rows', from: r.from, data: copy.buffer }, [copy.buffer]);
-      if (r.pTo > r.pFrom) {
-        const stride = b.bins * 3;
-        const pc = b.parts.slice(r.pFrom * stride, r.pTo * stride);
-        self.postMessage({ type: 'parts', from: r.pFrom, data: pc.buffer }, [pc.buffer]);
-      }
-      if (r.kTo > r.kFrom) {
-        const kc = b.pitch.slice(r.kFrom * 2, r.kTo * 2);
-        self.postMessage({ type: 'pitch', from: r.kFrom, data: kc.buffer }, [kc.buffer]);
-      }
-    }
-    self.postMessage({ type: 'done' });
+    sch = makeBuildScheduler(m);
+    setTimeout(tick, 0);
   } catch (err) {
     self.postMessage({ type: 'error', message: String(err?.message || err) });
   }

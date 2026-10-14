@@ -292,6 +292,35 @@ export function camParse(text) {
   return camClamp({ eye: e ? e[1] : null, pitch: p ? p[1] : null, yaw: w ? w[1] : null, sync: sy ? sy[1] : null });
 }
 
+const nowNum = (x, key) => {
+  const lim = NOW_LIMITS[key];
+  const n = typeof x === 'string' ? Number(x.trim().replace(/x$/i, '').replace(',', '.')) : Number(x);
+  return x === null || x === undefined || x === '' || !Number.isFinite(n) ? NOW_DEFAULTS[key] : Math.min(lim[1], Math.max(lim[0], n));
+};
+
+export const nowClamp = (v) => ({ nowH: nowNum(v?.nowH, 'nowH'), nowB: nowNum(v?.nowB, 'nowB') });
+
+export const nowFormat = (v) => {
+  const c = nowClamp(v);
+  return `nowH=${c.nowH.toFixed(2)} nowB=${c.nowB.toFixed(1)}`;
+};
+
+export function nowParse(text) {
+  const out = {};
+  const h = /nowH\s*=\s*(-?[\d.]+)/.exec(text || '');
+  const b = /nowB\s*=\s*(-?[\d.]+)/.exec(text || '');
+  if (h) out.nowH = nowNum(h[1], 'nowH');
+  if (b) out.nowB = nowNum(b[1], 'nowB');
+  return out;
+}
+
+export function parseNowField(text, key, last) {
+  const raw = String(text ?? '').trim().replace(/x$/i, '').replace(',', '.');
+  const n = Number(raw);
+  if (!raw || !Number.isFinite(n)) return last;
+  return Math.min(NOW_LIMITS[key][1], Math.max(NOW_LIMITS[key][0], n));
+}
+
 export const defaultPitchDeg = () => DEFAULT_PITCH_DEG;
 
 export function rowZ(row, rows) {
@@ -310,7 +339,7 @@ export const nowZOf = (rows) => {
 
 export function createFrame(rows, bins = HISTORY_BINS) {
   const data = new Float32Array(rows * bins);
-  return { rows, bins, data, boost: new Float32Array(rows), row: (r) => data.subarray(r * bins, (r + 1) * bins) };
+  return { rows, bins, data, boost: new Float32Array(rows), cov: new Float32Array(rows).fill(1), row: (r) => data.subarray(r * bins, (r + 1) * bins) };
 }
 
 export function landmarkWeight(dt) {
@@ -373,13 +402,34 @@ export function timelineLandmarks(tl) {
   return st.times;
 }
 
+function landmarkWindow(tl, k) {
+  const span = LANDMARK_PERIOD_S * tl.rps;
+  const from = Math.round(k * span);
+  const to = Math.min(tl.total, Math.round((k + 1) * span));
+  const cache = tl.lmExtra || (tl.lmExtra = new Map());
+  if (cache.has(k)) return cache.get(k);
+  if (!(from < tl.total) || uncoveredSpans(tl, from, to).length) return NaN;
+  const tmp = new Float32Array(tl.bins);
+  let best = -1;
+  let bestE = LANDMARK_MIN_ENERGY;
+  for (let i = from; i < to; i += 1) {
+    const e = energyOf(byteRow(tl.data, i * tl.bins, tl.bins, tmp));
+    if (e > bestE) { bestE = e; best = i; }
+  }
+  if (best >= 0 && rowPeak(byteRow(tl.data, best * tl.bins, tl.bins, tmp), tl.bins).ratio < LANDMARK_MIN_PEAKINESS) best = -1;
+  const v = best < 0 ? NaN : best / tl.rps;
+  cache.set(k, v);
+  return v;
+}
+
 export function landmarkBoostAt(tl, t) {
   if (!(t > -LANDMARK_SPREAD_S)) return 0;
   const times = timelineLandmarks(tl);
   const k = Math.floor(t / LANDMARK_PERIOD_S);
   let w = 0;
-  for (let i = Math.max(0, k - 1); i <= k + 1 && i < times.length; i += 1) {
-    if (times[i] === times[i]) w = Math.max(w, landmarkWeight(t - times[i]));
+  for (let i = Math.max(0, k - 1); i <= k + 1; i += 1) {
+    const at = i < times.length ? times[i] : landmarkWindow(tl, i);
+    if (at === at) w = Math.max(w, landmarkWeight(t - at));
   }
   return w;
 }
@@ -466,21 +516,98 @@ export function createSeries(cap = LIVE_CAP, bins = HISTORY_BINS) {
   };
 }
 
+export const TIMELINE_END_FADE_ROWS = 8;
+
+export const EDGE_FADE_ROWS = 8;
+
+function rangesOf(tl) {
+  if (tl.ranges?.length) return tl.ranges;
+  return tl.done > 0 ? [[0, Math.min(tl.total, tl.done)]] : [];
+}
+
+export function markRows(tl, from, to) {
+  const a = Math.max(0, Math.floor(from));
+  const b = Math.min(tl.total, Math.ceil(to));
+  if (!(b > a)) return tl;
+  const r = tl.ranges || (tl.ranges = []);
+  const out = [];
+  let lo = a;
+  let hi = b;
+  let placed = false;
+  for (const [x, y] of r) {
+    if (y < lo) out.push([x, y]);
+    else if (x > hi) { if (!placed) { out.push([lo, hi]); placed = true; } out.push([x, y]); }
+    else { lo = Math.min(lo, x); hi = Math.max(hi, y); }
+  }
+  if (!placed) out.push([lo, hi]);
+  tl.ranges = out;
+  tl.ver = (tl.ver || 0) + 1;
+  tl.done = out.length && out[0][0] === 0 ? out[0][1] : 0;
+  return tl;
+}
+
+export function uncoveredSpans(tl, from, to) {
+  const out = [];
+  let at = Math.max(0, Math.floor(from));
+  const end = Math.min(tl.total, Math.ceil(to));
+  for (const [x, y] of rangesOf(tl)) {
+    if (y <= at) continue;
+    if (x >= end) break;
+    if (x > at) out.push([at, x]);
+    at = Math.max(at, y);
+    if (at >= end) break;
+  }
+  if (at < end) out.push([at, end]);
+  return out;
+}
+
+export function timelineCovers(tl, t0, t1) {
+  const a = Math.max(0, Math.floor(t0 * tl.rps));
+  const b = Math.min(tl.total, Math.ceil(t1 * tl.rps) + 1);
+  return b <= a || uncoveredSpans(tl, a, b).length === 0;
+}
+
+export function coveredRows(tl) {
+  let n = 0;
+  for (const [x, y] of rangesOf(tl)) n += y - x;
+  return n;
+}
+
+export function coverageWeight(tl, t, fade = EDGE_FADE_ROWS) {
+  const x = t * tl.rps;
+  if (!(x >= 0)) return 0;
+  const i = Math.floor(x);
+  for (const [a, b] of rangesOf(tl)) {
+    if (i < a) return 0;
+    if (i >= b) continue;
+    const head = a > 0 ? (x - a) / fade : Infinity;
+    const tail = b < tl.total ? (b - 1 - x) / fade : Infinity;
+    const k = Math.max(0, Math.min(1, head, tail));
+    return k * k * (3 - 2 * k);
+  }
+  return 0;
+}
+
 export function sampleTimeline(tl, t, out) {
   const bins = tl.bins;
   const x = t * tl.rps;
-  const last = Math.min(tl.total, tl.done) - 1;
-  if (!(x >= 0) || x > last) { out.fill(0); return out; }
+  const last = tl.total - 1;
+  if (!(x >= 0) || last < 0 || x > last + TIMELINE_END_FADE_ROWS) { out.fill(0); return out; }
+  const d = tl.data;
+  if (x > last) {
+    const g = 1 - smoothstep(0, TIMELINE_END_FADE_ROWS, x - last);
+    for (let j = 0; j < bins; j += 1) out[j] = (d[last * bins + j] / 255) * g;
+    return out;
+  }
   const i = Math.floor(x);
   const f = x - i;
   const a = i * bins;
   const b = Math.min(last, i + 1) * bins;
-  const d = tl.data;
   for (let j = 0; j < bins; j += 1) out[j] = (d[a + j] * (1 - f) + d[b + j] * f) / 255;
   return out;
 }
 
-export function fillTimeFrame(frame, tNow, sampler, nowRow, boostFn) {
+export function fillTimeFrame(frame, tNow, sampler, nowRow, boostFn, covFn) {
   const { dt } = rowLayout(frame.rows);
   const pos = tNow / dt;
   const base = Math.floor(pos);
@@ -488,12 +615,13 @@ export function fillTimeFrame(frame, tNow, sampler, nowRow, boostFn) {
     const t = (base + r - nowRow) * dt;
     sampler(t, frame.row(r));
     if (frame.boost) frame.boost[r] = boostFn ? boostFn(t) : 0;
+    if (frame.cov) frame.cov[r] = covFn ? covFn(t) : 1;
   }
   return { base, frac: pos - base };
 }
 
 export function fillLookFrame(frame, timeline, tNow) {
-  return fillTimeFrame(frame, tNow, (t, out) => sampleTimeline(timeline, t, out), rowLayout(frame.rows).nowRow, (t) => landmarkBoostAt(timeline, t));
+  return fillTimeFrame(frame, tNow, (t, out) => sampleTimeline(timeline, t, out), rowLayout(frame.rows).nowRow, (t) => landmarkBoostAt(timeline, t), (t) => coverageWeight(timeline, t));
 }
 
 export function fillLiveFrame(frame, series, tNow) {
@@ -504,8 +632,18 @@ export function fillLiveFrame(frame, series, tNow) {
 export function blendFrames(a, b, k) {
   const out = a.data;
   const o = b.data;
-  for (let i = 0; i < out.length; i += 1) out[i] += (o[i] - out[i]) * k;
-  if (a.boost && b.boost) for (let i = 0; i < a.boost.length; i += 1) a.boost[i] += (b.boost[i] - a.boost[i]) * k;
+  const bins = a.bins;
+  const cov = b.cov;
+  if (!cov) {
+    for (let i = 0; i < out.length; i += 1) out[i] += (o[i] - out[i]) * k;
+  } else {
+    for (let r = 0; r < a.rows; r += 1) {
+      const kr = k * cov[r];
+      if (!(kr > 0)) continue;
+      for (let i = r * bins, e = i + bins; i < e; i += 1) out[i] += (o[i] - out[i]) * kr;
+    }
+  }
+  if (a.boost && b.boost) for (let i = 0; i < a.boost.length; i += 1) a.boost[i] += (b.boost[i] - a.boost[i]) * k * (cov ? cov[i] : 1);
   return a;
 }
 
@@ -852,6 +990,9 @@ export function makeRowClock(rate = ROWS_PER_SECOND, maxCatchUp = 4) {
 
 export const NOW_LINE_GAIN_H = 1.0;
 export const NOW_LINE_GAIN_B = 2.0;
+export const NOW_LINE_GAIN_H_FULL = 1.1;
+export const NOW_LIMITS = { nowH: [1, 3], nowB: [0.5, 4] };
+export const NOW_DEFAULTS = { nowH: NOW_LINE_GAIN_H_FULL, nowB: NOW_LINE_GAIN_B };
 export const NOW_LINE_SIGMA_S = NOW_FALLOFF_S / Math.SQRT2;
 export const NOW_LINE_REACH_S = 3 * NOW_LINE_SIGMA_S;
 export const BEAT_BASE_RELIEF = 0.6;

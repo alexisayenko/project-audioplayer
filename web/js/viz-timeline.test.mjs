@@ -205,7 +205,7 @@ test('row selection by currentTime lands the now row on the audio time', async (
   assert.deepEqual(Array.from(frame.row(nowRow)), Array.from(expect));
 });
 
-test('track change aborts the old job and starts a new one; leaving Terrain cancels', async () => {
+test('track change aborts the old job and starts a new one; leaving Terrain keeps building until the track changes', async () => {
   const audio = fakeAudio();
   const d = fakeDeps({ manual: true });
   const la = createLookahead({ audio, ...d });
@@ -219,12 +219,16 @@ test('track change aborts the old job and starts a new one; leaving Terrain canc
   assert.equal(d.log.cancels, 1);
   assert.deepEqual(d.log.fetches, ['/files/a', '/files/b']);
   la.request('a', false);
+  assert.equal(la.status, 'building');
+  assert.equal(d.log.cancels, 1);
+  audio.currentSrc = '/files/c';
+  audio.fire('loadstart');
   assert.equal(la.status, 'idle');
   assert.equal(la.timeline, null);
   assert.equal(d.log.cancels, 2);
 });
 
-test('a partially built timeline is used only once the lookahead window is covered', async () => {
+test('a partially built timeline is used progressively and flagged partial until the lookahead prefix is covered', async () => {
   const audio = fakeAudio({ duration: 20 });
   const d = fakeDeps({ manual: true, seconds: 20 });
   const la = createLookahead({ audio, ...d });
@@ -233,10 +237,10 @@ test('a partially built timeline is used only once the lookahead window is cover
   const { b, cb } = d.log.manual;
   b.step(16 * 4);
   cb.onRows(0, b.data.subarray(0, b.done * b.bins));
-  assert.equal(la.get(0), null);
+  assert.equal(la.get(0).partial, true);
   b.step(16 * 8);
   cb.onRows(0, b.data.subarray(0, b.done * b.bins));
-  assert.ok(la.get(1));
+  assert.equal(la.get(1).partial, false);
 });
 
 test('failures fall back to live: http error, too long, oversized, decode error', async () => {

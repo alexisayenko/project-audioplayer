@@ -1,7 +1,14 @@
 import { TERRAIN_STYLES, getStyle, setStyle, onStyle } from './viz-terrain-style.js';
 import { createPartsToggles } from './viz-parts-ui.js';
 import { modeLabel } from './viz-modes.js';
-import { flightOn, flightReduced, setFlightOn, onFlight } from './viz-flight.js';
+import { flight, flightOn, flightReduced, setFlightOn, onFlight } from './viz-flight.js';
+
+const signed = (v, d) => `${v >= 0 ? '+' : ''}${v.toFixed(d)}`;
+
+export function flightReadout(o, playing) {
+  const text = `eye ${signed(o.eye, 1)}  yaw ${signed(o.yaw, 1)}deg`;
+  return playing ? text : `${text} (paused with the music)`;
+}
 
 export const PANEL_COLLAPSED_KEY = 'ap2.viz.panelCollapsed';
 export const NARROW_PX = 480;
@@ -78,17 +85,27 @@ export function createStylePanel({ doc = document, mode, width, parts }) {
   flightBtn.textContent = 'Camera flight';
   const flightNote = doc.createElement('small');
   flightNote.textContent = 'Off: reduced motion is on';
+  const flightRead = doc.createElement('small');
+  flightRead.className = 'viz-flight-readout';
+  const paintRead = () => {
+    const show = flightOn() && !flightRow.hidden;
+    flightRead.hidden = !show;
+    if (show) flightRead.textContent = flightReadout(flight.applied(), flight.isPlaying());
+  };
+  const readTimer = globalThis.setInterval?.(paintRead, 250);
+  readTimer?.unref?.();
   const paintFlight = () => {
     const reduced = flightReduced();
     flightBtn.setAttribute('aria-checked', String(flightOn()));
     flightBtn.setAttribute('aria-pressed', String(flightOn()));
     flightBtn.disabled = reduced;
     flightNote.hidden = !reduced;
+    paintRead();
   };
   flightBtn.addEventListener('click', () => setFlightOn(!flightOn()));
   const offFlight = onFlight(paintFlight);
   paintFlight();
-  flightRow.append(flightBtn, flightNote);
+  flightRow.append(flightBtn, flightNote, flightRead);
 
   const partsRoot = doc.createElement('div');
   const toggles = createPartsToggles({ root: partsRoot, state: parts.state, onChange: parts.onChange, onRefuse: parts.onRefuse });
@@ -112,6 +129,6 @@ export function createStylePanel({ doc = document, mode, width, parts }) {
     setParts: (s) => toggles.set(s),
     toggles,
     isEmpty: () => root.dataset.empty === '1',
-    dispose() { offStyle(); offFlight(); root.remove(); },
+    dispose() { offStyle(); offFlight(); globalThis.clearInterval?.(readTimer); root.remove(); },
   };
 }

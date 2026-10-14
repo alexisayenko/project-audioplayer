@@ -5,7 +5,7 @@ import {
   gridCounts, buildGridVertices, buildLineIndices, buildDepthIndices, buildCrossIndices, energyOf, easeEnergy, GRID_DEPTH, colorRamp, fillColors, horizonGlow, makeStars, cameraAt, horizonY,
   camClamp, camFormat, camParse, defaultPitchDeg, smoothHeights, CAM_LIMITS, nearEnvelope, rowZ, halfWidthAt, columnX, EYE_HEIGHT,
   mat4Perspective, mat4LookAt, mat4Multiply, transformPoint, makeRowClock, SHAKE_MAX, RAMP,
-  SHAKE_ENABLED, CROSS_H0, CROSS_H1, crossAlpha, WORLD_SPEED, NOW_Z, NOW_GAIN, NOW_FALLOFF_S, rowLayout, nowZOf, ridgeZ, createFrame, createSeries, fillLookFrame, fillLiveFrame, sampleTimeline, blendFrames,
+  SHAKE_ENABLED, CROSS_H0, CROSS_H1, crossAlpha, WORLD_SPEED, NOW_Z, NOW_GAIN, NOW_FALLOFF_S, rowLayout, nowZOf, ridgeZ, createFrame, createSeries, fillLookFrame, fillLiveFrame, sampleTimeline, coverageWeight, blendFrames,
 } from './viz-terrain-math.js';
 import { FAR_FLAT_START, gridHalfWidth, yawStepOf } from './viz-terrain-math.js';
 import { createTerrain, isWebGLAvailable, linkProgram, TERRAIN_MAX_DPR, padTier, strideOf } from './viz-terrain-gl.js';
@@ -636,8 +636,11 @@ test('timeline sampling interpolates and returns calm outside the decoded range'
   const out = new Float32Array(2);
   near(sampleTimeline(tl, 0.05, out)[0], 0.5);
   near(sampleTimeline(tl, 0.2, out)[0], 0.2);
-  assert.equal(sampleTimeline(tl, 0.25, out)[0], 0);
+  assert.equal(coverageWeight(tl, 0.25), 0);
   assert.equal(sampleTimeline(tl, -1, out)[0], 0);
+  near(sampleTimeline(tl, 0.3, out)[0], 200 / 255);
+  assert.ok(sampleTimeline(tl, 0.34, out)[0] < 200 / 255 && sampleTimeline(tl, 0.34, out)[0] > 0);
+  assert.equal(sampleTimeline(tl, 0.5, out)[0], 0);
 });
 
 test('series interpolates between pushed rows and holds the newest', () => {

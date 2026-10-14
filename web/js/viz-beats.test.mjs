@@ -228,8 +228,8 @@ test('style validation, persistence and cycling', () => {
   assert.deepEqual(order, ['single', 'hill', 'multi', 'full', 'melody', 'relief']);
   assert.equal(S.normaliseStyle('full'), 'full');
   assert.equal(S.normaliseStyle('melody'), 'melody');
-  assert.equal(S.styleLabel('full'), 'Beat peaks: full spectrum');
-  assert.ok(S.isBeatStyle('full') && !S.isBeatStyle('melody') && S.isMelodyStyle('melody'));
+  assert.equal(S.styleLabel('full'), 'Full spectrum');
+  assert.ok(!S.isBeatStyle('full') && S.isFullStyle('full') && !S.isBeatStyle('melody') && S.isMelodyStyle('melody'));
   assert.equal(S.styleLabel('hill'), 'Beat peaks: hill');
   assert.deepEqual(seen, ['multi', 'relief']);
 });

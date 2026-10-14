@@ -1,4 +1,4 @@
-import { camClamp, camFormat, camParse, CAM_LIMITS, EYE_HEIGHT, DEFAULT_PITCH_DEG, YAW_COVER_MAX_DEG } from './viz-terrain-math.js';
+import { camClamp, camFormat, camParse, nowClamp, nowFormat, nowParse, parseNowField, NOW_LIMITS, NOW_DEFAULTS, CAM_LIMITS, EYE_HEIGHT, DEFAULT_PITCH_DEG, YAW_COVER_MAX_DEG } from './viz-terrain-math.js';
 
 import { flight } from './viz-flight.js';
 
@@ -8,7 +8,8 @@ let qualityForce = null;
 export const getQualityForce = () => qualityForce;
 export function setQualityForce(v) { qualityForce = Number.isInteger(v) && v >= 0 && v <= 2 ? v : null; return qualityForce; }
 
-const defaults = () => ({ eye: EYE_HEIGHT, pitch: DEFAULT_PITCH_DEG, yaw: 0, sync: 0 });
+const defaults = () => ({ eye: EYE_HEIGHT, pitch: DEFAULT_PITCH_DEG, yaw: 0, sync: 0, ...NOW_DEFAULTS });
+const clampAll = (v) => ({ ...camClamp(v), ...nowClamp(v) });
 let cam = defaults();
 const listeners = new Set();
 
@@ -17,7 +18,7 @@ const yawCoverNote = () => Math.max(0, Math.round(YAW_COVER_MAX_DEG - Math.atan(
 export function getCam() { return cam; }
 
 export function setCam(v, store = globalThis.localStorage) {
-  cam = camClamp({ ...cam, ...v });
+  cam = clampAll({ ...cam, ...v });
   try { store?.setItem(CAM_KEY, JSON.stringify(cam)); } catch { /* storage unavailable */ }
   for (const fn of listeners) fn(cam);
   return cam;
@@ -33,7 +34,7 @@ export function resetCam(store = globalThis.localStorage) {
 export function loadCam(store = globalThis.localStorage) {
   try {
     const raw = store?.getItem(CAM_KEY);
-    cam = raw ? camClamp(JSON.parse(raw)) : defaults();
+    cam = raw ? clampAll(JSON.parse(raw)) : defaults();
   } catch {
     cam = defaults();
   }
@@ -86,6 +87,32 @@ export function createCamPanel(doc = document) {
   mk('pitch', 'Pitch', 0.1);
   mk('yaw', 'Yaw', 0.1);
   mk('sync', 'Sync', 10);
+  const mkField = (key, label, step) => {
+    const row = doc.createElement('label');
+    const name = doc.createElement('span');
+    name.textContent = label;
+    const input = doc.createElement('input');
+    input.type = 'number';
+    input.min = NOW_LIMITS[key][0];
+    input.max = NOW_LIMITS[key][1];
+    input.step = step;
+    input.inputMode = 'decimal';
+    const out = doc.createElement('output');
+    const apply = () => {
+      const v = parseNowField(input.value, key, cam[key]);
+      setCam({ [key]: v });
+      input.value = cam[key].toFixed(step < 0.1 ? 2 : 1);
+    };
+    input.addEventListener('input', () => { const v = parseNowField(input.value, key, null); if (v !== null && input.value.trim() !== '') setCam({ [key]: v }); });
+    input.addEventListener('change', apply);
+    input.addEventListener('blur', apply);
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') apply(); });
+    row.append(name, input, out);
+    body.append(row);
+    rows[key] = { input, out };
+  };
+  mkField('nowH', 'Now line height', 0.05);
+  mkField('nowB', 'Now line glow', 0.1);
   const qRow = doc.createElement('label');
   const qName = doc.createElement('span');
   qName.textContent = 'Quality';
@@ -105,7 +132,7 @@ export function createCamPanel(doc = document) {
   line.rows = 2;
   line.spellcheck = false;
   line.setAttribute('aria-label', 'Camera values');
-  line.addEventListener('change', () => setCam(camParse(line.value)));
+  line.addEventListener('change', () => setCam({ ...camParse(line.value), ...nowParse(line.value) }));
   const btns = doc.createElement('div');
   btns.className = 'viz-cam-btns';
   const reset = doc.createElement('button');
@@ -117,7 +144,7 @@ export function createCamPanel(doc = document) {
   copy.textContent = 'Copy values';
   copy.addEventListener('click', () => {
     line.select?.();
-    try { void globalThis.navigator?.clipboard?.writeText(camFormat(cam)); } catch { /* clipboard unavailable */ }
+    try { void globalThis.navigator?.clipboard?.writeText(`${camFormat(cam)} ${nowFormat(cam)}`); } catch { /* clipboard unavailable */ }
   });
   const note = doc.createElement('small');
   note.textContent = `Yaw is fully covered up to about +-${yawCoverNote()} deg at 16:9; beyond that the far side of the grid can show bare edge. Sync is a trim added to the automatic output-latency estimate (positive = visuals earlier).`;
@@ -143,7 +170,11 @@ export function createCamPanel(doc = document) {
     rows.yaw.out.textContent = `${c.yaw.toFixed(1)}°`;
     rows.sync.input.value = c.sync;
     rows.sync.out.textContent = `${c.sync > 0 ? '+' : ''}${c.sync} ms`;
-    line.value = camFormat(c);
+    rows.nowH.input.value = c.nowH.toFixed(2);
+    rows.nowH.out.textContent = 'x';
+    rows.nowB.input.value = c.nowB.toFixed(1);
+    rows.nowB.out.textContent = 'x';
+    line.value = `${camFormat(c)} ${nowFormat(c)}`;
   };
   listeners.add(paint);
   paint(cam);

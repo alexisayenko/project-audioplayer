@@ -64,8 +64,8 @@ test('motion is continuous and slow at 60 fps', () => {
     maxEye = Math.max(maxEye, Math.abs(rows[i].eye - rows[i - 1].eye));
     maxYaw = Math.max(maxYaw, Math.abs(rows[i].yaw - rows[i - 1].yaw));
   }
-  assert.ok(maxEye < 0.003, `eye step ${maxEye}`);
-  assert.ok(maxYaw < 0.03, `yaw step ${maxYaw}`);
+  assert.ok(maxEye < 0.006, `eye step ${maxEye}`);
+  assert.ok(maxYaw < 0.09, `yaw step ${maxYaw}`);
 });
 
 test('same trajectory at 30, 60 and 120 fps', () => {
