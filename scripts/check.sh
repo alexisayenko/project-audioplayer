@@ -7,10 +7,20 @@ if ! command -v node >/dev/null 2>&1 && command -v wsl >/dev/null 2>&1; then
   exec wsl sh -c "cd \"\$(wslpath '$(pwd -W 2>/dev/null || pwd)')\" && sh scripts/check.sh"
 fi
 
-for f in web/js/*.test.mjs; do
-  node "$f" >/dev/null 2>&1 || { echo "FAIL: $f"; node "$f" 2>&1 | grep -E '^not ok|Error' | head -10 || true; exit 1; }
+total=0
+failed=0
+empty=0
+for f in ${WEB_TEST_FILES:-web/js/*.test.mjs}; do
+  total=$((total + 1))
+  grep -q -E "(^|[^A-Za-z])(test|it|assert)[.(]" "$f" || { echo "NO TESTS: $f"; empty=$((empty + 1)); }
+  if out=$(node --test "$f" 2>&1) && ! echo "$out" | grep -q -E '^[[:space:]]*not ok'; then :; else
+    failed=$((failed + 1))
+    echo "FAIL: $f"
+    echo "$out" | grep -E '^[[:space:]]*not ok|Error' | head -10
+  fi
 done
-echo "web tests ok"
+echo "web: $total files, $failed failed"
+[ "$failed" -eq 0 ] && [ "$empty" -eq 0 ] || exit 1
 
 dups=$(cat docs/specs/*.md | grep -o -E '^- [A-Z]{2,5}-[0-9]+' | sort | uniq -d)
 if [ -n "$dups" ]; then
