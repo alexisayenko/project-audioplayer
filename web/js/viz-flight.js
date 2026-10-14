@@ -10,8 +10,9 @@ export const FLIGHT_PITCH_COUPLING_DEG = 1.5;
 export const FLIGHT_EASE_IN_S = 3;
 export const FLIGHT_EASE_OUT_S = 2;
 export const FLIGHT_MAX_DT_S = 0.1;
-export const FLIGHT_EYE_PERIODS_S = [40, 24.7, 17.4];
-export const FLIGHT_YAW_PERIODS_S = [30, 18.5, 13];
+export const FLIGHT_SPEED = 2;
+export const FLIGHT_EYE_PERIODS_S = [40, 24.7, 17.4].map((p) => p / FLIGHT_SPEED);
+export const FLIGHT_YAW_PERIODS_S = [30, 18.5, 13].map((p) => p / FLIGHT_SPEED);
 export const FLIGHT_WEIGHTS = [0.55, 0.3, 0.15];
 export const REDUCED_QUERY = '(prefers-reduced-motion: reduce)';
 

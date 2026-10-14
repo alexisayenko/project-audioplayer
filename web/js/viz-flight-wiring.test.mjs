@@ -141,6 +141,6 @@ test('max speeds are clearly visible: yaw over 1 deg/s and eye over 0.1 units/s 
     if (prev && i > 300) { vy = Math.max(vy, Math.abs(o.yaw - prev.yaw) * 60); ve = Math.max(ve, Math.abs(o.eye - prev.eye) * 60); }
     prev = o;
   }
-  assert.ok(vy > 1 && vy < 8, `yaw ${vy}`);
-  assert.ok(ve > 0.1 && ve < 0.6, `eye ${ve}`);
+  assert.ok(vy > 1 && vy < 10, `yaw ${vy}`);
+  assert.ok(ve > 0.1 && ve < 0.7, `eye ${ve}`);
 });

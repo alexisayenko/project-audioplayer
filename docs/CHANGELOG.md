@@ -4,6 +4,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## 2026-10-14
 
+- Web: Terrain camera flight is 2x faster (not deployed) -- new `FLIGHT_SPEED = 2` divides all drift periods (eye 20 / 12.35 / 8.7 s, yaw 15 / 9.25 / 6.5 s), amplitudes and the 3 s / 2 s eases unchanged; peak speeds about 9.3 deg/s yaw and 0.57 units/s eye at the default camera (VIZ-074).
 - Web: Terrain lookahead fixes (not deployed) -- a song whose duration was still unknown at `loadstart` was rejected to the live fallback (flat future); now loads fine, failures show a reason in the vizdebug box and `console.warn`, retries twice; the timeline is built around the playhead first, cached per song and kept across mode switches, the next song's first 20 s are built ahead, uncovered rows are filled progressively with a short fade instead of all-or-nothing, the song end fades flat, relief flattens only over the last 8% of the depth (`FAR_FLAT_START` 0.92); VIZ-046, VIZ-048, VIZ-049
 - Web: "Full spectrum" is now Relief with a 1.1x now line (not deployed) -- no beat detection or base relief; label without the "Beat peaks:" prefix; vizdebug Camera panel gets number fields "Now line height" (`nowH`) and "Now line glow" (`nowB`), stored with the camera values; VIZ-044, VIZ-051, VIZ-055
 - Docs: terminology -- new `docs/specs/terminology.md` glossary (now line / "line now", relief vs beat peaks, parts, camera, quality, overlay, share link, baselines) with aliases and requirement ids.

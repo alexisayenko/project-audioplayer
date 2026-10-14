@@ -64,7 +64,7 @@ One name per thing. "Also called" lists informal names the owner or the code use
 | Eye | Camera height (defaults 3.31; liked-2: 3.70). | Also called: camera height | VIZ-044 |
 | Pitch | Camera tilt in degrees (default -13.5; liked-2: -13.0). | | VIZ-044 |
 | Yaw | Looking left and right. | | VIZ-044 |
-| Camera flight | Slow drift of eye and yaw like a gliding spaceship; off by default, key F, off with reduced motion, shared as `fl=1`. | Also called: flight, drift | VIZ-074, SHARE-017 |
+| Camera flight | Drift of eye and yaw like a gliding spaceship (periods 6 to 20 s, tuned by `FLIGHT_SPEED`); off by default, key F, off with reduced motion, shared as `fl=1`. | Also called: flight, drift | VIZ-074, SHARE-017 |
 | Shake | Bass shake of the camera; disabled (`SHAKE_ENABLED` false). | Not: camera flight | VIZ-043 |
 
 ## Performance
