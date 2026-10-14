@@ -1,4 +1,4 @@
-export const SYNC_LIMITS_MS = [-300, 300];
+export const SYNC_LIMITS_MS = [-1000, 1000];
 export const LATENCY_MAX_S = 0.5;
 
 export function outputLatencyS(ctx) {

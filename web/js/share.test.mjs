@@ -33,7 +33,7 @@ test('parse validates, clamps and ignores unknown params', () => {
   assert.equal(parseShareParams('#/play/abc?t=1e3').t, 0);
   assert.equal(parseShareParams('#/play/abc?t=1000000').t, 86400);
   const c = parseShareParams('#/play/abc?cam=99,99,99').cam;
-  assert.ok(c.eye <= 4 && c.pitch <= 15 && c.yaw <= 45);
+  assert.ok(c.eye <= 10 && c.pitch <= 15 && c.yaw <= 45);
   assert.equal(parseShareParams('#/play/?t=1'), null);
   assert.equal(parseShareParams('#/play/%E0%A4%A'), null);
   assert.equal(parseShareParams('#/play/<script>'), null);

@@ -14,7 +14,7 @@ Terrain is a landscape that is the song. The music is laid out as a field you fl
 
 ## 3. The "now" slice
 
-A bright, glowing line across the field, about a third of the way out, is the second playing right now. It pulses with the beat. It is the only thing in the scene that pulses.
+A bright, glowing line across the field, about a third of the way out, is the second playing right now. It pulses with the beat. It is the only thing in the scene that pulses. Glossary: this is the "now line".
 
 ## 4. The future
 
@@ -35,7 +35,7 @@ Each slice of time takes its height once, from its own moment of the song, and f
 ## 7. Styles
 
 - Relief (default): continuous relief of the song's spectrum, plus a landmark. Every 5 s the loudest moment gets a taller peak around its strongest frequencies (not a wall across the whole width); quiet or flat-sounding stretches get none.
-- Beat peaks: the ground is flat. On each beat a peak grows from the ground in about 0.15 s, to a height set by the beat strength, rides toward the viewer and sinks back to flat over about 5 s. Three variants:
+- Beat peaks: the ground carries a soft base relief of the spectrum (60% of the Relief height, `BEAT_BASE_RELIEF`) and the now line swells it (and the peaks on it) to 2x height with a 0.3 s gaussian falloff each side, so a wavefront travels through the field; on each beat a peak grows from the ground in about 0.15 s, to a height set by the beat strength, rides toward the viewer and sinks back to flat over about 5 s. Three variants:
   - Single: one narrow peak at the most energetic pitch.
   - Hill: a broad hill around that pitch.
   - Multi: several peaks, one per strong band.
@@ -56,7 +56,7 @@ Each slice of time takes its height once, from its own moment of the song, and f
 - A low camera looks slightly down toward the horizon. Defaults: eye 3.31, pitch -13.5 deg.
 - V: full-screen. M: switch visualizer. T: cycle Terrain style.
 - `?vizdebug=1` opens a panel with camera height, pitch, yaw (look left and right), a sync trim for audio-to-visual delay, style and a quality override, and shows fps, level and mesh size.
-- Quality levels: simple and crisp on weak devices; soft beaded lines, mist and bloom on strong ones. It steps down by itself when frames get slow.
+- Quality levels: simple and crisp on weak devices; soft beaded lines, mist and bloom on strong ones. It steps down by itself when frames get slow. Terrain draws at 60 fps (display refresh capped at 60; 30 fps on a low battery, with reduced motion, or when even the simplest level cannot keep 60); the Mirrored spectrum and the Ring stay at 30.
 
 ## 10. History and baselines
 

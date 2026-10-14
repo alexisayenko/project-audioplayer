@@ -18,6 +18,30 @@ export const PACE_BAN_MAX_S = 480;
 export const PACE_TOP = 3;
 export const PACE_START = 2;
 export const MIN_VALID_FRAMES = 30;
+export const TERRAIN_TARGET_FPS = 60;
+export const HALF_RATE_FPS = 30;
+export const LOW_BATTERY_LEVEL = 0.2;
+
+export function targetIntervalMs({ terrain = false, refreshMs = REFRESH_SLOW_MS, half = false, lowPower = false, reduced = false, baseFps = HALF_RATE_FPS } = {}) {
+  if (!terrain) return 1000 / baseFps;
+  if (half || lowPower || reduced) return 1000 / HALF_RATE_FPS;
+  const refresh = Number.isFinite(refreshMs) && refreshMs > 0 ? refreshMs : REFRESH_SLOW_MS;
+  return Math.max(refresh, 1000 / TERRAIN_TARGET_FPS);
+}
+
+export function watchLowPower(nav = globalThis.navigator) {
+  const st = { low: false };
+  try {
+    const p = nav?.getBattery?.();
+    p?.then?.((b) => {
+      const upd = () => { st.low = !b.charging && b.level < LOW_BATTERY_LEVEL; };
+      upd();
+      b.addEventListener?.('chargingchange', upd);
+      b.addEventListener?.('levelchange', upd);
+    }).catch?.(() => {});
+  } catch {}
+  return st;
+}
 
 export function makeFrameMeter({ frames = FRAME_EMA, hold = HOLD_FRAMES } = {}) {
   const ring = new Float32Array(REFRESH_RING);
@@ -63,28 +87,28 @@ export function makeFrameMeter({ frames = FRAME_EMA, hold = HOLD_FRAMES } = {}) 
 }
 
 export function makePaceGovernor({ top = PACE_TOP, start = PACE_START } = {}) {
-  let cap = Math.min(top, Math.max(0, start));
+  let cap = Math.min(top, Math.max(-1, start));
   let lite = false;
   let overSince = null;
   let okSince = null;
   let lockUntil = 0;
-  const banUntil = new Array(top + 1).fill(0);
-  const bans = new Array(top + 1).fill(PACE_BAN_S);
+  const banUntil = new Array(top + 2).fill(0);
+  const bans = new Array(top + 2).fill(PACE_BAN_S);
   let liteOkSince = null;
   return {
-    update(ts, ema, refresh, valid) {
+    update(ts, ema, target, valid) {
       let changed = 0;
       if (!valid || !(ema > 0)) { overSince = null; okSince = null; liteOkSince = null; return changed; }
-      const over = ema > refresh * PACE_OVER;
-      const ok = ema < refresh * PACE_OK;
+      const over = ema > target * PACE_OVER;
+      const ok = ema < target * PACE_OK;
       if (over) {
         overSince ??= ts;
         okSince = null;
         liteOkSince = null;
         if (ts - overSince >= PACE_LITE_S * 1000) lite = true;
-        if (ts - overSince >= PACE_DOWN_S * 1000 && ts >= lockUntil && cap > 0) {
-          banUntil[cap] = ts + bans[cap] * 1000;
-          bans[cap] = Math.min(PACE_BAN_MAX_S, bans[cap] * 2);
+        if (ts - overSince >= PACE_DOWN_S * 1000 && ts >= lockUntil && cap > -1 && (cap > 0 || lite)) {
+          banUntil[cap + 1] = ts + bans[cap + 1] * 1000;
+          bans[cap + 1] = Math.min(PACE_BAN_MAX_S, bans[cap + 1] * 2);
           cap -= 1;
           changed = -1;
           overSince = null;
@@ -96,7 +120,7 @@ export function makePaceGovernor({ top = PACE_TOP, start = PACE_START } = {}) {
           okSince ??= ts;
           liteOkSince ??= ts;
           if (lite && ts - liteOkSince >= PACE_LITE_OFF_S * 1000) lite = false;
-          if (ts - okSince >= PACE_UP_S * 1000 && cap < top && ts >= banUntil[cap + 1] && ts >= lockUntil) {
+          if (ts - okSince >= PACE_UP_S * 1000 && cap < top && ts >= banUntil[cap + 2] && ts >= lockUntil) {
             cap += 1;
             changed = 1;
             okSince = null;
@@ -110,9 +134,11 @@ export function makePaceGovernor({ top = PACE_TOP, start = PACE_START } = {}) {
       return changed;
     },
     reset() { overSince = null; okSince = null; liteOkSince = null; lite = false; },
-    get cap() { return cap; },
+    get cap() { return Math.max(0, cap); },
+    get rung() { return cap; },
+    get half() { return cap < 0; },
     get lite() { return lite; },
-    get level() { return Math.min(2, cap); },
+    get level() { return Math.min(2, Math.max(0, cap)); },
     get hiDpr() { return cap >= 3; },
   };
 }

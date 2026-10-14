@@ -2,7 +2,7 @@ import {
   QUALITY, HISTORY_BINS, STAR_VISIBLE, buildDepthIndices, buildCrossIndices, buildRibbonVertices, buildRibbonIndices, energyOf, easeEnergy, GRID_DEPTH, WORLD_SPEED, NOW_FALLOFF_S, NOW_GAIN, CROSS_H0, CROSS_H1, AMP_MAX, SHAKE_ENABLED,
   gridHalfWidth, FAR_FLAT_START, RAMP, qualityFor, createFrame, createSeries, fillHeights, buildGridVertices, rowLayout, nowZOf, fillLiveFrame, fillLookFrame, blendFrames,
   gridCounts, makeStars, lodTiers, makeTierPlan, resampleTier, cameraAt, horizonY, horizonGlow, mat4Perspective, mat4LookAt, mat4Multiply,
-  makeRowClock, clamp01, resample, yawStepOf, smoothHeights, HEIGHT_RESAMPLE_CAP, ROWS_PER_SECOND, gridDims, fillLight, LIGHT_GAIN, NODE_GAIN, FOG_NEAR, FOG_FAR, FOG_LOW_MIN, FOG_H0, FOG_H1,
+  makeRowClock, clamp01, applyNowLine, addBaseRelief, NOW_LINE_GAIN_B, resample, yawStepOf, smoothHeights, HEIGHT_RESAMPLE_CAP, ROWS_PER_SECOND, gridDims, fillLight, LIGHT_GAIN, NODE_GAIN, FOG_NEAR, FOG_FAR, FOG_LOW_MIN, FOG_H0, FOG_H1,
 } from './viz-terrain-math.js';
 import { getCam } from './viz-cam-debug.js';
 import { getStyle, isBeatStyle, isMelodyStyle } from './viz-terrain-style.js';
@@ -23,6 +23,9 @@ const BLOOM_SCALE = 0.5;
 const BASS_BINS = 6;
 const LOOK_BLEND_S = 1;
 const SLOW_S = 1.2;
+export const UPLOAD_MIN_S = 0.06;
+export const strideOf = (tier) => Math.max(1, Math.ceil(UPLOAD_MIN_S / (tier.dz / WORLD_SPEED) - 1e-9));
+export const padTier = (tier) => { const n = strideOf(tier); return n > 1 ? { ...tier, rows: tier.rows + n - 1 } : tier; };
 const LINE_PX = [0, 1.1, 1.5];
 
 const GRID_VS = `
@@ -407,7 +410,9 @@ export function createTerrain(canvas, opts = {}) {
     hiDpr: false,
     css: null,
     hVer: 0,
-    hs: { style: null, base: NaN, done: -1, pd: -1, kd: -1, dims: null },
+    hs: { style: null, done: -1, pd: -1, kd: -1, dims: null },
+    rk: { dims: null, base: NaN, done: -1, ver: -1 },
+    liveVer: 0,
     xs: null,
     static: false,
   };
@@ -427,14 +432,17 @@ export function createTerrain(canvas, opts = {}) {
     return b;
   }
 
-  function buildTier(tier) {
+  function buildTier(tier0) {
     const q = QUALITY[s.level];
+    const stride = strideOf(tier0);
+    const tier = padTier(tier0);
     const { rows, cols } = tier;
     const n = rows * cols;
     const depth = buildDepthIndices(rows, cols);
     const cross = buildCrossIndices(rows, cols);
     const g = {
       t: tier,
+      stride,
       plan: makeTierPlan({ rows: s.dims.rows, cols: s.dims.cols, dz: s.dims.dz, hw: gridHalfWidth(view.w / view.h) }, tier, s.nowZ),
       heights: new Float32Array(n),
       light: new Float32Array(n),
@@ -481,6 +489,7 @@ export function createTerrain(canvas, opts = {}) {
     s.liveFrame = createFrame(rows, HISTORY_BINS);
     s.lookFrame = createFrame(rows, HISTORY_BINS);
     s.heights = new Float32Array(rows * cols);
+    s.relief = new Float32Array(rows * cols);
     s.beatB = new Float32Array(rows * cols);
     s.light = new Float32Array(rows * cols);
     s.xs = new Float32Array(cols);
@@ -608,7 +617,7 @@ export function createTerrain(canvas, opts = {}) {
     u1(p, 'u_scroll', g.scroll);
     u1(p, 'u_nowZ', s.nowZ);
     u1(p, 'u_nowW', NOW_FALLOFF_S * WORLD_SPEED);
-    u1(p, 'u_nowGain', NOW_GAIN * (0.7 + 0.6 * s.pulse));
+    u1(p, 'u_nowGain', NOW_GAIN * (0.7 + 0.6 * s.pulse) * (s.beatNow ? NOW_LINE_GAIN_B : 1));
     u1(p, 'u_crossLo', CROSS_H0);
     u1(p, 'u_crossHi', CROSS_H1);
     u1(p, 'u_base', g.base % 256);
@@ -817,17 +826,22 @@ export function createTerrain(canvas, opts = {}) {
     const lay = rowLayout(rows);
     const eligible = !!tl && k >= 1 && !isBeatStyle(style) && (style !== 'melody' || !!tl.parts);
     s.static = eligible;
-    if (eligible) {
-      const pos = ahead.time / lay.dt;
-      const base = Math.floor(pos);
+    if (s.static) {
+      const at = ahead.time;
       const hs = s.hs;
-      const same = hs.style === style && hs.base === base && hs.done === tl.done && hs.pd === (tl.partsDone ?? 0) && hs.kd === (tl.pitchDone ?? 0) && hs.dims === s.dims;
+      const done = tl.done;
+      const same = hs.style === style && hs.done === done && hs.pd === (tl.partsDone ?? 0) && hs.kd === (tl.pitchDone ?? 0) && hs.dims === s.dims;
       if (same) {
-        for (const g of s.tiers) uploadTier(g, ahead.time, pos - base);
-        return;
+        let due = false;
+        for (const g of s.tiers) if (g.upVer !== s.hVer || g.upBase !== tierBase(g, at)) due = true;
+        if (!due) {
+          for (const g of s.tiers) uploadTier(g, at, 0);
+          return;
+        }
+      } else {
+        hs.style = style; hs.done = done; hs.pd = tl.partsDone ?? 0; hs.kd = tl.pitchDone ?? 0; hs.dims = s.dims;
+        s.hVer += 1;
       }
-      hs.style = style; hs.base = base; hs.done = tl.done; hs.pd = tl.partsDone ?? 0; hs.kd = tl.pitchDone ?? 0; hs.dims = s.dims;
-      s.hVer += 1;
     }
     let info = fillLiveFrame(s.liveFrame, s.series, sec);
     if (tl) {
@@ -836,18 +850,35 @@ export function createTerrain(canvas, opts = {}) {
       info = { base: k >= 1 ? li.base : info.base, frac: info.frac + (li.frac - info.frac) * k };
     }
     s.melodyOn = isMelodyStyle(style);
+    s.beatNow = isBeatStyle(style);
     if (s.melodyOn) fillMelodyStyle(sec, ahead, k, info.base, cols);
-    else if (isBeatStyle(style)) fillBeatStyle(style, sec, ahead, k, rows, cols);
+    else if (isBeatStyle(style)) {
+      fillBeatStyle(style, sec, ahead, k, rows, cols);
+      const rk = s.rk;
+      const settled = !tl || k >= 1;
+      const done = tl ? tl.done : -1;
+      if (!settled || rk.dims !== s.dims || rk.base !== info.base || rk.done !== done || rk.ver !== s.liveVer) {
+        fillHeights(s.liveFrame, cols, sec, s.relief, { swellAmp: 0, bakeAmp: true, landmarks: false });
+        rk.dims = s.dims; rk.base = info.base; rk.done = done; rk.ver = s.liveVer;
+      }
+      addBaseRelief(s.heights, s.relief);
+      applyNowLine(s.heights, rows, cols, info.frac);
+    }
     else fillHeights(s.liveFrame, cols, sec, s.heights, { swellAmp: 0, bakeAmp: true });
     fillLight(s.heights, rows, cols, gridHalfWidth(view.w / view.h), lay.dz, s.light, undefined, s.xs);
     const pos = (info.base + info.frac) * lay.dt;
     for (const g of s.tiers) uploadTier(g, pos, info.frac);
   }
 
+  function tierBase(g, pos) {
+    const p = pos / (g.t.dz / WORLD_SPEED);
+    return s.static && g.stride > 1 ? Math.floor(p / g.stride) * g.stride : Math.floor(p);
+  }
+
   function uploadTier(g, pos, fracL) {
     const t = g.t;
     const p = pos / (t.dz / WORLD_SPEED);
-    const base = Math.floor(p);
+    const base = tierBase(g, pos);
     const fracT = p - base;
     g.base = base;
     g.scroll = fracT - t.jz0 - s.nowZ / t.dz;
@@ -887,6 +918,7 @@ export function createTerrain(canvas, opts = {}) {
     }
     const sp = spectrum || [];
     const step = s.clock.advance(t);
+    s.liveVer += step.pushes;
     const gap = 1000 / ROWS_PER_SECOND;
     for (let i = 0; i < step.pushes; i += 1) {
       const ts = (t - (step.pushes - 1 - i) * gap) / 1000;

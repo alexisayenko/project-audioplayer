@@ -39,10 +39,31 @@ export function loadCam(store = globalThis.localStorage) {
   return cam;
 }
 
+export const CAM_COLLAPSED_KEY = 'ap2.viz.dbg.camCollapsed';
+
 export function createCamPanel(doc = document) {
   const root = doc.createElement('div');
   root.className = 'viz-cam-panel';
   root.addEventListener('click', (e) => e.stopPropagation());
+  const head = doc.createElement('button');
+  head.type = 'button';
+  head.className = 'viz-cam-head';
+  head.textContent = 'Camera';
+  head.setAttribute('aria-controls', 'viz-cam-body');
+  const body = doc.createElement('div');
+  body.className = 'viz-cam-body';
+  body.id = 'viz-cam-body';
+  const setCollapsed = (v, save = true) => {
+    root.classList.toggle('collapsed', v);
+    head.setAttribute('aria-expanded', String(!v));
+    body.hidden = v;
+    if (save) { try { globalThis.localStorage?.setItem(CAM_COLLAPSED_KEY, v ? '1' : '0'); } catch { /* storage unavailable */ } }
+  };
+  let startCollapsed = false;
+  try { startCollapsed = globalThis.localStorage?.getItem(CAM_COLLAPSED_KEY) === '1'; } catch { /* storage unavailable */ }
+  setCollapsed(startCollapsed, false);
+  head.addEventListener('click', () => setCollapsed(!root.classList.contains('collapsed')));
+  root.append(head, body);
   const rows = {};
   const mk = (key, label, step) => {
     const row = doc.createElement('label');
@@ -56,13 +77,13 @@ export function createCamPanel(doc = document) {
     const out = doc.createElement('output');
     input.addEventListener('input', () => setCam({ [key]: +input.value }));
     row.append(name, input, out);
-    root.append(row);
+    body.append(row);
     rows[key] = { input, out };
   };
   mk('eye', 'Eye', 0.01);
   mk('pitch', 'Pitch', 0.1);
   mk('yaw', 'Yaw', 0.1);
-  mk('sync', 'Sync', 1);
+  mk('sync', 'Sync', 10);
   const styleRow = doc.createElement('label');
   const styleName = doc.createElement('span');
   styleName.textContent = 'Style';
@@ -78,7 +99,7 @@ export function createCamPanel(doc = document) {
   styleSel.addEventListener('change', () => setStyle(styleSel.value));
   const offStyle = onStyle((id) => { styleSel.value = id; });
   styleRow.append(styleName, styleSel);
-  root.append(styleRow);
+  body.append(styleRow);
   const qRow = doc.createElement('label');
   const qName = doc.createElement('span');
   qName.textContent = 'Quality';
@@ -93,12 +114,14 @@ export function createCamPanel(doc = document) {
   qSel.value = qualityForce === null ? 'auto' : String(qualityForce);
   qSel.addEventListener('change', () => setQualityForce(qSel.value === 'auto' ? null : +qSel.value));
   qRow.append(qName, qSel);
-  root.append(qRow);
-  const line = doc.createElement('input');
-  line.type = 'text';
+  body.append(qRow);
+  const line = doc.createElement('textarea');
+  line.rows = 2;
+  line.spellcheck = false;
   line.setAttribute('aria-label', 'Camera values');
   line.addEventListener('change', () => setCam(camParse(line.value)));
   const btns = doc.createElement('div');
+  btns.className = 'viz-cam-btns';
   const reset = doc.createElement('button');
   reset.type = 'button';
   reset.textContent = 'Reset';
@@ -113,7 +136,7 @@ export function createCamPanel(doc = document) {
   const note = doc.createElement('small');
   note.textContent = `Yaw is fully covered up to about +-${yawCoverNote()} deg at 16:9; beyond that the far side of the grid can show bare edge. Sync is a trim added to the automatic output-latency estimate (positive = visuals earlier).`;
   btns.append(reset, copy);
-  root.append(line, btns, note);
+  body.append(line, btns, note);
   const paint = (c) => {
     rows.eye.input.value = c.eye;
     rows.eye.out.textContent = c.eye.toFixed(2);

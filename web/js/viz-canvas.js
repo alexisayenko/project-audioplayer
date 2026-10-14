@@ -1,4 +1,4 @@
-import { makeFrameMeter, makePaceGovernor } from './viz-pacing.js';
+import { makeFrameMeter, makePaceGovernor, targetIntervalMs, watchLowPower } from './viz-pacing.js';
 import { getQualityForce, getCam } from './viz-cam-debug.js';
 import {
   ATTACK, RELEASE, IDLE_EPSILON, VIZ_FPS, VIZ_DPR_CAP, DPR_CAP, VIZ_HEIGHT_SCALE, TILT_DB_PER_OCT,
@@ -35,6 +35,7 @@ function defaults() {
     getAnchor: () => null,
     getDiag: () => ({}),
     getOutputLatency: () => 0,
+    lowPower: () => watchLowPower(win.navigator),
     raf: (fn) => win.requestAnimationFrame(fn),
     caf: (id) => win.cancelAnimationFrame?.(id),
     createGLCanvas,
@@ -84,6 +85,8 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
   const pacer = makePacer(VIZ_FPS);
   const gov = makeGovernor({ fps: VIZ_FPS });
   const meter = makeFrameMeter();
+  const drawMeter = makeFrameMeter();
+  const power = d.lowPower();
   const pace = makePaceGovernor();
   const glow = createGlow(() => d.createOffscreen(canvas));
   const backdrop = createBackdrop(() => d.createOffscreen(canvas));
@@ -311,23 +314,31 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
     }
   }
 
-  function paceStep(ts) {
-    meter.tick(ts);
-    if (renderer?.id !== 'terrain') return;
-    if (pace.update(ts, meter.ema, meter.refresh, meter.valid)) meter.hold();
+  const isTerrain = () => renderer?.id === 'terrain';
+  const targetMs = () => targetIntervalMs({
+    terrain: isTerrain(), refreshMs: meter.refresh, half: pace.half, lowPower: !!power?.low, reduced: reduced(), baseFps: VIZ_FPS,
+  });
+
+  function paceDraw(ts) {
+    drawMeter.tick(ts);
+    if (!isTerrain()) return;
+    if (pace.update(ts, drawMeter.ema, targetMs(), drawMeter.valid)) drawMeter.hold();
   }
 
   function paceText() {
     const st = renderer?.stats;
-    const fps = meter.fps ? `${meter.fps.toFixed(0)} fps ${meter.ema.toFixed(1)} ms (display ${(1000 / meter.refresh).toFixed(0)} Hz)` : 'fps n/a';
+    const target = 1000 / targetMs();
+    const got = drawMeter.fps ? `${drawMeter.fps.toFixed(0)}` : 'n/a';
+    const fps = `fps ${got}/${target.toFixed(0)} (display ${(1000 / meter.refresh).toFixed(0)} Hz)`;
     if (!st) return fps;
-    return `${fps}  terrain L${st.level} cap ${pace.cap}${pace.lite ? ' lite' : ''} tiers ${st.tiers} verts ${st.vertices} dpr ${st.dpr} ${st.w}x${st.h}`;
+    return `${fps}  terrain L${st.level} cap ${pace.cap}${pace.half ? ' half-rate' : ''}${pace.lite ? ' lite' : ''} tiers ${st.tiers} verts ${st.vertices} dpr ${st.dpr} ${st.w}x${st.h}`;
   }
 
   function frame(ts) {
     raf = null;
-    paceStep(ts);
-    if (pacer.due(ts)) {
+    meter.tick(ts);
+    pacer.set(1000 / targetMs());
+    if (pacer.due(ts, Math.min(4, meter.refresh * 0.45))) {
       const t0 = d.now();
       const dt = st.last ? Math.min(0.1, Math.max(0.001, (ts - st.last) / 1000)) : 1 / 60;
       st.last = ts;
@@ -336,6 +347,7 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
       const work = d.now() - t0;
       avgMs = avgMs ? avgMs * 0.9 + work * 0.1 : work;
       gov.record(work);
+      paceDraw(ts);
     }
     evaluate();
   }
@@ -399,6 +411,7 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
       if (id === vizMode) return;
       vizMode = id;
       meter.hold();
+      drawMeter.hold();
       pace.reset();
       dropRenderer();
       if (raf == null) evaluate();

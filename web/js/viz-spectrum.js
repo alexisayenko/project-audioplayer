@@ -149,14 +149,16 @@ export const targetFps = (coarse) => (coarse ? FPS_TOUCH : FPS_DESKTOP);
 export const capDpr = (dpr, cap = DPR_CAP) => Math.min(cap, Math.max(1, Number.isFinite(dpr) ? dpr : 1));
 
 export function makePacer(fps) {
-  const gap = 1000 / fps;
+  let gap = 1000 / fps;
   let last = -Infinity;
   return {
-    due(now) {
-      if (now - last < gap - 4) return false;
+    due(now, slack = 4) {
+      if (now - last < gap - slack) return false;
       last = now;
       return true;
     },
+    set(next) { if (next > 0) gap = 1000 / next; },
+    get gap() { return gap; },
     reset() { last = -Infinity; },
   };
 }

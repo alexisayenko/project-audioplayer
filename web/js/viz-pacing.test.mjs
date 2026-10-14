@@ -1,6 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeFrameMeter, makePaceGovernor, PACE_UP_S, PACE_BAN_S, PACE_TOP } from './viz-pacing.js';
+import {
+  makeFrameMeter, makePaceGovernor, PACE_UP_S, PACE_BAN_S, PACE_TOP, targetIntervalMs, watchLowPower, TERRAIN_TARGET_FPS,
+} from './viz-pacing.js';
+import { makePacer } from './viz-spectrum.js';
 
 function drive(seconds, intervalAt, state) {
   const end = state.t + seconds * 1000;
@@ -47,10 +50,11 @@ test('hold() ignores the frames after a mode switch', () => {
   assert.ok(m.ema < 18);
 });
 
-test('sustained slow frames step the level down 2 -> 1 -> 0 and never below 0', () => {
+test('sustained slow frames step the level down 2 -> 1 -> 0, then to half rate, and never below', () => {
   const s = fresh();
   const ch = drive(20, () => 33, s);
-  assert.deepEqual(ch.map((c) => c[2]), [1, 0]);
+  assert.deepEqual(ch.map((c) => c[2]), [1, 0, 0]);
+  assert.equal(s.gov.half, true);
   assert.ok(ch[1][0] - ch[0][0] >= 3000);
   assert.equal(s.gov.cap, 0);
   assert.equal(s.gov.level, 0);
@@ -93,4 +97,149 @@ test('invalid or hidden data never moves the level', () => {
   for (let t = 0; t < 20000; t += 100) g.update(t, 50, 16.7, false);
   assert.equal(g.cap, 2);
   assert.equal(g.lite, false);
+});
+
+test('terrain target is the display refresh capped at 60 fps; other modes, low power, reduced motion and half rate give 30', () => {
+  assert.equal(TERRAIN_TARGET_FPS, 60);
+  const ms = (o) => Math.round(targetIntervalMs(o) * 10) / 10;
+  assert.equal(ms({ terrain: true, refreshMs: 1000 / 60 }), 16.7);
+  assert.equal(ms({ terrain: true, refreshMs: 1000 / 120 }), 16.7);
+  assert.equal(ms({ terrain: true, refreshMs: 1000 / 60, half: true }), 33.3);
+  assert.equal(ms({ terrain: true, lowPower: true }), 33.3);
+  assert.equal(ms({ terrain: true, reduced: true }), 33.3);
+  assert.equal(ms({ terrain: false, refreshMs: 1000 / 60 }), 33.3);
+});
+
+test('low power follows getBattery: discharging under 20 percent only', async () => {
+  const batt = { charging: false, level: 0.1, listeners: {}, addEventListener(t, f) { this.listeners[t] = f; } };
+  const st = watchLowPower({ getBattery: () => Promise.resolve(batt) });
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.equal(st.low, true);
+  batt.charging = true;
+  batt.listeners.chargingchange();
+  assert.equal(st.low, false);
+  assert.equal(watchLowPower({}).low, false);
+  assert.equal(watchLowPower({ getBattery: () => { throw new Error('x'); } }).low, false);
+});
+
+test('the governor judges against the new 60 fps target: 20 ms average is slow, 17 ms is fine', () => {
+  const g = makePaceGovernor();
+  let t = 0;
+  const T = 1000 / 60;
+  let down = 0;
+  for (; t < 4000; t += 16) down += g.update(t, 17, T, true) < 0 ? 1 : 0;
+  assert.equal(down, 0);
+  for (; t < 9000; t += 16) down += g.update(t, 21, T, true) < 0 ? 1 : 0;
+  assert.ok(down >= 1);
+  assert.equal(g.lite, true);
+});
+
+test('half rate: falls to 30 only after level 0 + lite fail, judged against 33 ms, banned for 30 s and then retried with a doubled ban', () => {
+  const g = makePaceGovernor();
+  const log = [];
+  let t = 0;
+  let target = 1000 / 60;
+  const run = (secs, dtMs) => {
+    const end = t + secs * 1000;
+    while (t < end) {
+      t += 16;
+      const c = g.update(t, dtMs(), target, true);
+      if (c) log.push([t, c, g.rung]);
+      target = 1000 / (g.half ? 30 : 60);
+    }
+  };
+  run(20, () => (g.half ? 33.3 : 40));
+  assert.deepEqual(log.map((l) => l[2]), [1, 0, -1]);
+  assert.equal(g.half, true);
+  assert.equal(g.cap, 0);
+  const downAt = log[2][0];
+  run(60, () => (g.half ? 33.3 : 40));
+  const ups = log.filter((l) => l[1] > 0);
+  assert.ok(ups.length >= 1 && ups[0][0] - downAt >= 30000, JSON.stringify(log));
+  run(400, () => (g.half ? 33.3 : 40));
+  const halfDowns = log.filter((l) => l[1] < 0 && l[2] === -1).map((l) => l[0]);
+  for (let i = 1; i < halfDowns.length; i += 1) assert.ok(halfDowns[i] - halfDowns[i - 1] >= 30000);
+  const gaps = halfDowns.slice(1).map((v, i) => v - halfDowns[i]);
+  assert.ok(gaps.length < 2 || gaps[gaps.length - 1] > gaps[0], `gaps ${gaps}`);
+});
+
+test('pacer: set() changes the rate, the slack keeps 60 fps on 60 Hz and 120 Hz', () => {
+  const p = makePacer(30);
+  p.set(60);
+  let drawn = 0;
+  for (let t = 0; t < 1000; t += 1000 / 60) if (p.due(t, 7.5)) drawn += 1;
+  assert.ok(drawn >= 58, `60Hz ${drawn}`);
+  p.reset();
+  drawn = 0;
+  for (let t = 0; t < 1000; t += 1000 / 120) if (p.due(t, 3.75)) drawn += 1;
+  assert.ok(drawn >= 58 && drawn <= 62, `120Hz ${drawn}`);
+});
+
+import { makeTimeFollower } from './viz-timeline.js';
+import { smoothBars, makePulse } from './viz-spectrum.js';
+import { easeEnergy } from './viz-terrain-math.js';
+
+function sampleAt(fps, secs, step, at) {
+  const out = [];
+  const n = Math.round(secs * fps);
+  let next = 0;
+  for (let i = 1; i <= n; i += 1) {
+    const t = i / fps;
+    step(t, 1 / fps);
+    if (t + 1e-9 >= at[next]) { out.push(step.read()); next += 1; }
+  }
+  return out;
+}
+
+function trajectories(make, at, secs = 2) {
+  return [30, 60, 120].map((fps) => sampleAt(fps, secs, make(), at));
+}
+
+test('frame-rate independence: the time follower, bar smoothing, pulse and energy follower give the same trajectory at 30, 60 and 120 fps', () => {
+  const at = [0.2, 0.5, 1, 1.5, 2];
+  const close = (runs, eps, times = at) => {
+    for (let k = 0; k < times.length; k += 1) {
+      const vs = runs.map((r) => r[k]);
+      assert.ok(Math.max(...vs) - Math.min(...vs) < eps, `t=${times[k]}: ${vs}`);
+    }
+  };
+  const follower = () => {
+    const f = makeTimeFollower();
+    let v = 0;
+    const step = (t) => { v = f.update(10 + t * 0.97 + 0.04 * Math.sin(t * 7), t * 1000, true); };
+    f.update(10, 0, true);
+    step.read = () => v;
+    return step;
+  };
+  close(trajectories(follower, at), 0.01);
+  const bars = () => {
+    const state = new Float32Array(1);
+    const step = (t, dt) => { smoothBars(state, [0.5 + 0.5 * Math.sin(t * 6)], 0.6, 0.15, dt * 60); };
+    step.read = () => state[0];
+    return step;
+  };
+  close(trajectories(bars, at), 0.05);
+  const settle = () => {
+    const state = new Float32Array(1);
+    const step = (t, dt) => { smoothBars(state, [0.8], 0.6, 0.15, dt * 60); };
+    step.read = () => state[0];
+    return step;
+  };
+  const early = [1 / 30, 0.1, 0.2, 0.5];
+  close(trajectories(settle, early, 0.5), 0.06, early);
+  const pulse = () => {
+    const p = makePulse();
+    const step = (t, dt) => { p.step(0.5 + 0.4 * Math.sin(t * 5), dt); };
+    step.read = () => p.value;
+    return step;
+  };
+  close(trajectories(pulse, at), 0.05);
+  const energy = () => {
+    let e = 0;
+    const step = (t, dt) => { e = easeEnergy(e, 0.5 + 0.4 * Math.sin(t * 5), dt); };
+    step.read = () => e;
+    return step;
+  };
+  close(trajectories(energy, at), 0.03);
 });

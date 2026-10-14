@@ -8,7 +8,7 @@ export const ANALYSIS_CENTRE = 0.5;
 export const LOOKAHEAD_MAX_S = 480;
 export const LOOKAHEAD_MAX_BYTES = 64 * 1024 * 1024;
 const TIME_SNAP_S = 0.25;
-const TIME_PULL = 0.3;
+const TIME_PULL_TAU_S = 0.0935;
 
 export function makeFft(n) {
   const levels = Math.log2(n);
@@ -161,7 +161,7 @@ export function makeTimeFollower() {
       last = nowMs;
       t += dt * (Number.isFinite(rate) && rate > 0 ? rate : 1);
       if (Math.abs(t - a) > TIME_SNAP_S) t = a;
-      else t += (a - t) * TIME_PULL;
+      else t += (a - t) * (1 - Math.exp(-dt / TIME_PULL_TAU_S));
       return t;
     },
     reset() { last = null; },

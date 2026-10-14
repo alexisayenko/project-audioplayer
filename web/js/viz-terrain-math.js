@@ -59,7 +59,7 @@ export const crossAlpha = (worldHeight) => smoothstep(CROSS_H0, CROSS_H1, worldH
 export const LIVE_CAP = Math.ceil((GRID_DEPTH / WORLD_SPEED) * ROWS_PER_SECOND) + 8;
 export const EYE_HEIGHT = 3.31;
 export const DEFAULT_PITCH_DEG = -13.5;
-export const CAM_LIMITS = { eye: [0.2, 4], pitch: [-30, 15], yaw: [-45, 45], sync: [-300, 300] };
+export const CAM_LIMITS = { eye: [0.2, 10], pitch: [-30, 15], yaw: [-45, 45], sync: [-1000, 1000] };
 export const YAW_COVER_MAX_DEG = 70;
 export const YAW_WIDTH_MAX = 3;
 export const YAW_STEP_DEG = 5;
@@ -561,7 +561,7 @@ export function fillHeights(history, cols, t, out, opts) {
     }
   }
   if (!opts || opts.smooth !== 0) smoothHeights(out, rows, cols, opts?.smooth ?? 2);
-  if (opts?.bakeAmp && history.boost) applyLandmarks(out, rows, cols, history.boost);
+  if (opts?.bakeAmp && history.boost && opts.landmarks !== false) applyLandmarks(out, rows, cols, history.boost);
   return out;
 }
 
@@ -848,4 +848,38 @@ export function makeRowClock(rate = ROWS_PER_SECOND, maxCatchUp = 4) {
     },
     reset() { last = null; },
   };
+}
+
+export const NOW_LINE_GAIN_H = 2.0;
+export const NOW_LINE_GAIN_B = 2.0;
+export const NOW_LINE_SIGMA_S = NOW_FALLOFF_S / Math.SQRT2;
+export const NOW_LINE_REACH_S = 3 * NOW_LINE_SIGMA_S;
+export const BEAT_BASE_RELIEF = 0.6;
+const NOW_LINE_EDGE = Math.exp(-((NOW_LINE_REACH_S / NOW_FALLOFF_S) ** 2));
+
+export function nowLineWeight(dtSec) {
+  const d = Math.abs(dtSec);
+  if (!(d < NOW_LINE_REACH_S)) return 0;
+  return (Math.exp(-((d / NOW_FALLOFF_S) ** 2)) - NOW_LINE_EDGE) / (1 - NOW_LINE_EDGE);
+}
+
+export const nowLineBoost = (dtSec, gain = NOW_LINE_GAIN_H) => 1 + (gain - 1) * nowLineWeight(dtSec);
+
+export function applyNowLine(out, rows, cols, frac, cap = HEIGHT_CAP) {
+  const { dt, nowRow } = rowLayout(rows);
+  const centre = nowRow + frac;
+  const lo = Math.max(0, Math.floor(centre - NOW_LINE_REACH_S / dt));
+  const hi = Math.min(rows - 1, Math.ceil(centre + NOW_LINE_REACH_S / dt));
+  for (let r = lo; r <= hi; r += 1) {
+    const g = nowLineBoost((r - centre) * dt);
+    if (g === 1) continue;
+    const o = r * cols;
+    for (let c = 0; c < cols; c += 1) out[o + c] = softKnee(out[o + c] * g, cap);
+  }
+  return out;
+}
+
+export function addBaseRelief(out, relief, k = BEAT_BASE_RELIEF, cap = HEIGHT_CAP) {
+  for (let i = 0; i < out.length; i += 1) out[i] = softKnee(out[i] + relief[i] * k, cap);
+  return out;
 }

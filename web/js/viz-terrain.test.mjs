@@ -8,7 +8,7 @@ import {
   SHAKE_ENABLED, CROSS_H0, CROSS_H1, crossAlpha, WORLD_SPEED, NOW_Z, NOW_GAIN, NOW_FALLOFF_S, rowLayout, nowZOf, ridgeZ, createFrame, createSeries, fillLookFrame, fillLiveFrame, sampleTimeline, blendFrames,
 } from './viz-terrain-math.js';
 import { FAR_FLAT_START, gridHalfWidth, yawStepOf } from './viz-terrain-math.js';
-import { createTerrain, isWebGLAvailable, linkProgram, TERRAIN_MAX_DPR } from './viz-terrain-gl.js';
+import { createTerrain, isWebGLAvailable, linkProgram, TERRAIN_MAX_DPR, padTier, strideOf } from './viz-terrain-gl.js';
 import { MODES, pickMode, nextMode, availableModes, createModeRenderer, modeLabel } from './viz-modes.js';
 
 const DEFAULT_PITCH_ABS = 13.5;
@@ -246,7 +246,7 @@ function fakeCanvas() {
   };
 }
 
-const tiersOf = (l, aspect) => lodTiers(l, aspect, nowZOf(gridDims(l, aspect).rows));
+const tiersOf = (l, aspect) => lodTiers(l, aspect, nowZOf(gridDims(l, aspect).rows)).map(padTier);
 const count = (gl, name) => gl.calls.filter((c) => c[0] === name).length;
 
 test('createTerrain compiles programs, creates buffers and draws expected counts', () => {
@@ -683,6 +683,10 @@ test('camera overrides: eye and pitch move the camera and the horizon', () => {
 test('camClamp, camFormat and camParse round-trip and clamp', () => {
   const c = camClamp({ eye: 99, pitch: -99 });
   assert.deepEqual([c.eye, c.pitch], [CAM_LIMITS.eye[1], CAM_LIMITS.pitch[0]]);
+  assert.deepEqual(CAM_LIMITS.eye, [0.2, 10]);
+  assert.equal(camClamp({ eye: 10 }).eye, 10);
+  assert.equal(camClamp({ eye: 10.5 }).eye, 10);
+  assert.equal(camParse('eye=25 pitch=-30deg').eye, 10);
   assert.equal(camClamp({ eye: 'x' }).eye, camClamp({}).eye);
   assert.equal(camFormat({ eye: 0.62, pitch: -4.5 }), 'eye=0.62 pitch=-4.5deg yaw=0.0deg sync=0ms');
   assert.equal(camFormat({ eye: 3.31, pitch: -13.5, yaw: 12.34 }), 'eye=3.31 pitch=-13.5deg yaw=12.3deg sync=0ms');
@@ -693,7 +697,14 @@ test('camClamp, camFormat and camParse round-trip and clamp', () => {
   assert.equal(camClamp({ yaw: 'x' }).yaw, 0);
   assert.equal(camFormat({ eye: 3.31, pitch: -13.5, yaw: 0, sync: 120.4 }), 'eye=3.31 pitch=-13.5deg yaw=0.0deg sync=120ms');
   assert.equal(camParse('eye=3.31 pitch=-13.5deg yaw=0.0deg sync=-80ms').sync, -80);
-  assert.equal(camParse('sync = 999').sync, 300);
+  assert.equal(camParse('sync = 999').sync, 999);
+  assert.equal(camParse('sync = 5000').sync, 1000);
+  assert.equal(camParse('sync=-1000ms').sync, -1000);
+  assert.equal(camClamp({ sync: 1000 }).sync, 1000);
+  assert.equal(camClamp({ sync: 1001 }).sync, 1000);
+  assert.equal(camClamp({ sync: -1000 }).sync, -1000);
+  assert.equal(camClamp({ sync: -1e9 }).sync, -1000);
+  assert.deepEqual(CAM_LIMITS.sync, [-1000, 1000]);
   assert.equal(camParse('eye=3.31 pitch=-13.5deg yaw=1deg').sync, 0);
   assert.deepEqual(camParse('junk'), camClamp({}));
 });
