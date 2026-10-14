@@ -2,6 +2,7 @@ import { api } from './api.js';
 import { storeGet, storeSet } from './storage.js';
 import { $ } from './player-ui.js';
 import { displayString } from './display-title.js';
+import { clampVolume, parseVolume } from './volume-logic.js';
 
 const VOLUME_KEY = 'ap2.volume';
 
@@ -34,7 +35,7 @@ export function updatePositionState(audio) {
 }
 
 export function setVolume(audio, v, save = true) {
-  const vol = Math.max(0, Math.min(1, v));
+  const vol = clampVolume(v);
   audio.volume = vol;
   for (const id of ['p-volume', 'mini-volume']) {
     $(id).value = Math.round(vol * 100);
@@ -46,6 +47,5 @@ export function setVolume(audio, v, save = true) {
 }
 
 export function storedVolume() {
-  const v = Number.parseFloat(storeGet(VOLUME_KEY));
-  return Number.isFinite(v) ? v : 1;
+  return parseVolume(storeGet(VOLUME_KEY));
 }

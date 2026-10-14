@@ -44,7 +44,7 @@
       <div class="cover-art noart" id="cover-art">
         <img id="player-cover" alt="">
         <span class="disc" aria-hidden="true"></span>
-        <button class="cover-btn" id="cover-toggle" type="button" aria-label="Play" title="Play" hidden><span class="cover-icon" id="cover-icon" aria-hidden="true"></span></button>
+        <button class="cover-btn row-cover persist" id="cover-toggle" type="button" aria-label="Play" title="Play" hidden><span class="rc-ov" id="cover-icon" aria-hidden="true"></span></button>
         <div class="cover-text" id="cover-text" hidden>
           <h2 id="player-title" class="t-title">Nothing playing</h2>
           <p id="player-sub" class="t-body"></p>
@@ -100,10 +100,12 @@
 </div>
 
 <section id="mini" class="mini" aria-label="Now playing" hidden>
+  <div class="mini-lead">
+  <button class="row-cover persist" id="mini-cover-btn" type="button" aria-label="Play" title="Play"><img id="mini-cover" alt="" class="cover"><span class="rc-ov" id="mini-cover-ov" aria-hidden="true"></span></button>
   <button class="mini-open" id="mini-open" type="button" aria-label="Open player">
-    <img id="mini-cover" alt="" class="cover">
     <span class="mini-text"><b id="mini-title" class="t-subhead"></b><small id="mini-artist" class="t-caption"></small></span>
   </button>
+  </div>
   <div class="mini-keys">
     <button class="key ghost toggle opt" id="mini-shuffle" type="button" aria-pressed="false" aria-label="Shuffle: off"></button>
     <button class="key opt" id="mini-prev" type="button" aria-label="Previous song"></button>
@@ -134,12 +136,22 @@
     <div class="viz-meta"><b id="viz-title" class="t-title"></b><span id="viz-artist" class="t-subhead"></span></div>
     <div id="viz-scrub" class="scrubber" role="slider" tabindex="-1" aria-label="Seek" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0" aria-valuetext="0:00 of 0:00" aria-disabled="true"><span class="scrub-rail"><span class="scrub-fill"></span></span><span class="scrub-thumb"></span><span class="scrub-bubble" aria-hidden="true">0:00</span></div>
     <div class="viz-keys">
-      <button class="key wide" id="viz-prev" type="button" aria-label="Previous song"></button>
-      <button class="key lit" id="viz-play" type="button" aria-label="Play"></button>
-      <button class="key wide" id="viz-next" type="button" aria-label="Next song"></button>
-      <div class="viz-switch" id="viz-switch" role="radiogroup" aria-label="Visualizer mode" hidden></div>
-      <button class="key ghost" id="viz-share" type="button" aria-label="Share link" title="Share link" hidden></button>
-      <button class="key ghost" id="viz-close" type="button" aria-label="Exit visualizer" title="Exit (Esc)"></button>
+      <div class="viz-keys-main">
+        <button class="key ghost toggle" id="viz-shuffle" type="button" aria-pressed="false" aria-label="Shuffle: off" title="Shuffle (S)"></button>
+        <button class="key wide" id="viz-prev" type="button" aria-label="Previous song"></button>
+        <button class="key lit" id="viz-play" type="button" aria-label="Play"></button>
+        <button class="key wide" id="viz-next" type="button" aria-label="Next song"></button>
+        <button class="key ghost toggle" id="viz-repeat" type="button" aria-pressed="false" aria-label="Repeat off" title="Repeat (R)"></button>
+      </div>
+      <div class="viz-keys-aux">
+        <div class="viz-switch" id="viz-switch" role="radiogroup" aria-label="Visualizer mode" hidden></div>
+        <div class="viz-vol" id="viz-vol">
+          <button class="key ghost" id="viz-mute" type="button" aria-pressed="false" aria-label="Mute" title="Mute"></button>
+          <input type="range" id="viz-volume" class="slider viz-vol-slider" min="0" max="1" step="0.01" value="1" aria-label="Volume">
+        </div>
+        <button class="key ghost" id="viz-share" type="button" aria-label="Share link" title="Share link" hidden></button>
+        <button class="key ghost" id="viz-close" type="button" aria-label="Exit visualizer" title="Exit (Esc)"></button>
+      </div>
     </div>
     <div id="viz-parts" hidden></div>
   </div>

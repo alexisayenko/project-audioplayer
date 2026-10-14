@@ -13,9 +13,10 @@ import { editDialog } from './edit-dialog.js';
 import { requestReveal } from './reveal.js';
 import { attachScrubber } from './scrubber.js';
 import { storeGet, storeSet } from './storage.js';
-import { COVER_FLASH_MS } from './constants.js';
+import { paintCover, currentCoverModel } from './row-cover.js';
 import { $, setIcon, setToggle, setCover, queueRow, updateDl, paintTimes } from './player-ui.js';
 import { updateMediaSession, setupMediaSession, updatePositionState, setVolume, storedVolume } from './player-media.js';
+import { canSetVolume } from './volume-logic.js';
 import { openTagPicker } from './player-tag-picker.js';
 import { displayString, titleNodes } from './display-title.js';
 import { marquee, disposeAll } from './marquee.js';
@@ -35,6 +36,7 @@ let shuffle = false;
 let repeat = 'off';
 let played = [];
 let history = [];
+let volumeOk = true;
 const scrubbers = [];
 let pendingRestore = false;
 let awaiting = null;
@@ -281,6 +283,24 @@ export const player = {
     back();
   },
 
+  get shuffleOn() { return shuffle; },
+  get repeatMode() { return repeat; },
+  get volume() { return audio.volume; },
+  get muted() { return audio.muted; },
+  get volumeAdjustable() { return volumeOk; },
+  setVolume(v) {
+    setVolume(audio, v);
+    if (audio.muted && v > 0) audio.muted = false;
+  },
+  toggleMute() {
+    if (audio.muted || audio.volume === 0) {
+      audio.muted = false;
+      if (audio.volume === 0) setVolume(audio, 0.5);
+    } else {
+      audio.muted = true;
+    }
+  },
+
   seek(t) { if (Number.isFinite(audio.duration)) audio.currentTime = Math.max(0, Math.min(t, audio.duration)); },
 };
 
@@ -343,10 +363,10 @@ function renderTransport(song, playing) {
   $('p-play').setAttribute('aria-label', label);
   const cover = $('cover-toggle');
   cover.hidden = !song;
-  cover.setAttribute('aria-label', label);
-  cover.title = label;
-  cover.classList.toggle('is-playing', playing);
-  $('cover-icon').replaceChildren(icon(playing ? 'pause' : 'play', 44));
+  const cm = currentCoverModel(playing);
+  const name = song ? displayString(song) : '';
+  paintCover(cover, cm, name, { size: 28, extra: 'cover-btn' });
+  paintCover($('mini-cover-btn'), cm, name, { size: 18 });
   $('mini-play').setAttribute('aria-label', label);
 }
 
@@ -489,12 +509,7 @@ export function initPlayer() {
   setIcon('mini-edit', 'pencil', 18);
   setIcon('mini-locate', 'locate', 18);
   setIcon('p-download', 'download', 20);
-  $('cover-toggle').addEventListener('click', () => {
-    player.toggle();
-    const b = $('cover-toggle');
-    b.classList.add('flash');
-    setTimeout(() => b.classList.remove('flash'), COVER_FLASH_MS);
-  });
+  for (const id of ['cover-toggle', 'mini-cover-btn']) $(id).addEventListener('click', () => player.toggle());
   $('player-dl-btn').addEventListener('click', () => { if (player.current) startDownload(player.current); });
   autodl.onChange(() => {
     const cur = player.current;
@@ -546,6 +561,8 @@ export function initPlayer() {
     }));
   }
 
+  volumeOk = canSetVolume(audio);
+  document.body.classList.toggle('vol-readonly', !volumeOk);
   setVolume(audio, storedVolume(), false);
   for (const id of ['p-volume', 'mini-volume']) $(id).addEventListener('input', (e) => setVolume(audio, e.target.value / 100));
 

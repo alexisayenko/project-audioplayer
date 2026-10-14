@@ -416,6 +416,8 @@ body.signed-out #nav a:not([data-route="settings"]), body.signed-out #mini { dis
   background: var(--surface-key); border: 1px solid var(--line); border-radius: var(--radius-card);
   box-shadow: 0 10px 28px color-mix(in srgb, var(--ink) 24%, transparent), 0 2px 6px color-mix(in srgb, var(--ink) 14%, transparent);
 }
+.mini-lead { display: flex; align-items: center; gap: var(--space-3); min-width: 0; }
+.mini .row-cover { position: relative; display: block; width: 44px; height: 44px; padding: 0; border: 0; border-radius: var(--radius-sm); background: none; cursor: pointer; flex: none; }
 .mini-open { display: flex; align-items: center; gap: var(--space-3); min-width: 0; background: none; border: 0; padding: 0; text-align: left; color: inherit; }
 .mini .cover { width: 44px; height: 44px; }
 .mini-text { display: flex; flex-direction: column; min-width: 0; }
@@ -494,19 +496,9 @@ body.signed-out #nav a:not([data-route="settings"]), body.signed-out #mini { dis
 }
 .cover-text h2 { font-size: 26px; line-height: 32px; overflow-wrap: anywhere; }
 .cover-text p { opacity: .8; overflow-wrap: anywhere; }
-.cover-btn {
-  position: absolute; inset: 0; z-index: 1; display: grid; place-items: center; padding: 0; border: 0; border-radius: inherit;
-  background: transparent; color: var(--cover-ink); cursor: pointer;
-}
+.cover-btn { position: absolute; inset: 0; z-index: 1; padding: 0; border: 0; border-radius: inherit; background: transparent; cursor: pointer; }
 .cover-btn:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: -4px; }
-.cover-icon {
-  display: grid; place-items: center; width: 84px; height: 84px; margin-bottom: 56px; border-radius: 50%;
-  background: color-mix(in srgb, var(--vinyl) 55%, transparent); color: var(--cover-ink);
-  transition: opacity .2s, transform .2s; opacity: 1;
-}
-.cover-btn.is-playing .cover-icon { opacity: 0; transform: scale(.9); }
-.cover-btn.is-playing:hover .cover-icon, .cover-btn.is-playing:focus-visible .cover-icon, .cover-btn.is-playing.flash .cover-icon { opacity: 1; transform: none; }
-@media (hover: none) { .cover-btn.is-playing .cover-icon { opacity: 1; transform: none; } }
+.cover-btn .rc-ov { width: 56px; height: 56px; margin: -56px 0 0 -28px; }
 .dl-note { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-radius: var(--radius-card); background: var(--accent-tint); color: var(--ink); }
 .qrow .dl { color: var(--ink-muted); }
 .qrow .dl.failed { color: var(--accent-ink); }

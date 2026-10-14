@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { installDom } from './test-dom.mjs';
 
 installDom();
-const { coverModel, coverLabel, coverButton, touchOnly, isRowControl } = await import('./row-cover.js');
+const { coverModel, coverLabel, coverButton, touchOnly, isRowControl, coverAttrs, currentCoverModel } = await import('./row-cover.js');
 const { el } = await import('./dom.js');
 
 const base = { audio: true, queueable: true, here: false, playing: false, dl: 'none' };
@@ -74,4 +74,20 @@ test('isRowControl is true for links and buttons except the title button', () =>
   assert.equal(isRowControl(more.firstChild), true);
   assert.equal(isRowControl(span), false);
   assert.equal(isRowControl(null), false);
+});
+
+test('currentCoverModel is the library state of the current song', () => {
+  const p = currentCoverModel(true);
+  assert.deepEqual([p.action, p.verb, p.icon, p.persistent], ['pause', 'Pause', 'pause', true]);
+  const r = currentCoverModel(false);
+  assert.deepEqual([r.action, r.verb, r.icon, r.persistent], ['resume', 'Play', 'play', true]);
+});
+
+test('coverAttrs gives label, class and tooltip (none on touch)', () => {
+  const a = coverAttrs(currentCoverModel(true), 'Alpha', false, 'cover-btn');
+  assert.equal(a.label, 'Pause Alpha');
+  assert.equal(a.title, 'Pause Alpha');
+  assert.equal(a.cls, 'row-cover cover-btn act-pause persist');
+  assert.equal(a.disabled, false);
+  assert.equal(coverAttrs(currentCoverModel(false), 'Alpha', true).title, null);
 });

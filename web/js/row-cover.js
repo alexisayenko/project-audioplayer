@@ -35,11 +35,30 @@ export function touchOnly(mm = globalThis.matchMedia) {
   }
 }
 
-export function coverButton(img, model, name, { run, touch = touchOnly() }) {
+export function coverAttrs(model, name, touch = false, extra = '') {
   const label = coverLabel(model, name);
-  const cls = ['row-cover', `act-${model.action}`, model.persistent ? 'persist' : ''].filter(Boolean).join(' ');
+  const cls = ['row-cover', extra, `act-${model.action}`, model.persistent ? 'persist' : ''].filter(Boolean).join(' ');
+  return { cls, label, title: touch ? null : label, disabled: !!model.disabled };
+}
+
+// Re-paints an existing cover button (Now playing, mini-player) in place; keeps focus.
+export function paintCover(btn, model, name, { touch = touchOnly(), size = 20, extra = '' } = {}) {
+  const a = coverAttrs(model, name, touch, extra);
+  btn.className = a.cls;
+  btn.setAttribute('aria-label', a.label);
+  if (a.title) btn.title = a.title; else btn.removeAttribute('title');
+  btn.disabled = a.disabled;
+  const ov = btn.querySelector('.rc-ov');
+  if (ov) ov.replaceChildren(icon(model.icon, size));
+}
+
+// Cover of the current song: always the current song's play/pause state (a song without server audio is handled by player.toggle).
+export const currentCoverModel = (playing) => coverModel({ audio: true, queueable: true, here: true, playing });
+
+export function coverButton(img, model, name, { run, touch = touchOnly() }) {
+  const { cls, label, title, disabled } = coverAttrs(model, name, touch);
   return el('button', {
-    class: cls, type: 'button', 'aria-label': label, title: touch ? null : label, disabled: !!model.disabled,
+    class: cls, type: 'button', 'aria-label': label, title, disabled,
     onclick: () => run(model.action),
   }, img, el('span', { class: 'rc-ov', 'aria-hidden': 'true' }, icon(model.icon, 20)));
 }

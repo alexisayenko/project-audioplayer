@@ -24,7 +24,7 @@ The layout is two columns (one below 900px): the player column (cover, seek bar,
 - PLY-012 SHOULD: tag chips in the details block wrap onto as many lines as needed (the old three-line clip is gone). Status: implemented
 - PLY-013 MUST: a missing or failing cover is blanked, not shown as a broken image. Status: implemented
 - PLY-014 MUST: chips on the overlay, queue rows, selected-tag chips and the tag picker use the same display names as Library (LIB-016); picker groups are Genre, Decade, Country, other keys, Tags. Status: implemented
-- PLY-016 MUST: with a current song the cover is a real `<button>` (`#cover-toggle`) that toggles play/pause: `aria-label` "Play" / "Pause" (swapped, no `aria-pressed`), same title, visible focus ring, Space and Enter work natively; the global Space shortcut (PLY-090) ignores key events whose target is a button, so one press toggles once. A translucent round play/pause icon is centred over the cover: always visible while paused, shown on hover, keyboard focus and for 1.2 s after a click while playing, and always visible on touch (`(hover: none)`); the title and subtitle scrim stays above it and does not take clicks. With an empty queue the cover is not a button (hidden, "Nothing playing"). On a current song without server audio the button starts or requests the download instead (PLY-111). Status: implemented
+- PLY-016 MUST: with a current song the cover is a real `<button>` (`#cover-toggle`) that toggles play/pause and behaves exactly like the current song's Library cover (LIB-121..123; shared `web/js/row-cover.js`): `aria-label` and tooltip "Pause <title>" / "Play <title>" (no tooltip where `(hover: none)`), a translucent round icon centred over the cover (a larger copy of the Library one), about 75% opaque and always visible, fully opaque on hover and keyboard focus, visible focus ring, Space and Enter work natively; the global Space shortcut (PLY-090) ignores key events whose target is a button, so one press toggles once. The state follows the player events. The title and subtitle scrim stays above it and does not take clicks. With an empty queue the cover is not a button (hidden, "Nothing playing"). On a current song without server audio the button starts or requests the download instead (PLY-111). Status: implemented (not browser-verified)
 
 ## Block 2: play controls
 
@@ -85,7 +85,7 @@ The layout is two columns (one below 900px): the player column (cover, seek bar,
 
 ## Mini-player
 
-- PLY-070 MUST: while a song is loaded a mini-player bar (cover, title, artist, play/pause, next, thin progress bar, elapsed / duration, volume; shuffle, previous and repeat from 640px, the `.opt` controls; the bar grows to 92px from 480px) shows on every tab; tapping its left part opens `#/playback`. Status: implemented
+- PLY-070 MUST: while a song is loaded a mini-player bar (cover, title, artist, play/pause, next, thin progress bar, elapsed / duration, volume; shuffle, previous and repeat from 640px, the `.opt` controls; the bar grows to 92px from 480px) shows on every tab; its cover thumbnail is the same play/pause button as the Playback cover (PLY-016); tapping the title and artist opens `#/playback`. Status: implemented (not browser-verified)
 - PLY-071 MUST: the browser tab title is "<title> - Electrophone", else "Electrophone". Status: implemented
 - PLY-072 MUST: the Playback song-details card has an Edit icon button (pencil, aria-label and tooltip "Edit song") for the current song that opens the Edit dialog (WEB-033); it is shown whenever a song is loaded, also when the song has no server audio. There is no "..." menu on this card. Status: implemented
 
@@ -98,6 +98,7 @@ The layout is two columns (one below 900px): the player column (cover, seek bar,
 - PLY-090 MUST: Space toggles play/pause and Left / Right seek 5 s back / forward when a song is loaded, except when focus is in an input, textarea, select, button, link, dialog or editable element, or a modifier key is held. Status: implemented
 
 - PLY-091 MUST: the Playback controls have a "Visualizer" toggle button and the key `V` toggles the full-screen visualizer from the Playback screen (same exclusions as PLY-090 except buttons; VIZ-021); the key `M` cycles the visualizer (Mirrored spectrum, Ring, Terrain) while it is showing, and a segmented switch next to the button (visible while the background is on) picks one (VIZ-044); Settings > Playback has "Visualizer background" (VIZ-020), "Visualizer mode" (VIZ-045) and "Visualizer height" (VIZ-041). The Web Audio graph behind it is created only on that first gesture (VIZ-001). Status: implemented (not browser-verified)
+- PLY-092 SHOULD: with the full-screen visualizer open, `S` toggles shuffle, `R` cycles repeat and `ArrowUp` / `ArrowDown` change the volume by 5 points (VIZ-070, VIZ-071). Status: implemented
 
 ## Offline
 

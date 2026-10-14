@@ -5,6 +5,7 @@ import { barCount } from './viz-spectrum.js';
 import { createFullscreen, isVizKey, isVizModeKey, isVizStyleKey } from './viz-fullscreen.js';
 import { createPartsToggles } from './viz-parts-ui.js';
 import { createModeSwitch } from './viz-switch.js';
+import { initOverlayPlayControls } from './viz-playctl.js';
 import { availableModes, nextMode, modeLabel } from './viz-modes.js';
 import {
   vizParts, setVizParts, onVizParts, vizBackgroundOn, onVizBackground, vizCaps, vizMode, setVizMode, onVizMode, vizHeightScale, onVizHeight,
@@ -204,6 +205,7 @@ export function initVisualizer({
   $('viz-prev').addEventListener('click', () => player.prev());
   $('viz-next').addEventListener('click', () => player.next());
   bindOverlayActivity($('viz-full'), full);
+  initOverlayPlayControls({ player, audio, root: $('viz-full'), live, isOpen: () => full.isOpen() });
 
   document.addEventListener('keydown', (e) => {
     if (!supported || !isVizKey(e, { open: full.isOpen(), route: document.body.dataset.route })) return;
