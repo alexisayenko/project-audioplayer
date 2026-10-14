@@ -180,3 +180,76 @@ test('part toggles are gone from the bottom control rows', async () => {
   const html = (await import('node:fs')).readFileSync(new URL('../index.html', import.meta.url), 'utf8');
   assert.doesNotMatch(html, /id="(p-)?viz-parts"/);
 });
+
+test('overlay volume slider keeps a fixed footprint: hover and focus only change opacity', async () => {
+  const css = (await import('node:fs')).readFileSync(new URL('../viz.css', import.meta.url), 'utf8');
+  const base = css.match(/\.viz-vol-slider \{[^}]*\}/g).join(' ');
+  assert.match(base, /flex: none/);
+  assert.match(base, /width: 96px/);
+  const rules = css.match(/@media \(hover: hover\)[^{]*\{[\s\S]*?\n\}/)[0];
+  assert.doesNotMatch(rules, /(^|[^-])width\s*:/);
+  assert.doesNotMatch(rules, /flex-basis|display\s*:/);
+  assert.match(rules, /\.viz-vol:hover \.viz-vol-slider[^{]*\{ opacity: 1; \}/);
+  assert.match(rules, /\.viz-vol-slider \{ opacity: 0; transition: opacity/);
+});
+
+test('the switch pill style is scoped to the Camera flight switch, not the mode dropdown container', async () => {
+  const fs = await import('node:fs');
+  const css = fs.readFileSync(new URL('../viz.css', import.meta.url), 'utf8');
+  const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  const panel = fs.readFileSync(new URL('./viz-panel.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(css, /\.viz-switch::after/);
+  assert.match(css, /\.viz-flag-switch::after/);
+  assert.match(panel, /className = 'viz-flag-switch'/);
+  assert.match(panel, /setAttribute\('role', 'switch'\)/);
+  const row = html.match(/<div class="viz-keys">[\s\S]*?<\/div>\s*<\/div>\s*<\/div>/)[0];
+  assert.doesNotMatch(row, /role="switch"/);
+});
+
+function manualTimers() {
+  const t = { list: [], now: 0 };
+  t.set = (fn, ms) => { const h = { fn, at: t.now + ms }; t.list.push(h); return h; };
+  t.clear = (h) => { t.list = t.list.filter((x) => x !== h); };
+  t.advance = (ms) => { t.now += ms; for (const h of t.list.filter((x) => x.at <= t.now)) { t.clear(h); h.fn(); } };
+  return t;
+}
+
+test('auto-hide waits while the keep guard (hover, focus, drag) holds, then hides once it lets go', () => {
+  const t = manualTimers();
+  let held = true;
+  const changes = [];
+  const hide = makeAutoHide({ delay: 3000, setTimer: t.set, clearTimer: t.clear, keep: () => held, onChange: (v) => changes.push(v) });
+  hide.poke();
+  t.advance(9000);
+  assert.equal(hide.idle, false);
+  held = false;
+  t.advance(3000);
+  assert.equal(hide.idle, true);
+  hide.poke();
+  assert.deepEqual(changes, [true, false]);
+});
+
+test('the overlay idle class (dock and controls) follows the timer and the keep guard', () => {
+  const t = manualTimers();
+  const root = $('viz-full');
+  let held = false;
+  const fs = createFullscreen({ root, opener: $('p-viz'), keep: () => held, setTimer: t.set, clearTimer: t.clear, hideMs: 3000 });
+  fs.open();
+  held = true;
+  t.advance(3000);
+  assert.equal(root.classList.contains('idle'), false);
+  held = false;
+  t.advance(3000);
+  assert.equal(root.classList.contains('idle'), true);
+  fs.poke();
+  assert.equal(root.classList.contains('idle'), false);
+  fs.close();
+});
+
+test('CSS hides the overlay dock with the controls: opacity and visibility, no pointer events, instant under reduced motion', async () => {
+  const css = (await import('node:fs')).readFileSync(new URL('../viz.css', import.meta.url), 'utf8');
+  assert.match(css, /\.viz-full\.idle \.viz-ctl, \.viz-full\.idle > \.viz-dock \{ opacity: 0; visibility: hidden; pointer-events: none; \}/);
+  assert.match(css, /\.viz-full > \.viz-dock \{ transition: opacity \.3s ease, visibility \.3s;/);
+  assert.match(css, /prefers-reduced-motion: reduce\) \{[^}]*\.viz-full > \.viz-dock[^}]*transition: none/);
+  assert.doesNotMatch(css, /\.idle[^{]*\.viz-dock \{[^}]*display/);
+});

@@ -63,6 +63,22 @@ function paintMeta(song) {
 }
 
 const CORNER_PAD = 48;
+const KEEP_AREA = '.viz-dock, .viz-ctl';
+const KEEP_FOCUS = 'select, input, [role="slider"], [role="switch"]';
+
+function makeKeepAwake(root, dock, ctl) {
+  let over = false;
+  let dragging = false;
+  root.addEventListener('pointerover', (e) => { over = !!e.target?.closest?.(KEEP_AREA); });
+  root.addEventListener('pointerleave', () => { over = false; });
+  root.addEventListener('pointerdown', (e) => { if (e.target?.closest?.(KEEP_AREA)) dragging = true; });
+  for (const ev of ['pointerup', 'pointercancel']) document.addEventListener(ev, () => { dragging = false; });
+  return () => {
+    const a = document.activeElement;
+    const focused = !!a && (dock.contains(a) || (ctl.contains(a) && a.matches?.(KEEP_FOCUS)));
+    return over || dragging || focused;
+  };
+}
 
 function bindOverlayActivity(root, full, { onCanvasClick }) {
   const corner = $('viz-corner');
@@ -191,6 +207,7 @@ export function initVisualizer({
 
   const full = createFullscreen({
     root: $('viz-full'),
+    keep: makeKeepAwake($('viz-full'), dock, $('viz-ctl')),
     opener: button,
     onOpen() {
       enableGraph();

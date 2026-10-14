@@ -37,13 +37,13 @@ export function isNearBox(point, box, pad = 0) {
   return point.x >= box.left - pad && point.x <= box.right + pad && point.y >= box.top - pad && point.y <= box.bottom + pad;
 }
 
-export function makeAutoHide({ delay = HIDE_CONTROLS_MS, setTimer = setTimeout, clearTimer = clearTimeout, onChange }) {
+export function makeAutoHide({ delay = HIDE_CONTROLS_MS, setTimer = setTimeout, clearTimer = clearTimeout, onChange, keep }) {
   let idle = false;
   let timer = null;
   const set = (v) => { if (idle !== v) { idle = v; onChange(v); } };
   const arm = () => {
     if (timer != null) clearTimer(timer);
-    timer = setTimer(() => { timer = null; set(true); }, delay);
+    timer = setTimer(() => { timer = null; if (keep?.()) arm(); else set(true); }, delay);
   };
   return {
     poke() { set(false); arm(); },
@@ -52,11 +52,11 @@ export function makeAutoHide({ delay = HIDE_CONTROLS_MS, setTimer = setTimeout, 
   };
 }
 
-export function createFullscreen({ root, opener, doc = document, onOpen, onClose, onIdle, setTimer, clearTimer, hideMs }) {
+export function createFullscreen({ root, opener, doc = document, onOpen, onClose, onIdle, keep, setTimer, clearTimer, hideMs }) {
   let open = false;
   let native = false;
   const hider = makeAutoHide({
-    delay: hideMs, setTimer, clearTimer, onChange: (idle) => { root.classList.toggle('idle', idle); if (idle) onIdle?.(); },
+    delay: hideMs, setTimer, clearTimer, keep, onChange: (idle) => { root.classList.toggle('idle', idle); if (idle) onIdle?.(); },
   });
 
   async function requestNative() {

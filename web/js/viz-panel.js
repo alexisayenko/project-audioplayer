@@ -73,7 +73,7 @@ export function createStylePanel({ doc = document, mode, width, parts }) {
   const flightBtn = doc.createElement('button');
   flightBtn.type = 'button';
   flightBtn.id = 'viz-flight-toggle';
-  flightBtn.className = 'viz-switch';
+  flightBtn.className = 'viz-flag-switch';
   flightBtn.setAttribute('role', 'switch');
   flightBtn.textContent = 'Camera flight';
   const flightNote = doc.createElement('small');

@@ -44,7 +44,7 @@
   background: linear-gradient(to top, color-mix(in srgb, var(--viz-bg-top) 85%, transparent), transparent);
   transition: opacity .3s ease, visibility .3s;
 }
-.viz-full.idle .viz-ctl { opacity: 0; visibility: hidden; }
+.viz-full.idle .viz-ctl, .viz-full.idle > .viz-dock { opacity: 0; visibility: hidden; pointer-events: none; }
 .viz-full.idle .viz-canvas { cursor: none; }
 .viz-meta { display: grid; justify-items: center; text-align: center; max-width: 100%; }
 .viz-meta b, .viz-meta span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -66,8 +66,8 @@
 .viz-vol-slider::-moz-range-thumb { background: #fff; }
 body.vol-readonly .viz-vol { display: none; }
 @media (hover: hover) and (pointer: fine) and (min-width: 480px) {
-  .viz-vol-slider { width: 0; opacity: 0; transition: width .2s ease, opacity .2s ease; }
-  .viz-vol:hover .viz-vol-slider, .viz-vol:focus-within .viz-vol-slider { width: 96px; opacity: 1; }
+  .viz-vol-slider { opacity: 0; transition: opacity .2s ease; }
+  .viz-vol:hover .viz-vol-slider, .viz-vol:focus-within .viz-vol-slider { opacity: 1; }
 }
 @media (max-width: 479px) { .viz-keys-aux .viz-vol { flex: 1 1 100%; justify-content: center; } .viz-vol-slider { width: min(220px, 60vw); } }
 @media (prefers-reduced-motion: reduce) { .viz-vol-slider { transition: none; } }
@@ -78,7 +78,7 @@ body.vol-readonly .viz-vol { display: none; }
 .viz-keys .key.ghost { background: transparent; box-shadow: none; }
 body.viz-full-open { overflow: hidden; }
 body.viz-full-open .mini { display: none !important; }
-@media (prefers-reduced-motion: reduce) { .viz-ctl, .viz-bg { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .viz-ctl, .viz-bg, .viz-full > .viz-dock { transition: none; } }
 
 .viz-switch { position: relative; display: inline-flex; }
 .viz-switch[hidden] { display: none; }
@@ -113,7 +113,7 @@ body.viz-full-open .mini { display: none !important; }
 .viz-dock { position: fixed; left: 8px; bottom: 120px; z-index: 60; display: flex; flex-direction: column-reverse; gap: var(--space-2); width: min(340px, calc(100vw - 16px)); max-height: calc(100vh - 200px); max-height: calc(100dvh - 200px); overflow-y: auto; }
 .viz-dock[hidden] { display: none; }
 .viz-dock > [hidden] { display: none; }
-.viz-full > .viz-dock { position: absolute; z-index: 2; bottom: calc(var(--viz-ctl-h, 112px) + 8px); max-height: calc(100dvh - var(--viz-ctl-h, 112px) - 8px - 72px); }
+.viz-full > .viz-dock { transition: opacity .3s ease, visibility .3s; position: absolute; z-index: 2; bottom: calc(var(--viz-ctl-h, 112px) + 8px); max-height: calc(100dvh - var(--viz-ctl-h, 112px) - 8px - 72px); }
 body:not([data-route="playback"]) > .viz-dock { display: none; }
 .viz-cam-panel, .viz-panel { box-sizing: border-box; flex: none; padding: var(--space-2) var(--space-3); font: 13px/1.35 var(--font-sans, system-ui, sans-serif); color: #eaf3ff; background: rgba(4, 12, 30, 0.88); border: 1px solid rgba(120, 170, 230, 0.4); border-radius: var(--radius-sm, 8px); }
 .viz-cam-head { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 32px; padding: 0; border: 0; background: none; color: inherit; font: 600 13px/1 var(--font-sans, system-ui, sans-serif); cursor: pointer; }
@@ -131,11 +131,11 @@ body:not([data-route="playback"]) > .viz-dock { display: none; }
 .viz-panel select option, .viz-cam-panel select option { color: #1b2024; }
 .viz-flight-row { display: grid; gap: 2px; }
 .viz-flight-row[hidden] { display: none; }
-.viz-switch { position: relative; display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 36px; padding: 0 var(--space-2); font: inherit; font-size: 13px; color: #eaf3ff; background: transparent; border: 0; cursor: pointer; }
-.viz-switch::after { content: ''; flex: none; width: 34px; height: 18px; border-radius: 999px; background: radial-gradient(circle at 9px 9px, #eaf3ff 6px, transparent 7px) rgba(255, 255, 255, 0.18); box-shadow: inset 0 0 0 1px rgba(120, 170, 230, 0.5); transition: background-position 0.15s; }
-.viz-switch[aria-checked='true']::after { background: radial-gradient(circle at 25px 9px, #eaf3ff 6px, transparent 7px) rgba(60, 150, 230, 0.75); }
-.viz-switch:disabled { opacity: 0.5; cursor: default; }
-.viz-switch:focus-visible { outline: 2px solid #8fc4ff; outline-offset: 2px; }
+.viz-flag-switch { position: relative; display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 36px; padding: 0 var(--space-2); font: inherit; font-size: 13px; color: #eaf3ff; background: transparent; border: 0; cursor: pointer; }
+.viz-flag-switch::after { content: ''; flex: none; width: 34px; height: 18px; border-radius: 999px; background: radial-gradient(circle at 9px 9px, #eaf3ff 6px, transparent 7px) rgba(255, 255, 255, 0.18); box-shadow: inset 0 0 0 1px rgba(120, 170, 230, 0.5); transition: background-position 0.15s; }
+.viz-flag-switch[aria-checked='true']::after { background: radial-gradient(circle at 25px 9px, #eaf3ff 6px, transparent 7px) rgba(60, 150, 230, 0.75); }
+.viz-flag-switch:disabled { opacity: 0.5; cursor: default; }
+.viz-flag-switch:focus-visible { outline: 2px solid #8fc4ff; outline-offset: 2px; }
 .viz-flight-row small { color: #b9cde6; font-size: 11px; padding: 0 var(--space-2); }
 .viz-cam-panel textarea { width: 100%; box-sizing: border-box; resize: none; min-height: 48px; padding: 6px var(--space-2); font: 12px/1.4 var(--font-mono, ui-monospace, monospace); overflow-wrap: anywhere; color: #eaf3ff; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(120, 170, 230, 0.35); border-radius: 6px; }
 .viz-cam-btns { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); }
