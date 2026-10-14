@@ -1,7 +1,8 @@
 import Foundation
 
 enum Endpoints {
-    static let defaultServer = secure("play.isayenko.net")
+    static let defaultServer = secure("electrophone.cc")
+    static let legacyServer = secure("play.isayenko.net")
     static let googleAuth = secure("accounts.google.com", "o", "oauth2", "v2", "auth")
     static let googleToken = secure("oauth2.googleapis.com", "token")
 

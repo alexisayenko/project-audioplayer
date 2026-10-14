@@ -37,7 +37,11 @@ final class Settings: ObservableObject {
     init() {
         downloadNewAutomatically = UserDefaults.standard.object(forKey: "downloadNewAutomatically") as? Bool ?? true
         useMobileData = UserDefaults.standard.bool(forKey: Self.useMobileDataKey)
-        serverURL = UserDefaults.standard.string(forKey: "serverURL") ?? Self.defaultServerURL
+        let stored = UserDefaults.standard.string(forKey: "serverURL")
+        let isLegacy = stored.map { $0.trimmingCharacters(in: CharacterSet(charactersIn: "/")) == Endpoints.legacyServer } ?? false
+        let resolved = (stored == nil || isLegacy) ? Self.defaultServerURL : stored!
+        if isLegacy { UserDefaults.standard.set(resolved, forKey: "serverURL") }
+        serverURL = resolved
         token = UserDefaults.standard.string(forKey: "token") ?? ""
         UserDefaults.standard.set(token, forKey: "token")
     }

@@ -23,6 +23,18 @@ Phases 0-3 done on 2026-10-14: Cloudflare zone active, both hostnames serve the 
 
 - `scripts/check-domain.sh` counts songs twice (reports 400 for a library of 200); the equal-count row still compares like with like, but the figure is wrong. To be fixed.
 
+## Remaining steps (ordered)
+
+1. **C** commits the iOS change (needs Alex's go) and the docs. Nothing in production changes.
+2. **A** builds and uploads the TestFlight build, installs it on devices (before the redirect, Question C of the task).
+3. **A** or root: server release with `PUBLIC_HOSTS=play.isayenko.net,electrophone.cc[,www.electrophone.cc]`. The `claude` user may set it through `/usr/local/sbin/audioplayer-env-set`.
+4. Wait one week of clean dual-host operation (not before 2026-10-21).
+5. **root/A** sets `CANONICAL_HOST=electrophone.cc` in `/etc/audioplayer/env` (the `claude` user's sudo does not allow it) and restarts the unit. Then **C** runs `check-domain.sh electrophone.cc --old play.isayenko.net`: old host must report 308.
+6. One week later **A** enables HSTS in Cloudflare (SSL/TLS > Edge Certificates, max-age 1 day first, then 6 months, no includeSubDomains or preload).
+7. **A/C** update bookmarks and docs URLs (README, CLAUDE.md, AGENTS.md, deploy.md, architecture.md, brand docs, project.yml comment).
+
+Rollback: step 5 unset `CANONICAL_HOST` and restart (browsers keep a cached 308); step 6 max-age 0; iOS ship the previous build or edit the URL.
+
 ## Phases
 
 ### Phase 0: purchase (done)
@@ -92,7 +104,7 @@ Rollback: remove the added origins and URIs; the old host's sign-in is unaffecte
 
 ### Phase 4: iOS app default server
 
-- The default server is `Endpoints.defaultServer = secure("play.isayenko.net")` in `ios/Sources/Endpoints.swift` (line 4); change it to `electrophone.cc`. The comment in `ios/project.yml` line 43 ("The server is HTTPS (play.isayenko.net)") changes with it.
+- Done in the working tree (2026-10-14, not committed): `Endpoints.defaultServer` is now `electrophone.cc`; `Settings.init` rewrites a stored `https://play.isayenko.net` to the new default so existing installs switch silently, a custom URL is kept. iOS sign-in is host-independent (Bearer ID token, native Google redirect scheme, Apple native), so no provider changes are needed. Remaining: the comment in `ios/project.yml` line 43 (left untouched on purpose). The comment in `ios/project.yml` line 43 ("The server is HTTPS (play.isayenko.net)") changes with it.
 - Ships as a separate TestFlight build (see [architecture.md](architecture.md)). **C** prepares the change, **A** builds and uploads. Not before Phase 3 passes, since the app signs in through the same providers.
 - During dual-host the installed build keeps working against the old URL. A server URL already saved in the app's Settings is not changed by the new default; change it by hand in Settings or reinstall.
 - The old host must keep serving or redirecting until every device runs the new build (Phase 6).
