@@ -12,7 +12,8 @@ Code: `server/app/library.py`, `server/app/schemas.py` (`SongMeta`).
 | `artist` | string or null | no | trimmed; empty becomes `null` |
 | `album` | string or null | no | trimmed; empty becomes `null` |
 | `remixer` | string or null | no | free text, the remix and additional production credit, the cut-out remix bracket text ("Sadrican 2026 Remix"; ADD-070); trimmed; empty becomes `null`; absent in old records |
-| `year` | int or null | no | 0..3000 (422 outside) |
+| `year` | int or null | no | 0..3000 (422 outside); the original release year |
+| `remix_year` | int or null | no | 1900..2100 (422 outside), the year the remix was released, optional and separate from `year` (DATA-061); absent in old records, read as `null` |
 | `tags` | string[] | yes (may be `[]`) | normalised, see [tags.md](tags.md); `decade:<NN>s` is derived from `year` (TAG-050..052) |
 | `bpm` | int or null | no | whole beats per minute, 20..300 (422 outside); a typed or PATCHed fraction is rounded; detected values are rounded; fractional values in old files are rounded on load (saved on the next write) |
 | `duration` | number or null | no | seconds, technical, set at download |
@@ -29,7 +30,8 @@ Code: `server/app/library.py`, `server/app/schemas.py` (`SongMeta`).
 
 - DATA-001 MUST: every song has a unique `id` that is a valid YouTube video id or a `soundcloud-<numeric id>` id (DATA-024); the SoundCloud id grammar is `^soundcloud-[0-9]{1,20}$` with ASCII digits only (`urlclean.SOUNDCLOUD_ID_RE`), so `soundcloud-`, `soundcloud-abc` and non-ASCII digits are refused. Status: implemented
 - DATA-024 MUST: `source` is optional; absent means `youtube`; the file is `<id>.m4a` and the cover `covers/<id>.jpg` for both sources; a mixed library round-trips unchanged. Status: implemented
-- DATA-002 MUST: `id`, `source_url`, `file`, `cover`, `duration`, `added_at` are server-set; PATCH accepts only title, artist, album, remixer, year, bpm, tags, wikipedia_song, wikipedia_artist, musicbrainz_url, discogs_url. Status: implemented
+- DATA-002 MUST: `id`, `source_url`, `file`, `cover`, `duration`, `added_at` are server-set; PATCH accepts only title, artist, album, remixer, year, remix_year, bpm, tags, wikipedia_song, wikipedia_artist, musicbrainz_url, discogs_url. Status: implemented
+- DATA-061 MUST: a song may carry `remix_year`, an integer 1900..2100 or `null`: the year the remix named in `remixer` was released. It is independent of `year`, which stays the original release year and alone drives the `decade:` tag, the stats chart and year-based logic. Validated like `year` (JSON integers and numeric strings accepted, anything else or out of range is 422); an old record without the key reads as `null` in `/library` and is not rewritten; no lookup (MusicBrainz, Wikipedia, Discogs, yt-dlp, identify) ever fills it. Status: implemented
 - DATA-003 MUST: `file` is reduced to its base name when read; an absent `file` key defaults to `<id>.m4a`; an explicit `null` stays `null` (metadata-only). Status: implemented
 - DATA-004 MUST: optional fields may be `null`; old records lacking `bpm` or other optional fields load without error. Status: implemented
 - DATA-005 (superseded by ADR-0010, see CAT-001): a song record exists only after its audio download succeeded. Status: superseded; a record may now exist without audio (`file: null`). Downloads still write the record only after they succeed.

@@ -36,3 +36,7 @@ __pycache__/
 server/.coverage
 scripts/__pycache__/
 *.bak*
+
+# Local-only invoices (personal data)
+docs/brand/invoices/*
+!docs/brand/invoices/README.md

@@ -22,6 +22,7 @@ Alex's server (ADR-0012). Search YouTube (or paste a YouTube or SoundCloud track
 link), download a song's audio through a private server (iOS only; the web UI saves catalog entries without audio and plays only audio already on the server), keep it in an on-device library, play it with background
 audio and lock-screen controls. No monetization. Downloading may violate
 YouTube's ToS; the app is not for distribution.
+The web UI is publicly viewable read-only without sign-in (the owner's library, with per-IP limits; [ADR-0018](docs/tech/decisions.md)); signed-in users get their own library.
 
 Catalog and audio are separate ([ADR-0010](docs/tech/decisions.md), server side done): the catalog (metadata: YouTube and SoundCloud links; in git) lists every song, audio is fetched on demand (state none/server/phone). The web is catalog-only (saves metadata, plays audio already on the server); audio reaches the server only through the iOS download. Add and Edit use one shared song form with Title, Artist and Remix token pills on both platforms. Spotify is not used for now. See [concept](docs/product/concept-catalog-and-audio.md).
 

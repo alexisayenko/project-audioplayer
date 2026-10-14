@@ -15,6 +15,23 @@ committed export and the workflow. Decision: ADR-0009 in
   built on the system.
   Artifact: `claude.ai/artifact/5K2BS7LFpb9qsKX7TtNyBm`.
 
+## Name and domain
+
+- **Full brand name**: **Electrophone Vega 108**. Short forms:
+  **Electrophone** (current UI title and wordmark, unchanged for now) and
+  **Vega 108** (compact form where space is tight).
+- **Status**: the full name is the intended brand; the UI and docs still say
+  "Electrophone" until Alex decides to rebrand. Pending decision: rebrand the
+  UI title, page titles, README and docs to the full name, with "Vega 108" as
+  the short form.
+- Technical identifiers (repo `project-audioplayer`, service name
+  `audioplayer`, paths) are **not** changed by branding.
+
+### Domain candidates
+
+No domain is bought yet; the primary pick is `vega108.app` (runner-up `vega-108.com`), pending Alex's decision.
+Prices, assessment, follow-up steps and the checks history: [`domains.md`](domains.md).
+
 ## Workflow
 
 1. Change the look in the design system (values, usage notes, components).

@@ -61,3 +61,9 @@ Then repeat the checklist below. To return to `main` later: `git checkout main &
 - Change a limit (`USER_MAX_SONGS`, `USER_MAX_BYTES`, `USER_ADDS_PER_HOUR`, `POOL_MAX_BYTES`, ...): same file, same restart.
 - yt-dlp broken: `sudo systemctl start audioplayer-ytdlp-update.service` (upgrades and restarts).
 - Pool usage: `du -sh /srv/music/users`; the server refuses new audio at `POOL_MAX_BYTES` (API-044).
+
+## Public guest view
+
+- Anonymous visitors see the owner's library read-only (ADR-0018, API-090..094). Env in `/etc/audioplayer/env`, then `sudo systemctl restart audioplayer`: `PUBLIC_VIEW` (default 1; `0` = off, anonymous gets 401 everywhere), `PUBLIC_AUDIO` (default 1; `0` = guests get metadata only, no audio), `PUBLIC_VIEW_EMAIL` (default the owner), `GUEST_REQ_PER_MIN` (240), `GUEST_AUDIO_MB_PER_HOUR` (1024), `GUEST_MAX_STREAMS` (3), all per client IP.
+- The client IP is `CF-Connecting-IP` when the TCP peer is loopback or a private LAN address (cloudflared runs on the same host), else the socket address. Never expose uvicorn directly to the internet, or behind another proxy on a LAN address, or the header can be spoofed.
+- Emergency off: `PUBLIC_VIEW=0` (everything) or `PUBLIC_AUDIO=0` (audio only). Cloudflare's terms restrict large media through the proxy; if traffic grows, switch `PUBLIC_AUDIO` off.
