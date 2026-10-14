@@ -1,3 +1,4 @@
+import { canonicalCountry, isHistoricalCountry } from './countries.js';
 export const GENRE_CAP = 12;
 export const COUNTRY_CAP = 1;
 const CAPS = { genre: GENRE_CAP, country: COUNTRY_CAP };
@@ -83,6 +84,8 @@ function regionNames() {
 export function countryCode(raw) {
   const t = String(raw ?? '').trim().toLowerCase();
   if (!t) return null;
+  const hist = canonicalCountry(t);
+  if (hist && isHistoricalCountry(hist)) return hist;
   const map = regionNames();
   if (/^[a-z]{2}$/.test(t) && (map.has(t) || map.size === 0)) return t;
   for (const [code, n] of map) if (n === t) return code;

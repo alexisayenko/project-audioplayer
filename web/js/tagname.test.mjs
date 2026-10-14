@@ -38,15 +38,15 @@ test('mergeTagCounts merges country aliases and sums counts', () => {
   const out = mergeTagCounts([
     { tag: 'country:us', count: 15 }, { tag: 'country:usa', count: 5 }, { tag: 'country:United States', count: 1 },
     { tag: 'country:Russia', count: 2 }, { tag: 'country:russia', count: 2 }, { tag: 'country:ru', count: 12 },
-    { tag: 'country:ussr', count: 3 }, { tag: 'genre:rock', count: 4 },
+    { tag: 'country:yugoslavia', count: 3 }, { tag: 'genre:rock', count: 4 },
   ]);
   assert.deepEqual(out, [
     { tag: 'country:us', count: 21 }, { tag: 'country:ru', count: 16 },
-    { tag: 'country:ussr', count: 3 }, { tag: 'genre:rock', count: 4 },
+    { tag: 'country:yugoslavia', count: 3 }, { tag: 'genre:rock', count: 4 },
   ]);
   assert.equal(canonicalTag('Country:usa'), 'country:us');
   assert.equal(tagLabel('country:usa'), 'United States');
-  assert.equal(tagLabel('country:ussr'), 'ussr');
+  assert.equal(tagLabel('country:yugoslavia'), 'yugoslavia');
   assert.equal(categoryTags([{ tag: 'country:usa', count: 5 }, { tag: 'country:us', count: 1 }], 'countries').length, 1);
 });
 
@@ -62,4 +62,16 @@ test('country list filter and aliases', () => {
   assert.deepEqual(filterCountries('zzzz'), []);
   assert.ok(filterCountries('united').some((c) => c.code === 'gb'));
   assert.equal(filterCountries('').length, 12);
+});
+
+test('historical country su', async () => {
+  assert.equal(tagLabel('country:su'), 'Soviet Union');
+  assert.equal(tagLabel('country:ussr'), 'Soviet Union');
+  assert.equal(tagText('country:su'), 'country:Soviet Union');
+  const { filterCountries, canonicalCountry, isHistoricalCountry } = await import('./countries.js');
+  assert.equal(filterCountries('ussr')[0].code, 'su');
+  assert.equal(filterCountries('soviet')[0].name, 'Soviet Union');
+  assert.equal(canonicalCountry('CCCP'), 'su');
+  assert.ok(isHistoricalCountry('su') && !isHistoricalCountry('lt'));
+  assert.equal(canonicalCountry('atlantis'), null);
 });

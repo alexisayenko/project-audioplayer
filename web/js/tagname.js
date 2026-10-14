@@ -1,5 +1,5 @@
 import { el } from './dom.js';
-import { canonicalCountry } from './countries.js';
+import { canonicalCountry, countryName, isHistoricalCountry } from './countries.js';
 
 const namers = {};
 try {
@@ -49,6 +49,7 @@ export function valueLabel(key, value) {
   try {
     const code = key === 'country' ? canonicalCountry(value) : null;
     if (key === 'country' && !code) return value;
+    if (code && isHistoricalCountry(code)) return countryName(code);
     const name = namer.of(key === 'country' ? code.toUpperCase() : value);
     return name && name.toLocaleLowerCase() !== value.toLocaleLowerCase() ? name : value;
   } catch {

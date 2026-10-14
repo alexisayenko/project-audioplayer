@@ -1,4 +1,4 @@
-import { COUNTRY_NAMES, COUNTRY_ALIASES } from './countries-data.js';
+import { COUNTRY_NAMES, COUNTRY_ALIASES, HISTORICAL_COUNTRIES } from './countries-data.js';
 
 export const COUNTRY_CODES = Object.keys(COUNTRY_NAMES);
 
@@ -15,8 +15,11 @@ export function canonicalCountry(value) {
   return COUNTRY_ALIASES[normCountry(value)] || null;
 }
 
+export const isHistoricalCountry = (code) => HISTORICAL_COUNTRIES.includes(String(code).toLowerCase());
+
 export function countryName(code) {
   const c = String(code).toLowerCase();
+  if (isHistoricalCountry(c)) return COUNTRY_NAMES[c];
   try {
     const n = namer && namer.of(c.toUpperCase());
     if (n && n.toLowerCase() !== c) return n;
