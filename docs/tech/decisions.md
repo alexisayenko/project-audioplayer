@@ -295,7 +295,7 @@ Status: Accepted, in use · 2026-10-12
   internal TestFlight group ("Alex"). Internal testers need no Beta App
   Review. No public release; the app may break YouTube's ToS.
 - Build numbers are date-based (`CURRENT_PROJECT_VERSION` = `YYYYMMDD`,
-  uploaded so far: 20261012, 20261013, 20261021, 20261022, 20261023). App Store Connect rejects a repeated
+  uploaded so far: 20261012, 20261013, 20261021, 20261022, 20261023, 20261024). App Store Connect rejects a repeated
   or lower number, so the next upload needs a strictly higher one: the
   next day's date, or the last number plus one for a second build in a day.
 - Upload: `xcodebuild archive`, then `xcodebuild -exportArchive` with
