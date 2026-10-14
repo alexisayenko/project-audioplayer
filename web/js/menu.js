@@ -1,3 +1,4 @@
+import { MENU_EDGE, MENU_GAP } from './constants.js';
 import { el } from './dom.js';
 
 let open = null;
@@ -22,8 +23,8 @@ export function openMenu(btn, items) {
   open = { node, btn };
   const r = btn.getBoundingClientRect();
   const h = node.offsetHeight;
-  node.style.top = `${r.bottom + h + 8 > window.innerHeight ? Math.max(8, r.top - h - 4) : r.bottom + 4}px`;
-  node.style.left = `${Math.max(8, Math.min(r.right - node.offsetWidth, window.innerWidth - node.offsetWidth - 8))}px`;
+  node.style.top = `${r.bottom + h + MENU_EDGE > window.innerHeight ? Math.max(MENU_EDGE, r.top - h - MENU_GAP) : r.bottom + MENU_GAP}px`;
+  node.style.left = `${Math.max(MENU_EDGE, Math.min(r.right - node.offsetWidth, window.innerWidth - node.offsetWidth - MENU_EDGE))}px`;
   const first = node.querySelector('button:not(:disabled)');
   if (first) first.focus();
 }

@@ -62,7 +62,7 @@ export function tagEditor({ tags = [], suggested = [], year = null, onChange = n
       el('button', { type: 'button', class: 'x', 'aria-label': `Remove ${t}`, onclick: () => toggle(t) }, '×'))));
     sugBox.hidden = !sug.length;
     sugBox.replaceChildren(...(sug.length ? [el('span', { class: 'group-name' }, 'Suggested'), ...sug.map((t) => chip(t))] : []));
-    const matches = store.tags.filter((t) => !hidden(t.tag) && !q || tagSearchText(t.tag).toLocaleLowerCase().includes(q));
+    const matches = store.tags.filter((t) => !hidden(t.tag) && (!q || tagSearchText(t.tag).toLocaleLowerCase().includes(q)));
     pool.replaceChildren(...tagGroups(matches).map((g) => el('div', { class: 'chip-group' },
       el('span', { class: 'group-name' }, g.name),
       ...[...g.tags].sort(g.key === 'decade' ? (a, b) => decadeRank(a.tag) - decadeRank(b.tag) : (a, b) => b.count - a.count || a.tag.localeCompare(b.tag)).map((t) => chip(t.tag, t.count)))));

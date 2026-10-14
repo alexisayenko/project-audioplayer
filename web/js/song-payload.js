@@ -22,7 +22,7 @@ export function sourceList(source) {
 
 export const songSources = (song) => sourceList([...(Array.isArray(song?.sources) ? song.sources : []), song?.source_url]);
 
-export function songFields(v) {
+function songFields(v) {
   return {
     title: v.title,
     artist: v.artist,
@@ -32,7 +32,7 @@ export function songFields(v) {
   };
 }
 
-export const wikiFieldsOf = (v) => ({ wikipedia_song: v.wikipedia_song ?? null, wikipedia_artist: v.wikipedia_artist ?? null, musicbrainz_url: v.musicbrainz_url ?? null, discogs_url: v.discogs_url ?? null });
+const wikiFieldsOf = (v) => ({ wikipedia_song: v.wikipedia_song ?? null, wikipedia_artist: v.wikipedia_artist ?? null, musicbrainz_url: v.musicbrainz_url ?? null, discogs_url: v.discogs_url ?? null });
 
 export function addBody(v) {
   return { ...songFields(v), ...wikiFieldsOf(v) };

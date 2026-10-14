@@ -1,8 +1,8 @@
-import { canonicalCountry, isHistoricalCountry } from './countries.js';
+import { canonicalCountry } from './countries.js';
 export const GENRE_CAP = 12;
-export const COUNTRY_CAP = 1;
+const COUNTRY_CAP = 1;
 const CAPS = { genre: GENRE_CAP, country: COUNTRY_CAP };
-export const SERVICES = ['youtube', 'soundcloud', 'wikipedia', 'spotify', 'musicbrainz', 'discogs'];
+const SERVICES = ['youtube', 'soundcloud', 'wikipedia', 'spotify', 'musicbrainz', 'discogs'];
 export const INERT = new Set(['spotify', 'discogs']);
 
 const tagKey = (t) => { const i = t.indexOf(':'); return i > 0 ? t.slice(0, i).trim().toLowerCase() : ''; };
@@ -63,31 +63,4 @@ export function suggestion(suggest, cur) {
 
 export const suggestionText = (sug, cur) => [sug.artist ?? cur.artist, sug.title ?? cur.title].map((v) => String(v ?? '').trim()).filter(Boolean).join(' / ');
 
-let names = null;
-function regionNames() {
-  if (names) return names;
-  names = new Map();
-  try {
-    const dn = new Intl.DisplayNames(['en'], { type: 'region' });
-    const A = 65;
-    for (let i = 0; i < 26; i++) {
-      for (let j = 0; j < 26; j++) {
-        const code = String.fromCodePoint(A + i, A + j);
-        const n = dn.of(code);
-        if (n && n !== code) names.set(code.toLowerCase(), n.toLowerCase());
-      }
-    }
-  } catch { /* no Intl.DisplayNames: only codes are accepted */ }
-  return names;
-}
-
-export function countryCode(raw) {
-  const t = String(raw ?? '').trim().toLowerCase();
-  if (!t) return null;
-  const hist = canonicalCountry(t);
-  if (hist && isHistoricalCountry(hist)) return hist;
-  const map = regionNames();
-  if (/^[a-z]{2}$/.test(t) && (map.has(t) || map.size === 0)) return t;
-  for (const [code, n] of map) if (n === t) return code;
-  return null;
-}
+export const countryCode = (raw) => canonicalCountry(String(raw ?? '').trim());

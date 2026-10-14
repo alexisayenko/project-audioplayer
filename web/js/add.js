@@ -7,6 +7,7 @@ import { cleanPasted, sourceOf, sourceLabel } from './url-clean.js';
 import { findInLibrary } from './library-match.js';
 import { dialogHead } from './edit-dialog.js';
 import { songForm } from './song-form.js';
+import { ADD_ROW_OUTLINE_MS } from './constants.js';
 import { addBody } from './song-payload.js';
 
 const BULK = new Set(['insertFromPaste', 'insertFromPasteAsQuotation', 'insertFromDrop', 'insertReplacementText']);
@@ -46,7 +47,7 @@ export function openAdd() {
     if (!row) { toast('Clear the search or filters to see it'); return; }
     row.scrollIntoView({ block: 'center', behavior: 'smooth' });
     row.style.outline = '2px solid var(--accent-ink)';
-    setTimeout(() => { row.style.outline = ''; }, 2500);
+    setTimeout(() => { row.style.outline = ''; }, ADD_ROW_OUTLINE_MS);
   };
   const checkKnown = () => {
     const song = store.loaded ? findInLibrary(url.value, store.songs) : null;

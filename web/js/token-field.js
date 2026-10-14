@@ -1,5 +1,6 @@
 import { el } from './dom.js';
 import { icon } from './icons.js';
+import { MIME, dragState, clearMarks, locate, mark, startTouchDrag } from './token-drag.js';
 import { tokenize, isBlankToken, removeToken, replaceToken, appendToken, moveToken, moveTokenTo, stripEdges, commitTyped, SEPARATOR } from './tokens.js';
 
 const KINDS = {
@@ -7,29 +8,6 @@ const KINDS = {
   artist: { label: 'Artist', move: 'Artist', sep: SEPARATOR },
   remixer: { label: 'Remix & additional production', move: 'Remix', sep: SEPARATOR },
 };
-
-const MIME = 'application/x-electrophone-token';
-const END = Number.MAX_SAFE_INTEGER;
-let drag = null;
-
-function clearMarks() {
-  for (const n of document.querySelectorAll('.drop-over, .drop-before')) n.classList.remove('drop-over', 'drop-before');
-}
-
-function locate(target) {
-  const node = target?.closest ? target.closest('.token-field') : null;
-  if (!node?.acceptDrop) return null;
-  const pill = target.closest('.token-pill');
-  const own = pill && node.contains(pill);
-  return { node, pill: own && !pill.classList.contains('dragging') ? pill : null, index: own ? Number(pill.dataset.i) : END };
-}
-
-function mark(hit) {
-  clearMarks();
-  if (!hit) return;
-  if (hit.pill) hit.pill.classList.add('drop-before');
-  else if (hit.index === END) hit.node.classList.add('drop-over');
-}
 
 export function tokenGroup() {
   const fields = {};
@@ -138,67 +116,6 @@ function tokenField(kind, fields) {
   node.acceptDrop = acceptDrop;
   node.moveTo = (i, target) => { if (kind !== 'title' || count() > 1) moveTo(i, target); };
 
-  function startTouchDrag(pill, i, e) {
-    if (e.pointerType === 'mouse' || e.button > 0) return;
-    const sx = e.clientX;
-    const sy = e.clientY;
-    let active = false;
-    let clone = null;
-    let timer = setTimeout(() => {
-      timer = null;
-      active = true;
-      drag = { kind, index: i };
-      pill.classList.add('dragging');
-      clone = pill.cloneNode(true);
-      clone.classList.remove('dragging');
-      clone.classList.add('token-drag-clone');
-      clone.style.width = `${pill.offsetWidth}px`;
-      document.body.append(clone);
-      place(sx, sy);
-      if (navigator.vibrate) navigator.vibrate(10);
-    }, 250);
-    const place = (x, y) => { clone.style.left = `${x - 20}px`; clone.style.top = `${y - 20}px`; };
-    const hitAt = (x, y) => locate(document.elementFromPoint(x, y));
-    const stopScroll = (ev) => { if (active && ev.cancelable) ev.preventDefault(); };
-    const move = (ev) => {
-      if (!active) {
-        if (Math.hypot(ev.clientX - sx, ev.clientY - sy) > 10) cleanup();
-        return;
-      }
-      place(ev.clientX, ev.clientY);
-      mark(hitAt(ev.clientX, ev.clientY));
-    };
-    const noContext = (ev) => ev.preventDefault();
-    function cleanup(drop, ev) {
-      if (timer) clearTimeout(timer);
-      document.removeEventListener('pointermove', move);
-      document.removeEventListener('pointerup', up);
-      document.removeEventListener('pointercancel', cancel);
-      document.removeEventListener('touchmove', stopScroll);
-      pill.removeEventListener('contextmenu', noContext);
-      const was = active;
-      active = false;
-      if (clone) clone.remove();
-      clearMarks();
-      pill.classList.remove('dragging');
-      drag = null;
-      if (was) {
-        const swallow = (c) => { c.stopPropagation(); c.preventDefault(); };
-        document.addEventListener('click', swallow, { capture: true, once: true });
-        setTimeout(() => document.removeEventListener('click', swallow, true), 400);
-        const hit = drop && ev ? hitAt(ev.clientX, ev.clientY) : null;
-        if (hit) hit.node.acceptDrop(kind, i, hit.index);
-      }
-    }
-    const up = (ev) => cleanup(true, ev);
-    const cancel = () => cleanup(false);
-    document.addEventListener('pointermove', move);
-    document.addEventListener('pointerup', up);
-    document.addEventListener('pointercancel', cancel);
-    document.addEventListener('touchmove', stopScroll, { passive: false });
-    pill.addEventListener('contextmenu', noContext);
-  }
-
   function openMenu(btn, pill, i, label) {
     const again = menu && menu.btn === btn;
     closeMenu();
@@ -249,14 +166,14 @@ function tokenField(kind, fields) {
       const pill = el('span', { class: 'token-pill', draggable: 'true', 'data-i': String(i) }, pencil, el('span', { class: 'token-text' }, label), x);
       pill.addEventListener('dragstart', (e) => {
         if (pill.classList.contains('editing')) { e.preventDefault(); return; }
-        drag = { kind, index: i };
+        dragState.current = { kind, index: i };
         e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData(MIME, JSON.stringify(drag));
+        e.dataTransfer.setData(MIME, JSON.stringify(dragState.current));
         e.dataTransfer.setData('text/plain', label);
         setTimeout(() => pill.classList.add('dragging'), 0);
       });
-      pill.addEventListener('dragend', () => { pill.classList.remove('dragging'); clearMarks(); drag = null; });
-      pill.addEventListener('pointerdown', (e) => { if (!pill.classList.contains('editing')) startTouchDrag(pill, i, e); });
+      pill.addEventListener('dragend', () => { pill.classList.remove('dragging'); clearMarks(); dragState.current = null; });
+      pill.addEventListener('pointerdown', (e) => { if (!pill.classList.contains('editing')) startTouchDrag(kind, pill, i, e); });
       pencil.addEventListener('click', () => openMenu(pencil, pill, i, label));
       x.addEventListener('click', () => removeAt(i));
       entry.before(pill);
@@ -292,7 +209,7 @@ function tokenField(kind, fields) {
     if (!e.dataTransfer?.types.includes(MIME)) return;
     e.preventDefault();
     let src = null;
-    try { src = JSON.parse(e.dataTransfer.getData(MIME)); } catch { src = drag; }
+    try { src = JSON.parse(e.dataTransfer.getData(MIME)); } catch { src = dragState.current; }
     const hit = locate(e.target);
     clearMarks();
     if (src && hit) hit.node.acceptDrop(src.kind, src.index, hit.index);

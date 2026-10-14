@@ -1,3 +1,4 @@
+import { TOAST_MS, TOAST_ACTION_MS } from './constants.js';
 const TAG_STYLE = { label: 't-caption', small: 't-caption', h2: 't-title' };
 
 function setProp(node, k, v) {
@@ -42,7 +43,7 @@ export function toast(text, action) {
   }
   t.hidden = false;
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { t.hidden = true; }, action ? 6000 : 3000);
+  toastTimer = setTimeout(() => { t.hidden = true; }, action ? TOAST_ACTION_MS : TOAST_MS);
 }
 
 export function pageHead(title, sub) {

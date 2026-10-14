@@ -1,5 +1,5 @@
-export const SMALL_STEP = 5;
-export const BIG_STEP = 15;
+const SMALL_STEP = 5;
+const BIG_STEP = 15;
 
 export const usableDuration = (d) => Number.isFinite(d) && d > 0;
 

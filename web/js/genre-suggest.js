@@ -1,6 +1,6 @@
-export const SUGGEST_MAX = 6;
+const SUGGEST_MAX = 6;
 
-export const fold = (s) => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+const fold = (s) => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
 
 export function suggestGenres(query, genres, chosen = [], max = SUGGEST_MAX) {
   const q = fold(query);

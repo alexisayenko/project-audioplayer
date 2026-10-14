@@ -1,36 +1,31 @@
 import { api } from './api.js';
 import { store } from './store.js';
 import { hasAudio } from './playable.js';
-import { el, fmtTime, toast, plural } from './dom.js';
+import { el, toast, plural } from './dom.js';
 import * as Q from './queue-logic.js';
-import { visibleTags, tagChip, tagGroups, tagLabel, tagText } from './tagname.js';
+import { visibleTags, tagChip, tagText } from './tagname.js';
 import { songLinks } from './wiki-links.js';
 import { icon } from './icons.js';
-import { openMenu, closeMenu, initMenus } from './menu.js';
+import { closeMenu, initMenus } from './menu.js';
 import { downloadSong } from './download.js';
 import { autodl, autoDownloadOn } from './autodl.js';
-import { statusText } from './dl-progress.js';
-import { editDialog, dialogHead } from './edit-dialog.js';
+import { editDialog } from './edit-dialog.js';
 import { requestReveal } from './reveal.js';
 import { attachScrubber } from './scrubber.js';
+import { storeGet, storeSet } from './storage.js';
+import { COVER_FLASH_MS } from './constants.js';
+import { $, setIcon, setToggle, setCover, queueRow, updateDl, paintTimes } from './player-ui.js';
+import { updateMediaSession, setupMediaSession, updatePositionState, setVolume, storedVolume } from './player-media.js';
+import { openTagPicker } from './player-tag-picker.js';
 
 const audio = document.getElementById('audio');
-const $ = (id) => document.getElementById(id);
 
 const REPEAT_NEXT = { off: 'all', all: 'one' };
 const REPEAT_LABEL = { one: 'one song', all: 'whole list' };
 
-function applyLabel(fresh, drop) {
-  if (fresh) return `Add songs (${fresh} ${plural(fresh, 'tag', 'tags')})`;
-  return drop ? 'Apply' : 'Add songs';
-}
-
 const QUEUE_KEY = 'ap2.queue';
 const SHUFFLE_KEY = 'ap2.shuffle';
 const REPEAT_KEY = 'ap2.repeat';
-const VOLUME_KEY = 'ap2.volume';
-
-const setIcon = (id, name, size) => $(id).replaceChildren(icon(name, size));
 
 let qs = Q.emptyState();
 let shuffle = false;
@@ -52,22 +47,20 @@ const hasAudioId = (id) => hasAudio(store.get(id));
 const logic = () => ({ queue: ids(), index: qs.index, shuffle, repeat, played });
 
 function saveQueue() {
-  try { localStorage.setItem(QUEUE_KEY, JSON.stringify(qs)); } catch { /* storage unavailable */ }
+  storeSet(QUEUE_KEY, JSON.stringify(qs));
 }
 
 function savePrefs() {
-  try {
-    localStorage.setItem(SHUFFLE_KEY, shuffle ? '1' : '0');
-    localStorage.setItem(REPEAT_KEY, repeat);
-  } catch { /* storage unavailable */ }
+  storeSet(SHUFFLE_KEY, shuffle ? '1' : '0');
+  storeSet(REPEAT_KEY, repeat);
 }
 
 function restore() {
   try {
-    qs = Q.parseSaved(JSON.parse(localStorage.getItem(QUEUE_KEY) || 'null'));
+    qs = Q.parseSaved(JSON.parse(storeGet(QUEUE_KEY) || 'null'));
     pendingRestore = qs.items.length > 0;
-    shuffle = localStorage.getItem(SHUFFLE_KEY) === '1';
-    const r = localStorage.getItem(REPEAT_KEY);
+    shuffle = storeGet(SHUFFLE_KEY) === '1';
+    const r = storeGet(REPEAT_KEY);
     repeat = ['off', 'all', 'one'].includes(r) ? r : 'off';
   } catch { /* corrupt or unavailable: start empty */ }
 }
@@ -332,13 +325,6 @@ function load(autoplay) {
   render();
 }
 
-function setCover(img, song) {
-  const src = song?.cover ? api.coverUrl(song.id) : '';
-  if (img.dataset.src === src) return;
-  img.dataset.src = src;
-  if (src) img.src = src; else img.removeAttribute('src');
-}
-
 function render() {
   const song = player.current;
   const n = qs.items.length;
@@ -395,7 +381,7 @@ function render() {
   $('player-tags').replaceChildren(...visibleTags(song.tags).map(tagChip));
   $('player-bpm').textContent = song.bpm != null ? `${Math.round(song.bpm)} BPM` : '';
   $('player-links').replaceChildren(...songLinks(song).map((l) => el('a', { class: 'source t-caption', href: l.href, target: '_blank', rel: 'noopener noreferrer' }, l.label)));
-  updateDl();
+  updateDl(player.current);
   setCover($('mini-cover'), song);
   setCover($('player-cover'), song);
   $('cover-art').classList.toggle('noart', !song.cover);
@@ -403,17 +389,6 @@ function render() {
   document.title = `${song.title} - Electrophone`;
   renderProgress();
   listeners.forEach((fn) => fn());
-}
-
-function setToggle(ids, on, label, iconName) {
-  for (const id of ids) {
-    const b = $(id);
-    b.setAttribute('aria-pressed', String(on));
-    b.setAttribute('aria-label', label);
-    b.title = label;
-    b.classList.toggle('on', on);
-    if (iconName) b.replaceChildren(icon(iconName, id.startsWith('mini') ? 18 : 20));
-  }
 }
 
 function renderPlaylistControls() {
@@ -430,189 +405,45 @@ function renderPlaylistControls() {
     }, '×'))));
 }
 
-function songRow(item, i) {
-  const s = store.get(item.id);
-  const cover = el('img', { class: 'cover', alt: '', loading: 'lazy' });
-  if (s?.cover) cover.src = api.coverUrl(s.id);
-  cover.addEventListener('error', () => cover.removeAttribute('src'));
-  const title = s ? s.title : item.id;
-  const more = el('button', {
-    class: 'more', type: 'button', title: 'Song menu', 'aria-label': `Song menu: ${title}`, 'aria-haspopup': 'menu', 'aria-expanded': 'false',
-  }, icon('more', 20));
-  more.addEventListener('click', () => openMenu(more, [
-    ...(s ? [{ label: 'Edit song', run: () => editDialog(s) }] : []),
-    ...(hasAudio(s) ? [{ label: 'Download', run: () => downloadSong(s) }] : []),
-    { label: 'Move up', disabled: i === 0, run: () => player.move(i, -1) },
-    { label: 'Move down', disabled: i === qs.items.length - 1, run: () => player.move(i, 1) },
-    { label: 'Remove', run: () => player.removeAt(i) },
-  ]));
-  return el('li', { class: `qrow${i === qs.index ? ' current' : ''}${s && !hasAudio(s) ? ' no-audio' : ''}`, 'aria-current': i === qs.index ? 'true' : null },
-    el('span', { class: 'c-idx t-time' }, i + 1),
-    cover,
-    el('div', { class: 'info' },
-      el('button', { class: 'open t-subhead', type: 'button', title: 'Play', onclick: () => player.playAt(i) }, title),
-      s?.artist ? el('small', { class: 'sub t-caption' }, s.artist) : null,
-      s && !hasAudio(s) ? el('small', { class: 'dl t-caption', 'data-dl': item.id }) : null),
-    el('span', { class: 'c-dur t-time' }, s?.duration ? fmtTime(s.duration) : ''),
-    more);
-}
-
-function openTagPicker() {
-  const dlg = document.getElementById('edit-dialog');
-  const chosen = new Set(qs.tags.map((t) => t.toLocaleLowerCase()));
-  const groups = tagGroups(store.tags);
-  const apply = el('button', { type: 'button', class: 'btn primary glow' }, 'Add songs');
-  const refresh = () => {
-    const fresh = [...chosen].filter((c) => !qs.tags.some((t) => t.toLocaleLowerCase() === c));
-    const drop = qs.tags.filter((t) => !chosen.has(t.toLocaleLowerCase()));
-    apply.disabled = !fresh.length && !drop.length;
-    apply.textContent = applyLabel(fresh.length, drop.length);
-  };
-  const chip = (t) => {
-    const b = el('button', { class: 'chip', type: 'button', 'aria-pressed': 'false', title: t.tag },
-      tagLabel(t.tag), el('small', {}, t.count));
-    const sync = () => {
-      const on = chosen.has(t.tag.toLocaleLowerCase());
-      b.classList.toggle('on', on);
-      b.setAttribute('aria-pressed', String(on));
-    };
-    b.addEventListener('click', () => {
-      const k = t.tag.toLocaleLowerCase();
-      if (chosen.has(k)) chosen.delete(k); else chosen.add(k);
-      sync();
-      refresh();
-    });
-    sync();
-    return b;
-  };
-  apply.addEventListener('click', () => {
-    const fresh = store.tags.filter((t) => chosen.has(t.tag.toLocaleLowerCase()) && !qs.tags.some((x) => x.toLocaleLowerCase() === t.tag.toLocaleLowerCase()));
-    const drop = qs.tags.filter((t) => !chosen.has(t.toLocaleLowerCase()));
-    dlg.close();
-    let removed = 0;
-    for (const t of drop) removed += player.removeTag(t);
-    let added = 0;
-    if (fresh.length) added = player.addTags(fresh.map((t) => t.tag));
-    const parts = [];
-    if (fresh.length) parts.push(`Added ${added} ${added === 1 ? 'song' : 'songs'}`);
-    if (drop.length) parts.push(`removed ${removed} ${removed === 1 ? 'song' : 'songs'}`);
-    toast(parts.join(', ').replace(/^./, (c) => c.toUpperCase()));
-  });
-  dlg.replaceChildren(el('div', {},
-    dialogHead('Add songs by tag', 'Songs with any picked tag are added to the end of the playlist.', () => dlg.close()),
-    groups.length ? el('div', { class: 'chip-groups' }, groups.map((g) => el('div', { class: 'chip-group' },
-      el('span', { class: 'group-name' }, g.name),
-      ...g.tags.map(chip)))) : el('p', { class: 'muted' }, 'No tags yet'),
-    el('div', { class: 'row end' }, apply)));
-  refresh();
-  dlg.showModal();
-}
+const queueCtx = () => ({
+  count: qs.items.length,
+  index: qs.index,
+  move: (i, d) => player.move(i, d),
+  removeAt: (i) => player.removeAt(i),
+  playAt: (i) => player.playAt(i),
+});
 
 function renderQueue() {
   closeMenu();
   $('queue-empty').hidden = qs.items.length > 0;
-  $('queue-list').replaceChildren(...qs.items.map((item, i) => songRow(item, i)));
-  updateDl();
-}
-
-function dlText(v, short) {
-  if (v.kind === 'paused') return `Download limit reached - resumes in ${v.minutes} min`;
-  return statusText(v, short);
-}
-
-function paintDl(node, id) {
-  const v = autodl.view(id);
-  node.classList.toggle('failed', v.kind === 'failed');
-  node.replaceChildren(dlText(v, true));
-  if (v.kind === 'failed') {
-    node.append(' ', el('button', { class: 'dl-act', type: 'button', onclick: () => autodl.retry(id) }, 'Retry'));
-  }
-}
-
-function updateDl() {
-  const song = player.current;
-  const box = $('player-dl');
-  const missing = !!song && !hasAudio(song);
-  box.hidden = !missing;
-  if (missing) {
-    const v = autodl.view(song.id);
-    $('player-dl-text').textContent = dlText(v, false);
-    const btn = $('player-dl-btn');
-    btn.hidden = !(v.kind === 'none' || v.kind === 'failed');
-    btn.textContent = v.kind === 'failed' ? 'Retry' : 'Download';
-    $('mini-artist').textContent = v.kind === 'none' ? song.artist || '' : dlText(v, true);
-  } else if (song) {
-    $('mini-artist').textContent = song.artist || '';
-  }
-  for (const node of $('queue-list').querySelectorAll('[data-dl]')) paintDl(node, node.dataset.dl);
+  $('queue-list').replaceChildren(...qs.items.map((item, i) => queueRow(item, i, queueCtx())));
+  updateDl(player.current);
 }
 
 const isScrubbing = () => scrubbers.some((x) => x.dragging);
 
 function previewTime(t) {
-  if (t == null) return;
-  const dur = audio.duration;
-  $('mini-time').textContent = `${fmtTime(t)} / ${fmtTime(dur)}`;
-  $('t-cur').textContent = fmtTime(t);
-  $('t-dur').textContent = `-${fmtTime(Number.isFinite(dur) ? Math.max(0, dur - t) : 0)}`;
+  if (t != null) paintTimes(t, audio.duration);
 }
 
 function renderProgress() {
   const dur = audio.duration;
   const cur = audio.currentTime;
   for (const x of scrubbers) x.sync();
-  if (!isScrubbing()) {
-    $('mini-time').textContent = `${fmtTime(cur)} / ${fmtTime(dur)}`;
-    $('t-dur').textContent = `-${fmtTime(Number.isFinite(dur) ? Math.max(0, dur - cur) : 0)}`;
-    $('t-cur').textContent = fmtTime(cur);
-  }
-  if ('mediaSession' in navigator && Number.isFinite(dur) && dur > 0) {
-    try {
-      navigator.mediaSession.setPositionState({ duration: dur, position: Math.min(cur, dur), playbackRate: audio.playbackRate });
-    } catch { /* unsupported state */ }
-  }
-}
-
-function updateMediaSession(song) {
-  if (!('mediaSession' in navigator)) return;
-  const artwork = song.cover
-    ? [{ src: new URL(api.coverUrl(song.id), location.href).href, sizes: '480x360', type: 'image/jpeg' }]
-    : [];
-  navigator.mediaSession.metadata = new MediaMetadata({
-    title: song.title,
-    artist: song.artist || '',
-    album: song.album || '',
-    artwork,
-  });
-}
-
-function setupMediaSession() {
-  if (!('mediaSession' in navigator)) return;
-  const set = (name, fn) => { try { navigator.mediaSession.setActionHandler(name, fn); } catch { /* unsupported */ } };
-  set('play', () => audio.play().catch(fail));
-  set('pause', () => audio.pause());
-  set('previoustrack', () => player.prev());
-  set('nexttrack', () => player.next());
-  set('seekto', (d) => player.seek(d.seekTime));
-  set('seekbackward', (d) => player.seek(audio.currentTime - (d.seekOffset || 10)));
-  set('seekforward', (d) => player.seek(audio.currentTime + (d.seekOffset || 10)));
-}
-
-function setVolume(v, save = true) {
-  const vol = Math.max(0, Math.min(1, v));
-  audio.volume = vol;
-  for (const id of ['p-volume', 'mini-volume']) {
-    $(id).value = Math.round(vol * 100);
-    $(id).style.setProperty('--p', vol.toFixed(3));
-  }
-  $('p-volume-pct').textContent = `${Math.round(vol * 100)}%`;
-  $('p-knob').style.setProperty('--vol', vol.toFixed(3));
-  if (!save) return;
-  try { localStorage.setItem(VOLUME_KEY, String(vol)); } catch { /* storage unavailable */ }
+  if (!isScrubbing()) paintTimes(cur, dur);
+  updatePositionState(audio);
 }
 
 export function initPlayer() {
-  setupMediaSession();
+  setupMediaSession({
+    play: () => audio.play().catch(fail),
+    pause: () => audio.pause(),
+    previoustrack: () => player.prev(),
+    nexttrack: () => player.next(),
+    seekto: (d) => player.seek(d.seekTime),
+    seekbackward: (d) => player.seek(audio.currentTime - (d.seekOffset || 10)),
+    seekforward: (d) => player.seek(audio.currentTime + (d.seekOffset || 10)),
+  });
   initMenus();
   audio.addEventListener('play', render);
   audio.addEventListener('pause', render);
@@ -635,7 +466,7 @@ export function initPlayer() {
     player.toggle();
     const b = $('cover-toggle');
     b.classList.add('flash');
-    setTimeout(() => b.classList.remove('flash'), 1200);
+    setTimeout(() => b.classList.remove('flash'), COVER_FLASH_MS);
   });
   $('player-dl-btn').addEventListener('click', () => { if (player.current) startDownload(player.current); });
   autodl.onChange(() => {
@@ -645,7 +476,7 @@ export function initPlayer() {
       toast(`Could not download "${cur.title}"`);
       player.next();
     }
-    updateDl();
+    updateDl(player.current);
   });
   $('p-download').addEventListener('click', () => { if (player.current) downloadSong(player.current); });
 
@@ -656,7 +487,7 @@ export function initPlayer() {
     $(`${p}-shuffle`).addEventListener('click', () => player.setShuffle(!shuffle));
     $(`${p}-repeat`).addEventListener('click', () => player.cycleRepeat());
   }
-  $('tag-add').addEventListener('click', openTagPicker);
+  $('tag-add').addEventListener('click', () => openTagPicker(player, () => qs.tags));
   $('queue-clear').addEventListener('click', () => {
     const n = player.clearUpcoming();
     toast(n ? `Cleared ${n} ${plural(n, 'song', 'songs')}` : 'Tag chips cleared');
@@ -688,10 +519,8 @@ export function initPlayer() {
     }));
   }
 
-  let stored = 1;
-  try { const v = Number.parseFloat(localStorage.getItem(VOLUME_KEY)); if (Number.isFinite(v)) stored = v; } catch { /* storage unavailable */ }
-  setVolume(stored, false);
-  for (const id of ['p-volume', 'mini-volume']) $(id).addEventListener('input', (e) => setVolume(e.target.value / 100));
+  setVolume(audio, storedVolume(), false);
+  for (const id of ['p-volume', 'mini-volume']) $(id).addEventListener('input', (e) => setVolume(audio, e.target.value / 100));
 
   for (const id of ['mini-cover', 'player-cover']) {
     $(id).addEventListener('error', () => { $(id).removeAttribute('src'); $(id).dataset.src = ''; });

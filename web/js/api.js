@@ -1,6 +1,7 @@
+import { storeRemove } from './storage.js';
 import { friendly } from './limits.js';
 
-try { localStorage.removeItem('audioplayer.token'); } catch { /* storage unavailable */ }
+storeRemove('audioplayer.token');
 
 export const auth = { email: '', provider: '' };
 

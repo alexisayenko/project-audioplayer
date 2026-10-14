@@ -1,6 +1,7 @@
 import { api } from './api.js';
 import { store } from './store.js';
 import * as D from './dl-queue.js';
+import { storeGet, storeSet } from './storage.js';
 
 const KEY = 'ap2.autodl';
 const MAX_RUNNING = 1;
@@ -9,11 +10,11 @@ const POLL_FAILS = 4;
 const FINISH_HOLD = 600;
 
 export function autoDownloadOn() {
-  try { return localStorage.getItem(KEY) === '1'; } catch { return false; }
+  return storeGet(KEY) === '1';
 }
 
 export function setAutoDownload(on) {
-  try { localStorage.setItem(KEY, on ? '1' : '0'); } catch { /* storage unavailable */ }
+  storeSet(KEY, on ? '1' : '0');
 }
 
 let st = D.empty();

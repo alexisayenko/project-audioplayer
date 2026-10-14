@@ -57,6 +57,10 @@ export function removeToken(text, i) {
     toks.at(-1).sep = '';
   } else {
     toks.splice(i, 1);
+    if (toks.length > 1 && isBlankToken(toks.at(-1))) {
+      toks.pop();
+      toks.at(-1).sep = '';
+    }
   }
   return compose(toks).trim();
 }

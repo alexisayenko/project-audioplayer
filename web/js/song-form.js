@@ -11,9 +11,8 @@ import { metadataBody, sourceList } from './song-payload.js';
 import { identifyBlock } from './identify-block.js';
 import { hasAudio } from './playable.js';
 import { cleanTitleEx } from './title-clean.js';
-import { splitTokens } from './tokens.js';
-
-const bpmText = (v) => (v != null ? `${Math.round(v)} BPM` : 'Not detected yet');
+import { titleCleaner } from './song-form-title.js';
+import { bpmRow } from './song-form-bpm.js';
 
 export function songForm({ mode = 'add', song = {}, source = null, onChange = null } = {}) {
   const isAdd = mode === 'add';
@@ -64,54 +63,9 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
   const metaMsg = el('p', { class: 't-caption muted', role: 'status' });
   const hint = el('button', { class: 'link-btn t-caption wiki-hint', type: 'button', hidden: true });
   let suggest = null;
-  const titleField = field('Title', f.title);
-  const cleaned = el('p', { class: 't-caption muted', role: 'status', hidden: true });
-  const moveHint = el('button', { class: 'link-btn t-caption', type: 'button', hidden: true });
-  titleField.append(cleaned, moveHint);
-  let before = null;
-  let restoredRaw = null;
-  const paintCleaned = (removed) => {
-    cleaned.replaceChildren();
-    cleaned.hidden = !removed.length;
-    if (!removed.length) return;
-    const undo = el('button', { class: 'link-btn t-caption', type: 'button' }, 'Restore');
-    undo.addEventListener('click', () => {
-      restoredRaw = before;
-      f.title.value = before;
-      paintCleaned([]);
-      emit();
-    });
-    cleaned.append(`Cleaned: removed ${removed.join(' ')} - `, undo);
-  };
-  const applyClean = () => {
-    const now = f.title.value;
-    if (now === restoredRaw) return;
-    const r = cleanTitleEx(now);
-    if (r.title === now) return;
-    before = now;
-    restoredRaw = null;
-    f.title.value = r.title;
-    paintCleaned(r.removed);
-    emit();
-  };
-  const paintMove = () => {
-    const parts = splitTokens(f.title.value);
-    const have = splitTokens(f.artist.value).map((a) => a.toLowerCase());
-    const show = parts.length > 1 && !have.includes(parts[0].toLowerCase());
-    moveHint.hidden = !show;
-    moveHint.textContent = show ? `Move "${parts[0]}" to Artist?` : '';
-  };
-  moveHint.addEventListener('click', () => f.title.moveTo(0, 'artist'));
-  if (isAdd) {
-    f.title.addEventListener('paste', () => setTimeout(applyClean));
-    f.title.addEventListener('focusout', (e) => { if (!f.title.contains(e.relatedTarget)) applyClean(); });
-    if (first.removed.length) { before = String(initial.title_raw ?? initial.title ?? ''); paintCleaned(first.removed); }
-  }
-  f.title.addEventListener('input', paintMove);
-  f.artist.addEventListener('input', paintMove);
-  paintMove();
-  const cur = () => ({ title: f.title.value, artist: f.artist.value });
   const emit = () => f.title.dispatchEvent(new Event('input', { bubbles: true }));
+  const tc = titleCleaner({ f, isAdd, initial, first, emit });
+  const cur = () => ({ title: f.title.value, artist: f.artist.value });
   const paintHint = () => {
     const sug = suggest ? suggestion(suggest, cur()) : null;
     hint.hidden = !sug;
@@ -192,41 +146,17 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
   };
   const ident = identifyBlock({ id: isAdd ? null : initial.id, audio: !isAdd && hasAudio(initial), editor, getYear: () => f.year.value, setYear, applyLinks });
 
-  let bpmRow;
-  if (isAdd) {
-    bpmRow = el('p', { class: 't-caption muted' }, 'BPM is detected after saving');
-  } else {
-    const bpmValue = el('span', { title: 'Heuristic, may be off by half or double' }, bpmText(initial.bpm));
-    const bpmErr = el('p', { class: 'msg error', hidden: true });
-    const redetect = el('button', { type: 'button', class: 'btn outline small' }, 'Re-detect');
-    redetect.addEventListener('click', async () => {
-      redetect.disabled = true;
-      redetect.textContent = 'Detecting...';
-      try {
-        const updated = await api.detectBpm(initial.id);
-        bpmValue.textContent = bpmText(updated.bpm);
-        bpmErr.hidden = true;
-        await store.refresh();
-      } catch (ex) {
-        bpmErr.textContent = ex.message;
-        bpmErr.hidden = false;
-      } finally {
-        redetect.disabled = false;
-        redetect.textContent = 'Re-detect';
-      }
-    });
-    bpmRow = el('div', { class: 'field' }, el('label', {}, 'BPM'), el('div', { class: 'row' }, bpmValue, redetect), bpmErr);
-  }
+  const bpmEl = bpmRow({ isAdd, initial });
 
   const node = el('div', { class: 'add-fields' },
-    titleField, field('Artist', f.artist),
+    tc.node, field('Artist', f.artist),
     field('Remix & additional production', f.remixer),
     hint,
     el('div', { class: 'meta-row' }, metaBtn, icons.node),
     metaMsg,
     ident.node,
     el('div', { class: 'grid2' }, field('Album', f.album), field('Year', f.year)),
-    bpmRow,
+    bpmEl,
     genres.node, countries.node,
     el('div', { class: 'field' }, el('label', {}, 'Tags'), editor.node),
     wiki.node);
@@ -239,7 +169,7 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
     }
     return {
       title: f.title.value,
-      keep_title: restoredRaw !== null && f.title.value === restoredRaw,
+      keep_title: tc.restoredRaw !== null && f.title.value === tc.restoredRaw,
       artist: f.artist.value,
       remixer: f.remixer.value,
       album: f.album.value,
@@ -270,8 +200,8 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
       resetMeta();
       metaBtn.disabled = false;
       metaBtn.textContent = 'Get metadata';
-      restoredRaw = null;
-      paintCleaned(first.removed);
+      tc.clearRestored();
+      tc.paintCleaned(first.removed);
       setValues({ title: startTitle, artist: initial.artist || '', remixer: initial.remixer || '', album: initial.album || '', year: initial.year ?? '', wikipedia_song: initial.wikipedia_song || '', wikipedia_artist: initial.wikipedia_artist || '' });
     },
     destroy() {

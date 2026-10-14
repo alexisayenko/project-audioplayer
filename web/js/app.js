@@ -6,6 +6,7 @@ import { openAdd } from './add.js';
 import { renderSettings } from './settings.js';
 import { renderGenres } from './genres.js';
 import { loadCollapsed, saveCollapsed } from './sidebar-state.js';
+import { SYNC_POLL_MS } from './constants.js';
 
 const player = document.getElementById('player');
 const renderPlayback = () => { player.hidden = false; return () => { player.hidden = true; }; };
@@ -92,4 +93,4 @@ async function checkSync() {
 }
 
 await checkSync().catch(() => {});
-setInterval(() => checkSync().catch(() => {}), 30000);
+setInterval(() => checkSync().catch(() => {}), SYNC_POLL_MS);

@@ -223,13 +223,6 @@ export function clearUpcoming(state) {
 
 export const queuedSet = (state) => new Set(state.items.map((it) => it.id));
 
-export function toggleQueued(state, id) {
-  const i = state.items.findIndex((it) => it.id === id);
-  if (i >= 0) return { ...removeItem(state, i), action: 'removed' };
-  const { state: next, result } = addManual(state, id);
-  return { state: next, currentRemoved: false, action: result };
-}
-
 // Next song that can play. `ok(id)` says whether an id has audio; with `autoOn` (Auto-download) every song counts
 // and this is a plain nextStep. Returns { index, played, skipped } or null (no playable song that way: stop).
 // Sequential mode steps over songs without audio and counts them in `skipped`; shuffle only draws playable songs.
