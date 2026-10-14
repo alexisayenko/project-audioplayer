@@ -8,6 +8,7 @@ import { downloadSong } from './download.js';
 import { autodl } from './autodl.js';
 import { statusText } from './dl-progress.js';
 import { editDialog } from './edit-dialog.js';
+import { displayString, titleNodes } from './display-title.js';
 
 export const $ = (id) => document.getElementById(id);
 
@@ -36,7 +37,7 @@ export function queueRow(item, i, { count, index, move, removeAt, playAt }) {
   const cover = el('img', { class: 'cover', alt: '', loading: 'lazy' });
   if (s?.cover) cover.src = api.coverUrl(s.id);
   cover.addEventListener('error', () => cover.removeAttribute('src'));
-  const title = s ? s.title : item.id;
+  const title = s ? displayString(s) : item.id;
   const more = el('button', {
     class: 'more', type: 'button', title: 'Song menu', 'aria-label': `Song menu: ${title}`, 'aria-haspopup': 'menu', 'aria-expanded': 'false',
   }, icon('more', 20));
@@ -51,7 +52,7 @@ export function queueRow(item, i, { count, index, move, removeAt, playAt }) {
     el('span', { class: 'c-idx t-time' }, i + 1),
     cover,
     el('div', { class: 'info' },
-      el('button', { class: 'open t-subhead', type: 'button', title: 'Play', onclick: () => playAt(i) }, title),
+      el('button', { class: 'open t-subhead', type: 'button', title: `Play: ${title}`, onclick: () => playAt(i) }, s ? titleNodes(s) : title),
       s?.artist ? el('small', { class: 'sub t-caption' }, s.artist) : null,
       s && !hasAudio(s) ? el('small', { class: 'dl t-caption', 'data-dl': item.id }) : null),
     el('span', { class: 'c-dur t-time' }, s?.duration ? fmtTime(s.duration) : ''),

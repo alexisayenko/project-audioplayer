@@ -4,6 +4,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## 2026-10-14
 
+- Web: Library, queue, mini-player, Playback details, page title and Media Session show the Remix & additional production value in parentheses after the title (LIB-112, PLY-130); the Library Track column is 300px wide (220-300px at 900-1099px, LIB-110); build artefacts (`__pycache__`, `.coverage`, `*.bak*`) are git-ignored.
 - Web and server: title cleaning also removes 'Original Mix', 'Original Version' and 'Original' when they are a whole segment ('Rover (Original Mix)' gives 'Rover'); with other words ('(Tiësto Original Mix)') and for Extended Mix, Radio Edit, Remix and the like nothing changes (ADD-077, ADR-0015).
 - Server: bugs fixed -- `HEAD /files/{id}` now works, SoundCloud ids accept ASCII digits only, Discogs no longer fuzzy-matches titles shorter than 3 characters, a non-object AcoustID reply is handled, `AUDIO_WEB_DIR` is read at call time (API-061, DATA-001, ADD-079).
 - Server: refactor -- `main.py` split into routers (`routes/`), shared state in `deps.py`, repeated helpers moved to `jsonio`, `httpjson`, `safepath`, `ratelimit`, `timeutil`, `tags`, `links`, `downloads`, `schemas`, `web`; JSON files are written atomically with mode 0600 (NFR-071, ADR-0017).

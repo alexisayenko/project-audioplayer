@@ -14,6 +14,7 @@ import { trackSub } from './track-sub.js';
 import { bpmLabel } from './bpm-label.js';
 import { genreText } from './genre-cell.js';
 import { editDialog } from './edit-dialog.js';
+import { displayString, titleNodes } from './display-title.js';
 
 function cover(s) {
   const img = el('img', { class: 'cover', alt: '', loading: 'lazy' });
@@ -34,7 +35,7 @@ function fetchAudio(s) {
 }
 
 function dlButton(s) {
-  return el('button', { class: 'row-dl', type: 'button', title: 'Download to the server', 'aria-label': `Download: ${s.title}`, onclick: (e) => { e.stopPropagation(); fetchAudio(s); } }, icon('download', 18));
+  return el('button', { class: 'row-dl', type: 'button', title: 'Download to the server', 'aria-label': `Download: ${displayString(s)}`, onclick: (e) => { e.stopPropagation(); fetchAudio(s); } }, icon('download', 18));
 }
 
 function bpmBadge(s) {
@@ -45,12 +46,14 @@ function bpmBadge(s) {
 }
 
 export function songRow(s, cur, flashId) {
+  const full = displayString(s);
+  const tip = s.artist ? `${full} - ${s.artist}` : full;
   const audio = hasAudio(s);
   const queueable = audio || autoDownloadOn();
   const link = audio ? null : sourceLink(s);
   const here = audio && cur && cur.id === s.id;
   const queued = player.inQueue(s.id);
-  const more = el('button', { class: 'more', type: 'button', 'aria-label': `More: ${s.title}`, 'aria-haspopup': 'menu', 'aria-expanded': 'false' }, icon('more', 20));
+  const more = el('button', { class: 'more', type: 'button', 'aria-label': `More: ${full}`, 'aria-haspopup': 'menu', 'aria-expanded': 'false' }, icon('more', 20));
   more.addEventListener('click', () => openMenu(more, [
     ...(queueable ? [
       { label: 'Play now', run: () => player.playNow(s.id) },
@@ -62,11 +65,11 @@ export function songRow(s, cur, flashId) {
   ]));
   const label = queued ? 'In playlist - click to remove' : 'Add to playlist';
   const pl = queueable
-    ? el('button', { class: `pl-toggle${queued ? ' on' : ''}`, type: 'button', title: label, 'aria-label': `${label}: ${s.title}`, 'aria-pressed': String(queued), onclick: () => toggleQueue(s) }, icon(queued ? 'listCheck' : 'listAdd', 18))
+    ? el('button', { class: `pl-toggle${queued ? ' on' : ''}`, type: 'button', title: label, 'aria-label': `${label}: ${full}`, 'aria-pressed': String(queued), onclick: () => toggleQueue(s) }, icon(queued ? 'listCheck' : 'listAdd', 18))
     : el('span', { class: 'pl-toggle ph', 'aria-hidden': 'true' });
   const open = queueable
-    ? el('button', { class: 'open t-headline', type: 'button', title: 'Play now', onclick: () => player.playNow(s.id) }, s.title)
-    : el('span', { class: 'open t-headline' }, s.title);
+    ? el('button', { class: 'open t-headline', type: 'button', title: `Play now: ${tip}`, 'aria-label': `Play now: ${full}`, onclick: () => player.playNow(s.id) }, titleNodes(s))
+    : el('span', { class: 'open t-headline', title: tip }, titleNodes(s));
   const genres = genreText(s.tags);
   let durText = '';
   if (audio) durText = s.duration ? fmtTime(s.duration) : '';

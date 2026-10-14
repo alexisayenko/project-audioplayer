@@ -17,6 +17,7 @@ import { COVER_FLASH_MS } from './constants.js';
 import { $, setIcon, setToggle, setCover, queueRow, updateDl, paintTimes } from './player-ui.js';
 import { updateMediaSession, setupMediaSession, updatePositionState, setVolume, storedVolume } from './player-media.js';
 import { openTagPicker } from './player-tag-picker.js';
+import { displayString, titleNodes } from './display-title.js';
 
 const audio = document.getElementById('audio');
 
@@ -365,7 +366,8 @@ function render() {
   for (const id of ['p-prev', 'p-play', 'mini-prev']) $(id).disabled = false;
   $('p-next').disabled = noNext;
   $('mini-next').disabled = noNext;
-  $('mini-title').textContent = song.title;
+  $('mini-title').replaceChildren(...titleNodes(song));
+  $('mini-title').title = displayString(song);
   const inList = player.inQueue(song.id);
   const pl = $('mini-playlist');
   pl.setAttribute('aria-pressed', String(inList));
@@ -374,7 +376,7 @@ function render() {
   pl.setAttribute('aria-label', pl.title);
   pl.replaceChildren(icon(inList ? 'listCheck' : 'listAdd', 18));
   $('mini-artist').textContent = song.artist || '';
-  $('player-title').textContent = song.title;
+  $('player-title').replaceChildren(...titleNodes(song));
   $('player-sub').textContent = [song.artist, song.album, song.year].filter(Boolean).join(' · ');
   const remixLine = [song.remixer ? `Remix: ${song.remixer}` : ''].filter(Boolean).join(' · ');
   if (remixLine) $('player-sub').textContent += ($('player-sub').textContent ? ' · ' : '') + remixLine;
@@ -386,7 +388,7 @@ function render() {
   setCover($('player-cover'), song);
   $('cover-art').classList.toggle('noart', !song.cover);
   renderQueue();
-  document.title = `${song.title} - Electrophone`;
+  document.title = `${displayString(song)} - Electrophone`;
   renderProgress();
   listeners.forEach((fn) => fn());
 }

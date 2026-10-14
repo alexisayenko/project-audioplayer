@@ -1,6 +1,7 @@
 import { api } from './api.js';
 import { storeGet, storeSet } from './storage.js';
 import { $ } from './player-ui.js';
+import { displayString } from './display-title.js';
 
 const VOLUME_KEY = 'ap2.volume';
 
@@ -10,7 +11,7 @@ export function updateMediaSession(song) {
     ? [{ src: new URL(api.coverUrl(song.id), location.href).href, sizes: '480x360', type: 'image/jpeg' }]
     : [];
   navigator.mediaSession.metadata = new MediaMetadata({
-    title: song.title,
+    title: displayString(song),
     artist: song.artist || '',
     album: song.album || '',
     artwork,

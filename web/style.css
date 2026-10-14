@@ -1,5 +1,6 @@
 /* Breakpoints (same values as js/constants.js): 480 phone to small tablet, 640 mini-player options, 720 wide, 900 Playback two columns, 1100 desktop. */
 :root {
+  --track-w: 300px;
   --rail-w: 0px;
   --gutter: var(--space-4);
   --tab-h: 64px;
@@ -232,6 +233,10 @@ label { display: block; color: var(--ink-muted); font-size: 13px; line-height: 1
 }
 .song .title-line { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
 .song .title-line .open { flex: 0 1 auto; min-width: 0; }
+.song .open, .qrow .open { min-width: 0; }
+.open .ttl, .open .rmx { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.open .ttl { flex: 0 8 auto; }
+.open .rmx { flex: 0 1 auto; margin-left: .3em; font-weight: 400; color: var(--muted); }
 .song .title-line .bpm-badge { margin-left: auto; }
 .bpm-badge {
   flex: none; display: inline-flex; align-items: baseline; gap: 3px; padding: 0 var(--space-2);
@@ -299,18 +304,18 @@ label { display: block; color: var(--ink-muted); font-size: 13px; line-height: 1
   .songs .song { grid-template-columns: var(--cols); height: 56px; padding: 0; }
   .songs .song .cover { width: 40px; height: 40px; }
   .songs .song .info { display: block; }
-  .songs .song .info .open { display: block; max-width: 100%; font-size: 15px; line-height: 20px; font-weight: 600; }
+  .songs .song .info .open { display: flex; max-width: 100%; font-size: 15px; line-height: 20px; font-weight: 600; }
   .songs .song .more { width: 28px; height: 28px; }
   .songs .song.current { height: 56px; padding: 0 var(--row-pad); border-radius: var(--radius-key); }
 }
 @media (min-width: 900px) {
-  .songs .song, .table-head { --cols: 40px minmax(260px, 400px) minmax(120px, 1fr) 64px 32px 28px; }
+  .songs .song, .table-head { --cols: 40px minmax(220px, var(--track-w)) minmax(120px, 1fr) 64px 32px 28px; }
   .table-head .c-genres { display: block; }
   .songs .song .c-genres { display: -webkit-box; color: var(--muted); overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; }
 }
 
 @media (min-width: 1100px) {
-  .songs .song, .table-head { --cols: 40px 400px minmax(120px, 1fr) 64px 32px 28px; }
+  .songs .song, .table-head { --cols: 40px var(--track-w) minmax(120px, 1fr) 64px 32px 28px; }
 }
 
 /* sheets and dialogs */
@@ -381,6 +386,7 @@ body.signed-out #nav a:not([data-route="settings"]), body.signed-out #mini { dis
 .mini .cover { width: 44px; height: 44px; }
 .mini-text { display: flex; flex-direction: column; min-width: 0; }
 .mini-text b, .mini-text small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mini-text b .rmx, #player-title .rmx { font-weight: 400; color: var(--ink-muted); }
 .mini-text b { font-weight: 600; font-size: 15px; line-height: 20px; }
 .mini-text small { color: var(--ink-muted); }
 .mini-keys, .mini-actions { display: flex; align-items: center; gap: var(--space-2); }
@@ -521,6 +527,7 @@ body.signed-out #nav a:not([data-route="settings"]), body.signed-out #mini { dis
 .qrow .c-idx { color: var(--muted); }
 .qrow.current .c-idx { color: var(--accent-ink); }
 .qrow .info { min-width: 0; display: flex; flex-direction: column; }
+.qrow .open { display: flex; }
 .qrow .open { background: none; border: 0; padding: 0; text-align: left; color: var(--ink); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .qrow .sub { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .qrow .c-dur { color: var(--muted); text-align: right; }
