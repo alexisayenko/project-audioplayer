@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   QUALITY, clamp01, smoothstep, qualityFor, resample, createHistory, columnBin, edgeFalloff, heightAt, fillHeights,
   gridCounts, buildGridVertices, buildLineIndices, buildDepthIndices, buildCrossIndices, energyOf, easeEnergy, GRID_DEPTH, colorRamp, fillColors, horizonGlow, makeStars, cameraAt, horizonY,
-  camClamp, camFormat, camParse, defaultPitchDeg, smoothHeights, CAM_LIMITS, nearEnvelope,
+  camClamp, camFormat, camParse, defaultPitchDeg, smoothHeights, CAM_LIMITS, nearEnvelope, rowZ, halfWidthAt, EYE_HEIGHT,
   mat4Perspective, mat4LookAt, mat4Multiply, transformPoint, makeRowClock, SHAKE_MAX, RAMP,
 } from './viz-terrain-math.js';
 import { createTerrain, isWebGLAvailable, linkProgram } from './viz-terrain-gl.js';
@@ -176,7 +176,9 @@ test('camera path is deterministic and shake is clamped', () => {
   assert.deepEqual(cameraAt(12.5, 0.4), cameraAt(12.5, 0.4));
   const calm = cameraAt(3.3, 0);
   const loud = cameraAt(3.3, 50);
-  assert.ok(Math.abs(loud.eye[0] - calm.eye[0]) <= SHAKE_MAX + 1e-9);
+  assert.equal(loud.eye[0], 0);
+  assert.equal(calm.eye[0], 0);
+  assert.equal(loud.target[0], 0);
   assert.ok(Math.abs(loud.eye[1] - calm.eye[1]) <= SHAKE_MAX + 1e-9);
   assert.ok(cameraAt(0).eye[2] >= cameraAt(30).eye[2]);
   const y = horizonY(cameraAt(5, 0.5));
@@ -442,21 +444,47 @@ test('quality levels scale smoke and line passes, smoke off at the lowest', () =
   assert.ok(QUALITY[0].passes < QUALITY[1].passes);
 });
 
-test('camera sits above the near terrain and the horizon is near 57% from the bottom', () => {
+test('camera defaults: eye 3.43, pitch -22.2, horizon high, no lateral motion', () => {
+  assert.equal(EYE_HEIGHT, 3.43);
+  assert.equal(defaultPitchDeg(), -22.2);
   for (const t of [0, 7, 31]) {
     const cam = cameraAt(t, 0);
-    assert.ok(cam.eye[1] > 1.2);
-    near(horizonY(cam), 0.57, 0.04);
+    assert.ok(cam.eye[1] > 3);
+    assert.equal(cam.eye[0], 0);
+    const y = horizonY(cam);
+    assert.ok(y > 0.75 && y < 0.9, `horizon ${y}`);
   }
-  assert.ok(GRID_DEPTH >= 10);
+  assert.ok(CAM_LIMITS.eye[0] <= 3.43 && CAM_LIMITS.eye[1] >= 3.43);
+  assert.ok(CAM_LIMITS.pitch[0] <= -22.2 && CAM_LIMITS.pitch[1] >= -22.2);
+});
+
+test('grid reaches the horizon and is wider than any viewport at every depth', () => {
+  const rows = 104;
+  near(rowZ(0, rows), 0);
+  near(rowZ(rows - 1, rows), GRID_DEPTH);
+  let prev = 0;
+  for (let r = 1; r < rows; r += 1) {
+    const z = rowZ(r, rows);
+    assert.ok(z > prev);
+    prev = z;
+  }
+  const eyeH = EYE_HEIGHT;
+  assert.ok(Math.atan(eyeH / (GRID_DEPTH - 0.7)) * (180 / Math.PI) < 4);
+  const tanH = Math.tan((62 * Math.PI) / 360);
+  for (const aspect of [0.46, 1.78, 2.4, 3.5]) {
+    for (const z of [2, 5, 12, 30, GRID_DEPTH]) {
+      const need = (0.93 * Math.max(0, z - 0.7) + 1.3) * tanH * aspect + 0.1;
+      assert.ok(halfWidthAt(z, aspect) > need, `aspect ${aspect} z ${z}`);
+    }
+  }
 });
 
 test('camera overrides: eye and pitch move the camera and the horizon', () => {
   const base = cameraAt(5, 0);
-  const high = cameraAt(5, 0, { eye: 2.5, pitchDeg: -10 });
-  assert.ok(high.eye[1] > base.eye[1] + 0.8);
-  assert.ok(horizonY(high) > horizonY(base));
-  near(horizonY(cameraAt(5, 0, { pitchDeg: defaultPitchDeg() })), 0.57, 0.04);
+  const high = cameraAt(5, 0, { eye: 3.9, pitchDeg: -5 });
+  assert.ok(high.eye[1] > base.eye[1] + 0.3);
+  assert.ok(horizonY(high) < horizonY(base));
+  near(horizonY(cameraAt(5, 0, { pitchDeg: defaultPitchDeg() })), horizonY(base), 0.01);
 });
 
 test('camClamp, camFormat and camParse round-trip and clamp', () => {

@@ -1,5 +1,5 @@
 import {
-  QUALITY, HISTORY_BINS, STAR_VISIBLE, buildDepthIndices, buildCrossIndices, energyOf, easeEnergy, GRID_DEPTH, GRID_HALF_WIDTH, RAMP, qualityFor, createHistory, fillHeights, buildGridVertices,
+  QUALITY, HISTORY_BINS, STAR_VISIBLE, buildDepthIndices, buildCrossIndices, energyOf, easeEnergy, GRID_DEPTH, GRID_CURVE, CALM_DEPTH, GRID_W0, GRID_W1, widthScale, RAMP, qualityFor, createHistory, fillHeights, buildGridVertices,
   gridCounts, makeStars, cameraAt, horizonY, horizonGlow, mat4Perspective, mat4LookAt, mat4Multiply,
   makeRowClock, clamp01,
 } from './viz-terrain-math.js';
@@ -9,7 +9,7 @@ const DPR_CAP = 2;
 const STAR_COUNT = STAR_VISIBLE[STAR_VISIBLE.length - 1];
 const STAR_SEED = 20261014;
 const NEAR = 0.3;
-const FAR = 40;
+const FAR = 160;
 const BLOOM_SCALE = 0.5;
 const BASS_BINS = 6;
 
@@ -18,12 +18,14 @@ precision mediump float;
 attribute vec2 a_p;
 attribute float a_h;
 uniform mat4 u_vp;
-uniform float u_halfW, u_dz, u_scroll, u_amp, u_pt, u_dpr, u_mode, u_time, u_off, u_viewW, u_energy, u_depth;
+uniform float u_w0, u_w1, u_rows, u_depth, u_curve, u_calm, u_scroll, u_amp, u_pt, u_dpr, u_mode, u_time, u_off, u_viewW, u_energy;
 varying float v_h;
 varying float v_fog;
 varying float v_near;
+varying float v_end;
 void main() {
   v_h = a_h;
+  v_end = 1.0;
   if (u_mode > 3.5) {
     gl_Position = vec4(a_p, 0.999, 1.0);
     gl_PointSize = (1.0 + a_h * 1.6) * u_dpr;
@@ -32,12 +34,13 @@ void main() {
     return;
   }
   float row = a_p.y - u_scroll;
-  float sway = sin(row * 0.45 + a_p.x * 2.3 + u_time * 0.5) * 0.1 * smoothstep(0.0, 10.0, row);
-  float env = 0.12 + 0.88 * smoothstep(0.0, 0.35, row * u_dz / u_depth);
-  vec3 pos = vec3(a_p.x * u_halfW + sway, a_h * u_amp * env, -row * u_dz);
+  float z = u_depth * (exp(u_curve * row / u_rows) - 1.0) / (exp(u_curve) - 1.0);
+  float env = 0.12 + 0.88 * smoothstep(0.0, 0.35, z / u_calm);
+  vec3 pos = vec3(a_p.x * (u_w0 + u_w1 * max(z, 0.0)), a_h * u_amp * env, -z);
   vec4 clip = u_vp * vec4(pos, 1.0);
   float near = clamp(3.0 / max(clip.w, 0.1), 0.0, 1.0);
-  v_fog = smoothstep(3.0, 15.0, clip.w);
+  v_fog = smoothstep(4.0, 40.0, clip.w);
+  v_end = 1.0 - smoothstep(0.55 * u_depth, 0.95 * u_depth, clip.w);
   clip.x += u_off * near * (0.7 + 0.5 * u_energy) * 2.0 * u_dpr / u_viewW * clip.w;
   v_near = smoothstep(0.4, 2.2, clip.w);
   gl_Position = clip;
@@ -51,6 +54,7 @@ uniform vec3 u_c0, u_c1, u_c2, u_fog;
 varying float v_h;
 varying float v_fog;
 varying float v_near;
+varying float v_end;
 vec3 ramp(float h) {
   return h < 0.45 ? mix(u_c0, u_c1, smoothstep(0.0, 0.45, h)) : mix(u_c1, u_c2, smoothstep(0.45, 1.0, h));
 }
@@ -75,7 +79,7 @@ void main() {
     }
     col = mix(col, u_fog, v_fog * 0.6) * (0.85 + 0.6 * u_glow * v_h) + vec3(0.5, 0.7, 1.0) * smoothstep(0.7, 1.0, v_h) * 0.3;
   }
-  a *= v_near;
+  a *= v_near * v_end;
   gl_FragColor = vec4(col * a, a);
 }`;
 
@@ -275,7 +279,7 @@ export function createTerrain(canvas, opts = {}) {
       depthCount: depth.length,
       crossCount: cross.length,
       vertices: counts.vertices,
-      dz: GRID_DEPTH / (q.rows - 1),
+      rows: q.rows,
     };
   }
 
@@ -359,8 +363,12 @@ export function createTerrain(canvas, opts = {}) {
     const g = s.res.grid;
     gl.useProgram(p.prog);
     gl.uniformMatrix4fv(uni(gl, p, 'u_vp'), false, mvp);
-    gl.uniform1f(uni(gl, p, 'u_halfW'), GRID_HALF_WIDTH);
-    gl.uniform1f(uni(gl, p, 'u_dz'), g.dz);
+    const ws = widthScale(view.w / view.h);
+    gl.uniform1f(uni(gl, p, 'u_w0'), GRID_W0 * ws);
+    gl.uniform1f(uni(gl, p, 'u_w1'), GRID_W1 * ws);
+    gl.uniform1f(uni(gl, p, 'u_rows'), g.rows - 1);
+    gl.uniform1f(uni(gl, p, 'u_curve'), GRID_CURVE);
+    gl.uniform1f(uni(gl, p, 'u_calm'), CALM_DEPTH);
     gl.uniform1f(uni(gl, p, 'u_depth'), GRID_DEPTH);
     gl.uniform1f(uni(gl, p, 'u_scroll'), s.scroll);
     gl.uniform1f(uni(gl, p, 'u_amp'), 1.0 + 1.9 * s.energy);

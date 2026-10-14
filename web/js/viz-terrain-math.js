@@ -6,12 +6,15 @@ export const QUALITY = [
 export const HISTORY_BINS = 64;
 export const ROWS_PER_SECOND = 16;
 export const SHAKE_MAX = 0.03;
-export const GRID_DEPTH = 12;
-export const HORIZON_TARGET = 0.57;
-export const EYE_HEIGHT = 1.6;
+export const GRID_DEPTH = 64;
+export const GRID_CURVE = 3;
+export const CALM_DEPTH = 12;
+export const GRID_W0 = 2.2;
+export const GRID_W1 = 2;
+export const EYE_HEIGHT = 3.43;
+export const DEFAULT_PITCH_DEG = -22.2;
 export const CAM_LIMITS = { eye: [0.2, 4], pitch: [-30, 15] };
 export const NEAR_CALM = 0.35;
-export const GRID_HALF_WIDTH = 4.5;
 export const RAMP = [
   { at: 0, c: [0.02, 0.05, 0.14] },
   { at: 0.45, c: [0.12, 0.55, 0.85] },
@@ -107,10 +110,16 @@ export function camParse(text) {
   return camClamp({ eye: e ? e[1] : null, pitch: p ? p[1] : null });
 }
 
-export function defaultPitchDeg(fovDeg = 62) {
-  const ndc = (HORIZON_TARGET - 0.5) * 2;
-  return -Math.atan(ndc * Math.tan((fovDeg * Math.PI) / 360)) * (180 / Math.PI);
+export const defaultPitchDeg = () => DEFAULT_PITCH_DEG;
+
+export function rowZ(row, rows) {
+  const u = row / Math.max(1, rows - 1);
+  return (GRID_DEPTH * (Math.exp(GRID_CURVE * u) - 1)) / (Math.exp(GRID_CURVE) - 1);
 }
+
+export const widthScale = (aspect) => Math.min(1.5, Math.max(0.3, (Number.isFinite(aspect) ? aspect : 1.78) / 2.4));
+
+export const halfWidthAt = (z, aspect) => (GRID_W0 + GRID_W1 * Math.max(0, z)) * widthScale(aspect);
 
 export function nearEnvelope(depthFrac) {
   const t = smoothstep(0, NEAR_CALM, clamp01(depthFrac));
@@ -274,19 +283,17 @@ export function cameraAt(t, bass = 0, opts = {}) {
   const camEye = Number.isFinite(opts.eye) ? opts.eye : EYE_HEIGHT;
   const pitchDeg = Number.isFinite(opts.pitchDeg) ? opts.pitchDeg : null;
   const shakeAmp = Math.min(SHAKE_MAX, clamp01(bass) * SHAKE_MAX);
-  const shakeX = Math.sin(t * 37.1) * shakeAmp;
   const shakeY = Math.sin(t * 41.7 + 1.3) * shakeAmp;
   const phase = (t / period) * Math.PI * 2;
   const forward = fly * (0.5 - 0.5 * Math.cos(phase));
-  const drift = 0.6 * Math.sin(t * 0.07);
   const fov = (62 + 3 * clamp01(bass)) * (Math.PI / 180);
-  const eye = [drift + shakeX, camEye + 0.04 * Math.sin(t * 0.11) + shakeY, 0.7 - forward];
+  const eye = [0, camEye + 0.04 * Math.sin(t * 0.11) + shakeY, 0.7 - forward];
   const targetZ = -GRID_DEPTH * 0.75;
-  const basePitch = pitchDeg === null ? defaultPitchDeg(fov * (180 / Math.PI)) : pitchDeg;
+  const basePitch = pitchDeg === null ? DEFAULT_PITCH_DEG : pitchDeg;
   const slope = Math.tan((basePitch + 0.1 * Math.sin(t * 0.05)) * (Math.PI / 180));
   return {
     eye,
-    target: [drift * 0.4, eye[1] + slope * (eye[2] - targetZ), targetZ],
+    target: [0, eye[1] + slope * (eye[2] - targetZ), targetZ],
     up: [0, 1, 0],
     fov,
   };
