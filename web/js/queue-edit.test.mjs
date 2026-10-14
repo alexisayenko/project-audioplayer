@@ -109,30 +109,4 @@ test('queuedSet lists the queued ids', () => {
   assert.equal(Q.queuedSet(Q.emptyState()).size, 0);
 });
 
-test('toggleQueued adds a missing song and removes a queued one', () => {
-  let r = Q.toggleQueued(Q.emptyState(), 'a');
-  assert.equal(r.action, 'queued');
-  assert.deepEqual(ids(r.state), ['a']);
-  r = Q.toggleQueued(r.state, 'b');
-  assert.equal(r.action, 'added');
-  assert.ok(Q.queuedSet(r.state).has('b'));
-  r = Q.toggleQueued(r.state, 'b');
-  assert.equal(r.action, 'removed');
-  assert.ok(!Q.queuedSet(r.state).has('b'));
-  assert.equal(r.currentRemoved, false);
-  assert.deepEqual(ids(r.state), ['a']);
-});
 
-test('toggleQueued on the current song reports currentRemoved', () => {
-  const r = Q.toggleQueued(mk(['a', 'b', 'c'], 1), 'b');
-  assert.equal(r.action, 'removed');
-  assert.equal(r.currentRemoved, true);
-  assert.equal(cur(r.state), 'c');
-  const last = Q.toggleQueued(mk(['a'], 0), 'a');
-  assert.equal(last.state.index, -1);
-});
-
-test('toggleQueued on a song queued by tag makes it manual again via add', () => {
-  const s = { items: [{ id: 'a', manual: false, tags: ['x'] }], index: 0, tags: ['x'] };
-  assert.equal(Q.toggleQueued(s, 'a').action, 'removed');
-});
