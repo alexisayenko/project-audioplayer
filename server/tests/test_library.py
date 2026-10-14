@@ -534,12 +534,14 @@ def test_country_migration_on_load_idempotent(tmp_path):
 def test_write_rejects_unknown_country_but_accepts_alias(client):
     r = add(client, tags=["country:Atlantis"])
     assert r.status_code == 422
-    assert r.json()["error"] == "unknown_country" and r.json()["value"] == "atlantis"
+    assert r.json()["error"] == "unknown_country"
+    assert r.json()["value"] == "atlantis"
     assert add(client, tags=["country:usa"]).status_code in (200, 202)
     s = client.get("/library", headers=H).json()["songs"][0]
     assert "country:us" in s["tags"]
     bad = client.patch(f"/songs/{VID}", json={"tags": ["country:atlantis"]}, headers=H)
-    assert bad.status_code == 422 and bad.json()["error"] == "unknown_country"
+    assert bad.status_code == 422
+    assert bad.json()["error"] == "unknown_country"
     assert client.patch(f"/songs/{VID}", json={"tags": ["country:Russia"]}, headers=H).json()["tags"][0] == "country:ru"
 
 
@@ -550,15 +552,18 @@ def test_legacy_unknown_country_survives_patch(client):
     songs[0]["tags"].append("country:yugoslavia")
     library.save(p, songs)
     r = client.patch(f"/songs/{VID}", json={"tags": ["country:yugoslavia", "x"]}, headers=H)
-    assert r.status_code == 200 and "country:yugoslavia" in r.json()["tags"]
+    assert r.status_code == 200
+    assert "country:yugoslavia" in r.json()["tags"]
 
 
 @pytest.mark.parametrize("raw", ["su", "SU", "SUN", "USSR", "U.S.S.R.", "Soviet Union", "the Soviet Union", "CCCP", "SSSR"])
 def test_soviet_union_is_a_first_class_country(client, raw):
     from app import countrycodes
     assert countrycodes.canonical_country(raw) == "su"
-    assert countrycodes.NAMES["su"] == "Soviet Union" and countrycodes.is_historical("su")
-    assert not countrycodes.is_historical("ru") and not countrycodes.is_historical("zz")
+    assert countrycodes.NAMES["su"] == "Soviet Union"
+    assert countrycodes.is_historical("su")
+    assert not countrycodes.is_historical("ru")
+    assert not countrycodes.is_historical("zz")
     assert library.unknown_countries([f"country:{raw}"]) == []
     r = add(client, tags=[f"country:{raw}"])
     assert r.status_code in (200, 202)

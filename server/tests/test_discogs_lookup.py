@@ -37,7 +37,8 @@ def fake(results, details, calls=None):
 
 def test_off_without_a_token_and_with_the_lookup_switch(monkeypatch):
     monkeypatch.delenv("DISCOGS_TOKEN")
-    assert not dl.enabled() and dl.suggest("A", "B")["tags"] == []
+    assert not dl.enabled()
+    assert dl.suggest("A", "B")["tags"] == []
     monkeypatch.setenv("DISCOGS_TOKEN", "t")
     monkeypatch.setenv("AUDIO_TAG_LOOKUP", "0")
     assert not dl.enabled()
@@ -49,7 +50,8 @@ def test_styles_win_over_genres_year_country_and_master_url(monkeypatch):
     monkeypatch.setattr(dl, "_get", fake(res, det))
     out = dl.suggest("Armin van Buuren", "Burned With Desire")
     assert out["tags"] == ["genre:trance", "genre:progressive trance", "country:nl"]
-    assert out["year"] == 2004 and out["country"] == "country:nl"
+    assert out["year"] == 2004
+    assert out["country"] == "country:nl"
     assert out["url"] == "https://www.discogs.com/master/77"
 
 
@@ -69,7 +71,8 @@ def test_earliest_year_among_strong_matches_and_fuzzy_artist(monkeypatch):
     calls = []
     monkeypatch.setattr(dl, "_get", fake(res, det, calls))
     out = dl.suggest("daft punk", "Around the World (Official Video)")
-    assert out["year"] == 1997 and out["tags"][0] == "genre:french house"
+    assert out["year"] == 1997
+    assert out["tags"][0] == "genre:french house"
     assert calls == ["database/search", "releases/2"]
 
 
@@ -85,7 +88,8 @@ def test_track_must_be_on_the_release_next_candidate_is_tried(monkeypatch):
     det = {1: release(1, "Artist", ["Something Else"], 1990, styles=("Wrong",)), 2: release(2, "Artist", ["Wanted Song"], 1995, styles=("Right",))}
     monkeypatch.setattr(dl, "_get", fake(res, det))
     out = dl.suggest("Artist", "Wanted Song")
-    assert out["tags"][0] == "genre:right" and out["year"] == 1995
+    assert out["tags"][0] == "genre:right"
+    assert out["year"] == 1995
 
 
 def test_various_is_used_only_without_a_direct_match_and_gives_no_year(monkeypatch):
@@ -96,7 +100,9 @@ def test_various_is_used_only_without_a_direct_match_and_gives_no_year(monkeypat
     dl._cache.clear()
     monkeypatch.setattr(dl, "_get", fake(res[:1], det))
     out = dl.suggest("Artist", "Song")
-    assert out["tags"] == ["genre:hardstyle"] and out["year"] is None and out["country"] is None
+    assert out["tags"] == ["genre:hardstyle"]
+    assert out["year"] is None
+    assert out["country"] is None
     assert dl.rank(res, "Artist")[0]["id"] == 2
 
 
@@ -105,7 +111,8 @@ def test_unknown_country_dropped(monkeypatch):
     det = {1: release(1, "A", ["S"], 2000, styles=("Techno",), country="Atlantis")}
     monkeypatch.setattr(dl, "_get", fake(res, det))
     out = dl.suggest("A", "S")
-    assert out["tags"] == ["genre:techno"] and out["country"] is None
+    assert out["tags"] == ["genre:techno"]
+    assert out["country"] is None
 
 
 def test_no_match_other_artists_and_empty_results(monkeypatch):
@@ -187,7 +194,8 @@ def test_request_carries_the_token_and_a_user_agent(monkeypatch):
     monkeypatch.setattr(httpjson.urllib.request, "urlopen", urlopen)
     assert dl._get("database/search", {"type": "release"}) == {"results": []}
     assert seen["h"]["Authorization"] == "Discogs token=test-token"
-    assert "audioplayer" in seen["h"]["User-agent"] and seen["timeout"] == 8
+    assert "audioplayer" in seen["h"]["User-agent"]
+    assert seen["timeout"] == 8
     assert "test-token" not in seen["url"]
 
 

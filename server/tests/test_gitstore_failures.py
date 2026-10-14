@@ -49,6 +49,12 @@ def write(clone, rel, text):
     p.write_text(text)
 
 
+def fail_in_transaction(s, clone, text, exc):
+    with s.transaction():
+        write(clone, "a.json", text)
+        raise exc
+
+
 def heads(bare):
     return git(bare, "log", "--format=%s", "main").splitlines()
 
@@ -73,7 +79,8 @@ def test_ssh_key_goes_into_git_ssh_command_and_identity_defaults(tmp_path, monke
     for n in ("GIT_AUTHOR_NAME", "GIT_AUTHOR_EMAIL", "GIT_COMMITTER_NAME", "GIT_COMMITTER_EMAIL", "GIT_SSH_COMMAND"):
         monkeypatch.delenv(n, raising=False)
     env = gitstore.GitSync(tmp_path, ssh_key="/k/id")._env()
-    assert '-i "/k/id"' in env["GIT_SSH_COMMAND"] and "BatchMode=yes" in env["GIT_SSH_COMMAND"]
+    assert '-i "/k/id"' in env["GIT_SSH_COMMAND"]
+    assert "BatchMode=yes" in env["GIT_SSH_COMMAND"]
     assert env["GIT_TERMINAL_PROMPT"] == "0"
     assert env["GIT_AUTHOR_NAME"] == env["GIT_COMMITTER_NAME"] == "audioplayer-server"
     assert "GIT_SSH_COMMAND" not in gitstore.GitSync(tmp_path)._env()
@@ -93,13 +100,15 @@ def test_commit_pushes_and_status_ok(sync):
     with s.transaction():
         write(clone, "users/u/library.json", "{}")
         s.commit("first")
-    assert heads(bare)[0] == "first" and s.status() == "ok"
+    assert heads(bare)[0] == "first"
+    assert s.status() == "ok"
 
 
 def test_commit_with_no_changes_makes_no_commit(sync):
     s, bare, clone = sync
     s.commit("nothing")
-    assert heads(bare) == ["init"] and s.status() == "ok"
+    assert heads(bare) == ["init"]
+    assert s.status() == "ok"
 
 
 def test_transaction_rolls_back_tracked_changes_when_body_raises(sync):
@@ -108,9 +117,7 @@ def test_transaction_rolls_back_tracked_changes_when_body_raises(sync):
         write(clone, "a.json", "one")
         s.commit("add a")
     with pytest.raises(RuntimeError):
-        with s.transaction():
-            write(clone, "a.json", "two")
-            raise RuntimeError("boom")
+        fail_in_transaction(s, clone, "two", RuntimeError("boom"))
     assert (clone / "audioplayer" / "a.json").read_text() == "one"
 
 
@@ -120,9 +127,7 @@ def test_transaction_rollback_also_on_keyboard_interrupt(sync):
         write(clone, "a.json", "one")
         s.commit("add a")
     with pytest.raises(KeyboardInterrupt):
-        with s.transaction():
-            write(clone, "a.json", "x")
-            raise KeyboardInterrupt
+        fail_in_transaction(s, clone, "x", KeyboardInterrupt())
     assert (clone / "audioplayer" / "a.json").read_text() == "one"
 
 
@@ -153,7 +158,8 @@ def test_push_failure_stays_pending_then_goes_error_then_recovers(sync, tmp_path
     assert s.status() == "error"
     git(clone, "remote", "set-url", "origin", str(bare))
     assert s._push_all() is True
-    assert s.status() == "ok" and heads(bare)[0] == "offline"
+    assert s.status() == "ok"
+    assert heads(bare)[0] == "offline"
 
 
 def test_retry_backoff_doubles_up_to_cap_and_stops_after_success(sync, monkeypatch):
@@ -230,7 +236,8 @@ def test_resync_marks_unpushed_repo_dirty_and_pushes(sync):
 def test_resync_noop_when_nothing_ahead_or_no_upstream(sync, tmp_path):
     s, bare, clone = sync
     s.resync()
-    assert s.status() == "ok" and s._retry is None
+    assert s.status() == "ok"
+    assert s._retry is None
     lone = tmp_path / "lone"
     git(tmp_path, "init", "-b", "main", str(lone))
     t = gitstore.GitSync(lone)
@@ -251,9 +258,11 @@ def test_from_env(tmp_path, monkeypatch):
     monkeypatch.delenv("AUDIO_COVERS_REPO", raising=False)
     monkeypatch.delenv("AUDIO_GIT_SSH_KEY", raising=False)
     g = gitstore.from_env()
-    assert g.covers_repo is None and g._ssh_key is None
+    assert g.covers_repo is None
+    assert g._ssh_key is None
     monkeypatch.setenv("AUDIO_COVERS_REPO", str(tmp_path / "c"))
     monkeypatch.setenv("AUDIO_GIT_SSH_KEY", "/k")
     g = gitstore.from_env()
-    assert g.covers_repo == tmp_path / "c" and g._ssh_key == "/k"
+    assert g.covers_repo == tmp_path / "c"
+    assert g._ssh_key == "/k"
     assert os.environ["AUDIO_GIT_SSH_KEY"] == "/k"

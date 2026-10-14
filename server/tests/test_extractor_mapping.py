@@ -47,7 +47,8 @@ def test_search_skips_bad_entries_and_maps_fields(ydl):
     ]}
     got = extractor.search("q", 5)
     assert [r["id"] for r in got] == [YT, "9bZkp7q19f0"]
-    assert got[0]["artist"] == "Chan" and "Song" in got[0]["title"]
+    assert got[0]["artist"] == "Chan"
+    assert "Song" in got[0]["title"]
     assert got[0]["thumbnail"] == f"https://i.ytimg.com/vi/{YT}/hqdefault.jpg"
     assert ydl.seen[1] == ("ytsearch5:q", False)
 
@@ -63,9 +64,11 @@ def test_download_legacy_maps_info_and_makes_the_directory(ydl, tmp_path):
     got = extractor.download(YT, out)
     assert out.is_dir()
     assert got == {"id": YT, "title": "T", "artist": "U", "duration": 12, "thumbnail": f"https://i.ytimg.com/vi/{YT}/hqdefault.jpg"}
-    assert ydl.seen[0]["outtmpl"] == str(out / "%(id)s.%(ext)s") and ydl.seen[0]["noplaylist"] is True
+    assert ydl.seen[0]["outtmpl"] == str(out / "%(id)s.%(ext)s")
+    assert ydl.seen[0]["noplaylist"] is True
     ydl.info = {"artist": "Real", "uploader": "U"}
-    assert extractor.download(YT, out)["artist"] == "Real" and extractor.download(YT, out)["title"] == ""
+    assert extractor.download(YT, out)["artist"] == "Real"
+    assert extractor.download(YT, out)["title"] == ""
 
 
 YT_INFO = {
@@ -77,7 +80,9 @@ YT_INFO = {
 def test_preview_youtube_info_dict_mapping(ydl):
     ydl.info = {**YT_INFO, "artist": "Daft Punk", "track": "One More Time"}
     got = extractor.preview(YT)
-    assert got["id"] == YT and got["source"] == "youtube" and got["source_url"] == f"https://www.youtube.com/watch?v={YT}"
+    assert got["id"] == YT
+    assert got["source"] == "youtube"
+    assert got["source_url"] == f"https://www.youtube.com/watch?v={YT}"
     assert (got["artist"], got["title"], got["album"], got["duration"]) == ("Daft Punk", "One More Time", "Discovery", 320)
     assert got["year"] == 2009
     assert {t.lower() for t in got["tags"]} >= {"genre:house", "genre:electronic", "genre:disco"}
@@ -112,9 +117,14 @@ SC_INFO = {
 def test_soundcloud_probe_info_dict_mapping(ydl):
     ydl.info = dict(SC_INFO)
     got = extractor.soundcloud_probe(SC_URL)
-    assert got["id"] == SC and got["source"] == "soundcloud" and got["source_url"] == SC_URL
-    assert got["artist"] == "some-artist" and got["title"] == "Some Track" and got["remixer"] == "Foo Bar Remix"
-    assert got["year"] == 2020 and got["duration"] == 245.0
+    assert got["id"] == SC
+    assert got["source"] == "soundcloud"
+    assert got["source_url"] == SC_URL
+    assert got["artist"] == "some-artist"
+    assert got["title"] == "Some Track"
+    assert got["remixer"] == "Foo Bar Remix"
+    assert got["year"] == 2020
+    assert got["duration"] == 245.0
     assert got["thumbnail"] == "https://i1.sndcdn.com/artworks-abc-t500x500.jpg"
     assert got["preview_only"] is False
     assert "genre:techno" in [t.lower() for t in got["tags"]]
@@ -123,7 +133,8 @@ def test_soundcloud_probe_info_dict_mapping(ydl):
 def test_soundcloud_probe_artist_precedence_and_genres_fallback(ydl):
     ydl.info = {**SC_INFO, "artists": ["First", "Second"], "artist": "A", "creator": "C", "genre": None, "genres": ["Ambient"]}
     got = extractor.soundcloud_probe(SC_URL)
-    assert got["artist"] == "First" and [t.lower() for t in got["tags"]] == ["genre:ambient"]
+    assert got["artist"] == "First"
+    assert [t.lower() for t in got["tags"]] == ["genre:ambient"]
     ydl.info = {**SC_INFO, "artist": "A", "creator": "C"}
     assert extractor.soundcloud_probe(SC_URL)["artist"] == "A"
     ydl.info = {**SC_INFO, "creator": "C"}
@@ -191,7 +202,8 @@ def test_download_audio_youtube_progress_and_result(ydl, tmp_path):
 
     got = extractor.download_audio(YT, tmp_path / "o", P())
     assert events == [("d", 10.5, 3), ("p", 0.5), ("c",)]
-    assert got["id"] == YT and got["duration"] == 100
+    assert got["id"] == YT
+    assert got["duration"] == 100
     assert ydl.seen[-1] == (f"https://www.youtube.com/watch?v={YT}", True)
 
 
@@ -221,7 +233,9 @@ def test_download_soundcloud_success(ydl, tmp_path, monkeypatch):
     ydl.info = {**SC_INFO, "format_id": "http_mp3_1_0"}
     monkeypatch.setattr(extractor, "_file_seconds", lambda p: 245.0)
     got = extractor.download_audio(SC, tmp_path, None, SC_URL)
-    assert got["id"] == SC and got["title"] == "Some Track" and got["remixer"] == "Foo Bar Remix"
+    assert got["id"] == SC
+    assert got["title"] == "Some Track"
+    assert got["remixer"] == "Foo Bar Remix"
     assert ydl.seen[0]["postprocessors"][0]["preferredcodec"] == "m4a"
     assert ydl.seen[0]["outtmpl"] == str(tmp_path / f"{SC}.%(ext)s")
 
@@ -285,7 +299,8 @@ def test_fetch_cover_writes_the_file_and_refuses_unknown_hosts(monkeypatch, tmp_
     monkeypatch.setattr(urllib.request, "urlopen", lambda u, timeout=0: urls.append(u) or R())
     dest = tmp_path / "x" / "c.jpg"
     extractor.fetch_cover(YT, dest)
-    assert dest.read_bytes() == b"jpg" and urls == [f"https://i.ytimg.com/vi/{YT}/hqdefault.jpg"]
+    assert dest.read_bytes() == b"jpg"
+    assert urls == [f"https://i.ytimg.com/vi/{YT}/hqdefault.jpg"]
     with pytest.raises(ValueError, match="no cover"):
         extractor.fetch_cover(SC, tmp_path / "n.jpg", "https://evil.example/a-large.jpg")
     assert not (tmp_path / "n.jpg").exists()

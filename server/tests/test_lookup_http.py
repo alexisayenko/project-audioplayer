@@ -42,9 +42,11 @@ def test_post_sends_form_encoded_ascii_with_user_agent(monkeypatch, clock):
     monkeypatch.setenv("AUDIO_MB_USER_AGENT", "agent/1")
     assert ac._post({"client": "k", "fingerprint": "A+B/c=="}) == {"status": "ok", "results": []}
     req = seen["req"]
-    assert req.full_url == ac.API and req.get_method() == "POST"
+    assert req.full_url == ac.API
+    assert req.get_method() == "POST"
     assert req.data == b"client=k&fingerprint=A%2BB%2Fc%3D%3D"
-    assert req.get_header("User-agent") == "agent/1" and seen["timeout"] == ac.HTTP_TIMEOUT
+    assert req.get_header("User-agent") == "agent/1"
+    assert seen["timeout"] == ac.HTTP_TIMEOUT
 
 
 def test_rate_limiter_spaces_calls_without_real_sleep(monkeypatch, clock):
@@ -130,7 +132,8 @@ def click_track(bpm_value, seconds=20, sr=bpm.SAMPLE_RATE):
 def test_bpm_of_a_synthetic_click_track_within_two(target):
     pytest.importorskip("aubio")
     got = bpm.bpm_from_samples(click_track(target))
-    assert got is not None and abs(got - target) <= 2
+    assert got is not None
+    assert abs(got - target) <= 2
 
 
 def test_bpm_of_silence_is_none():

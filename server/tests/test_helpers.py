@@ -33,7 +33,8 @@ def test_rate_limiter_serialized_waits_out_the_interval_and_stamps_the_end(clock
     limiter = ratelimit.RateLimiter(2.0)
     with limiter.serialized():
         pass
-    assert clock["sleeps"] == [] and limiter.last_call == 100.0
+    assert clock["sleeps"] == []
+    assert limiter.last_call == 100.0
     with limiter.serialized():
         pass
     assert clock["sleeps"] == [pytest.approx(2.0)]
@@ -84,7 +85,9 @@ def test_http_json_builds_get_and_post_requests(monkeypatch):
     assert seen == {"url": "https://x.test/api?a=b+c", "data": None, "ua": "ua/9", "accept": "application/json",
                     "extra": "1", "timeout": 7, "method": "GET"}
     httpjson.http_json("https://x.test/api", 3, form={"k": "v&"})
-    assert seen["data"] == b"k=v%26" and seen["method"] == "POST" and seen["url"] == "https://x.test/api"
+    assert seen["data"] == b"k=v%26"
+    assert seen["method"] == "POST"
+    assert seen["url"] == "https://x.test/api"
 
 
 def test_http_json_default_user_agent_and_bad_bodies(monkeypatch):
@@ -114,8 +117,10 @@ def test_write_json_atomic_keeps_the_old_file_when_encoding_fails(tmp_path):
 
 
 def test_tag_namespaces():
-    assert tags.namespace("Genre:house") == "genre" and tags.namespace(" country : us") == "country"
-    assert tags.namespace("80s") == "" and tags.namespace(5) == ""
+    assert tags.namespace("Genre:house") == "genre"
+    assert tags.namespace(" country : us") == "country"
+    assert tags.namespace("80s") == ""
+    assert tags.namespace(5) == ""
     assert list(tags.namespaced_values(["genre:house", "GENRE:Techno", "country:us", "plain", ":x"], "genre")) == ["house", "Techno"]
 
 
@@ -138,12 +143,15 @@ def test_timeutil_roundtrip():
     assert timeutil.epoch_of("1970-01-02T00:00:00Z") == 86400
     assert timeutil.epoch_of("nope") is None
     stamp = timeutil.now_utc()
-    assert timeutil.epoch_of(stamp) is not None and stamp.endswith("Z")
+    assert timeutil.epoch_of(stamp) is not None
+    assert stamp.endswith("Z")
 
 
 def test_lookup_query_combines_split_candidates_and_title():
     artist, names, title = titles.lookup_query("Daft Punk", "Daft Punk - One More Time (Official Video)")
-    assert artist == "Daft Punk" and names[0] == "Daft Punk" and title == "One More Time"
+    assert artist == "Daft Punk"
+    assert names[0] == "Daft Punk"
+    assert title == "One More Time"
     artist, names, title = titles.lookup_query("", "Boards of Canada - Roygbiv")
     assert (artist, names, title) == ("Boards of Canada", ["Boards of Canada"], "Roygbiv")
 
@@ -152,7 +160,8 @@ def test_genre_graph_cache_saves_compactly_and_survives_a_failing_disk(tmp_path,
     from app import genre_graph as gg
 
     path = tmp_path / "cache" / "g.json"
-    assert gg.save_cache(path) is None and not path.exists()
+    assert gg.save_cache(path) is None
+    assert not path.exists()
     data = gg.load_cache(path)
     data["labels"]["house"] = {"qid": "Q1"}
     gg.save_cache(path)
@@ -171,4 +180,6 @@ def test_genre_graph_api_reserves_a_slot_and_asks_for_json(monkeypatch):
     monkeypatch.setattr(httpjson.urllib.request, "urlopen",
                         lambda req, timeout: seen.update(url=req.full_url, timeout=timeout) or Resp(b'{"entities": {}}'))
     assert gg._api({"action": "wbgetentities"}) == {"entities": {}}
-    assert seen["reserved"] and seen["url"] == f"{gg.API}?action=wbgetentities&format=json" and seen["timeout"] == gg.TIMEOUT
+    assert seen["reserved"]
+    assert seen["url"] == f"{gg.API}?action=wbgetentities&format=json"
+    assert seen["timeout"] == gg.TIMEOUT

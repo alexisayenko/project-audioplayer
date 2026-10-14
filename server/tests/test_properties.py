@@ -24,9 +24,11 @@ def test_download_name_is_always_a_safe_basename(seed):
     for _ in range(80):
         song = {"artist": rnd_text(rng), "title": rnd_text(rng)}
         name = library.download_name(song, "dQw4w9WgXcQ")
-        assert name.endswith(".m4a") and len(name) <= 120 + 4
+        assert name.endswith(".m4a")
+        assert len(name) <= 120 + 4
         assert not any(c in name for c in '/\\:*?"<>|\x00\r\n\t')
-        assert name == name.strip() and not name.startswith(".")
+        assert name.strip() == name
+        assert not name.startswith(".")
 
 
 @pytest.mark.parametrize("seed", SEEDS)
@@ -36,10 +38,14 @@ def test_content_disposition_is_ascii_and_round_trips(seed):
         name = library.download_name({"artist": rnd_text(rng), "title": rnd_text(rng)}, "dQw4w9WgXcQ")
         header = library.content_disposition(name)
         header.encode("ascii")
-        assert "\r" not in header and "\n" not in header
+        assert "\r" not in header
+        assert "\n" not in header
         assert unquote(header.split("filename*=UTF-8''")[1]) == name
         fallback = header.split('filename="')[1].split('"; ')[0]
-        assert fallback.endswith(".m4a") and '"' not in fallback and "\\" not in fallback and "%" not in fallback
+        assert fallback.endswith(".m4a")
+        assert '"' not in fallback
+        assert "\\" not in fallback
+        assert "%" not in fallback
 
 
 def test_download_name_fallbacks():
@@ -81,10 +87,14 @@ def test_clean_tags_is_idempotent_deduped_and_trimmed(seed):
         assert library.clean_tags(once) == once
         assert len({t.casefold() for t in once}) == len(once)
         for t in once:
-            assert t == t.strip() and "  " not in t and t
+            assert t.strip() == t
+            assert "  " not in t
+            assert t
             if ":" in t:
                 key, _, value = t.partition(":")
-                assert key and value and key == key.lower()
+                assert key
+                assert value
+                assert key.lower() == key
 
 
 def test_tag_normalisation_edge_cases():
@@ -171,12 +181,18 @@ LEGACY = [
 def test_migration_is_idempotent_and_cleans_legacy_fields():
     once = library.normalize({"songs": json.loads(json.dumps(LEGACY))})
     twice = library.normalize(json.loads(json.dumps(once)))
-    assert once == twice
+    assert twice == once
     a, b, c = once["songs"]
-    assert a["file"] == "dQw4w9WgXcQ.m4a" and a["bpm"] == 121 and "genre" not in a and "original" not in a and a["remixer"] is None
-    assert a["source_url"] == "https://www.youtube.com/watch?v=dQw4w9WgXcQ" and a["wikipedia_song"] is None
+    assert a["file"] == "dQw4w9WgXcQ.m4a"
+    assert a["bpm"] == 121
+    assert "genre" not in a
+    assert "original" not in a
+    assert a["remixer"] is None
+    assert a["source_url"] == "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+    assert a["wikipedia_song"] is None
     assert sorted(a["tags"]) == ["Rock", "decade:90s", "genre:house"]
-    assert b["tags"] == ["lang:ru", "country:de"] and b["sources"] == [{"source": "youtube", "id": "9bZkp7q19f0", "url": "https://www.youtube.com/watch?v=9bZkp7q19f0"}]
+    assert b["tags"] == ["lang:ru", "country:de"]
+    assert b["sources"] == [{"source": "youtube", "id": "9bZkp7q19f0", "url": "https://www.youtube.com/watch?v=9bZkp7q19f0"}]
     assert c["file"] is None and c["tags"] == ["decade:00s"] if "tags" in c else True
 
 
@@ -202,7 +218,8 @@ def test_clean_sources_drops_malformed_entries():
     raw = [{"source": "youtube", "id": "a", "url": "https://youtu.be/dQw4w9WgXcQ?si=1"}, {"source": 5, "id": "x"}, {"source": "s"}, "junk", {"source": "s", "id": 7}]
     got = library.clean_sources(raw)
     assert got == [{"source": "youtube", "id": "a", "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"}, {"source": "s", "id": "7", "url": None}]
-    assert library.clean_sources("nope") == [] and library.clean_sources(None) == []
+    assert library.clean_sources("nope") == []
+    assert library.clean_sources(None) == []
 
 
 def test_public_song_reports_the_real_audio_size_and_survives_stat_errors(tmp_path, monkeypatch):
@@ -246,7 +263,8 @@ def test_identify_cache_evicts_the_oldest_beyond_the_limit_and_expires(monkeypat
     for i in range(5):
         identify.remember("u", f"v{i}", {"i": i})
     assert [k[1] for k in identify._cache] == ["v2", "v3", "v4"]
-    assert identify.recall("u", "v4") == {"i": 4} and identify.recall("u", "v0") is None
+    assert identify.recall("u", "v4") == {"i": 4}
+    assert identify.recall("u", "v0") is None
     assert identify.recall("u", "v4", max_age=-1) is None
     identify.forget("u", "v4")
     assert identify.recall("u", "v4") is None
@@ -291,9 +309,11 @@ def test_titleclean_reaches_a_fixed_point_in_two_passes(seed):
 
 
 def test_titleclean_odd_inputs():
-    assert titleclean.clean("") == "" and titleclean.clean(None) == ""
+    assert titleclean.clean("") == ""
+    assert titleclean.clean(None) == ""
     assert titleclean.clean("   ") == ""
-    assert titleclean._is_noise("   ") is False and titleclean._is_noise("") is False
+    assert titleclean._is_noise("   ") is False
+    assert titleclean._is_noise("") is False
     assert titleclean.clean("[Free Download]") == "[Free Download]"
     assert titleclean.clean("Song [Free Download]") == "Song"
 
@@ -304,9 +324,12 @@ def test_title_functions_never_raise_and_return_text(seed):
     for _ in range(150):
         artist, title = rnd_text(rng, rng.randrange(0, 30)), rnd_title(rng) if rng.random() < 0.5 else rnd_text(rng, rng.randrange(0, 40))
         a, t, remix = titles.split_title(artist, title)
-        assert isinstance(a, str) and isinstance(t, str) and (remix is None or isinstance(remix, str))
+        assert isinstance(a, str)
+        assert isinstance(t, str)
+        assert remix is None or isinstance(remix, str)
         cut, rm = titles.cut_remix(title)
-        assert isinstance(cut, str) and (rm is None or rm.strip())
+        assert isinstance(cut, str)
+        assert rm is None or rm.strip()
         assert len(cut) <= len(title)
         for fn in (titles.clean_artist, titles.clean_title, titles.lookup_title, titles.lookup_artist, titles.normalize_feat):
             assert isinstance(fn(title), str)

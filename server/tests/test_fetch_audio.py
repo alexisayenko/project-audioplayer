@@ -32,7 +32,8 @@ def test_fetch_is_idempotent_once_audio_exists(multi):
     add_meta(multi, a)
     multi.post(f"/songs/{VID}/audio", headers=a)
     r = multi.post(f"/songs/{VID}/audio", headers=a)
-    assert r.status_code == 200 and r.json()["status"] == "done"
+    assert r.status_code == 200
+    assert r.json()["status"] == "done"
 
 
 def test_unknown_song_is_404_and_other_users_cannot_fetch(multi):
@@ -52,7 +53,8 @@ def test_fetch_counts_against_the_hourly_limit(multi, monkeypatch):
     r = multi.post(f"/songs/{VID2}/audio", headers=a)
     assert r.status_code == 429
     body = r.json()
-    assert body["error"] == "hourly_limit" and body["retry_after_minutes"] >= 1
+    assert body["error"] == "hourly_limit"
+    assert body["retry_after_minutes"] >= 1
     assert state(multi, a, VID2) == "none"
 
 
@@ -73,7 +75,8 @@ def test_fetch_respects_the_storage_cap(multi, monkeypatch):
     audio.mkdir(parents=True, exist_ok=True)
     (audio / "other.m4a").write_bytes(b"xx")
     r = multi.post(f"/songs/{VID}/audio", headers=a)
-    assert r.status_code == 403 and r.json()["error"] == "library_full_bytes"
+    assert r.status_code == 403
+    assert r.json()["error"] == "library_full_bytes"
 
 
 def test_failed_fetch_reports_error_and_can_retry(multi, monkeypatch):
@@ -87,7 +90,8 @@ def test_failed_fetch_reports_error_and_can_retry(multi, monkeypatch):
     monkeypatch.setattr(extractor, "download_audio", boom)
     assert multi.post(f"/songs/{VID}/audio", headers=a).status_code == 202
     job = multi.get(f"/songs/{VID}/status", headers=a).json()
-    assert job["status"] == "error" and "blocked" in job["error"]
+    assert job["status"] == "error"
+    assert "blocked" in job["error"]
     assert state(multi, a) == "none"
     monkeypatch.setattr(extractor, "download_audio", good)
     assert multi.post(f"/songs/{VID}/audio", headers=a).status_code == 202

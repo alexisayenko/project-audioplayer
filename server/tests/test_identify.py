@@ -50,8 +50,10 @@ SONG = {"id": "x", "artist": "daft punk", "title": "around the world"}
 
 def test_unavailable_when_no_source_is_configured(monkeypatch):
     out = identify.run(SONG, None)
-    assert out["status"] == "unavailable" and out["available"] == {"acoustid": False, "discogs": False}
-    assert out["suggested_tags"] == [] and not identify.configured()
+    assert out["status"] == "unavailable"
+    assert out["available"] == {"acoustid": False, "discogs": False}
+    assert out["suggested_tags"] == []
+    assert not identify.configured()
 
 
 def test_full_merge_priorities_and_caps(monkeypatch):
@@ -81,7 +83,8 @@ def test_non_genres_and_unknown_countries_are_dropped():
 def test_discogs_only_run_without_fingerprint(monkeypatch):
     wire(monkeypatch, fp=False, title_mb=mb_result(langs=[]))
     out = identify.run(SONG, "x.m4a")
-    assert out["status"] == "ok" and out["matched"] is None
+    assert out["status"] == "ok"
+    assert out["matched"] is None
     assert out["sources"] == ["musicbrainz", "wikidata", "discogs"]
     assert out["suggested_tags"][:2] == ["genre:french house", "genre:disco"]
 
@@ -90,7 +93,9 @@ def test_fingerprint_without_match_falls_back_to_the_title_lookup(monkeypatch):
     wire(monkeypatch, title_mb=mb_result(), disc={})
     monkeypatch.setattr(ac, "identify", lambda path, artist="", title="": {"status": "no_match", "match": None})
     out = identify.run(SONG, "x.m4a")
-    assert out["matched"] is None and out["sources"][0] == "musicbrainz" and "acoustid" not in out["sources"]
+    assert out["matched"] is None
+    assert out["sources"][0] == "musicbrainz"
+    assert "acoustid" not in out["sources"]
     assert out["suggested_year"] == 1997
 
 
@@ -100,7 +105,9 @@ def test_no_match_status_when_nothing_is_found(monkeypatch):
     monkeypatch.setattr(gl, "lookup", lambda a, t, f=None: gl._empty())
     monkeypatch.setattr(dl, "suggest", lambda a, t: dl._empty())
     out = identify.run(SONG, "x.m4a")
-    assert out["status"] == "no_match" and out["suggested_tags"] == [] and out["sources"] == []
+    assert out["status"] == "no_match"
+    assert out["suggested_tags"] == []
+    assert out["sources"] == []
 
 
 def test_a_failing_source_is_skipped(monkeypatch):
@@ -112,7 +119,8 @@ def test_a_failing_source_is_skipped(monkeypatch):
     monkeypatch.setattr(dl, "suggest", boom)
     monkeypatch.setattr(wiki_lookup, "suggest", boom)
     out = identify.run(SONG, "x.m4a")
-    assert out["status"] == "ok" and "discogs" not in out["sources"]
+    assert out["status"] == "ok"
+    assert "discogs" not in out["sources"]
     assert out["suggested_tags"][:2] == ["genre:house", "genre:electronic"]
 
 
@@ -169,8 +177,12 @@ def test_lookup_recording_derives_the_same_suggestions_as_the_title_lookup(monke
     monkeypatch.setattr(gl, "_get", _get)
     out = gl.lookup_recording(MBID.upper())
     assert out["tags"] == ["genre:house", "country:fr"]
-    assert out["year"] == 1997 and out["album"] == "Homework" and out["mb_url"] == MB_URL
-    assert out["artist"] == "Daft Punk" and out["title"] == "Around the World" and out["langs"] == ["en"]
+    assert out["year"] == 1997
+    assert out["album"] == "Homework"
+    assert out["mb_url"] == MB_URL
+    assert out["artist"] == "Daft Punk"
+    assert out["title"] == "Around the World"
+    assert out["langs"] == ["en"]
     assert out["song_rels"] == ["https://en.wikipedia.org/wiki/Around_the_World_(Daft_Punk_song)"]
     gl.lookup_recording(MBID)
     assert calls == [f"recording/{MBID}", "artist/a1"]
@@ -199,10 +211,12 @@ def test_endpoint_statuses(client, monkeypatch):
     r = client.get(f"/songs/{VID}/identify", headers=H)
     assert r.json() == {"status": "not_run", "available": {"acoustid": False, "discogs": False}}
     r = client.post(f"/songs/{VID}/identify", headers=H)
-    assert r.status_code == 200 and r.json()["status"] == "unavailable"
+    assert r.status_code == 200
+    assert r.json()["status"] == "unavailable"
     wire(monkeypatch)
     out = client.post(f"/songs/{VID}/identify", headers=H).json()
-    assert out["status"] == "ok" and out["matched"]["confidence"] == 0.974
+    assert out["status"] == "ok"
+    assert out["matched"]["confidence"] == 0.974
     assert client.get(f"/songs/{VID}/identify", headers=H).json()["status"] == "ok"
     assert client.get(f"/songs/{VID}/identify").status_code in (401, 403)
     assert client.post("/songs/short/identify", headers=H).status_code == 422
@@ -212,7 +226,8 @@ def test_endpoint_needs_audio_on_the_server(client, monkeypatch):
     wire(monkeypatch)
     client.post("/songs", json={"url": f"https://youtu.be/{VID}", "metadata": {"title": "Song"}, "tags": [], "audio": False}, headers=H)
     r = client.post(f"/songs/{VID}/identify", headers=H)
-    assert r.status_code == 404 and r.json()["detail"] == "not downloaded"
+    assert r.status_code == 404
+    assert r.json()["detail"] == "not downloaded"
 
 
 def test_suggestions_are_never_applied(client, monkeypatch):
@@ -232,7 +247,8 @@ def test_isolation_between_users(multi, monkeypatch):
     assert multi.get(f"/songs/{VID}/identify", headers=b).status_code == 404
     assert add_as(multi, b).status_code == 202
     assert identify.recall(uid(ALICE), VID) is not identify.recall(uid(BOB), VID)
-    assert identify.recall(uid(BOB), VID) is not None and multi.get(f"/songs/{VID}/identify", headers=b).json()["status"] == "ok"
+    assert identify.recall(uid(BOB), VID) is not None
+    assert multi.get(f"/songs/{VID}/identify", headers=b).json()["status"] == "ok"
 
 
 def test_download_triggers_one_background_run_that_costs_no_quota(multi, monkeypatch):
@@ -243,7 +259,8 @@ def test_download_triggers_one_background_run_that_costs_no_quota(multi, monkeyp
     monkeypatch.setattr(identify, "run", lambda s, p: runs.append(s["id"]) or real(s, p))
     a = who(multi, ALICE)
     assert add_as(multi, a, VID).status_code == 202
-    assert runs == [VID] and identify.recall(uid(ALICE), VID)["status"] == "ok"
+    assert runs == [VID]
+    assert identify.recall(uid(ALICE), VID)["status"] == "ok"
     assert add_as(multi, a, VID2).status_code == 202
     assert add_as(multi, a, "abcdefghijk").status_code == 429
     assert multi.post(f"/songs/{VID}/identify", headers=a).status_code == 200
@@ -253,7 +270,8 @@ def test_download_skips_the_run_when_both_keys_are_missing(client, monkeypatch):
     ran = []
     monkeypatch.setattr(identify, "run", lambda s, p: ran.append(1))
     has_audio(client)
-    assert ran == [] and identify.recall(users.uid_for_email("alex.isayenko@gmail.com"), VID) is None
+    assert ran == []
+    assert identify.recall(users.uid_for_email("alex.isayenko@gmail.com"), VID) is None
 
 
 def test_deleting_a_song_forgets_its_result(client, monkeypatch):
@@ -279,8 +297,11 @@ def test_preview_includes_discogs_when_the_token_is_set(client, monkeypatch):
     monkeypatch.setattr(gl, "suggest_tags", lambda a, t: ["genre:house", "country:fr"])
     monkeypatch.setattr(dl, "suggest", lambda a, t: disc_result())
     body = client.post("/preview", json={"url": f"https://youtu.be/{VID}"}, headers=H).json()
-    assert body["tags"][:2] == ["genre:french house", "genre:disco"] and "genre:house" in body["tags"]
-    assert body["discogs_url"] == "https://www.discogs.com/release/5" and body["suggested_year"] == 1996
+    assert body["tags"][:2] == ["genre:french house", "genre:disco"]
+    assert "genre:house" in body["tags"]
+    assert body["discogs_url"] == "https://www.discogs.com/release/5"
+    assert body["suggested_year"] == 1996
     monkeypatch.setattr(dl, "suggest", lambda a, t: dl._empty())
     body = client.post("/preview", json={"url": f"https://youtu.be/{VID}"}, headers=H).json()
-    assert body["tags"] == ["genre:house", "country:fr"] and body["discogs_url"] is None
+    assert body["tags"] == ["genre:house", "country:fr"]
+    assert body["discogs_url"] is None

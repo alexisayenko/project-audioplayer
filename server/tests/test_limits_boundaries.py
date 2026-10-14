@@ -41,7 +41,8 @@ def test_env_int_parsing_falls_back_on_garbage(monkeypatch, raw, expected):
 def test_concurrency_never_below_one(monkeypatch):
     monkeypatch.setenv("USER_MAX_CONCURRENT_DOWNLOADS", "0")
     monkeypatch.setenv("GLOBAL_MAX_CONCURRENT_DOWNLOADS", "-5")
-    assert limits.user_concurrency() == 1 and limits.global_concurrency() == 1
+    assert limits.user_concurrency() == 1
+    assert limits.global_concurrency() == 1
     monkeypatch.setenv("USER_MAX_CONCURRENT_DOWNLOADS", "x")
     assert limits.user_concurrency() == 1
 
@@ -162,7 +163,8 @@ def test_rate_relearns_from_added_at_after_restart_and_ignores_bad_stamps():
 def test_rate_is_per_user():
     r = limits.AddRate()
     r.record("a", [], T0)
-    assert r.count("a", [], T0) == 1 and r.count("b", [], T0) == 0
+    assert r.count("a", [], T0) == 1
+    assert r.count("b", [], T0) == 0
 
 
 def test_check_fetch_has_no_song_count_but_has_rate_and_bytes(monkeypatch, dirs):
@@ -178,7 +180,9 @@ def test_usage_reports_none_limits_for_owner(monkeypatch, dirs):
     audio, _ = dirs
     (audio / "f").write_bytes(b"abc")
     u = limits.usage("o", True, songs(2), audio)
-    assert u["max_songs"] is None and u["max_bytes"] is None and u["max_adds"] is None
+    assert u["max_songs"] is None
+    assert u["max_bytes"] is None
+    assert u["max_adds"] is None
     assert (u["songs"], u["bytes"]) == (2, 3)
     assert limits.usage("u", False, [], audio)["max_songs"] == 500
 

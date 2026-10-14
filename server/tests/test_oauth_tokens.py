@@ -149,6 +149,7 @@ def test_jwks_client_is_built_once_per_provider(monkeypatch):
     monkeypatch.setattr(oauth, "PyJWKClient", lambda url, **kw: made.append((url, kw)) or object())
     a, b = oauth._jwks("google"), oauth._jwks("google")
     c = oauth._jwks("apple")
-    assert a is b and a is not c
+    assert a is b
+    assert a is not c
     assert [u for u, _ in made] == [oauth.PROVIDERS["google"]["jwks"], oauth.PROVIDERS["apple"]["jwks"]]
     assert made[0][1]["cache_keys"] is True

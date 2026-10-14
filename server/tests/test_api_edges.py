@@ -91,19 +91,23 @@ def test_session_cookie_flags(multi):
     assert cookie.startswith("__Host-session=")
     for flag in ("HttpOnly", "Secure", "SameSite=strict", "Path=/"):
         assert flag.lower() in cookie.lower()
-    assert f"Max-Age={session.LIFETIME}" in cookie and "Domain" not in cookie
+    assert f"Max-Age={session.LIFETIME}" in cookie
+    assert "Domain" not in cookie
 
 
 def test_unverified_google_email_cannot_open_a_session(multi):
     r = multi.post("/auth/session", json={"id_token": token(multi.key, ALICE, email_verified=False)}, headers=CSRF)
-    assert r.status_code == 403 and r.json()["error"] == "unverified_email"
+    assert r.status_code == 403
+    assert r.json()["error"] == "unverified_email"
     assert "set-cookie" not in r.headers
 
 
 def test_logout_needs_csrf_and_clears_the_cookie(multi):
     assert multi.post("/auth/logout").status_code == 403
     r = multi.post("/auth/logout", headers=CSRF)
-    assert r.status_code == 204 and "__Host-session" in r.headers["set-cookie"] and "Max-Age=0" in r.headers["set-cookie"]
+    assert r.status_code == 204
+    assert "__Host-session" in r.headers["set-cookie"]
+    assert "Max-Age=0" in r.headers["set-cookie"]
 
 
 @pytest.fixture
@@ -143,7 +147,8 @@ def test_cookie_for_a_closed_signup_user_is_refused_but_owner_cookie_works(https
     monkeypatch.setenv("SIGNUP_OPEN", "0")
     cookie_for(https, session.issue({"provider": "google", "email": "new@example.com", "uid": ""}))
     r = https.get("/library")
-    assert r.status_code == 403 and r.json()["error"] == "signup_closed"
+    assert r.status_code == 403
+    assert r.json()["error"] == "signup_closed"
     cookie_for(https, session.issue({"provider": "google", "email": users.owner_email(), "uid": ""}))
     assert https.get("/me").json()["owner"] is True
 
@@ -189,7 +194,8 @@ def test_symlink_escaping_the_user_audio_dir_is_not_served(client, tmp_path):
     except (OSError, NotImplementedError):
         pytest.skip("symlinks unavailable")
     r = client.get(f"/files/{VID}", headers=H)
-    assert r.status_code == 404 and b"SECRET" not in r.content
+    assert r.status_code == 404
+    assert b"SECRET" not in r.content
     assert client.get(f"/files/{VID}", params={"download": 1}, headers=H).json()["error"] == "audio_not_downloaded"
 
 
@@ -215,12 +221,15 @@ def test_covers_are_per_user_and_traversal_safe(multi, tmp_path):
 def test_range_requests_and_headers_on_files(client):
     owner_add(client)
     r = client.get(f"/files/{VID}", headers={**H, "Range": "bytes=1-3"})
-    assert r.status_code == 206 and r.content == b"udi" and r.headers["content-range"] == "bytes 1-3/5"
+    assert r.status_code == 206
+    assert r.content == b"udi"
+    assert r.headers["content-range"] == "bytes 1-3/5"
     assert client.get(f"/files/{VID}", headers={**H, "Range": "bytes=2-"}).content == b"dio"
     assert client.get(f"/files/{VID}", headers={**H, "Range": "bytes=-2"}).content == b"io"
     assert client.get(f"/files/{VID}", headers={**H, "Range": "bytes=99-"}).status_code == 416
     full = client.get(f"/files/{VID}", headers=H)
-    assert full.headers["accept-ranges"] == "bytes" and full.headers["content-type"] == "audio/mp4"
+    assert full.headers["accept-ranges"] == "bytes"
+    assert full.headers["content-type"] == "audio/mp4"
     assert full.headers["cache-control"] == "private, no-cache"
     assert client.head(f"/files/{VID}", headers=H).status_code == 200
 
@@ -234,14 +243,18 @@ def test_download_name_cyrillic_uses_rfc5987_and_ascii_fallback(client):
     assert unquote(star) == "Кино - Группа крови.m4a"
     header.encode("ascii")
     fallback = header.split('filename="')[1].split('"')[0]
-    assert fallback.isascii() and "/" not in fallback and fallback.endswith(".m4a")
+    assert fallback.isascii()
+    assert "/" not in fallback
+    assert fallback.endswith(".m4a")
 
 
 def test_download_name_cannot_inject_headers_or_paths(client):
     owner_add(client, metadata={"title": 'a"; evil=1\r\nX-Injected: 1/../..\\x', "artist": "%0d%0a"})
     r = client.get(f"/files/{VID}", params={"download": 1}, headers=H)
     header = r.headers["content-disposition"]
-    assert "x-injected" not in r.headers and "\r" not in header and "\n" not in header
+    assert "x-injected" not in r.headers
+    assert "\r" not in header
+    assert "\n" not in header
     star = unquote(header.split("filename*=UTF-8''")[1])
     assert not any(c in star for c in '/\\"\r\n')
 
@@ -249,9 +262,11 @@ def test_download_name_cannot_inject_headers_or_paths(client):
 def test_download_of_a_metadata_only_song_is_a_structured_404(client):
     owner_add(client, audio=False)
     r = client.get(f"/files/{VID}", params={"download": 1}, headers=H)
-    assert r.status_code == 404 and r.json()["error"] == "audio_not_downloaded"
+    assert r.status_code == 404
+    assert r.json()["error"] == "audio_not_downloaded"
     r = client.get(f"/files/{VID}", headers=H)
-    assert r.status_code == 404 and r.json() == {"detail": "not downloaded"}
+    assert r.status_code == 404
+    assert r.json() == {"detail": "not downloaded"}
 
 
 # ---- catalog ETag ----------------------------------------------------------------------------
@@ -260,10 +275,13 @@ def test_catalog_etag_revalidation_forms(client):
     owner_add(client)
     first = client.get("/catalog", headers=H)
     etag = first.headers["etag"]
-    assert first.status_code == 200 and first.headers["cache-control"] == "no-cache"
+    assert first.status_code == 200
+    assert first.headers["cache-control"] == "no-cache"
     for sent in (etag, f"W/{etag}", "*", f'"zzz", {etag}'):
         r = client.get("/catalog", headers={**H, "If-None-Match": sent})
-        assert r.status_code == 304 and r.content == b"" and r.headers["etag"] == etag, sent
+        assert r.status_code == 304, sent
+        assert r.content == b"", sent
+        assert r.headers["etag"] == etag, sent
     assert client.get("/catalog", headers={**H, "If-None-Match": '"other"'}).status_code == 200
     owner_add(client, VID2)
     assert client.get("/catalog", headers={**H, "If-None-Match": etag}).status_code == 200
@@ -274,7 +292,9 @@ def test_catalog_since_is_validated_and_filters(client):
     for bad in ("yesterday", "2020-01-01", "2020-01-01T00:00:00", "2020-01-01 00:00:00Z", "2020-01-01T00:00:00+01:00", "' OR 1=1"):
         assert client.get("/catalog", params={"since": bad}, headers=H).status_code == 422, bad
     future = client.get("/catalog", params={"since": "2999-01-01T00:00:00Z"}, headers=H).json()
-    assert future["songs"] == [] and future["total"] == 1 and future["ids"] == [VID]
+    assert future["songs"] == []
+    assert future["total"] == 1
+    assert future["ids"] == [VID]
     past = client.get("/catalog", params={"since": "2000-01-01T00:00:00Z"}, headers=H)
     assert len(past.json()["songs"]) == 1
     assert past.headers["etag"] != client.get("/catalog", headers=H).headers["etag"]
@@ -303,12 +323,14 @@ def test_hourly_window_rolls_over_with_an_injected_clock(multi, monkeypatch):
     now["t"] += 1800
     assert add(multi, a, VID2).status_code == 202
     r = add(multi, a, VID3)
-    assert r.status_code == 429 and r.json()["retry_after_minutes"] == 30
+    assert r.status_code == 429
+    assert r.json()["retry_after_minutes"] == 30
     assert r.headers["retry-after"] == "1800"
     now["t"] += 1800
     assert add(multi, a, VID3).status_code == 202
     r = add(multi, a, VID4)
-    assert r.status_code == 429 and r.json()["retry_after_minutes"] == 30
+    assert r.status_code == 429
+    assert r.json()["retry_after_minutes"] == 30
     now["t"] += 3600
     assert add(multi, a, VID4).status_code == 202
 
@@ -331,7 +353,9 @@ def test_usage_endpoint_boundaries(multi, monkeypatch):
     u = multi.get("/me/usage", headers=a).json()
     assert (u["songs"], u["max_songs"], u["adds_last_hour"], u["bytes"]) == (1, 3, 1, 5)
     o = multi.get("/me/usage", headers=H).json()
-    assert o["max_songs"] is None and o["max_bytes"] is None and o["max_adds"] is None
+    assert o["max_songs"] is None
+    assert o["max_bytes"] is None
+    assert o["max_adds"] is None
 
 
 # ---- scheduler: caps under real threads ------------------------------------------------------
@@ -380,7 +404,8 @@ def test_scheduler_per_user_global_caps_fifo_and_owner_exemption(monkeypatch):
     assert sub("o", True, "o1") is False
     g.release("b1")
     assert wait_until(lambda: "c1" in g.running)
-    assert "a2" not in g.running and "o1" not in g.running
+    assert "a2" not in g.running
+    assert "o1" not in g.running
     g.release("a1")
     assert wait_until(lambda: "a2" in g.running or "o1" in g.running)
     for n in ("a2", "c1", "o1"):
@@ -388,7 +413,8 @@ def test_scheduler_per_user_global_caps_fifo_and_owner_exemption(monkeypatch):
     assert wait_until(lambda: len(g.order) == 5 and not g.running)
     assert g.order == ["a1", "b1", "c1", "a2", "o1"]
     assert wait_until(lambda: s._running == 0)
-    assert s._running == 0 and all(v == 0 for v in s._by_user.values())
+    assert s._running == 0
+    assert all(v == 0 for v in s._by_user.values())
 
 
 def test_scheduler_exempt_owner_ignores_user_cap_but_not_global(monkeypatch):
@@ -442,7 +468,8 @@ def test_scheduled_waits_for_result_and_reraises_errors(monkeypatch):
 def test_legacy_download_failure_is_502_and_soundcloud_is_422(client, monkeypatch):
     monkeypatch.setattr(extractor, "download", lambda v, d: (_ for _ in ()).throw(RuntimeError("yt blew up")))
     r = client.post("/download", json={"video_id": VID}, headers=H)
-    assert r.status_code == 502 and "yt blew up" in r.json()["detail"]
+    assert r.status_code == 502
+    assert "yt blew up" in r.json()["detail"]
     assert client.post("/download", json={"video_id": "soundcloud-123"}, headers=H).status_code == 422
     assert client.post("/download", json={}, headers=H).status_code == 422
 
@@ -450,10 +477,12 @@ def test_legacy_download_failure_is_502_and_soundcloud_is_422(client, monkeypatc
 def test_preview_failure_is_502_with_short_message(client, monkeypatch):
     monkeypatch.setattr(extractor, "preview", lambda v: (_ for _ in ()).throw(RuntimeError("ERROR: x. Use --cookies for auth")))
     r = client.post("/preview", json={"url": VID}, headers=H)
-    assert r.status_code == 502 and "--cookies" not in r.json()["detail"]
+    assert r.status_code == 502
+    assert "--cookies" not in r.json()["detail"]
     for bad in ("", "not a url", "https://example.com/watch?v=" + VID, "https://soundcloud.com/discover/x"):
         r = client.post("/preview", json={"url": bad}, headers=H)
-        assert r.status_code == 422 and r.json()["error"] == "unsupported", bad
+        assert r.status_code == 422, bad
+        assert r.json()["error"] == "unsupported", bad
 
 
 def test_metadata_with_a_soundcloud_source_uses_the_probe(client, monkeypatch):
@@ -463,13 +492,16 @@ def test_metadata_with_a_soundcloud_source_uses_the_probe(client, monkeypatch):
     r = client.post("/metadata", json={"title": "T", "artist": "A", "sources": [{"url": SC_URL}, {"url": "  "}]}, headers=H)
     assert r.status_code == 200
     body = r.json()
-    assert body["album"] == "Alb" and body["year"] == 2020
+    assert body["album"] == "Alb"
+    assert body["year"] == 2020
     assert lookup.source_info(SC_URL) is probe
 
 
 def test_add_rejects_unknown_country_and_unsupported_links(client):
     r = owner_add(client, tags=["country:Atlantis"])
-    assert r.status_code == 422 and r.json()["error"] == "unknown_country" and r.json()["value"] == "atlantis"
+    assert r.status_code == 422
+    assert r.json()["error"] == "unknown_country"
+    assert r.json()["value"] == "atlantis"
     assert owner_add(client, tags=["country:Neverland"]).status_code == 422
     assert owner_add(client, tags=["country:germany"]).status_code == 202
     r = client.post("/songs", json={"url": "https://example.com/x", "metadata": {"title": "t"}}, headers=H)
@@ -507,7 +539,9 @@ def test_metadata_only_add_survives_preview_and_cover_failures(client, monkeypat
     r = owner_add(client, audio=False, metadata={"title": "Only Title"})
     assert r.status_code == 201
     song = r.json()["song"]
-    assert song["title"] == "Only Title" and song["audio_state"] == "none" and not song.get("cover")
+    assert song["title"] == "Only Title"
+    assert song["audio_state"] == "none"
+    assert not song.get("cover")
     assert client.get(f"/covers/{VID}", headers=H).status_code == 404
 
 
@@ -542,8 +576,11 @@ def test_fetch_audio_bpm_failure_and_missing_cover_are_tolerated(catalog_song, m
     monkeypatch.setattr(extractor, "download_audio", lambda v, out, progress=None, source_url=None: (out.mkdir(parents=True, exist_ok=True), (out / f"{v}.m4a").write_bytes(b"aud"), {"duration": 33, "thumbnail": "t"})[2])
     assert client.post(f"/songs/{VID}/audio", headers=H).status_code == 202
     song = client.get("/library", headers=H).json()["songs"][0]
-    assert song["audio_state"] == "server" and song["duration"] == 33 and song["bpm"] is None
-    assert song["cover"] == f"covers/{VID}.jpg" and len(covers) == 1
+    assert song["audio_state"] == "server"
+    assert song["duration"] == 33
+    assert song["bpm"] is None
+    assert song["cover"] == f"covers/{VID}.jpg"
+    assert len(covers) == 1
 
 
 def test_fetch_audio_cover_failure_leaves_cover_unset_and_bpm_is_stored(catalog_song, monkeypatch):
@@ -552,7 +589,8 @@ def test_fetch_audio_cover_failure_leaves_cover_unset_and_bpm_is_stored(catalog_
     monkeypatch.setattr(extractor, "fetch_cover", lambda *a, **k: (_ for _ in ()).throw(OSError("x")))
     assert client.post(f"/songs/{VID}/audio", headers=H).status_code == 202
     song = client.get("/library", headers=H).json()["songs"][0]
-    assert song["bpm"] == 128 and not song["cover"]
+    assert song["bpm"] == 128
+    assert not song["cover"]
 
 
 def test_fetch_audio_when_the_song_disappears_marks_the_job_failed_and_drops_the_file(catalog_song, monkeypatch, tmp_path):
@@ -579,27 +617,31 @@ def test_fetch_audio_preview_only_and_generic_errors_become_job_errors(catalog_s
     deps.JOBS.clear()
     client.post(f"/songs/{VID}/audio", headers=H)
     body = job_state(client)
-    assert body["state"] == "failed" and "--cookies" not in body["error"]
+    assert body["state"] == "failed"
+    assert "--cookies" not in body["error"]
 
 
 def test_fetch_audio_is_idempotent_while_a_job_is_active(catalog_song):
     deps.JOBS[(OWNER_UID, VID)] = {"status": "downloading", "progress": 0.3, "error": None}
     r = catalog_song.post(f"/songs/{VID}/audio", headers=H)
-    assert r.status_code == 202 and r.json() == {"id": VID, "status": "downloading"}
+    assert r.status_code == 202
+    assert r.json() == {"id": VID, "status": "downloading"}
 
 
 def test_status_of_unknown_and_known_songs(client):
     assert client.get(f"/songs/{VID}/status", headers=H).status_code == 404
     owner_add(client, audio=False)
     body = client.get(f"/songs/{VID}/status", headers=H).json()
-    assert body["state"] == "done" and body["percent"] == 100
+    assert body["state"] == "done"
+    assert body["percent"] == 100
 
 
 def test_bpm_detect_error_shapes(client, monkeypatch):
     assert client.post(f"/songs/{VID}/bpm/detect", headers=H).status_code == 404
     owner_add(client, audio=False)
     r = client.post(f"/songs/{VID}/bpm/detect", headers=H)
-    assert r.status_code == 404 and r.json()["detail"] == "not downloaded"
+    assert r.status_code == 404
+    assert r.json()["detail"] == "not downloaded"
     owner_add(client, VID2)
     monkeypatch.setattr(bpm, "detect_bpm", lambda p: None)
     assert client.post(f"/songs/{VID2}/bpm/detect", headers=H).status_code == 422
@@ -632,7 +674,8 @@ def test_unavailable_music_root_is_503_not_500(client, tmp_path, monkeypatch):
     monkeypatch.setenv("AUDIO_MUSIC_ROOT", "nas://music/")
     monkeypatch.delenv("AUDIO_HOSTS", raising=False)
     r = client.get(f"/files/{VID}", headers=H)
-    assert r.status_code == 503 and "not configured" in r.json()["detail"]
+    assert r.status_code == 503
+    assert "not configured" in r.json()["detail"]
 
 
 def test_auto_identify_is_best_effort(monkeypatch, caplog):
@@ -657,7 +700,8 @@ def test_short_hint_cutting_edges(msg, expected):
 
 def test_problem_error_shape_and_music_root_503(client):
     r = client.get("/songs/" + VID + "/status", headers=H)
-    assert r.status_code == 404 and "detail" in r.json()
+    assert r.status_code == 404
+    assert "detail" in r.json()
     p = Problem(429, "hourly_limit", "slow down", headers={"Retry-After": "60"}, retry_after_minutes=1)
     assert p.body() == {"error": "hourly_limit", "detail": "slow down", "retry_after_minutes": 1}
 
@@ -666,12 +710,16 @@ def test_head_files_matches_get_without_a_body(client):
     owner_add(client)
     got = client.get(f"/files/{VID}", headers=H)
     head = client.head(f"/files/{VID}", headers=H)
-    assert head.status_code == 200 and head.content == b""
+    assert head.status_code == 200
+    assert head.content == b""
     for name in ("content-length", "content-type", "accept-ranges", "cache-control", "etag"):
         assert head.headers.get(name) == got.headers.get(name)
-    assert head.headers["content-length"] == "5" and head.headers["accept-ranges"] == "bytes"
+    assert head.headers["content-length"] == "5"
+    assert head.headers["accept-ranges"] == "bytes"
     part = client.head(f"/files/{VID}", headers={**H, "Range": "bytes=1-3"})
-    assert part.status_code == 206 and part.content == b"" and part.headers["content-range"] == "bytes 1-3/5"
+    assert part.status_code == 206
+    assert part.content == b""
+    assert part.headers["content-range"] == "bytes 1-3/5"
     assert part.headers["content-length"] == "3"
     assert client.head(f"/files/{VID}", headers={**H, "Range": "bytes=99-"}).status_code == 416
     assert client.head(f"/files/{VID}", params={"token": "secret"}).status_code == 200

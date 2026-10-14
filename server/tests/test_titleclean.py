@@ -41,3 +41,49 @@ def test_lookup_title_uses_it():
     from app.titles import lookup_title
     assert lookup_title("Song [Free Download]") == "Song"
     assert titleclean.clean("Song (Live) [HD]") == "Song (Live)"
+
+
+_ALPHABET = [" ", " ", "\t", "\n", "-", "–", "|", "/", ",", "&", "(", ")", "1", "a", "x", "and", "live", "live at", "- live", "Live In", "acoustic", "ab"]
+
+
+def _fuzz_strings(count=4000):
+    import random
+
+    rng = random.Random(20260414)
+    for _ in range(count):
+        yield "".join(rng.choice(_ALPHABET) for _ in range(rng.randint(0, 14)))
+
+
+def test_rewritten_regexes_match_the_originals():
+    import re
+
+    from app import discogs_lookup, titleclean, titles
+
+    old_seg = re.compile(r"(\s+(?:\||｜|//|/|／|-|–|—)\s+)")
+    old_tail = re.compile(r"[\s|/\-–—]+$")
+    old_disambig = re.compile(r"\s*\(\d+\)$")
+    old_feat = re.compile(r"\s*+[,&]\s*+|\s++(?:and|x)\s++", re.I)
+    old_multi = re.compile(r"\s+[-–—]\s+|,\s+")
+    old_version = re.compile(r"(?<!\s)\s++(?:-\s+(?:live|acoustic|unplugged|sessions?|in concert)|live (?:at|from|in|on))\b.*+$", re.I)
+    for s in _fuzz_strings():
+        assert titleclean._SEG.split(s) == old_seg.split(s), repr(s)
+        assert titleclean._TAIL.sub("", s) == old_tail.sub("", s), repr(s)
+        assert discogs_lookup._DISAMBIG.sub("", s) == old_disambig.sub("", s), repr(s)
+        assert titles._FEAT_SPLIT.split(s) == old_feat.split(s), repr(s)
+        assert titles._MULTI_ARTIST.split(s, 1) == old_multi.split(s, 1), repr(s)
+        assert titles._cut_version_tail(s) == old_version.sub("", s), repr(s)
+
+
+def test_rewritten_regexes_stay_fast_on_long_runs():
+    import time
+
+    from app import titleclean, titles
+
+    start = time.perf_counter()
+    big = " " * 20000
+    titleclean._SEG.split(big + "x")
+    titleclean._TAIL.sub("", "-" * 20000 + "x")
+    titles._FEAT_SPLIT.split(big + "x")
+    titles._MULTI_ARTIST.split(big + "x", 1)
+    titles._cut_version_tail(" live at" * 5000 + "\nz")
+    assert time.perf_counter() - start < 2

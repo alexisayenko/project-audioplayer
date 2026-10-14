@@ -57,7 +57,8 @@ def test_extractor_hook_feeds_tracker(monkeypatch):
             seen.append(jobs.public(job))
     extractor.download_audio(VID, Path("."), Spy(job))
     assert [(s["state"], s["percent"]) for s in seen] == [("downloading", 25), ("downloading", 50)]
-    assert seen[0]["speed"] == 500 and seen[0]["eta"] == 2
+    assert seen[0]["speed"] == 500
+    assert seen[0]["eta"] == 2
     assert jobs.public(job)["state"] == "converting"
 
 
@@ -82,8 +83,12 @@ def test_status_endpoint_exposes_progress_per_user(multi, monkeypatch):
     assert (snaps[0]["state"], snaps[0]["percent"], snaps[0]["speed"], snaps[0]["eta"]) == ("downloading", 42, 2048, 5)
     assert (snaps[1]["state"], snaps[1]["percent"]) == ("converting", 100)
     done = multi.get(f"/songs/{VID}/status", headers=a).json()
-    assert done["status"] == "done" and done["state"] == "done" and done["percent"] == 100
-    assert done["progress"] == 1.0 and done["speed"] is None and done["error_code"] is None
+    assert done["status"] == "done"
+    assert done["state"] == "done"
+    assert done["percent"] == 100
+    assert done["progress"] == 1.0
+    assert done["speed"] is None
+    assert done["error_code"] is None
     assert multi.get(f"/songs/{VID}/status", headers=b).status_code == 404
 
 
@@ -97,5 +102,7 @@ def test_failed_status_carries_code_and_message(multi, monkeypatch):
     monkeypatch.setattr(extractor, "download_audio", boom)
     multi.post(f"/songs/{VID}/audio", headers=a)
     s = multi.get(f"/songs/{VID}/status", headers=a).json()
-    assert s["status"] == "error" and s["state"] == "failed"
-    assert s["error_code"] == "preview_only" and s["error"]
+    assert s["status"] == "error"
+    assert s["state"] == "failed"
+    assert s["error_code"] == "preview_only"
+    assert s["error"]

@@ -33,7 +33,8 @@ def test_discogs_tries_whole_then_first_part(monkeypatch):
     monkeypatch.setattr(dl, "_lookup", fake)
     out = dl.suggest("Armin van Buuren, Sharon den Adel", "Song")
     assert seen == ["Armin van Buuren, Sharon den Adel", "Armin van Buuren"]
-    assert out["url"] and out["tags"] == ["genre:trance"]
+    assert out["url"]
+    assert out["tags"] == ["genre:trance"]
 
 
 def test_discogs_whole_match_stops(monkeypatch):

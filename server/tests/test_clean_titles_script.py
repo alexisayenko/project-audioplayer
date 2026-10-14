@@ -24,7 +24,8 @@ def test_apply_writes_backup_outside_library_dir(tmp_path, monkeypatch):
     assert mod.main() == 0
     assert [p.name for p in lib_dir.iterdir()] == ["library.json"]
     saved = list(backups.glob("*.bak-*"))
-    assert len(saved) == 1 and "Free Download" in saved[0].read_text()
+    assert len(saved) == 1
+    assert "Free Download" in saved[0].read_text()
 
 
 def test_default_backup_dir_is_not_next_to_library(tmp_path, monkeypatch):

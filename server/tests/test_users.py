@@ -466,7 +466,8 @@ def test_download_headers_and_names(multi, tmp_path):
     assert r.headers["content-disposition"].startswith('attachment; filename="')
     assert r.headers["content-disposition"].endswith(".m4a")
     ranged = multi.get(f"/files/{VID}", params={"download": 1}, headers={**a, "Range": "bytes=1-2"})
-    assert ranged.status_code == 206 and ranged.content == b"ud"
+    assert ranged.status_code == 206
+    assert ranged.content == b"ud"
     assert multi.get(f"/files/{VID}", headers={**a, "Range": "bytes=0-1"}).status_code == 206
     r = multi.get(f"/files/{VID}", params={"download": 1}, headers=b)
     assert r.status_code == 404
@@ -478,7 +479,8 @@ def test_download_missing_audio_code(multi):
     assert add(multi, a).status_code == 202
     assert multi.delete(f"/songs/{VID}/audio", headers=a).status_code == 204
     r = multi.get(f"/files/{VID}", params={"download": 1}, headers=a)
-    assert r.status_code == 404 and r.json()["error"] == "audio_not_downloaded"
+    assert r.status_code == 404
+    assert r.json()["error"] == "audio_not_downloaded"
 
 
 def test_download_name_sanitising():
@@ -497,5 +499,6 @@ def test_download_name_sanitising():
     assert cd.startswith('attachment; filename="download.m4a"')
     assert unquote(cd.split("UTF-8''")[1]) == "Кино - Группа.m4a"
     cd = lib.content_disposition("Beyoncé - Halo.m4a")
-    assert 'filename="Beyonce - Halo.m4a"' in cd and "%C3%A9" in cd
+    assert 'filename="Beyonce - Halo.m4a"' in cd
+    assert "%C3%A9" in cd
     assert '"' not in lib.content_disposition('a"b.m4a').split("filename=", 1)[1].split(";")[0][1:-1]

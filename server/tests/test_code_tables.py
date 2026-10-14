@@ -19,13 +19,16 @@ def _literal(text, name):
 def test_every_country_code_is_two_lowercase_letters_with_a_name():
     assert len(cc.NAMES) > 240
     for code, name in cc.NAMES.items():
-        assert re.fullmatch(r"[a-z]{2}", code) and name.strip() == name and name
+        assert re.fullmatch(r"[a-z]{2}", code)
+        assert name.strip() == name
+        assert name
 
 
 def test_alpha3_codes_are_unique_and_well_formed():
     rows = [r.split("|") for r in (cc._ROWS + cc._HISTORICAL_ROWS).splitlines() if r.strip()]
     a3 = [r[1] for r in rows]
-    assert all(re.fullmatch(r"[A-Z]{3}", x) for x in a3) and len(a3) == len(set(a3))
+    assert all(re.fullmatch(r"[A-Z]{3}", x) for x in a3)
+    assert len(a3) == len(set(a3))
     assert len([r[0] for r in rows]) == len({r[0] for r in rows})
     assert all(len(r) in (3, 4) for r in rows)
 
@@ -61,8 +64,11 @@ def test_unknown_countries_are_rejected(value):
 
 
 def test_only_su_is_historical():
-    assert cc.is_historical("su") and cc.is_historical("SU")
-    assert not cc.is_historical("us") and not cc.is_historical("") and not cc.is_historical(None)
+    assert cc.is_historical("su")
+    assert cc.is_historical("SU")
+    assert not cc.is_historical("us")
+    assert not cc.is_historical("")
+    assert not cc.is_historical(None)
     assert [c for c in cc.NAMES if cc.is_historical(c)] == ["su"]
 
 
@@ -95,7 +101,8 @@ def test_web_historical_list_matches_server(web):
 
 def test_iso3_table_maps_to_two_letter_codes_without_duplicates():
     for three, two in lc.ISO3_TO_1.items():
-        assert re.fullmatch(r"[a-z]{3}", three) and re.fullmatch(r"[a-z]{2}", two)
+        assert re.fullmatch(r"[a-z]{3}", three)
+        assert re.fullmatch(r"[a-z]{2}", two)
         assert three not in lc.IGNORED
     assert len(set(lc.ISO3_TO_1)) == len(lc.ISO3_TO_1)
 

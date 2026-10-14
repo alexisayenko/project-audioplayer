@@ -50,7 +50,8 @@ def test_mb_503_is_retried_once_after_a_delay(monkeypatch, mb_clock):
 
     monkeypatch.setattr(httpjson.urllib.request, "urlopen", fake)
     assert gl._get("recording", {"query": "a b"}) == {"ok": 1}
-    assert len(calls) == 2 and gl.RETRY_DELAY in mb_clock["sleeps"]
+    assert len(calls) == 2
+    assert gl.RETRY_DELAY in mb_clock["sleeps"]
     assert "query=a+b" in calls[0]
 
 
@@ -156,7 +157,8 @@ def test_discogs_get_sends_token_and_accept_headers(monkeypatch, discogs):
     monkeypatch.setattr(httpjson.urllib.request, "urlopen", lambda req, timeout: seen.update(req=req, timeout=timeout) or Resp({"a": 1}))
     assert dl._get("database/search", {"q": "x y"}) == {"a": 1}
     assert seen["req"].get_header("Authorization") == "Discogs token=tok"
-    assert "q=x+y" in seen["req"].full_url and seen["timeout"] == dl.TIMEOUT
+    assert "q=x+y" in seen["req"].full_url
+    assert seen["timeout"] == dl.TIMEOUT
 
 
 @pytest.mark.parametrize("value,expected", [("1999", 1999), (1999, 1999), ("x", None), (None, None), ("999", None), ("3000", None), (2999, 2999), ("", None)])
@@ -165,7 +167,9 @@ def test_discogs_year_bounds(value, expected):
 
 
 def test_discogs_similarity_empty_names_never_match():
-    assert not dl._similar("", "A") and not dl._similar("A", "") and not dl._similar("!!!", "A")
+    assert not dl._similar("", "A")
+    assert not dl._similar("A", "")
+    assert not dl._similar("!!!", "A")
     assert dl._similar("Daft Punk", "Daft Punk (2)")
 
 
@@ -212,8 +216,11 @@ def test_discogs_one_failure_then_a_match_is_accepted(monkeypatch, discogs):
 
     monkeypatch.setattr(dl, "_get", fake)
     got = dl.suggest("Artist", "T")
-    assert got["url"] == "https://www.discogs.com/release/2" and got["year"] == 2001
-    assert "country:de" in got["tags"] and "genre:house" in got["tags"] and got["country"] == "country:de"
+    assert got["url"] == "https://www.discogs.com/release/2"
+    assert got["year"] == 2001
+    assert "country:de" in got["tags"]
+    assert "genre:house" in got["tags"]
+    assert got["country"] == "country:de"
 
 
 def test_discogs_various_compilation_has_no_year_or_country(monkeypatch, discogs):
@@ -224,7 +231,9 @@ def test_discogs_various_compilation_has_no_year_or_country(monkeypatch, discogs
 
     monkeypatch.setattr(dl, "_get", fake)
     got = dl.suggest("Artist", "T")
-    assert got["year"] is None and got["country"] is None and got["url"] == "https://www.discogs.com/master/77"
+    assert got["year"] is None
+    assert got["country"] is None
+    assert got["url"] == "https://www.discogs.com/master/77"
     assert got["tags"] == ["genre:electronic"]
 
 
@@ -249,7 +258,8 @@ def test_discogs_result_is_cached_per_query(monkeypatch, discogs):
     first = dl.suggest("Artist", "T")
     first["tags"].append("mutated")
     again = dl.suggest("Artist", "T")
-    assert again["tags"] == ["genre:techno"] and len(n) == 2
+    assert again["tags"] == ["genre:techno"]
+    assert len(n) == 2
 
 
 def test_discogs_empty_names_short_circuit(monkeypatch, discogs):
@@ -291,7 +301,8 @@ def boom(*a, **k):
 
 def test_wiki_entity_failure_is_none_and_not_cached(monkeypatch, wiki):
     monkeypatch.setattr(wl, "_fetch_json", boom)
-    assert wl._entity("Q1") is None and "Q1" not in wl._entities
+    assert wl._entity("Q1") is None
+    assert "Q1" not in wl._entities
     monkeypatch.setattr(wl, "_fetch_json", lambda url: {"entities": {"Q1": {"claims": {}}}})
     assert wl._entity("Q1") == {"claims": {}}
 
@@ -303,7 +314,8 @@ def test_wiki_entity_redirect_uses_the_only_entity(monkeypatch, wiki):
 
 def test_wiki_claims_and_labels_failures_degrade_to_empty(monkeypatch, wiki):
     monkeypatch.setattr(wl, "_fetch_json", boom)
-    assert wl._claims_map(["Q1"]) == {} and wl._label_map(["Q1"]) == {}
+    assert wl._claims_map(["Q1"]) == {}
+    assert wl._label_map(["Q1"]) == {}
 
 
 def test_wiki_labels_without_english_label_are_skipped(monkeypatch, wiki):
@@ -376,7 +388,8 @@ def test_wiki_infobox_is_cached_and_callers_cannot_mutate_it(monkeypatch, wiki):
     n = []
     monkeypatch.setattr(wl, "_fetch_json", lambda url: n.append(url) or {"parse": {"wikitext": "{{Infobox song\n| genre = Rock\n}}"}})
     wl.infobox("https://en.wikipedia.org/wiki/Z")["genres"].append("hacked")
-    assert wl.infobox("https://en.wikipedia.org/wiki/Z")["genres"] == ["rock"] and len(n) == 1
+    assert wl.infobox("https://en.wikipedia.org/wiki/Z")["genres"] == ["rock"]
+    assert len(n) == 1
 
 
 def test_wiki_facts_degrade_on_failure(monkeypatch, wiki):
@@ -389,10 +402,12 @@ def test_wiki_facts_degrade_on_failure(monkeypatch, wiki):
 def test_wiki_suggest_and_from_links_never_raise(monkeypatch, wiki):
     monkeypatch.setattr(gl, "lookup", boom)
     got = wl.suggest("A", "T")
-    assert got["tags"] == [] and got["wikipedia_song"] is None
+    assert got["tags"] == []
+    assert got["wikipedia_song"] is None
     monkeypatch.setattr(wl, "facts", boom)
     got = wl.from_links("https://en.wikipedia.org/wiki/Song", "https://en.wikipedia.org/wiki/Artist")
-    assert got["tags"] == [] and got["year"] is None
+    assert got["tags"] == []
+    assert got["year"] is None
 
 
 def test_wiki_suggest_disabled_makes_no_requests(monkeypatch, wiki):
@@ -434,14 +449,16 @@ def test_wiki_fetch_json_sends_agent_and_parses(monkeypatch):
     monkeypatch.setattr(httpjson.urllib.request, "urlopen", lambda req, timeout: seen.update(req=req, timeout=timeout) or Resp({"a": 1}))
     monkeypatch.setenv("AUDIO_MB_USER_AGENT", "ua/2")
     assert wl._fetch_json("https://www.wikidata.org/x") == {"a": 1}
-    assert seen["req"].get_header("User-agent") == "ua/2" and seen["timeout"] == wl.TIMEOUT
+    assert seen["req"].get_header("User-agent") == "ua/2"
+    assert seen["timeout"] == wl.TIMEOUT
 
 
 def test_mb_work_relation_failure_and_artist_without_id(monkeypatch):
     full = {"relations": [{"work": {"id": "w1"}}, {"work": {"id": "w2"}}]}
     calls = []
     monkeypatch.setattr(gl, "_get", lambda path, params: calls.append(path) or (_ for _ in ()).throw(OSError("down")))
-    assert gl._work_rels(full) == [] and calls == ["work/w1"]
+    assert gl._work_rels(full) == []
+    assert calls == ["work/w1"]
     assert gl._work_rels({"relations": [{"url": {}}, {"work": {}}]}) == []
     assert gl._artist_info("X", [{"name": "X", "artist": {}}], ["genre:rock"]) == (["genre:rock"], [], [])
     assert gl._artist_info("X", [{"name": "X", "artist": {"id": "a1", "name": "X"}}], ["genre:rock"]) == (["genre:rock"], [], [])
@@ -453,8 +470,11 @@ def test_metadata_cap_tags_drops_unknown_countries():
 
 
 def test_discogs_short_titles_match_exactly_only():
-    assert not dl._title_similar("A", "Alone") and not dl._title_similar("Ab", "Abba") and not dl._title_similar("", "A")
-    assert dl._title_similar("A", "A") and dl._title_similar("Ab", "ab!")
+    assert not dl._title_similar("A", "Alone")
+    assert not dl._title_similar("Ab", "Abba")
+    assert not dl._title_similar("", "A")
+    assert dl._title_similar("A", "A")
+    assert dl._title_similar("Ab", "ab!")
     assert dl._title_similar("Intro", "Intro (Remastered)")
     assert not dl._has_track({"tracklist": [{"title": "Alone"}, {"title": "Blue"}]}, "A")
     assert dl._has_track({"tracklist": [{"title": "A"}]}, "A")

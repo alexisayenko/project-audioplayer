@@ -146,7 +146,8 @@ def local_server():
 
 def test_open_no_redirect_returns_the_redirect_instead_of_following_it(local_server):
     resp = urlclean._open_no_redirect(local_server + "/short")
-    assert resp.code == 302 and resp.headers["Location"] == "https://soundcloud.com/a/b"
+    assert resp.code == 302
+    assert resp.headers["Location"] == "https://soundcloud.com/a/b"
     assert urlclean._open_no_redirect(local_server + "/ok").status == 200
     assert _Redirector.seen == ["/short", "/ok"]
 

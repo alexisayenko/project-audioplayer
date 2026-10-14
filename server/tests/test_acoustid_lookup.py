@@ -62,7 +62,8 @@ def test_available_needs_key_and_binary_and_logs_once(monkeypatch, caplog):
     assert ac.available()
     monkeypatch.delenv("ACOUSTID_API_KEY")
     with caplog.at_level("INFO"):
-        assert not ac.available() and not ac.available()
+        assert not ac.available()
+        assert not ac.available()
     assert len([r for r in caplog.records if "fingerprint identification is off" in r.message]) == 1
     monkeypatch.setenv("ACOUSTID_API_KEY", "k")
     monkeypatch.setattr(ac.shutil, "which", lambda name: None)
@@ -73,7 +74,8 @@ def test_custom_fpcalc_path(monkeypatch):
     seen = []
     monkeypatch.setattr(ac.shutil, "which", lambda name: seen.append(name) or name)
     monkeypatch.setenv("AUDIO_FPCALC", "/opt/fp/fpcalc")
-    assert ac._fpcalc() == "/opt/fp/fpcalc" and seen == ["/opt/fp/fpcalc"]
+    assert ac._fpcalc() == "/opt/fp/fpcalc"
+    assert seen == ["/opt/fp/fpcalc"]
 
 
 def test_score_threshold_default_and_configurable(monkeypatch):
@@ -92,7 +94,8 @@ def test_pick_prefers_the_recording_matching_the_song_then_the_best_score():
     ]
     assert ac.pick(results, "Daft Punk", "Around the World")["mbid"] == MBID2
     best = ac.pick(results, "Nobody", "Nothing")
-    assert best["mbid"] == MBID1 and best["confidence"] == 0.99
+    assert best["mbid"] == MBID1
+    assert best["confidence"] == 0.99
     assert ac.pick(results)["mbid"] == MBID1
 
 
@@ -112,8 +115,11 @@ def test_identify_ok_posts_only_the_fingerprint(monkeypatch, tmp_path):
     sent = []
     monkeypatch.setattr(ac, "_post", lambda f: sent.append(f) or {"status": "ok", "results": [{"score": 0.98, "recordings": [rec(MBID1, "T", "A")]}]})
     out = ac.identify(tmp_path / "x.m4a", "A", "T")
-    assert out["status"] == "ok" and out["match"]["mbid"] == MBID1
-    assert sent[0]["fingerprint"] == "FPDATA" and sent[0]["duration"] == "200" and sent[0]["meta"] == "recordings releasegroups"
+    assert out["status"] == "ok"
+    assert out["match"]["mbid"] == MBID1
+    assert sent[0]["fingerprint"] == "FPDATA"
+    assert sent[0]["duration"] == "200"
+    assert sent[0]["meta"] == "recordings releasegroups"
     assert set(sent[0]) == {"client", "meta", "duration", "fingerprint", "format"}
 
 

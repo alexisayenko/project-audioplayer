@@ -87,10 +87,12 @@ def test_multi_parent_family_and_edges(wd):
     assert set(n) == {"synthpop", "electronic music", "pop music"}
     sp = n["synthpop"]
     assert sorted(sp["parents"]) == sorted([n["electronic music"]["id"], n["pop music"]["id"]])
-    assert sp["family"] == "Electronic" and sp["qid"] == "Q101"
+    assert sp["family"] == "Electronic"
+    assert sp["qid"] == "Q101"
     assert n["pop music"]["family"] == "Pop"
     assert {"source": sp["id"], "target": n["pop music"]["id"], "kind": "parent"} in g["edges"]
-    assert g["ontology"] is True and g["pending"] is False
+    assert g["ontology"] is True
+    assert g["pending"] is False
 
 
 def test_related_edge_only_between_present_nodes(wd):
@@ -105,8 +107,10 @@ def test_related_edge_only_between_present_nodes(wd):
 def test_counts_do_not_double_count(wd):
     g = gg.graph(songs(("s1", ["dark synth", "chillsynth"]), ("s2", ["dark synth"]), ("s3", ["house music"])), wd.path)
     n = by_label(g)
-    assert n["dark synth"]["count"] == 2 and n["chillsynth"]["count"] == 1
-    assert n["synthpop"]["count"] == 2 and n["synthpop"]["ownCount"] == 0
+    assert n["dark synth"]["count"] == 2
+    assert n["chillsynth"]["count"] == 1
+    assert n["synthpop"]["count"] == 2
+    assert n["synthpop"]["ownCount"] == 0
     assert n["electronic music"]["count"] == 3
     assert n["pop music"]["count"] == 2
 
@@ -128,7 +132,10 @@ def test_cycle_is_broken(wd):
 def test_unresolved_tag_is_a_loose_node(wd):
     g = gg.graph(songs(("s1", ["zzz nothing"]), ("s2", ["synthpop"])), wd.path)
     z = by_label(g)["zzz nothing"]
-    assert z["qid"] is None and z["family"] == "Other" and z["parents"] == [] and z["count"] == 1
+    assert z["qid"] is None
+    assert z["family"] == "Other"
+    assert z["parents"] == []
+    assert z["count"] == 1
     assert g["ontology"] is True
 
 
@@ -174,7 +181,9 @@ def test_stale_entries_refresh_but_failure_keeps_cache(wd, monkeypatch):
 def test_network_failure_degrades_to_loose_nodes(wd, monkeypatch):
     monkeypatch.setattr(gg, "_api", boom)
     g = gg.graph(songs(("s1", ["synthpop"])), wd.path)
-    assert [n["qid"] for n in g["nodes"]] == [None] and g["ontology"] is False and g["pending"] is False
+    assert [n["qid"] for n in g["nodes"]] == [None]
+    assert g["ontology"] is False
+    assert g["pending"] is False
 
 
 def test_pending_while_fetching_in_background(wd, monkeypatch):
@@ -190,7 +199,9 @@ def test_pending_while_fetching_in_background(wd, monkeypatch):
     monkeypatch.setattr(gg, "INLINE", False)
     monkeypatch.setattr(gg.threading, "Thread", FakeThread)
     g = gg.graph(songs(("s1", ["synthpop"])), wd.path)
-    assert started and g["pending"] is True and g["ontology"] is False
+    assert started
+    assert g["pending"] is True
+    assert g["ontology"] is False
     gg.graph(songs(("s1", ["synthpop"])), wd.path)
     assert len(started) == 1
 
@@ -215,9 +226,12 @@ def test_endpoint_isolated_per_user_and_cache_has_no_user_data(multi, wd, monkey
     ga = multi.get("/genres/graph", headers=a).json()
     gb = multi.get("/genres/graph", headers=b).json()
     assert {n["label"] for n in ga["nodes"]} >= {"synthpop", "electronic music"}
-    assert gb["nodes"] == [] and gb["edges"] == []
+    assert gb["nodes"] == []
+    assert gb["edges"] == []
     cache_text = (tmp_path / "genre-ontology.json").read_text(encoding="utf-8")
-    assert VID not in cache_text and "Private Title" not in cache_text and "alice" not in cache_text
+    assert VID not in cache_text
+    assert "Private Title" not in cache_text
+    assert "alice" not in cache_text
     assert multi.get("/genres/graph").status_code == 401
 
 
