@@ -17,6 +17,16 @@
   --viz-ice-3: #e6fbff;
   --viz-ice-bg-top: #02050f;
   --viz-ice-bg-mid: #0a2a66;
+  --viz-ice2-0: #1b59a6;
+  --viz-ice2-1: #3e749d;
+  --viz-ice2-2: #5593b5;
+  --viz-ice2-3: #61afd3;
+  --viz-ice2-4: #76cce4;
+  --viz-ice2-5: #95e1f0;
+  --viz-ice2-6: #d4f8f8;
+  --viz-ice2-7: #fafcfa;
+  --viz-ice2-bg: #07080a;
+  --viz-ice2-ghost: #102b54;
 }
 
 #player { position: relative; isolation: isolate; }

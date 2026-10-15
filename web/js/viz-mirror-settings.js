@@ -12,21 +12,38 @@ const select = (key, group, label, options, def) => f(key, group, label, 'select
 const bool = (key, group, label, def) => f(key, group, label, 'bool', def);
 
 export const MIRROR_SCHEMA = [
-  f('barWidth', 'Bars', 'Bar width (px)', 'range', 0, { min: 0, max: 40, step: 1, zero: 'Auto', floor: 2 }),
+  f('barWidth', 'Bars', 'Bar width (px)', 'range', 0, { min: 0, max: 80, step: 1, zero: 'Auto', floor: 2 }),
   range('gap', 'Bars', 'Gap (px)', 0, 20, 1, 2),
   f('maxHeight', 'Bars', 'Max bar height (px)', 'range', 0, { min: 0, max: 600, step: 5, zero: 'Auto', floor: 20 }),
   range('segments', 'Sections', 'LED sections (0 = solid)', 0, 48, 1, 0),
   range('segmentGap', 'Sections', 'Section gap', 0.1, 0.6, 0.05, 0.3),
+  f('sectionHeight', 'Sections', 'Section height (px)', 'range', 0, { min: 0, max: 80, step: 1, zero: 'Auto', floor: 6 }),
+  range('peak', 'Sections', 'Peak marker', 0, 1, 0.05, 0),
+  range('peakHold', 'Sections', 'Peak hold (s)', 0.1, 2, 0.1, 0.6),
+  range('afterimage', 'Sections', 'Afterimage', 0, 1, 0.05, 0),
+  range('afterTau', 'Sections', 'Afterimage fade (s)', 0.1, 1.5, 0.05, 0.35),
+  range('shadeJitter', 'Sections', 'Tone variation', 0, 0.15, 0.01, 0),
+  select('sectorMode', 'History trail', 'Current sector', ['off', 'trail'], 'off'),
+  range('minDwell', 'History trail', 'Minimum dwell (ms)', 0, 300, 10, 60),
+  range('visitsPerStep', 'History trail', 'Visits per step', 1, 30, 1, 5),
+  range('loss', 'History trail', 'Loss per second', 0, 5, 0.1, 1),
+  range('maxLevel', 'History trail', 'Max level', 1, 12, 1, 6),
+  range('trailMax', 'History trail', 'Trail brightness', 0.3, 1, 0.05, 0.8),
+  range('stepGain', 'History trail', 'Step lightening', 0.05, 0.3, 0.01, 0.14),
   bool('tips', 'Bar tips', 'Show bar tips', false),
   range('tipFade', 'Bar tips', 'Fading speed', 0.05, 1, 0.05, 0.3),
   range('rise', 'Motion', 'Rise speed', 0.1, 1, 0.05, 0.6),
   range('fall', 'Motion', 'Fall speed', 0.03, 0.5, 0.01, 0.15),
-  select('gradient', 'Look', 'Colours', ['theme', 'reversed', 'accent', 'ice'], 'theme'),
+  select('gradient', 'Look', 'Colours', ['theme', 'reversed', 'accent', 'ice', 'ice-reversed', 'ice2'], 'theme'),
   select('direction', 'Look', 'Gradient direction', ['horizontal', 'vertical'], 'horizontal'),
   range('reflection', 'Look', 'Reflection', 0, 0.8, 0.05, 0.35),
   bool('horizon', 'Look', 'Horizon glow', true),
   range('band', 'Look', 'Horizon band', 0, 1, 0.05, 0),
-  select('backdrop', 'Look', 'Backdrop', ['none', 'ice'], 'none'),
+  range('baseGlow', 'Look', 'Base row glow', 0, 1, 0.05, 0),
+  range('mirrorGap', 'Look', 'Mirror gap (px)', 0, 12, 1, 0),
+  range('reflectionBlur', 'Look', 'Reflection blur', 0, 1, 0.05, 0),
+  range('tilt', 'Look', 'Tilt (deg)', -12, 12, 0.5, 0),
+  select('backdrop', 'Look', 'Backdrop', ['none', 'ice', 'black', 'ice2'], 'none'),
 ];
 
 export const MIRROR_GROUPS = [...new Set(MIRROR_SCHEMA.map((s) => s.group))];
@@ -127,15 +144,20 @@ const colorCache = new WeakMap();
 
 export function mirrorColors(colors, gradient) {
   if (gradient === 'theme' || !colors?.stops) return colors;
-  if (gradient === 'ice' && !colors.ice) return colors;
+  if ((gradient === 'ice' || gradient === 'ice-reversed') && !colors.ice) return colors;
+  if (gradient === 'ice2' && !colors.ice2) return colors;
   const hit = colorCache.get(colors);
   if (hit?.gradient === gradient) return hit.value;
   let stops;
   if (gradient === 'reversed') stops = [...colors.stops].reverse();
   else if (gradient === 'ice') stops = colors.ice.stops;
+  else if (gradient === 'ice-reversed') stops = [...colors.ice.stops].reverse();
+  else if (gradient === 'ice2') stops = [...colors.ice2.stops].reverse();
   else stops = colors.stops.map(() => colors.accent);
   const value = { ...colors, stops, a: stops[0], b: stops.at(-1) };
   if (gradient === 'ice') value.line = stops.at(-1);
+  else if (gradient === 'ice2') value.line = stops[0];
+  else if (gradient === 'ice-reversed') value.line = colors.ice.stops.at(-1);
   colorCache.set(colors, { gradient, value });
   return value;
 }

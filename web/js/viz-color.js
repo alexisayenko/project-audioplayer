@@ -23,8 +23,14 @@ const ICE = {
   bgMid: [10, 42, 102],
 };
 
+const ICE2 = {
+  stops: ['#1b59a6', '#3e749d', '#5593b5', '#61afd3', '#76cce4', '#95e1f0', '#d4f8f8', '#fafcfa'].map((h) => parseColor(h)),
+  bg: [7, 8, 10],
+  ghost: [16, 43, 84],
+};
+
 export const FALLBACK_COLORS = {
-  a: STOPS[0], b: STOPS[3], stops: STOPS, accent: [87, 211, 233], scrim: [26, 11, 51], line: [255, 255, 255], center: [27, 10, 51], ice: ICE,
+  a: STOPS[0], b: STOPS[3], stops: STOPS, accent: [87, 211, 233], scrim: [26, 11, 51], line: [255, 255, 255], center: [27, 10, 51], ice: ICE, ice2: ICE2,
 };
 
 export function readVizColors(style, fallback) {
@@ -43,6 +49,11 @@ export function readVizColors(style, fallback) {
       bgTop: get('--viz-ice-bg-top', fallback.ice.bgTop),
       bgMid: get('--viz-ice-bg-mid', fallback.ice.bgMid),
     },
+    ice2: {
+      stops: fallback.ice2.stops.map((def, k) => get(`--viz-ice2-${k}`, def)),
+      bg: get('--viz-ice2-bg', fallback.ice2.bg),
+      ghost: get('--viz-ice2-ghost', fallback.ice2.ghost),
+    },
   };
 }
 
@@ -50,7 +61,7 @@ export const lighten = (c, t) => mixColor(c, [255, 255, 255], t);
 
 export function barStops(colors) {
   const s = colors.stops ?? [colors.a, mixColor(colors.a, colors.b, 0.3), mixColor(colors.a, colors.b, 0.7), colors.b];
-  return s.map((color, k) => ({ at: STOP_AT[k], color }));
+  return s.map((color, k) => ({ at: s.length === STOP_AT.length ? STOP_AT[k] : k / (s.length - 1), color }));
 }
 
 export function sampleGradient(stops, t) {

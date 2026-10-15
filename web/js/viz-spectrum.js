@@ -1,6 +1,6 @@
 import {
   MIN_HZ, MAX_HZ, BASS_HZ, NOISE_FLOOR, DPR_CAP, FPS_TOUCH, FPS_DESKTOP, QUALITY_LEVELS, PULSE_MAX_RATE, MIN_TURN_S,
-  BAR_PITCH_PX, BAR_WIDTH_FRACTION, GAP_MIN_CSS, PX_BAR_MIN, PX_BAR_MAX, BAR_COUNT_MIN, BAR_COUNT_MAX, EDGE_FADE, HEIGHT_KNEE, HEIGHT_MAX, BAR_NOISE, NOISE_STEP_MS, BAR_COMPRESSION,
+  BAR_PITCH_PX, BAR_WIDTH_FRACTION, GAP_MIN_CSS, PX_BAR_MIN, PX_BAR_MIN_WIDE, PX_WIDE_BAR, PX_BAR_MAX, BAR_COUNT_MIN, BAR_COUNT_MAX, EDGE_FADE, HEIGHT_KNEE, HEIGHT_MAX, BAR_NOISE, NOISE_STEP_MS, BAR_COMPRESSION,
   RANGE_DB, TILT_DB_PER_OCT, REF_HEADROOM_DB, REF_RISE, REF_FALL_DB_PER_S, REF_MIN_DB,
 } from './viz-constants.js';
 
@@ -216,7 +216,7 @@ export function pixelBars(width, barWidth, gap) {
   const w = Number.isFinite(width) ? width : 0;
   if (!(barWidth > 0)) return { count: barCount(w), fraction: BAR_WIDTH_FRACTION, minGapCss: GAP_MIN_CSS };
   const pitch = Math.max(1, barWidth + Math.max(0, gap));
-  const count = Math.min(PX_BAR_MAX, Math.max(PX_BAR_MIN, Math.round(w / pitch)));
+  const count = Math.min(PX_BAR_MAX, Math.max(barWidth > PX_WIDE_BAR ? PX_BAR_MIN_WIDE : PX_BAR_MIN, Math.round(w / pitch)));
   return { count, fraction: barWidth / pitch, minGapCss: gap > 0 ? GAP_MIN_CSS : 0 };
 }
 

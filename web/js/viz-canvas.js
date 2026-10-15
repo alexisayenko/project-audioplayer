@@ -9,7 +9,7 @@ import {
 import { createTracker, diagnose, debugLines, byteMax, createStatusEl, userAgentFamily, audioOrigin } from './viz-signal.js';
 import { createGlow } from './viz-glow.js';
 import { readVizColors, FALLBACK_COLORS } from './viz-color.js';
-import { drawBars } from './viz-bars.js';
+import { drawBars, resetSector } from './viz-bars.js';
 import { createBackdrop } from './viz-backdrop.js';
 import { createPartsFilter } from './viz-parts.js';
 import { drawRing, ringRadius } from './viz-ring.js';
@@ -18,7 +18,7 @@ import { getStyle } from './viz-terrain-style.js';
 import { createSynth } from './viz-synth-gl.js';
 import { SHED_MAX, SYNTH_MAX_DPR, loadShed, saveShed } from './viz-synth-quality.js';
 import { synthVersion } from './viz-synth-settings.js';
-import { getMirror, mirrorVersion, mirrorColors } from './viz-mirror-settings.js';
+import { getMirror, mirrorVersion, mirrorColors, onMirror } from './viz-mirror-settings.js';
 import { createModeRenderer, MODES, DEFAULT_MODE, isSceneMode, usesFlight } from './viz-modes.js';
 
 const SPOKES = 48;
@@ -221,7 +221,7 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
       return;
     }
     const m = getMirror();
-    const iceBackdrop = m.backdrop === 'ice' && !!c.ice;
+    const iceBackdrop = (m.backdrop === 'ice' && !!c.ice) || m.backdrop === 'black' || (m.backdrop === 'ice2' && !!c.ice2);
     if (mode === 'full' && f.q?.backdrop && !iceBackdrop) backdrop.draw(ctx, w, h, c, bass);
     const drawn = parts.apply(st.bars, shaped, now / 1000);
     const dt = lastDraw ? Math.min(0.1, Math.max(0, (now - lastDraw) / 1000)) : 1 / 30;
@@ -231,7 +231,9 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
       colors: mirrorColors(c, m.gradient), alpha: mode === 'full' ? 1 : 0.85, dpr: view.dpr, horizon: 0.5, span: heightScale, maxHeightPx: m.maxHeight,
       widthFraction: px.fraction, minGapCss: px.minGapCss, reflection: m.reflection, glow: m.horizon,
       direction: m.direction, segments: m.segments, segmentGap: m.segmentGap, tips: m.tips, tipFade: m.tipFade, band: m.band,
-      backdrop: iceBackdrop ? 'ice' : 'none', backdropAlpha: mode === 'full' ? 1 : 0.6, dt,
+      backdrop: iceBackdrop ? m.backdrop : 'none',
+      sectionHeight: m.sectionHeight, shadeJitter: m.shadeJitter, peak: m.peak, peakHold: m.peakHold, afterimage: m.afterimage, afterTau: m.afterTau, peakDt: d.isPlaying() ? dt : 0, baseGlow: m.baseGlow, mirrorGap: m.mirrorGap, reflectionBlur: m.reflectionBlur, tilt: m.tilt,
+      sectorMode: m.sectorMode, minDwell: m.minDwell, visitsPerStep: m.visitsPerStep, loss: m.loss, maxLevel: m.maxLevel, trailMax: m.trailMax, stepGain: m.stepGain, backdropAlpha: mode === 'full' ? 1 : 0.6, dt,
     });
   }
 
@@ -484,11 +486,14 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
     evaluate();
   }
 
+  const sectorOff = onMirror((_, key) => { if (key === '*') resetSector(); });
+
   function resize(cssW, cssH, target = canvas) {
     const dpr = capDpr(d.dpr(), dprCap());
     view.dpr = dpr;
     view.w = Math.max(0, Math.round(cssW));
     view.h = Math.max(0, Math.round(cssH));
+    resetSector();
     st.colorAt = -Infinity;
     if (target === canvas) {
       canvas.width = Math.round(view.w * dpr);
@@ -570,6 +575,7 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
     get level() { return gov.level; },
     destroy() {
       stop();
+      sectorOff();
       laOff?.();
       observers.forEach((fn) => fn());
       dropRenderer();

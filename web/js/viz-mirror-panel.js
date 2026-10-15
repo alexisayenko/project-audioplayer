@@ -3,7 +3,7 @@ import {
 } from './viz-mirror-settings.js';
 import { pixelBars } from './viz-spectrum.js';
 import {
-  MIRROR_PRESET_LIST, MIRROR_PRESET_THUMB, applyMirrorPreset, findActiveMirrorPreset,
+  MIRROR_PRESET_LIST, MIRROR_PRESET_THUMB, applyMirrorPreset, findActiveMirrorPreset, setLastMirrorPreset,
 } from './viz-mirror-presets.js';
 
 const defaultStore = { get: getMirror, set: setMirror, reset: resetMirror, on: onMirror, replace: replaceMirror };
@@ -97,7 +97,7 @@ export function createMirrorPanel({ doc = document, store = defaultStore, getWid
     img.addEventListener('error', () => { img.hidden = true; btn.classList.add('viz-synth-nothumb'); });
     img.src = MIRROR_PRESET_THUMB(p.id);
     btn.append(img, make(doc, 'span', 'viz-synth-preset-name', p.name));
-    btn.addEventListener('click', () => overwrite(applyMirrorPreset(p.id)));
+    btn.addEventListener('click', () => { setLastMirrorPreset(p.id); overwrite(applyMirrorPreset(p.id)); });
     tiles.push({ id: p.id, btn });
     grid.append(btn);
   }

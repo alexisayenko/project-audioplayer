@@ -63,9 +63,9 @@ test('group reset only touches its group', () => {
 
 test('invalid stored data repairs to defaults', () => {
   reset();
-  saved[S.MIRROR_KEY] = JSON.stringify({ v: 1, barWidth: 99, gradient: 'nope', horizon: 'x', fall: 0.2 });
+  saved[S.MIRROR_KEY] = JSON.stringify({ v: 1, barWidth: 199, gradient: 'nope', horizon: 'x', fall: 0.2 });
   const m = S.getMirror();
-  assert.equal(m.barWidth, 40);
+  assert.equal(m.barWidth, 80);
   assert.equal(m.gradient, 'theme');
   assert.equal(m.horizon, true);
   assert.equal(m.fall, 0.2);
@@ -130,7 +130,10 @@ test('pixel bars: auto is the classic formula, px mode clamps count and keeps th
   }
   assert.equal(pixelBars(1200, 6, 2).count, 150);
   assert.equal(pixelBars(1200, 6, 2).fraction, 0.75);
-  assert.equal(pixelBars(300, 40, 20).count, 48);
+  assert.equal(pixelBars(300, 12, 8).count, 48);
+  assert.equal(pixelBars(375, 40, 6).count, 8);
+  assert.equal(pixelBars(1200, 40, 6).count, 26);
+  assert.equal(pixelBars(300, 40, 20).count, 8);
   assert.equal(pixelBars(4000, 2, 0).count, 600);
   assert.equal(pixelBars(1200, 6, 0).minGapCss, 0);
   assert.equal(pixelBars(1200, 6, 1).minGapCss, 1);
@@ -172,4 +175,33 @@ test('maxHeightPx caps the bars at that many css px and Auto keeps the old half-
   assert.ok(Math.abs(run({ maxHeightPx: 100 }) - 100) < 1e-6);
   assert.ok(Math.abs(run({ maxHeightPx: 600 }) - 0.95 * 200) < 1e-6);
   assert.equal(barHeights.length >= 0, true);
+});
+
+test('History trail settings: neutral defaults, validated ranges', () => {
+  const d = S.defaultMirror();
+  assert.equal(d.sectorMode, 'off');
+  assert.deepEqual([d.visitsPerStep, d.loss, d.maxLevel, d.trailMax, d.stepGain, d.minDwell], [5, 1, 6, 0.8, 0.14, 60]);
+  const v = S.validateMirror({ sectorMode: 'x', visitsPerStep: 99, loss: -3, maxLevel: 0, trailMax: 5, stepGain: 0 });
+  assert.equal(v.sectorMode, 'off');
+  assert.equal(v.visitsPerStep, 30);
+  assert.equal(v.loss, 0);
+  assert.equal(v.maxLevel, 1);
+  assert.equal(v.trailMax, 1);
+  assert.equal(v.stepGain, 0.05);
+  assert.ok(S.MIRROR_GROUPS.includes('History trail'));
+});
+
+test('ice2 gradient: ramp is light-to-dark by luminance, base first after mirrorColors', async () => {
+  const { FALLBACK_COLORS } = await import('./viz-color.js');
+  const lum = (c) => 0.3 * c[0] + 0.59 * c[1] + 0.11 * c[2];
+  const st = FALLBACK_COLORS.ice2.stops;
+  assert.equal(st.length, 8);
+  for (let k = 1; k < st.length; k += 1) assert.ok(lum(st[k]) > lum(st[k - 1]), `stop ${k}`);
+  const g = S.mirrorColors(FALLBACK_COLORS, 'ice2');
+  assert.deepEqual(g.stops[0], st[7]);
+  assert.deepEqual(g.stops.at(-1), st[0]);
+  assert.deepEqual(g.line, st[7]);
+  assert.equal(S.mirrorColors(FALLBACK_COLORS, 'ice').stops, FALLBACK_COLORS.ice.stops);
+  assert.equal(S.mirrorColors(FALLBACK_COLORS, 'theme'), FALLBACK_COLORS);
+  assert.equal(S.mirrorColors({ ...FALLBACK_COLORS, ice2: undefined }, 'ice2').stops, FALLBACK_COLORS.stops);
 });

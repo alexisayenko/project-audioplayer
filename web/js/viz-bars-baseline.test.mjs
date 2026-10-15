@@ -61,3 +61,273 @@ test('tips hold the peak and fall at the fading speed', async () => {
   assert.ok(after < before);
   assert.ok(Math.abs(before - after - 5) < 1e-3);
 });
+
+test('new LED effects are off by default and each adds ops when on', () => {
+  const led = { segments: 12 };
+  const base = trace(led);
+  assert.equal(hash(trace({ ...led, peak: 0, afterimage: 0, shadeJitter: 0, baseGlow: 0, mirrorGap: 0, reflectionBlur: 0, tilt: 0, sectionHeight: 0 })), hash(base));
+  for (const o of [{ peak: 1, afterimage: 0.5 }, { shadeJitter: 0.1 }, { baseGlow: 0.8 }, { reflectionBlur: 0.5 }, { tilt: 6 }, { mirrorGap: 6 }]) {
+    assert.notEqual(hash(trace({ ...led, ...o })), hash(base), JSON.stringify(o));
+  }
+  assert.ok(trace({ backdrop: 'black' }).some(([k, a]) => k === 'fillRect' && a[2] === 600));
+});
+
+test('section height fixes the pitch independent of the row count', async () => {
+  const { segmentPlan, litRows, jitterLevel } = await import('./viz-bars.js');
+  const plan = segmentPlan(100, 1, 0, 0.25, 20);
+  assert.equal(plan.rows, 5);
+  assert.equal(plan.pitch, 20);
+  assert.equal(segmentPlan(100, 2, 0, 0.25, 20).rows, 5);
+  assert.equal(segmentPlan(10, 1, 0, 0.25, 20), null);
+  assert.equal(litRows(40, 1, plan), 2);
+  assert.equal(segmentPlan(100, 1, 0, 0.3), null);
+});
+
+test('shade jitter is deterministic, bounded and varied', async () => {
+  const { jitterLevel } = await import('./viz-bars.js');
+  const seen = new Set();
+  for (let i = 0; i < 40; i += 1) for (let r = 0; r < 20; r += 1) {
+    const a = jitterLevel(i, r);
+    assert.equal(a, jitterLevel(i, r));
+    assert.ok(a >= 0 && a < 5);
+    seen.add(a);
+  }
+  assert.equal(seen.size, 5);
+});
+
+test('tilt rotates about the canvas centre', () => {
+  const t = trace({ segments: 12, tilt: 6 }).find(([k]) => k === 'setTransform');
+  assert.ok(t[1][1] < 0 && Math.abs(t[1][0] - Math.cos((6 * Math.PI) / 180)) < 1e-9);
+});
+
+const quiet = new Proxy({}, { get: (_, k) => (k === 'createLinearGradient' ? () => ({ addColorStop() {} }) : () => {}), set: () => true });
+
+function player(level) {
+  const vals = new Float32Array(4);
+  return {
+    set: (v) => vals.fill(v),
+    draw: (dt, opts = {}) => drawBars(quiet, 600, 300, vals, { colors: FALLBACK_COLORS, segments: 10, peak: 1, afterimage: 1, peakDt: dt, dpr: 1, ...opts }),
+  };
+}
+
+test('peak marker follows up instantly, holds, then steps down', async () => {
+  const B = await import('./viz-bars.js');
+  B.resetPeak();
+  const p = player();
+  p.set(0.8);
+  p.draw(1 / 60);
+  const high = B.markerRow(0);
+  assert.ok(high >= 4);
+  p.set(0.2);
+  for (let f = 0; f < 30; f += 1) p.draw(1 / 60);
+  assert.equal(B.markerRow(0), high);
+  for (let f = 0; f < 15; f += 1) p.draw(1 / 60);
+  assert.ok(B.markerRow(0) < high);
+  const mid = B.markerRow(0);
+  p.draw(0.12);
+  assert.equal(B.markerRow(0), mid - 1);
+  for (let f = 0; f < 400; f += 1) p.draw(1 / 60);
+  p.set(0.8);
+  p.draw(1 / 60);
+  assert.equal(B.markerRow(0), high);
+});
+
+test('afterimages fade with time since the marker left and stay detached from the body', async () => {
+  const B = await import('./viz-bars.js');
+  B.resetPeak();
+  const p = player();
+  p.set(0.8);
+  p.draw(1 / 60);
+  const row = B.markerRow(0);
+  p.set(0.1);
+  for (let f = 0; f < 36; f += 1) p.draw(1 / 60);
+  assert.equal(B.markerRow(0), row);
+  assert.ok(B.afterAge(0, row) < 0.1);
+  for (let f = 0; f < 9; f += 1) p.draw(1 / 60);
+  assert.ok(B.markerRow(0) < row);
+  const left = B.afterAge(0, row);
+  assert.ok(B.afterAlpha(left, 0.35) > 0.5);
+  for (let f = 0; f < 60; f += 1) p.draw(1 / 60);
+  assert.ok(B.afterAge(0, row) > left + 0.9);
+  assert.ok(B.afterAlpha(B.afterAge(0, row), 0.35) < 0.1);
+  assert.ok(B.afterAlpha(0.1, 0.35) > B.afterAlpha(0.5, 0.35));
+});
+
+test('peak timing is frame-rate independent and frozen when paused', async () => {
+  const B = await import('./viz-bars.js');
+  const run = (fps) => {
+    B.resetPeak();
+    const p = player();
+    p.set(0.8);
+    p.draw(1 / fps);
+    p.set(0.1);
+    for (let f = 0; f < fps * 1.2; f += 1) p.draw(1 / fps);
+    return B.markerRow(0);
+  };
+  const r30 = run(30);
+  assert.ok(Math.abs(run(60) - r30) <= 1);
+  assert.ok(Math.abs(run(120) - r30) <= 1);
+  B.resetPeak();
+  const p = player();
+  p.set(0.8);
+  p.draw(1 / 60);
+  p.set(0.1);
+  const m = B.markerRow(0);
+  for (let f = 0; f < 200; f += 1) p.draw(0);
+  assert.equal(B.markerRow(0), m);
+});
+
+test('peak 0 and afterimage 0 keep the old rendering; state is reused', async () => {
+  const B = await import('./viz-bars.js');
+  B.resetPeak();
+  const base = hash(trace({ segments: 12 }));
+  assert.equal(hash(trace({ segments: 12, peak: 0, afterimage: 0, peakDt: 1 })), base);
+  assert.equal(hash(trace({ segments: 0, peak: 1, afterimage: 1, peakDt: 1 })), hash(trace({})));
+  const p = player();
+  p.set(0.5);
+  p.draw(1 / 60);
+  const before = process.memoryUsage().heapUsed;
+  for (let k = 0; k < 300; k += 1) p.draw(1 / 60);
+  assert.ok(process.memoryUsage().heapUsed - before < 20e6);
+});
+
+const SECTOR = { segments: 0, sectionHeight: 20, sectorMode: 'trail', peak: 1, afterimage: 1 };
+
+function sectorPlayer(over = {}) {
+  const vals = new Float32Array(over.n ?? 4);
+  const ops = [];
+  const ctx = new Proxy({}, { get: (_, k) => (k === 'createLinearGradient' ? () => ({ addColorStop() {} }) : (...a) => { ops.push([k, a]); }), set: () => true });
+  return {
+    vals,
+    ops,
+    set: (v) => vals.fill(v),
+    draw: (dt, opts = {}) => { ops.length = 0; drawBars(ctx, 600, 300, vals, { colors: FALLBACK_COLORS, dpr: 1, peakDt: dt, minDwell: 0, ...SECTOR, ...opts }); },
+  };
+}
+
+test('sector mode: entering a row counts once, staying does not', async () => {
+  const B = await import('./viz-bars.js');
+  B.resetSector();
+  const p = sectorPlayer();
+  p.set(0.3);
+  p.draw(1 / 60, { loss: 0 });
+  const r = B.currentSector(0);
+  assert.ok(r >= 0);
+  for (let f = 0; f < 20; f += 1) p.draw(1 / 60, { loss: 0 });
+  assert.equal(B.visitCount(0, r), 1);
+  p.set(0.7);
+  p.draw(1 / 60, { loss: 0 });
+  p.set(0.3);
+  p.draw(1 / 60, { loss: 0 });
+  assert.equal(B.visitCount(0, r), 2);
+});
+
+test('sector leak is linear and frame-rate independent, frozen when paused, dt capped', async () => {
+  const B = await import('./viz-bars.js');
+  const run = (fps) => {
+    B.resetSector();
+    const p = sectorPlayer();
+    p.set(0.3);
+    for (let k = 0; k < 6; k += 1) { p.set(k % 2 ? 0.7 : 0.3); p.draw(0.001, { loss: 0 }); }
+    const r = B.currentSector(0);
+    const start = B.visitCount(0, r);
+    for (let f = 0; f < fps * 1; f += 1) p.draw(1 / fps, { loss: 1 });
+    return [start, B.visitCount(0, r)];
+  };
+  const [s, a30] = run(30);
+  assert.ok(s >= 2);
+  assert.ok(Math.abs(a30 - (s - 1)) < 0.05 + 1e-3);
+  assert.ok(Math.abs(run(60)[1] - a30) < 0.05);
+  assert.ok(Math.abs(run(120)[1] - a30) < 0.05);
+  B.resetSector();
+  const p = sectorPlayer();
+  p.set(0.3);
+  p.draw(0.001, { loss: 1 });
+  const r = B.currentSector(0);
+  for (let f = 0; f < 100; f += 1) p.draw(0, { loss: 5 });
+  assert.equal(B.visitCount(0, r), 1);
+  p.draw(5, { loss: 1 });
+  assert.ok(Math.abs(B.visitCount(0, r) - 0.9) < 1e-6);
+});
+
+test('trail level steps at 5/10/15 counts, alpha caps at 0.8, sector is brightest', async () => {
+  const B = await import('./viz-bars.js');
+  assert.deepEqual([4.9, 5, 9.9, 10, 15, 100].map((c) => B.trailLevel(c, 5, 6)), [0, 1, 1, 2, 3, 6]);
+  assert.ok(Math.abs(B.trailAlpha(0, 6, 0.8) - 0.15) < 1e-9);
+  assert.equal(B.trailAlpha(6, 6, 0.8), 0.8);
+  assert.equal(B.trailAlpha(6, 6, 1), 0.85);
+  assert.ok(Math.abs(B.trailLift(6, 0.14, 0.8) - 0.72) < 1e-9);
+  assert.ok(B.trailLift(1, 0.14, 0.8) < B.trailLift(2, 0.14, 0.8));
+  B.resetSector();
+  const p = sectorPlayer();
+  for (let k = 0; k < 40; k += 1) { p.set(k % 2 ? 0.7 : 0.3); p.draw(0.001, { loss: 0 }); }
+  p.draw(0.001, { loss: 0 });
+  const alphas = p.ops.filter(([k]) => k === 'fill').length;
+  assert.ok(alphas > 0);
+  const maxTrail = Math.max(...[...Array(7).keys()].map((k) => B.trailAlpha(k, 6, 0.8)));
+  assert.ok(maxTrail <= 0.8 && maxTrail < 1);
+});
+
+test('sector mode draws no body, cap or afterimages and resets on count change', async () => {
+  const B = await import('./viz-bars.js');
+  B.resetSector();
+  const p = sectorPlayer();
+  p.set(0.6);
+  p.draw(1 / 60);
+  const rects = p.ops.filter(([k]) => k === 'rect');
+  assert.equal(rects.length, 20);
+  assert.ok(p.ops.some(([k]) => k === 'stroke'));
+  const r = B.currentSector(0);
+  p.set(0.2);
+  p.draw(1 / 60);
+  assert.ok(B.visitCount(0, r) > 0);
+  const q = sectorPlayer({ n: 6 });
+  q.set(0.2);
+  q.draw(1 / 60);
+  assert.equal(B.visitCount(0, r), 0);
+  B.resetSector();
+  p.draw(1 / 60);
+  assert.equal(B.visitCount(0, r), 0);
+});
+
+test('sector mode off keeps the old renderer; no per-frame allocation, 600x48 stays fast', async () => {
+  const B = await import('./viz-bars.js');
+  assert.equal(hash(trace({ segments: 12, sectorMode: 'off' })), hash(trace({ segments: 12 })));
+  B.resetSector();
+  const p = sectorPlayer({ n: 600 });
+  const opts = { sectionHeight: 6 };
+  for (let f = 0; f < 5; f += 1) { p.vals.forEach((_, i, a) => { a[i] = ((i * 31 + f * 17) % 100) / 100; }); p.draw(1 / 60, opts); }
+  const t0 = performance.now();
+  for (let f = 0; f < 120; f += 1) { p.vals.forEach((_, i, a) => { a[i] = ((i * 31 + f * 17) % 100) / 100; }); p.draw(1 / 60, opts); }
+  const per = (performance.now() - t0) / 120;
+  assert.ok(per < 25, `${per} ms/frame`);
+  assert.ok(B.visitCount(0, 0) >= 0);
+});
+
+test('minimum dwell: pass-through rows never count, threshold counts once, frame-rate independent', async () => {
+  const B = await import('./viz-bars.js');
+  const frames = (fps, n, dwell = 60) => {
+    B.resetSector();
+    const p = sectorPlayer();
+    p.set(0.3);
+    for (let f = 0; f < n; f += 1) p.draw(1 / fps, { loss: 0, minDwell: dwell });
+    return B.visitCount(0, B.currentSector(0));
+  };
+  assert.equal(frames(60, 3), 0);
+  assert.equal(frames(60, 4), 1);
+  assert.equal(frames(60, 40), 1);
+  assert.equal(frames(30, 1), 0);
+  assert.equal(frames(30, 2), 1);
+  assert.equal(frames(120, 7), 0);
+  assert.equal(frames(120, 8), 1);
+  assert.equal(frames(60, 1, 0), 1);
+  B.resetSector();
+  const p = sectorPlayer();
+  const seen = [];
+  for (const v of [0.1, 0.3, 0.5, 0.7]) { p.set(v); p.draw(1 / 60, { loss: 0, minDwell: 60 }); seen.push(B.currentSector(0)); }
+  assert.equal(new Set(seen).size, 4);
+  for (const r of seen) assert.equal(B.visitCount(0, r), 0);
+  assert.ok(p.ops.some(([k]) => k === 'rect'));
+  for (let f = 0; f < 3; f += 1) p.draw(1 / 60, { loss: 0, minDwell: 60 });
+  assert.equal(B.visitCount(0, seen[3]), 1);
+});
