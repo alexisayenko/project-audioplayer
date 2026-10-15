@@ -102,3 +102,44 @@ test('radius grows with sqrt(count) and is capped; unknown family is Other', () 
   assert.equal(nodeRadius(10000), 30);
   assert.equal(familyIndex('nope'), 15);
 });
+
+const cat = (id, label, parents = [], count = 4, ownCount = 0) => ({ id, label, qid: null, family: 'Other', count, ownCount, parents, tags: ownCount ? [id] : [], });
+const CATS = indexGraph({
+  ontology: true,
+  nodes: [
+    cat('ethnic', 'ethnic music'),
+    cat('diaspora', 'music of the African diaspora', ['ethnic']),
+    cat('urban', 'urban contemporary', ['diaspora', 'popular'], 4, 1),
+    cat('popular', 'popular music', [], 4),
+    cat('hiphop', 'hip-hop', ['urban'], 3, 3),
+    cat('world', 'world music', [], 2, 2),
+    cat('wm2', 'World Music', [], 1),
+  ],
+  edges: [],
+});
+
+test('category umbrellas without own songs are skipped, children reattach, nothing is lost', () => {
+  const open = new Set(['f:Other', 'f:Other>popular', 'f:Other>popular>urban']);
+  const rows = outlineRows(CATS, open);
+  assert.ok(!rows.some((r) => ['ethnic', 'diaspora', 'wm2'].includes(r.id)));
+  const u = rows.find((r) => r.id === 'urban');
+  assert.equal(u.depth, 2);
+  assert.deepEqual(u.alsoUnder, []);
+  assert.ok(rows.some((r) => r.id === 'hiphop' && r.depth === 3));
+  assert.equal(CATS.nodes.length, 7);
+  assert.ok(CATS.byId.has('diaspora') && CATS.edges.length === 0);
+});
+
+test('a category node with own songs stays, and a promoted child becomes a root', () => {
+  assert.ok(outlineRows(CATS, new Set(['f:Other'])).some((r) => r.id === 'world'));
+  const g = indexGraph({ nodes: [cat('x', 'by genre'), cat('y', 'child', ['x'], 1, 1), cat('z', 'zed', [], 2, 2)], edges: [] });
+  assert.deepEqual(outlineRows(g, new Set(['f:Other'])).map((r) => r.id), [null, 'z', 'y']);
+});
+
+test('multi-parent also-under notes list effective parents after the skip', () => {
+  const g = indexGraph({ nodes: [cat('m', 'music of Asia'), cat('a', 'alpha', [], 2, 2), cat('c', 'child', ['m', 'a'], 1, 1)], edges: [] });
+  const rows = outlineRows(g, new Set(['f:Other', 'f:Other>a']));
+  assert.deepEqual(rows.filter((r) => r.id === 'c').map((r) => r.alsoUnder), [[]]);
+  assert.deepEqual(pathKeys(g, 'm'), []);
+  assert.deepEqual(pathKeys(CATS, 'urban'), ['f:Other', 'f:Other>popular', 'f:Other>popular>urban']);
+});

@@ -8,7 +8,7 @@ import { autodl, autoDownloadOn } from './autodl.js';
 import { statusText } from './dl-progress.js';
 import { downloadSong } from './download.js';
 import { editDialog } from './edit-dialog.js';
-import { displayTitle, titleNodes } from './display-title.js';
+import { displayTitle, subtitleString, titleNodes } from './display-title.js';
 import { bpmLabel } from './bpm-label.js';
 import { visibleTags, tagGroups, tagLabel } from './tagname.js';
 import { serviceIcons } from './service-icons.js';
@@ -31,7 +31,8 @@ export function cardModel(song, view) {
   return {
     title,
     remix,
-    sub: [song?.artist, song?.album, song?.year].filter((v) => v != null && String(v).trim() !== '').join(' - '),
+    sub: subtitleString(song),
+    album: String(song?.album ?? '').trim(),
     groups: cardTags(song?.tags),
     remixYear: Number.isInteger(song?.remix_year) ? `Remix year ${song.remix_year}` : '',
     bpm: bpmLabel(song?.bpm),
@@ -93,7 +94,8 @@ function paint(dlg, song, close, m) {
     coverBlock(song),
     el('div', { class: 'card-head' },
       el('h2', { id: 'song-card-title', class: 't-title' }, titleNodes(song)),
-      m.sub ? el('p', { class: 'muted t-subhead' }, m.sub) : null),
+      m.sub ? el('p', { class: 'card-sub t-subhead' }, m.sub) : null,
+      m.album ? el('p', { class: 'card-album muted t-subhead' }, m.album) : null),
     tagBlock(m.groups),
     el('p', { class: 'facts t-caption' },
       m.bpm ? el('span', { class: 'bpm-badge', title: 'Beats per minute (estimated)' }, m.bpm, el('small', { 'aria-hidden': 'true' }, 'BPM')) : null,

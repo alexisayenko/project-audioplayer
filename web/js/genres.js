@@ -1,6 +1,7 @@
 import { api } from './api.js';
 import { store } from './store.js';
 import { el, plural } from './dom.js';
+import { icon } from './icons.js';
 import { createGraphView } from './genre-graph.js';
 import {
   FAMILIES, familyIndex, indexGraph, flatGraph, localCounts, filterTags, searchNodes, outlineRows, pathKeys,
@@ -18,6 +19,21 @@ import { POLL_MS, shouldPoll, presentFamilies, toggleHidden, loadOutlineOpen, sa
 const CHILD_CHIPS = 12;
 
 const songsText = (n) => `${n} ${plural(n, 'song', 'songs')}`;
+
+export function wikiLink(n) {
+  if (n.wikipedia) return { href: n.wikipedia, label: 'Open on Wikipedia', dim: false };
+  if (n.qid) return { href: `https://www.wikidata.org/wiki/${n.qid}`, label: 'Open on Wikidata (no Wikipedia article)', dim: true };
+  return null;
+}
+
+function wikiButton(n) {
+  const w = wikiLink(n);
+  if (!w) return null;
+  return el('a', {
+    class: `icon gm-wiki${w.dim ? ' dim' : ''}`, href: w.href, target: '_blank', rel: 'noopener noreferrer',
+    title: w.label, 'aria-label': w.label,
+  }, icon('wikipedia', 16));
+}
 
 function loadMessage(data, pending) {
   if (!data.ontology) return 'Genre data unavailable - showing your tags only';
@@ -269,18 +285,17 @@ export function renderGenres(root) {
     const morePill = more > 0 ? el('span', { class: 'muted t-caption' }, `+${more} more`) : null;
     const exact = n.ownCount !== n.count ? ` (${n.ownCount} tagged exactly)` : '';
     const cl = infoCard('gm-info-body', [
-      n.parents.length ? el('div', { class: 'gm-group' }, el('p', { class: 't-eyebrow' }, 'PARENTS'), el('div', { class: 'gm-chips' }, n.parents.map(chip))) : null,
       kids.length ? el('div', { class: 'gm-group' }, el('p', { class: 't-eyebrow' }, 'SUBGENRES'),
         el('div', { class: 'gm-chips' }, kids.slice(0, CHILD_CHIPS).map(chip), morePill)) : null,
       el('button', {
         class: 'btn primary small', type: 'button', disabled: !n.count,
         onclick: () => { filterByTags(filterTags(g, n.id)); location.hash = '#/library'; },
-      }, `Show ${songsText(n.count)} in Library`),
-      n.qid ? el('a', { class: 't-caption', href: `https://www.wikidata.org/wiki/${n.qid}`, target: '_blank', rel: 'noopener noreferrer' }, 'Wikidata') : null]);
+      }, `Show ${songsText(n.count)} in Library`)]);
     panel.replaceChildren(
       el('div', { class: 'gm-panel-head' },
         el('span', { class: `gm-dot f${familyIndex(n.family)}`, 'aria-hidden': 'true' }),
         el('h2', { class: 't-headline' }, n.label),
+        wikiButton(n),
         cl.button,
         el('button', { class: 'gm-x', type: 'button', 'aria-label': 'Close', title: 'Close', onclick: () => view.select(null) }, '×')),
       el('p', { class: 'muted t-caption' }, `${n.family} · ${songsText(n.count)}${exact}`),

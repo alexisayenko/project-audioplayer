@@ -131,5 +131,6 @@ export const autodl = {
     set(D.prioritize(D.retry(st, id), id));
     pump();
   },
+  cancel(ids) { set(D.drop(st, ids)); },
   prune(keepIds) { set(D.prune(st, keepIds)); },
 };

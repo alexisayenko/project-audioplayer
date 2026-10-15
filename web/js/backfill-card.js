@@ -1,27 +1,56 @@
 import { api } from './api.js';
 import { store } from './store.js';
 import { el } from './dom.js';
+import { metaButton, metaLead, metaNormalize, metaStatus } from './bulk.js';
 import { POLL_MS, candidateText, canStart, isFinal, isRunning, progressPercent, statusText } from './backfill.js';
 
-export function bpmCard() {
+export const BPM = {
+  title: 'BPM detection',
+  label: 'BPM detection progress',
+  button: () => 'Detect missing BPM',
+  lead: (s) => candidateText(s.candidates),
+  status: statusText,
+  percent: progressPercent,
+  api: { get: () => api.backfillBpm(), start: () => api.startBackfillBpm(), cancel: () => api.cancelBackfillBpm() },
+};
+
+export const META = {
+  title: 'Metadata for downloaded songs',
+  label: 'Metadata progress',
+  button: metaButton,
+  lead: (s) => metaLead(s.candidates),
+  status: metaStatus,
+  percent: progressPercent,
+  api: {
+    get: async () => metaNormalize(await api.backfillMetadata()),
+    start: async () => metaNormalize(await api.startBackfillMetadata()),
+    cancel: async () => metaNormalize(await api.cancelBackfillMetadata()),
+  },
+};
+
+export const bpmCard = () => backfillCard(BPM);
+export const metadataCard = () => backfillCard(META);
+
+export function backfillCard(cfg) {
   const lead = el('p', { class: 'muted t-subhead' }, 'Checking...');
   const fill = el('div', { class: 'bf-fill' });
-  const bar = el('div', { class: 'bf-bar', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': '0', 'aria-label': 'BPM detection progress', hidden: true }, fill);
+  const bar = el('div', { class: 'bf-bar', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': '0', 'aria-label': cfg.label, hidden: true }, fill);
   const note = el('p', { class: 't-caption', role: 'status', 'aria-live': 'polite' }, '');
-  const start = el('button', { class: 'btn outline small', type: 'button', disabled: true }, 'Detect missing BPM');
+  const start = el('button', { class: 'btn outline small', type: 'button', disabled: true }, cfg.button({ candidates: 1 }));
   const stop = el('button', { class: 'btn danger small', type: 'button', hidden: true }, 'Cancel');
-  const card = el('section', { class: 'card' }, el('h2', { class: 't-headline' }, 'BPM detection'), lead, bar, note, el('div', { class: 'head-actions' }, start, stop));
+  const card = el('section', { class: 'card' }, el('h2', { class: 't-headline' }, cfg.title), lead, bar, note, el('div', { class: 'head-actions' }, start, stop));
   let timer = null;
   let last = null;
 
   const render = (s) => {
     const running = isRunning(s);
-    lead.textContent = candidateText(s.candidates);
+    lead.textContent = cfg.lead(s);
     bar.hidden = !running;
-    const pct = progressPercent(s);
+    const pct = cfg.percent(s);
     bar.setAttribute('aria-valuenow', String(pct));
     fill.style.width = `${pct}%`;
-    note.textContent = statusText(s);
+    note.textContent = cfg.status(s);
+    start.textContent = cfg.button(s);
     start.disabled = !canStart(s);
     stop.hidden = !running;
   };
@@ -50,7 +79,7 @@ export function bpmCard() {
   async function refresh() {
     let s;
     try {
-      s = await api.backfillBpm();
+      s = await cfg.api.get();
     } catch (err) {
       note.textContent = err.message;
       return;
@@ -65,7 +94,7 @@ export function bpmCard() {
   start.addEventListener('click', async () => {
     start.disabled = true;
     try {
-      last = await api.startBackfillBpm();
+      last = await cfg.api.start();
       render(last);
       if (isRunning(last)) schedule();
     } catch (err) {
@@ -77,7 +106,7 @@ export function bpmCard() {
   stop.addEventListener('click', async () => {
     stop.disabled = true;
     try {
-      await api.cancelBackfillBpm();
+      await cfg.api.cancel();
     } catch (err) {
       note.textContent = err.message;
     }

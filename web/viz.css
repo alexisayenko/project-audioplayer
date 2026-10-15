@@ -83,7 +83,7 @@
 .viz-keys .key:focus-visible, .viz-vol-slider:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 .viz-vol { display: flex; align-items: center; gap: var(--space-2, .4rem); }
 .viz-vol-slider { flex: none; width: 96px; height: var(--hit); }
-.viz-vol-slider::-webkit-slider-runnable-track { background: linear-gradient(to right, var(--accent) calc(var(--p) * 100%), #ffffff33 calc(var(--p) * 100%)); }
+.viz-vol-slider::-webkit-slider-runnable-track { background: linear-gradient(to right, var(--accent) max(calc(var(--p) * 100%), var(--fill-min)), #ffffff33 max(calc(var(--p) * 100%), var(--fill-min))); }
 .viz-vol-slider::-moz-range-track { background: #ffffff33; }
 .viz-vol-slider::-webkit-slider-thumb { background: #fff; }
 .viz-vol-slider::-moz-range-thumb { background: #fff; }
@@ -175,7 +175,7 @@ body:not([data-route="playback"]) > .viz-dock { display: none; }
   .viz-corner.near .viz-corner-btn, .viz-corner-btn:hover { opacity: 1; transform: scale(1.08); box-shadow: 0 0 0 2px var(--accent), 0 0 12px color-mix(in srgb, var(--accent) 45%, transparent); }
   .viz-corner-btn:hover::after { opacity: 1; }
 }
-.viz-corner-btn:focus-visible { opacity: 1; transform: scale(1.08); outline: 2px solid #fff; outline-offset: 2px; box-shadow: 0 0 0 4px var(--accent); }
+.viz-corner-btn:focus-visible { opacity: 1; transform: scale(1.08); outline: 2px solid #fff; outline-offset: 2px; }
 .viz-corner-btn:focus-visible::after { opacity: 1; }
 @media (prefers-reduced-motion: reduce) { .viz-corner-btn, .viz-corner-btn::after { transition: none; } .viz-corner.near .viz-corner-btn, .viz-corner-btn:hover, .viz-corner-btn:focus-visible { transform: none; } }
 @media (forced-colors: active) { .viz-corner-btn { border: 1px solid ButtonText; } }

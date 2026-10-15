@@ -180,3 +180,14 @@ test('Orphans button lists loose genres, excludes Now playing and releases on Es
   assert.equal(root.querySelector('.gm-panel').hidden, false);
   cleanup();
 });
+
+{
+  const { wikiLink } = await import('./genres.js');
+  test('genre card W icon: Wikipedia first, dimmed Wikidata fallback, nothing otherwise', () => {
+    const wp = wikiLink({ qid: 'Q9', wikipedia: 'https://en.wikipedia.org/wiki/Folk_rock' });
+    assert.deepEqual(wp, { href: 'https://en.wikipedia.org/wiki/Folk_rock', label: 'Open on Wikipedia', dim: false });
+    const wd = wikiLink({ qid: 'Q9', wikipedia: null });
+    assert.ok(wd.href.endsWith('wikidata.org/wiki/Q9') && wd.dim && wd.label === 'Open on Wikidata (no Wikipedia article)');
+    assert.equal(wikiLink({ qid: null, wikipedia: null }), null);
+  });
+}

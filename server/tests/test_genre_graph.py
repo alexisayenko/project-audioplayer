@@ -41,7 +41,8 @@ def entity(qid):
     claims = {"P279": [claim(p) for p in parents], "P737": [claim(r) for r in related]}
     if genre:
         claims["P31"] = [claim(GENRE)]
-    return {"labels": {"en": {"value": label}}, "descriptions": {"en": {"value": "a thing"}}, "claims": claims}
+    sl = {"enwiki": {"title": "Dark synth"}} if qid == "Q103" else {}
+    return {"sitelinks": sl, "labels": {"en": {"value": label}}, "descriptions": {"en": {"value": "a thing"}}, "claims": claims}
 
 
 @pytest.fixture
@@ -311,3 +312,17 @@ def test_umbrella_root_without_clear_majority_or_with_parent_stays_other():
     parents = {"u": [], "a": ["u"], "c": ["u"], "x": ["u"], "y": ["x"]}
     reach = {"u": {1, 2, 3, 4}, "a": {1}, "c": {2}, "x": {3, 4}, "y": {3}}
     assert gg.umbrella_families(fam, parents, reach) == fam
+
+
+def test_wikipedia_url_from_enwiki_sitelink(wd):
+    g = gg.graph(songs(("a", ["dark synth"]), ("b", ["chillsynth"])), wd.path)
+    n = by_label(g)
+    assert n["dark synth"]["wikipedia"] == "https://en.wikipedia.org/wiki/Dark_synth"
+    assert n["chillsynth"]["wikipedia"] is None
+
+
+def test_entity_cached_without_wp_is_refetched(wd):
+    gg.graph(songs(("a", ["dark synth"])), wd.path)
+    assert any("sitelinks" in c.get("props", "") for c in wd.calls if c["action"] == "wbgetentities")
+    assert gg._ent_fresh({"at": time.time(), "wp": ""})
+    assert not gg._ent_fresh({"at": time.time()})

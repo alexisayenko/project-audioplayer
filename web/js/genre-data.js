@@ -117,9 +117,47 @@ export function searchNodes(g, query, limit = 8) {
 
 const familyKey = (f) => `f:${f}`;
 
-function familyGroups(g) {
+export const CATEGORY_NAMES = [
+  /^ethnic music$/, /^music of .+/, /^.+ diaspora$/, /^world music$/, /^folk music of .+/,
+  /^by (country|region|genre|decade)$/, /^music genre$/, /^music by .+/,
+];
+
+export const isCategoryNode = (n) => (n.ownCount ?? n.count) === 0 && CATEGORY_NAMES.some((re) => re.test(n.label.trim().toLowerCase()));
+
+const views = new WeakMap();
+
+function outlineView(g) {
+  if (views.has(g)) return views.get(g);
+  const skip = new Set(g.nodes.filter(isCategoryNode).map((n) => n.id));
+  const up = new Map();
+  const eff = (id) => {
+    if (up.has(id)) return up.get(id);
+    up.set(id, []);
+    const out = [];
+    for (const p of g.byId.get(id).parents) for (const q of skip.has(p) ? eff(p) : [p]) if (!out.includes(q) && q !== id) out.push(q);
+    up.set(id, out);
+    return out;
+  };
+  const parents = new Map();
+  const children = new Map();
+  const roots = [];
+  for (const n of g.nodes) {
+    if (skip.has(n.id)) continue;
+    const ps = eff(n.id);
+    parents.set(n.id, ps);
+    children.set(n.id, children.get(n.id) || []);
+    for (const p of ps) children.set(p, [...(children.get(p) || []), n.id]);
+    if (!ps.length) roots.push(n.id);
+  }
+  roots.sort((a, b) => byCountThenLabel(g.byId.get(a), g.byId.get(b)));
+  const view = { skip, parents, children, roots, eff };
+  views.set(g, view);
+  return view;
+}
+
+function familyGroups(g, roots) {
   const groups = new Map();
-  for (const id of g.roots) {
+  for (const id of roots) {
     const n = g.byId.get(id);
     const list = groups.get(n.family) || [];
     list.push(id);
@@ -129,20 +167,21 @@ function familyGroups(g) {
 }
 
 export function outlineRows(g, expanded) {
+  const v = outlineView(g);
   const rows = [];
   const walk = (id, depth, key, via, path) => {
     const n = g.byId.get(id);
-    const kids = (g.children.get(id) || []).filter((c) => !path.has(c));
+    const kids = (v.children.get(id) || []).filter((c) => !path.has(c));
     const open = expanded.has(key) && kids.length > 0;
     rows.push({
       key, id, depth, label: n.label, count: n.count, family: n.family, hasChildren: kids.length > 0, expanded: open,
-      alsoUnder: n.parents.filter((p) => p !== via).map((p) => g.byId.get(p).label),
+      alsoUnder: v.parents.get(id).filter((p) => p !== via).map((p) => g.byId.get(p).label),
     });
     if (!open) return;
     const sorted = kids.map((c) => g.byId.get(c)).sort(byCountThenLabel);
     for (const c of sorted) walk(c.id, depth + 1, `${key}>${c.id}`, id, new Set(path).add(id));
   };
-  for (const [family, ids] of familyGroups(g)) {
+  for (const [family, ids] of familyGroups(g, v.roots)) {
     const key = familyKey(family);
     const open = expanded.has(key);
     rows.push({ key, id: null, depth: 0, label: family, count: null, family, hasChildren: true, expanded: open, alsoUnder: [], kind: 'family', size: ids.length });
@@ -152,13 +191,15 @@ export function outlineRows(g, expanded) {
 }
 
 export function pathKeys(g, id) {
+  const v = outlineView(g);
+  if (v.skip.has(id)) id = v.eff(id).sort((a, b) => byCountThenLabel(g.byId.get(a), g.byId.get(b)))[0];
   const n = g.byId.get(id);
   if (!n) return [];
   const chain = [id];
   const seen = new Set(chain);
   let cur = n;
-  while (cur.parents.length) {
-    const next = [...cur.parents].map((p) => g.byId.get(p)).sort(byCountThenLabel).find((p) => !seen.has(p.id));
+  while (v.parents.get(cur.id).length) {
+    const next = [...v.parents.get(cur.id)].map((p) => g.byId.get(p)).sort(byCountThenLabel).find((p) => !seen.has(p.id));
     if (!next) break;
     chain.unshift(next.id);
     seen.add(next.id);

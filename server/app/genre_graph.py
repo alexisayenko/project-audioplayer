@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from urllib.parse import quote
 import json
 import logging
 import re
@@ -99,6 +100,11 @@ def _label_fresh(entry: dict[str, Any] | None) -> bool:
     return _fresh(entry) and bool(entry.get("qid") or entry.get("v") == 2)
 
 
+def _ent_fresh(entry: dict[str, Any] | None) -> bool:
+    """An entity entry cached before the Wikipedia title was stored (no "wp" key) counts as stale and is refetched."""
+    return _fresh(entry) and "wp" in entry
+
+
 def _api(params: dict[str, str]) -> dict[str, Any]:
     _limiter.reserve()
     return httpjson.http_json(API, TIMEOUT, params={**params, "format": "json"})
@@ -123,6 +129,7 @@ def _slim(entity: dict[str, Any]) -> dict[str, Any]:
         "parents": _ids(entity, P_PARENT),
         "related": _ids(entity, P_RELATED),
         "genre": MUSIC_GENRE in types or bool(_GENRE_DESC.search(desc)),
+        "wp": ((entity.get("sitelinks") or {}).get("enwiki") or {}).get("title") or "",
         "at": time.time(),
     }
 
@@ -130,7 +137,7 @@ def _slim(entity: dict[str, Any]) -> dict[str, Any]:
 def _fetch_entities(cache: dict[str, Any], qids: list[str]) -> None:
     for i in range(0, len(qids), BATCH):
         chunk = qids[i:i + BATCH]
-        data = _api({"action": "wbgetentities", "ids": "|".join(chunk), "props": "labels|claims|descriptions", "languages": "en"})
+        data = _api({"action": "wbgetentities", "ids": "|".join(chunk), "props": "labels|claims|descriptions|sitelinks", "languages": "en"})
         for qid, ent in (data.get("entities") or {}).items():
             if isinstance(ent, dict) and "missing" not in ent:
                 with _lock:
@@ -187,7 +194,7 @@ def _missing(cache: dict[str, Any], keys: list[str]) -> bool:
         nxt: set[str] = set()
         for q in frontier - seen:
             ent = cache["entities"].get(q)
-            if not _fresh(ent):
+            if not _ent_fresh(ent):
                 return True
             nxt.update(ent["parents"])
         seen |= frontier
@@ -266,6 +273,11 @@ def _by_keyword(label: str) -> str | None:
         if word in index:
             return index[word]
     return None
+
+
+def _wikipedia(cache: dict[str, Any], qid: str | None) -> str | None:
+    title = ((cache["entities"].get(qid) or {}).get("wp") or "") if qid else ""
+    return "https://en.wikipedia.org/wiki/" + quote(title.replace(" ", "_"), safe="_(),:'!*~-.") if title else None
 
 
 def _family(cache: dict[str, Any], qid: str | None, label: str) -> str:
@@ -441,7 +453,7 @@ def build(songs: list[dict[str, Any]], cache: dict[str, Any]) -> dict[str, Any]:
 
     out_nodes = [
         {
-            "id": ids[nid], "label": n["label"], "qid": n["qid"], "family": fams[nid],
+            "id": ids[nid], "label": n["label"], "qid": n["qid"], "wikipedia": _wikipedia(cache, n["qid"]), "family": fams[nid],
             "count": len(reach[nid]), "ownCount": len(n["own"]), "parents": sorted(ids[p] for p in parents[nid]),
             "tags": sorted(n["keys"]),
         }

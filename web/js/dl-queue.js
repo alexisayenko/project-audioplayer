@@ -36,6 +36,13 @@ export const retry = (s, id) => {
   return j?.status === 'failed' ? patch(s, id, { status: 'queued', progress: 0, error: '', ...IDLE }) : s;
 };
 
+// Forgets the queued jobs among `ids`; a running download and failed jobs stay.
+export function drop(s, ids) {
+  const gone = new Set(ids);
+  const jobs = s.jobs.filter((j) => j.status !== 'queued' || !gone.has(j.id));
+  return jobs.length === s.jobs.length ? s : { ...s, jobs };
+}
+
 export const active = (s) => s.jobs.filter((j) => j.status === 'downloading').length;
 
 export const pausedFor = (s, now) => Math.max(0, s.pausedUntil - now);

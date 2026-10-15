@@ -1,6 +1,6 @@
 # Connect YouTube
 
-Planned (task-0032). Import the signed-in user's YouTube playlists and Liked videos into the catalog as songs without audio. Decision: ADR-0020 (proposed). Nothing here is built.
+Planned (task-0032). Import the signed-in user's YouTube playlists and Liked videos into the catalog as songs without audio. Decision: ADR-0020 (accepted). Nothing here is built.
 
 Code (planned): `server/app/routes/yt.py`, `server/app/ytauth.py`, `server/app/ytimport.py`, `web/js/youtube-connect.js`.
 
@@ -17,10 +17,10 @@ Code (planned): `server/app/routes/yt.py`, `server/app/ytauth.py`, `server/app/y
 
 ## Requirements
 
-Decisions marked "pending owner decision" are the recommended defaults of task-0032 (CW, CX, CY).
+CW, CX and CY are decided (Alex, 2026-10-16; task-0032); phase 3 (all users, Google verification) stays future.
 
 - YTC-001 MUST: Settings has a "YouTube" card for signed-in users with a Connect button; when connected it shows the connection state, Import and Disconnect. Guests and signed-out visitors do not see it and every `/yt/*` route answers 401 for them. Status: planned
-- YTC-002 MUST: phase 1 is owner-only (CW, pending owner decision): `/yt/*` answers 403 `yt_not_available` for any user who is not the owner, and the card is hidden for them. Opening it to all users needs Google verification of the `youtube.readonly` scope (phase 3). Status: planned
+- YTC-002 MUST: phase 1 is owner-only (CW, decided 2026-10-16): `/yt/*` answers 403 `yt_not_available` for any user who is not the owner, and the card is hidden for them. Opening it to all users needs Google verification of the `youtube.readonly` scope (phase 3). Status: planned
 - YTC-003 MUST: `GET /yt/connect` (authenticated) redirects (302) to Google's OAuth endpoint with scope `https://www.googleapis.com/auth/youtube.readonly`, `access_type=offline`, `include_granted_scopes=true`, `prompt=consent`, `response_type=code`, the redirect URI `https://electrophone.cc/yt/callback` and a signed `state`. Status: planned
 - YTC-004 MUST: `state` is signed with `AUDIO_SESSION_SECRET` (HMAC), carries the uid, a random nonce and an expiry of 10 minutes, and is also set as a short-lived `HttpOnly`, `Secure`, `SameSite=Lax` cookie; `GET /yt/callback` accepts the code only when the state signature, expiry, uid and cookie all match (CSRF), else 400 `bad_state`. Status: planned
 - YTC-005 MUST: `GET /yt/callback` exchanges the code for tokens, stores the refresh token (YTC-020), then redirects to `/#/settings` with `?yt=connected`; a Google error (`error=access_denied`) redirects with `?yt=denied` and stores nothing. Status: planned
@@ -40,9 +40,12 @@ Decisions marked "pending owner decision" are the recommended defaults of task-0
 - YTC-022 MUST: the OAuth client is a new Google "Web application" client; `GOOGLE_YT_CLIENT_ID` and `GOOGLE_YT_CLIENT_SECRET` are read from `/etc/audioplayer/env` (mode 600); when either is unset `GET /yt/status` answers `can_connect: false` and the card shows "Not configured". This client is separate from `GOOGLE_WEB_CLIENT_ID` (sign-in). Status: planned
 - YTC-023 MUST: `DELETE /yt/connect` revokes the token at `https://oauth2.googleapis.com/revoke`, deletes the secret file and answers 204 (idempotent); the file is deleted even if the revoke call fails (the response then carries `revoked:false`). Songs already imported stay. Status: planned
 - YTC-024 MUST: deleting the user's account data or library (if ever offered) also deletes the secret file. Status: planned
-- YTC-025 MUST: a consent screen in "Production, unverified" mode (CX, pending owner decision) gives refresh tokens that do not expire after 7 days, with a cap of 100 users and an "unverified app" warning page on the first consent; "Testing" mode is not used because it expires the refresh token after 7 days. Status: planned
-- YTC-030 SHOULD: after an import the user may keep each imported list as an Electrophone playlist (phase 2; CY, pending owner decision): the server stores `{playlist_id, title, video_ids[], imported_at}` per user and the card shows "Refresh" for each, which imports only the difference (new videos; removed videos are not deleted from the library). Playlist storage lives with the user's library data (git-synced, no tokens). Status: planned
+- YTC-025 MUST: a consent screen in "Production, unverified" mode (CX, decided 2026-10-16) gives refresh tokens that do not expire after 7 days, with a cap of 100 users and an "unverified app" warning page on the first consent; "Testing" mode is not used because it expires the refresh token after 7 days. Status: planned
+- YTC-030 SHOULD: after an import the user may keep each imported list as an Electrophone playlist (phase 2; CY, decided 2026-10-16): the server stores `{playlist_id, title, video_ids[], imported_at}` per user and the card shows "Refresh" for each, which imports only the difference (new videos; removed videos are not deleted from the library). Playlist storage and Refresh are owned by [Playlists](playlists.md) (PLS-042, PLS-040, ADR-0022); this requirement only says YTC imports create them. Status: planned
 - YTC-031 SHOULD: "Refresh" counts as an import for YTC-015 and shows the same progress and summary. Status: planned
 - YTC-040 MUST: Google API failures map to short errors: 403 `quotaExceeded` to 503 `yt_quota` (message "YouTube quota used up for today, try tomorrow"), 5xx or timeouts to 502 `yt_upstream` after 2 retries with backoff; an import that fails midway keeps the songs already written. Status: planned
 - YTC-041 MUST: outgoing calls use a 10 s timeout, a fixed `User-Agent`, and only the hosts `accounts.google.com`, `oauth2.googleapis.com` and `www.googleapis.com`; the Google endpoints are configurable by env (`GOOGLE_OAUTH_BASE`, `YT_API_BASE`) so tests can use a fake server. Status: planned
 - YTC-050 MUST NOT: the iOS app does not offer Connect YouTube before phase 3; the iOS app only sees the imported songs through `GET /catalog` like any catalog entry. Status: planned
+- YTC-051 MUST: every item carries its duration. `playlistItems.list` gives none, so after each page the server calls `videos.list?part=contentDetails&id=<up to 50 ids>` (1 quota unit per call, already counted in Scope and limits) and parses the ISO-8601 `duration` (`PT1H2M10S`) to seconds; imported songs store `duration`. Live streams, premieres and videos with a missing or zero duration have unknown duration and count as long. Status: planned
+- YTC-052 MUST: items longer than the cap `LONG_SONG_SECONDS` (default 300 s = 5 minutes, one constant shared with ADD-081, owner-configurable later) are marked 'Long (1:02:10)' in the selection list and are UNCHECKED by default; short items are checked. Status: planned
+- YTC-053 MUST: a long video is never imported silently: the confirm step before Import states how many long items are selected and asks 'Import N long videos anyway?' with a per-item checkbox and an 'Include all long videos' toggle; unconfirmed long items are not imported and are counted in `skipped`. Status: planned

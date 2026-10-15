@@ -46,6 +46,7 @@ Code: `server/app/library.py`, `server/app/schemas.py` (`SongMeta`).
 - DATA-050 MUST: `discogs_url` is validated by `discogs_lookup.clean_url` on POST, PATCH and load: http or https on `discogs.com` (optional `www.` and language prefix) with `/release/<digits>` or `/master/<digits>` (a trailing slug is cut), normalised to `https://www.discogs.com/<kind>/<id>`; anything else becomes `null`, never a 422. It is set only by the user, through "Apply links" after an identification (ADD-090) or a Discogs-matched preview; old builds ignore it. Status: implemented
 - DATA-007 MUST: `POST /songs` and PATCH round a typed `bpm` to an integer; `library.normalize` rounds stored fractions on load. Status: implemented
 - DATA-070 MUST: `bpm: null` means "not detected yet", not "no tempo": the BPM backfill may fill it; a non-null `bpm` (typed or detected) is never overwritten by it. Status: implemented
+- DATA-074 MUST: `metadata_checked_at` (UTC string, server-set) marks a song the metadata backfill has answered for; it is never sent by clients. Status: implemented
 
 ## `library.json`
 
@@ -92,6 +93,12 @@ Tag namespaces in use (see [tags.md](tags.md)): `genre:<name>`, `country:<ISO 31
 - DATA-041 MUST: `uid` is the first 16 hex chars of `sha256(lowercased email)`; for an Apple token without email, of `sha256(sub)`, and a later token without email finds the profile through `subs`. Status: implemented
 - DATA-042 MUST: `settings.music_root` stays one server-wide value (the owner's, or `AUDIO_MUSIC_ROOT`); each user's audio is below `<music_root>/users/<uid>/`. Status: implemented
 
+
+## Playlists (ADR-0022)
+
+- DATA-110 MUST: each user's `playlists.json` (git-synced, beside `library.json`; no tokens) is `{version: 1, nodes: [...]}`; a node is a folder `{id, kind:"folder", name, parent_id, position}` or a playlist `{id, kind:"playlist", name, description, cover, parent_id, position, smart, rules, source, entries:[{song_id, added}], created, updated}`; `entries` is empty and `rules` set when `smart`, `rules` is null otherwise. Status: planned
+- DATA-111 MUST: on load, entries whose `song_id` is not in the library are dropped, a `parent_id` pointing nowhere moves the node to the root, depth over 5 or a cycle is repaired to the root, and `position` is renumbered 0..n-1 per parent; ids are unique and never reused. Status: planned
+- DATA-112 MUST: playlists reference songs by `id` only; they never copy song fields, and they do not count toward `USER_MAX_SONGS`. Status: planned
 
 ## Genre ontology cache (ADR-0014)
 

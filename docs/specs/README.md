@@ -20,7 +20,7 @@ Each requirement is one line:
 `ID MUST|SHOULD: statement. Status: implemented | planned | to-confirm`
 
 - IDs are `<AREA>-<NNN>`, stable, never reused. Areas: `DATA`, `API`,
-  `TAG`, `ADD`, `LIB`, `STO`, `PLY`, `IOS`, `WEB`, `NFR`, `CAT`, `GEN`, `STA`, `VIZ`, `SHARE`, `YTC`.
+  `TAG`, `ADD`, `LIB`, `STO`, `PLY`, `IOS`, `WEB`, `NFR`, `CAT`, `GEN`, `STA`, `VIZ`, `SHARE`, `YTC`, `PLS`.
 - **MUST** is mandatory; **SHOULD** is desirable and may be waived with a reason.
 - **implemented**: verified in code (last full pass 2026-10-14); "(not browser-verified)" means read in code and unit-tested, not yet checked in a browser. **proposal**: an idea under discussion. **planned**: decided, not
   built. **to-confirm**: behaviour exists or is proposed but nobody has
@@ -48,4 +48,5 @@ Each requirement is one line:
 | [terminology.md](terminology.md) | all | Glossary: one name per thing and its aliases (now line, relief, parts, camera, quality, overlay, share link, baselines) |
 | [share.md](share.md) | SHARE | Share link: song id, start time and visualizer settings in a hash route, share dialog, tap-to-play gate (task-0028) |
 | [youtube-connect.md](youtube-connect.md) | YTC | Connect YouTube: Google OAuth, playlist and Liked videos import as catalog songs, refresh token storage, limits (task-0032, ADR-0020 proposed) |
+| [playlists.md](playlists.md) | PLS | Playlists: top-level menu item, folders and playlists, import from YouTube, SoundCloud and Spotify links and files, export to M3U8, CSV and JSON, Refresh, guest view, quotas (task-0034, ADR-0022) |
 | [non-functional.md](non-functional.md) | NFR | Auth, hosting, scale, browsers, offline, CPU |

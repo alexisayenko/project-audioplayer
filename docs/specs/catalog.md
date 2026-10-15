@@ -21,7 +21,7 @@ accepted (now) these are superseded as noted below.
 - CAT-012 MUST: a Spotify track link yields metadata only (title, artist, album, year, cover) via the Spotify Web API with client credentials; the preview shows "No audio yet". Status: planned
 - CAT-013 MUST: the Spotify client id and secret live only in the git-ignored server env and never reach a client or the repos. Status: planned
 - CAT-014 MUST: no audio is ever taken from Spotify. Status: planned
-- CAT-015 SHOULD: public Spotify playlists import as many records; the user's Liked Songs need a one-time OAuth login, a separate optional step. Status: planned
+- CAT-015 SHOULD: public Spotify playlists import as many records, as a playlist (PLS-033); the user's Liked Songs need a one-time OAuth login, a separate optional step. Status: planned
 
 ## Get audio
 

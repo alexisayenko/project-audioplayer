@@ -24,7 +24,8 @@ test('cardModel builds title, sub line, grouped tags, BPM, duration, links and d
   const m = cardModel(FULL, { kind: 'none' });
   assert.equal(m.title, 'Alpha');
   assert.equal(m.remix, 'Kav');
-  assert.equal(m.sub, 'Zed - LP - 1999');
+  assert.equal(m.sub, 'Zed · 1999');
+  assert.equal(m.album, 'LP');
   assert.deepEqual(m.groups.map((g) => g.name), ['Genre', 'Decade', 'Country', 'Tags']);
   assert.ok(!JSON.stringify(m.groups).includes('lang:'), 'lang tags stay hidden as in Playback');
   assert.equal(m.bpm, '120');
@@ -71,7 +72,8 @@ test('the card opens read-only with links, actions and returns focus to the row 
   assert.equal(hrefs.length, 3);
   assert.ok(dlg.querySelectorAll('a.svc').every((a) => a.getAttribute('target') === '_blank' && a.getAttribute('rel') === 'noopener'));
   assert.deepEqual(names(dlg), ['Play now', 'Add to playlist', 'Download', 'Edit', 'Close']);
-  assert.match(dlg.textContent, /Zed - LP - 1999/);
+  assert.match(dlg.textContent, /Zed · 1999/);
+  assert.equal(dlg.querySelector('.card-album').textContent, 'LP');
   assert.equal(store.listeners.size, before + 1);
   dlg.querySelector('.card-close').click();
   assert.equal(dlg.open, false);
@@ -170,5 +172,5 @@ test('card shows a Remix year line only when present', () => {
   assert.equal(cardModel({ ...FULL, remix_year: 2024 }, { kind: 'none' }).remixYear, 'Remix year 2024');
   assert.equal(cardModel(FULL, { kind: 'none' }).remixYear, '');
   assert.equal(cardModel({ ...FULL, remix_year: null }, { kind: 'none' }).remixYear, '');
-  assert.equal(cardModel({ ...FULL, remix_year: 2024 }, { kind: 'none' }).sub, 'Zed - LP - 1999', 'sub line keeps the original year');
+  assert.equal(cardModel({ ...FULL, remix_year: 2024 }, { kind: 'none' }).sub, 'Zed · 1999', 'sub line keeps the original year');
 });

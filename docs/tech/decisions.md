@@ -646,10 +646,28 @@ Status: Accepted (Alex, 2026-10-14)
 
 ## ADR-0020 Connect YouTube: read-only playlist import by Google OAuth
 
-Status: Proposed (Alex, 2026-10-16; task-0032)
+Status: Accepted (Alex, 2026-10-16; task-0032; scope: owner-only first, Google verification deferred)
 
 - Decision: a signed-in user can connect a Google account with the scope `youtube.readonly` (separate Web-application OAuth client, redirect `https://electrophone.cc/yt/callback`, `access_type=offline`) and import chosen playlists and Liked videos as catalog songs without audio (ADR-0010), deduplicated on the YouTube video id. Spec: [youtube-connect.md](../specs/youtube-connect.md).
 - Security: the refresh token is encrypted (Fernet, key derived from `AUDIO_SESSION_SECRET`) in `/var/lib/audioplayer/secrets/<uid>.json` (0600), outside the git-synced data dir, never logged; client id and secret live in `/etc/audioplayer/env`; the OAuth `state` is signed and bound to the user.
 - Quotas (ADR-0012): a metadata-only import does not use the hourly add limit but is limited to 6 per hour and stops at the 500-song cap; the owner is exempt as before.
-- Pending owner decisions: CW owner-only first (recommended) or all users (Google verification); CX Production-unverified consent (recommended) or Testing (7-day refresh expiry); CY songs only or songs plus a refreshable Electrophone playlist (recommended).
+- Decided (Alex, 2026-10-16): CW owner only first (phase 3, all users, waits for Google verification); CX Production, unverified consent (no 7-day refresh expiry, 100-user cap; delegated to the recommendation); CY songs plus an Electrophone playlist per imported list with Refresh (delegated to the recommendation).
 - Rejected: scraping YouTube Music (no official API for the private library); storing the token in the library repo (git history is permanent).
+
+## ADR-0021 Genre families follow Discogs genres
+
+Status: Accepted (Alex, 2026-10-16; DF1; task-0033)
+
+- Context: the Genres map groups and colours nodes by a top-level family. The families were assigned from a hand-made keyword and Wikidata map (GEN-008), which leaves many nodes in Other and is hard to review.
+- Decision: the families are the 15 Discogs genres (Blues, Brass & Military, Children's, Classical, Electronic, Folk World & Country, Funk / Soul, Hip Hop, Jazz, Latin, Non-Music, Pop, Reggae, Rock, Stage & Screen) plus Other. A reviewed table `server/data/genre_families.json`, seeded from the Discogs styles, maps nodes to families; the rest inherit from ancestors, then the umbrella rule, then Other. Spec: GEN-037 to GEN-042 in [genres.md](../specs/genres.md).
+- Consequences: one stable, public taxonomy with a style-to-genre mapping already made; most nodes get a family without keywords. Brass & Military, Children's and Non-Music are rare and are hidden when empty. The table is data to maintain in git. The family palette (16 colours) must be added to the design system and re-exported (ADR-0009). Existing colour assignments migrate by family name.
+- Rejected: the Apple Music genre list (51 entries, regional and use-case noise); AllMusic (no API); MusicBrainz genres (flat, no top level); Wikidata (no common root, the current source of loose nodes); the current keyword families (many nodes end in Other).
+
+## ADR-0022 Playlists
+
+Status: Accepted (Alex, 2026-10-16; task-0034)
+
+- Context: the catalog (ADR-0010) lists every song and the play queue is transient. Alex wants named, organised, importable and exportable lists, and Connect YouTube (ADR-0020) and Spotify import (CAT-015) both need somewhere to put imported lists.
+- Decision: Playlists is a top-level feature that owns the playlist data model. Each user's playlists and folders are stored in the git-synced store as `playlists.json` next to `library.json` (DATA-110): opaque server-generated ids, a tree via `parent_id` (depth cap 5) with user-defined `position` among siblings, entries are `{song_id, added}` references (a song may be in many playlists; no audio or metadata is copied, so the 500-song cap is untouched). A smart playlist is the same entity with `smart: true` and `rules` and no stored entries, evaluated live. Imports (YouTube and SoundCloud links via yt-dlp, Spotify public links via client credentials, Connect YouTube, M3U8/CSV/JSON files) create playlists with a remembered `source` and a diff Refresh; export is M3U8 (default), CSV and JSON. Playlists are visible to guests like the library (ADR-0018). Phasing: placeholder menu item, then web CRUD, hierarchy and export, then import and Refresh, then iOS, smart playlists and sharing.
+- Consequences: YTC-030 no longer has its own storage; the UI word "playlist" stops meaning the queue ("Add to queue", "Add to playlist..." picker). A new file to migrate and back up. Guests see every playlist until a private flag exists.
+- Rejected: a playlist table in a database (breaks the git-synced store, ADR-0001-style sync); storing songs inside playlists (duplicates and drifts from the catalog); one flat list without folders; a separate store per import source.

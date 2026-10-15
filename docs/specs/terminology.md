@@ -105,6 +105,8 @@ One name per thing. "Also called" lists informal names the owner or the code use
 | --- | --- | --- | --- |
 | Overlay | The full-screen visualizer (key V) with its control row and top-right Share and Exit. | Also called: full-screen visualizer | VIZ-035, VIZ-070..073 |
 | Playback screen | Tab `#/playback`: cover, seek bar, transport, details, and the queue. | Also called: Now playing (page title) | PLY-001 |
+| Playlist | A saved, named, ordered list of songs, kept in a folder tree (`#/playlists`). A smart playlist is a saved set of Library filter rules evaluated live; a folder holds playlists and folders. | Not: the Queue; "playlist" in old UI wording meant the queue | PLS-001..PLS-099 |
+| Queue | The transient play-next list on Playback ("Add to queue"; formerly "Add to playlist" in the UI). "Save queue as playlist..." turns it into a Playlist. | Also called: Now playing (queue list) | PLY-001, PLS-013 |
 | Now playing (queue list) | The queue card beside or below the player. | Not: the Playback screen as a whole | PLY-001, PLY-040 |
 | Mini-player | The fixed bar at the bottom on other screens. | | WEB-038; playback.md |
 | Cover button | The cover as a button (`#cover-toggle`) that toggles play/pause. | | PLY-016 |
@@ -116,6 +118,7 @@ One name per thing. "Also called" lists informal names the owner or the code use
 | --- | --- | --- | --- |
 | Share link | `<origin>/#/play/<songId>?v=1&...`. Parameters: `v` version, `t` start second, `viz` bars/ring/terrain, `style`, `bg`, `fs` (open full-screen), `cam` (eye,pitch,yaw), `fl` (flight). | | SHARE-001, SHARE-003 |
 | Liked baseline | Owner-approved visualizer look, tagged in git: `terrain-liked-1` (c9b18e7), `terrain-liked-2` (edd86a8); Mirrored spectrum Ice Blue Mirror: `mirror-liked-1` (001814c). | Also called: baseline | visualizer.md; terrain-concept 10 |
+| Family | Top-level genre of the Genres map: one of the 15 Discogs genres or Other; every node has exactly one. | Also called: top-level genre. Not: parent genre | GEN-037, GEN-038 |
 | Catalog | The list of songs as metadata, with or without audio. | Not: audio | CAT-001 |
 | Audio state | `none` (no file), `server` (on the server), `phone` (local copy). | Not: catalog | CAT-002 |
 | Guest | A signed-out visitor: read-only view of the owner's library, with per-IP limits. | Not: owner | WEB-060 |

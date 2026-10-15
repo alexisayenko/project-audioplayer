@@ -6,7 +6,8 @@ import { autoDownloadOn, setAutoDownload } from './autodl.js';
 import { el, pageHead } from './dom.js';
 import { signInErrorText } from './signin-error.js';
 import { isGuest, ownerLabel } from './guest.js';
-import { bpmCard } from './backfill-card.js';
+import { bpmCard, metadataCard } from './backfill-card.js';
+import { downloadAllCard } from './bulk-download.js';
 import { isSupported as vizSupported } from './audio-graph.js';
 import {
   vizBackgroundOn, setVizBackground, vizCaps, vizMode, setVizMode, vizHeightId, setVizHeight,
@@ -92,9 +93,9 @@ function accountSection() {
   if (auth.email) {
     return el('div', { class: 'account' },
       el('div', { class: 'cell' },
-        el('span', { class: 't-subhead' }, 'Signed in as ', el('b', {}, auth.email)),
+        el('span', { class: 't-subhead set-text' }, 'Signed in as ', el('b', {}, auth.email)),
         el('button', {
-          class: 'btn outline small',
+          class: 'btn outline small signout',
           type: 'button',
           onclick: async () => {
             try { await session.end(); } catch { /* cookie expires on its own */ }
@@ -127,7 +128,7 @@ function libraryCard() {
     sync.textContent = SYNC_TEXT[h.sync] || 'Waiting to sync to git';
   }).catch(() => { sync.textContent = 'Server unreachable'; });
   return el('section', { class: 'card' },
-    el('h2', { class: 't-headline' }, 'Library on the server'),
+    el('h2', { class: 't-headline' }, 'Library'),
     el('div', { class: 'cell' },
       el('span', { class: 't-title' }, `${songs} ${songs === 1 ? 'song' : 'songs'}`),
       el('span', { class: 'muted t-caption' }, songs ? hours : '')),
@@ -145,10 +146,13 @@ function playbackCard() {
   });
   return el('section', { class: 'card' },
     el('h2', { class: 't-headline' }, 'Playback'),
-    el('label', { class: 'switch-row', for: 'auto-dl' }, box,
-      el('span', { class: 't-subhead' }, 'Auto-download songs',
-        el('small', { class: 't-caption' }, 'Fetch audio from the server for songs you play or add to the playlist. Each fetch counts toward the hourly add limit.'))),
-    ...vizRows());
+    el('label', { class: 'switch-row', for: 'auto-dl' },
+      el('span', { class: 't-subhead set-text' }, 'Auto-download songs',
+        el('small', { class: 't-caption' }, 'Download songs you play or add to the playlist. Each download counts toward the hourly add limit.')), box));
+}
+
+function visualizerCard() {
+  return el('section', { class: 'card' }, el('h2', { class: 't-headline' }, 'Visualizer'), ...vizRows());
 }
 
 function vizSelect({ id, label, note, options, value, disabled, onChange }) {
@@ -156,7 +160,7 @@ function vizSelect({ id, label, note, options, value, disabled, onChange }) {
     options.map((o) => el('option', { value: o.id, selected: o.id === value }, o.label)));
   select.addEventListener('change', () => onChange(select.value));
   return el('label', { class: 'switch-row', for: id },
-    el('span', { class: 't-subhead' }, label, el('small', { class: 't-caption' }, note)), select);
+    el('span', { class: 't-subhead set-text' }, label, el('small', { class: 't-caption' }, note)), select);
 }
 
 function vizRows() {
@@ -167,7 +171,7 @@ function vizRows() {
     vizSelect({
       id: 'viz-mode-select',
       label: 'Visualizer mode',
-      note: 'One visualizer at a time. Press M on the Playback screen or in full screen to cycle.',
+      note: 'Press M on the Playback screen or in full screen to cycle.',
       options: modes,
       value: vizMode(),
       disabled: !supported,
@@ -176,7 +180,7 @@ function vizRows() {
     ...(modes.some((m) => m.id === 'terrain') ? [vizSelect({
       id: 'viz-terrain-style-select',
       label: 'Terrain style',
-      note: 'Relief follows the spectrum; Beat peaks grow peaks from flat ground on each beat (one peak, a hill, or several); Full spectrum is Relief with a slightly raised now line; Melody on beats lets the tune build the relief over a beat texture. Press T while Terrain is shown to cycle.',
+      note: 'How the terrain follows the music. Press T while Terrain is shown to cycle.',
       options: TERRAIN_STYLES,
       value: getStyle(),
       disabled: !supported,
@@ -185,7 +189,7 @@ function vizRows() {
     vizSelect({
       id: 'viz-height-select',
       label: 'Visualizer height',
-      note: 'How much of the screen height the visualizer fills.',
+      note: 'How much of the screen the visualizer fills.',
       options: HEIGHT_OPTIONS,
       value: vizHeightId(),
       disabled: !supported,
@@ -199,10 +203,10 @@ function vizRow() {
   const box = el('input', { type: 'checkbox', id: 'viz-bg-toggle', checked: supported && vizBackgroundOn(), disabled: !supported });
   box.addEventListener('change', () => setVizBackground(box.checked));
   const note = supported
-    ? 'Draw a quiet spectrum behind the Playback screen while music plays. Off when reduced motion is on.'
+    ? 'A quiet spectrum behind the Playback screen while music plays. Off when reduced motion is on.'
     : 'This browser does not offer Web Audio.';
-  return el('label', { class: 'switch-row', for: 'viz-bg-toggle' }, box,
-    el('span', { class: 't-subhead' }, 'Visualizer background', el('small', { class: 't-caption' }, note)));
+  return el('label', { class: 'switch-row', for: 'viz-bg-toggle' },
+    el('span', { class: 't-subhead set-text' }, 'Visualizer background', el('small', { class: 't-caption' }, note)), box);
 }
 
 export function renderSettings(root) {
@@ -212,6 +216,8 @@ export function renderSettings(root) {
   }
   let card = libraryCard();
   const unsub = store.subscribe(() => { const next = libraryCard(); card.replaceWith(next); card = next; });
-  root.append(pageHead('Settings', 'Your library and storage on this server.'), el('div', { class: 'settings-grid' }, accountCard(), playbackCard(), ...(auth.email ? [card, bpmCard()] : [])));
+  root.append(pageHead('Settings', 'Your library and storage on this server.'), el('div', { class: 'settings-grid' },
+    el('div', { class: 'settings-col' }, accountCard(), ...(auth.email ? [card, bpmCard(), metadataCard(), downloadAllCard()] : [])),
+    el('div', { class: 'settings-col' }, playbackCard(), visualizerCard())));
   return unsub;
 }

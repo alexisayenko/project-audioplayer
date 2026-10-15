@@ -23,3 +23,5 @@ export const TOUCH_HOLD_MS = 250;
 export const TOUCH_SLOP_PX = 10;
 export const CLICK_SWALLOW_MS = 400;
 export const VIBRATE_MS = 10;
+
+export const LONG_SONG_SECONDS = 300;
