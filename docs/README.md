@@ -185,6 +185,7 @@ docs/
 │   ├── concepts/                       # entry: concepts/README.md
 │   ├── features/                       # entry: features/README.md
 │   ├── concept-catalog-and-audio.md    # catalog vs audio (ADR-0010)
+│   ├── concept-mirrored-spectrum.md    # Mirrored spectrum: objects and vocabulary
 │   ├── screens.md                      # screens, library model, API
 │   ├── wireframes/                     # PNG wireframes (library row, playback)
 │   └── README.md
