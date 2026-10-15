@@ -4,7 +4,7 @@ import {
   IDLE_EPSILON, VIZ_FPS, VIZ_DPR_CAP, DPR_CAP, VIZ_HEIGHT_SCALE, TILT_DB_PER_OCT,
 } from './viz-constants.js';
 import {
-  barsDb, unitBars, makeReference, bassEnergy, smoothBars, idleBars, maxOf, makePulse, makePacer, makeGovernor, capDpr, pickSpokes, barCount, shapeBars,
+  barsDb, unitBars, makeReference, bassEnergy, smoothBars, idleBars, maxOf, makePulse, makePacer, makeGovernor, capDpr, pickSpokes, barCount, pixelBars, shapeBars,
 } from './viz-spectrum.js';
 import { createTracker, diagnose, debugLines, byteMax, createStatusEl, userAgentFamily, audioOrigin } from './viz-signal.js';
 import { createGlow } from './viz-glow.js';
@@ -137,7 +137,7 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
   const observers = [];
 
   const reduced = () => !!reducedMql?.matches;
-  const bandCount = () => barCount(view.w, getMirror().density);
+  const bandCount = () => pixelBars(view.w, getMirror().barWidth, getMirror().gap).count;
   const energy = () => Math.max(maxOf(st.bars), pulse.value);
 
   function colors(now) {
@@ -207,6 +207,8 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
     st.rot += dt * 0.12;
   }
 
+  let lastDraw = 0;
+
   function draw2d() {
     const { w, h } = view;
     const { c, shaped, spokes, bass, rotation, now } = f;
@@ -218,12 +220,18 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
       drawRing(ctx, cx, cy, r, spokes, { colors: c, bass, rotation, glow: false, alpha: mode === 'full' ? 1 : 0.5 });
       return;
     }
-    if (mode === 'full' && f.q?.backdrop) backdrop.draw(ctx, w, h, c, bass);
-    const drawn = parts.apply(st.bars, shaped, now / 1000);
     const m = getMirror();
+    const iceBackdrop = m.backdrop === 'ice' && !!c.ice;
+    if (mode === 'full' && f.q?.backdrop && !iceBackdrop) backdrop.draw(ctx, w, h, c, bass);
+    const drawn = parts.apply(st.bars, shaped, now / 1000);
+    const dt = lastDraw ? Math.min(0.1, Math.max(0, (now - lastDraw) / 1000)) : 1 / 30;
+    lastDraw = now;
+    const px = pixelBars(w, m.barWidth, m.gap);
     drawBars(ctx, w, h, drawn, {
-      colors: mirrorColors(c, m.gradient), alpha: mode === 'full' ? 1 : 0.85, dpr: view.dpr, horizon: 0.5, span: heightScale * m.height,
-      widthFraction: m.width, reflection: m.reflection, glow: m.horizon,
+      colors: mirrorColors(c, m.gradient), alpha: mode === 'full' ? 1 : 0.85, dpr: view.dpr, horizon: 0.5, span: heightScale, maxHeightPx: m.maxHeight,
+      widthFraction: px.fraction, minGapCss: px.minGapCss, reflection: m.reflection, glow: m.horizon,
+      direction: m.direction, segments: m.segments, segmentGap: m.segmentGap, tips: m.tips, tipFade: m.tipFade, band: m.band,
+      backdrop: iceBackdrop ? 'ice' : 'none', backdropAlpha: mode === 'full' ? 1 : 0.6, dt,
     });
   }
 

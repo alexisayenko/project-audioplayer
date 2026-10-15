@@ -3,11 +3,13 @@ import { defaultMirror, validateMirror } from './viz-mirror-settings.js';
 const build = (id, name, over) => ({ id, name, settings: validateMirror({ ...defaultMirror(), ...over }) });
 
 export const MIRROR_PRESET_LIST = [
-  build('neon-cylinders', 'Neon Cylinders', { density: 0.5, width: 0.8, height: 1, rise: 0.7, fall: 0.12, gradient: 'theme', reflection: 0.15, horizon: true }),
-  build('cyan-magenta-wave', 'Cyan Magenta Wave', { density: 1.6, width: 0.4, height: 1, rise: 0.6, fall: 0.15, gradient: 'reversed', reflection: 0.5, horizon: true }),
-  build('neon-blocks', 'Neon Blocks', { density: 0.8, width: 0.8, height: 0.9, rise: 0.8, fall: 0.2, gradient: 'theme', reflection: 0.6, horizon: true }),
-  build('pink-cyan-blocks', 'Pink Cyan Blocks', { density: 0.5, width: 0.85, height: 0.9, rise: 0.6, fall: 0.15, gradient: 'reversed', reflection: 0.25, horizon: false }),
-  build('ice-blue-mirror', 'Ice Blue Mirror', { density: 1.2, width: 0.9, height: 1.1, rise: 0.6, fall: 0.15, gradient: 'accent', reflection: 0.8, horizon: true }),
+  build('neon-cylinders', 'Neon Cylinders', { barWidth: 6, gap: 2, rise: 0.7, fall: 0.12, gradient: 'theme', reflection: 0.15, horizon: true }),
+  build('cyan-magenta-wave', 'Cyan Magenta Wave', { barWidth: 2, gap: 1, rise: 0.6, fall: 0.15, gradient: 'reversed', reflection: 0.5, horizon: true }),
+  build('neon-blocks', 'Neon Blocks', { barWidth: 4, gap: 1, maxHeight: 145, rise: 0.8, fall: 0.2, gradient: 'theme', reflection: 0.6, horizon: true }),
+  build('pink-cyan-blocks', 'Pink Cyan Blocks', { barWidth: 7, gap: 1, maxHeight: 145, rise: 0.6, fall: 0.15, gradient: 'reversed', reflection: 0.25, horizon: false }),
+  build('ice-blue-mirror', 'Ice Blue Mirror', {
+    barWidth: 10, gap: 2, maxHeight: 175, segments: 20, segmentGap: 0.3, rise: 0.6, fall: 0.15, gradient: 'ice', direction: 'vertical', reflection: 0.8, horizon: true, band: 0.6, backdrop: 'ice',
+  }),
   build('classic', 'Classic', {}),
 ];
 

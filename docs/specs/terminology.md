@@ -47,6 +47,9 @@ One name per thing. "Also called" lists informal names the owner or the code use
 | Term | Meaning | Also called / not | Where |
 | --- | --- | --- | --- |
 | Mirrored spectrum | Mode `bars`: bars up and down from a centre line. | Also called: spectrum bar(s), bars | VIZ-010, VIZ-040 |
+| Bar width, Gap | Mirrored spectrum pixel settings: bar width and the space between bars in css px (0 width = Auto, the classic look). | Replaced Bar count / Bar width | VIZ-100 |
+| Max bar height | Mirrored spectrum: tallest bar in css px above the horizon (0 = Auto). | Replaced Height | VIZ-100 |
+| LED sections | Mirrored spectrum bars cut into stacked blocks (`segments`). | Concept: Sections | VIZ-100 |
 | Ring | Mode `ring`: circular spectrum around the cover. | | VIZ-042 |
 | Terrain | Mode `terrain`: the song as a landscape (WebGL). | | VIZ-043; terrain-concept |
 | Cell | One square of the grid (square in the world, not on screen). | | VIZ-043 |

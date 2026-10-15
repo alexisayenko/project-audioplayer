@@ -35,35 +35,37 @@ test('one named control per schema field, grouped', () => {
 test('edits persist under ap2.viz.mirror and reset restores defaults', () => {
   reset();
   const p = createMirrorPanel({ doc: document });
-  const input = rowOf(p, 'Bar width').querySelector('input');
-  input.value = '0.8';
+  const input = rowOf(p, 'Bar width (px)').querySelector('input');
+  input.value = '8';
   fire(input, 'input');
-  assert.equal(S.getMirror().width, 0.8);
-  assert.equal(JSON.parse(saved[S.MIRROR_KEY]).width, 0.8);
+  assert.equal(S.getMirror().barWidth, 8);
+  assert.equal(JSON.parse(saved[S.MIRROR_KEY]).barWidth, 8);
+  assert.match(p.el.querySelector('.viz-synth-count').textContent, /^~\d+ bars$/);
   const sw = rowOf(p, 'Horizon glow').querySelector('input');
   sw.checked = false;
   fire(sw, 'change');
   assert.equal(S.getMirror().horizon, false);
   p.el.querySelector('.viz-synth-reset-all').click();
   assert.deepEqual(S.getMirror(), S.defaultMirror());
-  assert.equal(input.value, '0.6');
+  assert.equal(input.value, '0');
+  assert.equal(rowOf(p, 'Bar width (px)').querySelector('output').textContent, 'Auto');
   p.destroy();
 });
 
 test('group reset only touches its group', () => {
   reset();
-  S.setMirror('width', 0.9);
+  S.setMirror('barWidth', 9);
   S.setMirror('rise', 0.3);
   S.resetMirror('Bars');
-  assert.equal(S.getMirror().width, 0.6);
+  assert.equal(S.getMirror().barWidth, 0);
   assert.equal(S.getMirror().rise, 0.3);
 });
 
 test('invalid stored data repairs to defaults', () => {
   reset();
-  saved[S.MIRROR_KEY] = JSON.stringify({ v: 1, width: 9, gradient: 'nope', horizon: 'x', fall: 0.2 });
+  saved[S.MIRROR_KEY] = JSON.stringify({ v: 1, barWidth: 99, gradient: 'nope', horizon: 'x', fall: 0.2 });
   const m = S.getMirror();
-  assert.equal(m.width, 0.95);
+  assert.equal(m.barWidth, 40);
   assert.equal(m.gradient, 'theme');
   assert.equal(m.horizon, true);
   assert.equal(m.fall, 0.2);
@@ -91,4 +93,83 @@ test('bar width fraction widens bars and options reach the canvas', () => {
   drawBars(ctx, 500, 200, vals, { colors: FALLBACK_COLORS, glow: false });
   assert.equal(calls.filter(([k]) => k === 'fillRect').length, 0);
   assert.ok(withGlow > 0);
+});
+
+test('new settings are validated and neutral by default', () => {
+  const d = S.defaultMirror();
+  assert.equal(d.segments, 0);
+  assert.equal(d.tips, false);
+  assert.equal(d.band, 0);
+  assert.equal(d.backdrop, 'none');
+  assert.equal(d.direction, 'horizontal');
+  const bad = S.validateMirror({ v: 1, segments: 99, segmentGap: 0, tips: 'x', direction: 'diag', backdrop: 'fire', gradient: 'ice', band: 5 });
+  assert.equal(bad.segments, 48);
+  assert.equal(bad.segmentGap, 0.1);
+  assert.equal(bad.tips, false);
+  assert.equal(bad.direction, 'horizontal');
+  assert.equal(bad.backdrop, 'none');
+  assert.equal(bad.gradient, 'ice');
+  assert.equal(bad.band, 1);
+});
+
+test('mirrorColors ice uses the ice stops and a light line colour', () => {
+  const c = FALLBACK_COLORS;
+  const v = S.mirrorColors(c, 'ice');
+  assert.deepEqual(v.stops, c.ice.stops);
+  assert.deepEqual(v.line, c.ice.stops[3]);
+  assert.equal(S.mirrorColors(c, 'ice'), v);
+  assert.equal(S.mirrorColors({ stops: c.stops, line: c.line }, 'ice').line, c.line);
+});
+
+test('pixel bars: auto is the classic formula, px mode clamps count and keeps the ratio', async () => {
+  const { pixelBars, barCount } = await import('./viz-spectrum.js');
+  for (const w of [800, 1200, 1900]) {
+    const a = pixelBars(w, 0, 2);
+    assert.equal(a.count, barCount(w));
+    assert.equal(a.fraction, 0.6);
+  }
+  assert.equal(pixelBars(1200, 6, 2).count, 150);
+  assert.equal(pixelBars(1200, 6, 2).fraction, 0.75);
+  assert.equal(pixelBars(300, 40, 20).count, 48);
+  assert.equal(pixelBars(4000, 2, 0).count, 600);
+  assert.equal(pixelBars(1200, 6, 0).minGapCss, 0);
+  assert.equal(pixelBars(1200, 6, 1).minGapCss, 1);
+  assert.equal(barGeometry(150, 1200, 1, 1, 0).barDev, 8);
+});
+
+test('px settings are floored, Auto is 0, and old density/width/height migrate once', () => {
+  reset();
+  assert.equal(S.validateMirror({ v: 1, barWidth: 1, maxHeight: 5 }).barWidth, 2);
+  assert.equal(S.validateMirror({ v: 1, maxHeight: 5 }).maxHeight, 20);
+  assert.equal(S.validateMirror({ v: 1, maxHeight: 900 }).maxHeight, 600);
+  const d = S.defaultMirror();
+  assert.equal(d.barWidth, 0);
+  assert.equal(d.maxHeight, 0);
+  const same = S.validateMirror({ v: 1, density: 1, width: 0.6, height: 1, rise: 0.3 });
+  assert.equal(same.barWidth, 0);
+  assert.equal(same.maxHeight, 0);
+  assert.equal(same.rise, 0.3);
+  const old = S.validateMirror({ v: 1, density: 0.5, width: 0.8, height: 1.1 });
+  assert.equal(old.barWidth, 6);
+  assert.equal(old.gap, 2);
+  assert.equal(old.maxHeight, 175);
+  const junk = S.validateMirror({ v: 1, density: 'x', width: null });
+  assert.equal(junk.barWidth, 0);
+  const fresh = S.validateMirror({ v: 1, barWidth: 5, density: 0.5, width: 0.9 });
+  assert.equal(fresh.barWidth, 5);
+});
+
+test('maxHeightPx caps the bars at that many css px and Auto keeps the old half-height', async () => {
+  const { barHeights } = await import('./viz-bars.js');
+  const run = (extra) => {
+    const calls = [];
+    const ctx = new Proxy({}, { get: (_, k) => (k === 'createLinearGradient' ? () => ({ addColorStop() {} }) : (...a) => { calls.push([k, a]); }), set: () => true });
+    drawBars(ctx, 600, 400, new Float32Array(50).fill(1), { colors: FALLBACK_COLORS, glow: false, ...extra });
+    return Math.max(...calls.filter(([k]) => k === 'rect').map(([, a]) => a[3]));
+  };
+  const auto = run({});
+  assert.ok(Math.abs(auto - 0.8 * 200) < 1e-6);
+  assert.ok(Math.abs(run({ maxHeightPx: 100 }) - 100) < 1e-6);
+  assert.ok(Math.abs(run({ maxHeightPx: 600 }) - 0.95 * 200) < 1e-6);
+  assert.equal(barHeights.length >= 0, true);
 });

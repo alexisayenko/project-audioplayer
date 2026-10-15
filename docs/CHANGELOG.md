@@ -4,6 +4,8 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## 2026-10-15 (built, not deployed)
 
+- Web: Mirrored spectrum "Ice Blue Mirror" built -- new settings Bar width (px) and Gap (px) (replace Bar count / Bar width, Auto = classic), Max bar height (px) (replaces Height), LED sections, Bar tips, Ice palette, vertical gradient, Horizon band and Ice backdrop (new `--viz-ice-*` variables in `viz.css`); old saved values migrate once; defaults draw exactly as before (VIZ-100).
+
 - Web: Synthwave triangle-mesh diagonals no longer flip from frame to frame (`/ \ / \` shimmer): the checker parity was tied to the on-screen row and inverted at every one-cell scroll wrap; two index variants per tier are now swapped by the world cell parity (`diagParity`), so a cell keeps its diagonal as it scrolls.
 
 - Web: Synthwave no longer collapses on weak GPUs (Radeon R5 230 at 1920x1200 fell to 8 fps and then to Terrain while the picker still said Synthwave): internal render scale (backing store 100/75/60/50% stretched by CSS) and fewer glow repeats are the first things the governor gives up, before grid level and frame rate; sun, haze, reflection, sky and horizon passes are scissored to their own bounds; the last stable rung is remembered per device in `localStorage` (`ap2.viz.synth.shed`) and a fast machine always starts at full quality; the Terrain fallback is the last resort and is now visible: the mode picker reads "Synthwave terrain (using Terrain: too heavy)" and the notice states the measured interval and render scale; the vizdebug box shows render scale, rung, passes, fill and glow; VIZ-090.

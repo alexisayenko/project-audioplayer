@@ -17,8 +17,14 @@ export const STOP_AT = [0, 0.25, 0.6, 1];
 
 const STOPS = [[255, 31, 142], [255, 61, 115], [255, 106, 82], [255, 154, 58]];
 
+const ICE = {
+  stops: [[11, 58, 158], [31, 111, 224], [79, 184, 245], [230, 251, 255]],
+  bgTop: [2, 5, 15],
+  bgMid: [10, 42, 102],
+};
+
 export const FALLBACK_COLORS = {
-  a: STOPS[0], b: STOPS[3], stops: STOPS, accent: [87, 211, 233], scrim: [26, 11, 51], line: [255, 255, 255], center: [27, 10, 51],
+  a: STOPS[0], b: STOPS[3], stops: STOPS, accent: [87, 211, 233], scrim: [26, 11, 51], line: [255, 255, 255], center: [27, 10, 51], ice: ICE,
 };
 
 export function readVizColors(style, fallback) {
@@ -32,6 +38,11 @@ export function readVizColors(style, fallback) {
     scrim: get('--viz-bg-top', fallback.scrim),
     line: get('--viz-line', fallback.line),
     center: get('--viz-bg-center', fallback.center),
+    ice: {
+      stops: fallback.ice.stops.map((def, k) => get(`--viz-ice-${k}`, def)),
+      bgTop: get('--viz-ice-bg-top', fallback.ice.bgTop),
+      bgMid: get('--viz-ice-bg-mid', fallback.ice.bgMid),
+    },
   };
 }
 

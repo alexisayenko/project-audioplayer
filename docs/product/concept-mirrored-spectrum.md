@@ -151,7 +151,7 @@ Bar tips (usually called peak caps or peak hold in audio software; "bar tips" is
 - **Show / Hide**: whether the caps are drawn. Default: hide.
 - **Fading speed**: how fast a cap falls (or fades) back down after its bar dropped. Slow keeps the previous peak visible for a long time; fast makes the cap hug the bar.
 
-The Bar count setting (how many bars, 0.5 to 2 times the default density, default 1) also belongs to Bars.
+Bar width (px, 2 to 40, 0 = Auto = the classic look) and Gap (px, 0 to 20) replace the old Bar count and Bar width: bar pitch = width + gap, bar count = canvas width / pitch clamped to 48..600 (clamped counts stretch the bars to keep the ratio and fill the canvas); the panel shows the resulting count as "~N bars". Max bar height (px, 20 to 600, 0 = Auto = today's height) replaced the Height multiplier: the tallest bar's height in CSS px above the horizon, capped at 95% of the available half height. Old saved density, width and height values are converted once (at a 1200 px canvas and a 200 px half height). Status: built.
 
 ### Bar style (3D) and the other properties
 
@@ -166,7 +166,7 @@ The Bar count setting (how many bars, 0.5 to 2 times the default density, defaul
 
 Exists today (a settings panel for the Mirrored spectrum, saved on this device; the panel code is not committed yet):
 
-- Bars: Bar count, Bar width, Height; a colour choice of Theme, Reversed or Accent; Rise speed and Fall speed.
+- Bars: Bar width (px), Gap (px), Max bar height (px); LED Sections (0 to 48, with a Section gap), Bar tips (show, fading speed); a colour choice of Theme, Reversed or Accent; Rise speed and Fall speed.
 - Bottom space: Reflection opacity (the Transparency property, shown inverted).
 - Horizon line: Horizon glow on or off (the Glowing property).
 - Part toggles (bass, mids, highs; beats, melody, other) that filter which sound the bars show.
@@ -212,5 +212,5 @@ One-click looks at the top of the Mirrored spectrum panel, like the Synthwave pr
 | Cyan Magenta Wave | `02-cyan-magenta-wave.png` | many thin bars, reversed gradient, strong reflection | cyan-to-magenta vertical gradient with rounded bar ends, bars fading to nothing at the sides |
 | Neon Blocks | `03-neon-blocks.png` | medium wide bars, theme gradient, strong reflection | LED sections (sections number), glowing bars, blue to pink to orange colours across the width, blurred reflection |
 | Pink Cyan Blocks | `04-pink-cyan-blocks.png` | few wide bars, reversed gradient, faint reflection, no horizon glow | LED sections, the vertical pink-to-cyan gradient, bar tips |
-| Ice Blue Mirror | `05-ice-blue-mirror.png` | dense very wide bars, accent colour, strongest reflection | LED sections, the vertical blue gradient, the bright horizon band, the perspective view |
+| Ice Blue Mirror | `05-ice-blue-mirror.png` | built: wide pixel bars (10 px, gap 2), 20 LED sections, the Ice palette as a vertical gradient, a Horizon band, the Ice backdrop, reflection 0.8 (the thumbnail is still the owner's reference image) | the perspective view |
 | Classic | captured | all defaults, today's look | nothing |

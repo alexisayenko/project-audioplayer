@@ -11,6 +11,12 @@
   --viz-bg-edge: #07030f;
   --viz-bg-top: #1a0b33;
   --viz-bg-mid: #3b1470;
+  --viz-ice-0: #0b3a9e;
+  --viz-ice-1: #1f6fe0;
+  --viz-ice-2: #4fb8f5;
+  --viz-ice-3: #e6fbff;
+  --viz-ice-bg-top: #02050f;
+  --viz-ice-bg-mid: #0a2a66;
 }
 
 #player { position: relative; isolation: isolate; }

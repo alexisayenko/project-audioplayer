@@ -1,5 +1,7 @@
 import { storeGet, storeSet } from './storage.js';
 import { repairField } from './viz-synth-settings.js';
+import { barCount } from './viz-spectrum.js';
+import { MIGRATE_REF_WIDTH, MIGRATE_REF_HALF, BAR_WIDTH_FRACTION, HEIGHT_MAX } from './viz-constants.js';
 
 export const MIRROR_KEY = 'ap2.viz.mirror';
 export const MIRROR_VERSION = 1;
@@ -10,14 +12,21 @@ const select = (key, group, label, options, def) => f(key, group, label, 'select
 const bool = (key, group, label, def) => f(key, group, label, 'bool', def);
 
 export const MIRROR_SCHEMA = [
-  range('density', 'Bars', 'Bar count', 0.5, 2, 0.05, 1),
-  range('width', 'Bars', 'Bar width', 0.3, 0.95, 0.05, 0.6),
-  range('height', 'Bars', 'Height', 0.4, 1.2, 0.05, 1),
+  f('barWidth', 'Bars', 'Bar width (px)', 'range', 0, { min: 0, max: 40, step: 1, zero: 'Auto', floor: 2 }),
+  range('gap', 'Bars', 'Gap (px)', 0, 20, 1, 2),
+  f('maxHeight', 'Bars', 'Max bar height (px)', 'range', 0, { min: 0, max: 600, step: 5, zero: 'Auto', floor: 20 }),
+  range('segments', 'Sections', 'LED sections (0 = solid)', 0, 48, 1, 0),
+  range('segmentGap', 'Sections', 'Section gap', 0.1, 0.6, 0.05, 0.3),
+  bool('tips', 'Bar tips', 'Show bar tips', false),
+  range('tipFade', 'Bar tips', 'Fading speed', 0.05, 1, 0.05, 0.3),
   range('rise', 'Motion', 'Rise speed', 0.1, 1, 0.05, 0.6),
   range('fall', 'Motion', 'Fall speed', 0.03, 0.5, 0.01, 0.15),
-  select('gradient', 'Look', 'Colours', ['theme', 'reversed', 'accent'], 'theme'),
+  select('gradient', 'Look', 'Colours', ['theme', 'reversed', 'accent', 'ice'], 'theme'),
+  select('direction', 'Look', 'Gradient direction', ['horizontal', 'vertical'], 'horizontal'),
   range('reflection', 'Look', 'Reflection', 0, 0.8, 0.05, 0.35),
   bool('horizon', 'Look', 'Horizon glow', true),
+  range('band', 'Look', 'Horizon band', 0, 1, 0.05, 0),
+  select('backdrop', 'Look', 'Backdrop', ['none', 'ice'], 'none'),
 ];
 
 export const MIRROR_GROUPS = [...new Set(MIRROR_SCHEMA.map((s) => s.group))];
@@ -28,6 +37,26 @@ export function defaultMirror() {
   return Object.fromEntries(MIRROR_SCHEMA.map((s) => [s.key, s.def]));
 }
 
+const repair = (spec, v) => {
+  const r = repairField(spec, v);
+  return spec.floor && r > 0 && r < spec.floor ? spec.floor : r;
+};
+
+export function migrateHeight(mult) {
+  if (!Number.isFinite(mult) || mult === 1) return 0;
+  return Math.min(600, Math.max(20, Math.round((mult * MIGRATE_REF_HALF * HEIGHT_MAX) / 5) * 5));
+}
+
+export function migrateBars(density, width) {
+  const d = Number.isFinite(density) && density > 0 ? density : 1;
+  const wf = Number.isFinite(width) && width > 0 ? width : BAR_WIDTH_FRACTION;
+  if (d === 1 && wf === BAR_WIDTH_FRACTION) return { barWidth: 0, gap: 2 };
+  const pitch = MIGRATE_REF_WIDTH / barCount(MIGRATE_REF_WIDTH, d);
+  const barWidth = Math.min(40, Math.max(2, Math.round(pitch * wf)));
+  const gap = Math.min(20, Math.max(0, Math.round(pitch - barWidth)));
+  return { barWidth, gap };
+}
+
 export function validateMirror(raw) {
   let src = raw;
   if (typeof raw === 'string') {
@@ -36,7 +65,11 @@ export function validateMirror(raw) {
   const out = defaultMirror();
   if (!src || typeof src !== 'object' || Array.isArray(src)) return out;
   if (src.v !== undefined && src.v !== MIRROR_VERSION) return out;
-  for (const s of MIRROR_SCHEMA) if (s.key in src) out[s.key] = repairField(s, src[s.key]);
+  const legacy = !('barWidth' in src) && ('density' in src || 'width' in src);
+  const old = legacy ? migrateBars(Number(src.density), Number(src.width)) : null;
+  for (const s of MIRROR_SCHEMA) if (s.key in src) out[s.key] = repair(s, src[s.key]);
+  if (old) Object.assign(out, old);
+  if (!('maxHeight' in src) && 'height' in src) out.maxHeight = migrateHeight(Number(src.height));
   return out;
 }
 
@@ -61,7 +94,7 @@ export function getMirror() {
 export function setMirror(key, value) {
   const spec = FIELD.get(key);
   if (!spec) return undefined;
-  const v = repairField(spec, value);
+  const v = repair(spec, value);
   const cur = getMirror();
   if (cur[key] !== v) commit({ ...cur, [key]: v }, key);
   return v;
@@ -94,10 +127,15 @@ const colorCache = new WeakMap();
 
 export function mirrorColors(colors, gradient) {
   if (gradient === 'theme' || !colors?.stops) return colors;
+  if (gradient === 'ice' && !colors.ice) return colors;
   const hit = colorCache.get(colors);
   if (hit?.gradient === gradient) return hit.value;
-  const stops = gradient === 'reversed' ? [...colors.stops].reverse() : colors.stops.map(() => colors.accent);
+  let stops;
+  if (gradient === 'reversed') stops = [...colors.stops].reverse();
+  else if (gradient === 'ice') stops = colors.ice.stops;
+  else stops = colors.stops.map(() => colors.accent);
   const value = { ...colors, stops, a: stops[0], b: stops.at(-1) };
+  if (gradient === 'ice') value.line = stops.at(-1);
   colorCache.set(colors, { gradient, value });
   return value;
 }

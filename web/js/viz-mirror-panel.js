@@ -1,6 +1,7 @@
 import {
   MIRROR_SCHEMA, MIRROR_GROUPS, getMirror, setMirror, resetMirror, onMirror, replaceMirror,
 } from './viz-mirror-settings.js';
+import { pixelBars } from './viz-spectrum.js';
 import {
   MIRROR_PRESET_LIST, MIRROR_PRESET_THUMB, applyMirrorPreset, findActiveMirrorPreset,
 } from './viz-mirror-presets.js';
@@ -37,7 +38,7 @@ function buildField(doc, spec, write) {
     out = make(doc, 'output', 'viz-synth-out');
     const d = decimals(spec.step);
     read = () => Number(input.value);
-    paint = (v) => { input.value = String(v); out.textContent = Number(v).toFixed(d); };
+    paint = (v) => { input.value = String(v); out.textContent = spec.zero && Number(v) === 0 ? spec.zero : Number(v).toFixed(d); };
   } else if (spec.type === 'select') {
     for (const o of spec.options) {
       const opt = make(doc, 'option', '', titleCase(o));
@@ -60,7 +61,7 @@ function buildField(doc, spec, write) {
   return { row, paint };
 }
 
-export function createMirrorPanel({ doc = document, store = defaultStore } = {}) {
+export function createMirrorPanel({ doc = document, store = defaultStore, getWidth = () => doc.defaultView?.innerWidth || 1200 } = {}) {
   const root = make(doc, 'div', 'viz-synth viz-mirror');
   root.setAttribute('role', 'group');
   root.setAttribute('aria-label', 'Mirrored spectrum style');
@@ -105,6 +106,7 @@ export function createMirrorPanel({ doc = document, store = defaultStore } = {})
   root.append(make(doc, 'h3', 'viz-synth-heading', 'Fine tune'));
 
   const fields = [];
+  let counter = null;
   for (const group of MIRROR_GROUPS) {
     const det = make(doc, 'details', 'viz-synth-group');
     det.dataset.group = group;
@@ -117,6 +119,12 @@ export function createMirrorPanel({ doc = document, store = defaultStore } = {})
       fields.push({ spec, ...fld });
       body.append(fld.row);
     }
+    if (group === 'Bars') {
+      const note = make(doc, 'output', 'viz-synth-count');
+      note.setAttribute('aria-live', 'off');
+      counter = note;
+      body.append(note);
+    }
     const reset = make(doc, 'button', 'viz-synth-reset', `Reset ${group.toLowerCase()}`);
     reset.type = 'button';
     reset.addEventListener('click', () => store.reset(group));
@@ -128,6 +136,7 @@ export function createMirrorPanel({ doc = document, store = defaultStore } = {})
   const repaint = () => {
     const s = store.get();
     for (const f of fields) f.paint(s[f.spec.key]);
+    if (counter) counter.textContent = `~${pixelBars(getWidth(), s.barWidth, s.gap).count} bars`;
     const active = findActiveMirrorPreset(s);
     for (const t of tiles) t.btn.setAttribute('aria-pressed', String(t.id === active));
   };

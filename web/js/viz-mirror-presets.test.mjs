@@ -30,8 +30,8 @@ test('settings are valid and complete, Classic is the defaults', () => {
 
 test('applyMirrorPreset is an independent copy and findActive round-trips', () => {
   const a = P.applyMirrorPreset('neon-blocks');
-  a.width = 0.3;
-  assert.equal(P.applyMirrorPreset('neon-blocks').width, 0.8);
+  a.barWidth = 3;
+  assert.equal(P.applyMirrorPreset('neon-blocks').barWidth, 4);
   for (const id of IDS) assert.equal(P.findActiveMirrorPreset(P.applyMirrorPreset(id)), id);
   const t = P.applyMirrorPreset('ice-blue-mirror');
   t.rise = 0.9;
@@ -57,8 +57,8 @@ test('panel shows six preset buttons, click overwrites and highlights, tweak cle
   tiles.find((t) => t.dataset.preset === 'ice-blue-mirror').click();
   assert.deepEqual(S.getMirror(), P.applyMirrorPreset('ice-blue-mirror'));
   assert.deepEqual(pressed(), ['ice-blue-mirror']);
-  assert.equal(JSON.parse(saved[S.MIRROR_KEY]).gradient, 'accent');
-  S.setMirror('width', 0.5);
+  assert.equal(JSON.parse(saved[S.MIRROR_KEY]).gradient, 'ice');
+  S.setMirror('barWidth', 5);
   assert.deepEqual(pressed(), []);
   p.destroy();
 });
