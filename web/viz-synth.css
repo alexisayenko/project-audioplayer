@@ -1,0 +1,18 @@
+.viz-synth { display: grid; gap: var(--space-2); max-height: min(60dvh, 520px); overflow-y: auto; overscroll-behavior: contain; }
+.viz-synth-group { border: 1px solid rgba(120, 170, 230, 0.25); border-radius: 6px; }
+.viz-synth-summary { display: flex; align-items: center; min-height: 44px; padding: 0 var(--space-2); font-weight: 600; cursor: pointer; }
+.viz-synth-summary:focus-visible { outline: 2px solid #8fc4ff; outline-offset: 2px; }
+.viz-synth-body { display: grid; gap: 2px; padding: 0 var(--space-2) var(--space-2); }
+.viz-synth label.viz-synth-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) 48px; align-items: center; column-gap: var(--space-2); min-height: 44px; }
+.viz-synth label.viz-synth-select, .viz-synth label.viz-synth-color, .viz-synth label.viz-synth-bool { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); }
+.viz-synth .viz-synth-name { color: #eaf3ff; }
+.viz-synth input[type='range'] { width: 100%; min-width: 0; min-height: 44px; accent-color: #5ab0ff; }
+.viz-synth input[type='color'] { width: 100%; min-height: 44px; padding: 2px; background: transparent; border: 1px solid rgba(120, 170, 230, 0.35); border-radius: 6px; cursor: pointer; }
+.viz-synth input[type='checkbox'] { justify-self: start; width: 44px; height: 44px; margin: 0; accent-color: #5ab0ff; cursor: pointer; }
+.viz-synth select { width: 100%; min-width: 0; min-height: 44px; padding: 0 var(--space-2); font-size: 13px; color: #eaf3ff; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(120, 170, 230, 0.35); border-radius: 6px; }
+.viz-synth select option { color: #1b2024; }
+.viz-synth .viz-synth-out { text-align: right; font-variant-numeric: tabular-nums; color: #b8cde8; }
+.viz-synth .viz-synth-reset { min-height: 44px; margin-top: var(--space-1); padding: 0 var(--space-3); font: inherit; color: #eaf3ff; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(120, 170, 230, 0.35); border-radius: 6px; cursor: pointer; }
+.viz-synth .viz-synth-reset-all { margin-top: 0; }
+.viz-synth input:focus-visible, .viz-synth select:focus-visible, .viz-synth .viz-synth-reset:focus-visible { outline: 2px solid #8fc4ff; outline-offset: 2px; }
+@media (forced-colors: active) { .viz-synth-group, .viz-synth select, .viz-synth .viz-synth-reset { border-color: ButtonText; } }
