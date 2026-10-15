@@ -38,3 +38,7 @@ export function titleNodes(song, titleClass = 'ttl', remixClass = 'rmx') {
   }
   return [a, document.createTextNode(' '), b];
 }
+
+export function subtitleString(song) {
+  return [song?.artist, song?.album, song?.year].filter(Boolean).join(' · ');
+}

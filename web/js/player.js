@@ -18,9 +18,11 @@ import { $, setIcon, setToggle, setCover, queueRow, updateDl, paintTimes } from 
 import { updateMediaSession, setupMediaSession, updatePositionState, setVolume, storedVolume } from './player-media.js';
 import { canSetVolume } from './volume-logic.js';
 import { openTagPicker } from './player-tag-picker.js';
-import { displayString, titleNodes } from './display-title.js';
+import { displayString, subtitleString, titleNodes } from './display-title.js';
 import { marquee, disposeAll } from './marquee.js';
 import { can } from './guest.js';
+import { paintServiceButtons } from './player-actions.js';
+import { openSongCard } from './song-card.js';
 
 const audio = document.getElementById('audio');
 
@@ -362,7 +364,8 @@ function renderTransport(song, playing) {
   $('player-empty').hidden = !!song;
   $('details-body').hidden = !song;
   $('cover-text').hidden = !song;
-  $('p-edit').hidden = !song || !can('edit');
+  $('p-view').hidden = !song;
+  paintServiceButtons($('p-svc'), song);
   $('mini-edit').hidden = !can('edit');
   $('p-download').hidden = !hasAudio(song) || !can('download');
   setIcon('p-play', playing ? 'pause' : 'play', 22);
@@ -413,9 +416,7 @@ function renderDetails(song) {
   $('player-title').replaceChildren(...titleNodes(song));
   $('player-title').title = fullTitle(song);
   marquee($('player-title'), { auto: true });
-  $('player-sub').textContent = [song.artist, song.album, song.year].filter(Boolean).join(' · ');
-  const remixLine = [song.remixer ? `Remix: ${song.remixer}` : ''].filter(Boolean).join(' · ');
-  if (remixLine) $('player-sub').textContent += ($('player-sub').textContent ? ' · ' : '') + remixLine;
+  $('player-sub').textContent = subtitleString(song);
   $('player-tags').replaceChildren(...visibleTags(song.tags).map(tagChip));
   $('player-bpm').textContent = song.bpm != null ? `${Math.round(song.bpm)} BPM` : '';
   $('player-links').replaceChildren(...songLinks(song).map((l) => el('a', { class: 'source t-caption', href: l.href, target: '_blank', rel: 'noopener noreferrer' }, l.label)));
@@ -516,7 +517,7 @@ export function initPlayer() {
   setIcon('mini-prev', 'prev', 18);
   setIcon('mini-next', 'next', 18);
   setIcon('mini-shuffle', 'shuffle', 18);
-  setIcon('p-edit', 'pencil', 20);
+  setIcon('p-view', 'info', 20);
   setIcon('mini-edit', 'pencil', 18);
   setIcon('mini-locate', 'locate', 18);
   setIcon('p-download', 'download', 20);
@@ -552,7 +553,7 @@ export function initPlayer() {
     const cur = player.current;
     if (cur && player.toggleInPlaylist(cur.id) === 'removed') toast('Removed from playlist');
   });
-  $('p-edit').addEventListener('click', () => { if (player.current) editDialog(player.current); });
+  $('p-view').addEventListener('click', () => { if (player.current) openSongCard(player.current, $('p-view')); });
 
   document.addEventListener('keydown', (e) => {
     if (e.repeat || e.ctrlKey || e.metaKey || e.altKey || !player.current) return;

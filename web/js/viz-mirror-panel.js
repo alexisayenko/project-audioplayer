@@ -2,6 +2,7 @@ import {
   MIRROR_SCHEMA, MIRROR_GROUPS, getMirror, setMirror, resetMirror, onMirror, replaceMirror,
 } from './viz-mirror-settings.js';
 import { pixelBars } from './viz-spectrum.js';
+import { getBarLayout } from './viz-bars.js';
 import {
   MIRROR_PRESET_LIST, MIRROR_PRESET_THUMB, applyMirrorPreset, findActiveMirrorPreset, setLastMirrorPreset,
 } from './viz-mirror-presets.js';
@@ -61,7 +62,7 @@ function buildField(doc, spec, write) {
   return { row, paint, input, out };
 }
 
-export function createMirrorPanel({ doc = document, store = defaultStore, getWidth = () => doc.defaultView?.innerWidth || 1200 } = {}) {
+export function createMirrorPanel({ doc = document, store = defaultStore, getWidth = () => doc.defaultView?.innerWidth || 1200, getLayout = getBarLayout } = {}) {
   const root = make(doc, 'div', 'viz-synth viz-mirror');
   root.setAttribute('role', 'group');
   root.setAttribute('aria-label', 'Mirrored spectrum style');
@@ -107,6 +108,7 @@ export function createMirrorPanel({ doc = document, store = defaultStore, getWid
 
   const fields = [];
   let counter = null;
+  let effNote = null;
   for (const group of MIRROR_GROUPS) {
     const det = make(doc, 'details', 'viz-synth-group');
     det.dataset.group = group;
@@ -125,6 +127,11 @@ export function createMirrorPanel({ doc = document, store = defaultStore, getWid
       counter = note;
       body.append(note);
     }
+    if (group === 'Sections') {
+      effNote = make(doc, 'output', 'viz-synth-effective');
+      effNote.setAttribute('aria-live', 'off');
+      body.append(effNote);
+    }
     const reset = make(doc, 'button', 'viz-synth-reset', `Reset ${group.toLowerCase()}`);
     reset.type = 'button';
     reset.addEventListener('click', () => store.reset(group));
@@ -136,12 +143,24 @@ export function createMirrorPanel({ doc = document, store = defaultStore, getWid
   const repaint = () => {
     const s = store.get();
     for (const f of fields) f.paint(s[f.spec.key]);
-    const byHeight = s.sectionHeight > 0;
+    const derived = s.sectionHeight > 0 && s.segments > 0;
+    const lay = getLayout?.() ?? null;
     for (const f of fields) {
-      if (f.spec.key !== 'segments') continue;
-      f.input.disabled = byHeight;
-      f.row.classList.toggle('viz-synth-derived', byHeight);
-      if (byHeight) f.out.textContent = 'by height';
+      if (f.spec.key !== 'maxHeight') continue;
+      f.input.disabled = derived;
+      f.row.classList.toggle('viz-synth-derived', derived);
+      if (derived) {
+        const gap = Math.round(s.sectionHeight * s.segmentGap * 100) / 100;
+        f.out.textContent = `${Math.round(s.segments * (s.sectionHeight + gap))}, from ${s.segments} x ${s.sectionHeight} px`;
+      } else if (lay) {
+        f.out.textContent = `${s.maxHeight > 0 ? s.maxHeight : 'Auto'} (effective ${Math.round(lay.height)} px)`;
+      }
+    }
+    if (effNote) {
+      const fit = derived && lay && lay.derived && lay.fit < 1;
+      const px = lay ? Math.round(lay.sectionPx * 10) / 10 : 0;
+      effNote.textContent = lay && lay.rows > 0 ? `effective: ${lay.rows} rows x ${px} px (room ${Math.round(lay.room)} px)` : '';
+      if (fit && lay.fit < 0.75) effNote.textContent += '. More room: set Visualizer height to Full';
     }
     if (counter) counter.textContent = `~${pixelBars(getWidth(), s.barWidth, s.gap).count} bars`;
     const active = findActiveMirrorPreset(s);
@@ -149,10 +168,12 @@ export function createMirrorPanel({ doc = document, store = defaultStore, getWid
   };
   repaint();
   const off = store.on(repaint);
+  const poll = globalThis.setInterval?.(repaint, 500);
+  poll?.unref?.();
 
   return {
     el: root,
     repaint,
-    destroy() { off(); root.remove(); },
+    destroy() { off(); globalThis.clearInterval?.(poll); root.remove(); },
   };
 }

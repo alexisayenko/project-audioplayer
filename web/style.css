@@ -509,7 +509,10 @@ body.signed-out #nav a:not([data-route="settings"]), body.signed-out #mini { dis
 .switch-row .t-caption { display: block; color: var(--ink-muted); }
 .empty-note { text-align: center; padding: var(--space-2) 0; }
 .cover-art .empty-note { position: absolute; left: 0; right: 0; bottom: var(--space-4); color: var(--cover-ink); }
-.pb-actions { display: flex; justify-content: flex-end; gap: var(--space-2); }
+.pb-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-2); }
+.pb-svc { display: contents; }
+.pb-svc[hidden] { display: none; }
+.pb-actions a.svc { min-width: var(--hit); min-height: var(--hit); }
 .pb-actions:not(:has(:not([hidden]))) { display: none; }
 .pb-progress { display: flex; flex-direction: column; gap: 0; }
 .pb-progress .scrubber { width: 100%; }

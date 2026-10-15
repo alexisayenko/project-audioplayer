@@ -18,7 +18,7 @@ import { getStyle } from './viz-terrain-style.js';
 import { createSynth } from './viz-synth-gl.js';
 import { SHED_MAX, SYNTH_MAX_DPR, loadShed, saveShed } from './viz-synth-quality.js';
 import { synthVersion } from './viz-synth-settings.js';
-import { getMirror, mirrorVersion, mirrorColors, onMirror } from './viz-mirror-settings.js';
+import { getMirror, mirrorVersion, mirrorColors, mirrorSpan, onMirror } from './viz-mirror-settings.js';
 import { createModeRenderer, MODES, DEFAULT_MODE, isSceneMode, usesFlight } from './viz-modes.js';
 
 const SPOKES = 48;
@@ -228,7 +228,7 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
     lastDraw = now;
     const px = pixelBars(w, m.barWidth, m.gap);
     drawBars(ctx, w, h, drawn, {
-      colors: mirrorColors(c, m.gradient), alpha: mode === 'full' ? 1 : 0.85, dpr: view.dpr, horizon: 0.5, span: heightScale, maxHeightPx: m.maxHeight,
+      colors: mirrorColors(c, m.gradient), alpha: mode === 'full' ? 1 : 0.85, dpr: view.dpr, horizon: 0.5, span: mirrorSpan(m, mode, heightScale), maxHeightPx: m.maxHeight,
       widthFraction: px.fraction, minGapCss: px.minGapCss, reflection: m.reflection, glow: m.horizon,
       direction: m.direction, segments: m.segments, segmentGap: m.segmentGap, tips: m.tips, tipFade: m.tipFade, band: m.band,
       backdrop: iceBackdrop ? m.backdrop : 'none',

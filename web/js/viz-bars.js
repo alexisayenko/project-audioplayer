@@ -65,13 +65,37 @@ function resources(ctx, w, n, geo, colors, vertical) {
   return next;
 }
 
+export const MIN_SECTION_PX = 3;
+
+export function barLayout({ avail, maxHeightPx = 0, segments = 0, sectionHeight = 0, segmentGap = 0.3 }) {
+  const room = MAX_BAR_FRACTION * avail;
+  const cap = maxHeightPx > 0 ? Math.min(maxHeightPx, room) : HEIGHT_MAX * avail;
+  const k = 1 + segmentGap;
+  const n = Math.max(0, Math.floor(segments));
+  const out = { room, rows: 0, height: cap, sectionPx: 0, nominalPx: sectionHeight, derived: false, nominalHeight: cap, fit: 1 };
+  if (sectionHeight > 0 && n > 0) {
+    const needed = n * sectionHeight * k;
+    const px = needed <= room ? sectionHeight : Math.min(sectionHeight, Math.max(MIN_SECTION_PX, room / (n * k)));
+    return { ...out, rows: n, sectionPx: px, height: n * px * k, derived: true, nominalHeight: needed, fit: px / sectionHeight };
+  }
+  if (sectionHeight > 0) return { ...out, rows: Math.round(cap / (sectionHeight * k)), sectionPx: sectionHeight };
+  if (n > 0) return { ...out, rows: n, sectionPx: cap / n / k };
+  return out;
+}
+
+let lastLayout = null;
+export const getBarLayout = () => lastLayout;
+
+// sectionPx > 0: rows = round(stack / (sectionPx + gap)) with gap = segmentGap * sectionPx; else rows = segments
 export function segmentPlan(half, dpr, segments, gap, sectionPx = 0) {
   if (!(half > 0)) return null;
   const fixed = sectionPx > 0;
-  const rows = fixed ? Math.floor((half * dpr) / (sectionPx * dpr)) : Math.max(0, Math.floor(segments));
+  const unit = sectionPx * (1 + gap);
+  const rows = fixed ? Math.round(half / unit) : Math.max(0, Math.floor(segments));
   if (!rows) return null;
-  const pitch = fixed ? sectionPx * dpr : (half * dpr) / rows;
-  const gapPx = Math.min(Math.max(1, Math.round(pitch * gap)), Math.max(0, Math.round(pitch) - 1));
+  const pitch = fixed ? unit * dpr : (half * dpr) / rows;
+  const want = fixed ? Math.round(sectionPx * gap * dpr) : Math.round(pitch * gap);
+  const gapPx = Math.min(Math.max(1, want), Math.max(0, Math.round(pitch) - 1));
   return { rows, pitch, gapPx };
 }
 
@@ -559,14 +583,17 @@ export function drawBars(ctx, w, h, values, opts) {
   if (!n || !(w > 0) || !(h > 0)) return;
   const y0 = h * horizon;
   const avail = Math.min(y0, h - y0) * span;
-  const half = maxHeightPx > 0 ? Math.min(maxHeightPx, MAX_BAR_FRACTION * avail) / HEIGHT_MAX : avail;
+  const lay = barLayout({ avail, maxHeightPx, segments, sectionHeight, segmentGap });
+  lastLayout = lay;
+  const half = lay.height / HEIGHT_MAX;
+  const fixedPx = sectionHeight > 0 ? lay.sectionPx : 0;
   const geo = barGeometry(n, w, dpr, widthFraction, minGapCss);
   if (heights.length < n) heights = new Float32Array(n);
   barHeights(values, half, heights);
   const vertical = direction === 'vertical' ? { y0, half } : null;
   const res = resources(ctx, w, n, geo, colors, vertical);
-  const sectorPlan = sectorMode === 'trail' ? segmentPlan(half * HEIGHT_MAX, geo.dpr, segments, segmentGap, sectionHeight) : null;
-  const plan = sectorPlan ?? segmentPlan(half, geo.dpr, segments, segmentGap, sectionHeight);
+  const sectorPlan = sectorMode === 'trail' ? segmentPlan(half * HEIGHT_MAX, geo.dpr, segments, segmentGap, fixedPx) : null;
+  const plan = sectorPlan ?? segmentPlan(fixedPx ? half * HEIGHT_MAX : half, geo.dpr, segments, segmentGap, fixedPx);
   const sector = !!sectorPlan;
   const fx = { jitter: shadeJitter, baseGlow, baseColor: rgba(colors.line, 1), peak: sector ? 0 : peak, afterimage: sector ? 0 : afterimage, afterTau, sector, maxLevel, trailMax, path: trailPath(colors.ice2), glow: sector && !lite ? sectorGlow : 0, glowSize: sectorGlowSize, glowColor: rgba(colors.ice2?.stops?.[6] ?? colors.a, 1), liftColor: '#fff', fill: res.fill };
   if (sector) stepSector(n, plan, geo.dpr, peakDt, `${w}|${h}|${geo.dpr}|${visitsPerStep}|${maxLevel}`, { window, visitsPerStep, maxLevel, minDwell: minDwell / 1000 });

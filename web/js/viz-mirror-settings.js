@@ -15,9 +15,9 @@ export const MIRROR_SCHEMA = [
   f('barWidth', 'Bars', 'Bar width (px)', 'range', 0, { min: 0, max: 80, step: 1, zero: 'Auto', floor: 2 }),
   range('gap', 'Bars', 'Gap (px)', 0, 20, 1, 2),
   f('maxHeight', 'Bars', 'Max bar height (px)', 'range', 0, { min: 0, max: 600, step: 5, zero: 'Auto', floor: 20 }),
-  range('segments', 'Sections', 'LED sections (0 = solid; unused when Section height is set)', 0, 48, 1, 0),
+  range('segments', 'Sections', 'LED sections (0 = solid, or rows from height)', 0, 48, 1, 0),
   range('segmentGap', 'Sections', 'Section gap', 0.1, 0.6, 0.05, 0.3),
-  f('sectionHeight', 'Sections', 'Section height (px) (0 = use LED sections count)', 'range', 0, { min: 0, max: 80, step: 1, zero: 'Use count', floor: 6 }),
+  f('sectionHeight', 'Sections', 'Section height (px) (0 = from count and bar height)', 'range', 0, { min: 0, max: 80, step: 1, zero: 'From count', floor: 6 }),
   range('peak', 'Sections', 'Peak marker', 0, 1, 0.05, 0),
   range('peakHold', 'Sections', 'Peak hold (s)', 0.1, 2, 0.1, 0.6),
   range('afterimage', 'Sections', 'Afterimage', 0, 1, 0.05, 0),
@@ -31,6 +31,7 @@ export const MIRROR_SCHEMA = [
   range('glow', 'History trail', 'Glow', 0, 1, 0.05, 0.8),
   range('glowSize', 'History trail', 'Glow size', 0.5, 2, 0.1, 1),
   range('trailMax', 'History trail', 'Trail brightness', 0.3, 1, 0.05, 0.8),
+  bool('fullRoom', 'Bars', 'Use the whole screen in full-screen mode', false),
   bool('tips', 'Bar tips', 'Show bar tips', false),
   range('tipFade', 'Bar tips', 'Fading speed', 0.05, 1, 0.05, 0.3),
   range('rise', 'Motion', 'Rise speed', 0.1, 1, 0.05, 0.6),
@@ -46,6 +47,8 @@ export const MIRROR_SCHEMA = [
   range('tilt', 'Look', 'Tilt (deg)', -12, 12, 0.5, 0),
   select('backdrop', 'Look', 'Backdrop', ['none', 'ice', 'black', 'ice2'], 'none'),
 ];
+
+export const mirrorSpan = (m, mode, heightScale) => (mode === 'full' && m.fullRoom ? 1 : heightScale);
 
 export const MIRROR_GROUPS = [...new Set(MIRROR_SCHEMA.map((s) => s.group))];
 

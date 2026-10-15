@@ -280,18 +280,34 @@ test('ice2 gradient: 10-stop ramp, no big lightness gap, saturated, base first a
   assert.equal(S.mirrorColors({ ...FALLBACK_COLORS, ice2: undefined }, 'ice2').stops, FALLBACK_COLORS.stops);
 });
 
-test('LED sections count is disabled while Section height is set, labels say which wins', () => {
+test('Section height and count are used together: derived bar height disables Max bar height', () => {
   reset();
-  const p = createMirrorPanel({ doc: document });
-  const count = rowOf(p, 'LED sections (0 = solid; unused when Section height is set)');
-  const height = rowOf(p, 'Section height (px) (0 = use LED sections count)');
-  assert.ok(count && height);
+  let lay = null;
+  const p = createMirrorPanel({ doc: document, getLayout: () => lay });
+  const count = rowOf(p, 'LED sections (0 = solid, or rows from height)');
+  const height = rowOf(p, 'Section height (px) (0 = from count and bar height)');
+  const maxH = rowOf(p, 'Max bar height (px)');
+  assert.ok(count && height && maxH);
+  assert.equal(maxH.querySelector('input').disabled, false);
+  S.setMirror('sectionHeight', 20);
   assert.equal(count.querySelector('input').disabled, false);
-  S.setMirror('sectionHeight', 35);
-  assert.equal(count.querySelector('input').disabled, true);
-  assert.equal(count.querySelector('output').textContent, 'by height');
+  assert.equal(maxH.querySelector('input').disabled, false);
+  S.setMirror('segments', 20);
+  S.setMirror('segmentGap', 0.2);
+  assert.equal(count.querySelector('input').disabled, false);
+  assert.equal(maxH.querySelector('input').disabled, true);
+  assert.equal(maxH.querySelector('output').textContent, '480, from 20 x 20 px');
+  lay = { rows: 20, sectionPx: 5.9, room: 142.5, height: 142, derived: true, fit: 0.3 };
+  S.setMirror('segments', 21);
+  S.setMirror('segments', 20);
+  const note = p.el.querySelector('.viz-synth-effective').textContent;
+  assert.match(note, /effective: 20 rows x 5.9 px \(room 143 px\)/);
+  assert.match(note, /More room: set Visualizer height to Full/);
+  lay = { ...lay, sectionPx: 18, fit: 0.9 };
+  S.setMirror('segments', 21);
+  assert.doesNotMatch(p.el.querySelector('.viz-synth-effective').textContent, /More room/);
   S.setMirror('sectionHeight', 0);
-  assert.equal(count.querySelector('input').disabled, false);
-  assert.equal(height.querySelector('output').textContent, 'Use count');
+  assert.equal(maxH.querySelector('input').disabled, false);
+  assert.equal(height.querySelector('output').textContent, 'From count');
   p.destroy();
 });

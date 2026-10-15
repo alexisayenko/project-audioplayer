@@ -72,14 +72,15 @@ test('new LED effects are off by default and each adds ops when on', () => {
   assert.ok(trace({ backdrop: 'black' }).some(([k, a]) => k === 'fillRect' && a[2] === 600));
 });
 
-test('section height fixes the pitch independent of the row count', async () => {
-  const { segmentPlan, litRows, jitterLevel } = await import('./viz-bars.js');
+test('section height fixes the pitch: rows = round(stack / (section + gap))', async () => {
+  const { segmentPlan, litRows } = await import('./viz-bars.js');
   const plan = segmentPlan(100, 1, 0, 0.25, 20);
-  assert.equal(plan.rows, 5);
-  assert.equal(plan.pitch, 20);
-  assert.equal(segmentPlan(100, 2, 0, 0.25, 20).rows, 5);
+  assert.equal(plan.rows, 4);
+  assert.equal(plan.pitch, 25);
+  assert.equal(plan.gapPx, 5);
+  assert.equal(segmentPlan(100, 2, 0, 0.25, 20).rows, 4);
   assert.equal(segmentPlan(10, 1, 0, 0.25, 20), null);
-  assert.equal(litRows(40, 1, plan), 2);
+  assert.equal(litRows(50, 1, plan), 2);
   assert.equal(segmentPlan(100, 1, 0, 0.3), null);
 });
 
@@ -201,7 +202,7 @@ function sectorPlayer(over = {}) {
     vals,
     ops,
     set: (v) => vals.fill(v),
-    draw: (dt, opts = {}) => { ops.length = 0; drawBars(ctx, 600, 300, vals, { colors: FALLBACK_COLORS, dpr: 1, peakDt: dt, minDwell: 0, ...SECTOR, ...opts }); },
+    draw: (dt, opts = {}) => { ops.length = 0; drawBars(ctx, 600, opts.h ?? 300, vals, { colors: FALLBACK_COLORS, dpr: 1, peakDt: dt, minDwell: 0, ...SECTOR, ...opts }); },
   };
 }
 
@@ -450,15 +451,21 @@ test('trail floor: every trail level is visible against the ice2 background (dE2
   }
 });
 
-test('sector rows span the full-scale bar height: a 0..1 sweep visits every row, count and height modes', async () => {
+test('sector rows span the full-scale bar height: a 0..1 sweep visits every row, all three cases', async () => {
   const B = await import('./viz-bars.js');
-  for (const o of [{ segments: 21, sectionHeight: 0, rows: 21 }, { segments: 0, sectionHeight: 20, rows: 7 }]) {
+  const cases = [
+    { segments: 21, sectionHeight: 0, maxHeightPx: 140, rows: 21 },
+    { segments: 0, sectionHeight: 20, maxHeightPx: 140, segmentGap: 0.3, rows: 5 },
+    { segments: 20, sectionHeight: 20, maxHeightPx: 140, segmentGap: 0.2, rows: 20 },
+    { segments: 20, sectionHeight: 20, maxHeightPx: 140, segmentGap: 0.2, h: 1200, rows: 20 },
+  ];
+  for (const o of cases) {
     B.resetSector();
     const p = sectorPlayer({ n: 1 });
     const seen = new Set();
-    for (let k = 0; k <= 400; k += 1) {
-      p.set(k / 400);
-      p.draw(1 / 30, { segments: o.segments, sectionHeight: o.sectionHeight, maxHeightPx: 140, minDwell: 0 });
+    for (let k = 0; k <= 800; k += 1) {
+      p.set(k / 800);
+      p.draw(1 / 30, { ...o, minDwell: 0 });
       seen.add(B.currentSector(0));
     }
     for (let r = 0; r < o.rows; r += 1) assert.ok(seen.has(r), `row ${r} of ${o.rows}`);
@@ -466,9 +473,29 @@ test('sector rows span the full-scale bar height: a 0..1 sweep visits every row,
   }
 });
 
-test('segmentPlan: section height wins over the count; rows = floor(height / section height)', async () => {
+test('barLayout: the three cases, derived height ignores Max bar height, fit to room, min 3 px', async () => {
+  const { barLayout } = await import('./viz-bars.js');
+  const a = barLayout({ avail: 300, maxHeightPx: 100, segments: 10, sectionHeight: 0 });
+  assert.deepEqual([a.rows, a.height, a.derived], [10, 100, false]);
+  assert.equal(a.sectionPx, 100 / 10 / 1.3);
+  const b = barLayout({ avail: 300, maxHeightPx: 120, segments: 0, sectionHeight: 20, segmentGap: 0.2 });
+  assert.deepEqual([b.rows, b.height, b.sectionPx, b.derived], [5, 120, 20, false]);
+  const c = barLayout({ avail: 600, maxHeightPx: 50, segments: 20, sectionHeight: 20, segmentGap: 0.2 });
+  assert.deepEqual([c.rows, c.height, c.sectionPx, c.derived, c.fit], [20, 480, 20, true, 1]);
+  const tight = barLayout({ avail: 150, segments: 20, sectionHeight: 20, segmentGap: 0.2 });
+  assert.equal(tight.rows, 20);
+  assert.ok(Math.abs(tight.sectionPx - (150 * 0.95) / 24) < 1e-9);
+  assert.ok(Math.abs(tight.height - 142.5) < 1e-9);
+  assert.ok(tight.fit < 0.75);
+  const tiny = barLayout({ avail: 20, segments: 20, sectionHeight: 20, segmentGap: 0.2 });
+  assert.equal(tiny.sectionPx, 3);
+  assert.equal(barLayout({ avail: 540, segments: 20, sectionHeight: 20, segmentGap: 0.2 }).height, 480);
+});
+
+test('segmentPlan: rows = round(stack / (section + gap)); the count is used without a section height', async () => {
   const { segmentPlan } = await import('./viz-bars.js');
   assert.equal(segmentPlan(140, 1, 21, 0.2, 0).rows, 21);
-  assert.equal(segmentPlan(140, 1, 21, 0.2, 35).rows, 4);
+  assert.equal(segmentPlan(480, 1, 20, 0.2, 20).rows, 20);
+  assert.equal(segmentPlan(140, 1, 21, 0.2, 35).rows, 3);
   assert.equal(segmentPlan(140, 1, 0, 0.2, 0), null);
 });

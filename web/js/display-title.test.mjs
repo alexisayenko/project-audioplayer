@@ -49,3 +49,14 @@ test('titleNodes puts a real space between title and remix', () => {
   assert.equal(nodes[1].textContent, ' ');
   assert.equal(titleNodes({ title: 'Song' }).length, 1);
 });
+
+test('subtitleString never repeats remix info (it lives in the title parenthetical)', async () => {
+  const { subtitleString } = await import('./display-title.js');
+  const song = { title: 'Turn the Lights Off (S.A.R.A.H. Remix)', artist: 'Kato feat. Jon', year: 2026, remixer: 'S.A.R.A.H. Remix' };
+  assert.equal(subtitleString(song), 'Kato feat. Jon · 2026');
+  assert.equal(displayString(song), 'Turn the Lights Off (S.A.R.A.H. Remix)');
+  const plain = { title: 'Song', artist: 'A', remixer: 'Kav' };
+  assert.equal(subtitleString(plain), 'A');
+  assert.equal(displayString(plain), 'Song (Kav)');
+  assert.equal(subtitleString({ title: 'x', remixer: '' }), '');
+});

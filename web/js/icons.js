@@ -18,6 +18,7 @@ export const ICONS = {
   search: { d: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>' },
   clear: { d: '<path d="M6 6l12 12M18 6L6 18"/>', width: 2 },
   pencil: { d: '<path d="M4 20l1-4L16.5 4.5a2.1 2.1 0 013 3L8 19l-4 1zM14 7l3 3"/>', width: 1.8 },
+  info: { d: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><circle cx="12" cy="7.6" r=".6"/>', width: 2 },
   check: { d: '<path d="M5 12.5l4.5 4.5L19 7"/>', width: 2.2 },
   plus: { d: '<path d="M12 5v14M5 12h14"/>', width: 2.2 },
   chevron: { d: '<path d="M6 9l6 6 6-6"/>', width: 2 },

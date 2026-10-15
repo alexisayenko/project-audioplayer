@@ -8,7 +8,7 @@ const ICE_BLUE = {
 };
 // Working copy: starts identical to ICE_BLUE, edit freely.
 const ICE_BLUE_2 = {
-  ...ICE_BLUE, barWidth: 40, gap: 6, maxHeight: 280, segments: 21, sectionHeight: 0, segmentGap: 0.2, gradient: 'ice2', horizon: false, band: 0, backdrop: 'ice2', reflection: 0.5,
+  ...ICE_BLUE, fullRoom: true, barWidth: 40, gap: 6, maxHeight: 480, segments: 20, sectionHeight: 20, segmentGap: 0.2, gradient: 'ice2', horizon: false, band: 0, backdrop: 'ice2', reflection: 0.5,
   sectorMode: 'trail', peak: 0, peakHold: 0.6, afterimage: 0, afterTau: 0.35, shadeJitter: 0.06, baseGlow: 0.8, mirrorGap: 8, reflectionBlur: 0.4, tilt: 0, glow: 0.8, glowSize: 1,
 };
 

@@ -121,8 +121,10 @@ test('Ice Blue Mirror 2 uses the reverse-engineered LED settings, the original d
   assert.equal(one.sectorMode, 'off');
   assert.equal(one.gradient, 'ice');
   assert.equal(two.barWidth, 40);
-  assert.equal(two.sectionHeight, 0);
-  assert.equal(two.segments, 21);
+  assert.equal(two.sectionHeight, 20);
+  assert.equal(two.segments, 20);
+  assert.equal(two.segmentGap, 0.2);
+  assert.equal(two.maxHeight, 20 * (20 + 20 * 0.2));
   assert.equal(two.tilt, 0);
   assert.deepEqual([two.window, two.visitsPerStep, two.minDwell, two.maxLevel, two.trailMax, two.glow, two.glowSize], [10, 3, 60, 6, 0.8, 0.8, 1]);
   assert.equal('loss' in two, false);
@@ -133,4 +135,18 @@ test('Ice Blue Mirror 2 uses the reverse-engineered LED settings, the original d
     assert.equal(one[k], k === 'segments' ? 20 : 0, k);
   }
   assert.equal(one.tilt, 0);
+});
+
+test('fullRoom sets the full-screen overlay span only for Ice Blue Mirror 2', () => {
+  const span = (m, mode, h) => S.mirrorSpan(m, mode, h);
+  assert.equal(S.defaultMirror().fullRoom, false);
+  assert.equal(span(S.defaultMirror(), 'full', 0.6), 0.6);
+  assert.equal(span(S.defaultMirror(), 'background', 0.6), 0.6);
+  const two = P.applyMirrorPreset('ice-blue-mirror-2');
+  assert.equal(two.fullRoom, true);
+  assert.equal(span(two, 'full', 0.6), 1);
+  assert.equal(span(two, 'background', 0.6), 0.6);
+  for (const p of P.MIRROR_PRESET_LIST) if (p.id !== 'ice-blue-mirror-2') assert.equal(p.settings.fullRoom, false, p.id);
+  assert.equal(S.validateMirror({ v: 1, fullRoom: 'yes' }).fullRoom, false);
+  assert.equal(S.validateMirror({ v: 1, fullRoom: true }).fullRoom, true);
 });
