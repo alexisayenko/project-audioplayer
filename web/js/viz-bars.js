@@ -565,8 +565,9 @@ export function drawBars(ctx, w, h, values, opts) {
   barHeights(values, half, heights);
   const vertical = direction === 'vertical' ? { y0, half } : null;
   const res = resources(ctx, w, n, geo, colors, vertical);
-  const plan = segmentPlan(half, geo.dpr, segments, segmentGap, sectionHeight);
-  const sector = sectorMode === 'trail' && !!plan;
+  const sectorPlan = sectorMode === 'trail' ? segmentPlan(half * HEIGHT_MAX, geo.dpr, segments, segmentGap, sectionHeight) : null;
+  const plan = sectorPlan ?? segmentPlan(half, geo.dpr, segments, segmentGap, sectionHeight);
+  const sector = !!sectorPlan;
   const fx = { jitter: shadeJitter, baseGlow, baseColor: rgba(colors.line, 1), peak: sector ? 0 : peak, afterimage: sector ? 0 : afterimage, afterTau, sector, maxLevel, trailMax, path: trailPath(colors.ice2), glow: sector && !lite ? sectorGlow : 0, glowSize: sectorGlowSize, glowColor: rgba(colors.ice2?.stops?.[6] ?? colors.a, 1), liftColor: '#fff', fill: res.fill };
   if (sector) stepSector(n, plan, geo.dpr, peakDt, `${w}|${h}|${geo.dpr}|${visitsPerStep}|${maxLevel}`, { window, visitsPerStep, maxLevel, minDwell: minDwell / 1000 });
   else if ((peak > 0 || afterimage > 0) && plan) stepPeak(n, plan, geo.dpr, peakDt, peakHold);

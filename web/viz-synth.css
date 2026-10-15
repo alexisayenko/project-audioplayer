@@ -27,3 +27,5 @@
 .viz-synth .viz-synth-preset-name { font-size: 13px; }
 .viz-synth .viz-synth-preset:focus-visible { outline: 2px solid var(--accent-strong); outline-offset: 2px; }
 @media (forced-colors: active) { .viz-synth .viz-synth-preset { border-color: ButtonText; } .viz-synth .viz-synth-preset[aria-pressed='true'] { border-color: Highlight; } }
+
+.viz-synth-derived { opacity: 0.55; }

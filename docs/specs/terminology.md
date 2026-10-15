@@ -52,6 +52,7 @@ One name per thing. "Also called" lists informal names the owner or the code use
 | LED sections | Mirrored spectrum bars cut into stacked blocks (`segments`). | Concept: Sections | VIZ-100 |
 | Peak marker | Mirrored spectrum: one section above the body at the recent maximum; rises instantly, held, then falls section by section (`peak`, `peakHold`). | Peak cap | VIZ-104 |
 | Afterimage | Mirrored spectrum: fading ghost on each section the peak marker occupied (`afterimage`, `afterTau`); shows as dim detached sections. | Ghost | VIZ-104 |
+| Section height | Mirrored spectrum: fixed section pitch in px (`sectionHeight`); when above 0 it wins over the LED sections count (`segments`), rows = floor(max bar height / section height); 0 = use the count. | Not: LED sections | VIZ-104 |
 | Ice Blue Mirror 2 | Digital phosphor LED bars (working name kept): working copy of the liked Ice Blue Mirror (preset `ice-blue-mirror-2`); the original is frozen. | Copy, v2 | VIZ-104 |
 | Base row glow, Mirror gap | The innermost LED row drawn white with a glow, and the dark gap before the reflection. | Not a horizon band | VIZ-104 |
 | Current sector | Mirrored spectrum History trail: the one LED segment at a column's current level, drawn brightest with a white outline. | Not: body, peak marker | VIZ-105 |

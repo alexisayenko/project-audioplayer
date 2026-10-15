@@ -58,7 +58,7 @@ function buildField(doc, spec, write) {
   input.addEventListener('change', onEdit);
   row.append(input);
   if (out) row.append(out);
-  return { row, paint };
+  return { row, paint, input, out };
 }
 
 export function createMirrorPanel({ doc = document, store = defaultStore, getWidth = () => doc.defaultView?.innerWidth || 1200 } = {}) {
@@ -136,6 +136,13 @@ export function createMirrorPanel({ doc = document, store = defaultStore, getWid
   const repaint = () => {
     const s = store.get();
     for (const f of fields) f.paint(s[f.spec.key]);
+    const byHeight = s.sectionHeight > 0;
+    for (const f of fields) {
+      if (f.spec.key !== 'segments') continue;
+      f.input.disabled = byHeight;
+      f.row.classList.toggle('viz-synth-derived', byHeight);
+      if (byHeight) f.out.textContent = 'by height';
+    }
     if (counter) counter.textContent = `~${pixelBars(getWidth(), s.barWidth, s.gap).count} bars`;
     const active = findActiveMirrorPreset(s);
     for (const t of tiles) t.btn.setAttribute('aria-pressed', String(t.id === active));

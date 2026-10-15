@@ -433,3 +433,42 @@ test('glow: extra additive halos per frame behind the sector, scaled by size, of
 test('glow does not change other modes: sector off output is unchanged with glow set', () => {
   assert.equal(hash(trace({ segments: 12, sectorGlow: 1 })), hash(trace({ segments: 12 })));
 });
+
+test('trail floor: every trail level is visible against the ice2 background (dE2000 >= 10, reflection >= 6)', async () => {
+  const B = await import('./viz-bars.js');
+  const { deltaE2000 } = await import('./viz-deltae.js');
+  const { bg } = FALLBACK_COLORS.ice2;
+  const path = B.trailPath(FALLBACK_COLORS.ice2);
+  const over = (c, a) => c.map((v, i) => Math.min(255, Math.round(bg[i] + v * a)));
+  for (const maxLevel of [3, 6, 12]) {
+    for (let k = 0; k <= maxLevel; k += 1) {
+      const c = B.trailColor(path, k, maxLevel, 0.8);
+      const r = B.trailColor(path, k, maxLevel, 0.8, B.TRAIL_REFLECT_SHIFT);
+      assert.ok(deltaE2000(bg, over(c, B.TRAIL_ALPHA)) >= 10, `level ${k}/${maxLevel}`);
+      assert.ok(deltaE2000(bg, over(r, B.TRAIL_ALPHA * 0.5)) >= 6, `reflection ${k}/${maxLevel}`);
+    }
+  }
+});
+
+test('sector rows span the full-scale bar height: a 0..1 sweep visits every row, count and height modes', async () => {
+  const B = await import('./viz-bars.js');
+  for (const o of [{ segments: 21, sectionHeight: 0, rows: 21 }, { segments: 0, sectionHeight: 20, rows: 7 }]) {
+    B.resetSector();
+    const p = sectorPlayer({ n: 1 });
+    const seen = new Set();
+    for (let k = 0; k <= 400; k += 1) {
+      p.set(k / 400);
+      p.draw(1 / 30, { segments: o.segments, sectionHeight: o.sectionHeight, maxHeightPx: 140, minDwell: 0 });
+      seen.add(B.currentSector(0));
+    }
+    for (let r = 0; r < o.rows; r += 1) assert.ok(seen.has(r), `row ${r} of ${o.rows}`);
+    assert.ok(!seen.has(o.rows), 'no row beyond the stack');
+  }
+});
+
+test('segmentPlan: section height wins over the count; rows = floor(height / section height)', async () => {
+  const { segmentPlan } = await import('./viz-bars.js');
+  assert.equal(segmentPlan(140, 1, 21, 0.2, 0).rows, 21);
+  assert.equal(segmentPlan(140, 1, 21, 0.2, 35).rows, 4);
+  assert.equal(segmentPlan(140, 1, 0, 0.2, 0), null);
+});

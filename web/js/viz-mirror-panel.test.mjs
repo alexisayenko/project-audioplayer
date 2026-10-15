@@ -279,3 +279,19 @@ test('ice2 gradient: 10-stop ramp, no big lightness gap, saturated, base first a
   assert.equal(S.mirrorColors(FALLBACK_COLORS, 'theme'), FALLBACK_COLORS);
   assert.equal(S.mirrorColors({ ...FALLBACK_COLORS, ice2: undefined }, 'ice2').stops, FALLBACK_COLORS.stops);
 });
+
+test('LED sections count is disabled while Section height is set, labels say which wins', () => {
+  reset();
+  const p = createMirrorPanel({ doc: document });
+  const count = rowOf(p, 'LED sections (0 = solid; unused when Section height is set)');
+  const height = rowOf(p, 'Section height (px) (0 = use LED sections count)');
+  assert.ok(count && height);
+  assert.equal(count.querySelector('input').disabled, false);
+  S.setMirror('sectionHeight', 35);
+  assert.equal(count.querySelector('input').disabled, true);
+  assert.equal(count.querySelector('output').textContent, 'by height');
+  S.setMirror('sectionHeight', 0);
+  assert.equal(count.querySelector('input').disabled, false);
+  assert.equal(height.querySelector('output').textContent, 'Use count');
+  p.destroy();
+});
