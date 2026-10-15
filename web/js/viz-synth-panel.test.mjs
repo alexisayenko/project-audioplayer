@@ -145,3 +145,41 @@ test('an injected store is used instead of the global settings', () => {
   panel.destroy();
   assert.equal(listeners.size, 0);
 });
+
+test('presets section renders 8 tiles, click overwrites, active toggles after a tweak', async () => {
+  reset();
+  const { SYNTH_PRESET_LIST: list } = await import('./viz-synth-presets.js');
+  const panel = createSynthPanel({ doc: document });
+  const tiles = panel.el.querySelectorAll('button.viz-synth-preset');
+  assert.equal(tiles.length, 8);
+  assert.equal(tiles.filter((t) => t.getAttribute('aria-pressed') === 'true').length, 0);
+  for (const t of tiles) assert.ok(t.querySelector('.viz-synth-preset-name').textContent.length > 0);
+  assert.ok(panel.el.textContent.includes('Fine tune'));
+  const target = list[1];
+  let notified = 0;
+  const off = onSynth(() => { notified += 1; });
+  fire(tiles[1], 'click');
+  off();
+  assert.equal(notified, 1);
+  assert.deepEqual(getSynth(), target.settings);
+  assert.equal(tiles[1].getAttribute('aria-pressed'), 'true');
+  assert.equal(tiles.filter((t) => t.getAttribute('aria-pressed') === 'true').length, 1);
+  assert.ok(saved['ap2.viz.synth'].includes(target.settings.sun.top));
+  const r = rowOf(panel, 'Radius').querySelector('input');
+  r.value = String(target.settings.sun.radius === 0.3 ? 0.4 : 0.3);
+  fire(r, 'input');
+  assert.equal(tiles.filter((t) => t.getAttribute('aria-pressed') === 'true').length, 0);
+  panel.destroy();
+});
+
+test('preset tiles stop key events from propagating', () => {
+  reset();
+  const panel = createSynthPanel({ doc: document });
+  const seen = [];
+  document.addEventListener('keydown', (e) => seen.push(e.key));
+  const tile = panel.el.querySelector('button.viz-synth-preset');
+  document.body.append(panel.el);
+  fire(tile, 'keydown', { key: ' ' });
+  assert.deepEqual(seen, []);
+  panel.destroy();
+});

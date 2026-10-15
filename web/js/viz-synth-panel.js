@@ -1,8 +1,9 @@
 import {
-  SYNTH_SCHEMA, SYNTH_GROUPS, getSynth, setSynth, resetSynth, onSynth,
+  SYNTH_SCHEMA, SYNTH_GROUPS, getSynth, setSynth, resetSynth, onSynth, replaceSynth,
 } from './viz-synth-settings.js';
+import { SYNTH_PRESET_LIST, PRESET_THUMB, applyPreset, findActivePreset } from './viz-synth-presets.js';
 
-const defaultStore = { get: getSynth, set: setSynth, reset: resetSynth, on: onSynth };
+const defaultStore = { get: getSynth, set: setSynth, reset: resetSynth, on: onSynth, replace: replaceSynth };
 
 const pathValue = (settings, path) => {
   const i = path.indexOf('.');
@@ -84,6 +85,36 @@ export function createSynthPanel({ doc = document, store = defaultStore } = {}) 
   resetAll.addEventListener('click', () => store.reset());
   root.append(resetAll);
 
+  const presets = make(doc, 'section', 'viz-synth-presets');
+  presets.setAttribute('aria-labelledby', 'viz-synth-presets-h');
+  const ph = make(doc, 'h3', 'viz-synth-heading', 'Presets');
+  ph.id = 'viz-synth-presets-h';
+  const grid = make(doc, 'div', 'viz-synth-preset-grid');
+  const tiles = [];
+  const overwrite = (settings) => {
+    if (store.replace) { store.replace(settings); return; }
+    for (const spec of SYNTH_SCHEMA) store.set(spec.path, pathValue(settings, spec.path));
+  };
+  for (const p of SYNTH_PRESET_LIST) {
+    const btn = make(doc, 'button', 'viz-synth-preset');
+    btn.type = 'button';
+    btn.dataset.preset = p.id;
+    btn.setAttribute('aria-pressed', 'false');
+    btn.setAttribute('aria-label', `${p.name} preset`);
+    const img = make(doc, 'img', 'viz-synth-thumb');
+    img.alt = '';
+    img.loading = 'lazy';
+    img.addEventListener('error', () => { img.hidden = true; btn.classList.add('viz-synth-nothumb'); });
+    img.src = PRESET_THUMB(p.id);
+    btn.append(img, make(doc, 'span', 'viz-synth-preset-name', p.name));
+    btn.addEventListener('click', () => overwrite(applyPreset(p.id)));
+    tiles.push({ id: p.id, btn });
+    grid.append(btn);
+  }
+  presets.append(ph, grid);
+  root.append(presets);
+  root.append(make(doc, 'h3', 'viz-synth-heading', 'Fine tune'));
+
   const fields = [];
   for (const group of SYNTH_GROUPS) {
     const det = make(doc, 'details', 'viz-synth-group');
@@ -107,6 +138,8 @@ export function createSynthPanel({ doc = document, store = defaultStore } = {}) 
   const repaint = () => {
     const s = store.get();
     for (const f of fields) f.paint(pathValue(s, f.spec.path));
+    const active = findActivePreset(s);
+    for (const t of tiles) t.btn.setAttribute('aria-pressed', String(t.id === active));
   };
   repaint();
   const off = store.on(repaint);

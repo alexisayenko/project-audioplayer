@@ -214,6 +214,12 @@ export function setSynth(path, value) {
   return v;
 }
 
+export function replaceSynth(raw) {
+  const next = validateSynth(raw);
+  commit(next, '*');
+  return next;
+}
+
 export function resetSynth(group) {
   const cur = getSynth();
   const def = defaultSynth();
