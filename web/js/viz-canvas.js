@@ -1,4 +1,4 @@
-import { makeFrameMeter, makePaceGovernor, targetIntervalMs, watchLowPower } from './viz-pacing.js';
+import { makeFrameMeter, makePaceGovernor, targetIntervalMs, watchLowPower, PACE_OVER, PACE_DOWN_S } from './viz-pacing.js';
 import { getQualityForce, getCam } from './viz-cam-debug.js';
 import {
   ATTACK, RELEASE, IDLE_EPSILON, VIZ_FPS, VIZ_DPR_CAP, DPR_CAP, VIZ_HEIGHT_SCALE, TILT_DB_PER_OCT,
@@ -15,7 +15,9 @@ import { createPartsFilter } from './viz-parts.js';
 import { drawRing, ringRadius } from './viz-ring.js';
 import { flight } from './viz-flight.js';
 import { getStyle } from './viz-terrain-style.js';
-import { createModeRenderer, MODES, DEFAULT_MODE } from './viz-modes.js';
+import { createSynth } from './viz-synth-gl.js';
+import { synthVersion } from './viz-synth-settings.js';
+import { createModeRenderer, MODES, DEFAULT_MODE, isSceneMode, usesFlight } from './viz-modes.js';
 
 const SPOKES = 48;
 const COLOR_TTL_MS = 5000;
@@ -41,6 +43,9 @@ function defaults() {
     raf: (fn) => win.requestAnimationFrame(fn),
     caf: (id) => win.cancelAnimationFrame?.(id),
     createGLCanvas,
+    createSynth,
+    getSynthVersion: synthVersion,
+    onNotice: null,
     createOffscreen,
     debug: wantsDebug(win),
     now: () => (win.performance?.now ? win.performance.now() : Date.now()),
@@ -106,9 +111,13 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
   let enabled = false;
   let mode = startMode;
   let vizMode = DEFAULT_MODE;
+  let synthFallback = false;
+  let creating = false;
+  let heavySince = null;
   let heightScale = VIZ_HEIGHT_SCALE;
   let renderer = null;
   let glCanvas = null;
+  let glKind = null;
   let glObserver = null;
   let avgMs = 0;
   const targets = new Map();
@@ -227,17 +236,29 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
     targets.delete(glCanvas);
     glCanvas?.remove?.();
     glCanvas = null;
+    glKind = null;
   }
+
+  const renderMode = () => (vizMode === 'synthwave' && synthFallback ? 'terrain' : vizMode);
 
   function ensureRenderer() {
     if (renderer) return renderer;
-    const wantsGL = MODES.find((m) => m.id === vizMode)?.requiresWebGL;
+    const wantsGL = MODES.find((m) => m.id === renderMode())?.requiresWebGL;
+    if (wantsGL && glCanvas && glKind !== renderMode()) removeGL();
     if (wantsGL && !glCanvas) {
       glCanvas = d.createGLCanvas?.(canvas) ?? null;
+      glKind = renderMode();
       layoutGL();
       if (glCanvas) glObserver = watch(glCanvas);
     }
-    renderer = createModeRenderer(vizMode, canvas, glCanvas, { draw2d, createTerrain: d.createTerrain });
+    creating = true;
+    try {
+      renderer = createModeRenderer(renderMode(), canvas, glCanvas, {
+        draw2d, createTerrain: d.createTerrain, factories: { synthwave: d.createSynth }, terrainOpts: { onError: onRendererError },
+      });
+    } finally {
+      creating = false;
+    }
     if (view.w > 0) renderer.resize(view.w, renderer.usesGL ? view.h * glScale() : view.h, view.dpr);
     if (renderer.usesGL) canvas.hidden = true;
     return renderer;
@@ -247,7 +268,7 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
     renderer?.dispose();
     renderer = null;
     la?.request(laKey, false);
-    if (vizMode !== 'terrain' && glCanvas) removeGL();
+    if (!isSceneMode(renderMode()) && glCanvas) removeGL();
   }
 
   function paint(now, still) {
@@ -265,9 +286,9 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
     f.shaped = shapeBars(bars, still ? 0 : now, undefined, f.shaped);
     const r = ensureRenderer();
     r.setQuality(gov.level, { cap: pace.level, lite: pace.lite, hiDpr: pace.hiDpr, force: getQualityForce() });
-    la?.request(laKey, enabled && r.id === 'terrain');
-    if (r.id === 'terrain') flight.tick(now, d.isPlaying());
-    r.draw(bars, now, r.id === 'terrain' ? la?.get(now) ?? null : null, r.id === 'terrain' ? d.getOutputLatency() + getCam().sync / 1000 : 0);
+    la?.request(laKey, enabled && isSceneMode(r.id));
+    if (usesFlight(r.id)) flight.tick(now, d.isPlaying());
+    r.draw(bars, now, isSceneMode(r.id) ? la?.get(now) ?? null : null, isSceneMode(r.id) ? d.getOutputLatency() + getCam().sync / 1000 : 0);
     if (!r.usesGL) glow.apply(ctx, canvas, w, h, q.glow);
     if (d.debug) paintDebug(bars.length);
   }
@@ -321,7 +342,7 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
     }
   }
 
-  const isTerrain = () => renderer?.id === 'terrain';
+  const isTerrain = () => isSceneMode(renderer?.id);
   const targetMs = () => targetIntervalMs({
     terrain: isTerrain(), refreshMs: meter.refresh, half: pace.half, lowPower: !!power?.low, reduced: reduced(), baseFps: VIZ_FPS,
   });
@@ -333,7 +354,7 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
   const timelineBusy = () => /loading|building/.test(la?.statusText?.() ?? '');
 
   function paceSignature(busy) {
-    return `${isTerrain()}|${getStyle()}|${flight.isOn?.() ? 1 : 0}|${view.w}x${view.h}@${view.dpr}|${busy ? 1 : 0}`;
+    return `${isTerrain()}|${renderer?.id === 'synthwave' ? d.getSynthVersion?.() ?? 0 : getStyle()}|${flight.isOn?.() ? 1 : 0}|${view.w}x${view.h}@${view.dpr}|${busy ? 1 : 0}`;
   }
 
   function paceDraw(ts) {
@@ -354,6 +375,31 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
       lastBuilds = builds;
     }
     if (pace.update(ts, drawMeter.ema, targetMs(), drawMeter.valid)) drawMeter.restart();
+    checkSynthFallback(ts);
+  }
+
+  function checkSynthFallback(ts) {
+    const heavy = renderer?.id === 'synthwave' && pace.half && pace.lite && drawMeter.valid && drawMeter.ema > targetMs() * PACE_OVER;
+    if (!heavy) { heavySince = null; return; }
+    heavySince ??= ts;
+    if (ts - heavySince < PACE_DOWN_S * 2000) return;
+    fallBackToTerrain('Synthwave terrain is too heavy here, using Terrain');
+  }
+
+  function fallBackToTerrain(message) {
+    synthFallback = true;
+    heavySince = null;
+    pace.reset();
+    pace.grace();
+    drawMeter.restart();
+    dropRenderer();
+    d.onNotice?.(message);
+  }
+
+  function onRendererError() {
+    if (creating || renderer?.id !== 'synthwave') return;
+    fallBackToTerrain('Synthwave terrain stopped working, using Terrain');
+    if (raf == null) evaluate();
   }
 
   function paceNote() {
@@ -447,6 +493,8 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
     setVizMode(id) {
       if (id === vizMode) return;
       vizMode = id;
+      synthFallback = false;
+      heavySince = null;
       meter.hold();
       drawMeter.hold();
       pace.reset();

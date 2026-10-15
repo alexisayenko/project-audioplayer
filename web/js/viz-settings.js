@@ -41,7 +41,7 @@ export function resetVizCapsForTests(next = null) {
 export function vizMode(getCaps = vizCaps) {
   const saved = storeGet(MODE_STORAGE_KEY);
   const id = LEGACY_MODES[saved] ?? saved;
-  return pickMode(id, id === 'terrain' ? getCaps() : { webgl: false });
+  return pickMode(id, MODES.find((m) => m.id === id)?.requiresWebGL ? getCaps() : { webgl: false });
 }
 
 export function setVizMode(id) {

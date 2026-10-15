@@ -130,13 +130,16 @@ test('M cycles modes while the overlay is open; ignored in inputs, closed on oth
 
 test('saved mode migration, validation and WebGL skip', () => {
   const noGL = () => ({ webgl: false });
-  const table = [['bars-ring', 'bars'], ['combo', 'bars'], ['terrain', 'bars'], ['ring', 'ring'], ['bogus', 'bars'], [null, 'bars']];
+  const table = [['bars-ring', 'bars'], ['combo', 'bars'], ['terrain', 'bars'], ['synthwave', 'bars'], ['ring', 'ring'], ['bogus', 'bars'], [null, 'bars']];
   for (const [saved, want] of table) {
     if (saved == null) localStorage.removeItem('ap2.viz.mode'); else localStorage.setItem('ap2.viz.mode', saved);
     assert.equal(vizMode(noGL), want, String(saved));
   }
   localStorage.setItem('ap2.viz.mode', 'combo');
   assert.equal(vizMode(() => ({ webgl: true })), 'terrain');
+  localStorage.setItem('ap2.viz.mode', 'synthwave');
+  assert.equal(vizMode(() => ({ webgl: true })), 'synthwave');
+  assert.equal(vizMode(noGL), 'bars');
   setVizMode('nope');
   assert.equal(localStorage.getItem('ap2.viz.mode'), 'bars');
   resetVizCapsForTests(null);

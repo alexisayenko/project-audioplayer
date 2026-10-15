@@ -4,6 +4,7 @@ export const MODES = [
   { id: 'bars', label: 'Mirrored spectrum', icon: 'equalizer', requiresWebGL: false },
   { id: 'ring', label: 'Ring', icon: 'ring', requiresWebGL: false },
   { id: 'terrain', label: 'Terrain', icon: 'terrain', requiresWebGL: true },
+  { id: 'synthwave', label: 'Synthwave terrain', icon: 'synthwave', requiresWebGL: true },
 ];
 
 export const DEFAULT_MODE = 'bars';
@@ -31,15 +32,18 @@ export function nextMode(id, caps) {
 
 export const modeLabel = (id) => MODES.find((m) => m.id === id)?.label ?? MODES[0].label;
 
+export const isSceneMode = (id) => id === 'terrain' || id === 'synthwave';
+export const usesFlight = (id) => id === 'terrain';
+
 const GOV_TO_TERRAIN = [2, 1, 1, 0];
 const govToTerrain = (g) => GOV_TO_TERRAIN[Math.min(GOV_TO_TERRAIN.length - 1, Math.max(0, g | 0))];
 
 export function createModeRenderer(id, canvas2d, canvasGL, deps = {}) {
-  const make = deps.createTerrain || defaultCreateTerrain;
+  const factories = { terrain: deps.createTerrain || defaultCreateTerrain, ...deps.factories };
   const draw2d = deps.draw2d || (() => {});
   const want = MODES.find((m) => m.id === pickMode(id, { webgl: true })) || MODES[0];
   let terrain = null;
-  if (want.requiresWebGL && canvasGL) terrain = make(canvasGL, deps.terrainOpts || {});
+  if (want.requiresWebGL && canvasGL) terrain = factories[want.id]?.(canvasGL, deps.terrainOpts || {}) ?? null;
   const effective = want.requiresWebGL && !terrain ? DEFAULT_MODE : want.id;
   const showGL = !!terrain;
   const showBars = !showGL;

@@ -31,6 +31,7 @@ export const ICONS = {
   volumeMute: { d: '<path d="M4 9.5v5h3.5l5 4v-13l-5 4z"/><path d="M16.5 9.5l5 5M21.5 9.5l-5 5"/>', width: 1.8 },
   equalizer: { d: '<path d="M6 20V11M12 20V4M18 20v-6"/>', width: 2.4 },
   ring: { d: '<circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>', width: 1.8 },
+  synthwave: { d: '<circle cx="12" cy="9" r="4"/><path d="M2 14h20M4 18h16M7 21h10"/>', width: 1.8 },
   terrain: { d: '<path d="M3 18l4-5 3 3 4-7 3 4 4-5M3 21h18"/>', width: 1.8 },
   more: { fill: true, d: '<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>' },
 };

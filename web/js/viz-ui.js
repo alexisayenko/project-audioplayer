@@ -40,6 +40,7 @@ function vizDeps(audio, graph, extra) {
     isPlaying: () => !audio.paused && !audio.ended,
     getOutputLatency: () => outputLatencyS(graph.getContext?.()),
     getDiag: () => ({ audio, graphState: graph.getState?.(), ctxState: graph.getContext?.()?.state }),
+    onNotice: (text) => { const el = document.getElementById('viz-live'); if (el) el.textContent = text; },
     ...extra,
   };
 }

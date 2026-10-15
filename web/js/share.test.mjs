@@ -9,7 +9,9 @@ const O = 'https://electrophone.cc';
 
 test('style list matches the terrain styles', () => {
   assert.deepEqual([...SHARE_STYLES].sort(), TERRAIN_STYLES.map((s) => s.id).sort());
-  assert.deepEqual(SHARE_MODES, ['bars', 'ring', 'terrain']);
+  assert.deepEqual(SHARE_MODES, ['bars', 'ring', 'terrain', 'synthwave']);
+  assert.equal(buildShareUrl({ origin: O, id: 'x', viz: 'synthwave', style: 'single', fl: true }), `${O}/#/play/x?v=1&viz=synthwave`);
+  assert.equal(parseShareParams('#/play/x?viz=synthwave').viz, 'synthwave');
 });
 
 test('buildShareUrl matches the documented scheme', () => {

@@ -9,7 +9,7 @@ import {
 } from './viz-terrain-math.js';
 import { FAR_FLAT_START, gridHalfWidth, yawStepOf } from './viz-terrain-math.js';
 import { createTerrain, isWebGLAvailable, linkProgram, TERRAIN_MAX_DPR, padTier, strideOf } from './viz-terrain-gl.js';
-import { MODES, pickMode, nextMode, availableModes, createModeRenderer, modeLabel } from './viz-modes.js';
+import { MODES, pickMode, nextMode, availableModes, createModeRenderer, modeLabel, isSceneMode, usesFlight } from './viz-modes.js';
 
 const DEFAULT_PITCH_ABS = 13.5;
 const near = (a, b, eps = 1e-5) => assert.ok(Math.abs(a - b) < eps, `${a} vs ${b}`);
@@ -413,23 +413,26 @@ test('isWebGLAvailable checks getContext and survives errors', () => {
 });
 
 test('mode list, labels, migration and cycle respect WebGL capability', () => {
-  assert.deepEqual(MODES.map((m) => m.id), ['bars', 'ring', 'terrain']);
-  assert.deepEqual(MODES.map((m) => m.label), ['Mirrored spectrum', 'Ring', 'Terrain']);
+  assert.deepEqual(MODES.map((m) => m.id), ['bars', 'ring', 'terrain', 'synthwave']);
+  assert.deepEqual(MODES.map((m) => m.label), ['Mirrored spectrum', 'Ring', 'Terrain', 'Synthwave terrain']);
   const gl = { webgl: true };
   const no = { webgl: false };
   const table = [
-    ['terrain', gl, 'terrain'], ['terrain', no, 'bars'], ['ring', no, 'ring'], ['bars', gl, 'bars'],
+    ['terrain', gl, 'terrain'], ['terrain', no, 'bars'], ['synthwave', gl, 'synthwave'], ['synthwave', no, 'bars'], ['ring', no, 'ring'], ['bars', gl, 'bars'],
     ['bars-ring', gl, 'bars'], ['bars-ring', no, 'bars'], ['combo', gl, 'terrain'], ['combo', no, 'bars'],
     ['nope', gl, 'bars'], [null, null, 'bars'],
   ];
   for (const [saved, caps, want] of table) assert.equal(pickMode(saved, caps), want, `${saved}/${caps?.webgl}`);
   assert.equal(nextMode('bars', gl), 'ring');
   assert.equal(nextMode('ring', gl), 'terrain');
-  assert.equal(nextMode('terrain', gl), 'bars');
+  assert.equal(nextMode('terrain', gl), 'synthwave');
+  assert.equal(nextMode('synthwave', gl), 'bars');
   assert.equal(nextMode('ring', no), 'bars');
   assert.equal(nextMode('bars', no), 'ring');
   assert.equal(nextMode('unknown', gl), 'bars');
   assert.equal(availableModes(no).length, 2);
+  assert.equal(isSceneMode('synthwave') && isSceneMode('terrain') && !isSceneMode('bars'), true);
+  assert.equal(usesFlight('terrain') && !usesFlight('synthwave'), true);
   assert.equal(modeLabel('bars'), 'Mirrored spectrum');
 });
 
@@ -1007,4 +1010,15 @@ test('LOD tiers are selected by distance from the camera, not by depth alone, un
       assert.ok(Math.max(...sp) - Math.min(...sp) < tiers[1].spacing + 1e-9);
     }
   }
+});
+
+test('mode renderer builds the factory of the requested GL mode and falls back to bars', () => {
+  const made = [];
+  const mk = (n) => () => { made.push(n); return { draw() {}, resize() {}, setQuality() {}, dispose() {} }; };
+  const deps = { createTerrain: mk('terrain'), factories: { synthwave: mk('synth') } };
+  assert.equal(createModeRenderer('synthwave', {}, {}, deps).id, 'synthwave');
+  assert.equal(createModeRenderer('terrain', {}, {}, deps).id, 'terrain');
+  assert.deepEqual(made, ['synth', 'terrain']);
+  assert.equal(createModeRenderer('synthwave', {}, {}, { createTerrain: mk('terrain') }).id, 'bars');
+  assert.equal(createModeRenderer('synthwave', {}, {}, { factories: { synthwave: () => null } }).id, 'bars');
 });

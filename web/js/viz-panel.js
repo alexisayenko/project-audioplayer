@@ -1,6 +1,7 @@
 import { TERRAIN_STYLES, getStyle, setStyle, onStyle } from './viz-terrain-style.js';
 import { createPartsToggles } from './viz-parts-ui.js';
 import { modeLabel } from './viz-modes.js';
+import { createSynthPanel } from './viz-synth-panel.js';
 import { flight, flightOn, flightReduced, setFlightOn, onFlight } from './viz-flight.js';
 
 const signed = (v, d) => `${v >= 0 ? '+' : ''}${v.toFixed(d)}`;
@@ -14,7 +15,7 @@ export const PANEL_COLLAPSED_KEY = 'ap2.viz.panelCollapsed';
 export const NARROW_PX = 480;
 
 export function panelSections(mode) {
-  return { style: mode === 'terrain', flight: mode === 'terrain', parts: mode === 'bars' };
+  return { style: mode === 'terrain', flight: mode === 'terrain', parts: mode === 'bars', synth: mode === 'synthwave' };
 }
 
 export function panelTitle(mode) {
@@ -23,7 +24,7 @@ export function panelTitle(mode) {
 
 export function panelHasContent(mode) {
   const s = panelSections(mode);
-  return s.style || s.flight || s.parts;
+  return s.style || s.flight || s.parts || s.synth;
 }
 
 export function defaultCollapsed(width) {
@@ -110,7 +111,10 @@ export function createStylePanel({ doc = document, mode, width, parts }) {
   const partsRoot = doc.createElement('div');
   const toggles = createPartsToggles({ root: partsRoot, state: parts.state, onChange: parts.onChange, onRefuse: parts.onRefuse });
 
-  body.append(styleRow, flightRow, partsRoot);
+  const synthPanel = createSynthPanel({ doc });
+  const synthRoot = synthPanel.el;
+
+  body.append(styleRow, flightRow, partsRoot, synthRoot);
   root.append(head, body);
 
   const setMode = (m) => {
@@ -120,6 +124,7 @@ export function createStylePanel({ doc = document, mode, width, parts }) {
     flightRow.hidden = !s.flight;
     paintFlight();
     partsRoot.hidden = !s.parts;
+    synthRoot.hidden = !s.synth;
     root.dataset.empty = panelHasContent(m) ? '0' : '1';
   };
   setMode(mode);
@@ -129,6 +134,6 @@ export function createStylePanel({ doc = document, mode, width, parts }) {
     setParts: (s) => toggles.set(s),
     toggles,
     isEmpty: () => root.dataset.empty === '1',
-    dispose() { offStyle(); offFlight(); globalThis.clearInterval?.(readTimer); root.remove(); },
+    dispose() { offStyle(); offFlight(); synthPanel.destroy(); globalThis.clearInterval?.(readTimer); root.remove(); },
   };
 }

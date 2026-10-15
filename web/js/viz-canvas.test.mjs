@@ -336,3 +336,103 @@ test('destroy stops the loop', () => {
   viz.destroy();
   assert.equal(viz.isRunning(), false);
 });
+
+function synthSetup(over = {}) {
+  const made = { gl: [], synth: 0, errs: [], notices: [] };
+  const synths = [];
+  const mkCanvas = () => ({ style: {}, hidden: true, removed: false, remove() { this.removed = true; } });
+  const o = setup({
+    mode: 'full',
+    deps: {
+      createGLCanvas: () => { const c = mkCanvas(); made.gl.push(c); return c; },
+      createTerrain: () => ({ draw() {}, resize() {}, setQuality() {}, setLite() {}, setDprCap() {}, dispose() {} }),
+      createSynth: (_c, opts) => {
+        made.synth += 1;
+        if (over.nullSynth) return null;
+        const sy = {
+          opts, disposed: 0, draw() {}, resize() {}, setQuality() {}, setLite() {}, setDprCap() {}, dispose() { this.disposed += 1; },
+          stats: { builds: 1, level: 1, tiers: 1, vertices: 1, dpr: 1, w: 1, h: 1 },
+        };
+        synths.push(sy);
+        return sy;
+      },
+      getSynthVersion: () => 0,
+      onNotice: (m) => made.notices.push(m),
+    },
+  });
+  o.s.playing = true;
+  o.s.analyser = fakeAnalyser();
+  return { ...o, made, synths };
+}
+
+test('switching between terrain and synthwave recreates the GL canvas', () => {
+  const g = synthSetup();
+  g.viz.setVizMode('terrain');
+  g.viz.setEnabled(true);
+  g.tick(40);
+  g.viz.setVizMode('synthwave');
+  g.tick(40);
+  assert.equal(g.made.gl.length, 2);
+  assert.equal(g.made.gl[0].removed, true);
+  assert.equal(g.viz.effectiveMode(), 'synthwave');
+  g.viz.setVizMode('terrain');
+  g.tick(40);
+  assert.equal(g.made.gl.length, 3);
+  assert.equal(g.made.gl[1].removed, true);
+});
+
+test('a synth runtime error falls back to Terrain with a notice, and picking synthwave again retries', () => {
+  const g = synthSetup();
+  g.viz.setVizMode('synthwave');
+  g.viz.setEnabled(true);
+  g.tick(40);
+  assert.equal(typeof g.synths[0].opts.onError, 'function');
+  g.synths[0].opts.onError(new Error('lost'));
+  assert.equal(g.made.notices.length, 1);
+  assert.equal(g.synths[0].disposed, 1);
+  g.tick(40);
+  assert.equal(g.viz.effectiveMode(), 'terrain');
+  assert.equal(g.made.synth, 1);
+  g.viz.setVizMode('bars');
+  g.viz.setVizMode('synthwave');
+  g.tick(40);
+  assert.equal(g.viz.effectiveMode(), 'synthwave');
+  assert.equal(g.made.synth, 2);
+});
+
+test('an error raised while the synth is being created does not trigger the fallback', () => {
+  const g = synthSetup({ nullSynth: true });
+  g.viz.setVizMode('synthwave');
+  g.viz.setEnabled(true);
+  g.tick(40);
+  assert.equal(g.made.notices.length, 0);
+  assert.equal(g.viz.effectiveMode(), 'bars');
+});
+
+test('sustained heavy synthwave frames fall back to Terrain after 2000 x PACE_DOWN_S ms', () => {
+  const g = synthSetup();
+  g.viz.setVizMode('synthwave');
+  g.viz.setEnabled(true);
+  let fellAt = null;
+  for (let i = 0; i < 400 && fellAt === null; i += 1) {
+    g.tick(100);
+    if (g.made.notices.length) fellAt = i;
+  }
+  assert.notEqual(fellAt, null);
+  assert.equal(g.made.notices[0], 'Synthwave terrain is too heavy here, using Terrain');
+  g.tick(100);
+  assert.equal(g.viz.effectiveMode(), 'terrain');
+  g.viz.setVizMode('terrain');
+  g.viz.setVizMode('synthwave');
+  g.tick(100);
+  assert.equal(g.viz.effectiveMode(), 'synthwave');
+});
+
+test('light synthwave frames never fall back', () => {
+  const g = synthSetup();
+  g.viz.setVizMode('synthwave');
+  g.viz.setEnabled(true);
+  for (let i = 0; i < 300; i += 1) g.tick(17);
+  assert.equal(g.made.notices.length, 0);
+  assert.equal(g.viz.effectiveMode(), 'synthwave');
+});
