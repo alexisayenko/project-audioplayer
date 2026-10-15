@@ -106,7 +106,7 @@ function paint(dlg, song, close, m) {
   dlg.replaceChildren(...parts.filter(Boolean));
 }
 
-const actionButtons = (dlg) => dlg.querySelectorAll('.card-actions button');
+const actionButtons = (dlg) => [...dlg.querySelectorAll('.card-actions button')];
 
 function repaint(dlg, song, close) {
   const m = cardModel(song, autodl.view(song.id));
@@ -119,7 +119,7 @@ function repaint(dlg, song, close) {
 }
 
 function focusRow(id, fallback) {
-  const rows = document.querySelectorAll('.songs li.song');
+  const rows = [...document.querySelectorAll('.songs li.song')];
   const row = rows.find((r) => r.dataset.id === id);
   const target = row?.querySelector('.open') || (fallback?.isConnected ? fallback : null);
   target?.focus();

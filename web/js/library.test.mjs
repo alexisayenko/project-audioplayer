@@ -11,6 +11,8 @@ const calls = stubFetch((url, o) => {
 });
 const { store } = await import('./store.js');
 const { renderLibrary, visibleSongs, filterByTags } = await import('./library.js');
+const { unsetKey, unsetCount } = await import('./library-data.js');
+const { categoryTags } = await import('./tagname.js');
 const { player, initPlayer } = await import('./player.js');
 initPlayer();
 const { requestReveal } = await import('./reveal.js');
@@ -83,7 +85,11 @@ test('rows are sorted by recently added; counts, durations and BPM are shown', a
   assert.equal(alpha.querySelector('.c-dur').textContent, '2:05');
   assert.equal(alpha.querySelector('.bpm-badge').getAttribute('aria-label'), 'BPM 120');
   assert.match(alpha.querySelector('.sub').textContent, /Zed · 1999/);
-  assert.equal(alpha.querySelector('.c-genres').textContent, 'rock');
+  assert.equal(alpha.querySelector('.c-genres .g-txt').textContent, 'rock');
+  assert.ok(alpha.querySelector('.c-genres .bpm-badge'));
+  assert.equal(alpha.querySelector('.title-line .bpm-badge'), null);
+  const offline = rows().find((r) => r.dataset.id !== 'a' && !r.querySelector('.bpm-badge'));
+  assert.ok(offline, 'a row without BPM has no badge');
   cleanup();
 });
 
@@ -187,6 +193,48 @@ test('selections in different categories AND together; within one they OR', asyn
   filterByTags(['genre:nonexistent']);
   assert.equal(visibleSongs().length, 4, 'unknown tags are ignored');
   filterByTags([]);
+});
+
+test('"not set" system entry: counts, OR within a facet, AND across facets, not a real tag', async () => {
+  setStore(SONGS);
+  assert.equal(unsetKey('genres'), 'genre:__unset__');
+  assert.equal(unsetKey('tags'), null);
+  assert.deepEqual(['genres', 'years', 'countries'].map((c) => unsetCount(c)), [1, 2, 2]);
+  filterByTags(['genre:__unset__']);
+  assert.deepEqual(visibleSongs().map((s) => s.id), ['n1']);
+  filterByTags(['genre:__unset__', 'genre:rock']);
+  assert.deepEqual(visibleSongs().map((s) => s.id).sort(), ['a', 'c', 'n1']);
+  filterByTags(['country:__unset__', 'genre:rock']);
+  assert.deepEqual(visibleSongs().map((s) => s.id), ['c']);
+  filterByTags(['decade:__unset__']);
+  assert.deepEqual(visibleSongs().map((s) => s.id).sort(), ['c', 'n1']);
+  filterByTags(['tags:__unset__', 'foo:__unset__']);
+  assert.equal(visibleSongs().length, 4, 'unknown tokens are ignored');
+  assert.equal(store.tags.some((t) => t.tag.includes('__unset__')), false);
+  assert.equal(categoryTags(store.tags, 'genres').some((t) => t.tag.includes('__unset__')), false);
+  filterByTags([]);
+});
+
+test('"not set" pill in the filter sheet: first, italic, chip count stays real, summary names it', async () => {
+  setStore(SONGS);
+  filterByTags([]);
+  stubFetch(() => ({ body: { songs: SONGS } }));
+  const { root, titles, cleanup } = mount();
+  await flush();
+  const chips = root.querySelectorAll('.cat-chip');
+  assert.equal(chips[1].getAttribute('aria-label'), 'Genres, 2');
+  chips[1].click();
+  const sheet = document.getElementById('filter-sheet');
+  const first = sheet.querySelector('.pills button');
+  assert.equal(first.getAttribute('aria-label'), 'Songs with no genre');
+  assert.match(first.textContent, /not set1/);
+  first.click();
+  sheet.querySelector('.btn.primary').click();
+  assert.deepEqual(titles(), ['Offline']);
+  assert.match(root.querySelector('[role=status]').textContent, /Genres: not set/);
+  assert.equal(root.querySelectorAll('.cat-chip')[1].getAttribute('aria-label'), 'Genres, 1 selected');
+  filterByTags([]);
+  cleanup();
 });
 
 test('Play all replaces the queue with the visible songs that have audio; Add all appends', async () => {

@@ -10,7 +10,7 @@ import { can } from './guest.js';
 import { ROW_FLASH_MS } from './constants.js';
 import { findRowIndex, scrollTarget, registerRevealer } from './reveal.js';
 import { tagLabel, categoryOf, CATEGORIES } from './tagname.js';
-import { prefs, SORTS, visibleSongs, selectedIn } from './library-data.js';
+import { prefs, SORTS, visibleSongs, selectedIn, isUnsetKey, unsetCount } from './library-data.js';
 import { songRow } from './library-rows.js';
 import { disposeAll } from './marquee.js';
 import { isRowControl } from './row-cover.js';
@@ -80,12 +80,12 @@ export function renderLibrary(root) {
     status);
 
   function renderChips() {
-    for (const t of prefs.sel) if (!store.tags.some((x) => x.tag.toLocaleLowerCase() === t)) prefs.sel.delete(t);
+    for (const t of prefs.sel) if (!isUnsetKey(t) && !store.tags.some((x) => x.tag.toLocaleLowerCase() === t)) prefs.sel.delete(t);
     cats.replaceChildren(...CATEGORIES.map((c) => {
       const values = store.tags.filter((t) => categoryOf(t.tag) === c.id).length;
       const n = selectedIn(c.id);
       const b = el('button', {
-        class: `cat-chip${n ? ' on' : ''}`, type: 'button', disabled: !values,
+        class: `cat-chip${n ? ' on' : ''}`, type: 'button', disabled: !values && !unsetCount(c.id),
         'aria-haspopup': 'dialog',
         onclick: () => openFilterSheet(c, b, renderAll),
       }, c.name, el('small', { class: 't-caption' }, n || values));
@@ -95,7 +95,8 @@ export function renderLibrary(root) {
   }
 
   function selectedNames() {
-    return [...prefs.sel].map((k) => store.tags.find((t) => t.tag.toLocaleLowerCase() === k)).filter(Boolean).slice(0, 3).map((t) => tagLabel(t.tag));
+    return [...prefs.sel].map((k) => (isUnsetKey(k) ? { unset: categoryOf(k) } : store.tags.find((t) => t.tag.toLocaleLowerCase() === k))).filter(Boolean).slice(0, 3)
+      .map((t) => (t.unset ? `${CATEGORIES.find((c) => c.id === t.unset).name}: not set` : tagLabel(t.tag)));
   }
 
   function renderList() {
@@ -117,7 +118,7 @@ export function renderLibrary(root) {
     const focusedId = document.activeElement?.classList?.contains('row-cover') ? document.activeElement.closest('li.song')?.dataset.id : null;
     disposeAll(list);
     list.replaceChildren(...empty, ...songs.map((s) => songRow(s, cur, flashId)));
-    if (focusedId) list.querySelectorAll('li.song').find((r) => r.dataset.id === focusedId)?.querySelector('.row-cover')?.focus();
+    if (focusedId) [...list.querySelectorAll('li.song')].find((r) => r.dataset.id === focusedId)?.querySelector('.row-cover')?.focus();
   }
 
   // Progress ticks update the rings in place; a row gaining or losing its indicator rebuilds the list.

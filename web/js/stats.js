@@ -9,6 +9,7 @@ import { songGenres } from './genre-playing.js';
 import { POLL_MS, shouldPoll } from './genre-view.js';
 import { createChart } from './stats-chart.js';
 import { watchPlayerInset } from './player-inset.js';
+import { createCollapsible, loadCollapsed, saveCollapsed, PANEL_KEYS } from './collapsible.js';
 import { renderTable } from './stats-table.js';
 import {
   COLOR_MODES, DEFAULT_MODE, PALETTE_SIZE, FAMILY_PALETTE_SIZE, splitPlottable, makePoint, assignGroups, colorIndex, songFamilies, countText, skippedText, chartLabel,
@@ -274,13 +275,21 @@ export function renderStats(root) {
 
   const unsub = store.subscribe(() => rebuild());
 
+  const barCl = createCollapsible({
+    id: 'st-bar-body',
+    collapsed: loadCollapsed(globalThis.localStorage, PANEL_KEYS.stats, window.innerWidth),
+    onToggle: (v) => saveCollapsed(globalThis.localStorage, PANEL_KEYS.stats, v),
+    content: [
+      el('div', { class: 'st-row st-tools', title: 'Drag: select - Right-drag or Shift-drag: pan - C: center - Wheel: zoom - Double-click: reset' }, select, legendBtn, tableBtn, centerBtn, resetBtn),
+      note,
+      legend],
+  });
+
   const st = el('div', { class: 'st' },
     el('div', { class: 'st-stage' }, base, top, tip, live, empty, tableBox),
     el('div', { class: 'st-bar' },
-      el('div', { class: 'st-row' }, el('h1', { class: 'st-title' }, 'Song stats'), status),
-      el('div', { class: 'st-row st-tools', title: 'Drag: select - Right-drag or Shift-drag: pan - C: center - Wheel: zoom - Double-click: reset' }, select, legendBtn, tableBtn, centerBtn, resetBtn),
-      note,
-      legend),
+      el('div', { class: 'st-row' }, el('h1', { class: 'st-title' }, 'Song stats'), status, barCl.button),
+      barCl.root),
     panel);
   root.append(st);
   const stopInset = watchPlayerInset(st, (h) => chart.setInsetBottom(h));

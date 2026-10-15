@@ -44,6 +44,7 @@ Each requirement is one line:
 | [stats.md](stats.md) | STA | Song stats: year x BPM scatter plot page (`#/stats`), colour groups, selection, zoom, table view (ADR-0016) |
 | [visualizer.md](visualizer.md) | VIZ | Audio visualizer: lazy Web Audio graph, Mirrored spectrum, Ring, Terrain and Synthwave terrain (styles, lookahead, camera flight, 60 fps pacing), background and full-screen modes, controls, performance and flash safety (task-0023) |
 | [terrain-concept.md](terrain-concept.md) | VIZ | Terrain visualizer concept in plain language for designers (companion to VIZ-043 to VIZ-067 and VIZ-074) |
+| [../product/concept-digital-phosphor-led.md](../product/concept-digital-phosphor-led.md) | VIZ | Digital phosphor LED display (Ice Blue Mirror 2) concept in plain language for designers (companion to VIZ-104, VIZ-105) |
 | [terminology.md](terminology.md) | all | Glossary: one name per thing and its aliases (now line, relief, parts, camera, quality, overlay, share link, baselines) |
 | [share.md](share.md) | SHARE | Share link: song id, start time and visualizer settings in a hash route, share dialog, tap-to-play gate (task-0028) |
 | [non-functional.md](non-functional.md) | NFR | Auth, hosting, scale, browsers, offline, CPU |

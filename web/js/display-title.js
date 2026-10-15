@@ -40,5 +40,5 @@ export function titleNodes(song, titleClass = 'ttl', remixClass = 'rmx') {
 }
 
 export function subtitleString(song) {
-  return [song?.artist, song?.album, song?.year].filter(Boolean).join(' · ');
+  return [song?.artist, song?.year].filter(Boolean).join(' · ');
 }

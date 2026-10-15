@@ -312,3 +312,25 @@ test('the Center button and the c key centre the view without a Reset-only state
   cleanup();
   localStorage.removeItem('stats.color');
 });
+
+test('the panel has a chevron that collapses everything below the title row and remembers it', async () => {
+  window.innerWidth = 1200;
+  localStorage.removeItem('ap2.panel.stats');
+  const { root, cleanup } = mount();
+  await flush();
+  const chev = root.querySelector('.st-bar .cl-btn');
+  assert.equal(chev.getAttribute('aria-expanded'), 'true');
+  assert.equal(chev.getAttribute('aria-controls'), 'st-bar-body');
+  assert.ok(root.querySelector('#st-bar-body .st-tools'));
+  assert.ok(root.querySelector('.st-row .st-count'));
+  chev.click();
+  assert.equal(chev.getAttribute('aria-label'), 'Expand panel');
+  assert.ok(root.querySelector('.st-bar .cl').classList.contains('collapsed'));
+  assert.equal(localStorage.getItem('ap2.panel.stats'), '1');
+  cleanup();
+  const again = mount();
+  await flush();
+  assert.equal(again.root.querySelector('.st-bar .cl-btn').getAttribute('aria-expanded'), 'false');
+  again.cleanup();
+  localStorage.removeItem('ap2.panel.stats');
+});

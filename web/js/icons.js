@@ -1,6 +1,6 @@
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
-export const SHUFFLE_D = 'M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5';
+export const SHUFFLE_D = 'M3 7h2.5C9.5 7 10 10 12 12S14.5 17 18.5 17H21M18 14.5l3 2.5-3 2.5M3 17h2.5C8.3 17 9.38 15.53 10.47 13.96M13.53 10.04C14.62 8.47 15.7 7 18.5 7H21M18 4.5l3 2.5-3 2.5';
 export const LOOP_D = 'M3 11V8.5a4 4 0 014-4h13.5M17.5 2l3 2.5-3 2.5M21 13v2.5a4 4 0 01-4 4H3.5M6.5 17l-3 2.5 3 2.5';
 export const NUMERAL_ONE_BBOX = { x: 9, y: 7.5, w: 6, h: 9 };
 export const NUMERAL_ONE_D = 'M11.8 7.5H14V14.8H15V16.5H9V14.8H11.8V10.4L9.4 12V9.9Z';
@@ -34,6 +34,7 @@ export const ICONS = {
   ring: { d: '<circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>', width: 1.8 },
   synthwave: { d: '<circle cx="12" cy="9" r="4"/><path d="M2 14h20M4 18h16M7 21h10"/>', width: 1.8 },
   terrain: { d: '<path d="M3 18l4-5 3 3 4-7 3 4 4-5M3 21h18"/>', width: 1.8 },
+  link: { d: '<path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1"/>', width: 2 },
   more: { fill: true, d: '<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>' },
 };
 

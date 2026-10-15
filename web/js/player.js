@@ -5,11 +5,9 @@ import { el, toast, plural } from './dom.js';
 import * as Q from './queue-logic.js';
 import { visibleTags, tagChip, tagText } from './tagname.js';
 import { songLinks } from './wiki-links.js';
-import { icon } from './icons.js';
 import { closeMenu, initMenus } from './menu.js';
 import { downloadSong } from './download.js';
 import { autodl, autoDownloadOn } from './autodl.js';
-import { editDialog } from './edit-dialog.js';
 import { requestReveal } from './reveal.js';
 import { attachScrubber } from './scrubber.js';
 import { storeGet, storeSet } from './storage.js';
@@ -366,7 +364,6 @@ function renderTransport(song, playing) {
   $('cover-text').hidden = !song;
   $('p-view').hidden = !song;
   paintServiceButtons($('p-svc'), song);
-  $('mini-edit').hidden = !can('edit');
   $('p-download').hidden = !hasAudio(song) || !can('download');
   setIcon('p-play', playing ? 'pause' : 'play', 22);
   setIcon('mini-play', playing ? 'pause' : 'play', 20);
@@ -376,7 +373,7 @@ function renderTransport(song, playing) {
   const cm = currentCoverModel(playing);
   const name = song ? displayString(song) : '';
   paintCover(cover, cm, name, { size: 28, extra: 'cover-btn' });
-  paintCover($('mini-cover-btn'), cm, name, { size: 18 });
+  paintCover($('mini-cover-btn'), cm, name, { size: 27 });
   $('mini-play').setAttribute('aria-label', label);
 }
 
@@ -402,13 +399,6 @@ function renderMini(song) {
   $('mini-title').replaceChildren(...titleNodes(song));
   $('mini-title').title = fullTitle(song);
   marquee($('mini-title'), { auto: true });
-  const inList = player.inQueue(song.id);
-  const pl = $('mini-playlist');
-  pl.setAttribute('aria-pressed', String(inList));
-  pl.classList.toggle('on', inList);
-  pl.title = inList ? 'In playlist - click to remove' : 'Add to current playlist';
-  pl.setAttribute('aria-label', pl.title);
-  pl.replaceChildren(icon(inList ? 'listCheck' : 'listAdd', 18));
   $('mini-artist').textContent = song.artist || '';
 }
 
@@ -518,7 +508,6 @@ export function initPlayer() {
   setIcon('mini-next', 'next', 18);
   setIcon('mini-shuffle', 'shuffle', 18);
   setIcon('p-view', 'info', 20);
-  setIcon('mini-edit', 'pencil', 18);
   setIcon('mini-locate', 'locate', 18);
   setIcon('p-download', 'download', 20);
   for (const id of ['cover-toggle', 'mini-cover-btn']) $(id).addEventListener('click', () => player.toggle());
@@ -547,11 +536,11 @@ export function initPlayer() {
     toast(n ? `Cleared ${n} ${plural(n, 'song', 'songs')}` : 'Tag chips cleared');
   });
   $('mini-open').addEventListener('click', () => { location.hash = '#/playback'; });
-  $('mini-edit').addEventListener('click', () => { if (player.current) editDialog(player.current); });
-  $('mini-locate').addEventListener('click', () => { if (player.current) requestReveal(player.current.id); });
-  $('mini-playlist').addEventListener('click', () => {
+  $('mini-locate').addEventListener('click', () => {
     const cur = player.current;
-    if (cur && player.toggleInPlaylist(cur.id) === 'removed') toast('Removed from playlist');
+    if (!cur) return;
+    requestReveal(cur.id);
+    openSongCard(cur, $('mini-locate'));
   });
   $('p-view').addEventListener('click', () => { if (player.current) openSongCard(player.current, $('p-view')); });
 

@@ -72,10 +72,8 @@ test('Now playing is disabled with nothing playing or without genres', async () 
   a.cleanup();
   current = { ...song, tags: ['decade:90s'] };
   const b = await mount();
-  assert.equal(btn(b.root, 'Now playing').getAttribute('title'), 'This song has no genres');
-  assert.equal(btn(b.root, 'Now playing').disabled, false);
-  fire(btn(b.root, 'Now playing'), 'click');
-  assert.match(b.root.querySelector('#gm-now').textContent, /This song has no genres/);
+  assert.equal(btn(b.root, 'Now playing').getAttribute('title'), 'No genres for this song');
+  assert.equal(btn(b.root, 'Now playing').disabled, true);
   b.cleanup();
   current = song;
 });
@@ -108,11 +106,51 @@ test('Now playing follows song changes while mounted and works for a paused or r
 
 test('hovering an outline row or a chip only hovers, never selects', async () => {
   const { root, cleanup } = await mount();
-  fire(root.querySelector('.gm-tw'), 'click');
-  const row = root.querySelectorAll('.gm-row').filter((r) => !r.className.includes('fam')).map((r) => r.querySelector('.gm-lbl'))[0];
+  const rows = () => root.querySelectorAll('.gm-row').filter((r) => !r.className.includes('fam')).map((r) => r.querySelector('.gm-lbl'));
+  if (!rows().length) fire(root.querySelector('.gm-tw'), 'click');
+  const row = rows()[0];
   assert.ok(row, root.querySelector('.gm-tree').textContent);
   fire(row, 'pointerenter');
   fire(row, 'pointerleave');
   assert.equal(root.querySelector('.gm-panel').hidden, true);
   cleanup();
+});
+
+test('Now playing presses and selects the song genres; Esc and a second press release it', async () => {
+  const { root, cleanup } = await mount();
+  const now = btn(root, 'Now playing');
+  assert.equal(now.getAttribute('aria-pressed'), 'false');
+  fire(now, 'click');
+  assert.equal(now.getAttribute('aria-pressed'), 'true');
+  fire(root.querySelector('.gm'), 'keydown', { key: 'Escape' });
+  assert.equal(now.getAttribute('aria-pressed'), 'false');
+  fire(now, 'click');
+  fire(now, 'click');
+  assert.equal(now.getAttribute('aria-pressed'), 'false');
+  assert.equal(now.getAttribute('aria-expanded'), 'false');
+  cleanup();
+});
+
+test('the toolbar and the Now playing card have their own chevrons with saved state', async () => {
+  window.innerWidth = 1200;
+  localStorage.removeItem('ap2.panel.genres');
+  localStorage.removeItem('ap2.panel.genreInfo');
+  const { root, cleanup } = await mount();
+  const bar = root.querySelector('.gm-bar-row .cl-btn');
+  assert.equal(bar.getAttribute('aria-expanded'), 'true');
+  assert.equal(bar.getAttribute('aria-controls'), 'gm-bar-body');
+  assert.ok(root.querySelector('#gm-bar-body .gm-find'));
+  bar.click();
+  assert.equal(localStorage.getItem('ap2.panel.genres'), '1');
+  assert.ok(btn(root, 'Now playing'));
+  fire(btn(root, 'Now playing'), 'click');
+  const info = root.querySelector('#gm-now .cl-btn');
+  assert.equal(info.getAttribute('aria-controls'), 'gm-now-body');
+  assert.equal(info.getAttribute('aria-expanded'), 'true');
+  info.click();
+  assert.equal(info.getAttribute('aria-label'), 'Expand panel');
+  assert.equal(localStorage.getItem('ap2.panel.genreInfo'), '1');
+  cleanup();
+  localStorage.removeItem('ap2.panel.genres');
+  localStorage.removeItem('ap2.panel.genreInfo');
 });

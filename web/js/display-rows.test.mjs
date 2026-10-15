@@ -43,6 +43,6 @@ test('Track column width is one custom property', () => {
   const css = readFileSync(new URL('../style.css', import.meta.url), 'utf8');
   assert.match(css, /--track-w: 300px;/);
   assert.match(css, /minmax\(220px, var\(--track-w\)\)/);
-  assert.match(css, /40px var\(--track-w\) minmax/);
+  assert.match(css, /var\(--row-cover-size\) var\(--track-w\) minmax/);
   assert.doesNotMatch(css, /\b400px minmax|, 400px\)/);
 });

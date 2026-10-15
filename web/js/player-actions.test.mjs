@@ -34,8 +34,24 @@ test('paintServiceButtons builds new-tab links with safe rel and hides an empty 
   assert.equal(a.target, '_blank');
   assert.equal(a.rel, 'noopener noreferrer');
   assert.equal(a.getAttribute('aria-label'), 'Open on YouTube');
-  paintServiceButtons(host, none);
+  paintServiceButtons(host, { ...none, source_url: null });
   assert.equal(host.hidden, true);
+  assert.equal(host.children.length, 0);
+});
+
+test('a source that is neither YouTube nor SoundCloud gets one generic Open source button', () => {
+  const host = document.createElement('span');
+  paintServiceButtons(host, none);
+  assert.equal(host.hidden, false);
+  assert.equal(host.children.length, 1);
+  const a = host.children[0];
+  assert.equal(a.href, 'https://example.com/x');
+  assert.equal(a.target, '_blank');
+  assert.equal(a.rel, 'noopener noreferrer');
+  assert.equal(a.getAttribute('aria-label'), 'Open source');
+  paintServiceButtons(host, both);
+  assert.deepEqual([...host.children].map((c) => c.getAttribute('aria-label')), ['Open on YouTube', 'Open on SoundCloud']);
+  paintServiceButtons(host, { ...none, source_url: 'javascript:alert(1)' });
   assert.equal(host.children.length, 0);
 });
 

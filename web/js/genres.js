@@ -8,10 +8,11 @@ import {
 } from './genre-data.js';
 import { filterByTags } from './library.js';
 import { watchPlayerInset } from './player-inset.js';
+import { createCollapsible, loadCollapsed, saveCollapsed, PANEL_KEYS } from './collapsible.js';
 import { player } from './player.js';
 import { setCover } from './player-ui.js';
 import { titleNodes } from './display-title.js';
-import { songGenres, mapToNodes, nodeIds, nowPlayingState } from './genre-playing.js';
+import { songGenres, mapToNodes, nodeIds, nowPlayingState, createNowSelection } from './genre-playing.js';
 import { POLL_MS, shouldPoll, presentFamilies, toggleHidden, loadOutlineOpen, saveOutlineOpen } from './genre-view.js';
 
 const CHILD_CHIPS = 12;
@@ -40,6 +41,11 @@ export function renderGenres(root) {
   let outlineOpen = loadOutlineOpen(localStorage, window.innerWidth);
   let legendOpen = false;
   let nowOpen = false;
+  let infoCollapsed = loadCollapsed(localStorage, PANEL_KEYS.genreInfo, window.innerWidth);
+  const infoCard = (id, content) => createCollapsible({
+    id, content, collapsed: infoCollapsed,
+    onToggle: (v) => { infoCollapsed = v; saveCollapsed(localStorage, PANEL_KEYS.genreInfo, v); },
+  });
 
   const note = el('p', { class: 'gm-status t-caption', role: 'status' }, 'Loading genres...');
   const canvas = el('canvas', {
@@ -55,8 +61,8 @@ export function renderGenres(root) {
   }, 'Legend');
   legend.id = 'gm-legend';
   const nowBtn = el('button', {
-    class: 'gm-tbtn', type: 'button', 'aria-expanded': 'false', 'aria-controls': 'gm-now',
-    onclick: () => setNow(!nowOpen),
+    class: 'gm-tbtn', type: 'button', 'aria-expanded': 'false', 'aria-pressed': 'false', 'aria-controls': 'gm-now',
+    onclick: () => toggleNow(),
   }, el('span', { 'aria-hidden': 'true' }, '♪ '), 'Now playing');
   const nowPop = el('div', { class: 'gm-now', id: 'gm-now', role: 'group', 'aria-label': 'Genres of the playing song', hidden: true });
   const outlineBtn = el('button', {
@@ -81,7 +87,12 @@ export function renderGenres(root) {
 
   const view = createGraphView(canvas, {
     reducedMotion: reduced,
-    onSelect: (data) => { selectedId = data ? data.id : null; renderPanel(); revealInOutline(); },
+    onSelect: (data) => {
+      selectedId = data ? data.id : null;
+      if (nowSel.userSelected() && nowOpen) setNow(false);
+      renderPanel();
+      revealInOutline();
+    },
     onHover: (h) => {
       if (!h) { tip.hidden = true; return; }
       tip.textContent = `${h.node.label} - ${songsText(h.node.count)}`;
@@ -89,6 +100,14 @@ export function renderGenres(root) {
       tip.hidden = false;
     },
   });
+
+  const live = el('p', { role: 'status', 'aria-live': 'polite', style: 'position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap' });
+  const nowSel = createNowSelection({
+    setSelection: (ids) => view.selectMany(ids),
+    clearSelection: () => view.select(null),
+    announce: (t) => { live.textContent = t; },
+  });
+  const nowIds = () => (g ? nodeIds(mapToNodes(songGenres(player.current), g)) : []);
 
   const zoomBar = el('div', { class: 'gm-zoom', role: 'group', 'aria-label': 'Zoom' },
     el('button', { class: 'gm-zbtn', type: 'button', 'aria-label': 'Zoom in', title: 'Zoom in', onclick: () => view.zoom(1.3) }, '+'),
@@ -100,7 +119,17 @@ export function renderGenres(root) {
     legendBtn.setAttribute('aria-expanded', String(legendOpen));
   }
 
-  function closeNow() { setNow(false); nowBtn.focus?.(); }
+  function closeNow() {
+    if (nowSel.active) nowSel.toggle([]);
+    setNow(false);
+    nowBtn.focus?.();
+  }
+
+  function toggleNow() {
+    if (nowOpen || nowSel.active) { closeNow(); return; }
+    nowSel.toggle(nowIds());
+    setNow(true);
+  }
 
   function setNow(open) {
     nowOpen = open;
@@ -113,25 +142,36 @@ export function renderGenres(root) {
     const song = player.current;
     const items = g ? mapToNodes(songGenres(song), g) : songGenres(song).map((x) => ({ ...x, id: null }));
     const st = nowPlayingState(song, items);
-    nowBtn.disabled = st.kind === 'idle';
+    nowBtn.disabled = st.kind !== 'ready';
     nowBtn.title = st.hint;
-    if (nowBtn.disabled && nowOpen) { nowOpen = false; nowBtn.setAttribute('aria-expanded', 'false'); nowBtn.classList.remove('on'); }
+    const wasActive = nowSel.active;
+    nowSel.songChanged(nodeIds(items));
+    if (wasActive && !nowSel.active) nowOpen = false;
+    nowBtn.setAttribute('aria-pressed', String(nowSel.active));
+    if (nowBtn.disabled && nowOpen) nowOpen = false;
+    nowBtn.setAttribute('aria-expanded', String(nowOpen));
+    nowBtn.classList.toggle('on', nowOpen);
     nowPop.hidden = !nowOpen;
     const ids = nowOpen ? nodeIds(items) : [];
     view.setMarked(ids);
     if (!nowOpen) { nowPop.replaceChildren(); return; }
     const cover = el('img', { class: 'cover gm-now-cover', alt: '' });
     setCover(cover, song);
-    nowPop.replaceChildren(
-      el('div', { class: 'gm-now-head' }, cover,
-        el('div', { class: 'gm-now-text' }, el('b', { class: 'gm-now-title' }, titleNodes(song)), el('small', { class: 'muted' }, song.artist || ''))),
+    const cl = infoCard('gm-now-body', [
       el('div', { class: 'gm-chips' }, items.length ? items.map((x) => (x.id
         ? el('button', {
-          class: 'gm-chip', type: 'button', onclick: () => view.select(x.id, { center: true }),
+          class: 'gm-chip', type: 'button', onclick: () => { view.select(x.id, { center: true }); nowOpen = true; renderNow(); },
           onpointerenter: () => view.hoverId(x.id), onpointerleave: () => view.hoverId(null),
         }, x.label)
         : el('span', { class: 'gm-chip gm-chip-off', title: 'Not in the map yet' }, x.label))) : el('span', { class: 'muted t-caption gm-now-none' }, 'This song has no genres')),
-      el('button', { class: 'gm-tbtn gm-now-all', type: 'button', disabled: !ids.length, onclick: () => view.fitIds(ids) }, 'Show all'));
+      el('button', { class: 'gm-tbtn gm-now-all', type: 'button', disabled: !ids.length, onclick: () => view.fitIds(ids) }, 'Show all')]);
+    nowPop.replaceChildren(
+      el('div', { class: 'gm-now-head' }, cover,
+        el('div', { class: 'gm-now-text' }, el('b', { class: 'gm-now-title' }, titleNodes(song)),
+          el('small', { class: 'muted' }, song.artist || ''),
+          el('small', { class: 'muted gm-now-count' }, `${items.length} ${plural(items.length, 'genre', 'genres')}`)),
+        cl.button),
+      cl.root);
   }
 
   function setOutline(open, save = true) {
@@ -171,12 +211,7 @@ export function renderGenres(root) {
     const more = kids.length - CHILD_CHIPS;
     const morePill = more > 0 ? el('span', { class: 'muted t-caption' }, `+${more} more`) : null;
     const exact = n.ownCount !== n.count ? ` (${n.ownCount} tagged exactly)` : '';
-    panel.replaceChildren(
-      el('div', { class: 'gm-panel-head' },
-        el('span', { class: `gm-dot f${familyIndex(n.family)}`, 'aria-hidden': 'true' }),
-        el('h2', { class: 't-headline' }, n.label),
-        el('button', { class: 'gm-x', type: 'button', 'aria-label': 'Close', title: 'Close', onclick: () => view.select(null) }, '×')),
-      el('p', { class: 'muted t-caption' }, `${n.family} · ${songsText(n.count)}${exact}`),
+    const cl = infoCard('gm-info-body', [
       n.parents.length ? el('div', { class: 'gm-group' }, el('p', { class: 't-eyebrow' }, 'PARENTS'), el('div', { class: 'gm-chips' }, n.parents.map(chip))) : null,
       kids.length ? el('div', { class: 'gm-group' }, el('p', { class: 't-eyebrow' }, 'SUBGENRES'),
         el('div', { class: 'gm-chips' }, kids.slice(0, CHILD_CHIPS).map(chip), morePill)) : null,
@@ -184,7 +219,15 @@ export function renderGenres(root) {
         class: 'btn primary small', type: 'button', disabled: !n.count,
         onclick: () => { filterByTags(filterTags(g, n.id)); location.hash = '#/library'; },
       }, `Show ${songsText(n.count)} in Library`),
-      n.qid ? el('a', { class: 't-caption', href: `https://www.wikidata.org/wiki/${n.qid}`, target: '_blank', rel: 'noopener noreferrer' }, 'Wikidata') : null);
+      n.qid ? el('a', { class: 't-caption', href: `https://www.wikidata.org/wiki/${n.qid}`, target: '_blank', rel: 'noopener noreferrer' }, 'Wikidata') : null]);
+    panel.replaceChildren(
+      el('div', { class: 'gm-panel-head' },
+        el('span', { class: `gm-dot f${familyIndex(n.family)}`, 'aria-hidden': 'true' }),
+        el('h2', { class: 't-headline' }, n.label),
+        cl.button,
+        el('button', { class: 'gm-x', type: 'button', 'aria-label': 'Close', title: 'Close', onclick: () => view.select(null) }, '×')),
+      el('p', { class: 'muted t-caption' }, `${n.family} · ${songsText(n.count)}${exact}`),
+      cl.root);
   }
 
   function saveOpen() { saveExpanded(localStorage, expanded); }
@@ -294,20 +337,28 @@ export function renderGenres(root) {
     renderOutline();
   });
 
+  const barCl = createCollapsible({
+    id: 'gm-bar-body',
+    collapsed: loadCollapsed(localStorage, PANEL_KEYS.genres, window.innerWidth),
+    onToggle: (v) => saveCollapsed(localStorage, PANEL_KEYS.genres, v),
+    content: [el('div', { class: 'gm-find' }, search, results), legend],
+  });
+
   const gm = el('div', { class: 'gm' },
     el('div', { class: 'gm-stage' }, canvas, tip),
     el('div', { class: 'gm-bar' },
       el('div', { class: 'gm-bar-row' },
+        barCl.button,
         el('h1', { class: 'gm-title' }, 'Genres map'),
         note,
         legendBtn, nowBtn),
       nowPop,
-      el('div', { class: 'gm-find' }, search, results),
-      legend),
+      barCl.root),
     outlineBtn,
     zoomBar,
     panel,
-    outlinePanel);
+    outlinePanel,
+    live);
   root.append(gm);
   const unsubPlayer = player.onChange(renderNow);
   const unsubNowStore = store.subscribe(renderNow);
@@ -315,7 +366,7 @@ export function renderGenres(root) {
   const stopInset = watchPlayerInset(gm, (h) => view.setInsets({ b: 16 + h }));
   gm.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape' || e.target === search) return;
-    if (nowOpen) closeNow();
+    if (nowOpen || nowSel.active) closeNow();
     else if (outlineOpen) setOutline(false);
   });
   if (!hasStoredExpanded(localStorage)) for (const f of FAMILIES) expanded.add(`f:${f}`);

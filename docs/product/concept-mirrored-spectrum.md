@@ -2,6 +2,8 @@
 
 Owner vocabulary, agreed 2026-10-15. This page explains how to think about the Mirrored spectrum visualizer and names its parts. It is a concept page, not a specification: requirements live in [`../specs/visualizer.md`](../specs/visualizer.md) (VIZ-099 to VIZ-103 cover the target features described here, all planned).
 
+The Ice Blue Mirror 2 preset (digital phosphor LED bars) has its own concept page: [concept-digital-phosphor-led.md](concept-digital-phosphor-led.md).
+
 ## Purpose
 
 The Mirrored spectrum is the default visualizer mode. It turns the sound that is playing right now into a row of vertical bars that move with the music. It is calm and legible: you see at a glance where the energy is (low notes on the left, high notes on the right) and how loud it is.

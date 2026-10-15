@@ -38,6 +38,50 @@ export const nodeIds = (items) => [...new Set(items.map((x) => x.id).filter(Bool
 
 export function nowPlayingState(song, items) {
   if (!song) return { kind: 'idle', hint: 'Nothing playing' };
-  if (!items.length) return { kind: 'none', hint: 'This song has no genres' };
-  return { kind: 'ready', hint: 'Genres of the playing song' };
+  if (!items.length) return { kind: 'none', hint: 'No genres for this song' };
+  if (!nodeIds(items).length) return { kind: 'unmapped', hint: 'None of this song\'s genres are on the map' };
+  return { kind: 'ready', hint: 'Select the genres of the playing song' };
+}
+
+export const nowSelectionMessage = (n) => `Selected ${n} ${n === 1 ? 'genre' : 'genres'} of the playing song`;
+
+export function createNowSelection({ setSelection, clearSelection, announce = () => {} }) {
+  let active = false;
+  let busy = false;
+  let key = '';
+  const apply = (ids) => {
+    busy = true;
+    try { setSelection(ids); } finally { busy = false; }
+    announce(nowSelectionMessage(ids.length));
+  };
+  const drop = () => {
+    active = false;
+    busy = true;
+    try { clearSelection(); } finally { busy = false; }
+  };
+  return {
+    get active() { return active; },
+    toggle(ids) {
+      if (active) { drop(); return false; }
+      if (!ids.length) return false;
+      active = true;
+      key = ids.join('|');
+      apply(ids);
+      return true;
+    },
+    songChanged(ids) {
+      if (!active) return;
+      if (!ids.length) { drop(); return; }
+      const k = ids.join('|');
+      if (k === key) return;
+      key = k;
+      apply(ids);
+    },
+    userSelected() {
+      if (busy) return false;
+      const was = active;
+      active = false;
+      return was;
+    },
+  };
 }

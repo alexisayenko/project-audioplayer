@@ -1,4 +1,6 @@
-import { storedLinkStates } from './song-links.js';
+import { storedLinkStates, hostKind } from './song-links.js';
+import { songSources } from './song-payload.js';
+import { icon } from './icons.js';
 import { serviceIcon, LABELS } from './service-icons.js';
 
 const KINDS = ['youtube', 'soundcloud'];
@@ -6,6 +8,11 @@ const KINDS = ['youtube', 'soundcloud'];
 export function serviceButtons(song) {
   const states = storedLinkStates(song);
   return KINDS.filter((k) => states[k]?.url).map((k) => ({ kind: k, url: states[k].url, label: `Open on ${LABELS[k]}` }));
+}
+
+export function otherSourceUrl(song) {
+  const hit = songSources(song).find(({ url }) => !KINDS.includes(hostKind(url)) && /^https?:\/\//i.test(url));
+  return hit ? hit.url : null;
 }
 
 export function paintServiceButtons(host, song) {
@@ -20,6 +27,18 @@ export function paintServiceButtons(host, song) {
     a.append(serviceIcon(kind, { size: 22 }));
     return a;
   });
+  const other = otherSourceUrl(song);
+  if (other) {
+    const a = document.createElement('a');
+    a.className = 'icon round svc on';
+    a.href = other;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.title = 'Open source';
+    a.setAttribute('aria-label', 'Open source');
+    a.append(icon('link', 22));
+    nodes.push(a);
+  }
   host.replaceChildren(...nodes);
   host.hidden = !nodes.length;
 }

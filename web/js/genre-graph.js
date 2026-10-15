@@ -33,6 +33,7 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
   let nbr = new Map();
   let hover = null;
   let selected = null;
+  let selSet = new Set();
   let active = true;
   let raf = 0;
   let anim = null;
@@ -164,7 +165,7 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
 
 
   function drawLink(l, focus, k) {
-    const on = !focus || l.s === focus || l.t === focus;
+    const on = !focus || focus.has(l.s) || focus.has(l.t);
     ctx.globalAlpha = linkAlpha(on, focus);
     ctx.strokeStyle = on && focus ? colors.hi : colors.edge;
     ctx.lineWidth = (on && focus ? 1.8 : 1) / k;
@@ -193,10 +194,10 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
       ctx.strokeStyle = colors.ring;
       ctx.stroke();
     }
-    if (n === selected || n === hover) {
+    if (selSet.has(n) || n === hover) {
       ctx.beginPath();
       ctx.arc(n.x, n.y, n.r + 3 / k, 0, Math.PI * 2);
-      ctx.lineWidth = (n === selected ? 2.5 : 1.5) / k;
+      ctx.lineWidth = (selSet.has(n) ? 2.5 : 1.5) / k;
       ctx.strokeStyle = colors.ring;
       ctx.stroke();
     }
@@ -208,9 +209,10 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
     ctx.translate(tf.x, tf.y);
     ctx.scale(tf.k, tf.k);
     const k = tf.k;
-    const focus = selected;
-    const near = focus ? nbr.get(focus.id) : null;
-    const isOn = (n) => !focus || n === focus || near.has(n.id);
+    const focus = selSet.size ? selSet : null;
+    const near = new Set();
+    if (focus) for (const f of focus) for (const id of nbr.get(f.id) || []) near.add(id);
+    const isOn = (n) => !focus || focus.has(n) || near.has(n.id);
     for (const l of links) {
       if (visible(l.s) && visible(l.t)) drawLink(l, focus, k);
     }
@@ -389,8 +391,23 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
   function select(id, { center = false } = {}) {
     const n = id ? byId.get(id) || null : null;
     selected = n;
+    selSet = new Set(n ? [n] : []);
     if (n && center) focus(n.id);
-    if (onSelect) onSelect(n ? n.data : null);
+    if (onSelect) onSelect(n ? n.data : null, n ? [n.id] : []);
+    request();
+  }
+
+  function selectMany(ids, { fit: doFit = true } = {}) {
+    const list = [...new Set(ids)].map((id) => byId.get(id)).filter(Boolean);
+    selected = list.length === 1 ? list[0] : null;
+    selSet = new Set(list);
+    if (list.length && doFit) {
+      const group = new Set(list);
+      for (const n of list) for (const x of nbr.get(n.id) || []) if (byId.has(x)) group.add(byId.get(x));
+      userMoved = true;
+      fitTo([...group], { maxK: 2.4 });
+    }
+    if (onSelect) onSelect(selected ? selected.data : null, list.map((n) => n.id));
     request();
   }
 
@@ -434,6 +451,7 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
     links = sim.links;
     for (const l of links) l.related = l.related === true;
     selected = selected ? byId.get(selected.id) || null : null;
+    selSet = new Set([...selSet].map((n) => byId.get(n.id)).filter(Boolean));
     hover = null;
     if (!old.size) sim.settle(reducedMotion ? 500 : 240); else sim.reheat(0.4);
     if (needFit && nodes.length && canvas.clientWidth > 10 && canvas.clientHeight > 10) {
@@ -466,7 +484,7 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
 
   function setHiddenFamilies(names) {
     hiddenIdx = new Set([...names].map(familyIndex));
-    if (selected && !visible(selected)) select(null);
+    if (selSet.size && [...selSet].some((n) => !visible(n))) select(null);
     request();
   }
 
@@ -487,7 +505,7 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
   canvas.style.cursor = 'grab';
 
   return {
-    setData, update, setInsets, setMarked, hoverId, fitIds, setHiddenFamilies, select, focus, fit, setActive, resize, refreshColors: onScheme,
+    setData, update, setInsets, setMarked, hoverId, fitIds, setHiddenFamilies, select, selectMany, focus, fit, setActive, resize, refreshColors: onScheme,
     zoom: (f) => zoomAt(f, W / 2, H / 2),
     nodeCount: () => nodes.length,
     destroy() {

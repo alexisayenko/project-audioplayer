@@ -186,6 +186,7 @@ docs/
 │   ├── features/                       # entry: features/README.md
 │   ├── concept-catalog-and-audio.md    # catalog vs audio (ADR-0010)
 │   ├── concept-mirrored-spectrum.md    # Mirrored spectrum: objects and vocabulary
+│   ├── concept-digital-phosphor-led.md # digital phosphor LED display (Ice Blue Mirror 2)
 │   ├── screens.md                      # screens, library model, API
 │   ├── wireframes/                     # PNG wireframes (library row, playback)
 │   └── README.md

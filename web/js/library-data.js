@@ -1,12 +1,31 @@
 import { store } from './store.js';
 import { visibleTags, canonicalTag, tagSearchText, categoryOf } from './tagname.js';
 
+const UNSET_KEYS = { genres: 'genre', years: 'decade', countries: 'country' };
+const UNSET_NOUN = { genres: 'genre', years: 'year', countries: 'country' };
+export const UNSET_TOKEN = '__unset__';
+
+export function unsetKey(catId) {
+  return UNSET_KEYS[catId] ? `${UNSET_KEYS[catId]}:${UNSET_TOKEN}` : null;
+}
+
+export const isUnsetKey = (k) => Object.values(UNSET_KEYS).some((x) => k === `${x}:${UNSET_TOKEN}`);
+export const unsetLabel = (catId) => `Songs with no ${UNSET_NOUN[catId] || 'value'}`;
+
+function hasValueIn(song, catId) {
+  return (song.tags || []).some((t) => categoryOf(canonicalTag(t).toLocaleLowerCase()) === catId);
+}
+
+export function unsetCount(catId, songs = store.songs) {
+  return unsetKey(catId) ? songs.filter((s) => !hasValueIn(s, catId)).length : 0;
+}
+
 export const prefs = { query: '', sel: new Set(), sort: 'added' };
 
 export function filterByTags(tags) {
   const have = new Set(store.tags.map((t) => t.tag.toLocaleLowerCase()));
   prefs.query = '';
-  prefs.sel = new Set(tags.map((t) => canonicalTag(t).toLocaleLowerCase()).filter((t) => have.has(t)));
+  prefs.sel = new Set(tags.map((t) => canonicalTag(t).toLocaleLowerCase()).filter((t) => have.has(t) || isUnsetKey(t)));
 }
 
 function cmp(a, b) {
@@ -29,7 +48,7 @@ function matchesSelection(song, sel) {
     const c = categoryOf(t);
     byCat.set(c, [...(byCat.get(c) || []), t]);
   }
-  return [...byCat.values()].every((tags) => tags.some((t) => mine.has(t)));
+  return [...byCat.entries()].every(([c, tags]) => tags.some((t) => (isUnsetKey(t) ? !hasValueIn(song, c) : mine.has(t))));
 }
 
 export function visibleSongs(sel = prefs.sel) {
@@ -44,5 +63,6 @@ export function visibleSongs(sel = prefs.sel) {
 }
 
 export function selectedIn(catId) {
-  return store.tags.filter((t) => categoryOf(t.tag) === catId && prefs.sel.has(t.tag.toLocaleLowerCase())).length;
+  const k = unsetKey(catId);
+  return store.tags.filter((t) => categoryOf(t.tag) === catId && prefs.sel.has(t.tag.toLocaleLowerCase())).length + (k && prefs.sel.has(k) ? 1 : 0);
 }

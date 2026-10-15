@@ -81,19 +81,19 @@ test('guest without audio: the card offers the source link and rows cannot be qu
   g.clearGuest();
 });
 
-test('guest: player edit, download and mini edit controls are hidden; the Song info button stays', () => {
+test('guest: player edit and download controls are hidden, the mini-player has no edit button; the Song info button stays', () => {
   g.setGuest({ guest: true, audio: true });
   player.playNow('a');
   assert.equal($('p-view').hidden, false);
   assert.equal($('p-edit'), null);
-  assert.equal($('mini-edit').hidden, true);
+  assert.equal($('mini-edit'), null);
   assert.equal($('p-download').hidden, true);
   assert.equal($('p-play').hidden, false);
   g.clearGuest();
   player.toggle();
   player.toggle();
   assert.equal($('p-view').hidden, false);
-  assert.equal($('mini-edit').hidden, false);
+  assert.equal($('mini-edit'), null);
   assert.equal($('p-download').hidden, false);
 });
 
@@ -130,4 +130,15 @@ test('guest settings show only the sign-in section and the viewing note', async 
   assert.doesNotMatch(root.textContent, /Auto-download/);
   assert.doesNotMatch(root.textContent, /Library on the server/);
   g.clearGuest();
+});
+
+test('mini-player: no edit button; the target button opens the song card of the playing song', async () => {
+  g.clearGuest();
+  player.playNow('a');
+  assert.equal($('mini-edit'), null);
+  $('song-card').close?.();
+  $('mini-locate').click();
+  await flush();
+  assert.ok($('song-card').open || $('song-card').childNodes.length > 0);
+  $('song-card').close?.();
 });

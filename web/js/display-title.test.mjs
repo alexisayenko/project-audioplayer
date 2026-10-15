@@ -60,3 +60,14 @@ test('subtitleString never repeats remix info (it lives in the title parenthetic
   assert.equal(displayString(plain), 'Song (Kav)');
   assert.equal(subtitleString({ title: 'x', remixer: '' }), '');
 });
+
+test('subtitleString is Artist · Year and never contains the album', async () => {
+  const { subtitleString } = await import('./display-title.js');
+  const same = { title: 'Tell It to My Heart', artist: 'Taylor Dayne', album: 'Tell It to My Heart', year: 1987 };
+  assert.equal(subtitleString(same), 'Taylor Dayne · 1987');
+  const other = { title: 'Song', artist: 'A', album: 'Other Album', year: 2001 };
+  assert.equal(subtitleString(other), 'A · 2001');
+  assert.equal(subtitleString({ title: 'x', artist: 'A', album: 'Alb' }), 'A');
+  assert.equal(subtitleString({ title: 'x', album: 'Alb', year: 1999 }), '1999');
+  assert.equal(subtitleString({ title: 'x', album: 'Alb' }), '');
+});

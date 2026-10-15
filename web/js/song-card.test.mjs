@@ -80,6 +80,40 @@ test('the card opens read-only with links, actions and returns focus to the row 
   list.remove();
 });
 
+test('the card opens when querySelectorAll returns a real NodeList (no indexOf or find), as in browsers', () => {
+  publish([FULL, BARE]);
+  const list = document.createElement('ul');
+  list.className = 'songs';
+  const row = document.createElement('li');
+  row.className = 'song';
+  row.dataset.id = 'a';
+  const open = document.createElement('button');
+  open.className = 'open';
+  row.append(open);
+  list.append(row);
+  document.body.append(list);
+  const dlg = $('song-card');
+  const nodeList = (arr) => Object.assign(Object.create(null), arr, { length: arr.length, item: (i) => arr[i], forEach: (f) => arr.forEach(f), [Symbol.iterator]: () => arr[Symbol.iterator]() });
+  const origDlg = dlg.querySelectorAll;
+  const origDoc = document.querySelectorAll;
+  dlg.querySelectorAll = (sel) => nodeList(origDlg.call(dlg, sel));
+  document.querySelectorAll = (sel) => nodeList(origDoc.call(document, sel));
+  try {
+    openSongCard(FULL, open);
+    assert.equal(dlg.open, true);
+    dlg.querySelectorAll('.card-actions button')[0]?.focus?.();
+    publish([FULL, BARE]);
+    assert.equal(dlg.open, true);
+    dlg.querySelector('.card-close').click();
+    assert.equal(dlg.open, false);
+    assert.ok(document.activeElement === open);
+  } finally {
+    dlg.querySelectorAll = origDlg;
+    document.querySelectorAll = origDoc;
+    list.remove();
+  }
+});
+
 test('Play now plays the song, the playlist button toggles, Edit hands over to the edit dialog', () => {
   publish([FULL, BARE]);
   while (player.current) player.removeAt(0);

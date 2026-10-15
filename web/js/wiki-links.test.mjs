@@ -11,8 +11,8 @@ test('wiki-links', () => {
   assert.ok(!isWikiLink(''));
 
   const full = { source_url: 'https://www.youtube.com/watch?v=abcdefghijk', wikipedia_song: 'https://en.wikipedia.org/wiki/A', wikipedia_artist: 'https://de.wikipedia.org/wiki/B' };
-  assert.deepEqual(songLinks(full).map((l) => l.label), ['Source', 'Wikipedia (song)', 'Wikipedia (band)']);
-  assert.deepEqual(songLinks({ ...full, wikipedia_song: null }).map((l) => l.label), ['Source', 'Wikipedia (band)']);
+  assert.deepEqual(songLinks(full).map((l) => l.label), ['Wikipedia (song)', 'Wikipedia (band)']);
+  assert.deepEqual(songLinks({ ...full, wikipedia_song: null }).map((l) => l.label), ['Wikipedia (band)']);
   assert.deepEqual(songLinks({ source_url: 'javascript:alert(1)', wikipedia_song: 'javascript:alert(1)' }), []);
   assert.deepEqual(songLinks({}), []);
 

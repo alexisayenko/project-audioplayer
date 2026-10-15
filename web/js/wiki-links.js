@@ -7,7 +7,6 @@ export const isWikiLink = (v) => WP.test(v) || WD.test(v);
 
 export function songLinks(song) {
   const rows = [
-    ['Source', song.source_url, /^https?:\/\//i],
     ['Wikipedia (song)', song.wikipedia_song, /^https:\/\//i],
     ['Wikipedia (band)', song.wikipedia_artist, /^https:\/\//i],
   ];
