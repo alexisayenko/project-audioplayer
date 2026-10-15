@@ -1,6 +1,6 @@
 # Synthwave references
 
-Alex's reference images for the Synthwave presets ([VIZ-092](../../specs/visualizer.md#synthwave-presets), [task-0031](../../tasks/task-0031.md)). They are third-party stock images (one carries a Shutterstock mark) and the repo is public, so they are git-ignored and stay on Alex's machines only. Only this README is committed.
+Alex's reference images for the Synthwave presets ([VIZ-092](../../specs/visualizer.md#synthwave-presets), [task-0031](../../tasks/task-0031.md)). They are third-party reference stock images (one carries a Shutterstock mark), kept for look reference only and not used in the product; the preset thumbnails come from our own renderer.
 
 | File | Preset |
 |------|--------|

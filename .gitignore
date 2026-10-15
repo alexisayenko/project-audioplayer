@@ -40,7 +40,3 @@ scripts/__pycache__/
 # Local-only invoices (personal data)
 docs/brand/invoices/*
 !docs/brand/invoices/README.md
-
-# Local-only third-party reference images (public repo)
-docs/brand/synthwave-references/*
-!docs/brand/synthwave-references/README.md
