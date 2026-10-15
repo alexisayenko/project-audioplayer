@@ -201,3 +201,16 @@ Rise and Fall speed, Reflection opacity and Horizon glow keep working and will b
 - **Horizon line**, **Upper space**, **Bottom space**: the words for the line and the two areas it divides. Not "sky" and "ground", or "top half" and "bottom half".
 - **Frequency captions**, not "axis labels" or "scale": the labels naming frequencies along the horizon line.
 - **Reflection** is what the bars look like in the bottom space; it is not a separate object.
+
+## Presets
+
+One-click looks at the top of the Mirrored spectrum panel, like the Synthwave presets. A preset overwrites every setting the panel has today (bar count, width, height, colours, reflection opacity, horizon glow, rise and fall speed) and is highlighted while the settings equal it exactly; any later tweak clears the highlight. Names are working names and easy to rename. Thumbnails 1 to 5 are the owner's reference images used directly (watermarks included, accepted by the owner), kept in full under `docs/brand/mirror-references/`; Classic is captured from the real renderer. Colours can only be the three theme choices the panel has (Theme, Reversed, Accent), all from design tokens, so each look is an approximation.
+
+| Preset | Image | Set today | Not yet reproducible |
+| --- | --- | --- | --- |
+| Neon Cylinders | `01-neon-cylinders.webp` | few wide bars, theme gradient, faint reflection, glow on | the 3D glowing cylinders, rainbow colours (more than the theme stops), the frequency captions along the base, the perspective view |
+| Cyan Magenta Wave | `02-cyan-magenta-wave.png` | many thin bars, reversed gradient, strong reflection | cyan-to-magenta vertical gradient with rounded bar ends, bars fading to nothing at the sides |
+| Neon Blocks | `03-neon-blocks.png` | medium wide bars, theme gradient, strong reflection | LED sections (sections number), glowing bars, blue to pink to orange colours across the width, blurred reflection |
+| Pink Cyan Blocks | `04-pink-cyan-blocks.png` | few wide bars, reversed gradient, faint reflection, no horizon glow | LED sections, the vertical pink-to-cyan gradient, bar tips |
+| Ice Blue Mirror | `05-ice-blue-mirror.png` | dense very wide bars, accent colour, strongest reflection | LED sections, the vertical blue gradient, the bright horizon band, the perspective view |
+| Classic | captured | all defaults, today's look | nothing |
