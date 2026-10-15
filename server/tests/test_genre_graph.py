@@ -244,36 +244,20 @@ def test_nodes_carry_the_user_tags_that_resolve_to_them(wd):
 
 
 ROOT_CASES = [
-    ("electronic dance music", "Electronic"), ("house music", "Electronic"), ("trance music", "Electronic"),
-    ("dance music", "Electronic"), ("club/dance music", "Electronic"), ("progressive house", "Electronic"),
-    ("drum and bass", "Electronic"), ("tech house", "Electronic"), ("future garage", "Electronic"),
-    ("rock music", "Rock"), ("pop rock", "Rock"), ("alternative rock", "Rock"), ("post-grunge", "Rock"),
-    ("pop music", "Pop"), ("dance-pop", "Pop"), ("indie pop", "Pop"), ("k-pop", "Pop"),
-    ("hip hop music", "Hip Hop"), ("trip hop", "Electronic"), ("gangsta rap", "Hip Hop"),
-    ("jazz fusion", "Jazz"), ("modal jazz", "Jazz"), ("funk music", "Funk / Soul"), ("northern soul", "Funk / Soul"),
-    ("baroque music", "Classical"), ("romantic music", "Classical"), ("reggae fusion", "Reggae"), ("ska punk", "Rock"),
-    ("latin pop", "Latin"), ("mambo", "Latin"), ("delta blues", "Blues"), ("blues rock", "Blues"),
-    ("celtic folk", "Folk, World, & Country"), ("country rock", "Folk, World, & Country"),
-    ("film score", "Stage & Screen"), ("spoken word", "Non-Music"), ("lullaby", "Children's"), ("military march", "Brass & Military"),
-    ("music of europe", "Other"), ("regional music", "Other"), ("alternative music", "Rock"),
+    ("electronic dance music", "Electronic"), ("house music", "Electronic"), ("dance music", "Electronic"), ("club/dance music", "Electronic"),
+    ("progressive house", "Electronic"), ("drum and bass", "Electronic"), ("tech house", "Electronic"), ("future garage", "Electronic"),
+    ("rock music", "Rock"), ("pop rock", "Rock"), ("alternative rock", "Rock"), ("pop music", "Pop"), ("dance-pop", "Pop"), ("indie pop", "Pop"),
+    ("k-pop", "Pop"), ("hip hop music", "Hip Hop"), ("trip hop", "Electronic"), ("jazz fusion", "Jazz"), ("northern soul", "Funk / Soul"),
+    ("baroque music", "Classical"), ("romantic music", "Classical"), ("ska punk", "Reggae"), ("latin pop", "Latin"), ("mambo", "Latin"),
+    ("delta blues", "Blues"), ("country rock", "Folk, World, & Country"), ("film score", "Stage & Screen"), ("spoken word", "Non-Music"),
+    ("lullaby", "Children's"), ("marches", "Brass & Military"), ("music of europe", None), ("regional music", "Folk, World, & Country"),
+    ("alternative music", "Rock"),
 ]
 
 
 @pytest.mark.parametrize("label,family", ROOT_CASES)
 def test_common_roots_resolve_to_discogs_families(label, family):
-    assert gg._family({"entities": {}}, None, label) == family
-
-
-def test_family_walks_ancestors_then_falls_back_to_keywords():
-    cache = {"entities": {
-        "Q1": {"label": "zorbo", "parents": ["Q2"]},
-        "Q2": {"label": "club/dance music", "parents": ["Q3"]},
-        "Q3": {"label": "music", "parents": []},
-        "Q4": {"label": "zorbo too", "parents": ["Q3"]},
-    }}
-    assert gg._family(cache, "Q1", "zorbo") == "Electronic"
-    assert gg._family(cache, "Q4", "zorbo too") == "Other"
-    assert gg._family(cache, "Q4", "zorbo trance") == "Electronic"
+    assert gg.table_family(label) == family
 
 
 def test_user_genres_merge_aliases():
@@ -326,3 +310,55 @@ def test_entity_cached_without_wp_is_refetched(wd):
     assert any("sitelinks" in c.get("props", "") for c in wd.calls if c["action"] == "wbgetentities")
     assert gg._ent_fresh({"at": time.time(), "wp": ""})
     assert not gg._ent_fresh({"at": time.time()})
+
+
+def manual(monkeypatch, table):
+    monkeypatch.setattr(gg, "_manual", table)
+
+
+def parents_of(g, label):
+    ids = {n["id"]: n["label"] for n in g["nodes"]}
+    return sorted(ids[p] for p in by_label(g)[label]["parents"])
+
+
+def test_manual_parent_edge_added_and_marked(wd, monkeypatch):
+    manual(monkeypatch, {"chillsynth": ["house music"], "dark synth": ["pop music"]})
+    g = gg.graph(songs(("s1", ["chillsynth", "dark synth", "house music", "pop music"])), wd.path)
+    assert "house music" in parents_of(g, "chillsynth")
+    assert "pop music" in parents_of(g, "dark synth")
+    man = [e for e in g["edges"] if e.get("origin") == "manual"]
+    assert len(man) == 2 and all(e["kind"] == "parent" for e in man)
+    assert not any(e.get("origin") for e in g["edges"] if e not in man)
+
+
+def test_manual_parent_skipped_when_a_node_is_missing(wd, monkeypatch):
+    manual(monkeypatch, {"chillsynth": ["house music"], "nothing here": ["pop music"]})
+    g = gg.graph(songs(("s1", ["chillsynth"])), wd.path)
+    assert "house music" not in parents_of(g, "chillsynth")
+    assert not any(e.get("origin") for e in g["edges"])
+
+
+def test_manual_parent_skipped_when_it_would_make_a_cycle(wd, monkeypatch):
+    manual(monkeypatch, {"electronic music": ["chillsynth"], "chillsynth": ["chillsynth"]})
+    g = gg.graph(songs(("s1", ["chillsynth"])), wd.path)
+    assert "chillsynth" not in parents_of(g, "electronic music")
+    assert "chillsynth" not in parents_of(g, "chillsynth")
+
+
+def test_shipped_manual_table_is_valid():
+    gg._manual = None
+    assert gg.validate_manual(gg._json_table()) == []
+    assert "pop punk" in gg.manual_parents()
+
+
+def test_validate_manual_flags_problems():
+    bad = gg.validate_manual({"_c": "x", "A": ["b"], "b": ["b"], "c": ["d"], "d": ["c"], "e": "f"})
+    text = " ".join(bad)
+    assert "not a lowercase" in text and "parent of itself" in text and "cycle" in text and "must be a list" in text
+
+
+def test_missing_manual_file_is_empty(monkeypatch, tmp_path):
+    monkeypatch.setattr(gg, "_manual", None)
+    monkeypatch.setattr(gg, "_PARENTS_FILE", tmp_path / "none.json")
+    assert gg.manual_parents() == {}
+    monkeypatch.setattr(gg, "_manual", None)

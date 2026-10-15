@@ -1,0 +1,2385 @@
+{
+ "_note": "Trimmed snapshot of the live /genres/graph (2026-10-16): label, own tags, own song count and parent ids per node.",
+ "nodes": [
+  {
+   "id": "acoustic-music",
+   "label": "acoustic music",
+   "tags": [],
+   "ownCount": 0,
+   "parents": []
+  },
+  {
+   "id": "afro-house",
+   "label": "Afro house",
+   "tags": [
+    "afro house"
+   ],
+   "ownCount": 2,
+   "parents": [
+    "house-music"
+   ]
+  },
+  {
+   "id": "alternative-dance",
+   "label": "alternative dance",
+   "tags": [
+    "alternative dance"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "alternative-rock",
+    "club-dance-music"
+   ]
+  },
+  {
+   "id": "alternative-metal",
+   "label": "alternative metal",
+   "tags": [
+    "alternative metal"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "alternative-music",
+    "metal-music"
+   ]
+  },
+  {
+   "id": "alternative-music",
+   "label": "alternative music",
+   "tags": [
+    "alternative"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "popular-music"
+   ]
+  },
+  {
+   "id": "alternative-pop",
+   "label": "alternative pop",
+   "tags": [
+    "alternative pop"
+   ],
+   "ownCount": 2,
+   "parents": [
+    "alternative-music",
+    "pop-music"
+   ]
+  },
+  {
+   "id": "alternative-r-b",
+   "label": "alternative R&B",
+   "tags": [
+    "alternative r&b"
+   ],
+   "ownCount": 2,
+   "parents": [
+    "contemporary-r-b"
+   ]
+  },
+  {
+   "id": "alternative-rock",
+   "label": "alternative rock",
+   "tags": [
+    "alternative rock"
+   ],
+   "ownCount": 7,
+   "parents": [
+    "alternative-music",
+    "rock-music"
+   ]
+  },
+  {
+   "id": "ambient-house",
+   "label": "ambient house",
+   "tags": [
+    "ambient house"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "chill-out-music",
+    "house-music"
+   ]
+  },
+  {
+   "id": "ambient-music",
+   "label": "ambient music",
+   "tags": [
+    "ambient"
+   ],
+   "ownCount": 6,
+   "parents": [
+    "popular-music"
+   ]
+  },
+  {
+   "id": "american-folk-music",
+   "label": "American folk music",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "music-of-the-united-states",
+    "traditional-folk-music"
+   ]
+  },
+  {
+   "id": "amerindie",
+   "label": "Amerindie",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "independent-music",
+    "music-of-the-united-states"
+   ]
+  },
+  {
+   "id": "appalachian-folk-music",
+   "label": "Appalachian folk music",
+   "tags": [
+    "appalachian folk"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "american-folk-music",
+    "appalachian-music"
+   ]
+  },
+  {
+   "id": "appalachian-music",
+   "label": "Appalachian music",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "music-of-the-united-states"
+   ]
+  },
+  {
+   "id": "art-music",
+   "label": "art music",
+   "tags": [],
+   "ownCount": 0,
+   "parents": []
+  },
+  {
+   "id": "art-pop",
+   "label": "art pop",
+   "tags": [
+    "art pop"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "pop-music"
+   ]
+  },
+  {
+   "id": "art-rock",
+   "label": "art rock",
+   "tags": [
+    "art rock"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "rock-music"
+   ]
+  },
+  {
+   "id": "bard-song",
+   "label": "bard song",
+   "tags": [
+    "bard"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "music-of-russia",
+    "music-of-the-soviet-union",
+    "music-of-ukraine",
+    "russian-song",
+    "singer-songwriter-music"
+   ]
+  },
+  {
+   "id": "bass-music",
+   "label": "bass music",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "popular-music"
+   ]
+  },
+  {
+   "id": "bass-music-edm",
+   "label": "bass music (EDM)",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "bass-music",
+    "electronic-dance-music"
+   ]
+  },
+  {
+   "id": "big-beat",
+   "label": "big beat",
+   "tags": [
+    "big beat"
+   ],
+   "ownCount": 2,
+   "parents": [
+    "breakbeat"
+   ]
+  },
+  {
+   "id": "big-room-house",
+   "label": "big room house",
+   "tags": [
+    "big room house"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "house-music"
+   ]
+  },
+  {
+   "id": "bit-music",
+   "label": "bit music",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "electronic-music"
+   ]
+  },
+  {
+   "id": "blues",
+   "label": "blues",
+   "tags": [
+    "blues"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "music-of-north-america",
+    "popular-music"
+   ]
+  },
+  {
+   "id": "blues-rock",
+   "label": "blues rock",
+   "tags": [
+    "blues rock"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "blues",
+    "rock-music"
+   ]
+  },
+  {
+   "id": "breakbeat",
+   "label": "breakbeat",
+   "tags": [
+    "breakbeat"
+   ],
+   "ownCount": 2,
+   "parents": [
+    "electronic-dance-music"
+   ]
+  },
+  {
+   "id": "breakbeat-hardcore",
+   "label": "breakbeat hardcore",
+   "tags": [
+    "breakbeat hardcore"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "breakbeat",
+    "hardcore",
+    "rave-music"
+   ]
+  },
+  {
+   "id": "breakcore",
+   "label": "breakcore",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "hardcore"
+   ]
+  },
+  {
+   "id": "bubblegum-dance",
+   "label": "bubblegum dance",
+   "tags": [
+    "bubblegum dance"
+   ],
+   "ownCount": 2,
+   "parents": [
+    "eurodance"
+   ]
+  },
+  {
+   "id": "chanson",
+   "label": "chanson",
+   "tags": [
+    "chanson"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "popular-music"
+   ]
+  },
+  {
+   "id": "chill-out-music",
+   "label": "chill-out music",
+   "tags": [
+    "chillout"
+   ],
+   "ownCount": 4,
+   "parents": [
+    "electronic-music"
+   ]
+  },
+  {
+   "id": "chillwave",
+   "label": "chillwave",
+   "tags": [
+    "chillwave"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "electronic-music",
+    "popular-music"
+   ]
+  },
+  {
+   "id": "chiptune",
+   "label": "chiptune",
+   "tags": [
+    "chiptune"
+   ],
+   "ownCount": 2,
+   "parents": [
+    "bit-music",
+    "nerd-music"
+   ]
+  },
+  {
+   "id": "cinematic-classical",
+   "label": "cinematic classical",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "contemporary-classical-music",
+    "film-score"
+   ]
+  },
+  {
+   "id": "classical-music",
+   "label": "classical music",
+   "tags": [
+    "classical"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "art-music"
+   ]
+  },
+  {
+   "id": "cloud-rap",
+   "label": "cloud rap",
+   "tags": [
+    "cloud rap"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "hip-hop"
+   ]
+  },
+  {
+   "id": "club-dance-music",
+   "label": "club/dance music",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "dance-music"
+   ]
+  },
+  {
+   "id": "comedy-music",
+   "label": "comedy music",
+   "tags": [],
+   "ownCount": 0,
+   "parents": []
+  },
+  {
+   "id": "contemporary-classical-music",
+   "label": "contemporary classical music",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "modern-classical-music"
+   ]
+  },
+  {
+   "id": "contemporary-r-b",
+   "label": "contemporary R&B",
+   "tags": [
+    "contemporary r&b"
+   ],
+   "ownCount": 5,
+   "parents": [
+    "pop-music",
+    "rhythm-and-blues"
+   ]
+  },
+  {
+   "id": "country-music",
+   "label": "country music",
+   "tags": [
+    "country"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "music-of-north-america",
+    "popular-music"
+   ]
+  },
+  {
+   "id": "country-rock",
+   "label": "country rock",
+   "tags": [
+    "country rock"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "music-of-north-america",
+    "rock-music"
+   ]
+  },
+  {
+   "id": "cyberpunk-music",
+   "label": "cyberpunk music",
+   "tags": [
+    "cyberpunk"
+   ],
+   "ownCount": 2,
+   "parents": [
+    "electronic-music"
+   ]
+  },
+  {
+   "id": "dance-music",
+   "label": "dance music",
+   "tags": [
+    "dance"
+   ],
+   "ownCount": 10,
+   "parents": []
+  },
+  {
+   "id": "dance-pop",
+   "label": "dance pop",
+   "tags": [
+    "dance pop"
+   ],
+   "ownCount": 3,
+   "parents": []
+  },
+  {
+   "id": "dance-pop-q211756",
+   "label": "dance-pop",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "club-dance-music",
+    "pop-music"
+   ]
+  },
+  {
+   "id": "dance-punk",
+   "label": "dance-punk",
+   "tags": [
+    "dance-punk"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "post-punk"
+   ]
+  },
+  {
+   "id": "dance-rock",
+   "label": "dance-rock",
+   "tags": [
+    "dance-rock"
+   ],
+   "ownCount": 4,
+   "parents": [
+    "club-dance-music",
+    "rock-music"
+   ]
+  },
+  {
+   "id": "dancehall",
+   "label": "dancehall",
+   "tags": [
+    "dancehall"
+   ],
+   "ownCount": 2,
+   "parents": [
+    "music-of-jamaica",
+    "reggae"
+   ]
+  },
+  {
+   "id": "dark-ambient",
+   "label": "dark ambient",
+   "tags": [
+    "dark ambient"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "ambient-music",
+    "post-industrial-music"
+   ]
+  },
+  {
+   "id": "dark-metal",
+   "label": "dark metal",
+   "tags": [
+    "dark metal"
+   ],
+   "ownCount": 2,
+   "parents": [
+    "extreme-metal"
+   ]
+  },
+  {
+   "id": "darksynth",
+   "label": "darksynth",
+   "tags": [
+    "darksynth"
+   ],
+   "ownCount": 2,
+   "parents": [
+    "synthwave"
+   ]
+  },
+  {
+   "id": "death-metal",
+   "label": "death metal",
+   "tags": [
+    "death metal"
+   ],
+   "ownCount": 2,
+   "parents": [
+    "extreme-metal"
+   ]
+  },
+  {
+   "id": "deep-house",
+   "label": "deep house",
+   "tags": [
+    "deep house"
+   ],
+   "ownCount": 7,
+   "parents": [
+    "house-music"
+   ]
+  },
+  {
+   "id": "deep-trance",
+   "label": "deep trance",
+   "tags": [
+    "deep trance"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "trance"
+   ]
+  },
+  {
+   "id": "disco",
+   "label": "disco",
+   "tags": [
+    "disco"
+   ],
+   "ownCount": 5,
+   "parents": [
+    "club-dance-music",
+    "rhythm-and-blues"
+   ]
+  },
+  {
+   "id": "downtempo",
+   "label": "downtempo",
+   "tags": [
+    "downtempo"
+   ],
+   "ownCount": 7,
+   "parents": [
+    "chill-out-music"
+   ]
+  },
+  {
+   "id": "dream-pop",
+   "label": "dream pop",
+   "tags": [
+    "dream pop"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "indie-rock"
+   ]
+  },
+  {
+   "id": "dreamsynth",
+   "label": "dreamsynth",
+   "tags": [
+    "dreamsynth"
+   ],
+   "ownCount": 1,
+   "parents": []
+  },
+  {
+   "id": "dreamwave",
+   "label": "dreamwave",
+   "tags": [
+    "dreamwave"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "synthwave"
+   ]
+  },
+  {
+   "id": "drum-and-bass",
+   "label": "drum and bass",
+   "tags": [
+    "dnb",
+    "drum & bass",
+    "drum and bass"
+   ],
+   "ownCount": 12,
+   "parents": [
+    "electronic-dance-music"
+   ]
+  },
+  {
+   "id": "dubstep",
+   "label": "dubstep",
+   "tags": [
+    "dubstep"
+   ],
+   "ownCount": 2,
+   "parents": [
+    "bass-music-edm"
+   ]
+  },
+  {
+   "id": "dutch-language-music",
+   "label": "Dutch-language music",
+   "tags": [],
+   "ownCount": 0,
+   "parents": []
+  },
+  {
+   "id": "dystopian-music",
+   "label": "dystopian music",
+   "tags": [
+    "dystopian"
+   ],
+   "ownCount": 2,
+   "parents": []
+  },
+  {
+   "id": "east-coast-club",
+   "label": "East Coast club",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "ghetto-club",
+    "us-bass-music"
+   ]
+  },
+  {
+   "id": "eastern-european-pop",
+   "label": "Eastern European pop",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "music-of-eastern-europe",
+    "pop-music"
+   ]
+  },
+  {
+   "id": "edm-trap-music",
+   "label": "EDM trap music",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "bass-music-edm"
+   ]
+  },
+  {
+   "id": "electro",
+   "label": "electro",
+   "tags": [
+    "electro"
+   ],
+   "ownCount": 5,
+   "parents": [
+    "electronic-dance-music"
+   ]
+  },
+  {
+   "id": "electro-disco",
+   "label": "electro-disco",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "disco",
+    "electronic-dance-music"
+   ]
+  },
+  {
+   "id": "electro-house",
+   "label": "electro house",
+   "tags": [
+    "electro house"
+   ],
+   "ownCount": 9,
+   "parents": [
+    "house-music"
+   ]
+  },
+  {
+   "id": "electronic-dance-music",
+   "label": "electronic dance music",
+   "tags": [
+    "club",
+    "edm",
+    "electronic dance"
+   ],
+   "ownCount": 16,
+   "parents": [
+    "club-dance-music",
+    "electronic-music"
+   ]
+  },
+  {
+   "id": "electronic-music",
+   "label": "electronic music",
+   "tags": [
+    "electronic"
+   ],
+   "ownCount": 44,
+   "parents": []
+  },
+  {
+   "id": "electronic-pop",
+   "label": "electronic pop",
+   "tags": [
+    "electronic pop"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "electronic-music",
+    "pop-music"
+   ]
+  },
+  {
+   "id": "electronic-rock",
+   "label": "electronic rock",
+   "tags": [
+    "electronic rock"
+   ],
+   "ownCount": 2,
+   "parents": [
+    "electronic-music",
+    "rock-music"
+   ]
+  },
+  {
+   "id": "electronica",
+   "label": "electronica",
+   "tags": [
+    "electronica"
+   ],
+   "ownCount": 7,
+   "parents": [
+    "electronic-music"
+   ]
+  },
+  {
+   "id": "electropop",
+   "label": "electropop",
+   "tags": [
+    "electropop"
+   ],
+   "ownCount": 7,
+   "parents": [
+    "electronic-pop"
+   ]
+  },
+  {
+   "id": "epic-music",
+   "label": "epic music",
+   "tags": [
+    "epic"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "cinematic-classical"
+   ]
+  },
+  {
+   "id": "estrada-music",
+   "label": "estrada music",
+   "tags": [
+    "estrada"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "popular-music"
+   ]
+  },
+  {
+   "id": "ethnic-music",
+   "label": "ethnic music",
+   "tags": [],
+   "ownCount": 0,
+   "parents": []
+  },
+  {
+   "id": "eurobeat",
+   "label": "Eurobeat",
+   "tags": [
+    "eurobeat"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "electronic-dance-music"
+   ]
+  },
+  {
+   "id": "eurodance",
+   "label": "Eurodance",
+   "tags": [
+    "eurodance"
+   ],
+   "ownCount": 13,
+   "parents": [
+    "electronic-dance-music",
+    "music-of-europe"
+   ]
+  },
+  {
+   "id": "eurodisco",
+   "label": "Eurodisco",
+   "tags": [
+    "euro disco"
+   ],
+   "ownCount": 2,
+   "parents": [
+    "disco"
+   ]
+  },
+  {
+   "id": "eurohouse",
+   "label": "Eurohouse",
+   "tags": [
+    "euro house",
+    "eurohouse"
+   ],
+   "ownCount": 3,
+   "parents": [
+    "house-music"
+   ]
+  },
+  {
+   "id": "europop",
+   "label": "Europop",
+   "tags": [
+    "euro pop"
+   ],
+   "ownCount": 4,
+   "parents": [
+    "pop-music"
+   ]
+  },
+  {
+   "id": "experimental-music",
+   "label": "experimental music",
+   "tags": [
+    "experimental"
+   ],
+   "ownCount": 2,
+   "parents": []
+  },
+  {
+   "id": "experimental-rock",
+   "label": "experimental rock",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "experimental-music",
+    "rock-music"
+   ]
+  },
+  {
+   "id": "extreme-metal",
+   "label": "extreme metal",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "metal-music"
+   ]
+  },
+  {
+   "id": "festival-progressive-house",
+   "label": "festival progressive house",
+   "tags": [
+    "festival progressive house"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "house-music"
+   ]
+  },
+  {
+   "id": "festival-trap",
+   "label": "festival trap",
+   "tags": [
+    "festival trap"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "edm-trap-music"
+   ]
+  },
+  {
+   "id": "film-score",
+   "label": "film score",
+   "tags": [
+    "film score"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "film-soundtrack",
+    "score"
+   ]
+  },
+  {
+   "id": "film-soundtrack",
+   "label": "film soundtrack",
+   "tags": [],
+   "ownCount": 0,
+   "parents": []
+  },
+  {
+   "id": "folk-music",
+   "label": "folk music",
+   "tags": [],
+   "ownCount": 0,
+   "parents": []
+  },
+  {
+   "id": "folk-punk",
+   "label": "folk punk",
+   "tags": [
+    "folk punk"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "punk-music"
+   ]
+  },
+  {
+   "id": "folk-rock",
+   "label": "folk rock",
+   "tags": [
+    "folk rock"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "rock-music"
+   ]
+  },
+  {
+   "id": "freestyle-music",
+   "label": "freestyle music",
+   "tags": [
+    "freestyle"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "dance-pop-q211756",
+    "electronic-dance-music",
+    "electronic-pop"
+   ]
+  },
+  {
+   "id": "french-house",
+   "label": "French house",
+   "tags": [
+    "french house"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "house-music"
+   ]
+  },
+  {
+   "id": "functional-music",
+   "label": "functional music",
+   "tags": [],
+   "ownCount": 0,
+   "parents": []
+  },
+  {
+   "id": "funk",
+   "label": "funk",
+   "tags": [
+    "funk"
+   ],
+   "ownCount": 3,
+   "parents": [
+    "popular-music"
+   ]
+  },
+  {
+   "id": "future-bass",
+   "label": "future bass",
+   "tags": [
+    "future bass"
+   ],
+   "ownCount": 3,
+   "parents": [
+    "bass-music-edm"
+   ]
+  },
+  {
+   "id": "future-house",
+   "label": "future house",
+   "tags": [
+    "future house"
+   ],
+   "ownCount": 3,
+   "parents": [
+    "house-music"
+   ]
+  },
+  {
+   "id": "ghetto-club",
+   "label": "ghetto club",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "electronic-dance-music"
+   ]
+  },
+  {
+   "id": "goa-trance",
+   "label": "Goa trance",
+   "tags": [
+    "goa trance"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "psychedelic-trance"
+   ]
+  },
+  {
+   "id": "hard-dance",
+   "label": "hard dance",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "electronic-dance-music"
+   ]
+  },
+  {
+   "id": "hard-rock",
+   "label": "hard rock",
+   "tags": [
+    "hard rock"
+   ],
+   "ownCount": 3,
+   "parents": [
+    "rock-music"
+   ]
+  },
+  {
+   "id": "hardcore",
+   "label": "hardcore",
+   "tags": [
+    "hardcore"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "electronic-dance-music"
+   ]
+  },
+  {
+   "id": "hardstyle",
+   "label": "hardstyle",
+   "tags": [
+    "hardstyle"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "hard-dance"
+   ]
+  },
+  {
+   "id": "heavy-metal-music",
+   "label": "heavy metal music",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "metal-music"
+   ]
+  },
+  {
+   "id": "hi-nrg",
+   "label": "Hi-NRG",
+   "tags": [
+    "hi-nrg"
+   ],
+   "ownCount": 3,
+   "parents": [
+    "electro-disco"
+   ]
+  },
+  {
+   "id": "hip-hop",
+   "label": "hip-hop",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "urban-contemporary"
+   ]
+  },
+  {
+   "id": "house-music",
+   "label": "house music",
+   "tags": [
+    "house"
+   ],
+   "ownCount": 22,
+   "parents": [
+    "electronic-dance-music"
+   ]
+  },
+  {
+   "id": "independent-music",
+   "label": "independent music",
+   "tags": [
+    "indie"
+   ],
+   "ownCount": 1,
+   "parents": []
+  },
+  {
+   "id": "indie-pop",
+   "label": "indie pop",
+   "tags": [
+    "indie pop"
+   ],
+   "ownCount": 10,
+   "parents": [
+    "independent-music",
+    "pop-music"
+   ]
+  },
+  {
+   "id": "indie-rock",
+   "label": "indie rock",
+   "tags": [
+    "indie rock"
+   ],
+   "ownCount": 8,
+   "parents": [
+    "alternative-rock",
+    "independent-music"
+   ]
+  },
+  {
+   "id": "indietronica",
+   "label": "indietronica",
+   "tags": [
+    "indietronica"
+   ],
+   "ownCount": 2,
+   "parents": [
+    "alternative-music",
+    "electronica",
+    "independent-music"
+   ]
+  },
+  {
+   "id": "industrial-metal",
+   "label": "industrial metal",
+   "tags": [
+    "industrial metal"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "metal-music",
+    "post-industrial-music"
+   ]
+  },
+  {
+   "id": "industrial-music",
+   "label": "industrial music",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "experimental-music"
+   ]
+  },
+  {
+   "id": "industrial-rock",
+   "label": "industrial rock",
+   "tags": [
+    "industrial rock"
+   ],
+   "ownCount": 2,
+   "parents": [
+    "post-industrial-music",
+    "rock-music"
+   ]
+  },
+  {
+   "id": "instrumental-music",
+   "label": "instrumental music",
+   "tags": [],
+   "ownCount": 0,
+   "parents": []
+  },
+  {
+   "id": "intelligent-dance-music",
+   "label": "intelligent dance music",
+   "tags": [
+    "idm",
+    "intelligent dance music"
+   ],
+   "ownCount": 5,
+   "parents": [
+    "electronic-dance-music"
+   ]
+  },
+  {
+   "id": "italo-disco",
+   "label": "Italo disco",
+   "tags": [
+    "italo disco"
+   ],
+   "ownCount": 3,
+   "parents": [
+    "electro-disco",
+    "music-of-italy"
+   ]
+  },
+  {
+   "id": "jangle-pop",
+   "label": "jangle pop",
+   "tags": [
+    "jangle pop"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "alternative-rock",
+    "pop-rock"
+   ]
+  },
+  {
+   "id": "jersey-club",
+   "label": "Jersey club",
+   "tags": [
+    "jersey club"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "east-coast-club"
+   ]
+  },
+  {
+   "id": "krautrock",
+   "label": "Krautrock",
+   "tags": [
+    "krautrock"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "experimental-rock"
+   ]
+  },
+  {
+   "id": "liquid-drum-and-bass",
+   "label": "liquid drum and bass",
+   "tags": [
+    "liquid funk"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "drum-and-bass"
+   ]
+  },
+  {
+   "id": "melodic-house",
+   "label": "melodic house",
+   "tags": [
+    "melodic house"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "house-music"
+   ]
+  },
+  {
+   "id": "melodic-techno",
+   "label": "melodic techno",
+   "tags": [
+    "melodic techno"
+   ],
+   "ownCount": 5,
+   "parents": [
+    "techno"
+   ]
+  },
+  {
+   "id": "metal-music",
+   "label": "metal music",
+   "tags": [
+    "metal"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "rock-music"
+   ]
+  },
+  {
+   "id": "middle-of-the-road",
+   "label": "middle of the road",
+   "tags": [
+    "middle of the road"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "pop-music"
+   ]
+  },
+  {
+   "id": "modern-classical-music",
+   "label": "modern classical music",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "classical-music"
+   ]
+  },
+  {
+   "id": "music-of-asia",
+   "label": "music of Asia",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "regional-music"
+   ]
+  },
+  {
+   "id": "music-of-eastern-europe",
+   "label": "music of Eastern Europe",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "music-of-europe"
+   ]
+  },
+  {
+   "id": "music-of-europe",
+   "label": "music of Europe",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "regional-music"
+   ]
+  },
+  {
+   "id": "music-of-italy",
+   "label": "music of Italy",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "music-of-southern-europe"
+   ]
+  },
+  {
+   "id": "music-of-jamaica",
+   "label": "music of Jamaica",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "music-of-the-greater-antilles"
+   ]
+  },
+  {
+   "id": "music-of-north-america",
+   "label": "music of North America",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "music-of-the-americas"
+   ]
+  },
+  {
+   "id": "music-of-russia",
+   "label": "music of Russia",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "music-of-asia",
+    "music-of-eastern-europe"
+   ]
+  },
+  {
+   "id": "music-of-southern-europe",
+   "label": "music of Southern Europe",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "music-of-europe"
+   ]
+  },
+  {
+   "id": "music-of-the-african-diaspora",
+   "label": "music of the African diaspora",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "ethnic-music"
+   ]
+  },
+  {
+   "id": "music-of-the-americas",
+   "label": "music of the Americas",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "regional-music"
+   ]
+  },
+  {
+   "id": "music-of-the-caribbean",
+   "label": "music of the Caribbean",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "music-of-the-americas"
+   ]
+  },
+  {
+   "id": "music-of-the-greater-antilles",
+   "label": "music of the Greater Antilles",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "music-of-the-caribbean"
+   ]
+  },
+  {
+   "id": "music-of-the-netherlands",
+   "label": "music of the Netherlands",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "music-of-western-europe"
+   ]
+  },
+  {
+   "id": "music-of-the-soviet-union",
+   "label": "music of the Soviet Union",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "music-of-asia",
+    "music-of-eastern-europe"
+   ]
+  },
+  {
+   "id": "music-of-the-united-states",
+   "label": "music of the United States",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "music-of-north-america"
+   ]
+  },
+  {
+   "id": "music-of-ukraine",
+   "label": "music of Ukraine",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "music-of-eastern-europe"
+   ]
+  },
+  {
+   "id": "music-of-western-europe",
+   "label": "music of Western Europe",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "music-of-europe"
+   ]
+  },
+  {
+   "id": "nederpop",
+   "label": "Nederpop",
+   "tags": [
+    "nederpop"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "dutch-language-music",
+    "music-of-the-netherlands",
+    "pop-music"
+   ]
+  },
+  {
+   "id": "neo-psychedelia",
+   "label": "neo-psychedelia",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "psychedelic-rock"
+   ]
+  },
+  {
+   "id": "neo-soul",
+   "label": "neo soul",
+   "tags": [
+    "neo soul"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "soul"
+   ]
+  },
+  {
+   "id": "nerd-music",
+   "label": "nerd music",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "popular-music"
+   ]
+  },
+  {
+   "id": "neurofunk",
+   "label": "neurofunk",
+   "tags": [
+    "neurofunk"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "drum-and-bass"
+   ]
+  },
+  {
+   "id": "new-age-music",
+   "label": "new age music",
+   "tags": [
+    "new age"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "popular-music"
+   ]
+  },
+  {
+   "id": "new-romantic",
+   "label": "New Romantic",
+   "tags": [
+    "new romantic"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "new-wave"
+   ]
+  },
+  {
+   "id": "new-wave",
+   "label": "new wave",
+   "tags": [
+    "new wave"
+   ],
+   "ownCount": 8,
+   "parents": [
+    "rock-music"
+   ]
+  },
+  {
+   "id": "novelty-music",
+   "label": "novelty music",
+   "tags": [
+    "novelty"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "comedy-music"
+   ]
+  },
+  {
+   "id": "nu-metal",
+   "label": "nu metal",
+   "tags": [
+    "nu metal"
+   ],
+   "ownCount": 2,
+   "parents": [
+    "alternative-metal"
+   ]
+  },
+  {
+   "id": "orchestral-pop",
+   "label": "orchestral pop",
+   "tags": [
+    "orchestral pop"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "pop-music",
+    "symphonic-music"
+   ]
+  },
+  {
+   "id": "paisley-underground",
+   "label": "Paisley Underground",
+   "tags": [
+    "paisley underground"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "amerindie",
+    "jangle-pop",
+    "neo-psychedelia"
+   ]
+  },
+  {
+   "id": "pop-music",
+   "label": "pop music",
+   "tags": [
+    "pop"
+   ],
+   "ownCount": 26,
+   "parents": [
+    "popular-music"
+   ]
+  },
+  {
+   "id": "pop-punk",
+   "label": "pop punk",
+   "tags": [
+    "pop punk"
+   ],
+   "ownCount": 1,
+   "parents": []
+  },
+  {
+   "id": "pop-rap",
+   "label": "pop rap",
+   "tags": [
+    "pop rap"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "hip-hop"
+   ]
+  },
+  {
+   "id": "pop-rock",
+   "label": "pop rock",
+   "tags": [
+    "pop rock"
+   ],
+   "ownCount": 12,
+   "parents": [
+    "pop-music",
+    "rock-music"
+   ]
+  },
+  {
+   "id": "pop-soul",
+   "label": "pop soul",
+   "tags": [
+    "pop soul"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "pop-music",
+    "soul"
+   ]
+  },
+  {
+   "id": "popular-music",
+   "label": "popular music",
+   "tags": [
+    "popular"
+   ],
+   "ownCount": 2,
+   "parents": []
+  },
+  {
+   "id": "post-industrial-music",
+   "label": "post-industrial music",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "industrial-music"
+   ]
+  },
+  {
+   "id": "post-punk",
+   "label": "post-punk",
+   "tags": [
+    "post-punk"
+   ],
+   "ownCount": 9,
+   "parents": [
+    "punk-music"
+   ]
+  },
+  {
+   "id": "post-punk-revival",
+   "label": "post-punk revival",
+   "tags": [
+    "post-punk revival"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "indie-rock",
+    "post-punk"
+   ]
+  },
+  {
+   "id": "power-pop",
+   "label": "power pop",
+   "tags": [
+    "power pop"
+   ],
+   "ownCount": 3,
+   "parents": [
+    "pop-rock"
+   ]
+  },
+  {
+   "id": "progressive-electronic-dance-music",
+   "label": "progressive electronic dance music",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "electronic-dance-music"
+   ]
+  },
+  {
+   "id": "progressive-house",
+   "label": "progressive house",
+   "tags": [
+    "progressive house"
+   ],
+   "ownCount": 14,
+   "parents": [
+    "house-music",
+    "progressive-electronic-dance-music"
+   ]
+  },
+  {
+   "id": "progressive-music",
+   "label": "progressive music",
+   "tags": [
+    "progressive"
+   ],
+   "ownCount": 1,
+   "parents": []
+  },
+  {
+   "id": "progressive-trance",
+   "label": "progressive trance",
+   "tags": [
+    "progressive trance"
+   ],
+   "ownCount": 8,
+   "parents": [
+    "progressive-electronic-dance-music",
+    "trance"
+   ]
+  },
+  {
+   "id": "psybient",
+   "label": "psybient",
+   "tags": [
+    "psybient"
+   ],
+   "ownCount": 4,
+   "parents": [
+    "chill-out-music"
+   ]
+  },
+  {
+   "id": "psychedelic-music",
+   "label": "psychedelic music",
+   "tags": [
+    "psychedelic"
+   ],
+   "ownCount": 2,
+   "parents": [
+    "popular-music"
+   ]
+  },
+  {
+   "id": "psychedelic-rock",
+   "label": "psychedelic rock",
+   "tags": [
+    "psychedelic rock"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "psychedelic-music",
+    "rock-music"
+   ]
+  },
+  {
+   "id": "psychedelic-soul",
+   "label": "psychedelic soul",
+   "tags": [
+    "psychedelic soul"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "psychedelic-music",
+    "soul"
+   ]
+  },
+  {
+   "id": "psychedelic-trance",
+   "label": "psychedelic trance",
+   "tags": [
+    "psychedelic trance",
+    "psytrance"
+   ],
+   "ownCount": 4,
+   "parents": [
+    "trance"
+   ]
+  },
+  {
+   "id": "punk",
+   "label": "punk",
+   "tags": [
+    "punk"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "punk-music"
+   ]
+  },
+  {
+   "id": "punk-music",
+   "label": "punk music",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "rock-music"
+   ]
+  },
+  {
+   "id": "raggacore",
+   "label": "raggacore",
+   "tags": [
+    "raggacore"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "breakcore"
+   ]
+  },
+  {
+   "id": "rap-metal",
+   "label": "rap metal",
+   "tags": [
+    "rap metal"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "alternative-metal",
+    "rap-rock"
+   ]
+  },
+  {
+   "id": "rap-rock",
+   "label": "rap rock",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "hip-hop",
+    "rapping",
+    "rock-music"
+   ]
+  },
+  {
+   "id": "rapping",
+   "label": "rapping",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "hip-hop"
+   ]
+  },
+  {
+   "id": "rave-music",
+   "label": "rave music",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "electronic-dance-music"
+   ]
+  },
+  {
+   "id": "red-disco",
+   "label": "red disco",
+   "tags": [
+    "red disco"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "eastern-european-pop",
+    "electro-disco",
+    "music-of-the-soviet-union"
+   ]
+  },
+  {
+   "id": "reggae",
+   "label": "reggae",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "music-of-jamaica"
+   ]
+  },
+  {
+   "id": "regional-music",
+   "label": "regional music",
+   "tags": [],
+   "ownCount": 0,
+   "parents": []
+  },
+  {
+   "id": "rhythm-and-blues",
+   "label": "rhythm and blues",
+   "tags": [
+    "rhythm and blues"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "popular-music"
+   ]
+  },
+  {
+   "id": "rock-and-roll",
+   "label": "rock and roll",
+   "tags": [
+    "rock and roll"
+   ],
+   "ownCount": 3,
+   "parents": [
+    "rock-music"
+   ]
+  },
+  {
+   "id": "rock-music",
+   "label": "rock music",
+   "tags": [
+    "rock"
+   ],
+   "ownCount": 11,
+   "parents": [
+    "popular-music"
+   ]
+  },
+  {
+   "id": "romantic-music",
+   "label": "Romantic music",
+   "tags": [
+    "romantic"
+   ],
+   "ownCount": 2,
+   "parents": [
+    "classical-music"
+   ]
+  },
+  {
+   "id": "russian-music",
+   "label": "Russian music",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "music-of-russia"
+   ]
+  },
+  {
+   "id": "russian-song",
+   "label": "Russian song",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "russian-music"
+   ]
+  },
+  {
+   "id": "schlager-music",
+   "label": "schlager music",
+   "tags": [
+    "schlager"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "music-of-europe",
+    "pop-music"
+   ]
+  },
+  {
+   "id": "score",
+   "label": "score",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "soundtrack"
+   ]
+  },
+  {
+   "id": "shock-rock",
+   "label": "shock rock",
+   "tags": [
+    "shock rock"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "rock-music"
+   ]
+  },
+  {
+   "id": "singer-songwriter-music",
+   "label": "singer-songwriter music",
+   "tags": [
+    "singer-songwriter"
+   ],
+   "ownCount": 3,
+   "parents": [
+    "acoustic-music",
+    "popular-music",
+    "vocal-music"
+   ]
+  },
+  {
+   "id": "soft-rock",
+   "label": "soft rock",
+   "tags": [
+    "soft rock"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "pop-rock"
+   ]
+  },
+  {
+   "id": "soul",
+   "label": "soul",
+   "tags": [
+    "soul"
+   ],
+   "ownCount": 2,
+   "parents": [
+    "rhythm-and-blues"
+   ]
+  },
+  {
+   "id": "soundtrack",
+   "label": "soundtrack",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "stage-and-screen"
+   ]
+  },
+  {
+   "id": "spacesynth",
+   "label": "spacesynth",
+   "tags": [
+    "spacesynth"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "electronic-dance-music"
+   ]
+  },
+  {
+   "id": "stage-and-screen",
+   "label": "stage and screen",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "functional-music"
+   ]
+  },
+  {
+   "id": "sunshine-house",
+   "label": "sunshine house",
+   "tags": [
+    "sunshine house"
+   ],
+   "ownCount": 1,
+   "parents": []
+  },
+  {
+   "id": "symphonic-music",
+   "label": "symphonic music",
+   "tags": [
+    "orchestral"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "classical-music",
+    "instrumental-music"
+   ]
+  },
+  {
+   "id": "synth-pop",
+   "label": "synth-pop",
+   "tags": [
+    "synthpop"
+   ],
+   "ownCount": 12,
+   "parents": [
+    "electronic-pop"
+   ]
+  },
+  {
+   "id": "synth-rock",
+   "label": "synth-rock",
+   "tags": [
+    "synth-rock"
+   ],
+   "ownCount": 1,
+   "parents": []
+  },
+  {
+   "id": "synthwave",
+   "label": "synthwave",
+   "tags": [
+    "synthwave"
+   ],
+   "ownCount": 10,
+   "parents": [
+    "electronic-music"
+   ]
+  },
+  {
+   "id": "techno",
+   "label": "techno",
+   "tags": [
+    "techno"
+   ],
+   "ownCount": 8,
+   "parents": [
+    "electronic-dance-music"
+   ]
+  },
+  {
+   "id": "techstep",
+   "label": "techstep",
+   "tags": [
+    "techstep"
+   ],
+   "ownCount": 2,
+   "parents": [
+    "drum-and-bass"
+   ]
+  },
+  {
+   "id": "traditional-folk-music",
+   "label": "traditional folk music",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "folk-music"
+   ]
+  },
+  {
+   "id": "traditional-heavy-metal",
+   "label": "traditional heavy metal",
+   "tags": [
+    "heavy metal"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "heavy-metal-music"
+   ]
+  },
+  {
+   "id": "trailer-music",
+   "label": "trailer music",
+   "tags": [
+    "trailer"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "epic-music"
+   ]
+  },
+  {
+   "id": "trance",
+   "label": "trance",
+   "tags": [
+    "trance"
+   ],
+   "ownCount": 13,
+   "parents": [
+    "electronic-dance-music"
+   ]
+  },
+  {
+   "id": "trap-music",
+   "label": "trap music",
+   "tags": [
+    "trap"
+   ],
+   "ownCount": 3,
+   "parents": [
+    "hip-hop",
+    "us-bass-music"
+   ]
+  },
+  {
+   "id": "trip-hop",
+   "label": "trip hop",
+   "tags": [
+    "trip hop"
+   ],
+   "ownCount": 6,
+   "parents": [
+    "downtempo"
+   ]
+  },
+  {
+   "id": "uk-garage",
+   "label": "UK garage",
+   "tags": [
+    "uk garage"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "electronic-dance-music"
+   ]
+  },
+  {
+   "id": "underground-music",
+   "label": "underground music",
+   "tags": [
+    "underground"
+   ],
+   "ownCount": 1,
+   "parents": []
+  },
+  {
+   "id": "uplifting-trance",
+   "label": "uplifting trance",
+   "tags": [
+    "uplifting trance"
+   ],
+   "ownCount": 2,
+   "parents": [
+    "trance"
+   ]
+  },
+  {
+   "id": "urban-contemporary",
+   "label": "urban contemporary",
+   "tags": [
+    "hip hop"
+   ],
+   "ownCount": 4,
+   "parents": [
+    "music-of-the-african-diaspora",
+    "popular-music"
+   ]
+  },
+  {
+   "id": "us-bass-music",
+   "label": "US bass music",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "bass-music"
+   ]
+  },
+  {
+   "id": "vaporwave",
+   "label": "vaporwave",
+   "tags": [
+    "vaporwave"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "popular-music"
+   ]
+  },
+  {
+   "id": "vocal-music",
+   "label": "vocal music",
+   "tags": [],
+   "ownCount": 0,
+   "parents": []
+  },
+  {
+   "id": "vocal-trance",
+   "label": "vocal trance",
+   "tags": [
+    "vocal trance"
+   ],
+   "ownCount": 4,
+   "parents": [
+    "trance"
+   ]
+  },
+  {
+   "id": "west-coast-swing",
+   "label": "west coast swing",
+   "tags": [
+    "west coast swing"
+   ],
+   "ownCount": 1,
+   "parents": []
+  },
+  {
+   "id": "world-music",
+   "label": "world music",
+   "tags": [],
+   "ownCount": 0,
+   "parents": [
+    "popular-music"
+   ]
+  },
+  {
+   "id": "worldbeat",
+   "label": "worldbeat",
+   "tags": [
+    "worldbeat"
+   ],
+   "ownCount": 1,
+   "parents": [
+    "popular-music",
+    "world-music"
+   ]
+  }
+ ]
+}

@@ -3,6 +3,16 @@ export const FAMILIES = [
   'Blues', 'Folk, World, & Country', 'Stage & Screen', 'Non-Music', "Children's", 'Brass & Military', 'Other',
 ];
 
+export const FAMILY_ORDER = [
+  'Blues', 'Brass & Military', "Children's", 'Classical', 'Electronic', 'Folk, World, & Country', 'Funk / Soul', 'Hip Hop', 'Jazz',
+  'Latin', 'Non-Music', 'Pop', 'Reggae', 'Rock', 'Stage & Screen', 'Other',
+];
+
+export const familyOrder = (family) => {
+  const i = FAMILY_ORDER.indexOf(family);
+  return i < 0 ? FAMILY_ORDER.length - 1 : i;
+};
+
 export const familyIndex = (family) => {
   const i = FAMILIES.indexOf(family);
   return i < 0 ? FAMILIES.length - 1 : i;
@@ -120,6 +130,7 @@ const familyKey = (f) => `f:${f}`;
 export const CATEGORY_NAMES = [
   /^ethnic music$/, /^music of .+/, /^.+ diaspora$/, /^world music$/, /^folk music of .+/,
   /^by (country|region|genre|decade)$/, /^music genre$/, /^music by .+/,
+  /^acoustic music$/, /^vocal music$/, /^instrumental music$/, /^regional music$/, /^national music$/, /^traditional music$/, /^folk music by .+/, /^music genres? by .+/,
 ];
 
 export const isCategoryNode = (n) => (n.ownCount ?? n.count) === 0 && CATEGORY_NAMES.some((re) => re.test(n.label.trim().toLowerCase()));
@@ -163,7 +174,7 @@ function familyGroups(g, roots) {
     list.push(id);
     groups.set(n.family, list);
   }
-  return [...groups.entries()].sort((a, b) => familyIndex(a[0]) - familyIndex(b[0]));
+  return [...groups.entries()].sort((a, b) => familyOrder(a[0]) - familyOrder(b[0]));
 }
 
 export function outlineRows(g, expanded) {

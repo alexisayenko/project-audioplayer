@@ -1,0 +1,8 @@
+{
+  "_comment": "Reviewed manual parent edges (GEN-045): child label -> parent labels, lowercase. Applied only when both nodes exist in the user's graph; arrows point to the parent. Add more here; the Orphans button lists what is left.",
+  "pop punk": ["punk", "pop music"],
+  "dance pop": ["pop music", "dance music"],
+  "synth-rock": ["rock music", "synth-pop"],
+  "dreamsynth": ["synthwave"],
+  "sunshine house": ["house music"]
+}

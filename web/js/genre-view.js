@@ -1,5 +1,5 @@
 import { BP_DESKTOP } from './constants.js';
-import { FAMILIES } from './genre-data.js';
+import { FAMILY_ORDER } from './genre-data.js';
 
 export const POLL_MS = 5000;
 const POLL_MAX = 24;
@@ -73,7 +73,7 @@ export function toggleHidden(hidden, family) {
 export function presentFamilies(nodes) {
   const counts = new Map();
   for (const n of nodes) counts.set(n.family, (counts.get(n.family) || 0) + 1);
-  return FAMILIES.filter((f) => counts.has(f)).map((f) => ({ family: f, count: counts.get(f) }));
+  return FAMILY_ORDER.filter((f) => counts.has(f)).map((f) => ({ family: f, count: counts.get(f) }));
 }
 
 const edgeKey = (e) => `${e.kind || 'parent'}|${e.source}|${e.target}`;

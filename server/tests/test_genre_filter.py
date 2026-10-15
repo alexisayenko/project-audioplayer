@@ -91,7 +91,7 @@ def test_new_aliases(raw, want):
     assert gf.canonical(raw) == want
 
 
-@pytest.mark.parametrize("raw", ["mkj", "deb", "stadiumx", "Sam Smith", "dancin", "relaxed", "love song", "Love-Song"])
+@pytest.mark.parametrize("raw", ["mkj", "deb", "stadiumx", "Sam Smith", "dancin", "relaxed", "love song", "Love-Song", "progressive music", "Underground Music", "dystopian music", "comedy music", "Comedy", "novelty music", "novelty song", "novelty"])
 def test_junk_dropped(raw):
     from app import library
 
@@ -100,7 +100,7 @@ def test_junk_dropped(raw):
     assert gf.filter_tags([f"genre:{raw}", "x"]) == ["x"]
 
 
-@pytest.mark.parametrize("raw", ["dance pop", "pop punk", "sunshine house", "west coast swing", "dreamsynth", "synth-rock", "progressive music", "underground music", "dystopian music"])
+@pytest.mark.parametrize("raw", ["dance pop", "pop punk", "sunshine house", "west coast swing", "dreamsynth", "synth-rock"])
 def test_real_genres_untouched(raw):
     assert gf.is_genre(raw) and not gf.is_dropped(raw)
 

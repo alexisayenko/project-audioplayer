@@ -49,7 +49,7 @@ export function paintServiceButtons(host, song) {
     a.rel = 'noopener noreferrer';
     a.title = wiki.label;
     a.setAttribute('aria-label', wiki.label);
-    a.append(icon('wikipedia', 22));
+    a.append(serviceIcon('wikipedia', { size: 22 }));
     nodes.push(a);
   }
   host.replaceChildren(...nodes);

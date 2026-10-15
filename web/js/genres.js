@@ -2,6 +2,7 @@ import { api } from './api.js';
 import { store } from './store.js';
 import { el, plural } from './dom.js';
 import { icon } from './icons.js';
+import { serviceIcon } from './service-icons.js';
 import { createGraphView } from './genre-graph.js';
 import {
   FAMILIES, familyIndex, indexGraph, flatGraph, localCounts, filterTags, searchNodes, outlineRows, pathKeys,
@@ -32,7 +33,7 @@ function wikiButton(n) {
   return el('a', {
     class: `icon gm-wiki${w.dim ? ' dim' : ''}`, href: w.href, target: '_blank', rel: 'noopener noreferrer',
     title: w.label, 'aria-label': w.label,
-  }, icon('wikipedia', 16));
+  }, serviceIcon('wikipedia', { size: 20 }));
 }
 
 function loadMessage(data, pending) {

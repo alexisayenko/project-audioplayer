@@ -59,7 +59,8 @@ def _strip_music(value: str) -> str:
 
 
 DROP: frozenset[str] = frozenset(
-    key(v) for v in ("mkj", "deb", "stadiumx", "sam smith", "dancin", "relaxed", "love song")
+    key(v) for v in ("mkj", "deb", "stadiumx", "sam smith", "dancin", "relaxed", "love song", "progressive music", "underground music", "dystopian music",
+        "comedy music", "comedy", "novelty music", "novelty song", "novelty")
 )
 
 

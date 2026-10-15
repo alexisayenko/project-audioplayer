@@ -2,8 +2,16 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-16 (fourth batch, built, not deployed)
+
+- Genres map: families are now the 15 Discogs genres plus Other (ADR-0021, GEN-037 to GEN-042, task-0033): a reviewed table `server/data/genre_families.json` (explicit label to family), then the song-weighted majority of the parents, then the umbrella rule, then Other; the keyword family map is removed; outline and legend follow the fixed Discogs order and hide empty families; 99.8% of the live library's songs get a family.
+- Genres map: a reviewed manual parent table (`server/app/data/genre_parents.json`, GEN-045) links orphans (pop punk, dance pop, synth-rock, dreamsynth, sunshine house); edges carry `origin: manual`; entries with a missing node or a cycle are skipped.
+- Server: vague/non-genre tags progressive music, underground music, dystopian music, comedy music, comedy, novelty music, novelty song and novelty are dropped for good (TAG-073); the migration removes them at the next start (backup in `backups-genre-merge`).
+
 ## 2026-10-16 (built, not deployed)
 
+- Web: the Wikipedia button on the genre card and in Now playing uses the same serif W icon as the song form Links (one definition in `service-icons.js`; the thin line glyph is gone).
+- Web: the Genres outline also skips umbrella categories without own songs such as "regional music", "national music", "traditional music", "folk music by ..." and "music genre(s) by ..."; their children reattach to the nearest real ancestor or form their own family (GEN-036).
 - Web: Genres map shows the whole ancestor chain of a selected genre (and of Now playing genres), fading with distance, fit to view, plus an arrow-direction line in the Legend (GEN-043, GEN-044).
 - Web: new Playlists menu item (list icon) between Library and Playback in the side rail, icon rail and phone tab bar, route `#/playlists` with a placeholder "Playlists are coming soon."; the phone tab bar fits six items with 11px labels and tighter gaps (WEB-012).
 - Docs: planned: Playlists (new top-level menu item: folders and playlists, import from YouTube, SoundCloud and Spotify links and from M3U8/CSV/JSON files, export, Refresh, guest view; spec [playlists.md](specs/playlists.md) PLS-001 to PLS-092, ADR-0022, [task-0034](tasks/task-0034.md)); nothing built.

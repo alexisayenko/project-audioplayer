@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   indexGraph, flatGraph, descendantIds, filterTags, localCounts, searchNodes, outlineRows, pathKeys,
-  loadExpanded, saveExpanded, nodeRadius, familyIndex,
+  loadExpanded, saveExpanded, nodeRadius, familyIndex, isCategoryNode, familyOrder, FAMILY_ORDER,
 } from './genre-data.js';
 
 const node = (id, label, family, parents = [], count = 0, tags = [id]) => ({ id, label, qid: null, family, count, ownCount: 0, parents, tags });
@@ -136,6 +136,28 @@ test('a category node with own songs stays, and a promoted child becomes a root'
   assert.deepEqual(outlineRows(g, new Set(['f:Other'])).map((r) => r.id), [null, 'z', 'y']);
 });
 
+test('regional music and similar umbrellas are skipped, children reattach; own songs keep them', () => {
+  const g = indexGraph({
+    nodes: [cat('edm', 'electronic dance music', [], 3, 3), cat('reg', 'regional music', [], 5), cat('eurodance', 'Eurodance', ['reg', 'edm'], 2, 2), cat('dh', 'dancehall', ['reg'], 1, 1)],
+    edges: [],
+  });
+  const rows = outlineRows(g, new Set(['f:Other', 'f:Other>edm']));
+  assert.ok(!rows.some((r) => r.id === 'reg'));
+  assert.equal(rows.find((r) => r.id === 'eurodance').depth, 2);
+  assert.ok(rows.some((r) => r.id === 'dh' && r.depth === 1));
+  for (const l of ['National music', 'folk music by country', 'traditional music', 'music genre by country', 'by country']) assert.ok(isCategoryNode({ label: l, ownCount: 0 }), l);
+  assert.ok(!isCategoryNode({ label: 'regional music', ownCount: 2 }));
+  assert.ok(!isCategoryNode({ label: 'folk music', ownCount: 0 }));
+});
+
+test('acoustic, vocal and instrumental music umbrellas are skipped; electronic music is not; also-under lists only the other parents', () => {
+  for (const l of ['acoustic music', 'Vocal music', 'instrumental music']) assert.ok(isCategoryNode({ label: l, ownCount: 0 }), l);
+  assert.ok(!isCategoryNode({ label: 'electronic music', ownCount: 0 }));
+  const g = indexGraph({ nodes: [cat('a', 'alpha', [], 3, 3), cat('b', 'beta', [], 2, 2), cat('c', 'child', ['a', 'b'], 1, 1), cat('d', 'deep', ['c'], 1, 1)], edges: [] });
+  const rows = outlineRows(g, new Set(['f:Other', 'f:Other>a', 'f:Other>b', 'f:Other>a>c', 'f:Other>b>c']));
+  assert.deepEqual(rows.filter((r) => r.id === 'c').map((r) => r.alsoUnder), [['beta'], ['alpha']]);
+});
+
 test('multi-parent also-under notes list effective parents after the skip', () => {
   const g = indexGraph({ nodes: [cat('m', 'music of Asia'), cat('a', 'alpha', [], 2, 2), cat('c', 'child', ['m', 'a'], 1, 1)], edges: [] });
   const rows = outlineRows(g, new Set(['f:Other', 'f:Other>a']));
@@ -157,4 +179,11 @@ test('ancestorsOf: chain, diamond, cycle, root, orphan, cap, related ignored', a
   const long = Array.from({ length: 20 }, (_, i) => e(`n${i}`, `n${i + 1}`));
   assert.equal(ancestorsOf('n0', long).size, 12);
   assert.equal(ancestorsOf('n0', long, 3).size, 3);
+});
+
+test('families are ordered as the Discogs genres with Other last, colours keep their own index', () => {
+  assert.equal(FAMILY_ORDER.length, 16);
+  assert.ok(familyOrder('Blues') < familyOrder('Electronic') && familyOrder('Rock') < familyOrder('Stage & Screen'));
+  assert.equal(familyOrder('nope'), 15);
+  assert.equal(familyIndex('Electronic'), 0);
 });

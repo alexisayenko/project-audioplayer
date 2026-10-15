@@ -33,8 +33,14 @@ TIMEOUT = 8
 RETRY_AFTER = 300
 INLINE = False
 
-_FAMILIES_FILE = Path(__file__).with_name("data") / "discogs-families.json"
+_FAMILIES_FILE = Path(__file__).resolve().parent.parent / "data" / "genre_families.json"
+FAMILIES = (
+    "Blues", "Brass & Military", "Children's", "Classical", "Electronic", "Folk, World, & Country", "Funk / Soul", "Hip Hop", "Jazz",
+    "Latin", "Non-Music", "Pop", "Reggae", "Rock", "Stage & Screen",
+)
+OTHER = "Other"
 _GENRE_DESC = re.compile(r"\b(music|musical)\b.*\b(genre|style)\b|\bgenre\b.*\bmusic\b|\bsubgenre\b", re.I)
+_PARENTS_FILE = Path(__file__).with_name("data") / "genre_parents.json"
 _QID = re.compile(r"^Q[1-9]\d*$")
 
 _lock = threading.RLock()
@@ -43,15 +49,93 @@ _running = False
 _down_until = 0.0
 _limiter = RateLimiter(MIN_INTERVAL)
 _mem: dict[str, dict[str, Any]] = {}
-_families: dict[str, Any] | None = None
+_families: dict[str, str] | None = None
+_manual: dict[str, list[str]] | None = None
 
 
-def families() -> dict[str, Any]:
+def families() -> dict[str, str]:
+    """The reviewed label to Discogs family table (GEN-038); a missing or broken file is empty."""
     global _families
     if _families is None:
-        with open(_FAMILIES_FILE, encoding="utf-8") as f:
-            _families = json.load(f)
+        try:
+            with open(_FAMILIES_FILE, encoding="utf-8") as f:
+                data = json.load(f)
+            labels = data.get("labels", {}) if isinstance(data, dict) else {}
+        except (OSError, ValueError):
+            labels = {}
+        _families = {k: v for k, v in labels.items() if isinstance(v, str)}
     return _families
+
+
+def manual_parents() -> dict[str, list[str]]:
+    """The reviewed child label to parent labels table (GEN-045); a missing or broken file is empty."""
+    global _manual
+    if _manual is None:
+        try:
+            with open(_PARENTS_FILE, encoding="utf-8") as f:
+                data = json.load(f)
+        except (OSError, ValueError):
+            data = {}
+        _manual = {k: v for k, v in data.items() if not k.startswith("_") and isinstance(v, list)} if isinstance(data, dict) else {}
+    return _manual
+
+
+def validate_manual(table: dict[str, Any]) -> list[str]:
+    """Problems in a manual table: non-lowercase or non-string labels, self-parents and cycles within the table."""
+    bad: list[str] = []
+    graph: dict[str, list[str]] = {}
+    for child, ps in table.items():
+        if child.startswith("_"):
+            continue
+        if not isinstance(ps, list) or not all(isinstance(p, str) for p in ps):
+            bad.append(f"{child}: parents must be a list of strings")
+            continue
+        for label in (child, *ps):
+            if label != norm(label) or not label:
+                bad.append(f"{label!r}: not a lowercase label")
+        if child in ps:
+            bad.append(f"{child}: parent of itself")
+        graph[child] = list(ps)
+    for child in graph:
+        if _reaches(graph, child, child):
+            bad.append(f"{child}: cycle")
+    return bad
+
+
+def _reaches(parents: dict[str, list[str]], start: str, goal: str) -> bool:
+    seen: set[str] = set()
+    stack = list(parents.get(start, []))
+    while stack:
+        n = stack.pop()
+        if n == goal:
+            return True
+        if n not in seen:
+            seen.add(n)
+            stack.extend(parents.get(n, []))
+    return False
+
+
+def _apply_manual(nodes: dict[str, dict[str, Any]], parents: dict[str, list[str]]) -> set[tuple[str, str]]:
+    """Adds the manual parent edges whose two nodes exist and that close no cycle; returns the edges added."""
+    index: dict[str, str] = {}
+    for nid, n in sorted(nodes.items(), reverse=True):
+        for k in n["keys"]:
+            index[k] = nid
+    for nid, n in sorted(nodes.items(), reverse=True):
+        index[norm(n["label"])] = nid
+    added: set[tuple[str, str]] = set()
+    for child, ps in manual_parents().items():
+        c = index.get(norm(child))
+        for label in ps:
+            p = index.get(norm(label))
+            if c is None or p is None or c == p or p in parents[c]:
+                continue
+            if _reaches(parents, p, c):
+                log.warning("manual genre parent skipped (cycle): %s -> %s", child, label)
+                continue
+            parents[c].append(p)
+            added.add((c, p))
+    return added
 
 
 def norm(label: str) -> str:
@@ -255,51 +339,9 @@ def _kick(path: Path, keys: list[str]) -> None:
         threading.Thread(target=_background, args=(path, keys), daemon=True).start()
 
 
-_WORD = re.compile(r"[a-z0-9&'/\-]+")
-
-
-def _by_keyword(label: str) -> str | None:
-    """Last-resort family for a label: a known phrase, else the first keyword scanning words from the head noun backwards."""
-    fam = families()
-    text = " ".join(label.lower().split())
-    for phrase, family in fam.get("phrases", {}).items():
-        if phrase in text:
-            return family
-    index = fam.get("_kw_index")
-    if index is None:
-        index = {w: f for f, words in fam.get("keywords", {}).items() for w in words}
-        fam["_kw_index"] = index
-    for word in reversed([w for t in _WORD.findall(text) for w in (t, *re.split(r"[/\-]", t))]):
-        if word in index:
-            return index[word]
-    return None
-
-
 def _wikipedia(cache: dict[str, Any], qid: str | None) -> str | None:
     title = ((cache["entities"].get(qid) or {}).get("wp") or "") if qid else ""
     return "https://en.wikipedia.org/wiki/" + quote(title.replace(" ", "_"), safe="_(),:'!*~-.") if title else None
-
-
-def _family(cache: dict[str, Any], qid: str | None, label: str) -> str:
-    fam = families()
-    by_label = fam["labels"]
-    own = by_label.get(label.lower())
-    if not qid:
-        return own or _by_keyword(label) or "Other"
-    queue = deque([qid])
-    seen = {qid}
-    while queue:
-        q = queue.popleft()
-        ent = cache["entities"].get(q) or {}
-        name = str(ent.get("label", ""))
-        hit = fam["qids"].get(q) or by_label.get(name.lower()) or (_by_keyword(name) if name else None)
-        if hit:
-            return hit
-        for p in ent.get("parents", []):
-            if p not in seen:
-                seen.add(p)
-                queue.append(p)
-    return own or _by_keyword(label) or "Other"
 
 
 def _break_cycles(parents: dict[str, list[str]]) -> None:
@@ -409,6 +451,38 @@ def _related_edges(nodes: dict[str, dict[str, Any]], parents: dict[str, list[str
     return edges
 
 
+def resolve_families(
+    explicit: dict[str, str | None], parents: dict[str, list[str]], reach: dict[str, set[Any]]
+) -> dict[str, str]:
+    """GEN-038: the explicit table family, else the song-weighted majority of the parents' families, else Other (umbrella rule follows)."""
+    out: dict[str, str] = {}
+
+    def of(nid: str, stack: frozenset[str] = frozenset()) -> str:
+        if nid in out:
+            return out[nid]
+        fam = explicit.get(nid)
+        if not fam:
+            weight: dict[str, int] = {}
+            for p in parents.get(nid, []):
+                if p in stack or p == nid:
+                    continue
+                pf = of(p, stack | {nid})
+                if pf != OTHER:
+                    weight[pf] = weight.get(pf, 0) + max(1, len(reach.get(p, ())))
+            fam = max(sorted(weight), key=lambda f: weight[f]) if weight else OTHER
+        out[nid] = fam
+        return fam
+
+    for nid in explicit:
+        of(nid)
+    return out
+
+
+def table_family(label: str, keys: Any = ()) -> str | None:
+    table = families()
+    return table.get(norm(label)) or next((table[k] for k in sorted(keys) if k in table), None)
+
+
 UMBRELLA_SHARE = 0.5
 
 
@@ -446,10 +520,13 @@ def build(songs: list[dict[str, Any]], cache: dict[str, Any]) -> dict[str, Any]:
         for nid, n in nodes.items()
     }
     _break_cycles(parents)
+    manual = _apply_manual(nodes, parents)
     reach = _reach(nodes, parents)
     _trim(nodes, parents, reach)
     ids = _slugs(nodes)
-    fams = umbrella_families({nid: _family(cache, n["qid"], n["label"]) for nid, n in nodes.items()}, parents, reach)
+    fams = umbrella_families(
+        resolve_families({nid: table_family(n["label"], n["keys"]) for nid, n in nodes.items()}, parents, reach), parents, reach
+    )
 
     out_nodes = [
         {
@@ -459,7 +536,7 @@ def build(songs: list[dict[str, Any]], cache: dict[str, Any]) -> dict[str, Any]:
         }
         for nid, n in sorted(nodes.items(), key=lambda kv: ids[kv[0]])
     ]
-    edges = [{"source": ids[c], "target": ids[p], "kind": "parent"} for c in sorted(nodes, key=lambda i: ids[i]) for p in sorted(parents[c], key=lambda i: ids[i])]
+    edges = [{"source": ids[c], "target": ids[p], "kind": "parent", **({"origin": "manual"} if (c, p) in manual else {})} for c in sorted(nodes, key=lambda i: ids[i]) for p in sorted(parents[c], key=lambda i: ids[i])]
     edges += _related_edges(nodes, parents, ids, cache)
     return {"nodes": out_nodes, "edges": edges, "ontology": ontology}
 
@@ -477,3 +554,13 @@ def graph(songs: list[dict[str, Any]], path: Path) -> dict[str, Any]:
         again = bool(keys) and _missing(cache, keys)
     out["pending"] = bool(_running or (again and time.time() >= _down_until))
     return out
+
+
+def _json_table() -> dict[str, Any]:
+    return json.loads(_PARENTS_FILE.read_text(encoding="utf-8"))
+
+
+if __name__ == "__main__":
+    problems = validate_manual(_json_table())
+    print("\n".join(problems) or "genre_parents.json ok")
+    raise SystemExit(1 if problems else 0)

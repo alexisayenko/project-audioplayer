@@ -622,3 +622,23 @@ def test_genre_migration_aliases_drops_and_prefixes(tmp_path, monkeypatch):
     assert songs[1]["tags"] == ["genre:pop", "country:ua", "genre:french house", "country:ru", "lang:ru"]
     assert (tmp_path / "backups-genre-merge" / "u1" / "library.json").read_text() == original
     assert migrate_tags.run() == 0
+
+
+def test_vague_genres_dropped_by_migration_idempotent(tmp_path, monkeypatch):
+    from app import migrate_tags
+
+    monkeypatch.setattr(migrate_tags.deps, "data_root", lambda: tmp_path)
+    monkeypatch.setattr(migrate_tags.deps, "SYNC", None)
+    d = tmp_path / "users" / "u1"
+    d.mkdir(parents=True)
+    lib = d / "library.json"
+    original = json.dumps({"songs": [
+        {"id": "a", "title": "A", "tags": ["genre:progressive music", "genre:house"]},
+        {"id": "b", "title": "B", "tags": ["genre:underground music", "genre:dystopian music", "genre:comedy music", "genre:novelty"]},
+    ]})
+    lib.write_text(original)
+    assert migrate_tags.run() == 1
+    tags = [s["tags"] for s in json.loads(lib.read_text())["songs"]]
+    assert tags == [["genre:house"], []]
+    assert (tmp_path / "backups-genre-merge" / "u1" / "library.json").read_text() == original
+    assert migrate_tags.run() == 0
