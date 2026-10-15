@@ -1,4 +1,5 @@
 import { clamp01 } from './viz-terrain-math.js';
+import { beginRect, endRect, countFull } from './viz-synth-fill.js';
 
 export const MAX_BANDS = 16;
 const FLASH_GAIN = 0.15;
@@ -76,6 +77,45 @@ export function advancePhase(prev, dt, p, q, reduced, out) {
 
 function paletteUniforms(p) {
   return { uTop: toRgb(p.top), uMid: toRgb(p.mid), uBottom: toRgb(p.bottom), uMidOn: p.midOn ? 1 : 0 };
+}
+
+export function sunRect(scene, p) {
+  const lay = sunLayout(scene, p);
+  const w = scene.res[0];
+  const h = scene.res[1];
+  const r = lay.r * h + 2;
+  return [lay.cx * w - r, lay.cy * h - r, lay.cx * w + r, lay.cy * h + r];
+}
+
+export function hazeRects(scene, p) {
+  const lay = sunLayout(scene, p);
+  const w = scene.res[0];
+  const h = scene.res[1];
+  const out = { ring: null, band: null };
+  if (p.on && p.ringOn && num(p.ringAlpha, 0) > 0) {
+    const r = lay.r * 1.1 * h * Math.max(1.001, num(p.ringRadius, 1.5)) + 2;
+    const rx = r * (p.ringShape === 'band' ? 2.4 : 1);
+    out.ring = [lay.cx * w - rx, lay.cy * h - r, lay.cx * w + rx, lay.cy * h + r];
+  }
+  if (p.bandOn && num(p.bandHeight, 0) > 0) {
+    const hp = num(scene.horizonV, 0.4) * h;
+    const bh = clamp01(num(p.bandHeight, 0)) * h + 2;
+    out.band = [0, hp - bh, w, hp + bh];
+  }
+  return out;
+}
+
+export function reflectionRect(scene, p) {
+  const lay = sunLayout(scene, p);
+  const w = scene.res[0];
+  const h = scene.res[1];
+  const hp = num(scene.horizonV, 0.4) * h;
+  const groundH = Math.max(0, 1 - num(scene.horizonV, 0.4));
+  const len = p.on && p.refl !== 'off' && num(p.reflOpacity, 0) > 0 ? clamp01(num(p.reflLength, 0.5)) * groundH * h : 0;
+  const sheen = p.sheen && num(p.sheenAmount, 0) > 0;
+  const down = Math.max(len, sheen ? 0.3 * h : 0) + 2;
+  const span = len > 0 && !sheen ? lay.r * h * 3 : w;
+  return [lay.cx * w - span, hp, lay.cx * w + span, hp + down];
 }
 
 export function sunUniforms(scene, p, signal, driftPhase) {
@@ -373,7 +413,10 @@ export function createSunPass(gl, deps) {
 
   let stepParams = {};
 
-  function run(rec, uniforms, blendSrc, blendDst) {
+  function run(rec, uniforms, blendSrc, blendDst, scene, rect) {
+    if (rect) {
+      if (!beginRect(gl, scene, rect[0], rect[1], rect[2], rect[3])) return;
+    } else countFull(scene);
     gl.useProgram(rec.prog);
     for (const name of Object.keys(uniforms)) {
       if (setUniform(gl, rec, name, uniforms[name])) stats.uploads++;
@@ -386,6 +429,7 @@ export function createSunPass(gl, deps) {
     gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     gl.disable(gl.BLEND);
+    if (rect) endRect(gl);
     stats.draws++;
   }
 
@@ -398,20 +442,22 @@ export function createSunPass(gl, deps) {
       step(scene);
       const u = hazeUniforms(scene, p, signal, phase);
       if (!u.uRingOn && !u.uBandOn) return;
-      run(progs.haze, u, gl.SRC_ALPHA, gl.ONE);
+      const rects = hazeRects(scene, p);
+      if (u.uRingOn && rects.ring) run(progs.haze, { ...u, uBandOn: 0 }, gl.SRC_ALPHA, gl.ONE, scene, rects.ring);
+      if (u.uBandOn && rects.band) run(progs.haze, { ...u, uRingOn: 0 }, gl.SRC_ALPHA, gl.ONE, scene, rects.band);
     },
     drawSun(scene, p, signal) {
       stepParams = p;
       step(scene);
       if (!p.on) return;
-      run(progs.sun, sunUniforms(scene, p, signal, phase), gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+      run(progs.sun, sunUniforms(scene, p, signal, phase), gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, scene, sunRect(scene, p));
     },
     drawReflection(scene, p, signal) {
       stepParams = p;
       step(scene);
       const u = reflectionUniforms(scene, p, signal, phase);
       if (u.uOpacity <= 0 && u.uSheen <= 0) return;
-      run(progs.refl, u, gl.SRC_ALPHA, gl.ONE);
+      run(progs.refl, u, gl.SRC_ALPHA, gl.ONE, scene, reflectionRect(scene, p));
     },
     draw(scene, p, signal) {
       pass.drawHaze(scene, p, signal);

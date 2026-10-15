@@ -139,19 +139,29 @@ export function initVisualizer({
     getBands: () => barCount($('viz-bg').clientWidth || win.innerWidth || 1200),
     getNextSrc: () => { const id = player?.peekNextId?.(); return id ? new URL(api.fileUrl(id), win.location?.href).href : ''; },
   });
-  const bgViz = createViz({ canvas: $('viz-bg'), mode: 'background', deps: vizDeps(audio, graph, { getAnchor: coverAnchor, lookahead, ...deps }) });
-  const fullViz = createViz({ canvas: $('viz-full-canvas'), mode: 'full', deps: vizDeps(audio, graph, { lookahead, ...deps }) });
+  const noticeOf = (text, info) => {
+    const el = document.getElementById('viz-live');
+    if (el) el.textContent = text;
+    if (info?.label && info.mode === currentMode) {
+      fallbackNote = info.label;
+      for (const sw of switches) sw.setNote(fallbackNote);
+    }
+  };
+  const bgViz = createViz({ canvas: $('viz-bg'), mode: 'background', deps: vizDeps(audio, graph, { getAnchor: coverAnchor, lookahead, onNotice: noticeOf, ...deps }) });
+  const fullViz = createViz({ canvas: $('viz-full-canvas'), mode: 'full', deps: vizDeps(audio, graph, { lookahead, onNotice: noticeOf, ...deps }) });
   const refreshAll = () => { bgViz.refresh(); fullViz.refresh(); };
   graph.onState?.(refreshAll);
   const modes = availableModes(caps);
   let currentMode = vizMode(() => caps);
   const live = $('viz-live');
   const switches = [];
+  let fallbackNote = '';
   const applyMode = (id, announce) => {
     currentMode = id;
     bgViz.setVizMode(id);
     fullViz.setVizMode(id);
     for (const sw of switches) sw.set(id);
+    fallbackNote = '';
     syncSwitchVisibility();
     if (announce && live) live.textContent = `Visualizer: ${modeLabel(id)}`;
   };

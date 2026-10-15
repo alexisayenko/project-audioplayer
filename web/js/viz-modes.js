@@ -65,6 +65,7 @@ export function createModeRenderer(id, canvas2d, canvasGL, deps = {}) {
       terrain.setQuality(forced ?? Math.min(govToTerrain(governorLevel), Number.isInteger(o.cap) ? o.cap : 2));
       terrain.setLite?.(forced === null && !!o.lite);
       terrain.setDprCap?.(forced === null && !!o.hiDpr);
+      terrain.setShed?.(forced === null && Number.isInteger(o.shed) ? o.shed : 0);
     },
     get stats() { return terrain?.stats ?? null; },
     dispose() {

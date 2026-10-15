@@ -216,3 +216,19 @@ test('dispose frees every buffer and later draws are no-ops', () => {
   pass.drawHills(scene(), settings, null);
   assert.equal(gl.calls.length, n);
 });
+
+test('glow taps halve the glow repeats and rings of 0 remove them', () => {
+  const run = (q) => {
+    const t = setup();
+    t.pass.setHeights(t.st);
+    t.pass.drawTerrain(scene({ q: { cellMul: 1, glowPasses: 2, glowTaps: 4, ...q } }), t.settings, null);
+    return count(t.gl, 'drawElements');
+  };
+  const full = run({});
+  const two = run({ glowTaps: 2 });
+  const none = run({ glowPasses: 0 });
+  assert.ok(two < full);
+  assert.ok(none < two);
+  const one = run({ glowPasses: 1, glowTaps: 2 });
+  assert.ok(none < one && one < two);
+});

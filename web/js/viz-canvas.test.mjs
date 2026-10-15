@@ -52,6 +52,7 @@ function setup(over = {}) {
 const fakeAnalyser = (db = -40) => ({
   frequencyBinCount: 1024, fftSize: 2048, minDecibels: -100, maxDecibels: -30, context: { sampleRate: 48000 },
   getFloatFrequencyData: (a) => a.fill(db),
+  getByteFrequencyData: (a) => a.fill(10),
 });
 
 test('shouldRun needs every condition', () => {
@@ -338,7 +339,7 @@ test('destroy stops the loop', () => {
 });
 
 function synthSetup(over = {}) {
-  const made = { gl: [], synth: 0, errs: [], notices: [] };
+  const made = { gl: [], synth: 0, errs: [], notices: [], infos: [] };
   const synths = [];
   const mkCanvas = () => ({ style: {}, hidden: true, removed: false, remove() { this.removed = true; } });
   const o = setup({
@@ -350,14 +351,16 @@ function synthSetup(over = {}) {
         made.synth += 1;
         if (over.nullSynth) return null;
         const sy = {
-          opts, disposed: 0, draw() {}, resize() {}, setQuality() {}, setLite() {}, setDprCap() {}, dispose() { this.disposed += 1; },
-          stats: { builds: 1, level: 1, tiers: 1, vertices: 1, dpr: 1, w: 1, h: 1 },
+          opts, disposed: 0, sheds: [], levels: [], draw() {}, resize() {}, setQuality(l) { this.levels.push(l); }, setLite() {}, setDprCap() {}, setShed(n) { this.sheds.push(n); }, dispose() { this.disposed += 1; },
+          stats: { builds: 1, level: 1, tiers: 1, vertices: 1, dpr: 1, w: 1, h: 1, scale: 1, shed: 0, quads: 6, fill: 3.2, glowRings: 2, glowTaps: 4 },
         };
         synths.push(sy);
         return sy;
       },
       getSynthVersion: () => 0,
-      onNotice: (m) => made.notices.push(m),
+      onNotice: (m, info) => { made.notices.push(m); made.infos.push(info); },
+      ...(over.storage ? { storage: over.storage } : {}),
+      ...(over.status ? { status: over.status, debug: true } : {}),
     },
   });
   o.s.playing = true;
@@ -414,12 +417,12 @@ test('sustained heavy synthwave frames fall back to Terrain after 2000 x PACE_DO
   g.viz.setVizMode('synthwave');
   g.viz.setEnabled(true);
   let fellAt = null;
-  for (let i = 0; i < 400 && fellAt === null; i += 1) {
+  for (let i = 0; i < 1500 && fellAt === null; i += 1) {
     g.tick(100);
     if (g.made.notices.length) fellAt = i;
   }
   assert.notEqual(fellAt, null);
-  assert.equal(g.made.notices[0], 'Synthwave terrain is too heavy here, using Terrain');
+  assert.match(g.made.notices[0], /^Synthwave terrain is too heavy here \(\d+ ms per frame, target \d+ ms, render scale \d+%\), using Terrain$/);
   g.tick(100);
   assert.equal(g.viz.effectiveMode(), 'terrain');
   g.viz.setVizMode('terrain');
@@ -435,4 +438,84 @@ test('light synthwave frames never fall back', () => {
   for (let i = 0; i < 300; i += 1) g.tick(17);
   assert.equal(g.made.notices.length, 0);
   assert.equal(g.viz.effectiveMode(), 'synthwave');
+});
+
+test('the governor sheds render scale and glow before dropping the level, and Terrain is last', () => {
+  const g = synthSetup();
+  g.viz.setVizMode('synthwave');
+  g.viz.setEnabled(true);
+  for (let i = 0; i < 1500 && !g.made.notices.length; i += 1) g.tick(100);
+  const sy = g.synths[0];
+  assert.deepEqual(sy.sheds.filter((v, i, a) => a.indexOf(v) === i), [0, 1, 2, 3]);
+  const lastShed = sy.sheds.lastIndexOf(0) + 1;
+  assert.ok(lastShed > 0);
+  assert.equal(sy.sheds.at(-1), 3);
+  assert.equal(sy.sheds.indexOf(3) >= 0, true);
+});
+
+test('fallback is labelled and carries the measured interval', () => {
+  const g = synthSetup();
+  g.viz.setVizMode('synthwave');
+  g.viz.setEnabled(true);
+  assert.equal(g.viz.fallbackInfo(), null);
+  for (let i = 0; i < 1500 && !g.made.notices.length; i += 1) g.tick(100);
+  const info = g.viz.fallbackInfo();
+  assert.equal(info.mode, 'synthwave');
+  assert.equal(info.reason, 'heavy');
+  assert.equal(info.label, 'using Terrain: too heavy');
+  assert.ok(info.intervalMs > 40);
+  assert.equal(g.made.infos[0], info);
+  g.viz.setVizMode('bars');
+  assert.equal(g.viz.fallbackInfo(), null);
+});
+
+test('a runtime error fallback is labelled differently from a heavy one', () => {
+  const g = synthSetup();
+  g.viz.setVizMode('synthwave');
+  g.viz.setEnabled(true);
+  g.tick(40);
+  g.synths[0].opts.onError(new Error('lost'));
+  assert.equal(g.viz.fallbackInfo().label, 'using Terrain: stopped working');
+});
+
+test('the vizdebug text reports render scale, passes, fill and glow for the synth', () => {
+  const lines = [];
+  const g = synthSetup({ status: { set: (t) => lines.push(t) } });
+  g.viz.setVizMode('synthwave');
+  g.viz.setEnabled(true);
+  for (let i = 0; i < 80; i += 1) g.tick(17);
+  const last = lines.filter((l) => l.includes('render scale')).at(-1);
+  assert.ok(last, 'no render scale line');
+  assert.ok(last.includes('render scale 100% (rung 0/3) passes 6 fill 3.2x glow 2x4'));
+});
+
+test('the rung learned on this device is saved after a stable spell and restored next time', () => {
+  const store = new Map();
+  const storage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, v) };
+  const g = synthSetup({ storage });
+  g.viz.setVizMode('synthwave');
+  g.viz.setEnabled(true);
+  for (let i = 0; i < 200; i += 1) g.tick(100);
+  const shedNow = g.synths[0].sheds.at(-1);
+  assert.ok(shedNow >= 1);
+  for (let i = 0; i < 1400; i += 1) g.tick(17);
+  const saved = JSON.parse(store.get('ap2.viz.synth.shed'));
+  assert.ok(saved.shed >= 0 && Number.isInteger(saved.px));
+  store.set('ap2.viz.synth.shed', JSON.stringify({ px: saved.px, shed: 2 }));
+  const g2 = synthSetup({ storage });
+  g2.viz.setVizMode('synthwave');
+  g2.viz.setEnabled(true);
+  g2.tick(17);
+  assert.equal(g2.synths[0].sheds.at(-1), 2);
+});
+
+test('with no saved rung a fast machine starts at full render scale and stays there', () => {
+  const store = new Map();
+  const storage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, v) };
+  const g = synthSetup({ storage });
+  g.viz.setVizMode('synthwave');
+  g.viz.setEnabled(true);
+  for (let i = 0; i < 1000; i += 1) g.tick(17);
+  assert.deepEqual(g.synths[0].sheds.filter((v, k, a) => a.indexOf(v) === k), [0]);
+  assert.equal(store.size, 0);
 });

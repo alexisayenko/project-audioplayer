@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  skyColors, starField, twinkleAt, skyUniforms, horizonUniforms, vignetteUniforms, createSkyPass,
+  skyColors, starField, twinkleAt, skyUniforms, horizonUniforms, vignetteUniforms, createSkyPass, skyRect, horizonRect,
   SKY_FS, STAR_VS, HORIZON_FS, VIGNETTE_FS,
 } from './viz-synth-sky.js';
 import { linkProgram } from './viz-terrain-gl.js';
@@ -185,4 +185,31 @@ test('createSkyPass: dispose frees every buffer and program', () => {
   pass.drawBack(scene(), settings(), null);
   pass.dispose();
   assert.equal(gl.live.size, 0);
+});
+
+test('sky and horizon rectangles are scissored: the sky stops at the horizon, the horizon glow is bounded', () => {
+  const s = scene({ res: [1920, 1200] });
+  const sr = skyRect(s);
+  assert.deepEqual([sr[0], sr[1], sr[2]], [0, 0, 1920]);
+  near(sr[3], 0.4 * 1200 + 2);
+  const hr = horizonRect(s, SKY);
+  assert.ok(hr[1] < 0.4 * 1200 && hr[3] > 0.4 * 1200);
+  assert.ok(hr[3] - hr[1] < 1200 * 0.5);
+  const noGlow = horizonRect(s, { ...SKY, hGlow: 0 });
+  assert.ok(noGlow[3] - noGlow[1] < 20);
+  const band = horizonRect(s, { ...SKY, hBand: true, hBandHeight: 0.1 });
+  assert.ok(band[1] < hr[1]);
+});
+
+test('drawBack and drawFront scissor their quads and count the fill', () => {
+  const gl = fakeGL();
+  const pass = createSkyPass(gl, { linkProgram });
+  const s = scene({ res: [1920, 1200], fill: { px: 0, quads: 0 } });
+  const params = { sky: SKY, sun: SUN };
+  pass.drawBack(s, params, null);
+  pass.drawFront(s, params, null);
+  const sc = gl.calls.filter((c) => c[0] === 'scissor');
+  assert.equal(sc.length, 2);
+  assert.ok(s.fill.px < 1920 * 1200 * 2);
+  assert.equal(gl.calls.filter((c) => c[0] === 'disable' && c[1] === gl.SCISSOR_TEST).length >= 2, true);
 });

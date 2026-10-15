@@ -323,3 +323,57 @@ test('meter compares like with like at the half-rate pacer: 30 drawn fps on a 60
   assert.ok(Math.abs(m.fps - 30) < 1, `fps ${m.fps}`);
   assert.equal(downs, 0);
 });
+
+const shedGov = (shed = 0) => makePaceGovernor({ shedMax: 3, shedStart: shed });
+
+test('with shed rungs the governor sheds render scale before the level and half rate', () => {
+  const s = { t: 1000, meter: makeFrameMeter(), gov: shedGov() };
+  const steps = [];
+  for (let i = 0; i < 40 && !s.gov.half; i += 1) {
+    const before = [s.gov.shed, s.gov.cap];
+    drive(6, () => 40, s);
+    steps.push([before[0], before[1], s.gov.shed, s.gov.cap]);
+  }
+  const first = steps.findIndex((x) => x[3] < 2);
+  assert.ok(first > 0);
+  assert.ok(steps.slice(0, first).every((x) => x[3] === 2));
+  assert.equal(steps[first - 1][2], 3);
+  assert.equal(s.gov.half, true);
+  assert.equal(s.gov.shed, 3);
+  assert.equal(s.gov.exhausted, true);
+});
+
+test('shed rungs are restored after a sustained stable period, level first', () => {
+  const s = { t: 1000, meter: makeFrameMeter(), gov: shedGov() };
+  drive(80, () => 40, s);
+  assert.equal(s.gov.exhausted, true);
+  const ups = drive(400, () => 16.7, s).filter((c) => c[1] > 0);
+  assert.ok(ups.length >= 4);
+  assert.equal(s.gov.shed, 0);
+  assert.ok(s.gov.cap >= 2);
+});
+
+test('the shed ladder does not exist unless it is configured, and configure clamps it', () => {
+  const plain = makePaceGovernor();
+  assert.equal(plain.shedMax, 0);
+  assert.equal(plain.shed, 0);
+  const g = makePaceGovernor();
+  g.configure({ shedMax: 3, shed: 9 });
+  assert.equal(g.shed, 3);
+  g.configure({ shedMax: 0, shed: 2 });
+  assert.equal(g.shed, 0);
+});
+
+test('a fast machine stays at rung 0 and full level indefinitely', () => {
+  const s = { t: 1000, meter: makeFrameMeter(), gov: shedGov() };
+  const changes = drive(300, () => 16.7, s);
+  assert.ok(changes.every((c) => c[1] > 0));
+  assert.equal(s.gov.shed, 0);
+});
+
+test('a persisted start rung is honoured and can still come back up', () => {
+  const s = { t: 1000, meter: makeFrameMeter(), gov: shedGov(2) };
+  assert.equal(s.gov.shed, 2);
+  drive(120, () => 16.7, s);
+  assert.equal(s.gov.shed, 0);
+});

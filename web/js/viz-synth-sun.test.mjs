@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   sunLayout, sliceBands, sunUniforms, hazeUniforms, reflectionUniforms, sunColorAt, advancePhase,
-  SUN_FS, HAZE_FS, REFL_FS, createSunPass,
+  SUN_FS, HAZE_FS, REFL_FS, createSunPass, hazeRects, sunRect, reflectionRect,
 } from './viz-synth-sun.js';
 import { linkProgram } from './viz-terrain-gl.js';
 
@@ -163,12 +163,12 @@ test('createSunPass draws haze, sun and reflection with cached uniforms', () => 
   pass.drawHaze(s, P, sig);
   pass.drawSun(s, P, sig);
   pass.drawReflection(s, P, sig);
-  assert.equal(pass.stats.draws, 3);
+  assert.equal(pass.stats.draws, 4);
   const up1 = pass.stats.uploads;
   pass.drawSun(s, P, sig);
-  assert.equal(pass.stats.draws, 4);
+  assert.equal(pass.stats.draws, 5);
   assert.equal(pass.stats.uploads, up1);
-  assert.equal(log.filter((l) => l[0] === 'drawArrays').length, 4);
+  assert.equal(log.filter((l) => l[0] === 'drawArrays').length, 5);
   assert.ok(log.some((l) => l[0] === 'uniform1fv'));
 });
 
@@ -184,7 +184,7 @@ test('createSunPass skips disabled parts and draw runs all three', () => {
   pass.drawReflection(s, { ...P, refl: 'off', sheen: false }, sig);
   assert.equal(pass.stats.draws, 0);
   pass.draw(scene({ time: 2 }), P, sig);
-  assert.equal(pass.stats.draws, 3);
+  assert.equal(pass.stats.draws, 4);
 });
 
 test('rebuild recreates programs and clears cached uniforms; dispose frees', () => {
@@ -200,4 +200,27 @@ test('rebuild recreates programs and clears cached uniforms; dispose frees', () 
   pass.dispose();
   assert.ok(log.filter((l) => l[0] === 'deleteProgram').length >= 3);
   pass.dispose();
+});
+
+test('each sun pass is scissored to its own bounds and counts far less than full-screen fill', () => {
+  const { gl, log } = fakeGL();
+  const pass = createSunPass(gl, { linkProgram });
+  const s = scene({ res: [1920, 1200], fill: { px: 0, quads: 0 } });
+  pass.draw(s, P, sig);
+  const full = 1920 * 1200;
+  assert.ok(s.fill.quads >= 3);
+  assert.ok(s.fill.px < full * 1.6, 'sun+haze+reflection fill ' + s.fill.px / full);
+  assert.equal(log.filter((l) => l[0] === 'scissor').length, log.filter((l) => l[0] === 'drawArrays').length);
+  assert.equal(log.filter((l) => l[0] === 'enable' && l[1] === gl.SCISSOR_TEST).length, log.filter((l) => l[0] === 'disable' && l[1] === gl.SCISSOR_TEST).length);
+});
+
+test('haze and reflection rectangles stay inside the frame and skip invisible parts', () => {
+  const s = scene({ res: [1000, 500] });
+  const r = hazeRects(s, { ...P, on: true, ringOn: true, ringAlpha: 0, bandOn: false });
+  assert.equal(r.ring, null);
+  assert.equal(r.band, null);
+  const sr = sunRect(s, P);
+  assert.ok(sr[2] - sr[0] > 0 && sr[2] - sr[0] <= 2 * P.radius * 500 + 6);
+  const rr = reflectionRect(s, { ...P, refl: 'blur', reflOpacity: 0.5, reflLength: 0.5, sheen: false });
+  assert.ok(rr[1] >= 0 && rr[3] > rr[1]);
 });

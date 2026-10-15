@@ -7,6 +7,7 @@ import { synthTiers, buildMesh } from './viz-synth-mesh.js';
 import { futureLayout } from './viz-synth-field.js';
 import { skyColors } from './viz-synth-sky.js';
 import { parseHex } from './viz-synth-settings.js';
+import { countArea } from './viz-synth-fill.js';
 
 const FILL_MODES = { none: 0, dark: 1, faces: 2 };
 const RENDER_MODES = { wire: 0, filled: 1, both: 2 };
@@ -452,6 +453,7 @@ export function createGroundPass(gl, deps) {
     set4(p, 'u_geo', u.cam.eye[1], -u.cam.pitchDeg * RAD, Math.tan((SYNTH_FOV_DEG * RAD) / 2), 0);
     set4(p, 'u_fog', u.fogNear, u.fogFar, farOf(u), 0);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    countArea(scene, scene.res[0] * scene.res[1] * (1 - scene.horizonV));
     stats.draws += 1;
   }
 
@@ -480,10 +482,12 @@ export function createGroundPass(gl, deps) {
     set3(p, 'u_col', parseHex(params.terrain.hillsColor));
     set3(p, 'u_fogc', u.fogColor);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, hillN);
+    countArea(scene, scene.res[0] * scene.res[1] * hillTop * 0.5);
     stats.draws += 1;
   }
 
-  function drawFaces(u, farZ) {
+  function drawFaces(scene, u, farZ) {
+    countArea(scene, scene.res[0] * scene.res[1] * (1 - scene.horizonV));
     const p = progs.face;
     gl.useProgram(p.prog);
     gl.enable(gl.POLYGON_OFFSET_FILL);
@@ -538,6 +542,7 @@ export function createGroundPass(gl, deps) {
       pass(o, o, Math.min(1, wpx), 0);
     }
     const rings = Math.min(2, Math.max(0, scene.q?.glowPasses ?? 2));
+    const taps = scene.q?.glowTaps ?? 4;
     if (u.glow > 0 && rings > 0) {
       gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
       for (let i = 1; i <= rings; i += 1) {
@@ -545,8 +550,10 @@ export function createGroundPass(gl, deps) {
         const a = (u.glow * GLOW_ALPHA) / i;
         pass(r, r, a, 1);
         pass(-r, -r, a, 1);
-        pass(r, -r, a, 1);
-        pass(-r, r, a, 1);
+        if (taps > 2) {
+          pass(r, -r, a, 1);
+          pass(-r, r, a, 1);
+        }
       }
     }
     gl.disable(gl.BLEND);
@@ -589,7 +596,7 @@ export function createGroundPass(gl, deps) {
     gl.clear(gl.DEPTH_BUFFER_BIT);
     gl.disable(gl.BLEND);
     attribs(2);
-    if (u.fillMode !== 0) drawFaces(u, farZ);
+    if (u.fillMode !== 0) drawFaces(scene, u, farZ);
     if (u.renderMode !== 1 || u.fillMode === 0) drawLines(scene, u, farZ);
     if (pp.future && sil.n && u.futureOpacity > 0) drawFuture(pp, u);
     gl.depthMask(true);

@@ -1,4 +1,5 @@
 import { clamp01, mulberry32 } from './viz-terrain-math.js';
+import { beginRect, endRect, countFull } from './viz-synth-fill.js';
 
 const TWO_PI = Math.PI * 2;
 const STAR_REF_AREA = 1280 * 720;
@@ -89,6 +90,25 @@ export function horizonUniforms(scene, p, signal, out = {}) {
   out.bandOn = p.hBand ? 1 : 0;
   out.bandPx = p.hBand ? p.hBandHeight * hPx : 0;
   return out;
+}
+
+export function skyRect(scene) {
+  const w = scene.res[0];
+  return [0, 0, w, scene.horizonV * scene.res[1] + 2];
+}
+
+export function horizonRect(scene, p) {
+  const w = scene.res[0];
+  const h = scene.res[1];
+  const hy = scene.horizonV * h;
+  const thick = p.hThick * scene.dpr;
+  const glow = clamp01(p.hGlow);
+  const spread = p.hSpread * h;
+  const reach = glow > 0.002 ? (spread * Math.log(512 * glow)) / 2.2 : 0;
+  const edge = Math.max(thick * 0.5, 1) * 1.5 + 2;
+  const below = Math.max(0, reach) + thick + edge;
+  const above = below + (p.hBand ? p.hBandHeight * h : 0);
+  return [0, hy - above, w, hy + below];
 }
 
 export function vignetteUniforms(scene, p, out = {}) {
@@ -296,7 +316,10 @@ export function createSkyPass(gl, deps) {
     set3(s, 'u_top', uSky.top);
     set3(s, 'u_mid', uSky.mid);
     set3(s, 'u_bottom', uSky.bottom);
-    drawQuad(s);
+    if (beginRect(gl, scene, ...skyRect(scene))) {
+      drawQuad(s);
+      endRect(gl);
+    }
     if (p.stars <= 0 || uSky.starBright <= 0) return;
     ensureStars(scene, p);
     if (starN <= 0) return;
@@ -338,7 +361,10 @@ export function createSkyPass(gl, deps) {
     set1(hp, 'u_bandPx', uHor.bandPx);
     set3(hp, 'u_color', uHor.color);
     set3(hp, 'u_bandColor', uHor.bandColor);
-    drawQuad(hp);
+    if (beginRect(gl, scene, ...horizonRect(scene, p))) {
+      drawQuad(hp);
+      endRect(gl);
+    }
     vignetteUniforms(scene, p, uVig);
     if (uVig.amount > 0) {
       const vp = progs.vig;
@@ -347,6 +373,7 @@ export function createSkyPass(gl, deps) {
       set2(vp, 'u_res', uVig.res[0], uVig.res[1]);
       set1(vp, 'u_amount', uVig.amount);
       set1(vp, 'u_aspect', uVig.aspect);
+      countFull(scene);
       drawQuad(vp);
     }
     gl.disable(gl.BLEND);

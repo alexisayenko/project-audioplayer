@@ -16,6 +16,7 @@ import { drawRing, ringRadius } from './viz-ring.js';
 import { flight } from './viz-flight.js';
 import { getStyle } from './viz-terrain-style.js';
 import { createSynth } from './viz-synth-gl.js';
+import { SHED_MAX, SYNTH_MAX_DPR, loadShed, saveShed } from './viz-synth-quality.js';
 import { synthVersion } from './viz-synth-settings.js';
 import { createModeRenderer, MODES, DEFAULT_MODE, isSceneMode, usesFlight } from './viz-modes.js';
 
@@ -46,6 +47,7 @@ function defaults() {
     createSynth,
     getSynthVersion: synthVersion,
     onNotice: null,
+    storage: (() => { try { return win.localStorage ?? null; } catch { return null; } })(),
     createOffscreen,
     debug: wantsDebug(win),
     now: () => (win.performance?.now ? win.performance.now() : Date.now()),
@@ -80,7 +82,7 @@ function spectrumOpts(an) {
 }
 
 const INERT = Object.freeze({
-  setEnabled() {}, setMode() {}, setVizMode() {}, setHeightScale() {}, setParts() {}, effectiveMode: () => DEFAULT_MODE, refresh() {}, resize() {}, frame() {}, destroy() {}, isRunning: () => false, isReduced: () => false, level: 0,
+  setEnabled() {}, setMode() {}, setVizMode() {}, fallbackInfo: () => null, setHeightScale() {}, setParts() {}, effectiveMode: () => DEFAULT_MODE, refresh() {}, resize() {}, frame() {}, destroy() {}, isRunning: () => false, isReduced: () => false, level: 0,
 });
 
 export function createViz({ canvas, mode: startMode = 'background', deps = {} }) {
@@ -97,6 +99,7 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
   const pace = makePaceGovernor();
   const glow = createGlow(() => d.createOffscreen(canvas));
   const backdrop = createBackdrop(() => d.createOffscreen(canvas));
+  const SHED_SAVE_MS = 20000;
   const dprCap = () => (startMode === 'full' && !coarse ? DPR_CAP : VIZ_DPR_CAP);
   const pulse = makePulse();
   const ref = makeReference();
@@ -112,6 +115,11 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
   let mode = startMode;
   let vizMode = DEFAULT_MODE;
   let synthFallback = false;
+  let fallback = null;
+  let shedPx = 0;
+  let shedSaved = 0;
+  let shedSeen = 0;
+  let shedChangedAt = null;
   let creating = false;
   let heavySince = null;
   let heightScale = VIZ_HEIGHT_SCALE;
@@ -261,7 +269,18 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
     }
     if (view.w > 0) renderer.resize(view.w, renderer.usesGL ? view.h * glScale() : view.h, view.dpr);
     if (renderer.usesGL) canvas.hidden = true;
+    configureShed();
     return renderer;
+  }
+
+  function configureShed() {
+    if (renderer?.id !== 'synthwave') { pace.configure({ shedMax: 0, shed: 0 }); return; }
+    if (pace.shedMax > 0) return;
+    const k = Math.min(view.dpr, SYNTH_MAX_DPR);
+    shedPx = view.w * view.h * glScale() * k * k;
+    shedSaved = loadShed(d.storage, shedPx);
+    shedChangedAt = null;
+    pace.configure({ shedMax: SHED_MAX, shed: shedSaved });
   }
 
   function dropRenderer() {
@@ -285,7 +304,7 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
     f.spokes = pickSpokes(bars, SPOKES);
     f.shaped = shapeBars(bars, still ? 0 : now, undefined, f.shaped);
     const r = ensureRenderer();
-    r.setQuality(gov.level, { cap: pace.level, lite: pace.lite, hiDpr: pace.hiDpr, force: getQualityForce() });
+    r.setQuality(gov.level, { cap: pace.level, lite: pace.lite, hiDpr: pace.hiDpr, shed: pace.shed, force: getQualityForce() });
     la?.request(laKey, enabled && isSceneMode(r.id));
     if (usesFlight(r.id)) flight.tick(now, d.isPlaying());
     r.draw(bars, now, isSceneMode(r.id) ? la?.get(now) ?? null : null, isSceneMode(r.id) ? d.getOutputLatency() + getCam().sync / 1000 : 0);
@@ -376,24 +395,37 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
     }
     if (pace.update(ts, drawMeter.ema, targetMs(), drawMeter.valid)) drawMeter.restart();
     checkSynthFallback(ts);
+    persistShed(ts);
+  }
+
+  function persistShed(ts) {
+    if (renderer?.id !== 'synthwave' || pace.shedMax === 0) return;
+    if (pace.shed !== shedSeen) { shedSeen = pace.shed; shedChangedAt = ts; }
+    if (pace.shed === shedSaved || shedChangedAt === null) return;
+    if (ts - shedChangedAt < SHED_SAVE_MS || !drawMeter.valid || drawMeter.ema > targetMs() * PACE_OVER) return;
+    shedSaved = pace.shed;
+    saveShed(d.storage, shedPx, shedSaved);
   }
 
   function checkSynthFallback(ts) {
-    const heavy = renderer?.id === 'synthwave' && pace.half && pace.lite && drawMeter.valid && drawMeter.ema > targetMs() * PACE_OVER;
+    const heavy = renderer?.id === 'synthwave' && pace.exhausted && pace.lite && drawMeter.valid && drawMeter.ema > targetMs() * PACE_OVER;
     if (!heavy) { heavySince = null; return; }
     heavySince ??= ts;
     if (ts - heavySince < PACE_DOWN_S * 2000) return;
-    fallBackToTerrain('Synthwave terrain is too heavy here, using Terrain');
+    const ms = drawMeter.ema;
+    const sc = renderer?.stats?.scale;
+    fallBackToTerrain(`Synthwave terrain is too heavy here (${ms.toFixed(0)} ms per frame, target ${targetMs().toFixed(0)} ms${sc ? `, render scale ${Math.round(sc * 100)}%` : ''}), using Terrain`, { reason: 'heavy', intervalMs: ms });
   }
 
-  function fallBackToTerrain(message) {
+  function fallBackToTerrain(message, info = { reason: 'error' }) {
     synthFallback = true;
+    fallback = { mode: 'synthwave', ...info, label: info.reason === 'heavy' ? 'using Terrain: too heavy' : 'using Terrain: stopped working' };
     heavySince = null;
     pace.reset();
     pace.grace();
     drawMeter.restart();
     dropRenderer();
-    d.onNotice?.(message);
+    d.onNotice?.(message, fallback);
   }
 
   function onRendererError() {
@@ -408,13 +440,19 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
     return `last ${last}, ban ${i.banLeft.toFixed(0)} s${i.graceLeft > 0 ? `, grace ${i.graceLeft.toFixed(0)} s` : ''}`;
   }
 
+  function synthText(st) {
+    if (st.scale === undefined) return '';
+    return `
+  render scale ${Math.round(st.scale * 100)}% (rung ${st.shed}/${pace.shedMax}) passes ${st.quads} fill ${st.fill.toFixed(1)}x glow ${st.glowRings}x${st.glowTaps}`;
+  }
+
   function paceText() {
     const st = renderer?.stats;
     const target = 1000 / targetMs();
     const got = drawMeter.fps ? `${drawMeter.fps.toFixed(0)}` : 'n/a';
     const fps = `fps ${got}/${target.toFixed(0)} (display ${(1000 / meter.refresh).toFixed(0)} Hz)`;
     if (!st) return fps;
-    return `${fps}  terrain L${st.level} cap ${pace.cap}${pace.half ? ' half-rate' : ''}${pace.lite ? ' lite' : ''} tiers ${st.tiers} verts ${st.vertices} dpr ${st.dpr} ${st.w}x${st.h}\n  ${paceNote()}`;
+    return `${fps}  terrain L${st.level} cap ${pace.cap}${pace.half ? ' half-rate' : ''}${pace.lite ? ' lite' : ''} tiers ${st.tiers} verts ${st.vertices} dpr ${st.dpr} ${st.w}x${st.h}${synthText(st)}\n  ${paceNote()}`;
   }
 
   function frame(ts) {
@@ -494,6 +532,7 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
       if (id === vizMode) return;
       vizMode = id;
       synthFallback = false;
+      fallback = null;
       heavySince = null;
       meter.hold();
       drawMeter.hold();
@@ -511,6 +550,7 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
     },
     setParts(state) { parts.setState(state); if (raf == null) evaluate(); },
     effectiveMode: () => renderer?.id ?? vizMode,
+    fallbackInfo: () => fallback,
     refresh: evaluate,
     resize,
     frame,

@@ -380,3 +380,43 @@ test('a restored context cancels the restore timeout', (t) => {
   timers.filter((m) => !m.off).forEach((m) => m.fn());
   assert.equal(errs.length, 0);
 });
+
+test('render scale shrinks the canvas backing store but not the css size, and scene.dpr follows', () => {
+  const t = make();
+  t.synth.resize(1920, 1200, 1);
+  assert.equal(t.canvas.width, 1920);
+  t.synth.setShed(1);
+  assert.equal(t.canvas.width, 1440);
+  assert.equal(t.canvas.height, 900);
+  assert.equal(t.synth.stats.scale, 0.75);
+  assert.equal(t.synth.stats.shed, 1);
+  t.synth.setShed(3);
+  assert.equal(t.canvas.width, 960);
+  assert.equal(t.canvas.height, 600);
+  t.synth.draw(spec, 100);
+  const scene = t.made.sun.by.drawSun[0];
+  assert.deepEqual(scene.res, [960, 600]);
+  assert.equal(scene.dpr, 0.5);
+  assert.equal(scene.q.renderScale, 0.5);
+  assert.deepEqual(t.made.sky.sizes.at(-1), [1920, 1200, 1]);
+  t.synth.setShed(0);
+  assert.equal(t.canvas.width, 1920);
+});
+
+test('shed rungs are clamped and an unchanged rung does not resize', () => {
+  const t = make();
+  t.synth.resize(800, 400, 1);
+  const n = t.made.sky.sizes.length;
+  t.synth.setShed(0);
+  assert.equal(t.made.sky.sizes.length, n);
+  t.synth.setShed(99);
+  assert.equal(t.synth.stats.shed, 3);
+});
+
+test('the scissor test is switched off before the clear so the clear covers the frame', () => {
+  const t = make();
+  t.synth.draw(spec, 100);
+  const names = t.gl.calls.map((c) => c[0]);
+  assert.ok(names.indexOf('disable') < names.indexOf('clear'));
+  assert.equal(t.gl.calls.find((c) => c[0] === 'disable' && c[1] === t.gl.SCISSOR_TEST) !== undefined, true);
+});

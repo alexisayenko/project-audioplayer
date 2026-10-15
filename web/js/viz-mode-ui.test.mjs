@@ -256,3 +256,20 @@ test('CSS hides the overlay dock with the controls: opacity and visibility, no p
   assert.match(css, /prefers-reduced-motion: reduce\) \{[^}]*\.viz-full > \.viz-dock[^}]*transition: none/);
   assert.doesNotMatch(css, /\.idle[^{]*\.viz-dock \{[^}]*display/);
 });
+
+test('a fallback note is shown on the mode button and cleared when the mode is set again', async () => {
+  const { createModeSwitch } = await import('./viz-switch.js');
+  const root = document.createElement('div');
+  document.body.append(root);
+  const modes = [{ id: 'terrain', label: 'Terrain', icon: 'terrain' }, { id: 'synthwave', label: 'Synthwave terrain', icon: 'synthwave' }];
+  const sw = createModeSwitch({ root, modes, current: 'synthwave', onSelect() {} });
+  const text = () => root.children[0].textContent;
+  assert.equal(text(), 'Synthwave terrain');
+  sw.setNote('using Terrain: too heavy');
+  assert.equal(text(), 'Synthwave terrain (using Terrain: too heavy)');
+  assert.equal(root.children[0].getAttribute('aria-label'), 'Visualizer mode: Synthwave terrain (using Terrain: too heavy)');
+  assert.equal(root.children[0].title, 'Visualizer mode: Synthwave terrain (using Terrain: too heavy)');
+  sw.set('synthwave');
+  assert.equal(text(), 'Synthwave terrain');
+  root.remove();
+});

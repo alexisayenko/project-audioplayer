@@ -31,6 +31,7 @@ export function opensUpward(rect, popupHeight, viewportHeight, gap = 8) {
 
 export function createModeSwitch({ root, modes, current, onSelect, win = globalThis.window }) {
   let id = current;
+  let note = '';
   let open = false;
   const options = new Map();
   const label = () => modes.find((m) => m.id === id)?.label ?? '';
@@ -50,10 +51,11 @@ export function createModeSwitch({ root, modes, current, onSelect, win = globalT
     const m = modes.find((x) => x.id === id) ?? modes[0];
     const text = document.createElement('span');
     text.className = 'viz-dd-text';
-    text.textContent = m.label;
+    const full = note ? `${m.label} (${note})` : m.label;
+    text.textContent = full;
     button.replaceChildren(icon(m.icon, 18), text, icon('chevron', 16));
-    button.setAttribute('aria-label', `Visualizer mode: ${m.label}`);
-    button.title = `Visualizer mode: ${m.label}`;
+    button.setAttribute('aria-label', `Visualizer mode: ${full}`);
+    button.title = `Visualizer mode: ${full}`;
     button.dataset.mode = m.id;
   };
   const paintOptions = () => {
@@ -148,7 +150,8 @@ export function createModeSwitch({ root, modes, current, onSelect, win = globalT
   paintOptions();
   root.hidden = modes.length < 2;
   return {
-    set(next) { id = next; paintButton(); paintOptions(); },
+    set(next, why = '') { id = next; note = why; paintButton(); paintOptions(); },
+    setNote(why = '') { note = why; paintButton(); },
     close() { close(false); },
     get current() { return id; },
     get isOpen() { return open; },

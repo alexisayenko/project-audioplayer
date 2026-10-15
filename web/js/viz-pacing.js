@@ -89,8 +89,12 @@ export function makeFrameMeter({ frames = FRAME_EMA, hold = HOLD_FRAMES } = {}) 
   };
 }
 
-export function makePaceGovernor({ top = PACE_TOP, start = PACE_START } = {}) {
+export function makePaceGovernor({ top = PACE_TOP, start = PACE_START, shedMax = 0, shedStart = 0 } = {}) {
   let cap = Math.min(top, Math.max(-1, start));
+  let shedTop = Math.max(0, Math.floor(shedMax));
+  let shed = Math.min(shedTop, Math.max(0, Math.floor(shedStart)));
+  const shedBanUntil = new Array(16).fill(0);
+  const shedBans = new Array(16).fill(PACE_BAN_S);
   let lite = false;
   let overSince = null;
   let okSince = null;
@@ -120,7 +124,16 @@ export function makePaceGovernor({ top = PACE_TOP, start = PACE_START } = {}) {
         okSince = null;
         liteOkSince = null;
         if (ts - overSince >= PACE_LITE_S * 1000) lite = true;
-        if (ts - overSince >= PACE_DOWN_S * 1000 && ts >= lockUntil && cap > -1 && (cap > 0 || lite)) {
+        if (ts - overSince >= PACE_DOWN_S * 1000 && ts >= lockUntil && shed < shedTop) {
+          note = { dir: -1, at: ts, text: `interval ${ema.toFixed(1)} ms > ${(target * PACE_OVER).toFixed(1)} ms for ${((ts - overSince) / 1000).toFixed(1)} s (render scale)`, banS: shedBans[shed] };
+          stableSince = null;
+          shedBanUntil[shed] = ts + shedBans[shed] * 1000;
+          shedBans[shed] = Math.min(PACE_BAN_MAX_S, shedBans[shed] * 2);
+          shed += 1;
+          changed = -1;
+          overSince = null;
+          lockUntil = ts + PACE_SETTLE_S * 1000;
+        } else if (ts - overSince >= PACE_DOWN_S * 1000 && ts >= lockUntil && cap > -1 && (cap > 0 || lite)) {
           note = { dir: -1, at: ts, text: `interval ${ema.toFixed(1)} ms > ${(target * PACE_OVER).toFixed(1)} ms for ${((ts - overSince) / 1000).toFixed(1)} s`, banS: bans[cap + 1] };
           stableSince = null;
           banUntil[cap + 1] = ts + bans[cap + 1] * 1000;
@@ -136,7 +149,14 @@ export function makePaceGovernor({ top = PACE_TOP, start = PACE_START } = {}) {
           okSince ??= ts;
           liteOkSince ??= ts;
           if (lite && ts - liteOkSince >= PACE_LITE_OFF_S * 1000) lite = false;
-          if (ts - okSince >= PACE_UP_S * 1000 && cap < top && ts >= banUntil[cap + 2] && ts >= lockUntil) {
+          const climbCap = cap < (shedTop > 0 ? Math.min(top, 2) : top);
+          if (ts - okSince >= PACE_UP_S * 1000 && !climbCap && shed > 0 && ts >= shedBanUntil[shed - 1] && ts >= lockUntil) {
+            note = { dir: 1, at: ts, text: `interval ${ema.toFixed(1)} ms < ${(target * PACE_OK).toFixed(1)} ms for ${((ts - okSince) / 1000).toFixed(1)} s (render scale)`, banS: 0 };
+            shed -= 1;
+            changed = 1;
+            okSince = null;
+            lockUntil = ts + PACE_SETTLE_S * 1000;
+          } else if (ts - okSince >= PACE_UP_S * 1000 && cap < top && (climbCap || shed === 0) && ts >= banUntil[cap + 2] && ts >= lockUntil) {
             note = { dir: 1, at: ts, text: `interval ${ema.toFixed(1)} ms < ${(target * PACE_OK).toFixed(1)} ms for ${((ts - okSince) / 1000).toFixed(1)} s`, banS: 0 };
             cap += 1;
             changed = 1;
@@ -150,6 +170,12 @@ export function makePaceGovernor({ top = PACE_TOP, start = PACE_START } = {}) {
       }
       return changed;
     },
+    configure({ shedMax: m = shedTop, shed: n = shed } = {}) {
+      shedTop = Math.max(0, Math.floor(m));
+      shed = Math.min(shedTop, Math.max(0, Math.floor(n)));
+      shedBanUntil.fill(0);
+      shedBans.fill(PACE_BAN_S);
+    },
     reset() { overSince = null; okSince = null; liteOkSince = null; stableSince = null; lite = false; },
     info(ts) {
       const banLeft = Math.max(0, ...banUntil.map((u) => u - ts)) / 1000;
@@ -161,6 +187,9 @@ export function makePaceGovernor({ top = PACE_TOP, start = PACE_START } = {}) {
     get half() { return cap < 0; },
     get lite() { return lite; },
     get level() { return Math.min(2, Math.max(0, cap)); },
-    get hiDpr() { return cap >= 3; },
+    get hiDpr() { return cap >= 3 && shed === 0; },
+    get shed() { return shed; },
+    get shedMax() { return shedTop; },
+    get exhausted() { return shed >= shedTop && cap < 0; },
   };
 }
