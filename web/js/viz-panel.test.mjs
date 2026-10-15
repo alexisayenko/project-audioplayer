@@ -7,10 +7,10 @@ const { panelSections, panelTitle, panelHasContent, defaultCollapsed, readCollap
 const { defaultParts } = await import('./viz-parts.js');
 
 test('sections per mode: Terrain style select, Mirrored spectrum parts, Ring nothing', () => {
-  assert.deepEqual(panelSections('terrain'), { style: true, flight: true, parts: false, synth: false });
-  assert.deepEqual(panelSections('bars'), { style: false, flight: false, parts: true, synth: false });
-  assert.deepEqual(panelSections('ring'), { style: false, flight: false, parts: false, synth: false });
-  assert.deepEqual(panelSections('synthwave'), { style: false, flight: false, parts: false, synth: true });
+  assert.deepEqual(panelSections('terrain'), { style: true, flight: true, parts: false, synth: false, mirror: false });
+  assert.deepEqual(panelSections('bars'), { style: false, flight: false, parts: true, synth: false, mirror: true });
+  assert.deepEqual(panelSections('ring'), { style: false, flight: false, parts: false, synth: false, mirror: false });
+  assert.deepEqual(panelSections('synthwave'), { style: false, flight: false, parts: false, synth: true, mirror: false });
   assert.equal(panelHasContent('synthwave'), true);
   assert.equal(panelHasContent('ring'), false);
   assert.equal(panelHasContent('bars'), true);

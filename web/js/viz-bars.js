@@ -14,12 +14,12 @@ export function mirror(half) {
   return out;
 }
 
-export function barGeometry(n, w, dpr = 1) {
+export function barGeometry(n, w, dpr = 1, fraction = BAR_WIDTH_FRACTION) {
   const d = Math.max(1, dpr);
   const pitch = w / n;
   const pitchDev = pitch * d;
   const widest = Math.max(1, Math.floor(pitchDev) - Math.ceil(GAP_MIN_CSS * d));
-  const want = Math.max(Math.round(BAR_WIDTH_FRACTION * pitchDev), Math.ceil(BAR_MIN_CSS * d));
+  const want = Math.max(Math.round(fraction * pitchDev), Math.ceil(BAR_MIN_CSS * d));
   const barDev = Math.max(1, Math.min(want, widest));
   return { pitch, width: barDev / d, dpr: d, pitchDev, barDev };
 }
@@ -93,12 +93,14 @@ export function barHeights(values, half, out = heights) {
 }
 
 export function drawBars(ctx, w, h, values, opts) {
-  const { colors, horizon = 0.5, span = 1, alpha = 1, dpr = 1 } = opts;
+  const {
+    colors, horizon = 0.5, span = 1, alpha = 1, dpr = 1, widthFraction = BAR_WIDTH_FRACTION, reflection = MIRROR_ALPHA, glow = true,
+  } = opts;
   const n = values.length;
   if (!n || !(w > 0) || !(h > 0)) return;
   const y0 = h * horizon;
   const half = Math.min(y0, h - y0) * span;
-  const geo = barGeometry(n, w, dpr);
+  const geo = barGeometry(n, w, dpr, widthFraction);
   if (heights.length < n) heights = new Float32Array(n);
   barHeights(values, half, heights);
   const res = resources(ctx, w, n, geo, colors);
@@ -110,8 +112,8 @@ export function drawBars(ctx, w, h, values, opts) {
   drawHalf(ctx, y0, geo, alpha, res);
   ctx.translate(0, 2 * y0 * geo.dpr);
   ctx.scale(1, -1);
-  drawHalf(ctx, y0, geo, alpha * MIRROR_ALPHA, res);
+  drawHalf(ctx, y0, geo, alpha * reflection, res);
   ctx.restore();
-  drawHorizon(ctx, w, y0, res, alpha);
+  if (glow) drawHorizon(ctx, w, y0, res, alpha);
   ctx.restore();
 }

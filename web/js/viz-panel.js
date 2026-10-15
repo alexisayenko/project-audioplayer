@@ -2,6 +2,7 @@ import { TERRAIN_STYLES, getStyle, setStyle, onStyle } from './viz-terrain-style
 import { createPartsToggles } from './viz-parts-ui.js';
 import { modeLabel } from './viz-modes.js';
 import { createSynthPanel } from './viz-synth-panel.js';
+import { createMirrorPanel } from './viz-mirror-panel.js';
 import { flight, flightOn, flightReduced, setFlightOn, onFlight } from './viz-flight.js';
 
 const signed = (v, d) => `${v >= 0 ? '+' : ''}${v.toFixed(d)}`;
@@ -15,7 +16,7 @@ export const PANEL_COLLAPSED_KEY = 'ap2.viz.panelCollapsed';
 export const NARROW_PX = 480;
 
 export function panelSections(mode) {
-  return { style: mode === 'terrain', flight: mode === 'terrain', parts: mode === 'bars', synth: mode === 'synthwave' };
+  return { style: mode === 'terrain', flight: mode === 'terrain', parts: mode === 'bars', synth: mode === 'synthwave', mirror: mode === 'bars' };
 }
 
 export function panelTitle(mode) {
@@ -24,7 +25,7 @@ export function panelTitle(mode) {
 
 export function panelHasContent(mode) {
   const s = panelSections(mode);
-  return s.style || s.flight || s.parts || s.synth;
+  return s.style || s.flight || s.parts || s.synth || s.mirror;
 }
 
 export function defaultCollapsed(width) {
@@ -114,7 +115,10 @@ export function createStylePanel({ doc = document, mode, width, parts }) {
   const synthPanel = createSynthPanel({ doc });
   const synthRoot = synthPanel.el;
 
-  body.append(styleRow, flightRow, partsRoot, synthRoot);
+  const mirrorPanel = createMirrorPanel({ doc });
+  const mirrorRoot = mirrorPanel.el;
+
+  body.append(styleRow, flightRow, partsRoot, mirrorRoot, synthRoot);
   root.append(head, body);
 
   const setMode = (m) => {
@@ -125,6 +129,7 @@ export function createStylePanel({ doc = document, mode, width, parts }) {
     paintFlight();
     partsRoot.hidden = !s.parts;
     synthRoot.hidden = !s.synth;
+    mirrorRoot.hidden = !s.mirror;
     root.dataset.empty = panelHasContent(m) ? '0' : '1';
   };
   setMode(mode);
@@ -134,6 +139,6 @@ export function createStylePanel({ doc = document, mode, width, parts }) {
     setParts: (s) => toggles.set(s),
     toggles,
     isEmpty: () => root.dataset.empty === '1',
-    dispose() { offStyle(); offFlight(); synthPanel.destroy(); globalThis.clearInterval?.(readTimer); root.remove(); },
+    dispose() { offStyle(); offFlight(); synthPanel.destroy(); mirrorPanel.destroy(); globalThis.clearInterval?.(readTimer); root.remove(); },
   };
 }

@@ -1,7 +1,7 @@
 import { makeFrameMeter, makePaceGovernor, targetIntervalMs, watchLowPower, PACE_OVER, PACE_DOWN_S } from './viz-pacing.js';
 import { getQualityForce, getCam } from './viz-cam-debug.js';
 import {
-  ATTACK, RELEASE, IDLE_EPSILON, VIZ_FPS, VIZ_DPR_CAP, DPR_CAP, VIZ_HEIGHT_SCALE, TILT_DB_PER_OCT,
+  IDLE_EPSILON, VIZ_FPS, VIZ_DPR_CAP, DPR_CAP, VIZ_HEIGHT_SCALE, TILT_DB_PER_OCT,
 } from './viz-constants.js';
 import {
   barsDb, unitBars, makeReference, bassEnergy, smoothBars, idleBars, maxOf, makePulse, makePacer, makeGovernor, capDpr, pickSpokes, barCount, shapeBars,
@@ -18,6 +18,7 @@ import { getStyle } from './viz-terrain-style.js';
 import { createSynth } from './viz-synth-gl.js';
 import { SHED_MAX, SYNTH_MAX_DPR, loadShed, saveShed } from './viz-synth-quality.js';
 import { synthVersion } from './viz-synth-settings.js';
+import { getMirror, mirrorVersion, mirrorColors } from './viz-mirror-settings.js';
 import { createModeRenderer, MODES, DEFAULT_MODE, isSceneMode, usesFlight } from './viz-modes.js';
 
 const SPOKES = 48;
@@ -136,7 +137,7 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
   const observers = [];
 
   const reduced = () => !!reducedMql?.matches;
-  const bandCount = () => barCount(view.w);
+  const bandCount = () => barCount(view.w, getMirror().density);
   const energy = () => Math.max(maxOf(st.bars), pulse.value);
 
   function colors(now) {
@@ -201,7 +202,7 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
       tracker.lost();
     }
     publishStatus(playing, an);
-    smoothBars(st.bars, target, ATTACK, RELEASE, dt * 60);
+    smoothBars(st.bars, target, getMirror().rise, getMirror().fall, dt * 60);
     pulse.step(bass, dt);
     st.rot += dt * 0.12;
   }
@@ -219,8 +220,10 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
     }
     if (mode === 'full' && f.q?.backdrop) backdrop.draw(ctx, w, h, c, bass);
     const drawn = parts.apply(st.bars, shaped, now / 1000);
+    const m = getMirror();
     drawBars(ctx, w, h, drawn, {
-      colors: c, alpha: mode === 'full' ? 1 : 0.85, dpr: view.dpr, horizon: 0.5, span: heightScale,
+      colors: mirrorColors(c, m.gradient), alpha: mode === 'full' ? 1 : 0.85, dpr: view.dpr, horizon: 0.5, span: heightScale * m.height,
+      widthFraction: m.width, reflection: m.reflection, glow: m.horizon,
     });
   }
 
@@ -373,7 +376,7 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
   const timelineBusy = () => /loading|building/.test(la?.statusText?.() ?? '');
 
   function paceSignature(busy) {
-    return `${isTerrain()}|${renderer?.id === 'synthwave' ? d.getSynthVersion?.() ?? 0 : getStyle()}|${flight.isOn?.() ? 1 : 0}|${view.w}x${view.h}@${view.dpr}|${busy ? 1 : 0}`;
+    return `${isTerrain()}|${renderer?.id === 'synthwave' ? d.getSynthVersion?.() ?? 0 : getStyle()}|${mirrorVersion()}|${flight.isOn?.() ? 1 : 0}|${view.w}x${view.h}@${view.dpr}|${busy ? 1 : 0}`;
   }
 
   function paceDraw(ts) {
