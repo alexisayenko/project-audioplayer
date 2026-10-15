@@ -9,7 +9,7 @@ import {
 import { createTracker, diagnose, debugLines, byteMax, createStatusEl, userAgentFamily, audioOrigin } from './viz-signal.js';
 import { createGlow } from './viz-glow.js';
 import { readVizColors, FALLBACK_COLORS } from './viz-color.js';
-import { drawBars, resetSector } from './viz-bars.js';
+import { drawBars, resetSector, mirrorBarWidth } from './viz-bars.js';
 import { createBackdrop } from './viz-backdrop.js';
 import { createPartsFilter } from './viz-parts.js';
 import { drawRing, ringRadius } from './viz-ring.js';
@@ -137,7 +137,7 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
   const observers = [];
 
   const reduced = () => !!reducedMql?.matches;
-  const bandCount = () => pixelBars(view.w, getMirror().barWidth, getMirror().gap).count;
+  const bandCount = () => { const m = getMirror(); return pixelBars(view.w, mirrorBarWidth(m, view.h, mirrorSpan(m, mode, heightScale)), m.gap).count; };
   const energy = () => Math.max(maxOf(st.bars), pulse.value);
 
   function colors(now) {
@@ -226,14 +226,15 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
     const drawn = parts.apply(st.bars, shaped, now / 1000);
     const dt = lastDraw ? Math.min(0.1, Math.max(0, (now - lastDraw) / 1000)) : 1 / 30;
     lastDraw = now;
-    const px = pixelBars(w, m.barWidth, m.gap);
+    const span = mirrorSpan(m, mode, heightScale);
+    const px = pixelBars(w, mirrorBarWidth(m, h, span), m.gap);
     drawBars(ctx, w, h, drawn, {
-      colors: mirrorColors(c, m.gradient), alpha: mode === 'full' ? 1 : 0.85, dpr: view.dpr, horizon: 0.5, span: mirrorSpan(m, mode, heightScale), maxHeightPx: m.maxHeight,
+      colors: mirrorColors(c, m.gradient), alpha: mode === 'full' ? 1 : 0.85, dpr: view.dpr, horizon: 0.5, span, maxHeightPx: m.maxHeight,
       widthFraction: px.fraction, minGapCss: px.minGapCss, reflection: m.reflection, glow: m.horizon,
       direction: m.direction, segments: m.segments, segmentGap: m.segmentGap, tips: m.tips, tipFade: m.tipFade, band: m.band,
       backdrop: iceBackdrop ? m.backdrop : 'none',
-      sectionHeight: m.sectionHeight, shadeJitter: m.shadeJitter, peak: m.peak, peakHold: m.peakHold, afterimage: m.afterimage, afterTau: m.afterTau, peakDt: d.isPlaying() ? dt : 0, baseGlow: m.baseGlow, mirrorGap: m.mirrorGap, reflectionBlur: m.reflectionBlur, tilt: m.tilt,
-      sectorMode: m.sectorMode, minDwell: m.minDwell, visitsPerStep: m.visitsPerStep, window: m.window, maxLevel: m.maxLevel, trailMax: m.trailMax, sectorGlow: m.glow, sectorGlowSize: m.glowSize, lite: pace.lite, backdropAlpha: mode === 'full' ? 1 : 0.6, dt,
+      sectionHeight: m.sectionHeight, reflectionMode: m.reflectionMode, shadeJitter: m.shadeJitter, peak: m.peak, peakHold: m.peakHold, afterimage: m.afterimage, afterTau: m.afterTau, peakDt: d.isPlaying() ? dt : 0, baseGlow: m.baseGlow, mirrorGap: m.mirrorGap, reflectionBlur: m.reflectionBlur, tilt: m.tilt,
+      sectorMode: m.sectorMode, minDwell: m.minDwell, visitsPerStep: m.visitsPerStep, window: m.window, maxLevel: m.maxLevel, sectorGlow: m.glow, sectorGlowSize: m.glowSize, lite: pace.lite, backdropAlpha: mode === 'full' ? 1 : 0.6, dt,
     });
   }
 

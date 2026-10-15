@@ -120,21 +120,26 @@ test('Ice Blue Mirror 2 uses the reverse-engineered LED settings, the original d
   assert.equal(two.afterimage, 0);
   assert.equal(one.sectorMode, 'off');
   assert.equal(one.gradient, 'ice');
-  assert.equal(two.barWidth, 40);
+  assert.equal(two.barWidth, 80);
+  assert.equal(two.sectionAspect, 4);
   assert.equal(two.sectionHeight, 20);
   assert.equal(two.segments, 20);
-  assert.equal(two.segmentGap, 0.2);
-  assert.equal(two.maxHeight, 20 * (20 + 20 * 0.2));
+  assert.equal(two.segmentGap, 0.4);
+  assert.equal(two.maxHeight, 560);
+  assert.equal(two.maxHeight, 20 * (20 + 20 * 0.4));
   assert.equal(two.tilt, 0);
-  assert.deepEqual([two.window, two.visitsPerStep, two.minDwell, two.maxLevel, two.trailMax, two.glow, two.glowSize], [10, 3, 60, 6, 0.8, 0.8, 1]);
+  assert.deepEqual([two.window, two.visitsPerStep, two.minDwell, two.maxLevel, two.glow, two.glowSize], [10, 3, 60, 8, 0.8, 1]);
   assert.equal('loss' in two, false);
   assert.equal(two.horizon, false);
   assert.equal(two.band, 0);
-  for (const k of ['segments', 'shadeJitter', 'baseGlow', 'mirrorGap', 'reflectionBlur']) {
+  for (const k of ['segments', 'shadeJitter', 'baseGlow', 'mirrorGap']) {
     assert.ok(two[k] !== 0, k);
     assert.equal(one[k], k === 'segments' ? 20 : 0, k);
   }
   assert.equal(one.tilt, 0);
+  assert.equal(two.reflectionBlur, 0);
+  assert.equal(two.reflectionMode, 'shifted');
+  assert.equal(one.reflectionMode, 'alpha');
 });
 
 test('fullRoom sets the full-screen overlay span only for Ice Blue Mirror 2', () => {
@@ -149,4 +154,8 @@ test('fullRoom sets the full-screen overlay span only for Ice Blue Mirror 2', ()
   for (const p of P.MIRROR_PRESET_LIST) if (p.id !== 'ice-blue-mirror-2') assert.equal(p.settings.fullRoom, false, p.id);
   assert.equal(S.validateMirror({ v: 1, fullRoom: 'yes' }).fullRoom, false);
   assert.equal(S.validateMirror({ v: 1, fullRoom: true }).fullRoom, true);
+});
+
+test('only Ice Blue Mirror 2 derives the bar width from the section height', () => {
+  for (const p of P.MIRROR_PRESET_LIST) assert.equal(p.settings.sectionAspect, p.id === 'ice-blue-mirror-2' ? 4 : 0, p.id);
 });

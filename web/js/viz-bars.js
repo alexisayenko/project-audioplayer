@@ -2,7 +2,7 @@ import { rgba, barStops } from './viz-color.js';
 import { barHeight, edgeAlpha } from './viz-spectrum.js';
 import {
   BAR_WIDTH_FRACTION, BAR_MIN_CSS, GAP_MIN_CSS, MIRROR_ALPHA, EDGE_BANDS, HORIZON_CORE_PX, HEIGHT_MAX, MAX_BAR_FRACTION, PEAK_HOLD_S, PEAK_STEP_S, PEAK_ACCEL,
-  SECTOR_MIN_COUNT, SECTOR_DT_MAX, SECTOR_LIFT,
+  SECTOR_MIN_COUNT, SECTOR_DT_MAX,
 } from './viz-constants.js';
 
 export function mirror(half) {
@@ -81,6 +81,17 @@ export function barLayout({ avail, maxHeightPx = 0, segments = 0, sectionHeight 
   if (sectionHeight > 0) return { ...out, rows: Math.round(cap / (sectionHeight * k)), sectionPx: sectionHeight };
   if (n > 0) return { ...out, rows: n, sectionPx: cap / n / k };
   return out;
+}
+
+export function derivedBarWidth({ barWidth = 0, sectionAspect = 0, sectionHeight = 0 }, sectionPx) {
+  if (!(sectionAspect > 0 && sectionHeight > 0)) return barWidth;
+  return Math.round(sectionAspect * (sectionPx > 0 ? sectionPx : sectionHeight) * 100) / 100;
+}
+
+export function mirrorBarWidth(m, h, span) {
+  if (!(m.sectionAspect > 0 && m.sectionHeight > 0)) return m.barWidth;
+  const lay = barLayout({ avail: h * 0.5 * span, maxHeightPx: m.maxHeight, segments: m.segments, sectionHeight: m.sectionHeight, segmentGap: m.segmentGap });
+  return derivedBarWidth(m, lay.sectionPx);
 }
 
 let lastLayout = null;
@@ -188,10 +199,22 @@ export const visitCount = (i, r) => visits[i * sectorState.rows + r];
 export const sectorBuffers = () => [visits, evTime, evRow, evHead, evLen, sectorRow, trailList];
 export const currentSector = (i) => sectorRow[i];
 export const trailLevel = (count, visitsPerStep, maxLevel) => Math.min(maxLevel, Math.floor(count / visitsPerStep));
-export const TRAIL_ALPHA = 0.95;
+export const TRAIL_ALPHA = 1;
 export const TRAIL_REFLECT_SHIFT = 2;
-const HSV_MIN_SAT = 0.55;
-const PATH_DEFAULT = [[4, 13, 49], [6, 26, 83], [17, 59, 134], [36, 100, 172], [48, 119, 194], [61, 139, 217], [74, 159, 240], [108, 192, 245]];
+export const SECTOR_RAMP_INDEX = 9;
+export const TRAIL_TOP_INDEX = 8;
+const PATH_DEFAULT = ['#040d31', '#061a53', '#113b86', '#2464ac', '#3077c2', '#3d8bd9', '#4a9ff0', '#6cc0f5', '#98dcfa', '#d0f4ff', '#f4fdff'].map((h) => [1, 3, 5].map((k) => parseInt(h.slice(k, k + 2), 16)));
+
+export function trailPath(ice2) {
+  return ice2?.stops?.length > SECTOR_RAMP_INDEX ? ice2.stops : PATH_DEFAULT;
+}
+
+export function trailColor(path, level, shift = 0) {
+  const top = Math.min(TRAIL_TOP_INDEX, path.length - 1);
+  return path[Math.max(0, Math.min(top, level) - shift)];
+}
+
+export const sectorColor = (path, shift = 0) => path[Math.max(0, Math.min(SECTOR_RAMP_INDEX, path.length - 1) - shift)];
 
 function toHsv(c) {
   const r = c[0] / 255;
@@ -212,43 +235,43 @@ function fromHsv(h, s, v) {
   return [f(5), f(3), f(1)];
 }
 
-const pathCache = new WeakMap();
-export function trailPath(ice2) {
-  if (!ice2?.dim?.length || !ice2.stops?.length) return PATH_DEFAULT;
-  let hit = pathCache.get(ice2);
-  if (!hit) {
-    hit = [...ice2.dim, ...ice2.stops.slice(4, 8)];
-    pathCache.set(ice2, hit);
-  }
-  return hit;
+export const REFLECT_SHIFT = 4;
+export const REFLECT_SAT_MIN = 0.8;
+export const REFLECT_FULL = 0.5;
+export const REFLECT_FADE = { shifted: [1, 0.3], shade: [0.65, 0.2] };
+
+export function reflectColor(path, index, depth, mode, strength = 1) {
+  const [top, bottom] = REFLECT_FADE[mode];
+  const src = path[mode === 'shifted' ? Math.max(0, index - REFLECT_SHIFT) : index];
+  const [h, s0, v] = toHsv(src);
+  const s = mode === 'shade' ? Math.min(1, s0 * 1.1) : Math.max(s0, REFLECT_SAT_MIN);
+  const fade = top + (bottom - top) * Math.min(1, Math.max(0, depth));
+  return fromHsv(h, s, v * fade * Math.min(1, strength));
 }
 
-export function trailColor(path, level, maxLevel, trailMax, shift = 0) {
-  const top = path.length - 1;
-  const u = Math.max(0, Math.min(top, (level / maxLevel) * top - shift));
-  const i = Math.min(top - 1, Math.floor(u));
-  const f = u - i;
-  const a = toHsv(path[i]);
-  const b = toHsv(path[i + 1]);
-  let dh = b[0] - a[0];
-  if (dh > 180) dh -= 360;
-  else if (dh < -180) dh += 360;
-  const h = (a[0] + dh * f + 360) % 360;
-  let s = a[1] + (b[1] - a[1]) * f;
-  let v = Math.min(a[2] + (b[2] - a[2]) * f, trailMax);
-  if (u > 3) s = Math.max(s, HSV_MIN_SAT);
-  v = Math.max(0, v);
-  return fromHsv(h, Math.min(1, s), v);
+let reflectSlot = null;
+function reflectFills(path, maxLevel, rows, mode, strength) {
+  const hit = reflectSlot;
+  if (hit && hit.path === path && hit.maxLevel === maxLevel && hit.rows === rows && hit.mode === mode && hit.strength === strength) return hit;
+  const cells = new Array((maxLevel + 1) * rows);
+  const sector = new Array(rows);
+  for (let r = 0; r < rows; r += 1) {
+    const depth = r / rows;
+    for (let k = 0; k <= maxLevel; k += 1) cells[k * rows + r] = rgba(reflectColor(path, Math.min(k, TRAIL_TOP_INDEX), depth, mode, strength), 1);
+    sector[r] = rgba(reflectColor(path, SECTOR_RAMP_INDEX, depth, mode, strength), 1);
+  }
+  reflectSlot = { path, maxLevel, rows, mode, strength, cells, sector };
+  return reflectSlot;
 }
 
 const fillSlots = [null, null];
-function trailFills(path, maxLevel, trailMax, shift) {
+function trailFills(path, maxLevel, shift) {
   const slot = shift ? 1 : 0;
   const hit = fillSlots[slot];
-  if (hit && hit.path === path && hit.maxLevel === maxLevel && hit.trailMax === trailMax && hit.shift === shift) return hit.fills;
-  const fills = Array.from({ length: maxLevel + 1 }, (_, k) => rgba(trailColor(path, k, maxLevel, trailMax, shift), 1));
-  fillSlots[slot] = { path, maxLevel, trailMax, shift, fills };
-  return fills;
+  if (hit && hit.path === path && hit.maxLevel === maxLevel && hit.shift === shift) return hit;
+  const fills = Array.from({ length: maxLevel + 1 }, (_, k) => rgba(trailColor(path, k, shift), 1));
+  fillSlots[slot] = { path, maxLevel, shift, fills, sector: rgba(sectorColor(path, shift), 1) };
+  return fillSlots[slot];
 }
 
 export function stepSector(n, plan, dpr, dt, key, o) {
@@ -325,12 +348,12 @@ export function stepSector(n, plan, dpr, dt, key, o) {
 
 export const GLOW_FRAC = [0.08, 0.16, 0.28];
 export const GLOW_ALPHA = [0.3, 0.16, 0.08];
-const GLOW_EDGE = 0.25;
 const GLOW_REFLECT = 0.25;
 const GLOW_MIN_PX = 2;
 export const glowExpand = (j, rowH, dpr, size) => Math.max(GLOW_MIN_PX * dpr, GLOW_FRAC[j] * rowH) * size;
 
 function drawGlow(ctx, b, band, y0d, geo, alpha, plan, fx) {
+  ctx.globalCompositeOperation = 'lighter';
   ctx.fillStyle = fx.glowColor;
   for (let j = 2; j >= 0; j -= 1) {
     ctx.globalAlpha = alpha * fx.glow * GLOW_ALPHA[j];
@@ -344,45 +367,63 @@ function drawGlow(ctx, b, band, y0d, geo, alpha, plan, fx) {
     }
     ctx.fill();
   }
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+function drawReflectedSector(ctx, b, band, y0d, geo, alpha, plan, fx) {
+  const rows = plan.rows;
+  const t = reflectFills(fx.path, fx.maxLevel, rows, fx.reflectMode, fx.reflectStrength);
+  ctx.globalAlpha = alpha * TRAIL_ALPHA;
+  for (let k = 0; k <= fx.maxLevel; k += 1) {
+    for (let e = trailStart[k]; e < trailStart[k + 1]; e += 1) {
+      const cell = trailList[e];
+      const i = (cell / rows) | 0;
+      const r = cell - i * rows;
+      if (band[i] !== b || r === sectorRow[i]) continue;
+      const [ry, rh] = segmentRect(r, y0d, plan);
+      ctx.fillStyle = t.cells[k * rows + r];
+      ctx.beginPath();
+      ctx.rect(barRect(i, geo)[0], ry, geo.barDev, rh);
+      ctx.fill();
+    }
+  }
+  ctx.globalAlpha = alpha;
+  for (let i = 0; i < band.length; i += 1) {
+    const r = sectorRow[i];
+    if (band[i] !== b || r < 0) continue;
+    const [ry, rh] = segmentRect(r, y0d, plan);
+    ctx.fillStyle = t.sector[r];
+    ctx.beginPath();
+    ctx.rect(barRect(i, geo)[0], ry, geo.barDev, rh);
+    ctx.fill();
+  }
 }
 
 function drawSector(ctx, b, band, y0d, geo, alpha, plan, fx, reflected) {
   const rows = plan.rows;
   const x = (i) => barRect(i, geo)[0];
-  const fills = trailFills(fx.path, fx.maxLevel, fx.trailMax, reflected ? TRAIL_REFLECT_SHIFT : 0);
-  for (let pass = 0; pass < 2; pass += 1) {
-    for (let k = 0; k <= fx.maxLevel && pass === 0; k += 1) {
-      ctx.globalAlpha = alpha * TRAIL_ALPHA;
-      ctx.fillStyle = fills[k];
-      ctx.beginPath();
-      for (let e = trailStart[k]; e < trailStart[k + 1]; e += 1) {
-        const cell = trailList[e];
-        const i = (cell / rows) | 0;
-        const r = cell - i * rows;
-        if (band[i] !== b || r === sectorRow[i]) continue;
-        const [ry, rh] = segmentRect(r, y0d, plan);
-        ctx.rect(x(i), ry, geo.barDev, rh);
-      }
-      ctx.fill();
-    }
-    if (pass === 0 && fx.glow > 0) drawGlow(ctx, b, band, y0d, geo, alpha * (reflected ? GLOW_REFLECT : 1), plan, fx);
-    if (pass === 0) ctx.fillStyle = fx.fill;
-    ctx.globalAlpha = pass === 0 ? alpha : alpha * SECTOR_LIFT;
-    if (pass === 1) ctx.fillStyle = fx.liftColor;
+  if (reflected && fx.reflectMode !== 'alpha') {
+    drawReflectedSector(ctx, b, band, y0d, geo, alpha, plan, fx);
+    return;
+  }
+  const { fills, sector } = trailFills(fx.path, fx.maxLevel, reflected ? TRAIL_REFLECT_SHIFT : 0);
+  if (fx.glow > 0) drawGlow(ctx, b, band, y0d, geo, alpha * (reflected ? GLOW_REFLECT : 1), plan, fx);
+  for (let k = 0; k <= fx.maxLevel; k += 1) {
+    ctx.globalAlpha = alpha * TRAIL_ALPHA;
+    ctx.fillStyle = fills[k];
     ctx.beginPath();
-    for (let i = 0; i < band.length; i += 1) {
-      const r = sectorRow[i];
-      if (band[i] !== b || r < 0) continue;
+    for (let e = trailStart[k]; e < trailStart[k + 1]; e += 1) {
+      const cell = trailList[e];
+      const i = (cell / rows) | 0;
+      const r = cell - i * rows;
+      if (band[i] !== b || r === sectorRow[i]) continue;
       const [ry, rh] = segmentRect(r, y0d, plan);
       ctx.rect(x(i), ry, geo.barDev, rh);
     }
     ctx.fill();
-    if (pass === 1) ctx.fillStyle = fx.fill;
   }
-  if (reflected) return;
-  ctx.globalAlpha = fx.glow > 0 ? alpha * GLOW_EDGE : alpha;
-  ctx.strokeStyle = fx.liftColor;
-  ctx.lineWidth = Math.max(1, Math.round(geo.dpr));
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = sector;
   ctx.beginPath();
   for (let i = 0; i < band.length; i += 1) {
     const r = sectorRow[i];
@@ -390,7 +431,7 @@ function drawSector(ctx, b, band, y0d, geo, alpha, plan, fx, reflected) {
     const [ry, rh] = segmentRect(r, y0d, plan);
     ctx.rect(x(i), ry, geo.barDev, rh);
   }
-  ctx.stroke();
+  ctx.fill();
 }
 
 const JITTER_LEVELS = [-1, -0.5, 0, 0.5, 1];
@@ -410,8 +451,8 @@ function drawHalf(ctx, y0, geo, alpha, res, plan, fx = NO_FX, reflected = false)
   for (let b = 0; b < counts.length; b += 1) {
     if (!counts[b]) continue;
     if (plan && fx.sector) {
+      if (fx.baseGlow > 0 && !(reflected && fx.reflectMode !== 'alpha')) drawBaseRow(ctx, b, band, y0d, geo, alpha * alphas[b], res, plan, fx, true);
       drawSector(ctx, b, band, y0d, geo, alpha * alphas[b], plan, fx, reflected);
-      if (fx.baseGlow > 0) drawBaseRow(ctx, b, band, y0d, geo, alpha * alphas[b], res, plan, fx);
       continue;
     }
     const levels = jit ? 5 : 1;
@@ -475,12 +516,13 @@ function drawPeak(ctx, b, band, y0d, geo, alpha, plan, fx) {
   ctx.fill();
 }
 
-function drawBaseRow(ctx, b, band, y0d, geo, alpha, res, plan, fx) {
+function drawBaseRow(ctx, b, band, y0d, geo, alpha, res, plan, fx, haloOnly = false) {
   const d = geo.dpr;
+  if (haloOnly) ctx.globalCompositeOperation = 'lighter';
   const [ry, rh] = segmentRect(0, y0d, plan);
   const grow = Math.max(1, Math.round(3 * d));
-  ctx.fillStyle = fx.baseColor;
-  for (const [pad, a] of [[grow, 0.18], [0, 1]]) {
+  ctx.fillStyle = haloOnly ? fx.glowColor : fx.baseColor;
+  for (const [pad, a] of haloOnly ? [[grow, 0.18]] : [[grow, 0.18], [0, 1]]) {
     ctx.globalAlpha = alpha * a * fx.baseGlow;
     ctx.beginPath();
     for (let i = 0; i < band.length; i += 1) {
@@ -489,6 +531,7 @@ function drawBaseRow(ctx, b, band, y0d, geo, alpha, res, plan, fx) {
     }
     ctx.fill();
   }
+  if (haloOnly) ctx.globalCompositeOperation = 'source-over';
   ctx.fillStyle = res.fill;
 }
 
@@ -576,8 +619,8 @@ export function drawBars(ctx, w, h, values, opts) {
   const {
     colors, horizon = 0.5, span = 1, alpha = 1, dpr = 1, widthFraction = BAR_WIDTH_FRACTION, minGapCss = GAP_MIN_CSS, maxHeightPx = 0, reflection = MIRROR_ALPHA, glow = true,
     direction = 'horizontal', segments = 0, segmentGap = 0.3, tips = false, tipFade = 0.3, band = 0, backdrop = 'none', backdropAlpha = 1, dt = 1 / 30,
-    sectionHeight = 0, shadeJitter = 0, peak = 0, peakHold = PEAK_HOLD_S, afterimage = 0, afterTau = 0.35, peakDt = 0, baseGlow = 0, mirrorGap = 0, reflectionBlur = 0, tilt = 0,
-    sectorMode = 'off', visitsPerStep = 3, window = 10, maxLevel = 6, trailMax = 0.8, sectorGlow = 0, sectorGlowSize = 1, lite = false, minDwell = 60,
+    sectionHeight = 0, reflectionMode = 'alpha', shadeJitter = 0, peak = 0, peakHold = PEAK_HOLD_S, afterimage = 0, afterTau = 0.35, peakDt = 0, baseGlow = 0, mirrorGap = 0, reflectionBlur = 0, tilt = 0,
+    sectorMode = 'off', visitsPerStep = 3, window = 10, maxLevel = 8, sectorGlow = 0, sectorGlowSize = 1, lite = false, minDwell = 60,
   } = opts;
   const n = values.length;
   if (!n || !(w > 0) || !(h > 0)) return;
@@ -595,13 +638,13 @@ export function drawBars(ctx, w, h, values, opts) {
   const sectorPlan = sectorMode === 'trail' ? segmentPlan(half * HEIGHT_MAX, geo.dpr, segments, segmentGap, fixedPx) : null;
   const plan = sectorPlan ?? segmentPlan(fixedPx ? half * HEIGHT_MAX : half, geo.dpr, segments, segmentGap, fixedPx);
   const sector = !!sectorPlan;
-  const fx = { jitter: shadeJitter, baseGlow, baseColor: rgba(colors.line, 1), peak: sector ? 0 : peak, afterimage: sector ? 0 : afterimage, afterTau, sector, maxLevel, trailMax, path: trailPath(colors.ice2), glow: sector && !lite ? sectorGlow : 0, glowSize: sectorGlowSize, glowColor: rgba(colors.ice2?.stops?.[6] ?? colors.a, 1), liftColor: '#fff', fill: res.fill };
+  const fx = { jitter: shadeJitter, baseGlow, baseColor: rgba(colors.line, 1), peak: sector ? 0 : peak, afterimage: sector ? 0 : afterimage, afterTau, sector, maxLevel, reflectMode: sector ? reflectionMode : 'alpha', reflectStrength: reflection / REFLECT_FULL, path: trailPath(colors.ice2), glow: sector && !lite ? sectorGlow : 0, glowSize: sectorGlowSize, glowColor: rgba(colors.ice2?.stops?.[6] ?? colors.a, 1), fill: res.fill };
   if (sector) stepSector(n, plan, geo.dpr, peakDt, `${w}|${h}|${geo.dpr}|${visitsPerStep}|${maxLevel}`, { window, visitsPerStep, maxLevel, minDwell: minDwell / 1000 });
   else if ((peak > 0 || afterimage > 0) && plan) stepPeak(n, plan, geo.dpr, peakDt, peakHold);
   if (backdrop === 'ice' || backdrop === 'black' || backdrop === 'ice2') drawBackdrop(ctx, w, h, y0, colors, backdropAlpha, backdrop);
   if (tips) stepTips(n, tipFade, half, dt);
   ctx.save();
-  ctx.globalCompositeOperation = 'lighter';
+  ctx.globalCompositeOperation = sector ? 'source-over' : 'lighter';
   ctx.fillStyle = res.fill;
   const rad = tilt ? (-tilt * Math.PI) / 180 : 0;
   const cos = Math.cos(rad);
@@ -615,18 +658,23 @@ export function drawBars(ctx, w, h, values, opts) {
   if (tips) { drawTips(ctx, n, y0, geo, alpha, rgba(colors.line, 1), plan); ctx.fillStyle = res.fill; }
   ctx.translate(0, 2 * y0 * geo.dpr + Math.round(mirrorGap * geo.dpr));
   ctx.scale(1, -1);
-  drawHalf(ctx, y0, geo, alpha * reflection, res, plan, fx, true);
-  if (reflectionBlur > 0) {
+  const blur = (blurFx) => {
     const k = Math.max(1, Math.round((1 + reflectionBlur * 3) * geo.dpr));
     const soft = alpha * reflection * 0.4 * reflectionBlur;
     ctx.translate(0, k);
-    drawHalf(ctx, y0, geo, soft, res, plan, sector ? fx : NO_FX, true);
+    drawHalf(ctx, y0, geo, soft, res, plan, blurFx, true);
     ctx.translate(0, -2 * k);
-    drawHalf(ctx, y0, geo, soft, res, plan, sector ? fx : NO_FX, true);
-  }
+    drawHalf(ctx, y0, geo, soft, res, plan, blurFx, true);
+    if (sector) ctx.translate(0, k);
+  };
+  const exact = sector && reflectionMode !== 'alpha';
+  if (sector && !exact && reflectionBlur > 0) blur({ ...fx, glow: 0, baseGlow: 0 });
+  drawHalf(ctx, y0, geo, exact ? alpha : alpha * reflection, res, plan, fx, true);
+  if (!sector && reflectionBlur > 0) blur(NO_FX);
   if (tips) drawTips(ctx, n, y0, geo, alpha * reflection, rgba(colors.line, 1), plan);
   ctx.restore();
   if (glow) {
+    if (sector) ctx.globalCompositeOperation = 'lighter';
     if (rad) { ctx.translate(w / 2, h / 2); ctx.rotate(rad); ctx.translate(-w / 2, -h / 2); }
     drawHorizon(ctx, w, y0, res, alpha, band);
   }

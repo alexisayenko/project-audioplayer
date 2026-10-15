@@ -22,7 +22,6 @@ export const PEAK_STEP_S = 0.12;
 export const PEAK_ACCEL = 0.9;
 export const SECTOR_MIN_COUNT = 0.5;
 export const SECTOR_DT_MAX = 0.1;
-export const SECTOR_LIFT = 0.9;
 export const AFTERIMAGE_TAU_S = 0.35;
 export const PX_BAR_MIN = 48;
 export const PX_BAR_MIN_WIDE = 8;

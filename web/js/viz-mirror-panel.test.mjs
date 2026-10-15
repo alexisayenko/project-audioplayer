@@ -180,7 +180,7 @@ test('maxHeightPx caps the bars at that many css px and Auto keeps the old half-
 test('History trail settings: neutral defaults, validated ranges', () => {
   const d = S.defaultMirror();
   assert.equal(d.sectorMode, 'off');
-  assert.deepEqual([d.visitsPerStep, d.window, d.maxLevel, d.trailMax, d.minDwell, d.glow, d.glowSize], [3, 10, 6, 0.8, 60, 0.8, 1]);
+  assert.deepEqual([d.visitsPerStep, d.window, d.maxLevel, d.minDwell, d.glow, d.glowSize], [3, 10, 8, 60, 0.8, 1]);
   const v = S.validateMirror({ sectorMode: 'x', visitsPerStep: 99, loss: -3, window: 500, maxLevel: 0, trailMax: 5, stepGain: 0 });
   assert.equal(v.sectorMode, 'off');
   assert.equal(v.visitsPerStep, 30);
@@ -189,7 +189,8 @@ test('History trail settings: neutral defaults, validated ranges', () => {
   assert.equal(S.validateMirror({ window: 0 }).window, 2);
   assert.equal(S.validateMirror({ loss: 3 }).window, 10);
   assert.equal(v.maxLevel, 1);
-  assert.equal(v.trailMax, 1);
+  assert.equal('trailMax' in v, false);
+  assert.equal(S.validateMirror({ maxLevel: 12 }).maxLevel, 8);
   assert.equal('stepGain' in v, false);
   assert.ok(S.MIRROR_GROUPS.includes('History trail'));
 });
@@ -309,5 +310,38 @@ test('Section height and count are used together: derived bar height disables Ma
   S.setMirror('sectionHeight', 0);
   assert.equal(maxH.querySelector('input').disabled, false);
   assert.equal(height.querySelector('output').textContent, 'From count');
+  p.destroy();
+});
+
+test('Section aspect derives the bar width from the effective section height and disables Bar width', () => {
+  reset();
+  let lay = null;
+  const p = createMirrorPanel({ doc: document, getLayout: () => lay, getWidth: () => 1200 });
+  const aspect = rowOf(p, 'Section width = N x section height (0 = use Bar width)');
+  const bw = rowOf(p, 'Bar width (px)');
+  assert.ok(aspect && bw);
+  assert.equal(S.defaultMirror().sectionAspect, 0);
+  assert.equal(aspect.querySelector('output').textContent, 'Off');
+  S.setMirror('sectionHeight', 20);
+  S.setMirror('segments', 20);
+  assert.equal(bw.querySelector('input').disabled, false);
+  S.setMirror('sectionAspect', 4);
+  assert.equal(bw.querySelector('input').disabled, true);
+  assert.equal(bw.querySelector('output').textContent, '80, from 4 x 20 px');
+  S.setMirror('gap', 6);
+  assert.equal(p.el.querySelector('.viz-synth-count').textContent, '~14 bars');
+  lay = { rows: 20, sectionPx: 6, room: 140, height: 168, derived: true, fit: 0.3 };
+  S.setMirror('segments', 21);
+  S.setMirror('segments', 20);
+  assert.equal(bw.querySelector('output').textContent, '24, from 4 x 6 px');
+  assert.match(p.el.querySelector('.viz-synth-effective').textContent, /effective: 20 rows x 6 px, width 24 px \(room 140 px\)/);
+  assert.equal(p.el.querySelector('.viz-synth-count').textContent, '~40 bars');
+  S.setMirror('gap', 11);
+  assert.equal(p.el.querySelector('.viz-synth-count').textContent, '~34 bars');
+  S.setMirror('sectionHeight', 0);
+  assert.equal(bw.querySelector('input').disabled, false);
+  S.setMirror('sectionHeight', 20);
+  S.setMirror('sectionAspect', 0);
+  assert.equal(bw.querySelector('input').disabled, false);
   p.destroy();
 });

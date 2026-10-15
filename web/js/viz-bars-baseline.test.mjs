@@ -1,8 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { drawBars } from './viz-bars.js';
-import { FALLBACK_COLORS } from './viz-color.js';
+import { drawBars, barLayout, mirrorBarWidth, derivedBarWidth } from './viz-bars.js';
+import { pixelBars } from './viz-spectrum.js';
+import { FALLBACK_COLORS, rgba } from './viz-color.js';
 
 function trace(opts) {
   const log = [];
@@ -306,33 +307,76 @@ test('sliding window: several visits expire one by one in order; ring overflow k
   assert.equal(sum, 0);
 });
 
-test('trail level steps at 5/10/15 counts, trail colours climb the dim ladder at alpha >= 0.9', async () => {
+test('trail level steps at 3 counts; levels 0..8 are exactly palette colours 1..9, the now sector is colour 10, colour 11 is unused', async () => {
   const B = await import('./viz-bars.js');
   assert.deepEqual([4.9, 5, 9.9, 10, 15, 100].map((c) => B.trailLevel(c, 5, 6)), [0, 1, 1, 2, 3, 6]);
-  assert.ok(B.TRAIL_ALPHA >= 0.9);
+  assert.equal(B.TRAIL_ALPHA, 1);
+  assert.equal(B.SECTOR_RAMP_INDEX, 9);
   const path = B.trailPath(FALLBACK_COLORS.ice2);
-  assert.equal(path.length, 8);
-  assert.deepEqual(path.slice(0, 4), FALLBACK_COLORS.ice2.dim);
-  assert.deepEqual(B.trailColor(path, 0, 6, 1), path[0]);
-  const top = B.trailColor(path, 6, 6, 0.8);
-  const hsv = (c) => {
-    const mx = Math.max(...c);
-    const d = mx - Math.min(...c);
-    return { s: mx ? d / mx : 0, v: mx / 255 };
-  };
-  assert.ok(hsv(top).v <= 0.8 + 0.01 && hsv(top).v > 0.75);
-  const lum = (c) => 0.3 * c[0] + 0.59 * c[1] + 0.11 * c[2];
-  for (let k = 1; k <= 6; k += 1) assert.ok(lum(B.trailColor(path, k, 6, 0.8)) > lum(B.trailColor(path, k - 1, 6, 0.8)));
-  for (let k = 0; k <= 6; k += 1) assert.ok(lum(B.trailColor(path, k, 6, 0.8, 2)) <= lum(B.trailColor(path, k, 6, 0.8)));
-  for (const cap of [0.3, 0.5, 0.8, 1]) {
-    for (let k = 0; k <= 6; k += 1) {
-      const c = B.trailColor(path, k, 6, cap);
-      const o = hsv(c);
-      assert.ok(o.v <= cap + 0.01);
-      if (k >= 5 && cap >= 0.5) assert.ok(o.s >= 0.55, `level ${k} cap ${cap} s ${o.s}`);
-      assert.ok(Math.max(...c) - Math.min(...c) > 0 && c[2] >= c[1] && c[1] >= c[0]);
-    }
+  assert.equal(path.length, 11);
+  const hex = (c) => `#${c.map((v) => v.toString(16).padStart(2, '0')).join('')}`;
+  const want = ['#040d31', '#061a53', '#113b86', '#2464ac', '#3077c2', '#3d8bd9', '#4a9ff0', '#6cc0f5', '#98dcfa'];
+  for (let k = 0; k <= 8; k += 1) {
+    assert.equal(hex(B.trailColor(path, k)), want[k], `level ${k}`);
+    assert.equal(hex(B.trailColor(path, k, B.TRAIL_REFLECT_SHIFT)), want[Math.max(0, k - 2)], `reflection ${k}`);
   }
+  assert.equal(hex(B.trailColor(path, 99)), '#98dcfa');
+  assert.equal(hex(B.sectorColor(path)), '#d0f4ff');
+  assert.equal(hex(B.sectorColor(path, 2)), '#6cc0f5');
+  const all = new Set(Array.from({ length: 12 }, (_, k) => hex(B.trailColor(path, k))));
+  assert.equal(all.has('#f4fdff'), false);
+  assert.equal(all.has('#d0f4ff'), false);
+  const moved = { stops: path.map((c, k) => (k === 9 ? [1, 2, 3] : c)) };
+  assert.equal(hex(B.sectorColor(B.trailPath(moved))), '#010203');
+  const hsvV = (c) => Math.max(...c) / 255;
+  assert.ok(hsvV(B.trailColor(path, 8)) <= 0.8 * hsvV(B.sectorColor(path)) + 0.2);
+});
+
+test('now sector and brightest trail colour are told apart: dE2000 is about 9', async () => {
+  const B = await import('./viz-bars.js');
+  const { deltaE2000 } = await import('./viz-deltae.js');
+  const path = B.trailPath(FALLBACK_COLORS.ice2);
+  const d = deltaE2000(B.trailColor(path, 8), B.sectorColor(path));
+  assert.ok(d > 8 && d < 11, `dE ${d}`);
+});
+
+test('sector frame draws only palette colours: no white, flat now colour, additive only for glow', async () => {
+  const B = await import('./viz-bars.js');
+  B.resetSector();
+  const ice = FALLBACK_COLORS.ice2.stops;
+  const palette = new Set(ice.map((c) => rgba(c, 1)));
+  const state = { fillStyle: '', globalAlpha: 1, globalCompositeOperation: 'source-over' };
+  const fills = [];
+  const ctx = new Proxy({}, {
+    get: (_, k) => {
+      if (k === 'createLinearGradient') return () => ({ addColorStop() {} });
+      if (k in state) return state[k];
+      if (k === 'fill') return () => fills.push({ ...state });
+      return () => {};
+    },
+    set: (_, k, v) => { state[k] = v; return true; },
+  });
+  const vals = Float32Array.from({ length: 8 }, (_, i) => 0.1 + i * 0.1);
+  for (let f = 0; f < 120; f += 1) {
+    vals.forEach((v, i) => { vals[i] = 0.1 + ((i * 3 + f) % 8) * 0.1; });
+    fills.length = 0;
+    drawBars(ctx, 600, 300, vals, { colors: FALLBACK_COLORS, dpr: 1, peakDt: 1 / 30, minDwell: 0, ...SECTOR, baseGlow: 0.8, reflectionBlur: 0.4, reflection: 0.5, glow: 0, maxLevel: 8, sectorGlow: 0.8, reflectionMode: 'alpha' });
+  }
+  assert.ok(fills.length > 4);
+  const okStyles = new Set([...palette]);
+  let sawNow = false;
+  for (const f of fills) {
+    if (typeof f.fillStyle !== 'string' || !f.fillStyle.startsWith('rgba')) continue;
+    assert.ok(okStyles.has(f.fillStyle), `off-palette ${f.fillStyle}`);
+    assert.notEqual(f.fillStyle, rgba([255, 255, 255], 1));
+    if (f.globalCompositeOperation === 'lighter') assert.equal(f.fillStyle, rgba(ice[6], 1), 'only the glow halo is additive');
+    if (f.fillStyle === rgba(ice[9], 1)) sawNow = true;
+  }
+  assert.ok(sawNow);
+});
+
+test('sector frames keep drawing fills over many alternating levels', async () => {
+  const B = await import('./viz-bars.js');
   B.resetSector();
   const p = sectorPlayer();
   for (let k = 0; k < 40; k += 1) { p.set(k % 2 ? 0.7 : 0.3); p.draw(0.001, {}); }
@@ -348,8 +392,8 @@ test('sector mode draws no body, cap or afterimages and resets on count change',
   p.set(0.6);
   p.draw(1 / 60);
   const rects = p.ops.filter(([k]) => k === 'rect');
-  assert.equal(rects.length, 20);
-  assert.ok(p.ops.some(([k]) => k === 'stroke'));
+  assert.ok(rects.length > 0 && rects.length <= 20);
+  assert.equal(p.ops.some(([k]) => k === 'stroke'), false);
   const r = B.currentSector(0);
   p.set(0.2);
   p.draw(1 / 60);
@@ -441,13 +485,11 @@ test('trail floor: every trail level is visible against the ice2 background (dE2
   const { bg } = FALLBACK_COLORS.ice2;
   const path = B.trailPath(FALLBACK_COLORS.ice2);
   const over = (c, a) => c.map((v, i) => Math.min(255, Math.round(bg[i] + v * a)));
-  for (const maxLevel of [3, 6, 12]) {
-    for (let k = 0; k <= maxLevel; k += 1) {
-      const c = B.trailColor(path, k, maxLevel, 0.8);
-      const r = B.trailColor(path, k, maxLevel, 0.8, B.TRAIL_REFLECT_SHIFT);
-      assert.ok(deltaE2000(bg, over(c, B.TRAIL_ALPHA)) >= 10, `level ${k}/${maxLevel}`);
-      assert.ok(deltaE2000(bg, over(r, B.TRAIL_ALPHA * 0.5)) >= 6, `reflection ${k}/${maxLevel}`);
-    }
+  for (let k = 0; k <= 8; k += 1) {
+    const c = B.trailColor(path, k);
+    const r = B.trailColor(path, k, B.TRAIL_REFLECT_SHIFT);
+    assert.ok(deltaE2000(bg, over(c, B.TRAIL_ALPHA)) >= 10, `level ${k}`);
+    assert.ok(deltaE2000(bg, over(r, B.TRAIL_ALPHA * 0.5)) >= 6, `reflection ${k}`);
   }
 });
 
@@ -498,4 +540,77 @@ test('segmentPlan: rows = round(stack / (section + gap)); the count is used with
   assert.equal(segmentPlan(480, 1, 20, 0.2, 20).rows, 20);
   assert.equal(segmentPlan(140, 1, 21, 0.2, 35).rows, 3);
   assert.equal(segmentPlan(140, 1, 0, 0.2, 0), null);
+});
+
+test('sectionAspect: bar width = aspect x effective section height, incl. after fit-to-room shrink', () => {
+  const m = { barWidth: 80, sectionAspect: 4, sectionHeight: 20, segments: 20, segmentGap: 0.4, maxHeight: 560, gap: 6 };
+  assert.equal(mirrorBarWidth(m, 1400, 1), 80);
+  assert.equal(barLayout({ avail: 700, segments: 20, sectionHeight: 20, segmentGap: 0.4 }).height, 560);
+  const lay = barLayout({ avail: 500, segments: 20, sectionHeight: 20, segmentGap: 0.4 });
+  assert.ok(lay.sectionPx < 20);
+  assert.ok(Math.abs(mirrorBarWidth(m, 1000, 1) - 4 * lay.sectionPx) < 0.01);
+  const small = barLayout({ avail: 150, segments: 20, sectionHeight: 20, segmentGap: 0.4 });
+  assert.ok(Math.abs(small.sectionPx - (150 * 0.95) / 28) < 1e-9);
+  assert.equal(mirrorBarWidth({ ...m, sectionHeight: 6 }, 400, 1), 24);
+  assert.equal(mirrorBarWidth({ ...m, sectionAspect: 0 }, 1000, 1), 80);
+  assert.equal(mirrorBarWidth({ ...m, sectionHeight: 0 }, 1000, 1), 80);
+  assert.equal(derivedBarWidth({ barWidth: 7, sectionAspect: 0, sectionHeight: 20 }, 20), 7);
+  assert.equal(pixelBars(1200, mirrorBarWidth(m, 1400, 1), 6).count, 14);
+  assert.equal(pixelBars(375, mirrorBarWidth(m, 1400, 1), 6).count, 8);
+  assert.equal(pixelBars(1200, 80, 11).count, 13);
+});
+
+function recordFrame(over) {
+  const state = { fillStyle: '', globalAlpha: 1, globalCompositeOperation: 'source-over', t: 1 };
+  const rects = [];
+  let cur = [];
+  const ctx = new Proxy({}, {
+    get: (_, k) => {
+      if (k === 'createLinearGradient') return () => ({ addColorStop() {} });
+      if (k in state) return state[k];
+      if (k === 'beginPath') return () => { cur = []; };
+      if (k === 'rect') return (...a) => { cur.push(a); };
+      if (k === 'fill') return () => rects.push({ ...state, rects: cur.slice() });
+      if (k === 'scale') return (_x, y) => { state.t = y; };
+      if (k === 'setTransform') return () => { state.t = 1; };
+      return () => {};
+    },
+    set: (_, k, v) => { state[k] = v; return true; },
+  });
+  const vals = Float32Array.from({ length: 4 }, () => 0.7);
+  for (let f = 0; f < 40; f += 1) {
+    rects.length = 0;
+    drawBars(ctx, 600, 400, vals, { colors: FALLBACK_COLORS, dpr: 1, peakDt: 1 / 30, minDwell: 0, ...SECTOR, glow: 0, sectorGlow: 0, baseGlow: 0, mirrorGap: 12, ...over });
+  }
+  return rects;
+}
+
+test('reflection: shifted palette index, saturation >= 0.8, monotonic depth fade, no white, opaque', async () => {
+  const B = await import('./viz-bars.js');
+  B.resetSector();
+  const path = FALLBACK_COLORS.ice2.stops;
+  const hsvOf = (c) => { const mx = Math.max(...c); const d = mx - Math.min(...c); return { s: mx ? d / mx : 0, v: mx / 255 }; };
+  let prev = 2;
+  for (let r = 0; r <= 20; r += 1) {
+    const c = B.reflectColor(path, 9, r / 20, 'shifted');
+    assert.ok(hsvOf(c).s >= 0.79, `sat row ${r}`);
+    assert.ok(hsvOf(c).v <= prev + 1e-9, `fade row ${r}`);
+    prev = hsvOf(c).v;
+  }
+  const top = B.reflectColor(path, 9, 0, 'shifted');
+  assert.deepEqual(top.map((v, i) => Math.abs(v - path[5][i]) <= 40), [true, true, true]);
+  assert.ok(hsvOf(B.reflectColor(path, 9, 1, 'shifted')).v < 0.31 * hsvOf(path[5]).v + 0.02);
+  const shade = B.reflectColor(path, 9, 0, 'shade');
+  assert.ok(Math.abs(hsvOf(shade).v - 0.65 * hsvOf(path[9]).v) < 0.01);
+  const frame = recordFrame({ reflectionMode: 'shifted', reflection: 0.5, reflectionBlur: 0 });
+  const refl = frame.filter((f) => f.t === -1);
+  assert.ok(refl.length > 0);
+  for (const f of refl) {
+    assert.equal(f.globalAlpha, 1);
+    assert.equal(f.globalCompositeOperation, 'source-over');
+    assert.notEqual(f.fillStyle, rgba([255, 255, 255], 1));
+  }
+  const orig = frame.filter((f) => f.t !== -1 && f.rects.length).flatMap((f) => f.rects.map((r) => r[1] + r[3]));
+  const mirrored = refl.flatMap((f) => f.rects.map((r) => r[1] + r[3]));
+  assert.equal(mirrored.length, orig.length);
 });
