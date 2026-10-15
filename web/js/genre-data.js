@@ -227,3 +227,26 @@ export function saveExpanded(storage, expanded) {
 export function hasStoredExpanded(storage) {
   try { return storage.getItem(STORE_KEY) !== null; } catch { return true; }
 }
+
+export function ancestorsOf(id, edges, maxDepth = 12) {
+  const up = new Map();
+  for (const e of edges || []) {
+    if (e.kind === 'related' || e.source === e.target) continue;
+    if (!up.has(e.source)) up.set(e.source, []);
+    up.get(e.source).push(e.target);
+  }
+  const depth = new Map();
+  let level = [id];
+  for (let d = 1; d <= maxDepth && level.length; d++) {
+    const next = [];
+    for (const n of level) {
+      for (const p of up.get(n) || []) {
+        if (p === id || depth.has(p)) continue;
+        depth.set(p, d);
+        next.push(p);
+      }
+    }
+    level = next;
+  }
+  return depth;
+}

@@ -163,3 +163,4 @@ body.has-mini .gm { --player-h: calc(64px + 2 * var(--space-2)); }
 .gm-now-all { justify-self: start; }
 .gm-orph-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; max-height: 40vh; overflow-y: auto; }
 .gm-orph-list .gm-hit { width: 100%; }
+.gm-legend-note { flex-basis: 100%; color: var(--text-muted, inherit); margin-top: var(--space-1); }

@@ -1,5 +1,5 @@
 import { createSim } from './genre-sim.js';
-import { familyIndex, nodeRadius, FAMILIES } from './genre-data.js';
+import { familyIndex, nodeRadius, FAMILIES, ancestorsOf } from './genre-data.js';
 import { fitTransform, recenterOnResize, placeLabels, diffGraph, mixColor, hitNode, isDragMove } from './genre-view.js';
 
 const MIN_K = 0.15;
@@ -12,6 +12,10 @@ function bbox(list) {
     y0 = Math.min(y0, n.y - n.r); y1 = Math.max(y1, n.y + n.r);
   }
   return { x0, y0, x1, y1 };
+}
+
+function ancAlpha(depth, top, floor) {
+  return Math.max(floor, top - 0.12 * (depth - 1));
 }
 
 function linkAlpha(on, focus) {
@@ -34,6 +38,9 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
   let hover = null;
   let selected = null;
   let selSet = new Set();
+  let anc = new Map();
+  let rawEdges = [];
+  let withAnc = false;
   let active = true;
   let raf = 0;
   let anim = null;
@@ -165,8 +172,9 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
 
 
   function drawLink(l, focus, k) {
-    const on = !focus || focus.has(l.s) || focus.has(l.t);
-    ctx.globalAlpha = linkAlpha(on, focus);
+    const chain = !l.related && anc.has(l.t) && (anc.has(l.s) || focus?.has(l.s));
+    const on = !focus || focus.has(l.s) || focus.has(l.t) || chain;
+    ctx.globalAlpha = chain ? ancAlpha(anc.get(l.t), 0.95, 0.45) : linkAlpha(on, focus);
     ctx.strokeStyle = on && focus ? colors.hi : colors.edge;
     ctx.lineWidth = (on && focus ? 1.8 : 1) / k;
     ctx.setLineDash(l.related ? [4 / k, 4 / k] : []);
@@ -203,6 +211,12 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
     }
   }
 
+  function nodeAlpha(n, on, near) {
+    if (!on) return 0.16;
+    const d = anc.get(n);
+    return d && !near.has(n.id) ? ancAlpha(d, 1, 0.55) : 1;
+  }
+
   function draw() {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, W, H);
@@ -212,13 +226,13 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
     const focus = selSet.size ? selSet : null;
     const near = new Set();
     if (focus) for (const f of focus) for (const id of nbr.get(f.id) || []) near.add(id);
-    const isOn = (n) => !focus || focus.has(n) || near.has(n.id);
+    const isOn = (n) => !focus || focus.has(n) || near.has(n.id) || anc.has(n);
     for (const l of links) {
       if (visible(l.s) && visible(l.t)) drawLink(l, focus, k);
     }
     ctx.setLineDash([]);
     for (const n of nodes) {
-      if (visible(n)) drawNode(n, isOn(n) ? 1 : 0.16, k);
+      if (visible(n)) drawNode(n, nodeAlpha(n, isOn(n), near), k);
     }
     ctx.globalAlpha = 1;
     drawLabels(focus, isOn);
@@ -392,17 +406,32 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
     const n = id ? byId.get(id) || null : null;
     selected = n;
     selSet = new Set(n ? [n] : []);
+    withAnc = true;
+    computeAnc();
     if (n && center) focus(n.id);
     if (onSelect) onSelect(n ? n.data : null, n ? [n.id] : []);
     request();
   }
 
-  function selectMany(ids, { fit: doFit = true } = {}) {
+  function computeAnc() {
+    anc = new Map();
+    if (!withAnc) return;
+    for (const f of selSet) {
+      for (const [id, d] of ancestorsOf(f.id, rawEdges)) {
+        const n = byId.get(id);
+        if (n && !selSet.has(n) && (!anc.has(n) || anc.get(n) > d)) anc.set(n, d);
+      }
+    }
+  }
+
+  function selectMany(ids, { fit: doFit = true, ancestors = false } = {}) {
     const list = [...new Set(ids)].map((id) => byId.get(id)).filter(Boolean);
     selected = list.length === 1 ? list[0] : null;
     selSet = new Set(list);
+    withAnc = ancestors;
+    computeAnc();
     if (list.length && doFit) {
-      const group = new Set(list);
+      const group = new Set([...list, ...anc.keys()]);
       for (const n of list) for (const x of nbr.get(n.id) || []) if (byId.has(x)) group.add(byId.get(x));
       userMoved = true;
       fitTo([...group], { maxK: 2.4 });
@@ -414,7 +443,7 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
   function focus(id) {
     const n = byId.get(id);
     if (!n) return;
-    const group = [n, ...[...(nbr.get(id) || [])].map((x) => byId.get(x))];
+    const group = [n, ...[...(nbr.get(id) || [])].map((x) => byId.get(x)), ...(selSet.has(n) ? anc.keys() : [])];
     fitTo(group, { maxK: 2.4 });
   }
 
@@ -446,12 +475,14 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
     byId = new Map(nodes.map((n) => [n.id, n]));
     nbr = new Map(nodes.map((n) => [n.id, new Set()]));
     const raw = graph.edges.map((e) => ({ source: e.source, target: e.target, kind: e.kind }));
+    rawEdges = raw;
     for (const e of raw) { nbr.get(e.source)?.add(e.target); nbr.get(e.target)?.add(e.source); }
     sim = createSim({ nodes, links: raw, seed: 1, breathing: !reducedMotion });
     links = sim.links;
     for (const l of links) l.related = l.related === true;
     selected = selected ? byId.get(selected.id) || null : null;
     selSet = new Set([...selSet].map((n) => byId.get(n.id)).filter(Boolean));
+    computeAnc();
     hover = null;
     if (!old.size) sim.settle(reducedMotion ? 500 : 240); else sim.reheat(0.4);
     if (needFit && nodes.length && canvas.clientWidth > 10 && canvas.clientHeight > 10) {

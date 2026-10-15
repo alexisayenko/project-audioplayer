@@ -143,3 +143,18 @@ test('multi-parent also-under notes list effective parents after the skip', () =
   assert.deepEqual(pathKeys(g, 'm'), []);
   assert.deepEqual(pathKeys(CATS, 'urban'), ['f:Other', 'f:Other>popular', 'f:Other>popular>urban']);
 });
+
+test('ancestorsOf: chain, diamond, cycle, root, orphan, cap, related ignored', async () => {
+  const { ancestorsOf } = await import('./genre-data.js');
+  const e = (source, target, kind = 'parent') => ({ source, target, kind });
+  assert.deepEqual([...ancestorsOf('a', [e('a', 'b'), e('b', 'c')])], [['b', 1], ['c', 2]]);
+  const diamond = [e('a', 'b'), e('a', 'c'), e('b', 'd'), e('c', 'd')];
+  assert.deepEqual([...ancestorsOf('a', diamond)].sort(), [['b', 1], ['c', 1], ['d', 2]]);
+  assert.deepEqual([...ancestorsOf('a', [e('a', 'b'), e('b', 'c'), e('c', 'a')])].sort(), [['b', 1], ['c', 2]]);
+  assert.equal(ancestorsOf('b', [e('a', 'b')]).size, 0);
+  assert.equal(ancestorsOf('x', []).size, 0);
+  assert.equal(ancestorsOf('a', [e('a', 'b', 'related')]).size, 0);
+  const long = Array.from({ length: 20 }, (_, i) => e(`n${i}`, `n${i + 1}`));
+  assert.equal(ancestorsOf('n0', long).size, 12);
+  assert.equal(ancestorsOf('n0', long, 3).size, 3);
+});

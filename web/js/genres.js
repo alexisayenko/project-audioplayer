@@ -126,7 +126,7 @@ export function renderGenres(root) {
 
   const live = el('p', { role: 'status', 'aria-live': 'polite', style: 'position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap' });
   const nowSel = createNowSelection({
-    setSelection: (ids) => view.selectMany(ids),
+    setSelection: (ids) => view.selectMany(ids, { ancestors: true }),
     clearSelection: () => view.select(null),
     announce: (t) => { live.textContent = t; },
   });
@@ -357,6 +357,7 @@ export function renderGenres(root) {
     if (hidden.size) legend.append(el('li', {}, el('button', {
       class: 'gm-key', type: 'button', onclick: () => { hidden = new Set(); view.setHiddenFamilies(hidden); renderLegend(); },
     }, 'Show all')));
+    legend.append(el('li', { class: 'gm-legend-note' }, 'Arrow points to the parent genre (A -> B means A is a kind of B)'));
   }
 
   function apply(data, message) {

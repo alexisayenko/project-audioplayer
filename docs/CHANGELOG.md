@@ -4,7 +4,8 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## 2026-10-16 (built, not deployed)
 
-- Web: new Playlists menu item (list icon) between Playback and Genres map in the side rail, icon rail and phone tab bar, route `#/playlists` with a placeholder "Playlists are coming soon."; the phone tab bar fits six items with 11px labels and tighter gaps (WEB-012).
+- Web: Genres map shows the whole ancestor chain of a selected genre (and of Now playing genres), fading with distance, fit to view, plus an arrow-direction line in the Legend (GEN-043, GEN-044).
+- Web: new Playlists menu item (list icon) between Library and Playback in the side rail, icon rail and phone tab bar, route `#/playlists` with a placeholder "Playlists are coming soon."; the phone tab bar fits six items with 11px labels and tighter gaps (WEB-012).
 - Docs: planned: Playlists (new top-level menu item: folders and playlists, import from YouTube, SoundCloud and Spotify links and from M3U8/CSV/JSON files, export, Refresh, guest view; spec [playlists.md](specs/playlists.md) PLS-001 to PLS-092, ADR-0022, [task-0034](tasks/task-0034.md)); nothing built.
 - Web: Settings has two more bulk cards under BPM detection: "Metadata for downloaded songs" (server job `/me/backfill/metadata`, fills only empty fields, N of M, cancel, summary; API-115, API-116) and "Download all songs" (queue in the browser, confirm step with the hourly limit, skips songs over 5 minutes unless included, stops after 3 failures, copy-able failed list; WEB-081 to WEB-083).
 - Docs: Connect YouTube decided (task-0032, ADR-0020 accepted): owner only first, Production unverified consent, songs plus a refreshable Electrophone playlist per imported list; all users (Google verification) stays future; cap value (CZ) still open; nothing built.
