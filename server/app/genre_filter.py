@@ -58,9 +58,19 @@ def _strip_music(value: str) -> str:
     return v
 
 
+DROP: frozenset[str] = frozenset(
+    key(v) for v in ("mkj", "deb", "stadiumx", "sam smith", "dancin", "relaxed", "love song")
+)
+
+
+def is_dropped(value: str) -> bool:
+    """True for a junk tag removed from songs for good (TAG-073), compared by `key`."""
+    return key(value) in DROP or key(_strip_music(value)) in DROP
+
+
 def is_genre(value: str) -> bool:
     k = key(value)
-    if not k or k in DENY or _YEARISH.match(k):
+    if not k or k in DENY or k in DROP or _YEARISH.match(k):
         return False
     stripped = key(_strip_music(value))
     return bool(stripped) and stripped not in DENY and not _YEARISH.match(stripped)
@@ -69,6 +79,16 @@ def is_genre(value: str) -> bool:
 ALIASES: dict[str, str] = {
     "electronic dance music": "electronic dance",
     "punk rock": "punk",
+    "euroda": "eurodance",
+    "deep progressive": "progressive house",
+    "mor": "middle of the road",
+    "retro-synth": "synthwave",
+    "melodic progressive house": "progressive house",
+    "hip-hop & rap": "hip hop",
+    "rock and indie": "indie rock",
+    "pop and chart": "pop",
+    "russian electro pop": "electropop",
+    "russian electropop": "electropop",
 }
 _ALIAS_BY_KEY: dict[str, str] = {}
 for _a, _t in ALIASES.items():
@@ -76,11 +96,39 @@ for _a, _t in ALIASES.items():
     _ALIAS_BY_KEY.setdefault(key(_t), _t)
 
 
+PREFIXES: dict[str, tuple[str, str | None]] = {
+    "russian": ("ru", "ru"), "british": ("gb", None), "dutch": ("nl", "nl"), "german": ("de", "de"),
+    "french": ("fr", "fr"), "italian": ("it", "it"), "spanish": ("es", "es"), "swedish": ("se", "sv"),
+    "polish": ("pl", "pl"), "ukrainian": ("ua", "uk"), "japanese": ("jp", "ja"), "korean": ("kr", "ko"),
+    "brazilian": ("br", "pt"), "american": ("us", None), "finnish": ("fi", "fi"), "norwegian": ("no", "no"),
+    "danish": ("dk", "da"), "greek": ("gr", "el"), "turkish": ("tr", "tr"), "portuguese": ("pt", "pt"),
+    "czech": ("cz", "cs"), "irish": ("ie", None), "australian": ("au", None), "canadian": ("ca", None),
+    "chinese": ("cn", "zh"), "icelandic": ("is", "is"),
+}
+KEEP: set[str] = {key(v) for v in ("uk garage", "french house", "french touch", "british invasion")}
+
+
+def split_prefix(value: str) -> tuple[str, str, str | None] | None:
+    """`russian pop` gives `("pop", "ru", "ru")`: a leading demonym or language word is a country (and language), not a genre (TAG-074). None for aliases, KEEP names and single words."""
+    v = _strip_music(value)
+    if key(v) in _ALIAS_BY_KEY or key(v) in KEEP:
+        return None
+    first, _, rest = v.strip().partition(" ")
+    hit = PREFIXES.get(first.casefold())
+    rest = rest.strip()
+    if not hit or not rest or key(rest) in DENY or key(rest) in DROP or _YEARISH.match(key(rest)):
+        return None
+    return canonical(rest), hit[0], hit[1]
+
+
 def canonical(value: str) -> str:
-    """One spelling per genre: ALIASES first, else strip a trailing " music" (unless the built-in list has that exact name) and use the built-in spelling when one matches."""
+    """One spelling per genre: ALIASES first, then a leading demonym is stripped (`split_prefix`), else strip a trailing " music" (unless the built-in list has that exact name) and use the built-in spelling when one matches."""
     aliased = _ALIAS_BY_KEY.get(key(value))
     if aliased:
         return aliased
+    sp = split_prefix(value)
+    if sp:
+        return sp[0]
     v = _strip_music(value)
     return _BUILTIN_BY_KEY.get(key(v), v)
 

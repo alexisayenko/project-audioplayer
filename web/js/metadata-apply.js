@@ -31,8 +31,10 @@ export function planMetadata(resp, cur) {
   const plan = { album: null, year: null, tags: addNamespaced(cur.tags || [], returnedTags) };
   if (album && !String(cur.album ?? '').trim()) plan.album = album;
   if (year != null && String(cur.year ?? '').trim() === '') plan.year = year;
+  const wikiAlbum = typeof r.wikipedia_album === 'string' && /^https:\/\/\S+$/i.test(r.wikipedia_album) ? r.wikipedia_album : null;
+  if (wikiAlbum && !String(cur.wikipedia_album ?? '').trim()) plan.wikipedia_album = wikiAlbum;
   const returned = !!album || year != null || returnedTags.length > 0;
-  const filled = plan.album != null || plan.year != null || plan.tags.length > 0;
+  const filled = plan.album != null || plan.year != null || plan.tags.length > 0 || !!plan.wikipedia_album;
   if (filled) plan.status = 'filled';
   else plan.status = returned ? 'current' : 'empty';
   return plan;

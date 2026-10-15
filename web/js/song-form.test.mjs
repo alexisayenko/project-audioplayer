@@ -188,3 +188,25 @@ test('remix year input sits in the remix row and round-trips', () => {
   assert.equal(String(f.values().remix_year), '2011');
   assert.equal(String(songForm({ mode: 'add', song: { title: 'T', tags: [] } }).values().remix_year), '');
 });
+
+test('Links region: collapsed by default, one labelled field per source, filled rows are new-tab links', () => {
+  const f = songForm({ mode: 'edit', song: { id: 's1', title: 'T', artist: 'A', source_url: 'https://youtu.be/abcdefghijk', wikipedia_album: 'https://en.wikipedia.org/wiki/LP', musicbrainz_url: 'https://musicbrainz.org/recording/x', tags: [] } });
+  const head = f.node.querySelectorAll('button').find((b) => b.textContent.includes('Links'));
+  assert.equal(head.getAttribute('aria-expanded'), 'false');
+  head.click();
+  assert.equal(head.getAttribute('aria-expanded'), 'true');
+  for (const l of ['YouTube link', 'SoundCloud link', 'Wikipedia: song', 'Wikipedia: band', 'Wikipedia: album', 'Spotify link', 'MusicBrainz link', 'Discogs link']) {
+    assert.ok(inputs(f).find((i) => i.getAttribute('aria-label') === l), l);
+  }
+  const rows = f.node.querySelectorAll('.lk-row');
+  const yt = rows[0].querySelector('a');
+  assert.equal(yt.getAttribute('href'), 'https://youtu.be/abcdefghijk');
+  assert.equal(yt.getAttribute('rel'), 'noopener');
+  assert.equal(rows[1].querySelector('a'), null);
+  const v = f.values();
+  assert.equal(v.wikipedia_album, 'https://en.wikipedia.org/wiki/LP');
+  const mb = inputs(f).find((i) => i.getAttribute('aria-label') === 'MusicBrainz link');
+  mb.value = 'https://musicbrainz.org/recording/y';
+  mb.dispatchEvent(makeEvent('input'));
+  assert.equal(f.values().musicbrainz_url, 'https://musicbrainz.org/recording/y');
+});

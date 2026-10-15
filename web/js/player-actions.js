@@ -1,6 +1,7 @@
 import { storedLinkStates, hostKind } from './song-links.js';
 import { songSources } from './song-payload.js';
 import { icon } from './icons.js';
+import { wikiTarget } from './wiki-links.js';
 import { serviceIcon, LABELS } from './service-icons.js';
 
 const KINDS = ['youtube', 'soundcloud'];
@@ -37,6 +38,18 @@ export function paintServiceButtons(host, song) {
     a.title = 'Open source';
     a.setAttribute('aria-label', 'Open source');
     a.append(icon('link', 22));
+    nodes.push(a);
+  }
+  const wiki = wikiTarget(song);
+  if (wiki) {
+    const a = document.createElement('a');
+    a.className = 'icon round svc svc-wikipedia on';
+    a.href = wiki.href;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.title = wiki.label;
+    a.setAttribute('aria-label', wiki.label);
+    a.append(icon('wikipedia', 22));
     nodes.push(a);
   }
   host.replaceChildren(...nodes);

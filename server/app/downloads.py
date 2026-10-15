@@ -11,7 +11,7 @@ from typing import Any
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
 
-from . import bpm, deps, discogs_lookup, extractor, genre_lookup, identify, jobs, library, limits, wiki_lookup
+from . import bpm, deps, discogs_lookup, extractor, genre_lookup, identify, jobs, library, limits, urlclean, wiki_lookup
 from .links import Resolved, short_error
 from .problems import Problem
 
@@ -113,8 +113,10 @@ def _link_fields(vid: str, meta: dict[str, Any], source_url: str | None) -> dict
     return {
         "wikipedia_song": wiki_lookup.clean_link(meta.get("wikipedia_song")),
         "wikipedia_artist": wiki_lookup.clean_link(meta.get("wikipedia_artist")),
+        **({"wikipedia_album": link} if (link := wiki_lookup.clean_link(meta.get("wikipedia_album"))) else {}),
         "musicbrainz_url": genre_lookup.clean_recording_url(meta.get("musicbrainz_url")),
         "discogs_url": discogs_lookup.clean_url(meta.get("discogs_url")),
+        "spotify_url": urlclean.clean_spotify_url(meta.get("spotify_url")),
         **({"source": "soundcloud"} if extractor.source_of(vid) == "soundcloud" else {}),
         "source_url": url,
         "sources": [{"source": extractor.source_of(vid), "id": vid, "url": url}],
@@ -181,7 +183,7 @@ def run_fetch_audio(uid: str, owner: bool, vid: str, source_url: str | None) -> 
                 song["duration"] = info["duration"]
             if song.get("bpm") is None and value is not None:
                 song["bpm"] = round(value)
-            if cover_ok and not song.get("cover"):
+            if cover_ok and not song.get("cover") and not song.get("cover_off"):
                 song["cover"] = f"covers/{vid}.jpg"
             song["updated_at"] = library.now_utc()
             deps.save_songs(uid, songs)

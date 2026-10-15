@@ -30,8 +30,10 @@ class SongMeta(BaseModel):
     bpm: float | None = Field(default=None, ge=MIN_BPM, le=MAX_BPM)
     wikipedia_song: str | None = None
     wikipedia_artist: str | None = None
+    wikipedia_album: str | None = None
     musicbrainz_url: str | None = None
     discogs_url: str | None = None
+    spotify_url: str | None = None
 
 
 class CreateSongRequest(BaseModel):
@@ -44,11 +46,14 @@ class CreateSongRequest(BaseModel):
 
 class PatchSongRequest(SongMeta):
     tags: list[str] | None = None
+    youtube_url: str | None = None
+    soundcloud_url: str | None = None
 
 
 class WikipediaLookupRequest(BaseModel):
     wikipedia_song: str | None = None
     wikipedia_artist: str | None = None
+    wikipedia_album: str | None = None
 
 
 class MetadataSource(BaseModel):
@@ -61,3 +66,4 @@ class MetadataRequest(BaseModel):
     sources: list[MetadataSource] = Field(default_factory=list)
     wiki_song: str | None = None
     wiki_artist: str | None = None
+    wiki_album: str | None = None

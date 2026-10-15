@@ -1,7 +1,7 @@
 import { el } from './dom.js';
 
 export const PANEL_NARROW_PX = 480;
-export const PANEL_KEYS = { stats: 'ap2.panel.stats', genres: 'ap2.panel.genres', genreInfo: 'ap2.panel.genreInfo' };
+export const PANEL_KEYS = { stats: 'ap2.panel.stats', genres: 'ap2.panel.genres', genreInfo: 'ap2.panel.genreInfo', links: 'ap2.panel.links' };
 
 export function loadCollapsed(storage, key, width) {
   try {

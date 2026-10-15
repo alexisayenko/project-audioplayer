@@ -107,10 +107,11 @@ def gather(
     wiki_artist: str | None = None,
     timeout: float = TIMEOUT,
     source_urls: list[str] | None = None,
+    wiki_album: str | None = None,
 ) -> dict[str, Any]:
     """Run every source concurrently under one overall timeout; a failing or late source is skipped.
 
-    Returns {album, year, tags, suggest, services}; `suggest` is the song infobox's artist and title hint (never auto-filled); `services` only tells the UI which sources answered."""
+    Returns {album, year, tags, wikipedia_album, suggest, services}; `suggest` is the song infobox's artist and title hint (never auto-filled); `services` only tells the UI which sources answered."""
     lock = threading.Lock()
     found: dict[str, Any] = {}
     src_results: dict[int, dict[str, Any]] = {}
@@ -134,8 +135,8 @@ def gather(
     if artist and title:
         tasks.append(record("mb", lambda: genre_lookup.lookup(artist, title)))
         tasks.append(record("guess", lambda: wiki_lookup.suggest(artist, title)))
-    if wiki_song or wiki_artist:
-        tasks.append(record("links", lambda: wiki_lookup.from_links(wiki_song, wiki_artist)))
+    if wiki_song or wiki_artist or wiki_album:
+        tasks.append(record("links", lambda: wiki_lookup.from_links(wiki_song, wiki_artist, wiki_album)))
     if tasks:
         pool = ThreadPoolExecutor(max_workers=len(tasks))
         try:
@@ -148,6 +149,7 @@ def gather(
         by_index = dict(src_results)
     out = merge(sources, snapshot.get("mb"), snapshot.get("links"), snapshot.get("guess"))
     box = (snapshot.get("links") or {}).get("infobox_suggest") or (snapshot.get("guess") or {}).get("infobox_suggest")
+    out["wikipedia_album"] = (snapshot.get("links") or {}).get("wikipedia_album") or (snapshot.get("guess") or {}).get("wikipedia_album")
     out["suggest"] = {"artist": box["artist"], "title": box["title"]} if box else {"artist": None, "title": None}
     out["services"] = services(source_urls or [], by_index, snapshot.get("links"), snapshot.get("guess"), snapshot.get("mb"))
     return out

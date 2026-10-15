@@ -175,3 +175,30 @@ def clean_url(text: str) -> str:
         return text
     kept = [(k, v) for k, v in parse_qsl(parts.query, keep_blank_values=True) if not _is_tracking(k)]
     return urlunsplit(parts._replace(query=urlencode(kept)))
+
+
+_SPOTIFY_RE = re.compile(r"^https?://open\.spotify\.com/(?:intl-[a-z]{2}(?:-[A-Za-z]{2,4})?/)?(track|album)/([A-Za-z0-9]{22})(?:[/?#].*)?$", re.I)
+
+
+def clean_spotify_url(value: Any) -> str | None:
+    """https://open.spotify.com/<track|album>/<22-char id>; any other host, kind or id is None."""
+    m = _SPOTIFY_RE.fullmatch(value.strip()) if isinstance(value, str) else None
+    return f"https://open.spotify.com/{m.group(1).lower()}/{m.group(2)}" if m else None
+
+
+def clean_youtube_link(value: Any) -> str | None:
+    """A YouTube watch link (youtube.com, music.youtube.com, youtu.be; http or https) as https://www.youtube.com/watch?v=<id>; else None. A bare id is not a link."""
+    text = value.strip() if isinstance(value, str) else ""
+    if not re.match(r"^https?://", text, re.I):
+        return None
+    vid = parse_video_id(text)
+    return watch_url(vid) if vid else None
+
+
+def clean_soundcloud_link(value: Any) -> str | None:
+    """A SoundCloud track link as https://soundcloud.com/<artist>/<track>[/s-<secret>]; short links, other pages and other hosts are None."""
+    text = value.strip() if isinstance(value, str) else ""
+    if not re.match(r"^https?://", text, re.I):
+        return None
+    c = classify_soundcloud(text)
+    return c[1] if c and c[0] == "track" else None

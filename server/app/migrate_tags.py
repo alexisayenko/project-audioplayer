@@ -1,4 +1,4 @@
-"""One-time rewrite of stored genre tags to their canonical spelling (TAG-060); idempotent, run at startup."""
+"""One-time rewrite of stored genre tags to their canonical spelling, junk drops and demonym prefixes (TAG-060, TAG-073, TAG-074); idempotent, run at startup."""
 
 from __future__ import annotations
 
@@ -26,8 +26,8 @@ def _stale(path: Path) -> bool:
         tags = s.get("tags") if isinstance(s, dict) else None
         if not isinstance(tags, list):
             continue
-        genres = [str(t) for t in tags if namespace(t) == "genre"]
-        if library.clean_tags(genres) != genres:
+        watched = [str(t) for t in tags if namespace(t) in ("genre", "country", "lang")]
+        if [t for t in library.clean_tags([str(t) for t in tags]) if namespace(t) in ("genre", "country", "lang")] != watched:
             return True
     return False
 

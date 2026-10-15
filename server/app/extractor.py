@@ -225,11 +225,12 @@ def download_audio(video_id: str, out_dir: Path, progress: Callable[[float], Non
         "quiet": True,
         "noplaylist": True,
         "format": "bestaudio[ext=m4a]/140",
-        "outtmpl": str(out_dir / "%(id)s.%(ext)s"),
+        "outtmpl": str(out_dir / f"{video_id}.%(ext)s"),
         "progress_hooks": [hook],
     }
+    page = watch_url(parse_video_id(source_url) or video_id) if source_url and source_of(video_id) == "youtube" else watch_url(video_id)
     with yt_dlp.YoutubeDL(opts) as ydl:
-        info = ydl.extract_info(watch_url(video_id), download=True)
+        info = ydl.extract_info(page, download=True)
     artist, title, remixer = split_title(
         info.get("artist") or info.get("creator") or info.get("uploader") or "",
         info.get("track") or info.get("title") or "",

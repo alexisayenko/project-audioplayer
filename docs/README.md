@@ -195,7 +195,7 @@ docs/
 │   └── legal-draft.md                  # legal-page draft
 ├── specs/                              # entry: specs/README.md (what the system does)
 │   ├── add-song.md api.md catalog.md data-model.md genres.md ios.md
-│   └── library.md non-functional.md playback.md share.md stats.md storage-and-sync.md tags.md
+│   └── library.md non-functional.md playback.md share.md stats.md storage-and-sync.md tags.md youtube-connect.md
 │       terminology.md terrain-concept.md visualizer.md web.md
 ├── tasks/                              # entry: tasks/README.md
 │   ├── README.md

@@ -49,7 +49,7 @@ export function playControl(song, { cur, playing, queueable }) {
 
 function coverBlock(song) {
   const img = el('img', { class: 'cover card-cover', alt: '' });
-  if (song.cover) img.src = api.coverUrl(song.id);
+  if (song.cover) img.src = api.coverUrl(song.id, song.cover_v);
   img.addEventListener('error', () => img.removeAttribute('src'));
   return img;
 }

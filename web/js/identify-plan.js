@@ -37,7 +37,7 @@ const HTTP = /^https?:\/\//i;
 export function linkPlan(res) {
   const l = res?.links && typeof res.links === 'object' ? res.links : {};
   const pick = (v) => (typeof v === 'string' && HTTP.test(v) ? v : null);
-  const plan = { wikipedia_song: pick(l.wikipedia_song), wikipedia_artist: pick(l.wikipedia_artist), musicbrainz_url: pick(l.musicbrainz), discogs_url: pick(l.discogs) };
+  const plan = { wikipedia_song: pick(l.wikipedia_song), wikipedia_artist: pick(l.wikipedia_artist), wikipedia_album: pick(l.wikipedia_album), musicbrainz_url: pick(l.musicbrainz), discogs_url: pick(l.discogs) };
   return Object.values(plan).some(Boolean) ? plan : null;
 }
 

@@ -223,7 +223,7 @@ def test_failures_give_nothing(monkeypatch):
     assert wl.facts("Q100", "Q200") == {"tags": [], "song_genres": [], "year": None}
     assert wl.from_links("https://en.wikipedia.org/wiki/X", None) == {
         "tags": [], "song_genres": [], "year": None, "infobox_album": None, "infobox_year": None, "infobox_suggest": None,
-        "wikipedia_song": "https://en.wikipedia.org/wiki/X", "wikipedia_artist": None
+        "wikipedia_song": "https://en.wikipedia.org/wiki/X", "wikipedia_artist": None, "wikipedia_album": None
     }
     monkeypatch.setattr(gl, "_get", fake_mb({}, {}))
     assert wl.suggest("Daft Punk", "X")["tags"] == []
@@ -281,10 +281,10 @@ def test_year_falls_back_to_musicbrainz_first_release(monkeypatch):
 def test_suggest_disabled(monkeypatch):
     monkeypatch.setenv("AUDIO_TAG_LOOKUP", "0")
     monkeypatch.setattr(wl, "_fetch_json", lambda u: pytest.fail("called"))
-    assert wl.suggest("Daft Punk", "X") == {"wikipedia_song": None, "wikipedia_artist": None, "tags": [], "song_genres": [], "year": None, "infobox_album": None, "infobox_year": None, "infobox_suggest": None}
+    assert wl.suggest("Daft Punk", "X") == {"wikipedia_song": None, "wikipedia_artist": None, "wikipedia_album": None, "tags": [], "song_genres": [], "year": None, "infobox_album": None, "infobox_year": None, "infobox_suggest": None}
     assert wl.from_links("https://en.wikipedia.org/wiki/X", None) == {
         "tags": [], "song_genres": [], "year": None, "infobox_album": None, "infobox_year": None, "infobox_suggest": None,
-        "wikipedia_song": None, "wikipedia_artist": None
+        "wikipedia_song": None, "wikipedia_artist": None, "wikipedia_album": None
     }
 
 
@@ -653,3 +653,21 @@ def test_suggest_ignores_song_page_of_another_artist(monkeypatch):
     assert "genre:tech house" not in out["tags"]
     assert "genre:house" in out["tags"]
     assert out["infobox_suggest"] is None
+
+
+def test_from_links_album_link_cleaned_and_kept(monkeypatch):
+    monkeypatch.setattr(wl, "qid_of_page", lambda url: None)
+    monkeypatch.setattr(wl, "facts", lambda s, a: {"tags": [], "song_genres": [], "year": None})
+    monkeypatch.setattr(wl, "infobox", lambda url: {"genres": [], "album": None, "year": None, "type": None, "name": None, "artist": None})
+    out = wl.from_links(None, None, "http://en.wikipedia.org/wiki/Discovery_(album)")
+    assert out["wikipedia_album"] == "https://en.wikipedia.org/wiki/Discovery_(album)"
+    assert wl.from_links(None, None, "https://evil.example/wiki/X")["wikipedia_album"] is None
+
+
+def test_suggest_album_link_from_release_group_rels(monkeypatch):
+    mb = {"tags": [], "song_rels": [], "artist_rels": [], "album_rels": ["https://en.wikipedia.org/wiki/Discovery_(Daft_Punk_album)"], "year": None, "album": "Discovery", "mb_url": "https://musicbrainz.org/recording/x"}
+    monkeypatch.setattr(wl, "qid_of_page", lambda url: None)
+    monkeypatch.setattr(wl, "facts", lambda s, a: {"tags": [], "song_genres": [], "year": None})
+    monkeypatch.setattr(wl, "infobox", lambda url: {"genres": [], "album": None, "year": None, "type": None, "name": None, "artist": None})
+    assert wl.suggest("Daft Punk", "X", mb)["wikipedia_album"] == "https://en.wikipedia.org/wiki/Discovery_(Daft_Punk_album)"
+    assert wl.suggest("Daft Punk", "X", {**mb, "album": None})["wikipedia_album"] is None

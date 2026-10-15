@@ -63,3 +63,11 @@ test('countryCode accepts historical su', () => {
   assert.equal(countryCode('USSR'), 'su');
   assert.equal(countryCode('Atlantis'), null);
 });
+
+test('planMetadata fills an empty wikipedia_album link only from an https link', () => {
+  const r = { album: 'A', wikipedia_album: 'https://en.wikipedia.org/wiki/A_(album)' };
+  assert.equal(planMetadata(r, { album: 'A', year: '', tags: [], wikipedia_album: null }).wikipedia_album, r.wikipedia_album);
+  assert.equal(planMetadata(r, { album: 'A', year: '', tags: [], wikipedia_album: null }).status, 'filled');
+  assert.equal(planMetadata(r, { album: 'A', year: '', tags: [], wikipedia_album: 'https://en.wikipedia.org/wiki/Mine' }).wikipedia_album, undefined);
+  assert.equal(planMetadata({ wikipedia_album: 'javascript:x' }, { album: '', year: '', tags: [] }).wikipedia_album, undefined);
+});

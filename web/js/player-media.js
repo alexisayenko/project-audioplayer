@@ -9,7 +9,7 @@ const VOLUME_KEY = 'ap2.volume';
 export function updateMediaSession(song) {
   if (!('mediaSession' in navigator)) return;
   const artwork = song.cover
-    ? [{ src: new URL(api.coverUrl(song.id), location.href).href, sizes: '480x360', type: 'image/jpeg' }]
+    ? [{ src: new URL(api.coverUrl(song.id, song.cover_v), location.href).href, sizes: '480x360', type: 'image/jpeg' }]
     : [];
   navigator.mediaSession.metadata = new MediaMetadata({
     title: displayString(song),
@@ -41,8 +41,6 @@ export function setVolume(audio, v, save = true) {
     $(id).value = Math.round(vol * 100);
     $(id).style.setProperty('--p', vol.toFixed(3));
   }
-  $('p-volume-pct').textContent = `${Math.round(vol * 100)}%`;
-  $('p-knob').style.setProperty('--vol', vol.toFixed(3));
   if (save) storeSet(VOLUME_KEY, String(vol));
 }
 

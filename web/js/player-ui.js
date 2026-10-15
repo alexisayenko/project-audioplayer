@@ -29,7 +29,7 @@ export function setToggle(ids, on, label, iconName) {
 }
 
 export function setCover(img, song) {
-  const src = song?.cover ? api.coverUrl(song.id) : '';
+  const src = song?.cover ? api.coverUrl(song.id, song.cover_v) : '';
   if (img.dataset.src === src) return;
   img.dataset.src = src;
   if (src) img.src = src; else img.removeAttribute('src');
@@ -38,7 +38,7 @@ export function setCover(img, song) {
 export function queueRow(item, i, { count, index, move, removeAt, playAt, playing = false }) {
   const s = store.get(item.id);
   const cover = el('img', { class: 'cover', alt: '', loading: 'lazy' });
-  if (s?.cover) cover.src = api.coverUrl(s.id);
+  if (s?.cover) cover.src = api.coverUrl(s.id, s.cover_v);
   cover.addEventListener('error', () => cover.removeAttribute('src'));
   const title = s ? displayString(s) : item.id;
   const more = el('button', {

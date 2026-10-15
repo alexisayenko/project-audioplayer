@@ -36,7 +36,7 @@ test('year action is offered only when it differs', () => {
 
 test('link plan keeps http(s) links only and maps to song fields', () => {
   assert.deepEqual(linkPlan({ links: { musicbrainz: 'https://musicbrainz.org/recording/x', discogs: 'javascript:1', wikipedia_song: 'https://en.wikipedia.org/wiki/A', wikipedia_artist: null } }),
-    { wikipedia_song: 'https://en.wikipedia.org/wiki/A', wikipedia_artist: null, musicbrainz_url: 'https://musicbrainz.org/recording/x', discogs_url: null });
+    { wikipedia_song: 'https://en.wikipedia.org/wiki/A', wikipedia_artist: null, wikipedia_album: null, musicbrainz_url: 'https://musicbrainz.org/recording/x', discogs_url: null });
   assert.equal(linkPlan({ links: {} }), null);
   assert.equal(linkPlan(null), null);
 });
@@ -44,4 +44,8 @@ test('link plan keeps http(s) links only and maps to song fields', () => {
 test('suggested tags keep only genre, country and lang', () => {
   assert.deepEqual(suggestedTags({ suggested_tags: ['genre:house', 'country:fr', 'lang:en', 'decade:90s', 'plain', 5] }), ['genre:house', 'country:fr', 'lang:en']);
   assert.deepEqual(suggestedTags({}), []);
+});
+
+test('linkPlan carries the album article', () => {
+  assert.equal(linkPlan({ links: { wikipedia_album: 'https://en.wikipedia.org/wiki/Al_(album)' } }).wikipedia_album, 'https://en.wikipedia.org/wiki/Al_(album)');
 });

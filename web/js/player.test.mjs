@@ -217,10 +217,20 @@ test('volume input persists and clamps', () => {
   v.dispatchEvent(makeEvent('input', { target: v }));
   assert.equal(audio.volume, 0.4);
   assert.equal(localStorage.getItem('ap2.volume'), '0.4');
-  assert.equal($('p-volume-pct').textContent, '40%');
   v.value = '400';
   v.dispatchEvent(makeEvent('input', { target: v }));
   assert.equal(audio.volume, 1);
+});
+
+test('the Now playing speaker button mutes and unmutes', () => {
+  const m = $('p-mute');
+  m.dispatchEvent(makeEvent('click', { target: m }));
+  assert.equal(audio.muted, true);
+  audio.dispatchEvent(makeEvent('volumechange'));
+  assert.equal(m.getAttribute('aria-pressed'), 'true');
+  assert.equal(m.getAttribute('aria-label'), 'Unmute');
+  m.dispatchEvent(makeEvent('click', { target: m }));
+  assert.equal(audio.muted, false);
 });
 
 test('a song deleted from the library leaves the queue and stops playback', () => {

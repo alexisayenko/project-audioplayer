@@ -48,7 +48,19 @@ function songFields(v, stored = {}) {
   };
 }
 
-const wikiFieldsOf = (v) => ({ wikipedia_song: v.wikipedia_song ?? null, wikipedia_artist: v.wikipedia_artist ?? null, musicbrainz_url: v.musicbrainz_url ?? null, discogs_url: v.discogs_url ?? null });
+const wikiFieldsOf = (v) => ({ wikipedia_song: v.wikipedia_song ?? null, wikipedia_artist: v.wikipedia_artist ?? null, wikipedia_album: v.wikipedia_album ?? null, musicbrainz_url: v.musicbrainz_url ?? null, discogs_url: v.discogs_url ?? null, spotify_url: v.spotify_url ?? null });
+
+const HOST_RX = { youtube: /^https?:\/\/(?:[a-z]+\.)?(?:youtube\.com|youtu\.be)\//i, soundcloud: /^https?:\/\/(?:[a-z]+\.)?soundcloud\.com\//i };
+
+function sourceLinkChanges(v, stored) {
+  const sources = songSources(stored).map((e) => e.url);
+  const out = {};
+  for (const kind of ['youtube', 'soundcloud']) {
+    const now = (v[`${kind}_url`] ?? '').trim();
+    if (v[`${kind}_url`] !== undefined && now !== (sources.find((u) => HOST_RX[kind].test(u)) ?? '')) out[`${kind}_url`] = now || null;
+  }
+  return out;
+}
 
 export function addBody(v) {
   const { remix_year: remixYear, ...rest } = songFields(v);
@@ -56,7 +68,7 @@ export function addBody(v) {
 }
 
 export function patchBody(v, stored = {}) {
-  return { ...songFields(v, stored), tags: v.tags, ...wikiFieldsOf(v) };
+  return { ...songFields(v, stored), tags: v.tags, ...wikiFieldsOf(v), ...sourceLinkChanges(v, stored) };
 }
 
 export function metadataBody(v, sources) {
@@ -66,5 +78,6 @@ export function metadataBody(v, sources) {
     sources: sourceList(sources),
     ...(v.wikipedia_song ? { wiki_song: v.wikipedia_song } : {}),
     ...(v.wikipedia_artist ? { wiki_artist: v.wikipedia_artist } : {}),
+    ...(v.wikipedia_album ? { wiki_album: v.wikipedia_album } : {}),
   };
 }

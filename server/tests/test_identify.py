@@ -64,7 +64,7 @@ def test_full_merge_priorities_and_caps(monkeypatch):
     assert out["suggested_tags"] == ["genre:french house", "genre:disco", "genre:house", "genre:electronic", "country:fr", "lang:en", "lang:fr"]
     assert out["suggested_year"] == 1997
     assert out["links"] == {"musicbrainz": MB_URL, "discogs": "https://www.discogs.com/release/5",
-                            "wikipedia_song": "https://en.wikipedia.org/wiki/Around_the_World_(Daft_Punk_song)", "wikipedia_artist": "https://en.wikipedia.org/wiki/Daft_Punk"}
+                            "wikipedia_song": "https://en.wikipedia.org/wiki/Around_the_World_(Daft_Punk_song)", "wikipedia_artist": "https://en.wikipedia.org/wiki/Daft_Punk", "wikipedia_album": None}
     assert out["sources"] == ["acoustid", "musicbrainz", "wikidata", "discogs"]
 
 

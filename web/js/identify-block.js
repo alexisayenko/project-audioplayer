@@ -53,5 +53,5 @@ export function identifyBlock({ id = null, audio = false, editor, getYear, setYe
     }).catch(() => {});
   }
 
-  return { node, reset() { gen += 1; msg.textContent = ''; actions.replaceChildren(); }, destroy() { gen += 1; } };
+  return { node, button: btn, reset() { gen += 1; msg.textContent = ''; actions.replaceChildren(); }, destroy() { gen += 1; } };
 }

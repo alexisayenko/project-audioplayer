@@ -6,12 +6,12 @@ import { maxYear } from './constants.js';
 const v = { title: 'T', artist: 'A', album: 'Al', remixer: 'R', year: '1999', tags: ['x', 'lang:de'], wikipedia_song: 'https://en.wikipedia.org/wiki/T', wikipedia_artist: null, musicbrainz_url: 'https://musicbrainz.org/recording/11111111-2222-3333-4444-555555555555' };
 
 test('addBody has no bpm and no tags', () => {
-  assert.deepEqual(addBody(v), { title: 'T', artist: 'A', album: 'Al', remixer: 'R', year: 1999, wikipedia_song: 'https://en.wikipedia.org/wiki/T', wikipedia_artist: null, musicbrainz_url: v.musicbrainz_url, discogs_url: null });
+  assert.deepEqual(addBody(v), { title: 'T', artist: 'A', album: 'Al', remixer: 'R', year: 1999, wikipedia_song: 'https://en.wikipedia.org/wiki/T', wikipedia_artist: null, wikipedia_album: null, musicbrainz_url: v.musicbrainz_url, discogs_url: null, spotify_url: null });
   assert.ok(!('bpm' in addBody(v)) && !('tags' in addBody(v)));
 });
 
 test('patchBody keys', () => {
-  assert.deepEqual(Object.keys(patchBody(v)).sort(), ['album', 'artist', 'discogs_url', 'musicbrainz_url', 'remixer', 'tags', 'title', 'wikipedia_artist', 'wikipedia_song', 'year']);
+  assert.deepEqual(Object.keys(patchBody(v)).sort(), ['album', 'artist', 'discogs_url', 'musicbrainz_url', 'remixer', 'spotify_url', 'tags', 'title', 'wikipedia_album', 'wikipedia_artist', 'wikipedia_song', 'year']);
   assert.ok(!('remix_year' in patchBody(v)), 'absent from the form values stays absent');
   assert.deepEqual(patchBody(v).tags, ['x', 'lang:de']);
 });
@@ -77,4 +77,23 @@ test('years outside 1900..next year are dropped and reported, a stored one is ke
   assert.ok(!('remix_year' in patchBody({ ...v, remix_year: String(max + 5) })));
   assert.equal(patchBody({ ...v, year: String(max + 1) }, { year: max + 1 }).year, max + 1);
   assert.equal(addBody({ ...v, year: String(max) }).year, max);
+});
+
+test('wikipedia_album is saved and sent to metadata as wiki_album', () => {
+  const w = { ...v, wikipedia_album: 'https://en.wikipedia.org/wiki/Al_(album)' };
+  assert.equal(addBody(w).wikipedia_album, w.wikipedia_album);
+  assert.equal(patchBody(w).wikipedia_album, w.wikipedia_album);
+  assert.equal(metadataBody(w, []).wiki_album, w.wikipedia_album);
+  assert.ok(!('wiki_album' in metadataBody(v, [])));
+});
+
+test('patchBody sends youtube_url and soundcloud_url only when they differ from the stored link', () => {
+  const stored = { id: 'dQw4w9WgXcQ', source_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', sources: [{ source: 'youtube', id: 'dQw4w9WgXcQ', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' }] };
+  const same = patchBody({ ...v, youtube_url: stored.source_url, soundcloud_url: null }, stored);
+  assert.ok(!('youtube_url' in same) && !('soundcloud_url' in same));
+  const edit = patchBody({ ...v, youtube_url: 'https://youtu.be/9bZkp7q19f0', soundcloud_url: 'https://soundcloud.com/a/b', spotify_url: 'https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC' }, stored);
+  assert.equal(edit.youtube_url, 'https://youtu.be/9bZkp7q19f0');
+  assert.equal(edit.soundcloud_url, 'https://soundcloud.com/a/b');
+  assert.equal(edit.spotify_url, 'https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC');
+  assert.equal(patchBody({ ...v, youtube_url: '' }, stored).youtube_url, null);
 });

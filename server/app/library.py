@@ -110,10 +110,14 @@ def normalize_song(song: dict[str, Any]) -> dict[str, Any]:
         s["source_url"] = urlclean.clean_url(s["source_url"])
     for key in ("wikipedia_song", "wikipedia_artist"):
         s[key] = wiki_lookup.clean_link(s.get(key))
+    if "wikipedia_album" in s:
+        s["wikipedia_album"] = wiki_lookup.clean_link(s["wikipedia_album"])
     if "musicbrainz_url" in s:
         s["musicbrainz_url"] = genre_lookup.clean_recording_url(s["musicbrainz_url"])
     if "discogs_url" in s:
         s["discogs_url"] = discogs_lookup.clean_url(s["discogs_url"])
+    if "spotify_url" in s:
+        s["spotify_url"] = urlclean.clean_spotify_url(s["spotify_url"])
     s.pop("original", None)
     if "remixer" in s:
         v = s["remixer"].strip() if isinstance(s["remixer"], str) else ""
@@ -237,6 +241,8 @@ def clean_tag(tag: str) -> str:
         elif key == "country":
             value = countrycodes.canonical_country(value) or value
         elif key == "genre":
+            if genre_filter.is_dropped(value):
+                return ""
             value = " ".join(genre_filter.canonical(value).lower().split()) or value
         elif key == "decade" and not _DECADE_RE.match(value):
             value = value.replace(" ", "")
@@ -259,11 +265,25 @@ def unknown_countries(tags: list[str]) -> list[str]:
 def clean_tags(tags: list[str]) -> list[str]:
     seen: set[str] = set()
     out: list[str] = []
-    for t in tags:
-        t = clean_tag(str(t))
+    extras: list[tuple[str, str | None]] = []
+    for raw in tags:
+        raw = str(raw)
+        ns, sep, val = raw.partition(":")
+        if sep and ns.strip().lower() == "genre":
+            sp = genre_filter.split_prefix(" ".join(val.split()))
+            if sp and not genre_filter.is_dropped(sp[0]):
+                extras.append((sp[1], sp[2]))
+        t = clean_tag(raw)
         if t and t.casefold() not in seen:
             seen.add(t.casefold())
             out.append(t)
+    for country, lang in extras:
+        if sum(1 for t in out if t.startswith("country:")) < 2 and f"country:{country}" not in seen:
+            seen.add(f"country:{country}")
+            out.append(f"country:{country}")
+        if lang and not any(t.startswith("lang:") for t in out):
+            seen.add(f"lang:{lang}")
+            out.append(f"lang:{lang}")
     return out
 
 

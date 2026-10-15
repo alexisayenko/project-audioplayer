@@ -36,13 +36,14 @@ def test_merge_ignores_bad_years():
 def upstream(monkeypatch):
     monkeypatch.setattr(gl, "lookup", lambda a, t: {"tags": ["genre:rock", "country:au"], "year": 1979, "album": "Highway to Hell"})
     monkeypatch.setattr(wl, "suggest", lambda a, t: {"tags": ["genre:hard rock", "country:gb"], "year": 1979})
-    monkeypatch.setattr(wl, "from_links", lambda s, a: {"tags": ["genre:blues rock"], "year": 1980, "wikipedia_song": "https://en.wikipedia.org/wiki/X", "wikipedia_artist": None})
+    monkeypatch.setattr(wl, "from_links", lambda s, a, al=None: {"tags": ["genre:blues rock"], "year": 1980, "wikipedia_song": "https://en.wikipedia.org/wiki/X", "wikipedia_artist": None})
 
 
 def test_gather_merges_all_sources(upstream):
     out = metadata.gather("T", "A", [lambda: {"album": None, "year": 2015, "tags": ["genre:Rock", "lang:en"]}], "https://en.wikipedia.org/wiki/X", None, source_urls=["https://youtu.be/dQw4w9WgXcQ"])
     assert out == {
         "suggest": {"artist": None, "title": None},
+        "wikipedia_album": None,
         "album": "Highway to Hell",
         "year": 1980,
         "tags": ["genre:rock", "country:au", "genre:blues rock", "genre:hard rock"],
@@ -206,7 +207,7 @@ def test_gather_suggest_from_song_infobox(monkeypatch):
     out = _gather_with_box(monkeypatch, "{{Infobox song\n| name = Warrior's Dance\n| artist = [[the Prodigy]]\n| album = X\n}}")
     assert out["suggest"] == {"artist": "The Prodigy", "title": "Warrior's Dance"}
     assert out["album"] == "X"
-    assert set(out) == {"album", "year", "tags", "suggest", "services"}
+    assert set(out) == {"album", "year", "tags", "wikipedia_album", "suggest", "services"}
 
 
 def test_gather_suggest_nulls_without_name_artist_or_infobox(monkeypatch):

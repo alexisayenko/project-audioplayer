@@ -289,3 +289,25 @@ def test_bare_and_music_tags_make_one_connected_node(wd):
     assert "electronic" not in n and "house" not in n
     assert n["house music"]["ownCount"] == 2
     assert n["house music"]["parents"] == [n["electronic music"]["id"]]
+
+
+def test_euroda_merges_into_the_eurodance_node(wd):
+    g = gg.graph(songs(("s1", ["euroda"]), ("s2", ["Eurodance"]), ("s3", ["russian eurodance"])), wd.path)
+    nodes = [n for n in g["nodes"] if "eurodance" in n["label"].lower() or "euroda" in n["label"].lower()]
+    assert len(nodes) == 1
+    assert nodes[0]["tags"] == ["eurodance"]
+    assert nodes[0]["count"] == 3
+
+
+def test_umbrella_root_takes_majority_child_family():
+    fam = {"u": "Other", "a": "Pop", "b": "Pop", "c": "Rock"}
+    parents = {"u": [], "a": ["u"], "b": ["u"], "c": ["u"]}
+    reach = {"u": {1, 2, 3, 4}, "a": {1, 2}, "b": {2, 3}, "c": {4}}
+    assert gg.umbrella_families(fam, parents, reach)["u"] == "Pop"
+
+
+def test_umbrella_root_without_clear_majority_or_with_parent_stays_other():
+    fam = {"u": "Other", "a": "Pop", "c": "Rock", "x": "Other", "y": "Pop"}
+    parents = {"u": [], "a": ["u"], "c": ["u"], "x": ["u"], "y": ["x"]}
+    reach = {"u": {1, 2, 3, 4}, "a": {1}, "c": {2}, "x": {3, 4}, "y": {3}}
+    assert gg.umbrella_families(fam, parents, reach) == fam

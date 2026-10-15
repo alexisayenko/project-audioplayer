@@ -84,6 +84,7 @@ def _links(mb: dict[str, Any], disc: dict[str, Any], wiki: dict[str, Any]) -> di
         "discogs": discogs_lookup.clean_url(disc.get("url")),
         "wikipedia_song": wiki_lookup.clean_link(wiki.get("wikipedia_song")),
         "wikipedia_artist": wiki_lookup.clean_link(wiki.get("wikipedia_artist")),
+        "wikipedia_album": wiki_lookup.clean_link(wiki.get("wikipedia_album")),
     }
 
 
@@ -107,7 +108,7 @@ def _fingerprint(path: Path, artist: str, title: str) -> tuple[str, str, dict[st
 
 def _used(matched: Any, mb: dict[str, Any], wiki: dict[str, Any], disc: dict[str, Any]) -> list[str]:
     hits = (("acoustid", matched), ("musicbrainz", mb.get("mb_url")),
-            ("wikidata", wiki.get("wikipedia_song") or wiki.get("wikipedia_artist") or wiki.get("tags")),
+            ("wikidata", wiki.get("wikipedia_song") or wiki.get("wikipedia_artist") or wiki.get("wikipedia_album") or wiki.get("tags")),
             ("discogs", disc.get("url")))
     return [name for name, hit in hits if hit]
 

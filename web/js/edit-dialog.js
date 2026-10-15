@@ -7,6 +7,7 @@ import { downloadSong } from './download.js';
 import { songForm } from './song-form.js';
 import { patchBody, songSources, yearError } from './song-payload.js';
 import { can } from './guest.js';
+import { coverEditor } from './cover-edit.js';
 
 export function dialogHead(title, sub, onCancel) {
   return el('div', { class: 'dlg-head' },
@@ -52,8 +53,10 @@ export function editDialog(song) {
   const dlg = document.getElementById('edit-dialog');
   const sf = songForm({ mode: 'edit', song, source: () => songSources(song) });
   const err = el('p', { class: 'msg error', hidden: true });
+  const cover = coverEditor(song);
   const form = el('form', { method: 'dialog' },
     dialogHead('Edit song', null, () => dlg.close()),
+    cover.node,
     sf.node,
     err,
     el('div', { class: 'row end' },
@@ -75,6 +78,12 @@ export function editDialog(song) {
       err.hidden = false;
       return;
     }
+    const badLink = sf.linkProblems();
+    if (badLink) {
+      err.textContent = badLink;
+      err.hidden = false;
+      return;
+    }
     try {
       await api.patch(song.id, patchBody(v, song));
       dlg.close();
@@ -85,7 +94,7 @@ export function editDialog(song) {
       err.hidden = false;
     }
   });
-  dlg.addEventListener('close', () => sf.destroy(), { once: true });
+  dlg.addEventListener('close', () => { sf.destroy(); cover.destroy(); }, { once: true });
   dlg.replaceChildren(form);
   dlg.showModal();
 }

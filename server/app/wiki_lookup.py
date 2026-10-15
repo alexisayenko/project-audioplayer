@@ -486,10 +486,10 @@ def _pick(rels: list[str]) -> tuple[str | None, str | None]:
 
 
 def suggest(artist: str, title: str, mb: dict[str, Any] | None = None) -> dict[str, Any]:
-    """{wikipedia_song, wikipedia_artist, tags, year} for a track via MusicBrainz + Wikidata; empty values on any failure.
+    """{wikipedia_song, wikipedia_artist, wikipedia_album, tags, year} for a track via MusicBrainz + Wikidata; empty values on any failure.
 
     `mb` is an already looked-up MusicBrainz result (`lookup` or `lookup_recording`) used instead of searching."""
-    out: dict[str, Any] = {"wikipedia_song": None, "wikipedia_artist": None, "tags": [], "song_genres": [], "year": None, "infobox_album": None, "infobox_year": None, "infobox_suggest": None}
+    out: dict[str, Any] = {"wikipedia_song": None, "wikipedia_artist": None, "wikipedia_album": None, "tags": [], "song_genres": [], "year": None, "infobox_album": None, "infobox_year": None, "infobox_suggest": None}
     if not genre_lookup.enabled():
         return out
     try:
@@ -498,6 +498,7 @@ def suggest(artist: str, title: str, mb: dict[str, Any] | None = None) -> dict[s
         song_link, song_q = _pick(mb["song_rels"])
         artist_link, artist_q = _pick(mb["artist_rels"])
         out["wikipedia_song"], out["wikipedia_artist"] = song_link, artist_link
+        out["wikipedia_album"] = _pick(mb.get("album_rels") or [])[0] if mb.get("album") else None
         box_artist = infobox(song_link)["artist"] if song_link else None
         if box_artist and not any(genre_lookup._artist_match(c, box_artist) for c in artist_candidates(artist)):
             song_link, song_q = None, None
@@ -520,9 +521,9 @@ def _page_url(url: str | None) -> str | None:
     return (sitelink(qid) or url) if qid else url
 
 
-def from_links(song_link: Any, artist_link: Any) -> dict[str, Any]:
-    """Tags, year and page URLs (`wikipedia_song`, `wikipedia_artist`) for user-edited Wikipedia/Wikidata links; empty when disabled or on any failure."""
-    out: dict[str, Any] = {"tags": [], "song_genres": [], "year": None, "infobox_album": None, "infobox_year": None, "infobox_suggest": None, "wikipedia_song": None, "wikipedia_artist": None}
+def from_links(song_link: Any, artist_link: Any, album_link: Any = None) -> dict[str, Any]:
+    """Tags, year and page URLs (`wikipedia_song`, `wikipedia_artist`, `wikipedia_album`) for user-edited Wikipedia/Wikidata links; empty when disabled or on any failure."""
+    out: dict[str, Any] = {"tags": [], "song_genres": [], "year": None, "infobox_album": None, "infobox_year": None, "infobox_suggest": None, "wikipedia_song": None, "wikipedia_artist": None, "wikipedia_album": None}
     if not genre_lookup.enabled():
         return out
     try:
@@ -531,6 +532,7 @@ def from_links(song_link: Any, artist_link: Any) -> dict[str, Any]:
         out.update(facts(song_q, artist_q))
         out["wikipedia_song"] = _page_url(song_url)
         out["wikipedia_artist"] = _page_url(artist_url)
+        out["wikipedia_album"] = _page_url(clean_link(album_link))
         _with_infobox(out, out["wikipedia_song"], out["wikipedia_artist"])
         return out
     except Exception as exc:

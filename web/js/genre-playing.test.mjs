@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { songGenres, mapToNodes, nodeIds, nowPlayingState, createNowSelection, nowSelectionMessage } from './genre-playing.js';
+import { songGenres, mapToNodes, nodeIds, nowPlayingState, createNowSelection, nowSelectionMessage, orphanNodes, orphanState } from './genre-playing.js';
 
 const g = { nodes: [{ id: 'Q1', label: 'House', tags: ['house'] }, { id: 'Q2', label: 'Drum and bass', tags: [] }] };
 
@@ -95,4 +95,22 @@ test('a plain user selection is unaffected', () => {
   m.tapDot('x');
   assert.deepEqual(m.sel, ['x']);
   assert.equal(m.ctl.userSelected(), false);
+});
+
+test('orphanNodes: zero edges, self-loop only, hidden neighbours, empty graph', () => {
+  const nodes = [
+    { id: 'A', label: 'A', count: 1 }, { id: 'B', label: 'B', count: 5 }, { id: 'C', label: 'C', count: 5 },
+    { id: 'D', label: 'D', count: 2 }, { id: 'E', label: 'E', count: 0 },
+  ];
+  const edges = [{ source: 'B', target: 'B' }, { source: 'D', target: 'E' }];
+  assert.deepEqual(orphanNodes({ nodes, edges }).map((n) => n.id), ['B', 'C', 'A']);
+  assert.deepEqual(orphanNodes({ nodes, edges: [{ source: 'A', target: 'GONE' }] }).map((n) => n.id), ['B', 'C', 'D', 'E']);
+  assert.deepEqual(orphanNodes({ nodes: [], edges: [] }), []);
+  assert.deepEqual(orphanNodes(null), []);
+});
+
+test('orphanState labels the count and disables with none', () => {
+  assert.deepEqual(orphanState(25), { disabled: false, hint: 'Genres with no connections', label: 'Orphans 25' });
+  assert.equal(orphanState(0).disabled, true);
+  assert.equal(orphanState(0).hint, 'No orphan genres');
 });

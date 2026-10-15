@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { isWikiLink, songLinks, wikiDisplay, wikiNormalize } from './wiki-links.js';
+import { isWikiLink, wikiTarget, wikiDisplay, wikiNormalize } from './wiki-links.js';
 
 test('wiki-links', () => {
   assert.ok(isWikiLink('https://en.wikipedia.org/wiki/Daft_Punk'));
@@ -11,10 +11,13 @@ test('wiki-links', () => {
   assert.ok(!isWikiLink(''));
 
   const full = { source_url: 'https://www.youtube.com/watch?v=abcdefghijk', wikipedia_song: 'https://en.wikipedia.org/wiki/A', wikipedia_artist: 'https://de.wikipedia.org/wiki/B' };
-  assert.deepEqual(songLinks(full).map((l) => l.label), ['Wikipedia (song)', 'Wikipedia (band)']);
-  assert.deepEqual(songLinks({ ...full, wikipedia_song: null }).map((l) => l.label), ['Wikipedia (band)']);
-  assert.deepEqual(songLinks({ source_url: 'javascript:alert(1)', wikipedia_song: 'javascript:alert(1)' }), []);
-  assert.deepEqual(songLinks({}), []);
+  assert.deepEqual(wikiTarget(full), { href: full.wikipedia_song, label: 'Song on Wikipedia' });
+  assert.deepEqual(wikiTarget({ ...full, wikipedia_song: null, wikipedia_album: 'https://en.wikipedia.org/wiki/Al' }), { href: 'https://en.wikipedia.org/wiki/Al', label: 'Album on Wikipedia' });
+  assert.deepEqual(wikiTarget({ ...full, wikipedia_song: null }), { href: full.wikipedia_artist, label: 'Artist on Wikipedia' });
+  assert.deepEqual(wikiTarget({ ...full, wikipedia_song: 'javascript:alert(1)' }), { href: full.wikipedia_artist, label: 'Artist on Wikipedia' });
+  assert.equal(wikiTarget({ source_url: 'javascript:alert(1)', wikipedia_song: 'javascript:alert(1)' }), null);
+  assert.equal(wikiTarget({}), null);
+  assert.equal(wikiTarget(null), null);
 
   assert.equal(wikiDisplay('https://en.wikipedia.org/wiki/Bawitdaba_(song)'), 'Bawitdaba (song)');
   assert.equal(wikiDisplay('http://m.en.wikipedia.org/wiki/Daft_Punk'), 'Daft Punk');

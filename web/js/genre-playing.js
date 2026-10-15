@@ -85,3 +85,20 @@ export function createNowSelection({ setSelection, clearSelection, announce = ()
     },
   };
 }
+
+export function orphanNodes(g) {
+  const nodes = g?.nodes || [];
+  const linked = new Set();
+  for (const e of g?.edges || []) {
+    if (e.source === e.target) continue;
+    linked.add(e.source);
+    linked.add(e.target);
+  }
+  return nodes
+    .filter((n) => !linked.has(n.id))
+    .sort((a, b) => (b.count || 0) - (a.count || 0) || String(a.label).localeCompare(String(b.label)));
+}
+
+export const orphanState = (n) => (n
+  ? { disabled: false, hint: 'Genres with no connections', label: `Orphans ${n}` }
+  : { disabled: true, hint: 'No orphan genres', label: 'Orphans' });

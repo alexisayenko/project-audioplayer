@@ -33,6 +33,7 @@ export const ICONS = {
   ring: { d: '<circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>', width: 1.8 },
   synthwave: { d: '<circle cx="12" cy="9" r="4"/><path d="M2 14h20M4 18h16M7 21h10"/>', width: 1.8 },
   terrain: { d: '<path d="M3 18l4-5 3 3 4-7 3 4 4-5M3 21h18"/>', width: 1.8 },
+  wikipedia: { d: '<path d="M3 6l4 12 5-9 5 9 4-12"/>', width: 2 },
   link: { d: '<path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1"/>', width: 2 },
   more: { fill: true, d: '<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>' },
 };

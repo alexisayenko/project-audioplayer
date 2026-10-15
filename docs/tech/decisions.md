@@ -22,6 +22,7 @@ below, never by deleting.
 | 0015 | Pill separators and promo-noise cleaning | Accepted, implemented on the web |
 | 0016 | Web player chrome: fixed mini-player, queue menu, collapsible sidebar, draggable scrubber | Accepted, implemented |
 | 0017 | Server module structure and test strategy | Accepted, implemented |
+| 0020 | Connect YouTube: read-only playlist import by Google OAuth | Proposed |
 
 The web "Download" file save is a sub-decision of ADR-0003; the web "Auto-download songs" setting is one of ADR-0010. The 2026-10-13 form, token-pill and metadata decisions have no number (section "2026-10-13 decisions", above ADR-0013). The identification (AcoustID, Discogs) decision is the sub-decision of ADR-0013; per-user open signup is ADR-0012.
 
@@ -642,3 +643,13 @@ Status: Accepted (Alex, 2026-10-14)
 - Sign-in: Google and Apple consoles must list the new origin and return URL (add, never replace); a rejected address shows "This address is not registered with ... sign-in yet".
 - Rejected: a cookie `Domain` shared across both hosts (not possible across different registrable domains); a redirect on every method (it would break a POST in flight).
 - Amendment 2026-10-14 (owner): `play.isayenko.net` is removed entirely, with no redirect. Its DNS record is deleted and electrophone.cc is the only hostname; the dual-host and redirect steps above are historical. Installed iOS builds that still store the old URL are rewritten to the default by `Settings.init`.
+
+## ADR-0020 Connect YouTube: read-only playlist import by Google OAuth
+
+Status: Proposed (Alex, 2026-10-16; task-0032)
+
+- Decision: a signed-in user can connect a Google account with the scope `youtube.readonly` (separate Web-application OAuth client, redirect `https://electrophone.cc/yt/callback`, `access_type=offline`) and import chosen playlists and Liked videos as catalog songs without audio (ADR-0010), deduplicated on the YouTube video id. Spec: [youtube-connect.md](../specs/youtube-connect.md).
+- Security: the refresh token is encrypted (Fernet, key derived from `AUDIO_SESSION_SECRET`) in `/var/lib/audioplayer/secrets/<uid>.json` (0600), outside the git-synced data dir, never logged; client id and secret live in `/etc/audioplayer/env`; the OAuth `state` is signed and bound to the user.
+- Quotas (ADR-0012): a metadata-only import does not use the hourly add limit but is limited to 6 per hour and stops at the 500-song cap; the owner is exempt as before.
+- Pending owner decisions: CW owner-only first (recommended) or all users (Google verification); CX Production-unverified consent (recommended) or Testing (7-day refresh expiry); CY songs only or songs plus a refreshable Electrophone playlist (recommended).
+- Rejected: scraping YouTube Music (no official API for the private library); storing the token in the library repo (git history is permanent).

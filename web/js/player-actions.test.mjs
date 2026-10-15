@@ -55,6 +55,25 @@ test('a source that is neither YouTube nor SoundCloud gets one generic Open sour
   assert.equal(host.children.length, 0);
 });
 
+test('Wikipedia button: song article, else artist article, else none; sits after the service links', () => {
+  const host = document.createElement('span');
+  const song = { ...both, wikipedia_song: 'https://en.wikipedia.org/wiki/S', wikipedia_artist: 'https://en.wikipedia.org/wiki/B' };
+  paintServiceButtons(host, song);
+  const labels = () => [...host.children].map((c) => c.getAttribute('aria-label'));
+  assert.deepEqual(labels(), ['Open on YouTube', 'Open on SoundCloud', 'Song on Wikipedia']);
+  const w = host.children[2];
+  assert.equal(w.href, 'https://en.wikipedia.org/wiki/S');
+  assert.equal(w.target, '_blank');
+  assert.equal(w.rel, 'noopener noreferrer');
+  assert.equal(w.title, 'Song on Wikipedia');
+  paintServiceButtons(host, { ...song, wikipedia_song: null });
+  assert.equal(host.children[2].href, 'https://en.wikipedia.org/wiki/B');
+  assert.equal(host.children[2].getAttribute('aria-label'), 'Artist on Wikipedia');
+  paintServiceButtons(host, { ...none, source_url: null });
+  assert.equal(host.hidden, true);
+  assert.equal($('player-links'), null);
+});
+
 test('Song info button opens the read-only card, not the edit dialog; guests keep it, Edit stays in the card for writers only', () => {
   store.songs = [both];
   store.loaded = true;

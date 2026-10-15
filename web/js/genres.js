@@ -12,7 +12,7 @@ import { createCollapsible, loadCollapsed, saveCollapsed, PANEL_KEYS } from './c
 import { player } from './player.js';
 import { setCover } from './player-ui.js';
 import { titleNodes } from './display-title.js';
-import { songGenres, mapToNodes, nodeIds, nowPlayingState, createNowSelection } from './genre-playing.js';
+import { songGenres, mapToNodes, nodeIds, nowPlayingState, createNowSelection, orphanNodes, orphanState } from './genre-playing.js';
 import { POLL_MS, shouldPoll, presentFamilies, toggleHidden, loadOutlineOpen, saveOutlineOpen } from './genre-view.js';
 
 const CHILD_CHIPS = 12;
@@ -41,6 +41,7 @@ export function renderGenres(root) {
   let outlineOpen = loadOutlineOpen(localStorage, window.innerWidth);
   let legendOpen = false;
   let nowOpen = false;
+  let orphOpen = false;
   let infoCollapsed = loadCollapsed(localStorage, PANEL_KEYS.genreInfo, window.innerWidth);
   const infoCard = (id, content) => createCollapsible({
     id, content, collapsed: infoCollapsed,
@@ -65,6 +66,11 @@ export function renderGenres(root) {
     onclick: () => toggleNow(),
   }, el('span', { 'aria-hidden': 'true' }, '♪ '), 'Now playing');
   const nowPop = el('div', { class: 'gm-now', id: 'gm-now', role: 'group', 'aria-label': 'Genres of the playing song', hidden: true });
+  const orphBtn = el('button', {
+    class: 'gm-tbtn', type: 'button', 'aria-pressed': 'false', 'aria-controls': 'gm-orphans', title: 'Genres with no connections',
+    onclick: () => toggleOrph(),
+  }, 'Orphans');
+  const orphPop = el('div', { class: 'gm-now gm-orphans', id: 'gm-orphans', role: 'group', 'aria-label': 'Orphan genres', hidden: true });
   const outlineBtn = el('button', {
     class: 'gm-tbtn gm-outline-btn', type: 'button', 'aria-controls': 'gm-outline-panel', onclick: () => setOutline(!outlineOpen),
   }, 'Outline');
@@ -90,6 +96,7 @@ export function renderGenres(root) {
     onSelect: (data) => {
       selectedId = data ? data.id : null;
       if (nowSel.userSelected() && nowOpen) setNow(false);
+      if (orphSel.userSelected()) setOrph(false);
       renderPanel();
       revealInOutline();
     },
@@ -107,6 +114,12 @@ export function renderGenres(root) {
     clearSelection: () => view.select(null),
     announce: (t) => { live.textContent = t; },
   });
+  const orphSel = createNowSelection({
+    setSelection: (ids) => view.selectMany(ids),
+    clearSelection: () => view.select(null),
+    announce: (t) => { live.textContent = t.replace(/ of the playing song$/, ' with no connections'); },
+  });
+  const orphIds = () => (g ? orphanNodes(g).map((n) => n.id) : []);
   const nowIds = () => (g ? nodeIds(mapToNodes(songGenres(player.current), g)) : []);
 
   const zoomBar = el('div', { class: 'gm-zoom', role: 'group', 'aria-label': 'Zoom' },
@@ -125,7 +138,51 @@ export function renderGenres(root) {
     nowBtn.focus?.();
   }
 
+  function closeOrph() {
+    if (orphSel.active) orphSel.toggle([]);
+    setOrph(false);
+    orphBtn.focus?.();
+  }
+
+  function toggleOrph() {
+    if (orphOpen || orphSel.active) { closeOrph(); return; }
+    if (nowOpen || nowSel.active) { if (nowSel.active) nowSel.toggle([]); setNow(false); }
+    if (orphSel.toggle(orphIds())) setOrph(true);
+  }
+
+  function setOrph(open) {
+    orphOpen = open;
+    renderOrph();
+  }
+
+  function renderOrph() {
+    const list = g ? orphanNodes(g) : [];
+    const st = orphanState(list.length);
+    orphBtn.disabled = st.disabled;
+    orphBtn.title = st.hint;
+    orphBtn.textContent = st.label;
+    if (orphSel.active) orphSel.songChanged(list.map((n) => n.id));
+    if (!orphSel.active) orphOpen = false;
+    if (orphBtn.disabled) orphOpen = false;
+    orphBtn.setAttribute('aria-pressed', String(orphOpen));
+    orphPop.hidden = !orphOpen;
+    if (!orphOpen) { orphPop.replaceChildren(); return; }
+    const cl = infoCard('gm-orphans-body', [
+      el('ul', { class: 'gm-orph-list' }, list.map((n) => el('li', {},
+        el('button', {
+          class: 'gm-hit', type: 'button', onclick: () => view.select(n.id, { center: true }),
+          onpointerenter: () => view.hoverId(n.id), onpointerleave: () => view.hoverId(null),
+        }, el('span', { class: `gm-dot f${familyIndex(n.family)}`, 'aria-hidden': 'true' }), n.label, el('small', {}, songsText(n.count))))))]);
+    orphPop.replaceChildren(
+      el('div', { class: 'gm-now-head' },
+        el('div', { class: 'gm-now-text' }, el('b', { class: 'gm-now-title' }, `Orphans (${list.length})`),
+          el('small', { class: 'muted' }, 'Genres with no connections')),
+        cl.button),
+      cl.root);
+  }
+
   function toggleNow() {
+    if (orphOpen || orphSel.active) { if (orphSel.active) orphSel.toggle([]); setOrph(false); }
     if (nowOpen || nowSel.active) { closeNow(); return; }
     nowSel.toggle(nowIds());
     setNow(true);
@@ -302,6 +359,7 @@ export function renderGenres(root) {
     renderOutline();
     renderResults();
     renderNow();
+    renderOrph();
   }
 
   function genreTagCount() {
@@ -335,6 +393,7 @@ export function renderGenres(root) {
     view.update({ nodes: g.nodes, edges: g.edges });
     renderPanel();
     renderOutline();
+    renderOrph();
   });
 
   const barCl = createCollapsible({
@@ -351,8 +410,9 @@ export function renderGenres(root) {
         barCl.button,
         el('h1', { class: 'gm-title' }, 'Genres map'),
         note,
-        legendBtn, nowBtn),
+        legendBtn, nowBtn, orphBtn),
       nowPop,
+      orphPop,
       barCl.root),
     outlineBtn,
     zoomBar,
@@ -366,7 +426,8 @@ export function renderGenres(root) {
   const stopInset = watchPlayerInset(gm, (h) => view.setInsets({ b: 16 + h }));
   gm.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape' || e.target === search) return;
-    if (nowOpen || nowSel.active) closeNow();
+    if (orphOpen || orphSel.active) closeOrph();
+    else if (nowOpen || nowSel.active) closeNow();
     else if (outlineOpen) setOutline(false);
   });
   if (!hasStoredExpanded(localStorage)) for (const f of FAMILIES) expanded.add(`f:${f}`);

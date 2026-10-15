@@ -154,3 +154,29 @@ test('the toolbar and the Now playing card have their own chevrons with saved st
   localStorage.removeItem('ap2.panel.genres');
   localStorage.removeItem('ap2.panel.genreInfo');
 });
+
+test('Orphans button lists loose genres, excludes Now playing and releases on Esc', async () => {
+  const { root, cleanup } = await mount();
+  const orph = btn(root, 'Orphans');
+  assert.equal(orph.textContent, 'Orphans 2');
+  assert.equal(orph.disabled, false);
+  assert.equal(orph.getAttribute('title'), 'Genres with no connections');
+  fire(orph, 'click');
+  assert.equal(orph.getAttribute('aria-pressed'), 'true');
+  const pop = root.querySelector('#gm-orphans');
+  assert.equal(pop.hidden, false);
+  assert.match(pop.textContent, /Orphans \(2\)/);
+  assert.equal(pop.querySelectorAll('.gm-hit').length, 2);
+  fire(btn(root, 'Now playing'), 'click');
+  assert.equal(orph.getAttribute('aria-pressed'), 'false');
+  assert.equal(pop.hidden, true);
+  fire(orph, 'click');
+  assert.equal(btn(root, 'Now playing').getAttribute('aria-pressed'), 'false');
+  fire(root.querySelector('.gm'), 'keydown', { key: 'Escape' });
+  assert.equal(orph.getAttribute('aria-pressed'), 'false');
+  fire(orph, 'click');
+  fire(pop.querySelectorAll('.gm-hit')[0], 'click');
+  assert.equal(orph.getAttribute('aria-pressed'), 'false');
+  assert.equal(root.querySelector('.gm-panel').hidden, false);
+  cleanup();
+});

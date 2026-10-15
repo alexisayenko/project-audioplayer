@@ -4,7 +4,6 @@ import { hasAudio } from './playable.js';
 import { el, toast, plural } from './dom.js';
 import * as Q from './queue-logic.js';
 import { visibleTags, tagChip, tagText } from './tagname.js';
-import { songLinks } from './wiki-links.js';
 import { closeMenu, initMenus } from './menu.js';
 import { downloadSong } from './download.js';
 import { autodl, autoDownloadOn } from './autodl.js';
@@ -409,7 +408,6 @@ function renderDetails(song) {
   $('player-sub').textContent = subtitleString(song);
   $('player-tags').replaceChildren(...visibleTags(song.tags).map(tagChip));
   $('player-bpm').textContent = song.bpm != null ? `${Math.round(song.bpm)} BPM` : '';
-  $('player-links').replaceChildren(...songLinks(song).map((l) => el('a', { class: 'source t-caption', href: l.href, target: '_blank', rel: 'noopener noreferrer' }, l.label)));
   updateDl(player.current);
   setCover($('mini-cover'), song);
   setCover($('player-cover'), song);
@@ -569,7 +567,19 @@ export function initPlayer() {
   volumeOk = canSetVolume(audio);
   document.body.classList.toggle('vol-readonly', !volumeOk);
   setVolume(audio, storedVolume(), false);
-  for (const id of ['p-volume', 'mini-volume']) $(id).addEventListener('input', (e) => setVolume(audio, e.target.value / 100));
+  for (const id of ['p-volume', 'mini-volume']) $(id).addEventListener('input', (e) => player.setVolume(e.target.value / 100));
+  $('p-mute').addEventListener('click', () => player.toggleMute());
+  const paintMute = () => {
+    const silent = audio.muted || audio.volume === 0;
+    const label = silent ? 'Unmute' : 'Mute';
+    $('p-mute').setAttribute('aria-pressed', String(silent));
+    $('p-mute').setAttribute('aria-label', label);
+    $('p-mute').title = label;
+    $('p-mute').classList.toggle('on', silent);
+    setIcon('p-mute', silent ? 'volumeMute' : 'volume', 22);
+  };
+  audio.addEventListener('volumechange', paintMute);
+  paintMute();
 
   for (const id of ['mini-cover', 'player-cover']) {
     $(id).addEventListener('error', () => { $(id).removeAttribute('src'); $(id).dataset.src = ''; });

@@ -734,3 +734,10 @@ def test_head_files_requires_auth_and_hides_missing_files(client, monkeypatch):
     assert client.head(f"/files/{VID2}", headers=H).status_code == 404
     assert client.head("/files/not-an-id", headers=H).status_code == 422
     assert client.head(f"/files/{VID}", params={"download": 1}, headers=H).headers["content-disposition"].startswith("attachment")
+
+
+def test_patch_wikipedia_album_link(client):
+    assert owner_add(client).status_code == 202
+    r = client.patch(f"/songs/{VID}", json={"wikipedia_album": "http://en.wikipedia.org/wiki/Discovery_(album)"}, headers=H)
+    assert r.json()["wikipedia_album"] == "https://en.wikipedia.org/wiki/Discovery_(album)"
+    assert client.patch(f"/songs/{VID}", json={"wikipedia_album": "https://evil.example/wiki/X"}, headers=H).json()["wikipedia_album"] is None

@@ -4,3 +4,4 @@ yt-dlp>=2025.1.1
 numpy==2.5.4
 aubio==0.4.9
 pyjwt[crypto]>=2.9
+pillow>=10

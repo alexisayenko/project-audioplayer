@@ -265,7 +265,7 @@ def test_preview_and_metadata_give_same_tags(monkeypatch):
 
 def test_lookup_wikipedia_uses_same_rule(monkeypatch):
     monkeypatch.setenv("AUDIO_API_TOKEN", "secret")
-    monkeypatch.setattr(wl, "from_links", lambda s, a: {"tags": _MIXED, "song_genres": [], "year": 1999})
+    monkeypatch.setattr(wl, "from_links", lambda s, a, al=None: {"tags": _MIXED, "song_genres": [], "year": 1999})
     r = TestClient(main.app).post("/lookup/wikipedia", json={"wikipedia_song": "https://en.wikipedia.org/wiki/X"}, headers={"X-API-Token": "secret"})
     assert r.json() == {"tags": _EXPECTED, "year": 1999}
 
@@ -415,3 +415,15 @@ def test_musicbrainz_su_is_suggested_other_pseudo_codes_dropped(monkeypatch):
         gl._cache.clear()
         monkeypatch.setattr(gl, "_get", fake_get([REC], {}, {"country": code}))
         assert gl.suggest_tags("Daft Punk", "X") == []
+
+
+def test_album_rels_from_release_group(monkeypatch):
+    gid = "11111111-2222-3333-4444-555555555555"
+    full = {"releases": [{"title": "Discovery", "status": "Official", "date": "2001", "artist-credit": [{"name": "Daft Punk", "artist": {"name": "Daft Punk"}}], "release-group": {"id": gid, "primary-type": "Album", "secondary-types": []}}]}
+    calls = []
+    monkeypatch.setattr(gl, "_get", lambda path, params: calls.append(path) or {"relations": [{"type": "wikipedia", "url": {"resource": "https://en.wikipedia.org/wiki/Discovery_(Daft_Punk_album)"}}]})
+    assert gl._album_rels(full, "Daft Punk") == ["https://en.wikipedia.org/wiki/Discovery_(Daft_Punk_album)"]
+    assert calls == [f"release-group/{gid}"]
+    assert gl._album_rels({"releases": []}, "Daft Punk") == []
+    monkeypatch.setattr(gl, "_get", lambda path, params: (_ for _ in ()).throw(OSError("down")))
+    assert gl._album_rels(full, "Daft Punk") == []

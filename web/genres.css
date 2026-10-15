@@ -46,7 +46,7 @@ body[data-route="genres"] main { max-width: none; padding: 0; }
   background: var(--gm-card); border: 1px solid var(--line); box-shadow: var(--gm-card-shadow);
 }
 .gm-bar {
-  position: absolute; z-index: 4; top: var(--space-3); left: var(--space-3); width: min(340px, calc(100% - 2 * var(--space-3) - 96px));
+  position: absolute; z-index: 4; top: var(--space-3); left: var(--space-3); width: min(456px, calc(100% - 2 * var(--space-3) - 96px));
   display: grid; gap: var(--space-2); padding: var(--space-3) var(--space-4); border-radius: var(--radius-key);
 }
 .gm-bar-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); min-width: 0; }
@@ -157,3 +157,5 @@ body.has-mini .gm { --player-h: calc(64px + 2 * var(--space-2)); }
 .gm-now-title, .gm-now-text small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .gm-chip-off { display: inline-flex; align-items: center; min-height: 28px; padding: 0 var(--space-3); border-radius: var(--radius-pill); background: var(--surface-sunken); color: var(--ink-muted); font-size: 13px; cursor: not-allowed; }
 .gm-now-all { justify-self: start; }
+.gm-orph-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; max-height: 40vh; overflow-y: auto; }
+.gm-orph-list .gm-hit { width: 100%; }

@@ -28,15 +28,15 @@ export class ApiError extends Error {
   }
 }
 
-async function request(method, path, body, signal) {
+async function request(method, path, body, signal, raw = false) {
   const headers = { ...CSRF };
-  if (body !== undefined) headers['Content-Type'] = 'application/json';
+  if (body !== undefined) headers['Content-Type'] = raw ? body.type : 'application/json';
   let res;
   try {
     res = await fetch(path, {
       method,
       headers,
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body: body === undefined || raw ? body : JSON.stringify(body),
       signal,
     });
   } catch {
@@ -131,5 +131,8 @@ export const api = {
   remove: (id) => request('DELETE', `/songs/${q(id)}`),
   fileUrl: (id) => `/files/${q(id)}`,
   downloadUrl: (id) => `/files/${q(id)}?download=1`,
-  coverUrl: (id) => `/covers/${q(id)}`,
+  uploadCover: (id, file) => request('PUT', `/songs/${q(id)}/cover`, file, undefined, true),
+  coverFromUrl: (id, url) => request('POST', `/songs/${q(id)}/cover/from-url`, { url }),
+  removeCover: (id) => request('DELETE', `/songs/${q(id)}/cover`),
+  coverUrl: (id, v) => (v ? `/covers/${q(id)}?v=${encodeURIComponent(v)}` : `/covers/${q(id)}`),
 };

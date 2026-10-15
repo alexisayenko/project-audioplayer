@@ -80,3 +80,48 @@ def test_musicbrainz_url_is_stored_cleaned_and_listed(client):
     assert client.patch(f"/songs/{VID}", json={"musicbrainz_url": "https://evil.example/x"}, headers=H).json()["musicbrainz_url"] is None
     assert client.patch(f"/songs/{VID}", json={"musicbrainz_url": url}, headers=H).json()["musicbrainz_url"] == url
     assert client.patch(f"/songs/{VID}", json={"title": "Other"}, headers=H).json()["musicbrainz_url"] == url
+
+
+@pytest.mark.parametrize("raw,want", [
+    ("euroda", "eurodance"), ("deep progressive", "progressive house"), ("mor", "middle of the road"), ("retro-synth", "synthwave"),
+    ("melodic progressive house", "progressive house"), ("hip-hop & rap", "hip hop"), ("rock and indie", "indie rock"),
+    ("pop and chart", "pop"), ("russian electro pop", "electropop"), ("Russian Electropop", "electropop"),
+])
+def test_new_aliases(raw, want):
+    assert gf.canonical(raw) == want
+
+
+@pytest.mark.parametrize("raw", ["mkj", "deb", "stadiumx", "Sam Smith", "dancin", "relaxed", "love song", "Love-Song"])
+def test_junk_dropped(raw):
+    from app import library
+
+    assert gf.is_dropped(raw) and not gf.is_genre(raw)
+    assert library.clean_tag(f"genre:{raw}") == ""
+    assert gf.filter_tags([f"genre:{raw}", "x"]) == ["x"]
+
+
+@pytest.mark.parametrize("raw", ["dance pop", "pop punk", "sunshine house", "west coast swing", "dreamsynth", "synth-rock", "progressive music", "underground music", "dystopian music"])
+def test_real_genres_untouched(raw):
+    assert gf.is_genre(raw) and not gf.is_dropped(raw)
+
+
+@pytest.mark.parametrize("raw,want", [
+    ("russian pop", ("pop", "ru", "ru")), ("russian chanson", ("chanson", "ru", "ru")), ("british blues", ("blues", "gb", None)),
+    ("Dutch House", ("house", "nl", "nl")), ("russian hip-hop", ("hip hop", "ru", "ru")),
+    ("uk garage", None), ("french house", None), ("british invasion", None), ("russian", None), ("russian electropop", None), ("house", None),
+])
+def test_split_prefix(raw, want):
+    assert gf.split_prefix(raw) == want
+
+
+def test_prefix_cleaning_adds_country_and_lang_once():
+    from app import library
+
+    assert library.clean_tag("genre:russian pop") == "genre:pop"
+    assert library.clean_tags(["genre:russian pop", "genre:russian rock"]) == ["genre:pop", "genre:rock", "country:ru", "lang:ru"]
+    assert library.clean_tags(["genre:british blues", "country:us"]) == ["genre:blues", "country:us", "country:gb"]
+    assert library.clean_tags(["genre:dutch house", "genre:french house", "country:nl", "lang:en"]) == ["genre:house", "genre:french house", "country:nl", "lang:en"]
+    again = library.clean_tags(["genre:russian pop"])
+    assert library.clean_tags(again) == again
+    assert library.clean_tags(["genre:euroda", "genre:eurodance"]) == ["genre:eurodance"]
+    assert library.clean_tags(["genre:mkj", "x"]) == ["x"]

@@ -47,9 +47,9 @@ One name per thing. "Also called" lists informal names the owner or the code use
 | Term | Meaning | Also called / not | Where |
 | --- | --- | --- | --- |
 | Mirrored spectrum | Mode `bars`: bars up and down from a centre line. | Also called: spectrum bar(s), bars | VIZ-010, VIZ-040 |
-| Bar width, Gap | Mirrored spectrum pixel settings: bar width and the space between bars in css px (0 width = Auto, the classic look). | Replaced Bar count / Bar width | VIZ-100 |
-| Max bar height | Mirrored spectrum: tallest bar in css px above the horizon (0 = Auto). | Replaced Height | VIZ-100 |
-| LED sections | Mirrored spectrum bars cut into stacked blocks (`segments`). | Concept: Sections | VIZ-100 |
+| Bar width, Gap | Mirrored spectrum pixel settings: bar width and the space between bars in css px (0 width = Auto, the classic look). | Replaced Bar count / Bar width | VIZ-106 |
+| Max bar height | Mirrored spectrum: tallest bar in css px above the horizon (0 = Auto). | Replaced Height | VIZ-106 |
+| LED sections | Mirrored spectrum bars cut into stacked blocks (`segments`). | Concept: Sections | VIZ-106 |
 | Peak marker | Mirrored spectrum: one section above the body at the recent maximum; rises instantly, held, then falls section by section (`peak`, `peakHold`). | Peak cap | VIZ-104 |
 | Afterimage | Mirrored spectrum: fading ghost on each section the peak marker occupied (`afterimage`, `afterTau`); shows as dim detached sections. | Ghost | VIZ-104 |
 | Section height | Mirrored spectrum: height of one LED section in px (`sectionHeight`, the gap `segmentGap` x height is added); used together with the LED sections count: both above 0 gives the Derived bar height, count 0 gives rows = round(bar height / (section + gap)); 0 = derived from count and bar height. | Not: LED sections | VIZ-104 |

@@ -67,16 +67,15 @@
           <button class="key ghost toggle" id="p-repeat" type="button" aria-pressed="false" aria-label="Repeat: off"></button>
         </fieldset>
         <div class="volume">
-          <span class="knob" id="p-knob" aria-hidden="true"></span>
+          <button class="key ghost" id="p-mute" type="button" aria-pressed="false" aria-label="Mute" title="Mute"></button>
           <input type="range" id="p-volume" class="slider" min="0" max="100" value="100" step="1" aria-label="Volume">
-          <span class="t-caption muted" id="p-volume-pct">100%</span>
         </div>
         <div class="viz-switch" id="p-viz-switch" hidden></div>
         <span class="viz-sr" id="viz-live" role="status" aria-live="polite"></span>
       </div>
       <div class="now" id="details-body" hidden>
         <div id="player-tags" class="tags"></div>
-        <p class="facts t-caption"><span id="player-bpm"></span><span id="player-links" class="links"></span></p>
+        <p class="facts t-caption"><span id="player-bpm"></span></p>
       </div>
     </div>
     <div class="queue-col">

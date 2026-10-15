@@ -7,7 +7,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 
-from .. import deps, discogs_lookup, genre_lookup, jobs, library, limits, timeutil, titleclean, users, wiki_lookup
+from .. import deps, discogs_lookup, genre_lookup, jobs, library, limits, timeutil, titleclean, urlclean, users, wiki_lookup
 from ..downloads import (
     add_metadata_only, mark_started, new_job, reject_unknown_country, run_download, run_fetch_audio,
 )
@@ -92,7 +92,8 @@ def fetch_song_audio(video_id: str, user: dict[str, Any] = Depends(deps.require_
         limits.check_fetch(uid, owner, songs, deps.audio_dir(uid), deps.pool_dir())
         limits.RATE.record(uid, songs)
         deps.JOBS[key] = new_job()
-    link = next((s.get("url") for s in library.sources_of(song) if s.get("id") == video_id and s.get("url")), None)
+    own = urlclean.source_of(video_id)
+    link = next((s.get("url") for s in library.sources_of(song) if s.get("source") == own and s.get("url")), None)
     began = deps.SCHED.submit(
         uid, owner, lambda: run_fetch_audio(uid, owner, video_id, link or song.get("source_url")), mark_started(key))
     return _started_response(video_id, began)
@@ -111,13 +112,55 @@ def song_status(video_id: str, user: dict[str, Any] = Depends(deps.require_token
 
 
 def _apply_links(updated: dict[str, Any], changes: dict[str, Any]) -> None:
-    for key in ("wikipedia_song", "wikipedia_artist"):
+    for key in ("wikipedia_song", "wikipedia_artist", "wikipedia_album"):
         if key in changes:
             updated[key] = wiki_lookup.clean_link(changes[key])
     if "musicbrainz_url" in changes:
         updated["musicbrainz_url"] = genre_lookup.clean_recording_url(changes["musicbrainz_url"])
     if "discogs_url" in changes:
         updated["discogs_url"] = discogs_lookup.clean_url(changes["discogs_url"])
+    if "spotify_url" in changes:
+        updated["spotify_url"] = urlclean.clean_spotify_url(changes["spotify_url"])
+    _apply_source_links(updated, changes)
+
+
+_SOURCE_FIELDS = (
+    ("youtube_url", "youtube", urlclean.clean_youtube_link, "a YouTube link (https youtube.com, music.youtube.com or youtu.be)"),
+    ("soundcloud_url", "soundcloud", urlclean.clean_soundcloud_link, "a SoundCloud track link (https soundcloud.com/<artist>/<track>)"),
+)
+
+
+def _apply_source_links(updated: dict[str, Any], changes: dict[str, Any]) -> None:
+    """Edit the YouTube / SoundCloud entries of `sources`. The song id never changes; the entry of the id's own kind cannot be cleared."""
+    primary = urlclean.source_of(str(updated.get("id", "")))
+    sources = [dict(e) for e in library.sources_of(updated)]
+    touched = False
+    for field, kind, clean, what in _SOURCE_FIELDS:
+        if field not in changes:
+            continue
+        raw = changes[field]
+        link = None
+        if isinstance(raw, str) and raw.strip():
+            link = clean(raw)
+            if link is None:
+                raise HTTPException(status_code=422, detail=f"{field} must be {what}")
+        mine = [e for e in sources if e.get("source") == kind]
+        if link is None:
+            if kind == primary:
+                raise HTTPException(status_code=422, detail=f"{field} cannot be cleared: it is the link this song's audio comes from")
+            sources = [e for e in sources if e.get("source") != kind]
+        elif mine:
+            mine[0]["url"] = link
+            if kind == "youtube":
+                mine[0]["id"] = urlclean.parse_video_id(link) or mine[0]["id"]
+        else:
+            ident = urlclean.parse_video_id(link) if kind == "youtube" else link.split("soundcloud.com/", 1)[1]
+            sources.append({"source": kind, "id": ident, "url": link})
+        if kind == primary:
+            updated["source_url"] = link
+        touched = True
+    if touched:
+        updated["sources"] = library.clean_sources(sources)
 
 
 def _edited(song: dict[str, Any], changes: dict[str, Any]) -> dict[str, Any]:

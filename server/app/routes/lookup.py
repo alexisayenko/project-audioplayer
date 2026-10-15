@@ -39,6 +39,7 @@ async def _apply_suggestions(meta: dict[str, Any]) -> None:
     meta["tags"] = metadata.finalize_tags([*meta.get("tags", []), *disc_genres, *found, *wiki["tags"], *disc_rest], wiki.get("song_genres"))
     meta["wikipedia_song"] = wiki["wikipedia_song"]
     meta["wikipedia_artist"] = wiki["wikipedia_artist"]
+    meta["wikipedia_album"] = wiki.get("wikipedia_album")
     meta["discogs_url"] = disc["url"]
     meta["suggested_year"] = wiki["year"] or disc["year"]
     meta["remixer"] = meta.get("remixer")
@@ -71,11 +72,11 @@ async def get_metadata(req: MetadataRequest):
     urls = [src.url.strip() for src in req.sources[:MAX_METADATA_SOURCES] if src.url.strip()]
     fetchers = [(lambda u=u: source_info(u)) for u in urls]
     return await run_in_threadpool(
-        metadata.gather, req.title.strip(), req.artist.strip(), fetchers, req.wiki_song, req.wiki_artist, metadata.TIMEOUT, urls
+        metadata.gather, req.title.strip(), req.artist.strip(), fetchers, req.wiki_song, req.wiki_artist, metadata.TIMEOUT, urls, req.wiki_album
     )
 
 
 @router.post("/lookup/wikipedia", dependencies=[Depends(deps.require_token)])
 async def lookup_wikipedia(req: WikipediaLookupRequest):
-    found = await run_in_threadpool(wiki_lookup.from_links, req.wikipedia_song, req.wikipedia_artist)
+    found = await run_in_threadpool(wiki_lookup.from_links, req.wikipedia_song, req.wikipedia_artist, req.wikipedia_album)
     return {"tags": metadata.finalize_tags(found["tags"], found.get("song_genres")), "year": found["year"]}

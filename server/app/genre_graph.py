@@ -397,6 +397,33 @@ def _related_edges(nodes: dict[str, dict[str, Any]], parents: dict[str, list[str
     return edges
 
 
+UMBRELLA_SHARE = 0.5
+
+
+def umbrella_families(
+    family: dict[str, str], parents: dict[str, list[str]], reach: dict[str, set[Any]], share: float = UMBRELLA_SHARE
+) -> dict[str, str]:
+    """Roots left in "Other" take the family of the children whose songs cover at least `share` of theirs."""
+    kids: dict[str, list[str]] = {}
+    for c, ps in parents.items():
+        for p in ps:
+            kids.setdefault(p, []).append(c)
+    out = dict(family)
+    for nid, fam in family.items():
+        if fam != "Other" or parents.get(nid) or not reach[nid]:
+            continue
+        songs: dict[str, set[Any]] = {}
+        for c in kids.get(nid, []):
+            if family[c] != "Other":
+                songs.setdefault(family[c], set()).update(reach[c])
+        if not songs:
+            continue
+        best = max(sorted(songs), key=lambda f: len(songs[f]))
+        if len(songs[best] & reach[nid]) / len(reach[nid]) >= share:
+            out[nid] = best
+    return out
+
+
 def build(songs: list[dict[str, Any]], cache: dict[str, Any]) -> dict[str, Any]:
     nodes = _own_nodes(user_genres(songs), cache)
     ontology = any(n["qid"] for n in nodes.values())
@@ -410,10 +437,11 @@ def build(songs: list[dict[str, Any]], cache: dict[str, Any]) -> dict[str, Any]:
     reach = _reach(nodes, parents)
     _trim(nodes, parents, reach)
     ids = _slugs(nodes)
+    fams = umbrella_families({nid: _family(cache, n["qid"], n["label"]) for nid, n in nodes.items()}, parents, reach)
 
     out_nodes = [
         {
-            "id": ids[nid], "label": n["label"], "qid": n["qid"], "family": _family(cache, n["qid"], n["label"]),
+            "id": ids[nid], "label": n["label"], "qid": n["qid"], "family": fams[nid],
             "count": len(reach[nid]), "ownCount": len(n["own"]), "parents": sorted(ids[p] for p in parents[nid]),
             "tags": sorted(n["keys"]),
         }

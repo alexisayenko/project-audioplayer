@@ -354,3 +354,14 @@ def test_url_helpers_never_raise_on_garbage(seed):
         urlclean.find_soundcloud_url(text)
         assert isinstance(urlclean.clean_url(text), str)
         assert isinstance(urlclean.is_valid_video_id(text), bool)
+
+
+def test_wikipedia_album_is_optional_and_validated():
+    songs = library.normalize({"songs": [
+        {"id": "dQw4w9WgXcQ", "title": "A"},
+        {"id": "9bZkp7q19f0", "title": "B", "wikipedia_album": "http://en.wikipedia.org/wiki/Discovery_(album)"},
+        {"id": "soundcloud-5", "title": "C", "wikipedia_album": "javascript:alert(1)"},
+    ]})["songs"]
+    assert "wikipedia_album" not in songs[0]
+    assert songs[1]["wikipedia_album"] == "https://en.wikipedia.org/wiki/Discovery_(album)"
+    assert songs[2]["wikipedia_album"] is None

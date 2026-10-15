@@ -23,7 +23,7 @@ import { marquee } from './marquee.js';
 
 function cover(s) {
   const img = el('img', { class: 'cover', alt: '', loading: 'lazy' });
-  if (s?.cover) img.src = api.coverUrl(s.id);
+  if (s?.cover) img.src = api.coverUrl(s.id, s.cover_v);
   img.addEventListener('error', () => img.removeAttribute('src'));
   return img;
 }

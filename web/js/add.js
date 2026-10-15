@@ -100,7 +100,7 @@ export function openAdd() {
     if (sf) sf.destroy();
     sf = songForm({
       mode: 'add',
-      song: { ...preview, wikipedia_song: preview.wikipedia_song, wikipedia_artist: preview.wikipedia_artist },
+      song: { ...preview, wikipedia_song: preview.wikipedia_song, wikipedia_artist: preview.wikipedia_artist, wikipedia_album: preview.wikipedia_album },
       source: () => preview?.source_url || null,
     });
 
@@ -135,6 +135,11 @@ export function openAdd() {
       const bad = yearError(v);
       if (bad) {
         err.replaceChildren(el('p', { class: 'msg error' }, bad));
+        return;
+      }
+      const badLink = sf.linkProblems();
+      if (badLink) {
+        err.replaceChildren(el('p', { class: 'msg error' }, badLink));
         return;
       }
       save.disabled = true;

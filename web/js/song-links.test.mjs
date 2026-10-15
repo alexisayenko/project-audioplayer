@@ -57,3 +57,10 @@ test('Wikipedia prefers the song page, falls back to the artist page', () => {
   assert.deepEqual(only.wikipedia, { on: true, url: 'https://en.wikipedia.org/wiki/A', label: 'Wikipedia (artist)' });
   assert.equal(wikipediaLink({}), null);
 });
+
+test('wikipediaLink falls back from song to album to artist', () => {
+  const a = 'https://en.wikipedia.org/wiki/A', al = 'https://en.wikipedia.org/wiki/Al', s = 'https://en.wikipedia.org/wiki/S';
+  assert.equal(wikipediaLink({ wikipedia_song: s, wikipedia_album: al, wikipedia_artist: a }).url, s);
+  assert.deepEqual(wikipediaLink({ wikipedia_album: al, wikipedia_artist: a }), { url: al, label: 'Wikipedia (album)' });
+  assert.equal(wikipediaLink({ wikipedia_artist: a }).url, a);
+});

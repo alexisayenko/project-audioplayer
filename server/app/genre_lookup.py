@@ -91,15 +91,33 @@ def _release_key(r: dict[str, Any], artist: str) -> tuple[bool, bool, str] | Non
     return (primary != "album", r.get("status") != "Official", str(r.get("date") or "9999"))
 
 
-def _album(full: dict[str, Any], artist: str = "") -> str | None:
-    """Title of the best release of a recording: credited to `artist`, an Album or EP without
-    Compilation/Mixtape/DJ-mix/Live/Remix types; Albums first, then official, then earliest date."""
-    best: tuple[Any, str] | None = None
+def _best_release(full: dict[str, Any], artist: str = "") -> tuple[str, str | None] | None:
+    best: tuple[Any, str, str | None] | None = None
     for r in full.get("releases") or []:
         key = _release_key(r, artist)
         if key is not None and (best is None or key < best[0]):
-            best = (key, str(r.get("title") or "").strip())
-    return best[1] if best else None
+            best = (key, str(r.get("title") or "").strip(), (r.get("release-group") or {}).get("id"))
+    return (best[1], best[2]) if best else None
+
+
+def _album(full: dict[str, Any], artist: str = "") -> str | None:
+    """Title of the best release of a recording: credited to `artist`, an Album or EP without
+    Compilation/Mixtape/DJ-mix/Live/Remix types; Albums first, then official, then earliest date."""
+    best = _best_release(full, artist)
+    return best[0] if best else None
+
+
+def _album_rels(full: dict[str, Any], artist: str = "") -> list[str]:
+    """URL relations of the best release's release group (one extra call); [] when there is none or on failure."""
+    best = _best_release(full, artist)
+    gid = best[1] if best else None
+    if not gid or not _MBID.fullmatch(str(gid)):
+        return []
+    try:
+        return _url_rels(_get(f"release-group/{gid}", {"inc": "url-rels", "fmt": "json"}))
+    except Exception as exc:
+        log.warning("release group lookup failed for %s: %s", gid, exc)
+        return []
 
 
 def _country(artist: dict[str, Any]) -> list[str]:
@@ -155,7 +173,7 @@ def _work_rels(full: dict[str, Any]) -> list[str]:
 
 
 def _empty() -> dict[str, Any]:
-    return {"tags": [], "song_rels": [], "artist_rels": [], "year": None, "album": None, "mb_url": None}
+    return {"tags": [], "song_rels": [], "artist_rels": [], "album_rels": [], "year": None, "album": None, "mb_url": None}
 
 
 def _artist_info(artist: str, credited: list[dict[str, Any]], genres: list[str]) -> tuple[list[str], list[str], list[str]]:
@@ -213,6 +231,7 @@ def _details(rec_id: str, full: dict[str, Any], credited: list[dict[str, Any]], 
         "tags": [*genres, *country],
         "song_rels": song_rels,
         "artist_rels": artist_rels,
+        "album_rels": _album_rels(full, artist),
         "year": _first_year(full),
         "album": _album(full, artist),
         "mb_url": recording_url(rec_id),
