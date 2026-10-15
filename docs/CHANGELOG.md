@@ -2,6 +2,11 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-15 (built, not deployed)
+
+- Web: new fourth visualizer mode "Synthwave terrain" (key `M` cycle, mode dropdown, Settings, share link `viz=synthwave`, WebGL only): a square or triangle grid moving toward the viewer with spectrum relief, valley, hills and future silhouette, a sliced sun with haze ring and horizon band, a ground reflection, a horizon line, a star sky and vignette; about 130 adjustable properties in the style panel stored in `ap2.viz.synth` with Reset; own renderer `viz-synth-*.js`, Terrain untouched; under load it degrades stars and haze, slice detail, grid LOD and then half rate, and falls back to Terrain; reduced motion draws one static frame; VIZ-080 to VIZ-091, task-0030. Known gap: the peak fade setting has no effect yet.
+- Web: Synthwave sun position is now "Sun height (radii)" (`sun.height`, -1..3, default 0.5): the disc centre height above the horizon line in radii, independent of the sun radius (0 half sunk, 1 bottom edge touches the horizon, above 1 floats); replaces `sun.lift` (a saved `lift` is ignored, default applies); VIZ-083.
+
 ## 2026-10-14
 
 - Web: Terrain level-of-detail tiers are now chosen by distance from the camera (`rho = hypot(x, z)`) instead of depth z, and every tier's mesh starts at the camera, so under Camera flight yaw the cell size no longer differs between the left, centre and right at the same distance (no more layers of different cells); the vertex count grows (level 2 at 16:9: about 52k, at most 120k); VIZ-043, VIZ-074.
