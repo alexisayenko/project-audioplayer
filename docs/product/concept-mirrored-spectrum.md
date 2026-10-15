@@ -213,7 +213,7 @@ One-click looks at the top of the Mirrored spectrum panel, like the Synthwave pr
 | Neon Blocks | `03-neon-blocks.png` | medium wide bars, theme gradient, strong reflection | LED sections (sections number), glowing bars, blue to pink to orange colours across the width, blurred reflection |
 | Pink Cyan Blocks | `04-pink-cyan-blocks.png` | few wide bars, reversed gradient, faint reflection, no horizon glow | LED sections, the vertical pink-to-cyan gradient, bar tips |
 | Ice Blue Mirror | `05-ice-blue-mirror.png` | built: wide pixel bars (10 px, gap 2), 20 LED sections, the Ice palette as a vertical gradient, a Horizon band, the Ice backdrop, reflection 0.8 (the thumbnail is still the owner's reference image); liked, tag `mirror-liked-1` (parameters: [visualizer.md](../specs/visualizer.md)) | the perspective view |
-| Ice Blue Mirror 2 | none (our own renderer) | working copy of the liked Ice Blue Mirror, the one that gets modified from now on (the original stays frozen, tag `mirror-liked-1`); reverse-engineered LED look: 40 px wide blocks 35 px tall (about 4x the original), black background, no horizon band, white base row glow, the History trail (current sector plus visit-count trail, no peak marker or afterimages), the Ice 2 palette, tone jitter, dark gap before a blurred reflection, 6 degree tilt (thumbnail is a copy of the original's until recaptured) | the perspective skew (needs a 3D transform), per-column hue shifts |
+| Ice Blue Mirror 2 (digital phosphor LED bars) | none (our own renderer) | working copy of the liked Ice Blue Mirror, the one that gets modified from now on (the original stays frozen, tag `mirror-liked-1`); reverse-engineered LED look: 40 px wide blocks 35 px tall (about 4x the original), black background, no horizon band, white base row glow, the History trail (current sector plus visit-count trail, no peak marker or afterimages), the Ice 2 palette, tone jitter, dark gap before a blurred reflection, 6 degree tilt (thumbnail is a copy of the original's until recaptured) | the perspective skew (needs a 3D transform), per-column hue shifts |
 | Classic | captured | all defaults, today's look | nothing |
 
 ## Reverse-engineered reference: LED equalizer
@@ -237,13 +237,32 @@ New Mirror settings (all default to 0 or off, so existing presets draw identical
 
 Owner decisions BP1 and the one-bar prototype. Each bar column is judged on its own. Display: only the CURRENT SECTOR (the one LED segment at the column's level, row = floor(level x rows), clamped) is drawn at full brightness with a thin white outline, plus a HISTORY TRAIL; no body, no peak marker, no afterimages in this mode (`sectorMode` = trail; the `peak` and `afterimage` settings stay in the schema for other uses).
 
-- Visit count: per column and row a counter. A visit counts +1 only after the sector has stayed on the row continuously for the MINIMUM DWELL (`minDwell`, 60 ms, 0 to 300 ms); rows the sector only passes over during a jump never count; the +1 is applied once when the threshold is first reached (frames count, so 4 frames at 60 fps = 66 ms counts, 3 = 50 ms does not; at 30 fps 2 frames count).
-- Leak: every count falls linearly by `loss` per second (default 1.0), floor 0, dt from real elapsed time (capped at 0.1 s, frozen while paused).
-- Level: `min(maxLevel, floor(count / visitsPerStep))`, defaults 6 and 5 (steps at 5, 10, 15 visits, ...).
-- Trail: rows with count >= 0.5 are drawn with alpha `min(trailMax, 0.15 + 0.7 x level / maxLevel)` and a lift toward white of `min(0.9 x trailMax, level x stepGain)` (`trailMax` 0.8, `stepGain` 0.14). The current sector always draws at alpha 1 and lift 0.9, so it is the brightest element. The reflection mirrors the same drawing at the preset's reflection alpha (0.5), without the outline.
-- Memory resets when the bar count, row count or canvas size changes, and on preset change. Cost: one `Float32Array` of columns x rows reused across frames, 600 x 48 stays well under one frame; only rows with count >= 0.5 are drawn, batched per brightness level.
-- Settings (group "History trail"): Current sector (off, trail), Minimum dwell (ms), Visits per step, Loss per second, Max level, Trail brightness, Step lightening.
+- Visit count: per column and row the number of visits within the last `window` seconds (integers). A visit counts +1 only after the sector has stayed on the row continuously for the MINIMUM DWELL (`minDwell`, 60 ms, 0 to 300 ms); rows the sector only passes over during a jump never count; the +1 is applied once when the threshold is first reached (frames count, so 4 frames at 60 fps = 66 ms counts, 3 = 50 ms does not; at 30 fps 2 frames count).
+- Window: each visit is stamped with the simulation clock and expires exactly `window` seconds later (`window` 2..60 s, default 10; the clock uses dt capped at 0.1 s and does not advance while paused, so counts do not expire while paused). Storage: one event ring per column (`SECTOR_EVENTS` = 128 entries of row and time) with per-row counts kept incrementally (+1 on visit, -1 on expiry, oldest event evicted when the ring is full); cheaper than a timestamp ring per row, 600 columns use about 0.7 MB for rings plus one byte per row cell, all allocated once and reused (no per-frame allocation). The old leaky counter (`loss`) is removed; stored `loss` values are ignored.
+- Level: `min(maxLevel, floor(count / visitsPerStep))`, defaults 6 and 3 (steps at 3, 6, 9 visits in the window, ...).
+- Trail: rows with count >= 1 are drawn in a colour taken from the ramp path stops 0 to 7 (the four dark swatches = the dim ladder, then stops 4 to 7), never by fading alpha and never by mixing white or grey. Level 0 is stop 0, `maxLevel` reaches stop 7; colours are interpolated in HSV and `trailMax` (default 0.8) caps only the VALUE (hue and saturation are kept; saturation is clamped to >= 0.55 beyond the swatches). Trail alpha is a constant 0.95. The reflection uses the same path shifted 2 steps darker. The current sector is drawn at its gradient colour with the white lift 0.9.
+- Glow (replaces the white outline): behind each current sector three expanded rectangles (8 %, 16 %, 28 % of the segment height, minimum 2 px, times `glowSize`) in the ramp stop 6 colour at alpha 0.30, 0.16, 0.08 times `glow`, drawn additively ('lighter'), no shadowBlur, three fills per band; a faint 1 px lighter edge (alpha 0.25) remains while glow > 0. The reflection gets 25 % of the glow; glow is skipped when the pace governor is lite. Settings `glow` (0..1, default 0.8, 0 = old outline) and `glowSize` (0.5..2, default 1).
+- Memory resets when the bar count, row count or canvas size changes, and on preset change. Cost: typed arrays reused across frames, 600 x 48 stays well under one frame; only rows with count >= 1 are drawn, batched per brightness level.
+- Settings (group "History trail"): Current sector (off, trail), Minimum dwell (ms), Visits per step, Window (s), Max level, Trail brightness, Glow, Glow size.
 
-### Ice 2 palette (measured)
+Related industry ideas (concept only, nothing copied): the trail is a "digital phosphor" or persistence display as known from oscilloscopes and RF spectrum analyzers, where brightness or colour shows how often the signal visits a spot within a persistence window (rare = cool blue, frequent = hot white). Our `window` is the persistence time and our level steps are the density colouring. LED segmented spectrum analyzers with peak hold and a mirrored reflection are also a standard visual genre; audioMotion-analyzer (LED bars mode, peak hold, reflex) is prior art only, it is AGPL-3.0, so we implement our own and copy nothing.
 
-From the owner's blue LED equalizer crop (not stored; values only). Median colours of the brightest pixels per height zone and 8-cluster k-means over all lit pixels, ordered tip to base: `--viz-ice2-0` #1b59a6, `-1` #3e749d, `-2` #5593b5, `-3` #61afd3, `-4` #76cce4, `-5` #95e1f0, `-6` #d4f8f8, `-7` #fafcfa (white-cyan base). Background `--viz-ice2-bg` #07080a (median of the dark pixels); dim ghost segments `--viz-ice2-ghost` #102b54 (defined, unused by the trail rule). The gradient option Ice 2 runs the ramp from the base (whitest) to the tip, evenly spaced; the Ice 2 backdrop is the flat `--viz-ice2-bg`. The photo is noisy and perspective-shifted, so the mid steps are the cluster centres rather than exact segment centres.
+### Ice 2 palette
+
+Owner-approved 11-stop ramp (prototype 11), tip to base, used exactly; CIE L* and CIEDE2000 step to the previous stop below. Stops 0 to 3 are the owner's four dark blue swatches and are deliberately not regularised (hue 212 to 228, saturation 79 to 92 %); stops 4 to 10 climb to white-cyan. Luminance is monotonic and no step exceeds dE 15 (pinned by a test).
+
+| Variable | Hex | L* | dE2000 |
+|---|---|---|---|
+| `--viz-ice2-0` | #040d31 | 4.8 |  |
+| `--viz-ice2-1` | #061a53 | 12.0 | 6.8 |
+| `--viz-ice2-2` | #113b86 | 26.6 | 11.6 |
+| `--viz-ice2-3` | #2464ac | 41.9 | 14.1 |
+| `--viz-ice2-4` | #3077c2 | 49.1 | 7.2 |
+| `--viz-ice2-5` | #3d8bd9 | 56.5 | 7.5 |
+| `--viz-ice2-6` | #4a9ff0 | 63.8 | 6.5 |
+| `--viz-ice2-7` | #6cc0f5 | 74.5 | 10.1 |
+| `--viz-ice2-8` | #98dcfa | 84.4 | 9.0 |
+| `--viz-ice2-9` | #d0f4ff | 94.0 | 9.4 |
+| `--viz-ice2-10` | #f4fdff | 98.7 | 8.9 |
+
+Dim ladder `--viz-ice2-dim-0..3` = stops 0 to 3 (the darkening path of the trail and the reflection). Background `--viz-ice2-bg` #02050f (blue-black); ghost `--viz-ice2-ghost` #08142d (defined, unused). The gradient option Ice 2 runs the ramp from the base (whitest) to the tip, evenly spaced; the Ice 2 backdrop is the flat `--viz-ice2-bg`. The earlier measured-from-crop ramp (k-means, then segment centres) is superseded.

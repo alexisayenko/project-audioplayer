@@ -17,16 +17,23 @@
   --viz-ice-3: #e6fbff;
   --viz-ice-bg-top: #02050f;
   --viz-ice-bg-mid: #0a2a66;
-  --viz-ice2-0: #1b59a6;
-  --viz-ice2-1: #3e749d;
-  --viz-ice2-2: #5593b5;
-  --viz-ice2-3: #61afd3;
-  --viz-ice2-4: #76cce4;
-  --viz-ice2-5: #95e1f0;
-  --viz-ice2-6: #d4f8f8;
-  --viz-ice2-7: #fafcfa;
-  --viz-ice2-bg: #07080a;
-  --viz-ice2-ghost: #102b54;
+  --viz-ice2-0: #040d31;
+  --viz-ice2-1: #061a53;
+  --viz-ice2-2: #113b86;
+  --viz-ice2-3: #2464ac;
+  --viz-ice2-4: #3077c2;
+  --viz-ice2-5: #3d8bd9;
+  --viz-ice2-6: #4a9ff0;
+  --viz-ice2-7: #6cc0f5;
+  --viz-ice2-8: #98dcfa;
+  --viz-ice2-9: #d0f4ff;
+  --viz-ice2-10: #f4fdff;
+  --viz-ice2-dim-0: #040d31;
+  --viz-ice2-dim-1: #061a53;
+  --viz-ice2-dim-2: #113b86;
+  --viz-ice2-dim-3: #2464ac;
+  --viz-ice2-bg: #02050f;
+  --viz-ice2-ghost: #08142d;
 }
 
 #player { position: relative; isolation: isolate; }

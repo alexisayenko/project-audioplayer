@@ -24,9 +24,10 @@ const ICE = {
 };
 
 const ICE2 = {
-  stops: ['#1b59a6', '#3e749d', '#5593b5', '#61afd3', '#76cce4', '#95e1f0', '#d4f8f8', '#fafcfa'].map((h) => parseColor(h)),
-  bg: [7, 8, 10],
-  ghost: [16, 43, 84],
+  stops: ['#040d31', '#061a53', '#113b86', '#2464ac', '#3077c2', '#3d8bd9', '#4a9ff0', '#6cc0f5', '#98dcfa', '#d0f4ff', '#f4fdff'].map((h) => parseColor(h)),
+  dim: ['#040d31', '#061a53', '#113b86', '#2464ac'].map((h) => parseColor(h)),
+  bg: [2, 5, 15],
+  ghost: [8, 20, 45],
 };
 
 export const FALLBACK_COLORS = {
@@ -51,6 +52,7 @@ export function readVizColors(style, fallback) {
     },
     ice2: {
       stops: fallback.ice2.stops.map((def, k) => get(`--viz-ice2-${k}`, def)),
+      dim: fallback.ice2.dim.map((def, k) => get(`--viz-ice2-dim-${k}`, def)),
       bg: get('--viz-ice2-bg', fallback.ice2.bg),
       ghost: get('--viz-ice2-ghost', fallback.ice2.ghost),
     },

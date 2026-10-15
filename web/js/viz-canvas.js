@@ -233,7 +233,7 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
       direction: m.direction, segments: m.segments, segmentGap: m.segmentGap, tips: m.tips, tipFade: m.tipFade, band: m.band,
       backdrop: iceBackdrop ? m.backdrop : 'none',
       sectionHeight: m.sectionHeight, shadeJitter: m.shadeJitter, peak: m.peak, peakHold: m.peakHold, afterimage: m.afterimage, afterTau: m.afterTau, peakDt: d.isPlaying() ? dt : 0, baseGlow: m.baseGlow, mirrorGap: m.mirrorGap, reflectionBlur: m.reflectionBlur, tilt: m.tilt,
-      sectorMode: m.sectorMode, minDwell: m.minDwell, visitsPerStep: m.visitsPerStep, loss: m.loss, maxLevel: m.maxLevel, trailMax: m.trailMax, stepGain: m.stepGain, backdropAlpha: mode === 'full' ? 1 : 0.6, dt,
+      sectorMode: m.sectorMode, minDwell: m.minDwell, visitsPerStep: m.visitsPerStep, window: m.window, maxLevel: m.maxLevel, trailMax: m.trailMax, sectorGlow: m.glow, sectorGlowSize: m.glowSize, lite: pace.lite, backdropAlpha: mode === 'full' ? 1 : 0.6, dt,
     });
   }
 

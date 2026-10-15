@@ -123,6 +123,8 @@ test('Ice Blue Mirror 2 uses the reverse-engineered LED settings, the original d
   assert.equal(two.barWidth, 40);
   assert.equal(two.sectionHeight, 35);
   assert.equal(two.tilt, 6);
+  assert.deepEqual([two.window, two.visitsPerStep, two.minDwell, two.maxLevel, two.trailMax, two.glow, two.glowSize], [10, 3, 60, 6, 0.8, 0.8, 1]);
+  assert.equal('loss' in two, false);
   assert.equal(two.horizon, false);
   assert.equal(two.band, 0);
   for (const k of ['sectionHeight', 'shadeJitter', 'baseGlow', 'mirrorGap', 'reflectionBlur', 'tilt']) {

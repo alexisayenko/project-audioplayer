@@ -52,13 +52,15 @@ One name per thing. "Also called" lists informal names the owner or the code use
 | LED sections | Mirrored spectrum bars cut into stacked blocks (`segments`). | Concept: Sections | VIZ-100 |
 | Peak marker | Mirrored spectrum: one section above the body at the recent maximum; rises instantly, held, then falls section by section (`peak`, `peakHold`). | Peak cap | VIZ-104 |
 | Afterimage | Mirrored spectrum: fading ghost on each section the peak marker occupied (`afterimage`, `afterTau`); shows as dim detached sections. | Ghost | VIZ-104 |
-| Ice Blue Mirror 2 | Working copy of the liked Ice Blue Mirror (preset `ice-blue-mirror-2`); the original is frozen. | Copy, v2 | VIZ-104 |
+| Ice Blue Mirror 2 | Digital phosphor LED bars (working name kept): working copy of the liked Ice Blue Mirror (preset `ice-blue-mirror-2`); the original is frozen. | Copy, v2 | VIZ-104 |
 | Base row glow, Mirror gap | The innermost LED row drawn white with a glow, and the dark gap before the reflection. | Not a horizon band | VIZ-104 |
 | Current sector | Mirrored spectrum History trail: the one LED segment at a column's current level, drawn brightest with a white outline. | Not: body, peak marker | VIZ-105 |
-| Visit count | Per column and row: how often the current sector stayed on that row (after the minimum dwell), leaking over time; sets the trail brightness step. | | VIZ-105 |
+| Visit count | Per column and row: number of visits to that row in the last 10 s (`window`; a visit = the current sector stayed on the row for the minimum dwell); sets the trail brightness step. | | VIZ-105 |
 | History trail | Rows the current sector visited, drawn by brightness step from the visit count (owner's name). | Not: afterimage | VIZ-105 |
+| Digital phosphor (persistence) | Industry name for the idea behind the History trail: brightness or colour shows how often a spot is visited within a persistence window (oscilloscopes, RF spectrum analyzers). Ice Blue Mirror 2 implements it: window = persistence time, level steps = density colouring. | See: History trail | VIZ-105 |
 | Minimum dwell | Time the sector must stay on a row before the visit counts (`minDwell`, 60 ms); passed-over rows do not count. | | VIZ-105 |
-| Ice 2 palette | Viz-local blue ramp `--viz-ice2-0..7` (tip to base) plus `-bg` and `-ghost`, measured from the owner's LED crop. | Not: Ice palette | VIZ-105 |
+| Ice 2 palette | Viz-local 11-stop blue ramp `--viz-ice2-0..10` (tip to base, #040d31 to #f4fdff) plus `-dim-0..3` (= stops 0..3), `-bg` and `-ghost`, owner-approved. | Not: Ice palette | VIZ-105 |
+| Glow (current sector) | Soft additive blue halo behind the current sector (settings Glow, Glow size). | Not: horizon glow | VIZ-105 |
 | Ring | Mode `ring`: circular spectrum around the cover. | | VIZ-042 |
 | Terrain | Mode `terrain`: the song as a landscape (WebGL). | | VIZ-043; terrain-concept |
 | Cell | One square of the grid (square in the world, not on screen). | | VIZ-043 |

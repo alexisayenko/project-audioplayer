@@ -180,27 +180,101 @@ test('maxHeightPx caps the bars at that many css px and Auto keeps the old half-
 test('History trail settings: neutral defaults, validated ranges', () => {
   const d = S.defaultMirror();
   assert.equal(d.sectorMode, 'off');
-  assert.deepEqual([d.visitsPerStep, d.loss, d.maxLevel, d.trailMax, d.stepGain, d.minDwell], [5, 1, 6, 0.8, 0.14, 60]);
-  const v = S.validateMirror({ sectorMode: 'x', visitsPerStep: 99, loss: -3, maxLevel: 0, trailMax: 5, stepGain: 0 });
+  assert.deepEqual([d.visitsPerStep, d.window, d.maxLevel, d.trailMax, d.minDwell, d.glow, d.glowSize], [3, 10, 6, 0.8, 60, 0.8, 1]);
+  const v = S.validateMirror({ sectorMode: 'x', visitsPerStep: 99, loss: -3, window: 500, maxLevel: 0, trailMax: 5, stepGain: 0 });
   assert.equal(v.sectorMode, 'off');
   assert.equal(v.visitsPerStep, 30);
-  assert.equal(v.loss, 0);
+  assert.equal(v.window, 60);
+  assert.equal('loss' in v, false);
+  assert.equal(S.validateMirror({ window: 0 }).window, 2);
+  assert.equal(S.validateMirror({ loss: 3 }).window, 10);
   assert.equal(v.maxLevel, 1);
   assert.equal(v.trailMax, 1);
-  assert.equal(v.stepGain, 0.05);
+  assert.equal('stepGain' in v, false);
   assert.ok(S.MIRROR_GROUPS.includes('History trail'));
 });
 
-test('ice2 gradient: ramp is light-to-dark by luminance, base first after mirrorColors', async () => {
+function labOf(c) {
+  const lin = c.map((q) => { const x = q / 255; return x <= 0.04045 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4; });
+  const X = (0.4124564 * lin[0] + 0.3575761 * lin[1] + 0.1804375 * lin[2]) / 0.95047;
+  const Y = 0.2126729 * lin[0] + 0.7151522 * lin[1] + 0.072175 * lin[2];
+  const Z = (0.0193339 * lin[0] + 0.119192 * lin[1] + 0.9503041 * lin[2]) / 1.08883;
+  const f = (t) => (t > 216 / 24389 ? Math.cbrt(t) : (24389 / 27 * t + 16) / 116);
+  return [116 * f(Y) - 16, 500 * (f(X) - f(Y)), 200 * (f(Y) - f(Z))];
+}
+
+export function dE2000(l1, l2) {
+  const [L1, a1, b1] = l1;
+  const [L2, a2, b2] = l2;
+  const rad = Math.PI / 180;
+  const C1 = Math.hypot(a1, b1);
+  const C2 = Math.hypot(a2, b2);
+  const Cm = (C1 + C2) / 2;
+  const G = 0.5 * (1 - Math.sqrt(Cm ** 7 / (Cm ** 7 + 25 ** 7)));
+  const ap1 = (1 + G) * a1;
+  const ap2 = (1 + G) * a2;
+  const Cp1 = Math.hypot(ap1, b1);
+  const Cp2 = Math.hypot(ap2, b2);
+  const hp = (b, a) => ((Math.atan2(b, a) / rad) + 360) % 360;
+  const h1 = Cp1 === 0 ? 0 : hp(b1, ap1);
+  const h2 = Cp2 === 0 ? 0 : hp(b2, ap2);
+  const dL = L2 - L1;
+  const dC = Cp2 - Cp1;
+  let dh = h2 - h1;
+  if (Cp1 * Cp2 === 0) dh = 0;
+  else if (dh > 180) dh -= 360;
+  else if (dh < -180) dh += 360;
+  const dH = 2 * Math.sqrt(Cp1 * Cp2) * Math.sin((dh * rad) / 2);
+  const Lm = (L1 + L2) / 2;
+  const Cpm = (Cp1 + Cp2) / 2;
+  let hm = h1 + h2;
+  if (Cp1 * Cp2 === 0) hm = h1 + h2;
+  else if (Math.abs(h1 - h2) <= 180) hm /= 2;
+  else hm = (hm + (hm < 360 ? 360 : -360)) / 2;
+  const T = 1 - 0.17 * Math.cos((hm - 30) * rad) + 0.24 * Math.cos(2 * hm * rad) + 0.32 * Math.cos((3 * hm + 6) * rad) - 0.2 * Math.cos((4 * hm - 63) * rad);
+  const dTheta = 30 * Math.exp(-(((hm - 275) / 25) ** 2));
+  const Rc = 2 * Math.sqrt(Cpm ** 7 / (Cpm ** 7 + 25 ** 7));
+  const Sl = 1 + (0.015 * (Lm - 50) ** 2) / Math.sqrt(20 + (Lm - 50) ** 2);
+  const Sc = 1 + 0.045 * Cpm;
+  const Sh = 1 + 0.015 * Cpm * T;
+  const Rt = -Math.sin(2 * dTheta * rad) * Rc;
+  return Math.sqrt((dL / Sl) ** 2 + (dC / Sc) ** 2 + (dH / Sh) ** 2 + Rt * (dC / Sc) * (dH / Sh));
+}
+
+test('ice2 gradient: 10-stop ramp, no big lightness gap, saturated, base first after mirrorColors', async () => {
   const { FALLBACK_COLORS } = await import('./viz-color.js');
   const lum = (c) => 0.3 * c[0] + 0.59 * c[1] + 0.11 * c[2];
   const st = FALLBACK_COLORS.ice2.stops;
-  assert.equal(st.length, 8);
-  for (let k = 1; k < st.length; k += 1) assert.ok(lum(st[k]) > lum(st[k - 1]), `stop ${k}`);
+  assert.equal(st.length, 11);
+  for (let k = 1; k < st.length; k += 1) {
+    assert.ok(lum(st[k]) > lum(st[k - 1]), `stop ${k}`);
+    const d = dE2000(labOf(st[k - 1]), labOf(st[k]));
+    assert.ok(d < 15, `dE2000 ${k - 1}->${k} = ${d}`);
+  }
+  const hsv = (c) => {
+    const [r, g2, b] = c.map((q) => q / 255);
+    const mx = Math.max(r, g2, b);
+    const d = mx - Math.min(r, g2, b);
+    const h = d === 0 ? 0 : mx === r ? ((g2 - b) / d + 6) % 6 : mx === g2 ? (b - r) / d + 2 : (r - g2) / d + 4;
+    return { h: h * 60, s: mx ? d / mx : 0, v: mx };
+  };
+  const dim = FALLBACK_COLORS.ice2.dim;
+  assert.deepEqual(dim, st.slice(0, 4));
+  dim.forEach((c, k) => {
+    const o = hsv(c);
+    assert.ok(o.h >= 205 && o.h <= 232 && o.s >= 0.6 && o.s <= 0.95, `swatch ${k} ${o.h} ${o.s}`);
+  });
+  st.forEach((c, k) => {
+    const o = hsv(c);
+    assert.ok(o.h >= (k < 4 ? 205 : k < 8 ? 196 : 185) && o.h <= 232, `hue ${k} ${o.h}`);
+    if (k >= 4 && k < 8) assert.ok(o.s >= 0.55, `sat ${k}`);
+    else if (k >= 8) assert.ok(o.s >= 0.03);
+    if (k) assert.ok(o.v >= hsv(st[k - 1]).v, `value ${k}`);
+  });
   const g = S.mirrorColors(FALLBACK_COLORS, 'ice2');
-  assert.deepEqual(g.stops[0], st[7]);
+  assert.deepEqual(g.stops[0], st[10]);
   assert.deepEqual(g.stops.at(-1), st[0]);
-  assert.deepEqual(g.line, st[7]);
+  assert.deepEqual(g.line, st[10]);
   assert.equal(S.mirrorColors(FALLBACK_COLORS, 'ice').stops, FALLBACK_COLORS.ice.stops);
   assert.equal(S.mirrorColors(FALLBACK_COLORS, 'theme'), FALLBACK_COLORS);
   assert.equal(S.mirrorColors({ ...FALLBACK_COLORS, ice2: undefined }, 'ice2').stops, FALLBACK_COLORS.stops);

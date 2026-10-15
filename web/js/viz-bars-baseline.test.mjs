@@ -210,62 +210,134 @@ test('sector mode: entering a row counts once, staying does not', async () => {
   B.resetSector();
   const p = sectorPlayer();
   p.set(0.3);
-  p.draw(1 / 60, { loss: 0 });
+  p.draw(1 / 60, {});
   const r = B.currentSector(0);
   assert.ok(r >= 0);
-  for (let f = 0; f < 20; f += 1) p.draw(1 / 60, { loss: 0 });
+  for (let f = 0; f < 20; f += 1) p.draw(1 / 60, {});
   assert.equal(B.visitCount(0, r), 1);
   p.set(0.7);
-  p.draw(1 / 60, { loss: 0 });
+  p.draw(1 / 60, {});
   p.set(0.3);
-  p.draw(1 / 60, { loss: 0 });
+  p.draw(1 / 60, {});
   assert.equal(B.visitCount(0, r), 2);
 });
 
-test('sector leak is linear and frame-rate independent, frozen when paused, dt capped', async () => {
+test('sliding window: counts are integers, rise by visits and fall exactly W seconds later, any fps', async () => {
   const B = await import('./viz-bars.js');
   const run = (fps) => {
     B.resetSector();
     const p = sectorPlayer();
-    p.set(0.3);
-    for (let k = 0; k < 6; k += 1) { p.set(k % 2 ? 0.7 : 0.3); p.draw(0.001, { loss: 0 }); }
-    const r = B.currentSector(0);
-    const start = B.visitCount(0, r);
-    for (let f = 0; f < fps * 1; f += 1) p.draw(1 / fps, { loss: 1 });
-    return [start, B.visitCount(0, r)];
+    const r0 = (() => { p.set(0.3); p.draw(0.001); return B.currentSector(0); })();
+    const trace = [];
+    const frames = Math.round(fps * 5);
+    for (let f = 0; f < frames; f += 1) {
+      p.set(f % Math.round(fps / 2) === 0 && f % fps < fps / 2 ? 0.7 : 0.3);
+      p.draw(1 / fps, { window: 2 });
+      trace.push(B.visitCount(0, r0));
+    }
+    for (let f = 0; f < fps * 3; f += 1) { p.draw(1 / fps, { window: 2 }); trace.push(B.visitCount(0, r0)); }
+    return { r0, trace, peak: Math.max(...trace), last: trace.at(-1) };
   };
-  const [s, a30] = run(30);
-  assert.ok(s >= 2);
-  assert.ok(Math.abs(a30 - (s - 1)) < 0.05 + 1e-3);
-  assert.ok(Math.abs(run(60)[1] - a30) < 0.05);
-  assert.ok(Math.abs(run(120)[1] - a30) < 0.05);
+  for (const fps of [30, 60, 120]) {
+    const o = run(fps);
+    assert.ok(o.trace.every(Number.isInteger));
+    assert.ok(o.peak >= 1, `fps ${fps}`);
+    assert.equal(o.last, 0);
+  }
   B.resetSector();
   const p = sectorPlayer();
   p.set(0.3);
-  p.draw(0.001, { loss: 1 });
+  p.draw(0.05, { minDwell: 60 });
   const r = B.currentSector(0);
-  for (let f = 0; f < 100; f += 1) p.draw(0, { loss: 5 });
+  assert.equal(B.visitCount(0, r), 0);
+  p.draw(0.05, { minDwell: 60 });
   assert.equal(B.visitCount(0, r), 1);
-  p.draw(5, { loss: 1 });
-  assert.ok(Math.abs(B.visitCount(0, r) - 0.9) < 1e-6);
+  for (let k = 0; k < 19; k += 1) p.draw(0.1, { window: 2 });
+  assert.equal(B.visitCount(0, r), 1);
+  p.draw(0.1, { window: 2 });
+  assert.equal(B.visitCount(0, r), 0);
 });
 
-test('trail level steps at 5/10/15 counts, alpha caps at 0.8, sector is brightest', async () => {
+test('sliding window: dt 0 (paused) freezes expiry, dt is capped, window setting applies live', async () => {
   const B = await import('./viz-bars.js');
-  assert.deepEqual([4.9, 5, 9.9, 10, 15, 100].map((c) => B.trailLevel(c, 5, 6)), [0, 1, 1, 2, 3, 6]);
-  assert.ok(Math.abs(B.trailAlpha(0, 6, 0.8) - 0.15) < 1e-9);
-  assert.equal(B.trailAlpha(6, 6, 0.8), 0.8);
-  assert.equal(B.trailAlpha(6, 6, 1), 0.85);
-  assert.ok(Math.abs(B.trailLift(6, 0.14, 0.8) - 0.72) < 1e-9);
-  assert.ok(B.trailLift(1, 0.14, 0.8) < B.trailLift(2, 0.14, 0.8));
   B.resetSector();
   const p = sectorPlayer();
-  for (let k = 0; k < 40; k += 1) { p.set(k % 2 ? 0.7 : 0.3); p.draw(0.001, { loss: 0 }); }
-  p.draw(0.001, { loss: 0 });
+  p.set(0.3);
+  p.draw(0.001);
+  p.draw(0.001);
+  const r = B.currentSector(0);
+  assert.equal(B.visitCount(0, r), 1);
+  for (let f = 0; f < 500; f += 1) p.draw(0, { window: 2 });
+  assert.equal(B.visitCount(0, r), 1);
+  p.draw(1000, { window: 2 });
+  assert.equal(B.visitCount(0, r), 1);
+  for (let k = 0; k < 20; k += 1) p.draw(0.1, { window: 2 });
+  assert.equal(B.visitCount(0, r), 0);
+});
+
+test('sliding window: several visits expire one by one in order; ring overflow keeps counts consistent', async () => {
+  const B = await import('./viz-bars.js');
+  B.resetSector();
+  const p = sectorPlayer({ n: 1 });
+  const lo = 0.3;
+  const hi = 0.7;
+  let rLo = -1;
+  for (let k = 0; k < 3; k += 1) {
+    p.set(lo); p.draw(0.1, { window: 4.5 }); p.draw(0.1, { window: 4.5 });
+    rLo = B.currentSector(0);
+    p.set(hi); p.draw(0.1, { window: 4.5 }); p.draw(0.1, { window: 4.5 });
+  }
+  assert.equal(B.visitCount(0, rLo), 3);
+  for (let k = 0; k < 40; k += 1) p.draw(0.1, { window: 4.5 });
+  assert.equal(B.visitCount(0, rLo), 1);
+  for (let k = 0; k < 120; k += 1) p.draw(0.1, { window: 4.5 });
+  assert.equal(B.visitCount(0, rLo), 0);
+  B.resetSector();
+  const q = sectorPlayer({ n: 1 });
+  for (let k = 0; k < 600; k += 1) { q.set(k % 2 ? 0.7 : 0.3); q.draw(0.1, { window: 60 }); q.draw(0.1, { window: 60 }); }
+  const rows = [B.currentSector(0)];
+  let sum = 0;
+  for (let r = 0; r < 20; r += 1) sum += B.visitCount(0, r);
+  assert.ok(sum <= B.SECTOR_EVENTS && sum > 0 && rows[0] >= 0);
+  for (let k = 0; k < 700; k += 1) q.draw(0.1, { window: 60 });
+  sum = 0;
+  for (let r = 0; r < 20; r += 1) sum += B.visitCount(0, r);
+  assert.equal(sum, 0);
+});
+
+test('trail level steps at 5/10/15 counts, trail colours climb the dim ladder at alpha >= 0.9', async () => {
+  const B = await import('./viz-bars.js');
+  assert.deepEqual([4.9, 5, 9.9, 10, 15, 100].map((c) => B.trailLevel(c, 5, 6)), [0, 1, 1, 2, 3, 6]);
+  assert.ok(B.TRAIL_ALPHA >= 0.9);
+  const path = B.trailPath(FALLBACK_COLORS.ice2);
+  assert.equal(path.length, 8);
+  assert.deepEqual(path.slice(0, 4), FALLBACK_COLORS.ice2.dim);
+  assert.deepEqual(B.trailColor(path, 0, 6, 1), path[0]);
+  const top = B.trailColor(path, 6, 6, 0.8);
+  const hsv = (c) => {
+    const mx = Math.max(...c);
+    const d = mx - Math.min(...c);
+    return { s: mx ? d / mx : 0, v: mx / 255 };
+  };
+  assert.ok(hsv(top).v <= 0.8 + 0.01 && hsv(top).v > 0.75);
+  const lum = (c) => 0.3 * c[0] + 0.59 * c[1] + 0.11 * c[2];
+  for (let k = 1; k <= 6; k += 1) assert.ok(lum(B.trailColor(path, k, 6, 0.8)) > lum(B.trailColor(path, k - 1, 6, 0.8)));
+  for (let k = 0; k <= 6; k += 1) assert.ok(lum(B.trailColor(path, k, 6, 0.8, 2)) <= lum(B.trailColor(path, k, 6, 0.8)));
+  for (const cap of [0.3, 0.5, 0.8, 1]) {
+    for (let k = 0; k <= 6; k += 1) {
+      const c = B.trailColor(path, k, 6, cap);
+      const o = hsv(c);
+      assert.ok(o.v <= cap + 0.01);
+      if (k >= 5 && cap >= 0.5) assert.ok(o.s >= 0.55, `level ${k} cap ${cap} s ${o.s}`);
+      assert.ok(Math.max(...c) - Math.min(...c) > 0 && c[2] >= c[1] && c[1] >= c[0]);
+    }
+  }
+  B.resetSector();
+  const p = sectorPlayer();
+  for (let k = 0; k < 40; k += 1) { p.set(k % 2 ? 0.7 : 0.3); p.draw(0.001, {}); }
+  p.draw(0.001, {});
   const alphas = p.ops.filter(([k]) => k === 'fill').length;
   assert.ok(alphas > 0);
-  const maxTrail = Math.max(...[...Array(7).keys()].map((k) => B.trailAlpha(k, 6, 0.8)));
-  assert.ok(maxTrail <= 0.8 && maxTrail < 1);
 });
 
 test('sector mode draws no body, cap or afterimages and resets on count change', async () => {
@@ -297,10 +369,13 @@ test('sector mode off keeps the old renderer; no per-frame allocation, 600x48 st
   const p = sectorPlayer({ n: 600 });
   const opts = { sectionHeight: 6 };
   for (let f = 0; f < 5; f += 1) { p.vals.forEach((_, i, a) => { a[i] = ((i * 31 + f * 17) % 100) / 100; }); p.draw(1 / 60, opts); }
+  const ref = B.sectorBuffers();
   const t0 = performance.now();
   for (let f = 0; f < 120; f += 1) { p.vals.forEach((_, i, a) => { a[i] = ((i * 31 + f * 17) % 100) / 100; }); p.draw(1 / 60, opts); }
   const per = (performance.now() - t0) / 120;
   assert.ok(per < 25, `${per} ms/frame`);
+  const after = B.sectorBuffers();
+  assert.ok(ref.every((a, i) => a === after[i]));
   assert.ok(B.visitCount(0, 0) >= 0);
 });
 
@@ -310,7 +385,7 @@ test('minimum dwell: pass-through rows never count, threshold counts once, frame
     B.resetSector();
     const p = sectorPlayer();
     p.set(0.3);
-    for (let f = 0; f < n; f += 1) p.draw(1 / fps, { loss: 0, minDwell: dwell });
+    for (let f = 0; f < n; f += 1) p.draw(1 / fps, { minDwell: dwell });
     return B.visitCount(0, B.currentSector(0));
   };
   assert.equal(frames(60, 3), 0);
@@ -324,10 +399,37 @@ test('minimum dwell: pass-through rows never count, threshold counts once, frame
   B.resetSector();
   const p = sectorPlayer();
   const seen = [];
-  for (const v of [0.1, 0.3, 0.5, 0.7]) { p.set(v); p.draw(1 / 60, { loss: 0, minDwell: 60 }); seen.push(B.currentSector(0)); }
+  for (const v of [0.1, 0.3, 0.5, 0.7]) { p.set(v); p.draw(1 / 60, { minDwell: 60 }); seen.push(B.currentSector(0)); }
   assert.equal(new Set(seen).size, 4);
   for (const r of seen) assert.equal(B.visitCount(0, r), 0);
   assert.ok(p.ops.some(([k]) => k === 'rect'));
-  for (let f = 0; f < 3; f += 1) p.draw(1 / 60, { loss: 0, minDwell: 60 });
+  for (let f = 0; f < 3; f += 1) p.draw(1 / 60, { minDwell: 60 });
   assert.equal(B.visitCount(0, seen[3]), 1);
+});
+
+test('glow: extra additive halos per frame behind the sector, scaled by size, off in lite and when 0', async () => {
+  const B = await import('./viz-bars.js');
+  const fills = (ops) => ops.filter(([k]) => k === 'fill').length;
+  const run = (over) => {
+    B.resetSector();
+    const p = sectorPlayer();
+    p.set(0.5);
+    p.draw(1 / 60, { sectorGlow: 0, ...over });
+    p.draw(1 / 60, { sectorGlow: 0, ...over });
+    return p.ops;
+  };
+  const off = run({});
+  const on = run({ sectorGlow: 0.8 });
+  assert.equal(fills(on) - fills(off), 6);
+  assert.equal(fills(run({ sectorGlow: 0.8, lite: true })), fills(off));
+  const rectW = (ops) => ops.filter(([k]) => k === 'rect').map(([, a]) => a[2]);
+  assert.ok(Math.max(...rectW(run({ sectorGlow: 1, sectorGlowSize: 2 }))) > Math.max(...rectW(run({ sectorGlow: 1, sectorGlowSize: 1 }))));
+  assert.deepEqual([0, 1, 2].map((j) => Math.round(B.glowExpand(j, 100, 1, 1))), [8, 16, 28]);
+  assert.equal(B.glowExpand(0, 10, 1, 1), 2);
+  assert.equal(B.glowExpand(0, 10, 2, 1), 4);
+  assert.ok(Math.abs(B.glowExpand(2, 100, 1, 0.5) - 14) < 1e-9);
+});
+
+test('glow does not change other modes: sector off output is unchanged with glow set', () => {
+  assert.equal(hash(trace({ segments: 12, sectorGlow: 1 })), hash(trace({ segments: 12 })));
 });
