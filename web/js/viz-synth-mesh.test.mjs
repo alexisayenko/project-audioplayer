@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { synthTiers, buildMesh, crossAlphaFor } from './viz-synth-mesh.js';
+import { synthTiers, buildMesh, crossAlphaFor, diagParity } from './viz-synth-mesh.js';
 import { GRID_DEPTH, GRID_MAX_VERTICES, NOW_Z, makeTierPlan, resampleTier, crossAlpha } from './viz-terrain-math.js';
 
 const total = (t) => t.reduce((s, x) => s + x.rows * x.cols, 0);
@@ -82,4 +82,52 @@ test('vertices are centred in x and start at the tier row offset in z', () => {
 
 test('crossAlphaFor is the Terrain cross alpha', () => {
   assert.equal(crossAlphaFor, crossAlpha);
+});
+
+function diagMap(mesh, tier) {
+  const { cols } = tier;
+  const m = new Map();
+  for (let k = 0; k < mesh.lines.length; k += 2) {
+    const lo = Math.min(mesh.lines[k], mesh.lines[k + 1]);
+    const d = Math.abs(mesh.lines[k + 1] - mesh.lines[k]);
+    if (d === cols + 1) m.set(lo, 'main');
+    else if (d === cols - 1) m.set(lo - 1, 'anti');
+  }
+  return m;
+}
+
+test('diagonal of a world cell stays fixed as the terrain scrolls through the mesh', () => {
+  const tier = synthTiers({ cell: 1.2 }, 2, 1.78, NOW_Z)[0];
+  const { cols, rows } = tier;
+  const maps = [0, 1].map((p) => diagMap(buildMesh(tier, 'triangle', p), tier));
+  const latDz = 0.5;
+  const seen = new Map();
+  for (let scroll = -5; scroll < 40; scroll += 0.37) {
+    const step = Math.floor((scroll * latDz) / tier.dz);
+    const map = maps[diagParity(scroll, latDz, tier.dz)];
+    for (let r = 0; r < rows - 1; r += 1) {
+      for (let c = 0; c < cols - 1; c += 1) {
+        const kind = map.get(r * cols + c);
+        const key = `${step + r}/${c}`;
+        if (seen.has(key)) assert.equal(kind, seen.get(key), `cell ${key} flipped at scroll ${scroll}`);
+        else seen.set(key, kind);
+      }
+    }
+  }
+  assert.ok(seen.size > 100);
+});
+
+test('parity changes only on whole-cell steps, not on fractional scroll', () => {
+  assert.equal(diagParity(0.1, 1, 1), diagParity(0.9, 1, 1));
+  assert.notEqual(diagParity(0.9, 1, 1), diagParity(1.1, 1, 1));
+  assert.equal(diagParity(1.1, 1, 1), diagParity(1.9, 1, 1));
+  assert.equal(diagParity(-0.5, 1, 1), 1);
+});
+
+test('mesh diagonals do not depend on heights or frame', () => {
+  const tier = synthTiers({ cell: 1.2 }, 2, 1.78, NOW_Z)[0];
+  const a = buildMesh(tier, 'triangle', 0);
+  const b = buildMesh(tier, 'triangle', 0);
+  assert.deepEqual(a.lines, b.lines);
+  assert.deepEqual(a.tris, b.tris);
 });

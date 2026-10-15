@@ -46,7 +46,11 @@ export function synthTiers(p, level, aspect, nowZ) {
   return tiers;
 }
 
-export function buildMesh(tier, style) {
+export function diagParity(scrollRows, latDz, tierDz) {
+  return Math.floor((scrollRows * latDz) / tierDz) & 1;
+}
+
+export function buildMesh(tier, style, parity = 0) {
   const { rows, cols } = tier;
   const half = (cols - 1) / 2;
   const n = rows * cols;
@@ -72,7 +76,7 @@ export function buildMesh(tier, style) {
       if (r < rows - 1) { lines[l++] = i; lines[l++] = i + cols; }
       if (c < cols - 1) { lines[l++] = i; lines[l++] = i + 1; }
       if (r < rows - 1 && c < cols - 1) {
-        const flip = tri && ((r + c) & 1) === 1;
+        const flip = tri && ((r + c + parity) & 1) === 1;
         const a = i;
         const b = i + 1;
         const d = i + cols;

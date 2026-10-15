@@ -3,7 +3,7 @@ import {
   makeTierPlan, resampleTier, fillLight, gridHalfWidth,
 } from './viz-terrain-math.js';
 import { synthCamera, viewProj, SYNTH_FOV_DEG } from './viz-synth-camera.js';
-import { synthTiers, buildMesh } from './viz-synth-mesh.js';
+import { synthTiers, buildMesh, diagParity } from './viz-synth-mesh.js';
 import { futureLayout } from './viz-synth-field.js';
 import { skyColors } from './viz-synth-sky.js';
 import { parseHex } from './viz-synth-settings.js';
@@ -269,7 +269,7 @@ export function createGroundPass(gl, deps) {
 
   function freeTiers() {
     for (const t of tiers) {
-      for (const k of ['xzBuf', 'hBuf', 'lBuf', 'lineBuf', 'triBuf']) gl.deleteBuffer(t[k]);
+      for (const k of ['xzBuf', 'hBuf', 'lBuf', 'lineBuf', 'triBuf', 'lineBuf1', 'triBuf1']) gl.deleteBuffer(t[k]);
     }
     tiers = [];
   }
@@ -304,6 +304,7 @@ export function createGroundPass(gl, deps) {
     };
     tiers = synthTiers({ cell: cell0 }, level, scene.aspect, NOW_Z).map((tier) => {
       const mesh = buildMesh(tier, p.grid);
+      const alt = p.grid === 'triangle' ? buildMesh(tier, p.grid, 1) : null;
       return {
         tier,
         mesh,
@@ -312,6 +313,9 @@ export function createGroundPass(gl, deps) {
         lBuf: make(gl.ARRAY_BUFFER, mesh.vertices * 4, gl.DYNAMIC_DRAW),
         lineBuf: make(gl.ELEMENT_ARRAY_BUFFER, mesh.lines, gl.STATIC_DRAW),
         triBuf: make(gl.ELEMENT_ARRAY_BUFFER, mesh.tris, gl.STATIC_DRAW),
+        lineBuf1: alt ? make(gl.ELEMENT_ARRAY_BUFFER, alt.lines, gl.STATIC_DRAW) : null,
+        triBuf1: alt ? make(gl.ELEMENT_ARRAY_BUFFER, alt.tris, gl.STATIC_DRAW) : null,
+        parity: 0,
         heights: new Float32Array(mesh.vertices),
         light: new Float32Array(mesh.vertices),
         plan: null,
@@ -353,6 +357,7 @@ export function createGroundPass(gl, deps) {
       else t.plan.lat = lat;
       const fracT = fract01((scrollRows * lat.dz) / tier.dz);
       resampleTier(t.plan, lat.data, t.heights, fracL, fracT, 0, LANDMARK_MAX);
+      t.parity = diagParity(scrollRows, lat.dz, tier.dz);
       t.zBase = NOW_Z - fracT * tier.dz * speed;
       gl.bindBuffer(gl.ARRAY_BUFFER, t.hBuf);
       gl.bufferSubData(gl.ARRAY_BUFFER, 0, t.heights);
@@ -501,7 +506,7 @@ export function createGroundPass(gl, deps) {
     for (const t of tiers) {
       bindTier(t, true);
       tierUniforms(p, t, u, farZ);
-      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, t.triBuf);
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, t.parity && t.triBuf1 ? t.triBuf1 : t.triBuf);
       gl.drawElements(gl.TRIANGLES, t.mesh.triCount * 3, gl.UNSIGNED_SHORT, 0);
       stats.draws += 1;
     }
@@ -527,7 +532,7 @@ export function createGroundPass(gl, deps) {
       for (const t of tiers) {
         bindTier(t, false);
         tierUniforms(p, t, u, farZ);
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, t.lineBuf);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, t.parity && t.lineBuf1 ? t.lineBuf1 : t.lineBuf);
         gl.drawElements(gl.LINES, t.mesh.lineCount * 2, gl.UNSIGNED_SHORT, 0);
         stats.draws += 1;
       }
