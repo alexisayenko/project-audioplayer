@@ -508,7 +508,6 @@ export function initPlayer() {
   setIcon('mini-next', 'next', 18);
   setIcon('mini-shuffle', 'shuffle', 18);
   setIcon('p-view', 'info', 20);
-  setIcon('mini-locate', 'locate', 18);
   setIcon('p-download', 'download', 20);
   for (const id of ['cover-toggle', 'mini-cover-btn']) $(id).addEventListener('click', () => player.toggle());
   $('player-dl-btn').addEventListener('click', () => { if (player.current) startDownload(player.current); });
@@ -535,12 +534,17 @@ export function initPlayer() {
     const n = player.clearUpcoming();
     toast(n ? `Cleared ${n} ${plural(n, 'song', 'songs')}` : 'Tag chips cleared');
   });
-  $('mini-open').addEventListener('click', () => { location.hash = '#/playback'; });
-  $('mini-locate').addEventListener('click', () => {
-    const cur = player.current;
-    if (!cur) return;
-    requestReveal(cur.id);
-    openSongCard(cur, $('mini-locate'));
+  const miniOpen = $('mini-open');
+  const onLibrary = () => !location.hash || location.hash.startsWith('#/library');
+  const syncMiniOpen = () => {
+    const label = onLibrary() ? 'Show in Library' : 'Open player';
+    miniOpen.setAttribute('aria-label', label);
+  };
+  window.addEventListener('hashchange', syncMiniOpen);
+  syncMiniOpen();
+  miniOpen.addEventListener('click', () => {
+    if (!onLibrary()) { location.hash = '#/playback'; return; }
+    if (player.current) requestReveal(player.current.id);
   });
   $('p-view').addEventListener('click', () => { if (player.current) openSongCard(player.current, $('p-view')); });
 

@@ -87,6 +87,7 @@ test('rows are sorted by recently added; counts, durations and BPM are shown', a
   assert.match(alpha.querySelector('.sub').textContent, /Zed · 1999/);
   assert.equal(alpha.querySelector('.c-genres .g-txt').textContent, 'rock');
   assert.ok(alpha.querySelector('.c-genres .bpm-badge'));
+  assert.ok(alpha.querySelector('.c-genres').children[0].classList.contains('bpm-badge'));
   assert.equal(alpha.querySelector('.title-line .bpm-badge'), null);
   const offline = rows().find((r) => r.dataset.id !== 'a' && !r.querySelector('.bpm-badge'));
   assert.ok(offline, 'a row without BPM has no badge');

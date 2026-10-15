@@ -66,8 +66,21 @@ def is_genre(value: str) -> bool:
     return bool(stripped) and stripped not in DENY and not _YEARISH.match(stripped)
 
 
+ALIASES: dict[str, str] = {
+    "electronic dance music": "electronic dance",
+    "punk rock": "punk",
+}
+_ALIAS_BY_KEY: dict[str, str] = {}
+for _a, _t in ALIASES.items():
+    _ALIAS_BY_KEY[key(_a)] = _t
+    _ALIAS_BY_KEY.setdefault(key(_t), _t)
+
+
 def canonical(value: str) -> str:
-    """Strip a trailing " music" (unless the built-in list has that exact name) and use the built-in spelling when one matches."""
+    """One spelling per genre: ALIASES first, else strip a trailing " music" (unless the built-in list has that exact name) and use the built-in spelling when one matches."""
+    aliased = _ALIAS_BY_KEY.get(key(value))
+    if aliased:
+        return aliased
     v = _strip_music(value)
     return _BUILTIN_BY_KEY.get(key(v), v)
 

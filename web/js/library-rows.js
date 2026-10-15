@@ -45,7 +45,7 @@ function dlButton(s) {
 
 function bpmBadge(s) {
   const n = bpmLabel(s.bpm);
-  if (!n) return null;
+  if (!n) return el('span', { class: 'bpm-slot', 'aria-hidden': 'true' });
   return el('span', { class: 'bpm-badge', title: 'Beats per minute (estimated)', 'aria-label': `BPM ${n}` },
     n, el('small', { 'aria-hidden': 'true' }, 'BPM'));
 }
@@ -117,7 +117,7 @@ export function songRow(s, cur, flashId) {
     el('div', { class: 'info' },
       el('div', { class: 'title-line' }, open),
       trackSub(s) ? el('small', { class: 'sub t-subhead' }, trackSub(s)) : null),
-    el('div', { class: 'c-genres t-subhead' }, el('span', { class: 'g-txt', title: genres || null }, genres), bpmBadge(s)),
+    el('div', { class: 'c-genres t-subhead' }, bpmBadge(s), el('span', { class: 'g-txt', title: genres || null }, genres)),
     dur,
     pl,
     more,

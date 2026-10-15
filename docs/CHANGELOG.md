@@ -2,6 +2,13 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-16 (built, not deployed)
+
+- Web: the Library BPM badge now sits at the start of the Genres column, before the genre text, in a fixed-width slot (empty spacer when a song has no BPM) so genre text stays aligned.
+- Web: the mini-player target button is removed; clicking the song title on the Library page now scrolls to and highlights the playing row (no song card), and still opens Playback from other pages.
+- Server: duplicate genre tags are merged permanently (owner request): `clean_tag` canonicalises `genre:` values on write and load (trailing " music" stripped, `electronic dance music` and `punk rock` aliased, duplicates collapsed), the Genres map resolves a bare tag to its "X music" Wikidata item so merged nodes keep their edges, and a startup migration rewrites every user library once, backing each up to `backups-genre-merge/<uid>/library.json` outside the synced tree (TAG-071, GEN-031).
+- Web: Genres map panel, the collapse chevron glyph now shares the left edge of the Legend and Now playing buttons and the Find a genre input (it sat about 9px right of them because of the centred 44px hit box; the hit area is now 36px with negative margins) (GEN-027).
+
 ## 2026-10-15 (deployed 2026-10-16)
 
 - Web: removed the "Add to current playlist" (list with check) button from the mini-player (owner request); the Library row toggle, the song card and the Playback queue stay the ways to manage the queue (PLY-118, PLY-119).

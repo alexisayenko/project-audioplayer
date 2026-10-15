@@ -238,7 +238,7 @@ def test_endpoint_isolated_per_user_and_cache_has_no_user_data(multi, wd, monkey
 def test_nodes_carry_the_user_tags_that_resolve_to_them(wd):
     g = gg.graph(songs(("s1", ["House"]), ("s2", ["house music"])), wd.path)
     n = by_label(g)
-    assert n["house music"]["tags"] == ["house", "house music"]
+    assert n["house music"]["tags"] == ["house"]
     assert n["electronic music"]["tags"] == []
 
 
@@ -273,3 +273,19 @@ def test_family_walks_ancestors_then_falls_back_to_keywords():
     assert gg._family(cache, "Q1", "zorbo") == "Electronic"
     assert gg._family(cache, "Q4", "zorbo too") == "Other"
     assert gg._family(cache, "Q4", "zorbo trance") == "Electronic"
+
+
+def test_user_genres_merge_aliases():
+    songs = [{"id": "a", "tags": ["genre:electronic"]}, {"id": "b", "tags": ["genre:electronic music"]}, {"id": "c", "tags": ["genre:house music"]}]
+    own = gg.user_genres(songs)
+    assert own == {"electronic": {"a", "b"}, "house": {"c"}}
+
+
+def test_bare_and_music_tags_make_one_connected_node(wd):
+    g = gg.graph(songs(("s1", ["electronic"]), ("s2", ["electronic music"]), ("s3", ["house"]), ("s4", ["house music"])), wd.path)
+    n = by_label(g)
+    assert n["electronic music"]["qid"] == "Q100"
+    assert n["electronic music"]["ownCount"] == 2
+    assert "electronic" not in n and "house" not in n
+    assert n["house music"]["ownCount"] == 2
+    assert n["house music"]["parents"] == [n["electronic music"]["id"]]

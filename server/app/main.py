@@ -7,7 +7,7 @@ from collections.abc import Awaitable, Callable
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
 
-from . import deps, guest, hosts, legal, web
+from . import deps, guest, hosts, legal, migrate_tags, web
 from .problems import Problem
 from .routes import analyze, auth, backfill, catalog, files, genres, health, legacy, legal as legal_routes, lookup, me, removal, songs
 
@@ -52,6 +52,7 @@ def _startup() -> None:
     legal.check_startup()
     if deps.SYNC:
         deps.SYNC.resync()
+    migrate_tags.run()
 
 
 for _module in (auth, me, health, legal_routes, legacy, files, catalog, genres, lookup, songs, analyze, backfill, removal):

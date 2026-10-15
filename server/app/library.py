@@ -10,7 +10,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from . import countrycodes, discogs_lookup, genre_lookup, langcodes, urlclean, wiki_lookup
+from . import countrycodes, discogs_lookup, genre_filter, genre_lookup, langcodes, urlclean, wiki_lookup
 from .jsonio import write_json_atomic
 from .timeutil import max_year, now_utc  # noqa: F401
 
@@ -236,6 +236,8 @@ def clean_tag(tag: str) -> str:
             value = langcodes.canonical_lang(value) or value
         elif key == "country":
             value = countrycodes.canonical_country(value) or value
+        elif key == "genre":
+            value = " ".join(genre_filter.canonical(value).lower().split()) or value
         elif key == "decade" and not _DECADE_RE.match(value):
             value = value.replace(" ", "")
         return f"{key}:{value}"

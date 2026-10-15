@@ -96,6 +96,8 @@ body.has-mini .st { --player-h: calc(64px + 2 * var(--space-2)); }
 .cl-chev { display: block; transition: transform .2s ease; }
 .cl-btn.collapsed .cl-chev { transform: rotate(-90deg); }
 .st .st-bar, .gm .gm-bar { gap: 0; }
+.gm-bar-row > .cl-btn { width: 36px; height: 36px; margin: -4px -5px -4px -13px; }
+.gm-bar-row > .cl-btn .cl-chev { line-height: 1; }
 .gm-panel > .cl.collapsed, .gm-now > .cl.collapsed { margin-top: calc(-1 * var(--space-3)); }
 .gm-now-count { display: none; }
 .gm-now > .gm-now-head .gm-now-count { display: none; }

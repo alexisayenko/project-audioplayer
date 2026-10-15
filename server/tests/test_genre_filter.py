@@ -18,6 +18,11 @@ def test_kept(v):
 def test_canonical_strips_music_and_uses_builtin_spelling():
     assert gf.canonical("house music") == "house"
     assert gf.canonical("Electronic Music") == "electronic"
+    assert gf.canonical("Electronic Dance") == "electronic dance"
+    assert gf.canonical("electronic-dance-music") == "electronic dance"
+    assert gf.canonical("punk rock") == "punk"
+    for keep in ("trap", "chillout", "dance-pop", "pop-punk", "cyberpunk", "soft-rock", "synth-rock", "new age", "indie", "classical", "country"):
+        assert gf.canonical(keep) == keep or gf.canonical(keep) == keep.replace("-", " ")
     assert gf.canonical("hip-hop") == "hip hop"
     assert gf.canonical("hiphop") == "hip hop"
     assert gf.canonical("Hip Hop") == "hip hop"
@@ -51,7 +56,7 @@ def test_kato_example():
 def test_user_entered_genre_tags_are_not_filtered():
     import app.library as library
 
-    assert library.clean_tags(["genre:danish", "genre:house music", "genre:dj"]) == ["genre:danish", "genre:house music", "genre:dj"]
+    assert library.clean_tags(["genre:danish", "genre:house music", "genre:dj"]) == ["genre:danish", "genre:house", "genre:dj"]
 
 
 def test_patch_keeps_user_entered_genre_tags(client):
@@ -60,8 +65,9 @@ def test_patch_keeps_user_entered_genre_tags(client):
     add(client)
     tags = ["genre:danish", "genre:house music", "genre:dj"]
     r = client.patch(f"/songs/{VID}", json={"tags": tags}, headers=H)
-    assert r.json()["tags"] == tags
-    assert client.get("/library", headers=H).json()["songs"][0]["tags"] == tags
+    want = ["genre:danish", "genre:house", "genre:dj"]
+    assert r.json()["tags"] == want
+    assert client.get("/library", headers=H).json()["songs"][0]["tags"] == want
 
 
 def test_musicbrainz_url_is_stored_cleaned_and_listed(client):

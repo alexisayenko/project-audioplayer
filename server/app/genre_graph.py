@@ -13,6 +13,7 @@ from typing import Any
 
 from . import httpjson
 from .jsonio import write_json_atomic
+from .genre_filter import canonical
 from .ratelimit import RateLimiter
 from .tags import namespaced_values
 
@@ -93,6 +94,11 @@ def _fresh(entry: dict[str, Any] | None) -> bool:
     return bool(entry) and time.time() - float(entry.get("at", 0)) < TTL
 
 
+def _label_fresh(entry: dict[str, Any] | None) -> bool:
+    """A cached miss counts only when it was made by the "<label> music" fallback lookup (v 2)."""
+    return _fresh(entry) and bool(entry.get("qid") or entry.get("v") == 2)
+
+
 def _api(params: dict[str, str]) -> dict[str, Any]:
     _limiter.reserve()
     return httpjson.http_json(API, TIMEOUT, params={**params, "format": "json"})
@@ -132,7 +138,14 @@ def _fetch_entities(cache: dict[str, Any], qids: list[str]) -> None:
 
 
 def resolve_label(cache: dict[str, Any], key: str) -> str | None:
-    """The Wikidata music-genre item for a label: exact English label (or alias) match; None when there is none."""
+    """The Wikidata music-genre item for a label: exact English label (or alias) match, else that of "<label> music" (so a bare tag joins the resolved "X music" node); None when there is none."""
+    qid = _search(cache, key)
+    if qid is None and not key.endswith(" music"):
+        qid = _search(cache, f"{key} music")
+    return qid
+
+
+def _search(cache: dict[str, Any], key: str) -> str | None:
     data = _api({"action": "wbsearchentities", "search": key, "language": "en", "type": "item", "limit": "10"})
     hits = [h for h in data.get("search") or [] if isinstance(h, dict) and _QID.match(str(h.get("id", "")))]
     need = [h["id"] for h in hits if not _fresh(cache["entities"].get(h["id"]))]
@@ -156,7 +169,7 @@ def user_genres(songs: list[dict[str, Any]]) -> dict[str, set[str]]:
     for s in songs:
         for value in namespaced_values(s.get("tags") or [], "genre"):
             if norm(value):
-                own.setdefault(norm(value), set()).add(s["id"])
+                own.setdefault(norm(canonical(value)), set()).add(s["id"])
     return own
 
 
@@ -165,7 +178,7 @@ def _missing(cache: dict[str, Any], keys: list[str]) -> bool:
     frontier: set[str] = set()
     for k in keys:
         e = cache["labels"].get(k)
-        if not _fresh(e):
+        if not _label_fresh(e):
             return True
         if e.get("qid"):
             frontier.add(e["qid"])
@@ -190,10 +203,10 @@ def ensure(path: Path, keys: list[str]) -> bool:
     cache = load_cache(path)
     try:
         for k in keys:
-            if not _fresh(cache["labels"].get(k)):
+            if not _label_fresh(cache["labels"].get(k)):
                 qid = resolve_label(cache, k)
                 with _lock:
-                    cache["labels"][k] = {"qid": qid, "at": time.time()}
+                    cache["labels"][k] = {"qid": qid, "at": time.time(), "v": 2}
         frontier = {cache["labels"][k]["qid"] for k in keys if cache["labels"].get(k, {}).get("qid")}
         seen: set[str] = set()
         for _ in range(FETCH_LEVELS):

@@ -132,12 +132,13 @@ test('guest settings show only the sign-in section and the viewing note', async 
   g.clearGuest();
 });
 
-test('mini-player: no edit button; the target button opens the song card of the playing song', async () => {
+test('mini-player: no edit and no locate button; the Now playing view button opens the song card', async () => {
   g.clearGuest();
   player.playNow('a');
   assert.equal($('mini-edit'), null);
+  assert.equal($('mini-locate'), null);
   $('song-card').close?.();
-  $('mini-locate').click();
+  $('p-view').click();
   await flush();
   assert.ok($('song-card').open || $('song-card').childNodes.length > 0);
   $('song-card').close?.();

@@ -271,7 +271,7 @@ def test_static_ui_served_without_shadowing_api(tmp_path, monkeypatch):
 
 def test_clean_tags_normalises_namespaced():
     assert library.clean_tags(["Genre: Synth  Wave", "genre:synth wave", " Mood:Chill ", "80s", "80S", "a:", ":b", "mood:", " : ", " "]) == [
-        "genre:synth wave", "mood:chill", "80s",
+        "genre:synthwave", "mood:chill", "80s",
     ]
 
 
@@ -305,7 +305,7 @@ def test_patch_normalises_and_ignores_genre(client):
 
 
 def test_suggest_tags_from_ytdlp_metadata():
-    assert extractor.suggest_tags({"genre": "Synth Pop"}) == ["genre:synth pop"]
+    assert extractor.suggest_tags({"genre": "Synth Pop"}) == ["genre:synthpop"]
     assert extractor.suggest_tags({"genre": "Rock, Pop"}) == ["genre:rock", "genre:pop"]
     assert extractor.suggest_tags({"categories": ["Music", "Film & Animation"]}) == []
     assert extractor.suggest_tags({}) == []
@@ -571,3 +571,33 @@ def test_soviet_union_is_a_first_class_country(client, raw):
     r = add(client, tags=[f"country:{raw}"])
     assert r.status_code in (200, 202)
     assert "country:su" in client.get("/library", headers=H).json()["songs"][0]["tags"]
+
+
+def test_genre_tags_canonical_on_write_and_dedupe():
+    assert library.clean_tag("genre:House Music") == "genre:house"
+    assert library.clean_tag("genre:electronic music") == "genre:electronic"
+    assert library.clean_tag("genre:Electronic Dance Music") == "genre:electronic dance"
+    assert library.clean_tag("genre:punk rock") == "genre:punk"
+    assert library.clean_tag("genre:bass music") == "genre:bass music"
+    assert library.clean_tags(["genre:house", "genre:house music", "genre:electronic", "genre:electronic music"]) == ["genre:house", "genre:electronic"]
+
+
+def test_genre_migration_backup_idempotent(tmp_path, monkeypatch):
+    from app import migrate_tags
+
+    monkeypatch.setattr(migrate_tags.deps, "data_root", lambda: tmp_path)
+    monkeypatch.setattr(migrate_tags.deps, "SYNC", None)
+    d = tmp_path / "users" / "u1"
+    d.mkdir(parents=True)
+    lib = d / "library.json"
+    ok = d.parent / "u2"
+    ok.mkdir()
+    (ok / "library.json").write_text(json.dumps({"songs": [{"id": "b", "title": "B", "tags": ["genre:house"]}]}))
+    original = json.dumps({"settings": {}, "songs": [{"id": "a", "title": "A", "tags": ["genre:house music", "genre:house", "genre:electronic music", "x"]}]})
+    lib.write_text(original)
+    assert migrate_tags.run() == 1
+    assert json.loads(lib.read_text())["songs"][0]["tags"] == ["genre:house", "genre:electronic", "x"]
+    assert (tmp_path / "backups-genre-merge" / "u1" / "library.json").read_text() == original
+    assert not (tmp_path / "backups-genre-merge" / "u2" / "library.json").exists()
+    assert migrate_tags.run() == 0
+    assert (tmp_path / "backups-genre-merge" / "u1" / "library.json").read_text() == original

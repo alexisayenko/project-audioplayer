@@ -88,6 +88,7 @@ test('media keys: mini buttons drive the same actions', () => {
   assert.equal($('mini-shuffle').getAttribute('aria-pressed'), 'true');
   $('mini-repeat').click();
   assert.match($('mini-repeat').getAttribute('aria-label'), /whole list/);
+  location.hash = '#/settings';
   $('mini-open').click();
   assert.equal(location.hash, '#/playback');
   audio.dispatchEvent(makeEvent('pause'));

@@ -164,6 +164,7 @@ def test_find_uid_by_sub_scans_profiles_then_caches(multi, tmp_path):
 
 def test_startup_resyncs_git_only_when_configured(monkeypatch):
     calls = []
+    monkeypatch.setattr(main.migrate_tags, "run", lambda: 0)
     monkeypatch.setattr(deps, "SYNC", SimpleNamespace(resync=lambda: calls.append(1)))
     main._startup()
     monkeypatch.setattr(deps, "SYNC", None)
