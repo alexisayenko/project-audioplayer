@@ -86,9 +86,42 @@ def genre_names(tags: Iterable[Any]) -> list[str]:
     return list(dict.fromkeys(v.strip() for v in namespaced_values(tags, "genre") if v.strip()))
 
 
+def tag_list(song: dict[str, Any]) -> list[str]:
+    """All tags of a song in the working form: `genre:<name>` for each stored bare genre, then the other stored tags (a loaded song already has them merged in `tags`)."""
+    genres = [f"genre:{g}" for g in song.get("genres") or [] if isinstance(g, str) and g.strip()]
+    return [*genres, *(str(t) for t in song.get("tags") or [])]
+
+
+def merge_genres(genres: Iterable[Any] | None, tags: Iterable[Any] | None) -> list[str]:
+    """Cleaned working tags from a request: bare `genres` become `genre:` tags and join the sent `tags`."""
+    return clean_tags([*(f"genre:{g}" for g in genres or [] if isinstance(g, str) and g.strip()), *(tags or [])])
+
+
+def stored_song(song: dict[str, Any]) -> dict[str, Any]:
+    """The file form of a working song (data model v2): genres bare in `genres`, only the other tags left in `tags`; the working song is not changed."""
+    if "tags" not in song and "genres" not in song:
+        return song
+    full = tag_list(song)
+    genres = genre_names(full)
+    rest = [t for t in full if namespace(t) != "genre"]
+    out: dict[str, Any] = {}
+    for k, v in song.items():
+        if k == "tags":
+            out["genres"] = genres
+            if rest:
+                out["tags"] = rest
+        elif k != "genres":
+            out[k] = v
+    if "genres" not in out:
+        out["genres"] = genres
+        if rest:
+            out["tags"] = rest
+    return out
+
+
 def view_tags(song: dict[str, Any], table: Any = None) -> list[str]:
     """The legacy `tags` view of a v2 song: its stored tags, `decade:NNs` computed from `releaseYear` and the `country:` codes of its main artists."""
-    kept, _, _ = split_tags(song.get("tags") or [])
+    kept, _, _ = split_tags(tag_list(song))
     decade = decade_tag(credits.release_year(song))
     countries = artist_table.countries_for(table, credits.main_artists(song)) if table else []
     return [*kept, *([decade] if decade else []), *(f"country:{c}" for c in countries)]
@@ -102,8 +135,7 @@ def public_song(song: dict[str, Any], root: Path | None, table: Any = None) -> d
     credits.ensure(out)
     out.update(credits.project(out))
     out.pop("raw", None)
-    out["genres"] = genre_names(out.get("tags") or [])
-    out["tags"] = view_tags(out, table)
+    out["tags"], out["genres"] = view_tags(out, table), genre_names(tag_list(out))
     state = audio_state(song, root)
     out["audio_state"] = state
     out["sources"] = sources_of(song)
@@ -162,10 +194,11 @@ def normalize_song(song: dict[str, Any]) -> dict[str, Any]:
 
 def normalize_tags(s: dict[str, Any]) -> None:
     genre = s.pop("genre", None)
-    tags = list(s.get("tags") or [])
+    stored = s.pop("genres", None)
+    tags = [*(f"genre:{g}" for g in stored if isinstance(g, str)), *(s.get("tags") or [])] if isinstance(stored, list) else list(s.get("tags") or [])
     if isinstance(genre, str) and genre.strip():
         tags.append(f"genre:{genre}")
-    if "tags" in s or genre:
+    if "tags" in s or genre or isinstance(stored, list):
         s["tags"] = clean_tags(tags)
 
 
@@ -248,7 +281,7 @@ def save_doc(path: Path, doc: dict[str, Any]) -> None:
         route_tags(song, table)
     artist_table.sync_names(table, songs)
     doc["artists"] = table
-    out = {"settings": {**(doc.get("settings") or {}), "credits_schema": credits.SCHEMA}, "songs": songs, "artists": table}
+    out = {"settings": {**(doc.get("settings") or {}), "credits_schema": credits.SCHEMA}, "songs": [stored_song(s) for s in songs], "artists": table}
     write_json_atomic(path, out)
 
 

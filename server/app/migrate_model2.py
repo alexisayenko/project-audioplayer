@@ -20,6 +20,7 @@ from typing import Any
 
 from . import artist_table, credits, credits_v1, deps, library
 from .jsonio import write_json_atomic
+from .tags import namespace
 
 BACKUP_DIR = "backups-model2"
 LEGACY_FIELDS = ("artist", "remixer", "year", "remix_year", "album")
@@ -45,7 +46,13 @@ def is_model2(raw: Any) -> bool:
     settings = raw.get("settings") if isinstance(raw, dict) else None
     if not isinstance(settings, dict) or settings.get("credits_schema") != credits.SCHEMA:
         return False
-    return all(isinstance(s, dict) and credits_v1.is_v2(s) and not any(k in s for k in credits.LEGACY_KEYS) for s in _songs_of(raw))
+    return all(isinstance(s, dict) and credits_v1.is_v2(s) and not any(k in s for k in credits.LEGACY_KEYS) and not _prefixed(s) for s in _songs_of(raw))
+
+
+def _prefixed(song: dict[str, Any]) -> bool:
+    """True when a song still holds `genre:`, `decade:`, `lang:` or `country:` tags in `tags` (the form before genres were stored bare)."""
+    tags = song.get("tags")
+    return isinstance(tags, list) and any(namespace(t) in ("genre", "decade", "lang", "country") for t in tags)
 
 
 def _oracle(song: dict[str, Any]) -> dict[str, Any]:
@@ -72,6 +79,7 @@ def convert(raw: Any) -> tuple[dict[str, Any], dict[str, Any]]:
     tag_changes: list[dict[str, Any]] = []
     decade_off: list[str] = []
     raw_kept: list[str] = []
+    leftovers: list[dict[str, Any]] = []
     converted = 0
     per_artist: dict[str, list[tuple[str, tuple[str, ...]]]] = {}
     multi: list[dict[str, Any]] = []
@@ -85,13 +93,17 @@ def convert(raw: Any) -> tuple[dict[str, Any], dict[str, Any]]:
         new = copy.deepcopy(song)
         if credits.ensure(new):
             converted += 1
-        if "tags" in new:
-            kept, countries, gone = library.split_tags(new["tags"] or [])
-            new["tags"] = kept
+        if "tags" in new or "genres" in new:
+            kept, countries, gone = library.split_tags(library.tag_list(new))
             removed.update(gone)
             year_decade = library.decade_tag(credits.release_year(new))
-            if any(t.startswith("decade:") and t.casefold() != (year_decade or "").casefold() for t in map(str, old.get("tags") or [])):
+            if any(t.startswith("decade:") and t.casefold() != (year_decade or "").casefold() for t in library.tag_list(old)):
                 decade_off.append(str(new.get("id")))
+            new.pop("genres", None)
+            new["tags"] = kept
+            new = library.stored_song(new)
+            if "tags" in new:
+                leftovers.append({"id": new.get("id"), "tags": new["tags"]})
         else:
             countries = []
         if isinstance(new.get("sources"), list):
@@ -122,7 +134,7 @@ def convert(raw: Any) -> tuple[dict[str, Any], dict[str, Any]]:
     artist_table.sync_names(table, new_songs)
     idx = artist_table.index(table)
     for old, new in zip(olds, new_songs):
-        before, after = _tag_set(old.get("tags")), _tag_set(library.view_tags(new, idx))
+        before, after = _tag_set(library.tag_list(old)), _tag_set(library.view_tags(new, idx))
         if before != after:
             tag_changes.append({"id": new.get("id"), "removed": sorted(before - after), "added": sorted(after - before)})
 
@@ -135,7 +147,7 @@ def convert(raw: Any) -> tuple[dict[str, Any], dict[str, Any]]:
         "version_types": dict(sorted(types.items())),
         "raw_kept": raw_kept,
         "artists": {"total": len(table), "with_countries": sum(1 for e in table if e["countries"])},
-        "review": {"multi_artist_countries": multi, "conflicting_countries": conflicts},
+        "review": {"multi_artist_countries": multi, "conflicting_countries": conflicts, "leftover_tags": leftovers},
         "legacy_diffs": diffs,
         "tag_view_changes": {"songs": len(tag_changes), "sample": tag_changes[:SAMPLE]},
         "ok": not diffs,
@@ -192,7 +204,7 @@ def migrate(path: Path, apply: bool = False, report_path: Path | None = None, ba
                 backup.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(path, backup)
                 out["backup"] = str(backup)
-                if out["review"]["multi_artist_countries"] or out["review"]["conflicting_countries"] or out["raw_kept"]:
+                if out["review"]["multi_artist_countries"] or out["review"]["conflicting_countries"] or out["review"]["leftover_tags"] or out["raw_kept"]:
                     write_json_atomic(review_path(path, backup_dir), {"uid": path.parent.name, "review": out["review"], "raw_kept": out["raw_kept"]})
                 write_json_atomic(path, doc)
     if report_path is not None:

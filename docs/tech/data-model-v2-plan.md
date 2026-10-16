@@ -17,11 +17,11 @@ Status: implemented on branch `worktree-agent-a9ef527b632364730`, not deployed. 
 | `version.of[]` | `version.originalArtists[]` | only for `cover` and `mashup`; the key is absent when the list is empty |
 | `raw{title,artist,remixer,year,remix_year}` | `rawTitle` (= `raw.title`) | `raw` is dropped only when the derived `artist` stays identical without it; otherwise `raw` stays and the song is listed in the review file |
 | `sources[{source,id,url}]` | `sources[{platform,url}]` | `source` becomes `platform`; `id` is derived on output |
-| `tags` with `decade:`, `lang:`, `country:` | `tags` (genre and plain tags only) | `decade:` computed at runtime, `lang:` discarded, `country:` moves to the Artist table |
+| `tags` with `genre:`, `decade:`, `lang:`, `country:` | `genres` (bare names); `tags` only for other leftovers | `decade:` computed at runtime, `lang:` discarded, `country:` moves to the Artist table |
 | (new) | `artists` table in `library.json`: `[{name, countries[]}]` | one entry per main-artist name, keyed case-insensitively, never auto-split |
 | `settings.credits_schema: 1` | `settings.credits_schema: 2` | the data-model version |
 
-Decision D1 (genres): the stored list stays `tags[]` with `genre:` prefixed values (every genre rule, vocabulary check and migration already works on that form); `genres[]` (bare names) is a derived response field. Both names exist in the API; only `tags` is stored.
+Decision D1 (genres, superseded by CF2 in section 7): genres are stored bare in `genres[]`.
 
 ## 2. API contract (the web and iOS follow this)
 
@@ -73,4 +73,4 @@ Artist country lookup from MusicBrainz or Wikipedia (implementation step 6 of ta
 
 - CH2 (decided): the MusicBrainz and Wikipedia artist-country lookup stays NOT built; planned in task-0043 step 6.
 
-- CF (pending user decision): the stored list stays `tags[]` with the `genre:` prefix and `genres[]` is derived in responses; revisit when answered.
+- CF2 (decided by the user via the coordinator): `genres[]` is stored as bare names; stored `tags[]` holds only non-genre leftovers (listed in the review file as `leftover_tags`); the prefixed `genre:` list is a view in responses and the loader working form (`library.tag_list`, `stored_song`). Requests accept `genres` and legacy prefixed `tags`.

@@ -1,4 +1,6 @@
 import json
+
+from app import library
 from pathlib import Path
 
 from tests.test_library import H, client  # noqa: F401
@@ -281,13 +283,13 @@ def test_migration_folds_removed_styles_idempotently_and_keeps_a_backup(tmp_path
     ]})
     lib.write_text(original)
     assert migrate_tags.run() == 1
-    songs = {s["id"]: s["tags"] for s in json.loads(lib.read_text())["songs"]}
+    songs = {s["id"]: library.tag_list(s) for s in json.loads(lib.read_text())["songs"]}
     assert songs["a"] == ["genre:house", "genre:electronic", "x"]
     assert songs["c"] == ["genre:electronic"]
     assert songs["b"] == list(dict.fromkeys(f"genre:{t}" for t in REMOVED.values()))
     assert (tmp_path / "backups-genre-merge" / "u1" / "library.json").read_text() == original
     assert migrate_tags.run() == 0
-    assert {s["id"]: s["tags"] for s in json.loads(lib.read_text())["songs"]} == songs
+    assert {s["id"]: library.tag_list(s) for s in json.loads(lib.read_text())["songs"]} == songs
 
 
 def test_disco_umbrella_spans_funk_soul_and_electronic():
