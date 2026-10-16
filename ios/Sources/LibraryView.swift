@@ -206,7 +206,7 @@ struct LibraryView: View {
         } else {
             LazyVStack(spacing: 0) {
                 ForEach(arriving) { t in
-                    SongRow(title: t.title, subtitle: subtitle(t), source: t.source, thumbnail: t.thumbnail,
+                    SongRow(title: t.title, subtitle: subtitle(t), thumbnail: t.thumbnail,
                             downloading: server.transfers[t.id]?.progress ?? 0)
                     divider
                 }
@@ -262,7 +262,7 @@ struct LibraryView: View {
             else if !hasAudio { if progress == nil { toast = "No audio yet" } }
             else if progress == nil { fetch() }
         }
-        return LibrarySongRow(title: track.title, subtitle: subtitle(track), source: track.source, thumbnail: track.thumbnail,
+        return LibrarySongRow(title: track.title, subtitle: subtitle(track), thumbnail: track.thumbnail,
                     duration: onPhone ? track.duration : nil,
                     downloading: onPhone ? nil : progress,
                     onDownload: !onPhone && progress == nil && hasAudio ? { fetch() } : nil,
@@ -322,7 +322,6 @@ struct LibraryView: View {
 struct LibrarySongRow<Menu: View, Actions: View>: View {
     let title: String
     let subtitle: String
-    var source: String?
     let thumbnail: String?
     var duration: Double?
     var downloading: Double?
@@ -347,22 +346,7 @@ struct LibrarySongRow<Menu: View, Actions: View>: View {
                         .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 0) {
                         Text(title).font(T.headline).foregroundStyle(DS.Color.ink).lineLimit(2)
-                        let artist = Text(subtitle).foregroundStyle(playing ? DS.Color.ink : DS.Color.inkMuted).lineLimit(1)
-                        if typeSize.isAccessibilitySize {
-                            VStack(alignment: .leading, spacing: 0) {
-                                artist
-                                if let source { Text(sourceLabel(source)).foregroundStyle(DS.Color.inkFaint).lineLimit(1).minimumScaleFactor(0.7) }
-                            }
-                            .font(T.subhead)
-                        } else {
-                            HStack(spacing: 0) {
-                                artist.layoutPriority(1)
-                                if let source {
-                                    Text(" \u{00B7} " + sourceLabel(source)).foregroundStyle(DS.Color.inkFaint).lineLimit(1)
-                                }
-                            }
-                            .font(T.subhead)
-                        }
+                        Text(subtitle).font(T.subhead).foregroundStyle(playing ? DS.Color.ink : DS.Color.inkMuted).lineLimit(1)
                     }
                     .opacity(noAudio ? 0.55 : 1)
                     Spacer(minLength: 0)
