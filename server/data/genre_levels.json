@@ -154,6 +154,7 @@
     "electronica",
     "indietronica",
     "alternative dance",
+    "rave",
     "dance & edm"
    ]
   },
@@ -325,10 +326,7 @@
  "acid house": {
   "genre": "Electronic",
   "parent": "house",
-  "discogs": true,
-  "flavours": [
-   "acid"
-  ]
+  "discogs": true
  },
  "acid jazz": {
   "genre": "Jazz",
@@ -346,10 +344,7 @@
   "genre": "Electronic",
   "parent": "trance",
   "discogs": false,
-  "status": "question",
-  "flavours": [
-   "acid"
-  ]
+  "status": "question"
  },
  "acoustic": {
   "genre": "Rock",
@@ -537,10 +532,7 @@
   "also_under": [
    "house"
   ],
-  "discogs": true,
-  "flavours": [
-   "baltimore"
-  ]
+  "discogs": true
  },
  "banda": {
   "genre": "Latin",
@@ -602,10 +594,7 @@
  "berlin-school": {
   "genre": "Electronic",
   "parent": "ambient",
-  "discogs": true,
-  "flavours": [
-   "berlin"
-  ]
+  "discogs": true
  },
  "bhangra": {
   "genre": "Folk, World, & Country",
@@ -727,7 +716,8 @@
   "parent": null,
   "discogs": true,
   "synonyms": [
-   "jersey club"
+   "jersey club",
+   "breakbeat hardcore"
   ]
  },
  "breakcore": {
@@ -1076,10 +1066,7 @@
  "dark ambient": {
   "genre": "Electronic",
   "parent": "ambient",
-  "discogs": true,
-  "flavours": [
-   "dark"
-  ]
+  "discogs": true
  },
  "dark electro": {
   "genre": "Electronic",
@@ -1087,10 +1074,7 @@
   "also_under": [
    "electro"
   ],
-  "discogs": true,
-  "flavours": [
-   "dark"
-  ]
+  "discogs": true
  },
  "dark jazz": {
   "genre": "Jazz",
@@ -1113,9 +1097,6 @@
    "dark psy",
    "dark psy-trance"
   ],
-  "flavours": [
-   "dark"
-  ],
   "discogs": false,
   "status": "approved"
  },
@@ -1126,10 +1107,7 @@
    "industrial"
   ],
   "discogs": false,
-  "status": "approved",
-  "flavours": [
-   "dark"
-  ]
+  "status": "approved"
  },
  "darkwave": {
   "genre": "Electronic",
@@ -1157,27 +1135,18 @@
  "deep house": {
   "genre": "Electronic",
   "parent": "house",
-  "discogs": true,
-  "flavours": [
-   "deep"
-  ]
+  "discogs": true
  },
  "deep techno": {
   "genre": "Electronic",
   "parent": "techno",
-  "discogs": true,
-  "flavours": [
-   "deep"
-  ]
+  "discogs": true
  },
  "deep trance": {
   "genre": "Electronic",
   "parent": "trance",
   "discogs": false,
-  "status": "question",
-  "flavours": [
-   "deep"
-  ]
+  "status": "question"
  },
  "delta blues": {
   "genre": "Blues",
@@ -1871,10 +1840,7 @@
   "also_under": [
    "hardcore"
   ],
-  "discogs": true,
-  "flavours": [
-   "hard"
-  ]
+  "discogs": true
  },
  "hard rock": {
   "genre": "Rock",
@@ -1885,10 +1851,7 @@
  "hard techno": {
   "genre": "Electronic",
   "parent": "techno",
-  "discogs": true,
-  "flavours": [
-   "hard"
-  ]
+  "discogs": true
  },
  "hard trance": {
   "genre": "Electronic",
@@ -1896,20 +1859,12 @@
   "also_under": [
    "hardcore"
   ],
-  "discogs": true,
-  "flavours": [
-   "hard"
-  ]
+  "discogs": true
  },
  "hardcore": {
   "genre": "Electronic",
   "parent": null,
-  "discogs": true,
-  "synonyms": [
-   "breakbeat hardcore",
-   "raggacore",
-   "rave"
-  ]
+  "discogs": true
  },
  "hardcore hip hop": {
   "genre": "Hip Hop",
@@ -2399,10 +2354,7 @@
    "trance"
   ],
   "discogs": false,
-  "status": "approved",
-  "flavours": [
-   "melodic"
-  ]
+  "status": "approved"
  },
  "memphis blues": {
   "genre": "Blues",
@@ -2490,10 +2442,7 @@
   "also_under": [
    "house"
   ],
-  "discogs": true,
-  "flavours": [
-   "minimal"
-  ]
+  "discogs": true
  },
  "minimalism": {
   "genre": "Classical",
@@ -2947,10 +2896,7 @@
  "progressive breaks": {
   "genre": "Electronic",
   "parent": "breakbeat",
-  "discogs": true,
-  "flavours": [
-   "progressive"
-  ]
+  "discogs": true
  },
  "progressive house": {
   "genre": "Electronic",
@@ -2960,10 +2906,7 @@
    "melodic progressive house",
    "festival progressive house"
   ],
-  "discogs": true,
-  "flavours": [
-   "progressive"
-  ]
+  "discogs": true
  },
  "progressive metal": {
   "genre": "Rock",
@@ -2986,9 +2929,6 @@
    "progressive psy",
    "progressive psy-trance"
   ],
-  "flavours": [
-   "progressive"
-  ],
   "discogs": false,
   "status": "approved"
  },
@@ -3001,10 +2941,7 @@
  "progressive trance": {
   "genre": "Electronic",
   "parent": "trance",
-  "discogs": true,
-  "flavours": [
-   "progressive"
-  ]
+  "discogs": true
  },
  "promotional": {
   "genre": "Non-Music",
@@ -3612,10 +3549,7 @@
   "also_under": [
    "techno"
   ],
-  "discogs": true,
-  "flavours": [
-   "tech"
-  ]
+  "discogs": true
  },
  "tech trance": {
   "genre": "Electronic",
@@ -3623,10 +3557,7 @@
   "also_under": [
    "techno"
   ],
-  "discogs": true,
-  "flavours": [
-   "tech"
-  ]
+  "discogs": true
  },
  "technical": {
   "genre": "Non-Music",
@@ -3757,10 +3688,7 @@
   "genre": "Electronic",
   "parent": "trance",
   "discogs": false,
-  "status": "approved",
-  "flavours": [
-   "uplifting"
-  ]
+  "status": "approved"
  },
  "vallenato": {
   "genre": "Latin",
@@ -3804,10 +3732,7 @@
   "genre": "Electronic",
   "parent": "trance",
   "discogs": false,
-  "status": "approved",
-  "flavours": [
-   "vocal"
-  ]
+  "status": "approved"
  },
  "volksmusik": {
   "genre": "Folk, World, & Country",

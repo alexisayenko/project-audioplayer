@@ -42,8 +42,8 @@ All placements below are agent judgement, awaiting Alex's review.
 - psytrance (6): dark psytrance, forest psytrance, progressive psytrance, full-on psytrance, goa trance, psybient
 - techno (6): deep, dub, hard, melodic, minimal, schranz
 - drum and bass (4): jungle, liquid funk, neurofunk, techstep
-- breakbeat (6): big beat, breaks, progressive breaks, baltimore club, jersey club, breakcore
-- hardcore (11): breakbeat hardcore, doomcore, donk, gabber, happy hardcore, makina, raggacore, rave, speedcore, hardstyle, jumpstyle
+- breakbeat (7): big beat, breaks, progressive breaks, baltimore club, jersey club, breakbeat hardcore, breakcore
+- hardcore (8): doomcore, donk, gabber, happy hardcore, makina, speedcore, hardstyle, jumpstyle (rave, raggacore and breakbeat hardcore no longer fold here, BA2)
 - ambient (6): dark ambient, drone, illbient, berlin-school, lowercase, dungeon synth
 - downtempo (2): chillout, trip hop
 - synthwave (5): darksynth, dreamsynth, dreamwave, chillwave, vaporwave
@@ -90,7 +90,9 @@ Removed styles (gone from `genre_extras.json` and `genre_levels.json`; the old n
 | bubblegum dance | eurodance | 2 |
 | techstep | drum and bass | 2 |
 | liquid funk | liquid drum and bass (new) | 1 |
-| breakbeat hardcore, raggacore, rave | hardcore | 1, 1, 1 |
+| rave | electronic (genre; corrected 2026-10-16, BA2) | 1 |
+| breakbeat hardcore | breakbeat (its earlier reviewed parent; corrected BA2) | 1 |
+| raggacore | dropped, not folded (the Russian "raggakor" means ragga-pop, not hardcore; BA2, the tag is in `DROP`) | 1 |
 | jersey club | breakbeat | 1 |
 | techno pop, electropop (incl. "russian electro pop", "electronic pop") | synthpop | 1, 9 |
 
@@ -110,6 +112,8 @@ Added: `liquid drum and bass` (extras, level 3 under drum and bass, approved, di
 `melodic house` is intentionally not a style any more; the `melodic` flavour stays (used by melodic techno). `french` is not a flavour for now (its only user, french house, is gone).
 
 ## Flavours
+
+Status: defined, not attached (decision of 2026-10-16). The top-level `flavours` block exists and is served, but no style entry carries a `flavours` list yet; every `levels[<style>].flavours` is `[]`, and the map hides the Flavour selector and chips while no style carries one. The earlier assignment (styles per flavour, kept so nothing is lost) is in [genre-flavours-proposal.md](genre-flavours-proposal.md), not loaded by any code, awaiting Alex. The per-style lists described below and the counts listed under them are therefore the proposal, not the data.
 
 A flavour is a modifier that runs alongside the tree, not a level. Top-level `flavours` block in `genre_levels.json`: `{"<key>": {"name", "kind": "sound" | "scene", "description"}}` (lowercase unique keys; a flavour key may equal a style key, e.g. `acid`, they are separate namespaces). A style entry may carry `"flavours": ["<key>", ...]` (no repeats, every key in the block). Only Electronic entries carry them so far; stored tags do not change.
 

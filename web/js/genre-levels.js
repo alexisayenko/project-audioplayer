@@ -169,16 +169,19 @@ export function visibleRows(tree, { expanded = new Set(), query = '', onlyWithSo
     }
   }
   const rows = [];
-  const walk = (n) => {
+  const seen = new Set();
+  const walk = (n, parentKey = null, rootId = n.id) => {
     if (searching && !keep.has(n.id)) return;
     if (byStatus && !byStatus.has(n.id)) return;
     if (onlyWithSongs && !n.all.size) return;
     const kids = n.children.filter((c) => (!searching || keep.has(c.id)) && (!byStatus || byStatus.has(c.id)) && (!onlyWithSongs || c.all.size));
     const isOpen = kids.length > 0 && (expanded.has(n.id) || open.has(n.id));
-    rows.push({ node: n, level: n.level, hasChildren: kids.length > 0, expanded: isOpen, via: hits.get(n.id) ?? null, matched: hits.has(n.id) });
-    if (isOpen) kids.forEach(walk);
+    const key = seen.has(n.id) ? `${rootId}|${n.id}` : n.id;
+    seen.add(n.id);
+    rows.push({ key, parentKey, node: n, level: n.level, hasChildren: kids.length > 0, expanded: isOpen, via: hits.get(n.id) ?? null, matched: hits.has(n.id) });
+    if (isOpen) kids.forEach((c) => walk(c, key, rootId));
   };
-  tree.roots.forEach(walk);
+  tree.roots.forEach((r) => walk(r));
   return rows;
 }
 
@@ -187,23 +190,24 @@ export function allExpandable(tree) {
 }
 
 export function treeKey(rows, id, key) {
-  const i = rows.findIndex((r) => r.node.id === id);
-  if (i < 0) return rows.length ? { type: 'focus', id: rows[0].node.id } : null;
+  const i = rows.findIndex((r) => r.key === id);
+  if (i < 0) return rows.length ? { type: 'focus', id: rows[0].key } : null;
   const r = rows[i];
+  const node = r.node.id;
   switch (key) {
-    case 'ArrowDown': return i + 1 < rows.length ? { type: 'focus', id: rows[i + 1].node.id } : null;
-    case 'ArrowUp': return i > 0 ? { type: 'focus', id: rows[i - 1].node.id } : null;
-    case 'Home': return { type: 'focus', id: rows[0].node.id };
-    case 'End': return { type: 'focus', id: rows.at(-1).node.id };
+    case 'ArrowDown': return i + 1 < rows.length ? { type: 'focus', id: rows[i + 1].key } : null;
+    case 'ArrowUp': return i > 0 ? { type: 'focus', id: rows[i - 1].key } : null;
+    case 'Home': return { type: 'focus', id: rows[0].key };
+    case 'End': return { type: 'focus', id: rows.at(-1).key };
     case 'ArrowRight':
-      if (r.hasChildren && !r.expanded) return { type: 'expand', id };
-      return r.expanded && rows[i + 1] ? { type: 'focus', id: rows[i + 1].node.id } : null;
+      if (r.hasChildren && !r.expanded) return { type: 'expand', id, node };
+      return r.expanded && rows[i + 1] ? { type: 'focus', id: rows[i + 1].key } : null;
     case 'ArrowLeft':
-      if (r.expanded) return { type: 'collapse', id };
-      return r.node.parent && rows.some((x) => x.node.id === r.node.parent) ? { type: 'focus', id: r.node.parent } : null;
+      if (r.expanded) return { type: 'collapse', id, node };
+      return r.parentKey && rows.some((x) => x.key === r.parentKey) ? { type: 'focus', id: r.parentKey } : null;
     case 'Enter':
     case ' ':
-      return { type: 'activate', id, toggle: r.hasChildren };
+      return { type: 'activate', id, node, toggle: r.hasChildren };
     default: return null;
   }
 }

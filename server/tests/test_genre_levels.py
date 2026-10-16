@@ -74,14 +74,14 @@ def test_synonyms_are_lowercase_and_collision_free():
 def test_electronic_synonyms():
     assert GENRES["Electronic"]["synonyms"] == [
         "electronic dance music", "edm", "dance music", "club music", "electronic music",
-        "dance", "electronic dance", "electronica", "indietronica", "alternative dance", "dance & edm",
+        "dance", "electronic dance", "electronica", "indietronica", "alternative dance", "rave", "dance & edm",
     ]
 
 
 REMOVED = {
     "electronic dance": "electronic", "dance": "electronic", "electronica": "electronic", "indietronica": "electronic", "alternative dance": "electronic",
     "chillout": "downtempo", "afro house": "house", "big room house": "house", "bubblegum dance": "eurodance", "techstep": "drum and bass",
-    "liquid funk": "liquid drum and bass", "breakbeat hardcore": "hardcore", "jersey club": "breakbeat", "raggacore": "hardcore", "rave": "hardcore",
+    "liquid funk": "liquid drum and bass", "breakbeat hardcore": "breakbeat", "jersey club": "breakbeat", "rave": "electronic",
     "techno pop": "synthpop", "french touch": "house", "electropop": "synthpop", "french house": "house", "melodic house": "house",
 }
 APPROVED = {"dark psytrance", "forest psytrance", "progressive psytrance", "full-on psytrance", "vocal trance", "melodic techno", "psybient", "darksynth", "uplifting trance", "sunshine house", "dreamsynth", "dreamwave", "neurofunk",
@@ -143,18 +143,8 @@ def test_flavours_block_and_assignments():
     for k, f in FLAVOURS.items():
         assert k == k.lower() and k.strip() == k and k, k
         assert f["kind"] in ("sound", "scene") and f["name"] and f["description"], k
-    used = set()
-    for k, v in ENTRIES.items():
-        fl = v.get("flavours", [])
-        assert len(set(fl)) == len(fl), k
-        assert all(f in FLAVOURS for f in fl), k
-        if fl:
-            assert v["genre"] == "Electronic" and not v.get("provisional"), k
-        used.update(fl)
-    assert used == set(FLAVOURS)
-    assert ENTRIES["progressive house"]["flavours"] == ["progressive"]
-    assert "melodic" in ENTRIES["melodic techno"]["flavours"] and "melodic house" not in ENTRIES
-    assert "flavours" not in ENTRIES["techno"] and "flavours" not in ENTRIES["hardcore"] and "flavours" not in ENTRIES["trance"]
+    assert not any(v.get("flavours") for v in ENTRIES.values()), "flavours are defined but not attached (awaiting Alex)"
+    assert any(f["kind"] == "scene" for f in FLAVOURS.values()) and any(f["kind"] == "sound" for f in FLAVOURS.values())
 
 
 def _payload_with(doc):
@@ -293,7 +283,7 @@ def test_migration_folds_removed_styles_idempotently_and_keeps_a_backup(tmp_path
     assert migrate_tags.run() == 1
     songs = {s["id"]: s["tags"] for s in json.loads(lib.read_text())["songs"]}
     assert songs["a"] == ["genre:house", "genre:electronic", "x"]
-    assert songs["c"] == ["genre:hardcore"]
+    assert songs["c"] == ["genre:electronic"]
     assert songs["b"] == list(dict.fromkeys(f"genre:{t}" for t in REMOVED.values()))
     assert (tmp_path / "backups-genre-merge" / "u1" / "library.json").read_text() == original
     assert migrate_tags.run() == 0
@@ -353,5 +343,4 @@ def test_psytrance_branch_is_a_level_two_umbrella_apart_from_trance():
         e = ENTRIES[k]
         assert e["discogs"] is False and e["status"] == "approved" and k in EXTRAS and k not in STYLES["styles"], k
         assert e["display"].endswith("Psy-Trance"), k
-    assert ENTRIES["dark psytrance"]["flavours"] == ["dark"] and ENTRIES["progressive psytrance"]["flavours"] == ["progressive"]
     assert "darkpsy" in ENTRIES["dark psytrance"]["synonyms"] and "prog psy" in ENTRIES["progressive psytrance"]["synonyms"]

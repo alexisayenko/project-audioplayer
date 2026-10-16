@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { buildTree, applyCounts } from './genre-levels.js';
-import { layoutRadial as layout0, highlightSets, radius, visibleCrossLinks } from './genre-radial.js';
+import { layoutRadial as layout0, highlightSets, radius, visibleCrossLinks, placeLevel2Labels, truncateLabel } from './genre-radial.js';
 const layoutRadial = (t, root, o = { showAll: true }) => layout0(t, root, o);
 
 const doc = JSON.parse(readFileSync(new URL('../../server/data/genre_levels.json', import.meta.url), 'utf8'));
@@ -174,4 +174,37 @@ test('psytrance is a level 2 sibling of trance with its own level 3 children; co
   assert.equal(t.byId.get('s:progressive trance').level, 3);
   const l = layoutRadial(t);
   assert.equal(l.nodes.filter((n) => n.id === 's:psytrance').length, 1);
+});
+
+const overlapArea = (a, b) => Math.max(0, Math.min(a.x + a.w / 2, b.x + b.w / 2) - Math.max(a.x - a.w / 2, b.x - b.w / 2)) * Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
+
+function level2Items(k) {
+  const l = layout0(sample(), 'Electronic', { showAll: true });
+  return l.nodes.filter((n) => n.level === 2 && !n.parked).map((n) => ({
+    id: n.id, sx: n.x * k + 500, sy: n.y * k + 400, r: (n.r + 4) * k, dx: Math.cos(n.angle), dy: Math.sin(n.angle), w: 6.5 * truncateLabel(n.label).length, h: 14,
+  }));
+}
+
+test('level 2 labels are never hidden: every one gets a box, deterministic, nudged without overlap when room allows', () => {
+  const items = level2Items(0.8);
+  const a = placeLevel2Labels(items);
+  const b = placeLevel2Labels(items);
+  assert.equal(a.size, items.length);
+  assert.deepEqual([...a], [...b]);
+  const boxes = [...a.values()];
+  let bad = 0;
+  for (let i = 0; i < boxes.length; i += 1) for (let j = i + 1; j < boxes.length; j += 1) if (overlapArea(boxes[i], boxes[j]) > 0) bad += 1;
+  assert.equal(bad, 0);
+});
+
+test('a crowded ring still places every label, uses leaders for displaced ones, and truncates long names', () => {
+  const items = Array.from({ length: 40 }, (_, i) => {
+    const a = (i / 40) * 2 * Math.PI;
+    return { id: `n${i}`, sx: 300 + Math.cos(a) * 60, sy: 300 + Math.sin(a) * 60, r: 8, dx: Math.cos(a), dy: Math.sin(a), w: 90, h: 14 };
+  });
+  const out = placeLevel2Labels(items);
+  assert.equal(out.size, 40);
+  assert.ok([...out.values()].some((p) => p.leader));
+  assert.equal(truncateLabel('a very long style name indeed').length, 18);
+  assert.equal(truncateLabel('short'), 'short');
 });

@@ -88,3 +88,32 @@ export function highlightSets(tree, id) {
 }
 
 export const visibleCrossLinks = (layout, sel, hover) => (layout?.links || []).filter((l) => l.from === sel || l.to === sel || l.from === hover || l.to === hover);
+
+export const truncateLabel = (s, max = 18) => (s.length > max ? `${s.slice(0, max - 1)}…` : s);
+
+const overlap = (a, b, gap) => Math.max(0, Math.min(a.x + a.w, b.x + b.w + gap) - Math.max(a.x, b.x - gap)) * Math.max(0, Math.min(a.y + a.h, b.y + b.h + gap) - Math.max(a.y, b.y - gap));
+const DISTANCES = [0, 14, 28, 42, 56, 72, 90];
+const LATERALS = [0, 1, -1, 2, -2, 3, -3];
+
+export function placeLevel2Labels(items, { gap = 2, avoid = [] } = {}) {
+  const placed = [...avoid];
+  const out = new Map();
+  for (const it of items) {
+    const tx = -it.dy;
+    const ty = it.dx;
+    let best = null;
+    search: for (const d of DISTANCES) {
+      for (const lat of LATERALS) {
+        const px = it.sx + it.dx * (it.r + 4 + d) + tx * lat * (it.w / 2 + 6);
+        const py = it.sy + it.dy * (it.r + 4 + d) + ty * lat * (it.w / 2 + 6);
+        const box = { x: px - it.w / 2, y: py - it.h / 2, w: it.w, h: it.h };
+        const cost = placed.reduce((s, o) => s + overlap(box, o, gap), 0);
+        if (!best || cost < best.cost) best = { box, cost, d, lat };
+        if (cost === 0) break search;
+      }
+    }
+    placed.push(best.box);
+    out.set(it.id, { x: best.box.x + best.box.w / 2, y: best.box.y, w: it.w, h: it.h, leader: best.d > 0 || best.lat !== 0, cost: best.cost });
+  }
+  return out;
+}

@@ -22,6 +22,9 @@ ONE_OFF: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
     "soundcloud-122880128": ((), ("genre:house",)),
     "soundcloud-158983912": ((), ("genre:house",)),
     "wL8DVHuWI7Y": ((), ("genre:electronic",)),
+    "JYIaWeVL1JM": (("genre:hardcore",), ()),
+    "ylpNEb31k4U": (("genre:hardcore", "genre:dubstep", "genre:techno"), ()),
+    "soundcloud-193950580": (("genre:hip hop", "genre:pop punk", "genre:hardstyle"), ()),
 }
 
 

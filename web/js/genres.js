@@ -13,7 +13,7 @@ import { watchPlayerInset } from './player-inset.js';
 import { createCollapsible, loadCollapsed, saveCollapsed, PANEL_KEYS } from './collapsible.js';
 import { player } from './player.js';
 import { setCover } from './player-ui.js';
-import { titleNodes } from './display-title.js';
+import { titleNodes, artistLine } from './credits.js';
 import { songGenres, mapToNodes, nodeIds, nowPlayingState, createNowSelection, orphanNodes, orphanState } from './genre-playing.js';
 import { POLL_MS, shouldPoll, presentFamilies, toggleHidden, loadOutlineOpen, saveOutlineOpen } from './genre-view.js';
 
@@ -241,7 +241,7 @@ export function renderGenres(root) {
     nowPop.replaceChildren(
       el('div', { class: 'gm-now-head' }, cover,
         el('div', { class: 'gm-now-text' }, el('b', { class: 'gm-now-title' }, titleNodes(song)),
-          el('small', { class: 'muted' }, song.artist || ''),
+          el('small', { class: 'muted' }, artistLine(song)),
           el('small', { class: 'muted gm-now-count' }, `${items.length} ${plural(items.length, 'genre', 'genres')}`)),
         cl.button),
       cl.root);

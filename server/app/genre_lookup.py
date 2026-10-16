@@ -154,9 +154,25 @@ def clean_recording_url(value: Any) -> str | None:
     return recording_url(match.group(1)) if match else None
 
 
-def _first_year(full: dict[str, Any]) -> int | None:
-    m = re.match(r"^(\d{4})", str(full.get("first-release-date") or ""))
+def _date_year(value: Any) -> int | None:
+    m = re.match(r"^(\d{4})", str(value or ""))
     return timeutil.valid_year(int(m.group(1))) if m else None
+
+
+def _credible_release(r: dict[str, Any]) -> bool:
+    rg = r.get("release-group") or {}
+    secondary = {str(t).casefold() for t in rg.get("secondary-types") or []}
+    various = any(_norm(n) in ("various artists", "various") for n in _credited_names(r.get("artist-credit") or []))
+    return not (secondary & _SECONDARY_BAD or various)
+
+
+def _first_year(full: dict[str, Any]) -> int | None:
+    """Earliest year of a credible release of the recording (DATA-126); a compilation, mixtape, live or Various Artists release never counts. Without dated releases the recording's first-release-date is used."""
+    dated = [r for r in full.get("releases") or [] if _date_year(r.get("date")) is not None]
+    if dated:
+        years = [_date_year(r.get("date")) for r in dated if _credible_release(r)]
+        return min(y for y in years if y is not None) if years else None
+    return _date_year(full.get("first-release-date"))
 
 
 def _work_rels(full: dict[str, Any]) -> list[str]:

@@ -102,7 +102,7 @@ export function renderGenresRework(root, opts = {}) {
     onkeydown: (e) => {
       if (e.key === 'Escape') { search.value = ''; query = ''; renderTree(); markMatches(); }
       if (e.key === 'Enter' && matchIds().length) { e.preventDefault(); select(matchIds()[0], { reveal: true, center: true }); }
-      if (e.key === 'ArrowDown' && rows.length) { e.preventDefault(); focusRow(activeId && rows.some((r) => r.node.id === activeId) ? activeId : rows[0].node.id); }
+      if (e.key === 'ArrowDown' && rows.length) { e.preventDefault(); focusRow(activeId && rows.some((r) => r.key === activeId) ? activeId : rows[0].key); }
     },
   });
   const statusRow = el('div', { class: 'gmr-status-row', role: 'group', 'aria-label': 'Status filter' },
@@ -142,7 +142,8 @@ export function renderGenresRework(root, opts = {}) {
   }
 
   function renderFlavours() {
-    const all = tree ? [...tree.flavours.values()] : [];
+    const used = new Set(tree ? [...tree.byId.values()].flatMap((n) => n.flavours) : []);
+    const all = tree ? [...tree.flavours.values()].filter((f) => used.has(f.key)) : [];
     flavourRow.hidden = !all.length;
     if (!all.length) { flavourRow.replaceChildren(); return; }
     const group = (kind, label) => {
@@ -228,7 +229,7 @@ export function renderGenresRework(root, opts = {}) {
     ];
     const attrs = {
       class: `gmr-row l${n.level}${selectedId === n.id ? ' sel' : ''}${r.matched ? ' hit' : ''}`,
-      role: 'treeitem', 'data-id': n.id, tabindex: n.id === activeId ? '0' : '-1', 'aria-level': String(n.level),
+      role: 'treeitem', 'data-id': r.key, 'data-node': n.id, tabindex: r.key === activeId ? '0' : '-1', 'aria-level': String(n.level),
       'aria-selected': String(selectedId === n.id), 'aria-posinset': String(i + 1), 'aria-setsize': String(rows.length),
       onclick: () => select(n.id, { center: true, toggle: r.hasChildren }),
     };
@@ -240,7 +241,7 @@ export function renderGenresRework(root, opts = {}) {
     if (!tree) { treeEl.replaceChildren(); return; }
     rows = visibleRows(tree, { expanded, query, onlyWithSongs, status: statusFilter, flavours: flavourSel });
     if (!rows.length) activeId = null;
-    else if (!rows.some((r) => r.node.id === activeId)) activeId = rows[0].node.id;
+    else if (!rows.some((r) => r.key === activeId)) activeId = rows[0].key;
     let rootName = '';
     treeEl.replaceChildren(...rows.map((r, i) => { if (r.level === 1) rootName = r.node.name; return buildRow(r, i, rootName); }));
     empty.hidden = rows.length > 0;
@@ -287,10 +288,10 @@ export function renderGenresRework(root, opts = {}) {
     const a = treeKey(rows, activeId, e.key);
     if (!a) return;
     e.preventDefault();
-    if (a.type === 'focus') { focusRow(a.id); if (layout?.byId.has(a.id)) view.select(a.id); }
-    else if (a.type === 'expand') { expanded.add(a.id); renderTree(); focusRow(a.id); }
-    else if (a.type === 'collapse') { expanded.delete(a.id); renderTree(); focusRow(a.id); }
-    else select(a.id, { center: true, toggle: a.toggle });
+    if (a.type === 'focus') { focusRow(a.id); const nid = rows.find((x) => x.key === a.id)?.node.id; if (layout?.byId.has(nid)) view.select(nid); }
+    else if (a.type === 'expand') { expanded.add(a.node); renderTree(); focusRow(a.id); }
+    else if (a.type === 'collapse') { expanded.delete(a.node); renderTree(); focusRow(a.id); }
+    else select(a.node, { center: true, toggle: a.toggle });
   });
 
   async function load() {

@@ -57,7 +57,7 @@ def _strip_music(value: str) -> str:
 DROP: frozenset[str] = frozenset(
     key(v) for v in ("mkj", "deb", "stadiumx", "sam smith", "dancin", "relaxed", "love song", "progressive music", "underground music", "dystopian music",
         "comedy music", "comedy", "novelty music", "novelty song", "novelty", "popular", "underground", "cyberpunk",
-        "aaron smith", "joris", "skrux", "medley", "music video", "party", "popcorn", "functional music", "event music", "party music", "west coast swing")
+        "aaron smith", "joris", "skrux", "medley", "music video", "party", "popcorn", "functional music", "event music", "party music", "west coast swing", "raggacore")
 )
 
 
@@ -131,9 +131,8 @@ ALIASES: dict[str, str] = {
     "liquid dnb": "liquid drum and bass",
     "liquid drum n bass": "liquid drum and bass",
     "liquid drum & bass": "liquid drum and bass",
-    "breakbeat hardcore": "hardcore",
-    "raggacore": "hardcore",
-    "rave": "hardcore",
+    "breakbeat hardcore": "breakbeat",
+    "rave": "electronic",
     "jersey club": "breakbeat",
     "techno pop": "synthpop",
     "electropop": "synthpop",

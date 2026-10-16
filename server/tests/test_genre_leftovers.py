@@ -103,3 +103,61 @@ def test_one_off_targets_are_canonical():
     for _remove, add in migrate_tags.ONE_OFF.values():
         for t in add:
             assert genre_vocab.is_canonical(t.partition(":")[2])
+
+
+def test_rave_breakbeat_hardcore_and_raggacore_folds():
+    assert library.clean_tag("genre:rave") == "genre:electronic"
+    assert library.clean_tag("genre:breakbeat hardcore") == "genre:breakbeat"
+    assert gf.is_dropped("raggacore") and gf.is_dropped("Raggacore") and not gf.is_genre("raggacore")
+    assert "raggacore" not in gf.ALIASES
+    assert library.clean_tag("genre:raggacore") == ""
+    assert library.clean_tags(["genre:raggacore", "genre:house"]) == ["genre:house"]
+    assert library.clean_tag("genre:hardcore") == "genre:hardcore"
+
+
+def _noise_songs():
+    return [
+        {"id": "JYIaWeVL1JM", "title": "Rhythm", "tags": ["genre:electronic", "genre:eurodance", "genre:euro house", "genre:hardcore", "decade:90s"]},
+        {"id": "ylpNEb31k4U", "title": "London", "tags": ["genre:synthpop", "genre:techno", "genre:euro disco", "genre:eurodance", "genre:hardcore", "genre:dubstep", "genre:house"]},
+        {"id": "soundcloud-193950580", "title": "WaVeZ", "tags": ["genre:dubstep", "genre:electronic", "genre:future bass", "genre:hardstyle", "genre:hip hop", "genre:breakbeat", "genre:trap", "genre:pop punk"]},
+        {"id": "soundcloud-42327170", "title": "Voodoo", "tags": ["genre:techno", "genre:breakbeat", "genre:hardcore", "genre:electronic"]},
+        {"id": "other", "title": "Other", "tags": ["genre:hardcore", "genre:hip hop"]},
+    ]
+
+
+def test_one_off_noise_tags_removed_once_keeping_the_rest(datadir, caplog):
+    lib = _lib(datadir, OWNER, _noise_songs())
+    original = lib.read_text(encoding="utf-8")
+    with caplog.at_level("INFO", logger="app.migrate_tags"):
+        assert migrate_tags.run() == 1
+    tags = _tags(lib)
+    assert tags["JYIaWeVL1JM"] == ["genre:electronic", "genre:eurodance", "genre:euro house", "decade:90s"]
+    assert tags["ylpNEb31k4U"] == ["genre:synthpop", "genre:euro disco", "genre:eurodance", "genre:house"]
+    assert set(tags["soundcloud-193950580"]) == {"genre:dubstep", "genre:electronic", "genre:future bass", "genre:breakbeat", "genre:trap"}
+    assert "genre:hardcore" in tags["soundcloud-42327170"]
+    assert tags["soundcloud-42327170"] == _noise_songs()[3]["tags"]
+    assert tags["other"] == ["genre:hardcore", "genre:hip hop"]
+    for sid in ("JYIaWeVL1JM", "ylpNEb31k4U", "soundcloud-193950580"):
+        assert any(t.startswith("genre:") for t in tags[sid])
+        assert f"one-off genre fix applied to song {sid}" in caplog.text
+    assert (datadir / "backups-genre-merge" / OWNER / "library.json").read_text(encoding="utf-8") == original
+
+
+def test_one_off_noise_tags_idempotent_and_owner_only(datadir):
+    mine = _lib(datadir, OWNER, _noise_songs())
+    other = _lib(datadir, "someoneelse", _noise_songs())
+    before = other.read_text(encoding="utf-8")
+    assert migrate_tags.run() == 1
+    first = mine.read_text(encoding="utf-8")
+    assert migrate_tags.run() == 0
+    assert mine.read_text(encoding="utf-8") == first
+    assert other.read_text(encoding="utf-8") == before
+
+
+def test_one_off_noise_entries_remove_only_and_leave_no_song_without_a_genre():
+    for sid in ("JYIaWeVL1JM", "ylpNEb31k4U", "soundcloud-193950580"):
+        remove, add = migrate_tags.ONE_OFF[sid]
+        assert remove and not add
+    songs = _noise_songs()[:3]
+    migrate_tags.apply_one_off(songs)
+    assert all(any(t.startswith("genre:") for t in s["tags"]) for s in songs)

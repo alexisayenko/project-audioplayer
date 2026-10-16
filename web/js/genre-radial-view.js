@@ -1,5 +1,5 @@
 import { fitTransform, recenterOnResize, placeLabels, hitNode, isDragMove } from './genre-view.js';
-import { highlightSets, visibleCrossLinks } from './genre-radial.js';
+import { highlightSets, visibleCrossLinks, truncateLabel, placeLevel2Labels } from './genre-radial.js';
 
 const MIN_K = 0.15;
 const MAX_K = 8;
@@ -169,30 +169,53 @@ export function createRadialView(canvas, { onSelect, onHover, reducedMotion = fa
     ctx.font = `${FONT_PX}px ${colors.font}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    const zoomed = tf.k >= LABEL_K;
+    const k = tf.k;
+    const sx = (n) => n.x * k + tf.x;
+    const sy = (n) => n.y * k + tf.y;
+    const l2 = layout.nodes.filter((n) => n.level === 2 && !n.parked)
+      .sort((p, q) => (q.node.all.size - p.node.all.size) || p.name.localeCompare(q.name));
+    const text = new Map(l2.map((n) => [n.id, truncateLabel(n.label || n.name)]));
+    const placed = placeLevel2Labels(l2.map((n) => ({
+      id: n.id, sx: sx(n), sy: sy(n), r: (n.r + (n.discogs ? 2 : 5)) * k, dx: Math.cos(n.angle), dy: Math.sin(n.angle),
+      w: ctx.measureText(text.get(n.id)).width, h: FONT_PX + 2,
+    })));
+    const zoomed = k >= LABEL_K;
     const cands = [];
     for (const n of layout.nodes) {
+      if (n.level === 2 && !n.parked) continue;
       const forced = n.level === 1 || n.id === sel || n.id === hover || matches.has(n.id);
       const near = lit3(n);
       if (n.level === 3 && !zoomed && !forced && !near) continue;
       if (n.parked && !forced) continue;
       cands.push({ n, forced: forced || near, w: ctx.measureText(n.label || n.name).width });
     }
-    cands.sort((a, b) => (b.forced - a.forced) || (a.n.level - b.n.level) || (b.n.node.all.size - a.n.node.all.size) || a.n.name.localeCompare(b.n.name));
-    const boxes = cands.map(({ n, forced, w }) => ({
-      id: n.id, x: n.x * tf.k + tf.x, y: n.y * tf.k + tf.y + (n.r + (n.discogs ? 2 : 5)) * tf.k + 1, w, h: FONT_PX + 2, force: forced,
-    }));
+    cands.sort((p, q) => (q.forced - p.forced) || (p.n.level - q.n.level) || (q.n.node.all.size - p.n.node.all.size) || p.n.name.localeCompare(q.n.name));
+    const boxes = [
+      ...[...placed].map(([id, p]) => ({ id, x: p.x, y: p.y, w: p.w, h: p.h, force: true, fixed: true })),
+      ...cands.map(({ n, forced, w }) => ({
+        id: n.id, x: sx(n), y: sy(n) + (n.r + (n.discogs ? 2 : 5)) * k + 1, w, h: FONT_PX + 2, force: forced,
+      })),
+    ];
     const shown = placeLabels(boxes);
     ctx.lineWidth = 3;
     ctx.lineJoin = 'round';
     for (const b of boxes) {
       if (!shown.has(b.id)) continue;
       const n = layout.byId.get(b.id);
+      const label = b.fixed ? text.get(b.id) : n.label || n.name;
       ctx.globalAlpha = Math.max(alphaOf(n), n.node.all.size || b.force ? alphaOf(n) : 0.6);
+      if (b.fixed && placed.get(b.id).leader) {
+        ctx.save();
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = colors.edge;
+        ctx.beginPath(); ctx.moveTo(sx(n), sy(n)); ctx.lineTo(b.x, b.y + b.h / 2); ctx.stroke();
+        ctx.restore();
+        ctx.lineWidth = 3;
+      }
       ctx.strokeStyle = colors.halo;
-      ctx.strokeText(n.label || n.name, b.x, b.y);
+      ctx.strokeText(label, b.x, b.y);
       ctx.fillStyle = colors.ink;
-      ctx.fillText(n.label || n.name, b.x, b.y);
+      ctx.fillText(label, b.x, b.y);
     }
     ctx.globalAlpha = 1;
   }
