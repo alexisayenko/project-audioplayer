@@ -28,7 +28,7 @@ def _etag_matches(header: str, etag: str) -> bool:
 
 @router.get("/library")
 def get_library(user: dict[str, Any] = Depends(deps.read_user)):
-    return {"credits_schema": credits.SCHEMA, "songs": _public(user)}
+    return {"credits_schema": credits.SCHEMA, "songs": _public(user), "artists": deps.load_artists(user["uid"])}
 
 
 @router.get("/catalog", responses=deps.responses(422))
@@ -56,4 +56,4 @@ def get_catalog(request: Request, since: str | None = Query(default=None),
 
 @router.get("/tags")
 def get_tags(user: dict[str, Any] = Depends(deps.read_user)):
-    return library.tag_counts(deps.load_songs(user["uid"]))
+    return library.tag_counts(deps.public_songs(user["uid"], deps.load_songs(user["uid"])))

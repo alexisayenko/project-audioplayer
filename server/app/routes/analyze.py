@@ -22,7 +22,7 @@ def store_bpm(uid: str, video_id: str, value: float) -> dict[str, Any]:
         song["bpm"] = round(value)
         song["updated_at"] = library.now_utc()
         deps.save_songs(uid, songs)
-        return library.public_song(song, deps.user_audio_root(uid))
+        return deps.public_song(uid, song)
 
 
 @router.post("/songs/{video_id}/bpm/detect", responses=deps.responses(404, 422))

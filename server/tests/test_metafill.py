@@ -38,7 +38,7 @@ def wait(uid):
 
 def bare(uid, *ids):
     for v in ids:
-        edit(uid, v, album=None, released=None, tags=[])
+        edit(uid, v, albums=[], releaseYear=None, tags=[])
 
 
 def test_anonymous_is_refused(client):
@@ -67,15 +67,15 @@ def test_candidates_need_audio_gaps_and_no_stamp(client):
 def test_run_fills_only_empty_fields(client, monkeypatch):
     add(client, VID)
     bare(OWNER_UID, VID)
-    edit(OWNER_UID, VID, album="Mine", tags=["genre:jazz"])
+    edit(OWNER_UID, VID, albums=["Mine"], tags=["genre:jazz"])
     monkeypatch.setattr(metafill, "_fetch", lambda s: RESP)
     assert client.post(URL, headers=H).status_code == 202
     job = wait(OWNER_UID)
     assert (job.state, job.updated, job.nothing, job.failed) == ("done", 1, 0, 0)
     s = song(OWNER_UID, VID)
-    assert s["album"] == "Mine"
-    assert s["released"] == 1999
-    assert {"genre:jazz", "genre:house", "country:fr", "decade:90s"} <= set(s["tags"])
+    assert s["albums"] == ["Mine"]
+    assert s["releaseYear"] == 1999
+    assert s["tags"] == ["genre:jazz", "genre:house"]
     assert s["wikipedia_album"].endswith("/Found")
     assert s["musicbrainz_url"].startswith("https://musicbrainz.org/")
     assert s["metadata_checked_at"]
@@ -152,14 +152,25 @@ def test_other_user_gets_busy_and_isolation(multi, monkeypatch):
     assert (busy.status_code, busy.json()["error"]) == (409, "metadata_busy")
     gate.set()
     wait(ua)
-    assert song(ub, VID2)["album"] is None
+    assert song(ub, VID2)["albums"] == []
 
 
 def test_apply_respects_caps_and_blank_values():
-    s = {"album": "  ", "released": None, "tags": [f"genre:g{i}" for i in range(12)] + ["country:de"]}
-    changed = metafill.apply(s, {"album": "X", "year": 2001, "tags": ["genre:new", "country:fr"]})
-    assert changed and s["album"] == "X" and s["released"] == 2001
-    assert "genre:new" not in s["tags"] and "country:fr" not in s["tags"]
+    s = {"mainArtists": ["A"], "albums": [], "releaseYear": None, "tags": [f"genre:g{i}" for i in range(12)]}
+    table = [{"name": "A", "countries": ["de"]}]
+    changed = metafill.apply(s, {"album": "X", "year": 2001, "tags": ["genre:new", "country:fr"]}, table)
+    assert changed and s["albums"] == ["X"] and s["releaseYear"] == 2001
+    assert "genre:new" not in s["tags"]
+    assert table == [{"name": "A", "countries": ["de"]}]
+
+
+def test_apply_fills_the_country_of_a_single_main_artist_without_one():
+    s = {"mainArtists": ["A"], "albums": ["x"], "releaseYear": 1990, "tags": ["genre:house"]}
+    table = [{"name": "A", "countries": []}]
+    assert metafill.apply(s, {"tags": ["country:fr", "country:de"]}, table)
+    assert table == [{"name": "A", "countries": ["fr"]}]
+    two = {"mainArtists": ["A", "B"], "albums": ["x"], "releaseYear": 1990, "tags": ["genre:house"]}
+    assert not metafill.apply(two, {"tags": ["country:fr"]}, [])
 
 
 def test_fetch_builds_sources_and_links(monkeypatch):

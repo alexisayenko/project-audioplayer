@@ -29,7 +29,7 @@
    "musicbrainzURL": "String?", "addedAt": "Date?", "sources": "[SongSource]?", "onServer": "Bool?", "localOnly": "Bool?"
   }
  },
- "always_present": ["id", "title", "artist", "remixer", "year", "remix_year", "artists", "featured", "released", "tags", "sources", "audio_state"],
+ "always_present": ["id", "title", "artist", "remixer", "year", "remix_year", "album", "mainArtists", "featuredArtists", "releaseYear", "albums", "genres", "tags", "sources", "audio_state"],
  "requests": {
   "add": {"url": "https://youtu.be/dQw4w9WgXcQ",
           "metadata": {"title": "Song", "artist": "Band", "album": "", "remixer": null, "year": null, "wikipedia_song": null, "wikipedia_artist": null, "musicbrainz_url": null},

@@ -18,10 +18,10 @@ from .ratelimit import KeyedWindow
 OWNER_LABEL = "Alex"
 LAN_NETS = tuple(ipaddress.ip_network(n) for n in ("10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "fc00::/7"))
 MB = 1024 * 1024
-READ_PATHS = frozenset({"/library", "/tags", "/genres/graph", "/genres/vocabulary", "/catalog", "/me"})
+READ_PATHS = frozenset({"/library", "/artists", "/tags", "/genres/graph", "/genres/vocabulary", "/catalog", "/me"})
 READ_PREFIXES = ("/files/", "/covers/")
 SONG_KEYS = frozenset({
-    "id", "source", "title", "artists", "featured", "released", "version", "artist", "album", "remixer", "year", "remix_year", "tags", "bpm", "duration",
+    "id", "source", "title", "mainArtists", "featuredArtists", "releaseYear", "albums", "genres", "version", "artist", "album", "remixer", "year", "remix_year", "tags", "bpm", "duration",
     "source_url", "musicbrainz_url", "discogs_url", "spotify_url", "wikipedia_song", "wikipedia_artist", "wikipedia_album", "sources",
     "updated_at", "cover", "cover_v", "added_at", "audio_state",
 })
