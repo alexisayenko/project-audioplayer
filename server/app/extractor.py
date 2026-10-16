@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 import subprocess
+from datetime import UTC, datetime
 from pathlib import Path
 from collections.abc import Callable
 from typing import Any
@@ -97,6 +98,20 @@ def _year(info: dict[str, Any]) -> int | None:
     return timeutil.valid_year(int(date[:4])) if date[:4].isdigit() else None
 
 
+def _published_year(info: dict[str, Any]) -> int | None:
+    """Year the platform shows for the upload (`upload_date`, else the created `timestamp`); never a release date."""
+    date = str(info.get("upload_date") or "")
+    if date[:4].isdigit():
+        return timeutil.valid_year(int(date[:4]))
+    stamp = info.get("timestamp")
+    if isinstance(stamp, (int, float)) and not isinstance(stamp, bool):
+        try:
+            return timeutil.valid_year(datetime.fromtimestamp(stamp, UTC).year)
+        except (OverflowError, OSError, ValueError):
+            return None
+    return None
+
+
 def suggest_tags(info: dict[str, Any]) -> list[str]:
     """yt-dlp's real `genre` value -> suggested `genre:` tags."""
     raw = info.get("genre")
@@ -151,6 +166,7 @@ def soundcloud_probe(url: str) -> dict[str, Any]:
         "album": info.get("album"),
         "remixer": remixer,
         "year": _year({k: info.get(k) for k in ("release_year", "release_date")}),
+        "published_year": _published_year(info),
         "tags": suggest_tags({**info, "genre": info.get("genre") or info.get("genres")}),
         "duration": info.get("duration"),
         "thumbnail": _artwork_of(info),
@@ -176,6 +192,7 @@ def preview(video_id: str) -> dict[str, Any]:
         "album": info.get("album"),
         "remixer": remixer,
         "year": _year(info),
+        "published_year": _published_year(info),
         "tags": suggest_tags(info),
         "duration": info.get("duration"),
         "thumbnail": cover_url(video_id),

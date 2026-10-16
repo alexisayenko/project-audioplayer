@@ -312,3 +312,19 @@ def test_fetch_cover_writes_the_file_and_refuses_unknown_hosts(monkeypatch, tmp_
 ])
 def test_error_code(msg, code):
     assert extractor.error_code(Exception(msg)) == code
+
+
+@pytest.mark.parametrize(
+    "info,expected",
+    [
+        ({"upload_date": "20140708"}, 2014),
+        ({"upload_date": "20140708", "release_year": 2001}, 2014),
+        ({"timestamp": 1405000000}, 2014),
+        ({"upload_date": "18500101"}, None),
+        ({"timestamp": True}, None),
+        ({"timestamp": 10**30}, None),
+        ({}, None),
+    ],
+)
+def test_published_year_is_the_platform_upload_year(info, expected):
+    assert extractor._published_year(info) == expected

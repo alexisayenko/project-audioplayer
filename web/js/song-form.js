@@ -15,6 +15,7 @@ import { cleanTitleEx } from './title-clean.js';
 import { titleCleaner } from './song-form-title.js';
 import { bpmRow } from './song-form-bpm.js';
 import { unknownGenre } from './genre-vocab.js';
+import { planRemixYear, validYear } from './remix-year.js';
 
 export function songForm({ mode = 'add', song = {}, source = null, onChange = null } = {}) {
   const isAdd = mode === 'add';
@@ -34,6 +35,27 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
   const genres = chipField('genre', editor);
   const countries = chipField('country', editor);
   const wiki = wikiFields({ song: initial.wikipedia_song, artist: initial.wikipedia_artist, album: initial.wikipedia_album });
+
+  let pubYear = validYear(initial.published_year);
+  let specYear = null;
+  let remixAuto = false;
+  let remixTouched = false;
+  const syncRemixYear = () => {
+    if (remixTouched) return;
+    const plan = planRemixYear({ remixer: f.remixer.value, current: f.remixYear.value, auto: remixAuto, published: pubYear, specific: specYear });
+    remixAuto = plan.auto;
+    f.remixYear.classList.toggle('suggested', remixAuto);
+    f.remixYear.title = remixAuto ? 'Suggested from the YouTube or SoundCloud publish date; type a year to replace it' : '';
+    if (plan.value !== f.remixYear.value) f.remixYear.value = plan.value;
+  };
+  f.remixYear.addEventListener('input', () => {
+    remixTouched = true;
+    remixAuto = false;
+    f.remixYear.classList.remove('suggested');
+    f.remixYear.title = '';
+  });
+  f.remixer.addEventListener('input', syncRemixYear);
+  syncRemixYear();
 
   let gen = 0;
   const pending = new Set();
@@ -140,14 +162,19 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
     paintHint();
   };
   const applyMeta = (resp) => {
-    const plan = planMetadata(resp, { album: f.album.value, year: f.year.value, tags: editor.peek(), wikipedia_album: wiki.values().wikipedia_album });
+    const plan = planMetadata(resp, { album: f.album.value, year: f.year.value, tags: editor.peek(), ...wiki.values() });
     if (plan.album != null) f.album.value = plan.album;
     if (plan.year != null) {
       f.year.value = plan.year;
       f.year.dispatchEvent(new Event('input', { bubbles: true }));
     }
     if (plan.tags.length) editor.addTags(plan.tags);
+    if (plan.wikipedia_song) wiki.set({ song: plan.wikipedia_song });
+    if (plan.wikipedia_artist) wiki.set({ artist: plan.wikipedia_artist });
     if (plan.wikipedia_album) wiki.set({ album: plan.wikipedia_album });
+    if (validYear(resp?.published_year)) pubYear = resp.published_year;
+    specYear = validYear(resp?.remix_year);
+    syncRemixYear();
     f.album.dispatchEvent(new Event('input', { bubbles: true }));
     metaMsg.textContent = statusText(plan);
   };
@@ -247,7 +274,12 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
   const setValues = (p = {}) => {
     for (const k of ['title', 'artist', 'remixer', 'album']) if (p[k] !== undefined) f[k].value = p[k] ?? '';
     if (p.year !== undefined) f.year.value = p.year ?? '';
-    if (p.remix_year !== undefined) f.remixYear.value = p.remix_year ?? '';
+    if (p.remix_year !== undefined) {
+      f.remixYear.value = p.remix_year ?? '';
+      remixAuto = false;
+      f.remixYear.classList.remove('suggested');
+      f.remixYear.title = '';
+    }
     wiki.set({ song: p.wikipedia_song, artist: p.wikipedia_artist, album: p.wikipedia_album });
     paintIcons();
     emit();
@@ -278,6 +310,10 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
       tc.clearRestored();
       tc.paintCleaned(first.removed);
       setValues({ title: startTitle, artist: initial.artist || '', remixer: initial.remixer || '', album: initial.album || '', year: initial.year ?? '', remix_year: initial.remix_year ?? '', wikipedia_song: initial.wikipedia_song || '', wikipedia_artist: initial.wikipedia_artist || '', wikipedia_album: initial.wikipedia_album || '' });
+      pubYear = validYear(initial.published_year);
+      specYear = null;
+      remixTouched = false;
+      syncRemixYear();
     },
     destroy() {
       abortAll();

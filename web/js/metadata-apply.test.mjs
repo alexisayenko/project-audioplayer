@@ -71,3 +71,11 @@ test('planMetadata fills an empty wikipedia_album link only from an https link',
   assert.equal(planMetadata(r, { album: 'A', year: '', tags: [], wikipedia_album: 'https://en.wikipedia.org/wiki/Mine' }).wikipedia_album, undefined);
   assert.equal(planMetadata({ wikipedia_album: 'javascript:x' }, { album: '', year: '', tags: [] }).wikipedia_album, undefined);
 });
+
+test('planMetadata fills empty song and band wikipedia links only', () => {
+  const r = { wikipedia_song: 'https://en.wikipedia.org/wiki/What_Is_Love', wikipedia_artist: 'https://en.wikipedia.org/wiki/Haddaway' };
+  const p = planMetadata(r, { album: '', year: '', tags: [], wikipedia_song: '', wikipedia_artist: 'https://en.wikipedia.org/wiki/Mine' });
+  assert.equal(p.wikipedia_song, r.wikipedia_song);
+  assert.equal(p.wikipedia_artist, undefined);
+  assert.equal(p.status, 'filled');
+});

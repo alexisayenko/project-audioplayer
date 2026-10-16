@@ -663,6 +663,7 @@ body[data-route="playback"] main, body[data-route="playback"] .mini { display: n
 .remix-row > .field:first-child { flex: 1 1 200px; min-width: 0; }
 .remix-row > .field:last-child { flex: 0 0 110px; }
 @media (max-width: 479px) { .remix-row > .field:last-child { flex: 1 1 100%; margin-top: var(--space-3); } }
+.remix-row input.suggested { border-style: dashed; font-style: italic; }
 .add-fields > .t-caption { margin-top: var(--space-2); }
 .add-fields > .t-caption:empty { display: none; }
 .add-fields > .field, .add-fields > .grid2 { margin-top: var(--space-3); }
