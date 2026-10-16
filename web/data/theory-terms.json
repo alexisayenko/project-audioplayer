@@ -1,0 +1,17 @@
+[
+  {
+    "id": "british-invasion",
+    "term": "British Invasion",
+    "description": "The mid-1960s wave of British rock and pop acts, beginning with the Beatles' arrival in the United States in 1964, that became hugely popular there and reshaped American popular music."
+  },
+  {
+    "id": "drum-machine",
+    "term": "Drum machine",
+    "description": "An electronic instrument that plays back or generates drum and percussion sounds and patterns, which are programmed or sequenced. It has been common in electronic, pop and hip hop since the 1980s."
+  },
+  {
+    "id": "syncopation",
+    "term": "Syncopation",
+    "description": "A rhythm that stresses weak beats or the off-beats between the main pulses, or leaves a strong beat silent, so the beat feels displaced and bouncy."
+  }
+]

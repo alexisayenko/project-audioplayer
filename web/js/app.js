@@ -15,12 +15,13 @@ import { renderGenres } from './genres.js';
 import { renderGenresRework } from './genres-rework.js';
 import { renderPlaylists } from './playlists.js';
 import { renderStats } from './stats.js';
+import { renderTheory } from './theory.js';
 import { loadCollapsed, saveCollapsed } from './sidebar-state.js';
 import { SYNC_POLL_MS } from './constants.js';
 
 const player = document.getElementById('player');
 const renderPlayback = () => { player.hidden = false; return () => { player.hidden = true; }; };
-const routes = { library: renderLibrary, playback: renderPlayback, playlists: renderPlaylists, genres: renderGenres, 'genres-rework': renderGenresRework, stats: renderStats, settings: renderSettings };
+const routes = { library: renderLibrary, playback: renderPlayback, playlists: renderPlaylists, genres: renderGenres, 'genres-rework': renderGenresRework, stats: renderStats, theory: renderTheory, settings: renderSettings };
 const view = document.getElementById('view');
 let cleanup = null;
 

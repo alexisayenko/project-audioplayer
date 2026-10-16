@@ -1,0 +1,4 @@
+.th-list { display: grid; gap: var(--space-3); margin: 0; padding: 0; }
+.th-item { margin: 0; }
+.th-item dt { color: var(--ink); margin: 0; }
+.th-item dd { color: var(--ink-muted); margin: 0; overflow-wrap: anywhere; }

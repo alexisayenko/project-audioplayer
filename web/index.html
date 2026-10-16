@@ -15,6 +15,7 @@
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="genres.css">
 <link rel="stylesheet" href="stats.css">
+<link rel="stylesheet" href="theory.css">
 <link rel="stylesheet" href="viz.css">
 <link rel="stylesheet" href="viz-synth.css">
 </head>
@@ -24,12 +25,13 @@
   <button class="side-toggle" id="side-toggle" type="button" aria-expanded="true" aria-label="Collapse sidebar" title="Collapse sidebar"><span data-icon="chevronLeft" aria-hidden="true"></span></button>
   <div class="brand"><span class="brand-lockup"><span class="brand-mark"><span data-icon="mark" aria-hidden="true"></span></span><span class="brand-name">Electrophone</span></span><span class="brand-sub t-caption">Offline music player</span></div>
   <nav id="nav" aria-label="Main">
-    <a href="#/library" data-route="library" title="Library"><span data-icon="library" aria-hidden="true"></span><span class="nav-label">Library</span></a>
-    <a href="#/playlists" data-route="playlists" title="Playlists"><span data-icon="playlist" aria-hidden="true"></span><span class="nav-label">Playlists</span></a>
     <a href="#/playback" data-route="playback" title="Playback"><span data-icon="playOutline" aria-hidden="true"></span><span class="nav-label">Playback</span></a>
+    <a href="#/playlists" data-route="playlists" title="Playlists"><span data-icon="playlist" aria-hidden="true"></span><span class="nav-label">Playlists</span></a>
+    <a href="#/library" data-route="library" title="Library"><span data-icon="library" aria-hidden="true"></span><span class="nav-label">Library</span></a>
     <a href="#/genres" data-route="genres" title="Genres map"><span data-icon="genresMap" aria-hidden="true"></span><span class="nav-label">Genres map</span></a>
     <a href="#/genres-rework" data-route="genres-rework" title="Genres map rework"><span data-icon="genresMapRework" aria-hidden="true"></span><span class="nav-label">Genres map rework</span></a>
     <a href="#/stats" data-route="stats" title="Song stats"><span data-icon="stats" aria-hidden="true"></span><span class="nav-label">Song stats</span></a>
+    <a href="#/theory" data-route="theory" title="Music theory"><span data-icon="theory" aria-hidden="true"></span><span class="nav-label">Music theory</span></a>
     <a href="#/settings" data-route="settings" title="Settings"><span data-icon="settings" aria-hidden="true"></span><span class="nav-label">Settings</span></a>
   </nav>
   <output class="server t-caption"><span class="led" id="server-led"></span><span id="server-text">Server</span></output>
@@ -60,23 +62,7 @@
       </div>
       <output class="dl-note" id="player-dl" hidden><span class="t-subhead" id="player-dl-text"></span><button class="btn outline small" id="player-dl-btn" type="button" hidden>Download</button></output>
       <div class="pb-actions"><span class="pb-svc" id="p-svc" hidden></span><button class="icon round" id="p-share" type="button" title="Share link" aria-label="Share link" hidden></button><button class="icon round" id="p-download" type="button" title="Download" aria-label="Download" hidden></button><button class="icon round" id="p-view" type="button" title="Song info" aria-label="Song info" hidden></button><button class="icon round" id="p-viz" type="button" aria-pressed="false" aria-label="Visualizer" title="Visualizer (V)"></button></div>
-      <div class="pb-progress">
-        <div id="scrub" class="scrubber" role="slider" tabindex="-1" aria-label="Seek" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0" aria-valuetext="0:00 of 0:00" aria-disabled="true"><span class="scrub-rail"><span class="scrub-fill"></span></span><span class="scrub-thumb"></span><span class="scrub-bubble" aria-hidden="true">0:00</span></div>
-        <div class="times t-time"><span id="t-cur">0:00</span><span id="t-dur">-0:00</span></div>
-      </div>
       <div class="pb-controls">
-        <fieldset class="tray" aria-label="Transport">
-          <button class="key ghost toggle" id="p-shuffle" type="button" aria-pressed="false" aria-label="Shuffle: off"></button>
-          <button class="key wide" id="p-prev" type="button" aria-label="Previous song"></button>
-          <button class="key lit" id="p-play" type="button" aria-label="Play"></button>
-          <button class="key wide" id="p-next" type="button" aria-label="Next song"></button>
-          <button class="key ghost toggle" id="p-repeat" type="button" aria-pressed="false" aria-label="Repeat: off"></button>
-        </fieldset>
-        <div class="volume">
-          <button class="key ghost" id="p-mute" type="button" aria-pressed="false" aria-label="Mute" title="Mute"></button>
-          <input type="range" id="p-volume" class="slider" min="0" max="100" value="100" step="1" aria-label="Volume">
-        </div>
-        <div class="viz-switch" id="p-viz-switch" hidden></div>
         <span class="viz-sr" id="viz-live" role="status" aria-live="polite"></span>
       </div>
       <div class="now" id="details-body" hidden>
@@ -121,6 +107,7 @@
     <span class="t-time" id="mini-time">0:00 / 0:00</span>
     <div id="mini-scrub" class="scrubber mini-progress" role="slider" tabindex="-1" aria-label="Seek" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0" aria-valuetext="0:00 of 0:00" aria-disabled="true"><span class="scrub-rail"><span class="scrub-fill"></span></span><span class="scrub-thumb"></span><span class="scrub-bubble" aria-hidden="true">0:00</span></div>
     <input type="range" id="mini-volume" class="slider" min="0" max="100" value="100" step="1" aria-label="Volume">
+    <div class="viz-switch mini-viz" id="mini-viz-switch" hidden></div>
   </div>
 </section>
 
