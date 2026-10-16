@@ -46,6 +46,8 @@ sudo systemctl restart audioplayer
 
 Then repeat the checklist below. To return to `main` later: `git checkout main && git pull --ff-only`. Data is not rolled back by a code rollback: library history is in the data repos, restore from a bundle in `/var/backups/audioplayer-<ts>/` only if a deploy damaged the data clone.
 
+Credits migration (DATA-125): the first start of the structured-credits build rewrites every `library.json` (the legacy `artist`, `remixer`, `remix_year` and `year` keys become `artists`, `featured`, `released`, `version`; the original strings stay in `raw`) after copying the old file to `<data repo>/backups-credits/`. An older build does not read the new keys: songs would show no artist or year, and saving from it writes legacy keys over the structure. Do not roll the code back across this deploy without restoring each `library.json` from `backups-credits/` (losing later edits); prefer a forward fix.
+
 ## Verify
 
 1. `scripts/deploy.sh` ends with the new short SHA and `web index: 200`.
