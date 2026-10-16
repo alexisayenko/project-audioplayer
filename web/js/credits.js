@@ -8,7 +8,7 @@ export const KINDS = ['remix', 'live', 'acoustic', 'extended', 'instrumental', '
 
 export const ofNames = (v) => (Array.isArray(v) ? names(v) : text(v) ? [text(v)] : []);
 
-export const isStructured = (song) => Array.isArray(song?.artists);
+export const isStructured = (song) => Array.isArray(song?.mainArtists);
 
 export function joinNames(list) {
   const n = names(list);
@@ -28,7 +28,7 @@ function versionLabel(song, title) {
   const seen = norm(title);
   const name = text(v.name);
   if (name) return splitTokens(name).filter((p) => !hidden(seen, p)).join(', ');
-  const kind = text(v.kind).toLowerCase();
+  const kind = text(v.type).toLowerCase();
   if (!kind || kind === 'other' || hidden(seen, kind)) return '';
   return kind;
 }
@@ -41,13 +41,13 @@ export function creditParts(song) {
     return { title, remix, artists: [], featured: [], version: null, structured: false };
   }
   const version = song.version && typeof song.version === 'object' ? song.version : null;
-  return { title, remix: versionLabel(song, title), artists: names(song.artists), featured: names(song.featured), version, structured: true };
+  return { title, remix: versionLabel(song, title), artists: names(song.mainArtists), featured: names(song.featuredArtists), version, structured: true };
 }
 
 export function artistLine(song) {
   if (!isStructured(song)) return text(song?.artist);
-  const main = joinNames(song.artists);
-  const feat = joinNames(song.featured);
+  const main = joinNames(song.mainArtists);
+  const feat = joinNames(song.featuredArtists);
   if (!feat) return main;
   return main ? `${main} feat. ${feat}` : `feat. ${feat}`;
 }
@@ -73,7 +73,7 @@ export function tooltipLine(song) {
 export function versionTooltip(song) {
   const { remix, version, structured } = creditParts(song);
   if (!remix) return '';
-  const year = structured ? version?.year : song?.remix_year;
+  const year = structured ? version?.releaseYear : song?.remix_year;
   return Number.isInteger(year) ? `${remix} (${year})` : remix;
 }
 
@@ -91,13 +91,15 @@ export function titleNodes(song, titleClass = 'ttl', remixClass = 'rmx') {
   return [a, document.createTextNode(' '), b];
 }
 
+export const albumOf = (song) => text(Array.isArray(song?.albums) ? song.albums[0] : song?.album);
+
 export function releasedYear(song) {
-  if (Number.isInteger(song?.released)) return song.released;
+  if (Number.isInteger(song?.releaseYear)) return song.releaseYear;
   return song?.year ?? null;
 }
 
 export function versionYear(song) {
-  const y = song?.version?.year ?? song?.remix_year;
+  const y = song?.version?.releaseYear ?? song?.version?.year ?? song?.remix_year;
   return Number.isInteger(y) ? y : null;
 }
 
@@ -122,12 +124,12 @@ export function detailsLines(song) {
   const v = song?.version;
   if (isStructured(song) && v && typeof v === 'object') {
     const add = (label, value) => { if (value) out.push({ label, value }); };
-    add('Version', KIND_LABEL(text(v.kind).toLowerCase()));
+    add('Version', KIND_LABEL(text(v.type).toLowerCase()));
     add('Version name', text(v.name));
-    add('Remixed / mixed by', joinNames(v.by));
-    add('Version year', Number.isInteger(v.year) ? String(v.year) : '');
-    const kind = text(v.kind).toLowerCase();
-    add(kind === 'mashup' ? 'Mashup of' : 'Cover of', ofNames(v.of).join(', '));
+    add('Remixed / mixed by', joinNames(v.artists));
+    add('Version year', Number.isInteger(v.releaseYear) ? String(v.releaseYear) : '');
+    const kind = text(v.type).toLowerCase();
+    add(kind === 'mashup' ? 'Mashup of' : 'Cover of', ofNames(v.originalArtists).join(', '));
   }
   const year = releasedYear(song);
   if (Number.isInteger(year)) out.push({ label: 'First released', value: String(year) });
@@ -137,7 +139,7 @@ export function detailsLines(song) {
 export function sortKey(song, key) {
   const t = text(song?.title).toLocaleLowerCase();
   if (key !== 'artist') return [t];
-  const a = isStructured(song) ? text(song.artists?.[0]) : text(song?.artist);
+  const a = isStructured(song) ? text(song.mainArtists?.[0]) : text(song?.artist);
   return [a.toLocaleLowerCase(), t];
 }
 
@@ -152,7 +154,7 @@ export function compareKeys(a, b) {
 export function searchText(song, extra = []) {
   const v = song?.version;
   const parts = isStructured(song)
-    ? [song.title, ...names(song.artists), ...names(song.featured), v?.name, ...names(v?.by), ...ofNames(v?.of), song.album]
+    ? [song.title, ...names(song.mainArtists), ...names(song.featuredArtists), v?.name, ...names(v?.artists), ...ofNames(v?.originalArtists), ...names(song.albums)]
     : [song?.title, song?.artist, song?.album, song?.remixer];
   return [...parts, ...extra].join('\n').toLocaleLowerCase();
 }

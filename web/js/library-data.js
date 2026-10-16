@@ -1,6 +1,6 @@
 import { store } from './store.js';
 import { sortKey, compareKeys, displayYear, searchText } from './credits.js';
-import { visibleTags, canonicalTag, tagSearchText, categoryOf } from './tagname.js';
+import { visibleTags, canonicalTag, tagSearchText, categoryOf, withRuntimeDecade } from './tagname.js';
 
 const UNSET_KEYS = { genres: 'genre', years: 'decade', countries: 'country' };
 const UNSET_NOUN = { genres: 'genre', years: 'year', countries: 'country' };
@@ -14,7 +14,7 @@ export const isUnsetKey = (k) => Object.values(UNSET_KEYS).some((x) => k === `${
 export const unsetLabel = (catId) => `Songs with no ${UNSET_NOUN[catId] || 'value'}`;
 
 function hasValueIn(song, catId) {
-  return (song.tags || []).some((t) => categoryOf(canonicalTag(t).toLocaleLowerCase()) === catId);
+  return (withRuntimeDecade(song).tags || []).some((t) => categoryOf(canonicalTag(t).toLocaleLowerCase()) === catId);
 }
 
 export function unsetCount(catId, songs = store.songs) {
@@ -39,7 +39,7 @@ export const SORTS = {
 
 function matchesSelection(song, sel) {
   if (!sel.size) return true;
-  const mine = new Set((song.tags || []).map((t) => canonicalTag(t).toLocaleLowerCase()));
+  const mine = new Set((withRuntimeDecade(song).tags || []).map((t) => canonicalTag(t).toLocaleLowerCase()));
   const byCat = new Map();
   for (const t of sel) {
     const c = categoryOf(t);
@@ -53,7 +53,7 @@ export function visibleSongs(sel = prefs.sel) {
   const list = store.songs.filter((s) => {
     if (!matchesSelection(s, sel)) return false;
     if (!q) return true;
-    const hay = searchText(s, visibleTags(s.tags).map(tagSearchText));
+    const hay = searchText(s, visibleTags(withRuntimeDecade(s).tags).map(tagSearchText));
     return hay.includes(q);
   });
   return list.sort(SORTS[prefs.sort][1]);

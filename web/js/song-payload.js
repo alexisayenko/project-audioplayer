@@ -8,13 +8,13 @@ const yearKept = (raw, stored) => {
   const n = yearValue(raw);
   return n === null || yearOk(n) || n === stored;
 };
-const storedYears = (stored) => ({ released: stored?.released ?? stored?.year ?? null, version: stored?.version?.year ?? stored?.remix_year ?? null });
+const storedYears = (stored) => ({ released: stored?.releaseYear ?? stored?.year ?? null, version: stored?.version?.releaseYear ?? stored?.remix_year ?? null });
 
 export const yearMessage = () => `Enter a year from ${MIN_YEAR} to ${maxYear()}`;
 
 export function yearError(v, stored = {}) {
   const st = storedYears(stored);
-  return yearKept(v.released, st.released) && yearKept(v.version?.year, st.version) ? null : yearMessage();
+  return yearKept(v.releaseYear, st.released) && yearKept(v.version?.releaseYear, st.version) ? null : yearMessage();
 }
 
 const sourceUrl = (s) => {
@@ -45,23 +45,23 @@ const ofNames = (v) => (Array.isArray(v) ? names(v) : text(v) ? [text(v)] : []);
 
 function versionOf(v, storedYear) {
   const ver = v.version;
-  if (!ver || !ver.kind) return null;
+  if (!ver || !ver.type) return null;
   return {
-    kind: ver.kind,
+    type: ver.type,
     name: text(ver.name),
-    by: names(ver.by),
-    year: yearKept(ver.year, storedYear) ? yearValue(ver.year) : null,
-    ...(ver.kind === 'cover' || ver.kind === 'mashup' ? { of: ofNames(ver.of) } : {}),
+    artists: names(ver.artists),
+    releaseYear: yearKept(ver.releaseYear, storedYear) ? yearValue(ver.releaseYear) : null,
+    ...(ver.type === 'cover' || ver.type === 'mashup' ? { originalArtists: ofNames(ver.originalArtists) } : {}),
   };
 }
 
 function songFields(v, stored = {}) {
   return {
     title: v.title,
-    album: v.album,
-    artists: names(v.artists),
-    featured: names(v.featured),
-    ...(yearKept(v.released, storedYears(stored).released) ? { released: yearValue(v.released) } : {}),
+    albums: names(v.albums),
+    mainArtists: names(v.mainArtists),
+    featuredArtists: names(v.featuredArtists),
+    ...(yearKept(v.releaseYear, storedYears(stored).released) ? { releaseYear: yearValue(v.releaseYear) } : {}),
   };
 }
 
@@ -84,14 +84,16 @@ export function addBody(v) {
   return { ...songFields(v), ...(version ? { version } : {}), ...wikiFieldsOf(v) };
 }
 
+export const storedTags = (tags) => (Array.isArray(tags) ? tags.filter((t) => !/^(decade|lang):/i.test(t)) : tags);
+
 export function patchBody(v, stored = {}) {
-  return { ...songFields(v, stored), version: versionOf(v, storedYears(stored).version), tags: v.tags, ...wikiFieldsOf(v), ...sourceLinkChanges(v, stored) };
+  return { ...songFields(v, stored), version: versionOf(v, storedYears(stored).version), tags: storedTags(v.tags), ...wikiFieldsOf(v), ...sourceLinkChanges(v, stored) };
 }
 
 
 export function artistString(v) {
-  const main = joinNames(names(v.artists));
-  const feat = joinNames(names(v.featured));
+  const main = joinNames(names(v.mainArtists));
+  const feat = joinNames(names(v.featuredArtists));
   return feat ? `${main} feat. ${feat}`.trim() : main;
 }
 
@@ -99,7 +101,7 @@ export function metadataBody(v, sources) {
   return {
     title: String(v.title ?? '').trim(),
     artist: typeof v.artist === 'string' ? v.artist.trim() : artistString(v),
-    ...(v.version?.kind ? { version_kind: v.version.kind } : {}),
+    ...(v.version?.type ? { version_kind: v.version.type } : {}),
     sources: sourceList(sources),
     ...(v.wikipedia_song ? { wiki_song: v.wikipedia_song } : {}),
     ...(v.wikipedia_artist ? { wiki_artist: v.wikipedia_artist } : {}),

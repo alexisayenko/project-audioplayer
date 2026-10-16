@@ -31,7 +31,7 @@ test('editDialog opens modally with the song loaded; Save patches and refreshes'
   assert.equal(patch.url, '/songs/s1');
   const body = JSON.parse(patch.opts.body);
   assert.equal(body.title, 'Song');
-  assert.deepEqual(body.artists, ['Band']);
+  assert.deepEqual(body.mainArtists, ['Band']);
   assert.ok(body.tags.includes('rock'));
   assert.equal(dlg().open, false);
   assert.equal(document.getElementById('toast').textContent, 'Saved');

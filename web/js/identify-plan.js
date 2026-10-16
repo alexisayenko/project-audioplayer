@@ -41,4 +41,4 @@ export function linkPlan(res) {
   return Object.values(plan).some(Boolean) ? plan : null;
 }
 
-export const suggestedTags = (res) => (Array.isArray(res?.suggested_tags) ? res.suggested_tags : []).filter((t) => typeof t === 'string' && /^(genre|country|lang):\S/i.test(t));
+export const suggestedTags = (res) => (Array.isArray(res?.suggested_tags) ? res.suggested_tags : []).filter((t) => typeof t === 'string' && /^(genre|country):\S/i.test(t));
