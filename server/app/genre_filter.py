@@ -56,7 +56,8 @@ def _strip_music(value: str) -> str:
 
 DROP: frozenset[str] = frozenset(
     key(v) for v in ("mkj", "deb", "stadiumx", "sam smith", "dancin", "relaxed", "love song", "progressive music", "underground music", "dystopian music",
-        "comedy music", "comedy", "novelty music", "novelty song", "novelty", "popular", "underground", "club", "cyberpunk")
+        "comedy music", "comedy", "novelty music", "novelty song", "novelty", "popular", "underground", "club", "cyberpunk",
+        "aaron smith", "joris", "skrux", "medley", "music video", "party", "popcorn", "functional music", "event music", "party music", "west coast swing")
 )
 
 
@@ -116,7 +117,6 @@ for _a, _t in ALIASES.items():
 RETAGS: dict[str, str] = {
     "appalachian folk": "folk",
     "bard": "folk",
-    "west coast swing": "swing",
     "romantic": "classical",
     "psychedelic": "psychedelic rock",
     "nederpop": "pop",
@@ -125,6 +125,7 @@ RETAGS: dict[str, str] = {
     "indie": "indie rock",
     "dystopian": "darksynth",
     "progressive": "progressive rock",
+    "⚈⚈": "glitch hop",
 }
 PROGRESSIVE = "progressive"
 PROGRESSIVE_ELECTRONIC = "progressive house"

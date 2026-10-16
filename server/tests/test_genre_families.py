@@ -104,8 +104,8 @@ def test_alias_and_retag_targets_have_a_family():
 
     want = {"drum and bass": "Electronic", "electronic dance": "Electronic", "europop": "Pop", "euro disco": "Electronic", "euro house": "Electronic",
             "electropop": "Electronic", "progressive house": "Electronic", "trap": "Hip Hop", "disco": "Funk / Soul", "folk": "Folk, World, & Country",
-            "swing": "Jazz", "classical": "Classical", "psychedelic rock": "Rock", "pop": "Pop", "modern classical": "Classical",
-            "alternative rock": "Rock", "indie rock": "Rock", "progressive rock": "Rock"}
+            "classical": "Classical", "psychedelic rock": "Rock", "pop": "Pop", "modern classical": "Classical",
+            "alternative rock": "Rock", "indie rock": "Rock", "progressive rock": "Rock", "glitch hop": "Electronic"}
     targets = {*gf.ALIASES.values(), *gf.RETAGS.values(), gf.PROGRESSIVE_ELECTRONIC}
     assert set(want) <= targets
     for target in targets:

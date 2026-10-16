@@ -656,7 +656,7 @@ def test_migration_merges_dnb_retags_and_drops_idempotent(tmp_path, monkeypatch)
         {"id": "a", "title": "A", "tags": ["genre:dnb", "genre:drum and bass", "genre:drum & bass", "genre:liquid funk", "genre:edm"]},
         {"id": "b", "title": "B", "tags": ["genre:melodic techno", "genre:progressive"]},
         {"id": "c", "title": "C", "tags": ["genre:progressive", "genre:rock"]},
-        {"id": "d", "title": "D", "tags": ["genre:indie", "genre:indie rock", "genre:indie pop", "genre:popular", "genre:club", "genre:west coast swing", "x"]},
+        {"id": "d", "title": "D", "tags": ["genre:indie", "genre:indie rock", "genre:indie pop", "genre:popular", "genre:club", "genre:west coast swing", "genre:swing", "x"]},
         {"id": "e", "title": "E", "tags": ["genre:euro pop", "genre:eurohouse", "genre:euro disco", "genre:red disco", "genre:dystopian", "genre:cyberpunk", "genre:underground"]},
         {"id": "f", "title": "F", "tags": ["genre:orchestral", "genre:epic", "genre:romantic", "genre:bard", "genre:appalachian folk", "genre:psychedelic", "genre:alternative", "genre:nederpop"]},
     ]})

@@ -17,7 +17,7 @@ LIVE = json.loads((Path(__file__).parent / "fixtures" / "genre_live_tags.json").
 GENRES = ["Blues", "Brass & Military", "Children's", "Classical", "Electronic", "Folk, World, & Country", "Funk / Soul", "Hip Hop", "Jazz", "Latin", "Non-Music", "Pop", "Reggae", "Rock", "Stage & Screen"]
 
 # Tags of the live library (2026-10-16) that no rule maps: kept on the songs and listed in the review file (TAG-082).
-LIVE_UNMAPPABLE = {"aaron smith", "joris", "skrux", "⚈⚈", "medley", "music video", "party", "popcorn"}
+LIVE_UNMAPPABLE: set[str] = set()
 
 
 def names() -> set[str]:
@@ -178,9 +178,9 @@ def test_reject_unknown_genre_without_close_names_points_to_the_list():
 
 def test_reject_unknown_genre_passes_known_other_namespaces_and_stored_values():
     reject_unknown_genre(["genre:house", "country:lt", "mood:calm", "80s"])
-    reject_unknown_genre(["genre:joris"], ["genre:joris"])
+    reject_unknown_genre(["genre:zzqq"], ["genre:zzqq"])
     with pytest.raises(Problem):
-        reject_unknown_genre(["genre:joris", "genre:zzz"], ["genre:joris"])
+        reject_unknown_genre(["genre:zzqq", "genre:zzz"], ["genre:zzqq"])
 
 
 def test_create_rejects_unknown_genre_and_applies_nothing(client):
@@ -218,12 +218,12 @@ def test_patch_lets_a_stored_unmappable_tag_stay(client, tmp_path):
     add(client, audio=False, tags=["genre:house"])
     lib = ODIR(tmp_path) / "library.json"
     doc = json.loads(lib.read_text())
-    doc["songs"][0]["tags"].append("genre:joris")
+    doc["songs"][0]["tags"].append("genre:zzqq")
     lib.write_text(json.dumps(doc))
-    ok = client.patch(f"/songs/{VID}", json={"tags": ["genre:house", "genre:joris", "genre:trance"]}, headers=H)
+    ok = client.patch(f"/songs/{VID}", json={"tags": ["genre:house", "genre:zzqq", "genre:trance"]}, headers=H)
     assert ok.status_code == 200
-    assert ok.json()["tags"][:3] == ["genre:house", "genre:joris", "genre:trance"]
-    bad = client.patch(f"/songs/{VID}", json={"tags": ["genre:house", "genre:joris", "genre:zzzz"]}, headers=H)
+    assert ok.json()["tags"][:3] == ["genre:house", "genre:zzqq", "genre:trance"]
+    bad = client.patch(f"/songs/{VID}", json={"tags": ["genre:house", "genre:zzqq", "genre:zzzz"]}, headers=H)
     assert bad.status_code == 422 and bad.json()["value"] == "zzzz"
 
 
@@ -322,34 +322,34 @@ def _lib(root: Path, uid: str, songs: list[dict]) -> Path:
 
 def test_unmappable_tags_are_kept_and_reported_outside_the_synced_tree(datadir, caplog):
     songs = [
-        {"id": "a", "title": "A", "tags": ["genre:joris", "genre:house music", "x"]},
-        {"id": "b", "title": "B", "tags": ["genre:joris", "genre:skrux"]},
+        {"id": "a", "title": "A", "tags": ["genre:zzqq", "genre:house music", "x"]},
+        {"id": "b", "title": "B", "tags": ["genre:zzqq", "genre:qqzz"]},
         {"id": "c", "title": "C", "tags": ["genre:house"]},
     ]
     lib = _lib(datadir, "u1", songs)
     with caplog.at_level(logging.WARNING, logger="app.migrate_tags"):
         migrate_tags.run()
     stored = json.loads(lib.read_text())["songs"]
-    assert stored[0]["tags"] == ["genre:joris", "genre:house", "x"]
-    assert stored[1]["tags"] == ["genre:joris", "genre:skrux"]
+    assert stored[0]["tags"] == ["genre:zzqq", "genre:house", "x"]
+    assert stored[1]["tags"] == ["genre:zzqq", "genre:qqzz"]
     report = json.loads((datadir / "backups-genre-merge" / "review-u1.json").read_text())
     assert report == {"uid": "u1", "unmappable": [
-        {"tag": "joris", "songs": 2, "sample_ids": ["a", "b"]},
-        {"tag": "skrux", "songs": 1, "sample_ids": ["b"]},
+        {"tag": "zzqq", "songs": 2, "sample_ids": ["a", "b"]},
+        {"tag": "qqzz", "songs": 1, "sample_ids": ["b"]},
     ]}
     assert "2 unmappable genre tags" in caplog.text
     assert not list(datadir.glob("users/**/review-*"))
 
 
 def test_review_report_is_rewritten_only_when_it_changes(datadir):
-    lib = _lib(datadir, "u1", [{"id": "a", "title": "A", "tags": ["genre:joris"]}])
+    lib = _lib(datadir, "u1", [{"id": "a", "title": "A", "tags": ["genre:zzqq"]}])
     migrate_tags.run()
     target = datadir / "backups-genre-merge" / "review-u1.json"
     first = target.stat().st_mtime_ns
     text = target.read_text()
     migrate_tags.run()
     assert target.stat().st_mtime_ns == first and target.read_text() == text
-    assert json.loads(lib.read_text())["songs"][0]["tags"] == ["genre:joris"]
+    assert json.loads(lib.read_text())["songs"][0]["tags"] == ["genre:zzqq"]
     _lib(datadir, "u1", [{"id": "a", "title": "A", "tags": ["genre:house"]}])
     migrate_tags.run()
     assert json.loads(target.read_text()) == {"uid": "u1", "unmappable": []}
@@ -362,13 +362,13 @@ def test_review_report_is_empty_when_everything_maps(datadir):
 
 
 def test_migration_still_backs_up_before_rewriting_and_reports_after(datadir):
-    original = json.dumps({"settings": {}, "songs": [{"id": "a", "title": "A", "tags": ["genre:house music", "genre:joris"]}]})
+    original = json.dumps({"settings": {}, "songs": [{"id": "a", "title": "A", "tags": ["genre:house music", "genre:zzqq"]}]})
     d = datadir / "users" / "u3"
     d.mkdir(parents=True)
     (d / "library.json").write_text(original)
     assert migrate_tags.run() == 1
     assert (datadir / "backups-genre-merge" / "u3" / "library.json").read_text() == original
-    assert json.loads((datadir / "backups-genre-merge" / "review-u3.json").read_text())["unmappable"][0]["tag"] == "joris"
+    assert json.loads((datadir / "backups-genre-merge" / "review-u3.json").read_text())["unmappable"][0]["tag"] == "zzqq"
     assert migrate_tags.run() == 0
 
 
