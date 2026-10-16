@@ -11,14 +11,13 @@ import { ringModel } from './dl-progress.js';
 import { rowActions } from './row-actions.js';
 import { ringNode, lineNode } from './dl-ring.js';
 import { serviceIcon } from './service-icons.js';
-import { trackSub } from './track-sub.js';
 import { bpmLabel } from './bpm-label.js';
 import { genreText } from './genre-cell.js';
 import { toggleQueue } from './queue-toggle.js';
 import { coverModel, coverButton } from './row-cover.js';
 import { editDialog } from './edit-dialog.js';
 import { can } from './guest.js';
-import { displayString, titleNodes } from './display-title.js';
+import { tooltipLine, subtitle, titleLine, titleNodes } from './credits.js';
 import { marquee } from './marquee.js';
 
 function cover(s) {
@@ -40,7 +39,7 @@ function fetchAudio(s) {
 }
 
 function dlButton(s) {
-  return el('button', { class: 'row-dl', type: 'button', title: 'Download to the server', 'aria-label': `Download: ${displayString(s)}`, onclick: (e) => { e.stopPropagation(); fetchAudio(s); } }, icon('download', 'action'));
+  return el('button', { class: 'row-dl', type: 'button', title: 'Download to the server', 'aria-label': `Download: ${titleLine(s)}`, onclick: (e) => { e.stopPropagation(); fetchAudio(s); } }, icon('download', 'action'));
 }
 
 function bpmBadge(s) {
@@ -98,8 +97,8 @@ function durationContent(s, audio, link, dl) {
 }
 
 export function songRow(s, cur, flashId) {
-  const full = displayString(s);
-  const tip = s.artist ? `${full} - ${s.artist}` : full;
+  const full = titleLine(s);
+  const tip = tooltipLine(s);
   const audio = hasAudio(s);
   const queueable = audio || autoDownloadOn();
   const link = audio ? null : sourceLink(s);
@@ -116,7 +115,7 @@ export function songRow(s, cur, flashId) {
     coverCell(s, full, { audio, queueable, here, link }),
     el('div', { class: 'info' },
       el('div', { class: 'title-line' }, open),
-      trackSub(s) ? el('small', { class: 'sub t-subhead' }, trackSub(s)) : null),
+      subtitle(s) ? el('small', { class: 'sub t-subhead' }, subtitle(s)) : null),
     el('div', { class: 'c-genres t-subhead' }, bpmBadge(s), el('span', { class: 'g-txt', title: genres || null }, genres)),
     dur,
     pl,

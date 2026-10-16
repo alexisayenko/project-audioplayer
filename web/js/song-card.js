@@ -8,7 +8,8 @@ import { autodl, autoDownloadOn } from './autodl.js';
 import { statusText } from './dl-progress.js';
 import { downloadSong } from './download.js';
 import { editDialog } from './edit-dialog.js';
-import { displayTitle, subtitleString, titleNodes } from './display-title.js';
+import { creditParts, isStructured, subtitle, titleNodes, detailsLines } from './credits.js';
+import { icon } from './icons.js';
 import { bpmLabel } from './bpm-label.js';
 import { visibleTags, tagGroups, tagLabel } from './tagname.js';
 import { serviceIcons } from './service-icons.js';
@@ -27,14 +28,15 @@ export function cardTags(tags) {
 }
 
 export function cardModel(song, view) {
-  const { title, remix } = displayTitle(song);
+  const { title, remix } = creditParts(song);
   return {
     title,
     remix,
-    sub: subtitleString(song),
+    sub: subtitle(song),
     album: String(song?.album ?? '').trim(),
     groups: cardTags(song?.tags),
-    remixYear: Number.isInteger(song?.remix_year) ? `Remix year ${song.remix_year}` : '',
+    remixYear: !isStructured(song) && Number.isInteger(song?.remix_year) ? `Remix year ${song.remix_year}` : '',
+    details: detailsLines(song).map(({ label, value }) => (label === 'Cover of' ? `Cover of ${value}` : `${label}: ${value}`)),
     bpm: bpmLabel(song?.bpm),
     duration: song?.duration ? fmtTime(song.duration) : '',
     links: storedLinkStates(song),
@@ -48,11 +50,15 @@ export function playControl(song, { cur, playing, queueable }) {
   return { label: 'Play now', run: () => player.playNow(song.id) };
 }
 
-function coverBlock(song) {
-  const img = el('img', { class: 'cover card-cover', alt: '' });
-  if (song.cover) img.src = api.coverUrl(song.id, song.cover_v);
-  img.addEventListener('error', () => img.removeAttribute('src'));
-  return img;
+function headBlock(song, m) {
+  const title = el('h2', { id: 'song-card-title', class: 't-title' }, titleNodes(song));
+  const sub = m.sub ? el('p', { class: 'card-sub t-subhead' }, m.sub) : null;
+  const album = m.album ? el('p', { class: 'card-album muted t-subhead' }, m.album) : null;
+  if (!song.cover) return [el('div', { class: 'card-head' }, title, sub, album)];
+  const img = el('img', { class: 'cover card-cover', alt: '', src: api.coverUrl(song.id, song.cover_v) });
+  const art = el('div', { class: 'card-art' }, img, el('div', { class: 'cover-text' }, title, sub));
+  img.addEventListener('error', () => { img.removeAttribute('src'); art.classList.add('noart'); });
+  return [art, album ? el('div', { class: 'card-head' }, album) : null];
 }
 
 function tagBlock(groups) {
@@ -69,7 +75,7 @@ function linkBlock(links) {
   return row.node;
 }
 
-function actionRow(song, close) {
+function actionRow(song) {
   const audio = hasAudio(song);
   const queueable = audio || autoDownloadOn();
   const play = playControl(song, { cur: player.current, playing: player.playing, queueable });
@@ -78,32 +84,47 @@ function actionRow(song, close) {
   const link = sourceLink(song);
   const queueLabel = queued ? 'Remove from playlist' : 'Add to playlist';
   const btn = (label, run, cls = 'btn outline') => el('button', { class: cls, type: 'button', onclick: run }, label);
+  const ib = (label, name, run, cls = '') => el('button', { class: `icon round card-ic ${cls}`.trim(), type: 'button', title: label, 'aria-label': label, onclick: run }, icon(name, 'nav'));
+  const dl = audio && can('download') ? ib('Download', 'download', () => downloadSong(song))
+    : !audio && can('fetch') && (view.kind === 'none' || view.kind === 'failed') ? ib('Download to server', 'download', () => autodl.request([song.id], { front: true })) : null;
+  const icons = [
+    play ? ib(play.label, play.label === 'Pause' ? 'pause' : 'play', play.run, 'card-play') : null,
+    dl,
+    can('edit') ? ib('Edit', 'pencil', () => editDialog(song)) : null,
+  ].filter(Boolean);
   return el('div', { class: 'card-actions' },
-    play ? btn(play.label, play.run, 'btn primary glow') : null,
+    icons.length ? el('div', { class: 'card-icons' }, ...icons) : null,
     queueable ? btn(queueLabel, () => toggleQueue(song)) : null,
-    audio && can('download') ? btn('Download', () => downloadSong(song)) : null,
-    !audio && can('fetch') && (view.kind === 'none' || view.kind === 'failed') ? btn('Download to server', () => autodl.request([song.id], { front: true })) : null,
-    can('edit') ? btn('Edit', () => editDialog(song)) : null,
-    !audio && !can('fetch') && link ? btn(link.label, () => window.open(link.url, '_blank', 'noopener')) : null,
-    btn('Close', close, 'btn outline card-close'));
+    !audio && !can('fetch') && link ? btn(link.label, () => window.open(link.url, '_blank', 'noopener')) : null);
+}
+
+const SIDE_KEYS = ['country'];
+
+function sideBlock(m) {
+  const row = (label, ...vals) => el('div', { class: 'side-row' }, el('span', { class: 'group-name t-caption' }, label), el('span', { class: 'side-val t-caption' }, ...vals));
+  const tagRow = (g) => row(g.name, ...g.tags.map((t) => el('span', { class: 'tag ns t-caption', title: t.tag }, t.label)));
+  return el('div', { class: 'card-side' },
+    ...m.groups.filter((g) => SIDE_KEYS.includes(g.key)).map(tagRow),
+    m.bpm ? row('BPM', el('span', { class: 'bpm-badge', title: 'Beats per minute (estimated)' }, m.bpm, el('small', { 'aria-hidden': 'true' }, 'BPM'))) : null,
+    m.duration ? row('Time', m.duration) : null,
+    m.remixYear ? row('Remix year', el('span', { class: 'remix-year' }, m.remixYear)) : null,
+    row('Status', m.download));
 }
 
 function paint(dlg, song, close, m) {
+  const [art, head] = headBlock(song, m);
+  const side = sideBlock(m);
+  const rest = m.groups.filter((g) => g.key !== 'decade' && !SIDE_KEYS.includes(g.key));
   const parts = [
     el('span', { class: 'grab', 'aria-hidden': 'true' }),
-    coverBlock(song),
-    el('div', { class: 'card-head' },
-      el('h2', { id: 'song-card-title', class: 't-title' }, titleNodes(song)),
-      m.sub ? el('p', { class: 'card-sub t-subhead' }, m.sub) : null,
-      m.album ? el('p', { class: 'card-album muted t-subhead' }, m.album) : null),
-    tagBlock(m.groups),
-    el('p', { class: 'facts t-caption' },
-      m.bpm ? el('span', { class: 'bpm-badge', title: 'Beats per minute (estimated)' }, m.bpm, el('small', { 'aria-hidden': 'true' }, 'BPM')) : null,
-      m.duration ? el('span', {}, m.duration) : null,
-      m.remixYear ? el('span', { class: 'remix-year' }, m.remixYear) : null,
-      el('span', {}, m.download)),
+    el('div', { class: 'dlg-head card-bar' }, el('span'), el('button', { type: 'button', class: 'link-btn t-headline card-close', onclick: close }, 'Close')),
+    art ? el('div', { class: 'card-top' }, art, side) : null,
+    head,
+    art ? null : side,
+    tagBlock(rest),
+    m.details.length ? el('p', { class: 'facts t-caption card-details' }, ...m.details.map((d) => el('span', {}, d))) : null,
     linkBlock(m.links),
-    actionRow(song, close),
+    actionRow(song),
   ];
   dlg.replaceChildren(...parts.filter(Boolean));
 }
@@ -149,5 +170,5 @@ export function openSongCard(song, opener = null) {
   }, { once: true });
   render(true);
   if (!dlg.open) dlg.showModal();
-  dlg.querySelector('.card-actions button')?.focus();
+  (dlg.querySelector('.card-actions button') || dlg.querySelector('.card-close'))?.focus();
 }

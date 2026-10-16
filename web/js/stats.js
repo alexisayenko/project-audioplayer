@@ -3,7 +3,7 @@ import { store } from './store.js';
 import { player } from './player.js';
 import { el, toast, plural } from './dom.js';
 import { icon } from './icons.js';
-import { titleNodes, displayString } from './display-title.js';
+import { titleNodes, titleLine, artistLine } from './credits.js';
 import { storeGet, storeSet } from './storage.js';
 import { indexGraph } from './genre-data.js';
 import { songGenres } from './genre-playing.js';
@@ -78,7 +78,7 @@ export function renderStats(root) {
     onHover: (p, pos) => showTip(p, pos),
     onOpen: (p) => { void openSong(p.song, top); },
     onSelect: (ids) => setSelected(new Set(ids)),
-    onFocus: (p) => { live.textContent = `${displayString(p.song)}, ${p.song.artist || 'unknown artist'}, ${p.year}, ${p.bpm} BPM`; },
+    onFocus: (p) => { live.textContent = `${titleLine(p.song)}, ${artistLine(p.song) || 'unknown artist'}, ${p.year}, ${p.bpm} BPM`; },
     onView: () => syncReset(),
   });
 
@@ -108,7 +108,7 @@ export function renderStats(root) {
     if (!p) { tip.hidden = true; return; }
     tip.replaceChildren(
       el('b', {}, titleNodes(p.song)),
-      el('span', {}, p.song.artist || ''),
+      el('span', {}, artistLine(p.song)),
       el('span', { class: 'st-tipmeta' }, `${p.year} · ${p.bpm} BPM`),
       ...genreLines(p.song));
     const wide = top.clientWidth || 0;

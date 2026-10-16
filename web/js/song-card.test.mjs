@@ -18,7 +18,7 @@ const FULL = {
 const BARE = { id: 'n', title: 'Bare', file: null, audio_state: 'none', tags: [] };
 const publish = (songs) => { store.songs = songs; store.loaded = true; store.listeners.forEach((fn) => fn()); };
 const $ = (id) => document.getElementById(id);
-const names = (dlg) => dlg.querySelectorAll('.card-actions button').map((b) => b.textContent);
+const names = (dlg) => dlg.querySelectorAll('.card-actions button').map((b) => b.getAttribute('aria-label') || b.textContent);
 
 test('cardModel builds title, sub line, grouped tags, BPM, duration, links and download state', () => {
   const m = cardModel(FULL, { kind: 'none' });
@@ -71,7 +71,10 @@ test('the card opens read-only with links, actions and returns focus to the row 
   const hrefs = dlg.querySelectorAll('a.svc').map((a) => a.getAttribute('href'));
   assert.equal(hrefs.length, 3);
   assert.ok(dlg.querySelectorAll('a.svc').every((a) => a.getAttribute('target') === '_blank' && a.getAttribute('rel') === 'noopener'));
-  assert.deepEqual(names(dlg), ['Play now', 'Add to playlist', 'Download', 'Edit', 'Close']);
+  assert.deepEqual(names(dlg), ['Play now', 'Download', 'Edit', 'Add to playlist']);
+  assert.ok(dlg.querySelectorAll('.card-icons .icon').every((b) => b.getAttribute('aria-label') && b.title), 'icon buttons are labelled');
+  assert.equal(dlg.querySelector('.card-bar .card-close').textContent, 'Close');
+  assert.equal(dlg.querySelector('.card-actions .btn').textContent, 'Add to playlist', 'queue toggle stays a text button');
   assert.match(dlg.textContent, /Zed · 1999/);
   assert.equal(dlg.querySelector('.card-album').textContent, 'LP');
   assert.equal(store.listeners.size, before + 1);
@@ -121,7 +124,7 @@ test('Play now plays the song, the playlist button toggles, Edit hands over to t
   while (player.current) player.removeAt(0);
   openSongCard(FULL);
   const dlg = $('song-card');
-  const btn = (t) => dlg.querySelectorAll('.card-actions button').find((b) => b.textContent === t);
+  const btn = (t) => dlg.querySelectorAll('.card-actions button').find((b) => (b.getAttribute('aria-label') || b.textContent) === t);
   btn('Add to playlist').click();
   assert.equal(player.inQueue('a'), true);
   assert.ok(btn('Remove from playlist'), 'the card repaints after the toggle');
@@ -164,7 +167,7 @@ test('songs without audio get Download to server, not Download, and no Play when
   publish([BARE]);
   openSongCard(BARE);
   const dlg = $('song-card');
-  assert.deepEqual(names(dlg), ['Download to server', 'Edit', 'Close']);
+  assert.deepEqual(names(dlg), ['Download to server', 'Edit']);
   dlg.close();
 });
 
@@ -173,4 +176,33 @@ test('card shows a Remix year line only when present', () => {
   assert.equal(cardModel(FULL, { kind: 'none' }).remixYear, '');
   assert.equal(cardModel({ ...FULL, remix_year: null }, { kind: 'none' }).remixYear, '');
   assert.equal(cardModel({ ...FULL, remix_year: 2024 }, { kind: 'none' }).sub, 'Zed · 1999', 'sub line keeps the original year');
+});
+
+test('with a cover the title and the artist line sit inside the cover box; without one they follow as plain text', () => {
+  publish([FULL, BARE]);
+  openSongCard(FULL);
+  const dlg = $('song-card');
+  const art = dlg.querySelector('.card-art');
+  assert.ok(art.querySelector('img.card-cover'));
+  assert.equal(art.querySelector('.cover-text h2#song-card-title').textContent, 'Alpha (Kav)');
+  assert.equal(art.querySelector('.cover-text .card-sub').textContent, 'Zed · 1999');
+  assert.equal(dlg.querySelector('.card-album').textContent, 'LP');
+  assert.ok(!art.contains(dlg.querySelector('.card-album')));
+  dlg.close();
+  openSongCard(BARE);
+  assert.equal(dlg.querySelector('.card-art'), null);
+  assert.equal(dlg.querySelector('.card-head h2').textContent, 'Bare');
+  dlg.close();
+});
+
+test('the facts column sits beside the cover: decade, country, BPM, time and status', () => {
+  publish([FULL]);
+  openSongCard(FULL);
+  const dlg = $('song-card');
+  const top = dlg.querySelector('.card-top');
+  assert.ok(top.querySelector('.card-art') && top.querySelector('.card-side'));
+  const labels = top.querySelectorAll('.side-row .group-name').map((n) => n.textContent);
+  assert.deepEqual(labels, ['Country', 'BPM', 'Time', 'Status']);
+  assert.ok(!top.contains(dlg.querySelector('.card-tags')));
+  dlg.close();
 });

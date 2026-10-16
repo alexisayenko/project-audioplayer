@@ -1,4 +1,5 @@
 import { plural } from './dom.js';
+import { displayLine } from './credits.js';
 import { hasAudio } from './playable.js';
 import { LONG_SONG_SECONDS } from './constants.js';
 import { fmtTime } from './dom.js';
@@ -37,7 +38,7 @@ export function splitLong(songs) {
 export function longText(long, shown = 3) {
   const n = long.length;
   const head = long.slice(0, shown).map((s) => {
-    const name = [s.artist, s.title].filter(Boolean).join(' - ') || s.id;
+    const name = displayLine(s) || s.id;
     return `${name} (${Number(s.duration) > 0 ? fmtTime(s.duration) : 'unknown length'})`;
   }).join('; ');
   const more = n > shown ? `; and ${n - shown} more` : '';
@@ -98,7 +99,7 @@ export function runText(run, { running, pausedMinutes }) {
 export function failedList(run, songs) {
   return run.order.filter((id) => run.results[id].kind === 'failed').map((id) => {
     const s = songs.find((x) => x.id === id);
-    const name = s ? [s.artist, s.title].filter(Boolean).join(' - ') || id : id;
+    const name = s ? displayLine(s) || id : id;
     const why = run.results[id].error;
     return `${name} (${id})${why ? `: ${why}` : ''}`;
   });

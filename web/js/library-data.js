@@ -1,4 +1,5 @@
 import { store } from './store.js';
+import { sortKey, compareKeys, releasedYear, searchText } from './credits.js';
 import { visibleTags, canonicalTag, tagSearchText, categoryOf } from './tagname.js';
 
 const UNSET_KEYS = { genres: 'genre', years: 'decade', countries: 'country' };
@@ -28,15 +29,11 @@ export function filterByTags(tags) {
   prefs.sel = new Set(tags.map((t) => canonicalTag(t).toLocaleLowerCase()).filter((t) => have.has(t) || isUnsetKey(t)));
 }
 
-function cmp(a, b) {
-  return (a || '').localeCompare(b || '', undefined, { sensitivity: 'base' });
-}
-
 export const SORTS = {
   added: ['Recently added', (a, b) => (b.added_at || '').localeCompare(a.added_at || '')],
-  title: ['Title', (a, b) => cmp(a.title, b.title)],
-  artist: ['Artist', (a, b) => cmp(a.artist, b.artist) || cmp(a.title, b.title)],
-  year: ['Year', (a, b) => (b.year || 0) - (a.year || 0)],
+  title: ['Title', (a, b) => compareKeys(sortKey(a, 'title'), sortKey(b, 'title'))],
+  artist: ['Artist', (a, b) => compareKeys(sortKey(a, 'artist'), sortKey(b, 'artist'))],
+  year: ['Year', (a, b) => (releasedYear(b) || 0) - (releasedYear(a) || 0)],
   bpm: ['BPM', (a, b) => (a.bpm == null) - (b.bpm == null) || (a.bpm || 0) - (b.bpm || 0)],
 };
 
@@ -56,7 +53,7 @@ export function visibleSongs(sel = prefs.sel) {
   const list = store.songs.filter((s) => {
     if (!matchesSelection(s, sel)) return false;
     if (!q) return true;
-    const hay = [s.title, s.artist, s.album, s.remixer, ...visibleTags(s.tags).map(tagSearchText)].join('\n').toLocaleLowerCase();
+    const hay = searchText(s, visibleTags(s.tags).map(tagSearchText));
     return hay.includes(q);
   });
   return list.sort(SORTS[prefs.sort][1]);

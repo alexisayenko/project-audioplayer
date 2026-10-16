@@ -1,6 +1,6 @@
 import { el } from './dom.js';
 import { icon } from './icons.js';
-import { displayString, titleNodes } from './display-title.js';
+import { titleLine, artistLine, titleNodes } from './credits.js';
 import { decadeOf } from './stats-data.js';
 
 export const COLUMNS = [
@@ -10,9 +10,10 @@ export const COLUMNS = [
 const NUMERIC = new Set(['year', 'bpm', 'decade']);
 
 export function rowValue(song, key, familyOf) {
-  if (key === 'title') return displayString(song);
+  if (key === 'title') return titleLine(song);
   if (key === 'decade') return decadeOf(song.year);
   if (key === 'family') return familyOf?.(song) ?? '';
+  if (key === 'artist') return artistLine(song);
   return song[key] ?? '';
 }
 
@@ -39,7 +40,7 @@ export function renderTable(songs, { sort, onSort, onOpen, familyOf }) {
   }));
   const rows = sortRows(songs, sort.key, sort.dir, familyOf).map((s) => {
     const open = el('button', { class: 'st-open', type: 'button', onclick: () => onOpen(s) }, titleNodes(s));
-    return el('tr', { 'data-id': s.id }, el('td', {}, open), el('td', {}, s.artist || ''), el('td', {}, String(s.year)),
+    return el('tr', { 'data-id': s.id }, el('td', {}, open), el('td', {}, artistLine(s)), el('td', {}, String(s.year)),
       el('td', {}, String(s.bpm)), el('td', {}, decadeLabel(s)), el('td', {}, familyOf?.(s) ?? ''));
   });
   return el('table', { class: 'st-table t-caption' }, el('caption', { class: 'st-sr' }, 'Plotted songs'),
