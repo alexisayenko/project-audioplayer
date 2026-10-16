@@ -178,7 +178,7 @@ test('A - T (X Cover): evidence picks the reading, no evidence lists both and de
 });
 
 test('title first: "Title [X Remix] feat. Y - Artist" is read reversed', () => {
-  const want = { artists: ['Tommee Profitt'], featured: ['Fleurie'], title: 'In The End', version: { kind: 'remix', name: 'Mellen Gi Remix', by: ['Mellen Gi'] } };
+  const want = { mainArtists: ['Tommee Profitt'], featuredArtists: ['Fleurie'], title: 'In The End', version: { type: 'remix', name: 'Mellen Gi Remix', artists: ['Mellen Gi'] } };
   const t = 'In The End [Mellen Gi Remix] feat. Fleurie - Tommee Profitt';
   for (const s of [suggest('', t, '', { uploader: 'Tommee Profitt' }), suggest('', t, ''), suggest('Tommee Profitt', 'In The End feat. Fleurie - Tommee Profitt', 'Mellen Gi Remix', { uploader: 'Tommee Profitt' })]) {
     for (const k of Object.keys(want)) assert.deepEqual(s[k], want[k], k);
