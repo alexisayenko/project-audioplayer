@@ -433,9 +433,7 @@ dialog.sheet { border-radius: var(--radius-tray) var(--radius-tray) 0 0; margin:
 .card-dlg .svc-row { margin-bottom: var(--space-3); }
 .card-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .card-dlg .card-bar { margin-bottom: var(--space-2); }
-.card-dlg .card-icons { display: flex; gap: var(--space-4); width: 100%; }
-.card-dlg .card-ic { flex: 1 1 0; max-width: calc(var(--hit) * 2); width: auto; min-width: var(--hit); height: var(--hit); border-radius: var(--radius-key); background: var(--surface-key); color: var(--ink); box-shadow: var(--shadow-key); }
-.card-dlg .card-ic.card-play { background: var(--fill); color: var(--on-fill); }
+.card-dlg .card-icons { display: flex; flex-wrap: wrap; gap: var(--space-3); width: 100%; }
 .sheet .card-actions .btn { width: auto; flex: 1 1 40%; }
 .chip-groups { display: grid; gap: var(--space-3); }
 .chip-group { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }

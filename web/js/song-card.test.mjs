@@ -43,11 +43,9 @@ test('cardModel copes with missing fields', () => {
   assert.deepEqual(cardTags(undefined), []);
 });
 
-test('playControl: Play now, Play/Pause for the current song, none when not playable', () => {
-  assert.equal(playControl(FULL, { cur: null, playing: false, queueable: true }).label, 'Play now');
-  assert.equal(playControl(FULL, { cur: FULL, playing: true, queueable: true }).label, 'Pause');
-  assert.equal(playControl(FULL, { cur: FULL, playing: false, queueable: true }).label, 'Play');
-  assert.equal(playControl(BARE, { cur: null, playing: false, queueable: false }), null);
+test('playControl: only Play now, none when not playable', () => {
+  assert.equal(playControl(FULL, { queueable: true }).label, 'Play now');
+  assert.equal(playControl(BARE, { queueable: false }), null);
 });
 
 test('the card opens read-only with links, actions and returns focus to the row on Close', () => {
@@ -71,11 +69,12 @@ test('the card opens read-only with links, actions and returns focus to the row 
   const hrefs = dlg.querySelectorAll('a.svc').map((a) => a.getAttribute('href'));
   assert.equal(hrefs.length, 3);
   assert.ok(dlg.querySelectorAll('a.svc').every((a) => a.getAttribute('target') === '_blank' && a.getAttribute('rel') === 'noopener'));
-  assert.deepEqual(names(dlg), ['Play now', 'Download', 'Edit', 'Add to playlist']);
-  assert.ok(dlg.querySelectorAll('.card-icons .icon').every((b) => b.getAttribute('aria-label') && b.title), 'icon buttons are labelled');
+  assert.deepEqual(names(dlg), ['Play now', 'Share link', 'Download', 'Edit', 'Add to playlist']);
+  assert.ok(dlg.querySelectorAll('.card-icons button').every((b) => b.getAttribute('aria-label') && b.title), 'icon buttons are labelled');
   assert.equal(dlg.querySelector('.card-bar .card-close').textContent, 'Close');
-  assert.equal(dlg.querySelector('.card-actions .btn'), null, 'no text button while the song is not in the playlist');
-  assert.equal(dlg.querySelectorAll('.card-icons .icon').length, 4, 'Add to playlist is the fourth icon in the row');
+  assert.equal(dlg.querySelector('.card-actions .btn'), null, 'no text button in the action row');
+  assert.ok(dlg.querySelector('.card-icons .key.lit') && dlg.querySelector('.card-icons .icon.round'), 'Play now is a dock key, metadata actions are round');
+  assert.equal(dlg.querySelectorAll('.card-icons button').length, 5, 'all actions sit in one row');
   assert.match(dlg.textContent, /Zed · 1999/);
   assert.equal(dlg.querySelector('.card-album').textContent, 'LP');
   assert.equal(store.listeners.size, before + 1);
@@ -129,14 +128,14 @@ test('Play now plays the song, the playlist button toggles, Edit hands over to t
   btn('Add to playlist').click();
   assert.equal(player.inQueue('a'), true);
   assert.ok(btn('Remove from playlist'), 'the card repaints after the toggle');
-  assert.equal(btn('Add to playlist'), undefined, 'the Add icon gives way to the Remove text button');
-  assert.equal(btn('Remove from playlist').classList.contains('btn'), true, 'Remove stays a text button below the icon row');
-  assert.ok(btn('Play'), 'the first queued song becomes current, so the primary button resumes it');
-  btn('Play').click();
+  assert.equal(btn('Add to playlist'), undefined, 'the Add button gives way to the Remove button');
+  assert.ok(btn('Remove from playlist').classList.contains('icon'), 'Remove is a round icon button in the same row');
+  assert.equal(btn('Remove from playlist').title, 'Remove from playlist');
+  assert.equal(dlg.querySelector('.card-actions .btn'), null);
+  assert.equal(btn('Play'), undefined, 'no Play/Pause toggle on the card');
+  btn('Play now').click();
   assert.equal(player.playing, true);
-  assert.ok(btn('Pause'), 'the primary button shows Pause while the song plays');
-  btn('Pause').click();
-  assert.equal(player.playing, false);
+  assert.ok(btn('Play now'), 'the button stays Play now while the song plays');
   btn('Edit').click();
   assert.equal($('edit-dialog').open, true);
   assert.equal(dlg.open, true, 'the card stays under the edit dialog');
@@ -170,7 +169,7 @@ test('songs without audio get Download to server, not Download, and no Play when
   publish([BARE]);
   openSongCard(BARE);
   const dlg = $('song-card');
-  assert.deepEqual(names(dlg), ['Download to server', 'Edit']);
+  assert.deepEqual(names(dlg), ['Share link', 'Download to server', 'Edit']);
   dlg.close();
 });
 

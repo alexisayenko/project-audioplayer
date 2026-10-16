@@ -15,6 +15,7 @@ import { visibleTags, tagGroups, tagLabel } from './tagname.js';
 import { serviceIcons } from './service-icons.js';
 import { storedLinkStates } from './song-links.js';
 import { toggleQueue } from './queue-toggle.js';
+import { openShareDialog } from './share-ui.js';
 
 export function downloadText(song, view) {
   if (hasAudio(song)) return 'Downloaded to the server';
@@ -44,10 +45,8 @@ export function cardModel(song, view) {
   };
 }
 
-export function playControl(song, { cur, playing, queueable }) {
-  if (hasAudio(song) && cur && cur.id === song.id) return { label: playing ? 'Pause' : 'Play', run: () => player.toggle() };
-  if (!queueable) return null;
-  return { label: 'Play now', run: () => player.playNow(song.id) };
+export function playControl(song, { queueable }) {
+  return queueable ? { label: 'Play now', run: () => player.playNow(song.id) } : null;
 }
 
 function headBlock(song, m) {
@@ -78,23 +77,23 @@ function linkBlock(links) {
 function actionRow(song) {
   const audio = hasAudio(song);
   const queueable = audio || autoDownloadOn();
-  const play = playControl(song, { cur: player.current, playing: player.playing, queueable });
+  const play = playControl(song, { queueable });
   const queued = player.inQueue(song.id);
   const view = autodl.view(song.id);
   const link = sourceLink(song);
   const btn = (label, run, cls = 'btn outline') => el('button', { class: cls, type: 'button', onclick: run }, label);
-  const ib = (label, name, run, cls = '') => el('button', { class: `icon round card-ic ${cls}`.trim(), type: 'button', title: label, 'aria-label': label, onclick: run }, icon(name, 'nav'));
+  const ib = (label, name, run, cls = 'icon round') => el('button', { class: cls, type: 'button', title: label, 'aria-label': label, onclick: run }, icon(name, 'nav'));
   const dl = audio && can('download') ? ib('Download', 'download', () => downloadSong(song))
     : !audio && can('fetch') && (view.kind === 'none' || view.kind === 'failed') ? ib('Download to server', 'download', () => autodl.request([song.id], { front: true })) : null;
   const icons = [
-    play ? ib(play.label, play.label === 'Pause' ? 'pause' : 'play', play.run, 'card-play') : null,
+    play ? ib(play.label, 'play', play.run, 'key lit') : null,
+    ib('Share link', 'share', () => openShareDialog(song)),
     dl,
     can('edit') ? ib('Edit', 'pencil', () => editDialog(song)) : null,
-    queueable && !queued ? ib('Add to playlist', 'playlistAdd', () => toggleQueue(song)) : null,
+    queueable ? (queued ? ib('Remove from playlist', 'playlistRemove', () => toggleQueue(song)) : ib('Add to playlist', 'playlistAdd', () => toggleQueue(song))) : null,
   ].filter(Boolean);
   return el('div', { class: 'card-actions' },
     icons.length ? el('div', { class: 'card-icons' }, ...icons) : null,
-    queueable && queued ? btn('Remove from playlist', () => toggleQueue(song)) : null,
     !audio && !can('fetch') && link ? btn(link.label, () => window.open(link.url, '_blank', 'noopener')) : null);
 }
 
