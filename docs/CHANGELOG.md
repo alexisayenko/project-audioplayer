@@ -4,6 +4,8 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## 2026-10-17 (YouTube genres and release tags, not deployed)
 
+- Web: a song whose version has a year shows that year, not the original one, in the Library row, the song card, the dock and Now playing, the Media Session, Library sort by Year and Song stats; the card facts show "2012 · original 1985" when they differ; falls back to the original year; one helper in `credits.js` (LIB-150, not deployed).
+- Web: the Library title of a song without audio shows the pointing-finger cursor like the others, since it opens the song card too (not deployed).
 - Server and web: genres from YouTube tags, categories and hashtags (TAG-095, `youtube_genres` and `tag_sources` on `/preview`), and "(... Release)" label tags are dropped from titles and a "Cover Release" suggests a cover with no original artist (ADD-131); "(mashup by X)" titles suggest X as the artist and the artists before the dash as the mashup sources (ADD-132).
 
 - Web: the Library row title button's keyboard focus ring is drawn inside the button, so the row's `overflow: hidden` info block no longer clips it to the right and bottom edges (not deployed).

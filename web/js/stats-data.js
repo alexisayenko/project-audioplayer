@@ -1,4 +1,5 @@
 import { hasAudio } from './playable.js';
+import { displayYear } from './credits.js';
 import { familyIndex, FAMILIES } from './genre-data.js';
 import { songGenres, mapToNodes } from './genre-playing.js';
 
@@ -29,7 +30,7 @@ export function splitPlottable(songs) {
   const plotted = [];
   let skipped = 0;
   for (const s of songs || []) {
-    if (validYear(s.year) && validBpm(s.bpm)) plotted.push(s);
+    if (validYear(displayYear(s)) && validBpm(s.bpm)) plotted.push(s);
     else skipped += 1;
   }
   return { plotted, skipped };
@@ -53,7 +54,7 @@ export function jitter(id) {
 
 export function makePoint(song) {
   const j = jitter(song.id);
-  return { id: song.id, song, year: song.year, bpm: song.bpm, x: song.year + j.dx, y: song.bpm + j.dy };
+  return { id: song.id, song, year: displayYear(song), bpm: song.bpm, x: displayYear(song) + j.dx, y: song.bpm + j.dy };
 }
 
 export function extentX(years) {
@@ -128,7 +129,7 @@ export function panRange(lo, hi, delta, bounds) {
 export const decadeOf = (year) => Math.floor(year / 10) * 10;
 
 function decadeGroup(song) {
-  const d = decadeOf(song.year);
+  const d = decadeOf(displayYear(song));
   return { key: String(d), label: `${d}s`, order: d };
 }
 

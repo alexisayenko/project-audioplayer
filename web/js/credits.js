@@ -96,8 +96,22 @@ export function releasedYear(song) {
   return song?.year ?? null;
 }
 
+export function versionYear(song) {
+  const y = song?.version?.year ?? song?.remix_year;
+  return Number.isInteger(y) ? y : null;
+}
+
+export const displayYear = (song) => versionYear(song) ?? (Number.isInteger(releasedYear(song)) ? releasedYear(song) : null);
+
+export function yearFact(song) {
+  const v = versionYear(song);
+  if (v == null) return '';
+  const o = releasedYear(song);
+  return Number.isInteger(o) && o !== v ? `${v} · original ${o}` : String(v);
+}
+
 export function subtitle(song) {
-  const year = String(releasedYear(song) ?? '').trim();
+  const year = String(displayYear(song) ?? '').trim();
   return [artistLine(song), year].filter(Boolean).join(' · ');
 }
 

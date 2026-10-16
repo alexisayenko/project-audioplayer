@@ -321,7 +321,7 @@ label { display: block; color: var(--ink-muted); font: var(--font-caption); marg
 }
 .song.current .open, .qrow.current .open { color: var(--accent-ink); }
 .song.current .more { color: var(--accent-ink); }
-.song.no-audio .open { cursor: default; color: var(--muted); }
+.song.no-audio .open { color: var(--muted); }
 .song.no-audio .cover { opacity: 0.6; }
 .song .src-logo { display: inline-grid; place-items: center; width: var(--control-sm); height: var(--control-sm); border-radius: var(--radius-sm); color: var(--ink-muted); transition: transform var(--dur-fast) var(--ease-out); }
 .song .src-logo:hover, .song .src-logo:focus-visible { transform: scale(1.12); }

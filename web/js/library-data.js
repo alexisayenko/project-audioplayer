@@ -1,5 +1,5 @@
 import { store } from './store.js';
-import { sortKey, compareKeys, releasedYear, searchText } from './credits.js';
+import { sortKey, compareKeys, displayYear, searchText } from './credits.js';
 import { visibleTags, canonicalTag, tagSearchText, categoryOf } from './tagname.js';
 
 const UNSET_KEYS = { genres: 'genre', years: 'decade', countries: 'country' };
@@ -33,7 +33,7 @@ export const SORTS = {
   added: ['Recently added', (a, b) => (b.added_at || '').localeCompare(a.added_at || '')],
   title: ['Title', (a, b) => compareKeys(sortKey(a, 'title'), sortKey(b, 'title'))],
   artist: ['Artist', (a, b) => compareKeys(sortKey(a, 'artist'), sortKey(b, 'artist'))],
-  year: ['Year', (a, b) => (releasedYear(b) || 0) - (releasedYear(a) || 0)],
+  year: ['Year', (a, b) => (displayYear(b) || 0) - (displayYear(a) || 0)],
   bpm: ['BPM', (a, b) => (a.bpm == null) - (b.bpm == null) || (a.bpm || 0) - (b.bpm || 0)],
 };
 

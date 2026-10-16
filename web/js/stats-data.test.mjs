@@ -274,3 +274,9 @@ test('clampLo keeps the span and shifts a range that dips below 0', () => {
   const v = clampLo(panRange(20, 120, -500, { lo: 0, hi: 200 }));
   assert.ok(v.lo >= 0 && v.hi - v.lo === 100);
 });
+
+test('stats plot a version at its version year', () => {
+  const v = S('v', 1985, 120, { remix_year: 2012 });
+  assert.equal(makePoint(v).year, 2012);
+  assert.equal(splitPlottable([S('n', null, 120, { remix_year: 2012 })]).plotted.length, 1);
+});

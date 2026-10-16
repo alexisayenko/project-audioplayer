@@ -120,3 +120,18 @@ test('a version marker is hidden only by a whole word of the title', () => {
   assert.equal(c.displayLine({ title: 'Alive', artists: ['B'], version: { kind: 'live' } }), 'B - Alive (live)');
   assert.equal(c.displayLine({ title: 'Song (Live)', artists: ['B'], version: { kind: 'live' } }), 'B - Song (Live)');
 });
+
+test('displayed year is the version year, else the original, never the upload date', () => {
+  const R = { title: 'Running Up That Hill', artists: ['Kate Bush'], released: 1985, version: { kind: 'remix', name: 'Pure Orkidea Pure Progressive Mix', year: 2012 } };
+  assert.equal(c.subtitle(R), 'Kate Bush · 2012');
+  assert.equal(c.displayYear(R), 2012);
+  assert.equal(c.yearFact(R), '2012 · original 1985');
+  assert.equal(c.yearFact({ ...R, released: 2012 }), '2012');
+  assert.equal(c.yearFact({ ...R, released: null }), '2012');
+  const noYear = { ...R, version: { ...R.version, year: null } };
+  assert.equal(c.subtitle(noYear), 'Kate Bush · 1985');
+  assert.equal(c.yearFact(noYear), '');
+  assert.equal(c.subtitle({ title: 'S', artist: 'A', year: 1985, remix_year: 2012 }), 'A · 2012');
+  assert.equal(c.subtitle({ title: 'S', artist: 'A', year: 1985, remix_year: null, upload_date: '2024-01-01' }), 'A · 1985');
+  assert.equal(c.displayYear({ title: 'S' }), null);
+});

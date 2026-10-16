@@ -173,11 +173,11 @@ test('songs without audio get Download to server, not Download, and no Play when
   dlg.close();
 });
 
-test('card shows a Remix year line only when present', () => {
-  assert.equal(cardModel({ ...FULL, remix_year: 2024 }, { kind: 'none' }).remixYear, 'Remix year 2024');
-  assert.equal(cardModel(FULL, { kind: 'none' }).remixYear, '');
-  assert.equal(cardModel({ ...FULL, remix_year: null }, { kind: 'none' }).remixYear, '');
-  assert.equal(cardModel({ ...FULL, remix_year: 2024 }, { kind: 'none' }).sub, 'Zed · 1999', 'sub line keeps the original year');
+test('card shows a Year fact only for a version with a year, both years when they differ', () => {
+  assert.equal(cardModel({ ...FULL, remix_year: 2024 }, { kind: 'none' }).yearFact, '2024 · original 1999');
+  assert.equal(cardModel(FULL, { kind: 'none' }).yearFact, '');
+  assert.equal(cardModel({ ...FULL, remix_year: null }, { kind: 'none' }).yearFact, '');
+  assert.equal(cardModel({ ...FULL, remix_year: 2024 }, { kind: 'none' }).sub, 'Zed · 2024', 'sub line shows the version year');
 });
 
 test('with a cover the title and the artist line sit inside the cover box; without one they follow as plain text', () => {

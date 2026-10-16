@@ -8,7 +8,7 @@ import { autodl, autoDownloadOn } from './autodl.js';
 import { statusText } from './dl-progress.js';
 import { downloadSong } from './download.js';
 import { editDialog } from './edit-dialog.js';
-import { creditParts, isStructured, subtitle, titleNodes, detailsLines } from './credits.js';
+import { creditParts, subtitle, titleNodes, detailsLines, yearFact } from './credits.js';
 import { icon } from './icons.js';
 import { bpmLabel } from './bpm-label.js';
 import { visibleTags, tagGroups, tagLabel } from './tagname.js';
@@ -36,7 +36,7 @@ export function cardModel(song, view) {
     sub: subtitle(song),
     album: String(song?.album ?? '').trim(),
     groups: cardTags(song?.tags),
-    remixYear: !isStructured(song) && Number.isInteger(song?.remix_year) ? `Remix year ${song.remix_year}` : '',
+    yearFact: yearFact(song),
     details: detailsLines(song).map(({ label, value }) => (label === 'Cover of' ? `Cover of ${value}` : `${label}: ${value}`)),
     bpm: bpmLabel(song?.bpm),
     duration: song?.duration ? fmtTime(song.duration) : '',
@@ -106,7 +106,7 @@ function sideBlock(m) {
     ...m.groups.filter((g) => SIDE_KEYS.includes(g.key)).map(tagRow),
     m.bpm ? row('BPM', el('span', { class: 'bpm-badge', title: 'Beats per minute (estimated)' }, m.bpm, el('small', { 'aria-hidden': 'true' }, 'BPM'))) : null,
     m.duration ? row('Time', m.duration) : null,
-    m.remixYear ? row('Remix year', el('span', { class: 'remix-year' }, m.remixYear)) : null,
+    m.yearFact ? row('Year', el('span', { class: 'remix-year' }, m.yearFact)) : null,
     row('Status', m.download));
 }
 
