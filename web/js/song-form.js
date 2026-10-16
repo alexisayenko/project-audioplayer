@@ -243,7 +243,7 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
       keep_title: tc.restoredRaw !== null && f.title.value === tc.restoredRaw,
       ...credits.values(),
       album: f.album.value,
-      tags: editor.getTags(),
+      tags: editor.getTags({ commit }),
       ...wiki.values(),
       musicbrainz_url: mbUrl,
       discogs_url: discogsUrl,

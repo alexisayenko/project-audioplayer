@@ -264,3 +264,41 @@ test('saveError turns a 422 unknown_genre into an inline message with suggestion
   assert.deepEqual(f.values({ commit: false }).tags, ['genre:rock']);
   assert.equal(f.saveError(new ApiError(500, 'boom')), null);
 });
+
+test('typing in the Tags field accumulates letters; a chip appears only on Enter, comma or blur', () => {
+  const f = songForm({ mode: 'add', song: {} });
+  const tags = f.node.querySelector('.tag-editor');
+  const input = tags.querySelector('input');
+  const chips = () => tags.querySelector('.chips').children.map((c) => c.textContent.replace(/\s+/g, ''));
+  const type = (s) => { for (const ch of s) { input.value += ch; f.node.dispatchEvent(makeEvent('input')); f.values({ commit: false }); } };
+  type('asdf');
+  assert.equal(input.value, 'asdf');
+  assert.deepEqual(chips(), []);
+  input.dispatchEvent(makeEvent('keydown', { key: 'Enter' }));
+  assert.equal(input.value, '');
+  assert.equal(chips().length, 1);
+  assert.ok(chips()[0].startsWith('asdf'));
+  type('foo');
+  input.dispatchEvent(makeEvent('keydown', { key: ',' }));
+  assert.equal(chips().length, 2);
+  type('country:fi');
+  assert.equal(chips().length, 2);
+  input.dispatchEvent(makeEvent('keydown', { key: 'Enter' }));
+  assert.ok(f.values({ commit: false }).tags.includes('country:fi'));
+  assert.equal(input.value, '');
+});
+
+test('values() with the default commit still flushes pending Tags text', () => {
+  const f = songForm({ mode: 'add', song: {} });
+  f.node.querySelector('.tag-editor input').value = 'pending';
+  assert.ok(f.values().tags.includes('pending'));
+});
+
+test('typing letters into Artists and Genres keeps them in the input', () => {
+  const f = songForm({ mode: 'add', song: {} });
+  for (const label of ['Artists', 'Genres']) {
+    const input = f.node.querySelector(`[aria-label="${label}"]`);
+    for (const ch of 'asdf') { input.value += ch; input.dispatchEvent(makeEvent('input', { bubbles: true })); }
+    assert.equal(input.value, 'asdf', label);
+  }
+});

@@ -4,6 +4,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## 2026-10-17 (YouTube genres and release tags, not deployed)
 
+- Web: fix in Add, typing in the Tags field turned every letter into its own chip (the live title preview read the form with `values()`, which committed the Tags text on each keystroke, LIB-055); text now stays in the input until Enter, comma or Save; not deployed.
 - Server and web: saving a new web song takes about 1 s instead of 3 to 5: the link lookup Fetch already did is reused (API-142) and the web patches the saved song into its list instead of reloading the library (ADD-134); not deployed.
 
 - Server and web: a reversed YouTube title "In The End [Mellen Gi Remix] feat. Fleurie - Tommee Profitt" is read title first, so Add fills Title, Artists, Featuring and the remixer correctly instead of swapping title and artist (ADD-135); not deployed.
