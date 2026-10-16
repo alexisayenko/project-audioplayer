@@ -1,5 +1,5 @@
-import { fitTransform, recenterOnResize, placeLabels, hitNode, isDragMove } from './genre-view.js';
-import { highlightSets, visibleCrossLinks, truncateLabel, placeLevel2Labels } from './genre-radial.js';
+import { fitTransform, recenterOnResize, hitNode, isDragMove } from './genre-view.js';
+import { highlightSets, visibleCrossLinks, selectLabels } from './genre-radial.js';
 
 const MIN_K = 0.15;
 const MAX_K = 8;
@@ -107,7 +107,7 @@ export function createRadialView(canvas, { onSelect, onHover, reducedMotion = fa
       const a = layout.byId.get(e.from);
       const b = layout.byId.get(e.to);
       const on = sel && lit(e.from) && lit(e.to);
-      ctx.globalAlpha = sel ? (on ? 0.95 : 0.1) : 0.45;
+      ctx.globalAlpha = sel ? (on ? 0.95 : 0.1) : 0.3;
       ctx.strokeStyle = on ? colors.accent : colors.edge;
       ctx.lineWidth = (on ? 2 : 1) / k;
       ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
@@ -170,53 +170,38 @@ export function createRadialView(canvas, { onSelect, onHover, reducedMotion = fa
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     const k = tf.k;
-    const sx = (n) => n.x * k + tf.x;
-    const sy = (n) => n.y * k + tf.y;
-    const l2 = layout.nodes.filter((n) => n.level === 2 && !n.parked)
-      .sort((p, q) => (q.node.all.size - p.node.all.size) || p.name.localeCompare(q.name));
-    const text = new Map(l2.map((n) => [n.id, truncateLabel(n.label || n.name)]));
-    const placed = placeLevel2Labels(l2.map((n) => ({
-      id: n.id, sx: sx(n), sy: sy(n), r: (n.r + (n.discogs ? 2 : 5)) * k, dx: Math.cos(n.angle), dy: Math.sin(n.angle),
-      w: ctx.measureText(text.get(n.id)).width, h: FONT_PX + 2,
-    })));
     const zoomed = k >= LABEL_K;
-    const cands = [];
-    for (const n of layout.nodes) {
-      if (n.level === 2 && !n.parked) continue;
-      const forced = n.level === 1 || n.id === sel || n.id === hover || matches.has(n.id);
-      const near = lit3(n);
-      if (n.level === 3 && !zoomed && !forced && !near) continue;
-      if (n.parked && !forced) continue;
-      cands.push({ n, forced: forced || near, w: ctx.measureText(n.label || n.name).width });
-    }
-    cands.sort((p, q) => (q.forced - p.forced) || (p.n.level - q.n.level) || (q.n.node.all.size - p.n.node.all.size) || p.n.name.localeCompare(q.n.name));
-    const boxes = [
-      ...[...placed].map(([id, p]) => ({ id, x: p.x, y: p.y, w: p.w, h: p.h, force: true, fixed: true })),
-      ...cands.map(({ n, forced, w }) => ({
-        id: n.id, x: sx(n), y: sy(n) + (n.r + (n.discogs ? 2 : 5)) * k + 1, w, h: FONT_PX + 2, force: forced,
-      })),
-    ];
-    const shown = placeLabels(boxes);
+    const isForced = (n) => n.id === sel || n.id === hover || matches.has(n.id);
+    const prio = (n) => (n.id === sel ? 0 : n.id === hover ? 1 : matches.has(n.id) ? 2 : n.level === 1 ? 3 : 4 + n.level);
+    const list = layout.nodes
+      .filter((n) => isForced(n) || n.level <= 2 && !n.parked || (n.level === 3 && (zoomed || lit3(n))))
+      .sort((p, q) => (prio(p) - prio(q)) || (q.node.all.size - p.node.all.size) || p.name.localeCompare(q.name));
+    const items = list.map((n) => ({
+      id: n.id, x: n.x * k + tf.x, y: n.y * k + tf.y + (n.r + (n.discogs ? 2 : 5)) * k + 1,
+      w: ctx.measureText(n.label || n.name).width, h: FONT_PX + 2, force: isForced(n),
+    }));
+    const markers = layout.nodes.map((n) => ({ id: n.id, x: n.x * k + tf.x, y: n.y * k + tf.y, r: (n.r + (n.discogs ? 0 : 3)) * k }));
+    const shown = selectLabels(items, markers);
     ctx.lineWidth = 3;
     ctx.lineJoin = 'round';
-    for (const b of boxes) {
-      if (!shown.has(b.id)) continue;
-      const n = layout.byId.get(b.id);
-      const label = b.fixed ? text.get(b.id) : n.label || n.name;
-      ctx.globalAlpha = Math.max(alphaOf(n), n.node.all.size || b.force ? alphaOf(n) : 0.6);
-      if (b.fixed && placed.get(b.id).leader) {
-        ctx.save();
-        ctx.lineWidth = 1;
-        ctx.strokeStyle = colors.edge;
-        ctx.beginPath(); ctx.moveTo(sx(n), sy(n)); ctx.lineTo(b.x, b.y + b.h / 2); ctx.stroke();
-        ctx.restore();
-        ctx.lineWidth = 3;
+    const draw = (it, pill) => {
+      const n = layout.byId.get(it.id);
+      const label = n.label || n.name;
+      ctx.globalAlpha = Math.max(alphaOf(n), n.node.all.size || it.force ? alphaOf(n) : 0.6);
+      if (pill) {
+        ctx.fillStyle = colors.halo;
+        ctx.globalAlpha = 0.92;
+        ctx.fillRect(it.x - it.w / 2 - 3, it.y - 1, it.w + 6, it.h);
+        ctx.globalAlpha = 1;
+      } else {
+        ctx.strokeStyle = colors.halo;
+        ctx.strokeText(label, it.x, it.y);
       }
-      ctx.strokeStyle = colors.halo;
-      ctx.strokeText(label, b.x, b.y);
       ctx.fillStyle = colors.ink;
-      ctx.fillText(label, b.x, b.y);
-    }
+      ctx.fillText(label, it.x, it.y);
+    };
+    for (const it of items) if (shown.has(it.id) && !it.force) draw(it, false);
+    for (const it of items) if (it.force) draw(it, true);
     ctx.globalAlpha = 1;
   }
 

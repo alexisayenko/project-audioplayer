@@ -82,7 +82,6 @@ function actionRow(song) {
   const queued = player.inQueue(song.id);
   const view = autodl.view(song.id);
   const link = sourceLink(song);
-  const queueLabel = queued ? 'Remove from playlist' : 'Add to playlist';
   const btn = (label, run, cls = 'btn outline') => el('button', { class: cls, type: 'button', onclick: run }, label);
   const ib = (label, name, run, cls = '') => el('button', { class: `icon round card-ic ${cls}`.trim(), type: 'button', title: label, 'aria-label': label, onclick: run }, icon(name, 'nav'));
   const dl = audio && can('download') ? ib('Download', 'download', () => downloadSong(song))
@@ -91,10 +90,11 @@ function actionRow(song) {
     play ? ib(play.label, play.label === 'Pause' ? 'pause' : 'play', play.run, 'card-play') : null,
     dl,
     can('edit') ? ib('Edit', 'pencil', () => editDialog(song)) : null,
+    queueable && !queued ? ib('Add to playlist', 'playlistAdd', () => toggleQueue(song)) : null,
   ].filter(Boolean);
   return el('div', { class: 'card-actions' },
     icons.length ? el('div', { class: 'card-icons' }, ...icons) : null,
-    queueable ? btn(queueLabel, () => toggleQueue(song)) : null,
+    queueable && queued ? btn('Remove from playlist', () => toggleQueue(song)) : null,
     !audio && !can('fetch') && link ? btn(link.label, () => window.open(link.url, '_blank', 'noopener')) : null);
 }
 

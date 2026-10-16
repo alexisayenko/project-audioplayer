@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { buildTree, applyCounts } from './genre-levels.js';
-import { layoutRadial as layout0, highlightSets, radius, visibleCrossLinks, placeLevel2Labels, truncateLabel } from './genre-radial.js';
+import { layoutRadial as layout0, highlightSets, radius, visibleCrossLinks, selectLabels, labelBox } from './genre-radial.js';
 const layoutRadial = (t, root, o = { showAll: true }) => layout0(t, root, o);
 
 const doc = JSON.parse(readFileSync(new URL('../../server/data/genre_levels.json', import.meta.url), 'utf8'));
@@ -176,35 +176,46 @@ test('psytrance is a level 2 sibling of trance with its own level 3 children; co
   assert.equal(l.nodes.filter((n) => n.id === 's:psytrance').length, 1);
 });
 
-const overlapArea = (a, b) => Math.max(0, Math.min(a.x + a.w / 2, b.x + b.w / 2) - Math.max(a.x - a.w / 2, b.x - b.w / 2)) * Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
+const box = (id, x, y, w = 40, h = 14, force = false) => ({ id, x, y, w, h, force });
+const overlaps = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 
-function level2Items(k) {
-  const l = layout0(sample(), 'Electronic', { showAll: true });
-  return l.nodes.filter((n) => n.level === 2 && !n.parked).map((n) => ({
-    id: n.id, sx: n.x * k + 500, sy: n.y * k + 400, r: (n.r + 4) * k, dx: Math.cos(n.angle), dy: Math.sin(n.angle), w: 6.5 * truncateLabel(n.label).length, h: 14,
-  }));
-}
-
-test('level 2 labels are never hidden: every one gets a box, deterministic, nudged without overlap when room allows', () => {
-  const items = level2Items(0.8);
-  const a = placeLevel2Labels(items);
-  const b = placeLevel2Labels(items);
-  assert.equal(a.size, items.length);
-  assert.deepEqual([...a], [...b]);
-  const boxes = [...a.values()];
-  let bad = 0;
-  for (let i = 0; i < boxes.length; i += 1) for (let j = i + 1; j < boxes.length; j += 1) if (overlapArea(boxes[i], boxes[j]) > 0) bad += 1;
-  assert.equal(bad, 0);
+test('selectLabels hides what does not fit, in priority order, and is deterministic', () => {
+  const items = [box('a', 100, 100), box('b', 110, 102), box('c', 300, 100), box('d', 120, 140)];
+  const shown = selectLabels(items);
+  assert.deepEqual([...shown], ['a', 'c', 'd']);
+  assert.deepEqual([...selectLabels(items)], [...shown]);
+  assert.deepEqual([...selectLabels([...items].reverse())].sort(), ['a', 'c', 'd'].filter((x) => x !== 'a').concat(['b']).sort());
+  const boxes = items.filter((i) => shown.has(i.id)).map(labelBox);
+  for (let i = 0; i < boxes.length; i += 1) for (let j = i + 1; j < boxes.length; j += 1) assert.equal(overlaps(boxes[i], boxes[j]), false);
 });
 
-test('a crowded ring still places every label, uses leaders for displaced ones, and truncates long names', () => {
-  const items = Array.from({ length: 40 }, (_, i) => {
-    const a = (i / 40) * 2 * Math.PI;
-    return { id: `n${i}`, sx: 300 + Math.cos(a) * 60, sy: 300 + Math.sin(a) * 60, r: 8, dx: Math.cos(a), dy: Math.sin(a), w: 90, h: 14 };
-  });
-  const out = placeLevel2Labels(items);
-  assert.equal(out.size, 40);
-  assert.ok([...out.values()].some((p) => p.leader));
-  assert.equal(truncateLabel('a very long style name indeed').length, 18);
-  assert.equal(truncateLabel('short'), 'short');
+test('padding counts: labels closer than the pad are hidden', () => {
+  assert.equal(selectLabels([box('a', 100, 100), box('b', 100, 115)], [], { pad: 2.5 }).has('b'), false);
+  assert.equal(selectLabels([box('a', 100, 100), box('b', 100, 117)], [], { pad: 2.5 }).has('b'), true);
+});
+
+test('a label is hidden when it would cover the marker of a higher priority node, not a lower one', () => {
+  const markers = [{ id: 'a', x: 300, y: 300, r: 8 }, { id: 'b', x: 100, y: 108, r: 8 }];
+  const items = [box('a', 100, 100), box('b', 300, 300 - 14)];
+  const s = selectLabels(items, markers);
+  assert.equal(s.has('a'), true);
+  assert.equal(s.has('b'), false);
+  const s2 = selectLabels([box('b', 300, 286), box('a', 100, 100)], markers);
+  assert.equal(s2.has('b'), true);
+  assert.equal(s2.has('a'), false);
+});
+
+test('forced labels (selected, hovered, matched) are always drawn even over others', () => {
+  const items = [box('a', 100, 100), box('sel', 105, 100, 40, 14, true)];
+  assert.deepEqual([...selectLabels(items)], ['a', 'sel']);
+  assert.deepEqual([...selectLabels([box('sel', 105, 100, 40, 14, true), box('a', 100, 100)])], ['sel']);
+});
+
+test('hidden labels reappear when zooming in because spacing grows', () => {
+  const l = layout0(sample(), 'Electronic', { showAll: false });
+  const at = (k) => selectLabels(l.nodes.filter((n) => n.level === 2).sort((p, q) => q.node.all.size - p.node.all.size).map((n) => box(n.id, n.x * k, n.y * k + n.r * k, 7 * n.name.length, 14))).size;
+  const lvl2 = l.nodes.filter((n) => n.level === 2).length;
+  assert.ok(at(0.2) < lvl2);
+  assert.ok(at(0.2) < at(1));
+  assert.ok(at(3) >= at(1));
 });

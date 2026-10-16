@@ -45,9 +45,9 @@ const key = (k, init = {}, target = document.body) => fire(target, 'keydown', { 
 test('nothing Web Audio is created at start', () => {
   assert.equal(stats.ctors, 0);
   assert.equal(audioGraph.hasGraph(), false);
-  assert.equal($('p-viz').disabled, false);
+  assert.equal($('mini-viz').disabled, false);
   assert.equal($('viz-full').hidden, true);
-  assert.notEqual($('p-viz').getAttribute('aria-pressed'), 'true');
+  assert.notEqual($('mini-viz').getAttribute('aria-pressed'), 'true');
 });
 
 test('V is ignored outside the Playback screen', () => {
@@ -61,7 +61,7 @@ test('V opens the overlay on the Playback screen and the graph is built once, on
   assert.equal(ui.full.isOpen(), true);
   assert.equal($('viz-full').hidden, false);
   assert.equal(document.body.classList.contains('viz-full-open'), true);
-  assert.equal($('p-viz').getAttribute('aria-pressed'), 'true');
+  assert.equal($('mini-viz').getAttribute('aria-pressed'), 'true');
   assert.equal($('viz-title').textContent, 'Alpha');
   assert.equal($('viz-artist').textContent, 'AA');
   await flush();
@@ -71,22 +71,22 @@ test('V opens the overlay on the Playback screen and the graph is built once, on
 });
 
 test('V closes it again, from anywhere; focus returns to the button', () => {
-  const before = $('p-viz').focused;
+  const before = $('mini-viz').focused;
   key('V');
   assert.equal(ui.full.isOpen(), false);
   assert.equal($('viz-full').hidden, true);
-  assert.equal($('p-viz').getAttribute('aria-pressed'), 'false');
+  assert.equal($('mini-viz').getAttribute('aria-pressed'), 'false');
   assert.equal(document.body.classList.contains('viz-full-open'), false);
-  assert.equal($('p-viz').focused, before + 1);
-  assert.equal(document.activeElement, $('p-viz'));
+  assert.equal($('mini-viz').focused, before + 1);
+  assert.equal(document.activeElement, $('mini-viz'));
 });
 
 test('reopening reuses the same graph', async () => {
-  $('p-viz').click();
+  $('mini-viz').click();
   await flush();
   assert.equal(ui.full.isOpen(), true);
   key('Escape');
-  $('p-viz').click();
+  $('mini-viz').click();
   await flush();
   key('Escape');
   assert.equal(stats.ctors, 1);
@@ -94,11 +94,11 @@ test('reopening reuses the same graph', async () => {
 });
 
 test('Esc closes the overlay and returns focus to the button', () => {
-  $('p-viz').click();
+  $('mini-viz').click();
   assert.equal(ui.full.isOpen(), true);
   key('Escape', {}, $('viz-full'));
   assert.equal(ui.full.isOpen(), false);
-  assert.equal(document.activeElement, $('p-viz'));
+  assert.equal(document.activeElement, $('mini-viz'));
 });
 
 test('V is ignored with modifiers, key repeat and inside text inputs', () => {
@@ -117,7 +117,7 @@ test('V is ignored with modifiers, key repeat and inside text inputs', () => {
 });
 
 test('overlay controls drive the player', () => {
-  $('p-viz').click();
+  $('mini-viz').click();
   $('viz-play').click();
   $('viz-prev').click();
   $('viz-next').click();
@@ -134,7 +134,7 @@ test('play and pause update the overlay button label', () => {
 });
 
 test('clicking the canvas toggles play/pause and announces; it never exits', () => {
-  $('p-viz').click();
+  $('mini-viz').click();
   calls.length = 0;
   audio.pause();
   fire($('viz-full'), 'click', { target: $('viz-full-canvas') });
@@ -171,15 +171,15 @@ test('there is no background visualizer: no layer, the stale setting is dropped,
   assert.equal(ui.fullViz.isRunning(), false);
 });
 
-test('the dock button is available without any setting and opens the same full screen as #p-viz', () => {
+test('the dock button is available without any setting and opens the full screen', () => {
   const k = $('mini-viz');
   assert.equal(k.disabled, false);
   k.click();
   assert.equal(ui.full.isOpen(), true);
-  assert.equal($('p-viz').getAttribute('aria-pressed'), 'true');
+  assert.equal($('mini-viz').getAttribute('aria-pressed'), 'true');
   k.click();
   assert.equal(ui.full.isOpen(), false);
-  assert.equal($('p-viz').getAttribute('aria-pressed'), 'false');
+  assert.equal($('mini-viz').getAttribute('aria-pressed'), 'false');
 });
 
 test('the settings dock is hidden outside full screen and toggled by the overlay settings button', () => {
@@ -198,22 +198,22 @@ test('without Web Audio the button is disabled with a tooltip and V does nothing
   audioGraph.resetForTests();
   const noWin = { matchMedia: () => ({ matches: false, addEventListener() {} }) };
   const ui2 = initVisualizer({ player, audio, graph: audioGraph, win: noWin });
-  assert.equal($('p-viz').disabled, true);
-  assert.match($('p-viz').title, /Web Audio/);
+  assert.equal($('mini-viz').disabled, true);
+  assert.match($('mini-viz').title, /Web Audio/);
   document.body.dataset.route = 'playback';
   key('v');
   assert.equal(ui2.full.isOpen(), false);
   ui.full.close();
-  $('p-viz').disabled = false;
-  $('p-viz').title = 'Visualizer (V)';
+  $('mini-viz').disabled = false;
+  $('mini-viz').title = 'Visualizer (V)';
 });
 
 test('reduced motion shows the tooltip and keeps playback unaffected', () => {
   const rWin = { ...win, matchMedia: () => ({ matches: true, addEventListener() {} }) };
   audioGraph.resetForTests();
   initVisualizer({ player, audio, graph: audioGraph, win: rWin });
-  assert.equal($('p-viz').title, 'Reduced motion is on');
-  assert.equal($('p-viz').disabled, false);
+  assert.equal($('mini-viz').title, 'Reduced motion is on');
+  assert.equal($('mini-viz').disabled, false);
 });
 
 function fakeTimers() {
@@ -246,7 +246,7 @@ test('controls auto-hide after 3 s without activity and return on a poke', () =>
 test('overlay toggles the idle class through the timer', () => {
   const t = fakeTimers();
   const root = $('viz-full');
-  const fs = createFullscreen({ root, opener: $('p-viz'), setTimer: t.set, clearTimer: t.clear, hideMs: 3000 });
+  const fs = createFullscreen({ root, opener: $('mini-viz'), setTimer: t.set, clearTimer: t.clear, hideMs: 3000 });
   fs.open();
   assert.equal(root.classList.contains('idle'), false);
   t.advance(3000);
@@ -260,7 +260,7 @@ test('overlay toggles the idle class through the timer', () => {
 test('native Fullscreen: leaving it with the browser Esc closes the overlay', async () => {
   const root = $('viz-full');
   root.requestFullscreen = async () => { document.fullscreenElement = root; };
-  const fs = createFullscreen({ root, opener: $('p-viz') });
+  const fs = createFullscreen({ root, opener: $('mini-viz') });
   fs.open();
   await flush();
   document.fullscreenElement = null;
@@ -272,7 +272,7 @@ test('native Fullscreen: leaving it with the browser Esc closes the overlay', as
 test('a rejected requestFullscreen falls back to the fixed overlay', async () => {
   const root = $('viz-full');
   root.requestFullscreen = () => Promise.reject(new Error('denied'));
-  const fs = createFullscreen({ root, opener: $('p-viz') });
+  const fs = createFullscreen({ root, opener: $('mini-viz') });
   fs.open();
   await flush();
   assert.equal(fs.isOpen(), true);

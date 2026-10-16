@@ -2,3 +2,47 @@
 .th-item { margin: 0; }
 .th-item dt { color: var(--ink); margin: 0; }
 .th-item dd { color: var(--ink-muted); margin: 0; overflow-wrap: anywhere; }
+
+.th-anatomy { display: grid; gap: var(--space-4); margin-top: var(--space-8); min-width: 0; }
+.th-anatomy h2 { color: var(--ink); }
+.an { display: grid; gap: var(--space-4); min-width: 0; }
+.an-out { display: grid; gap: var(--space-4); min-width: 0; }
+.an-title { display: flex; flex-wrap: wrap; align-items: flex-start; column-gap: 0; row-gap: var(--space-4); margin: 0; padding: var(--space-4) var(--space-5); background: var(--surface); border-radius: var(--radius-card); box-shadow: var(--shadow-card); font: var(--font-display); overflow-wrap: anywhere; min-width: 0; }
+.an-sep { white-space: pre-wrap; }
+.an-seg { --an-c: var(--ink-faint); display: flex; flex-direction: column; align-items: stretch; max-width: 100%; min-width: 0; padding: 0 var(--space-1); border-radius: var(--radius-xs); cursor: default; }
+.an-seg[data-tone="main"], .an-row[data-tone="main"] { --an-c: var(--chart-0); }
+.an-seg[data-tone="title"], .an-row[data-tone="title"] { --an-c: var(--chart-6); }
+.an-seg[data-tone="featured"], .an-row[data-tone="featured"] { --an-c: var(--chart-2); }
+.an-seg[data-tone="version"], .an-row[data-tone="version"] { --an-c: var(--chart-5); }
+.an-seg[data-tone="original"], .an-row[data-tone="original"] { --an-c: var(--chart-3); }
+.an-row { --an-c: var(--ink-faint); }
+.an-text { white-space: pre-wrap; }
+.an-mark { display: block; height: var(--space-2); margin-top: var(--space-1); border: var(--stroke-focus) solid var(--an-c); border-top: 0; border-radius: 0 var(--radius-xs) var(--radius-sm) var(--radius-xs); }
+.an-label { display: block; margin-top: var(--space-1); color: var(--ink-muted); font: var(--font-caption); text-align: center; overflow-wrap: anywhere; }
+.an-seg.is-on { background: var(--selection); box-shadow: 0 0 0 var(--stroke-focus) var(--an-c); }
+.an-seg.is-on .an-label { color: var(--ink); }
+.an-tablewrap { min-width: 0; }
+.an-table { width: 100%; border-collapse: separate; border-spacing: 0 var(--space-2); table-layout: fixed; font: var(--font-subhead); }
+.an-table caption { text-align: left; color: var(--ink-muted); padding-bottom: var(--space-2); }
+.an-table thead th { text-align: left; color: var(--ink-muted); font: var(--font-caption); padding: 0 var(--space-3); }
+.an-table th[scope="col"]:nth-child(1) { width: 26%; }
+.an-table th[scope="col"]:nth-child(2) { width: 24%; }
+.an-row { background: var(--surface); border-radius: var(--radius-sm); }
+.an-row th, .an-row td { padding: var(--space-2) var(--space-3); text-align: left; vertical-align: top; font-weight: 400; color: var(--ink); background: var(--surface); overflow-wrap: anywhere; }
+.an-row th { border-left: var(--space-1) solid var(--an-c); border-radius: var(--radius-sm) 0 0 var(--radius-sm); }
+.an-row td:last-child { border-radius: 0 var(--radius-sm) var(--radius-sm) 0; color: var(--ink-muted); }
+.an-row.is-on th, .an-row.is-on td { background: var(--selection); }
+.an-row code { display: block; font: var(--font-time); color: var(--ink); }
+.an-fname { display: block; color: var(--ink-muted); font: var(--font-caption); }
+.an-sub { margin: 0; color: var(--ink); }
+.an-json { margin: 0; padding: var(--space-3) var(--space-4); max-width: 100%; overflow-x: auto; background: var(--surface-sunken); border-radius: var(--radius-key); font: var(--font-time); color: var(--ink); }
+@media (max-width: 640px) {
+  .an-title { font: var(--font-title); padding: var(--space-3) var(--space-4); }
+  .an-table, .an-table tbody { display: block; }
+  .an-table thead { display: none; }
+  .an-table caption { display: block; width: 100%; }
+  .an-row { display: grid; gap: var(--space-1); padding: var(--space-2) var(--space-3); border-left: var(--space-1) solid var(--an-c); }
+  .an-row th, .an-row td { padding: 0; border: 0; background: transparent; }
+  .an-row td::before { content: attr(data-label) ": "; color: var(--ink-faint); font: var(--font-caption); }
+  .an-row.is-on { background: var(--selection); }
+}

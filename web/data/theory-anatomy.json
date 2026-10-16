@@ -1,0 +1,785 @@
+{
+  "fields": [
+    {
+      "id": "mainArtists",
+      "path": "mainArtists",
+      "label": "Main artist",
+      "tone": "main",
+      "description": "Who the song is by. For a cover this is the performer; for a mashup, whoever made it. A remix keeps the original artist here."
+    },
+    {
+      "id": "title",
+      "path": "title",
+      "label": "Title",
+      "tone": "title",
+      "description": "The base title only, with no version text in it."
+    },
+    {
+      "id": "featuredArtists",
+      "path": "featuredArtists",
+      "label": "Featured artist",
+      "tone": "featured",
+      "description": "Guests credited with \"feat.\" or \"ft.\" on the original release."
+    },
+    {
+      "id": "version.type",
+      "path": "version.type",
+      "label": "Version type",
+      "tone": "version",
+      "description": "What kind of version this is: remix, cover, mashup, live, acoustic, extended, instrumental, remaster, edit or other."
+    },
+    {
+      "id": "version.name",
+      "path": "version.name",
+      "label": "Version name",
+      "tone": "version",
+      "description": "The credited version text exactly as written, without the brackets."
+    },
+    {
+      "id": "version.artists",
+      "path": "version.artists",
+      "label": "Version artist",
+      "tone": "version",
+      "description": "Extra people credited only on this version, such as a remixer. Empty for covers and mashups."
+    },
+    {
+      "id": "version.originalArtists",
+      "path": "version.originalArtists",
+      "label": "Original artist",
+      "tone": "original",
+      "description": "Whose song it was before: one name for a cover, the sources for a mashup. Left out for every other type."
+    },
+    {
+      "id": "version.releaseYear",
+      "path": "version.releaseYear",
+      "label": "Version year",
+      "tone": "version",
+      "description": "The year of the version itself, such as the year of a remaster."
+    },
+    {
+      "id": "releaseYear",
+      "path": "releaseYear",
+      "label": "Release year",
+      "tone": "plain",
+      "description": "The year of the original recording, taken from Wikipedia, MusicBrainz or Discogs, never from an upload date. It is not in the title."
+    },
+    {
+      "id": "albums",
+      "path": "albums",
+      "label": "Albums",
+      "tone": "plain",
+      "description": "Albums the song appeared on; the first is the original one when known."
+    },
+    {
+      "id": "genres",
+      "path": "genres",
+      "label": "Genres",
+      "tone": "plain",
+      "description": "Genre tags, each prefixed with genre:."
+    },
+    {
+      "id": "sources",
+      "path": "sources",
+      "label": "Sources",
+      "tone": "plain",
+      "description": "Where the catalog entry points: a platform and a link, for example YouTube."
+    },
+    {
+      "id": "audio",
+      "path": "audio",
+      "label": "Audio",
+      "tone": "plain",
+      "description": "Whether the audio file is on the server or the phone, and facts like the BPM."
+    },
+    {
+      "id": "rawTitle",
+      "path": "rawTitle",
+      "label": "Raw title",
+      "tone": "plain",
+      "description": "The source title exactly as found, never edited. Everything above is read from it."
+    }
+  ],
+  "examples": [
+    {
+      "id": "plain",
+      "label": "Plain song",
+      "rawTitle": "Daft Punk - One More Time",
+      "segments": [
+        {
+          "text": "Daft Punk",
+          "fields": [
+            "mainArtists"
+          ]
+        },
+        {
+          "text": " - "
+        },
+        {
+          "text": "One More Time",
+          "fields": [
+            "title"
+          ]
+        }
+      ],
+      "song": {
+        "title": "One More Time",
+        "mainArtists": [
+          "Daft Punk"
+        ],
+        "featuredArtists": [],
+        "releaseYear": 2000,
+        "albums": [
+          "Discovery"
+        ],
+        "genres": [
+          "genre:house"
+        ],
+        "sources": [
+          {
+            "platform": "youtube",
+            "url": "https://youtu.be/example"
+          }
+        ],
+        "audio": {
+          "state": "none"
+        },
+        "rawTitle": "Daft Punk - One More Time"
+      }
+    },
+    {
+      "id": "feat",
+      "label": "Featured artist",
+      "rawTitle": "Calvin Harris - This Is What You Came For feat. Rihanna",
+      "segments": [
+        {
+          "text": "Calvin Harris",
+          "fields": [
+            "mainArtists"
+          ]
+        },
+        {
+          "text": " - "
+        },
+        {
+          "text": "This Is What You Came For",
+          "fields": [
+            "title"
+          ]
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "feat. Rihanna",
+          "fields": [
+            "featuredArtists"
+          ]
+        }
+      ],
+      "song": {
+        "title": "This Is What You Came For",
+        "mainArtists": [
+          "Calvin Harris"
+        ],
+        "featuredArtists": [
+          "Rihanna"
+        ],
+        "releaseYear": 2016,
+        "albums": [],
+        "genres": [
+          "genre:dance"
+        ],
+        "sources": [
+          {
+            "platform": "youtube",
+            "url": "https://youtu.be/example"
+          }
+        ],
+        "audio": {
+          "state": "none"
+        },
+        "rawTitle": "Calvin Harris - This Is What You Came For feat. Rihanna"
+      }
+    },
+    {
+      "id": "remix",
+      "label": "Remix",
+      "rawTitle": "The Prodigy - Voodoo People (Pendulum Remix)",
+      "segments": [
+        {
+          "text": "The Prodigy",
+          "fields": [
+            "mainArtists"
+          ]
+        },
+        {
+          "text": " - "
+        },
+        {
+          "text": "Voodoo People",
+          "fields": [
+            "title"
+          ]
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "(Pendulum Remix)",
+          "fields": [
+            "version.name",
+            "version.type",
+            "version.artists"
+          ],
+          "label": "Version, remixer"
+        }
+      ],
+      "song": {
+        "title": "Voodoo People",
+        "mainArtists": [
+          "The Prodigy"
+        ],
+        "featuredArtists": [],
+        "version": {
+          "type": "remix",
+          "name": "Pendulum Remix",
+          "artists": [
+            "Pendulum"
+          ]
+        },
+        "releaseYear": 1994,
+        "albums": [
+          "Music for the Jilted Generation"
+        ],
+        "genres": [
+          "genre:breakbeat"
+        ],
+        "sources": [
+          {
+            "platform": "youtube",
+            "url": "https://youtu.be/example"
+          }
+        ],
+        "audio": {
+          "state": "none"
+        },
+        "rawTitle": "The Prodigy - Voodoo People (Pendulum Remix)"
+      }
+    },
+    {
+      "id": "cover",
+      "label": "Cover",
+      "rawTitle": "Teemid - Crazy feat. Joie Tan (Gnarls Barkley Cover)",
+      "segments": [
+        {
+          "text": "Teemid",
+          "fields": [
+            "mainArtists"
+          ]
+        },
+        {
+          "text": " - "
+        },
+        {
+          "text": "Crazy",
+          "fields": [
+            "title"
+          ]
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "feat. Joie Tan",
+          "fields": [
+            "featuredArtists"
+          ]
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "(Gnarls Barkley Cover)",
+          "fields": [
+            "version.name",
+            "version.type",
+            "version.originalArtists"
+          ],
+          "label": "Version, original artist"
+        }
+      ],
+      "song": {
+        "title": "Crazy",
+        "mainArtists": [
+          "Teemid"
+        ],
+        "featuredArtists": [
+          "Joie Tan"
+        ],
+        "version": {
+          "type": "cover",
+          "name": "Gnarls Barkley Cover",
+          "artists": [],
+          "originalArtists": [
+            "Gnarls Barkley"
+          ]
+        },
+        "releaseYear": 2006,
+        "albums": [
+          "St. Elsewhere"
+        ],
+        "genres": [
+          "genre:soul"
+        ],
+        "sources": [
+          {
+            "platform": "youtube",
+            "url": "https://youtu.be/example"
+          }
+        ],
+        "audio": {
+          "state": "none"
+        },
+        "rawTitle": "Teemid - Crazy feat. Joie Tan (Gnarls Barkley Cover)"
+      }
+    },
+    {
+      "id": "mashup",
+      "label": "Mashup",
+      "rawTitle": "Mashup Lab - Summer Ends (Nirvana x Daft Punk Mashup)",
+      "segments": [
+        {
+          "text": "Mashup Lab",
+          "fields": [
+            "mainArtists"
+          ],
+          "label": "Maker, main artist"
+        },
+        {
+          "text": " - "
+        },
+        {
+          "text": "Summer Ends",
+          "fields": [
+            "title"
+          ]
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "(Nirvana x Daft Punk Mashup)",
+          "fields": [
+            "version.name",
+            "version.type",
+            "version.originalArtists"
+          ],
+          "label": "Version, source artists"
+        }
+      ],
+      "song": {
+        "title": "Summer Ends",
+        "mainArtists": [
+          "Mashup Lab"
+        ],
+        "featuredArtists": [],
+        "version": {
+          "type": "mashup",
+          "name": "Nirvana x Daft Punk Mashup",
+          "artists": [],
+          "originalArtists": [
+            "Nirvana",
+            "Daft Punk"
+          ]
+        },
+        "albums": [],
+        "genres": [
+          "genre:electronic"
+        ],
+        "sources": [
+          {
+            "platform": "youtube",
+            "url": "https://youtu.be/example"
+          }
+        ],
+        "audio": {
+          "state": "none"
+        },
+        "rawTitle": "Mashup Lab - Summer Ends (Nirvana x Daft Punk Mashup)"
+      }
+    },
+    {
+      "id": "live",
+      "label": "Live",
+      "rawTitle": "Dua Lipa - Cold Heart (Live, Royal Albert Hall)",
+      "segments": [
+        {
+          "text": "Dua Lipa",
+          "fields": [
+            "mainArtists"
+          ]
+        },
+        {
+          "text": " - "
+        },
+        {
+          "text": "Cold Heart",
+          "fields": [
+            "title"
+          ]
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "(Live, Royal Albert Hall)",
+          "fields": [
+            "version.name",
+            "version.type",
+            "version.releaseYear"
+          ],
+          "label": "Version"
+        }
+      ],
+      "song": {
+        "title": "Cold Heart",
+        "mainArtists": [
+          "Dua Lipa"
+        ],
+        "featuredArtists": [],
+        "version": {
+          "type": "live",
+          "name": "Live, Royal Albert Hall",
+          "artists": []
+        },
+        "releaseYear": 2021,
+        "albums": [],
+        "genres": [
+          "genre:pop"
+        ],
+        "sources": [
+          {
+            "platform": "youtube",
+            "url": "https://youtu.be/example"
+          }
+        ],
+        "audio": {
+          "state": "none"
+        },
+        "rawTitle": "Dua Lipa - Cold Heart (Live, Royal Albert Hall)"
+      }
+    },
+    {
+      "id": "acoustic",
+      "label": "Acoustic",
+      "rawTitle": "Ed Sheeran - Shape of You (Acoustic)",
+      "segments": [
+        {
+          "text": "Ed Sheeran",
+          "fields": [
+            "mainArtists"
+          ]
+        },
+        {
+          "text": " - "
+        },
+        {
+          "text": "Shape of You",
+          "fields": [
+            "title"
+          ]
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "(Acoustic)",
+          "fields": [
+            "version.name",
+            "version.type",
+            "version.releaseYear"
+          ],
+          "label": "Version"
+        }
+      ],
+      "song": {
+        "title": "Shape of You",
+        "mainArtists": [
+          "Ed Sheeran"
+        ],
+        "featuredArtists": [],
+        "version": {
+          "type": "acoustic",
+          "name": "Acoustic",
+          "artists": []
+        },
+        "releaseYear": 2017,
+        "albums": [],
+        "genres": [
+          "genre:pop"
+        ],
+        "sources": [
+          {
+            "platform": "youtube",
+            "url": "https://youtu.be/example"
+          }
+        ],
+        "audio": {
+          "state": "none"
+        },
+        "rawTitle": "Ed Sheeran - Shape of You (Acoustic)"
+      }
+    },
+    {
+      "id": "extended",
+      "label": "Extended",
+      "rawTitle": "Daft Punk - Around the World (Extended Mix)",
+      "segments": [
+        {
+          "text": "Daft Punk",
+          "fields": [
+            "mainArtists"
+          ]
+        },
+        {
+          "text": " - "
+        },
+        {
+          "text": "Around the World",
+          "fields": [
+            "title"
+          ]
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "(Extended Mix)",
+          "fields": [
+            "version.name",
+            "version.type",
+            "version.releaseYear"
+          ],
+          "label": "Version"
+        }
+      ],
+      "song": {
+        "title": "Around the World",
+        "mainArtists": [
+          "Daft Punk"
+        ],
+        "featuredArtists": [],
+        "version": {
+          "type": "extended",
+          "name": "Extended Mix",
+          "artists": []
+        },
+        "releaseYear": 1997,
+        "albums": [
+          "Homework"
+        ],
+        "genres": [
+          "genre:house"
+        ],
+        "sources": [
+          {
+            "platform": "youtube",
+            "url": "https://youtu.be/example"
+          }
+        ],
+        "audio": {
+          "state": "none"
+        },
+        "rawTitle": "Daft Punk - Around the World (Extended Mix)"
+      }
+    },
+    {
+      "id": "instrumental",
+      "label": "Instrumental",
+      "rawTitle": "Gotye - Somebody That I Used to Know (Instrumental)",
+      "segments": [
+        {
+          "text": "Gotye",
+          "fields": [
+            "mainArtists"
+          ]
+        },
+        {
+          "text": " - "
+        },
+        {
+          "text": "Somebody That I Used to Know",
+          "fields": [
+            "title"
+          ]
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "(Instrumental)",
+          "fields": [
+            "version.name",
+            "version.type",
+            "version.releaseYear"
+          ],
+          "label": "Version"
+        }
+      ],
+      "song": {
+        "title": "Somebody That I Used to Know",
+        "mainArtists": [
+          "Gotye"
+        ],
+        "featuredArtists": [],
+        "version": {
+          "type": "instrumental",
+          "name": "Instrumental",
+          "artists": []
+        },
+        "releaseYear": 2011,
+        "albums": [],
+        "genres": [
+          "genre:pop"
+        ],
+        "sources": [
+          {
+            "platform": "youtube",
+            "url": "https://youtu.be/example"
+          }
+        ],
+        "audio": {
+          "state": "none"
+        },
+        "rawTitle": "Gotye - Somebody That I Used to Know (Instrumental)"
+      }
+    },
+    {
+      "id": "remaster",
+      "label": "Remaster",
+      "rawTitle": "Pink Floyd - Time (2011 Remaster)",
+      "segments": [
+        {
+          "text": "Pink Floyd",
+          "fields": [
+            "mainArtists"
+          ]
+        },
+        {
+          "text": " - "
+        },
+        {
+          "text": "Time",
+          "fields": [
+            "title"
+          ]
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "(2011 Remaster)",
+          "fields": [
+            "version.name",
+            "version.type",
+            "version.releaseYear"
+          ],
+          "label": "Version, version year"
+        }
+      ],
+      "song": {
+        "title": "Time",
+        "mainArtists": [
+          "Pink Floyd"
+        ],
+        "featuredArtists": [],
+        "version": {
+          "type": "remaster",
+          "name": "2011 Remaster",
+          "artists": [],
+          "releaseYear": 2011
+        },
+        "releaseYear": 1973,
+        "albums": [
+          "The Dark Side of the Moon"
+        ],
+        "genres": [
+          "genre:rock"
+        ],
+        "sources": [
+          {
+            "platform": "youtube",
+            "url": "https://youtu.be/example"
+          }
+        ],
+        "audio": {
+          "state": "none"
+        },
+        "rawTitle": "Pink Floyd - Time (2011 Remaster)"
+      }
+    },
+    {
+      "id": "edit",
+      "label": "Edit",
+      "rawTitle": "Kate Bush - Running Up That Hill (Radio Edit)",
+      "segments": [
+        {
+          "text": "Kate Bush",
+          "fields": [
+            "mainArtists"
+          ]
+        },
+        {
+          "text": " - "
+        },
+        {
+          "text": "Running Up That Hill",
+          "fields": [
+            "title"
+          ]
+        },
+        {
+          "text": " "
+        },
+        {
+          "text": "(Radio Edit)",
+          "fields": [
+            "version.name",
+            "version.type",
+            "version.releaseYear"
+          ],
+          "label": "Version"
+        }
+      ],
+      "song": {
+        "title": "Running Up That Hill",
+        "mainArtists": [
+          "Kate Bush"
+        ],
+        "featuredArtists": [],
+        "version": {
+          "type": "edit",
+          "name": "Radio Edit",
+          "artists": []
+        },
+        "releaseYear": 1985,
+        "albums": [
+          "Hounds of Love"
+        ],
+        "genres": [
+          "genre:pop"
+        ],
+        "sources": [
+          {
+            "platform": "youtube",
+            "url": "https://youtu.be/example"
+          }
+        ],
+        "audio": {
+          "state": "none"
+        },
+        "rawTitle": "Kate Bush - Running Up That Hill (Radio Edit)"
+      }
+    }
+  ]
+}

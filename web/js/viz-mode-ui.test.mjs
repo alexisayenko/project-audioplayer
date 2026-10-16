@@ -106,7 +106,7 @@ test('outside pointerdown closes the popup', () => {
 
 test('M cycles modes while the overlay is open; ignored in inputs, closed on other routes', () => {
   assert.equal(vizMode(), 'ring');
-  if (!ui.full.isOpen()) $('p-viz').click();
+  if (!ui.full.isOpen()) $('mini-viz').click();
   key('m');
   assert.equal(vizMode(), 'bars');
   assert.equal($('viz-live').textContent, 'Visualizer: Mirrored spectrum');
@@ -232,7 +232,7 @@ test('the overlay idle class (dock and controls) follows the timer and the keep 
   const t = manualTimers();
   const root = $('viz-full');
   let held = false;
-  const fs = createFullscreen({ root, opener: $('p-viz'), keep: () => held, setTimer: t.set, clearTimer: t.clear, hideMs: 3000 });
+  const fs = createFullscreen({ root, opener: $('mini-viz'), keep: () => held, setTimer: t.set, clearTimer: t.clear, hideMs: 3000 });
   fs.open();
   held = true;
   t.advance(3000);
@@ -280,17 +280,18 @@ test('the dock has a plain Visualizer key left of Shuffle, no dropdown or chevro
   assert.deepEqual([...mini.matchAll(/id="(mini-(?:viz|shuffle|prev|play|next|repeat))"/g)].map((m) => m[1]), ['mini-viz', 'mini-shuffle', 'mini-prev', 'mini-play', 'mini-next', 'mini-repeat']);
   assert.doesNotMatch(section('player'), /viz-switch/);
   assert.equal($('mini-viz-switch'), null);
+  assert.equal($('p-viz'), null);
+  assert.doesNotMatch(pageHtml, /id="p-viz"/);
   assert.match(pageHtml, /id="viz-full"[\s\S]*id="viz-switch"/);
 });
 
-test('dock Visualizer key opens and closes the same full screen as #p-viz and returns focus', () => {
+test('dock Visualizer key opens and closes the full screen and returns focus', () => {
   document.body.dataset.route = 'library';
   const k = $('mini-viz');
   assert.equal(ui.full.isOpen(), false);
   k.click();
   assert.equal(ui.full.isOpen(), true);
   assert.equal(k.getAttribute('aria-pressed'), 'true');
-  assert.equal($('p-viz').getAttribute('aria-pressed'), 'true');
   ui.full.close();
   assert.equal(k.getAttribute('aria-pressed'), 'false');
   assert.equal(document.activeElement, k);

@@ -74,7 +74,8 @@ test('the card opens read-only with links, actions and returns focus to the row 
   assert.deepEqual(names(dlg), ['Play now', 'Download', 'Edit', 'Add to playlist']);
   assert.ok(dlg.querySelectorAll('.card-icons .icon').every((b) => b.getAttribute('aria-label') && b.title), 'icon buttons are labelled');
   assert.equal(dlg.querySelector('.card-bar .card-close').textContent, 'Close');
-  assert.equal(dlg.querySelector('.card-actions .btn').textContent, 'Add to playlist', 'queue toggle stays a text button');
+  assert.equal(dlg.querySelector('.card-actions .btn'), null, 'no text button while the song is not in the playlist');
+  assert.equal(dlg.querySelectorAll('.card-icons .icon').length, 4, 'Add to playlist is the fourth icon in the row');
   assert.match(dlg.textContent, /Zed · 1999/);
   assert.equal(dlg.querySelector('.card-album').textContent, 'LP');
   assert.equal(store.listeners.size, before + 1);
@@ -128,6 +129,8 @@ test('Play now plays the song, the playlist button toggles, Edit hands over to t
   btn('Add to playlist').click();
   assert.equal(player.inQueue('a'), true);
   assert.ok(btn('Remove from playlist'), 'the card repaints after the toggle');
+  assert.equal(btn('Add to playlist'), undefined, 'the Add icon gives way to the Remove text button');
+  assert.equal(btn('Remove from playlist').classList.contains('btn'), true, 'Remove stays a text button below the icon row');
   assert.ok(btn('Play'), 'the first queued song becomes current, so the primary button resumes it');
   btn('Play').click();
   assert.equal(player.playing, true);

@@ -114,9 +114,9 @@ export function initVisualizer({
   $('viz-full').dataset.theme = 'dark';
   $('viz-corner').classList.add('t-micro');
   document.body.append(dock);
-  const button = $('p-viz');
+  const button = $('mini-viz');
   const reducedMql = win.matchMedia?.(REDUCED) ?? null;
-  setIcon('p-viz', 'equalizer', 'nav');
+  setIcon('mini-viz', 'equalizer', 'action');
   setIcon('viz-prev', 'prev', 'nav');
   setIcon('viz-next', 'next', 'nav');
   if (!supported) {
@@ -216,7 +216,6 @@ export function initVisualizer({
       paintPlayButton(audio);
       scrubber.sync();
       fullViz.setEnabled(true);
-      miniViz.setAttribute('aria-pressed', 'true');
       syncSwitchVisibility();
     },
     onIdle() { for (const sw of switches) sw.close(); },
@@ -225,18 +224,11 @@ export function initVisualizer({
       placeStatus(false);
       document.body.append(dock);
       fullViz.setEnabled(false);
-      miniViz.setAttribute('aria-pressed', 'false');
-      if (openedFromMini) { openedFromMini = false; miniViz.focus?.(); }
       syncSwitchVisibility();
     },
   });
 
   button.addEventListener('click', toggleFull);
-  const miniViz = $('mini-viz');
-  setIcon('mini-viz', 'equalizer', 'action');
-  if (!supported) { miniViz.disabled = true; miniViz.title = NO_AUDIO_TIP; }
-  let openedFromMini = false;
-  miniViz.addEventListener('click', () => { openedFromMini = true; toggleFull(); });
   const gear = $('viz-settings');
   setIcon('viz-settings', 'settings', 'nav');
   gear.addEventListener('click', () => {

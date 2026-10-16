@@ -5,6 +5,7 @@ import { layoutRadial } from './genre-radial.js';
 import { VOCAB, SONGS } from './genre-levels-fixture.mjs';
 
 let frames = [];
+let drawCalls = {};
 let transforms = [];
 globalThis.window = { devicePixelRatio: 1, addEventListener() {}, removeEventListener() {} };
 globalThis.getComputedStyle = () => ({ getPropertyValue: () => '#123456', fontFamily: 'sans-serif' });
@@ -14,7 +15,7 @@ globalThis.cancelAnimationFrame = () => {};
 function makeCanvas() {
   const h = new Map();
   const ctx = new Proxy({}, {
-    get: (t, k) => (k === 'setTransform' ? (...a) => transforms.push(a) : k === 'measureText' ? () => ({ width: 30 }) : () => {}),
+    get: (t, k) => (k === 'setTransform' ? (...a) => transforms.push(a) : k === 'measureText' ? () => ({ width: 30 }) : (...a) => { (drawCalls[k] ||= []).push(a); }),
     set: () => true,
   });
   return {
@@ -90,4 +91,25 @@ test('lostpointercapture ends the drag and the window blur handler is registered
   canvas.fire('lostpointercapture');
   canvas.fire('pointermove', { clientX: 700, clientY: 500 });
   assert.deepEqual(pan(), moved);
+});
+
+test('labels never use leader lines: only edges are stroked as lines, none for labels', async () => {
+  const { view, layout, pan } = await setup();
+  const run = (f = 1) => { drawCalls = {}; while (frames.length) frames.splice(0).forEach((fn) => fn()); drawCalls = {}; view.zoomBy(f); frames.splice(0).forEach((f) => f()); return drawCalls; };
+  pan();
+  const c = run();
+  const ticks = layout.nodes.filter((n) => n.node.status === 'approved').length;
+  assert.equal((c.lineTo || []).length, layout.edges.length + 2 * ticks);
+  assert.equal((c.moveTo || []).length, layout.edges.length + ticks);
+  const texts = (c.fillText || []).map(([t, x, y]) => ({ t, x, y }));
+  assert.ok(texts.length > 0);
+  const boxes = texts.map((p) => ({ x: p.x - 15, y: p.y, w: 30, h: 14 }));
+  for (let i = 0; i < boxes.length; i += 1) for (let j = i + 1; j < boxes.length; j += 1) {
+    const a = boxes[i]; const b = boxes[j];
+    assert.equal(a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h, false);
+  }
+  const again = run();
+  assert.deepEqual((again.fillText || []).map((x) => x.slice(0, 3)), texts.map((p) => [p.t, p.x, p.y]));
+  const zoomed = run(3);
+  assert.ok((zoomed.fillText || []).length >= 1);
 });
