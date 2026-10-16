@@ -17,6 +17,7 @@
   --on-accent: #0b2a33;
   --ok: #1f8f45;
   --power: #e54436;
+  --power-text: #c0362a;
   --vinyl: #101417;
   --chrome: #c9ccca;
   --brand-youtube: #FF0000;
@@ -24,27 +25,105 @@
   --brand-spotify: #1DB954;
   --brand-wikipedia: #1b2024;
   --brand-musicbrainz: #BA478F;
+  --chart-0: #1a8aa6;
+  --chart-1: #c8372d;
+  --chart-2: #d0549a;
+  --chart-3: #7a4fc2;
+  --chart-4: #a87400;
+  --chart-5: #d2601a;
+  --chart-6: #3558c4;
+  --chart-7: #2f8f3f;
+  --chart-8: #6f8a12;
+  --chart-9: #2a6f97;
+  --chart-10: #8a5a2b;
+  --chart-11: #b03aa8;
+  --chart-12: #5f6669;
+  --chart-13: #1fa088;
+  --chart-14: #8f7f3a;
+  --chart-15: #8a8f93;
+  --scrim: #1b202466;
+  --fill: var(--accent-strong);
+  --on-fill: var(--ink);
+  --ring-color: var(--accent-ink);
+  --caret: var(--accent-ink);
+  --selection: var(--accent-tint);
   --font-sans: -apple-system, "SF Pro Display", "SF Pro Text", system-ui, "Helvetica Neue", sans-serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
   --space-4: 16px;
+  --space-5: 20px;
   --space-6: 24px;
   --space-8: 32px;
   --hit: 44px;
+  --radius-xs: 4px;
   --radius-sm: 8px;
   --radius-key: 12px;
   --radius-card: 20px;
   --radius-tray: 28px;
   --radius-pill: 999px;
+  --stroke-hairline: 1px;
+  --stroke-focus: 2px;
+  --stroke-progress: 3px;
   --shadow-card: 0 2px 10px #1b202414, inset 0 1px 0 #ffffffb3;
   --shadow-float: 0 8px 24px #1b202429, 0 0 0 1px #ddd5c6, inset 0 1px 0 #ffffffb3;
   --shadow-key: 0 1px 2px #1b20241a, inset 0 1px 0 #ffffffcc;
   --glow-accent: 0 0 12px #57d3e980, inset 0 1px 0 #ffffff99;
+  --rim-copper: inset 0 0 0 1px #b5895a59;
+  --cover-gradient: linear-gradient(#10141700, #101417a6 40%, #101417e6);
+  --hover-mix: 6%;
+  --pressed-mix: 12%;
+  --pressed-scale: .98;
+  --disabled-opacity: .45;
+  --ring-width: 2px;
+  --ring-offset: 2px;
+  --scrollbar-width: thin;
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --dur-slow: 300ms;
+  --ease-out: cubic-bezier(.2,.8,.2,1);
+  --ease-io: cubic-bezier(.4,0,.2,1);
+  --enter-offset: 8px;
+  --enter-scale: .96;
+  --z-sticky: 10;
+  --z-float: 20;
+  --z-menu: 30;
+  --z-dialog: 60;
+  --z-toast: 70;
+  --z-full: 100;
+  --icon-inline: 16px;
+  --icon-action: 18px;
+  --icon-nav: 20px;
+  --icon-play: 24px;
+  --icon-stroke: 1.8;
+  --icon-grid: 24;
+  --icon-live: 20;
+  --control-sm: 28px;
+  --control: 36px;
+  --control-xl: 56px;
+  --track-seek: 6px;
+  --track-volume: 3px;
+  --thumb-seek: 16px;
+  --thumb-volume: 12px;
+  --drag-scale: 1.25;
+  --dialog-width: 560px;
+  --dialog-width-wide: 720px;
+  --grab-w: 36px;
+  --grab-h: 5px;
+  --font-display: 700 34px/41px var(--font-sans);
+  --font-title: 700 22px/28px var(--font-sans);
+  --font-headline: 600 17px/22px var(--font-sans);
+  --font-body: 400 17px/22px var(--font-sans);
+  --font-subhead: 400 15px/20px var(--font-sans);
+  --font-subhead-strong: 600 15px/20px var(--font-sans);
+  --font-caption: 400 13px/18px var(--font-sans);
+  --font-micro: 400 11px/14px var(--font-sans);
+  --font-eyebrow: 600 12px/16px var(--font-sans);
+  --font-time: 500 13px/18px var(--font-mono);
 }
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --ground: #1b1f22;
     --surface: #24282b;
     --surface-sunken: #15181a;
@@ -59,18 +138,91 @@
     --accent-tint: #34484e;
     --ok: #46e46e;
     --power: #ff6a5c;
+    --power-text: #ff6a5c;
     --chrome: #9aa0a3;
     --brand-wikipedia: #ece8df;
+    --chart-0: #4fc3e0;
+    --chart-1: #ff6b5e;
+    --chart-2: #f27fbd;
+    --chart-3: #a98aff;
+    --chart-4: #e6b422;
+    --chart-5: #ff9a52;
+    --chart-6: #7b9bff;
+    --chart-7: #5fcf72;
+    --chart-8: #b5d33d;
+    --chart-9: #5aa9d6;
+    --chart-10: #c99a62;
+    --chart-11: #d878d0;
+    --chart-12: #a3a9ab;
+    --chart-13: #4fd1b5;
+    --chart-14: #cdbb62;
+    --chart-15: #a0a5a8;
+    --scrim: #0d0f10a6;
+    --fill: var(--accent);
+    --on-fill: var(--on-accent);
+    --ring-color: var(--accent-ink);
+    --caret: var(--accent-ink);
+    --selection: var(--accent-tint);
     --shadow-card: 0 2px 10px #00000066, inset 0 1px 0 #ffffff14;
     --shadow-float: 0 8px 24px #000000b3, 0 0 0 1px #353b3f, inset 0 1px 0 #ffffff14;
     --shadow-key: 0 1px 2px #00000080, inset 0 1px 0 #ffffff1a;
+    --glow-accent: 0 0 12px #57d3e980, inset 0 1px 0 #ffffff14;
+    --rim-copper: inset 0 0 0 1px #6b482f59;
   }
+}
+[data-theme="dark"] {
+  --ground: #1b1f22;
+  --surface: #24282b;
+  --surface-sunken: #15181a;
+  --surface-key: #1d2023;
+  --line: #353b3f;
+  --ink: #ece8df;
+  --ink-muted: #a3a9ab;
+  --ink-faint: #5f6568;
+  --copper: #6b482f;
+  --copper-deep: #4e3320;
+  --accent-ink: #9edde6;
+  --accent-tint: #34484e;
+  --ok: #46e46e;
+  --power: #ff6a5c;
+  --power-text: #ff6a5c;
+  --chrome: #9aa0a3;
+  --brand-wikipedia: #ece8df;
+  --chart-0: #4fc3e0;
+  --chart-1: #ff6b5e;
+  --chart-2: #f27fbd;
+  --chart-3: #a98aff;
+  --chart-4: #e6b422;
+  --chart-5: #ff9a52;
+  --chart-6: #7b9bff;
+  --chart-7: #5fcf72;
+  --chart-8: #b5d33d;
+  --chart-9: #5aa9d6;
+  --chart-10: #c99a62;
+  --chart-11: #d878d0;
+  --chart-12: #a3a9ab;
+  --chart-13: #4fd1b5;
+  --chart-14: #cdbb62;
+  --chart-15: #a0a5a8;
+  --scrim: #0d0f10a6;
+  --fill: var(--accent);
+  --on-fill: var(--on-accent);
+  --ring-color: var(--accent-ink);
+  --caret: var(--accent-ink);
+  --selection: var(--accent-tint);
+  --shadow-card: 0 2px 10px #00000066, inset 0 1px 0 #ffffff14;
+  --shadow-float: 0 8px 24px #000000b3, 0 0 0 1px #353b3f, inset 0 1px 0 #ffffff14;
+  --shadow-key: 0 1px 2px #00000080, inset 0 1px 0 #ffffff1a;
+  --glow-accent: 0 0 12px #57d3e980, inset 0 1px 0 #ffffff14;
+  --rim-copper: inset 0 0 0 1px #6b482f59;
 }
 .t-display { font-family: var(--font-sans); font-size: 34px; font-weight: 700; line-height: 41px; }
 .t-title { font-family: var(--font-sans); font-size: 22px; font-weight: 700; line-height: 28px; }
 .t-headline { font-family: var(--font-sans); font-size: 17px; font-weight: 600; line-height: 22px; }
 .t-body { font-family: var(--font-sans); font-size: 17px; font-weight: 400; line-height: 22px; }
 .t-subhead { font-family: var(--font-sans); font-size: 15px; font-weight: 400; line-height: 20px; }
+.t-subhead-strong { font-family: var(--font-sans); font-size: 15px; font-weight: 600; line-height: 20px; }
 .t-caption { font-family: var(--font-sans); font-size: 13px; font-weight: 400; line-height: 18px; }
-.t-eyebrow { font-family: var(--font-sans); font-size: 12px; font-weight: 600; line-height: 16px; letter-spacing: 2px; }
+.t-micro { font-family: var(--font-sans); font-size: 11px; font-weight: 400; line-height: 14px; }
+.t-eyebrow { font-family: var(--font-sans); font-size: 12px; font-weight: 600; line-height: 16px; letter-spacing: 2px; text-transform: uppercase; }
 .t-time { font-family: var(--font-mono); font-size: 13px; font-weight: 500; line-height: 18px; }

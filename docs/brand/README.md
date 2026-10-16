@@ -38,9 +38,11 @@ Prices, assessment, follow-up steps and the checks history: [`domains.md`](domai
 2. Export its `project/tokens.json` here as [`tokens.json`](tokens.json).
 3. `python3 scripts/sync-design-system.py` regenerates
    `ios/Sources/DesignTokens.swift` and `web/tokens.css`.
-4. Commit the export and the two generated files together. Never edit the
+   `python3 scripts/sync-design-system.py --check` writes nothing and exits
+   1 if the generated files differ from what the script would write.
+4. Run `--check`, then commit the export and the two generated files together. Never edit the
    generated files; never add a colour, size or radius in code that the
-   system does not define — add it to the system first. Partially followed: the web still has literal colours, radii, shadows and px sizes (WEB-010 Known gaps) and the iOS app has hand-built shadows, literal radius 16, literal sizes and `.white`/`.black` on the Sign in with Apple button (IOS-050 Known gaps); `sync-design-system.py` has no `--check` mode and `check.sh` has no literal-colour lint.
+   system does not define — add it to the system first. Partially followed: the web still has literal colours, radii, shadows and px sizes (WEB-010 Known gaps) and the iOS app has hand-built shadows, literal radius 16, literal sizes and `.white`/`.black` on the Sign in with Apple button (IOS-050 Known gaps); `sync-design-system.py --check` verifies only that the generated files are current, and `check.sh` has no literal-colour lint.
 
 Screens are designed in the Screens artifact before they are built; a
 component used on a screen must exist in the system.
@@ -55,6 +57,7 @@ component used on a screen must exist in the system.
 - **Mark**: the record on the platter (cyan disc, teal stripes, paper
   frame); the app icon is derived from it. Source file: the system's
   `assets/Mockups2/mockup-11.png` until a vector mark is drawn.
+- **Token families**: colour (including the chart palette and the web-only `scrim`, `fill`, `on-fill`, `ring-color`, `caret`, `selection`), type, space, radius, shadow plus `stroke`, `state`, `motion`, `elevation`, `overlay`, `icon` and `control` (the chart palette and `stroke` also reach Swift; the rest are web-only).
 - **History**: Vega 108 skeuomorphic look (ADR-0007), sketches in
   `../ui-ux/vega-108/`, retired by ADR-0009.
 

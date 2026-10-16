@@ -8,7 +8,7 @@ enum DS {
     enum Color {
         /// Screen background. Warm paper by day, charcoal by night. Never pure white or pure black.
         static let ground = SwiftUI.Color(light: (0.953, 0.937, 0.902, 1.000), dark: (0.106, 0.122, 0.133, 1.000))
-        /// Cards, the transport tray, the tab bar, list groups. Sits on ground with shadow-card, no border.
+        /// Cards, list groups and the fill of every slab. Sits on ground with shadow-card, no border; floating slabs (transport tray, tab bar, mini player, sheets, menus, dialogs) keep this fill but use shadow-float.
         static let surface = SwiftUI.Color(light: (0.984, 0.973, 0.949, 1.000), dark: (0.141, 0.157, 0.169, 1.000))
         /// Segmented-control track, progress track, search field. Below the surface, so darker by day and darker by night too.
         static let surfaceSunken = SwiftUI.Color(light: (0.914, 0.890, 0.839, 1.000), dark: (0.082, 0.094, 0.102, 1.000))
@@ -22,9 +22,9 @@ enum DS {
         static let inkMuted = SwiftUI.Color(light: (0.373, 0.400, 0.412, 1.000), dark: (0.639, 0.663, 0.671, 1.000))
         /// Disabled text, drag handles, chevrons. Decorative only: below 4.5:1, never for text that must be read.
         static let inkFaint = SwiftUI.Color(light: (0.627, 0.639, 0.635, 1.000), dark: (0.373, 0.396, 0.408, 1.000))
-        /// The thin copper rim around the phone bezel and the turntable deck. Decoration, never a text or button colour.
+        /// The thin copper rim around the phone bezel and the turntable deck. Web: only the rim on cover art and the placeholder disc (rim-copper). Decoration, never a text or button colour.
         static let copper = SwiftUI.Color(light: (0.710, 0.537, 0.353, 1.000), dark: (0.420, 0.282, 0.184, 1.000))
-        /// Shaded edge of the copper rim and the deck's inner border.
+        /// iOS only (not used on the web). Shaded edge of the copper rim and the deck's inner border.
         static let copperDeep = SwiftUI.Color(light: (0.549, 0.384, 0.220, 1.000), dark: (0.306, 0.200, 0.125, 1.000))
         /// The single accent: the lit play/pause key, the active segment, the progress fill, the active tab icon. Cyan is a light; keep it on controls, not on text.
         static let accent = SwiftUI.Color(light: (0.341, 0.827, 0.914, 1.000), dark: (0.341, 0.827, 0.914, 1.000))
@@ -40,9 +40,11 @@ enum DS {
         static let ok = SwiftUI.Color(light: (0.122, 0.561, 0.271, 1.000), dark: (0.275, 0.894, 0.431, 1.000))
         /// The tiny red LED on the deck, 'Delete from library', 'Server unavailable'. A signal, never a surface.
         static let power = SwiftUI.Color(light: (0.898, 0.267, 0.212, 1.000), dark: (1.000, 0.416, 0.361, 1.000))
+        /// power as TEXT: error and unavailable messages, destructive menu items. Darker by day (5.2:1 on surface, 4.8:1 on ground); equals power by night (5.3:1 on surface). Use power for LEDs and glyphs, power-text for words.
+        static let powerText = SwiftUI.Color(light: (0.753, 0.212, 0.165, 1.000), dark: (1.000, 0.416, 0.361, 1.000))
         /// The record on the platter, in both themes.
         static let vinyl = SwiftUI.Color(light: (0.063, 0.078, 0.090, 1.000), dark: (0.063, 0.078, 0.090, 1.000))
-        /// Tonearm, spindle, the small volume knob. Flat metal, no gradient in UI code; the mockups' brushed look is for the deck only.
+        /// iOS only (not used on the web). Tonearm, spindle, the small volume knob. Flat metal, no gradient in UI code; the mockups' brushed look is for the deck only.
         static let chrome = SwiftUI.Color(light: (0.788, 0.800, 0.792, 1.000), dark: (0.604, 0.627, 0.639, 1.000))
         /// Service icon next to Get metadata once that service returned data; icons only, never text or surfaces; inactive state uses ink-faint.
         static let brandYoutube = SwiftUI.Color(light: (1.000, 0.000, 0.000, 1.000), dark: (1.000, 0.000, 0.000, 1.000))
@@ -54,6 +56,42 @@ enum DS {
         static let brandWikipedia = SwiftUI.Color(light: (0.106, 0.125, 0.141, 1.000), dark: (0.925, 0.910, 0.875, 1.000))
         /// Service icon next to Get metadata once that service returned data; icons only, never text or surfaces; inactive state uses ink-faint. MusicBrainz magenta (not the orange, which would read as SoundCloud): 4.1:1 on day ground, 3.5:1 on night ground, above the 3:1 icon minimum.
         static let brandMusicbrainz = SwiftUI.Color(light: (0.729, 0.278, 0.561, 1.000), dark: (0.729, 0.278, 0.561, 1.000))
+    }
+
+    // MARK: Chart
+    enum Chart {
+        /// Categorical series 0 (cyan): genre family colours on the Genres map and Song stats, graph marks only, never text. Pair with a label or position; never rely on hue alone.
+        static let chart0 = SwiftUI.Color(light: (0.102, 0.541, 0.651, 1.000), dark: (0.310, 0.765, 0.878, 1.000))
+        /// Categorical series 1 (red): genre family colours on the Genres map and Song stats, graph marks only, never text. Pair with a label or position; never rely on hue alone.
+        static let chart1 = SwiftUI.Color(light: (0.784, 0.216, 0.176, 1.000), dark: (1.000, 0.420, 0.369, 1.000))
+        /// Categorical series 2 (pink): genre family colours on the Genres map and Song stats, graph marks only, never text. Pair with a label or position; never rely on hue alone.
+        static let chart2 = SwiftUI.Color(light: (0.816, 0.329, 0.604, 1.000), dark: (0.949, 0.498, 0.741, 1.000))
+        /// Categorical series 3 (violet): genre family colours on the Genres map and Song stats, graph marks only, never text. Pair with a label or position; never rely on hue alone.
+        static let chart3 = SwiftUI.Color(light: (0.478, 0.310, 0.761, 1.000), dark: (0.663, 0.541, 1.000, 1.000))
+        /// Categorical series 4 (amber): genre family colours on the Genres map and Song stats, graph marks only, never text. Pair with a label or position; never rely on hue alone.
+        static let chart4 = SwiftUI.Color(light: (0.659, 0.455, 0.000, 1.000), dark: (0.902, 0.706, 0.133, 1.000))
+        /// Categorical series 5 (orange): genre family colours on the Genres map and Song stats, graph marks only, never text. Pair with a label or position; never rely on hue alone.
+        static let chart5 = SwiftUI.Color(light: (0.824, 0.376, 0.102, 1.000), dark: (1.000, 0.604, 0.322, 1.000))
+        /// Categorical series 6 (blue): genre family colours on the Genres map and Song stats, graph marks only, never text. Pair with a label or position; never rely on hue alone.
+        static let chart6 = SwiftUI.Color(light: (0.208, 0.345, 0.769, 1.000), dark: (0.482, 0.608, 1.000, 1.000))
+        /// Categorical series 7 (green): genre family colours on the Genres map and Song stats, graph marks only, never text. Pair with a label or position; never rely on hue alone.
+        static let chart7 = SwiftUI.Color(light: (0.184, 0.561, 0.247, 1.000), dark: (0.373, 0.812, 0.447, 1.000))
+        /// Categorical series 8 (olive): genre family colours on the Genres map and Song stats, graph marks only, never text. Pair with a label or position; never rely on hue alone.
+        static let chart8 = SwiftUI.Color(light: (0.435, 0.541, 0.071, 1.000), dark: (0.710, 0.827, 0.239, 1.000))
+        /// Categorical series 9 (steel): genre family colours on the Genres map and Song stats, graph marks only, never text. Pair with a label or position; never rely on hue alone.
+        static let chart9 = SwiftUI.Color(light: (0.165, 0.435, 0.592, 1.000), dark: (0.353, 0.663, 0.839, 1.000))
+        /// Categorical series 10 (brown): genre family colours on the Genres map and Song stats, graph marks only, never text. Pair with a label or position; never rely on hue alone.
+        static let chart10 = SwiftUI.Color(light: (0.541, 0.353, 0.169, 1.000), dark: (0.788, 0.604, 0.384, 1.000))
+        /// Categorical series 11 (magenta): genre family colours on the Genres map and Song stats, graph marks only, never text. Pair with a label or position; never rely on hue alone.
+        static let chart11 = SwiftUI.Color(light: (0.690, 0.227, 0.659, 1.000), dark: (0.847, 0.471, 0.816, 1.000))
+        /// Categorical series 12 (grey): same values as ink-muted, so the neutral family follows the ink ramp. Graph marks only.
+        static let chart12 = SwiftUI.Color(light: (0.373, 0.400, 0.412, 1.000), dark: (0.639, 0.663, 0.671, 1.000))
+        /// Categorical series 13 (teal): genre family colours on the Genres map and Song stats, graph marks only, never text. Pair with a label or position; never rely on hue alone.
+        static let chart13 = SwiftUI.Color(light: (0.122, 0.627, 0.533, 1.000), dark: (0.310, 0.820, 0.710, 1.000))
+        /// Categorical series 14 (khaki): genre family colours on the Genres map and Song stats, graph marks only, never text. Pair with a label or position; never rely on hue alone.
+        static let chart14 = SwiftUI.Color(light: (0.561, 0.498, 0.227, 1.000), dark: (0.804, 0.733, 0.384, 1.000))
+        /// Categorical series 15 (silver): the quiet neutral. Kept at its original value rather than ink-faint, which is 2.4:1 on surface by day and 2.5:1 by night, too low for a graph mark (3:1).
+        static let chart15 = SwiftUI.Color(light: (0.541, 0.561, 0.576, 1.000), dark: (0.627, 0.647, 0.659, 1.000))
     }
 
     // MARK: Type
@@ -68,8 +106,12 @@ enum DS {
         static let body = SwiftUI.Font.system(size: 17, weight: .regular, design: .default)
         /// Chips, status lines ('Playing from this iPhone'), tab labels at 500 (.subheadline).
         static let subhead = SwiftUI.Font.system(size: 15, weight: .regular, design: .default)
+        /// Button labels, selected chips, mini-player title, desktop row title (.subheadline.semibold).
+        static let subheadStrong = SwiftUI.Font.system(size: 15, weight: .semibold, design: .default)
         /// Counts, 'On iPhone', helper text (.footnote).
         static let caption = SwiftUI.Font.system(size: 13, weight: .regular, design: .default)
+        /// Chart legends, the download-ring label, tab labels on narrow phones. Smallest step; never for body text.
+        static let micro = SwiftUI.Font.system(size: 11, weight: .regular, design: .default)
         /// Small uppercase label, +2px tracking, in ink-muted. Web only: the Sidebar's wordmark subtitle and section labels. Never on iOS screens — the app name does not sit above a screen title.
         static let eyebrow = SwiftUI.Font.system(size: 12, weight: .semibold, design: .default)
         static let eyebrowTracking: CGFloat = 2
@@ -87,6 +129,8 @@ enum DS {
         static let space3: CGFloat = 12
         /// Card padding, screen edge inset.
         static let space4: CGFloat = 16
+        /// Dialog and sheet padding, gap between page sections on web.
+        static let space5: CGFloat = 20
         /// Section gap on Playback (deck → title → progress → transport).
         static let space6: CGFloat = 24
         /// Space above the first screen title.
@@ -97,6 +141,8 @@ enum DS {
 
     // MARK: Radius
     enum Radius {
+        /// Innermost nesting: marks, thumbs, small tags. Rule: inner radius = outer radius minus the padding between them.
+        static let radiusXs: CGFloat = 4
         /// Cover thumbnails, search field inner.
         static let radiusSm: CGFloat = 8
         /// Transport keys, the lit play key, settings cells.
@@ -107,6 +153,16 @@ enum DS {
         static let radiusTray: CGFloat = 28
         /// Chips, the segmented control, the LED dot.
         static let radiusPill: CGFloat = 999
+    }
+
+    // MARK: Stroke
+    enum Stroke {
+        /// Outlines of secondary buttons, rims, separators. The only line weight for a rim; 1.5px is retired.
+        static let strokeHairline: CGFloat = 1
+        /// Keyboard focus ring thickness (see state ring).
+        static let strokeFocus: CGFloat = 2
+        /// Progress arcs and thin tracks (download ring, volume track).
+        static let strokeProgress: CGFloat = 3
     }
 
 }

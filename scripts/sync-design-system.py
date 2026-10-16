@@ -5,14 +5,21 @@ Source of truth: the "Electrophone" Design System artifact on claude.ai
 (see docs/brand/README.md). Its project/tokens.json is committed as
 docs/brand/tokens.json; this script turns that file into
 
-  ios/Sources/DesignTokens.swift   (SwiftUI: colours per theme, type, spacing, radius)
-  web/tokens.css                   (CSS custom properties, light + dark)
+  ios/Sources/DesignTokens.swift   (SwiftUI: colours, chart colours, type, spacing, radius, stroke)
+  web/tokens.css                   (CSS custom properties, light + dark; families marked platform web are web only)
+
+All colour-valued tokens live in the color family (the artifact's parser accepts per-theme values and
+{name} aliases only there). Inside it, chart-N tokens go to DS.Chart on iOS, tokens marked
+"platform": "web" are skipped on iOS, and a "{name}" value resolves to var(--name) in CSS.
 
 Never edit the generated files. Change the design system, re-export
 tokens.json, run:  python3 scripts/sync-design-system.py
+Verify without writing:  python3 scripts/sync-design-system.py --check
 """
 from __future__ import annotations
 
+import argparse
+import difflib
 import json
 import re
 import sys
@@ -51,6 +58,18 @@ def theme_values(token: dict, themes: list[str]) -> dict[str, str]:
     return {t: val.get(t, val[first]) for t in themes}
 
 
+def css_values(token: dict, themes: list[str]) -> dict[str, str]:
+    return {t: re.sub(r"\{([a-z0-9-]+)\}", r"var(--\1)", v) for t, v in theme_values(token, themes).items()}
+
+
+def is_chart(token: dict) -> bool:
+    return token["name"].startswith("chart-")
+
+
+def on_ios(token: dict) -> bool:
+    return token.get("platform", "ios") != "web"
+
+
 def px(value) -> str:
     """'16px' -> '16', '0.5rem' -> '8', number -> str."""
     if isinstance(value, (int, float)):
@@ -69,23 +88,30 @@ def swift(tokens: dict) -> str:
     light, dark = themes[0], (themes[1] if len(themes) > 1 else themes[0])
     out = [f"// {HEADER}", "", "import SwiftUI", "", "/// Electrophone design tokens. Colours adapt to light/dark automatically.", "enum DS {"]
 
-    out.extend([
-        "    // MARK: Colours",
-        "    enum Color {",
-    ])
-    for tok in tokens["color"]["tokens"]:
-        vals = theme_values(tok, themes)
-        lr, lg, lb, la = hex_to_rgba(vals[light])
-        dr, dg, db, da = hex_to_rgba(vals[dark])
-        usage = tok.get("usage", "").replace("\n", " ")
-        out.append(f"        /// {usage}")
-        out.append(
-            f"        static let {camel(tok['name'])} = SwiftUI.Color(light: ({lr:.3f}, {lg:.3f}, {lb:.3f}, {la:.3f}), dark: ({dr:.3f}, {dg:.3f}, {db:.3f}, {da:.3f}))"
-        )
-    out.extend([
-        "    }",
-        "",
-    ])
+    color_tokens = [t for t in tokens["color"]["tokens"] if on_ios(t)]
+    for mark, enum_name, group in (
+        ("Colours", "Color", [t for t in color_tokens if not is_chart(t)]),
+        ("Chart", "Chart", [t for t in color_tokens if is_chart(t)]),
+    ):
+        if not group:
+            continue
+        out.extend([
+            f"    // MARK: {mark}",
+            f"    enum {enum_name} {{",
+        ])
+        for tok in group:
+            vals = theme_values(tok, themes)
+            lr, lg, lb, la = hex_to_rgba(vals[light])
+            dr, dg, db, da = hex_to_rgba(vals[dark])
+            usage = tok.get("usage", "").replace("\n", " ")
+            out.append(f"        /// {usage}")
+            out.append(
+                f"        static let {camel(tok['name'])} = SwiftUI.Color(light: ({lr:.3f}, {lg:.3f}, {lb:.3f}, {la:.3f}), dark: ({dr:.3f}, {dg:.3f}, {db:.3f}, {da:.3f}))"
+            )
+        out.extend([
+            "    }",
+            "",
+        ])
 
     out.extend([
         "    // MARK: Type",
@@ -146,13 +172,29 @@ def swift(tokens: dict) -> str:
     return "\n".join(out) + "\n"
 
 
-def css_dark_overrides(tokens: dict, themes: list, light: str, dark: str) -> list:
-    lines = ["@media (prefers-color-scheme: dark) {", "  :root {"]
-    for tok in tokens["color"]["tokens"] + tokens.get("shadow", {}).get("tokens", []):
-        v = theme_values(tok, themes)
-        if v[dark] != v[light]:
-            lines.append(f"    --{tok['name']}: {v[dark]};")
-    lines.extend(["  }", "}"])
+CSS_FAMILIES = ("spacing", "radius", "stroke", "shadow", "overlay", "state", "motion", "elevation", "icon", "control")
+
+
+def css_tokens(tokens: dict) -> list:
+    out = list(tokens["color"]["tokens"])
+    for family in CSS_FAMILIES:
+        out.extend(tokens.get(family, {}).get("tokens", []))
+    return out
+
+
+def css_dark_blocks(tokens: dict, themes: list, light: str, dark: str) -> list:
+    # A var() reference resolves where it is declared, so tokens built on colour variables are
+    # redeclared in the dark scope; otherwise a [data-theme="dark"] container would inherit day colours.
+    decls = []
+    for tok in css_tokens(tokens):
+        v = css_values(tok, themes)
+        if v[dark] != v[light] or "var(" in v[dark]:
+            decls.append(f"--{tok['name']}: {v[dark]};")
+    lines = ["@media (prefers-color-scheme: dark) {", '  :root:not([data-theme="light"]) {']
+    lines.extend(f"    {d}" for d in decls)
+    lines.extend(["  }", "}", '[data-theme="dark"] {'])
+    lines.extend(f"  {d}" for d in decls)
+    lines.append("}")
     return lines
 
 
@@ -162,7 +204,14 @@ def css_text_style(st: dict, fam: str) -> str:
         decl.append(f"line-height: {st['lineHeight']}")
     if st.get("letterSpacing"):
         decl.append(f"letter-spacing: {st['letterSpacing']}")
+    if st.get("textTransform"):
+        decl.append(f"text-transform: {st['textTransform']}")
     return f".t-{st['name']} {{ {'; '.join(decl)}; }}"
+
+
+def css_font_shorthand(st: dict, fam: str) -> str:
+    size = f"{st['fontSize']}/{st['lineHeight']}" if st.get("lineHeight") else st["fontSize"]
+    return f"  --font-{st['name']}: {st.get('fontWeight', 400)} {size} var(--font-{fam});"
 
 
 def css(tokens: dict) -> str:
@@ -170,32 +219,62 @@ def css(tokens: dict) -> str:
     light, dark = themes[0], (themes[1] if len(themes) > 1 else themes[0])
     lines = [f"/* {HEADER} */", ":root {"]
     for tok in tokens["color"]["tokens"]:
-        lines.append(f"  --{tok['name']}: {theme_values(tok, themes)[light]};")
+        lines.append(f"  --{tok['name']}: {css_values(tok, themes)[light]};")
     for key, stack in tokens["type"].get("families", {}).items():
         lines.append(f"  --font-{key}: {stack};")
-    for family in ("spacing", "radius", "stroke"):
+    for family in CSS_FAMILIES:
         for tok in tokens.get(family, {}).get("tokens", []):
-            lines.append(f"  --{tok['name']}: {tok['value']};")
-    for tok in tokens.get("shadow", {}).get("tokens", []):
-        lines.append(f"  --{tok['name']}: {theme_values(tok, themes)[light]};")
+            lines.append(f"  --{tok['name']}: {css_values(tok, themes)[light]};")
+    for group in tokens["type"].get("groups", []):
+        fam = group.get("family", "sans")
+        lines.extend(css_font_shorthand(st, fam) for st in group["styles"])
     lines.append("}")
     if dark != light:
-        lines.extend(css_dark_overrides(tokens, themes, light, dark))
+        lines.extend(css_dark_blocks(tokens, themes, light, dark))
     for group in tokens["type"].get("groups", []):
         fam = group.get("family", "sans")
         lines.extend(css_text_style(st, fam) for st in group["styles"])
     return "\n".join(lines) + "\n"
 
 
-def main() -> int:
+def generate() -> tuple[dict[Path, str], dict]:
     with open(SRC, encoding="utf-8") as fh:
         tokens = json.load(fh)
-    swift_text = swift(tokens)
-    css_text = css(tokens)
-    with open(SWIFT_OUT, "w", encoding="utf-8") as fh:
-        fh.write(swift_text)
-    with open(CSS_OUT, "w", encoding="utf-8") as fh:
-        fh.write(css_text)
+    return {SWIFT_OUT: swift(tokens), CSS_OUT: css(tokens)}, tokens
+
+
+def check(outputs: dict) -> int:
+    stale = 0
+    for path, text in outputs.items():
+        current = path.read_text(encoding="utf-8") if path.exists() else ""
+        if current == text:
+            continue
+        stale += 1
+        diff = list(difflib.unified_diff(current.splitlines(), text.splitlines(), f"{path.relative_to(ROOT)} (committed)", f"{path.relative_to(ROOT)} (generated)", lineterm="", n=0))
+        added = sum(1 for d in diff if d.startswith("+") and not d.startswith("+++"))
+        removed = sum(1 for d in diff if d.startswith("-") and not d.startswith("---"))
+        print(f"STALE {path.relative_to(ROOT)}: generated output differs (+{added} -{removed} lines)")
+        for line in diff[:40]:
+            print(f"  {line}")
+        if len(diff) > 40:
+            print(f"  ... {len(diff) - 40} more diff lines")
+    if stale:
+        print("run: python3 scripts/sync-design-system.py")
+        return 1
+    print("ok: web/tokens.css and ios/Sources/DesignTokens.swift match docs/brand/tokens.json")
+    return 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Generate web/tokens.css and ios/Sources/DesignTokens.swift from docs/brand/tokens.json.")
+    parser.add_argument("--check", action="store_true", help="write nothing; exit 1 if the generated files differ from what this script would write")
+    args = parser.parse_args()
+    outputs, tokens = generate()
+    if args.check:
+        return check(outputs)
+    for path, text in outputs.items():
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write(text)
     n = len(tokens["color"]["tokens"])
     print(f"wrote {SWIFT_OUT.relative_to(ROOT)} and {CSS_OUT.relative_to(ROOT)} ({n} colours, {sum(len(g['styles']) for g in tokens['type']['groups'])} text styles)")
     return 0
