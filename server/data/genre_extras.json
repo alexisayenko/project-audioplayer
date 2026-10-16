@@ -44,6 +44,11 @@
    "parent": "heavy metal",
    "note": "kept subgenre, TAG-076"
   },
+  "dark psytrance": {
+   "family": "Electronic",
+   "parent": "psytrance",
+   "note": "added by Alex, 2026-10-16 (not in Discogs, verified)"
+  },
   "darksynth": {
    "family": "Electronic",
    "parent": "synthwave",
@@ -88,6 +93,16 @@
    "family": "Rock",
    "parent": "punk",
    "note": "live library tag, reviewed 2026-10-16"
+  },
+  "forest psytrance": {
+   "family": "Electronic",
+   "parent": "psytrance",
+   "note": "added by Alex, 2026-10-16 (not in Discogs, verified)"
+  },
+  "full-on psytrance": {
+   "family": "Electronic",
+   "parent": "psytrance",
+   "note": "added by Alex, 2026-10-16 (not in Discogs, verified)"
   },
   "industrial rock": {
    "family": "Rock",
@@ -158,6 +173,11 @@
    "family": "Pop",
    "parent": "pop",
    "note": "live library tag, reviewed 2026-10-16"
+  },
+  "progressive psytrance": {
+   "family": "Electronic",
+   "parent": "psytrance",
+   "note": "added by Alex, 2026-10-16 (not in Discogs, verified)"
   },
   "psybient": {
    "family": "Electronic",

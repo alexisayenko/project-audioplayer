@@ -151,3 +151,27 @@ test('cross-links are drawn only for the selected or hovered node', () => {
   assert.ok(visibleCrossLinks(l, null, link.to).includes(link));
   assert.ok(visibleCrossLinks(l, null, null).length < l.links.length);
 });
+
+test('psytrance is a level 2 sibling of trance with its own level 3 children; counts do not leak into trance', async () => {
+  const { chain, count, searchMatches, resolveNode } = await import('./genre-levels.js');
+  const t = buildTree(vocab);
+  applyCounts(t, [{ id: 'a', tags: ['genre:dark psytrance'] }, { id: 'b', tags: ['genre:goa trance'] }, { id: 'c', tags: ['genre:psytrance'] }, { id: 'd', tags: ['genre:trance'] }]);
+  const psy = t.byId.get('s:psytrance');
+  assert.equal(psy.level, 2);
+  assert.equal(psy.parent, 'g:Electronic');
+  assert.deepEqual(psy.alsoUnder, []);
+  assert.deepEqual(psy.children.map((c) => c.name).sort(), ['dark psytrance', 'forest psytrance', 'full-on psytrance', 'goa trance', 'progressive psytrance', 'psybient']);
+  assert.ok(psy.children.every((c) => c.level === 3));
+  assert.ok(!t.byId.get('s:trance').children.some((c) => ['psytrance', 'goa trance', 'psybient'].includes(c.name)));
+  assert.equal(count(psy), 3);
+  assert.equal(count(t.byId.get('s:trance')), 1);
+  assert.deepEqual(chain(t, 's:dark psytrance').map((n) => n.name), ['Electronic', 'psytrance', 'dark psytrance']);
+  assert.equal(t.byId.get('s:dark psytrance').display, 'Dark Psy-Trance');
+  assert.equal(resolveNode('darkpsy', t).id, 's:dark psytrance');
+  assert.equal(resolveNode('prog psy', t).id, 's:progressive psytrance');
+  assert.ok(searchMatches(t, 'darkpsy').has('s:dark psytrance'));
+  assert.ok(searchMatches(t, 'prog psy').has('s:progressive psytrance'));
+  assert.equal(t.byId.get('s:progressive trance').level, 3);
+  const l = layoutRadial(t);
+  assert.equal(l.nodes.filter((n) => n.id === 's:psytrance').length, 1);
+});

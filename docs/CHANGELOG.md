@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-16 (psytrance branch, built, not deployed)
+
+- Server and web data: `psytrance` is now a level 2 umbrella beside `trance` with level 3 children dark, forest, progressive and full-on psytrance (new, not in Discogs, approved), goa trance and psybient (GEN-056); trance no longer lists them. The three-level cap is unchanged.
+
 ## 2026-10-16 (remix year suggestion, built, not deployed)
 
 - Web and server: with a "Remix & additional production" value and an empty Remix year, the Add and Edit form suggests the YouTube or SoundCloud publish year (dashed, italic; a typed value is never touched, clearing the remix removes the suggestion); `POST /preview` and `POST /metadata` gain `published_year`, `POST /metadata` an optional `remix_year` hook (ADD-111, API-048).

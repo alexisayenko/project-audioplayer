@@ -84,7 +84,7 @@ REMOVED = {
     "liquid funk": "liquid drum and bass", "breakbeat hardcore": "hardcore", "jersey club": "breakbeat", "raggacore": "hardcore", "rave": "hardcore",
     "techno pop": "synthpop", "french touch": "house", "electropop": "synthpop", "french house": "house", "melodic house": "house",
 }
-APPROVED = {"vocal trance", "melodic techno", "psybient", "darksynth", "uplifting trance", "sunshine house", "dreamsynth", "dreamwave", "neurofunk",
+APPROVED = {"dark psytrance", "forest psytrance", "progressive psytrance", "full-on psytrance", "vocal trance", "melodic techno", "psybient", "darksynth", "uplifting trance", "sunshine house", "dreamsynth", "dreamwave", "neurofunk",
             "spacesynth", "nu-nrg", "liquid drum and bass"}
 QUESTION = {"deep trance", "acid trance"}
 
@@ -335,3 +335,23 @@ def test_also_in_genres_is_validated_and_served():
     genre_vocab.reset()
     body = genre_vocab.vocabulary()["levels"]
     assert body["disco"]["also_in_genres"] == ["Electronic"] and body["deep house"]["also_in_genres"] == []
+
+
+def test_psytrance_branch_is_a_level_two_umbrella_apart_from_trance():
+    p = ENTRIES["psytrance"]
+    assert (p["parent"], p["discogs"], p["display"]) == (None, True, "Psy-Trance") and not p.get("also_under")
+    kids = {k for k, v in ENTRIES.items() if v["parent"] == "psytrance"}
+    assert kids == {"dark psytrance", "forest psytrance", "progressive psytrance", "full-on psytrance", "goa trance", "psybient"}
+    for k in kids:
+        assert ENTRIES[k]["genre"] == "Electronic"
+    assert "psytrance" not in ENTRIES["goa trance"].get("also_under", []) and "trance" not in ENTRIES["goa trance"].get("also_under", [])
+    assert ENTRIES["goa trance"]["discogs"] is True and ENTRIES["psybient"]["also_under"] == ["ambient"]
+    assert ENTRIES["progressive trance"]["parent"] == "trance"
+    assert not any(v["parent"] == "trance" and k in kids for k, v in ENTRIES.items())
+    new = ["dark psytrance", "forest psytrance", "progressive psytrance", "full-on psytrance"]
+    for k in new:
+        e = ENTRIES[k]
+        assert e["discogs"] is False and e["status"] == "approved" and k in EXTRAS and k not in STYLES["styles"], k
+        assert e["display"].endswith("Psy-Trance"), k
+    assert ENTRIES["dark psytrance"]["flavours"] == ["dark"] and ENTRIES["progressive psytrance"]["flavours"] == ["progressive"]
+    assert "darkpsy" in ENTRIES["dark psytrance"]["synonyms"] and "prog psy" in ENTRIES["progressive psytrance"]["synonyms"]

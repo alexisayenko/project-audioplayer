@@ -1104,6 +1104,21 @@
   "provisional": true,
   "discogs": false
  },
+ "dark psytrance": {
+  "genre": "Electronic",
+  "parent": "psytrance",
+  "display": "Dark Psy-Trance",
+  "synonyms": [
+   "darkpsy",
+   "dark psy",
+   "dark psy-trance"
+  ],
+  "flavours": [
+   "dark"
+  ],
+  "discogs": false,
+  "status": "approved"
+ },
  "darksynth": {
   "genre": "Electronic",
   "parent": "synthwave",
@@ -1553,6 +1568,17 @@
   "parent": null,
   "discogs": true
  },
+ "forest psytrance": {
+  "genre": "Electronic",
+  "parent": "psytrance",
+  "display": "Forest Psy-Trance",
+  "synonyms": [
+   "forest psy",
+   "forest psy-trance"
+  ],
+  "discogs": false,
+  "status": "approved"
+ },
  "forró": {
   "genre": "Latin",
   "parent": null,
@@ -1581,6 +1607,20 @@
   "genre": "Electronic",
   "parent": null,
   "discogs": true
+ },
+ "full-on psytrance": {
+  "genre": "Electronic",
+  "parent": "psytrance",
+  "display": "Full-On Psy-Trance",
+  "synonyms": [
+   "full on",
+   "fullon",
+   "full-on psy",
+   "full on psytrance",
+   "full-on psy-trance"
+  ],
+  "discogs": false,
+  "status": "approved"
  },
  "funeral doom metal": {
   "genre": "Rock",
@@ -1721,7 +1761,7 @@
  },
  "goa trance": {
   "genre": "Electronic",
-  "parent": "trance",
+  "parent": "psytrance",
   "discogs": true
  },
  "goregrind": {
@@ -2937,6 +2977,21 @@
   "provisional": true,
   "discogs": false
  },
+ "progressive psytrance": {
+  "genre": "Electronic",
+  "parent": "psytrance",
+  "display": "Progressive Psy-Trance",
+  "synonyms": [
+   "prog psy",
+   "progressive psy",
+   "progressive psy-trance"
+  ],
+  "flavours": [
+   "progressive"
+  ],
+  "discogs": false,
+  "status": "approved"
+ },
  "progressive rock": {
   "genre": "Rock",
   "parent": null,
@@ -2959,7 +3014,7 @@
  },
  "psybient": {
   "genre": "Electronic",
-  "parent": "trance",
+  "parent": "psytrance",
   "also_under": [
    "ambient"
   ],
@@ -2986,9 +3041,12 @@
  },
  "psytrance": {
   "genre": "Electronic",
-  "parent": "trance",
+  "parent": null,
+  "display": "Psy-Trance",
   "synonyms": [
-   "psychedelic trance"
+   "psychedelic trance",
+   "psy trance",
+   "psy"
   ],
   "discogs": true
  },

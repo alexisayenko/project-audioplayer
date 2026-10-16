@@ -31,14 +31,15 @@ Decided: "dance music" and "club music" fold into Electronic (see Decisions).
 
 ## Counts (Electronic drafted; others provisional)
 
-Electronic 137 (54 level 2, 83 level 3, 14 not in Discogs; after the 2026-10-16 removals below). Others, all level 2 and provisional: Rock 102, Folk, World, & Country 66, Latin 57, Pop 32, Jazz 26, Classical 24, Hip Hop 24, Funk / Soul 23, Non-Music 20, Blues 16, Reggae 13, Stage & Screen 9, Brass & Military 5, Children's 4. Total 558. Non-Discogs elsewhere: Rock 14, Pop 7, Funk / Soul 6, Folk, World, & Country 3, Stage & Screen 2.
+Electronic 141 (55 level 2, 86 level 3, 18 not in Discogs; after the 2026-10-16 removals and the psytrance branch below). Others, all level 2 and provisional: Rock 102, Folk, World, & Country 66, Latin 57, Pop 32, Jazz 26, Classical 24, Hip Hop 24, Funk / Soul 23, Non-Music 20, Blues 16, Reggae 13, Stage & Screen 9, Brass & Military 5, Children's 4. Total 558. Non-Discogs elsewhere: Rock 14, Pop 7, Funk / Soul 6, Folk, World, & Country 3, Stage & Screen 2.
 
-## Electronic umbrellas (15, level-3 children)
+## Electronic umbrellas (16, level-3 children)
 
 All placements below are agent judgement, awaiting Alex's review.
 
 - house (22): acid house, afro house, ambient house, big room house, deep house, electro house, euro house, french house, french touch, future house, garage house, ghetto house, hard house, hip house, italo house, melodic house, microhouse, progressive house, sunshine house, tech house, tribal house, tropical house
-- trance (13): acid, deep, euro, goa, hard, neo, nu-nrg, progressive, psytrance, psybient, tech, uplifting, vocal
+- trance (10): acid, deep, euro, hard, neo, nu-nrg, progressive, tech, uplifting, vocal
+- psytrance (6): dark psytrance, forest psytrance, progressive psytrance, full-on psytrance, goa trance, psybient
 - techno (6): deep, dub, hard, melodic, minimal, schranz
 - drum and bass (4): jungle, liquid funk, neurofunk, techstep
 - breakbeat (6): big beat, breaks, progressive breaks, baltimore club, jersey club, breakcore
@@ -67,7 +68,7 @@ acid trance, afro house, alternative dance, big room house, breakbeat hardcore, 
 
 - jungle: under drum and bass, also under breakbeat.
 - jersey club, baltimore club: both under breakbeat, also under house.
-- psybient: under trance (not psytrance, no level 4), also under ambient. french touch: under house (not french house). nu-nrg: under trance (not hard trance).
+- psybient: under psytrance (Alex, 2026-10-16), also under ambient. french touch: under house (not french house). nu-nrg: under trance (not hard trance).
 - spacesynth: standalone level 2, also under italo disco. indietronica: standalone level 2, also under electronica.
 - hands up: under eurodance, also trance. hardstyle: under hardcore, also trance. donk: under hardcore, also house. jumpstyle: under hardcore.
 - chillwave, vaporwave: under synthwave, also downtempo. dungeon synth: under ambient, also synthwave.
@@ -140,3 +141,9 @@ An entry may carry `"display": "<string>"`: the name to show in the UI instead o
 `disco` is a Discogs style under two genres. Its primary genre stays `Funk / Soul` (per `genre_styles.json`), and it is a level 2 entry there, still provisional. New optional field on a level 2 entry: `"also_in_genres": ["Electronic"]` (list of other level 1 genre names; served as `levels[<style>].also_in_genres`, always a list). It means: show this entry as a level 2 node in those genres' trees too, because children of that genre hang under it. A child keeps its own `genre` and names the umbrella as `parent` even when the umbrella's genre differs, as long as the child's genre is in the umbrella's `also_in_genres`. Depth stays at most three. For the Electronic map: root Electronic, then `disco` (taken from `levels` where `also_in_genres` contains "Electronic"), then its children `euro disco`, `italo disco`, `hi-nrg`, `nu-disco` (level 3). `disco polo` stays a standalone level 2 style (a Polish dance-pop genre, not a disco descendant). `post-disco` (Funk / Soul, not in Discogs) belongs under disco by meaning, but Funk / Soul is undrafted, so it stays a provisional level 2 until that genre is drafted.
 
 `also_under` may now point at any other entry, not only at a level 2 one: `spacesynth` keeps `also_under: ["italo disco"]` although italo disco is now level 3.
+
+## Psytrance branch (Alex, 2026-10-16)
+
+Alex: "trance and psy-trance are way too different". `psytrance` (display "Psy-Trance", Discogs style) is a plain level 2 umbrella, a sibling of `trance`: `parent` null, no `also_under`, no link of any kind to trance. The three-level cap is unchanged (a fourth level was considered and rejected). Children (level 3, `parent: "psytrance"`): `dark psytrance`, `forest psytrance`, `progressive psytrance`, `full-on psytrance` (new extras, `discogs` false, status approved, displays "Dark Psy-Trance" and so on; the Discogs search `style=<name>` returned no results for any of them on 2026-10-16), `goa trance` (Discogs; moved from trance) and `psybient` (approved; also under ambient; moved from trance). Flavours: dark psytrance `dark`, progressive psytrance `progressive`. Synonyms: darkpsy, dark psy, dark psy-trance; forest psy, forest psy-trance; prog psy, progressive psy, progressive psy-trance; full on, fullon, full-on psy, full on psytrance, full-on psy-trance.
+
+Judgement call: `goa trance` sits under psytrance only (no `also_under: trance`), so trance's children and counts no longer include goa trance or psytrance songs. `progressive trance` stays under trance and is not merged with `progressive psytrance`. Known psy styles not added: hi-tech psytrance, suomisaundi, psychill.
