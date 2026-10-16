@@ -83,6 +83,8 @@ ALIASES: dict[str, str] = {
     "deep progressive": "progressive house",
     "mor": "middle of the road",
     "retro-synth": "synthwave",
+    "советская волна": "soviet wave",
+    "советская-волна": "soviet wave",
     "melodic progressive house": "progressive house",
     "hip-hop & rap": "hip hop",
     "rock and indie": "indie rock",

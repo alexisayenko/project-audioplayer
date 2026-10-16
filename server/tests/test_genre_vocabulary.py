@@ -431,3 +431,15 @@ def test_the_graph_exposes_a_style_per_node(client):
     assert by["house"]["style"] == "house" and by["neurofunk"]["style"] == "neurofunk"
     assert by["electronic"]["style"] is None
     assert all("style" in n for n in nodes)
+
+
+
+@pytest.mark.parametrize("raw", ["Soviet Wave", "sovietwave", "Soviet-Wave", "советская волна", "Советская-волна"])
+def test_soviet_wave_spellings_resolve(raw):
+    assert gf.vocabulary_name(raw) == "soviet wave"
+
+
+def test_soviet_wave_hashtag_is_a_youtube_genre():
+    from app import yt_genres
+
+    assert yt_genres.genre_of("#SovietWave") == "soviet wave"

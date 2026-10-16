@@ -214,6 +214,11 @@
    "parent": "folk",
    "note": "kept subgenre, TAG-076"
   },
+  "soviet wave": {
+   "family": "Electronic",
+   "parent": "synthwave",
+   "note": "added by Alex, 2026-10-17 (not in Discogs); Wikipedia calls Sovietwave a synthwave subgenre: https://en.wikipedia.org/wiki/Sovietwave"
+  },
   "spacesynth": {
    "family": "Electronic",
    "parent": "italo disco",

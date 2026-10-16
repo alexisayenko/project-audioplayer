@@ -38,9 +38,9 @@
     "level3": 0
    },
    "Electronic": {
-    "total": 137,
+    "total": 138,
     "level2": 50,
-    "level3": 87
+    "level3": 88
    },
    "Folk, World, & Country": {
     "total": 66,
@@ -3374,6 +3374,19 @@
   "parent": null,
   "provisional": true,
   "discogs": true
+ },
+ "soviet wave": {
+  "genre": "Electronic",
+  "parent": "synthwave",
+  "display": "Soviet Wave",
+  "synonyms": [
+   "sovietwave",
+   "soviet-wave",
+   "советская волна",
+   "советская-волна"
+  ],
+  "discogs": false,
+  "status": "approved"
  },
  "space rock": {
   "genre": "Rock",

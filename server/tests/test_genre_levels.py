@@ -85,7 +85,7 @@ REMOVED = {
     "techno pop": "synthpop", "french touch": "house", "electropop": "synthpop", "french house": "house", "melodic house": "house",
 }
 APPROVED = {"dark psytrance", "forest psytrance", "progressive psytrance", "full-on psytrance", "vocal trance", "melodic techno", "psybient", "darksynth", "uplifting trance", "sunshine house", "dreamsynth", "dreamwave", "neurofunk",
-            "spacesynth", "nu-nrg", "liquid drum and bass"}
+            "spacesynth", "nu-nrg", "liquid drum and bass", "soviet wave"}
 QUESTION = {"deep trance", "acid trance"}
 
 
@@ -344,3 +344,10 @@ def test_psytrance_branch_is_a_level_two_umbrella_apart_from_trance():
         assert e["discogs"] is False and e["status"] == "approved" and k in EXTRAS and k not in STYLES["styles"], k
         assert e["display"].endswith("Psy-Trance"), k
     assert "darkpsy" in ENTRIES["dark psytrance"]["synonyms"] and "prog psy" in ENTRIES["progressive psytrance"]["synonyms"]
+
+
+def test_soviet_wave_is_an_approved_extra_under_synthwave():
+    e = ENTRIES["soviet wave"]
+    assert e["genre"] == "Electronic" and e["parent"] == "synthwave" and e["display"] == "Soviet Wave"
+    assert e["discogs"] is False and e["status"] == "approved" and "soviet wave" in EXTRAS and "soviet wave" not in STYLES["styles"]
+    assert "советская волна" in e["synonyms"] and "sovietwave" in e["synonyms"]

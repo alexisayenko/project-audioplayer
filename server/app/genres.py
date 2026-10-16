@@ -6,7 +6,7 @@ house, deep house, tropical house, tech house, progressive house, acid house, ch
 trance, progressive trance, uplifting trance, psytrance, goa trance, vocal trance, tech trance, hard trance, full-on, dark psytrance, melodic trance
 drum and bass, liquid drum and bass, neurofunk, jungle, jump up, darkstep, techstep, breakbeat, big beat, breaks, uk garage, speed garage, 2-step, future garage
 dubstep, brostep, riddim, grime, trap, future bass, bass music, glitch hop,, hardstyle, hardcore, gabber, happy hardcore, frenchcore, uk hardcore, hard dance, makina
-edm, electro, electroclash, electropop, synthpop, synthwave, retrowave, vaporwave, future funk, italo disco, eurodance, eurobeat, hi-nrg, nu-disco, disco, space disco, euro disco
+edm, electro, electroclash, electropop, synthpop, synthwave, retrowave, soviet wave, vaporwave, future funk, italo disco, eurodance, eurobeat, hi-nrg, nu-disco, disco, space disco, euro disco
 idm, intelligent dance music, glitch, microsound, braindance, acid, electronica, downtempo, trip hop, chillout, chillwave, lounge, nu jazz, psybient, dark ambient, drone, ambient, space music, new age, dungeon synth
 industrial, ebm, electro-industrial, darkwave, coldwave, minimal wave, new wave, synth-punk, aggrotech, dark electro, futurepop, witch house
 rock, classic rock, hard rock, soft rock, progressive rock, psychedelic rock, art rock, glam rock, southern rock, blues rock, folk rock, country rock, garage rock, surf rock, space rock, krautrock, stoner rock, desert rock, math rock, post-rock, noise rock, yacht rock, heartland rock, jam band, rockabilly, rock and roll, symphonic rock, gothic rock, pop rock, funk rock, acoustic rock, instrumental rock

@@ -46,7 +46,7 @@ All placements below are agent judgement, awaiting Alex's review.
 - hardcore (8): doomcore, donk, gabber, happy hardcore, makina, speedcore, hardstyle, jumpstyle (rave, raggacore and breakbeat hardcore no longer fold here, BA2)
 - ambient (6): dark ambient, drone, illbient, berlin-school, lowercase, dungeon synth
 - downtempo (2): chillout, trip hop
-- synthwave (5): darksynth, dreamsynth, dreamwave, chillwave, vaporwave
+- synthwave (6): darksynth, dreamsynth, dreamwave, chillwave, vaporwave, soviet wave
 - synthpop (3): electroclash, electropop, techno pop
 - industrial (5): ebm, dark electro, rhythmic noise, power electronics, harsh noise wall
 - eurodance (3): bubblegum dance, hands up, italodance

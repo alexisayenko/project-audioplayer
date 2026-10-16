@@ -5,7 +5,7 @@
 The canonical `genre:` list (TAG-077 to TAG-084, ADR-0023). Read once at start by `app/genre_vocab.py`; the server refuses to start without these two files.
 
 - `genre_styles.json`: `genres` (the 15 Discogs genres in the fixed order of GEN-037), `styles` (512 entries, lowercase style name to the genre Discogs files it under, one genre per style), `also_under` (other genres of a multi-genre style, GEN-039), `discogs_names` (Discogs's own spelling where it differs from the stored one beyond case, spaces, hyphens and "&"), `unverified` (0 names kept without a successful search check, see below).
-- `genre_extras.json`: `extras` (46 real genres Discogs lacks), each with `family` (one of the 15), `parent` (a canonical name, or null for a root) and `note` (where it came from). Reviewed in git.
+- `genre_extras.json`: `extras` (47 real genres Discogs lacks), each with `family` (one of the 15), `parent` (a canonical name, or null for a root) and `note` (where it came from). Reviewed in git.
 - `genre_families.json` is gone: the vocabulary replaces it (GEN-038 step 1).
 
 Stored spelling: Discogs's name lowercased, except where the project already used another spelling (drum and bass, rock and roll, rhythm and blues, psytrance, synthpop, hi-nrg, hip house, euro disco, dance pop and similar). Lookups ignore case, spaces, hyphens, accents and "&" versus "and". Discogs styles that TAG-073 drops as junk (comedy, novelty, parody) or TAG-075 retags (romantic) are left out.
