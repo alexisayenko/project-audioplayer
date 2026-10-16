@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-16 (Add: fetch progress checklist, not deployed)
+
+- Web and server: pressing Fetch in Add now shows the real steps (reading the link, title and artist, genres and first release, Wikipedia and Wikidata, Discogs) as a checklist with the current step, an aria-live line and elapsed seconds, and the failing step on error (ADD-129); new `POST /preview/stream` sends NDJSON step events and the same result as `POST /preview`, which is unchanged for iOS (API-140). Measured on a cold lookup: yt-dlp about 2 s, MusicBrainz about 10 s, Wikipedia and Wikidata about 6 s, Discogs under 1 s.
+
 ## 2026-10-16 (documentation: data model v2 and the versions concept)
 
 - Docs: ADR-0025 records data model v2 (final names, the version block with `type`, `originalArtists` for cover and mashup only, the Artist table, runtime decade, DDEX adopted only for the display-artist role names and `version.type`, full DDEX and a Work/chain model deferred); new concept note [concept-songs-versions-and-credits](product/concept-songs-versions-and-credits.md); [ddex-terminology](tech/ddex-terminology.md) and task-0043 added. ADR-0026 plans per-save local commits with a systemd timer that only pushes, plus a Settings warning mark when pushes lag (amends ADR-0005; task-0021, NFR-111 to NFR-114, WEB-094, deploy.md and architecture.md updated; docs only, not built). Planned, not built; the changelog sections below are marked deployed or not deployed according to production at `c813d92`.
