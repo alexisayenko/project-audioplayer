@@ -2,11 +2,17 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-16 (remix year suggestion, built, not deployed)
+
+- Web and server: with a "Remix & additional production" value and an empty Remix year, the Add and Edit form suggests the YouTube or SoundCloud publish year (dashed, italic; a typed value is never touched, clearing the remix removes the suggestion); `POST /preview` and `POST /metadata` gain `published_year`, `POST /metadata` an optional `remix_year` hook (ADD-111, API-048).
+
+## 2026-10-16 (Wikipedia link search, built, not deployed)
+
+- Server and web: "Get metadata" and the Add preview found no Wikipedia links for "What Is Love" by Haddaway because they came only from MusicBrainz relations (that recording has none, and its best release is a compilation), and `POST /metadata` returned only the album link, never the song or band link. Now a verified English Wikipedia search fills missing song, band and album links (TAG-087; infobox must match the artist, disambiguation pages never qualify), `/metadata` returns `wikipedia_song` and `wikipedia_artist`, and the web fills empty link fields from them (ADD-050); the found song page also corrects the year (1993 instead of 2002). iOS not changed.
+
 ## 2026-10-16 (Genres map rework page, built, not deployed)
 
-- Web: new sidebar item "Genres map rework" (`#/genres-rework`, WEB-084) after "Genres map", with a scaffold page that reads genre counts from `/genres/vocabulary` and `/genres/graph`; the three-level map will be built there.
-
-## 2026-10-16 (genre decisions, built, not deployed)
+- Web: new sidebar item "Genres map rework" (`#/genres-rework`, WEB-084) after "Genres map", with a drawn radial map of the Electronic genre tree (WEB-085 to WEB-087, GEN-051 to GEN-054, API-119, [task-0037](tasks/task-0037.md)): 15 umbrellas around the genre, their children fanning out, node size by songs in your library, a dashed ring for styles not in Discogs, dashed also-under links, pan and zoom, hover tooltips, details panel, and an outline list with search over names and synonyms. Server: `GET /genres/vocabulary` now carries `levels` and `genre_synonyms` from `server/data/genre_levels.json`. By default only styles with songs and their ancestors are drawn; "Show whole vocabulary" (remembered) adds the rest, empty standalone styles as dim dots on an outer arc, and also-under lines show only for the selected or hovered node. Fixed the map drag sticking to the pointer (drag now ends on pointer cancel, lost capture, blur or a move without a button; same guard added to the Genres map). Review badges (Alex approved, never on Discogs styles; Under question), flavour chips and filters (dim, not remove), status filter and display names (WEB-088). Umbrellas in two genres (disco) show in both trees with an "also in" chip. Not checked in a browser; the data placements await Alex.
 
 - Server: Alex's genre decisions (TAG-086, GEN-055, built, not deployed; the deploy migration rewrites the owner's tags, 65 songs): 20 Electronic styles removed and folded through ALIASES (dance, electronic dance, electronica, chillout, electropop, french house, melodic house and others), `liquid drum and bass` added, `club` and `club music` fold into electronic instead of being dropped, `status` (approved, under question; Discogs outranks approval), `flavours` and `display` fields in `genre_levels.json`, all served in the vocabulary payload.
 
