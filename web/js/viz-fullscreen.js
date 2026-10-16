@@ -9,27 +9,27 @@ export function isVizKey(e, { open, route }) {
   return open || route === 'playback';
 }
 
-export function isVizModeKey(e, { open, route, background }) {
+export function isVizModeKey(e, { open, route }) {
   if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return false;
   if (String(e.key).toLowerCase() !== 'm') return false;
   if (e.target?.closest?.(SKIP_KEY_TARGETS)) return false;
-  return open || (route === 'playback' && !!background);
+  return open || route === 'playback';
 }
 
-export function isVizStyleKey(e, { open, route, background, mode }) {
+export function isVizStyleKey(e, { open, route, mode }) {
   if (mode !== 'terrain') return false;
   if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return false;
   if (String(e.key).toLowerCase() !== 't') return false;
   if (e.target?.closest?.(SKIP_KEY_TARGETS)) return false;
-  return open || (route === 'playback' && !!background);
+  return open;
 }
 
-export function isVizFlightKey(e, { open, route, background, mode }) {
+export function isVizFlightKey(e, { open, route, mode }) {
   if (mode !== 'terrain') return false;
   if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return false;
   if (String(e.key).toLowerCase() !== 'f') return false;
   if (e.target?.closest?.(SKIP_KEY_TARGETS)) return false;
-  return open || (route === 'playback' && !!background);
+  return open;
 }
 
 export function isNearBox(point, box, pad = 0) {

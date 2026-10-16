@@ -11,7 +11,7 @@ import { bpmCard, metadataCard } from './backfill-card.js';
 import { downloadAllCard } from './bulk-download.js';
 import { isSupported as vizSupported } from './audio-graph.js';
 import {
-  vizBackgroundOn, setVizBackground, vizCaps, vizMode, setVizMode, vizHeightId, setVizHeight,
+  vizCaps, vizMode, setVizMode, vizHeightId, setVizHeight,
 } from './viz-settings.js';
 import { availableModes } from './viz-modes.js';
 import { TERRAIN_STYLES, getStyle, setStyle } from './viz-terrain-style.js';
@@ -168,7 +168,6 @@ function vizRows() {
   const supported = vizSupported();
   const modes = availableModes(vizCaps());
   return [
-    vizRow(),
     vizSelect({
       id: 'viz-mode-select',
       label: 'Visualizer mode',
@@ -197,17 +196,6 @@ function vizRows() {
       onChange: setVizHeight,
     }),
   ];
-}
-
-function vizRow() {
-  const supported = vizSupported();
-  const box = el('input', { type: 'checkbox', id: 'viz-bg-toggle', checked: supported && vizBackgroundOn(), disabled: !supported });
-  box.addEventListener('change', () => setVizBackground(box.checked));
-  const note = supported
-    ? 'A quiet spectrum behind the Playback screen while music plays. Off when reduced motion is on.'
-    : 'This browser does not offer Web Audio.';
-  return el('label', { class: 'switch-row', for: 'viz-bg-toggle' },
-    el('span', { class: 't-subhead set-text' }, 'Visualizer background', el('small', { class: 't-caption' }, note)), box);
 }
 
 export function renderSettings(root) {

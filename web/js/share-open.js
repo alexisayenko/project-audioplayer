@@ -7,7 +7,7 @@ import { streamable } from './guest.js';
 import { storeGet, storeSet, storeRemove } from './storage.js';
 import { MODE_STORAGE_KEY } from './viz-modes.js';
 import { STYLE_STORAGE_KEY, setStyle } from './viz-terrain-style.js';
-import { setVizMode, setVizBackgroundSession } from './viz-settings.js';
+import { setVizMode } from './viz-settings.js';
 import { FLIGHT_KEY, setFlightOn } from './viz-flight.js';
 import { setCam } from './viz-cam-debug.js';
 import { openSongCard } from './song-card.js';
@@ -32,7 +32,6 @@ function keepStored(key, fn) {
 export function applyVizOverrides(share) {
   if (share.viz) keepStored(MODE_STORAGE_KEY, () => setVizMode(share.viz));
   if (share.style) keepStored(STYLE_STORAGE_KEY, () => setStyle(share.style));
-  if (share.bg !== null) setVizBackgroundSession(share.bg);
   if (share.cam) setCam(share.cam, memoryOnly);
   if (share.fl) keepStored(FLIGHT_KEY, () => setFlightOn(true));
 }

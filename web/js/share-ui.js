@@ -2,7 +2,7 @@ import { player } from './player.js';
 import { el, toast, fmtTime } from './dom.js';
 import { icon } from './icons.js';
 import { displayLine } from './credits.js';
-import { vizMode, vizBackgroundOn } from './viz-settings.js';
+import { vizMode } from './viz-settings.js';
 import { modeLabel } from './viz-modes.js';
 import { getStyle, styleLabel } from './viz-terrain-style.js';
 import { getCam } from './viz-cam-debug.js';
@@ -35,7 +35,6 @@ export function shareState(song, audio = $('audio')) {
   return {
     mode,
     style: mode === 'terrain' ? getStyle() : null,
-    bg: vizBackgroundOn(),
     cam: mode === 'terrain' && camDiffers(getCam()) ? { ...getCam() } : null,
     fl: mode === 'terrain',
     flOn: flightOn(),
@@ -47,7 +46,6 @@ export function shareState(song, audio = $('audio')) {
 function summary(st) {
   const bits = [modeLabel(st.mode)];
   if (st.style) bits.push(styleLabel(st.style));
-  bits.push(st.bg ? 'background on' : 'background off');
   return `Visualizer: ${bits.join(', ')}`;
 }
 
@@ -84,7 +82,7 @@ export function openShareDialog(song, audio = $('audio')) {
     const t = seconds();
     if (t === null) return null;
     return buildShareUrl({
-      origin: origin(), id: song.id, t: clampT(t, song.duration), viz: st.mode, style: st.style, bg: st.bg, fs: fs.checked, cam: cam?.checked ? st.cam : null, fl: !!fl?.checked,
+      origin: origin(), id: song.id, t: clampT(t, song.duration), viz: st.mode, style: st.style, fs: fs.checked, cam: cam?.checked ? st.cam : null, fl: !!fl?.checked,
     });
   };
   const refresh = () => {

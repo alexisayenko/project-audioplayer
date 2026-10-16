@@ -8,7 +8,6 @@ stubFetch(() => ({ body: {} }));
 const audioGraph = await import('./audio-graph.js');
 const { initVisualizer } = await import('./viz-ui.js');
 const { createFullscreen, makeAutoHide, isVizKey, isNearBox } = await import('./viz-fullscreen.js');
-const { setVizBackground, vizBackgroundOn } = await import('./viz-settings.js');
 
 const $ = (id) => document.getElementById(id);
 const audio = $('audio');
@@ -16,7 +15,6 @@ const audio = $('audio');
 function fakeCtx() {
   return new Proxy({}, { get: (t, k) => (k in t ? t[k] : () => ({ addColorStop() {} })), set: (t, k, v) => { t[k] = v; return true; } });
 }
-$('viz-bg').getContext = fakeCtx;
 $('viz-full-canvas').getContext = fakeCtx;
 
 const stats = { ctors: 0, sources: 0 };
@@ -166,26 +164,42 @@ test('isNearBox: inside, within the padding, and outside', () => {
   assert.equal(isNearBox(null, box, 48), false);
 });
 
-test('Visualizer background setting persists and enables the layer', async () => {
-  assert.equal(vizBackgroundOn(), false);
-  assert.equal($('viz-bg-layer').classList.contains('on'), false);
-  setVizBackground(true);
-  assert.equal(localStorage.getItem('ap2.viz.bg'), '1');
-  assert.equal(vizBackgroundOn(), true);
-  assert.equal($('viz-bg-layer').classList.contains('on'), true);
-  await flush();
-  assert.equal(stats.ctors, 1, 'graph still built once');
-  setVizBackground(false);
-  assert.equal(localStorage.getItem('ap2.viz.bg'), '0');
-  assert.equal($('viz-bg-layer').classList.contains('on'), false);
+test('there is no background visualizer: no layer, the stale setting is dropped, nothing draws outside full screen', async () => {
+  assert.equal($('viz-bg-layer'), null);
+  assert.equal($('viz-bg'), null);
+  assert.equal(localStorage.getItem('ap2.viz.bg'), null);
+  assert.equal(ui.fullViz.isRunning(), false);
 });
 
-test('the setting survives a broken localStorage', () => {
-  const real = globalThis.localStorage;
-  globalThis.localStorage = { getItem() { throw new Error('denied'); }, setItem() { throw new Error('denied'); } };
-  assert.equal(vizBackgroundOn(), false);
-  assert.doesNotThrow(() => setVizBackground(true));
-  globalThis.localStorage = real;
+test('the dock button is available without any setting and opens the same full screen as #p-viz', () => {
+  const sw = $('mini-viz-switch');
+  assert.equal(sw.hidden, false);
+  const open = $('mini-viz-switch-open');
+  assert.equal(open.getAttribute('aria-label'), 'Open full screen visualizer');
+  open.click();
+  assert.equal(ui.full.isOpen(), true);
+  assert.equal($('p-viz').getAttribute('aria-pressed'), 'true');
+  open.click();
+  assert.equal(ui.full.isOpen(), false);
+  assert.equal($('p-viz').getAttribute('aria-pressed'), 'false');
+  const chev = sw.querySelector('.viz-dd-chev');
+  assert.equal(chev.getAttribute('aria-label'), 'Visualizer mode');
+  chev.click();
+  assert.equal(sw.querySelector('[role="listbox"]').hidden, false);
+  assert.equal(ui.full.isOpen(), false);
+  chev.click();
+});
+
+test('the settings dock is hidden outside full screen and toggled by the overlay settings button', () => {
+  const dock = document.querySelector('.viz-dock');
+  assert.equal(dock.hidden, true);
+  ui.full.open();
+  assert.equal(dock.hidden, true, 'closed by default in full screen');
+  $('viz-settings').click();
+  assert.equal($('viz-settings').getAttribute('aria-pressed'), 'true');
+  assert.equal(dock.hidden, false);
+  ui.full.close();
+  assert.equal(dock.hidden, true);
 });
 
 test('without Web Audio the button is disabled with a tooltip and V does nothing', async () => {

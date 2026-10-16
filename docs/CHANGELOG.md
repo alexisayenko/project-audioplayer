@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-16 (dock Visualizer split button, no background visualizer, built, not deployed)
+
+- Web: the dock Visualizer button is a split button: the icon part opens the full-screen visualizer (same as the Now playing button), the chevron part opens the mode menu; the dock foot row is 44 px high so the button no longer overhangs the dock (PLY-148). The background visualizer and the Settings switch "Visualizer background" are removed (VIZ-020); the visualizer and its settings panel (new gear button) exist only in full screen. Built, not deployed.
+
 ## 2026-10-16 (song card without Decade, built, not deployed)
 
 - Web: the song card no longer shows the Decade row (the exact year is already shown); the `decade:` tag stays everywhere else (LIB-146). Built, not deployed.

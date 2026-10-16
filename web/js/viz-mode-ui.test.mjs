@@ -17,7 +17,6 @@ const audio = $('audio');
 function fakeCtx() {
   return new Proxy({}, { get: (t, k) => (k in t ? t[k] : () => ({ addColorStop() {} })), set: (t, k, v) => { t[k] = v; return true; } });
 }
-$('viz-bg').getContext = fakeCtx;
 $('viz-full-canvas').getContext = fakeCtx;
 
 const stats = { ctors: 0, sources: 0 };
@@ -48,8 +47,8 @@ const key = (k, init = {}, target = document.body) => fire(target, 'keydown', { 
 
 const { vizMode, setVizMode, vizHeightId, vizHeightScale, setVizHeight, resetVizCapsForTests } = await import('./viz-settings.js');
 const dd = (id = 'viz-switch') => $(id);
-const btn = (id) => dd(id).children[0];
-const list = (id) => dd(id).children[1];
+const btn = (id) => dd(id).querySelector('.viz-dd-btn');
+const list = (id) => dd(id).querySelector('[role="listbox"]');
 const opts = (id) => [...list(id).children];
 
 test('mode switch is a dropdown: button with listbox popup of the available modes', () => {
@@ -74,11 +73,11 @@ test('opening focuses the current option; clicking another selects, persists, an
   assert.equal(btn('viz-switch').getAttribute('aria-expanded'), 'false');
   assert.equal(localStorage.getItem('ap2.viz.mode'), 'ring');
   assert.equal(ui.fullViz.effectiveMode(), 'ring');
-  assert.equal(ui.bgViz.effectiveMode(), 'ring');
   assert.equal($('viz-live').textContent, 'Visualizer: Ring');
   assert.deepEqual(opts('viz-switch').map((o) => o.getAttribute('aria-selected')), ['false', 'true']);
   assert.deepEqual(opts('mini-viz-switch').map((o) => o.getAttribute('aria-selected')), ['false', 'true']);
-  assert.equal(btn('mini-viz-switch').getAttribute('aria-label'), 'Visualizer mode: Ring');
+  assert.equal(btn('mini-viz-switch').getAttribute('aria-label'), 'Visualizer mode');
+  assert.equal(btn('mini-viz-switch').title, 'Visualizer mode: Ring');
 });
 
 test('keyboard: arrows move focus, Enter selects, Escape closes the popup', () => {
@@ -174,7 +173,7 @@ test('dropdown pure logic', () => {
 
 test('exit and share live in the top-right cluster; dialog describes how to exit', async () => {
   const html = (await import('node:fs')).readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-  assert.match(html, /<div class="viz-corner" id="viz-corner">\s*<button[^>]*id="viz-share"[^>]*>\s*<\/button>\s*<button[^>]*id="viz-close"[^>]*aria-label="Exit full screen"/);
+  assert.match(html, /<div class="viz-corner" id="viz-corner">\s*<button[^>]*id="viz-share"[^>]*>\s*<\/button>\s*<button[^>]*id="viz-settings"[^>]*>\s*<\/button>\s*<button[^>]*id="viz-close"[^>]*aria-label="Exit full screen"/);
   assert.match(html, /id="viz-full"[^>]*aria-describedby="viz-exit-hint"/);
   assert.match(html, /id="viz-exit-hint">Press Escape or use the Exit button to leave\. Click the picture to pause or play\./);
 });
@@ -281,9 +280,27 @@ test('the mode button lives in the dock (#mini), not on the Now playing page', (
   assert.doesNotMatch(section('player'), /viz-switch/);
   assert.doesNotMatch(pageHtml, /id="p-viz-switch"/);
   const sw = $('mini-viz-switch');
-  assert.equal(sw.children[0].getAttribute('aria-haspopup'), 'listbox');
-  assert.match(sw.children[0].getAttribute('aria-label'), /^Visualizer mode: /);
-  assert.equal(sw.children[1].getAttribute('role'), 'listbox');
+  assert.equal(sw.children[0].id, 'mini-viz-switch-open');
+  assert.equal(sw.children[1].getAttribute('aria-haspopup'), 'listbox');
+  assert.equal(sw.children[1].getAttribute('aria-label'), 'Visualizer mode');
+  assert.equal(sw.children[2].getAttribute('role'), 'listbox');
+});
+
+test('dock split button: the icon part opens the full screen like #p-viz, the chevron part only opens the menu', () => {
+  document.body.dataset.route = 'playback';
+  const open = $('mini-viz-switch-open');
+  assert.equal(open.getAttribute('aria-label'), 'Open full screen visualizer');
+  assert.equal(ui.full.isOpen(), false);
+  open.click();
+  assert.equal(ui.full.isOpen(), true);
+  assert.equal($('p-viz').getAttribute('aria-pressed'), 'true');
+  ui.full.close();
+  assert.equal(document.activeElement, $('p-viz'));
+  btn('mini-viz-switch').click();
+  assert.equal(list('mini-viz-switch').hidden, false);
+  assert.equal(ui.full.isOpen(), false);
+  fire(document.body, 'pointerdown', {});
+  assert.equal($('mini-viz-switch').hidden, false);
 });
 
 test('dock mode change on another route only stores the mode', () => {

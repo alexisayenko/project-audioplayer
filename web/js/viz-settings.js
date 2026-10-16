@@ -1,33 +1,12 @@
 import { storeGet, storeSet } from './storage.js';
-import { BG_STORAGE_KEY, HEIGHT_STORAGE_KEY, HEIGHT_OPTIONS, DEFAULT_HEIGHT } from './viz-constants.js';
+import { HEIGHT_STORAGE_KEY, HEIGHT_OPTIONS, DEFAULT_HEIGHT } from './viz-constants.js';
 import { PARTS_STORAGE_KEY, validateParts } from './viz-parts.js';
 import { MODES, DEFAULT_MODE, MODE_STORAGE_KEY, LEGACY_MODES, detectCaps, pickMode } from './viz-modes.js';
 
-const listeners = new Set();
 const modeListeners = new Set();
 const heightListeners = new Set();
 const partsListeners = new Set();
 let caps = null;
-
-let bgSession = null;
-
-export const vizBackgroundOn = () => (bgSession ?? storeGet(BG_STORAGE_KEY) === '1');
-
-export function setVizBackgroundSession(on) {
-  bgSession = on === null ? null : !!on;
-  for (const cb of listeners) cb(vizBackgroundOn());
-}
-
-export function setVizBackground(on) {
-  bgSession = null;
-  storeSet(BG_STORAGE_KEY, on ? '1' : '0');
-  for (const cb of listeners) cb(!!on);
-}
-
-export function onVizBackground(cb) {
-  listeners.add(cb);
-  return () => listeners.delete(cb);
-}
 
 export function vizCaps(doc = globalThis.document) {
   caps ??= detectCaps(doc);

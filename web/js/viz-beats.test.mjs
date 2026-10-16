@@ -238,13 +238,12 @@ test('style validation, persistence and cycling', () => {
 
 test('T key follows the V/M ignore rules and only applies while Terrain is the mode', () => {
   const ev = (key, extra = {}) => ({ key, target: { closest: () => null }, ...extra });
-  const ctx = { open: true, route: 'library', background: false, mode: 'terrain' };
+  const ctx = { open: true, route: 'library', mode: 'terrain' };
   assert.equal(isVizStyleKey(ev('t'), ctx), true);
   assert.equal(isVizStyleKey(ev('T'), ctx), true);
   assert.equal(isVizStyleKey(ev('t'), { ...ctx, mode: 'ring' }), false);
   assert.equal(isVizStyleKey(ev('t'), { ...ctx, open: false }), false);
-  assert.equal(isVizStyleKey(ev('t'), { ...ctx, open: false, route: 'playback', background: true }), true);
-  assert.equal(isVizStyleKey(ev('t'), { ...ctx, open: false, route: 'playback', background: false }), false);
+  assert.equal(isVizStyleKey(ev('t'), { ...ctx, open: false, route: 'playback' }), false);
   assert.equal(isVizStyleKey(ev('t', { ctrlKey: true }), ctx), false);
   assert.equal(isVizStyleKey(ev('t', { repeat: true }), ctx), false);
   assert.equal(isVizStyleKey({ key: 't', target: { closest: () => ({}) } }, ctx), false);

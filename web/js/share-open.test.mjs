@@ -8,7 +8,6 @@ stubFetch(() => ({ body: {} }));
 const { store } = await import('./store.js');
 const { openShared, applyVizOverrides, closeGate } = await import('./share-open.js');
 const { copyText } = await import('./share-ui.js');
-const { vizBackgroundOn, setVizBackground } = await import('./viz-settings.js');
 const { getStyle } = await import('./viz-terrain-style.js');
 const { storeGet, storeSet } = await import('./storage.js');
 
@@ -37,15 +36,10 @@ test('a playable shared song shows the tap-to-play gate with the start time', ()
 test('shared visualizer settings do not overwrite stored preferences', () => {
   storeSet('ap2.viz.mode', 'bars');
   storeSet('ap2.viz.terrain.style', 'relief');
-  setVizBackground(false);
   applyVizOverrides({ viz: 'ring', style: 'melody', bg: true, cam: null });
   assert.equal(getStyle(), 'melody');
-  assert.equal(vizBackgroundOn(), true);
   assert.equal(storeGet('ap2.viz.mode'), 'bars');
   assert.equal(storeGet('ap2.viz.terrain.style'), 'relief');
-  assert.equal(storeGet('ap2.viz.bg'), '0');
-  setVizBackground(false);
-  assert.equal(vizBackgroundOn(), false);
 });
 
 test('copyText falls back to a textarea and execCommand', async () => {

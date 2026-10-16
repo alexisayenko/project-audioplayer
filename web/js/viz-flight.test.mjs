@@ -241,12 +241,12 @@ test('reduced motion forces flight off even when stored on, and notifies', () =>
 
 test('F key follows the T rules and only applies in Terrain', () => {
   const ev = (key, extra = {}) => ({ key, target: { closest: () => null }, ...extra });
-  const ctx = { open: true, route: 'library', background: false, mode: 'terrain' };
+  const ctx = { open: true, route: 'library', mode: 'terrain' };
   assert.equal(isVizFlightKey(ev('f'), ctx), true);
   assert.equal(isVizFlightKey(ev('F'), ctx), true);
   assert.equal(isVizFlightKey(ev('f'), { ...ctx, mode: 'bars' }), false);
   assert.equal(isVizFlightKey(ev('f'), { ...ctx, open: false }), false);
-  assert.equal(isVizFlightKey(ev('f'), { ...ctx, open: false, route: 'playback', background: true }), true);
+  assert.equal(isVizFlightKey(ev('f'), { ...ctx, open: false, route: 'playback' }), false);
   assert.equal(isVizFlightKey(ev('f', { metaKey: true }), ctx), false);
   assert.equal(isVizFlightKey(ev('f', { repeat: true }), ctx), false);
   assert.equal(isVizFlightKey({ key: 'f', target: { closest: () => ({}) } }, ctx), false);

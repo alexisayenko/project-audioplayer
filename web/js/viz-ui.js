@@ -9,7 +9,7 @@ import { createModeSwitch } from './viz-switch.js';
 import { initOverlayPlayControls } from './viz-playctl.js';
 import { availableModes, nextMode, modeLabel } from './viz-modes.js';
 import {
-  vizParts, setVizParts, onVizParts, vizBackgroundOn, onVizBackground, vizCaps, vizMode, setVizMode, onVizMode, vizHeightScale, onVizHeight,
+  vizParts, setVizParts, onVizParts, vizCaps, vizMode, setVizMode, onVizMode, vizHeightScale, onVizHeight,
 } from './viz-settings.js';
 import { attachScrubber } from './scrubber.js';
 import { titleNodes, artistLine } from './credits.js';
@@ -17,22 +17,13 @@ import { $, setIcon } from './player-ui.js';
 import { createCamPanel, loadCam } from './viz-cam-debug.js';
 import { outputLatencyS } from './viz-latency.js';
 import { flightOn, flightReduced, setFlightOn, initFlight } from './viz-flight.js';
+import { storeRemove } from './storage.js';
+import { BG_STORAGE_KEY } from './viz-constants.js';
 import { getStyle, setStyle, nextStyle, styleLabel } from './viz-terrain-style.js';
 
 const REDUCED = '(prefers-reduced-motion: reduce)';
 const NO_AUDIO_TIP = 'Visualizer needs Web Audio, which this browser does not offer';
 const REDUCED_TIP = 'Reduced motion is on';
-
-function coverAnchor() {
-  const cover = $('cover-art').getBoundingClientRect();
-  const canvas = $('viz-bg').getBoundingClientRect();
-  if (!(cover.width > 0)) return null;
-  return {
-    x: cover.left - canvas.left + cover.width / 2,
-    y: cover.top - canvas.top + cover.height / 2,
-    r: Math.min(cover.width, cover.height) * 0.36,
-  };
-}
 
 function vizDeps(audio, graph, extra) {
   return {
@@ -139,7 +130,7 @@ export function initVisualizer({
     audio,
     win,
     getSampleRate: () => graph.getContext?.()?.sampleRate || 44100,
-    getBands: () => barCount($('viz-bg').clientWidth || win.innerWidth || 1200),
+    getBands: () => barCount($('viz-full-canvas').clientWidth || win.innerWidth || 1200),
     getNextSrc: () => { const id = player?.peekNextId?.(); return id ? new URL(api.fileUrl(id), win.location?.href).href : ''; },
   });
   const noticeOf = (text, info) => {
@@ -150,9 +141,8 @@ export function initVisualizer({
       for (const sw of switches) sw.setNote(fallbackNote);
     }
   };
-  const bgViz = createViz({ canvas: $('viz-bg'), mode: 'background', deps: vizDeps(audio, graph, { getAnchor: coverAnchor, lookahead, onNotice: noticeOf, ...deps }) });
   const fullViz = createViz({ canvas: $('viz-full-canvas'), mode: 'full', deps: vizDeps(audio, graph, { lookahead, onNotice: noticeOf, ...deps }) });
-  const refreshAll = () => { bgViz.refresh(); fullViz.refresh(); };
+  const refreshAll = () => { fullViz.refresh(); };
   graph.onState?.(refreshAll);
   const modes = availableModes(caps);
   let currentMode = vizMode(() => caps);
@@ -161,7 +151,6 @@ export function initVisualizer({
   let fallbackNote = '';
   const applyMode = (id, announce) => {
     currentMode = id;
-    bgViz.setVizMode(id);
     fullViz.setVizMode(id);
     for (const sw of switches) sw.set(id);
     fallbackNote = '';
@@ -169,22 +158,19 @@ export function initVisualizer({
     if (announce && live) live.textContent = `Visualizer: ${modeLabel(id)}`;
   };
   const pickFromSwitch = (id) => { setVizMode(id); };
+  const toggleFull = () => { if (supported) full.toggle(); };
   for (const id of ['mini-viz-switch', 'viz-switch']) {
-    switches.push(createModeSwitch({ root: $(id), modes, current: currentMode, onSelect: pickFromSwitch }));
+    switches.push(createModeSwitch({ root: $(id), modes, current: currentMode, onSelect: pickFromSwitch, onOpenFull: id === 'mini-viz-switch' ? toggleFull : null }));
   }
   onVizMode((id) => { if (id !== currentMode) applyMode(id, true); });
-  const heightOf = vizHeightScale;
-  bgViz.setHeightScale(heightOf());
-  fullViz.setHeightScale(heightOf());
-  onVizHeight((s) => { bgViz.setHeightScale(s); fullViz.setHeightScale(s); });
-  bgViz.setVizMode(currentMode);
+  fullViz.setHeightScale(vizHeightScale());
+  onVizHeight((s) => { fullViz.setHeightScale(s); });
   fullViz.setVizMode(currentMode);
   const syncSwitchVisibility = () => {
-    $('mini-viz-switch').hidden = modes.length < 2 || !(supported && vizBackgroundOn());
+    $('mini-viz-switch').hidden = !supported;
     syncDock();
   };
   const partsState = vizParts();
-  bgViz.setParts(partsState);
   fullViz.setParts(partsState);
   const stylePanel = createStylePanel({
     mode: currentMode,
@@ -197,16 +183,15 @@ export function initVisualizer({
   });
   dock.append(...(camPanel ? [camPanel.el] : []), stylePanel.el);
   onVizParts((s) => {
-    bgViz.setParts(s);
     fullViz.setParts(s);
     stylePanel.setParts(s);
   });
+  let settingsOpen = false;
   const syncDock = () => {
     const inFull = full?.isOpen?.() ?? false;
-    const bgOn = supported && vizBackgroundOn();
     stylePanel.setMode(currentMode);
     stylePanel.el.hidden = stylePanel.isEmpty();
-    dock.hidden = !(supported && (inFull || bgOn)) || (stylePanel.el.hidden && !camPanel);
+    dock.hidden = !(supported && inFull && settingsOpen) || (stylePanel.el.hidden && !camPanel);
   };
 
   function enableGraph() {
@@ -234,7 +219,7 @@ export function initVisualizer({
       paintPlayButton(audio);
       scrubber.sync();
       fullViz.setEnabled(true);
-      syncBackground();
+      syncSwitchVisibility();
     },
     onIdle() { for (const sw of switches) sw.close(); },
     onClose() {
@@ -242,18 +227,18 @@ export function initVisualizer({
       placeStatus(false);
       document.body.append(dock);
       fullViz.setEnabled(false);
-      syncBackground();
+      syncSwitchVisibility();
     },
   });
 
-  function syncBackground() {
-    const on = supported && vizBackgroundOn();
-    $('viz-bg-layer').classList.toggle('on', on);
-    bgViz.setEnabled(on && !full.isOpen());
-    syncSwitchVisibility();
-  }
-
-  button.addEventListener('click', () => { if (supported) full.toggle(); });
+  button.addEventListener('click', toggleFull);
+  const gear = $('viz-settings');
+  setIcon('viz-settings', 'settings', 'nav');
+  gear.addEventListener('click', () => {
+    settingsOpen = !settingsOpen;
+    gear.setAttribute('aria-pressed', String(settingsOpen));
+    syncDock();
+  });
   $('viz-play').addEventListener('click', () => player.toggle());
   $('viz-prev').addEventListener('click', () => player.prev());
   $('viz-next').addEventListener('click', () => player.next());
@@ -281,14 +266,14 @@ export function initVisualizer({
 
   document.addEventListener('keydown', (e) => {
     if (!supported || modes.length < 2) return;
-    if (!isVizModeKey(e, { open: full.isOpen(), route: document.body.dataset.route, background: vizBackgroundOn() })) return;
+    if (!isVizModeKey(e, { open: full.isOpen(), route: document.body.dataset.route })) return;
     e.preventDefault();
     setVizMode(nextMode(currentMode, caps));
   });
 
   document.addEventListener('keydown', (e) => {
     if (!supported) return;
-    if (!isVizStyleKey(e, { open: full.isOpen(), route: document.body.dataset.route, background: vizBackgroundOn(), mode: currentMode })) return;
+    if (!isVizStyleKey(e, { open: full.isOpen(), route: document.body.dataset.route, mode: currentMode })) return;
     e.preventDefault();
     const next = setStyle(nextStyle(getStyle()));
     if (live) live.textContent = `Terrain style: ${styleLabel(next)}`;
@@ -297,7 +282,7 @@ export function initVisualizer({
   initFlight();
   document.addEventListener('keydown', (e) => {
     if (!supported) return;
-    if (!isVizFlightKey(e, { open: full.isOpen(), route: document.body.dataset.route, background: vizBackgroundOn(), mode: currentMode })) return;
+    if (!isVizFlightKey(e, { open: full.isOpen(), route: document.body.dataset.route, mode: currentMode })) return;
     e.preventDefault();
     const on = flightReduced() ? false : setFlightOn(!flightOn());
     if (live) live.textContent = flightReduced() ? 'Camera flight is off: reduced motion is on' : `Camera flight ${on ? 'on' : 'off'}`;
@@ -311,8 +296,8 @@ export function initVisualizer({
   for (const type of ['timeupdate', 'durationchange']) audio.addEventListener(type, () => scrubber.sync());
   document.addEventListener('visibilitychange', () => { if (!document.hidden) void graph.resume(); });
 
-  onVizBackground((on) => { syncBackground(); if (on) enableGraph(); });
-  syncBackground();
-  armGestureUnlock({ supported, graph, wanted: () => vizBackgroundOn() || full.isOpen(), unlock: enableGraph });
-  return { full, bgViz, fullViz, syncBackground };
+  try { storeRemove(BG_STORAGE_KEY); } catch { /* storage unavailable */ }
+  syncSwitchVisibility();
+  armGestureUnlock({ supported, graph, wanted: () => full.isOpen(), unlock: enableGraph });
+  return { full, fullViz, openFull: toggleFull, syncBackground: syncSwitchVisibility };
 }

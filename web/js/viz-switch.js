@@ -29,7 +29,8 @@ export function opensUpward(rect, popupHeight, viewportHeight, gap = 8) {
   return below < popupHeight && above > below;
 }
 
-export function createModeSwitch({ root, modes, current, onSelect, win = globalThis.window }) {
+export function createModeSwitch({ root, modes, current, onSelect, onOpenFull = null, win = globalThis.window }) {
+  const split = typeof onOpenFull === 'function';
   let id = current;
   let note = '';
   let open = false;
@@ -41,6 +42,18 @@ export function createModeSwitch({ root, modes, current, onSelect, win = globalT
   button.className = 'viz-dd-btn t-caption';
   button.setAttribute('aria-haspopup', 'listbox');
   button.setAttribute('aria-expanded', 'false');
+  let openBtn = null;
+  if (split) {
+    openBtn = document.createElement('button');
+    openBtn.type = 'button';
+    openBtn.className = 'viz-dd-open';
+    openBtn.id = `${root.id}-open`;
+    openBtn.setAttribute('aria-label', 'Open full screen visualizer');
+    openBtn.title = 'Visualizer (V)';
+    openBtn.append(icon('equalizer', 'action'));
+    openBtn.addEventListener('click', () => onOpenFull());
+    root.classList.add('split');
+  }
   const list = document.createElement('div');
   list.className = 'viz-dd-list t-subhead';
   list.setAttribute('role', 'listbox');
@@ -53,8 +66,9 @@ export function createModeSwitch({ root, modes, current, onSelect, win = globalT
     text.className = 'viz-dd-text';
     const full = note ? `${m.label} (${note})` : m.label;
     text.textContent = full;
-    button.replaceChildren(icon(m.icon, 'action'), text, icon('chevron', 'inline'));
-    button.setAttribute('aria-label', `Visualizer mode: ${full}`);
+    if (split) button.replaceChildren(icon('chevron', 'inline'));
+    else button.replaceChildren(icon(m.icon, 'action'), text, icon('chevron', 'inline'));
+    button.setAttribute('aria-label', split ? 'Visualizer mode' : `Visualizer mode: ${full}`);
     button.title = `Visualizer mode: ${full}`;
     button.dataset.mode = m.id;
   };
@@ -143,12 +157,13 @@ export function createModeSwitch({ root, modes, current, onSelect, win = globalT
     focusIndex(moveFocus(i < 0 ? currentIndex(modes, id) : i, k, modes.length));
   });
 
-  root.replaceChildren(button, list);
+  if (split) button.classList.add('viz-dd-chev');
+  root.replaceChildren(...(split ? [openBtn] : []), button, list);
   root.removeAttribute?.('role');
   root.removeAttribute?.('aria-label');
   paintButton();
   paintOptions();
-  root.hidden = modes.length < 2;
+  if (split) { button.hidden = modes.length < 2; root.hidden = false; } else root.hidden = modes.length < 2;
   return {
     set(next, why = '') { id = next; note = why; paintButton(); paintOptions(); },
     setNote(why = '') { note = why; paintButton(); },
