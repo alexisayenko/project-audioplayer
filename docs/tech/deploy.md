@@ -48,6 +48,19 @@ Then repeat the checklist below. To return to `main` later: `git checkout main &
 
 Credits migration (DATA-125): the first start of the structured-credits build rewrites every `library.json` (the legacy `artist`, `remixer`, `remix_year` and `year` keys become `artists`, `featured`, `released`, `version`; the original strings stay in `raw`) after copying the old file to `<data repo>/backups-credits/`. An older build does not read the new keys: songs would show no artist or year, and saving from it writes legacy keys over the structure. Do not roll the code back across this deploy without restoring each `library.json` from `backups-credits/` (losing later edits); prefer a forward fix.
 
+## Data model v2 migration
+
+Built on branch `worktree-agent-a9ef527b632364730`, not deployed (DATA-144 to DATA-155, [plan](data-model-v2-plan.md), ADR-0025, task-0043). The server migrates every `library.json` once at startup (`app.migrate_model2`, before the genre-tag migration); the steps below make that safe. The code and the migrated files cannot be rolled back separately.
+
+1. Backup by hand, outside the git tree: copy `users/<uid>/library.json` of every user to a dated folder (the startup migration also writes `<data repo>/backups-model2/<uid>/library.json`, never overwriting an older copy).
+2. Guest snapshot BEFORE: `curl -s https://electrophone.cc/library > before.json` (guest view of the owner's library).
+3. Dry run on a copy of the live file, with the new code, nothing is written except the report:
+   `cd server && PYTHONPATH=. python -m app.migrate_model2 --library /path/copy/users/<uid>/library.json --report report.json`.
+   Expect `status: dry_run`, `legacy_diffs: 0`, `ok: true`. Read `report.json`: `tags_removed` per prefix (`decade`, `lang`, `country`), `decade_tags_disagreeing_with_release_year`, `raw_kept` (songs that keep the composite `raw` because the artist text would change), `review.multi_artist_countries` and `review.conflicting_countries` (never applied), `tag_view_changes` (expected: `lang:` tags gone, countries of multi-artist songs gone). A status `aborted` lists the songs whose `artist`, `remixer`, `year`, `remix_year` or `album` would change: stop and fix, do not deploy.
+4. Deploy the build (`scripts/deploy.sh`). On start each library is converted: backup, atomic rewrite, one git commit per user (`audioplayer: <uid> migrate data model 2`), `updated_at` untouched. Log lines: `data model 2 migrated for <uid>` or `data model 2 migration aborted` (the library stays unchanged and is served through the in-memory loader). The review lists are in `<data repo>/backups-model2/review-model2-<uid>.json`.
+5. Guest snapshot AFTER: `curl -s https://electrophone.cc/library > after.json`. Compare song by song: `artist`, `remixer`, `year`, `remix_year`, `album`, `title`, `id`, `bpm`, `audio_state` must be identical; `tags` may differ only by the removed `lang:` values and by `country:` values of songs with several main artists; the new fields (`mainArtists`, `featuredArtists`, `releaseYear`, `albums`, `genres`, `version.type`, ...) are the expected additions, and `artists`, `featured`, `released`, `raw`, `version.kind/by/year/of` are the expected removals. `GET /artists` lists the Artist table. Run `scripts/check.sh`-style API checks and one Add, Edit and Play on the web UI.
+6. Rollback: deploy the previous revision and restore `users/<uid>/library.json` from `backups-model2/<uid>/library.json` (later edits are lost); then restart. A forward fix is preferred.
+
 ## Verify
 
 1. `scripts/deploy.sh` ends with the new short SHA and `web index: 200`.
