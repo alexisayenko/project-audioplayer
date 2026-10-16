@@ -41,8 +41,8 @@ test('link plan keeps http(s) links only and maps to song fields', () => {
   assert.equal(linkPlan(null), null);
 });
 
-test('suggested tags keep only genre, country and lang', () => {
-  assert.deepEqual(suggestedTags({ suggested_tags: ['genre:house', 'country:fr', 'lang:en', 'decade:90s', 'plain', 5] }), ['genre:house', 'country:fr', 'lang:en']);
+test('suggested tags keep only genre and country', () => {
+  assert.deepEqual(suggestedTags({ suggested_tags: ['genre:house', 'country:fr', 'lang:en', 'decade:90s', 'plain', 5] }), ['genre:house', 'country:fr']);
   assert.deepEqual(suggestedTags({}), []);
 });
 

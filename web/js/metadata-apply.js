@@ -25,8 +25,10 @@ export function addNamespaced(tags, candidates) {
 
 export function planMetadata(resp, cur) {
   const r = resp || {};
-  const album = typeof r.album === 'string' ? r.album.trim() : '';
-  const year = Number.isInteger(r.year) ? r.year : null;
+  const rawAlbum = Array.isArray(r.albums) ? r.albums[0] : r.album;
+  const album = typeof rawAlbum === 'string' ? rawAlbum.trim() : '';
+  const rawYear = r.releaseYear ?? r.year;
+  const year = Number.isInteger(rawYear) ? rawYear : null;
   const returnedTags = (Array.isArray(r.tags) ? r.tags : []).filter((t) => typeof t === 'string' && CAPS[tagKey(t)]);
   const plan = { album: null, released: null, tags: addNamespaced(cur.tags || [], returnedTags) };
   if (album && !cur.versioned && !String(cur.album ?? '').trim()) plan.album = album;

@@ -25,12 +25,12 @@ test('add mode cleans the pasted title and offers Restore', () => {
 });
 
 test('edit mode keeps the title untouched and shows BPM with a Re-detect button', () => {
-  const f = songForm({ mode: 'edit', song: { id: 's1', title: 'Song (Live)', artists: ['Band'], featured: [], bpm: 127.6, tags: ['rock'], released: 1999, album: 'LP', file: 'x.mp3' } });
+  const f = songForm({ mode: 'edit', song: { id: 's1', title: 'Song (Live)', mainArtists: ['Band'], featuredArtists: [], bpm: 127.6, tags: ['rock'], releaseYear: 1999, albums: ['LP'], file: 'x.mp3' } });
   const v = f.values();
   assert.equal(v.title, 'Song (Live)');
-  assert.deepEqual(v.artists, ['Band']);
-  assert.equal(v.album, 'LP');
-  assert.equal(String(v.released), '1999');
+  assert.deepEqual(v.mainArtists, ['Band']);
+  assert.deepEqual(v.albums, ['LP']);
+  assert.equal(String(v.releaseYear), '1999');
   assert.deepEqual(v.tags.filter((t) => !t.startsWith('decade:')), ['rock']);
   assert.ok(v.tags.includes('decade:90s'), 'decade follows the year');
   assert.match(f.node.textContent, /128 BPM/);
@@ -65,7 +65,7 @@ test('Re-detect failure surfaces the message and re-enables the button', async (
 
 test('Get metadata fills only empty fields, never overwrites, and paints service icons', async () => {
   const calls = stubFetch(() => ({ body: { album: 'Found LP', year: 2001, tags: ['genre:rock', 'country:gb'], services: { musicbrainz: { found: true, url: 'https://mb/1' } }, suggest: { artist: 'Real Artist' } } }));
-  const f = songForm({ mode: 'edit', song: { id: 's4', title: 'Song', artists: ['Typed'], featured: [], album: 'Mine', tags: [], file: 'x' }, source: { url: 'https://y/1' } });
+  const f = songForm({ mode: 'edit', song: { id: 's4', title: 'Song', mainArtists: ['Typed'], featuredArtists: [], albums: ['Mine'], tags: [], file: 'x' }, source: { url: 'https://y/1' } });
   btn(f, 'Get metadata').click();
   assert.equal(btn(f, 'Getting metadata...') !== undefined || f.node.textContent.includes('Getting metadata'), true);
   await flush();
@@ -73,8 +73,8 @@ test('Get metadata fills only empty fields, never overwrites, and paints service
   assert.equal(body.title, 'Song');
   assert.deepEqual(body.sources, [{ url: 'https://y/1' }]);
   const v = f.values();
-  assert.equal(v.album, 'Mine', 'existing album kept');
-  assert.equal(String(v.released), '2001');
+  assert.deepEqual(v.albums, ['Mine'], 'existing album kept');
+  assert.equal(String(v.releaseYear), '2001');
   assert.equal(body.artist, 'Typed');
   assert.ok(!('version_kind' in body));
   assert.ok(v.tags.includes('genre:rock') && v.tags.includes('country:gb'));
@@ -83,7 +83,7 @@ test('Get metadata fills only empty fields, never overwrites, and paints service
   assert.match(f.node.textContent, /Wikipedia says: Real Artist/);
   btn(f, 'Get metadata').disabled === false;
   f.node.querySelector('.wiki-hint').click();
-  assert.deepEqual(f.values().artists, ['Real Artist']);
+  assert.deepEqual(f.values().mainArtists, ['Real Artist']);
 });
 
 test('Get metadata failure shows a message and keeps the form usable', async () => {
@@ -98,14 +98,14 @@ test('Get metadata failure shows a message and keeps the form usable', async () 
 test('reset() aborts an in-flight lookup and restores the initial values', async () => {
   let release;
   stubFetch(() => new Promise((r) => { release = () => r({ body: { album: 'Late' } }); }));
-  const f = songForm({ mode: 'edit', song: { id: 's6', title: 'Orig', album: '', tags: [], file: 'x' } });
+  const f = songForm({ mode: 'edit', song: { id: 's6', title: 'Orig', albums: [], tags: [], file: 'x' } });
   f.setValues({ title: 'Changed' });
   btn(f, 'Get metadata').click();
   f.reset();
   release();
   await flush();
   assert.equal(f.values().title, 'Orig');
-  assert.equal(f.values().album, '', 'late response after reset is ignored');
+  assert.deepEqual(f.values().albums, [], 'late response after reset is ignored');
   f.destroy();
 });
 
@@ -129,21 +129,21 @@ test('onChange fires on input from any field', () => {
 });
 
 test('a title with a leading artist offers to move it to Artists', () => {
-  const f = songForm({ mode: 'edit', song: { id: 's7', title: 'Band X - Great Song', artists: [], featured: [], tags: [], file: 'x' } });
+  const f = songForm({ mode: 'edit', song: { id: 's7', title: 'Band X - Great Song', mainArtists: [], featuredArtists: [], tags: [], file: 'x' } });
   const hint = f.node.querySelectorAll('button').find((b) => /^Move ".*" to Artists\?$/.test(b.textContent));
   assert.ok(hint && !hint.hidden);
   hint.click();
   assert.equal(f.values().title, 'Great Song');
-  assert.deepEqual(f.values().artists, ['Band X']);
+  assert.deepEqual(f.values().mainArtists, ['Band X']);
 });
 
 test('setValues updates fields and wiki links; focus targets the title entry', () => {
   const f = songForm({ mode: 'edit', song: { id: 's8', title: 'A', tags: [], file: 'x' } });
-  f.setValues({ title: 'B', artists: ['C', 'D'], released: 1984, wikipedia_song: 'https://en.wikipedia.org/wiki/B' });
+  f.setValues({ title: 'B', mainArtists: ['C', 'D'], releaseYear: 1984, wikipedia_song: 'https://en.wikipedia.org/wiki/B' });
   const v = f.values();
   assert.equal(v.title, 'B');
-  assert.deepEqual(v.artists, ['C', 'D']);
-  assert.equal(String(v.released), '1984');
+  assert.deepEqual(v.mainArtists, ['C', 'D']);
+  assert.equal(String(v.releaseYear), '1984');
   assert.equal(v.wikipedia_song, 'https://en.wikipedia.org/wiki/B');
   assert.equal(v.wikipedia_artist, null);
   f.focus();
@@ -175,7 +175,7 @@ test('the Add preview seeds the YouTube icon from its source link, and a lookup 
 });
 
 test('version year and first released inputs have a year range and round-trip', () => {
-  const f = songForm({ mode: 'edit', song: { id: 's1', title: 'T', artists: ['A'], featured: [], released: 2003, version: { kind: 'remix', name: 'R', by: ['R'], year: 2024 }, tags: [] } });
+  const f = songForm({ mode: 'edit', song: { id: 's1', title: 'T', mainArtists: ['A'], featuredArtists: [], releaseYear: 2003, version: { type: 'remix', name: 'R', artists: ['R'], releaseYear: 2024 }, tags: [] } });
   const row = f.node.querySelector('.remix-row.version-row');
   assert.ok(row, 'row exists');
   assert.match(row.textContent, /Remixed \/ mixed by/);
@@ -185,12 +185,12 @@ test('version year and first released inputs have a year range and round-trip', 
   assert.equal(years.length, 2);
   for (const i of years) assert.equal(String(i.max), String(nextYear));
   const v = f.values();
-  assert.equal(String(v.version.year), '2024');
-  assert.equal(String(v.released), '2003', 'original year untouched');
-  f.setValues({ version: { kind: 'remix', name: 'R', by: [], year: '' } });
-  assert.equal(f.values().version.year, '');
-  f.setValues({ version: { kind: 'remix', name: 'R', by: [], year: 2011 } });
-  assert.equal(String(f.values().version.year), '2011');
+  assert.equal(String(v.version.releaseYear), '2024');
+  assert.equal(String(v.releaseYear), '2003', 'original year untouched');
+  f.setValues({ version: { type: 'remix', name: 'R', artists: [], releaseYear: '' } });
+  assert.equal(f.values().version.releaseYear, '');
+  f.setValues({ version: { type: 'remix', name: 'R', artists: [], releaseYear: 2011 } });
+  assert.equal(String(f.values().version.releaseYear), '2011');
   f.setValues({ version: null });
   assert.equal(f.values().version, null);
   assert.equal(songForm({ mode: 'add', song: { title: 'T', tags: [] } }).values().version, null);
@@ -200,24 +200,24 @@ test('values() returns structure keys only', () => {
   const f = songForm({ mode: 'edit', song: { id: 's1', title: 'T', artist: 'A', remixer: 'B Remix', year: 2000, remix_year: 2010, tags: [] } });
   const v = f.values();
   for (const k of ['artist', 'remixer', 'year', 'remix_year']) assert.ok(!(k in v), k);
-  assert.deepEqual(v.artists, ['A']);
-  assert.deepEqual(v.featured, []);
-  assert.equal(String(v.released), '2000');
-  assert.deepEqual(v.version, { kind: 'remix', name: 'B Remix', by: [], year: '2010' });
+  assert.deepEqual(v.mainArtists, ['A']);
+  assert.deepEqual(v.featuredArtists, []);
+  assert.equal(String(v.releaseYear), '2000');
+  assert.deepEqual(v.version, { type: 'remix', name: 'B Remix', artists: [], releaseYear: '2010' });
 });
 
 test('an untouched edit form returns the stored structure', () => {
-  const song = { id: 's1', title: 'T', artists: ['A', 'B'], featured: ['C'], released: 1999, version: { kind: 'cover', name: null, by: [], year: null, of: 'Z' }, tags: [] };
+  const song = { id: 's1', title: 'T', mainArtists: ['A', 'B'], featuredArtists: ['C'], releaseYear: 1999, version: { type: 'cover', name: null, artists: [], releaseYear: null, originalArtists: 'Z' }, tags: [] };
   const v = songForm({ mode: 'edit', song }).values();
-  assert.deepEqual(v.artists, ['A', 'B']);
-  assert.deepEqual(v.featured, ['C']);
-  assert.equal(String(v.released), '1999');
-  assert.deepEqual(v.version, { kind: 'cover', name: '', by: [], year: '', of: ['Z'] });
+  assert.deepEqual(v.mainArtists, ['A', 'B']);
+  assert.deepEqual(v.featuredArtists, ['C']);
+  assert.equal(String(v.releaseYear), '1999');
+  assert.deepEqual(v.version, { type: 'cover', name: '', artists: [], releaseYear: '', originalArtists: ['Z'] });
 });
 
 test('Get metadata for a version song sends version_kind and never takes a MusicBrainz or Discogs link', async () => {
   const calls = stubFetch(() => ({ body: { album: 'Orig LP', year: 1993, services: { musicbrainz: { found: true, url: 'https://mb/1' }, discogs: { found: true, url: 'https://dc/1' } } } }));
-  const f = songForm({ mode: 'edit', song: { id: 's9', title: 'T', artists: ['A', 'B'], featured: [], version: { kind: 'live', name: 'Live', by: [], year: null }, album: '', tags: [], file: 'x' } });
+  const f = songForm({ mode: 'edit', song: { id: 's9', title: 'T', mainArtists: ['A', 'B'], featuredArtists: [], version: { type: 'live', name: 'Live', artists: [], releaseYear: null }, albums: [], tags: [], file: 'x' } });
   btn(f, 'Get metadata').click();
   await flush();
   const body = JSON.parse(calls.find((c) => c.url === '/metadata').opts.body);
@@ -226,8 +226,8 @@ test('Get metadata for a version song sends version_kind and never takes a Music
   const v = f.values();
   assert.equal(v.musicbrainz_url, null);
   assert.equal(v.discogs_url, null);
-  assert.equal(v.album, '', 'no album of the original recording');
-  assert.equal(String(v.released), '1993');
+  assert.deepEqual(v.albums, [], 'no album of the original recording');
+  assert.equal(String(v.releaseYear), '1993');
 });
 
 test('Links region: collapsed by default, one labelled field per source, filled rows are new-tab links', () => {

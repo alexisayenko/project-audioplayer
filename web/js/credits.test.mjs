@@ -7,12 +7,12 @@ import { trackSub } from './track-sub.js';
 
 installDom();
 
-const A = { title: 'The Only Way Is Up', artists: ['Martin Garrix', 'Tiesto'], featured: [], released: null };
-const B = { title: 'What Is Love', artists: ['Haddaway'], featured: [], released: 1993 };
-const Cc = { title: 'Cold Heart', artists: ['Dua Lipa', 'Elton John'], featured: [], released: null, version: { kind: 'live', name: 'Live, Royal Albert Hall', by: [], year: null } };
-const D = { title: 'Pressure', artists: ['Nadia Ali', 'Starkillers', 'Alex Kenji'], featured: [], released: null, version: { kind: 'remix', name: 'Alesso Remix', by: ['Alesso'], year: 2012 } };
-const E = { title: 'Song', artists: ['Artist B'], featured: [], released: null, version: { kind: 'cover', name: null, by: [], year: null, of: 'Artist A' } };
-const F = { title: 'Turn The Lights Off', artists: ['Kato'], featured: ['Jon'], released: 2009 };
+const A = { title: 'The Only Way Is Up', mainArtists: ['Martin Garrix', 'Tiesto'], featuredArtists: [], releaseYear: null };
+const B = { title: 'What Is Love', mainArtists: ['Haddaway'], featuredArtists: [], releaseYear: 1993 };
+const Cc = { title: 'Cold Heart', mainArtists: ['Dua Lipa', 'Elton John'], featuredArtists: [], releaseYear: null, version: { type: 'live', name: 'Live, Royal Albert Hall', artists: [], releaseYear: null } };
+const D = { title: 'Pressure', mainArtists: ['Nadia Ali', 'Starkillers', 'Alex Kenji'], featuredArtists: [], releaseYear: null, version: { type: 'remix', name: 'Alesso Remix', artists: ['Alesso'], releaseYear: 2012 } };
+const E = { title: 'Song', mainArtists: ['Artist B'], featuredArtists: [], releaseYear: null, version: { type: 'cover', name: null, artists: [], releaseYear: null, originalArtists: 'Artist A' } };
+const F = { title: 'Turn The Lights Off', mainArtists: ['Kato'], featuredArtists: ['Jon'], releaseYear: 2009 };
 
 test('joinNames forms', () => {
   assert.equal(c.joinNames([]), '');
@@ -30,7 +30,7 @@ test('artist and display lines for examples A-F', () => {
   assert.equal(c.displayLine(D), 'Nadia Ali, Starkillers & Alex Kenji - Pressure (Alesso Remix)');
   assert.equal(c.artistLine(F), 'Kato feat. Jon');
   assert.equal(c.displayLine(F), 'Kato feat. Jon - Turn The Lights Off');
-  assert.equal(c.displayLine({ title: 'Solo', artists: [], featured: [] }), 'Solo');
+  assert.equal(c.displayLine({ title: 'Solo', mainArtists: [], featuredArtists: [] }), 'Solo');
 });
 
 test('cover rule: covering artist first, cover marker after the title', () => {
@@ -40,11 +40,11 @@ test('cover rule: covering artist first, cover marker after the title', () => {
     { label: 'Version', value: 'Cover' },
     { label: 'Cover of', value: 'Artist A' },
   ]);
-  assert.deepEqual(c.detailsLines({ ...E, version: { ...E.version, of: ['Artist A'] } }).at(-1), { label: 'Cover of', value: 'Artist A' });
+  assert.deepEqual(c.detailsLines({ ...E, version: { ...E.version, originalArtists: ['Artist A'] } }).at(-1), { label: 'Cover of', value: 'Artist A' });
 });
 
 test('mashup: makers first, kind word after the title, Mashup of lists the sources', () => {
-  const M = { title: 'Кончится лето', artists: ['Yaukoshi', 'LXST CXNTURY', 'Цой'], featured: [], version: { kind: 'mashup', name: null, by: [], year: null, of: ['S1', 'S2'] } };
+  const M = { title: 'Кончится лето', mainArtists: ['Yaukoshi', 'LXST CXNTURY', 'Цой'], featuredArtists: [], version: { type: 'mashup', name: null, artists: [], releaseYear: null, originalArtists: ['S1', 'S2'] } };
   assert.equal(c.displayLine(M), 'Yaukoshi, LXST CXNTURY & Цой - Кончится лето (mashup)');
   assert.deepEqual(c.detailsLines(M), [{ label: 'Version', value: 'Mashup' }, { label: 'Mashup of', value: 'S1, S2' }]);
   assert.ok(c.searchText(M).includes('s2'));
@@ -53,12 +53,12 @@ test('mashup: makers first, kind word after the title, Mashup of lists the sourc
 });
 
 test('version label: name wins, kind word as fallback, other is silent, dedupe against title', () => {
-  assert.equal(c.titleLine({ title: 'S', artists: [], version: { kind: 'live', name: null } }), 'S (live)');
-  assert.equal(c.titleLine({ title: 'S', artists: [], version: { kind: 'other', name: null, year: 2020 } }), 'S');
-  assert.equal(c.titleLine({ title: 'S (Live)', artists: [], version: { kind: 'live', name: null } }), 'S (Live)');
-  assert.equal(c.titleLine({ title: 'S (Kav Remix)', artists: [], version: { kind: 'remix', name: 'Kav Remix' } }), 'S (Kav Remix)');
-  assert.equal(c.titleLine({ title: 'S', artists: [], version: { kind: 'remix', name: 'A - B | C' } }), 'S (A, B, C)');
-  assert.equal(c.titleLine({ title: 'S (Kav Remix)', artists: [], version: { kind: 'remix', name: 'Kav - Bob' } }), 'S (Kav Remix) (Bob)');
+  assert.equal(c.titleLine({ title: 'S', mainArtists: [], version: { type: 'live', name: null } }), 'S (live)');
+  assert.equal(c.titleLine({ title: 'S', mainArtists: [], version: { type: 'other', name: null, releaseYear: 2020 } }), 'S');
+  assert.equal(c.titleLine({ title: 'S (Live)', mainArtists: [], version: { type: 'live', name: null } }), 'S (Live)');
+  assert.equal(c.titleLine({ title: 'S (Kav Remix)', mainArtists: [], version: { type: 'remix', name: 'Kav Remix' } }), 'S (Kav Remix)');
+  assert.equal(c.titleLine({ title: 'S', mainArtists: [], version: { type: 'remix', name: 'A - B | C' } }), 'S (A, B, C)');
+  assert.equal(c.titleLine({ title: 'S (Kav Remix)', mainArtists: [], version: { type: 'remix', name: 'Kav - Bob' } }), 'S (Kav Remix) (Bob)');
 });
 
 test('tooltip and title nodes carry the version year', () => {
@@ -78,9 +78,9 @@ test('subtitle, released year and details order', () => {
   assert.equal(c.subtitle(F), 'Kato feat. Jon · 2009');
   assert.equal(c.subtitle(A), 'Martin Garrix & Tiesto');
   assert.equal(c.releasedYear(B), 1993);
-  assert.equal(c.releasedYear({ artists: [], released: null, year: 2001 }), 2001);
-  assert.equal(c.releasedYear({ artists: [], released: null }), null);
-  assert.deepEqual(c.detailsLines({ ...D, released: 2009 }).map((d) => d.label),
+  assert.equal(c.releasedYear({ mainArtists: [], releaseYear: null, year: 2001 }), 2001);
+  assert.equal(c.releasedYear({ mainArtists: [], releaseYear: null }), null);
+  assert.deepEqual(c.detailsLines({ ...D, releaseYear: 2009 }).map((d) => d.label),
     ['Version', 'Version name', 'Remixed / mixed by', 'Version year', 'First released']);
   assert.deepEqual(c.detailsLines(A), []);
 });
@@ -116,9 +116,9 @@ test('legacy-only songs keep the old behaviour', () => {
 });
 
 test('a version marker is hidden only by a whole word of the title', () => {
-  assert.equal(c.displayLine({ title: 'Recovery', artists: ['B'], version: { kind: 'cover' } }), 'B - Recovery (cover)');
-  assert.equal(c.displayLine({ title: 'Alive', artists: ['B'], version: { kind: 'live' } }), 'B - Alive (live)');
-  assert.equal(c.displayLine({ title: 'Song (Live)', artists: ['B'], version: { kind: 'live' } }), 'B - Song (Live)');
+  assert.equal(c.displayLine({ title: 'Recovery', mainArtists: ['B'], version: { type: 'cover' } }), 'B - Recovery (cover)');
+  assert.equal(c.displayLine({ title: 'Alive', mainArtists: ['B'], version: { type: 'live' } }), 'B - Alive (live)');
+  assert.equal(c.displayLine({ title: 'Song (Live)', mainArtists: ['B'], version: { type: 'live' } }), 'B - Song (Live)');
 });
 
 test('displayed year is the version year, else the original, never the upload date', () => {

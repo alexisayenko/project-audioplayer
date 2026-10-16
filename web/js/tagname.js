@@ -37,6 +37,13 @@ export function withDecade(tags, year) {
   return placed ? out : [...out, derived];
 }
 
+export function withRuntimeDecade(song) {
+  if (!song || !Number.isInteger(song.releaseYear)) return song;
+  const tags = (song.tags || []).filter((t) => !/^decade:/i.test(t));
+  const derived = decadeTag(song.releaseYear);
+  return { ...song, tags: derived ? [...tags, derived] : tags };
+}
+
 export const decadeRank = (tag) => {
   const n = Number(splitTag(tag).value.slice(0, 2));
   if (Number.isNaN(n)) return 999;
