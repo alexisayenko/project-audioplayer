@@ -248,7 +248,7 @@ function titleFirst(base, titleText, artists, ctx) {
   return [left, rightNames.every((n) => have.has(fold(n))) ? artists : rightNames];
 }
 
-export function suggest(artist, title, remixer, ctx = {}) {
+function suggestInternal(artist, title, remixer, ctx = {}) {
   const notes = [];
   let alternatives = null;
   const [primary, feat] = cutFeat(squash(artist ?? ''));
@@ -325,4 +325,21 @@ export function suggest(artist, title, remixer, ctx = {}) {
   const out = { artists, featured, version: ver, title: base && base !== titleText ? base : null, notes };
   if (alternatives) out.alternatives = alternatives;
   return out;
+}
+
+function v2Version(v) {
+  if (!v) return v;
+  const { kind, by, of, ...rest } = v;
+  const out = { ...rest, type: kind, artists: by ?? [] };
+  if (of !== undefined) out.originalArtists = of;
+  return out;
+}
+
+function v2Reading({ artists, featured, version: v, ...rest }) {
+  return { ...rest, mainArtists: artists, featuredArtists: featured, version: v2Version(v) };
+}
+
+export function suggest(artist, title, remixer, ctx = {}) {
+  const { alternatives, ...out } = v2Reading(suggestInternal(artist, title, remixer, ctx));
+  return alternatives ? { ...out, alternatives: alternatives.map(v2Reading) } : out;
 }

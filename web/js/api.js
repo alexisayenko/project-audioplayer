@@ -1,6 +1,7 @@
 import { storeRemove } from './storage.js';
 import { friendly } from './limits.js';
 import { clearGuest } from './guest.js';
+import { withRuntimeDecade } from './tagname.js';
 
 storeRemove('audioplayer.token');
 
@@ -165,7 +166,7 @@ export const session = {
 export const api = {
   me: () => request('GET', '/me'),
   usage: () => request('GET', '/me/usage'),
-  library: () => request('GET', '/library').then((d) => d.songs),
+  library: () => request('GET', '/library').then((d) => d.songs.map(withRuntimeDecade)),
   tags: () => request('GET', '/tags'),
   genreGraph: () => request('GET', '/genres/graph'),
   genres: () => request('GET', '/genres').then((d) => (Array.isArray(d?.genres) ? d.genres : [])),

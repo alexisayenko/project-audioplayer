@@ -51,9 +51,9 @@ test('planRemixYear stays as an alias driven by the remixer text', () => {
 
 test('add form: a legacy remixer and published_year fill Version year, marked as a suggestion, First released untouched', () => {
   const f = songForm({ mode: 'add', song: { title: 'T', remixer: 'DJ X Remix', published_year: 2014, year: 2001, tags: [] } });
-  assert.equal(f.values().version.kind, 'remix');
-  assert.equal(String(f.values().version.year), '2014');
-  assert.equal(String(f.values().released), '2001');
+  assert.equal(f.values().version.type, 'remix');
+  assert.equal(String(f.values().version.releaseYear), '2014');
+  assert.equal(String(f.values().releaseYear), '2001');
   assert.ok(vy(f).classList.contains('suggested'));
 });
 
@@ -66,16 +66,16 @@ test('add form: no version leaves Version year empty', () => {
 
 test('add form: published_year never reaches First released', () => {
   const f = songForm({ mode: 'add', song: { title: 'T', published_year: 2014, tags: [] } });
-  assert.equal(f.values().released, '');
+  assert.equal(f.values().releaseYear, '');
   setKind(f, 'remix');
-  assert.equal(f.values().released, '');
-  assert.equal(String(f.values().version.year), '2014');
+  assert.equal(f.values().releaseYear, '');
+  assert.equal(String(f.values().version.releaseYear), '2014');
 });
 
 test('add form: choosing a version suggests the year, clearing it removes the suggestion', () => {
   const f = songForm({ mode: 'add', song: { title: 'T', published_year: 2014, tags: [] } });
   setKind(f, 'live');
-  assert.equal(String(f.values().version.year), '2014');
+  assert.equal(String(f.values().version.releaseYear), '2014');
   assert.ok(vy(f).classList.contains('suggested'));
   setKind(f, '');
   assert.equal(f.values().version, null);
@@ -90,7 +90,7 @@ test('add form: a typed version year is kept and survives clearing the version',
   setKind(f, '');
   assert.equal(vy(f).value, '2020');
   setKind(f, 'edit');
-  assert.equal(String(f.values().version.year), '2020');
+  assert.equal(String(f.values().version.releaseYear), '2020');
 });
 
 test('add form: a user who cleared the field is not re-suggested', () => {
@@ -98,66 +98,66 @@ test('add form: a user who cleared the field is not re-suggested', () => {
   typeVersionYear(f, '');
   setKind(f, '');
   setKind(f, 'remix');
-  assert.equal(f.values().version.year, '');
+  assert.equal(f.values().version.releaseYear, '');
 });
 
 test('add form: an out-of-range published year is ignored', () => {
   const f = songForm({ mode: 'add', song: { title: 'T', remixer: 'DJ X Remix', published_year: 1850, tags: [] } });
-  assert.equal(f.values().version.year, '');
+  assert.equal(f.values().version.releaseYear, '');
 });
 
 test('Get metadata: a version-specific date beats the platform year', async () => {
   const f = songForm({ mode: 'add', song: { title: 'T', remixer: 'DJ X Remix', published_year: 2014, tags: [] } });
   await getMeta(f, { year: 2001, published_year: 2014, version_year: 2012 });
-  assert.equal(String(f.values().version.year), '2012');
-  assert.equal(String(f.values().released), '2001');
+  assert.equal(String(f.values().version.releaseYear), '2012');
+  assert.equal(String(f.values().releaseYear), '2001');
 });
 
 test('Get metadata: remix_year from an older server still works', async () => {
   const f = songForm({ mode: 'add', song: { title: 'T', remixer: 'DJ X Remix', published_year: 2014, tags: [] } });
   await getMeta(f, { published_year: 2014, remix_year: 2012 });
-  assert.equal(String(f.values().version.year), '2012');
+  assert.equal(String(f.values().version.releaseYear), '2012');
 });
 
 test('Get metadata: a typed value is never changed on re-fetch', async () => {
   const f = songForm({ mode: 'add', song: { title: 'T', remixer: 'DJ X Remix', published_year: 2014, tags: [] } });
   typeVersionYear(f, '2020');
   await getMeta(f, { published_year: 2014, version_year: 2012 });
-  assert.equal(String(f.values().version.year), '2020');
+  assert.equal(String(f.values().version.releaseYear), '2020');
 });
 
 test('Get metadata: a year from lookups fills an empty First released, a typed one is kept', async () => {
   const f = songForm({ mode: 'add', song: { title: 'T', tags: [] } });
   await getMeta(f, { year: 1993, published_year: 2014 });
-  assert.equal(String(f.values().released), '1993');
+  assert.equal(String(f.values().releaseYear), '1993');
   const g = songForm({ mode: 'add', song: { title: 'T', year: 1990, tags: [] } });
   await getMeta(g, { year: 1993 });
-  assert.equal(String(g.values().released), '1990');
+  assert.equal(String(g.values().releaseYear), '1990');
 });
 
 test('edit dialog: empty version year with a version is filled from the fetched publish year', async () => {
-  const f = songForm({ mode: 'edit', song: { id: 's1', title: 'T', artists: ['A'], featured: [], released: null, version: { kind: 'remix', name: 'DJ X Remix', by: [], year: null }, tags: [] } });
-  assert.equal(f.values().version.year, '');
+  const f = songForm({ mode: 'edit', song: { id: 's1', title: 'T', mainArtists: ['A'], featuredArtists: [], releaseYear: null, version: { type: 'remix', name: 'DJ X Remix', artists: [], releaseYear: null }, tags: [] } });
+  assert.equal(f.values().version.releaseYear, '');
   await getMeta(f, { published_year: 2016 });
-  assert.equal(String(f.values().version.year), '2016');
+  assert.equal(String(f.values().version.releaseYear), '2016');
   assert.ok(vy(f).classList.contains('suggested'));
 });
 
 test('edit dialog: a stored version year is kept', async () => {
-  const f = songForm({ mode: 'edit', song: { id: 's1', title: 'T', artists: ['A'], featured: [], version: { kind: 'remix', name: 'R', by: [], year: 2009 }, tags: [] } });
+  const f = songForm({ mode: 'edit', song: { id: 's1', title: 'T', mainArtists: ['A'], featuredArtists: [], version: { type: 'remix', name: 'R', artists: [], releaseYear: 2009 }, tags: [] } });
   await getMeta(f, { published_year: 2016, version_year: 2012 });
-  assert.equal(String(f.values().version.year), '2009');
+  assert.equal(String(f.values().version.releaseYear), '2009');
 });
 
 test('edit dialog: no version, no version year from a fetch', async () => {
-  const f = songForm({ mode: 'edit', song: { id: 's1', title: 'T', artists: ['A'], featured: [], tags: [] } });
+  const f = songForm({ mode: 'edit', song: { id: 's1', title: 'T', mainArtists: ['A'], featuredArtists: [], tags: [] } });
   await getMeta(f, { published_year: 2016, year: 2016 });
   assert.equal(f.values().version, null);
 });
 
 test('reset drops a suggestion', async () => {
-  const f = songForm({ mode: 'edit', song: { id: 's1', title: 'T', artists: ['A'], featured: [], version: { kind: 'remix', name: 'R', by: [], year: null }, tags: [] } });
+  const f = songForm({ mode: 'edit', song: { id: 's1', title: 'T', mainArtists: ['A'], featuredArtists: [], version: { type: 'remix', name: 'R', artists: [], releaseYear: null }, tags: [] } });
   await getMeta(f, { published_year: 2016 });
   f.reset();
-  assert.equal(f.values().version.year, '');
+  assert.equal(f.values().version.releaseYear, '');
 });

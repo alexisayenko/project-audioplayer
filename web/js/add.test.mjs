@@ -196,16 +196,16 @@ test('save sends structure keys, no legacy keys, and the preview raw strings as 
   await flush();
   const body = JSON.parse(calls.find((c) => c.url === '/songs' && c.opts.method === 'POST').opts.body);
   assert.deepEqual(body.source_raw, raw);
-  assert.deepEqual(body.metadata.artists, ['Rick']);
-  assert.deepEqual(body.metadata.featured, []);
-  assert.equal(body.metadata.released, 1987);
+  assert.deepEqual(body.metadata.mainArtists, ['Rick']);
+  assert.deepEqual(body.metadata.featuredArtists, []);
+  assert.equal(body.metadata.releaseYear, 1987);
   assert.ok(!('version' in body.metadata));
   for (const k of ['artist', 'remixer', 'year', 'remix_year']) assert.ok(!(k in body.metadata), k);
 });
 
 test('a structured library song is shown as its display line in the Already-in-library hint', () => {
   store.loaded = true;
-  store.songs = [{ id: 'dQw4w9WgXcQ', title: 'Have it', artists: ['A', 'B'], featured: [], sources: [{ url: YT }] }];
+  store.songs = [{ id: 'dQw4w9WgXcQ', title: 'Have it', mainArtists: ['A', 'B'], featuredArtists: [], sources: [{ url: YT }] }];
   stubFetch(preview(PREVIEW));
   openAdd();
   typeUrl(YT);

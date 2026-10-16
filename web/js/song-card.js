@@ -8,10 +8,10 @@ import { autodl, autoDownloadOn } from './autodl.js';
 import { statusText } from './dl-progress.js';
 import { downloadSong } from './download.js';
 import { editDialog } from './edit-dialog.js';
-import { creditParts, subtitle, titleNodes, detailsLines, yearFact } from './credits.js';
+import { creditParts, subtitle, titleNodes, detailsLines, yearFact, albumOf } from './credits.js';
 import { icon } from './icons.js';
 import { bpmLabel } from './bpm-label.js';
-import { visibleTags, tagGroups, tagLabel } from './tagname.js';
+import { visibleTags, tagGroups, tagLabel, withRuntimeDecade } from './tagname.js';
 import { serviceIcons } from './service-icons.js';
 import { storedLinkStates } from './song-links.js';
 import { toggleQueue } from './queue-toggle.js';
@@ -34,8 +34,8 @@ export function cardModel(song, view) {
     title,
     remix,
     sub: subtitle(song),
-    album: String(song?.album ?? '').trim(),
-    groups: cardTags(song?.tags),
+    album: albumOf(song),
+    groups: cardTags(withRuntimeDecade(song)?.tags),
     yearFact: yearFact(song),
     details: detailsLines(song).map(({ label, value }) => (label === 'Cover of' ? `Cover of ${value}` : `${label}: ${value}`)),
     bpm: bpmLabel(song?.bpm),

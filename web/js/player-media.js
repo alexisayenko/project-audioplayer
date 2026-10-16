@@ -1,7 +1,7 @@
 import { api } from './api.js';
 import { storeGet, storeSet } from './storage.js';
 import { $ } from './player-ui.js';
-import { titleLine, artistLine } from './credits.js';
+import { titleLine, artistLine, albumOf } from './credits.js';
 import { clampVolume, parseVolume } from './volume-logic.js';
 
 const VOLUME_KEY = 'ap2.volume';
@@ -14,7 +14,7 @@ export function updateMediaSession(song) {
   navigator.mediaSession.metadata = new MediaMetadata({
     title: titleLine(song),
     artist: artistLine(song),
-    album: song.album || '',
+    album: albumOf(song),
     artwork,
   });
 }
