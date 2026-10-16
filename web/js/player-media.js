@@ -1,7 +1,7 @@
 import { api } from './api.js';
 import { storeGet, storeSet } from './storage.js';
 import { $ } from './player-ui.js';
-import { displayString } from './display-title.js';
+import { titleLine, artistLine } from './credits.js';
 import { clampVolume, parseVolume } from './volume-logic.js';
 
 const VOLUME_KEY = 'ap2.volume';
@@ -12,8 +12,8 @@ export function updateMediaSession(song) {
     ? [{ src: new URL(api.coverUrl(song.id, song.cover_v), location.href).href, sizes: '480x360', type: 'image/jpeg' }]
     : [];
   navigator.mediaSession.metadata = new MediaMetadata({
-    title: displayString(song),
-    artist: song.artist || '',
+    title: titleLine(song),
+    artist: artistLine(song),
     album: song.album || '',
     artwork,
   });
@@ -37,10 +37,8 @@ export function updatePositionState(audio) {
 export function setVolume(audio, v, save = true) {
   const vol = clampVolume(v);
   audio.volume = vol;
-  for (const id of ['p-volume', 'mini-volume']) {
-    $(id).value = Math.round(vol * 100);
-    $(id).style.setProperty('--p', vol.toFixed(3));
-  }
+  $('mini-volume').value = Math.round(vol * 100);
+  $('mini-volume').style.setProperty('--p', vol.toFixed(3));
   if (save) storeSet(VOLUME_KEY, String(vol));
 }
 

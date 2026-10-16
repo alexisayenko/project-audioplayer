@@ -83,7 +83,7 @@ test('Song info button opens the read-only card, not the edit dialog; guests kee
   $('p-view').dispatchEvent(makeEvent('click'));
   const card = $('song-card');
   assert.ok(card.querySelector('.card-head'));
-  const names = () => card.querySelectorAll('.card-actions button').map((b) => b.textContent);
+  const names = () => card.querySelectorAll('.card-actions button').map((b) => b.getAttribute('aria-label') || b.textContent);
   assert.ok(names().includes('Edit'));
   assert.equal($('edit-dialog').querySelector('form, input'), null);
   card.close?.();

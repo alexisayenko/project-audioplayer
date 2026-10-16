@@ -28,9 +28,9 @@ const publish = (songs) => { store.songs = songs; store.tags = []; store.loaded 
 test('saved queue, shuffle, repeat and volume are restored on init', () => {
   initPlayer();
   assert.equal(audio.volume, 0.25);
-  assert.equal($('p-volume').value, 25);
-  assert.equal($('p-shuffle').getAttribute('aria-pressed'), 'true');
-  assert.match($('p-repeat').getAttribute('aria-label'), /whole list/);
+  assert.equal($('mini-volume').value, 25);
+  assert.equal($('mini-shuffle').getAttribute('aria-pressed'), 'true');
+  assert.match($('mini-repeat').getAttribute('aria-label'), /whole list/);
   assert.equal(player.current, null, 'library not loaded yet: nothing current');
 });
 

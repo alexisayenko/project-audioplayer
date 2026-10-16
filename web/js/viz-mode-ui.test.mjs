@@ -77,8 +77,8 @@ test('opening focuses the current option; clicking another selects, persists, an
   assert.equal(ui.bgViz.effectiveMode(), 'ring');
   assert.equal($('viz-live').textContent, 'Visualizer: Ring');
   assert.deepEqual(opts('viz-switch').map((o) => o.getAttribute('aria-selected')), ['false', 'true']);
-  assert.deepEqual(opts('p-viz-switch').map((o) => o.getAttribute('aria-selected')), ['false', 'true']);
-  assert.equal(btn('p-viz-switch').getAttribute('aria-label'), 'Visualizer mode: Ring');
+  assert.deepEqual(opts('mini-viz-switch').map((o) => o.getAttribute('aria-selected')), ['false', 'true']);
+  assert.equal(btn('mini-viz-switch').getAttribute('aria-label'), 'Visualizer mode: Ring');
 });
 
 test('keyboard: arrows move focus, Enter selects, Escape closes the popup', () => {
@@ -102,10 +102,10 @@ test('keyboard: arrows move focus, Enter selects, Escape closes the popup', () =
 });
 
 test('outside pointerdown closes the popup', () => {
-  btn('p-viz-switch').click();
-  assert.equal(list('p-viz-switch').hidden, false);
+  btn('mini-viz-switch').click();
+  assert.equal(list('mini-viz-switch').hidden, false);
   fire(document.body, 'pointerdown', {});
-  assert.equal(list('p-viz-switch').hidden, true);
+  assert.equal(list('mini-viz-switch').hidden, true);
 });
 
 test('M cycles modes while the overlay is open; ignored in inputs, closed on other routes', () => {
@@ -271,4 +271,32 @@ test('a fallback note is shown on the mode button and cleared when the mode is s
   sw.set('synthwave');
   assert.equal(text(), 'Synthwave terrain');
   root.remove();
+});
+
+const pageHtml = (await import('node:fs')).readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+const section = (id) => { const a = pageHtml.indexOf(`<section id="${id}"`); return a < 0 ? '' : pageHtml.slice(a, pageHtml.indexOf('</section>', a)); };
+
+test('the mode button lives in the dock (#mini), not on the Now playing page', () => {
+  assert.match(section('mini'), /id="mini-viz-switch"/);
+  assert.doesNotMatch(section('player'), /viz-switch/);
+  assert.doesNotMatch(pageHtml, /id="p-viz-switch"/);
+  const sw = $('mini-viz-switch');
+  assert.equal(sw.children[0].getAttribute('aria-haspopup'), 'listbox');
+  assert.match(sw.children[0].getAttribute('aria-label'), /^Visualizer mode: /);
+  assert.equal(sw.children[1].getAttribute('role'), 'listbox');
+});
+
+test('dock mode change on another route only stores the mode', () => {
+  document.body.dataset.route = 'library';
+  const before = vizMode();
+  btn('mini-viz-switch').click();
+  opts('mini-viz-switch').find((o) => o.dataset.mode !== before).click();
+  assert.notEqual(vizMode(), before);
+  assert.equal(localStorage.getItem('ap2.viz.mode'), vizMode());
+  setVizMode(before);
+});
+
+test('element ids in index.html are unique', () => {
+  const ids = [...pageHtml.matchAll(/\sid="([^"]+)"/g)].map((m) => m[1]);
+  assert.deepEqual(ids.filter((id, i) => ids.indexOf(id) !== i), []);
 });

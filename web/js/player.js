@@ -16,7 +16,7 @@ import { $, setIcon, setToggle, setCover, queueRow, updateDl, paintTimes } from 
 import { updateMediaSession, setupMediaSession, updatePositionState, setVolume, storedVolume } from './player-media.js';
 import { canSetVolume } from './volume-logic.js';
 import { openTagPicker } from './player-tag-picker.js';
-import { displayString, subtitleString, titleNodes } from './display-title.js';
+import { titleLine, tooltipLine, artistLine, subtitle, titleNodes } from './credits.js';
 import { marquee, disposeAll } from './marquee.js';
 import { can } from './guest.js';
 import { paintServiceButtons } from './player-actions.js';
@@ -365,13 +365,11 @@ function renderTransport(song, playing) {
   $('p-view').hidden = !song;
   paintServiceButtons($('p-svc'), song);
   $('p-download').hidden = !hasAudio(song) || !can('download');
-  setIcon('p-play', playing ? 'pause' : 'play', 'play');
   setIcon('mini-play', playing ? 'pause' : 'play', 'action');
-  $('p-play').setAttribute('aria-label', label);
   const cover = $('cover-toggle');
   cover.hidden = !song;
   const cm = currentCoverModel(playing);
-  const name = song ? displayString(song) : '';
+  const name = song ? titleLine(song) : '';
   paintCover(cover, cm, name, { size: 28, extra: 'cover-btn' });
   paintCover($('mini-cover-btn'), cm, name, { size: 27 });
   $('mini-play').setAttribute('aria-label', label);
@@ -379,7 +377,7 @@ function renderTransport(song, playing) {
 
 function renderIdle() {
   document.title = 'Electrophone';
-  for (const id of ['p-prev', 'p-next', 'p-play', 'mini-prev', 'mini-next']) $(id).disabled = true;
+  for (const id of ['mini-prev', 'mini-next']) $(id).disabled = true;
   $('player-cover').removeAttribute('src');
   $('player-cover').dataset.src = '';
   $('cover-art').classList.add('noart');
@@ -389,24 +387,21 @@ function renderIdle() {
   listeners.forEach((fn) => fn());
 }
 
-const fullTitle = (song) => (song.artist ? `${displayString(song)} - ${song.artist}` : displayString(song));
-
 function renderMini(song) {
   const noNext = !Q.hasNext(logic());
-  for (const id of ['p-prev', 'p-play', 'mini-prev']) $(id).disabled = false;
-  $('p-next').disabled = noNext;
+  for (const id of ['mini-prev', 'mini-play']) $(id).disabled = false;
   $('mini-next').disabled = noNext;
   $('mini-title').replaceChildren(...titleNodes(song));
-  $('mini-title').title = fullTitle(song);
+  $('mini-title').title = tooltipLine(song);
   marquee($('mini-title'), { auto: true });
-  $('mini-artist').textContent = song.artist || '';
+  $('mini-artist').textContent = artistLine(song);
 }
 
 function renderDetails(song) {
   $('player-title').replaceChildren(...titleNodes(song));
-  $('player-title').title = fullTitle(song);
+  $('player-title').title = tooltipLine(song);
   marquee($('player-title'), { auto: true });
-  $('player-sub').textContent = subtitleString(song);
+  $('player-sub').textContent = subtitle(song);
   $('player-tags').replaceChildren(...visibleTags(song.tags).map(tagChip));
   const bpm = song.bpm != null ? Math.round(song.bpm) : null;
   $('player-bpm').replaceChildren(...(bpm == null ? [] : [el('span', { class: 'bpm-badge', title: 'Beats per minute (estimated)', 'aria-label': `BPM ${bpm}` }, `${bpm} `, el('small', { 'aria-hidden': 'true' }, 'BPM'))]));
@@ -431,14 +426,14 @@ function render(coversOnly = false) {
   renderDetails(song);
   if (coversOnly) paintQueueCovers($('queue-list'), qs.index, !audio.paused, (row) => row.querySelector('.row-cover').dataset.title);
   else renderQueue();
-  document.title = `${displayString(song)} - Electrophone`;
+  document.title = `${titleLine(song)} - Electrophone`;
   renderProgress();
   listeners.forEach((fn) => fn());
 }
 
 function renderPlaylistControls() {
-  setToggle(['p-shuffle', 'mini-shuffle'], shuffle, `Shuffle: ${shuffle ? 'on' : 'off'}`);
-  setToggle(['p-repeat', 'mini-repeat'], repeat !== 'off', `Repeat: ${REPEAT_LABEL[repeat] || 'off'}`, repeat === 'one' ? 'repeatOne' : 'repeat');
+  setToggle(['mini-shuffle'], shuffle, `Shuffle: ${shuffle ? 'on' : 'off'}`);
+  setToggle(['mini-repeat'], repeat !== 'off', `Repeat: ${REPEAT_LABEL[repeat] || 'off'}`, repeat === 'one' ? 'repeatOne' : 'repeat');
   const nothing = !Q.upcomingCount(qs) && !qs.tags.length;
   $('queue-clear').disabled = nothing;
   $('queue-clear').title = nothing ? 'Nothing upcoming to clear' : 'Remove the upcoming songs and tag chips';
@@ -501,9 +496,6 @@ export function initPlayer() {
   audio.addEventListener('ended', () => player.next(true));
   audio.addEventListener('error', () => { if (audio.src) fail(); });
 
-  setIcon('p-prev', 'prev');
-  setIcon('p-next', 'next');
-  setIcon('p-shuffle', 'shuffle');
   setIcon('mini-prev', 'prev', 'action');
   setIcon('mini-next', 'next', 'action');
   setIcon('mini-shuffle', 'shuffle', 'action');
@@ -522,13 +514,11 @@ export function initPlayer() {
   });
   $('p-download').addEventListener('click', () => { if (player.current) downloadSong(player.current); });
 
-  for (const p of ['mini', 'p']) {
-    $(`${p}-play`).addEventListener('click', () => player.toggle());
-    $(`${p}-next`).addEventListener('click', () => player.next());
-    $(`${p}-prev`).addEventListener('click', () => player.prev());
-    $(`${p}-shuffle`).addEventListener('click', () => player.setShuffle(!shuffle));
-    $(`${p}-repeat`).addEventListener('click', () => player.cycleRepeat());
-  }
+  $('mini-play').addEventListener('click', () => player.toggle());
+  $('mini-next').addEventListener('click', () => player.next());
+  $('mini-prev').addEventListener('click', () => player.prev());
+  $('mini-shuffle').addEventListener('click', () => player.setShuffle(!shuffle));
+  $('mini-repeat').addEventListener('click', () => player.cycleRepeat());
   $('tag-add').addEventListener('click', () => openTagPicker(player, () => qs.tags));
   $('queue-clear').addEventListener('click', () => {
     const n = player.clearUpcoming();
@@ -557,31 +547,17 @@ export function initPlayer() {
   });
   $('queue-list').addEventListener('scroll', closeMenu);
 
-  for (const id of ['scrub', 'mini-scrub']) {
-    scrubbers.push(attachScrubber($(id), {
-      duration: () => audio.duration,
-      time: () => audio.currentTime,
-      onSeek: (t) => { player.seek(t); renderProgress(); },
-      onPreview: previewTime,
-    }));
-  }
+  scrubbers.push(attachScrubber($('mini-scrub'), {
+    duration: () => audio.duration,
+    time: () => audio.currentTime,
+    onSeek: (t) => { player.seek(t); renderProgress(); },
+    onPreview: previewTime,
+  }));
 
   volumeOk = canSetVolume(audio);
   document.body.classList.toggle('vol-readonly', !volumeOk);
   setVolume(audio, storedVolume(), false);
-  for (const id of ['p-volume', 'mini-volume']) $(id).addEventListener('input', (e) => player.setVolume(e.target.value / 100));
-  $('p-mute').addEventListener('click', () => player.toggleMute());
-  const paintMute = () => {
-    const silent = audio.muted || audio.volume === 0;
-    const label = silent ? 'Unmute' : 'Mute';
-    $('p-mute').setAttribute('aria-pressed', String(silent));
-    $('p-mute').setAttribute('aria-label', label);
-    $('p-mute').title = label;
-    $('p-mute').classList.toggle('on', silent);
-    setIcon('p-mute', silent ? 'volumeMute' : 'volume', 'nav');
-  };
-  audio.addEventListener('volumechange', paintMute);
-  paintMute();
+  $('mini-volume').addEventListener('input', (e) => player.setVolume(e.target.value / 100));
 
   for (const id of ['mini-cover', 'player-cover']) {
     $(id).addEventListener('error', () => { $(id).removeAttribute('src'); $(id).dataset.src = ''; });

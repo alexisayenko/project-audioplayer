@@ -27,7 +27,7 @@ publish(SONGS);
 test('empty player: nothing playing, controls disabled, mini hidden', () => {
   assert.equal(player.current, null);
   assert.equal($('mini').hidden, true);
-  assert.equal($('p-play').disabled, true);
+  assert.equal($('mini-prev').disabled, true);
   assert.equal($('queue-empty').hidden, false);
   assert.equal($('queue-clear').disabled, true);
   assert.equal(document.title, 'Electrophone');
@@ -43,7 +43,7 @@ test('playNow loads the file, plays, and fills mini/full player details', () => 
   assert.equal($('player-title').textContent, 'Alpha');
   assert.equal($('player-bpm').textContent, '120 BPM');
   assert.equal(document.title, 'Alpha - Electrophone');
-  assert.equal($('p-play').getAttribute('aria-label'), 'Pause');
+  assert.equal($('mini-play').getAttribute('aria-label'), 'Pause');
   assert.equal(player.playing, true);
   assert.deepEqual(queueTitles(), ['Alpha']);
   assert.equal(saved().items[0].id, 'a', 'queue persisted');
@@ -83,7 +83,7 @@ test('next/prev walk the queue; prev restarts when past 3 s', () => {
 
 test('at the end of the queue Next is disabled; auto-advance stops', () => {
   player.playAt(2);
-  assert.equal($('p-next').disabled, true);
+  assert.equal($('mini-next').disabled, true);
   const before = audio.plays;
   audio.dispatchEvent(makeEvent('ended'));
   assert.equal(player.current.id, 'c');
@@ -91,12 +91,12 @@ test('at the end of the queue Next is disabled; auto-advance stops', () => {
 });
 
 test('repeat cycles off -> all -> one -> off and labels follow', () => {
-  assert.match($('p-repeat').getAttribute('aria-label'), /off/);
+  assert.match($('mini-repeat').getAttribute('aria-label'), /off/);
   player.cycleRepeat();
-  assert.match($('p-repeat').getAttribute('aria-label'), /whole list/);
-  assert.equal($('p-repeat').getAttribute('aria-pressed'), 'true');
+  assert.match($('mini-repeat').getAttribute('aria-label'), /whole list/);
+  assert.equal($('mini-repeat').getAttribute('aria-pressed'), 'true');
   player.cycleRepeat();
-  assert.match($('p-repeat').getAttribute('aria-label'), /one song/);
+  assert.match($('mini-repeat').getAttribute('aria-label'), /one song/);
   assert.equal(localStorage.getItem('ap2.repeat'), 'one');
   player.cycleRepeat();
   assert.equal(localStorage.getItem('ap2.repeat'), 'off');
@@ -117,7 +117,7 @@ test('repeat all wraps on auto-advance; repeat one restarts the song', () => {
 test('shuffle toggles, persists, and visits every song once', () => {
   player.setShuffle(true);
   assert.equal(localStorage.getItem('ap2.shuffle'), '1');
-  assert.equal($('p-shuffle').getAttribute('aria-pressed'), 'true');
+  assert.equal($('mini-shuffle').getAttribute('aria-pressed'), 'true');
   player.playAt(0);
   const seen = new Set([player.current.id]);
   for (let i = 0; i < 2; i += 1) { player.next(); seen.add(player.current.id); }
@@ -212,7 +212,7 @@ test('seek clamps to the duration and ignores an unknown duration', () => {
 });
 
 test('volume input persists and clamps', () => {
-  const v = $('p-volume');
+  const v = $('mini-volume');
   v.value = '40';
   v.dispatchEvent(makeEvent('input', { target: v }));
   assert.equal(audio.volume, 0.4);
@@ -222,14 +222,11 @@ test('volume input persists and clamps', () => {
   assert.equal(audio.volume, 1);
 });
 
-test('the Now playing speaker button mutes and unmutes', () => {
-  const m = $('p-mute');
-  m.dispatchEvent(makeEvent('click', { target: m }));
+test('toggleMute mutes and unmutes; Now playing has no speaker button of its own', () => {
+  assert.equal($('p-mute'), null);
+  player.toggleMute();
   assert.equal(audio.muted, true);
-  audio.dispatchEvent(makeEvent('volumechange'));
-  assert.equal(m.getAttribute('aria-pressed'), 'true');
-  assert.equal(m.getAttribute('aria-label'), 'Unmute');
-  m.dispatchEvent(makeEvent('click', { target: m }));
+  player.toggleMute();
   assert.equal(audio.muted, false);
 });
 

@@ -12,7 +12,7 @@ import {
   vizParts, setVizParts, onVizParts, vizBackgroundOn, onVizBackground, vizCaps, vizMode, setVizMode, onVizMode, vizHeightScale, onVizHeight,
 } from './viz-settings.js';
 import { attachScrubber } from './scrubber.js';
-import { titleNodes } from './display-title.js';
+import { titleNodes, artistLine } from './credits.js';
 import { $, setIcon } from './player-ui.js';
 import { createCamPanel, loadCam } from './viz-cam-debug.js';
 import { outputLatencyS } from './viz-latency.js';
@@ -61,7 +61,7 @@ function paintPlayButton(audio) {
 
 function paintMeta(song) {
   $('viz-title').replaceChildren(...(song ? titleNodes(song) : ['Nothing playing']));
-  $('viz-artist').textContent = song?.artist || '';
+  $('viz-artist').textContent = song ? artistLine(song) : '';
 }
 
 const CORNER_PAD = 48;
@@ -169,7 +169,7 @@ export function initVisualizer({
     if (announce && live) live.textContent = `Visualizer: ${modeLabel(id)}`;
   };
   const pickFromSwitch = (id) => { setVizMode(id); };
-  for (const id of ['p-viz-switch', 'viz-switch']) {
+  for (const id of ['mini-viz-switch', 'viz-switch']) {
     switches.push(createModeSwitch({ root: $(id), modes, current: currentMode, onSelect: pickFromSwitch }));
   }
   onVizMode((id) => { if (id !== currentMode) applyMode(id, true); });
@@ -180,7 +180,7 @@ export function initVisualizer({
   bgViz.setVizMode(currentMode);
   fullViz.setVizMode(currentMode);
   const syncSwitchVisibility = () => {
-    $('p-viz-switch').hidden = modes.length < 2 || !(supported && vizBackgroundOn());
+    $('mini-viz-switch').hidden = modes.length < 2 || !(supported && vizBackgroundOn());
     syncDock();
   };
   const partsState = vizParts();

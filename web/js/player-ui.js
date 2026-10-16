@@ -8,7 +8,7 @@ import { downloadSong } from './download.js';
 import { autodl } from './autodl.js';
 import { statusText } from './dl-progress.js';
 import { editDialog } from './edit-dialog.js';
-import { displayString, titleNodes } from './display-title.js';
+import { titleLine, artistLine, titleNodes } from './credits.js';
 import { marquee } from './marquee.js';
 import { can } from './guest.js';
 import { coverButton, queueCoverModel } from './row-cover.js';
@@ -24,7 +24,7 @@ export function setToggle(ids, on, label, iconName) {
     b.setAttribute('aria-label', label);
     b.title = label;
     b.classList.toggle('on', on);
-    if (iconName) b.replaceChildren(icon(iconName, id.startsWith('mini') ? 'action' : 'nav'));
+    if (iconName) b.replaceChildren(icon(iconName, 'action'));
   }
 }
 
@@ -40,7 +40,7 @@ export function queueRow(item, i, { count, index, move, removeAt, playAt, playin
   const cover = el('img', { class: 'cover', alt: '', loading: 'lazy' });
   if (s?.cover) cover.src = api.coverUrl(s.id, s.cover_v);
   cover.addEventListener('error', () => cover.removeAttribute('src'));
-  const title = s ? displayString(s) : item.id;
+  const title = s ? titleLine(s) : item.id;
   const more = el('button', {
     class: 'more', type: 'button', title: 'Song menu', 'aria-label': `Song menu: ${title}`, 'aria-haspopup': 'menu', 'aria-expanded': 'false',
   }, icon('more', 'nav'));
@@ -58,7 +58,7 @@ export function queueRow(item, i, { count, index, move, removeAt, playAt, playin
     coverBtn,
     el('div', { class: 'info' },
       el('button', { class: 'open t-subhead', type: 'button', title: `Play: ${title}`, onclick: () => playAt(i) }, s ? titleNodes(s) : title),
-      s?.artist ? el('small', { class: 'sub t-caption' }, s.artist) : null,
+      s && artistLine(s) ? el('small', { class: 'sub t-caption' }, artistLine(s)) : null,
       s && !hasAudio(s) ? el('small', { class: 'dl t-caption', 'data-dl': item.id }) : null),
     el('span', { class: 'c-dur t-time' }, s?.duration ? fmtTime(s.duration) : ''),
     more);
@@ -90,15 +90,13 @@ export function updateDl(song) {
     const btn = $('player-dl-btn');
     btn.hidden = !(v.kind === 'none' || v.kind === 'failed') || !can('fetch');
     btn.textContent = v.kind === 'failed' ? 'Retry' : 'Download';
-    $('mini-artist').textContent = v.kind === 'none' ? song.artist || '' : dlText(v, true);
+    $('mini-artist').textContent = v.kind === 'none' ? artistLine(song) : dlText(v, true);
   } else if (song) {
-    $('mini-artist').textContent = song.artist || '';
+    $('mini-artist').textContent = artistLine(song);
   }
   for (const node of $('queue-list').querySelectorAll('[data-dl]')) paintDl(node, node.dataset.dl);
 }
 
 export function paintTimes(cur, dur) {
   $('mini-time').textContent = `${fmtTime(cur)} / ${fmtTime(dur)}`;
-  $('t-cur').textContent = fmtTime(cur);
-  $('t-dur').textContent = `-${fmtTime(Number.isFinite(dur) ? Math.max(0, dur - cur) : 0)}`;
 }
