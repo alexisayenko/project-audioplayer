@@ -29,6 +29,24 @@ export class ApiError extends Error {
   }
 }
 
+function failure(res, data) {
+  let detail = data?.detail;
+  if (Array.isArray(detail)) detail = detail.map((d) => d.msg).join('; ');
+  if (res.status === 401) {
+    detail = 'Not signed in (see Settings)';
+    lostSession();
+  }
+  const code = data?.error || '';
+  const err = new ApiError(res.status, friendly(code, data, detail) || `Request failed (${res.status})`, code, Number(data?.retry_after_minutes) || 0);
+  err.data = data;
+  if (code === 'guest_limit') {
+    const ev = new Event('guest-limit');
+    ev.detail = err.message;
+    window.dispatchEvent(ev);
+  }
+  return err;
+}
+
 async function request(method, path, body, signal, raw = false) {
   const headers = { ...CSRF };
   if (body !== undefined) headers['Content-Type'] = raw ? body.type : 'application/json';
@@ -46,24 +64,57 @@ async function request(method, path, body, signal, raw = false) {
   if (res.status === 204) return null;
   let data = null;
   try { data = await res.json(); } catch { /* no body */ }
-  if (!res.ok) {
-    let detail = data?.detail;
-    if (Array.isArray(detail)) detail = detail.map((d) => d.msg).join('; ');
-    if (res.status === 401) {
-      detail = 'Not signed in (see Settings)';
-      lostSession();
-    }
-    const code = data?.error || '';
-    const err = new ApiError(res.status, friendly(code, data, detail) || `Request failed (${res.status})`, code, Number(data?.retry_after_minutes) || 0);
-    err.data = data;
-    if (code === 'guest_limit') {
-      const ev = new Event('guest-limit');
-      ev.detail = err.message;
-      window.dispatchEvent(ev);
-    }
-    throw err;
-  }
+  if (!res.ok) throw failure(res, data);
   return data;
+}
+
+async function* ndjson(res) {
+  if (!res.body?.getReader) {
+    for (const line of (await res.text()).split('\n')) if (line.trim()) yield JSON.parse(line);
+    return;
+  }
+  const reader = res.body.getReader();
+  const dec = new TextDecoder();
+  let buf = '';
+  for (;;) {
+    const { done, value } = await reader.read();
+    buf += done ? dec.decode() : dec.decode(value, { stream: true });
+    const lines = buf.split('\n');
+    buf = done ? '' : lines.pop();
+    for (const line of lines) if (line.trim()) yield JSON.parse(line);
+    if (done) return;
+  }
+}
+
+async function previewStream(url, signal, onEvent) {
+  let res;
+  try {
+    res = await fetch('/preview/stream', { method: 'POST', headers: { ...CSRF, 'Content-Type': 'application/json' }, body: JSON.stringify({ url }), signal });
+  } catch (ex) {
+    if (ex?.name === 'AbortError') throw ex;
+    throw new ApiError(0, 'Server unreachable');
+  }
+  if (!res.ok) {
+    let data = null;
+    try { data = await res.json(); } catch { /* no body */ }
+    throw failure(res, data);
+  }
+  try {
+    for await (const ev of ndjson(res)) {
+      if (ev.event === 'result') return ev.data;
+      if (ev.event === 'error') {
+        const err = new ApiError(ev.status || 500, friendly(ev.error || '', ev, ev.detail) || 'Lookup failed', ev.error || '');
+        err.data = ev;
+        err.stage = ev.stage || '';
+        throw err;
+      }
+      onEvent(ev);
+    }
+  } catch (ex) {
+    if (ex instanceof ApiError || ex?.name === 'AbortError') throw ex;
+    throw new ApiError(0, 'Lookup was interrupted');
+  }
+  throw new ApiError(0, 'Lookup was interrupted');
 }
 
 const q = (id) => encodeURIComponent(id);
@@ -119,7 +170,7 @@ export const api = {
   genreGraph: () => request('GET', '/genres/graph'),
   genres: () => request('GET', '/genres').then((d) => (Array.isArray(d?.genres) ? d.genres : [])),
   genreVocabulary: () => request('GET', '/genres/vocabulary'),
-  preview: (url, signal) => request('POST', '/preview', { url }, signal),
+  preview: (url, signal, onEvent) => (onEvent ? previewStream(url, signal, onEvent) : request('POST', '/preview', { url }, signal)),
   metadata: (body, signal) => request('POST', '/metadata', body, signal),
   addSong: (url, metadata, tags, keepTitle = false, sourceRaw = null) => request('POST', '/songs', { url, metadata, tags, audio: false, ...(keepTitle ? { keep_title: true } : {}), ...(sourceRaw ? { source_raw: sourceRaw } : {}) }),
   patch: (id, changes) => request('PATCH', `/songs/${q(id)}`, changes),

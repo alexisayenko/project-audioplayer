@@ -11,6 +11,7 @@ import { ADD_ROW_OUTLINE_MS } from './constants.js';
 import { addBody, yearError, artistString } from './song-payload.js';
 import { displayLine } from './credits.js';
 import { can } from './guest.js';
+import { fetchSteps } from './add-progress.js';
 
 const BULK = new Set(['insertFromPaste', 'insertFromPasteAsQuotation', 'insertFromDrop', 'insertReplacementText']);
 const PREVIEW_ONLY = 'Preview only \u2014 SoundCloud Go+ track, can\'t be downloaded in full.';
@@ -21,6 +22,7 @@ export function openAdd() {
   let preview = null;
   let sf = null;
   let gen = 0;
+  let steps = null;
   const pending = new Set();
   const begin = () => {
     const ctl = new AbortController();
@@ -75,19 +77,25 @@ export function openAdd() {
     fetchBtn.disabled = true;
     fetchBtn.textContent = 'Fetching...';
     const req = begin();
+    steps = fetchSteps();
+    const mine = steps;
+    body.replaceChildren(mine.node);
     try {
-      const got = await api.preview(url.value, req.signal);
+      const got = await api.preview(url.value, req.signal, (ev) => { if (req.live()) mine.handle(ev); });
       if (!req.live()) return;
       if (!store.loaded) await store.refresh().catch(() => {});
       if (!req.live()) return;
+      mine.stop();
       preview = got;
       form.hidden = true;
       renderPreview();
       if (preview.in_library) say('This song is already in your library.', 'error');
     } catch (ex) {
       if (!req.live()) return;
+      mine.fail();
       say(ex.code === 'preview_only' ? PREVIEW_ONLY : ex.message, 'error');
     } finally {
+      mine.stop();
       req.done();
       if (req.live()) {
         fetchBtn.disabled = false;
@@ -109,11 +117,14 @@ export function openAdd() {
     cover.addEventListener('error', () => cover.removeAttribute('src'));
     const title = el('div', { class: 't-headline' });
     const sub = el('div', { class: 't-subhead muted' });
+    const albumLine = el('div', { class: 't-subhead muted' });
     const facts = el('div', { class: 't-time muted' });
     const paintMeta = () => {
       const v = sf.values({ commit: false });
       title.textContent = v.title || 'Untitled';
-      sub.textContent = [artistString(v), v.album, v.released].filter(Boolean).join(' \u00b7 ');
+      sub.textContent = [artistString(v), v.released].filter(Boolean).join(' \u00b7 ');
+      albumLine.textContent = v.album || '';
+      albumLine.hidden = !v.album;
       facts.textContent = preview.duration ? fmtTime(preview.duration) : '';
     };
     sf.node.addEventListener('input', paintMeta);
@@ -123,7 +134,7 @@ export function openAdd() {
     const err = el('div');
 
     const card = el('form', { class: 'add-card' },
-      el('div', { class: 'preview-row' }, cover, el('div', { class: 'preview-meta' }, title, sub, facts,
+      el('div', { class: 'preview-row' }, cover, el('div', { class: 'preview-meta' }, title, sub, albumLine, facts,
         el('span', { class: 'chip tint', title: 'Source' }, sourceLabel(preview.source || sourceOf(preview.id))))),
       sf.node,
       err,
@@ -161,6 +172,8 @@ export function openAdd() {
     gen += 1;
     for (const ctl of pending) ctl.abort();
     pending.clear();
+    if (steps) steps.stop();
+    steps = null;
     preview = null;
     if (sf) sf.destroy();
     sf = null;

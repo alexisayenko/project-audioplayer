@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+import json
+import time
+from collections.abc import AsyncIterator
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.concurrency import run_in_threadpool
+from fastapi.responses import StreamingResponse
 
 from .. import credits, deps, discogs_lookup, extractor, genre_lookup, library, metadata, timeutil, titleclean, wiki_lookup
 from ..links import Refused, resolve_link, short_error
@@ -29,12 +33,29 @@ def source_info(url: str) -> dict[str, Any]:
     return extractor.preview(link.vid)
 
 
-async def _apply_suggestions(meta: dict[str, Any]) -> None:
+async def _genre_stage(meta: dict[str, Any]) -> tuple[list[str], dict[str, Any]]:
     artist, title = meta.get("artist", ""), meta.get("title", "")
     found = await run_in_threadpool(genre_lookup.suggest_tags, artist, title)
     mb = await run_in_threadpool(genre_lookup.lookup, artist, title)
-    wiki = await run_in_threadpool(wiki_lookup.suggest, artist, title)
-    disc = await run_in_threadpool(discogs_lookup.suggest, artist, title)
+    return found, mb
+
+
+async def _wiki_stage(meta: dict[str, Any]) -> dict[str, Any]:
+    return await run_in_threadpool(wiki_lookup.suggest, meta.get("artist", ""), meta.get("title", ""))
+
+
+async def _discogs_stage(meta: dict[str, Any]) -> dict[str, Any]:
+    return await run_in_threadpool(discogs_lookup.suggest, meta.get("artist", ""), meta.get("title", ""))
+
+
+async def _apply_suggestions(meta: dict[str, Any]) -> None:
+    found, mb = await _genre_stage(meta)
+    wiki = await _wiki_stage(meta)
+    disc = await _discogs_stage(meta)
+    _merge_suggestions(meta, found, mb, wiki, disc)
+
+
+def _merge_suggestions(meta: dict[str, Any], found: list[str], mb: dict[str, Any], wiki: dict[str, Any], disc: dict[str, Any]) -> None:
     disc_genres = [t for t in disc["tags"] if t.startswith("genre:")]
     disc_rest = [t for t in disc["tags"] if not t.startswith("genre:")]
     meta["tags"] = metadata.finalize_tags([*meta.get("tags", []), *disc_genres, *found, *wiki["tags"], *disc_rest], wiki.get("song_genres"))
@@ -77,6 +98,73 @@ async def preview(req: PreviewRequest, user: Annotated[dict[str, Any], Depends(d
     await _apply_suggestions(meta)
     meta["in_library"] = library.find_song(deps.load_songs(user["uid"]), vid) is not None
     return meta
+
+
+PREVIEW_STAGES = (
+    ("link", "Reading the link"),
+    ("details", "Getting title and artist"),
+    ("genres", "Looking up genres and the first release"),
+    ("wiki", "Checking Wikipedia and Wikidata"),
+    ("discogs", "Checking Discogs"),
+)
+
+
+def _line(event: dict[str, Any]) -> bytes:
+    return (json.dumps(event, separators=(",", ":")) + "\n").encode()
+
+
+async def _preview_events(req: PreviewRequest, user: dict[str, Any]) -> AsyncIterator[bytes]:
+    yield _line({"event": "stages", "stages": [{"id": i, "label": label} for i, label in PREVIEW_STAGES]})
+    stage = "link"
+    t0 = time.monotonic()
+
+    def mark(state: str) -> bytes:
+        return _line({"event": "stage", "id": stage, "state": state, "at": round(time.monotonic() - t0, 2)})
+
+    try:
+        yield mark("start")
+        try:
+            link = await run_in_threadpool(resolve_link, req.url)
+        except Refused as refused:
+            body = json.loads(refused.response.body)
+            yield _line({"event": "error", "stage": stage, "status": refused.response.status_code, **body})
+            return
+        yield mark("done")
+        stage = "details"
+        yield mark("start")
+        if link.probe is not None:
+            meta = {k: v for k, v in link.probe.items() if k != "preview_only"}
+        else:
+            try:
+                meta = await run_in_threadpool(extractor.preview, link.vid)
+            except Exception as exc:
+                yield _line({"event": "error", "stage": stage, "status": 502, "error": "failed", "detail": f"preview failed: {short_error(exc)}"})
+                return
+        meta.update(clean_preview_title(meta))
+        yield mark("done")
+        stage = "genres"
+        yield mark("start")
+        found, mb = await _genre_stage(meta)
+        yield mark("done")
+        stage = "wiki"
+        yield mark("start")
+        wiki = await _wiki_stage(meta)
+        yield mark("done")
+        stage = "discogs"
+        yield mark("start")
+        disc = await _discogs_stage(meta)
+        yield mark("done")
+        _merge_suggestions(meta, found, mb, wiki, disc)
+        meta["in_library"] = library.find_song(deps.load_songs(user["uid"]), link.vid) is not None
+        yield _line({"event": "result", "data": meta})
+    except Exception as exc:
+        yield _line({"event": "error", "stage": stage, "status": 500, "error": "failed", "detail": short_error(exc) or "lookup failed"})
+
+
+@router.post("/preview/stream", responses=deps.responses(502))
+async def preview_stream(req: PreviewRequest, user: Annotated[dict[str, Any], Depends(deps.require_token)]):
+    """Same lookup as /preview, as NDJSON events so the web can show the step being worked on (API-138)."""
+    return StreamingResponse(_preview_events(req, user), media_type="application/x-ndjson", headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"})
 
 
 @router.post("/metadata", dependencies=[Depends(deps.require_token)])

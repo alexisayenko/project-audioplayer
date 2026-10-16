@@ -1,0 +1,12 @@
+.fetch-steps { margin-top: var(--space-3); padding: var(--space-3); background: var(--surface); box-shadow: var(--shadow-card); border-radius: var(--radius-key); }
+.fetch-steps-head { display: flex; justify-content: space-between; gap: var(--space-3); align-items: baseline; }
+.fetch-steps-head p { margin: 0; color: var(--ink); }
+.fetch-steps-list { list-style: none; margin: var(--space-2) 0 0; padding: 0; display: grid; gap: var(--space-1); }
+.fetch-steps .step { display: flex; align-items: center; gap: var(--space-2); min-height: var(--space-6); font: var(--font-caption); color: var(--ink-muted); }
+.fetch-steps .step.current { color: var(--ink); }
+.fetch-steps .step.done { color: var(--ink-muted); }
+.fetch-steps .step.done svg { color: var(--ok); }
+.fetch-steps .step.failed { color: var(--power-text); }
+.fetch-steps .step .spin { margin-right: 0; flex: none; }
+.fetch-steps .step svg { flex: none; }
+.step-dot { flex: none; width: 14px; height: 14px; box-sizing: border-box; border-radius: 50%; border: var(--stroke-hairline) solid var(--line); }

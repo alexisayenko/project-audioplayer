@@ -13,8 +13,12 @@ const dlg = () => document.getElementById('add-dialog');
 const urlInput = () => dlg().querySelector('input');
 const submitFetch = () => dlg().querySelector('form.well').dispatchEvent(makeEvent('submit'));
 const typeUrl = (v) => { urlInput().value = v; urlInput().dispatchEvent(makeEvent('input', { inputType: 'insertText', data: v.slice(-1) })); };
+const STAGES = [{ id: 'link', label: 'Reading the link' }, { id: 'details', label: 'Getting title and artist' }, { id: 'wiki', label: 'Checking Wikipedia and Wikidata' }];
+const lines = (...evs) => `${evs.map((e) => JSON.stringify(e)).join('\n')}\n`;
+const streamOf = (body, status = 200) => lines({ event: 'stages', stages: STAGES },
+  ...(status === 200 ? [{ event: 'result', data: body }] : [{ event: 'stage', id: 'link', state: 'start' }, { event: 'error', stage: 'link', status, ...body }]));
 const preview = (body, status = 200) => (url, o) => {
-  if (url === '/preview') return { status, body };
+  if (url === '/preview/stream') return { body: streamOf(body, status) };
   if (url === '/library') return { body: { songs: store.songs } };
   if (url === '/songs' && o.method === 'POST') return { body: { id: 'dQw4w9WgXcQ' } };
   return { body: {} };
@@ -39,7 +43,7 @@ test('pasting a messy link is cleaned; an empty field does nothing', async () =>
   openAdd();
   submitFetch();
   await flush();
-  assert.equal(calls.filter((c) => c.url === '/preview').length, 0);
+  assert.equal(calls.filter((c) => c.url === '/preview/stream').length, 0);
   urlInput().value = `${YT}&utm_source=x&list=PL1`;
   urlInput().dispatchEvent(makeEvent('input', { inputType: 'insertFromPaste' }));
   assert.equal(urlInput().value, YT);
@@ -128,7 +132,7 @@ test('server says in_library: warns and disables saving', async () => {
 test('save failure keeps the dialog open, shows the message and re-enables Save', async () => {
   store.songs = [];
   stubFetch((url, o) => {
-    if (url === '/preview') return { body: PREVIEW };
+    if (url === '/preview/stream') return { body: streamOf(PREVIEW) };
     if (url === '/songs' && o.method === 'POST') return { status: 429, body: { error: 'hourly_limit', retry_after_minutes: 12 } };
     return { body: { songs: [] } };
   });
@@ -146,7 +150,7 @@ test('save failure keeps the dialog open, shows the message and re-enables Save'
 
 test('closing while a preview is in flight ignores the late answer', async () => {
   let release;
-  stubFetch((url) => (url === '/preview' ? new Promise((r) => { release = () => r({ body: PREVIEW }); }) : { body: { songs: [] } }));
+  stubFetch((url) => (url === '/preview/stream' ? new Promise((r) => { release = () => r({ body: streamOf(PREVIEW) }); }) : { body: { songs: [] } }));
   openAdd();
   typeUrl(YT);
   submitFetch();
@@ -160,7 +164,7 @@ test('with auto-download on, the saved song is queued for download at the front'
   localStorage.setItem('ap2.autodl', '1');
   store.songs = [];
   const calls = stubFetch((url, o) => {
-    if (url === '/preview') return { body: PREVIEW };
+    if (url === '/preview/stream') return { body: streamOf(PREVIEW) };
     if (url === '/songs' && o.method === 'POST') return { body: { id: 'dQw4w9WgXcQ' } };
     if (url.endsWith('/audio')) return { body: { status: 'done' } };
     return { body: { songs: [] } };
@@ -203,5 +207,26 @@ test('a structured library song is shown as its display line in the Already-in-l
   openAdd();
   typeUrl(YT);
   assert.match(dlg().textContent, /Already in your library: A & B - Have it/);
+  close();
+});
+
+test('preview card: title, then "Artists · Year", then the album on its own line (omitted when empty)', async () => {
+  store.loaded = true;
+  store.songs = [];
+  stubFetch(preview({ ...PREVIEW, title: 'ODIUM', title_raw: 'ODIUM', artist: 'LXST CXNTURY', album: 'Universe of the Past', year: 2019 }));
+  openAdd();
+  typeUrl(YT);
+  submitFetch();
+  await flush();
+  const subs = () => [...dlg().querySelectorAll('.preview-meta .t-subhead')].filter((n) => !n.hidden).map((n) => n.textContent);
+  assert.equal(dlg().querySelector('.preview-meta .t-headline').textContent, 'ODIUM');
+  assert.deepEqual(subs(), ['LXST CXNTURY · 2019', 'Universe of the Past']);
+  close();
+  stubFetch(preview({ ...PREVIEW, album: null, year: null }));
+  openAdd();
+  typeUrl(YT);
+  submitFetch();
+  await flush();
+  assert.deepEqual(subs(), ['Rick']);
   close();
 });
