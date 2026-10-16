@@ -25,3 +25,19 @@ def write_json_atomic(path: Path, data: Any, indent: int | None = 2, compact: bo
         if os.path.exists(tmp):
             os.unlink(tmp)
         raise
+
+
+def write_bytes_atomic(path: Path, data: bytes) -> None:
+    """Write `data` to a temp file in the same directory, fsync it and rename it over `path`; a failure leaves `path` untouched."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=".json-", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "wb") as f:
+            f.write(data)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, path)
+    except BaseException:
+        if os.path.exists(tmp):
+            os.unlink(tmp)
+        raise

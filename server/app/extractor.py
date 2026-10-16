@@ -13,6 +13,7 @@ from urllib.parse import urlparse
 import yt_dlp
 
 from . import credits_split, genre_filter, library, timeutil, urlclean
+from .jsonio import write_bytes_atomic
 from .titles import cut_remix, split_artist_title, split_title
 from .urlclean import is_valid_video_id, parse_video_id, source_of, watch_url  # noqa: F401
 
@@ -287,7 +288,7 @@ def fetch_cover(video_id: str, dest: Path, artwork: str | None = None) -> None:
     dest.parent.mkdir(parents=True, exist_ok=True)
     with urllib.request.urlopen(url, timeout=20) as r:
         data = r.read()
-    dest.write_bytes(data)
+    write_bytes_atomic(dest, data)
 
 
 def error_code(exc: Exception) -> str | None:

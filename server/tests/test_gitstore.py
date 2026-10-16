@@ -51,7 +51,7 @@ def repos(tmp_path, monkeypatch):
 @pytest.fixture
 def client(tmp_path, repos, monkeypatch):
     _, data, _, cov = repos
-    sync = gitstore.GitSync(data, cov, backoff=(0.05, 0.1))
+    sync = gitstore.GitSync(data, cov, backoff=(0.05, 0.1), mode="request")
     monkeypatch.setenv("AUDIO_API_TOKEN", "secret")
     monkeypatch.setattr(deps, "SYNC", sync)
     monkeypatch.setattr(deps, "DOWNLOAD_DIR", tmp_path / "music")
@@ -84,7 +84,7 @@ def log(bare):
 def wait_ok(client, secs=5):
     end = time.time() + secs
     while time.time() < end:
-        if client.get("/health").json()["sync"] == "ok":
+        if client.get("/health", headers=H).json()["sync"]["state"] == "ok":
             return True
         time.sleep(0.05)
     return False
@@ -105,7 +105,8 @@ def test_add_edit_delete_commit_and_push(client, repos):
     assert log(data_bare)[0] == f"audioplayer: {U8} delete {VID}"
     assert log(cov_bare)[0] == f"audioplayer: {U8} delete {VID}"
     assert json.loads(git(data_bare, "show", LIBP))["songs"] == []
-    assert client.get("/health").json() == {"status": "ok", "sync": "ok"}
+    assert client.get("/health").json() == {"status": "ok", "sync": {"state": "ok"}}
+    assert client.get("/health", headers=H).json()["sync"]["state"] == "ok"
 
 
 def test_pull_rebase_picks_up_remote_changes(client, repos, tmp_path):
@@ -128,7 +129,7 @@ def test_push_failure_then_recovery(client, repos, tmp_path):
     data_bare, data, _, _ = repos
     git(data, "remote", "set-url", "origin", str(tmp_path / "missing.git"))
     add(client)
-    assert client.get("/health").json()["sync"] in ("pending", "error")
+    assert client.get("/health", headers=H).json()["sync"]["state"] in ("pending", "error")
     assert [s["id"] for s in client.get("/library", headers=H).json()["songs"]] == [VID]
     assert git(data, "log", "--format=%s", "-1") == f"audioplayer: {U8} add {VID}"
     git(data, "remote", "set-url", "origin", str(data_bare))
@@ -141,9 +142,9 @@ def test_persistent_failure_reports_error(client, repos, tmp_path):
     git(data, "remote", "set-url", "origin", str(tmp_path / "missing.git"))
     add(client)
     end = time.time() + 10
-    while time.time() < end and client.get("/health").json()["sync"] != "error":
+    while time.time() < end and client.get("/health", headers=H).json()["sync"]["state"] != "error":
         time.sleep(0.05)
-    assert client.get("/health").json()["sync"] == "error"
+    assert client.get("/health", headers=H).json()["sync"]["state"] == "error"
 
 
 def test_resync_pushes_leftover_commits(repos):
@@ -152,7 +153,7 @@ def test_resync_pushes_leftover_commits(repos):
     (data / "audioplayer" / "library.json").write_text("{}")
     git(data, "add", "-A")
     git(data, "commit", "-m", "left over")
-    sync = gitstore.GitSync(data, cov, backoff=(0.05, 0.1))
+    sync = gitstore.GitSync(data, cov, backoff=(0.05, 0.1), mode="request")
     sync.resync()
     end = time.time() + 5
     while time.time() < end and sync.status() != "ok":

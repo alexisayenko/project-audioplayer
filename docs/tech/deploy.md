@@ -12,7 +12,7 @@ Status: Accepted · 2026-10-14. Live at https://electrophone.cc since 2026-10-13
 | Venv | `/opt/audioplayer/venv` (`ExecStart=/opt/audioplayer/venv/bin/uvicorn app.main:app`, working dir `/opt/audioplayer/server`) |
 | Env file | `/etc/audioplayer/env`, loaded by the unit (secrets; never in a repo, never printed). Keys present: `AUDIO_API_TOKEN`, `AUDIO_DATA_REPO`, `AUDIO_COVERS_REPO`, `AUDIO_HOSTS`, `AUDIO_DATA_DIR`, `ALLOWED_EMAIL`, `GOOGLE_WEB_CLIENT_ID`, `APPLE_WEB_CLIENT_ID`, `APPLE_AUDIENCE`, `GOOGLE_CLIENT_ID`, `AUDIO_SESSION_SECRET`; optional host keys `PUBLIC_HOSTS`, `CANONICAL_HOST`, `OAUTH_REDIRECT_URIS` (ADR-0019, see [Hostnames](#hostnames)); no limit keys are set, so the defaults apply |
 | Audio | ZFS dataset `pool-3/music` (single disk, no redundancy), mounted in the LXC at `/srv/music`; audio resolves via `AUDIO_MUSIC_ROOT` / `AUDIO_HOSTS` (STO-010; `AUDIO_DATA_DIR` holds only `library.json`, `covers/` and `genre-ontology.json`); files under `/srv/music/users/<uid>/` |
-| Metadata | the server's own clones, in `/var/lib/audioplayer/`, of `data-storage` (`audioplayer/users/<uid>/{profile,library}.json`) and `data-storage-lfs` (covers), pushed on every write (ADR-0005, ADR-0012) |
+| Metadata | the server's own clones, in `/var/lib/audioplayer/`, of `data-storage` (`audioplayer/users/<uid>/{profile,library}.json`) and `data-storage-lfs` (covers), committed on every write and pushed by the git sync timer (ADR-0005, ADR-0012, ADR-0026) |
 | yt-dlp | `audioplayer-ytdlp-update.timer` (`OnCalendar=weekly`, Mondays 00:00 UTC, `Persistent=true`) starts `audioplayer-ytdlp-update.service`: `venv/bin/pip install -q -U yt-dlp`, then restarts `audioplayer` (NFR-013) |
 | Backups | `/var/backups/audioplayer-<YYYYMMDD-HHMMSS>/` with `data-storage.bundle`, `data-storage-lfs.bundle` and the SHA files `app.HEAD`, `data-storage.HEAD`, `data-storage-lfs.HEAD`; taken by hand, not by the deploy helper |
 
@@ -82,33 +82,45 @@ Credits migration (DATA-125): the first start of the structured-credits build re
 
 `X-Forwarded-Host` is trusted only from a loopback or LAN peer. Sessions are host-only cookies: sign in again on each host. Steps: [domain-migration.md](domain-migration.md).
 
-## Planned: git sync timer
+## Git sync timer
 
-Planned (ADR-0026, [task-0021](../tasks/task-0021.md)), not built, not installed. Saves commit locally; this timer only pushes. The deploy user `claude` cannot write `/etc/systemd`, so root installs the units once (and runs `systemctl daemon-reload`) before `GIT_SYNC_MODE=timer` is set in `/etc/audioplayer/env`.
+Built, not deployed (ADR-0026, [task-0021](../tasks/task-0021.md), [design](git-sync-design.md)); the timer is NOT yet installed on perkunas. Saves commit locally (no pull, no push in a request); `audioplayer-gitsync.timer` only pushes. Unit files are in `deploy/systemd/` (`audioplayer-gitsync.service`, `audioplayer-gitsync.timer`, `README.md`). The deploy user `claude` cannot write `/etc/systemd`, so root installs them once; `scripts/deploy.sh` does not.
 
-```ini
-# /etc/systemd/system/audioplayer-gitsync.service  (planned)
-[Unit]
-Description=Electrophone git push
-[Service]
-Type=oneshot
-User=audioplayer
-EnvironmentFile=/etc/audioplayer/env
-ExecStart=/opt/audioplayer/venv/bin/python -m app.gitsync
+| Env (in `/etc/audioplayer/env`, read by the server and the CLI) | Default | Meaning |
+| --- | --- | --- |
+| `GIT_SYNC_MODE` | `timer` | `timer`: commit only, the timer pushes. `request`: the old synchronous pull, commit and push in the request (rollback, kept for one release) |
+| `GIT_SYNC_INTERVAL_S` | `60` | must match the timer interval |
+| `GIT_SYNC_STALE_GRACE_S` | `30` | stale threshold = interval + grace (90 s) |
+| `GIT_SYNC_STATE_FILE` | `/var/lib/audioplayer/gitsync-state.json` | heartbeat and failure counters written by the CLI, read by the server |
 
-# /etc/systemd/system/audioplayer-gitsync.timer  (planned)
-[Unit]
-Description=Run the git push every minute
-[Timer]
-OnBootSec=1min
-OnUnitActiveSec=1min
-Persistent=true
-[Install]
-WantedBy=timers.target
+Install (root, once):
+
+```sh
+install -m 644 deploy/systemd/audioplayer-gitsync.service deploy/systemd/audioplayer-gitsync.timer /etc/systemd/system/
+systemctl daemon-reload
+systemctl enable --now audioplayer-gitsync.timer
 ```
 
-- Only `git push`, per repo with unpushed commits, no lock, no pull. The pull happens at server startup.
-- Single-writer rule: only the `audioplayer` user commits to `data-storage` and `data-storage-lfs`; nobody edits them by hand or from another host.
-- Check: `systemctl list-timers audioplayer-gitsync.timer`, `journalctl -u audioplayer-gitsync`, `/health` `sync` (`ok`, `pending`, `stale`, `error`); Settings shows a warning mark and a nav dot while `stale` (oldest unpushed commit older than interval + 30 s) or `error`.
-- Rejected-push runbook: the timer stops pushing that repo and `sync` is `error`. As the service user in the data repo: `git fetch`, inspect `git log HEAD..origin/main` and `git log origin/main..HEAD`, rebase by hand (`git rebase origin/main`, resolve), `git push`, then `systemctl restart audioplayer` (resync) and `systemctl start audioplayer-gitsync.timer`.
-- Rollback: `GIT_SYNC_MODE=request`, `systemctl disable --now audioplayer-gitsync.timer`, restart `audioplayer`; run `python -m app.gitsync` once to push leftovers.
+Until the timer is installed the app still works: saves commit locally, `/health` `sync` goes `pending`, then `stale` after 90 s, and the Settings sync card says the push timer is not installed or not running (`timer_seen: false`).
+
+Verify:
+
+- `systemctl list-timers audioplayer-gitsync.timer`, `journalctl -u audioplayer-gitsync`.
+- `scripts/check-gitsync.sh` (read-only, runs `python -m app.gitsync --status` as the service user): prints `state`, `unpushed`, `oldest_unpushed_age_s`, `last_push_at`, `timer_seen`; exit 0 for `ok` or `pending`, 1 for `stale`, 2 for `error`, 3 when the state cannot be read.
+- One save in the web UI: `pending`, then `ok` within about 60 s. Stop the timer: `stale` after 90 s, with the "timer not installed or not running" text; start it: back to `ok`.
+- `/health` owner form (with `X-API-Token`) shows the full `sync` object; everyone else sees only `ok` or `degraded` (API-137).
+
+Rules:
+
+- The CLI only runs `git push` per repo with unpushed commits, takes no repo lock and never pulls. The server pulls only at startup (fetch plus fast-forward, never a rebase), after sweeping stray `.json-*.tmp` files and committing a dirty tree.
+- Single writer: only the `audioplayer` user commits to `data-storage` and `data-storage-lfs`; nobody edits them by hand or from another host (NFR-114).
+- Alerts: ERROR lines in the journal (`audioplayer-gitsync`, and logger `audioplayer.git` in the server), the `error` state and `last_error` in `/health` (owner form), the Settings card mark. No external channel yet.
+
+Rejected-push runbook (`sync` is `error`, `repos[].rejected` true; the CLI skips that repo and never merges):
+
+1. As the service user in the repo (`/var/lib/audioplayer/<data repo>`): `git fetch`, then inspect `git log HEAD..@{u}` (remote only) and `git log @{u}..HEAD` (local only).
+2. Combine by hand: `git rebase @{u}` (resolve conflicts), then `git push`.
+3. The mark clears on its own once nothing is unpushed and `HEAD` contains `@{u}`; otherwise `python -m app.gitsync --clear-rejected data` (or `covers`).
+4. `systemctl restart audioplayer` if the server tree was changed under it (it reloads data at startup only).
+
+Rollback: set `GIT_SYNC_MODE=request` in `/etc/audioplayer/env`, `systemctl disable --now audioplayer-gitsync.timer`, restart `audioplayer`, then run `python -m app.gitsync` once as the service user to push leftovers.

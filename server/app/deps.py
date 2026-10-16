@@ -119,7 +119,7 @@ def save_songs(uid: str, songs: list[dict[str, Any]]) -> None:
 
 @contextmanager
 def tx(uid: str, verb: str) -> Iterator[None]:
-    """One writer per user, one git writer overall: user lock -> pull --rebase -> body -> commit -> push."""
+    """One writer per user, one git writer overall: user lock -> git lock -> body -> local commit (request mode: pull before, push after)."""
     with users.user_lock(uid):
         if SYNC is None:
             yield
@@ -236,6 +236,28 @@ def require_token_or_query(
 ) -> dict[str, Any]:
     """File/cover GETs: <audio>/<img> cannot send headers, so the session cookie (or ?token=, owner only) works too."""
     return authenticate(request, x_api_token, authorization, token)
+
+
+def sync_viewer(
+    request: Request,
+    x_api_token: str = Header(default=""),
+    authorization: str = Header(default=""),
+) -> str:
+    """Return owner when the request carries the owner's credentials, else other. Never raises, never creates a profile."""
+    try:
+        if x_api_token:
+            expected = os.environ.get("AUDIO_API_TOKEN", "")
+            ok = bool(expected) and hmac.compare_digest(x_api_token.encode(), expected.encode())
+            return "owner" if ok else "other"
+        bearer = _bearer(authorization)
+        if bearer:
+            return "owner" if users.is_owner(identity_of(oauth.verify_identity(bearer))["uid"]) else "other"
+        who = session.read(request.cookies.get(session.COOKIE, ""))
+        if who:
+            return "owner" if users.is_owner(who["uid"] or users.uid_for_email(who["email"])) else "other"
+    except Exception:
+        pass
+    return "other"
 
 
 def _view_exists() -> bool:

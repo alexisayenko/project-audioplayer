@@ -93,7 +93,9 @@ check_host() { # host -> sets LIBCOUNT_<n>
 
   # (c) app
   body="$(get "$url/health")"
-  if [ "$(printf '%s' "$body" | tr -d ' ')" = '{"status":"ok","sync":"ok"}' ]; then pass "/health $h" "$body"
+  flat="$(printf '%s' "$body" | tr -d ' ')"
+  if [ "$flat" = '{"status":"ok","sync":{"state":"ok"}}' ] || [ "$flat" = '{"status":"ok","sync":"ok"}' ]; then pass "/health $h" "$body"
+  elif [ "$flat" = '{"status":"ok","sync":{"state":"degraded"}}' ]; then warn "/health $h" "git sync degraded (stale or error): $body"
   else fail "/health $h" "got: ${body:0:80}"; fi
 
   body="$(get "$url/")"

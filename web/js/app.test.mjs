@@ -5,7 +5,7 @@ import { installPage, stubFetch, flush } from './test-dom.mjs';
 const dom = await installPage();
 globalThis.location = { hash: '', href: 'http://localhost/', host: 'music.example' };
 globalThis.history = { replaceState: (a, b, url) => { location.hash = url; } };
-globalThis.setInterval = () => 0;
+globalThis.setInterval = (fn, ms) => { if (ms === 30000) globalThis.__poll = fn; return 0; };
 const nav = document.createElement('nav');
 nav.setAttribute('id', 'nav');
 for (const r of ['library', 'playback', 'playlists', 'genres', 'settings']) {
@@ -100,4 +100,41 @@ test('sidebar toggle flips the collapsed class, aria and persists', () => {
   t.click();
   assert.ok(!document.body.classList.contains('side-collapsed'));
   assert.equal(t.title, 'Collapse sidebar');
+});
+
+const settingsLink = () => [...document.querySelectorAll('#nav a')].find((a) => a.dataset.route === 'settings');
+
+test('stale and error mark the Settings nav item and banner; pending and ok clear them', async () => {
+  const { clearGuest } = await import('./guest.js');
+  clearGuest();
+  state.healthOk = true;
+  const cases = [
+    [{ state: 'pending', unpushed: 1 }, null, true],
+    [{ state: 'stale', unpushed: 2, last_push_at: null, timer_seen: true }, 'warn', false],
+    [{ state: 'error', repos: [{ rejected: true }] }, 'error', false],
+    [{ state: 'ok', unpushed: 0 }, null, true],
+  ];
+  for (const [sync, level, hidden] of cases) {
+    state.health = { sync };
+    assert.ok(globalThis.__poll);
+    await globalThis.__poll();
+    await flush();
+    assert.equal(settingsLink().getAttribute('data-sync'), level);
+    assert.equal(document.getElementById('sync-warn').hidden, hidden);
+    if (level) assert.match(settingsLink().getAttribute('aria-label'), /^Settings, Sync /);
+  }
+  state.health = { sync: 'ok' };
+});
+
+test('guests never get a sync mark', async () => {
+  const { setGuest, clearGuest } = await import('./guest.js');
+  setGuest({});
+  state.healthOk = true;
+  state.health = { sync: { state: 'degraded' } };
+  await globalThis.__poll();
+  await flush();
+  assert.equal(settingsLink().getAttribute('data-sync'), null);
+  assert.equal(document.getElementById('sync-warn').hidden, true);
+  clearGuest();
+  state.health = { sync: 'ok' };
 });

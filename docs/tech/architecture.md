@@ -67,13 +67,13 @@ via a local name -> mount path/host config outside the repo; songs hold
 relative audio file names only (replaces `AUDIO_DOWNLOAD_DIR`). Each save costs a push
 (~1-2 s). The server never uses `C:\Alex\data-storage` on the PC.
 
-Planned (ADR-0026, task-0021, not built): data flow is clients -> server API -> files on disk; the server commits each save locally and never talks to GitHub inside a request, and a systemd timer (`audioplayer-gitsync`, every minute) only pushes (single writer; pull only at server startup). Web and iOS never talk to GitHub. The paragraph above describes the current synchronous path.
+Built, not deployed (ADR-0026, task-0021): data flow is clients -> server API -> files on disk; the server commits each save locally and never talks to GitHub inside a request, and a systemd timer (`audioplayer-gitsync`, every minute) only pushes (single writer; pull only at server startup). Web and iOS never talk to GitHub. The paragraph above describes the `GIT_SYNC_MODE=request` rollback path.
 
 ## Server (`server/`)
 
 | Endpoint | Purpose |
 | --- | --- |
-| `GET /health` | liveness + git `sync` state (`ok`/`pending`/`error`), no auth |
+| `GET /health` | liveness + git `sync` state (`ok`/`degraded` for everyone, the full object with counts for the owner), no auth |
 | `GET /search?q=&limit=` | `ytsearch` via yt-dlp, flat results |
 | `POST /download {video_id}` | synchronous YouTube-only m4a fetch (`bestaudio[ext=m4a]`, fallback itag 140; no ffmpeg), under the download caps; returns metadata, does not touch the library |
 | `GET /files/{video_id}` | stream the stored m4a |

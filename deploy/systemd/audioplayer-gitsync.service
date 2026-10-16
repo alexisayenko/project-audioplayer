@@ -1,0 +1,13 @@
+[Unit]
+Description=Electrophone git push
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=audioplayer
+WorkingDirectory=/opt/audioplayer/server
+EnvironmentFile=/etc/audioplayer/env
+ExecStart=/opt/audioplayer/venv/bin/python -m app.gitsync
+TimeoutStartSec=90
+Nice=10

@@ -258,7 +258,7 @@ def synced(tmp_path, monkeypatch):
     monkeypatch.setenv("GIT_COMMITTER_NAME", "t")
     monkeypatch.setenv("GIT_COMMITTER_EMAIL", "t@t")
     data_bare, data = make_remote(tmp_path, "data")
-    sync = gitstore.GitSync(data, None, backoff=(0.05, 0.1))
+    sync = gitstore.GitSync(data, None, backoff=(0.05, 0.1), mode="request")
     monkeypatch.setattr(deps, "SYNC", sync)
     yield data_bare, data
     sync.stop()

@@ -33,16 +33,16 @@ Code: `server/app/gitstore.py`, `server/app/library.py`, `server/app/deps.py`, `
 - STO-023 MUST: pull is best effort: a failed pull is logged, the rebase is aborted, and the write proceeds (offline must not block writes). Status: implemented
 - STO-024 MUST: if the write body raises, uncommitted tracked changes are reverted (`git checkout -- .`). Status: implemented
 - STO-025 MUST: git runs non-interactively (`GIT_TERMINAL_PROMPT=0`, 120 s timeout); an optional deploy key `AUDIO_GIT_SSH_KEY` is used with `IdentitiesOnly` and the key path is scrubbed from error text. Status: implemented
-- STO-026 SHOULD: a save costs one push (~1-2 s); acceptable at a few hundred songs. Status: implemented
+- STO-026 SHOULD: in `request` mode a save costs one push (~1-2 s), in `timer` mode none (STO-054); acceptable at a few hundred songs. Status: implemented
 
 ## Retry and sync states
 
-- STO-030 MUST: a failed push keeps the local commit, marks the repo dirty and starts one background retry thread (pull, push) with exponential backoff, 2 s doubling to a 300 s cap, until a push succeeds. Status: implemented
-- STO-031 MUST: `/health` `sync` is `ok` (nothing unpushed), `pending` (unpushed, fewer than 5 consecutive push failures), `error` (5 or more). Status: implemented
-- STO-032 MUST: at startup unpushed local commits (`@{u}..HEAD`) are detected and pushed (`resync`). Status: implemented
-- STO-033 MUST: the web UI polls `/health` every 30 s (and at load) and shows a banner when `sync` is not `ok`: `pending` "Library changes are waiting to sync to git."; `error` "Library changes are not reaching git (retrying). Check the server." Status: implemented
-- STO-034 MUST: a write is never lost because of a push failure; it is acknowledged to the client and synced later. Status: implemented
-- STO-035 SHOULD: a conflicting remote edit (manual change in `data-storage`) is resolved by `pull --rebase`; an unresolvable conflict ends in `error` state. Status: to-confirm
+- STO-030 MUST: in `request` mode (rollback, `GIT_SYNC_MODE=request`) a failed push keeps the local commit, marks the repo dirty and starts one background retry thread (pull, push) with exponential backoff, 2 s doubling to a 300 s cap, until a push succeeds; in `timer` mode (default) there is no retry thread: the next timer run retries. Status: implemented
+- STO-031 MUST: `/health` `sync.state` is `ok` (nothing unpushed), `pending` (unpushed, oldest younger than the stale threshold, fewer than 5 consecutive failures, no rejection), `stale` (oldest unpushed commit older than `interval + 30 s`, 90 s by default, strictly greater), `error` (a rejected push, 5 or more consecutive failed runs, or no upstream); the owner form carries the counts (API-137). Status: implemented (built, not deployed)
+- STO-032 MUST: at startup unpushed local commits (`@{u}..HEAD`) are detected and pushed (`resync` in `request` mode; STO-056 in `timer` mode). Status: implemented
+- STO-033 MUST: the web UI polls `/health` every 30 s (and at load) and shows the top banner only when `sync.state` is `stale` or `error`, not on `pending`, which is normal for up to a minute after a save; see WEB-094 to WEB-097. Status: implemented (built, not deployed)
+- STO-034 MUST: a write is never lost because of a push failure; it is acknowledged to the client, committed locally and pushed later. Status: implemented
+- STO-035 SHOULD: a remote that moved (manual change in `data-storage`, or a second writer) is never merged or rebased automatically: the repo is marked `rejected`, `sync` is `error` and the operator resolves it by hand ([deploy.md](../tech/deploy.md#git-sync-timer)). Status: implemented (built, not deployed)
 
 ## Environment variables
 
@@ -72,5 +72,8 @@ Code: `server/app/gitstore.py`, `server/app/library.py`, `server/app/deps.py`, `
 
 - STO-050 MUST: every user has `audioplayer/users/<uid>/profile.json` (`email`, `provider`, `created_at`, `subs`) and `library.json` in the data repo, `audioplayer/users/<uid>/covers/<id>.jpg` in the covers repo and `<music_root>/users/<uid>/<id>.m4a` for audio; `uid` is the first 16 hex of `sha256(lowercased email)` (Apple without email: of `sub`). The email appears only inside `profile.json`, never in a path, file name or commit message. Status: implemented
 - STO-051 MUST: there is no shared audio pool: the same song in two libraries is two files; a request only ever resolves paths under its own `uid`, which the server derives from the credential. Status: implemented
-- STO-052 MUST: library writes are serialised per user; the git pull/commit/push cycle is serialised across all users by one lock; a user's usage (bytes) is the sum of the real files in their audio directory. Status: implemented
+- STO-052 MUST: library writes are serialised per user; the git write and local commit is serialised across all users by one lock (in `request` mode it also covers pull and push); a user's usage (bytes) is the sum of the real files in their audio directory. Status: implemented
 - STO-053 (removed): the one-time legacy-to-per-user migration ran on 2026-10-13; the migration code and its marker were then removed. Status: removed
+- STO-054 MUST: in `timer` mode a save writes atomically and commits locally under the git lock (`git add` of `audioplayer/` excluding `*.tmp`, `git commit` with `audioplayer: <uid8> <verb>`), then returns: no pull, no push, no network in the request; a failing save reverts tracked changes and removes new untracked files. Status: implemented (built, not deployed)
+- STO-055 MUST: `python -m app.gitsync` (run every 60 s by `audioplayer-gitsync.timer`) pushes each repo with unpushed commits, data then covers, without the git lock; exit 0 ok, 1 a push failed, 2 a repo rejected, 3 config or state error; `--status` prints the owner-form sync object and changes nothing; `--clear-rejected data|covers` clears a sticky rejection; a busy run lock skips the run. Status: implemented (built, not deployed)
+- STO-056 MUST: at startup in `timer` mode the server sweeps stray `.json-*.tmp` files, commits a dirty tree as `audioplayer: recover uncommitted changes`, fetches, fast-forwards when only the remote is ahead, marks a diverged repo `rejected`, and pushes unpushed commits within 30 s before the migrations run; on clean shutdown it makes one push pass. Status: implemented (built, not deployed)

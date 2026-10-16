@@ -18,6 +18,7 @@ import { renderStats } from './stats.js';
 import { renderTheory } from './theory.js';
 import { loadCollapsed, saveCollapsed } from './sidebar-state.js';
 import { SYNC_POLL_MS } from './constants.js';
+import { describeSync } from './sync-status.js';
 
 const player = document.getElementById('player');
 const renderPlayback = () => { player.hidden = false; return () => { player.hidden = true; }; };
@@ -141,23 +142,39 @@ const warn = document.getElementById('sync-warn');
 const led = document.getElementById('server-led');
 const ledText = document.getElementById('server-text');
 
+const settingsLink = [...document.querySelectorAll('#nav a')].find((a) => a.dataset.route === 'settings');
+
+function markSettingsLink(view) {
+  if (!settingsLink) return;
+  if (view.dot) {
+    settingsLink.setAttribute('data-sync', view.level);
+    settingsLink.setAttribute('aria-label', `Settings, ${view.label}`);
+  } else {
+    settingsLink.removeAttribute('data-sync');
+    settingsLink.removeAttribute('aria-label');
+  }
+}
+
 async function checkSync() {
-  let state = 'ok';
+  let raw = 'ok';
   let online = false;
   try {
     const res = await fetch('/health');
     online = res.ok;
-    if (res.ok) state = (await res.json()).sync || 'ok';
+    if (res.ok) raw = (await res.json()).sync || 'ok';
   } catch { /* server unreachable: api calls report that */ }
   led.classList.toggle('down', !online);
-  const serverText = online ? `Server online \u00b7 ${location.host}` : 'Server unavailable';
+  const serverText = online ? `Server online · ${location.host}` : 'Server unavailable';
   ledText.textContent = serverText;
   led.parentElement.title = serverText;
   led.parentElement.setAttribute('aria-label', serverText);
-  warn.hidden = state === 'ok';
-  warn.textContent = state === 'error'
-    ? 'Library changes are not reaching git (retrying). Check the server.'
-    : 'Library changes are waiting to sync to git.';
+  if (online) store.sync = raw;
+  const view = describeSync(online ? raw : 'ok');
+  const shown = isGuest() || !online ? { level: 'none', dot: false } : view;
+  warn.hidden = shown.level === 'none';
+  warn.textContent = shown.level === 'none' ? '' : view.text;
+  markSettingsLink(shown);
+  window.dispatchEvent(new Event('sync-changed'));
 }
 
 await checkSync().catch(() => {});

@@ -5,6 +5,7 @@ export const store = {
   songs: [],
   tags: [],
   loaded: false,
+  sync: null,
   listeners: new Set(),
 
   async refresh() {

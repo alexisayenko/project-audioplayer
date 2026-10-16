@@ -52,9 +52,16 @@ def _startup() -> None:
     legal.check_startup()
     genre_vocab.check()
     if deps.SYNC:
-        deps.SYNC.resync()
+        deps.SYNC.recover_on_startup()
     migrate_tags.run()
     migrate_credits.run()
+
+
+@app.on_event("shutdown")
+def _shutdown() -> None:
+    if deps.SYNC:
+        deps.SYNC.flush()
+        deps.SYNC.stop()
 
 
 for _module in (auth, me, health, legal_routes, legacy, files, catalog, covers, genres, lookup, songs, analyze, backfill, metafill, removal):

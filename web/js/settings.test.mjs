@@ -55,6 +55,7 @@ test('config failure is shown as an error, not a crash', async () => {
 test('signed in: shows the account, library stats, storage meter, sync and server', async () => {
   auth.email = 'me@x.y';
   store.songs = [{ id: 'a', duration: 3600 }, { id: 'b', duration: 1800 }];
+  store.sync = null;
   route({ cfg: {}, health: { sync: 'error' } });
   const { root, cleanup } = mount();
   await flush();
@@ -62,7 +63,7 @@ test('signed in: shows the account, library stats, storage meter, sync and serve
   assert.match(root.textContent, /2 songs/);
   assert.match(root.textContent, /1\.5 h of music/);
   assert.match(root.textContent, /3 \/ 100 songs/);
-  assert.match(root.textContent, /Not reaching git/);
+  assert.match(root.textContent, /Sync failed: not reaching git/);
   assert.match(root.textContent, /music\.example/);
   cleanup();
 });
@@ -85,6 +86,7 @@ test('library card follows store refreshes and stops after cleanup', async () =>
 });
 
 test('health unreachable is reported', async () => {
+  store.sync = null;
   auth.email = 'me@x.y';
   stubFetch((url) => (url === '/health' ? Promise.reject(new Error('x')) : { body: { songs: [] } }));
   const orig = globalThis.fetch;
@@ -179,4 +181,40 @@ test('a rejected credential shows the server message and stays signed out', asyn
   assert.equal(auth.email, '');
   assert.equal(location.hash, '');
   cleanup();
+});
+
+test('sync card marks stale and error with accessible labels and follows sync-changed', async () => {
+  auth.email = 'me@x.y';
+  store.songs = [];
+  store.sync = { state: 'stale', unpushed: 4, last_push_at: new Date(Date.now() - 180000).toISOString(), timer_seen: true };
+  route();
+  const { root, cleanup } = mount();
+  await flush();
+  assert.match(root.textContent, /last pushed 3 min ago, 4 changes not pushed/);
+  assert.ok(root.querySelector('.sync-mark.warn'));
+  assert.equal(root.querySelector('.sync-mark').getAttribute('aria-label'), 'Sync is behind: 4 changes not pushed');
+  store.sync = { state: 'error', repos: [{ rejected: true }] };
+  window.dispatchEvent(new Event('sync-changed'));
+  await flush();
+  assert.match(root.textContent, /Sync failed: push rejected/);
+  assert.ok(root.querySelector('.sync-mark.error'));
+  store.sync = { state: 'pending', unpushed: 1 };
+  window.dispatchEvent(new Event('sync-changed'));
+  await flush();
+  assert.match(root.textContent, /Saving to git/);
+  assert.equal(root.querySelector('.sync-mark'), null);
+  cleanup();
+  store.sync = null;
+});
+
+test('timer not installed is spelled out on the card', async () => {
+  auth.email = 'me@x.y';
+  store.songs = [];
+  store.sync = { state: 'stale', unpushed: 2, timer_seen: false, last_push_at: null };
+  route();
+  const { root, cleanup } = mount();
+  await flush();
+  assert.match(root.textContent, /Git push timer not installed or not running, 2 changes not pushed/);
+  cleanup();
+  store.sync = null;
 });

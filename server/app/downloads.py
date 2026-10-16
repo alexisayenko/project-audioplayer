@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import contextlib
 import logging
+import tempfile
 import threading
 from collections.abc import Callable
 from pathlib import Path
@@ -12,6 +14,7 @@ from fastapi import HTTPException
 from fastapi.responses import JSONResponse
 
 from . import bpm, credits, deps, discogs_lookup, extractor, genre_filter, genre_lookup, genre_vocab, identify, jobs, library, limits, urlclean, wiki_lookup
+from .jsonio import write_bytes_atomic
 from .links import Resolved, short_error
 from .problems import Problem
 from .tags import namespaced_values
@@ -94,7 +97,12 @@ def _fail_job(job: dict[str, Any], out: Path | None, vid: str, exc: Exception) -
 
 def _fetch_cover(uid: str, vid: str, thumbnail: str | None) -> str | None:
     try:
-        extractor.fetch_cover(vid, deps.covers_dir(uid) / f"{vid}.jpg", thumbnail)
+        with tempfile.TemporaryDirectory() as tmp:
+            staged = Path(tmp) / f"{vid}.jpg"
+            extractor.fetch_cover(vid, staged, thumbnail)
+            data = staged.read_bytes()
+        with deps.SYNC.lock if deps.SYNC else contextlib.nullcontext():
+            write_bytes_atomic(deps.covers_dir(uid) / f"{vid}.jpg", data)
     except Exception:
         return None
     return f"covers/{vid}.jpg"

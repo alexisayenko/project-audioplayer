@@ -4,6 +4,7 @@ import { store } from './store.js';
 import { player } from './player.js';
 import { autoDownloadOn, setAutoDownload } from './autodl.js';
 import { el, pageHead } from './dom.js';
+import { describeSync } from './sync-status.js';
 import { signInErrorText } from './signin-error.js';
 import { serviceIcon } from './service-icons.js';
 import { isGuest, ownerLabel } from './guest.js';
@@ -112,8 +113,6 @@ function accountSection() {
   return el('div', { class: 'account' }, el('p', { class: 'muted t-subhead' }, intro), box, out);
 }
 
-const SYNC_TEXT = { ok: 'In sync with git', error: 'Not reaching git (retrying)' };
-
 function accountCard() {
   return el('section', { class: 'card' }, el('h2', { class: 't-headline' }, 'Account'), accountSection());
 }
@@ -125,9 +124,17 @@ function libraryCard() {
   const meter = el('span', { class: 't-caption' }, '');
   api.usage().then((u) => { meter.textContent = usageText(u); }).catch(() => { meter.textContent = ''; });
   const sync = el('span', {}, 'Checking...');
-  fetch('/health').then((r) => r.json()).then((h) => {
-    sync.textContent = SYNC_TEXT[h.sync] || 'Waiting to sync to git';
-  }).catch(() => { sync.textContent = 'Server unreachable'; });
+  const paint = () => {
+    const v = describeSync(store.sync);
+    sync.textContent = '';
+    if (v.level !== 'none') sync.append(el('span', { class: `sync-mark ${v.level}`, role: 'img', 'aria-label': v.label }, '!'), ' ');
+    sync.append(v.text);
+  };
+  if (store.sync) paint();
+  else {
+    fetch('/health').then((r) => r.json()).then((h) => { store.sync = h.sync || 'ok'; paint(); })
+      .catch(() => { sync.textContent = 'Server unreachable'; });
+  }
   return el('section', { class: 'card' },
     el('h2', { class: 't-headline' }, 'Library'),
     el('div', { class: 'cell' },
@@ -204,9 +211,11 @@ export function renderSettings(root) {
     return null;
   }
   let card = libraryCard();
-  const unsub = store.subscribe(() => { const next = libraryCard(); card.replaceWith(next); card = next; });
+  const rebuild = () => { const next = libraryCard(); card.replaceWith(next); card = next; };
+  const unsub = store.subscribe(rebuild);
+  window.addEventListener('sync-changed', rebuild);
   root.append(pageHead('Settings', 'Your library and storage on this server.'), el('div', { class: 'settings-grid' },
     el('div', { class: 'settings-col' }, accountCard(), ...(auth.email ? [card, bpmCard(), metadataCard(), downloadAllCard()] : [])),
     el('div', { class: 'settings-col' }, playbackCard(), visualizerCard())));
-  return unsub;
+  return () => { unsub(); window.removeEventListener('sync-changed', rebuild); };
 }

@@ -38,7 +38,7 @@ def remote(tmp_path, name):
 @pytest.fixture
 def sync(tmp_path):
     bare, clone = remote(tmp_path, "data")
-    s = gitstore.GitSync(clone, backoff=(0.01, 0.02))
+    s = gitstore.GitSync(clone, backoff=(0.01, 0.02), mode="request")
     yield s, bare, clone
     s.stop()
 
@@ -242,7 +242,7 @@ def test_resync_noop_when_nothing_ahead_or_no_upstream(sync, tmp_path):
     assert s._retry is None
     lone = tmp_path / "lone"
     git(tmp_path, "init", "-b", "main", str(lone))
-    t = gitstore.GitSync(lone)
+    t = gitstore.GitSync(lone, mode="request")
     t.resync()
     assert t.status() == "ok"
 
@@ -268,3 +268,12 @@ def test_from_env(tmp_path, monkeypatch):
     assert g.covers_repo == tmp_path / "c"
     assert g._ssh_key == "/k"
     assert os.environ["AUDIO_GIT_SSH_KEY"] == "/k"
+
+
+def test_rollback_keeps_untracked_files_that_existed_before_the_transaction(sync):
+    s, _, clone = sync
+    write(clone, "covers/kept.jpg", "cover")
+    with pytest.raises(RuntimeError):
+        fail_in_transaction(s, clone, "x", RuntimeError("boom"))
+    assert (clone / "audioplayer" / "covers" / "kept.jpg").read_text() == "cover"
+    assert not (clone / "audioplayer" / "a.json").exists()

@@ -9,6 +9,7 @@ from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
 
 from .. import coverimg, deps, library
+from ..jsonio import write_bytes_atomic
 from ..problems import Problem
 
 router = APIRouter()
@@ -31,7 +32,7 @@ def _store(uid: str, video_id: str, jpeg: bytes) -> dict[str, Any]:
             raise HTTPException(status_code=404, detail=deps.UNKNOWN_SONG)
         dest = deps.covers_dir(uid) / f"{video_id}.jpg"
         dest.parent.mkdir(parents=True, exist_ok=True)
-        dest.write_bytes(jpeg)
+        write_bytes_atomic(dest, jpeg)
         song.update(cover=f"covers/{video_id}.jpg", cover_v=coverimg.version_of(jpeg), cover_off=None, updated_at=library.now_utc())
         deps.save_songs(uid, songs)
         return library.public_song(song, deps.user_audio_root(uid))
