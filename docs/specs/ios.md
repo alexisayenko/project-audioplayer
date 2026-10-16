@@ -68,3 +68,9 @@ device unless a line says so.
 
 The server is open to any signed-in user and every user has their own library. Implemented in the client: Google and Apple sign-in for any verified account (IOS-012), the 403 "not allowed" texts (IOS-010, IOS-023, IOS-035). Still open in [task-0016](../tasks/task-0016.md): the `queued` job status and its "Waiting..." display, so an iOS user may still see raw error texts for refused jobs.
 - IOS-071 MAY: web-added links (`spotify_url`, edited `sources[]` via `youtube_url` / `soundcloud_url`, DATA-072, DATA-073) are not decoded or edited by the app yet: `Track` ignores `spotify_url` (the Spotify icon stays inert) and the song sheet shows the YouTube and SoundCloud links from `sources[]` as before; unknown fields are ignored on decode, so nothing breaks. Status: planned
+
+## Credits and versions (ADR-0024)
+
+- IOS-072 MUST: the app needs no change for the structured credits: it decodes `title`, `artist`, `remixer`, `year` as before; the server sends them as derived values with unchanged types and ignores `artists`, `featured`, `released`, `version`, `remix_year`, `raw` and `credits_schema` on the client (unknown keys are safe). Status: implemented (server side, `test_ios_contract.py`)
+- IOS-073 MUST: an Add or Edit that echoes the whole legacy form leaves the structure untouched (DATA-130); changing the artist text replaces `artists` with its pills and clears `featured`; clearing the remixer removes the version. Status: implemented (server side)
+- IOS-074 MAY: gap: the app labels the remixer line "Remix: ..." even for a live or other version (the server puts the version name or kind into `remixer`), and it has no fields for featured artists, version kind or First released; a later iOS task. Status: gap

@@ -69,7 +69,7 @@ def test_uid_is_a_hash_of_the_lowercased_email():
 def test_isolation_between_users(multi, tmp_path):
     a, b = who(multi, ALICE), who(multi, BOB)
     assert add(multi, a).status_code == 202
-    assert multi.get("/library", headers=b).json() == {"songs": []}
+    assert multi.get("/library", headers=b).json()["songs"] == []
     assert [s["id"] for s in multi.get("/library", headers=a).json()["songs"]] == [VID]
     for path in (f"/files/{VID}", f"/covers/{VID}"):
         assert multi.get(path, headers=a).status_code == 200
@@ -84,7 +84,7 @@ def test_isolation_between_users(multi, tmp_path):
     assert multi.get("/tags", headers=b).json() == []
     assert multi.get("/catalog", headers=b).json()["total"] == 0
     assert multi.get(f"/files/{VID}", headers=a).content == b"audio"
-    assert multi.get("/library", headers=H).json() == {"songs": []}
+    assert multi.get("/library", headers=H).json()["songs"] == []
     assert multi.get(f"/files/{VID}", params={"token": "secret"}).status_code == 404
 
 
@@ -107,7 +107,7 @@ def test_client_cannot_name_a_user(multi, tmp_path):
     add(multi, b)
     for extra in ({"uid": uid(BOB)}, {"user": uid(BOB)}):
         assert multi.get(f"/files/{VID}", params=extra, headers=a).status_code == 404
-        assert multi.get("/library", params=extra, headers=a).json() == {"songs": []}
+        assert multi.get("/library", params=extra, headers=a).json()["songs"] == []
     spoof = {**a, "X-User": uid(BOB), "X-Uid": uid(BOB)}
     assert multi.get(f"/files/{VID}", headers=spoof).status_code == 404
     assert multi.get("/me", headers=spoof).json()["email"] == ALICE
@@ -139,7 +139,7 @@ def test_cookie_sessions_are_per_user(key, multi, monkeypatch, tmp_path):
     assert ca.post("/songs", json={"url": VID, "metadata": {"title": "S"}}, headers=CSRF).status_code == 202
     assert ca.get(f"/files/{VID}").status_code == 200
     assert cb.get(f"/files/{VID}").status_code == 404
-    assert cb.get("/library").json() == {"songs": []}
+    assert cb.get("/library").json()["songs"] == []
     forged = session.issue({"provider": "google", "email": BOB, "uid": uid(ALICE)})
     assert forged
     cb.cookies.clear()

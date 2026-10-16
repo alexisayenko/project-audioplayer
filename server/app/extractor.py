@@ -12,7 +12,7 @@ from urllib.parse import urlparse
 
 import yt_dlp
 
-from . import genre_filter, library, timeutil, urlclean
+from . import credits_split, genre_filter, library, timeutil, urlclean
 from .titles import cut_remix, split_artist_title, split_title
 from .urlclean import is_valid_video_id, parse_video_id, source_of, watch_url  # noqa: F401
 
@@ -91,13 +91,6 @@ def cover_url(video_id: str, artwork: str | None = None) -> str | None:
     return f"https://i.ytimg.com/vi/{video_id}/hqdefault.jpg"
 
 
-def _year(info: dict[str, Any]) -> int | None:
-    if info.get("release_year"):
-        return timeutil.valid_year(int(info["release_year"]))
-    date = str(info.get("release_date") or info.get("upload_date") or "")
-    return timeutil.valid_year(int(date[:4])) if date[:4].isdigit() else None
-
-
 def _published_year(info: dict[str, Any]) -> int | None:
     """Year the platform shows for the upload (`upload_date`, else the created `timestamp`); never a release date."""
     date = str(info.get("upload_date") or "")
@@ -156,16 +149,20 @@ def _soundcloud_info(url: str, download: bool = False, opts: dict[str, Any] | No
 def soundcloud_probe(url: str) -> dict[str, Any]:
     """Resolve a canonical SoundCloud track URL to its id, metadata and preview-only flag (no download)."""
     info = _soundcloud_info(url)
-    title, remixer = cut_remix(info.get("track") or info.get("title") or "")
+    raw_title = info.get("track") or info.get("title") or ""
+    title, remixer = cut_remix(raw_title)
+    artist = _first(info.get("artists")) or info.get("artist") or info.get("creator") or info.get("uploader") or ""
     return {
         "id": urlclean.soundcloud_song_id(info["id"]),
         "source_url": urlclean.watch_url(urlclean.soundcloud_song_id(info["id"]), url),
         "source": "soundcloud",
         "title": title,
-        "artist": _first(info.get("artists")) or info.get("artist") or info.get("creator") or info.get("uploader") or "",
+        "artist": artist,
         "album": info.get("album"),
         "remixer": remixer,
-        "year": _year({k: info.get(k) for k in ("release_year", "release_date")}),
+        "raw": {"title": raw_title, "artist": artist, "remixer": remixer},
+        "suggested_credits": credits_split.suggest(artist, title, remixer),
+        "year": None,
         "published_year": _published_year(info),
         "tags": suggest_tags({**info, "genre": info.get("genre") or info.get("genres")}),
         "duration": info.get("duration"),
@@ -179,10 +176,9 @@ def preview(video_id: str) -> dict[str, Any]:
     opts = {"quiet": True, "noplaylist": True, "skip_download": True}
     with yt_dlp.YoutubeDL(opts) as ydl:
         info = ydl.extract_info(watch_url(video_id), download=False)
-    artist, title, remixer = split_title(
-        info.get("artist") or info.get("creator") or info.get("uploader") or "",
-        info.get("track") or info.get("title") or "",
-    )
+    raw_artist = info.get("artist") or info.get("creator") or info.get("uploader") or ""
+    raw_title = info.get("track") or info.get("title") or ""
+    artist, title, remixer = split_title(raw_artist, raw_title)
     return {
         "id": video_id,
         "source": "youtube",
@@ -191,7 +187,9 @@ def preview(video_id: str) -> dict[str, Any]:
         "artist": artist,
         "album": info.get("album"),
         "remixer": remixer,
-        "year": _year(info),
+        "raw": {"title": raw_title, "artist": raw_artist, "remixer": remixer},
+        "suggested_credits": credits_split.suggest(artist, title, remixer),
+        "year": None,
         "published_year": _published_year(info),
         "tags": suggest_tags(info),
         "duration": info.get("duration"),

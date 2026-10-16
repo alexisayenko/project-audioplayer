@@ -8,7 +8,8 @@ import { findInLibrary } from './library-match.js';
 import { dialogHead } from './edit-dialog.js';
 import { songForm } from './song-form.js';
 import { ADD_ROW_OUTLINE_MS } from './constants.js';
-import { addBody, yearError } from './song-payload.js';
+import { addBody, yearError, artistString } from './song-payload.js';
+import { displayLine } from './credits.js';
 import { can } from './guest.js';
 
 const BULK = new Set(['insertFromPaste', 'insertFromPasteAsQuotation', 'insertFromDrop', 'insertReplacementText']);
@@ -57,7 +58,7 @@ export function openAdd() {
     if (!song) { known.replaceChildren(); return; }
     const where = el('button', { class: 'link-btn t-caption', type: 'button' }, 'Show in library');
     where.addEventListener('click', () => showInLibrary(song));
-    known.replaceChildren(icon('check', 'inline'), ` Already in your library: ${[song.title, song.artist].filter(Boolean).join(' · ')} `, where);
+    known.replaceChildren(icon('check', 'inline'), ` Already in your library: ${displayLine(song)} `, where);
   };
   url.addEventListener('input', checkKnown);
   url.addEventListener('input', (e) => { if (BULK.has(e.inputType) || (e.data && e.data.length > 1)) tidy(); });
@@ -112,7 +113,7 @@ export function openAdd() {
     const paintMeta = () => {
       const v = sf.values({ commit: false });
       title.textContent = v.title || 'Untitled';
-      sub.textContent = [v.artist, v.album, v.year].filter(Boolean).join(' \u00b7 ');
+      sub.textContent = [artistString(v), v.album, v.released].filter(Boolean).join(' \u00b7 ');
       facts.textContent = preview.duration ? fmtTime(preview.duration) : '';
     };
     sf.node.addEventListener('input', paintMeta);
@@ -144,7 +145,7 @@ export function openAdd() {
       }
       save.disabled = true;
       try {
-        const added = await api.addSong(preview.source_url, addBody(v), v.tags, v.keep_title);
+        const added = await api.addSong(preview.source_url, addBody(v), v.tags, v.keep_title, preview.raw ?? null);
         await store.refresh().catch(() => {});
         if (autoDownloadOn() && added?.id) autodl.request([added.id], { front: true });
         dlg.close();

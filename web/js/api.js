@@ -121,7 +121,7 @@ export const api = {
   genreVocabulary: () => request('GET', '/genres/vocabulary'),
   preview: (url, signal) => request('POST', '/preview', { url }, signal),
   metadata: (body, signal) => request('POST', '/metadata', body, signal),
-  addSong: (url, metadata, tags, keepTitle = false) => request('POST', '/songs', { url, metadata, tags, audio: false, ...(keepTitle ? { keep_title: true } : {}) }),
+  addSong: (url, metadata, tags, keepTitle = false, sourceRaw = null) => request('POST', '/songs', { url, metadata, tags, audio: false, ...(keepTitle ? { keep_title: true } : {}), ...(sourceRaw ? { source_raw: sourceRaw } : {}) }),
   patch: (id, changes) => request('PATCH', `/songs/${q(id)}`, changes),
   fetchAudio: (id) => request('POST', `/songs/${q(id)}/audio`),
   songStatus: (id) => request('GET', `/songs/${q(id)}/status`),

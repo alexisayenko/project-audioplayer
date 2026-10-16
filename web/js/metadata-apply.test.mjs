@@ -2,19 +2,19 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { addNamespaced, planMetadata, statusText, serviceState, suggestion, suggestionText, countryCode } from './metadata-apply.js';
 
-test('fills only empty album and year', () => {
+test('fills only empty album and first released', () => {
   const r = { album: 'A', year: 1999, tags: [] };
-  assert.deepEqual(planMetadata(r, { album: '', year: '', tags: [] }), { album: 'A', year: 1999, tags: [], status: 'filled' });
-  const p = planMetadata(r, { album: 'Mine', year: '2001', tags: [] });
+  assert.deepEqual(planMetadata(r, { album: '', released: '', tags: [] }), { album: 'A', released: 1999, tags: [], status: 'filled' });
+  const p = planMetadata(r, { album: 'Mine', released: '2001', tags: [] });
   assert.equal(p.album, null);
-  assert.equal(p.year, null);
+  assert.equal(p.released, null);
   assert.equal(p.status, 'current');
   assert.equal(statusText(p), 'Already up to date');
 });
 
 test('empty and tolerant responses', () => {
   for (const r of [null, {}, { tags: 'x', year: '1' }, { tags: ['lang:ru', 'mood:calm'] }]) {
-    const p = planMetadata(r, { album: '', year: '', tags: [] });
+    const p = planMetadata(r, { album: '', released: '', tags: [] });
     assert.equal(p.status, 'empty');
     assert.equal(statusText(p), 'Nothing found');
   }
@@ -26,7 +26,7 @@ test('adds genre and country tags within caps, never lang', () => {
   const twelve = Array.from({ length: 12 }, (_, i) => `genre:g${i}`);
   assert.deepEqual(addNamespaced(twelve, ['genre:new']), []);
   assert.deepEqual(addNamespaced([], ['country:lt', 'country:de', 'genre:a', 'genre:a']), ['country:lt', 'genre:a']);
-  const p = planMetadata({ tags: ['genre:pop', 'lang:ru'] }, { album: '', year: '', tags: ['genre:pop'] });
+  const p = planMetadata({ tags: ['genre:pop', 'lang:ru'] }, { album: '', released: '', tags: ['genre:pop'] });
   assert.equal(p.status, 'current');
 });
 
@@ -66,16 +66,23 @@ test('countryCode accepts historical su', () => {
 
 test('planMetadata fills an empty wikipedia_album link only from an https link', () => {
   const r = { album: 'A', wikipedia_album: 'https://en.wikipedia.org/wiki/A_(album)' };
-  assert.equal(planMetadata(r, { album: 'A', year: '', tags: [], wikipedia_album: null }).wikipedia_album, r.wikipedia_album);
-  assert.equal(planMetadata(r, { album: 'A', year: '', tags: [], wikipedia_album: null }).status, 'filled');
-  assert.equal(planMetadata(r, { album: 'A', year: '', tags: [], wikipedia_album: 'https://en.wikipedia.org/wiki/Mine' }).wikipedia_album, undefined);
-  assert.equal(planMetadata({ wikipedia_album: 'javascript:x' }, { album: '', year: '', tags: [] }).wikipedia_album, undefined);
+  assert.equal(planMetadata(r, { album: 'A', released: '', tags: [], wikipedia_album: null }).wikipedia_album, r.wikipedia_album);
+  assert.equal(planMetadata(r, { album: 'A', released: '', tags: [], wikipedia_album: null }).status, 'filled');
+  assert.equal(planMetadata(r, { album: 'A', released: '', tags: [], wikipedia_album: 'https://en.wikipedia.org/wiki/Mine' }).wikipedia_album, undefined);
+  assert.equal(planMetadata({ wikipedia_album: 'javascript:x' }, { album: '', released: '', tags: [] }).wikipedia_album, undefined);
 });
 
 test('planMetadata fills empty song and band wikipedia links only', () => {
   const r = { wikipedia_song: 'https://en.wikipedia.org/wiki/What_Is_Love', wikipedia_artist: 'https://en.wikipedia.org/wiki/Haddaway' };
-  const p = planMetadata(r, { album: '', year: '', tags: [], wikipedia_song: '', wikipedia_artist: 'https://en.wikipedia.org/wiki/Mine' });
+  const p = planMetadata(r, { album: '', released: '', tags: [], wikipedia_song: '', wikipedia_artist: 'https://en.wikipedia.org/wiki/Mine' });
   assert.equal(p.wikipedia_song, r.wikipedia_song);
   assert.equal(p.wikipedia_artist, undefined);
   assert.equal(p.status, 'filled');
+});
+
+test('a song with a version never takes the album of the original recording', () => {
+  const r = { album: 'A', year: 1999, tags: [] };
+  const p = planMetadata(r, { album: '', released: '', tags: [], versioned: true });
+  assert.equal(p.album, null);
+  assert.equal(p.released, 1999);
 });

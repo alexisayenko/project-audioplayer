@@ -11,7 +11,7 @@ from typing import Any
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
 
-from . import bpm, deps, discogs_lookup, extractor, genre_filter, genre_lookup, genre_vocab, identify, jobs, library, limits, urlclean, wiki_lookup
+from . import bpm, credits, deps, discogs_lookup, extractor, genre_filter, genre_lookup, genre_vocab, identify, jobs, library, limits, urlclean, wiki_lookup
 from .links import Resolved, short_error
 from .problems import Problem
 from .tags import namespaced_values
@@ -124,27 +124,35 @@ def _link_fields(vid: str, meta: dict[str, Any], source_url: str | None) -> dict
     }
 
 
+def _credit_meta(meta: dict[str, Any], found: dict[str, Any]) -> dict[str, Any]:
+    """The request's credit keys, with the artist and year the source reported filling what the request left empty."""
+    out = dict(meta)
+    if not out.get("artists") and not str(out.get("artist") or "").strip() and found.get("artist"):
+        out["artist"] = found["artist"]
+    if out.get("released") is None and out.get("year") is None and found.get("year") is not None:
+        out["released"] = found["year"]
+    return out
+
+
 def _downloaded_song(uid: str, owner: bool, out: Path, vid: str, meta: dict[str, Any], tags: list[str],
                      source_url: str | None, job: dict[str, Any]) -> dict[str, Any]:
     limits.check_capacity(owner, out, deps.pool_dir())
     info = extractor.download_audio(vid, out, jobs.Tracker(job), source_url)
     cover = _fetch_cover(uid, vid, info.get("thumbnail"))
     value = round(meta["bpm"]) if meta.get("bpm") is not None else _detect_bpm(out / f"{vid}.m4a", vid)
+    fields = credits.new_fields(_credit_meta(meta, info), meta.get("source_raw"))
     return {
         "id": vid,
         "title": meta.get("title") or info.get("title") or vid,
-        "artist": meta.get("artist") or info.get("artist"),
+        **fields,
         "album": meta.get("album"),
-        "remixer": meta.get("remixer"),
-        "year": meta.get("year"),
-        "remix_year": meta.get("remix_year"),
         "bpm": value,
         **_link_fields(vid, meta, source_url),
         "file": f"{vid}.m4a",
         "cover": cover,
         "duration": info.get("duration"),
         "added_at": library.now_utc(),
-        "tags": library.with_decade(tags, meta.get("year")),
+        "tags": library.with_decade(tags, fields["released"]),
     }
 
 
@@ -230,21 +238,19 @@ def add_metadata_only(uid: str, vid: str, link: Resolved, meta: dict[str, Any], 
             log.warning("preview failed for %s: %s", vid, exc)
             found = {}
         cover = _fetch_cover(uid, vid, found.get("thumbnail"))
+        fields = credits.new_fields(_credit_meta(meta, found), meta.get("source_raw"))
         song = {
             "id": vid,
             "title": meta.get("title") or found.get("title") or vid,
-            "artist": meta.get("artist") or found.get("artist") or None,
+            **fields,
             "album": meta.get("album") or found.get("album"),
-            "remixer": meta.get("remixer"),
-            "year": meta["year"] if meta.get("year") is not None else found.get("year"),
-            "remix_year": meta.get("remix_year"),
             "bpm": round(meta["bpm"]) if meta.get("bpm") is not None else None,
             **_link_fields(vid, meta, link.url),
             "file": None,
             "cover": cover,
             "duration": found.get("duration"),
             "added_at": library.now_utc(),
-            "tags": library.with_decade(tags or _known_country_tags(library.clean_tags(found.get("tags") or [])), meta.get("year") or found.get("year")),
+            "tags": library.with_decade(tags or _known_country_tags(library.clean_tags(found.get("tags") or [])), fields["released"]),
         }
         with deps.tx(uid, f"add {vid}"):
             songs = library.load(deps.library_path(uid))

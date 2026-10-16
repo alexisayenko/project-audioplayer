@@ -11,8 +11,8 @@ const typeIn = (f, v) => { entry(f).value = v; entry(f).dispatchEvent(makeEvent(
 function mount() {
   const g = tokenGroup();
   const title = g.field('title', 'Song A - Song B');
-  const artist = g.field('artist', 'Band X');
-  const remixer = g.field('remixer', '');
+  const artist = g.field('artists', 'Band X');
+  const remixer = g.field('by', '');
   const host = document.createElement('div');
   host.append(title, artist, remixer);
   document.body.append(host);
@@ -76,7 +76,7 @@ test('pencil opens a menu; Remove and Move to X work; menu closes on selection',
   assert.equal(title.querySelectorAll('.token-menu').length, 1);
   assert.equal(pencil.getAttribute('aria-expanded'), 'true');
   const labels = title.querySelector('.token-menu').querySelectorAll('button').map((b) => b.textContent);
-  assert.deepEqual(labels, ['Edit text', 'Move to Artist', 'Move to Remix', 'Remove']);
+  assert.deepEqual(labels, ['Edit text', 'Move to Artists', 'Move to Remixed / mixed by', 'Remove']);
   title.querySelector('.token-menu').querySelectorAll('button')[1].click();
   assert.deepEqual(pills(title), ['Song B']);
   assert.deepEqual(pills(artist), ['Band X', 'Song A']);
@@ -86,12 +86,12 @@ test('pencil opens a menu; Remove and Move to X work; menu closes on selection',
 test('the last title token cannot be moved away (Move is disabled, moveTo refuses)', () => {
   const g = tokenGroup();
   const title = g.field('title', 'Only');
-  const artist = g.field('artist', '');
+  const artist = g.field('artists', '');
   document.body.append(title, artist);
   title.querySelector('.token-pill').querySelector('button').click();
   const move = title.querySelector('.token-menu').querySelectorAll('button')[1];
   assert.equal(move.disabled, true);
-  title.moveTo(0, 'artist');
+  title.moveTo(0, 'artists');
   assert.deepEqual(pills(title), ['Only']);
   assert.deepEqual(pills(artist), []);
 });
@@ -159,7 +159,7 @@ test('touch long-press drag moves a pill into another field; an early move cance
   document.elementFromPoint = (x) => (x > 500 ? document.getElementById('drop-target') : null);
   const g = tokenGroup();
   const title = g.field('title', 'Song A - Song B');
-  const artist = g.field('artist', 'Band X');
+  const artist = g.field('artists', 'Band X');
   artist.setAttribute('id', 'drop-target');
   document.body.append(title, artist);
   const pill = title.querySelectorAll('.token-pill')[1];
@@ -189,4 +189,21 @@ test('mouse pointer never starts the touch drag', (t) => {
   pill.dispatchEvent(makeEvent('pointerdown', { clientX: 1, clientY: 1, pointerType: 'mouse', button: 0 }));
   t.mock.timers.tick(500);
   assert.equal(pill.classList.contains('dragging'), false);
+});
+
+test('featured and by fields use the same pill rules and offer moves to each other', () => {
+  const g = tokenGroup();
+  const artists = g.field('artists', 'A - B');
+  const featured = g.field('featured', 'C');
+  const by = g.field('by', 'D');
+  document.body.append(artists, featured, by);
+  assert.deepEqual(pills(featured), ['C']);
+  assert.equal(featured.getAttribute('aria-label'), 'Featuring');
+  assert.equal(by.getAttribute('aria-label'), 'Remixed / mixed by');
+  featured.querySelector('.token-pill').querySelector('button').click();
+  const labels = featured.querySelector('.token-menu').querySelectorAll('button').map((b) => b.textContent);
+  assert.deepEqual(labels, ['Edit text', 'Move to Artists', 'Move to Remixed / mixed by', 'Remove']);
+  featured.querySelector('.token-menu').querySelectorAll('button')[2].click();
+  assert.deepEqual(pills(by), ['D', 'C']);
+  assert.deepEqual(pills(featured), []);
 });

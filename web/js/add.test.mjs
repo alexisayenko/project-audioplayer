@@ -102,7 +102,7 @@ test('an already-saved song disables Fetch and links to it', async () => {
   openAdd();
   typeUrl(YT);
   assert.equal(dlg().querySelector('button[type=submit]').disabled, true);
-  assert.match(dlg().textContent, /Already in your library: Have it · Me/);
+  assert.match(dlg().textContent, /Already in your library: Me - Have it/);
   const calls = stubFetch(preview(PREVIEW));
   submitFetch();
   await flush();
@@ -173,4 +173,35 @@ test('with auto-download on, the saved song is queued for download at the front'
   await flush();
   assert.ok(calls.some((c) => c.url === '/songs/dQw4w9WgXcQ/audio'));
   localStorage.setItem('ap2.autodl', '0');
+});
+
+test('save sends structure keys, no legacy keys, and the preview raw strings as source_raw', async () => {
+  store.loaded = true;
+  store.songs = [];
+  const raw = { title: 'Rick - Never Gonna (Official Video)', artist: 'Rick', remixer: null };
+  const calls = stubFetch(preview({ ...PREVIEW, raw, year: 1987 }));
+  openAdd();
+  typeUrl(YT);
+  submitFetch();
+  await flush();
+  assert.match(dlg().querySelector('.preview-meta .t-subhead').textContent, /Rick.*1987/);
+  dlg().querySelector('form.add-card').dispatchEvent(makeEvent('submit'));
+  await flush();
+  const body = JSON.parse(calls.find((c) => c.url === '/songs' && c.opts.method === 'POST').opts.body);
+  assert.deepEqual(body.source_raw, raw);
+  assert.deepEqual(body.metadata.artists, ['Rick']);
+  assert.deepEqual(body.metadata.featured, []);
+  assert.equal(body.metadata.released, 1987);
+  assert.ok(!('version' in body.metadata));
+  for (const k of ['artist', 'remixer', 'year', 'remix_year']) assert.ok(!(k in body.metadata), k);
+});
+
+test('a structured library song is shown as its display line in the Already-in-library hint', () => {
+  store.loaded = true;
+  store.songs = [{ id: 'dQw4w9WgXcQ', title: 'Have it', artists: ['A', 'B'], featured: [], sources: [{ url: YT }] }];
+  stubFetch(preview(PREVIEW));
+  openAdd();
+  typeUrl(YT);
+  assert.match(dlg().textContent, /Already in your library: A & B - Have it/);
+  close();
 });

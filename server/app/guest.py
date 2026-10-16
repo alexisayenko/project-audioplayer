@@ -21,7 +21,7 @@ MB = 1024 * 1024
 READ_PATHS = frozenset({"/library", "/tags", "/genres/graph", "/genres/vocabulary", "/catalog", "/me"})
 READ_PREFIXES = ("/files/", "/covers/")
 SONG_KEYS = frozenset({
-    "id", "source", "title", "artist", "album", "remixer", "year", "remix_year", "tags", "bpm", "duration",
+    "id", "source", "title", "artists", "featured", "released", "version", "artist", "album", "remixer", "year", "remix_year", "tags", "bpm", "duration",
     "source_url", "musicbrainz_url", "discogs_url", "spotify_url", "wikipedia_song", "wikipedia_artist", "wikipedia_album", "sources",
     "updated_at", "cover", "cover_v", "added_at", "audio_state",
 })

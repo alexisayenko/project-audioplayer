@@ -165,6 +165,7 @@ def test_find_uid_by_sub_scans_profiles_then_caches(multi, tmp_path):
 def test_startup_resyncs_git_only_when_configured(monkeypatch):
     calls = []
     monkeypatch.setattr(main.migrate_tags, "run", lambda: 0)
+    monkeypatch.setattr(main.migrate_credits, "run", lambda: 0)
     monkeypatch.setattr(deps, "SYNC", SimpleNamespace(resync=lambda: calls.append(1)))
     main._startup()
     monkeypatch.setattr(deps, "SYNC", None)
@@ -494,7 +495,7 @@ def test_metadata_with_a_soundcloud_source_uses_the_probe(client, monkeypatch):
     assert r.status_code == 200
     body = r.json()
     assert body["album"] == "Alb"
-    assert body["year"] == 2020
+    assert body["year"] is None
     assert lookup.source_info(SC_URL) is probe
 
 
@@ -666,7 +667,7 @@ def test_delete_song_when_the_music_root_is_gone_still_deletes_the_record(client
 
     monkeypatch.setattr(deps, "audio_dir", gone)
     assert client.delete(f"/songs/{VID}", headers=H).status_code == 204
-    assert client.get("/library", headers=H).json() == {"songs": []}
+    assert client.get("/library", headers=H).json()["songs"] == []
     assert calls
 
 

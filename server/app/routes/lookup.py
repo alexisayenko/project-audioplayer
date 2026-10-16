@@ -7,7 +7,7 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.concurrency import run_in_threadpool
 
-from .. import deps, discogs_lookup, extractor, genre_lookup, library, metadata, titleclean, wiki_lookup
+from .. import credits, deps, discogs_lookup, extractor, genre_lookup, library, metadata, timeutil, titleclean, wiki_lookup
 from ..links import Refused, resolve_link, short_error
 from ..schemas import MetadataRequest, PreviewRequest, WikipediaLookupRequest
 
@@ -32,6 +32,7 @@ def source_info(url: str) -> dict[str, Any]:
 async def _apply_suggestions(meta: dict[str, Any]) -> None:
     artist, title = meta.get("artist", ""), meta.get("title", "")
     found = await run_in_threadpool(genre_lookup.suggest_tags, artist, title)
+    mb = await run_in_threadpool(genre_lookup.lookup, artist, title)
     wiki = await run_in_threadpool(wiki_lookup.suggest, artist, title)
     disc = await run_in_threadpool(discogs_lookup.suggest, artist, title)
     disc_genres = [t for t in disc["tags"] if t.startswith("genre:")]
@@ -41,10 +42,21 @@ async def _apply_suggestions(meta: dict[str, Any]) -> None:
     meta["wikipedia_artist"] = wiki["wikipedia_artist"]
     meta["wikipedia_album"] = wiki.get("wikipedia_album")
     meta["discogs_url"] = disc["url"]
-    meta["suggested_year"] = wiki["year"] or disc["year"]
     meta["remixer"] = meta.get("remixer")
+    suggestion = _released_suggestion(wiki, mb, disc)
+    meta["released_suggestion"] = suggestion
+    meta["suggested_year"] = suggestion["year"] if suggestion else None
     if meta.get("year") is None:
-        meta["year"] = wiki["year"]
+        meta["year"] = meta["suggested_year"]
+
+
+def _released_suggestion(wiki: dict[str, Any], mb: dict[str, Any], disc: dict[str, Any]) -> dict[str, Any] | None:
+    """First released year of the original recording: Wikipedia, then MusicBrainz, then Discogs; never a platform date (DATA-126)."""
+    for source, value in (("wikipedia", wiki.get("year")), ("musicbrainz", mb.get("year")), ("discogs", disc.get("year"))):
+        year = timeutil.valid_year(value)
+        if year:
+            return {"year": year, "source": source}
+    return None
 
 
 @router.post("/preview", responses=deps.responses(502))
@@ -69,10 +81,13 @@ async def preview(req: PreviewRequest, user: Annotated[dict[str, Any], Depends(d
 
 @router.post("/metadata", dependencies=[Depends(deps.require_token)])
 async def get_metadata(req: MetadataRequest):
+    if req.version_kind is not None and req.version_kind not in credits.KINDS:
+        raise HTTPException(status_code=422, detail=f"version_kind must be one of {', '.join(credits.KINDS)}")
     urls = [src.url.strip() for src in req.sources[:MAX_METADATA_SOURCES] if src.url.strip()]
     fetchers = [(lambda u=u: source_info(u)) for u in urls]
     return await run_in_threadpool(
-        metadata.gather, req.title.strip(), req.artist.strip(), fetchers, req.wiki_song, req.wiki_artist, metadata.TIMEOUT, urls, req.wiki_album
+        metadata.gather, req.title.strip(), req.artist.strip(), fetchers, req.wiki_song, req.wiki_artist, metadata.TIMEOUT, urls, req.wiki_album,
+        req.version_kind,
     )
 
 

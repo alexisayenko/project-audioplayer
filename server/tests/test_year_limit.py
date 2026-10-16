@@ -72,8 +72,5 @@ def test_lookups_discard_out_of_range_years():
     assert discogs_lookup._year(2027) == 2027
     assert genre_lookup._first_year({"first-release-date": "2028-01-01"}) is None
     assert genre_lookup._first_year({"first-release-date": "1999-01-01"}) == 1999
-    assert extractor._year({"release_year": 2028}) is None
-    assert extractor._year({"release_date": "18990101"}) is None
-    assert extractor._year({"release_date": "20210101"}) == 2021
     assert wiki_lookup._in_range(2027)
     assert not wiki_lookup._in_range(2028)

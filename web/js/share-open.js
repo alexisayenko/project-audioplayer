@@ -1,4 +1,5 @@
 import { store } from './store.js';
+import { artistLine } from './credits.js';
 import { player } from './player.js';
 import { el, toast, fmtTime } from './dom.js';
 import { hasAudio } from './playable.js';
@@ -65,7 +66,7 @@ export function showGate(song, share) {
     el('div', { class: 'share-gate-card' },
       el('p', { class: 't-eyebrow' }, 'SHARED WITH YOU'),
       el('h2', { class: 't-title' }, song.title),
-      song.artist ? el('p', { class: 'muted t-subhead' }, song.artist) : null,
+      artistLine(song) ? el('p', { class: 'muted t-subhead' }, artistLine(song)) : null,
       go, skip));
   go.addEventListener('click', () => { closeGate(); start(song, share); });
   skip.addEventListener('click', closeGate);

@@ -88,7 +88,7 @@ test('guest: player edit and download controls are hidden, the mini-player has n
   assert.equal($('p-edit'), null);
   assert.equal($('mini-edit'), null);
   assert.equal($('p-download').hidden, true);
-  assert.equal($('p-play').hidden, false);
+  assert.equal($('mini-play').hidden, false);
   g.clearGuest();
   player.toggle();
   player.toggle();

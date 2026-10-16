@@ -9,7 +9,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from fastapi.responses import JSONResponse
 
-from .. import deps, guest, library
+from .. import credits, deps, guest, library
 
 router = APIRouter()
 
@@ -28,7 +28,7 @@ def _etag_matches(header: str, etag: str) -> bool:
 
 @router.get("/library")
 def get_library(user: dict[str, Any] = Depends(deps.read_user)):
-    return {"songs": _public(user)}
+    return {"credits_schema": credits.SCHEMA, "songs": _public(user)}
 
 
 @router.get("/catalog", responses=deps.responses(422))
@@ -45,6 +45,7 @@ def get_catalog(request: Request, since: str | None = Query(default=None),
         return Response(status_code=304, headers=headers)
     changed = [s for s in public if since is None or library.updated_at(s) >= since]
     body = {
+        "credits_schema": credits.SCHEMA,
         "revision": revision,
         "total": len(public),
         "ids": [s["id"] for s in public],

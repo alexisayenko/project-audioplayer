@@ -5,8 +5,9 @@ import { tokenize, isBlankToken, removeToken, replaceToken, appendToken, moveTok
 
 const KINDS = {
   title: { label: 'Title', move: 'Title', sep: SEPARATOR },
-  artist: { label: 'Artist', move: 'Artist', sep: SEPARATOR },
-  remixer: { label: 'Remix & additional production', move: 'Remix', sep: SEPARATOR },
+  artists: { label: 'Artists', move: 'Artists', sep: SEPARATOR },
+  featured: { label: 'Featuring', move: 'Featuring', sep: SEPARATOR },
+  by: { label: 'Remixed / mixed by', move: 'Remixed / mixed by', sep: SEPARATOR },
 };
 
 export function tokenGroup() {

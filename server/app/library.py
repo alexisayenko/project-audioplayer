@@ -11,7 +11,7 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
-from . import countrycodes, discogs_lookup, genre_filter, genre_lookup, langcodes, urlclean, wiki_lookup
+from . import countrycodes, credits, discogs_lookup, genre_filter, genre_lookup, langcodes, urlclean, wiki_lookup
 from .jsonio import write_json_atomic
 from .timeutil import max_year, now_utc  # noqa: F401
 
@@ -68,10 +68,11 @@ def audio_state(song: dict[str, Any], root: Path | None) -> str:
 def public_song(song: dict[str, Any], root: Path | None) -> dict[str, Any]:
     """The record plus derived, additive fields: `audio_state`, `sources`, and `audio` when a file exists."""
     out = dict(song)
+    credits.ensure(out)
+    out.update(credits.project(out))
     state = audio_state(song, root)
     out["audio_state"] = state
     out["sources"] = sources_of(song)
-    out["remix_year"] = song.get("remix_year")
     if state == "server":
         name = file_name(song)
         size = None
@@ -101,6 +102,7 @@ def catalog_revision(songs: list[dict[str, Any]]) -> str:
 
 def normalize_song(song: dict[str, Any]) -> dict[str, Any]:
     s = dict(song)
+    credits.ensure(s)
     if "id" in s and (s.get("file") == "" or "file" not in s):
         s["file"] = f"{s['id']}.m4a"
     if "sources" in s:
@@ -120,9 +122,6 @@ def normalize_song(song: dict[str, Any]) -> dict[str, Any]:
     if "spotify_url" in s:
         s["spotify_url"] = urlclean.clean_spotify_url(s["spotify_url"])
     s.pop("original", None)
-    if "remixer" in s:
-        v = s["remixer"].strip() if isinstance(s["remixer"], str) else ""
-        s["remixer"] = v or None
     normalize_tags(s)
     return s
 
@@ -134,8 +133,9 @@ def normalize_tags(s: dict[str, Any]) -> None:
         tags.append(f"genre:{genre}")
     if "tags" in s or genre:
         s["tags"] = clean_tags(tags)
-    if decade_tag(s.get("year")):
-        s["tags"] = with_decade(s.get("tags") or [], s["year"])
+    year = credits.released(s)
+    if decade_tag(year):
+        s["tags"] = with_decade(s.get("tags") or [], year)
 
 
 def normalize(raw: Any) -> dict[str, Any]:
@@ -188,7 +188,10 @@ def load_doc(path: Path) -> dict[str, Any]:
 
 
 def save_doc(path: Path, doc: dict[str, Any]) -> None:
-    out = {"settings": doc.get("settings") or {}, "songs": doc.get("songs") or []}
+    songs = doc.get("songs") or []
+    for song in songs:
+        credits.absorb(song)
+    out = {"settings": {**(doc.get("settings") or {}), "credits_schema": credits.SCHEMA}, "songs": songs}
     write_json_atomic(path, out)
 
 
@@ -303,7 +306,7 @@ _BAD_NAME = re.compile(r'[\x00-\x1f\x7f/\\:*?"<>|]')
 
 def download_name(song: dict[str, Any] | None, video_id: str, limit: int = 120) -> str:
     """`Artist - Title.m4a` for a browser save: no path separators, control chars or quotes; falls back to `<id>.m4a`."""
-    parts = [str((song or {}).get(k) or "") for k in ("artist", "title")]
+    parts = [credits.artist_string(song or {}), str((song or {}).get("title") or "")]
     text = " - ".join(p for p in parts if p.strip())
     text = " ".join(_BAD_NAME.sub(" ", text).split()).strip(" .")
     text = text[:limit].strip(" .")

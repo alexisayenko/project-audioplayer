@@ -170,7 +170,7 @@ def test_soundcloud_probe_fields(ydl):
     assert p["source_url"] == SC_URL
     assert p["title"] == "Some Track"
     assert p["artist"] == "Some Artist"
-    assert p["year"] == 2019
+    assert p["year"] is None
     assert p["duration"] == 215.5
     assert p["tags"] == ["genre:electronic"]
     assert p["thumbnail"] == "https://i1.sndcdn.com/artworks-abc-t500x500.jpg"
@@ -347,7 +347,7 @@ def test_preview_only_is_422_structured(client):
     r = client.post("/songs", json={"url": SC_URL}, headers=H)
     assert r.status_code == 422
     assert r.json()["error"] == "preview_only"
-    assert client.get("/library", headers=H).json() == {"songs": []}
+    assert client.get("/library", headers=H).json()["songs"] == []
 
 
 @pytest.mark.parametrize(
@@ -403,7 +403,7 @@ def test_download_time_preview_only_reports_code(client, monkeypatch):
     assert st["status"] == "error"
     assert st["code"] == "preview_only"
     assert "Go+" in st["error"]
-    assert client.get("/library", headers=H).json() == {"songs": []}
+    assert client.get("/library", headers=H).json()["songs"] == []
 
 
 def test_id_validators_in_paths(client):

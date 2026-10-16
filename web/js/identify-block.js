@@ -2,7 +2,7 @@ import { api } from './api.js';
 import { el } from './dom.js';
 import { disabledReason, statusLine, yearAction, linkPlan, suggestedTags } from './identify-plan.js';
 
-export function identifyBlock({ id = null, audio = false, editor, getYear, setYear, applyLinks }) {
+export function identifyBlock({ id = null, audio = false, editor, getReleased, setReleased, applyLinks }) {
   const btn = el('button', { class: 'btn outline small', type: 'button' }, 'Identify from audio');
   const msg = el('p', { class: 't-caption muted', role: 'status' });
   const actions = el('div', { class: 'row' });
@@ -19,10 +19,10 @@ export function identifyBlock({ id = null, audio = false, editor, getYear, setYe
   const show = (res) => {
     msg.textContent = statusLine(res);
     editor.setSuggested(suggestedTags(res), { all: true });
-    const year = yearAction(res, getYear());
+    const year = yearAction(res, getReleased());
     const links = linkPlan(res);
     const buttons = [];
-    if (year) buttons.push(el('button', { class: 'btn outline small', type: 'button', onclick: () => setYear(year) }, `Apply year ${year}`));
+    if (year) buttons.push(el('button', { class: 'btn outline small', type: 'button', onclick: () => setReleased(year) }, `Apply year ${year}`));
     if (links) buttons.push(el('button', { class: 'btn outline small', type: 'button', onclick: () => applyLinks(links) }, 'Apply links'));
     actions.replaceChildren(...buttons);
   };

@@ -84,16 +84,24 @@ def test_preview_youtube_info_dict_mapping(ydl):
     assert got["source"] == "youtube"
     assert got["source_url"] == f"https://www.youtube.com/watch?v={YT}"
     assert (got["artist"], got["title"], got["album"], got["duration"]) == ("Daft Punk", "One More Time", "Discovery", 320)
-    assert got["year"] == 2009
+    assert got["year"] is None
+    assert got["published_year"] == 2009
+    assert got["raw"] == {"title": "One More Time", "artist": "Daft Punk", "remixer": None}
+    assert got["suggested_credits"]["artists"] == ["Daft Punk"]
     assert {t.lower() for t in got["tags"]} >= {"genre:house", "genre:electronic", "genre:disco"}
     assert got["thumbnail"] == f"https://i.ytimg.com/vi/{YT}/hqdefault.jpg"
 
 
-def test_preview_prefers_release_year_over_dates(ydl):
+def test_preview_year_is_never_platform_derived(ydl):
     ydl.info = {**YT_INFO, "release_year": 1999, "release_date": "20000101"}
-    assert extractor.preview(YT)["year"] == 1999
+    got = extractor.preview(YT)
+    assert got["year"] is None
+    assert got["published_year"] == 2009
     ydl.info = {**YT_INFO, "release_date": "20010101"}
-    assert extractor.preview(YT)["year"] == 2001
+    assert extractor.preview(YT)["year"] is None
+    ydl.info = {"title": "x", "upload_date": "20140101"}
+    got = extractor.preview(YT)
+    assert (got["year"], got["published_year"]) == (None, 2014)
     ydl.info = {"title": "x", "upload_date": "bad!"}
     assert extractor.preview(YT)["year"] is None
     ydl.info = {"title": "x"}
@@ -123,7 +131,7 @@ def test_soundcloud_probe_info_dict_mapping(ydl):
     assert got["artist"] == "some-artist"
     assert got["title"] == "Some Track"
     assert got["remixer"] == "Foo Bar Remix"
-    assert got["year"] == 2020
+    assert got["year"] is None
     assert got["duration"] == 245.0
     assert got["thumbnail"] == "https://i1.sndcdn.com/artworks-abc-t500x500.jpg"
     assert got["preview_only"] is False

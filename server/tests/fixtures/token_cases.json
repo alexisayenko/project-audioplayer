@@ -1,0 +1,1188 @@
+[
+ {
+  "input": "",
+  "tokenize": [
+   {
+    "text": "",
+    "sep": ""
+   }
+  ],
+  "split": [],
+  "join": ""
+ },
+ {
+  "input": " ",
+  "tokenize": [
+   {
+    "text": " ",
+    "sep": ""
+   }
+  ],
+  "split": [],
+  "join": ""
+ },
+ {
+  "input": "A",
+  "tokenize": [
+   {
+    "text": "A",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "A"
+  ],
+  "join": "A"
+ },
+ {
+  "input": "A - B",
+  "tokenize": [
+   {
+    "text": "A",
+    "sep": " - "
+   },
+   {
+    "text": "B",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "A",
+   "B"
+  ],
+  "join": "A - B"
+ },
+ {
+  "input": "A - B - C",
+  "tokenize": [
+   {
+    "text": "A",
+    "sep": " - "
+   },
+   {
+    "text": "B",
+    "sep": " - "
+   },
+   {
+    "text": "C",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "A",
+   "B",
+   "C"
+  ],
+  "join": "A - B - C"
+ },
+ {
+  "input": "A-B",
+  "tokenize": [
+   {
+    "text": "A-B",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "A-B"
+  ],
+  "join": "A-B"
+ },
+ {
+  "input": "A -B",
+  "tokenize": [
+   {
+    "text": "A -B",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "A -B"
+  ],
+  "join": "A -B"
+ },
+ {
+  "input": "A- B",
+  "tokenize": [
+   {
+    "text": "A- B",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "A- B"
+  ],
+  "join": "A- B"
+ },
+ {
+  "input": "A – B",
+  "tokenize": [
+   {
+    "text": "A",
+    "sep": " – "
+   },
+   {
+    "text": "B",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "A",
+   "B"
+  ],
+  "join": "A - B"
+ },
+ {
+  "input": "A — B",
+  "tokenize": [
+   {
+    "text": "A",
+    "sep": " — "
+   },
+   {
+    "text": "B",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "A",
+   "B"
+  ],
+  "join": "A - B"
+ },
+ {
+  "input": "A | B",
+  "tokenize": [
+   {
+    "text": "A",
+    "sep": " | "
+   },
+   {
+    "text": "B",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "A",
+   "B"
+  ],
+  "join": "A - B"
+ },
+ {
+  "input": "A｜ B",
+  "tokenize": [
+   {
+    "text": "A｜ B",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "A｜ B"
+  ],
+  "join": "A｜ B"
+ },
+ {
+  "input": "A / B",
+  "tokenize": [
+   {
+    "text": "A",
+    "sep": " / "
+   },
+   {
+    "text": "B",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "A",
+   "B"
+  ],
+  "join": "A - B"
+ },
+ {
+  "input": "A // B",
+  "tokenize": [
+   {
+    "text": "A",
+    "sep": " // "
+   },
+   {
+    "text": "B",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "A",
+   "B"
+  ],
+  "join": "A - B"
+ },
+ {
+  "input": "A ／ B",
+  "tokenize": [
+   {
+    "text": "A",
+    "sep": " ／ "
+   },
+   {
+    "text": "B",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "A",
+   "B"
+  ],
+  "join": "A - B"
+ },
+ {
+  "input": "A ／／ B",
+  "tokenize": [
+   {
+    "text": "A",
+    "sep": " ／／ "
+   },
+   {
+    "text": "B",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "A",
+   "B"
+  ],
+  "join": "A - B"
+ },
+ {
+  "input": "A  -  B",
+  "tokenize": [
+   {
+    "text": "A",
+    "sep": "  -  "
+   },
+   {
+    "text": "B",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "A",
+   "B"
+  ],
+  "join": "A - B"
+ },
+ {
+  "input": " A - B ",
+  "tokenize": [
+   {
+    "text": " A",
+    "sep": " - "
+   },
+   {
+    "text": "B ",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "A",
+   "B"
+  ],
+  "join": "A - B"
+ },
+ {
+  "input": "A - ",
+  "tokenize": [
+   {
+    "text": "A",
+    "sep": " - "
+   },
+   {
+    "text": "",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "A"
+  ],
+  "join": "A"
+ },
+ {
+  "input": " - A",
+  "tokenize": [
+   {
+    "text": "",
+    "sep": " - "
+   },
+   {
+    "text": "A",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "A"
+  ],
+  "join": "A"
+ },
+ {
+  "input": "A - - B",
+  "tokenize": [
+   {
+    "text": "A",
+    "sep": " - - "
+   },
+   {
+    "text": "B",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "A",
+   "B"
+  ],
+  "join": "A - B"
+ },
+ {
+  "input": "A - | B",
+  "tokenize": [
+   {
+    "text": "A",
+    "sep": " - | "
+   },
+   {
+    "text": "B",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "A",
+   "B"
+  ],
+  "join": "A - B"
+ },
+ {
+  "input": "A / - B",
+  "tokenize": [
+   {
+    "text": "A",
+    "sep": " / - "
+   },
+   {
+    "text": "B",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "A",
+   "B"
+  ],
+  "join": "A - B"
+ },
+ {
+  "input": "A  -  B",
+  "tokenize": [
+   {
+    "text": "A",
+    "sep": "  -  "
+   },
+   {
+    "text": "B",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "A",
+   "B"
+  ],
+  "join": "A - B"
+ },
+ {
+  "input": "A　-　B",
+  "tokenize": [
+   {
+    "text": "A",
+    "sep": "　-　"
+   },
+   {
+    "text": "B",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "A",
+   "B"
+  ],
+  "join": "A - B"
+ },
+ {
+  "input": "A ﻿- B",
+  "tokenize": [
+   {
+    "text": "A",
+    "sep": " ﻿- "
+   },
+   {
+    "text": "B",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "A",
+   "B"
+  ],
+  "join": "A - B"
+ },
+ {
+  "input": "A\t-\tB",
+  "tokenize": [
+   {
+    "text": "A",
+    "sep": "\t-\t"
+   },
+   {
+    "text": "B",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "A",
+   "B"
+  ],
+  "join": "A - B"
+ },
+ {
+  "input": "A\n-\nB",
+  "tokenize": [
+   {
+    "text": "A",
+    "sep": "\n-\n"
+   },
+   {
+    "text": "B",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "A",
+   "B"
+  ],
+  "join": "A - B"
+ },
+ {
+  "input": "Martin Garrix & Tiesto",
+  "tokenize": [
+   {
+    "text": "Martin Garrix & Tiesto",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "Martin Garrix & Tiesto"
+  ],
+  "join": "Martin Garrix & Tiesto"
+ },
+ {
+  "input": "Nadia Ali, Starkillers & Alex Kenji",
+  "tokenize": [
+   {
+    "text": "Nadia Ali, Starkillers & Alex Kenji",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "Nadia Ali, Starkillers & Alex Kenji"
+  ],
+  "join": "Nadia Ali, Starkillers & Alex Kenji"
+ },
+ {
+  "input": "Kato feat. Jon",
+  "tokenize": [
+   {
+    "text": "Kato feat. Jon",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "Kato feat. Jon"
+  ],
+  "join": "Kato feat. Jon"
+ },
+ {
+  "input": "AC/DC",
+  "tokenize": [
+   {
+    "text": "AC/DC",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "AC/DC"
+  ],
+  "join": "AC/DC"
+ },
+ {
+  "input": "AC / DC",
+  "tokenize": [
+   {
+    "text": "AC",
+    "sep": " / "
+   },
+   {
+    "text": "DC",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "AC",
+   "DC"
+  ],
+  "join": "AC - DC"
+ },
+ {
+  "input": "Guns N' Roses - Live",
+  "tokenize": [
+   {
+    "text": "Guns N' Roses",
+    "sep": " - "
+   },
+   {
+    "text": "Live",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "Guns N' Roses",
+   "Live"
+  ],
+  "join": "Guns N' Roses - Live"
+ },
+ {
+  "input": "Mr. Oizo - Flat Beat",
+  "tokenize": [
+   {
+    "text": "Mr. Oizo",
+    "sep": " - "
+   },
+   {
+    "text": "Flat Beat",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "Mr. Oizo",
+   "Flat Beat"
+  ],
+  "join": "Mr. Oizo - Flat Beat"
+ },
+ {
+  "input": "Земфира - Хочется",
+  "tokenize": [
+   {
+    "text": "Земфира",
+    "sep": " - "
+   },
+   {
+    "text": "Хочется",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "Земфира",
+   "Хочется"
+  ],
+  "join": "Земфира - Хочется"
+ },
+ {
+  "input": "Земфира, CarMan",
+  "tokenize": [
+   {
+    "text": "Земфира, CarMan",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "Земфира, CarMan"
+  ],
+  "join": "Земфира, CarMan"
+ },
+ {
+  "input": "Alesso Remix",
+  "tokenize": [
+   {
+    "text": "Alesso Remix",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "Alesso Remix"
+  ],
+  "join": "Alesso Remix"
+ },
+ {
+  "input": "Gabriel & Dresden Chill Mix",
+  "tokenize": [
+   {
+    "text": "Gabriel & Dresden Chill Mix",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "Gabriel & Dresden Chill Mix"
+  ],
+  "join": "Gabriel & Dresden Chill Mix"
+ },
+ {
+  "input": "Mixed By DJ Gvozd",
+  "tokenize": [
+   {
+    "text": "Mixed By DJ Gvozd",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "Mixed By DJ Gvozd"
+  ],
+  "join": "Mixed By DJ Gvozd"
+ },
+ {
+  "input": "Dua Lipa - Elton John",
+  "tokenize": [
+   {
+    "text": "Dua Lipa",
+    "sep": " - "
+   },
+   {
+    "text": "Elton John",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "Dua Lipa",
+   "Elton John"
+  ],
+  "join": "Dua Lipa - Elton John"
+ },
+ {
+  "input": "a - b - c - d - e",
+  "tokenize": [
+   {
+    "text": "a",
+    "sep": " - "
+   },
+   {
+    "text": "b",
+    "sep": " - "
+   },
+   {
+    "text": "c",
+    "sep": " - "
+   },
+   {
+    "text": "d",
+    "sep": " - "
+   },
+   {
+    "text": "e",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "a",
+   "b",
+   "c",
+   "d",
+   "e"
+  ],
+  "join": "a - b - c - d - e"
+ },
+ {
+  "input": "a -- b",
+  "tokenize": [
+   {
+    "text": "a -- b",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "a -- b"
+  ],
+  "join": "a -- b"
+ },
+ {
+  "input": "a --- b",
+  "tokenize": [
+   {
+    "text": "a --- b",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "a --- b"
+  ],
+  "join": "a --- b"
+ },
+ {
+  "input": "a - — b",
+  "tokenize": [
+   {
+    "text": "a",
+    "sep": " - — "
+   },
+   {
+    "text": "b",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "a",
+   "b"
+  ],
+  "join": "a - b"
+ },
+ {
+  "input": "a |||| b",
+  "tokenize": [
+   {
+    "text": "a |||| b",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "a |||| b"
+  ],
+  "join": "a |||| b"
+ },
+ {
+  "input": "a | | b",
+  "tokenize": [
+   {
+    "text": "a",
+    "sep": " | | "
+   },
+   {
+    "text": "b",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "a",
+   "b"
+  ],
+  "join": "a - b"
+ },
+ {
+  "input": "a / b",
+  "tokenize": [
+   {
+    "text": "a",
+    "sep": " / "
+   },
+   {
+    "text": "b",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "a",
+   "b"
+  ],
+  "join": "a - b"
+ },
+ {
+  "input": "a // / b",
+  "tokenize": [
+   {
+    "text": "a",
+    "sep": " // / "
+   },
+   {
+    "text": "b",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "a",
+   "b"
+  ],
+  "join": "a - b"
+ },
+ {
+  "input": "a /// b",
+  "tokenize": [
+   {
+    "text": "a /// b",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "a /// b"
+  ],
+  "join": "a /// b"
+ },
+ {
+  "input": "x - ",
+  "tokenize": [
+   {
+    "text": "x",
+    "sep": " - "
+   },
+   {
+    "text": "",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "x"
+  ],
+  "join": "x"
+ },
+ {
+  "input": "- -",
+  "tokenize": [
+   {
+    "text": "- -",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "- -"
+  ],
+  "join": "- -"
+ },
+ {
+  "input": " - ",
+  "tokenize": [
+   {
+    "text": "",
+    "sep": " - "
+   },
+   {
+    "text": "",
+    "sep": ""
+   }
+  ],
+  "split": [],
+  "join": ""
+ },
+ {
+  "input": "  -  ",
+  "tokenize": [
+   {
+    "text": "",
+    "sep": "  -  "
+   },
+   {
+    "text": "",
+    "sep": ""
+   }
+  ],
+  "split": [],
+  "join": ""
+ },
+ {
+  "input": "-",
+  "tokenize": [
+   {
+    "text": "-",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "-"
+  ],
+  "join": "-"
+ },
+ {
+  "input": "--",
+  "tokenize": [
+   {
+    "text": "--",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "--"
+  ],
+  "join": "--"
+ },
+ {
+  "input": "/",
+  "tokenize": [
+   {
+    "text": "/",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "/"
+  ],
+  "join": "/"
+ },
+ {
+  "input": "//",
+  "tokenize": [
+   {
+    "text": "//",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "//"
+  ],
+  "join": "//"
+ },
+ {
+  "input": "|",
+  "tokenize": [
+   {
+    "text": "|",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "|"
+  ],
+  "join": "|"
+ },
+ {
+  "input": "a | ",
+  "tokenize": [
+   {
+    "text": "a",
+    "sep": " | "
+   },
+   {
+    "text": "",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "a"
+  ],
+  "join": "a"
+ },
+ {
+  "input": " | a",
+  "tokenize": [
+   {
+    "text": "",
+    "sep": " | "
+   },
+   {
+    "text": "a",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "a"
+  ],
+  "join": "a"
+ },
+ {
+  "input": "Tiësto – Adagio for Strings",
+  "tokenize": [
+   {
+    "text": "Tiësto",
+    "sep": " – "
+   },
+   {
+    "text": "Adagio for Strings",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "Tiësto",
+   "Adagio for Strings"
+  ],
+  "join": "Tiësto - Adagio for Strings"
+ },
+ {
+  "input": "Daft Punk / Pharrell",
+  "tokenize": [
+   {
+    "text": "Daft Punk",
+    "sep": " / "
+   },
+   {
+    "text": "Pharrell",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "Daft Punk",
+   "Pharrell"
+  ],
+  "join": "Daft Punk - Pharrell"
+ },
+ {
+  "input": "one  -  two",
+  "tokenize": [
+   {
+    "text": "one",
+    "sep": "  -  "
+   },
+   {
+    "text": "two",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "one",
+   "two"
+  ],
+  "join": "one - two"
+ },
+ {
+  "input": "one  -  two",
+  "tokenize": [
+   {
+    "text": "one",
+    "sep": "  -  "
+   },
+   {
+    "text": "two",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "one",
+   "two"
+  ],
+  "join": "one - two"
+ },
+ {
+  "input": "one​ - two",
+  "tokenize": [
+   {
+    "text": "one​",
+    "sep": " - "
+   },
+   {
+    "text": "two",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "one​",
+   "two"
+  ],
+  "join": "one​ - two"
+ },
+ {
+  "input": " ",
+  "tokenize": [
+   {
+    "text": " ",
+    "sep": ""
+   }
+  ],
+  "split": [],
+  "join": ""
+ },
+ {
+  "input": "A - ",
+  "tokenize": [
+   {
+    "text": "A",
+    "sep": " - "
+   },
+   {
+    "text": "",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "A"
+  ],
+  "join": "A"
+ },
+ {
+  "input": "ＡＢ - ＣＤ",
+  "tokenize": [
+   {
+    "text": "ＡＢ",
+    "sep": " - "
+   },
+   {
+    "text": "ＣＤ",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "ＡＢ",
+   "ＣＤ"
+  ],
+  "join": "ＡＢ - ＣＤ"
+ },
+ {
+  "input": "a ／ b ／ c",
+  "tokenize": [
+   {
+    "text": "a",
+    "sep": " ／ "
+   },
+   {
+    "text": "b",
+    "sep": " ／ "
+   },
+   {
+    "text": "c",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "a",
+   "b",
+   "c"
+  ],
+  "join": "a - b - c"
+ },
+ {
+  "input": "a ／／ b",
+  "tokenize": [
+   {
+    "text": "a",
+    "sep": " ／／ "
+   },
+   {
+    "text": "b",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "a",
+   "b"
+  ],
+  "join": "a - b"
+ },
+ {
+  "input": "x —— y",
+  "tokenize": [
+   {
+    "text": "x —— y",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "x —— y"
+  ],
+  "join": "x —— y"
+ },
+ {
+  "input": "x - – - y",
+  "tokenize": [
+   {
+    "text": "x",
+    "sep": " - – - "
+   },
+   {
+    "text": "y",
+    "sep": ""
+   }
+  ],
+  "split": [
+   "x",
+   "y"
+  ],
+  "join": "x - y"
+ }
+]

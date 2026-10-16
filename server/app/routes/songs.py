@@ -7,7 +7,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 
-from .. import deps, discogs_lookup, genre_lookup, jobs, library, limits, timeutil, titleclean, urlclean, users, wiki_lookup
+from .. import credits, deps, discogs_lookup, genre_lookup, jobs, library, limits, titleclean, urlclean, users, wiki_lookup
 from ..downloads import (
     add_metadata_only, mark_started, new_job, reject_unknown_country, reject_unknown_genre, run_download, run_fetch_audio,
 )
@@ -16,7 +16,7 @@ from ..schemas import CreateSongRequest, PatchSongRequest
 
 router = APIRouter()
 
-_TEXT_FIELDS = ("title", "artist", "album", "remixer")
+_TEXT_FIELDS = ("title", "album")
 
 
 def _clean_text(v: str | None) -> str | None:
@@ -24,14 +24,12 @@ def _clean_text(v: str | None) -> str | None:
     return v or None
 
 
-def _check_years(changes: dict[str, Any], current: dict[str, Any] | None = None) -> None:
-    """422 for a year or remix_year outside 1900..max_year, except a value equal to the stored one."""
-    for key in ("year", "remix_year"):
-        value = changes.get(key)
-        if value is None or (current is not None and current.get(key) == value):
-            continue
-        if timeutil.valid_year(value) is None:
-            raise HTTPException(status_code=422, detail=f"{key} must be {timeutil.year_range_text()}")
+def _check_credits(changes: dict[str, Any], current: dict[str, Any] | None = None) -> dict[str, Any]:
+    """The resolved credit changes of a request; 422 with the message of credits.clean_changes."""
+    try:
+        return credits.clean_changes(changes, current)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 def _started_response(vid: str, began: bool) -> dict[str, str]:
@@ -44,7 +42,8 @@ def create_song(req: CreateSongRequest, user: dict[str, Any] = Depends(deps.requ
     cleaned = library.clean_tags(req.tags)
     reject_unknown_country(cleaned)
     reject_unknown_genre(cleaned)
-    _check_years(req.metadata.model_dump())
+    sent = req.metadata.model_dump(exclude_unset=True)
+    _check_credits(sent)
     deps.guard_add(uid, owner, req.audio)
     try:
         link = resolve_link(req.url)
@@ -61,10 +60,9 @@ def create_song(req: CreateSongRequest, user: dict[str, Any] = Depends(deps.requ
         if req.audio:
             limits.RATE.record(uid, songs)
         deps.JOBS[key] = new_job()
-    meta = {
-        k: (v.strip() if isinstance(v, str) else v) or None
-        for k, v in req.metadata.model_dump().items()
-    }
+    meta = {k: (v.strip() or None) if isinstance(v, str) else v for k, v in sent.items()}
+    if req.source_raw is not None:
+        meta["source_raw"] = req.source_raw.model_dump(exclude_none=True)
     if meta.get("title") and not req.keep_title:
         meta["title"] = titleclean.clean(meta["title"])
     if not req.audio:
@@ -170,10 +168,10 @@ def _edited(song: dict[str, Any], changes: dict[str, Any]) -> dict[str, Any]:
     for key in _TEXT_FIELDS:
         if key in changes:
             updated[key] = _clean_text(changes[key])
-    if "year" in changes:
-        updated["year"] = changes["year"]
-    if "remix_year" in changes:
-        updated["remix_year"] = changes["remix_year"]
+    try:
+        credits.apply_changes(updated, changes)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     if "bpm" in changes:
         updated["bpm"] = round(changes["bpm"]) if changes["bpm"] is not None else None
     _apply_links(updated, changes)
@@ -184,7 +182,7 @@ def _edited(song: dict[str, Any], changes: dict[str, Any]) -> dict[str, Any]:
         reject_unknown_genre(updated["tags"], stored)
     if not updated.get("title"):
         raise HTTPException(status_code=422, detail="title must not be empty")
-    updated["tags"] = library.with_decade(updated.get("tags") or [], updated.get("year"))
+    updated["tags"] = library.with_decade(updated.get("tags") or [], updated.get("released"))
     updated["updated_at"] = library.now_utc()
     return updated
 
@@ -199,7 +197,8 @@ def patch_song(video_id: str, req: PatchSongRequest, user: dict[str, Any] = Depe
         song = library.find_song(songs, video_id)
         if song is None:
             raise HTTPException(status_code=404, detail=deps.UNKNOWN_SONG)
-        _check_years(changes, song)
-        song.update(_edited(song, changes))
+        edited = _edited(song, changes)
+        song.clear()
+        song.update(edited)
         deps.save_songs(uid, songs)
         return library.public_song(song, deps.user_audio_root(uid))

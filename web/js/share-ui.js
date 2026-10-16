@@ -1,7 +1,7 @@
 import { player } from './player.js';
 import { el, toast, fmtTime } from './dom.js';
 import { icon } from './icons.js';
-import { displayString } from './display-title.js';
+import { displayLine } from './credits.js';
 import { vizMode, vizBackgroundOn } from './viz-settings.js';
 import { modeLabel } from './viz-modes.js';
 import { getStyle, styleLabel } from './viz-terrain-style.js';
@@ -113,7 +113,7 @@ export function openShareDialog(song, audio = $('audio')) {
   send?.addEventListener('click', async () => {
     if (!out.value) return;
     try {
-      await globalThis.navigator.share({ title: displayString(song), url: out.value });
+      await globalThis.navigator.share({ title: displayLine(song), url: out.value });
     } catch (e) {
       if (e?.name !== 'AbortError') done(await copyText(out.value));
     }
@@ -121,7 +121,7 @@ export function openShareDialog(song, audio = $('audio')) {
   const row = (input, text) => el('label', { class: 'check-row t-body' }, input, ' ', text);
   dlg.replaceChildren(
     el('div', { class: 'dlg-head' },
-      el('div', {}, el('h2', { class: 't-title', id: 'share-title' }, 'Share link'), el('p', { class: 'muted t-caption' }, displayString(song))),
+      el('div', {}, el('h2', { class: 't-title', id: 'share-title' }, 'Share link'), el('p', { class: 'muted t-caption' }, displayLine(song))),
       el('button', { type: 'button', class: 'link-btn t-headline', onclick: () => dlg.close() }, 'Close')),
     el('div', { class: 'field' }, row(atCur, `Start at current time${st.current ? ` (${fmtTime(audio.currentTime)})` : ''}`),
       el('label', { for: 'share-time' }, 'Start time (mm:ss)'), time, err),

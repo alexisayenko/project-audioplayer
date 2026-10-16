@@ -1,0 +1,30 @@
+{
+ "settings": {"music_root": "perkunas://data/music/"},
+ "songs": [
+  {"id": "aaaaaaaaaa1", "title": "The Only Way Is Up", "artist": "Martin Garrix & Tiesto", "album": null, "remixer": null, "year": null, "remix_year": null, "file": null, "tags": [], "added_at": "2026-01-01T10:00:00Z", "updated_at": "2026-01-02T10:00:00Z"},
+  {"id": "aaaaaaaaaa2", "title": "What Is Love", "artist": "Haddaway", "album": "The Album", "remixer": null, "year": 1993, "file": "aaaaaaaaaa2.m4a", "tags": ["genre:eurodance", "decade:90s"], "added_at": "2026-01-01T10:01:00Z", "updated_at": "2026-01-02T10:01:00Z"},
+  {"id": "aaaaaaaaaa3", "title": "Cold Heart (Live, Royal Albert Hall)", "artist": "Dua Lipa - Elton John", "remixer": null, "year": null, "file": null, "tags": [], "added_at": "2026-01-01T10:02:00Z"},
+  {"id": "aaaaaaaaaa4", "title": "Pressure", "artist": "Nadia Ali, Starkillers & Alex Kenji", "remixer": "Alesso Remix", "year": 2009, "remix_year": 2012, "file": null, "tags": ["decade:00s"], "added_at": "2026-01-01T10:03:00Z", "updated_at": "2026-01-02T10:03:00Z"},
+  {"id": "aaaaaaaaaa5", "title": "Turn The Lights Off (feat. Jon)", "artist": "Kato", "year": 2009, "file": null, "tags": ["decade:00s"], "added_at": "2026-01-01T10:04:00Z"},
+  {"id": "aaaaaaaaaa6", "title": "Song", "artist": "Kato feat. Jon", "file": null, "tags": [], "added_at": "2026-01-01T10:05:00Z"},
+  {"id": "aaaaaaaaaa7", "title": "Track", "artist": "DJ X", "remixer": "Mixed By DJ Gvozd", "file": null, "tags": [], "added_at": "2026-01-01T10:06:00Z"},
+  {"id": "aaaaaaaaaa8", "title": "Track 2", "artist": "Artist", "remixer": "Gabriel & Dresden Chill Mix", "year": 2001, "remix_year": 2005, "file": null, "tags": ["decade:00s"], "added_at": "2026-01-01T10:07:00Z"},
+  {"id": "aaaaaaaaaa9", "title": "Orphan", "artist": "Artist", "remix_year": 2012, "file": null, "tags": [], "added_at": "2026-01-01T10:08:00Z"},
+  {"id": "aaaaaaaaab1", "title": "No Artist", "artist": null, "file": null, "tags": [], "added_at": "2026-01-01T10:09:00Z"},
+  {"id": "aaaaaaaaab2", "title": "Blank Artist", "artist": "   ", "remixer": "", "file": null, "tags": [], "added_at": "2026-01-01T10:10:00Z"},
+  {"id": "aaaaaaaaab3", "title": "Far Future", "artist": "A", "year": 2999, "file": null, "tags": [], "added_at": "2026-01-01T10:11:00Z"},
+  {"id": "aaaaaaaaab4", "title": "Song (Remastered 2011)", "artist": "Band", "file": null, "tags": [], "added_at": "2026-01-01T10:12:00Z"},
+  {"id": "aaaaaaaaab5", "title": "Song X", "artist": "Band", "remixer": "Extended Mix", "file": null, "tags": [], "added_at": "2026-01-01T10:13:00Z"},
+  {"id": "aaaaaaaaab6", "title": "Song Y (Acoustic Unplugged)", "artist": "Band", "file": null, "tags": [], "added_at": "2026-01-01T10:14:00Z"},
+  {"id": "aaaaaaaaab7", "title": "Song Z (Radio Edit)", "artist": "Band", "file": null, "tags": [], "added_at": "2026-01-01T10:15:00Z"},
+  {"id": "aaaaaaaaab8", "title": "Song I (Instrumental)", "artist": "Band", "file": null, "tags": [], "added_at": "2026-01-01T10:16:00Z"},
+  {"id": "aaaaaaaaab9", "title": "Song C (Cover)", "artist": "Band", "file": null, "tags": [], "added_at": "2026-01-01T10:17:00Z"},
+  {"id": "aaaaaaaaac1", "title": "Dub Song", "artist": "Band", "remixer": "Dub", "file": null, "tags": [], "added_at": "2026-01-01T10:18:00Z"},
+  {"id": "aaaaaaaaac2", "title": "Лондон, гуд бай", "artist": "Земфира, CarMan", "file": null, "tags": [], "added_at": "2026-01-01T10:19:00Z"},
+  {"id": "aaaaaaaaac3", "title": "Multi Pill", "artist": "A - B - C", "file": null, "tags": [], "added_at": "2026-01-01T10:20:00Z"},
+  {"id": "aaaaaaaaac4", "title": "Whitespace", "artist": "  Padded Name  ", "remixer": "  ", "year": "1999", "file": null, "tags": [], "added_at": "2026-01-01T10:21:00Z"},
+  {"id": "soundcloud-100", "source": "soundcloud", "title": "Mashup", "artist": "SC Artist", "remixer": "Foo Bar Remix", "year": 2020, "file": null, "tags": ["decade:20s"], "added_at": "2026-01-01T10:22:00Z"},
+  {"id": "aaaaaaaaac5", "title": "Bool Years", "artist": "Band", "year": true, "remix_year": false, "file": null, "tags": [], "added_at": "2026-01-01T10:23:00Z"},
+  {"id": "aaaaaaaaac6", "title": "Plain", "artist": "Plain Artist", "album": "Plain Album", "year": 2015, "file": null, "tags": ["decade:10s"], "added_at": "2026-01-01T10:24:00Z"}
+ ]
+}

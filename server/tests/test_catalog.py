@@ -207,4 +207,4 @@ def test_titles_with_commas_are_stored_verbatim(client, tmp_path):
     stored = client.get("/library", headers=H).json()["songs"][0]
     assert (stored["title"], stored["artist"]) == (title, artist)
     raw = json.loads((ODIR(tmp_path) / "library.json").read_text(encoding="utf-8"))["songs"][0]
-    assert (raw["title"], raw["artist"]) == (title, artist)
+    assert (raw["title"], raw["artists"], raw["raw"]["artist"]) == (title, [artist], artist)

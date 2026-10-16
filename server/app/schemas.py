@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 MAX_ID_TOKEN_LEN = 8192
 MIN_BPM, MAX_BPM = 20, 300
@@ -20,8 +20,28 @@ class PreviewRequest(BaseModel):
     url: str
 
 
+class VersionIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    kind: str | None = None
+    name: str | None = None
+    by: list[str] | None = None
+    year: int | None = None
+    of: str | None = None
+
+
+class SourceRaw(BaseModel):
+    title: str | None = None
+    artist: str | None = None
+    remixer: str | None = None
+
+
 class SongMeta(BaseModel):
     title: str | None = None
+    artists: list[str] | None = None
+    featured: list[str] | None = None
+    released: int | None = None
+    version: VersionIn | None = None
     artist: str | None = None
     album: str | None = None
     remixer: str | None = None
@@ -42,6 +62,7 @@ class CreateSongRequest(BaseModel):
     metadata: SongMeta = SongMeta()
     tags: list[str] = []
     keep_title: bool = False
+    source_raw: SourceRaw | None = None
 
 
 class PatchSongRequest(SongMeta):
@@ -67,3 +88,4 @@ class MetadataRequest(BaseModel):
     wiki_song: str | None = None
     wiki_artist: str | None = None
     wiki_album: str | None = None
+    version_kind: str | None = None

@@ -8,7 +8,7 @@ import urllib.parse
 from concurrent.futures import ThreadPoolExecutor, wait
 from typing import Any, Callable
 
-from . import genre_filter, genre_lookup, library, timeutil, wiki_lookup
+from . import discogs_lookup, genre_filter, genre_lookup, library, timeutil, wiki_lookup
 from .tags import namespace
 
 log = logging.getLogger(__name__)
@@ -50,22 +50,23 @@ def _year(value: Any) -> int | None:
     return timeutil.valid_year(value)
 
 
-def merge(sources: list[dict[str, Any]], mb: dict[str, Any] | None, links: dict[str, Any] | None, guess: dict[str, Any] | None) -> dict[str, Any]:
-    """Merge per-source results into {album, year, tags}.
+def merge(sources: list[dict[str, Any]], mb: dict[str, Any] | None, links: dict[str, Any] | None, guess: dict[str, Any] | None, disc: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Merge per-source results into {album, year, published_year, remix_year, version_year, tags}.
 
     Precedence: tags the song's own Wikidata genres (all, links else guess), yt-dlp sources, MusicBrainz, user-given wiki links, wiki guess (country: MusicBrainz first);
-    year links, song-page infobox, guess, MusicBrainz, sources; album sources, song-page infobox, then MusicBrainz.
+    year (DATA-126) links, song-page infobox, guess, MusicBrainz, Discogs, never a yt-dlp year; album sources, song-page infobox, then MusicBrainz.
     """
-    mb, links, guess = mb or {}, links or {}, guess or {}
+    mb, links, guess, disc = mb or {}, links or {}, guess or {}, disc or {}
     tags = finalize_tags([t for r in (*sources, mb, links, guess) for t in r.get("tags") or []], links.get("song_genres") or guess.get("song_genres"))
     box_album = links.get("infobox_album") or guess.get("infobox_album")
     box_year = links.get("infobox_year") or guess.get("infobox_year")
     albums = (*(s.get("album") for s in sources), box_album, mb.get("album"))
     album = next((str(a).strip() for a in albums if a and str(a).strip()), None)
-    years = (links.get("year"), box_year, guess.get("year"), mb.get("year"), *(s.get("year") for s in sources))
+    years = (links.get("year"), box_year, guess.get("year"), mb.get("year"), disc.get("year"))
     year = next((y for y in map(_year, years) if y), None)
     published = next((y for y in (_year(s.get("published_year")) for s in sources) if y), None)
-    return {"album": album, "year": year, "published_year": published, "remix_year": _year(mb.get("remix_year")), "tags": tags}
+    version_year = _year(mb.get("remix_year"))
+    return {"album": album, "year": year, "published_year": published, "remix_year": version_year, "version_year": version_year, "tags": tags}
 
 
 def _service_of(url: str) -> str | None:
@@ -81,7 +82,7 @@ def _useful(info: dict[str, Any]) -> bool:
     return bool(info.get("album") or _year(info.get("year")) or info.get("tags"))
 
 
-def services(source_urls: list[str], src_by_index: dict[int, dict[str, Any]], links: dict[str, Any] | None, guess: dict[str, Any] | None, mb: dict[str, Any] | None = None) -> dict[str, Any]:
+def services(source_urls: list[str], src_by_index: dict[int, dict[str, Any]], links: dict[str, Any] | None, guess: dict[str, Any] | None, mb: dict[str, Any] | None = None, disc: dict[str, Any] | None = None) -> dict[str, Any]:
     """Per-service outcome for the UI's icons: {youtube, soundcloud, wikipedia, spotify, musicbrainz, discogs: {found, url}}."""
     out: dict[str, Any] = {k: {"found": False, "url": None} for k in ("youtube", "soundcloud", "wikipedia", "spotify", "musicbrainz", "discogs")}
     for i, url in enumerate(source_urls):
@@ -97,6 +98,9 @@ def services(source_urls: list[str], src_by_index: dict[int, dict[str, Any]], li
     mb_url = (mb or {}).get("mb_url")
     if mb_url:
         out["musicbrainz"] = {"found": True, "url": mb_url}
+    disc_url = (disc or {}).get("url")
+    if disc_url:
+        out["discogs"] = {"found": True, "url": disc_url}
     return out
 
 
@@ -109,10 +113,12 @@ def gather(
     timeout: float = TIMEOUT,
     source_urls: list[str] | None = None,
     wiki_album: str | None = None,
+    version_kind: str | None = None,
 ) -> dict[str, Any]:
     """Run every source concurrently under one overall timeout; a failing or late source is skipped.
 
-    Returns {album, year, tags, wikipedia_song, wikipedia_artist, wikipedia_album, suggest, services}; `suggest` is the song infobox's artist and title hint (never auto-filled); `services` only tells the UI which sources answered."""
+    Returns {album, year, version_year, tags, wikipedia_song, wikipedia_artist, wikipedia_album, suggest, services}; `suggest` is the song infobox's artist and title hint (never auto-filled); `services` only tells the UI which sources answered.
+    `title` and `artist` name the original work; with a `version_kind` the MusicBrainz and Discogs links are withheld, they would point at the original (DATA-126)."""
     lock = threading.Lock()
     found: dict[str, Any] = {}
     src_results: dict[int, dict[str, Any]] = {}
@@ -136,6 +142,7 @@ def gather(
     if artist and title:
         tasks.append(record("mb", lambda: genre_lookup.lookup(artist, title)))
         tasks.append(record("guess", lambda: wiki_lookup.suggest(artist, title)))
+        tasks.append(record("disc", lambda: discogs_lookup.suggest(artist, title)))
     if wiki_song or wiki_artist or wiki_album:
         tasks.append(record("links", lambda: wiki_lookup.from_links(wiki_song, wiki_artist, wiki_album)))
     if tasks:
@@ -148,10 +155,13 @@ def gather(
         sources = [src_results[i] for i in sorted(src_results)]
         snapshot = dict(found)
         by_index = dict(src_results)
-    out = merge(sources, snapshot.get("mb"), snapshot.get("links"), snapshot.get("guess"))
+    out = merge(sources, snapshot.get("mb"), snapshot.get("links"), snapshot.get("guess"), snapshot.get("disc"))
     box = (snapshot.get("links") or {}).get("infobox_suggest") or (snapshot.get("guess") or {}).get("infobox_suggest")
     for key in ("wikipedia_song", "wikipedia_artist", "wikipedia_album"):
         out[key] = (snapshot.get("links") or {}).get(key) or (snapshot.get("guess") or {}).get(key)
     out["suggest"] = {"artist": box["artist"], "title": box["title"]} if box else {"artist": None, "title": None}
-    out["services"] = services(source_urls or [], by_index, snapshot.get("links"), snapshot.get("guess"), snapshot.get("mb"))
+    out["services"] = services(source_urls or [], by_index, snapshot.get("links"), snapshot.get("guess"), snapshot.get("mb"), snapshot.get("disc"))
+    if version_kind:
+        out["services"]["musicbrainz"] = {"found": False, "url": None}
+        out["services"]["discogs"] = {"found": False, "url": None}
     return out

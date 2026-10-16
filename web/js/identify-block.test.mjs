@@ -8,7 +8,7 @@ const { identifyBlock } = await import('./identify-block.js');
 function mk(opts = {}) {
   const calls = { suggested: [], year: [], links: [] };
   const editor = { setSuggested: (t, o) => calls.suggested.push([t, o]) };
-  const b = identifyBlock({ id: 's1', audio: true, editor, getYear: () => '', setYear: (y) => calls.year.push(y), applyLinks: (l) => calls.links.push(l), ...opts });
+  const b = identifyBlock({ id: 's1', audio: true, editor, getReleased: () => '', setReleased: (y) => calls.year.push(y), applyLinks: (l) => calls.links.push(l), ...opts });
   return { b, calls, btn: b.node.querySelector('button'), msg: b.node.querySelector('p') };
 }
 
@@ -60,7 +60,7 @@ test('clicking identifies, shows suggestions and Apply buttons that call back; u
 
 test('year button is not offered when the year already matches', async () => {
   stubFetch((u, o) => (o.method === 'POST' ? { body: { ...OK, links: {} } } : { body: {} }));
-  const { btn, b } = mk({ getYear: () => '1999' });
+  const { btn, b } = mk({ getReleased: () => '1999' });
   await flush();
   btn.click();
   await flush();

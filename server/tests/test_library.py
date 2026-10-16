@@ -100,7 +100,7 @@ def test_new_endpoints_require_token(client):
 
 
 def test_empty_library(client):
-    assert client.get("/library", headers=H).json() == {"songs": []}
+    assert client.get("/library", headers=H).json()["songs"] == []
 
 
 def test_preview(client):
@@ -183,7 +183,7 @@ def test_download_error_status(client, monkeypatch):
     assert st["status"] == "error"
     assert "Video unavailable" in st["error"]
     assert "\x1b" not in st["error"]
-    assert client.get("/library", headers=H).json() == {"songs": []}
+    assert client.get("/library", headers=H).json()["songs"] == []
 
 
 def test_cover_failure_is_not_fatal(client, monkeypatch):
@@ -220,7 +220,7 @@ def test_patch(client):
 def test_delete(client, tmp_path):
     add(client)
     assert client.delete(f"/songs/{VID}", headers=H).status_code == 204
-    assert client.get("/library", headers=H).json() == {"songs": []}
+    assert client.get("/library", headers=H).json()["songs"] == []
     assert not (ADIR(tmp_path) / f"{VID}.m4a").exists()
     assert not (ODIR(tmp_path) / "covers" / f"{VID}.jpg").exists()
     assert client.delete(f"/songs/{VID}", headers=H).status_code == 404

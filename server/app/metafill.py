@@ -11,7 +11,7 @@ import threading
 import time
 from typing import Any
 
-from . import deps, genre_filter, genre_lookup, library, metadata, wiki_lookup
+from . import credits, deps, genre_filter, genre_lookup, library, metadata, wiki_lookup
 from .tags import namespace
 
 log = logging.getLogger(__name__)
@@ -54,7 +54,7 @@ def _blank(value: Any) -> bool:
 
 def _needs(song: dict[str, Any]) -> bool:
     tags = song.get("tags") or []
-    return _blank(song.get("album")) or _blank(song.get("year")) or not any(namespace(t) == "genre" for t in tags)
+    return (_blank(song.get("album")) and not credits.has_version(song)) or _blank(song.get("released")) or not any(namespace(t) == "genre" for t in tags)
 
 
 def candidates(uid: str) -> list[str]:
@@ -120,8 +120,10 @@ def _fetch(song: dict[str, Any]) -> dict[str, Any]:
 
     urls = _urls(song)
     fetchers = [(lambda u=u: source_info(u)) for u in urls]
-    return metadata.gather(str(song.get("title") or "").strip(), str(song.get("artist") or "").strip(), fetchers,
-                           song.get("wikipedia_song"), song.get("wikipedia_artist"), metadata.TIMEOUT, urls, song.get("wikipedia_album"))
+    version = song.get("version") if credits.has_version(song) else None
+    return metadata.gather(str(song.get("title") or "").strip(), credits.lookup_artist(song).strip(), fetchers,
+                           song.get("wikipedia_song"), song.get("wikipedia_artist"), metadata.TIMEOUT, urls, song.get("wikipedia_album"),
+                           **({"version_kind": version["kind"]} if version else {}))
 
 
 def _add_tags(have: list[str], found: list[str]) -> list[str]:
@@ -143,28 +145,29 @@ def _add_tags(have: list[str], found: list[str]) -> list[str]:
 def apply(song: dict[str, Any], resp: dict[str, Any]) -> bool:
     """Write `resp` into `song`, empty fields only; tags are added. True when something changed."""
     changed = False
+    version = credits.has_version(song)
     album = resp.get("album")
-    if isinstance(album, str) and album.strip() and _blank(song.get("album")):
+    if not version and isinstance(album, str) and album.strip() and _blank(song.get("album")):
         song["album"] = album.strip()
         changed = True
     year = resp.get("year")
-    if isinstance(year, int) and not isinstance(year, bool) and _blank(song.get("year")):
-        song["year"] = year
+    if isinstance(year, int) and not isinstance(year, bool) and _blank(song.get("released")):
+        song["released"] = year
         changed = True
     tags = library.clean_tags(song.get("tags") or [])
     added = _add_tags(tags, resp.get("tags") or [])
     if added:
         song["tags"] = library.clean_tags([*tags, *added])
         changed = True
-    if library.decade_tag(song.get("year")):
-        song["tags"] = library.with_decade(song.get("tags") or [], song["year"])
+    if library.decade_tag(song.get("released")):
+        song["tags"] = library.with_decade(song.get("tags") or [], song["released"])
     wiki_album = wiki_lookup.clean_link(resp.get("wikipedia_album"))
-    if wiki_album and _blank(song.get("wikipedia_album")):
+    if not version and wiki_album and _blank(song.get("wikipedia_album")):
         song["wikipedia_album"] = wiki_album
         changed = True
     mb = ((resp.get("services") or {}).get("musicbrainz") or {}).get("url")
     mb = genre_lookup.clean_recording_url(mb) if mb else None
-    if mb and _blank(song.get("musicbrainz_url")):
+    if not version and mb and _blank(song.get("musicbrainz_url")):
         song["musicbrainz_url"] = mb
         changed = True
     return changed

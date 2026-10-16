@@ -1,4 +1,5 @@
 import { api } from './api.js';
+import { displayLine, isStructured } from './credits.js';
 import { store } from './store.js';
 import { el, toast } from './dom.js';
 import { icon } from './icons.js';
@@ -21,7 +22,7 @@ export function removeSong(s) {
   const del = el('button', { type: 'submit', class: 'btn danger' }, 'Delete from library');
   const form = el('form', { method: 'dialog' },
     dialogHead('Delete song?', null, () => dlg.close()),
-    el('p', { class: 't-body' }, `"${s.title}" will be removed from the library. The audio file and cover are deleted from the server.`),
+    el('p', { class: 't-body' }, `"${isStructured(s) ? displayLine(s) : s.title}" will be removed from the library. The audio file and cover are deleted from the server.`),
     err,
     el('div', { class: 'row end' }, del));
   form.addEventListener('submit', async (e) => {
@@ -55,7 +56,7 @@ export function editDialog(song) {
   const err = el('p', { class: 'msg error', hidden: true });
   const cover = coverEditor(song);
   const form = el('form', { method: 'dialog' },
-    dialogHead('Edit song', null, () => dlg.close()),
+    dialogHead('Edit song', displayLine(song), () => dlg.close()),
     cover.node,
     sf.node,
     err,

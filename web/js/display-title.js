@@ -1,44 +1,11 @@
-import { splitTokens } from './tokens.js';
-
-const norm = (s) => String(s ?? '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+import { creditParts, titleLine, versionTooltip, titleNodes, subtitle } from './credits.js';
 
 export function displayTitle(song) {
-  const title = String(song?.title ?? '');
-  const seen = norm(title);
-  const parts = splitTokens(song?.remixer ?? '').filter((p) => {
-    const n = norm(p);
-    return n && !seen.includes(n);
-  });
-  return { title, remix: parts.join(', ') };
+  const { title, remix } = creditParts(song);
+  return { title, remix };
 }
 
-export function displayString(song) {
-  const { title, remix } = displayTitle(song);
-  return remix ? `${title} (${remix})` : title;
-}
-
-export function remixTooltip(song) {
-  const { remix } = displayTitle(song);
-  const year = song?.remix_year;
-  if (!remix) return '';
-  return Number.isInteger(year) ? `${remix} (${year})` : remix;
-}
-
-export function titleNodes(song, titleClass = 'ttl', remixClass = 'rmx') {
-  const { title, remix } = displayTitle(song);
-  const a = document.createElement('span');
-  a.className = titleClass;
-  a.textContent = title;
-  if (!remix) return [a];
-  const b = document.createElement('span');
-  b.className = remixClass;
-  b.textContent = `(${remix})`;
-  if (Number.isInteger(song?.remix_year)) {
-    b.title = remixTooltip(song);
-  }
-  return [a, document.createTextNode(' '), b];
-}
-
-export function subtitleString(song) {
-  return [song?.artist, song?.year].filter(Boolean).join(' · ');
-}
+export const displayString = titleLine;
+export const remixTooltip = versionTooltip;
+export const subtitleString = subtitle;
+export { titleNodes };

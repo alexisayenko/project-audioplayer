@@ -1,18 +1,20 @@
 import { MIN_YEAR, maxYear } from './constants.js';
+import { joinNames } from './credits.js';
 
 export const yearValue = (v) => (v === '' || v == null ? null : Number(v));
 
-const YEAR_KEYS = ['year', 'remix_year'];
 const yearOk = (n) => Number.isInteger(n) && n >= MIN_YEAR && n <= maxYear();
-const yearKept = (key, v, stored) => {
-  const n = yearValue(v[key]);
-  return n === null || yearOk(n) || n === stored[key];
+const yearKept = (raw, stored) => {
+  const n = yearValue(raw);
+  return n === null || yearOk(n) || n === stored;
 };
+const storedYears = (stored) => ({ released: stored?.released ?? stored?.year ?? null, version: stored?.version?.year ?? stored?.remix_year ?? null });
 
 export const yearMessage = () => `Enter a year from ${MIN_YEAR} to ${maxYear()}`;
 
 export function yearError(v, stored = {}) {
-  return YEAR_KEYS.every((k) => yearKept(k, v, stored)) ? null : yearMessage();
+  const st = storedYears(stored);
+  return yearKept(v.released, st.released) && yearKept(v.version?.year, st.version) ? null : yearMessage();
 }
 
 const sourceUrl = (s) => {
@@ -37,14 +39,28 @@ export function sourceList(source) {
 
 export const songSources = (song) => sourceList([...(Array.isArray(song?.sources) ? song.sources : []), song?.source_url]);
 
+const names = (list) => (Array.isArray(list) ? list.map((n) => String(n ?? '').trim()).filter(Boolean) : []);
+const text = (v) => String(v ?? '').trim() || null;
+
+function versionOf(v, storedYear) {
+  const ver = v.version;
+  if (!ver || !ver.kind) return null;
+  return {
+    kind: ver.kind,
+    name: text(ver.name),
+    by: names(ver.by),
+    year: yearKept(ver.year, storedYear) ? yearValue(ver.year) : null,
+    ...(ver.kind === 'cover' ? { of: text(ver.of) } : {}),
+  };
+}
+
 function songFields(v, stored = {}) {
   return {
     title: v.title,
-    artist: v.artist,
     album: v.album,
-    remixer: v.remixer,
-    ...(yearKept('year', v, stored) ? { year: yearValue(v.year) } : {}),
-    ...(v.remix_year !== undefined && yearKept('remix_year', v, stored) ? { remix_year: yearValue(v.remix_year) } : {}),
+    artists: names(v.artists),
+    featured: names(v.featured),
+    ...(yearKept(v.released, storedYears(stored).released) ? { released: yearValue(v.released) } : {}),
   };
 }
 
@@ -63,18 +79,26 @@ function sourceLinkChanges(v, stored) {
 }
 
 export function addBody(v) {
-  const { remix_year: remixYear, ...rest } = songFields(v);
-  return { ...rest, ...(remixYear == null ? {} : { remix_year: remixYear }), ...wikiFieldsOf(v) };
+  const version = versionOf(v, null);
+  return { ...songFields(v), ...(version ? { version } : {}), ...wikiFieldsOf(v) };
 }
 
 export function patchBody(v, stored = {}) {
-  return { ...songFields(v, stored), tags: v.tags, ...wikiFieldsOf(v), ...sourceLinkChanges(v, stored) };
+  return { ...songFields(v, stored), version: versionOf(v, storedYears(stored).version), tags: v.tags, ...wikiFieldsOf(v), ...sourceLinkChanges(v, stored) };
+}
+
+
+export function artistString(v) {
+  const main = joinNames(names(v.artists));
+  const feat = joinNames(names(v.featured));
+  return feat ? `${main} feat. ${feat}`.trim() : main;
 }
 
 export function metadataBody(v, sources) {
   return {
     title: String(v.title ?? '').trim(),
-    artist: String(v.artist ?? '').trim(),
+    artist: typeof v.artist === 'string' ? v.artist.trim() : artistString(v),
+    ...(v.version?.kind ? { version_kind: v.version.kind } : {}),
     sources: sourceList(sources),
     ...(v.wikipedia_song ? { wiki_song: v.wikipedia_song } : {}),
     ...(v.wikipedia_artist ? { wiki_artist: v.wikipedia_artist } : {}),

@@ -38,7 +38,7 @@ def wait(uid):
 
 def bare(uid, *ids):
     for v in ids:
-        edit(uid, v, album=None, year=None, tags=[])
+        edit(uid, v, album=None, released=None, tags=[])
 
 
 def test_anonymous_is_refused(client):
@@ -49,7 +49,7 @@ def test_anonymous_is_refused(client):
 
 def test_nothing_to_do_when_complete(client):
     add(client)
-    edit(OWNER_UID, VID, album="A", year=2000, tags=["genre:pop"])
+    edit(OWNER_UID, VID, album="A", released=2000, tags=["genre:pop"])
     r = client.post(URL, headers=H)
     assert r.status_code == 200
     assert r.json()["candidates"] == 0
@@ -74,7 +74,7 @@ def test_run_fills_only_empty_fields(client, monkeypatch):
     assert (job.state, job.updated, job.nothing, job.failed) == ("done", 1, 0, 0)
     s = song(OWNER_UID, VID)
     assert s["album"] == "Mine"
-    assert s["year"] == 1999
+    assert s["released"] == 1999
     assert {"genre:jazz", "genre:house", "country:fr", "decade:90s"} <= set(s["tags"])
     assert s["wikipedia_album"].endswith("/Found")
     assert s["musicbrainz_url"].startswith("https://musicbrainz.org/")
@@ -156,9 +156,9 @@ def test_other_user_gets_busy_and_isolation(multi, monkeypatch):
 
 
 def test_apply_respects_caps_and_blank_values():
-    s = {"album": "  ", "year": "", "tags": [f"genre:g{i}" for i in range(12)] + ["country:de"]}
+    s = {"album": "  ", "released": None, "tags": [f"genre:g{i}" for i in range(12)] + ["country:de"]}
     changed = metafill.apply(s, {"album": "X", "year": 2001, "tags": ["genre:new", "country:fr"]})
-    assert changed and s["album"] == "X" and s["year"] == 2001
+    assert changed and s["album"] == "X" and s["released"] == 2001
     assert "genre:new" not in s["tags"] and "country:fr" not in s["tags"]
 
 

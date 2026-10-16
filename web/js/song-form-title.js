@@ -35,19 +35,19 @@ export function titleCleaner({ f, isAdd, initial, first, emit }) {
   };
   const paintMove = () => {
     const parts = splitTokens(f.title.value);
-    const have = splitTokens(f.artist.value).map((a) => a.toLowerCase());
+    const have = splitTokens(f.artists.value).map((a) => a.toLowerCase());
     const show = parts.length > 1 && !have.includes(parts[0].toLowerCase());
     moveHint.hidden = !show;
-    moveHint.textContent = show ? `Move "${parts[0]}" to Artist?` : '';
+    moveHint.textContent = show ? `Move "${parts[0]}" to Artists?` : '';
   };
-  moveHint.addEventListener('click', () => f.title.moveTo(0, 'artist'));
+  moveHint.addEventListener('click', () => f.title.moveTo(0, 'artists'));
   if (isAdd) {
     f.title.addEventListener('paste', () => setTimeout(applyClean));
     f.title.addEventListener('focusout', (e) => { if (!f.title.contains(e.relatedTarget)) applyClean(); });
     if (first.removed.length) { before = String(initial.title_raw ?? initial.title ?? ''); paintCleaned(first.removed); }
   }
   f.title.addEventListener('input', paintMove);
-  f.artist.addEventListener('input', paintMove);
+  f.artists.addEventListener('input', paintMove);
   paintMove();
   return {
     node: titleField,

@@ -11,7 +11,7 @@ from pathlib import Path
 from collections.abc import Callable
 from typing import Any
 
-from . import acoustid_lookup, discogs_lookup, genre_filter, genre_lookup, library, timeutil, wiki_lookup
+from . import acoustid_lookup, credits, discogs_lookup, genre_filter, genre_lookup, library, timeutil, wiki_lookup
 from .tags import namespace
 
 log = logging.getLogger(__name__)
@@ -120,7 +120,7 @@ def run(song: dict[str, Any], path: Path | None) -> dict[str, Any]:
                             "links": _links({}, {}, {}), "sources": [], "available": avail, "identified_at": library.now_utc()}
     if not any(avail.values()):
         return base
-    artist, title = str(song.get("artist") or ""), str(song.get("title") or "")
+    artist, title = credits.lookup_artist(song), str(song.get("title") or "")
     matched = None
     mb: dict[str, Any] = {}
     if avail["acoustid"] and path is not None:
@@ -133,7 +133,9 @@ def run(song: dict[str, Any], path: Path | None) -> dict[str, Any]:
     tags = merge_tags(mb, disc, wiki)
     year = next((y for y in map(_valid_year, (wiki.get("year"), mb.get("year"), disc.get("year"))) if y), None)
     links = _links(mb, disc, wiki)
-    found = bool(matched or tags or year or any(links.values()))
+    if credits.has_version(song):
+        links["musicbrainz"] = links["discogs"] = None
+    found =bool(matched or tags or year or any(links.values()))
     return {**base, "status": "ok" if found else "no_match", "matched": matched, "suggested_tags": tags,
             "suggested_year": year, "links": links, "sources": _used(matched, mb, wiki, disc)}
 

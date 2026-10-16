@@ -1,0 +1,40 @@
+{
+ "swift": {
+  "ios/Sources/ServerLink.swift": ["ServerSong"],
+  "ios/Sources/APIModels.swift": ["Preview", "SongStatus", "MetadataResult", "Suggest", "Service", "Services"],
+  "ios/Sources/Track.swift": ["SongSource", "Track"]
+ },
+ "structs": {
+  "ServerSong": {
+   "id": "String", "title": "String", "artist": "String?", "album": "String?", "remixer": "String?", "year": "Int?", "duration": "Double?",
+   "cover": "String?", "tags": "[String]?", "bpm": "Double?", "source_url": "String?", "wikipedia_song": "String?",
+   "wikipedia_artist": "String?", "musicbrainz_url": "String?", "added_at": "String?", "audio_state": "String?", "sources": "[SongSource]?"
+  },
+  "Preview": {
+   "id": "String", "source": "String?", "source_url": "String?", "title": "String?", "artist": "String?", "album": "String?",
+   "remixer": "String?", "year": "Int?", "duration": "Double?", "thumbnail": "String?", "tags": "[String]?", "wikipedia_song": "String?",
+   "wikipedia_artist": "String?", "in_library": "Bool?"
+  },
+  "SongStatus": {"status": "String", "progress": "Double?", "error": "String?"},
+  "MetadataResult": {"album": "String?", "year": "Int?", "tags": "[String]?", "services": "Services?", "suggest": "Suggest?"},
+  "Suggest": {"artist": "String?", "title": "String?"},
+  "Service": {"found": "Bool?", "url": "String?"},
+  "Services": {
+   "youtube": "Service?", "soundcloud": "Service?", "wikipedia": "Service?", "spotify": "Service?", "musicbrainz": "Service?", "discogs": "Service?"
+  },
+  "SongSource": {"source": "String?", "id": "String?", "url": "String?"},
+  "Track": {
+   "id": "String", "title": "String", "artist": "String", "duration": "Double?", "thumbnail": "String?", "album": "String?", "remixer": "String?",
+   "year": "Int?", "tags": "[String]?", "bpm": "Double?", "sourceURL": "String?", "wikipediaSong": "String?", "wikipediaArtist": "String?",
+   "musicbrainzURL": "String?", "addedAt": "Date?", "sources": "[SongSource]?", "onServer": "Bool?", "localOnly": "Bool?"
+  }
+ },
+ "always_present": ["id", "title", "artist", "remixer", "year", "remix_year", "artists", "featured", "released", "tags", "sources", "audio_state"],
+ "requests": {
+  "add": {"url": "https://youtu.be/dQw4w9WgXcQ",
+          "metadata": {"title": "Song", "artist": "Band", "album": "", "remixer": null, "year": null, "wikipedia_song": null, "wikipedia_artist": null, "musicbrainz_url": null},
+          "tags": []},
+  "edit": {"title": "Song", "artist": "Band", "album": "", "remixer": null, "year": null, "wikipedia_song": null, "wikipedia_artist": null, "musicbrainz_url": null, "tags": []},
+  "metadata": {"title": "Song", "artist": "Band", "sources": [{"url": "https://youtu.be/dQw4w9WgXcQ"}], "wiki_song": null, "wiki_artist": null}
+ }
+}

@@ -28,15 +28,15 @@ export function planMetadata(resp, cur) {
   const album = typeof r.album === 'string' ? r.album.trim() : '';
   const year = Number.isInteger(r.year) ? r.year : null;
   const returnedTags = (Array.isArray(r.tags) ? r.tags : []).filter((t) => typeof t === 'string' && CAPS[tagKey(t)]);
-  const plan = { album: null, year: null, tags: addNamespaced(cur.tags || [], returnedTags) };
-  if (album && !String(cur.album ?? '').trim()) plan.album = album;
-  if (year != null && String(cur.year ?? '').trim() === '') plan.year = year;
+  const plan = { album: null, released: null, tags: addNamespaced(cur.tags || [], returnedTags) };
+  if (album && !cur.versioned && !String(cur.album ?? '').trim()) plan.album = album;
+  if (year != null && String(cur.released ?? '').trim() === '') plan.released = year;
   for (const key of ['wikipedia_song', 'wikipedia_artist', 'wikipedia_album']) {
     const link = typeof r[key] === 'string' && /^https:\/\/\S+$/i.test(r[key]) ? r[key] : null;
     if (link && !String(cur[key] ?? '').trim()) plan[key] = link;
   }
   const returned = !!album || year != null || returnedTags.length > 0;
-  const filled = plan.album != null || plan.year != null || plan.tags.length > 0 || !!(plan.wikipedia_song || plan.wikipedia_artist || plan.wikipedia_album);
+  const filled = plan.album != null || plan.released != null || plan.tags.length > 0 || !!(plan.wikipedia_song || plan.wikipedia_artist || plan.wikipedia_album);
   if (filled) plan.status = 'filled';
   else plan.status = returned ? 'current' : 'empty';
   return plan;

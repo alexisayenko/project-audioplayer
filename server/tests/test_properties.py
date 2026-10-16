@@ -187,7 +187,7 @@ def test_migration_is_idempotent_and_cleans_legacy_fields():
     assert a["bpm"] == 121
     assert "genre" not in a
     assert "original" not in a
-    assert a["remixer"] is None
+    assert "remixer" not in a and a["artists"] == [] and "version" not in a
     assert a["source_url"] == "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
     assert a["wikipedia_song"] is None
     assert sorted(a["tags"]) == ["Rock", "decade:90s", "genre:house"]

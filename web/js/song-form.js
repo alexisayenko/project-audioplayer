@@ -1,5 +1,4 @@
 import { api } from './api.js';
-import { MIN_YEAR, maxYear } from './constants.js';
 import { tagEditor } from './tag-editor.js';
 import { el, field } from './dom.js';
 import { tokenGroup } from './token-field.js';
@@ -8,14 +7,14 @@ import { chipField } from './chip-field.js';
 import { linksPanel } from './links-panel.js';
 import { storedLinkStates, wikipediaLink, linkError, linkErrors, ownSourceKind } from './song-links.js';
 import { planMetadata, statusText, serviceState, suggestion, suggestionText } from './metadata-apply.js';
-import { metadataBody, sourceList } from './song-payload.js';
+import { metadataBody, sourceList, artistString } from './song-payload.js';
+import { creditsBlock, initialCredits } from './song-form-credits.js';
 import { identifyBlock } from './identify-block.js';
 import { hasAudio } from './playable.js';
 import { cleanTitleEx } from './title-clean.js';
 import { titleCleaner } from './song-form-title.js';
 import { bpmRow } from './song-form-bpm.js';
 import { unknownGenre } from './genre-vocab.js';
-import { planRemixYear, validYear } from './remix-year.js';
 
 export function songForm({ mode = 'add', song = {}, source = null, onChange = null } = {}) {
   const isAdd = mode === 'add';
@@ -25,37 +24,20 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
   const startTitle = first.title;
   const f = {
     title: tg.field('title', startTitle),
-    artist: tg.field('artist', initial.artist || ''),
-    remixer: tg.field('remixer', initial.remixer || ''),
     album: el('input', { type: 'text', value: initial.album || '' }),
-    year: el('input', { type: 'number', value: initial.year ?? '', min: MIN_YEAR, max: maxYear() }),
-    remixYear: el('input', { type: 'number', value: initial.remix_year ?? '', min: MIN_YEAR, max: maxYear() }),
   };
-  const editor = tagEditor({ tags: initial.tags || [], suggested: isAdd ? initial.tags || [] : [], year: f.year, hideNs: true });
+  const credits = creditsBlock({
+    tg,
+    song: initial,
+    getTitle: () => f.title.value,
+    setTitle: (t) => { f.title.value = t; },
+    emit: () => f.title.dispatchEvent(new Event('input', { bubbles: true })),
+  });
+  Object.assign(f, credits.f);
+  const editor = tagEditor({ tags: initial.tags || [], suggested: isAdd ? initial.tags || [] : [], year: f.released, hideNs: true });
   const genres = chipField('genre', editor);
   const countries = chipField('country', editor);
   const wiki = wikiFields({ song: initial.wikipedia_song, artist: initial.wikipedia_artist, album: initial.wikipedia_album });
-
-  let pubYear = validYear(initial.published_year);
-  let specYear = null;
-  let remixAuto = false;
-  let remixTouched = false;
-  const syncRemixYear = () => {
-    if (remixTouched) return;
-    const plan = planRemixYear({ remixer: f.remixer.value, current: f.remixYear.value, auto: remixAuto, published: pubYear, specific: specYear });
-    remixAuto = plan.auto;
-    f.remixYear.classList.toggle('suggested', remixAuto);
-    f.remixYear.title = remixAuto ? 'Suggested from the YouTube or SoundCloud publish date; type a year to replace it' : '';
-    if (plan.value !== f.remixYear.value) f.remixYear.value = plan.value;
-  };
-  f.remixYear.addEventListener('input', () => {
-    remixTouched = true;
-    remixAuto = false;
-    f.remixYear.classList.remove('suggested');
-    f.remixYear.title = '';
-  });
-  f.remixer.addEventListener('input', syncRemixYear);
-  syncRemixYear();
 
   let gen = 0;
   const pending = new Set();
@@ -138,7 +120,7 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
   let suggest = null;
   const emit = () => f.title.dispatchEvent(new Event('input', { bubbles: true }));
   const tc = titleCleaner({ f, isAdd, initial, first, emit });
-  const cur = () => ({ title: f.title.value, artist: f.artist.value });
+  const cur = () => ({ title: f.title.value, artist: artistString({ artists: credits.values().artists }) });
   const paintHint = () => {
     const sug = suggest ? suggestion(suggest, cur()) : null;
     hint.hidden = !sug;
@@ -147,13 +129,13 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
   hint.addEventListener('click', () => {
     const sug = suggestion(suggest, cur());
     if (!sug) return;
-    if (sug.artist) f.artist.value = sug.artist;
+    if (sug.artist) f.artists.value = sug.artist;
     if (sug.title) f.title.value = sug.title;
     paintHint();
     emit();
   });
   f.title.addEventListener('input', paintHint);
-  f.artist.addEventListener('input', paintHint);
+  f.artists.addEventListener('input', paintHint);
 
   const resetMeta = () => {
     suggest = null;
@@ -162,26 +144,25 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
     paintHint();
   };
   const applyMeta = (resp) => {
-    const plan = planMetadata(resp, { album: f.album.value, year: f.year.value, tags: editor.peek(), ...wiki.values() });
+    const plan = planMetadata(resp, { album: f.album.value, released: f.released.value, versioned: credits.hasVersion(), tags: editor.peek(), ...wiki.values() });
     if (plan.album != null) f.album.value = plan.album;
-    if (plan.year != null) {
-      f.year.value = plan.year;
-      f.year.dispatchEvent(new Event('input', { bubbles: true }));
+    if (plan.released != null) {
+      f.released.value = plan.released;
+      f.released.dispatchEvent(new Event('input', { bubbles: true }));
     }
     if (plan.tags.length) editor.addTags(plan.tags);
     if (plan.wikipedia_song) wiki.set({ song: plan.wikipedia_song });
     if (plan.wikipedia_artist) wiki.set({ artist: plan.wikipedia_artist });
     if (plan.wikipedia_album) wiki.set({ album: plan.wikipedia_album });
-    if (validYear(resp?.published_year)) pubYear = resp.published_year;
-    specYear = validYear(resp?.remix_year);
-    syncRemixYear();
+    credits.setPublished(resp?.published_year);
+    credits.setSpecific(resp?.version_year ?? resp?.remix_year);
     f.album.dispatchEvent(new Event('input', { bubbles: true }));
     metaMsg.textContent = statusText(plan);
   };
   metaBtn.addEventListener('click', async () => {
     const wv = wiki.values();
     const src = typeof source === 'function' ? source() : source;
-    const body = metadataBody({ title: f.title.value, artist: f.artist.value, ...wv }, sourceList(src));
+    const body = metadataBody({ title: f.title.value, ...credits.values(), ...wv }, sourceList(src));
     const req = begin();
     resetMeta();
     metaBtn.disabled = true;
@@ -192,6 +173,10 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
       if (!req.live()) return;
       icons.setBusy(false);
       const states = serviceState(resp?.services);
+      if (credits.hasVersion()) {
+        states.musicbrainz = { on: false, url: null };
+        states.discogs = { on: false, url: null };
+      }
       if (states.musicbrainz.url) mbUrl = states.musicbrainz.url;
       lastStates = states;
       paintIcons();
@@ -211,34 +196,34 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
     }
   });
 
-  const setYear = (y) => {
-    f.year.value = y;
-    f.year.dispatchEvent(new Event('input', { bubbles: true }));
+  const setReleased = (y) => {
+    f.released.value = y;
+    f.released.dispatchEvent(new Event('input', { bubbles: true }));
   };
   const applyLinks = (plan) => {
     const cur = wiki.values();
     wiki.set({ song: plan.wikipedia_song ?? cur.wikipedia_song, artist: plan.wikipedia_artist ?? cur.wikipedia_artist, album: plan.wikipedia_album ?? cur.wikipedia_album });
-    if (plan.musicbrainz_url) mbUrl = plan.musicbrainz_url;
-    if (plan.discogs_url) discogsUrl = plan.discogs_url;
+    if (plan.musicbrainz_url && !credits.hasVersion()) mbUrl = plan.musicbrainz_url;
+    if (plan.discogs_url && !credits.hasVersion()) discogsUrl = plan.discogs_url;
     paintIcons();
     emit();
   };
-  const ident = identifyBlock({ id: isAdd ? null : initial.id, audio: !isAdd && hasAudio(initial), editor, getYear: () => f.year.value, setYear, applyLinks });
+  const ident = identifyBlock({ id: isAdd ? null : initial.id, audio: !isAdd && hasAudio(initial), editor, getReleased: () => f.released.value, setReleased, applyLinks });
 
   const bpmEl = bpmRow({ isAdd, initial });
 
   const node = el('div', { class: 'add-fields' },
-    tc.node, field('Artist', f.artist),
-    el('div', { class: 'remix-row' }, field('Remix & additional production', f.remixer), field('Remix year', f.remixYear)),
+    tc.node, credits.node,
     hint,
     el('div', { class: 'meta-row' }, el('div', { class: 'lk-slot' }, panel.bar), el('div', { class: 'meta-btns' }, metaBtn, ident.button)),
     panel.clip,
     metaMsg,
     ident.node,
-    el('div', { class: 'grid2' }, field('Album', f.album), field('Year', f.year)),
+    el('div', { class: 'grid2' }, field('Album', f.album), field('First released', f.released)),
     bpmEl,
     genres.node, countries.node,
     el('div', { class: 'field' }, el('label', {}, 'Tags'), editor.node));
+  node.addEventListener('input', credits.paint);
   if (onChange) node.addEventListener('input', onChange);
 
   const values = ({ commit = true } = {}) => {
@@ -249,11 +234,8 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
     return {
       title: f.title.value,
       keep_title: tc.restoredRaw !== null && f.title.value === tc.restoredRaw,
-      artist: f.artist.value,
-      remixer: f.remixer.value,
+      ...credits.values(),
       album: f.album.value,
-      year: f.year.value,
-      remix_year: f.remixYear.value,
       tags: editor.getTags(),
       ...wiki.values(),
       musicbrainz_url: mbUrl,
@@ -272,14 +254,9 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
     return Object.values(errors)[0] || null;
   };
   const setValues = (p = {}) => {
-    for (const k of ['title', 'artist', 'remixer', 'album']) if (p[k] !== undefined) f[k].value = p[k] ?? '';
-    if (p.year !== undefined) f.year.value = p.year ?? '';
-    if (p.remix_year !== undefined) {
-      f.remixYear.value = p.remix_year ?? '';
-      remixAuto = false;
-      f.remixYear.classList.remove('suggested');
-      f.remixYear.title = '';
-    }
+    if (p.title !== undefined) f.title.value = p.title ?? '';
+    if (p.album !== undefined) f.album.value = p.album ?? '';
+    credits.set(p);
     wiki.set({ song: p.wikipedia_song, artist: p.wikipedia_artist, album: p.wikipedia_album });
     paintIcons();
     emit();
@@ -309,11 +286,8 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
       metaBtn.textContent = 'Get metadata';
       tc.clearRestored();
       tc.paintCleaned(first.removed);
-      setValues({ title: startTitle, artist: initial.artist || '', remixer: initial.remixer || '', album: initial.album || '', year: initial.year ?? '', remix_year: initial.remix_year ?? '', wikipedia_song: initial.wikipedia_song || '', wikipedia_artist: initial.wikipedia_artist || '', wikipedia_album: initial.wikipedia_album || '' });
-      pubYear = validYear(initial.published_year);
-      specYear = null;
-      remixTouched = false;
-      syncRemixYear();
+      setValues({ title: startTitle, ...initialCredits(initial), album: initial.album || '', wikipedia_song: initial.wikipedia_song || '', wikipedia_artist: initial.wikipedia_artist || '', wikipedia_album: initial.wikipedia_album || '' });
+      credits.resetYear(initial.published_year);
     },
     destroy() {
       abortAll();
