@@ -11,7 +11,7 @@ from urllib.parse import urlparse
 
 import yt_dlp
 
-from . import library, timeutil, urlclean
+from . import genre_filter, library, timeutil, urlclean
 from .titles import cut_remix, split_artist_title, split_title
 from .urlclean import is_valid_video_id, parse_video_id, source_of, watch_url  # noqa: F401
 
@@ -107,7 +107,7 @@ def suggest_tags(info: dict[str, Any]) -> list[str]:
     else:
         values = []
     tags = [f"genre:{v}" for v in values if str(v).strip()]
-    return library.clean_tags(tags)
+    return genre_filter.only_canonical(library.clean_tags(tags))
 
 
 def _artwork_of(info: dict[str, Any]) -> str | None:

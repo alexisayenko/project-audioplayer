@@ -1,0 +1,333 @@
+{
+ "_notes": [
+  "Reviewed extras (TAG-078, ADR-0023): real genres Discogs lacks, each with a mandatory family (one of the 15 Discogs genres) and a parent (a canonical name, or null for a root). Entries are reviewed in git; 'electronic' is one of the 15 genres and therefore not listed here.",
+  "Origin: the kept subgenres of TAG-076 and the manual parents of GEN-045, plus library tags that are real genres Discogs does not list (reviewed 2026-10-16). note says where each came from."
+ ],
+ "extras": {
+  "acid trance": {
+   "family": "Electronic",
+   "parent": "trance",
+   "note": "live library tag, reviewed 2026-10-16"
+  },
+  "afro house": {
+   "family": "Electronic",
+   "parent": "house",
+   "note": "live library tag, reviewed 2026-10-16"
+  },
+  "alternative dance": {
+   "family": "Electronic",
+   "parent": "dance",
+   "note": "live library tag, reviewed 2026-10-16"
+  },
+  "alternative pop": {
+   "family": "Pop",
+   "parent": "pop",
+   "note": "live library tag, reviewed 2026-10-16"
+  },
+  "alternative r&b": {
+   "family": "Funk / Soul",
+   "parent": "contemporary r&b",
+   "note": "live library tag, reviewed 2026-10-16"
+  },
+  "art pop": {
+   "family": "Pop",
+   "parent": "pop",
+   "note": "live library tag, reviewed 2026-10-16"
+  },
+  "big room house": {
+   "family": "Electronic",
+   "parent": "house",
+   "note": "kept subgenre, TAG-076"
+  },
+  "breakbeat hardcore": {
+   "family": "Electronic",
+   "parent": "breakbeat",
+   "note": "live library tag, reviewed 2026-10-16"
+  },
+  "british invasion": {
+   "family": "Rock",
+   "parent": "pop rock",
+   "note": "established name, TAG-074"
+  },
+  "bubblegum dance": {
+   "family": "Electronic",
+   "parent": "eurodance",
+   "note": "live library tag, reviewed 2026-10-16"
+  },
+  "chillout": {
+   "family": "Electronic",
+   "parent": "downtempo",
+   "note": "live library tag, reviewed 2026-10-16"
+  },
+  "dance": {
+   "family": "Electronic",
+   "parent": "electronic",
+   "note": "kept subgenre, TAG-076"
+  },
+  "dance-punk": {
+   "family": "Rock",
+   "parent": "post-punk",
+   "note": "live library tag, reviewed 2026-10-16"
+  },
+  "dance-rock": {
+   "family": "Rock",
+   "parent": "new wave",
+   "note": "kept subgenre, TAG-076"
+  },
+  "dark metal": {
+   "family": "Rock",
+   "parent": "heavy metal",
+   "note": "kept subgenre, TAG-076"
+  },
+  "darksynth": {
+   "family": "Electronic",
+   "parent": "synthwave",
+   "note": "kept subgenre, TAG-076"
+  },
+  "deep trance": {
+   "family": "Electronic",
+   "parent": "trance",
+   "note": "live library tag, reviewed 2026-10-16"
+  },
+  "dreamsynth": {
+   "family": "Electronic",
+   "parent": "synthwave",
+   "note": "manual parent, GEN-045"
+  },
+  "dreamwave": {
+   "family": "Electronic",
+   "parent": "synthwave",
+   "note": "kept subgenre, TAG-076"
+  },
+  "electronic dance": {
+   "family": "Electronic",
+   "parent": "dance",
+   "note": "alias target, TAG-071"
+  },
+  "electronic rock": {
+   "family": "Rock",
+   "parent": "alternative rock",
+   "note": "live library tag, reviewed 2026-10-16"
+  },
+  "electronica": {
+   "family": "Electronic",
+   "parent": "electronic",
+   "note": "kept subgenre, TAG-076"
+  },
+  "electropop": {
+   "family": "Electronic",
+   "parent": "synthpop",
+   "note": "alias target, TAG-071"
+  },
+  "epic": {
+   "family": "Stage & Screen",
+   "parent": "soundtrack",
+   "note": "kept subgenre, TAG-076"
+  },
+  "estrada": {
+   "family": "Pop",
+   "parent": "pop",
+   "note": "kept subgenre, TAG-076"
+  },
+  "folk pop": {
+   "family": "Folk, World, & Country",
+   "parent": "folk",
+   "note": "live library tag, reviewed 2026-10-16"
+  },
+  "folk punk": {
+   "family": "Rock",
+   "parent": "punk",
+   "note": "live library tag, reviewed 2026-10-16"
+  },
+  "french house": {
+   "family": "Electronic",
+   "parent": "house",
+   "note": "established name, TAG-074"
+  },
+  "french touch": {
+   "family": "Electronic",
+   "parent": "french house",
+   "note": "established name, TAG-074"
+  },
+  "indietronica": {
+   "family": "Electronic",
+   "parent": "electronica",
+   "note": "live library tag, reviewed 2026-10-16"
+  },
+  "industrial rock": {
+   "family": "Rock",
+   "parent": "alternative rock",
+   "note": "live library tag, reviewed 2026-10-16"
+  },
+  "jersey club": {
+   "family": "Electronic",
+   "parent": "house",
+   "note": "live library tag, reviewed 2026-10-16"
+  },
+  "liquid funk": {
+   "family": "Electronic",
+   "parent": "drum and bass",
+   "note": "kept subgenre, TAG-076"
+  },
+  "melodic house": {
+   "family": "Electronic",
+   "parent": "house",
+   "note": "kept subgenre, TAG-076"
+  },
+  "melodic techno": {
+   "family": "Electronic",
+   "parent": "techno",
+   "note": "kept subgenre, TAG-076"
+  },
+  "middle of the road": {
+   "family": "Pop",
+   "parent": "pop",
+   "note": "alias target, TAG-071"
+  },
+  "neurofunk": {
+   "family": "Electronic",
+   "parent": "drum and bass",
+   "note": "kept subgenre, TAG-076"
+  },
+  "new romantic": {
+   "family": "Pop",
+   "parent": "pop",
+   "note": "live library tag, reviewed 2026-10-16"
+  },
+  "nu-nrg": {
+   "family": "Electronic",
+   "parent": "hard trance",
+   "note": "kept subgenre, TAG-076"
+  },
+  "orchestral pop": {
+   "family": "Pop",
+   "parent": "pop",
+   "note": "live library tag, reviewed 2026-10-16"
+  },
+  "paisley underground": {
+   "family": "Rock",
+   "parent": "psychedelic rock",
+   "note": "live library tag, reviewed 2026-10-16"
+  },
+  "pop soul": {
+   "family": "Funk / Soul",
+   "parent": "soul",
+   "note": "live library tag, reviewed 2026-10-16"
+  },
+  "post-britpop": {
+   "family": "Rock",
+   "parent": "britpop",
+   "note": "live library tag, reviewed 2026-10-16"
+  },
+  "post-disco": {
+   "family": "Funk / Soul",
+   "parent": "disco",
+   "note": "live library tag, reviewed 2026-10-16"
+  },
+  "post-punk revival": {
+   "family": "Rock",
+   "parent": "post-punk",
+   "note": "live library tag, reviewed 2026-10-16"
+  },
+  "progressive pop": {
+   "family": "Pop",
+   "parent": "pop",
+   "note": "live library tag, reviewed 2026-10-16"
+  },
+  "psybient": {
+   "family": "Electronic",
+   "parent": "psytrance",
+   "note": "kept subgenre, TAG-076"
+  },
+  "psychedelic soul": {
+   "family": "Funk / Soul",
+   "parent": "soul",
+   "note": "live library tag, reviewed 2026-10-16"
+  },
+  "r&b": {
+   "family": "Funk / Soul",
+   "parent": null,
+   "note": "live library tag, reviewed 2026-10-16"
+  },
+  "raggacore": {
+   "family": "Electronic",
+   "parent": "hardcore",
+   "note": "kept subgenre, TAG-076"
+  },
+  "rap metal": {
+   "family": "Rock",
+   "parent": "heavy metal",
+   "note": "live library tag, reviewed 2026-10-16"
+  },
+  "rave": {
+   "family": "Electronic",
+   "parent": "hardcore",
+   "note": "live library tag, reviewed 2026-10-16"
+  },
+  "sadcore": {
+   "family": "Rock",
+   "parent": "indie rock",
+   "note": "live library tag, reviewed 2026-10-16"
+  },
+  "shock rock": {
+   "family": "Rock",
+   "parent": "hard rock",
+   "note": "kept subgenre, TAG-076"
+  },
+  "singer-songwriter": {
+   "family": "Folk, World, & Country",
+   "parent": "folk",
+   "note": "kept subgenre, TAG-076"
+  },
+  "spacesynth": {
+   "family": "Electronic",
+   "parent": "italo disco",
+   "note": "live library tag, reviewed 2026-10-16"
+  },
+  "sunshine house": {
+   "family": "Electronic",
+   "parent": "house",
+   "note": "manual parent, GEN-045"
+  },
+  "synth-funk": {
+   "family": "Funk / Soul",
+   "parent": "funk",
+   "note": "live library tag, reviewed 2026-10-16"
+  },
+  "synth-rock": {
+   "family": "Rock",
+   "parent": "new wave",
+   "note": "manual parent, GEN-045"
+  },
+  "techno pop": {
+   "family": "Electronic",
+   "parent": "synthpop",
+   "note": "live library tag, reviewed 2026-10-16"
+  },
+  "techstep": {
+   "family": "Electronic",
+   "parent": "drum and bass",
+   "note": "kept subgenre, TAG-076"
+  },
+  "trailer": {
+   "family": "Stage & Screen",
+   "parent": "soundtrack",
+   "note": "kept subgenre, TAG-076"
+  },
+  "uplifting trance": {
+   "family": "Electronic",
+   "parent": "trance",
+   "note": "kept subgenre, TAG-076"
+  },
+  "vocal trance": {
+   "family": "Electronic",
+   "parent": "trance",
+   "note": "live library tag, reviewed 2026-10-16"
+  },
+  "worldbeat": {
+   "family": "Folk, World, & Country",
+   "parent": "folk",
+   "note": "live library tag, reviewed 2026-10-16"
+  }
+ }
+}

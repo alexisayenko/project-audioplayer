@@ -3,11 +3,12 @@ import time
 
 import pytest
 
+from tests.vocab import REAL
 from app import genre_lookup as gl, metadata, wiki_lookup as wl
 
 
 def test_cap_tags_dedupes_normalises_and_drops_lang():
-    gs = [f"genre:g{i}" for i in range(9)]
+    gs = [f"genre:{REAL[i]}" for i in range(9)]
     tags = ["genre:Rock", "genre:rock", *gs, "country:AU", "country:fr", "lang:en", "Plain", "decade:1990s"]
     assert metadata.cap_tags(tags) == ["genre:rock", *gs[:7], "country:au", "Plain", "decade:1990s"]
 
@@ -130,22 +131,22 @@ def test_metadata_endpoint(monkeypatch):
 
 
 def test_merge_song_genres_first_and_all_artist_after():
-    song = [f"genre:s{i}" for i in range(7)]
+    song = [f"genre:{REAL[i]}" for i in range(7)]
     out = metadata.merge(
-        sources=[{"tags": ["genre:src"]}],
-        mb={"tags": ["genre:hip hop", "genre:alt hip hop", "genre:exp hip hop", "country:us"]},
-        links={"tags": [*song, "genre:art1", "genre:art2"], "song_genres": song},
+        sources=[{"tags": ["genre:folk"]}],
+        mb={"tags": ["genre:hip hop", "genre:trap", "genre:rap", "country:us"]},
+        links={"tags": [*song, "genre:soul", "genre:funk"], "song_genres": song},
         guess=None,
     )
     assert out["tags"][:7] == song
-    assert out["tags"][7] == "genre:src"
+    assert out["tags"][7] == "genre:folk"
     assert len([t for t in out["tags"] if t.startswith("genre:")]) == 8
-    assert "genre:art1" not in out["tags"]
+    assert "genre:soul" not in out["tags"]
 
 
 def test_merge_song_genres_exceed_cap_up_to_all():
-    song = [f"genre:s{i}" for i in range(10)]
-    out = metadata.merge([{"tags": ["genre:src"]}], None, None, {"tags": song, "song_genres": song})
+    song = [f"genre:{REAL[i]}" for i in range(10)]
+    out = metadata.merge([{"tags": ["genre:folk"]}], None, None, {"tags": song, "song_genres": song})
     assert out["tags"] == song
 
 
@@ -159,8 +160,8 @@ def test_services_wikipedia_found_from_infobox_genres(monkeypatch):
 
 
 def test_infobox_genres_beyond_cap_kept():
-    song = [f"genre:g{i}" for i in range(11)]
-    out = metadata.merge([{"tags": ["genre:x"]}], None, {"song_genres": song, "tags": song}, None)
+    song = [f"genre:{REAL[i]}" for i in range(11)]
+    out = metadata.merge([{"tags": ["genre:folk"]}], None, {"song_genres": song, "tags": song}, None)
     assert out["tags"] == song
 
 

@@ -104,6 +104,7 @@ export function createSynthPanel({ doc = document, store = defaultStore } = {}) 
     const img = make(doc, 'img', 'viz-synth-thumb');
     img.alt = '';
     img.loading = 'lazy';
+    img.decoding = 'async';
     img.addEventListener('error', () => { img.hidden = true; btn.classList.add('viz-synth-nothumb'); });
     img.src = PRESET_THUMB(p.id);
     btn.append(img, make(doc, 'span', 'viz-synth-preset-name', p.name));

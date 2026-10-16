@@ -24,7 +24,8 @@ export const MIRROR_PRESET_LIST = [
 
 const BY_ID = new Map(MIRROR_PRESET_LIST.map((p) => [p.id, p]));
 
-export const MIRROR_PRESET_THUMB = (id) => `img/mirror-presets/${id}.png`;
+const THUMB_OF = { 'ice-blue-mirror-2': 'ice-blue-mirror' };
+export const MIRROR_PRESET_THUMB = (id) => `img/mirror-presets/${THUMB_OF[id] || id}.png`;
 
 export function applyMirrorPreset(id) {
   const p = BY_ID.get(id);

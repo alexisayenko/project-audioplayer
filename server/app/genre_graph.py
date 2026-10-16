@@ -12,7 +12,7 @@ from collections import deque
 from pathlib import Path
 from typing import Any
 
-from . import httpjson
+from . import genre_vocab, httpjson
 from .jsonio import write_json_atomic
 from .genre_filter import canonical
 from .ratelimit import RateLimiter
@@ -33,7 +33,6 @@ TIMEOUT = 8
 RETRY_AFTER = 300
 INLINE = False
 
-_FAMILIES_FILE = Path(__file__).resolve().parent.parent / "data" / "genre_families.json"
 FAMILIES = (
     "Blues", "Brass & Military", "Children's", "Classical", "Electronic", "Folk, World, & Country", "Funk / Soul", "Hip Hop", "Jazz",
     "Latin", "Non-Music", "Pop", "Reggae", "Rock", "Stage & Screen",
@@ -49,22 +48,12 @@ _running = False
 _down_until = 0.0
 _limiter = RateLimiter(MIN_INTERVAL)
 _mem: dict[str, dict[str, Any]] = {}
-_families: dict[str, str] | None = None
 _manual: dict[str, list[str]] | None = None
 
 
 def families() -> dict[str, str]:
-    """The reviewed label to Discogs family table (GEN-038); a missing or broken file is empty."""
-    global _families
-    if _families is None:
-        try:
-            with open(_FAMILIES_FILE, encoding="utf-8") as f:
-                data = json.load(f)
-            labels = data.get("labels", {}) if isinstance(data, dict) else {}
-        except (OSError, ValueError):
-            labels = {}
-        _families = {k: v for k, v in labels.items() if isinstance(v, str)}
-    return _families
+    """Canonical genre name to family (a Discogs genre), from the vocabulary files (GEN-038 step 1, TAG-078)."""
+    return {name: e.family for name, e in genre_vocab.load().entries.items()}
 
 
 def manual_parents() -> dict[str, list[str]]:
@@ -479,9 +468,57 @@ def resolve_families(
     return out
 
 
+def vocab_name(label: str) -> str | None:
+    """The vocabulary name a graph label or tag stands for (ALIASES, " music" and RETAGS applied), else None."""
+    for text in (label, canonical(label)):
+        e = genre_vocab.entry(text)
+        if e is None and norm(text).endswith(" music"):
+            e = genre_vocab.entry(norm(text)[: -len(" music")])
+        if e is not None:
+            return e.name
+    return None
+
+
 def table_family(label: str, keys: Any = ()) -> str | None:
-    table = families()
-    return table.get(norm(label)) or next((table[k] for k in sorted(keys) if k in table), None)
+    """The vocabulary family of a node: its label, else one of its tags (sorted); None when neither is in the vocabulary."""
+    for text in (label, *sorted(keys)):
+        name = vocab_name(text)
+        if name:
+            return genre_vocab.load().entries[name].family
+    return None
+
+
+def node_style(label: str, keys: Any = ()) -> str | None:
+    """The Discogs style or extras entry a node is itself (label first, then its tags); None for the 15 genres and for names outside the vocabulary."""
+    for text in (label, *sorted(keys)):
+        name = vocab_name(text)
+        if name and genre_vocab.load().entries[name].level == "style":
+            return name
+    return None
+
+
+def resolve_styles(
+    own: dict[str, str | None], parents: dict[str, list[str]], reach: dict[str, set[Any]]
+) -> dict[str, str | None]:
+    """GEN-047: a node's own style, else the style of its nearest ancestors (breadth-first over parent edges, closest first, ties by song count then name), else None."""
+    out: dict[str, str | None] = {}
+    for nid in own:
+        found: str | None = own[nid]
+        seen = {nid}
+        frontier = [nid]
+        while found is None and frontier:
+            nxt: list[str] = []
+            for n in frontier:
+                for p in parents.get(n, []):
+                    if p not in seen:
+                        seen.add(p)
+                        nxt.append(p)
+            hits = [(-len(reach.get(p, ())), own[p], p) for p in nxt if own.get(p)]
+            if hits:
+                found = sorted(hits, key=lambda h: (h[0], h[1] or ""))[0][1]
+            frontier = nxt
+        out[nid] = found
+    return out
 
 
 UMBRELLA_SHARE = 0.5
@@ -529,9 +566,10 @@ def build(songs: list[dict[str, Any]], cache: dict[str, Any]) -> dict[str, Any]:
         resolve_families({nid: table_family(n["label"], n["keys"]) for nid, n in nodes.items()}, parents, reach), parents, reach
     )
 
+    styles = resolve_styles({nid: node_style(n["label"], n["keys"]) for nid, n in nodes.items()}, parents, reach)
     out_nodes = [
         {
-            "id": ids[nid], "label": n["label"], "qid": n["qid"], "wikipedia": _wikipedia(cache, n["qid"]), "family": fams[nid],
+            "id": ids[nid], "label": n["label"], "qid": n["qid"], "wikipedia": _wikipedia(cache, n["qid"]), "family": fams[nid], "style": styles[nid],
             "count": len(reach[nid]), "ownCount": len(n["own"]), "parents": sorted(ids[p] for p in parents[nid]),
             "tags": sorted(n["keys"]),
         }

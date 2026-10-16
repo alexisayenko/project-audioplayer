@@ -172,7 +172,7 @@ def test_soundcloud_probe_fields(ydl):
     assert p["artist"] == "Some Artist"
     assert p["year"] == 2019
     assert p["duration"] == 215.5
-    assert p["tags"] == ["genre:dance & edm"]
+    assert p["tags"] == ["genre:electronic dance"]
     assert p["thumbnail"] == "https://i1.sndcdn.com/artworks-abc-t500x500.jpg"
     assert p["preview_only"] is False
     url, download, opts = ydl.calls[0]

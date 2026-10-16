@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 
 from .. import deps, discogs_lookup, genre_lookup, jobs, library, limits, timeutil, titleclean, urlclean, users, wiki_lookup
 from ..downloads import (
-    add_metadata_only, mark_started, new_job, reject_unknown_country, run_download, run_fetch_audio,
+    add_metadata_only, mark_started, new_job, reject_unknown_country, reject_unknown_genre, run_download, run_fetch_audio,
 )
 from ..links import Refused, resolve_link
 from ..schemas import CreateSongRequest, PatchSongRequest
@@ -41,7 +41,9 @@ def _started_response(vid: str, began: bool) -> dict[str, str]:
 @router.post("/songs", status_code=202, responses=deps.responses(409))
 def create_song(req: CreateSongRequest, user: dict[str, Any] = Depends(deps.require_token)):
     uid, owner = user["uid"], user["owner"]
-    reject_unknown_country(library.clean_tags(req.tags))
+    cleaned = library.clean_tags(req.tags)
+    reject_unknown_country(cleaned)
+    reject_unknown_genre(cleaned)
     _check_years(req.metadata.model_dump())
     deps.guard_add(uid, owner, req.audio)
     try:
@@ -177,7 +179,9 @@ def _edited(song: dict[str, Any], changes: dict[str, Any]) -> dict[str, Any]:
     _apply_links(updated, changes)
     if changes.get("tags") is not None:
         updated["tags"] = library.clean_tags(changes["tags"])
-        reject_unknown_country(updated["tags"], library.clean_tags(song.get("tags") or []))
+        stored = library.clean_tags(song.get("tags") or [])
+        reject_unknown_country(updated["tags"], stored)
+        reject_unknown_genre(updated["tags"], stored)
     if not updated.get("title"):
         raise HTTPException(status_code=422, detail="title must not be empty")
     updated["tags"] = library.with_decade(updated.get("tags") or [], updated.get("year"))

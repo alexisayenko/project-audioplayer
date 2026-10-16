@@ -69,10 +69,10 @@ def test_full_merge_priorities_and_caps(monkeypatch):
 
 
 def test_caps_per_namespace_and_dedupe():
-    mb = {"tags": ["genre:a", "genre:b", "genre:A", "country:fr", "country:de"], "langs": ["en", "fr", "de"]}
-    disc = {"tags": ["genre:c", "genre:d", "genre:e", "country:us"]}
+    mb = {"tags": ["genre:jungle", "genre:grime", "genre:Jungle", "country:fr", "country:de"], "langs": ["en", "fr", "de"]}
+    disc = {"tags": ["genre:techno", "genre:trance", "genre:dubstep", "country:us"]}
     tags = identify.merge_tags(mb, disc, {})
-    assert tags == ["genre:c", "genre:d", "genre:e", "genre:a", "country:fr", "lang:en", "lang:fr"]
+    assert tags == ["genre:techno", "genre:trance", "genre:dubstep", "genre:jungle", "country:fr", "lang:en", "lang:fr"]
 
 
 def test_non_genres_and_unknown_countries_are_dropped():

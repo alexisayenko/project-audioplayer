@@ -1,4 +1,4 @@
-"""One-time rewrite of stored genre tags to their canonical spelling, junk drops, demonym prefixes and retags (TAG-060, TAG-073, TAG-074, TAG-075); idempotent, run at startup."""
+"""One-time rewrite of stored genre tags to their canonical spelling, junk drops, demonym prefixes and retags (TAG-060, TAG-073, TAG-074, TAG-075); idempotent, run at startup. Tags the vocabulary cannot map are kept and listed in a review file (TAG-082)."""
 
 from __future__ import annotations
 
@@ -6,11 +6,14 @@ import json
 import logging
 import shutil
 from pathlib import Path
+from typing import Any
 
-from . import deps, library
-from .tags import namespace
+from . import deps, genre_filter, library
+from .jsonio import write_json_atomic
+from .tags import namespace, namespaced_values
 
 BACKUP_DIR = "backups-genre-merge"
+SAMPLE_IDS = 5
 _log = logging.getLogger(__name__)
 
 
@@ -38,6 +41,38 @@ def backup_path(path: Path) -> Path:
     return base / BACKUP_DIR / path.parent.name / path.name
 
 
+def review_path(path: Path) -> Path:
+    """`<repo root>/backups-genre-merge/review-<uid>.json`: next to the backups, outside the git-added `audioplayer/` tree."""
+    return backup_path(path).parent.parent / f"review-{path.parent.name}.json"
+
+
+def unmappable_report(path: Path) -> dict[str, Any]:
+    """Genre values of the stored library that are neither junk nor in the vocabulary after ALIASES and RETAGS, with song counts and sample ids (TAG-082)."""
+    found: dict[str, list[str]] = {}
+    for song in library.load(path):
+        for value in dict.fromkeys(namespaced_values(song.get("tags") or [], "genre")):
+            if genre_filter.unmappable(value):
+                found.setdefault(value, []).append(str(song.get("id")))
+    rows = [{"tag": tag, "songs": len(ids), "sample_ids": ids[:SAMPLE_IDS]} for tag, ids in found.items()]
+    rows.sort(key=lambda r: (-r["songs"], r["tag"]))
+    return {"uid": path.parent.name, "unmappable": rows}
+
+
+def write_review(path: Path) -> int:
+    """Write the review file when its content changed (nothing is ever deleted from the library); returns the number of unmappable tags."""
+    report = unmappable_report(path)
+    target = review_path(path)
+    try:
+        same = json.loads(target.read_text(encoding="utf-8")) == report
+    except (OSError, ValueError):
+        same = False
+    if not same:
+        write_json_atomic(target, report)
+    if report["unmappable"]:
+        _log.warning("genre review: %d unmappable genre tags kept for %s (see %s)", len(report["unmappable"]), path.parent.name[:8], target.name)
+    return len(report["unmappable"])
+
+
 def migrate(path: Path) -> bool:
     """Rewrite one library.json when a genre tag is not canonical; keeps a one-time backup first. True when rewritten."""
     if not _stale(path):
@@ -58,11 +93,14 @@ def run() -> int:
     for lib in sorted(users_dir.glob("*/library.json")):
         uid = lib.parent.name
         try:
-            if not _stale(lib):
-                continue
-            with deps.tx(uid, "merge genre tags"):
-                done += migrate(lib)
-            _log.info("genre tags merged for %s", uid[:8])
+            if _stale(lib):
+                with deps.tx(uid, "merge genre tags"):
+                    done += migrate(lib)
+                _log.info("genre tags merged for %s", uid[:8])
         except Exception:
             _log.exception("genre tag migration failed for %s", uid[:8])
+        try:
+            write_review(lib)
+        except Exception:
+            _log.exception("genre review report failed for %s", uid[:8])
     return done

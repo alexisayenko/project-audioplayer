@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 import re
-import unicodedata
 from collections.abc import Iterable
 
-from . import genres
+from . import genre_vocab, genres
 
 _PLAIN = """
 danish swedish german british american french dutch italian spanish norwegian finnish russian polish australian canadian brazilian japanese korean
@@ -29,11 +28,7 @@ _PHRASES = (
 _YEARISH = re.compile(r"^(\d{2}|\d{4})s?$")
 
 
-def key(name: str) -> str:
-    """Lowercase, accents folded, spaces and hyphens collapsed away."""
-    folded = unicodedata.normalize("NFKD", name.casefold())
-    folded = "".join(c for c in folded if not unicodedata.combining(c))
-    return "".join(c for c in folded if c not in " -_\t")
+key = genre_vocab.key
 
 
 def _build_deny() -> frozenset[str]:
@@ -53,7 +48,7 @@ for _name in genres.BUILTIN:
 
 def _strip_music(value: str) -> str:
     v = " ".join(value.split())
-    if v.casefold().endswith(" music") and key(v) not in _BUILTIN_BY_KEY:
+    if v.casefold().endswith(" music") and key(v) not in _BUILTIN_BY_KEY and genre_vocab.lookup(v) is None:
         stripped = v[: -len(" music")].strip()
         return stripped or v
     return v
@@ -72,6 +67,8 @@ def is_dropped(value: str) -> bool:
 
 def is_genre(value: str) -> bool:
     k = key(value)
+    if k and k not in DROP and genre_vocab.lookup(value):
+        return True
     if not k or k in DENY or k in DROP or _YEARISH.match(k):
         return False
     stripped = key(_strip_music(value))
@@ -102,6 +99,14 @@ ALIASES: dict[str, str] = {
     "festival progressive house": "progressive house",
     "festival trap": "trap",
     "red disco": "disco",
+    "intelligent dance music": "idm",
+    "dance & edm": "electronic dance",
+    "metal": "heavy metal",
+    "psychedelic trance": "psytrance",
+    "glam rock": "glam",
+    "film score": "score",
+    "bebop": "bop",
+    "ethereal wave": "ethereal",
 }
 _ALIAS_BY_KEY: dict[str, str] = {}
 for _a, _t in ALIASES.items():
@@ -142,7 +147,7 @@ KEEP: set[str] = {key(v) for v in ("uk garage", "french house", "french touch", 
 def split_prefix(value: str) -> tuple[str, str, str | None] | None:
     """`russian pop` gives `("pop", "ru", "ru")`: a leading demonym or language word is a country (and language), not a genre (TAG-074). None for aliases, KEEP names and single words. The genre is spelled as `_spelling` (before RETAGS)."""
     v = _strip_music(value)
-    if key(v) in _ALIAS_BY_KEY or key(v) in KEEP:
+    if key(v) in _ALIAS_BY_KEY or key(v) in KEEP or genre_vocab.lookup(v):
         return None
     first, _, rest = v.strip().partition(" ")
     hit = PREFIXES.get(first.casefold())
@@ -160,18 +165,13 @@ def _spelling(value: str) -> str:
     if sp:
         return sp[0]
     v = _strip_music(value)
-    return _BUILTIN_BY_KEY.get(key(v), v)
+    return genre_vocab.lookup(v) or _BUILTIN_BY_KEY.get(key(v), v)
 
 
 def is_electronic(value: str) -> bool:
-    """True when the genre belongs to the Electronic family: `ELECTRONIC_CONTEXT`, or the reviewed table `server/data/genre_families.json` (bare form or "<value> music")."""
-    from . import genre_graph  # lazy: genre_graph imports this module
-
+    """True when the genre belongs to the Electronic family: `ELECTRONIC_CONTEXT`, or the vocabulary family (`genre_vocab.family_of`, bare form or "<value> music")."""
     v = _spelling(value).lower()
-    if key(v) in ELECTRONIC_CONTEXT:
-        return True
-    table = genre_graph.families()
-    return table.get(v) == "Electronic" or table.get(f"{v} music") == "Electronic"
+    return key(v) in ELECTRONIC_CONTEXT or genre_vocab.family_of(v) == "Electronic"
 
 
 def retag(value: str, song_genres: Iterable[str] = ()) -> str:
@@ -187,8 +187,34 @@ def canonical(value: str, song_genres: Iterable[str] = ()) -> str:
     return retag(_spelling(value), song_genres)
 
 
+def vocabulary_name(value: str, song_genres: Iterable[str] = ()) -> str | None:
+    """The canonical vocabulary name a genre value maps to (after ALIASES, prefix, " music" and RETAGS, TAG-071, TAG-075), else None (TAG-077)."""
+    name = " ".join(canonical(value, song_genres).lower().split())
+    return name if genre_vocab.is_canonical(name) else None
+
+
+def unmappable(value: str, song_genres: Iterable[str] = ()) -> bool:
+    """True when a stored `genre:` value is neither junk (TAG-073) nor mappable to the vocabulary (TAG-082)."""
+    return not is_dropped(value) and vocabulary_name(value, song_genres) is None
+
+
+def only_canonical(tags: list[str]) -> list[str]:
+    """Drop `genre:` tags that are not in the vocabulary; other tags pass through (suggestions, TAG-079)."""
+    out: list[str] = []
+    values = [v for t in tags for ns, sep, v in [str(t).partition(":")] if sep and ns.strip().casefold() == "genre"]
+    for t in tags:
+        ns, sep, value = str(t).partition(":")
+        if sep and ns.strip().casefold() == "genre":
+            name = vocabulary_name(value, values)
+            if name:
+                out.append(f"genre:{name}")
+        else:
+            out.append(t)
+    return out
+
+
 def filter_tags(tags: list[str]) -> list[str]:
-    """Drop non-genre `genre:` tags and canonicalise the rest, keeping order; other tags pass through. Duplicates are left to the caller's tag clean-up."""
+    """Drop non-genre `genre:` tags and canonicalise the rest, keeping order; other tags pass through. Duplicates are left to the caller's tag clean-up. Genres outside the vocabulary are dropped too (TAG-079): suggestions never offer them."""
     out: list[str] = []
     values = [v for t in tags for ns, sep, v in [str(t).partition(":")] if sep and ns.strip().casefold() == "genre"]
     for t in tags:
@@ -196,7 +222,9 @@ def filter_tags(tags: list[str]) -> list[str]:
         if sep and ns.strip().casefold() == "genre":
             if not is_genre(value):
                 continue
-            out.append(f"genre:{canonical(value, values)}")
+            name = vocabulary_name(value, values)
+            if name:
+                out.append(f"genre:{name}")
         else:
             out.append(t)
     return out

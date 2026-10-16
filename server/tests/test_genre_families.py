@@ -3,10 +3,9 @@ from pathlib import Path
 
 import pytest
 
-from app import genre_graph as gg
+from app import genre_graph as gg, genre_vocab
 
 FIXTURE = Path(__file__).parent / "fixtures" / "genre_graph_live.json"
-TABLE = Path(gg.__file__).resolve().parent.parent / "data" / "genre_families.json"
 
 
 def _reach(parents):
@@ -24,15 +23,15 @@ def _reach(parents):
     return go
 
 
-def test_table_is_valid():
-    data = json.loads(TABLE.read_text(encoding="utf-8"))
-    labels = data["labels"]
-    assert labels
-    for key, family in labels.items():
-        assert key == key.lower().strip() and key, key
-        assert family in gg.FAMILIES, (key, family)
-    assert gg.families() == labels
+def test_families_come_from_the_vocabulary_files():
+    table = gg.families()
+    assert table
+    for name, family in table.items():
+        assert name == name.lower().strip() and name, name
+        assert family in gg.FAMILIES, (name, family)
+    assert table == {n: e.family for n, e in genre_vocab.load().entries.items()}
     assert len(gg.FAMILIES) == 15
+    assert not (Path(gg.__file__).resolve().parent.parent / "data" / "genre_families.json").exists()
 
 
 def test_every_family_has_entries():

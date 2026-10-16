@@ -1,4 +1,5 @@
 import pytest
+from tests.vocab import REAL
 from fastapi.testclient import TestClient
 
 from app import extractor, genre_lookup as gl, httpjson, main, wiki_lookup as wl
@@ -233,8 +234,8 @@ def test_clean_tag_namespaces():
     assert library.clean_tag("country:Atlantis") == "country:atlantis"
 
 
-_MIXED = ["genre:danish", "genre:dj", "genre:house music", "genre:house", *[f"genre:g{i}" for i in range(9)], "country:lt", "country:lv", "lang:en", "lang:de"]
-_EXPECTED = ["genre:house", *[f"genre:g{i}" for i in range(7)], "country:lt"]
+_MIXED = ["genre:danish", "genre:dj", "genre:house music", "genre:house", *[f"genre:{REAL[i]}" for i in range(9)], "country:lt", "country:lv", "lang:en", "lang:de"]
+_EXPECTED = ["genre:house", *[f"genre:{REAL[i]}" for i in range(7)], "country:lt"]
 
 
 def _mock_preview(monkeypatch, found, wiki_tags=(), song_genres=()):
@@ -251,7 +252,7 @@ def test_preview_filters_caps_and_drops_lang(monkeypatch):
 
 
 def test_preview_and_metadata_give_same_tags(monkeypatch):
-    _mock_preview(monkeypatch, [], wiki_tags=_MIXED, song_genres=["genre:z1", "genre:z2"])
+    _mock_preview(monkeypatch, [], wiki_tags=_MIXED, song_genres=["genre:soul", "genre:funk"])
     c = TestClient(main.app)
     h = {"X-API-Token": "secret"}
     prev = c.post("/preview", json={"url": "https://youtu.be/dQw4w9WgXcQ"}, headers=h).json()["tags"]
@@ -259,7 +260,7 @@ def test_preview_and_metadata_give_same_tags(monkeypatch):
     monkeypatch.setattr(gl, "lookup", lambda a, t: {"tags": [], "year": None, "album": None})
     meta = c.post("/metadata", json={"title": "T", "artist": "A", "sources": [{"url": "https://youtu.be/dQw4w9WgXcQ"}]}, headers=h).json()["tags"]
     assert prev == meta
-    assert prev[:2] == ["genre:z1", "genre:z2"]
+    assert prev[:2] == ["genre:soul", "genre:funk"]
     assert len([t for t in prev if t.startswith("genre:")]) == 8
 
 

@@ -331,7 +331,7 @@ export function renderGenres(root) {
       return el('li', {
         class: `gm-row${isFamily ? ' fam' : ''}${r.id && r.id === selectedId ? ' sel' : ''}`, style: `--depth:${r.depth}`, 'data-key': r.key,
       }, toggle, label,
-      el('small', { class: 'muted' }, isFamily ? `${r.size} ${plural(r.size, 'root', 'roots')}` : String(r.count)),
+      el('small', { class: 'muted' }, isFamily ? `${r.size} ${r.unit === 'style' ? plural(r.size, 'style', 'styles') : plural(r.size, 'root', 'roots')}` : String(r.count)),
       r.alsoUnder.length ? el('small', { class: 'gm-also muted' }, `also under ${r.alsoUnder.join(', ')}`) : null);
     }));
   }

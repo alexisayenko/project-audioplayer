@@ -11,9 +11,10 @@ from typing import Any
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
 
-from . import bpm, deps, discogs_lookup, extractor, genre_lookup, identify, jobs, library, limits, urlclean, wiki_lookup
+from . import bpm, deps, discogs_lookup, extractor, genre_filter, genre_lookup, genre_vocab, identify, jobs, library, limits, urlclean, wiki_lookup
 from .links import Resolved, short_error
 from .problems import Problem
+from .tags import namespaced_values
 
 log = logging.getLogger(__name__)
 
@@ -204,6 +205,20 @@ def reject_unknown_country(tags: list[str], existing: list[str] | None = None) -
     for value in library.unknown_countries(tags):
         if value not in keep:
             raise Problem(422, "unknown_country", f"Unknown country: {value}", value=value)
+
+
+def reject_unknown_genre(tags: list[str], existing: list[str] | None = None) -> None:
+    """422 `unknown_genre` for a `genre:` value outside the vocabulary (TAG-079), with up to 5 "did you mean" names; values the song already carries (kept unmappable tags, TAG-082) pass. Expects cleaned tags."""
+    keep = set(namespaced_values(existing or [], "genre"))
+    bad = list(dict.fromkeys(v for v in namespaced_values(tags, "genre") if not genre_vocab.is_canonical(v) and v not in keep))
+    if not bad:
+        return
+    aliases = {**genre_filter.ALIASES, **genre_filter.RETAGS}
+    suggestions = {v: genre_vocab.suggest(v, aliases) for v in bad}
+    first = bad[0]
+    hint = f" Did you mean: {', '.join(suggestions[first])}?" if suggestions[first] else " Pick a name from GET /genres/vocabulary."
+    raise Problem(422, "unknown_genre", f"Unknown genre: {first}.{hint}", value=first, suggestions=suggestions[first],
+                  unknown=[{"value": v, "suggestions": suggestions[v]} for v in bad])
 
 
 def add_metadata_only(uid: str, vid: str, link: Resolved, meta: dict[str, Any], tags: list[str]) -> JSONResponse:

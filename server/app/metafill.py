@@ -11,7 +11,7 @@ import threading
 import time
 from typing import Any
 
-from . import deps, genre_lookup, library, metadata, wiki_lookup
+from . import deps, genre_filter, genre_lookup, library, metadata, wiki_lookup
 from .tags import namespace
 
 log = logging.getLogger(__name__)
@@ -128,7 +128,7 @@ def _add_tags(have: list[str], found: list[str]) -> list[str]:
     caps = {"genre": GENRE_CAP, "country": COUNTRY_CAP}
     out = list(have)
     added: list[str] = []
-    for raw in found:
+    for raw in genre_filter.only_canonical([str(r) for r in found]):
         t = str(raw).strip().lower()
         ns = namespace(t)
         if ns not in caps or t.endswith(":") or any(x.lower() == t for x in out):

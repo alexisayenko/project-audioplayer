@@ -7,7 +7,7 @@ from collections.abc import Awaitable, Callable
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
 
-from . import deps, guest, hosts, legal, migrate_tags, web
+from . import deps, genre_vocab, guest, hosts, legal, migrate_tags, web
 from .problems import Problem
 from .routes import analyze, auth, backfill, catalog, covers, files, genres, health, legacy, legal as legal_routes, lookup, me, metafill, removal, songs
 
@@ -50,6 +50,7 @@ async def _no_index(request: Request, call_next: Callable[[Request], Awaitable[R
 @app.on_event("startup")
 def _startup() -> None:
     legal.check_startup()
+    genre_vocab.check()
     if deps.SYNC:
         deps.SYNC.resync()
     migrate_tags.run()

@@ -14,7 +14,7 @@ WD = {
     "Q500": ("music", False, [], []),
     "Q102": ("pop music", True, [], []),
     "Q101": ("synthpop", True, ["Q100", "Q102"], ["Q105"]),
-    "Q103": ("dark synth", True, ["Q101"], []),
+    "Q103": ("darksynth", True, ["Q101"], []),
     "Q104": ("chillsynth", True, ["Q101"], []),
     "Q105": ("new wave", True, ["Q102"], []),
     "Q110": ("a-genre", True, ["Q111"], []),
@@ -106,9 +106,9 @@ def test_related_edge_only_between_present_nodes(wd):
 
 
 def test_counts_do_not_double_count(wd):
-    g = gg.graph(songs(("s1", ["dark synth", "chillsynth"]), ("s2", ["dark synth"]), ("s3", ["house music"])), wd.path)
+    g = gg.graph(songs(("s1", ["darksynth", "chillsynth"]), ("s2", ["darksynth"]), ("s3", ["house music"])), wd.path)
     n = by_label(g)
-    assert n["dark synth"]["count"] == 2
+    assert n["darksynth"]["count"] == 2
     assert n["chillsynth"]["count"] == 1
     assert n["synthpop"]["count"] == 2
     assert n["synthpop"]["ownCount"] == 0
@@ -243,14 +243,15 @@ def test_nodes_carry_the_user_tags_that_resolve_to_them(wd):
     assert n["electronic music"]["tags"] == []
 
 
+# None: a Wikidata label outside the vocabulary, its family comes from its ancestors (GEN-038)
 ROOT_CASES = [
-    ("electronic dance music", "Electronic"), ("house music", "Electronic"), ("dance music", "Electronic"), ("club/dance music", "Electronic"),
-    ("progressive house", "Electronic"), ("drum and bass", "Electronic"), ("tech house", "Electronic"), ("future garage", "Electronic"),
+    ("electronic dance music", "Electronic"), ("house music", "Electronic"), ("dance music", "Electronic"), ("club/dance music", None),
+    ("progressive house", "Electronic"), ("drum and bass", "Electronic"), ("tech house", "Electronic"), ("future garage", None),
     ("rock music", "Rock"), ("pop rock", "Rock"), ("alternative rock", "Rock"), ("pop music", "Pop"), ("dance-pop", "Pop"), ("indie pop", "Pop"),
-    ("k-pop", "Pop"), ("hip hop music", "Hip Hop"), ("trip hop", "Electronic"), ("jazz fusion", "Jazz"), ("northern soul", "Funk / Soul"),
-    ("baroque music", "Classical"), ("romantic music", "Classical"), ("ska punk", "Reggae"), ("latin pop", "Latin"), ("mambo", "Latin"),
+    ("k-pop", "Pop"), ("hip hop music", "Hip Hop"), ("trip hop", "Electronic"), ("fusion", "Jazz"), ("northern soul", None),
+    ("baroque music", "Classical"), ("romantic music", "Classical"), ("ska punk", None), ("latin pop", "Latin"), ("mambo", "Latin"),
     ("delta blues", "Blues"), ("country rock", "Folk, World, & Country"), ("film score", "Stage & Screen"), ("spoken word", "Non-Music"),
-    ("lullaby", "Children's"), ("marches", "Brass & Military"), ("music of europe", None), ("regional music", "Folk, World, & Country"),
+    ("lullaby", "Children's"), ("marches", "Brass & Military"), ("music of europe", None), ("regional music", None),
     ("alternative music", "Rock"),
 ]
 
@@ -304,14 +305,14 @@ def test_umbrella_root_without_clear_majority_or_with_parent_stays_other():
 
 
 def test_wikipedia_url_from_enwiki_sitelink(wd):
-    g = gg.graph(songs(("a", ["dark synth"]), ("b", ["chillsynth"])), wd.path)
+    g = gg.graph(songs(("a", ["darksynth"]), ("b", ["chillsynth"])), wd.path)
     n = by_label(g)
-    assert n["dark synth"]["wikipedia"] == "https://en.wikipedia.org/wiki/Dark_synth"
+    assert n["darksynth"]["wikipedia"] == "https://en.wikipedia.org/wiki/Dark_synth"
     assert n["chillsynth"]["wikipedia"] is None
 
 
 def test_entity_cached_without_wp_is_refetched(wd):
-    gg.graph(songs(("a", ["dark synth"])), wd.path)
+    gg.graph(songs(("a", ["darksynth"])), wd.path)
     assert any("sitelinks" in c.get("props", "") for c in wd.calls if c["action"] == "wbgetentities")
     assert gg._ent_fresh({"at": time.time(), "wp": ""})
     assert not gg._ent_fresh({"at": time.time()})
@@ -327,10 +328,10 @@ def parents_of(g, label):
 
 
 def test_manual_parent_edge_added_and_marked(wd, monkeypatch):
-    manual(monkeypatch, {"chillsynth": ["house music"], "dark synth": ["pop music"]})
-    g = gg.graph(songs(("s1", ["chillsynth", "dark synth", "house music", "pop music"])), wd.path)
+    manual(monkeypatch, {"chillsynth": ["house music"], "darksynth": ["pop music"]})
+    g = gg.graph(songs(("s1", ["chillsynth", "darksynth", "house music", "pop music"])), wd.path)
     assert "house music" in parents_of(g, "chillsynth")
-    assert "pop music" in parents_of(g, "dark synth")
+    assert "pop music" in parents_of(g, "darksynth")
     man = [e for e in g["edges"] if e.get("origin") == "manual"]
     assert len(man) == 2 and all(e["kind"] == "parent" for e in man)
     assert not any(e.get("origin") for e in g["edges"] if e not in man)

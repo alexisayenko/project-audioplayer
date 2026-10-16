@@ -1,5 +1,6 @@
 import pytest
 
+from tests.vocab import REAL
 from tests.test_library import client  # noqa: F401
 
 from app import genre_filter as gf, metadata
@@ -37,15 +38,15 @@ def test_filter_tags_keeps_other_namespaces():
 
 def test_merge_dedupes_and_does_not_waste_slots():
     junk = [f"genre:{w}" for w in ("danish", "dj", "seen live", "2010", "english", "music")]
-    tags = [*junk, "genre:house music", "genre:house", *[f"genre:g{i}" for i in range(8)]]
+    tags = [*junk, "genre:house music", "genre:house", *[f"genre:{REAL[i]}" for i in range(8)]]
     out = metadata.merge([], {"tags": tags}, None, None)["tags"]
-    assert out == ["genre:house", *[f"genre:g{i}" for i in range(7)]]
+    assert out == ["genre:house", *[f"genre:{REAL[i]}" for i in range(7)]]
 
 
 def test_merge_song_genres_filtered_and_priority_counts_distinct():
-    song = ["genre:house music", "genre:house", "genre:danish", *[f"genre:s{i}" for i in range(10)]]
-    out = metadata.merge([], {"tags": ["genre:x"]}, {"song_genres": song, "tags": song}, None)["tags"]
-    assert out == ["genre:house", *[f"genre:s{i}" for i in range(10)]]
+    song = ["genre:house music", "genre:house", "genre:danish", *[f"genre:{REAL[i]}" for i in range(10)]]
+    out = metadata.merge([], {"tags": ["genre:folk"]}, {"song_genres": song, "tags": song}, None)["tags"]
+    assert out == ["genre:house", *[f"genre:{REAL[i]}" for i in range(10)]]
 
 
 def test_kato_example():
@@ -59,13 +60,13 @@ def test_user_entered_genre_tags_are_not_filtered():
     assert library.clean_tags(["genre:danish", "genre:house music", "genre:dj"]) == ["genre:danish", "genre:house", "genre:dj"]
 
 
-def test_patch_keeps_user_entered_genre_tags(client):
+def test_patch_canonicalises_user_entered_genre_tags(client):
     from tests.test_library import H, VID, add
 
     add(client)
-    tags = ["genre:danish", "genre:house music", "genre:dj"]
+    tags = ["genre:Trance", "genre:house music", "genre:punk"]
     r = client.patch(f"/songs/{VID}", json={"tags": tags}, headers=H)
-    want = ["genre:danish", "genre:house", "genre:dj"]
+    want = ["genre:trance", "genre:house", "genre:punk"]
     assert r.json()["tags"] == want
     assert client.get("/library", headers=H).json()["songs"][0]["tags"] == want
 
@@ -108,7 +109,7 @@ def test_retags(raw, want):
     assert library.clean_tag(f"genre:{raw}") == f"genre:{want}"
 
 
-@pytest.mark.parametrize("raw", ["indie rock", "indie pop", "progressive house", "progressive rock", "progressive trance", "psychedelic rock", "psychedelic trance", "alternative rock", "folk rock", "swing"])
+@pytest.mark.parametrize("raw", ["indie rock", "indie pop", "progressive house", "progressive rock", "progressive trance", "psychedelic rock", "acid house", "alternative rock", "folk rock", "swing"])
 def test_retags_match_the_whole_tag_only(raw):
     assert gf.canonical(raw) == raw
 

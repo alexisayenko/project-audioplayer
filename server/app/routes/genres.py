@@ -4,7 +4,7 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends
 
-from .. import deps, genre_filter, genre_graph, genres
+from .. import deps, genre_graph, genre_vocab, genres
 from ..tags import namespaced_values
 
 router = APIRouter()
@@ -21,10 +21,19 @@ def get_genres(user: Annotated[dict[str, Any], Depends(deps.require_token)]):
             if n:
                 counts[n] = counts.get(n, 0) + 1
     used = sorted(counts, key=lambda g: (-counts[g], g))
-    rest = [g for g in genres.BUILTIN if g not in counts and genre_filter.canonical(g) == g and not genre_filter.is_dropped(g)]
+    vocab = genre_vocab.load().entries
+    rest = [g for g in genres.BUILTIN if g not in counts and g in vocab]
+    listed = set(rest)
+    rest += sorted(g for g in vocab if g not in counts and g not in listed)
     return {"genres": [*used, *rest][:GENRES_MAX]}
 
 
 @router.get("/genres/graph")
 def get_genre_graph(user: Annotated[dict[str, Any], Depends(deps.read_user)]):
     return genre_graph.graph(deps.load_songs(user["uid"]), deps.DATA_DIR / "genre-ontology.json")
+
+
+@router.get("/genres/vocabulary")
+def get_genre_vocabulary(user: Annotated[dict[str, Any], Depends(deps.read_user)]):
+    """The canonical genre list for the picker (TAG-077, TAG-080): `genres` with name, family, level (genre or style), parent, extra, also_under; `families` in display order. Same for every user, built once."""
+    return genre_vocab.vocabulary()

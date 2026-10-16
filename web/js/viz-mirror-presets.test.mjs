@@ -76,7 +76,7 @@ test('Ice Blue Mirror 2 starts as an separate preset, listed after the original'
   const ids = P.MIRROR_PRESET_LIST.map((p) => p.id);
   assert.equal(ids.indexOf('ice-blue-mirror-2'), ids.indexOf('ice-blue-mirror') + 1);
   assert.equal(P.MIRROR_PRESET_LIST[ids.indexOf('ice-blue-mirror-2')].name, 'Ice Blue Mirror 2');
-  assert.equal(P.MIRROR_PRESET_THUMB('ice-blue-mirror-2'), 'img/mirror-presets/ice-blue-mirror-2.png');
+  assert.equal(P.MIRROR_PRESET_THUMB('ice-blue-mirror-2'), 'img/mirror-presets/ice-blue-mirror.png');
 });
 
 test('pickActivePreset prefers the preferred id among presets with equal settings', () => {

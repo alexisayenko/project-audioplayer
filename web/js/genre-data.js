@@ -136,10 +136,10 @@ export const CATEGORY_NAMES = [
 export const isCategoryNode = (n) => (n.ownCount ?? n.count) === 0 && CATEGORY_NAMES.some((re) => re.test(n.label.trim().toLowerCase()));
 
 const views = new WeakMap();
+const hybridViews = new WeakMap();
 
-function outlineView(g) {
-  if (views.has(g)) return views.get(g);
-  const skip = new Set(g.nodes.filter(isCategoryNode).map((n) => n.id));
+function buildView(g, include = () => true) {
+  const skip = new Set(g.nodes.filter((n) => !include(n) || isCategoryNode(n)).map((n) => n.id));
   const up = new Map();
   const eff = (id) => {
     if (up.has(id)) return up.get(id);
@@ -161,9 +161,12 @@ function outlineView(g) {
     if (!ps.length) roots.push(n.id);
   }
   roots.sort((a, b) => byCountThenLabel(g.byId.get(a), g.byId.get(b)));
-  const view = { skip, parents, children, roots, eff };
-  views.set(g, view);
-  return view;
+  return { skip, parents, children, roots, eff };
+}
+
+function outlineView(g) {
+  if (!views.has(g)) views.set(g, buildView(g));
+  return views.get(g);
 }
 
 function familyGroups(g, roots) {
@@ -177,7 +180,110 @@ function familyGroups(g, roots) {
   return [...groups.entries()].sort((a, b) => familyOrder(a[0]) - familyOrder(b[0]));
 }
 
+const own = (n) => n.ownCount ?? n.count;
+const foldName = (s) => String(s).toLowerCase().replace(/\s+/g, ' ').trim().replace(/ music$/, '');
+
+export const hasStyles = (g) => g.nodes.some((n) => n.style);
+
+function isOwnStyle(g, n) {
+  if (!n.style) return false;
+  const s = foldName(n.style);
+  if (foldName(n.label) === s || n.tags.some((t) => foldName(t) === s)) return true;
+  return !n.parents.some((p) => g.byId.get(p).style === n.style);
+}
+
+function hybridView(g) {
+  if (hybridViews.has(g)) return hybridViews.get(g);
+  const styles = new Set(g.nodes.filter((n) => isOwnStyle(g, n)).map((n) => n.id));
+  const shownHung = new Set(g.nodes.filter((n) => n.style && !styles.has(n.id) && own(n) > 0).map((n) => n.id));
+  const upMemo = new Map();
+  const up = (id) => {
+    if (upMemo.has(id)) return upMemo.get(id);
+    upMemo.set(id, []);
+    const out = [];
+    for (const p of g.byId.get(id).parents) {
+      for (const q of styles.has(p) || shownHung.has(p) ? [p] : up(p)) if (q !== id && !out.includes(q)) out.push(q);
+    }
+    upMemo.set(id, out);
+    return out;
+  };
+  const sset = new Map();
+  const styleSet = (id, path = new Set()) => {
+    if (styles.has(id)) return new Set([id]);
+    if (sset.has(id)) return sset.get(id);
+    if (path.has(id)) return new Set();
+    const out = new Set();
+    for (const p of up(id)) for (const s of styleSet(p, new Set(path).add(id))) out.add(s);
+    sset.set(id, out);
+    return out;
+  };
+  const placed = new Map();
+  const orphans = new Set();
+  for (const id of shownHung) {
+    const ups = up(id);
+    if (!ups.length) { orphans.add(id); continue; }
+    const hungParents = ups.filter((x) => !styles.has(x));
+    const keep = ups.filter((x) => !styles.has(x) || !hungParents.some((m) => styleSet(m).has(x)));
+    placed.set(id, keep.length ? keep : ups);
+  }
+  const fb = buildView(g, (n) => !n.style || orphans.has(n.id));
+  const kids = new Map();
+  for (const [id, ps] of placed) for (const p of ps) kids.set(p, [...(kids.get(p) || []), id]);
+  const seen = new Map();
+  const fbVisible = (id, path = new Set()) => {
+    if (seen.has(id)) return seen.get(id);
+    const n = g.byId.get(id);
+    let ok = own(n) > 0;
+    for (const c of fb.children.get(id) || []) if (!ok && !path.has(c)) ok = fbVisible(c, new Set(path).add(id));
+    seen.set(id, ok);
+    return ok;
+  };
+  const roots = [...styles].filter((id) => g.byId.get(id).count > 0).concat(fb.roots.filter((id) => fbVisible(id)));
+  roots.sort((a, b) => byCountThenLabel(g.byId.get(a), g.byId.get(b)));
+  const row = (id) => styles.has(id) || placed.has(id) || (fb.parents.has(id) && fbVisible(id));
+  const parentsOf = (id) => {
+    if (styles.has(id)) return [];
+    if (placed.has(id)) return placed.get(id);
+    if (fb.parents.has(id) && fbVisible(id)) return fb.parents.get(id).filter((p) => row(p));
+    const n = g.byId.get(id);
+    return (n.style && !orphans.has(id) ? up(id) : fb.eff(id)).filter(row);
+  };
+  const children = (id) => {
+    const fbKids = (fb.children.get(id) || []).filter((c) => fbVisible(c));
+    return [...new Set([...(kids.get(id) || []), ...fbKids])];
+  };
+  const view = { styles, roots, row, parentsOf, children };
+  hybridViews.set(g, view);
+  return view;
+}
+
+function hybridRows(g, expanded) {
+  const v = hybridView(g);
+  const rows = [];
+  const walk = (id, depth, key, via, path) => {
+    const n = g.byId.get(id);
+    const kids = v.children(id).filter((c) => !path.has(c));
+    const open = expanded.has(key) && kids.length > 0;
+    rows.push({
+      key, id, depth, label: n.label, count: n.count, family: n.family, hasChildren: kids.length > 0, expanded: open,
+      alsoUnder: v.parentsOf(id).filter((p) => p !== via).map((p) => g.byId.get(p).label),
+      ...(v.styles.has(id) ? { kind: 'style' } : {}),
+    });
+    if (!open) return;
+    for (const c of kids.map((x) => g.byId.get(x)).sort(byCountThenLabel)) walk(c.id, depth + 1, `${key}>${c.id}`, id, new Set(path).add(id));
+  };
+  for (const [family, ids] of familyGroups(g, v.roots)) {
+    const key = familyKey(family);
+    const open = expanded.has(key);
+    const styled = ids.filter((id) => v.styles.has(id)).length;
+    rows.push({ key, id: null, depth: 0, label: family, count: null, family, hasChildren: true, expanded: open, alsoUnder: [], kind: 'family', size: ids.length, unit: styled === ids.length ? 'style' : 'root' });
+    if (open) for (const id of ids) walk(id, 1, `${key}>${id}`, null, new Set());
+  }
+  return rows;
+}
+
 export function outlineRows(g, expanded) {
+  if (hasStyles(g)) return hybridRows(g, expanded);
   const v = outlineView(g);
   const rows = [];
   const walk = (id, depth, key, via, path) => {
@@ -195,13 +301,36 @@ export function outlineRows(g, expanded) {
   for (const [family, ids] of familyGroups(g, v.roots)) {
     const key = familyKey(family);
     const open = expanded.has(key);
-    rows.push({ key, id: null, depth: 0, label: family, count: null, family, hasChildren: true, expanded: open, alsoUnder: [], kind: 'family', size: ids.length });
+    rows.push({ key, id: null, depth: 0, label: family, count: null, family, hasChildren: true, expanded: open, alsoUnder: [], kind: 'family', size: ids.length, unit: 'root' });
     if (open) for (const id of ids) walk(id, 1, `${key}>${id}`, null, new Set());
   }
   return rows;
 }
 
+function keysOf(g, chain) {
+  const keys = [familyKey(g.byId.get(chain[0]).family)];
+  for (const c of chain) keys.push(`${keys.at(-1)}>${c}`);
+  return keys;
+}
+
+function hybridPath(g, id) {
+  const v = hybridView(g);
+  if (!v.row(id)) id = [...v.parentsOf(id)].sort((a, b) => byCountThenLabel(g.byId.get(a), g.byId.get(b)))[0];
+  if (!id) return [];
+  const chain = [id];
+  const seen = new Set(chain);
+  for (;;) {
+    const next = v.parentsOf(chain[0]).map((p) => g.byId.get(p)).sort(byCountThenLabel).find((p) => !seen.has(p.id));
+    if (!next) break;
+    chain.unshift(next.id);
+    seen.add(next.id);
+  }
+  return keysOf(g, chain);
+}
+
 export function pathKeys(g, id) {
+  if (!g.byId.get(id)) return [];
+  if (hasStyles(g)) return hybridPath(g, id);
   const v = outlineView(g);
   if (v.skip.has(id)) id = v.eff(id).sort((a, b) => byCountThenLabel(g.byId.get(a), g.byId.get(b)))[0];
   const n = g.byId.get(id);
@@ -216,10 +345,7 @@ export function pathKeys(g, id) {
     seen.add(next.id);
     cur = next;
   }
-  const top = g.byId.get(chain[0]);
-  const keys = [familyKey(top.family)];
-  for (const c of chain) keys.push(`${keys.at(-1)}>${c}`);
-  return keys;
+  return keysOf(g, chain);
 }
 
 const STORE_KEY = 'electrophone.genresOutline';

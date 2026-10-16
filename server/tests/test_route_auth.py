@@ -17,6 +17,7 @@ GUEST_READABLE = {
     ("GET", "/library"),
     ("GET", "/tags"),
     ("GET", "/genres/graph"),
+    ("GET", "/genres/vocabulary"),
     ("GET", "/catalog"),
     ("GET", "/files/{video_id}"),
     ("GET", "/covers/{video_id}"),
