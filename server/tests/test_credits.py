@@ -462,6 +462,8 @@ def test_a_suggestion_is_renamed_to_the_v2_names():
         "version": {"type": "cover", "name": "X Cover", "artists": [], "originalArtists": ["X"], "ambiguous": True},
     }
     assert credits.suggestion({"artists": [], "featured": [], "version": None})["version"] is None
+    alt = credits.suggestion({"artists": ["B"], "featured": [], "version": None, "alternatives": [{"artists": ["A"], "featured": [], "version": {"kind": "cover", "name": "x", "by": [], "of": ["B"]}, "title": "T"}]})
+    assert alt["alternatives"] == [{"mainArtists": ["A"], "featuredArtists": [], "version": {"type": "cover", "name": "x", "artists": [], "originalArtists": ["B"]}, "title": "T"}]
 
 
 class TestEnsureRepairs:

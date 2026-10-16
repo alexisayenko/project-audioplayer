@@ -8,7 +8,7 @@ const fixture = fs.existsSync(FIXTURE) ? JSON.parse(fs.readFileSync(FIXTURE, 'ut
 
 const RENAME = { artists: 'mainArtists', featured: 'featuredArtists' };
 const VERSION_RENAME = { kind: 'type', by: 'artists', of: 'originalArtists' };
-const v2 = (want) => Object.fromEntries(Object.entries(want ?? {}).map(([k, val]) => [RENAME[k] ?? k, k === 'version' && val ? Object.fromEntries(Object.entries(val).map(([a, b]) => [VERSION_RENAME[a] ?? a, b])) : val]));
+const v2 = (want) => Object.fromEntries(Object.entries(want ?? {}).map(([k, val]) => [RENAME[k] ?? k, k === 'version' && val ? Object.fromEntries(Object.entries(val).map(([a, b]) => [VERSION_RENAME[a] ?? a, b])) : k === 'alternatives' && val ? val.map(v2) : val]));
 
 test('a plain single artist suggests nothing new', () => {
   assert.deepEqual(suggest('Haddaway', 'What Is Love', ''), { mainArtists: ['Haddaway'], featuredArtists: [], version: null, title: null, notes: [] });
