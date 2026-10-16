@@ -69,12 +69,14 @@ class CreateSongRequest(BaseModel):
     audio: bool = True
     metadata: SongMeta = SongMeta()
     tags: list[str] = []
+    genres: list[str] = []
     keep_title: bool = False
     source_raw: SourceRaw | None = None
 
 
 class PatchSongRequest(SongMeta):
     tags: list[str] | None = None
+    genres: list[str] | None = None
     youtube_url: str | None = None
     soundcloud_url: str | None = None
 

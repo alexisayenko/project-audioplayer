@@ -24,7 +24,7 @@ def _lib(root, uid, songs):
 
 
 def _tags(path):
-    return {s["id"]: s["tags"] for s in json.loads(path.read_text(encoding="utf-8"))["songs"]}
+    return {s["id"]: library.tag_list(s) for s in json.loads(path.read_text(encoding="utf-8"))["songs"]}
 
 
 @pytest.mark.parametrize("value", [

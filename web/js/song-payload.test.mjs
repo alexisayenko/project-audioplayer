@@ -12,10 +12,11 @@ test('addBody sends the structure, no legacy key, no bpm, no tags, no version wh
 });
 
 test('patchBody keys: structure only, version null removes it', () => {
-  assert.deepEqual(Object.keys(patchBody(v)).sort(), ['albums', 'discogs_url', 'featuredArtists', 'mainArtists', 'musicbrainz_url', 'releaseYear', 'spotify_url', 'tags', 'title', 'version', 'wikipedia_album', 'wikipedia_artist', 'wikipedia_song']);
+  assert.deepEqual(Object.keys(patchBody(v)).sort(), ['albums', 'discogs_url', 'featuredArtists', 'genres', 'mainArtists', 'musicbrainz_url', 'releaseYear', 'spotify_url', 'tags', 'title', 'version', 'wikipedia_album', 'wikipedia_artist', 'wikipedia_song']);
   assert.equal(patchBody(v).version, null);
   for (const k of LEGACY) assert.ok(!(k in patchBody(v)), k);
-  assert.deepEqual(patchBody(v).tags, ['x', 'country:de'], 'decade and lang tags are never stored');
+  assert.deepEqual(patchBody(v).tags, ['x', 'country:de'], 'decade and lang tags are never sent, genres travel in genres');
+  assert.deepEqual(patchBody({ ...v, tags: ['genre:House', 'x', 'genre:'] }).genres, ['House']);
 });
 
 test('version object: type, name, artists, releaseYear; originalArtists only for a cover; blank text is null', () => {

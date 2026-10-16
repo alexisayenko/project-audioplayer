@@ -46,7 +46,7 @@ def test_the_artist_table_follows_adds_edits_and_the_library_response(client, tm
     lib = client.get("/library", headers=H).json()
     assert lib["artists"] == [{"name": "Solo", "countries": ["us"]}]
     assert "country:us" in lib["songs"][0]["tags"]
-    assert on_disk(tmp_path)["tags"] == []
+    assert on_disk(tmp_path)["genres"] == []
     assert json.loads((ODIR(tmp_path) / "library.json").read_text(encoding="utf-8"))["artists"] == [{"name": "Solo", "countries": ["us"]}]
 
 
