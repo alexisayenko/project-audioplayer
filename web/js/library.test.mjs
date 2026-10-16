@@ -85,6 +85,7 @@ test('rows are sorted by recently added; counts, durations and BPM are shown', a
   assert.equal(alpha.querySelector('.c-dur').textContent, '2:05');
   assert.equal(alpha.querySelector('.bpm-badge').getAttribute('aria-label'), 'BPM 120');
   assert.match(alpha.querySelector('.sub').textContent, /Zed · 1999/);
+  assert.equal(alpha.querySelector('.sub').getAttribute('title'), alpha.querySelector('.sub').textContent);
   assert.equal(alpha.querySelector('.c-genres .g-txt').textContent, 'rock');
   assert.ok(alpha.querySelector('.c-genres .bpm-badge'));
   assert.ok(alpha.querySelector('.c-genres').children[0].classList.contains('bpm-badge'));

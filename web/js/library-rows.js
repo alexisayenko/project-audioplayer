@@ -115,7 +115,7 @@ export function songRow(s, cur, flashId) {
     coverCell(s, full, { audio, queueable, here, link }),
     el('div', { class: 'info' },
       el('div', { class: 'title-line' }, open),
-      subtitle(s) ? el('small', { class: 'sub t-subhead' }, subtitle(s)) : null),
+      subtitle(s) ? el('small', { class: 'sub t-subhead', title: subtitle(s) }, subtitle(s)) : null),
     el('div', { class: 'c-genres t-subhead' }, bpmBadge(s), el('span', { class: 'g-txt', title: genres || null }, genres)),
     dur,
     pl,

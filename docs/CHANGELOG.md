@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-16 (Library: long artist line no longer overlaps columns, not deployed)
+
+- Web: in the Library table the Track cell shrinks and clips; the Artist and Year line wraps to 2 lines with an ellipsis and carries a full-text tooltip (LIB-148).
+
 ## 2026-10-16 (Add: fetch progress checklist, not deployed)
 
 - Web and server: pressing Fetch in Add now shows the real steps (reading the link, title and artist, genres and first release, Wikipedia and Wikidata, Discogs) as a checklist with the current step, an aria-live line and elapsed seconds, and the failing step on error (ADD-129); new `POST /preview/stream` sends NDJSON step events and the same result as `POST /preview`, which is unchanged for iOS (API-140). Measured on a cold lookup: yt-dlp about 2 s, MusicBrainz about 10 s, Wikipedia and Wikidata about 6 s, Discogs under 1 s.

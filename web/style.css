@@ -275,7 +275,7 @@ label { display: block; color: var(--ink-muted); font: var(--font-caption); marg
 .row-cover:disabled .rc-ov { display: none; }
 @media (hover: hover) { .row-cover:hover .rc-ov { opacity: 1; } .row-cover.persist:hover .rc-ov { opacity: .9; } }
 .song .c-genres { display: none; }
-.song .info { min-width: 0; display: flex; flex-direction: column; }
+.song .info { min-width: 0; overflow: hidden; display: flex; flex-direction: column; }
 .song .open {
   background: none; border: 0; padding: 0; text-align: left; color: var(--ink);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: var(--font-body);
@@ -305,7 +305,7 @@ label { display: block; color: var(--ink-muted); font: var(--font-caption); marg
 .bpm-badge, .bpm-slot { flex: none; box-sizing: border-box; min-width: 62px; justify-content: center; }
 .bpm-slot { display: block; }
 .bpm-badge small { font: var(--font-micro); }
-.song .sub { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.song .sub { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; min-width: 0; max-width: 100%; color: var(--muted); overflow: hidden; overflow-wrap: anywhere; }
 .song .c-dur { color: var(--muted); text-align: right; }
 .song .more { width: var(--control-sm); height: var(--hit); border-radius: var(--radius-sm); }
 .pl-toggle { width: var(--control); height: var(--control); border: 0; border-radius: var(--radius-pill); padding: 0; display: inline-grid; place-items: center; background: transparent; color: var(--ink-muted); }
