@@ -15,6 +15,7 @@ import { cleanTitleEx } from './title-clean.js';
 import { titleCleaner } from './song-form-title.js';
 import { bpmRow } from './song-form-bpm.js';
 import { unknownGenre } from './genre-vocab.js';
+import { originalGenres, originalBox } from './original-genres.js';
 
 export function songForm({ mode = 'add', song = {}, source = null, onChange = null } = {}) {
   const isAdd = mode === 'add';
@@ -116,6 +117,8 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
   resetIcons();
   const metaBtn = el('button', { class: 'btn outline small', type: 'button' }, 'Get metadata');
   const metaMsg = el('p', { class: 't-caption muted', role: 'status' });
+  const orig = originalBox((tag) => editor.addTags([tag]));
+  if (isAdd) orig.set(originalGenres(initial, initial.tags || []));
   const hint = el('button', { class: 'link-btn t-caption wiki-hint', type: 'button', hidden: true });
   let suggest = null;
   const emit = () => f.title.dispatchEvent(new Event('input', { bubbles: true }));
@@ -141,6 +144,7 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
     suggest = null;
     resetIcons();
     metaMsg.textContent = '';
+    orig.clear();
     paintHint();
   };
   const applyMeta = (resp) => {
@@ -156,8 +160,10 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
     if (plan.wikipedia_album) wiki.set({ album: plan.wikipedia_album });
     credits.setPublished(resp?.published_year);
     credits.setSpecific(resp?.version_year ?? resp?.remix_year);
+    credits.setOriginal(resp?.suggest?.artist);
     f.album.dispatchEvent(new Event('input', { bubbles: true }));
     metaMsg.textContent = statusText(plan);
+    orig.set(originalGenres(resp, editor.peek()));
   };
   metaBtn.addEventListener('click', async () => {
     const wv = wiki.values();
@@ -218,6 +224,7 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
     el('div', { class: 'meta-row' }, el('div', { class: 'lk-slot' }, panel.bar), el('div', { class: 'meta-btns' }, metaBtn, ident.button)),
     panel.clip,
     metaMsg,
+    orig.node,
     ident.node,
     el('div', { class: 'grid2' }, field('Album', f.album), field('First released', f.released)),
     bpmEl,

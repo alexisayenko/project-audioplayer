@@ -15,7 +15,7 @@ def test_join_names(case):
 
 @pytest.mark.parametrize("case", CASES["split"], ids=lambda c: f"{c['artist']}|{c['title']}|{c['remixer']}")
 def test_suggest(case):
-    assert credits_split.suggest(case["artist"], case["title"], case["remixer"]) == case["expect"]
+    assert credits_split.suggest(case["artist"], case["title"], case["remixer"], case.get("ctx")) == case["expect"]
 
 
 @pytest.mark.parametrize("case", CASES["review"], ids=lambda c: json.dumps(c["raw"], ensure_ascii=False)[:60])
@@ -70,3 +70,16 @@ def test_mashup_word_forms_and_non_matches():
 def test_mashup_never_guesses_sources_without_an_explicit_separator():
     s = credits_split.suggest("", "Кончится лето - Yaukoshi, LXST CXNTURY, Цой (mashup)", None)
     assert "of" not in s["version"] and s["title"] == "Кончится лето"
+
+
+def test_cover_with_a_dash_uses_evidence_or_lists_both_readings():
+    title = "Pharrell Williams - Happy (EFIX & ALLISON Cover)"
+    known = credits_split.suggest("", title, None, {"original": ["Pharrell Williams"]})
+    assert (known["artists"], known["title"], known["version"]["kind"], known["version"]["of"]) == (["EFIX", "ALLISON"], "Happy", "cover", ["Pharrell Williams"])
+    assert "alternatives" not in known
+    assert credits_split.suggest("", title, None, {"uploader": "EFIX"})["artists"] == ["EFIX", "ALLISON"]
+    none = credits_split.suggest("", title, None)
+    assert "cover_ambiguous" in none["notes"]
+    assert [r["artists"] for r in none["alternatives"]] == [["EFIX", "ALLISON"], ["Pharrell Williams"]]
+    crazy = credits_split.suggest("", "Teemid - Crazy feat. Joie Tan (Gnarls Barkley Cover)", None, {"original": ["Gnarls Barkley"]})
+    assert (crazy["artists"], crazy["featured"], crazy["title"], crazy["version"]["of"]) == (["Teemid"], ["Joie Tan"], "Crazy", ["Gnarls Barkley"])

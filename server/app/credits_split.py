@@ -112,6 +112,45 @@ def _cover_version(text: str, credited: list[str], notes: list[str]) -> dict[str
     return version
 
 
+def _reading(artists: list[str], featured: list[str], version: dict[str, Any], title: str) -> dict[str, Any]:
+    return {"artists": artists, "featured": featured, "version": version, "title": title}
+
+
+def _cover_dash(left: str, right: str, text: str, name: str, credited: list[str], featured: list[str], ctx: dict[str, Any], notes: list[str]) -> tuple[str, list[str], dict[str, Any], list[dict[str, Any]] | None]:
+    """`A - T (X Cover)`: X is the performer and A the original artist, or the other way round. Evidence in order: the work's known original artist (`ctx["original"]`), the credited artists, the uploader (`ctx["uploader"]`, an X equal to it performs); with none the first reading (X performs) is returned with both listed as `alternatives`, nothing decided."""
+    a_names, x_names, title = _names(left), _names(name), _squash(right)
+
+    def reading(performers: list[str], original: list[str]) -> dict[str, Any]:
+        return _reading(performers, featured, {"kind": "cover", "name": text, "by": [], "of": original}, title)
+
+    r1, r2 = reading(a_names, x_names), reading(x_names, a_names)
+
+    def hit(names: list[str], pool: set[str]) -> bool:
+        return any(_fold(n) in pool for n in names)
+
+    original = {_fold(o) for o in ctx.get("original") or []}
+    credit = {_fold(c) for c in credited}
+    uploader = {_fold(ctx["uploader"])} if ctx.get("uploader") else set()
+    chosen = None
+    if hit(x_names, original):
+        chosen = r1
+    elif hit(a_names, original):
+        chosen = r2
+    else:
+        for pool in (credit, uploader):
+            if hit(a_names, pool):
+                chosen = r1
+            elif hit(x_names, pool):
+                chosen = r2
+            if chosen:
+                break
+    notes.append("cover_dash")
+    if chosen:
+        return title, chosen["artists"], chosen["version"], None
+    notes.append("cover_ambiguous")
+    return title, r2["artists"], r2["version"], [r2, r1]
+
+
 def _by_names(text: str, kind: str) -> list[str]:
     if kind not in ("remix", "other"):
         return []
@@ -187,8 +226,10 @@ def _mashup(base: str, artists: list[str], notes: list[str], name: str) -> tuple
     return _squash(base), artists, version
 
 
-def suggest(artist: str | None, title: str | None, remixer: str | None) -> dict[str, Any]:
+def suggest(artist: str | None, title: str | None, remixer: str | None, ctx: dict[str, Any] | None = None) -> dict[str, Any]:
     """`{artists, featured, version, title, notes}` suggested from the current strings; `title` is the base title when it differs, `notes` are codes."""
+    ctx = ctx or {}
+    alternatives: list[dict[str, Any]] | None = None
     notes: list[str] = []
     artist_text = _squash(artist or "")
     primary, featured = _cut_feat(artist_text)
@@ -238,13 +279,21 @@ def suggest(artist: str | None, title: str | None, remixer: str | None) -> dict[
         version = _version(_squash(from_title))
         notes.append("version_in_title")
         if version["kind"] == "cover":
-            version = _cover_version(version["name"], [*artists, *featured], notes) or version
+            dash = _DASH.search(base)
+            cname = cover_name(version["name"])
+            if dash and cname and _squash(base[: dash.start()]) and _squash(base[dash.end() :]):
+                base, artists, version, alternatives = _cover_dash(base[: dash.start()], base[dash.end() :], version["name"], cname, [*artists, *featured], featured, ctx, notes)
+            else:
+                version = _cover_version(version["name"], [*artists, *featured], notes) or version
     elif release and release[1]:
         version = {"kind": "cover", "name": "Cover", "by": []}
         notes.append("cover_release")
         notes.append("version_in_title")
     new_title = base if base and base != title_text else None
-    return {"artists": artists, "featured": featured, "version": version, "title": new_title, "notes": notes}
+    out = {"artists": artists, "featured": featured, "version": version, "title": new_title, "notes": notes}
+    if alternatives:
+        out["alternatives"] = alternatives
+    return out
 
 
 def review_flags(raw: dict[str, Any]) -> list[str]:

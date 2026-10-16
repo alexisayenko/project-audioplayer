@@ -20,13 +20,13 @@ def test_merge_precedence():
         links={"year": 1997, "tags": ["genre:disco", "country:fr"]},
         guess={"year": 1980, "tags": ["genre:soul"]},
     )
-    assert out == {"album": "Src Album", "year": 1997, "published_year": None, "remix_year": None, "version_year": None, "tags": ["genre:pop", "genre:house", "genre:funk", "country:au", "genre:disco", "genre:soul"]}
+    assert out == {"album": "Src Album", "year": 1997, "published_year": None, "remix_year": None, "version_year": None, "tags": ["genre:pop", "genre:house", "genre:funk", "country:au", "genre:disco", "genre:soul"], "original_genres": []}
 
 
 def test_merge_falls_back_through_sources():
-    assert metadata.merge([], {"album": "MB", "year": 1999}, None, {"year": 1980}) == {"album": "MB", "year": 1980, "published_year": None, "remix_year": None, "version_year": None, "tags": []}
-    assert metadata.merge([{"year": 2003}], None, None, None) == {"album": None, "year": None, "published_year": None, "remix_year": None, "version_year": None, "tags": []}
-    assert metadata.merge([], None, None, None) == {"album": None, "year": None, "published_year": None, "remix_year": None, "version_year": None, "tags": []}
+    assert metadata.merge([], {"album": "MB", "year": 1999}, None, {"year": 1980}) == {"album": "MB", "year": 1980, "published_year": None, "remix_year": None, "version_year": None, "tags": [], "original_genres": []}
+    assert metadata.merge([{"year": 2003}], None, None, None) == {"album": None, "year": None, "published_year": None, "remix_year": None, "version_year": None, "tags": [], "original_genres": []}
+    assert metadata.merge([], None, None, None) == {"album": None, "year": None, "published_year": None, "remix_year": None, "version_year": None, "tags": [], "original_genres": []}
 
 
 def test_merge_ignores_bad_years():
@@ -53,6 +53,7 @@ def test_gather_merges_all_sources(upstream):
         "remix_year": None,
         "version_year": None,
         "tags": ["genre:rock", "country:au", "genre:blues rock", "genre:hard rock"],
+        "original_genres": [],
         "services": {
             "youtube": {"found": True, "url": "https://youtu.be/dQw4w9WgXcQ"},
             "soundcloud": {"found": False, "url": None},
@@ -213,7 +214,7 @@ def test_gather_suggest_from_song_infobox(monkeypatch):
     out = _gather_with_box(monkeypatch, "{{Infobox song\n| name = Warrior's Dance\n| artist = [[the Prodigy]]\n| album = X\n}}")
     assert out["suggest"] == {"artist": "The Prodigy", "title": "Warrior's Dance"}
     assert out["album"] == "X"
-    assert set(out) == {"album", "year", "published_year", "remix_year", "version_year", "tags", "wikipedia_song", "wikipedia_artist", "wikipedia_album", "suggest", "services"}
+    assert set(out) == {"album", "year", "published_year", "remix_year", "version_year", "tags", "original_genres", "wikipedia_song", "wikipedia_artist", "wikipedia_album", "suggest", "services"}
 
 
 def test_gather_suggest_nulls_without_name_artist_or_infobox(monkeypatch):
@@ -272,3 +273,45 @@ def test_gather_for_a_version_withholds_the_musicbrainz_and_discogs_links(monkey
     assert version["services"]["musicbrainz"] == {"found": False, "url": None}
     assert version["services"]["discogs"] == {"found": False, "url": None}
     assert version["year"] == 1999
+
+
+def _orig_sources(monkeypatch):
+    monkeypatch.setattr(gl, "lookup", lambda a, t: {"tags": ["genre:synthpop", "country:gb"], "year": 1985, "album": "Hounds of Love"})
+    monkeypatch.setattr(wl, "suggest", lambda a, t: {"tags": ["genre:art pop"], "song_genres": ["art pop", "new wave"], "year": None})
+    monkeypatch.setattr(metadata.discogs_lookup, "suggest", lambda a, t: {"tags": [], "year": None, "url": None})
+
+
+def test_gather_for_a_remix_applies_only_the_sources_own_genres(monkeypatch):
+    _orig_sources(monkeypatch)
+    src = lambda: {"tags": ["genre:trance", "genre:progressive trance"], "youtube_genres": []}
+    plain = metadata.gather("T", "A", [src])
+    remix = metadata.gather("T", "A", [src], version_kind="remix")
+    assert "genre:art pop" in plain["tags"] and plain["original_genres"] == []
+    assert remix["tags"] == ["genre:trance", "genre:progressive trance", "country:gb"]
+    assert remix["original_genres"] == ["genre:art pop", "genre:new wave", "genre:synthpop"]
+
+
+def test_a_version_with_no_own_source_has_no_genres_and_the_original_is_a_hint(monkeypatch):
+    _orig_sources(monkeypatch)
+    out = metadata.gather("T", "A", [], version_kind="cover")
+    assert [t for t in out["tags"] if t.startswith("genre:")] == []
+    assert out["original_genres"]
+
+
+def test_a_same_recording_version_keeps_the_original_genres(monkeypatch):
+    _orig_sources(monkeypatch)
+    out = metadata.gather("T", "A", [], version_kind="remaster")
+    assert "genre:art pop" in out["tags"] and out["original_genres"] == []
+
+
+@pytest.mark.parametrize("artist, title, remixer, expect", [
+    ("Orkidea", "Kate Bush - Running Up That Hill (Orkidea Pure Progressive Mix)", None, True),
+    ("Orkidea", "Kate Bush - Running Up That Hill", "Orkidea Remix", True),
+    ("Kate Bush", "Running Up That Hill (Orkidea Pure Progressive Mix)", None, False),
+    ("Kate Bush", "Running Up That Hill (Kate Bush Live)", None, False),
+    ("Café del Mar", "Song [Cafe Del Mar Edit]", None, True),
+    ("Delerium", "Innocente", "Sadrican 2026 Remix", False),
+    ("", "T (X Mix)", None, False),
+])
+def test_artist_is_remixer(artist, title, remixer, expect):
+    assert metadata.artist_is_remixer(artist, title, remixer) is expect

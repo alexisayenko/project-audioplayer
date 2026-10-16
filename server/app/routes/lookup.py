@@ -60,11 +60,16 @@ def _merge_suggestions(meta: dict[str, Any], found: list[str], mb: dict[str, Any
     disc_rest = [t for t in disc["tags"] if not t.startswith("genre:")]
     yt = list(meta.get("youtube_genres") or [])
     own = list(meta.get("tags", []))
-    meta["tags"] = metadata.finalize_tags([*meta.get("tags", []), *disc_genres, *found, *wiki["tags"], *yt, *disc_rest], wiki.get("song_genres"))
+    remixer_is_artist = metadata.artist_is_remixer(meta.get("artist", ""), meta.get("title_raw") or meta.get("title", ""), meta.get("remixer"))
+    if meta.get("remixer") or remixer_is_artist:
+        meta["tags"], meta["original_genres"] = metadata.split_for_version([*own, *yt], [*disc_genres, *found, *wiki["tags"], *disc_rest], wiki.get("song_genres"))
+    else:
+        meta["tags"] = metadata.finalize_tags([*meta.get("tags", []), *disc_genres, *found, *wiki["tags"], *yt, *disc_rest], wiki.get("song_genres"))
+        meta["original_genres"] = []
     others = {*own, *disc_genres, *found, *wiki["tags"]}
     meta["tag_sources"] = {t: "youtube" for t in meta["tags"] if t in yt and t not in others}
     meta["wikipedia_song"] = wiki["wikipedia_song"]
-    meta["wikipedia_artist"] = wiki["wikipedia_artist"]
+    meta["wikipedia_artist"] = None if remixer_is_artist else wiki["wikipedia_artist"]
     meta["wikipedia_album"] = wiki.get("wikipedia_album")
     meta["discogs_url"] = disc["url"]
     meta["remixer"] = meta.get("remixer")

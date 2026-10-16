@@ -80,7 +80,7 @@ test('input is not mutated and the result is deterministic', () => {
 test('server cases (credits_split_cases.json, section split)', { skip: !fixture?.split }, () => {
   for (const c of fixture.split) {
     const input = c.input ?? c;
-    const got = suggest(input.artist ?? '', input.title ?? '', input.remixer ?? '');
+    const got = suggest(input.artist ?? '', input.title ?? '', input.remixer ?? '', c.ctx ?? {});
     const want = c.expect ?? c.expected;
     assert.ok(want, JSON.stringify(c));
     for (const k of Object.keys(want)) assert.deepEqual(got[k], want[k], `${k} ${JSON.stringify(c)}`);
@@ -158,4 +158,17 @@ test('"(mashup by X)" makes X the main artist and the artists before the dash th
   assert.equal(s.title, 'КОНЧИТСЯ ODIUM');
   assert.deepEqual(suggest('Chan', 'A vs B - Song [DJ K & Q mashup]', '').artists, ['DJ K', 'Q']);
   assert.equal(suggest('Chan', 'A + B - Song (bootleg by X)', '').version.kind, 'remix');
+});
+
+test('A - T (X Cover): evidence picks the reading, no evidence lists both and decides nothing', () => {
+  const t = 'Pharrell Williams - Happy (EFIX & ALLISON Cover)';
+  const known = suggest('', t, '', { original: ['Pharrell Williams'] });
+  assert.deepEqual([known.artists, known.title, known.version.kind, known.version.of], [['EFIX', 'ALLISON'], 'Happy', 'cover', ['Pharrell Williams']]);
+  assert.equal(known.alternatives, undefined);
+  assert.deepEqual(suggest('', t, '', { uploader: 'EFIX' }).artists, ['EFIX', 'ALLISON']);
+  const none = suggest('', t, '');
+  assert.ok(none.notes.includes('cover_ambiguous'));
+  assert.deepEqual(none.alternatives.map((r) => r.artists), [['EFIX', 'ALLISON'], ['Pharrell Williams']]);
+  const crazy = suggest('', 'Teemid - Crazy feat. Joie Tan (Gnarls Barkley Cover)', '', { original: ['Gnarls Barkley'] });
+  assert.deepEqual([crazy.artists, crazy.featured, crazy.title, crazy.version.of], [['Teemid'], ['Joie Tan'], 'Crazy', ['Gnarls Barkley']]);
 });

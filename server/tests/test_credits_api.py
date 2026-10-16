@@ -314,3 +314,15 @@ class TestEnrichmentOfVersions:
         s = self.version_song(artists=["A", "B"], featured=["C"])
         assert library.download_name(s, VID) == "A & B feat. C - T.m4a"
         assert credits.artist_string(s) == "A & B feat. C"
+
+
+def test_preview_does_not_link_the_remixer_as_the_artist(client, monkeypatch):
+    meta = {"id": VID, "title": "Kate Bush - Running Up That Hill (Orkidea Pure Progressive Mix)", "artist": "Orkidea", "tags": ["genre:trance"]}
+    monkeypatch.setattr(extractor, "preview", lambda v: dict(meta))
+    monkeypatch.setattr(genre_lookup, "suggest_tags", lambda a, t: ["genre:pop"])
+    monkeypatch.setattr(genre_lookup, "lookup", lambda a, t, f=None: genre_lookup._empty())
+    monkeypatch.setattr(wiki_lookup, "suggest", lambda a, t, mb=None: {"tags": ["genre:art pop"], "song_genres": [], "year": None, "wikipedia_song": None, "wikipedia_artist": "https://en.wikipedia.org/wiki/Orkidea"})
+    monkeypatch.setattr(discogs_lookup, "suggest", lambda a, t: {"tags": [], "year": None, "url": None})
+    body = client.post("/preview", json={"url": VID}, headers=H).json()
+    assert body["wikipedia_artist"] is None
+    assert body["tags"] == ["genre:trance"] and body["original_genres"] == ["genre:pop", "genre:art pop"]

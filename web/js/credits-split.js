@@ -106,6 +106,32 @@ function coverVersion(text, credited, notes) {
   return ver;
 }
 
+function coverDash(left, right, text, name, credited, featured, ctx, notes) {
+  const aNames = names(left);
+  const xNames = names(name);
+  const title = squash(right);
+  const reading = (artists, of) => ({ artists, featured, version: { kind: 'cover', name: text, by: [], of }, title });
+  const r1 = reading(aNames, xNames);
+  const r2 = reading(xNames, aNames);
+  const pool = (list) => new Set((list ?? []).map(fold));
+  const hit = (list, set) => list.some((n) => set.has(fold(n)));
+  const original = pool(ctx.original);
+  let chosen = null;
+  if (hit(xNames, original)) chosen = r1;
+  else if (hit(aNames, original)) chosen = r2;
+  else {
+    for (const set of [pool(credited), pool(ctx.uploader ? [ctx.uploader] : [])]) {
+      if (hit(aNames, set)) chosen = r1;
+      else if (hit(xNames, set)) chosen = r2;
+      if (chosen) break;
+    }
+  }
+  notes.push('cover_dash');
+  if (chosen) return [title, chosen.artists, chosen.version, null];
+  notes.push('cover_ambiguous');
+  return [title, r2.artists, r2.version, [r2, r1]];
+}
+
 const byNames = (text, kind) => (kind === 'remix' || kind === 'other' ? names(text.replace(BY_STRIP, ' ')) : []);
 
 function version(text) {
@@ -195,8 +221,9 @@ function mashup(base, artists, notes, name) {
   return [squash(base), artists, ver];
 }
 
-export function suggest(artist, title, remixer) {
+export function suggest(artist, title, remixer, ctx = {}) {
   const notes = [];
+  let alternatives = null;
   const [primary, feat] = cutFeat(squash(artist ?? ''));
   let featured = feat;
   if (featured.length) notes.push('feat_in_artist');
@@ -247,10 +274,21 @@ export function suggest(artist, title, remixer) {
   } else if (fromTitle) {
     ver = version(squash(fromTitle));
     notes.push('version_in_title');
-    if (ver.kind === 'cover') ver = coverVersion(ver.name, [...artists, ...featured], notes) ?? ver;
+    if (ver.kind === 'cover') {
+      const dash = DASH.exec(base);
+      const m = COVER_TAIL.exec(ver.name);
+      const cname = m ? squash(m[1]) : '';
+      if (dash && cname && squash(base.slice(0, dash.index)) && squash(base.slice(dash.index + dash[0].length))) {
+        [base, artists, ver, alternatives] = coverDash(base.slice(0, dash.index), base.slice(dash.index + dash[0].length), ver.name, cname, [...artists, ...featured], featured, ctx ?? {}, notes);
+      } else {
+        ver = coverVersion(ver.name, [...artists, ...featured], notes) ?? ver;
+      }
+    }
   } else if (release && release.cover) {
     ver = { kind: 'cover', name: 'Cover', by: [] };
     notes.push('cover_release', 'version_in_title');
   }
-  return { artists, featured, version: ver, title: base && base !== titleText ? base : null, notes };
+  const out = { artists, featured, version: ver, title: base && base !== titleText ? base : null, notes };
+  if (alternatives) out.alternatives = alternatives;
+  return out;
 }

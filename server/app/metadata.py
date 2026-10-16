@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import logging
+import re
 import threading
+import unicodedata
 import urllib.parse
 from concurrent.futures import ThreadPoolExecutor, wait
 from typing import Any, Callable
@@ -46,19 +48,60 @@ def finalize_tags(tags: list[str], song_genres: list[str] | None = None) -> list
     return cap_tags(merged, len(library.clean_tags(song)))
 
 
+SAME_RECORDING = ("remaster", "extended", "instrumental")
+_VERSION_WORD = re.compile(r"\b(?:remix|mix|edit|bootleg|mashup|rework|vip|dub|cover|version)\b", re.I)
+_BRACKET = re.compile(r"[(\[]([^()\[\]]*)[)\]]")
+
+
+def is_versioned(version_kind: str | None) -> bool:
+    """A version of kind remix, edit, live, cover, mashup, acoustic or other is a different recording: the original's genres are not applied to it (TAG-088). Remaster, extended and instrumental are the same recording."""
+    return bool(version_kind) and version_kind not in SAME_RECORDING
+
+
+def _fold(text: str) -> str:
+    plain = "".join(c for c in unicodedata.normalize("NFKD", text) if not unicodedata.combining(c))
+    return " ".join(re.sub(r"\W+", " ", plain.casefold()).split())
+
+
+def artist_is_remixer(artist: str, title: str, remixer: str | None) -> bool:
+    """True when `artist` is credited in the remix text (the remixer text, or a bracket of the title with a version word): such an artist is the maker of the version, not the main artist, so its Wikipedia page is not the song's artist link (TAG-096)."""
+    name = _fold(artist)
+    if not name:
+        return False
+    texts = [remixer or "", *(m.group(1) for m in _BRACKET.finditer(title or "") if _VERSION_WORD.search(m.group(1)))]
+    return any(re.search(rf"(?<!\w){re.escape(name)}(?!\w)", _fold(t)) for t in texts)
+
+
+def split_for_version(own: list[str], lookup: list[str], song_genres: list[str] | None = None) -> tuple[list[str], list[str]]:
+    """(tags, original_genres) for a version: only `own` genres (yt-dlp, SoundCloud, YouTube) and the non-genre lookup tags (country, decade) are applied; the genres the lookups found for the original recording are returned separately as `genre:` tags, never applied (TAG-088, TAG-090)."""
+    kept = [t for t in lookup if namespace(t) != "genre"]
+    tags = finalize_tags([*own, *kept])
+    original = [t for t in finalize_tags(lookup, song_genres) if namespace(t) == "genre" and t not in tags]
+    return tags, original
+
+
 def _year(value: Any) -> int | None:
     return timeutil.valid_year(value)
 
 
-def merge(sources: list[dict[str, Any]], mb: dict[str, Any] | None, links: dict[str, Any] | None, guess: dict[str, Any] | None, disc: dict[str, Any] | None = None) -> dict[str, Any]:
-    """Merge per-source results into {album, year, published_year, remix_year, version_year, tags}.
+def merge(sources: list[dict[str, Any]], mb: dict[str, Any] | None, links: dict[str, Any] | None, guess: dict[str, Any] | None, disc: dict[str, Any] | None = None, versioned: bool = False) -> dict[str, Any]:
+    """Merge per-source results into {album, year, published_year, remix_year, version_year, tags, original_genres}.
+
+    With `versioned` the tags hold only the sources' own genres (yt-dlp, SoundCloud, YouTube) and the non-genre lookup tags; the genres of the lookups, which describe the original recording, go to `original_genres` and are never applied (TAG-088, TAG-090).
 
     Precedence: tags the song's own Wikidata genres (all, links else guess), yt-dlp sources, MusicBrainz, user-given wiki links, wiki guess (country: MusicBrainz first);
     year (DATA-126) links, song-page infobox, guess, MusicBrainz, Discogs, never a yt-dlp year; album sources, song-page infobox, then MusicBrainz.
     """
     mb, links, guess, disc = mb or {}, links or {}, guess or {}, disc or {}
     yt = [t for s in sources for t in s.get("youtube_genres") or []]
-    tags = finalize_tags([*(t for r in (*sources, mb, links, guess) for t in r.get("tags") or []), *yt], links.get("song_genres") or guess.get("song_genres"))
+    song_genres = links.get("song_genres") or guess.get("song_genres")
+    own = [t for s in sources for t in s.get("tags") or []]
+    lookup = [t for r in (mb, links, guess) for t in r.get("tags") or []]
+    original: list[str] = []
+    if versioned:
+        tags, original = split_for_version([*own, *yt], lookup, song_genres)
+    else:
+        tags = finalize_tags([*own, *lookup, *yt], song_genres)
     box_album = links.get("infobox_album") or guess.get("infobox_album")
     box_year = links.get("infobox_year") or guess.get("infobox_year")
     albums = (*(s.get("album") for s in sources), box_album, mb.get("album"))
@@ -67,7 +110,7 @@ def merge(sources: list[dict[str, Any]], mb: dict[str, Any] | None, links: dict[
     year = next((y for y in map(_year, years) if y), None)
     published = next((y for y in (_year(s.get("published_year")) for s in sources) if y), None)
     version_year = _year(mb.get("remix_year"))
-    return {"album": album, "year": year, "published_year": published, "remix_year": version_year, "version_year": version_year, "tags": tags}
+    return {"album": album, "year": year, "published_year": published, "remix_year": version_year, "version_year": version_year, "tags": tags, "original_genres": original}
 
 
 def _service_of(url: str) -> str | None:
@@ -156,7 +199,7 @@ def gather(
         sources = [src_results[i] for i in sorted(src_results)]
         snapshot = dict(found)
         by_index = dict(src_results)
-    out = merge(sources, snapshot.get("mb"), snapshot.get("links"), snapshot.get("guess"), snapshot.get("disc"))
+    out = merge(sources, snapshot.get("mb"), snapshot.get("links"), snapshot.get("guess"), snapshot.get("disc"), versioned=is_versioned(version_kind))
     box = (snapshot.get("links") or {}).get("infobox_suggest") or (snapshot.get("guess") or {}).get("infobox_suggest")
     for key in ("wikipedia_song", "wikipedia_artist", "wikipedia_album"):
         out[key] = (snapshot.get("links") or {}).get(key) or (snapshot.get("guess") or {}).get(key)

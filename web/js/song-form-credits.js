@@ -24,6 +24,7 @@ const nameList = (v) => splitTokens(v);
 const OF_KINDS = ['cover', 'mashup'];
 const ofLabel = (kind) => (kind === 'mashup' ? 'Mashup of' : 'Cover of');
 const MAKERS_ASK = 'Who made this mashup? Confirm or edit Artists; sources go in Mashup of.';
+const COVER_ASK = 'Who performs this cover? Pick the reading that matches; the usual one is listed first.';
 
 export const kindFor = (text) => (/mixed\s+by/i.test(text) && !/remix|mashup/i.test(text) ? 'other' : 'remix');
 
@@ -102,11 +103,31 @@ export function creditsBlock({ tg, song = {}, getTitle, setTitle, emit }) {
     ? { kind: f.kind.value, name: f.name.value.trim() || null, by: nameList(f.by.value), year: validYear(Number(f.vyear.value)), of: OF_KINDS.includes(f.kind.value) ? nameList(f.of.value) : null }
     : null);
 
-  let ask = false;
+  let ask = '';
+  let knownOriginal = [];
+  const readingRow = (r, i, cur) => {
+    const v = r.version;
+    return {
+      key: `reading:${i}:${r.artists.join('|')}:${(v.of ?? []).join('|')}`,
+      text: `Reading ${i + 1}: Artists ${r.artists.join(' | ')}, ${ofLabel(v.kind)} ${v.of.join(', ')}, Title ${r.title}`,
+      apply: () => {
+        f.artists.value = joinTokens(r.artists);
+        if (r.title && r.title !== cur.title.trim()) setTitle(r.title);
+        f.kind.value = v.kind;
+        syncYear();
+        if (!f.name.value.trim() && v.name) f.name.value = v.name;
+        f.of.value = joinTokens(v.of);
+      },
+    };
+  };
   const items = () => {
     const cur = current();
-    const s = suggest(f.artists.value, cur.title, f.name.value);
-    ask = s.notes.includes('mashup_makers_unknown');
+    const s = suggest(f.artists.value, cur.title, f.name.value, { uploader: song.raw?.artist ?? '', original: knownOriginal });
+    ask = s.notes.includes('mashup_makers_unknown') ? MAKERS_ASK : '';
+    if (s.alternatives) {
+      ask = COVER_ASK;
+      return s.alternatives.map((r, i) => readingRow(r, i, cur)).filter((i) => !dismissed.has(i.key));
+    }
     const out = [];
     if (s.artists.length && !sameList(s.artists, cur.artists)) out.push({ key: `artists:${s.artists.join('|')}`, text: `Artists: ${s.artists.join(' | ')}`, apply: () => { f.artists.value = joinTokens(s.artists); } });
     const newFeat = missing(cur.featured, s.featured);
@@ -144,7 +165,7 @@ export function creditsBlock({ tg, song = {}, getTitle, setTitle, emit }) {
     panel.replaceChildren();
     if (!list.length) return;
     panel.append(el('p', { class: 't-caption muted' }, 'Suggested split'));
-    if (ask) panel.append(el('p', { class: 't-caption credits-warn' }, MAKERS_ASK));
+    if (ask) panel.append(el('p', { class: 't-caption credits-warn' }, ask));
     for (const it of list) {
       const apply = el('button', { class: 'link-btn t-caption', type: 'button' }, 'Apply');
       const dismiss = el('button', { class: 'link-btn t-caption', type: 'button' }, 'Dismiss');
@@ -241,6 +262,10 @@ export function creditsBlock({ tg, song = {}, getTitle, setTitle, emit }) {
         f.vyear.title = '';
       }
       dismissed.clear();
+      paint();
+    },
+    setOriginal(artist) {
+      knownOriginal = typeof artist === 'string' ? splitTokens(artist).flatMap((a) => a.split(/\s*(?:,|&|\band\b)\s*/i)).filter(Boolean) : [];
       paint();
     },
     setPublished(y) {
