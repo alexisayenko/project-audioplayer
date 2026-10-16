@@ -5,6 +5,7 @@ struct SongEditView: View {
     @EnvironmentObject var settings: Settings
     @EnvironmentObject var library: LibraryStore
     @Environment(\.dismiss) private var dismiss
+    @ScaledMetric(relativeTo: .body) private var coverSize: CGFloat = 88
 
     let song: ServerSong
     @StateObject private var form: SongFormState
@@ -98,7 +99,7 @@ struct SongEditView: View {
 
     private var summary: some View {
         HStack(spacing: 14) {
-            CoverImage(source: track?.thumbnail ?? song.track.thumbnail).frame(width: 88, height: 88)
+            CoverImage(source: track?.thumbnail ?? song.track.thumbnail).frame(width: coverSize, height: coverSize)
                 .clipShape(RoundedRectangle(cornerRadius: DS.Radius.radiusSm, style: .continuous))
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 6) {
@@ -114,7 +115,7 @@ struct SongEditView: View {
         VStack(alignment: .leading, spacing: DS.Space.space2) {
             HStack(spacing: DS.Space.space2) {
                 ForEach(links) { l in
-                    let glyph = Image(systemName: l.symbol).font(.system(size: 18, weight: .semibold))
+                    let glyph = Image(systemName: l.symbol).font(.headline)
                         .frame(width: DS.Space.hit, height: DS.Space.hit)
                         .background(Circle().fill(DS.Color.surfaceSunken))
                     if let url = l.url {

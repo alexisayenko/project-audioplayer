@@ -9,6 +9,7 @@ struct SettingsView: View {
     @Environment(\.colorScheme) private var scheme
     @State private var bytes: Int64 = 0
     @State private var confirmRemoveAll = false
+    @State private var removedTick = 0
     @State private var confirmReset = false
 
     var body: some View {
@@ -23,9 +24,10 @@ struct SettingsView: View {
             .padding(.horizontal, DS.Space.space4).padding(.top, DS.Space.space2).padding(.bottom, DS.Space.space4)
         }
         .scrollDismissesKeyboard(.interactively)
+        .sensoryFeedback(.success, trigger: removedTick)
         .dsGround()
         .confirmationDialog("Remove all \(library.tracks.filter { $0.localOnly != true }.count) downloads from this iPhone?", isPresented: $confirmRemoveAll, titleVisibility: .visible) {
-            Button("Remove all downloads", role: .destructive) { library.removeAllAudio() }
+            Button("Remove all downloads", role: .destructive) { library.removeAllAudio(); removedTick += 1 }
         } message: { Text("The songs stay in your library. Tap Download to get one back.") }
         .confirmationDialog("Reset to the default server?", isPresented: $confirmReset, titleVisibility: .visible) {
             Button("Reset", role: .destructive) { settings.resetConnection(); Task { await server.check(settings: settings) } }
@@ -81,7 +83,7 @@ struct SettingsView: View {
             row("Audio quality") {
                 HStack(spacing: 6) {
                     Text("High \u{00B7} 192 kbps").font(T.subhead).foregroundStyle(DS.Color.inkMuted)
-                    Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(DS.Color.inkFaint)
+                    Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(DS.Color.inkFaint)
                         .accessibilityHidden(true)
                 }
             }
@@ -191,7 +193,7 @@ struct GoogleSignInButton: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: DS.Space.space2) {
-                Text("G").font(.system(size: 17, weight: .bold, design: .rounded)).foregroundStyle(DS.Color.accentInk)
+                Text("G").font(.system(.body, design: .rounded, weight: .bold)).foregroundStyle(DS.Color.accentInk)
                 Text("Sign in with Google").font(T.subhead.weight(.semibold)).foregroundStyle(DS.Color.ink)
             }
             .frame(maxWidth: .infinity, minHeight: DS.Space.hit)

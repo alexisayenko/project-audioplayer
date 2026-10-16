@@ -59,6 +59,7 @@ extension RootView {
 /// Floating tab bar: a surface slab with the active item in an accent-tint pill.
 struct DSTabBar: View {
     @Binding var selection: AppTab
+    @ScaledMetric(relativeTo: .title3) private var icon: CGFloat = 22
 
     var body: some View {
         HStack(spacing: 0) {
@@ -66,9 +67,9 @@ struct DSTabBar: View {
                 let active = tab == selection
                 Button { selection = tab } label: {
                     VStack(spacing: DS.Space.space1) {
-                        Image(systemName: tab.symbol).font(.system(size: 22, weight: active ? .semibold : .regular))
+                        Image(systemName: tab.symbol).font(.system(size: icon, weight: active ? .semibold : .regular))
                             .foregroundStyle(active ? DS.Color.accent : DS.Color.inkMuted)
-                            .frame(height: 24)
+                            .frame(minHeight: icon + DS.Space.space1 / 2)
                         Text(tab.title).font(.caption.weight(.medium)).lineLimit(1).minimumScaleFactor(0.7)
                             .foregroundStyle(active ? DS.Color.accentInk : DS.Color.inkMuted)
                     }
@@ -82,7 +83,9 @@ struct DSTabBar: View {
                 .accessibilityAddTraits(active ? [.isSelected, .isButton] : .isButton)
             }
         }
-        .padding(6)
+        .padding(DS.Space.space1 + 2)
+        .accessibilityElement(children: .contain)
+        .accessibilityAddTraits(.isTabBar)
         .dsFloat(radius: DS.Radius.radiusTray)
     }
 }
@@ -90,11 +93,13 @@ struct DSTabBar: View {
 struct MiniPlayer: View {
     @EnvironmentObject var player: PlayerService
     let open: () -> Void
+    @ScaledMetric(relativeTo: .title3) private var icon: CGFloat = 22
+    @ScaledMetric(relativeTo: .body) private var cover: CGFloat = 44
 
     var body: some View {
         HStack(spacing: DS.Space.space3) {
             CoverImage(source: player.current?.thumbnail)
-                .frame(width: 44, height: 44)
+                .frame(width: cover, height: cover)
                 .clipShape(RoundedRectangle(cornerRadius: DS.Radius.radiusSm, style: .continuous))
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 0) {
@@ -103,17 +108,17 @@ struct MiniPlayer: View {
             }
             Spacer(minLength: 0)
             Button { player.toggle() } label: {
-                Image(systemName: player.isPlaying ? "pause.fill" : "play.fill").font(.system(size: 22))
-                    .foregroundStyle(DS.Color.ink).frame(width: DS.Space.hit, height: DS.Space.hit)
+                Image(systemName: player.isPlaying ? "pause.fill" : "play.fill").font(.system(size: icon))
+                    .foregroundStyle(DS.Color.ink).frame(minWidth: DS.Space.hit, minHeight: DS.Space.hit)
             }
             .accessibilityLabel(player.isPlaying ? "Pause" : "Play")
             Button { player.next() } label: {
-                Image(systemName: "forward.end.fill").font(.system(size: 22))
-                    .foregroundStyle(DS.Color.ink).frame(width: DS.Space.hit, height: DS.Space.hit)
+                Image(systemName: "forward.end.fill").font(.system(size: icon))
+                    .foregroundStyle(DS.Color.ink).frame(minWidth: DS.Space.hit, minHeight: DS.Space.hit)
             }
             .accessibilityLabel("Next song")
         }
-        .padding(.horizontal, DS.Space.space3).padding(.vertical, 10)
+        .padding(.horizontal, DS.Space.space3).padding(.vertical, DS.Space.space2 + 2)
         .contentShape(Rectangle())
         .onTapGesture(perform: open)
         .overlay(alignment: .bottomLeading) {

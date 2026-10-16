@@ -1,5 +1,6 @@
 import AVFoundation
 import MediaPlayer
+import UIKit
 
 /// Plays a queue of local tracks with background audio and lock-screen controls.
 @MainActor
@@ -47,6 +48,9 @@ final class PlayerService: ObservableObject {
     private var history: [String] = []
     private var manual: Set<String> = []
     private var viaTags: [String: Set<String>] = [:]
+    private var artwork: MPMediaItemArtwork?
+    private var artworkID: String?
+    private var artworkTask: Task<Void, Never>?
 
     var current: Track? { index.flatMap { queue.indices.contains($0) ? queue[$0] : nil } }
 
@@ -127,7 +131,7 @@ final class PlayerService: ObservableObject {
             viaTags[t.id, default: []].formUnion(hit.map { $0.lowercased() })
             if !queue.contains(where: { $0.id == t.id }) { queue.append(t); added += 1 }
         }
-        if index == nil, !queue.isEmpty { index = 0; duration = queue[0].duration ?? 0; player.replaceCurrentItem(with: AVPlayerItem(url: queue[0].fileURL)); updateNowPlaying() }
+        if index == nil, !queue.isEmpty { index = 0; duration = queue[0].duration ?? 0; refreshArtwork(); player.replaceCurrentItem(with: AVPlayerItem(url: queue[0].fileURL)); updateNowPlaying() }
         return added
     }
 
@@ -228,6 +232,7 @@ final class PlayerService: ObservableObject {
         guard queue.indices.contains(i) else { return }
         if remember, shuffle, let cur = current, i != index { history.append(cur.id) }
         index = i
+        refreshArtwork()
         let item = AVPlayerItem(url: queue[i].fileURL)
         player.replaceCurrentItem(with: item)
         duration = queue[i].duration ?? 0
@@ -239,18 +244,88 @@ final class PlayerService: ObservableObject {
         resume()
     }
 
+    private func refreshArtwork() {
+        artworkTask?.cancel()
+        guard let track = current else { artwork = nil; artworkID = nil; return }
+        if artworkID != track.id { artwork = nil; artworkID = nil }
+        artworkTask = Task { [weak self] in
+            do {
+                let image = try await Self.artworkImage(for: track)
+                guard let self, !Task.isCancelled, self.current?.id == track.id, let image else { return }
+                self.artwork = Self.makeArtwork(image)
+                self.artworkID = track.id
+                self.updateNowPlaying()
+            } catch is CancellationError {
+            } catch {
+                NSLog("artwork \(track.id): \(error.localizedDescription)")
+            }
+        }
+    }
+
+    private nonisolated static func makeArtwork(_ image: UIImage) -> MPMediaItemArtwork {
+        MPMediaItemArtwork(boundsSize: image.size) { @Sendable _ in image }
+    }
+
+    private nonisolated static var artworkDirectory: URL {
+        FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0].appendingPathComponent("artwork", isDirectory: true)
+    }
+
+    private nonisolated static func artworkImage(for track: Track) async throws -> UIImage? {
+        let file = artworkDirectory.appendingPathComponent("\(track.id).jpg")
+        if let data = try? Data(contentsOf: file), let img = UIImage(data: data) { return img }
+        try Task.checkCancellation()
+        var data = try await embeddedArtwork(track.fileURL)
+        try Task.checkCancellation()
+        if data == nil, let source = track.thumbnail { data = try await remoteArtwork(source) }
+        try Task.checkCancellation()
+        guard let data, let img = UIImage(data: data) else { return nil }
+        try? FileManager.default.createDirectory(at: artworkDirectory, withIntermediateDirectories: true)
+        try? (img.jpegData(compressionQuality: 0.9) ?? data).write(to: file, options: .atomic)
+        return img
+    }
+
+    private nonisolated static func embeddedArtwork(_ url: URL) async throws -> Data? {
+        guard FileManager.default.fileExists(atPath: url.path) else { return nil }
+        let items = try await AVURLAsset(url: url).load(.commonMetadata)
+        let art = AVMetadataItem.metadataItems(from: items, filteredByIdentifier: .commonIdentifierArtwork)
+        guard let item = art.first else { return nil }
+        return try await item.load(.dataValue)
+    }
+
+    private nonisolated static func remoteArtwork(_ source: String) async throws -> Data? {
+        let settings = await MainActor.run { Settings() }
+        let (base, token) = await MainActor.run { (settings.serverURL, settings.token) }
+        return try await withThrowingTaskGroup(of: Data?.self) { group in
+            group.addTask {
+                if source.hasPrefix("/") { return try await APIClient(baseURL: base, token: token).fetch(source) }
+                guard let url = CoverURL.resolve(source, baseURL: base, token: "") else { return nil }
+                var req = URLRequest(url: url)
+                req.timeoutInterval = 10
+                return try await URLSession.shared.data(for: req).0
+            }
+            group.addTask {
+                try await Task.sleep(for: .seconds(10))
+                throw URLError(.timedOut)
+            }
+            defer { group.cancelAll() }
+            return try await group.next() ?? nil
+        }
+    }
+
     private func updateNowPlaying() {
         guard let track = current else {
             MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
             return
         }
-        MPNowPlayingInfoCenter.default().nowPlayingInfo = [
+        var info: [String: Any] = [
             MPMediaItemPropertyTitle: track.title,
             MPMediaItemPropertyArtist: track.artist,
             MPMediaItemPropertyPlaybackDuration: duration,
             MPNowPlayingInfoPropertyElapsedPlaybackTime: position,
             MPNowPlayingInfoPropertyPlaybackRate: isPlaying ? 1.0 : 0.0,
         ]
+        if let artwork, artworkID == track.id { info[MPMediaItemPropertyArtwork] = artwork }
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = info
     }
 
     private func setupRemoteCommands() {

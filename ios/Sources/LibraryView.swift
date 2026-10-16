@@ -20,6 +20,11 @@ struct LibraryView: View {
     @State private var deleting: Track?
     @State private var onlyPhone = false
     @State private var showAdd = false
+    @State private var queueTick = 0
+    @State private var deleteTick = 0
+    @ScaledMetric(relativeTo: .title2) private var plusSize: CGFloat = 22
+    @ScaledMetric(relativeTo: .body) private var moreSize: CGFloat = 18
+    @ScaledMetric(relativeTo: .body) private var moreWidth: CGFloat = 24
 
     private var counts: [(tag: String, count: Int)] {
         var counts: [String: (tag: String, count: Int)] = [:]
@@ -74,7 +79,7 @@ struct LibraryView: View {
                         HStack(spacing: DS.Space.space3) {
                             Text("\(library.songs.count) \(library.songs.count == 1 ? "song" : "songs")").dsCaption()
                             Button { showAdd = true } label: {
-                                Image(systemName: "plus").font(.system(size: 22, weight: .semibold))
+                                Image(systemName: "plus").font(.system(size: plusSize, weight: .semibold))
                             }
                             .buttonStyle(LitCircleButtonStyle())
                             .accessibilityLabel("Add a song")
@@ -82,19 +87,12 @@ struct LibraryView: View {
                     }
                     searchField
                     chips(counts)
-                    HStack {
-                        Menu {
-                            Picker("Sort", selection: $sort) { ForEach(LibrarySort.allCases) { Text($0.rawValue).tag($0) } }
-                        } label: {
-                            HStack(spacing: 6) {
-                                Text(sort.rawValue); Image(systemName: "chevron.down").font(T.caption.weight(.semibold))
-                            }
-                            .font(T.headline).foregroundStyle(DS.Color.accentInk).frame(minHeight: DS.Space.hit)
-                        }
-                        .accessibilityLabel("Sort: \(sort.rawValue)")
-                        Spacer()
-                        ToggleChip(title: "Downloaded", count: library.tracks.count, on: onlyPhone) { onlyPhone.toggle() }
+                    if typeSize.isAccessibilitySize {
+                        VStack(alignment: .leading, spacing: DS.Space.space2) { sortMenu; downloadedChip }
+                    } else {
+                        HStack { sortMenu; Spacer(); downloadedChip }
                     }
+                    if server.reachable == false && !library.songs.isEmpty { offlineBanner }
                     list(tracks)
                 }
                 .padding(.horizontal, DS.Space.space4).padding(.top, DS.Space.space2).padding(.bottom, DS.Space.space4)
@@ -111,6 +109,8 @@ struct LibraryView: View {
                         .task(id: toast) { try? await Task.sleep(for: .seconds(2)); self.toast = nil }
                 }
             }
+            .sensoryFeedback(.success, trigger: queueTick)
+            .sensoryFeedback(.warning, trigger: deleteTick)
             .sheet(item: $editing) { SongEditView(song: $0) }
             .sheet(isPresented: $showAdd) { AddSheet() }
             .onChange(of: library.phoneIDs) { _, _ in server.reconcile(library) }
@@ -124,7 +124,7 @@ struct LibraryView: View {
             .confirmationDialog("Delete \"\(deleting?.title ?? "")\" from the library?", isPresented: Binding(
                 get: { deleting != nil }, set: { if !$0 { deleting = nil } }), titleVisibility: .visible) {
                 Button("Delete from library", role: .destructive) {
-                    if let t = deleting { Task { await delete(t) } }
+                    if let t = deleting { deleteTick += 1; Task { await delete(t) } }
                     deleting = nil
                 }
             } message: { Text("Removes the song from your library, on the server and on this iPhone.") }
@@ -146,6 +146,23 @@ struct LibraryView: View {
         .dsSlab(radius: 16)
     }
 
+    private var sortMenu: some View {
+        Menu {
+            Picker("Sort", selection: $sort) { ForEach(LibrarySort.allCases) { Text($0.rawValue).tag($0) } }
+        } label: {
+            HStack(spacing: 6) {
+                Text(sort.rawValue).lineLimit(1).minimumScaleFactor(0.7)
+                Image(systemName: "chevron.down").font(T.caption.weight(.semibold))
+            }
+            .font(T.headline).foregroundStyle(DS.Color.accentInk).frame(minHeight: DS.Space.hit)
+        }
+        .accessibilityLabel("Sort: \(sort.rawValue)")
+    }
+
+    private var downloadedChip: some View {
+        ToggleChip(title: "Downloaded", count: library.tracks.count, on: onlyPhone) { onlyPhone.toggle() }
+    }
+
     private func chips(_ counts: [(tag: String, count: Int)]) -> some View {
         let cols = typeSize.isAccessibilitySize ? 2 : 4
         return LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: DS.Space.space2), count: cols), spacing: DS.Space.space2) {
@@ -161,20 +178,31 @@ struct LibraryView: View {
     private func list(_ tracks: [Track]) -> some View {
         if library.songs.isEmpty && arriving.isEmpty {
             if server.forbidden {
-                empty(APIError.forbiddenMessage)
+                unavailable("Access denied", "lock.slash", APIError.forbiddenMessage)
             } else if !ServerLink.hasCredentials(settings) {
-                empty("Sign in in Settings to load your library.")
+                unavailable("Sign in to load your library", "person.crop.circle", "Open the Settings tab to sign in.")
             } else if server.syncing || !server.synced && server.reachable != false {
-                empty("Loading your library\u{2026}")
+                unavailable("Loading your library\u{2026}", "arrow.triangle.2.circlepath", nil)
             } else if !server.synced {
-                empty("Can't reach the server. Pull down to try again.")
+                unavailable("Can't reach the server", "wifi.slash", "Check the connection and try again.") {
+                    Button("Retry") { Task { await server.syncCatalog(settings: settings, library: library) } }
+                        .buttonStyle(.borderedProminent).tint(DS.Color.accentStrong)
+                }
             } else {
-                empty("No songs yet. Tap + to add one.")
+                unavailable("No songs yet", "music.note.list", "Add a song to start your library.") {
+                    Button("Add song") { showAdd = true }.buttonStyle(.borderedProminent).tint(DS.Color.accentStrong)
+                }
             }
         } else if tracks.isEmpty && arriving.isEmpty {
-            empty(onlyPhone && selection.isEmpty && search.isEmpty
-                  ? "Nothing is on this iPhone yet. Tap Downloaded to see every song."
-                  : "No songs match. Clear the search or the filters.")
+            if onlyPhone && selection.isEmpty && search.isEmpty {
+                unavailable("Nothing on this iPhone yet", "iphone", "Show every song instead.") {
+                    Button("Show all songs") { onlyPhone = false }.buttonStyle(.bordered)
+                }
+            } else {
+                unavailable("No songs match", "magnifyingglass", "Clear the search or the filters.") {
+                    Button("Clear filters") { search = ""; selection = [] }.buttonStyle(.bordered)
+                }
+            }
         } else {
             LazyVStack(spacing: 0) {
                 ForEach(arriving) { t in
@@ -196,9 +224,22 @@ struct LibraryView: View {
         Rectangle().fill(DS.Color.line).frame(height: 1).padding(.horizontal, DS.Space.space3)
     }
 
-    private func empty(_ text: String) -> some View {
-        Text(text).font(T.body).foregroundStyle(DS.Color.inkMuted).multilineTextAlignment(.center)
-            .frame(maxWidth: .infinity).padding(DS.Space.space6)
+    private func unavailable<A: View>(_ title: String, _ icon: String, _ detail: String?, @ViewBuilder actions: () -> A = { EmptyView() }) -> some View {
+        ContentUnavailableView {
+            Label(title, systemImage: icon).font(T.headline).foregroundStyle(DS.Color.ink)
+        } description: {
+            if let detail { Text(detail).font(T.body).foregroundStyle(DS.Color.inkMuted) }
+        } actions: { actions() }
+        .frame(maxWidth: .infinity).padding(.vertical, DS.Space.space6)
+    }
+
+    private var offlineBanner: some View {
+        Label("Offline. Showing your saved library.", systemImage: "wifi.slash")
+            .font(T.caption).foregroundStyle(DS.Color.ink)
+            .padding(.horizontal, DS.Space.space3).padding(.vertical, DS.Space.space2)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .dsSlab(radius: DS.Radius.radiusKey)
+            .accessibilityElement(children: .combine)
     }
 
     private func row(_ track: Track, in tracks: [Track]) -> some View {
@@ -208,23 +249,40 @@ struct LibraryView: View {
         let hasAudio = onPhone || (track.onServer ?? true)
         let playable = tracks.filter { library.contains($0.id) }
         let start = { player.play(playable, startAt: playable.firstIndex(of: track) ?? 0) }
-        let fetch = { Task { if await server.download(track, settings: settings, into: library) { player.playNow(track) } } }
-        let getAudio = { server.getAudio(track, settings: settings, library: library, player: player, playWhenReady: false) }
-        return SongRow(title: track.title, subtitle: subtitle(track), source: track.source, thumbnail: track.thumbnail,
-                       duration: onPhone ? track.duration : nil,
-                       downloading: onPhone ? nil : progress,
-                       onDownload: !onPhone && progress == nil && hasAudio ? { fetch() } : nil,
-                       noAudio: !onPhone && !hasAudio && progress == nil,
-                       playing: playing) {
+        let fetch: () -> Void = { Task { if await server.download(track, settings: settings, into: library) { player.playNow(track) } } }
+        let getAudio: () -> Void = { server.getAudio(track, settings: settings, library: library, player: player, playWhenReady: false) }
+        let playNext = { player.playNext(track); queueTick += 1; toast = "Plays next" }
+        let enqueue = {
+            if player.enqueue([track]) == 1 { toast = "Added to queue"; queueTick += 1 } else { toast = "Already in queue" }
+        }
+        let removeAudio = { library.removeAudio(track.id); toast = "Removed from this iPhone" }
+        let state = onPhone ? "on iPhone" : progress != nil ? "downloading \(Int((progress ?? 0) * 100)) percent" : hasAudio ? "on server" : "no audio yet"
+        let tap = {
+            if onPhone { start() }
+            else if !hasAudio { if progress == nil { toast = "No audio yet" } }
+            else if progress == nil { fetch() }
+        }
+        return LibrarySongRow(title: track.title, subtitle: subtitle(track), source: track.source, thumbnail: track.thumbnail,
+                    duration: onPhone ? track.duration : nil,
+                    downloading: onPhone ? nil : progress,
+                    onDownload: !onPhone && progress == nil && hasAudio ? { fetch() } : nil,
+                    noAudio: !onPhone && !hasAudio && progress == nil,
+                    playing: playing, a11yLabel: "\(track.title), \(track.artist), \(state)", onTap: tap, actions: {
+            Button("Edit") { editing = ServerSong(track) }
+            if onPhone {
+                Button("Play next", action: playNext)
+                Button("Add to queue", action: enqueue)
+                if track.localOnly != true { Button("Remove from iPhone", action: removeAudio) }
+            } else if !hasAudio, progress == nil { Button("Get audio", action: getAudio) }
+            Button("Delete") { deleting = track }
+        }) {
                 Menu {
                     Button { editing = ServerSong(track) } label: { Label("Edit", systemImage: "pencil") }
                     if onPhone {
-                        Button { player.playNext(track); toast = "Plays next" } label: { Label("Play next", systemImage: "text.insert") }
-                        Button { toast = player.enqueue([track]) == 1 ? "Added to queue" : "Already in queue" } label: {
-                            Label("Add to queue", systemImage: "text.badge.plus")
-                        }
+                        Button(action: playNext) { Label("Play next", systemImage: "text.insert") }
+                        Button(action: enqueue) { Label("Add to queue", systemImage: "text.badge.plus") }
                         if track.localOnly != true {
-                            Button { library.removeAudio(track.id); toast = "Removed from this iPhone" } label: {
+                            Button(action: removeAudio) {
                                 Label("Remove from iPhone", systemImage: "iphone.slash")
                             }
                         }
@@ -235,20 +293,19 @@ struct LibraryView: View {
                     }
                     Button(role: .destructive) { deleting = track } label: { Label("Delete from library", systemImage: "trash") }
                 } label: {
-                    Image(systemName: "ellipsis").font(.system(size: 18)).foregroundStyle(playing ? DS.Color.accentInk : DS.Color.inkFaint)
-                        .frame(width: 24, height: DS.Space.hit)
+                    Image(systemName: "ellipsis").font(.system(size: moreSize)).foregroundStyle(playing ? DS.Color.accentInk : DS.Color.inkFaint)
+                        .frame(width: moreWidth, height: DS.Space.hit)
                         .contentShape(Rectangle().inset(by: -10))
                 }
                 .accessibilityLabel("More actions for \(track.title)")
             }
-        .onTapGesture {
-            if onPhone { start() }
-            else if !hasAudio { if progress == nil { toast = "No audio yet" } }
-            else if progress == nil { fetch() }
-        }
-        .accessibilityAddTraits(.isButton)
-        .accessibilityAction(named: onPhone ? "Play" : "Download") {
-            if onPhone { start() } else if hasAudio, progress == nil { fetch() }
+        .contextMenu {
+            Button { editing = ServerSong(track) } label: { Label("Edit", systemImage: "pencil") }
+            if onPhone {
+                Button(action: playNext) { Label("Play next", systemImage: "text.insert") }
+                Button(action: enqueue) { Label("Add to queue", systemImage: "text.badge.plus") }
+            }
+            Button(role: .destructive) { deleting = track } label: { Label("Delete from library", systemImage: "trash") }
         }
     }
 
@@ -259,5 +316,89 @@ struct LibraryView: View {
             catch { toast = "Couldn't delete. Check the server and try again."; return }
         }
         library.delete(t.id)
+    }
+}
+
+struct LibrarySongRow<Menu: View, Actions: View>: View {
+    let title: String
+    let subtitle: String
+    var source: String?
+    let thumbnail: String?
+    var duration: Double?
+    var downloading: Double?
+    var onDownload: (() -> Void)?
+    var noAudio = false
+    var playing = false
+    let a11yLabel: String
+    let onTap: () -> Void
+    @Environment(\.dynamicTypeSize) private var typeSize
+    @ScaledMetric(relativeTo: .body) private var coverSize: CGFloat = 56
+    @ViewBuilder var actions: () -> Actions
+    @ViewBuilder var menu: () -> Menu
+
+    var body: some View {
+        HStack(spacing: DS.Space.space3) {
+            Button(action: onTap) {
+                HStack(spacing: DS.Space.space3) {
+                    CoverImage(source: thumbnail)
+                        .frame(width: coverSize, height: coverSize)
+                        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.radiusSm, style: .continuous))
+                        .opacity(noAudio ? 0.55 : 1)
+                        .accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text(title).font(T.headline).foregroundStyle(DS.Color.ink).lineLimit(2)
+                        let artist = Text(subtitle).foregroundStyle(playing ? DS.Color.ink : DS.Color.inkMuted).lineLimit(1)
+                        if typeSize.isAccessibilitySize {
+                            VStack(alignment: .leading, spacing: 0) {
+                                artist
+                                if let source { Text(sourceLabel(source)).foregroundStyle(DS.Color.inkFaint).lineLimit(1).minimumScaleFactor(0.7) }
+                            }
+                            .font(T.subhead)
+                        } else {
+                            HStack(spacing: 0) {
+                                artist.layoutPriority(1)
+                                if let source {
+                                    Text(" \u{00B7} " + sourceLabel(source)).foregroundStyle(DS.Color.inkFaint).lineLimit(1)
+                                }
+                            }
+                            .font(T.subhead)
+                        }
+                    }
+                    .opacity(noAudio ? 0.55 : 1)
+                    Spacer(minLength: 0)
+                    if onDownload == nil {
+                        if noAudio {
+                            Text("No audio yet").font(T.caption).foregroundStyle(DS.Color.inkMuted)
+                                .multilineTextAlignment(.trailing).frame(maxWidth: 84, alignment: .trailing).fixedSize(horizontal: false, vertical: true)
+                        } else if let downloading {
+                            Text("Downloading \(Int(downloading * 100))%").font(T.caption).foregroundStyle(DS.Color.accentInk)
+                                .lineLimit(typeSize.isAccessibilitySize ? 2 : 1).multilineTextAlignment(.trailing)
+                                .fixedSize(horizontal: !typeSize.isAccessibilitySize, vertical: true)
+                        } else if let duration {
+                            Text(formatTime(duration)).font(T.time).foregroundStyle(playing ? DS.Color.ink : DS.Color.inkMuted)
+                        }
+                    }
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(a11yLabel)
+            .accessibilityAddTraits(playing ? .isSelected : [])
+            .accessibilityActions { actions() }
+            if let onDownload {
+                Button(action: onDownload) {
+                    Text("Download").font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.accentInk)
+                        .padding(.horizontal, DS.Space.space3).frame(minHeight: 32)
+                        .overlay(Capsule().stroke(DS.Color.accentInk, lineWidth: 1.5))
+                        .contentShape(Capsule().inset(by: -6))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Download \(title)")
+            }
+            menu()
+        }
+        .padding(.horizontal, DS.Space.space3).padding(.vertical, DS.Space.space3)
+        .frame(minHeight: DS.Space.hit)
+        .background(playing ? DS.Color.accentTint : Color.clear)
     }
 }

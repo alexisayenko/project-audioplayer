@@ -88,6 +88,7 @@ struct AddSheet: View {
     @EnvironmentObject var settings: Settings
     @EnvironmentObject var server: ServerLink
     @Environment(\.dismiss) private var dismiss
+    @ScaledMetric(relativeTo: .body) private var previewCover: CGFloat = 72
     @Environment(\.colorScheme) private var scheme
     @State private var path: [String] = []
     @State private var contentHeight: CGFloat = 0
@@ -133,6 +134,7 @@ struct AddSheet: View {
         .onChange(of: flow.phase) { _, phase in
             if phase == .saved { dismiss() }
         }
+        .sensoryFeedback(.success, trigger: flow.phase == .saved)
         .onDisappear { flow.cancelLookups() }
     }
 
@@ -159,7 +161,7 @@ struct AddSheet: View {
     private var linkField: some View {
         VStack(alignment: .leading, spacing: DS.Space.space1) {
             HStack(spacing: DS.Space.space2) {
-                TextField("YouTube or SoundCloud link, or YouTube video id", text: $flow.url)
+                TextField("YouTube or SoundCloud link", text: $flow.url)
                     .textInputAutocapitalization(.never).autocorrectionDisabled().keyboardType(.URL)
                     .submitLabel(.go).font(T.subhead).frame(minHeight: 44).foregroundStyle(DS.Color.ink)
                     .onSubmit { fetch() }
@@ -177,13 +179,13 @@ struct AddSheet: View {
                 .opacity(fetchOff ? 0.5 : 1)
             }
             .padding(.leading, DS.Space.space4).padding(.trailing, DS.Space.space2).frame(minHeight: 48)
-            .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(DS.Color.surfaceSunken))
+            .background(RoundedRectangle(cornerRadius: DS.Radius.radiusKey, style: .continuous).fill(DS.Color.surfaceSunken))
             .overlay {
-                if linkFailed { RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(DS.Color.power, lineWidth: 1.5) }
+                if linkFailed { RoundedRectangle(cornerRadius: DS.Radius.radiusKey, style: .continuous).strokeBorder(DS.Color.power, lineWidth: 1.5) }
             }
             if let known = knownSong {
                 HStack(alignment: .center, spacing: DS.Space.space2) {
-                    Image(systemName: "checkmark.circle.fill").font(.system(size: 14, weight: .semibold))
+                    Image(systemName: "checkmark.circle.fill").font(.footnote.weight(.semibold))
                         .foregroundStyle(DS.Color.accentInk).accessibilityHidden(true)
                     Text("Already in your library: \(known.title) · \(known.artist)")
                         .font(T.caption).foregroundStyle(DS.Color.ink).lineLimit(2)
@@ -200,7 +202,7 @@ struct AddSheet: View {
             if linkFailed, let m = flow.message {
                 let copy = linkErrorCopy(code: flow.errorCode, detail: m)
                 HStack(alignment: .top, spacing: DS.Space.space2) {
-                    Image(systemName: "exclamationmark.circle").font(.system(size: 14, weight: .semibold))
+                    Image(systemName: "exclamationmark.circle").font(.footnote.weight(.semibold))
                         .foregroundStyle(DS.Color.power).padding(.top, 2).accessibilityHidden(true)
                     (copy.lead.isEmpty ? Text(copy.rest) : Text(copy.lead).font(T.caption.weight(.semibold)) + Text(" " + copy.rest))
                         .font(T.caption).foregroundStyle(DS.Color.ink)
@@ -255,7 +257,7 @@ struct AddSheet: View {
     @ViewBuilder
     private func previewSections(_ p: Preview) -> some View {
         HStack(spacing: 14) {
-            CoverImage(source: p.thumbnail).frame(width: 72, height: 72)
+            CoverImage(source: p.thumbnail).frame(width: previewCover, height: previewCover)
                 .clipShape(RoundedRectangle(cornerRadius: DS.Radius.radiusSm, style: .continuous))
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
@@ -263,8 +265,8 @@ struct AddSheet: View {
                 if !summary.isEmpty { Text(summary).font(T.subhead).foregroundStyle(DS.Color.inkMuted).lineLimit(1) }
                 HStack(spacing: DS.Space.space2) {
                     if !timing.isEmpty { Text(timing).font(T.time).foregroundStyle(DS.Color.inkMuted) }
-                    Text(sourceLabel(p.source ?? sourceOf(id: p.id))).font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(DS.Color.inkMuted).padding(.horizontal, DS.Space.space2).frame(height: 20)
+                    Text(sourceLabel(p.source ?? sourceOf(id: p.id))).font(.caption2.weight(.semibold))
+                        .foregroundStyle(DS.Color.inkMuted).padding(.horizontal, DS.Space.space2).padding(.vertical, DS.Space.space1 / 2)
                         .background(Capsule().fill(DS.Color.surfaceSunken))
                 }
             }

@@ -3,12 +3,19 @@ import SwiftUI
 struct PlaybackView: View {
     @EnvironmentObject var player: PlayerService
     @EnvironmentObject var library: LibraryStore
+    @ScaledMetric(relativeTo: .body) private var menuIcon: CGFloat = 20
+    @ScaledMetric(relativeTo: .body) private var menuHit: CGFloat = DS.Space.hit
+    @ScaledMetric(relativeTo: .body) private var grip: CGFloat = 16
     @State private var showTags = false
+    @State private var shuffleTaps = 0
+    @State private var repeatTaps = 0
+    @State private var toggleTaps = 0
     @State private var showQueue = false
     @State private var toast: String?
     @State private var editing: ServerSong?
 
     private var current: Track? { player.current }
+    private var menuSize: CGFloat { min(max(menuHit, DS.Space.hit), DS.Space.hit * 1.5) }
 
     private func subtitle(_ t: Track) -> String {
         [t.artist, t.year.map(String.init), sourceLabel(t.source)].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · ")
@@ -26,14 +33,17 @@ struct PlaybackView: View {
                 cover
                 progress
                 TransportTray(playing: player.isPlaying, shuffle: player.shuffle, repeatMode: player.repeatMode,
-                              onShuffle: { player.shuffle.toggle() }, onPrevious: { player.previous() },
-                              onToggle: { player.toggle() }, onNext: { player.next() },
-                              onRepeat: { player.repeatMode = player.repeatMode.next })
+                              onShuffle: { shuffleTaps += 1; player.shuffle.toggle() }, onPrevious: { player.previous() },
+                              onToggle: { toggleTaps += 1; player.toggle() }, onNext: { player.next() },
+                              onRepeat: { repeatTaps += 1; player.repeatMode = player.repeatMode.next })
                 upNextCard
             }
             .padding(.horizontal, DS.Space.space4).padding(.top, DS.Space.space2).padding(.bottom, DS.Space.space4)
         }
         .dsGround()
+        .sensoryFeedback(.selection, trigger: shuffleTaps)
+        .sensoryFeedback(.selection, trigger: repeatTaps)
+        .sensoryFeedback(.impact, trigger: toggleTaps)
         .overlay(alignment: .top) {
             if let toast {
                 Text(toast).font(T.caption).foregroundStyle(DS.Color.ink)
@@ -61,8 +71,8 @@ struct PlaybackView: View {
             Button { player.skip(by: 5) } label: { Label("Forward 5 seconds", systemImage: "goforward.5") }
             Button(role: .destructive) { player.clearQueue() } label: { Label("Clear queue", systemImage: "trash") }
         } label: {
-            Image(systemName: "ellipsis").font(.system(size: 20)).foregroundStyle(DS.Color.ink)
-                .frame(width: DS.Space.hit, height: DS.Space.hit)
+            Image(systemName: "ellipsis").font(.system(size: min(menuIcon, menuSize / 2))).foregroundStyle(DS.Color.ink)
+                .frame(width: menuSize, height: menuSize)
                 .dsSlab(radius: DS.Radius.radiusPill)
         }
         .accessibilityLabel("More")
@@ -70,7 +80,7 @@ struct PlaybackView: View {
 
     /// The song's cover, full width and square, with title and artist · album · year on a bottom gradient.
     private var cover: some View {
-        Color.clear.frame(maxWidth: .infinity).frame(height: 300)
+        Color.clear.frame(maxWidth: .infinity).aspectRatio(1, contentMode: .fit).frame(maxHeight: 520)
             .overlay { CoverImage(source: current?.thumbnail).accessibilityHidden(true) }
             .overlay(alignment: .bottom) {
                 VStack(alignment: .leading, spacing: 2) {
@@ -133,7 +143,7 @@ struct PlaybackView: View {
                         Text(t.artist).font(T.caption).foregroundStyle(DS.Color.inkMuted).lineLimit(1)
                     }
                     Spacer(minLength: 0)
-                    Text("\u{22EE}\u{22EE}").font(.system(size: 16)).foregroundStyle(DS.Color.inkFaint).accessibilityHidden(true)
+                    Text("\u{22EE}\u{22EE}").font(.system(size: grip)).foregroundStyle(DS.Color.inkFaint).accessibilityHidden(true)
                 }
                 .accessibilityElement(children: .combine)
             }
