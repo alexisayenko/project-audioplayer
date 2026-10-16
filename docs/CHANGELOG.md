@@ -2,6 +2,11 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-16 (sixth batch, built, not deployed)
+
+- Docs: planned: canonical genre vocabulary (ADR-0023, [task-0035](tasks/task-0035.md), TAG-077 to TAG-084): the 15 Discogs genres, about 550 styles and a reviewed extras file; other `genre:` values are rejected with 422 and "did you mean"; a picker replaces free text; the migration reports unmappable tags in a review file; nothing built.
+- Docs: planned: hybrid Genres outline (GEN-046 to GEN-050): Discogs genre, then Discogs style, then Wikidata subgenres (Electronic > Trance > Progressive trance), without the Wikidata umbrella chain; GEN-016 tree shape and GEN-036 skip list are superseded (GEN-036 stays as a fallback only); ADR-0021 amended.
+
 ## 2026-10-16 (fifth batch, built, not deployed)
 
 - Server: genre cleanup (TAG-071, TAG-073, TAG-075, TAG-076, GEN-039): new aliases (dnb, drum & bass, drum n bass to drum and bass; edm to electronic dance; euro pop to europop; eurohouse to euro house; electronic pop to electropop; festival progressive house, festival trap and red disco to their parent), a new retag table (appalachian folk and bard to folk, west coast swing to swing, romantic to classical, psychedelic to psychedelic rock, nederpop to pop, orchestral to modern classical, alternative to alternative rock, indie to indie rock, progressive to progressive house when the song has an electronic tag else progressive rock), more junk dropped (popular, underground, club, cyberpunk); dystopian is retagged to darksynth (no established "dystopian synthwave" genre), real subgenres kept with a family entry, nu-nrg and uplifting trance get a hard trance and trance parent (neurofunk, liquid funk, techstep, melodic techno, darksynth, psybient, estrada, epic, trailer and others), disco now Funk / Soul, new wave Rock, acid jazz Jazz; `GET /genres` no longer offers built-in names that would be rewritten on save; the migration reruns at the next start (backup in `backups-genre-merge`, idempotent).
