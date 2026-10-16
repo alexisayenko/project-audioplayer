@@ -87,7 +87,7 @@ export function createSynthPanel({ doc = document, store = defaultStore } = {}) 
 
   const presets = make(doc, 'section', 'viz-synth-presets');
   presets.setAttribute('aria-labelledby', 'viz-synth-presets-h');
-  const ph = make(doc, 'h3', 'viz-synth-heading', 'Presets');
+  const ph = make(doc, 'h3', 'viz-synth-heading t-eyebrow', 'Presets');
   ph.id = 'viz-synth-presets-h';
   const grid = make(doc, 'div', 'viz-synth-preset-grid');
   const tiles = [];
@@ -113,7 +113,7 @@ export function createSynthPanel({ doc = document, store = defaultStore } = {}) 
   }
   presets.append(ph, grid);
   root.append(presets);
-  root.append(make(doc, 'h3', 'viz-synth-heading', 'Fine tune'));
+  root.append(make(doc, 'h3', 'viz-synth-heading t-eyebrow', 'Fine tune'));
 
   const fields = [];
   for (const group of SYNTH_GROUPS) {

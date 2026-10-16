@@ -9,9 +9,8 @@ test('selected toggle has a transparent interior and no later background overrid
   const at = css.indexOf(`${SEL} {`);
   assert.ok(at >= 0, 'selected toggle rule exists');
   const body = css.slice(css.indexOf('{', at) + 1, css.indexOf('}', at));
-  assert.match(body, /background:\s*transparent/);
-  assert.match(body, /background-image:\s*none/);
-  assert.match(body, /,\s*0 0 [1-9]\d*px color-mix\(in srgb, var\(--accent\) 25%, transparent\)/, 'faint outer glow at 25%');
+  assert.match(body, /background(-color)?:\s*transparent/);
+  assert.match(body, /,\s*0 0 [1-9]\d*px color-mix\(in srgb, var\(--fill\) 25%, transparent\)/, 'faint outer glow at 25%');
   assert.doesNotMatch(body, /inset 0 0 [1-9]\d*px/, 'no inset glow');
   const after = css.slice(css.indexOf('}', at) + 1);
   for (const m of after.matchAll(/([^{}]*\.key\.ghost\.on[^{}]*)\{([^}]*)\}/g)) {

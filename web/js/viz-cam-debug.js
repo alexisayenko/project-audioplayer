@@ -46,7 +46,7 @@ export const CAM_COLLAPSED_KEY = 'ap2.viz.dbg.camCollapsed';
 
 export function createCamPanel(doc = document) {
   const root = doc.createElement('div');
-  root.className = 'viz-cam-panel';
+  root.className = 'viz-cam-panel t-caption';
   root.addEventListener('click', (e) => e.stopPropagation());
   const head = doc.createElement('button');
   head.type = 'button';
@@ -150,10 +150,11 @@ export function createCamPanel(doc = document) {
     try { void globalThis.navigator?.clipboard?.writeText(`${camFormat(cam)} ${nowFormat(cam)}`); } catch { /* clipboard unavailable */ }
   });
   const note = doc.createElement('small');
+  note.className = 't-micro';
   note.textContent = `Yaw is fully covered up to about +-${yawCoverNote()} deg at 16:9; beyond that the side of the grid fades out instead of showing a bare edge. Sync is a trim added to the automatic output-latency estimate (positive = visuals earlier).`;
   btns.append(reset, copy);
   const flightLine = doc.createElement('small');
-  flightLine.className = 'viz-flight-line';
+  flightLine.className = 'viz-flight-line t-micro';
   flightLine.hidden = true;
   const paintFlight = () => {
     const on = flight.active();

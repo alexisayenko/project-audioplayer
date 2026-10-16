@@ -96,9 +96,10 @@ export function debugLines(i) {
 function styleStatus(el) {
   el.id = 'viz-status';
   el.setAttribute?.('aria-hidden', 'true');
+  el.setAttribute?.('data-theme', 'dark');
   Object.assign(el.style ?? {}, {
-    position: 'fixed', left: 'max(8px, env(safe-area-inset-left))', bottom: '8px', zIndex: '100', pointerEvents: 'none', font: '11px monospace',
-    color: '#fff', background: 'rgba(0,0,0,.65)', padding: '4px 6px', whiteSpace: 'pre-wrap', maxWidth: 'calc(100vw - 16px)', display: 'none',
+    position: 'fixed', left: 'max(8px, env(safe-area-inset-left))', bottom: '8px', zIndex: 'var(--z-full)', pointerEvents: 'none', font: '11px/14px var(--font-mono)',
+    color: 'var(--ink)', background: 'var(--scrim)', padding: '4px 6px', whiteSpace: 'pre-wrap', maxWidth: 'calc(100vw - 16px)', display: 'none',
   });
 }
 

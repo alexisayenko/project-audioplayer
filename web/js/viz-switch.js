@@ -38,11 +38,11 @@ export function createModeSwitch({ root, modes, current, onSelect, win = globalT
 
   const button = document.createElement('button');
   button.type = 'button';
-  button.className = 'viz-dd-btn';
+  button.className = 'viz-dd-btn t-caption';
   button.setAttribute('aria-haspopup', 'listbox');
   button.setAttribute('aria-expanded', 'false');
   const list = document.createElement('div');
-  list.className = 'viz-dd-list';
+  list.className = 'viz-dd-list t-subhead';
   list.setAttribute('role', 'listbox');
   list.setAttribute('aria-label', 'Visualizer mode');
   list.hidden = true;

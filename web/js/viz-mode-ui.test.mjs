@@ -249,11 +249,10 @@ test('the overlay idle class (dock and controls) follows the timer and the keep 
   fs.close();
 });
 
-test('CSS hides the overlay dock with the controls: opacity and visibility, no pointer events, instant under reduced motion', async () => {
+test('CSS hides the overlay dock with the controls: opacity and visibility, no pointer events, token durations', async () => {
   const css = (await import('node:fs')).readFileSync(new URL('../viz.css', import.meta.url), 'utf8');
   assert.match(css, /\.viz-full\.idle \.viz-ctl, \.viz-full\.idle > \.viz-dock \{ opacity: 0; visibility: hidden; pointer-events: none; \}/);
-  assert.match(css, /\.viz-full > \.viz-dock \{ transition: opacity \.3s ease, visibility \.3s;/);
-  assert.match(css, /prefers-reduced-motion: reduce\) \{[^}]*\.viz-full > \.viz-dock[^}]*transition: none/);
+  assert.match(css, /\.viz-full > \.viz-dock \{ transition: opacity var\(--dur-slow\) var\(--ease-out\), visibility var\(--dur-slow\);/);
   assert.doesNotMatch(css, /\.idle[^{]*\.viz-dock \{[^}]*display/);
 });
 

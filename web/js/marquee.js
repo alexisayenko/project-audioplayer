@@ -1,5 +1,5 @@
 export const MIN_OVERFLOW = 2;
-export const PAD = 14;
+export const PAD = 16;
 const SPEED = 32;
 const PAUSES = 3;
 const MIN_DUR = 6;

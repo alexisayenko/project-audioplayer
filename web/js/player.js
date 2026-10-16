@@ -407,7 +407,8 @@ function renderDetails(song) {
   marquee($('player-title'), { auto: true });
   $('player-sub').textContent = subtitleString(song);
   $('player-tags').replaceChildren(...visibleTags(song.tags).map(tagChip));
-  $('player-bpm').textContent = song.bpm != null ? `${Math.round(song.bpm)} BPM` : '';
+  const bpm = song.bpm != null ? Math.round(song.bpm) : null;
+  $('player-bpm').replaceChildren(...(bpm == null ? [] : [el('span', { class: 'bpm-badge', title: 'Beats per minute (estimated)', 'aria-label': `BPM ${bpm}` }, `${bpm} `, el('small', { 'aria-hidden': 'true' }, 'BPM'))]));
   updateDl(player.current);
   setCover($('mini-cover'), song);
   setCover($('player-cover'), song);

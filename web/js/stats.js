@@ -18,6 +18,7 @@ import {
 const MODE_KEY = 'stats.color';
 const EMPTY_TEXT = 'Songs need a year and a BPM to appear here';
 
+const BAR_GAP = 8;
 const RESOLVING_TEXT = 'Resolving genre families...';
 
 export const loadMode = () => {
@@ -37,8 +38,7 @@ export async function openSong(song, opener = null) {
 
 const swatch = (color, family) => {
   const i = colorIndex(color, family ? FAMILY_PALETTE_SIZE : PALETTE_SIZE);
-  const name = family ? '--gf' : '--st';
-  const token = i < 0 ? '--st-n' : `${name}-${i}`;
+  const token = `--chart-${i < 0 ? FAMILY_PALETTE_SIZE - 1 : i}`;
   return el('span', { class: 'st-sw', style: `background: var(${token})`, 'aria-hidden': 'true' });
 };
 
@@ -82,19 +82,19 @@ export function renderStats(root) {
   });
 
   const select = el('select', {
-    class: 'st-select', 'aria-label': 'Colour by',
+    class: 'st-select t-caption', 'aria-label': 'Colour by',
     onchange: (e) => { mode = e.target.value; storeSet(MODE_KEY, mode); hidden = new Set(); rebuild(); },
   }, COLOR_MODES.map(([k, label]) => el('option', { value: k, selected: k === mode }, label)));
   const legendBtn = el('button', {
-    class: 'st-btn', type: 'button', 'aria-expanded': 'true', 'aria-controls': 'st-legend',
+    class: 'st-btn t-caption', type: 'button', 'aria-expanded': 'true', 'aria-controls': 'st-legend',
     onclick: () => { legendOpen = !legendOpen; syncLegend(); },
   }, 'Legend');
   const tableBtn = el('button', {
-    class: 'st-btn', type: 'button', 'aria-pressed': 'false',
+    class: 'st-btn t-caption', type: 'button', 'aria-pressed': 'false',
     onclick: () => { asTable = !asTable; syncMode(); },
   }, 'View as table');
-  const centerBtn = el('button', { class: 'st-btn', type: 'button', 'aria-label': 'Center chart', title: 'Center chart (C)', onclick: () => chart.center() }, '⌖');
-  const resetBtn = el('button', { class: 'st-btn', type: 'button', hidden: true, onclick: () => chart.reset() }, 'Reset');
+  const centerBtn = el('button', { class: 'st-btn t-caption', type: 'button', 'aria-label': 'Center chart', title: 'Center chart (C)', onclick: () => chart.center() }, '⌖');
+  const resetBtn = el('button', { class: 'st-btn t-caption', type: 'button', hidden: true, onclick: () => chart.reset() }, 'Reset');
 
   function genreLines(song) {
     const genres = songGenres(song).map((g) => g.label);
@@ -199,10 +199,10 @@ export function renderStats(root) {
     if (!selected.size) { panel.replaceChildren(); return; }
     panel.replaceChildren(
       el('span', { class: 't-subhead st-sel' }, `${selected.size} selected:`),
-      el('button', { class: 'st-act', type: 'button', disabled: true, title: 'Coming soon', 'data-act': 'library' }, 'Show in Library'),
-      el('button', { class: 'st-act', type: 'button', 'data-act': 'add', onclick: addSelected }, 'Add to playlist'),
-      el('button', { class: 'st-act', type: 'button', 'data-act': 'play', onclick: playSelected }, 'Play'),
-      el('button', { class: 'st-act', type: 'button', 'data-act': 'clear', onclick: () => setSelected(new Set()) }, 'Clear'));
+      el('button', { class: 'st-act t-caption', type: 'button', disabled: true, title: 'Coming soon', 'data-act': 'library' }, 'Show in Library'),
+      el('button', { class: 'st-act t-caption', type: 'button', 'data-act': 'add', onclick: addSelected }, 'Add to playlist'),
+      el('button', { class: 'st-act t-caption', type: 'button', 'data-act': 'play', onclick: playSelected }, 'Play'),
+      el('button', { class: 'st-act t-caption', type: 'button', 'data-act': 'clear', onclick: () => setSelected(new Set()) }, 'Clear'));
   }
 
   function computeFamilies() {
@@ -288,11 +288,20 @@ export function renderStats(root) {
   const st = el('div', { class: 'st' },
     el('div', { class: 'st-stage' }, base, top, tip, live, empty, tableBox),
     el('div', { class: 'st-bar' },
-      el('div', { class: 'st-row' }, el('h1', { class: 'st-title' }, 'Song stats'), status, barCl.button),
+      el('div', { class: 'st-row' }, el('h1', { class: 'st-title t-headline' }, 'Song stats'), status, barCl.button),
       barCl.root),
     panel);
   root.append(st);
   const stopInset = watchPlayerInset(st, (h) => chart.setInsetBottom(h));
+  const barEl = st.querySelector('.st-bar');
+  const measureBar = () => {
+    const px = barEl.offsetHeight ? (barEl.offsetTop || 0) + barEl.offsetHeight + BAR_GAP : 0;
+    st.style.setProperty('--st-top', `${px}px`);
+    chart.setInsetTop(px);
+  };
+  const barRo = typeof ResizeObserver === 'function' ? new ResizeObserver(measureBar) : null;
+  barRo?.observe(barEl);
+  measureBar();
   syncMode();
   rebuild();
 
@@ -300,6 +309,7 @@ export function renderStats(root) {
     dead = true;
     if (pollTimer) clearTimeout(pollTimer);
     stopInset();
+    barRo?.disconnect();
     unsub();
     chart.destroy();
   };

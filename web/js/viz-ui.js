@@ -119,6 +119,9 @@ export function initVisualizer({
     : null;
   const dock = document.createElement('div');
   dock.className = 'viz-dock';
+  dock.dataset.theme = 'dark';
+  $('viz-full').dataset.theme = 'dark';
+  $('viz-corner').classList.add('t-micro');
   document.body.append(dock);
   const button = $('p-viz');
   const reducedMql = win.matchMedia?.(REDUCED) ?? null;

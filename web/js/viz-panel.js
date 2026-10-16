@@ -43,7 +43,7 @@ export function readCollapsed(store, width) {
 
 export function createStylePanel({ doc = document, mode, width, parts }) {
   const root = doc.createElement('div');
-  root.className = 'viz-panel viz-style-panel';
+  root.className = 'viz-panel viz-style-panel t-caption';
   root.addEventListener('click', (e) => e.stopPropagation());
   const head = doc.createElement('button');
   head.type = 'button';
@@ -86,9 +86,10 @@ export function createStylePanel({ doc = document, mode, width, parts }) {
   flightBtn.setAttribute('role', 'switch');
   flightBtn.textContent = 'Camera flight';
   const flightNote = doc.createElement('small');
+  flightNote.className = 't-micro';
   flightNote.textContent = 'Off: reduced motion is on';
   const flightRead = doc.createElement('small');
-  flightRead.className = 'viz-flight-readout';
+  flightRead.className = 'viz-flight-readout t-micro';
   const paintRead = () => {
     const show = flightOn() && !flightRow.hidden;
     flightRead.hidden = !show;

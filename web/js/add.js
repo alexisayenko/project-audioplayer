@@ -47,9 +47,9 @@ export function openAdd() {
     dlg.close();
     const row = document.querySelector(`li.song[data-id="${CSS.escape(song.id)}"]`);
     if (!row) { toast('Clear the search or filters to see it'); return; }
-    row.scrollIntoView({ block: 'center', behavior: 'smooth' });
-    row.style.outline = '2px solid var(--accent-ink)';
-    setTimeout(() => { row.style.outline = ''; }, ADD_ROW_OUTLINE_MS);
+    row.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    row.classList.add('flash');
+    setTimeout(() => row.classList.remove('flash'), ADD_ROW_OUTLINE_MS);
   };
   const checkKnown = () => {
     const song = store.loaded ? findInLibrary(url.value, store.songs) : null;

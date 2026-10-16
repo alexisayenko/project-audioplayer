@@ -2,6 +2,15 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-16 (web style overhaul, built, not deployed)
+
+- Design system: the Electrophone artifact (version 26) gains token families chart, stroke, state, motion, elevation, overlay, icon and control, `radius-xs`, `space-5`, `power-text`, two type styles, 15 web components (Icon, SearchField, SortControl, Toggle, Slider, Dialog, Sheet, Toast, Menu, TokenPill, Banner, StatCard, GenreMap, VisualizerChrome, SignIn) and a 45-icon Lucide and Simple Icons set; `docs/brand/tokens.json` is byte-identical to the artifact copy.
+- Tooling: `scripts/sync-design-system.py` emits a `[data-theme="dark"]` scope, `--font-*` shorthand variables and the new families, rejects unknown arguments and has `--check`; the iOS file only gained lines.
+- Web: the read-only banner is a quiet surface card, floating slabs use one `shadow-float` recipe, copper is a rim on covers only, hover, pressed, focus, disabled, motion and reduced motion come from tokens, radii, heights, type and z-index use tokens, nav icons are generated from `icons.js`.
+- Web: the visualizer chrome is retokenised under an always-dark scope, Stats and Genres share the panel recipe and read `--chart-N`, chart tops no longer sit under the header card, the stale `--hairline`, `--text-muted` and `--gf-N` references are gone.
+- Web fixes: tab labels wrap at 399px, the focus ring follows the rounded input well, genres no longer clip mid-letter, the download ring fits three digits, the marquee padding matches its token.
+- Not done: Step 3 icon swaps, Step 4 brand mark and assets, toast exit motion and toast layering above the full visualizer, merging the Genres and Stats button families, the Screens board re-wire.
+
 ## 2026-10-16 (sixth batch, built, not deployed)
 
 - Docs: planned: canonical genre vocabulary (ADR-0023, [task-0035](tasks/task-0035.md), TAG-077 to TAG-084): the 15 Discogs genres, about 550 styles and a reviewed extras file; other `genre:` values are rejected with 422 and "did you mean"; a picker replaces free text; the migration reports unmappable tags in a review file; nothing built.

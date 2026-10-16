@@ -15,19 +15,23 @@ export const mixColor = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) *
 
 export const STOP_AT = [0, 0.25, 0.6, 1];
 
-const STOPS = [[255, 31, 142], [255, 61, 115], [255, 106, 82], [255, 154, 58]];
+const hexes = (list) => list.map((h) => parseColor(h));
+
+const STOPS = hexes(['#ff1f8e', '#ff3d73', '#ff6a52', '#ff9a3a']);
 
 const ICE = {
-  stops: [[11, 58, 158], [31, 111, 224], [79, 184, 245], [230, 251, 255]],
-  bgTop: [2, 5, 15],
-  bgMid: [10, 42, 102],
+  stops: hexes(['#0b3a9e', '#1f6fe0', '#4fb8f5', '#e6fbff']),
+  bgTop: parseColor('#02050f'),
+  bgMid: parseColor('#0a2a66'),
 };
 
+const ICE2_STOPS = hexes(['#040d31', '#061a53', '#113b86', '#2464ac', '#3077c2', '#3d8bd9', '#4a9ff0', '#6cc0f5', '#98dcfa', '#d0f4ff', '#f4fdff']);
+
 const ICE2 = {
-  stops: ['#040d31', '#061a53', '#113b86', '#2464ac', '#3077c2', '#3d8bd9', '#4a9ff0', '#6cc0f5', '#98dcfa', '#d0f4ff', '#f4fdff'].map((h) => parseColor(h)),
-  dim: ['#040d31', '#061a53', '#113b86', '#2464ac'].map((h) => parseColor(h)),
-  bg: [2, 5, 15],
-  ghost: [8, 20, 45],
+  stops: ICE2_STOPS,
+  dim: ICE2_STOPS.slice(0, 4),
+  bg: ICE.bgTop,
+  ghost: parseColor('#08142d'),
 };
 
 export const FALLBACK_COLORS = {

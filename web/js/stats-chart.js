@@ -11,16 +11,17 @@ const DOT_ALPHA = 0.55;
 
 const readColors = (el) => {
   const cs = getComputedStyle(el);
-  const v = (name, fb) => cs.getPropertyValue(name).trim() || fb;
+  const v = (name) => cs.getPropertyValue(name).trim();
+  const family = Array.from({ length: FAMILY_PALETTE_SIZE }, (_, i) => v(`--chart-${i}`));
   return {
-    palette: Array.from({ length: PALETTE_SIZE }, (_, i) => v(`--st-${i}`, '#888')),
-    family: Array.from({ length: FAMILY_PALETTE_SIZE }, (_, i) => v(`--gf-${i}`, '#888')),
-    neutral: v('--st-n', '#8a8f93'),
-    grid: v('--line', '#ddd'),
-    text: v('--ink-muted', '#666'),
-    ink: v('--ink', '#111'),
-    accent: v('--accent', '#06c'),
-    surface: v('--surface', '#fff'),
+    palette: family.slice(0, PALETTE_SIZE),
+    family,
+    neutral: family[FAMILY_PALETTE_SIZE - 1],
+    grid: v('--line'),
+    text: v('--ink-muted'),
+    ink: v('--ink'),
+    accent: v('--accent'),
+    surface: v('--surface'),
     font: cs.fontFamily || 'sans-serif',
   };
 };
@@ -31,6 +32,7 @@ export function createChart(base, top, { onHover, onOpen, onSelect, onFocus, onV
   let W = 1;
   let H = 1;
   let insetB = 0;
+  let insetT = 0;
   let dpr = 1;
   let points = [];
   let hidden = new Set();
@@ -51,7 +53,10 @@ export function createChart(base, top, { onHover, onOpen, onSelect, onFocus, onV
   let dead = false;
 
   const visible = (it) => !hidden.has(it.point.group);
-  const plot = () => ({ x0: MARGIN.l, x1: Math.max(MARGIN.l + 1, W - MARGIN.r), y0: MARGIN.t, y1: Math.max(MARGIN.t + 1, H - MARGIN.b - insetB) });
+  const plot = () => {
+    const y0 = Math.max(MARGIN.t, insetT);
+    return { x0: MARGIN.l, x1: Math.max(MARGIN.l + 1, W - MARGIN.r), y0, y1: Math.max(y0 + 1, H - MARGIN.b - insetB) };
+  };
   const scales = () => {
     const p = plot();
     return { sx: makeScale(view.x.lo, view.x.hi, p.x0, p.x1), sy: makeScale(view.y.lo, view.y.hi, p.y1, p.y0), p };
@@ -348,6 +353,7 @@ export function createChart(base, top, { onHover, onOpen, onSelect, onFocus, onV
   return {
     setData, setHidden, setFamilyPalette, center, setSelected, reset, resize,
     setInsetBottom(px) { if (px !== insetB) { insetB = px; redraw(); } },
+    setInsetTop(px) { if (px !== insetT) { insetT = px; redraw(); } },
     isZoomed: () => zoomed,
     focusPoint: (id) => { ensureLayout(); setFocus(items.findIndex((it) => it.point.id === id)); },
     destroy() { dead = true; if (raf) { cancelAnimationFrame(raf); } ro?.disconnect(); scheme?.removeEventListener?.('change', redraw); },

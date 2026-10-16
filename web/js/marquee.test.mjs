@@ -127,14 +127,19 @@ test('mini-player and playback heading use the module; css has the rules', () =>
   const css = readFileSync(new URL('../style.css', import.meta.url), 'utf8');
   assert.match(css, /@keyframes mq/);
   assert.match(css, /\.mq-run \.mq-track \{[^}]*animation: mq var\(--mq-dur/);
-  assert.match(css, /prefers-reduced-motion: reduce\) \{ \.mq-run \.mq-track \{ animation: none/);
+  assert.match(css, /prefers-reduced-motion: reduce\)[\s\S]*?\.mq-run \.mq-track \{ animation: none[^}]*text-overflow: ellipsis/);
   assert.match(css, /\.doc-hidden \.mq-track \{ animation-play-state: paused/);
 });
 
 test('css: padding matches PAD, covers the fade, mask sits on the container', () => {
   const css = readFileSync(new URL('../style.css', import.meta.url), 'utf8');
-  const pad = Number(/--mq-pad: (\d+)px/.exec(css)[1]);
-  const fade = Number(/--mq-fade: (\d+)px/.exec(css)[1]);
+  const tokens = readFileSync(new URL('../tokens.css', import.meta.url), 'utf8');
+  const px = (prop) => {
+    const v = new RegExp(`${prop}: var\\(--space-(\\d+)\\)`).exec(css)[1];
+    return Number(new RegExp(`--space-${v}: (\\d+)px`).exec(tokens)[1]);
+  };
+  const pad = px('--mq-pad');
+  const fade = px('--mq-fade');
   assert.equal(pad, PAD);
   assert.ok(pad >= fade);
   assert.match(css, /\.mq-run \{ -webkit-mask-image: linear-gradient\(90deg, transparent, #000 var\(--mq-fade\), #000 calc\(100% - var\(--mq-fade\)\), transparent\)/);

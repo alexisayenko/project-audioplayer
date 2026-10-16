@@ -4,6 +4,7 @@ import { fitTransform, recenterOnResize, placeLabels, diffGraph, mixColor, hitNo
 
 const MIN_K = 0.15;
 const MAX_K = 6;
+const BAR_GAP = 8;
 
 function bbox(list) {
   let x0 = Infinity; let y0 = Infinity; let x1 = -Infinity; let y1 = -Infinity;
@@ -52,6 +53,8 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
   let autoFitAt = 0;
   let userMoved = false;
   let insets = { t: 56, r: 0, b: 16, l: 16 };
+  let bar = null;
+  let barRo = null;
   let hiddenIdx = new Set();
   let order = [];
   let lastGraph = null;
@@ -59,16 +62,31 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
 
   function readColors() {
     const cs = getComputedStyle(canvas);
-    const v = (name, fb) => cs.getPropertyValue(name).trim() || fb;
+    const v = (name) => cs.getPropertyValue(name).trim();
     return {
-      fam: FAMILIES.map((_, i) => v(`--gf-${i}`, '#888')),
-      edge: v('--gm-edge', '#888'),
-      hi: v('--gm-hi', '#06c'),
-      label: v('--gm-label', '#111'),
-      halo: v('--gm-halo', '#fff'),
-      ring: v('--gm-ring', '#06c'),
+      fam: FAMILIES.map((_, i) => v(`--chart-${i}`)),
+      edge: v('--ink-muted'),
+      hi: v('--accent-ink'),
+      label: v('--ink'),
+      halo: v('--surface'),
+      ring: v('--accent-ink'),
       font: cs.fontFamily || 'sans-serif',
     };
+  }
+
+  function measureBar() {
+    if (!bar) {
+      bar = canvas.closest?.('.gm')?.querySelector?.('.gm-bar') ?? null;
+      if (bar && typeof ResizeObserver === 'function') {
+        barRo = new ResizeObserver(() => { if (measureBar() && !userMoved && nodes.length) fitTo(nodes.filter(visible)); });
+        barRo.observe(bar);
+      }
+    }
+    if (!bar || !bar.offsetHeight) return false;
+    const t = (bar.offsetTop || 0) + bar.offsetHeight + BAR_GAP;
+    if (t === insets.t) return false;
+    insets = { ...insets, t };
+    return true;
   }
 
   function resize() {
@@ -80,6 +98,7 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
     canvas.width = Math.round(W * dpr);
     canvas.height = Math.round(H * dpr);
     colors = readColors();
+    measureBar();
     widths.clear();
     const laidOut = canvas.clientWidth > 10 && canvas.clientHeight > 10;
     if (laidOut && needFit && nodes.length) { fit(); needFit = false; autoFitAt = performance.now() + 700; }
@@ -94,6 +113,7 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
   function frame() {
     raf = 0;
     if (!active || document.hidden) return;
+    if (!colors.label) colors = readColors();
     let again = false;
     if (sim && !reducedMotion) { sim.tick(); again = true; }
     if (anim) { stepAnim(); again = true; }
@@ -545,6 +565,7 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
       if (raf) cancelAnimationFrame(raf);
       raf = 0;
       ro?.disconnect();
+      barRo?.disconnect();
       document.removeEventListener('visibilitychange', onVisible);
       scheme?.removeEventListener?.('change', onScheme);
     },

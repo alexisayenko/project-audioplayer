@@ -1,4 +1,4 @@
-import { rgba, barStops } from './viz-color.js';
+import { rgba, barStops, FALLBACK_COLORS } from './viz-color.js';
 import { barHeight, edgeAlpha } from './viz-spectrum.js';
 import {
   BAR_WIDTH_FRACTION, BAR_MIN_CSS, GAP_MIN_CSS, MIRROR_ALPHA, EDGE_BANDS, HORIZON_CORE_PX, HEIGHT_MAX, MAX_BAR_FRACTION, PEAK_HOLD_S, PEAK_STEP_S, PEAK_ACCEL,
@@ -203,7 +203,7 @@ export const TRAIL_ALPHA = 1;
 export const TRAIL_REFLECT_SHIFT = 2;
 export const SECTOR_RAMP_INDEX = 9;
 export const TRAIL_TOP_INDEX = 8;
-const PATH_DEFAULT = ['#040d31', '#061a53', '#113b86', '#2464ac', '#3077c2', '#3d8bd9', '#4a9ff0', '#6cc0f5', '#98dcfa', '#d0f4ff', '#f4fdff'].map((h) => [1, 3, 5].map((k) => parseInt(h.slice(k, k + 2), 16)));
+const PATH_DEFAULT = FALLBACK_COLORS.ice2.stops;
 
 export function trailPath(ice2) {
   return ice2?.stops?.length > SECTOR_RAMP_INDEX ? ice2.stops : PATH_DEFAULT;

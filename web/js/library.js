@@ -54,7 +54,7 @@ export function renderLibrary(root) {
     toast(`Playing ${count} ${plural(count, 'song', 'songs')}${replaced ? ' (queue replaced)' : ''}${note}`);
   });
   const status = el('div');
-  const head = el('div', { class: 'table-head', 'aria-hidden': 'true' },
+  const head = el('div', { class: 'table-head t-eyebrow', 'aria-hidden': 'true' },
     el('span'), el('span', {}, 'Track'), el('span', { class: 'c-genres' }, 'Genres'), el('span', { class: 'c-dur' }, 'Time'), el('span'), el('span'));
   list.addEventListener('click', (e) => {
     const row = e.target.closest('li.song');

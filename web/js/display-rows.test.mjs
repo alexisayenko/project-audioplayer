@@ -42,7 +42,7 @@ test('queue row shows the remix span', () => {
 test('Track column width is one custom property', () => {
   const css = readFileSync(new URL('../style.css', import.meta.url), 'utf8');
   assert.match(css, /--track-w: 300px;/);
-  assert.match(css, /minmax\(220px, var\(--track-w\)\)/);
+  assert.match(css, /minmax\(160px, var\(--track-w\)\)/);
   assert.match(css, /var\(--row-cover-size\) var\(--track-w\) minmax/);
   assert.doesNotMatch(css, /\b400px minmax|, 400px\)/);
 });

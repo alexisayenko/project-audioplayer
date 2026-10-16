@@ -15,7 +15,7 @@ export function createPartsToggles({ root, state, onChange, onRefuse }) {
       b.classList.toggle('on', !!cur[row][id]);
     }
   };
-  root.classList.add('viz-parts');
+  root.classList.add('viz-parts', 't-caption');
   root.setAttribute('role', 'group');
   root.setAttribute('aria-label', 'Visualizer parts');
   root.replaceChildren(group);
@@ -23,7 +23,7 @@ export function createPartsToggles({ root, state, onChange, onRefuse }) {
     const line = document.createElement('div');
     line.className = 'viz-parts-line';
     const label = document.createElement('span');
-    label.className = 'viz-parts-label';
+    label.className = 'viz-parts-label t-micro';
     label.textContent = ROW_LABELS[row];
     const el = document.createElement('div');
     el.className = 'viz-parts-row';
