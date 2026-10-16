@@ -157,7 +157,7 @@ export function openAdd() {
       save.disabled = true;
       try {
         const added = await api.addSong(preview.source_url, addBody(v), v.tags, v.keep_title, preview.raw ?? null);
-        await store.refresh().catch(() => {});
+        if (added?.song && store.loaded) store.insert(added.song); else await store.refresh().catch(() => {});
         if (autoDownloadOn() && added?.id) autodl.request([added.id], { front: true });
         dlg.close();
         toast('Saved to library');

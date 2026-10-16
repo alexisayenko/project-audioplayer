@@ -15,6 +15,13 @@ export const store = {
     this.listeners.forEach((fn) => fn());
   },
 
+  insert(song) {
+    this.songs = [...this.songs.filter((s) => s.id !== song.id), song];
+    this.tags = tagCounts(this.songs);
+    this.loaded = true;
+    this.listeners.forEach((fn) => fn());
+  },
+
   get(id) {
     return this.songs.find((s) => s.id === id);
   },

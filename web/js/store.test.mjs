@@ -43,3 +43,15 @@ test('refresh failure leaves previous songs and does not notify', async () => {
   assert.equal(store.songs, before);
   assert.equal(n, 0);
 });
+
+test('insert appends a song (replacing the same id), refreshes tags and notifies', () => {
+  store.songs = [{ id: 'a', tags: ['pop'] }];
+  let n = 0;
+  const off = store.subscribe(() => { n += 1; });
+  store.insert({ id: 'b', tags: ['pop'] });
+  store.insert({ id: 'b', tags: ['rock'] });
+  off();
+  assert.deepEqual(store.songs.map((s) => s.id), ['a', 'b']);
+  assert.deepEqual(store.tags.map((t) => t.tag).sort(), ['pop', 'rock']);
+  assert.equal(n, 2);
+});

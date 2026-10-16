@@ -4,6 +4,8 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## 2026-10-17 (YouTube genres and release tags, not deployed)
 
+- Server and web: saving a new web song takes about 1 s instead of 3 to 5: the link lookup Fetch already did is reused (API-142) and the web patches the saved song into its list instead of reloading the library (ADD-134); not deployed.
+
 - Server and web: "A - T (X Cover)" titles (Pharrell Williams - Happy (EFIX & ALLISON Cover)) suggest performer and original from evidence or offer both readings (ADD-133); not deployed.
 - Server and web: for a song with a version the original recording's genres from MusicBrainz, Discogs and Wikipedia are no longer applied, they are listed as "From the original (not applied)" (`original_genres`, TAG-096), and the preview never links the remixer's Wikipedia page as the artist (TAG-097); not deployed.
 - Web: a song whose version has a year shows that year, not the original one, in the Library row, the song card, the dock and Now playing, the Media Session, Library sort by Year and Song stats; the card facts show "2012 · original 1985" when they differ; falls back to the original year; one helper in `credits.js` (LIB-150, not deployed).

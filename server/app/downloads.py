@@ -13,7 +13,7 @@ from typing import Any
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
 
-from . import bpm, credits, deps, discogs_lookup, extractor, genre_filter, genre_lookup, genre_vocab, identify, jobs, library, limits, urlclean, wiki_lookup
+from . import bpm, credits, deps, discogs_lookup, extractor, genre_filter, genre_lookup, genre_vocab, identify, jobs, library, limits, previewcache, urlclean, wiki_lookup
 from .jsonio import write_bytes_atomic
 from .links import Resolved, short_error
 from .problems import Problem
@@ -241,7 +241,7 @@ def add_metadata_only(uid: str, vid: str, link: Resolved, meta: dict[str, Any], 
     """Catalog entry without audio: `file: null`, state `none`. Gaps in the metadata are filled from the link."""
     try:
         try:
-            found = link.probe if link.probe is not None else extractor.preview(vid)
+            found = link.probe if link.probe is not None else previewcache.youtube(vid)
         except Exception as exc:
             log.warning("preview failed for %s: %s", vid, exc)
             found = {}

@@ -2,7 +2,7 @@ import pytest
 
 from datetime import UTC, datetime
 
-from app import deps, genre_lookup, guest, httpjson, limits, timeutil, wiki_lookup
+from app import deps, genre_lookup, guest, httpjson, limits, previewcache, timeutil, wiki_lookup
 
 ENV = (
     "OWNER_EMAIL", "ALLOWED_EMAIL", "ALLOWED_APPLE_SUB", "SIGNUP_OPEN", "USER_MAX_SONGS", "USER_MAX_BYTES",
@@ -20,6 +20,7 @@ def _hermetic(monkeypatch):
     monkeypatch.setattr(httpjson.urllib.request, "urlopen", _no_network)
     monkeypatch.setattr(genre_lookup.time, "sleep", lambda s: None)
     genre_lookup._cache.clear()
+    previewcache.clear()
     for cache in (wiki_lookup._entities, wiki_lookup._claims, wiki_lookup._labels, wiki_lookup._qid_of_page):
         cache.clear()
     for name in ENV:

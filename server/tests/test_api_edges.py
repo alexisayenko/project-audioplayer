@@ -496,7 +496,7 @@ def test_metadata_with_a_soundcloud_source_uses_the_probe(client, monkeypatch):
     body = r.json()
     assert body["album"] == "Alb"
     assert body["year"] is None
-    assert lookup.source_info(SC_URL) is probe
+    assert lookup.source_info(SC_URL) == probe
 
 
 def test_add_rejects_unknown_country_and_unsupported_links(client):
@@ -742,3 +742,33 @@ def test_patch_wikipedia_album_link(client):
     r = client.patch(f"/songs/{VID}", json={"wikipedia_album": "http://en.wikipedia.org/wiki/Discovery_(album)"}, headers=H)
     assert r.json()["wikipedia_album"] == "https://en.wikipedia.org/wiki/Discovery_(album)"
     assert client.patch(f"/songs/{VID}", json={"wikipedia_album": "https://evil.example/wiki/X"}, headers=H).json()["wikipedia_album"] is None
+
+
+def test_save_reuses_the_preview_fetch_did_and_asks_the_source_once(client, monkeypatch):
+    calls = []
+
+    def fake(v):
+        calls.append(v)
+        return {"id": v, "title": "Looked Up", "artist": "A", "duration": 100, "thumbnail": None, "tags": []}
+
+    monkeypatch.setattr(extractor, "preview", fake)
+    assert client.post("/preview", json={"url": VID}, headers=H).status_code == 200
+    r = owner_add(client, audio=False, metadata={})
+    assert r.status_code == 201
+    assert r.json()["song"]["title"] == "Looked Up"
+    assert calls == [VID]
+
+
+def test_preview_memory_expires_and_hands_out_copies(monkeypatch):
+    from app import previewcache
+
+    previewcache.remember("k", {"a": [1]})
+    got = previewcache.recall("k")
+    got["a"].append(2)
+    assert previewcache.recall("k") == {"a": [1]}
+    now = previewcache.time.monotonic()
+    monkeypatch.setattr(previewcache.time, "monotonic", lambda: now + previewcache.TTL_S + 1)
+    assert previewcache.recall("k") is None
+    for i in range(previewcache.MAX_ENTRIES + 5):
+        previewcache.remember(f"x{i}", {})
+    assert len(previewcache._items) == previewcache.MAX_ENTRIES

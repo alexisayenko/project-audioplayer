@@ -11,7 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import StreamingResponse
 
-from .. import credits, deps, discogs_lookup, extractor, genre_lookup, library, metadata, timeutil, titleclean, wiki_lookup
+from .. import credits, deps, discogs_lookup, extractor, genre_lookup, library, metadata, previewcache, timeutil, titleclean, wiki_lookup
 from ..links import Refused, resolve_link, short_error
 from ..schemas import MetadataRequest, PreviewRequest, WikipediaLookupRequest
 
@@ -100,7 +100,7 @@ async def preview(req: PreviewRequest, user: Annotated[dict[str, Any], Depends(d
         meta = {k: v for k, v in link.probe.items() if k != "preview_only"}
     else:
         try:
-            meta = await run_in_threadpool(extractor.preview, vid)
+            meta = await run_in_threadpool(previewcache.youtube, vid)
         except Exception as exc:
             raise HTTPException(status_code=502, detail=f"preview failed: {short_error(exc)}") from exc
     meta.update(clean_preview_title(meta))
@@ -145,7 +145,7 @@ async def _preview_events(req: PreviewRequest, user: dict[str, Any]) -> AsyncIte
             meta = {k: v for k, v in link.probe.items() if k != "preview_only"}
         else:
             try:
-                meta = await run_in_threadpool(extractor.preview, link.vid)
+                meta = await run_in_threadpool(previewcache.youtube, link.vid)
             except Exception as exc:
                 yield _line({"event": "error", "stage": stage, "status": 502, "error": "failed", "detail": f"preview failed: {short_error(exc)}"})
                 return

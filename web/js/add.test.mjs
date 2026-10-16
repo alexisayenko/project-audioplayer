@@ -20,7 +20,7 @@ const streamOf = (body, status = 200) => lines({ event: 'stages', stages: STAGES
 const preview = (body, status = 200) => (url, o) => {
   if (url === '/preview/stream') return { body: streamOf(body, status) };
   if (url === '/library') return { body: { songs: store.songs } };
-  if (url === '/songs' && o.method === 'POST') return { body: { id: 'dQw4w9WgXcQ' } };
+  if (url === '/songs' && o.method === 'POST') return { body: { id: 'dQw4w9WgXcQ', song: { id: 'dQw4w9WgXcQ', title: 'Rick - Never Gonna', tags: ['genre:pop'] } } };
   return { body: {} };
 };
 const close = () => { dlg().close(); };
@@ -74,9 +74,12 @@ test('Fetch shows the preview form (title cleaned) and saves with the right payl
   assert.equal(body.audio, false);
   assert.equal(dlg().open, false);
   assert.equal(document.getElementById('toast').textContent, 'Saved to library');
+  assert.equal(calls.filter((c) => c.url === '/library').length, 0, 'the saved song is patched into the store, not reloaded');
+  assert.equal(store.get('dQw4w9WgXcQ').title, 'Rick - Never Gonna');
 });
 
 test('Fetch error is shown and the form stays usable', async () => {
+  store.songs = [];
   stubFetch(preview({ detail: 'Video unavailable' }, 502));
   openAdd();
   typeUrl(YT);
@@ -165,7 +168,7 @@ test('with auto-download on, the saved song is queued for download at the front'
   store.songs = [];
   const calls = stubFetch((url, o) => {
     if (url === '/preview/stream') return { body: streamOf(PREVIEW) };
-    if (url === '/songs' && o.method === 'POST') return { body: { id: 'dQw4w9WgXcQ' } };
+    if (url === '/songs' && o.method === 'POST') return { body: { id: 'dQw4w9WgXcQ', song: { id: 'dQw4w9WgXcQ', title: 'Rick - Never Gonna', tags: ['genre:pop'] } } };
     if (url.endsWith('/audio')) return { body: { status: 'done' } };
     return { body: { songs: [] } };
   });

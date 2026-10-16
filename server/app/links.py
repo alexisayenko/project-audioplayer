@@ -7,7 +7,7 @@ from typing import Any
 
 from fastapi.responses import JSONResponse
 
-from . import extractor, urlclean
+from . import extractor, previewcache, urlclean
 
 NOT_A_LINK = "not a YouTube video or SoundCloud track URL"
 _ANSI = re.compile(r"\x1b\[[0-9;]*m")
@@ -72,7 +72,10 @@ def resolve_link(text: str) -> Resolved:
     try:
         if kind == "short":
             url = urlclean.resolve_soundcloud_short(url)
-        probe = extractor.soundcloud_probe(url)
+        probe = previewcache.recall(f"sc:{url}")
+        if probe is None:
+            probe = extractor.soundcloud_probe(url)
+            previewcache.remember(f"sc:{url}", probe)
     except ValueError as exc:
         raise Refused(error_response(422, "unsupported", str(exc))) from exc
     except Exception as exc:
