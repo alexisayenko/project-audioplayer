@@ -15,6 +15,7 @@ PUBLIC = {
 }
 GUEST_READABLE = {
     ("GET", "/library"),
+    ("GET", "/artists"),
     ("GET", "/tags"),
     ("GET", "/genres/graph"),
     ("GET", "/genres/vocabulary"),

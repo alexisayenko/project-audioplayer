@@ -71,8 +71,8 @@ def test_one_off_table_fixes_only_the_listed_songs_and_backs_up(datadir, caplog)
         assert migrate_tags.run() == 1
     tags = _tags(lib)
     assert tags["RVmG_d3HKBA"] == ["genre:pop", "genre:glam"]
-    assert tags["soundcloud-168294142"] == ["genre:glitch hop", "decade:10s"]
-    assert tags["soundcloud-122880128"] == ["country:fr", "genre:house"]
+    assert tags["soundcloud-168294142"] == ["genre:glitch hop"]
+    assert tags["soundcloud-122880128"] == ["genre:house"]
     assert tags["soundcloud-158983912"] == ["genre:house"]
     assert tags["wL8DVHuWI7Y"] == ["genre:electronic"]
     assert tags["0XFudmaObLI"] == ["genre:house"]
@@ -131,7 +131,7 @@ def test_one_off_noise_tags_removed_once_keeping_the_rest(datadir, caplog):
     with caplog.at_level("INFO", logger="app.migrate_tags"):
         assert migrate_tags.run() == 1
     tags = _tags(lib)
-    assert tags["JYIaWeVL1JM"] == ["genre:electronic", "genre:eurodance", "genre:euro house", "decade:90s"]
+    assert tags["JYIaWeVL1JM"] == ["genre:electronic", "genre:eurodance", "genre:euro house"]
     assert tags["ylpNEb31k4U"] == ["genre:synthpop", "genre:euro disco", "genre:eurodance", "genre:house"]
     assert set(tags["soundcloud-193950580"]) == {"genre:dubstep", "genre:electronic", "genre:future bass", "genre:breakbeat", "genre:trap"}
     assert "genre:hardcore" in tags["soundcloud-42327170"]

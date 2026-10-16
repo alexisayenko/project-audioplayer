@@ -54,7 +54,7 @@ def norm_year(v):
 
 def expected(song):
     return {"artist": norm_text(song.get("artist")), "remixer": norm_text(song.get("remixer")),
-            "year": norm_year(song.get("year")), "remix_year": norm_year(song.get("remix_year"))}
+            "year": norm_year(song.get("year")), "remix_year": norm_year(song.get("remix_year")), "album": None}
 
 
 def dumps(song):
@@ -103,8 +103,8 @@ def test_structure_edits_then_legacy_round_trip_keep_the_structure(seed):
         song = legacy_song(rng, i)
         credits.ensure(song)
         names = [rng.choice(NAMES) for _ in range(rng.randrange(0, 4))]
-        credits.apply_changes(song, {"artists": names, "featured": [rng.choice(NAMES)] if rng.random() < 0.5 else [],
-                                     "version": rng.choice([None, {"kind": "remix", "name": "X Remix", "by": ["X"]}, {"kind": "live"}])})
+        credits.apply_changes(song, {"mainArtists": names, "featuredArtists": [rng.choice(NAMES)] if rng.random() < 0.5 else [],
+                                     "version": rng.choice([None, {"type": "remix", "name": "X Remix", "artists": ["X"]}, {"type": "live"}])})
         snapshot = copy.deepcopy(song)
         credits.apply_changes(song, credits.project(song))
         assert song == snapshot

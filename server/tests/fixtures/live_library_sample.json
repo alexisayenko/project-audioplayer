@@ -1,0 +1,3497 @@
+{
+ "library": {
+  "settings": {
+   "credits_schema": 1
+  },
+  "songs": [
+   {
+    "id": "W7hAo28NCXc",
+    "title": "American Boy",
+    "artists": [
+     "Комбинация"
+    ],
+    "featured": [],
+    "released": 1991,
+    "album": null,
+    "bpm": 132,
+    "source_url": "https://www.youtube.com/watch?v=W7hAo28NCXc",
+    "duration": 270,
+    "added_at": "2026-10-12T14:42:48Z",
+    "tags": [
+     "decade:90s",
+     "genre:chanson",
+     "genre:disco",
+     "genre:pop",
+     "country:ru",
+     "genre:folk pop",
+     "genre:synthpop"
+    ],
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "musicbrainz_url": "https://musicbrainz.org/recording/ff7b715d-5e39-4be1-87dc-9da471eaafb0",
+    "updated_at": "2026-10-15T23:43:11Z",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "W7hAo28NCXc",
+      "url": "https://www.youtube.com/watch?v=W7hAo28NCXc"
+     }
+    ],
+    "raw": {
+     "title": "American Boy",
+     "artist": "Комбинация",
+     "year": 1991
+    }
+   },
+   {
+    "id": "ylpNEb31k4U",
+    "title": "Лондон, гудбай (London, Good Bye)",
+    "artists": [
+     "Кар-мэн"
+    ],
+    "featured": [],
+    "released": 1991,
+    "album": null,
+    "bpm": 131,
+    "source_url": "https://www.youtube.com/watch?v=ylpNEb31k4U",
+    "duration": 333,
+    "added_at": "2026-10-12T14:47:20Z",
+    "tags": [
+     "country:ru",
+     "decade:90s",
+     "genre:synthpop",
+     "genre:euro disco",
+     "genre:eurodance",
+     "genre:house"
+    ],
+    "wikipedia_song": null,
+    "wikipedia_artist": "https://ru.wikipedia.org/wiki/%D0%9A%D0%B0%D1%80-%D0%BC%D1%8D%D0%BD",
+    "musicbrainz_url": "https://musicbrainz.org/recording/1646cc81-76dd-467a-b060-77ac5ff8509c",
+    "updated_at": "2026-10-14T09:41:16Z",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "ylpNEb31k4U",
+      "url": "https://www.youtube.com/watch?v=ylpNEb31k4U"
+     }
+    ],
+    "raw": {
+     "title": "Лондон, гудбай (London, Good Bye)",
+     "artist": "Кар-мэн",
+     "year": 1991
+    }
+   },
+   {
+    "id": "IbxPoaTdrz0",
+    "title": "Cold Heart (Live from the Royal Albert Hall)",
+    "artists": [
+     "Dua Lipa",
+     "Elton John"
+    ],
+    "featured": [],
+    "released": 2024,
+    "album": "The Lockdown Sessions",
+    "bpm": 120,
+    "source_url": "https://www.youtube.com/watch?v=IbxPoaTdrz0",
+    "duration": 295,
+    "added_at": "2026-10-12T14:49:20Z",
+    "tags": [
+     "decade:20s",
+     "genre:electronic",
+     "genre:dance pop",
+     "genre:synthpop",
+     "genre:disco",
+     "genre:pop",
+     "genre:contemporary r&b",
+     "country:gb",
+     "genre:post-disco"
+    ],
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "musicbrainz_url": "https://musicbrainz.org/recording/c1906902-d402-43de-9228-182beccbd7d6",
+    "updated_at": "2026-10-15T23:43:39Z",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "IbxPoaTdrz0",
+      "url": "https://www.youtube.com/watch?v=IbxPoaTdrz0"
+     }
+    ],
+    "raw": {
+     "title": "Cold Heart (Live from the Royal Albert Hall)",
+     "artist": "Dua Lipa - Elton John",
+     "year": 2024
+    }
+   },
+   {
+    "id": "wL8DVHuWI7Y",
+    "title": "Memory Reboot",
+    "artists": [
+     "VØJ, Narvent"
+    ],
+    "featured": [],
+    "released": 2023,
+    "album": null,
+    "bpm": 147,
+    "source_url": "https://www.youtube.com/watch?v=wL8DVHuWI7Y",
+    "duration": 236,
+    "added_at": "2026-10-12T14:53:03Z",
+    "tags": [
+     "decade:20s",
+     "genre:electronic"
+    ],
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "musicbrainz_url": "https://musicbrainz.org/recording/0f931476-b15b-4c63-b99d-e6366467766a",
+    "updated_at": "2026-10-15T23:43:51Z",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "wL8DVHuWI7Y",
+      "url": "https://www.youtube.com/watch?v=wL8DVHuWI7Y"
+     }
+    ],
+    "raw": {
+     "title": "Memory Reboot",
+     "artist": "VØJ, Narvent",
+     "year": 2023
+    }
+   },
+   {
+    "id": "N4bFqW_eu2I",
+    "title": "House Of The Rising Sun",
+    "artists": [
+     "The Animals"
+    ],
+    "featured": [],
+    "released": 1964,
+    "album": null,
+    "bpm": 126,
+    "source_url": "https://www.youtube.com/watch?v=N4bFqW_eu2I",
+    "duration": 260,
+    "added_at": "2026-10-12T14:54:28Z",
+    "tags": [
+     "decade:60s",
+     "genre:blues rock",
+     "genre:rock and roll",
+     "genre:folk rock",
+     "genre:folk",
+     "genre:blues",
+     "country:gb",
+     "genre:r&b",
+     "genre:psychedelic rock",
+     "genre:progressive rock"
+    ],
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "musicbrainz_url": "https://musicbrainz.org/recording/54809c47-1fde-4056-af82-5800fc1faeb7",
+    "updated_at": "2026-10-15T23:44:07Z",
+    "discogs_url": null,
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "N4bFqW_eu2I",
+      "url": "https://www.youtube.com/watch?v=N4bFqW_eu2I"
+     }
+    ],
+    "raw": {
+     "title": "House Of The Rising Sun",
+     "artist": "The Animals",
+     "year": 1964
+    }
+   },
+   {
+    "id": "o_1aF54DO60",
+    "title": "Lana Del Rey - Young and Beautiful",
+    "artists": [
+     "Lana Del Rey"
+    ],
+    "featured": [],
+    "released": 2013,
+    "album": null,
+    "bpm": 126,
+    "source_url": "https://www.youtube.com/watch?v=o_1aF54DO60",
+    "duration": 239,
+    "added_at": "2026-10-12T14:55:45Z",
+    "tags": [
+     "country:us",
+     "decade:10s",
+     "genre:indie pop",
+     "genre:pop",
+     "genre:dream pop",
+     "genre:baroque pop",
+     "genre:trip hop",
+     "genre:sadcore",
+     "genre:indie rock",
+     "genre:slowcore"
+    ],
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "musicbrainz_url": "https://musicbrainz.org/recording/a01eb9d7-32b9-4447-8561-101116ab9641",
+    "updated_at": "2026-10-15T23:44:23Z",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "o_1aF54DO60",
+      "url": "https://www.youtube.com/watch?v=o_1aF54DO60"
+     }
+    ],
+    "raw": {
+     "title": "Lana Del Rey - Young and Beautiful",
+     "artist": "Lana Del Rey",
+     "year": 2013
+    }
+   },
+   {
+    "id": "6OW1JJwqVRQ",
+    "title": "Save Your Kisses For Me",
+    "artists": [
+     "Brotherhood Of Man"
+    ],
+    "featured": [],
+    "released": 1976,
+    "album": "Love and Kisses",
+    "bpm": 94,
+    "source_url": "https://www.youtube.com/watch?v=6OW1JJwqVRQ",
+    "duration": 182,
+    "added_at": "2026-10-12T14:57:44Z",
+    "tags": [
+     "lang:en",
+     "decade:70s",
+     "genre:pop",
+     "genre:middle of the road",
+     "genre:schlager",
+     "genre:disco",
+     "country:gb"
+    ],
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "musicbrainz_url": "https://musicbrainz.org/recording/eae20429-679c-4da3-b557-5bc172d5d443",
+    "discogs_url": null,
+    "updated_at": "2026-10-15T21:31:14Z",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "6OW1JJwqVRQ",
+      "url": "https://www.youtube.com/watch?v=6OW1JJwqVRQ"
+     }
+    ],
+    "raw": {
+     "title": "Save Your Kisses For Me",
+     "artist": "Brotherhood Of Man",
+     "year": 1976
+    }
+   },
+   {
+    "id": "o5NH2yKhl1M",
+    "title": "Нас кинули",
+    "artists": [
+     "Скрябін"
+    ],
+    "featured": [],
+    "released": 2009,
+    "album": null,
+    "bpm": 127,
+    "source_url": "https://www.youtube.com/watch?v=o5NH2yKhl1M",
+    "duration": 211,
+    "added_at": "2026-10-12T15:01:52Z",
+    "tags": [
+     "country:ua",
+     "decade:00s"
+    ],
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "o5NH2yKhl1M",
+      "url": "https://www.youtube.com/watch?v=o5NH2yKhl1M"
+     }
+    ],
+    "raw": {
+     "title": "Нас кинули",
+     "artist": "Скрябін",
+     "year": 2009
+    }
+   },
+   {
+    "id": "RVmG_d3HKBA",
+    "title": "Relax, Take It Easy",
+    "artists": [
+     "MIKA"
+    ],
+    "featured": [],
+    "released": 2006,
+    "album": "Life in Cartoon Motion",
+    "bpm": 124,
+    "source_url": "https://www.youtube.com/watch?v=RVmG_d3HKBA",
+    "duration": 235,
+    "added_at": "2026-10-12T15:02:52Z",
+    "tags": [
+     "genre:pop",
+     "genre:singer-songwriter",
+     "country:gb",
+     "lang:en",
+     "decade:00s",
+     "genre:synthpop",
+     "genre:dance pop",
+     "genre:power pop",
+     "genre:glam",
+     "genre:alternative rock"
+    ],
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "musicbrainz_url": "https://musicbrainz.org/recording/ccf89ee5-8f64-4981-a45e-bd889c72aa67",
+    "updated_at": "2026-10-15T23:45:06Z",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "RVmG_d3HKBA",
+      "url": "https://www.youtube.com/watch?v=RVmG_d3HKBA"
+     }
+    ],
+    "raw": {
+     "title": "Relax, Take It Easy",
+     "artist": "MIKA",
+     "year": 2006
+    }
+   },
+   {
+    "id": "dvgZkm1xWPE",
+    "title": "Coldplay - Viva La Vida",
+    "artists": [
+     "Coldplay"
+    ],
+    "featured": [],
+    "released": 2008,
+    "album": null,
+    "bpm": 141,
+    "source_url": "https://www.youtube.com/watch?v=dvgZkm1xWPE",
+    "duration": 242,
+    "added_at": "2026-10-12T15:04:47Z",
+    "tags": [
+     "lang:en",
+     "genre:alternative rock",
+     "genre:pop",
+     "genre:pop rock",
+     "country:gb",
+     "decade:00s",
+     "genre:post-britpop"
+    ],
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "musicbrainz_url": "https://musicbrainz.org/recording/3f6387bc-c6a5-41d4-87cd-6dfae4fe441b",
+    "updated_at": "2026-10-15T23:45:21Z",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "dvgZkm1xWPE",
+      "url": "https://www.youtube.com/watch?v=dvgZkm1xWPE"
+     }
+    ],
+    "raw": {
+     "title": "Coldplay - Viva La Vida",
+     "artist": "Coldplay",
+     "year": 2008
+    }
+   },
+   {
+    "id": "zAGaU_ddZKU",
+    "title": "Big In Japan",
+    "artists": [
+     "Alphaville"
+    ],
+    "featured": [],
+    "released": 1984,
+    "version": {
+     "kind": "live",
+     "name": "Thommys Popshow",
+     "by": [],
+     "year": 1984
+    },
+    "album": null,
+    "bpm": 100,
+    "source_url": "https://www.youtube.com/watch?v=zAGaU_ddZKU",
+    "duration": 247,
+    "added_at": "2026-10-12T15:07:15Z",
+    "tags": [
+     "decade:80s",
+     "genre:synthpop",
+     "genre:new wave",
+     "genre:pop",
+     "country:de"
+    ],
+    "wikipedia_song": "https://en.wikipedia.org/wiki/Big_in_Japan_(Alphaville_song)",
+    "wikipedia_artist": "https://en.wikipedia.org/wiki/Alphaville_(band)",
+    "wikipedia_album": "https://en.wikipedia.org/wiki/Forever_Young_(Alphaville_album)",
+    "musicbrainz_url": null,
+    "discogs_url": null,
+    "spotify_url": null,
+    "updated_at": "2026-10-16T20:38:04Z",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "zAGaU_ddZKU",
+      "url": "https://www.youtube.com/watch?v=zAGaU_ddZKU"
+     }
+    ],
+    "raw": {
+     "title": "Big In Japan",
+     "artist": "Alphaville",
+     "remixer": "Thommys Popshow",
+     "year": 1984,
+     "remix_year": 1984
+    }
+   },
+   {
+    "id": "XEjLoHdbVeE",
+    "title": "ABBA - Gimme! Gimme! Gimme! (A Man After Midnight)",
+    "artists": [
+     "ABBA"
+    ],
+    "featured": [],
+    "released": 1979,
+    "album": "Greatest Hits Vol. 2",
+    "bpm": 121,
+    "source_url": "https://www.youtube.com/watch?v=XEjLoHdbVeE",
+    "duration": 196,
+    "added_at": "2026-10-12T15:13:46Z",
+    "tags": [
+     "genre:europop",
+     "lang:en",
+     "country:se",
+     "decade:70s",
+     "genre:disco",
+     "genre:euro disco",
+     "genre:electronic",
+     "genre:pop",
+     "genre:pop rock",
+     "genre:glam"
+    ],
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "musicbrainz_url": "https://musicbrainz.org/recording/559561d7-2fd4-4c34-997c-edaf406b261b",
+    "updated_at": "2026-10-15T23:46:22Z",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "XEjLoHdbVeE",
+      "url": "https://www.youtube.com/watch?v=XEjLoHdbVeE"
+     }
+    ],
+    "raw": {
+     "title": "ABBA - Gimme! Gimme! Gimme! (A Man After Midnight)",
+     "artist": "ABBA",
+     "year": 1979
+    }
+   },
+   {
+    "id": "6ZAWNgEbdqA",
+    "title": "Maria",
+    "artists": [
+     "Blondie"
+    ],
+    "featured": [],
+    "released": 1999,
+    "album": "No Exit",
+    "bpm": 163,
+    "source_url": "https://www.youtube.com/watch?v=6ZAWNgEbdqA",
+    "duration": 248,
+    "added_at": "2026-10-12T15:15:30Z",
+    "tags": [
+     "lang:en",
+     "country:us",
+     "decade:90s",
+     "genre:power pop",
+     "genre:alternative rock",
+     "genre:new wave",
+     "genre:rock",
+     "genre:disco",
+     "genre:post-punk",
+     "genre:dance-rock"
+    ],
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "musicbrainz_url": "https://musicbrainz.org/recording/4613731d-54ea-4c51-a19b-50a0c136c221",
+    "updated_at": "2026-10-15T23:46:41Z",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "6ZAWNgEbdqA",
+      "url": "https://www.youtube.com/watch?v=6ZAWNgEbdqA"
+     }
+    ],
+    "raw": {
+     "title": "Maria",
+     "artist": "Blondie",
+     "year": 1999
+    }
+   },
+   {
+    "id": "Ry-yQKwpc38",
+    "title": "A-EUROPA - БЕЛЫЕ НЕБЕСА",
+    "artists": [
+     "A-Europa Official channel"
+    ],
+    "featured": [],
+    "released": 2001,
+    "album": null,
+    "bpm": 101,
+    "source_url": "https://www.youtube.com/watch?v=Ry-yQKwpc38",
+    "duration": 195,
+    "added_at": "2026-10-12T15:22:06Z",
+    "tags": [
+     "lang:ru",
+     "genre:europop",
+     "genre:euro house",
+     "decade:00s"
+    ],
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "Ry-yQKwpc38",
+      "url": "https://www.youtube.com/watch?v=Ry-yQKwpc38"
+     }
+    ],
+    "raw": {
+     "title": "A-EUROPA - БЕЛЫЕ НЕБЕСА",
+     "artist": "A-Europa Official channel",
+     "year": 2001
+    }
+   },
+   {
+    "id": "DqgCZ1CkzOY",
+    "title": "Ангел дня",
+    "artists": [
+     "Русский размер"
+    ],
+    "featured": [],
+    "released": 1999,
+    "album": "650",
+    "bpm": 136,
+    "source_url": "https://www.youtube.com/watch?v=DqgCZ1CkzOY",
+    "duration": 209,
+    "added_at": "2026-10-12T15:24:00Z",
+    "tags": [
+     "lang:ru",
+     "country:ru",
+     "decade:90s",
+     "genre:eurodance",
+     "genre:synthpop",
+     "genre:techno",
+     "genre:dance pop",
+     "genre:trance"
+    ],
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "musicbrainz_url": "https://musicbrainz.org/recording/16a56d2d-2c88-4b6f-825d-5de9814d32eb",
+    "updated_at": "2026-10-15T23:47:26Z",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "DqgCZ1CkzOY",
+      "url": "https://www.youtube.com/watch?v=DqgCZ1CkzOY"
+     }
+    ],
+    "raw": {
+     "title": "Ангел дня",
+     "artist": "Русский размер",
+     "year": 1999
+    }
+   },
+   {
+    "id": "aGSKrC7dGcY",
+    "title": "Enjoy the Silence",
+    "artists": [
+     "Depeche Mode"
+    ],
+    "featured": [],
+    "released": 1990,
+    "album": "Violator",
+    "bpm": 115,
+    "source_url": "https://www.youtube.com/watch?v=aGSKrC7dGcY",
+    "duration": 280,
+    "added_at": "2026-10-12T15:26:10Z",
+    "tags": [
+     "genre:alternative rock",
+     "country:gb",
+     "lang:en",
+     "genre:synthpop",
+     "genre:synth-rock",
+     "decade:90s"
+    ],
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "aGSKrC7dGcY",
+      "url": "https://www.youtube.com/watch?v=aGSKrC7dGcY"
+     }
+    ],
+    "raw": {
+     "title": "Enjoy the Silence",
+     "artist": "Depeche Mode",
+     "year": 1990
+    }
+   },
+   {
+    "id": "Epj84QVw2rc",
+    "title": "Come Undone",
+    "artists": [
+     "Duran Duran"
+    ],
+    "featured": [],
+    "released": 1993,
+    "album": "Duran Duran",
+    "bpm": 177,
+    "source_url": "https://www.youtube.com/watch?v=Epj84QVw2rc",
+    "duration": 263,
+    "added_at": "2026-10-12T15:27:39Z",
+    "tags": [
+     "genre:new wave",
+     "genre:pop",
+     "genre:new romantic",
+     "country:gb",
+     "lang:en",
+     "genre:soft rock",
+     "genre:dance-rock",
+     "decade:90s",
+     "genre:ethereal",
+     "genre:art pop",
+     "genre:hard rock"
+    ],
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "musicbrainz_url": "https://musicbrainz.org/recording/275e9ac4-8e40-413a-95cf-820630980879",
+    "updated_at": "2026-10-15T23:47:42Z",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "Epj84QVw2rc",
+      "url": "https://www.youtube.com/watch?v=Epj84QVw2rc"
+     }
+    ],
+    "raw": {
+     "title": "Come Undone",
+     "artist": "Duran Duran",
+     "year": 1993
+    }
+   },
+   {
+    "id": "JYIaWeVL1JM",
+    "title": "Rhythm Is A Dancer",
+    "artists": [
+     "SNAP!"
+    ],
+    "featured": [],
+    "released": 1992,
+    "album": "The Madman's Return",
+    "bpm": 126,
+    "source_url": "https://www.youtube.com/watch?v=JYIaWeVL1JM",
+    "duration": 222,
+    "added_at": "2026-10-12T15:33:59Z",
+    "tags": [
+     "lang:en",
+     "genre:electronic",
+     "country:de",
+     "genre:eurodance",
+     "genre:euro house",
+     "decade:90s"
+    ],
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "musicbrainz_url": "https://musicbrainz.org/recording/cc2e95bf-7355-43d2-bafb-c4451306705c",
+    "updated_at": "2026-10-15T23:47:58Z",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "JYIaWeVL1JM",
+      "url": "https://www.youtube.com/watch?v=JYIaWeVL1JM"
+     }
+    ],
+    "raw": {
+     "title": "Rhythm Is A Dancer",
+     "artist": "SNAP!",
+     "year": 1992
+    }
+   },
+   {
+    "id": "OnT58cIJSpw",
+    "title": "The Rhythm of the Night",
+    "artists": [
+     "Corona"
+    ],
+    "featured": [],
+    "released": 1995,
+    "album": "The Rhythm of the Night",
+    "bpm": 130,
+    "source_url": "https://www.youtube.com/watch?v=OnT58cIJSpw",
+    "duration": 227,
+    "added_at": "2026-10-12T15:34:52Z",
+    "tags": [
+     "lang:en",
+     "decade:90s",
+     "genre:eurodance",
+     "genre:europop",
+     "genre:synthpop",
+     "genre:house",
+     "genre:pop",
+     "country:it"
+    ],
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "musicbrainz_url": "https://musicbrainz.org/recording/5c5c1869-b640-4145-a88e-e54137331861",
+    "updated_at": "2026-10-14T09:22:52Z",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "OnT58cIJSpw",
+      "url": "https://www.youtube.com/watch?v=OnT58cIJSpw"
+     }
+    ],
+    "raw": {
+     "title": "The Rhythm of the Night",
+     "artist": "Corona",
+     "year": 1995
+    }
+   },
+   {
+    "id": "iZd-nhQZj5M",
+    "title": "Think About The Way",
+    "artists": [
+     "Ice MC"
+    ],
+    "featured": [],
+    "released": 1994,
+    "album": "Ice'n'Green",
+    "bpm": 135,
+    "source_url": "https://www.youtube.com/watch?v=iZd-nhQZj5M",
+    "duration": 262,
+    "added_at": "2026-10-12T15:41:21Z",
+    "tags": [
+     "lang:en",
+     "decade:90s",
+     "genre:eurodance",
+     "genre:ragga",
+     "genre:synthpop",
+     "genre:euro house",
+     "genre:hip house",
+     "country:gb"
+    ],
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "musicbrainz_url": "https://musicbrainz.org/recording/234ff209-f63d-446b-9803-a3d18c5a62f1",
+    "updated_at": "2026-10-15T23:48:45Z",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "iZd-nhQZj5M",
+      "url": "https://www.youtube.com/watch?v=iZd-nhQZj5M"
+     }
+    ],
+    "raw": {
+     "title": "Think About The Way",
+     "artist": "Ice MC",
+     "year": 1994
+    }
+   },
+   {
+    "id": "ZlYDqL_mudI",
+    "title": "Ice MC - It's a Rainy Day",
+    "artists": [
+     "rdsmusiclabel"
+    ],
+    "featured": [],
+    "released": 1994,
+    "album": null,
+    "bpm": 137,
+    "source_url": "https://www.youtube.com/watch?v=ZlYDqL_mudI",
+    "duration": 279,
+    "added_at": "2026-10-12T15:42:41Z",
+    "tags": [
+     "lang:en",
+     "country:it",
+     "genre:eurodance",
+     "decade:90s"
+    ],
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "ZlYDqL_mudI",
+      "url": "https://www.youtube.com/watch?v=ZlYDqL_mudI"
+     }
+    ],
+    "raw": {
+     "title": "Ice MC - It's a Rainy Day",
+     "artist": "rdsmusiclabel",
+     "year": 1994
+    }
+   },
+   {
+    "id": "SU88c0f5-h0",
+    "title": "Pressure",
+    "artists": [
+     "Nadia Ali, Starkillers & Alex Kenji"
+    ],
+    "featured": [],
+    "released": 2011,
+    "version": {
+     "kind": "remix",
+     "name": "Alesso Remix",
+     "by": [],
+     "year": null
+    },
+    "album": null,
+    "bpm": 130,
+    "source_url": "https://www.youtube.com/watch?v=SU88c0f5-h0",
+    "duration": 371,
+    "added_at": "2026-10-12T15:46:28Z",
+    "tags": [
+     "lang:en",
+     "decade:10s",
+     "genre:trance",
+     "genre:house",
+     "genre:indie pop",
+     "genre:vocal trance",
+     "genre:singer-songwriter",
+     "country:us",
+     "genre:blues"
+    ],
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "musicbrainz_url": "https://musicbrainz.org/recording/75e480f0-34fd-4dae-88cd-4ea1ca3678da",
+    "discogs_url": null,
+    "updated_at": "2026-10-15T23:49:11Z",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "SU88c0f5-h0",
+      "url": "https://www.youtube.com/watch?v=SU88c0f5-h0"
+     }
+    ],
+    "raw": {
+     "title": "Pressure",
+     "artist": "Nadia Ali, Starkillers & Alex Kenji",
+     "remixer": "Alesso Remix",
+     "year": 2011
+    }
+   },
+   {
+    "id": "ViP87WipSm0",
+    "title": "Be My Lover",
+    "artists": [
+     "La Bouche"
+    ],
+    "featured": [],
+    "released": 1995,
+    "album": "Sweet Dreams",
+    "bpm": 137,
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "source_url": "https://www.youtube.com/watch?v=ViP87WipSm0",
+    "duration": 223,
+    "added_at": "2026-10-12T15:49:15Z",
+    "tags": [
+     "genre:eurodance",
+     "genre:pop",
+     "country:de",
+     "lang:en",
+     "decade:90s"
+    ],
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "ViP87WipSm0",
+      "url": "https://www.youtube.com/watch?v=ViP87WipSm0"
+     }
+    ],
+    "raw": {
+     "title": "Be My Lover",
+     "artist": "La Bouche",
+     "year": 1995
+    }
+   },
+   {
+    "id": "7YvAYIJSSZY",
+    "title": "Somebody's Watching Me",
+    "artists": [
+     "Rockwell"
+    ],
+    "featured": [],
+    "released": 1984,
+    "album": "Somebody's Watching Me",
+    "bpm": 124,
+    "wikipedia_song": "https://en.wikipedia.org/wiki/Somebody%27s_Watching_Me",
+    "wikipedia_artist": "https://en.wikipedia.org/wiki/Rockwell_(musician)",
+    "source_url": "https://www.youtube.com/watch?v=7YvAYIJSSZY",
+    "duration": 216,
+    "added_at": "2026-10-12T15:58:12Z",
+    "tags": [
+     "genre:pop",
+     "genre:indie rock",
+     "country:us",
+     "lang:en",
+     "genre:funk",
+     "decade:80s",
+     "genre:synth-funk",
+     "genre:synthpop",
+     "genre:new wave",
+     "genre:r&b",
+     "genre:contemporary r&b",
+     "genre:electronic"
+    ],
+    "musicbrainz_url": "https://musicbrainz.org/recording/d6d3c344-051d-4624-9cdc-0fbeee31a335",
+    "updated_at": "2026-10-15T23:49:24Z",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "7YvAYIJSSZY",
+      "url": "https://www.youtube.com/watch?v=7YvAYIJSSZY"
+     }
+    ],
+    "raw": {
+     "title": "Somebody's Watching Me",
+     "artist": "Rockwell",
+     "year": 1984
+    }
+   },
+   {
+    "id": "8UVNT4wvIGY",
+    "title": "Somebody That I Used To Know (feat. Kimbra)",
+    "artists": [
+     "Gotye"
+    ],
+    "featured": [],
+    "released": 2011,
+    "album": "Making Mirrors",
+    "bpm": 131,
+    "wikipedia_song": "https://en.wikipedia.org/wiki/Somebody_That_I_Used_to_Know",
+    "wikipedia_artist": "https://en.wikipedia.org/wiki/Gotye",
+    "source_url": "https://www.youtube.com/watch?v=8UVNT4wvIGY",
+    "duration": 244,
+    "added_at": "2026-10-12T16:11:00Z",
+    "tags": [
+     "lang:en",
+     "genre:electro house",
+     "genre:house",
+     "genre:classical",
+     "country:au",
+     "decade:10s",
+     "genre:art pop",
+     "genre:alternative rock",
+     "genre:hard rock",
+     "genre:rock",
+     "genre:indie rock"
+    ],
+    "musicbrainz_url": "https://musicbrainz.org/recording/166fc65d-9926-4617-8c5f-d304cc1599ad",
+    "updated_at": "2026-10-15T23:49:52Z",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "8UVNT4wvIGY",
+      "url": "https://www.youtube.com/watch?v=8UVNT4wvIGY"
+     }
+    ],
+    "raw": {
+     "title": "Somebody That I Used To Know (feat. Kimbra)",
+     "artist": "Gotye",
+     "year": 2011
+    }
+   },
+   {
+    "id": "AXZI4SzknYs",
+    "title": "Ад Колыма (mudekhar remix)",
+    "artists": [
+     "Гио ПиКа"
+    ],
+    "featured": [],
+    "released": 2021,
+    "album": null,
+    "bpm": 86,
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "source_url": "https://www.youtube.com/watch?v=AXZI4SzknYs",
+    "duration": 160,
+    "added_at": "2026-10-12T16:11:58Z",
+    "tags": [
+     "lang:ro",
+     "decade:20s"
+    ],
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "AXZI4SzknYs",
+      "url": "https://www.youtube.com/watch?v=AXZI4SzknYs"
+     }
+    ],
+    "raw": {
+     "title": "Ад Колыма (mudekhar remix)",
+     "artist": "Гио ПиКа",
+     "year": 2021
+    }
+   },
+   {
+    "id": "rsGw1WtoGsQ",
+    "title": "After Midnight",
+    "artists": [
+     "N.emesis"
+    ],
+    "featured": [],
+    "released": 2026,
+    "album": null,
+    "bpm": 177,
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "source_url": "https://www.youtube.com/watch?v=rsGw1WtoGsQ",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "rsGw1WtoGsQ",
+      "url": "https://www.youtube.com/watch?v=rsGw1WtoGsQ"
+     }
+    ],
+    "duration": 228,
+    "added_at": "2026-10-13T07:56:33Z",
+    "tags": [
+     "lang:en",
+     "decade:20s",
+     "genre:drum and bass"
+    ],
+    "updated_at": "2026-10-14T09:25:53Z",
+    "musicbrainz_url": null,
+    "raw": {
+     "title": "After Midnight",
+     "artist": "N.emesis",
+     "year": 2026
+    }
+   },
+   {
+    "id": "Tx9zMFodNtA",
+    "title": "Innerbloom",
+    "artists": [
+     "RÜFÜS DU SOL"
+    ],
+    "featured": [],
+    "released": 2015,
+    "album": "Bloom",
+    "bpm": 124,
+    "wikipedia_song": "https://en.wikipedia.org/wiki/Innerbloom",
+    "wikipedia_artist": "https://en.wikipedia.org/wiki/R%C3%BCf%C3%BCs_Du_Sol",
+    "source_url": "https://www.youtube.com/watch?v=Tx9zMFodNtA",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "Tx9zMFodNtA",
+      "url": "https://www.youtube.com/watch?v=Tx9zMFodNtA"
+     }
+    ],
+    "duration": 578,
+    "added_at": "2026-10-13T12:37:17Z",
+    "tags": [
+     "lang:en",
+     "decade:10s",
+     "genre:electronic",
+     "genre:deep house",
+     "genre:progressive house",
+     "genre:dancehall",
+     "country:au",
+     "genre:house"
+    ],
+    "musicbrainz_url": "https://musicbrainz.org/recording/412b1bc7-538d-4178-af00-17616d20f289",
+    "updated_at": "2026-10-15T23:50:56Z",
+    "raw": {
+     "title": "Innerbloom",
+     "artist": "RÜFÜS DU SOL",
+     "year": 2015
+    }
+   },
+   {
+    "id": "Le8325thBt4",
+    "title": "Ecstasy",
+    "artists": [
+     "ATB"
+    ],
+    "featured": [],
+    "released": 2026,
+    "version": {
+     "kind": "remix",
+     "name": "Sadrican 2026 Remix",
+     "by": [],
+     "year": null
+    },
+    "album": "No Silence",
+    "bpm": 126,
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "source_url": "https://www.youtube.com/watch?v=Le8325thBt4",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "Le8325thBt4",
+      "url": "https://www.youtube.com/watch?v=Le8325thBt4"
+     }
+    ],
+    "duration": 251,
+    "added_at": "2026-10-13T18:32:44Z",
+    "tags": [
+     "decade:20s",
+     "genre:progressive house",
+     "genre:trance",
+     "genre:electronic",
+     "genre:vocal trance",
+     "country:de",
+     "genre:progressive trance",
+     "genre:dance pop",
+     "genre:eurodance",
+     "genre:drum and bass"
+    ],
+    "updated_at": "2026-10-15T23:51:11Z",
+    "musicbrainz_url": "https://musicbrainz.org/recording/fa1c7163-cce5-4289-b4ca-240b5a2c7ca7",
+    "raw": {
+     "title": "Ecstasy",
+     "artist": "ATB",
+     "remixer": "Sadrican 2026 Remix",
+     "year": 2026
+    }
+   },
+   {
+    "id": "TTvcivjxHNY",
+    "title": "Something",
+    "artists": [
+     "Lasgo"
+    ],
+    "featured": [],
+    "released": 2026,
+    "version": {
+     "kind": "remix",
+     "name": "Sadrican 2026 Remix",
+     "by": [],
+     "year": null
+    },
+    "album": "Some Things",
+    "bpm": 125,
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "source_url": "https://www.youtube.com/watch?v=TTvcivjxHNY",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "TTvcivjxHNY",
+      "url": "https://www.youtube.com/watch?v=TTvcivjxHNY"
+     }
+    ],
+    "duration": 250,
+    "added_at": "2026-10-13T18:45:08Z",
+    "tags": [
+     "decade:20s",
+     "genre:progressive house",
+     "genre:deep trance",
+     "genre:melodic techno",
+     "genre:trance",
+     "genre:electronic",
+     "genre:eurodance",
+     "genre:vocal trance",
+     "genre:dance pop",
+     "country:be"
+    ],
+    "updated_at": "2026-10-15T23:51:29Z",
+    "musicbrainz_url": "https://musicbrainz.org/recording/3c07d554-c0dc-4d21-9ac8-5cdf88c71b6e",
+    "raw": {
+     "title": "Something",
+     "artist": "Lasgo",
+     "remixer": "Sadrican 2026 Remix",
+     "year": 2026
+    }
+   },
+   {
+    "id": "dQ03F36U5qg",
+    "title": "Innocente",
+    "artists": [
+     "Delerium"
+    ],
+    "featured": [],
+    "released": 2026,
+    "version": {
+     "kind": "remix",
+     "name": "Sadrican 2026 Remix",
+     "by": [],
+     "year": null
+    },
+    "album": null,
+    "bpm": 127,
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "source_url": "https://www.youtube.com/watch?v=dQ03F36U5qg",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "dQ03F36U5qg",
+      "url": "https://www.youtube.com/watch?v=dQ03F36U5qg"
+     }
+    ],
+    "duration": 248,
+    "added_at": "2026-10-13T18:52:19Z",
+    "tags": [
+     "decade:20s",
+     "genre:melodic techno",
+     "genre:progressive trance",
+     "genre:new age",
+     "genre:electronic",
+     "genre:worldbeat",
+     "genre:trance",
+     "genre:ambient house",
+     "genre:dark ambient",
+     "genre:ambient",
+     "country:ca"
+    ],
+    "musicbrainz_url": "https://musicbrainz.org/recording/0c7cdd48-210b-414b-ba1d-dcfa3a02e620",
+    "discogs_url": null,
+    "updated_at": "2026-10-15T23:51:47Z",
+    "raw": {
+     "title": "Innocente",
+     "artist": "Delerium",
+     "remixer": "Sadrican 2026 Remix",
+     "year": 2026
+    }
+   },
+   {
+    "id": "s5IIWKZr_2w",
+    "title": "Stereo Love",
+    "artists": [
+     "Edward Maya"
+    ],
+    "featured": [],
+    "released": 2026,
+    "version": {
+     "kind": "remix",
+     "name": "Sadrican 2026 Remix",
+     "by": [],
+     "year": null
+    },
+    "album": null,
+    "bpm": 130,
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "source_url": "https://www.youtube.com/watch?v=s5IIWKZr_2w",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "s5IIWKZr_2w",
+      "url": "https://www.youtube.com/watch?v=s5IIWKZr_2w"
+     }
+    ],
+    "duration": 241,
+    "added_at": "2026-10-13T19:18:45Z",
+    "tags": [
+     "decade:20s",
+     "genre:progressive house",
+     "genre:house",
+     "genre:deep house",
+     "genre:electronic",
+     "genre:electro house",
+     "genre:eurodance",
+     "genre:tropical house",
+     "country:ro"
+    ],
+    "updated_at": "2026-10-15T23:52:01Z",
+    "musicbrainz_url": "https://musicbrainz.org/recording/16dae382-a64a-4f1f-86f1-b9e662d9f5cf",
+    "raw": {
+     "title": "Stereo Love",
+     "artist": "Edward Maya",
+     "remixer": "Sadrican 2026 Remix",
+     "year": 2026
+    }
+   },
+   {
+    "id": "Zb5sUzQc-_I",
+    "title": "Mr. Vain",
+    "artists": [
+     "Culture Beat"
+    ],
+    "featured": [],
+    "released": 2026,
+    "version": {
+     "kind": "remix",
+     "name": "Paul Da Breda Remix",
+     "by": [],
+     "year": null
+    },
+    "album": "Serenity",
+    "bpm": 132,
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "source_url": "https://www.youtube.com/watch?v=Zb5sUzQc-_I",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "Zb5sUzQc-_I",
+      "url": "https://www.youtube.com/watch?v=Zb5sUzQc-_I"
+     }
+    ],
+    "duration": 265,
+    "added_at": "2026-10-13T19:23:44Z",
+    "tags": [
+     "decade:20s",
+     "genre:melodic techno",
+     "genre:progressive house",
+     "genre:eurodance",
+     "genre:dance pop",
+     "genre:house",
+     "country:de"
+    ],
+    "updated_at": "2026-10-15T23:52:16Z",
+    "musicbrainz_url": "https://musicbrainz.org/recording/36b232d2-d44a-4b2c-91f7-1a759c35447a",
+    "raw": {
+     "title": "Mr. Vain",
+     "artist": "Culture Beat",
+     "remixer": "Paul Da Breda Remix",
+     "year": 2026
+    }
+   },
+   {
+    "id": "eqLtSWmKkJE",
+    "title": "In And Out Of Love",
+    "artists": [
+     "Armin van Buuren"
+    ],
+    "featured": [],
+    "released": 2026,
+    "version": {
+     "kind": "remix",
+     "name": "Sadrican 2026 Remix",
+     "by": [],
+     "year": null
+    },
+    "album": null,
+    "bpm": 128,
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "source_url": "https://www.youtube.com/watch?v=eqLtSWmKkJE",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "eqLtSWmKkJE",
+      "url": "https://www.youtube.com/watch?v=eqLtSWmKkJE"
+     }
+    ],
+    "duration": 260,
+    "added_at": "2026-10-13T19:31:41Z",
+    "tags": [
+     "decade:20s",
+     "genre:progressive house",
+     "genre:electronic",
+     "genre:trance",
+     "genre:house",
+     "genre:techno",
+     "genre:progressive trance",
+     "genre:uplifting trance",
+     "country:nl",
+     "genre:psytrance",
+     "genre:vocal trance"
+    ],
+    "updated_at": "2026-10-15T23:52:33Z",
+    "musicbrainz_url": "https://musicbrainz.org/recording/d78212c9-ebcd-4575-978b-e28025d33c80",
+    "raw": {
+     "title": "In And Out Of Love",
+     "artist": "Armin van Buuren",
+     "remixer": "Sadrican 2026 Remix",
+     "year": 2026
+    }
+   },
+   {
+    "id": "szLTDSw11kw",
+    "title": "Turn The Lights Off",
+    "artists": [
+     "Kato Feat. Jon"
+    ],
+    "featured": [],
+    "released": 2026,
+    "version": {
+     "kind": "remix",
+     "name": "DEEPO Remix Long Version",
+     "by": [],
+     "year": null
+    },
+    "album": null,
+    "bpm": 126,
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "source_url": "https://www.youtube.com/watch?v=szLTDSw11kw",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "szLTDSw11kw",
+      "url": "https://www.youtube.com/watch?v=szLTDSw11kw"
+     }
+    ],
+    "duration": 578,
+    "added_at": "2026-10-13T19:46:58Z",
+    "tags": [
+     "decade:20s",
+     "country:us",
+     "genre:house",
+     "genre:electronic",
+     "genre:hip hop"
+    ],
+    "updated_at": "2026-10-15T23:52:47Z",
+    "musicbrainz_url": "https://musicbrainz.org/recording/d51a2bb6-57a2-4cf8-8d72-88c14b747f6f",
+    "raw": {
+     "title": "Turn The Lights Off",
+     "artist": "Kato Feat. Jon",
+     "remixer": "DEEPO Remix Long Version",
+     "year": 2026
+    }
+   },
+   {
+    "id": "E7pK86smWuA",
+    "title": "Дети минут",
+    "artists": [
+     "Виктор Цой"
+    ],
+    "featured": [],
+    "released": 2026,
+    "version": {
+     "kind": "remix",
+     "name": "Professor von Klyajser",
+     "by": [],
+     "year": null
+    },
+    "album": null,
+    "bpm": 133,
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "source_url": "https://www.youtube.com/watch?v=E7pK86smWuA",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "E7pK86smWuA",
+      "url": "https://www.youtube.com/watch?v=E7pK86smWuA"
+     }
+    ],
+    "duration": 260,
+    "added_at": "2026-10-13T20:56:17Z",
+    "tags": [
+     "decade:20s",
+     "genre:rock",
+     "genre:post-punk",
+     "country:ru",
+     "lang:ru"
+    ],
+    "updated_at": "2026-10-16T00:08:54Z",
+    "raw": {
+     "title": "Дети минут",
+     "artist": "Виктор Цой",
+     "remixer": "Professor von Klyajser",
+     "year": 2026
+    }
+   },
+   {
+    "id": "w77QqG66gO4",
+    "title": "В сигаретном дыму",
+    "artists": [
+     "Ислам Идигов"
+    ],
+    "featured": [],
+    "released": 2018,
+    "album": null,
+    "bpm": 128,
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "source_url": "https://www.youtube.com/watch?v=w77QqG66gO4",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "w77QqG66gO4",
+      "url": "https://www.youtube.com/watch?v=w77QqG66gO4"
+     }
+    ],
+    "duration": 179,
+    "added_at": "2026-10-13T20:58:46Z",
+    "tags": [
+     "decade:10s",
+     "genre:chanson",
+     "country:ru",
+     "lang:ru"
+    ],
+    "updated_at": "2026-10-15T23:56:28Z",
+    "raw": {
+     "title": "В сигаретном дыму",
+     "artist": "Ислам Идигов",
+     "year": 2018
+    }
+   },
+   {
+    "id": "HWOIEAZLgx0",
+    "title": "Blood Sugar",
+    "artists": [
+     "Pendulum"
+    ],
+    "featured": [],
+    "released": 2018,
+    "version": {
+     "kind": "other",
+     "name": "Mixed By DJ Gvozd",
+     "by": [],
+     "year": null
+    },
+    "album": null,
+    "bpm": 122,
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "source_url": "https://www.youtube.com/watch?v=HWOIEAZLgx0",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "HWOIEAZLgx0",
+      "url": "https://www.youtube.com/watch?v=HWOIEAZLgx0"
+     }
+    ],
+    "duration": 129,
+    "added_at": "2026-10-13T21:06:28Z",
+    "tags": [
+     "decade:10s",
+     "genre:drum and bass",
+     "genre:electronic rock",
+     "genre:electronic",
+     "country:au",
+     "genre:neurofunk"
+    ],
+    "updated_at": "2026-10-15T23:58:17Z",
+    "raw": {
+     "title": "Blood Sugar",
+     "artist": "Pendulum",
+     "remixer": "Mixed By DJ Gvozd",
+     "year": 2018
+    }
+   },
+   {
+    "id": "cb61AVsxD34",
+    "title": "As the Rush Comes",
+    "artists": [
+     "Motorcycle"
+    ],
+    "featured": [],
+    "released": 2008,
+    "version": {
+     "kind": "remix",
+     "name": "Gabriel & Dresden Chill Mix",
+     "by": [],
+     "year": null
+    },
+    "album": null,
+    "bpm": 136,
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "source_url": "https://www.youtube.com/watch?v=cb61AVsxD34",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "cb61AVsxD34",
+      "url": "https://www.youtube.com/watch?v=cb61AVsxD34"
+     }
+    ],
+    "duration": 382,
+    "added_at": "2026-10-13T21:12:06Z",
+    "tags": [
+     "decade:00s",
+     "genre:trance",
+     "genre:electronic",
+     "country:us",
+     "genre:progressive trance"
+    ],
+    "updated_at": "2026-10-15T23:53:11Z",
+    "musicbrainz_url": "https://musicbrainz.org/recording/dc2b0f11-6995-4418-90fb-1d7cb0fce696",
+    "raw": {
+     "title": "As the Rush Comes",
+     "artist": "Motorcycle",
+     "remixer": "Gabriel & Dresden Chill Mix",
+     "year": 2008
+    }
+   },
+   {
+    "id": "rv3EY4k3yrY",
+    "title": "As the Rush Comes",
+    "artists": [
+     "Motorcycle"
+    ],
+    "featured": [],
+    "released": 2008,
+    "version": {
+     "kind": "remix",
+     "name": "DJ Tiesto Remix",
+     "by": [],
+     "year": null
+    },
+    "album": "Nyana",
+    "bpm": 138,
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "source_url": "https://www.youtube.com/watch?v=rv3EY4k3yrY",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "rv3EY4k3yrY",
+      "url": "https://www.youtube.com/watch?v=rv3EY4k3yrY"
+     }
+    ],
+    "duration": 403,
+    "added_at": "2026-10-13T21:14:15Z",
+    "tags": [
+     "decade:00s",
+     "genre:trance",
+     "genre:electronic",
+     "country:us",
+     "genre:progressive trance"
+    ],
+    "updated_at": "2026-10-15T23:41:10Z",
+    "raw": {
+     "title": "As the Rush Comes",
+     "artist": "Motorcycle",
+     "remixer": "DJ Tiesto Remix",
+     "year": 2008
+    }
+   },
+   {
+    "id": "7RH0RVt6Rm0",
+    "title": "Beautiful Things",
+    "artists": [
+     "Andain"
+    ],
+    "featured": [],
+    "released": 2010,
+    "version": {
+     "kind": "remix",
+     "name": "Gabriel & Dresden Unplugged Mix",
+     "by": [],
+     "year": null
+    },
+    "album": "Nyana Mixed by Tiësto",
+    "bpm": 136,
+    "wikipedia_song": null,
+    "wikipedia_artist": "https://en.wikipedia.org/wiki/Andain",
+    "source_url": "https://www.youtube.com/watch?v=7RH0RVt6Rm0",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "7RH0RVt6Rm0",
+      "url": "https://www.youtube.com/watch?v=7RH0RVt6Rm0"
+     }
+    ],
+    "duration": 435,
+    "added_at": "2026-10-13T21:16:10Z",
+    "tags": [
+     "genre:electronic",
+     "genre:vocal trance",
+     "genre:trance",
+     "country:us",
+     "decade:10s"
+    ],
+    "updated_at": "2026-10-16T00:28:37Z",
+    "raw": {
+     "title": "Beautiful Things",
+     "artist": "Andain",
+     "remixer": "Gabriel & Dresden Unplugged Mix",
+     "year": 2010
+    }
+   },
+   {
+    "id": "AewNd29wRUM",
+    "title": "The Only Way Is Up",
+    "artists": [
+     "Martin Garrix & Tiësto"
+    ],
+    "featured": [],
+    "released": 2015,
+    "album": null,
+    "bpm": 130,
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "source_url": "https://www.youtube.com/watch?v=AewNd29wRUM",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "AewNd29wRUM",
+      "url": "https://www.youtube.com/watch?v=AewNd29wRUM"
+     }
+    ],
+    "duration": 189,
+    "added_at": "2026-10-13T21:20:21Z",
+    "tags": [
+     "decade:10s",
+     "genre:progressive house",
+     "genre:house",
+     "genre:deep house",
+     "genre:electro house",
+     "genre:future bass",
+     "genre:electronic",
+     "country:nl",
+     "lang:nl"
+    ],
+    "updated_at": "2026-10-15T23:53:25Z",
+    "musicbrainz_url": "https://musicbrainz.org/recording/81da590e-a410-49bf-95fa-cfe0527e472c",
+    "raw": {
+     "title": "The Only Way Is Up",
+     "artist": "Martin Garrix & Tiësto",
+     "year": 2015
+    }
+   },
+   {
+    "id": "yoDs4TaPpxU",
+    "title": "Pure Energy",
+    "artists": [
+     "Astrix & Domestic"
+    ],
+    "featured": [],
+    "released": 2000,
+    "version": {
+     "kind": "remix",
+     "name": "Astral Projection Remix",
+     "by": [],
+     "year": null
+    },
+    "album": null,
+    "bpm": 143,
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "source_url": "https://www.youtube.com/watch?v=yoDs4TaPpxU",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "yoDs4TaPpxU",
+      "url": "https://www.youtube.com/watch?v=yoDs4TaPpxU"
+     }
+    ],
+    "duration": 636,
+    "added_at": "2026-10-13T21:40:01Z",
+    "tags": [
+     "decade:00s",
+     "genre:psytrance",
+     "genre:electronic",
+     "genre:psychedelic rock",
+     "country:il"
+    ],
+    "updated_at": "2026-10-15T23:53:40Z",
+    "musicbrainz_url": "https://musicbrainz.org/recording/e9d718e4-065c-4af3-9d02-77765779b371",
+    "raw": {
+     "title": "Pure Energy",
+     "artist": "Astrix & Domestic",
+     "remixer": "Astral Projection Remix",
+     "year": 2000
+    }
+   },
+   {
+    "id": "XAX3ZQ5eNaM",
+    "title": "In The End (Magic Cover Release)",
+    "artists": [
+     "Linking Park"
+    ],
+    "featured": [],
+    "released": 2023,
+    "version": {
+     "kind": "remix",
+     "name": "Twin & Elise Lieberth",
+     "by": [],
+     "year": null
+    },
+    "album": null,
+    "bpm": 96,
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "source_url": "https://www.youtube.com/watch?v=XAX3ZQ5eNaM",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "XAX3ZQ5eNaM",
+      "url": "https://www.youtube.com/watch?v=XAX3ZQ5eNaM"
+     }
+    ],
+    "duration": 169,
+    "added_at": "2026-10-13T21:54:19Z",
+    "tags": [
+     "decade:20s"
+    ],
+    "updated_at": "2026-10-15T22:24:14Z",
+    "raw": {
+     "title": "In The End (Magic Cover Release)",
+     "artist": "Linking Park",
+     "remixer": "Twin & Elise Lieberth",
+     "year": 2023
+    }
+   },
+   {
+    "id": "Ad8OT0S7l6k",
+    "title": "Комарово - OST Atomic Heart",
+    "artists": [
+     "Игорь Скляр"
+    ],
+    "featured": [],
+    "released": 2023,
+    "version": {
+     "kind": "remix",
+     "name": "DVRST Phonk Remix",
+     "by": [],
+     "year": null
+    },
+    "album": "OST Atomic Heart",
+    "bpm": 117,
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "source_url": "https://www.youtube.com/watch?v=Ad8OT0S7l6k",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "Ad8OT0S7l6k",
+      "url": "https://www.youtube.com/watch?v=Ad8OT0S7l6k"
+     }
+    ],
+    "duration": 146,
+    "added_at": "2026-10-13T21:58:49Z",
+    "tags": [
+     "decade:20s"
+    ],
+    "updated_at": "2026-10-15T22:23:58Z",
+    "raw": {
+     "title": "Комарово - OST Atomic Heart",
+     "artist": "Игорь Скляр",
+     "remixer": "DVRST Phonk Remix",
+     "year": 2023
+    }
+   },
+   {
+    "id": "LdkbgZ6PMN8",
+    "title": "Foolishly Running Up That Hill",
+    "artists": [
+     "Sickick"
+    ],
+    "featured": [],
+    "released": 2022,
+    "version": {
+     "kind": "remix",
+     "name": "Kate Bush x Ashanti Remix",
+     "by": [],
+     "year": null
+    },
+    "album": null,
+    "bpm": 110,
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "source_url": "https://www.youtube.com/watch?v=LdkbgZ6PMN8",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "LdkbgZ6PMN8",
+      "url": "https://www.youtube.com/watch?v=LdkbgZ6PMN8"
+     }
+    ],
+    "duration": 158,
+    "added_at": "2026-10-13T22:00:42Z",
+    "tags": [
+     "decade:20s"
+    ],
+    "updated_at": "2026-10-15T22:22:15Z",
+    "raw": {
+     "title": "Foolishly Running Up That Hill",
+     "artist": "Sickick",
+     "remixer": "Kate Bush x Ashanti Remix",
+     "year": 2022
+    }
+   },
+   {
+    "id": "Q9UqRUPCrYg",
+    "title": "Кончится лето",
+    "artists": [
+     "Цой"
+    ],
+    "featured": [],
+    "released": 2021,
+    "version": {
+     "kind": "remix",
+     "name": "Yaukoshi, LXST CXNTURY",
+     "by": [],
+     "year": null
+    },
+    "album": null,
+    "bpm": 152,
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "source_url": "https://www.youtube.com/watch?v=Q9UqRUPCrYg",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "Q9UqRUPCrYg",
+      "url": "https://www.youtube.com/watch?v=Q9UqRUPCrYg"
+     }
+    ],
+    "duration": 167,
+    "added_at": "2026-10-13T22:15:54Z",
+    "tags": [
+     "decade:20s"
+    ],
+    "updated_at": "2026-10-16T00:08:33Z",
+    "raw": {
+     "title": "Кончится лето",
+     "artist": "Цой",
+     "remixer": "Yaukoshi, LXST CXNTURY",
+     "year": 2021
+    }
+   },
+   {
+    "id": "AEwTnmIM1YM",
+    "title": "Музыка нас связала",
+    "artists": [
+     "Мираж"
+    ],
+    "featured": [],
+    "released": 1994,
+    "album": "Снова вместе (Remastered 1994)",
+    "bpm": 134,
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "musicbrainz_url": null,
+    "source_url": "https://www.youtube.com/watch?v=AEwTnmIM1YM",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "AEwTnmIM1YM",
+      "url": "https://www.youtube.com/watch?v=AEwTnmIM1YM"
+     }
+    ],
+    "duration": 269,
+    "added_at": "2026-10-13T22:19:20Z",
+    "tags": [
+     "decade:90s",
+     "genre:euro disco",
+     "genre:eurodance",
+     "genre:italo disco",
+     "genre:eurobeat",
+     "genre:hi-nrg",
+     "genre:disco",
+     "genre:pop",
+     "genre:pop rock",
+     "country:ru",
+     "lang:ru"
+    ],
+    "updated_at": "2026-10-14T11:53:59Z",
+    "raw": {
+     "title": "Музыка нас связала",
+     "artist": "Мираж",
+     "year": 1994
+    }
+   },
+   {
+    "id": "_yejiN8Sl9s",
+    "title": "Тепло",
+    "artists": [
+     "Елена Темникова"
+    ],
+    "featured": [],
+    "released": 2016,
+    "album": "TEMNIKOVA I",
+    "bpm": 122,
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "musicbrainz_url": "https://musicbrainz.org/recording/fe100460-a4c4-4889-8371-330805c5593a",
+    "source_url": "https://www.youtube.com/watch?v=_yejiN8Sl9s",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "_yejiN8Sl9s",
+      "url": "https://www.youtube.com/watch?v=_yejiN8Sl9s"
+     }
+    ],
+    "duration": 257,
+    "added_at": "2026-10-13T22:39:46Z",
+    "tags": [
+     "decade:10s",
+     "country:ru",
+     "genre:pop",
+     "genre:deep house",
+     "genre:europop",
+     "genre:trap",
+     "genre:cloud rap",
+     "lang:ru"
+    ],
+    "updated_at": "2026-10-16T00:25:29Z",
+    "raw": {
+     "title": "Тепло",
+     "artist": "Елена Темникова",
+     "year": 2016
+    }
+   },
+   {
+    "id": "cb6WpqqN1ww",
+    "title": "What is Love",
+    "artists": [
+     "Haddaway"
+    ],
+    "featured": [],
+    "released": 2002,
+    "version": {
+     "kind": "remix",
+     "name": "Deepjack & Mr  Nu Remix",
+     "by": [],
+     "year": null
+    },
+    "album": null,
+    "bpm": 120,
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "musicbrainz_url": "https://musicbrainz.org/recording/13d6a7da-a487-4452-a895-a129ad76e072",
+    "source_url": "https://www.youtube.com/watch?v=cb6WpqqN1ww",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "cb6WpqqN1ww",
+      "url": "https://www.youtube.com/watch?v=cb6WpqqN1ww"
+     }
+    ],
+    "duration": 345,
+    "added_at": "2026-10-13T23:01:24Z",
+    "tags": [
+     "decade:00s",
+     "country:de",
+     "genre:eurodance",
+     "genre:pop",
+     "genre:electronic"
+    ],
+    "updated_at": "2026-10-15T23:57:41Z",
+    "raw": {
+     "title": "What is Love",
+     "artist": "Haddaway",
+     "remixer": "Deepjack & Mr  Nu Remix",
+     "year": 2002
+    }
+   },
+   {
+    "id": "3HVuMlaNcOM",
+    "title": "Heart Of Glass",
+    "artists": [
+     "Blondie"
+    ],
+    "featured": [],
+    "released": 2013,
+    "version": {
+     "kind": "remix",
+     "name": "Oliver & Thee Mike B Remix",
+     "by": [],
+     "year": null
+    },
+    "album": "Parallel Lines",
+    "bpm": 117,
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "musicbrainz_url": "https://musicbrainz.org/recording/0e94bd4e-44b8-4e66-ad9e-afa2e8fb003d",
+    "source_url": "https://www.youtube.com/watch?v=3HVuMlaNcOM",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "3HVuMlaNcOM",
+      "url": "https://www.youtube.com/watch?v=3HVuMlaNcOM"
+     }
+    ],
+    "duration": 308,
+    "added_at": "2026-10-13T23:03:37Z",
+    "tags": [
+     "decade:10s",
+     "country:us",
+     "genre:disco",
+     "genre:new wave",
+     "genre:rock and roll",
+     "genre:rock",
+     "genre:post-punk",
+     "genre:power pop",
+     "genre:dance-rock"
+    ],
+    "updated_at": "2026-10-15T23:07:11Z",
+    "raw": {
+     "title": "Heart Of Glass",
+     "artist": "Blondie",
+     "remixer": "Oliver & Thee Mike B Remix",
+     "year": 2013
+    }
+   },
+   {
+    "id": "0XFudmaObLI",
+    "title": "Dancin",
+    "artists": [
+     "Aaron Smith"
+    ],
+    "featured": [],
+    "released": 2013,
+    "version": {
+     "kind": "remix",
+     "name": "KRONO Remix",
+     "by": [],
+     "year": null
+    },
+    "album": null,
+    "bpm": 122,
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "musicbrainz_url": "https://musicbrainz.org/recording/ec872d6b-1830-4416-958e-2bb1576c21c8",
+    "source_url": "https://www.youtube.com/watch?v=0XFudmaObLI",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "0XFudmaObLI",
+      "url": "https://www.youtube.com/watch?v=0XFudmaObLI"
+     }
+    ],
+    "duration": 256,
+    "added_at": "2026-10-13T23:04:29Z",
+    "tags": [
+     "decade:10s",
+     "genre:dancehall",
+     "country:us",
+     "genre:house"
+    ],
+    "updated_at": "2026-10-15T23:57:54Z",
+    "raw": {
+     "title": "Dancin",
+     "artist": "Aaron Smith",
+     "remixer": "KRONO Remix",
+     "year": 2013
+    }
+   },
+   {
+    "id": "uEWkDQI0jN4",
+    "title": "Amoled",
+    "artists": [
+     "Son Dambi",
+     "After School"
+    ],
+    "featured": [],
+    "released": 2009,
+    "album": null,
+    "bpm": 127,
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "musicbrainz_url": null,
+    "source_url": "https://www.youtube.com/watch?v=uEWkDQI0jN4",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "uEWkDQI0jN4",
+      "url": "https://www.youtube.com/watch?v=uEWkDQI0jN4"
+     }
+    ],
+    "duration": 222,
+    "added_at": "2026-10-13T23:29:05Z",
+    "tags": [
+     "decade:00s",
+     "country:kr"
+    ],
+    "updated_at": "2026-10-15T20:45:09Z",
+    "raw": {
+     "title": "Amoled",
+     "artist": "Son Dambi - After School",
+     "year": 2009
+    }
+   },
+   {
+    "id": "soundcloud-100613452",
+    "title": "Zonnestraal",
+    "artists": [
+     "De Hofnar"
+    ],
+    "featured": [],
+    "released": 2013,
+    "version": {
+     "kind": "remix",
+     "name": "Kav Verhouzer Remix",
+     "by": [],
+     "year": null
+    },
+    "album": null,
+    "bpm": 127,
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "musicbrainz_url": "https://musicbrainz.org/recording/6124b836-4073-4229-b6d9-2743ca8f833b",
+    "source": "soundcloud",
+    "source_url": "https://soundcloud.com/kavverhouzer/zonnestraal-kav-verhouzer",
+    "sources": [
+     {
+      "source": "soundcloud",
+      "id": "soundcloud-100613452",
+      "url": "https://soundcloud.com/kavverhouzer/zonnestraal-kav-verhouzer"
+     }
+    ],
+    "duration": 362.025,
+    "added_at": "2026-10-14T10:29:32Z",
+    "tags": [
+     "genre:sunshine house",
+     "decade:10s",
+     "country:nl"
+    ],
+    "updated_at": "2026-10-14T18:53:31Z",
+    "raw": {
+     "title": "Zonnestraal",
+     "artist": "De Hofnar",
+     "remixer": "Kav Verhouzer Remix",
+     "year": 2013
+    }
+   },
+   {
+    "id": "soundcloud-262607316",
+    "title": "Fading",
+    "artists": [
+     "Didrik Thulin X Sonny Alven"
+    ],
+    "featured": [],
+    "released": null,
+    "version": {
+     "kind": "remix",
+     "name": "MKJ Remix",
+     "by": [],
+     "year": null
+    },
+    "album": null,
+    "bpm": 127,
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "musicbrainz_url": null,
+    "source": "soundcloud",
+    "source_url": "https://soundcloud.com/mkjaff/fading-mkj-remix",
+    "sources": [
+     {
+      "source": "soundcloud",
+      "id": "soundcloud-262607316",
+      "url": "https://soundcloud.com/mkjaff/fading-mkj-remix"
+     }
+    ],
+    "duration": 247.791,
+    "added_at": "2026-10-14T10:40:30Z",
+    "tags": [],
+    "updated_at": "2026-10-15T21:08:47Z",
+    "raw": {
+     "title": "Fading",
+     "artist": "Didrik Thulin X Sonny Alven",
+     "remixer": "MKJ Remix"
+    }
+   },
+   {
+    "id": "soundcloud-318053613",
+    "title": "Kuaga",
+    "artists": [
+     "Pierce Fulton"
+    ],
+    "featured": [],
+    "released": 2017,
+    "version": {
+     "kind": "remix",
+     "name": "Champion Remix",
+     "by": [],
+     "year": null
+    },
+    "album": null,
+    "bpm": 117,
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "musicbrainz_url": "https://musicbrainz.org/recording/70b834d7-44ff-4726-9592-e17b2434cebb",
+    "discogs_url": null,
+    "source": "soundcloud",
+    "source_url": "https://soundcloud.com/user-608912146/drum-bass-pierce-fulton-kuaga",
+    "sources": [
+     {
+      "source": "soundcloud",
+      "id": "soundcloud-318053613",
+      "url": "https://soundcloud.com/user-608912146/drum-bass-pierce-fulton-kuaga"
+     }
+    ],
+    "duration": 272.752,
+    "added_at": "2026-10-14T10:46:36Z",
+    "tags": [
+     "genre:drum and bass",
+     "decade:10s",
+     "country:us",
+     "genre:progressive house",
+     "genre:electro house",
+     "genre:indie pop",
+     "genre:electronic"
+    ],
+    "updated_at": "2026-10-16T00:02:26Z",
+    "raw": {
+     "title": "Kuaga",
+     "artist": "Pierce Fulton",
+     "remixer": "Champion Remix",
+     "year": 2017
+    }
+   },
+   {
+    "id": "soundcloud-42327170",
+    "title": "Voodoo People",
+    "artists": [
+     "The Prodigy"
+    ],
+    "featured": [],
+    "released": 1994,
+    "version": {
+     "kind": "remix",
+     "name": "Pendulum Remix",
+     "by": [],
+     "year": null
+    },
+    "album": "Music for the Jilted Generation",
+    "bpm": 118,
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "musicbrainz_url": "https://musicbrainz.org/recording/654accd9-b320-4e92-a410-a7d81372af66",
+    "discogs_url": null,
+    "source": "soundcloud",
+    "source_url": "https://soundcloud.com/ninjaerx/the-prodigy-voodoo-people",
+    "sources": [
+     {
+      "source": "soundcloud",
+      "id": "soundcloud-42327170",
+      "url": "https://soundcloud.com/ninjaerx/the-prodigy-voodoo-people"
+     }
+    ],
+    "duration": 306.332,
+    "added_at": "2026-10-14T10:53:04Z",
+    "tags": [
+     "genre:drum and bass",
+     "decade:90s",
+     "genre:techno",
+     "genre:breakbeat",
+     "genre:hardcore",
+     "genre:electronic",
+     "country:gb",
+     "genre:alternative rock"
+    ],
+    "updated_at": "2026-10-15T21:23:26Z",
+    "raw": {
+     "title": "Voodoo People",
+     "artist": "The Prodigy",
+     "remixer": "Pendulum Remix",
+     "year": 1994
+    }
+   },
+   {
+    "id": "BE9lrJDkRgg",
+    "title": "Surrender",
+    "artists": [
+     "Lian July feat. Eli"
+    ],
+    "featured": [],
+    "released": 2015,
+    "version": {
+     "kind": "remix",
+     "name": "Cloudive Remix",
+     "by": [],
+     "year": null
+    },
+    "album": "Surrender",
+    "bpm": 123,
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "musicbrainz_url": "https://musicbrainz.org/recording/b336f994-736c-4309-8301-082c151cb02d",
+    "discogs_url": null,
+    "source_url": "https://www.youtube.com/watch?v=BE9lrJDkRgg",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "BE9lrJDkRgg",
+      "url": "https://www.youtube.com/watch?v=BE9lrJDkRgg"
+     }
+    ],
+    "duration": 440,
+    "added_at": "2026-10-14T10:56:06Z",
+    "tags": [
+     "decade:10s"
+    ],
+    "updated_at": "2026-10-14T10:56:34Z",
+    "raw": {
+     "title": "Surrender",
+     "artist": "Lian July feat. Eli",
+     "remixer": "Cloudive Remix",
+     "year": 2015
+    }
+   },
+   {
+    "id": "rsqVWIdUp08",
+    "title": "Golden Love",
+    "artists": [
+     "Guru Groove Foundation"
+    ],
+    "featured": [],
+    "released": 2015,
+    "version": {
+     "kind": "remix",
+     "name": "Mr. Frenkie Remix",
+     "by": [],
+     "year": null
+    },
+    "album": "Golden Love (Mr. Frenkie Remix)",
+    "bpm": 117,
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "musicbrainz_url": null,
+    "discogs_url": null,
+    "source_url": "https://www.youtube.com/watch?v=rsqVWIdUp08",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "rsqVWIdUp08",
+      "url": "https://www.youtube.com/watch?v=rsqVWIdUp08"
+     }
+    ],
+    "duration": 299,
+    "added_at": "2026-10-14T11:19:37Z",
+    "tags": [
+     "decade:10s",
+     "genre:drum and bass"
+    ],
+    "updated_at": "2026-10-14T11:20:04Z",
+    "raw": {
+     "title": "Golden Love",
+     "artist": "Guru Groove Foundation",
+     "remixer": "Mr. Frenkie Remix",
+     "year": 2015
+    }
+   },
+   {
+    "id": "soundcloud-301036700",
+    "title": "Girl Meets Boy",
+    "artists": [
+     "N.I.C.O."
+    ],
+    "featured": [],
+    "released": 2017,
+    "version": {
+     "kind": "remix",
+     "name": "LYAR Remix",
+     "by": [],
+     "year": null
+    },
+    "album": null,
+    "bpm": 122,
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "musicbrainz_url": "https://musicbrainz.org/recording/133256e3-36a8-4766-b493-2f432c3412de",
+    "discogs_url": null,
+    "source": "soundcloud",
+    "source_url": "https://soundcloud.com/lyar/nico-girl-meets-boy-lyar-remix",
+    "sources": [
+     {
+      "source": "soundcloud",
+      "id": "soundcloud-301036700",
+      "url": "https://soundcloud.com/lyar/nico-girl-meets-boy-lyar-remix"
+     }
+    ],
+    "duration": 211.115,
+    "added_at": "2026-10-14T11:22:15Z",
+    "tags": [
+     "genre:deep house",
+     "decade:10s",
+     "country:de"
+    ],
+    "updated_at": "2026-10-14T11:22:50Z",
+    "raw": {
+     "title": "Girl Meets Boy",
+     "artist": "N.I.C.O.",
+     "remixer": "LYAR Remix",
+     "year": 2017
+    }
+   },
+   {
+    "id": "soundcloud-226068169",
+    "title": "Writings On The Wall",
+    "artists": [
+     "Sam Smith"
+    ],
+    "featured": [],
+    "released": 2015,
+    "version": {
+     "kind": "remix",
+     "name": "Sofia Karlberg Cover",
+     "by": [],
+     "year": null
+    },
+    "album": null,
+    "bpm": 131,
+    "wikipedia_song": "https://en.wikipedia.org/wiki/Writing%27s_on_the_Wall_(Sam_Smith_song)",
+    "wikipedia_artist": null,
+    "musicbrainz_url": null,
+    "discogs_url": null,
+    "source": "soundcloud",
+    "source_url": "https://soundcloud.com/fff00/writings-on-the-wall-sam-smith-james-bond-theme-song-cover",
+    "sources": [
+     {
+      "source": "soundcloud",
+      "id": "soundcloud-226068169",
+      "url": "https://soundcloud.com/fff00/writings-on-the-wall-sam-smith-james-bond-theme-song-cover"
+     }
+    ],
+    "duration": 204.063,
+    "added_at": "2026-10-14T11:35:13Z",
+    "tags": [
+     "decade:10s",
+     "genre:orchestral pop",
+     "genre:score",
+     "country:gb"
+    ],
+    "updated_at": "2026-10-15T21:37:24Z",
+    "raw": {
+     "title": "Writings On The Wall",
+     "artist": "Sam Smith",
+     "remixer": "Sofia Karlberg Cover",
+     "year": 2015
+    }
+   },
+   {
+    "id": "soundcloud-209517864",
+    "title": "Raindrops Feat. Kerli",
+    "artists": [
+     "SNBRN"
+    ],
+    "featured": [],
+    "released": 2015,
+    "version": {
+     "kind": "remix",
+     "name": "Gianni Kosta Remix",
+     "by": [],
+     "year": null
+    },
+    "album": null,
+    "bpm": 123,
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "musicbrainz_url": "https://musicbrainz.org/recording/5ff5c420-a2ef-4a87-aa0c-cc10c6e04bac",
+    "discogs_url": null,
+    "source": "soundcloud",
+    "source_url": "https://soundcloud.com/giannikosta/snbrn-raindrops-gianni-kosta-remix",
+    "sources": [
+     {
+      "source": "soundcloud",
+      "id": "soundcloud-209517864",
+      "url": "https://soundcloud.com/giannikosta/snbrn-raindrops-gianni-kosta-remix"
+     }
+    ],
+    "duration": 301.534,
+    "added_at": "2026-10-14T11:42:22Z",
+    "tags": [
+     "genre:deep house",
+     "decade:10s",
+     "genre:electronic",
+     "genre:future house",
+     "country:us"
+    ],
+    "updated_at": "2026-10-15T20:45:51Z",
+    "raw": {
+     "title": "Raindrops Feat. Kerli",
+     "artist": "SNBRN",
+     "remixer": "Gianni Kosta Remix",
+     "year": 2015
+    }
+   },
+   {
+    "id": "QQnlqJkHqjI",
+    "title": "Daddy",
+    "artists": [
+     "Emeli Sandé"
+    ],
+    "featured": [],
+    "released": 2011,
+    "version": {
+     "kind": "remix",
+     "name": "Fred V & Grafix Remix",
+     "by": [],
+     "year": null
+    },
+    "album": null,
+    "bpm": 118,
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "musicbrainz_url": null,
+    "discogs_url": null,
+    "source_url": "https://www.youtube.com/watch?v=QQnlqJkHqjI",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "QQnlqJkHqjI",
+      "url": "https://www.youtube.com/watch?v=QQnlqJkHqjI"
+     }
+    ],
+    "duration": 270,
+    "added_at": "2026-10-14T11:43:31Z",
+    "tags": [
+     "decade:10s",
+     "genre:drum and bass"
+    ],
+    "updated_at": "2026-10-15T20:02:30Z",
+    "raw": {
+     "title": "Daddy",
+     "artist": "Emeli Sandé",
+     "remixer": "Fred V & Grafix Remix",
+     "year": 2011
+    }
+   },
+   {
+    "id": "soundcloud-15844695",
+    "title": "Naiad",
+    "artists": [
+     "Den Rize & Mark Andrez"
+    ],
+    "featured": [],
+    "released": 2011,
+    "version": {
+     "kind": "remix",
+     "name": null,
+     "by": [],
+     "year": null
+    },
+    "album": null,
+    "bpm": 143,
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "musicbrainz_url": "https://musicbrainz.org/recording/1a3fb35c-dbb6-42c6-9d88-159a1a9087df",
+    "discogs_url": null,
+    "source": "soundcloud",
+    "source_url": "https://soundcloud.com/denrize/den-rize-mark-andrez-naiad",
+    "sources": [
+     {
+      "source": "soundcloud",
+      "id": "soundcloud-15844695",
+      "url": "https://soundcloud.com/denrize/den-rize-mark-andrez-naiad"
+     }
+    ],
+    "duration": 396.888,
+    "added_at": "2026-10-14T11:52:15Z",
+    "tags": [
+     "genre:trance",
+     "decade:10s"
+    ],
+    "updated_at": "2026-10-16T20:26:52Z",
+    "wikipedia_album": null,
+    "spotify_url": null,
+    "raw": {
+     "title": "Naiad",
+     "artist": "Den Rize & Mark Andrez",
+     "remixer": "Remix",
+     "year": 2011
+    }
+   },
+   {
+    "id": "soundcloud-145343982",
+    "title": "White Tiger",
+    "artists": [
+     "Izzy Bizu"
+    ],
+    "featured": [],
+    "released": 2013,
+    "version": {
+     "kind": "remix",
+     "name": "FlicFlac Remix",
+     "by": [],
+     "year": null
+    },
+    "album": "Coolbeanz",
+    "bpm": 122,
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "musicbrainz_url": "https://musicbrainz.org/recording/a22078a8-8ab8-408e-ab15-fc553ba8810d",
+    "discogs_url": null,
+    "source": "soundcloud",
+    "source_url": "https://soundcloud.com/deividas-erniauskas-1/izzy-bizu-white-tiger-flicflac-remix",
+    "sources": [
+     {
+      "source": "soundcloud",
+      "id": "soundcloud-145343982",
+      "url": "https://soundcloud.com/deividas-erniauskas-1/izzy-bizu-white-tiger-flicflac-remix"
+     }
+    ],
+    "duration": 324.215,
+    "added_at": "2026-10-14T11:55:49Z",
+    "tags": [
+     "genre:downtempo",
+     "decade:10s",
+     "genre:soul",
+     "genre:pop",
+     "genre:contemporary r&b",
+     "genre:pop soul",
+     "country:gb"
+    ],
+    "updated_at": "2026-10-14T14:30:52Z",
+    "raw": {
+     "title": "White Tiger",
+     "artist": "Izzy Bizu",
+     "remixer": "FlicFlac Remix",
+     "year": 2013
+    }
+   },
+   {
+    "id": "soundcloud-134381882",
+    "title": "Sticks & Stones",
+    "artists": [
+     "Steffen Linck"
+    ],
+    "featured": [],
+    "released": 2014,
+    "version": {
+     "kind": "remix",
+     "name": "Sascha Kloeber Bootmix",
+     "by": [],
+     "year": null
+    },
+    "album": null,
+    "bpm": 122,
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "musicbrainz_url": "https://musicbrainz.org/recording/af4b53ef-0908-4232-9d47-c3004186a405",
+    "discogs_url": null,
+    "source": "soundcloud",
+    "source_url": "https://soundcloud.com/boysdeep/steffen-linck-sticks-stones-1",
+    "sources": [
+     {
+      "source": "soundcloud",
+      "id": "soundcloud-134381882",
+      "url": "https://soundcloud.com/boysdeep/steffen-linck-sticks-stones-1"
+     }
+    ],
+    "duration": 304.085,
+    "added_at": "2026-10-14T12:03:38Z",
+    "tags": [
+     "genre:deep house",
+     "country:de",
+     "decade:10s"
+    ],
+    "updated_at": "2026-10-15T16:43:48Z",
+    "raw": {
+     "title": "Sticks & Stones",
+     "artist": "Steffen Linck",
+     "remixer": "Sascha Kloeber Bootmix",
+     "year": 2014
+    }
+   },
+   {
+    "id": "FcVOsoBIGq0",
+    "title": "Change",
+    "artists": [
+     "BANKS"
+    ],
+    "featured": [],
+    "released": 2015,
+    "version": {
+     "kind": "remix",
+     "name": "Chainsmokers Remix",
+     "by": [],
+     "year": null
+    },
+    "album": "Goddess",
+    "bpm": 122,
+    "wikipedia_song": null,
+    "wikipedia_artist": "https://en.wikipedia.org/wiki/Banks_(singer)",
+    "musicbrainz_url": null,
+    "discogs_url": null,
+    "source_url": "https://www.youtube.com/watch?v=FcVOsoBIGq0",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "FcVOsoBIGq0",
+      "url": "https://www.youtube.com/watch?v=FcVOsoBIGq0"
+     }
+    ],
+    "duration": 280,
+    "added_at": "2026-10-14T12:07:46Z",
+    "tags": [
+     "genre:downtempo",
+     "genre:electronic",
+     "genre:alternative pop",
+     "country:us",
+     "genre:contemporary r&b",
+     "genre:indie pop",
+     "genre:alternative r&b",
+     "genre:synthpop",
+     "genre:trip hop",
+     "decade:10s"
+    ],
+    "updated_at": "2026-10-14T12:08:19Z",
+    "raw": {
+     "title": "Change",
+     "artist": "BANKS",
+     "remixer": "Chainsmokers Remix",
+     "year": 2015
+    }
+   },
+   {
+    "id": "LpUogjU99NY",
+    "title": "Turn The Lights Off",
+    "artists": [
+     "Kato feat. Jon"
+    ],
+    "featured": [],
+    "released": 2026,
+    "version": {
+     "kind": "remix",
+     "name": "S.A.R.A.H. Remix",
+     "by": [],
+     "year": null
+    },
+    "album": null,
+    "bpm": 130,
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "musicbrainz_url": "https://musicbrainz.org/recording/d51a2bb6-57a2-4cf8-8d72-88c14b747f6f",
+    "discogs_url": null,
+    "source_url": "https://www.youtube.com/watch?v=LpUogjU99NY",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "LpUogjU99NY",
+      "url": "https://www.youtube.com/watch?v=LpUogjU99NY"
+     }
+    ],
+    "duration": 335,
+    "added_at": "2026-10-14T14:08:08Z",
+    "tags": [
+     "decade:20s",
+     "genre:melodic techno",
+     "genre:progressive house",
+     "genre:house",
+     "genre:electronic",
+     "genre:hip hop",
+     "country:dk"
+    ],
+    "updated_at": "2026-10-16T00:06:31Z",
+    "raw": {
+     "title": "Turn The Lights Off",
+     "artist": "Kato feat. Jon",
+     "remixer": "S.A.R.A.H. Remix",
+     "year": 2026
+    }
+   },
+   {
+    "id": "WOjFhKg4h3s",
+    "title": "Crazy",
+    "artists": [
+     "Gnarls Barkley"
+    ],
+    "featured": [],
+    "released": null,
+    "version": {
+     "kind": "live",
+     "name": "From the Basement",
+     "by": [],
+     "year": 2012
+    },
+    "album": null,
+    "bpm": 139,
+    "wikipedia_song": null,
+    "wikipedia_artist": null,
+    "musicbrainz_url": null,
+    "discogs_url": null,
+    "spotify_url": null,
+    "source_url": "https://www.youtube.com/watch?v=WOjFhKg4h3s",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "WOjFhKg4h3s",
+      "url": "https://www.youtube.com/watch?v=WOjFhKg4h3s"
+     }
+    ],
+    "duration": 294,
+    "added_at": "2026-10-16T14:33:49Z",
+    "tags": [],
+    "wikipedia_album": null,
+    "updated_at": "2026-10-16T16:04:12Z",
+    "raw": {
+     "title": "Crazy",
+     "artist": "Gnarls Barkley",
+     "remixer": "From the Basement",
+     "remix_year": 2012
+    }
+   },
+   {
+    "id": "5NV6Rdv1a3I",
+    "title": "Get Lucky",
+    "artists": [
+     "Daft Punk"
+    ],
+    "featured": [
+     "Pharrell Williams, Nile Rodgers"
+    ],
+    "released": 2013,
+    "album": "Random Access Memories",
+    "bpm": 118,
+    "wikipedia_song": "https://en.wikipedia.org/wiki/Get_Lucky_(Daft_Punk_song)",
+    "wikipedia_artist": "https://en.wikipedia.org/wiki/Daft_Punk",
+    "wikipedia_album": "https://en.wikipedia.org/wiki/Random_Access_Memories",
+    "musicbrainz_url": "https://musicbrainz.org/recording/97c21330-5552-41db-ba0d-249f4c833267",
+    "discogs_url": null,
+    "spotify_url": null,
+    "source_url": "https://www.youtube.com/watch?v=5NV6Rdv1a3I",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "5NV6Rdv1a3I",
+      "url": "https://www.youtube.com/watch?v=5NV6Rdv1a3I"
+     }
+    ],
+    "duration": 249,
+    "added_at": "2026-10-16T14:36:09Z",
+    "tags": [
+     "genre:disco",
+     "genre:funk",
+     "genre:pop",
+     "genre:electronic",
+     "genre:house",
+     "country:fr",
+     "genre:synthpop",
+     "genre:electronic rock",
+     "genre:nu-disco",
+     "decade:10s"
+    ],
+    "updated_at": "2026-10-16T14:37:05Z",
+    "raw": {
+     "title": "Get Lucky",
+     "artist": "Daft Punk feat. Pharrell Williams, Nile Rodgers",
+     "year": 2013
+    }
+   },
+   {
+    "id": "5R4Zu1nrAYY",
+    "title": "ODIUM",
+    "artists": [
+     "LXST CXNTURY"
+    ],
+    "featured": [
+     "Kingpin Skinny Pimp"
+    ],
+    "released": 2019,
+    "album": "Universe of the Past",
+    "bpm": 152,
+    "wikipedia_song": null,
+    "wikipedia_artist": "https://www.wikidata.org/wiki/Q112967296",
+    "musicbrainz_url": "https://musicbrainz.org/recording/d4c8e7ac-c411-4764-9b2f-9a5f0e432300",
+    "discogs_url": null,
+    "spotify_url": null,
+    "source_url": "https://www.youtube.com/watch?v=5R4Zu1nrAYY",
+    "sources": [
+     {
+      "source": "youtube",
+      "id": "5R4Zu1nrAYY",
+      "url": "https://www.youtube.com/watch?v=5R4Zu1nrAYY"
+     }
+    ],
+    "duration": 167,
+    "added_at": "2026-10-16T20:13:21Z",
+    "tags": [
+     "genre:electronic",
+     "genre:phonk",
+     "country:by",
+     "decade:10s"
+    ],
+    "updated_at": "2026-10-16T20:25:03Z",
+    "raw": {
+     "title": "ODIUM",
+     "artist": "LXST CXNTURY feat. Kingpin Skinny Pimp",
+     "year": 2019
+    }
+   }
+  ]
+ },
+ "expected": {
+  "W7hAo28NCXc": {
+   "artist": "Комбинация",
+   "remixer": null,
+   "year": 1991,
+   "remix_year": null,
+   "album": null
+  },
+  "ylpNEb31k4U": {
+   "artist": "Кар-мэн",
+   "remixer": null,
+   "year": 1991,
+   "remix_year": null,
+   "album": null
+  },
+  "IbxPoaTdrz0": {
+   "artist": "Dua Lipa - Elton John",
+   "remixer": null,
+   "year": 2024,
+   "remix_year": null,
+   "album": "The Lockdown Sessions"
+  },
+  "wL8DVHuWI7Y": {
+   "artist": "VØJ, Narvent",
+   "remixer": null,
+   "year": 2023,
+   "remix_year": null,
+   "album": null
+  },
+  "N4bFqW_eu2I": {
+   "artist": "The Animals",
+   "remixer": null,
+   "year": 1964,
+   "remix_year": null,
+   "album": null
+  },
+  "o_1aF54DO60": {
+   "artist": "Lana Del Rey",
+   "remixer": null,
+   "year": 2013,
+   "remix_year": null,
+   "album": null
+  },
+  "6OW1JJwqVRQ": {
+   "artist": "Brotherhood Of Man",
+   "remixer": null,
+   "year": 1976,
+   "remix_year": null,
+   "album": "Love and Kisses"
+  },
+  "o5NH2yKhl1M": {
+   "artist": "Скрябін",
+   "remixer": null,
+   "year": 2009,
+   "remix_year": null,
+   "album": null
+  },
+  "RVmG_d3HKBA": {
+   "artist": "MIKA",
+   "remixer": null,
+   "year": 2006,
+   "remix_year": null,
+   "album": "Life in Cartoon Motion"
+  },
+  "dvgZkm1xWPE": {
+   "artist": "Coldplay",
+   "remixer": null,
+   "year": 2008,
+   "remix_year": null,
+   "album": null
+  },
+  "zAGaU_ddZKU": {
+   "artist": "Alphaville",
+   "remixer": "Thommys Popshow",
+   "year": 1984,
+   "remix_year": 1984,
+   "album": null
+  },
+  "XEjLoHdbVeE": {
+   "artist": "ABBA",
+   "remixer": null,
+   "year": 1979,
+   "remix_year": null,
+   "album": "Greatest Hits Vol. 2"
+  },
+  "6ZAWNgEbdqA": {
+   "artist": "Blondie",
+   "remixer": null,
+   "year": 1999,
+   "remix_year": null,
+   "album": "No Exit"
+  },
+  "Ry-yQKwpc38": {
+   "artist": "A-Europa Official channel",
+   "remixer": null,
+   "year": 2001,
+   "remix_year": null,
+   "album": null
+  },
+  "DqgCZ1CkzOY": {
+   "artist": "Русский размер",
+   "remixer": null,
+   "year": 1999,
+   "remix_year": null,
+   "album": "650"
+  },
+  "aGSKrC7dGcY": {
+   "artist": "Depeche Mode",
+   "remixer": null,
+   "year": 1990,
+   "remix_year": null,
+   "album": "Violator"
+  },
+  "Epj84QVw2rc": {
+   "artist": "Duran Duran",
+   "remixer": null,
+   "year": 1993,
+   "remix_year": null,
+   "album": "Duran Duran"
+  },
+  "JYIaWeVL1JM": {
+   "artist": "SNAP!",
+   "remixer": null,
+   "year": 1992,
+   "remix_year": null,
+   "album": "The Madman's Return"
+  },
+  "OnT58cIJSpw": {
+   "artist": "Corona",
+   "remixer": null,
+   "year": 1995,
+   "remix_year": null,
+   "album": "The Rhythm of the Night"
+  },
+  "iZd-nhQZj5M": {
+   "artist": "Ice MC",
+   "remixer": null,
+   "year": 1994,
+   "remix_year": null,
+   "album": "Ice'n'Green"
+  },
+  "ZlYDqL_mudI": {
+   "artist": "rdsmusiclabel",
+   "remixer": null,
+   "year": 1994,
+   "remix_year": null,
+   "album": null
+  },
+  "SU88c0f5-h0": {
+   "artist": "Nadia Ali, Starkillers & Alex Kenji",
+   "remixer": "Alesso Remix",
+   "year": 2011,
+   "remix_year": null,
+   "album": null
+  },
+  "ViP87WipSm0": {
+   "artist": "La Bouche",
+   "remixer": null,
+   "year": 1995,
+   "remix_year": null,
+   "album": "Sweet Dreams"
+  },
+  "7YvAYIJSSZY": {
+   "artist": "Rockwell",
+   "remixer": null,
+   "year": 1984,
+   "remix_year": null,
+   "album": "Somebody's Watching Me"
+  },
+  "8UVNT4wvIGY": {
+   "artist": "Gotye",
+   "remixer": null,
+   "year": 2011,
+   "remix_year": null,
+   "album": "Making Mirrors"
+  },
+  "AXZI4SzknYs": {
+   "artist": "Гио ПиКа",
+   "remixer": null,
+   "year": 2021,
+   "remix_year": null,
+   "album": null
+  },
+  "rsGw1WtoGsQ": {
+   "artist": "N.emesis",
+   "remixer": null,
+   "year": 2026,
+   "remix_year": null,
+   "album": null
+  },
+  "Tx9zMFodNtA": {
+   "artist": "RÜFÜS DU SOL",
+   "remixer": null,
+   "year": 2015,
+   "remix_year": null,
+   "album": "Bloom"
+  },
+  "Le8325thBt4": {
+   "artist": "ATB",
+   "remixer": "Sadrican 2026 Remix",
+   "year": 2026,
+   "remix_year": null,
+   "album": "No Silence"
+  },
+  "TTvcivjxHNY": {
+   "artist": "Lasgo",
+   "remixer": "Sadrican 2026 Remix",
+   "year": 2026,
+   "remix_year": null,
+   "album": "Some Things"
+  },
+  "dQ03F36U5qg": {
+   "artist": "Delerium",
+   "remixer": "Sadrican 2026 Remix",
+   "year": 2026,
+   "remix_year": null,
+   "album": null
+  },
+  "s5IIWKZr_2w": {
+   "artist": "Edward Maya",
+   "remixer": "Sadrican 2026 Remix",
+   "year": 2026,
+   "remix_year": null,
+   "album": null
+  },
+  "Zb5sUzQc-_I": {
+   "artist": "Culture Beat",
+   "remixer": "Paul Da Breda Remix",
+   "year": 2026,
+   "remix_year": null,
+   "album": "Serenity"
+  },
+  "eqLtSWmKkJE": {
+   "artist": "Armin van Buuren",
+   "remixer": "Sadrican 2026 Remix",
+   "year": 2026,
+   "remix_year": null,
+   "album": null
+  },
+  "szLTDSw11kw": {
+   "artist": "Kato Feat. Jon",
+   "remixer": "DEEPO Remix Long Version",
+   "year": 2026,
+   "remix_year": null,
+   "album": null
+  },
+  "E7pK86smWuA": {
+   "artist": "Виктор Цой",
+   "remixer": "Professor von Klyajser",
+   "year": 2026,
+   "remix_year": null,
+   "album": null
+  },
+  "w77QqG66gO4": {
+   "artist": "Ислам Идигов",
+   "remixer": null,
+   "year": 2018,
+   "remix_year": null,
+   "album": null
+  },
+  "HWOIEAZLgx0": {
+   "artist": "Pendulum",
+   "remixer": "Mixed By DJ Gvozd",
+   "year": 2018,
+   "remix_year": null,
+   "album": null
+  },
+  "cb61AVsxD34": {
+   "artist": "Motorcycle",
+   "remixer": "Gabriel & Dresden Chill Mix",
+   "year": 2008,
+   "remix_year": null,
+   "album": null
+  },
+  "rv3EY4k3yrY": {
+   "artist": "Motorcycle",
+   "remixer": "DJ Tiesto Remix",
+   "year": 2008,
+   "remix_year": null,
+   "album": "Nyana"
+  },
+  "7RH0RVt6Rm0": {
+   "artist": "Andain",
+   "remixer": "Gabriel & Dresden Unplugged Mix",
+   "year": 2010,
+   "remix_year": null,
+   "album": "Nyana Mixed by Tiësto"
+  },
+  "AewNd29wRUM": {
+   "artist": "Martin Garrix & Tiësto",
+   "remixer": null,
+   "year": 2015,
+   "remix_year": null,
+   "album": null
+  },
+  "yoDs4TaPpxU": {
+   "artist": "Astrix & Domestic",
+   "remixer": "Astral Projection Remix",
+   "year": 2000,
+   "remix_year": null,
+   "album": null
+  },
+  "XAX3ZQ5eNaM": {
+   "artist": "Linking Park",
+   "remixer": "Twin & Elise Lieberth",
+   "year": 2023,
+   "remix_year": null,
+   "album": null
+  },
+  "Ad8OT0S7l6k": {
+   "artist": "Игорь Скляр",
+   "remixer": "DVRST Phonk Remix",
+   "year": 2023,
+   "remix_year": null,
+   "album": "OST Atomic Heart"
+  },
+  "LdkbgZ6PMN8": {
+   "artist": "Sickick",
+   "remixer": "Kate Bush x Ashanti Remix",
+   "year": 2022,
+   "remix_year": null,
+   "album": null
+  },
+  "Q9UqRUPCrYg": {
+   "artist": "Цой",
+   "remixer": "Yaukoshi, LXST CXNTURY",
+   "year": 2021,
+   "remix_year": null,
+   "album": null
+  },
+  "AEwTnmIM1YM": {
+   "artist": "Мираж",
+   "remixer": null,
+   "year": 1994,
+   "remix_year": null,
+   "album": "Снова вместе (Remastered 1994)"
+  },
+  "_yejiN8Sl9s": {
+   "artist": "Елена Темникова",
+   "remixer": null,
+   "year": 2016,
+   "remix_year": null,
+   "album": "TEMNIKOVA I"
+  },
+  "cb6WpqqN1ww": {
+   "artist": "Haddaway",
+   "remixer": "Deepjack & Mr  Nu Remix",
+   "year": 2002,
+   "remix_year": null,
+   "album": null
+  },
+  "3HVuMlaNcOM": {
+   "artist": "Blondie",
+   "remixer": "Oliver & Thee Mike B Remix",
+   "year": 2013,
+   "remix_year": null,
+   "album": "Parallel Lines"
+  },
+  "0XFudmaObLI": {
+   "artist": "Aaron Smith",
+   "remixer": "KRONO Remix",
+   "year": 2013,
+   "remix_year": null,
+   "album": null
+  },
+  "uEWkDQI0jN4": {
+   "artist": "Son Dambi - After School",
+   "remixer": null,
+   "year": 2009,
+   "remix_year": null,
+   "album": null
+  },
+  "soundcloud-100613452": {
+   "artist": "De Hofnar",
+   "remixer": "Kav Verhouzer Remix",
+   "year": 2013,
+   "remix_year": null,
+   "album": null
+  },
+  "soundcloud-262607316": {
+   "artist": "Didrik Thulin X Sonny Alven",
+   "remixer": "MKJ Remix",
+   "year": null,
+   "remix_year": null,
+   "album": null
+  },
+  "soundcloud-318053613": {
+   "artist": "Pierce Fulton",
+   "remixer": "Champion Remix",
+   "year": 2017,
+   "remix_year": null,
+   "album": null
+  },
+  "soundcloud-42327170": {
+   "artist": "The Prodigy",
+   "remixer": "Pendulum Remix",
+   "year": 1994,
+   "remix_year": null,
+   "album": "Music for the Jilted Generation"
+  },
+  "BE9lrJDkRgg": {
+   "artist": "Lian July feat. Eli",
+   "remixer": "Cloudive Remix",
+   "year": 2015,
+   "remix_year": null,
+   "album": "Surrender"
+  },
+  "rsqVWIdUp08": {
+   "artist": "Guru Groove Foundation",
+   "remixer": "Mr. Frenkie Remix",
+   "year": 2015,
+   "remix_year": null,
+   "album": "Golden Love (Mr. Frenkie Remix)"
+  },
+  "soundcloud-301036700": {
+   "artist": "N.I.C.O.",
+   "remixer": "LYAR Remix",
+   "year": 2017,
+   "remix_year": null,
+   "album": null
+  },
+  "soundcloud-226068169": {
+   "artist": "Sam Smith",
+   "remixer": "Sofia Karlberg Cover",
+   "year": 2015,
+   "remix_year": null,
+   "album": null
+  },
+  "soundcloud-209517864": {
+   "artist": "SNBRN",
+   "remixer": "Gianni Kosta Remix",
+   "year": 2015,
+   "remix_year": null,
+   "album": null
+  },
+  "QQnlqJkHqjI": {
+   "artist": "Emeli Sandé",
+   "remixer": "Fred V & Grafix Remix",
+   "year": 2011,
+   "remix_year": null,
+   "album": null
+  },
+  "soundcloud-15844695": {
+   "artist": "Den Rize & Mark Andrez",
+   "remixer": "Remix",
+   "year": 2011,
+   "remix_year": null,
+   "album": null
+  },
+  "soundcloud-145343982": {
+   "artist": "Izzy Bizu",
+   "remixer": "FlicFlac Remix",
+   "year": 2013,
+   "remix_year": null,
+   "album": "Coolbeanz"
+  },
+  "soundcloud-134381882": {
+   "artist": "Steffen Linck",
+   "remixer": "Sascha Kloeber Bootmix",
+   "year": 2014,
+   "remix_year": null,
+   "album": null
+  },
+  "FcVOsoBIGq0": {
+   "artist": "BANKS",
+   "remixer": "Chainsmokers Remix",
+   "year": 2015,
+   "remix_year": null,
+   "album": "Goddess"
+  },
+  "LpUogjU99NY": {
+   "artist": "Kato feat. Jon",
+   "remixer": "S.A.R.A.H. Remix",
+   "year": 2026,
+   "remix_year": null,
+   "album": null
+  },
+  "WOjFhKg4h3s": {
+   "artist": "Gnarls Barkley",
+   "remixer": "From the Basement",
+   "year": null,
+   "remix_year": 2012,
+   "album": null
+  },
+  "5NV6Rdv1a3I": {
+   "artist": "Daft Punk feat. Pharrell Williams, Nile Rodgers",
+   "remixer": null,
+   "year": 2013,
+   "remix_year": null,
+   "album": "Random Access Memories"
+  },
+  "5R4Zu1nrAYY": {
+   "artist": "LXST CXNTURY feat. Kingpin Skinny Pimp",
+   "remixer": null,
+   "year": 2019,
+   "remix_year": null,
+   "album": "Universe of the Past"
+  }
+ }
+}

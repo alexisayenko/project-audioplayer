@@ -128,17 +128,18 @@ def _link_fields(vid: str, meta: dict[str, Any], source_url: str | None) -> dict
         "spotify_url": urlclean.clean_spotify_url(meta.get("spotify_url")),
         **({"source": "soundcloud"} if extractor.source_of(vid) == "soundcloud" else {}),
         "source_url": url,
-        "sources": [{"source": extractor.source_of(vid), "id": vid, "url": url}],
+        "sources": [{"platform": extractor.source_of(vid), "url": url}],
     }
 
 
 def _credit_meta(meta: dict[str, Any], found: dict[str, Any]) -> dict[str, Any]:
     """The request's credit keys, with the artist and year the source reported filling what the request left empty."""
     out = dict(meta)
-    if not out.get("artists") and not str(out.get("artist") or "").strip() and found.get("artist"):
+    has_artists = any(out.get(k) for k in ("mainArtists", "artists"))
+    if not has_artists and not str(out.get("artist") or "").strip() and found.get("artist"):
         out["artist"] = found["artist"]
-    if out.get("released") is None and out.get("year") is None and found.get("year") is not None:
-        out["released"] = found["year"]
+    if all(out.get(k) is None for k in ("releaseYear", "released", "year")) and found.get("year") is not None:
+        out["releaseYear"] = found["year"]
     return out
 
 
@@ -153,14 +154,13 @@ def _downloaded_song(uid: str, owner: bool, out: Path, vid: str, meta: dict[str,
         "id": vid,
         "title": meta.get("title") or info.get("title") or vid,
         **fields,
-        "album": meta.get("album"),
         "bpm": value,
         **_link_fields(vid, meta, source_url),
         "file": f"{vid}.m4a",
         "cover": cover,
         "duration": info.get("duration"),
         "added_at": library.now_utc(),
-        "tags": library.with_decade(tags, fields["released"]),
+        "tags": tags,
     }
 
 
@@ -247,18 +247,19 @@ def add_metadata_only(uid: str, vid: str, link: Resolved, meta: dict[str, Any], 
             found = {}
         cover = _fetch_cover(uid, vid, found.get("thumbnail"))
         fields = credits.new_fields(_credit_meta(meta, found), meta.get("source_raw"))
+        if not fields["albums"] and isinstance(found.get("album"), str) and found["album"].strip():
+            fields["albums"] = [found["album"].strip()]
         song = {
             "id": vid,
             "title": meta.get("title") or found.get("title") or vid,
             **fields,
-            "album": meta.get("album") or found.get("album"),
             "bpm": round(meta["bpm"]) if meta.get("bpm") is not None else None,
             **_link_fields(vid, meta, link.url),
             "file": None,
             "cover": cover,
             "duration": found.get("duration"),
             "added_at": library.now_utc(),
-            "tags": library.with_decade(tags or _known_country_tags(library.clean_tags(found.get("tags") or [])), fields["released"]),
+            "tags": tags or _known_country_tags(library.clean_tags(found.get("tags") or [])),
         }
         with deps.tx(uid, f"add {vid}"):
             songs = library.load(deps.library_path(uid))
@@ -268,6 +269,6 @@ def add_metadata_only(uid: str, vid: str, link: Resolved, meta: dict[str, Any], 
     finally:
         deps.JOBS.pop((uid, vid), None)
     return JSONResponse(
-        {"id": vid, "status": "done", "audio_state": "none", "song": library.public_song(song, deps.user_audio_root(uid))},
+        {"id": vid, "status": "done", "audio_state": "none", "song": deps.public_song(uid, song)},
         status_code=201,
     )

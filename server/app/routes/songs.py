@@ -7,7 +7,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 
-from .. import credits, deps, discogs_lookup, genre_lookup, jobs, library, limits, titleclean, urlclean, users, wiki_lookup
+from .. import artist_table, credits, deps, discogs_lookup, genre_lookup, jobs, library, limits, titleclean, urlclean, users, wiki_lookup
 from ..downloads import (
     add_metadata_only, mark_started, new_job, reject_unknown_country, reject_unknown_genre, run_download, run_fetch_audio,
 )
@@ -16,7 +16,7 @@ from ..schemas import CreateSongRequest, PatchSongRequest
 
 router = APIRouter()
 
-_TEXT_FIELDS = ("title", "album")
+_TEXT_FIELDS = ("title",)
 
 
 def _clean_text(v: str | None) -> str | None:
@@ -163,7 +163,14 @@ def _apply_source_links(updated: dict[str, Any], changes: dict[str, Any]) -> Non
         updated["sources"] = library.clean_sources(sources)
 
 
-def _edited(song: dict[str, Any], changes: dict[str, Any]) -> dict[str, Any]:
+def _apply_countries(updated: dict[str, Any], countries: list[str], table: list[dict[str, Any]]) -> None:
+    """Country tags of a request go to the Artist table (DATA-147): replaced for a song with exactly one main artist, ignored otherwise."""
+    names = credits.main_artists(updated)
+    if len(names) == 1:
+        artist_table.set_countries(table, names[0], countries)
+
+
+def _edited(song: dict[str, Any], changes: dict[str, Any], table: list[dict[str, Any]]) -> dict[str, Any]:
     updated = dict(song)
     for key in _TEXT_FIELDS:
         if key in changes:
@@ -176,13 +183,13 @@ def _edited(song: dict[str, Any], changes: dict[str, Any]) -> dict[str, Any]:
         updated["bpm"] = round(changes["bpm"]) if changes["bpm"] is not None else None
     _apply_links(updated, changes)
     if changes.get("tags") is not None:
-        updated["tags"] = library.clean_tags(changes["tags"])
-        stored = library.clean_tags(song.get("tags") or [])
-        reject_unknown_country(updated["tags"], stored)
-        reject_unknown_genre(updated["tags"], stored)
+        cleaned = library.clean_tags(changes["tags"])
+        reject_unknown_country(cleaned)
+        reject_unknown_genre(cleaned, library.clean_tags(song.get("tags") or []))
+        updated["tags"], countries, _ = library.split_tags(cleaned)
+        _apply_countries(updated, countries, table)
     if not updated.get("title"):
         raise HTTPException(status_code=422, detail="title must not be empty")
-    updated["tags"] = library.with_decade(updated.get("tags") or [], updated.get("released"))
     updated["updated_at"] = library.now_utc()
     return updated
 
@@ -193,12 +200,12 @@ def patch_song(video_id: str, req: PatchSongRequest, user: dict[str, Any] = Depe
     uid = user["uid"]
     changes = req.model_dump(exclude_unset=True)
     with deps.tx(uid, f"edit {video_id}"):
-        songs = library.load(deps.library_path(uid))
-        song = library.find_song(songs, video_id)
+        doc = deps.load_doc(uid)
+        song = library.find_song(doc["songs"], video_id)
         if song is None:
             raise HTTPException(status_code=404, detail=deps.UNKNOWN_SONG)
-        edited = _edited(song, changes)
+        edited = _edited(song, changes, doc["artists"])
         song.clear()
         song.update(edited)
-        deps.save_songs(uid, songs)
-        return library.public_song(song, deps.user_audio_root(uid))
+        deps.save_doc(uid, doc)
+        return deps.public_song(uid, song)

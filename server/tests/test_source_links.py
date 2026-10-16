@@ -66,7 +66,7 @@ def test_old_records_without_sources_are_edited_from_the_derived_source(client):
     assert owner_add(client).status_code == 202
     r = client.patch(f"/songs/{VID}", json={"soundcloud_url": "https://soundcloud.com/a/b"}, headers=H)
     assert [e["source"] for e in r.json()["sources"]] == ["youtube", "soundcloud"]
-    assert library.clean_sources(r.json()["sources"])[1]["id"] == "a/b"
+    assert r.json()["sources"][1]["id"] == "a/b"
 
 
 def test_download_uses_the_edited_youtube_link(monkeypatch, tmp_path):

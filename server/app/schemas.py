@@ -23,6 +23,10 @@ class PreviewRequest(BaseModel):
 class VersionIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
+    type: str | None = None
+    releaseYear: int | None = None
+    originalArtists: str | list[str] | None = None
+    artists: list[str] | None = None
     kind: str | None = None
     name: str | None = None
     by: list[str] | None = None
@@ -38,6 +42,10 @@ class SourceRaw(BaseModel):
 
 class SongMeta(BaseModel):
     title: str | None = None
+    mainArtists: list[str] | None = None
+    featuredArtists: list[str] | None = None
+    releaseYear: int | None = None
+    albums: list[str] | None = None
     artists: list[str] | None = None
     featured: list[str] | None = None
     released: int | None = None
@@ -89,3 +97,8 @@ class MetadataRequest(BaseModel):
     wiki_artist: str | None = None
     wiki_album: str | None = None
     version_kind: str | None = None
+    version_type: str | None = None
+
+
+class ArtistPatch(BaseModel):
+    countries: list[str] = Field(default_factory=list, max_length=20)

@@ -19,7 +19,7 @@ log = logging.getLogger(__name__)
 TTL = 24 * 3600
 COOLDOWN = 20
 MAX_ENTRIES = 500
-CAPS = {"genre": 4, "country": 1, "lang": 2}
+CAPS = {"genre": 4, "country": 1}
 
 _cache: dict[tuple[str, str], tuple[float, dict[str, Any]]] = {}
 _locks: dict[tuple[str, str], threading.Lock] = {}
@@ -63,17 +63,16 @@ def _valid_year(value: Any) -> int | None:
 
 
 def merge_tags(mb: dict[str, Any], disc: dict[str, Any], wiki: dict[str, Any]) -> list[str]:
-    """Suggested tags: at most 4 genre, 1 country, 2 lang, deduped and canonical.
+    """Suggested tags: at most 4 genre and 1 country, deduped and canonical (`lang:` is no longer looked up, DATA-147).
 
     genre: Discogs styles first, then the song's own Wikidata genres, MusicBrainz, the artist's Wikidata genres;
-    country: MusicBrainz, then Discogs, then Wikidata; lang: MusicBrainz release languages."""
+    country: MusicBrainz, then Discogs, then Wikidata."""
     song_genres = [g if ":" in str(g) else f"genre:{g}" for g in wiki.get("song_genres") or []]
     mb_tags, disc_tags, wiki_tags = mb.get("tags") or [], disc.get("tags") or [], wiki.get("tags") or []
     genres = genre_filter.filter_tags([*_of(disc_tags, "genre"), *song_genres, *_of(mb_tags, "genre"), *_of(wiki_tags, "genre")])
     countries = [t for t in library.clean_tags([*_of(mb_tags, "country"), *_of(disc_tags, "country"), *_of(wiki_tags, "country")]) if not library.unknown_countries([t])]
-    langs = library.clean_tags([f"lang:{c}" for c in mb.get("langs") or []])
     out: list[str] = []
-    for ns, tags in (("genre", library.clean_tags(genres)), ("country", countries), ("lang", langs)):
+    for ns, tags in (("genre", library.clean_tags(genres)), ("country", countries)):
         out.extend(tags[: CAPS[ns]])
     return out
 
