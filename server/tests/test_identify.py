@@ -61,7 +61,7 @@ def test_full_merge_priorities_and_caps(monkeypatch):
     out = identify.run(SONG, "x.m4a")
     assert out["status"] == "ok"
     assert out["matched"] == {"artist": "Daft Punk", "title": "Around the World", "confidence": 0.974, "source": "acoustid"}
-    assert out["suggested_tags"] == ["genre:deep house", "genre:disco", "genre:house", "genre:electronic", "country:fr", "lang:en", "lang:fr"]
+    assert out["suggested_tags"] == ["genre:deep house", "genre:disco", "genre:house", "genre:electronic", "country:fr"]
     assert out["suggested_year"] == 1997
     assert out["links"] == {"musicbrainz": MB_URL, "discogs": "https://www.discogs.com/release/5",
                             "wikipedia_song": "https://en.wikipedia.org/wiki/Around_the_World_(Daft_Punk_song)", "wikipedia_artist": "https://en.wikipedia.org/wiki/Daft_Punk", "wikipedia_album": None}
@@ -72,7 +72,7 @@ def test_caps_per_namespace_and_dedupe():
     mb = {"tags": ["genre:jungle", "genre:grime", "genre:Jungle", "country:fr", "country:de"], "langs": ["en", "fr", "de"]}
     disc = {"tags": ["genre:techno", "genre:trance", "genre:dubstep", "country:us"]}
     tags = identify.merge_tags(mb, disc, {})
-    assert tags == ["genre:techno", "genre:trance", "genre:dubstep", "genre:jungle", "country:fr", "lang:en", "lang:fr"]
+    assert tags == ["genre:techno", "genre:trance", "genre:dubstep", "genre:jungle", "country:fr"]
 
 
 def test_non_genres_and_unknown_countries_are_dropped():

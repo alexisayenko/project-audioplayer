@@ -11,7 +11,7 @@ import threading
 import time
 from typing import Any
 
-from . import credits, deps, genre_filter, genre_lookup, library, metadata, wiki_lookup
+from . import artist_table, credits, deps, genre_filter, genre_lookup, library, metadata, wiki_lookup
 from .tags import namespace
 
 log = logging.getLogger(__name__)
@@ -54,7 +54,7 @@ def _blank(value: Any) -> bool:
 
 def _needs(song: dict[str, Any]) -> bool:
     tags = song.get("tags") or []
-    return (_blank(song.get("album")) and not credits.has_version(song)) or _blank(song.get("released")) or not any(namespace(t) == "genre" for t in tags)
+    return (not credits.albums(song) and not credits.has_version(song)) or _blank(song.get("releaseYear")) or not any(namespace(t) == "genre" for t in tags)
 
 
 def candidates(uid: str) -> list[str]:
@@ -123,11 +123,11 @@ def _fetch(song: dict[str, Any]) -> dict[str, Any]:
     version = song.get("version") if credits.has_version(song) else None
     return metadata.gather(str(song.get("title") or "").strip(), credits.lookup_artist(song).strip(), fetchers,
                            song.get("wikipedia_song"), song.get("wikipedia_artist"), metadata.TIMEOUT, urls, song.get("wikipedia_album"),
-                           **({"version_kind": version["kind"]} if version else {}))
+                           **({"version_kind": version["type"]} if version else {}))
 
 
 def _add_tags(have: list[str], found: list[str]) -> list[str]:
-    caps = {"genre": GENRE_CAP, "country": COUNTRY_CAP}
+    caps = {"genre": GENRE_CAP}
     out = list(have)
     added: list[str] = []
     for raw in genre_filter.only_canonical([str(r) for r in found]):
@@ -142,25 +142,32 @@ def _add_tags(have: list[str], found: list[str]) -> list[str]:
     return added
 
 
-def apply(song: dict[str, Any], resp: dict[str, Any]) -> bool:
-    """Write `resp` into `song`, empty fields only; tags are added. True when something changed."""
+def _fill_country(song: dict[str, Any], found: list[str], table: list[dict[str, Any]]) -> bool:
+    """The first country the lookup found goes to the Artist table when the song has one main artist without a country (DATA-153)."""
+    names = credits.main_artists(song)
+    codes = library.split_tags(found)[1][:COUNTRY_CAP]
+    return len(names) == 1 and bool(codes) and artist_table.fill_countries(table, names[0], codes)
+
+
+def apply(song: dict[str, Any], resp: dict[str, Any], table: list[dict[str, Any]] | None = None) -> bool:
+    """Write `resp` into `song`, empty fields only; genre tags are added; a country goes to the Artist `table` when given. True when something changed."""
     changed = False
     version = credits.has_version(song)
     album = resp.get("album")
-    if not version and isinstance(album, str) and album.strip() and _blank(song.get("album")):
-        song["album"] = album.strip()
+    if not version and isinstance(album, str) and album.strip() and not credits.albums(song):
+        song["albums"] = [album.strip()]
         changed = True
     year = resp.get("year")
-    if isinstance(year, int) and not isinstance(year, bool) and _blank(song.get("released")):
-        song["released"] = year
+    if isinstance(year, int) and not isinstance(year, bool) and _blank(song.get("releaseYear")):
+        song["releaseYear"] = year
         changed = True
     tags = library.clean_tags(song.get("tags") or [])
     added = _add_tags(tags, resp.get("tags") or [])
     if added:
         song["tags"] = library.clean_tags([*tags, *added])
         changed = True
-    if library.decade_tag(song.get("released")):
-        song["tags"] = library.with_decade(song.get("tags") or [], song["released"])
+    if table is not None and _fill_country(song, [str(t) for t in resp.get("tags") or [] if namespace(t) == "country"], table):
+        changed = True
     wiki_album = wiki_lookup.clean_link(resp.get("wikipedia_album"))
     if not version and wiki_album and _blank(song.get("wikipedia_album")):
         song["wikipedia_album"] = wiki_album
@@ -184,15 +191,15 @@ def _process(uid: str, vid: str) -> str:
         log.warning("metadata backfill failed for %s: %s", vid, exc)
         return "failed"
     with deps.tx(uid, f"get metadata for {vid}"):
-        songs = library.load(deps.library_path(uid))
-        fresh = library.find_song(songs, vid)
+        doc = deps.load_doc(uid)
+        fresh = library.find_song(doc["songs"], vid)
         if fresh is None:
             return "skipped"
-        changed = apply(fresh, resp)
+        changed = apply(fresh, resp, doc["artists"])
         fresh["metadata_checked_at"] = library.now_utc()
         if changed:
             fresh["updated_at"] = library.now_utc()
-        deps.save_songs(uid, songs)
+        deps.save_doc(uid, doc)
     return "updated" if changed else "nothing"
 
 

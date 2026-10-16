@@ -10,7 +10,7 @@ from typing import Any, Iterator
 
 from fastapi import Header, HTTPException, Query, Request
 
-from . import extractor, gitstore, guest, jobs, library, limits, oauth, session, users
+from . import artist_table, extractor, gitstore, guest, jobs, library, limits, oauth, session, users
 from .problems import Problem
 
 DOWNLOAD_DIR = Path(os.environ.get("AUDIO_DOWNLOAD_DIR", "downloads"))
@@ -103,9 +103,19 @@ def user_audio_root(uid: str) -> Path | None:
         return None
 
 
+def load_artists(uid: str) -> list[dict[str, Any]]:
+    """The user's Artist table (DATA-148)."""
+    return library.load_artists(library_path(uid))
+
+
 def public_songs(uid: str, songs: list[dict[str, Any]]) -> list[dict[str, Any]]:
     root = user_audio_root(uid)
-    return [library.public_song(s, root) for s in songs]
+    table = artist_table.index(load_artists(uid))
+    return [library.public_song(s, root, table) for s in songs]
+
+
+def public_song(uid: str, song: dict[str, Any]) -> dict[str, Any]:
+    return library.public_song(song, user_audio_root(uid), artist_table.index(load_artists(uid)))
 
 
 def load_songs(uid: str) -> list[dict[str, Any]]:
@@ -115,6 +125,17 @@ def load_songs(uid: str) -> list[dict[str, Any]]:
 
 def save_songs(uid: str, songs: list[dict[str, Any]]) -> None:
     library.save(library_path(uid), songs, default_music_root=music_root())
+
+
+def load_doc(uid: str) -> dict[str, Any]:
+    """Songs and Artist table of one user for a read-modify-write under `tx`."""
+    return library.load_doc(library_path(uid))
+
+
+def save_doc(uid: str, doc: dict[str, Any]) -> None:
+    if not doc["settings"].get("music_root"):
+        doc["settings"]["music_root"] = music_root()
+    library.save_doc(library_path(uid), doc)
 
 
 @contextmanager

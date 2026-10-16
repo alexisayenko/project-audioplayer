@@ -7,12 +7,14 @@ import json
 import logging
 import os
 import re
+from collections import Counter
 from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
-from . import countrycodes, credits, discogs_lookup, genre_filter, genre_lookup, langcodes, urlclean, wiki_lookup
+from . import artist_table, countrycodes, credits, discogs_lookup, genre_filter, genre_lookup, langcodes, urlclean, wiki_lookup
 from .jsonio import write_json_atomic
+from .tags import namespace, namespaced_values
 from .timeutil import max_year, now_utc  # noqa: F401
 
 _ROOT_RE = re.compile(r"^([A-Za-z][A-Za-z0-9_.-]+)://(.*)$")
@@ -36,22 +38,36 @@ def has_file(song: dict[str, Any]) -> bool:
 
 
 def clean_sources(raw: Any) -> list[dict[str, Any]]:
+    """Stored sources `{platform, url}`; the older `{source, id, url}` entries are accepted (`source` is the platform, the id is derived again on output)."""
     out: list[dict[str, Any]] = []
     for e in raw if isinstance(raw, list) else []:
-        if not isinstance(e, dict) or not isinstance(e.get("source"), str) or not e.get("id"):
+        if not isinstance(e, dict):
+            continue
+        platform = e.get("platform") if isinstance(e.get("platform"), str) and e.get("platform") else e.get("source")
+        if not isinstance(platform, str) or not platform:
             continue
         url = urlclean.clean_url(e["url"]) if isinstance(e.get("url"), str) else None
-        out.append({"source": e["source"], "id": str(e["id"]), "url": url})
+        out.append({"platform": platform, "url": url})
     return out
 
 
+def _source_id(platform: str, url: str | None, song_id: str) -> str | None:
+    if platform == urlclean.source_of(song_id):
+        return song_id
+    if not url:
+        return None
+    if platform == "youtube":
+        return urlclean.parse_video_id(url)
+    return url.split("soundcloud.com/", 1)[1] if "soundcloud.com/" in url else None
+
+
 def sources_of(song: dict[str, Any]) -> list[dict[str, Any]]:
-    """Stored `sources`, or the single source derived from the id and `source_url` (old records)."""
-    stored = song.get("sources")
-    if isinstance(stored, list) and stored:
-        return stored
+    """The sources of a song as `{platform, url, source, id}` (`source` and `id` are the legacy keys iOS decodes); the single source derived from the id and `source_url` for old records."""
     sid = str(song.get("id", ""))
-    return [{"source": urlclean.source_of(sid), "id": sid, "url": song.get("source_url")}]
+    stored = clean_sources(song.get("sources")) if isinstance(song.get("sources"), list) else []
+    if not stored:
+        stored = [{"platform": urlclean.source_of(sid), "url": song.get("source_url")}]
+    return [{"platform": e["platform"], "url": e["url"], "source": e["platform"], "id": _source_id(e["platform"], e["url"], sid)} for e in stored]
 
 
 def audio_state(song: dict[str, Any], root: Path | None) -> str:
@@ -65,11 +81,29 @@ def audio_state(song: dict[str, Any], root: Path | None) -> str:
     return "server" if (root / file_name(song)).is_file() else "none"
 
 
-def public_song(song: dict[str, Any], root: Path | None) -> dict[str, Any]:
-    """The record plus derived, additive fields: `audio_state`, `sources`, and `audio` when a file exists."""
+def genre_names(tags: Iterable[Any]) -> list[str]:
+    """The bare genre names of the stored `genre:` tags."""
+    return list(dict.fromkeys(v.strip() for v in namespaced_values(tags, "genre") if v.strip()))
+
+
+def view_tags(song: dict[str, Any], table: Any = None) -> list[str]:
+    """The legacy `tags` view of a v2 song: its stored tags, `decade:NNs` computed from `releaseYear` and the `country:` codes of its main artists."""
+    kept, _, _ = split_tags(song.get("tags") or [])
+    decade = decade_tag(credits.release_year(song))
+    countries = artist_table.countries_for(table, credits.main_artists(song)) if table else []
+    return [*kept, *([decade] if decade else []), *(f"country:{c}" for c in countries)]
+
+
+def public_song(song: dict[str, Any], root: Path | None, table: Any = None) -> dict[str, Any]:
+    """The record plus derived, additive fields: the legacy `artist`, `remixer`, `year`, `remix_year`, `album` and `tags` view, `genres`, `audio_state`, `sources`, and `audio` when a file exists.
+
+    `table` is the user's Artist table (list or index); without it the tags view has no `country:` values."""
     out = dict(song)
     credits.ensure(out)
     out.update(credits.project(out))
+    out.pop("raw", None)
+    out["genres"] = genre_names(out.get("tags") or [])
+    out["tags"] = view_tags(out, table)
     state = audio_state(song, root)
     out["audio_state"] = state
     out["sources"] = sources_of(song)
@@ -133,65 +167,88 @@ def normalize_tags(s: dict[str, Any]) -> None:
         tags.append(f"genre:{genre}")
     if "tags" in s or genre:
         s["tags"] = clean_tags(tags)
-    year = credits.released(s)
-    if decade_tag(year):
-        s["tags"] = with_decade(s.get("tags") or [], year)
+
+
+def split_tags(tags: Iterable[Any]) -> tuple[list[str], list[str], Counter[str]]:
+    """`(kept, countries, removed)`: the tags without `decade:`, `lang:` and `country:` values (data model v2), the canonical country codes found, and a count of the removed tags per prefix."""
+    kept: list[str] = []
+    countries: list[str] = []
+    removed: Counter[str] = Counter()
+    for tag in tags:
+        ns = namespace(tag)
+        if ns not in ("decade", "lang", "country"):
+            kept.append(str(tag))
+            continue
+        removed[ns] += 1
+        if ns == "country":
+            code = countrycodes.canonical_country(str(tag).partition(":")[2])
+            if code and code not in countries:
+                countries.append(code)
+    return kept, countries, removed
+
+
+def route_tags(song: dict[str, Any], table: list[dict[str, Any]]) -> Counter[str]:
+    """Take the `decade:`, `lang:` and `country:` tags out of one song; the countries fill the Artist table when the song has exactly one main artist that has none yet."""
+    if "tags" not in song:
+        return Counter()
+    kept, countries, removed = split_tags(song["tags"] or [])
+    song["tags"] = kept
+    names = credits.main_artists(song)
+    if countries and len(names) == 1:
+        artist_table.fill_countries(table, names[0], countries)
+    elif countries:
+        logging.getLogger(__name__).warning("song %s: country tags %s not applied (%d main artists)", song.get("id"), countries, len(names))
+    return removed
 
 
 def normalize(raw: Any) -> dict[str, Any]:
-    """Accept the old bare {songs:[...]} shape and return {settings, songs}."""
+    """Accept the old bare {songs:[...]} shape and return {settings, songs, artists} in data model v2."""
     if isinstance(raw, list):
         raw = {"songs": raw}
     raw = raw if isinstance(raw, dict) else {}
     settings = dict(raw.get("settings") or {})
     songs = [normalize_song(s) for s in raw.get("songs") or []]
-    return {"settings": settings, "songs": songs}
+    table = artist_table.parse(raw.get("artists"))
+    for song in songs:
+        route_tags(song, table)
+    artist_table.sync_names(table, songs)
+    return {"settings": settings, "songs": songs, "artists": table}
 
 
 def decade_tag(year: Any) -> str | None:
-    """`decade:90s` for every year from 1950 up to max_year(), else None."""
+    """`decade:90s` for every year from 1950 up to max_year(), else None; computed at runtime, never stored."""
     if isinstance(year, bool) or not isinstance(year, int) or not DECADE_MIN <= year <= max_year():
         return None
     return f"decade:{year // 10 * 10 % 100:02d}s"
 
 
-def with_decade(tags: list[str], year: Any) -> list[str]:
-    """Replace every `decade:*` tag by the one derived from `year`; untouched when the year gives none."""
-    derived = decade_tag(year)
-    if derived is None:
-        return list(tags)
-    out: list[str] = []
-    placed = False
-    for t in tags:
-        if t.casefold().startswith("decade:"):
-            if not placed:
-                out.append(derived)
-                placed = True
-        else:
-            out.append(t)
-    if not placed:
-        out.append(derived)
-    return out
-
-
 def load_doc(path: Path) -> dict[str, Any]:
     try:
         with open(path, encoding="utf-8") as f:
-            doc = normalize(json.load(f))
-        for song in doc["songs"]:
-            bad = unknown_countries(song.get("tags") or [])
-            if bad:
-                logging.getLogger(__name__).warning("song %s has unmapped country tags %s", song.get("id"), bad)
-        return doc
+            return normalize(json.load(f))
     except FileNotFoundError:
         return normalize({})
 
 
+def load_artists(path: Path) -> list[dict[str, Any]]:
+    """The Artist table of one library file without normalising the songs; empty when the file is missing or unreadable."""
+    try:
+        with open(path, encoding="utf-8") as f:
+            doc = json.load(f)
+    except (OSError, ValueError):
+        return []
+    return artist_table.parse(doc.get("artists") if isinstance(doc, dict) else None)
+
+
 def save_doc(path: Path, doc: dict[str, Any]) -> None:
     songs = doc.get("songs") or []
+    table = artist_table.parse(doc.get("artists"))
     for song in songs:
         credits.absorb(song)
-    out = {"settings": {**(doc.get("settings") or {}), "credits_schema": credits.SCHEMA}, "songs": songs}
+        route_tags(song, table)
+    artist_table.sync_names(table, songs)
+    doc["artists"] = table
+    out = {"settings": {**(doc.get("settings") or {}), "credits_schema": credits.SCHEMA}, "songs": songs, "artists": table}
     write_json_atomic(path, out)
 
 

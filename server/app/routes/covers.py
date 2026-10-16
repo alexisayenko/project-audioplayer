@@ -35,7 +35,7 @@ def _store(uid: str, video_id: str, jpeg: bytes) -> dict[str, Any]:
         write_bytes_atomic(dest, jpeg)
         song.update(cover=f"covers/{video_id}.jpg", cover_v=coverimg.version_of(jpeg), cover_off=None, updated_at=library.now_utc())
         deps.save_songs(uid, songs)
-        return library.public_song(song, deps.user_audio_root(uid))
+        return deps.public_song(uid, song)
 
 
 async def _body(request: Request) -> bytes:

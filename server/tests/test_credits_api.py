@@ -28,58 +28,58 @@ def on_disk(tmp_path, vid=VID):
 
 class TestCreate:
     def test_structure_keys_are_stored_and_projected(self, client, tmp_path):
-        r = post(client, {"artists": ["Dua Lipa", "Elton John"], "featured": ["Jon"], "released": 2021,
-                          "version": {"kind": "live", "name": "Live, Royal Albert Hall", "year": 2022}})
+        r = post(client, {"mainArtists": ["Dua Lipa", "Elton John"], "featuredArtists": ["Jon"], "releaseYear": 2021,
+                          "version": {"type": "live", "name": "Live, Royal Albert Hall", "releaseYear": 2022}})
         assert r.status_code == 201
         got = r.json()["song"]
-        assert (got["artists"], got["featured"], got["released"]) == (["Dua Lipa", "Elton John"], ["Jon"], 2021)
-        assert got["version"] == {"kind": "live", "name": "Live, Royal Albert Hall", "by": [], "year": 2022}
+        assert (got["mainArtists"], got["featuredArtists"], got["releaseYear"]) == (["Dua Lipa", "Elton John"], ["Jon"], 2021)
+        assert got["version"] == {"type": "live", "name": "Live, Royal Albert Hall", "artists": [], "releaseYear": 2022}
         assert (got["artist"], got["remixer"], got["year"], got["remix_year"]) == ("Dua Lipa & Elton John feat. Jon", "Live, Royal Albert Hall", 2021, 2022)
         stored = on_disk(tmp_path)
         assert all(k not in stored for k in LEGACY)
-        assert list(stored)[:6] == ["id", "title", "artists", "featured", "released", "version"]
+        assert list(stored)[:7] == ["id", "title", "mainArtists", "featuredArtists", "releaseYear", "albums", "version"]
         assert "decade:20s" in got["tags"]
 
     def test_legacy_keys_from_ios_become_structure(self, client, tmp_path):
-        r = post(client, {"artist": "Band", "album": "", "remixer": "Alesso Remix", "year": 1999, "remix_year": 2012,
+        r = post(client, {"artist": "Band", "album": "", "remixer": "Alesso Remix", "releaseYear": 1999, "remix_year": 2012,
                           "wikipedia_song": None, "wikipedia_artist": None, "musicbrainz_url": None})
         got = r.json()["song"]
-        assert got["artists"] == ["Band"] and got["released"] == 1999
-        assert got["version"] == {"kind": "remix", "name": "Alesso Remix", "by": [], "year": 2012}
-        assert on_disk(tmp_path)["raw"] == {"title": "Song", "artist": "Band", "remixer": "Alesso Remix"}
+        assert got["mainArtists"] == ["Band"] and got["releaseYear"] == 1999
+        assert got["version"] == {"type": "remix", "name": "Alesso Remix", "artists": [], "releaseYear": 2012}
+        assert on_disk(tmp_path)["rawTitle"] == "Song" and "raw" not in on_disk(tmp_path)
 
     def test_structure_wins_over_legacy_keys_in_the_same_body(self, client):
-        got = post(client, {"artist": "Legacy", "artists": ["New"], "year": 1990, "released": 2001, "remixer": "Old Remix", "version": None}).json()["song"]
-        assert (got["artists"], got["released"], got["artist"], got["year"]) == (["New"], 2001, "New", 2001)
+        got = post(client, {"artist": "Legacy", "mainArtists": ["New"], "year": 1990, "releaseYear": 2001, "remixer": "Old Remix", "version": None}).json()["song"]
+        assert (got["mainArtists"], got["releaseYear"], got["artist"], got["year"]) == (["New"], 2001, "New", 2001)
         assert "version" not in got and got["remixer"] is None
 
     def test_unsent_keys_do_not_become_nulls_that_wipe_structure(self, client):
-        got = post(client, {"artists": ["A"]}).json()["song"]
-        assert got["artists"] == ["A"] and got["released"] == 1987 and "version" not in got
+        got = post(client, {"mainArtists": ["A"]}).json()["song"]
+        assert got["mainArtists"] == ["A"] and got["releaseYear"] == 1987 and "version" not in got
 
     def test_source_raw_is_stored_verbatim_and_never_edited_later(self, client, tmp_path):
         raw = {"title": "Song (Alesso Remix) [Official]", "artist": "Band - Topic", "remixer": "Alesso Remix"}
-        post(client, {"artists": ["Band"], "version": {"kind": "remix", "name": "Alesso Remix", "by": ["Alesso"]}}, source_raw=raw)
-        assert on_disk(tmp_path)["raw"] == raw
-        client.patch(f"/songs/{VID}", json={"title": "Other", "artists": ["Z"], "version": None}, headers=H)
-        assert on_disk(tmp_path)["raw"] == raw
+        post(client, {"mainArtists": ["Band"], "version": {"type": "remix", "name": "Alesso Remix", "artists": ["Alesso"]}}, source_raw=raw)
+        assert on_disk(tmp_path)["rawTitle"] == raw["title"]
+        client.patch(f"/songs/{VID}", json={"title": "Other", "mainArtists": ["Z"], "version": None}, headers=H)
+        assert on_disk(tmp_path)["rawTitle"] == raw["title"]
 
     def test_with_audio_the_source_artist_fills_an_empty_artist(self, client, tmp_path):
         assert post(client, audio=True).status_code == 202
         got = song(client)
-        assert got["artists"] == ["Yt Artist"] and got["artist"] == "Yt Artist"
+        assert got["mainArtists"] == ["Yt Artist"] and got["artist"] == "Yt Artist"
         assert "artist" not in on_disk(tmp_path)
 
     def test_without_audio_the_source_year_fills_released_only_when_unsent(self, client):
-        assert post(client).json()["song"]["released"] == 1987
-        assert post(client, {"released": 2001}, vid=VID2).json()["song"]["released"] == 2001
+        assert post(client).json()["song"]["releaseYear"] == 1987
+        assert post(client, {"releaseYear": 2001}, vid=VID2).json()["song"]["releaseYear"] == 2001
 
     @pytest.mark.parametrize("meta, message", [
-        ({"version": {"kind": "bogus"}}, "version.kind must be one of remix, live, acoustic, extended, instrumental, remaster, edit, cover, mashup, other"),
-        ({"version": {"kind": "remix", "of": "X"}}, "version.of is only for covers and mashups"),
-        ({"artists": [f"n{i}" for i in range(31)]}, "artists must be a list of at most 30 names"),
-        ({"released": 1899}, "released must be from 1900 to 2027"),
-        ({"version": {"kind": "live", "year": 2028}}, "version.year must be from 1900 to 2027"),
+        ({"version": {"type": "bogus"}}, "version.type must be one of remix, cover, mashup, live, acoustic, extended, instrumental, remaster, edit, other"),
+        ({"version": {"type": "remix", "originalArtists": "X"}}, "version.originalArtists is only for covers and mashups"),
+        ({"mainArtists": [f"n{i}" for i in range(31)]}, "mainArtists must be a list of at most 30 names"),
+        ({"releaseYear": 1899}, "releaseYear must be from 1900 to 2027"),
+        ({"version": {"type": "live", "releaseYear": 2028}}, "version.releaseYear must be from 1900 to 2027"),
         ({"year": 2028}, "year must be from 1900 to 2027"),
         ({"remix_year": 1800}, "remix_year must be from 1900 to 2027"),
     ])
@@ -90,26 +90,26 @@ class TestCreate:
         assert client.get("/library", headers=H).json()["songs"] == []
 
     def test_unknown_version_keys_are_a_422(self, client):
-        assert post(client, {"version": {"kind": "remix", "colour": "red"}}).status_code == 422
+        assert post(client, {"version": {"type": "remix", "colour": "red"}}).status_code == 422
 
 
 class TestPatch:
     @pytest.fixture
     def structured(self, client):
-        post(client, {"artists": ["A", "B"], "featured": ["C"], "released": 1999, "version": {"kind": "remix", "name": "Alesso Remix", "by": ["Alesso"], "year": 2012}},
+        post(client, {"mainArtists": ["A", "B"], "featuredArtists": ["C"], "releaseYear": 1999, "version": {"type": "remix", "name": "Alesso Remix", "artists": ["Alesso"], "releaseYear": 2012}},
              source_raw={"title": "Song", "artist": "A - B"})
         return client
 
     def test_title_only_keeps_all_structure(self, structured, tmp_path):
         before = on_disk(tmp_path)
         got = structured.patch(f"/songs/{VID}", json={"title": "New"}, headers=H).json()
-        assert (got["artists"], got["featured"], got["released"], got["version"]) == (before["artists"], before["featured"], before["released"], before["version"])
-        assert on_disk(tmp_path)["raw"] == before["raw"]
+        assert (got["mainArtists"], got["featuredArtists"], got["releaseYear"], got["version"]) == (before["mainArtists"], before["featuredArtists"], before["releaseYear"], before["version"])
+        assert on_disk(tmp_path)["rawTitle"] == before["rawTitle"]
 
     def test_structure_keys_replace(self, structured, tmp_path):
-        got = structured.patch(f"/songs/{VID}", json={"artists": ["X"], "released": 2005, "version": {"kind": "cover", "of": "Orig"}}, headers=H).json()
-        assert got["artists"] == ["X"] and got["featured"] == ["C"] and got["released"] == 2005
-        assert got["version"] == {"kind": "cover", "name": None, "by": [], "year": None, "of": ["Orig"]}
+        got = structured.patch(f"/songs/{VID}", json={"mainArtists": ["X"], "releaseYear": 2005, "version": {"type": "cover", "originalArtists": "Orig"}}, headers=H).json()
+        assert got["mainArtists"] == ["X"] and got["featuredArtists"] == ["C"] and got["releaseYear"] == 2005
+        assert got["version"] == {"type": "cover", "name": None, "artists": [], "releaseYear": None, "originalArtists": ["Orig"]}
         assert (got["artist"], got["remixer"], got["year"], got["remix_year"]) == ("X feat. C", "Cover", 2005, None)
         assert "decade:00s" in got["tags"]
         assert all(k not in on_disk(tmp_path) for k in LEGACY)
@@ -120,8 +120,8 @@ class TestPatch:
         assert "version" not in song(structured)
 
     def test_structure_shadows_legacy_in_the_same_patch(self, structured):
-        got = structured.patch(f"/songs/{VID}", json={"artists": ["Only"], "artist": "Ignored", "released": 2001, "year": 1950}, headers=H).json()
-        assert (got["artists"], got["released"]) == (["Only"], 2001)
+        got = structured.patch(f"/songs/{VID}", json={"mainArtists": ["Only"], "artist": "Ignored", "releaseYear": 2001, "year": 1950}, headers=H).json()
+        assert (got["mainArtists"], got["releaseYear"]) == (["Only"], 2001)
 
     def test_ios_edit_of_an_unchanged_song_is_a_no_op_on_structure(self, structured, tmp_path):
         current = song(structured)
@@ -130,26 +130,26 @@ class TestPatch:
                 "wikipedia_song": None, "wikipedia_artist": None, "musicbrainz_url": None, "tags": current["tags"]}
         assert structured.patch(f"/songs/{VID}", json=body, headers=H).status_code == 200
         after = on_disk(tmp_path)
-        for key in ("artists", "featured", "released", "version", "raw", "title"):
+        for key in ("mainArtists", "featuredArtists", "releaseYear", "version", "rawTitle", "title"):
             assert after[key] == before[key]
 
     def test_ios_changed_artist_flattens_to_pills_and_clears_featured(self, structured):
         got = structured.patch(f"/songs/{VID}", json={"artist": "Brand - New"}, headers=H).json()
-        assert (got["artists"], got["featured"]) == (["Brand", "New"], [])
+        assert (got["mainArtists"], got["featuredArtists"]) == (["Brand", "New"], [])
 
     def test_ios_cleared_remixer_removes_the_version(self, structured):
         got = structured.patch(f"/songs/{VID}", json={"remixer": None}, headers=H).json()
         assert "version" not in got
 
     def test_legacy_remix_year_sets_the_version_year(self, structured):
-        assert structured.patch(f"/songs/{VID}", json={"remix_year": 2020}, headers=H).json()["version"]["year"] == 2020
+        assert structured.patch(f"/songs/{VID}", json={"remix_year": 2020}, headers=H).json()["version"]["releaseYear"] == 2020
 
     @pytest.mark.parametrize("body, message", [
-        ({"artists": [f"n{i}" for i in range(31)]}, "artists must be a list of at most 30 names"),
-        ({"version": {"kind": "nope"}}, "version.kind must be one of"),
-        ({"version": {"kind": "live", "of": "X"}}, "version.of is only for covers and mashups"),
-        ({"released": 2028}, "released must be from 1900 to 2027"),
-        ({"version": {"kind": "live", "year": 1899}}, "version.year must be from 1900 to 2027"),
+        ({"mainArtists": [f"n{i}" for i in range(31)]}, "mainArtists must be a list of at most 30 names"),
+        ({"version": {"type": "nope"}}, "version.type must be one of"),
+        ({"version": {"type": "live", "originalArtists": "X"}}, "version.originalArtists is only for covers and mashups"),
+        ({"releaseYear": 2028}, "releaseYear must be from 1900 to 2027"),
+        ({"version": {"type": "live", "releaseYear": 1899}}, "version.releaseYear must be from 1900 to 2027"),
         ({"year": 1899}, "year must be from 1900 to 2027"),
     ])
     def test_rejections_leave_the_song_unchanged(self, structured, tmp_path, body, message):
@@ -160,49 +160,49 @@ class TestPatch:
         assert on_disk(tmp_path) == before
 
     def test_an_unchanged_out_of_range_stored_year_does_not_block_other_edits(self, client, tmp_path):
-        post(client, {"artists": ["A"]})
+        post(client, {"mainArtists": ["A"]})
         path = ODIR(tmp_path) / "library.json"
         doc = json.loads(path.read_text(encoding="utf-8"))
-        doc["songs"][0]["released"] = 1850
+        doc["songs"][0]["releaseYear"] = 1850
         path.write_text(json.dumps(doc), encoding="utf-8")
-        assert client.patch(f"/songs/{VID}", json={"title": "T2", "year": 1850, "released": 1850}, headers=H).status_code == 200
-        assert client.patch(f"/songs/{VID}", json={"released": 1851}, headers=H).status_code == 422
+        assert client.patch(f"/songs/{VID}", json={"title": "T2", "year": 1850, "releaseYear": 1850}, headers=H).status_code == 200
+        assert client.patch(f"/songs/{VID}", json={"releaseYear": 1851}, headers=H).status_code == 422
 
 
 class TestListsAndGuest:
     def test_library_and_catalog_carry_the_schema_and_always_present_keys(self, client):
-        post(client, {"artists": ["A"], "version": {"kind": "live"}})
+        post(client, {"mainArtists": ["A"], "version": {"type": "live"}})
         post(client, {"title": "Plain"}, vid=VID2)
         lib = client.get("/library", headers=H).json()
         cat = client.get("/catalog", headers=H).json()
-        assert lib["credits_schema"] == 1 and cat["credits_schema"] == 1
+        assert lib["credits_schema"] == 2 and cat["credits_schema"] == 2
         for body in (lib, cat):
             for s in body["songs"]:
-                for key in ("title", "artists", "featured", "released", "artist", "remixer", "year", "remix_year"):
+                for key in ("title", "mainArtists", "featuredArtists", "releaseYear", "albums", "genres", "artist", "remixer", "year", "remix_year", "album"):
                     assert key in s, key
             assert "version" in next(s for s in body["songs"] if s["id"] == VID)
             assert "version" not in next(s for s in body["songs"] if s["id"] == VID2)
 
     def test_catalog_revision_etag_and_since_follow_edits(self, client):
-        post(client, {"artists": ["A"]})
+        post(client, {"mainArtists": ["A"]})
         first = client.get("/catalog", headers=H)
         etag = first.headers["ETag"]
         assert client.get("/catalog", headers={**H, "If-None-Match": etag}).status_code == 304
-        client.patch(f"/songs/{VID}", json={"artists": ["B"]}, headers=H)
+        client.patch(f"/songs/{VID}", json={"mainArtists": ["B"]}, headers=H)
         again = client.get("/catalog", headers={**H, "If-None-Match": etag})
         assert again.status_code == 200 and again.headers["ETag"] != etag
         stamp = song(client)["updated_at"]
         assert [s["id"] for s in client.get("/catalog", params={"since": stamp}, headers=H).json()["songs"]] == [VID]
 
     def test_guest_gets_the_structure_but_not_raw(self, client, monkeypatch):
-        post(client, {"artists": ["A"], "featured": ["B"], "released": 1999, "version": {"kind": "remix", "name": "X Remix", "by": ["X"]}}, source_raw={"title": "Original Upload Title"})
+        post(client, {"mainArtists": ["A"], "featuredArtists": ["B"], "releaseYear": 1999, "version": {"type": "remix", "name": "X Remix", "artists": ["X"]}}, source_raw={"title": "Original Upload Title"})
         owner = song(client)
-        assert "raw" in owner
+        assert "rawTitle" in owner
         seen = web().get("/library").json()["songs"][0]
-        assert "raw" not in seen and "metadata_checked_at" not in seen
-        assert (seen["artists"], seen["featured"], seen["released"], seen["version"]["kind"]) == (["A"], ["B"], 1999, "remix")
+        assert "rawTitle" not in seen and "raw" not in seen and "metadata_checked_at" not in seen
+        assert (seen["mainArtists"], seen["featuredArtists"], seen["releaseYear"], seen["version"]["type"]) == (["A"], ["B"], 1999, "remix")
         assert seen["artist"] == "A feat. B" and seen["remixer"] == "X Remix" and seen["year"] == 1999
-        assert {"artists", "featured", "released", "version"} <= guest.SONG_KEYS and "raw" not in guest.SONG_KEYS
+        assert {"mainArtists", "featuredArtists", "releaseYear", "albums", "version"} <= guest.SONG_KEYS and not {"raw", "rawTitle"} & guest.SONG_KEYS
 
 
 class TestPreviewAndMetadata:
@@ -211,8 +211,8 @@ class TestPreviewAndMetadata:
         monkeypatch.setattr(extractor, "preview", REAL_PREVIEW)
         for mod, name in ((genre_lookup, "lookup"),):
             monkeypatch.setattr(mod, name, lambda a, t, f=None: genre_lookup._empty())
-        monkeypatch.setattr(wiki_lookup, "suggest", lambda a, t, mb=None: {"tags": [], "year": None, "wikipedia_song": None, "wikipedia_artist": None})
-        monkeypatch.setattr(discogs_lookup, "suggest", lambda a, t: {"tags": [], "year": None, "url": None, "country": None, "artist": "", "title": ""})
+        monkeypatch.setattr(wiki_lookup, "suggest", lambda a, t, mb=None: {"tags": [], "releaseYear": None, "wikipedia_song": None, "wikipedia_artist": None})
+        monkeypatch.setattr(discogs_lookup, "suggest", lambda a, t: {"tags": [], "releaseYear": None, "url": None, "country": None, "artist": "", "title": ""})
         return ydl
 
     def test_an_upload_only_video_gives_no_year_and_no_decade(self, real_preview, client):
@@ -223,7 +223,7 @@ class TestPreviewAndMetadata:
         assert body["raw"]["title"] == "Kato feat. Jon - Turn The Lights Off (Alesso Remix)"
         assert body["raw"]["remixer"] == "Alesso Remix" and body["remixer"] == "Alesso Remix"
         sug = body["suggested_credits"]
-        assert sug["featured"] == ["Jon"] and sug["version"]["by"] == ["Alesso"]
+        assert sug["featuredArtists"] == ["Jon"] and sug["version"]["artists"] == ["Alesso"]
         assert not any(t.startswith("decade:") for t in body["tags"])
 
     @pytest.mark.parametrize("wiki, mb, disc, expect", [
@@ -245,7 +245,7 @@ class TestPreviewAndMetadata:
     def test_metadata_for_a_version_withholds_the_original_links(self, client, monkeypatch):
         mb = {**genre_lookup._empty(), "year": 1999, "mb_url": MB_URL}
         monkeypatch.setattr(genre_lookup, "lookup", lambda a, t, f=None: mb)
-        monkeypatch.setattr(wiki_lookup, "suggest", lambda a, t, m=None: {"tags": [], "year": None})
+        monkeypatch.setattr(wiki_lookup, "suggest", lambda a, t, m=None: {"tags": [], "releaseYear": None})
         monkeypatch.setattr(discogs_lookup, "suggest", lambda a, t: {"tags": [], "year": 1998, "url": "https://www.discogs.com/release/5"})
         body = {"title": "T", "artist": "A", "sources": []}
         plain = client.post("/metadata", json=body, headers=H).json()
@@ -264,25 +264,25 @@ class TestEnrichmentOfVersions:
             "services": {"musicbrainz": {"found": True, "url": MB_URL}}}
 
     def version_song(self, **over):
-        return {"id": VID, "title": "T", "artists": ["A"], "featured": [], "released": None, "album": None, "tags": [],
-                "version": {"kind": "remix", "name": "X Remix", "by": [], "year": None}, **over}
+        return {"id": VID, "title": "T", "mainArtists": ["A"], "featuredArtists": [], "releaseYear": None, "albums": [], "tags": [],
+                "version": {"type": "remix", "name": "X Remix", "artists": [], "releaseYear": None}, **over}
 
     def test_metafill_fills_released_and_genres_but_never_album_or_links_for_a_version(self):
         s = self.version_song()
         assert metafill.apply(s, self.RESP) is True
-        assert s["released"] == 1999 and "genre:house" in s["tags"] and "decade:90s" in s["tags"]
-        assert s["album"] is None and "musicbrainz_url" not in s and "wikipedia_album" not in s
+        assert s["releaseYear"] == 1999 and "genre:house" in s["tags"]
+        assert s["albums"] == [] and "musicbrainz_url" not in s and "wikipedia_album" not in s
 
     def test_metafill_fills_everything_for_a_song_without_a_version(self):
         s = self.version_song()
         s.pop("version")
         metafill.apply(s, self.RESP)
-        assert s["album"] == "Original Album" and s["musicbrainz_url"].startswith("https://musicbrainz.org/")
+        assert s["albums"] == ["Original Album"] and s["musicbrainz_url"].startswith("https://musicbrainz.org/")
 
     def test_metafill_asks_for_the_original_work(self, monkeypatch):
         seen = {}
         monkeypatch.setattr(metafill.metadata, "gather", lambda title, artist, fetchers, *a, **kw: seen.update(title=title, artist=artist, kw=kw) or {})
-        cover = self.version_song(artists=["Covering Band"], version={"kind": "cover", "name": None, "by": [], "year": None, "of": ["Original Band"]})
+        cover = self.version_song(mainArtists=["Covering Band"], version={"type": "cover", "name": None, "artists": [], "releaseYear": None, "originalArtists": ["Original Band"]})
         metafill._fetch(cover)
         assert (seen["title"], seen["artist"], seen["kw"]) == ("T", "Original Band", {"version_kind": "cover"})
         metafill._fetch(self.version_song())
@@ -291,27 +291,27 @@ class TestEnrichmentOfVersions:
     def test_metafill_treats_a_mashup_like_any_version(self, monkeypatch):
         seen = {}
         monkeypatch.setattr(metafill.metadata, "gather", lambda title, artist, fetchers, *a, **kw: seen.update(artist=artist, kw=kw) or {})
-        metafill._fetch(self.version_song(artists=["Maker"], version={"kind": "mashup", "name": None, "by": [], "year": None, "of": ["S1", "S2"]}))
+        metafill._fetch(self.version_song(mainArtists=["Maker"], version={"type": "mashup", "name": None, "artists": [], "releaseYear": None, "originalArtists": ["S1", "S2"]}))
         assert seen["artist"] == "Maker" and seen["kw"] == {"version_kind": "mashup"}
 
     def test_metafill_needs_released_not_album_for_a_version(self):
         s = self.version_song(tags=["genre:house"])
         assert metafill._needs(s)
-        s["released"] = 2000
+        s["releaseYear"] = 2000
         assert not metafill._needs(s)
 
     def test_identify_offers_no_musicbrainz_or_discogs_link_for_a_version(self, monkeypatch):
         wire(monkeypatch)
         monkeypatch.setattr(genre_lookup, "lookup", lambda a, t, f=None: {**genre_lookup._empty(), "mb_url": MB_URL, "year": 1997})
-        plain = {"id": "x", "title": "around the world", "artists": ["daft punk"], "featured": [], "released": None}
+        plain = {"id": "x", "title": "around the world", "mainArtists": ["daft punk"], "featuredArtists": [], "releaseYear": None}
         assert identify.run(plain, None)["links"]["musicbrainz"] == MB_URL
-        version = {**plain, "version": {"kind": "remix", "name": "R", "by": [], "year": None}}
+        version = {**plain, "version": {"type": "remix", "name": "R", "artists": [], "releaseYear": None}}
         out = identify.run(version, None)
         assert out["links"]["musicbrainz"] is None and out["links"]["discogs"] is None
         assert out["suggested_year"] == 1997
 
     def test_download_name_uses_the_credited_artists(self):
-        s = self.version_song(artists=["A", "B"], featured=["C"])
+        s = self.version_song(mainArtists=["A", "B"], featuredArtists=["C"])
         assert library.download_name(s, VID) == "A & B feat. C - T.m4a"
         assert credits.artist_string(s) == "A & B feat. C"
 
