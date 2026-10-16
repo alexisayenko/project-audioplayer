@@ -172,3 +172,18 @@ test('A - T (X Cover): evidence picks the reading, no evidence lists both and de
   const crazy = suggest('', 'Teemid - Crazy feat. Joie Tan (Gnarls Barkley Cover)', '', { original: ['Gnarls Barkley'] });
   assert.deepEqual([crazy.artists, crazy.featured, crazy.title, crazy.version.of], [['Teemid'], ['Joie Tan'], 'Crazy', ['Gnarls Barkley']]);
 });
+
+test('title first: "Title [X Remix] feat. Y - Artist" is read reversed', () => {
+  const want = { artists: ['Tommee Profitt'], featured: ['Fleurie'], title: 'In The End', version: { kind: 'remix', name: 'Mellen Gi Remix', by: ['Mellen Gi'] } };
+  const t = 'In The End [Mellen Gi Remix] feat. Fleurie - Tommee Profitt';
+  for (const s of [suggest('', t, '', { uploader: 'Tommee Profitt' }), suggest('', t, ''), suggest('Tommee Profitt', 'In The End feat. Fleurie - Tommee Profitt', 'Mellen Gi Remix', { uploader: 'Tommee Profitt' })]) {
+    for (const k of Object.keys(want)) assert.deepEqual(s[k], want[k], k);
+    assert.ok(s.notes.includes('title_first'));
+  }
+});
+
+test('title first leaves ordinary titles alone', () => {
+  assert.equal(suggest('', 'Artist - Title', '').notes.length, 0);
+  assert.equal(suggest('', 'Title - Artist', '').notes.length, 0);
+  assert.deepEqual(suggest('', 'Artist - Title (Remix)', '').title, 'Artist - Title');
+});

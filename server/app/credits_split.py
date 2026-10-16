@@ -226,6 +226,23 @@ def _mashup(base: str, artists: list[str], notes: list[str], name: str) -> tuple
     return _squash(base), artists, version
 
 
+def _title_first(base: str, title_text: str, artists: list[str], ctx: dict[str, Any]) -> tuple[str, list[str]] | None:
+    """`Title - Artist` read title first (ADD-135): the after-dash plain name is a known artist (credited, uploader, original) and the before-dash part is not, or a version bracket sits before the dash and no artist is credited; returns (title, artists)."""
+    m = _DASH.search(base)
+    if not m:
+        return None
+    left, right = _squash(base[: m.start()]), _squash(base[m.end():])
+    if not left or not right or _DASH.search(right) or titles._BRACKET.search(right) or titles._FEAT_KEY.search(right):
+        return None
+    right_names = _names(right)
+    known = {_fold(n) for n in [*artists, *(ctx.get("original") or []), *([ctx["uploader"]] if ctx.get("uploader") else [])]}
+    right_hit = any(_fold(n) in known for n in right_names)
+    left_hit = any(_fold(n) in known for n in [left, *_names(left)])
+    if left_hit or not (right_hit or (not artists and titles.marker_before_dash(title_text))):
+        return None
+    return left, artists if all(_fold(n) in {_fold(a) for a in artists} for n in right_names) else right_names
+
+
 def suggest(artist: str | None, title: str | None, remixer: str | None, ctx: dict[str, Any] | None = None) -> dict[str, Any]:
     """`{artists, featured, version, title, notes}` suggested from the current strings; `title` is the base title when it differs, `notes` are codes."""
     ctx = ctx or {}
@@ -289,6 +306,11 @@ def suggest(artist: str | None, title: str | None, remixer: str | None, ctx: dic
         version = {"kind": "cover", "name": "Cover", "by": []}
         notes.append("cover_release")
         notes.append("version_in_title")
+    if not tail and not alternatives and (version is None or version["kind"] not in ("cover", "mashup")):
+        first = _title_first(base, title_text, artists, ctx)
+        if first:
+            base, artists = first
+            notes.append("title_first")
     new_title = base if base and base != title_text else None
     out = {"artists": artists, "featured": featured, "version": version, "title": new_title, "notes": notes}
     if alternatives:

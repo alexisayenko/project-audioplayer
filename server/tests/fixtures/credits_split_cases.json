@@ -107,7 +107,19 @@
   {"artist": "Chan", "title": "A vs B - Song [DJ K & Q mashup]", "remixer": null,
    "expect": {"artists": ["DJ K", "Q"], "featured": [], "version": {"kind": "mashup", "name": "DJ K & Q mashup", "by": [], "of": ["A", "B"]}, "title": "Song", "notes": ["mashup_by", "version_in_title"]}},
   {"artist": "Chan", "title": "A + B - Song (bootleg by X)", "remixer": null,
-   "expect": {"artists": ["Chan"], "featured": [], "version": {"kind": "remix", "name": "bootleg by X", "by": ["X"]}, "title": "A + B - Song", "notes": ["version_in_title"]}}
+   "expect": {"artists": ["Chan"], "featured": [], "version": {"kind": "remix", "name": "bootleg by X", "by": ["X"]}, "title": "A + B - Song", "notes": ["version_in_title"]}},
+  {"artist": "", "title": "In The End [Mellen Gi Remix] feat. Fleurie - Tommee Profitt", "remixer": null, "ctx": {"uploader": "Tommee Profitt"},
+   "expect": {"artists": ["Tommee Profitt"], "featured": ["Fleurie"], "version": {"kind": "remix", "name": "Mellen Gi Remix", "by": ["Mellen Gi"]}, "title": "In The End", "notes": ["feat_in_title", "version_in_title", "title_first"]}},
+  {"artist": "", "title": "In The End [Mellen Gi Remix] feat. Fleurie - Tommee Profitt", "remixer": null,
+   "expect": {"artists": ["Tommee Profitt"], "featured": ["Fleurie"], "version": {"kind": "remix", "name": "Mellen Gi Remix", "by": ["Mellen Gi"]}, "title": "In The End", "notes": ["feat_in_title", "version_in_title", "title_first"]}},
+  {"artist": "Tommee Profitt", "title": "In The End - Tommee Profitt", "remixer": "Mellen Gi Remix",
+   "expect": {"artists": ["Tommee Profitt"], "featured": [], "version": {"kind": "remix", "name": "Mellen Gi Remix", "by": ["Mellen Gi"]}, "title": "In The End", "notes": ["remixer_to_version", "title_first"]}},
+  {"artist": "", "title": "Artist - Title", "remixer": null,
+   "expect": {"artists": [], "featured": [], "version": null, "title": null, "notes": []}},
+  {"artist": "", "title": "Artist - Title (Remix)", "remixer": null,
+   "expect": {"artists": [], "featured": [], "version": {"kind": "remix", "name": "Remix", "by": []}, "title": "Artist - Title", "notes": ["version_in_title"]}},
+  {"artist": "", "title": "Title - Artist", "remixer": null,
+   "expect": {"artists": [], "featured": [], "version": null, "title": null, "notes": []}}
  ],
  "review": [
   {"raw": {"title": "Pressure", "artist": "Nadia Ali, Starkillers & Alex Kenji", "remixer": "Alesso Remix", "year": 2009, "remix_year": 2012},

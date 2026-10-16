@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import unicodedata
 from collections.abc import Callable
 
 from . import titleclean
@@ -231,9 +232,42 @@ def cut_remix(title: str) -> tuple[str, str | None]:
     return _cut_remix_segment(title)
 
 
+_VERSION_MARK = re.compile(r"\b(?:remix(?:ed)?|mix|edit|mashup|bootleg|rework|vip|dub|version|live|acoustic|unplugged|instrumental|remaster(?:ed)?|cover|extended)\b", re.I)
+
+
+def marker_before_dash(title: str) -> bool:
+    """True when a bracket naming a version (remix, edit, live, cover, ...) sits left of the first spaced dash outside brackets: "Title [X Remix] feat. Y - Artist" (ADD-135)."""
+    blanked = _BRACKET.sub(lambda m: "x" * len(m.group()), title)
+    m = _CUE_DASH.search(blanked)
+    return bool(m) and any(_VERSION_MARK.search(b.group(1)) for b in _BRACKET.finditer(title[: m.start()]))
+
+
+def _fold(text: str) -> str:
+    return "".join(c for c in unicodedata.normalize("NFD", text) if not unicodedata.combining(c)).casefold()
+
+
+def _title_first(artist: str, title: str, cut: str) -> tuple[str, str] | None:
+    """(title, artist) of a reversed "Title [Version] feat. X - Artist" when the after-dash part is a plain name and the uploader equals it, or a version bracket sits before the dash and the uploader is not the before-dash part; else None."""
+    t = clean_title(cut)
+    m = _CUE_DASH.search(t)
+    if not m:
+        return None
+    left, right = t[: m.start()].strip(), t[m.end() :].strip()
+    if not left or not right or _CUE_DASH.search(right) or _BRACKET.search(right) or _FEAT_KEY.search(right):
+        return None
+    up = _fold(clean_artist(artist))
+    is_left = bool(up) and up == _fold(clean_artist(_strip_feat(left)))
+    if is_left or not (up and up == _fold(clean_artist(right)) or marker_before_dash(title)):
+        return None
+    return left, right
+
+
 def split_title(artist: str, title: str) -> tuple[str, str, str | None]:
-    """Cut the remix out of the title, then split artist and title as split_artist_title does; a feat credit left of the first spaced dash makes that left part the artist when nothing else split."""
+    """Cut the remix out of the title, then split artist and title as split_artist_title does; a feat credit left of the first spaced dash makes that left part the artist when nothing else split; a reversed "Title [Version] feat. X - Artist" is read title first (ADD-135)."""
     cut, remix = cut_remix(title)
+    reversed_ = _title_first(artist, title, cut)
+    if reversed_:
+        return normalize_feat(clean_artist(reversed_[1])), normalize_feat(reversed_[0]), remix
     a, t = split_artist_title(artist, cut)
     if a == clean_artist(artist) and t == clean_title(cut):
         m = _CUE_DASH.search(t)

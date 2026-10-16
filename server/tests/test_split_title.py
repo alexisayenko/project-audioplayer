@@ -1,5 +1,6 @@
 import pytest
 
+from app import credits_split
 from app.titles import split_title
 
 CH = "Melodic Techno & Progressive Trance Anthem Rework | Sadrican"
@@ -203,3 +204,29 @@ def test_mixed_by_segment_after_pipe():
 @pytest.mark.parametrize("t", ["A - B (Mixed)", "A - B (Mixed Version)", "A - B (Extended Mix)"])
 def test_mixed_without_by_untouched(t):
     assert split_title("", t)[2] is None
+
+
+REVERSED = "In The End [Mellen Gi Remix] feat. Fleurie - Tommee Profitt"
+
+
+@pytest.mark.parametrize("uploader", ["Tommee Profitt", "Tommee Profitt - Topic", "", "Some Label"])
+def test_title_first_youtube_title_is_read_reversed(uploader):
+    assert split_title(uploader, REVERSED) == ("Tommee Profitt", "In The End feat. Fleurie", "Mellen Gi Remix")
+
+
+def test_title_first_through_the_preview_suggestion():
+    a, t, r = split_title("Tommee Profitt", REVERSED)
+    s = credits_split.suggest(a, t, r, {"uploader": "Tommee Profitt"})
+    assert (s["artists"], s["featured"], s["title"]) == (["Tommee Profitt"], ["Fleurie"], "In The End")
+    assert s["version"] == {"kind": "remix", "name": "Mellen Gi Remix", "by": ["Mellen Gi"]}
+
+
+def test_title_first_uploader_equal_to_after_dash_is_enough():
+    assert split_title("Metallica", "Enter Sandman - Metallica") == ("Metallica", "Enter Sandman", None)
+
+
+def test_ordinary_titles_unaffected():
+    assert split_title("", "Artist - Title") == ("Artist", "Title", None)
+    assert split_title("Artist", "Artist - Title (Remix)") == ("Artist", "Title", "Remix")
+    assert split_title("", "Title - Artist") == ("Title", "Artist", None)
+    assert split_title("Artist", "Artist feat. B - Title") == ("Artist feat. B", "Title", None)

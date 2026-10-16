@@ -221,6 +221,33 @@ function mashup(base, artists, notes, name) {
   return [squash(base), artists, ver];
 }
 
+const CUE_DASH = / [-–—] /;
+const VERSION_MARK = /\b(?:remix(?:ed)?|mix|edit|mashup|bootleg|rework|vip|dub|version|live|acoustic|unplugged|instrumental|remaster(?:ed)?|cover|extended)\b/i;
+const FEAT_PLAIN = /\b(?:featuring|feat\.?|ft\.?)\s/i;
+const ANY_BRACKET = /[([][^)\]]*[)\]]/;
+
+function markerBeforeDash(title) {
+  const blanked = title.replace(new RegExp(ANY_BRACKET, 'g'), (m) => 'x'.repeat(m.length));
+  const m = CUE_DASH.exec(blanked);
+  if (!m) return false;
+  return [...title.slice(0, m.index).matchAll(BRACKET)].some((b) => VERSION_MARK.test(b[1]));
+}
+
+function titleFirst(base, titleText, artists, ctx) {
+  const m = DASH.exec(base);
+  if (!m) return null;
+  const left = squash(base.slice(0, m.index));
+  const right = squash(base.slice(m.index + m[0].length));
+  if (!left || !right || DASH.test(right) || ANY_BRACKET.test(right) || FEAT_PLAIN.test(right)) return null;
+  const rightNames = names(right);
+  const known = new Set([...artists, ...(ctx.original ?? []), ...(ctx.uploader ? [ctx.uploader] : [])].map(fold));
+  const rightHit = rightNames.some((n) => known.has(fold(n)));
+  const leftHit = [left, ...names(left)].some((n) => known.has(fold(n)));
+  if (leftHit || !(rightHit || (!artists.length && markerBeforeDash(titleText)))) return null;
+  const have = new Set(artists.map(fold));
+  return [left, rightNames.every((n) => have.has(fold(n))) ? artists : rightNames];
+}
+
 export function suggest(artist, title, remixer, ctx = {}) {
   const notes = [];
   let alternatives = null;
@@ -287,6 +314,13 @@ export function suggest(artist, title, remixer, ctx = {}) {
   } else if (release && release.cover) {
     ver = { kind: 'cover', name: 'Cover', by: [] };
     notes.push('cover_release', 'version_in_title');
+  }
+  if (!tail && !alternatives && !(ver && (ver.kind === 'cover' || ver.kind === 'mashup'))) {
+    const first = titleFirst(base, titleText, artists, ctx ?? {});
+    if (first) {
+      [base, artists] = first;
+      notes.push('title_first');
+    }
   }
   const out = { artists, featured, version: ver, title: base && base !== titleText ? base : null, notes };
   if (alternatives) out.alternatives = alternatives;
