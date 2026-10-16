@@ -353,6 +353,7 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
   });
 
   canvas.addEventListener('pointermove', (ev) => {
+    if (drag && pointers.has(ev.pointerId) && ev.pointerType !== 'touch' && ev.buttons === 0) release(ev);
     if (!pointers.has(ev.pointerId)) { if (ev.pointerType !== 'touch') queueHover(ev); return; }
     const [sx, sy] = local(ev);
     pointers.set(ev.pointerId, [sx, sy]);
@@ -398,6 +399,7 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
   }
   canvas.addEventListener('pointerup', release);
   canvas.addEventListener('pointercancel', release);
+  canvas.addEventListener('lostpointercapture', (ev) => { if (drag && ev.pointerType !== 'touch') release(ev); });
   canvas.addEventListener('pointerleave', () => { cancelHover(); if (!drag) setHover(null); });
 
   canvas.addEventListener('dblclick', (ev) => {
