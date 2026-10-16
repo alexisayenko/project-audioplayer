@@ -43,7 +43,7 @@ Pure function `convert(doc) -> (new_doc, report)` over the raw JSON of the deplo
 3. Report: songs, tag removals per prefix (`decade`, `lang`, `country`), decade tags that disagree with `releaseYear`, version types, songs that kept `raw`, artist table size, artists with conflicting or unassignable countries (written to `review-artists-<uid>.json`, never applied), tag-view differences (informational).
 4. Apply: backup of `library.json` to `<data repo>/backups-model2/<uid>/library.json` (outside the git-added tree; never overwritten, a numbered copy is made instead), atomic write, one git commit per user via `deps.tx`, `updated_at` untouched.
 5. Refuses to run twice: a file that is already model 2 (`credits_schema` 2 and every song in the v2 shape) is reported `already_migrated` and left alone. Idempotent.
-6. Startup: `main._startup` runs it after `migrate_credits` (which now only writes its review file). If the check fails the library stays unchanged and the server still serves it (the loader converts the shape in memory); the failure is logged.
+6. Startup: `main._startup` runs it first, before the genre-tag migration; `migrate_credits` was removed because the converter reads the flat and ADR-0024 shapes too (its review file stays as written). If the check fails the library stays unchanged and the server still serves it (the loader converts the shape in memory); the failure is logged.
 7. CLI: `python -m app.migrate_model2 --library PATH [--report FILE] [--apply] [--backup-dir DIR]`.
 
 ## 4. Compatibility

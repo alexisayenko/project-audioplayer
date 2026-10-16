@@ -22,6 +22,10 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 - Server and web: genres from YouTube tags, categories and hashtags (TAG-095, `youtube_genres` and `tag_sources` on `/preview`), and "(... Release)" label tags are dropped from titles and a "Cover Release" suggests a cover with no original artist (ADD-131); "(mashup by X)" titles suggest X as the artist and the artists before the dash as the mashup sources (ADD-132).
 
 - Web: the Library row title button's keyboard focus ring is drawn inside the button, so the row's `overflow: hidden` info block no longer clips it to the right and bottom edges (not deployed).
+## 2026-10-17 (data model v2, built, not deployed)
+
+- Server: songs are stored as `mainArtists`, `featuredArtists`, `releaseYear`, `albums`, `version {type, name, artists, releaseYear, originalArtists}`, `rawTitle` and `sources {platform, url}` (DATA-156); decade is computed at runtime, `lang:` tags are gone, `country:` tags moved to a per-user Artist table (`GET /artists`, `PATCH /artists/{name}`). `artist`, `remixer`, `remix_year`, `year`, `album` and `tags` stay derived in every response, so iOS is unchanged; old and flat names are still accepted on input for one release. New one-time migration `app.migrate_model2` (dry run, derived-field check that aborts on any difference, backup, review file) replaces `migrate_credits`; runbook in deploy.md.
+- Web: reads and sends the v2 names, decade chips and filters computed from `releaseYear`.
 
 ## 2026-10-16 (button shape audit, not deployed)
 
