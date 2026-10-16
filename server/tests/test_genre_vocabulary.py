@@ -81,9 +81,9 @@ def test_extras_have_family_and_a_canonical_parent_without_cycles():
 
 
 REQUIRED_EXTRAS = (
-    "dance", "electronica", "singer-songwriter", "psybient", "darksynth", "dreamwave", "neurofunk", "liquid funk", "techstep", "melodic techno",
-    "melodic house", "big room house", "raggacore", "dance-rock", "estrada", "shock rock", "nu-nrg", "uplifting trance", "chillwave", "darkwave",
-    "folk", "dark metal", "epic", "trailer", "electronic dance", "dreamsynth", "sunshine house", "synth-rock", "electronic",
+    "singer-songwriter", "psybient", "darksynth", "dreamwave", "neurofunk", "liquid drum and bass", "melodic techno",
+    "dance-rock", "estrada", "shock rock", "nu-nrg", "uplifting trance", "chillwave", "darkwave",
+    "folk", "dark metal", "epic", "trailer", "dreamsynth", "sunshine house", "synth-rock", "electronic",
 )
 
 
@@ -194,7 +194,7 @@ def test_create_rejects_unknown_genre_and_applies_nothing(client):
 def test_create_accepts_aliases_and_canonicalises(client):
     r = add(client, metadata={"title": "S"}, audio=False, tags=["genre:Drum & Bass", "genre:house music", "genre:EDM"])
     assert r.status_code == 201
-    assert r.json()["song"]["tags"][:3] == ["genre:drum and bass", "genre:house", "genre:electronic dance"]
+    assert r.json()["song"]["tags"][:3] == ["genre:drum and bass", "genre:house", "genre:electronic"]
 
 
 def test_create_still_drops_junk_silently(client):

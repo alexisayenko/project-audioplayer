@@ -9,16 +9,6 @@
    "parent": "trance",
    "note": "live library tag, reviewed 2026-10-16"
   },
-  "afro house": {
-   "family": "Electronic",
-   "parent": "house",
-   "note": "live library tag, reviewed 2026-10-16"
-  },
-  "alternative dance": {
-   "family": "Electronic",
-   "parent": "dance",
-   "note": "live library tag, reviewed 2026-10-16"
-  },
   "alternative pop": {
    "family": "Pop",
    "parent": "pop",
@@ -34,35 +24,10 @@
    "parent": "pop",
    "note": "live library tag, reviewed 2026-10-16"
   },
-  "big room house": {
-   "family": "Electronic",
-   "parent": "house",
-   "note": "kept subgenre, TAG-076"
-  },
-  "breakbeat hardcore": {
-   "family": "Electronic",
-   "parent": "breakbeat",
-   "note": "live library tag, reviewed 2026-10-16"
-  },
   "british invasion": {
    "family": "Rock",
    "parent": "pop rock",
    "note": "established name, TAG-074"
-  },
-  "bubblegum dance": {
-   "family": "Electronic",
-   "parent": "eurodance",
-   "note": "live library tag, reviewed 2026-10-16"
-  },
-  "chillout": {
-   "family": "Electronic",
-   "parent": "downtempo",
-   "note": "live library tag, reviewed 2026-10-16"
-  },
-  "dance": {
-   "family": "Electronic",
-   "parent": "electronic",
-   "note": "kept subgenre, TAG-076"
   },
   "dance-punk": {
    "family": "Rock",
@@ -99,25 +64,10 @@
    "parent": "synthwave",
    "note": "kept subgenre, TAG-076"
   },
-  "electronic dance": {
-   "family": "Electronic",
-   "parent": "dance",
-   "note": "alias target, TAG-071"
-  },
   "electronic rock": {
    "family": "Rock",
    "parent": "alternative rock",
    "note": "live library tag, reviewed 2026-10-16"
-  },
-  "electronica": {
-   "family": "Electronic",
-   "parent": "electronic",
-   "note": "kept subgenre, TAG-076"
-  },
-  "electropop": {
-   "family": "Electronic",
-   "parent": "synthpop",
-   "note": "alias target, TAG-071"
   },
   "epic": {
    "family": "Stage & Screen",
@@ -139,40 +89,15 @@
    "parent": "punk",
    "note": "live library tag, reviewed 2026-10-16"
   },
-  "french house": {
-   "family": "Electronic",
-   "parent": "house",
-   "note": "established name, TAG-074"
-  },
-  "french touch": {
-   "family": "Electronic",
-   "parent": "french house",
-   "note": "established name, TAG-074"
-  },
-  "indietronica": {
-   "family": "Electronic",
-   "parent": "electronica",
-   "note": "live library tag, reviewed 2026-10-16"
-  },
   "industrial rock": {
    "family": "Rock",
    "parent": "alternative rock",
    "note": "live library tag, reviewed 2026-10-16"
   },
-  "jersey club": {
-   "family": "Electronic",
-   "parent": "house",
-   "note": "live library tag, reviewed 2026-10-16"
-  },
-  "liquid funk": {
+  "liquid drum and bass": {
    "family": "Electronic",
    "parent": "drum and bass",
-   "note": "kept subgenre, TAG-076"
-  },
-  "melodic house": {
-   "family": "Electronic",
-   "parent": "house",
-   "note": "kept subgenre, TAG-076"
+   "note": "added by Alex, 2026-10-16"
   },
   "melodic techno": {
    "family": "Electronic",
@@ -249,19 +174,9 @@
    "parent": null,
    "note": "live library tag, reviewed 2026-10-16"
   },
-  "raggacore": {
-   "family": "Electronic",
-   "parent": "hardcore",
-   "note": "kept subgenre, TAG-076"
-  },
   "rap metal": {
    "family": "Rock",
    "parent": "heavy metal",
-   "note": "live library tag, reviewed 2026-10-16"
-  },
-  "rave": {
-   "family": "Electronic",
-   "parent": "hardcore",
    "note": "live library tag, reviewed 2026-10-16"
   },
   "sadcore": {
@@ -298,16 +213,6 @@
    "family": "Rock",
    "parent": "new wave",
    "note": "manual parent, GEN-045"
-  },
-  "techno pop": {
-   "family": "Electronic",
-   "parent": "synthpop",
-   "note": "live library tag, reviewed 2026-10-16"
-  },
-  "techstep": {
-   "family": "Electronic",
-   "parent": "drum and bass",
-   "note": "kept subgenre, TAG-076"
   },
   "trailer": {
    "family": "Stage & Screen",

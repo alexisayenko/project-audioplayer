@@ -19,7 +19,7 @@ _log = logging.getLogger(__name__)
 ONE_OFF: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
     "RVmG_d3HKBA": (("genre:swing",), ()),
     "soundcloud-168294142": ((), ("genre:glitch hop",)),
-    "soundcloud-122880128": ((), ("genre:french house",)),
+    "soundcloud-122880128": ((), ("genre:house",)),
     "soundcloud-158983912": ((), ("genre:house",)),
     "wL8DVHuWI7Y": ((), ("genre:electronic",)),
 }

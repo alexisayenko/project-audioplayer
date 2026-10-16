@@ -56,7 +56,7 @@ def _strip_music(value: str) -> str:
 
 DROP: frozenset[str] = frozenset(
     key(v) for v in ("mkj", "deb", "stadiumx", "sam smith", "dancin", "relaxed", "love song", "progressive music", "underground music", "dystopian music",
-        "comedy music", "comedy", "novelty music", "novelty song", "novelty", "popular", "underground", "club", "cyberpunk",
+        "comedy music", "comedy", "novelty music", "novelty song", "novelty", "popular", "underground", "cyberpunk",
         "aaron smith", "joris", "skrux", "medley", "music video", "party", "popcorn", "functional music", "event music", "party music", "west coast swing")
 )
 
@@ -77,7 +77,7 @@ def is_genre(value: str) -> bool:
 
 
 ALIASES: dict[str, str] = {
-    "electronic dance music": "electronic dance",
+    "electronic dance music": "electronic",
     "punk rock": "punk",
     "euroda": "eurodance",
     "deep progressive": "progressive house",
@@ -87,27 +87,56 @@ ALIASES: dict[str, str] = {
     "hip-hop & rap": "hip hop",
     "rock and indie": "indie rock",
     "pop and chart": "pop",
-    "russian electro pop": "electropop",
-    "russian electropop": "electropop",
+    "russian electro pop": "synthpop",
+    "russian electropop": "synthpop",
     "dnb": "drum and bass",
+    "d&b": "drum and bass",
+    "drum'n'bass": "drum and bass",
+    "drum n bass music": "drum and bass",
     "drum & bass": "drum and bass",
     "drum n bass": "drum and bass",
-    "edm": "electronic dance",
+    "edm": "electronic",
     "euro pop": "europop",
     "euro-disco": "euro disco",
     "eurohouse": "euro house",
-    "electronic pop": "electropop",
+    "electronic pop": "synthpop",
     "festival progressive house": "progressive house",
     "festival trap": "trap",
     "red disco": "disco",
     "intelligent dance music": "idm",
-    "dance & edm": "electronic dance",
+    "dance & edm": "electronic",
     "metal": "heavy metal",
     "psychedelic trance": "psytrance",
     "glam rock": "glam",
     "film score": "score",
     "bebop": "bop",
     "ethereal wave": "ethereal",
+    "dance music": "electronic",
+    "club": "electronic",
+    "club music": "electronic",
+    "electronic dance": "electronic",
+    "dance": "electronic",
+    "electronica": "electronic",
+    "indietronica": "electronic",
+    "alternative dance": "electronic",
+    "chillout": "downtempo",
+    "afro house": "house",
+    "big room house": "house",
+    "french touch": "house",
+    "french house": "house",
+    "melodic house": "house",
+    "bubblegum dance": "eurodance",
+    "techstep": "drum and bass",
+    "liquid funk": "liquid drum and bass",
+    "liquid dnb": "liquid drum and bass",
+    "liquid drum n bass": "liquid drum and bass",
+    "liquid drum & bass": "liquid drum and bass",
+    "breakbeat hardcore": "hardcore",
+    "raggacore": "hardcore",
+    "rave": "hardcore",
+    "jersey club": "breakbeat",
+    "techno pop": "synthpop",
+    "electropop": "synthpop",
 }
 _ALIAS_BY_KEY: dict[str, str] = {}
 for _a, _t in ALIASES.items():
@@ -129,7 +158,7 @@ RETAGS: dict[str, str] = {
 }
 PROGRESSIVE = "progressive"
 PROGRESSIVE_ELECTRONIC = "progressive house"
-ELECTRONIC_CONTEXT: frozenset[str] = frozenset(key(v) for v in ("electronic", "dance", "electronic dance", "edm", "club", "electronica"))
+ELECTRONIC_CONTEXT: frozenset[str] = frozenset(key(v) for v in ("electronic", "club"))
 _RETAG_BY_KEY: dict[str, str] = {key(_a): _t for _a, _t in RETAGS.items()}
 
 
@@ -142,7 +171,7 @@ PREFIXES: dict[str, tuple[str, str | None]] = {
     "czech": ("cz", "cs"), "irish": ("ie", None), "australian": ("au", None), "canadian": ("ca", None),
     "chinese": ("cn", "zh"), "icelandic": ("is", "is"),
 }
-KEEP: set[str] = {key(v) for v in ("uk garage", "french house", "french touch", "british invasion")}
+KEEP: set[str] = {key(v) for v in ("uk garage", "british invasion")}
 
 
 def split_prefix(value: str) -> tuple[str, str, str | None] | None:

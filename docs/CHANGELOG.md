@@ -6,6 +6,10 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 - Web: new sidebar item "Genres map rework" (`#/genres-rework`, WEB-084) after "Genres map", with a scaffold page that reads genre counts from `/genres/vocabulary` and `/genres/graph`; the three-level map will be built there.
 
+## 2026-10-16 (genre decisions, built, not deployed)
+
+- Server: Alex's genre decisions (TAG-086, GEN-055, built, not deployed; the deploy migration rewrites the owner's tags, 65 songs): 20 Electronic styles removed and folded through ALIASES (dance, electronic dance, electronica, chillout, electropop, french house, melodic house and others), `liquid drum and bass` added, `club` and `club music` fold into electronic instead of being dropped, `status` (approved, under question; Discogs outranks approval), `flavours` and `display` fields in `genre_levels.json`, all served in the vocabulary payload.
+
 ## 2026-10-16 (leftover genre tags, deployed)
 
 - Server: junk genre tags dropped for good (aaron smith, joris, skrux, medley, music video, party, popcorn, functional music, event music, party music, west coast swing), `⚈⚈` retagged to glitch hop, and `west coast swing` is no longer retagged to swing (TAG-085, [task-0035](tasks/task-0035.md)). A one-off table in the startup migration fixes the 5 affected songs (MIKA loses swing; Point Point, Air France, If You and Memory Reboot get a genre); backup in `backups-genre-merge`, idempotent.

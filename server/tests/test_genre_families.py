@@ -82,9 +82,9 @@ def test_reviewed_overrides_win_over_the_order_rule(label, family):
 
 
 KEPT = {
-    "neurofunk": "Electronic", "liquid funk": "Electronic", "techstep": "Electronic", "melodic techno": "Electronic", "melodic house": "Electronic",
-    "big room house": "Electronic", "darksynth": "Electronic", "dreamwave": "Electronic", "raggacore": "Electronic", "dance-rock": "Rock",
-    "psybient": "Electronic", "electronica": "Electronic", "electronic": "Electronic", "dance": "Electronic", "experimental": "Electronic",
+    "neurofunk": "Electronic", "liquid drum and bass": "Electronic", "melodic techno": "Electronic",
+    "darksynth": "Electronic", "dreamwave": "Electronic", "dance-rock": "Rock",
+    "psybient": "Electronic", "electronic": "Electronic", "experimental": "Electronic",
     "singer-songwriter": "Folk, World, & Country", "estrada": "Pop", "shock rock": "Rock", "dark metal": "Rock", "epic": "Stage & Screen",
     "trailer": "Stage & Screen", "chillwave": "Electronic", "darkwave": "Electronic", "nu-nrg": "Electronic", "uplifting trance": "Electronic",
 }
@@ -102,8 +102,8 @@ def test_kept_subgenres_have_a_family_entry(tag, family):
 def test_alias_and_retag_targets_have_a_family():
     from app import genre_filter as gf
 
-    want = {"drum and bass": "Electronic", "electronic dance": "Electronic", "europop": "Pop", "euro disco": "Electronic", "euro house": "Electronic",
-            "electropop": "Electronic", "progressive house": "Electronic", "trap": "Hip Hop", "disco": "Funk / Soul", "folk": "Folk, World, & Country",
+    want = {"drum and bass": "Electronic", "electronic": "Electronic", "europop": "Pop", "euro disco": "Electronic", "euro house": "Electronic",
+            "synthpop": "Electronic", "progressive house": "Electronic", "trap": "Hip Hop", "disco": "Funk / Soul", "folk": "Folk, World, & Country",
             "classical": "Classical", "psychedelic rock": "Rock", "pop": "Pop", "modern classical": "Classical",
             "alternative rock": "Rock", "indie rock": "Rock", "progressive rock": "Rock", "glitch hop": "Electronic"}
     targets = {*gf.ALIASES.values(), *gf.RETAGS.values(), gf.PROGRESSIVE_ELECTRONIC}
@@ -117,10 +117,10 @@ def test_alias_and_retag_targets_have_a_family():
 def test_kept_subgenres_in_the_live_graph_have_wikidata_parents():
     nodes = json.loads(FIXTURE.read_text(encoding="utf-8"))["nodes"]
     by_tag = {t: n for n in nodes for t in n["tags"]}
-    roots = {"electronic", "dance", "experimental"}
+    roots = {"electronic", "experimental"}
     for tag in KEPT:
         node = by_tag.get(tag)
-        if tag in {"darkwave", "nu-nrg"}:
+        if tag in {"darkwave", "nu-nrg", "liquid drum and bass"}:
             continue
         assert node is not None, tag
         assert bool(node["parents"]) == (tag not in roots), tag

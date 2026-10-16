@@ -27,11 +27,11 @@ def mb_result(**over):
 
 def wiki_result(**over):
     return {"wikipedia_song": "https://en.wikipedia.org/wiki/Around_the_World_(Daft_Punk_song)", "wikipedia_artist": "https://en.wikipedia.org/wiki/Daft_Punk",
-            "tags": ["genre:french house", "country:fr"], "song_genres": ["house"], "year": None, **over}
+            "tags": ["genre:deep house", "country:fr"], "song_genres": ["house"], "year": None, **over}
 
 
 def disc_result(**over):
-    return {"tags": ["genre:french house", "genre:disco", "country:fr"], "year": 1996, "country": "country:fr", "url": "https://www.discogs.com/release/5",
+    return {"tags": ["genre:deep house", "genre:disco", "country:fr"], "year": 1996, "country": "country:fr", "url": "https://www.discogs.com/release/5",
             "artist": "Daft Punk", "title": "Around the World", **over}
 
 
@@ -61,7 +61,7 @@ def test_full_merge_priorities_and_caps(monkeypatch):
     out = identify.run(SONG, "x.m4a")
     assert out["status"] == "ok"
     assert out["matched"] == {"artist": "Daft Punk", "title": "Around the World", "confidence": 0.974, "source": "acoustid"}
-    assert out["suggested_tags"] == ["genre:french house", "genre:disco", "genre:house", "genre:electronic", "country:fr", "lang:en", "lang:fr"]
+    assert out["suggested_tags"] == ["genre:deep house", "genre:disco", "genre:house", "genre:electronic", "country:fr", "lang:en", "lang:fr"]
     assert out["suggested_year"] == 1997
     assert out["links"] == {"musicbrainz": MB_URL, "discogs": "https://www.discogs.com/release/5",
                             "wikipedia_song": "https://en.wikipedia.org/wiki/Around_the_World_(Daft_Punk_song)", "wikipedia_artist": "https://en.wikipedia.org/wiki/Daft_Punk", "wikipedia_album": None}
@@ -86,7 +86,7 @@ def test_discogs_only_run_without_fingerprint(monkeypatch):
     assert out["status"] == "ok"
     assert out["matched"] is None
     assert out["sources"] == ["musicbrainz", "wikidata", "discogs"]
-    assert out["suggested_tags"][:2] == ["genre:french house", "genre:disco"]
+    assert out["suggested_tags"][:2] == ["genre:deep house", "genre:disco"]
 
 
 def test_fingerprint_without_match_falls_back_to_the_title_lookup(monkeypatch):
@@ -297,7 +297,7 @@ def test_preview_includes_discogs_when_the_token_is_set(client, monkeypatch):
     monkeypatch.setattr(gl, "suggest_tags", lambda a, t: ["genre:house", "country:fr"])
     monkeypatch.setattr(dl, "suggest", lambda a, t: disc_result())
     body = client.post("/preview", json={"url": f"https://youtu.be/{VID}"}, headers=H).json()
-    assert body["tags"][:2] == ["genre:french house", "genre:disco"]
+    assert body["tags"][:2] == ["genre:deep house", "genre:disco"]
     assert "genre:house" in body["tags"]
     assert body["discogs_url"] == "https://www.discogs.com/release/5"
     assert body["suggested_year"] == 1996

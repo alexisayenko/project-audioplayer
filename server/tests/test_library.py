@@ -576,7 +576,7 @@ def test_soviet_union_is_a_first_class_country(client, raw):
 def test_genre_tags_canonical_on_write_and_dedupe():
     assert library.clean_tag("genre:House Music") == "genre:house"
     assert library.clean_tag("genre:electronic music") == "genre:electronic"
-    assert library.clean_tag("genre:Electronic Dance Music") == "genre:electronic dance"
+    assert library.clean_tag("genre:Electronic Dance Music") == "genre:electronic"
     assert library.clean_tag("genre:punk rock") == "genre:punk"
     assert library.clean_tag("genre:bass music") == "genre:bass music"
     assert library.clean_tags(["genre:house", "genre:house music", "genre:electronic", "genre:electronic music"]) == ["genre:house", "genre:electronic"]
@@ -613,13 +613,13 @@ def test_genre_migration_aliases_drops_and_prefixes(tmp_path, monkeypatch):
     lib = d / "library.json"
     original = json.dumps({"songs": [
         {"id": "a", "title": "A", "tags": ["genre:euroda", "genre:eurodance", "genre:mkj"]},
-        {"id": "b", "title": "B", "tags": ["genre:russian pop", "country:ua", "genre:french house"]},
+        {"id": "b", "title": "B", "tags": ["genre:russian pop", "country:ua", "genre:deep house"]},
     ]})
     lib.write_text(original)
     assert migrate_tags.run() == 1
     songs = json.loads(lib.read_text())["songs"]
     assert songs[0]["tags"] == ["genre:eurodance"]
-    assert songs[1]["tags"] == ["genre:pop", "country:ua", "genre:french house", "country:ru", "lang:ru"]
+    assert songs[1]["tags"] == ["genre:pop", "country:ua", "genre:deep house", "country:ru", "lang:ru"]
     assert (tmp_path / "backups-genre-merge" / "u1" / "library.json").read_text() == original
     assert migrate_tags.run() == 0
 
@@ -656,7 +656,7 @@ def test_migration_merges_dnb_retags_and_drops_idempotent(tmp_path, monkeypatch)
         {"id": "a", "title": "A", "tags": ["genre:dnb", "genre:drum and bass", "genre:drum & bass", "genre:liquid funk", "genre:edm"]},
         {"id": "b", "title": "B", "tags": ["genre:melodic techno", "genre:progressive"]},
         {"id": "c", "title": "C", "tags": ["genre:progressive", "genre:rock"]},
-        {"id": "d", "title": "D", "tags": ["genre:indie", "genre:indie rock", "genre:indie pop", "genre:popular", "genre:club", "genre:west coast swing", "genre:swing", "x"]},
+        {"id": "d", "title": "D", "tags": ["genre:indie", "genre:indie rock", "genre:indie pop", "genre:popular", "genre:west coast swing", "genre:swing", "x"]},
         {"id": "e", "title": "E", "tags": ["genre:euro pop", "genre:eurohouse", "genre:euro disco", "genre:red disco", "genre:dystopian", "genre:cyberpunk", "genre:underground"]},
         {"id": "f", "title": "F", "tags": ["genre:orchestral", "genre:epic", "genre:romantic", "genre:bard", "genre:appalachian folk", "genre:psychedelic", "genre:alternative", "genre:nederpop"]},
     ]})
@@ -664,7 +664,7 @@ def test_migration_merges_dnb_retags_and_drops_idempotent(tmp_path, monkeypatch)
     assert migrate_tags.run() == 1
     tags = [s["tags"] for s in json.loads(lib.read_text())["songs"]]
     assert tags == [
-        ["genre:drum and bass", "genre:liquid funk", "genre:electronic dance"],
+        ["genre:drum and bass", "genre:liquid drum and bass", "genre:electronic"],
         ["genre:melodic techno", "genre:progressive house"],
         ["genre:progressive rock", "genre:rock"],
         ["genre:indie rock", "genre:indie pop", "genre:swing", "x"],

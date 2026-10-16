@@ -72,7 +72,7 @@ def test_one_off_table_fixes_only_the_listed_songs_and_backs_up(datadir, caplog)
     tags = _tags(lib)
     assert tags["RVmG_d3HKBA"] == ["genre:pop", "genre:glam"]
     assert tags["soundcloud-168294142"] == ["genre:glitch hop", "decade:10s"]
-    assert tags["soundcloud-122880128"] == ["country:fr", "genre:french house"]
+    assert tags["soundcloud-122880128"] == ["country:fr", "genre:house"]
     assert tags["soundcloud-158983912"] == ["genre:house"]
     assert tags["wL8DVHuWI7Y"] == ["genre:electronic"]
     assert tags["0XFudmaObLI"] == ["genre:house"]
