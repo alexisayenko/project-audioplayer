@@ -1,4 +1,4 @@
-"""One-time rewrite of stored genre tags to their canonical spelling, junk drops and demonym prefixes (TAG-060, TAG-073, TAG-074); idempotent, run at startup."""
+"""One-time rewrite of stored genre tags to their canonical spelling, junk drops, demonym prefixes and retags (TAG-060, TAG-073, TAG-074, TAG-075); idempotent, run at startup."""
 
 from __future__ import annotations
 

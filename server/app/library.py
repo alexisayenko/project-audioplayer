@@ -7,6 +7,7 @@ import json
 import logging
 import os
 import re
+from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
@@ -230,8 +231,8 @@ def resolve_music_root(root: str, hosts: dict[str, str] | None = None) -> Path:
     return Path(hosts[name]) / rest.strip("/")
 
 
-def clean_tag(tag: str) -> str:
-    """Trim and collapse spaces; `key:value` is lowercased, a plain tag keeps its case; a half-empty `key:` or `:value` is dropped."""
+def clean_tag(tag: str, song_genres: Iterable[str] = ()) -> str:
+    """Trim and collapse spaces; `key:value` is lowercased, a plain tag keeps its case; a half-empty `key:` or `:value` is dropped. `song_genres` are the song's other `genre:` values (the `progressive` rule of TAG-075)."""
     key, sep, value = tag.partition(":")
     key, value = " ".join(key.split()), " ".join(value.split())
     if sep and key and value:
@@ -243,7 +244,7 @@ def clean_tag(tag: str) -> str:
         elif key == "genre":
             if genre_filter.is_dropped(value):
                 return ""
-            value = " ".join(genre_filter.canonical(value).lower().split()) or value
+            value = " ".join(genre_filter.canonical(value, song_genres).lower().split()) or value
         elif key == "decade" and not _DECADE_RE.match(value):
             value = value.replace(" ", "")
         return f"{key}:{value}"
@@ -266,6 +267,7 @@ def clean_tags(tags: list[str]) -> list[str]:
     seen: set[str] = set()
     out: list[str] = []
     extras: list[tuple[str, str | None]] = []
+    genres = [" ".join(v.split()) for t in tags for ns, sep, v in [str(t).partition(":")] if sep and ns.strip().lower() == "genre"]
     for raw in tags:
         raw = str(raw)
         ns, sep, val = raw.partition(":")
@@ -273,7 +275,7 @@ def clean_tags(tags: list[str]) -> list[str]:
             sp = genre_filter.split_prefix(" ".join(val.split()))
             if sp and not genre_filter.is_dropped(sp[0]):
                 extras.append((sp[1], sp[2]))
-        t = clean_tag(raw)
+        t = clean_tag(raw, genres)
         if t and t.casefold() not in seen:
             seen.add(t.casefold())
             out.append(t)

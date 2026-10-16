@@ -258,9 +258,10 @@ def _hit_score(ent: dict[str, Any] | None, h: dict[str, Any], rank: int, key: st
 def user_genres(songs: list[dict[str, Any]]) -> dict[str, set[str]]:
     own: dict[str, set[str]] = {}
     for s in songs:
-        for value in namespaced_values(s.get("tags") or [], "genre"):
+        values = list(namespaced_values(s.get("tags") or [], "genre"))
+        for value in values:
             if norm(value):
-                own.setdefault(norm(canonical(value)), set()).add(s["id"])
+                own.setdefault(norm(canonical(value, values)), set()).add(s["id"])
     return own
 
 

@@ -4,7 +4,7 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends
 
-from .. import deps, genre_graph, genres
+from .. import deps, genre_filter, genre_graph, genres
 from ..tags import namespaced_values
 
 router = APIRouter()
@@ -21,7 +21,7 @@ def get_genres(user: Annotated[dict[str, Any], Depends(deps.require_token)]):
             if n:
                 counts[n] = counts.get(n, 0) + 1
     used = sorted(counts, key=lambda g: (-counts[g], g))
-    rest = [g for g in genres.BUILTIN if g not in counts]
+    rest = [g for g in genres.BUILTIN if g not in counts and genre_filter.canonical(g) == g and not genre_filter.is_dropped(g)]
     return {"genres": [*used, *rest][:GENRES_MAX]}
 
 

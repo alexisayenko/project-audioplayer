@@ -4,5 +4,7 @@
   "dance pop": ["pop music", "dance music"],
   "synth-rock": ["rock music", "synth-pop"],
   "dreamsynth": ["synthwave"],
-  "sunshine house": ["house music"]
+  "sunshine house": ["house music"],
+  "nu-nrg": ["hard trance"],
+  "uplifting trance": ["trance"]
 }

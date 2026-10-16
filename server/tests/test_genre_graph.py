@@ -266,6 +266,11 @@ def test_user_genres_merge_aliases():
     assert own == {"electronic": {"a", "b"}, "house": {"c"}}
 
 
+def test_user_genres_apply_retags_with_the_song_context():
+    songs = [{"id": "a", "tags": ["genre:progressive", "genre:house"]}, {"id": "b", "tags": ["genre:progressive"]}, {"id": "c", "tags": ["genre:dnb", "genre:drum & bass"]}]
+    assert gg.user_genres(songs) == {"progressive house": {"a"}, "house": {"a"}, "progressive rock": {"b"}, "drum and bass": {"c"}}
+
+
 def test_bare_and_music_tags_make_one_connected_node(wd):
     g = gg.graph(songs(("s1", ["electronic"]), ("s2", ["electronic music"]), ("s3", ["house"]), ("s4", ["house music"])), wd.path)
     n = by_label(g)

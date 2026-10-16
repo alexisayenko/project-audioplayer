@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-16 (fifth batch, built, not deployed)
+
+- Server: genre cleanup (TAG-071, TAG-073, TAG-075, TAG-076, GEN-039): new aliases (dnb, drum & bass, drum n bass to drum and bass; edm to electronic dance; euro pop to europop; eurohouse to euro house; electronic pop to electropop; festival progressive house, festival trap and red disco to their parent), a new retag table (appalachian folk and bard to folk, west coast swing to swing, romantic to classical, psychedelic to psychedelic rock, nederpop to pop, orchestral to modern classical, alternative to alternative rock, indie to indie rock, progressive to progressive house when the song has an electronic tag else progressive rock), more junk dropped (popular, underground, club, cyberpunk); dystopian is retagged to darksynth (no established "dystopian synthwave" genre), real subgenres kept with a family entry, nu-nrg and uplifting trance get a hard trance and trance parent (neurofunk, liquid funk, techstep, melodic techno, darksynth, psybient, estrada, epic, trailer and others), disco now Funk / Soul, new wave Rock, acid jazz Jazz; `GET /genres` no longer offers built-in names that would be rewritten on save; the migration reruns at the next start (backup in `backups-genre-merge`, idempotent).
+
 ## 2026-10-16 (fourth batch, built, not deployed)
 
 - Genres map: families are now the 15 Discogs genres plus Other (ADR-0021, GEN-037 to GEN-042, task-0033): a reviewed table `server/data/genre_families.json` (explicit label to family), then the song-weighted majority of the parents, then the umbrella rule, then Other; the keyword family map is removed; outline and legend follow the fixed Discogs order and hide empty families; 99.8% of the live library's songs get a family.

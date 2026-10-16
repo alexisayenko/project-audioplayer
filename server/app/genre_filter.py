@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 import unicodedata
+from collections.abc import Iterable
 
 from . import genres
 
@@ -60,7 +61,7 @@ def _strip_music(value: str) -> str:
 
 DROP: frozenset[str] = frozenset(
     key(v) for v in ("mkj", "deb", "stadiumx", "sam smith", "dancin", "relaxed", "love song", "progressive music", "underground music", "dystopian music",
-        "comedy music", "comedy", "novelty music", "novelty song", "novelty")
+        "comedy music", "comedy", "novelty music", "novelty song", "novelty", "popular", "underground", "club", "cyberpunk")
 )
 
 
@@ -74,7 +75,7 @@ def is_genre(value: str) -> bool:
     if not k or k in DENY or k in DROP or _YEARISH.match(k):
         return False
     stripped = key(_strip_music(value))
-    return bool(stripped) and stripped not in DENY and not _YEARISH.match(stripped)
+    return bool(stripped) and stripped not in DENY and stripped not in DROP and not _YEARISH.match(stripped)
 
 
 ALIASES: dict[str, str] = {
@@ -90,11 +91,40 @@ ALIASES: dict[str, str] = {
     "pop and chart": "pop",
     "russian electro pop": "electropop",
     "russian electropop": "electropop",
+    "dnb": "drum and bass",
+    "drum & bass": "drum and bass",
+    "drum n bass": "drum and bass",
+    "edm": "electronic dance",
+    "euro pop": "europop",
+    "euro-disco": "euro disco",
+    "eurohouse": "euro house",
+    "electronic pop": "electropop",
+    "festival progressive house": "progressive house",
+    "festival trap": "trap",
+    "red disco": "disco",
 }
 _ALIAS_BY_KEY: dict[str, str] = {}
 for _a, _t in ALIASES.items():
     _ALIAS_BY_KEY[key(_a)] = _t
     _ALIAS_BY_KEY.setdefault(key(_t), _t)
+
+RETAGS: dict[str, str] = {
+    "appalachian folk": "folk",
+    "bard": "folk",
+    "west coast swing": "swing",
+    "romantic": "classical",
+    "psychedelic": "psychedelic rock",
+    "nederpop": "pop",
+    "orchestral": "modern classical",
+    "alternative": "alternative rock",
+    "indie": "indie rock",
+    "dystopian": "darksynth",
+    "progressive": "progressive rock",
+}
+PROGRESSIVE = "progressive"
+PROGRESSIVE_ELECTRONIC = "progressive house"
+ELECTRONIC_CONTEXT: frozenset[str] = frozenset(key(v) for v in ("electronic", "dance", "electronic dance", "edm", "club", "electronica"))
+_RETAG_BY_KEY: dict[str, str] = {key(_a): _t for _a, _t in RETAGS.items()}
 
 
 PREFIXES: dict[str, tuple[str, str | None]] = {
@@ -110,7 +140,7 @@ KEEP: set[str] = {key(v) for v in ("uk garage", "french house", "french touch", 
 
 
 def split_prefix(value: str) -> tuple[str, str, str | None] | None:
-    """`russian pop` gives `("pop", "ru", "ru")`: a leading demonym or language word is a country (and language), not a genre (TAG-074). None for aliases, KEEP names and single words."""
+    """`russian pop` gives `("pop", "ru", "ru")`: a leading demonym or language word is a country (and language), not a genre (TAG-074). None for aliases, KEEP names and single words. The genre is spelled as `_spelling` (before RETAGS)."""
     v = _strip_music(value)
     if key(v) in _ALIAS_BY_KEY or key(v) in KEEP:
         return None
@@ -119,11 +149,10 @@ def split_prefix(value: str) -> tuple[str, str, str | None] | None:
     rest = rest.strip()
     if not hit or not rest or key(rest) in DENY or key(rest) in DROP or _YEARISH.match(key(rest)):
         return None
-    return canonical(rest), hit[0], hit[1]
+    return _spelling(rest), hit[0], hit[1]
 
 
-def canonical(value: str) -> str:
-    """One spelling per genre: ALIASES first, then a leading demonym is stripped (`split_prefix`), else strip a trailing " music" (unless the built-in list has that exact name) and use the built-in spelling when one matches."""
+def _spelling(value: str) -> str:
     aliased = _ALIAS_BY_KEY.get(key(value))
     if aliased:
         return aliased
@@ -134,15 +163,40 @@ def canonical(value: str) -> str:
     return _BUILTIN_BY_KEY.get(key(v), v)
 
 
+def is_electronic(value: str) -> bool:
+    """True when the genre belongs to the Electronic family: `ELECTRONIC_CONTEXT`, or the reviewed table `server/data/genre_families.json` (bare form or "<value> music")."""
+    from . import genre_graph  # lazy: genre_graph imports this module
+
+    v = _spelling(value).lower()
+    if key(v) in ELECTRONIC_CONTEXT:
+        return True
+    table = genre_graph.families()
+    return table.get(v) == "Electronic" or table.get(f"{v} music") == "Electronic"
+
+
+def retag(value: str, song_genres: Iterable[str] = ()) -> str:
+    """RETAGS by whole tag (TAG-075): a vague or non-genre tag becomes the named genre it stands for; `progressive` becomes progressive house when another `genre:` of the song is electronic (`is_electronic`), else progressive rock."""
+    k = key(value)
+    if k == key(PROGRESSIVE) and any(key(g) != k and is_electronic(g) for g in song_genres):
+        return PROGRESSIVE_ELECTRONIC
+    return _RETAG_BY_KEY.get(k, value)
+
+
+def canonical(value: str, song_genres: Iterable[str] = ()) -> str:
+    """One spelling per genre: ALIASES first, then a leading demonym is stripped (`split_prefix`), else strip a trailing " music" (unless the built-in list has that exact name) and use the built-in spelling when one matches; RETAGS last (`retag`, with the song's other `genre:` values for the `progressive` rule)."""
+    return retag(_spelling(value), song_genres)
+
+
 def filter_tags(tags: list[str]) -> list[str]:
     """Drop non-genre `genre:` tags and canonicalise the rest, keeping order; other tags pass through. Duplicates are left to the caller's tag clean-up."""
     out: list[str] = []
+    values = [v for t in tags for ns, sep, v in [str(t).partition(":")] if sep and ns.strip().casefold() == "genre"]
     for t in tags:
         ns, sep, value = str(t).partition(":")
         if sep and ns.strip().casefold() == "genre":
             if not is_genre(value):
                 continue
-            out.append(f"genre:{canonical(value)}")
+            out.append(f"genre:{canonical(value, values)}")
         else:
             out.append(t)
     return out
