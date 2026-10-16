@@ -24,7 +24,7 @@ export function setToggle(ids, on, label, iconName) {
     b.setAttribute('aria-label', label);
     b.title = label;
     b.classList.toggle('on', on);
-    if (iconName) b.replaceChildren(icon(iconName, id.startsWith('mini') ? 18 : 20));
+    if (iconName) b.replaceChildren(icon(iconName, id.startsWith('mini') ? 'action' : 'nav'));
   }
 }
 
@@ -43,7 +43,7 @@ export function queueRow(item, i, { count, index, move, removeAt, playAt, playin
   const title = s ? displayString(s) : item.id;
   const more = el('button', {
     class: 'more', type: 'button', title: 'Song menu', 'aria-label': `Song menu: ${title}`, 'aria-haspopup': 'menu', 'aria-expanded': 'false',
-  }, icon('more', 20));
+  }, icon('more', 'nav'));
   more.addEventListener('click', () => openMenu(more, [
     ...(s && can('edit') ? [{ label: 'Edit song', run: () => editDialog(s) }] : []),
     ...(hasAudio(s) && can('download') ? [{ label: 'Download', run: () => downloadSong(s) }] : []),

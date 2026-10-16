@@ -23,7 +23,8 @@ test('unknown icon throws rather than rendering nothing silently', () => {
 
 test('serviceIcon falls back to the external glyph', () => {
   assert.ok(serviceIcon('youtube').innerHTML.includes('<path'));
-  assert.equal(serviceIcon('nope').innerHTML.includes('M14 4h6v6'), true);
+  assert.equal(serviceIcon('nope').innerHTML.includes('M15 3h6v6'), true);
+  assert.ok(serviceIcon('apple').innerHTML.includes('<path'));
   assert.equal(serviceIcon('youtube', { size: 30 }).getAttribute('width'), '30');
 });
 
@@ -47,43 +48,30 @@ test('serviceIcons row: links only when on with a url, pulse only when busy and 
   assert.equal(row.node.children.length, Object.keys(LABELS).length);
 });
 
-const { SHUFFLE_D, LOOP_D, NUMERAL_ONE_D, NUMERAL_ONE_BBOX } = await import('./icons.js');
+test('size is a token class or a numeric width, and stroke is set only here', () => {
+  const tok = icon('check', 'action');
+  assert.equal(tok.getAttribute('class'), 'ic ic-action');
+  assert.equal(tok.getAttribute('width'), null);
+  assert.equal(icon('check').getAttribute('class'), 'ic ic-nav');
+  assert.equal(icon('check', 14).getAttribute('height'), '14');
+  assert.equal(icon('play').getAttribute('stroke-width'), '1.8');
+});
+
+test('fill only for play, pause, prev, next and more; everything else is stroked', () => {
+  for (const name of Object.keys(ICONS)) {
+    const filled = ['play', 'pause', 'prev', 'next', 'more'].includes(name);
+    assert.equal(icon(name).getAttribute('fill'), filled ? 'currentColor' : 'none', name);
+  }
+});
 
 test('shuffle, repeat and repeat-one icons are well-formed stroke icons', () => {
   for (const name of ['shuffle', 'repeat', 'repeatOne']) {
-    const s = icon(name, 20);
+    const s = icon(name, 'nav');
     assert.equal(s.getAttribute('viewBox'), '0 0 24 24');
     assert.equal(s.getAttribute('fill'), 'none');
     assert.equal(s.getAttribute('stroke'), 'currentColor');
-    assert.ok(Number(s.getAttribute('stroke-width')) <= 2.25);
-    const html = s.innerHTML;
-    assert.ok(!/#[0-9a-f]{3,6}|rgb|<text/i.test(html), name);
-    for (const tag of html.match(/<path[^>]*>/g)) {
-      const attrs = [...tag.matchAll(/\s([a-z-]+)=/g)].map((m) => m[1]);
-      assert.equal(new Set(attrs).size, attrs.length, 'duplicate attribute');
-      const fill = /fill="([^"]+)"/.exec(tag);
-      if (fill) assert.equal(fill[1], 'currentColor');
-    }
+    assert.ok(!/#[0-9a-f]{3,6}|rgb|<text/i.test(s.innerHTML), name);
   }
-  for (const d of [SHUFFLE_D, LOOP_D, NUMERAL_ONE_D]) assert.match(d, /^M/);
-  assert.equal((LOOP_D.match(/M/g) || []).length, 4);
-});
-
-test('repeat-one carries a legible numeral 1 that repeat lacks', () => {
-  assert.ok(icon('repeatOne').innerHTML.includes(NUMERAL_ONE_D));
-  assert.ok(!icon('repeat').innerHTML.includes(NUMERAL_ONE_D));
-  assert.ok(NUMERAL_ONE_BBOX.h >= 8 && NUMERAL_ONE_BBOX.w >= 5);
-  const xs = [];
-  const ys = [];
-  let x = 0;
-  let y = 0;
-  for (const [, c, a, b] of NUMERAL_ONE_D.matchAll(/([MLHVZ])\s*(-?[\d.]+)?[ ,]?(-?[\d.]+)?/g)) {
-    if (c === 'H') x = +a;
-    else if (c === 'V') y = +a;
-    else if (c !== 'Z') { x = +a; y = +b; }
-    xs.push(x);
-    ys.push(y);
-  }
-  const { x: bx, y: by, w, h } = NUMERAL_ONE_BBOX;
-  assert.deepEqual([Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)], [bx, bx + w, by, by + h]);
+  assert.ok(ICONS.repeatOne.d.startsWith(ICONS.repeat.d));
+  assert.ok(ICONS.repeatOne.d.length > ICONS.repeat.d.length);
 });

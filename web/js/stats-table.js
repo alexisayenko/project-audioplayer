@@ -1,4 +1,5 @@
 import { el } from './dom.js';
+import { icon } from './icons.js';
 import { displayString, titleNodes } from './display-title.js';
 import { decadeOf } from './stats-data.js';
 
@@ -32,9 +33,9 @@ export function renderTable(songs, { sort, onSort, onOpen, familyOf }) {
     const on = sort.key === key;
     const asc = sort.dir > 0;
     const ariaSort = asc ? 'ascending' : 'descending';
-    const arrow = asc ? ' ▲' : ' ▼';
+    const arrow = el('span', { class: 'st-sort', 'aria-hidden': 'true' }, icon(asc ? 'chevronUp' : 'chevron', 14));
     return el('th', { scope: 'col', 'aria-sort': on ? ariaSort : 'none' },
-      el('button', { class: 'st-th', type: 'button', onclick: () => onSort(key) }, label, on ? arrow : ''));
+      el('button', { class: 'st-th', type: 'button', onclick: () => onSort(key) }, label, on ? arrow : null));
   }));
   const rows = sortRows(songs, sort.key, sort.dir, familyOf).map((s) => {
     const open = el('button', { class: 'st-open', type: 'button', onclick: () => onOpen(s) }, titleNodes(s));

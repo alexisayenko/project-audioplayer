@@ -30,7 +30,7 @@ function cover(s) {
 
 function srcLogo(link) {
   const kind = link.source in { youtube: 1, soundcloud: 1 } ? link.source : 'other';
-  const a = el('a', { class: `src-logo src-${kind}`, href: link.url, target: '_blank', rel: 'noopener', 'aria-label': link.label, title: link.label }, serviceIcon(kind, { size: 22 }));
+  const a = el('a', { class: `src-logo src-${kind}`, href: link.url, target: '_blank', rel: 'noopener', 'aria-label': link.label, title: link.label }, serviceIcon(kind));
   a.addEventListener('click', (e) => e.stopPropagation());
   return a;
 }
@@ -40,7 +40,7 @@ function fetchAudio(s) {
 }
 
 function dlButton(s) {
-  return el('button', { class: 'row-dl', type: 'button', title: 'Download to the server', 'aria-label': `Download: ${displayString(s)}`, onclick: (e) => { e.stopPropagation(); fetchAudio(s); } }, icon('download', 18));
+  return el('button', { class: 'row-dl', type: 'button', title: 'Download to the server', 'aria-label': `Download: ${displayString(s)}`, onclick: (e) => { e.stopPropagation(); fetchAudio(s); } }, icon('download', 'action'));
 }
 
 function bpmBadge(s) {
@@ -62,7 +62,7 @@ function moreButton(s, full, { audio, queueable, queued }) {
     ...(can('edit') ? [{ label: 'Edit song', run: () => editDialog(s) }] : []),
   ];
   if (!items.length) return el('span', { class: 'more ph', 'aria-hidden': 'true' });
-  const more = el('button', { class: 'more', type: 'button', 'aria-label': `More: ${full}`, 'aria-haspopup': 'menu', 'aria-expanded': 'false' }, icon('more', 20));
+  const more = el('button', { class: 'more', type: 'button', 'aria-label': `More: ${full}`, 'aria-haspopup': 'menu', 'aria-expanded': 'false' }, icon('more', 'nav'));
   more.addEventListener('click', () => openMenu(more, items));
   return more;
 }
@@ -71,7 +71,7 @@ function playlistToggle(s, full, queued, queueable) {
   if (!queueable) return el('span', { class: 'pl-toggle ph', 'aria-hidden': 'true' });
   const label = queued ? 'In playlist - click to remove' : 'Add to playlist';
   const glyph = queued ? 'listCheck' : 'listAdd';
-  return el('button', { class: `pl-toggle${queued ? ' on' : ''}`, type: 'button', title: label, 'aria-label': `${label}: ${full}`, 'aria-pressed': String(queued), onclick: () => toggleQueue(s) }, icon(glyph, 18));
+  return el('button', { class: `pl-toggle${queued ? ' on' : ''}`, type: 'button', title: label, 'aria-label': `${label}: ${full}`, 'aria-pressed': String(queued), onclick: () => toggleQueue(s) }, icon(glyph, 'action'));
 }
 
 function openTitle(s, full, tip) {

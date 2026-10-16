@@ -1,4 +1,5 @@
 import { el } from './dom.js';
+import { icon } from './icons.js';
 import { tagLabel } from './tagname.js';
 import { splitAll, splitChips } from './chip-split.js';
 import { store } from './store.js';
@@ -157,8 +158,8 @@ export function chipField(ns, editor) {
   input.addEventListener('blur', () => { closeList(); commit(); });
   input.addEventListener('input', () => { input.removeAttribute('aria-invalid'); flushFinished(); wantSuggestions(); });
   editor.subscribe(() => {
-    chips.replaceChildren(...mine().map((t) => { const bad = ns === 'country' && !isKnownCountry(t.slice(prefix.length)); return el('span', { class: 'chip tint', title: bad ? `${t}: not a known country, remove it` : t, style: bad ? 'border:1px dashed currentColor' : null }, bad ? `⚠ ${tagLabel(t)}` : tagLabel(t),
-      el('button', { type: 'button', class: 'x', 'aria-label': `Remove ${tagLabel(t)}`, onclick: () => editor.removeTag(t) }, '×')); }));
+    chips.replaceChildren(...mine().map((t) => { const bad = ns === 'country' && !isKnownCountry(t.slice(prefix.length)); return el('span', { class: 'chip tint', title: bad ? `${t}: not a known country, remove it` : t, style: bad ? 'border:1px dashed currentColor' : null }, bad ? [icon('warning', 'inline'), tagLabel(t)] : tagLabel(t),
+      el('button', { type: 'button', class: 'x', 'aria-label': `Remove ${tagLabel(t)}`, onclick: () => editor.removeTag(t) }, icon('clear', 'inline'))); }));
     chips.hidden = !chips.children.length;
     if (suggesting && list.style.display !== 'none') refreshList();
   });

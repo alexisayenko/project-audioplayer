@@ -60,7 +60,7 @@ export function coverButton(img, model, name, { run, touch = touchOnly() }) {
   return el('button', {
     class: cls, type: 'button', 'aria-label': label, title, disabled,
     onclick: () => run(model.action),
-  }, img, el('span', { class: 'rc-ov', 'aria-hidden': 'true' }, icon(model.icon, 20)));
+  }, el('span', { class: 'cover-mark', 'aria-hidden': 'true' }, icon('mark')), img, el('span', { class: 'rc-ov', 'aria-hidden': 'true' }, icon(model.icon, 20)));
 }
 
 // Cover button of a Now playing row: the current row follows play/pause, any other row starts that queue item.

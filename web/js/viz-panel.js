@@ -1,3 +1,4 @@
+import { icon } from './icons.js';
 import { TERRAIN_STYLES, getStyle, setStyle, onStyle } from './viz-terrain-style.js';
 import { createPartsToggles } from './viz-parts-ui.js';
 import { modeLabel } from './viz-modes.js';
@@ -49,6 +50,12 @@ export function createStylePanel({ doc = document, mode, width, parts }) {
   head.type = 'button';
   head.className = 'viz-cam-head';
   head.setAttribute('aria-controls', 'viz-style-body');
+  const headLabel = doc.createElement('span');
+  const headChev = doc.createElement('span');
+  headChev.className = 'viz-chev';
+  headChev.setAttribute('aria-hidden', 'true');
+  headChev.append(icon('chevron', 'inline'));
+  head.append(headLabel, headChev);
   const body = doc.createElement('div');
   body.className = 'viz-cam-body';
   body.id = 'viz-style-body';
@@ -124,7 +131,7 @@ export function createStylePanel({ doc = document, mode, width, parts }) {
 
   const setMode = (m) => {
     const s = panelSections(m);
-    head.textContent = panelTitle(m);
+    headLabel.textContent = panelTitle(m);
     styleRow.hidden = !s.style;
     flightRow.hidden = !s.flight;
     paintFlight();

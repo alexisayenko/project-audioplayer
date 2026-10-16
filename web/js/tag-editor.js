@@ -1,4 +1,5 @@
 import { el } from './dom.js';
+import { icon } from './icons.js';
 import { store } from './store.js';
 import { splitInput } from './tag-input.js';
 import { canonicalCountry, filterCountries } from './countries.js';
@@ -58,8 +59,8 @@ export function tagEditor({ tags = [], suggested = [], year = null, onChange = n
       type: 'button', class: 'chip', title: `country:${code}`,
       onclick: () => { current = has(`country:${code}`) ? current : [...current, `country:${code}`]; input.value = ''; note.hidden = true; render(); },
     }, name, el('small', {}, code.toUpperCase())))));
-    chosen.replaceChildren(...shown(current).map((t) => el('span', { class: 'chip on', style: badCountry(t) ? 'border:1px dashed currentColor' : null, title: badCountry(t) ? `${t}: not a known country, remove it or pick one from the list` : t }, badCountry(t) ? `⚠ ${tagText(t)}` : tagText(t),
-      el('button', { type: 'button', class: 'x', 'aria-label': `Remove ${t}`, onclick: () => toggle(t) }, '×'))));
+    chosen.replaceChildren(...shown(current).map((t) => el('span', { class: 'chip on', style: badCountry(t) ? 'border:1px dashed currentColor' : null, title: badCountry(t) ? `${t}: not a known country, remove it or pick one from the list` : t }, badCountry(t) ? [icon('warning', 'inline'), tagText(t)] : tagText(t),
+      el('button', { type: 'button', class: 'x', 'aria-label': `Remove ${t}`, onclick: () => toggle(t) }, icon('clear', 'inline')))));
     sugBox.hidden = !sug.length;
     sugBox.replaceChildren(...(sug.length ? [el('span', { class: 'group-name' }, 'Suggested'), ...sug.map((t) => chip(t))] : []));
     const matches = store.tags.filter((t) => !hidden(t.tag) && (!q || tagSearchText(t.tag).toLocaleLowerCase().includes(q)));

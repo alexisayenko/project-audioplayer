@@ -33,7 +33,7 @@ function wikiButton(n) {
   return el('a', {
     class: `icon gm-wiki${w.dim ? ' dim' : ''}`, href: w.href, target: '_blank', rel: 'noopener noreferrer',
     title: w.label, 'aria-label': w.label,
-  }, serviceIcon('wikipedia', { size: 20 }));
+  }, serviceIcon('wikipedia'));
 }
 
 function loadMessage(data, pending) {
@@ -41,9 +41,8 @@ function loadMessage(data, pending) {
   return pending ? 'Resolving genre families...' : '';
 }
 
-function toggleGlyph(r) {
-  if (!r.hasChildren) return '';
-  return r.expanded ? '▾' : '▸';
+function toggleIcon(r) {
+  return r.hasChildren ? icon('chevron', 'inline') : null;
 }
 
 export function renderGenres(root) {
@@ -81,7 +80,7 @@ export function renderGenres(root) {
   const nowBtn = el('button', {
     class: 'gm-tbtn', type: 'button', 'aria-expanded': 'false', 'aria-pressed': 'false', 'aria-controls': 'gm-now',
     onclick: () => toggleNow(),
-  }, el('span', { 'aria-hidden': 'true' }, '♪ '), 'Now playing');
+  }, icon('music', 'inline'), 'Now playing');
   const nowPop = el('div', { class: 'gm-now', id: 'gm-now', role: 'group', 'aria-label': 'Genres of the playing song', hidden: true });
   const orphBtn = el('button', {
     class: 'gm-tbtn', type: 'button', 'aria-pressed': 'false', 'aria-controls': 'gm-orphans', title: 'Genres with no connections',
@@ -105,7 +104,7 @@ export function renderGenres(root) {
   const outlinePanel = el('section', { class: 'gm-outline', id: 'gm-outline-panel', 'aria-label': 'Outline' },
     el('div', { class: 'gm-outline-head' },
       el('h2', { class: 't-headline' }, 'Outline'),
-      el('button', { class: 'gm-x', type: 'button', 'aria-label': 'Close outline', title: 'Close outline', onclick: () => setOutline(false) }, '×')),
+      el('button', { class: 'gm-x', type: 'button', 'aria-label': 'Close outline', title: 'Close outline', onclick: () => setOutline(false) }, icon('clear', 'nav'))),
     tree);
 
   const view = createGraphView(canvas, {
@@ -140,9 +139,9 @@ export function renderGenres(root) {
   const nowIds = () => (g ? nodeIds(mapToNodes(songGenres(player.current), g)) : []);
 
   const zoomBar = el('div', { class: 'gm-zoom', role: 'group', 'aria-label': 'Zoom' },
-    el('button', { class: 'gm-zbtn', type: 'button', 'aria-label': 'Zoom in', title: 'Zoom in', onclick: () => view.zoom(1.3) }, '+'),
-    el('button', { class: 'gm-zbtn', type: 'button', 'aria-label': 'Zoom out', title: 'Zoom out', onclick: () => view.zoom(1 / 1.3) }, '−'),
-    el('button', { class: 'gm-zbtn', type: 'button', 'aria-label': 'Fit all genres', title: 'Fit all', onclick: () => view.fit() }, '□'));
+    el('button', { class: 'gm-zbtn', type: 'button', 'aria-label': 'Zoom in', title: 'Zoom in', onclick: () => view.zoom(1.3) }, icon('plus', 'action')),
+    el('button', { class: 'gm-zbtn', type: 'button', 'aria-label': 'Zoom out', title: 'Zoom out', onclick: () => view.zoom(1 / 1.3) }, icon('minus', 'action')),
+    el('button', { class: 'gm-zbtn', type: 'button', 'aria-label': 'Fit all genres', title: 'Fit all', onclick: () => view.fit() }, icon('maximize', 'action')));
 
   function syncLegend() {
     legend.hidden = !legendOpen;
@@ -298,7 +297,7 @@ export function renderGenres(root) {
         el('h2', { class: 't-headline' }, n.label),
         wikiButton(n),
         cl.button,
-        el('button', { class: 'gm-x', type: 'button', 'aria-label': 'Close', title: 'Close', onclick: () => view.select(null) }, '×')),
+        el('button', { class: 'gm-x', type: 'button', 'aria-label': 'Close', title: 'Close', onclick: () => view.select(null) }, icon('clear', 'nav'))),
       el('p', { class: 'muted t-caption' }, `${n.family} · ${songsText(n.count)}${exact}`),
       cl.root);
   }
@@ -319,7 +318,7 @@ export function renderGenres(root) {
           saveOpen();
           renderOutline();
         },
-      }, toggleGlyph(r));
+      }, toggleIcon(r));
       const label = el('button', {
         class: 'gm-lbl', type: 'button', 'aria-current': r.id && r.id === selectedId ? 'true' : null,
         onpointerenter: () => view.hoverId(isFamily ? null : r.id), onpointerleave: () => view.hoverId(null),

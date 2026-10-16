@@ -70,4 +70,5 @@ The visualizer palettes (`--viz-*` in `web/viz.css`, including the Ice palette `
 | iOS tokens | `ios/Sources/DesignTokens.swift` (generated) |
 | Web tokens | `web/tokens.css` (generated) |
 | iOS app icon | `ios/Sources/Assets.xcassets/AppIcon.appiconset/` (the record on the platter, drawn programmatically) |
-| Web favicon | `web/favicon.svg` (hand-drawn record mark; social cards not yet) |
+| Web favicon | `web/favicon.svg` (hand-drawn record mark with a dark-scheme variant), `web/favicon-32.png` and `web/apple-touch-icon.png` rasterised from it; social cards not yet |
+| Web in-app mark | `icon('mark')` in `web/js/icons.js` (disc, copper ring, cyan label, no tile; the sidebar lockup, the cover placeholder and empty states) |

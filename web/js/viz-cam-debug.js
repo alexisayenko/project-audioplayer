@@ -1,3 +1,4 @@
+import { icon } from './icons.js';
 import { camClamp, camFormat, camParse, nowClamp, nowFormat, nowParse, nowGains, parseNowField, NOW_LIMITS, NOW_DEFAULTS, CAM_LIMITS, EYE_HEIGHT, DEFAULT_PITCH_DEG, YAW_COVER_MAX_DEG } from './viz-terrain-math.js';
 
 import { getStyle, onStyle } from './viz-terrain-style.js';
@@ -51,9 +52,14 @@ export function createCamPanel(doc = document) {
   const head = doc.createElement('button');
   head.type = 'button';
   head.className = 'viz-cam-head';
-  head.textContent = 'Camera';
   head.setAttribute('aria-controls', 'viz-cam-body');
-  head.textContent = 'Camera (debug)';
+  const headLabel = doc.createElement('span');
+  headLabel.textContent = 'Camera (debug)';
+  const headChev = doc.createElement('span');
+  headChev.className = 'viz-chev';
+  headChev.setAttribute('aria-hidden', 'true');
+  headChev.append(icon('chevron', 'inline'));
+  head.append(headLabel, headChev);
   const body = doc.createElement('div');
   body.className = 'viz-cam-body';
   body.id = 'viz-cam-body';

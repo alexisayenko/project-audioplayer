@@ -161,8 +161,8 @@ function tokenField(kind, fields) {
     tokenize(text).forEach((t, i) => {
       if (isBlankToken(t)) return;
       const label = t.text.trim();
-      const pencil = el('button', { type: 'button', class: 'token-btn', 'aria-label': `Edit ${label}`, 'aria-haspopup': 'menu', 'aria-expanded': 'false' }, icon('pencil', 14));
-      const x = el('button', { type: 'button', class: 'token-btn', 'aria-label': `Remove ${label}` }, icon('clear', 14));
+      const pencil = el('button', { type: 'button', class: 'token-btn', 'aria-label': `Edit ${label}`, 'aria-haspopup': 'menu', 'aria-expanded': 'false' }, icon('pencil', 'inline'));
+      const x = el('button', { type: 'button', class: 'token-btn', 'aria-label': `Remove ${label}` }, icon('clear', 'inline'));
       const pill = el('span', { class: 'token-pill', draggable: 'true', 'data-i': String(i) }, pencil, el('span', { class: 'token-text' }, label), x);
       pill.addEventListener('dragstart', (e) => {
         if (pill.classList.contains('editing')) { e.preventDefault(); return; }

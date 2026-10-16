@@ -60,7 +60,7 @@ export function editDialog(song) {
     sf.node,
     err,
     el('div', { class: 'row end' },
-      hasAudio(song) ? el('button', { type: 'button', class: 'btn outline', title: 'Download', 'aria-label': 'Download', onclick: () => downloadSong(song) }, icon('download', 18)) : null,
+      hasAudio(song) ? el('button', { type: 'button', class: 'btn outline', title: 'Download', 'aria-label': 'Download', onclick: () => downloadSong(song) }, icon('download', 'action')) : null,
       el('button', { type: 'button', class: 'btn danger del-left', onclick: () => removeSong(song) }, 'Delete from library'),
       el('button', { type: 'submit', class: 'btn primary glow' }, 'Save')));
   form.addEventListener('submit', async (e) => {

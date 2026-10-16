@@ -1,4 +1,5 @@
 import { el } from './dom.js';
+import { icon } from './icons.js';
 import { serviceIcon, serviceIcons, LABELS } from './service-icons.js';
 import { loadCollapsed, saveCollapsed, PANEL_KEYS } from './collapsible.js';
 
@@ -24,7 +25,7 @@ export const LINK_ROWS = [
 export function linksPanel({ inputs, readOnly = [], storage = globalThis.localStorage, id = 'song-links' } = {}) {
   const summary = serviceIcons({ onlyOn: true });
   summary.node.classList.add('lk-summary');
-  const chev = el('span', { class: 'cl-chev', 'aria-hidden': 'true' }, '▾');
+  const chev = el('span', { class: 'cl-chev', 'aria-hidden': 'true' }, icon('chevron', 'inline'));
   const head = el('button', { class: 'lk-head', type: 'button', 'aria-controls': id }, chev, el('span', { class: 'lk-title' }, 'Links'));
   const body = el('div', { class: 'lk-body', id });
   const bar = el('div', { class: 'lk-bar' }, head, summary.node);
@@ -43,7 +44,7 @@ export function linksPanel({ inputs, readOnly = [], storage = globalThis.localSt
 
   const paintRow = (r, url) => {
     const link = httpUrl(url);
-    const icon = serviceIcon(r.kind, { size: 20 });
+    const mark = serviceIcon(r.kind);
     const node = el(link ? 'a' : 'span', { class: `svc svc-${r.kind}${link ? ' on' : ' off'}` });
     node.title = link ? `Open ${LABELS[r.kind]}` : `${LABELS[r.kind]} (empty)`;
     if (link) {
@@ -52,7 +53,7 @@ export function linksPanel({ inputs, readOnly = [], storage = globalThis.localSt
       node.rel = 'noopener';
       node.setAttribute('aria-label', `Open ${r.label}`);
     } else node.setAttribute('aria-hidden', 'true');
-    node.append(icon);
+    node.append(mark);
     r.slot.replaceChildren(node);
   };
 

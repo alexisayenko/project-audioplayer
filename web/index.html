@@ -22,7 +22,7 @@
 <div class="app">
 <aside class="side">
   <button class="side-toggle" id="side-toggle" type="button" aria-expanded="true" aria-label="Collapse sidebar" title="Collapse sidebar"><span data-icon="chevronLeft" aria-hidden="true"></span></button>
-  <div class="brand"><span class="brand-name">Electrophone</span><span class="brand-sub t-caption">Offline music player</span></div>
+  <div class="brand"><span class="brand-lockup"><span class="brand-mark"><span data-icon="mark" aria-hidden="true"></span></span><span class="brand-name">Electrophone</span></span><span class="brand-sub t-caption">Offline music player</span></div>
   <nav id="nav" aria-label="Main">
     <a href="#/library" data-route="library" title="Library"><span data-icon="library" aria-hidden="true"></span><span class="nav-label">Library</span></a>
     <a href="#/playlists" data-route="playlists" title="Playlists"><span data-icon="playlist" aria-hidden="true"></span><span class="nav-label">Playlists</span></a>
@@ -47,9 +47,9 @@
   </header>
   <div class="pb-grid">
     <div class="pb-main">
-      <div class="cover-art noart" id="cover-art">
+      <div class="cover cover-art noart" id="cover-art">
+        <span class="cover-mark" aria-hidden="true"><span data-icon="mark"></span></span>
         <img id="player-cover" alt="">
-        <span class="disc" aria-hidden="true"></span>
         <button class="cover-btn row-cover persist" id="cover-toggle" type="button" aria-label="Play" title="Play" hidden><span class="rc-ov" id="cover-icon" aria-hidden="true"></span></button>
         <div class="cover-text" id="cover-text" hidden>
           <h2 id="player-title" class="t-title">Nothing playing</h2>
@@ -104,7 +104,7 @@
 
 <section id="mini" class="mini" aria-label="Now playing" hidden>
   <div class="mini-lead">
-  <button class="row-cover persist" id="mini-cover-btn" type="button" aria-label="Play" title="Play"><img id="mini-cover" alt="" class="cover"><span class="rc-ov" id="mini-cover-ov" aria-hidden="true"></span></button>
+  <button class="row-cover persist" id="mini-cover-btn" type="button" aria-label="Play" title="Play"><span class="cover-mark" aria-hidden="true"><span data-icon="mark"></span></span><img id="mini-cover" alt="" class="cover"><span class="rc-ov" id="mini-cover-ov" aria-hidden="true"></span></button>
   <button class="mini-open" id="mini-open" type="button" aria-label="Show in Library">
     <span class="mini-text"><b id="mini-title" class="t-subhead"></b><small id="mini-artist" class="t-caption"></small></span>
   </button>

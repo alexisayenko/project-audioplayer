@@ -5,6 +5,7 @@ import { player } from './player.js';
 import { autoDownloadOn, setAutoDownload } from './autodl.js';
 import { el, pageHead } from './dom.js';
 import { signInErrorText } from './signin-error.js';
+import { serviceIcon } from './service-icons.js';
 import { isGuest, ownerLabel } from './guest.js';
 import { bpmCard, metadataCard } from './backfill-card.js';
 import { downloadAllCard } from './bulk-download.js';
@@ -63,7 +64,7 @@ async function setupProviders(box, out) {
     }).catch((ex) => slot.replaceChildren(el('p', { class: 'msg error' }, ex.message)));
   }
   if (cfg.apple_client_id) {
-    const btn = el('button', { class: 'btn outline small', type: 'button', disabled: true }, 'Sign in');
+    const btn = el('button', { class: 'btn outline', type: 'button', disabled: true }, serviceIcon('apple', { size: 'inline' }), 'Sign in');
     box.append(row('Sign in with Apple', btn));
     loadScript(APPLE).then(() => {
       window.AppleID.auth.init({

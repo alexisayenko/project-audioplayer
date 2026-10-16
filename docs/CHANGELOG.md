@@ -9,7 +9,9 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 - Web: the read-only banner is a quiet surface card, floating slabs use one `shadow-float` recipe, copper is a rim on covers only, hover, pressed, focus, disabled, motion and reduced motion come from tokens, radii, heights, type and z-index use tokens, nav icons are generated from `icons.js`.
 - Web: the visualizer chrome is retokenised under an always-dark scope, Stats and Genres share the panel recipe and read `--chart-N`, chart tops no longer sit under the header card, the stale `--hairline`, `--text-muted` and `--gf-N` references are gone.
 - Web fixes: tab labels wrap at 399px, the focus ring follows the rounded input well, genres no longer clip mid-letter, the download ring fits three digits, the marquee padding matches its token.
-- Not done: Step 3 icon swaps, Step 4 brand mark and assets, toast exit motion and toast layering above the full visualizer, merging the Genres and Stats button families, the Screens board re-wire.
+- Web icons: one icon family on the 24 grid at stroke 1.8 (Lucide geometry and Simple Icons brand marks vendored into `icons.js` and `service-icons.js`), the nine text glyphs (close, warning, chevrons, sort arrows, zoom, music, crosshair) are vector icons, the visualizer panels show collapse chevrons again.
+- Web brand: an in-app record mark (sidebar lockup, collapsed rail, phone page heads, cover placeholders, empty states), one cover frame with a copper rim, a favicon with a dark-scheme variant plus 32px and 180px PNGs, theme-color tags, the duplicate mirror thumbnail removed.
+- Not done: toast exit motion and toast layering above the full visualizer, merging the Genres and Stats button families, regenerating the preset thumbnails at 16:10 (needs ffmpeg), the Screens board re-wire, versioned URLs for the new PNG icons in `server/app/web.py`.
 
 ## 2026-10-16 (sixth batch, built, not deployed)
 

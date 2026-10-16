@@ -1,4 +1,5 @@
 import { el } from './dom.js';
+import { icon } from './icons.js';
 
 export const PANEL_NARROW_PX = 480;
 export const PANEL_KEYS = { stats: 'ap2.panel.stats', genres: 'ap2.panel.genres', genreInfo: 'ap2.panel.genreInfo', links: 'ap2.panel.links' };
@@ -20,7 +21,7 @@ export const toggleCollapsed = (v) => !v;
 
 export function createCollapsible({ id, content, collapsed = false, onToggle }) {
   const root = el('div', { class: 'cl' }, el('div', { class: 'cl-clip', id }, el('div', { class: 'cl-in' }, content)));
-  const button = el('button', { class: 'cl-btn', type: 'button', 'aria-controls': id }, el('span', { class: 'cl-chev', 'aria-hidden': 'true' }, '▾'));
+  const button = el('button', { class: 'cl-btn', type: 'button', 'aria-controls': id }, el('span', { class: 'cl-chev', 'aria-hidden': 'true' }, icon('chevron', 'inline')));
   const set = (v) => {
     root.classList.toggle('collapsed', v);
     button.classList.toggle('collapsed', v);

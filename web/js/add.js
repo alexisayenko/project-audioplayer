@@ -57,7 +57,7 @@ export function openAdd() {
     if (!song) { known.replaceChildren(); return; }
     const where = el('button', { class: 'link-btn t-caption', type: 'button' }, 'Show in library');
     where.addEventListener('click', () => showInLibrary(song));
-    known.replaceChildren(icon('check', 16), ` Already in your library: ${[song.title, song.artist].filter(Boolean).join(' · ')} `, where);
+    known.replaceChildren(icon('check', 'inline'), ` Already in your library: ${[song.title, song.artist].filter(Boolean).join(' · ')} `, where);
   };
   url.addEventListener('input', checkKnown);
   url.addEventListener('input', (e) => { if (BULK.has(e.inputType) || (e.data && e.data.length > 1)) tidy(); });
@@ -118,7 +118,7 @@ export function openAdd() {
     sf.node.addEventListener('input', paintMeta);
     paintMeta();
 
-    const save = el('button', { class: 'btn primary glow big', type: 'submit', disabled: !!preview.in_library }, icon('plus', 20), 'Save to library');
+    const save = el('button', { class: 'btn primary glow big', type: 'submit', disabled: !!preview.in_library }, icon('plus', 'nav'), 'Save to library');
     const err = el('div');
 
     const card = el('form', { class: 'add-card' },

@@ -53,7 +53,7 @@ export function createModeSwitch({ root, modes, current, onSelect, win = globalT
     text.className = 'viz-dd-text';
     const full = note ? `${m.label} (${note})` : m.label;
     text.textContent = full;
-    button.replaceChildren(icon(m.icon, 18), text, icon('chevron', 16));
+    button.replaceChildren(icon(m.icon, 'action'), text, icon('chevron', 'inline'));
     button.setAttribute('aria-label', `Visualizer mode: ${full}`);
     button.title = `Visualizer mode: ${full}`;
     button.dataset.mode = m.id;
@@ -112,7 +112,7 @@ export function createModeSwitch({ root, modes, current, onSelect, win = globalT
     const text = document.createElement('span');
     text.className = 'viz-dd-opt-text';
     text.textContent = m.label;
-    o.append(icon(m.icon, 18), text, icon('check', 16));
+    o.append(icon(m.icon, 'action'), text, icon('check', 'inline'));
     o.addEventListener('click', () => choose(m.id));
     options.set(m.id, o);
     list.append(o);

@@ -141,7 +141,7 @@ export function openShareDialog(song, audio = $('audio')) {
 export function initShare() {
   const buttons = ['p-share', 'viz-share'].map($).filter(Boolean);
   for (const b of buttons) {
-    b.replaceChildren(icon('share', b.id === 'p-share' ? 20 : 22));
+    b.replaceChildren(icon('share', 'nav'));
     b.addEventListener('click', () => openShareDialog(player.current));
   }
   const sync = () => { for (const b of buttons) b.hidden = !player.current; };

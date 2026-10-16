@@ -55,7 +55,7 @@ function placeStatus(inFull) {
 
 function paintPlayButton(audio) {
   const playing = !audio.paused;
-  setIcon('viz-play', playing ? 'pause' : 'play', 24);
+  setIcon('viz-play', playing ? 'pause' : 'play', 'play');
   $('viz-play').setAttribute('aria-label', playing ? 'Pause' : 'Play');
 }
 
@@ -125,9 +125,9 @@ export function initVisualizer({
   document.body.append(dock);
   const button = $('p-viz');
   const reducedMql = win.matchMedia?.(REDUCED) ?? null;
-  setIcon('p-viz', 'equalizer', 20);
-  setIcon('viz-prev', 'prev', 22);
-  setIcon('viz-next', 'next', 22);
+  setIcon('p-viz', 'equalizer', 'nav');
+  setIcon('viz-prev', 'prev', 'nav');
+  setIcon('viz-next', 'next', 'nav');
   if (!supported) {
     button.disabled = true;
     button.title = NO_AUDIO_TIP;
@@ -257,7 +257,7 @@ export function initVisualizer({
   $('viz-play').addEventListener('click', () => player.toggle());
   $('viz-prev').addEventListener('click', () => player.prev());
   $('viz-next').addEventListener('click', () => player.next());
-  setIcon('viz-close', 'clear', 22);
+  setIcon('viz-close', 'clear', 'nav');
   $('viz-close').addEventListener('click', () => full.close());
   const flash = $('viz-flash');
   bindOverlayActivity($('viz-full'), full, {

@@ -69,12 +69,12 @@ export function renderLibrary(root) {
         el('p', { class: 't-eyebrow' }, 'ELECTROPHONE'),
         el('h1', { class: 't-display' }, 'Library')),
       el('div', { class: 'head-actions' }, total,
-        can('add') ? el('button', { class: 'btn primary glow', type: 'button', onclick: openAdd }, icon('plus', 18), 'Add song') : null)),
+        can('add') ? el('button', { class: 'btn primary glow', type: 'button', onclick: openAdd }, icon('plus', 'action'), 'Add song') : null)),
     el('div', { class: 'toolbar' },
-      el('label', { class: 'search' }, icon('search', 18), search),
+      el('label', { class: 'search' }, icon('search', 'action'), search),
       cats),
     el('div', { class: 'sortbar' },
-      el('label', { class: 'sort t-headline' }, sort, icon('chevron', 16)),
+      el('label', { class: 'sort t-headline' }, sort, icon('chevron', 'inline')),
       summary, playAll, addAll),
     group,
     status);
@@ -190,7 +190,7 @@ export function renderLibrary(root) {
       status.replaceChildren(el('div', { class: 'state card' },
         el('p', { class: 't-headline' }, 'No songs yet'),
         el('p', { class: 'muted t-subhead' }, 'Paste a YouTube or SoundCloud link to save the song to your library.'),
-        can('add') ? el('button', { class: 'btn primary glow', type: 'button', onclick: openAdd }, icon('plus', 18), 'Add song') : null));
+        can('add') ? el('button', { class: 'btn primary glow', type: 'button', onclick: openAdd }, icon('plus', 'action'), 'Add song') : null));
     } else {
       status.replaceChildren();
     }

@@ -26,7 +26,7 @@ export function initOverlayPlayControls({ player, audio, root, live, isOpen }) {
     mute.title = label;
     mute.classList.toggle('on', silent);
     mute.replaceChildren();
-    setIcon('viz-mute', silent ? 'volumeMute' : 'volume', 22);
+    setIcon('viz-mute', silent ? 'volumeMute' : 'volume', 'nav');
   };
 
   const shuffle = () => { player.setShuffle(!player.shuffleOn); say(`Shuffle ${player.shuffleOn ? 'on' : 'off'}`); };
@@ -51,8 +51,8 @@ export function initOverlayPlayControls({ player, audio, root, live, isOpen }) {
     else nudge(act === 'vol-up' ? 1 : -1);
   });
 
-  setIcon('viz-shuffle', 'shuffle', 22);
-  setIcon('viz-repeat', 'repeat', 22);
+  setIcon('viz-shuffle', 'shuffle', 'nav');
+  setIcon('viz-repeat', 'repeat', 'nav');
   player.onChange(paintTransport);
   audio.addEventListener('volumechange', paintVolume);
   paintTransport();

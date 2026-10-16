@@ -2,6 +2,7 @@ import { api } from './api.js';
 import { store } from './store.js';
 import { hasAudio } from './playable.js';
 import { el, toast, plural } from './dom.js';
+import { icon } from './icons.js';
 import * as Q from './queue-logic.js';
 import { visibleTags, tagChip, tagText } from './tagname.js';
 import { closeMenu, initMenus } from './menu.js';
@@ -364,8 +365,8 @@ function renderTransport(song, playing) {
   $('p-view').hidden = !song;
   paintServiceButtons($('p-svc'), song);
   $('p-download').hidden = !hasAudio(song) || !can('download');
-  setIcon('p-play', playing ? 'pause' : 'play', 22);
-  setIcon('mini-play', playing ? 'pause' : 'play', 20);
+  setIcon('p-play', playing ? 'pause' : 'play', 'play');
+  setIcon('mini-play', playing ? 'pause' : 'play', 'action');
   $('p-play').setAttribute('aria-label', label);
   const cover = $('cover-toggle');
   cover.hidden = !song;
@@ -446,7 +447,7 @@ function renderPlaylistControls() {
     el('button', {
       class: 'x', type: 'button', title: `Remove tag: ${t}`, 'aria-label': `Remove tag: ${t}`,
       onclick: () => { const n = player.removeTag(t); toast(n ? `Removed ${n} ${plural(n, 'song', 'songs')}` : 'Tag removed'); },
-    }, '×'))));
+    }, icon('clear', 'inline')))));
 }
 
 const queueCtx = () => ({
@@ -503,11 +504,11 @@ export function initPlayer() {
   setIcon('p-prev', 'prev');
   setIcon('p-next', 'next');
   setIcon('p-shuffle', 'shuffle');
-  setIcon('mini-prev', 'prev', 18);
-  setIcon('mini-next', 'next', 18);
-  setIcon('mini-shuffle', 'shuffle', 18);
-  setIcon('p-view', 'info', 20);
-  setIcon('p-download', 'download', 20);
+  setIcon('mini-prev', 'prev', 'action');
+  setIcon('mini-next', 'next', 'action');
+  setIcon('mini-shuffle', 'shuffle', 'action');
+  setIcon('p-view', 'info', 'nav');
+  setIcon('p-download', 'download', 'nav');
   for (const id of ['cover-toggle', 'mini-cover-btn']) $(id).addEventListener('click', () => player.toggle());
   $('player-dl-btn').addEventListener('click', () => { if (player.current) startDownload(player.current); });
   autodl.onChange(() => {
@@ -577,7 +578,7 @@ export function initPlayer() {
     $('p-mute').setAttribute('aria-label', label);
     $('p-mute').title = label;
     $('p-mute').classList.toggle('on', silent);
-    setIcon('p-mute', silent ? 'volumeMute' : 'volume', 22);
+    setIcon('p-mute', silent ? 'volumeMute' : 'volume', 'nav');
   };
   audio.addEventListener('volumechange', paintMute);
   paintMute();

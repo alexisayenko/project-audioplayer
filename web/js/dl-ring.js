@@ -13,7 +13,7 @@ function svgEl(tag, attrs) {
 // Builds the indicator for a model from ringModel(); paintRing(node, model) later updates it in place.
 export function ringNode(model, onRetry) {
   if (model.actionable) {
-    const b = el('button', { class: 'dl-ring failed', type: 'button', onclick: (e) => { e.stopPropagation(); onRetry(); } }, icon('warning', 20));
+    const b = el('button', { class: 'dl-ring failed', type: 'button', onclick: (e) => { e.stopPropagation(); onRetry(); } }, icon('warning', 'nav'));
     b.dataset.role = model.role;
     paintRing(b, model);
     return b;

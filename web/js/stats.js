@@ -2,6 +2,7 @@ import { api } from './api.js';
 import { store } from './store.js';
 import { player } from './player.js';
 import { el, toast, plural } from './dom.js';
+import { icon } from './icons.js';
 import { titleNodes, displayString } from './display-title.js';
 import { storeGet, storeSet } from './storage.js';
 import { indexGraph } from './genre-data.js';
@@ -93,7 +94,7 @@ export function renderStats(root) {
     class: 'st-btn t-caption', type: 'button', 'aria-pressed': 'false',
     onclick: () => { asTable = !asTable; syncMode(); },
   }, 'View as table');
-  const centerBtn = el('button', { class: 'st-btn t-caption', type: 'button', 'aria-label': 'Center chart', title: 'Center chart (C)', onclick: () => chart.center() }, '⌖');
+  const centerBtn = el('button', { class: 'st-btn t-caption', type: 'button', 'aria-label': 'Center chart', title: 'Center chart (C)', onclick: () => chart.center() }, icon('crosshair', 'inline'));
   const resetBtn = el('button', { class: 'st-btn t-caption', type: 'button', hidden: true, onclick: () => chart.reset() }, 'Reset');
 
   function genreLines(song) {

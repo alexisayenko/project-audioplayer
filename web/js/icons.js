@@ -1,63 +1,68 @@
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
-export const SHUFFLE_D = 'M3 7h2.5C9.5 7 10 10 12 12S14.5 17 18.5 17H21M18 14.5l3 2.5-3 2.5M3 17h2.5C8.3 17 9.38 15.53 10.47 13.96M13.53 10.04C14.62 8.47 15.7 7 18.5 7H21M18 4.5l3 2.5-3 2.5';
-export const LOOP_D = 'M3 11V8.5a4 4 0 014-4h13.5M17.5 2l3 2.5-3 2.5M21 13v2.5a4 4 0 01-4 4H3.5M6.5 17l-3 2.5 3 2.5';
-export const NUMERAL_ONE_BBOX = { x: 9, y: 7.5, w: 6, h: 9 };
-export const NUMERAL_ONE_D = 'M11.8 7.5H14V14.8H15V16.5H9V14.8H11.8V10.4L9.4 12V9.9Z';
+export const STROKE_WIDTH = 1.8;
 
 export const ICONS = {
-  prev: { fill: true, d: '<path d="M6 5h2v14H6zm13 0v14l-10-7z"/>' },
-  next: { fill: true, d: '<path d="M16 5h2v14h-2zM5 5l10 7-10 7z"/>' },
-  play: { fill: true, d: '<path d="M7 5l11 7-11 7z"/>' },
-  pause: { fill: true, d: '<path d="M7 5h4v14H7zm6 0h4v14h-4z"/>' },
-  shuffle: { d: `<path d="${SHUFFLE_D}"/>`, width: 2 },
-  repeat: { d: `<path d="${LOOP_D}"/>`, width: 2 },
-  repeatOne: { d: `<path d="${LOOP_D}"/><path d="${NUMERAL_ONE_D}" fill="currentColor" stroke="none"/>`, width: 2 },
-  playOutline: { d: '<path d="M7 5l11 7-11 7z"/>' },
+  prev: { fill: true, d: '<path d="M17.971 4.285A2 2 0 0 1 21 6v12a2 2 0 0 1-3.029 1.715l-9.997-5.998a2 2 0 0 1-.003-3.432z"/><path d="M3 20V4"/>' },
+  next: { fill: true, d: '<path d="M21 4v16"/><path d="M6.029 4.285A2 2 0 0 0 3 6v12a2 2 0 0 0 3.029 1.715l9.997-5.998a2 2 0 0 0 .003-3.432z"/>' },
+  play: { fill: true, d: '<path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z"/>' },
+  pause: { fill: true, d: '<rect x="14" y="3" width="5" height="18" rx="1"/><rect x="5" y="3" width="5" height="18" rx="1"/>' },
+  more: { fill: true, d: '<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>' },
+  shuffle: { d: '<path d="m18 14 4 4-4 4"/><path d="m18 2 4 4-4 4"/><path d="M2 18h1.973a4 4 0 0 0 3.3-1.7l5.454-8.6a4 4 0 0 1 3.3-1.7H22"/><path d="M2 6h1.972a4 4 0 0 1 3.6 2.2"/><path d="M22 18h-6.041a4 4 0 0 1-3.3-1.8l-.359-.45"/>' },
+  repeat: { d: '<path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/>' },
+  repeatOne: { d: '<path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/><path d="M11 10h1v4"/>' },
   library: { d: '<path d="m16 6 4 14"/><path d="M12 6v14"/><path d="M8 8v12"/><path d="M4 4v16"/>' },
   genresMap: { d: '<path d="m10.586 5.414-5.172 5.172"/><path d="m18.586 13.414-5.172 5.172"/><path d="M6 12h12"/><circle cx="12" cy="20" r="2"/><circle cx="12" cy="4" r="2"/><circle cx="20" cy="12" r="2"/><circle cx="4" cy="12" r="2"/>' },
   stats: { d: '<circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="18.5" cy="5.5" r=".5" fill="currentColor"/><circle cx="11.5" cy="11.5" r=".5" fill="currentColor"/><circle cx="7.5" cy="16.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="14.5" r=".5" fill="currentColor"/><path d="M3 3v16a2 2 0 0 0 2 2h16"/>' },
-  settings: { d: '<path d="M10.6 4.9L10.8 2.5L13.2 2.5L13.4 4.9L16.0 6.0L17.9 4.4L19.6 6.1L18.0 8.0L19.1 10.6L21.5 10.8L21.5 13.2L19.1 13.4L18.0 16.0L19.6 17.9L17.9 19.6L16.0 18.0L13.4 19.1L13.2 21.5L10.8 21.5L10.6 19.1L8.0 18.0L6.1 19.6L4.4 17.9L6.0 16.0L4.9 13.4L2.5 13.2L2.5 10.8L4.9 10.6L6.0 8.0L4.4 6.1L6.1 4.4L8.0 6.0Z"/><circle cx="12" cy="12" r="2.8"/>' },
-  playlist: { d: '<path d="M4 6h12M4 11h12M4 16h6"/><path d="M15 21V15l5 3z"/>' },
-  search: { d: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>' },
-  clear: { d: '<path d="M6 6l12 12M18 6L6 18"/>', width: 2 },
-  pencil: { d: '<path d="M4 20l1-4L16.5 4.5a2.1 2.1 0 013 3L8 19l-4 1zM14 7l3 3"/>', width: 1.8 },
-  info: { d: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><circle cx="12" cy="7.6" r=".6"/>', width: 2 },
-  check: { d: '<path d="M5 12.5l4.5 4.5L19 7"/>', width: 2.2 },
-  plus: { d: '<path d="M12 5v14M5 12h14"/>', width: 2.2 },
-  chevron: { d: '<path d="M6 9l6 6 6-6"/>', width: 2 },
-  chevronLeft: { d: '<path d="M15 6l-6 6 6 6"/>', width: 2 },
-  download: { d: '<path d="M12 4v11M7 10l5 5 5-5M5 19h14"/>', width: 2 },
-  listAdd: { d: '<path d="M4 7h11M4 12h8M4 17h8M18 12v7M14.5 15.5h7"/>', width: 1.8 },
-  listCheck: { d: '<path d="M4 7h11M4 12h6M4 17h6M13 16l3 3 5-6"/>', width: 1.8 },
-  warning: { d: '<path d="M12 4l9.5 16h-19zM12 10v4.5M12 17.3v.2"/>', width: 1.8 },
-  share: { d: '<circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.2 10.8l7.6-3.6M8.2 13.2l7.6 3.6"/>', width: 1.8 },
-  volume: { d: '<path d="M4 9.5v5h3.5l5 4v-13l-5 4z"/><path d="M16 9a4 4 0 010 6M18.6 6.4a8 8 0 010 11.2"/>', width: 1.8 },
-  volumeMute: { d: '<path d="M4 9.5v5h3.5l5 4v-13l-5 4z"/><path d="M16.5 9.5l5 5M21.5 9.5l-5 5"/>', width: 1.8 },
-  equalizer: { d: '<path d="M6 20V11M12 20V4M18 20v-6"/>', width: 2.4 },
-  ring: { d: '<circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>', width: 1.8 },
-  synthwave: { d: '<circle cx="12" cy="9" r="4"/><path d="M2 14h20M4 18h16M7 21h10"/>', width: 1.8 },
-  terrain: { d: '<path d="M3 18l4-5 3 3 4-7 3 4 4-5M3 21h18"/>', width: 1.8 },
-  link: { d: '<path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1"/>', width: 2 },
-  more: { fill: true, d: '<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>' },
+  settings: { d: '<path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/>' },
+  playlist: { d: '<path d="M16 5H3"/><path d="M11 12H3"/><path d="M11 19H3"/><path d="M21 16V5"/><circle cx="18" cy="16" r="3"/>' },
+  search: { d: '<path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/>' },
+  clear: { d: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>' },
+  pencil: { d: '<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>' },
+  info: { d: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>' },
+  check: { d: '<path d="M20 6 9 17l-5-5"/>' },
+  plus: { d: '<path d="M5 12h14"/><path d="M12 5v14"/>' },
+  minus: { d: '<path d="M5 12h14"/>' },
+  chevron: { d: '<path d="m6 9 6 6 6-6"/>' },
+  chevronLeft: { d: '<path d="m15 18-6-6 6-6"/>' },
+  download: { d: '<path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/>' },
+  listAdd: { d: '<path d="M16 5H3"/><path d="M11 12H3"/><path d="M16 19H3"/><path d="M18 9v6"/><path d="M21 12h-6"/>' },
+  listCheck: { d: '<path d="M13 5h8"/><path d="M13 12h8"/><path d="M13 19h8"/><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/>' },
+  warning: { d: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>' },
+  share: { d: '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/>' },
+  volume: { d: '<path d="M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z"/><path d="M16 9a5 5 0 0 1 0 6"/><path d="M19.364 18.364a9 9 0 0 0 0-12.728"/>' },
+  volumeMute: { d: '<path d="M11 4.702a.7.7 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.7.7 0 0 0 11 19.298z"/><path d="m16.5 14.5 5-5"/><path d="m16.5 9.5 5 5"/>' },
+  equalizer: { d: '<path d="M5 21v-6"/><path d="M12 21V3"/><path d="M19 21V9"/>' },
+  terrain: { d: '<path d="m8 3 4 8 5-5 5 15H2L8 3z"/>' },
+  link: { d: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>' },
+  music: { d: '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>' },
+  crosshair: { d: '<circle cx="12" cy="12" r="10"/><line x1="22" x2="18" y1="12" y2="12"/><line x1="6" x2="2" y1="12" y2="12"/><line x1="12" x2="12" y1="6" y2="2"/><line x1="12" x2="12" y1="22" y2="18"/>' },
+  maximize: { d: '<path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/>' },
+  externalLink: { d: '<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>' },
+  playOutline: { d: '<path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z"/>' },
+  chevronUp: { d: '<path d="m18 15-6-6-6 6"/>' },
+  ring: { d: '<circle cx="12" cy="12" r="3.5"/><path d="M12 3v2.5"/><path d="M12 18.5V21"/><path d="M3 12h2.5"/><path d="M18.5 12H21"/><path d="m16.6 7.4 1.8-1.8"/><path d="m16.6 16.6 1.8 1.8"/><path d="m7.4 16.6-1.8 1.8"/><path d="m7.4 7.4-1.8-1.8"/>' },
+  mark: { d: '<circle cx="12" cy="12" r="10.6" style="fill:none;stroke:var(--copper);stroke-width:1"/><circle cx="12" cy="12" r="9.6" style="fill:var(--vinyl);stroke:none"/><circle cx="12" cy="12" r="3.9" style="fill:var(--accent);stroke:none"/><path d="M9.6 10.8h4.8M9.4 13.2h5.2" style="fill:none;stroke:var(--on-accent);stroke-width:1.3"/><circle cx="12" cy="12" r=".6" style="fill:var(--surface);stroke:none"/>' },
+  synthwave: { d: '<path d="M7 12a5 5 0 0 1 10 0"/><path d="M3 12h18"/><path d="M5 16h14"/><path d="M8 20h8"/>' },
 };
 
-export function icon(name, size = 20) {
+export function icon(name, size = 'nav') {
   const def = ICONS[name];
   const svg = document.createElementNS(SVG_NS, 'svg');
   svg.setAttribute('viewBox', '0 0 24 24');
-  svg.setAttribute('width', size);
-  svg.setAttribute('height', size);
   svg.setAttribute('aria-hidden', 'true');
-  if (def.fill) {
-    svg.setAttribute('fill', 'currentColor');
+  if (typeof size === 'number') {
+    svg.setAttribute('class', 'ic');
+    svg.setAttribute('width', size);
+    svg.setAttribute('height', size);
   } else {
-    svg.setAttribute('fill', 'none');
-    svg.setAttribute('stroke', 'currentColor');
-    svg.setAttribute('stroke-width', def.width || 1.8);
-    svg.setAttribute('stroke-linecap', 'round');
-    svg.setAttribute('stroke-linejoin', 'round');
+    svg.setAttribute('class', `ic ic-${size}`);
   }
+  svg.setAttribute('fill', def.fill ? 'currentColor' : 'none');
+  svg.setAttribute('stroke', 'currentColor');
+  svg.setAttribute('stroke-width', STROKE_WIDTH);
+  svg.setAttribute('stroke-linecap', 'round');
+  svg.setAttribute('stroke-linejoin', 'round');
   svg.innerHTML = def.d;
   return svg;
 }

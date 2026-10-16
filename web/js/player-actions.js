@@ -25,7 +25,7 @@ export function paintServiceButtons(host, song) {
     a.rel = 'noopener noreferrer';
     a.title = label;
     a.setAttribute('aria-label', label);
-    a.append(serviceIcon(kind, { size: 22 }));
+    a.append(serviceIcon(kind));
     return a;
   });
   const other = otherSourceUrl(song);
@@ -37,7 +37,7 @@ export function paintServiceButtons(host, song) {
     a.rel = 'noopener noreferrer';
     a.title = 'Open source';
     a.setAttribute('aria-label', 'Open source');
-    a.append(icon('link', 22));
+    a.append(icon('link', 'nav'));
     nodes.push(a);
   }
   const wiki = wikiTarget(song);
@@ -49,7 +49,7 @@ export function paintServiceButtons(host, song) {
     a.rel = 'noopener noreferrer';
     a.title = wiki.label;
     a.setAttribute('aria-label', wiki.label);
-    a.append(serviceIcon('wikipedia', { size: 22 }));
+    a.append(serviceIcon('wikipedia'));
     nodes.push(a);
   }
   host.replaceChildren(...nodes);

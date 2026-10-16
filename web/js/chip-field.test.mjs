@@ -115,7 +115,8 @@ test('country: names and ISO codes resolve, unknown input is flagged, one countr
 test('a stored country that is not a real one is shown with a warning', () => {
   const { f } = make('country', ['country:nowhere']);
   const chip = f.node.querySelector('.chips').children[0];
-  assert.match(chip.textContent, /^⚠/);
+  assert.ok(chip.querySelector('svg'));
+  assert.equal(chip.textContent, 'nowhere');
   assert.match(chip.getAttribute('title'), /not a known country/);
 });
 
