@@ -29,7 +29,7 @@ Every song response carries the v2 fields: `mainArtists`, `featuredArtists`, `re
 Legacy derived fields stay in every response (iOS decodes only these): `artist`, `remixer`, `remix_year`, `year`, `album` (= `albums[0]`), and `tags` as a view = stored tags + `decade:NNs` (from `releaseYear`) + `country:xx` (countries of the main artists).
 The ADR-0024 names (`artists`, `featured`, `released`, `version.kind/by/year/of`, `raw`) are no longer in responses.
 
-Requests (`POST /songs` metadata, `PATCH /songs/{id}`) accept, for one release, the new names, the ADR-0024 names and the flat legacy names. In one group the new name shadows the old one, which shadows the legacy one: `mainArtists`/`featuredArtists` > `artists`/`featured` > `artist`; `releaseYear` > `released` > `year`; `version` (either key set) > `remixer`/`remix_year`; `albums` > `album`. A legacy value equal to its current derived value is ignored (iOS echoes the whole form). `tags` in a request may still hold `decade:`, `lang:`, `country:`: `decade:` and `lang:` are dropped, `country:` is written to the Artist table when the song has exactly one main artist (otherwise ignored).
+Requests (`POST /songs` metadata, `PATCH /songs/{id}`) accept, for one release, the new names, the ADR-0024 names and the flat legacy names. In one group the new name shadows the old one, which shadows the legacy one: `mainArtists`/`featuredArtists` > `artists`/`featured` > `artist`; `releaseYear` > `released` > `year`; `version` (either key set) > `remixer`/`remix_year`; `albums` > `album`. A legacy value equal to its current derived value is ignored (iOS echoes the whole form). `tags` in a request may still hold `decade:`, `lang:`, `country:`: `decade:` and `lang:` are dropped, `country:` is written to the Artist table when the song has exactly one main artist (several main artists: refused with 422 unless unchanged, DATA-160).
 
 New: `GET /library` also returns `artists: [{name, countries}]`; `GET /artists` (same list, readable by guests); `PATCH /artists/{name}` with `{countries: [ISO 3166-1 alpha-2...]}` edits the countries (404 unknown name, 422 bad code).
 Suggestions (`suggested_credits` in preview and metadata responses) use the new names.
@@ -64,3 +64,13 @@ Pure function `convert(doc) -> (new_doc, report)` over the raw JSON of the deplo
 ## 6. Out of scope
 
 Artist country lookup from MusicBrainz or Wikipedia (implementation step 6 of task-0042/0043 order) is not built: countries come from the migrated `country:` tags and from manual edits. Chain/tree, Work and full Artist entities stay deferred (DATA-155).
+
+## 7. Decisions pending or fixed by the user
+
+
+
+- CG1 (decided): country changes on a song with several main artists are rejected (DATA-160).
+
+- CH2 (decided): the MusicBrainz and Wikipedia artist-country lookup stays NOT built; planned in task-0043 step 6.
+
+- CF (pending user decision): the stored list stays `tags[]` with the `genre:` prefix and `genres[]` is derived in responses; revisit when answered.

@@ -73,11 +73,18 @@ def test_guests_read_the_artist_table_and_cannot_edit_it(client):
     assert guest.patch("/artists/Solo", json={"countries": ["us"]}).status_code in (401, 403)
 
 
-def test_a_country_chip_edit_on_a_song_with_two_main_artists_is_ignored(client):
+def test_a_country_chip_edit_on_a_song_with_two_main_artists_is_refused(client):
     post(client, {"mainArtists": ["P", "Q"]})
     r = client.patch(f"/songs/{VID}", json={"tags": ["country:de"]}, headers=H)
-    assert r.status_code == 200 and not [t for t in r.json()["tags"] if t.startswith("country:")]
-    assert client.get("/artists", headers=H).json() == [{"name": "P", "countries": []}, {"name": "Q", "countries": []}]
+    assert r.status_code == 422 and "several main artists" in r.json()["detail"]
+    client.patch("/artists/P", json={"countries": ["fr"]}, headers=H)
+    echo = song(client)["tags"]
+    assert "country:fr" in echo
+    assert client.patch(f"/songs/{VID}", json={"tags": echo}, headers=H).status_code == 200
+    assert client.patch(f"/songs/{VID}", json={"tags": [t for t in echo if not t.startswith("country:")]}, headers=H).status_code == 422
+    r = client.patch(f"/songs/{VID}", json={"tags": echo}, headers=H)
+    assert r.status_code == 200
+    assert client.get("/artists", headers=H).json() == [{"name": "P", "countries": ["fr"]}, {"name": "Q", "countries": []}]
 
 
 def test_renaming_the_only_main_artist_keeps_the_old_entry_only_while_it_has_countries(client):
