@@ -75,9 +75,6 @@ test('opening focuses the current option; clicking another selects, persists, an
   assert.equal(ui.fullViz.effectiveMode(), 'ring');
   assert.equal($('viz-live').textContent, 'Visualizer: Ring');
   assert.deepEqual(opts('viz-switch').map((o) => o.getAttribute('aria-selected')), ['false', 'true']);
-  assert.deepEqual(opts('mini-viz-switch').map((o) => o.getAttribute('aria-selected')), ['false', 'true']);
-  assert.equal(btn('mini-viz-switch').getAttribute('aria-label'), 'Visualizer mode');
-  assert.equal(btn('mini-viz-switch').title, 'Visualizer mode: Ring');
 });
 
 test('keyboard: arrows move focus, Enter selects, Escape closes the popup', () => {
@@ -101,10 +98,10 @@ test('keyboard: arrows move focus, Enter selects, Escape closes the popup', () =
 });
 
 test('outside pointerdown closes the popup', () => {
-  btn('mini-viz-switch').click();
-  assert.equal(list('mini-viz-switch').hidden, false);
+  btn('viz-switch').click();
+  assert.equal(list('viz-switch').hidden, false);
   fire(document.body, 'pointerdown', {});
-  assert.equal(list('mini-viz-switch').hidden, true);
+  assert.equal(list('viz-switch').hidden, true);
 });
 
 test('M cycles modes while the overlay is open; ignored in inputs, closed on other routes', () => {
@@ -275,41 +272,37 @@ test('a fallback note is shown on the mode button and cleared when the mode is s
 const pageHtml = (await import('node:fs')).readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const section = (id) => { const a = pageHtml.indexOf(`<section id="${id}"`); return a < 0 ? '' : pageHtml.slice(a, pageHtml.indexOf('</section>', a)); };
 
-test('the mode button lives in the dock (#mini), not on the Now playing page', () => {
-  assert.match(section('mini'), /id="mini-viz-switch"/);
+test('the dock has a plain Visualizer key left of Shuffle, no dropdown or chevron; the mode menu lives in the overlay', () => {
+  const mini = section('mini');
+  assert.doesNotMatch(mini, /mini-viz-switch|viz-switch|viz-dd/);
+  assert.match(mini, /<button class="key" id="mini-viz"[^>]*aria-label="Visualizer"[^>]*title="Visualizer \(V\)"/);
+  assert.ok(mini.indexOf('id="mini-viz"') < mini.indexOf('id="mini-shuffle"'));
+  assert.deepEqual([...mini.matchAll(/id="(mini-(?:viz|shuffle|prev|play|next|repeat))"/g)].map((m) => m[1]), ['mini-viz', 'mini-shuffle', 'mini-prev', 'mini-play', 'mini-next', 'mini-repeat']);
   assert.doesNotMatch(section('player'), /viz-switch/);
-  assert.doesNotMatch(pageHtml, /id="p-viz-switch"/);
-  const sw = $('mini-viz-switch');
-  assert.equal(sw.children[0].id, 'mini-viz-switch-open');
-  assert.equal(sw.children[1].getAttribute('aria-haspopup'), 'listbox');
-  assert.equal(sw.children[1].getAttribute('aria-label'), 'Visualizer mode');
-  assert.equal(sw.children[2].getAttribute('role'), 'listbox');
+  assert.equal($('mini-viz-switch'), null);
+  assert.match(pageHtml, /id="viz-full"[\s\S]*id="viz-switch"/);
 });
 
-test('dock split button: the icon part opens the full screen like #p-viz, the chevron part only opens the menu', () => {
-  document.body.dataset.route = 'playback';
-  const open = $('mini-viz-switch-open');
-  assert.equal(open.getAttribute('aria-label'), 'Open full screen visualizer');
+test('dock Visualizer key opens and closes the same full screen as #p-viz and returns focus', () => {
+  document.body.dataset.route = 'library';
+  const k = $('mini-viz');
   assert.equal(ui.full.isOpen(), false);
-  open.click();
+  k.click();
   assert.equal(ui.full.isOpen(), true);
+  assert.equal(k.getAttribute('aria-pressed'), 'true');
   assert.equal($('p-viz').getAttribute('aria-pressed'), 'true');
   ui.full.close();
-  assert.equal(document.activeElement, $('p-viz'));
-  btn('mini-viz-switch').click();
-  assert.equal(list('mini-viz-switch').hidden, false);
-  assert.equal(ui.full.isOpen(), false);
-  fire(document.body, 'pointerdown', {});
-  assert.equal($('mini-viz-switch').hidden, false);
+  assert.equal(k.getAttribute('aria-pressed'), 'false');
+  assert.equal(document.activeElement, k);
 });
 
-test('dock mode change on another route only stores the mode', () => {
-  document.body.dataset.route = 'library';
+test('mode can be changed inside the full screen via the overlay dropdown', () => {
+  ui.full.open();
   const before = vizMode();
-  btn('mini-viz-switch').click();
-  opts('mini-viz-switch').find((o) => o.dataset.mode !== before).click();
+  btn('viz-switch').click();
+  opts('viz-switch').find((o) => o.dataset.mode !== before).click();
   assert.notEqual(vizMode(), before);
-  assert.equal(localStorage.getItem('ap2.viz.mode'), vizMode());
+  ui.full.close();
   setVizMode(before);
 });
 

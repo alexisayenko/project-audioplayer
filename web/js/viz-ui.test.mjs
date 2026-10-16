@@ -172,22 +172,14 @@ test('there is no background visualizer: no layer, the stale setting is dropped,
 });
 
 test('the dock button is available without any setting and opens the same full screen as #p-viz', () => {
-  const sw = $('mini-viz-switch');
-  assert.equal(sw.hidden, false);
-  const open = $('mini-viz-switch-open');
-  assert.equal(open.getAttribute('aria-label'), 'Open full screen visualizer');
-  open.click();
+  const k = $('mini-viz');
+  assert.equal(k.disabled, false);
+  k.click();
   assert.equal(ui.full.isOpen(), true);
   assert.equal($('p-viz').getAttribute('aria-pressed'), 'true');
-  open.click();
+  k.click();
   assert.equal(ui.full.isOpen(), false);
   assert.equal($('p-viz').getAttribute('aria-pressed'), 'false');
-  const chev = sw.querySelector('.viz-dd-chev');
-  assert.equal(chev.getAttribute('aria-label'), 'Visualizer mode');
-  chev.click();
-  assert.equal(sw.querySelector('[role="listbox"]').hidden, false);
-  assert.equal(ui.full.isOpen(), false);
-  chev.click();
 });
 
 test('the settings dock is hidden outside full screen and toggled by the overlay settings button', () => {

@@ -159,15 +159,12 @@ export function initVisualizer({
   };
   const pickFromSwitch = (id) => { setVizMode(id); };
   const toggleFull = () => { if (supported) full.toggle(); };
-  for (const id of ['mini-viz-switch', 'viz-switch']) {
-    switches.push(createModeSwitch({ root: $(id), modes, current: currentMode, onSelect: pickFromSwitch, onOpenFull: id === 'mini-viz-switch' ? toggleFull : null }));
-  }
+  switches.push(createModeSwitch({ root: $('viz-switch'), modes, current: currentMode, onSelect: pickFromSwitch }));
   onVizMode((id) => { if (id !== currentMode) applyMode(id, true); });
   fullViz.setHeightScale(vizHeightScale());
   onVizHeight((s) => { fullViz.setHeightScale(s); });
   fullViz.setVizMode(currentMode);
   const syncSwitchVisibility = () => {
-    $('mini-viz-switch').hidden = !supported;
     syncDock();
   };
   const partsState = vizParts();
@@ -219,6 +216,7 @@ export function initVisualizer({
       paintPlayButton(audio);
       scrubber.sync();
       fullViz.setEnabled(true);
+      miniViz.setAttribute('aria-pressed', 'true');
       syncSwitchVisibility();
     },
     onIdle() { for (const sw of switches) sw.close(); },
@@ -227,11 +225,18 @@ export function initVisualizer({
       placeStatus(false);
       document.body.append(dock);
       fullViz.setEnabled(false);
+      miniViz.setAttribute('aria-pressed', 'false');
+      if (openedFromMini) { openedFromMini = false; miniViz.focus?.(); }
       syncSwitchVisibility();
     },
   });
 
   button.addEventListener('click', toggleFull);
+  const miniViz = $('mini-viz');
+  setIcon('mini-viz', 'equalizer', 'action');
+  if (!supported) { miniViz.disabled = true; miniViz.title = NO_AUDIO_TIP; }
+  let openedFromMini = false;
+  miniViz.addEventListener('click', () => { openedFromMini = true; toggleFull(); });
   const gear = $('viz-settings');
   setIcon('viz-settings', 'settings', 'nav');
   gear.addEventListener('click', () => {
