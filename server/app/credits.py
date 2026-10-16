@@ -417,7 +417,9 @@ def absorb(song: dict[str, Any]) -> bool:
 
 def suggestion(found: dict[str, Any]) -> dict[str, Any]:
     """A `credits_split.suggest` result under the v2 names (`mainArtists`, `featuredArtists`, `version.type/artists/originalArtists`); a suggestion only, never stored as is."""
-    out = {("mainArtists" if k == "artists" else "featuredArtists" if k == "featured" else k): v for k, v in found.items() if k != "version"}
+    out = {("mainArtists" if k == "artists" else "featuredArtists" if k == "featured" else k): v for k, v in found.items() if k not in ("version", "alternatives")}
+    if isinstance(found.get("alternatives"), list):
+        out["alternatives"] = [suggestion(a) for a in found["alternatives"]]
     version = found.get("version")
     if isinstance(version, dict):
         renamed = {"kind": "type", "by": "artists", "of": "originalArtists"}
