@@ -39,7 +39,7 @@ The look is defined ONLY in the "Electrophone" Design System artifact on claude.
 committed at `docs/brand/tokens.json`; `scripts/sync-design-system.py` generates
 `ios/Sources/DesignTokens.swift` and `web/tokens.css` from it. Never hand-edit the generated
 files or invent a colour, size or radius in code: change the system, re-export, re-run the script.
-Screens: the "Electrophone Screens" Design artifact (same README). ADR-0009.
+Screens: the "Electrophone Screens · iOS" and "Electrophone Screens · Web" Design artifacts (same README). ADR-0009.
 
 ## Working in a shared checkout
 
