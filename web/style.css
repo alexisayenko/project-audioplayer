@@ -280,6 +280,7 @@ label { display: block; color: var(--ink-muted); font: var(--font-caption); marg
   background: none; border: 0; padding: 0; text-align: left; color: var(--ink);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: var(--font-body);
 }
+.song .open:focus-visible { outline-offset: calc(-1 * var(--stroke-focus)); } /* .info clips overflow, so the ring sits inside the button */
 .song .title-line { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
 .song .title-line .open { flex: 0 1 auto; min-width: 0; }
 .song .open, .qrow .open { min-width: 0; }
