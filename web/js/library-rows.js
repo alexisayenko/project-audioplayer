@@ -39,7 +39,7 @@ function fetchAudio(s) {
 }
 
 function dlButton(s) {
-  return el('button', { class: 'row-dl', type: 'button', title: 'Download to the server', 'aria-label': `Download: ${titleLine(s)}`, onclick: (e) => { e.stopPropagation(); fetchAudio(s); } }, icon('download', 'action'));
+  return el('button', { class: 'icon round row-dl', type: 'button', title: 'Download to the server', 'aria-label': `Download: ${titleLine(s)}`, onclick: (e) => { e.stopPropagation(); fetchAudio(s); } }, icon('download', 'action'));
 }
 
 function bpmBadge(s) {
@@ -70,7 +70,7 @@ function playlistToggle(s, full, queued, queueable) {
   if (!queueable) return el('span', { class: 'pl-toggle ph', 'aria-hidden': 'true' });
   const label = queued ? 'In playlist - click to remove' : 'Add to playlist';
   const glyph = queued ? 'listCheck' : 'listAdd';
-  return el('button', { class: `pl-toggle${queued ? ' on' : ''}`, type: 'button', title: label, 'aria-label': `${label}: ${full}`, 'aria-pressed': String(queued), onclick: () => toggleQueue(s) }, icon(glyph, 'action'));
+  return el('button', { class: `icon round pl-toggle${queued ? ' on' : ''}`, type: 'button', title: label, 'aria-label': `${label}: ${full}`, 'aria-pressed': String(queued), onclick: () => toggleQueue(s) }, icon(glyph, 'action'));
 }
 
 function openTitle(s, full, tip) {

@@ -273,6 +273,7 @@ test('no-audio rows show the source logo and a Download button; clicking request
   assert.equal(row.querySelector('a.src-youtube').getAttribute('href'), 'https://youtu.be/x');
   assert.equal(row.querySelector('.open').localName, 'button', 'the title opens the song card');
   assert.equal(row.querySelector('.row-cover').getAttribute('aria-label'), 'Download Offline', 'with Auto-download off the cover downloads');
+  assert.ok(row.querySelector('.row-dl').classList.contains('round'), 'WEB-099: download is a round icon');
   row.querySelector('.row-dl').click();
   await flush();
   assert.ok(c.some((x) => x.url === '/songs/n1/audio' && x.opts.method === 'POST'));
@@ -301,6 +302,7 @@ test('row menu: Play now, queue toggle and Edit song', async () => {
   await flush();
   while (player.current) player.removeAt(0);
   const row = rows().find((r) => r.dataset.id === 'b');
+  assert.ok(row.querySelector('.pl-toggle').classList.contains('round'), 'WEB-099: playlist toggle is a round icon');
   row.querySelector('.pl-toggle').click();
   assert.equal(player.inQueue('b'), true);
   assert.equal(document.getElementById('toast').textContent, 'Queued');

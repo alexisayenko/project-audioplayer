@@ -308,7 +308,7 @@ label { display: block; color: var(--ink-muted); font: var(--font-caption); marg
 .song .sub { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; min-width: 0; max-width: 100%; color: var(--muted); overflow: hidden; overflow-wrap: anywhere; }
 .song .c-dur { color: var(--muted); text-align: right; }
 .song .more { width: var(--control-sm); height: var(--hit); border-radius: var(--radius-sm); }
-.pl-toggle { width: var(--control); height: var(--control); border: 0; border-radius: var(--radius-pill); padding: 0; display: inline-grid; place-items: center; background: transparent; color: var(--ink-muted); }
+.pl-toggle { width: var(--hit); height: var(--hit); }
 .pl-toggle.on { background: var(--accent); color: var(--on-accent); }
 .pl-toggle.ph, .more.ph { visibility: hidden; }
 @media (max-width: 719px) { .song > .pl-toggle { display: none; } }
@@ -327,7 +327,7 @@ label { display: block; color: var(--ink-muted); font: var(--font-caption); marg
 .song .src-youtube { color: var(--brand-youtube); }
 .song .src-soundcloud { color: var(--brand-soundcloud); }
 .song.no-audio .c-dur { white-space: nowrap; display: inline-flex; align-items: center; justify-content: flex-end; gap: var(--space-1); }
-.row-dl { display: inline-grid; place-items: center; width: var(--control-sm); height: var(--control-sm); padding: 0; border: 0; border-radius: var(--radius-sm); background: none; color: var(--ink-muted); }
+.row-dl { width: var(--hit); height: var(--hit); }
 @media (max-width: 719px) { .row-dl { display: none; } }
 .dl-ring { display: inline-grid; place-items: center; width: var(--control); height: var(--control); padding: 0; border: 0; background: none; color: var(--fill); font: var(--font-micro); --ring-k: 1.5; }
 .dl-ring svg { width: 100%; height: 100%; display: block; }

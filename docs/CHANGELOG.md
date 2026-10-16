@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-16 (button shape audit, not deployed)
+
+- Web: WEB-099 applied app-wide: Library row Download and Add to playlist and the Edit dialog Download are round icon buttons (44px), and the Song stats selection bar has a round Add to playlist icon and a dock-style Play key.
+
 ## 2026-10-16 (song card: dock-style action keys, Share and playlist keys, not deployed)
 
 - Web: the song card action row is one wrapping row: "Play now" as a dock-style key (no Play/Pause toggle), then Share link, Download, Edit and Add to / Remove from playlist as round icon buttons; rule recorded as WEB-099 (rect keys for playback, round buttons for metadata) (LIB-149).
