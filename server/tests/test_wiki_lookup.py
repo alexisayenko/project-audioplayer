@@ -546,7 +546,7 @@ def test_parse_infobox_year_shapes(released, year):
 
 
 def test_parse_infobox_malformed_and_missing():
-    empty = {"genres": [], "album": None, "year": None, "type": None, "name": None, "artist": None}
+    empty = {"genres": [], "album": None, "year": None, "type": None, "name": None, "artist": None, "kind": None}
     assert wl.parse_infobox("{{Infobox song\n| album = [[X]]\n| released = 2009") == empty
     assert wl.parse_infobox("plain text") == empty
     assert wl.parse_infobox("") == empty

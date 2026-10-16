@@ -322,11 +322,11 @@ def _clean_year(value: str) -> int | None:
 
 
 def _empty_infobox() -> dict[str, Any]:
-    return {"genres": [], "album": None, "year": None, "type": None, "name": None, "artist": None}
+    return {"genres": [], "album": None, "year": None, "type": None, "name": None, "artist": None, "kind": None}
 
 
 def parse_infobox(wikitext: str) -> dict[str, Any]:
-    """{genres, album, year, type, name, artist} from the first {{Infobox ...}}; empty values when absent or malformed.
+    """{genres, album, year, type, name, artist, kind} from the first {{Infobox ...}}; empty values when absent or malformed.
 
     `album` is the infobox `album` parameter only (a standalone single has none, so it stays None)."""
     out = _empty_infobox()
@@ -334,6 +334,7 @@ def parse_infobox(wikitext: str) -> dict[str, Any]:
         body = _infobox_body(wikitext or "")
         if body is None:
             return out
+        out["kind"] = re.sub(r"\s+", " ", re.sub(r"^\s*infobox\b", "", _split_top(body)[0], flags=re.I).replace("_", " ")).strip().casefold() or None
         seen: set[str] = set()
         for part in _split_top(body)[1:]:
             key, eq, value = part.partition("=")
@@ -485,6 +486,76 @@ def _pick(rels: list[str]) -> tuple[str | None, str | None]:
     return link, qid
 
 
+_search_cache: dict[str, list[str]] = {}
+MAX_CANDIDATES = 3
+
+
+def _search(query: str) -> list[str]:
+    """Titles of the top English Wikipedia article hits for `query`; [] on any failure."""
+    if query not in _search_cache:
+        try:
+            api = urllib.parse.urlencode({"action": "query", "list": "search", "srsearch": query, "srnamespace": "0", "srlimit": "5", "format": "json"})
+            hits = ((_fetch_json(f"https://en.wikipedia.org/w/api.php?{api}")).get("query") or {}).get("search") or []
+            _search_cache[query] = [str(h["title"]) for h in hits if h.get("title")]
+        except Exception as exc:
+            log.warning("wikipedia search failed for %r: %s", query, exc)
+            return []
+    return _search_cache[query]
+
+
+def _article_url(title: str) -> str:
+    return "https://en.wikipedia.org/wiki/" + urllib.parse.quote(title.replace(" ", "_"), safe="_(),!'~*-.:")
+
+
+def _loose(a: str, b: str) -> bool:
+    return genre_lookup._artist_match(a, b)
+
+
+def _find_article(query: str, name: str, kinds: tuple[str, ...], credited: list[str]) -> str | None:
+    """The first search hit starting with `name` whose infobox is of one of `kinds` (a substring of its template name), named `name`, and, when `credited` is given, credited to one of those artists.
+
+    Disambiguation pages and pages without an infobox never qualify."""
+    wanted = genre_lookup._norm(name)
+    if not wanted:
+        return None
+    hits = [t for t in _search(query) if genre_lookup._norm(t).startswith(wanted)][:MAX_CANDIDATES]
+    for title in hits:
+        url = _article_url(title)
+        box = infobox(url)
+        if not box["kind"] or not any(k in box["kind"] for k in kinds):
+            continue
+        if box["name"] and not _loose(name, box["name"]):
+            continue
+        if credited and not (box["artist"] and any(_loose(c, box["artist"]) for c in credited)):
+            continue
+        return url
+    return None
+
+
+def find_song(artist: str, title: str, names: list[str]) -> str | None:
+    """English Wikipedia article of a song found by search ("<title> <artist>") when MusicBrainz has no link; None unless its song infobox names the artist."""
+    return _find_article(f"{title} {names[0]}", title, ("song", "single"), names)
+
+
+def find_album(artist: str, album: str, names: list[str]) -> str | None:
+    return _find_article(f"{album} {names[0]} album", album, ("album",), names)
+
+
+def find_artist(artist: str) -> str | None:
+    """English Wikipedia article of a band or musician whose title is the artist's name, optionally followed by a bracket ("Haddaway", "Air (French band)")."""
+    wanted = genre_lookup._norm(artist)
+    if not wanted:
+        return None
+    for title in _search(artist)[:MAX_CANDIDATES + 2]:
+        base = genre_lookup._norm(re.sub(r"\s*\([^)]*\)\s*$", "", title))
+        if base != wanted:
+            continue
+        kind = infobox(_article_url(title))["kind"] or ""
+        if "musical artist" in kind or "band" in kind or "person" in kind or "singer" in kind or "musician" in kind or "dj" in kind:
+            return _article_url(title)
+    return None
+
+
 def suggest(artist: str, title: str, mb: dict[str, Any] | None = None) -> dict[str, Any]:
     """{wikipedia_song, wikipedia_artist, wikipedia_album, tags, year} for a track via MusicBrainz + Wikidata; empty values on any failure.
 
@@ -503,6 +574,15 @@ def suggest(artist: str, title: str, mb: dict[str, Any] | None = None) -> dict[s
         if box_artist and not any(genre_lookup._artist_match(c, box_artist) for c in artist_candidates(artist)):
             song_link, song_q = None, None
             out["wikipedia_song"] = None
+        names = artist_candidates(artist)
+        if not song_link and title and names:
+            song_link = find_song(artist, title, names)
+            out["wikipedia_song"] = song_link
+            song_q = None
+        if not artist_link and names:
+            artist_link = next((u for u in (find_artist(n) for n in names) if u), None)
+            out["wikipedia_artist"] = artist_link
+            artist_q = None
         song_q = song_q or qid_of_page(song_link or "")
         artist_q = artist_q or qid_of_page(artist_link or "")
         found = facts(song_q, artist_q)
@@ -510,6 +590,11 @@ def suggest(artist: str, title: str, mb: dict[str, Any] | None = None) -> dict[s
         out["song_genres"] = found["song_genres"]
         out["year"] = found["year"] or mb["year"]
         _with_infobox(out, song_link, artist_link)
+        if not out["wikipedia_album"] and names:
+            for album in dict.fromkeys(a for a in (out["infobox_album"], mb.get("album")) if a):
+                out["wikipedia_album"] = find_album(artist, album, names)
+                if out["wikipedia_album"]:
+                    break
     except Exception as exc:
         log.warning("wikipedia suggestion failed for %r - %r: %s", artist, title, exc)
     return out

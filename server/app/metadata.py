@@ -64,7 +64,8 @@ def merge(sources: list[dict[str, Any]], mb: dict[str, Any] | None, links: dict[
     album = next((str(a).strip() for a in albums if a and str(a).strip()), None)
     years = (links.get("year"), box_year, guess.get("year"), mb.get("year"), *(s.get("year") for s in sources))
     year = next((y for y in map(_year, years) if y), None)
-    return {"album": album, "year": year, "tags": tags}
+    published = next((y for y in (_year(s.get("published_year")) for s in sources) if y), None)
+    return {"album": album, "year": year, "published_year": published, "remix_year": _year(mb.get("remix_year")), "tags": tags}
 
 
 def _service_of(url: str) -> str | None:
@@ -111,7 +112,7 @@ def gather(
 ) -> dict[str, Any]:
     """Run every source concurrently under one overall timeout; a failing or late source is skipped.
 
-    Returns {album, year, tags, wikipedia_album, suggest, services}; `suggest` is the song infobox's artist and title hint (never auto-filled); `services` only tells the UI which sources answered."""
+    Returns {album, year, tags, wikipedia_song, wikipedia_artist, wikipedia_album, suggest, services}; `suggest` is the song infobox's artist and title hint (never auto-filled); `services` only tells the UI which sources answered."""
     lock = threading.Lock()
     found: dict[str, Any] = {}
     src_results: dict[int, dict[str, Any]] = {}
@@ -149,7 +150,8 @@ def gather(
         by_index = dict(src_results)
     out = merge(sources, snapshot.get("mb"), snapshot.get("links"), snapshot.get("guess"))
     box = (snapshot.get("links") or {}).get("infobox_suggest") or (snapshot.get("guess") or {}).get("infobox_suggest")
-    out["wikipedia_album"] = (snapshot.get("links") or {}).get("wikipedia_album") or (snapshot.get("guess") or {}).get("wikipedia_album")
+    for key in ("wikipedia_song", "wikipedia_artist", "wikipedia_album"):
+        out[key] = (snapshot.get("links") or {}).get(key) or (snapshot.get("guess") or {}).get(key)
     out["suggest"] = {"artist": box["artist"], "title": box["title"]} if box else {"artist": None, "title": None}
     out["services"] = services(source_urls or [], by_index, snapshot.get("links"), snapshot.get("guess"), snapshot.get("mb"))
     return out

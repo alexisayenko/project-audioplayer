@@ -20,13 +20,13 @@ def test_merge_precedence():
         links={"year": 1997, "tags": ["genre:disco", "country:fr"]},
         guess={"year": 1980, "tags": ["genre:soul"]},
     )
-    assert out == {"album": "Src Album", "year": 1997, "tags": ["genre:pop", "genre:house", "genre:funk", "country:au", "genre:disco", "genre:soul"]}
+    assert out == {"album": "Src Album", "year": 1997, "published_year": None, "remix_year": None, "tags": ["genre:pop", "genre:house", "genre:funk", "country:au", "genre:disco", "genre:soul"]}
 
 
 def test_merge_falls_back_through_sources():
-    assert metadata.merge([], {"album": "MB", "year": 1999}, None, {"year": 1980}) == {"album": "MB", "year": 1980, "tags": []}
-    assert metadata.merge([{"year": 2003}], None, None, None) == {"album": None, "year": 2003, "tags": []}
-    assert metadata.merge([], None, None, None) == {"album": None, "year": None, "tags": []}
+    assert metadata.merge([], {"album": "MB", "year": 1999}, None, {"year": 1980}) == {"album": "MB", "year": 1980, "published_year": None, "remix_year": None, "tags": []}
+    assert metadata.merge([{"year": 2003}], None, None, None) == {"album": None, "year": 2003, "published_year": None, "remix_year": None, "tags": []}
+    assert metadata.merge([], None, None, None) == {"album": None, "year": None, "published_year": None, "remix_year": None, "tags": []}
 
 
 def test_merge_ignores_bad_years():
@@ -44,9 +44,13 @@ def test_gather_merges_all_sources(upstream):
     out = metadata.gather("T", "A", [lambda: {"album": None, "year": 2015, "tags": ["genre:Rock", "lang:en"]}], "https://en.wikipedia.org/wiki/X", None, source_urls=["https://youtu.be/dQw4w9WgXcQ"])
     assert out == {
         "suggest": {"artist": None, "title": None},
+        "wikipedia_song": "https://en.wikipedia.org/wiki/X",
+        "wikipedia_artist": None,
         "wikipedia_album": None,
         "album": "Highway to Hell",
         "year": 1980,
+        "published_year": None,
+        "remix_year": None,
         "tags": ["genre:rock", "country:au", "genre:blues rock", "genre:hard rock"],
         "services": {
             "youtube": {"found": True, "url": "https://youtu.be/dQw4w9WgXcQ"},
@@ -208,7 +212,7 @@ def test_gather_suggest_from_song_infobox(monkeypatch):
     out = _gather_with_box(monkeypatch, "{{Infobox song\n| name = Warrior's Dance\n| artist = [[the Prodigy]]\n| album = X\n}}")
     assert out["suggest"] == {"artist": "The Prodigy", "title": "Warrior's Dance"}
     assert out["album"] == "X"
-    assert set(out) == {"album", "year", "tags", "wikipedia_album", "suggest", "services"}
+    assert set(out) == {"album", "year", "published_year", "remix_year", "tags", "wikipedia_song", "wikipedia_artist", "wikipedia_album", "suggest", "services"}
 
 
 def test_gather_suggest_nulls_without_name_artist_or_infobox(monkeypatch):
@@ -235,3 +239,16 @@ def test_gather_reports_musicbrainz_match(monkeypatch, upstream):
     out = metadata.gather("T", "A", [], None, None)
     assert out["services"]["musicbrainz"] == {"found": True, "url": url}
     assert out["services"]["discogs"] == {"found": False, "url": None}
+
+
+def test_merge_reports_the_platform_publish_year_apart_from_year():
+    out = metadata.merge([{"year": None, "published_year": 2014}, {"published_year": 2016}], None, None, None)
+    assert out["year"] is None
+    assert out["published_year"] == 2014
+    assert out["remix_year"] is None
+
+
+def test_merge_passes_a_remix_specific_date_and_discards_out_of_range():
+    assert metadata.merge([], {"remix_year": 2012}, None, None)["remix_year"] == 2012
+    assert metadata.merge([{"published_year": 1850}], {"remix_year": 1850}, None, None)["published_year"] is None
+    assert metadata.merge([], {"remix_year": 1850}, None, None)["remix_year"] is None
