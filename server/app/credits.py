@@ -13,11 +13,12 @@ from .tokens import split_tokens
 log = logging.getLogger(__name__)
 
 SCHEMA = 1
-KINDS = ("remix", "live", "acoustic", "extended", "instrumental", "remaster", "edit", "cover", "other")
+KINDS = ("remix", "live", "acoustic", "extended", "instrumental", "remaster", "edit", "cover", "mashup", "other")
 MAX_NAMES = 30
 MAX_NAME = 200
 MAX_VERSION_NAME = 300
 MAX_RAW = 500
+OF_KINDS = ("cover", "mashup")
 LEGACY_KEYS = ("artist", "remixer", "remix_year", "year")
 STRUCTURE_ORDER = ("artists", "featured", "released", "version", "raw")
 _VERSION_KEYS = frozenset({"kind", "name", "by", "year", "of"})
@@ -84,6 +85,23 @@ def clean_names(value: Any, label: str) -> list[str]:
     return out
 
 
+def of_names(value: Any) -> list[str]:
+    """`version.of` as a list of names: a legacy or request string becomes a one-element list, anything else unusable an empty one."""
+    if isinstance(value, str):
+        return [value.strip()] if value.strip() else []
+    if isinstance(value, (list, tuple)):
+        return [n.strip() for n in value if isinstance(n, str) and n.strip()]
+    return []
+
+
+def _clean_of(value: Any) -> list[str]:
+    if value is None:
+        return []
+    if isinstance(value, str):
+        value = [value]
+    return clean_names(value, "version.of")
+
+
 def _year_checked(value: Any, label: str, stored: Any) -> int | None:
     if value is None:
         return None
@@ -109,15 +127,13 @@ def _clean_version(value: Any, stored: dict[str, Any] | None) -> dict[str, Any] 
         raise ValueError(f"version.name must be at most {MAX_VERSION_NAME} characters")
     by = clean_names(value.get("by"), "version.by")
     year = _year_checked(value.get("year"), "version.year", (stored or {}).get("year"))
-    of = _text(value.get("of"))
-    if of is not None and len(of) > MAX_NAME:
-        raise ValueError(f"version.of must be at most {MAX_NAME} characters")
-    if of and kind != "cover":
-        raise ValueError("version.of is only for covers")
+    of = _clean_of(value.get("of"))
+    if of and kind not in OF_KINDS:
+        raise ValueError("version.of is only for covers and mashups")
     if kind == "other" and not (name or by or year or of):
         return None
     out: dict[str, Any] = {"kind": kind, "name": name, "by": by, "year": year}
-    if kind == "cover":
+    if kind in OF_KINDS:
         out["of"] = of
     return out
 
@@ -180,8 +196,8 @@ def artist_string(song: dict[str, Any]) -> str:
 def lookup_artist(song: dict[str, Any]) -> str:
     """The artist external lookups ask for: the original artist of a cover, else the credited artists."""
     version = song.get("version") if isinstance(song.get("version"), dict) else None
-    if version and version.get("kind") == "cover" and _text(version.get("of")):
-        return _text(version.get("of")) or ""
+    if version and version.get("kind") == "cover" and of_names(version.get("of")):
+        return join_names(of_names(version.get("of")))
     return artist_string(song)
 
 
@@ -276,6 +292,10 @@ def ensure(song: dict[str, Any]) -> bool:
             changed = True
         if "released" not in song:
             _place(song, "released", None)
+            changed = True
+        version = song.get("version")
+        if isinstance(version, dict) and "of" in version and not isinstance(version["of"], list):
+            version["of"] = of_names(version["of"])
             changed = True
         return absorb(song) or changed
     migrate_fields(song)

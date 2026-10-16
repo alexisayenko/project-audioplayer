@@ -41,6 +41,7 @@ export const songSources = (song) => sourceList([...(Array.isArray(song?.sources
 
 const names = (list) => (Array.isArray(list) ? list.map((n) => String(n ?? '').trim()).filter(Boolean) : []);
 const text = (v) => String(v ?? '').trim() || null;
+const ofNames = (v) => (Array.isArray(v) ? names(v) : text(v) ? [text(v)] : []);
 
 function versionOf(v, storedYear) {
   const ver = v.version;
@@ -50,7 +51,7 @@ function versionOf(v, storedYear) {
     name: text(ver.name),
     by: names(ver.by),
     year: yearKept(ver.year, storedYear) ? yearValue(ver.year) : null,
-    ...(ver.kind === 'cover' ? { of: text(ver.of) } : {}),
+    ...(ver.kind === 'cover' || ver.kind === 'mashup' ? { of: ofNames(ver.of) } : {}),
   };
 }
 

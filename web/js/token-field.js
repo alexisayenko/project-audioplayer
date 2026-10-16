@@ -8,6 +8,7 @@ const KINDS = {
   artists: { label: 'Artists', move: 'Artists', sep: SEPARATOR },
   featured: { label: 'Featuring', move: 'Featuring', sep: SEPARATOR },
   by: { label: 'Remixed / mixed by', move: 'Remixed / mixed by', sep: SEPARATOR },
+  of: { label: 'Cover of', move: 'Cover / mashup sources', sep: SEPARATOR },
 };
 
 export function tokenGroup() {
@@ -23,7 +24,7 @@ export function tokenGroup() {
 }
 
 function tokenField(kind, fields) {
-  const cfg = KINDS[kind];
+  const cfg = { ...KINDS[kind] };
   let text = '';
   let tail = false;
   let menu = null;
@@ -115,6 +116,11 @@ function tokenField(kind, fields) {
     fire();
   }
   node.acceptDrop = acceptDrop;
+  node.setLabel = (label) => {
+    cfg.label = label;
+    entry.setAttribute('aria-label', label);
+    node.setAttribute('aria-label', label);
+  };
   node.moveTo = (i, target) => { if (kind !== 'title' || count() > 1) moveTo(i, target); };
 
   function openMenu(btn, pill, i, label) {

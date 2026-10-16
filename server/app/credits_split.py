@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import unicodedata
 from typing import Any
 
 from . import credits, timeutil, titles
@@ -24,6 +25,10 @@ _BY_STRIP = re.compile(
 _MIXED_BY = re.compile(r"\bmixed\s+by\b", re.I)
 _REMIX_WORDISH = re.compile(r"\b(?:remix|mashup|mix|edit)\b", re.I)
 _PUNCT = " -|"
+_MASHUP_WORD = re.compile(r"^mash[\s-]?up$", re.I)
+_MASHUP_TAIL = re.compile(r"\s*[(\[]\s*(mash[\s-]?up)\s*[)\]]\s*$", re.I)
+_SOURCE_SPLIT = re.compile(r"\s+(?:x|×|vs\.?)\s+", re.I)
+_DASH = re.compile(r"\s[-–—]\s")
 FLAGS = (
     "feat_in_artist", "feat_in_title", "multi_artist_in_one_pill", "remix_text_in_title", "mixed_by", "live", "acoustic",
     "unplugged", "extended", "instrumental", "remaster", "edit", "cover", "remixer_without_remix_word",
@@ -70,12 +75,41 @@ def _cut_feat(text: str) -> tuple[str, list[str]]:
 
 
 def _kind_of(text: str) -> str:
+    if _MASHUP_WORD.match(text.strip()):
+        return "mashup"
     if _MIXED_BY.search(text) and not re.search(r"\bremix\b|\bmashup\b", text, re.I):
         return "other"
     for kind, pattern in _KIND_WORDS:
         if pattern.search(text):
             return kind
     return credits.kind_for(text)
+
+
+_COVER_TAIL = re.compile(r"^(.*?)[\s,:-]*\bcover(?:\s+version)?\s*$", re.I)
+
+
+def _fold(text: str) -> str:
+    return "".join(c for c in unicodedata.normalize("NFD", text) if not unicodedata.combining(c)).lower()
+
+
+def cover_name(text: str) -> str:
+    m = _COVER_TAIL.match(text)
+    return _squash(m.group(1)) if m else ""
+
+
+def _cover_version(text: str, credited: list[str], notes: list[str]) -> dict[str, Any] | None:
+    """A title parenthetical `NAME Cover`: NAME is the performer when it is a credited artist, else the original artist; no credits to compare with is ambiguous."""
+    name = cover_name(text)
+    if not name:
+        return None
+    version: dict[str, Any] = {"kind": "cover", "name": text, "by": []}
+    if not credited:
+        notes.append("cover_ambiguous")
+    elif _fold(name) in {_fold(c) for c in credited}:
+        notes.append("cover_performer")
+    else:
+        version["of"] = [name]
+    return version
 
 
 def _by_names(text: str, kind: str) -> list[str]:
@@ -100,6 +134,31 @@ def _title_version(title: str) -> tuple[str, str | None]:
     return title, None
 
 
+def _sources(text: str) -> list[str]:
+    """The works of a `Song A x Song B` text when it splits unambiguously on x, vs or the multiplication sign, else nothing."""
+    parts = [_squash(p) for p in _SOURCE_SPLIT.split(_squash(text))]
+    return parts if len(parts) >= 2 and all(parts) else []
+
+
+def _mashup(base: str, artists: list[str], notes: list[str], name: str) -> tuple[str, list[str], dict[str, Any]]:
+    """`Title - A, B (mashup)`: the credited names are the provisional makers; sources only when the title names them with x or vs."""
+    version: dict[str, Any] = {"kind": "mashup", "name": name, "by": []}
+    m = _DASH.search(base)
+    left, right = (base[: m.start()], base[m.end():]) if m else (base, "")
+    if m and _squash(left) and _squash(right):
+        sources = _sources(right)
+        if sources:
+            version["of"] = sources
+            return _squash(right), _names(left), version
+        notes.append("mashup_makers_unknown")
+        return _squash(left), _names(right), version
+    sources = _sources(base)
+    if sources:
+        version["of"] = sources
+    notes.append("mashup_makers_unknown")
+    return _squash(base), artists, version
+
+
 def suggest(artist: str | None, title: str | None, remixer: str | None) -> dict[str, Any]:
     """`{artists, featured, version, title, notes}` suggested from the current strings; `title` is the base title when it differs, `notes` are codes."""
     notes: list[str] = []
@@ -121,10 +180,17 @@ def suggest(artist: str | None, title: str | None, remixer: str | None) -> dict[
     if title_feat:
         notes.append("feat_in_title")
         featured = [*featured, *(n for n in title_feat if n.casefold() not in {f.casefold() for f in featured})]
-    base, from_title = _title_version(base)
+    tail = _MASHUP_TAIL.search(base)
+    if tail:
+        base, from_title = _squash(base[: tail.start()]), None
+    else:
+        base, from_title = _title_version(base)
     remixer_text = _squash(remixer or "")
     version: dict[str, Any] | None = None
-    if remixer_text:
+    if tail or _MASHUP_WORD.match(remixer_text):
+        base, artists, version = _mashup(base, artists, notes, tail.group(1) if tail else remixer_text)
+        notes.append("version_in_title" if tail else "remixer_to_version")
+    elif remixer_text:
         version = _version(remixer_text)
         notes.append("remixer_to_version")
         if from_title:
@@ -132,6 +198,8 @@ def suggest(artist: str | None, title: str | None, remixer: str | None) -> dict[
     elif from_title:
         version = _version(_squash(from_title))
         notes.append("version_in_title")
+        if version["kind"] == "cover":
+            version = _cover_version(version["name"], [*artists, *featured], notes) or version
     new_title = base if base and base != title_text else None
     return {"artists": artists, "featured": featured, "version": version, "title": new_title, "notes": notes}
 

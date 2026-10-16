@@ -4,7 +4,9 @@ const norm = (s) => String(s ?? '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' 
 const text = (v) => String(v ?? '').trim();
 const names = (list) => (Array.isArray(list) ? list.map(text).filter(Boolean) : []);
 
-export const KINDS = ['remix', 'live', 'acoustic', 'extended', 'instrumental', 'remaster', 'edit', 'cover', 'other'];
+export const KINDS = ['remix', 'live', 'acoustic', 'extended', 'instrumental', 'remaster', 'edit', 'cover', 'mashup', 'other'];
+
+export const ofNames = (v) => (Array.isArray(v) ? names(v) : text(v) ? [text(v)] : []);
 
 export const isStructured = (song) => Array.isArray(song?.artists);
 
@@ -110,7 +112,8 @@ export function detailsLines(song) {
     add('Version name', text(v.name));
     add('Remixed / mixed by', joinNames(v.by));
     add('Version year', Number.isInteger(v.year) ? String(v.year) : '');
-    add('Cover of', text(v.of));
+    const kind = text(v.kind).toLowerCase();
+    add(kind === 'mashup' ? 'Mashup of' : 'Cover of', ofNames(v.of).join(', '));
   }
   const year = releasedYear(song);
   if (Number.isInteger(year)) out.push({ label: 'First released', value: String(year) });
@@ -135,7 +138,7 @@ export function compareKeys(a, b) {
 export function searchText(song, extra = []) {
   const v = song?.version;
   const parts = isStructured(song)
-    ? [song.title, ...names(song.artists), ...names(song.featured), v?.name, ...names(v?.by), v?.of, song.album]
+    ? [song.title, ...names(song.artists), ...names(song.featured), v?.name, ...names(v?.by), ...ofNames(v?.of), song.album]
     : [song?.title, song?.artist, song?.album, song?.remixer];
   return [...parts, ...extra].join('\n').toLocaleLowerCase();
 }

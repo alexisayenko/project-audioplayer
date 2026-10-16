@@ -75,8 +75,8 @@ class TestCreate:
         assert post(client, {"released": 2001}, vid=VID2).json()["song"]["released"] == 2001
 
     @pytest.mark.parametrize("meta, message", [
-        ({"version": {"kind": "bogus"}}, "version.kind must be one of remix, live, acoustic, extended, instrumental, remaster, edit, cover, other"),
-        ({"version": {"kind": "remix", "of": "X"}}, "version.of is only for covers"),
+        ({"version": {"kind": "bogus"}}, "version.kind must be one of remix, live, acoustic, extended, instrumental, remaster, edit, cover, mashup, other"),
+        ({"version": {"kind": "remix", "of": "X"}}, "version.of is only for covers and mashups"),
         ({"artists": [f"n{i}" for i in range(31)]}, "artists must be a list of at most 30 names"),
         ({"released": 1899}, "released must be from 1900 to 2027"),
         ({"version": {"kind": "live", "year": 2028}}, "version.year must be from 1900 to 2027"),
@@ -109,7 +109,7 @@ class TestPatch:
     def test_structure_keys_replace(self, structured, tmp_path):
         got = structured.patch(f"/songs/{VID}", json={"artists": ["X"], "released": 2005, "version": {"kind": "cover", "of": "Orig"}}, headers=H).json()
         assert got["artists"] == ["X"] and got["featured"] == ["C"] and got["released"] == 2005
-        assert got["version"] == {"kind": "cover", "name": None, "by": [], "year": None, "of": "Orig"}
+        assert got["version"] == {"kind": "cover", "name": None, "by": [], "year": None, "of": ["Orig"]}
         assert (got["artist"], got["remixer"], got["year"], got["remix_year"]) == ("X feat. C", "Cover", 2005, None)
         assert "decade:00s" in got["tags"]
         assert all(k not in on_disk(tmp_path) for k in LEGACY)
@@ -147,7 +147,7 @@ class TestPatch:
     @pytest.mark.parametrize("body, message", [
         ({"artists": [f"n{i}" for i in range(31)]}, "artists must be a list of at most 30 names"),
         ({"version": {"kind": "nope"}}, "version.kind must be one of"),
-        ({"version": {"kind": "live", "of": "X"}}, "version.of is only for covers"),
+        ({"version": {"kind": "live", "of": "X"}}, "version.of is only for covers and mashups"),
         ({"released": 2028}, "released must be from 1900 to 2027"),
         ({"version": {"kind": "live", "year": 1899}}, "version.year must be from 1900 to 2027"),
         ({"year": 1899}, "year must be from 1900 to 2027"),
@@ -282,11 +282,17 @@ class TestEnrichmentOfVersions:
     def test_metafill_asks_for_the_original_work(self, monkeypatch):
         seen = {}
         monkeypatch.setattr(metafill.metadata, "gather", lambda title, artist, fetchers, *a, **kw: seen.update(title=title, artist=artist, kw=kw) or {})
-        cover = self.version_song(artists=["Covering Band"], version={"kind": "cover", "name": None, "by": [], "year": None, "of": "Original Band"})
+        cover = self.version_song(artists=["Covering Band"], version={"kind": "cover", "name": None, "by": [], "year": None, "of": ["Original Band"]})
         metafill._fetch(cover)
         assert (seen["title"], seen["artist"], seen["kw"]) == ("T", "Original Band", {"version_kind": "cover"})
         metafill._fetch(self.version_song())
         assert seen["artist"] == "A" and seen["kw"] == {"version_kind": "remix"}
+
+    def test_metafill_treats_a_mashup_like_any_version(self, monkeypatch):
+        seen = {}
+        monkeypatch.setattr(metafill.metadata, "gather", lambda title, artist, fetchers, *a, **kw: seen.update(artist=artist, kw=kw) or {})
+        metafill._fetch(self.version_song(artists=["Maker"], version={"kind": "mashup", "name": None, "by": [], "year": None, "of": ["S1", "S2"]}))
+        assert seen["artist"] == "Maker" and seen["kw"] == {"version_kind": "mashup"}
 
     def test_metafill_needs_released_not_album_for_a_version(self):
         s = self.version_song(tags=["genre:house"])

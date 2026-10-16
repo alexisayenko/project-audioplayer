@@ -112,7 +112,7 @@ class TestProject:
         ({"kind": "remix", "name": "Alesso Remix", "by": ["X"], "year": None}, "Alesso Remix"),
         ({"kind": "remix", "name": None, "by": ["A", "B"], "year": None}, "A & B"),
         ({"kind": "live", "name": None, "by": [], "year": None}, "Live"),
-        ({"kind": "cover", "name": None, "by": [], "year": None, "of": "X"}, "Cover"),
+        ({"kind": "cover", "name": None, "by": [], "year": None, "of": ["X"]}, "Cover"),
         ({"kind": "other", "name": None, "by": [], "year": 2012}, None),
     ])
     def test_remixer_text(self, version, text):
@@ -124,9 +124,13 @@ class TestProject:
         assert credits.project({"artist": " A ", "remixer": "", "year": 1999, "remix_year": None}) == {"artist": "A", "remixer": None, "year": 1999, "remix_year": None}
 
     def test_artist_string_and_lookup_artist(self):
-        song = {"title": "T", "artists": ["B"], "featured": [], "released": None, "version": {"kind": "cover", "name": None, "by": [], "year": None, "of": "A"}}
+        song = {"title": "T", "artists": ["B"], "featured": [], "released": None, "version": {"kind": "cover", "name": None, "by": [], "year": None, "of": ["A"]}}
         assert credits.artist_string(song) == "B"
         assert credits.lookup_artist(song) == "A"
+        song["version"]["of"] = "Legacy"
+        assert credits.lookup_artist(song) == "Legacy"
+        song["version"] = {"kind": "mashup", "name": None, "by": [], "year": None, "of": ["S1", "S2"]}
+        assert credits.lookup_artist(song) == "B"
         assert credits.released({"released": 1990, "artists": []}) == 1990
         assert credits.released({"year": 1991}) == 1991
 
@@ -225,11 +229,25 @@ class TestApplyChanges:
     def test_names_are_trimmed_deduped_case_insensitively_and_empties_dropped(self):
         assert applied({"artists": [" A ", "a", "", "B", "b "]})["artists"] == ["A", "B"]
 
-    def test_cover_keeps_of_and_other_kinds_must_not_have_it(self):
+    def test_cover_keeps_of_as_a_list_and_other_kinds_must_not_have_it(self):
         song = applied({"version": {"kind": "cover", "of": "Artist A"}})
-        assert song["version"] == {"kind": "cover", "name": None, "by": [], "year": None, "of": "Artist A"}
-        with pytest.raises(ValueError, match="only for covers"):
+        assert song["version"] == {"kind": "cover", "name": None, "by": [], "year": None, "of": ["Artist A"]}
+        with pytest.raises(ValueError, match="only for covers and mashups"):
             applied({"version": {"kind": "remix", "of": "Artist A"}})
+
+    def test_mashup_keeps_several_sources_and_a_string_becomes_a_list(self):
+        song = applied({"version": {"kind": "mashup", "of": [" S1 ", "s1", "S2", ""]}})
+        assert song["version"] == {"kind": "mashup", "name": None, "by": [], "year": None, "of": ["S1", "S2"]}
+        assert applied({"version": {"kind": "mashup", "of": "Only"}})["version"]["of"] == ["Only"]
+        assert applied({"version": {"kind": "mashup"}})["version"]["of"] == []
+        assert credits.project(song)["remixer"] == "Mashup"
+
+    def test_a_legacy_string_of_is_normalised_by_ensure_and_idempotently(self):
+        song = {"id": "a", "title": "T", "artists": ["A"], "featured": [], "released": None,
+                "version": {"kind": "cover", "name": None, "by": [], "year": None, "of": "Orig"}}
+        assert credits.ensure(song) is True
+        assert song["version"]["of"] == ["Orig"]
+        assert credits.ensure(song) is False
 
     def test_an_empty_other_version_is_dropped(self):
         assert "version" not in applied({"version": {"kind": "other", "name": " ", "by": [], "year": None}})
@@ -250,7 +268,9 @@ class TestValidation:
         ({"version": {"kind": "remix", "by": [f"n{i}" for i in range(31)]}}, "version.by must be a list of at most 30 names"),
         ({"version": {"kind": "remix", "year": 1899}}, "version.year must be from 1900 to 2027"),
         ({"version": {"kind": "remix", "year": 2028}}, "version.year must be from 1900 to 2027"),
-        ({"version": {"kind": "cover", "of": "x" * 201}}, "version.of must be at most 200"),
+        ({"version": {"kind": "mashup", "of": [f"n{i}" for i in range(31)]}}, "version.of must be a list of at most 30 names"),
+        ({"version": {"kind": "cover", "of": 5}}, "version.of must be a list of at most 30 names"),
+        ({"version": {"kind": "cover", "of": "x" * 201}}, "names must be at most 200"),
         ({"released": 1899}, "released must be from 1900 to 2027"),
         ({"released": 2028}, "released must be from 1900 to 2027"),
         ({"released": "x"}, "released must be from 1900 to 2027"),

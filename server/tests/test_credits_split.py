@@ -39,3 +39,34 @@ def test_flags_are_returned_in_the_documented_order():
     flags = credits_split.review_flags({"title": "S (feat. X) (Live) (Remix)", "artist": "A & B feat. C", "remixer": "Mixed By Q", "remix_year": 2012, "year": 1500})
     assert flags == [f for f in credits_split.FLAGS if f in flags]
     assert {"feat_in_artist", "feat_in_title", "multi_artist_in_one_pill", "mixed_by", "live", "year_out_of_range"} <= set(flags)
+
+
+def test_cover_parenthetical_original_performer_ambiguous():
+    s = credits_split.suggest("Teemid", "Crazy feat. Joie Tan (Gnarls Barkley Cover)", None)
+    assert s["version"] == {"kind": "cover", "name": "Gnarls Barkley Cover", "by": [], "of": ["Gnarls Barkley"]}
+    perf = credits_split.suggest("Sofia Karlberg", "Writings On The Wall (sófia karlberg cover version)", None)
+    assert perf["version"] == {"kind": "cover", "name": "sófia karlberg cover version", "by": []}
+    assert "cover_performer" in perf["notes"]
+    amb = credits_split.suggest("", "Song (X Cover)", None)
+    assert amb["version"] == {"kind": "cover", "name": "X Cover", "by": []} and "cover_ambiguous" in amb["notes"]
+
+
+def test_cover_rule_is_whole_word_and_parenthetical_only():
+    assert credits_split.suggest("A", "Cover Me Up", None)["version"] is None
+    assert credits_split.suggest("A", "Discovery (Recovery)", None)["version"] is None
+    assert credits_split.suggest("A", "Song (Cover)", None)["version"].get("of") is None
+    assert credits_split.suggest("Sam Smith", "Writings On The Wall", "Sofia Karlberg Cover")["version"].get("of") is None
+    assert credits_split.suggest("A", "Song (Remix) (X Cover)", None)["version"]["kind"] == "remix"
+
+
+def test_mashup_word_forms_and_non_matches():
+    for text in ("(mashup)", "[Mash-Up]", "(MASH UP)"):
+        s = credits_split.suggest("", f"Song - A, B {text}", None)
+        assert s["version"]["kind"] == "mashup" and s["artists"] == ["A", "B"] and "mashup_makers_unknown" in s["notes"]
+    for title in ("Discovery (Mashups)", "Mashup City", "Song (Mashup Remix)"):
+        assert (credits_split.suggest("A", title, None)["version"] or {}).get("kind") != "mashup"
+
+
+def test_mashup_never_guesses_sources_without_an_explicit_separator():
+    s = credits_split.suggest("", "Кончится лето - Yaukoshi, LXST CXNTURY, Цой (mashup)", None)
+    assert "of" not in s["version"] and s["title"] == "Кончится лето"

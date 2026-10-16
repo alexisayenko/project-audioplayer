@@ -1,7 +1,7 @@
 import { MIN_YEAR, maxYear } from './constants.js';
 import { el, field } from './dom.js';
 import { splitTokens, joinTokens } from './tokens.js';
-import { displayLine } from './credits.js';
+import { displayLine, ofNames } from './credits.js';
 import { suggest } from './credits-split.js';
 import { planVersionYear, validYear } from './remix-year.js';
 
@@ -14,12 +14,16 @@ export const KIND_LABELS = {
   remaster: 'Remaster',
   edit: 'Edit',
   cover: 'Cover',
+  mashup: 'Mashup',
   other: 'Other',
 };
 
 const SUGGESTED_TIP = 'Suggested from the YouTube or SoundCloud publish date; type a year to replace it';
 const lower = (s) => String(s ?? '').trim().toLowerCase();
 const nameList = (v) => splitTokens(v);
+const OF_KINDS = ['cover', 'mashup'];
+const ofLabel = (kind) => (kind === 'mashup' ? 'Mashup of' : 'Cover of');
+const MAKERS_ASK = 'Who made this mashup? Confirm or edit Artists; sources go in Mashup of.';
 
 export const kindFor = (text) => (/mixed\s+by/i.test(text) && !/remix|mashup/i.test(text) ? 'other' : 'remix');
 
@@ -55,7 +59,7 @@ export function creditsBlock({ tg, song = {}, getTitle, setTitle, emit }) {
       ...Object.entries(KIND_LABELS).map(([k, label]) => el('option', { value: k }, label))),
     name: el('input', { type: 'text', value: iv?.name ?? '', autocomplete: 'off' }),
     vyear: year(iv?.year),
-    of: el('input', { type: 'text', value: iv?.of ?? '', autocomplete: 'off' }),
+    of: tg.field('of', joinTokens(ofNames(iv?.of))),
     released: year(init.released),
   };
   f.kind.value = iv?.kind ?? '';
@@ -66,7 +70,7 @@ export function creditsBlock({ tg, song = {}, getTitle, setTitle, emit }) {
   const nameField = field('Version name', f.name);
   const byField = field('Remixed / mixed by', f.by);
   const yearField = field('Version year', f.vyear);
-  const ofField = field('Cover of', f.of);
+  const ofField = field(ofLabel(iv?.kind), f.of);
   const versionRow = el('div', { class: 'remix-row credits-version' }, field('Version', f.kind), nameField);
   const detailRow = el('div', { class: 'remix-row version-row' }, byField, yearField);
 
@@ -95,12 +99,14 @@ export function creditsBlock({ tg, song = {}, getTitle, setTitle, emit }) {
   });
 
   const versionObject = () => (hasVersion()
-    ? { kind: f.kind.value, name: f.name.value.trim() || null, by: nameList(f.by.value), year: validYear(Number(f.vyear.value)), of: f.kind.value === 'cover' ? f.of.value.trim() || null : null }
+    ? { kind: f.kind.value, name: f.name.value.trim() || null, by: nameList(f.by.value), year: validYear(Number(f.vyear.value)), of: OF_KINDS.includes(f.kind.value) ? nameList(f.of.value) : null }
     : null);
 
+  let ask = false;
   const items = () => {
     const cur = current();
     const s = suggest(f.artists.value, cur.title, f.name.value);
+    ask = s.notes.includes('mashup_makers_unknown');
     const out = [];
     if (s.artists.length && !sameList(s.artists, cur.artists)) out.push({ key: `artists:${s.artists.join('|')}`, text: `Artists: ${s.artists.join(' | ')}`, apply: () => { f.artists.value = joinTokens(s.artists); } });
     const newFeat = missing(cur.featured, s.featured);
@@ -115,6 +121,8 @@ export function creditsBlock({ tg, song = {}, getTitle, setTitle, emit }) {
         if (!cur.kind) parts.push(v.kind);
         if (newName) parts.push(`"${newName}"`);
         if (newBy.length) parts.push(`by ${newBy.join(' | ')}`);
+        if (OF_KINDS.includes(v.kind) && v.of?.length) parts.push(`${ofLabel(v.kind)} ${v.of.join(', ')}`);
+        else if (v.kind === 'cover' && s.notes.includes('cover_performer')) parts.push(`Cover performed by ${v.name.replace(/[\s,:-]*\bcover(?:\s+version)?\s*$/i, '').trim()}`);
         out.push({
           key: `version:${v.kind}:${newName}:${newBy.join('|')}`,
           text: `Version: ${parts.join(', ')}`,
@@ -122,6 +130,7 @@ export function creditsBlock({ tg, song = {}, getTitle, setTitle, emit }) {
             if (!cur.kind) { f.kind.value = v.kind; syncYear(); }
             if (newName) f.name.value = newName;
             if (newBy.length) f.by.value = joinTokens([...cur.by, ...newBy]);
+            if (OF_KINDS.includes(v.kind) && v.of?.length && !f.of.value.trim()) f.of.value = joinTokens(v.of);
           },
         });
       }
@@ -135,6 +144,7 @@ export function creditsBlock({ tg, song = {}, getTitle, setTitle, emit }) {
     panel.replaceChildren();
     if (!list.length) return;
     panel.append(el('p', { class: 't-caption muted' }, 'Suggested split'));
+    if (ask) panel.append(el('p', { class: 't-caption credits-warn' }, MAKERS_ASK));
     for (const it of list) {
       const apply = el('button', { class: 'link-btn t-caption', type: 'button' }, 'Apply');
       const dismiss = el('button', { class: 'link-btn t-caption', type: 'button' }, 'Dismiss');
@@ -155,7 +165,10 @@ export function creditsBlock({ tg, song = {}, getTitle, setTitle, emit }) {
     const on = hasVersion();
     nameField.hidden = !on;
     detailRow.hidden = !on;
-    ofField.hidden = f.kind.value !== 'cover';
+    ofField.hidden = !OF_KINDS.includes(f.kind.value);
+    const label = ofLabel(f.kind.value);
+    ofField.children[0].textContent = label;
+    f.of.setLabel(label);
   };
 
   function paint() {
@@ -194,7 +207,7 @@ export function creditsBlock({ tg, song = {}, getTitle, setTitle, emit }) {
       featured: nameList(f.featured.value),
       released: f.released.value,
       version: hasVersion()
-        ? { kind: f.kind.value, name: f.name.value, by: nameList(f.by.value), year: f.vyear.value, ...(f.kind.value === 'cover' ? { of: f.of.value } : {}) }
+        ? { kind: f.kind.value, name: f.name.value, by: nameList(f.by.value), year: f.vyear.value, ...(OF_KINDS.includes(f.kind.value) ? { of: nameList(f.of.value) } : {}) }
         : null,
     }),
     set(p = {}) {
@@ -210,7 +223,7 @@ export function creditsBlock({ tg, song = {}, getTitle, setTitle, emit }) {
         f.kind.value = v?.kind ?? '';
         f.name.value = v?.name ?? '';
         f.by.value = joinTokens(v?.by ?? []);
-        f.of.value = v?.of ?? '';
+        f.of.value = joinTokens(ofNames(v?.of));
         f.vyear.value = v?.year ?? '';
         yearSet = true;
       } else if (has('remixer')) {

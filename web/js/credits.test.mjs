@@ -40,6 +40,16 @@ test('cover rule: covering artist first, cover marker after the title', () => {
     { label: 'Version', value: 'Cover' },
     { label: 'Cover of', value: 'Artist A' },
   ]);
+  assert.deepEqual(c.detailsLines({ ...E, version: { ...E.version, of: ['Artist A'] } }).at(-1), { label: 'Cover of', value: 'Artist A' });
+});
+
+test('mashup: makers first, kind word after the title, Mashup of lists the sources', () => {
+  const M = { title: 'Кончится лето', artists: ['Yaukoshi', 'LXST CXNTURY', 'Цой'], featured: [], version: { kind: 'mashup', name: null, by: [], year: null, of: ['S1', 'S2'] } };
+  assert.equal(c.displayLine(M), 'Yaukoshi, LXST CXNTURY & Цой - Кончится лето (mashup)');
+  assert.deepEqual(c.detailsLines(M), [{ label: 'Version', value: 'Mashup' }, { label: 'Mashup of', value: 'S1, S2' }]);
+  assert.ok(c.searchText(M).includes('s2'));
+  assert.deepEqual(c.ofNames('Legacy'), ['Legacy']);
+  assert.deepEqual(c.ofNames(null), []);
 });
 
 test('version label: name wins, kind word as fallback, other is silent, dedupe against title', () => {

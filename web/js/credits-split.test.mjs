@@ -86,3 +86,51 @@ test('server cases (credits_split_cases.json, section split)', { skip: !fixture?
     for (const k of Object.keys(want)) assert.deepEqual(got[k], want[k], `${k} ${JSON.stringify(c)}`);
   }
 });
+
+test('cover parenthetical: original artist, performer, or ambiguous', () => {
+  const crazy = suggest('Teemid', 'Crazy feat. Joie Tan (Gnarls Barkley Cover)', '');
+  assert.deepEqual(crazy.version, { kind: 'cover', name: 'Gnarls Barkley Cover', by: [], of: ['Gnarls Barkley'] });
+  assert.deepEqual([crazy.featured, crazy.title], [['Joie Tan'], 'Crazy']);
+  const perf = suggest('Sofia Karlberg', 'Writings On The Wall (sófia karlberg cover version)', '');
+  assert.deepEqual(perf.version, { kind: 'cover', name: 'sófia karlberg cover version', by: [] });
+  assert.ok(perf.notes.includes('cover_performer'));
+  assert.deepEqual(suggest('A', 'Song (Gabriel & Dresden Cover)', '').version.of, ['Gabriel & Dresden']);
+  assert.deepEqual(suggest('A ft. B', 'Song ft. C [Dua Lipa Cover]', '').version.of, ['Dua Lipa']);
+  const amb = suggest('', 'Song (X Cover)', '');
+  assert.deepEqual(amb.version, { kind: 'cover', name: 'X Cover', by: [] });
+  assert.ok(amb.notes.includes('cover_ambiguous'));
+});
+
+test('cover rule is whole-word and parenthetical only', () => {
+  assert.equal(suggest('A', 'Cover Me Up', '').version, null);
+  assert.equal(suggest('A', 'Discovery (Recovery)', '').version, null);
+  assert.deepEqual(suggest('A', 'Song (Discovery Cover)', '').version.of, ['Discovery']);
+  assert.equal(suggest('A', 'Song (Cover)', '').version.of, undefined);
+  assert.equal(suggest('Sam Smith', 'Writings On The Wall', 'Sofia Karlberg Cover').version.of, undefined);
+  assert.equal(suggest('A', 'Song (Remix) (X Cover)', '').version.kind, 'remix');
+});
+
+test('mashup: the credited names are provisional makers, flagged, with no sources guessed', () => {
+  const s = suggest('Repost Channel', 'Кончится лето - Yaukoshi, LXST CXNTURY, Цой (mashup)', '');
+  assert.deepEqual(s.artists, ['Yaukoshi', 'LXST CXNTURY', 'Цой']);
+  assert.deepEqual(s.version, { kind: 'mashup', name: 'mashup', by: [] });
+  assert.equal(s.title, 'Кончится лето');
+  assert.ok(s.notes.includes('mashup_makers_unknown'));
+  const viaRemixer = suggest('Repost Channel', 'Кончится лето - Yaukoshi, LXST CXNTURY, Цой', 'mashup');
+  assert.deepEqual(viaRemixer.artists, s.artists);
+  assert.equal(viaRemixer.version.kind, 'mashup');
+});
+
+test('mashup spellings and words that must not match', () => {
+  for (const w of ['(mashup)', '[Mash-Up]', '(MASH UP)']) assert.equal(suggest('', `Song - A, B ${w}`, '').version.kind, 'mashup', w);
+  for (const t of ['Discovery (Mashups)', 'Mashup City', 'Song (Mashup Remix)']) assert.notEqual(suggest('A', t, '').version?.kind, 'mashup', t);
+});
+
+test('mashup sources only from an explicit x, vs or multiplication-sign split', () => {
+  assert.deepEqual(suggest('DJ K', 'Song A x Song B (mashup)', '').version.of, ['Song A', 'Song B']);
+  const named = suggest('', 'DJ K - Song A vs. Song B × Song C (mashup)', '');
+  assert.deepEqual(named.version.of, ['Song A', 'Song B', 'Song C']);
+  assert.deepEqual(named.artists, ['DJ K']);
+  assert.ok(!named.notes.includes('mashup_makers_unknown'));
+  assert.equal(suggest('DJ K', 'Song A & Song B (mashup)', '').version.of, undefined);
+});

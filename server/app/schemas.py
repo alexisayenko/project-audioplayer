@@ -27,7 +27,7 @@ class VersionIn(BaseModel):
     name: str | None = None
     by: list[str] | None = None
     year: int | None = None
-    of: str | None = None
+    of: str | list[str] | None = None
 
 
 class SourceRaw(BaseModel):

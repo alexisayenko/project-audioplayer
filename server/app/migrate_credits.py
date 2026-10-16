@@ -37,6 +37,14 @@ def _suggested(song: dict[str, Any], raw: dict[str, Any]) -> dict[str, Any]:
     wanted = found["version"]
     if wanted and (version is None or version.get("kind") != wanted["kind"] or (wanted["by"] and not version.get("by"))):
         out["version"] = {"kind": wanted["kind"], "by": wanted["by"]}
+        if wanted.get("of"):
+            out["version"]["of"] = wanted["of"]
+        elif "cover_performer" in found["notes"]:
+            out["version"]["performer"] = credits_split.cover_name(wanted["name"])
+        elif "cover_ambiguous" in found["notes"]:
+            out["version"]["ambiguous"] = True
+        if "mashup_makers_unknown" in found["notes"]:
+            out["version"]["ambiguous"] = True
     return out
 
 

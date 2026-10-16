@@ -24,7 +24,7 @@ test('the form has every credits field with its label', () => {
   for (const label of ['Title', 'Artists', 'Featuring', 'Version', 'Version name', 'Remixed / mixed by', 'Version year', 'Cover of', 'First released']) {
     assert.ok(fieldOf(f, label), label);
   }
-  assert.deepEqual([...kind(f).querySelectorAll('option')].map((o) => o.value), ['', 'remix', 'live', 'acoustic', 'extended', 'instrumental', 'remaster', 'edit', 'cover', 'other']);
+  assert.deepEqual([...kind(f).querySelectorAll('option')].map((o) => o.value), ['', 'remix', 'live', 'acoustic', 'extended', 'instrumental', 'remaster', 'edit', 'cover', 'mashup', 'other']);
 });
 
 test('Artists, Featuring and Remixed / mixed by are pill fields', () => {
@@ -53,12 +53,12 @@ test('Cover of shows only for Cover and is dropped when leaving Cover', () => {
   setKind(f, 'cover');
   assert.equal(fieldOf(f, 'Cover of').hidden, false);
   type(input(f, 'Cover of'), 'Artist A');
-  assert.equal(f.values().version.of, 'Artist A');
+  assert.deepEqual(f.values().version.of, ['Artist A']);
   setKind(f, 'live');
   assert.equal(fieldOf(f, 'Cover of').hidden, true);
   assert.ok(!('of' in f.values().version));
   setKind(f, 'cover');
-  assert.equal(f.values().version.of, 'Artist A', 'text is kept in the field and sent for covers');
+  assert.deepEqual(f.values().version.of, ['Artist A'], 'text is kept in the field and sent for covers');
 });
 
 test('the preview line is the display line and follows the fields', () => {
@@ -155,4 +155,37 @@ test('First released sits beside Album and is empty when nothing gave a year', (
   const f = mk({ artists: ['A'], featured: [] }, 'add');
   assert.equal(input(f, 'First released').value, '');
   assert.equal(f.values().released, '');
+});
+
+test('Suggested split words a cover as Cover of the original or Cover performed by the performer', () => {
+  const a = mk({ title: 'Crazy (Gnarls Barkley Cover)', artists: ['Teemid'], featured: [] });
+  assert.match(panel(a).textContent, /Cover of Gnarls Barkley/);
+  const b = mk({ title: 'Writings On The Wall (Sofia Karlberg Cover)', artists: ['Sofia Karlberg'], featured: [] });
+  assert.match(panel(b).textContent, /Cover performed by Sofia Karlberg/);
+});
+
+test('Mashup of: context-aware label, several source pills, shown only for Cover and Mashup', () => {
+  const f = mk({ title: 'Song', artists: ['Maker'], featured: [], version: { kind: 'mashup', name: null, by: [], year: null, of: ['S1', 'S2'] } });
+  assert.equal(fieldOf(f, 'Mashup of').hidden, false);
+  assert.deepEqual(pills(f, 'Mashup of'), ['S1', 'S2']);
+  assert.deepEqual(f.values().version.of, ['S1', 'S2']);
+  assert.equal(preview(f).textContent, 'Maker - Song (mashup)');
+  setKind(f, 'cover');
+  assert.ok(fieldOf(f, 'Cover of'));
+  setKind(f, 'live');
+  assert.equal(fieldOf(f, 'Cover of').hidden, true);
+  assert.ok(!('of' in f.values().version));
+});
+
+test('a legacy string of loads as a pill', () => {
+  const f = mk({ artists: ['B'], featured: [], version: { kind: 'cover', name: null, by: [], year: null, of: 'Orig' } });
+  assert.deepEqual(pills(f, 'Cover of'), ['Orig']);
+});
+
+test('mashup suggestion asks who made it and applies nothing by itself', () => {
+  const f = mk({ title: 'Кончится лето - Yaukoshi, LXST CXNTURY, Цой (mashup)', artists: ['Repost Channel'], featured: [] });
+  assert.match(panel(f).textContent, /Who made this mashup\? Confirm or edit Artists; sources go in Mashup of/);
+  assert.match(panel(f).textContent, /Artists: Yaukoshi \| LXST CXNTURY \| Цой/);
+  assert.deepEqual(f.values().artists, ['Repost Channel']);
+  assert.equal(f.values().version, null);
 });

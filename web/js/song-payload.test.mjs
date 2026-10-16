@@ -21,7 +21,8 @@ test('patchBody keys: structure only, version null removes it', () => {
 test('version object: kind, name, by, year; of only for a cover; blank text is null', () => {
   const ver = { kind: 'remix', name: ' Alesso Remix ', by: [' Alesso ', ''], year: '2012', of: 'ignored' };
   assert.deepEqual(addBody({ ...v, version: ver }).version, { kind: 'remix', name: 'Alesso Remix', by: ['Alesso'], year: 2012 });
-  assert.deepEqual(patchBody({ ...v, version: { kind: 'cover', name: '', by: [], year: '', of: ' Artist A ' } }).version, { kind: 'cover', name: null, by: [], year: null, of: 'Artist A' });
+  assert.deepEqual(patchBody({ ...v, version: { kind: 'cover', name: '', by: [], year: '', of: ' Artist A ' } }).version, { kind: 'cover', name: null, by: [], year: null, of: ['Artist A'] });
+  assert.deepEqual(patchBody({ ...v, version: { kind: 'mashup', name: '', by: [], year: '', of: [' S1 ', '', 'S2'] } }).version.of, ['S1', 'S2']);
   assert.equal(patchBody({ ...v, version: { kind: '', name: 'x' } }).version, null);
 });
 

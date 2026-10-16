@@ -212,7 +212,7 @@ test('an untouched edit form returns the stored structure', () => {
   assert.deepEqual(v.artists, ['A', 'B']);
   assert.deepEqual(v.featured, ['C']);
   assert.equal(String(v.released), '1999');
-  assert.deepEqual(v.version, { kind: 'cover', name: '', by: [], year: '', of: 'Z' });
+  assert.deepEqual(v.version, { kind: 'cover', name: '', by: [], year: '', of: ['Z'] });
 });
 
 test('Get metadata for a version song sends version_kind and never takes a MusicBrainz or Discogs link', async () => {
