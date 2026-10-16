@@ -58,7 +58,11 @@ async def _apply_suggestions(meta: dict[str, Any]) -> None:
 def _merge_suggestions(meta: dict[str, Any], found: list[str], mb: dict[str, Any], wiki: dict[str, Any], disc: dict[str, Any]) -> None:
     disc_genres = [t for t in disc["tags"] if t.startswith("genre:")]
     disc_rest = [t for t in disc["tags"] if not t.startswith("genre:")]
-    meta["tags"] = metadata.finalize_tags([*meta.get("tags", []), *disc_genres, *found, *wiki["tags"], *disc_rest], wiki.get("song_genres"))
+    yt = list(meta.get("youtube_genres") or [])
+    own = list(meta.get("tags", []))
+    meta["tags"] = metadata.finalize_tags([*meta.get("tags", []), *disc_genres, *found, *wiki["tags"], *yt, *disc_rest], wiki.get("song_genres"))
+    others = {*own, *disc_genres, *found, *wiki["tags"]}
+    meta["tag_sources"] = {t: "youtube" for t in meta["tags"] if t in yt and t not in others}
     meta["wikipedia_song"] = wiki["wikipedia_song"]
     meta["wikipedia_artist"] = wiki["wikipedia_artist"]
     meta["wikipedia_album"] = wiki.get("wikipedia_album")

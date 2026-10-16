@@ -57,7 +57,8 @@ def merge(sources: list[dict[str, Any]], mb: dict[str, Any] | None, links: dict[
     year (DATA-126) links, song-page infobox, guess, MusicBrainz, Discogs, never a yt-dlp year; album sources, song-page infobox, then MusicBrainz.
     """
     mb, links, guess, disc = mb or {}, links or {}, guess or {}, disc or {}
-    tags = finalize_tags([t for r in (*sources, mb, links, guess) for t in r.get("tags") or []], links.get("song_genres") or guess.get("song_genres"))
+    yt = [t for s in sources for t in s.get("youtube_genres") or []]
+    tags = finalize_tags([*(t for r in (*sources, mb, links, guess) for t in r.get("tags") or []), *yt], links.get("song_genres") or guess.get("song_genres"))
     box_album = links.get("infobox_album") or guess.get("infobox_album")
     box_year = links.get("infobox_year") or guess.get("infobox_year")
     albums = (*(s.get("album") for s in sources), box_album, mb.get("album"))

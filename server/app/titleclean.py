@@ -55,12 +55,20 @@ def _is_noise(text: str, allowed: frozenset[str] = _NOISE_SET) -> bool:
     return False
 
 
+_RELEASE_KEEP = frozenset("cover covers remix remixed mashup mix mixed edit".split())
+
+
+def _is_release_tag(text: str) -> bool:
+    words = _norm(text).split()
+    return len(words) > 1 and words[-1] == "release" and not _RELEASE_KEEP.intersection(words)
+
+
 def _drop_noise_groups(s: str, removed: list[str]) -> str:
     changed = True
 
     def drop(m: re.Match) -> str:
         nonlocal changed
-        if _is_noise(m.group()[1:-1]):
+        if _is_noise(m.group()[1:-1]) or _is_release_tag(m.group()[1:-1]):
             removed.append(_WS.sub(" ", m.group()))
             changed = True
             return " "

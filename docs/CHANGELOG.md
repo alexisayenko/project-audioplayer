@@ -2,6 +2,12 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-17 (YouTube genres and release tags, not deployed)
+
+- Server and web: genres from YouTube tags, categories and hashtags (TAG-095, `youtube_genres` and `tag_sources` on `/preview`), and "(... Release)" label tags are dropped from titles and a "Cover Release" suggests a cover with no original artist (ADD-131); "(mashup by X)" titles suggest X as the artist and the artists before the dash as the mashup sources (ADD-132).
+
+- Web: the Library row title button's keyboard focus ring is drawn inside the button, so the row's `overflow: hidden` info block no longer clips it to the right and bottom edges (not deployed).
+
 ## 2026-10-16 (button shape audit, not deployed)
 
 - Web: WEB-099 applied app-wide: Library row Download and Add to playlist and the Edit dialog Download are round icon buttons (44px), and the Song stats selection bar has a round Add to playlist icon and a dock-style Play key.

@@ -12,7 +12,7 @@ from urllib.parse import urlparse
 
 import yt_dlp
 
-from . import credits_split, genre_filter, library, timeutil, urlclean
+from . import credits_split, genre_filter, library, timeutil, urlclean, yt_genres
 from .jsonio import write_bytes_atomic
 from .titles import cut_remix, split_artist_title, split_title
 from .urlclean import is_valid_video_id, parse_video_id, source_of, watch_url  # noqa: F401
@@ -193,6 +193,7 @@ def preview(video_id: str) -> dict[str, Any]:
         "year": None,
         "published_year": _published_year(info),
         "tags": suggest_tags(info),
+        "youtube_genres": yt_genres.suggest(info, artist, title),
         "duration": info.get("duration"),
         "thumbnail": cover_url(video_id),
     }

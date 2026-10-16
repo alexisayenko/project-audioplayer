@@ -161,6 +161,17 @@ _BRACKET = re.compile(r"[\(\[]([^\)\]]*)[\)\]]")
 _REMIX_WORD = re.compile(r"\bremix\b|\bmashup\b|\bmixed\s+by\b", re.I)
 
 
+RELEASE_TAG = re.compile(r"\s*[(\[]\s*([^()\[\]]*?\brelease)\s*[)\]]\s*$", re.I)
+_RELEASE_TAG_TAIL = RELEASE_TAG
+_RELEASE_SKIP = re.compile(r"\bremix(?:ed)?\b|\bmashup\b|\bmixed\s+by\b", re.I)
+
+
+def release_tag(title: str) -> tuple[int, bool] | None:
+    """(start of the trailing label release tag, whether it names a cover) for "(Magic Cover Release)" or "[NCS Release]"; None when the last bracket does not end in "Release" or holds a remix or mashup."""
+    m = RELEASE_TAG.search(title)
+    if not m or _RELEASE_SKIP.search(m.group(1)):
+        return None
+    return m.start(), bool(re.search(r"\bcover\b", m.group(1), re.I))
 _SEGMENT_SEP = re.compile(r"( \| | - | \u2013 | \u2014 )")
 _CUE_DASH = re.compile(r" [-\u2013\u2014] ")
 _FEAT_NORM = re.compile(r"\b(?:featuring|feat|ft)\b(\.?)", re.I)
@@ -226,7 +237,7 @@ def split_title(artist: str, title: str) -> tuple[str, str, str | None]:
     a, t = split_artist_title(artist, cut)
     if a == clean_artist(artist) and t == clean_title(cut):
         m = _CUE_DASH.search(t)
-        if m and _has_feat_keyword(t[: m.start()]) and t[m.end() :].strip():
+        if m and (_has_feat_keyword(t[: m.start()]) or _RELEASE_TAG_TAIL.search(t)) and t[m.end() :].strip():
             a, t = t[: m.start()].strip(), clean_title(t[m.end() :])
     return normalize_feat(a), normalize_feat(t), remix
 

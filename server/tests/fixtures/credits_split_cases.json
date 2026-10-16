@@ -78,7 +78,21 @@
   {"artist": "", "title": "Song (X Cover)", "remixer": null,
    "expect": {"artists": [], "featured": [], "version": {"kind": "cover", "name": "X Cover", "by": []}, "title": "Song", "notes": ["version_in_title", "cover_ambiguous"]}},
   {"artist": "A", "title": "Song (Remix) (X Cover)", "remixer": null,
-   "expect": {"artists": ["A"], "featured": [], "version": {"kind": "remix", "name": "Remix", "by": []}, "title": "Song (X Cover)", "notes": ["version_in_title"]}}
+   "expect": {"artists": ["A"], "featured": [], "version": {"kind": "remix", "name": "Remix", "by": []}, "title": "Song (X Cover)", "notes": ["version_in_title"]}},
+  {"artist": "Twin & Elise Lieberth", "title": "In The End (Magic Cover Release)", "remixer": null,
+   "expect": {"artists": ["Twin", "Elise Lieberth"], "featured": [], "version": {"kind": "cover", "name": "Cover", "by": []}, "title": "In The End", "notes": ["multi_artist", "release_tag", "cover_release", "version_in_title"]}},
+  {"artist": "A", "title": "Song [NCS Release]", "remixer": null,
+   "expect": {"artists": ["A"], "featured": [], "version": null, "title": "Song", "notes": ["release_tag"]}},
+  {"artist": "A", "title": "Song (Foo Remix) (Free Release)", "remixer": null,
+   "expect": {"artists": ["A"], "featured": [], "version": {"kind": "remix", "name": "Foo Remix", "by": ["Foo"]}, "title": "Song", "notes": ["release_tag", "version_in_title"]}},
+  {"artist": "yaukoshi", "title": "КИНО x LXST CXNTURY - КОНЧИТСЯ ODIUM", "remixer": "mashup by yaukoshi",
+   "expect": {"artists": ["yaukoshi"], "featured": [], "version": {"kind": "mashup", "name": "mashup by yaukoshi", "by": [], "of": ["КИНО", "LXST CXNTURY"]}, "title": "КОНЧИТСЯ ODIUM", "notes": ["mashup_by", "remixer_to_version"]}},
+  {"artist": "Chan", "title": "КИНО x LXST CXNTURY - КОНЧИТСЯ ODIUM (Mashup by yaukoshi)", "remixer": null,
+   "expect": {"artists": ["yaukoshi"], "featured": [], "version": {"kind": "mashup", "name": "Mashup by yaukoshi", "by": [], "of": ["КИНО", "LXST CXNTURY"]}, "title": "КОНЧИТСЯ ODIUM", "notes": ["mashup_by", "version_in_title"]}},
+  {"artist": "Chan", "title": "A vs B - Song [DJ K & Q mashup]", "remixer": null,
+   "expect": {"artists": ["DJ K", "Q"], "featured": [], "version": {"kind": "mashup", "name": "DJ K & Q mashup", "by": [], "of": ["A", "B"]}, "title": "Song", "notes": ["mashup_by", "version_in_title"]}},
+  {"artist": "Chan", "title": "A + B - Song (bootleg by X)", "remixer": null,
+   "expect": {"artists": ["Chan"], "featured": [], "version": {"kind": "remix", "name": "bootleg by X", "by": ["X"]}, "title": "A + B - Song", "notes": ["version_in_title"]}}
  ],
  "review": [
   {"raw": {"title": "Pressure", "artist": "Nadia Ali, Starkillers & Alex Kenji", "remixer": "Alesso Remix", "year": 2009, "remix_year": 2012},

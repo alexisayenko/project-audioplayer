@@ -134,3 +134,28 @@ test('mashup sources only from an explicit x, vs or multiplication-sign split', 
   assert.ok(!named.notes.includes('mashup_makers_unknown'));
   assert.equal(suggest('DJ K', 'Song A & Song B (mashup)', '').version.of, undefined);
 });
+
+test('a label "Cover Release" tag suggests a cover without guessing the original artist', () => {
+  const s = suggest('Twin & Elise Lieberth', 'In The End (Magic Cover Release)', '');
+  assert.deepEqual(s.artists, ['Twin', 'Elise Lieberth']);
+  assert.deepEqual(s.version, { kind: 'cover', name: 'Cover', by: [] });
+  assert.equal(s.title, 'In The End');
+  assert.deepEqual(s.notes, ['multi_artist', 'release_tag', 'cover_release', 'version_in_title']);
+});
+
+test('other "... Release" tags are dropped from the title and never become a version', () => {
+  const s = suggest('A', 'Song [NCS Release]', '');
+  assert.equal(s.version, null);
+  assert.equal(s.title, 'Song');
+  assert.equal(suggest('A', 'Song (Foo Remix) (Free Release)', '').version.kind, 'remix');
+  assert.equal(suggest('A', 'Song (Release)', '').version, null);
+});
+
+test('"(mashup by X)" makes X the main artist and the artists before the dash the sources', () => {
+  const s = suggest('yaukoshi', 'КИНО x LXST CXNTURY - КОНЧИТСЯ ODIUM', 'mashup by yaukoshi');
+  assert.deepEqual(s.artists, ['yaukoshi']);
+  assert.deepEqual(s.version, { kind: 'mashup', name: 'mashup by yaukoshi', by: [], of: ['КИНО', 'LXST CXNTURY'] });
+  assert.equal(s.title, 'КОНЧИТСЯ ODIUM');
+  assert.deepEqual(suggest('Chan', 'A vs B - Song [DJ K & Q mashup]', '').artists, ['DJ K', 'Q']);
+  assert.equal(suggest('Chan', 'A + B - Song (bootleg by X)', '').version.kind, 'remix');
+});

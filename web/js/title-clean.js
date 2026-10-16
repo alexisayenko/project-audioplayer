@@ -41,13 +41,20 @@ function isNoise(text, allowed = NOISE_SET) {
   return words.every((w) => WORDS.has(w)) && words.some((w) => STRONG.has(w));
 }
 
+const RELEASE_KEEP = new Set('cover covers remix remixed mashup mix mixed edit'.split(' '));
+
+function isReleaseTag(text) {
+  const words = norm(text).split(' ').filter(Boolean);
+  return words.length > 1 && words.at(-1) === 'release' && !words.some((w) => RELEASE_KEEP.has(w));
+}
+
 function stripNoiseGroups(text, removed) {
   let s = text;
   let changed = true;
   while (changed) {
     changed = false;
     s = s.replace(GROUP, (m) => {
-      if (isNoise(m.slice(1, -1))) {
+      if (isNoise(m.slice(1, -1)) || isReleaseTag(m.slice(1, -1))) {
         removed.push(ws(m));
         changed = true;
         return ' ';
