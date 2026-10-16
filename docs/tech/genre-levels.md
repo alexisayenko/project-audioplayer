@@ -78,7 +78,7 @@ acid trance, afro house, alternative dance, big room house, breakbeat hardcore, 
 
 ## Decisions of 2026-10-16 (Alex)
 
-Data change, built and tested, not deployed: the startup migration rewrites the owner's tags on deploy (backup first, `backups-genre-merge/<uid>/library.json`).
+Data change, built, tested and deployed: the startup migration rewrites the owner's tags on deploy (backup first, `backups-genre-merge/<uid>/library.json`).
 
 Removed styles (gone from `genre_extras.json` and `genre_levels.json`; the old name stays an input alias in `ALIASES` and a synonym of the target, so old tags, picker input and share links still resolve):
 

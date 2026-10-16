@@ -142,7 +142,7 @@ and rules):
 - [`tech/ci-cd.md`](tech/ci-cd.md) — CI/CD playbook (manual
   workflows, test layers, deploy and release paths)
 - [`tech/decisions.md`](tech/decisions.md) — tech decisions (ADRs):
-  components, server, Cloudflare Tunnel, storage, open signup (ADR-0012), music-database lookups and identification (ADR-0013), Genres map (ADR-0014), pill tokenizer and title cleaning (ADR-0015), web player chrome (ADR-0016), server module structure and test strategy (ADR-0017), public read-only guest view (ADR-0018), domain migration to electrophone.cc (ADR-0019)
+  components, server, Cloudflare Tunnel, storage, open signup (ADR-0012), music-database lookups and identification (ADR-0013), Genres map (ADR-0014), pill tokenizer and title cleaning (ADR-0015), web player chrome (ADR-0016), server module structure and test strategy (ADR-0017), public read-only guest view (ADR-0018), domain migration to electrophone.cc (ADR-0019), Connect YouTube (ADR-0020), genre families and vocabulary (ADR-0021, ADR-0023), playlists (ADR-0022), structured credits and versions (ADR-0024), data model v2 and the versions concept (ADR-0025), per-save local commit with a timer push (ADR-0026)
 - [`ui-ux/README.md`](ui-ux/README.md) — screen + journey spec,
   section glossary
 - [`ui-ux/style-guide.md`](ui-ux/style-guide.md) — visual +
@@ -185,6 +185,7 @@ docs/
 │   ├── concepts/                       # entry: concepts/README.md
 │   ├── features/                       # entry: features/README.md
 │   ├── concept-catalog-and-audio.md    # catalog vs audio (ADR-0010)
+│   ├── concept-songs-versions-and-credits.md # songs, versions, credits (ADR-0024, ADR-0025)
 │   ├── concept-mirrored-spectrum.md    # Mirrored spectrum: objects and vocabulary
 │   ├── concept-digital-phosphor-led.md # digital phosphor LED display (Ice Blue Mirror 2)
 │   ├── screens.md                      # screens, library model, API

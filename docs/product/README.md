@@ -8,6 +8,8 @@ possible (or wasn't easy) before.]
 
 Catalog vs audio (proposed, ADR-0010): [`concept-catalog-and-audio.md`](concept-catalog-and-audio.md).
 
+Songs, versions and credits (ADR-0024, ADR-0025): [`concept-songs-versions-and-credits.md`](concept-songs-versions-and-credits.md).
+
 For the wider docs/ map and what-lives-where, see
 [`../README.md`](../README.md).
 

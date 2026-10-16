@@ -81,3 +81,34 @@ Credits migration (DATA-125): the first start of the structured-credits build re
 | `LEGAL_CONTACT` | unset | Optional email address or `https://` URL shown as the contact for song removal in the copyright note (`GET /legal`). Use a dedicated alias, not a personal address; invalid values are ignored with a startup warning |
 
 `X-Forwarded-Host` is trusted only from a loopback or LAN peer. Sessions are host-only cookies: sign in again on each host. Steps: [domain-migration.md](domain-migration.md).
+
+## Planned: git sync timer
+
+Planned (ADR-0026, [task-0021](../tasks/task-0021.md)), not built, not installed. Saves commit locally; this timer only pushes. The deploy user `claude` cannot write `/etc/systemd`, so root installs the units once (and runs `systemctl daemon-reload`) before `GIT_SYNC_MODE=timer` is set in `/etc/audioplayer/env`.
+
+```ini
+# /etc/systemd/system/audioplayer-gitsync.service  (planned)
+[Unit]
+Description=Electrophone git push
+[Service]
+Type=oneshot
+User=audioplayer
+EnvironmentFile=/etc/audioplayer/env
+ExecStart=/opt/audioplayer/venv/bin/python -m app.gitsync
+
+# /etc/systemd/system/audioplayer-gitsync.timer  (planned)
+[Unit]
+Description=Run the git push every minute
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=1min
+Persistent=true
+[Install]
+WantedBy=timers.target
+```
+
+- Only `git push`, per repo with unpushed commits, no lock, no pull. The pull happens at server startup.
+- Single-writer rule: only the `audioplayer` user commits to `data-storage` and `data-storage-lfs`; nobody edits them by hand or from another host.
+- Check: `systemctl list-timers audioplayer-gitsync.timer`, `journalctl -u audioplayer-gitsync`, `/health` `sync` (`ok`, `pending`, `stale`, `error`); Settings shows a warning mark and a nav dot while `stale` (oldest unpushed commit older than interval + 30 s) or `error`.
+- Rejected-push runbook: the timer stops pushing that repo and `sync` is `error`. As the service user in the data repo: `git fetch`, inspect `git log HEAD..origin/main` and `git log origin/main..HEAD`, rebase by hand (`git rebase origin/main`, resolve), `git push`, then `systemctl restart audioplayer` (resync) and `systemctl start audioplayer-gitsync.timer`.
+- Rollback: `GIT_SYNC_MODE=request`, `systemctl disable --now audioplayer-gitsync.timer`, restart `audioplayer`; run `python -m app.gitsync` once to push leftovers.

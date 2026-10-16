@@ -1,57 +1,73 @@
 # Changelog
 
-What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
+What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
-## 2026-10-16 (dock Visualizer split button, no background visualizer, built, not deployed)
+## 2026-10-16 (documentation: data model v2 and the versions concept)
 
-- Web: the dock Visualizer button is a split button: the icon part opens the full-screen visualizer (same as the Now playing button), the chevron part opens the mode menu; the dock foot row is 44 px high so the button no longer overhangs the dock (PLY-148). The background visualizer and the Settings switch "Visualizer background" are removed (VIZ-020); the visualizer and its settings panel (new gear button) exist only in full screen. Built, not deployed.
+- Docs: ADR-0025 records data model v2 (final names, the version block with `type`, `originalArtists` for cover and mashup only, the Artist table, runtime decade, DDEX adopted only for the display-artist role names and `version.type`, full DDEX and a Work/chain model deferred); new concept note [concept-songs-versions-and-credits](product/concept-songs-versions-and-credits.md); [ddex-terminology](tech/ddex-terminology.md) and task-0043 added. ADR-0026 plans per-save local commits with a systemd timer that only pushes, plus a Settings warning mark when pushes lag (amends ADR-0005; task-0021, NFR-111 to NFR-114, WEB-094, deploy.md and architecture.md updated; docs only, not built). Planned, not built; the changelog sections below are marked deployed or not deployed according to production at `c813d92`.
 
-## 2026-10-16 (song card without Decade, built, not deployed)
+## 2026-10-16 (mashup version kind, built, not deployed)
 
-- Web: the song card no longer shows the Decade row (the exact year is already shown); the `decade:` tag stays everywhere else (LIB-146). Built, not deployed.
+- Web and server: decision BJ1 - a mashup is a version of kind `mashup`; the makers are the main artists and the sources go in `version.of`, now a list of names (a single string is accepted and normalised, also for stored legacy values). Display `Maker A & Maker B - Title (mashup)`, details "Mashup of S1, S2". The form has the Mashup option and a context-aware "Cover of" / "Mashup of" pill field; the suggestion reads a trailing "(mashup)" and only suggests (makers unknown, sources only from an explicit x or vs). Rules DATA-140, DATA-141, ADD-127, ADD-128, LIB-147, API-136.
 
-## 2026-10-16 (Now playing cover button centred, built, not deployed)
+## 2026-10-16 (cover suggestion rule, built, not deployed)
 
-- Web: the play/pause circle on the Now playing cover sits exactly in the middle of the cover (it was about 44% down, above the title scrim); PLY-016. Built, not deployed.
+- Web and server: the "Suggested split" reads a title parenthetical ending in "Cover" as a cover of the original artist ("Cover of Gnarls Barkley") or, when the name is a credited artist, as the performer ("Cover performed by Sofia Karlberg"); ambiguous without artists; suggestion only (ADD-126); the migration review file carries `of` or `performer`.
 
-## 2026-10-16 (Music theory page, built, not deployed)
+## 2026-10-16 (dock Visualizer split button, no background visualizer, deployed)
 
-- Web: new "Music theory" navigation item (`#/theory`, after Song stats, open-book icon) with a read-only list of terms and brief descriptions from `web/data/theory-terms.json`; for now British Invasion, Drum machine and Syncopation (WEB-093). Built, not deployed.
+- Web: the dock Visualizer button is a split button: the icon part opens the full-screen visualizer (same as the Now playing button), the chevron part opens the mode menu; the dock foot row is 44 px high so the button no longer overhangs the dock (PLY-148). The background visualizer and the Settings switch "Visualizer background" are removed (VIZ-020); the visualizer and its settings panel (new gear button) exist only in full screen. Deployed (the dock key below replaces the split button).
 
-## 2026-10-16 (structured credits and versions, built, not deployed)
+## 2026-10-16 (dock Visualizer key, built, not deployed)
+
+- Web: the dock Visualizer button is now a plain square key like Previous and Next, placed left of Shuffle; no pill, chevron or mode dropdown in the dock (the mode is chosen inside the full-screen window); the dock foot row is back to 28 px (PLY-148). Built, not deployed.
+
+## 2026-10-16 (song card without Decade, deployed)
+
+- Web: the song card no longer shows the Decade row (the exact year is already shown); the `decade:` tag stays everywhere else (LIB-146). Deployed.
+
+## 2026-10-16 (Now playing cover button centred, deployed)
+
+- Web: the play/pause circle on the Now playing cover sits exactly in the middle of the cover (it was about 44% down, above the title scrim); PLY-016. Deployed.
+
+## 2026-10-16 (Music theory page, deployed)
+
+- Web: new "Music theory" navigation item (`#/theory`, after Song stats, open-book icon) with a read-only list of terms and brief descriptions from `web/data/theory-terms.json`; for now British Invasion, Drum machine and Syncopation (WEB-093). Deployed.
+
+## 2026-10-16 (structured credits and versions, deployed)
 - Fix: a legacy value that fails validation is kept in `raw.rejected` instead of being dropped; a version marker is no longer hidden by a title word that merely contains it (Recovery, Alive); the deploy runbook warns against rolling code back across the credits migration.
 
 - Server: songs now store `artists`, `featured`, `released`, an optional `version {kind, name, by, year, of}` and an immutable `raw`; `artist`, `remixer`, `year` and `remix_year` are derived in every response and still accepted in requests, so the iOS app is unchanged (DATA-127 to DATA-139, API-120 to API-135, IOS-072 to IOS-074, ADR-0024, [design](tech/metadata-model-design.md)).
 - Server: an idempotent startup migration converts old songs without splitting any credit, with a backup in `backups-credits/` and a review file of songs worth a look; `/preview` adds `raw`, `suggested_credits` and `released_suggestion`; `released` no longer falls back to the upload date (DATA-126); a song with a version never gets a MusicBrainz or Discogs link.
-- Web: the Add and Edit form has Artists, Featuring, First released, Version (kind, name, year, remixed / mixed by, cover of) and a Suggested split with Apply and Dismiss; the library, Now playing, share page, stats and the Media Session show one display line from the structure (ADD-111/112, LIB-134). Dry run on a copy of the live library: 201 songs, every derived artist, remixer, year and remix_year equal to the original, 63 songs listed for review. iOS needs no change; built, not deployed.
+- Web: the Add and Edit form has Artists, Featuring, First released, Version (kind, name, year, remixed / mixed by, cover of) and a Suggested split with Apply and Dismiss; the library, Now playing, share page, stats and the Media Session show one display line from the structure (ADD-111/112, LIB-134). Dry run on a copy of the live library: 201 songs, every derived artist, remixer, year and remix_year equal to the original, 63 songs listed for review. iOS needs no change; deployed.
 
-## 2026-10-16 (Now playing uses the standard dock, built, not deployed)
+## 2026-10-16 (Now playing uses the standard dock, deployed)
 
-- Web: Playback is now the first navigation item, followed by Playlists and Library, in the side rail, icon rail and phone tab bar; the default landing page stays Library (WEB-012). Built, not deployed.
-- Web: song card actions are icon buttons (Play/Pause, Download, Edit) with the Close link at the top right; "Add to playlist" stays text (LIB-146). Built, not deployed.
-- Web: the song card shows the title and the "Artist · Year" line over the bottom of the cover (Now playing scrim), clamped to 2 lines, plain text below when there is no cover (LIB-146). Built, not deployed.
+- Web: Playback is now the first navigation item, followed by Playlists and Library, in the side rail, icon rail and phone tab bar; the default landing page stays Library (WEB-012). Deployed.
+- Web: song card actions are icon buttons (Play/Pause, Download, Edit) with the Close link at the top right; "Add to playlist" stays text (LIB-146). Deployed.
+- Web: the song card shows the title and the "Artist · Year" line over the bottom of the cover (Now playing scrim), clamped to 2 lines, plain text below when there is no cover (LIB-146). Deployed.
 - Web: Now playing no longer has its own progress bar, times, transport tray and volume row; the standard mini-player dock now shows there too (it was hidden by a CSS rule) with the same seek, times, volume and toggles (PLY-146). The full-screen visualizer still hides it and uses its own overlay. The round thumbs of the seek and volume sliders get a 1px accent border like the selected Shuffle / Repeat buttons (PLY-147).
-- Web: the Visualizer mode dropdown moved from the Now playing page into the dock (PLY-148, VIZ-044): icon only, in the dock's second row after the volume (in the main row below 480 px), popup opens upward and is no longer clipped; the full-screen Visualizer button stays on Now playing. Built, not deployed.
+- Web: the Visualizer mode dropdown moved from the Now playing page into the dock (PLY-148, VIZ-044): icon only, in the dock's second row after the volume (in the main row below 480 px), popup opens upward and is no longer clipped; the full-screen Visualizer button stays on Now playing. Deployed.
 
-## 2026-10-16 (psytrance branch, built, not deployed)
+## 2026-10-16 (psytrance branch, deployed)
 
 - Server and web data: `psytrance` is now a level 2 umbrella beside `trance` with level 3 children dark, forest, progressive and full-on psytrance (new, not in Discogs, approved), goa trance and psybient (GEN-056); trance no longer lists them. The three-level cap is unchanged.
 
-## 2026-10-16 (remix year suggestion, built, not deployed)
+## 2026-10-16 (remix year suggestion, deployed)
 
 - Web and server: with a "Remix & additional production" value and an empty Remix year, the Add and Edit form suggests the YouTube or SoundCloud publish year (dashed, italic; a typed value is never touched, clearing the remix removes the suggestion); `POST /preview` and `POST /metadata` gain `published_year`, `POST /metadata` an optional `remix_year` hook (ADD-111, API-048).
 
-## 2026-10-16 (Wikipedia link search, built, not deployed)
+## 2026-10-16 (Wikipedia link search, deployed)
 
 - Server and web: "Get metadata" and the Add preview found no Wikipedia links for "What Is Love" by Haddaway because they came only from MusicBrainz relations (that recording has none, and its best release is a compilation), and `POST /metadata` returned only the album link, never the song or band link. Now a verified English Wikipedia search fills missing song, band and album links (TAG-087; infobox must match the artist, disambiguation pages never qualify), `/metadata` returns `wikipedia_song` and `wikipedia_artist`, and the web fills empty link fields from them (ADD-050); the found song page also corrects the year (1993 instead of 2002). iOS not changed.
 
-## 2026-10-16 (Genres map rework page, built, not deployed)
+## 2026-10-16 (Genres map rework page, deployed)
 
 - Web: new sidebar item "Genres map rework" (`#/genres-rework`, WEB-084) after "Genres map", with a drawn radial map of the Electronic genre tree (WEB-085 to WEB-087, GEN-051 to GEN-054, API-119, [task-0037](tasks/task-0037.md)): 15 umbrellas around the genre, their children fanning out, node size by songs in your library, a dashed ring for styles not in Discogs, dashed also-under links, pan and zoom, hover tooltips, details panel, and an outline list with search over names and synonyms. Server: `GET /genres/vocabulary` now carries `levels` and `genre_synonyms` from `server/data/genre_levels.json`. By default only styles with songs and their ancestors are drawn; "Show whole vocabulary" (remembered) adds the rest, empty standalone styles as dim dots on an outer arc, and also-under lines show only for the selected or hovered node. Fixed the map drag sticking to the pointer (drag now ends on pointer cancel, lost capture, blur or a move without a button; same guard added to the Genres map). Review badges (Alex approved, never on Discogs styles; Under question), flavour chips and filters (dim, not remove), status filter and display names (WEB-088). Outline rows get unique keys; level 2 labels on the map are never hidden (nudged, leader lines, truncated). Umbrellas in two genres (disco) show in both trees with an "also in" chip. Not checked in a browser; the data placements await Alex.
 
-- Server: Alex's genre decisions (TAG-086, GEN-055, built, not deployed; the deploy migration rewrites the owner's tags, 65 songs): 20 Electronic styles removed and folded through ALIASES (dance, electronic dance, electronica, chillout, electropop, french house, melodic house and others), `liquid drum and bass` added, `club` and `club music` fold into electronic instead of being dropped, `status` (approved, under question; Discogs outranks approval), `flavours` (block defined and served, not attached to any style yet, proposal in docs/tech/genre-flavours-proposal.md) and `display` fields in `genre_levels.json`, all served in the vocabulary payload.
+- Server: Alex's genre decisions (TAG-086, GEN-055, deployed; the deploy migration rewrites the owner's tags, 65 songs): 20 Electronic styles removed and folded through ALIASES (dance, electronic dance, electronica, chillout, electropop, french house, melodic house and others), `liquid drum and bass` added, `club` and `club music` fold into electronic instead of being dropped, `status` (approved, under question; Discogs outranks approval), `flavours` (block defined and served, not attached to any style yet, proposal in docs/tech/genre-flavours-proposal.md) and `display` fields in `genre_levels.json`, all served in the vocabulary payload.
 
-## 2026-10-16 (wrong genre folds fixed, built, not deployed)
+## 2026-10-16 (wrong genre folds fixed, deployed)
 
 - Server: BA2 corrections to the genre fold: `rave` now folds to electronic, `breakbeat hardcore` to breakbeat, `raggacore` is dropped (TAG-073, TAG-085). `migrate_tags.ONE_OFF` removes the artist-level noise tags from SNAP! "Rhythm Is A Dancer" (hardcore), Кар-мэн "Лондон, гудбай" (hardcore, dubstep, techno) and marshmello "WaVeZ" (hip hop, pop punk, hardstyle); backup in `backups-genre-merge`, idempotent, owner only.
 
@@ -59,7 +75,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 - Server: junk genre tags dropped for good (aaron smith, joris, skrux, medley, music video, party, popcorn, functional music, event music, party music, west coast swing), `⚈⚈` retagged to glitch hop, and `west coast swing` is no longer retagged to swing (TAG-085, [task-0035](tasks/task-0035.md)). A one-off table in the startup migration fixes the 5 affected songs (MIKA loses swing; Point Point, Air France, If You and Memory Reboot get a genre); backup in `backups-genre-merge`, idempotent.
 
-## 2026-10-16 (web style overhaul, built, not deployed)
+## 2026-10-16 (web style overhaul, deployed)
 
 - Design system: the Electrophone artifact (version 26) gains token families chart, stroke, state, motion, elevation, overlay, icon and control, `radius-xs`, `space-5`, `power-text`, two type styles, 15 web components (Icon, SearchField, SortControl, Toggle, Slider, Dialog, Sheet, Toast, Menu, TokenPill, Banner, StatCard, GenreMap, VisualizerChrome, SignIn) and a 45-icon Lucide and Simple Icons set; `docs/brand/tokens.json` is byte-identical to the artifact copy.
 - Tooling: `scripts/sync-design-system.py` emits a `[data-theme="dark"]` scope, `--font-*` shorthand variables and the new families, rejects unknown arguments and has `--check`; the iOS file only gained lines.
@@ -68,7 +84,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 - Web fixes: tab labels wrap at 399px, the focus ring follows the rounded input well, genres no longer clip mid-letter, the download ring fits three digits, the marquee padding matches its token.
 - Not done: Step 3 icon swaps, Step 4 brand mark and assets, toast exit motion and toast layering above the full visualizer, merging the Genres and Stats button families, the Screens board re-wire.
 
-## 2026-10-16 (sixth batch, built, not deployed)
+## 2026-10-16 (sixth batch, deployed)
 
 - Server: canonical genre vocabulary (ADR-0023, [task-0035](tasks/task-0035.md) phases 1 and 2, TAG-077 to TAG-084, API-117, API-118): `server/data/genre_styles.json` (512 Discogs styles under the 15 genres, each checked against the public Discogs search) and `server/data/genre_extras.json` (65 reviewed extras with family and parent: the kept subgenres of TAG-076 and the reviewed library tags), loaded once at start with validator tests (`test_genre_vocabulary.py`); `genre_families.json` is retired and families come from the new files.
 - Server: strict genre writes: `POST /songs` and `PATCH /songs/{id}` answer 422 `unknown_genre` with up to 5 "did you mean" names for a `genre:` value outside the vocabulary (after aliases and retags; a tag the song already carries still passes); suggestions from `/preview`, `/metadata`, `/lookup/wikipedia`, identify, yt-dlp and the metadata backfill silently drop values outside the list; new `GET /genres/vocabulary` (canonical list with family and genre or style level, built once, guests may read it) and `GET /genres` offers only canonical names.
@@ -76,17 +92,17 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 - Web: genre picker (TAG-080, [task-0035](tasks/task-0035.md) phase 3): the Genres field of the song form (Add and Edit) autocompletes over `GET /genres/vocabulary` with the family colour dot and the style or genre level; no free text (unknown text stays and offers "did you mean" chips); aliases, spelling variants and a trailing " music" resolve to the canonical name (the endpoint now also serves `aliases`); the Tags editor refuses a typed `genre:` tag; a 422 `unknown_genre` on save keeps the form open with the server's suggestions.
 - Web: hybrid Genres outline (GEN-046 to GEN-050): family, then Discogs style, then Wikidata subgenres below it (Electronic > Trance > Festival trance), the Wikidata umbrella chain never shown; nodes without a style fall back to the GEN-036 skip logic; counts, "also under" notes, Orphans, Now playing and the map's ancestor chain unchanged. Not checked in a browser. Discogs-style "also under" family links are not built.
 
-## 2026-10-16 (fifth batch, built, not deployed)
+## 2026-10-16 (fifth batch, deployed)
 
 - Server: genre cleanup (TAG-071, TAG-073, TAG-075, TAG-076, GEN-039): new aliases (dnb, drum & bass, drum n bass to drum and bass; edm to electronic dance; euro pop to europop; eurohouse to euro house; electronic pop to electropop; festival progressive house, festival trap and red disco to their parent), a new retag table (appalachian folk and bard to folk, west coast swing to swing, romantic to classical, psychedelic to psychedelic rock, nederpop to pop, orchestral to modern classical, alternative to alternative rock, indie to indie rock, progressive to progressive house when the song has an electronic tag else progressive rock), more junk dropped (popular, underground, club, cyberpunk); dystopian is retagged to darksynth (no established "dystopian synthwave" genre), real subgenres kept with a family entry, nu-nrg and uplifting trance get a hard trance and trance parent (neurofunk, liquid funk, techstep, melodic techno, darksynth, psybient, estrada, epic, trailer and others), disco now Funk / Soul, new wave Rock, acid jazz Jazz; `GET /genres` no longer offers built-in names that would be rewritten on save; the migration reruns at the next start (backup in `backups-genre-merge`, idempotent).
 
-## 2026-10-16 (fourth batch, built, not deployed)
+## 2026-10-16 (fourth batch, deployed)
 
 - Genres map: families are now the 15 Discogs genres plus Other (ADR-0021, GEN-037 to GEN-042, task-0033): a reviewed table `server/data/genre_families.json` (explicit label to family), then the song-weighted majority of the parents, then the umbrella rule, then Other; the keyword family map is removed; outline and legend follow the fixed Discogs order and hide empty families; 99.8% of the live library's songs get a family.
 - Genres map: a reviewed manual parent table (`server/app/data/genre_parents.json`, GEN-045) links orphans (pop punk, dance pop, synth-rock, dreamsynth, sunshine house); edges carry `origin: manual`; entries with a missing node or a cycle are skipped.
 - Server: vague/non-genre tags progressive music, underground music, dystopian music, comedy music, comedy, novelty music, novelty song and novelty are dropped for good (TAG-073); the migration removes them at the next start (backup in `backups-genre-merge`).
 
-## 2026-10-16 (built, not deployed)
+## 2026-10-16 (deployed)
 
 - Web: the Wikipedia button on the genre card and in Now playing uses the same serif W icon as the song form Links (one definition in `service-icons.js`; the thin line glyph is gone).
 - Web: the Genres outline also skips umbrella categories without own songs such as "regional music", "national music", "traditional music", "folk music by ..." and "music genre(s) by ..."; their children reattach to the nearest real ancestor or form their own family (GEN-036).

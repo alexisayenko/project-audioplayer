@@ -67,6 +67,8 @@ via a local name -> mount path/host config outside the repo; songs hold
 relative audio file names only (replaces `AUDIO_DOWNLOAD_DIR`). Each save costs a push
 (~1-2 s). The server never uses `C:\Alex\data-storage` on the PC.
 
+Planned (ADR-0026, task-0021, not built): data flow is clients -> server API -> files on disk; the server commits each save locally and never talks to GitHub inside a request, and a systemd timer (`audioplayer-gitsync`, every minute) only pushes (single writer; pull only at server startup). Web and iOS never talk to GitHub. The paragraph above describes the current synchronous path.
+
 ## Server (`server/`)
 
 | Endpoint | Purpose |

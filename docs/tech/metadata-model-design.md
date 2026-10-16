@@ -1,6 +1,6 @@
 # Metadata model design: structured credits and versions
 
-Design for [task-0036](../tasks/task-0036.md), written against the real code on 2026-10-16. Requirements it implements: DATA-120 to DATA-125, ADD-111/112, LIB-134 (built 2026-10-16, not deployed). This file is the single plan for three builders: `server`, `form`, `display`. Builders append only to the "Contract changes" appendix at the end.
+Design for [task-0036](../tasks/task-0036.md), written against the real code on 2026-10-16. Requirements it implements: DATA-120 to DATA-125, ADD-111/112, LIB-134 (built and deployed 2026-10-16). This file is the single plan for three builders: `server`, `form`, `display`. Builders append only to the "Contract changes" appendix at the end.
 
 Decisions taken here that go beyond the task text are marked **D** and listed again under Risks.
 
@@ -438,3 +438,8 @@ Builders append dated entries below; never edit an earlier entry.
 3. `ios_contract.json` `always_present` has no `album` (the app decodes it as optional and the server omits it for songs without one); it lists `artists`, `featured`, `released`, `remix_year` instead.
 4. `/metadata` with an unknown `version_kind` is 422; `/preview` `released_suggestion` is `null` when no source gave a year.
 5. Rules written: DATA-127..139, API-120..135, IOS-072..074; DATA-120..126 are now "implemented" (DATA-126 text unchanged). ADR-0024 added.
+6. Cover suggestion (ADD-126): `credits_split.suggest` and `credits-split.js` apply the COVER rule to a title parenthetical `NAME Cover` / `NAME Cover Version`: NAME among the artists or featured (NFD, accents stripped, lower case) means performer (note `cover_performer`, no `of`), else `version.of = NAME`; no artists to compare gives note `cover_ambiguous` and no `of`. A remix or other-kind parenthetical earlier wins as before (the cover one stays in the title). The migration review file adds `of`, `performer` or `ambiguous` to `suggested.version`; stored data is untouched. Live and unplugged are unchanged.
+7. Mashups (decision BJ1): `credits.KINDS` gains `mashup`; `version.of` is a list of names for `cover` and `mashup` (`credits.of_names` reads a string or list, `credits.ensure` normalises a stored string; `VersionIn.of` takes `str | list[str]`); `credits_split.suggest` and `credits-split.js` read a trailing `(mashup)` / `[Mash-Up]` / `(mash up)` or a Remixer text of exactly that word as kind `mashup`, with the new note `mashup_makers_unknown` and `of` only from an explicit `x`, `vs`, `vs.` or multiplication-sign split; the cover suggestion's `of` is now `[NAME]` in both languages and in `credits_split_cases.json`. The enrichment guard (`has_version`, `version_kind`) is generic, so a mashup already withholds the MusicBrainz and Discogs links and the album. Web: `token-field.js` gets the pill kind `of` with `setLabel`. Rules: DATA-140, DATA-141, ADD-127, ADD-128, LIB-147, API-136.
+## Appendix: final model v2 (2026-10-16)
+
+Alex approved the final song data model (renames, `version` block, Artist table, runtime decade). It supersedes the field names above once built. Spec: [data-model.md, Data model v2](../specs/data-model.md#data-model-v2-final-model-approved-2026-10-16) (DATA-144 to DATA-155); ticket: [task-0043](../tasks/task-0043.md).
