@@ -676,6 +676,7 @@ body[data-route="playback"] main { display: none; }
 @media (max-width: 479px) { .remix-row > .field:last-child { flex: 1 1 100%; margin-top: var(--space-3); } }
 .remix-row input.suggested { border-style: dashed; font-style: italic; }
 .remix-row.credits-version > .field:first-child { flex: 0 0 9rem; }
+.remix-row select { display: block; height: var(--hit); appearance: none; -webkit-appearance: none; padding-right: var(--space-6); background-image: linear-gradient(45deg, transparent 50%, var(--ink-muted) 50%), linear-gradient(135deg, var(--ink-muted) 50%, transparent 50%); background-position: calc(100% - var(--space-4) - var(--space-1)) 50%, calc(100% - var(--space-4)) 50%; background-size: var(--space-1) var(--space-1); background-repeat: no-repeat; }
 .remix-row.credits-version > .field:last-child { flex: 1 1 200px; min-width: 0; }
 @media (max-width: 479px) { .remix-row.credits-version > .field:first-child { flex: 1 1 100%; } .remix-row.credits-version > .field:last-child { margin-top: var(--space-3); } }
 .credits-block { margin-top: var(--space-3); }
