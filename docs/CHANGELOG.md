@@ -2,6 +2,14 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-16 (Genres map rework page, built, not deployed)
+
+- Web: new sidebar item "Genres map rework" (`#/genres-rework`, WEB-084) after "Genres map", with a scaffold page that reads genre counts from `/genres/vocabulary` and `/genres/graph`; the three-level map will be built there.
+
+## 2026-10-16 (leftover genre tags, deployed)
+
+- Server: junk genre tags dropped for good (aaron smith, joris, skrux, medley, music video, party, popcorn, functional music, event music, party music, west coast swing), `⚈⚈` retagged to glitch hop, and `west coast swing` is no longer retagged to swing (TAG-085, [task-0035](tasks/task-0035.md)). A one-off table in the startup migration fixes the 5 affected songs (MIKA loses swing; Point Point, Air France, If You and Memory Reboot get a genre); backup in `backups-genre-merge`, idempotent.
+
 ## 2026-10-16 (web style overhaul, built, not deployed)
 
 - Design system: the Electrophone artifact (version 26) gains token families chart, stroke, state, motion, elevation, overlay, icon and control, `radius-xs`, `space-5`, `power-text`, two type styles, 15 web components (Icon, SearchField, SortControl, Toggle, Slider, Dialog, Sheet, Toast, Menu, TokenPill, Banner, StatCard, GenreMap, VisualizerChrome, SignIn) and a 45-icon Lucide and Simple Icons set; `docs/brand/tokens.json` is byte-identical to the artifact copy.

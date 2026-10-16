@@ -8,13 +8,47 @@ import shutil
 from pathlib import Path
 from typing import Any
 
-from . import deps, genre_filter, library
+from . import deps, genre_filter, library, users
 from .jsonio import write_json_atomic
 from .tags import namespace, namespaced_values
 
 BACKUP_DIR = "backups-genre-merge"
 SAMPLE_IDS = 5
 _log = logging.getLogger(__name__)
+
+ONE_OFF: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
+    "RVmG_d3HKBA": (("genre:swing",), ()),
+    "soundcloud-168294142": ((), ("genre:glitch hop",)),
+    "soundcloud-122880128": ((), ("genre:french house",)),
+    "soundcloud-158983912": ((), ("genre:house",)),
+    "wL8DVHuWI7Y": ((), ("genre:electronic",)),
+}
+
+
+def apply_one_off(songs: list[dict[str, Any]]) -> list[str]:
+    """TAG-085, one-off: per song id, remove a wrong genre tag and give a song left without any `genre:` tag its target genre. Returns the ids changed; a rerun changes nothing."""
+    changed: list[str] = []
+    for song in songs:
+        rule = ONE_OFF.get(str(song.get("id")))
+        if not rule:
+            continue
+        remove, add = rule
+        tags = [str(t) for t in song.get("tags") or []]
+        new = [t for t in tags if t not in remove]
+        if add and not any(namespace(t) == "genre" for t in new):
+            new += [t for t in add if t not in new]
+        if new != tags:
+            song["tags"] = new
+            changed.append(str(song.get("id")))
+    return changed
+
+
+def one_off_pending(path: Path) -> bool:
+    """True when the loaded (cleaned) library still needs `apply_one_off`; only the owner's library is ever touched."""
+    if path.parent.name != users.owner_uid():
+        return False
+    songs = library.load(path)
+    return bool(apply_one_off([dict(s) for s in songs if str(s.get("id")) in ONE_OFF]))
 
 
 def _stale(path: Path) -> bool:
@@ -75,13 +109,17 @@ def write_review(path: Path) -> int:
 
 def migrate(path: Path) -> bool:
     """Rewrite one library.json when a genre tag is not canonical; keeps a one-time backup first. True when rewritten."""
-    if not _stale(path):
+    if not (_stale(path) or one_off_pending(path)):
         return False
     backup = backup_path(path)
     if not backup.exists():
         backup.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(path, backup)
-    library.save_doc(path, library.load_doc(path))
+    doc = library.load_doc(path)
+    if path.parent.name == users.owner_uid():
+        for sid in apply_one_off(doc["songs"]):
+            _log.info("one-off genre fix applied to song %s", sid)
+    library.save_doc(path, doc)
     return True
 
 
@@ -93,7 +131,7 @@ def run() -> int:
     for lib in sorted(users_dir.glob("*/library.json")):
         uid = lib.parent.name
         try:
-            if _stale(lib):
+            if _stale(lib) or one_off_pending(lib):
                 with deps.tx(uid, "merge genre tags"):
                     done += migrate(lib)
                 _log.info("genre tags merged for %s", uid[:8])
