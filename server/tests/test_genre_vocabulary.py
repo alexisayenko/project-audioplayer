@@ -280,6 +280,9 @@ def test_vocabulary_endpoint_lists_every_name_with_family_and_level(client):
     assert by["rock"]["level"] == "genre" and by["rock"]["family"] == "Rock"
     assert by["neurofunk"]["extra"] and by["neurofunk"]["parent"] == "drum and bass"
     assert [g["name"] for g in body["genres"]] == sorted(by)
+    assert body["aliases"]["dnb"] == "drum and bass" and body["aliases"]["indie"] == "indie rock"
+    assert "progressive" not in body["aliases"]
+    assert set(body["aliases"].values()) <= set(by)
 
 
 def test_vocabulary_endpoint_is_built_once(client):

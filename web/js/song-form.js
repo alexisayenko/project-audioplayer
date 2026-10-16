@@ -14,6 +14,7 @@ import { hasAudio } from './playable.js';
 import { cleanTitleEx } from './title-clean.js';
 import { titleCleaner } from './song-form-title.js';
 import { bpmRow } from './song-form-bpm.js';
+import { unknownGenre } from './genre-vocab.js';
 
 export function songForm({ mode = 'add', song = {}, source = null, onChange = null } = {}) {
   const isAdd = mode === 'add';
@@ -258,6 +259,12 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
     linkProblems,
     setValues,
     focus: () => f.title.focus(),
+    saveError(ex) {
+      const u = unknownGenre(ex);
+      if (!u) return null;
+      genres.reject(u);
+      return `"${u.value}" is not in the genre list. Pick a genre under Genres.`;
+    },
     reset() {
       abortAll();
       mbUrl = initialMb();

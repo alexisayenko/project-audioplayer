@@ -90,7 +90,7 @@ export function editDialog(song) {
       await store.refresh();
       toast('Saved');
     } catch (ex) {
-      err.textContent = ex.message;
+      err.textContent = sf.saveError(ex) || ex.message;
       err.hidden = false;
     }
   });

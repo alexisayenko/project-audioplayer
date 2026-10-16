@@ -3,6 +3,7 @@ import { icon } from './icons.js';
 import { store } from './store.js';
 import { splitInput } from './tag-input.js';
 import { canonicalCountry, filterCountries } from './countries.js';
+import { resolveGenre, cachedIndex } from './genre-vocab.js';
 import { isHiddenTag, tagGroups, tagLabel, tagText, tagSearchText, withDecade, decadeRank } from './tagname.js';
 
 const same = (a, b) => a.toLocaleLowerCase() === b.toLocaleLowerCase();
@@ -23,6 +24,7 @@ export function tagEditor({ tags = [], suggested = [], year = null, onChange = n
   const node = el('div', { class: 'tag-editor' }, input, note, picker, chosen, sugBox, pool);
   const COUNTRY = /^\s*country\s*:/i;
   const isCountry = (t) => /^country:/i.test(t);
+  const isGenre = (t) => /^genre:/i.test(t);
   const badCountry = (t) => isCountry(t) && !canonicalCountry(t.slice(8));
 
   const has = (t) => current.some((x) => same(x, t));
@@ -38,11 +40,16 @@ export function tagEditor({ tags = [], suggested = [], year = null, onChange = n
         const code = canonicalCountry(t.slice(t.indexOf(':') + 1));
         if (!code) { refused.push(t); continue; }
         t = `country:${code}`;
+      } else if (isGenre(t)) {
+        const hit = resolveGenre(t.slice(t.indexOf(':') + 1), cachedIndex());
+        if (!hit) { refused.push(t); continue; }
+        t = `genre:${hit.name}`;
       }
       if (!isHiddenTag(t) && !has(t)) current.push(t);
     }
     input.value = [rest, ...refused].filter(Boolean).join(', ');
     note.hidden = !refused.length;
+    note.textContent = refused.some(isGenre) ? 'Pick a genre from the Genres list' : 'Pick a country from the list';
     render();
   }
 

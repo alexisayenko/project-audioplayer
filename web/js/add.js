@@ -151,7 +151,7 @@ export function openAdd() {
         toast('Saved to library');
       } catch (ex) {
         save.disabled = !!preview.in_library;
-        err.replaceChildren(el('p', { class: 'msg error' }, ex.message));
+        err.replaceChildren(el('p', { class: 'msg error' }, sf.saveError(ex) || ex.message));
       }
     });
   }

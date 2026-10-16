@@ -25,6 +25,7 @@ export class ApiError extends Error {
     this.status = status;
     this.code = code;
     this.retryMinutes = retryMinutes;
+    this.data = null;
   }
 }
 
@@ -54,6 +55,7 @@ async function request(method, path, body, signal, raw = false) {
     }
     const code = data?.error || '';
     const err = new ApiError(res.status, friendly(code, data, detail) || `Request failed (${res.status})`, code, Number(data?.retry_after_minutes) || 0);
+    err.data = data;
     if (code === 'guest_limit') {
       const ev = new Event('guest-limit');
       ev.detail = err.message;
@@ -116,6 +118,7 @@ export const api = {
   tags: () => request('GET', '/tags'),
   genreGraph: () => request('GET', '/genres/graph'),
   genres: () => request('GET', '/genres').then((d) => (Array.isArray(d?.genres) ? d.genres : [])),
+  genreVocabulary: () => request('GET', '/genres/vocabulary'),
   preview: (url, signal) => request('POST', '/preview', { url }, signal),
   metadata: (body, signal) => request('POST', '/metadata', body, signal),
   addSong: (url, metadata, tags, keepTitle = false) => request('POST', '/songs', { url, metadata, tags, audio: false, ...(keepTitle ? { keep_title: true } : {}) }),

@@ -162,8 +162,21 @@ def suggest(value: str, extra_names: dict[str, str] | None = None, limit: int = 
     return [n for n, _ in sorted(scored.items(), key=lambda kv: (-kv[1], len(kv[0]), kv[0]))][:limit]
 
 
+def _aliases(v: Vocabulary) -> dict[str, str]:
+    """Loose spelling to canonical name (ALIASES and RETAGS whose target is in the vocabulary), so a picker can resolve what a user types."""
+    from . import genre_filter
+
+    out: dict[str, str] = {}
+    for table in (genre_filter.ALIASES, genre_filter.RETAGS):
+        for loose, target in table.items():
+            name = target if target in v.entries else v.by_key.get(vkey(target))
+            if loose != genre_filter.PROGRESSIVE and name:
+                out[" ".join(loose.lower().split())] = name
+    return dict(sorted(out.items()))
+
+
 def vocabulary() -> dict[str, Any]:
-    """Payload of `GET /genres/vocabulary`: every canonical name with family, level and parent; built once."""
+    """Payload of `GET /genres/vocabulary`: every canonical name with family, level and parent, plus `aliases`; built once."""
     global _payload
     v = load()
     with _lock:
@@ -173,5 +186,5 @@ def vocabulary() -> dict[str, Any]:
                   "also_under": list(v.also_under.get(e.name, ()))} for e in v.entries.values()),
                 key=lambda r: r["name"],
             )
-            _payload = {"families": list(v.families), "genres": rows, "count": len(rows)}
+            _payload = {"families": list(v.families), "genres": rows, "count": len(rows), "aliases": _aliases(v)}
         return _payload

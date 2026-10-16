@@ -3,8 +3,12 @@ import assert from 'node:assert/strict';
 import { installDom, makeEvent, stubFetch, flush } from './test-dom.mjs';
 
 installDom();
-stubFetch(() => ({ body: {} }));
+const VOCAB = { genres: ['ambient', 'dub', 'rock'].map((name) => ({ name, family: 'Electronic', level: 'style', parent: null, extra: false, also_under: [] })), aliases: {} };
+stubFetch((url) => ({ body: url === '/genres/vocabulary' ? VOCAB : {} }));
 const { songForm } = await import('./song-form.js');
+const { loadVocabulary } = await import('./genre-vocab.js');
+const { ApiError } = await import('./api.js');
+await loadVocabulary();
 
 const inputs = (f) => f.node.querySelectorAll('input');
 const pillsOf = (f, label) => f.node.querySelector(`[aria-label="${label}"]`).querySelectorAll('.token-text').map((n) => n.textContent);
@@ -209,4 +213,17 @@ test('Links region: collapsed by default, one labelled field per source, filled 
   mb.value = 'https://musicbrainz.org/recording/y';
   mb.dispatchEvent(makeEvent('input'));
   assert.equal(f.values().musicbrainz_url, 'https://musicbrainz.org/recording/y');
+});
+
+test('saveError turns a 422 unknown_genre into an inline message with suggestions and keeps the form', () => {
+  const f = songForm({ mode: 'edit', song: { id: 'a', title: 'T', tags: [] } });
+  const e = new ApiError(422, 'Unknown genre: rok. Did you mean: rock?', 'unknown_genre');
+  e.data = { error: 'unknown_genre', value: 'rok', suggestions: ['rock'] };
+  const msg = f.saveError(e);
+  assert.match(msg, /"rok" is not in the genre list/);
+  const hint = f.node.querySelector('.genre-hint');
+  assert.equal(hint.hidden, false);
+  hint.querySelectorAll('button')[0].click();
+  assert.deepEqual(f.values({ commit: false }).tags, ['genre:rock']);
+  assert.equal(f.saveError(new ApiError(500, 'boom')), null);
 });
