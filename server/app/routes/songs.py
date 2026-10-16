@@ -164,10 +164,12 @@ def _apply_source_links(updated: dict[str, Any], changes: dict[str, Any]) -> Non
 
 
 def _apply_countries(updated: dict[str, Any], countries: list[str], table: list[dict[str, Any]]) -> None:
-    """Country tags of a request go to the Artist table (DATA-147): replaced for a song with exactly one main artist, ignored otherwise."""
+    """Country tags of a request go to the Artist table (DATA-147): replaced for a song with exactly one main artist; with several main artists a change is refused (DATA-160), the unchanged echo of the derived view passes."""
     names = credits.main_artists(updated)
     if len(names) == 1:
         artist_table.set_countries(table, names[0], countries)
+    elif set(countries) != set(artist_table.countries_for(table, names)):
+        raise HTTPException(status_code=422, detail="Countries belong to artists; this song has several main artists, edit them via the artist")
 
 
 def _edited(song: dict[str, Any], changes: dict[str, Any], table: list[dict[str, Any]]) -> dict[str, Any]:
