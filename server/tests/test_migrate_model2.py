@@ -175,7 +175,7 @@ def test_countries_go_to_single_artists_conflicts_and_groups_are_reviewed():
     assert report["review"]["multi_artist_countries"] == [{"id": "e", "mainArtists": ["P", "Q"], "countries": ["gb"]}]
     assert report["tags_removed"] == {"decade": 2, "lang": 1, "country": 5}
     assert report["decade_tags_disagreeing_with_release_year"] == 1
-    assert doc["songs"][0]["tags"] == ["genre:house"]
+    assert doc["songs"][0]["genres"] == ["house"] and "tags" not in doc["songs"][0]
 
 
 def test_review_file_is_written_on_apply(tmp_path):

@@ -605,7 +605,7 @@ def test_genre_migration_backup_idempotent(tmp_path, monkeypatch):
     original = json.dumps({"settings": {}, "songs": [{"id": "a", "title": "A", "tags": ["genre:house music", "genre:house", "genre:electronic music", "x"]}]})
     lib.write_text(original)
     assert migrate_tags.run() == 1
-    assert json.loads(lib.read_text())["songs"][0]["tags"] == ["genre:house", "genre:electronic", "x"]
+    assert library.tag_list(json.loads(lib.read_text())["songs"][0]) == ["genre:house", "genre:electronic", "x"]
     assert (tmp_path / "backups-genre-merge" / "u1" / "library.json").read_text() == original
     assert not (tmp_path / "backups-genre-merge" / "u2" / "library.json").exists()
     assert migrate_tags.run() == 0
@@ -627,8 +627,8 @@ def test_genre_migration_aliases_drops_and_prefixes(tmp_path, monkeypatch):
     lib.write_text(original)
     assert migrate_tags.run() == 1
     songs = json.loads(lib.read_text())["songs"]
-    assert songs[0]["tags"] == ["genre:eurodance"]
-    assert songs[1]["tags"] == ["genre:pop", "genre:deep house"]
+    assert library.tag_list(songs[0]) == ["genre:eurodance"]
+    assert library.tag_list(songs[1]) == ["genre:pop", "genre:deep house"]
     assert (tmp_path / "backups-genre-merge" / "u1" / "library.json").read_text() == original
     assert migrate_tags.run() == 0
 
@@ -647,7 +647,7 @@ def test_vague_genres_dropped_by_migration_idempotent(tmp_path, monkeypatch):
     ]})
     lib.write_text(original)
     assert migrate_tags.run() == 1
-    tags = [s["tags"] for s in json.loads(lib.read_text())["songs"]]
+    tags = [library.tag_list(s) for s in json.loads(lib.read_text())["songs"]]
     assert tags == [["genre:house"], []]
     assert (tmp_path / "backups-genre-merge" / "u1" / "library.json").read_text() == original
     assert migrate_tags.run() == 0
@@ -671,7 +671,7 @@ def test_migration_merges_dnb_retags_and_drops_idempotent(tmp_path, monkeypatch)
     ]})
     lib.write_text(original)
     assert migrate_tags.run() == 1
-    tags = [s["tags"] for s in json.loads(lib.read_text())["songs"]]
+    tags = [library.tag_list(s) for s in json.loads(lib.read_text())["songs"]]
     assert tags == [
         ["genre:drum and bass", "genre:liquid drum and bass", "genre:electronic"],
         ["genre:melodic techno", "genre:progressive house"],
@@ -682,4 +682,4 @@ def test_migration_merges_dnb_retags_and_drops_idempotent(tmp_path, monkeypatch)
     ]
     assert (tmp_path / "backups-genre-merge" / "u1" / "library.json").read_text() == original
     assert migrate_tags.run() == 0
-    assert [s["tags"] for s in json.loads(lib.read_text())["songs"]] == tags
+    assert [library.tag_list(s) for s in json.loads(lib.read_text())["songs"]] == tags

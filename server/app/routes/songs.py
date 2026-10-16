@@ -12,6 +12,7 @@ from ..downloads import (
     add_metadata_only, mark_started, new_job, reject_unknown_country, reject_unknown_genre, run_download, run_fetch_audio,
 )
 from ..links import Refused, resolve_link
+from ..tags import namespace
 from ..schemas import CreateSongRequest, PatchSongRequest
 
 router = APIRouter()
@@ -39,7 +40,7 @@ def _started_response(vid: str, began: bool) -> dict[str, str]:
 @router.post("/songs", status_code=202, responses=deps.responses(409))
 def create_song(req: CreateSongRequest, user: dict[str, Any] = Depends(deps.require_token)):
     uid, owner = user["uid"], user["owner"]
-    cleaned = library.clean_tags(req.tags)
+    cleaned = library.merge_genres(req.genres, req.tags)
     reject_unknown_country(cleaned)
     reject_unknown_genre(cleaned)
     sent = req.metadata.model_dump(exclude_unset=True)
@@ -66,10 +67,10 @@ def create_song(req: CreateSongRequest, user: dict[str, Any] = Depends(deps.requ
     if meta.get("title") and not req.keep_title:
         meta["title"] = titleclean.clean(meta["title"])
     if not req.audio:
-        return add_metadata_only(uid, vid, link, meta, library.clean_tags(req.tags))
+        return add_metadata_only(uid, vid, link, meta, library.merge_genres(req.genres, req.tags))
     began = deps.SCHED.submit(
         uid, owner,
-        lambda: run_download(uid, owner, vid, meta, library.clean_tags(req.tags), link.url), mark_started(key))
+        lambda: run_download(uid, owner, vid, meta, library.merge_genres(req.genres, req.tags), link.url), mark_started(key))
     return _started_response(vid, began)
 
 
@@ -184,12 +185,17 @@ def _edited(song: dict[str, Any], changes: dict[str, Any], table: list[dict[str,
     if "bpm" in changes:
         updated["bpm"] = round(changes["bpm"]) if changes["bpm"] is not None else None
     _apply_links(updated, changes)
-    if changes.get("tags") is not None:
-        cleaned = library.clean_tags(changes["tags"])
+    sent_tags, sent_genres = changes.get("tags"), changes.get("genres")
+    if sent_tags is not None or sent_genres is not None:
+        own = sent_tags if sent_tags is not None else song.get("tags") or []
+        if sent_genres is not None:
+            own = [t for t in own if namespace(str(t)) != "genre"]
+        cleaned = library.merge_genres(sent_genres, own)
         reject_unknown_country(cleaned)
         reject_unknown_genre(cleaned, library.clean_tags(song.get("tags") or []))
         updated["tags"], countries, _ = library.split_tags(cleaned)
-        _apply_countries(updated, countries, table)
+        if sent_tags is not None:
+            _apply_countries(updated, countries, table)
     if not updated.get("title"):
         raise HTTPException(status_code=422, detail="title must not be empty")
     updated["updated_at"] = library.now_utc()

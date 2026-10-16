@@ -86,8 +86,11 @@ export function addBody(v) {
 
 export const storedTags = (tags) => (Array.isArray(tags) ? tags.filter((t) => !/^(decade|lang):/i.test(t)) : tags);
 
+export const genresOf = (tags) => (Array.isArray(tags) ? tags.filter((t) => /^genre:/i.test(t)).map((t) => t.slice(6).trim()).filter(Boolean) : []);
+export const otherTags = (tags) => (Array.isArray(tags) ? tags.filter((t) => !/^(genre|decade|lang):/i.test(t)) : []);
+
 export function patchBody(v, stored = {}) {
-  return { ...songFields(v, stored), version: versionOf(v, storedYears(stored).version), tags: storedTags(v.tags), ...wikiFieldsOf(v), ...sourceLinkChanges(v, stored) };
+  return { ...songFields(v, stored), version: versionOf(v, storedYears(stored).version), genres: genresOf(v.tags), tags: otherTags(v.tags), ...wikiFieldsOf(v), ...sourceLinkChanges(v, stored) };
 }
 
 

@@ -63,8 +63,8 @@ def _stale(path: Path) -> bool:
     if not isinstance(songs, list):
         return False
     for s in songs:
-        tags = s.get("tags") if isinstance(s, dict) else None
-        if not isinstance(tags, list):
+        tags = library.tag_list(s) if isinstance(s, dict) else None
+        if not tags:
             continue
         watched = [str(t) for t in tags if namespace(t) in ("genre", "country", "lang")]
         if [t for t in library.clean_tags([str(t) for t in tags]) if namespace(t) in ("genre", "country", "lang")] != watched:
