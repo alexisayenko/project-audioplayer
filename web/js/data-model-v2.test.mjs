@@ -36,7 +36,7 @@ test('withRuntimeDecade derives the decade tag from releaseYear and replaces a s
   assert.deepEqual(withRuntimeDecade({ releaseYear: 2003, tags: ['decade:90s', 'x'] }).tags, ['x', 'decade:00s']);
   assert.deepEqual(withRuntimeDecade({ releaseYear: 1920, tags: ['decade:90s'] }).tags, []);
   const legacy = { year: 1994, tags: ['decade:90s'] };
-  assert.equal(withRuntimeDecade(legacy), legacy);
+  assert.deepEqual(withRuntimeDecade(legacy).tags, ['decade:90s']);
 });
 
 test('stats read releaseYear and fall back to the legacy year', () => {
@@ -82,4 +82,12 @@ test('Library filters and decade chips use the decade computed from releaseYear'
   filterByTags(['decade:90s']);
   assert.deepEqual(visibleSongs().map((s) => s.id), ['a']);
   assert.equal(unsetCount('years'), 1);
+});
+
+test('the decade follows the displayed year: the version year when there is one, else the original', () => {
+  const base = { title: 'T', mainArtists: ['A'], releaseYear: 1985, tags: ['decade:60s', 'genre:house'] };
+  const remix = { ...base, version: { type: 'remix', name: 'X Remix', releaseYear: 2019 } };
+  assert.deepEqual(withRuntimeDecade(remix).tags, ['genre:house', 'decade:10s']);
+  assert.deepEqual(withRuntimeDecade({ ...remix, version: { ...remix.version, releaseYear: null } }).tags, ['genre:house', 'decade:80s']);
+  assert.deepEqual(withRuntimeDecade(base).tags, ['genre:house', 'decade:80s']);
 });
