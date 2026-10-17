@@ -138,3 +138,29 @@ test('guests never get a sync mark', async () => {
   clearGuest();
   state.health = { sync: 'ok' };
 });
+
+test('the owner build line follows /health and disappears without a build or when offline', async () => {
+  const el = document.getElementById('server-build');
+  assert.equal(el.hidden, true);
+  state.healthOk = true;
+  state.health = { sync: 'ok', build: { sha: '68df2bf0123456789abcdef0123456789abcdef0', committed_at: '2026-10-17T08:00:00Z', deployed_at: '2026-10-17T12:05:00Z' } };
+  await globalThis.__poll();
+  await flush();
+  assert.equal(el.hidden, false);
+  assert.match(el.textContent, /^Build 68df2bf · deployed \d{4}-\d\d-\d\d \d\d:\d\d$/);
+  assert.match(el.title, /^Commit 68df2bf0123456789abcdef0123456789abcdef0\ncommitted 2026-10-17 08:00 UTC\ndeployed 2026-10-17 12:05 UTC$/);
+  state.health = { sync: 'ok' };
+  await globalThis.__poll();
+  await flush();
+  assert.equal(el.hidden, true);
+  assert.equal(el.textContent, '');
+  state.health = { sync: 'ok', build: { sha: '68df2bf0123456789abcdef0123456789abcdef0', deployed_at: '2026-10-17T12:05:00Z' } };
+  await globalThis.__poll();
+  await flush();
+  state.healthOk = false;
+  await globalThis.__poll();
+  await flush();
+  assert.equal(el.hidden, true);
+  state.healthOk = true;
+  state.health = { sync: 'ok' };
+});

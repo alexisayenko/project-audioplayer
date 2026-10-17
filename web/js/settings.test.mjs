@@ -218,3 +218,20 @@ test('timer not installed is spelled out on the card', async () => {
   cleanup();
   store.sync = null;
 });
+
+test('the library card shows a Build row only when /health carried a build', async () => {
+  auth.email = 'me@x.y';
+  store.sync = 'ok';
+  store.build = null;
+  route({ cfg: {} });
+  let m = mount();
+  await flush();
+  assert.doesNotMatch(m.root.textContent, /Build/);
+  m.cleanup();
+  store.build = { text: 'Build 68df2bf · deployed 2026-10-17 14:05', title: 'Commit x' };
+  m = mount();
+  await flush();
+  assert.match(m.root.textContent, /Build68df2bf · deployed 2026-10-17 14:05/);
+  m.cleanup();
+  store.build = null;
+});

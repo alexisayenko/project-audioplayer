@@ -49,7 +49,7 @@ def test_fast_forward_is_applied_and_visible_without_a_restart(tmp_path):
     assert library.load(clone / "audioplayer" / LIB)[0]["title"] == "T"
     st = s.sync_status(True)
     assert st["state"] == "ok"
-    assert st["inbound"] == {"enabled": True, "last_pull_at": st["inbound"]["last_pull_at"], "behind": 0}
+    assert st["inbound"] == {"enabled": True, "last_pull_at": st["inbound"]["last_pull_at"], "behind": 0, "foreign_commits": 0, "last_rebase_at": None}
     assert st["inbound"]["last_pull_at"]
     assert st["last_error"] is None
     assert gitstore.load_state(s.state_file)["repos"]["data"]["last_pull_at"]

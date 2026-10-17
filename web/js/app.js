@@ -19,6 +19,7 @@ import { renderTheory } from './theory.js';
 import { loadCollapsed, saveCollapsed } from './sidebar-state.js';
 import { SYNC_POLL_MS } from './constants.js';
 import { describeSync } from './sync-status.js';
+import { describeBuild } from './build-info.js';
 
 const player = document.getElementById('player');
 const renderPlayback = () => { player.hidden = false; return () => { player.hidden = true; }; };
@@ -141,6 +142,7 @@ void loadLegal(legalEl, legalCtx);
 const warn = document.getElementById('sync-warn');
 const led = document.getElementById('server-led');
 const ledText = document.getElementById('server-text');
+const buildEl = document.getElementById('server-build');
 
 const settingsLink = [...document.querySelectorAll('#nav a')].find((a) => a.dataset.route === 'settings');
 
@@ -157,11 +159,16 @@ function markSettingsLink(view) {
 
 async function checkSync() {
   let raw = 'ok';
+  let build = null;
   let online = false;
   try {
     const res = await fetch('/health');
     online = res.ok;
-    if (res.ok) raw = (await res.json()).sync || 'ok';
+    if (res.ok) {
+      const body = await res.json();
+      raw = body.sync || 'ok';
+      build = describeBuild(body.build);
+    }
   } catch { /* server unreachable: api calls report that */ }
   led.classList.toggle('down', !online);
   const serverText = online ? `Server online · ${location.host}` : 'Server unavailable';
@@ -169,6 +176,10 @@ async function checkSync() {
   led.parentElement.title = serverText;
   led.parentElement.setAttribute('aria-label', serverText);
   if (online) store.sync = raw;
+  store.build = online ? build : null;
+  buildEl.hidden = !store.build;
+  buildEl.textContent = store.build ? store.build.text : '';
+  buildEl.title = store.build ? store.build.title : '';
   const view = describeSync(online ? raw : 'ok');
   const shown = isGuest() || !online ? { level: 'none', dot: false } : view;
   warn.hidden = shown.level === 'none';

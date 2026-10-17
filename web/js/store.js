@@ -6,6 +6,7 @@ export const store = {
   tags: [],
   loaded: false,
   sync: null,
+  build: null,
   listeners: new Set(),
 
   async refresh() {

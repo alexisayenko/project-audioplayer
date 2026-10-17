@@ -30,6 +30,8 @@ It runs `sudo -n /usr/local/sbin/audioplayer-deploy` over SSH (`claude@192.168.0
 2. `systemctl restart audioplayer` (the LXC is not restarted), wait 3 s, print `is-active`.
 3. `curl http://127.0.0.1:8000/health` and print the status.
 
+After the helper, `scripts/deploy.sh` also writes `/opt/audioplayer/BUILD` (`sha=`, `committed_at=`, `deployed_at=`, git-ignored) over the same SSH user, best effort: if the `claude` user cannot write there the script prints a note and carries on. The server reports its build in the owner form of `/health` (`build`, NFR-119) from git, falls back to `BUILD`, and uses its own start time as the deploy time when `BUILD` is missing or older than the restart. The sidebar and Settings show it to the owner only (WEB-102). Check: `curl -s -H "X-API-Token: $T" https://electrophone.cc/health`.
+
 It takes no backup. Before a deploy that touches data handling, bundle the clones by hand: `git bundle create /var/backups/audioplayer-<ts>/<name>.bundle --all` in each clone under `/var/lib/audioplayer/`, and record the `HEAD` SHAs.
 
 In-flight downloads are forgotten by a restart (API-013); deploy when none is running.
@@ -93,6 +95,8 @@ Built, not deployed (ADR-0026, [task-0021](../tasks/task-0021.md), [design](git-
 | `GIT_SYNC_STALE_GRACE_S` | `30` | stale threshold = interval + grace (90 s) |
 | `GIT_SYNC_STATE_FILE` | `/var/lib/audioplayer/gitsync-state.json` | heartbeat and failure counters written by the CLI, read by the server |
 | `GIT_SYNC_INBOUND` | `1` | `1`: the timer also fast-forwards from GitHub (ADR-0027); `0`: push-only as in ADR-0026 (rollback). Also creates `<GIT_SYNC_STATE_FILE>.write.lock`, the lock file saves and the pull share (same directory, no setup) |
+| `GIT_SYNC_REBASE_FOREIGN` | `1` | `1`: unpushed local commits are rebased over GitHub commits that stay outside the owned paths (ADR-0028); `0`: any divergence is an error (ADR-0027). Needs `GIT_SYNC_INBOUND` not `0` |
+| `GIT_SYNC_OWNED_PREFIXES` | `audioplayer/` | comma-separated repo paths only the server writes; keep equal to the tree saves stage (`audioplayer/` in both repos) |
 
 Install (root, once):
 
@@ -133,5 +137,7 @@ Built, not deployed (ADR-0027). To correct data without touching the server: edi
 - The change must be a plain fast-forward of what the server last pushed. A browser edit or `git pull --rebase` then `git push` from a clone always is, as long as the server did not save in between.
 - Invalid JSON is refused, not applied: `sync.state` `error`, `last_error` "data: inbound change invalid (path)", the file named in the journal. Fix the file on GitHub; the next run applies it and the error clears by itself.
 - Diverged (`last_error` "data diverged: GitHub and the server both have new commits; resolve by hand", exit code 2, ERROR line every run, nothing pulled or pushed): a save on the server and a change on GitHub landed in the same minute. As the service user (`sudo -u audioplayer -i`) in the repo (`/var/lib/audioplayer/<data repo>`): `git fetch`; inspect `git log HEAD..@{u}` (GitHub only) and `git log @{u}..HEAD` (server only); `git rebase @{u}` (resolve conflicts in `library.json` by hand, keep both sets of edits); `git push`. The error clears on the next run, no restart or `--clear-rejected` is needed (the server reads the rebased file on its next request). If the server file was rewritten under a request in between, nothing is lost: both sides are in git.
+- Another app in the same repo (the `moodtracker` case, ADR-0028): `moodtracker` pushes commits under `moodtracker/users/<id>/...` while the server has unpushed commits. The next timer run logs INFO `rebased N local commits over M foreign commits (paths outside audioplayer/)`, rebases only the server's unpushed commits and pushes; `/health` owner `sync.inbound.last_rebase_at` and `foreign_commits` show it, nothing to do. A push that loses the race to a second foreign push is a one-run retry; only 5 in a row turn the state into `error` "not reaching git". Rollback: `GIT_SYNC_REBASE_FOREIGN=0`.
+- A real overlap (GitHub-only commits touch `audioplayer/`, someone edited our files, or a conflict/invalid file aborted the rebase; the repo is left exactly as it was): use the diverged runbook above (`git fetch`, inspect `git log --name-only HEAD..@{u}`, `git rebase @{u}`, resolve, `git push`). Only rebase commits that were never pushed.
 - A pull that finds the write lock busy (a save is running) skips and retries next minute; a save waits at most the length of a fast-forward (well under a second).
 - Rollback: `GIT_SYNC_INBOUND=0` in `/etc/audioplayer/env`; the timer then only pushes, and a moved GitHub is the old sticky `rejected` error. No unit file change is needed for this feature (same units, same `/etc/audioplayer/env`); the lock file is created next to the state file by the service user.

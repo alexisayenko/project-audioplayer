@@ -185,15 +185,15 @@ def test_startup_marks_a_diverged_repo_rejected_and_leaves_the_tree_alone(tmp_pa
     s, bare, clone, *_ = make_sync(tmp_path)
     other = tmp_path / "other"
     git(tmp_path, "clone", str(bare), str(other))
-    (other / "x").write_text("x")
-    git(other, "add", "x")
+    (other / "audioplayer").mkdir(exist_ok=True); (other / "audioplayer" / "x").write_text("x")
+    git(other, "add", "-A")
     git(other, "commit", "-m", "remote")
     git(other, "push")
     save(s, clone, "a.json", "1", "mine")
     head = git(clone, "rev-parse", "HEAD")
     s.recover_on_startup()
     assert git(clone, "rev-parse", "HEAD") == head
-    assert not (clone / "x").exists()
+    assert not (clone / "audioplayer" / "x").exists()
     assert s.sync_status(True)["state"] == "error"
     assert subjects(bare)[0] == "remote"
 
@@ -268,8 +268,8 @@ def test_cli_exit_codes(tmp_path, monkeypatch, capsys):
     assert subjects(bare)[0] == "mine"
     other = tmp_path / "other"
     git(tmp_path, "clone", str(bare), str(other))
-    (other / "x").write_text("x")
-    git(other, "add", "x")
+    (other / "audioplayer").mkdir(exist_ok=True); (other / "audioplayer" / "x").write_text("x")
+    git(other, "add", "-A")
     git(other, "commit", "-m", "intruder")
     git(other, "push")
     save(s, clone, "a.json", "2", "mine2")
