@@ -138,7 +138,10 @@ export function renderGenresRework(root, opts = {}) {
     return el('button', {
       class: 'gm-tbtn gmr-flav', type: 'button', 'data-flavour': f.key, 'aria-pressed': String(flavourSel.has(f.key)),
       'aria-label': `${f.name}, ${songs(n)}`, title: `${described}${songs(n)}`,
-      onclick: () => { if (flavourSel.has(f.key)) flavourSel.delete(f.key); else flavourSel.add(f.key); applyFilters(); },
+      onclick: () => {
+        if (flavourSel.has(f.key)) flavourSel.delete(f.key); else flavourSel.add(f.key);
+        applyFilters();
+      },
     }, f.name);
   }
 
@@ -244,7 +247,10 @@ export function renderGenresRework(root, opts = {}) {
     if (!rows.length) activeId = null;
     else if (!rows.some((r) => r.key === activeId)) activeId = rows[0].key;
     let rootName = '';
-    treeEl.replaceChildren(...rows.map((r, i) => { if (r.level === 1) rootName = r.node.name; return buildRow(r, i, rootName); }));
+    treeEl.replaceChildren(...rows.map((r, i) => {
+      if (r.level === 1) rootName = r.node.name;
+      return buildRow(r, i, rootName);
+    }));
     empty.hidden = rows.length > 0;
     let emptyText = 'No genres.';
     if ((statusFilter !== 'all' || flavourSel.size) && !query) emptyText = 'No genres match the filters.';
@@ -336,7 +342,7 @@ export function renderGenresRework(root, opts = {}) {
     view.setLayout(layout, tree);
     if (selectedId && !tree.byId.has(selectedId)) selectedId = null;
     view.select(selectedId);
-    for (const k of [...flavourSel]) if (!tree.flavours.has(k)) flavourSel.delete(k);
+    for (const k of flavourSel) if (!tree.flavours.has(k)) flavourSel.delete(k);
     view.setFilter(filterIds(tree, { status: statusFilter, flavours: flavourSel }));
     markMatches();
     renderFlavours();

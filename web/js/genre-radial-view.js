@@ -302,7 +302,11 @@ export function createRadialView(canvas, { onSelect, onHover, reducedMotion = fa
   const up = (ev) => {
     canvas.releasePointerCapture?.(ev.pointerId);
     pointers.delete(ev.pointerId);
-    if (pinch) { if (pointers.size < 2) pinch = null; drag = null; return; }
+    if (pinch) {
+      if (pointers.size < 2) pinch = null;
+      drag = null;
+      return;
+    }
     if (drag && !drag.moved && ev.type === 'pointerup') { const h = pick(ev); onSelect?.(h ? h.id : null); }
     drag = null;
   };
@@ -337,6 +341,11 @@ export function createRadialView(canvas, { onSelect, onHover, reducedMotion = fa
     reset() { fit(); },
     zoomBy(f) { zoomAt(W / 2, H / 2, f); },
     resize,
-    destroy() { window.removeEventListener?.('blur', onBlur); ro?.disconnect(); if (raf && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(raf); raf = 0; },
+    destroy() {
+      window.removeEventListener?.('blur', onBlur);
+      ro?.disconnect();
+      if (raf && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(raf);
+      raf = 0;
+    },
   };
 }

@@ -552,7 +552,7 @@ def find_artist(artist: str) -> str | None:
     if not wanted:
         return None
     for title in _search(artist)[:MAX_CANDIDATES + 2]:
-        base = genre_lookup._norm(re.sub(r"\s*\([^)]*\)\s*$", "", title))
+        base = genre_lookup._norm(re.sub(r"\s*+\([^)]*+\)\s*+$", "", title))
         if base != wanted:
             continue
         kind = infobox(_article_url(title))["kind"] or ""

@@ -11,8 +11,7 @@ export function frameStats(buf, silentDb = SILENT_DB) {
   let max = -Infinity;
   let sum = 0;
   let count = 0;
-  for (let i = 0; i < buf.length; i += 1) {
-    const v = buf[i];
+  for (const v of buf) {
     if (!Number.isFinite(v)) continue;
     if (v > max) max = v;
     sum += v;
@@ -23,7 +22,7 @@ export function frameStats(buf, silentDb = SILENT_DB) {
 
 export function byteMax(bytes) {
   let max = 0;
-  for (let i = 0; i < bytes.length; i += 1) if (bytes[i] > max) max = bytes[i];
+  for (const b of bytes) if (b > max) max = b;
   return max;
 }
 

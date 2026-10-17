@@ -201,6 +201,17 @@ const fract01 = (v) => {
   return Math.max(0, f);
 };
 
+function cell(p, name) {
+  let c = p.vals.get(name);
+  if (!c) { c = [Number.NaN, Number.NaN, Number.NaN, Number.NaN]; p.vals.set(name, c); }
+  return c;
+}
+
+function keyOf(scene, p) {
+  const cellMul = scene.q?.cellMul || 1;
+  return `${(p.cell * cellMul).toFixed(4)}|${scene.aspect.toFixed(4)}|${cellMul > 1 ? 0 : 2}|${p.grid}`;
+}
+
 export function createGroundPass(gl, deps) {
   const link = deps.linkProgram;
   const stats = { tiers: 0, vertices: 0, draws: 0, uploads: 0, builds: 0 };
@@ -218,11 +229,6 @@ export function createGroundPass(gl, deps) {
   let pending = null;
   let stale = false;
 
-  function cell(p, name) {
-    let c = p.vals.get(name);
-    if (!c) { c = [Number.NaN, Number.NaN, Number.NaN, Number.NaN]; p.vals.set(name, c); }
-    return c;
-  }
   function loc(p, name) {
     if (!p.locs.has(name)) p.locs.set(name, gl.getUniformLocation(p.prog, name));
     return p.locs.get(name);
@@ -281,11 +287,6 @@ export function createGroundPass(gl, deps) {
     for (const b of [quadBuf, hillBuf, sil.buf, sil.lineIdx]) gl.deleteBuffer(b);
     progs = null;
     sil = null;
-  }
-
-  function keyOf(scene, p) {
-    const cellMul = scene.q?.cellMul || 1;
-    return `${(p.cell * cellMul).toFixed(4)}|${scene.aspect.toFixed(4)}|${cellMul > 1 ? 0 : 2}|${p.grid}`;
   }
 
   function ensureTiers(scene, p) {

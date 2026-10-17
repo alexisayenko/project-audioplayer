@@ -12,6 +12,25 @@ export function glowSize(canvasW, canvasH, glow) {
   return { w: Math.max(1, Math.round(canvasW * s)), h: Math.max(1, Math.round(canvasH * s)), scale: s };
 }
 
+function blurInto(l, source, srcW, srcH, w, h, blurPx) {
+  const c = l.octx;
+  c.setTransform?.(1, 0, 0, 1, 0, 0);
+  c.globalCompositeOperation = 'source-over';
+  c.globalAlpha = 1;
+  c.clearRect(0, 0, w, h);
+  c.filter = `blur(${blurPx}px)`;
+  c.drawImage(source, 0, 0, srcW, srcH, 0, 0, w, h);
+  c.filter = 'none';
+}
+
+function composite(ctx, l, w, h, cssW, cssH, alpha) {
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.globalAlpha = alpha;
+  ctx.drawImage(l.off, 0, 0, w, h, 0, 0, cssW, cssH);
+  ctx.restore();
+}
+
 export function createGlow(makeCanvas) {
   const layers = {};
 
@@ -25,25 +44,6 @@ export function createGlow(makeCanvas) {
     if (!l.octx) return null;
     if (l.off.width !== w || l.off.height !== h) { l.off.width = w; l.off.height = h; }
     return l;
-  }
-
-  function blurInto(l, source, srcW, srcH, w, h, blurPx) {
-    const c = l.octx;
-    c.setTransform?.(1, 0, 0, 1, 0, 0);
-    c.globalCompositeOperation = 'source-over';
-    c.globalAlpha = 1;
-    c.clearRect(0, 0, w, h);
-    c.filter = `blur(${blurPx}px)`;
-    c.drawImage(source, 0, 0, srcW, srcH, 0, 0, w, h);
-    c.filter = 'none';
-  }
-
-  function composite(ctx, l, w, h, cssW, cssH, alpha) {
-    ctx.save();
-    ctx.globalCompositeOperation = 'lighter';
-    ctx.globalAlpha = alpha;
-    ctx.drawImage(l.off, 0, 0, w, h, 0, 0, cssW, cssH);
-    ctx.restore();
   }
 
   return {

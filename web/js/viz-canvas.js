@@ -58,6 +58,8 @@ function defaults() {
   };
 }
 
+const defaultFallbackInfo = () => ({ reason: 'error' });
+
 function createGLCanvas(canvas) {
   const gl = canvas.ownerDocument?.createElement?.('canvas');
   if (!gl || !canvas.after) return null;
@@ -435,7 +437,7 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
     fallBackToTerrain(`Synthwave terrain is too heavy here (${ms.toFixed(0)} ms per frame, target ${targetMs().toFixed(0)} ms${scaleNote}), using Terrain`, { reason: 'heavy', intervalMs: ms });
   }
 
-  function fallBackToTerrain(message, info = { reason: 'error' }) {
+  function fallBackToTerrain(message, info = defaultFallbackInfo()) {
     synthFallback = true;
     fallback = { mode: 'synthwave', ...info, label: info.reason === 'heavy' ? 'using Terrain: too heavy' : 'using Terrain: stopped working' };
     heavySince = null;
@@ -549,7 +551,11 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
 
   observe();
   return {
-    setEnabled(on) { enabled = !!on; if (!enabled) la?.request(laKey, false); evaluate(); },
+    setEnabled(on) {
+      enabled = !!on;
+      if (!enabled) la?.request(laKey, false);
+      evaluate();
+    },
     setMode(m) { mode = m; st.anchorAt = -Infinity; if (raf == null) evaluate(); },
     setVizMode(id) {
       if (id === vizMode) return;

@@ -162,7 +162,10 @@ export function renderGenres(root) {
 
   function toggleOrph() {
     if (orphOpen || orphSel.active) { closeOrph(); return; }
-    if (nowOpen || nowSel.active) { if (nowSel.active) nowSel.toggle([]); setNow(false); }
+    if (nowOpen || nowSel.active) {
+      if (nowSel.active) nowSel.toggle([]);
+      setNow(false);
+    }
     if (orphSel.toggle(orphIds())) setOrph(true);
   }
 
@@ -198,7 +201,10 @@ export function renderGenres(root) {
   }
 
   function toggleNow() {
-    if (orphOpen || orphSel.active) { if (orphSel.active) orphSel.toggle([]); setOrph(false); }
+    if (orphOpen || orphSel.active) {
+      if (orphSel.active) orphSel.toggle([]);
+      setOrph(false);
+    }
     if (nowOpen || nowSel.active) { closeNow(); return; }
     nowSel.toggle(nowIds());
     setNow(true);

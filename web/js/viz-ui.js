@@ -282,7 +282,10 @@ export function initVisualizer({
     if (!isVizFlightKey(e, { open: full.isOpen(), route: document.body.dataset.route, mode: currentMode })) return;
     e.preventDefault();
     const on = flightReduced() ? false : setFlightOn(!flightOn());
-    if (live) live.textContent = flightReduced() ? 'Camera flight is off: reduced motion is on' : `Camera flight ${on ? 'on' : 'off'}`;
+    if (live) {
+      const state = on ? 'on' : 'off';
+      live.textContent = flightReduced() ? 'Camera flight is off: reduced motion is on' : `Camera flight ${state}`;
+    }
   });
 
   for (const type of ['play', 'pause', 'ended', 'emptied']) {

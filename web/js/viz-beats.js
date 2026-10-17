@@ -152,7 +152,7 @@ export function beatEnv(age) {
 
 export function beatTimeWeight(dt) {
   const d = Math.abs(dt);
-  if (!(d < BEAT_SPREAD_S)) return 0;
+  if (Number.isNaN(d) || d >= BEAT_SPREAD_S) return 0;
   const sigma = BEAT_SPREAD_S / 2;
   const edge = Math.exp(-0.5 * (BEAT_SPREAD_S / sigma) ** 2);
   return (Math.exp(-0.5 * (d / sigma) ** 2) - edge) / (1 - edge);
@@ -261,13 +261,13 @@ export function beatsBetween(beats, lo, hi) {
   return out;
 }
 
-function addBeatRow(out, o, off, n, live, style, T, mask) {
+function addBeatRow(out, at, n, live, style, T, mask) {
   for (const { b, env, a } of live) {
     if (!(env > 0)) continue;
     const w = beatTimeWeight(T - b.t) * env * mask * a;
     if (!(w > 0)) continue;
     const s = shapeOf(b, style, n);
-    for (let c = 0; c < n; c += 1) out[o + off + c] += w * s[c];
+    for (let c = 0; c < n; c += 1) out[at + c] += w * s[c];
   }
 }
 
@@ -286,7 +286,7 @@ export function fillBeatHeights({ beats, style, tNow, base, rows, cols, out }) {
     const mask = 1 - smoothstep(0, BEAT_AHEAD_FADE_S, T - tNow);
     if (!(mask > 0)) continue;
     const o = r * cols;
-    addBeatRow(out, o, off, n, live, style, T, mask);
+    addBeatRow(out, o + off, n, live, style, T, mask);
     for (let c = off; c < off + n; c += 1) out[o + c] = softKnee(out[o + c], BEAT_CAP);
   }
   return out;

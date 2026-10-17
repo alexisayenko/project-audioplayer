@@ -15,7 +15,7 @@ function toRgb(c) {
   let v = hexCache.get(key);
   if (!v) {
     const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(key);
-    v = m ? [Number.parseInt(m[1], 16) / 255, parseInt(m[2], 16) / 255, parseInt(m[3], 16) / 255] : [1, 1, 1];
+    v = m ? [Number.parseInt(m[1], 16) / 255, Number.parseInt(m[2], 16) / 255, Number.parseInt(m[3], 16) / 255] : [1, 1, 1];
     hexCache.set(key, v);
   }
   return v.slice();

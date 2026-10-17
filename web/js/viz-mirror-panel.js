@@ -80,9 +80,9 @@ function paintMaxHeight(f, s, derived, lay) {
 }
 
 function paintEffNote(effNote, s, lay, derived, widthDerived, barW) {
-  const fit = derived && lay && lay.derived && lay.fit < 1;
+  const fit = derived && lay?.derived && lay.fit < 1;
   const px = lay ? Math.round(lay.sectionPx * 10) / 10 : 0;
-  effNote.textContent = lay && lay.rows > 0 ? `effective: ${lay.rows} rows x ${px} px (room ${Math.round(lay.room)} px)` : '';
+  effNote.textContent = lay?.rows > 0 ? `effective: ${lay.rows} rows x ${px} px (room ${Math.round(lay.room)} px)` : '';
   if (effNote.textContent && widthDerived) effNote.textContent = effNote.textContent.replace(' (room', `, width ${Math.round(barW)} px (room`);
   if (fit && lay.fit < 0.75) effNote.textContent += '. More room: set Visualizer height to Full';
 }

@@ -47,7 +47,11 @@ export function makeAutoHide({ delay = HIDE_CONTROLS_MS, setTimer = setTimeout, 
   };
   return {
     poke() { set(false); arm(); },
-    stop() { if (timer != null) clearTimer(timer); timer = null; set(false); },
+    stop() {
+      if (timer != null) clearTimer(timer);
+      timer = null;
+      set(false);
+    },
     get idle() { return idle; },
   };
 }

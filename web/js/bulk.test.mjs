@@ -100,3 +100,13 @@ test('download card skips long songs unless included', async () => {
   bulkDownload.reset();
   card.remove();
 });
+
+test('isLong treats missing, NaN and non-positive durations as long', () => {
+  assert.equal(b.isLong({}), true);
+  assert.equal(b.isLong(null), true);
+  assert.equal(b.isLong({ duration: 'x' }), true);
+  assert.equal(b.isLong({ duration: 0 }), true);
+  assert.equal(b.isLong({ duration: -5 }), true);
+  assert.equal(b.isLong({ duration: 60 }), false);
+  assert.equal(b.isLong({ duration: LONG_SONG_SECONDS + 1 }), true);
+});

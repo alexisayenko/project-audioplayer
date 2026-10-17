@@ -1,8 +1,8 @@
 import { FFT_SIZE, ANALYSER_SMOOTHING, ATTACK, RELEASE, TILT_DB_PER_OCT } from './viz-constants.js';
 import { barsDb, unitBars, makeReference, smoothBars } from './viz-spectrum.js';
-import { resample, HISTORY_BINS, ROWS_PER_SECOND, markRows, uncoveredSpans, timelineCovers, coveredRows, coverageWeight, EDGE_FADE_ROWS } from './viz-terrain-math.js';
+import { resample, HISTORY_BINS, ROWS_PER_SECOND, markRows, uncoveredSpans } from './viz-terrain-math.js';
 
-export { markRows, uncoveredSpans, timelineCovers, coveredRows, coverageWeight, EDGE_FADE_ROWS };
+export { markRows, uncoveredSpans, timelineCovers, coveredRows, coverageWeight, EDGE_FADE_ROWS } from './viz-terrain-math.js';
 import { SILENT_DB } from './viz-signal.js';
 import { createPartsBaker, PLANES } from './viz-melody.js';
 
@@ -157,7 +157,7 @@ export function makeTimelineBuilder({
     return peak;
   };
   const rowTarget = (peak) => {
-    if (!(peak > SILENT_DB)) return new Float32Array(bands);
+    if (peak <= SILENT_DB) return new Float32Array(bands);
     const levels = barsDb(db, bands, { sampleRate, fftSize, tilt: TILT_DB_PER_OCT });
     return unitBars(levels, { ...ref.update(levels, dt) });
   };

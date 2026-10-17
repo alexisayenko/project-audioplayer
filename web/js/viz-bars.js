@@ -52,7 +52,7 @@ function resources(ctx, w, n, geo, colors, vertical) {
   const vertKey = vertical ? `${vertical.y0}/${vertical.half}` : '';
   const key = `${w}|${n}|${geo.barDev}|${geo.dpr}|${colors.stops ?? [colors.a, colors.b]}|${colors.line}|${vertKey}`;
   const hit = cache.get(ctx);
-  if (hit && hit.key === key) return hit;
+  if (hit?.key === key) return hit;
   const fill = vertical
     ? ctx.createLinearGradient(0, vertical.y0 * geo.dpr, 0, (vertical.y0 - vertical.half) * geo.dpr)
     : ctx.createLinearGradient(0, 0, w * geo.dpr, 0);
@@ -100,15 +100,18 @@ export const getBarLayout = () => lastLayout;
 
 // sectionPx > 0: rows = round(stack / (sectionPx + gap)) with gap = segmentGap * sectionPx; else rows = segments
 export function segmentPlan(half, dpr, segments, gap, sectionPx = 0) {
-  if (!(half > 0)) return null;
-  const fixed = sectionPx > 0;
-  const unit = sectionPx * (1 + gap);
-  const rows = fixed ? Math.round(half / unit) : Math.max(0, Math.floor(segments));
-  if (!rows) return null;
-  const pitch = fixed ? unit * dpr : (half * dpr) / rows;
-  const want = fixed ? Math.round(sectionPx * gap * dpr) : Math.round(pitch * gap);
-  const gapPx = Math.min(Math.max(1, want), Math.max(0, Math.round(pitch) - 1));
-  return { rows, pitch, gapPx };
+  if (half > 0) {
+    const fixed = sectionPx > 0;
+    const unit = sectionPx * (1 + gap);
+    const rows = fixed ? Math.round(half / unit) : Math.max(0, Math.floor(segments));
+    if (rows) {
+      const pitch = fixed ? unit * dpr : (half * dpr) / rows;
+      const want = fixed ? Math.round(sectionPx * gap * dpr) : Math.round(pitch * gap);
+      const gapPx = Math.min(Math.max(1, want), Math.max(0, Math.round(pitch) - 1));
+      return { rows, pitch, gapPx };
+    }
+  }
+  return null;
 }
 
 export function litRows(heightCss, dpr, plan) {
@@ -138,43 +141,55 @@ export const markerRow = (i) => markers[i];
 export const afterAge = (i, r) => since[i * peakState.rows + r];
 export const afterAlpha = (age, tau) => Math.exp(-Math.max(0, age) / Math.max(1e-3, tau));
 
-export function stepPeak(n, plan, dpr, dt, hold = PEAK_HOLD_S) {
-  if (!plan) return;
-  if (peakState.n !== n || peakState.rows !== plan.rows) {
-    if (markers.length < n) { markers = new Int16Array(n); holds = new Float32Array(n); falls = new Float32Array(n); steps = new Uint8Array(n); }
-    if (since.length < n * plan.rows) since = new Float32Array(n * plan.rows);
-    markers.fill(-1);
-    holds.fill(0);
-    falls.fill(0);
-    steps.fill(0);
-    since.fill(1e3);
-    peakState.n = n;
-    peakState.rows = plan.rows;
+function resetPeakBuffers(n, rows) {
+  if (markers.length < n) { markers = new Int16Array(n); holds = new Float32Array(n); falls = new Float32Array(n); steps = new Uint8Array(n); }
+  if (since.length < n * rows) since = new Float32Array(n * rows);
+  markers.fill(-1);
+  holds.fill(0);
+  falls.fill(0);
+  steps.fill(0);
+  since.fill(1e3);
+  peakState.n = n;
+  peakState.rows = rows;
+}
+
+function fallMarker(i, top, dt) {
+  falls[i] += dt;
+  let interval = PEAK_STEP_S * PEAK_ACCEL ** steps[i];
+  while (falls[i] >= interval && markers[i] > top) {
+    falls[i] -= interval;
+    markers[i] -= 1;
+    steps[i] = Math.min(20, steps[i] + 1);
+    interval = PEAK_STEP_S * PEAK_ACCEL ** steps[i];
   }
-  if (!(dt > 0)) return;
+}
+
+function trackMarker(i, top, dt, hold) {
+  if (top >= markers[i]) {
+    markers[i] = top;
+    holds[i] = 0;
+    falls[i] = 0;
+    steps[i] = 0;
+    return;
+  }
+  holds[i] += dt;
+  if (holds[i] > hold) fallMarker(i, top, dt);
+}
+
+function advancePeak(n, plan, dpr, dt, hold) {
+  const rows = plan.rows;
   for (let i = 0; i < n; i += 1) {
     const top = (heights[i] > 0 ? litRows(heights[i], dpr, plan) : 0) - 1;
-    if (top >= markers[i]) {
-      markers[i] = top;
-      holds[i] = 0;
-      falls[i] = 0;
-      steps[i] = 0;
-    } else {
-      holds[i] += dt;
-      if (holds[i] > hold) {
-        falls[i] += dt;
-        let interval = PEAK_STEP_S * PEAK_ACCEL ** steps[i];
-        while (falls[i] >= interval && markers[i] > top) {
-          falls[i] -= interval;
-          markers[i] -= 1;
-          steps[i] = Math.min(20, steps[i] + 1);
-          interval = PEAK_STEP_S * PEAK_ACCEL ** steps[i];
-        }
-      }
-    }
-    const base = i * plan.rows;
-    for (let r = 0; r < plan.rows; r += 1) since[base + r] = r === markers[i] && markers[i] > top ? 0 : since[base + r] + dt;
+    trackMarker(i, top, dt, hold);
+    const base = i * rows;
+    for (let r = 0; r < rows; r += 1) since[base + r] = r === markers[i] && markers[i] > top ? 0 : since[base + r] + dt;
   }
+}
+
+export function stepPeak(n, plan, dpr, dt, hold = PEAK_HOLD_S) {
+  if (!plan) return;
+  if (peakState.n !== n || peakState.rows !== plan.rows) resetPeakBuffers(n, plan.rows);
+  if (dt > 0) advancePeak(n, plan, dpr, dt, hold);
 }
 
 let visits = new Uint8Array(0);
@@ -279,76 +294,95 @@ function trailFills(path, maxLevel, shift) {
   return fillSlots[slot];
 }
 
-export function stepSector(n, plan, dpr, dt, key, o) {
-  if (!plan) return;
-  const rows = plan.rows;
-  if (sectorState.key !== key || sectorState.n !== n || sectorState.rows !== rows) {
-    if (visits.length < n * rows) { visits = new Uint8Array(n * rows); trailList = new Int32Array(n * rows); }
-    if (sectorRow.length < n) { sectorRow = new Int16Array(n); dwell = new Float32Array(n); counted = new Uint8Array(n); evHead = new Int32Array(n); evLen = new Int32Array(n); }
-    if (evTime.length < n * SECTOR_EVENTS) { evTime = new Float64Array(n * SECTOR_EVENTS); evRow = new Int16Array(n * SECTOR_EVENTS); }
-    visits.fill(0);
-    evHead.fill(0);
-    evLen.fill(0);
-    simT = 0;
-    sectorRow.fill(-1);
-    dwell.fill(0);
-    counted.fill(0);
-    trailStart.fill(0);
-    sectorState.key = key;
-    sectorState.n = n;
-    sectorState.rows = rows;
-  }
-  if (!(dt > 0)) return;
-  const step = Math.min(SECTOR_DT_MAX, dt);
-  simT += step;
-  const horizon = simT - o.window + 1e-9;
-  const levels = o.maxLevel + 1;
+function resetSectorBuffers(n, rows, key) {
+  if (visits.length < n * rows) { visits = new Uint8Array(n * rows); trailList = new Int32Array(n * rows); }
+  if (sectorRow.length < n) { sectorRow = new Int16Array(n); dwell = new Float32Array(n); counted = new Uint8Array(n); evHead = new Int32Array(n); evLen = new Int32Array(n); }
+  if (evTime.length < n * SECTOR_EVENTS) { evTime = new Float64Array(n * SECTOR_EVENTS); evRow = new Int16Array(n * SECTOR_EVENTS); }
+  visits.fill(0);
+  evHead.fill(0);
+  evLen.fill(0);
+  simT = 0;
+  sectorRow.fill(-1);
+  dwell.fill(0);
+  counted.fill(0);
   trailStart.fill(0);
-  for (let i = 0; i < n; i += 1) {
-    const row = heights[i] > 0 ? Math.min(rows - 1, Math.floor((heights[i] * dpr) / plan.pitch)) : -1;
-    const base = i * rows;
-    const eb = i * SECTOR_EVENTS;
-    while (evLen[i] > 0 && evTime[eb + evHead[i]] <= horizon) {
-      visits[base + evRow[eb + evHead[i]]] -= 1;
-      evHead[i] = evHead[i] + 1 === SECTOR_EVENTS ? 0 : evHead[i] + 1;
-      evLen[i] -= 1;
-    }
-    if (row !== sectorRow[i]) {
-      sectorRow[i] = row;
-      dwell[i] = 0;
-      counted[i] = 0;
-    }
-    if (row >= 0 && !counted[i]) {
-      dwell[i] += step;
-      if (dwell[i] + 1e-6 >= o.minDwell) {
-        if (evLen[i] === SECTOR_EVENTS) {
-          visits[base + evRow[eb + evHead[i]]] -= 1;
-          evHead[i] = evHead[i] + 1 === SECTOR_EVENTS ? 0 : evHead[i] + 1;
-          evLen[i] -= 1;
-        }
-        let at = evHead[i] + evLen[i];
-        if (at >= SECTOR_EVENTS) at -= SECTOR_EVENTS;
-        evTime[eb + at] = simT;
-        evRow[eb + at] = row;
-        evLen[i] += 1;
-        visits[base + row] += 1;
-        counted[i] = 1;
-      }
-    }
-    for (let r = 0; r < rows; r += 1) {
-      const v = visits[base + r];
-      if (v >= SECTOR_MIN_COUNT) trailStart[trailLevel(v, o.visitsPerStep, o.maxLevel) + 1] += 1;
-    }
+  sectorState.key = key;
+  sectorState.n = n;
+  sectorState.rows = rows;
+}
+
+function popEvent(i, base, eb) {
+  visits[base + evRow[eb + evHead[i]]] -= 1;
+  evHead[i] = evHead[i] + 1 === SECTOR_EVENTS ? 0 : evHead[i] + 1;
+  evLen[i] -= 1;
+}
+
+function pushEvent(i, base, eb, row) {
+  if (evLen[i] === SECTOR_EVENTS) popEvent(i, base, eb);
+  let at = evHead[i] + evLen[i];
+  if (at >= SECTOR_EVENTS) at -= SECTOR_EVENTS;
+  evTime[eb + at] = simT;
+  evRow[eb + at] = row;
+  evLen[i] += 1;
+  visits[base + row] += 1;
+  counted[i] = 1;
+}
+
+function stepBar(i, base, row, step, horizon, minDwell) {
+  const eb = i * SECTOR_EVENTS;
+  while (evLen[i] > 0 && evTime[eb + evHead[i]] <= horizon) popEvent(i, base, eb);
+  if (row !== sectorRow[i]) {
+    sectorRow[i] = row;
+    dwell[i] = 0;
+    counted[i] = 0;
   }
+  if (row >= 0 && !counted[i]) {
+    dwell[i] += step;
+    if (dwell[i] + 1e-6 >= minDwell) pushEvent(i, base, eb, row);
+  }
+}
+
+function countTrail(base, rows, visitsPerStep, maxLevel) {
+  for (let r = 0; r < rows; r += 1) {
+    const v = visits[base + r];
+    if (v >= SECTOR_MIN_COUNT) trailStart[trailLevel(v, visitsPerStep, maxLevel) + 1] += 1;
+  }
+}
+
+function listTrail(n, rows, visitsPerStep, maxLevel) {
+  const levels = maxLevel + 1;
   for (let k = 1; k <= levels; k += 1) trailStart[k] += trailStart[k - 1];
   for (let k = 0; k < levels; k += 1) trailPos[k] = trailStart[k];
   for (let i = 0; i < n; i += 1) {
     const base = i * rows;
     for (let r = 0; r < rows; r += 1) {
       const v = visits[base + r];
-      if (v >= SECTOR_MIN_COUNT) trailList[trailPos[trailLevel(v, o.visitsPerStep, o.maxLevel)]++] = base + r;
+      if (v >= SECTOR_MIN_COUNT) trailList[trailPos[trailLevel(v, visitsPerStep, maxLevel)]++] = base + r;
     }
   }
+}
+
+function advanceSector(n, plan, dpr, dt, o) {
+  const rows = plan.rows;
+  const step = Math.min(SECTOR_DT_MAX, dt);
+  simT += step;
+  const horizon = simT - o.window + 1e-9;
+  const minDwell = o.minDwell;
+  trailStart.fill(0);
+  for (let i = 0; i < n; i += 1) {
+    const row = heights[i] > 0 ? Math.min(rows - 1, Math.floor((heights[i] * dpr) / plan.pitch)) : -1;
+    const base = i * rows;
+    stepBar(i, base, row, step, horizon, minDwell);
+    countTrail(base, rows, o.visitsPerStep, o.maxLevel);
+  }
+  listTrail(n, rows, o.visitsPerStep, o.maxLevel);
+}
+
+export function stepSector(n, plan, dpr, dt, key, o) {
+  if (!plan) return;
+  const rows = plan.rows;
+  if (sectorState.key !== key || sectorState.n !== n || sectorState.rows !== rows) resetSectorBuffers(n, rows, key);
+  if (dt > 0) advanceSector(n, plan, dpr, dt, o);
 }
 
 export const GLOW_FRAC = [0.08, 0.16, 0.28];
@@ -448,77 +482,104 @@ export function jitterLevel(i, r) {
   return (h >>> 0) % 5;
 }
 
+const litAt = (i, d, plan) => (heights[i] > 0 ? litRows(heights[i], d, plan) : 0);
+
+function fillFlat(ctx, b, y0, geo, a, band) {
+  const d = geo.dpr;
+  const w = geo.barDev;
+  ctx.globalAlpha = a;
+  ctx.beginPath();
+  for (let i = 0; i < band.length; i += 1) {
+    if (band[i] === b && heights[i] > 0) ctx.rect(barRect(i, geo)[0], (y0 - heights[i]) * d, w, heights[i] * d);
+  }
+  ctx.fill();
+}
+
+function fillLit(ctx, b, y0d, geo, band, plan, k) {
+  ctx.beginPath();
+  for (let i = 0; i < band.length; i += 1) {
+    if (band[i] === b && heights[i] > 0) {
+      const x = barRect(i, geo)[0];
+      const lit = litRows(heights[i], geo.dpr, plan);
+      for (let r = 0; r < lit; r += 1) {
+        if (k >= 0 && jitterLevel(i, r) !== k) continue;
+        const [ry, rh] = segmentRect(r, y0d, plan);
+        ctx.rect(x, ry, geo.barDev, rh);
+      }
+    }
+  }
+  ctx.fill();
+}
+
+function drawLedBand(ctx, b, y0d, geo, a, res, plan, fx) {
+  const band = res.bands.band;
+  if (fx.jitter > 0) {
+    for (let k = 0; k < JITTER_LEVELS.length; k += 1) {
+      ctx.globalAlpha = Math.min(1, a * (1 + JITTER_LEVELS[k] * fx.jitter));
+      fillLit(ctx, b, y0d, geo, band, plan, k);
+    }
+  } else {
+    ctx.globalAlpha = a;
+    fillLit(ctx, b, y0d, geo, band, plan, -1);
+  }
+  if (fx.peak > 0 && peakState.rows === plan.rows) drawPeak(ctx, b, band, y0d, geo, a, plan, fx);
+  if (fx.baseGlow > 0) drawBaseRow(ctx, b, band, y0d, geo, a, res, plan, fx);
+}
+
 function drawHalf(ctx, y0, geo, alpha, res, plan, fx = NO_FX, reflected = false) {
   const { band, counts, alphas } = res.bands;
-  const d = geo.dpr;
-  const y0d = y0 * d;
-  const jit = plan && fx.jitter > 0;
+  const y0d = y0 * geo.dpr;
   for (let b = 0; b < counts.length; b += 1) {
     if (!counts[b]) continue;
-    if (plan && fx.sector) {
-      if (fx.baseGlow > 0 && !(reflected && fx.reflectMode !== 'alpha')) drawBaseRow(ctx, b, band, y0d, geo, alpha * alphas[b], res, plan, fx, true);
-      drawSector(ctx, b, band, y0d, geo, alpha * alphas[b], plan, fx, reflected);
-      continue;
+    const a = alpha * alphas[b];
+    if (!plan) fillFlat(ctx, b, y0, geo, a, band);
+    else if (!fx.sector) drawLedBand(ctx, b, y0d, geo, a, res, plan, fx);
+    else {
+      if (fx.baseGlow > 0 && !(reflected && fx.reflectMode !== 'alpha')) drawBaseRow(ctx, b, band, y0d, geo, a, res, plan, fx, true);
+      drawSector(ctx, b, band, y0d, geo, a, plan, fx, reflected);
     }
-    const levels = jit ? 5 : 1;
-    for (let k = 0; k < levels; k += 1) {
-      ctx.globalAlpha = jit ? Math.min(1, alpha * alphas[b] * (1 + JITTER_LEVELS[k] * fx.jitter)) : alpha * alphas[b];
-      ctx.beginPath();
-      for (let i = 0; i < band.length; i += 1) {
-        if (band[i] !== b || !(heights[i] > 0)) continue;
-        const x = barRect(i, geo)[0];
-        if (!plan) {
-          ctx.rect(x, (y0 - heights[i]) * d, geo.barDev, heights[i] * d);
-          continue;
-        }
-        const lit = litRows(heights[i], d, plan);
-        for (let r = 0; r < lit; r += 1) {
-          if (jit && jitterLevel(i, r) !== k) continue;
-          const [ry, rh] = segmentRect(r, y0d, plan);
-          ctx.rect(x, ry, geo.barDev, rh);
-        }
-      }
-      ctx.fill();
-    }
-    if (plan && fx.peak > 0 && peakState.rows === plan.rows) drawPeak(ctx, b, band, y0d, geo, alpha * alphas[b], plan, fx);
-    if (plan && fx.baseGlow > 0) drawBaseRow(ctx, b, band, y0d, geo, alpha * alphas[b], res, plan, fx);
   }
 }
 
-function drawPeak(ctx, b, band, y0d, geo, alpha, plan, fx) {
-  const d = geo.dpr;
+function addAfterCells(ctx, i, y0d, geo, plan, k, tau) {
+  const lo = k / AFTER_BINS;
+  const hi = lo + 1 / AFTER_BINS + (k === AFTER_BINS - 1 ? 1 : 0);
   const rows = plan.rows;
+  const x = barRect(i, geo)[0];
+  for (let r = litAt(i, geo.dpr, plan); r < rows; r += 1) {
+    if (r === markers[i]) continue;
+    const a = afterAlpha(since[i * rows + r], tau);
+    if (a < 0.02 || a < lo || a >= hi) continue;
+    const [ry, rh] = segmentRect(r, y0d, plan);
+    ctx.rect(x, ry, geo.barDev, rh);
+  }
+}
+
+function fillPeakMarkers(ctx, b, band, y0d, geo, plan) {
+  ctx.beginPath();
+  for (let i = 0; i < band.length; i += 1) {
+    if (band[i] !== b) continue;
+    const m = markers[i];
+    if (m < litAt(i, geo.dpr, plan) || m >= plan.rows) continue;
+    const [ry, rh] = segmentRect(m, y0d, plan);
+    ctx.rect(barRect(i, geo)[0], ry, geo.barDev, rh);
+  }
+  ctx.fill();
+}
+
+function drawPeak(ctx, b, band, y0d, geo, alpha, plan, fx) {
   if (fx.afterimage > 0) {
     for (let k = 0; k < AFTER_BINS; k += 1) {
-      const lo = k / AFTER_BINS;
       ctx.globalAlpha = alpha * fx.afterimage * ((k + 0.5) / AFTER_BINS);
       ctx.beginPath();
       for (let i = 0; i < band.length; i += 1) {
-        if (band[i] !== b) continue;
-        const x = barRect(i, geo)[0];
-        const lit = heights[i] > 0 ? litRows(heights[i], d, plan) : 0;
-        for (let r = lit; r < rows; r += 1) {
-          if (r === markers[i]) continue;
-          const a = afterAlpha(since[i * rows + r], fx.afterTau);
-          if (a < 0.02 || a < lo || a >= lo + 1 / AFTER_BINS + (k === AFTER_BINS - 1 ? 1 : 0)) continue;
-          const [ry, rh] = segmentRect(r, y0d, plan);
-          ctx.rect(x, ry, geo.barDev, rh);
-        }
+        if (band[i] === b) addAfterCells(ctx, i, y0d, geo, plan, k, fx.afterTau);
       }
       ctx.fill();
     }
   }
   ctx.globalAlpha = alpha * fx.peak;
-  ctx.beginPath();
-  for (let i = 0; i < band.length; i += 1) {
-    if (band[i] !== b) continue;
-    const m = markers[i];
-    const lit = heights[i] > 0 ? litRows(heights[i], d, plan) : 0;
-    if (m < lit || m >= rows) continue;
-    const [ry, rh] = segmentRect(m, y0d, plan);
-    ctx.rect(barRect(i, geo)[0], ry, geo.barDev, rh);
-  }
-  ctx.fill();
+  fillPeakMarkers(ctx, b, band, y0d, geo, plan);
 }
 
 function drawBaseRow(ctx, b, band, y0d, geo, alpha, res, plan, fx, haloOnly = false) {
@@ -559,15 +620,17 @@ function drawTips(ctx, n, y0, geo, alpha, color, plan) {
   ctx.beginPath();
   const thick = Math.max(2, Math.round(2 * d));
   for (let i = 0; i < n; i += 1) {
-    if (!(peaks[i] > 0)) continue;
-    const x = barRect(i, geo)[0];
-    if (plan) {
-      const r = litRows(peaks[i], d, plan);
-      if (r >= plan.rows) continue;
-      const [ry, rh] = segmentRect(r, y0d, plan);
-      ctx.rect(x, ry, geo.barDev, rh);
-    } else {
-      ctx.rect(x, Math.round(y0d - peaks[i] * d) - thick - 1, geo.barDev, thick);
+    if (peaks[i] > 0) {
+      const x = barRect(i, geo)[0];
+      if (plan) {
+        const r = litRows(peaks[i], d, plan);
+        if (r < plan.rows) {
+          const [ry, rh] = segmentRect(r, y0d, plan);
+          ctx.rect(x, ry, geo.barDev, rh);
+        }
+      } else {
+        ctx.rect(x, Math.round(y0d - peaks[i] * d) - thick - 1, geo.barDev, thick);
+      }
     }
   }
   ctx.fill();
@@ -591,8 +654,10 @@ export function barHeights(values, half, out = heights) {
 }
 
 const BACKDROP_KEY = new WeakMap();
+const BACKDROPS = new Set(['ice', 'black', 'ice2']);
 
 function drawBackdrop(ctx, w, h, y0, colors, alpha, kind = 'ice') {
+  if (!BACKDROPS.has(kind)) return;
   if (kind === 'black' || (kind === 'ice2' && colors.ice2)) {
     ctx.save();
     ctx.globalAlpha = alpha;
@@ -605,7 +670,7 @@ function drawBackdrop(ctx, w, h, y0, colors, alpha, kind = 'ice') {
   if (!ice?.bgTop) return;
   const key = `${h}|${y0}|${ice.bgTop}|${ice.bgMid}`;
   let hit = BACKDROP_KEY.get(ctx);
-  if (!hit || hit.key !== key) {
+  if (hit?.key !== key) {
     const g = ctx.createLinearGradient(0, 0, 0, h);
     g.addColorStop(0, rgba(ice.bgTop, 1));
     g.addColorStop(y0 / h, rgba(ice.bgMid, 1));
@@ -620,15 +685,75 @@ function drawBackdrop(ctx, w, h, y0, colors, alpha, kind = 'ice') {
   ctx.restore();
 }
 
+function buildFx(opts, n, tiltRad, colors, res, sector) {
+  const {
+    reflection = MIRROR_ALPHA, tips = false, mirrorGap = 0, band = 0, reflectionBlur = 0, reflectionMode = 'alpha', shadeJitter = 0, baseGlow = 0, peak = 0, afterimage = 0, afterTau = 0.35,
+    maxLevel = 8, sectorGlow = 0, sectorGlowSize = 1, lite = false,
+  } = opts;
+  return { jitter: shadeJitter, baseGlow, baseColor: rgba(colors.line, 1), peak: sector ? 0 : peak, afterimage: sector ? 0 : afterimage, afterTau, sector, maxLevel, reflectMode: sector ? reflectionMode : 'alpha', reflectStrength: reflection / REFLECT_FULL, path: trailPath(colors.ice2), glow: sector && !lite ? sectorGlow : 0, glowSize: sectorGlowSize, glowColor: rgba(colors.ice2?.stops?.[6] ?? colors.a, 1), fill: res.fill, n, tips, mirrorGap, band, reflection, reflectionBlur, tiltRad };
+}
+
+function stepEffects(n, plan, geo, w, h, fx, opts) {
+  const { peakDt = 0, peakHold = PEAK_HOLD_S, visitsPerStep = 3, window = 10, minDwell = 60 } = opts;
+  if (fx.sector) stepSector(n, plan, geo.dpr, peakDt, `${w}|${h}|${geo.dpr}|${visitsPerStep}|${fx.maxLevel}`, { window, visitsPerStep, maxLevel: fx.maxLevel, minDwell: minDwell / 1000 });
+  else if ((fx.peak > 0 || fx.afterimage > 0) && plan) stepPeak(n, plan, geo.dpr, peakDt, peakHold);
+}
+
+function tiltRadians(tilt) {
+  return tilt ? (-tilt * Math.PI) / 180 : 0;
+}
+
+function applyTilt(ctx, w, h, dpr, rad) {
+  if (!rad) {
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    return;
+  }
+  const cos = Math.cos(rad);
+  const sin = Math.sin(rad);
+  const cx = (w * dpr) / 2;
+  const cy = (h * dpr) / 2;
+  ctx.setTransform(cos, sin, -sin, cos, cx - cos * cx + sin * cy, cy - sin * cx - cos * cy);
+}
+
+function drawUpper(ctx, y0, geo, alpha, res, plan, fx) {
+  drawHalf(ctx, y0, geo, alpha, res, plan, fx);
+  if (fx.tips) { drawTips(ctx, fx.n, y0, geo, alpha, fx.baseColor, plan); ctx.fillStyle = res.fill; }
+}
+
+function drawLower(ctx, y0, geo, alpha, res, plan, fx) {
+  const { sector, reflection, reflectionBlur } = fx;
+  ctx.translate(0, 2 * y0 * geo.dpr + Math.round(fx.mirrorGap * geo.dpr));
+  ctx.scale(1, -1);
+  const blur = (blurFx) => {
+    const k = Math.max(1, Math.round((1 + reflectionBlur * 3) * geo.dpr));
+    const soft = alpha * reflection * 0.4 * reflectionBlur;
+    ctx.translate(0, k);
+    drawHalf(ctx, y0, geo, soft, res, plan, blurFx, true);
+    ctx.translate(0, -2 * k);
+    drawHalf(ctx, y0, geo, soft, res, plan, blurFx, true);
+    if (sector) ctx.translate(0, k);
+  };
+  const exact = sector && fx.reflectMode !== 'alpha';
+  if (sector && !exact && reflectionBlur > 0) blur({ ...fx, glow: 0, baseGlow: 0 });
+  drawHalf(ctx, y0, geo, exact ? alpha : alpha * reflection, res, plan, fx, true);
+  if (!sector && reflectionBlur > 0) blur(NO_FX);
+  if (fx.tips) drawTips(ctx, fx.n, y0, geo, alpha * reflection, fx.baseColor, plan);
+}
+
+function glowHorizon(ctx, w, h, y0, res, alpha, fx) {
+  if (fx.sector) ctx.globalCompositeOperation = 'lighter';
+  if (fx.tiltRad) { ctx.translate(w / 2, h / 2); ctx.rotate(fx.tiltRad); ctx.translate(-w / 2, -h / 2); }
+  drawHorizon(ctx, w, y0, res, alpha, fx.band);
+}
+
 export function drawBars(ctx, w, h, values, opts) {
   const {
-    colors, horizon = 0.5, span = 1, alpha = 1, dpr = 1, widthFraction = BAR_WIDTH_FRACTION, minGapCss = GAP_MIN_CSS, maxHeightPx = 0, reflection = MIRROR_ALPHA, glow = true,
-    direction = 'horizontal', segments = 0, segmentGap = 0.3, tips = false, tipFade = 0.3, band = 0, backdrop = 'none', backdropAlpha = 1, dt = 1 / 30,
-    sectionHeight = 0, reflectionMode = 'alpha', shadeJitter = 0, peak = 0, peakHold = PEAK_HOLD_S, afterimage = 0, afterTau = 0.35, peakDt = 0, baseGlow = 0, mirrorGap = 0, reflectionBlur = 0, tilt = 0,
-    sectorMode = 'off', visitsPerStep = 3, window = 10, maxLevel = 8, sectorGlow = 0, sectorGlowSize = 1, lite = false, minDwell = 60,
+    colors, horizon = 0.5, span = 1, alpha = 1, dpr = 1, widthFraction = BAR_WIDTH_FRACTION, minGapCss = GAP_MIN_CSS, maxHeightPx = 0, glow = true,
+    direction = 'horizontal', segments = 0, segmentGap = 0.3, tips = false, tipFade = 0.3, backdrop = 'none', backdropAlpha = 1, dt = 1 / 30,
+    sectionHeight = 0, tilt = 0, sectorMode = 'off',
   } = opts;
   const n = values.length;
-  if (!n || !(w > 0) || !(h > 0)) return;
+  if (!(n && w > 0 && h > 0)) return;
   const y0 = h * horizon;
   const avail = Math.min(y0, h - y0) * span;
   const lay = barLayout({ avail, maxHeightPx, segments, sectionHeight, segmentGap });
@@ -642,46 +767,19 @@ export function drawBars(ctx, w, h, values, opts) {
   const res = resources(ctx, w, n, geo, colors, vertical);
   const sectorPlan = sectorMode === 'trail' ? segmentPlan(half * HEIGHT_MAX, geo.dpr, segments, segmentGap, fixedPx) : null;
   const plan = sectorPlan ?? segmentPlan(fixedPx ? half * HEIGHT_MAX : half, geo.dpr, segments, segmentGap, fixedPx);
-  const sector = !!sectorPlan;
-  const fx = { jitter: shadeJitter, baseGlow, baseColor: rgba(colors.line, 1), peak: sector ? 0 : peak, afterimage: sector ? 0 : afterimage, afterTau, sector, maxLevel, reflectMode: sector ? reflectionMode : 'alpha', reflectStrength: reflection / REFLECT_FULL, path: trailPath(colors.ice2), glow: sector && !lite ? sectorGlow : 0, glowSize: sectorGlowSize, glowColor: rgba(colors.ice2?.stops?.[6] ?? colors.a, 1), fill: res.fill };
-  if (sector) stepSector(n, plan, geo.dpr, peakDt, `${w}|${h}|${geo.dpr}|${visitsPerStep}|${maxLevel}`, { window, visitsPerStep, maxLevel, minDwell: minDwell / 1000 });
-  else if ((peak > 0 || afterimage > 0) && plan) stepPeak(n, plan, geo.dpr, peakDt, peakHold);
-  if (backdrop === 'ice' || backdrop === 'black' || backdrop === 'ice2') drawBackdrop(ctx, w, h, y0, colors, backdropAlpha, backdrop);
+  const rad = tiltRadians(tilt);
+  const fx = buildFx(opts, n, rad, colors, res, !!sectorPlan);
+  stepEffects(n, plan, geo, w, h, fx, opts);
+  drawBackdrop(ctx, w, h, y0, colors, backdropAlpha, backdrop);
   if (tips) stepTips(n, tipFade, half, dt);
   ctx.save();
-  ctx.globalCompositeOperation = sector ? 'source-over' : 'lighter';
+  ctx.globalCompositeOperation = fx.sector ? 'source-over' : 'lighter';
   ctx.fillStyle = res.fill;
-  const rad = tilt ? (-tilt * Math.PI) / 180 : 0;
-  const cos = Math.cos(rad);
-  const sin = Math.sin(rad);
-  const cx = (w * geo.dpr) / 2;
-  const cy = (h * geo.dpr) / 2;
   ctx.save();
-  if (rad) ctx.setTransform(cos, sin, -sin, cos, cx - cos * cx + sin * cy, cy - sin * cx - cos * cy);
-  else ctx.setTransform(1, 0, 0, 1, 0, 0);
-  drawHalf(ctx, y0, geo, alpha, res, plan, fx);
-  if (tips) { drawTips(ctx, n, y0, geo, alpha, rgba(colors.line, 1), plan); ctx.fillStyle = res.fill; }
-  ctx.translate(0, 2 * y0 * geo.dpr + Math.round(mirrorGap * geo.dpr));
-  ctx.scale(1, -1);
-  const blur = (blurFx) => {
-    const k = Math.max(1, Math.round((1 + reflectionBlur * 3) * geo.dpr));
-    const soft = alpha * reflection * 0.4 * reflectionBlur;
-    ctx.translate(0, k);
-    drawHalf(ctx, y0, geo, soft, res, plan, blurFx, true);
-    ctx.translate(0, -2 * k);
-    drawHalf(ctx, y0, geo, soft, res, plan, blurFx, true);
-    if (sector) ctx.translate(0, k);
-  };
-  const exact = sector && reflectionMode !== 'alpha';
-  if (sector && !exact && reflectionBlur > 0) blur({ ...fx, glow: 0, baseGlow: 0 });
-  drawHalf(ctx, y0, geo, exact ? alpha : alpha * reflection, res, plan, fx, true);
-  if (!sector && reflectionBlur > 0) blur(NO_FX);
-  if (tips) drawTips(ctx, n, y0, geo, alpha * reflection, rgba(colors.line, 1), plan);
+  applyTilt(ctx, w, h, geo.dpr, rad);
+  drawUpper(ctx, y0, geo, alpha, res, plan, fx);
+  drawLower(ctx, y0, geo, alpha, res, plan, fx);
   ctx.restore();
-  if (glow) {
-    if (sector) ctx.globalCompositeOperation = 'lighter';
-    if (rad) { ctx.translate(w / 2, h / 2); ctx.rotate(rad); ctx.translate(-w / 2, -h / 2); }
-    drawHorizon(ctx, w, y0, res, alpha, band);
-  }
+  if (glow) glowHorizon(ctx, w, h, y0, res, alpha, fx);
   ctx.restore();
 }

@@ -69,7 +69,7 @@ export function makeFrameMeter({ frames = FRAME_EMA, hold = HOLD_FRAMES } = {}) 
       if (last === null) { last = ts; return null; }
       const dt = ts - last;
       last = ts;
-      if (!(dt > 0)) return null;
+      if (Number.isNaN(dt) || dt <= 0) return null;
       if (dt > GAP_MS) { skip = hold; return null; }
       if (skip > 0) { skip -= 1; return null; }
       ema = ema ? ema + (dt - ema) / frames : dt;

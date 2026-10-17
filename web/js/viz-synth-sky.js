@@ -213,6 +213,12 @@ void main() {
 }
 `;
 
+function cell(p, name) {
+  let c = p.vals.get(name);
+  if (!c) { c = [Number.NaN, Number.NaN, Number.NaN]; p.vals.set(name, c); }
+  return c;
+}
+
 export function createSkyPass(gl, deps) {
   const link = deps.linkProgram;
   const stats = { starCount: 0, uploads: 0, builds: 0 };
@@ -228,11 +234,6 @@ export function createSkyPass(gl, deps) {
   const uHor = {};
   const uVig = {};
 
-  function cell(p, name) {
-    let c = p.vals.get(name);
-    if (!c) { c = [Number.NaN, Number.NaN, Number.NaN]; p.vals.set(name, c); }
-    return c;
-  }
   function loc(p, name) {
     if (!p.locs.has(name)) p.locs.set(name, gl.getUniformLocation(p.prog, name));
     return p.locs.get(name);

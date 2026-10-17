@@ -34,7 +34,10 @@ export function metaStatus(s) {
 
 export const missingAudio = (songs) => songs.filter((s) => !hasAudio(s));
 
-export const isLong = (song) => !(Number(song?.duration) > 0) || Number(song.duration) > LONG_SONG_SECONDS;
+export const isLong = (song) => {
+  const d = Number(song?.duration);
+  return Number.isNaN(d) || d <= 0 || d > LONG_SONG_SECONDS;
+};
 
 export function splitLong(songs) {
   return { short: songs.filter((s) => !isLong(s)), long: songs.filter(isLong) };

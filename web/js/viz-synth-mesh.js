@@ -1,8 +1,8 @@
 import {
-  GRID_DEPTH, GRID_MAX_VERTICES, LOD_ROW_PX, LOD_MERGE, LOD_MAX_SPACING, tierHalfWidth, crossAlpha,
+  GRID_DEPTH, GRID_MAX_VERTICES, LOD_ROW_PX, LOD_MERGE, LOD_MAX_SPACING, tierHalfWidth,
 } from './viz-terrain-math.js';
 
-export const crossAlphaFor = crossAlpha;
+export { crossAlpha as crossAlphaFor } from './viz-terrain-math.js';
 const MAX_TIERS = 12;
 const BASE_MIN = 0.2;
 const BASE_MAX = 1.2;

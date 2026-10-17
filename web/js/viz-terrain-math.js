@@ -730,7 +730,7 @@ export function fillHeights(history, cols, t, out, opts) {
       out[r * cols + c] = heightAt(v, x, r, t, opts) * amp;
     }
   }
-  if (!opts || opts.smooth !== 0) smoothHeights(out, rows, cols, opts?.smooth ?? 2);
+  if (opts?.smooth !== 0) smoothHeights(out, rows, cols, opts?.smooth ?? 2);
   if (opts?.bakeAmp && history.boost && opts.landmarks !== false) applyLandmarks(out, rows, cols, history.boost);
   return out;
 }

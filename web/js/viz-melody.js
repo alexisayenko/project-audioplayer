@@ -235,8 +235,7 @@ export function selectLeads(scores, winRows) {
     if (!(s >= ACCENT_MIN_SCORE)) continue;
     let best = true;
     for (let k = Math.max(0, r - winRows); k <= Math.min(n - 1, r + winRows) && best; k += 1) {
-      if (k < r && scores[k] >= s) best = false;
-      else if (k > r && scores[k] > s) best = false;
+      if ((k < r && scores[k] >= s) || (k > r && scores[k] > s)) best = false;
     }
     if (best) out.push(r);
   }
@@ -293,7 +292,9 @@ export function fillMelodyAttrs(attrs, mel, can, oth, cols, scratch = null) {
 const U_LUT = Float32Array.from({ length: PITCH_LEVELS }, (_, i) => hzToU(idxToHz(i)));
 export const ACCENT_RIDGE = 0.85;
 
-export function samplePitch(tl, t, out = { u: 0, s: 0 }) {
+const newPitchOut = () => ({ u: 0, s: 0 });
+
+export function samplePitch(tl, t, out = newPitchOut()) {
   const last = Math.min(tl.total, tl.pitchDone ?? 0) - 1;
   const x = t * tl.rps;
   out.s = 0;

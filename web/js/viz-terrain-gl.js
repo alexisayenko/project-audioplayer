@@ -328,7 +328,7 @@ export function linkProgram(gl, vsSrc, fsSrc, attribs) {
     gl.deleteProgram(prog);
     throw new Error(`program link failed: ${log}`);
   }
-  return { prog, locs: new Map(), vals: new Map(), mvpV: -1 };
+  return { gl, prog, locs: new Map(), vals: new Map(), mvpV: -1 };
 }
 
 function uni(gl, p, name) {
@@ -336,11 +336,12 @@ function uni(gl, p, name) {
   return p.locs.get(name);
 }
 
-function setU(gl, p, name, a, b, c, d, n) {
+function setU(p, name, a, b, c, d, n) {
   let cur = p.vals.get(name);
   if (!cur) { cur = [Number.NaN, Number.NaN, Number.NaN, Number.NaN]; p.vals.set(name, cur); }
   if (cur[0] === a && cur[1] === b && cur[2] === c && cur[3] === d) return;
   cur[0] = a; cur[1] = b; cur[2] = c; cur[3] = d;
+  const gl = p.gl;
   const loc = uni(gl, p, name);
   if (n === 1) gl.uniform1f(loc, a);
   else if (n === 2) gl.uniform2f(loc, a, b);
@@ -429,10 +430,10 @@ export function createTerrain(canvas, opts = {}) {
   const proj = new Float32Array(16);
   const look = new Float32Array(16);
 
-  const u1 = (p, n, a) => setU(gl, p, n, a, 0, 0, 0, 1);
-  const u2 = (p, n, a, b) => setU(gl, p, n, a, b, 0, 0, 2);
-  const u3 = (p, n, a, b, c) => setU(gl, p, n, a, b, c, 0, 3);
-  const u4 = (p, n, a, b, c, d) => setU(gl, p, n, a, b, c, d, 4);
+  const u1 = (p, n, a) => setU(p, n, a, 0, 0, 0, 1);
+  const u2 = (p, n, a, b) => setU(p, n, a, b, 0, 0, 2);
+  const u3 = (p, n, a, b, c) => setU(p, n, a, b, c, 0, 3);
+  const u4 = (p, n, a, b, c, d) => setU(p, n, a, b, c, d, 4);
 
   function buffer(target, data, usage) {
     const b = gl.createBuffer();
@@ -825,68 +826,85 @@ export function createTerrain(canvas, opts = {}) {
     }
   }
 
-  function updateHeights(sec, ahead) {
-    const { rows, cols } = s.dims;
-    const style = getStyle();
-    const needsPrefix = isBeatStyle(style) || isMelodyStyle(style);
-    const usable = !!ahead?.timeline && !(ahead.partial && needsPrefix);
-    const tl = usable ? ahead.timeline : null;
-    if (!usable) ahead = null;
-    let k = 0;
-    if (tl) {
-      if (s.lookAt === null) s.lookAt = sec;
-      k = clamp01((sec - s.lookAt) / LOOK_BLEND_S);
-    } else s.lookAt = null;
-    const lay = rowLayout(rows);
+  function resolveAhead(ahead, style) {
+    if (!ahead?.timeline) return null;
+    return ahead.partial && (isBeatStyle(style) || isMelodyStyle(style)) ? null : ahead;
+  }
+
+  function lookBlend(sec, tl) {
+    if (!tl) { s.lookAt = null; return 0; }
+    if (s.lookAt === null) s.lookAt = sec;
+    return clamp01((sec - s.lookAt) / LOOK_BLEND_S);
+  }
+
+  function staticCacheHit(style, tl, ahead, k) {
     const eligible = !!tl && k >= 1 && !isBeatStyle(style) && timelineCovers(tl, ahead.time - 3, ahead.time + LOOK_S + 0.5) && (style !== 'melody' || !!tl.parts);
     s.static = eligible;
-    if (s.static) {
-      const at = ahead.time;
-      const hs = s.hs;
-      const done = tl.done;
-      const same = hs.style === style && hs.done === done && hs.v === tl.ver && hs.pd === (tl.partsDone ?? 0) && hs.kd === (tl.pitchDone ?? 0) && hs.dims === s.dims;
-      if (same) {
-        let due = false;
-        for (const g of s.tiers) if (g.upVer !== s.hVer || g.upBase !== tierBase(g, at)) due = true;
-        if (!due) {
-          for (const g of s.tiers) uploadTier(g, at, 0);
-          return;
-        }
-      } else {
-        hs.style = style; hs.done = done; hs.v = tl.ver; hs.pd = tl.partsDone ?? 0; hs.kd = tl.pitchDone ?? 0; hs.dims = s.dims;
-        s.hVer += 1;
-      }
+    if (!eligible) return false;
+    const hs = s.hs;
+    const done = tl.done;
+    const same = hs.style === style && hs.done === done && hs.v === tl.ver && hs.pd === (tl.partsDone ?? 0) && hs.kd === (tl.pitchDone ?? 0) && hs.dims === s.dims;
+    if (!same) {
+      hs.style = style; hs.done = done; hs.v = tl.ver; hs.pd = tl.partsDone ?? 0; hs.kd = tl.pitchDone ?? 0; hs.dims = s.dims;
+      s.hVer += 1;
+      return false;
     }
-    let info = fillLiveFrame(s.liveFrame, s.series, sec);
-    if (tl) {
-      const li = fillLookFrame(s.lookFrame, tl, ahead.time);
-      blendFrames(s.liveFrame, s.lookFrame, k);
-      info = { base: k >= 1 ? li.base : info.base, frac: info.frac + (li.frac - info.frac) * k };
+    const at = ahead.time;
+    for (const g of s.tiers) if (g.upVer !== s.hVer || g.upBase !== tierBase(g, at)) return false;
+    for (const g of s.tiers) uploadTier(g, at, 0);
+    return true;
+  }
+
+  function frameInfo(sec, tl, ahead, k) {
+    const info = fillLiveFrame(s.liveFrame, s.series, sec);
+    if (!tl) return info;
+    const li = fillLookFrame(s.lookFrame, tl, ahead.time);
+    blendFrames(s.liveFrame, s.lookFrame, k);
+    return { base: k >= 1 ? li.base : info.base, frac: info.frac + (li.frac - info.frac) * k };
+  }
+
+  function fillBeatLayer(style, sec, ahead, tl, k, info) {
+    const { rows, cols } = s.dims;
+    fillBeatStyle(style, sec, ahead, k, rows, cols);
+    const rk = s.rk;
+    const settled = !tl || k >= 1;
+    const done = tl ? tl.done : -1;
+    const ver = tl ? tl.ver : -1;
+    const full = isFullStyle(style);
+    if (!settled || rk.dims !== s.dims || rk.base !== info.base || rk.done !== done || rk.v !== ver || rk.ver !== s.liveVer || rk.full !== full) {
+      fillHeights(s.liveFrame, cols, sec, s.relief, full ? { swellAmp: 0, bakeAmp: true } : { swellAmp: 0, bakeAmp: true, landmarks: false });
+      rk.dims = s.dims; rk.base = info.base; rk.done = done; rk.v = ver; rk.ver = s.liveVer; rk.full = full;
     }
-    s.melodyOn = isMelodyStyle(style);
-    s.beatNow = isBeatStyle(style) || isLavaStyle(style);
-    s.fullOn = isFullStyle(style);
+    if (full) layerFullRelief(s.heights, s.relief, rows, cols, info.frac, nowGains(getCam(), style).h, s.peak);
+    else {
+      addBaseRelief(s.heights, s.relief, BEAT_BASE_RELIEF);
+      applyNowLine(s.heights, rows, cols, info.frac, HEIGHT_CAP, NOW_LINE_GAIN_H);
+    }
+  }
+
+  function fillStyleHeights(style, sec, ahead, tl, k, info) {
+    const { rows, cols } = s.dims;
     if (s.melodyOn) fillMelodyStyle(sec, ahead, k, info.base, cols);
-    else if (isBeatStyle(style)) {
-      fillBeatStyle(style, sec, ahead, k, rows, cols);
-      const rk = s.rk;
-      const settled = !tl || k >= 1;
-      const done = tl ? tl.done : -1;
-      const full = isFullStyle(style);
-      if (!settled || rk.dims !== s.dims || rk.base !== info.base || rk.done !== done || rk.v !== (tl ? tl.ver : -1) || rk.ver !== s.liveVer || rk.full !== full) {
-        fillHeights(s.liveFrame, cols, sec, s.relief, full ? { swellAmp: 0, bakeAmp: true } : { swellAmp: 0, bakeAmp: true, landmarks: false });
-        rk.dims = s.dims; rk.base = info.base; rk.done = done; rk.v = tl ? tl.ver : -1; rk.ver = s.liveVer; rk.full = full;
-      }
-      if (full) layerFullRelief(s.heights, s.relief, rows, cols, info.frac, nowGains(getCam(), style).h, s.peak);
-      else {
-        addBaseRelief(s.heights, s.relief, BEAT_BASE_RELIEF);
-        applyNowLine(s.heights, rows, cols, info.frac, HEIGHT_CAP, NOW_LINE_GAIN_H);
-      }
-    }
+    else if (isBeatStyle(style)) fillBeatLayer(style, sec, ahead, tl, k, info);
     else {
       fillHeights(s.liveFrame, cols, sec, s.heights, { swellAmp: 0, bakeAmp: true });
       if (isLavaStyle(style)) applyNowLine(s.heights, rows, cols, info.frac, HEIGHT_CAP, nowGains(getCam(), style).h);
     }
+  }
+
+  function updateHeights(sec, aheadIn) {
+    const { rows, cols } = s.dims;
+    const style = getStyle();
+    const ahead = resolveAhead(aheadIn, style);
+    const tl = ahead ? ahead.timeline : null;
+    const k = lookBlend(sec, tl);
+    if (staticCacheHit(style, tl, ahead, k)) return;
+    const info = frameInfo(sec, tl, ahead, k);
+    s.melodyOn = isMelodyStyle(style);
+    s.beatNow = isBeatStyle(style) || isLavaStyle(style);
+    s.fullOn = isFullStyle(style);
+    fillStyleHeights(style, sec, ahead, tl, k, info);
+    const lay = rowLayout(rows);
     fillLight(s.heights, rows, cols, gridHalfWidth(view.w / view.h), lay.dz, s.light, undefined, s.xs);
     const pos = (info.base + info.frac) * lay.dt;
     for (const g of s.tiers) uploadTier(g, pos, info.frac);
@@ -934,25 +952,17 @@ export function createTerrain(canvas, opts = {}) {
     return yawStepOf(Math.abs(cc.yaw) + flight.yawRange(cc.yaw, view.w / view.h));
   }
 
-  function draw(spectrum, t = 0, aheadIn = null, latS = 0) {
-    if (s.lost || s.disposed || !s.res) return;
-    const lat = Number.isFinite(latS) ? latS : 0;
-    let ahead = aheadIn;
-    if (aheadIn?.timeline) {
-      s.ah.timeline = aheadIn.timeline;
-      s.ah.time = aheadIn.time - lat;
-      ahead = s.ah;
-    }
-    const sp = spectrum || [];
-    const step = s.clock.advance(t);
-    s.liveVer += step.pushes;
+  function pushRows(sp, t, pushes) {
     const gap = 1000 / ROWS_PER_SECOND;
-    for (let i = 0; i < step.pushes; i += 1) {
-      const ts = (t - (step.pushes - 1 - i) * gap) / 1000;
+    for (let i = 0; i < pushes; i += 1) {
+      const ts = (t - (pushes - 1 - i) * gap) / 1000;
       s.series.push(sp, ts);
       s.liveBeats.push(resample(sp, HISTORY_BINS), ts);
       if (isMelodyStyle(getStyle())) s.liveParts.push(resample(sp, HISTORY_BINS), ts);
     }
+  }
+
+  function updateEnergy(sp, t) {
     let bass = 0;
     const n = Math.min(BASS_BINS, sp.length);
     for (let i = 0; i < n; i += 1) bass += clamp01(sp[i]);
@@ -963,6 +973,39 @@ export function createTerrain(canvas, opts = {}) {
     s.energy += (rawEnergy - s.energy) * slow;
     s.pulse = easeEnergy(s.pulse, rawEnergy, dtS);
     s.lastT = t;
+  }
+
+  function shiftedAhead(aheadIn, lat) {
+    if (!aheadIn?.timeline) return aheadIn;
+    s.ah.timeline = aheadIn.timeline;
+    s.ah.time = aheadIn.time - lat;
+    return s.ah;
+  }
+
+  function renderScene(cam) {
+    if (s.res.bloom && !s.lite) renderBloom();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0, 0, view.w, view.h);
+    drawBackground(cam);
+    drawStars();
+    drawGrid();
+    if (s.lite) return;
+    drawMist();
+    if (s.res.bloom) {
+      gl.viewport(0, 0, view.w, view.h);
+      blurPass(s.res.bloom.a, null, 0, 0, 0.9, true);
+    }
+  }
+
+  function draw(spectrum, t = 0, aheadIn = null, latS = 0) {
+    if (s.lost || s.disposed || !s.res) return;
+    const lat = Number.isFinite(latS) ? latS : 0;
+    const ahead = shiftedAhead(aheadIn, lat);
+    const sp = spectrum || [];
+    const step = s.clock.advance(t);
+    s.liveVer += step.pushes;
+    pushRows(sp, t, step.pushes);
+    updateEnergy(sp, t);
     s.time = (t / 1000) % 600;
     const cc = getCam();
     if (tierYaw(cc) !== s.yaw) { freeGrid(); buildGrid(); s.clock.reset(); }
@@ -975,17 +1018,7 @@ export function createTerrain(canvas, opts = {}) {
     mat4Perspective(cam.fov, view.w / view.h, NEAR, FAR, proj);
     mat4LookAt(cam.eye, cam.target, cam.up, look);
     mat4Multiply(proj, look, mvp);
-    if (s.res.bloom && !s.lite) renderBloom();
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    gl.viewport(0, 0, view.w, view.h);
-    drawBackground(cam);
-    drawStars();
-    drawGrid();
-    if (!s.lite) drawMist();
-    if (s.res.bloom && !s.lite) {
-      gl.viewport(0, 0, view.w, view.h);
-      blurPass(s.res.bloom.a, null, 0, 0, 0.9, true);
-    }
+    renderScene(cam);
   }
 
   function resize(w, h, dpr = 1) {

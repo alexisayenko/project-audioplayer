@@ -54,7 +54,13 @@ export function buildShareUrl({
     const c = camClamp(cam);
     q.push(`cam=${[round(c.eye, 2), round(c.pitch, 1), round(c.yaw, 1)].join(',')}`);
   }
-  return `${String(origin ?? '').replace(/\/+$/, '')}/#/play/${encodeURIComponent(id)}?${q.join('&')}`;
+  return `${trimTrailingSlashes(String(origin ?? ''))}/#/play/${encodeURIComponent(id)}?${q.join('&')}`;
+}
+
+function trimTrailingSlashes(s) {
+  let end = s.length;
+  while (end > 0 && s[end - 1] === '/') end -= 1;
+  return s.slice(0, end);
 }
 
 function parseCam(raw) {

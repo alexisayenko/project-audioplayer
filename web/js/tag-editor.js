@@ -92,7 +92,10 @@ export function tagEditor({ tags = [], suggested = [], year = null, onChange = n
 
   return {
     node,
-    getTags({ commit = true } = {}) { if (commit) add(input.value); return [...current]; },
+    getTags({ commit = true } = {}) {
+      if (commit) add(input.value);
+      return [...current];
+    },
     peek() { return [...current]; },
     subscribe(fn) { listeners.push(fn); fn([...current]); },
     addTags(list) {
