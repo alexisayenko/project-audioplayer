@@ -1,6 +1,6 @@
 # macOS app GUI
 
-Build spec for a native SwiftUI macOS app whose GUI matches the web UI (`web/`, served at https://electrophone.cc). Status: v1 (Library, Playback, Add/Edit, Settings, sign-in) built and compiling, not tested with a real account (task-0046, ADR-0028); the MAC requirement statuses below still read "planned" until they are checked on a Mac. It describes what the web does today (read from `web/index.html`, `web/js/*`, `web/*.css` and the specs it links, 2026-10-17) and how that maps to a Mac app. It does not restate every requirement: the linked specs ([library](library.md), [playback](playback.md), [add-song](add-song.md), [web](web.md), [api](api.md), [share](share.md), [visualizer](visualizer.md), [stats](stats.md), [genres](genres.md), [playlists](playlists.md)) stay the source for detail; where this file and the code disagree, the code wins.
+Build spec for a native SwiftUI macOS app whose GUI matches the web UI (`web/`, served at https://electrophone.cc). Status: Sign-in, Library, Playback, Add/Edit, Settings, Playlists (placeholder), Genres map, Song stats, Music theory and the visualizer (Mirrored spectrum, Ring) are built and compile; none of it is tested with a real account or seen on a real UI, and the visualizer tap is unverified on the real server stream (task-0046, ADR-0028). The MAC requirement statuses below still read "planned" until they are checked on a Mac. It describes what the web does today (read from `web/index.html`, `web/js/*`, `web/*.css` and the specs it links, 2026-10-17) and how that maps to a Mac app. It does not restate every requirement: the linked specs ([library](library.md), [playback](playback.md), [add-song](add-song.md), [web](web.md), [api](api.md), [share](share.md), [visualizer](visualizer.md), [stats](stats.md), [genres](genres.md), [playlists](playlists.md)) stay the source for detail; where this file and the code disagree, the code wins.
 
 Requirement IDs in this file use the area `MAC` and the format of the [specs README](README.md); they are assigned only to the Mac-specific decisions. Pages are described as "Web reference" (what to copy) and "Mac" (what changes).
 
@@ -17,18 +17,18 @@ Key principle (CLAUDE.md): playback and offline reliability beat features. A pag
 | Settings (account, storage, sync, auto-download) | yes | P2 | account and download behaviour |
 | Download progress, retry, hourly-limit pause | yes | P1 | part of Library and Playback rows |
 | Settings: BPM detection, Metadata backfill, Download all | later | P3 | bulk maintenance, not playback |
-| Visualizer full screen: Mirrored spectrum and Ring | later | P3 | listening pleasure, no reliability gain |
+| Visualizer: Mirrored spectrum and Ring (in-window overlay) | built, unverified | P3 | listening pleasure, no reliability gain |
 | Visualizer Terrain / Synthwave (WebGL) | out of v1 | P4 | large, no reliability gain |
 | Share link (copy a web URL) | later | P3 | cheap, only useful with web viewers |
 | Guest read-only view (public library) | out of v1 | P4 | the Mac app is for signed-in users |
-| Playlists | out of v1 | P4 | web has only a placeholder; do not ship one |
-| Genres map and Genres map rework | out of v1 | P4 | browsing aid (GEN: "nothing here changes a song") |
-| Song stats (year x BPM scatter) | out of v1 | P4 | analysis only |
-| Music theory | out of v1 | P4 | static reference text |
+| Playlists | built (placeholder, as the web) | P4 | the web has only "Playlists are coming soon"; the Mac mirrors it |
+| Genres map (rework not built) | built, unverified | P4 | browsing aid (GEN: "nothing here changes a song") |
+| Song stats (year x BPM scatter) | built, unverified | P4 | analysis only |
+| Music theory | built, unverified | P4 | static reference text |
 
 The Library genre / decade / country / tag filter chips are part of Library and stay in v1; only the Genres map page is out.
 
-MAC-001 MUST: v1 ships Sign-in, Library, Playback, Add/Edit and Settings (account, storage, auto-download) and nothing from the "out of v1" rows; the sidebar shows no placeholder items for them. Status: planned
+MAC-001 MUST: v1 ships Sign-in, Library, Playback, Add/Edit and Settings (account, storage, auto-download) and nothing from the "out of v1" rows. Superseded for the pages: Playlists (placeholder, as on the web), Genres map, Song stats and Music theory were built afterwards at Alex's request and sit in the sidebar in the web's order (Playback, Playlists, Library, Genres map, Song stats, Music theory, Settings); the Genres map rework page is not built. Status: planned
 
 ## 2. Shared foundations
 
@@ -199,7 +199,7 @@ Web reference ([visualizer.md](visualizer.md)): full-screen overlay opened from 
 
 Mac:
 
-- MAC-030 SHOULD: later phase; render with Metal or SwiftUI `Canvas` fed by an audio tap (`MTAudioProcessingTap` on the `AVPlayerItem`, or `AVAudioEngine`); a remote progressive stream may not allow a tap, so verify before committing (open question E). Reuse the exact colours, density, 30 fps pacing and the flash-safety and reduced-motion rules. Terrain, Synthwave and Camera flight are out of v1. Status: planned
+- MAC-030 SHOULD: later phase; render with Metal or SwiftUI `Canvas` fed by an audio tap (`MTAudioProcessingTap` on the `AVPlayerItem`, or `AVAudioEngine`); a remote progressive stream may not allow a tap, so verify before committing (open question E). Reuse the exact colours, density, 30 fps pacing and the flash-safety and reduced-motion rules. Terrain, Synthwave and Camera flight are out of v1. Status: implemented for Mirrored spectrum and Ring (`MacAudioTap.swift`, `MacVisualizer.swift`, `MacVisualizerView.swift`): a 2048-point FFT in 64 log bands from an `MTAudioProcessingTap` set on the item before it plays, drawn in `Canvas` at 30 fps in an in-window overlay (V, M, Esc, dock key, View menu; native full screen, Share link, the style panel and the Settings card are not built). The tap is verified only on a local file and a Range-capable HTTP file with custom headers in a test harness; on the real server stream it is unverified until run. If no tap callback arrives within 3 s of playback the key is disabled with a tooltip and the console logs `viz tap: NO callbacks`. Colours are the `chart` tokens (the web `--viz-*` palette is viz-local); the look is untuned. Not browser-comparable by ear or eye yet
 - Full-screen uses native macOS full-screen (`toggleFullScreen`), Esc exits; the same keys V, M, S, R, Up, Down apply while it is open.
 
 ### 3.6 Share links (P3)
@@ -208,21 +208,21 @@ Web reference ([share.md](share.md)): link `https://electrophone.cc/#/play/<song
 
 Mac: v1 has no Share. Later: a Share link item that builds the same URL (only `t`, `viz`, `fs`) and offers the system share sheet and Copy; opening links in the app (custom URL scheme) is not planned; the web handles them.
 
-### 3.7 Playlists (out of v1)
+### 3.7 Playlists (placeholder built)
 
-Web reference: nav item "Playlists" and a page that says only "Playlists are coming soon" (PLS-100); the full model (folders, import, export, smart playlists) is planned in [playlists.md](playlists.md). Do not build or show a placeholder on the Mac (MAC-001). Terminology trap: in the current web UI "Add to playlist", "Play all" and "Add all N to playlist" operate on the transient play queue ([terminology](terminology.md)); on the Mac keep the exact web labels until Playlists ship, then rename to "Add to queue" (PLS-008).
+Web reference: nav item "Playlists" and a page that says only "Playlists are coming soon" (PLS-100); the full model (folders, import, export, smart playlists) is planned in [playlists.md](playlists.md). Built as the same placeholder page (`PlaylistsPage.swift`), not a real playlist model. Terminology trap: in the current web UI "Add to playlist", "Play all" and "Add all N to playlist" operate on the transient play queue ([terminology](terminology.md)); on the Mac keep the exact web labels until Playlists ship, then rename to "Add to queue" (PLS-008).
 
-### 3.8 Genres map and Genres map rework (out of v1)
+### 3.8 Genres map and Genres map rework (Genres map built, rework not)
 
-Web reference ([genres.md](genres.md), WEB-084..088): full-viewport canvas workspace with a force-directed genre graph (nodes sized by song count, family colours from `--chart-*`, parent edges with arrows, related edges dashed), floating toolbar (title, status chip, search, Legend, Now playing, Orphans, zoom buttons), selected-genre card with "Show N songs in Library", outline tree panel. The rework page is a three-level hierarchy map from `GET /genres/vocabulary` and library counts, with review badges and flavour filters. Data: `GET /genres/graph`, `GET /genres/vocabulary`, `GET /library`. Out of v1; the Library Genres filter chip (which only needs `GET /tags`) is enough. If built later, copy the card style (opaque `ground`, 1 px `line`, `radius-key`) and keep nodes selectable by click only (GEN-026).
+Web reference ([genres.md](genres.md), WEB-084..088): full-viewport canvas workspace with a force-directed genre graph (nodes sized by song count, family colours from `--chart-*`, parent edges with arrows, related edges dashed), floating toolbar (title, status chip, search, Legend, Now playing, Orphans, zoom buttons), selected-genre card with "Show N songs in Library", outline tree panel. The rework page is a three-level hierarchy map from `GET /genres/vocabulary` and library counts, with review badges and flavour filters. Data: `GET /genres/graph`, `GET /genres/vocabulary`, `GET /library`. Built for the Genres map only (`GenresMapPage.swift`, `Gen*.swift`: port of `genre-graph.js`, `genre-data.js`, `genre-view.js` with a `Canvas` force graph, search, info card, outline); the rework page and `GET /genres/vocabulary` are not built. Card style and click-only selection (GEN-026) follow the web.
 
-### 3.9 Song stats (out of v1)
+### 3.9 Song stats (built)
 
-Web reference ([stats.md](stats.md)): `#/stats`, a full-viewport canvas scatter plot of year (x, padded, at least 10 years) against BPM (y, 60 to 200 default, never below 0), one 5 px dot per song with year and BPM (version year counts), jitter seeded by the song id, colour by Genre family (default), Decade, Audio on server or None, collapsible legend with counts, hover tooltip (title, artist, year, BPM), click opens the song card, rubber-band selection with a panel "N selected:" (Show in Library, Add to playlist, Play, Clear), wheel zoom, Shift/middle/right-drag pan, `C` centre, `0` or double-click reset, "View as table" (sortable). Data: the loaded library plus `GET /genres/graph`. Out of v1.
+Web reference ([stats.md](stats.md)): `#/stats`, a full-viewport canvas scatter plot of year (x, padded, at least 10 years) against BPM (y, 60 to 200 default, never below 0), one 5 px dot per song with year and BPM (version year counts), jitter seeded by the song id, colour by Genre family (default), Decade, Audio on server or None, collapsible legend with counts, hover tooltip (title, artist, year, BPM), click opens the song card, rubber-band selection with a panel "N selected:" (Show in Library, Add to playlist, Play, Clear), wheel zoom, Shift/middle/right-drag pan, `C` centre, `0` or double-click reset, "View as table" (sortable). Data: the loaded library plus `GET /genres/graph`. Built (`SongStatsPage.swift`, `Stat*.swift`); it fetches `/genres/graph` on its own, as does the Genres map (two decoders, no shared cache).
 
-### 3.10 Music theory (out of v1)
+### 3.10 Music theory (built)
 
-Web reference (WEB-093, WEB-098): `#/theory`, a read-only alphabetical glossary (`web/data/theory-terms.json`) and a "Composition metadata anatomy" section (`theory-anatomy.json`, annotated raw titles for example songs). Static JSON, no API. Out of v1.
+Web reference (WEB-093, WEB-098): `#/theory`, a read-only alphabetical glossary (`web/data/theory-terms.json`) and a "Composition metadata anatomy" section (`theory-anatomy.json`, annotated raw titles for example songs). Static JSON, no API. Built: `MusicTheoryPage.swift`, `ThyLogic.swift` (port of `theory.js`), `ThyAnatomyView.swift`; the JSON is fetched from the server's `/data/` files, not bundled.
 
 ### 3.11 Settings (P2)
 
@@ -326,7 +326,7 @@ Each phase ends in a state where playback works with the screen unlocked or lock
 - B. Where audio lives on a Mac: the web only streams audio that is already on the server (it never downloads to the device; "Download" there means save a file, "Auto-download" means fetch to the server), while iOS keeps audio on the phone (`audio_state` `phone`). The key principle is "on my phone". Recommendation: the Mac behaves like iOS (catalog + local files + server fetch) because it shares iOS code; v1 minimum is stream-from-server like the web. The words "download" and "audio state" must be defined for the Mac before building Library status and the Settings card.
 - C. "Playlist" in labels means the play queue today (LIB-012 vs PLS-008); renaming is planned with Playlists. Mac keeps the web labels.
 - D. App name: UI says "Electrophone", the brand README says the full name is "Electrophone Vega 108", rebrand pending.
-- E. Visualizer tap: whether `MTAudioProcessingTap` works on a remote progressive HTTP stream with custom headers is unverified; playing a downloaded local file avoids the question.
+- E. Visualizer tap: `MTAudioProcessingTap` is tried directly on the streamed item (no caching, no fake data); it works in a harness on local and Range-capable HTTP files with custom headers, but on the real server stream it is unverified until the owner runs the app. A failure disables the key after 3 s of playback (MAC-030).
 - F. Collapsed sidebar: the web icon rail (64 px, nav icons only) is not the system sidebar behaviour; either custom or accept the system collapse. Cosmetic.
 - G. Docs drift worth knowing: PLS-001 and PLS-100 put Playlists "between Library and Genres map", but WEB-012 and `index.html` put it second, right after Playback (the code order is used above); WEB-001 says a signed-out visitor sees only Settings, but the guest view (WEB-060) shows Library and Playback. Use `index.html`, `library.js` and `player-ui.js` as the order and label authority.
 - H. Distribution: iOS is TestFlight internal only and the YouTube ToS note applies; the Mac build is assumed to be a locally signed, non-App-Store app (not stated anywhere).

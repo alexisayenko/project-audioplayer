@@ -7,6 +7,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 - iOS: removing the playing song from the queue now pauses and cues the neighbouring song instead of leaving the old one playing; songs cued after a restart or tag add now advance to the next song when they end.
 - Mac: native macOS app `ElectrophoneMac` (task-0046, ADR-0028): sign-in, Library, Playback with a transport bar and media keys, Add and Edit, Settings; it streams from the server and never downloads audio to the Mac. Builds; not tested with a real account, no signing team or icon yet; the visualizer, share link and song info are not built.
 
+- Mac: Playlists (placeholder), Genres map, Song stats and Music theory pages in the web's sidebar order, plus a visualizer (Mirrored spectrum, Ring) driven by an `MTAudioProcessingTap` (V, M, Esc, dock key). `ios/project.yml` now declares explicit `AudioPlayer` and `ElectrophoneMac` schemes. Builds; not seen on a real UI, and the tap on the real server stream is unverified (needs Range support on `/files`).
 - Server and web: `french house` is a reviewed genre again (Electronic, under house, task DQ1) and `french touch` is an alias of it instead of a fold to house; the startup migration rewrites stored `french touch` to `french house` and leaves stored `french house` alone; not deployed.
 
 ## 2026-10-17 (YouTube genres and release tags, not deployed)

@@ -48,6 +48,8 @@ final class PlayerService: ObservableObject {
     var itemFactory: ((Track, Bool) async -> AVPlayerItem)?
     /// Title and artist for Now Playing; the default is the song's own fields.
     var nowPlayingText: ((Track) -> (title: String, artist: String))?
+    /// Called with the item that now plays, or nil when the player holds none.
+    var itemObserver: ((AVPlayerItem?) -> Void)?
 
     private let player = AVPlayer()
     private var timeObserver: Any?
@@ -325,11 +327,13 @@ final class PlayerService: ObservableObject {
         if let endObserver { NotificationCenter.default.removeObserver(endObserver) }
         endObserver = nil
         player.replaceCurrentItem(with: nil)
+        itemObserver?(nil)
     }
 
     private func attach(_ item: AVPlayerItem) {
         failedTrackID = nil
         player.replaceCurrentItem(with: item)
+        itemObserver?(item)
         if let endObserver { NotificationCenter.default.removeObserver(endObserver) }
         endObserver = NotificationCenter.default.addObserver(
             forName: .AVPlayerItemDidPlayToEndTime, object: item, queue: .main

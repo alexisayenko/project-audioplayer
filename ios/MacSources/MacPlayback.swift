@@ -87,6 +87,7 @@ final class MacPlayback: ObservableObject {
             if let item = await self?.item(for: track, refresh: refresh) { return item }
             return AVPlayerItem(url: track.fileURL)
         }
+        MacVisualizer.shared.install(player: player)
         player.nowPlayingText = { (SongName.titleLine($0), SongName.artistLine($0)) }
 
         if let v = UserDefaults.standard.object(forKey: Self.volumeKey) as? Double { player.volume = min(max(v, 0), 1) }
@@ -119,6 +120,12 @@ final class MacPlayback: ObservableObject {
     }
 
     private func item(for track: Track, refresh: Bool) async -> AVPlayerItem {
+        let item = await makeItem(for: track, refresh: refresh)
+        await MacVisualizer.shared.prepare(item)
+        return item
+    }
+
+    private func makeItem(for track: Track, refresh: Bool) async -> AVPlayerItem {
         if FileManager.default.fileExists(atPath: track.fileURL.path) { return AVPlayerItem(url: track.fileURL) }
         guard let settings, var c = URLComponents(string: settings.serverURL) else { return AVPlayerItem(url: track.fileURL) }
         c.path = Endpoints.file(track.id)

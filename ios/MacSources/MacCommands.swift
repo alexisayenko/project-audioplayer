@@ -19,6 +19,9 @@ enum MacKeys {
               !(window.firstResponder is NSText), player.current != nil else { return false }
         let mods = event.modifierFlags.intersection(.deviceIndependentFlagsMask).subtracting([.numericPad, .function])
         switch (event.keyCode, mods) {
+        case (9, []): MacVisualizer.shared.toggle()
+        case (46, []) where MacVisualizer.shared.isOpen: MacVisualizer.shared.mode = MacVisualizer.shared.mode.next
+        case (53, []) where MacVisualizer.shared.isOpen: MacVisualizer.shared.isOpen = false
         case (49, []):
             if !event.isARepeat { player.toggle() }
         case (124, []): player.skip(by: 5)
@@ -38,6 +41,7 @@ enum MacKeys {
 struct MacCommands: Commands {
     @ObservedObject var player: PlayerService
     let nav: MacNavigation
+    @ObservedObject private var viz = MacVisualizer.shared
 
     var body: some Commands {
         CommandMenu("Playback") {
@@ -70,6 +74,8 @@ struct MacCommands: Commands {
             Button("Library") { nav.page = .library }.keyboardShortcut("1", modifiers: .command)
             Button("Playback") { nav.page = .playback }.keyboardShortcut("2", modifiers: .command)
             Button("Settings") { nav.page = .settings }.keyboardShortcut(",", modifiers: .command)
+            Button(viz.isOpen ? "Hide Visualizer (V)" : "Show Visualizer (V)") { viz.toggle() }
+                .disabled(!viz.available || player.current == nil)
         }
     }
 }

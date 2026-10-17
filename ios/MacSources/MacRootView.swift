@@ -7,6 +7,7 @@ struct MacRootView: View {
     @EnvironmentObject var library: LibraryStore
     @EnvironmentObject var auth: AuthService
     @EnvironmentObject var player: PlayerService
+    @ObservedObject private var viz = MacVisualizer.shared
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
@@ -19,6 +20,7 @@ struct MacRootView: View {
                 .safeAreaInset(edge: .bottom, spacing: 0) { MacTransportBar() }
                 .background(DS.Color.ground)
         }
+        .overlay { if viz.isOpen { MacVisualizerView().transition(.opacity) } }
         .sheet(isPresented: $nav.showSignIn) { MacSignInSheet() }
         .onAppear { MacKeys.install(player) }
         .task { await server.check(settings: settings); await server.syncCatalog(settings: settings, library: library, auto: false) }
@@ -34,7 +36,11 @@ struct MacRootView: View {
     @ViewBuilder private var detail: some View {
         switch nav.page ?? .library {
         case .library: LibraryPage()
+        case .playlists: PlaylistsPage()
+        case .genresMap: GenresMapPage()
         case .playback: PlaybackPage()
+        case .musicTheory: MusicTheoryPage()
+        case .songStats: SongStatsPage()
         case .settings: SettingsPage()
         }
     }

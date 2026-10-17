@@ -10,6 +10,23 @@ settings:
     SWIFT_VERSION: "5.9"
     MARKETING_VERSION: "1.0"
     CURRENT_PROJECT_VERSION: "20261025"
+schemes:
+  AudioPlayer:
+    build:
+      targets:
+        AudioPlayer: all
+    run:
+      config: Debug
+    archive:
+      config: Release
+  ElectrophoneMac:
+    build:
+      targets:
+        ElectrophoneMac: all
+    run:
+      config: Debug
+    archive:
+      config: Release
 targets:
   AudioPlayer:
     type: application

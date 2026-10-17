@@ -6,6 +6,7 @@ struct MacTransportBar: View {
     @EnvironmentObject var settings: Settings
     @EnvironmentObject var library: LibraryStore
     @ObservedObject private var mac = MacPlayback.shared
+    @ObservedObject private var viz = MacVisualizer.shared
     @State private var premute: Double = 1
 
     var body: some View {
@@ -71,11 +72,11 @@ struct MacTransportBar: View {
 
     private var keys: some View {
         HStack(spacing: DS.Space.space2) {
-            Button {} label: { Image(systemName: "waveform") }
-                .buttonStyle(MacKeyStyle())
-                .disabled(true)
-                .help("Visualizer (V): not on the Mac yet")
-                .accessibilityLabel("Visualizer")
+            Button { viz.toggle() } label: { Image(systemName: "waveform") }
+                .buttonStyle(MacKeyStyle(kind: .toggle(viz.isOpen)))
+                .disabled(!viz.available)
+                .help(viz.tooltip)
+                .accessibilityLabel("Visualizer").accessibilityValue(viz.isOpen ? "on" : "off")
             Button { player.shuffle.toggle() } label: { Image(systemName: "shuffle") }
                 .buttonStyle(MacKeyStyle(kind: .toggle(player.shuffle)))
                 .help("Shuffle").accessibilityLabel("Shuffle").accessibilityValue(player.shuffle ? "on" : "off")
