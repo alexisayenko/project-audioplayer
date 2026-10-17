@@ -23,7 +23,7 @@ import { describeBuild } from './build-info.js';
 
 const player = document.getElementById('player');
 const renderPlayback = () => { player.hidden = false; return () => { player.hidden = true; }; };
-const routes = { library: renderLibrary, playback: renderPlayback, playlists: renderPlaylists, genres: renderGenres, 'genres-rework': renderGenresRework, stats: renderStats, theory: renderTheory, settings: renderSettings };
+const routes = { library: renderLibrary, playback: renderPlayback, playlists: renderPlaylists, genres: renderGenresRework, 'genres-classic': renderGenres, stats: renderStats, theory: renderTheory, settings: renderSettings };
 const view = document.getElementById('view');
 let cleanup = null;
 
@@ -38,6 +38,10 @@ function route() {
   if (wantsAdd) {
     name = 'library';
     history.replaceState(null, '', '#/library');
+  }
+  if (name === 'genres-rework') {
+    name = 'genres';
+    history.replaceState(null, '', '#/genres');
   }
   if (!routes[name]) name = 'library';
   if (!isSignedIn() && !isGuest() && name !== 'settings') {

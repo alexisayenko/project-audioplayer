@@ -27,7 +27,7 @@ export function libraryGenres() {
   return [...counts].sort((a, b) => b[1] - a[1]).map(([g]) => g);
 }
 
-const levelText = (e) => (e.level === 'genre' ? 'genre' : 'style');
+const levelText = (e) => (e.level === 'genre' || !e.family ? 'genre' : e.family);
 
 let listSeq = 0;
 
@@ -109,7 +109,7 @@ export function chipField(ns, editor) {
       const label = r ? [e.name.slice(0, r[0]), el('b', {}, e.name.slice(r[0], r[1])), e.name.slice(r[1])] : [e.name];
       return el('button', {
         type: 'button', class: 'chip', role: 'option', id: `${list.id}-${i}`, 'aria-selected': 'false', tabIndex: -1,
-        title: e.family ? `${e.name}: ${levelText(e)} in ${e.family}` : e.name, 'data-genre': e.name,
+        title: e.family ? `${e.name}: genre in ${e.family}` : e.name, 'data-genre': e.name,
         onmousedown: (ev) => ev.preventDefault(),
         onclick: () => { accept(e.name); input.focus(); },
       }, dot(e), ...label, e.level ? el('small', {}, levelText(e)) : null);
@@ -193,7 +193,7 @@ export function chipField(ns, editor) {
       const e = suggesting ? resolveGenre(t.slice(prefix.length), idx) : null;
       let title = t;
       if (bad) title = `${t}: not a known country, remove it`;
-      else if (e?.family) title = `${tagLabel(t)}: ${levelText(e)} in ${e.family}`;
+      else if (e?.family) title = `${tagLabel(t)}: genre in ${e.family}`;
       return el('span', { class: 'chip tint', title, style: bad ? 'border:1px dashed currentColor' : null }, dot(e), bad ? [icon('warning', 'inline'), tagLabel(t)] : tagLabel(t),
         el('button', { type: 'button', class: 'x', 'aria-label': `Remove ${tagLabel(t)}`, onclick: () => editor.removeTag(t) }, icon('clear', 'inline')));
     }));

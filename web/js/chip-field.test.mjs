@@ -224,8 +224,8 @@ test('suggestions show the family dot and the level, and match aliases', async (
   const opt = f.node.querySelector('[role=listbox]').children[0];
   assert.equal(opt.getAttribute('data-genre'), 'drum and bass');
   assert.ok(opt.querySelector('.gm-dot'));
-  assert.equal(opt.querySelector('small').textContent, 'style');
-  assert.match(opt.getAttribute('title'), /Electronic/);
+  assert.equal(opt.querySelector('small').textContent, 'Electronic');
+  assert.equal(opt.getAttribute('title'), 'drum and bass: genre in Electronic');
 });
 
 test('a chosen genre chip carries the family dot', () => {

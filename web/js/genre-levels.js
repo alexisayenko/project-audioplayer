@@ -126,7 +126,7 @@ export const count = (n) => n.all.size;
 export function libraryTags(tree, id) {
   const out = [];
   const walk = (n) => {
-    if (n.level > 1) out.push(`genre:${n.name}`);
+    if (n.level > 1 || n.name !== 'Other') out.push(`genre:${n.name}`);
     n.children.forEach(walk);
   };
   walk(tree.byId.get(id));

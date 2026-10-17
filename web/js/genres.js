@@ -333,7 +333,7 @@ export function renderGenres(root) {
           view.select(r.id, { center: true });
         },
       }, el('span', { class: `gm-dot f${familyIndex(r.family)}`, 'aria-hidden': 'true' }), r.label);
-      const unitWord = r.unit === 'style' ? plural(r.size, 'style', 'styles') : plural(r.size, 'root', 'roots');
+      const unitWord = plural(r.size, 'genre', 'genres');
       const countText = isFamily ? `${r.size} ${unitWord}` : String(r.count);
       return el('li', {
         class: `gm-row${isFamily ? ' fam' : ''}${r.id && r.id === selectedId ? ' sel' : ''}`, style: `--depth:${r.depth}`, 'data-key': r.key,

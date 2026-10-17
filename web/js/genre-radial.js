@@ -1,3 +1,4 @@
+import { familyIndex } from './genre-data.js';
 export const R2 = 220;
 export const STAGGER2 = 30;
 export const R3 = 420;
@@ -41,7 +42,7 @@ export function layoutRadial(tree, rootGenre = 'Electronic', { showAll = false }
     rOut = r3 + STAGGER3 + PARK_PAD;
     if (parked.length) theta = Math.min(Math.PI, (parked.length * PARK_GAP) / rOut);
   }
-  const nodes = [{ id: root.id, name: root.name, label: root.label, level: 1, x: 0, y: 0, r: radius(1), angle: 0, hue: NEUTRAL_HUE, node: root }];
+  const nodes = [{ id: root.id, name: root.name, label: root.label, level: 1, x: 0, y: 0, r: radius(1), angle: 0, hue: familyIndex(root.name), node: root }];
   const edges = [];
   let a = -Math.PI / 2;
   main.forEach((k, i) => {

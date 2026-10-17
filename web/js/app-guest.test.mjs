@@ -67,3 +67,20 @@ test('signing in leaves guest mode: banner and guest classes go away and the lib
   assert.ok(!document.body.classList.contains('guest'));
   assert.equal(document.getElementById('guest-banner'), null);
 });
+
+test('#/genres opens the radial Genres map, #/genres-rework redirects to it', async () => {
+  const activeRoute = () => [...document.querySelectorAll('#nav a')].filter((a) => a.classList.contains('active')).map((a) => a.dataset.route);
+  location.hash = '#/genres';
+  dom.window.dispatch('hashchange');
+  await flush();
+  assert.equal(document.body.dataset.route, 'genres');
+  assert.ok(document.getElementById('view').querySelector('.gmr-canvas'));
+  assert.equal(document.getElementById('view').querySelector('h1').textContent, 'Genres map');
+  assert.deepEqual(activeRoute(), ['genres']);
+  location.hash = '#/genres-rework';
+  dom.window.dispatch('hashchange');
+  await flush();
+  assert.equal(location.hash, '#/genres');
+  assert.equal(document.body.dataset.route, 'genres');
+  assert.deepEqual(activeRoute(), ['genres']);
+});

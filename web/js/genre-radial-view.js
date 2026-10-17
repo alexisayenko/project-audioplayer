@@ -9,9 +9,10 @@ const FOCUS_MS = 350;
 const FONT_PX = 12;
 const DIM = 0.22;
 const EMPTY_ALPHA = 0.38;
+const FLASH_MS = 1400;
 
 const inert = () => ({
-  setLayout() {}, setTree() {}, select() {}, setMatches() {}, setFilter() {}, focusNode() {}, reset() {}, zoomBy() {}, resize() {}, destroy() {},
+  setLayout() {}, setTree() {}, select() {}, setMatches() {}, setFilter() {}, focusNode() {}, flash() {}, setFocusInset() {}, reset() {}, zoomBy() {}, resize() {}, destroy() {},
 });
 
 export function createRadialView(canvas, { onSelect, onHover, reducedMotion = false } = {}) {
@@ -31,6 +32,8 @@ export function createRadialView(canvas, { onSelect, onHover, reducedMotion = fa
   let raf = 0;
   let anim = null;
   let userMoved = false;
+  let flashing = null;
+  let focusInset = { r: 0, b: 0 };
   let colors = {};
   let drag = null;
   const pointers = new Map();
@@ -124,6 +127,17 @@ export function createRadialView(canvas, { onSelect, onHover, reducedMotion = fa
       ctx.beginPath(); ctx.arc(n.x, n.y, n.r + (n.discogs ? 3 : 6) / k, 0, 2 * Math.PI); ctx.stroke();
     }
     if (n.node.status) drawBadge(n, k);
+    if (flashing && flashing.id === n.id) drawFlash(n, k);
+  }
+
+  function drawFlash(n, k) {
+    const t = (performance.now() - flashing.t0) / FLASH_MS;
+    if (t >= 1) { flashing = null; return; }
+    const phase = reducedMotion ? 0 : (t * 3) % 1;
+    ctx.globalAlpha = 1 - (reducedMotion ? t : phase);
+    ctx.strokeStyle = colors.accent;
+    ctx.lineWidth = 3 / k;
+    ctx.beginPath(); ctx.arc(n.x, n.y, n.r + (6 + 16 * phase) / k, 0, 2 * Math.PI); ctx.stroke();
   }
 
   function draw() {
@@ -224,7 +238,7 @@ export function createRadialView(canvas, { onSelect, onHover, reducedMotion = fa
       if (t >= 1) anim = null;
     }
     draw();
-    if (anim) request();
+    if (anim || flashing) request();
   }
 
   function pick(ev) {
@@ -318,11 +332,19 @@ export function createRadialView(canvas, { onSelect, onHover, reducedMotion = fa
       const n = layout?.byId.get(id);
       if (!n) return;
       const k = Math.max(tf.k, FOCUS_K);
-      const to = { k, x: insets.l + (W - insets.l) / 2 - n.x * k, y: insets.t + (H - insets.t) / 2 - n.y * k };
+      const w = Math.max(1, W - insets.l - focusInset.r);
+      const h = Math.max(1, H - insets.t - focusInset.b);
+      const to = { k, x: insets.l + w / 2 - n.x * k, y: insets.t + h / 2 - n.y * k };
       userMoved = true;
       if (reducedMotion) { tf = to; anim = null; } else anim = { from: { ...tf }, to, t0: performance.now() };
       request();
     },
+    flash(id) {
+      if (!layout?.byId.has(id)) return;
+      flashing = { id, t0: performance.now() };
+      request();
+    },
+    setFocusInset(inset) { focusInset = { r: Math.max(0, inset?.r || 0), b: Math.max(0, inset?.b || 0) }; },
     reset() { fit(); },
     zoomBy(f) { zoomAt(W / 2, H / 2, f); },
     resize,

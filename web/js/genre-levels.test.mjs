@@ -87,6 +87,7 @@ test('libraryTags lists the node and everything below it, not also_under parents
   assert.deepEqual(libraryTags(t, 's:house').sort(), ['genre:afro house', 'genre:deep house', 'genre:house']);
   assert.deepEqual(libraryTags(t, 's:breakbeat'), ['genre:breakbeat']);
   assert.ok(libraryTags(t, 'g:Electronic').includes('genre:jungle'));
+  assert.ok(libraryTags(t, 'g:Electronic').includes('genre:Electronic'), 'the genre own tag is part of its filter, so songs tagged only with the genre are found');
 });
 
 test('treeKey: arrows, home/end, expand/collapse, enter and space', () => {
