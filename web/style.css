@@ -84,7 +84,6 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + var(--dock-b) + var(--m
   #nav a { flex: none; flex-direction: row; justify-content: center; padding: 0; border-radius: var(--radius-key); }
   #nav a .nav-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .server { display: flex; justify-content: center; padding: var(--space-3) 0; }
-  .server #server-text { display: none; }
   main { padding-top: var(--space-8); padding-bottom: var(--space-6); }
   body.has-mini main { padding-bottom: calc(var(--mini-h) + var(--dock-b) + var(--space-8)); }
 }
@@ -95,7 +94,6 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + var(--dock-b) + var(--m
   #nav a { justify-content: flex-start; }
   #nav a .nav-label { position: static; width: auto; height: auto; clip-path: none; overflow: visible; font: var(--font-caption); text-align: left; white-space: nowrap; }
   .server { justify-content: flex-start; padding: 0 var(--space-3); }
-  .server #server-text { display: inline; }
   body:not(.side-collapsed) .build-line:not([hidden]) { display: block; }
 }
 
@@ -116,7 +114,6 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + var(--dock-b) + var(--m
   body.side-collapsed #nav a { justify-content: center; }
   body.side-collapsed #nav a .nav-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   body.side-collapsed .server { justify-content: center; padding: var(--space-3) 0; }
-  body.side-collapsed .server #server-text { display: none; }
 }
 
 /* page headers */

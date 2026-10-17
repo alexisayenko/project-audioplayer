@@ -47,7 +47,10 @@ test('other routes are refused while signed out', () => {
 });
 
 test('server led and sync warning reflect /health', async () => {
-  assert.equal(document.getElementById('server-text').textContent, 'Server online · music.example');
+  assert.equal(document.getElementById('server-text'), null);
+  const status = document.getElementById('server-led').parentElement;
+  assert.equal(status.getAttribute('aria-label'), 'Server online · music.example');
+  assert.equal(status.title, 'Server online · music.example');
   assert.equal(document.getElementById('sync-warn').hidden, true);
 });
 
@@ -147,7 +150,7 @@ test('the owner build line follows /health and disappears without a build or whe
   await globalThis.__poll();
   await flush();
   assert.equal(el.hidden, false);
-  assert.match(el.textContent, /^Build 68df2bf · deployed \d{4}-\d\d-\d\d \d\d:\d\d$/);
+  assert.match(el.textContent, /^68df2bf · \d{1,2} [A-Z][a-z]{2} \d\d:\d\d$/);
   assert.match(el.title, /^Commit 68df2bf0123456789abcdef0123456789abcdef0\ncommitted 2026-10-17 08:00 UTC\ndeployed 2026-10-17 12:05 UTC$/);
   state.health = { sync: 'ok' };
   await globalThis.__poll();

@@ -141,7 +141,6 @@ void loadLegal(legalEl, legalCtx);
 
 const warn = document.getElementById('sync-warn');
 const led = document.getElementById('server-led');
-const ledText = document.getElementById('server-text');
 const buildEl = document.getElementById('server-build');
 
 const settingsLink = [...document.querySelectorAll('#nav a')].find((a) => a.dataset.route === 'settings');
@@ -172,7 +171,6 @@ async function checkSync() {
   } catch { /* server unreachable: api calls report that */ }
   led.classList.toggle('down', !online);
   const serverText = online ? `Server online · ${location.host}` : 'Server unavailable';
-  ledText.textContent = serverText;
   led.parentElement.title = serverText;
   led.parentElement.setAttribute('aria-label', serverText);
   if (online) store.sync = raw;

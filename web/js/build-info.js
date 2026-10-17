@@ -1,8 +1,10 @@
 const pad = (n) => String(n).padStart(2, '0');
 const shaOk = (s) => typeof s === 'string' && /^[0-9a-f]{7,40}$/.test(s);
 
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
 function local(d) {
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return `${d.getDate()} ${MONTHS[d.getMonth()]} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 function utc(d) {
@@ -15,7 +17,7 @@ export function describeBuild(raw) {
   const when = (v) => new Date(typeof v === 'string' ? v : Number.NaN);
   const deployed = when(raw.deployed_at);
   const committed = when(raw.committed_at);
-  const text = Number.isNaN(deployed.getTime()) ? `Build ${short}` : `Build ${short} · deployed ${local(deployed)}`;
+  const text = Number.isNaN(deployed.getTime()) ? short : `${short} · ${local(deployed)}`;
   const parts = [`Commit ${raw.sha}`];
   if (!Number.isNaN(committed.getTime())) parts.push(`committed ${utc(committed)}`);
   if (!Number.isNaN(deployed.getTime())) parts.push(`deployed ${utc(deployed)}`);

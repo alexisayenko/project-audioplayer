@@ -228,10 +228,10 @@ test('the library card shows a Build row only when /health carried a build', asy
   await flush();
   assert.doesNotMatch(m.root.textContent, /Build/);
   m.cleanup();
-  store.build = { text: 'Build 68df2bf · deployed 2026-10-17 14:05', title: 'Commit x' };
+  store.build = { text: '68df2bf · 17 Oct 14:05', title: 'Commit x' };
   m = mount();
   await flush();
-  assert.match(m.root.textContent, /Build68df2bf · deployed 2026-10-17 14:05/);
+  assert.match(m.root.textContent, /Build68df2bf · 17 Oct 14:05/);
   m.cleanup();
   store.build = null;
 });
