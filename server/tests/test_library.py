@@ -648,9 +648,9 @@ def test_genre_migration_french_touch_becomes_french_house_and_french_house_stay
     ]}))
     assert migrate_tags.run() == 1
     songs = json.loads(lib.read_text())["songs"]
-    assert songs[0]["tags"] == ["genre:french house", "genre:electronic"]
-    assert songs[1]["tags"] == ["genre:french house", "genre:house"]
-    assert songs[2]["tags"] == ["genre:house"]
+    assert library.tag_list(songs[0]) == ["genre:french house", "genre:electronic"]
+    assert library.tag_list(songs[1]) == ["genre:french house", "genre:house"]
+    assert library.tag_list(songs[2]) == ["genre:house"]
     assert migrate_tags.run() == 0
 
 
