@@ -48,7 +48,7 @@ export function renderAnatomy(data) {
   const { fields, examples } = data;
   const byId = new Map(fields.map((f) => [f.id, f]));
   const select = el('select', { id: 'an-select', 'aria-controls': 'an-out' },
-    examples.map((e) => el('option', { value: e.id }, e.label)));
+    examples.map((e) => el('option', { value: e.id }, e.rawTitle)));
   const out = el('div', { class: 'an-out', id: 'an-out', 'aria-live': 'polite' });
   const root = el('div', { class: 'an' },
     el('div', { class: 'field' }, el('label', { for: 'an-select' }, 'Example'), select),

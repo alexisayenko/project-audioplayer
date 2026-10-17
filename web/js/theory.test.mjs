@@ -102,6 +102,7 @@ test('the page shows the anatomy section with the first example and a select of 
   assert.ok(textOf(root).includes('Composition metadata anatomy'));
   const sel = all(root, 'select')[0];
   assert.equal(all(sel, 'option').length, anatomy.examples.length);
+  assert.deepEqual(all(sel, 'option').map(textOf), anatomy.examples.map((e) => e.rawTitle));
   assert.equal(shownTitle(root), 'Daft Punk - One More Time');
   assert.equal(all(root, 'dl').length, 1);
 });
