@@ -109,6 +109,14 @@ export const player = {
     load(true);
   },
 
+  playNext(id) {
+    if (!canQueue(store.get(id))) return 'unavailable';
+    const { state, result } = Q.playNext(qs, id);
+    if (result === 'now') player.playNow(id);
+    else if (result === 'next') commit(state);
+    return result;
+  },
+
   add(id) {
     if (!canQueue(store.get(id))) return 'unavailable';
     const { state, result } = Q.addManual(qs, id);

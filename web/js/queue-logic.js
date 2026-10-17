@@ -86,6 +86,21 @@ export function playNow(state, id) {
   return { ...state, items, index };
 }
 
+export function playNext(state, id) {
+  if (state.index < 0 || !state.items.length) return { state: playNow(state, id), result: 'now' };
+  if (state.items[state.index]?.id === id) return { state, result: 'current' };
+  const items = [...state.items];
+  let index = state.index;
+  const at = items.findIndex((it) => it.id === id);
+  let item = { id, manual: true, tags: [] };
+  if (at >= 0) {
+    item = { ...items.splice(at, 1)[0], manual: true };
+    if (at < index) index -= 1;
+  }
+  items.splice(index + 1, 0, item);
+  return { state: { ...state, items, index }, result: 'next' };
+}
+
 function mergeTags(item, tags) {
   for (const m of tags) if (!item.tags.some((t) => lc(t) === lc(m))) item.tags.push(m);
 }

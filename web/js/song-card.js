@@ -7,13 +7,13 @@ import { can } from './guest.js';
 import { autodl, autoDownloadOn } from './autodl.js';
 import { downloadSong } from './download.js';
 import { editDialog } from './edit-dialog.js';
-import { creditParts, subtitle, titleNodes, detailsLines, yearFact, albumOf } from './credits.js';
+import { creditParts, subtitle, titleNodes, detailsLines, yearFact, albumOf, displayLine } from './credits.js';
 import { icon } from './icons.js';
 import { bpmLabel } from './bpm-label.js';
 import { visibleTags, tagGroups, tagLabel } from './tagname.js';
 import { serviceIcons } from './service-icons.js';
 import { storedLinkStates } from './song-links.js';
-import { toggleQueue } from './queue-toggle.js';
+import { toggleQueue, playNextInQueue } from './queue-toggle.js';
 import { openShareDialog } from './share-ui.js';
 
 export function cardTags(tags) {
@@ -30,6 +30,7 @@ export function cardModel(song) {
     remix,
     sub: subtitle(song),
     album: albumOf(song),
+    full: displayLine(song),
     groups: cardTags(song?.tags),
     yearFact: yearFact(song),
     details: detailsLines(song).filter(({ label }) => !HIDDEN_DETAILS.has(label)).map(({ label, value }) => (label === 'Cover of' ? `Cover of ${value}` : `${label}: ${value}`)),
@@ -39,19 +40,15 @@ export function cardModel(song) {
   };
 }
 
-export function playControl(song, { queueable }) {
-  return queueable ? { label: 'Play now', run: () => player.playNow(song.id) } : null;
-}
-
 function headBlock(song, m) {
   const title = el('h2', { id: 'song-card-title', class: 't-title' }, titleNodes(song));
   const sub = m.sub ? el('p', { class: 'card-sub t-subhead' }, m.sub) : null;
-  const album = m.album ? el('p', { class: 'card-album muted t-subhead' }, m.album) : null;
-  if (!song.cover) return [el('div', { class: 'card-head' }, title, sub, album)];
+  const full = m.full ? el('p', { class: 'card-full muted t-subhead' }, m.full) : null;
+  if (!song.cover) return [el('div', { class: 'card-head' }, title, sub, full)];
   const img = el('img', { class: 'cover card-cover', alt: '', src: api.coverUrl(song.id, song.cover_v) });
   const art = el('div', { class: 'card-art' }, img, el('div', { class: 'cover-text' }, title, sub));
   img.addEventListener('error', () => { img.removeAttribute('src'); art.classList.add('noart'); });
-  return [art, album ? el('div', { class: 'card-head' }, album) : null];
+  return [art, full ? el('div', { class: 'card-head' }, full) : null];
 }
 
 function tagBlock(groups) {
@@ -71,7 +68,6 @@ function linkBlock(links) {
 function actionRow(song) {
   const audio = hasAudio(song);
   const queueable = audio || autoDownloadOn();
-  const play = playControl(song, { queueable });
   const queued = player.inQueue(song.id);
   const view = autodl.view(song.id);
   const link = sourceLink(song);
@@ -80,7 +76,7 @@ function actionRow(song) {
   const dl = audio && can('download') ? ib('Download', 'download', () => downloadSong(song))
     : !audio && can('fetch') && (view.kind === 'none' || view.kind === 'failed') ? ib('Download to server', 'download', () => autodl.request([song.id], { front: true })) : null;
   const icons = [
-    play ? ib(play.label, 'play', play.run, 'key lit') : null,
+    queueable ? ib('Play next', 'playNext', () => playNextInQueue(song)) : null,
     ib('Share link', 'share', () => openShareDialog(song)),
     dl,
     can('edit') ? ib('Edit', 'pencil', () => editDialog(song)) : null,

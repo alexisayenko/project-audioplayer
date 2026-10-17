@@ -8,7 +8,7 @@ stubFetch(() => ({ body: { songs: [] } }));
 const { store } = await import('./store.js');
 const { player, initPlayer } = await import('./player.js');
 initPlayer();
-const { cardModel, cardTags, playControl, openSongCard } = await import('./song-card.js');
+const { cardModel, cardTags, openSongCard } = await import('./song-card.js');
 
 const FULL = {
   id: 'a', title: 'Alpha', remixer: 'Kav', artist: 'Zed', album: 'LP', year: 1999, bpm: 120.4, duration: 125, file: 'a.mp3', cover: true,
@@ -48,11 +48,6 @@ test('cardModel copes with missing fields', () => {
   assert.deepEqual(cardTags(undefined), []);
 });
 
-test('playControl: only Play now, none when not playable', () => {
-  assert.equal(playControl(FULL, { queueable: true }).label, 'Play now');
-  assert.equal(playControl(BARE, { queueable: false }), null);
-});
-
 test('the card opens read-only with links, actions and returns focus to the row on Close', () => {
   publish([FULL, BARE]);
   const list = document.createElement('ul');
@@ -74,14 +69,15 @@ test('the card opens read-only with links, actions and returns focus to the row 
   const hrefs = dlg.querySelectorAll('a.svc').map((a) => a.getAttribute('href'));
   assert.equal(hrefs.length, 3);
   assert.ok(dlg.querySelectorAll('a.svc').every((a) => a.getAttribute('target') === '_blank' && a.getAttribute('rel') === 'noopener'));
-  assert.deepEqual(names(dlg), ['Play now', 'Share link', 'Download', 'Edit', 'Add to playlist']);
+  assert.deepEqual(names(dlg), ['Play next', 'Share link', 'Download', 'Edit', 'Add to playlist']);
   assert.ok(dlg.querySelectorAll('.card-icons button').every((b) => b.getAttribute('aria-label') && b.title), 'icon buttons are labelled');
   assert.equal(dlg.querySelector('.card-bar .card-close').textContent, 'Close');
   assert.equal(dlg.querySelector('.card-actions .btn'), null, 'no text button in the action row');
-  assert.ok(dlg.querySelector('.card-icons .key.lit') && dlg.querySelector('.card-icons .icon.round'), 'Play now is a dock key, metadata actions are round');
+  assert.equal(dlg.querySelector('.card-icons .key'), null, 'no dock key on the card');
+  assert.equal(dlg.querySelectorAll('.card-icons .icon.round').length, 5, 'every card action is a round icon button');
   assert.equal(dlg.querySelectorAll('.card-icons button').length, 5, 'all actions sit in one row');
   assert.match(dlg.textContent, /Zed · 1999/);
-  assert.equal(dlg.querySelector('.card-album').textContent, 'LP');
+  assert.equal(dlg.querySelector('.card-full').textContent, 'Zed - Alpha (Kav)');
   assert.equal(store.listeners.size, before + 1);
   dlg.querySelector('.card-close').click();
   assert.equal(dlg.open, false);
@@ -141,8 +137,8 @@ test('pressing the pressed playlist button removes the song from the list and th
   dlg.close();
 });
 
-test('Play now plays the song, the playlist button toggles, Edit hands over to the edit dialog', () => {
-  publish([FULL, BARE]);
+test('the playlist button toggles, Play next queues the song after the current one, Edit hands over to the edit dialog', () => {
+  publish([FULL, BARE, { ...FULL, id: 'o', title: 'Other', file: 'o.mp3' }]);
   while (player.current) player.removeAt(0);
   openSongCard(FULL);
   const dlg = $('song-card');
@@ -160,9 +156,15 @@ test('Play now plays the song, the playlist button toggles, Edit hands over to t
   assert.equal(on.title, 'In playlist - click to remove');
   assert.equal(dlg.querySelector('.card-actions .btn'), null);
   assert.equal(btn('Play'), undefined, 'no Play/Pause toggle on the card');
-  btn('Play now').click();
-  assert.equal(player.playing, true);
-  assert.ok(btn('Play now'), 'the button stays Play now while the song plays');
+  on.click();
+  assert.equal(player.inQueue('a'), false);
+  player.playNow('o');
+  assert.equal(player.current.id, 'o');
+  const next = btn('Play next');
+  assert.ok(next.classList.contains('icon') && next.classList.contains('round'));
+  next.click();
+  assert.equal(player.inQueue('a'), true, 'queued');
+  assert.equal(player.current.id, 'o', 'the current song keeps playing');
   btn('Edit').click();
   assert.equal($('edit-dialog').open, true);
   assert.equal(dlg.open, true, 'the card stays under the edit dialog');
@@ -177,7 +179,7 @@ test('the card refreshes after an edit and closes when the song is deleted', () 
   const dlg = $('song-card');
   publish([{ ...FULL, title: 'Alpha 2', album: 'New LP' }]);
   assert.equal(dlg.querySelector('h2').textContent, 'Alpha 2 (Kav)');
-  assert.match(dlg.textContent, /New LP/);
+  assert.equal(dlg.querySelector('.card-full').textContent, 'Zed - Alpha 2 (Kav)');
   publish([]);
   assert.equal(dlg.open, false);
 });
@@ -215,8 +217,8 @@ test('with a cover the title and the artist line sit inside the cover box; witho
   assert.ok(art.querySelector('img.card-cover'));
   assert.equal(art.querySelector('.cover-text h2#song-card-title').textContent, 'Alpha (Kav)');
   assert.equal(art.querySelector('.cover-text .card-sub').textContent, 'Zed · 1999');
-  assert.equal(dlg.querySelector('.card-album').textContent, 'LP');
-  assert.ok(!art.contains(dlg.querySelector('.card-album')));
+  assert.equal(dlg.querySelector('.card-full').textContent, 'Zed - Alpha (Kav)');
+  assert.ok(!art.contains(dlg.querySelector('.card-full')));
   dlg.close();
   openSongCard(BARE);
   assert.equal(dlg.querySelector('.card-art'), null);

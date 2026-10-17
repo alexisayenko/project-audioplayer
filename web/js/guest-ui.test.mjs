@@ -56,12 +56,12 @@ test('guest: rows have no edit, no download-to-server, and the cover opens the s
   g.clearGuest();
 });
 
-test('guest: song card has no Edit or Download buttons but keeps Play and Close', () => {
+test('guest: song card has no Edit or Download buttons but keeps Play next and Close', () => {
   g.setGuest({ guest: true, audio: true });
   openSongCard(WITH, null);
   const names = labels($('song-card'));
   assert.ok(!names.includes('Edit') && !names.includes('Download'));
-  assert.ok(names.includes('Play now') && names.includes('Close'));
+  assert.ok(names.includes('Play next') && names.includes('Close'));
   $('song-card').close?.();
   g.clearGuest();
   openSongCard(WITH, null);

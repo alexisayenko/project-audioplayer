@@ -156,3 +156,26 @@ test("tag picks match legacy country spellings", () => {
   const r = Q.addTags(Q.emptyState(), ["country:us"], songs);
   assert.deepEqual(r.state.items.map((i) => i.id).sort(), ['a', 'b']);
 });
+
+test('playNext inserts the song right after the current one and never switches to it', () => {
+  const base = { items: [{ id: 'a', manual: true, tags: [] }, { id: 'b', manual: true, tags: [] }, { id: 'c', manual: true, tags: [] }], index: 0, tags: [] };
+  const ids = (st) => st.items.map((it) => it.id);
+  const fresh = Q.playNext(base, 'z');
+  assert.equal(fresh.result, 'next');
+  assert.deepEqual(ids(fresh.state), ['a', 'z', 'b', 'c']);
+  assert.equal(fresh.state.index, 0);
+  const moved = Q.playNext(base, 'c');
+  assert.deepEqual(ids(moved.state), ['a', 'c', 'b']);
+  assert.equal(moved.state.index, 0);
+  const behind = Q.playNext({ ...base, index: 2 }, 'a');
+  assert.deepEqual(ids(behind.state), ['b', 'c', 'a']);
+  assert.equal(behind.state.index, 1, 'the current song keeps its place after an earlier song moves behind it');
+  assert.equal(behind.state.items[behind.state.index].id, 'c');
+  const same = Q.playNext(base, 'a');
+  assert.equal(same.result, 'current');
+  assert.equal(same.state, base);
+  const empty = Q.playNext(Q.emptyState(), 'x');
+  assert.equal(empty.result, 'now');
+  assert.deepEqual(ids(empty.state), ['x']);
+  assert.equal(empty.state.index, 0);
+});
