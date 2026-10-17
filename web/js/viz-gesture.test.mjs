@@ -40,7 +40,8 @@ test('the first gesture unlocks once; a blocked context is retried on the next g
   ui.full.open();
   await flush();
   assert.equal(stats.ctors, 1);
-  assert.equal(stats.sources, 1);
+  assert.equal(stats.sources, 0);
+  assert.equal(audioGraph.hasGraph(), false);
   assert.equal(audioGraph.getState(), 'blocked');
   stats.resumeTo = 'running';
   fire(document.body, 'click');
