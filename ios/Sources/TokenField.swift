@@ -227,8 +227,9 @@ struct TokenField: View {
                 Image(systemName: "pencil").font(.system(size: 12, weight: .semibold)).foregroundStyle(DS.Color.accentInk)
                     .frame(width: 30, height: 36).contentShape(Rectangle())
             }
+            .flatMenu()
             .accessibilityLabel("Edit \(label)")
-            Text(label).font(T.subhead.weight(.medium)).foregroundStyle(DS.Color.ink).lineLimit(1)
+            Text(label).font(T.subhead.weight(.medium)).foregroundStyle(DS.Color.ink).lineLimit(1).padding(.horizontal, DS.Space.space1)
             Button { remove(i) } label: {
                 Image(systemName: "xmark").font(.system(size: 11, weight: .bold)).foregroundStyle(DS.Color.accentInk)
                     .frame(width: 30, height: 36).contentShape(Rectangle())
@@ -252,5 +253,15 @@ struct TokenField: View {
         } isTargeted: { on in
             if on { targetedPill = i } else if targetedPill == i { targetedPill = nil }
         }
+    }
+}
+
+private extension View {
+    @ViewBuilder func flatMenu() -> some View {
+        #if os(macOS)
+        self.menuStyle(.borderlessButton).menuIndicator(.hidden).buttonStyle(.plain).fixedSize()
+        #else
+        self
+        #endif
     }
 }
