@@ -468,6 +468,22 @@ dialog .row.end .btn + .btn { margin-left: 0; }
 }
 @starting-style { .toast { opacity: 0; } }
 @media (min-width: 480px) { .toast { bottom: calc(var(--dock-b) + var(--mini-h) + var(--space-4)); } }
+.scroll-top {
+  position: fixed; z-index: var(--z-float); right: var(--gutter);
+  bottom: calc(var(--dock-b) + var(--tab-h) + var(--space-4));
+  display: grid; place-items: center; width: var(--hit); height: var(--hit); padding: 0;
+  border: 0; border-radius: var(--radius-pill); background-color: var(--surface); color: var(--ink); box-shadow: var(--shadow-float);
+  opacity: 0; visibility: hidden;
+  transition: opacity var(--dur-base) var(--ease-out), visibility var(--dur-base) var(--ease-out), background-image var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+}
+.scroll-top.shown { opacity: 1; visibility: visible; }
+body.has-mini .scroll-top { bottom: calc(var(--dock-b) + var(--tab-h) + var(--mini-h) + var(--space-4)); }
+@media (min-width: 480px) {
+  .scroll-top { bottom: calc(var(--dock-b) + var(--space-4)); }
+  body.has-mini .scroll-top { bottom: calc(var(--dock-b) + var(--mini-h) + var(--space-4)); }
+}
+@media (hover: hover) { .scroll-top:hover { background-image: linear-gradient(var(--hover-wash), var(--hover-wash)); } }
+.scroll-top:active { background-image: linear-gradient(var(--pressed-wash), var(--pressed-wash)); transform: scale(var(--pressed-scale)); }
 .sync-warn { display: block; padding: var(--space-2) var(--space-4); color: var(--power-text); text-align: center; }
 body[data-route="library"] main { max-width: none; }
 body.signed-out #nav a:not([data-route="settings"]), body.signed-out #mini { display: none; }

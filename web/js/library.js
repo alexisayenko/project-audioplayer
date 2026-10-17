@@ -16,6 +16,7 @@ import { disposeAll } from './marquee.js';
 import { isRowControl } from './row-cover.js';
 import { openSongCard } from './song-card.js';
 import { openFilterSheet } from './library-toolbar.js';
+import { mountScrollTop } from './scroll-top.js';
 
 export { filterByTags, visibleSongs } from './library-data.js';
 
@@ -199,5 +200,7 @@ export function renderLibrary(root) {
   void load();
   renderAll();
 
-  return () => { unsub(); unsubPlayer(); unsubDl(); unregister(); clearTimeout(flashTimer); flashId = null; const d = document.getElementById('filter-sheet'); if (d.open) d.close(); };
+  const unmountScrollTop = mountScrollTop();
+
+  return () => { unmountScrollTop(); unsub(); unsubPlayer(); unsubDl(); unregister(); clearTimeout(flashTimer); flashId = null; const d = document.getElementById('filter-sheet'); if (d.open) d.close(); };
 }
