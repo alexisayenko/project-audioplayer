@@ -57,7 +57,7 @@ struct SettingsPage: View {
         LibCard(title: "Account") {
             if let session = auth.session {
                 HStack(spacing: DS.Space.space3) {
-                    Circle().fill(auth.expired || server.forbidden ? DS.Color.power : server.reachable == true ? DS.Color.ok : DS.Color.inkFaint)
+                    Circle().fill(auth.expired || server.forbidden || server.unauthorized ? DS.Color.power : server.reachable == true ? DS.Color.ok : DS.Color.inkFaint)
                         .frame(width: 10, height: 10)
                     VStack(alignment: .leading, spacing: 2) {
                         (Text("Signed in as ") + Text(session.email ?? "your account").bold()).font(DS.Font.body).foregroundStyle(DS.Color.ink)
@@ -82,6 +82,7 @@ struct SettingsPage: View {
     private func accountStatus(_ session: AuthService.Session) -> String {
         if auth.expired { return "Expired, sign in again" }
         if server.forbidden { return "Not allowed on this server" }
+        if server.unauthorized { return "The server didn't accept this sign-in" }
         return "via \(session.provider == .apple ? "Apple" : "Google")"
     }
 
@@ -98,6 +99,7 @@ struct SettingsPage: View {
 
     private var serverStatus: String {
         if server.forbidden { return "Not allowed on this server" }
+        if server.unauthorized { return "Server online, sign-in not accepted" }
         switch server.reachable {
         case true?: return "Server online \u{00B7} \(host)"
         case false?: return "Server unavailable"

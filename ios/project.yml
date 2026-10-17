@@ -106,4 +106,6 @@ targets:
       base:
         PRODUCT_NAME: Electrophone
         PRODUCT_BUNDLE_IDENTIFIER: com.alexisayenko.audioplayer.mac
+        DEVELOPMENT_TEAM: L8C7TUQLBM
+        CODE_SIGN_STYLE: Automatic
         ENABLE_HARDENED_RUNTIME: YES

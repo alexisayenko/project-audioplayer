@@ -46,6 +46,10 @@ final class ServerLink: ObservableObject {
     @Published private(set) var checking = false
     /// The server answered 403: signed in, but this account isn't allowed. Cleared by the next successful request.
     @Published private(set) var forbidden = false
+    /// The server answered 401: it is reachable but did not accept the stored sign-in. Cleared by the next successful request.
+    @Published private(set) var unauthorized = false
+    /// What the last failed request really was, in words for the person. Nil while requests succeed.
+    @Published private(set) var failureMessage: String?
     @Published private var book = TransferBook()
     var transfers: [String: Transfer] { book.items }
     @Published private(set) var failed: Set<String> = []
@@ -75,12 +79,44 @@ final class ServerLink: ObservableObject {
                 }
             }
             synced = true
-            reachable = true
-            forbidden = false
+            recordSuccess()
         } catch {
-            reachable = false
-            if case APIError.forbidden = error { forbidden = true }
+            record(error)
         }
+    }
+
+    private func recordSuccess() {
+        reachable = true
+        forbidden = false
+        unauthorized = false
+        failureMessage = nil
+    }
+
+    private func record(_ error: Error) {
+        forbidden = false
+        unauthorized = false
+        switch error {
+        case let e as URLError where e.code != .cancelled:
+            reachable = false
+            failureMessage = e.code == .timedOut ? "The server took too long to answer. Try again." : "Can't reach the server. Check the connection and try again."
+        case APIError.forbidden:
+            reachable = true
+            forbidden = true
+            failureMessage = APIError.forbiddenMessage
+        case APIError.http(401, _):
+            reachable = true
+            unauthorized = true
+            failureMessage = "The server didn't accept your sign-in (401). Sign out and sign in again."
+        case APIError.http(let code, let detail):
+            reachable = true
+            failureMessage = detail.isEmpty ? "The server answered with error \(code). Try again later." : "The server answered with error \(code): \(detail)"
+        case is DecodingError:
+            reachable = true
+            failureMessage = "The server's reply could not be read. Update the app and try again."
+        default:
+            failureMessage = error.localizedDescription
+        }
+        transferLog.error("request failed: \(String(describing: error), privacy: .public)")
     }
 
     private func autoDownload(_ tracks: [Track], settings: Settings, library: LibraryStore) {
@@ -113,15 +149,13 @@ final class ServerLink: ObservableObject {
         defer { checking = false }
         do {
             try await APIClient(baseURL: settings.serverURL, token: settings.token).verify()
-            reachable = true
-            forbidden = false
+            recordSuccess()
         } catch {
-            reachable = false
-            if case APIError.forbidden = error { forbidden = true }
+            record(error)
         }
     }
 
-    func clearForbidden() { forbidden = false }
+    func clearForbidden() { forbidden = false; unauthorized = false; failureMessage = nil }
 
     func setReachable(_ value: Bool) { reachable = value }
 

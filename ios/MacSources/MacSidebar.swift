@@ -27,7 +27,7 @@ struct MacSidebar: View {
     }
 
     private var ledColor: Color {
-        if auth.expired || server.forbidden { return DS.Color.power }
+        if auth.expired || server.forbidden || server.unauthorized { return DS.Color.power }
         switch server.reachable {
         case true?: return DS.Color.ok
         case false?: return DS.Color.power

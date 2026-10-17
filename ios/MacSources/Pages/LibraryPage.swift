@@ -255,10 +255,10 @@ struct LibraryPage: View {
             stateBox("Sign in to see your library, add songs and play them.") {
                 Button("Sign in") { nav.showSignIn = true }.buttonStyle(LibLitButtonStyle())
             }
-        } else if server.syncing || (!server.synced && server.reachable != false) {
+        } else if server.syncing || (!server.synced && server.failureMessage == nil) {
             stateBox("Loading your library...") { EmptyView() }
         } else if !server.synced {
-            stateBox("Can't reach the server. Check the connection and try again.") {
+            stateBox(server.failureMessage ?? "Couldn't load your library. Try again.") {
                 Button("Retry") { Task { await server.syncCatalog(settings: settings, library: library, auto: false) } }
                     .buttonStyle(LibOutlineButtonStyle())
             }

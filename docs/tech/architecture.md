@@ -218,7 +218,7 @@ the first sign-in creates the profile (`SIGNUP_OPEN=0` closes that).
 
 Server env: `OWNER_EMAIL` (alias `ALLOWED_EMAIL`, default `alex.isayenko@gmail.com`;
 the owner is exempt from quotas), `SIGNUP_OPEN` (default `1`),
-`ALLOWED_APPLE_SUB` (an Apple `sub` that is the owner), `APPLE_AUDIENCE=com.alexisayenko.audioplayer`,
+`ALLOWED_APPLE_SUB` (an Apple `sub` that is the owner), `APPLE_AUDIENCE=com.alexisayenko.audioplayer,com.alexisayenko.audioplayer.mac`,
 `GOOGLE_CLIENT_ID`. A provider without its audience set is rejected.
 
 iOS setup (done): Sign in with Apple capability on the App ID

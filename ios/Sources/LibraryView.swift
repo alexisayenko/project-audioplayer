@@ -181,10 +181,10 @@ struct LibraryView: View {
                 unavailable("Access denied", "lock.slash", APIError.forbiddenMessage)
             } else if !ServerLink.hasCredentials(settings) {
                 unavailable("Sign in to load your library", "person.crop.circle", "Open the Settings tab to sign in.")
-            } else if server.syncing || !server.synced && server.reachable != false {
+            } else if server.syncing || !server.synced && server.failureMessage == nil {
                 unavailable("Loading your library\u{2026}", "arrow.triangle.2.circlepath", nil)
             } else if !server.synced {
-                unavailable("Can't reach the server", "wifi.slash", "Check the connection and try again.") {
+                unavailable(server.reachable == false ? "Can't reach the server" : "Couldn't load your library", server.reachable == false ? "wifi.slash" : "exclamationmark.triangle", server.failureMessage ?? "Check the connection and try again.") {
                     Button("Retry") { Task { await server.syncCatalog(settings: settings, library: library) } }
                         .buttonStyle(.borderedProminent).tint(DS.Color.accentStrong)
                 }
