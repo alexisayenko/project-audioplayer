@@ -38,9 +38,9 @@
     "level3": 0
    },
    "Electronic": {
-    "total": 138,
+    "total": 139,
     "level2": 50,
-    "level3": 88
+    "level3": 89
    },
    "Folk, World, & Country": {
     "total": 66,
@@ -1572,6 +1572,14 @@
   "provisional": true,
   "discogs": true
  },
+ "french house": {
+  "genre": "Electronic",
+  "parent": "house",
+  "synonyms": [
+   "french touch"
+  ],
+  "discogs": false
+ },
  "freestyle": {
   "genre": "Electronic",
   "parent": null,
@@ -1959,8 +1967,6 @@
   "synonyms": [
    "afro house",
    "big room house",
-   "french house",
-   "french touch",
    "melodic house"
   ]
  },

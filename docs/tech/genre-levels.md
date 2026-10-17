@@ -37,7 +37,7 @@ Electronic 141 (55 level 2, 86 level 3, 18 not in Discogs; after the 2026-10-16 
 
 All placements below are agent judgement, awaiting Alex's review.
 
-- house (22): acid house, afro house, ambient house, big room house, deep house, electro house, euro house, french house, french touch, future house, garage house, ghetto house, hard house, hip house, italo house, melodic house, microhouse, progressive house, sunshine house, tech house, tribal house, tropical house
+- house (22): acid house, afro house, ambient house, big room house, deep house, electro house, euro house, french house, future house, garage house, ghetto house, hard house, hip house, italo house, melodic house, microhouse, progressive house, sunshine house, tech house, tribal house, tropical house
 - trance (10): acid, deep, euro, hard, neo, nu-nrg, progressive, tech, uplifting, vocal
 - psytrance (6): dark psytrance, forest psytrance, progressive psytrance, full-on psytrance, goa trance, psybient
 - techno (6): deep, dub, hard, melodic, minimal, schranz
@@ -68,7 +68,7 @@ acid trance, afro house, alternative dance, big room house, breakbeat hardcore, 
 
 - jungle: under drum and bass, also under breakbeat.
 - jersey club, baltimore club: both under breakbeat, also under house.
-- psybient: under psytrance (Alex, 2026-10-16), also under ambient. french touch: under house (not french house). nu-nrg: under trance (not hard trance).
+- psybient: under psytrance (Alex, 2026-10-16), also under ambient. nu-nrg: under trance (not hard trance).
 - spacesynth: standalone level 2, also under italo disco. indietronica: standalone level 2, also under electronica.
 - hands up: under eurodance, also trance. hardstyle: under hardcore, also trance. donk: under hardcore, also house. jumpstyle: under hardcore.
 - chillwave, vaporwave: under synthwave, also downtempo. dungeon synth: under ambient, also synthwave.
@@ -86,7 +86,7 @@ Removed styles (gone from `genre_extras.json` and `genre_levels.json`; the old n
 |---|---|---|
 | electronic dance, dance, electronica, indietronica, alternative dance (also "dance music", "edm", "dance & edm") | electronic (genre) | 21, 15, 9, 2, 2 |
 | chillout | downtempo | 4 |
-| afro house, big room house, melodic house, french house, french touch | house | 2, 1, 2, 2, 0 |
+| afro house, big room house, melodic house | house | 2, 1, 2 |
 | bubblegum dance | eurodance | 2 |
 | techstep | drum and bass | 2 |
 | liquid funk | liquid drum and bass (new) | 1 |
@@ -109,7 +109,9 @@ Precedence rule: Discogs outranks Alex's approval. `approved` is only stored on 
 
 Added: `liquid drum and bass` (extras, level 3 under drum and bass, approved, display "Liquid Drum & Bass"; synonyms liquid dnb, liquid d&b, liquid drum & bass, liquid drum n bass, liquid drum'n'bass, liquid drum and bass music, liquid drum & bass music, liquid funk).
 
-`melodic house` is intentionally not a style any more; the `melodic` flavour stays (used by melodic techno). `french` is not a flavour for now (its only user, french house, is gone).
+`french house` came back on 2026-10-17 (DQ1): an extra (level 3 under house, `discogs: false`, not Discogs), and `french touch` is an `ALIASES` entry and a synonym of it, no longer a house fold. Stored `french touch` is rewritten to `french house` by the startup migration; stored `french house` stays (songs folded to house earlier stay house).
+
+`melodic house` is intentionally not a style any more; the `melodic` flavour stays (used by melodic techno). `french` is not a flavour for now.
 
 ## Flavours
 

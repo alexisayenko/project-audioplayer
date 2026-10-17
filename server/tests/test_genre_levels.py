@@ -82,7 +82,7 @@ REMOVED = {
     "electronic dance": "electronic", "dance": "electronic", "electronica": "electronic", "indietronica": "electronic", "alternative dance": "electronic",
     "chillout": "downtempo", "afro house": "house", "big room house": "house", "bubblegum dance": "eurodance", "techstep": "drum and bass",
     "liquid funk": "liquid drum and bass", "breakbeat hardcore": "breakbeat", "jersey club": "breakbeat", "rave": "electronic",
-    "techno pop": "synthpop", "french touch": "house", "electropop": "synthpop", "french house": "house", "melodic house": "house",
+    "techno pop": "synthpop", "electropop": "synthpop", "melodic house": "house",
 }
 APPROVED = {"dark psytrance", "forest psytrance", "progressive psytrance", "full-on psytrance", "vocal trance", "melodic techno", "psybient", "darksynth", "uplifting trance", "sunshine house", "dreamsynth", "dreamwave", "neurofunk",
             "spacesynth", "nu-nrg", "liquid drum and bass", "soviet wave"}
@@ -351,3 +351,20 @@ def test_soviet_wave_is_an_approved_extra_under_synthwave():
     assert e["genre"] == "Electronic" and e["parent"] == "synthwave" and e["display"] == "Soviet Wave"
     assert e["discogs"] is False and e["status"] == "approved" and "soviet wave" in EXTRAS and "soviet wave" not in STYLES["styles"]
     assert "советская волна" in e["synonyms"] and "sovietwave" in e["synonyms"]
+
+
+def test_french_house_is_an_extra_under_house_and_french_touch_is_its_alias():
+    from app import genre_filter as gf
+    from app import genre_vocab
+
+    genre_vocab.reset()
+    e = ENTRIES["french house"]
+    assert e["genre"] == "Electronic" and e["parent"] == "house" and e["discogs"] is False
+    assert "french house" in EXTRAS and "french house" not in STYLES["styles"]
+    assert EXTRAS["french house"]["family"] == "Electronic" and EXTRAS["french house"]["parent"] == "house"
+    assert "french touch" in e["synonyms"] and "french touch" not in ENTRIES["house"]["synonyms"] and "french house" not in ENTRIES["house"]["synonyms"]
+    assert genre_vocab.lookup("French House") == "french house" and genre_vocab.lookup("french touch") is None
+    for raw in ("french touch", "French Touch", "french-touch", "french house"):
+        assert gf.canonical(raw) == "french house" and gf.vocabulary_name(raw) == "french house" and not gf.unmappable(raw), raw
+    assert genre_vocab.vocabulary()["aliases"]["french touch"] == "french house"
+    assert "french house" not in genre_vocab.vocabulary()["aliases"]

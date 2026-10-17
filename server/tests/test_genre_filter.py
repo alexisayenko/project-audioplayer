@@ -170,7 +170,8 @@ def test_prefix_cleaning_adds_country_and_lang_once():
     assert library.clean_tag("genre:russian pop") == "genre:pop"
     assert library.clean_tags(["genre:russian pop", "genre:russian rock"]) == ["genre:pop", "genre:rock", "country:ru", "lang:ru"]
     assert library.clean_tags(["genre:british blues", "country:us"]) == ["genre:blues", "country:us", "country:gb"]
-    assert library.clean_tags(["genre:dutch house", "genre:french house", "country:nl", "lang:en"]) == ["genre:house", "country:nl", "lang:en"]
+    assert library.clean_tags(["genre:dutch house", "genre:french house", "country:nl", "lang:en"]) == ["genre:house", "genre:french house", "country:nl", "lang:en"]
+    assert library.clean_tags(["genre:french touch", "genre:french house"]) == ["genre:french house"]
     again = library.clean_tags(["genre:russian pop"])
     assert library.clean_tags(again) == again
     assert library.clean_tags(["genre:euroda", "genre:eurodance"]) == ["genre:eurodance"]

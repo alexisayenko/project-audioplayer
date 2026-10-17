@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-17 (built, not deployed)
+
+- Server and web: `french house` is a reviewed genre again (Electronic, under house, task DQ1) and `french touch` is an alias of it instead of a fold to house; the startup migration rewrites stored `french touch` to `french house` and leaves stored `french house` alone; not deployed.
+
 ## 2026-10-17 (YouTube genres and release tags, not deployed)
 
 - Server and web: the git sync timer also fast-forwards data fixed in GitHub (or pushed from another clone) onto the server within 60 s, under a shared write lock, with invalid JSON refused and a diverged repo shown as a sync error; `GIT_SYNC_INBOUND=0` turns it off (ADR-0027, STO-057 to STO-060, NFR-118, API-144, WEB-101); not deployed.
