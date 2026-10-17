@@ -1,4 +1,5 @@
 import { el } from './dom.js';
+import { icon } from './icons.js';
 
 export const TERMS_URL = 'data/theory-terms.json';
 export const FAIL_TEXT = 'Could not load the terms. Reload to try again.';
@@ -44,21 +45,47 @@ export function rowsFor(example, fields) {
     .filter((r) => r.value !== undefined);
 }
 
+const panel = (title, content) => el('details', { class: 'an-panel' },
+  el('summary', {}, el('span', { class: 'an-chev', 'aria-hidden': 'true' }, icon('chevron', 'inline')), el('span', {}, title)),
+  content);
+
 export function renderAnatomy(data) {
   const { fields, examples } = data;
   const byId = new Map(fields.map((f) => [f.id, f]));
-  const select = el('select', { id: 'an-select', 'aria-controls': 'an-out' },
-    examples.map((e) => el('option', { value: e.id }, e.rawTitle)));
-  const out = el('div', { class: 'an-out', id: 'an-out', 'aria-live': 'polite' });
-  const root = el('div', { class: 'an' },
-    el('div', { class: 'field' }, el('label', { for: 'an-select' }, 'Example'), select),
-    out);
+  const titleNode = el('p', { class: 'an-title' });
+  const tableBody = el('tbody', {});
+  const jsonNode = el('pre', { class: 'an-json', tabindex: '0', 'aria-label': 'Stored song as JSON' });
+  const table = el('div', { class: 'an-panel-body' },
+    el('div', { class: 'an-tablewrap' },
+      el('table', { class: 'an-table' },
+        el('thead', {}, el('tr', {}, el('th', { scope: 'col' }, 'Field'), el('th', { scope: 'col' }, 'Value'), el('th', { scope: 'col' }, 'Meaning'))),
+        tableBody)));
+  const out = el('div', { class: 'an-out', id: 'an-out', 'aria-live': 'polite' },
+    titleNode,
+    panel('Legend', table),
+    panel('How this song is stored', el('div', { class: 'an-panel-body' }, jsonNode)));
+  const buttons = examples.map((e) => el('button', { type: 'button', class: 'an-ex', 'aria-pressed': 'false', 'aria-controls': 'an-out' }, e.rawTitle));
+  const list = el('div', { class: 'an-examples', role: 'group', 'aria-label': 'Examples' }, buttons);
+  const root = el('div', { class: 'an' }, list, out);
 
   const draw = (example) => {
     const segs = [];
     const rows = [];
+    const place = (seg) => {
+      const hint = seg.node.querySelector('.an-label');
+      const card = titleNode.getBoundingClientRect?.();
+      if (!hint || !card) return;
+      hint.style.setProperty('--an-shift', '0px');
+      const r = hint.getBoundingClientRect();
+      const shift = Math.max(card.left - r.left, Math.min(0, card.right - r.right));
+      hint.style.setProperty('--an-shift', `${shift}px`);
+    };
     const setActive = (ids) => {
-      for (const s of segs) s.node.classList.toggle('is-on', !!ids && s.fields.some((f) => ids.includes(f)));
+      for (const s of segs) {
+        const on = !!ids && s.fields.some((f) => ids.includes(f));
+        s.node.classList.toggle('is-on', on);
+        if (on) place(s);
+      }
       for (const r of rows) r.node.classList.toggle('is-on', !!ids && ids.includes(r.id));
     };
     const hook = (node, ids) => {
@@ -74,7 +101,6 @@ export function renderAnatomy(data) {
       const label = s.label ?? byId.get(s.fields[0])?.label ?? '';
       const node = el('span', { class: 'an-seg', tabindex: '0', 'data-tone': tone },
         el('span', { class: 'an-text' }, s.text),
-        el('span', { class: 'an-mark', 'aria-hidden': 'true' }),
         el('span', { class: 'an-label' }, label));
       segs.push({ node, fields: s.fields });
       hook(node, s.fields);
@@ -91,21 +117,13 @@ export function renderAnatomy(data) {
       return node;
     });
 
-    out.replaceChildren(
-      el('p', { class: 'an-title' }, parts),
-      el('div', { class: 'an-tablewrap' },
-        el('table', { class: 'an-table' },
-          el('caption', { class: 't-caption' }, 'Each part of the title and the field it is stored in'),
-          el('thead', {}, el('tr', {}, el('th', { scope: 'col' }, 'Field'), el('th', { scope: 'col' }, 'Value'), el('th', { scope: 'col' }, 'Meaning'))),
-          el('tbody', {}, body))),
-      el('h3', { class: 't-headline an-sub' }, 'How this song is stored'),
-      el('pre', { class: 'an-json', tabindex: '0', 'aria-label': 'Stored song as JSON' }, JSON.stringify(example.song, null, 2)));
+    titleNode.replaceChildren(...parts);
+    tableBody.replaceChildren(...body);
+    jsonNode.textContent = JSON.stringify(example.song, null, 2);
+    examples.forEach((e, i) => buttons[i].setAttribute('aria-pressed', e === example ? 'true' : 'false'));
   };
 
-  select.addEventListener('change', () => {
-    const ex = examples.find((e) => e.id === select.value);
-    if (ex) draw(ex);
-  });
+  buttons.forEach((b, i) => b.addEventListener('click', () => draw(examples[i])));
   if (examples.length) draw(examples[0]);
   return root;
 }
@@ -121,7 +139,7 @@ export function renderTheory(root) {
     el('section', { class: 'th', 'aria-label': 'Terms' }, body),
     el('section', { class: 'th th-anatomy', 'aria-labelledby': 'an-heading' },
       el('h2', { class: 't-title', id: 'an-heading' }, ANATOMY_TITLE),
-      el('p', { class: 'muted t-body' }, 'How one raw song title is split into the fields the library stores. Pick an example, then hover or focus a part of the title or a row of the table to link them.'),
+      el('p', { class: 'muted t-body' }, 'How one raw song title is split into the fields the library stores. Pick an example, then hover or focus a part of the title or a row of the legend to link them.'),
       anatomyBody),
   );
   loadAnatomy().then((data) => {
