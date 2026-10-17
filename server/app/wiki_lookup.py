@@ -495,21 +495,168 @@ _search_cache: dict[str, list[str]] = {}
 MAX_CANDIDATES = 3
 
 
+def _search_raw(query: str, lang: str = "en") -> list[str]:
+    key = query if lang == "en" else f"{lang}:{query}"
+    if key not in _search_cache:
+        api = urllib.parse.urlencode({"action": "query", "list": "search", "srsearch": query, "srnamespace": "0", "srlimit": "5", "format": "json"})
+        hits = ((_fetch_json(f"https://{lang}.wikipedia.org/w/api.php?{api}")).get("query") or {}).get("search") or []
+        _search_cache[key] = [str(h["title"]) for h in hits if h.get("title")]
+    return _search_cache[key]
+
+
 def _search(query: str) -> list[str]:
     """Titles of the top English Wikipedia article hits for `query`; [] on any failure."""
-    if query not in _search_cache:
+    try:
+        return _search_raw(query)
+    except Exception as exc:
+        log.warning("wikipedia search failed for %r: %s", query, exc)
+        return []
+
+
+def _article_url(title: str, lang: str = "en") -> str:
+    return f"https://{lang}.wikipedia.org/wiki/" + urllib.parse.quote(title.replace(" ", "_"), safe="_(),!'~*-.:")
+
+
+_CYRILLIC = re.compile("[\u0400-\u04ff]")
+_UK_ONLY = re.compile("[їєіґЇЄІҐ]")
+_BE_ONLY = re.compile("[ўЎ]")
+_QUOTE_CHARS = "\"'`«»„“”‟‘’‚‹›"
+_QUOTES = re.compile(f"[{re.escape(_QUOTE_CHARS)}]")
+_DESCRIPTOR = re.compile(
+    rf"^(?:вокально-инструментальный\s+ансамбль|ансамбль|виа|рок-группа|группа|гурт)(?:\s+|(?=[{re.escape(_QUOTE_CHARS)}]))(?P<quote>[{re.escape(_QUOTE_CHARS)}])?\s*",
+    re.I,
+)
+_BRACKET_TAIL = re.compile(r"\s*[\(\[][^\)\]]*[\)\]]\s*$")
+_WORK_SUFFIX = {
+    "ru": {"artist": "группа", "song": "песня", "album": "альбом"},
+    "uk": {"artist": "гурт", "song": "пісня", "album": "альбом"},
+    "be": {"artist": "гурт", "song": "песня", "album": "альбом"},
+}
+_DISAMBIGUATION = "Q4167410"
+_GROUP_CLASSES = {"Q215380", "Q2088357", "Q5741069"}
+_MUSIC_OCCUPATIONS = {"Q177220", "Q639669", "Q488205", "Q36834", "Q753110", "Q855091", "Q130857", "Q2252262", "Q183945"}
+_WORK_CLASSES = {"Q7366", "Q134556", "Q482994", "Q208569", "Q169930", "Q105543609", "Q2188189"}
+_foreign_cache: dict[str, str | None] = {}
+
+
+def _wiki_langs(text: str) -> list[str]:
+    """Wikipedia language editions to search for a name written in Cyrillic, best first; [] for any other script."""
+    if not _CYRILLIC.search(text):
+        return []
+    if _BE_ONLY.search(text):
+        return ["be", "ru"]
+    if _UK_ONLY.search(text):
+        return ["uk", "ru"]
+    return ["ru", "uk"]
+
+
+def _wiki_names(name: str, kind: str) -> list[str]:
+    """Query forms of a non-Latin name: quotes removed and whitespace collapsed; for artists also without a leading descriptor word (group, VIA, ensemble); for songs and albums also without a trailing bracket."""
+    def tidy(text: str) -> str:
+        return re.sub(r"\s+", " ", _QUOTES.sub(" ", text)).strip()
+
+    plain = tidy(name)
+    variants = [plain]
+    if kind == "artist":
+        m = _DESCRIPTOR.match(name.strip())
+        stripped = tidy(name.strip()[m.end() :]) if m else ""
+        if stripped:
+            variants = [stripped, plain] if m.group("quote") else [plain, stripped]
+    else:
+        variants.append(tidy(_BRACKET_TAIL.sub("", name)))
+    return list(dict.fromkeys(v for v in variants if v))
+
+
+def _wiki_pages(lang: str, titles: list[str]) -> list[tuple[str, str]]:
+    """(resolved title, Wikidata id) of the existing pages among `titles`, in the order given, redirects followed."""
+    query = urllib.parse.urlencode(
+        {"action": "query", "prop": "pageprops", "ppprop": "wikibase_item", "titles": "|".join(titles), "redirects": "1", "format": "json", "formatversion": "2"}
+    )
+    data = (_fetch_json(f"https://{lang}.wikipedia.org/w/api.php?{query}")).get("query") or {}
+    alias = {r["from"]: r["to"] for key in ("normalized", "redirects") for r in data.get(key) or []}
+    pages = {p["title"]: p for p in data.get("pages") or [] if p.get("title") and not p.get("missing") and not p.get("invalid")}
+    out: list[tuple[str, str]] = []
+    for title in titles:
+        resolved = alias.get(alias.get(title, title), alias.get(title, title))
+        qid = ((pages.get(resolved) or {}).get("pageprops") or {}).get("wikibase_item")
+        if qid and _QID.match(str(qid)) and not any(resolved == t for t, _ in out):
+            out.append((resolved, str(qid)))
+    return out
+
+
+def _wd_claims(qid: str) -> dict[str, Any]:
+    got = _claims_map([qid])
+    if qid not in got:
+        raise RuntimeError(f"claims of {qid} unavailable")
+    return got[qid]
+
+
+def _is_music_artist(claims: dict[str, Any]) -> bool:
+    classes = set(_ids(claims, "P31"))
+    if _DISAMBIGUATION in classes:
+        return False
+    if classes & _GROUP_CLASSES or claims.get("P434") or claims.get("P264"):
+        return True
+    if "Q5" in classes:
+        return bool(set(_ids(claims, "P106")) & _MUSIC_OCCUPATIONS)
+    return bool(claims.get("P136"))
+
+
+def _is_music_work(claims: dict[str, Any]) -> bool:
+    classes = set(_ids(claims, "P31"))
+    if _DISAMBIGUATION in classes:
+        return False
+    return bool(classes & _WORK_CLASSES or claims.get("P175") or claims.get("P435") or claims.get("P436"))
+
+
+def _lead_text(lang: str, title: str) -> str:
+    query = urllib.parse.urlencode(
+        {"action": "query", "prop": "extracts", "exintro": "1", "explaintext": "1", "titles": title, "redirects": "1", "format": "json", "formatversion": "2"}
+    )
+    pages = ((_fetch_json(f"https://{lang}.wikipedia.org/w/api.php?{query}")).get("query") or {}).get("pages") or []
+    return " ".join(str(p.get("extract") or "") for p in pages)
+
+
+def _foreign_page(lang: str, kind: str, name: str, rest: str, credited: list[str]) -> str | None:
+    wanted = genre_lookup._norm(name)
+    suffix = _WORK_SUFFIX[lang][kind]
+    direct = [f"{name} ({suffix})", name]
+    search_q = f"{name} {rest}".strip()
+    if kind == "artist":
+        hits = [t for t in _search_raw(search_q, lang) if genre_lookup._norm(_BRACKET_TAIL.sub("", t)) == wanted]
+    else:
+        hits = [t for t in _search_raw(search_q, lang) if genre_lookup._norm(t).startswith(wanted)]
+    titles = list(dict.fromkeys([*direct, *hits[: MAX_CANDIDATES + 2]]))
+    for title, qid in _wiki_pages(lang, titles):
+        claims = _wd_claims(qid)
+        if not (_is_music_artist(claims) if kind == "artist" else _is_music_work(claims)):
+            continue
+        if kind != "artist":
+            lead = _lead_text(lang, title)
+            if not any(genre_lookup._norm(c) and genre_lookup._norm(c) in genre_lookup._norm(lead) for c in credited):
+                continue
+        return clean_link(_article_url(title, lang))
+    return None
+
+
+def _find_foreign(kind: str, name: str, rest: str, credited: list[str]) -> str | None:
+    """Article of a non-English edition (Russian, Ukrainian, Belarusian) for a Cyrillic artist, song or album name; None for other scripts.
+
+    A page qualifies only when its Wikidata item is a music artist (group class, MusicBrainz id, label or genre; or a person with a music occupation) or a music work (song, single or album class or a performer), so a generic article of the same title never wins; songs and albums must also name a credited artist in the lead."""
+    langs = _wiki_langs(name)
+    if not langs:
+        return None
+    key = "\0".join([kind, name, rest, *credited])
+    if key not in _foreign_cache:
         try:
-            api = urllib.parse.urlencode({"action": "query", "list": "search", "srsearch": query, "srnamespace": "0", "srlimit": "5", "format": "json"})
-            hits = ((_fetch_json(f"https://en.wikipedia.org/w/api.php?{api}")).get("query") or {}).get("search") or []
-            _search_cache[query] = [str(h["title"]) for h in hits if h.get("title")]
+            _foreign_cache[key] = next(
+                (url for lang in langs for n in _wiki_names(name, kind) if (url := _foreign_page(lang, kind, n, rest, credited))),
+                None,
+            )
         except Exception as exc:
-            log.warning("wikipedia search failed for %r: %s", query, exc)
-            return []
-    return _search_cache[query]
-
-
-def _article_url(title: str) -> str:
-    return "https://en.wikipedia.org/wiki/" + urllib.parse.quote(title.replace(" ", "_"), safe="_(),!'~*-.:")
+            log.warning("wikipedia %s lookup in %s failed for %r: %s", kind, "/".join(langs), name, exc)
+            return None
+    return _foreign_cache[key]
 
 
 def _loose(a: str, b: str) -> bool:
@@ -539,11 +686,11 @@ def _find_article(query: str, name: str, kinds: tuple[str, ...], credited: list[
 
 def find_song(artist: str, title: str, names: list[str]) -> str | None:
     """English Wikipedia article of a song found by search ("<title> <artist>") when MusicBrainz has no link; None unless its song infobox names the artist."""
-    return _find_article(f"{title} {names[0]}", title, ("song", "single"), names)
+    return _find_article(f"{title} {names[0]}", title, ("song", "single"), names) or _find_foreign("song", title, names[0], names)
 
 
 def find_album(artist: str, album: str, names: list[str]) -> str | None:
-    return _find_article(f"{album} {names[0]} album", album, ("album",), names)
+    return _find_article(f"{album} {names[0]} album", album, ("album",), names) or _find_foreign("album", album, names[0], names)
 
 
 def find_artist(artist: str) -> str | None:
@@ -558,7 +705,7 @@ def find_artist(artist: str) -> str | None:
         kind = infobox(_article_url(title))["kind"] or ""
         if "musical artist" in kind or "band" in kind or "person" in kind or "singer" in kind or "musician" in kind or "dj" in kind:
             return _article_url(title)
-    return None
+    return _find_foreign("artist", artist, "", [])
 
 
 def _suggest_into(out: dict[str, Any], artist: str, title: str, mb: dict[str, Any]) -> None:
