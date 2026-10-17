@@ -65,7 +65,7 @@ Built on branch `worktree-agent-a9ef527b632364730`, not deployed (DATA-144 to DA
 
 ## Data model v3 migration (countries back on songs)
 
-Built, not deployed (ADR-0031, task-0049, DATA-164 to DATA-166). The server migrates every schema-2 `library.json` once at startup (`app.migrate_model3`, right after `app.migrate_model2`): the countries go back onto the songs as `country:` tags and the Artist table is removed. It needs the model-2 state, so deploy it after the data model v2 migration. The code and the migrated files cannot be rolled back separately: an older build reads the countries of single-artist songs back into its table on the next save and drops those of songs with several main artists.
+Deployed 2026-10-18 (ADR-0031, task-0049, DATA-164 to DATA-166). The server migrates every schema-2 `library.json` once at startup (`app.migrate_model3`, right after `app.migrate_model2`): the countries go back onto the songs as `country:` tags and the Artist table is removed. It needs the model-2 state, so deploy it after the data model v2 migration. The code and the migrated files cannot be rolled back separately: an older build reads the countries of single-artist songs back into its table on the next save and drops those of songs with several main artists.
 
 1. Backup by hand, outside the git tree: copy `users/<uid>/library.json` of every user to a dated folder, and also `<data repo>/backups-model2/<uid>/` (the pre-v2 file; the migration reads it, `library.json` is the original, numbered copies are later repeats). Check that the pre-v2 file is really the old one: its songs have `tags` with `country:` values and no `mainArtists`.
 2. Guest snapshot BEFORE: `curl -s https://electrophone.cc/library > before3.json`.
