@@ -17,7 +17,7 @@ from .tokens import split_tokens
 
 log = logging.getLogger(__name__)
 
-SCHEMA = 2
+SCHEMA = 3
 TYPES = ("remix", "cover", "mashup", "live", "acoustic", "extended", "instrumental", "remaster", "edit", "other")
 KINDS = TYPES
 MAX_NAMES = 30

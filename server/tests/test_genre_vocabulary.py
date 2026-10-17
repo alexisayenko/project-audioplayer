@@ -259,10 +259,8 @@ def test_identify_suggestions_are_narrowed():
 
 def test_metafill_adds_only_canonical_genres():
     song = {"id": "a", "title": "A", "mainArtists": ["Z"], "tags": ["genre:house"], "albums": ["x"], "releaseYear": None}
-    table: list = []
-    assert metafill.apply(song, {"tags": ["genre:qqqq", "genre:techno", "country:lt"]}, table)
-    assert song["tags"] == ["genre:house", "genre:techno"]
-    assert table == [{"name": "Z", "countries": ["lt"]}]
+    assert metafill.apply(song, {"tags": ["genre:qqqq", "genre:techno", "country:lt"]})
+    assert song["tags"] == ["genre:house", "genre:techno", "country:lt"]
     other = {"id": "b", "title": "B", "tags": [], "albums": ["x"], "releaseYear": None}
     assert not metafill.apply(other, {"tags": ["genre:qqqq"]})
     assert other["tags"] == []

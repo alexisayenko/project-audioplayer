@@ -2,6 +2,11 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-18 (data model 3)
+
+- Server: countries are `country:` tags on the song again, any number per song; the Artist table, `artists` in `GET /library` and the `/artists` routes are gone (ADR-0031, [task-0049](tasks/task-0049.md)). A startup migration (`migrate_model3`) moves each library to schema 3 and keeps a backup in `backups-model3/`.
+- Web: the song form and the tag picker accept several countries.
+
 ## 2026-10-18 (genres map and dock)
 
 - Web: Genres map is now the new radial map; Genres map rework is gone from the menu and its old link redirects.

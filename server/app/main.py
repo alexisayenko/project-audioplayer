@@ -7,9 +7,9 @@ from collections.abc import Awaitable, Callable
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
 
-from . import deps, genre_vocab, guest, hosts, legal, migrate_model2, migrate_tags, web
+from . import deps, genre_vocab, guest, hosts, legal, migrate_model2, migrate_model3, migrate_tags, web
 from .problems import Problem
-from .routes import analyze, artists, auth, backfill, catalog, covers, files, genres, health, legacy, legal as legal_routes, lookup, me, metafill, removal, songs
+from .routes import analyze, auth, backfill, catalog, covers, files, genres, health, legacy, legal as legal_routes, lookup, me, metafill, removal, songs
 
 app = FastAPI(title="Electrophone")
 
@@ -54,6 +54,7 @@ def _startup() -> None:
     if deps.SYNC:
         deps.SYNC.recover_on_startup()
     migrate_model2.run()
+    migrate_model3.run()
     migrate_tags.run()
 
 
@@ -64,7 +65,7 @@ def _shutdown() -> None:
         deps.SYNC.stop()
 
 
-for _module in (auth, me, health, legal_routes, legacy, files, catalog, artists, covers, genres, lookup, songs, analyze, backfill, metafill, removal):
+for _module in (auth, me, health, legal_routes, legacy, files, catalog, covers, genres, lookup, songs, analyze, backfill, metafill, removal):
     app.include_router(_module.router)
 
 web.mount(app)

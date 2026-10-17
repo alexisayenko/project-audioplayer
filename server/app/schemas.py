@@ -101,6 +101,3 @@ class MetadataRequest(BaseModel):
     version_kind: str | None = None
     version_type: str | None = None
 
-
-class ArtistPatch(BaseModel):
-    countries: list[str] = Field(default_factory=list, max_length=20)

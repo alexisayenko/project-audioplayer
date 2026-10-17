@@ -75,7 +75,7 @@ def test_run_fills_only_empty_fields(client, monkeypatch):
     s = song(OWNER_UID, VID)
     assert s["albums"] == ["Mine"]
     assert s["releaseYear"] == 1999
-    assert s["tags"] == ["genre:jazz", "genre:house"]
+    assert s["tags"] == ["genre:jazz", "genre:house", "country:fr"]
     assert s["wikipedia_album"].endswith("/Found")
     assert s["musicbrainz_url"].startswith("https://musicbrainz.org/")
     assert s["metadata_checked_at"]
@@ -156,21 +156,19 @@ def test_other_user_gets_busy_and_isolation(multi, monkeypatch):
 
 
 def test_apply_respects_caps_and_blank_values():
-    s = {"mainArtists": ["A"], "albums": [], "releaseYear": None, "tags": [f"genre:g{i}" for i in range(12)]}
-    table = [{"name": "A", "countries": ["de"]}]
-    changed = metafill.apply(s, {"album": "X", "year": 2001, "tags": ["genre:new", "country:fr"]}, table)
+    s = {"mainArtists": ["A"], "albums": [], "releaseYear": None, "tags": [f"genre:g{i}" for i in range(12)] + ["country:de"]}
+    changed = metafill.apply(s, {"album": "X", "year": 2001, "tags": ["genre:new", "country:fr"]})
     assert changed and s["albums"] == ["X"] and s["releaseYear"] == 2001
-    assert "genre:new" not in s["tags"]
-    assert table == [{"name": "A", "countries": ["de"]}]
+    assert "genre:new" not in s["tags"] and "country:fr" not in s["tags"]
 
 
-def test_apply_fills_the_country_of_a_single_main_artist_without_one():
-    s = {"mainArtists": ["A"], "albums": ["x"], "releaseYear": 1990, "tags": ["genre:house"]}
-    table = [{"name": "A", "countries": []}]
-    assert metafill.apply(s, {"tags": ["country:fr", "country:de"]}, table)
-    assert table == [{"name": "A", "countries": ["fr"]}]
-    two = {"mainArtists": ["A", "B"], "albums": ["x"], "releaseYear": 1990, "tags": ["genre:house"]}
-    assert not metafill.apply(two, {"tags": ["country:fr"]}, [])
+def test_apply_fills_one_country_into_a_song_without_any_and_keeps_several_it_has():
+    s = {"mainArtists": ["A", "B"], "albums": ["x"], "releaseYear": 1990, "tags": ["genre:house"]}
+    assert metafill.apply(s, {"tags": ["country:fr", "country:de"]})
+    assert s["tags"] == ["genre:house", "country:fr"]
+    many = {"mainArtists": ["A"], "albums": ["x"], "releaseYear": 1990, "tags": ["genre:house", "country:us", "country:gb"]}
+    assert not metafill.apply(many, {"tags": ["country:fr"]})
+    assert many["tags"] == ["genre:house", "country:us", "country:gb"]
 
 
 def test_fetch_builds_sources_and_links(monkeypatch):

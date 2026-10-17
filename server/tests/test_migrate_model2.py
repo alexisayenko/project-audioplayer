@@ -114,16 +114,15 @@ def test_the_migrated_file_loads_and_serves_the_same_derived_values(tmp_path):
     path = write(tmp_path, LIVE)
     migrate_model2.migrate(path, apply=True, backup_dir=tmp_path / "bk")
     doc = library.load_doc(path)
-    index = {e["name"].casefold(): e for e in doc["artists"]}
     assert len(doc["songs"]) == len(LIVE["songs"])
     for song in doc["songs"]:
-        view = library.public_song(song, None, index)
+        view = library.public_song(song, None)
         want = {k: (v.strip() or None) if isinstance(v, str) else v for k, v in EXPECTED[song["id"]].items()}
         assert {k: view[k] for k in FIELDS} == want
         assert view["genres"] == library.genre_names(song["tags"])
     old_by_id = {s["id"]: s for s in LIVE["songs"]}
     for song in doc["songs"]:
-        view = library.public_song(song, None, index)
+        view = library.public_song(song, None)
         shown = (view.get("version") or {}).get("releaseYear")
         skip = ("lang:", "country:", "decade:") if shown else ("lang:", "country:")
         old = {t for t in old_by_id[song["id"]]["tags"] if not t.startswith(skip)}

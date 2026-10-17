@@ -11,7 +11,7 @@ import { isKnownCountry } from './countries.js';
 
 const KINDS = {
   genre: { label: 'Genres', placeholder: 'Pick a genre from the list', make: () => '', cap: GENRE_CAP },
-  country: { label: 'Countries', placeholder: 'Add a country (name or ISO code)', make: (raw) => { const c = countryCode(raw); return c ? `country:${c}` : ''; }, cap: 1 },
+  country: { label: 'Countries', placeholder: 'Add a country (name or ISO code)', make: (raw) => { const c = countryCode(raw); return c ? `country:${c}` : ''; }, cap: Infinity },
 };
 
 export function libraryGenres() {
@@ -145,8 +145,7 @@ export function chipField(ns, editor) {
       if (suggesting) { bad = addGenre(p) || bad; continue; }
       const tag = kind.make(p);
       if (!tag) { bad = true; continue; }
-      if (ns === 'country') for (const t of mine()) editor.removeTag(t);
-      else if (mine().length >= kind.cap) { bad = true; continue; }
+      if (mine().length >= kind.cap) { bad = true; continue; }
       editor.addTags([tag]);
     }
     if (rejected) showHint(rejected.value, rejected.names, rejected.loading ? 'The genre list is still loading. Try again in a moment.' : '');

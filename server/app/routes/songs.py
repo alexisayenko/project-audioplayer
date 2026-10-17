@@ -7,7 +7,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 
-from .. import artist_table, credits, deps, discogs_lookup, genre_lookup, jobs, library, limits, titleclean, urlclean, users, wiki_lookup
+from .. import credits, deps, discogs_lookup, genre_lookup, jobs, library, limits, titleclean, urlclean, users, wiki_lookup
 from ..downloads import (
     add_metadata_only, mark_started, new_job, reject_unknown_country, reject_unknown_genre, run_download, run_fetch_audio,
 )
@@ -164,16 +164,7 @@ def _apply_source_links(updated: dict[str, Any], changes: dict[str, Any]) -> Non
         updated["sources"] = library.clean_sources(sources)
 
 
-def _apply_countries(updated: dict[str, Any], countries: list[str], table: list[dict[str, Any]]) -> None:
-    """Country tags of a request go to the Artist table (DATA-147): replaced for a song with exactly one main artist; with several main artists a change is refused (DATA-160), the unchanged echo of the derived view passes."""
-    names = credits.main_artists(updated)
-    if len(names) == 1:
-        artist_table.set_countries(table, names[0], countries)
-    elif set(countries) != set(artist_table.countries_for(table, names)):
-        raise HTTPException(status_code=422, detail="Countries belong to artists; this song has several main artists, edit them via the artist")
-
-
-def _edited(song: dict[str, Any], changes: dict[str, Any], table: list[dict[str, Any]]) -> dict[str, Any]:
+def _edited(song: dict[str, Any], changes: dict[str, Any]) -> dict[str, Any]:
     updated = dict(song)
     for key in _TEXT_FIELDS:
         if key in changes:
@@ -191,11 +182,10 @@ def _edited(song: dict[str, Any], changes: dict[str, Any], table: list[dict[str,
         if sent_genres is not None:
             own = [t for t in own if namespace(str(t)) != "genre"]
         cleaned = library.merge_genres(sent_genres, own)
-        reject_unknown_country(cleaned)
-        reject_unknown_genre(cleaned, library.clean_tags(song.get("tags") or []))
-        updated["tags"], countries, _ = library.split_tags(cleaned)
-        if sent_tags is not None:
-            _apply_countries(updated, countries, table)
+        stored = library.clean_tags(song.get("tags") or [])
+        reject_unknown_country(cleaned, stored)
+        reject_unknown_genre(cleaned, stored)
+        updated["tags"] = library.drop_derived_tags(cleaned)
     if not updated.get("title"):
         raise HTTPException(status_code=422, detail="title must not be empty")
     updated["updated_at"] = library.now_utc()
@@ -212,7 +202,7 @@ def patch_song(video_id: str, req: PatchSongRequest, user: dict[str, Any] = Depe
         song = library.find_song(doc["songs"], video_id)
         if song is None:
             raise HTTPException(status_code=404, detail=deps.UNKNOWN_SONG)
-        edited = _edited(song, changes, doc["artists"])
+        edited = _edited(song, changes)
         song.clear()
         song.update(edited)
         deps.save_doc(uid, doc)

@@ -54,11 +54,11 @@ test('country tags: aliases normalise to codes, unknown names are refused with a
   assert.equal(ed.node.querySelector('input').value, 'country:Atlantis');
 });
 
-test('only one country at a time via the pool', () => {
+test('several countries can be picked via the pool', () => {
   const ed = tagEditor({ tags: ['country:fr'] });
   const chip = ed.node.querySelector('.tag-pool').querySelectorAll('button').find((b) => b.getAttribute('title') === 'country:de');
   chip.click();
-  assert.deepEqual(ed.peek().filter((t) => t.startsWith('country:')), ['country:de']);
+  assert.deepEqual(ed.peek().filter((t) => t.startsWith('country:')), ['country:fr', 'country:de']);
 });
 
 test('picker opens for a country: prefix and selecting a country adds it', () => {

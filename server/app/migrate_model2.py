@@ -1,5 +1,7 @@
 """One-time rewrite of a stored library to data model v2 (DATA-151..153, ADR-0025); idempotent, dry-run first, refuses to run twice.
 
+The runtime no longer knows the Artist table it writes (ADR-0031, `migrate_model3` removes it again); the few helpers it needs live here.
+
 `convert` is a pure function over the raw JSON of the deployed shape (flat legacy or ADR-0024; v2 songs pass through), `check` proves that the five legacy derived fields of every song are unchanged, and `migrate` adds the backup, the review files and the atomic write.
 
     python -m app.migrate_model2 --library users/<uid>/library.json [--report report.json]            # dry run, writes nothing else
@@ -18,14 +20,84 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
-from . import artist_table, credits, credits_v1, deps, library
+from . import countrycodes, credits, credits_v1, deps, library
 from .jsonio import write_json_atomic
 from .tags import namespace
 
 BACKUP_DIR = "backups-model2"
+SCHEMA = 2
+MAX_COUNTRIES = 5
+MAX_ARTISTS = 20000
 LEGACY_FIELDS = ("artist", "remixer", "year", "remix_year", "album")
 SAMPLE = 20
 _log = logging.getLogger(__name__)
+
+
+
+def table_key(name: Any) -> str:
+    return " ".join(str(name or "").split()).casefold()
+
+
+def _clean_countries(values: Any) -> list[str]:
+    out: list[str] = []
+    for v in values if isinstance(values, (list, tuple)) else []:
+        code = countrycodes.canonical_country(str(v))
+        if code and code not in out:
+            out.append(code)
+    return out[:MAX_COUNTRIES]
+
+
+def parse_table(raw: Any) -> list[dict[str, Any]]:
+    """The stored Artist table as a clean list: entries with a name, one per key (first spelling kept), countries canonical."""
+    out: dict[str, dict[str, Any]] = {}
+    for e in raw if isinstance(raw, list) else []:
+        if not isinstance(e, dict) or not isinstance(e.get("name"), str):
+            continue
+        name = " ".join(e["name"].split())
+        if not name or table_key(name) in out:
+            continue
+        out[table_key(name)] = {"name": name, "countries": _clean_countries(e.get("countries"))}
+    return list(out.values())[:MAX_ARTISTS]
+
+
+def _find(table: list[dict[str, Any]], name: str) -> dict[str, Any] | None:
+    k = table_key(name)
+    return next((e for e in table if table_key(e["name"]) == k), None)
+
+
+def _set_countries(table: list[dict[str, Any]], name: str, countries: Any) -> None:
+    entry = _find(table, name)
+    if entry is None:
+        entry = {"name": " ".join(name.split()), "countries": []}
+        table.append(entry)
+    entry["countries"] = _clean_countries(list(countries))
+
+
+def _sync_names(table: list[dict[str, Any]], songs: list[dict[str, Any]]) -> None:
+    used: dict[str, str] = {}
+    for s in songs:
+        for n in s.get("mainArtists") or []:
+            if isinstance(n, str) and table_key(n):
+                used.setdefault(table_key(n), " ".join(n.split()))
+    have = {table_key(e["name"]) for e in table}
+    table[:] = [e for e in table if e["countries"] or table_key(e["name"]) in used]
+    for k, name in used.items():
+        if k not in have:
+            table.append({"name": name, "countries": []})
+    table.sort(key=lambda e: table_key(e["name"]))
+
+
+def _view_tags(song: dict[str, Any], table: list[dict[str, Any]]) -> list[str]:
+    """The tags a v2 response showed: stored tags, the computed decade and the countries of the main artists."""
+    kept, _, _ = library.split_tags(library.tag_list(song))
+    decade = library.decade_tag(credits.display_year(song))
+    idx = {table_key(e["name"]): e for e in table}
+    countries: list[str] = []
+    for n in credits.main_artists(song):
+        for c in (idx.get(table_key(n)) or {}).get("countries") or []:
+            if c not in countries:
+                countries.append(c)
+    return [*kept, *([decade] if decade else []), *(f"country:{c}" for c in countries)]
 
 
 class MigrationAborted(Exception):
@@ -44,7 +116,10 @@ def _songs_of(raw: Any) -> list[Any]:
 def is_model2(raw: Any) -> bool:
     """True when the file already is data model v2: the schema stamp is 2 and every song has the v2 shape."""
     settings = raw.get("settings") if isinstance(raw, dict) else None
-    if not isinstance(settings, dict) or settings.get("credits_schema") != credits.SCHEMA:
+    stamp = settings.get("credits_schema") if isinstance(settings, dict) else None
+    if isinstance(stamp, int) and not isinstance(stamp, bool) and stamp > SCHEMA:
+        return True
+    if stamp != SCHEMA:
         return False
     return all(isinstance(s, dict) and credits_v1.is_v2(s) and not any(k in s for k in credits.LEGACY_KEYS) and not _prefixed(s) for s in _songs_of(raw))
 
@@ -72,7 +147,7 @@ def convert(raw: Any) -> tuple[dict[str, Any], dict[str, Any]]:
     """`(new_doc, report)` for the raw JSON of one library file. Pure: the input is not modified."""
     raw = copy.deepcopy(raw)
     settings = dict(raw.get("settings") or {}) if isinstance(raw, dict) else {}
-    old_table = artist_table.parse(raw.get("artists") if isinstance(raw, dict) else None)
+    old_table = parse_table(raw.get("artists") if isinstance(raw, dict) else None)
     removed: Counter[str] = Counter()
     types: Counter[str] = Counter()
     diffs: list[dict[str, Any]] = []
@@ -110,7 +185,7 @@ def convert(raw: Any) -> tuple[dict[str, Any], dict[str, Any]]:
             new["sources"] = library.clean_sources(new["sources"])
         names = credits.main_artists(new)
         if countries and len(names) == 1:
-            per_artist.setdefault(artist_table.key(names[0]), []).append((names[0], tuple(countries)))
+            per_artist.setdefault(table_key(names[0]), []).append((names[0], tuple(countries)))
         elif countries:
             multi.append({"id": new.get("id"), "mainArtists": names, "countries": countries})
         if new.get("raw"):
@@ -127,18 +202,17 @@ def convert(raw: Any) -> tuple[dict[str, Any], dict[str, Any]]:
     conflicts: list[dict[str, Any]] = []
     for k, found in per_artist.items():
         sets = list(dict.fromkeys(c for _, c in found))
-        if len(sets) == 1 and not (artist_table.find(table, found[0][0]) or {}).get("countries"):
-            artist_table.set_countries(table, found[0][0], sets[0])
+        if len(sets) == 1 and not (_find(table, found[0][0]) or {}).get("countries"):
+            _set_countries(table, found[0][0], sets[0])
         elif len(sets) > 1:
             conflicts.append({"artist": found[0][0], "countries": [list(s) for s in sets]})
-    artist_table.sync_names(table, new_songs)
-    idx = artist_table.index(table)
+    _sync_names(table, new_songs)
     for old, new in zip(olds, new_songs):
-        before, after = _tag_set(library.tag_list(old)), _tag_set(library.view_tags(new, idx))
+        before, after = _tag_set(library.tag_list(old)), _tag_set(_view_tags(new, table))
         if before != after:
             tag_changes.append({"id": new.get("id"), "removed": sorted(before - after), "added": sorted(after - before)})
 
-    doc = {"settings": {**settings, "credits_schema": credits.SCHEMA}, "songs": new_songs, "artists": table}
+    doc = {"settings": {**settings, "credits_schema": SCHEMA}, "songs": new_songs, "artists": table}
     report = {
         "songs": len(new_songs),
         "songs_converted": converted,

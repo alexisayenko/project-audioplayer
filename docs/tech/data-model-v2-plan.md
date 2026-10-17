@@ -1,6 +1,6 @@
 # Data model v2: implementation plan (task-0043)
 
-Status: implemented on branch `worktree-agent-a9ef527b632364730`, not deployed. Spec: DATA-144 to DATA-155 in [data-model.md](../specs/data-model.md#data-model-v2-final-model-approved-2026-10-16), ADR-0025, [task-0043](../tasks/task-0043.md). Deploy steps: [deploy.md](deploy.md#data-model-v2-migration).
+Status: implemented on branch `worktree-agent-a9ef527b632364730`, not deployed. The Artist table and the artist country parts of this plan (sections 1, 3 and 5, CG1, CH2) are superseded by [ADR-0031](decisions.md): countries stay on the song, `migrate_model3` restores them ([task-0049](../tasks/task-0049.md)). Spec: DATA-144 to DATA-155 in [data-model.md](../specs/data-model.md#data-model-v2-final-model-approved-2026-10-16), ADR-0025, [task-0043](../tasks/task-0043.md). Deploy steps: [deploy.md](deploy.md#data-model-v2-migration).
 
 ## 1. Field mapping (deployed ADR-0024 shape -> v2)
 

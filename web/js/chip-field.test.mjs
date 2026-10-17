@@ -107,17 +107,17 @@ test('clicking a suggestion adds it', async () => {
   assert.deepEqual(editor.peek(), ['genre:jazz']);
 });
 
-test('country: names and ISO codes resolve, unknown input is flagged, one country only', () => {
+test('country: names and ISO codes resolve, unknown input is flagged, several countries', () => {
   const { editor, type, key, input } = make('country');
   type('Italy');
   key('Enter');
   assert.deepEqual(editor.peek(), ['country:it']);
   type('fr');
   key('Enter');
-  assert.deepEqual(editor.peek(), ['country:fr'], 'a new country replaces the old one');
+  assert.deepEqual(editor.peek(), ['country:it', 'country:fr'], 'a new country is added to the old one');
   type('Nowhereland');
   key('Enter');
-  assert.deepEqual(editor.peek(), ['country:fr']);
+  assert.deepEqual(editor.peek(), ['country:it', 'country:fr']);
   assert.equal(input.getAttribute('aria-invalid'), 'true');
   type('');
   assert.equal(input.getAttribute('aria-invalid'), null, 'typing clears the invalid flag');

@@ -192,7 +192,7 @@ def test_migration_is_idempotent_and_cleans_legacy_fields():
     assert a["wikipedia_song"] is None
     assert sorted(a["tags"]) == ["Rock", "genre:house"]
     assert a["releaseYear"] == 1994
-    assert b["tags"] == []
+    assert b["tags"] == ["country:de"]
     assert b["sources"] == [{"platform": "youtube", "url": "https://www.youtube.com/watch?v=9bZkp7q19f0"}]
     assert c["file"] is None and c["releaseYear"] == 2007
 
@@ -200,7 +200,7 @@ def test_migration_is_idempotent_and_cleans_legacy_fields():
 def test_normalize_accepts_every_legacy_shape():
     assert library.normalize([{"id": "dQw4w9WgXcQ", "title": "x"}])["songs"][0]["file"] == "dQw4w9WgXcQ.m4a"
     for junk in (None, 5, "x", {"songs": None}, {}):
-        assert library.normalize(junk) == {"settings": {}, "songs": [], "artists": []}
+        assert library.normalize(junk) == {"settings": {}, "songs": []}
 
 
 def test_load_doc_survives_corrupt_and_missing_files(tmp_path):

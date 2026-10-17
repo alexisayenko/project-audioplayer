@@ -170,7 +170,7 @@ def test_migrates_old_bare_format(tmp_path):
     assert doc["songs"][0]["file"] == f"{VID}.m4a"
     library.save(p, doc["songs"], default_music_root="perkunas://data/music/")
     saved = json.loads(p.read_text())
-    assert saved["settings"] == {"music_root": "perkunas://data/music/", "credits_schema": 2}
+    assert saved["settings"] == {"music_root": "perkunas://data/music/", "credits_schema": 3}
     assert saved["songs"][0]["file"] == f"{VID}.m4a"
 
 

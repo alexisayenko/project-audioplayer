@@ -11,7 +11,7 @@ import threading
 import time
 from typing import Any
 
-from . import artist_table, credits, deps, genre_filter, genre_lookup, library, metadata, wiki_lookup
+from . import credits, deps, genre_filter, genre_lookup, library, metadata, wiki_lookup
 from .tags import namespace
 
 log = logging.getLogger(__name__)
@@ -127,7 +127,7 @@ def _fetch(song: dict[str, Any]) -> dict[str, Any]:
 
 
 def _add_tags(have: list[str], found: list[str]) -> list[str]:
-    caps = {"genre": GENRE_CAP}
+    caps = {"genre": GENRE_CAP, "country": COUNTRY_CAP}
     out = list(have)
     added: list[str] = []
     for raw in genre_filter.only_canonical([str(r) for r in found]):
@@ -142,15 +142,8 @@ def _add_tags(have: list[str], found: list[str]) -> list[str]:
     return added
 
 
-def _fill_country(song: dict[str, Any], found: list[str], table: list[dict[str, Any]]) -> bool:
-    """The first country the lookup found goes to the Artist table when the song has one main artist without a country (DATA-153)."""
-    names = credits.main_artists(song)
-    codes = library.split_tags(found)[1][:COUNTRY_CAP]
-    return len(names) == 1 and bool(codes) and artist_table.fill_countries(table, names[0], codes)
-
-
-def apply(song: dict[str, Any], resp: dict[str, Any], table: list[dict[str, Any]] | None = None) -> bool:
-    """Write `resp` into `song`, empty fields only; genre tags are added; a country goes to the Artist `table` when given. True when something changed."""
+def apply(song: dict[str, Any], resp: dict[str, Any]) -> bool:
+    """Write `resp` into `song`, empty fields only; genre tags and, for a song without one, a country are added. True when something changed."""
     changed = False
     version = credits.has_version(song)
     album = resp.get("album")
@@ -165,8 +158,6 @@ def apply(song: dict[str, Any], resp: dict[str, Any], table: list[dict[str, Any]
     added = _add_tags(tags, resp.get("tags") or [])
     if added:
         song["tags"] = library.clean_tags([*tags, *added])
-        changed = True
-    if table is not None and _fill_country(song, [str(t) for t in resp.get("tags") or [] if namespace(t) == "country"], table):
         changed = True
     wiki_album = wiki_lookup.clean_link(resp.get("wikipedia_album"))
     if not version and wiki_album and _blank(song.get("wikipedia_album")):
@@ -195,7 +186,7 @@ def _process(uid: str, vid: str) -> str:
         fresh = library.find_song(doc["songs"], vid)
         if fresh is None:
             return "skipped"
-        changed = apply(fresh, resp, doc["artists"])
+        changed = apply(fresh, resp)
         fresh["metadata_checked_at"] = library.now_utc()
         if changed:
             fresh["updated_at"] = library.now_utc()

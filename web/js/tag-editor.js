@@ -28,7 +28,7 @@ export function tagEditor({ tags = [], suggested = [], onChange = null, hideNs =
 
   const has = (t) => current.some((x) => same(x, t));
   const toggle = (t) => {
-    current = has(t) ? current.filter((x) => !same(x, t)) : [...current.filter((x) => !(isCountry(t) && isCountry(x))), t];
+    current = has(t) ? current.filter((x) => !same(x, t)) : [...current, t];
     render();
   };
   function add(raw) {

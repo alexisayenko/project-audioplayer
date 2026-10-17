@@ -528,18 +528,17 @@ def test_lang_aliases():
     assert library.clean_tag("lang:klingon") == "lang:klingon"
 
 
-def test_country_tags_move_to_the_artist_table_on_load_idempotent(tmp_path):
+def test_country_tags_stay_on_the_song_on_load_idempotent(tmp_path):
     p = tmp_path / "lib.json"
     p.write_text(json.dumps({"songs": [
-        {"id": "a", "title": "A", "artist": "Solo", "tags": ["country:usa", "country:us", "country:yugoslavia", "x"]},
-        {"id": "b", "title": "B", "artist": "One - Two", "tags": ["country:fr"]},
+        {"id": "a", "title": "A", "artist": "Solo", "tags": ["country:usa", "country:us", "country:yugoslavia", "x", "decade:90s", "lang:en"]},
+        {"id": "b", "title": "B", "artist": "One - Two", "tags": ["country:fr", "country:de"]},
     ]}))
     doc = library.load_doc(p)
-    assert [s["tags"] for s in doc["songs"]] == [["x"], []]
-    doc = library.load_doc(p)
-    assert doc["artists"] == [{"name": "One", "countries": []}, {"name": "Solo", "countries": ["us"]}, {"name": "Two", "countries": []}]
-    again = library.normalize({"songs": doc["songs"], "artists": doc["artists"]})
-    assert again["songs"] == doc["songs"] and again["artists"] == doc["artists"]
+    assert "artists" not in doc
+    assert [s["tags"] for s in doc["songs"]] == [["country:us", "country:yugoslavia", "x"], ["country:fr", "country:de"]]
+    again = library.normalize({"songs": doc["songs"]})
+    assert again["songs"] == doc["songs"]
 
 
 def test_write_rejects_unknown_country_but_accepts_alias(client):
@@ -556,16 +555,27 @@ def test_write_rejects_unknown_country_but_accepts_alias(client):
     assert client.patch(f"/songs/{VID}", json={"tags": ["country:Russia"]}, headers=H).json()["tags"][0] == "country:ru"
 
 
-def test_a_country_edit_replaces_the_countries_of_a_single_main_artist(client):
+def test_a_country_edit_replaces_the_countries_of_the_song(client):
     add(client, metadata={"title": "S", "artist": "Solo"}, tags=["country:us"])
     song = client.get("/library", headers=H).json()["songs"][0]
     assert "country:us" in song["tags"]
     r = client.patch(f"/songs/{VID}", json={"tags": ["x", "country:de", "country:fr"]}, headers=H)
     assert r.status_code == 200
     assert [t for t in r.json()["tags"] if t.startswith("country:")] == ["country:de", "country:fr"]
-    assert client.get("/artists", headers=H).json() == [{"name": "Solo", "countries": ["de", "fr"]}]
     r = client.patch(f"/songs/{VID}", json={"tags": ["x"]}, headers=H)
     assert [t for t in r.json()["tags"] if t.startswith("country:")] == []
+
+
+def test_legacy_unknown_country_survives_patch(client):
+    add(client)
+    p = deps.library_path(OWNER_UID)
+    songs = library.load(p)
+    songs[0]["tags"] = [*songs[0].get("tags", []), "country:yugoslavia"]
+    library.save(p, songs)
+    r = client.patch(f"/songs/{VID}", json={"tags": ["country:yugoslavia", "x"]}, headers=H)
+    assert r.status_code == 200
+    assert "country:yugoslavia" in r.json()["tags"]
+    assert client.patch(f"/songs/{VID}", json={"tags": ["country:mordor"]}, headers=H).status_code == 422
 
 
 @pytest.mark.parametrize("raw", ["su", "SU", "SUN", "USSR", "U.S.S.R.", "Soviet Union", "the Soviet Union", "CCCP", "SSSR"])
@@ -628,7 +638,7 @@ def test_genre_migration_aliases_drops_and_prefixes(tmp_path, monkeypatch):
     assert migrate_tags.run() == 1
     songs = json.loads(lib.read_text())["songs"]
     assert library.tag_list(songs[0]) == ["genre:eurodance"]
-    assert library.tag_list(songs[1]) == ["genre:pop", "genre:deep house"]
+    assert library.tag_list(songs[1]) == ["genre:pop", "genre:deep house", "country:ua", "country:ru"]
     assert (tmp_path / "backups-genre-merge" / "u1" / "library.json").read_text() == original
     assert migrate_tags.run() == 0
 

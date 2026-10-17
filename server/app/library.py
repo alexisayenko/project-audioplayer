@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import logging
 import os
 import re
 from collections import Counter
@@ -12,7 +11,7 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
-from . import artist_table, countrycodes, credits, discogs_lookup, genre_filter, genre_lookup, langcodes, urlclean, wiki_lookup
+from . import countrycodes, credits, discogs_lookup, genre_filter, genre_lookup, langcodes, urlclean, wiki_lookup
 from .jsonio import write_json_atomic
 from .tags import namespace, namespaced_values
 from .timeutil import max_year, now_utc  # noqa: F401
@@ -119,23 +118,20 @@ def stored_song(song: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
-def view_tags(song: dict[str, Any], table: Any = None) -> list[str]:
-    """The legacy `tags` view of a v2 song: its stored tags, `decade:NNs` computed from `releaseYear` and the `country:` codes of its main artists."""
-    kept, _, _ = split_tags(tag_list(song))
+def view_tags(song: dict[str, Any]) -> list[str]:
+    """The legacy `tags` view of a v2 song: its stored tags (countries included) and `decade:NNs` computed from the displayed year."""
+    kept = drop_derived_tags(tag_list(song))
     decade = decade_tag(credits.display_year(song))
-    countries = artist_table.countries_for(table, credits.main_artists(song)) if table else []
-    return [*kept, *([decade] if decade else []), *(f"country:{c}" for c in countries)]
+    return [*(t for t in kept if namespace(t) != "country"), *([decade] if decade else []), *(t for t in kept if namespace(t) == "country")]
 
 
-def public_song(song: dict[str, Any], root: Path | None, table: Any = None) -> dict[str, Any]:
-    """The record plus derived, additive fields: the legacy `artist`, `remixer`, `year`, `remix_year`, `album` and `tags` view, `genres`, `audio_state`, `sources`, and `audio` when a file exists.
-
-    `table` is the user's Artist table (list or index); without it the tags view has no `country:` values."""
+def public_song(song: dict[str, Any], root: Path | None) -> dict[str, Any]:
+    """The record plus derived, additive fields: the legacy `artist`, `remixer`, `year`, `remix_year`, `album` and `tags` view, `genres`, `audio_state`, `sources`, and `audio` when a file exists."""
     out = dict(song)
     credits.ensure(out)
     out.update(credits.project(out))
     out.pop("raw", None)
-    out["tags"], out["genres"] = view_tags(out, table), genre_names(tag_list(out))
+    out["tags"], out["genres"] = view_tags(out), genre_names(tag_list(out))
     state = audio_state(song, root)
     out["audio_state"] = state
     out["sources"] = sources_of(song)
@@ -220,32 +216,29 @@ def split_tags(tags: Iterable[Any]) -> tuple[list[str], list[str], Counter[str]]
     return kept, countries, removed
 
 
-def route_tags(song: dict[str, Any], table: list[dict[str, Any]]) -> Counter[str]:
-    """Take the `decade:`, `lang:` and `country:` tags out of one song; the countries fill the Artist table when the song has exactly one main artist that has none yet."""
-    if "tags" not in song:
-        return Counter()
-    kept, countries, removed = split_tags(song["tags"] or [])
-    song["tags"] = kept
-    names = credits.main_artists(song)
-    if countries and len(names) == 1:
-        artist_table.fill_countries(table, names[0], countries)
-    elif countries:
-        logging.getLogger(__name__).warning("song %s: country tags %s not applied (%d main artists)", song.get("id"), countries, len(names))
-    return removed
+def drop_derived_tags(tags: Iterable[Any]) -> list[str]:
+    """The tags without `decade:` (computed at runtime) and `lang:` (discarded) values; `country:` tags stay on the song (ADR-0031)."""
+    return [str(t) for t in tags if namespace(t) not in ("decade", "lang")]
+
+
+def strip_derived(song: dict[str, Any]) -> None:
+    if "tags" in song:
+        song["tags"] = drop_derived_tags(song["tags"] or [])
 
 
 def normalize(raw: Any) -> dict[str, Any]:
-    """Accept the old bare {songs:[...]} shape and return {settings, songs, artists} in data model v2."""
+    """Accept the old bare {songs:[...]} shape and return {settings, songs}; an `artists` table that the model-3 migration has not removed yet is carried along untouched."""
     if isinstance(raw, list):
         raw = {"songs": raw}
     raw = raw if isinstance(raw, dict) else {}
     settings = dict(raw.get("settings") or {})
     songs = [normalize_song(s) for s in raw.get("songs") or []]
-    table = artist_table.parse(raw.get("artists"))
     for song in songs:
-        route_tags(song, table)
-    artist_table.sync_names(table, songs)
-    return {"settings": settings, "songs": songs, "artists": table}
+        strip_derived(song)
+    doc: dict[str, Any] = {"settings": settings, "songs": songs}
+    if "artists" in raw:
+        doc["artists"] = raw["artists"]
+    return doc
 
 
 def decade_tag(year: Any) -> str | None:
@@ -263,26 +256,21 @@ def load_doc(path: Path) -> dict[str, Any]:
         return normalize({})
 
 
-def load_artists(path: Path) -> list[dict[str, Any]]:
-    """The Artist table of one library file without normalising the songs; empty when the file is missing or unreadable."""
-    try:
-        with open(path, encoding="utf-8") as f:
-            doc = json.load(f)
-    except (OSError, ValueError):
-        return []
-    return artist_table.parse(doc.get("artists") if isinstance(doc, dict) else None)
-
-
 def save_doc(path: Path, doc: dict[str, Any]) -> None:
     songs = doc.get("songs") or []
-    table = artist_table.parse(doc.get("artists"))
     for song in songs:
         credits.absorb(song)
-        route_tags(song, table)
-    artist_table.sync_names(table, songs)
-    doc["artists"] = table
-    out = {"settings": {**(doc.get("settings") or {}), "credits_schema": credits.SCHEMA}, "songs": [stored_song(s) for s in songs], "artists": table}
+        strip_derived(song)
+    settings = {**(doc.get("settings") or {}), "credits_schema": credits.SCHEMA if "artists" not in doc else settings_schema(doc)}
+    out: dict[str, Any] = {"settings": settings, "songs": [stored_song(s) for s in songs]}
+    if "artists" in doc:
+        out["artists"] = doc["artists"]
     write_json_atomic(path, out)
+
+
+def settings_schema(doc: dict[str, Any]) -> Any:
+    """The stamp of a library that still holds the model-2 Artist table stays what it was, so the model-3 migration still runs on it."""
+    return (doc.get("settings") or {}).get("credits_schema", 2)
 
 
 def load(path: Path) -> list[dict[str, Any]]:

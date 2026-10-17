@@ -175,7 +175,7 @@ class TestListsAndGuest:
         post(client, {"title": "Plain"}, vid=VID2)
         lib = client.get("/library", headers=H).json()
         cat = client.get("/catalog", headers=H).json()
-        assert lib["credits_schema"] == 2 and cat["credits_schema"] == 2
+        assert lib["credits_schema"] == 3 and cat["credits_schema"] == 3
         for body in (lib, cat):
             for s in body["songs"]:
                 for key in ("title", "mainArtists", "featuredArtists", "releaseYear", "albums", "genres", "artist", "remixer", "year", "remix_year", "album"):

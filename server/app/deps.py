@@ -10,7 +10,7 @@ from typing import Any, Iterator
 
 from fastapi import Header, HTTPException, Query, Request
 
-from . import artist_table, extractor, gitstore, guest, jobs, library, limits, oauth, session, users
+from . import extractor, gitstore, guest, jobs, library, limits, oauth, session, users
 from .problems import Problem
 
 DOWNLOAD_DIR = Path(os.environ.get("AUDIO_DOWNLOAD_DIR", "downloads"))
@@ -103,19 +103,13 @@ def user_audio_root(uid: str) -> Path | None:
         return None
 
 
-def load_artists(uid: str) -> list[dict[str, Any]]:
-    """The user's Artist table (DATA-148)."""
-    return library.load_artists(library_path(uid))
-
-
 def public_songs(uid: str, songs: list[dict[str, Any]]) -> list[dict[str, Any]]:
     root = user_audio_root(uid)
-    table = artist_table.index(load_artists(uid))
-    return [library.public_song(s, root, table) for s in songs]
+    return [library.public_song(s, root) for s in songs]
 
 
 def public_song(uid: str, song: dict[str, Any]) -> dict[str, Any]:
-    return library.public_song(song, user_audio_root(uid), artist_table.index(load_artists(uid)))
+    return library.public_song(song, user_audio_root(uid))
 
 
 def load_songs(uid: str) -> list[dict[str, Any]]:

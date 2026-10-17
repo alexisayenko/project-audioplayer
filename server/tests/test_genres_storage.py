@@ -10,7 +10,7 @@ from tests.test_library import H, VID, client  # noqa: F401
 def test_genres_are_stored_bare_and_the_prefixed_view_is_derived(client, tmp_path):
     post(client, {"artist": "Solo"}, genres=["house", "Techno"], tags=["x", "country:us", "decade:90s", "lang:en"])
     stored = on_disk(tmp_path)
-    assert stored["genres"] == ["house", "techno"] and stored["tags"] == ["x"]
+    assert stored["genres"] == ["house", "techno"] and stored["tags"] == ["x", "country:us"]
     got = song(client)
     assert got["genres"] == ["house", "techno"]
     assert got["tags"] == ["genre:house", "genre:techno", "x", "decade:80s", "country:us"]

@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from app import credits_v1, extractor, genre_lookup, library, migrate_model2
+from app import credits_v1, extractor, genre_lookup, library, migrate_model2, migrate_model3
 from tests.test_credits_api import REAL_PREVIEW, post
 from tests.test_extractor_mapping import ydl  # noqa: F401
 from tests.test_library import H, ODIR, VID, VID2, client  # noqa: F401
@@ -123,6 +123,23 @@ def test_legacy_migrated_and_new_songs_decode_as_server_song(client, tmp_path, r
             assert s["remixer"] is None or isinstance(s["remixer"], str)
             assert isinstance(s["sources"], list) and all({"source", "id", "url", "platform"} == set(e) for e in s["sources"])
         migrate_model2.migrate(path, apply=True, backup_dir=tmp_path / "bk")
+
+
+def test_countries_come_back_in_tags_through_both_migrations_and_still_decode(client, tmp_path):
+    seed = {"songs": [{**SAMPLE["songs"][0], "tags": ["genre:house", "country:gb", "country:fr"]}, {**SAMPLE["songs"][1], "tags": ["country:de"]}, *SAMPLE["songs"][2:]]}
+    path = ODIR(tmp_path) / "library.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(seed), encoding="utf-8")
+    migrate_model2.migrate(path, apply=True, backup_dir=tmp_path / "bk2")
+    assert "country:gb" not in songs_of(client, "/catalog")[0]["tags"]
+    migrate_model3.migrate(path, apply=True, backup_dir=tmp_path / "bk3", legacy_backup=tmp_path / "bk2" / "library.json")
+    songs = {s["id"]: s for s in songs_of(client, "/catalog")}
+    for s in songs.values():
+        check(s, "ServerSong")
+    first, second = seed["songs"][0]["id"], seed["songs"][1]["id"]
+    assert [t for t in songs[first]["tags"] if t.startswith("country:")] == ["country:gb", "country:fr"]
+    assert [t for t in songs[second]["tags"] if t.startswith("country:")] == ["country:de"]
+    assert {k: songs[first][k] for k in ("artist", "remixer", "year", "remix_year")} == legacy_view(SAMPLE["songs"][0])
 
 
 def test_the_five_legacy_values_are_equal_before_and_after_the_migration(client, tmp_path):

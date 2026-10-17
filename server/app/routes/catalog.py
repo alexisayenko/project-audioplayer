@@ -28,7 +28,7 @@ def _etag_matches(header: str, etag: str) -> bool:
 
 @router.get("/library")
 def get_library(user: dict[str, Any] = Depends(deps.read_user)):
-    return {"credits_schema": credits.SCHEMA, "songs": _public(user), "artists": deps.load_artists(user["uid"])}
+    return {"credits_schema": credits.SCHEMA, "songs": _public(user)}
 
 
 @router.get("/catalog", responses=deps.responses(422))
