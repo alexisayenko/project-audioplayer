@@ -8,7 +8,7 @@ stubFetch(() => ({ body: { songs: [] } }));
 const { store } = await import('./store.js');
 const { player, initPlayer } = await import('./player.js');
 initPlayer();
-const { cardModel, cardTags, downloadText, playControl, openSongCard } = await import('./song-card.js');
+const { cardModel, cardTags, playControl, openSongCard } = await import('./song-card.js');
 
 const FULL = {
   id: 'a', title: 'Alpha', remixer: 'Kav', artist: 'Zed', album: 'LP', year: 1999, bpm: 120.4, duration: 125, file: 'a.mp3', cover: true,
@@ -20,7 +20,7 @@ const publish = (songs) => { store.songs = songs; store.loaded = true; store.lis
 const $ = (id) => document.getElementById(id);
 const names = (dlg) => dlg.querySelectorAll('.card-actions button').map((b) => b.getAttribute('aria-label') || b.textContent);
 
-test('cardModel builds title, sub line, grouped tags, BPM, duration, links and download state', () => {
+test('cardModel builds title, sub line, grouped tags, BPM, duration and links', () => {
   const m = cardModel(FULL, { kind: 'none' });
   assert.equal(m.title, 'Alpha');
   assert.equal(m.remix, 'Kav');
@@ -31,15 +31,19 @@ test('cardModel builds title, sub line, grouped tags, BPM, duration, links and d
   assert.equal(m.bpm, '120');
   assert.equal(m.duration, '2:05');
   assert.deepEqual(Object.keys(m.links).sort(), ['musicbrainz', 'wikipedia', 'youtube']);
-  assert.equal(m.download, 'Downloaded to the server');
+  assert.equal('download' in m, false);
+});
+
+test('the card hides the version type and version name lines and keeps the other details', () => {
+  const m = cardModel({ ...FULL, mainArtists: ['Zed'], version: { type: 'remix', name: 'MKJ Remix', artists: ['Kav'] } });
+  assert.deepEqual(m.details.filter((d) => /^Version/.test(d)), []);
+  assert.ok(m.details.includes('Remixed / mixed by: Kav'));
 });
 
 test('cardModel copes with missing fields', () => {
   const m = cardModel(BARE, { kind: 'none' });
   assert.deepEqual([m.sub, m.bpm, m.duration, m.groups.length, Object.keys(m.links).length], ['', '', '', 0, 0]);
-  assert.equal(m.download, 'Not downloaded');
   assert.equal(cardModel(undefined, undefined).title, '');
-  assert.equal(downloadText(BARE, { kind: 'queued' }).length > 0, true);
   assert.deepEqual(cardTags(undefined), []);
 });
 
@@ -119,18 +123,40 @@ test('the card opens when querySelectorAll returns a real NodeList (no indexOf o
   }
 });
 
+test('pressing the pressed playlist button removes the song from the list and the card repaints', () => {
+  publish([FULL, BARE]);
+  while (player.current) player.removeAt(0);
+  openSongCard(FULL);
+  const dlg = $('song-card');
+  const btn = (t) => dlg.querySelectorAll('.card-actions button').find((b) => b.getAttribute('aria-label') === t);
+  btn('Add to playlist').click();
+  assert.equal(player.inQueue('a'), true);
+  btn('In playlist - click to remove').click();
+  assert.equal(player.inQueue('a'), false);
+  const off = btn('Add to playlist');
+  assert.ok(off, 'the card repaints to the unpressed button');
+  assert.equal(off.getAttribute('aria-pressed'), 'false');
+  assert.equal(off.classList.contains('on'), false);
+  dlg.close();
+});
+
 test('Play now plays the song, the playlist button toggles, Edit hands over to the edit dialog', () => {
   publish([FULL, BARE]);
   while (player.current) player.removeAt(0);
   openSongCard(FULL);
   const dlg = $('song-card');
   const btn = (t) => dlg.querySelectorAll('.card-actions button').find((b) => (b.getAttribute('aria-label') || b.textContent) === t);
-  btn('Add to playlist').click();
+  const off = btn('Add to playlist');
+  assert.equal(off.getAttribute('aria-pressed'), 'false');
+  assert.equal(off.classList.contains('on'), false);
+  off.click();
   assert.equal(player.inQueue('a'), true);
-  assert.ok(btn('Remove from playlist'), 'the card repaints after the toggle');
-  assert.equal(btn('Add to playlist'), undefined, 'the Add button gives way to the Remove button');
-  assert.ok(btn('Remove from playlist').classList.contains('icon'), 'Remove is a round icon button in the same row');
-  assert.equal(btn('Remove from playlist').title, 'Remove from playlist');
+  const on = btn('In playlist - click to remove');
+  assert.ok(on, 'the card repaints after the toggle');
+  assert.equal(btn('Add to playlist'), undefined, 'one toggle: the label follows the state');
+  assert.equal(on.getAttribute('aria-pressed'), 'true');
+  assert.ok(on.classList.contains('on') && on.classList.contains('pl-toggle') && on.classList.contains('icon'), 'the same pressed round button as the Library row');
+  assert.equal(on.title, 'In playlist - click to remove');
   assert.equal(dlg.querySelector('.card-actions .btn'), null);
   assert.equal(btn('Play'), undefined, 'no Play/Pause toggle on the card');
   btn('Play now').click();
@@ -197,14 +223,14 @@ test('with a cover the title and the artist line sit inside the cover box; witho
   dlg.close();
 });
 
-test('the facts column sits beside the cover: decade, country, BPM, time and status', () => {
+test('the facts column sits beside the cover: country, BPM and length', () => {
   publish([FULL]);
   openSongCard(FULL);
   const dlg = $('song-card');
   const top = dlg.querySelector('.card-top');
   assert.ok(top.querySelector('.card-art') && top.querySelector('.card-side'));
   const labels = top.querySelectorAll('.side-row .group-name').map((n) => n.textContent);
-  assert.deepEqual(labels, ['Country', 'BPM', 'Time', 'Status']);
+  assert.deepEqual(labels, ['Country', 'BPM', 'Length']);
   assert.ok(!top.contains(dlg.querySelector('.card-tags')));
   dlg.close();
 });

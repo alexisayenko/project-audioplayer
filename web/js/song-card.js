@@ -5,7 +5,6 @@ import { el, fmtTime } from './dom.js';
 import { hasAudio, sourceLink } from './playable.js';
 import { can } from './guest.js';
 import { autodl, autoDownloadOn } from './autodl.js';
-import { statusText } from './dl-progress.js';
 import { downloadSong } from './download.js';
 import { editDialog } from './edit-dialog.js';
 import { creditParts, subtitle, titleNodes, detailsLines, yearFact, albumOf } from './credits.js';
@@ -17,18 +16,14 @@ import { storedLinkStates } from './song-links.js';
 import { toggleQueue } from './queue-toggle.js';
 import { openShareDialog } from './share-ui.js';
 
-export function downloadText(song, view) {
-  if (hasAudio(song)) return 'Downloaded to the server';
-  if (!view || view.kind === 'none') return 'Not downloaded';
-  return statusText(view, false);
-}
-
 export function cardTags(tags) {
   const counts = visibleTags(tags).map((tag) => ({ tag, count: 1 }));
   return tagGroups(counts).map((g) => ({ key: g.key, name: g.name, tags: g.tags.map((t) => ({ tag: t.tag, label: tagLabel(t.tag) })) }));
 }
 
-export function cardModel(song, view) {
+const HIDDEN_DETAILS = new Set(['Version', 'Version name']);
+
+export function cardModel(song) {
   const { title, remix } = creditParts(song);
   return {
     title,
@@ -37,11 +32,10 @@ export function cardModel(song, view) {
     album: albumOf(song),
     groups: cardTags(withRuntimeDecade(song)?.tags),
     yearFact: yearFact(song),
-    details: detailsLines(song).map(({ label, value }) => (label === 'Cover of' ? `Cover of ${value}` : `${label}: ${value}`)),
+    details: detailsLines(song).filter(({ label }) => !HIDDEN_DETAILS.has(label)).map(({ label, value }) => (label === 'Cover of' ? `Cover of ${value}` : `${label}: ${value}`)),
     bpm: bpmLabel(song?.bpm),
     duration: song?.duration ? fmtTime(song.duration) : '',
     links: storedLinkStates(song),
-    download: downloadText(song, view),
   };
 }
 
@@ -90,7 +84,7 @@ function actionRow(song) {
     ib('Share link', 'share', () => openShareDialog(song)),
     dl,
     can('edit') ? ib('Edit', 'pencil', () => editDialog(song)) : null,
-    queueable ? (queued ? ib('Remove from playlist', 'playlistRemove', () => toggleQueue(song)) : ib('Add to playlist', 'playlistAdd', () => toggleQueue(song))) : null,
+    queueable ? el('button', { class: `icon round pl-toggle${queued ? ' on' : ''}`, type: 'button', title: queued ? 'In playlist - click to remove' : 'Add to playlist', 'aria-label': queued ? 'In playlist - click to remove' : 'Add to playlist', 'aria-pressed': String(queued), onclick: () => toggleQueue(song) }, icon(queued ? 'listCheck' : 'listAdd', 'nav')) : null,
   ].filter(Boolean);
   return el('div', { class: 'card-actions' },
     icons.length ? el('div', { class: 'card-icons' }, ...icons) : null,
@@ -105,9 +99,8 @@ function sideBlock(m) {
   return el('div', { class: 'card-side' },
     ...m.groups.filter((g) => SIDE_KEYS.includes(g.key)).map(tagRow),
     m.bpm ? row('BPM', el('span', { class: 'bpm-badge', title: 'Beats per minute (estimated)' }, m.bpm, el('small', { 'aria-hidden': 'true' }, 'BPM'))) : null,
-    m.duration ? row('Time', m.duration) : null,
-    m.yearFact ? row('Year', el('span', { class: 'remix-year' }, m.yearFact)) : null,
-    row('Status', m.download));
+    m.duration ? row('Length', m.duration) : null,
+    m.yearFact ? row('Year', el('span', { class: 'remix-year' }, m.yearFact)) : null);
 }
 
 function paint(dlg, song, close, m) {
@@ -131,7 +124,7 @@ function paint(dlg, song, close, m) {
 const actionButtons = (dlg) => [...dlg.querySelectorAll('.card-actions button')];
 
 function repaint(dlg, song, close) {
-  const m = cardModel(song, autodl.view(song.id));
+  const m = cardModel(song);
   const idx = actionButtons(dlg).indexOf(document.activeElement);
   paint(dlg, song, close, m);
   if (idx >= 0) {
@@ -155,7 +148,7 @@ export function openSongCard(song, opener = null) {
   const render = (force) => {
     const fresh = store.get(id);
     if (!fresh) { close(); return; }
-    const sig = [downloadText(fresh, autodl.view(id)), player.current?.id === id, player.playing, player.inQueue(id), autoDownloadOn()].join('|');
+    const sig = [hasAudio(fresh), autodl.view(id).kind, player.current?.id === id, player.playing, player.inQueue(id), autoDownloadOn()].join('|');
     if (force !== true && sig === last) return;
     last = sig;
     repaint(dlg, fresh, close);
