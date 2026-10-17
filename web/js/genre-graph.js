@@ -192,12 +192,13 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
 
 
   function drawLink(l, focus, k) {
+    if (l.related) return;
     const chain = !l.related && anc.has(l.t) && (anc.has(l.s) || focus?.has(l.s));
     const on = !focus || focus.has(l.s) || focus.has(l.t) || chain;
     ctx.globalAlpha = chain ? ancAlpha(anc.get(l.t), 0.95, 0.45) : linkAlpha(on, focus);
     ctx.strokeStyle = on && focus ? colors.hi : colors.edge;
     ctx.lineWidth = (on && focus ? 1.8 : 1) / k;
-    ctx.setLineDash(l.related ? [4 / k, 4 / k] : []);
+    ctx.setLineDash([]);
     const d = Math.hypot(l.t.x - l.s.x, l.t.y - l.s.y) || 1;
     ctx.beginPath();
     ctx.moveTo(l.s.x, l.s.y);

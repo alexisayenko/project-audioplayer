@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { buildTree, applyCounts } from './genre-levels.js';
-import { layoutRadial as layout0, highlightSets, radius, visibleCrossLinks, selectLabels, labelBox } from './genre-radial.js';
+import { layoutRadial as layout0, highlightSets, radius, selectLabels, labelBox } from './genre-radial.js';
 const layoutRadial = (t, root, o = { showAll: true }) => layout0(t, root, o);
 
 const doc = JSON.parse(readFileSync(new URL('../../server/data/genre_levels.json', import.meta.url), 'utf8'));
@@ -141,15 +141,11 @@ test('whole vocabulary shows every style once; empty standalone styles are parke
   for (let i = 1; i < parked.length; i += 1) assert.ok(Math.hypot(parked[i].x - parked[i - 1].x, parked[i].y - parked[i - 1].y) >= 2 * parked[i].r);
 });
 
-test('cross-links are drawn only for the selected or hovered node', () => {
+test('the layout keeps the also-under links as data but the map draws no dashed cross-link lines', async () => {
   const l = layout0(sample(), 'Electronic', { showAll: true });
   assert.ok(l.links.length > 10);
-  assert.deepEqual(visibleCrossLinks(l, null, null), []);
-  const link = l.links[0];
-  assert.ok(visibleCrossLinks(l, link.from, null).every((x) => x.from === link.from || x.to === link.from));
-  assert.ok(visibleCrossLinks(l, link.from, null).includes(link));
-  assert.ok(visibleCrossLinks(l, null, link.to).includes(link));
-  assert.ok(visibleCrossLinks(l, null, null).length < l.links.length);
+  const view = await import('node:fs').then((fs) => fs.readFileSync(new URL('./genre-radial-view.js', import.meta.url), 'utf8'));
+  assert.doesNotMatch(view, /drawCrossLinks|visibleCrossLinks/);
 });
 
 test('psytrance is a level 2 sibling of trance with its own level 3 children; counts do not leak into trance', async () => {

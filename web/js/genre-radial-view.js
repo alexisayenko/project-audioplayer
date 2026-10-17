@@ -1,5 +1,5 @@
 import { fitTransform, recenterOnResize, hitNode, isDragMove } from './genre-view.js';
-import { highlightSets, visibleCrossLinks, selectLabels } from './genre-radial.js';
+import { highlightSets, selectLabels } from './genre-radial.js';
 
 const MIN_K = 0.15;
 const MAX_K = 8;
@@ -84,20 +84,6 @@ export function createRadialView(canvas, { onSelect, onHover, reducedMotion = fa
     return a;
   };
 
-  function drawCrossLinks(k) {
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = colors.edge;
-    for (const l of visibleCrossLinks(layout, sel, hover)) {
-      const a = layout.byId.get(l.from);
-      const b = layout.byId.get(l.to);
-      ctx.globalAlpha = 0.85;
-      ctx.lineWidth = 1 / k;
-      ctx.setLineDash([5 / k, 4 / k]);
-      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
-    }
-    ctx.setLineDash([]);
-  }
-
   function drawEdges(k) {
     const lit = (id) => hl.chain.has(id) || hl.kids.has(id);
     for (const e of layout.edges) {
@@ -147,7 +133,6 @@ export function createRadialView(canvas, { onSelect, onHover, reducedMotion = fa
     if (!layout) return;
     const { k } = tf;
     ctx.setTransform(dpr * k, 0, 0, dpr * k, dpr * tf.x, dpr * tf.y);
-    drawCrossLinks(k);
     drawEdges(k);
     for (const n of layout.nodes) drawNode(n, k);
     ctx.globalAlpha = 1;

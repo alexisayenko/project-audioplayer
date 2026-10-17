@@ -362,7 +362,6 @@ export function renderGenresRework(root, opts = {}) {
     el('li', {}, el('span', { class: 'gmr-key size', 'aria-hidden': 'true' }), 'Size: songs here and below'),
     el('li', {}, el('span', { class: 'gmr-key dim', 'aria-hidden': 'true' }), 'Faded: no songs'),
     el('li', {}, el('span', { class: 'gmr-key nodisc', 'aria-hidden': 'true' }), 'Dashed ring: not in Discogs'),
-    el('li', {}, el('span', { class: 'gmr-key also', 'aria-hidden': 'true' }), 'Dashed line: also under (selected or hovered node)'),
     el('li', { title: 'Discogs outranks approval: a style that is in Discogs never shows this badge' }, el('span', { class: 'gmr-key ok', 'aria-hidden': 'true' }), 'Check badge: Alex approved (styles not in Discogs only)'),
     el('li', {}, el('span', { class: 'gmr-key q', 'aria-hidden': 'true' }), 'Question badge: under question'),
     el('li', {}, el('span', { class: 'gmr-key dim small', 'aria-hidden': 'true' }), 'Small dim dots on the outer arc: styles with no songs (whole vocabulary)'));

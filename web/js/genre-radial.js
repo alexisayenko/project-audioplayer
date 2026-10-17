@@ -87,7 +87,6 @@ export function highlightSets(tree, id) {
   return { chain: chainIds, kids: kidIds };
 }
 
-export const visibleCrossLinks = (layout, sel, hover) => (layout?.links || []).filter((l) => l.from === sel || l.to === sel || l.from === hover || l.to === hover);
 
 const hits = (a, b, pad) => a.x - pad < b.x + b.w && b.x - pad < a.x + a.w && a.y - pad < b.y + b.h && b.y - pad < a.y + a.h;
 

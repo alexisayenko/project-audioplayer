@@ -168,7 +168,6 @@ body[data-route="genres-rework"] main { max-width: none; padding: 0; }
 .gmr-key.size { width: 8px; height: 8px; margin: 3px; }
 .gmr-key.dim { opacity: .38; }
 .gmr-key.nodisc { background: var(--chart-0); box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--ink); }
-.gmr-key.also { height: 0; border-radius: 0; background: none; border-top: var(--stroke-hairline) dashed var(--ink-muted); }
 @media (max-width: 719px) { .gmr-legend { display: none; } }
 .gmr-tree { display: grid; gap: 1px; }
 .gmr-empty { margin: 0; }
