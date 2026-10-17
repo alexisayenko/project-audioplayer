@@ -3,6 +3,7 @@ import { store } from './store.js';
 import { hasAudio } from './playable.js';
 import { el, fmtTime } from './dom.js';
 import { icon } from './icons.js';
+import { storeGet, storeSet } from './storage.js';
 import { openMenu } from './menu.js';
 import { downloadSong } from './download.js';
 import { autodl } from './autodl.js';
@@ -16,6 +17,30 @@ import { coverButton, queueCoverModel, isRowControl } from './row-cover.js';
 export const $ = (id) => document.getElementById(id);
 
 export const setIcon = (id, name, size) => $(id).replaceChildren(icon(name, size));
+
+export const MINI_COMPACT_KEY = 'ap2.miniCompact';
+
+export function setMiniCompact(on) {
+  const label = on ? 'Expand player' : 'Compact player';
+  const b = $('mini-compact');
+  $('mini').classList.toggle('compact', on);
+  document.body.classList.toggle('mini-compact', on);
+  b.setAttribute('aria-pressed', String(on));
+  b.setAttribute('aria-label', label);
+  b.title = label;
+  b.replaceChildren(icon(on ? 'chevronRight' : 'chevronLeft', 'inline'));
+}
+
+export function initMiniCompact() {
+  const b = $('mini-compact');
+  let on = storeGet(MINI_COMPACT_KEY) === '1';
+  setMiniCompact(on);
+  b.addEventListener('click', () => {
+    on = !on;
+    setMiniCompact(on);
+    storeSet(MINI_COMPACT_KEY, on ? '1' : '0');
+  });
+}
 
 export function setToggle(ids, on, label, iconName) {
   for (const id of ids) {

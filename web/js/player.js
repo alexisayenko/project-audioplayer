@@ -11,7 +11,7 @@ import { autodl, autoDownloadOn } from './autodl.js';
 import { attachScrubber } from './scrubber.js';
 import { storeGet, storeSet } from './storage.js';
 import { paintCover, currentCoverModel, paintQueueCovers } from './row-cover.js';
-import { $, setIcon, setToggle, setCover, queueRow, updateDl, paintTimes } from './player-ui.js';
+import { $, setIcon, setToggle, setCover, queueRow, updateDl, paintTimes, initMiniCompact } from './player-ui.js';
 import { updateMediaSession, setupMediaSession, updatePositionState, setVolume, storedVolume } from './player-media.js';
 import { canSetVolume } from './volume-logic.js';
 import { openTagPicker } from './player-tag-picker.js';
@@ -504,6 +504,7 @@ export function initPlayer() {
   audio.addEventListener('ended', () => player.next(true));
   audio.addEventListener('error', () => { if (audio.src) fail(); });
 
+  initMiniCompact();
   setIcon('mini-prev', 'prev', 'action');
   setIcon('mini-next', 'next', 'action');
   setIcon('mini-shuffle', 'shuffle', 'action');

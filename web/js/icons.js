@@ -29,6 +29,7 @@ export const ICONS = {
   minus: { d: '<path d="M5 12h14"/>' },
   chevron: { d: '<path d="m6 9 6 6 6-6"/>' },
   chevronLeft: { d: '<path d="m15 18-6-6 6-6"/>' },
+  chevronRight: { d: '<path d="m9 18 6-6-6-6"/>' },
   download: { d: '<path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/>' },
   listAdd: { d: '<path d="M11 5H3"/><path d="M16 12H3"/><path d="M16 19H3"/><path d="M18 2v6"/><path d="M21 5h-6"/>' },
   listCheck: { d: '<path d="M13 5h8"/><path d="M13 12h8"/><path d="M13 19h8"/><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/>' },
