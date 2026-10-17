@@ -1,6 +1,6 @@
 import AVFoundation
+import Combine
 import MediaPlayer
-import UIKit
 
 /// Plays a queue of local tracks with background audio and lock-screen controls.
 @MainActor
@@ -40,6 +40,14 @@ final class PlayerService: ObservableObject {
     }
 
     @Published var volume: Double = 1 { didSet { player.volume = Float(volume) } }
+    /// Set when the current item could not be played; cleared when another song loads.
+    @Published private(set) var failedTrackID: String?
+
+    /// Builds the item for a song; the default plays the file in Documents. The Mac app streams from the server.
+    /// The flag asks for fresh credentials after a failed attempt.
+    var itemFactory: ((Track, Bool) async -> AVPlayerItem)?
+    /// Title and artist for Now Playing; the default is the song's own fields.
+    var nowPlayingText: ((Track) -> (title: String, artist: String))?
 
     private let player = AVPlayer()
     private var timeObserver: Any?
@@ -51,11 +59,15 @@ final class PlayerService: ObservableObject {
     private var artwork: MPMediaItemArtwork?
     private var artworkID: String?
     private var artworkTask: Task<Void, Never>?
+    private var statusObserver: AnyCancellable?
+    private var itemTask: Task<Void, Never>?
+    private var needsItem = false
+    private var retriedID: String?
 
     var current: Track? { index.flatMap { queue.indices.contains($0) ? queue[$0] : nil } }
 
     init() {
-        try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
+        PlatformAudio.configure()
         timeObserver = player.addPeriodicTimeObserver(
             forInterval: CMTime(seconds: 0.5, preferredTimescale: 600), queue: .main
         ) { [weak self] time in
@@ -66,6 +78,15 @@ final class PlayerService: ObservableObject {
             }
         }
         setupRemoteCommands()
+        NotificationCenter.default.addObserver(forName: .trackThumbnailChanged, object: nil, queue: .main) { [weak self] note in
+            let id = note.userInfo?["id"] as? String
+            let thumbnail = note.userInfo?["thumbnail"] as? String
+            Task { @MainActor in
+                guard let self, let id else { return }
+                self.thumbnailChanged(id, thumbnail)
+            }
+        }
+        #if os(iOS)
         NotificationCenter.default.addObserver(
             forName: AVAudioSession.interruptionNotification, object: nil, queue: .main
         ) { [weak self] note in
@@ -77,6 +98,7 @@ final class PlayerService: ObservableObject {
                 else if AVAudioSession.InterruptionOptions(rawValue: opts).contains(.shouldResume) { self.resume() }
             }
         }
+        #endif
     }
 
     func play(_ tracks: [Track], startAt start: Int) {
@@ -131,7 +153,7 @@ final class PlayerService: ObservableObject {
             viaTags[t.id, default: []].formUnion(hit.map { $0.lowercased() })
             if !queue.contains(where: { $0.id == t.id }) { queue.append(t); added += 1 }
         }
-        if index == nil, !queue.isEmpty { index = 0; duration = queue[0].duration ?? 0; refreshArtwork(); player.replaceCurrentItem(with: AVPlayerItem(url: queue[0].fileURL)); updateNowPlaying() }
+        if index == nil, !queue.isEmpty { index = 0; duration = queue[0].duration ?? 0; refreshArtwork(); cue(queue[0]); updateNowPlaying() }
         return added
     }
 
@@ -166,15 +188,38 @@ final class PlayerService: ObservableObject {
 
     func removeFromQueue(at offsets: IndexSet) {
         let playingID = current?.id
+        let was = index ?? 0
         queue.remove(atOffsets: offsets)
-        if let playingID, let i = queue.firstIndex(where: { $0.id == playingID }) { index = i }
+        guard let playingID else { return }
+        if let i = queue.firstIndex(where: { $0.id == playingID }) { index = i; return }
+        player.pause()
+        isPlaying = false
+        position = 0
+        guard !queue.isEmpty else {
+            index = nil
+            duration = 0
+            detach()
+            updateNowPlaying()
+            return
+        }
+        let i = min(was, queue.count - 1)
+        index = i
+        duration = queue[i].duration ?? 0
+        cue(queue[i])
+        refreshArtwork()
+        updateNowPlaying()
     }
 
     func toggle() { isPlaying ? pause() : resume() }
 
     func resume() {
-        guard current != nil else { return }
-        try? AVAudioSession.sharedInstance().setActive(true)
+        guard let cur = current else { return }
+        let failed = failedTrackID == cur.id
+        if needsItem || failed {
+            if failed { retriedID = nil }
+            return install(cur, play: true, refresh: failed)
+        }
+        PlatformAudio.activate()
         player.play()
         isPlaying = true
         updateNowPlaying()
@@ -233,15 +278,109 @@ final class PlayerService: ObservableObject {
         if remember, shuffle, let cur = current, i != index { history.append(cur.id) }
         index = i
         refreshArtwork()
-        let item = AVPlayerItem(url: queue[i].fileURL)
-        player.replaceCurrentItem(with: item)
         duration = queue[i].duration ?? 0
         position = 0
+        retriedID = nil
+        install(queue[i], play: true)
+    }
+
+    private func install(_ track: Track, play: Bool, refresh: Bool = false) {
+        itemTask?.cancel()
+        needsItem = false
+        guard let itemFactory else {
+            attach(AVPlayerItem(url: track.fileURL))
+            if play { resume() }
+            return
+        }
+        if play {
+            PlatformAudio.activate()
+            isPlaying = true
+            updateNowPlaying()
+        }
+        itemTask = Task { [weak self] in
+            let item = await itemFactory(track, refresh)
+            guard let self, !Task.isCancelled, self.current?.id == track.id else { return }
+            self.finishInstall(item)
+        }
+    }
+
+    private func finishInstall(_ item: AVPlayerItem) {
+        attach(item)
+        if position > 0 { player.seek(to: CMTime(seconds: position, preferredTimescale: 600)) }
+        if isPlaying { player.play() }
+    }
+
+    private func cue(_ track: Track) {
+        itemTask?.cancel()
+        retriedID = nil
+        guard itemFactory != nil else { return attach(AVPlayerItem(url: track.fileURL)) }
+        detach()
+        needsItem = true
+    }
+
+    private func detach() {
+        itemTask?.cancel()
+        needsItem = false
+        statusObserver = nil
+        if let endObserver { NotificationCenter.default.removeObserver(endObserver) }
+        endObserver = nil
+        player.replaceCurrentItem(with: nil)
+    }
+
+    private func attach(_ item: AVPlayerItem) {
+        failedTrackID = nil
+        player.replaceCurrentItem(with: item)
         if let endObserver { NotificationCenter.default.removeObserver(endObserver) }
         endObserver = NotificationCenter.default.addObserver(
             forName: .AVPlayerItemDidPlayToEndTime, object: item, queue: .main
         ) { [weak self] _ in Task { @MainActor in self?.advance(manual: false) } }
-        resume()
+        let id = current?.id
+        statusObserver = item.publisher(for: \.status).receive(on: DispatchQueue.main).sink { [weak self] status in
+            guard status == .failed else { return }
+            MainActor.assumeIsolated {
+                guard let self, self.current?.id == id else { return }
+                if let id, self.itemFactory != nil, self.retriedID != id, let track = self.current {
+                    self.retriedID = id
+                    self.install(track, play: self.isPlaying, refresh: true)
+                    return
+                }
+                self.failedTrackID = id
+                self.isPlaying = false
+                self.updateNowPlaying()
+            }
+        }
+    }
+
+    /// Whether Next would go somewhere.
+    var hasNext: Bool {
+        guard let index else { return false }
+        if repeatMode == .all { return !queue.isEmpty }
+        if shuffle { return queue.contains { !played.contains($0.id) && $0.id != current?.id } }
+        return index + 1 < queue.count
+    }
+
+    /// Moves a queue row; the current song stays current by identity.
+    func moveInQueue(from i: Int, to j: Int) {
+        guard queue.indices.contains(i), queue.indices.contains(j), i != j else { return }
+        let playingID = current?.id
+        queue.insert(queue.remove(at: i), at: j)
+        if let playingID, let at = queue.firstIndex(where: { $0.id == playingID }) { index = at }
+    }
+
+    /// Puts a saved queue back with its song cued and paused.
+    func restore(_ tracks: [Track], index start: Int, tags: [String]) {
+        guard !tracks.isEmpty, index == nil else { return }
+        queue = tracks
+        manual = Set(tracks.map(\.id))
+        queueTags = tags
+        let i = tracks.indices.contains(start) ? start : 0
+        index = i
+        played = [tracks[i].id]
+        duration = tracks[i].duration ?? 0
+        position = 0
+        cue(tracks[i])
+        refreshArtwork()
+        updateNowPlaying()
     }
 
     private func refreshArtwork() {
@@ -262,7 +401,7 @@ final class PlayerService: ObservableObject {
         }
     }
 
-    private nonisolated static func makeArtwork(_ image: UIImage) -> MPMediaItemArtwork {
+    private nonisolated static func makeArtwork(_ image: PlatformImage) -> MPMediaItemArtwork {
         MPMediaItemArtwork(boundsSize: image.size) { @Sendable _ in image }
     }
 
@@ -270,17 +409,31 @@ final class PlayerService: ObservableObject {
         FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0].appendingPathComponent("artwork", isDirectory: true)
     }
 
-    private nonisolated static func artworkImage(for track: Track) async throws -> UIImage? {
-        let file = artworkDirectory.appendingPathComponent("\(track.id).jpg")
-        if let data = try? Data(contentsOf: file), let img = UIImage(data: data) { return img }
+    private nonisolated static func artworkFile(_ id: String) -> URL {
+        artworkDirectory.appendingPathComponent("\(id).jpg")
+    }
+
+    private func thumbnailChanged(_ id: String, _ thumbnail: String?) {
+        for i in queue.indices where queue[i].id == id { queue[i].thumbnail = thumbnail }
+        try? FileManager.default.removeItem(at: Self.artworkFile(id))
+        guard current?.id == id else { return }
+        artwork = nil
+        artworkID = nil
+        refreshArtwork()
+        updateNowPlaying()
+    }
+
+    private nonisolated static func artworkImage(for track: Track) async throws -> PlatformImage? {
+        let file = artworkFile(track.id)
+        if let data = try? Data(contentsOf: file), let img = PlatformImage(data: data) { return img }
         try Task.checkCancellation()
         var data = try await embeddedArtwork(track.fileURL)
         try Task.checkCancellation()
         if data == nil, let source = track.thumbnail { data = try await remoteArtwork(source) }
         try Task.checkCancellation()
-        guard let data, let img = UIImage(data: data) else { return nil }
+        guard let data, let img = PlatformImage(data: data) else { return nil }
         try? FileManager.default.createDirectory(at: artworkDirectory, withIntermediateDirectories: true)
-        try? (img.jpegData(compressionQuality: 0.9) ?? data).write(to: file, options: .atomic)
+        try? (img.jpegRepresentation(quality: 0.9) ?? data).write(to: file, options: .atomic)
         return img
     }
 
@@ -313,17 +466,22 @@ final class PlayerService: ObservableObject {
     }
 
     private func updateNowPlaying() {
+        #if os(macOS)
+        MPNowPlayingInfoCenter.default().playbackState = current == nil ? .stopped : (isPlaying ? .playing : .paused)
+        #endif
         guard let track = current else {
             MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
             return
         }
+        let text: (title: String, artist: String) = nowPlayingText?(track) ?? (track.title, track.artist)
         var info: [String: Any] = [
-            MPMediaItemPropertyTitle: track.title,
-            MPMediaItemPropertyArtist: track.artist,
+            MPMediaItemPropertyTitle: text.title,
+            MPMediaItemPropertyArtist: text.artist,
             MPMediaItemPropertyPlaybackDuration: duration,
             MPNowPlayingInfoPropertyElapsedPlaybackTime: position,
             MPNowPlayingInfoPropertyPlaybackRate: isPlaying ? 1.0 : 0.0,
         ]
+        if let album = track.album, !album.isEmpty { info[MPMediaItemPropertyAlbumTitle] = album }
         if let artwork, artworkID == track.id { info[MPMediaItemPropertyArtwork] = artwork }
         MPNowPlayingInfoCenter.default().nowPlayingInfo = info
     }
@@ -338,6 +496,10 @@ final class PlayerService: ObservableObject {
             Task { @MainActor in self?.pause() }
             return .success
         }
+        center.togglePlayPauseCommand.addTarget { [weak self] _ in
+            Task { @MainActor in self?.toggle() }
+            return .success
+        }
         center.nextTrackCommand.addTarget { [weak self] _ in
             Task { @MainActor in self?.next() }
             return .success
@@ -346,6 +508,18 @@ final class PlayerService: ObservableObject {
             Task { @MainActor in self?.previous() }
             return .success
         }
+        #if os(macOS)
+        center.skipForwardCommand.preferredIntervals = [10]
+        center.skipBackwardCommand.preferredIntervals = [10]
+        center.skipForwardCommand.addTarget { [weak self] _ in
+            Task { @MainActor in self?.skip(by: 10) }
+            return .success
+        }
+        center.skipBackwardCommand.addTarget { [weak self] _ in
+            Task { @MainActor in self?.skip(by: -10) }
+            return .success
+        }
+        #endif
         center.changePlaybackPositionCommand.addTarget { [weak self] event in
             guard let event = event as? MPChangePlaybackPositionCommandEvent else { return .commandFailed }
             Task { @MainActor in self?.seek(to: event.positionTime) }

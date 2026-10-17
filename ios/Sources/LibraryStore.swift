@@ -72,6 +72,13 @@ final class LibraryStore: ObservableObject {
         save()
     }
 
+    func setThumbnail(_ id: String, _ value: String?) {
+        guard let i = songs.firstIndex(where: { $0.id == id }) else { return }
+        songs[i].thumbnail = value
+        save()
+        NotificationCenter.default.post(name: .trackThumbnailChanged, object: nil, userInfo: ["id": id, "thumbnail": value as Any])
+    }
+
     /// Removes the audio from the phone. The song stays listed unless the server no longer knows it.
     func removeAudio(_ id: String) {
         guard let i = songs.firstIndex(where: { $0.id == id }) else { return }
@@ -140,4 +147,8 @@ final class LibraryStore: ObservableObject {
             try? data.write(to: Self.indexURL, options: .atomic)
         }
     }
+}
+
+extension Notification.Name {
+    static let trackThumbnailChanged = Notification.Name("trackThumbnailChanged")
 }

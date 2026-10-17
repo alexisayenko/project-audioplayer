@@ -753,3 +753,15 @@ Status: Accepted, built, not deployed (Alex, 2026-10-17, CI1). Amends ADR-0026 (
 - Startup: the existing fetch and fast-forward goes through the same validation and lock; a diverged repo is logged and shown as `error` by the first timer pass instead of being marked `rejected`.
 - Consequences: data can be corrected in GitHub in about a minute. A fix and a server save inside the same minute make the repos diverge: the operator rebases by hand (runbook in [deploy.md](deploy.md#fixing-data-from-github-inbound-fast-forward)). Editing the same data by hand on GitHub is only safe as a fast-forward of the server's last pushed commit, which GitHub's web editor and a normal `git push` from a current clone both produce.
 - Rejected: pulling with `--rebase` or merge (silent merges of hand edits, conflicts in `library.json`); pulling inside the request (puts the network back into a save, NFR-111); a pull without a lock (a save could write a file git is replacing); validating only after the merge (a bad file would be live for the validation window).
+
+
+## ADR-0028 Native macOS target with the web GUI, streaming only in v1
+
+Status: Accepted, built (builds only; not tested with a real account) (Alex, 2026-10-17, task-0046).
+
+- Context: Alex wants the app on the Mac with the same look and pages as the web UI. The key principle (playback and offline reliability) still ranks above features.
+- Decision, target: a second XcodeGen target `ElectrophoneMac` (macOS 14, SwiftUI, AVPlayer) in `ios/`, sharing the iOS models, `APIClient`, `AuthService`, `PlayerService`, `LibraryStore` and the generated `DesignTokens.swift`; Mac-only views live in `ios/MacSources/`. The layout follows the web (sidebar, library table, song card, bottom transport bar), see [macos-gui.md](../specs/macos-gui.md).
+- Decision, streaming only: the Mac plays audio from the server (`GET /files/{id}`, Bearer header) like the web and never downloads audio to the device in v1; the catalog sync does not auto-download. "Download" in the Mac UI means asking the server to fetch audio, as on the web. Offline reliability is still the iOS app's job; a Mac cache can follow (spec open question B).
+- Decision, scope: Library, Playback, Add and Edit, Settings and sign-in only; no placeholder pages (MAC-001).
+- Consequences: no signing team or icon yet, the Google client id may need a Mac OAuth client, and the visualizer, share link and song info are later.
+- Rejected: Mac Catalyst (the iPhone layout would be scaled, not rebuilt as the web grid, and the playback and sidebar controls would stay touch-first); a web view wrapper (no media keys or Now Playing integration without extra native code, no Keychain sign-in, and the app would depend on the browser engine's background audio rules).

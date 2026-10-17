@@ -57,6 +57,14 @@ final class AuthService: NSObject, ObservableObject {
         return s.expiry > Date() ? s.idToken : nil
     }
 
+    /// Forces a refresh when the provider supports it, then falls back to `validToken()`.
+    func refreshedToken() async -> String? {
+        if let s = session, s.provider == .google, let refresh = s.refreshToken, await refreshGoogle(refresh) {
+            return session?.idToken
+        }
+        return await validToken()
+    }
+
     // MARK: Apple
 
     func apple(_ result: Result<ASAuthorization, Error>) {
@@ -171,6 +179,10 @@ final class AuthService: NSObject, ObservableObject {
 
 extension AuthService: ASWebAuthenticationPresentationContextProviding {
     func presentationAnchor(for _: ASWebAuthenticationSession) -> ASPresentationAnchor {
-        UIApplication.shared.connectedScenes.compactMap { ($0 as? UIWindowScene)?.keyWindow }.first ?? ASPresentationAnchor()
+        #if os(iOS)
+        return UIApplication.shared.connectedScenes.compactMap { ($0 as? UIWindowScene)?.keyWindow }.first ?? ASPresentationAnchor()
+        #else
+        return NSApplication.shared.keyWindow ?? NSApplication.shared.windows.first ?? ASPresentationAnchor()
+        #endif
     }
 }

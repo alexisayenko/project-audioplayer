@@ -26,13 +26,15 @@ audio and lock-screen controls. No monetization. Downloading may violate
 YouTube's ToS; the app is not for distribution.
 The web UI is publicly viewable read-only without sign-in (the owner's library, with per-IP limits; [ADR-0018](docs/tech/decisions.md)); signed-in users get their own library.
 
+A native macOS app (`ElectrophoneMac`, task-0046, ADR-0028, [spec](docs/specs/macos-gui.md)) shows the web GUI with Library, Playback, Add/Edit and Settings; it streams from the server and downloads no audio to the Mac. Status: builds, not yet tested with a real account, no signing team or icon.
+
 Songs carry an optional version (remix, cover, mashup, live, ...) with its own credits: [concept](docs/product/concept-songs-versions-and-credits.md), ADR-0024 (deployed) and ADR-0025 (data model v2, planned, task-0043).
 
 Catalog and audio are separate ([ADR-0010](docs/tech/decisions.md), server side done): the catalog (metadata: YouTube and SoundCloud links; in git) lists every song, audio is fetched on demand (state none/server/phone). The web is catalog-only (saves metadata, plays audio already on the server); audio reaches the server only through the iOS download. Add and Edit use one shared song form with Title, Artist and Remix token pills on both platforms. Spotify is not used for now. See [concept](docs/product/concept-catalog-and-audio.md).
 
 ## Tech stack
 
-`ios/` — SwiftUI app (iOS 17, XcodeGen `project.yml`, AVPlayer). `server/` —
+`ios/` — SwiftUI app (iOS 17, XcodeGen `project.yml`, AVPlayer; second target `ElectrophoneMac` for macOS 14 in `ios/MacSources/`, sharing `ios/Sources/`; open: no `DEVELOPMENT_TEAM`, no Mac icon, Google may need a Mac OAuth client, visualizer, share and song info not built). `server/` —
 FastAPI wrapper around `yt-dlp` (Python 3.11+), run on the home server `perkunas` behind a Cloudflare
 Tunnel (live at https://electrophone.cc, LXC 106 `tools`, deploy runbook [docs/tech/deploy.md](docs/tech/deploy.md); Tailscale is not used) with Apple/Google sign-in in the apps and the web UI (open signup,
 per-user storage; the owner's `X-API-Token` stays server-side for scripts); see [docs/tech/decisions.md](docs/tech/decisions.md). Web UI in `web/`.

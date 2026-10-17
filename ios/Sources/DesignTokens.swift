@@ -170,9 +170,17 @@ enum DS {
 extension SwiftUI.Color {
     /// A colour with separate light and dark values, resolved by the system appearance.
     init(light: (Double, Double, Double, Double), dark: (Double, Double, Double, Double)) {
+#if canImport(UIKit)
         self.init(uiColor: UIColor { trait in
             let c = trait.userInterfaceStyle == .dark ? dark : light
             return UIColor(red: c.0, green: c.1, blue: c.2, alpha: c.3)
         })
+#else
+        self.init(nsColor: NSColor(name: nil) { appearance in
+            let isDark = appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+            let c = isDark ? dark : light
+            return NSColor(srgbRed: c.0, green: c.1, blue: c.2, alpha: c.3)
+        })
+#endif
     }
 }

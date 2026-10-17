@@ -188,8 +188,8 @@ struct APIClient {
         try JSONDecoder().decode(Preview.self, from: await send(Endpoints.preview, method: "POST", body: ["url": url], timeout: 90))
     }
 
-    func addSong(url: String, metadata: [String: Any], tags: [String]) async throws {
-        _ = try await send(Endpoints.songs, method: "POST", body: ["url": url, "metadata": metadata, "tags": tags])
+    func addSong(url: String, metadata: [String: Any], tags: [String], audio: Bool = true) async throws {
+        _ = try await send(Endpoints.songs, method: "POST", body: ["url": url, "metadata": metadata, "tags": tags, "audio": audio])
     }
 
     func status(_ id: String) async throws -> SongStatus {

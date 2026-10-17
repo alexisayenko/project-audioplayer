@@ -17,12 +17,17 @@ enum Keychain {
         return SecItemCopyMatching(q as CFDictionary, &out) == errSecSuccess ? out as? Data : nil
     }
 
-    static func write(_ key: String, _ data: Data) {
+    @discardableResult
+    static func write(_ key: String, _ data: Data) -> OSStatus {
         SecItemDelete(query(key) as CFDictionary)
         var q = query(key)
         q[kSecValueData as String] = data
+        #if os(iOS)
         q[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock
-        SecItemAdd(q as CFDictionary, nil)
+        #endif
+        let status = SecItemAdd(q as CFDictionary, nil)
+        if status != errSecSuccess { NSLog("Keychain write for \(key) failed: OSStatus \(status)") }
+        return status
     }
 
     static func delete(_ key: String) {
