@@ -180,6 +180,25 @@ def test_session_cookie_flags_and_use(web, key, tmp_path):
     assert web.get("/auth/me").json()["email"] == OWNER
 
 
+def test_auth_me_renews_a_cookie_past_half_its_life(web, key, monkeypatch):
+    from app import session
+
+    sign_in(web, key, aud=WEB_GOOGLE)
+    fresh = web.cookies.get("__Host-session")
+    res = web.get("/auth/me")
+    assert "set-cookie" not in res.headers
+    assert web.cookies.get("__Host-session") == fresh
+    web.cookies.clear()
+    aged = session.issue({"provider": "google", "email": OWNER, "uid": ""}, now=__import__("time").time() - session.LIFETIME * 0.6)
+    web.cookies.set("__Host-session", aged)
+    res = web.get("/auth/me")
+    assert res.status_code == 200
+    assert "Max-Age=43200" in res.headers["set-cookie"]
+    renewed = res.headers["set-cookie"].split("__Host-session=")[1].split(";")[0]
+    assert session.renewable(aged) and not session.renewable(renewed)
+    assert not session.renewable("junk")
+
+
 def test_cookie_authenticated_file_get_without_token_in_url(web, key, tmp_path):
     put_audio(tmp_path)
     assert web.get("/files/dQw4w9WgXcQ").status_code == 401

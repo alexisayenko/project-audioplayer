@@ -151,14 +151,22 @@ export const session = {
     auth.email = '';
     auth.provider = '';
   },
+  retryMs: [500, 1500, 3000],
   restore: async () => {
-    try {
-      const who = await authCall('GET', '/auth/me', undefined);
-      if (who.method === 'session') {
-        auth.email = who.email || who.provider || 'owner';
-        auth.provider = who.provider || '';
+    for (let i = 0; ; i++) {
+      try {
+        const who = await authCall('GET', '/auth/me', undefined);
+        if (who.method === 'session') {
+          auth.email = who.email || who.provider || 'owner';
+          auth.provider = who.provider || '';
+        }
+        return;
+      } catch (ex) {
+        const transient = !ex.status || ex.status >= 500;
+        if (!transient || i >= session.retryMs.length) return;
+        await new Promise((r) => setTimeout(r, session.retryMs[i]));
       }
-    } catch { /* signed out or unreachable */ }
+    }
   },
 };
 

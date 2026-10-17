@@ -7,7 +7,7 @@ from app import deps, gitstore, main, session, users
 from gitrepo import clock, commit_at, make_sync, save
 
 OWNER_FIELDS = {"state", "unpushed", "oldest_unpushed_age_s", "last_push_at", "stale_after_s", "mode",
-                "timer_seen", "last_run_at", "last_error", "repos"}
+                "timer_seen", "last_run_at", "last_error", "inbound", "repos"}
 REPO_FIELDS = {"name", "state", "unpushed", "oldest_unpushed_age_s", "rejected", "failures"}
 
 

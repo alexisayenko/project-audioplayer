@@ -101,7 +101,7 @@ def _fetch_cover(uid: str, vid: str, thumbnail: str | None) -> str | None:
             staged = Path(tmp) / f"{vid}.jpg"
             extractor.fetch_cover(vid, staged, thumbnail)
             data = staged.read_bytes()
-        with deps.SYNC.lock if deps.SYNC else contextlib.nullcontext():
+        with deps.SYNC.exclusive() if deps.SYNC else contextlib.nullcontext():
             write_bytes_atomic(deps.covers_dir(uid) / f"{vid}.jpg", data)
     except Exception:
         return None

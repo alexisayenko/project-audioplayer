@@ -48,5 +48,8 @@ def auth_logout(request: Request) -> Response:
 
 
 @router.get("/auth/me")
-def auth_me(user: Annotated[dict[str, Any], Depends(deps.require_token)]) -> dict[str, Any]:
+def auth_me(request: Request, response: Response, user: Annotated[dict[str, Any], Depends(deps.require_token)]) -> dict[str, Any]:
+    cookie = request.cookies.get(session.COOKIE, "")
+    if user["method"] == "session" and session.renewable(cookie):
+        response.set_cookie(session.COOKIE, session.issue(session.read(cookie)), max_age=session.LIFETIME, **_COOKIE_FLAGS)
     return {k: user[k] for k in ("method", "email", "provider", "owner")}

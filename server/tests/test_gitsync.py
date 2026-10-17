@@ -83,7 +83,7 @@ def test_push_failure_counts_up_to_error_logs_and_recovers(tmp_path, caplog):
 
 
 def test_a_rejected_push_stops_that_repo_and_never_merges(tmp_path):
-    s, bare, clone, cbare, cov = make_sync(tmp_path, covers=True)
+    s, bare, clone, cbare, cov = make_sync(tmp_path, covers=True, inbound=False)
     other = tmp_path / "other"
     git(tmp_path, "clone", str(bare), str(other))
     (other / "x").write_text("x")

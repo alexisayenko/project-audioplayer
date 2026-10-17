@@ -74,6 +74,7 @@ test('401 signs the web out and fires auth-changed once', async () => {
 });
 
 test('session.restore adopts only cookie sessions and swallows errors', async () => {
+  session.retryMs = [];
   stubFetch(() => ({ body: { method: 'token', email: 'x' } }));
   await session.restore();
   assert.equal(isSignedIn(), false);
@@ -83,6 +84,26 @@ test('session.restore adopts only cookie sessions and swallows errors', async ()
   stubFetch(() => ({ status: 500, body: {} }));
   await session.restore();
   assert.equal(auth.email, 'me@x.y', 'failed restore leaves state alone');
+});
+
+test('session.restore retries a restarting server and does not retry a real 401 (WEB-100)', async () => {
+  session.retryMs = [0, 0, 0];
+  auth.email = '';
+  let n = 0;
+  stubFetch(() => (++n < 3 ? { status: 502, body: {} } : { body: { method: 'session', email: 'me@x.y', provider: 'google' } }));
+  await session.restore();
+  assert.equal(n, 3);
+  assert.equal(auth.email, 'me@x.y');
+  auth.email = '';
+  n = 0;
+  stubFetch(() => { n++; return { status: 401, body: {} }; });
+  await session.restore();
+  assert.equal(n, 1);
+  assert.equal(isSignedIn(), false);
+  n = 0;
+  stubFetch(() => { n++; return { status: 503, body: {} }; });
+  await session.restore();
+  assert.equal(n, 4, 'gives up after the retries');
 });
 
 test('session.end clears state after logout; config and failures surface', async () => {

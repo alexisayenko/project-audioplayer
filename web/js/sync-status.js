@@ -11,6 +11,8 @@ function reason(s) {
   const err = String(s.last_error || '').toLowerCase();
   if ((s.repos || []).some((r) => r.rejected)) return 'push rejected';
   if (err.includes('no upstream')) return 'no upstream';
+  if (err.includes('diverged')) return 'data diverged, resolve by hand';
+  if (err.includes('inbound change invalid')) return 'inbound change invalid';
   return 'not reaching git';
 }
 

@@ -92,6 +92,7 @@ Built, not deployed (ADR-0026, [task-0021](../tasks/task-0021.md), [design](git-
 | `GIT_SYNC_INTERVAL_S` | `60` | must match the timer interval |
 | `GIT_SYNC_STALE_GRACE_S` | `30` | stale threshold = interval + grace (90 s) |
 | `GIT_SYNC_STATE_FILE` | `/var/lib/audioplayer/gitsync-state.json` | heartbeat and failure counters written by the CLI, read by the server |
+| `GIT_SYNC_INBOUND` | `1` | `1`: the timer also fast-forwards from GitHub (ADR-0027); `0`: push-only as in ADR-0026 (rollback). Also creates `<GIT_SYNC_STATE_FILE>.write.lock`, the lock file saves and the pull share (same directory, no setup) |
 
 Install (root, once):
 
@@ -112,15 +113,25 @@ Verify:
 
 Rules:
 
-- The CLI only runs `git push` per repo with unpushed commits, takes no repo lock and never pulls. The server pulls only at startup (fetch plus fast-forward, never a rebase), after sweeping stray `.json-*.tmp` files and committing a dirty tree.
-- Single writer: only the `audioplayer` user commits to `data-storage` and `data-storage-lfs`; nobody edits them by hand or from another host (NFR-114).
+- The CLI per repo: `git fetch`, a fast-forward when GitHub is ahead and nothing is unpushed (ADR-0027, below), then `git push` when local is ahead. Never a rebase, merge commit or force. Only the fast-forward takes the write lock (a short flock shared with saves); the fetch and the push run without it. The server also fast-forwards at startup, after sweeping stray `.json-*.tmp` files and committing a dirty tree.
+- Single writer for commits: only the `audioplayer` user creates commits on the server clones of `data-storage` and `data-storage-lfs`; commits made elsewhere arrive only as a fast-forward (NFR-114, NFR-118).
 - Alerts: ERROR lines in the journal (`audioplayer-gitsync`, and logger `audioplayer.git` in the server), the `error` state and `last_error` in `/health` (owner form), the Settings card mark. No external channel yet.
 
-Rejected-push runbook (`sync` is `error`, `repos[].rejected` true; the CLI skips that repo and never merges):
+Rejected-push runbook (only with `GIT_SYNC_INBOUND=0`; otherwise see the next section; `sync` is `error`, `repos[].rejected` true; the CLI skips that repo and never merges):
 
 1. As the service user in the repo (`/var/lib/audioplayer/<data repo>`): `git fetch`, then inspect `git log HEAD..@{u}` (remote only) and `git log @{u}..HEAD` (local only).
 2. Combine by hand: `git rebase @{u}` (resolve conflicts), then `git push`.
 3. The mark clears on its own once nothing is unpushed and `HEAD` contains `@{u}`; otherwise `python -m app.gitsync --clear-rejected data` (or `covers`).
-4. `systemctl restart audioplayer` if the server tree was changed under it (it reloads data at startup only).
+4. No restart is needed: the server reads the files on every request.
 
 Rollback: set `GIT_SYNC_MODE=request` in `/etc/audioplayer/env`, `systemctl disable --now audioplayer-gitsync.timer`, restart `audioplayer`, then run `python -m app.gitsync` once as the service user to push leftovers.
+
+### Fixing data from GitHub (inbound fast-forward)
+
+Built, not deployed (ADR-0027). To correct data without touching the server: edit the file in `data-storage` on GitHub (for example `audioplayer/users/<uid>/library.json`), or push a commit from a clone that is up to date with `origin/main`. Within 60 s the next timer run fetches it and fast-forwards the server clone; the server reads files on every request, so no restart is needed. Check `journalctl -u audioplayer-gitsync` ("fast-forwarded N commit(s)") or `/health` owner form `sync.inbound.last_pull_at`.
+
+- The change must be a plain fast-forward of what the server last pushed. A browser edit or `git pull --rebase` then `git push` from a clone always is, as long as the server did not save in between.
+- Invalid JSON is refused, not applied: `sync.state` `error`, `last_error` "data: inbound change invalid (path)", the file named in the journal. Fix the file on GitHub; the next run applies it and the error clears by itself.
+- Diverged (`last_error` "data diverged: GitHub and the server both have new commits; resolve by hand", exit code 2, ERROR line every run, nothing pulled or pushed): a save on the server and a change on GitHub landed in the same minute. As the service user (`sudo -u audioplayer -i`) in the repo (`/var/lib/audioplayer/<data repo>`): `git fetch`; inspect `git log HEAD..@{u}` (GitHub only) and `git log @{u}..HEAD` (server only); `git rebase @{u}` (resolve conflicts in `library.json` by hand, keep both sets of edits); `git push`. The error clears on the next run, no restart or `--clear-rejected` is needed (the server reads the rebased file on its next request). If the server file was rewritten under a request in between, nothing is lost: both sides are in git.
+- A pull that finds the write lock busy (a save is running) skips and retries next minute; a save waits at most the length of a fast-forward (well under a second).
+- Rollback: `GIT_SYNC_INBOUND=0` in `/etc/audioplayer/env`; the timer then only pushes, and a moved GitHub is the old sticky `rejected` error. No unit file change is needed for this feature (same units, same `/etc/audioplayer/env`); the lock file is created next to the state file by the service user.

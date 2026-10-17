@@ -22,6 +22,8 @@ FAILS_BEFORE_ERROR = 5
 STATE_NAME = "gitsync-state.json"
 ADD_SPEC = ("--", "audioplayer", ":(exclude)*.tmp")
 REPO_NAMES = ("data", "covers")
+WATCHED_JSON = ("library.json", "profile.json")
+FLOCK_WAIT_S = 30.0
 
 
 class GitError(RuntimeError):
@@ -41,6 +43,13 @@ class Probe(NamedTuple):
     count: int | None
     oldest: int | None
     synced: bool
+    behind: int = 0
+
+
+class Inbound(NamedTuple):
+    status: str
+    error: str = ""
+    behind: int = 0
 
 
 def _iso(ts: float | None) -> str | None:
@@ -88,6 +97,7 @@ class GitSync:
         grace_s: int = 30,
         state_file: Path | str | None = None,
         clock: Callable[[], float] = time.time,
+        inbound: bool = True,
     ) -> None:
         self.data_repo = Path(data_repo)
         self.covers_repo = Path(covers_repo) if covers_repo else None
@@ -98,6 +108,9 @@ class GitSync:
         self.grace_s = grace_s
         self.state_file = Path(state_file) if state_file else self.data_repo.parent / STATE_NAME
         self.clock = clock
+        self.inbound = inbound
+        self._flock_fh: Any = None
+        self._flock_depth = 0
         self.cache_ttl_s = 5.0
         self.lock = threading.RLock()
         self._state = threading.Lock()
@@ -185,10 +198,78 @@ class GitSync:
         out = self._git(repo, "ls-files", "--others", "--exclude-standard", "-z", "--", "audioplayer", check=False).stdout
         return {n for n in out.split("\0") if n}
 
+    @property
+    def write_lock_path(self) -> Path:
+        return Path(str(self.state_file) + ".write.lock")
+
+    def _flock_take(self, wait_s: float) -> bool:
+        """Caller holds self.lock. Cross-process write lock shared with the timer's inbound pull; re-entrant."""
+        if self._flock_depth:
+            self._flock_depth += 1
+            return True
+        import fcntl
+
+        try:
+            self.write_lock_path.parent.mkdir(parents=True, exist_ok=True)
+            fh = open(self.write_lock_path, "a")
+        except OSError as exc:
+            log.warning("write lock file unavailable, continuing without it: %s", exc)
+            self._flock_depth = 1
+            return True
+        deadline = time.monotonic() + wait_s
+        while True:
+            try:
+                fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except OSError:
+                if time.monotonic() >= deadline:
+                    fh.close()
+                    return False
+                time.sleep(0.005)
+        self._flock_fh = fh
+        self._flock_depth = 1
+        return True
+
+    def _flock_drop(self) -> None:
+        self._flock_depth -= 1
+        if self._flock_depth == 0 and self._flock_fh is not None:
+            import fcntl
+
+            try:
+                fcntl.flock(self._flock_fh, fcntl.LOCK_UN)
+            finally:
+                self._flock_fh.close()
+                self._flock_fh = None
+
+    @contextmanager
+    def try_exclusive(self, wait_s: float) -> Iterator[bool]:
+        """The in-process git lock plus the cross-process write flock; False when not obtained within wait_s."""
+        if not self.lock.acquire(timeout=wait_s):
+            yield False
+            return
+        try:
+            if not self._flock_take(wait_s):
+                yield False
+                return
+            try:
+                yield True
+            finally:
+                self._flock_drop()
+        finally:
+            self.lock.release()
+
+    @contextmanager
+    def exclusive(self) -> Iterator[None]:
+        """Every tree write (saves, cover writes) runs inside this; the timer's inbound fast-forward takes the same flock."""
+        with self.try_exclusive(FLOCK_WAIT_S) as got:
+            if not got:
+                raise GitError("git write lock busy")
+            yield
+
     @contextmanager
     def transaction(self) -> Iterator[None]:
         """Hold the git lock; discard uncommitted changes and the files the body created if it raises."""
-        with self.lock:
+        with self.exclusive():
             if self.mode == "request":
                 self.pull()
             before = {repo: self._untracked(repo) for repo in self._repos()}
@@ -214,7 +295,7 @@ class GitSync:
 
     def commit(self, message: str) -> None:
         """Commit changes under audioplayer/ in every repo; request mode also pushes."""
-        with self.lock:
+        with self.exclusive():
             for repo in self._repos():
                 if self._commit_repo(repo, message) and self.mode == "request":
                     with self._state:
@@ -238,11 +319,13 @@ class GitSync:
         if counted.returncode != 0:
             return Probe(None, None, False)
         count = int(counted.stdout.strip() or 0)
+        behind = self._git(repo, "rev-list", "--count", "HEAD..@{u}", check=False).stdout.strip()
+        behind_n = int(behind) if behind.isdigit() else 0
         if count:
             stamps = self._git(repo, "log", "@{u}..HEAD", "--format=%ct", check=False).stdout.split()
-            return Probe(count, min(int(s) for s in stamps) if stamps else None, False)
+            return Probe(count, min(int(s) for s in stamps) if stamps else None, False, behind_n)
         contains = self._git(repo, "merge-base", "--is-ancestor", "@{u}", "HEAD", check=False)
-        return Probe(0, None, contains.returncode == 0)
+        return Probe(0, None, contains.returncode == 0, behind_n)
 
     def unpushed(self, repo: Path) -> tuple[int | None, int | None]:
         """(commits in @{u}..HEAD, committer time of the oldest); (None, None) without an upstream."""
@@ -348,6 +431,22 @@ class GitSync:
             for repo in self._repos():
                 name = self.repo_name(repo)
                 rs = repos.setdefault(name, {"failures": 0, "rejected": False, "last_ok_at": None})
+                if self.inbound:
+                    inb = self.inbound_repo(repo, timeout=push_timeout)
+                    if inb.status in ("none", "pulled"):
+                        rs.update(behind=0, inbound_error=None)
+                        if inb.status == "pulled":
+                            state["last_pull_at"] = rs["last_pull_at"] = _iso(self.clock())
+                    elif inb.status in ("diverged", "invalid", "failed"):
+                        rs.update(behind=inb.behind, inbound_error=inb.error)
+                        state["last_error"] = inb.error
+                        pass_log.error("%s", inb.error)
+                        code = 2 if inb.status == "diverged" else (code or 1)
+                        continue
+                    elif inb.status == "busy":
+                        pass_log.info("%s inbound pull skipped: a save holds the write lock", name)
+                    else:
+                        pass_log.warning("%s fetch failed: %s", name, inb.error)
                 probe = self.probe(repo, fresh=True)
                 if probe.count is None:
                     state["last_error"] = f"{name}: no upstream"
@@ -370,6 +469,12 @@ class GitSync:
                 if result.status == "ok":
                     rs.update(failures=0, last_ok_at=now_iso)
                     state["last_push_at"] = now_iso
+                elif result.status == "rejected" and self.inbound:
+                    message = self.diverged_message(name)
+                    rs.update(behind=self.probe(repo, fresh=True).behind, inbound_error=message)
+                    state["last_error"] = message
+                    pass_log.error("%s", message)
+                    code = 2
                 elif result.status == "rejected":
                     rs["rejected"] = True
                     state["last_error"] = f"{name}: push rejected"
@@ -389,6 +494,71 @@ class GitSync:
             self._probes.clear()
             return code
 
+    # --- inbound fast-forward (ADR-0027) ---------------------------------------------------------
+
+    def _ahead_behind(self, repo: Path) -> tuple[int, int] | None:
+        out = self._git(repo, "rev-list", "--left-right", "--count", "HEAD...@{u}", check=False)
+        parts = out.stdout.split()
+        if out.returncode != 0 or len(parts) != 2:
+            return None
+        return int(parts[0]), int(parts[1])
+
+    def diverged_message(self, name: str) -> str:
+        return f"{name} diverged: GitHub and the server both have new commits; resolve by hand"
+
+    def inbound_repo(self, repo: Path, timeout: int = 60, wait_s: float = 0.5) -> Inbound:
+        """Fetch; fast-forward only when origin is ahead and nothing is unpushed. Never rebases, merges or forces."""
+        name = self.repo_name(repo)
+        fetched = self._git(repo, "fetch", check=False, timeout=timeout)
+        if fetched.returncode != 0:
+            return Inbound("offline", self._short_error(fetched.stderr or fetched.stdout))
+        self._probes.pop(repo, None)
+        counts = self._ahead_behind(repo)
+        if counts is None or counts[1] == 0:
+            return Inbound("none")
+        ahead, behind = counts
+        if ahead:
+            return Inbound("diverged", self.diverged_message(name), behind)
+        with self.try_exclusive(wait_s) as got:
+            if not got:
+                return Inbound("busy", behind=behind)
+            counts = self._ahead_behind(repo)
+            if counts is None or counts[1] == 0:
+                return Inbound("none")
+            if counts[0]:
+                return Inbound("diverged", self.diverged_message(name), counts[1])
+            return self._fast_forward(repo, name, counts[1])
+
+    def _fast_forward(self, repo: Path, name: str, behind: int) -> Inbound:
+        old = self._git(repo, "rev-parse", "HEAD").stdout.strip()
+        new = self._git(repo, "rev-parse", "@{u}").stdout.strip()
+        names = self._git(repo, "diff", "--name-only", "--diff-filter=d", "-z", old, new, "--", "audioplayer", check=False)
+        watched = [n for n in names.stdout.split("\0") if n.rsplit("/", 1)[-1] in WATCHED_JSON]
+        for rel in watched:
+            blob = self._git(repo, "show", f"{new}:{rel}", check=False)
+            problem = check_inbound_json(rel, blob.stdout) if blob.returncode == 0 else "unreadable"
+            if problem:
+                pass_log.error("%s inbound change invalid, not applied: %s (%s)", name, rel, problem)
+                return Inbound("invalid", f"{name}: inbound change invalid ({rel})", behind)
+        merged = self._git(repo, "merge", "--ff-only", new, check=False)
+        if merged.returncode != 0:
+            why = self._short_error(merged.stderr or merged.stdout)
+            pass_log.error("%s inbound fast-forward failed: %s", name, why)
+            return Inbound("failed", f"{name}: inbound change failed: {why}", behind)
+        self._probes.pop(repo, None)
+        for rel in watched:
+            try:
+                problem = check_inbound_json(rel, (repo / rel).read_text(encoding="utf-8"))
+            except (OSError, ValueError) as exc:
+                problem = str(exc)
+            if problem:
+                self._git(repo, "reset", "--hard", old)
+                self._probes.pop(repo, None)
+                pass_log.error("%s inbound change invalid, rolled back: %s (%s)", name, rel, problem)
+                return Inbound("invalid", f"{name}: inbound change invalid ({rel})", behind)
+        pass_log.info("%s fast-forwarded %d commit(s) from the remote", name, behind)
+        return Inbound("pulled", behind=behind)
+
     def set_repo_state(self, name: str, **fields: Any) -> None:
         state = load_state(self.state_file)
         rs = state.setdefault("repos", {}).setdefault(name, {"failures": 0, "rejected": False, "last_ok_at": None})
@@ -402,7 +572,7 @@ class GitSync:
         if self.mode == "request":
             self.resync()
             return
-        with self.lock:
+        with self.exclusive():
             for repo in self._repos():
                 try:
                     self._recover_repo(repo)
@@ -425,10 +595,14 @@ class GitSync:
             return
         self._probes.pop(repo, None)
         if self.probe(repo, fresh=True).count == 0:
-            self._git(repo, "merge", "--ff-only", "@{u}")
+            res = self._fast_forward(repo, self.repo_name(repo), int(behind.stdout.strip()))
+            if res.error:
+                log.error("startup fast-forward not applied: %s", res.error)
             self._probes.pop(repo, None)
             return
         log.error("%s diverged from the remote at startup: not merging, pushing stopped", self.repo_name(repo))
+        if self.inbound:
+            return
         with self._state:
             self._rejected.add(repo)
         self.set_repo_state(self.repo_name(repo), rejected=True)
@@ -486,6 +660,7 @@ class GitSync:
             "timer_seen": request_mode or (seen is not None and now - seen <= 3 * self.interval_s),
             "last_run_at": last_run,
             "last_error": self._clean(last_error)[:200] if last_error else None,
+            "inbound": {"enabled": self.inbound, "last_pull_at": state.get("last_pull_at"), "behind": sum(v["behind"] for v in views)},
             "repos": [{k: v[k] for k in ("name", "state", "unpushed", "oldest_unpushed_age_s", "rejected", "failures")} for v in views],
         }
 
@@ -507,6 +682,8 @@ class GitSync:
             level, error = "error", f"{name}: no upstream"
         elif rejected:
             level, error = "error", f"{name}: push rejected"
+        elif self.inbound and probe.behind > 0 and rs.get("inbound_error"):
+            level, error = "error", str(rs["inbound_error"])
         elif failures >= FAILS_BEFORE_ERROR:
             level, error = "error", f"{name}: not reaching git"
         elif count == 0:
@@ -516,13 +693,33 @@ class GitSync:
         else:
             level = "pending"
         return {"name": name, "state": level, "unpushed": count, "oldest_unpushed_age_s": age if count else None,
-                "rejected": rejected, "failures": failures, "error": error}
+                "rejected": rejected, "failures": failures, "error": error, "behind": probe.behind}
 
     def _log_transition(self, worst: str, views: list[dict[str, Any]]) -> None:
         if worst in ("stale", "error") and worst != self._logged_state:
             detail = "; ".join(f"{v['name']}={v['state']} unpushed={v['unpushed']} age={v['oldest_unpushed_age_s']}" for v in views)
             log.error("git sync is %s: %s", worst, detail)
         self._logged_state = worst
+
+
+def check_inbound_json(rel: str, text: str) -> str | None:
+    """None when `text` is a usable library.json / profile.json, else why not."""
+    try:
+        raw = json.loads(text)
+    except ValueError:
+        return "not valid JSON"
+    if rel.endswith("library.json"):
+        from . import library
+
+        if not isinstance(raw, (dict, list)) or (isinstance(raw, dict) and not isinstance(raw.get("songs", []), list)):
+            return "not a library"
+        try:
+            library.normalize(raw)
+        except Exception as exc:
+            return f"library schema: {type(exc).__name__}"
+    elif not isinstance(raw, dict):
+        return "not an object"
+    return None
 
 
 def _is_rejection(stderr: str) -> bool:
@@ -546,6 +743,7 @@ def from_env() -> GitSync | None:
         interval_s=_env_int("GIT_SYNC_INTERVAL_S", 60),
         grace_s=_env_int("GIT_SYNC_STALE_GRACE_S", 30),
         state_file=os.environ.get("GIT_SYNC_STATE_FILE") or None,
+        inbound=os.environ.get("GIT_SYNC_INBOUND", "1").strip().lower() not in ("0", "false", "off", "no"),
     )
 
 

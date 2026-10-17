@@ -4,6 +4,9 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## 2026-10-17 (YouTube genres and release tags, not deployed)
 
+- Server and web: the git sync timer also fast-forwards data fixed in GitHub (or pushed from another clone) onto the server within 60 s, under a shared write lock, with invalid JSON refused and a diverged repo shown as a sync error; `GIT_SYNC_INBOUND=0` turns it off (ADR-0027, STO-057 to STO-060, NFR-118, API-144, WEB-101); not deployed.
+
+- Server and web: staying signed in across deploys: the boot session check retries while the server restarts (WEB-100) and `GET /auth/me` renews a session cookie past half its life (API-143); not deployed.
 - Web: fix in Add, typing in the Tags field turned every letter into its own chip (the live title preview read the form with `values()`, which committed the Tags text on each keystroke, LIB-055); text now stays in the input until Enter, comma or Save; not deployed.
 - Server and web: saving a new web song takes about 1 s instead of 3 to 5: the link lookup Fetch already did is reused (API-142) and the web patches the saved song into its list instead of reloading the library (ADD-134); not deployed.
 

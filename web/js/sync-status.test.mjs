@@ -47,6 +47,8 @@ test('stale with the timer missing says so', () => {
 test('error reasons', () => {
   assert.equal(describeSync({ state: 'error', repos: [{ rejected: true }] }, NOW).text, 'Sync failed: push rejected');
   assert.equal(describeSync({ state: 'error', last_error: 'No upstream configured' }, NOW).text, 'Sync failed: no upstream');
+  assert.equal(describeSync({ state: 'error', last_error: 'data diverged: GitHub and the server both have new commits; resolve by hand' }, NOW).text, 'Sync failed: data diverged, resolve by hand');
+  assert.equal(describeSync({ state: 'error', last_error: 'data: inbound change invalid (audioplayer/users/a/library.json)' }, NOW).text, 'Sync failed: inbound change invalid');
   const v = describeSync({ state: 'error', last_error: 'timeout' }, NOW);
   assert.deepEqual([v.level, v.text, v.label, v.dot], ['error', 'Sync failed: not reaching git', 'Sync failed', true]);
 });

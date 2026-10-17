@@ -63,6 +63,15 @@ def read(value: str, now: float | None = None) -> dict | None:
         return None
 
 
+def renewable(value: str, now: float | None = None) -> bool:
+    """A valid cookie past half its life: /auth/me re-issues it so a regular user is not signed out by the clock."""
+    try:
+        left = int(json.loads(_unb64(value.partition(".")[0]))["x"]) - (now or time.time())
+    except Exception:
+        return False
+    return read(value, now) is not None and left < LIFETIME / 2
+
+
 def csrf_ok(headers: Mapping[str, str], host: str) -> bool:
     """Unsafe cookie-authenticated requests need the custom header, and a same-host Origin if one is sent."""
     if headers.get(CSRF_HEADER, "") != CSRF_VALUE:
