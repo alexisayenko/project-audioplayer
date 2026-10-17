@@ -11,7 +11,7 @@ import { editDialog } from './edit-dialog.js';
 import { titleLine, artistLine, titleNodes } from './credits.js';
 import { marquee } from './marquee.js';
 import { can } from './guest.js';
-import { coverButton, queueCoverModel } from './row-cover.js';
+import { coverButton, queueCoverModel, isRowControl } from './row-cover.js';
 
 export const $ = (id) => document.getElementById(id);
 
@@ -35,7 +35,7 @@ export function setCover(img, song) {
   if (src) img.src = src; else img.removeAttribute('src');
 }
 
-export function queueRow(item, i, { count, index, move, removeAt, playAt, playing = false }) {
+export function queueRow(item, i, { count, index, move, removeAt, playAt, openCard = () => {}, playing = false }) {
   const s = store.get(item.id);
   const cover = el('img', { class: 'cover', alt: '', loading: 'lazy' });
   if (s?.cover) cover.src = api.coverUrl(s.id, s.cover_v);
@@ -57,11 +57,14 @@ export function queueRow(item, i, { count, index, move, removeAt, playAt, playin
     el('span', { class: 'c-idx t-time' }, i + 1),
     coverBtn,
     el('div', { class: 'info' },
-      el('button', { class: 'open t-subhead', type: 'button', title: `Play: ${title}`, onclick: () => playAt(i) }, s ? titleNodes(s) : title),
+      el('button', { class: 'open t-subhead', type: 'button', title: `Open: ${title}`, 'aria-label': `Open: ${title}` }, s ? titleNodes(s) : title),
       s && artistLine(s) ? el('small', { class: 'sub t-caption' }, artistLine(s)) : null,
       s && !hasAudio(s) ? el('small', { class: 'dl t-caption', 'data-dl': item.id }) : null),
     el('span', { class: 'c-dur t-time' }, s?.duration ? fmtTime(s.duration) : ''),
     more);
+  row.addEventListener('click', (e) => {
+    if (s && !isRowControl(e.target)) openCard(s, row.querySelector('.open'));
+  });
   marquee(row.querySelector('.open'), { auto: i === index, host: row });
   return row;
 }

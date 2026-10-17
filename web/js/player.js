@@ -8,7 +8,6 @@ import { visibleTags, tagChip, tagText } from './tagname.js';
 import { closeMenu, initMenus } from './menu.js';
 import { downloadSong } from './download.js';
 import { autodl, autoDownloadOn } from './autodl.js';
-import { requestReveal } from './reveal.js';
 import { attachScrubber } from './scrubber.js';
 import { storeGet, storeSet } from './storage.js';
 import { paintCover, currentCoverModel, paintQueueCovers } from './row-cover.js';
@@ -459,6 +458,7 @@ const queueCtx = () => ({
   move: (i, d) => player.move(i, d),
   removeAt: (i) => player.removeAt(i),
   playAt: (i) => player.playAt(i),
+  openCard: (song, opener) => openSongCard(song, opener),
   playing: !audio.paused,
 });
 
@@ -533,17 +533,8 @@ export function initPlayer() {
     toast(n ? `Cleared ${n} ${plural(n, 'song', 'songs')}` : 'Tag chips cleared');
   });
   const miniOpen = $('mini-open');
-  const onLibrary = () => !location.hash || location.hash.startsWith('#/library');
-  const syncMiniOpen = () => {
-    const label = onLibrary() ? 'Show in Library' : 'Open player';
-    miniOpen.setAttribute('aria-label', label);
-  };
-  window.addEventListener('hashchange', syncMiniOpen);
-  syncMiniOpen();
-  miniOpen.addEventListener('click', () => {
-    if (!onLibrary()) { location.hash = '#/playback'; return; }
-    if (player.current) requestReveal(player.current.id);
-  });
+  miniOpen.setAttribute('aria-label', 'Song info');
+  miniOpen.addEventListener('click', () => { if (player.current) openSongCard(player.current, miniOpen); });
   $('p-view').addEventListener('click', () => { if (player.current) openSongCard(player.current, $('p-view')); });
 
   document.addEventListener('keydown', (e) => {

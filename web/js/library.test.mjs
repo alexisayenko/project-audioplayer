@@ -284,7 +284,9 @@ test('Play all replaces the queue with the visible songs that have audio; Add al
   const { root, cleanup, search } = mount();
   await flush();
   search('a');
-  const [playAll, addAll] = [...root.querySelectorAll('.sortbar button')];
+  const bar = [...root.querySelectorAll('.sortbar button')];
+  const playAll = bar.find((b) => /^Play all/.test(b.textContent));
+  const addAll = bar.find((b) => /^Add all/.test(b.textContent));
   assert.match(playAll.textContent, /^Play all \d/);
   playAll.click();
   assert.equal(player.current.id !== 'n1', true);
@@ -458,4 +460,45 @@ test('cleanup unregisters the revealer and closes an open sheet', async () => {
   assert.equal(document.getElementById('filter-sheet').open, true);
   cleanup();
   assert.equal(document.getElementById('filter-sheet').open, false);
+});
+
+test('Clear filters appears with a search or a filter and resets both at once', async () => {
+  setStore(SONGS);
+  filterByTags([]);
+  stubFetch(() => ({ body: { songs: SONGS } }));
+  const { root, titles, cleanup, search } = mount();
+  await flush();
+  const clear = () => [...root.querySelectorAll('.sortbar button')].find((b) => b.textContent === 'Clear filters');
+  assert.equal(clear().hidden, true, 'hidden while nothing is filtered');
+  search('alp');
+  assert.equal(clear().hidden, false);
+  assert.deepEqual(titles(), ['Alpha']);
+  root.querySelectorAll('.cat-chip')[1].click();
+  const sheet = document.getElementById('filter-sheet');
+  sheet.querySelectorAll('.pills button').find((b) => b.getAttribute('title') === 'genre:rock').click();
+  sheet.close();
+  clear().click();
+  assert.equal(root.querySelector('input[type=search]').value, '');
+  assert.equal(titles().length, 4, 'search and genre filter are both gone');
+  assert.equal(clear().hidden, true);
+  assert.equal(root.querySelectorAll('.cat-chip')[1].getAttribute('aria-label'), 'Genres, 2');
+  cleanup();
+});
+
+test('Show playing sits on the Library toolbar only while a song is current and reveals its row', async () => {
+  setStore(SONGS);
+  filterByTags([]);
+  stubFetch(() => ({ body: { songs: SONGS } }));
+  while (player.current) player.removeAt(0);
+  const { root, cleanup } = mount();
+  await flush();
+  const show = () => [...root.querySelectorAll('.sortbar button')].find((b) => b.textContent === 'Show playing');
+  assert.equal(show().hidden, true, 'nothing is current');
+  player.playNow('a');
+  assert.equal(show().hidden, false);
+  assert.equal(show().getAttribute('aria-label'), 'Show the playing song in the list');
+  show().click();
+  assert.ok(root.querySelector('li.song[data-id="a"]').classList.contains('flash'), 'the playing row is revealed and flashed');
+  while (player.current) player.removeAt(0);
+  cleanup();
 });

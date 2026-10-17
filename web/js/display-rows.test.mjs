@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { installPage, stubFetch } from './test-dom.mjs';
+import { installPage, stubFetch, makeEvent } from './test-dom.mjs';
 
 await installPage();
 globalThis.location = { hash: '', href: 'http://localhost/', host: 'localhost' };
@@ -46,3 +46,22 @@ test('Track column width is one custom property', () => {
   assert.match(css, /var\(--row-cover-size\) var\(--track-w\) minmax/);
   assert.doesNotMatch(css, /\b400px minmax|, 400px\)/);
 });
+
+test('queue row: the title and the row open the song card, the cover plays, the menu does neither', () => {
+  store.songs = [song, plain];
+  store.loaded = true;
+  const calls = [];
+  const ctx = { count: 2, index: 1, move: () => {}, removeAt: () => {}, playAt: (i) => calls.push(['play', i]), openCard: (s, opener) => calls.push(['card', s.id, opener.className]) };
+  const row = queueRow({ id: song.id }, 0, ctx);
+  const open = row.querySelector('.open');
+  assert.equal(open.getAttribute('aria-label').startsWith('Open: '), true);
+  open.dispatchEvent(makeEvent('click', { bubbles: true }));
+  assert.deepEqual(calls.splice(0), [['card', song.id, open.className]]);
+  row.querySelector('.sub, .info')?.dispatchEvent(makeEvent('click', { bubbles: true }));
+  assert.equal(calls.splice(0).length, 1, 'a click on the info area opens the card as in the Library');
+  row.querySelector('.more').dispatchEvent(makeEvent('click', { bubbles: true }));
+  assert.equal(calls.filter((c) => c[0] === 'card').length, 0, 'the song menu button does not open the card');
+  row.querySelector('.row-cover').dispatchEvent(makeEvent('click', { bubbles: true }));
+  assert.deepEqual(calls.filter((c) => c[0] === 'play'), [['play', 0]], 'the cover still plays the song');
+});
+

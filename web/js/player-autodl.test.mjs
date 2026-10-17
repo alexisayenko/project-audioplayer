@@ -88,8 +88,14 @@ test('media keys: mini buttons drive the same actions', () => {
   assert.equal($('mini-shuffle').getAttribute('aria-pressed'), 'true');
   $('mini-repeat').click();
   assert.match($('mini-repeat').getAttribute('aria-label'), /whole list/);
-  location.hash = '#/settings';
-  $('mini-open').click();
-  assert.equal(location.hash, '#/playback');
+  assert.equal($('mini-open').getAttribute('aria-label'), 'Song info');
+  for (const hash of ['#/library', '#/settings']) {
+    location.hash = hash;
+    $('song-card').close?.();
+    $('mini-open').click();
+    assert.equal($('song-card').open, true, `the dock title opens the song card on ${hash}`);
+    assert.equal(location.hash, hash, 'it does not navigate');
+    $('song-card').close?.();
+  }
   audio.dispatchEvent(makeEvent('pause'));
 });

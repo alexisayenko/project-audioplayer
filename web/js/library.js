@@ -54,6 +54,10 @@ export function renderLibrary(root) {
     const note = (fetching ? `, ${fetching} downloading` : '') + (skipped ? `, ${skipped} without audio skipped` : '');
     toast(`Playing ${count} ${plural(count, 'song', 'songs')}${replaced ? ' (queue replaced)' : ''}${note}`);
   });
+  const showPlaying = el('button', { class: 'btn outline small', type: 'button', hidden: true, 'aria-label': 'Show the playing song in the list' }, icon('crosshair', 'inline'), 'Show playing');
+  showPlaying.addEventListener('click', () => { if (player.current) reveal(player.current.id); });
+  const clearFilters = el('button', { class: 'btn outline small', type: 'button', hidden: true, 'aria-label': 'Clear the search and all filters' }, icon('clear', 'inline'), 'Clear filters');
+  clearFilters.addEventListener('click', () => clearAllFilters());
   const status = el('div');
   const head = el('div', { class: 'table-head t-eyebrow', 'aria-hidden': 'true' },
     el('span'), el('span', {}, 'Track'), el('span', { class: 'c-genres' }, 'Genres'), el('span', { class: 'c-dur' }, 'Time'), el('span'), el('span'));
@@ -76,7 +80,7 @@ export function renderLibrary(root) {
       cats),
     el('div', { class: 'sortbar' },
       el('label', { class: 'sort t-headline' }, sort, icon('chevron', 'inline')),
-      summary, playAll, addAll),
+      summary, el('div', { class: 'sort-actions' }, clearFilters, showPlaying, playAll, addAll)),
     group,
     status);
 
@@ -110,6 +114,8 @@ export function renderLibrary(root) {
     playAll.textContent = `Play all ${songs.length}`;
     addAll.hidden = !(store.loaded && filtered && songs.length);
     addAll.textContent = `Add all ${songs.length} to playlist`;
+    clearFilters.hidden = !(store.loaded && filtered);
+    showPlaying.hidden = !(store.loaded && cur);
     const nothing = store.loaded && !store.songs.length;
     group.hidden = nothing || !store.loaded;
     paintStatus(nothing);
@@ -144,6 +150,13 @@ export function renderLibrary(root) {
 
   function renderAll() { renderChips(); renderList(); }
 
+  function clearAllFilters() {
+    prefs.query = '';
+    prefs.sel.clear();
+    search.value = '';
+    renderAll();
+  }
+
   function scrollToRow(id) {
     const row = list.querySelector(`li.song[data-id="${CSS.escape(id)}"]`);
     if (!row) return;
@@ -168,10 +181,7 @@ export function renderLibrary(root) {
     toast('Song is hidden by the current filters', {
       label: 'Show',
       run: () => {
-        prefs.query = '';
-        prefs.sel.clear();
-        search.value = '';
-        renderAll();
+        clearAllFilters();
         scrollToRow(id);
       },
     });
