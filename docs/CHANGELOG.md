@@ -4,6 +4,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## 2026-10-17 (built, not deployed)
 
+- Web: Library search is built by one helper (`web/js/search-text.js`) that finds songs by version artists (`of`, `by`), also under the v2 names (`originalArtists`, `artists`), and by version name (LIB-141, LIB-151).
 - Server: the sync timer rebases the server's unpushed commits over commits another app (`moodtracker`) pushed outside `audioplayer/` instead of stopping with "data diverged", then pushes; real overlaps in `audioplayer/` stay an error; `GIT_SYNC_REBASE_FOREIGN=0` and `GIT_SYNC_OWNED_PREFIXES` (ADR-0028, NFR-120, STO-061, STO-062, API-144); not deployed.
 - iOS, not built or run: removed the nested ternary in the Library row accessibility state and gave the empty artwork `CancellationError` catch a body, no behaviour change (SonarCloud swift:S3358, swift:S108, [task-0046](tasks/task-0046.md)).
 - Server, web and ops: the owner sees which build runs: `GET /health` owner form gains `build: {sha, committed_at, deployed_at}` and the sidebar (under "Server online") and Settings > Library show "Build 68df2bf · deployed 2026-10-17 14:05" in local time; `scripts/deploy.sh` writes a git-ignored `BUILD` file after the pull, best effort, else the server uses git and its start time (API-145, NFR-119, WEB-102); not deployed.
