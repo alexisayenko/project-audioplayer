@@ -1,7 +1,7 @@
 import { store } from './store.js';
 import { sortKey, compareKeys, displayYear } from './credits.js';
 import { songSearchText } from './search-text.js';
-import { visibleTags, canonicalTag, tagSearchText, categoryOf, withRuntimeDecade } from './tagname.js';
+import { filterableTags, canonicalTag, tagSearchText, categoryOf, withRuntimeDecade } from './tagname.js';
 
 const UNSET_KEYS = { genres: 'genre', years: 'decade', countries: 'country' };
 const UNSET_NOUN = { genres: 'genre', years: 'year', countries: 'country' };
@@ -54,7 +54,7 @@ export function visibleSongs(sel = prefs.sel) {
   const list = store.songs.filter((s) => {
     if (!matchesSelection(s, sel)) return false;
     if (!q) return true;
-    const hay = songSearchText(s, visibleTags(withRuntimeDecade(s).tags).map(tagSearchText));
+    const hay = songSearchText(s, filterableTags(withRuntimeDecade(s).tags).map(tagSearchText));
     return hay.includes(q);
   });
   return list.sort(SORTS[prefs.sort][1]);

@@ -31,8 +31,7 @@ test('edit mode keeps the title untouched and shows BPM with a Re-detect button'
   assert.deepEqual(v.mainArtists, ['Band']);
   assert.deepEqual(v.albums, ['LP']);
   assert.equal(String(v.releaseYear), '1999');
-  assert.deepEqual(v.tags.filter((t) => !t.startsWith('decade:')), ['rock']);
-  assert.ok(v.tags.includes('decade:90s'), 'decade follows the year');
+  assert.deepEqual(v.tags, ['rock'], 'the year adds no decade tag');
   assert.match(f.node.textContent, /128 BPM/);
   assert.ok(btn(f, 'Re-detect'));
 });

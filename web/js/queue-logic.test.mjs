@@ -121,7 +121,7 @@ test('queue-logic', () => {
   console.log('queue-logic: ok');
 
   {
-    const songs = [{ id: 'a', tags: ['decade:90s'] }, { id: 'b', tags: ['decade:90s'] }, { id: 'c', tags: ['decade:90s'] }];
+    const songs = [{ id: 'a', releaseYear: 1990, tags: [] }, { id: 'b', releaseYear: 1999, tags: ['decade:80s'] }, { id: 'c', year: 1995, tags: [] }];
     let r = Q.addListed(Q.emptyState(), songs, 'decade:90s');
     assert.deepEqual([r.added, r.already, r.state.tags, r.state.index], [3, 0, ['decade:90s'], 0]);
     assert.ok(r.state.items.every((it) => !it.manual && it.tags[0] === 'decade:90s'));

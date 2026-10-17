@@ -26,8 +26,9 @@ test('cardModel builds title, sub line, grouped tags, BPM, duration and links', 
   assert.equal(m.remix, 'Kav');
   assert.equal(m.sub, 'Zed · 1999');
   assert.equal(m.album, 'LP');
-  assert.deepEqual(m.groups.map((g) => g.name), ['Genre', 'Decade', 'Country', 'Tags']);
+  assert.deepEqual(m.groups.map((g) => g.name), ['Genre', 'Country', 'Tags']);
   assert.ok(!JSON.stringify(m.groups).includes('lang:'), 'lang tags stay hidden as in Playback');
+  assert.ok(!JSON.stringify(m.groups).includes('decade'), 'decade tags stay hidden');
   assert.equal(m.bpm, '120');
   assert.equal(m.duration, '2:05');
   assert.deepEqual(Object.keys(m.links).sort(), ['musicbrainz', 'wikipedia', 'youtube']);

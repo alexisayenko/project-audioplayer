@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import * as T from './tokens.js';
 import { cleanTitleEx } from './title-clean.js';
 import { cleanPasted } from './url-clean.js';
-import { canonicalTag, splitTag, withDecade, decadeTag } from './tagname.js';
+import { canonicalTag, splitTag, decadeTag } from './tagname.js';
 import { splitAll } from './chip-split.js';
 
 function mulberry(seed) {
@@ -142,8 +142,6 @@ test('decade boundaries', () => {
   for (const [y, tag] of Object.entries(cases)) assert.equal(decadeTag(Number(y), new Date(2026, 5, 1)), tag, y);
   assert.equal(decadeTag(null), null);
   assert.equal(decadeTag('1999'), null, 'strings are not years');
-  assert.deepEqual(withDecade(['decade:80s', 'rock', 'decade:70s'], 1995), ['decade:90s', 'rock']);
-  assert.deepEqual(withDecade(['rock'], null), ['rock']);
   assert.deepEqual(splitTag('a:b:c'), { key: 'a', value: 'b:c' });
   assert.deepEqual(splitTag(':x'), { key: '', value: ':x' });
 });

@@ -1,4 +1,4 @@
-import { visibleTags, canonicalTag, withRuntimeDecade } from './tagname.js';
+import { filterableTags, canonicalTag, withRuntimeDecade } from './tagname.js';
 import { api } from './api.js';
 
 export const store = {
@@ -37,7 +37,7 @@ export function tagCounts(songs) {
   const map = new Map();
   for (const s of songs) {
     const seen = new Set();
-    for (const raw of visibleTags(withRuntimeDecade(s).tags)) {
+    for (const raw of filterableTags(withRuntimeDecade(s).tags)) {
       const t = canonicalTag(raw);
       const key = t.toLocaleLowerCase();
       if (seen.has(key)) continue;

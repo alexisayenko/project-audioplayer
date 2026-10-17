@@ -111,17 +111,24 @@ test('getTags flushes text still typed in the input', () => {
   assert.deepEqual(ed.getTags(), ['a', 'b']);
 });
 
-test('year drives the decade tag: set, replace, clear-to-invalid keeps old derived', () => {
+test('decade tags are never added, suggested, listed or shown, and existing ones pass through on save', () => {
   const year = document.createElement('input');
   year.value = '1994';
-  const ed = tagEditor({ tags: [], year });
-  assert.deepEqual(ed.peek(), ['decade:90s']);
+  const ed = tagEditor({ tags: ['rock', 'decade:80s'], suggested: ['decade:90s', 'indie'], year });
+  assert.deepEqual(ed.peek(), ['rock', 'decade:80s']);
   year.value = '2003';
   year.dispatchEvent(makeEvent('input'));
-  assert.deepEqual(ed.peek(), ['decade:00s']);
-  year.value = '';
-  year.dispatchEvent(makeEvent('input'));
-  assert.deepEqual(ed.peek(), ['decade:00s']);
+  assert.deepEqual(ed.getTags(), ['rock', 'decade:80s'], 'saved unchanged: nothing stripped, nothing added');
+  assert.deepEqual(chosen(ed), ['rock']);
+  const sug = ed.node.children[4];
+  assert.deepEqual(sug.querySelectorAll('button').map((b) => b.getAttribute('title')), ['indie']);
+  const pool = ed.node.querySelector('.tag-pool').querySelectorAll('button').map((b) => b.getAttribute('title'));
+  assert.ok(pool.includes('rock') && !pool.some((t) => t.startsWith('decade:')));
+  typeIn(ed, 'the 90s');
+  assert.equal(ed.node.querySelector('.tag-pool').querySelectorAll('button').length, 0);
+  ed.addTags(['decade:70s']);
+  key(ed, 'Enter');
+  assert.ok(!ed.peek().includes('decade:70s'));
 });
 
 test('suggested tags show once, can be toggled on, and hideNs hides genre:/country: ones', () => {

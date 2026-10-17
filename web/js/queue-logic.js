@@ -1,4 +1,4 @@
-import { canonicalTag } from './tagname.js';
+import { canonicalTag, withRuntimeDecade } from './tagname.js';
 
 
 // Returns { index, played } for the song to play next, or null to stop.
@@ -46,7 +46,7 @@ export function prevStep({ queue, index, shuffle, history = [] }) {
 }
 
 const lc = (s) => s.toLocaleLowerCase();
-const hasTag = (song, tag) => (song.tags || []).some((t) => lc(canonicalTag(t)) === lc(canonicalTag(tag)));
+const hasTag = (song, tag) => (withRuntimeDecade(song).tags || []).some((t) => lc(canonicalTag(t)) === lc(canonicalTag(tag)));
 
 // Queue state: { items: [{ id, manual, tags }], index, tags }.
 // `tags` are the selected tag chips; an item's `tags` are the chips that brought it in.

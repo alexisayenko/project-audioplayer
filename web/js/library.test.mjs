@@ -9,10 +9,10 @@ const calls = stubFetch((url, o) => {
   if (url === '/songs/n1/audio' && o.method === 'POST') return { status: 500, body: { detail: 'nope' } };
   return { body: {} };
 });
-const { store } = await import('./store.js');
+const { store, tagCounts } = await import('./store.js');
 const { renderLibrary, visibleSongs, filterByTags } = await import('./library.js');
 const { unsetKey, unsetCount } = await import('./library-data.js');
-const { categoryTags } = await import('./tagname.js');
+const { categoryTags, tagLabel } = await import('./tagname.js');
 const { player, initPlayer } = await import('./player.js');
 initPlayer();
 const { requestReveal } = await import('./reveal.js');
@@ -215,6 +215,43 @@ test('"not set" system entry: counts, OR within a facet, AND across facets, not 
   assert.equal(store.tags.some((t) => t.tag.includes('__unset__')), false);
   assert.equal(categoryTags(store.tags, 'genres').some((t) => t.tag.includes('__unset__')), false);
   filterByTags([]);
+});
+
+test('Years filter is derived from each song year, not from decade tags', async () => {
+  const YEARS = [
+    { id: 'y99', title: 'Y99', releaseYear: 1999, file: 'a.mp3', tags: [] },
+    { id: 'y00', title: 'Y00', releaseYear: 2000, file: 'b.mp3', tags: ['decade:90s'] },
+    { id: 'v2', title: 'V2', releaseYear: 1990, file: 'c.mp3', tags: ['decade:00s'], version: { type: 'remix', name: 'X Remix', releaseYear: 1984 } },
+    { id: 'old', title: 'Old', releaseYear: 1949, file: 'd.mp3', tags: ['decade:40s'] },
+    { id: 'none', title: 'None', file: 'e.mp3', tags: ['decade:90s'] },
+  ];
+  const load = () => { store.songs = YEARS; store.loaded = true; store.tags = tagCounts(YEARS); };
+  load();
+  assert.deepEqual(categoryTags(store.tags, 'years').map((t) => [tagLabel(t.tag), t.count]), [['the 80s', 1], ['the 90s', 1], ['the 00s', 1]]);
+  assert.equal(unsetCount('years'), 2);
+  filterByTags(['decade:90s']);
+  assert.deepEqual(visibleSongs().map((s) => s.id), ['y99']);
+  filterByTags(['decade:00s']);
+  assert.deepEqual(visibleSongs().map((s) => s.id), ['y00'], 'a stored decade tag with another year does not count');
+  filterByTags(['decade:80s', 'decade:00s']);
+  assert.deepEqual(visibleSongs().map((s) => s.id).sort(), ['v2', 'y00']);
+  filterByTags(['decade:__unset__']);
+  assert.deepEqual(visibleSongs().map((s) => s.id).sort(), ['none', 'old']);
+  filterByTags([]);
+  stubFetch(() => ({ body: { songs: YEARS } }));
+  const { root, titles, cleanup } = mount();
+  await flush();
+  const chips = root.querySelectorAll('.cat-chip');
+  assert.equal(chips[2].getAttribute('aria-label'), 'Years, 3');
+  chips[2].click();
+  const sheet = document.getElementById('filter-sheet');
+  const pills = sheet.querySelectorAll('.pills button');
+  assert.deepEqual(pills.filter((b) => !b.classList.contains('unset')).map((b) => b.getAttribute('title')), ['decade:80s', 'decade:90s', 'decade:00s']);
+  pills.find((b) => b.getAttribute('title') === 'decade:90s').click();
+  sheet.querySelector('.btn.primary').click();
+  assert.deepEqual(titles(), ['Y99']);
+  filterByTags([]);
+  cleanup();
 });
 
 test('"not set" pill in the filter sheet: first, italic, chip count stays real, summary names it', async () => {

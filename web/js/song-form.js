@@ -38,7 +38,7 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
     emit: () => f.title.dispatchEvent(new Event('input', { bubbles: true })),
   });
   Object.assign(f, credits.f);
-  const editor = tagEditor({ tags: initial.tags || [], suggested: isAdd ? initial.tags || [] : [], year: f.released, hideNs: true });
+  const editor = tagEditor({ tags: initial.tags || [], suggested: isAdd ? initial.tags || [] : [], hideNs: true });
   const genres = chipField('genre', editor);
   const countries = chipField('country', editor);
   const wiki = wikiFields({ song: initial.wikipedia_song, artist: initial.wikipedia_artist, album: initial.wikipedia_album });

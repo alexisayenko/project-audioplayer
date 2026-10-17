@@ -1,16 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { isHiddenTag, visibleTags, decadeTag, withDecade, tagLabel, tagText, tagSearchText, tagGroups, groupName } from './tagname.js';
+import { isHiddenTag, visibleTags, decadeTag, tagLabel, tagText, tagSearchText, tagGroups, groupName, filterableTags } from './tagname.js';
 import { categoryOf, categoryTags, CATEGORIES } from './tagname.js';
 
 test('tagname', () => {
   for (const [y, t] of [[1949, null], [1950, 'decade:50s'], [1994, 'decade:90s'], [2000, 'decade:00s'], [2007, 'decade:00s'], [2013, 'decade:10s'], [2027, 'decade:20s'], [2028, null], [null, null], [NaN, null]]) {
     assert.equal(decadeTag(y, new Date(2026, 5, 1)), t, String(y));
   }
-  assert.deepEqual(withDecade(['x', 'decade:80s'], 1994), ['x', 'decade:90s']);
-  assert.deepEqual(withDecade(['x'], 1994), ['x', 'decade:90s']);
-  assert.deepEqual(withDecade(['decade:80s'], 1949), ['decade:80s']);
-  assert.deepEqual(withDecade(['decade:80s'], null), ['decade:80s']);
 
   assert.equal(tagLabel('decade:90s'), 'the 90s');
   assert.equal(tagLabel('decade:00s'), 'the 00s');
@@ -27,8 +23,9 @@ test('tagname', () => {
   assert.equal(CATEGORIES.length, 4);
   assert.deepEqual(categoryTags([{ tag: 'decade:00s', count: 1 }, { tag: 'decade:90s', count: 5 }, { tag: 'genre:rock', count: 2 }], 'years').map((t) => t.tag), ['decade:90s', 'decade:00s']);
   assert.deepEqual(categoryTags([{ tag: 'a', count: 1 }, { tag: 'b', count: 3 }, { tag: 'lang:en', count: 2 }], 'tags').map((t) => t.tag), ['b', 'lang:en', 'a']);
-  assert.ok(isHiddenTag('lang:en') && isHiddenTag('Lang:ru') && !isHiddenTag('genre:pop'));
-  assert.deepEqual(visibleTags(['a', 'lang:en', 'country:GB']), ['a', 'country:GB']);
+  assert.ok(isHiddenTag('lang:en') && isHiddenTag('Lang:ru') && isHiddenTag('decade:90s') && isHiddenTag('Decade:00s') && !isHiddenTag('genre:pop'));
+  assert.deepEqual(visibleTags(['a', 'lang:en', 'decade:90s', 'country:GB']), ['a', 'country:GB']);
+  assert.deepEqual(filterableTags(['a', 'lang:en', 'decade:90s']), ['a', 'decade:90s']);
 });
 
 import { mergeTagCounts, canonicalTag } from './tagname.js';

@@ -4,17 +4,16 @@ import { store } from './store.js';
 import { splitInput } from './tag-input.js';
 import { canonicalCountry, filterCountries } from './countries.js';
 import { resolveGenre, cachedIndex } from './genre-vocab.js';
-import { isHiddenTag, tagGroups, tagLabel, tagText, tagSearchText, withDecade, decadeRank } from './tagname.js';
+import { isHiddenTag, tagGroups, tagLabel, tagText, tagSearchText } from './tagname.js';
 
 const same = (a, b) => a.toLocaleLowerCase() === b.toLocaleLowerCase();
 
-export function tagEditor({ tags = [], suggested = [], year = null, onChange = null, hideNs = false } = {}) {
+export function tagEditor({ tags = [], suggested = [], onChange = null, hideNs = false } = {}) {
   const listeners = onChange ? [onChange] : [];
   const hidden = (t) => isHiddenTag(t) || (hideNs && /^(genre|country):/i.test(t));
   const shown = (list) => list.filter((t) => !hidden(t));
-  const yearValue = () => (year && year.value !== '' ? Number(year.value) : null);
-  let current = withDecade(tags, yearValue());
-  let sug = shown(withDecade(suggested, yearValue()));
+  let current = [...tags];
+  let sug = shown(suggested);
   const input = el('input', { type: 'text', placeholder: 'Type a tag (plain or key:value), Enter or comma to add', enterKeyHint: 'done', autocomplete: 'off' });
   const chosen = el('div', { class: 'chips' });
   const sugBox = el('div', { class: 'chip-group' });
@@ -73,7 +72,7 @@ export function tagEditor({ tags = [], suggested = [], year = null, onChange = n
     const matches = store.tags.filter((t) => !hidden(t.tag) && (!q || tagSearchText(t.tag).toLocaleLowerCase().includes(q)));
     pool.replaceChildren(...tagGroups(matches).map((g) => el('div', { class: 'chip-group' },
       el('span', { class: 'group-name' }, g.name),
-      ...[...g.tags].sort(g.key === 'decade' ? (a, b) => decadeRank(a.tag) - decadeRank(b.tag) : (a, b) => b.count - a.count || a.tag.localeCompare(b.tag)).map((t) => chip(t.tag, t.count)))));
+      ...[...g.tags].sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag)).map((t) => chip(t.tag, t.count)))));
     for (const fn of listeners) fn([...current]);
   }
 
@@ -81,13 +80,6 @@ export function tagEditor({ tags = [], suggested = [], year = null, onChange = n
     if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); add(input.value); }
   });
   input.addEventListener('input', render);
-  if (year) {
-    year.addEventListener('input', () => {
-      current = withDecade(current, yearValue());
-      sug = withDecade(sug, yearValue());
-      render();
-    });
-  }
   render();
 
   return {

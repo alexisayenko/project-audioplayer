@@ -12,8 +12,9 @@ const GROUP_NAMES = { decade: 'Decade', country: 'Country' };
 const FIRST = ['genre', 'decade', 'country'];
 const DECADE = /^\d{2}s$/;
 
-export const isHiddenTag = (tag) => /^lang:/i.test(tag);
+export const isHiddenTag = (tag) => /^(lang|decade):/i.test(tag);
 export const visibleTags = (tags) => (tags || []).filter((t) => !isHiddenTag(t));
+export const filterableTags = (tags) => (tags || []).filter((t) => !/^lang:/i.test(t));
 
 export function splitTag(tag) {
   const i = tag.indexOf(':');
@@ -24,25 +25,10 @@ export function decadeTag(year, now = new Date()) {
   return Number.isInteger(year) && year >= 1950 && year <= maxYear(now) ? `decade:${String(Math.floor(year / 10) * 10 % 100).padStart(2, '0')}s` : null;
 }
 
-export function withDecade(tags, year) {
-  const derived = decadeTag(year);
-  if (!derived) return [...tags];
-  const out = [];
-  let placed = false;
-  for (const t of tags) {
-    if (/^decade:/i.test(t)) {
-      if (!placed) out.push(derived);
-      placed = true;
-    } else out.push(t);
-  }
-  return placed ? out : [...out, derived];
-}
-
 export function withRuntimeDecade(song) {
-  const year = displayYear(song);
-  if (!song || !Number.isInteger(year)) return song;
+  if (!song) return song;
   const tags = (song.tags || []).filter((t) => !/^decade:/i.test(t));
-  const derived = decadeTag(year);
+  const derived = decadeTag(displayYear(song));
   return { ...song, tags: derived ? [...tags, derived] : tags };
 }
 

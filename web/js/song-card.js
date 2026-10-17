@@ -10,7 +10,7 @@ import { editDialog } from './edit-dialog.js';
 import { creditParts, subtitle, titleNodes, detailsLines, yearFact, albumOf } from './credits.js';
 import { icon } from './icons.js';
 import { bpmLabel } from './bpm-label.js';
-import { visibleTags, tagGroups, tagLabel, withRuntimeDecade } from './tagname.js';
+import { visibleTags, tagGroups, tagLabel } from './tagname.js';
 import { serviceIcons } from './service-icons.js';
 import { storedLinkStates } from './song-links.js';
 import { toggleQueue } from './queue-toggle.js';
@@ -30,7 +30,7 @@ export function cardModel(song) {
     remix,
     sub: subtitle(song),
     album: albumOf(song),
-    groups: cardTags(withRuntimeDecade(song)?.tags),
+    groups: cardTags(song?.tags),
     yearFact: yearFact(song),
     details: detailsLines(song).filter(({ label }) => !HIDDEN_DETAILS.has(label)).map(({ label, value }) => (label === 'Cover of' ? `Cover of ${value}` : `${label}: ${value}`)),
     bpm: bpmLabel(song?.bpm),
@@ -106,7 +106,7 @@ function sideBlock(m) {
 function paint(dlg, song, close, m) {
   const [art, head] = headBlock(song, m);
   const side = sideBlock(m);
-  const rest = m.groups.filter((g) => g.key !== 'decade' && !SIDE_KEYS.includes(g.key));
+  const rest = m.groups.filter((g) => !SIDE_KEYS.includes(g.key));
   const parts = [
     el('span', { class: 'grab', 'aria-hidden': 'true' }),
     el('div', { class: 'dlg-head card-bar' }, el('span'), el('button', { type: 'button', class: 'link-btn t-headline card-close', onclick: close }, 'Close')),

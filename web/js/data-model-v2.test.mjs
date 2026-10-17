@@ -37,6 +37,7 @@ test('withRuntimeDecade derives the decade tag from releaseYear and replaces a s
   assert.deepEqual(withRuntimeDecade({ releaseYear: 1920, tags: ['decade:90s'] }).tags, []);
   const legacy = { year: 1994, tags: ['decade:90s'] };
   assert.deepEqual(withRuntimeDecade(legacy).tags, ['decade:90s']);
+  assert.deepEqual(withRuntimeDecade({ tags: ['decade:90s', 'x'] }).tags, ['x'], 'a stored decade without a usable year is dropped');
 });
 
 test('stats read releaseYear and fall back to the legacy year', () => {
