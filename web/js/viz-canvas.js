@@ -4,7 +4,7 @@ import {
   IDLE_EPSILON, VIZ_FPS, VIZ_DPR_CAP, DPR_CAP, VIZ_HEIGHT_SCALE, TILT_DB_PER_OCT,
 } from './viz-constants.js';
 import {
-  barsDb, unitBars, makeReference, bassEnergy, smoothBars, idleBars, maxOf, makePulse, makePacer, makeGovernor, capDpr, pickSpokes, barCount, pixelBars, shapeBars,
+  barsDb, unitBars, makeReference, bassEnergy, smoothBars, idleBars, maxOf, makePulse, makePacer, makeGovernor, capDpr, pickSpokes, pixelBars, shapeBars,
 } from './viz-spectrum.js';
 import { createTracker, diagnose, debugLines, byteMax, createStatusEl, userAgentFamily, audioOrigin } from './viz-signal.js';
 import { createGlow } from './viz-glow.js';
@@ -57,6 +57,8 @@ function defaults() {
     ResizeObserver: win.ResizeObserver,
   };
 }
+
+const defaultFallbackInfo = () => ({ reason: 'error' });
 
 function createGLCanvas(canvas) {
   const gl = canvas.ownerDocument?.createElement?.('canvas');
@@ -209,17 +211,20 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
 
   let lastDraw = 0;
 
-  function draw2d() {
+  function drawRing2d() {
     const { w, h } = view;
-    const { c, shaped, spokes, bass, rotation, now } = f;
-    if (renderer.id === 'ring') {
-      const a = mode === 'full' ? null : anchor(now);
-      const cx = a ? a.x : w / 2;
-      const cy = a ? a.y : h / 2;
-      const r = ringRadius(w, h, cx, cy, Math.min(w, h) * RING_FRACTION * heightScale);
-      drawRing(ctx, cx, cy, r, spokes, { colors: c, bass, rotation, glow: false, alpha: mode === 'full' ? 1 : 0.5 });
-      return;
-    }
+    const { c, spokes, bass, rotation, now } = f;
+    const a = mode === 'full' ? null : anchor(now);
+    const cx = a ? a.x : w / 2;
+    const cy = a ? a.y : h / 2;
+    const r = ringRadius(w, h, cx, cy, Math.min(w, h) * RING_FRACTION * heightScale);
+    drawRing(ctx, cx, cy, r, spokes, { colors: c, bass, rotation, glow: false, alpha: mode === 'full' ? 1 : 0.5 });
+  }
+
+  function draw2d() {
+    if (renderer.id === 'ring') { drawRing2d(); return; }
+    const { w, h } = view;
+    const { c, shaped, bass, now } = f;
     const m = getMirror();
     const iceBackdrop = (m.backdrop === 'ice' && !!c.ice) || m.backdrop === 'black' || (m.backdrop === 'ice2' && !!c.ice2);
     if (mode === 'full' && f.q?.backdrop && !iceBackdrop) backdrop.draw(ctx, w, h, c, bass);
@@ -428,10 +433,11 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
     if (ts - heavySince < PACE_DOWN_S * 2000) return;
     const ms = drawMeter.ema;
     const sc = renderer?.stats?.scale;
-    fallBackToTerrain(`Synthwave terrain is too heavy here (${ms.toFixed(0)} ms per frame, target ${targetMs().toFixed(0)} ms${sc ? `, render scale ${Math.round(sc * 100)}%` : ''}), using Terrain`, { reason: 'heavy', intervalMs: ms });
+    const scaleNote = sc ? `, render scale ${Math.round(sc * 100)}%` : '';
+    fallBackToTerrain(`Synthwave terrain is too heavy here (${ms.toFixed(0)} ms per frame, target ${targetMs().toFixed(0)} ms${scaleNote}), using Terrain`, { reason: 'heavy', intervalMs: ms });
   }
 
-  function fallBackToTerrain(message, info = { reason: 'error' }) {
+  function fallBackToTerrain(message, info = defaultFallbackInfo()) {
     synthFallback = true;
     fallback = { mode: 'synthwave', ...info, label: info.reason === 'heavy' ? 'using Terrain: too heavy' : 'using Terrain: stopped working' };
     heavySince = null;
@@ -450,8 +456,10 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
 
   function paceNote() {
     const i = pace.info(paceTs);
-    const last = i.note ? `${i.note.dir < 0 ? 'down' : 'up'}: ${i.note.text}, ${i.ago.toFixed(0)} s ago` : 'none';
-    return `last ${last}, ban ${i.banLeft.toFixed(0)} s${i.graceLeft > 0 ? `, grace ${i.graceLeft.toFixed(0)} s` : ''}`;
+    const dir = i.note?.dir < 0 ? 'down' : 'up';
+    const last = i.note ? `${dir}: ${i.note.text}, ${i.ago.toFixed(0)} s ago` : 'none';
+    const grace = i.graceLeft > 0 ? `, grace ${i.graceLeft.toFixed(0)} s` : '';
+    return `last ${last}, ban ${i.banLeft.toFixed(0)} s${grace}`;
   }
 
   function synthText(st) {
@@ -543,7 +551,11 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
 
   observe();
   return {
-    setEnabled(on) { enabled = !!on; if (!enabled) la?.request(laKey, false); evaluate(); },
+    setEnabled(on) {
+      enabled = !!on;
+      if (!enabled) la?.request(laKey, false);
+      evaluate();
+    },
     setMode(m) { mode = m; st.anchorAt = -Infinity; if (raf == null) evaluate(); },
     setVizMode(id) {
       if (id === vizMode) return;

@@ -9,6 +9,7 @@ import re
 import threading
 import time
 from collections import deque
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -38,6 +39,7 @@ FAMILIES = (
     "Latin", "Non-Music", "Pop", "Reggae", "Rock", "Stage & Screen",
 )
 OTHER = "Other"
+_MUSIC = " music"
 _GENRE_DESC = re.compile(r"\b(music|musical)\b.*\b(genre|style)\b|\bgenre\b.*\bmusic\b|\bsubgenre\b", re.I)
 _PARENTS_FILE = Path(__file__).with_name("data") / "genre_parents.json"
 _QID = re.compile(r"^Q[1-9]\d*$")
@@ -69,6 +71,17 @@ def manual_parents() -> dict[str, list[str]]:
     return _manual
 
 
+def _is_parent_list(ps: Any) -> bool:
+    return isinstance(ps, list) and all(isinstance(p, str) for p in ps)
+
+
+def _row_problems(child: str, ps: list[str]) -> list[str]:
+    bad = [f"{label!r}: not a lowercase label" for label in (child, *ps) if label != norm(label) or not label]
+    if child in ps:
+        bad.append(f"{child}: parent of itself")
+    return bad
+
+
 def validate_manual(table: dict[str, Any]) -> list[str]:
     """Problems in a manual table: non-lowercase or non-string labels, self-parents and cycles within the table."""
     bad: list[str] = []
@@ -76,14 +89,10 @@ def validate_manual(table: dict[str, Any]) -> list[str]:
     for child, ps in table.items():
         if child.startswith("_"):
             continue
-        if not isinstance(ps, list) or not all(isinstance(p, str) for p in ps):
+        if not _is_parent_list(ps):
             bad.append(f"{child}: parents must be a list of strings")
             continue
-        for label in (child, *ps):
-            if label != norm(label) or not label:
-                bad.append(f"{label!r}: not a lowercase label")
-        if child in ps:
-            bad.append(f"{child}: parent of itself")
+        bad.extend(_row_problems(child, ps))
         graph[child] = list(ps)
     for child in graph:
         if _reaches(graph, child, child):
@@ -220,8 +229,8 @@ def _fetch_entities(cache: dict[str, Any], qids: list[str]) -> None:
 def resolve_label(cache: dict[str, Any], key: str) -> str | None:
     """The Wikidata music-genre item for a label: exact English label (or alias) match, else that of "<label> music" (so a bare tag joins the resolved "X music" node); None when there is none."""
     qid = _search(cache, key)
-    if qid is None and not key.endswith(" music"):
-        qid = _search(cache, f"{key} music")
+    if qid is None and not key.endswith(_MUSIC):
+        qid = _search(cache, f"{key}{_MUSIC}")
     return qid
 
 
@@ -441,6 +450,18 @@ def _related_edges(nodes: dict[str, dict[str, Any]], parents: dict[str, list[str
     return edges
 
 
+def _majority_family(nid: str, parents: dict[str, list[str]], reach: dict[str, set[Any]], stack: frozenset[str],
+                     of: Callable[[str, frozenset[str]], str]) -> str:
+    weight: dict[str, int] = {}
+    for p in parents.get(nid, []):
+        if p in stack or p == nid:
+            continue
+        pf = of(p, stack | {nid})
+        if pf != OTHER:
+            weight[pf] = weight.get(pf, 0) + max(1, len(reach.get(p, ())))
+    return max(sorted(weight), key=weight.__getitem__) if weight else OTHER
+
+
 def resolve_families(
     explicit: dict[str, str | None], parents: dict[str, list[str]], reach: dict[str, set[Any]]
 ) -> dict[str, str]:
@@ -450,16 +471,7 @@ def resolve_families(
     def of(nid: str, stack: frozenset[str] = frozenset()) -> str:
         if nid in out:
             return out[nid]
-        fam = explicit.get(nid)
-        if not fam:
-            weight: dict[str, int] = {}
-            for p in parents.get(nid, []):
-                if p in stack or p == nid:
-                    continue
-                pf = of(p, stack | {nid})
-                if pf != OTHER:
-                    weight[pf] = weight.get(pf, 0) + max(1, len(reach.get(p, ())))
-            fam = max(sorted(weight), key=lambda f: weight[f]) if weight else OTHER
+        fam = explicit.get(nid) or _majority_family(nid, parents, reach, stack, of)
         out[nid] = fam
         return fam
 
@@ -472,8 +484,8 @@ def vocab_name(label: str) -> str | None:
     """The vocabulary name a graph label or tag stands for (ALIASES, " music" and RETAGS applied), else None."""
     for text in (label, canonical(label)):
         e = genre_vocab.entry(text)
-        if e is None and norm(text).endswith(" music"):
-            e = genre_vocab.entry(norm(text)[: -len(" music")])
+        if e is None and norm(text).endswith(_MUSIC):
+            e = genre_vocab.entry(norm(text)[: -len(_MUSIC)])
         if e is not None:
             return e.name
     return None
@@ -501,24 +513,24 @@ def resolve_styles(
     own: dict[str, str | None], parents: dict[str, list[str]], reach: dict[str, set[Any]]
 ) -> dict[str, str | None]:
     """GEN-047: a node's own style, else the style of its nearest ancestors (breadth-first over parent edges, closest first, ties by song count then name), else None."""
-    out: dict[str, str | None] = {}
-    for nid in own:
-        found: str | None = own[nid]
-        seen = {nid}
-        frontier = [nid]
-        while found is None and frontier:
-            nxt: list[str] = []
-            for n in frontier:
-                for p in parents.get(n, []):
-                    if p not in seen:
-                        seen.add(p)
-                        nxt.append(p)
-            hits = [(-len(reach.get(p, ())), own[p], p) for p in nxt if own.get(p)]
-            if hits:
-                found = sorted(hits, key=lambda h: (h[0], h[1] or ""))[0][1]
-            frontier = nxt
-        out[nid] = found
-    return out
+    return {nid: own[nid] if own[nid] is not None else _nearest_style(nid, own, parents, reach) for nid in own}
+
+
+def _nearest_style(nid: str, own: dict[str, str | None], parents: dict[str, list[str]], reach: dict[str, set[Any]]) -> str | None:
+    seen = {nid}
+    frontier = [nid]
+    while frontier:
+        nxt: list[str] = []
+        for n in frontier:
+            for p in parents.get(n, []):
+                if p not in seen:
+                    seen.add(p)
+                    nxt.append(p)
+        hits = [(-len(reach.get(p, ())), own[p], p) for p in nxt if own.get(p)]
+        if hits:
+            return min(hits, key=lambda h: (h[0], h[1] or ""))[1]
+        frontier = nxt
+    return None
 
 
 UMBRELLA_SHARE = 0.5
@@ -536,16 +548,21 @@ def umbrella_families(
     for nid, fam in family.items():
         if fam != "Other" or parents.get(nid) or not reach[nid]:
             continue
-        songs: dict[str, set[Any]] = {}
-        for c in kids.get(nid, []):
-            if family[c] != "Other":
-                songs.setdefault(family[c], set()).update(reach[c])
+        songs = _kid_songs(kids.get(nid, []), family, reach)
         if not songs:
             continue
-        best = max(sorted(songs), key=lambda f: len(songs[f]))
+        best = max(sorted(songs), key=lambda f, by_family=songs: len(by_family[f]))
         if len(songs[best] & reach[nid]) / len(reach[nid]) >= share:
             out[nid] = best
     return out
+
+
+def _kid_songs(kids: list[str], family: dict[str, str], reach: dict[str, set[Any]]) -> dict[str, set[Any]]:
+    songs: dict[str, set[Any]] = {}
+    for c in kids:
+        if family[c] != "Other":
+            songs.setdefault(family[c], set()).update(reach[c])
+    return songs
 
 
 def build(songs: list[dict[str, Any]], cache: dict[str, Any]) -> dict[str, Any]:

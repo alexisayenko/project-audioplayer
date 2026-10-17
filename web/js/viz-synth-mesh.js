@@ -1,8 +1,8 @@
 import {
-  GRID_DEPTH, GRID_MAX_VERTICES, LOD_ROW_PX, LOD_MERGE, LOD_MAX_SPACING, tierHalfWidth, crossAlpha,
+  GRID_DEPTH, GRID_MAX_VERTICES, LOD_ROW_PX, LOD_MERGE, LOD_MAX_SPACING, tierHalfWidth,
 } from './viz-terrain-math.js';
 
-export const crossAlphaFor = crossAlpha;
+export { crossAlpha as crossAlphaFor } from './viz-terrain-math.js';
 const MAX_TIERS = 12;
 const BASE_MIN = 0.2;
 const BASE_MAX = 1.2;
@@ -50,12 +50,10 @@ export function diagParity(scrollRows, latDz, tierDz) {
   return Math.floor((scrollRows * latDz) / tierDz) & 1;
 }
 
-export function buildMesh(tier, style, parity = 0) {
+function buildXz(tier) {
   const { rows, cols } = tier;
   const half = (cols - 1) / 2;
-  const n = rows * cols;
-  const tri = style === 'triangle';
-  const xz = new Float32Array(n * 2);
+  const xz = new Float32Array(rows * cols * 2);
   for (let r = 0; r < rows; r += 1) {
     for (let c = 0; c < cols; c += 1) {
       const i = (r * cols + c) * 2;
@@ -63,34 +61,45 @@ export function buildMesh(tier, style, parity = 0) {
       xz[i + 1] = (r + tier.jz0) * tier.dz;
     }
   }
+  return xz;
+}
+
+function emitCell(lines, tris, cur, i, cols, flip, tri) {
+  const a = i;
+  const b = i + 1;
+  const d = i + cols;
+  const e = i + cols + 1;
+  let { l, t } = cur;
+  if (flip) {
+    lines[l++] = b; lines[l++] = d;
+    tris[t++] = a; tris[t++] = d; tris[t++] = b;
+    tris[t++] = b; tris[t++] = d; tris[t++] = e;
+  } else {
+    if (tri) { lines[l++] = a; lines[l++] = e; }
+    tris[t++] = a; tris[t++] = d; tris[t++] = e;
+    tris[t++] = a; tris[t++] = e; tris[t++] = b;
+  }
+  cur.l = l;
+  cur.t = t;
+}
+
+export function buildMesh(tier, style, parity = 0) {
+  const { rows, cols } = tier;
+  const n = rows * cols;
+  const tri = style === 'triangle';
+  const xz = buildXz(tier);
   const cells = (rows - 1) * (cols - 1);
   const nLines = cols * (rows - 1) + rows * (cols - 1) + (tri ? cells : 0);
   const Idx = n > 65535 ? Uint32Array : Uint16Array;
   const lines = new Idx(nLines * 2);
   const tris = new Idx(cells * 6);
-  let l = 0;
-  let t = 0;
+  const cur = { l: 0, t: 0 };
   for (let r = 0; r < rows; r += 1) {
     for (let c = 0; c < cols; c += 1) {
       const i = r * cols + c;
-      if (r < rows - 1) { lines[l++] = i; lines[l++] = i + cols; }
-      if (c < cols - 1) { lines[l++] = i; lines[l++] = i + 1; }
-      if (r < rows - 1 && c < cols - 1) {
-        const flip = tri && ((r + c + parity) & 1) === 1;
-        const a = i;
-        const b = i + 1;
-        const d = i + cols;
-        const e = i + cols + 1;
-        if (flip) {
-          lines[l++] = b; lines[l++] = d;
-          tris[t++] = a; tris[t++] = d; tris[t++] = b;
-          tris[t++] = b; tris[t++] = d; tris[t++] = e;
-        } else {
-          if (tri) { lines[l++] = a; lines[l++] = e; }
-          tris[t++] = a; tris[t++] = d; tris[t++] = e;
-          tris[t++] = a; tris[t++] = e; tris[t++] = b;
-        }
-      }
+      if (r < rows - 1) { lines[cur.l++] = i; lines[cur.l++] = i + cols; }
+      if (c < cols - 1) { lines[cur.l++] = i; lines[cur.l++] = i + 1; }
+      if (r < rows - 1 && c < cols - 1) emitCell(lines, tris, cur, i, cols, tri && ((r + c + parity) & 1) === 1, tri);
     }
   }
   return { xz, lines, tris, lineCount: nLines, triCount: cells * 2, rows, cols, vertices: n };

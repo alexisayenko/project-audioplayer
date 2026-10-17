@@ -31,11 +31,13 @@ def test_upload_png_is_stored_as_jpeg_with_a_version(client, song, tmp_path):
     r = put(client, image("PNG", (3000, 1000)))
     assert r.status_code == 200
     body = r.json()
-    assert body["cover"] == f"covers/{VID}.jpg" and len(body["cover_v"]) == 10
+    assert body["cover"] == f"covers/{VID}.jpg"
+    assert len(body["cover_v"]) == 10
     got = client.get(f"/covers/{VID}", headers=H)
     assert got.headers["content-type"] == "image/jpeg"
     with Image.open(io.BytesIO(got.content)) as img:
-        assert img.format == "JPEG" and max(img.size) == 1024
+        assert img.format == "JPEG"
+        assert max(img.size) == 1024
     assert stored(tmp_path)["cover_v"] == body["cover_v"]
     assert client.get("/library", headers=H).json()["songs"][0]["cover_v"] == body["cover_v"]
 
@@ -57,7 +59,9 @@ def test_delete_clears_the_cover_and_is_idempotent(client, song, tmp_path):
     assert client.delete(f"/songs/{VID}/cover", headers=H).status_code == 204
     assert client.get(f"/covers/{VID}", headers=H).status_code == 404
     rec = stored(tmp_path)
-    assert rec["cover"] is None and rec["cover_v"] is None and rec["cover_off"] is True
+    assert rec["cover"] is None
+    assert rec["cover_v"] is None
+    assert rec["cover_off"] is True
     assert put(client, image()).json()["cover_off"] is None
 
 
@@ -65,7 +69,8 @@ def test_bad_inputs(client, song):
     assert put(client, image(), "text/plain").status_code == 415
     assert put(client, image("GIF"), "image/png").json()["error"] == "cover_bad_type"
     bad = put(client, b"not an image at all")
-    assert bad.status_code == 422 and bad.json()["error"] == "cover_bad_image"
+    assert bad.status_code == 422
+    assert bad.json()["error"] == "cover_bad_image"
     assert put(client, b"<svg xmlns='http://www.w3.org/2000/svg'/>").status_code == 422
     assert put(client, image(), vid="aaaaaaaaaaa").status_code == 404
     assert put(client, image(), vid="bad id").status_code in (404, 422)
@@ -77,7 +82,8 @@ def test_too_large_is_refused_by_header_and_by_stream(client, song, monkeypatch)
     assert len(big) > 0
     noisy = b"\x89PNG" + bytes(2000)
     r = put(client, noisy)
-    assert r.status_code == 413 and r.json()["error"] == "cover_too_large"
+    assert r.status_code == 413
+    assert r.json()["error"] == "cover_too_large"
 
     def chunks():
         yield bytes(600)
@@ -133,7 +139,8 @@ def from_url(client, url):
 def test_from_url_stores_the_image_and_connects_to_the_checked_ip(client, song, web):
     web.pages[("img.example", "/a.png?x=1")] = reply(body=image())
     r = from_url(client, "https://img.example/a.png?x=1")
-    assert r.status_code == 200 and r.json()["cover_v"]
+    assert r.status_code == 200
+    assert r.json()["cover_v"]
     assert web.calls == [("https", "img.example", 443, "/a.png?x=1", "93.184.216.34")]
     assert client.get(f"/covers/{VID}", headers=H).status_code == 200
 
@@ -147,14 +154,16 @@ def test_from_url_stores_the_image_and_connects_to_the_checked_ip(client, song, 
 ])
 def test_ssrf_refusals_never_connect(client, song, web, url):
     r = from_url(client, url)
-    assert r.status_code == 422 and r.json()["error"] == "cover_url_refused"
+    assert r.status_code == 422
+    assert r.json()["error"] == "cover_url_refused"
     assert web.calls == []
 
 
 def test_redirect_to_private_address_is_refused(client, song, web):
     web.pages[("img.example", "/a.png")] = reply(302, location="http://169.254.169.254/latest/meta-data")
     r = from_url(client, "http://img.example/a.png")
-    assert r.status_code == 422 and r.json()["error"] == "cover_url_refused"
+    assert r.status_code == 422
+    assert r.json()["error"] == "cover_url_refused"
     assert len(web.calls) == 1
 
 
@@ -170,7 +179,8 @@ def test_relative_redirect_is_followed_and_loops_are_cut(client, song, web):
     assert from_url(client, "http://img.example/a").status_code == 200
     web.pages[("img.example", "/loop")] = reply(302, location="/loop")
     r = from_url(client, "http://img.example/loop")
-    assert r.status_code == 422 and "redirects" in r.json()["detail"]
+    assert r.status_code == 422
+    assert "redirects" in r.json()["detail"]
     assert len(web.calls) == 2 + coverimg.MAX_REDIRECTS + 1
 
 
@@ -183,7 +193,8 @@ def test_from_url_errors(client, song, web):
     assert from_url(client, "http://img.example/fake").json()["error"] == "cover_bad_image"
     web.pages[("img.example", "/404")] = reply(404)
     r = from_url(client, "http://img.example/404")
-    assert r.status_code == 502 and r.json()["error"] == "cover_url_unreachable"
+    assert r.status_code == 502
+    assert r.json()["error"] == "cover_url_unreachable"
     assert from_url(client, "http://nohost.example/a").status_code == 502
 
 
@@ -191,7 +202,8 @@ def test_from_url_too_large(client, song, web, monkeypatch):
     monkeypatch.setattr(coverimg, "MAX_BYTES", 100)
     web.pages[("img.example", "/big")] = reply(body=bytes(101))
     r = from_url(client, "http://img.example/big")
-    assert r.status_code == 413 and r.json()["error"] == "cover_too_large"
+    assert r.status_code == 413
+    assert r.json()["error"] == "cover_too_large"
 
 
 def test_connection_failure_is_unreachable(client, song, web, monkeypatch):
@@ -232,6 +244,6 @@ def test_http_get_reads_a_real_local_server(monkeypatch):
 
 def test_resolve_public_rejects_mixed_answers(monkeypatch):
     monkeypatch.setattr(coverimg.socket, "getaddrinfo", lambda *a, **k: [(2, 1, 6, "", ("93.184.216.34", 80)), (2, 1, 6, "", ("10.0.0.1", 80))])
-    with pytest.raises(Exception) as exc:
+    with pytest.raises(coverimg.Problem) as exc:
         coverimg.resolve_public("x.example", 80)
     assert exc.value.code == "cover_url_refused"

@@ -13,7 +13,7 @@ const bucketOf = (px) => Math.round((Number.isFinite(px) ? px : 0) / PX_BUCKET);
 export function loadShed(storage, pixels) {
   try {
     const v = JSON.parse(storage?.getItem?.(SHED_STORAGE_KEY) ?? 'null');
-    if (v && v.px === bucketOf(pixels) && Number.isInteger(v.shed)) return clampShed(v.shed);
+    if (v?.px === bucketOf(pixels) && Number.isInteger(v.shed)) return clampShed(v.shed);
   } catch {}
   return 0;
 }
@@ -33,12 +33,19 @@ export function renderSize(cssW, cssH, dpr, scale) {
   return { w: Math.max(1, Math.round(cssW * k)), h: Math.max(1, Math.round(cssH * k)), ratio: k };
 }
 
+function dprCapFor(low, hi) {
+  if (low) return 1;
+  return hi ? SYNTH_HI_DPR : SYNTH_MAX_DPR;
+}
+
 export function synthQuality(level, flags = {}) {
   const lv = Math.min(2, Math.max(0, Math.round(Number.isFinite(level) ? level : 1)));
   const lite = !!flags.lite;
   const low = lv === 0;
   const shed = clampShed(flags.shed);
-  const rings = lite || shed >= 2 ? 0 : low || shed === 1 ? 1 : 2;
+  let rings = 2;
+  if (lite || shed >= 2) rings = 0;
+  else if (low || shed === 1) rings = 1;
   return {
     level: lv,
     lite,
@@ -54,6 +61,6 @@ export function synthQuality(level, flags = {}) {
     glowPasses: rings,
     glowTaps: shed >= 1 ? 2 : 4,
     reflBlur: !lite && !low && shed < 2,
-    dprCap: low ? 1 : lv === 2 && flags.hiDpr ? SYNTH_HI_DPR : SYNTH_MAX_DPR,
+    dprCap: dprCapFor(low, lv === 2 && flags.hiDpr),
   };
 }

@@ -1,8 +1,7 @@
-import { plural } from './dom.js';
+import { plural, fmtTime } from './dom.js';
 import { displayLine } from './credits.js';
 import { hasAudio } from './playable.js';
 import { LONG_SONG_SECONDS } from './constants.js';
-import { fmtTime } from './dom.js';
 
 export const STREAK_STOP = 3;
 
@@ -19,17 +18,26 @@ const metaTally = (s) => `${s.updated} updated, ${s.nothing} nothing found, ${s.
 
 export function metaStatus(s) {
   const seen = (s.updated || 0) + (s.nothing || 0) + (s.failed || 0) + (s.skipped || 0);
-  if (s.state === 'running') return `Getting metadata... ${seen} of ${s.total}${s.failed ? ` (${s.failed} failed)` : ''}`;
+  if (s.state === 'running') {
+    const failedNote = s.failed ? ` (${s.failed} failed)` : '';
+    return `Getting metadata... ${seen} of ${s.total}${failedNote}`;
+  }
   if (!seen) return '';
   if (s.state === 'done') return `Done: ${metaTally(s)}.`;
   if (s.state === 'cancelled') return `Cancelled: ${metaTally(s)}.`;
-  if (s.state === 'error') return `Stopped by an error after ${metaTally(s)}${s.last_error ? ` (${s.last_error})` : ''}.`;
+  if (s.state === 'error') {
+    const lastError = s.last_error ? ` (${s.last_error})` : '';
+    return `Stopped by an error after ${metaTally(s)}${lastError}.`;
+  }
   return '';
 }
 
 export const missingAudio = (songs) => songs.filter((s) => !hasAudio(s));
 
-export const isLong = (song) => !(Number(song?.duration) > 0) || Number(song.duration) > LONG_SONG_SECONDS;
+export const isLong = (song) => {
+  const d = Number(song?.duration);
+  return Number.isNaN(d) || d <= 0 || d > LONG_SONG_SECONDS;
+};
 
 export function splitLong(songs) {
   return { short: songs.filter((s) => !isLong(s)), long: songs.filter(isLong) };
@@ -90,7 +98,9 @@ export function runText(run, { running, pausedMinutes }) {
     return `Downloading... ${run.order.length} of ${run.ids.length}${failed}.${pause}`;
   }
   const long = run.longSkipped ? `, ${run.longSkipped} long ${plural(run.longSkipped, 'song', 'songs')} skipped` : '';
-  const tail = `${t.done} downloaded, ${t.failed} failed${t.skipped ? `, ${t.skipped} skipped` : ''}${t.left ? `, ${t.left} not started` : ''}${long}`;
+  const skipped = t.skipped ? `, ${t.skipped} skipped` : '';
+  const left = t.left ? `, ${t.left} not started` : '';
+  const tail = `${t.done} downloaded, ${t.failed} failed${skipped}${left}${long}`;
   if (run.stopped) return `Stopped after ${STREAK_STOP} failures in a row: ${tail}.`;
   if (run.cancelled) return `Cancelled: ${tail}.`;
   return `Done: ${tail}.`;
@@ -101,6 +111,7 @@ export function failedList(run, songs) {
     const s = songs.find((x) => x.id === id);
     const name = s ? displayLine(s) || id : id;
     const why = run.results[id].error;
-    return `${name} (${id})${why ? `: ${why}` : ''}`;
+    const reason = why ? `: ${why}` : '';
+    return `${name} (${id})${reason}`;
   });
 }

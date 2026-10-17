@@ -11,7 +11,7 @@ import ssl
 import urllib.parse
 from dataclasses import dataclass
 
-from PIL import Image, ImageOps, UnidentifiedImageError
+from PIL import Image, ImageOps
 
 from .problems import Problem
 
@@ -23,6 +23,7 @@ TIMEOUT = 10.0
 ALLOWED_TYPES = ("image/jpeg", "image/png", "image/webp")
 ALLOWED_PORTS = (80, 443)
 USER_AGENT = "audioplayer/0.1 (cover fetch)"
+NOT_ALLOWED = "That address is not allowed."
 
 Image.MAX_IMAGE_PIXELS = MAX_PIXELS
 
@@ -54,7 +55,7 @@ def normalize(data: bytes) -> bytes:
                 img = img.convert("RGB")
     except Problem:
         raise
-    except (UnidentifiedImageError, OSError, ValueError, Image.DecompressionBombError, SyntaxError):
+    except (OSError, ValueError, Image.DecompressionBombError, SyntaxError):
         raise refuse(422, "cover_bad_image", "This file is not a readable image.") from None
     img.thumbnail((MAX_SIDE, MAX_SIDE), Image.Resampling.LANCZOS)
     out = io.BytesIO()
@@ -81,7 +82,7 @@ def resolve_public(host: str, port: int) -> str:
         raise refuse(502, "cover_url_unreachable", "Could not reach that address.") from None
     ips = [info[4][0] for info in infos]
     if not ips or not all(_public(ip) for ip in ips):
-        raise refuse(422, "cover_url_refused", "That address is not allowed.")
+        raise refuse(422, "cover_url_refused", NOT_ALLOWED)
     return ips[0]
 
 
@@ -95,10 +96,10 @@ def parse_url(url: str) -> tuple[str, str, int, str]:
     if parts.scheme not in ("http", "https") or not host:
         raise refuse(422, "cover_url_refused", "Enter a full http:// or https:// address.")
     if parts.username or parts.password:
-        raise refuse(422, "cover_url_refused", "That address is not allowed.")
+        raise refuse(422, "cover_url_refused", NOT_ALLOWED)
     port = port or (443 if parts.scheme == "https" else 80)
     if port not in ALLOWED_PORTS:
-        raise refuse(422, "cover_url_refused", "That address is not allowed.")
+        raise refuse(422, "cover_url_refused", NOT_ALLOWED)
     path = parts.path or "/"
     return parts.scheme, host, port, f"{path}?{parts.query}" if parts.query else path
 
@@ -127,18 +128,32 @@ def http_get(scheme: str, host: str, port: int, path: str, ip: str) -> Reply:
         sock.close()
 
 
+def _target_ip(host: str, port: int) -> str:
+    try:
+        ip = ipaddress.ip_address(host.strip("[]"))
+    except ValueError:
+        return resolve_public(host, port)
+    if not _public(str(ip)):
+        raise refuse(422, "cover_url_refused", NOT_ALLOWED)
+    return str(ip)
+
+
+def _accept(reply: Reply) -> bytes:
+    if reply.status != 200:
+        raise refuse(502, "cover_url_unreachable", f"That address answered {reply.status}.")
+    if reply.content_type not in ALLOWED_TYPES:
+        raise refuse(415, "cover_bad_type", "That address is not a JPEG, PNG or WebP image.")
+    if len(reply.body) > MAX_BYTES:
+        raise too_large()
+    return reply.body
+
+
 def fetch(url: str) -> bytes:
     """Download an image from a public http(s) URL: every hop is resolved and checked, redirects are followed up to MAX_REDIRECTS."""
     current = url
     for _hop in range(MAX_REDIRECTS + 1):
         scheme, host, port, path = parse_url(current)
-        try:
-            ip = ipaddress.ip_address(host.strip("[]"))
-            if not _public(str(ip)):
-                raise refuse(422, "cover_url_refused", "That address is not allowed.")
-            target = str(ip)
-        except ValueError:
-            target = resolve_public(host, port)
+        target = _target_ip(host, port)
         try:
             reply = http_get(scheme, host, port, path, target)
         except (OSError, http.client.HTTPException):
@@ -146,11 +161,5 @@ def fetch(url: str) -> bytes:
         if 300 <= reply.status < 400 and reply.location:
             current = urllib.parse.urljoin(current, reply.location)
             continue
-        if reply.status != 200:
-            raise refuse(502, "cover_url_unreachable", f"That address answered {reply.status}.")
-        if reply.content_type not in ALLOWED_TYPES:
-            raise refuse(415, "cover_bad_type", "That address is not a JPEG, PNG or WebP image.")
-        if len(reply.body) > MAX_BYTES:
-            raise too_large()
-        return reply.body
+        return _accept(reply)
     raise refuse(422, "cover_url_refused", "That address redirects too many times.")

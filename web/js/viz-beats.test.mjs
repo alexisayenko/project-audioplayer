@@ -387,3 +387,10 @@ test('beat sums above the cap stay round: overlapping beats are soft-limited, no
   assert.ok(top.length > 20);
   assert.ok(new Set(top.map((v) => v.toFixed(7))).size > top.length * 0.5);
 });
+
+test('beatTimeWeight is zero for NaN and out-of-spread offsets', () => {
+  assert.equal(B.beatTimeWeight(NaN), 0);
+  assert.equal(B.beatTimeWeight(undefined), 0);
+  assert.equal(B.beatTimeWeight(1000), 0);
+  assert.ok(B.beatTimeWeight(0) > 0);
+});

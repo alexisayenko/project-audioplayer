@@ -50,7 +50,10 @@ def test_stream_result_equals_the_plain_preview(client):
 def test_stream_refused_link_is_an_error_event_at_the_first_step(client):
     evs = events(client.post("/preview/stream", json={"url": "http://x.y"}, headers=H))
     err = evs[-1]
-    assert err["event"] == "error" and err["stage"] == "link" and err["status"] == 422 and err["error"] == "unsupported"
+    assert err["event"] == "error"
+    assert err["stage"] == "link"
+    assert err["status"] == 422
+    assert err["error"] == "unsupported"
     assert not any(e["event"] == "result" for e in evs)
 
 
@@ -60,7 +63,9 @@ def test_stream_extractor_failure_names_the_details_step(client, monkeypatch):
 
     monkeypatch.setattr(extractor, "preview", boom)
     err = events(client.post("/preview/stream", json={"url": VID}, headers=H))[-1]
-    assert err["stage"] == "details" and err["status"] == 502 and "Video unavailable" in err["detail"]
+    assert err["stage"] == "details"
+    assert err["status"] == 502
+    assert "Video unavailable" in err["detail"]
 
 
 def test_stream_lookup_failure_names_the_failing_step(client, monkeypatch):
@@ -69,7 +74,8 @@ def test_stream_lookup_failure_names_the_failing_step(client, monkeypatch):
 
     monkeypatch.setattr(lookup.wiki_lookup, "suggest", boom)
     evs = events(client.post("/preview/stream", json={"url": VID}, headers=H))
-    assert evs[-1]["event"] == "error" and evs[-1]["stage"] == "wiki"
+    assert evs[-1]["event"] == "error"
+    assert evs[-1]["stage"] == "wiki"
     assert ("genres", "done") in [(e.get("id"), e.get("state")) for e in evs]
 
 

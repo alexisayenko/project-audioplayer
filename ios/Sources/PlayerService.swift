@@ -399,6 +399,7 @@ final class PlayerService: ObservableObject {
                 self.artworkID = track.id
                 self.updateNowPlaying()
             } catch is CancellationError {
+                return // cancelled
             } catch {
                 NSLog("artwork \(track.id): \(error.localizedDescription)")
             }

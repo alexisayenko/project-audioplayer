@@ -325,6 +325,22 @@ def _empty_infobox() -> dict[str, Any]:
     return {"genres": [], "album": None, "year": None, "type": None, "name": None, "artist": None, "kind": None}
 
 
+def _apply_param(out: dict[str, Any], key: str, value: str) -> bool:
+    if key in ("genre", "genres") and not out["genres"]:
+        out["genres"] = _clean_genre_value(value)
+    elif key == "album":
+        out["album"] = _clean_text(value)
+    elif key in ("released", "release"):
+        out["year"] = _clean_year(value)
+    elif key == "artist":
+        out[key] = _clean_artist(value)
+    elif key in ("type", "name"):
+        out[key] = _clean_text(value)
+    else:
+        return False
+    return True
+
+
 def parse_infobox(wikitext: str) -> dict[str, Any]:
     """{genres, album, year, type, name, artist, kind} from the first {{Infobox ...}}; empty values when absent or malformed.
 
@@ -341,19 +357,8 @@ def parse_infobox(wikitext: str) -> dict[str, Any]:
             key = key.strip().casefold()
             if not eq or key in seen:
                 continue
-            if key in ("genre", "genres") and not out["genres"]:
-                out["genres"] = _clean_genre_value(value)
-            elif key == "album":
-                out["album"] = _clean_text(value)
-            elif key in ("released", "release"):
-                out["year"] = _clean_year(value)
-            elif key == "artist":
-                out[key] = _clean_artist(value)
-            elif key in ("type", "name"):
-                out[key] = _clean_text(value)
-            else:
-                continue
-            seen.add(key)
+            if _apply_param(out, key, value):
+                seen.add(key)
     except Exception as exc:
         log.warning("infobox parse failed: %s", exc)
         return _empty_infobox()
@@ -547,12 +552,53 @@ def find_artist(artist: str) -> str | None:
     if not wanted:
         return None
     for title in _search(artist)[:MAX_CANDIDATES + 2]:
-        base = genre_lookup._norm(re.sub(r"\s*\([^)]*\)\s*$", "", title))
+        base = genre_lookup._norm(re.sub(r"\s*+\([^)]*+\)\s*+$", "", title))
         if base != wanted:
             continue
         kind = infobox(_article_url(title))["kind"] or ""
         if "musical artist" in kind or "band" in kind or "person" in kind or "singer" in kind or "musician" in kind or "dj" in kind:
             return _article_url(title)
+    return None
+
+
+def _suggest_into(out: dict[str, Any], artist: str, title: str, mb: dict[str, Any]) -> None:
+    song_link, song_q = _pick(mb["song_rels"])
+    artist_link, artist_q = _pick(mb["artist_rels"])
+    out["wikipedia_song"], out["wikipedia_artist"] = song_link, artist_link
+    out["wikipedia_album"] = _pick(mb.get("album_rels") or [])[0] if mb.get("album") else None
+    names = artist_candidates(artist)
+    if song_link and _credits_other_artist(song_link, names):
+        song_link, song_q = None, None
+        out["wikipedia_song"] = None
+    if not song_link and title and names:
+        song_link = find_song(artist, title, names)
+        out["wikipedia_song"] = song_link
+        song_q = None
+    if not artist_link and names:
+        artist_link = next((u for u in (find_artist(n) for n in names) if u), None)
+        out["wikipedia_artist"] = artist_link
+        artist_q = None
+    song_q = song_q or qid_of_page(song_link or "")
+    artist_q = artist_q or qid_of_page(artist_link or "")
+    found = facts(song_q, artist_q)
+    out["tags"] = found["tags"]
+    out["song_genres"] = found["song_genres"]
+    out["year"] = found["year"] or mb["year"]
+    _with_infobox(out, song_link, artist_link)
+    if not out["wikipedia_album"] and names:
+        out["wikipedia_album"] = _search_album(artist, names, (out["infobox_album"], mb.get("album")))
+
+
+def _credits_other_artist(song_link: str, names: list[str]) -> bool:
+    box_artist = infobox(song_link)["artist"]
+    return bool(box_artist) and not any(genre_lookup._artist_match(c, box_artist) for c in names)
+
+
+def _search_album(artist: str, names: list[str], candidates: tuple[str | None, str | None]) -> str | None:
+    for album in dict.fromkeys(a for a in candidates if a):
+        found = find_album(artist, album, names)
+        if found:
+            return found
     return None
 
 
@@ -566,35 +612,7 @@ def suggest(artist: str, title: str, mb: dict[str, Any] | None = None) -> dict[s
     try:
         mb = mb or genre_lookup.lookup(artist, title)
         out["year"] = mb["year"]
-        song_link, song_q = _pick(mb["song_rels"])
-        artist_link, artist_q = _pick(mb["artist_rels"])
-        out["wikipedia_song"], out["wikipedia_artist"] = song_link, artist_link
-        out["wikipedia_album"] = _pick(mb.get("album_rels") or [])[0] if mb.get("album") else None
-        box_artist = infobox(song_link)["artist"] if song_link else None
-        if box_artist and not any(genre_lookup._artist_match(c, box_artist) for c in artist_candidates(artist)):
-            song_link, song_q = None, None
-            out["wikipedia_song"] = None
-        names = artist_candidates(artist)
-        if not song_link and title and names:
-            song_link = find_song(artist, title, names)
-            out["wikipedia_song"] = song_link
-            song_q = None
-        if not artist_link and names:
-            artist_link = next((u for u in (find_artist(n) for n in names) if u), None)
-            out["wikipedia_artist"] = artist_link
-            artist_q = None
-        song_q = song_q or qid_of_page(song_link or "")
-        artist_q = artist_q or qid_of_page(artist_link or "")
-        found = facts(song_q, artist_q)
-        out["tags"] = found["tags"]
-        out["song_genres"] = found["song_genres"]
-        out["year"] = found["year"] or mb["year"]
-        _with_infobox(out, song_link, artist_link)
-        if not out["wikipedia_album"] and names:
-            for album in dict.fromkeys(a for a in (out["infobox_album"], mb.get("album")) if a):
-                out["wikipedia_album"] = find_album(artist, album, names)
-                if out["wikipedia_album"]:
-                    break
+        _suggest_into(out, artist, title, mb)
     except Exception as exc:
         log.warning("wikipedia suggestion failed for %r - %r: %s", artist, title, exc)
     return out

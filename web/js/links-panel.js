@@ -7,7 +7,10 @@ const httpUrl = (v) => (typeof v === 'string' && /^https?:\/\/\S+$/i.test(v.trim
 
 let seq = 0;
 const ensureId = (r) => {
-  if (!r.msg.id) r.msg.id = `lk-err-${seq += 1}`;
+  if (!r.msg.id) {
+    seq += 1;
+    r.msg.id = `lk-err-${seq}`;
+  }
   return r.msg.id;
 };
 

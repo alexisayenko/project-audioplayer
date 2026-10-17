@@ -11,8 +11,7 @@ export function frameStats(buf, silentDb = SILENT_DB) {
   let max = -Infinity;
   let sum = 0;
   let count = 0;
-  for (let i = 0; i < buf.length; i += 1) {
-    const v = buf[i];
+  for (const v of buf) {
     if (!Number.isFinite(v)) continue;
     if (v > max) max = v;
     sum += v;
@@ -23,7 +22,7 @@ export function frameStats(buf, silentDb = SILENT_DB) {
 
 export function byteMax(bytes) {
   let max = 0;
-  for (let i = 0; i < bytes.length; i += 1) if (bytes[i] > max) max = bytes[i];
+  for (const b of bytes) if (b > max) max = b;
   return max;
 }
 
@@ -80,10 +79,12 @@ const fmt = (v) => (Number.isFinite(v) ? v.toFixed(1) : '-inf');
 
 export function debugLines(i) {
   const d = diagnose(i);
+  const stateText = d.text ? `: ${d.text}` : '';
+  const fftText = i.hasAnalyser ? `fft ${i.fftSize}` : 'none';
   return [
-    `state ${d.code}${d.text ? `: ${d.text}` : ''}`,
+    `state ${d.code}${stateText}`,
     `playing ${i.playing ? 'yes' : 'no'}  paused ${i.paused ? 'yes' : 'no'}  graph ${i.graphState}`,
-    `AudioContext ${i.ctxState}  analyser ${i.hasAnalyser ? `fft ${i.fftSize}` : 'none'}`,
+    `AudioContext ${i.ctxState}  analyser ${fftText}`,
     `dB max ${fmt(i.max)}  mean ${fmt(i.mean)}  byte max ${i.byteMax ?? 'n/a'}`,
     `all-zero ${i.allZero ? 'yes' : 'no'}  frames ${i.frames}  nonzero ${i.live}  silent run ${i.silentRun}`,
     `audio origin ${i.src}  page ${i.pageOrigin}  same-origin ${i.sameOrigin ? 'yes' : 'no'}  crossOrigin ${i.crossOrigin ?? 'null'}`,

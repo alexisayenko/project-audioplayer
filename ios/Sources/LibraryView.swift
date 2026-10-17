@@ -256,7 +256,11 @@ struct LibraryView: View {
             if player.enqueue([track]) == 1 { toast = "Added to queue"; queueTick += 1 } else { toast = "Already in queue" }
         }
         let removeAudio = { library.removeAudio(track.id); toast = "Removed from this iPhone" }
-        let state = onPhone ? "on iPhone" : progress != nil ? "downloading \(Int((progress ?? 0) * 100)) percent" : hasAudio ? "on server" : "no audio yet"
+        let state: String
+        if onPhone { state = "on iPhone" }
+        else if progress != nil { state = "downloading \(Int((progress ?? 0) * 100)) percent" }
+        else if hasAudio { state = "on server" }
+        else { state = "no audio yet" }
         let tap = {
             if onPhone { start() }
             else if !hasAudio { if progress == nil { toast = "No audio yet" } }

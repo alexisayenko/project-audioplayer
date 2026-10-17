@@ -35,7 +35,7 @@ export function describeSync(raw, nowMs = Date.now()) {
       dot: true,
     };
   }
-  const t = s.last_push_at ? Date.parse(s.last_push_at) : NaN;
+  const t = s.last_push_at ? Date.parse(s.last_push_at) : Number.NaN;
   const ago = Number.isFinite(t) ? `last pushed ${Math.max(1, Math.round((nowMs - t) / 60000))} min ago` : 'no push recorded';
   return { level: 'warn', text: `${ago}, ${m} not pushed`, label: `Sync is behind: ${m} not pushed`, dot: true };
 }

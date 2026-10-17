@@ -69,7 +69,7 @@ export function makeFrameMeter({ frames = FRAME_EMA, hold = HOLD_FRAMES } = {}) 
       if (last === null) { last = ts; return null; }
       const dt = ts - last;
       last = ts;
-      if (!(dt > 0)) return null;
+      if (Number.isNaN(dt) || dt <= 0) return null;
       if (dt > GAP_MS) { skip = hold; return null; }
       if (skip > 0) { skip -= 1; return null; }
       ema = ema ? ema + (dt - ema) / frames : dt;
@@ -106,6 +106,55 @@ export function makePaceGovernor({ top = PACE_TOP, start = PACE_START, shedMax =
   let pendingGrace = null;
   let stableSince = null;
   let note = null;
+  const downNote = (ts, ema, target, suffix, banS) => ({ dir: -1, at: ts, text: `interval ${ema.toFixed(1)} ms > ${(target * PACE_OVER).toFixed(1)} ms for ${((ts - overSince) / 1000).toFixed(1)} s${suffix}`, banS });
+  const upNote = (ts, ema, target, suffix) => ({ dir: 1, at: ts, text: `interval ${ema.toFixed(1)} ms < ${(target * PACE_OK).toFixed(1)} ms for ${((ts - okSince) / 1000).toFixed(1)} s${suffix}`, banS: 0 });
+  const settle = (ts) => { lockUntil = ts + PACE_SETTLE_S * 1000; };
+  const onOver = (ts, ema, target) => {
+    overSince ??= ts;
+    okSince = null;
+    liteOkSince = null;
+    if (ts - overSince >= PACE_LITE_S * 1000) lite = true;
+    if (!(ts - overSince >= PACE_DOWN_S * 1000 && ts >= lockUntil)) return 0;
+    if (shed < shedTop) {
+      note = downNote(ts, ema, target, ' (render scale)', shedBans[shed]);
+      stableSince = null;
+      shedBanUntil[shed] = ts + shedBans[shed] * 1000;
+      shedBans[shed] = Math.min(PACE_BAN_MAX_S, shedBans[shed] * 2);
+      shed += 1;
+    } else if (cap > -1 && (cap > 0 || lite)) {
+      note = downNote(ts, ema, target, '', bans[cap + 1]);
+      stableSince = null;
+      banUntil[cap + 1] = ts + bans[cap + 1] * 1000;
+      bans[cap + 1] = Math.min(PACE_BAN_MAX_S, bans[cap + 1] * 2);
+      cap -= 1;
+    } else return 0;
+    overSince = null;
+    settle(ts);
+    return -1;
+  };
+  const onUnder = (ts, ema, target, ok) => {
+    overSince = null;
+    if (!ok) {
+      okSince = null;
+      liteOkSince = null;
+      return 0;
+    }
+    okSince ??= ts;
+    liteOkSince ??= ts;
+    if (lite && ts - liteOkSince >= PACE_LITE_OFF_S * 1000) lite = false;
+    const climbCap = cap < (shedTop > 0 ? Math.min(top, 2) : top);
+    if (!(ts - okSince >= PACE_UP_S * 1000)) return 0;
+    if (!climbCap && shed > 0 && ts >= shedBanUntil[shed - 1] && ts >= lockUntil) {
+      note = upNote(ts, ema, target, ' (render scale)');
+      shed -= 1;
+    } else if (cap < top && (climbCap || shed === 0) && ts >= banUntil[cap + 2] && ts >= lockUntil) {
+      note = upNote(ts, ema, target, '');
+      cap += 1;
+    } else return 0;
+    okSince = null;
+    settle(ts);
+    return 1;
+  };
   return {
     grace(ms = PACE_GRACE_S * 1000) { pendingGrace = Math.max(pendingGrace ?? 0, ms); },
     update(ts, ema, target, valid) {
@@ -119,55 +168,8 @@ export function makePaceGovernor({ top = PACE_TOP, start = PACE_START, shedMax =
         stableSince ??= ts;
         if (ts - stableSince >= PACE_BAN_RESET_S * 1000) { bans.fill(PACE_BAN_S); stableSince = ts; }
       }
-      if (over) {
-        overSince ??= ts;
-        okSince = null;
-        liteOkSince = null;
-        if (ts - overSince >= PACE_LITE_S * 1000) lite = true;
-        if (ts - overSince >= PACE_DOWN_S * 1000 && ts >= lockUntil && shed < shedTop) {
-          note = { dir: -1, at: ts, text: `interval ${ema.toFixed(1)} ms > ${(target * PACE_OVER).toFixed(1)} ms for ${((ts - overSince) / 1000).toFixed(1)} s (render scale)`, banS: shedBans[shed] };
-          stableSince = null;
-          shedBanUntil[shed] = ts + shedBans[shed] * 1000;
-          shedBans[shed] = Math.min(PACE_BAN_MAX_S, shedBans[shed] * 2);
-          shed += 1;
-          changed = -1;
-          overSince = null;
-          lockUntil = ts + PACE_SETTLE_S * 1000;
-        } else if (ts - overSince >= PACE_DOWN_S * 1000 && ts >= lockUntil && cap > -1 && (cap > 0 || lite)) {
-          note = { dir: -1, at: ts, text: `interval ${ema.toFixed(1)} ms > ${(target * PACE_OVER).toFixed(1)} ms for ${((ts - overSince) / 1000).toFixed(1)} s`, banS: bans[cap + 1] };
-          stableSince = null;
-          banUntil[cap + 1] = ts + bans[cap + 1] * 1000;
-          bans[cap + 1] = Math.min(PACE_BAN_MAX_S, bans[cap + 1] * 2);
-          cap -= 1;
-          changed = -1;
-          overSince = null;
-          lockUntil = ts + PACE_SETTLE_S * 1000;
-        }
-      } else {
-        overSince = null;
-        if (ok) {
-          okSince ??= ts;
-          liteOkSince ??= ts;
-          if (lite && ts - liteOkSince >= PACE_LITE_OFF_S * 1000) lite = false;
-          const climbCap = cap < (shedTop > 0 ? Math.min(top, 2) : top);
-          if (ts - okSince >= PACE_UP_S * 1000 && !climbCap && shed > 0 && ts >= shedBanUntil[shed - 1] && ts >= lockUntil) {
-            note = { dir: 1, at: ts, text: `interval ${ema.toFixed(1)} ms < ${(target * PACE_OK).toFixed(1)} ms for ${((ts - okSince) / 1000).toFixed(1)} s (render scale)`, banS: 0 };
-            shed -= 1;
-            changed = 1;
-            okSince = null;
-            lockUntil = ts + PACE_SETTLE_S * 1000;
-          } else if (ts - okSince >= PACE_UP_S * 1000 && cap < top && (climbCap || shed === 0) && ts >= banUntil[cap + 2] && ts >= lockUntil) {
-            note = { dir: 1, at: ts, text: `interval ${ema.toFixed(1)} ms < ${(target * PACE_OK).toFixed(1)} ms for ${((ts - okSince) / 1000).toFixed(1)} s`, banS: 0 };
-            cap += 1;
-            changed = 1;
-            okSince = null;
-            lockUntil = ts + PACE_SETTLE_S * 1000;
-          }
-        } else {
-          okSince = null;
-          liteOkSince = null;
-        }
-      }
+      if (over) changed = onOver(ts, ema, target);
+      else changed = onUnder(ts, ema, target, ok);
       return changed;
     },
     configure({ shedMax: m = shedTop, shed: n = shed } = {}) {

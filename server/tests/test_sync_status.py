@@ -31,14 +31,17 @@ def aged(tmp_path, age, **kw):
 def test_stale_boundaries(tmp_path, age, state):
     s = aged(tmp_path, age)
     st = s.sync_status(True)
-    assert st["state"] == state and st["oldest_unpushed_age_s"] == age and st["stale_after_s"] == 90
+    assert st["state"] == state
+    assert st["oldest_unpushed_age_s"] == age
+    assert st["stale_after_s"] == 90
 
 
 def test_custom_interval_and_grace(tmp_path):
     (tmp_path / "a").mkdir()
     (tmp_path / "b").mkdir()
     s = aged(tmp_path / "a", 31, interval_s=10, grace_s=20)
-    assert s.sync_status(True)["state"] == "stale" and s.stale_after_s == 30
+    assert s.sync_status(True)["state"] == "stale"
+    assert s.stale_after_s == 30
     assert aged(tmp_path / "b", 30, interval_s=10, grace_s=20).sync_status(True)["state"] == "pending"
 
 
@@ -56,7 +59,9 @@ def test_idle_server_stays_ok_and_age_uses_commit_time_not_last_push(tmp_path):
     assert s.sync_status(True)["state"] == "stale"
     s.push_pass()
     st = s.sync_status(True)
-    assert st["state"] == "ok" and st["oldest_unpushed_age_s"] is None and st["last_push_at"]
+    assert st["state"] == "ok"
+    assert st["oldest_unpushed_age_s"] is None
+    assert st["last_push_at"]
 
 
 def test_heartbeat_timer_seen(tmp_path):
@@ -77,7 +82,8 @@ def test_no_upstream_is_an_error(tmp_path):
     subprocess.run(["git", "init", "-q", "-b", "main", str(lone)], check=True)
     s = gitstore.GitSync(lone, state_file=tmp_path / "st.json")
     st = s.sync_status(True)
-    assert st["state"] == "error" and "no upstream" in st["last_error"]
+    assert st["state"] == "error"
+    assert "no upstream" in st["last_error"]
 
 
 @pytest.fixture
@@ -92,8 +98,11 @@ def api(tmp_path, monkeypatch):
 def test_only_the_owner_sees_counts(api):
     client, s = api
     owner = client.get("/health", headers={"X-API-Token": "secret"}).json()
-    assert set(owner["sync"]) == OWNER_FIELDS and all(set(r) == REPO_FIELDS for r in owner["sync"]["repos"])
-    assert owner["sync"]["unpushed"] == 1 and owner["sync"]["mode"] == "timer" and owner["sync"]["timer_seen"] is False
+    assert set(owner["sync"]) == OWNER_FIELDS
+    assert all(set(r) == REPO_FIELDS for r in owner["sync"]["repos"])
+    assert owner["sync"]["unpushed"] == 1
+    assert owner["sync"]["mode"] == "timer"
+    assert owner["sync"]["timer_seen"] is False
     assert isinstance(owner["sync"]["stale_after_s"], int)
     assert client.get("/health").json() == {"status": "ok", "sync": {"state": "ok"}}
     assert client.get("/health", headers={"X-API-Token": "wrong"}).json()["sync"] == {"state": "ok"}
@@ -130,7 +139,9 @@ def test_no_store_and_default_mode(monkeypatch):
     assert c.get("/health").json() == {"status": "ok", "sync": {"state": "ok"}}
     monkeypatch.setenv("AUDIO_API_TOKEN", "secret")
     owner = c.get("/health", headers={"X-API-Token": "secret"}).json()["sync"]
-    assert owner["unpushed"] == 0 and owner["mode"] == "none" and owner["state"] == "ok"
+    assert owner["unpushed"] == 0
+    assert owner["mode"] == "none"
+    assert owner["state"] == "ok"
     monkeypatch.delenv("GIT_SYNC_MODE", raising=False)
     monkeypatch.setenv("AUDIO_DATA_REPO", "/x")
     assert gitstore.from_env().mode == "timer"

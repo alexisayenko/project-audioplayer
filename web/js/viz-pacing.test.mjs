@@ -377,3 +377,10 @@ test('a persisted start rung is honoured and can still come back up', () => {
   drive(120, () => 16.7, s);
   assert.equal(s.gov.shed, 0);
 });
+
+test('frame meter ignores NaN and non-advancing timestamps', () => {
+  const m = makeFrameMeter();
+  assert.equal(m.tick(100), null);
+  assert.equal(m.tick(NaN), null);
+  assert.equal(m.tick(100), null);
+});

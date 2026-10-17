@@ -11,7 +11,7 @@ function rgb(str) {
   let c = hexCache.get(str);
   if (!c) {
     const m = /^#([0-9a-f]{6})$/i.exec(str);
-    const n = m ? parseInt(m[1], 16) : 0;
+    const n = m ? Number.parseInt(m[1], 16) : 0;
     c = [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
     hexCache.set(str, c);
   }
@@ -34,7 +34,7 @@ export function skyColors(p, sunP) {
   const top = rgb(p.top);
   const bottom = rgb(p.bottom);
   const mid = p.midOn ? rgb(p.mid) : mix3(top, bottom, MID_STOP);
-  const fog = sunP && sunP.bandOn ? mix3(bottom, rgb(sunP.bandColor), 0.5) : bottom.slice();
+  const fog = sunP?.bandOn ? mix3(bottom, rgb(sunP.bandColor), 0.5) : bottom.slice();
   return { top: top.slice(), mid: mid.slice(), bottom: bottom.slice(), horizon: bottom.slice(), fog };
 }
 
@@ -57,7 +57,7 @@ export function starField(p, w, h) {
 }
 
 export function twinkleAt(phase, t, amount, q) {
-  if (!q || !q.starsAnimated || q.reduced || !(amount > 0) || !Number.isFinite(t)) return 1;
+  if (!q?.starsAnimated || q.reduced || !(amount > 0) || !Number.isFinite(t)) return 1;
   return 1 - clamp01(amount) * 0.5 * (1 + Math.sin(phase + t * 1.3));
 }
 
@@ -213,6 +213,12 @@ void main() {
 }
 `;
 
+function cell(p, name) {
+  let c = p.vals.get(name);
+  if (!c) { c = [Number.NaN, Number.NaN, Number.NaN]; p.vals.set(name, c); }
+  return c;
+}
+
 export function createSkyPass(gl, deps) {
   const link = deps.linkProgram;
   const stats = { starCount: 0, uploads: 0, builds: 0 };
@@ -228,11 +234,6 @@ export function createSkyPass(gl, deps) {
   const uHor = {};
   const uVig = {};
 
-  function cell(p, name) {
-    let c = p.vals.get(name);
-    if (!c) { c = [NaN, NaN, NaN]; p.vals.set(name, c); }
-    return c;
-  }
   function loc(p, name) {
     if (!p.locs.has(name)) p.locs.set(name, gl.getUniformLocation(p.prog, name));
     return p.locs.get(name);

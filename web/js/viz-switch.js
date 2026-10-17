@@ -1,6 +1,6 @@
 import { icon } from './icons.js';
 
-const WRAP = ['ArrowDown', 'ArrowUp', 'Home', 'End'];
+const WRAP = new Set(['ArrowDown', 'ArrowUp', 'Home', 'End']);
 
 export function stepIndex(i, key, n) {
   if (key === 'ArrowRight' || key === 'ArrowDown') return (i + 1) % n;
@@ -19,7 +19,7 @@ export function currentIndex(modes, current) {
 }
 
 export function moveFocus(i, key, n) {
-  if (!WRAP.includes(key) || n < 1) return i;
+  if (!WRAP.has(key) || n < 1) return i;
   return stepIndex(i, key, n);
 }
 
@@ -34,7 +34,6 @@ export function createModeSwitch({ root, modes, current, onSelect, win = globalT
   let note = '';
   let open = false;
   const options = new Map();
-  const label = () => modes.find((m) => m.id === id)?.label ?? '';
 
   const button = document.createElement('button');
   button.type = 'button';
@@ -68,7 +67,7 @@ export function createModeSwitch({ root, modes, current, onSelect, win = globalT
 
   const ordered = () => modes.map((m) => options.get(m.id));
   const focusIndex = (i) => ordered()[i]?.focus?.();
-  const focused = () => ordered().findIndex((o) => o === document.activeElement);
+  const focused = () => ordered().indexOf(document.activeElement);
 
   const place = () => {
     const h = win?.innerHeight ?? 800;
@@ -136,7 +135,7 @@ export function createModeSwitch({ root, modes, current, onSelect, win = globalT
       if (i >= 0) choose(modes[i].id);
       return;
     }
-    if (!WRAP.includes(k)) return;
+    if (!WRAP.has(k)) return;
     e.preventDefault();
     e.stopPropagation?.();
     const i = focused();

@@ -85,12 +85,12 @@ export function coverEditor(song) {
     file.value = '';
     const bad = fileProblem(f);
     if (bad) { msg.textContent = bad; return; }
-    apply(() => api.uploadCover(id, f), 'Cover updated');
+    void apply(() => api.uploadCover(id, f), 'Cover updated');
   });
   const submitUrl = () => {
     const bad = urlProblem(urlIn.value);
     if (bad) { msg.textContent = bad; urlIn.focus(); return; }
-    apply(() => api.coverFromUrl(id, urlIn.value.trim()), 'Cover updated');
+    void apply(() => api.coverFromUrl(id, urlIn.value.trim()), 'Cover updated');
   };
   urlGo.addEventListener('click', submitUrl);
   urlIn.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); submitUrl(); } });

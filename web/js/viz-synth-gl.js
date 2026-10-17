@@ -32,7 +32,7 @@ export function createSynth(canvas, opts = {}) {
   if (!gl) return null;
   const onError = opts.onError || (() => {});
   const readSettings = opts.settings || getSynth;
-  const factories = { ...DEFAULT_PASSES, ...(opts.passes || {}) };
+  const factories = { ...DEFAULT_PASSES, ...opts.passes };
   const view = { w: canvas.width || 1, h: canvas.height || 1, dpr: 1, ratio: 1 };
   const s = {
     level: clampLevel(opts.quality ?? 1),
@@ -98,7 +98,7 @@ export function createSynth(canvas, opts = {}) {
   function allocate(aspect) {
     const d = gridDims(s.level, aspect);
     const key = `${d.rows}x${d.cols}`;
-    if (s.dims && s.dims.key === key) return s.dims;
+    if (s.dims?.key === key) return s.dims;
     s.dims = { rows: d.rows, cols: d.cols, key };
     s.liveFrame = createFrame(d.rows);
     s.lookFrame = createFrame(d.rows);
@@ -136,7 +136,7 @@ export function createSynth(canvas, opts = {}) {
     lat.dz = rowLayout(rows).dz;
     lat.data = s.heights;
     if (wantFuture) {
-      if (!lat.future || lat.future.length !== fl.n * cols) lat.future = s.future.subarray(0, fl.n * cols);
+      if (lat.future?.length !== fl.n * cols) lat.future = s.future.subarray(0, fl.n * cols);
     } else lat.future = null;
     passes.ground.setHeights(lat, info.base + info.frac, scene, settings);
   }

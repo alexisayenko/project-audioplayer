@@ -176,7 +176,7 @@ async def preview_stream(req: PreviewRequest, user: Annotated[dict[str, Any], De
     return StreamingResponse(_preview_events(req, user), media_type="application/x-ndjson", headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"})
 
 
-@router.post("/metadata", dependencies=[Depends(deps.require_token)])
+@router.post("/metadata", dependencies=[Depends(deps.require_token)], responses=deps.responses(422))
 async def get_metadata(req: MetadataRequest):
     if req.version_kind is not None and req.version_kind not in credits.KINDS:
         raise HTTPException(status_code=422, detail=f"version_kind must be one of {', '.join(credits.KINDS)}")

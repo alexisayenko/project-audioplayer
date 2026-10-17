@@ -40,3 +40,5 @@ scripts/__pycache__/
 # Local-only invoices (personal data)
 docs/brand/invoices/*
 !docs/brand/invoices/README.md
+
+/BUILD

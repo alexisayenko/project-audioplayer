@@ -117,7 +117,8 @@ def test_retags_match_the_whole_tag_only(raw):
 def test_targets_are_canonical_fixed_points():
     for target in {*gf.ALIASES.values(), *gf.RETAGS.values(), gf.PROGRESSIVE_ELECTRONIC}:
         assert gf.canonical(target) == target, target
-        assert gf.is_genre(target) and not gf.is_dropped(target), target
+        assert gf.is_genre(target), target
+        assert not gf.is_dropped(target), target
 
 
 def test_progressive_goes_to_house_with_an_electronic_tag_else_rock():
@@ -133,8 +134,14 @@ def test_progressive_goes_to_house_with_an_electronic_tag_else_rock():
     assert library.clean_tags(["genre:progressive", "genre:progressive house"]) == ["genre:progressive house"]
     assert library.clean_tags(["genre:progressive", "genre:progressive"]) == ["genre:progressive rock"]
     assert gf.filter_tags(["genre:progressive", "genre:trance"]) == ["genre:progressive house", "genre:trance"]
-    assert gf.is_electronic("house") and gf.is_electronic("Electronic") and gf.is_electronic("dance") and gf.is_electronic("edm") and gf.is_electronic("eurodance")
-    assert not gf.is_electronic("rock") and not gf.is_electronic("progressive") and not gf.is_electronic("zzz-weird")
+    assert gf.is_electronic("house")
+    assert gf.is_electronic("Electronic")
+    assert gf.is_electronic("dance")
+    assert gf.is_electronic("edm")
+    assert gf.is_electronic("eurodance")
+    assert not gf.is_electronic("rock")
+    assert not gf.is_electronic("progressive")
+    assert not gf.is_electronic("zzz-weird")
 
 
 @pytest.mark.parametrize("raw", ["mkj", "deb", "stadiumx", "Sam Smith", "dancin", "relaxed", "love song", "Love-Song", "progressive music", "Underground Music", "dystopian music", "comedy music", "Comedy", "novelty music", "novelty song", "novelty",
@@ -142,7 +149,8 @@ def test_progressive_goes_to_house_with_an_electronic_tag_else_rock():
 def test_junk_dropped(raw):
     from app import library
 
-    assert gf.is_dropped(raw) and not gf.is_genre(raw)
+    assert gf.is_dropped(raw)
+    assert not gf.is_genre(raw)
     assert library.clean_tag(f"genre:{raw}") == ""
     assert gf.filter_tags([f"genre:{raw}", "x"]) == ["x"]
 
@@ -151,7 +159,8 @@ def test_junk_dropped(raw):
                                  "darksynth", "dreamwave", "dance-rock", "psybient", "electronic", "singer-songwriter", "experimental", "estrada",
                                  "shock rock", "dark metal", "epic", "trailer", "chillwave", "darkwave", "nu-nrg", "uplifting trance"])
 def test_real_genres_untouched(raw):
-    assert gf.is_genre(raw) and not gf.is_dropped(raw)
+    assert gf.is_genre(raw)
+    assert not gf.is_dropped(raw)
     assert gf.canonical(raw) == raw
 
 
@@ -181,7 +190,8 @@ def test_prefix_cleaning_adds_country_and_lang_once():
 def test_dystopian_is_retagged_to_darksynth_not_dropped():
     from app import library
 
-    assert not gf.is_dropped("dystopian") and gf.is_genre("dystopian")
+    assert not gf.is_dropped("dystopian")
+    assert gf.is_genre("dystopian")
     assert gf.canonical("Dystopian") == "darksynth"
     assert library.clean_tag("genre:dystopian") == "genre:darksynth"
     assert library.clean_tags(["genre:dystopian", "genre:darksynth", "genre:synthwave"]) == ["genre:darksynth", "genre:synthwave"]

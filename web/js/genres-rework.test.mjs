@@ -10,6 +10,7 @@ const calls = stubFetch((u) => {
   if (mode === 'fail') return { status: 500, body: { error: 'x' } };
   if (u.includes('vocabulary')) {
     if (mode === 'vocab-fail') return { status: 500, body: { error: 'x' } };
+    if (mode === 'hostile') return { body: { levels: { x: null }, families: ['F'] } };
     if (mode === 'old') return { body: { families: ['Electronic'], genres: [] } };
     return { body: VOCAB };
   }
@@ -258,4 +259,12 @@ test('Reload is a real button and the nav icon exists', async () => {
   const b = btn(root, 'Reload');
   assert.ok(b && b.getAttribute('type') === 'button' && !b.disabled);
   assert.ok(ICONS.genresMapRework);
+});
+
+test('a vocabulary payload that breaks the tree builder shows Failed to load and re-enables Reload', async () => {
+  mode = 'hostile';
+  const { root, cleanup } = await mount();
+  assert.equal(root.querySelector('[role="status"]').textContent, 'Failed to load');
+  assert.equal(btn(root, 'Reload').disabled, false);
+  cleanup();
 });

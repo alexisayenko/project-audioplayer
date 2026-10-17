@@ -117,11 +117,12 @@ export function openShareDialog(song, audio = $('audio')) {
     }
   });
   const row = (input, text) => el('label', { class: 'check-row t-body' }, input, ' ', text);
+  const curTimeNote = st.current ? ` (${fmtTime(audio.currentTime)})` : '';
   dlg.replaceChildren(
     el('div', { class: 'dlg-head' },
       el('div', {}, el('h2', { class: 't-title', id: 'share-title' }, 'Share link'), el('p', { class: 'muted t-caption' }, displayLine(song))),
       el('button', { type: 'button', class: 'link-btn t-headline', onclick: () => dlg.close() }, 'Close')),
-    el('div', { class: 'field' }, row(atCur, `Start at current time${st.current ? ` (${fmtTime(audio.currentTime)})` : ''}`),
+    el('div', { class: 'field' }, row(atCur, `Start at current time${curTimeNote}`),
       el('label', { for: 'share-time' }, 'Start time (mm:ss)'), time, err),
     row(fs, 'Open in full-screen visualizer'),
     cam ? row(cam, 'Include camera') : null,

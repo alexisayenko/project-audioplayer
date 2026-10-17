@@ -15,7 +15,7 @@ function toRgb(c) {
   let v = hexCache.get(key);
   if (!v) {
     const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(key);
-    v = m ? [parseInt(m[1], 16) / 255, parseInt(m[2], 16) / 255, parseInt(m[3], 16) / 255] : [1, 1, 1];
+    v = m ? [Number.parseInt(m[1], 16) / 255, Number.parseInt(m[2], 16) / 255, Number.parseInt(m[3], 16) / 255] : [1, 1, 1];
     hexCache.set(key, v);
   }
   return v.slice();
@@ -195,7 +195,7 @@ export function reflectionUniforms(scene, p, signal, phase) {
     uFollow: p.reflFollow ? 1 : 0,
     uColor: toRgb(p.reflColor),
     uSheen: p.sheen ? clamp01(num(p.sheenAmount, 0)) : 0,
-    uSoft: scene.q && scene.q.reflBlur === false ? 0 : 1,
+    uSoft: scene.q?.reflBlur === false ? 0 : 1,
   };
 }
 
@@ -351,6 +351,12 @@ void main() {
   gl_FragColor = vec4(col, a);
 }`;
 
+function sameValues(prev, v) {
+  if (!prev || prev.length !== v.length) return false;
+  for (let i = 0; i < v.length; i++) if (prev[i] !== v[i]) return false;
+  return true;
+}
+
 function setUniform(gl, rec, name, v) {
   let loc = rec.locs.get(name);
   if (loc === undefined) {
@@ -365,11 +371,7 @@ function setUniform(gl, rec, name, v) {
     gl.uniform1f(loc, v);
     return true;
   }
-  if (prev && prev.length === v.length) {
-    let same = true;
-    for (let i = 0; i < v.length; i++) if (prev[i] !== v[i]) { same = false; break; }
-    if (same) return false;
-  }
+  if (sameValues(prev, v)) return false;
   rec.vals.set(name, Array.from(v));
   if (v.length === 2) gl.uniform2f(loc, v[0], v[1]);
   else if (v.length === 3) gl.uniform3f(loc, v[0], v[1], v[2]);
@@ -383,7 +385,7 @@ export function createSunPass(gl, deps) {
   let progs = null;
   let buf = null;
   let phase = { slice: 0, haze: 0 };
-  let lastTime = NaN;
+  let lastTime = Number.NaN;
 
   function build() {
     progs = {

@@ -198,8 +198,19 @@ void main() {
 
 const fract01 = (v) => {
   const f = v - Math.floor(v);
-  return f < 0 ? 0 : f;
+  return Math.max(0, f);
 };
+
+function cell(p, name) {
+  let c = p.vals.get(name);
+  if (!c) { c = [Number.NaN, Number.NaN, Number.NaN, Number.NaN]; p.vals.set(name, c); }
+  return c;
+}
+
+function keyOf(scene, p) {
+  const cellMul = scene.q?.cellMul || 1;
+  return `${(p.cell * cellMul).toFixed(4)}|${scene.aspect.toFixed(4)}|${cellMul > 1 ? 0 : 2}|${p.grid}`;
+}
 
 export function createGroundPass(gl, deps) {
   const link = deps.linkProgram;
@@ -218,11 +229,6 @@ export function createGroundPass(gl, deps) {
   let pending = null;
   let stale = false;
 
-  function cell(p, name) {
-    let c = p.vals.get(name);
-    if (!c) { c = [NaN, NaN, NaN, NaN]; p.vals.set(name, c); }
-    return c;
-  }
   function loc(p, name) {
     if (!p.locs.has(name)) p.locs.set(name, gl.getUniformLocation(p.prog, name));
     return p.locs.get(name);
@@ -281,11 +287,6 @@ export function createGroundPass(gl, deps) {
     for (const b of [quadBuf, hillBuf, sil.buf, sil.lineIdx]) gl.deleteBuffer(b);
     progs = null;
     sil = null;
-  }
-
-  function keyOf(scene, p) {
-    const cellMul = scene.q?.cellMul || 1;
-    return `${(p.cell * cellMul).toFixed(4)}|${scene.aspect.toFixed(4)}|${cellMul > 1 ? 0 : 2}|${p.grid}`;
   }
 
   function ensureTiers(scene, p) {
@@ -538,7 +539,9 @@ export function createGroundPass(gl, deps) {
       }
     };
     const wpx = Math.min(3, Math.max(0.5, u.lineWidthPx));
-    const n = wpx <= 1.5 ? 1 : wpx <= 2.4 ? 2 : 3;
+    let n = 3;
+    if (wpx <= 1.5) n = 1;
+    else if (wpx <= 2.4) n = 2;
     const step = n > 1 ? ((wpx - 1) * ratio) / (n - 1) : 0;
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);

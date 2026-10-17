@@ -18,7 +18,9 @@ export function fetchSteps(now = () => Date.now()) {
   const paint = (id, state) => {
     const row = rows.get(id);
     row.li.className = `step ${state}`;
-    row.mark.replaceWith((row.mark = MARK[state]()));
+    const next = MARK[state]();
+    row.mark.replaceWith(next);
+    row.mark = next;
     if (state === 'current') row.li.setAttribute('aria-current', 'step'); else row.li.removeAttribute('aria-current');
   };
   const say = (id, text) => { const n = order.indexOf(id) + 1; live.textContent = `Step ${n} of ${order.length}: ${text}`; };

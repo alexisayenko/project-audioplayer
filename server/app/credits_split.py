@@ -9,7 +9,7 @@ from typing import Any
 from . import credits, timeutil, titles
 from .tokens import split_tokens
 
-_SPLIT = re.compile(r"\s*,\s*|\s*&\s*|\s+and\s+|\s+x\s+|\s+vs\.?\s+", re.I)
+_SPLIT = re.compile(r"\s*+[,&]\s*+|\s++(?:and|x|vs\.?)\s++", re.I)
 _KIND_WORDS = (
     ("remix", re.compile(r"\bremix(?:ed)?\b|\bmashup\b|\bbootleg\b|\brework\b|\bvip\b", re.I)),
     ("live", re.compile(r"\blive\b|\bunplugged\b|\bin concert\b", re.I)),
@@ -26,8 +26,8 @@ _MIXED_BY = re.compile(r"\bmixed\s+by\b", re.I)
 _REMIX_WORDISH = re.compile(r"\b(?:remix|mashup|mix|edit)\b", re.I)
 _PUNCT = " -|"
 _MASHUP_WORD = re.compile(r"^mash[\s-]?up$", re.I)
-_MASHUP_TAIL = re.compile(r"\s*[(\[]\s*(mash[\s-]?up)\s*[)\]]\s*$", re.I)
-_SOURCE_SPLIT = re.compile(r"\s+(?:x|×|vs\.?)\s+", re.I)
+_MASHUP_TAIL = re.compile(r"\s*+[(\[]\s*+(mash[\s-]?up)\s*+[)\]]\s*+$", re.I)
+_SOURCE_SPLIT = re.compile(r"\s++(?:x|×|vs\.?)\s++", re.I)
 _DASH = re.compile(r"\s[-–—]\s")
 FLAGS = (
     "feat_in_artist", "feat_in_title", "multi_artist_in_one_pill", "remix_text_in_title", "mixed_by", "live", "acoustic",
@@ -85,7 +85,7 @@ def _kind_of(text: str) -> str:
     return credits.kind_for(text)
 
 
-_COVER_TAIL = re.compile(r"^(.*?)[\s,:-]*\bcover(?:\s+version)?\s*$", re.I)
+_COVER_TAIL = re.compile(r"^(.*?)[\s,:-]*+\bcover(?:\s++version)?+\s*+$", re.I)
 
 
 def _fold(text: str) -> str:
@@ -179,8 +179,8 @@ def _sources(text: str) -> list[str]:
     return parts if len(parts) >= 2 and all(parts) else []
 
 
-_MASHUP_BY = re.compile(r"mash[\s-]?up\s+by\s+(?P<a>.+)|(?P<b>.+?)\s+mash[\s-]?up", re.I)
-_MAKERS = re.compile(r"\s*,\s*|\s*&\s*|\s+and\s+|\s+x\s+|\s+feat\.?\s+|\s+ft\.?\s+", re.I)
+_MASHUP_BY = re.compile(r"mash[\s-]?up\s+by\s+(?P<a>.+)|(?P<b>.+?)\s++mash[\s-]?up", re.I)
+_MAKERS = re.compile(r"\s*+[,&]\s*+|\s++(?:and|x|feat\.?|ft\.?)\s++", re.I)
 _MASH_SOURCES = re.compile(r"\s+(?:x|×|vs\.?|&|\+)\s+|\s*,\s*", re.I)
 
 

@@ -28,6 +28,8 @@ def test_genres_library_first_then_builtin(client):
     assert "calm" not in out
     assert "deep house" in out
     assert "trance" in out
-    assert "europop" in out and "drum and bass" in out and "indie rock" in out
+    assert "europop" in out
+    assert "drum and bass" in out
+    assert "indie rock" in out
     for rewritten in ("edm", "euro pop", "punk rock", "indie", "romantic", "bard", "nederpop", "appalachian folk", "electronic dance music"):
         assert rewritten not in out, rewritten

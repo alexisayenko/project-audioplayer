@@ -163,6 +163,8 @@ export function createPartsSplitter(opts = {}) {
   };
 }
 
+const maskAt = (on, mask, i) => (on ? mask[i] : 0);
+
 export function combineWeights(state, masks, out = null) {
   const n = masks.freq.bass.length;
   const res = out && out.length === n ? out : new Float32Array(n);
@@ -172,10 +174,10 @@ export function combineWeights(state, masks, out = null) {
     let f = 1;
     let b = 1;
     if (!fOn) {
-      f = (state.freq.bass ? masks.freq.bass[i] : 0) + (state.freq.mids ? masks.freq.mids[i] : 0) + (state.freq.highs ? masks.freq.highs[i] : 0);
+      f = maskAt(state.freq.bass, masks.freq.bass, i) + maskAt(state.freq.mids, masks.freq.mids, i) + maskAt(state.freq.highs, masks.freq.highs, i);
     }
     if (!bOn) {
-      b = (state.behav.beats ? masks.behav.beats[i] : 0) + (state.behav.melody ? masks.behav.melody[i] : 0) + (state.behav.other ? masks.behav.other[i] : 0);
+      b = maskAt(state.behav.beats, masks.behav.beats, i) + maskAt(state.behav.melody, masks.behav.melody, i) + maskAt(state.behav.other, masks.behav.other, i);
     }
     res[i] = clamp01(f) * clamp01(b);
   }
@@ -189,6 +191,23 @@ export function createPartsFilter(opts = {}) {
   let target = null;
   let out = null;
   let lastT = null;
+  const refreshTarget = (on, n, levels, timeS) => {
+    if (on) {
+      target = combineWeights(state, splitter.push(levels, timeS), target?.length === n ? target : null);
+    } else if (!target || target.length !== n) target = new Float32Array(n).fill(1);
+    else target.fill(1);
+  };
+  const blend = (on, shaped, ka, kr) => {
+    let settled = !on;
+    for (let i = 0; i < shaped.length; i += 1) {
+      const g = gains[i];
+      const k = target[i] > g ? ka : kr;
+      gains[i] = g + (target[i] - g) * k;
+      out[i] = shaped[i] * gains[i];
+      if (!on && gains[i] < 0.995) settled = false;
+    }
+    return settled;
+  };
   return {
     setState(next) { state = validateParts(next); if (allOn(state)) splitter.reset(); },
     get state() { return state; },
@@ -200,21 +219,9 @@ export function createPartsFilter(opts = {}) {
       const dt = lastT == null ? 1 / 30 : Math.min(0.2, Math.max(0, timeS - lastT));
       lastT = timeS;
       if (!gains || gains.length !== n) gains = new Float32Array(n).fill(1);
-      if (on) {
-        target = combineWeights(state, splitter.push(levels, timeS), target?.length === n ? target : null);
-      } else if (!target || target.length !== n) target = new Float32Array(n).fill(1);
-      else target.fill(1);
+      refreshTarget(on, n, levels, timeS);
       if (!out || out.length !== n) out = new Float32Array(n);
-      const ka = 1 - Math.exp(-dt / ATTACK_S);
-      const kr = 1 - Math.exp(-dt / RELEASE_S);
-      let settled = !on;
-      for (let i = 0; i < n; i += 1) {
-        const g = gains[i];
-        const k = target[i] > g ? ka : kr;
-        gains[i] = g + (target[i] - g) * k;
-        out[i] = shaped[i] * gains[i];
-        if (!on && gains[i] < 0.995) settled = false;
-      }
+      const settled = blend(on, shaped, 1 - Math.exp(-dt / ATTACK_S), 1 - Math.exp(-dt / RELEASE_S));
       if (settled) { gains = null; lastT = null; return shaped; }
       return out;
     },

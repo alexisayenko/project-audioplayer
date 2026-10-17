@@ -269,7 +269,8 @@ def test_gather_for_a_version_withholds_the_musicbrainz_and_discogs_links(monkey
     monkeypatch.setattr(metadata.discogs_lookup, "suggest", lambda a, t: {"tags": [], "year": 1998, "url": "https://www.discogs.com/release/1"})
     plain = metadata.gather("T", "A", [])
     version = metadata.gather("T", "A", [], version_kind="remix")
-    assert plain["services"]["musicbrainz"]["found"] and plain["services"]["discogs"]["found"]
+    assert plain["services"]["musicbrainz"]["found"]
+    assert plain["services"]["discogs"]["found"]
     assert version["services"]["musicbrainz"] == {"found": False, "url": None}
     assert version["services"]["discogs"] == {"found": False, "url": None}
     assert version["year"] == 1999
@@ -286,7 +287,8 @@ def test_gather_for_a_remix_applies_only_the_sources_own_genres(monkeypatch):
     src = lambda: {"tags": ["genre:trance", "genre:progressive trance"], "youtube_genres": []}
     plain = metadata.gather("T", "A", [src])
     remix = metadata.gather("T", "A", [src], version_kind="remix")
-    assert "genre:art pop" in plain["tags"] and plain["original_genres"] == []
+    assert "genre:art pop" in plain["tags"]
+    assert plain["original_genres"] == []
     assert remix["tags"] == ["genre:trance", "genre:progressive trance", "country:gb"]
     assert remix["original_genres"] == ["genre:art pop", "genre:new wave", "genre:synthpop"]
 
@@ -301,7 +303,8 @@ def test_a_version_with_no_own_source_has_no_genres_and_the_original_is_a_hint(m
 def test_a_same_recording_version_keeps_the_original_genres(monkeypatch):
     _orig_sources(monkeypatch)
     out = metadata.gather("T", "A", [], version_kind="remaster")
-    assert "genre:art pop" in out["tags"] and out["original_genres"] == []
+    assert "genre:art pop" in out["tags"]
+    assert out["original_genres"] == []
 
 
 @pytest.mark.parametrize("artist, title, remixer, expect", [

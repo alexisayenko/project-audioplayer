@@ -127,7 +127,7 @@ export function createLookahead({
       const pcm = downmixMono(decoded);
       let tl = createTimeline(pcm.length / decoded.sampleRate, HISTORY_BINS, ROWS_PER_SECOND);
       if (!tl.total) throw new Error('empty audio');
-      if (seed && seed.total === tl.total && seed.bins === tl.bins) tl = seed;
+      if (seed?.total === tl.total && seed?.bins === tl.bins) tl = seed;
       timeline = tl;
       status = 'building';
       stage = '';

@@ -1,6 +1,6 @@
 # macOS app GUI
 
-Build spec for a native SwiftUI macOS app whose GUI matches the web UI (`web/`, served at https://electrophone.cc). Status: Sign-in, Library, Playback, Add/Edit, Settings, Playlists (placeholder), Genres map, Song stats, Music theory and the visualizer (Mirrored spectrum, Ring) are built and compile; none of it is tested with a real account or seen on a real UI, and the visualizer tap is unverified on the real server stream (task-0046, ADR-0028). The MAC requirement statuses below still read "planned" until they are checked on a Mac. It describes what the web does today (read from `web/index.html`, `web/js/*`, `web/*.css` and the specs it links, 2026-10-17) and how that maps to a Mac app. It does not restate every requirement: the linked specs ([library](library.md), [playback](playback.md), [add-song](add-song.md), [web](web.md), [api](api.md), [share](share.md), [visualizer](visualizer.md), [stats](stats.md), [genres](genres.md), [playlists](playlists.md)) stay the source for detail; where this file and the code disagree, the code wins.
+Build spec for a native SwiftUI macOS app whose GUI matches the web UI (`web/`, served at https://electrophone.cc). Status: Sign-in, Library, Playback, Add/Edit, Settings, Playlists (placeholder), Genres map, Song stats, Music theory and the visualizer (Mirrored spectrum, Ring) are built and compile; none of it is tested with a real account or seen on a real UI, and the visualizer tap is unverified on the real server stream (task-0047, ADR-0029). The MAC requirement statuses below still read "planned" until they are checked on a Mac. It describes what the web does today (read from `web/index.html`, `web/js/*`, `web/*.css` and the specs it links, 2026-10-17) and how that maps to a Mac app. It does not restate every requirement: the linked specs ([library](library.md), [playback](playback.md), [add-song](add-song.md), [web](web.md), [api](api.md), [share](share.md), [visualizer](visualizer.md), [stats](stats.md), [genres](genres.md), [playlists](playlists.md)) stay the source for detail; where this file and the code disagree, the code wins.
 
 Requirement IDs in this file use the area `MAC` and the format of the [specs README](README.md); they are assigned only to the Mac-specific decisions. Pages are described as "Web reference" (what to copy) and "Mac" (what changes).
 
@@ -318,7 +318,7 @@ These shortcuts are proposals (marked MAC-060 SHOULD, Status: planned); only Spa
 3. P3: Settings bulk cards (BPM detection, Metadata backfill, Download all), Share link, full-screen visualizer (Mirrored spectrum, Ring) and its settings.
 4. P4 (only if wanted): Terrain / Synthwave, Playlists (once the web ships them), Genres map, Song stats, Music theory, guest read-only view.
 
-Each phase ends in a state where playback works with the screen unlocked or locked; offline playback on the Mac needs local audio files, which v1 does not keep (ADR-0028).
+Each phase ends in a state where playback works with the screen unlocked or locked; offline playback on the Mac needs local audio files, which v1 does not keep (ADR-0029).
 
 ## 6. Ambiguities and open decisions
 

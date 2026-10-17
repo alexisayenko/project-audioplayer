@@ -82,7 +82,7 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
         barRo.observe(bar);
       }
     }
-    if (!bar || !bar.offsetHeight) return false;
+    if (!bar?.offsetHeight) return false;
     const t = (bar.offsetTop || 0) + bar.offsetHeight + BAR_GAP;
     if (t === insets.t) return false;
     insets = { ...insets, t };
@@ -354,7 +354,10 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
 
   canvas.addEventListener('pointermove', (ev) => {
     if (drag && pointers.has(ev.pointerId) && ev.pointerType !== 'touch' && ev.buttons === 0) release(ev);
-    if (!pointers.has(ev.pointerId)) { if (ev.pointerType !== 'touch') queueHover(ev); return; }
+    if (!pointers.has(ev.pointerId)) {
+      if (ev.pointerType !== 'touch') queueHover(ev);
+      return;
+    }
     const [sx, sy] = local(ev);
     pointers.set(ev.pointerId, [sx, sy]);
     if (pinch && pointers.size === 2) {
@@ -368,6 +371,12 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
     if (!drag.moved && !isDragMove(sx - drag.sx, sy - drag.sy)) return;
     if (!drag.moved && drag.node && sim && !reducedMotion) sim.setAlphaTarget(0.3);
     drag.moved = true;
+    applyDrag(sx, sy);
+    drag.lastX = sx; drag.lastY = sy;
+    request();
+  });
+
+  function applyDrag(sx, sy) {
     if (drag.node) {
       const [wx, wy] = toWorld(sx, sy);
       drag.node.fx = wx; drag.node.fy = wy;
@@ -378,9 +387,7 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
       userMoved = true;
       canvas.style.cursor = 'grabbing';
     }
-    drag.lastX = sx; drag.lastY = sy;
-    request();
-  });
+  }
 
   function release(ev) {
     pointers.delete(ev.pointerId);

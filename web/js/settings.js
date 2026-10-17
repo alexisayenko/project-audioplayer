@@ -143,7 +143,9 @@ function libraryCard() {
     el('div', { class: 'divider' }),
     el('div', { class: 'cell' }, el('span', { class: 'muted t-caption' }, 'Storage'), meter),
     el('div', { class: 'cell' }, el('span', { class: 'muted t-caption' }, 'Sync'), el('span', { class: 't-caption' }, sync)),
-    el('div', { class: 'cell' }, el('span', { class: 'muted t-caption' }, 'Server'), el('span', { class: 't-caption' }, location.host)));
+    el('div', { class: 'cell' }, el('span', { class: 'muted t-caption' }, 'Server'), el('span', { class: 't-caption' }, location.host)),
+    ...(store.build ? [el('div', { class: 'cell' }, el('span', { class: 'muted t-caption' }, 'Build'),
+      el('span', { class: 't-caption', title: store.build.title }, store.build.text.replace(/^Build /, '')))] : []));
 }
 
 function playbackCard() {

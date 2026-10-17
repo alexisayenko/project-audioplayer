@@ -54,7 +54,13 @@ export function buildShareUrl({
     const c = camClamp(cam);
     q.push(`cam=${[round(c.eye, 2), round(c.pitch, 1), round(c.yaw, 1)].join(',')}`);
   }
-  return `${String(origin ?? '').replace(/\/+$/, '')}/#/play/${encodeURIComponent(id)}?${q.join('&')}`;
+  return `${trimTrailingSlashes(String(origin ?? ''))}/#/play/${encodeURIComponent(id)}?${q.join('&')}`;
+}
+
+function trimTrailingSlashes(s) {
+  let end = s.length;
+  while (end > 0 && s[end - 1] === '/') end -= 1;
+  return s.slice(0, end);
 }
 
 function parseCam(raw) {
@@ -77,12 +83,15 @@ export function parseShareParams(hash) {
   const viz = q.get('viz');
   const style = q.get('style');
   const bg = q.get('bg');
+  let bgFlag = null;
+  if (bg === '1') bgFlag = true;
+  else if (bg === '0') bgFlag = false;
   return {
     id,
     t: t != null && /^\d{1,7}$/.test(t) ? clampT(t) : 0,
     viz: SHARE_MODES.includes(viz) ? viz : null,
     style: SHARE_STYLES.includes(style) ? style : null,
-    bg: bg === '1' ? true : bg === '0' ? false : null,
+    bg: bgFlag,
     fs: q.get('fs') === '1',
     cam: parseCam(q.get('cam')),
     fl: q.get('fl') === '1' && viz === 'terrain',

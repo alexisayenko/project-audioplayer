@@ -1,8 +1,8 @@
 import { FFT_SIZE, ANALYSER_SMOOTHING, ATTACK, RELEASE, TILT_DB_PER_OCT } from './viz-constants.js';
 import { barsDb, unitBars, makeReference, smoothBars } from './viz-spectrum.js';
-import { resample, HISTORY_BINS, ROWS_PER_SECOND, markRows, uncoveredSpans, timelineCovers, coveredRows, coverageWeight, EDGE_FADE_ROWS } from './viz-terrain-math.js';
+import { resample, HISTORY_BINS, ROWS_PER_SECOND, markRows, uncoveredSpans } from './viz-terrain-math.js';
 
-export { markRows, uncoveredSpans, timelineCovers, coveredRows, coverageWeight, EDGE_FADE_ROWS };
+export { markRows, uncoveredSpans, timelineCovers, coveredRows, coverageWeight, EDGE_FADE_ROWS } from './viz-terrain-math.js';
 import { SILENT_DB } from './viz-signal.js';
 import { createPartsBaker, PLANES } from './viz-melody.js';
 
@@ -136,6 +136,31 @@ export function makeTimelineBuilder({
   const baker = full ? createPartsBaker({ total, bins, rps, sampleRate, fftSize }) : null;
   const rowF = new Float32Array(bins);
   let done = Math.max(0, start - warm);
+  const loadFrame = (row) => {
+    const last = Math.round(row * dt * sampleRate);
+    const lead = last - Math.round(fftSize * (1 - centre));
+    for (let i = 0; i < fftSize; i += 1) {
+      const idx = lead + i;
+      re[i] = idx >= 0 && idx < pcm.length ? pcm[idx] * win[i] : 0;
+      im[i] = 0;
+    }
+    fft(re, im);
+  };
+  const analyse = () => {
+    let peak = -Infinity;
+    for (let k = 0; k < half; k += 1) {
+      const m = Math.hypot(re[k], im[k]) / fftSize;
+      mag[k] = smoothing * mag[k] + (1 - smoothing) * m;
+      db[k] = mag[k] > 0 ? 20 * Math.log10(mag[k]) : -Infinity;
+      if (db[k] > peak) peak = db[k];
+    }
+    return peak;
+  };
+  const rowTarget = (peak) => {
+    if (peak <= SILENT_DB) return new Float32Array(bands);
+    const levels = barsDb(db, bands, { sampleRate, fftSize, tilt: TILT_DB_PER_OCT });
+    return unitBars(levels, { ...ref.update(levels, dt) });
+  };
   return {
     total,
     end,
@@ -153,27 +178,8 @@ export function makeTimelineBuilder({
       const pFrom = baker ? baker.done : 0;
       const kFrom = baker ? baker.pitchDone : 0;
       for (; done < stop; done += 1) {
-        const last = Math.round(done * dt * sampleRate);
-        const lead = last - Math.round(fftSize * (1 - centre));
-        for (let i = 0; i < fftSize; i += 1) {
-          const idx = lead + i;
-          re[i] = idx >= 0 && idx < pcm.length ? pcm[idx] * win[i] : 0;
-          im[i] = 0;
-        }
-        fft(re, im);
-        let peak = -Infinity;
-        for (let k = 0; k < half; k += 1) {
-          const m = Math.hypot(re[k], im[k]) / fftSize;
-          mag[k] = smoothing * mag[k] + (1 - smoothing) * m;
-          db[k] = mag[k] > 0 ? 20 * Math.log10(mag[k]) : -Infinity;
-          if (db[k] > peak) peak = db[k];
-        }
-        let target;
-        if (!(peak > SILENT_DB)) target = new Float32Array(bands);
-        else {
-          const levels = barsDb(db, bands, { sampleRate, fftSize, tilt: TILT_DB_PER_OCT });
-          target = unitBars(levels, { ...ref.update(levels, dt) });
-        }
+        loadFrame(done);
+        const target = rowTarget(analyse());
         smoothBars(state, target, ATTACK, RELEASE, dt * 60);
         const row = resample(state, bins);
         for (let j = 0; j < bins; j += 1) {
@@ -206,28 +212,32 @@ export function makeBuildScheduler(job, { windows = true } = {}) {
     queue = needsWindow(c, focusRow, main.done) ? planWindows(c, focusRow, { sDone: main.done }) : [];
     win = null;
   };
+  const openWindow = () => {
+    while (!win && queue.length) {
+      const [a, b] = queue.shift();
+      const left = uncoveredSpans(cover(), a, b);
+      if (left.length) { win = makeTimelineBuilder({ ...job, from: left[0][0], to: left[0][1], warm: Math.round(WINDOW_WARM_S * main.rps) }); break; }
+    }
+  };
+  const stepWindow = (maxRows, sink) => {
+    const r = win.step(maxRows);
+    if (r.to > r.from) { sink.rows(r.from, win.data.subarray(r.from * win.bins, r.to * win.bins), true); markRows(built, r.from, r.to); }
+    if (win.done >= win.end) win = null;
+  };
+  const stepMain = (maxRows, sink) => {
+    const r = main.step(maxRows);
+    if (r.to > r.from) sink.rows(r.from, main.data.subarray(r.from * main.bins, r.to * main.bins), false);
+    if (r.pTo > r.pFrom) sink.parts?.(r.pFrom, main.parts.subarray(r.pFrom * main.bins * PLANES, r.pTo * main.bins * PLANES));
+    if (r.kTo > r.kFrom) sink.pitch?.(r.kFrom, main.pitch.subarray(r.kFrom * 2, r.kTo * 2));
+  };
   return {
     get busy() { return main.done < main.end || !!win || !!queue.length || dirty; },
     focus(row) { if (windows && Number.isFinite(row)) { focusRow = Math.max(0, Math.round(row)); dirty = true; } },
     step(maxRows, sink) {
       if (dirty) replan();
-      while (!win && queue.length) {
-        const [a, b] = queue.shift();
-        const left = uncoveredSpans(cover(), a, b);
-        if (left.length) { win = makeTimelineBuilder({ ...job, from: left[0][0], to: left[0][1], warm: Math.round(WINDOW_WARM_S * main.rps) }); break; }
-      }
-      if (win) {
-        const r = win.step(maxRows);
-        if (r.to > r.from) { sink.rows(r.from, win.data.subarray(r.from * win.bins, r.to * win.bins), true); markRows(built, r.from, r.to); }
-        if (win.done >= win.end) win = null;
-        return this.busy;
-      }
-      if (main.done < main.end) {
-        const r = main.step(maxRows);
-        if (r.to > r.from) sink.rows(r.from, main.data.subarray(r.from * main.bins, r.to * main.bins), false);
-        if (r.pTo > r.pFrom) sink.parts?.(r.pFrom, main.parts.subarray(r.pFrom * main.bins * PLANES, r.pTo * main.bins * PLANES));
-        if (r.kTo > r.kFrom) sink.pitch?.(r.kFrom, main.pitch.subarray(r.kFrom * 2, r.kTo * 2));
-      }
+      openWindow();
+      if (win) stepWindow(maxRows, sink);
+      else if (main.done < main.end) stepMain(maxRows, sink);
       return this.busy;
     },
   };

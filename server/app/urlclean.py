@@ -177,7 +177,7 @@ def clean_url(text: str) -> str:
     return urlunsplit(parts._replace(query=urlencode(kept)))
 
 
-_SPOTIFY_RE = re.compile(r"^https?://open\.spotify\.com/(?:intl-[a-z]{2}(?:-[A-Za-z]{2,4})?/)?(track|album)/([A-Za-z0-9]{22})(?:[/?#].*)?$", re.I)
+_SPOTIFY_RE = re.compile(r"^https?://open\.spotify\.com/(?:intl-[a-z]{2}(?:-[a-z]{2,4})?/)?(track|album)/([a-z0-9]{22})(?:[/?#].*)?$", re.I)
 
 
 def clean_spotify_url(value: Any) -> str | None:

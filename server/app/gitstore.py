@@ -23,7 +23,9 @@ STATE_NAME = "gitsync-state.json"
 ADD_SPEC = ("--", "audioplayer", ":(exclude)*.tmp")
 REPO_NAMES = ("data", "covers")
 WATCHED_JSON = ("library.json", "profile.json")
+DEFAULT_OWNED = ("audioplayer/",)
 FLOCK_WAIT_S = 30.0
+UNPUSHED_RANGE = "@{u}..HEAD"
 
 
 class GitError(RuntimeError):
@@ -50,6 +52,15 @@ class Inbound(NamedTuple):
     status: str
     error: str = ""
     behind: int = 0
+    local: int = 0
+
+
+def normalize_prefixes(prefixes: Any) -> tuple[str, ...]:
+    """Repo-relative directory prefixes the server owns, each with one trailing slash; the default when none is usable."""
+    if isinstance(prefixes, str):
+        prefixes = prefixes.split(",")
+    cleaned = tuple(dict.fromkeys(p.strip().strip("/") + "/" for p in (prefixes or ()) if p and p.strip().strip("/")))
+    return cleaned or DEFAULT_OWNED
 
 
 def _iso(ts: float | None) -> str | None:
@@ -98,6 +109,8 @@ class GitSync:
         state_file: Path | str | None = None,
         clock: Callable[[], float] = time.time,
         inbound: bool = True,
+        rebase_foreign: bool = True,
+        owned_prefixes: tuple[str, ...] | None = None,
     ) -> None:
         self.data_repo = Path(data_repo)
         self.covers_repo = Path(covers_repo) if covers_repo else None
@@ -109,6 +122,8 @@ class GitSync:
         self.state_file = Path(state_file) if state_file else self.data_repo.parent / STATE_NAME
         self.clock = clock
         self.inbound = inbound
+        self.rebase_foreign = rebase_foreign
+        self.owned_prefixes = normalize_prefixes(owned_prefixes)
         self._flock_fh: Any = None
         self._flock_depth = 0
         self.cache_ttl_s = 5.0
@@ -315,14 +330,14 @@ class GitSync:
         return value
 
     def _probe(self, repo: Path) -> Probe:
-        counted = self._git(repo, "rev-list", "--count", "@{u}..HEAD", check=False)
+        counted = self._git(repo, "rev-list", "--count", UNPUSHED_RANGE, check=False)
         if counted.returncode != 0:
             return Probe(None, None, False)
         count = int(counted.stdout.strip() or 0)
         behind = self._git(repo, "rev-list", "--count", "HEAD..@{u}", check=False).stdout.strip()
         behind_n = int(behind) if behind.isdigit() else 0
         if count:
-            stamps = self._git(repo, "log", "@{u}..HEAD", "--format=%ct", check=False).stdout.split()
+            stamps = self._git(repo, "log", UNPUSHED_RANGE, "--format=%ct", check=False).stdout.split()
             return Probe(count, min(int(s) for s in stamps) if stamps else None, False, behind_n)
         contains = self._git(repo, "merge-base", "--is-ancestor", "@{u}", "HEAD", check=False)
         return Probe(0, None, contains.returncode == 0, behind_n)
@@ -429,70 +444,99 @@ class GitSync:
             repos = state.setdefault("repos", {})
             code = 0
             for repo in self._repos():
-                name = self.repo_name(repo)
-                rs = repos.setdefault(name, {"failures": 0, "rejected": False, "last_ok_at": None})
-                if self.inbound:
-                    inb = self.inbound_repo(repo, timeout=push_timeout)
-                    if inb.status in ("none", "pulled"):
-                        rs.update(behind=0, inbound_error=None)
-                        if inb.status == "pulled":
-                            state["last_pull_at"] = rs["last_pull_at"] = _iso(self.clock())
-                    elif inb.status in ("diverged", "invalid", "failed"):
-                        rs.update(behind=inb.behind, inbound_error=inb.error)
-                        state["last_error"] = inb.error
-                        pass_log.error("%s", inb.error)
-                        code = 2 if inb.status == "diverged" else (code or 1)
-                        continue
-                    elif inb.status == "busy":
-                        pass_log.info("%s inbound pull skipped: a save holds the write lock", name)
-                    else:
-                        pass_log.warning("%s fetch failed: %s", name, inb.error)
-                probe = self.probe(repo, fresh=True)
-                if probe.count is None:
-                    state["last_error"] = f"{name}: no upstream"
-                    pass_log.error("%s has no upstream", name)
-                    code = code or 1
-                    continue
-                if rs.get("rejected"):
-                    if probe.synced:
-                        rs.update(rejected=False, failures=0)
-                        pass_log.warning("%s rejection cleared: local matches the remote", name)
-                    else:
-                        pass_log.error("%s is rejected: the remote moved, not pushing (fix by hand, see deploy.md)", name)
-                        code = 2
-                        continue
-                if probe.count == 0:
-                    rs.update(failures=0, last_ok_at=_iso(self.clock()))
-                    continue
-                result = self.push_repo(repo, timeout=push_timeout)
-                now_iso = _iso(self.clock())
-                if result.status == "ok":
-                    rs.update(failures=0, last_ok_at=now_iso)
-                    state["last_push_at"] = now_iso
-                elif result.status == "rejected" and self.inbound:
-                    message = self.diverged_message(name)
-                    rs.update(behind=self.probe(repo, fresh=True).behind, inbound_error=message)
-                    state["last_error"] = message
-                    pass_log.error("%s", message)
-                    code = 2
-                elif result.status == "rejected":
-                    rs["rejected"] = True
-                    state["last_error"] = f"{name}: push rejected"
-                    pass_log.error("%s push rejected: single-writer rule broken, stopped pushing it", name)
-                    code = 2
-                else:
-                    rs["failures"] = int(rs.get("failures", 0)) + 1
-                    state["last_error"] = f"{name}: {result.error}"
-                    level = logging.ERROR if rs["failures"] >= FAILS_BEFORE_ERROR else logging.WARNING
-                    pass_log.log(level, "%s push failed (%d in a row): %s", name, rs["failures"], result.error)
-                    if code != 2:
-                        code = 1
-            if code == 0:
-                state["last_error"] = None
-            state["last_run_at"] = _iso(self.clock())
-            save_state(self.state_file, state)
-            self._probes.clear()
-            return code
+                code = max(code, self._pass_repo(repo, state, repos, push_timeout))
+            return self._finish_pass(state, code)
+
+    def _pass_repo(self, repo: Path, state: dict[str, Any], repos: dict[str, Any], timeout: int) -> int:
+        name = self.repo_name(repo)
+        rs = repos.setdefault(name, {"failures": 0, "rejected": False, "last_ok_at": None})
+        if self.inbound:
+            skipped = self._inbound_step(repo, name, rs, state, timeout)
+            if skipped is not None:
+                return skipped
+        probe = self.probe(repo, fresh=True)
+        if probe.count is None:
+            state["last_error"] = f"{name}: no upstream"
+            pass_log.error("%s has no upstream", name)
+            return 1
+        if rs.get("rejected") and not self._clear_or_keep_rejected(name, rs, probe):
+            return 2
+        if probe.count == 0:
+            rs.update(failures=0, last_ok_at=_iso(self.clock()))
+            return 0
+        return self._record_push_result(repo, name, rs, state, self.push_repo(repo, timeout=timeout))
+
+    def _inbound_step(self, repo: Path, name: str, rs: dict[str, Any], state: dict[str, Any], timeout: int) -> int | None:
+        """The exit code that ends this repo's pass early (the inbound change cannot be applied), else None to go on to the push."""
+        inb = self.inbound_repo(repo, timeout=timeout)
+        if inb.status in ("none", "pulled"):
+            rs.update(behind=0, inbound_error=None)
+            if inb.status == "pulled":
+                state["last_pull_at"] = rs["last_pull_at"] = _iso(self.clock())
+        elif inb.status == "rebased":
+            rs.update(behind=0, inbound_error=None, rejected=False)
+            state["last_rebase_at"] = rs["last_rebase_at"] = _iso(self.clock())
+            rs["foreign_commits"] = int(rs.get("foreign_commits") or 0) + inb.behind
+        elif inb.status in ("diverged", "invalid", "failed"):
+            rs.update(behind=inb.behind, inbound_error=inb.error)
+            state["last_error"] = inb.error
+            pass_log.error("%s", inb.error)
+            return 2 if inb.status == "diverged" else 1
+        elif inb.status == "busy":
+            pass_log.info("%s inbound pull skipped: a save holds the write lock", name)
+        else:
+            pass_log.warning("%s fetch failed: %s", name, inb.error)
+        return None
+
+    def _clear_or_keep_rejected(self, name: str, rs: dict[str, Any], probe: Probe) -> bool:
+        """True when the rejection is cleared because local matches the remote; False keeps the repo stopped."""
+        if not probe.synced:
+            pass_log.error("%s is rejected: the remote moved, not pushing (fix by hand, see deploy.md)", name)
+            return False
+        rs.update(rejected=False, failures=0)
+        pass_log.warning("%s rejection cleared: local matches the remote", name)
+        return True
+
+    def _record_push_result(self, repo: Path, name: str, rs: dict[str, Any], state: dict[str, Any], result: PushResult) -> int:
+        now_iso = _iso(self.clock())
+        if result.status == "ok":
+            rs.update(failures=0, last_ok_at=now_iso)
+            state["last_push_at"] = now_iso
+            return 0
+        if result.status == "rejected" and self.inbound and self.rebase_foreign and self._foreign_overlap(repo) is None:
+            return self._record_moved_remote(repo, name, rs, state)
+        if result.status == "rejected" and self.inbound:
+            message = self.diverged_message(name)
+            rs.update(behind=self.probe(repo, fresh=True).behind, inbound_error=message)
+            state["last_error"] = message
+            pass_log.error("%s", message)
+            return 2
+        if result.status == "rejected":
+            rs["rejected"] = True
+            state["last_error"] = f"{name}: push rejected"
+            pass_log.error("%s push rejected: single-writer rule broken, stopped pushing it", name)
+            return 2
+        rs["failures"] = int(rs.get("failures", 0)) + 1
+        state["last_error"] = f"{name}: {result.error}"
+        level = logging.ERROR if rs["failures"] >= FAILS_BEFORE_ERROR else logging.WARNING
+        pass_log.log(level, "%s push failed (%d in a row): %s", name, rs["failures"], result.error)
+        return 1
+
+    def _record_moved_remote(self, repo: Path, name: str, rs: dict[str, Any], state: dict[str, Any]) -> int:
+        """The push lost a race with a foreign push outside the owned paths: the next run rebases; it only counts as a failure."""
+        rs["failures"] = int(rs.get("failures", 0)) + 1
+        state["last_error"] = f"{name}: push rejected, GitHub moved; retrying"
+        level = logging.ERROR if rs["failures"] >= FAILS_BEFORE_ERROR else logging.WARNING
+        pass_log.log(level, "%s push rejected, GitHub moved by foreign commits (%d in a row); the next run rebases", name, rs["failures"])
+        return 1
+
+    def _finish_pass(self, state: dict[str, Any], code: int) -> int:
+        if code == 0:
+            state["last_error"] = None
+        state["last_run_at"] = _iso(self.clock())
+        save_state(self.state_file, state)
+        self._probes.clear()
+        return code
 
     # --- inbound fast-forward (ADR-0027) ---------------------------------------------------------
 
@@ -517,7 +561,7 @@ class GitSync:
         if counts is None or counts[1] == 0:
             return Inbound("none")
         ahead, behind = counts
-        if ahead:
+        if ahead and not self.rebase_foreign:
             return Inbound("diverged", self.diverged_message(name), behind)
         with self.try_exclusive(wait_s) as got:
             if not got:
@@ -525,14 +569,101 @@ class GitSync:
             counts = self._ahead_behind(repo)
             if counts is None or counts[1] == 0:
                 return Inbound("none")
+            if counts[0] and self.rebase_foreign:
+                return self._rebase_foreign(repo, name, counts[0], counts[1], timeout)
             if counts[0]:
                 return Inbound("diverged", self.diverged_message(name), counts[1])
             return self._fast_forward(repo, name, counts[1])
 
+    def is_owned(self, rel: str) -> bool:
+        return rel.startswith(self.owned_prefixes)
+
+    def _paths(self, repo: Path, *revs: str) -> set[str] | None:
+        """Every path touched by any commit in the range (a merge against each parent, both sides of a rename); None when git fails."""
+        logged = self._git(repo, "log", "--name-only", "--no-renames", "-m", "--format=", "-z", *revs, check=False)
+        if logged.returncode != 0:
+            return None
+        return {n.strip("\n") for n in logged.stdout.split("\0") if n.strip("\n")}
+
+    def _foreign_overlap(self, repo: Path) -> str | None:
+        """None when every GitHub-only commit stays outside the owned paths (and clear of the local-only paths); else why not."""
+        base = self._git(repo, "merge-base", "HEAD", "@{u}", check=False)
+        if base.returncode != 0 or not base.stdout.strip():
+            return "no merge base"
+        b = base.stdout.strip()
+        foreign = self._paths(repo, f"{b}..@{{u}}")
+        local = self._paths(repo, f"{b}..HEAD")
+        if foreign is None or local is None:
+            return "cannot list paths"
+        hit = next((p for p in sorted(foreign) if self.is_owned(p)), None)
+        if hit:
+            return hit
+        return next(iter(sorted(foreign & local)), None)
+
+    def _rebase_foreign(self, repo: Path, name: str, ahead: int, behind: int, timeout: int) -> Inbound:
+        """Caller holds the write lock. Rebase the local-only commits onto origin when GitHub's new commits stay outside the owned paths."""
+        diverged = Inbound("diverged", self.diverged_message(name), behind)
+        old = self._git(repo, "rev-parse", "HEAD").stdout.strip()
+        why = self._foreign_overlap(repo)
+        if why:
+            pass_log.error("%s diverged: GitHub commits touch %s", name, why)
+            return diverged
+        if self._git(repo, "rev-list", "--merges", "--count", UNPUSHED_RANGE, check=False).stdout.strip() != "0":
+            pass_log.error("%s diverged: local commits contain a merge", name)
+            return diverged
+        started = time.monotonic()
+        rebased = self._git(repo, "-c", "core.editor=true", "rebase", "--no-autostash", "@{u}", check=False, timeout=timeout)
+        if rebased.returncode != 0:
+            self._restore(repo, old)
+            pass_log.error("%s rebase failed, restored %s: %s", name, old[:10], self._short_error(rebased.stderr or rebased.stdout))
+            return diverged
+        bad = self._invalid_in_tree(repo)
+        if bad:
+            self._restore(repo, old)
+            pass_log.error("%s rebased tree invalid, restored %s: %s (%s)", name, old[:10], bad[0], bad[1])
+            return Inbound("invalid", f"{name}: inbound change invalid after rebase ({bad[0]})", behind)
+        self._probes.pop(repo, None)
+        pass_log.info("rebased %d local commits over %d foreign commits (paths outside %s) in %.2fs",
+                      ahead, behind, ", ".join(self.owned_prefixes), time.monotonic() - started)
+        return Inbound("rebased", behind=behind, local=ahead)
+
+    def _restore(self, repo: Path, old: str) -> None:
+        self._git(repo, "rebase", "--abort", check=False)
+        if self._git(repo, "rev-parse", "HEAD", check=False).stdout.strip() != old:
+            self._git(repo, "reset", "--hard", old, check=False)
+        self._probes.pop(repo, None)
+
+    def _invalid_in_tree(self, repo: Path) -> tuple[str, str] | None:
+        """(path, why) of the first library.json / profile.json in the owned part of HEAD's tree that is unusable."""
+        listed = self._git(repo, "ls-tree", "-r", "--name-only", "-z", "HEAD", "--", *self.owned_prefixes, check=False)
+        if listed.returncode != 0:
+            return "tree", "unreadable"
+        rels = [n for n in listed.stdout.split("\0") if n.rsplit("/", 1)[-1] in WATCHED_JSON]
+        if not rels:
+            return None
+        try:
+            batch = subprocess.run(["git", "cat-file", "--batch"], cwd=repo, env=self._env(), capture_output=True,
+                                   input="".join(f"HEAD:{r}\n" for r in rels).encode(), timeout=120)
+        except subprocess.TimeoutExpired:
+            return "tree", "timed out"
+        data, pos = batch.stdout, 0
+        for rel in rels:
+            end = data.find(b"\n", pos)
+            head = data[pos:end].split() if end >= 0 else []
+            if len(head) != 3 or head[1] != b"blob":
+                return rel, "unreadable"
+            size = int(head[2])
+            body = data[end + 1:end + 1 + size]
+            pos = end + 1 + size + 1
+            problem = check_inbound_json(rel, body.decode("utf-8", "replace"))
+            if problem:
+                return rel, problem
+        return None
+
     def _fast_forward(self, repo: Path, name: str, behind: int) -> Inbound:
         old = self._git(repo, "rev-parse", "HEAD").stdout.strip()
         new = self._git(repo, "rev-parse", "@{u}").stdout.strip()
-        names = self._git(repo, "diff", "--name-only", "--diff-filter=d", "-z", old, new, "--", "audioplayer", check=False)
+        names = self._git(repo, "diff", "--name-only", "--diff-filter=d", "-z", old, new, "--", *self.owned_prefixes, check=False)
         watched = [n for n in names.stdout.split("\0") if n.rsplit("/", 1)[-1] in WATCHED_JSON]
         for rel in watched:
             blob = self._git(repo, "show", f"{new}:{rel}", check=False)
@@ -577,7 +708,7 @@ class GitSync:
                 try:
                     self._recover_repo(repo)
                 except (GitError, OSError) as exc:
-                    log.error("startup recovery failed in %s: %s", repo.name, exc)
+                    log.exception("startup recovery failed in %s: %s", repo.name, exc)
         try:
             self.push_pass(push_timeout=30)
         except (OSError, StateError) as exc:
@@ -621,7 +752,7 @@ class GitSync:
         """request mode startup: push local commits left over from a previous run."""
         with self.lock:
             for repo in self._repos():
-                ahead = self._git(repo, "rev-list", "--count", "@{u}..HEAD", check=False)
+                ahead = self._git(repo, "rev-list", "--count", UNPUSHED_RANGE, check=False)
                 if ahead.returncode == 0 and ahead.stdout.strip() not in ("", "0"):
                     with self._state:
                         self._dirty.add(repo)
@@ -649,7 +780,12 @@ class GitSync:
         last_run = state.get("last_run_at")
         seen = _parse_iso(last_run)
         errors = [v["error"] for v in views if v.get("error")]
-        last_error = errors[0] if errors else (self._last_error if request_mode else state.get("last_error"))
+        if errors:
+            last_error = errors[0]
+        elif request_mode:
+            last_error = self._last_error
+        else:
+            last_error = state.get("last_error")
         return {
             "state": worst,
             "unpushed": sum(v["unpushed"] for v in views),
@@ -660,7 +796,11 @@ class GitSync:
             "timer_seen": request_mode or (seen is not None and now - seen <= 3 * self.interval_s),
             "last_run_at": last_run,
             "last_error": self._clean(last_error)[:200] if last_error else None,
-            "inbound": {"enabled": self.inbound, "last_pull_at": state.get("last_pull_at"), "behind": sum(v["behind"] for v in views)},
+            "inbound": {
+                "enabled": self.inbound, "last_pull_at": state.get("last_pull_at"), "behind": sum(v["behind"] for v in views),
+                "foreign_commits": sum(int(((state.get("repos") or {}).get(v["name"]) or {}).get("foreign_commits") or 0) for v in views),
+                "last_rebase_at": state.get("last_rebase_at"),
+            },
             "repos": [{k: v[k] for k in ("name", "state", "unpushed", "oldest_unpushed_age_s", "rejected", "failures")} for v in views],
         }
 
@@ -668,32 +808,31 @@ class GitSync:
         name = self.repo_name(repo)
         rs = (state.get("repos") or {}).get(name) or {}
         probe = self.probe(repo)
-        rejected = bool(rs.get("rejected")) or repo in self._rejected
-        if rejected and probe.synced:
-            rejected = False
+        rejected = (bool(rs.get("rejected")) or repo in self._rejected) and not probe.synced
         if request_mode:
             failures = self._fails if repo in self._dirty else 0
         else:
             failures = int(rs.get("failures") or 0)
         count = probe.count or 0
         age = None if probe.oldest is None else max(0, int(now - probe.oldest))
-        error = None
-        if probe.count is None:
-            level, error = "error", f"{name}: no upstream"
-        elif rejected:
-            level, error = "error", f"{name}: push rejected"
-        elif self.inbound and probe.behind > 0 and rs.get("inbound_error"):
-            level, error = "error", str(rs["inbound_error"])
-        elif failures >= FAILS_BEFORE_ERROR:
-            level, error = "error", f"{name}: not reaching git"
-        elif count == 0:
-            level = "ok"
-        elif age is not None and age > self.stale_after_s:
-            level = "stale"
-        else:
-            level = "pending"
+        level, error = self._view_level(name, probe, rs, rejected, failures, age)
         return {"name": name, "state": level, "unpushed": count, "oldest_unpushed_age_s": age if count else None,
                 "rejected": rejected, "failures": failures, "error": error, "behind": probe.behind}
+
+    def _view_level(self, name: str, probe: Probe, rs: dict[str, Any], rejected: bool, failures: int, age: int | None) -> tuple[str, str | None]:
+        if probe.count is None:
+            return "error", f"{name}: no upstream"
+        if rejected:
+            return "error", f"{name}: push rejected"
+        if self.inbound and probe.behind > 0 and rs.get("inbound_error"):
+            return "error", str(rs["inbound_error"])
+        if failures >= FAILS_BEFORE_ERROR:
+            return "error", f"{name}: not reaching git"
+        if not probe.count:
+            return "ok", None
+        if age is not None and age > self.stale_after_s:
+            return "stale", None
+        return "pending", None
 
     def _log_transition(self, worst: str, views: list[dict[str, Any]]) -> None:
         if worst in ("stale", "error") and worst != self._logged_state:
@@ -743,8 +882,14 @@ def from_env() -> GitSync | None:
         interval_s=_env_int("GIT_SYNC_INTERVAL_S", 60),
         grace_s=_env_int("GIT_SYNC_STALE_GRACE_S", 30),
         state_file=os.environ.get("GIT_SYNC_STATE_FILE") or None,
-        inbound=os.environ.get("GIT_SYNC_INBOUND", "1").strip().lower() not in ("0", "false", "off", "no"),
+        inbound=_env_flag("GIT_SYNC_INBOUND"),
+        rebase_foreign=_env_flag("GIT_SYNC_REBASE_FOREIGN"),
+        owned_prefixes=normalize_prefixes(os.environ.get("GIT_SYNC_OWNED_PREFIXES", "")),
     )
+
+
+def _env_flag(name: str) -> bool:
+    return os.environ.get(name, "1").strip().lower() not in ("0", "false", "off", "no")
 
 
 def _env_int(name: str, default: int) -> int:

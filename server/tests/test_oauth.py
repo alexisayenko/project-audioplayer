@@ -195,7 +195,8 @@ def test_auth_me_renews_a_cookie_past_half_its_life(web, key, monkeypatch):
     assert res.status_code == 200
     assert "Max-Age=43200" in res.headers["set-cookie"]
     renewed = res.headers["set-cookie"].split("__Host-session=")[1].split(";")[0]
-    assert session.renewable(aged) and not session.renewable(renewed)
+    assert session.renewable(aged)
+    assert not session.renewable(renewed)
     assert not session.renewable("junk")
 
 

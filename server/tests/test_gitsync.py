@@ -78,7 +78,9 @@ def test_push_failure_counts_up_to_error_logs_and_recovers(tmp_path, caplog):
     git(clone, "remote", "set-url", "origin", str(bare))
     assert s.push_pass() == 0
     status = s.sync_status(True)
-    assert status["state"] == "ok" and status["repos"][0]["failures"] == 0 and status["last_error"] is None
+    assert status["state"] == "ok"
+    assert status["repos"][0]["failures"] == 0
+    assert status["last_error"] is None
     assert subjects(bare)[0] == "offline"
 
 
@@ -95,8 +97,11 @@ def test_a_rejected_push_stops_that_repo_and_never_merges(tmp_path):
     head, tree = git(clone, "rev-parse", "HEAD"), git(clone, "status", "--porcelain")
     assert s.push_pass() == 2
     st = s.sync_status(True)
-    assert st["state"] == "error" and st["repos"][0]["rejected"] is True and "rejected" in st["last_error"]
-    assert git(clone, "rev-parse", "HEAD") == head and git(clone, "status", "--porcelain") == tree
+    assert st["state"] == "error"
+    assert st["repos"][0]["rejected"] is True
+    assert "rejected" in st["last_error"]
+    assert git(clone, "rev-parse", "HEAD") == head
+    assert git(clone, "status", "--porcelain") == tree
     assert subjects(cbare)[0] == "cover"
     before = git(bare, "rev-parse", "main")
     assert s.push_pass() == 2
@@ -138,11 +143,13 @@ def test_pushes_touch_only_the_repo_that_has_commits(tmp_path):
     assert s.sync_status(True)["repos"][1]["unpushed"] == 0
     cref = git(cbare, "rev-parse", "main")
     assert s.push_pass() == 0
-    assert git(cbare, "rev-parse", "main") == cref and subjects(bare)[0] == "data only"
+    assert git(cbare, "rev-parse", "main") == cref
+    assert subjects(bare)[0] == "data only"
     save(s, cov, "u/c.jpg", "img", "cover")
     dref = git(bare, "rev-parse", "main")
     assert s.push_pass() == 0
-    assert subjects(cbare)[0] == "cover" and git(bare, "rev-parse", "main") == dref
+    assert subjects(cbare)[0] == "cover"
+    assert git(bare, "rev-parse", "main") == dref
 
 
 def test_startup_pushes_leftovers_before_anything_else(tmp_path):
@@ -178,14 +185,15 @@ def test_startup_marks_a_diverged_repo_rejected_and_leaves_the_tree_alone(tmp_pa
     s, bare, clone, *_ = make_sync(tmp_path)
     other = tmp_path / "other"
     git(tmp_path, "clone", str(bare), str(other))
-    (other / "x").write_text("x")
-    git(other, "add", "x")
+    (other / "audioplayer").mkdir(exist_ok=True); (other / "audioplayer" / "x").write_text("x")
+    git(other, "add", "-A")
     git(other, "commit", "-m", "remote")
     git(other, "push")
     save(s, clone, "a.json", "1", "mine")
     head = git(clone, "rev-parse", "HEAD")
     s.recover_on_startup()
-    assert git(clone, "rev-parse", "HEAD") == head and not (clone / "x").exists()
+    assert git(clone, "rev-parse", "HEAD") == head
+    assert not (clone / "audioplayer" / "x").exists()
     assert s.sync_status(True)["state"] == "error"
     assert subjects(bare)[0] == "remote"
 
@@ -219,11 +227,14 @@ def test_tmp_files_are_not_staged_and_a_failed_save_leaves_a_clean_tree(tmp_path
     save(s, clone, "b.json", "b", "more")
     assert ".json-left.tmp" not in git(clone, "ls-files")
     (clone / "audioplayer" / ".json-left.tmp").unlink()
-    with pytest.raises(RuntimeError):
+    def failing_save():
         with s.transaction():
             write(clone, "a.json", "two")
             write(clone, "new.json", "n")
             raise RuntimeError("boom")
+
+    with pytest.raises(RuntimeError):
+        failing_save()
     assert git(clone, "status", "--porcelain") == ""
     assert (clone / "audioplayer" / "a.json").read_text() == "one"
 
@@ -257,8 +268,8 @@ def test_cli_exit_codes(tmp_path, monkeypatch, capsys):
     assert subjects(bare)[0] == "mine"
     other = tmp_path / "other"
     git(tmp_path, "clone", str(bare), str(other))
-    (other / "x").write_text("x")
-    git(other, "add", "x")
+    (other / "audioplayer").mkdir(exist_ok=True); (other / "audioplayer" / "x").write_text("x")
+    git(other, "add", "-A")
     git(other, "commit", "-m", "intruder")
     git(other, "push")
     save(s, clone, "a.json", "2", "mine2")
@@ -279,8 +290,10 @@ def test_cli_status_is_read_only_and_busy_lock_skips(tmp_path, monkeypatch, caps
     save(s, clone, "a.json", "1", "mine")
     assert gitsync.main(["--status"]) == 0
     out = json.loads(capsys.readouterr().out)
-    assert out["state"] == "pending" and out["unpushed"] == 1
-    assert not s.state_file.exists() and subjects(bare) == ["init"]
+    assert out["state"] == "pending"
+    assert out["unpushed"] == 1
+    assert not s.state_file.exists()
+    assert subjects(bare) == ["init"]
     with s.pusher_lock() as got:
         assert got
         assert gitsync.main([]) == 0
