@@ -87,7 +87,7 @@ export function renderLibrary(root) {
       const n = selectedIn(c.id);
       const b = el('button', {
         class: `cat-chip${n ? ' on' : ''}`, type: 'button', disabled: !values && !unsetCount(c.id),
-        'aria-haspopup': 'dialog',
+        'aria-haspopup': 'dialog', 'data-cat': c.id,
         onclick: () => openFilterSheet(c, b, renderAll),
       }, c.name, el('small', { class: 't-caption' }, n || values));
       b.setAttribute('aria-label', n ? `${c.name}, ${n} selected` : `${c.name}, ${values}`);

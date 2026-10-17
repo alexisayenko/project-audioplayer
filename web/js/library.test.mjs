@@ -172,17 +172,18 @@ test('category chips: counts, disabled when empty, filter sheet applies and clea
   const rock = sheet.querySelectorAll('.pills button').find((b) => b.getAttribute('title') === 'genre:rock');
   rock.click();
   assert.equal(rock.getAttribute('aria-pressed'), 'true');
-  const show = sheet.querySelector('.btn.primary');
-  assert.equal(show.textContent, 'Show 2 songs');
-  show.click();
-  assert.equal(sheet.open, false);
+  assert.equal(sheet.querySelector('.btn.primary'), null, 'no Show button: the selection applies as you tap');
+  assert.equal(sheet.open, true);
   assert.deepEqual(titles(), ['Gamma', 'Alpha']);
+  assert.match(sheet.querySelector('.sheet-head p').textContent, /1 selected · 2 songs/);
+  sheet.close();
   assert.match(root.querySelector('[role=status]').textContent, /2 songs match · rock/);
   assert.equal(root.querySelectorAll('.cat-chip')[1].getAttribute('aria-label'), 'Genres, 1 selected');
   root.querySelectorAll('.cat-chip')[1].click();
   sheet.querySelector('.sheet-head button').click();
-  sheet.querySelector('.btn.primary').click();
-  assert.equal(titles().length, 4);
+  assert.equal(titles().length, 4, 'Clear applies at once');
+  assert.equal(sheet.open, true);
+  sheet.close();
   cleanup();
 });
 
@@ -248,8 +249,8 @@ test('Years filter is derived from each song year, not from decade tags', async 
   const pills = sheet.querySelectorAll('.pills button');
   assert.deepEqual(pills.filter((b) => !b.classList.contains('unset')).map((b) => b.getAttribute('title')), ['decade:80s', 'decade:90s', 'decade:00s']);
   pills.find((b) => b.getAttribute('title') === 'decade:90s').click();
-  sheet.querySelector('.btn.primary').click();
   assert.deepEqual(titles(), ['Y99']);
+  sheet.close();
   filterByTags([]);
   cleanup();
 });
@@ -268,8 +269,8 @@ test('"not set" pill in the filter sheet: first, italic, chip count stays real, 
   assert.equal(first.getAttribute('aria-label'), 'Songs with no genre');
   assert.match(first.textContent, /not set1/);
   first.click();
-  sheet.querySelector('.btn.primary').click();
   assert.deepEqual(titles(), ['Offline']);
+  sheet.close();
   assert.match(root.querySelector('[role=status]').textContent, /Genres: not set/);
   assert.equal(root.querySelectorAll('.cat-chip')[1].getAttribute('aria-label'), 'Genres, 1 selected');
   filterByTags([]);

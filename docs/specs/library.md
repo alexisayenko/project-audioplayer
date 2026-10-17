@@ -37,7 +37,7 @@ in `docs/product/wireframes/` yet; add a link here when it lands).
 
 ## Tag filter
 
-- LIB-030 MUST: four category chips (Tags, Genres, Years, Countries, with counts) open a filter sheet of value pills with counts, multi-select (values in a category are OR, categories are AND), Clear, and a "Show N songs" button (WEB-011); changed 2026-10-13: single-select chips grouped by key are gone (TAG-033 is the iOS-era rule). Status: implemented
+- LIB-030 MUST: four category chips (Tags, Genres, Years, Countries, with counts) open a filter sheet of value pills with counts, multi-select (values in a category are OR, categories are AND) and Clear; every tap applies at once to the list behind the sheet, there is no apply button, and the sheet subtitle shows the live count (WEB-011); changed 2026-10-13: single-select chips grouped by key are gone (TAG-033 is the iOS-era rule). Status: implemented
 
 - LIB-031 MUST: when a filter and/or search text is active and at least one song is listed, an "Add all N to playlist" button (N = songs currently listed) sits in the sort bar; it is hidden when neither is active (no "add entire library"). Click appends the listed songs that have server audio (WEB-023) to the queue, de-duplicated, at the end, without starting playback (same as per-song Add), toast "Added X songs (Y already in queue)". With exactly one filter value selected it becomes a chip in the playlist controls (as in PLY-035, only the listed songs are added) so Clear removes them; otherwise (several values, or search only) the songs are added as manual. Status: implemented
 
