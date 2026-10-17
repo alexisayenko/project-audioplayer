@@ -2,6 +2,19 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-18 (genres map and dock)
+
+- Web: Genres map is now the new radial map; Genres map rework is gone from the menu and its old link redirects.
+- Web: choosing a genre in the Genres map outline selects it on the map but does not open the infobox; a click on a circle does.
+- Web: the Genres map has one side panel with the genre details inside the Outline.
+- Web: the Genres map legend has a title and is hidden until you press Show legend.
+- Web: the Genres map has a Now playing button that finds the playing song's genre.
+- Web: the Electronic circle on the Genres map uses the Electronic colour.
+- Web: Show N songs in Library on the Genres map also includes songs tagged with the genre itself.
+- Web: the Genres map and genre suggestions call every level a genre.
+- Web: the mini-player has a compact mode, a pill with Play/Pause, Next and volume, switched by the handle on its left edge.
+- Web: the sidebar collapse chevron sits between the brand and the first menu item.
+
 ## 2026-10-18 (web polish)
 
 - Web: the Library filter sheet applies at once; there is no Show N songs button.
