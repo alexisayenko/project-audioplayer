@@ -60,9 +60,9 @@ def test_preview_returns_youtube_genres_title_and_cover_credits(monkeypatch):
     assert got["title"] == "In The End (Magic Cover Release)"
     assert got["raw"]["title"] == TITLE
     sc = got["suggested_credits"]
-    assert sc["artists"] == ["Twin", "Elise Lieberth"]
-    assert sc["version"] == {"kind": "cover", "name": "Cover", "by": []}
-    assert "of" not in sc["version"]
+    assert sc["mainArtists"] == ["Twin", "Elise Lieberth"]
+    assert sc["version"] == {"type": "cover", "name": "Cover", "artists": []}
+    assert "originalArtists" not in sc["version"]
     assert sc["title"] == "In The End"
     assert "cover_release" in sc["notes"]
 

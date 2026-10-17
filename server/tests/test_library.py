@@ -409,11 +409,11 @@ def test_decade_tag_derivation(year, tag):
     assert library.decade_tag(year) == tag
 
 
-def test_with_decade_replaces_and_leaves_alone():
-    assert library.with_decade(["rock", "decade:80s", "decade:70s"], 1994) == ["rock", "decade:90s"]
-    assert library.with_decade(["rock"], 2007) == ["rock", "decade:00s"]
-    assert library.with_decade(["decade:80s"], 1949) == ["decade:80s"]
-    assert library.with_decade(["decade:80s"], None) == ["decade:80s"]
+def test_split_tags_removes_decade_lang_and_country_and_counts_them():
+    kept, countries, removed = library.split_tags(["rock", "decade:80s", "lang:en", "country:usa", "Country:gb", "genre:house", "country:atlantis"])
+    assert kept == ["rock", "genre:house"]
+    assert countries == ["us", "gb"]
+    assert dict(removed) == {"decade": 1, "lang": 1, "country": 3}
 
 
 def test_decade_value_normalised_never_rejected():
@@ -421,7 +421,7 @@ def test_decade_value_normalised_never_rejected():
     assert library.clean_tag("decade:the 90s") == "decade:the90s"
 
 
-def test_decade_migration_on_load(tmp_path):
+def test_decade_tags_are_dropped_on_load_and_computed_in_the_view(tmp_path):
     p = tmp_path / "library.json"
     p.write_text(json.dumps({"songs": [
         {"id": "a", "title": "A", "year": 1994},
@@ -430,10 +430,12 @@ def test_decade_migration_on_load(tmp_path):
         {"id": "d", "title": "D"},
     ]}))
     a, b, c, d = library.load(p)
-    assert a["tags"] == ["decade:90s"]
-    assert b["tags"] == ["x", "decade:00s"]
-    assert c["tags"] == ["decade:80s"]
+    assert "tags" not in a
+    assert b["tags"] == ["x"]
+    assert c["tags"] == []
     assert "tags" not in d
+    views = [library.public_song(s, None)["tags"] for s in (a, b, c, d)]
+    assert views == [["decade:90s"], ["x", "decade:00s"], [], []]
 
 
 def test_decade_on_create_and_year_change(client):
@@ -450,7 +452,7 @@ def test_decade_on_create_and_year_change(client):
     r = client.patch(f"/songs/{VID}", json={"year": 2028}, headers=H)
     assert r.status_code == 422
     r = client.patch(f"/songs/{VID}", json={"year": None}, headers=H)
-    assert r.json()["tags"] == ["x", "decade:10s"]
+    assert r.json()["tags"] == ["x"]
 
 
 def test_web_assets_are_versioned_and_revalidated(tmp_path, monkeypatch):
@@ -526,12 +528,18 @@ def test_lang_aliases():
     assert library.clean_tag("lang:klingon") == "lang:klingon"
 
 
-def test_country_migration_on_load_idempotent(tmp_path):
+def test_country_tags_move_to_the_artist_table_on_load_idempotent(tmp_path):
     p = tmp_path / "lib.json"
-    p.write_text(json.dumps({"songs": [{"id": "a", "title": "A", "tags": ["country:usa", "country:us", "country:yugoslavia"]}]}))
-    first = library.load(p)
-    assert first[0]["tags"] == ["country:us", "country:yugoslavia"]
-    assert library.normalize_song(first[0])["tags"] == first[0]["tags"]
+    p.write_text(json.dumps({"songs": [
+        {"id": "a", "title": "A", "artist": "Solo", "tags": ["country:usa", "country:us", "country:yugoslavia", "x"]},
+        {"id": "b", "title": "B", "artist": "One - Two", "tags": ["country:fr"]},
+    ]}))
+    doc = library.load_doc(p)
+    assert [s["tags"] for s in doc["songs"]] == [["x"], []]
+    doc = library.load_doc(p)
+    assert doc["artists"] == [{"name": "One", "countries": []}, {"name": "Solo", "countries": ["us"]}, {"name": "Two", "countries": []}]
+    again = library.normalize({"songs": doc["songs"], "artists": doc["artists"]})
+    assert again["songs"] == doc["songs"] and again["artists"] == doc["artists"]
 
 
 def test_write_rejects_unknown_country_but_accepts_alias(client):
@@ -548,15 +556,16 @@ def test_write_rejects_unknown_country_but_accepts_alias(client):
     assert client.patch(f"/songs/{VID}", json={"tags": ["country:Russia"]}, headers=H).json()["tags"][0] == "country:ru"
 
 
-def test_legacy_unknown_country_survives_patch(client):
-    add(client)
-    p = deps.library_path(OWNER_UID)
-    songs = library.load(p)
-    songs[0]["tags"].append("country:yugoslavia")
-    library.save(p, songs)
-    r = client.patch(f"/songs/{VID}", json={"tags": ["country:yugoslavia", "x"]}, headers=H)
+def test_a_country_edit_replaces_the_countries_of_a_single_main_artist(client):
+    add(client, metadata={"title": "S", "artist": "Solo"}, tags=["country:us"])
+    song = client.get("/library", headers=H).json()["songs"][0]
+    assert "country:us" in song["tags"]
+    r = client.patch(f"/songs/{VID}", json={"tags": ["x", "country:de", "country:fr"]}, headers=H)
     assert r.status_code == 200
-    assert "country:yugoslavia" in r.json()["tags"]
+    assert [t for t in r.json()["tags"] if t.startswith("country:")] == ["country:de", "country:fr"]
+    assert client.get("/artists", headers=H).json() == [{"name": "Solo", "countries": ["de", "fr"]}]
+    r = client.patch(f"/songs/{VID}", json={"tags": ["x"]}, headers=H)
+    assert [t for t in r.json()["tags"] if t.startswith("country:")] == []
 
 
 @pytest.mark.parametrize("raw", ["su", "SU", "SUN", "USSR", "U.S.S.R.", "Soviet Union", "the Soviet Union", "CCCP", "SSSR"])
@@ -596,7 +605,7 @@ def test_genre_migration_backup_idempotent(tmp_path, monkeypatch):
     original = json.dumps({"settings": {}, "songs": [{"id": "a", "title": "A", "tags": ["genre:house music", "genre:house", "genre:electronic music", "x"]}]})
     lib.write_text(original)
     assert migrate_tags.run() == 1
-    assert json.loads(lib.read_text())["songs"][0]["tags"] == ["genre:house", "genre:electronic", "x"]
+    assert library.tag_list(json.loads(lib.read_text())["songs"][0]) == ["genre:house", "genre:electronic", "x"]
     assert (tmp_path / "backups-genre-merge" / "u1" / "library.json").read_text() == original
     assert not (tmp_path / "backups-genre-merge" / "u2" / "library.json").exists()
     assert migrate_tags.run() == 0
@@ -618,8 +627,8 @@ def test_genre_migration_aliases_drops_and_prefixes(tmp_path, monkeypatch):
     lib.write_text(original)
     assert migrate_tags.run() == 1
     songs = json.loads(lib.read_text())["songs"]
-    assert songs[0]["tags"] == ["genre:eurodance"]
-    assert songs[1]["tags"] == ["genre:pop", "country:ua", "genre:deep house", "country:ru", "lang:ru"]
+    assert library.tag_list(songs[0]) == ["genre:eurodance"]
+    assert library.tag_list(songs[1]) == ["genre:pop", "genre:deep house"]
     assert (tmp_path / "backups-genre-merge" / "u1" / "library.json").read_text() == original
     assert migrate_tags.run() == 0
 
@@ -639,9 +648,9 @@ def test_genre_migration_french_touch_becomes_french_house_and_french_house_stay
     ]}))
     assert migrate_tags.run() == 1
     songs = json.loads(lib.read_text())["songs"]
-    assert songs[0]["tags"] == ["genre:french house", "genre:electronic"]
-    assert songs[1]["tags"] == ["genre:french house", "genre:house"]
-    assert songs[2]["tags"] == ["genre:house"]
+    assert library.tag_list(songs[0]) == ["genre:french house", "genre:electronic"]
+    assert library.tag_list(songs[1]) == ["genre:french house", "genre:house"]
+    assert library.tag_list(songs[2]) == ["genre:house"]
     assert migrate_tags.run() == 0
 
 
@@ -659,7 +668,7 @@ def test_vague_genres_dropped_by_migration_idempotent(tmp_path, monkeypatch):
     ]})
     lib.write_text(original)
     assert migrate_tags.run() == 1
-    tags = [s["tags"] for s in json.loads(lib.read_text())["songs"]]
+    tags = [library.tag_list(s) for s in json.loads(lib.read_text())["songs"]]
     assert tags == [["genre:house"], []]
     assert (tmp_path / "backups-genre-merge" / "u1" / "library.json").read_text() == original
     assert migrate_tags.run() == 0
@@ -683,7 +692,7 @@ def test_migration_merges_dnb_retags_and_drops_idempotent(tmp_path, monkeypatch)
     ]})
     lib.write_text(original)
     assert migrate_tags.run() == 1
-    tags = [s["tags"] for s in json.loads(lib.read_text())["songs"]]
+    tags = [library.tag_list(s) for s in json.loads(lib.read_text())["songs"]]
     assert tags == [
         ["genre:drum and bass", "genre:liquid drum and bass", "genre:electronic"],
         ["genre:melodic techno", "genre:progressive house"],
@@ -694,4 +703,4 @@ def test_migration_merges_dnb_retags_and_drops_idempotent(tmp_path, monkeypatch)
     ]
     assert (tmp_path / "backups-genre-merge" / "u1" / "library.json").read_text() == original
     assert migrate_tags.run() == 0
-    assert [s["tags"] for s in json.loads(lib.read_text())["songs"]] == tags
+    assert [library.tag_list(s) for s in json.loads(lib.read_text())["songs"]] == tags

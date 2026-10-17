@@ -8,7 +8,7 @@ import { findInLibrary } from './library-match.js';
 import { dialogHead } from './edit-dialog.js';
 import { songForm } from './song-form.js';
 import { ADD_ROW_OUTLINE_MS } from './constants.js';
-import { addBody, yearError, artistString } from './song-payload.js';
+import { addBody, yearError, artistString, storedTags } from './song-payload.js';
 import { displayLine } from './credits.js';
 import { can } from './guest.js';
 import { fetchSteps } from './add-progress.js';
@@ -122,9 +122,9 @@ export function openAdd() {
     const paintMeta = () => {
       const v = sf.values({ commit: false });
       title.textContent = v.title || 'Untitled';
-      sub.textContent = [artistString(v), v.released].filter(Boolean).join(' \u00b7 ');
-      albumLine.textContent = v.album || '';
-      albumLine.hidden = !v.album;
+      sub.textContent = [artistString(v), v.releaseYear].filter(Boolean).join(' \u00b7 ');
+      albumLine.textContent = v.albums?.[0] || '';
+      albumLine.hidden = !v.albums?.[0];
       facts.textContent = preview.duration ? fmtTime(preview.duration) : '';
     };
     sf.node.addEventListener('input', paintMeta);
@@ -156,7 +156,7 @@ export function openAdd() {
       }
       save.disabled = true;
       try {
-        const added = await api.addSong(preview.source_url, addBody(v), v.tags, v.keep_title, preview.raw ?? null);
+        const added = await api.addSong(preview.source_url, addBody(v), storedTags(v.tags), v.keep_title, preview.raw ?? null);
         if (added?.song && store.loaded) store.insert(added.song); else await store.refresh().catch(() => {});
         if (autoDownloadOn() && added?.id) autodl.request([added.id], { front: true });
         dlg.close();

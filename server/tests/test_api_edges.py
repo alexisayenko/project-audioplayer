@@ -165,7 +165,7 @@ def test_find_uid_by_sub_scans_profiles_then_caches(multi, tmp_path):
 def test_startup_recovers_git_only_when_configured(monkeypatch):
     calls = []
     monkeypatch.setattr(main.migrate_tags, "run", lambda: 0)
-    monkeypatch.setattr(main.migrate_credits, "run", lambda: 0)
+    monkeypatch.setattr(main.migrate_model2, "run", lambda: 0)
     monkeypatch.setattr(deps, "SYNC", SimpleNamespace(recover_on_startup=lambda: calls.append(1)))
     main._startup()
     monkeypatch.setattr(deps, "SYNC", None)
@@ -525,10 +525,10 @@ def test_add_twice_is_409_and_patch_validations(client):
     assert not any(t.startswith("decade:") for t in client.patch(f"/songs/{VID}", json={"year": 1949, "tags": []}, headers=H).json()["tags"])
 
 
-def test_patch_keeps_a_legacy_unknown_country_the_song_already_has(client, tmp_path):
+def test_an_unknown_country_stored_by_older_code_is_dropped_on_load_and_new_ones_are_refused(client, tmp_path):
     ODIR(tmp_path).mkdir(parents=True)
-    (ODIR(tmp_path) / "library.json").write_text(json.dumps({"songs": [{"id": VID, "title": "t", "file": None, "tags": ["country:Atlantis"]}]}))
-    r = client.patch(f"/songs/{VID}", json={"tags": ["country:Atlantis", "rock"]}, headers=H)
+    (ODIR(tmp_path) / "library.json").write_text(json.dumps({"songs": [{"id": VID, "title": "t", "file": None, "tags": ["country:Atlantis", "rock"]}]}))
+    r = client.patch(f"/songs/{VID}", json={"tags": ["rock"]}, headers=H)
     assert r.status_code == 200
     assert client.patch(f"/songs/{VID}", json={"tags": ["country:Mordor"]}, headers=H).status_code == 422
 

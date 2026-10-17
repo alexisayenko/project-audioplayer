@@ -14,7 +14,7 @@ def test_create_stores_remix_year_and_year_stays_separate(client):
     assert add(client, H, metadata={"title": "S", "year": 2003, "remix_year": 2024}).status_code == 202
     s = song(client)
     assert (s["year"], s["remix_year"]) == (2003, 2024)
-    assert "decade:00s" in s["tags"]
+    assert "decade:20s" in s["tags"] and "decade:00s" not in s["tags"]
 
 
 def test_create_without_audio_keeps_remix_year(client):
@@ -61,13 +61,13 @@ def test_null_clears_and_absent_keeps(client):
     assert song(client)["remix_year"] is None
 
 
-def test_patch_remix_year_does_not_touch_year_or_decade(client):
+def test_patch_remix_year_does_not_touch_year_and_moves_the_decade(client):
     add(client, H, metadata={"title": "S", "year": 1994})
     client.patch(f"/songs/{VID}", json={"remix_year": 2024}, headers=H)
     s = song(client)
     assert s["year"] == 1994
-    assert s["tags"].count("decade:90s") == 1
-    assert not any(t == "decade:20s" for t in s["tags"])
+    assert s["tags"].count("decade:20s") == 1
+    assert not any(t == "decade:90s" for t in s["tags"])
 
 
 def test_old_library_without_the_field_reads_null_and_is_not_rewritten(client, tmp_path):

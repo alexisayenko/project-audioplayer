@@ -87,7 +87,7 @@ def test_preview_youtube_info_dict_mapping(ydl):
     assert got["year"] is None
     assert got["published_year"] == 2009
     assert got["raw"] == {"title": "One More Time", "artist": "Daft Punk", "remixer": None}
-    assert got["suggested_credits"]["artists"] == ["Daft Punk"]
+    assert got["suggested_credits"]["mainArtists"] == ["Daft Punk"]
     assert {t.lower() for t in got["tags"]} >= {"genre:house", "genre:electronic", "genre:disco"}
     assert got["thumbnail"] == f"https://i.ytimg.com/vi/{YT}/hqdefault.jpg"
 

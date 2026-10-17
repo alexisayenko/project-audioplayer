@@ -12,7 +12,7 @@ from urllib.parse import urlparse
 
 import yt_dlp
 
-from . import credits_split, genre_filter, library, timeutil, urlclean, yt_genres
+from . import credits, credits_split, genre_filter, library, timeutil, urlclean, yt_genres
 from .jsonio import write_bytes_atomic
 from .titles import cut_remix, split_artist_title, split_title
 from .urlclean import is_valid_video_id, parse_video_id, source_of, watch_url  # noqa: F401
@@ -162,7 +162,7 @@ def soundcloud_probe(url: str) -> dict[str, Any]:
         "album": info.get("album"),
         "remixer": remixer,
         "raw": {"title": raw_title, "artist": artist, "remixer": remixer},
-        "suggested_credits": credits_split.suggest(artist, title, remixer, {"uploader": artist}),
+        "suggested_credits": credits.suggestion(credits_split.suggest(artist, title, remixer, {"uploader": artist})),
         "year": None,
         "published_year": _published_year(info),
         "tags": suggest_tags({**info, "genre": info.get("genre") or info.get("genres")}),
@@ -189,7 +189,7 @@ def preview(video_id: str) -> dict[str, Any]:
         "album": info.get("album"),
         "remixer": remixer,
         "raw": {"title": raw_title, "artist": raw_artist, "remixer": remixer},
-        "suggested_credits": credits_split.suggest(artist, title, remixer, {"uploader": raw_artist}),
+        "suggested_credits": credits.suggestion(credits_split.suggest(artist, title, remixer, {"uploader": raw_artist})),
         "year": None,
         "published_year": _published_year(info),
         "tags": suggest_tags(info),

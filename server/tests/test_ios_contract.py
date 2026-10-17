@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from app import credits, extractor, genre_lookup, library, migrate_credits
+from app import credits_v1, extractor, genre_lookup, library, migrate_model2
 from tests.test_credits_api import REAL_PREVIEW, post
 from tests.test_extractor_mapping import ydl  # noqa: F401
 from tests.test_library import H, ODIR, VID, VID2, client  # noqa: F401
@@ -92,8 +92,9 @@ EXAMPLES = [
     ("E", {"artists": ["Artist B"], "title": "Song", "version": {"kind": "cover", "of": "Artist A"}}),
     ("F", {"artists": ["Kato"], "featured": ["Jon"], "released": 2009, "title": "Turn The Lights Off"}),
     ("G", {"artists": ["Nadia Ali, Starkillers & Alex Kenji"], "released": 2009, "title": "Pressure", "version": {"kind": "remix", "name": "Alesso Remix", "year": 2012}}),
+    ("H", {"mainArtists": ["Teemid"], "releaseYear": 2007, "albums": ["St. Elsewhere", "Deluxe"], "title": "Crazy", "version": {"type": "cover", "originalArtists": ["Gnarls Barkley"]}}),
 ]
-IDS = ["aaaaaaaaae1", "aaaaaaaaae2", "aaaaaaaaae3", "aaaaaaaaae4", "aaaaaaaaae5", "aaaaaaaaae6", "aaaaaaaaae7"]
+IDS = ["aaaaaaaaae1", "aaaaaaaaae2", "aaaaaaaaae3", "aaaaaaaaae4", "aaaaaaaaae5", "aaaaaaaaae6", "aaaaaaaaae7", "aaaaaaaaae8"]
 
 
 def make_examples(client):
@@ -120,8 +121,8 @@ def test_legacy_migrated_and_new_songs_decode_as_server_song(client, tmp_path, r
             assert s["artist"] is None or isinstance(s["artist"], str)
             assert s["year"] is None or (isinstance(s["year"], int) and not isinstance(s["year"], bool))
             assert s["remixer"] is None or isinstance(s["remixer"], str)
-            assert isinstance(s["sources"], list) and all(set(e) == {"source", "id", "url"} for e in s["sources"])
-        migrate_credits.migrate(path)
+            assert isinstance(s["sources"], list) and all({"source", "id", "url", "platform"} == set(e) for e in s["sources"])
+        migrate_model2.migrate(path, apply=True, backup_dir=tmp_path / "bk")
 
 
 def test_the_five_legacy_values_are_equal_before_and_after_the_migration(client, tmp_path):
@@ -130,7 +131,7 @@ def test_the_five_legacy_values_are_equal_before_and_after_the_migration(client,
     for stage in ("lazy", "migrated"):
         got = {s["id"]: {k: s[k] for k in ("artist", "remixer", "year", "remix_year")} for s in songs_of(client, "/catalog")}
         assert got == expected, stage
-        migrate_credits.migrate(path)
+        migrate_model2.migrate(path, apply=True, backup_dir=tmp_path / "bk")
 
 
 def test_ios_add_from_the_fixture_body_matches_what_the_migration_would_store(client, tmp_path):
@@ -140,10 +141,10 @@ def test_ios_add_from_the_fixture_body_matches_what_the_migration_would_store(cl
     assert client.post("/songs", json=body, headers=H).status_code == 201
     got = songs_of(client, "/library")[0]
     legacy = {"id": VID, "title": "Song", "artist": body["metadata"]["artist"], "remixer": "Alesso Remix", "year": 2009}
-    credits.migrate_fields(legacy)
-    for key in ("artists", "featured", "released", "version"):
+    credits_v1.to_v2(legacy)
+    for key in ("mainArtists", "featuredArtists", "releaseYear", "version"):
         assert got[key] == legacy[key], key
-    assert got["raw"] == {"title": "Song", "artist": body["metadata"]["artist"], "remixer": "Alesso Remix"}
+    assert got["rawTitle"] == "Song" and "raw" not in got
     assert (got["artist"], got["remixer"], got["year"]) == (body["metadata"]["artist"], "Alesso Remix", 2009)
 
 
@@ -176,7 +177,7 @@ def test_a_changed_artist_becomes_pills_and_clears_featured(client):
     body = edit_body(current)
     body["artist"] = "Kato & New Name"
     got = client.patch(f"/songs/{vid}", json=body, headers=H).json()
-    assert (got["artists"], got["featured"]) == (["Kato & New Name"], [])
+    assert (got["mainArtists"], got["featuredArtists"]) == (["Kato & New Name"], [])
     assert got["version"] if "version" in got else True
 
 
@@ -187,7 +188,7 @@ def test_a_cleared_remixer_removes_the_version_and_a_changed_one_renames_it(clie
     body = edit_body(current)
     body["remixer"] = "Bob Remix"
     got = client.patch(f"/songs/{vid}", json=body, headers=H).json()
-    assert got["version"] == {"kind": "remix", "name": "Bob Remix", "by": ["Alesso"], "year": None}
+    assert got["version"] == {"type": "remix", "name": "Bob Remix", "artists": ["Alesso"], "releaseYear": None}
     body["remixer"] = None
     assert "version" not in client.patch(f"/songs/{vid}", json=body, headers=H).json()
 

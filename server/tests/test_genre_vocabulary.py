@@ -218,7 +218,7 @@ def test_patch_lets_a_stored_unmappable_tag_stay(client, tmp_path):
     add(client, audio=False, tags=["genre:house"])
     lib = ODIR(tmp_path) / "library.json"
     doc = json.loads(lib.read_text())
-    doc["songs"][0]["tags"].append("genre:zzqq")
+    doc["songs"][0]["genres"].append("zzqq")
     lib.write_text(json.dumps(doc))
     ok = client.patch(f"/songs/{VID}", json={"tags": ["genre:house", "genre:zzqq", "genre:trance"]}, headers=H)
     assert ok.status_code == 200
@@ -258,10 +258,12 @@ def test_identify_suggestions_are_narrowed():
 
 
 def test_metafill_adds_only_canonical_genres():
-    song = {"id": "a", "title": "A", "tags": ["genre:house"], "album": "x", "year": None}
-    assert metafill.apply(song, {"tags": ["genre:qqqq", "genre:techno", "country:lt"]})
-    assert song["tags"][:3] == ["genre:house", "genre:techno", "country:lt"]
-    other = {"id": "b", "title": "B", "tags": [], "album": "x", "year": None}
+    song = {"id": "a", "title": "A", "mainArtists": ["Z"], "tags": ["genre:house"], "albums": ["x"], "releaseYear": None}
+    table: list = []
+    assert metafill.apply(song, {"tags": ["genre:qqqq", "genre:techno", "country:lt"]}, table)
+    assert song["tags"] == ["genre:house", "genre:techno"]
+    assert table == [{"name": "Z", "countries": ["lt"]}]
+    other = {"id": "b", "title": "B", "tags": [], "albums": ["x"], "releaseYear": None}
     assert not metafill.apply(other, {"tags": ["genre:qqqq"]})
     assert other["tags"] == []
 
@@ -330,8 +332,8 @@ def test_unmappable_tags_are_kept_and_reported_outside_the_synced_tree(datadir, 
     with caplog.at_level(logging.WARNING, logger="app.migrate_tags"):
         migrate_tags.run()
     stored = json.loads(lib.read_text())["songs"]
-    assert stored[0]["tags"] == ["genre:zzqq", "genre:house", "x"]
-    assert stored[1]["tags"] == ["genre:zzqq", "genre:qqzz"]
+    assert library.tag_list(stored[0]) == ["genre:zzqq", "genre:house", "x"]
+    assert library.tag_list(stored[1]) == ["genre:zzqq", "genre:qqzz"]
     report = json.loads((datadir / "backups-genre-merge" / "review-u1.json").read_text())
     assert report == {"uid": "u1", "unmappable": [
         {"tag": "zzqq", "songs": 2, "sample_ids": ["a", "b"]},

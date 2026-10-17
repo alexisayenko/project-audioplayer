@@ -117,10 +117,10 @@ def test_decade_boundaries(year, tag):
     assert library.decade_tag(year) == tag
 
 
-def test_with_decade_is_idempotent_and_replaces_case_variants():
-    once = library.with_decade(["x", "Decade:80S", "decade:70s"], 1994)
-    assert once == ["x", "decade:90s"]
-    assert library.with_decade(once, 1994) == once
+def test_split_tags_is_idempotent_and_case_insensitive():
+    kept, countries, removed = library.split_tags(["x", "Decade:80S", "decade:70s", "LANG:EN"])
+    assert (kept, countries, dict(removed)) == (["x"], [], {"decade": 2, "lang": 1})
+    assert library.split_tags(kept) == (kept, [], library.Counter())
 
 
 @pytest.mark.parametrize("seed", SEEDS[:4])
@@ -187,19 +187,20 @@ def test_migration_is_idempotent_and_cleans_legacy_fields():
     assert a["bpm"] == 121
     assert "genre" not in a
     assert "original" not in a
-    assert "remixer" not in a and a["artists"] == [] and "version" not in a
+    assert "remixer" not in a and a["mainArtists"] == [] and "version" not in a
     assert a["source_url"] == "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
     assert a["wikipedia_song"] is None
-    assert sorted(a["tags"]) == ["Rock", "decade:90s", "genre:house"]
-    assert b["tags"] == ["lang:ru", "country:de"]
-    assert b["sources"] == [{"source": "youtube", "id": "9bZkp7q19f0", "url": "https://www.youtube.com/watch?v=9bZkp7q19f0"}]
-    assert c["file"] is None and c["tags"] == ["decade:00s"] if "tags" in c else True
+    assert sorted(a["tags"]) == ["Rock", "genre:house"]
+    assert a["releaseYear"] == 1994
+    assert b["tags"] == []
+    assert b["sources"] == [{"platform": "youtube", "url": "https://www.youtube.com/watch?v=9bZkp7q19f0"}]
+    assert c["file"] is None and c["releaseYear"] == 2007
 
 
 def test_normalize_accepts_every_legacy_shape():
     assert library.normalize([{"id": "dQw4w9WgXcQ", "title": "x"}])["songs"][0]["file"] == "dQw4w9WgXcQ.m4a"
     for junk in (None, 5, "x", {"songs": None}, {}):
-        assert library.normalize(junk) == {"settings": {}, "songs": []}
+        assert library.normalize(junk) == {"settings": {}, "songs": [], "artists": []}
 
 
 def test_load_doc_survives_corrupt_and_missing_files(tmp_path):
@@ -215,9 +216,9 @@ def test_load_doc_survives_corrupt_and_missing_files(tmp_path):
 
 
 def test_clean_sources_drops_malformed_entries():
-    raw = [{"source": "youtube", "id": "a", "url": "https://youtu.be/dQw4w9WgXcQ?si=1"}, {"source": 5, "id": "x"}, {"source": "s"}, "junk", {"source": "s", "id": 7}]
+    raw = [{"source": "youtube", "id": "a", "url": "https://youtu.be/dQw4w9WgXcQ?si=1"}, {"source": 5, "id": "x"}, {"platform": "soundcloud"}, "junk", {"source": "s", "id": 7}, {"url": "https://x"}]
     got = library.clean_sources(raw)
-    assert got == [{"source": "youtube", "id": "a", "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"}, {"source": "s", "id": "7", "url": None}]
+    assert got == [{"platform": "youtube", "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"}, {"platform": "soundcloud", "url": None}, {"platform": "s", "url": None}]
     assert library.clean_sources("nope") == []
     assert library.clean_sources(None) == []
 

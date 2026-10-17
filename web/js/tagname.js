@@ -1,6 +1,7 @@
 import { el } from './dom.js';
 import { maxYear } from './constants.js';
 import { canonicalCountry, countryName, isHistoricalCountry } from './countries.js';
+import { displayYear } from './credits.js';
 
 const namers = {};
 try {
@@ -35,6 +36,14 @@ export function withDecade(tags, year) {
     } else out.push(t);
   }
   return placed ? out : [...out, derived];
+}
+
+export function withRuntimeDecade(song) {
+  const year = displayYear(song);
+  if (!song || !Number.isInteger(year)) return song;
+  const tags = (song.tags || []).filter((t) => !/^decade:/i.test(t));
+  const derived = decadeTag(year);
+  return { ...song, tags: derived ? [...tags, derived] : tags };
 }
 
 export const decadeRank = (tag) => {

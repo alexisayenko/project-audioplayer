@@ -178,13 +178,14 @@ async def preview_stream(req: PreviewRequest, user: Annotated[dict[str, Any], De
 
 @router.post("/metadata", dependencies=[Depends(deps.require_token)], responses=deps.responses(422))
 async def get_metadata(req: MetadataRequest):
-    if req.version_kind is not None and req.version_kind not in credits.KINDS:
-        raise HTTPException(status_code=422, detail=f"version_kind must be one of {', '.join(credits.KINDS)}")
+    version_type = req.version_type if req.version_type is not None else req.version_kind
+    if version_type is not None and version_type not in credits.TYPES:
+        raise HTTPException(status_code=422, detail=f"version_type must be one of {', '.join(credits.TYPES)}")
     urls = [src.url.strip() for src in req.sources[:MAX_METADATA_SOURCES] if src.url.strip()]
     fetchers = [(lambda u=u: source_info(u)) for u in urls]
     return await run_in_threadpool(
         metadata.gather, req.title.strip(), req.artist.strip(), fetchers, req.wiki_song, req.wiki_artist, metadata.TIMEOUT, urls, req.wiki_album,
-        req.version_kind,
+        version_type,
     )
 
 

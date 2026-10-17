@@ -17,6 +17,8 @@ import { bpmRow } from './song-form-bpm.js';
 import { unknownGenre } from './genre-vocab.js';
 import { originalGenres, originalBox } from './original-genres.js';
 
+const firstAlbum = (s) => (Array.isArray(s.albums) ? s.albums[0] : s.album) || '';
+
 export function songForm({ mode = 'add', song = {}, source = null, onChange = null } = {}) {
   const isAdd = mode === 'add';
   const initial = { ...song };
@@ -25,8 +27,9 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
   const startTitle = first.title;
   const f = {
     title: tg.field('title', startTitle),
-    album: el('input', { type: 'text', value: initial.album || '' }),
+    album: el('input', { type: 'text', value: firstAlbum(initial) }),
   };
+  const moreAlbums = Array.isArray(initial.albums) ? initial.albums.slice(1) : [];
   const credits = creditsBlock({
     tg,
     song: initial,
@@ -123,7 +126,7 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
   let suggest = null;
   const emit = () => f.title.dispatchEvent(new Event('input', { bubbles: true }));
   const tc = titleCleaner({ f, isAdd, initial, first, emit });
-  const cur = () => ({ title: f.title.value, artist: artistString({ artists: credits.values().artists }) });
+  const cur = () => ({ title: f.title.value, artist: artistString({ mainArtists: credits.values().mainArtists }) });
   const paintHint = () => {
     const sug = suggest ? suggestion(suggest, cur()) : null;
     hint.hidden = !sug;
@@ -242,7 +245,7 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
       title: f.title.value,
       keep_title: tc.restoredRaw !== null && f.title.value === tc.restoredRaw,
       ...credits.values(),
-      album: f.album.value,
+      albums: [f.album.value.trim(), ...moreAlbums].filter(Boolean),
       tags: editor.getTags({ commit }),
       ...wiki.values(),
       musicbrainz_url: mbUrl,
@@ -262,7 +265,8 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
   };
   const setValues = (p = {}) => {
     if (p.title !== undefined) f.title.value = p.title ?? '';
-    if (p.album !== undefined) f.album.value = p.album ?? '';
+    if (p.albums !== undefined) f.album.value = p.albums?.[0] ?? '';
+    else if (p.album !== undefined) f.album.value = p.album ?? '';
     credits.set(p);
     wiki.set({ song: p.wikipedia_song, artist: p.wikipedia_artist, album: p.wikipedia_album });
     paintIcons();
@@ -293,7 +297,7 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
       metaBtn.textContent = 'Get metadata';
       tc.clearRestored();
       tc.paintCleaned(first.removed);
-      setValues({ title: startTitle, ...initialCredits(initial), album: initial.album || '', wikipedia_song: initial.wikipedia_song || '', wikipedia_artist: initial.wikipedia_artist || '', wikipedia_album: initial.wikipedia_album || '' });
+      setValues({ title: startTitle, ...initialCredits(initial), albums: [firstAlbum(initial)], wikipedia_song: initial.wikipedia_song || '', wikipedia_artist: initial.wikipedia_artist || '', wikipedia_album: initial.wikipedia_album || '' });
       credits.resetYear(initial.published_year);
     },
     destroy() {
