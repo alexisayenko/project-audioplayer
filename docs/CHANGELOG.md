@@ -2,6 +2,17 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-18 (web polish)
+
+- Web: the Library filter sheet applies at once; there is no Show N songs button.
+- Web: the song card has a round Play next button instead of Play now, and the line under the cover shows the full title.
+- Web: the Library toolbar has Show playing and Clear filters.
+- Web: the mini-player title and the Now playing queue rows open the song card.
+- Web: the menu item Playback is now called Now playing.
+- Web: the Genres map, Genres map rework and Song stats screens have the standard page head, and the ELECTROPHONE line is hidden from 720px up.
+- Web: the genre maps no longer draw dashed also-under cross-link lines.
+- Web: the first visualizer open no longer silences playback.
+
 ## 2026-10-17 (built, not deployed)
 
 - iOS: removing the playing song from the queue now pauses and cues the neighbouring song instead of leaving the old one playing; songs cued after a restart or tag add now advance to the next song when they end.
