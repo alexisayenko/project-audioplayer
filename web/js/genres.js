@@ -1,6 +1,6 @@
 import { api } from './api.js';
 import { store } from './store.js';
-import { el, plural } from './dom.js';
+import { el, plural, pageHead } from './dom.js';
 import { icon } from './icons.js';
 import { serviceIcon } from './service-icons.js';
 import { createGraphView } from './genre-graph.js';
@@ -428,21 +428,22 @@ export function renderGenres(root) {
   });
 
   const gm = el('div', { class: 'gm' },
-    el('div', { class: 'gm-stage' }, canvas, tip),
-    el('div', { class: 'gm-bar' },
-      el('div', { class: 'gm-bar-row' },
-        barCl.button,
-        el('h1', { class: 'gm-title' }, 'Genres map'),
-        note,
-        legendBtn, nowBtn, orphBtn),
-      nowPop,
-      orphPop,
-      barCl.root),
-    outlineBtn,
-    zoomBar,
-    panel,
-    outlinePanel,
-    live);
+    pageHead('Genres map'),
+    el('div', { class: 'gm-work' },
+      el('div', { class: 'gm-stage' }, canvas, tip),
+      el('div', { class: 'gm-bar' },
+        el('div', { class: 'gm-bar-row' },
+          barCl.button,
+          note,
+          legendBtn, nowBtn, orphBtn),
+        nowPop,
+        orphPop,
+        barCl.root),
+      outlineBtn,
+      zoomBar,
+      panel,
+      outlinePanel,
+      live));
   root.append(gm);
   const unsubPlayer = player.onChange(renderNow);
   const unsubNowStore = store.subscribe(renderNow);

@@ -268,3 +268,20 @@ test('a vocabulary payload that breaks the tree builder shows Failed to load and
   assert.equal(btn(root, 'Reload').disabled, false);
   cleanup();
 });
+
+test('Genres map rework shows one page title inside the standard page head and no small bar title', async () => {
+  mode = 'ok';
+  const { root, cleanup } = await mount();
+  const h1s = root.querySelectorAll('h1');
+  assert.equal(h1s.length, 1);
+  assert.equal(h1s[0].textContent, 'Genres map rework');
+  assert.ok(h1s[0].className.includes('t-display'));
+  const head = h1s[0].parentElement;
+  assert.equal(head.tagName.toLowerCase(), 'header');
+  assert.ok(head.className.includes('page-head'));
+  assert.equal(head.querySelector('.t-eyebrow').textContent, 'ELECTROPHONE');
+  assert.equal(root.querySelector('.gm-title'), null);
+  assert.equal(root.querySelector('.gm').children[0], head);
+  assert.equal(root.querySelector('.gm .gm-bar').closest('.gm-work').parentElement, root.querySelector('.gm'));
+  cleanup();
+});

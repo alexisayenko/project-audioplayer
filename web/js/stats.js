@@ -1,7 +1,7 @@
 import { api } from './api.js';
 import { store } from './store.js';
 import { player } from './player.js';
-import { el, toast, plural } from './dom.js';
+import { el, toast, plural, pageHead } from './dom.js';
 import { icon } from './icons.js';
 import { titleNodes, titleLine, artistLine } from './credits.js';
 import { storeGet, storeSet } from './storage.js';
@@ -287,11 +287,13 @@ export function renderStats(root) {
   });
 
   const st = el('div', { class: 'st' },
-    el('div', { class: 'st-stage' }, base, top, tip, live, empty, tableBox),
-    el('div', { class: 'st-bar' },
-      el('div', { class: 'st-row' }, el('h1', { class: 'st-title t-headline' }, 'Song stats'), status, barCl.button),
-      barCl.root),
-    panel);
+    pageHead('Song stats'),
+    el('div', { class: 'st-work' },
+      el('div', { class: 'st-stage' }, base, top, tip, live, empty, tableBox),
+      el('div', { class: 'st-bar' },
+        el('div', { class: 'st-row' }, status, barCl.button),
+        barCl.root),
+      panel));
   root.append(st);
   const stopInset = watchPlayerInset(st, (h) => chart.setInsetBottom(h));
   const barEl = st.querySelector('.st-bar');

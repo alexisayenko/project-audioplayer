@@ -336,3 +336,20 @@ test('the panel has a chevron that collapses everything below the title row and 
   again.cleanup();
   localStorage.removeItem('ap2.panel.stats');
 });
+
+test('Song stats shows one page title inside the standard page head and no small bar title', async () => {
+  const { root, cleanup } = mount();
+  await flush();
+  const h1s = root.querySelectorAll('h1');
+  assert.equal(h1s.length, 1);
+  assert.equal(h1s[0].textContent, 'Song stats');
+  assert.ok(h1s[0].className.includes('t-display'));
+  const head = h1s[0].parentElement;
+  assert.equal(head.tagName.toLowerCase(), 'header');
+  assert.ok(head.className.includes('page-head'));
+  assert.equal(head.querySelector('.t-eyebrow').textContent, 'ELECTROPHONE');
+  assert.equal(root.querySelector('.st-title'), null);
+  assert.equal(root.querySelector('.st').children[0], head);
+  assert.equal(root.querySelector('.st .st-bar').closest('.st-work').parentElement, root.querySelector('.st'));
+  cleanup();
+});

@@ -1,5 +1,5 @@
 import { api } from './api.js';
-import { el, plural } from './dom.js';
+import { el, plural, pageHead } from './dom.js';
 import { icon } from './icons.js';
 import { familyIndex } from './genre-data.js';
 import { vkey } from './genre-vocab.js';
@@ -57,6 +57,7 @@ export function renderGenresRework(root, opts = {}) {
     class: 'gm-tbtn gm-outline-btn', type: 'button', 'aria-controls': 'gmr-outline', 'aria-expanded': 'false', onclick: () => setOutline(!outlineOpen),
   }, 'Outline');
   const wrap = el('div', { class: 'gm gmr' });
+  const work = el('div', { class: 'gm-work' });
   const allBtn = el('button', {
     class: 'gm-tbtn', type: 'button', 'aria-pressed': String(showAll),
     onclick: () => {
@@ -75,7 +76,7 @@ export function renderGenresRework(root, opts = {}) {
 
   function showTip(n, pt) {
     if (!n || !pt) { tip.hidden = true; return; }
-    const r = wrap.getBoundingClientRect?.() || { left: 0, top: 0 };
+    const r = work.getBoundingClientRect?.() || { left: 0, top: 0 };
     const t = n.node;
     tip.replaceChildren(
       el('strong', {}, t.label),
@@ -373,10 +374,11 @@ export function renderGenresRework(root, opts = {}) {
     el('div', { class: 'gmr-tools' }, search, expandAll, collapseAll, onlyBtn, statusRow, flavourRow),
     treeEl, empty);
 
-  wrap.append(
+  work.append(
     canvas,
-    el('div', { class: 'gm-bar' }, el('div', { class: 'gm-bar-row' }, el('h1', { class: 'gm-title' }, 'Genres map rework'), status, allBtn, reload)),
+    el('div', { class: 'gm-bar' }, el('div', { class: 'gm-bar-row' }, status, allBtn, reload)),
     outlineBtn, outlineEl, zoomBar, legend, panel, tip);
+  wrap.append(pageHead('Genres map rework'), work);
   root.append(wrap);
   setOutline(outlineOpen);
   start();
