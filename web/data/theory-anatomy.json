@@ -75,7 +75,7 @@
       "path": "genres",
       "label": "Genres",
       "tone": "plain",
-      "description": "Genre tags, each prefixed with genre:."
+      "description": "Genre names, stored bare (house, soul), with no genre: prefix."
     },
     {
       "id": "sources",
@@ -132,7 +132,7 @@
           "Discovery"
         ],
         "genres": [
-          "genre:house"
+          "house"
         ],
         "sources": [
           {
@@ -187,7 +187,7 @@
         "releaseYear": 2016,
         "albums": [],
         "genres": [
-          "genre:dance"
+          "dance"
         ],
         "sources": [
           {
@@ -252,7 +252,7 @@
           "Music for the Jilted Generation"
         ],
         "genres": [
-          "genre:breakbeat"
+          "breakbeat"
         ],
         "sources": [
           {
@@ -329,7 +329,7 @@
           "St. Elsewhere"
         ],
         "genres": [
-          "genre:soul"
+          "soul"
         ],
         "sources": [
           {
@@ -394,7 +394,7 @@
         },
         "albums": [],
         "genres": [
-          "genre:electronic"
+          "electronic"
         ],
         "sources": [
           {
@@ -455,7 +455,7 @@
         "releaseYear": 2021,
         "albums": [],
         "genres": [
-          "genre:pop"
+          "pop"
         ],
         "sources": [
           {
@@ -516,7 +516,7 @@
         "releaseYear": 2017,
         "albums": [],
         "genres": [
-          "genre:pop"
+          "pop"
         ],
         "sources": [
           {
@@ -579,7 +579,7 @@
           "Homework"
         ],
         "genres": [
-          "genre:house"
+          "house"
         ],
         "sources": [
           {
@@ -640,7 +640,7 @@
         "releaseYear": 2011,
         "albums": [],
         "genres": [
-          "genre:pop"
+          "pop"
         ],
         "sources": [
           {
@@ -704,7 +704,7 @@
           "The Dark Side of the Moon"
         ],
         "genres": [
-          "genre:rock"
+          "rock"
         ],
         "sources": [
           {
@@ -767,7 +767,7 @@
           "Hounds of Love"
         ],
         "genres": [
-          "genre:pop"
+          "pop"
         ],
         "sources": [
           {
