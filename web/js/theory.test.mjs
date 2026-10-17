@@ -97,37 +97,84 @@ test('helpers: pathValue, formatValue, rowsFor', () => {
   assert.ok(cover.includes('version.originalArtists') && cover.includes('version.artists'));
 });
 
-test('the page shows the anatomy section with the first example and a select of all examples', async () => {
+const exButtons = (root) => classes(root, 'an-examples')[0].children;
+const pick = (root, id) => {
+  const i = anatomy.examples.findIndex((e) => e.id === id);
+  fire(exButtons(root)[i], 'click');
+};
+
+test('the page shows the anatomy section with the first example and a button list of all examples', async () => {
   const root = await mount(anatomyHandler);
   assert.ok(textOf(root).includes('Composition metadata anatomy'));
-  const sel = all(root, 'select')[0];
-  assert.equal(all(sel, 'option').length, anatomy.examples.length);
-  assert.deepEqual(all(sel, 'option').map(textOf), anatomy.examples.map((e) => e.rawTitle));
+  assert.equal(all(root, 'select').length, 0);
+  assert.equal(root.querySelector('#an-select'), null);
+  const group = classes(root, 'an-examples')[0];
+  assert.equal(group.getAttribute('role'), 'group');
+  assert.equal(group.getAttribute('aria-label'), 'Examples');
+  const btns = [...exButtons(root)];
+  assert.ok(btns.every((b) => b.tagName.toLowerCase() === 'button'));
+  assert.deepEqual(btns.map(textOf), anatomy.examples.map((e) => e.rawTitle));
+  assert.deepEqual(btns.map((b) => b.getAttribute('aria-pressed')), anatomy.examples.map((e, i) => (i === 0 ? 'true' : 'false')));
   assert.equal(shownTitle(root), 'Daft Punk - One More Time');
   assert.equal(all(root, 'dl').length, 1);
 });
 
+test('the table and the stored json sit in two collapsed panels', async () => {
+  const root = await mount(anatomyHandler);
+  const panels = all(root, 'details');
+  assert.equal(panels.length, 2);
+  assert.deepEqual(all(root, 'summary').map(textOf), ['Legend', 'How this song is stored']);
+  for (const p of panels) assert.ok(!p.open && !p.hasAttribute('open'), 'collapsed by default');
+  assert.equal(all(panels[0], 'table').length, 1);
+  assert.equal(classes(panels[1], 'an-json').length, 1);
+});
+
+test('css: parts are underlined in their tone, the hint shows only for the active segment', () => {
+  const css = readFileSync(new URL('../theory.css', import.meta.url), 'utf8');
+  assert.match(css, /\.an-text \{[^}]*text-decoration-color: var\(--an-c\)/);
+  assert.match(css, /\.an-label \{[^}]*opacity: 0[^}]*pointer-events: none/);
+  assert.match(css, /\.an-label \{[^}]*position: absolute/);
+  assert.match(css, /\.an-seg\.is-on \.an-label \{[^}]*opacity: 1/);
+  assert.ok(!/an-mark/.test(css));
+  assert.ok(!/\.an-sep[^{]*\{[^}]*underline/.test(css));
+  assert.match(css, /\.an-ex\[aria-pressed="true"\] \{[^}]*var\(--selection\)/);
+  assert.match(css, /\.an-examples \{[^}]*grid-template-columns: repeat\(auto-fill/);
+});
+
+test('no bracket element in the title markup', async () => {
+  const root = await mount(anatomyHandler);
+  assert.equal(classes(root, 'an-mark').length, 0);
+  assert.ok(classes(root, 'an-label').length > 0);
+});
+
+test('clicking an example marks it pressed, unmarks the others, and keeps the opened panels open', async () => {
+  const root = await mount(anatomyHandler);
+  const panels = all(root, 'details');
+  panels[1].open = true;
+  pick(root, 'remix');
+  const pressed = [...exButtons(root)].map((b) => b.getAttribute('aria-pressed'));
+  assert.equal(pressed.filter((v) => v === 'true').length, 1);
+  assert.equal(pressed[anatomy.examples.findIndex((e) => e.id === 'remix')], 'true');
+  const after = all(root, 'details');
+  assert.deepEqual(after.map((p) => p.open), [false, true]);
+  assert.ok(after[0] === panels[0] && after[1] === panels[1]);
+  assert.match(textOf(classes(root, 'an-json')[0]), /Pendulum/);
+});
+
 test('selecting the cover example redraws title, table and json', async () => {
   const root = await mount(anatomyHandler);
-  const sel = all(root, 'select')[0];
-  sel.value = 'cover';
-  fire(sel, 'change');
+  pick(root, 'cover');
   assert.equal(shownTitle(root), 'Teemid - Crazy feat. Joie Tan (Gnarls Barkley Cover)');
   const labels = classes(root, 'an-label').map(textOf);
   assert.deepEqual(labels, ['Main artist', 'Title', 'Featured artist', 'Version, original artist']);
   assert.match(textOf(classes(root, 'an-json')[0]), /"originalArtists": \[\s*"Gnarls Barkley"/);
   const rows = classes(root, 'an-row');
   assert.ok(rows.some((r) => textOf(r).includes('version.originalArtists') && textOf(r).includes('Gnarls Barkley')));
-  sel.value = 'nope';
-  fire(sel, 'change');
-  assert.equal(classes(root, 'an-row').length, rows.length);
 });
 
 test('hover and focus link a segment with its table rows, and clear on leave', async () => {
   const root = await mount(anatomyHandler);
-  const sel = all(root, 'select')[0];
-  sel.value = 'cover';
-  fire(sel, 'change');
+  pick(root, 'cover');
   const segs = classes(root, 'an-seg');
   const rows = classes(root, 'an-row');
   const on = () => rows.filter((r) => r.classList.contains('is-on')).map((r) => textOf(r.children[0]).split(/(?=[A-Z])/)[0]);
