@@ -143,7 +143,7 @@ export const SYNTH_PRESET_LIST = [
 ];
 
 const BY_ID = new Map(SYNTH_PRESET_LIST.map((p) => [p.id, p]));
-const clone = (s) => JSON.parse(JSON.stringify(s));
+const clone = (s) => structuredClone(s);
 
 export const PRESET_THUMB = (id) => `img/synth-presets/${id}.png`;
 

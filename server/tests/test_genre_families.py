@@ -27,7 +27,8 @@ def test_families_come_from_the_vocabulary_files():
     table = gg.families()
     assert table
     for name, family in table.items():
-        assert name == name.lower().strip() and name, name
+        assert name == name.lower().strip(), name
+        assert name, name
         assert family in gg.FAMILIES, (name, family)
     assert table == {n: e.family for n, e in genre_vocab.load().entries.items()}
     assert len(gg.FAMILIES) == 15
@@ -127,8 +128,9 @@ def test_kept_subgenres_in_the_live_graph_have_wikidata_parents():
     assert gg.validate_manual(gg._json_table()) == []
 
 
-def test_nu_nrg_and_uplifting_trance_have_manual_parents():
-    gg._manual = None
+def test_nu_nrg_and_uplifting_trance_have_manual_parents(monkeypatch):
+    monkeypatch.setattr(gg, "_manual", None)
     table = gg.manual_parents()
-    assert table["nu-nrg"] == ["hard trance"] and table["uplifting trance"] == ["trance"]
+    assert table["nu-nrg"] == ["hard trance"]
+    assert table["uplifting trance"] == ["trance"]
     assert gg.table_family("nu-nrg") == "Electronic" == gg.table_family("uplifting trance")

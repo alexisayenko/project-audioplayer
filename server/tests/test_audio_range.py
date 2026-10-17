@@ -19,9 +19,11 @@ def assert_ranged(client, **kw):
     assert part.headers["accept-ranges"] == "bytes"
     assert len(part.content) == 100
     tail = client.get(f"/files/{VID}", headers={**kw.get("headers", {}), "Range": "bytes=9900-"})
-    assert tail.status_code == 206 and len(tail.content) == 100
+    assert tail.status_code == 206
+    assert len(tail.content) == 100
     probe = client.get(f"/files/{VID}", headers={**kw.get("headers", {}), "Range": "bytes=0-1"})
-    assert probe.status_code == 206 and len(probe.content) == 2
+    assert probe.status_code == 206
+    assert len(probe.content) == 2
 
 
 def test_owner_audio_supports_range(lib):

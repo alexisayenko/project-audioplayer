@@ -252,6 +252,20 @@ export function accentLut(strength, out = [0, 0, 0]) {
   return out;
 }
 
+function fillAttrRow(canvas, spark, r, cols, bins, csrc, osrc) {
+  for (let c = 0; c < cols; c += 1) {
+    canvas[r * cols + c] = clamp01(colLevel(csrc, c, cols, bins) * CANVAS_GAIN);
+    spark[r * cols + c] = smoothstep(SPARK_LO, SPARK_HI, colLevel(osrc, c, cols, bins));
+  }
+}
+
+function stampAccentRow(accent, k, cols, wt, x) {
+  for (let c = 0; c < cols; c += 1) {
+    const a = wt * landmarkShape(cols <= 1 ? 0 : c / (cols - 1), x);
+    if (a > accent[k * cols + c]) accent[k * cols + c] = a;
+  }
+}
+
 export function fillMelodyAttrs(attrs, mel, can, oth, cols, scratch = null) {
   const { rows, bins } = mel;
   const { dt } = rowLayout(rows);
@@ -260,12 +274,7 @@ export function fillMelodyAttrs(attrs, mel, can, oth, cols, scratch = null) {
   const scores = scratch?.scores?.length === rows ? scratch.scores : new Float32Array(rows);
   const leads = new Array(rows);
   for (let r = 0; r < rows; r += 1) {
-    const csrc = can.row(r);
-    const osrc = oth.row(r);
-    for (let c = 0; c < cols; c += 1) {
-      canvas[r * cols + c] = clamp01(colLevel(csrc, c, cols, bins) * CANVAS_GAIN);
-      spark[r * cols + c] = smoothstep(SPARK_LO, SPARK_HI, colLevel(osrc, c, cols, bins));
-    }
+    fillAttrRow(canvas, spark, r, cols, bins, can.row(r), oth.row(r));
     leads[r] = leadOf(mel.row(r));
     scores[r] = leads[r].score;
   }
@@ -275,11 +284,7 @@ export function fillMelodyAttrs(attrs, mel, can, oth, cols, scratch = null) {
     const { x, score } = leads[r];
     for (let k = Math.max(0, r - spreadRows); k <= Math.min(rows - 1, r + spreadRows); k += 1) {
       const wt = landmarkWeight((k - r) * dt) * score;
-      if (!(wt > 0)) continue;
-      for (let c = 0; c < cols; c += 1) {
-        const a = wt * landmarkShape(cols <= 1 ? 0 : c / (cols - 1), x);
-        if (a > accent[k * cols + c]) accent[k * cols + c] = a;
-      }
+      if (wt > 0) stampAccentRow(accent, k, cols, wt, x);
     }
   }
   return attrs;

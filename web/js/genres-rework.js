@@ -43,7 +43,7 @@ export function renderGenresRework(root, opts = {}) {
   let outlineOpen = outlineDefaultOpen(window.innerWidth || 1200);
 
   const status = el('p', { class: 'gm-status t-caption', role: 'status' }, 'Loading...');
-  const reload = el('button', { class: 'gm-tbtn', type: 'button', onclick: () => load() }, 'Reload');
+  const reload = el('button', { class: 'gm-tbtn', type: 'button', onclick: () => start() }, 'Reload');
   const canvas = el('canvas', {
     class: 'gmr-canvas', role: 'img', tabindex: '-1',
     'aria-label': `Map of ${rootGenre} genres and styles. Drag to pan, scroll or pinch to zoom. The outline lists the same genres and is the keyboard alternative.`,
@@ -120,7 +120,7 @@ export function renderGenresRework(root, opts = {}) {
 
   function setStatus(f) {
     statusFilter = f;
-    for (const b of statusRow.querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.getAttribute('data-status') === f));
+    for (const b of statusRow.querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.dataset.status === f));
     applyFilters();
   }
 
@@ -134,9 +134,10 @@ export function renderGenresRework(root, opts = {}) {
 
   function flavourChip(f) {
     const n = flavourCount(tree, f.key);
+    const described = f.description ? `${f.description} - ` : '';
     return el('button', {
       class: 'gm-tbtn gmr-flav', type: 'button', 'data-flavour': f.key, 'aria-pressed': String(flavourSel.has(f.key)),
-      'aria-label': `${f.name}, ${songs(n)}`, title: `${f.description ? `${f.description} - ` : ''}${songs(n)}`,
+      'aria-label': `${f.name}, ${songs(n)}`, title: `${described}${songs(n)}`,
       onclick: () => { if (flavourSel.has(f.key)) flavourSel.delete(f.key); else flavourSel.add(f.key); applyFilters(); },
     }, f.name);
   }
@@ -164,7 +165,7 @@ export function renderGenresRework(root, opts = {}) {
   function focusRow(id) {
     activeId = id;
     renderTree();
-    const row = treeEl.querySelectorAll('[role="treeitem"]').find((r) => r.getAttribute('data-id') === id);
+    const row = treeEl.querySelectorAll('[role="treeitem"]').find((r) => r.dataset.id === id);
     if (row) row.focus();
   }
 
@@ -173,7 +174,7 @@ export function renderGenresRework(root, opts = {}) {
     if (!visibleRows(tree, { expanded, query, onlyWithSongs, status: statusFilter, flavours: flavourSel }).some((r) => r.node.id === id)) {
       query = '';
       search.value = '';
-      if (statusFilter !== 'all') { statusFilter = 'all'; for (const b of statusRow.querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.getAttribute('data-status') === 'all')); }
+      if (statusFilter !== 'all') { statusFilter = 'all'; for (const b of statusRow.querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.dataset.status === 'all')); }
       if (flavourSel.size) flavourSel.clear();
       applyFilters();
       markMatches();
@@ -245,32 +246,42 @@ export function renderGenresRework(root, opts = {}) {
     let rootName = '';
     treeEl.replaceChildren(...rows.map((r, i) => { if (r.level === 1) rootName = r.node.name; return buildRow(r, i, rootName); }));
     empty.hidden = rows.length > 0;
-    empty.textContent = (statusFilter !== 'all' || flavourSel.size) && !query ? 'No genres match the filters.' : query ? `No genre or synonym matches "${query.trim()}".` : onlyWithSongs ? 'No genre has songs yet.' : 'No genres.';
+    let emptyText = 'No genres.';
+    if ((statusFilter !== 'all' || flavourSel.size) && !query) emptyText = 'No genres match the filters.';
+    else if (query) emptyText = `No genre or synonym matches "${query.trim()}".`;
+    else if (onlyWithSongs) emptyText = 'No genre has songs yet.';
+    empty.textContent = emptyText;
   }
 
   const chipButton = (id, label) => el('button', { class: 'gm-chip', type: 'button', onclick: () => select(id, { reveal: true, center: true }) }, label);
+
+  function panelItems(n, total) {
+    const path = chain(tree, n.id).slice(0, -1);
+    const also = n.alsoUnder.map((a) => tree.byKey.get(vkey(a))).filter(Boolean);
+    const chips = (list) => el('span', { class: 'gm-chips' }, list.map((p) => chipButton(p.id, p.label)));
+    const items = [];
+    const add = (k, ...v) => items.push(el('dt', { class: 't-caption muted' }, k), el('dd', { class: 't-body' }, ...v));
+    if (n.display) add('Vocabulary key', n.name);
+    add('Level', LEVEL_NAMES[n.level]);
+    if (n.alsoIn.length) add('Also in genres', [n.genre, ...n.alsoIn].join(', '));
+    add('Parent chain', path.length ? chips(path) : 'None (top level)');
+    add('Synonyms', n.synonyms.length ? n.synonyms.join(', ') : 'None');
+    if (n.level > 1) add('Also under', also.length ? chips(also) : 'None');
+    add('In Discogs', n.discogs ? 'Yes' : 'No, a name added to this library');
+    if (n.level > 1) add('Review', STATUS_LABELS[statusKey(n)]);
+    if (n.level > 1 && n.flavours.length) add('Flavours', el('span', { class: 'gm-chips' }, n.flavours.map((k) => el('span', { class: 'gmr-badge flav', title: tree.flavours.get(k).description }, tree.flavours.get(k).name))));
+    if (n.provisional) add('Status', 'Provisional: not yet reviewed');
+    const exact = n.own.size !== total ? ` (${n.own.size} tagged exactly)` : '';
+    add('Songs', countsOk ? `${total} in your library${exact}` : 'Counts unavailable');
+    return items;
+  }
 
   function renderPanel() {
     const n = tree && selectedId ? tree.byId.get(selectedId) : null;
     panel.hidden = !n;
     if (!n) { panel.replaceChildren(); return; }
     const total = count(n);
-    const path = chain(tree, n.id).slice(0, -1);
-    const also = n.alsoUnder.map((a) => tree.byKey.get(vkey(a))).filter(Boolean);
-    const dl = (k, ...v) => [el('dt', { class: 't-caption muted' }, k), el('dd', { class: 't-body' }, ...v)];
-    const items = [
-      ...(n.display ? dl('Vocabulary key', n.name) : []),
-      ...dl('Level', LEVEL_NAMES[n.level]),
-      ...(n.alsoIn.length ? dl('Also in genres', [n.genre, ...n.alsoIn].join(', ')) : []),
-      ...dl('Parent chain', path.length ? el('span', { class: 'gm-chips' }, path.map((p) => chipButton(p.id, p.label))) : 'None (top level)'),
-      ...dl('Synonyms', n.synonyms.length ? n.synonyms.join(', ') : 'None'),
-      ...(n.level > 1 ? dl('Also under', also.length ? el('span', { class: 'gm-chips' }, also.map((p) => chipButton(p.id, p.label))) : 'None') : []),
-      ...dl('In Discogs', n.discogs ? 'Yes' : 'No, a name added to this library'),
-      ...(n.level > 1 ? dl('Review', STATUS_LABELS[statusKey(n)]) : []),
-      ...(n.level > 1 && n.flavours.length ? dl('Flavours', el('span', { class: 'gm-chips' }, n.flavours.map((k) => el('span', { class: 'gmr-badge flav', title: tree.flavours.get(k).description }, tree.flavours.get(k).name)))) : []),
-      ...(n.provisional ? dl('Status', 'Provisional: not yet reviewed') : []),
-      ...dl('Songs', countsOk ? `${total} in your library${n.own.size !== total ? ` (${n.own.size} tagged exactly)` : ''}` : 'Counts unavailable'),
-    ];
+    const items = panelItems(n, total);
     panel.replaceChildren(
       el('div', { class: 'gm-panel-head' },
         n.level === 1 ? el('span', { class: `gm-dot f${familyIndex(n.name)}`, 'aria-hidden': 'true' }) : null,
@@ -293,6 +304,14 @@ export function renderGenresRework(root, opts = {}) {
     else if (a.type === 'collapse') { expanded.delete(a.node); renderTree(); focusRow(a.id); }
     else select(a.node, { center: true, toggle: a.toggle });
   });
+
+  function start() {
+    load().catch(() => {
+      if (dead) return;
+      reload.disabled = false;
+      status.textContent = 'Failed to load';
+    });
+  }
 
   async function load() {
     status.textContent = 'Loading...';
@@ -354,6 +373,6 @@ export function renderGenresRework(root, opts = {}) {
     outlineBtn, outlineEl, zoomBar, legend, panel, tip);
   root.append(wrap);
   setOutline(outlineOpen);
-  load();
+  start();
   return () => { dead = true; view.destroy(); };
 }

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends
 
@@ -16,7 +16,7 @@ NO_STORE = {
 
 
 @router.get("/health")
-def health(viewer: str = Depends(deps.sync_viewer)) -> dict[str, Any]:
+def health(viewer: Annotated[str, Depends(deps.sync_viewer)]) -> dict[str, Any]:
     owner = viewer == "owner"
     if deps.SYNC is None:
         return {"status": "ok", "sync": dict(NO_STORE) if owner else {"state": "ok"}}

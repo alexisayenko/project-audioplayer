@@ -62,6 +62,31 @@ function buildField(doc, spec, write) {
   return { row, paint, input, out };
 }
 
+function paintBarWidth(f, s, widthDerived, barW, shownPx) {
+  f.input.disabled = widthDerived;
+  f.row.classList.toggle('viz-synth-derived', widthDerived);
+  if (widthDerived) f.out.textContent = `${Math.round(barW)}, from ${s.sectionAspect} x ${Math.round(shownPx * 10) / 10} px`;
+}
+
+function paintMaxHeight(f, s, derived, lay) {
+  f.input.disabled = derived;
+  f.row.classList.toggle('viz-synth-derived', derived);
+  if (derived) {
+    const gap = Math.round(s.sectionHeight * s.segmentGap * 100) / 100;
+    f.out.textContent = `${Math.round(s.segments * (s.sectionHeight + gap))}, from ${s.segments} x ${s.sectionHeight} px`;
+  } else if (lay) {
+    f.out.textContent = `${s.maxHeight > 0 ? s.maxHeight : 'Auto'} (effective ${Math.round(lay.height)} px)`;
+  }
+}
+
+function paintEffNote(effNote, s, lay, derived, widthDerived, barW) {
+  const fit = derived && lay && lay.derived && lay.fit < 1;
+  const px = lay ? Math.round(lay.sectionPx * 10) / 10 : 0;
+  effNote.textContent = lay && lay.rows > 0 ? `effective: ${lay.rows} rows x ${px} px (room ${Math.round(lay.room)} px)` : '';
+  if (effNote.textContent && widthDerived) effNote.textContent = effNote.textContent.replace(' (room', `, width ${Math.round(barW)} px (room`);
+  if (fit && lay.fit < 0.75) effNote.textContent += '. More room: set Visualizer height to Full';
+}
+
 export function createMirrorPanel({ doc = document, store = defaultStore, getWidth = () => doc.defaultView?.innerWidth || 1200, getLayout = getBarLayout } = {}) {
   const root = make(doc, 'div', 'viz-synth viz-mirror');
   root.setAttribute('role', 'group');
@@ -147,32 +172,13 @@ export function createMirrorPanel({ doc = document, store = defaultStore, getWid
     const derived = s.sectionHeight > 0 && s.segments > 0;
     const lay = getLayout?.() ?? null;
     const widthDerived = s.sectionAspect > 0 && s.sectionHeight > 0;
-    const shownPx = lay && lay.derived ? lay.sectionPx : s.sectionHeight;
+    const shownPx = lay?.derived ? lay.sectionPx : s.sectionHeight;
     const barW = derivedBarWidth(s, shownPx);
     for (const f of fields) {
-      if (f.spec.key === 'barWidth') {
-        f.input.disabled = widthDerived;
-        f.row.classList.toggle('viz-synth-derived', widthDerived);
-        if (widthDerived) f.out.textContent = `${Math.round(barW)}, from ${s.sectionAspect} x ${Math.round(shownPx * 10) / 10} px`;
-        continue;
-      }
-      if (f.spec.key !== 'maxHeight') continue;
-      f.input.disabled = derived;
-      f.row.classList.toggle('viz-synth-derived', derived);
-      if (derived) {
-        const gap = Math.round(s.sectionHeight * s.segmentGap * 100) / 100;
-        f.out.textContent = `${Math.round(s.segments * (s.sectionHeight + gap))}, from ${s.segments} x ${s.sectionHeight} px`;
-      } else if (lay) {
-        f.out.textContent = `${s.maxHeight > 0 ? s.maxHeight : 'Auto'} (effective ${Math.round(lay.height)} px)`;
-      }
+      if (f.spec.key === 'barWidth') paintBarWidth(f, s, widthDerived, barW, shownPx);
+      else if (f.spec.key === 'maxHeight') paintMaxHeight(f, s, derived, lay);
     }
-    if (effNote) {
-      const fit = derived && lay && lay.derived && lay.fit < 1;
-      const px = lay ? Math.round(lay.sectionPx * 10) / 10 : 0;
-      effNote.textContent = lay && lay.rows > 0 ? `effective: ${lay.rows} rows x ${px} px (room ${Math.round(lay.room)} px)` : '';
-      if (effNote.textContent && widthDerived) effNote.textContent = effNote.textContent.replace(' (room', `, width ${Math.round(barW)} px (room`);
-      if (fit && lay.fit < 0.75) effNote.textContent += '. More room: set Visualizer height to Full';
-    }
+    if (effNote) paintEffNote(effNote, s, lay, derived, widthDerived, barW);
     if (counter) counter.textContent = `~${pixelBars(getWidth(), barW, s.gap).count} bars`;
     const active = findActiveMirrorPreset(s);
     for (const t of tiles) t.btn.setAttribute('aria-pressed', String(t.id === active));

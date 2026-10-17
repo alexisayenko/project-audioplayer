@@ -55,43 +55,51 @@ export function createPitchEstimator({ sampleRate = 44100, fftSize = 8192, bins 
   const L = new Float32Array(top + 2);
   const score = new Float32Array(PITCH_LEVELS);
   const sorted = new Float32Array(PITCH_LEVELS);
+  const fillLevels = (mag, melody) => {
+    for (let k = 0; k <= top; k += 1) {
+      const m = mag[k] * melody[maskBin[k]];
+      L[k] = m > MAG_FLOOR ? clamp01(Math.log10(m / MAG_FLOOR) / MAG_SPAN) : 0;
+    }
+  };
+  const scoreAll = () => {
+    let peak = 0;
+    for (let i = 0; i < PITCH_LEVELS; i += 1) {
+      let acc = 0;
+      for (let h = 0; h < HARMONICS; h += 1) {
+        const p = pos[i * HARMONICS + h];
+        if (p < 0) continue;
+        const a = Math.floor(p);
+        acc += wt[h] * Math.max(L[a], L[a + 1]);
+      }
+      score[i] = acc / wsum;
+      if (score[i] > peak) peak = score[i];
+    }
+    return peak;
+  };
+  const pickCands = (peak) => {
+    const cands = [];
+    for (let i = 0; i < PITCH_LEVELS; i += 1) {
+      const v = score[i];
+      if (v >= CAND_REL * peak && v >= (i ? score[i - 1] : -1) && v > (i < PITCH_LEVELS - 1 ? score[i + 1] : -1)) cands.push({ idx: i, e: v * LOUD_NORM });
+    }
+    cands.sort((a, b) => b.e - a.e || a.idx - b.idx);
+    const picked = [];
+    for (const c of cands) {
+      if (picked.length < CAND_MAX && picked.every((p) => Math.abs(p.idx - c.idx) * SEMI_PER_IDX >= CAND_SEP_SEMI)) picked.push(c);
+    }
+    return picked;
+  };
   return {
     estimate(mag, melody) {
-      for (let k = 0; k <= top; k += 1) {
-        const m = mag[k] * melody[maskBin[k]];
-        L[k] = m > MAG_FLOOR ? clamp01(Math.log10(m / MAG_FLOOR) / MAG_SPAN) : 0;
-      }
-      let peak = 0;
-      for (let i = 0; i < PITCH_LEVELS; i += 1) {
-        let acc = 0;
-        for (let h = 0; h < HARMONICS; h += 1) {
-          const p = pos[i * HARMONICS + h];
-          if (p < 0) continue;
-          const a = Math.floor(p);
-          acc += wt[h] * Math.max(L[a], L[a + 1]);
-        }
-        score[i] = acc / wsum;
-        if (score[i] > peak) peak = score[i];
-      }
+      fillLevels(mag, melody);
+      const peak = scoreAll();
       sorted.set(score);
       sorted.sort();
       const median = sorted[PITCH_LEVELS >> 1];
       const conf = peak > 0 ? (peak - median) / peak : 0;
       const loud = clamp01(peak * LOUD_NORM);
-      const cands = [];
-      if (conf >= LEAD_MIN_CONF && loud >= LEAD_MIN_LOUD) {
-        for (let i = 0; i < PITCH_LEVELS; i += 1) {
-          const v = score[i];
-          if (v >= CAND_REL * peak && v >= (i ? score[i - 1] : -1) && v > (i < PITCH_LEVELS - 1 ? score[i + 1] : -1)) cands.push({ idx: i, e: v * LOUD_NORM });
-        }
-        cands.sort((a, b) => b.e - a.e || a.idx - b.idx);
-        const picked = [];
-        for (const c of cands) {
-          if (picked.length < CAND_MAX && picked.every((p) => Math.abs(p.idx - c.idx) * SEMI_PER_IDX >= CAND_SEP_SEMI)) picked.push(c);
-        }
-        return { cands: picked, conf, loud };
-      }
-      return { cands, conf, loud };
+      const strong = conf >= LEAD_MIN_CONF && loud >= LEAD_MIN_LOUD;
+      return { cands: strong ? pickCands(peak) : [], conf, loud };
     },
   };
 }

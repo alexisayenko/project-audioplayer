@@ -148,6 +148,35 @@ def services(source_urls: list[str], src_by_index: dict[int, dict[str, Any]], li
     return out
 
 
+def _recorder(lock: threading.Lock, found: dict[str, Any], src_results: dict[int, dict[str, Any]]) -> Callable[[str, Callable[[], Any]], Callable[[], None]]:
+    def record(key: str, fn: Callable[[], Any]) -> Callable[[], None]:
+        def run() -> None:
+            try:
+                value = fn()
+            except Exception as exc:
+                log.warning("metadata source %s failed: %s", key, exc)
+                return
+            with lock:
+                if key.startswith("src"):
+                    src_results[int(key[3:])] = value
+                else:
+                    found[key] = value
+
+        return run
+
+    return record
+
+
+def _run_all(tasks: list[Callable[[], None]], timeout: float) -> None:
+    if not tasks:
+        return
+    pool = ThreadPoolExecutor(max_workers=len(tasks))
+    try:
+        wait([pool.submit(t) for t in tasks], timeout=timeout)
+    finally:
+        pool.shutdown(wait=False, cancel_futures=True)
+
+
 def gather(
     title: str,
     artist: str,
@@ -166,35 +195,18 @@ def gather(
     lock = threading.Lock()
     found: dict[str, Any] = {}
     src_results: dict[int, dict[str, Any]] = {}
-
-    def record(key: str, fn: Callable[[], Any]) -> Callable[[], None]:
-        def run() -> None:
-            try:
-                value = fn()
-            except Exception as exc:
-                log.warning("metadata source %s failed: %s", key, exc)
-                return
-            with lock:
-                if key.startswith("src"):
-                    src_results[int(key[3:])] = value
-                else:
-                    found[key] = value
-
-        return run
+    record = _recorder(lock, found, src_results)
 
     tasks = [record(f"src{i}", f) for i, f in enumerate(source_fetchers)]
     if artist and title:
-        tasks.append(record("mb", lambda: genre_lookup.lookup(artist, title)))
-        tasks.append(record("guess", lambda: wiki_lookup.suggest(artist, title)))
-        tasks.append(record("disc", lambda: discogs_lookup.suggest(artist, title)))
+        tasks.extend([
+            record("mb", lambda: genre_lookup.lookup(artist, title)),
+            record("guess", lambda: wiki_lookup.suggest(artist, title)),
+            record("disc", lambda: discogs_lookup.suggest(artist, title)),
+        ])
     if wiki_song or wiki_artist or wiki_album:
         tasks.append(record("links", lambda: wiki_lookup.from_links(wiki_song, wiki_artist, wiki_album)))
-    if tasks:
-        pool = ThreadPoolExecutor(max_workers=len(tasks))
-        try:
-            wait([pool.submit(t) for t in tasks], timeout=timeout)
-        finally:
-            pool.shutdown(wait=False, cancel_futures=True)
+    _run_all(tasks, timeout)
     with lock:
         sources = [src_results[i] for i in sorted(src_results)]
         snapshot = dict(found)

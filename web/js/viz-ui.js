@@ -248,7 +248,7 @@ export function initVisualizer({
       player.toggle();
       setIcon('viz-flash', willPlay ? 'play' : 'pause', 64);
       flash.classList.remove('go');
-      void flash.offsetWidth;
+      flash.getBoundingClientRect();
       flash.classList.add('go');
       if (live) live.textContent = willPlay ? 'Playing' : 'Paused';
     },

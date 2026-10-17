@@ -4,7 +4,7 @@ import { suggestGenres } from './genre-suggest.js';
 const SUGGEST_FUZZY = 5;
 const CLOSE = 0.6;
 
-export const vkey = (s) => String(s).normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/&/g, ' and ').replace(/[\s\-_]+/g, '');
+export const vkey = (s) => String(s).normalize('NFKD').replaceAll(/[̀-ͯ]/g, '').toLowerCase().replaceAll(/&/g, ' and ').replaceAll(/[\s\-_]+/g, '');
 const spaced = (s) => String(s).trim().toLowerCase().replace(/\s+/g, ' ');
 
 export function buildIndex(data) {

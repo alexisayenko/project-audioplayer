@@ -327,10 +327,12 @@ export function renderGenres(root) {
           view.select(r.id, { center: true });
         },
       }, el('span', { class: `gm-dot f${familyIndex(r.family)}`, 'aria-hidden': 'true' }), r.label);
+      const unitWord = r.unit === 'style' ? plural(r.size, 'style', 'styles') : plural(r.size, 'root', 'roots');
+      const countText = isFamily ? `${r.size} ${unitWord}` : String(r.count);
       return el('li', {
         class: `gm-row${isFamily ? ' fam' : ''}${r.id && r.id === selectedId ? ' sel' : ''}`, style: `--depth:${r.depth}`, 'data-key': r.key,
       }, toggle, label,
-      el('small', { class: 'muted' }, isFamily ? `${r.size} ${r.unit === 'style' ? plural(r.size, 'style', 'styles') : plural(r.size, 'root', 'roots')}` : String(r.count)),
+      el('small', { class: 'muted' }, countText),
       r.alsoUnder.length ? el('small', { class: 'gm-also muted' }, `also under ${r.alsoUnder.join(', ')}`) : null);
     }));
   }

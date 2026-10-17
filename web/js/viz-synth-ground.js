@@ -198,7 +198,7 @@ void main() {
 
 const fract01 = (v) => {
   const f = v - Math.floor(v);
-  return f < 0 ? 0 : f;
+  return Math.max(0, f);
 };
 
 export function createGroundPass(gl, deps) {
@@ -220,7 +220,7 @@ export function createGroundPass(gl, deps) {
 
   function cell(p, name) {
     let c = p.vals.get(name);
-    if (!c) { c = [NaN, NaN, NaN, NaN]; p.vals.set(name, c); }
+    if (!c) { c = [Number.NaN, Number.NaN, Number.NaN, Number.NaN]; p.vals.set(name, c); }
     return c;
   }
   function loc(p, name) {
@@ -538,7 +538,9 @@ export function createGroundPass(gl, deps) {
       }
     };
     const wpx = Math.min(3, Math.max(0.5, u.lineWidthPx));
-    const n = wpx <= 1.5 ? 1 : wpx <= 2.4 ? 2 : 3;
+    let n = 3;
+    if (wpx <= 1.5) n = 1;
+    else if (wpx <= 2.4) n = 2;
     const step = n > 1 ? ((wpx - 1) * ratio) / (n - 1) : 0;
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);

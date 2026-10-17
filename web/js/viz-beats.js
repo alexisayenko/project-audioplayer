@@ -88,7 +88,7 @@ export function createBeatDetector({ bins = HISTORY_BINS, shift = 0 } = {}) {
       if (refT !== null && t > refT) ref = Math.max(BEAT_REF_FLOOR, ref * 0.5 ** ((t - refT) / BEAT_REF_HALF_LIFE_S));
       refT = t;
       const f = beatFlux(cur, prev);
-      const f2 = hist.length ? hist[hist.length - 1] : 0;
+      const f2 = hist.length ? hist.at(-1) : 0;
       let beat = null;
       const cold = prevT - firstT < BEAT_COLD_S && prevFlux < BEAT_COLD_FLUX;
       if (!cold && prevFlux > beatThreshold(hist) && prevFlux >= f2 && prevFlux > f && prevT - lastBeat >= BEAT_MIN_GAP_S) {
@@ -205,11 +205,7 @@ export function hillShape(spectrum, cols, out = new Float32Array(cols)) {
   return out;
 }
 
-export function spectralPeaks(spectrum) {
-  const n = spectrum.length;
-  let max = 0;
-  for (let i = 0; i < n; i += 1) if (spectrum[i] > max) max = spectrum[i];
-  const floor = Math.max(MULTI_MIN_LEVEL, MULTI_REL * max);
+function peakCandidates(spectrum, n, floor) {
   const cand = [];
   for (let i = 0; i < n; i += 1) {
     const v = spectrum[i];
@@ -217,6 +213,15 @@ export function spectralPeaks(spectrum) {
     const right = i === n - 1 ? -Infinity : spectrum[i + 1];
     if (v >= floor && v >= left && v > right) cand.push(i);
   }
+  return cand;
+}
+
+export function spectralPeaks(spectrum) {
+  const n = spectrum.length;
+  let max = 0;
+  for (let i = 0; i < n; i += 1) if (spectrum[i] > max) max = spectrum[i];
+  const floor = Math.max(MULTI_MIN_LEVEL, MULTI_REL * max);
+  const cand = peakCandidates(spectrum, n, floor);
   cand.sort((a, b) => spectrum[b] - spectrum[a] || a - b);
   const picked = [];
   for (const i of cand) {
@@ -256,6 +261,16 @@ export function beatsBetween(beats, lo, hi) {
   return out;
 }
 
+function addBeatRow(out, o, off, n, live, style, T, mask) {
+  for (const { b, env, a } of live) {
+    if (!(env > 0)) continue;
+    const w = beatTimeWeight(T - b.t) * env * mask * a;
+    if (!(w > 0)) continue;
+    const s = shapeOf(b, style, n);
+    for (let c = 0; c < n; c += 1) out[o + off + c] += w * s[c];
+  }
+}
+
 export function fillBeatHeights({ beats, style, tNow, base, rows, cols, out }) {
   out.fill(0);
   const shape = BEAT_SHAPES[style];
@@ -271,13 +286,7 @@ export function fillBeatHeights({ beats, style, tNow, base, rows, cols, out }) {
     const mask = 1 - smoothstep(0, BEAT_AHEAD_FADE_S, T - tNow);
     if (!(mask > 0)) continue;
     const o = r * cols;
-    for (const { b, env, a } of live) {
-      if (!(env > 0)) continue;
-      const w = beatTimeWeight(T - b.t) * env * mask * a;
-      if (!(w > 0)) continue;
-      const s = shapeOf(b, style, n);
-      for (let c = 0; c < n; c += 1) out[o + off + c] += w * s[c];
-    }
+    addBeatRow(out, o, off, n, live, style, T, mask);
     for (let c = off; c < off + n; c += 1) out[o + c] = softKnee(out[o + c], BEAT_CAP);
   }
   return out;

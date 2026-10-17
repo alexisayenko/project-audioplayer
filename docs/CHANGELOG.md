@@ -4,6 +4,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## 2026-10-17 (built, not deployed)
 
+- iOS, not built or run: removed the nested ternary in the Library row accessibility state and gave the empty artwork `CancellationError` catch a body, no behaviour change (SonarCloud swift:S3358, swift:S108, [task-0046](tasks/task-0046.md)).
 - Server and web: `french house` is a reviewed genre again (Electronic, under house, task DQ1) and `french touch` is an alias of it instead of a fold to house; the startup migration rewrites stored `french touch` to `french house` and leaves stored `french house` alone; not deployed.
 
 ## 2026-10-17 (YouTube genres and release tags, not deployed)

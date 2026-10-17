@@ -191,7 +191,9 @@ export function chipField(ns, editor) {
     chips.replaceChildren(...mine().map((t) => {
       const bad = ns === 'country' && !isKnownCountry(t.slice(prefix.length));
       const e = suggesting ? resolveGenre(t.slice(prefix.length), idx) : null;
-      const title = bad ? `${t}: not a known country, remove it` : e?.family ? `${tagLabel(t)}: ${levelText(e)} in ${e.family}` : t;
+      let title = t;
+      if (bad) title = `${t}: not a known country, remove it`;
+      else if (e?.family) title = `${tagLabel(t)}: ${levelText(e)} in ${e.family}`;
       return el('span', { class: 'chip tint', title, style: bad ? 'border:1px dashed currentColor' : null }, dot(e), bad ? [icon('warning', 'inline'), tagLabel(t)] : tagLabel(t),
         el('button', { type: 'button', class: 'x', 'aria-label': `Remove ${tagLabel(t)}`, onclick: () => editor.removeTag(t) }, icon('clear', 'inline')));
     }));

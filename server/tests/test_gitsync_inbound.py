@@ -48,8 +48,10 @@ def test_fast_forward_is_applied_and_visible_without_a_restart(tmp_path):
     assert git(clone, "rev-list", "--merges", "--count", "HEAD") == "0"
     assert library.load(clone / "audioplayer" / LIB)[0]["title"] == "T"
     st = s.sync_status(True)
-    assert st["state"] == "ok" and st["inbound"] == {"enabled": True, "last_pull_at": st["inbound"]["last_pull_at"], "behind": 0}
-    assert st["inbound"]["last_pull_at"] and st["last_error"] is None
+    assert st["state"] == "ok"
+    assert st["inbound"] == {"enabled": True, "last_pull_at": st["inbound"]["last_pull_at"], "behind": 0}
+    assert st["inbound"]["last_pull_at"]
+    assert st["last_error"] is None
     assert gitstore.load_state(s.state_file)["repos"]["data"]["last_pull_at"]
 
 
@@ -59,7 +61,9 @@ def test_nothing_ahead_changes_nothing(tmp_path):
     assert s.push_pass() == 0
     assert git(clone, "rev-parse", "HEAD") == head
     st = s.sync_status(True)
-    assert st["inbound"]["last_pull_at"] is None and st["inbound"]["behind"] == 0 and st["state"] == "ok"
+    assert st["inbound"]["last_pull_at"] is None
+    assert st["inbound"]["behind"] == 0
+    assert st["state"] == "ok"
 
 
 def test_local_ahead_only_still_pushes(tmp_path):
@@ -76,11 +80,14 @@ def test_diverged_changes_nothing_and_shows_as_error(tmp_path, caplog):
     head, remote_head = git(clone, "rev-parse", "HEAD"), git(bare, "rev-parse", "main")
     with caplog.at_level(logging.ERROR):
         assert s.push_pass() == 2
-    assert git(clone, "rev-parse", "HEAD") == head and git(bare, "rev-parse", "main") == remote_head
+    assert git(clone, "rev-parse", "HEAD") == head
+    assert git(bare, "rev-parse", "main") == remote_head
     assert not (clone / "audioplayer" / "x.json").exists()
     assert any(MSG in r.getMessage() and r.levelno == logging.ERROR for r in caplog.records)
     st = s.sync_status(True)
-    assert st["state"] == "error" and st["last_error"] == MSG and st["inbound"]["behind"] == 1
+    assert st["state"] == "error"
+    assert st["last_error"] == MSG
+    assert st["inbound"]["behind"] == 1
     assert s.sync_status(False) == {"state": "degraded"}
     assert not gitstore.load_state(s.state_file)["repos"]["data"]["rejected"]
     assert s.push_pass() == 2
@@ -96,7 +103,8 @@ def test_diverged_clears_itself_once_resolved_by_hand(tmp_path):
     assert s.push_pass() == 0
     assert subjects(bare)[:2] == ["mine", "remote"]
     st = s.sync_status(True)
-    assert st["state"] == "ok" and st["last_error"] is None
+    assert st["state"] == "ok"
+    assert st["last_error"] is None
 
 
 def test_push_rejected_after_the_fetch_becomes_diverged_not_sticky_rejected(tmp_path, monkeypatch):
@@ -106,7 +114,8 @@ def test_push_rejected_after_the_fetch_becomes_diverged_not_sticky_rejected(tmp_
     monkeypatch.setattr(s, "inbound_repo", lambda *a, **k: gitstore.Inbound("none"))
     assert s.push_pass() == 2
     st = s.sync_status(True)
-    assert st["state"] == "error" and st["last_error"] == MSG
+    assert st["state"] == "error"
+    assert st["last_error"] == MSG
     assert not gitstore.load_state(s.state_file)["repos"]["data"]["rejected"]
 
 
@@ -117,10 +126,12 @@ def test_invalid_inbound_library_is_not_applied(tmp_path, caplog, bad):
     head = git(clone, "rev-parse", "HEAD")
     with caplog.at_level(logging.ERROR):
         assert s.push_pass() == 1
-    assert git(clone, "rev-parse", "HEAD") == head and not (clone / "audioplayer" / LIB).exists()
+    assert git(clone, "rev-parse", "HEAD") == head
+    assert not (clone / "audioplayer" / LIB).exists()
     assert any(LIB in r.getMessage() for r in caplog.records)
     st = s.sync_status(True)
-    assert st["state"] == "error" and "inbound change invalid" in st["last_error"]
+    assert st["state"] == "error"
+    assert "inbound change invalid" in st["last_error"]
     remote_commit(tmp_path, bare, LIB, GOOD, "fixed")
     assert s.push_pass() == 0
     assert library.load(clone / "audioplayer" / LIB)[0]["id"] == "abcdefghijk"
@@ -147,7 +158,8 @@ def test_a_file_that_goes_bad_after_the_merge_is_rolled_back(tmp_path, monkeypat
     monkeypatch.setattr(gitstore, "check_inbound_json", first_ok_then_broken)
     with caplog.at_level(logging.ERROR):
         assert s.push_pass() == 1
-    assert git(clone, "rev-parse", "HEAD") == head and not (clone / "audioplayer" / LIB).exists()
+    assert git(clone, "rev-parse", "HEAD") == head
+    assert not (clone / "audioplayer" / LIB).exists()
     assert git(clone, "status", "--porcelain") == ""
     assert any("rolled back" in r.getMessage() and LIB in r.getMessage() for r in caplog.records)
     assert "inbound change invalid" in s.sync_status(True)["last_error"]
@@ -199,7 +211,8 @@ def test_a_save_during_a_pull_waits_for_it_and_lands_on_top(tmp_path, monkeypatc
     save(server, clone, "a.json", "mine", "save during pull")
     done = time.monotonic()
     t.join()
-    assert pulled_at and done >= pulled_at[0] - 0.05
+    assert pulled_at
+    assert done >= pulled_at[0] - 0.05
     assert done - t0 < 5
     assert git(clone, "log", "--format=%s", "-2") == "save during pull\nfrom github"
     assert library.load(clone / "audioplayer" / LIB)[0]["title"] == "T"
@@ -257,7 +270,8 @@ def test_startup_applies_valid_inbound_and_refuses_invalid(tmp_path):
     remote_commit(tmp_path, bare, LIB, "{bad")
     head = git(clone, "rev-parse", "HEAD")
     s.recover_on_startup()
-    assert git(clone, "rev-parse", "HEAD") == head and not (clone / "audioplayer" / LIB).exists()
+    assert git(clone, "rev-parse", "HEAD") == head
+    assert not (clone / "audioplayer" / LIB).exists()
     remote_commit(tmp_path, bare, LIB, GOOD, "fixed")
     s.recover_on_startup()
     assert (clone / "audioplayer" / LIB).exists()

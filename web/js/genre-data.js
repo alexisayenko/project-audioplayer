@@ -365,13 +365,18 @@ export function hasStoredExpanded(storage) {
   try { return storage.getItem(STORE_KEY) !== null; } catch { return true; }
 }
 
-export function ancestorsOf(id, edges, maxDepth = 12) {
+function parentLinks(edges) {
   const up = new Map();
   for (const e of edges || []) {
     if (e.kind === 'related' || e.source === e.target) continue;
     if (!up.has(e.source)) up.set(e.source, []);
     up.get(e.source).push(e.target);
   }
+  return up;
+}
+
+export function ancestorsOf(id, edges, maxDepth = 12) {
+  const up = parentLinks(edges);
   const depth = new Map();
   let level = [id];
   for (let d = 1; d <= maxDepth && level.length; d++) {

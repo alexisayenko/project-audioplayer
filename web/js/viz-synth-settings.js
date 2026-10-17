@@ -114,20 +114,20 @@ const split = (path) => { const i = path.indexOf('.'); return [path.slice(0, i),
 
 export function parseHex(str) {
   if (typeof str !== 'string' || !HEX.test(str)) return [0, 0, 0];
-  const n = parseInt(str.slice(1), 16);
+  const n = Number.parseInt(str.slice(1), 16);
   return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
+}
+
+function repairNumber(spec, v, round) {
+  const n = typeof v === 'number' ? v : Number.NaN;
+  if (!Number.isFinite(n)) return spec.def;
+  return Math.min(spec.max, Math.max(spec.min, round ? Math.round(n) : n));
 }
 
 export function repairField(spec, v) {
   switch (spec.type) {
-    case 'range': {
-      const n = typeof v === 'number' ? v : NaN;
-      return Number.isFinite(n) ? Math.min(spec.max, Math.max(spec.min, n)) : spec.def;
-    }
-    case 'int': {
-      const n = typeof v === 'number' ? v : NaN;
-      return Number.isFinite(n) ? Math.min(spec.max, Math.max(spec.min, Math.round(n))) : spec.def;
-    }
+    case 'range': return repairNumber(spec, v, false);
+    case 'int': return repairNumber(spec, v, true);
     case 'select': return spec.options.includes(v) ? v : spec.def;
     case 'bool': return typeof v === 'boolean' ? v : spec.def;
     case 'color': return typeof v === 'string' && HEX.test(v) ? v.toLowerCase() : spec.def;

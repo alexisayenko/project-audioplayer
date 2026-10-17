@@ -77,12 +77,15 @@ export function parseShareParams(hash) {
   const viz = q.get('viz');
   const style = q.get('style');
   const bg = q.get('bg');
+  let bgFlag = null;
+  if (bg === '1') bgFlag = true;
+  else if (bg === '0') bgFlag = false;
   return {
     id,
     t: t != null && /^\d{1,7}$/.test(t) ? clampT(t) : 0,
     viz: SHARE_MODES.includes(viz) ? viz : null,
     style: SHARE_STYLES.includes(style) ? style : null,
-    bg: bg === '1' ? true : bg === '0' ? false : null,
+    bg: bgFlag,
     fs: q.get('fs') === '1',
     cam: parseCam(q.get('cam')),
     fl: q.get('fl') === '1' && viz === 'terrain',

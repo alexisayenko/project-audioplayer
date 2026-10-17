@@ -122,6 +122,27 @@ export function tierHalfWidth(zEnd, aspect, yawDeg = 0, near = false) {
 
 export const yawStepOf = (yawDeg) => (Number.isFinite(yawDeg) ? Math.ceil(Math.abs(yawDeg) / YAW_STEP_DEG - 1e-9) * YAW_STEP_DEG : 0);
 
+function fitTier(nominal, want, zA, zB, nowZ) {
+  let sp = nominal;
+  let half = 0;
+  let rows = 0;
+  let cols = 0;
+  let jz0 = 0;
+  for (let i = 0; i < 80; i += 1) {
+    half = Math.ceil(want / sp);
+    cols = 2 * half + 1;
+    jz0 = Math.floor((zA - nowZ) / sp);
+    rows = Math.ceil((zB - nowZ) / sp) - jz0 + 2;
+    if (rows * cols <= GRID_MAX_VERTICES) break;
+    sp *= 1.06;
+  }
+  return { sp, half, rows, cols, jz0 };
+}
+
+function tierFade(k, z0, z1, wIn, wOut, last) {
+  return [k === 0 ? -2 : z0 - wIn, k === 0 ? -1 : z0 + wIn, last ? GRID_DEPTH + 2 : z1 - wOut, last ? GRID_DEPTH + 3 : z1 + wOut];
+}
+
 export function lodTiers(level, aspect, nowZ = NOW_Z, yawDeg = 0) {
   const base = qualityFor(level).cell;
   const tiers = [];
@@ -137,20 +158,8 @@ export function lodTiers(level, aspect, nowZ = NOW_Z, yawDeg = 0) {
     const zA = 0;
     const zB = Math.min(GRID_DEPTH, z1 + wOut);
     const want = tierHalfWidth(zB, aspect, yawDeg, k === 0);
-    let sp = nominal;
-    let half = 0;
-    let rows = 0;
-    let cols = 0;
-    let jz0 = 0;
-    for (let i = 0; i < 80; i += 1) {
-      half = Math.ceil(want / sp);
-      cols = 2 * half + 1;
-      jz0 = Math.floor((zA - nowZ) / sp);
-      rows = Math.ceil((zB - nowZ) / sp) - jz0 + 2;
-      if (rows * cols <= GRID_MAX_VERTICES) break;
-      sp *= 1.06;
-    }
-    const fade = [k === 0 ? -2 : z0 - wIn, k === 0 ? -1 : z0 + wIn, last ? GRID_DEPTH + 2 : z1 - wOut, last ? GRID_DEPTH + 3 : z1 + wOut];
+    const { sp, half, rows, cols, jz0 } = fitTier(nominal, want, zA, zB, nowZ);
+    const fade = tierFade(k, z0, z1, wIn, wOut, last);
     tiers.push({ k, z0, z1, zA, zB, fade, phw: k === 0 ? 0 : tiers[k - 1].hw, spacing: sp, dz: sp, dx: sp, hw: half * sp, rows, cols, jz0 });
     z0 = z1;
   }
@@ -220,7 +229,9 @@ export function resampleTier(plan, src, dst, fracL, fracT, lo = 0, hi = Infinity
     const o = j * cols;
     for (let c = 0; c < cols; c += 1) {
       const v = buf[a + c] * rw[0] + buf[b + c] * rw[1] + buf[c2 + c] * rw[2] + buf[d + c] * rw[3];
-      dst[o + c] = v < lo ? lo : v > hi ? hi : v;
+      if (v < lo) dst[o + c] = lo;
+      else if (v > hi) dst[o + c] = hi;
+      else dst[o + c] = v;
     }
   }
   return dst;
@@ -412,7 +423,7 @@ export function timelineLandmarks(tl) {
       if (e > bestE) { bestE = e; best = i; }
     }
     if (best >= 0 && rowPeak(byteRow(tl.data, best * tl.bins, tl.bins, tmp), tl.bins).ratio < LANDMARK_MIN_PEAKINESS) best = -1;
-    st.times.push(best < 0 ? NaN : best / tl.rps);
+    st.times.push(best < 0 ? Number.NaN : best / tl.rps);
     st.next += 1;
   }
   return st.times;
@@ -424,7 +435,7 @@ function landmarkWindow(tl, k) {
   const to = Math.min(tl.total, Math.round((k + 1) * span));
   const cache = tl.lmExtra || (tl.lmExtra = new Map());
   if (cache.has(k)) return cache.get(k);
-  if (!(from < tl.total) || uncoveredSpans(tl, from, to).length) return NaN;
+  if (!(from < tl.total) || uncoveredSpans(tl, from, to).length) return Number.NaN;
   const tmp = new Float32Array(tl.bins);
   let best = -1;
   let bestE = LANDMARK_MIN_ENERGY;
@@ -433,7 +444,7 @@ function landmarkWindow(tl, k) {
     if (e > bestE) { bestE = e; best = i; }
   }
   if (best >= 0 && rowPeak(byteRow(tl.data, best * tl.bins, tl.bins, tmp), tl.bins).ratio < LANDMARK_MIN_PEAKINESS) best = -1;
-  const v = best < 0 ? NaN : best / tl.rps;
+  const v = best < 0 ? Number.NaN : best / tl.rps;
   cache.set(k, v);
   return v;
 }
@@ -445,7 +456,7 @@ export function landmarkBoostAt(tl, t) {
   let w = 0;
   for (let i = Math.max(0, k - 1); i <= k + 1; i += 1) {
     const at = i < times.length ? times[i] : landmarkWindow(tl, i);
-    if (at === at) w = Math.max(w, landmarkWeight(t - at));
+    if (!Number.isNaN(at)) w = Math.max(w, landmarkWeight(t - at));
   }
   return w;
 }
@@ -473,7 +484,7 @@ export function createSeries(cap = LIVE_CAP, bins = HISTORY_BINS) {
   const boosts = new Float32Array(cap);
   let count = 0;
   let head = 0;
-  let winK = NaN;
+  let winK = Number.NaN;
   let winMax = 0;
   const phys = (i) => (head - count + i + cap * 2) % cap;
   const locate = (t) => {
@@ -528,7 +539,7 @@ export function createSeries(cap = LIVE_CAP, bins = HISTORY_BINS) {
       for (let j = 0; j < bins; j += 1) out[j] = data[a * bins + j] * (1 - f) + data[b * bins + j] * f;
       return out;
     },
-    clear() { count = 0; head = 0; winK = NaN; winMax = 0; },
+    clear() { count = 0; head = 0; winK = Number.NaN; winMax = 0; },
   };
 }
 
@@ -645,20 +656,25 @@ export function fillLiveFrame(frame, series, tNow) {
   return fillTimeFrame(frame, tNow, (t, out) => (t > tNow ? out.fill(0) : series.sample(t, out)), nowRow, (t) => (t > tNow ? 0 : series.boostAt(t)));
 }
 
-export function blendFrames(a, b, k) {
+function blendData(a, b, k) {
   const out = a.data;
   const o = b.data;
   const bins = a.bins;
   const cov = b.cov;
   if (!cov) {
     for (let i = 0; i < out.length; i += 1) out[i] += (o[i] - out[i]) * k;
-  } else {
-    for (let r = 0; r < a.rows; r += 1) {
-      const kr = k * cov[r];
-      if (!(kr > 0)) continue;
-      for (let i = r * bins, e = i + bins; i < e; i += 1) out[i] += (o[i] - out[i]) * kr;
-    }
+    return;
   }
+  for (let r = 0; r < a.rows; r += 1) {
+    const kr = k * cov[r];
+    if (!(kr > 0)) continue;
+    for (let i = r * bins, e = i + bins; i < e; i += 1) out[i] += (o[i] - out[i]) * kr;
+  }
+}
+
+export function blendFrames(a, b, k) {
+  blendData(a, b, k);
+  const cov = b.cov;
   if (a.boost && b.boost) for (let i = 0; i < a.boost.length; i += 1) a.boost[i] += (b.boost[i] - a.boost[i]) * k * (cov ? cov[i] : 1);
   return a;
 }
@@ -1044,6 +1060,11 @@ export function addBaseRelief(out, relief, k = BEAT_BASE_RELIEF, cap = HEIGHT_CA
   return out;
 }
 
+function layeredHeight(base, p, cap) {
+  if (!(p > 0)) return base;
+  return Math.min(Math.max(base, cap), base + softKnee(base + p, cap) - softKnee(base, cap));
+}
+
 export function layerFullRelief(beats, relief, rows, cols, frac, gain = NOW_LINE_GAIN_H_FULL, share = null, cap = HEIGHT_CAP) {
   const { dt, nowRow } = rowLayout(rows);
   const centre = nowRow + frac;
@@ -1054,7 +1075,7 @@ export function layerFullRelief(beats, relief, rows, cols, frac, gain = NOW_LINE
     for (let c = 0; c < cols; c += 1) {
       const base = relief[o + c];
       const p = beats[o + c] * g;
-      const out = p > 0 ? Math.min(Math.max(base, cap), base + softKnee(base + p, cap) - softKnee(base, cap)) : base;
+      const out = layeredHeight(base, p, cap);
       if (share) share[o + c] = out > base && out > 0 ? (out - base) / out : 0;
       beats[o + c] = out;
     }
@@ -1064,7 +1085,9 @@ export function layerFullRelief(beats, relief, rows, cols, frac, gain = NOW_LINE
 
 export function nowGains(cam, style) {
   const lava = style === 'lava';
-  const dh = lava ? NOW_LINE_GAIN_H_LAVA : style === 'full' ? NOW_LINE_GAIN_H_FULL : NOW_LINE_GAIN_H;
+  let dh = NOW_LINE_GAIN_H;
+  if (lava) dh = NOW_LINE_GAIN_H_LAVA;
+  else if (style === 'full') dh = NOW_LINE_GAIN_H_FULL;
   const db = lava ? NOW_LINE_GAIN_B_LAVA : NOW_LINE_GAIN_B;
   const h = cam?.nowH;
   const b = cam?.nowB;

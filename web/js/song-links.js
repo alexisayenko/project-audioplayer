@@ -117,5 +117,6 @@ export function linkErrors(values, { ownKind = null } = {}) {
 export const ownSourceKind = (song) => {
   const id = String(song?.id ?? '');
   if (id.startsWith('soundcloud-')) return 'soundcloud';
-  return /^(spotify|applemusic|shazam)-/.test(id) ? null : /^[A-Za-z0-9_-]{11}$/.test(id) ? 'youtube' : null;
+  if (/^(spotify|applemusic|shazam)-/.test(id)) return null;
+  return /^[A-Za-z0-9_-]{11}$/.test(id) ? 'youtube' : null;
 };

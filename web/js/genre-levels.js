@@ -17,26 +17,17 @@ function makeNode(id, name, level, genre, extra = {}) {
 
 const byName = (a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
 
-export function buildTree(vocab) {
-  const levels = vocab?.levels || {};
-  const gsyn = vocab?.genre_synonyms || {};
-  const names = Array.isArray(vocab?.families) && vocab.families.length ? vocab.families : Object.keys(gsyn);
-  const byId = new Map();
-  const roots = names.map((g) => {
-    const n = makeNode(`g:${g}`, g, 1, g, { synonyms: [...(gsyn[g] || [])] });
-    byId.set(n.id, n);
-    return n;
+function styleNode(k, v) {
+  const display = typeof v.display === 'string' && v.display.trim() ? v.display.trim() : null;
+  const n = makeNode(`s:${k}`, k, v.parent ? 3 : 2, v.genre, {
+    discogs: v.discogs !== false, synonyms: [...(v.synonyms || [])], provisional: v.provisional === true, status: effectiveStatus(v), display, flavours: Array.isArray(v.flavours) ? [...v.flavours] : [], alsoUnder: [...(v.also_under || [])],
   });
-  const styles = new Map();
-  for (const [k, v] of Object.entries(levels)) {
-    const n = makeNode(`s:${k}`, k, v.parent ? 3 : 2, v.genre, {
-      discogs: v.discogs !== false, synonyms: [...(v.synonyms || [])], provisional: v.provisional === true, status: effectiveStatus(v), display: typeof v.display === 'string' && v.display.trim() ? v.display.trim() : null, flavours: Array.isArray(v.flavours) ? [...v.flavours] : [], alsoUnder: [...(v.also_under || [])],
-    });
-    n.label = n.display || k;
-    n.alsoIn = Array.isArray(v.also_in_genres) ? v.also_in_genres.filter((g) => g !== v.genre) : [];
-    styles.set(k, n);
-    byId.set(n.id, n);
-  }
+  n.label = n.display || k;
+  n.alsoIn = Array.isArray(v.also_in_genres) ? v.also_in_genres.filter((g) => g !== v.genre) : [];
+  return n;
+}
+
+function linkStyles(levels, styles, byId) {
   for (const [k, v] of Object.entries(levels)) {
     const n = styles.get(k);
     const p = v.parent ? styles.get(v.parent) : byId.get(`g:${v.genre}`);
@@ -49,13 +40,37 @@ export function buildTree(vocab) {
     for (const g of n.alsoIn) byId.get(`g:${g}`)?.children.push(n);
   }
   for (const n of byId.values()) n.children.sort(byName);
-  const flavours = new Map(Object.entries(vocab?.flavours || {}).map(([key, f]) => [key, { key, name: f.name || key, kind: f.kind === 'scene' ? 'scene' : 'sound', description: f.description || '', songs: new Set() }]));
-  for (const n of byId.values()) n.flavours = n.flavours.filter((f) => flavours.has(f));
+}
+
+function nodeLookups(byId) {
   const byKey = new Map();
   const bySyn = new Map();
   for (const n of byId.values()) if (!byKey.has(vkey(n.name))) byKey.set(vkey(n.name), n);
   for (const n of byId.values()) if (n.display && !byKey.has(vkey(n.display))) byKey.set(vkey(n.display), n);
   for (const n of byId.values()) for (const s of n.synonyms) if (!bySyn.has(vkey(s)) && !byKey.has(vkey(s))) bySyn.set(vkey(s), n);
+  return { byKey, bySyn };
+}
+
+export function buildTree(vocab) {
+  const levels = vocab?.levels || {};
+  const gsyn = vocab?.genre_synonyms || {};
+  const names = Array.isArray(vocab?.families) && vocab.families.length ? vocab.families : Object.keys(gsyn);
+  const byId = new Map();
+  const roots = names.map((g) => {
+    const n = makeNode(`g:${g}`, g, 1, g, { synonyms: [...(gsyn[g] || [])] });
+    byId.set(n.id, n);
+    return n;
+  });
+  const styles = new Map();
+  for (const [k, v] of Object.entries(levels)) {
+    const n = styleNode(k, v);
+    styles.set(k, n);
+    byId.set(n.id, n);
+  }
+  linkStyles(levels, styles, byId);
+  const flavours = new Map(Object.entries(vocab?.flavours || {}).map(([key, f]) => [key, { key, name: f.name || key, kind: f.kind === 'scene' ? 'scene' : 'sound', description: f.description || '', songs: new Set() }]));
+  for (const n of byId.values()) n.flavours = n.flavours.filter((f) => flavours.has(f));
+  const { byKey, bySyn } = nodeLookups(byId);
   return { roots, byId, byKey, bySyn, flavours, index: buildIndex(vocab) };
 }
 
@@ -88,21 +103,23 @@ export function otherGenres(n, rootName) {
   return n.level === 2 ? [n.genre, ...n.alsoIn].filter((g) => g !== rootName) : [];
 }
 
+function countSong(tree, s, sid) {
+  for (const t of s.tags || []) {
+    if (typeof t !== 'string' || !t.toLowerCase().startsWith('genre:')) continue;
+    const node = resolveNode(t.slice(6), tree);
+    if (!node) continue;
+    node.own.add(sid);
+    for (const f of node.flavours) tree.flavours.get(f).songs.add(sid);
+    for (const a of ancestorIds(tree, node.id)) tree.byId.get(a).all.add(sid);
+  }
+}
+
 export function applyCounts(tree, songs) {
   for (const n of tree.byId.values()) { n.own = new Set(); n.all = new Set(); }
   for (const f of tree.flavours.values()) f.songs = new Set();
-  for (const [i, s] of (songs || []).entries()) {
-    const sid = s.id ?? `#${i}`;
-    for (const t of s.tags || []) {
-      if (typeof t !== 'string' || !t.toLowerCase().startsWith('genre:')) continue;
-      const node = resolveNode(t.slice(6), tree);
-      if (!node) continue;
-      node.own.add(sid);
-      for (const f of node.flavours) tree.flavours.get(f).songs.add(sid);
-      for (const a of ancestorIds(tree, node.id)) tree.byId.get(a).all.add(sid);
-    }
-  }
+  for (const [i, s] of (songs || []).entries()) countSong(tree, s, s.id ?? `#${i}`);
 }
+
 
 export const count = (n) => n.all.size;
 
@@ -189,25 +206,33 @@ export function allExpandable(tree) {
   return new Set([...tree.byId.values()].filter((n) => n.children.length).map((n) => n.id));
 }
 
+const focusAt = (rows, i) => (rows[i] ? { type: 'focus', id: rows[i].key } : null);
+
+function rightKey(rows, i, id) {
+  const r = rows[i];
+  if (r.hasChildren && !r.expanded) return { type: 'expand', id, node: r.node.id };
+  return r.expanded ? focusAt(rows, i + 1) : null;
+}
+
+function leftKey(rows, r, id) {
+  if (r.expanded) return { type: 'collapse', id, node: r.node.id };
+  return r.parentKey && rows.some((x) => x.key === r.parentKey) ? { type: 'focus', id: r.parentKey } : null;
+}
+
 export function treeKey(rows, id, key) {
   const i = rows.findIndex((r) => r.key === id);
-  if (i < 0) return rows.length ? { type: 'focus', id: rows[0].key } : null;
+  if (i < 0) return focusAt(rows, 0);
   const r = rows[i];
-  const node = r.node.id;
   switch (key) {
-    case 'ArrowDown': return i + 1 < rows.length ? { type: 'focus', id: rows[i + 1].key } : null;
-    case 'ArrowUp': return i > 0 ? { type: 'focus', id: rows[i - 1].key } : null;
-    case 'Home': return { type: 'focus', id: rows[0].key };
-    case 'End': return { type: 'focus', id: rows.at(-1).key };
-    case 'ArrowRight':
-      if (r.hasChildren && !r.expanded) return { type: 'expand', id, node };
-      return r.expanded && rows[i + 1] ? { type: 'focus', id: rows[i + 1].key } : null;
-    case 'ArrowLeft':
-      if (r.expanded) return { type: 'collapse', id, node };
-      return r.parentKey && rows.some((x) => x.key === r.parentKey) ? { type: 'focus', id: r.parentKey } : null;
+    case 'ArrowDown': return focusAt(rows, i + 1);
+    case 'ArrowUp': return focusAt(rows, i - 1);
+    case 'Home': return focusAt(rows, 0);
+    case 'End': return focusAt(rows, rows.length - 1);
+    case 'ArrowRight': return rightKey(rows, i, id);
+    case 'ArrowLeft': return leftKey(rows, r, id);
     case 'Enter':
     case ' ':
-      return { type: 'activate', id, node, toggle: r.hasChildren };
+      return { type: 'activate', id, node: r.node.id, toggle: r.hasChildren };
     default: return null;
   }
 }

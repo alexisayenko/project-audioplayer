@@ -48,7 +48,8 @@ def test_cover_parenthetical_original_performer_ambiguous():
     assert perf["version"] == {"kind": "cover", "name": "sófia karlberg cover version", "by": []}
     assert "cover_performer" in perf["notes"]
     amb = credits_split.suggest("", "Song (X Cover)", None)
-    assert amb["version"] == {"kind": "cover", "name": "X Cover", "by": []} and "cover_ambiguous" in amb["notes"]
+    assert amb["version"] == {"kind": "cover", "name": "X Cover", "by": []}
+    assert "cover_ambiguous" in amb["notes"]
 
 
 def test_cover_rule_is_whole_word_and_parenthetical_only():
@@ -62,14 +63,17 @@ def test_cover_rule_is_whole_word_and_parenthetical_only():
 def test_mashup_word_forms_and_non_matches():
     for text in ("(mashup)", "[Mash-Up]", "(MASH UP)"):
         s = credits_split.suggest("", f"Song - A, B {text}", None)
-        assert s["version"]["kind"] == "mashup" and s["artists"] == ["A", "B"] and "mashup_makers_unknown" in s["notes"]
+        assert s["version"]["kind"] == "mashup"
+        assert s["artists"] == ["A", "B"]
+        assert "mashup_makers_unknown" in s["notes"]
     for title in ("Discovery (Mashups)", "Mashup City", "Song (Mashup Remix)"):
         assert (credits_split.suggest("A", title, None)["version"] or {}).get("kind") != "mashup"
 
 
 def test_mashup_never_guesses_sources_without_an_explicit_separator():
     s = credits_split.suggest("", "Кончится лето - Yaukoshi, LXST CXNTURY, Цой (mashup)", None)
-    assert "of" not in s["version"] and s["title"] == "Кончится лето"
+    assert "of" not in s["version"]
+    assert s["title"] == "Кончится лето"
 
 
 def test_cover_with_a_dash_uses_evidence_or_lists_both_readings():

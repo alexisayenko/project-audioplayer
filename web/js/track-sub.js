@@ -1,3 +1,1 @@
-import { subtitle } from './credits.js';
-
-export const trackSub = subtitle;
+export { subtitle as trackSub } from './credits.js';

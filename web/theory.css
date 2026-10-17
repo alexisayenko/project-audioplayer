@@ -15,7 +15,7 @@
 .an-seg[data-tone="featured"], .an-row[data-tone="featured"] { --an-c: var(--chart-2); }
 .an-seg[data-tone="version"], .an-row[data-tone="version"] { --an-c: var(--chart-5); }
 .an-seg[data-tone="original"], .an-row[data-tone="original"] { --an-c: var(--chart-3); }
-.an-row { --an-c: var(--ink-faint); }
+.an-row { --an-c: var(--ink-faint); background: var(--surface); border-radius: var(--radius-sm); }
 .an-text { white-space: pre-wrap; }
 .an-mark { display: block; height: var(--space-2); margin-top: var(--space-1); border: var(--stroke-focus) solid var(--an-c); border-top: 0; border-radius: 0 var(--radius-xs) var(--radius-sm) var(--radius-xs); }
 .an-label { display: block; margin-top: var(--space-1); color: var(--ink-muted); font: var(--font-caption); text-align: center; overflow-wrap: anywhere; }
@@ -27,7 +27,6 @@
 .an-table thead th { text-align: left; color: var(--ink-muted); font: var(--font-caption); padding: 0 var(--space-3); }
 .an-table th[scope="col"]:nth-child(1) { width: 26%; }
 .an-table th[scope="col"]:nth-child(2) { width: 24%; }
-.an-row { background: var(--surface); border-radius: var(--radius-sm); }
 .an-row th, .an-row td { padding: var(--space-2) var(--space-3); text-align: left; vertical-align: top; font-weight: 400; color: var(--ink); background: var(--surface); overflow-wrap: anywhere; }
 .an-row th { border-left: var(--space-1) solid var(--an-c); border-radius: var(--radius-sm) 0 0 var(--radius-sm); }
 .an-row td:last-child { border-radius: 0 var(--radius-sm) var(--radius-sm) 0; color: var(--ink-muted); }

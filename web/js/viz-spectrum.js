@@ -1,7 +1,7 @@
 import {
   MIN_HZ, MAX_HZ, BASS_HZ, NOISE_FLOOR, DPR_CAP, FPS_TOUCH, FPS_DESKTOP, QUALITY_LEVELS, PULSE_MAX_RATE, MIN_TURN_S,
   BAR_PITCH_PX, BAR_WIDTH_FRACTION, GAP_MIN_CSS, PX_BAR_MIN, PX_BAR_MIN_WIDE, PX_WIDE_BAR, PX_BAR_MAX, BAR_COUNT_MIN, BAR_COUNT_MAX, EDGE_FADE, HEIGHT_KNEE, HEIGHT_MAX, BAR_NOISE, NOISE_STEP_MS, BAR_COMPRESSION,
-  RANGE_DB, TILT_DB_PER_OCT, REF_HEADROOM_DB, REF_RISE, REF_FALL_DB_PER_S, REF_MIN_DB,
+  RANGE_DB, REF_HEADROOM_DB, REF_RISE, REF_FALL_DB_PER_S, REF_MIN_DB,
 } from './viz-constants.js';
 
 const clamp01 = (v) => Math.min(1, Math.max(0, v));
@@ -38,7 +38,7 @@ function barPeakDb(db, lo, hi, binW) {
 export function barsDb(db, n, opts) {
   const { sampleRate, fftSize, tilt = 0 } = opts;
   const out = new Float32Array(n).fill(-Infinity);
-  if (!db || !db.length || !(n > 0)) return out;
+  if (!db?.length || !(n > 0)) return out;
   const edges = barEdges(n, sampleRate, fftSize);
   const binW = sampleRate / fftSize;
   for (let i = 0; i < n; i += 1) {
@@ -80,7 +80,7 @@ export function makeReference({
 
 export function bassEnergy(db, opts) {
   const { sampleRate, fftSize, floor = NOISE_FLOOR, maxHz = BASS_HZ } = opts;
-  if (!db || !db.length) return 0;
+  if (!db?.length) return 0;
   const last = Math.max(1, Math.min(db.length - 1, Math.floor(maxHz / (sampleRate / fftSize))));
   let sum = 0;
   for (let i = 1; i <= last; i += 1) sum += dbToUnit(binDb(db, i), opts.minDb, opts.maxDb);

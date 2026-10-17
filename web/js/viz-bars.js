@@ -49,7 +49,8 @@ const cache = new WeakMap();
 let heights = new Float32Array(0);
 
 function resources(ctx, w, n, geo, colors, vertical) {
-  const key = `${w}|${n}|${geo.barDev}|${geo.dpr}|${colors.stops ?? [colors.a, colors.b]}|${colors.line}|${vertical ? `${vertical.y0}/${vertical.half}` : ''}`;
+  const vertKey = vertical ? `${vertical.y0}/${vertical.half}` : '';
+  const key = `${w}|${n}|${geo.barDev}|${geo.dpr}|${colors.stops ?? [colors.a, colors.b]}|${colors.line}|${vertKey}`;
   const hit = cache.get(ctx);
   if (hit && hit.key === key) return hit;
   const fill = vertical
@@ -223,7 +224,11 @@ function toHsv(c) {
   const mx = Math.max(r, g, b);
   const d = mx - Math.min(r, g, b);
   let h = 0;
-  if (d > 0) h = mx === r ? ((g - b) / d + 6) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  if (d > 0) {
+    if (mx === r) h = ((g - b) / d + 6) % 6;
+    else if (mx === g) h = (b - r) / d + 2;
+    else h = (r - g) / d + 4;
+  }
   return [h * 60, mx ? d / mx : 0, mx];
 }
 

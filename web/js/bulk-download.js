@@ -95,7 +95,8 @@ export function downloadAllCard() {
   const confirmFor = (usage) => {
     const { long } = splitLong(missingAudio(store.songs));
     longNote = long.length ? longText(long) : '';
-    confirmNote = `${confirmText(chosen().ids.length, usage)}${longNote ? ` ${longNote}` : ''}`;
+    const longSuffix = longNote ? ` ${longNote}` : '';
+    confirmNote = `${confirmText(chosen().ids.length, usage)}${longSuffix}`;
   };
   let usageNow = null;
 
@@ -109,7 +110,10 @@ export function downloadAllCard() {
     bar.setAttribute('aria-valuenow', String(pct));
     fill.style.width = `${pct}%`;
     const paused = running ? Math.max(0, ...r.ids.map((id) => autodl.view(id).minutes || 0)) : 0;
-    note.textContent = confirming ? confirmNote : r ? runText(r, { running, pausedMinutes: paused }) : '';
+    let noteText = '';
+    if (confirming) noteText = confirmNote;
+    else if (r) noteText = runText(r, { running, pausedMinutes: paused });
+    note.textContent = noteText;
     list.hidden = !failed.length;
     list.value = failed.join('\n');
     copyBtn.hidden = !failed.length;

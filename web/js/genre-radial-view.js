@@ -84,14 +84,7 @@ export function createRadialView(canvas, { onSelect, onHover, reducedMotion = fa
     return a;
   };
 
-  function draw() {
-    if (!colors.ink) readColors();
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, W, H);
-    if (!layout) return;
-    const { k } = tf;
-    ctx.setTransform(dpr * k, 0, 0, dpr * k, dpr * tf.x, dpr * tf.y);
-    const lit = (id) => hl.chain.has(id) || hl.kids.has(id);
+  function drawCrossLinks(k) {
     ctx.lineCap = 'round';
     ctx.strokeStyle = colors.edge;
     for (const l of visibleCrossLinks(layout, sel, hover)) {
@@ -103,35 +96,60 @@ export function createRadialView(canvas, { onSelect, onHover, reducedMotion = fa
       ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
     }
     ctx.setLineDash([]);
+  }
+
+  function drawEdges(k) {
+    const lit = (id) => hl.chain.has(id) || hl.kids.has(id);
     for (const e of layout.edges) {
       const a = layout.byId.get(e.from);
       const b = layout.byId.get(e.to);
       const on = sel && lit(e.from) && lit(e.to);
-      ctx.globalAlpha = sel ? (on ? 0.95 : 0.1) : 0.3;
+      let alpha = 0.3;
+      if (sel) alpha = on ? 0.95 : 0.1;
+      ctx.globalAlpha = alpha;
       ctx.strokeStyle = on ? colors.accent : colors.edge;
       ctx.lineWidth = (on ? 2 : 1) / k;
       ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
     }
-    for (const n of layout.nodes) {
-      ctx.globalAlpha = alphaOf(n);
-      ctx.fillStyle = colors.fam[n.hue] || colors.ink;
-      ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, 2 * Math.PI); ctx.fill();
-      if (!n.node.discogs) {
-        ctx.strokeStyle = colors.ink;
-        ctx.lineWidth = 1.5 / k;
-        ctx.setLineDash([3 / k, 2.5 / k]);
-        ctx.beginPath(); ctx.arc(n.x, n.y, n.r + 3 / k, 0, 2 * Math.PI); ctx.stroke();
-        ctx.setLineDash([]);
-      }
-      const ring = n.id === sel ? 3 : n.id === hover ? 2 : matches.has(n.id) ? 2.5 : 0;
-      if (ring) {
-        ctx.globalAlpha = 1;
-        ctx.strokeStyle = colors.accent;
-        ctx.lineWidth = ring / k;
-        ctx.beginPath(); ctx.arc(n.x, n.y, n.r + (n.discogs ? 3 : 6) / k, 0, 2 * Math.PI); ctx.stroke();
-      }
-      if (n.node.status) drawBadge(n, k);
+  }
+
+  function ringWidth(n) {
+    if (n.id === sel) return 3;
+    if (n.id === hover) return 2;
+    return matches.has(n.id) ? 2.5 : 0;
+  }
+
+  function drawNode(n, k) {
+    ctx.globalAlpha = alphaOf(n);
+    ctx.fillStyle = colors.fam[n.hue] || colors.ink;
+    ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, 2 * Math.PI); ctx.fill();
+    if (!n.node.discogs) {
+      ctx.strokeStyle = colors.ink;
+      ctx.lineWidth = 1.5 / k;
+      ctx.setLineDash([3 / k, 2.5 / k]);
+      ctx.beginPath(); ctx.arc(n.x, n.y, n.r + 3 / k, 0, 2 * Math.PI); ctx.stroke();
+      ctx.setLineDash([]);
     }
+    const ring = ringWidth(n);
+    if (ring) {
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = colors.accent;
+      ctx.lineWidth = ring / k;
+      ctx.beginPath(); ctx.arc(n.x, n.y, n.r + (n.discogs ? 3 : 6) / k, 0, 2 * Math.PI); ctx.stroke();
+    }
+    if (n.node.status) drawBadge(n, k);
+  }
+
+  function draw() {
+    if (!colors.ink) readColors();
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    if (!layout) return;
+    const { k } = tf;
+    ctx.setTransform(dpr * k, 0, 0, dpr * k, dpr * tf.x, dpr * tf.y);
+    drawCrossLinks(k);
+    drawEdges(k);
+    for (const n of layout.nodes) drawNode(n, k);
     ctx.globalAlpha = 1;
     drawLabels();
   }
@@ -172,7 +190,12 @@ export function createRadialView(canvas, { onSelect, onHover, reducedMotion = fa
     const k = tf.k;
     const zoomed = k >= LABEL_K;
     const isForced = (n) => n.id === sel || n.id === hover || matches.has(n.id);
-    const prio = (n) => (n.id === sel ? 0 : n.id === hover ? 1 : matches.has(n.id) ? 2 : n.level === 1 ? 3 : 4 + n.level);
+    const prio = (n) => {
+      if (n.id === sel) return 0;
+      if (n.id === hover) return 1;
+      if (matches.has(n.id)) return 2;
+      return n.level === 1 ? 3 : 4 + n.level;
+    };
     const list = layout.nodes
       .filter((n) => isForced(n) || n.level <= 2 && !n.parked || (n.level === 3 && (zoomed || lit3(n))))
       .sort((p, q) => (prio(p) - prio(q)) || (q.node.all.size - p.node.all.size) || p.name.localeCompare(q.name));

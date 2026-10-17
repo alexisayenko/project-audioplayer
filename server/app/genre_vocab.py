@@ -189,9 +189,7 @@ def _strings(value: Any, where: str) -> list[str]:
 FLAVOUR_KINDS = ("sound", "scene")
 
 
-def parse_levels(doc: Any) -> tuple[dict[str, dict[str, Any]], dict[str, list[str]], dict[str, dict[str, str]]]:
-    """Validate the three-level genre data (GEN-051): returns (`levels` per style, `genre_synonyms` per genre, `flavours` block). Raises ValueError naming the file and the bad entry."""
-    name = LEVELS_FILE.name
+def _parse_synonyms(doc: Any, name: str) -> dict[str, list[str]]:
     if not isinstance(doc, dict) or not isinstance(doc.get("genres"), dict) or not doc["genres"]:
         raise ValueError(f"{name}: missing the 'genres' object")
     synonyms = {}
@@ -199,6 +197,10 @@ def parse_levels(doc: Any) -> tuple[dict[str, dict[str, Any]], dict[str, list[st
         if not isinstance(spec, dict):
             raise ValueError(f"{name}: genre {g!r} is not an object")
         synonyms[g] = _strings(spec.get("synonyms", []), f"genre {g!r} synonyms")
+    return synonyms
+
+
+def _parse_flavours(doc: dict[str, Any], name: str) -> dict[str, dict[str, str]]:
     flavours: dict[str, dict[str, str]] = {}
     block = doc.get("flavours", {})
     if not isinstance(block, dict):
@@ -210,51 +212,66 @@ def parse_levels(doc: Any) -> tuple[dict[str, dict[str, Any]], dict[str, list[st
         if not isinstance(desc, str):
             raise ValueError(f"{name}: flavour {fk!r} description must be a string")
         flavours[fk] = {"name": spec["name"], "kind": spec["kind"], "description": desc}
+    return flavours
+
+
+def _parse_entry(k: str, v: Any, name: str, synonyms: dict[str, list[str]], flavours: dict[str, dict[str, str]]) -> dict[str, Any]:
+    if not isinstance(v, dict):
+        raise ValueError(f"{name}: entry {k!r} is not an object")
+    if v.get("genre") not in synonyms:
+        raise ValueError(f"{name}: entry {k!r} has an unknown genre {v.get('genre')!r}")
+    parent = v.get("parent")
+    if parent is not None and (not isinstance(parent, str) or parent == k):
+        raise ValueError(f"{name}: entry {k!r} has an invalid parent {parent!r}")
+    if not isinstance(v.get("discogs"), bool):
+        raise ValueError(f"{name}: entry {k!r} needs a boolean 'discogs'")
+    status = v.get("status")
+    if status not in (None, "approved", "question"):
+        raise ValueError(f"{name}: entry {k!r} has an invalid status {status!r} (approved, question or absent)")
+    display = v.get("display")
+    if display is not None and (not isinstance(display, str) or not display.strip()):
+        raise ValueError(f"{name}: entry {k!r} display must be a non-empty string")
+    entry = {
+        "genre": v["genre"],
+        "parent": parent,
+        "also_under": _strings(v.get("also_under", []), f"entry {k!r} also_under"),
+        "discogs": v["discogs"],
+        "synonyms": _strings(v.get("synonyms", []), f"entry {k!r} synonyms"),
+        "provisional": v.get("provisional") is True,
+        "status": status,
+        "display": display,
+        "flavours": _strings(v.get("flavours", []), f"entry {k!r} flavours"),
+        "also_in_genres": _strings(v.get("also_in_genres", []), f"entry {k!r} also_in_genres"),
+    }
+    bad_genres = [g for g in entry["also_in_genres"] if g not in synonyms or g == v["genre"]]
+    if bad_genres:
+        raise ValueError(f"{name}: entry {k!r} also_in_genres {bad_genres!r} is not another genre")
+    unknown = [f for f in entry["flavours"] if f not in flavours]
+    if unknown:
+        raise ValueError(f"{name}: entry {k!r} has unknown flavours {unknown!r}")
+    return entry
+
+
+def _check_links(k: str, v: dict[str, Any], levels: dict[str, dict[str, Any]], name: str) -> None:
+    if v["display"] and v["display"].lower() != k and v["display"].lower() in levels:
+        raise ValueError(f"{name}: entry {k!r} display {v['display']!r} collides with another entry")
+    p = v["parent"]
+    if p is not None and (p not in levels or levels[p]["parent"] is not None or (levels[p]["genre"] != v["genre"] and v["genre"] not in levels[p]["also_in_genres"])):
+        raise ValueError(f"{name}: entry {k!r} parent {p!r} is not a level 2 entry of {v['genre']!r}")
+    for a in v["also_under"]:
+        if a not in levels or a == p or a == k:
+            raise ValueError(f"{name}: entry {k!r} also_under {a!r} is not another entry")
+
+
+def parse_levels(doc: Any) -> tuple[dict[str, dict[str, Any]], dict[str, list[str]], dict[str, dict[str, str]]]:
+    """Validate the three-level genre data (GEN-051): returns (`levels` per style, `genre_synonyms` per genre, `flavours` block). Raises ValueError naming the file and the bad entry."""
+    name = LEVELS_FILE.name
+    synonyms = _parse_synonyms(doc, name)
+    flavours = _parse_flavours(doc, name)
     entries = {k: v for k, v in doc.items() if k not in ("_meta", "genres", "flavours")}
-    levels: dict[str, dict[str, Any]] = {}
-    for k, v in entries.items():
-        if not isinstance(v, dict):
-            raise ValueError(f"{name}: entry {k!r} is not an object")
-        if v.get("genre") not in synonyms:
-            raise ValueError(f"{name}: entry {k!r} has an unknown genre {v.get('genre')!r}")
-        parent = v.get("parent")
-        if parent is not None and (not isinstance(parent, str) or parent == k):
-            raise ValueError(f"{name}: entry {k!r} has an invalid parent {parent!r}")
-        if not isinstance(v.get("discogs"), bool):
-            raise ValueError(f"{name}: entry {k!r} needs a boolean 'discogs'")
-        status = v.get("status")
-        if status not in (None, "approved", "question"):
-            raise ValueError(f"{name}: entry {k!r} has an invalid status {status!r} (approved, question or absent)")
-        display = v.get("display")
-        if display is not None and (not isinstance(display, str) or not display.strip()):
-            raise ValueError(f"{name}: entry {k!r} display must be a non-empty string")
-        levels[k] = {
-            "genre": v["genre"],
-            "parent": parent,
-            "also_under": _strings(v.get("also_under", []), f"entry {k!r} also_under"),
-            "discogs": v["discogs"],
-            "synonyms": _strings(v.get("synonyms", []), f"entry {k!r} synonyms"),
-            "provisional": v.get("provisional") is True,
-            "status": status,
-            "display": display,
-            "flavours": _strings(v.get("flavours", []), f"entry {k!r} flavours"),
-            "also_in_genres": _strings(v.get("also_in_genres", []), f"entry {k!r} also_in_genres"),
-        }
-        bad_genres = [g for g in levels[k]["also_in_genres"] if g not in synonyms or g == v["genre"]]
-        if bad_genres:
-            raise ValueError(f"{name}: entry {k!r} also_in_genres {bad_genres!r} is not another genre")
-        unknown = [f for f in levels[k]["flavours"] if f not in flavours]
-        if unknown:
-            raise ValueError(f"{name}: entry {k!r} has unknown flavours {unknown!r}")
+    levels = {k: _parse_entry(k, v, name, synonyms, flavours) for k, v in entries.items()}
     for k, v in levels.items():
-        if v["display"] and v["display"].lower() != k and v["display"].lower() in levels:
-            raise ValueError(f"{name}: entry {k!r} display {v['display']!r} collides with another entry")
-        p = v["parent"]
-        if p is not None and (p not in levels or levels[p]["parent"] is not None or (levels[p]["genre"] != v["genre"] and v["genre"] not in levels[p]["also_in_genres"])):
-            raise ValueError(f"{name}: entry {k!r} parent {p!r} is not a level 2 entry of {v['genre']!r}")
-        for a in v["also_under"]:
-            if a not in levels or a == p or a == k:
-                raise ValueError(f"{name}: entry {k!r} also_under {a!r} is not another entry")
+        _check_links(k, v, levels, name)
     return levels, synonyms, flavours
 
 

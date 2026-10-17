@@ -273,7 +273,8 @@ def test_from_env(tmp_path, monkeypatch):
 def test_rollback_keeps_untracked_files_that_existed_before_the_transaction(sync):
     s, _, clone = sync
     write(clone, "covers/kept.jpg", "cover")
+    boom = RuntimeError("boom")
     with pytest.raises(RuntimeError):
-        fail_in_transaction(s, clone, "x", RuntimeError("boom"))
+        fail_in_transaction(s, clone, "x", boom)
     assert (clone / "audioplayer" / "covers" / "kept.jpg").read_text() == "cover"
     assert not (clone / "audioplayer" / "a.json").exists()

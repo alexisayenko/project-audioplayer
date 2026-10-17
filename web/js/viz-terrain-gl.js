@@ -1,7 +1,7 @@
 import {
   QUALITY, HISTORY_BINS, STAR_VISIBLE, buildDepthIndices, buildCrossIndices, buildRibbonVertices, buildRibbonIndices, energyOf, easeEnergy, GRID_DEPTH, WORLD_SPEED, NOW_FALLOFF_S, NOW_GAIN, CROSS_H0, CROSS_H1, AMP_MAX, SHAKE_ENABLED,
   gridHalfWidth, FAR_FLAT_START, RAMP, qualityFor, createFrame, createSeries, fillHeights, buildGridVertices, rowLayout, nowZOf, fillLiveFrame, fillLookFrame, blendFrames,
-  gridCounts, makeStars, lodTiers, makeTierPlan, resampleTier, cameraAt, horizonY, horizonGlow, mat4Perspective, mat4LookAt, mat4Multiply,
+  makeStars, lodTiers, makeTierPlan, resampleTier, cameraAt, horizonY, horizonGlow, mat4Perspective, mat4LookAt, mat4Multiply,
   makeRowClock, clamp01, LOOK_S, timelineCovers, applyNowLine, addBaseRelief, BEAT_BASE_RELIEF, layerFullRelief, NOW_LINE_GAIN_H, nowGains, HEIGHT_CAP, resample, yawStepOf, smoothHeights, HEIGHT_RESAMPLE_CAP, ROWS_PER_SECOND, gridDims, fillLight, LIGHT_GAIN, NODE_GAIN, FOG_NEAR, FOG_FAR, FOG_LOW_MIN, FOG_H0, FOG_H1,
 } from './viz-terrain-math.js';
 import { getCam } from './viz-cam-debug.js';
@@ -16,7 +16,7 @@ const DPR_CAP = 2;
 const BEAT_SMOOTH_PASSES = 1;
 export const TERRAIN_MAX_DPR = 1.5;
 const ACC_NAMES = ['u_acc0', 'u_acc1', 'u_acc2', 'u_acc3'];
-const STAR_COUNT = STAR_VISIBLE[STAR_VISIBLE.length - 1];
+const STAR_COUNT = STAR_VISIBLE.at(-1);
 const STAR_SEED = 20261014;
 const NEAR = 0.3;
 const FAR = 160;
@@ -338,7 +338,7 @@ function uni(gl, p, name) {
 
 function setU(gl, p, name, a, b, c, d, n) {
   let cur = p.vals.get(name);
-  if (!cur) { cur = [NaN, NaN, NaN, NaN]; p.vals.set(name, cur); }
+  if (!cur) { cur = [Number.NaN, Number.NaN, Number.NaN, Number.NaN]; p.vals.set(name, cur); }
   if (cur[0] === a && cur[1] === b && cur[2] === c && cur[3] === d) return;
   cur[0] = a; cur[1] = b; cur[2] = c; cur[3] = d;
   const loc = uni(gl, p, name);
@@ -377,7 +377,8 @@ function freeTarget(gl, t) {
 
 function layoutSig(level, aspect, yaw = 0) {
   const d = gridDims(level, aspect);
-  return `${d.rows}x${d.cols}y${yaw};${lodTiers(level, aspect, nowZOf(d.rows), yaw).map((t) => `${t.rows}x${t.cols}@${t.spacing.toFixed(4)}`).join()}`;
+  const tiers = lodTiers(level, aspect, nowZOf(d.rows), yaw).map((t) => `${t.rows}x${t.cols}@${t.spacing.toFixed(4)}`).join();
+  return `${d.rows}x${d.cols}y${yaw};${tiers}`;
 }
 
 export function createTerrain(canvas, opts = {}) {
@@ -419,7 +420,7 @@ export function createTerrain(canvas, opts = {}) {
     css: null,
     hVer: 0,
     hs: { style: null, done: -1, v: -1, pd: -1, kd: -1, dims: null },
-    rk: { dims: null, base: NaN, done: -1, v: -1, ver: -1, full: false },
+    rk: { dims: null, base: Number.NaN, done: -1, v: -1, ver: -1, full: false },
     liveVer: 0,
     xs: null,
     static: false,
@@ -489,7 +490,6 @@ export function createTerrain(canvas, opts = {}) {
   }
 
   function buildGrid() {
-    const q = QUALITY[s.level];
     const aspect = view.w / view.h;
     s.builds = (s.builds ?? 0) + 1;
     s.dims = gridDims(s.level, aspect);

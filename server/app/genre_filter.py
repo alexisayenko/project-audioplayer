@@ -76,33 +76,36 @@ def is_genre(value: str) -> bool:
     return bool(stripped) and stripped not in DENY and stripped not in DROP and not _YEARISH.match(stripped)
 
 
+_DNB = "drum and bass"
+_LIQUID_DNB = "liquid drum and bass"
+_PROG_HOUSE = "progressive house"
 ALIASES: dict[str, str] = {
     "electronic dance music": "electronic",
     "punk rock": "punk",
     "euroda": "eurodance",
-    "deep progressive": "progressive house",
+    "deep progressive": _PROG_HOUSE,
     "mor": "middle of the road",
     "retro-synth": "synthwave",
     "советская волна": "soviet wave",
     "советская-волна": "soviet wave",
-    "melodic progressive house": "progressive house",
+    "melodic progressive house": _PROG_HOUSE,
     "hip-hop & rap": "hip hop",
     "rock and indie": "indie rock",
     "pop and chart": "pop",
     "russian electro pop": "synthpop",
     "russian electropop": "synthpop",
-    "dnb": "drum and bass",
-    "d&b": "drum and bass",
-    "drum'n'bass": "drum and bass",
-    "drum n bass music": "drum and bass",
-    "drum & bass": "drum and bass",
-    "drum n bass": "drum and bass",
+    "dnb": _DNB,
+    "d&b": _DNB,
+    "drum'n'bass": _DNB,
+    "drum n bass music": _DNB,
+    "drum & bass": _DNB,
+    "drum n bass": _DNB,
     "edm": "electronic",
     "euro pop": "europop",
     "euro-disco": "euro disco",
     "eurohouse": "euro house",
     "electronic pop": "synthpop",
-    "festival progressive house": "progressive house",
+    "festival progressive house": _PROG_HOUSE,
     "festival trap": "trap",
     "red disco": "disco",
     "intelligent dance music": "idm",
@@ -127,11 +130,11 @@ ALIASES: dict[str, str] = {
     "french touch": "french house",
     "melodic house": "house",
     "bubblegum dance": "eurodance",
-    "techstep": "drum and bass",
-    "liquid funk": "liquid drum and bass",
-    "liquid dnb": "liquid drum and bass",
-    "liquid drum n bass": "liquid drum and bass",
-    "liquid drum & bass": "liquid drum and bass",
+    "techstep": _DNB,
+    "liquid funk": _LIQUID_DNB,
+    "liquid dnb": _LIQUID_DNB,
+    "liquid drum n bass": _LIQUID_DNB,
+    "liquid drum & bass": _LIQUID_DNB,
     "breakbeat hardcore": "breakbeat",
     "rave": "electronic",
     "jersey club": "breakbeat",
@@ -157,7 +160,7 @@ RETAGS: dict[str, str] = {
     "⚈⚈": "glitch hop",
 }
 PROGRESSIVE = "progressive"
-PROGRESSIVE_ELECTRONIC = "progressive house"
+PROGRESSIVE_ELECTRONIC = _PROG_HOUSE
 ELECTRONIC_CONTEXT: frozenset[str] = frozenset(key(v) for v in ("electronic", "club"))
 _RETAG_BY_KEY: dict[str, str] = {key(_a): _t for _a, _t in RETAGS.items()}
 

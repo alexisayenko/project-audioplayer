@@ -80,10 +80,12 @@ const fmt = (v) => (Number.isFinite(v) ? v.toFixed(1) : '-inf');
 
 export function debugLines(i) {
   const d = diagnose(i);
+  const stateText = d.text ? `: ${d.text}` : '';
+  const fftText = i.hasAnalyser ? `fft ${i.fftSize}` : 'none';
   return [
-    `state ${d.code}${d.text ? `: ${d.text}` : ''}`,
+    `state ${d.code}${stateText}`,
     `playing ${i.playing ? 'yes' : 'no'}  paused ${i.paused ? 'yes' : 'no'}  graph ${i.graphState}`,
-    `AudioContext ${i.ctxState}  analyser ${i.hasAnalyser ? `fft ${i.fftSize}` : 'none'}`,
+    `AudioContext ${i.ctxState}  analyser ${fftText}`,
     `dB max ${fmt(i.max)}  mean ${fmt(i.mean)}  byte max ${i.byteMax ?? 'n/a'}`,
     `all-zero ${i.allZero ? 'yes' : 'no'}  frames ${i.frames}  nonzero ${i.live}  silent run ${i.silentRun}`,
     `audio origin ${i.src}  page ${i.pageOrigin}  same-origin ${i.sameOrigin ? 'yes' : 'no'}  crossOrigin ${i.crossOrigin ?? 'null'}`,

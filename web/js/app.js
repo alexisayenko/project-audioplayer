@@ -147,10 +147,10 @@ const settingsLink = [...document.querySelectorAll('#nav a')].find((a) => a.data
 function markSettingsLink(view) {
   if (!settingsLink) return;
   if (view.dot) {
-    settingsLink.setAttribute('data-sync', view.level);
+    settingsLink.dataset.sync = view.level;
     settingsLink.setAttribute('aria-label', `Settings, ${view.label}`);
   } else {
-    settingsLink.removeAttribute('data-sync');
+    delete settingsLink.dataset.sync;
     settingsLink.removeAttribute('aria-label');
   }
 }

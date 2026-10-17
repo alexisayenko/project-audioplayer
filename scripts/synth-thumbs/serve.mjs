@@ -10,7 +10,7 @@ const port = Number(process.argv[2]) || 8765;
 const types = { '.js': 'text/javascript', '.mjs': 'text/javascript', '.html': 'text/html', '.css': 'text/css', '.png': 'image/png' };
 
 http.createServer((req, res) => {
-  const url = new URL(req.url, 'http://x');
+  const url = new URL(req.url, 'http://localhost');
   if (req.method === 'POST' && url.pathname === '/save') {
     const id = url.searchParams.get('id') || '';
     if (!/^[a-z0-9-]+$/.test(id)) { res.writeHead(400).end('bad id'); return; }

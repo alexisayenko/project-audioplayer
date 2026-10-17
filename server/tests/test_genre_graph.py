@@ -277,7 +277,8 @@ def test_bare_and_music_tags_make_one_connected_node(wd):
     n = by_label(g)
     assert n["electronic music"]["qid"] == "Q100"
     assert n["electronic music"]["ownCount"] == 2
-    assert "electronic" not in n and "house" not in n
+    assert "electronic" not in n
+    assert "house" not in n
     assert n["house music"]["ownCount"] == 2
     assert n["house music"]["parents"] == [n["electronic music"]["id"]]
 
@@ -333,7 +334,8 @@ def test_manual_parent_edge_added_and_marked(wd, monkeypatch):
     assert "house music" in parents_of(g, "chillsynth")
     assert "pop music" in parents_of(g, "darksynth")
     man = [e for e in g["edges"] if e.get("origin") == "manual"]
-    assert len(man) == 2 and all(e["kind"] == "parent" for e in man)
+    assert len(man) == 2
+    assert all(e["kind"] == "parent" for e in man)
     assert not any(e.get("origin") for e in g["edges"] if e not in man)
 
 
@@ -351,8 +353,8 @@ def test_manual_parent_skipped_when_it_would_make_a_cycle(wd, monkeypatch):
     assert "chillsynth" not in parents_of(g, "chillsynth")
 
 
-def test_shipped_manual_table_is_valid():
-    gg._manual = None
+def test_shipped_manual_table_is_valid(monkeypatch):
+    monkeypatch.setattr(gg, "_manual", None)
     assert gg.validate_manual(gg._json_table()) == []
     assert "pop punk" in gg.manual_parents()
 
@@ -360,7 +362,10 @@ def test_shipped_manual_table_is_valid():
 def test_validate_manual_flags_problems():
     bad = gg.validate_manual({"_c": "x", "A": ["b"], "b": ["b"], "c": ["d"], "d": ["c"], "e": "f"})
     text = " ".join(bad)
-    assert "not a lowercase" in text and "parent of itself" in text and "cycle" in text and "must be a list" in text
+    assert "not a lowercase" in text
+    assert "parent of itself" in text
+    assert "cycle" in text
+    assert "must be a list" in text
 
 
 def test_missing_manual_file_is_empty(monkeypatch, tmp_path):

@@ -83,11 +83,12 @@ def px(value) -> str:
     return str(int(n)) if n.is_integer() else str(n)
 
 
-def swift(tokens: dict) -> str:
-    themes = [t["id"] for t in tokens["color"]["themes"]]
-    light, dark = themes[0], (themes[1] if len(themes) > 1 else themes[0])
-    out = [f"// {HEADER}", "", "import SwiftUI", "", "/// Electrophone design tokens. Colours adapt to light/dark automatically.", "enum DS {"]
+FONT_WEIGHTS = {100: "ultraLight", 200: "thin", 300: "light", 400: "regular", 500: "medium", 600: "semibold", 700: "bold", 800: "heavy", 900: "black"}
 
+
+def swift_colors(tokens: dict, themes: list[str]) -> list[str]:
+    light, dark = themes[0], (themes[1] if len(themes) > 1 else themes[0])
+    out: list[str] = []
     color_tokens = [t for t in tokens["color"]["tokens"] if on_ios(t)]
     for mark, enum_name, group in (
         ("Colours", "Color", [t for t in color_tokens if not is_chart(t)]),
@@ -112,19 +113,21 @@ def swift(tokens: dict) -> str:
             "    }",
             "",
         ])
+    return out
 
-    out.extend([
+
+def swift_fonts(tokens: dict) -> list[str]:
+    out = [
         "    // MARK: Type",
         "    enum Font {",
-    ])
+    ]
     families = tokens["type"].get("families", {})
     for group in tokens["type"].get("groups", []):
         fam = group.get("family", "sans")
         design = ".monospaced" if "mono" in families.get(fam, fam).lower() else ".default"
         for st in group["styles"]:
             size = px(st["fontSize"])
-            weight = st.get("fontWeight", 400)
-            wname = {100: "ultraLight", 200: "thin", 300: "light", 400: "regular", 500: "medium", 600: "semibold", 700: "bold", 800: "heavy", 900: "black"}.get(int(weight), "regular")
+            wname = FONT_WEIGHTS.get(int(st.get("fontWeight", 400)), "regular")
             usage = st.get("usage", "").replace("\n", " ")
             out.extend([
                 f"        /// {usage}",
@@ -136,7 +139,11 @@ def swift(tokens: dict) -> str:
         "    }",
         "",
     ])
+    return out
 
+
+def swift_scales(tokens: dict) -> list[str]:
+    out: list[str] = []
     for family, enum_name in (("spacing", "Space"), ("radius", "Radius"), ("stroke", "Stroke")):
         fam = tokens.get(family)
         if not fam:
@@ -155,6 +162,15 @@ def swift(tokens: dict) -> str:
             "    }",
             "",
         ])
+    return out
+
+
+def swift(tokens: dict) -> str:
+    themes = [t["id"] for t in tokens["color"]["themes"]]
+    out = [f"// {HEADER}", "", "import SwiftUI", "", "/// Electrophone design tokens. Colours adapt to light/dark automatically.", "enum DS {"]
+    out.extend(swift_colors(tokens, themes))
+    out.extend(swift_fonts(tokens))
+    out.extend(swift_scales(tokens))
 
     out.extend([
         "}",
