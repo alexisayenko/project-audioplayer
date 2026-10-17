@@ -13,7 +13,7 @@ import { tagLabel, categoryOf, CATEGORIES } from './tagname.js';
 import { prefs, SORTS, visibleSongs, selectedIn, isUnsetKey, unsetCount } from './library-data.js';
 import { songRow } from './library-rows.js';
 import { disposeAll } from './marquee.js';
-import { isRowControl } from './row-cover.js';
+import { isRowControl, keepCovers } from './row-cover.js';
 import { openSongCard } from './song-card.js';
 import { openFilterSheet } from './library-toolbar.js';
 import { mountScrollTop } from './scroll-top.js';
@@ -117,8 +117,11 @@ export function renderLibrary(root) {
       ? [el('li', { class: 'empty muted t-subhead' }, 'No songs match. Clear the search or the filters.')]
       : [];
     const focusedId = document.activeElement?.classList?.contains('row-cover') ? document.activeElement.closest('li.song')?.dataset.id : null;
+    const prevRows = [...list.querySelectorAll('li.song')];
+    const rows = songs.map((s) => songRow(s, cur, flashId));
+    keepCovers(prevRows, rows);
     disposeAll(list);
-    list.replaceChildren(...empty, ...songs.map((s) => songRow(s, cur, flashId)));
+    list.replaceChildren(...empty, ...rows);
     if (focusedId) [...list.querySelectorAll('li.song')].find((r) => r.dataset.id === focusedId)?.querySelector('.row-cover')?.focus();
   }
 

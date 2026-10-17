@@ -25,6 +25,21 @@ export function coverModel({ audio, queueable, here, playing, dl = 'none', sourc
 
 export const isRowControl = (target) => !!target?.closest?.('a, button:not(.open)');
 
+const coverImg = (row) => row.querySelector?.('.row-cover img.cover');
+
+export function keepCovers(prevRows, nextRows) {
+  const loaded = new Map();
+  for (const row of prevRows) {
+    const img = coverImg(row);
+    if (img?.getAttribute('src')) loaded.set(row.dataset.id, img);
+  }
+  for (const row of nextRows) {
+    const fresh = coverImg(row);
+    const kept = loaded.get(row.dataset.id);
+    if (fresh && kept && kept !== fresh && kept.getAttribute('src') === fresh.getAttribute('src')) fresh.replaceWith(kept);
+  }
+}
+
 export const coverLabel = (model, name) => `${model.verb} ${name}`;
 
 export function touchOnly(mm = globalThis.matchMedia) {

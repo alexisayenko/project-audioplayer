@@ -367,6 +367,32 @@ test('the cover button plays now, shows Pause on the playing song and Play when 
   cleanup();
 });
 
+test('a player state change keeps the loaded cover images and still repaints the row state', async () => {
+  const covered = SONGS.slice(0, 3).map((s) => ({ ...s, cover: true, cover_v: 'v1' }));
+  setStore(covered);
+  filterByTags([]);
+  stubFetch(() => ({ body: { songs: covered } }));
+  const { rows, cleanup } = mount();
+  await flush();
+  while (player.current) player.removeAt(0);
+  const imgs = () => rows().map((r) => r.querySelector('.row-cover img.cover'));
+  const before = imgs();
+  assert.equal(before.length, 3);
+  assert.ok(before.every((i) => i.getAttribute('src')?.startsWith('/covers/')));
+  player.playNow('b');
+  assert.deepEqual(imgs(), before, 'covers survive the song change');
+  player.toggle();
+  assert.deepEqual(imgs(), before, 'covers survive pause');
+  player.toggle();
+  assert.deepEqual(imgs(), before, 'covers survive play');
+  const row = rows().find((r) => r.dataset.id === 'b');
+  assert.equal(row.classList.contains('current'), true);
+  assert.equal(row.querySelector('.row-cover').getAttribute('aria-label'), 'Pause beta');
+  assert.ok(before.every((i) => i.parentNode?.classList.contains('row-cover')));
+  while (player.current) player.removeAt(0);
+  cleanup();
+});
+
 test('reveal scrolls to a visible row and flashes it; hidden-by-filter offers Show', async () => {
   setStore(SONGS);
   filterByTags([]);

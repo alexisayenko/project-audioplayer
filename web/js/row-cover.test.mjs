@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { installDom } from './test-dom.mjs';
 
 installDom();
-const { coverModel, coverLabel, coverButton, touchOnly, isRowControl, coverAttrs, currentCoverModel, queueCoverModel, paintQueueCovers } = await import('./row-cover.js');
+const { coverModel, coverLabel, coverButton, touchOnly, isRowControl, coverAttrs, currentCoverModel, queueCoverModel, paintQueueCovers, keepCovers } = await import('./row-cover.js');
 const { el } = await import('./dom.js');
 
 const base = { audio: true, queueable: true, here: false, playing: false, dl: 'none' };
@@ -111,4 +111,23 @@ test('paintQueueCovers repaints rows in place and keeps the same buttons', () =>
   assert.equal(before[1], after[1]);
   assert.equal(after[1].getAttribute('aria-label'), 'Pause B');
   assert.equal(after[0].getAttribute('aria-label'), 'Play A');
+});
+
+test('keepCovers moves a loaded cover into the rebuilt row with the same source and leaves others alone', () => {
+  const row = (id, src) => {
+    const img = el('img', { class: 'cover' });
+    if (src) img.setAttribute('src', src);
+    return el('li', { class: 'song', 'data-id': id }, el('button', { class: 'row-cover' }, img));
+  };
+  const prev = [row('a', '/covers/a?v=1'), row('b', '/covers/b?v=1'), row('c', null)];
+  const next = [row('a', '/covers/a?v=1'), row('b', '/covers/b?v=2'), row('c', null), row('d', '/covers/d')];
+  const kept = prev[0].querySelector('img');
+  const freshB = next[1].querySelector('img');
+  const freshC = next[2].querySelector('img');
+  keepCovers(prev, next);
+  assert.equal(next[0].querySelector('img'), kept);
+  assert.equal(next[1].querySelector('img'), freshB);
+  assert.equal(next[2].querySelector('img'), freshC);
+  assert.equal(next[3].querySelector('img').getAttribute('src'), '/covers/d');
+  assert.equal(prev[0].querySelector('img'), null);
 });
