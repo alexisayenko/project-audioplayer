@@ -122,7 +122,7 @@ def stored_song(song: dict[str, Any]) -> dict[str, Any]:
 def view_tags(song: dict[str, Any], table: Any = None) -> list[str]:
     """The legacy `tags` view of a v2 song: its stored tags, `decade:NNs` computed from `releaseYear` and the `country:` codes of its main artists."""
     kept, _, _ = split_tags(tag_list(song))
-    decade = decade_tag(credits.release_year(song))
+    decade = decade_tag(credits.display_year(song))
     countries = artist_table.countries_for(table, credits.main_artists(song)) if table else []
     return [*kept, *([decade] if decade else []), *(f"country:{c}" for c in countries)]
 

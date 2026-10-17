@@ -139,6 +139,13 @@ def _structured(song: dict[str, Any]) -> bool:
     return credits_v1.is_v2(song)
 
 
+def display_year(song: dict[str, Any]) -> int | None:
+    """The year shown for a song: the version year when its version has one, else the original release year (decade filters follow it)."""
+    version = song.get("version")
+    year = _int_year(version.get("releaseYear")) if isinstance(version, dict) else None
+    return year if year is not None else release_year(song)
+
+
 def release_year(song: dict[str, Any]) -> int | None:
     if _structured(song):
         return _int_year(song.get("releaseYear"))

@@ -16,7 +16,7 @@ test('cardModel computes the decade from releaseYear and shows albums[0]', () =>
   assert.equal(m.album, 'First LP');
   assert.equal(m.sub, 'Zed · 2010');
   assert.equal(m.remix, 'Kav Remix');
-  assert.deepEqual(m.groups.find((g) => g.key === 'decade').tags.map((t) => t.tag), ['decade:90s']);
+  assert.deepEqual(m.groups.find((g) => g.key === 'decade').tags.map((t) => t.tag), ['decade:10s']);
   assert.ok(m.details.includes('Remixed / mixed by: Kav'));
-  assert.deepEqual(cardModel({ ...song, releaseYear: null }, { kind: 'none' }).groups.find((g) => g.key === 'decade')?.tags.map((t) => t.tag), ['decade:80s']);
+  assert.deepEqual(cardModel({ ...song, releaseYear: null }, { kind: 'none' }).groups.find((g) => g.key === 'decade')?.tags.map((t) => t.tag), ['decade:10s']);
 });

@@ -124,8 +124,10 @@ def test_the_migrated_file_loads_and_serves_the_same_derived_values(tmp_path):
     old_by_id = {s["id"]: s for s in LIVE["songs"]}
     for song in doc["songs"]:
         view = library.public_song(song, None, index)
-        old = {t for t in old_by_id[song["id"]]["tags"] if not t.startswith("lang:")}
-        assert {t for t in view["tags"] if not t.startswith("country:")} == {t for t in old if not t.startswith("country:")}
+        shown = (view.get("version") or {}).get("releaseYear")
+        skip = ("lang:", "country:", "decade:") if shown else ("lang:", "country:")
+        old = {t for t in old_by_id[song["id"]]["tags"] if not t.startswith(skip)}
+        assert {t for t in view["tags"] if not t.startswith(skip)} == old
 
 
 def test_updated_at_and_other_fields_are_untouched():

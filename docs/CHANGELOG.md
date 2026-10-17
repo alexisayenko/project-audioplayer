@@ -26,6 +26,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 - Server: songs are stored as `mainArtists`, `featuredArtists`, `releaseYear`, `albums`, `version {type, name, artists, releaseYear, originalArtists}`, `rawTitle` and `sources {platform, url}` (DATA-156); decade is computed at runtime, `lang:` tags are gone, `country:` tags moved to a per-user Artist table (`GET /artists`, `PATCH /artists/{name}`). `artist`, `remixer`, `remix_year`, `year`, `album` and `tags` stay derived in every response, so iOS is unchanged; old and flat names are still accepted on input for one release. New one-time migration `app.migrate_model2` (dry run, derived-field check that aborts on any difference, backup, review file) replaces `migrate_credits`; runbook in deploy.md.
 - Web: reads and sends the v2 names, decade chips and filters computed from `releaseYear`.
+- Server and web: the decade (Years filter, chips, `decade:` in the tags view) follows the displayed year, the version year when there is one (DATA-161).
 - Server: genres are stored bare in `genres[]` (no `genre:` prefix); `tags[]` is kept only for other leftovers; responses derive the prefixed `tags` view for iOS; `PATCH`/`POST` accept `genres` or legacy prefixed `tags`; the web edit dialog sends `genres`.
 - Server: changing country tags on a song with several main artists is refused with 422 (DATA-160); the edit dialog shows the message inline.
 

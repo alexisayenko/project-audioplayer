@@ -66,6 +66,15 @@ def test_a_file_with_prefixed_stored_tags_is_not_yet_model_2(raw, expect):
     assert migrate_model2.is_model2({"settings": {"credits_schema": 2}, "songs": [raw]}) is expect
 
 
+def test_the_decade_in_the_tags_view_follows_the_displayed_year(client):
+    post(client, {"artist": "Solo", "releaseYear": 1985, "version": {"type": "remix", "name": "X Remix", "releaseYear": 2019}})
+    assert [t for t in song(client)["tags"] if t.startswith("decade:")] == ["decade:10s"]
+    client.patch(f"/songs/{VID}", json={"version": {"type": "remix", "name": "X Remix", "releaseYear": None}}, headers=H)
+    assert [t for t in song(client)["tags"] if t.startswith("decade:")] == ["decade:80s"]
+    client.patch(f"/songs/{VID}", json={"version": None}, headers=H)
+    assert [t for t in song(client)["tags"] if t.startswith("decade:")] == ["decade:80s"]
+
+
 def test_the_migration_stores_bare_genres_and_lists_leftovers():
     old = {"songs": [
         {"id": "a", "title": "A", "artists": ["X"], "featured": [], "released": 2000, "tags": ["genre:house", "decade:00s", "80s", "genre:Deep House"]},
