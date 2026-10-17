@@ -1246,6 +1246,16 @@
   "provisional": true,
   "discogs": true
  },
+ "dream trance": {
+  "genre": "Electronic",
+  "parent": "trance",
+  "synonyms": [
+   "dream house",
+   "dream dance"
+  ],
+  "discogs": false,
+  "status": "approved"
+ },
  "dreamsynth": {
   "genre": "Electronic",
   "parent": "synthwave",
@@ -3706,6 +3716,11 @@
  "uplifting trance": {
   "genre": "Electronic",
   "parent": "trance",
+  "synonyms": [
+   "anthem trance",
+   "epic trance",
+   "euphoric trance"
+  ],
   "discogs": false,
   "status": "approved"
  },

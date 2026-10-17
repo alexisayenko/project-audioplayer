@@ -87,7 +87,7 @@ REMOVED = {
     "techno pop": "synthpop", "electropop": "synthpop", "melodic house": "house",
 }
 APPROVED = {"dark psytrance", "forest psytrance", "progressive psytrance", "full-on psytrance", "vocal trance", "melodic techno", "psybient", "darksynth", "uplifting trance", "sunshine house", "dreamsynth", "dreamwave", "neurofunk",
-            "spacesynth", "nu-nrg", "liquid drum and bass", "soviet wave"}
+            "spacesynth", "nu-nrg", "liquid drum and bass", "soviet wave", "dream trance"}
 QUESTION = {"deep trance", "acid trance"}
 
 
@@ -370,3 +370,42 @@ def test_french_house_is_an_extra_under_house_and_french_touch_is_its_alias():
         assert gf.canonical(raw) == "french house" and gf.vocabulary_name(raw) == "french house" and not gf.unmappable(raw), raw
     assert genre_vocab.vocabulary()["aliases"]["french touch"] == "french house"
     assert "french house" not in genre_vocab.vocabulary()["aliases"]
+
+
+def test_dream_trance_is_an_approved_extra_under_trance_with_two_synonyms():
+    from app import genre_filter as gf
+    from app import genre_vocab
+
+    genre_vocab.reset()
+    e = ENTRIES["dream trance"]
+    assert (e["genre"], e["parent"], e["discogs"], e["status"]) == ("Electronic", "trance", False, "approved")
+    assert e["synonyms"] == ["dream house", "dream dance"]
+    assert "dream trance" in EXTRAS and "dream trance" not in STYLES["styles"]
+    assert EXTRAS["dream trance"]["family"] == "Electronic" and EXTRAS["dream trance"]["parent"] == "trance"
+    assert ENTRIES["trance"]["parent"] is None and "dream" not in ENTRIES and "dream" not in gf.ALIASES
+    assert genre_vocab.lookup("Dream Trance") == "dream trance" and genre_vocab.lookup("dream house") is None
+    for raw in ("dream house", "Dream Dance", "dream-house", "dream trance"):
+        assert gf.canonical(raw) == "dream trance" and gf.vocabulary_name(raw) == "dream trance" and not gf.unmappable(raw), raw
+    payload = genre_vocab.vocabulary()
+    assert payload["aliases"]["dream house"] == payload["aliases"]["dream dance"] == "dream trance"
+    assert "dream trance" not in payload["aliases"]
+    assert payload["levels"]["dream trance"]["synonyms"] == ["dream house", "dream dance"]
+    assert payload["levels"]["dream trance"]["parent"] == "trance" and payload["levels"]["dream trance"]["status"] == "approved"
+    assert payload["levels"]["dream trance"]["discogs"] is False
+
+
+def test_uplifting_trance_has_three_synonyms_that_do_not_touch_epic():
+    from app import genre_filter as gf
+    from app import genre_vocab
+
+    genre_vocab.reset()
+    assert ENTRIES["uplifting trance"]["synonyms"] == ["anthem trance", "epic trance", "euphoric trance"]
+    assert ENTRIES["uplifting trance"]["parent"] == "trance" and ENTRIES["uplifting trance"]["status"] == "approved"
+    for raw in ("anthem trance", "Epic Trance", "euphoric-trance", "uplifting trance"):
+        assert gf.canonical(raw) == "uplifting trance" and gf.vocabulary_name(raw) == "uplifting trance" and not gf.unmappable(raw), raw
+    for name in ("commercial trance", "stadium trance"):
+        assert name not in gf.ALIASES
+    assert gf.canonical("epic") == "epic" and ENTRIES["epic"]["genre"] == "Stage & Screen"
+    payload = genre_vocab.vocabulary()
+    assert payload["aliases"]["epic trance"] == "uplifting trance"
+    assert payload["levels"]["uplifting trance"]["synonyms"] == ["anthem trance", "epic trance", "euphoric trance"]

@@ -82,7 +82,7 @@ def test_extras_have_family_and_a_canonical_parent_without_cycles():
 
 REQUIRED_EXTRAS = (
     "singer-songwriter", "psybient", "darksynth", "dreamwave", "neurofunk", "liquid drum and bass", "melodic techno",
-    "dance-rock", "estrada", "shock rock", "nu-nrg", "uplifting trance", "chillwave", "darkwave",
+    "dance-rock", "estrada", "shock rock", "nu-nrg", "uplifting trance", "dream trance", "chillwave", "darkwave",
     "folk", "dark metal", "epic", "trailer", "dreamsynth", "sunshine house", "synth-rock", "electronic",
 )
 

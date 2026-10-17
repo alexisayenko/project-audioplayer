@@ -6,6 +6,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 - Server: countries are `country:` tags on the song again, any number per song; the Artist table, `artists` in `GET /library` and the `/artists` routes are gone (ADR-0031, [task-0049](tasks/task-0049.md)). A startup migration (`migrate_model3`) moves each library to schema 3 and keeps a backup in `backups-model3/`.
 - Web: the song form and the tag picker accept several countries.
+- Server: new genre dream trance under trance (synonyms dream house, dream dance); anthem trance, epic trance and euphoric trance are synonyms of uplifting trance.
 
 ## 2026-10-18 (genres map and dock)
 

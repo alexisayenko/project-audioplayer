@@ -38,7 +38,7 @@ Electronic 141 (55 level 2, 86 level 3, 18 not in Discogs; after the 2026-10-16 
 All placements below are agent judgement, awaiting Alex's review.
 
 - house (22): acid house, afro house, ambient house, big room house, deep house, electro house, euro house, french house, future house, garage house, ghetto house, hard house, hip house, italo house, melodic house, microhouse, progressive house, sunshine house, tech house, tribal house, tropical house
-- trance (10): acid, deep, euro, hard, neo, nu-nrg, progressive, tech, uplifting, vocal
+- trance (11): acid, deep, dream, euro, hard, neo, nu-nrg, progressive, tech, uplifting, vocal
 - psytrance (6): dark psytrance, forest psytrance, progressive psytrance, full-on psytrance, goa trance, psybient
 - techno (6): deep, dub, hard, melodic, minimal, schranz
 - drum and bass (4): jungle, liquid funk, neurofunk, techstep
@@ -102,10 +102,14 @@ Statuses (`status` on an entry; absent means unreviewed; the web shows a badge):
 
 | status | styles |
 |---|---|
-| approved (badge "Alex approved") | vocal trance, melodic techno, psybient, darksynth, uplifting trance, dreamsynth, dreamwave, neurofunk, spacesynth, nu-nrg, sunshine house, liquid drum and bass |
+| approved (badge "Alex approved") | vocal trance, melodic techno, psybient, darksynth, uplifting trance, dreamsynth, dreamwave, neurofunk, spacesynth, nu-nrg, sunshine house, liquid drum and bass, soviet wave, dream trance |
 | question (badge "under question") | deep trance, acid trance |
 
 Precedence rule: Discogs outranks Alex's approval. `approved` is only stored on entries with `discogs: false`; for a Discogs style it is ignored and not stored (tropical house and chillwave are Discogs styles: approval ignored). `question` is allowed on any entry. Tests: `server/tests/test_genre_levels.py`.
+
+Added 2026-10-18: `dream trance` (extras, level 3 under trance, approved, not Discogs; synonyms dream house, dream dance, both also `ALIASES`; source https://en.wikipedia.org/wiki/Dream_trance).
+
+Added 2026-10-18: `anthem trance`, `epic trance` and `euphoric trance` are synonyms of `uplifting trance` (also `ALIASES`); `commercial trance` and `stadium trance` stay out as too broad; the separate `epic` (Stage & Screen) is unaffected.
 
 Added: `liquid drum and bass` (extras, level 3 under drum and bass, approved, display "Liquid Drum & Bass"; synonyms liquid dnb, liquid d&b, liquid drum & bass, liquid drum n bass, liquid drum'n'bass, liquid drum and bass music, liquid drum & bass music, liquid funk).
 
