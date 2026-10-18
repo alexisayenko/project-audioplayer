@@ -526,7 +526,23 @@ _DESCRIPTOR = re.compile(
     rf"^(?:вокально-инструментальный\s+ансамбль|ансамбль|виа|рок-группа|группа|гурт)(?:\s+|(?=[{re.escape(_QUOTE_CHARS)}]))(?P<quote>[{re.escape(_QUOTE_CHARS)}])?\s*",
     re.I,
 )
-_BRACKET_TAIL = re.compile(r"(?<!\s)\s*+[\(\[][^\)\]]*+[\)\]]\s*+$")
+
+
+def _strip_bracket_tail(text: str) -> str:
+    end = len(text.rstrip())
+    if not end or text[end - 1] not in ")]":
+        return text
+    closer = end - 1
+    seg = max(text.rfind(")", 0, closer), text.rfind("]", 0, closer)) + 1
+    openers = [i for i in (text.find("(", seg, closer), text.find("[", seg, closer)) if i >= 0]
+    if not openers:
+        return text
+    start = min(openers)
+    while start > 0 and text[start - 1].isspace():
+        start -= 1
+    return text[:start]
+
+
 _ALBUM_RU = "альбом"
 _WORK_SUFFIX = {
     "ru": {"artist": "группа", "song": "песня", "album": _ALBUM_RU},
@@ -564,7 +580,7 @@ def _wiki_names(name: str, kind: str) -> list[str]:
         if stripped:
             variants = [stripped, plain] if m.group("quote") else [plain, stripped]
     else:
-        variants.append(tidy(_BRACKET_TAIL.sub("", name)))
+        variants.append(tidy(_strip_bracket_tail(name)))
     return list(dict.fromkeys(v for v in variants if v))
 
 
@@ -624,7 +640,7 @@ def _foreign_page(lang: str, kind: str, name: str, rest: str, credited: list[str
     direct = [f"{name} ({suffix})", name]
     search_q = f"{name} {rest}".strip()
     if kind == "artist":
-        hits = [t for t in _search_raw(search_q, lang) if genre_lookup._norm(_BRACKET_TAIL.sub("", t)) == wanted]
+        hits = [t for t in _search_raw(search_q, lang) if genre_lookup._norm(_strip_bracket_tail(t)) == wanted]
     else:
         hits = [t for t in _search_raw(search_q, lang) if genre_lookup._norm(t).startswith(wanted)]
     titles = list(dict.fromkeys([*direct, *hits[: MAX_CANDIDATES + 2]]))
