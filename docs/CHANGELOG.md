@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-18 (Library chips under the search, built, not deployed)
+
+- Web: the Library search field takes the remaining toolbar width with the action buttons (Clear filters, Show playing, Play all, Add all) at its right end, and the category chips (Tags, Genres, Years, Countries) sit on their own line directly below it at every width; under 720px the buttons wrap after the chips and the sort bar keeps only the sort select and the summary (LIB-030).
+
 ## 2026-10-18 (genres map library only, built, not deployed)
 
 - Web: the Genres map and its outline show only genres of songs that are in the library plus the ancestors that connect them (ancestors without a song of their own are neutral connector nodes); the "Show whole vocabulary" and "Only with songs" toggles are gone, the family chips list only families with library songs (most songs first and pressed by default), the status chip reads "N genres in <family>" counting genres with songs, and a library without genre tags shows "No genres yet. Add songs with genres to see them here." ([WEB-085](specs/web.md), GEN-054).

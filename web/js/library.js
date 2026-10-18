@@ -77,10 +77,11 @@ export function renderLibrary(root) {
         can('add') ? el('button', { class: 'btn primary glow', type: 'button', onclick: openAdd }, icon('plus', 'action'), 'Add song') : null)),
     el('div', { class: 'toolbar' },
       el('label', { class: 'search' }, icon('search', 'action'), search),
+      el('div', { class: 'sort-actions' }, clearFilters, showPlaying, playAll, addAll),
       cats),
     el('div', { class: 'sortbar' },
       el('label', { class: 'sort t-headline' }, sort, icon('chevron', 'inline')),
-      summary, el('div', { class: 'sort-actions' }, clearFilters, showPlaying, playAll, addAll)),
+      summary),
     group,
     status);
 
