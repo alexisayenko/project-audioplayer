@@ -10,7 +10,7 @@ const { planVersionYear, planRemixYear } = await import('./remix-year.js');
 const next = new Date().getFullYear() + 1;
 const btn = (f, text) => f.node.querySelectorAll('button').find((b) => b.textContent === text);
 const fieldOf = (f, label) => f.node.querySelectorAll('.field').find((d) => d.children[0].textContent === label);
-const vy = (f) => fieldOf(f, 'Version year').querySelector('input');
+const vy = (f) => fieldOf(f, 'Remix year').querySelector('input');
 const kind = (f) => f.node.querySelector('select');
 const setKind = (f, k) => { kind(f).value = k; fire(kind(f), 'input'); };
 const typeVersionYear = (f, v) => { vy(f).value = v; fire(vy(f), 'input'); };
@@ -49,7 +49,7 @@ test('planRemixYear stays as an alias driven by the remixer text', () => {
   assert.deepEqual(planRemixYear({ remixer: ' ', current: '', auto: false, published: 2014 }), { value: '', auto: false });
 });
 
-test('add form: a legacy remixer and published_year fill Version year, marked as a suggestion, First released untouched', () => {
+test('add form: a legacy remixer and published_year fill Remix year, marked as a suggestion, First released untouched', () => {
   const f = songForm({ mode: 'add', song: { title: 'T', remixer: 'DJ X Remix', published_year: 2014, year: 2001, tags: [] } });
   assert.equal(f.values().version.type, 'remix');
   assert.equal(String(f.values().version.releaseYear), '2014');
@@ -57,7 +57,7 @@ test('add form: a legacy remixer and published_year fill Version year, marked as
   assert.ok(vy(f).classList.contains('suggested'));
 });
 
-test('add form: no version leaves Version year empty', () => {
+test('add form: no version leaves Remix year empty', () => {
   const f = songForm({ mode: 'add', song: { title: 'T', published_year: 2014, tags: [] } });
   assert.equal(f.values().version, null);
   assert.equal(vy(f).value, '');

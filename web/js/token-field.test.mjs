@@ -76,7 +76,7 @@ test('pencil opens a menu; Remove and Move to X work; menu closes on selection',
   assert.equal(title.querySelectorAll('.token-menu').length, 1);
   assert.equal(pencil.getAttribute('aria-expanded'), 'true');
   const labels = title.querySelector('.token-menu').querySelectorAll('button').map((b) => b.textContent);
-  assert.deepEqual(labels, ['Edit text', 'Move to Artists', 'Move to Remixed / mixed by', 'Remove']);
+  assert.deepEqual(labels, ['Edit text', 'Move to Artists', 'Move to Remix by', 'Remove']);
   title.querySelector('.token-menu').querySelectorAll('button')[1].click();
   assert.deepEqual(pills(title), ['Song B']);
   assert.deepEqual(pills(artist), ['Band X', 'Song A']);
@@ -199,10 +199,10 @@ test('featured and by fields use the same pill rules and offer moves to each oth
   document.body.append(artists, featured, by);
   assert.deepEqual(pills(featured), ['C']);
   assert.equal(featured.getAttribute('aria-label'), 'Featuring');
-  assert.equal(by.getAttribute('aria-label'), 'Remixed / mixed by');
+  assert.equal(by.getAttribute('aria-label'), 'Remix by');
   featured.querySelector('.token-pill').querySelector('button').click();
   const labels = featured.querySelector('.token-menu').querySelectorAll('button').map((b) => b.textContent);
-  assert.deepEqual(labels, ['Edit text', 'Move to Artists', 'Move to Remixed / mixed by', 'Remove']);
+  assert.deepEqual(labels, ['Edit text', 'Move to Artists', 'Move to Remix by', 'Remove']);
   featured.querySelector('.token-menu').querySelectorAll('button')[2].click();
   assert.deepEqual(pills(by), ['D', 'C']);
   assert.deepEqual(pills(featured), []);

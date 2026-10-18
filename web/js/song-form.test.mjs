@@ -177,8 +177,8 @@ test('version year and first released inputs have a year range and round-trip', 
   const f = songForm({ mode: 'edit', song: { id: 's1', title: 'T', mainArtists: ['A'], featuredArtists: [], releaseYear: 2003, version: { type: 'remix', name: 'R', artists: ['R'], releaseYear: 2024 }, tags: [] } });
   const row = f.node.querySelector('.remix-row.version-row');
   assert.ok(row, 'row exists');
-  assert.match(row.textContent, /Remixed \/ mixed by/);
-  assert.match(row.textContent, /Version year/);
+  assert.match(row.textContent, /Remix by/);
+  assert.match(row.textContent, /Remix year/);
   const nextYear = new Date().getFullYear() + 1;
   const years = f.node.querySelectorAll('input').filter((x) => x.type === 'number' && String(x.min) === '1900');
   assert.equal(years.length, 2);

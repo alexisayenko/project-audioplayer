@@ -21,17 +21,17 @@ const warn = (f) => f.node.querySelector('.credits-warn');
 
 test('the form has every credits field with its label', () => {
   const f = mk({ mainArtists: ['A'], featuredArtists: [] });
-  for (const label of ['Title', 'Artists', 'Featuring', 'Version', 'Version name', 'Remixed / mixed by', 'Version year', 'Cover of', 'First released']) {
+  for (const label of ['Title', 'Artists', 'Featuring', 'Version', 'Version name', 'Remix by', 'Remix year', 'Cover of', 'First released']) {
     assert.ok(fieldOf(f, label), label);
   }
   assert.deepEqual([...kind(f).querySelectorAll('option')].map((o) => o.value), ['', 'remix', 'live', 'acoustic', 'extended', 'instrumental', 'remaster', 'edit', 'cover', 'mashup', 'other']);
 });
 
-test('Artists, Featuring and Remixed / mixed by are pill fields', () => {
+test('Artists, Featuring and Remix by are pill fields', () => {
   const f = mk({ mainArtists: ['A', 'B'], featuredArtists: ['C'], version: { type: 'remix', name: 'Alesso Remix', artists: ['Alesso', 'X'], releaseYear: null } });
   assert.deepEqual(pills(f, 'Artists'), ['A', 'B']);
   assert.deepEqual(pills(f, 'Featuring'), ['C']);
-  assert.deepEqual(pills(f, 'Remixed / mixed by'), ['Alesso', 'X']);
+  assert.deepEqual(pills(f, 'Remix by'), ['Alesso', 'X']);
   assert.deepEqual(f.values().mainArtists, ['A', 'B']);
   assert.deepEqual(f.values().version.artists, ['Alesso', 'X']);
 });
@@ -39,10 +39,10 @@ test('Artists, Featuring and Remixed / mixed by are pill fields', () => {
 test('without a version the version details are hidden and values().version is null', () => {
   const f = mk({ mainArtists: ['A'], featuredArtists: [] });
   assert.equal(fieldOf(f, 'Version name').hidden, true);
-  assert.equal(fieldOf(f, 'Remixed / mixed by').parentNode.hidden, true);
+  assert.equal(fieldOf(f, 'Remix by').parentNode.hidden, true);
   setKind(f, 'remix');
   assert.equal(fieldOf(f, 'Version name').hidden, false);
-  assert.equal(fieldOf(f, 'Remixed / mixed by').parentNode.hidden, false);
+  assert.equal(fieldOf(f, 'Remix by').parentNode.hidden, false);
   setKind(f, '');
   assert.equal(f.values().version, null);
 });
@@ -125,7 +125,7 @@ test('Suggested split: a feat. credit in the title offers to move it, title text
   assert.equal(f.values().title, 'Song');
 });
 
-test('warning when a Remixed / mixed by name is not in the Version name; never blocks', () => {
+test('warning when a Remix by name is not in the Version name; never blocks', () => {
   const f = mk({ mainArtists: ['A'], featuredArtists: [], version: { type: 'remix', name: 'Alesso Remix', artists: ['Alesso'], releaseYear: null } });
   assert.equal(warn(f).hidden, true);
   f.setValues({ version: { type: 'remix', name: 'Alesso Remix', artists: ['Alesso', 'Nobody'], releaseYear: null } });

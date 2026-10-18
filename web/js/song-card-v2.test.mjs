@@ -17,7 +17,15 @@ test('cardModel shows albums[0] and never a decade', () => {
   assert.equal(m.sub, 'Zed · 2010');
   assert.equal(m.remix, 'Kav Remix');
   assert.equal(m.groups.find((g) => g.key === 'decade'), undefined);
-  assert.ok(m.details.includes('Remixed / mixed by: Kav'));
+  assert.ok(m.details.includes('Remix by: Kav'));
+});
+
+test('the line under the cover is the full title: artists, featured artists, title and version', () => {
+  const remix = { id: 'r', title: 'Fading', mainArtists: ['Didrik Thulin', 'Sonny Alven'], featuredArtists: [], releaseYear: 2019, version: { type: 'remix', name: 'MKJ Remix', artists: ['MKJ'] } };
+  assert.equal(cardModel(remix).full, 'Didrik Thulin & Sonny Alven - Fading (MKJ Remix)');
+  const cover = { id: 'c', title: 'Crazy', mainArtists: ['Teemid'], featuredArtists: ['Joie Tan'], releaseYear: 2019, version: { type: 'cover', name: 'Gnarls Barkley Cover', originalArtists: ['Gnarls Barkley'] } };
+  assert.equal(cardModel(cover).full, 'Teemid feat. Joie Tan - Crazy (Gnarls Barkley Cover)');
+  assert.equal(cardModel({ id: 'p', title: 'One More Time', mainArtists: ['Daft Punk'], featuredArtists: [] }).full, 'Daft Punk - One More Time');
 });
 
 test('the line under the cover is the full title: artists, featured artists, title and version', () => {

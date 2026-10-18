@@ -106,7 +106,7 @@ Song keys added or changed (every other key unchanged):
 | `version` | object, absent when none | `{kind, name, by, year, of}`; key absent means no version (never `null`, never `{}`) |
 | `version.kind` | enum | `remix, live, acoustic, extended, instrumental, remaster, edit, cover, other` |
 | `version.name` | string or null | credited text exactly as written |
-| `version.by` | list of string | remixed / mixed by; `[]` when unknown |
+| `version.by` | list of string | remix by; `[]` when unknown |
 | `version.year` | int or null | year of the version (replaces `remix_year`) |
 | `version.of` | string or null | original artist; only when `kind` is `cover` (422 otherwise on write) |
 | `raw` | object | immutable source strings, see below |
@@ -297,7 +297,7 @@ One owner per file. A builder never edits a file owned by another; shared behavi
 
 | File | Content |
 | --- | --- |
-| `web/js/song-form.js` | fields Title, Artists (pills), Featuring (pills), Version (select), Version name, Version year, Remixed / mixed by (pills), Cover of (shown only for Cover), First released, live preview line (`credits.displayLine`), `values()` returns structure keys only |
+| `web/js/song-form.js` | fields Title, Artists (pills), Featuring (pills), Version (select), Version name, Remix year, Remix by (pills), Cover of (shown only for Cover), First released, live preview line (`credits.displayLine`), `values()` returns structure keys only |
 | `web/js/song-form-credits.js` (new) | the credits block, the "Suggested split" button and panel (Apply / Dismiss per suggestion), the by-versus-name warning |
 | `web/js/credits-split.js` (new) | web twin of `credits_split.suggest` (pure) |
 | `web/js/song-payload.js` | `addBody`, `patchBody` send `artists, featured, released, version`, no legacy key; `yearError` over `released` and `version.year`; `metadataBody` sends `artist` = display artist string, plus `version_kind` |
@@ -328,7 +328,7 @@ One owner per file. A builder never edits a file owned by another; shared behavi
 - `artistLine = joinNames(artists) [+ " feat. " + joinNames(featured)]`.
 - Version label `L`: tokens of `version.name` (pills of ADD-071, rejoined with `, `, each hidden when its normalised text is already inside the title, the rule `display-title.js` has today), else the lowercase `kind` word unless `other`. A migrated remix therefore renders exactly as before.
 - `titleLine = title [+ " (" + L + ")"]`. `displayLine = artistLine + " - " + titleLine` (just `titleLine` without artists). Cover: `Artist B - Title (cover)`, never `Title (cover artist B)`.
-- `detailsLines`: `[{label, value}]` in the order: Version (kind), Version name, Remixed / mixed by, Version year, Cover of (`Cover of Artist A`), First released.
+- `detailsLines`: `[{label, value}]` in the order: Version (kind), Version name, Remix by, Remix year, Cover of (`Cover of Artist A`), First released.
 - Tooltip of the version part: `Name (year)` when `version.year` is an int (replaces `remixTooltip` via `remix_year`).
 - Library row: line 1 `titleNodes` (title span, version span `rmx`), line 2 `artistLine · released` (replaces `trackSub`); tooltip and aria label use `displayLine`.
 - `sortKey(song, "artist")`: casefold `artists[0]`, then `title`; legacy-only uses `artist`. `sortKey(song, "title")`: casefold `title`.
@@ -340,14 +340,14 @@ Artists that were several pills (`A - B` in the old string) now render `A & B`; 
 
 ### 6.2 Form rules
 
-- Pills: Artists, Featuring and Remixed / mixed by keep the ADD-071 token behaviour; the value is the list of `splitTokens` pills; a name that itself contains a spaced separator cannot be one pill (same as today).
+- Pills: Artists, Featuring and Remix by keep the ADD-071 token behaviour; the value is the list of `splitTokens` pills; a name that itself contains a spaced separator cannot be one pill (same as today).
 - Version select empty means no version object is sent (`version: null` on PATCH). Choosing Cover shows Cover of; leaving Cover clears it.
 - Live preview: the display line, under the fields, updated on `input`.
 - "Suggested split" is visible whenever the current Artists, Title or Version name matches a split pattern (`credits_split`), shows `Artists: A | B`, `Featuring: C`, `Version: remix, by Alesso`, each with Apply and Dismiss; nothing changes until Apply; the suggestion is recomputed from the CURRENT field text, not from `raw`.
-- Warning (not blocking) when a name in Remixed / mixed by does not appear in Version name.
-- Version year: auto suggestion from `published_year` (and `version_year` of `/metadata`) exactly as `planRemixYear` does today, now whenever a Version is chosen; the field is visibly marked as a suggestion until the user types.
+- Warning (not blocking) when a name in Remix by does not appear in Version name.
+- Remix year: auto suggestion from `published_year` (and `version_year` of `/metadata`) exactly as `planRemixYear` does today, now whenever a Version is chosen; the field is visibly marked as a suggestion until the user types.
 - First released (AR): comes only from wiki/MusicBrainz/Discogs (`year` of `/preview` and `/metadata`); empty when no source gave one, no suggestion styling, no decade tag; a typed value is never overwritten; `published_year` never reaches this field.
-- Version year: `published_year` is the only fallback and is shown as a marked suggestion; the original's years are never applied to it, nor the version's date to `released`.
+- Remix year: `published_year` is the only fallback and is shown as a marked suggestion; the original's years are never applied to it, nor the version's date to `released`.
 - Edit keeps the old behaviour of not rewriting data on open: values are compared on save; an untouched form sends the same structure back.
 
 ## 7. Test plan and risks
@@ -410,14 +410,14 @@ Builders append dated entries below; never edit an earlier entry.
 1. [metadata-model-decisions-AR.md](metadata-model-decisions-AR.md) is part of this contract: DATA-126 (already written in data-model.md) owns it; server builder ids start at DATA-127.
 2. `released` sources are exactly wikipedia, musicbrainz, discogs, in that order; `released_suggestion.source` is one of those three; no yt-dlp year, no upload year; `/preview` and `/metadata` `year` follow the same chain; `published_year` and `version_year` only ever feed `version.year`.
 3. Version songs: lookups use the base `title` and the original artists (`version.of` for a cover) and may fill `released` and genres, never `musicbrainz_url`, `discogs_url`, `album`.
-4. Server files added to the plan: `genre_lookup.py`, `discogs_lookup.py` year handling (owner server); form rule on First released and Version year as in 6.2.
+4. Server files added to the plan: `genre_lookup.py`, `discogs_lookup.py` year handling (owner server); form rule on First released and Remix year as in 6.2.
 
 ### 2026-10-16 display builder
 
 1. `web/js/credits.js` exports beyond the contract list (additive): `KINDS`, `isStructured(song)` (true when `artists` is an array), `tooltipLine(song)` (structured: `displayLine`; legacy-only: `Title (Remix) - Artist` as before), `compareKeys(a, b)`.
 2. `creditParts(song)` returns `{title, remix, artists, featured, version, structured}`; `remix` is the version label (the old `displayTitle().remix`).
 3. `sortKey(song, key)` returns an array: `[artistKey, titleKey]` for `artist`, `[titleKey]` otherwise; compare with `compareKeys`. `searchText(song, extra = [])` returns the lowercase newline-joined haystack, `extra` carries tag text.
-4. `detailsLines` labels: `Version`, `Version name`, `Remixed / mixed by`, `Version year`, `Cover of` (value is the original artist), `First released`.
+4. `detailsLines` labels: `Version`, `Version name`, `Remix by`, `Remix year`, `Cover of` (value is the original artist), `First released`.
 5. Version label: `version.name` tokens (deduped against the title), else the lowercase kind word (not for `other`, also deduped); `version.by` is never shown in the title line.
 6. Edit dialog head sub shows `displayLine`; the delete text uses `displayLine` only for songs with an `artists` array.
 

@@ -38,7 +38,10 @@ test('cardModel builds title, sub line, grouped tags, BPM, duration and links', 
 test('the card hides the version type and version name lines and keeps the other details', () => {
   const m = cardModel({ ...FULL, mainArtists: ['Zed'], version: { type: 'remix', name: 'MKJ Remix', artists: ['Kav'] } });
   assert.deepEqual(m.details.filter((d) => /^Version/.test(d)), []);
-  assert.ok(m.details.includes('Remixed / mixed by: Kav'));
+  assert.ok(m.details.includes('Remix by: Kav'));
+  const y = cardModel({ ...FULL, mainArtists: ['Zed'], releaseYear: 1985, version: { type: 'remix', name: 'X', artists: ['Kav'], releaseYear: 2023 } });
+  assert.deepEqual(y.details.filter((d) => /^(Remix year|First released)/.test(d)), [], 'years are folded into the Year fact');
+  assert.equal(y.yearFact, '2023 · original 1985');
 });
 
 test('cardModel copes with missing fields', () => {
@@ -202,11 +205,14 @@ test('songs without audio get Download to server, not Download, and no Play when
   dlg.close();
 });
 
-test('card shows a Year fact only for a version with a year, both years when they differ', () => {
+test('card Year fact: version year plus the original when they differ, else one year; none without a version year', () => {
   assert.equal(cardModel({ ...FULL, remix_year: 2024 }, { kind: 'none' }).yearFact, '2024 · original 1999');
   assert.equal(cardModel(FULL, { kind: 'none' }).yearFact, '');
   assert.equal(cardModel({ ...FULL, remix_year: null }, { kind: 'none' }).yearFact, '');
-  assert.equal(cardModel({ ...FULL, remix_year: 2024 }, { kind: 'none' }).sub, 'Zed · 2024', 'sub line shows the version year');
+});
+
+test('the sub line shows the version year', () => {
+  assert.equal(cardModel({ ...FULL, remix_year: 2024 }, { kind: 'none' }).sub, 'Zed · 2024');
 });
 
 test('with a cover the title and the artist line sit inside the cover box; without one they follow as plain text', () => {
@@ -226,14 +232,59 @@ test('with a cover the title and the artist line sit inside the cover box; witho
   dlg.close();
 });
 
-test('the facts column sits beside the cover: country, BPM and length', () => {
+test('country, BPM, length and the credit details share one details block under the title line, in order', () => {
   publish([FULL]);
   openSongCard(FULL);
   const dlg = $('song-card');
-  const top = dlg.querySelector('.card-top');
-  assert.ok(top.querySelector('.card-art') && top.querySelector('.card-side'));
-  const labels = top.querySelectorAll('.side-row .group-name').map((n) => n.textContent);
-  assert.deepEqual(labels, ['Country', 'BPM', 'Length']);
-  assert.ok(!top.contains(dlg.querySelector('.card-tags')));
+  assert.ok(!dlg.querySelector('.card-top') && !dlg.querySelector('.card-side'));
+  const details = dlg.querySelector('.card-details');
+  assert.ok(details);
+  const texts = details.querySelectorAll('.detail').map((n) => n.textContent);
+  assert.ok(texts[0].startsWith('Country:'));
+  assert.ok(details.querySelector('.bpm-badge'));
+  assert.ok(texts.some((t) => t.startsWith('Length: ')));
+  assert.ok(!details.contains(dlg.querySelector('.card-tags')));
+  dlg.close();
+});
+
+const withNavigator = async (nav, run) => {
+  const saved = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+  Object.defineProperty(globalThis, 'navigator', { value: nav, configurable: true, writable: true });
+  try { await run(); } finally { if (saved) Object.defineProperty(globalThis, 'navigator', saved); else delete globalThis.navigator; }
+};
+
+test('Copy title writes exactly the displayed line to the clipboard and toasts', async () => {
+  publish([FULL]);
+  openSongCard(FULL);
+  const dlg = $('song-card');
+  const copy = dlg.querySelector('.card-copy');
+  assert.equal(copy.getAttribute('aria-label'), 'Copy title');
+  const written = [];
+  await withNavigator({ clipboard: { writeText: async (t) => { written.push(t); } } }, async () => {
+    copy.click();
+    await new Promise((r) => setTimeout(r, 0));
+  });
+  assert.deepEqual(written, ['Zed - Alpha (Kav)']);
+  assert.equal($('toast').textContent, 'Title copied');
+  dlg.close();
+});
+
+test('Copy title falls back to a hidden textarea when the clipboard API is missing', async () => {
+  publish([FULL]);
+  openSongCard(FULL);
+  const dlg = $('song-card');
+  const copied = [];
+  const append = document.body.append;
+  const exec = document.execCommand;
+  document.body.append = (n) => { copied.push(n.value); };
+  document.execCommand = () => true;
+  await withNavigator({}, async () => {
+    dlg.querySelector('.card-copy').click();
+    await new Promise((r) => setTimeout(r, 0));
+  });
+  document.body.append = append;
+  document.execCommand = exec;
+  assert.deepEqual(copied, ['Zed - Alpha (Kav)']);
+  assert.equal($('toast').textContent, 'Title copied');
   dlg.close();
 });

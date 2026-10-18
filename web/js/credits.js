@@ -145,8 +145,8 @@ export function detailsLines(song) {
     const add = (label, value) => { if (value) out.push({ label, value }); };
     add('Version', KIND_LABEL(text(v.type).toLowerCase()));
     add('Version name', text(v.name));
-    add('Remixed / mixed by', joinNames(v.artists));
-    add('Version year', Number.isInteger(v.releaseYear) ? String(v.releaseYear) : '');
+    add('Remix by', joinNames(v.artists));
+    add('Remix year', Number.isInteger(v.releaseYear) ? String(v.releaseYear) : '');
     const kind = text(v.type).toLowerCase();
     add(kind === 'mashup' ? 'Mashup of' : 'Cover of', ofNames(v.originalArtists).join(', '));
   }

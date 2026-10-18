@@ -1,7 +1,7 @@
 import { api } from './api.js';
 import { store } from './store.js';
 import { player } from './player.js';
-import { el, fmtTime } from './dom.js';
+import { el, fmtTime, toast } from './dom.js';
 import { hasAudio, sourceLink } from './playable.js';
 import { can } from './guest.js';
 import { autodl, autoDownloadOn } from './autodl.js';
@@ -14,14 +14,14 @@ import { visibleTags, tagGroups, tagLabel } from './tagname.js';
 import { serviceIcons } from './service-icons.js';
 import { storedLinkStates } from './song-links.js';
 import { toggleQueue, playNextInQueue } from './queue-toggle.js';
-import { openShareDialog } from './share-ui.js';
+import { openShareDialog, copyText } from './share-ui.js';
 
 export function cardTags(tags) {
   const counts = visibleTags(tags).map((tag) => ({ tag, count: 1 }));
   return tagGroups(counts).map((g) => ({ key: g.key, name: g.name, tags: g.tags.map((t) => ({ tag: t.tag, label: tagLabel(t.tag) })) }));
 }
 
-const HIDDEN_DETAILS = new Set(['Version', 'Version name']);
+const HIDDEN_DETAILS = new Set(['Version', 'Version name', 'Remix year', 'First released']);
 
 export function cardModel(song) {
   const { title, remix } = creditParts(song);
@@ -40,10 +40,21 @@ export function cardModel(song) {
   };
 }
 
+function fullRow(line) {
+  const copy = el('button', {
+    type: 'button',
+    class: 'link-btn card-copy',
+    title: 'Copy title',
+    'aria-label': 'Copy title',
+    onclick: async () => toast((await copyText(line)) ? 'Title copied' : 'Could not copy the title'),
+  }, 'Copy');
+  return el('div', { class: 'card-full-row' }, el('p', { class: 'card-full muted t-subhead' }, line), copy);
+}
+
 function headBlock(song, m) {
   const title = el('h2', { id: 'song-card-title', class: 't-title' }, titleNodes(song));
   const sub = m.sub ? el('p', { class: 'card-sub t-subhead' }, m.sub) : null;
-  const full = m.full ? el('p', { class: 'card-full muted t-subhead' }, m.full) : null;
+  const full = m.full ? fullRow(m.full) : null;
   if (!song.cover) return [el('div', { class: 'card-head' }, title, sub, full)];
   const img = el('img', { class: 'cover card-cover', alt: '', src: api.coverUrl(song.id, song.cover_v) });
   const art = el('div', { class: 'card-art' }, img, el('div', { class: 'cover-text' }, title, sub));
@@ -89,28 +100,28 @@ function actionRow(song) {
 
 const SIDE_KEYS = ['country'];
 
-function sideBlock(m) {
-  const row = (label, ...vals) => el('div', { class: 'side-row' }, el('span', { class: 'group-name t-caption' }, label), el('span', { class: 'side-val t-caption' }, ...vals));
-  const tagRow = (g) => row(g.name, ...g.tags.map((t) => el('span', { class: 'tag ns t-caption', title: t.tag }, t.label)));
-  return el('div', { class: 'card-side' },
-    ...m.groups.filter((g) => SIDE_KEYS.includes(g.key)).map(tagRow),
-    m.bpm ? row('BPM', el('span', { class: 'bpm-badge', title: 'Beats per minute (estimated)' }, m.bpm, el('small', { 'aria-hidden': 'true' }, 'BPM'))) : null,
-    m.duration ? row('Length', m.duration) : null,
-    m.yearFact ? row('Year', el('span', { class: 'remix-year' }, m.yearFact)) : null);
+function detailsBlock(m) {
+  const tagChip = (t) => el('span', { class: 'tag ns t-caption', title: t.tag }, t.label);
+  const items = [
+    ...m.groups.filter((g) => SIDE_KEYS.includes(g.key)).map((g) => el('span', { class: 'detail' }, `${g.name}: `, ...g.tags.map(tagChip))),
+    m.bpm ? el('span', { class: 'detail' }, el('span', { class: 'bpm-badge', title: 'Beats per minute (estimated)' }, m.bpm, el('small', { 'aria-hidden': 'true' }, 'BPM'))) : null,
+    m.duration ? el('span', { class: 'detail' }, `Length: ${m.duration}`) : null,
+    m.yearFact ? el('span', { class: 'detail' }, `Year: ${m.yearFact}`) : null,
+    ...m.details.map((d) => el('span', { class: 'detail' }, d)),
+  ].filter(Boolean);
+  return items.length ? el('p', { class: 'facts t-caption card-details' }, ...items) : null;
 }
 
 function paint(dlg, song, close, m) {
   const [art, head] = headBlock(song, m);
-  const side = sideBlock(m);
   const rest = m.groups.filter((g) => !SIDE_KEYS.includes(g.key));
   const parts = [
     el('span', { class: 'grab', 'aria-hidden': 'true' }),
     el('div', { class: 'dlg-head card-bar' }, el('span'), el('button', { type: 'button', class: 'link-btn t-headline card-close', onclick: close }, 'Close')),
-    art ? el('div', { class: 'card-top' }, art, side) : null,
+    art,
     head,
-    art ? null : side,
+    detailsBlock(m),
     tagBlock(rest),
-    m.details.length ? el('p', { class: 'facts t-caption card-details' }, ...m.details.map((d) => el('span', {}, d))) : null,
     linkBlock(m.links),
     actionRow(song),
   ];

@@ -21,7 +21,7 @@ test('v2 song is structured by mainArtists; albums[0] and version type/artists/o
   assert.equal(c.versionTooltip(song), 'Alesso Remix (2012)');
   assert.deepEqual(c.detailsLines(song), [
     { label: 'Version', value: 'Remix' }, { label: 'Version name', value: 'Alesso Remix' },
-    { label: 'Remixed / mixed by', value: 'Alesso' }, { label: 'Version year', value: '2012' }, { label: 'First released', value: '2004' },
+    { label: 'Remix by', value: 'Alesso' }, { label: 'Remix year', value: '2012' }, { label: 'First released', value: '2004' },
   ]);
   const cover = { title: 'S', mainArtists: ['B'], version: { type: 'cover', originalArtists: ['A'] } };
   assert.deepEqual(c.detailsLines(cover), [{ label: 'Version', value: 'Cover' }, { label: 'Cover of', value: 'A' }]);

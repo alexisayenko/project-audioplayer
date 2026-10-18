@@ -417,12 +417,6 @@ dialog.sheet { border-radius: var(--radius-tray) var(--radius-tray) 0 0; margin:
 .sheet .btn { width: 100%; }
 .pills, .chips, .fill-tags { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .card-dlg .card-cover { display: block; width: 100%; max-width: var(--cover-max); height: auto; aspect-ratio: 1 / 1; max-height: var(--cover-max); object-fit: cover; margin: 0 auto var(--space-4); border-radius: var(--radius-card); box-shadow: var(--shadow-card); }
-.card-dlg .card-top { display: grid; grid-template-columns: minmax(0, 11fr) minmax(0, 12fr); gap: var(--space-4); align-items: start; margin-bottom: var(--space-4); }
-.card-dlg .card-top .card-art { margin: 0; max-width: none; }
-.card-dlg .card-side { display: grid; gap: var(--space-3); min-width: 0; }
-.card-dlg .side-row { display: grid; gap: var(--space-1); justify-items: start; min-width: 0; color: var(--ink-muted); }
-.card-dlg .side-row .group-name { min-width: 0; }
-.card-dlg .side-val { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; overflow-wrap: anywhere; }
 .card-dlg .card-art { position: relative; width: 100%; max-width: var(--cover-max); aspect-ratio: 1 / 1; margin: 0 auto var(--space-4); border-radius: var(--radius-card); overflow: hidden; box-shadow: var(--shadow-card); }
 .card-dlg .card-art .card-cover { position: absolute; inset: 0; width: 100%; height: 100%; max-height: none; margin: 0; border-radius: 0; box-shadow: none; }
 .card-dlg .card-art .card-cover:not([src]) { display: none; }
@@ -433,6 +427,9 @@ dialog.sheet { border-radius: var(--radius-tray) var(--radius-tray) 0 0; margin:
 .card-dlg .card-art.noart .cover-text { position: static; padding: 0; background: none; color: var(--ink); }
 .card-dlg .card-head { margin-bottom: var(--space-3); }
 .card-dlg .card-head p { margin: 0; overflow-wrap: anywhere; }
+.card-dlg .card-full-row { display: flex; align-items: center; gap: var(--space-2); }
+.card-dlg .card-full-row .card-full { flex: 1 1 auto; min-width: 0; }
+.card-dlg .card-copy { flex: none; }
 .card-dlg .card-head .rmx { font-weight: 400; color: var(--ink-muted); }
 .card-dlg .card-tags { margin-bottom: var(--space-3); }
 .card-dlg .facts { align-items: center; margin: var(--space-3) 0; }

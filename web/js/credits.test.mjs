@@ -81,7 +81,7 @@ test('subtitle, released year and details order', () => {
   assert.equal(c.releasedYear({ mainArtists: [], releaseYear: null, year: 2001 }), 2001);
   assert.equal(c.releasedYear({ mainArtists: [], releaseYear: null }), null);
   assert.deepEqual(c.detailsLines({ ...D, releaseYear: 2009 }).map((d) => d.label),
-    ['Version', 'Version name', 'Remixed / mixed by', 'Version year', 'First released']);
+    ['Version', 'Version name', 'Remix by', 'Remix year', 'First released']);
   assert.deepEqual(c.detailsLines(A), []);
 });
 
@@ -175,5 +175,5 @@ test('a remaster with a version year gets the year before its label in the title
   assert.equal(nodes[2].textContent, '(2007 remaster)');
   assert.equal(nodes[2].title, '');
   assert.equal(c.versionTooltip(R({})), '2007 remaster');
-  assert.deepEqual(c.detailsLines(R({})).filter((l) => l.label === 'Version year').map((l) => l.value), ['2007']);
+  assert.deepEqual(c.detailsLines(R({})).filter((l) => l.label === 'Remix year').map((l) => l.value), ['2007']);
 });

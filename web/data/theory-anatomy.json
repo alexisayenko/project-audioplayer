@@ -52,7 +52,7 @@
     {
       "id": "version.releaseYear",
       "path": "version.releaseYear",
-      "label": "Version year",
+      "label": "Remix year",
       "tone": "version",
       "description": "The year of the version itself, such as the year of a remaster."
     },

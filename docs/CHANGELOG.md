@@ -9,6 +9,12 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 - Server and web: the playlist import reads details 10 videos per request by 2 workers with short random pauses and stops when YouTube rate-limits; videos YouTube lists without a title or refuses to serve show as Unavailable rows; without a YouTube artist field a title "Artist - Title" gives the artist (API-161, ADD-154, ADD-158).
 - Server: yt-dlp is installed as `yt-dlp[default]` (brings `yt-dlp-ejs`); the server needs deno for YouTube challenges ([deploy](tech/deploy.md#deno)).
 
+## 2026-10-18 (song card and labels)
+
+- Web: the credits label "Remixed / mixed by" is now "Remix by" and "Version year" is now "Remix year" in the song form, pill menus and the Theory page; data keys are unchanged.
+- Web: the song card has no facts column beside the cover; Country, BPM, Length, one Year fact ("2023 · original 1985") and Remix by sit in one details block under the full-title line, and the separate Remix year and First released lines are gone from the card.
+- Web: the song card has a "Copy" button next to the full-title line that copies it to the clipboard and shows "Title copied".
+
 ## 2026-10-18 (remaster year)
 
 - Web: a remaster with its own year shows it in the title, "Doctor Doctor (2007 remaster)", and the year line keeps the original year only, "UFO · 1979"; Library sort by Year and Song stats use the original year (LIB-150).
