@@ -102,7 +102,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + var(--dock-b) + var(--m
 @media (min-width: 720px) {
   .side, .stage, .mini { transition: width var(--dur-base) var(--ease-io), margin-left var(--dur-base) var(--ease-io), left var(--dur-base) var(--ease-io), max-width var(--dur-base) var(--ease-io); }
   .brand, #nav a, .server, .build-line { overflow: hidden; }
-  .side-toggle { display: grid; place-items: center; align-self: flex-end; width: var(--control-sm); height: var(--control-sm); flex: none; padding: 0; border: var(--stroke-hairline) solid var(--line); border-radius: var(--radius-pill); background-color: var(--surface); color: var(--ink-muted); margin-block: calc((var(--hit) - var(--control-sm)) / 2); }
+  .side-toggle { display: grid; place-items: center; align-self: flex-end; width: var(--control-sm); height: var(--control-sm); flex: none; padding: 0; border: var(--stroke-hairline) solid var(--line); border-radius: var(--radius-sm); background-color: var(--surface); color: var(--ink-muted); margin-block: calc((var(--hit) - var(--control-sm)) / 2); }
   .brand { order: -1; }
   body:not(.side-collapsed) .side-toggle { margin-right: calc(-1 * (var(--space-4) + var(--stroke-hairline) / 2 + var(--control-sm) / 2)); }
   .side-toggle svg { width: var(--icon-action); height: var(--icon-action); transition: transform var(--dur-base) var(--ease-io); }
