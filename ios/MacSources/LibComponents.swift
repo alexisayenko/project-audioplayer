@@ -178,6 +178,11 @@ struct LibLitButtonStyle: ButtonStyle {
     }
 }
 
+func buttonOpacity(enabled: Bool, pressed: Bool, pressedValue: Double) -> Double {
+    if !enabled { return 0.4 }
+    return pressed ? pressedValue : 1
+}
+
 struct LibOutlineButtonStyle: ButtonStyle {
     var danger = false
     @Environment(\.isEnabled) private var enabled
@@ -187,7 +192,7 @@ struct LibOutlineButtonStyle: ButtonStyle {
             .foregroundStyle(danger ? DS.Color.powerText : DS.Color.accentInk)
             .padding(.horizontal, DS.Space.space4).frame(minHeight: 36)
             .overlay(Capsule().stroke(danger ? DS.Color.power : DS.Color.accentInk, lineWidth: 1.5))
-            .opacity(enabled ? (configuration.isPressed ? 0.7 : 1) : 0.4)
+            .opacity(buttonOpacity(enabled: enabled, pressed: configuration.isPressed, pressedValue: 0.7))
             .contentShape(Capsule())
     }
 }
@@ -202,7 +207,7 @@ struct LibRoundButtonStyle: ButtonStyle {
             .foregroundStyle(on ? DS.Color.onAccent : DS.Color.accentInk)
             .frame(width: 36, height: 36)
             .background(Circle().fill(on ? DS.Color.accent : DS.Color.surfaceSunken))
-            .opacity(enabled ? (configuration.isPressed ? 0.7 : 1) : 0.4)
+            .opacity(buttonOpacity(enabled: enabled, pressed: configuration.isPressed, pressedValue: 0.7))
             .contentShape(Circle())
     }
 }

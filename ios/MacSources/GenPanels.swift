@@ -19,7 +19,7 @@ struct GenToolButtonStyle: ButtonStyle {
             .padding(.horizontal, DS.Space.space3).frame(minHeight: 28)
             .background(Capsule().fill(on ? DS.Color.accentTint : DS.Color.surfaceSunken))
             .overlay { if on { Capsule().strokeBorder(DS.Color.accentInk, lineWidth: DS.Stroke.strokeHairline) } }
-            .opacity(enabled ? (configuration.isPressed ? 0.7 : 1) : 0.4)
+            .opacity(buttonOpacity(enabled: enabled, pressed: configuration.isPressed, pressedValue: 0.7))
             .contentShape(Capsule())
     }
 }
@@ -34,7 +34,7 @@ struct GenIconButtonStyle: ButtonStyle {
             .foregroundStyle(key ? DS.Color.ink : DS.Color.inkMuted)
             .frame(width: 30, height: 30)
             .background(RoundedRectangle(cornerRadius: DS.Radius.radiusSm, style: .continuous).fill(key ? DS.Color.surfaceKey : Color.clear))
-            .opacity(enabled ? (configuration.isPressed ? 0.6 : 1) : 0.4)
+            .opacity(buttonOpacity(enabled: enabled, pressed: configuration.isPressed, pressedValue: 0.6))
             .contentShape(Rectangle())
     }
 }

@@ -42,10 +42,8 @@ final class MacVisualizer: ObservableObject {
     var available: Bool { if case .unavailable = status { return false }; return true }
 
     var tooltip: String {
-        switch status {
-        case .unavailable(let why): return "Visualizer (V): unavailable. \(why)"
-        default: return "Visualizer (V)"
-        }
+        if case .unavailable(let why) = status { return "Visualizer (V): unavailable. \(why)" }
+        return "Visualizer (V)"
     }
 
     func install(player: PlayerService) {

@@ -316,8 +316,10 @@ struct StatIndex {
     func near(x: Double, y: Double, r: Double, ok: (StatItem) -> Bool) -> Int? {
         var best: Int?
         var bestD = r * r
-        let x0 = Int(((x - r) / cell).rounded(.down)), x1 = Int(((x + r) / cell).rounded(.down))
-        let y0 = Int(((y - r) / cell).rounded(.down)), y1 = Int(((y + r) / cell).rounded(.down))
+        let x0 = Int(((x - r) / cell).rounded(.down))
+        let x1 = Int(((x + r) / cell).rounded(.down))
+        let y0 = Int(((y - r) / cell).rounded(.down))
+        let y1 = Int(((y + r) / cell).rounded(.down))
         guard x0 <= x1, y0 <= y1 else { return nil }
         for cx in x0...x1 {
             for cy in y0...y1 {
@@ -333,7 +335,10 @@ struct StatIndex {
 
 enum StatNav {
     static func inRect(_ items: [StatItem], _ a: CGPoint, _ b: CGPoint, ok: (StatItem) -> Bool) -> [Int] {
-        let x0 = min(a.x, b.x), x1 = max(a.x, b.x), y0 = min(a.y, b.y), y1 = max(a.y, b.y)
+        let x0 = min(a.x, b.x)
+        let x1 = max(a.x, b.x)
+        let y0 = min(a.y, b.y)
+        let y1 = max(a.y, b.y)
         return items.indices.filter { i in
             let it = items[i]
             return ok(it) && it.px >= x0 && it.px <= x1 && it.py >= y0 && it.py <= y1
@@ -346,7 +351,8 @@ enum StatNav {
         var best = from
         var bestScore = Double.infinity
         for i in items.indices where i != from && ok(items[i]) {
-            let dx = items[i].px - o.px, dy = items[i].py - o.py
+            let dx = items[i].px - o.px
+            let dy = items[i].py - o.py
             let along = dx * dir.0 + dy * dir.1
             if along <= 0 { continue }
             let across = abs(dx * dir.1 - dy * dir.0)

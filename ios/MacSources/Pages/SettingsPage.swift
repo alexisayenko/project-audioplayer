@@ -53,11 +53,21 @@ struct SettingsPage: View {
 
     private var divider: some View { Rectangle().fill(DS.Color.line).frame(height: 1) }
 
+    private var accountDotColor: Color {
+        if auth.expired || server.forbidden || server.unauthorized { return DS.Color.power }
+        return server.reachable == true ? DS.Color.ok : DS.Color.inkFaint
+    }
+
+    private var serverDotColor: Color {
+        if server.reachable == true { return DS.Color.ok }
+        return server.reachable == false ? DS.Color.power : DS.Color.inkFaint
+    }
+
     private var accountCard: some View {
         LibCard(title: "Account") {
             if let session = auth.session {
                 HStack(spacing: DS.Space.space3) {
-                    Circle().fill(auth.expired || server.forbidden || server.unauthorized ? DS.Color.power : server.reachable == true ? DS.Color.ok : DS.Color.inkFaint)
+                    Circle().fill(accountDotColor)
                         .frame(width: 10, height: 10)
                     VStack(alignment: .leading, spacing: 2) {
                         (Text("Signed in as ") + Text(session.email ?? "your account").bold()).font(DS.Font.body).foregroundStyle(DS.Color.ink)
@@ -129,7 +139,7 @@ struct SettingsPage: View {
             divider
             row("Server") {
                 HStack(spacing: DS.Space.space2) {
-                    Circle().fill(server.reachable == true ? DS.Color.ok : server.reachable == false ? DS.Color.power : DS.Color.inkFaint)
+                    Circle().fill(serverDotColor)
                         .frame(width: 8, height: 8)
                     Text(serverStatus).font(DS.Font.subhead).foregroundStyle(DS.Color.inkMuted)
                     if server.checking { ProgressView().controlSize(.small) }

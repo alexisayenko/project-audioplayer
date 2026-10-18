@@ -200,13 +200,18 @@ private struct ThyExampleRow: View {
     let action: () -> Void
     @State private var hover = false
 
+    private var fill: Color {
+        if on { return DS.Color.accentTint }
+        return hover ? DS.Color.surfaceKey : Color.clear
+    }
+
     var body: some View {
         Button(action: action) {
             Text(title).font(DS.Font.body).foregroundStyle(on ? DS.Color.ink : DS.Color.inkMuted)
                 .multilineTextAlignment(.leading)
                 .padding(.horizontal, DS.Space.space3).padding(.vertical, DS.Space.space2)
                 .frame(maxWidth: .infinity, minHeight: 36, alignment: .leading)
-                .background(RoundedRectangle(cornerRadius: DS.Radius.radiusSm, style: .continuous).fill(on ? DS.Color.accentTint : (hover ? DS.Color.surfaceKey : Color.clear)))
+                .background(RoundedRectangle(cornerRadius: DS.Radius.radiusSm, style: .continuous).fill(fill))
                 .overlay(alignment: .leading) {
                     if on { UnevenRoundedRectangle(topLeadingRadius: DS.Radius.radiusSm, bottomLeadingRadius: DS.Radius.radiusSm).fill(rule).frame(width: DS.Stroke.strokeFocus) }
                 }

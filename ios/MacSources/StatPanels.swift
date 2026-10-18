@@ -4,13 +4,18 @@ struct StatPillStyle: ButtonStyle {
     var on = false
     @Environment(\.isEnabled) private var enabled
 
+    private func opacity(pressed: Bool) -> Double {
+        if !enabled { return 0.4 }
+        return pressed ? 0.7 : 1
+    }
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label.font(DS.Font.caption.weight(on ? .semibold : .regular))
             .foregroundStyle(on ? DS.Color.accentInk : DS.Color.ink)
             .padding(.horizontal, DS.Space.space3).frame(minHeight: 28)
             .background(Capsule().fill(on ? DS.Color.accentTint : DS.Color.surfaceSunken))
             .overlay { if on { Capsule().strokeBorder(DS.Color.accentInk, lineWidth: DS.Stroke.strokeHairline) } }
-            .opacity(enabled ? (configuration.isPressed ? 0.7 : 1) : 0.4)
+            .opacity(opacity(pressed: configuration.isPressed))
             .contentShape(Capsule())
     }
 }
@@ -18,12 +23,17 @@ struct StatPillStyle: ButtonStyle {
 struct StatActStyle: ButtonStyle {
     @Environment(\.isEnabled) private var enabled
 
+    private func opacity(pressed: Bool) -> Double {
+        if !enabled { return 0.4 }
+        return pressed ? 0.7 : 1
+    }
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label.font(DS.Font.caption.weight(.semibold))
             .foregroundStyle(DS.Color.accentInk)
             .padding(.horizontal, DS.Space.space3).frame(minHeight: 36)
             .background(Capsule().fill(DS.Color.accentTint))
-            .opacity(enabled ? (configuration.isPressed ? 0.7 : 1) : 0.4)
+            .opacity(opacity(pressed: configuration.isPressed))
             .contentShape(Capsule())
     }
 }

@@ -49,7 +49,12 @@ final class StatChartModel: ObservableObject {
     private var stale = true
     private var drag: (start: CGPoint, last: CGPoint, pan: Bool, moved: Bool)?
 
-    struct Plot { var x0, x1, y0, y1: Double }
+    struct Plot {
+        var x0: Double
+        var x1: Double
+        var y0: Double
+        var y1: Double
+    }
 
     var plot: Plot {
         let y0 = max(Self.margin.t, insetTop)
@@ -215,7 +220,13 @@ final class StatChartModel: ObservableObject {
             clearSelection()
             return true
         case 123, 124, 125, 126:
-            let dir: (Double, Double) = code == 123 ? (-1, 0) : code == 124 ? (1, 0) : code == 125 ? (0, 1) : (0, -1)
+            let dir: (Double, Double)
+            switch code {
+            case 123: dir = (-1, 0)
+            case 124: dir = (1, 0)
+            case 125: dir = (0, 1)
+            default: dir = (0, -1)
+            }
             let its = layoutItems()
             let next = overlay.focus.map { StatNav.neighbour(its, from: $0, dir: dir, ok: isVisible) } ?? StatNav.first(its, ok: isVisible)
             focus(next)
@@ -332,14 +343,14 @@ struct StatInput: NSViewRepresentable {
     let model: StatChartModel
     let label: String
 
-    func makeNSView(context: Context) -> StatInputView {
+    func makeNSView(context _: Context) -> StatInputView {
         let v = StatInputView()
         v.model = model
         v.setAccessibilityRole(.image)
         return v
     }
 
-    func updateNSView(_ v: StatInputView, context: Context) {
+    func updateNSView(_ v: StatInputView, context _: Context) {
         v.model = model
         v.setAccessibilityLabel(label)
     }
@@ -386,16 +397,20 @@ final class StatInputView: NSView {
         run { $0.pointerDown(p, pan: e.modifierFlags.contains(.shift)) }
     }
 
-    override func mouseDragged(with e: NSEvent) { let p = pos(e); run { $0.pointerDragged(p) }; cursor() }
-    override func mouseUp(with e: NSEvent) { let p = pos(e); run { $0.pointerUp(p) }; cursor() }
-    override func rightMouseDown(with e: NSEvent) { window?.makeFirstResponder(self); let p = pos(e); run { $0.pointerDown(p, pan: true) } }
-    override func rightMouseDragged(with e: NSEvent) { let p = pos(e); run { $0.pointerDragged(p) }; cursor() }
-    override func rightMouseUp(with e: NSEvent) { let p = pos(e); run { $0.pointerUp(p) }; cursor() }
-    override func otherMouseDown(with e: NSEvent) { window?.makeFirstResponder(self); let p = pos(e); run { $0.pointerDown(p, pan: true) } }
-    override func otherMouseDragged(with e: NSEvent) { let p = pos(e); run { $0.pointerDragged(p) }; cursor() }
-    override func otherMouseUp(with e: NSEvent) { let p = pos(e); run { $0.pointerUp(p) }; cursor() }
+    private func panDown(_ e: NSEvent) { window?.makeFirstResponder(self); let p = pos(e); run { $0.pointerDown(p, pan: true) } }
+    private func dragged(_ e: NSEvent) { let p = pos(e); run { $0.pointerDragged(p) }; cursor() }
+    private func released(_ e: NSEvent) { let p = pos(e); run { $0.pointerUp(p) }; cursor() }
+
+    override func mouseDragged(with e: NSEvent) { dragged(e) }
+    override func mouseUp(with e: NSEvent) { released(e) }
+    override func rightMouseDown(with e: NSEvent) { panDown(e) }
+    override func rightMouseDragged(with e: NSEvent) { dragged(e) }
+    override func rightMouseUp(with e: NSEvent) { released(e) }
+    override func otherMouseDown(with e: NSEvent) { panDown(e) }
+    override func otherMouseDragged(with e: NSEvent) { dragged(e) }
+    override func otherMouseUp(with e: NSEvent) { released(e) }
     override func mouseMoved(with e: NSEvent) { let p = pos(e); run { $0.hover(p) }; cursor() }
-    override func mouseExited(with e: NSEvent) { run { if $0.overlay.hover != nil { $0.overlay.hover = nil } } }
+    override func mouseExited(with _: NSEvent) { run { if $0.overlay.hover != nil { $0.overlay.hover = nil } } }
 
     override func scrollWheel(with e: NSEvent) {
         let dy = -e.scrollingDeltaY * (e.hasPreciseScrollingDeltas ? 1 : 10)

@@ -85,7 +85,8 @@ final class VizTapContext {
     deinit { vDSP_destroy_fftsetup(setup) }
 
     private func configureBands() {
-        let lo = 30.0, hi = min(16000.0, sampleRate / 2 - 100)
+        let lo = 30.0
+        let hi = min(16000.0, sampleRate / 2 - 100)
         let binWidth = sampleRate / Double(Self.fftSize)
         let top = Self.fftSize / 2 - 1
         for k in 0..<vizBandCount {
@@ -140,11 +141,7 @@ final class VizTapContext {
         re.withUnsafeMutableBufferPointer { rp in
             im.withUnsafeMutableBufferPointer { ip in
                 var split = DSPSplitComplex(realp: rp.baseAddress!, imagp: ip.baseAddress!)
-                windowed.withUnsafeBufferPointer { w in
-                    w.baseAddress!.withMemoryRebound(to: DSPComplex.self, capacity: n / 2) {
-                        vDSP_ctoz($0, 2, &split, 1, vDSP_Length(n / 2))
-                    }
-                }
+                Self.pack(windowed, into: &split, count: n)
                 vDSP_fft_zrip(setup, &split, 1, Self.log2n, FFTDirection(FFT_FORWARD))
                 vDSP_zvabs(&split, 1, &mag, 1, vDSP_Length(n / 2))
             }
@@ -158,6 +155,14 @@ final class VizTapContext {
             out[k] = min(max((db + 80) / 70, 0), 1)
         }
         out.withUnsafeBufferPointer { levels.publish(token: token, bands: $0) }
+    }
+
+    private static func pack(_ input: [Float], into split: inout DSPSplitComplex, count n: Int) {
+        input.withUnsafeBufferPointer { w in
+            w.baseAddress!.withMemoryRebound(to: DSPComplex.self, capacity: n / 2) {
+                vDSP_ctoz($0, 2, &split, 1, vDSP_Length(n / 2))
+            }
+        }
     }
 
     @inline(__always)
@@ -179,7 +184,7 @@ private let tapPrepare: MTAudioProcessingTapPrepareCallback = { tap, _, format i
     Unmanaged<VizTapContext>.fromOpaque(MTAudioProcessingTapGetStorage(tap)).takeUnretainedValue().prepare(format.pointee)
 }
 
-private let tapUnprepare: MTAudioProcessingTapUnprepareCallback = { _ in }
+private let tapUnprepare: MTAudioProcessingTapUnprepareCallback = { _ in /* no per-tap state to release */ }
 
 private let tapProcess: MTAudioProcessingTapProcessCallback = { tap, frames, _, list, framesOut, flagsOut in
     guard MTAudioProcessingTapGetSourceAudio(tap, frames, list, flagsOut, nil, framesOut) == noErr else { return }

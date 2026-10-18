@@ -36,7 +36,8 @@ struct LibraryPage: View {
         switch ui.sort {
         case .added:
             list.sort {
-                let a = $0.addedAt ?? .distantPast, b = $1.addedAt ?? .distantPast
+                let a = $0.addedAt ?? .distantPast
+                let b = $1.addedAt ?? .distantPast
                 return a == b ? order[$0.id, default: 0] < order[$1.id, default: 0] : a > b
             }
         case .title: list.sort { compare($0.title, $1.title) == .orderedAscending }
@@ -374,7 +375,9 @@ struct LibColumns {
 
     init(width: CGFloat) {
         genres = width >= 900
-        track = width >= 1100 ? 300 : width >= 900 ? 240 : max(200, width - 60 - 64 - 32 - 28 - 4 * DS.Space.space3 - 2 * DS.Space.space3)
+        if width >= 1100 { track = 300 }
+        else if width >= 900 { track = 240 }
+        else { track = max(200, width - 60 - 64 - 32 - 28 - 4 * DS.Space.space3 - 2 * DS.Space.space3) }
     }
 }
 
@@ -440,6 +443,11 @@ struct LibRowView: View {
         .accessibilityElement(children: .contain)
     }
 
+    private var coverLabel: String {
+        if !hasAudio { return "Download \(track.title)" }
+        return playingNow ? "Pause \(track.title)" : "Play \(track.title)"
+    }
+
     private var coverButton: some View {
         Button { cb.coverTap(track) } label: {
             LibCover(source: track.thumbnail)
@@ -454,7 +462,7 @@ struct LibRowView: View {
         }
         .buttonStyle(.plain)
         .onHover { hover = $0 }
-        .accessibilityLabel(!hasAudio ? "Download \(track.title)" : playingNow ? "Pause \(track.title)" : "Play \(track.title)")
+        .accessibilityLabel(coverLabel)
     }
 
     private var trackColumn: some View {

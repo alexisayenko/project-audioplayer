@@ -155,7 +155,8 @@ final class GenModel: ObservableObject {
             if Task.isCancelled { return }
             if !failed, let wire, !(wire.nodes ?? []).isEmpty {
                 let pending = (wire.pending ?? false) && polls < 24
-                let text = (wire.ontology ?? false) ? (pending ? "Resolving genre families..." : "") : "Genre data unavailable - showing your tags only"
+                var text = "Genre data unavailable - showing your tags only"
+                if wire.ontology ?? false { text = pending ? "Resolving genre families..." : "" }
                 apply(GenGraph(wire: wire), text)
                 if pending {
                     polls += 1

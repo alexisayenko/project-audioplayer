@@ -472,7 +472,8 @@ final class PlayerService: ObservableObject {
 
     private func updateNowPlaying() {
         #if os(macOS)
-        MPNowPlayingInfoCenter.default().playbackState = current == nil ? .stopped : (isPlaying ? .playing : .paused)
+        if current == nil { MPNowPlayingInfoCenter.default().playbackState = .stopped }
+        else { MPNowPlayingInfoCenter.default().playbackState = isPlaying ? .playing : .paused }
         #endif
         guard let track = current else {
             MPNowPlayingInfoCenter.default().nowPlayingInfo = nil

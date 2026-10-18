@@ -1,21 +1,40 @@
 import AppKit
 import SwiftUI
 
-struct GenTransform { var k = 1.0, x = 0.0, y = 0.0 }
-struct GenInsets { var t = 56.0, r = 0.0, b = 16.0, l = 16.0 }
+struct GenTransform {
+    var k = 1.0
+    var x = 0.0
+    var y = 0.0
+}
+struct GenInsets {
+    var t = 56.0
+    var r = 0.0
+    var b = 16.0
+    var l = 16.0
+}
 
-private struct GenBox { var x0: Double, y0: Double, x1: Double, y1: Double }
+private struct GenBox {
+    var x0: Double
+    var y0: Double
+    var x1: Double
+    var y1: Double
+}
 
 private struct GenLabelCand {
     var id: String
-    var x: Double, y: Double, w: Double, h: Double
+    var x: Double
+    var y: Double
+    var w: Double
+    var h: Double
     var force: Bool
 }
 
 /// Layout, hit-testing and drawing of the genre graph: the port of `web/js/genre-graph.js` and `genre-view.js`.
 @MainActor
 final class GenEngine {
-    static let minK = 0.15, maxK = 6.0, barGap = 8.0
+    static let minK = 0.15
+    static let maxK = 6.0
+    static let barGap = 8.0
 
     private(set) var size = CGSize(width: 1, height: 1)
     private(set) var tf = GenTransform()
@@ -62,7 +81,9 @@ final class GenEngine {
         let (wx, wy) = toWorld(sx, sy)
         let slack = 3 / tf.k
         for n in bodies.reversed() where visible(n) {
-            let dx = n.x - wx, dy = n.y - wy, rr = n.r + slack
+            let dx = n.x - wx
+            let dy = n.y - wy
+            let rr = n.r + slack
             if dx * dx + dy * dy <= rr * rr { return n }
         }
         return nil
@@ -78,13 +99,15 @@ final class GenEngine {
     }
 
     private func fitTransform(_ b: GenBox, pad: Double, minK: Double, maxK: Double) -> GenTransform {
-        let W = size.width, H = size.height
-        let aw = max(1, W - insets.l - insets.r - 2 * pad)
-        let ah = max(1, H - insets.t - insets.b - 2 * pad)
-        let bw = max(b.x1 - b.x0, 40), bh = max(b.y1 - b.y0, 40)
+        let w = size.width
+        let h = size.height
+        let aw = max(1, w - insets.l - insets.r - 2 * pad)
+        let ah = max(1, h - insets.t - insets.b - 2 * pad)
+        let bw = max(b.x1 - b.x0, 40)
+        let bh = max(b.y1 - b.y0, 40)
         let k = min(maxK, max(minK, min(aw / bw, ah / bh)))
-        let cx = insets.l + (W - insets.l - insets.r) / 2
-        let cy = insets.t + (H - insets.t - insets.b) / 2
+        let cx = insets.l + (w - insets.l - insets.r) / 2
+        let cy = insets.t + (h - insets.t - insets.b) / 2
         return GenTransform(k: k, x: cx - (b.x0 + b.x1) / 2 * k, y: cy - (b.y0 + b.y1) / 2 * k)
     }
 
@@ -98,7 +121,8 @@ final class GenEngine {
     func fit() { userMoved = false; fitTo(visibleBodies, animate: false) }
 
     func resize(_ s: CGSize) {
-        let ow = size.width, oh = size.height
+        let ow = size.width
+        let oh = size.height
         size = CGSize(width: max(1, s.width), height: max(1, s.height))
         widths.removeAll()
         let laidOut = s.width > 10 && s.height > 10
@@ -346,22 +370,30 @@ final class GenEngine {
         var near = Set<String>()
         if let focus { for f in focus { near.formUnion(nbr[f] ?? []) } }
         func isOn(_ n: GenBody) -> Bool { focus == nil || focus!.contains(n.id) || near.contains(n.id) || anc[n.id] != nil }
-        let edge = DS.Color.inkMuted, hi = DS.Color.accentInk
+        let edge = DS.Color.inkMuted
+        let hi = DS.Color.accentInk
 
         for l in links where visible(l.s) && visible(l.t) {
             let chain = !l.related && anc[l.t.id] != nil && (anc[l.s.id] != nil || (focus?.contains(l.s.id) ?? false))
             let on = focus == nil || focus!.contains(l.s.id) || focus!.contains(l.t.id) || chain
-            let alpha: Double = chain ? ancAlpha(anc[l.t.id]!, 0.95, 0.45) : (on ? (focus != nil ? 0.95 : 0.5) : 0.06)
+            let alpha: Double
+            if chain { alpha = ancAlpha(anc[l.t.id]!, 0.95, 0.45) }
+            else if !on { alpha = 0.06 }
+            else if focus != nil { alpha = 0.95 }
+            else { alpha = 0.5 }
             let color = (on && focus != nil ? hi : edge).opacity(alpha)
-            let a = screen(l.s), b = screen(l.t)
+            let a = screen(l.s)
+            let b = screen(l.t)
             var p = Path()
             p.move(to: a)
             p.addLine(to: b)
             ctx.stroke(p, with: .color(color), style: StrokeStyle(lineWidth: on && focus != nil ? 1.8 : 1, dash: l.related ? [4, 4] : []))
             let d = hypot(l.t.x - l.s.x, l.t.y - l.s.y)
             if !l.related, k > 0.45, d > l.t.r + 10 / k, d > 0 {
-                let ux = (b.x - a.x) / (d * k), uy = (b.y - a.y) / (d * k)
-                let tipX = b.x - ux * (l.t.r + 1) * k, tipY = b.y - uy * (l.t.r + 1) * k
+                let ux = (b.x - a.x) / (d * k)
+                let uy = (b.y - a.y) / (d * k)
+                let tipX = b.x - ux * (l.t.r + 1) * k
+                let tipY = b.y - uy * (l.t.r + 1) * k
                 let s = 6.0
                 var arrow = Path()
                 arrow.move(to: CGPoint(x: tipX, y: tipY))
@@ -372,13 +404,15 @@ final class GenEngine {
             }
         }
 
-        let halo = DS.Color.surface, ring = DS.Color.accentInk
+        let halo = DS.Color.surface
+        let ring = DS.Color.accentInk
         for n in bodies where visible(n) {
             let alpha: Double
             if !isOn(n) { alpha = 0.16 }
             else if let d = anc[n.id], !near.contains(n.id) { alpha = ancAlpha(d, 1, 0.55) }
             else { alpha = 1 }
-            let c = screen(n), r = n.r * k
+            let c = screen(n)
+            let r = n.r * k
             if c.x < -r - 20 || c.x > size.width + r + 20 || c.y < -r - 20 || c.y > size.height + r + 20 { continue }
             let circle = Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: 2 * r, height: 2 * r))
             if n.mix < 1 {

@@ -15,8 +15,12 @@ struct GenRNG {
 final class GenBody {
     let id: String
     var data: GenNode
-    var x = Double.nan, y = Double.nan, vx = 0.0, vy = 0.0
-    var fx: Double?, fy: Double?
+    var x = Double.nan
+    var y = Double.nan
+    var vx = 0.0
+    var vy = 0.0
+    var fx: Double?
+    var fy: Double?
     var r: Double
     var phase = 0.0
     var fi: Int
@@ -42,8 +46,12 @@ struct GenLink {
 }
 
 private final class GenQuad {
-    let x0: Double, y0: Double, size: Double
-    var mass = 0.0, cx = 0.0, cy = 0.0
+    let x0: Double
+    let y0: Double
+    let size: Double
+    var mass = 0.0
+    var cx = 0.0
+    var cy = 0.0
     var kids: [GenQuad?]?
     var leaf: [(GenBody, Double)]?
 
@@ -93,7 +101,8 @@ final class GenSim {
             deg[t.id]! += 1
         }
         for i in ls.indices {
-            let ds = Double(deg[ls[i].s.id]!), dt = Double(deg[ls[i].t.id]!)
+            let ds = Double(deg[ls[i].s.id]!)
+            let dt = Double(deg[ls[i].t.id]!)
             ls[i].strength = (ls[i].related ? 0.15 : 1) / min(ds, dt)
             ls[i].dist = (ls[i].related ? 1.6 : 1) * linkDistance + ls[i].s.r + ls[i].t.r
             ls[i].bias = ds / (ds + dt)
@@ -130,7 +139,8 @@ final class GenSim {
 
     private func linkForce() {
         for l in links {
-            let s = l.s, t = l.t
+            let s = l.s
+            let t = l.t
             var dx = t.x + t.vx - s.x - s.vx
             var dy = t.y + t.vy - s.y - s.vy
             if dx == 0 { dx = (rng.next() - 0.5) * 1e-4 }
@@ -169,7 +179,8 @@ final class GenSim {
 
     private func leafForce(_ n: GenBody, _ c: GenQuad) {
         for (o, ow) in c.leaf ?? [] where o !== n {
-            var ex = o.x - n.x, ey = o.y - n.y
+            var ex = o.x - n.x
+            var ey = o.y - n.y
             var e2 = ex * ex + ey * ey
             if e2 == 0 { ex = (rng.next() - 0.5) * 1e-3; ey = (rng.next() - 0.5) * 1e-3; e2 = ex * ex + ey * ey }
             if e2 < 25 { e2 = (25 * e2).squareRoot() }
@@ -182,7 +193,8 @@ final class GenSim {
         var stack = [root]
         while let c = stack.popLast() {
             if c.mass == 0 { continue }
-            let dx = c.cx - n.x, dy = c.cy - n.y
+            let dx = c.cx - n.x
+            let dy = c.cy - n.y
             var d2 = dx * dx + dy * dy
             if let kids = c.kids, d2 == 0 || (c.size * c.size) / d2 >= Self.theta2 {
                 for k in kids { if let k { stack.append(k) } }
@@ -197,7 +209,10 @@ final class GenSim {
 
     private func chargeForce() {
         guard !bodies.isEmpty else { return }
-        var x0 = Double.infinity, y0 = Double.infinity, x1 = -Double.infinity, y1 = -Double.infinity
+        var x0 = Double.infinity
+        var y0 = Double.infinity
+        var x1 = -Double.infinity
+        var y1 = -Double.infinity
         for n in bodies { x0 = min(x0, n.x); x1 = max(x1, n.x); y0 = min(y0, n.y); y1 = max(y1, n.y) }
         let root = GenQuad(x0, y0, max(x1 - x0, y1 - y0, 1) + 1)
         for n in bodies { insert(root, n, weight(n)) }
@@ -225,7 +240,8 @@ final class GenSim {
         func key(_ gx: Int, _ gy: Int) -> Int64 { Int64(gx) << 32 ^ Int64(truncatingIfNeeded: gy) & 0xFFFF_FFFF }
         for n in bodies { grid[key(Int((n.x / cell).rounded(.down)), Int((n.y / cell).rounded(.down))), default: []].append(n) }
         for a in bodies {
-            let cx = Int((a.x / cell).rounded(.down)), cy = Int((a.y / cell).rounded(.down))
+            let cx = Int((a.x / cell).rounded(.down))
+            let cy = Int((a.y / cell).rounded(.down))
             for gx in (cx - 1)...(cx + 1) {
                 for gy in (cy - 1)...(cy + 1) {
                     for b in grid[key(gx, gy)] ?? [] where b.id > a.id { collidePair(a, b) }

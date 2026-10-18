@@ -427,7 +427,7 @@ struct MacSongFormSheet: View {
         guard let t = editing else { return }
         form.phase = .saving
         do { try await api.delete(t.id) }
-        catch APIError.http(404, _) {}
+        catch APIError.http(404, _) { /* already gone from the server */ }
         catch { form.message = "Couldn't delete. Check the server and try again."; form.phase = .failed; return }
         library.delete(t.id)
         dismiss()

@@ -139,17 +139,20 @@ struct MacVisualizerView: View {
     }
 
     private static func drawBars(_ ctx: inout GraphicsContext, _ size: CGSize, _ s: VizSmoother, _ colors: [Color], _ line: Color) {
-        let w = size.width, h = size.height
+        let w = size.width
+        let h = size.height
         let total = min(max(Int((w / 4).rounded()), 96), 480) / 2 * 2
         let half = total / 2
         let pitch = w / CGFloat(total)
         let barW = max(pitch * 0.6, 1.5)
         let horizon = (h * 0.58).rounded()
-        let up = h * 0.4, down = h * 0.2
+        let up = h * 0.4
+        let down = h * 0.2
         let gradient = GraphicsContext.Shading.linearGradient(
             Gradient(colors: colors), startPoint: CGPoint(x: 0, y: 0), endPoint: CGPoint(x: w, y: 0))
         if !s.idle {
-            var above = Path(), below = Path()
+            var above = Path()
+            var below = Path()
             for i in 0..<half {
                 let lv = CGFloat(s.level(at: Double(i) / Double(max(half - 1, 1))))
                 let bh = pow(lv, 1.2) * up
@@ -193,7 +196,8 @@ struct MacVisualizerView: View {
                 let lv = CGFloat(s.level(at: m))
                 guard lv > 0.02 else { continue }
                 let a = u * 2 * .pi - .pi / 2
-                let r0 = radius + 6, r1 = r0 + pow(lv, 1.2) * base * 1.1
+                let r0 = radius + 6
+                let r1 = r0 + pow(lv, 1.2) * base * 1.1
                 spokes.move(to: CGPoint(x: center.x + CGFloat(cos(a)) * r0, y: center.y + CGFloat(sin(a)) * r0))
                 spokes.addLine(to: CGPoint(x: center.x + CGFloat(cos(a)) * r1, y: center.y + CGFloat(sin(a)) * r1))
             }

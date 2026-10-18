@@ -53,9 +53,10 @@ struct MacKeyStyle: ButtonStyle {
         let shape = RoundedRectangle(cornerRadius: DS.Radius.radiusKey, style: .continuous)
         let lit: Bool = { if case .lit = kind { return true }; return false }()
         let on: Bool = { if case .toggle(let v) = kind { return v }; return false }()
+        let foreground = on ? DS.Color.accentInk : DS.Color.ink
         return configuration.label
             .font(.system(size: lit ? 17 : 14, weight: .semibold))
-            .foregroundStyle(lit ? DS.Color.onAccent : (on ? DS.Color.accentInk : DS.Color.ink))
+            .foregroundStyle(lit ? DS.Color.onAccent : foreground)
             .frame(width: lit ? 52 : 36, height: 36)
             .background {
                 if lit {
@@ -67,7 +68,7 @@ struct MacKeyStyle: ButtonStyle {
                     shape.fill(DS.Color.surfaceKey).shadow(color: DS.Color.vinyl.opacity(0.2), radius: 2, y: 1)
                 }
             }
-            .opacity(enabled ? (configuration.isPressed ? 0.75 : 1) : 0.4)
+            .opacity(buttonOpacity(enabled: enabled, pressed: configuration.isPressed, pressedValue: 0.75))
             .contentShape(shape)
     }
 }
@@ -82,7 +83,7 @@ struct RoundIconButtonStyle: ButtonStyle {
             .frame(width: DS.Space.hit, height: DS.Space.hit)
             .background(Circle().fill(DS.Color.surfaceKey))
             .overlay(Circle().strokeBorder(DS.Color.line, lineWidth: DS.Stroke.strokeHairline))
-            .opacity(enabled ? (configuration.isPressed ? 0.75 : 1) : 0.4)
+            .opacity(buttonOpacity(enabled: enabled, pressed: configuration.isPressed, pressedValue: 0.75))
             .contentShape(Circle())
     }
 }
@@ -196,11 +197,11 @@ struct MacScrubber: View {
 struct PlaybackFlow: Layout {
     var spacing: CGFloat = DS.Space.space2
 
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache _: inout ()) -> CGSize {
         arrange(subviews, width: proposal.width ?? .infinity).size
     }
 
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+    func placeSubviews(in bounds: CGRect, proposal _: ProposedViewSize, subviews: Subviews, cache _: inout ()) {
         for (i, p) in arrange(subviews, width: bounds.width).points.enumerated() {
             subviews[i].place(at: CGPoint(x: bounds.minX + p.x, y: bounds.minY + p.y), proposal: .unspecified)
         }
@@ -208,7 +209,10 @@ struct PlaybackFlow: Layout {
 
     private func arrange(_ subviews: Subviews, width: CGFloat) -> (points: [CGPoint], size: CGSize) {
         var points: [CGPoint] = []
-        var x: CGFloat = 0, y: CGFloat = 0, row: CGFloat = 0, maxX: CGFloat = 0
+        var x: CGFloat = 0
+        var y: CGFloat = 0
+        var row: CGFloat = 0
+        var maxX: CGFloat = 0
         for s in subviews {
             let sz = s.sizeThatFits(.unspecified)
             if x > 0, x + sz.width > width { x = 0; y += row + spacing; row = 0 }
