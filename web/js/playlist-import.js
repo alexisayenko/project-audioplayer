@@ -203,7 +203,7 @@ export function playlistImport({ link, onBack, onSingle }) {
       if (aborted(ex) || destroyed) return;
       loading.hidden = true;
       const retry = el('button', { class: 'link-btn t-caption', type: 'button' }, 'Try again');
-      retry.addEventListener('click', () => { loading.hidden = false; say(''); open(); });
+      retry.addEventListener('click', () => { loading.hidden = false; say(''); void open(); });
       message.replaceChildren(el('p', { class: 'msg error', role: 'alert' }, ex.message, ' ', retry));
     }
   }

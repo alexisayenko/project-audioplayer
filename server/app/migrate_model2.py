@@ -20,7 +20,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
-from . import countrycodes, credits, credits_v1, deps, library
+from . import countrycodes, credits, credits_v1, deps, library, safepath
 from .jsonio import write_json_atomic
 from .tags import namespace
 
@@ -318,7 +318,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--report", type=Path, help="write the JSON report here")
     parser.add_argument("--backup-dir", type=Path, help="where --apply puts the backup (default: <data repo>/backups-model2/<uid>/)")
     args = parser.parse_args(argv)
-    result = migrate(args.library, apply=args.apply, report_path=args.report, backup_dir=args.backup_dir)
+    try:
+        lib_path = safepath.input_file(args.library)
+        bases = safepath.trusted_bases(lib_path)
+        report = safepath.output_file(args.report, bases) if args.report else None
+        backup_dir = safepath.output_dir(args.backup_dir, bases) if args.backup_dir else None
+    except safepath.UnsafePath as exc:
+        print(f"refused: {exc}", file=sys.stderr)
+        return 2
+    result = migrate(lib_path, apply=args.apply, report_path=report, backup_dir=backup_dir)
     brief = {k: v for k, v in result.items() if k not in ("legacy_diffs", "tag_view_changes", "raw_kept", "review")}
     brief.update(legacy_diffs=len(result.get("legacy_diffs", [])), raw_kept=len(result.get("raw_kept", [])),
                  tag_view_changes=result.get("tag_view_changes", {}).get("songs", 0))

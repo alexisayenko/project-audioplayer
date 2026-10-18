@@ -36,7 +36,7 @@ export const isSceneMode = (id) => id === 'terrain' || id === 'synthwave';
 export const usesFlight = (id) => id === 'terrain';
 
 const GOV_TO_TERRAIN = [2, 1, 1, 0];
-const govToTerrain = (g) => GOV_TO_TERRAIN[Math.min(GOV_TO_TERRAIN.length - 1, Math.max(0, g | 0))];
+const govToTerrain = (g) => GOV_TO_TERRAIN[Math.min(GOV_TO_TERRAIN.length - 1, Math.max(0, Math.trunc(g) || 0))];
 
 export function createModeRenderer(id, canvas2d, canvasGL, deps = {}) {
   const factories = { terrain: deps.createTerrain || defaultCreateTerrain, ...deps.factories };

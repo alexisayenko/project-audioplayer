@@ -416,7 +416,7 @@ function drawReflectedSector(ctx, b, band, y0d, geo, alpha, plan, fx) {
   for (let k = 0; k <= fx.maxLevel; k += 1) {
     for (let e = trailStart[k]; e < trailStart[k + 1]; e += 1) {
       const cell = trailList[e];
-      const i = (cell / rows) | 0;
+      const i = Math.trunc(cell / rows);
       const r = cell - i * rows;
       if (band[i] !== b || r === sectorRow[i]) continue;
       const [ry, rh] = segmentRect(r, y0d, plan);
@@ -453,7 +453,7 @@ function drawSector(ctx, b, band, y0d, geo, alpha, plan, fx, reflected) {
     ctx.beginPath();
     for (let e = trailStart[k]; e < trailStart[k + 1]; e += 1) {
       const cell = trailList[e];
-      const i = (cell / rows) | 0;
+      const i = Math.trunc(cell / rows);
       const r = cell - i * rows;
       if (band[i] !== b || r === sectorRow[i]) continue;
       const [ry, rh] = segmentRect(r, y0d, plan);

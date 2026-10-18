@@ -18,7 +18,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from . import countrycodes, credits, deps, migrate_model2
+from . import countrycodes, credits, deps, migrate_model2, safepath
 from .jsonio import write_json_atomic
 from .tags import namespace
 
@@ -285,7 +285,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--backup-dir", type=Path, help="where --apply puts the backup (default: <data repo>/backups-model3/<uid>/)")
     parser.add_argument("--legacy-backup", type=Path, help="the pre-v2 library.json (default: <data repo>/backups-model2/<uid>/library.json or its oldest numbered copy)")
     args = parser.parse_args(argv)
-    result = migrate(args.library, apply=args.apply, report_path=args.report, backup_dir=args.backup_dir, legacy_backup=args.legacy_backup)
+    try:
+        lib_path = safepath.input_file(args.library)
+        bases = safepath.trusted_bases(lib_path)
+        report = safepath.output_file(args.report, bases) if args.report else None
+        backup_dir = safepath.output_dir(args.backup_dir, bases) if args.backup_dir else None
+        legacy = safepath.input_file(args.legacy_backup) if args.legacy_backup else None
+    except safepath.UnsafePath as exc:
+        print(f"refused: {exc}", file=sys.stderr)
+        return 2
+    result = migrate(lib_path, apply=args.apply, report_path=report, backup_dir=backup_dir, legacy_backup=legacy)
     brief = {k: v for k, v in result.items() if k != "table_and_backup_disagree"}
     if "table_and_backup_disagree" in result:
         brief["table_and_backup_disagree"] = result["table_and_backup_disagree"]["songs"]

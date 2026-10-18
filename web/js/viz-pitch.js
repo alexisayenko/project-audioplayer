@@ -147,7 +147,7 @@ export function createPitchTracker({ lag = PITCH_LAG } = {}) {
   };
 
   const drain = () => {
-    while (fin[given] !== undefined && (fin[given + 1] !== undefined || finished)) {
+    while (given < fin.length && fin[given] !== undefined && (fin[given + 1] !== undefined || finished)) {
       const prev = fin[given - 1];
       const cur = fin[given];
       const next = fin[given + 1];

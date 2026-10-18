@@ -9,8 +9,19 @@ from pathlib import Path
 from typing import Any
 
 
+def _target(path: Path) -> Path:
+    s = os.fspath(path)
+    if chr(0) in s:
+        raise ValueError("NUL byte in path")
+    real = os.path.realpath(s)
+    if os.path.isdir(real):
+        raise IsADirectoryError(real)
+    return Path(real)
+
+
 def write_json_atomic(path: Path, data: Any, indent: int | None = 2, compact: bool = False) -> None:
     """Write `data` to a temp file in the same directory, fsync it and rename it over `path`; a failure leaves `path` untouched."""
+    path = _target(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=".json-", suffix=".tmp")
     try:
@@ -29,6 +40,7 @@ def write_json_atomic(path: Path, data: Any, indent: int | None = 2, compact: bo
 
 def write_bytes_atomic(path: Path, data: bytes) -> None:
     """Write `data` to a temp file in the same directory, fsync it and rename it over `path`; a failure leaves `path` untouched."""
+    path = _target(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=".json-", suffix=".tmp")
     try:
