@@ -12,7 +12,14 @@ test('the sidebar toggle is a small rounded-square surface button straddling the
   assert.match(r, /background-color: var\(--surface\)/);
   assert.match(r, /border: var\(--stroke-hairline\) solid var\(--line\)/);
   assert.match(rule('body:not(.side-collapsed) .side-toggle'), /margin-right: calc\(-1 \* \(var\(--space-4\)/);
-  assert.match(rule('body.side-collapsed .side-toggle'), /margin-right: calc\(-1 \* \(var\(--space-2\)/);
+  assert.match(rule('body.side-collapsed .side-toggle'), /margin-right: calc\(-1 \* \(var\(--space-2\)/);  assert.match(r, /margin-block: 0 calc\(-1 \* var\(--space-1\)\)/);
+});
+
+test('the toggle sits one space-2 below the brand block and one space-1 above the first menu item, in both states', () => {
+  assert.match(css, /^\.side \{[^}]*gap: var\(--space-2\)/m);
+  assert.match(css, /#nav \{[^}]*gap: var\(--space-2\)/);
+  assert.doesNotMatch(rule('body.side-collapsed .side-toggle'), /margin-block/);
+  assert.doesNotMatch(rule('body:not(.side-collapsed) .side-toggle'), /margin-block/);
 });
 
 test('the sidebar itself does not clip, so the toggle can sit half outside it', () => {
