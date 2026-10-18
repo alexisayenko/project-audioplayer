@@ -10,10 +10,15 @@ const WORDS = new Set(('free download dl premiere premiered exclusive hd hq 4k 1
   'music clip with out now soon available buy new full song high quality the').split(' '));
 const STRONG = new Set('free download dl premiere premiered exclusive hd hq 4k 1080p 720p 480p 360p 60fps official lyrics lyric visualizer mv video audio clip'.split(' '));
 const PROMO = ['free download', 'free dl', 'free d/l', 'free dl!', 'out now', 'premiere'];
+const USE_NOTE_WORDS = ['soundtrack', 'ost', 'original soundtrack', 'score'];
+const USE_NOTE_LEADS = ['from', 'theme from', 'music from'];
 
 const norm = (s) => s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
 const NOISE_SET = new Set(NOISE.map(norm));
 const PROMO_SET = new Set(PROMO.map(norm));
+const alt = (list) => list.map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+const USE_NOTE = new RegExp(`(?<![\\p{L}\\p{N}_])(?:${alt(USE_NOTE_WORDS)})(?![\\p{L}\\p{N}_])|^\\s*(?:${alt(USE_NOTE_LEADS)})\\s`, 'iu');
+const TAIL_GROUP = /[([]([^()[\]]*)[)\]]$/;
 const GROUP = /[([{【][^()[\]{}【】]*[)\]}】]/g;
 const SEG = /((?<!\s)\s+(?:\||｜|\/\/|\/|／|-|–|—)\s+)/;
 const TRIM_EXTRA = '|/-–—';
@@ -65,6 +70,21 @@ function stripNoiseGroups(text, removed) {
   return s;
 }
 
+export const isUseNote = (text) => USE_NOTE.test(text);
+
+export function dropUseNotes(text, removed = null) {
+  let s = text;
+  for (;;) {
+    const base = s.trimEnd();
+    const m = TAIL_GROUP.exec(base);
+    if (!m || !isUseNote(m[1])) return s;
+    const head = trimTail(base.slice(0, m.index));
+    if (!head.trim()) return s;
+    if (removed) removed.push(ws(m[0]));
+    s = head;
+  }
+}
+
 function stripTrailingSegments(text, removed) {
   let parts = text.split(SEG);
   while (parts.length >= 3) {
@@ -87,6 +107,7 @@ export function cleanTitleEx(title) {
     if (s !== before) s = trimHead(trimTail(ws(s).trim()));
     const joined = stripTrailingSegments(s, removed);
     if (joined !== s) s = trimTail(joined);
+    s = dropUseNotes(s, removed);
     s = ws(s).trim();
     if (s === before.trim() || s === ws(before).trim()) break;
   }

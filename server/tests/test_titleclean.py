@@ -93,3 +93,10 @@ def test_rewritten_regexes_stay_fast_on_long_runs():
     titles.artist_candidates(big + "x")
     titles._cut_version_tail(" live at" * 5000 + "\nz")
     assert time.perf_counter() - start < 2
+
+
+def test_use_notes_are_reported_as_removed():
+    assert clean_ex("Perfect (Exceeder) [Official Music Video] [Saltburn Soundtrack]") == (
+        "Perfect (Exceeder)",
+        ["[Official Music Video]", "[Saltburn Soundtrack]"],
+    )

@@ -16,6 +16,7 @@ _TAIL_BRACKET = re.compile(r"[(\[]([^()\[\]]*)[)\]]\s*$")
 _WITH_HEAD = re.compile(r"^with\s+(?=\S)", re.I)
 _STOPS = (" - ", " – ", " — ", " | ", " ●● ", " • ", ")", "]", "(", "[")
 _NAME_SEP = re.compile(r"\s*,\s*|\s+(?:&|\+|x|[aA][nN][dD]|[vV][sS]\.?)\s+")
+_VS = re.compile(r"\s+vs\.?\s+", re.I)
 _EDGE = " -|"
 
 
@@ -106,6 +107,11 @@ def _names(text: str) -> list[str]:
     return out
 
 
+def _vs_parts(pill: str) -> list[str]:
+    parts = [p.strip() for p in _VS.split(pill)]
+    return parts if len(parts) > 1 and all(parts) else [pill]
+
+
 def unique(names: list[str], taken: set[str]) -> list[str]:
     """The names whose folded form is not in `taken` yet, each once; `taken` grows."""
     out: list[str] = []
@@ -117,8 +123,8 @@ def unique(names: list[str], taken: set[str]) -> list[str]:
     return out
 
 
-def parse(artist: str | None, title: str | None) -> dict[str, Any]:
-    """`{mainArtists, featuredArtists, withArtists, title, notes, removed}` of a source artist text (pills) and a title already cut of noise and version: a feat keyword inside a pill splits that pill at the keyword only; a trailing "(feat. X)", "[feat. X]", unbracketed " feat. X" or "(with X)" of the title moves out. `removed` lists the exact title groups taken out. Primary names are never split; a name already in a stronger role is dropped (CRD-003); a title that would end up empty stays whole (note `title_empty`)."""
+def parse(artist: str | None, title: str | None, *, split_vs: bool = False) -> dict[str, Any]:
+    """`{mainArtists, featuredArtists, withArtists, title, notes, removed}` of a source artist text (pills) and a title already cut of noise and version: a feat keyword inside a pill splits that pill at the keyword only; a trailing "(feat. X)", "[feat. X]", unbracketed " feat. X" or "(with X)" of the title moves out. `removed` lists the exact title groups taken out. Primary names are never split, except at a spaced "vs" / "vs." between two non-empty names when `split_vs` is set (the add paths; stored artists never pass it); a name already in a stronger role is dropped (CRD-003); a title that would end up empty stays whole (note `title_empty`)."""
     notes: list[str] = []
     mains: list[str] = []
     featured: list[str] = []
@@ -130,9 +136,9 @@ def parse(artist: str | None, title: str | None) -> dict[str, Any]:
         if g and names and g.rest:
             guessed = guessed or len(names) > 1
             featured += names
-            mains.append(g.rest)
+            mains.extend(_vs_parts(g.rest) if split_vs else [g.rest])
         else:
-            mains.append(pill)
+            mains.extend(_vs_parts(pill) if split_vs else [pill])
     text = title or ""
     work = text.strip()
     removed: list[str] = []
@@ -171,7 +177,7 @@ def artist_text(mains: list[str], featured: list[str], withs: list[str], *, pill
 def split(artist: str, title: str) -> dict[str, Any]:
     """The preview and import form of `parse`: reads the title without its promo noise, then returns `{artist, title, mainArtists, featuredArtists, withArtists}` where `artist` is the legacy string and `title` still holds any noise (the caller cleans it and keeps it as `title_raw`) but not the moved credit group. Without any credit found `artist` and `title` come back untouched."""
     pills = split_tokens(artist or "")
-    found = parse(artist, titleclean.clean(title or ""))
+    found = parse(artist, titleclean.clean(title or ""), split_vs=True)
     if found["mainArtists"] == pills and not found["removed"]:
         return {"artist": artist, "title": title, "mainArtists": pills, "featuredArtists": [], "withArtists": []}
     out = title or ""

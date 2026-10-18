@@ -125,7 +125,7 @@ def view(video_id: str, meta: dict[str, Any], owned: Owned, *, detailed: bool) -
     withs = list(meta.get("withArtists") or [])
     lead = None if meta.get("credited") else titles.lead_artist(title)
     if lead:
-        found = credit_title.parse(lead[0], lead[1])
+        found = credit_title.parse(lead[0], lead[1], split_vs=True)
         artists, title = found["mainArtists"], found["title"]
         taken = {credit_title.fold(a) for a in artists}
         featured = credit_title.unique([*featured, *found["featuredArtists"]], taken)

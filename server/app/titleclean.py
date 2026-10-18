@@ -21,6 +21,8 @@ _STRONG = frozenset(
     "free download dl premiere premiered exclusive hd hq 4k 1080p 720p 480p 360p 60fps official lyrics lyric visualizer mv video audio clip".split()
 )
 _PROMO = ("free download", "free dl", "free d/l", "free dl!", "out now", "premiere")
+_USE_NOTE_WORDS = ("soundtrack", "ost", "original soundtrack", "score")
+_USE_NOTE_LEADS = ("from", "theme from", "music from")
 
 _PUNCT = re.compile(r"[\W_]+")
 _PARTS = re.compile(r"[/,&+]")
@@ -36,6 +38,9 @@ def _norm(s: str) -> str:
 
 
 _NOISE_SET = frozenset(_norm(n) for n in _NOISE)
+_USE_NOTE = re.compile(
+    rf"\b(?:{'|'.join(re.escape(w) for w in _USE_NOTE_WORDS)})\b|^\s*(?:{'|'.join(re.escape(w) for w in _USE_NOTE_LEADS)})\s", re.I)
+_TAIL_GROUP = re.compile(r"[(\[]([^()\[\]]*)[)\]]\s*$")
 _PROMO_SET = frozenset(_norm(n) for n in _PROMO)
 
 
@@ -87,6 +92,26 @@ def _rstrip_seps(s: str) -> str:
     return s[:end]
 
 
+def is_use_note(text: str) -> bool:
+    """True for the text of a bracket that only says where the song is used ("Saltburn Soundtrack", "Game OST", "From the Motion Picture", "Theme from X"); the whole word soundtrack, ost or score, or a start of from / theme from / music from."""
+    return bool(_USE_NOTE.search(text))
+
+
+def drop_use_notes(s: str, removed: list[str] | None = None) -> str:
+    """Drops each trailing round or square bracket group (only whitespace after it) that is a use note, and the separators before it; never the group when nothing else would be left."""
+    while True:
+        base = s.rstrip()
+        m = _TAIL_GROUP.search(base)
+        if not m or not is_use_note(m.group(1)):
+            return s
+        head = _rstrip_seps(base[: m.start()])
+        if not head.strip():
+            return s
+        if removed is not None:
+            removed.append(_WS.sub(" ", m.group()))
+        s = head
+
+
 def _split_segments(s: str) -> list[str]:
     """Text and separators alternately: a separator is `|`, `/`, `//`, `-`, an en or em dash set off by whitespace on both sides."""
     parts: list[str] = []
@@ -131,6 +156,7 @@ def clean_ex(title: str) -> tuple[str, list[str]]:
         if s != before:
             s = _HEAD.sub("", _rstrip_seps(_WS.sub(" ", s).strip()))
         s = _drop_noise_tail(s, removed)
+        s = drop_use_notes(s, removed)
         s = _WS.sub(" ", s).strip()
         if s == before.strip() or s == _WS.sub(" ", before).strip():
             break

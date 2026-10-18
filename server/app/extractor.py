@@ -12,7 +12,7 @@ from urllib.parse import urlparse
 
 import yt_dlp
 
-from . import credit_title, credits, credits_split, genre_filter, library, timeutil, urlclean, yt_genres
+from . import credit_title, credits, credits_split, genre_filter, library, timeutil, titles, urlclean, yt_genres
 from .jsonio import write_bytes_atomic
 from .titles import cut_version, split_artist_title, split_title
 from .urlclean import is_valid_video_id, parse_video_id, source_of, watch_url  # noqa: F401
@@ -147,12 +147,23 @@ def _soundcloud_info(url: str, download: bool = False, opts: dict[str, Any] | No
     return info
 
 
+def _sc_artist(info: dict[str, Any]) -> str:
+    return _first(info.get("artists")) or info.get("artist") or info.get("creator") or info.get("uploader") or ""
+
+
+def _sc_credits(info: dict[str, Any], title: str) -> tuple[str, str]:
+    if not (info.get("artists") or info.get("artist")) and (led := titles.lead_artist(title)):
+        return led
+    return _sc_artist(info), title
+
+
 def soundcloud_probe(url: str) -> dict[str, Any]:
     """Resolve a canonical SoundCloud track URL to its id, metadata and preview-only flag (no download)."""
     info = _soundcloud_info(url)
     raw_title = info.get("track") or info.get("title") or ""
     title, remixer = cut_version(raw_title)
-    artist = _first(info.get("artists")) or info.get("artist") or info.get("creator") or info.get("uploader") or ""
+    uploader = _sc_artist(info)
+    artist, title = _sc_credits(info, title)
     shown = credit_title.split(artist, title)
     return {
         "id": urlclean.soundcloud_song_id(info["id"]),
@@ -166,8 +177,8 @@ def soundcloud_probe(url: str) -> dict[str, Any]:
         "album": info.get("album"),
         "remixer": remixer,
         "version_year": credits_split.version_year(remixer),
-        "raw": {"title": raw_title, "artist": artist, "remixer": remixer},
-        "suggested_credits": credits.suggestion(credits_split.suggest(artist, title, remixer, {"uploader": artist})),
+        "raw": {"title": raw_title, "artist": uploader, "remixer": remixer},
+        "suggested_credits": credits.suggestion(credits_split.suggest(artist, title, remixer, {"uploader": uploader})),
         "year": None,
         "published_year": _published_year(info),
         "tags": suggest_tags({**info, "genre": info.get("genre") or info.get("genres")}),
@@ -189,7 +200,8 @@ def meta_from_info(video_id: str, info: dict[str, Any]) -> dict[str, Any]:
     """The preview fields of one YouTube video from what yt-dlp reports (a full page or a flat playlist entry)."""
     raw_artist = info.get("artist") or info.get("creator") or info.get("uploader") or info.get("channel") or ""
     raw_title = info.get("track") or info.get("title") or ""
-    artist, title, remixer = split_title(raw_artist, raw_title)
+    credited = bool(info.get("artist") or info.get("track"))
+    artist, title, remixer = split_title(raw_artist, raw_title, lead=not credited)
     shown = credit_title.split(artist, title)
     return {
         "id": video_id,
@@ -204,7 +216,7 @@ def meta_from_info(video_id: str, info: dict[str, Any]) -> dict[str, Any]:
         "remixer": remixer,
         "version_year": credits_split.version_year(remixer),
         "raw": {"title": raw_title, "artist": raw_artist, "remixer": remixer},
-        "credited": bool(info.get("artist") or info.get("track")),
+        "credited": credited,
         "suggested_credits": credits.suggestion(credits_split.suggest(artist, title, remixer, {"uploader": raw_artist})),
         "year": None,
         "published_year": _published_year(info),
@@ -286,6 +298,7 @@ def download_audio(video_id: str, out_dir: Path, progress: Callable[[float], Non
     artist, title, remixer = split_title(
         info.get("artist") or info.get("creator") or info.get("uploader") or "",
         info.get("track") or info.get("title") or "",
+        lead=not (info.get("artist") or info.get("track")),
     )
     shown = credit_title.split(artist, title)
     return {"id": video_id, "title": shown["title"], "artist": shown["artist"], "remixer": remixer, "duration": info.get("duration")}
@@ -305,7 +318,7 @@ def _download_soundcloud(video_id: str, out_dir: Path, hook: Callable[[dict[str,
         target.unlink(missing_ok=True)
         raise PreviewOnly()
     title, remixer = cut_version(info.get("track") or info.get("title") or "")
-    artist = _first(info.get("artists")) or info.get("artist") or info.get("creator") or info.get("uploader") or ""
+    artist, title = _sc_credits(info, title)
     shown = credit_title.split(artist, title)
     return {
         "id": video_id,

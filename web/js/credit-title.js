@@ -10,6 +10,7 @@ const TAIL_BRACKET = /[([]([^()[\]]*)[)\]]\s*$/;
 const WITH_HEAD = /^with\s+(?=\S)/i;
 const STOPS = [' - ', ' – ', ' — ', ' | ', ' ●● ', ' • ', ')', ']', '(', '['];
 const NAME_SEP = /\s*,\s*|\s+(?:&|\+|x|[aA][nN][dD]|[vV][sS]\.?)\s+/;
+const VS = /\s+vs\.?\s+/i;
 const EDGE = new Set([' ', '-', '|']);
 
 const strip = (s) => {
@@ -101,7 +102,12 @@ function unique(names, taken) {
   return out;
 }
 
-export function parseCreditTitle(artist, title) {
+function vsParts(pill) {
+  const parts = pill.split(VS).map((p) => p.trim());
+  return parts.length > 1 && parts.every(Boolean) ? parts : [pill];
+}
+
+export function parseCreditTitle(artist, title, { splitVs = false } = {}) {
   const notes = [];
   const mains = [];
   let featured = [];
@@ -113,8 +119,8 @@ export function parseCreditTitle(artist, title) {
     if (g && names.length && g.rest) {
       guessed = guessed || names.length > 1;
       featured = [...featured, ...names];
-      mains.push(g.rest);
-    } else mains.push(pill);
+      mains.push(...(splitVs ? vsParts(g.rest) : [g.rest]));
+    } else mains.push(...(splitVs ? vsParts(pill) : [pill]));
   }
   const text = title ?? '';
   let work = text.trim();

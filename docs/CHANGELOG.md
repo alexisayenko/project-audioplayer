@@ -6,6 +6,11 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 - Server: the migration command lines validate their path arguments (library, legacy backup, report, backup folder; NFR-121) and the atomic JSON writers refuse NUL bytes and directories; web: the pitch tracker drain loop, the playlist import retry and three bit truncations were rewritten for static analysis with no behaviour change. Not deployed.
 
+## 2026-10-18 (vs splits artists on add)
+
+- Server and web: adding from a link or a playlist import now reads a spaced "vs" / "vs." in the artist text as two main artists ("Mason vs Princess Superstar" gives Mason and Princess Superstar); stored artists are never split (ADD-177).
+- Server and web: the single-link Add (preview, SoundCloud probe, download fallback) now reads "Artist - Title" in a video title like the playlist import when the video has no artist data ("The Midnight - Love Is An Ocean (Lyrics)" on a fan channel gives The Midnight), and a trailing use-note bracket such as "[Saltburn Soundtrack]" or "[Game OST]" is cut from the title; stored songs are unchanged (ADD-178, ADD-179).
+
 ## 2026-10-18 (Library actions under the chips)
 
 - Web: the Library toolbar keeps only Show playing beside the search field; Clear filters, Play all and Add all to playlist moved back to the sort bar row under the chips, right-aligned, and under 720px wrap onto their own line below the sort select (LIB-030).

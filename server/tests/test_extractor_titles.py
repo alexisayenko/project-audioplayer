@@ -40,8 +40,9 @@ def test_preview_cuts_remix_into_remixer(monkeypatch):
     monkeypatch.setattr(extractor.yt_dlp, "YoutubeDL", FakeYDL)
     monkeypatch.setattr(FakeYDL, "info", {"title": "Delerium - Innocente (Sadrican 2026 Remix)", "uploader": CH})
     p = extractor.preview(YT)
-    assert (p["title"], p["remixer"]) == ("Delerium - Innocente", "Sadrican 2026 Remix")
-    assert p["artist"] == CH
+    assert (p["title"], p["remixer"]) == ("Innocente", "Sadrican 2026 Remix")
+    assert p["artist"] == "Delerium"
+    assert p["raw"]["artist"] == CH
 
 
 def test_preview_remixer_is_none_without_remix(monkeypatch):
@@ -63,7 +64,7 @@ def test_download_audio_cuts_remix(monkeypatch):
     monkeypatch.setattr(extractor.yt_dlp, "YoutubeDL", FakeYDL)
     monkeypatch.setattr(FakeYDL, "info", {"title": "A - B (Sadrican Remix)", "uploader": "X"})
     d = extractor.download_audio(YT, Path("."))
-    assert (d["title"], d["remixer"]) == ("A - B", "Sadrican Remix")
+    assert (d["artist"], d["title"], d["remixer"]) == ("A", "B", "Sadrican Remix")
 
 
 LIVE = "Dua Lipa and Elton John - Cold Heart (Live from the Royal Albert Hall)"
@@ -73,7 +74,7 @@ def test_preview_cuts_live_bracket_into_the_version(monkeypatch):
     monkeypatch.setattr(extractor.yt_dlp, "YoutubeDL", FakeYDL)
     monkeypatch.setattr(FakeYDL, "info", {"title": LIVE, "uploader": "Dua Lipa", "duration": 200})
     p = extractor.preview(YT)
-    assert p["title"] == "Dua Lipa and Elton John - Cold Heart"
+    assert (p["artist"], p["title"]) == ("Dua Lipa and Elton John", "Cold Heart")
     assert p["remixer"] == "Live from the Royal Albert Hall"
     assert p["suggested_credits"]["version"]["type"] == "live"
     assert p["version_year"] is None

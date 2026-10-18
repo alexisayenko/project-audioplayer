@@ -1000,6 +1000,141 @@
     "title": "T",
     "notes": []
    }
+  },
+  {
+   "artist": "Mason vs Princess Superstar",
+   "title": "Perfect (Exceeder)",
+   "splitVs": true,
+   "expect": {
+    "mainArtists": [
+     "Mason",
+     "Princess Superstar"
+    ],
+    "featuredArtists": [],
+    "withArtists": [],
+    "title": "Perfect (Exceeder)",
+    "notes": []
+   }
+  },
+  {
+   "artist": "A vs. B",
+   "title": "T",
+   "splitVs": true,
+   "expect": {
+    "mainArtists": [
+     "A",
+     "B"
+    ],
+    "featuredArtists": [],
+    "withArtists": [],
+    "title": "T",
+    "notes": []
+   }
+  },
+  {
+   "artist": "A VS B",
+   "title": "T",
+   "splitVs": true,
+   "expect": {
+    "mainArtists": [
+     "A",
+     "B"
+    ],
+    "featuredArtists": [],
+    "withArtists": [],
+    "title": "T",
+    "notes": []
+   }
+  },
+  {
+   "artist": "A vs B & C",
+   "title": "T",
+   "splitVs": true,
+   "expect": {
+    "mainArtists": [
+     "A",
+     "B & C"
+    ],
+    "featuredArtists": [],
+    "withArtists": [],
+    "title": "T",
+    "notes": []
+   }
+  },
+  {
+   "artist": "Versus",
+   "title": "T",
+   "splitVs": true,
+   "expect": {
+    "mainArtists": [
+     "Versus"
+    ],
+    "featuredArtists": [],
+    "withArtists": [],
+    "title": "T",
+    "notes": []
+   }
+  },
+  {
+   "artist": "Vs. Them",
+   "title": "T",
+   "splitVs": true,
+   "expect": {
+    "mainArtists": [
+     "Vs. Them"
+    ],
+    "featuredArtists": [],
+    "withArtists": [],
+    "title": "T",
+    "notes": []
+   }
+  },
+  {
+   "artist": "Eves Vsion",
+   "title": "T",
+   "splitVs": true,
+   "expect": {
+    "mainArtists": [
+     "Eves Vsion"
+    ],
+    "featuredArtists": [],
+    "withArtists": [],
+    "title": "T",
+    "notes": []
+   }
+  },
+  {
+   "artist": "A vs B feat. C",
+   "title": "T",
+   "splitVs": true,
+   "expect": {
+    "mainArtists": [
+     "A",
+     "B"
+    ],
+    "featuredArtists": [
+     "C"
+    ],
+    "withArtists": [],
+    "title": "T",
+    "notes": []
+   }
+  },
+  {
+   "artist": "A vs B - C",
+   "title": "T",
+   "splitVs": true,
+   "expect": {
+    "mainArtists": [
+     "A",
+     "B",
+     "C"
+    ],
+    "featuredArtists": [],
+    "withArtists": [],
+    "title": "T",
+    "notes": []
+   }
   }
  ]
 }

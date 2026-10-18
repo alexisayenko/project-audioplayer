@@ -79,6 +79,7 @@ def clean_artist(artist: str) -> str:
 
 def clean_title(title: str) -> str:
     t = _drop_brackets(title or "", _is_noise)
+    t = titleclean.drop_use_notes(t)
     t = re.sub(r"[\(\[]\s*[\)\]]", "", t)
     return re.sub(r"\s+", " ", t).strip(" -|")
 
@@ -239,7 +240,7 @@ _RELEASE_END = re.compile(r"\brelease\s*$", re.I)
 
 
 def _is_version_group(inner: str) -> bool:
-    return bool(_VERSION_WORD.search(inner)) and not _RELEASE_END.search(inner) and not _FEAT_KEY.match(inner) and not titleclean._is_noise(inner)
+    return bool(_VERSION_WORD.search(inner)) and not _RELEASE_END.search(inner) and not _FEAT_KEY.match(inner) and not titleclean._is_noise(inner) and not titleclean.is_use_note(inner)
 
 
 def cut_version(title: str) -> tuple[str, str | None]:
@@ -304,8 +305,8 @@ def _title_first(artist: str, title: str, cut: str) -> tuple[str, str] | None:
     return left, right
 
 
-def split_title(artist: str, title: str) -> tuple[str, str, str | None]:
-    """Cut the remix or another version (cut_version) out of the title, then split artist and title as split_artist_title does; a feat credit left of the first spaced dash makes that left part the artist when nothing else split; a reversed "Title [Version] feat. X - Artist" is read title first (ADD-135)."""
+def split_title(artist: str, title: str, *, lead: bool = False) -> tuple[str, str, str | None]:
+    """Cut the remix or another version (cut_version) out of the title, then split artist and title as split_artist_title does; a feat credit left of the first spaced dash makes that left part the artist when nothing else split; a reversed "Title [Version] feat. X - Artist" is read title first (ADD-135). With `lead` (the video has no artist data), a title of exactly "Artist - Title" that the channel did not split makes the left side the artist (`lead_artist`, ADD-115)."""
     cut, remix = cut_version(title)
     reversed_ = _title_first(artist, title, cut)
     if reversed_:
@@ -315,6 +316,8 @@ def split_title(artist: str, title: str) -> tuple[str, str, str | None]:
         m = _CUE_DASH.search(t)
         if m and (_has_feat_keyword(t[: m.start()]) or _RELEASE_TAG_TAIL.search(t)) and t[m.end() :].strip():
             a, t = t[: m.start()].strip(), clean_title(t[m.end() :])
+        elif lead and (led := lead_artist(t)):
+            a, t = led
     return normalize_feat(a), normalize_feat(t), remix
 
 

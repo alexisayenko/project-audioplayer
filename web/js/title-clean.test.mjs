@@ -25,3 +25,10 @@ test('trailing and leading separators trimmed, long whitespace runs stay fast', 
   assert.equal(cleanTitle(`Artist${' '.repeat(50000)}x`), 'Artist x');
   assert.ok(Date.now() - t0 < 1000);
 });
+
+test('use notes are reported as removed', () => {
+  assert.deepEqual(cleanTitleEx('Perfect (Exceeder) [Official Music Video] [Saltburn Soundtrack]'), {
+    title: 'Perfect (Exceeder)',
+    removed: ['[Official Music Video]', '[Saltburn Soundtrack]'],
+  });
+});
