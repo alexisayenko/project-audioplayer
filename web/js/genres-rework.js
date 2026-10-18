@@ -10,15 +10,15 @@ import { createRadialView } from './genre-radial-view.js';
 import { player } from './player.js';
 import { songGenres } from './genre-playing.js';
 import {
-  hasLevels, buildTree, applyCounts, count, chain, ancestorIds, resolveNode, libraryTags, otherGenres, searchMatches, visibleRows, allExpandable, treeKey, filterIds, flavourCount, STATUS_FILTERS, STATUS_LABELS, statusKey,
+  hasLevels, buildTree, applyCounts, count, populatedFamilies, genresWithSongs, chain, ancestorIds, resolveNode, libraryTags, otherGenres, searchMatches, visibleRows, allExpandable, treeKey, filterIds, flavourCount, STATUS_FILTERS, STATUS_LABELS, statusKey,
 } from './genre-levels.js';
 
 const songs = (n) => `${n} ${plural(n, 'song', 'songs')}`;
 const LEVEL_NAMES = { 1: 'Genre (level 1)', 2: 'Umbrella or standalone genre (level 2)', 3: 'Specific genre (level 3)' };
-const ROOT_GENRE = 'Electronic';
+const EMPTY_TEXT = 'No genres yet. Add songs with genres to see them here.';
+const canvasLabel = (name) => `Map of ${name ? `${name} ` : ''}genres. Drag to pan, scroll or pinch to zoom. The outline lists the same genres and is the keyboard alternative.`;
 const NARROW_PX = 720;
 const FLASH_MS = 1400;
-export const ALL_KEY = 'electrophone.genresReworkAll';
 export const LEGEND_KEY = 'electrophone.genresLegend';
 
 function loadFlag(storage, key) {
@@ -29,35 +29,24 @@ function saveFlag(storage, key, on) {
   try { storage?.setItem(key, on ? '1' : '0'); } catch { /* storage unavailable */ }
 }
 
-export const loadShowAll = (storage) => loadFlag(storage, ALL_KEY);
-export const saveShowAll = (storage, on) => saveFlag(storage, ALL_KEY, on);
 export const loadLegend = (storage) => loadFlag(storage, LEGEND_KEY);
 export const saveLegend = (storage, on) => saveFlag(storage, LEGEND_KEY, on);
 
-const subtreeSize = (root) => {
-  const seen = new Set();
-  const walk = (n) => { for (const c of n.children) if (!seen.has(c.id)) { seen.add(c.id); walk(c); } };
-  walk(root);
-  return seen.size;
-};
-
 export function renderGenresRework(root, opts = {}) {
-  const rootGenre = typeof opts?.rootGenre === 'string' ? opts.rootGenre : ROOT_GENRE;
+  let rootGenre = typeof opts?.rootGenre === 'string' ? opts.rootGenre : null;
+  let families = [];
   const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
   let dead = false;
   let tree = null;
   let layout = null;
   let query = '';
-  let onlyWithSongs = false;
-  let expanded = new Set([`g:${rootGenre}`]);
+  let expanded = new Set();
   let activeId = null;
   let selectedId = null;
   let panelId = null;
   let rows = [];
-  let countsOk = true;
   let statusFilter = 'all';
   const flavourSel = new Set();
-  let showAll = loadShowAll(globalThis.localStorage);
   let legendOpen = loadLegend(globalThis.localStorage);
   let flashTimer = 0;
   let outlineOpen = outlineDefaultOpen(window.innerWidth || 1200);
@@ -66,27 +55,27 @@ export function renderGenresRework(root, opts = {}) {
   const reload = el('button', { class: 'gm-tbtn', type: 'button', onclick: () => start() }, 'Reload');
   const canvas = el('canvas', {
     class: 'gmr-canvas', role: 'img', tabindex: '-1',
-    'aria-label': `Map of ${rootGenre} genres. Drag to pan, scroll or pinch to zoom. The outline lists the same genres and is the keyboard alternative.`,
+    'aria-label': canvasLabel(rootGenre),
   });
   const tip = el('div', { class: 'gmr-tip t-caption', role: 'tooltip', hidden: true });
   const treeEl = el('div', { class: 'gmr-tree', role: 'tree', 'aria-label': 'Genre hierarchy' });
   const details = el('div', { class: 'gmr-details', role: 'group', 'aria-label': 'Genre details', hidden: true });
   const empty = el('p', { class: 'gmr-empty muted t-body', hidden: true });
-  const outlineEl = el('section', { class: 'gm-outline gmr-outline', id: 'gmr-outline', 'aria-label': 'Outline' });
+  const outlineEl = el('section', { class: 'gmr-outline', id: 'gmr-outline', 'aria-label': 'Outline' });
+  const side = el('div', { class: 'gmr-side' });
   const outlineBtn = el('button', {
-    class: 'gm-tbtn gm-outline-btn', type: 'button', 'aria-controls': 'gmr-outline', 'aria-expanded': 'false', onclick: () => setOutline(!outlineOpen),
+    class: 'gm-tbtn gmr-outline-btn', type: 'button', 'aria-controls': 'gmr-outline', 'aria-expanded': 'false', onclick: () => setOutline(!outlineOpen),
   }, 'Outline');
   const wrap = el('div', { class: 'gm gmr' });
   const work = el('div', { class: 'gm-work' });
-  const allBtn = el('button', {
-    class: 'gm-tbtn', type: 'button', 'aria-pressed': String(showAll),
-    onclick: () => {
-      showAll = !showAll;
-      allBtn.setAttribute('aria-pressed', String(showAll));
-      saveShowAll(globalThis.localStorage, showAll);
-      if (tree) { layout = layoutRadial(tree, rootGenre, { showAll }); view.setLayout(layout, tree); view.select(selectedId); markMatches(); }
-    },
-  }, 'Show whole vocabulary');
+  const familyRow = el('div', { class: 'gmr-family-row', role: 'group', 'aria-label': 'Genre family', hidden: true });
+
+  function renderFamilies() {
+    familyRow.hidden = !families.length;
+    familyRow.replaceChildren(...families.map((f) => el('button', {
+      class: 'gm-tbtn', type: 'button', 'data-family': f, 'aria-pressed': String(f === rootGenre), onclick: () => setFamily(f),
+    }, el('span', { class: `gm-dot f${familyIndex(f)}`, 'aria-hidden': 'true' }), f)));
+  }
   const legendBtn = el('button', {
     class: 'gm-tbtn', type: 'button', 'aria-controls': 'gmr-legend', 'aria-expanded': String(legendOpen), onclick: () => setLegend(!legendOpen, { save: true }),
   }, legendOpen ? 'Hide legend' : 'Show legend');
@@ -150,10 +139,6 @@ export function renderGenresRework(root, opts = {}) {
     }, f)));
   const expandAll = el('button', { class: 'gm-tbtn', type: 'button', onclick: () => { if (tree) { expanded = allExpandable(tree); renderTree(); } } }, 'Expand all');
   const collapseAll = el('button', { class: 'gm-tbtn', type: 'button', onclick: () => { expanded = new Set(); renderTree(); } }, 'Collapse all');
-  const onlyBtn = el('button', {
-    class: 'gm-tbtn', type: 'button', 'aria-pressed': 'false',
-    onclick: () => { onlyWithSongs = !onlyWithSongs; onlyBtn.setAttribute('aria-pressed', String(onlyWithSongs)); renderTree(); },
-  }, 'Only with songs');
 
   function setStatus(f) {
     statusFilter = f;
@@ -183,7 +168,7 @@ export function renderGenresRework(root, opts = {}) {
   }
 
   function renderFlavours() {
-    const used = new Set(tree ? [...tree.byId.values()].flatMap((n) => n.flavours) : []);
+    const used = new Set(tree ? [...tree.byId.values()].filter((n) => count(n)).flatMap((n) => n.flavours) : []);
     const all = tree ? [...tree.flavours.values()].filter((f) => used.has(f.key)) : [];
     flavourRow.hidden = !all.length;
     if (!all.length) { flavourRow.replaceChildren(); return; }
@@ -197,12 +182,12 @@ export function renderGenresRework(root, opts = {}) {
   }
 
   function matchIds() {
-    return tree && query ? [...searchMatches(tree, query).keys()].filter((id) => layout?.byId.has(id)) : [];
+    return tree && query ? [...searchMatches(tree, query, { populatedOnly: true }).keys()].filter((id) => layout?.byId.has(id)) : [];
   }
-  function markMatches() { view.setMatches(tree && query ? [...searchMatches(tree, query).keys()] : []); }
+  function markMatches() { view.setMatches(tree && query ? [...searchMatches(tree, query, { populatedOnly: true }).keys()] : []); }
   function panelInset() {
     if (!outlineOpen || outlineEl.hidden) return { r: 0, b: 0 };
-    const rect = outlineEl.getBoundingClientRect?.() || { width: 0, height: 0 };
+    const rect = side.getBoundingClientRect?.() || { width: 0, height: 0 };
     return narrow() ? { r: 0, b: rect.height } : { r: rect.width, b: 0 };
   }
   function centre(id) {
@@ -220,18 +205,40 @@ export function renderGenresRework(root, opts = {}) {
 
   function reveal(id) {
     for (const a of chain(tree, id).slice(0, -1)) expanded.add(a.id);
-    if (!visibleRows(tree, { expanded, query, onlyWithSongs, status: statusFilter, flavours: flavourSel }).some((r) => r.node.id === id)) {
+    if (!visibleRows(tree, { expanded, query, onlyWithSongs: true, status: statusFilter, flavours: flavourSel }).some((r) => r.node.id === id)) {
       query = '';
       search.value = '';
       if (statusFilter !== 'all') { statusFilter = 'all'; for (const b of statusRow.querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.dataset.status === 'all')); }
       if (flavourSel.size) flavourSel.clear();
       applyFilters();
       markMatches();
-      if (onlyWithSongs && !count(tree.byId.get(id))) { onlyWithSongs = false; onlyBtn.setAttribute('aria-pressed', 'false'); }
     }
   }
 
+  function showTotals() {
+    const total = genresWithSongs(layout);
+    status.textContent = `${total} ${plural(total, 'genre', 'genres')} in ${rootGenre}`;
+  }
+
+  function setFamily(name) {
+    if (name === rootGenre) return;
+    rootGenre = name;
+    expanded.add(`g:${name}`);
+    canvas.setAttribute('aria-label', canvasLabel(name));
+    for (const b of familyRow.querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.dataset.family === name));
+    if (!tree) return;
+    layout = layoutRadial(tree, rootGenre);
+    view.setLayout(layout, tree);
+    view.reset();
+    view.select(selectedId);
+    markMatches();
+    renderTree();
+    showTotals();
+  }
+
   function select(id, { reveal: rv = false, center = false, toggle = false, info = false } = {}) {
+    const family = tree && !layout?.byId.has(id) ? chain(tree, id)[0]?.name : null;
+    if (family && families.includes(family)) setFamily(family);
     selectedId = id;
     panelId = info ? id : null;
     activeId = id;
@@ -273,10 +280,11 @@ export function renderGenresRework(root, opts = {}) {
       n.status === 'question' ? badge('question', STATUS_LABELS.question, 'q') : null,
       ...n.alsoUnder.map((a) => {
         const target = tree.byKey.get(vkey(a));
+        if (!target || !count(target)) return null;
         return el('button', {
-          class: 'gmr-also', type: 'button', tabindex: '-1', 'aria-label': `Also under ${target?.label || a}: jump to ${target?.label || a}`, title: `Also under ${target?.label || a}`,
-          onclick: (e) => { e.stopPropagation(); if (target) select(target.id, { reveal: true, center: true }); },
-        }, `also under ${target?.label || a}`);
+          class: 'gmr-also', type: 'button', tabindex: '-1', 'aria-label': `Also under ${target.label}: jump to ${target.label}`, title: `Also under ${target.label}`,
+          onclick: (e) => { e.stopPropagation(); select(target.id, { reveal: true, center: true }); },
+        }, `also under ${target.label}`);
       }),
       total ? el('span', { class: 'gmr-count t-caption', role: 'img', 'aria-label': songs(total) }, String(total)) : null,
     ];
@@ -292,7 +300,7 @@ export function renderGenresRework(root, opts = {}) {
 
   function renderTree() {
     if (!tree) { treeEl.replaceChildren(); return; }
-    rows = visibleRows(tree, { expanded, query, onlyWithSongs, status: statusFilter, flavours: flavourSel });
+    rows = visibleRows(tree, { expanded, query, onlyWithSongs: true, status: statusFilter, flavours: flavourSel });
     if (!rows.length) activeId = null;
     else if (!rows.some((r) => r.key === activeId)) activeId = rows[0].key;
     let rootName = '';
@@ -301,10 +309,9 @@ export function renderGenresRework(root, opts = {}) {
       return buildRow(r, i, rootName);
     }));
     empty.hidden = rows.length > 0;
-    let emptyText = 'No genres.';
+    let emptyText = EMPTY_TEXT;
     if ((statusFilter !== 'all' || flavourSel.size) && !query) emptyText = 'No genres match the filters.';
     else if (query) emptyText = `No genre or synonym matches "${query.trim()}".`;
-    else if (onlyWithSongs) emptyText = 'No genre has songs yet.';
     empty.textContent = emptyText;
   }
 
@@ -312,7 +319,7 @@ export function renderGenresRework(root, opts = {}) {
 
   function panelItems(n, total) {
     const path = chain(tree, n.id).slice(0, -1);
-    const also = n.alsoUnder.map((a) => tree.byKey.get(vkey(a))).filter(Boolean);
+    const also = n.alsoUnder.map((a) => tree.byKey.get(vkey(a))).filter((t) => t && count(t));
     const chips = (list) => el('span', { class: 'gm-chips' }, list.map((p) => chipButton(p.id, p.label)));
     const items = [];
     const add = (k, ...v) => items.push(el('dt', { class: 't-caption muted' }, k), el('dd', { class: 't-body' }, ...v));
@@ -327,7 +334,7 @@ export function renderGenresRework(root, opts = {}) {
     if (n.level > 1 && n.flavours.length) add('Flavours', el('span', { class: 'gm-chips' }, n.flavours.map((k) => el('span', { class: 'gmr-badge flav', title: tree.flavours.get(k).description }, tree.flavours.get(k).name))));
     if (n.provisional) add('Status', 'Provisional: not yet reviewed');
     const exact = n.own.size !== total ? ` (${n.own.size} tagged exactly)` : '';
-    add('Songs', countsOk ? `${total} in your library${exact}` : 'Counts unavailable');
+    add('Songs', `${total} in your library${exact}`);
     return items;
   }
 
@@ -335,6 +342,7 @@ export function renderGenresRework(root, opts = {}) {
     const n = tree && panelId ? tree.byId.get(panelId) : null;
     details.hidden = !n;
     outlineEl.classList.toggle('has-details', !!n);
+    side.classList.toggle('has-details', !!n);
     if (!n) { details.replaceChildren(); return; }
     const total = count(n);
     const items = panelItems(n, total);
@@ -376,7 +384,7 @@ export function renderGenresRework(root, opts = {}) {
 
   function showNowPlaying() {
     const n = nowNode();
-    if (!n) { toast(`The playing song has no ${rootGenre} genre`); return; }
+    if (!n) { toast(rootGenre ? `The playing song has no ${rootGenre} genre` : 'The playing song has no genre on the map'); return; }
     if (!outlineOpen && !narrow()) setOutline(true);
     select(n.id, { reveal: true, center: true });
     view.flash(n.id);
@@ -409,20 +417,29 @@ export function renderGenresRework(root, opts = {}) {
     if (dead) return;
     reload.disabled = false;
     const vocab = v.status === 'fulfilled' ? v.value : null;
-    countsOk = l.status === 'fulfilled';
-    if (!hasLevels(vocab)) {
+    const failed = !hasLevels(vocab) || l.status !== 'fulfilled';
+    if (failed) {
       tree = null;
       layout = null;
+      families = [];
+      renderFamilies();
       view.setLayout(null, null);
       renderTree();
       renderPanel();
       refreshNow();
-      status.textContent = v.status === 'rejected' ? 'Vocabulary unavailable' : 'Genre levels unavailable: the server has no level data yet';
+      if (v.status === 'rejected') status.textContent = 'Vocabulary unavailable';
+      else if (!hasLevels(vocab)) status.textContent = 'Genre levels unavailable: the server has no level data yet';
+      else status.textContent = 'Library unavailable: song counts are needed to show genres';
       return;
     }
     tree = buildTree(vocab);
-    applyCounts(tree, countsOk ? l.value : []);
-    layout = layoutRadial(tree, rootGenre, { showAll });
+    applyCounts(tree, l.value);
+    families = populatedFamilies(tree);
+    if (!families.includes(rootGenre)) rootGenre = families[0] || null;
+    if (rootGenre) expanded.add(`g:${rootGenre}`);
+    canvas.setAttribute('aria-label', canvasLabel(rootGenre));
+    renderFamilies();
+    layout = rootGenre ? layoutRadial(tree, rootGenre) : null;
     view.setLayout(layout, tree);
     if (selectedId && !tree.byId.has(selectedId)) selectedId = null;
     if (panelId && !tree.byId.has(panelId)) panelId = null;
@@ -433,9 +450,7 @@ export function renderGenresRework(root, opts = {}) {
     renderFlavours();
     renderTree();
     renderPanel();
-    const total = subtreeSize(tree.roots.find((r) => r.name === rootGenre) || { children: [] });
-    const text = `${total} ${plural(total, 'genre', 'genres')} in ${rootGenre}`;
-    status.textContent = countsOk ? text : `${text}; song counts unavailable`;
+    if (rootGenre) showTotals(); else status.textContent = EMPTY_TEXT;
     refreshNow();
   }
 
@@ -448,11 +463,9 @@ export function renderGenresRework(root, opts = {}) {
     el('h2', { class: 'gmr-legend-title t-caption', id: 'gmr-legend-title' }, 'Legend'),
     el('ul', { class: 'gmr-legend-list t-caption' },
       el('li', {}, el('span', { class: 'gmr-key size', 'aria-hidden': 'true' }), 'Size: songs here and below'),
-      el('li', {}, el('span', { class: 'gmr-key dim', 'aria-hidden': 'true' }), 'Faded: no songs'),
+      el('li', {}, el('span', { class: 'gmr-key neutral', 'aria-hidden': 'true' }), 'Grey: no song tagged here, shown to connect genres below'),
       el('li', {}, el('span', { class: 'gmr-key nodisc', 'aria-hidden': 'true' }), 'Dashed ring: not in Discogs'),
-      el('li', { title: 'Discogs outranks approval: a genre that is in Discogs never shows this badge' }, el('span', { class: 'gmr-key ok', 'aria-hidden': 'true' }), 'Check badge: Alex approved (genres not in Discogs only)'),
-      el('li', {}, el('span', { class: 'gmr-key q', 'aria-hidden': 'true' }), 'Question badge: under question'),
-      el('li', {}, el('span', { class: 'gmr-key dim small', 'aria-hidden': 'true' }), 'Small dim dots on the outer arc: genres with no songs (whole vocabulary)')));
+      el('li', {}, el('span', { class: 'gmr-key q', 'aria-hidden': 'true' }), 'Question badge: under question')));
 
   outlineEl.append(
     el('div', { class: 'gm-outline-head' },
@@ -460,13 +473,11 @@ export function renderGenresRework(root, opts = {}) {
       el('button', { class: 'gm-x', type: 'button', 'aria-label': 'Close outline', title: 'Close outline', onclick: () => setOutline(false) }, icon('clear', 'nav'))),
     details,
     el('div', { class: 'gmr-scroll' },
-      el('div', { class: 'gmr-tools' }, search, expandAll, collapseAll, onlyBtn, statusRow, flavourRow),
+      el('div', { class: 'gmr-tools' }, search, expandAll, collapseAll, statusRow, flavourRow),
       treeEl, empty));
 
-  work.append(
-    canvas,
-    el('div', { class: 'gm-bar' }, el('div', { class: 'gm-bar-row' }, status, allBtn, legendBtn, nowBtn, reload)),
-    outlineBtn, outlineEl, zoomBar, legend, tip);
+  side.append(el('div', { class: 'gmr-bar' }, status, legendBtn, nowBtn, reload, outlineBtn, familyRow), outlineEl);
+  work.append(canvas, side, zoomBar, legend, tip);
   wrap.append(pageHead('Genres map'), work);
   root.append(wrap);
   setOutline(outlineOpen);

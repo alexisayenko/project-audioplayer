@@ -158,6 +158,14 @@ export function applyCounts(tree, songs) {
 
 export const count = (n) => n.all.size;
 
+export function populatedFamilies(tree) {
+  return (tree?.roots || []).filter((r) => r.all.size > 0).sort((a, b) => b.all.size - a.all.size || a.name.localeCompare(b.name)).map((r) => r.name);
+}
+
+export function genresWithSongs(layout) {
+  return (layout?.nodes || []).filter((n) => n.node.own.size > 0).length;
+}
+
 export function libraryTags(tree, id) {
   const out = [];
   const walk = (n) => {
@@ -168,11 +176,12 @@ export function libraryTags(tree, id) {
   return out;
 }
 
-export function searchMatches(tree, query) {
+export function searchMatches(tree, query, { populatedOnly = false } = {}) {
   const q = vkey(query);
   const hits = new Map();
   if (!q) return hits;
   for (const n of tree.byId.values()) {
+    if (populatedOnly && !n.all.size) continue;
     if (vkey(n.name).includes(q) || (n.display && vkey(n.display).includes(q))) hits.set(n.id, null);
     else {
       const s = n.synonyms.find((x) => vkey(x).includes(q));
@@ -206,7 +215,7 @@ export function flavourCount(tree, key) {
 }
 
 export function visibleRows(tree, { expanded = new Set(), query = '', onlyWithSongs = false, status = 'all', flavours = [] } = {}) {
-  const hits = searchMatches(tree, query);
+  const hits = searchMatches(tree, query, { populatedOnly: onlyWithSongs });
   const byStatus = filterIds(tree, { status, flavours });
   const searching = !!vkey(query);
   const open = new Set();

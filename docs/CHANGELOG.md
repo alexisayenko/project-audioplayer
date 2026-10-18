@@ -2,6 +2,22 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-18 (genres map library only, built, not deployed)
+
+- Web: the Genres map and its outline show only genres of songs that are in the library plus the ancestors that connect them (ancestors without a song of their own are neutral connector nodes); the "Show whole vocabulary" and "Only with songs" toggles are gone, the family chips list only families with library songs (most songs first and pressed by default), the status chip reads "N genres in <family>" counting genres with songs, and a library without genre tags shows "No genres yet. Add songs with genres to see them here." ([WEB-085](specs/web.md), GEN-054).
+
+## 2026-10-18 (genres map approved sign)
+
+- Web: the Genres map no longer draws the green check badge on approved genres, and the legend lost its "Check badge" entry; the question badge, the dashed ring, the outline badge and the data stay.
+
+## 2026-10-18 (genres map families)
+
+- Web: the Genres map has a family row in its header (Electronic, Blues, Jazz, Rock, each with its palette dot); a chip redraws the map around that family with the same circles, counts, selection and details, and picking an outline row of another family switches the map to it.
+
+## 2026-10-18 (genres map panel)
+
+- Web: on the Genres map the status chip and the Show whole vocabulary, Show legend, Now playing and Reload buttons moved into the Outline panel as its header row, so there is one side panel instead of two; closing the outline leaves the header row (with an Outline button to reopen it).
+
 ## 2026-10-18 (song card playlist icon, built, not deployed)
 
 - Web: the song card playlist toggle keeps the list add icon in the pressed state and differs only by the accent background; the accessible name still tells the state (LIB-149).

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  hasLevels, buildTree, resolveNode, applyCounts, count, chain, libraryTags, genreLines, searchMatches, visibleRows, allExpandable, treeKey, otherGenres, filterIds, statusIds, flavourCount, statusKey,
+  hasLevels, buildTree, resolveNode, applyCounts, count, populatedFamilies, genresWithSongs, chain, libraryTags, genreLines, searchMatches, visibleRows, allExpandable, treeKey, otherGenres, filterIds, statusIds, flavourCount, statusKey,
 } from './genre-levels.js';
 import { VOCAB, SONGS } from './genre-levels-fixture.mjs';
 
@@ -72,6 +72,32 @@ test('collapsed by default, expand sets, only-with-songs hides empty nodes', () 
   assert.deepEqual(open.map((r) => r.node.name), ['Electronic', 'breakbeat', 'drum and bass', 'house', 'afro house', 'deep house', 'Rock']);
   const some = visibleRows(t, { expanded: allExpandable(t), onlyWithSongs: true });
   assert.deepEqual(some.map((r) => r.node.name), ['Electronic', 'drum and bass', 'jungle', 'house', 'afro house', 'deep house', 'Rock', 'rock and roll']);
+});
+
+test('populatedOnly search skips genres without library songs; populated rows keep their ancestors', () => {
+  const t = make();
+  assert.ok(searchMatches(t, 'breakbeat').has('s:breakbeat'));
+  assert.equal(searchMatches(t, 'breakbeat', { populatedOnly: true }).size, 0);
+  assert.deepEqual([...searchMatches(t, 'dnb', { populatedOnly: true }).keys()], ['s:drum and bass']);
+  assert.deepEqual(visibleRows(t, { query: 'breakbeat', onlyWithSongs: true }).map((r) => r.node.name), []);
+  assert.deepEqual(visibleRows(t, { query: 'jungle', onlyWithSongs: true }).map((r) => r.node.name), ['Electronic', 'drum and bass', 'jungle']);
+});
+
+test('populatedFamilies lists families with songs, most songs first, ties by name', () => {
+  const t = make();
+  assert.deepEqual(populatedFamilies(t), ['Electronic', 'Rock']);
+  applyCounts(t, [{ id: 'a', tags: ['genre:rock and roll'] }, { id: 'b', tags: ['genre:rock and roll'] }, { id: 'c', tags: ['genre:house'] }]);
+  assert.deepEqual(populatedFamilies(t), ['Rock', 'Electronic']);
+  applyCounts(t, [{ id: 'a', tags: ['genre:rock and roll'] }, { id: 'c', tags: ['genre:house'] }]);
+  assert.deepEqual(populatedFamilies(t), ['Electronic', 'Rock']);
+  applyCounts(t, [{ id: 'x', tags: ['mood:calm', 'genre:unknown thing'] }]);
+  assert.deepEqual(populatedFamilies(t), []);
+  assert.deepEqual(populatedFamilies(null), []);
+});
+
+test('genresWithSongs counts displayed nodes with songs of their own, not connectors', () => {
+  assert.equal(genresWithSongs(null), 0);
+  assert.equal(genresWithSongs({ nodes: [{ node: { own: new Set(['a']) } }, { node: { own: new Set() } }] }), 1);
 });
 
 test('provisional and discogs flags are on the nodes', () => {

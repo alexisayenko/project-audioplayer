@@ -47,7 +47,7 @@ export function createRadialView(canvas, { onSelect, onHover, reducedMotion = fa
     const v = (n) => cs.getPropertyValue(n).trim();
     colors = {
       fam: Array.from({ length: FAMILY_PALETTE_SIZE }, (_, i) => v(`--chart-${i}`)),
-      edge: v('--ink-muted'), accent: v('--accent-ink'), ink: v('--ink'), halo: v('--surface'), ok: v('--ok'), warn: v('--accent'), font: cs.fontFamily || 'sans-serif',
+      edge: v('--ink-muted'), accent: v('--accent-ink'), ink: v('--ink'), halo: v('--surface'), warn: v('--accent'), font: cs.fontFamily || 'sans-serif',
     };
   }
 
@@ -127,7 +127,7 @@ export function createRadialView(canvas, { onSelect, onHover, reducedMotion = fa
       ctx.lineWidth = ring / k;
       ctx.beginPath(); ctx.arc(n.x, n.y, n.r + (n.discogs ? 3 : 6) / k, 0, 2 * Math.PI); ctx.stroke();
     }
-    if (n.node.status) drawBadge(n, k);
+    if (n.node.status === 'question') drawBadge(n, k);
     if (flashing && flashing.id === n.id) drawFlash(n, k);
   }
 
@@ -161,25 +161,16 @@ export function createRadialView(canvas, { onSelect, onHover, reducedMotion = fa
     const off = (n.r + 4 / k) * 0.72;
     const bx = n.x + off;
     const by = n.y - off;
-    const ok = n.node.status === 'approved';
-    ctx.fillStyle = ok ? colors.ok : colors.warn;
+    ctx.fillStyle = colors.warn;
     ctx.beginPath(); ctx.arc(bx, by, br, 0, 2 * Math.PI); ctx.fill();
     ctx.strokeStyle = colors.halo;
     ctx.lineWidth = 1.5 / k;
     ctx.stroke();
-    ctx.strokeStyle = colors.halo;
     ctx.fillStyle = colors.halo;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    if (ok) {
-      ctx.lineWidth = 1.6 / k;
-      ctx.beginPath(); ctx.moveTo(bx - br * 0.45, by + br * 0.05); ctx.lineTo(bx - br * 0.1, by + br * 0.4); ctx.lineTo(bx + br * 0.5, by - br * 0.35); ctx.stroke();
-    } else {
-      ctx.font = `bold ${8 / k}px ${colors.font}`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('?', bx, by + 0.5 / k);
-    }
+    ctx.font = `bold ${8 / k}px ${colors.font}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('?', bx, by + 0.5 / k);
   }
 
   function drawLabels() {
@@ -197,7 +188,7 @@ export function createRadialView(canvas, { onSelect, onHover, reducedMotion = fa
       return n.level === 1 ? 3 : 4 + n.level;
     };
     const list = layout.nodes
-      .filter((n) => isForced(n) || n.level <= 2 && !n.parked || (n.level === 3 && (zoomed || lit3(n))))
+      .filter((n) => isForced(n) || n.level <= 2 || (n.level === 3 && (zoomed || lit3(n))))
       .sort((p, q) => (prio(p) - prio(q)) || (q.node.all.size - p.node.all.size) || p.name.localeCompare(q.name));
     const items = list.map((n) => ({
       id: n.id, x: n.x * k + tf.x, y: n.y * k + tf.y + (n.r + (n.discogs ? 2 : 5)) * k + 1,

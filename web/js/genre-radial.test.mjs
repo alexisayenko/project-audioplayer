@@ -2,8 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { buildTree, applyCounts } from './genre-levels.js';
-import { layoutRadial as layout0, highlightSets, radius, selectLabels, labelBox } from './genre-radial.js';
-const layoutRadial = (t, root, o = { showAll: true }) => layout0(t, root, o);
+import { layoutRadial, highlightSets, radius, selectLabels, labelBox } from './genre-radial.js';
 
 const doc = JSON.parse(readFileSync(new URL('../../server/data/genre_levels.json', import.meta.url), 'utf8'));
 const styles = JSON.parse(readFileSync(new URL('../../server/data/genre_styles.json', import.meta.url), 'utf8'));
@@ -23,14 +22,16 @@ function sample() {
   return t;
 }
 
-test('every Electronic style appears exactly once, plus the root', () => {
-  const l = layoutRadial(sample());
-  assert.equal(l.nodes.length, electronic.length + 1);
+test('every Electronic style with library songs appears exactly once, plus the root', () => {
+  const t = sample();
+  const l = layoutRadial(t);
+  const withSongs = electronic.filter(([k]) => t.byId.get(`s:${k}`).all.size > 0);
+  assert.ok(withSongs.length > 20 && withSongs.length < electronic.length);
+  assert.equal(l.nodes.length, withSongs.length + 1);
   const ids = l.nodes.map((n) => n.id);
   assert.equal(new Set(ids).size, ids.length);
-  assert.deepEqual(new Set(ids), new Set(['g:Electronic', ...electronic.map(([k]) => `s:${k}`)]));
-  assert.deepEqual(l.nodes.map((n) => n.level).reduce((a, x) => { a[x] += 1; return a; }, [0, 0, 0, 0]).slice(1), [1, electronic.filter(([, v]) => !v.parent).length, electronic.filter(([, v]) => v.parent).length]);
-  assert.equal(l.edges.length, electronic.length - l.nodes.filter((n) => n.parked).length);
+  assert.deepEqual(new Set(ids), new Set(['g:Electronic', ...withSongs.map(([k]) => `s:${k}`)]));
+  assert.equal(l.edges.length, withSongs.length);
 });
 
 test('layout is deterministic and does not depend on input order', () => {
@@ -42,7 +43,7 @@ test('layout is deterministic and does not depend on input order', () => {
 
 test('level 2 nodes do not overlap beyond a tolerance, level 3 stays outside level 2', () => {
   const l = layoutRadial(sample());
-  const l2 = l.nodes.filter((n) => n.level === 2 && !n.parked);
+  const l2 = l.nodes.filter((n) => n.level === 2);
   for (let i = 0; i < l2.length; i += 1) {
     for (let j = i + 1; j < l2.length; j += 1) {
       const d = Math.hypot(l2[i].x - l2[j].x, l2[i].y - l2[j].y);
@@ -51,8 +52,6 @@ test('level 2 nodes do not overlap beyond a tolerance, level 3 stays outside lev
   }
   const maxR2 = Math.max(...l2.map((n) => Math.hypot(n.x, n.y) + n.r));
   for (const n of l.nodes.filter((x) => x.level === 3)) assert.ok(Math.hypot(n.x, n.y) - n.r > maxR2, n.name);
-  const maxR3 = Math.max(...l.nodes.filter((x) => x.level === 3).map((n) => Math.hypot(n.x, n.y) + n.r));
-  for (const n of l.nodes.filter((x) => x.parked)) assert.ok(Math.hypot(n.x, n.y) - n.r > maxR3, n.name);
 });
 
 test('level 3 nodes keep apart within a tolerance and sit in their umbrella sector side', () => {
@@ -73,29 +72,64 @@ test('size follows the song count, the root is centred, bounds contain all nodes
   for (const n of l.nodes) assert.ok(n.x - n.r >= l.bounds.x0 && n.x + n.r <= l.bounds.x1 && n.y - n.r >= l.bounds.y0 && n.y + n.r <= l.bounds.y1);
 });
 
-test('umbrellas get distinct hues, children share the umbrella hue, standalone styles are neutral', () => {
-  const l = layoutRadial(sample());
+test('umbrellas with songs of their own get distinct hues, children share them, standalone and connector nodes are neutral', () => {
+  const t = sample();
+  const l = layoutRadial(t);
+  const tagged = l.nodes.filter((n) => n.level === 2 && n.node.children.length && n.node.own.size > 0);
+  assert.ok(tagged.length > 3);
+  assert.equal(new Set(tagged.map((n) => n.hue)).size, tagged.length);
+  for (const u of tagged) for (const c of l.nodes.filter((x) => x.level === 3 && x.node.parent === u.id)) assert.equal(c.hue, u.hue, c.name);
+  for (const n of l.nodes.filter((x) => x.level > 1)) {
+    assert.equal(n.connector, n.node.own.size === 0, n.name);
+    if (n.connector) assert.equal(n.hue, 15, n.name);
+  }
+  assert.ok(l.nodes.some((n) => n.connector));
+  assert.equal(l.nodes.find((n) => n.level === 2 && !n.node.children.length && n.node.own.size > 0).hue, 15);
+});
+
+test('a style without songs of its own but with a populated child is drawn as a neutral connector node', () => {
+  const t = buildTree(vocab);
+  applyCounts(t, [{ id: 'a', tags: ['genre:deep house'] }]);
+  const l = layoutRadial(t);
+  assert.deepEqual(l.nodes.map((n) => n.id).sort(), ['g:Electronic', 's:deep house', 's:house']);
   const house = l.byId.get('s:house');
-  assert.equal(l.byId.get('s:deep house').hue, house.hue);
-  const umbrellas = l.nodes.filter((n) => n.level === 2 && n.node.children.length);
-  assert.equal(umbrellas.length, electronic.filter(([k]) => electronic.some(([, v]) => v.parent === k)).length);
-  assert.equal(new Set(umbrellas.map((n) => n.hue)).size, Math.min(umbrellas.length, 15));
-  assert.equal(l.byId.get('s:darkwave').hue, 15);
+  assert.equal(house.connector, true);
+  assert.equal(house.hue, 15);
+  assert.equal(house.node.own.size, 0);
+  assert.equal(house.node.all.size, 1);
+  assert.equal(l.byId.get('s:deep house').connector, false);
+  assert.equal(l.byId.get('g:Electronic').connector, undefined);
 });
 
 test('also_under becomes a cross-link between level 2 nodes only', () => {
   const l = layoutRadial(sample());
-  const jungle = l.links.filter((x) => x.from === 's:jungle');
+  const t = buildTree(vocab);
+  applyCounts(t, [{ id: 'a', tags: ['genre:jungle'] }, { id: 'b', tags: ['genre:breakbeat'] }]);
+  const jungle = layoutRadial(t).links.filter((x) => x.from === 's:jungle');
   assert.deepEqual(jungle.map((x) => x.to).sort(), ['s:breakbeat']);
-  assert.ok(l.links.length > 10);
+  assert.ok(l.links.length > 0);
   for (const x of l.links) assert.equal(l.byId.get(x.to).level, 2);
 });
 
 test('the root genre is a parameter; unknown roots give null', () => {
   const t = sample();
   const rock = layoutRadial(t, 'Rock');
-  assert.equal(rock.nodes.length, Object.values(entries).filter((v) => v.genre === 'Rock').length + 1);
+  assert.equal(rock.nodes.length, 1);
   assert.equal(layoutRadial(t, 'Nope'), null);
+});
+
+test('Blues, Jazz and Rock lay out like Electronic: family hue on the root, only styles with songs around it', () => {
+  const t = buildTree(vocab);
+  for (const [name, hue] of [['Blues', 9], ['Jazz', 4], ['Rock', 1]]) {
+    const own = Object.entries(entries).filter(([, v]) => v.genre === name);
+    assert.ok(own.length > 2, `${name} has styles in genre_levels.json`);
+    assert.equal(layoutRadial(t, name).nodes.length, 1);
+    applyCounts(t, own.slice(0, 2).map(([k], i) => ({ id: `${name}${i}`, tags: [`genre:${k}`] })));
+    const l = layoutRadial(t, name);
+    assert.equal(l.byId.get(`g:${name}`).hue, hue);
+    assert.equal(l.nodes.filter((n) => n.level === 2).length, 2);
+    assert.equal(l.nodes.filter((n) => n.level === 3).length, 0);
+  }
 });
 
 test('highlightSets returns the ancestor chain and the direct children', () => {
@@ -108,7 +142,7 @@ test('highlightSets returns the ancestor chain and the direct children', () => {
 
 test('default view keeps only nodes with songs and the ancestors that connect them', () => {
   const t = sample();
-  const l = layout0(t, 'Electronic');
+  const l = layoutRadial(t, 'Electronic');
   assert.ok(l.nodes.length < electronic.length + 1);
   for (const n of l.nodes) assert.ok(n.level === 1 || n.node.all.size > 0, n.name);
   const have = new Set(l.nodes.map((n) => n.id));
@@ -117,33 +151,20 @@ test('default view keeps only nodes with songs and the ancestors that connect th
     const n = t.byId.get(`s:${k}`);
     assert.equal(have.has(n.id), n.all.size > 0, k);
   }
-  assert.equal(l.nodes.some((n) => n.parked), false);
-  assert.equal(l.edges.length, l.nodes.length - 1);
+    assert.equal(l.edges.length, l.nodes.length - 1);
 });
 
 test('default view of a genre without songs is just the root; positions stay deterministic', () => {
   const t = buildTree(vocab);
-  assert.equal(layout0(t, 'Electronic').nodes.length, 1);
-  const a = layout0(sample(), 'Electronic');
-  const b = layout0(sample(), 'Electronic');
+  assert.equal(layoutRadial(t, 'Electronic').nodes.length, 1);
+  const a = layoutRadial(sample(), 'Electronic');
+  const b = layoutRadial(sample(), 'Electronic');
   assert.deepEqual(a.nodes.map((n) => [n.id, n.x, n.y]), b.nodes.map((n) => [n.id, n.x, n.y]));
 });
 
-test('whole vocabulary shows every style once; empty standalone styles are parked on one outer arc', () => {
-  const l = layout0(sample(), 'Electronic', { showAll: true });
-  assert.equal(l.nodes.length, electronic.length + 1);
-  assert.equal(new Set(l.nodes.map((n) => n.id)).size, l.nodes.length);
-  const parked = l.nodes.filter((n) => n.parked);
-  assert.ok(parked.length > 10);
-  for (const n of parked) assert.ok(n.level === 2 && n.node.all.size === 0 && !n.node.children.length, n.name);
-  const rs = parked.map((n) => Math.hypot(n.x, n.y));
-  assert.ok(Math.max(...rs) - Math.min(...rs) < 1e-6);
-  for (let i = 1; i < parked.length; i += 1) assert.ok(Math.hypot(parked[i].x - parked[i - 1].x, parked[i].y - parked[i - 1].y) >= 2 * parked[i].r);
-});
-
 test('the layout keeps the also-under links as data but the map draws no dashed cross-link lines', async () => {
-  const l = layout0(sample(), 'Electronic', { showAll: true });
-  assert.ok(l.links.length > 10);
+  const l = layoutRadial(sample(), 'Electronic');
+  assert.ok(l.links.length > 0);
   const view = await import('node:fs').then((fs) => fs.readFileSync(new URL('./genre-radial-view.js', import.meta.url), 'utf8'));
   assert.doesNotMatch(view, /drawCrossLinks|visibleCrossLinks/);
 });
@@ -208,7 +229,7 @@ test('forced labels (selected, hovered, matched) are always drawn even over othe
 });
 
 test('hidden labels reappear when zooming in because spacing grows', () => {
-  const l = layout0(sample(), 'Electronic', { showAll: false });
+  const l = layoutRadial(sample(), 'Electronic');
   const at = (k) => selectLabels(l.nodes.filter((n) => n.level === 2).sort((p, q) => q.node.all.size - p.node.all.size).map((n) => box(n.id, n.x * k, n.y * k + n.r * k, 7 * n.name.length, 14))).size;
   const lvl2 = l.nodes.filter((n) => n.level === 2).length;
   assert.ok(at(0.2) < lvl2);

@@ -15,6 +15,9 @@ const calls = stubFetch((u) => {
     return { body: VOCAB };
   }
   if (mode === 'lib-fail') return { status: 500, body: { error: 'x' } };
+  if (mode === 'breakbeat') return { body: { songs: [...SONGS, { id: 's7', tags: ['genre:breakbeat'] }] } };
+  if (mode === 'rock-heavy') return { body: { songs: [...SONGS, ...[1, 2, 3, 4].map((i) => ({ id: `r${i}`, tags: ['genre:rock and roll'] }))] } };
+  if (mode === 'no-genres') return { body: { songs: [{ id: 'x', tags: ['mood:calm'] }, { id: 'y', tags: ['genre:unknown thing'] }] } };
   return { body: { songs: SONGS } };
 });
 const { renderGenresRework } = await import('./genres-rework.js');
@@ -54,16 +57,17 @@ test('page loads vocabulary and library, shows the map canvas, legend and the tr
   assert.equal(canvas.getAttribute('role'), 'img');
   assert.ok(canvas.getAttribute('aria-label').includes('Electronic'));
   assert.ok(root.querySelector('#gmr-legend').textContent.includes('Dashed ring: not in Discogs'));
+  assert.ok(!root.querySelector('#gmr-legend').textContent.includes('approved'));
   assert.equal(root.querySelector('[role="tree"]').getAttribute('aria-label'), 'Genre hierarchy');
-  assert.deepEqual(names(root), ['Electronic', 'breakbeat', 'drum and bass', 'house', 'Rock']);
+  assert.deepEqual(names(root), ['Electronic', 'drum and bass', 'house', 'Rock']);
   assert.equal(row(root, 'Electronic').getAttribute('aria-expanded'), 'true');
   assert.equal(row(root, 'house').getAttribute('aria-expanded'), 'false');
-  assert.equal(row(root, 'breakbeat').getAttribute('aria-expanded'), null);
+  assert.equal(row(root, 'drum and bass').getAttribute('aria-expanded'), 'false');
   assert.equal(row(root, 'house').getAttribute('aria-level'), '2');
-  assert.equal(root.querySelector('[role="status"]').textContent, '6 genres in Electronic');
+  assert.equal(root.querySelector('[role="status"]').textContent, '5 genres in Electronic');
   assert.equal(row(root, 'Electronic').querySelector('.gmr-count').textContent, '4');
   assert.equal(row(root, 'Rock').querySelector('.gmr-count').textContent, '1');
-  assert.equal(row(root, 'breakbeat').querySelector('.gmr-count'), null);
+  assert.equal(row(root, 'drum and bass').querySelector('.gmr-count').textContent, '1');
   cleanup();
 });
 
@@ -80,19 +84,30 @@ test('zoom controls exist and the outline toggle reports its state', async () =>
   assert.notEqual(toggle.getAttribute('aria-expanded'), before);
 });
 
-test('expand all, collapse all and the only-with-songs toggle', async () => {
+test('the outline lists only genres with library songs and the ancestors that nest them', async () => {
+  mode = 'ok';
+  const { root, cleanup } = await mount();
+  btn(root, 'Expand all').click();
+  assert.deepEqual(names(root), ['Electronic', 'drum and bass', 'jungle', 'house', 'afro house', 'deep house', 'Rock', 'rock and roll']);
+  assert.equal(row(root, 'breakbeat'), undefined);
+  assert.equal(btn(root, 'Only with songs'), undefined);
+  assert.equal(btn(root, 'Show whole vocabulary'), undefined);
+  assert.equal(row(root, 'drum and bass').querySelector('.gmr-count').textContent, '1');
+  assert.equal(row(root, 'jungle').querySelector('.gmr-also'), null, 'a jump to a genre without songs is not offered');
+  cleanup();
+});
+
+test('expand all and collapse all', async () => {
   mode = 'ok';
   const { root } = await mount();
   btn(root, 'Expand all').click();
-  assert.equal(rowsOf(root).length, 9);
+  assert.equal(rowsOf(root).length, 8);
   const afro = row(root, 'afro house');
   assert.equal(afro.getAttribute('aria-level'), '3');
   assert.ok(afro.textContent.includes('not in Discogs'));
   assert.equal(afro.querySelector('.nodisc').getAttribute('aria-label'), 'Not in Discogs');
   assert.ok(row(root, 'rock and roll').textContent.includes('provisional'));
   assert.equal(row(root, 'deep house').querySelector('.nodisc'), null);
-  btn(root, 'Only with songs').click();
-  assert.equal(btn(root, 'Only with songs').getAttribute('aria-pressed'), 'true');
   assert.equal(names(root).includes('breakbeat'), false);
   btn(root, 'Collapse all').click();
   assert.deepEqual(names(root), ['Electronic', 'Rock']);
@@ -113,6 +128,23 @@ test('search finds a synonym, expands to it and clears with Escape', async () =>
   assert.ok(root.textContent.includes('No genre or synonym matches'));
   fire(input, 'keydown', { key: 'Escape' });
   assert.deepEqual(names(root), ['Electronic', 'Rock']);
+});
+
+test('outline search only finds genres that have library songs', async () => {
+  mode = 'ok';
+  const { root, cleanup } = await mount();
+  const input = root.querySelector('input');
+  input.value = 'breakbeat';
+  fire(input, 'input');
+  assert.equal(rowsOf(root).length, 0);
+  assert.ok(root.textContent.includes('No genre or synonym matches "breakbeat"'));
+  input.value = 'jungle';
+  fire(input, 'input');
+  assert.deepEqual(names(root), ['Electronic', 'drum and bass', 'jungle']);
+  input.value = 'house';
+  fire(input, 'input');
+  assert.deepEqual(names(root), ['Electronic', 'house', 'afro house', 'deep house']);
+  cleanup();
 });
 
 test('Enter in the search selects the first match and opens its details', async () => {
@@ -150,8 +182,8 @@ test('clicking a row opens the detail panel with chain, synonyms, flags and coun
   assert.equal(root.querySelector('.gmr-details').hidden, true);
 });
 
-test('also under chip jumps to the other parent; library button applies the genre filter', async () => {
-  mode = 'ok';
+test('also under chip jumps to the other parent when it has songs; library button applies the genre filter', async () => {
+  mode = 'breakbeat';
   const { root } = await mount();
   btn(root, 'Expand all').click();
   const chip = row(root, 'jungle').querySelector('.gmr-also');
@@ -164,10 +196,10 @@ test('also under chip jumps to the other parent; library button applies the genr
   btn(root, 'Show 2 songs in Library').click();
   assert.equal(location.hash, '#/library');
   assert.ok(prefs.sel instanceof Set);
-  btn(root, 'Show whole vocabulary').click();
   openInfo(root, 'breakbeat');
   assert.equal(panelOf(root).querySelector('h3').textContent, 'breakbeat');
-  assert.equal(btn(root, 'Show 0 songs in Library').disabled, true);
+  assert.ok(btn(root, 'Show 1 song in Library'));
+  mode = 'ok';
 });
 
 test('keyboard: arrows move, right expands, left collapses, Enter and Space toggle', async () => {
@@ -178,8 +210,8 @@ test('keyboard: arrows move, right expands, left collapses, Enter and Space togg
   const active = () => rowsOf(root).find((r) => r.getAttribute('tabindex') === '0').querySelector('.gmr-name').textContent;
   assert.equal(active(), 'Electronic');
   press('ArrowDown');
-  assert.equal(active(), 'breakbeat');
-  press('ArrowDown'); press('ArrowDown');
+  assert.equal(active(), 'drum and bass');
+  press('ArrowDown');
   assert.equal(active(), 'house');
   press('ArrowRight');
   assert.equal(row(root, 'house').getAttribute('aria-expanded'), 'true');
@@ -210,9 +242,9 @@ test('failures: old server without levels, vocabulary down, library down', async
   assert.equal(r.root.querySelector('[role="status"]').textContent, 'Vocabulary unavailable');
   mode = 'lib-fail';
   r = await mount();
-  assert.ok(r.root.querySelector('[role="status"]').textContent.includes('song counts unavailable'));
-  assert.equal(rowsOf(r.root).length, 5);
-  assert.equal(row(r.root, 'Electronic').querySelector('.gmr-count'), null);
+  assert.ok(r.root.querySelector('[role="status"]').textContent.startsWith('Library unavailable'));
+  assert.equal(rowsOf(r.root).length, 0);
+  assert.equal(r.root.querySelector('.gmr-family-row').hidden, true);
   mode = 'fail';
   r = await mount();
   assert.equal(r.root.querySelector('[role="status"]').textContent, 'Vocabulary unavailable');
@@ -251,25 +283,18 @@ test('flavour chips have counts in their label and filter the list; clear resets
   assert.ok(row(root, 'house'));
   btn(root, 'Clear flavours').click();
   assert.equal(chip('dark').getAttribute('aria-pressed'), 'false');
-  assert.deepEqual(names(root), ['Electronic', 'breakbeat', 'drum and bass', 'house', 'Rock']);
+  assert.deepEqual(names(root), ['Electronic', 'drum and bass', 'house', 'Rock']);
 });
 
-test('the whole-vocabulary toggle is a pressed button and persists through localStorage safely', async () => {
+test('there is no whole-vocabulary mode: no toggle, nothing stored', async () => {
   mode = 'ok';
   const store = new Map();
   globalThis.localStorage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, v) };
-  const { root } = await mount();
-  const b = btn(root, 'Show whole vocabulary');
-  assert.equal(b.getAttribute('aria-pressed'), 'false');
-  b.click();
-  assert.equal(b.getAttribute('aria-pressed'), 'true');
-  assert.equal(store.get('electrophone.genresReworkAll'), '1');
-  globalThis.localStorage = { getItem() { throw new Error('blocked'); }, setItem() { throw new Error('blocked'); } };
-  const second = await mount();
-  const b2 = btn(second.root, 'Show whole vocabulary');
-  assert.equal(b2.getAttribute('aria-pressed'), 'false');
-  b2.click();
-  assert.equal(b2.getAttribute('aria-pressed'), 'true');
+  const { root, cleanup } = await mount();
+  assert.equal(btn(root, 'Show whole vocabulary'), undefined);
+  assert.equal(root.textContent.includes('whole vocabulary'), false);
+  assert.equal(store.has('electrophone.genresReworkAll'), false);
+  cleanup();
   delete globalThis.localStorage;
 });
 
@@ -302,7 +327,32 @@ test('Genres map shows one page title inside the standard page head and no small
   assert.equal(head.querySelector('.t-eyebrow').textContent, 'ELECTROPHONE');
   assert.equal(root.querySelector('.gm-title'), null);
   assert.equal(root.querySelector('.gm').children[0], head);
-  assert.equal(root.querySelector('.gm .gm-bar').closest('.gm-work').parentElement, root.querySelector('.gm'));
+  assert.equal(root.querySelector('.gm .gmr-side').closest('.gm-work').parentElement, root.querySelector('.gm'));
+  assert.equal(root.querySelector('.gm-bar'), null);
+  cleanup();
+});
+
+test('the toolbar is the header of the one side panel and stays reachable when the outline is closed', async () => {
+  mode = 'ok';
+  const { root, cleanup } = await mount();
+  const side = root.querySelector('.gmr-side');
+  const bar = side.querySelector('.gmr-bar');
+  assert.equal(root.querySelectorAll('.gmr-side').length, 1);
+  assert.equal(bar, side.children[0]);
+  assert.equal(side.children[1], root.querySelector('#gmr-outline'));
+  assert.ok(bar.querySelector('[role="status"]').textContent.includes('genres in Electronic'));
+  for (const l of ['Show legend', 'Reload', 'Outline']) assert.ok(bar.contains(btn(root, l)), l);
+  assert.equal(root.querySelectorAll('.gmr-bar').length, 1);
+  const close = root.querySelectorAll('button').find((x) => x.getAttribute('aria-label') === 'Close outline');
+  assert.ok(!bar.contains(close));
+  close.click();
+  assert.equal(root.querySelector('#gmr-outline').hidden, true);
+  assert.ok(side.contains(bar));
+  assert.equal(bar.contains(btn(root, 'Outline')), true);
+  btn(root, 'Show legend').click();
+  assert.equal(root.querySelector('#gmr-legend').hidden, false);
+  btn(root, 'Outline').click();
+  assert.equal(root.querySelector('#gmr-outline').hidden, false);
   cleanup();
 });
 
@@ -429,4 +479,72 @@ test('Now playing says so when the playing song has no genre inside the root', a
   assert.equal(document.getElementById('toast').textContent, 'The playing song has no Electronic genre');
   cleanup();
   current = null;
+});
+
+test('family chips list only families with library songs, most songs first, the first one pressed', async () => {
+  mode = 'ok';
+  const { root, cleanup } = await mount();
+  const chips = root.querySelectorAll('.gmr-family-row button');
+  assert.deepEqual(chips.map((c) => c.textContent), ['Electronic', 'Rock']);
+  assert.deepEqual(chips.map((c) => c.querySelector('.gm-dot').className), ['gm-dot f0', 'gm-dot f1']);
+  assert.deepEqual(chips.map((c) => c.getAttribute('aria-pressed')), ['true', 'false']);
+  assert.equal(root.querySelector('.gmr-family-row').getAttribute('aria-label'), 'Genre family');
+  cleanup();
+});
+
+test('the default family is the one with the most library songs', async () => {
+  mode = 'rock-heavy';
+  const { root, cleanup } = await mount();
+  const chips = root.querySelectorAll('.gmr-family-row button');
+  assert.deepEqual(chips.map((c) => c.textContent), ['Rock', 'Electronic']);
+  assert.deepEqual(chips.map((c) => c.getAttribute('aria-pressed')), ['true', 'false']);
+  assert.equal(root.querySelector('[role="status"]').textContent, '1 genre in Rock');
+  assert.ok(root.querySelector('canvas').getAttribute('aria-label').includes('Rock'));
+  assert.equal(row(root, 'Rock').getAttribute('aria-expanded'), 'true');
+  cleanup();
+  mode = 'ok';
+});
+
+test('without genre-tagged songs there are no family chips and a calm empty state', async () => {
+  mode = 'no-genres';
+  const { root, cleanup } = await mount();
+  assert.equal(root.querySelectorAll('.gmr-family-row button').length, 0);
+  assert.equal(root.querySelector('.gmr-family-row').hidden, true);
+  assert.equal(root.querySelector('[role="status"]').textContent, 'No genres yet. Add songs with genres to see them here.');
+  assert.equal(rowsOf(root).length, 0);
+  assert.equal(root.querySelector('.gmr-empty').hidden, false);
+  assert.equal(root.querySelector('.gmr-empty').textContent, 'No genres yet. Add songs with genres to see them here.');
+  assert.equal(root.querySelector('canvas').getAttribute('aria-label').startsWith('Map of genres.'), true);
+  cleanup();
+  mode = 'ok';
+});
+
+test('a family chip switches the map root, the status chip, the canvas label and Now playing', async () => {
+  mode = 'ok';
+  current = { id: 's5', tags: ['genre:rock and roll'] };
+  const { root, cleanup } = await mount();
+  const chip = (name) => root.querySelectorAll('.gmr-family-row button').find((c) => c.textContent === name);
+  chip('Rock').click();
+  assert.equal(chip('Rock').getAttribute('aria-pressed'), 'true');
+  assert.equal(chip('Electronic').getAttribute('aria-pressed'), 'false');
+  assert.ok(root.querySelector('canvas').getAttribute('aria-label').includes('Rock'));
+  assert.equal(root.querySelector('[role="status"]').textContent, '1 genre in Rock');
+  assert.equal(row(root, 'Rock').getAttribute('aria-expanded'), 'true');
+  btn(root, 'Now playing').click();
+  assert.equal(row(root, 'rock and roll').getAttribute('aria-selected'), 'true');
+  chip('Electronic').click();
+  assert.equal(root.querySelector('[role="status"]').textContent, '5 genres in Electronic');
+  btn(root, 'Now playing').click();
+  assert.equal(document.getElementById('toast').textContent, 'The playing song has no Electronic genre');
+  cleanup();
+  current = null;
+});
+
+test('selecting an outline row of another map family switches the map to it', async () => {
+  mode = 'ok';
+  const { root, cleanup } = await mount();
+  row(root, 'Rock').click();
+  assert.equal(root.querySelectorAll('.gmr-family-row button').find((c) => c.textContent === 'Rock').getAttribute('aria-pressed'), 'true');
+  assert.equal(root.querySelector('[role="status"]').textContent, '1 genre in Rock');
+  cleanup();
 });

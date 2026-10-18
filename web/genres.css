@@ -174,7 +174,6 @@ body[data-route="genres"] main { max-width: none; padding: 0; }
 .gmr-legend li { display: flex; align-items: center; gap: var(--space-2); }
 .gmr-key { flex: none; display: inline-block; width: 14px; height: 14px; box-sizing: border-box; border-radius: var(--radius-pill); background: var(--chart-0); }
 .gmr-key.size { width: 8px; height: 8px; margin: 3px; }
-.gmr-key.dim { opacity: .38; }
 .gmr-key.nodisc { background: var(--chart-0); box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--ink); }
 .gmr-tree { display: grid; gap: 1px; }
 .gmr-empty { margin: 0; }
@@ -203,19 +202,28 @@ body[data-route="genres"] main { max-width: none; padding: 0; }
 .gmr-count { margin-left: auto; color: var(--ink-muted); font-weight: 400; }
 .gmr-dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: var(--space-2) var(--space-3); margin: 0; }
 .gmr-dl dd { margin: 0; overflow-wrap: anywhere; }
-.gmr-key.small { width: 6px; height: 6px; margin: 4px; }
+.gmr-key.neutral { background: var(--chart-15); }
 .gmr-status-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); flex: 1 1 100%; }
 .gmr-badge.ok { background: var(--ok); color: var(--surface); }
 .gmr-badge.q { background: var(--accent); color: var(--on-accent); }
-.gmr-key.ok { background: var(--ok); }
 .gmr-key.q { background: var(--accent); }
 .gmr-flavour-row, .gmr-flav-group { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); }
 .gmr-flavour-row { flex: 1 1 100%; }
 .gmr-flavour-row[hidden] { display: none; }
+.gmr-family-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); flex: 1 1 100%; }
 .gmr-badge.flav { background: var(--surface-sunken); color: var(--ink); box-shadow: inset 0 0 0 var(--stroke-hairline) var(--line); }
 .gmr-flav[aria-pressed="true"] { background-color: var(--accent-tint); color: var(--accent-ink); }
 .gmr-badge.alsoin { background: var(--surface-sunken); color: var(--ink-muted); }
-.gmr-outline { display: flex; flex-direction: column; overflow: hidden; padding: 0; }
+.gmr-side {
+  position: absolute; z-index: 5; top: var(--space-3); right: var(--space-3); bottom: calc(var(--space-3) + var(--player-h)); width: min(360px, calc(100% - 2 * var(--space-3)));
+  display: flex; flex-direction: column; overflow: hidden; border-radius: var(--radius-key); background: var(--surface); box-shadow: var(--shadow-float);
+}
+.gm:not(.outline-open) .gmr-side { bottom: auto; }
+.gmr-bar { flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); min-width: 0; padding: var(--space-3); }
+.gmr-bar .gm-status { flex: 0 1 auto; max-width: 100%; margin: 0; }
+.gm.outline-open .gmr-outline-btn { display: none; }
+.gmr-outline { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; overflow: hidden; border-top: var(--stroke-hairline) solid var(--line); }
+.gmr-outline[hidden] { display: none; }
 .gmr-outline .gm-outline-head { position: static; flex: none; margin: 0; padding: var(--space-3) var(--space-3) var(--space-2); }
 .gmr-details {
   flex: none; display: grid; gap: var(--space-3); max-height: 50%; overflow-y: auto; padding: var(--space-3); background: var(--surface-sunken);
@@ -224,7 +232,11 @@ body[data-route="genres"] main { max-width: none; padding: 0; }
 .gmr-details[hidden] { display: none; }
 .gmr-scroll { flex: 1 1 auto; min-height: 0; overflow-x: hidden; overflow-y: auto; padding: var(--space-3) var(--space-3) var(--space-4); }
 .gmr-details, .gmr-scroll { scrollbar-width: var(--scrollbar-width); scrollbar-color: var(--line) transparent; }
-@media (max-width: 719px) { .gmr-outline.has-details { height: 70%; } }
+@media (max-width: 719px) {
+  .gmr-side { top: auto; left: var(--space-3); width: auto; height: 55%; }
+  .gm:not(.outline-open) .gmr-side { top: var(--space-3); height: auto; }
+  .gm.outline-open .gmr-side.has-details { height: 70%; }
+}
 @keyframes gmr-flash { from { background-color: var(--accent); color: var(--on-accent); } to { background-color: var(--accent-tint); color: var(--accent-ink); } }
 .gmr-row.flash { animation: gmr-flash 1.4s var(--ease-out) 1; }
 @media (prefers-reduced-motion: reduce) { .gmr-row.flash { animation: none; background-color: var(--accent); color: var(--on-accent); } }
