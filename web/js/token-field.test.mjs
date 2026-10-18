@@ -69,49 +69,37 @@ test('the remove button drops a pill and fires input', () => {
   assert.equal(fired, 1);
 });
 
-test('pencil opens a menu; Remove and Move to X work; menu closes on selection', () => {
-  const { title, artist } = mount();
+test('pencil starts inline editing with no menu', () => {
+  const { title } = mount();
   const pencil = title.querySelector('.token-pill').querySelector('button');
+  assert.equal(pencil.getAttribute('aria-label'), 'Edit Song A');
+  assert.equal(pencil.hasAttribute('aria-haspopup'), false);
   pencil.click();
-  assert.equal(title.querySelectorAll('.token-menu').length, 1);
-  assert.equal(pencil.getAttribute('aria-expanded'), 'true');
-  const labels = title.querySelector('.token-menu').querySelectorAll('button').map((b) => b.textContent);
-  assert.deepEqual(labels, ['Edit text', 'Move to Artists', 'Move to Remix by', 'Remove']);
-  title.querySelector('.token-menu').querySelectorAll('button')[1].click();
-  assert.deepEqual(pills(title), ['Song B']);
-  assert.deepEqual(pills(artist), ['Band X', 'Song A']);
   assert.equal(title.querySelectorAll('.token-menu').length, 0);
+  const edit = title.querySelector('.token-pill .token-edit');
+  assert.ok(edit);
+  assert.equal(edit.value, 'Song A');
+  assert.equal(edit.getAttribute('aria-label'), 'Edit Song A');
 });
 
-test('the last title token cannot be moved away (Move is disabled, moveTo refuses)', () => {
+test('moveTo still moves a token for the Title hint, but never the last title token', () => {
   const g = tokenGroup();
   const title = g.field('title', 'Only');
   const artist = g.field('artists', '');
   document.body.append(title, artist);
-  title.querySelector('.token-pill').querySelector('button').click();
-  const move = title.querySelector('.token-menu').querySelectorAll('button')[1];
-  assert.equal(move.disabled, true);
   title.moveTo(0, 'artists');
   assert.deepEqual(pills(title), ['Only']);
   assert.deepEqual(pills(artist), []);
+  const { title: t2, artist: a2 } = mount();
+  t2.moveTo(0, 'artists');
+  assert.deepEqual(pills(t2), ['Song B']);
+  assert.deepEqual(pills(a2), ['Band X', 'Song A']);
 });
 
-test('the menu toggles on a second pencil click and closes with Escape', () => {
-  const { title } = mount();
-  const pencil = title.querySelector('.token-pill').querySelector('button');
-  pencil.click();
-  pencil.click();
-  assert.equal(title.querySelectorAll('.token-menu').length, 0);
-  pencil.click();
-  title.querySelector('.token-menu').dispatchEvent(makeEvent('keydown', { key: 'Escape', bubbles: true }));
-  assert.equal(title.querySelectorAll('.token-menu').length, 0);
-});
-
-test('Edit text: Enter saves the new text, Escape discards', () => {
+test('pencil edit: Enter saves the new text, Escape discards', () => {
   const { artist } = mount();
   const open = () => {
     artist.querySelector('.token-pill').querySelector('button').click();
-    artist.querySelector('.token-menu').querySelector('button').click();
     return artist.querySelector('.token-edit');
   };
   let edit = open();
@@ -122,6 +110,15 @@ test('Edit text: Enter saves the new text, Escape discards', () => {
   edit.value = 'Ignored';
   edit.dispatchEvent(makeEvent('keydown', { key: 'Escape' }));
   assert.deepEqual(pills(artist), ['Renamed']);
+});
+
+test('pencil edit: blur commits and an emptied pill is removed', () => {
+  const { artist } = mount();
+  artist.querySelector('.token-pill').querySelector('button').click();
+  const edit = artist.querySelector('.token-edit');
+  edit.value = '';
+  edit.dispatchEvent(makeEvent('blur'));
+  assert.deepEqual(pills(artist), []);
 });
 
 test('acceptDrop reorders within a field and moves across fields', () => {
@@ -191,7 +188,7 @@ test('mouse pointer never starts the touch drag', (t) => {
   assert.equal(pill.classList.contains('dragging'), false);
 });
 
-test('featured and by fields use the same pill rules and offer moves to each other', () => {
+test('featured and by fields use the same pill rules and can move to each other', () => {
   const g = tokenGroup();
   const artists = g.field('artists', 'A - B');
   const featured = g.field('featured', 'C');
@@ -200,10 +197,7 @@ test('featured and by fields use the same pill rules and offer moves to each oth
   assert.deepEqual(pills(featured), ['C']);
   assert.equal(featured.getAttribute('aria-label'), 'Featuring');
   assert.equal(by.getAttribute('aria-label'), 'Remix by');
-  featured.querySelector('.token-pill').querySelector('button').click();
-  const labels = featured.querySelector('.token-menu').querySelectorAll('button').map((b) => b.textContent);
-  assert.deepEqual(labels, ['Edit text', 'Move to Artists', 'Move to Remix by', 'Remove']);
-  featured.querySelector('.token-menu').querySelectorAll('button')[2].click();
+  featured.moveTo(0, 'by');
   assert.deepEqual(pills(by), ['D', 'C']);
   assert.deepEqual(pills(featured), []);
 });

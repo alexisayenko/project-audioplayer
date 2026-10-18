@@ -4,12 +4,12 @@ import { MIME, dragState, clearMarks, locate, mark, startTouchDrag } from './tok
 import { tokenize, isBlankToken, removeToken, replaceToken, appendToken, moveToken, moveTokenTo, stripEdges, commitTyped, SEPARATOR } from './tokens.js';
 
 const KINDS = {
-  title: { label: 'Title', move: 'Title', sep: SEPARATOR },
-  artists: { label: 'Artists', move: 'Artists', sep: SEPARATOR },
-  featured: { label: 'Featuring', move: 'Featuring', sep: SEPARATOR },
-  withs: { label: 'With', move: 'With', sep: SEPARATOR },
-  by: { label: 'Remix by', move: 'Remix by', sep: SEPARATOR },
-  of: { label: 'Cover of', move: 'Cover / mashup sources', sep: SEPARATOR },
+  title: { label: 'Title', sep: SEPARATOR },
+  artists: { label: 'Artists', sep: SEPARATOR },
+  featured: { label: 'Featuring', sep: SEPARATOR },
+  withs: { label: 'With', sep: SEPARATOR },
+  by: { label: 'Remix by', sep: SEPARATOR },
+  of: { label: 'Cover of', sep: SEPARATOR },
 };
 
 export function tokenGroup() {
@@ -28,7 +28,6 @@ function tokenField(kind, fields) {
   const cfg = { ...KINDS[kind] };
   let text = '';
   let tail = false;
-  let menu = null;
   const entry = el('input', { type: 'text', class: 'token-entry', 'aria-label': cfg.label, autocomplete: 'off' });
   const node = el('div', { class: 'token-field', role: 'group', 'aria-label': cfg.label }, entry);
 
@@ -42,14 +41,6 @@ function tokenField(kind, fields) {
   const fire = () => node.dispatchEvent(new Event('input', { bubbles: true }));
   const set = (v) => { text = v; tail = false; render(); };
 
-  const closeMenu = () => {
-    if (!menu) return;
-    menu.node.remove();
-    menu.btn.setAttribute('aria-expanded', 'false');
-    document.removeEventListener('click', menu.outside, true);
-    menu = null;
-  };
-
   const commitPending = () => {
     if (!pending().trim()) return;
     text = appendToken(text, pending(), cfg.sep);
@@ -59,7 +50,6 @@ function tokenField(kind, fields) {
   };
 
   function editPill(pill, i, current) {
-    closeMenu();
     const input = el('input', { type: 'text', class: 'token-edit', 'aria-label': `Edit ${current}`, value: current, autocomplete: 'off' });
     let done = false;
     const finish = (save) => {
@@ -124,38 +114,7 @@ function tokenField(kind, fields) {
   };
   node.moveTo = (i, target) => { if (kind !== 'title' || count() > 1) moveTo(i, target); };
 
-  function openMenu(btn, pill, i, label) {
-    const again = menu && menu.btn === btn;
-    closeMenu();
-    if (again) return;
-    const items = [{ label: 'Edit text', run: () => editPill(pill, i, label) }];
-    for (const k of Object.keys(KINDS)) {
-      if (k !== kind && fields[k]) items.push({ label: `Move to ${KINDS[k].move}`, disabled: kind === 'title' && count() < 2, run: () => moveTo(i, k) });
-    }
-    items.push({ label: 'Remove', danger: true, run: () => removeAt(i) });
-    const m = el('div', { class: 'menu token-menu', role: 'menu' }, items.map((it) => el('button', {
-      class: `menu-item${it.danger ? ' danger' : ''}`, type: 'button', role: 'menuitem', disabled: !!it.disabled,
-      onclick: () => { closeMenu(); it.run(); },
-    }, it.label)));
-    m.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeMenu(); btn.focus(); }
-      else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-        e.preventDefault();
-        const bs = [...m.querySelectorAll('button')];
-        const at = bs.indexOf(document.activeElement);
-        bs[(at + (e.key === 'ArrowDown' ? 1 : bs.length - 1)) % bs.length].focus();
-      }
-    });
-    pill.append(m);
-    btn.setAttribute('aria-expanded', 'true');
-    const outside = (e) => { if (!m.contains(e.target) && !btn.contains(e.target)) closeMenu(); };
-    document.addEventListener('click', outside, true);
-    menu = { node: m, btn, outside };
-    m.querySelector('button').focus();
-  }
-
   function removeAt(i) {
-    closeMenu();
     text = removeToken(text, i);
     tail = false;
     render();
@@ -164,12 +123,11 @@ function tokenField(kind, fields) {
   }
 
   function render() {
-    closeMenu();
     for (const p of node.querySelectorAll('.token-pill')) p.remove();
     tokenize(text).forEach((t, i) => {
       if (isBlankToken(t)) return;
       const label = t.text.trim();
-      const pencil = el('button', { type: 'button', class: 'token-btn', 'aria-label': `Edit ${label}`, 'aria-haspopup': 'menu', 'aria-expanded': 'false' }, icon('pencil', 'inline'));
+      const pencil = el('button', { type: 'button', class: 'token-btn', 'aria-label': `Edit ${label}` }, icon('pencil', 'inline'));
       const x = el('button', { type: 'button', class: 'token-btn', 'aria-label': `Remove ${label}` }, icon('clear', 'inline'));
       const pill = el('span', { class: 'token-pill', draggable: 'true', 'data-i': String(i) }, pencil, el('span', { class: 'token-text' }, label), x);
       pill.addEventListener('dragstart', (e) => {
@@ -182,7 +140,7 @@ function tokenField(kind, fields) {
       });
       pill.addEventListener('dragend', () => { pill.classList.remove('dragging'); clearMarks(); dragState.current = null; });
       pill.addEventListener('pointerdown', (e) => { if (!pill.classList.contains('editing')) startTouchDrag(kind, pill, i, e); });
-      pencil.addEventListener('click', () => openMenu(pencil, pill, i, label));
+      pencil.addEventListener('click', () => editPill(pill, i, label));
       x.addEventListener('click', () => removeAt(i));
       entry.before(pill);
     });
@@ -200,7 +158,6 @@ function tokenField(kind, fields) {
     if (e.key === 'Enter' && pending().trim()) { e.preventDefault(); commitPending(); fire(); }
   });
   entry.addEventListener('blur', () => {
-    if (menu) return;
     if (pending().trim()) { commitPending(); fire(); }
     if (tail) { text = stripEdges(text); tail = false; render(); fire(); }
   });

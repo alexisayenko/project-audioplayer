@@ -762,7 +762,6 @@ input[type=text].token-entry, input[type=text].token-edit {
 }
 input[type=text].token-entry { flex: 1 1 80px; min-width: 80px; }
 input[type=text].token-edit { background: var(--surface); box-shadow: inset 0 0 0 var(--stroke-focus) var(--ring-color); border-radius: var(--radius-pill); }
-.token-menu { position: absolute; top: calc(100% + var(--space-1)); left: 0; z-index: var(--z-menu); }
 .token-pill[draggable=true] { cursor: grab; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 .token-pill.dragging { opacity: 0.4; cursor: grabbing; }
 .token-pill.drop-before::before { content: ""; position: absolute; left: calc(-1 * var(--space-1)); top: 2px; bottom: 2px; width: var(--stroke-focus); border-radius: var(--radius-pill); background: var(--accent-ink); }

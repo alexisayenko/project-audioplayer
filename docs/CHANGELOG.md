@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-18 (Pill pencil edits directly, not deployed)
+
+- Web: the pencil on a song form pill (Title, Artists, Featuring, With, Remix by, Cover / mashup sources) now starts editing the pill text directly; the popup menu (Edit text, Move to ..., Remove) is gone, so pills move between fields only by drag and drop and the Title "Move to Artists?" hint; the X still removes. Not checked in a browser.
+
 ## 2026-10-18 (Library row playlist button, not deployed)
 
 - Web: the Library row playlist button keeps the plus icon (`listAdd`) when pressed, like the song card toggle; the pressed state is only the accent background, and the unused check icon is gone.
