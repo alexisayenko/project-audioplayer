@@ -22,7 +22,7 @@ test('stored compact state is applied at init, before any song loads', () => {
   assert.equal(b.getAttribute('aria-pressed'), 'true');
   assert.equal(b.getAttribute('aria-label'), 'Expand player');
   assert.equal(b.title, 'Expand player');
-  assert.equal(b.firstChild.innerHTML, '<path d="m9 18 6-6-6-6"/>');
+  assert.equal(b.firstChild.innerHTML, '<path d="m15 18-6-6 6-6"/>');
 });
 
 test('clicking the handle flips state, class, label, chevron and storage', () => {
@@ -33,7 +33,7 @@ test('clicking the handle flips state, class, label, chevron and storage', () =>
   assert.equal(b.title, 'Compact player');
   assert.equal($('mini').classList.contains('compact'), false);
   assert.equal(document.body.classList.contains('mini-compact'), false);
-  assert.equal(b.firstChild.innerHTML, '<path d="m15 18-6-6 6-6"/>');
+  assert.equal(b.firstChild.innerHTML, '<path d="m9 18 6-6-6-6"/>');
   assert.equal(localStorage.getItem(KEY), '0');
   b.click();
   assert.equal(b.getAttribute('aria-pressed'), 'true');

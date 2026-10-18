@@ -28,7 +28,7 @@ export function setMiniCompact(on) {
   b.setAttribute('aria-pressed', String(on));
   b.setAttribute('aria-label', label);
   b.title = label;
-  b.replaceChildren(icon(on ? 'chevronRight' : 'chevronLeft', 'inline'));
+  b.replaceChildren(icon(on ? 'chevronLeft' : 'chevronRight', 'inline'));
 }
 
 export function initMiniCompact() {
