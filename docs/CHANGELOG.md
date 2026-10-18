@@ -2,7 +2,7 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
-## 2026-10-18 (compact player on the right, built, not deployed)
+## 2026-10-18 (compact player on the right)
 
 - Web: the compact player pill (PLY-149) now sits at the right edge of the stage, 16px from the edge, instead of centred; the handle stays on its left and the expanded dock stays centred.
 
@@ -10,11 +10,11 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 - Web: the sidebar collapse chevron is a small round button on the sidebar's right edge, half over the page, at the height between the logo and the first menu item.
 
-## 2026-10-18 (Library chips under the search, built, not deployed)
+## 2026-10-18 (Library chips under the search)
 
 - Web: the Library search field takes the remaining toolbar width with the action buttons (Clear filters, Show playing, Play all, Add all) at its right end, and the category chips (Tags, Genres, Years, Countries) sit on their own line directly below it at every width; under 720px the buttons wrap after the chips and the sort bar keeps only the sort select and the summary (LIB-030).
 
-## 2026-10-18 (genres map library only, built, not deployed)
+## 2026-10-18 (genres map library only)
 
 - Web: the Genres map and its outline show only genres of songs that are in the library plus the ancestors that connect them (ancestors without a song of their own are neutral connector nodes); the "Show whole vocabulary" and "Only with songs" toggles are gone, the family chips list only families with library songs (most songs first and pressed by default), the status chip reads "N genres in <family>" counting genres with songs, and a library without genre tags shows "No genres yet. Add songs with genres to see them here." ([WEB-085](specs/web.md), GEN-054).
 
@@ -30,11 +30,11 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 - Web: on the Genres map the status chip and the Show whole vocabulary, Show legend, Now playing and Reload buttons moved into the Outline panel as its header row, so there is one side panel instead of two; closing the outline leaves the header row (with an Outline button to reopen it).
 
-## 2026-10-18 (song card playlist icon, built, not deployed)
+## 2026-10-18 (song card playlist icon)
 
 - Web: the song card playlist toggle keeps the list add icon in the pressed state and differs only by the accent background; the accessible name still tells the state (LIB-149).
 
-## 2026-10-18 (song card genre lines, built, not deployed)
+## 2026-10-18 (song card genre lines)
 
 - Web: the song card's Genre row now shows one line per level-1 genre inferred from the song's genre tags (family chip first even when untagged, then the tagged genres by level, a two-family genre on both lines, unknown genres on a last line); LIB-158.
 
@@ -46,15 +46,15 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 - Web: the song card's round Play next button shows a play triangle with a plus at its top right (new icon `playPlus`) instead of the queue-list icon.
 
-## 2026-10-18 (Other family colour fix, built, not deployed)
+## 2026-10-18 (Other family colour fix)
 
 - Web and macOS: Other and unknown genre families keep the neutral `--chart-15` after the family list shrank to 11 plus Other; the other 11 families keep their old colours (GEN-040).
 
-## 2026-10-18 (removed genre families, built, not deployed)
+## 2026-10-18 (removed genre families)
 
 - Server, web and macOS: the families Stage & Screen, Children's, Brass & Military and Non-Music are removed with every style, synonym and extra under them (soundtrack, trailer, score, musical, theme, audiobook, spoken word, poetry, military, marches, lullaby and the rest; GEN-037, TAG-073, TAG-077, [genre-levels.md](tech/genre-levels.md#removed-families-alex-2026-10-18)); `epic` stays as a Classical style. 11 families remain; songs lose the removed genres at the next start through the existing genre-tag migration (backup in `backups-genre-merge`).
 
-## 2026-10-18 (clean credits on add, built, not deployed)
+## 2026-10-18 (clean credits on add)
 
 - Server and web: a song added from a link or a playlist now stores clean credits: a trailing "(feat. X)", "[feat. X]" or " feat. X" in the title, a feat keyword inside an artist pill ("Kato Feat. Jon") and a trailing "(with X)" move into `featuredArtists` and the new optional `withArtists`, the title is saved without them; one parser (`credit_title.py`, twin `credit-title.js`) and one case table (`credit_title_cases.json`). The Add and Edit form has a With pill field, pasting a title with such a group into the Add form moves it, and the suggestions of one parse are one row with one Apply and one Dismiss. Not deployed; existing songs are untouched until the migration.
 
