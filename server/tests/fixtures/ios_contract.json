@@ -7,7 +7,7 @@
  "structs": {
   "ServerSong": {
    "id": "String", "title": "String", "artist": "String?", "album": "String?", "remixer": "String?", "year": "Int?", "duration": "Double?",
-   "cover": "String?", "tags": "[String]?", "bpm": "Double?", "source_url": "String?", "wikipedia_song": "String?",
+   "cover": "String?", "cover_v": "String?", "tags": "[String]?", "bpm": "Double?", "source_url": "String?", "wikipedia_song": "String?",
    "wikipedia_artist": "String?", "musicbrainz_url": "String?", "added_at": "String?", "audio_state": "String?", "sources": "[SongSource]?",
    "version": "SongVersion?", "mainArtists": "[String]?", "featuredArtists": "[String]?", "withArtists": "[String]?", "releaseYear": "Int?",
    "albums": "[String]?", "genres": "[String]?", "remix_year": "Int?", "rawTitle": "String?", "wikipedia_album": "String?", "discogs_url": "String?"
@@ -17,7 +17,7 @@
    "remixer": "String?", "year": "Int?", "duration": "Double?", "thumbnail": "String?", "tags": "[String]?", "wikipedia_song": "String?",
    "wikipedia_artist": "String?", "in_library": "Bool?"
   },
-  "SongStatus": {"status": "String", "progress": "Double?", "error": "String?"},
+  "SongStatus": {"status": "String", "progress": "Double?", "error": "String?", "code": "String?", "state": "String?", "error_code": "String?"},
   "MetadataResult": {"album": "String?", "year": "Int?", "tags": "[String]?", "services": "Services?", "suggest": "Suggest?"},
   "Suggest": {"artist": "String?", "title": "String?"},
   "Service": {"found": "Bool?", "url": "String?"},
