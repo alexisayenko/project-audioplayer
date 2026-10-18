@@ -14,7 +14,7 @@ DATA = Path(genre_vocab.__file__).resolve().parent.parent / "data"
 STYLES = json.loads((DATA / "genre_styles.json").read_text(encoding="utf-8"))
 EXTRAS = json.loads((DATA / "genre_extras.json").read_text(encoding="utf-8"))["extras"]
 LIVE = json.loads((Path(__file__).parent / "fixtures" / "genre_live_tags.json").read_text(encoding="utf-8"))
-GENRES = ["Blues", "Brass & Military", "Children's", "Classical", "Electronic", "Folk, World, & Country", "Funk / Soul", "Hip Hop", "Jazz", "Latin", "Non-Music", "Pop", "Reggae", "Rock", "Stage & Screen"]
+GENRES = ["Blues", "Classical", "Electronic", "Folk, World, & Country", "Funk / Soul", "Hip Hop", "Jazz", "Latin", "Pop", "Reggae", "Rock"]
 
 # Tags of the live library (2026-10-16) that no rule maps: kept on the songs and listed in the review file (TAG-082).
 LIVE_UNMAPPABLE: set[str] = set()
@@ -27,7 +27,7 @@ def names() -> set[str]:
 # --- the data files (TAG-078, TAG-083) -------------------------------------------------------
 
 
-def test_the_15_genres_in_the_fixed_order():
+def test_the_11_genres_in_the_fixed_order():
     assert STYLES["genres"] == GENRES
     assert genre_vocab.load().families == tuple(GENRES)
 
@@ -83,7 +83,7 @@ def test_extras_have_family_and_a_canonical_parent_without_cycles():
 REQUIRED_EXTRAS = (
     "singer-songwriter", "psybient", "darksynth", "dreamwave", "neurofunk", "liquid drum and bass", "melodic techno",
     "dance-rock", "estrada", "shock rock", "nu-nrg", "uplifting trance", "dream trance", "chillwave", "darkwave",
-    "folk", "dark metal", "epic", "trailer", "dreamsynth", "sunshine house", "synth-rock", "electronic",
+    "folk", "dark metal", "epic", "dreamsynth", "sunshine house", "synth-rock", "electronic",
 )
 
 

@@ -2,11 +2,11 @@
 
 `server/data/genre_levels.json` places every vocabulary style and extra (`genre_styles.json`, `genre_extras.json`) in a three-level tree. The server serves it in `GET /genres/vocabulary` as `levels` and `genre_synonyms` (GEN-051, GEN-052, API-119) and the rework map (`#/genres-rework`, WEB-085 to WEB-087, GEN-054) draws it. Tracked in [task-0037](../tasks/task-0037.md).
 
-Only Electronic is drafted. Entry fields added later: `status`, `flavours`, `display` (sections below). The other 14 genres are provisional placeholders (every style level 2, `parent` null, `"provisional": true`) until Alex reviews them.
+Only Electronic is drafted. Entry fields added later: `status`, `flavours`, `display` (sections below). The other 10 genres are provisional placeholders (every style level 2, `parent` null, `"provisional": true`) until Alex reviews them.
 
 ## Format
 
-Level 1 is the 15 Discogs genres (not listed as entries). Each entry: `"<style key>": {"genre", "parent", "also_under"?, "provisional"?, "discogs"}`.
+Level 1 is the 11 kept Discogs genres (not listed as entries; four of the 15 are removed, see Removed families). Each entry: `"<style key>": {"genre", "parent", "also_under"?, "provisional"?, "discogs"}`.
 
 - `parent`: null for level 2 (umbrella or standalone style), a level-2 key for level 3. Hard cap three levels.
 - `also_under`: other level-2 keys the style could sit under; the primary parent stays in `parent`.
@@ -15,23 +15,21 @@ Level 1 is the 15 Discogs genres (not listed as entries). Each entry: `"<style k
 
 ## Genre names and synonyms
 
-The top-level `genres` block holds each of the 15 genres as `{"name", "synonyms"}` (lowercase; typos such as "electrnic" are input normalisation, not stored). Style entries may carry an optional `synonyms` list, filled only from `ALIASES` in `app/genre_filter.py` (copied read-only; 27 aliases whose target is a vocabulary style). A synonym never equals a vocabulary key, a genre name or another synonym (test). Agent judgement, awaiting Alex's review, except Electronic (Alex's list).
+The top-level `genres` block holds each of the 11 genres as `{"name", "synonyms"}` (lowercase; typos such as "electrnic" are input normalisation, not stored). Style entries may carry an optional `synonyms` list, filled only from `ALIASES` in `app/genre_filter.py` (copied read-only; 27 aliases whose target is a vocabulary style). A synonym never equals a vocabulary key, a genre name or another synonym (test). Agent judgement, awaiting Alex's review, except Electronic (Alex's list).
 
 - Electronic: electronic dance music, edm, dance music, club music, electronic music. The ALIASES entries "electronic dance music" and "edm" currently map to the style `electronic dance`; here they sit on the genre instead, so they are not on that style.
-- Brass & Military: brass and military, military and brass, military & brass
-- Children's: childrens, children, kids, kids music, children music
 - Classical: classical music. Folk, World, & Country: folk world and country, folk, world and country, world music, folk and country, world and country
 - Funk / Soul: funk and soul, soul/funk, funk soul, soul and funk, funk & soul, rnb, r and b
 - Hip Hop: hip-hop, hiphop, hip hop music, rap, hip-hop & rap, hip hop and rap
-- Jazz: jazz music. Latin: latin music, latino. Non-Music: non music, nonmusic, spoken. Pop: pop music, popular music. Reggae: reggae music. Rock: rock music. Stage & Screen: stage and screen, soundtracks, film and tv, stage, screen. Blues: none.
+- Jazz: jazz music. Latin: latin music, latino. Pop: pop music, popular music. Reggae: reggae music. Rock: rock music. Blues: none.
 
-Dropped candidates because they equal a vocabulary key or a genre name: r&b (style), audiobook, speech, soundtrack (styles), non-music and stage & screen (equal the genre names). The ALIASES entry "pop and chart" is not carried (target is a genre, not a style). "rap" is not a vocabulary key here (only cloud rap, pop rap, thug rap and similar), so it is kept as a Hip Hop synonym.
+Dropped candidates because they equal a vocabulary key or a genre name: r&b (style). The ALIASES entry "pop and chart" is not carried (target is a genre, not a style). "rap" is not a vocabulary key here (only cloud rap, pop rap, thug rap and similar), so it is kept as a Hip Hop synonym.
 
 Decided: "dance music" and "club music" fold into Electronic (see Decisions).
 
 ## Counts (Electronic drafted; others provisional)
 
-Electronic 141 (55 level 2, 86 level 3, 18 not in Discogs; after the 2026-10-16 removals and the psytrance branch below). Others, all level 2 and provisional: Rock 102, Folk, World, & Country 66, Latin 57, Pop 32, Jazz 26, Classical 24, Hip Hop 24, Funk / Soul 23, Non-Music 20, Blues 16, Reggae 13, Stage & Screen 9, Brass & Military 5, Children's 4. Total 558. Non-Discogs elsewhere: Rock 14, Pop 7, Funk / Soul 6, Folk, World, & Country 3, Stage & Screen 2.
+Electronic 141 (55 level 2, 86 level 3, 18 not in Discogs; after the 2026-10-16 removals and the psytrance branch below). Others, all level 2 and provisional: Rock 102, Folk, World, & Country 66, Latin 57, Pop 32, Jazz 26, Classical 25 (includes `epic`), Hip Hop 24, Funk / Soul 23, Blues 16, Reggae 13. Total 521 (`_meta.total`; the family counts in `_meta` are the reference). Non-Discogs elsewhere: Rock 14, Pop 7, Funk / Soul 6, Folk, World, & Country 3, Classical 1 (`epic`).
 
 ## Electronic umbrellas (16, level-3 children)
 
@@ -109,7 +107,7 @@ Precedence rule: Discogs outranks Alex's approval. `approved` is only stored on 
 
 Added 2026-10-18: `dream trance` (extras, level 3 under trance, approved, not Discogs; synonyms dream house, dream dance, both also `ALIASES`; source https://en.wikipedia.org/wiki/Dream_trance).
 
-Added 2026-10-18: `anthem trance`, `epic trance` and `euphoric trance` are synonyms of `uplifting trance` (also `ALIASES`); `commercial trance` and `stadium trance` stay out as too broad; the separate `epic` (Stage & Screen) is unaffected.
+Added 2026-10-18: `anthem trance`, `epic trance` and `euphoric trance` are synonyms of `uplifting trance` (also `ALIASES`); `commercial trance` and `stadium trance` stay out as too broad; the separate `epic` (Classical since 2026-10-18, see Removed families) is unaffected.
 
 Added: `liquid drum and bass` (extras, level 3 under drum and bass, approved, display "Liquid Drum & Bass"; synonyms liquid dnb, liquid d&b, liquid drum & bass, liquid drum n bass, liquid drum'n'bass, liquid drum and bass music, liquid drum & bass music, liquid funk).
 
@@ -157,3 +155,17 @@ An entry may carry `"display": "<string>"`: the name to show in the UI instead o
 Alex: "trance and psy-trance are way too different". `psytrance` (display "Psy-Trance", Discogs style) is a plain level 2 umbrella, a sibling of `trance`: `parent` null, no `also_under`, no link of any kind to trance. The three-level cap is unchanged (a fourth level was considered and rejected). Children (level 3, `parent: "psytrance"`): `dark psytrance`, `forest psytrance`, `progressive psytrance`, `full-on psytrance` (new extras, `discogs` false, status approved, displays "Dark Psy-Trance" and so on; the Discogs search `style=<name>` returned no results for any of them on 2026-10-16), `goa trance` (Discogs; moved from trance) and `psybient` (approved; also under ambient; moved from trance). Flavours: dark psytrance `dark`, progressive psytrance `progressive`. Synonyms: darkpsy, dark psy, dark psy-trance; forest psy, forest psy-trance; prog psy, progressive psy, progressive psy-trance; full on, fullon, full-on psy, full on psytrance, full-on psy-trance.
 
 Judgement call: `goa trance` sits under psytrance only (no `also_under: trance`), so trance's children and counts no longer include goa trance or psytrance songs. `progressive trance` stays under trance and is not merged with `progressive psytrance`. Known psy styles not added: hi-tech psytrance, suomisaundi, psychill.
+
+## Removed families (Alex, 2026-10-18)
+
+Alex decided that the genre list describes how music sounds, not where or how it is used or what format it is. Four of the 15 Discogs families are removed from the vocabulary, the graph, the web and macOS copies and the tests, with every style, synonym and extra under them, and nothing is re-parented:
+
+- Stage & Screen: score (synonym film score), musical, theme, incidental music, vaudeville, video game music, soundtrack, trailer; synonyms stage and screen, soundtracks, film and tv, stage, screen.
+- Children's: educational, lullaby, nursery rhymes, story; synonyms childrens, children, kids, kids music, children music.
+- Brass & Military: brass band, concert band, marches, military, pipe & drum; synonyms brass and military, military and brass, military & brass.
+- Non-Music: audiobook, dialogue, education, field recording, interview, karaoke, medical, monolog, poetry, political, promotional, public service announcement, radioplay, religious, sermon, sound poetry, speech, spoken word, technical, therapy; synonyms non music, nonmusic, spoken.
+
+One exception: `epic` stays, as a level 2 style of Classical next to `modern classical` (extras entry: family Classical, parent null; the `epic trance` synonym of `uplifting trance` is unchanged).
+
+Songs: every removed name, the family names and their synonyms are in `genre_filter.REMOVED_GENRES`, which joins `DROP` (TAG-073). The existing genre-tag migration (`migrate_tags`, run at startup) sees the stored tag change under `clean_tags`, backs the file up once (`backups-genre-merge/<uid>/library.json`) and rewrites it, so each song loses these genres on the next start; a song left without a genre stays valid. No new migration step and no `credits_schema` change. The ALIASES entry "film score" to "score" is gone.
+

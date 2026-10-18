@@ -1,5 +1,6 @@
 import { fitTransform, recenterOnResize, hitNode, isDragMove } from './genre-view.js';
 import { highlightSets, selectLabels } from './genre-radial.js';
+import { FAMILY_PALETTE_SIZE } from './genre-data.js';
 
 const MIN_K = 0.15;
 const MAX_K = 8;
@@ -45,7 +46,7 @@ export function createRadialView(canvas, { onSelect, onHover, reducedMotion = fa
     const cs = getComputedStyle(canvas);
     const v = (n) => cs.getPropertyValue(n).trim();
     colors = {
-      fam: Array.from({ length: 16 }, (_, i) => v(`--chart-${i}`)),
+      fam: Array.from({ length: FAMILY_PALETTE_SIZE }, (_, i) => v(`--chart-${i}`)),
       edge: v('--ink-muted'), accent: v('--accent-ink'), ink: v('--ink'), halo: v('--surface'), ok: v('--ok'), warn: v('--accent'), font: cs.fontFamily || 'sans-serif',
     };
   }

@@ -250,8 +250,7 @@ ROOT_CASES = [
     ("rock music", "Rock"), ("pop rock", "Rock"), ("alternative rock", "Rock"), ("pop music", "Pop"), ("dance-pop", "Pop"), ("indie pop", "Pop"),
     ("k-pop", "Pop"), ("hip hop music", "Hip Hop"), ("trip hop", "Electronic"), ("fusion", "Jazz"), ("northern soul", None),
     ("baroque music", "Classical"), ("romantic music", "Classical"), ("ska punk", None), ("latin pop", "Latin"), ("mambo", "Latin"),
-    ("delta blues", "Blues"), ("country rock", "Folk, World, & Country"), ("film score", "Stage & Screen"), ("spoken word", "Non-Music"),
-    ("lullaby", "Children's"), ("marches", "Brass & Military"), ("music of europe", None), ("regional music", None),
+    ("delta blues", "Blues"), ("country rock", "Folk, World, & Country"), ("music of europe", None), ("regional music", None),
     ("alternative music", "Rock"),
 ]
 

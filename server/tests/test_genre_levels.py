@@ -18,7 +18,7 @@ def test_every_vocabulary_style_appears_once():
     assert set(ENTRIES) == set(STYLES["styles"]) | set(EXTRAS)
 
 
-def test_genres_are_among_the_fifteen():
+def test_genres_are_among_the_eleven():
     assert all(v["genre"] in STYLES["genres"] for v in ENTRIES.values())
 
 
@@ -56,7 +56,7 @@ def test_only_electronic_is_drafted():
             assert "provisional" not in v, k
 
 
-def test_genres_block_names_match_the_fifteen():
+def test_genres_block_names_match_the_eleven():
     assert list(GENRES) == STYLES["genres"]
     assert all(v["name"] == k for k, v in GENRES.items())
 
@@ -405,7 +405,40 @@ def test_uplifting_trance_has_three_synonyms_that_do_not_touch_epic():
         assert gf.canonical(raw) == "uplifting trance" and gf.vocabulary_name(raw) == "uplifting trance" and not gf.unmappable(raw), raw
     for name in ("commercial trance", "stadium trance"):
         assert name not in gf.ALIASES
-    assert gf.canonical("epic") == "epic" and ENTRIES["epic"]["genre"] == "Stage & Screen"
+    assert gf.canonical("epic") == "epic" and ENTRIES["epic"]["genre"] == "Classical"
     payload = genre_vocab.vocabulary()
     assert payload["aliases"]["epic trance"] == "uplifting trance"
     assert payload["levels"]["uplifting trance"]["synonyms"] == ["anthem trance", "epic trance", "euphoric trance"]
+
+
+RM_GENRES = (
+    "soundtrack", "trailer", "score", "musical", "theme", "incidental music", "vaudeville", "video game music",
+    "audiobook", "speech", "spoken word", "poetry", "field recording", "interview", "radioplay", "education",
+    "brass band", "marches", "military", "pipe & drum", "concert band", "educational", "lullaby", "nursery rhymes", "story",
+)
+RM_FAMILIES = ("Stage & Screen", "Children's", "Brass & Military", "Non-Music")
+
+
+def test_removed_genres_and_families_are_gone_from_the_vocabulary_files():
+    from app import genre_vocab
+
+    genre_vocab.reset()
+    assert not set(RM_GENRES) & (set(ENTRIES) | set(STYLES["styles"]) | set(EXTRAS))
+    assert not set(RM_FAMILIES) & (set(STYLES["genres"]) | set(GENRES) | {v["genre"] for v in ENTRIES.values()})
+    assert not any(v["parent"] in RM_GENRES for v in ENTRIES.values())
+    assert all(genre_vocab.lookup(n) is None for n in RM_GENRES), [n for n in RM_GENRES if genre_vocab.lookup(n)]
+
+
+def test_removed_genres_are_dropped_from_songs_by_the_tag_cleaner():
+    from app import genre_filter as gf
+    from app import library
+
+    for name in (*RM_GENRES, "soundtracks", "film score", "kids"):
+        assert gf.is_dropped(name) and not gf.is_genre(name), name
+    assert library.clean_tags(["genre:Soundtrack", "genre:trailer", "genre:Score", "genre:house", "genre:epic"]) == ["genre:house", "genre:epic"]
+    assert library.clean_tags(["genre:trailer"]) == []
+
+
+def test_epic_is_a_level_two_classical_style_next_to_modern_classical():
+    assert ENTRIES["epic"]["genre"] == "Classical" and ENTRIES["epic"]["parent"] is None and ENTRIES["modern classical"]["genre"] == "Classical"
+    assert EXTRAS["epic"]["family"] == "Classical" and EXTRAS["epic"]["parent"] is None

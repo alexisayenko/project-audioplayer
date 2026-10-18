@@ -1,11 +1,11 @@
 export const FAMILIES = [
   'Electronic', 'Rock', 'Pop', 'Hip Hop', 'Jazz', 'Funk / Soul', 'Classical', 'Reggae', 'Latin',
-  'Blues', 'Folk, World, & Country', 'Stage & Screen', 'Non-Music', "Children's", 'Brass & Military', 'Other',
+  'Blues', 'Folk, World, & Country', 'Other',
 ];
 
 export const FAMILY_ORDER = [
-  'Blues', 'Brass & Military', "Children's", 'Classical', 'Electronic', 'Folk, World, & Country', 'Funk / Soul', 'Hip Hop', 'Jazz',
-  'Latin', 'Non-Music', 'Pop', 'Reggae', 'Rock', 'Stage & Screen', 'Other',
+  'Blues', 'Classical', 'Electronic', 'Folk, World, & Country', 'Funk / Soul', 'Hip Hop', 'Jazz',
+  'Latin', 'Pop', 'Reggae', 'Rock', 'Other',
 ];
 
 export const familyOrder = (family) => {
@@ -13,9 +13,12 @@ export const familyOrder = (family) => {
   return i < 0 ? FAMILY_ORDER.length - 1 : i;
 };
 
+export const FAMILY_PALETTE_SIZE = 16;
+export const OTHER_COLOR = FAMILY_PALETTE_SIZE - 1;
+
 export const familyIndex = (family) => {
   const i = FAMILIES.indexOf(family);
-  return i < 0 ? FAMILIES.length - 1 : i;
+  return i < 0 || family === 'Other' ? OTHER_COLOR : i;
 };
 
 export const nodeRadius = (count) => Math.min(30, 4 + 2.4 * Math.sqrt(Math.max(0, count)));

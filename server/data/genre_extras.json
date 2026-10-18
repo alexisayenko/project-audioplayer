@@ -1,6 +1,6 @@
 {
  "_notes": [
-  "Reviewed extras (TAG-078, ADR-0023): real genres Discogs lacks, each with a mandatory family (one of the 15 Discogs genres) and a parent (a canonical name, or null for a root). Entries are reviewed in git; 'electronic' is one of the 15 genres and therefore not listed here.",
+  "Reviewed extras (TAG-078, ADR-0023): real genres Discogs lacks, each with a mandatory family (one of the 11 genres) and a parent (a canonical name, or null for a root). Entries are reviewed in git; 'electronic' is one of the 15 genres and therefore not listed here.",
   "Origin: the kept subgenres of TAG-076 and the manual parents of GEN-045, plus library tags that are real genres Discogs does not list (reviewed 2026-10-16). note says where each came from."
  ],
  "extras": {
@@ -80,9 +80,9 @@
    "note": "live library tag, reviewed 2026-10-16"
   },
   "epic": {
-   "family": "Stage & Screen",
-   "parent": "soundtrack",
-   "note": "kept subgenre, TAG-076"
+   "family": "Classical",
+   "parent": null,
+   "note": "kept subgenre, TAG-076; manual parent: re-homed under Classical when the Stage & Screen family was removed (owner, 2026-10-18)"
   },
   "estrada": {
    "family": "Pop",
@@ -248,11 +248,6 @@
    "family": "Rock",
    "parent": "new wave",
    "note": "manual parent, GEN-045"
-  },
-  "trailer": {
-   "family": "Stage & Screen",
-   "parent": "soundtrack",
-   "note": "kept subgenre, TAG-076"
   },
   "uplifting trance": {
    "family": "Electronic",

@@ -67,7 +67,7 @@ struct StatGraph: Decodable {
 enum StatData {
     static let families = [
         "Electronic", "Rock", "Pop", "Hip Hop", "Jazz", "Funk / Soul", "Classical", "Reggae", "Latin",
-        "Blues", "Folk, World, & Country", "Stage & Screen", "Non-Music", "Children's", "Brass & Military", "Other",
+        "Blues", "Folk, World, & Country", "Other",
     ]
     static let bpmDefault = StatRange(lo: 60, hi: 200)
     static let minYearSpan = 10.0
@@ -84,7 +84,9 @@ enum StatData {
     static func validYear(_ v: Int?) -> Bool { v.map { (1900...maxYear).contains($0) } ?? false }
     static func validBPM(_ v: Double?) -> Bool { v.map { $0.isFinite && $0 >= 20 && $0 <= 300 } ?? false }
 
-    static func familyIndex(_ family: String) -> Int { families.firstIndex(of: family) ?? families.count - 1 }
+    static func familyIndex(_ family: String) -> Int {
+        family == other ? familyPaletteSize - 1 : (families.firstIndex(of: family) ?? familyPaletteSize - 1)
+    }
 
     static func split(_ songs: [Track]) -> (plotted: [Track], skipped: Int) {
         var plotted: [Track] = []

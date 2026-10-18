@@ -59,6 +59,18 @@ DROP: frozenset[str] = frozenset(
         "comedy music", "comedy", "novelty music", "novelty song", "novelty", "popular", "underground", "cyberpunk",
         "aaron smith", "joris", "skrux", "medley", "music video", "party", "popcorn", "functional music", "event music", "party music", "west coast swing", "raggacore")
 )
+REMOVED_GENRES: tuple[str, ...] = (
+    "audiobook", "brass & military", "brass and military", "brass band", "children", "children music",
+    "children's", "childrens", "concert band", "dialogue", "education", "educational",
+    "field recording", "interview", "karaoke", "kids", "kids music", "lullaby",
+    "marches", "medical", "military", "military & brass", "military and brass", "monolog",
+    "non music", "non-music", "nonmusic", "nursery rhymes", "pipe & drum", "poetry",
+    "political", "promotional", "public service announcement", "radioplay", "religious", "sermon",
+    "sound poetry", "soundtrack", "speech", "spoken", "spoken word", "story",
+    "technical", "therapy", "trailer", "stage & screen", "stage and screen", "soundtracks", "film and tv", "stage, screen",
+    "incidental music", "musical", "score", "film score", "theme", "vaudeville", "video game music",
+)
+DROP = DROP | frozenset(key(v) for v in REMOVED_GENRES)
 
 
 def is_dropped(value: str) -> bool:
@@ -113,7 +125,6 @@ ALIASES: dict[str, str] = {
     "metal": "heavy metal",
     "psychedelic trance": "psytrance",
     "glam rock": "glam",
-    "film score": "score",
     "bebop": "bop",
     "ethereal wave": "ethereal",
     "dance music": "electronic",

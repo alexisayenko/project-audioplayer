@@ -35,8 +35,8 @@ RETRY_AFTER = 300
 INLINE = False
 
 FAMILIES = (
-    "Blues", "Brass & Military", "Children's", "Classical", "Electronic", "Folk, World, & Country", "Funk / Soul", "Hip Hop", "Jazz",
-    "Latin", "Non-Music", "Pop", "Reggae", "Rock", "Stage & Screen",
+    "Blues", "Classical", "Electronic", "Folk, World, & Country", "Funk / Soul", "Hip Hop", "Jazz",
+    "Latin", "Pop", "Reggae", "Rock",
 )
 OTHER = "Other"
 _MUSIC = " music"

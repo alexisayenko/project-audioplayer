@@ -157,7 +157,7 @@ def test_junk_dropped(raw):
 
 @pytest.mark.parametrize("raw", ["dance pop", "pop punk", "sunshine house", "dreamsynth", "synth-rock", "neurofunk", "liquid drum and bass", "melodic techno",
                                  "darksynth", "dreamwave", "dance-rock", "psybient", "electronic", "singer-songwriter", "experimental", "estrada",
-                                 "shock rock", "dark metal", "epic", "trailer", "chillwave", "darkwave", "nu-nrg", "uplifting trance"])
+                                 "shock rock", "dark metal", "epic", "chillwave", "darkwave", "nu-nrg", "uplifting trance"])
 def test_real_genres_untouched(raw):
     assert gf.is_genre(raw)
     assert not gf.is_dropped(raw)

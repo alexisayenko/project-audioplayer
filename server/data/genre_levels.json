@@ -1,8 +1,8 @@
 {
  "_meta": {
   "rules": [
-   "One entry per vocabulary style or extra; the 15 genres themselves are level 1 and not listed.",
-   "genre: level 1 name (Discogs 15).",
+   "One entry per vocabulary style or extra; the 11 genres themselves are level 1 and not listed.",
+   "genre: level 1 name (the 11 kept Discogs genres).",
    "parent: null for level 2 (umbrella or standalone style), else a level 2 key; hard cap three levels.",
    "also_under: other level 2 keys a style could sit under; the primary parent stays in parent.",
    "provisional: true marks an undrafted placeholder (all genres except Electronic); parent null.",
@@ -22,19 +22,9 @@
     "level2": 16,
     "level3": 0
    },
-   "Brass & Military": {
-    "total": 5,
-    "level2": 5,
-    "level3": 0
-   },
-   "Children's": {
-    "total": 4,
-    "level2": 4,
-    "level3": 0
-   },
    "Classical": {
-    "total": 24,
-    "level2": 24,
+    "total": 25,
+    "level2": 25,
     "level3": 0
    },
    "Electronic": {
@@ -67,11 +57,6 @@
     "level2": 57,
     "level3": 0
    },
-   "Non-Music": {
-    "total": 20,
-    "level2": 20,
-    "level3": 0
-   },
    "Pop": {
     "total": 32,
     "level2": 32,
@@ -86,54 +71,27 @@
     "total": 102,
     "level2": 102,
     "level3": 0
-   },
-   "Stage & Screen": {
-    "total": 9,
-    "level2": 9,
-    "level3": 0
    }
   },
-  "total": 558,
+  "total": 521,
   "non_discogs": {
    "Blues": 0,
-   "Brass & Military": 0,
-   "Children's": 0,
-   "Classical": 0,
+   "Classical": 1,
    "Electronic": 14,
    "Folk, World, & Country": 3,
    "Funk / Soul": 6,
    "Hip Hop": 0,
    "Jazz": 0,
    "Latin": 0,
-   "Non-Music": 0,
    "Pop": 7,
    "Reggae": 0,
-   "Rock": 14,
-   "Stage & Screen": 2
+   "Rock": 14
   }
  },
  "genres": {
   "Blues": {
    "name": "Blues",
    "synonyms": []
-  },
-  "Brass & Military": {
-   "name": "Brass & Military",
-   "synonyms": [
-    "brass and military",
-    "military and brass",
-    "military & brass"
-   ]
-  },
-  "Children's": {
-   "name": "Children's",
-   "synonyms": [
-    "childrens",
-    "children",
-    "kids",
-    "kids music",
-    "children music"
-   ]
   },
   "Classical": {
    "name": "Classical",
@@ -204,14 +162,6 @@
     "latino"
    ]
   },
-  "Non-Music": {
-   "name": "Non-Music",
-   "synonyms": [
-    "non music",
-    "nonmusic",
-    "spoken"
-   ]
-  },
   "Pop": {
    "name": "Pop",
    "synonyms": [
@@ -229,15 +179,6 @@
    "name": "Rock",
    "synonyms": [
     "rock music"
-   ]
-  },
-  "Stage & Screen": {
-   "name": "Stage & Screen",
-   "synonyms": [
-    "stage and screen",
-    "soundtracks",
-    "film and tv",
-    "stage, screen"
    ]
   }
  },
@@ -463,12 +404,6 @@
  },
  "atmospheric black metal": {
   "genre": "Rock",
-  "parent": null,
-  "provisional": true,
-  "discogs": true
- },
- "audiobook": {
-  "genre": "Non-Music",
   "parent": null,
   "provisional": true,
   "discogs": true
@@ -705,12 +640,6 @@
   "provisional": true,
   "discogs": true
  },
- "brass band": {
-  "genre": "Brass & Military",
-  "parent": null,
-  "provisional": true,
-  "discogs": true
- },
  "breakbeat": {
   "genre": "Electronic",
   "parent": null,
@@ -915,12 +844,6 @@
  },
  "compas": {
   "genre": "Latin",
-  "parent": null,
-  "provisional": true,
-  "discogs": true
- },
- "concert band": {
-  "genre": "Brass & Military",
   "parent": null,
   "provisional": true,
   "discogs": true
@@ -1172,12 +1095,6 @@
   "provisional": true,
   "discogs": true
  },
- "dialogue": {
-  "genre": "Non-Music",
-  "parent": null,
-  "provisional": true,
-  "discogs": true
- },
  "disco": {
   "genre": "Funk / Soul",
   "parent": null,
@@ -1351,18 +1268,6 @@
   ],
   "discogs": true
  },
- "education": {
-  "genre": "Non-Music",
-  "parent": null,
-  "provisional": true,
-  "discogs": true
- },
- "educational": {
-  "genre": "Children's",
-  "parent": null,
-  "provisional": true,
-  "discogs": true
- },
  "electric blues": {
   "genre": "Blues",
   "parent": null,
@@ -1414,7 +1319,7 @@
   "discogs": true
  },
  "epic": {
-  "genre": "Stage & Screen",
+  "genre": "Classical",
   "parent": null,
   "provisional": true,
   "discogs": false
@@ -1496,12 +1401,6 @@
  },
  "favela funk": {
   "genre": "Latin",
-  "parent": null,
-  "provisional": true,
-  "discogs": true
- },
- "field recording": {
-  "genre": "Non-Music",
   "parent": null,
   "provisional": true,
   "discogs": true
@@ -2011,12 +1910,6 @@
   "provisional": true,
   "discogs": true
  },
- "incidental music": {
-  "genre": "Stage & Screen",
-  "parent": null,
-  "provisional": true,
-  "discogs": true
- },
  "indian classical": {
   "genre": "Folk, World, & Country",
   "parent": null,
@@ -2057,12 +1950,6 @@
  },
  "instrumental": {
   "genre": "Hip Hop",
-  "parent": null,
-  "provisional": true,
-  "discogs": true
- },
- "interview": {
-  "genre": "Non-Music",
   "parent": null,
   "provisional": true,
   "discogs": true
@@ -2143,12 +2030,6 @@
  },
  "k-pop": {
   "genre": "Pop",
-  "parent": null,
-  "provisional": true,
-  "discogs": true
- },
- "karaoke": {
-  "genre": "Non-Music",
   "parent": null,
   "provisional": true,
   "discogs": true
@@ -2286,12 +2167,6 @@
   "parent": "ambient",
   "discogs": true
  },
- "lullaby": {
-  "genre": "Children's",
-  "parent": null,
-  "provisional": true,
-  "discogs": true
- },
  "makina": {
   "genre": "Electronic",
   "parent": "hardcore",
@@ -2305,12 +2180,6 @@
  },
  "mandopop": {
   "genre": "Pop",
-  "parent": null,
-  "provisional": true,
-  "discogs": true
- },
- "marches": {
-  "genre": "Brass & Military",
   "parent": null,
   "provisional": true,
   "discogs": true
@@ -2335,12 +2204,6 @@
  },
  "mbalax": {
   "genre": "Folk, World, & Country",
-  "parent": null,
-  "provisional": true,
-  "discogs": true
- },
- "medical": {
-  "genre": "Non-Music",
   "parent": null,
   "provisional": true,
   "discogs": true
@@ -2431,12 +2294,6 @@
   "provisional": true,
   "discogs": true
  },
- "military": {
-  "genre": "Brass & Military",
-  "parent": null,
-  "provisional": true,
-  "discogs": true
- },
  "min'yō": {
   "genre": "Folk, World, & Country",
   "parent": null,
@@ -2496,12 +2353,6 @@
   "provisional": true,
   "discogs": true
  },
- "monolog": {
-  "genre": "Non-Music",
-  "parent": null,
-  "provisional": true,
-  "discogs": true
- },
  "moombahton": {
   "genre": "Electronic",
   "parent": "bass music",
@@ -2527,12 +2378,6 @@
  },
  "music hall": {
   "genre": "Pop",
-  "parent": null,
-  "provisional": true,
-  "discogs": true
- },
- "musical": {
-  "genre": "Stage & Screen",
   "parent": null,
   "provisional": true,
   "discogs": true
@@ -2665,12 +2510,6 @@
   "provisional": true,
   "discogs": true
  },
- "nursery rhymes": {
-  "genre": "Children's",
-  "parent": null,
-  "provisional": true,
-  "discogs": true
- },
  "oi": {
   "genre": "Rock",
   "parent": null,
@@ -2761,12 +2600,6 @@
   "provisional": true,
   "discogs": true
  },
- "pipe & drum": {
-  "genre": "Brass & Military",
-  "parent": null,
-  "provisional": true,
-  "discogs": true
- },
  "plena": {
   "genre": "Latin",
   "parent": null,
@@ -2776,18 +2609,6 @@
  "plunderphonics": {
   "genre": "Electronic",
   "parent": "experimental",
-  "discogs": true
- },
- "poetry": {
-  "genre": "Non-Music",
-  "parent": null,
-  "provisional": true,
-  "discogs": true
- },
- "political": {
-  "genre": "Non-Music",
-  "parent": null,
-  "provisional": true,
   "discogs": true
  },
  "polka": {
@@ -2959,12 +2780,6 @@
   "parent": "trance",
   "discogs": true
  },
- "promotional": {
-  "genre": "Non-Music",
-  "parent": null,
-  "provisional": true,
-  "discogs": true
- },
  "psybient": {
   "genre": "Electronic",
   "parent": "psytrance",
@@ -3009,12 +2824,6 @@
   "provisional": true,
   "discogs": true
  },
- "public service announcement": {
-  "genre": "Non-Music",
-  "parent": null,
-  "provisional": true,
-  "discogs": true
- },
  "punk": {
   "genre": "Rock",
   "parent": null,
@@ -3035,12 +2844,6 @@
   "parent": null,
   "provisional": true,
   "discogs": false
- },
- "radioplay": {
-  "genre": "Non-Music",
-  "parent": null,
-  "provisional": true,
-  "discogs": true
  },
  "ragga": {
   "genre": "Reggae",
@@ -3098,12 +2901,6 @@
  },
  "reggaeton": {
   "genre": "Latin",
-  "parent": null,
-  "provisional": true,
-  "discogs": true
- },
- "religious": {
-  "genre": "Non-Music",
   "parent": null,
   "provisional": true,
   "discogs": true
@@ -3217,15 +3014,6 @@
   "parent": "techno",
   "discogs": true
  },
- "score": {
-  "genre": "Stage & Screen",
-  "parent": null,
-  "provisional": true,
-  "synonyms": [
-   "film score"
-  ],
-  "discogs": true
- },
  "screamo": {
   "genre": "Rock",
   "parent": null,
@@ -3246,12 +3034,6 @@
  },
  "seresta": {
   "genre": "Latin",
-  "parent": null,
-  "provisional": true,
-  "discogs": true
- },
- "sermon": {
-  "genre": "Non-Music",
   "parent": null,
   "provisional": true,
   "discogs": true
@@ -3373,18 +3155,6 @@
   "parent": "experimental",
   "discogs": true
  },
- "sound poetry": {
-  "genre": "Non-Music",
-  "parent": null,
-  "provisional": true,
-  "discogs": true
- },
- "soundtrack": {
-  "genre": "Stage & Screen",
-  "parent": null,
-  "provisional": true,
-  "discogs": true
- },
  "southern rock": {
   "genre": "Rock",
   "parent": null,
@@ -3425,12 +3195,6 @@
   "discogs": false,
   "status": "approved"
  },
- "speech": {
-  "genre": "Non-Music",
-  "parent": null,
-  "provisional": true,
-  "discogs": true
- },
  "speed garage": {
   "genre": "Electronic",
   "parent": "uk garage",
@@ -3456,20 +3220,8 @@
   "provisional": true,
   "discogs": true
  },
- "spoken word": {
-  "genre": "Non-Music",
-  "parent": null,
-  "provisional": true,
-  "discogs": true
- },
  "stoner rock": {
   "genre": "Rock",
-  "parent": null,
-  "provisional": true,
-  "discogs": true
- },
- "story": {
-  "genre": "Children's",
   "parent": null,
   "provisional": true,
   "discogs": true
@@ -3588,12 +3340,6 @@
   ],
   "discogs": true
  },
- "technical": {
-  "genre": "Non-Music",
-  "parent": null,
-  "provisional": true,
-  "discogs": true
- },
  "technical death metal": {
   "genre": "Rock",
   "parent": null,
@@ -3617,18 +3363,6 @@
   "provisional": true,
   "discogs": true
  },
- "theme": {
-  "genre": "Stage & Screen",
-  "parent": null,
-  "provisional": true,
-  "discogs": true
- },
- "therapy": {
-  "genre": "Non-Music",
-  "parent": null,
-  "provisional": true,
-  "discogs": true
- },
  "thrash": {
   "genre": "Rock",
   "parent": null,
@@ -3646,12 +3380,6 @@
   "parent": null,
   "provisional": true,
   "discogs": true
- },
- "trailer": {
-  "genre": "Stage & Screen",
-  "parent": null,
-  "provisional": true,
-  "discogs": false
  },
  "trance": {
   "genre": "Electronic",
@@ -3736,18 +3464,6 @@
   "also_under": [
    "downtempo"
   ],
-  "discogs": true
- },
- "vaudeville": {
-  "genre": "Stage & Screen",
-  "parent": null,
-  "provisional": true,
-  "discogs": true
- },
- "video game music": {
-  "genre": "Stage & Screen",
-  "parent": null,
-  "provisional": true,
   "discogs": true
  },
  "viking metal": {

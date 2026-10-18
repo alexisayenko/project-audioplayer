@@ -161,3 +161,25 @@ def test_one_off_noise_entries_remove_only_and_leave_no_song_without_a_genre():
     songs = _noise_songs()[:3]
     migrate_tags.apply_one_off(songs)
     assert all(any(t.startswith("genre:") for t in s["tags"]) for s in songs)
+
+
+def _removed_family_songs():
+    return [
+        {"id": "gb", "title": "Ghostbusters", "genres": ["soundtrack", "funk", "pop"], "tags": []},
+        {"id": "ak", "title": "Akkadian Empire", "genres": ["trailer"], "tags": []},
+        {"id": "ww", "title": "Writings", "genres": ["score", "rock"], "tags": ["genre:Spoken Word"]},
+        {"id": "ep", "title": "Final Frontier", "genres": ["modern classical", "epic"], "tags": []},
+    ]
+
+
+def test_removed_family_genres_are_dropped_from_every_library_with_a_backup_and_once(datadir):
+    mine = _lib(datadir, OWNER, _removed_family_songs())
+    other = _lib(datadir, "someoneelse", _removed_family_songs())
+    assert migrate_tags.run() == 2
+    for lib in (mine, other):
+        genres = {s["id"]: s.get("genres", []) for s in json.loads(lib.read_text(encoding="utf-8"))["songs"]}
+        assert genres == {"gb": ["funk", "pop"], "ak": [], "ww": ["rock"], "ep": ["modern classical", "epic"]}
+    assert (datadir / "backups-genre-merge" / OWNER / "library.json").exists()
+    first = mine.read_text(encoding="utf-8")
+    assert migrate_tags.run() == 0
+    assert mine.read_text(encoding="utf-8") == first

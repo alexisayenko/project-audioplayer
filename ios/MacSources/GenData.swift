@@ -5,18 +5,22 @@ import SwiftUI
 enum GenFamily {
     static let all = [
         "Electronic", "Rock", "Pop", "Hip Hop", "Jazz", "Funk / Soul", "Classical", "Reggae", "Latin",
-        "Blues", "Folk, World, & Country", "Stage & Screen", "Non-Music", "Children's", "Brass & Military", "Other",
+        "Blues", "Folk, World, & Country", "Other",
     ]
     static let order = [
-        "Blues", "Brass & Military", "Children's", "Classical", "Electronic", "Folk, World, & Country", "Funk / Soul", "Hip Hop", "Jazz",
-        "Latin", "Non-Music", "Pop", "Reggae", "Rock", "Stage & Screen", "Other",
+        "Blues", "Classical", "Electronic", "Folk, World, & Country", "Funk / Soul", "Hip Hop", "Jazz",
+        "Latin", "Pop", "Reggae", "Rock", "Other",
     ]
     private static let colors: [Color] = [
         DS.Chart.chart0, DS.Chart.chart1, DS.Chart.chart2, DS.Chart.chart3, DS.Chart.chart4, DS.Chart.chart5, DS.Chart.chart6, DS.Chart.chart7,
         DS.Chart.chart8, DS.Chart.chart9, DS.Chart.chart10, DS.Chart.chart11, DS.Chart.chart12, DS.Chart.chart13, DS.Chart.chart14, DS.Chart.chart15,
     ]
 
-    static func index(_ family: String) -> Int { all.firstIndex(of: family) ?? all.count - 1 }
+    static let otherColor = 15
+
+    static func index(_ family: String) -> Int {
+        family == "Other" ? otherColor : (all.firstIndex(of: family) ?? otherColor)
+    }
     static func orderIndex(_ family: String) -> Int { order.firstIndex(of: family) ?? order.count - 1 }
     static func color(_ index: Int) -> Color { colors[min(max(index, 0), colors.count - 1)] }
     static func color(of family: String) -> Color { color(index(family)) }

@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   validBpm, validYear, clampLo, splitPlottable, jitter, makePoint, extentX, extentY, tickStep, ticks, makeScale, zoomRange, panRange, centerRange, assignGroups, songFamilies, songFamily, DEFAULT_MODE,
-  buildIndex, inRect, neighbour, firstItem, groupOf, colorIndex, NEUTRAL, countText, skippedText, chartLabel,
+  buildIndex, inRect, neighbour, firstItem, groupOf, colorIndex, FAMILY_PALETTE_SIZE, NEUTRAL, countText, skippedText, chartLabel,
   JITTER_YEAR, JITTER_BPM, MIN_YEAR_SPAN,
 } from './stats-data.js';
 
@@ -143,6 +143,7 @@ test('family grouping uses the genre graph and falls back to Other', () => {
 test('colorIndex wraps into the palette and keeps neutral', () => {
   assert.equal(colorIndex(NEUTRAL), NEUTRAL);
   assert.equal(colorIndex(13), 1);
+  assert.equal(colorIndex(15, FAMILY_PALETTE_SIZE), 15);
 });
 
 const grid = [{ px: 10, py: 10 }, { px: 100, py: 100 }, { px: 105, py: 100 }, { px: 300, py: 20 }];

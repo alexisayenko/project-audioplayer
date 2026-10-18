@@ -1,5 +1,5 @@
 import { createSim } from './genre-sim.js';
-import { familyIndex, nodeRadius, FAMILIES, ancestorsOf } from './genre-data.js';
+import { familyIndex, nodeRadius, FAMILY_PALETTE_SIZE, ancestorsOf } from './genre-data.js';
 import { fitTransform, recenterOnResize, placeLabels, diffGraph, mixColor, hitNode, isDragMove } from './genre-view.js';
 
 const MIN_K = 0.15;
@@ -64,7 +64,7 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
     const cs = getComputedStyle(canvas);
     const v = (name) => cs.getPropertyValue(name).trim();
     return {
-      fam: FAMILIES.map((_, i) => v(`--chart-${i}`)),
+      fam: Array.from({ length: FAMILY_PALETTE_SIZE }, (_, i) => v(`--chart-${i}`)),
       edge: v('--ink-muted'),
       hi: v('--accent-ink'),
       label: v('--ink'),

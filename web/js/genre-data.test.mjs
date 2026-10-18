@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   indexGraph, flatGraph, descendantIds, filterTags, localCounts, searchNodes, outlineRows, pathKeys,
-  loadExpanded, saveExpanded, nodeRadius, familyIndex, isCategoryNode, familyOrder, FAMILY_ORDER,
+  loadExpanded, saveExpanded, nodeRadius, familyIndex, FAMILIES, FAMILY_PALETTE_SIZE, isCategoryNode, familyOrder, FAMILY_ORDER,
 } from './genre-data.js';
 
 const node = (id, label, family, parents = [], count = 0, tags = [id]) => ({ id, label, qid: null, family, count, ownCount: 0, parents, tags });
@@ -101,6 +101,7 @@ test('radius grows with sqrt(count) and is capped; unknown family is Other', () 
   assert.ok(nodeRadius(4) > nodeRadius(1));
   assert.equal(nodeRadius(10000), 30);
   assert.equal(familyIndex('nope'), 15);
+  assert.equal(familyIndex('Other'), 15);
 });
 
 const cat = (id, label, parents = [], count = 4, ownCount = 0) => ({ id, label, qid: null, family: 'Other', count, ownCount, parents, tags: ownCount ? [id] : [], });
@@ -182,8 +183,11 @@ test('ancestorsOf: chain, diamond, cycle, root, orphan, cap, related ignored', a
 });
 
 test('families are ordered as the Discogs genres with Other last, colours keep their own index', () => {
-  assert.equal(FAMILY_ORDER.length, 16);
-  assert.ok(familyOrder('Blues') < familyOrder('Electronic') && familyOrder('Rock') < familyOrder('Stage & Screen'));
-  assert.equal(familyOrder('nope'), 15);
+  assert.equal(FAMILY_ORDER.length, 12);
+  assert.ok(familyOrder('Blues') < familyOrder('Electronic') && familyOrder('Rock') < familyOrder('Other'));
+  assert.equal(familyOrder('nope'), 11);
   assert.equal(familyIndex('Electronic'), 0);
+  assert.deepEqual(FAMILIES.slice(0, 11).map(familyIndex), [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+  assert.equal(familyIndex('Other'), 15);
+  assert.equal(FAMILY_PALETTE_SIZE, 16);
 });

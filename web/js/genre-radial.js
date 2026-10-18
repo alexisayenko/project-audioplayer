@@ -1,4 +1,4 @@
-import { familyIndex } from './genre-data.js';
+import { familyIndex, OTHER_COLOR } from './genre-data.js';
 export const R2 = 220;
 export const STAGGER2 = 30;
 export const R3 = 420;
@@ -6,7 +6,7 @@ export const STAGGER3 = 26;
 const MIN_WEIGHT = 3;
 const LEVEL3_GAP = 12;
 export const HUES = 15;
-export const NEUTRAL_HUE = 15;
+export const NEUTRAL_HUE = OTHER_COLOR;
 
 export const radius = (level, n) => {
   if (level === 1) return 26;

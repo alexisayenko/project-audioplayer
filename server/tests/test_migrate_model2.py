@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from app import credits, library, migrate_model2
+from app import credits, genre_filter, library, migrate_model2
 from tests.test_credits_properties import legacy_song
 
 FIX = json.loads((Path(__file__).parent / "fixtures" / "live_library_sample.json").read_text(encoding="utf-8"))
@@ -125,7 +125,7 @@ def test_the_migrated_file_loads_and_serves_the_same_derived_values(tmp_path):
         view = library.public_song(song, None)
         shown = (view.get("version") or {}).get("releaseYear")
         skip = ("lang:", "country:", "decade:") if shown else ("lang:", "country:")
-        old = {t for t in old_by_id[song["id"]]["tags"] if not t.startswith(skip)}
+        old = {t for t in old_by_id[song["id"]]["tags"] if not t.startswith(skip) and not (t.startswith("genre:") and genre_filter.is_dropped(t[6:]))}
         assert {t for t in view["tags"] if not t.startswith(skip)} == old
 
 

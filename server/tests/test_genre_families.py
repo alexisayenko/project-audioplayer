@@ -31,7 +31,7 @@ def test_families_come_from_the_vocabulary_files():
         assert name, name
         assert family in gg.FAMILIES, (name, family)
     assert table == {n: e.family for n, e in genre_vocab.load().entries.items()}
-    assert len(gg.FAMILIES) == 15
+    assert len(gg.FAMILIES) == 11
     assert not (Path(gg.__file__).resolve().parent.parent / "data" / "genre_families.json").exists()
 
 
@@ -86,8 +86,8 @@ KEPT = {
     "neurofunk": "Electronic", "liquid drum and bass": "Electronic", "melodic techno": "Electronic",
     "darksynth": "Electronic", "dreamwave": "Electronic", "dance-rock": "Rock",
     "psybient": "Electronic", "electronic": "Electronic", "experimental": "Electronic",
-    "singer-songwriter": "Folk, World, & Country", "estrada": "Pop", "shock rock": "Rock", "dark metal": "Rock", "epic": "Stage & Screen",
-    "trailer": "Stage & Screen", "chillwave": "Electronic", "darkwave": "Electronic", "nu-nrg": "Electronic", "uplifting trance": "Electronic",
+    "singer-songwriter": "Folk, World, & Country", "estrada": "Pop", "shock rock": "Rock", "dark metal": "Rock", "epic": "Classical",
+    "chillwave": "Electronic", "darkwave": "Electronic", "nu-nrg": "Electronic", "uplifting trance": "Electronic",
 }
 
 
