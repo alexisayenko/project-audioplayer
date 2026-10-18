@@ -258,6 +258,25 @@ test('country, BPM, length and the credit details share one details block under 
   dlg.close();
 });
 
+test('the Albums row lists every album after the version credits, "Album" for one, and is absent without albums', () => {
+  const rows = (song) => {
+    publish([song]);
+    openSongCard(song);
+    const dlg = $('song-card');
+    const out = dlg.querySelector('.card-details').querySelectorAll('.detail').map((n) => n.textContent);
+    dlg.close();
+    return out;
+  };
+  const one = rows({ ...FULL, albums: ['First LP'], version: { type: 'remix', name: 'Kav Remix', artists: ['Kav'] }, mainArtists: ['Zed'], featuredArtists: [], releaseYear: 1999 });
+  assert.equal(one[one.length - 1], 'Album: First LP');
+  assert.ok(one.indexOf('Remix by: Kav') < one.indexOf('Album: First LP'));
+  const many = rows({ ...FULL, albums: ['First LP', 'Reissue'] });
+  assert.equal(many[many.length - 1], 'Albums: First LP, Reissue');
+  assert.equal(rows({ ...FULL, album: '', albums: [] }).filter((t) => /^Albums?:/.test(t)).length, 0);
+  assert.equal(rows({ ...BARE, tags: ['country:de'] }).filter((t) => /^Albums?:/.test(t)).length, 0);
+  assert.equal(rows(FULL).at(-1), 'Album: LP');
+});
+
 const withNavigator = async (nav, run) => {
   const saved = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
   Object.defineProperty(globalThis, 'navigator', { value: nav, configurable: true, writable: true });

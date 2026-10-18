@@ -104,6 +104,8 @@ export function titleNodes(song, titleClass = 'ttl', remixClass = 'rmx') {
 
 export const albumOf = (song) => text(Array.isArray(song?.albums) ? song.albums[0] : song?.album);
 
+export const albumsOf = (song) => (Array.isArray(song?.albums) ? names(song.albums) : names([song?.album]));
+
 export function releasedYear(song) {
   if (Number.isInteger(song?.releaseYear)) return song.releaseYear;
   return song?.year ?? null;

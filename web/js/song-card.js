@@ -7,7 +7,7 @@ import { can } from './guest.js';
 import { autodl, autoDownloadOn } from './autodl.js';
 import { downloadSong } from './download.js';
 import { editDialog } from './edit-dialog.js';
-import { creditParts, subtitle, titleNodes, detailsLines, yearFact, albumOf, displayLine } from './credits.js';
+import { creditParts, subtitle, titleNodes, detailsLines, yearFact, albumOf, albumsOf, displayLine } from './credits.js';
 import { icon } from './icons.js';
 import { bpmLabel } from './bpm-label.js';
 import { visibleTags, tagGroups, tagLabel, splitTag } from './tagname.js';
@@ -39,6 +39,7 @@ export function cardModel(song) {
     genreLines: genreLines(cachedTree(), genres),
     yearFact: yearFact(song),
     details: detailsLines(song).filter(({ label }) => !HIDDEN_DETAILS.has(label)).map(({ label, value }) => (label === 'Cover of' ? `Cover of ${value}` : `${label}: ${value}`)),
+    albums: albumsOf(song),
     bpm: bpmLabel(song?.bpm),
     duration: song?.duration ? fmtTime(song.duration) : '',
     links: storedLinkStates(song),
@@ -119,6 +120,7 @@ function detailsBlock(m) {
     m.duration ? el('span', { class: 'detail' }, `Length: ${m.duration}`) : null,
     m.yearFact ? el('span', { class: 'detail' }, `Year: ${m.yearFact}`) : null,
     ...m.details.map((d) => el('span', { class: 'detail' }, d)),
+    m.albums.length ? el('span', { class: 'detail' }, `${m.albums.length === 1 ? 'Album' : 'Albums'}: ${m.albums.join(', ')}`) : null,
   ].filter(Boolean);
   return items.length ? el('p', { class: 'facts t-caption card-details' }, ...items) : null;
 }

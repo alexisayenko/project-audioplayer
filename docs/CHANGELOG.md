@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-18 (song card Albums row)
+
+- Web: the song card details block ends with an `Album: ...` or `Albums: A, B` item listing every album of the song, placed after Remix by / Cover of / Mashup of and above the Genre lines; hidden when the song has no album (LIB-142, LIB-158).
+
 ## 2026-10-18 (song card Year fact)
 
 - Web: the song card details block shows `Year: 1995` for a song without a version year too (before, only versions with a year had it); the version and remaster forms are unchanged (LIB-142, LIB-150).
