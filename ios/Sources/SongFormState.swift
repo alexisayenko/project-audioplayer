@@ -21,10 +21,14 @@ class SongFormState: ObservableObject {
     @Published var services: [ServiceKind: URL?] = [:]
     @Published var suggest: MetadataResult.Suggest?
 
+    /// The song being edited as the server sent it; nil in the Add form. Fields the form does not show stay read-only here.
+    private(set) var base: ServerSong?
+
     init() {}
 
     convenience init(song: ServerSong) {
         self.init()
+        base = song
         title = song.title
         artist = song.artist ?? ""
         album = song.album ?? ""
@@ -35,6 +39,38 @@ class SongFormState: ObservableObject {
         musicbrainzURL = song.musicbrainz_url ?? ""
         services = storedServices
         tags = song.tags ?? []
+    }
+
+    /// Only a remix (or an untyped version) is edited through the Remix text; a cover, live, ... version is read-only so clearing the text cannot wipe it.
+    var remixLocked: Bool {
+        guard let type = base?.version?.type else { return false }
+        return type != "remix" && type != "other"
+    }
+
+    /// "Cover of X", "Live, Royal Albert Hall": the version in words, for the read-only line.
+    var versionSummary: String? {
+        guard let v = base?.version, let type = v.type else { return nil }
+        let original = (v.originalArtists ?? []).joined(separator: ", ")
+        let name = v.name?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let head = type.prefix(1).uppercased() + type.dropFirst()
+        if !original.isEmpty { return "\(head) of \(original)" }
+        return name.isEmpty ? head : "\(head): \(name)"
+    }
+
+    var featuredSummary: String? {
+        let names = base?.featuredArtists ?? []
+        return names.isEmpty ? nil : "Featuring " + names.joined(separator: ", ")
+    }
+
+    /// The keys an edit sends: only the credit fields the person changed, so the server keeps what the form cannot show.
+    func editChanges() -> [String: Any] {
+        func plain(_ s: String?) -> String { (s ?? "").trimmingCharacters(in: .whitespacesAndNewlines) }
+        var out: [String: Any] = ["title": title]
+        if plain(artist) != plain(base?.artist) { out["artist"] = artist }
+        if plain(album) != plain(base?.album) { out["album"] = album }
+        if !remixLocked, plain(remixer) != plain(base?.remixer) { out["remixer"] = remixerValue ?? NSNull() }
+        if yearValue != base?.year { out["year"] = yearValue.map { $0 as Any } ?? NSNull() }
+        return out
     }
 
     var remixerValue: String? { let t = remixer.trimmingCharacters(in: .whitespacesAndNewlines); return t.isEmpty ? nil : t }
@@ -62,8 +98,9 @@ class SongFormState: ObservableObject {
     }
 
     private func applyDecade() {
-        tags = withDecade(tags, yearValue)
-        suggested = withDecade(suggested, yearValue)
+        let shown = displayYear(yearValue, versionYear: base?.version?.releaseYear)
+        tags = withDecade(tags, shown)
+        suggested = withDecade(suggested, shown)
     }
 
     /// The MusicBrainz link saved with the song keeps its icon lit until a lookup finds another one.

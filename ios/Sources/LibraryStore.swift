@@ -13,8 +13,12 @@ final class LibraryStore: ObservableObject {
     static let audioDirectory = documents.appendingPathComponent("audio", isDirectory: true)
     private static let indexURL = documents.appendingPathComponent("library.json")
 
+    /// Bumped when the cached song records gain fields, so the next sync refetches the catalog instead of answering 304.
+    private static let schema = 2
+
     private struct Stored: Codable {
         var etag: String?
+        var schema: Int?
         var songs: [Track]
     }
 
@@ -26,7 +30,7 @@ final class LibraryStore: ObservableObject {
         if let data = try? Data(contentsOf: Self.indexURL) {
             if let stored = try? JSONDecoder().decode(Stored.self, from: data) {
                 songs = stored.songs
-                etag = stored.etag
+                etag = stored.schema == Self.schema ? stored.etag : nil
             } else if let legacy = try? JSONDecoder().decode([Track].self, from: data) {
                 songs = legacy
             }
@@ -49,6 +53,7 @@ final class LibraryStore: ObservableObject {
             t.addedAt = t.addedAt ?? songs[i].addedAt
             t.sources = t.sources ?? songs[i].sources
             t.localOnly = songs[i].localOnly
+            t.inheritDetail(from: songs[i])
             t.onServer = songs[i].localOnly == true ? false : true
             songs[i] = t
         } else {
@@ -143,7 +148,7 @@ final class LibraryStore: ObservableObject {
     }
 
     private func save() {
-        if let data = try? JSONEncoder().encode(Stored(etag: etag, songs: songs)) {
+        if let data = try? JSONEncoder().encode(Stored(etag: etag, schema: Self.schema, songs: songs)) {
             try? data.write(to: Self.indexURL, options: .atomic)
         }
     }

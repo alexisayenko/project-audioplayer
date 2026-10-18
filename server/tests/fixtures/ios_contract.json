@@ -2,13 +2,15 @@
  "swift": {
   "ios/Sources/ServerLink.swift": ["ServerSong"],
   "ios/Sources/APIModels.swift": ["Preview", "SongStatus", "MetadataResult", "Suggest", "Service", "Services"],
-  "ios/Sources/Track.swift": ["SongSource", "Track"]
+  "ios/Sources/Track.swift": ["SongSource", "SongVersion", "Track"]
  },
  "structs": {
   "ServerSong": {
    "id": "String", "title": "String", "artist": "String?", "album": "String?", "remixer": "String?", "year": "Int?", "duration": "Double?",
    "cover": "String?", "tags": "[String]?", "bpm": "Double?", "source_url": "String?", "wikipedia_song": "String?",
-   "wikipedia_artist": "String?", "musicbrainz_url": "String?", "added_at": "String?", "audio_state": "String?", "sources": "[SongSource]?"
+   "wikipedia_artist": "String?", "musicbrainz_url": "String?", "added_at": "String?", "audio_state": "String?", "sources": "[SongSource]?",
+   "version": "SongVersion?", "mainArtists": "[String]?", "featuredArtists": "[String]?", "withArtists": "[String]?", "releaseYear": "Int?",
+   "albums": "[String]?", "genres": "[String]?", "remix_year": "Int?", "rawTitle": "String?", "wikipedia_album": "String?", "discogs_url": "String?"
   },
   "Preview": {
    "id": "String", "source": "String?", "source_url": "String?", "title": "String?", "artist": "String?", "album": "String?",
@@ -23,10 +25,13 @@
    "youtube": "Service?", "soundcloud": "Service?", "wikipedia": "Service?", "spotify": "Service?", "musicbrainz": "Service?", "discogs": "Service?"
   },
   "SongSource": {"source": "String?", "id": "String?", "url": "String?"},
+  "SongVersion": {"type": "String?", "name": "String?", "artists": "[String]?", "releaseYear": "Int?", "originalArtists": "[String]?"},
   "Track": {
    "id": "String", "title": "String", "artist": "String", "duration": "Double?", "thumbnail": "String?", "album": "String?", "remixer": "String?",
    "year": "Int?", "tags": "[String]?", "bpm": "Double?", "sourceURL": "String?", "wikipediaSong": "String?", "wikipediaArtist": "String?",
-   "musicbrainzURL": "String?", "addedAt": "Date?", "sources": "[SongSource]?", "onServer": "Bool?", "localOnly": "Bool?"
+   "musicbrainzURL": "String?", "addedAt": "Date?", "sources": "[SongSource]?", "onServer": "Bool?", "localOnly": "Bool?",
+   "version": "SongVersion?", "mainArtists": "[String]?", "featuredArtists": "[String]?", "withArtists": "[String]?", "releaseYear": "Int?",
+   "albums": "[String]?", "genres": "[String]?", "remixYear": "Int?", "rawTitle": "String?", "wikipediaAlbum": "String?", "discogsURL": "String?"
   }
  },
  "always_present": ["id", "title", "artist", "remixer", "year", "remix_year", "album", "mainArtists", "featuredArtists", "releaseYear", "albums", "genres", "tags", "sources", "audio_state"],

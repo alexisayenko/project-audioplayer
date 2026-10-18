@@ -39,6 +39,19 @@ struct SongFormView<BPMRow: View>: View {
         }
     }
 
+    private func moves(from kind: TokenKind) -> [TokenMove] {
+        let texts: [TokenKind: Binding<String>] = [.title: $form.title, .artist: $form.artist, .remixer: $form.remixer]
+        return [TokenKind.title, .artist, .remixer].filter { $0 != kind && !(form.remixLocked && $0 == .remixer) }
+            .compactMap { k in texts[k].map { TokenMove(kind: k, text: $0) } }
+    }
+
+    private func readOnly(_ label: String, _ text: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label).font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.inkMuted)
+            Text(text).font(T.body).foregroundStyle(DS.Color.ink)
+        }
+    }
+
     private var metadataButton: some View {
         Button { form.launch { await form.getMetadata(api: api, sources: sources()) } } label: {
             HStack { Text("Get metadata"); if form.metaBusy { ProgressView() } }
@@ -63,9 +76,14 @@ struct SongFormView<BPMRow: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.space3) {
-            tokenField(.title, $form.title, [TokenMove(kind: .artist, text: $form.artist), TokenMove(kind: .remixer, text: $form.remixer)])
-            tokenField(.artist, $form.artist, [TokenMove(kind: .title, text: $form.title), TokenMove(kind: .remixer, text: $form.remixer)])
-            tokenField(.remixer, $form.remixer, [TokenMove(kind: .title, text: $form.title), TokenMove(kind: .artist, text: $form.artist)])
+            tokenField(.title, $form.title, moves(from: .title))
+            tokenField(.artist, $form.artist, moves(from: .artist))
+            if let featured = form.featuredSummary { readOnly("Featured", featured) }
+            if form.remixLocked, let version = form.versionSummary {
+                readOnly("Version", version)
+            } else {
+                tokenField(.remixer, $form.remixer, moves(from: .remixer))
+            }
             if let h = form.hint { suggestionHint(h) }
             ViewThatFits(in: .horizontal) {
                 HStack(spacing: DS.Space.space3) { metadataButton; Spacer(minLength: DS.Space.space2); ServiceIconRow(busy: form.metaBusy, found: form.services) }

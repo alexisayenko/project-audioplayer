@@ -85,14 +85,11 @@ final class MacSongForm: SongFormState {
     func saveEdit(id: String, settings: Settings, library: LibraryStore) async -> Bool {
         let api = APIClient(baseURL: settings.serverURL, token: settings.token)
         phase = .saving; message = nil
-        let changes: [String: Any] = [
-            "title": title, "artist": artist, "album": album,
-            "remixer": link(remixer),
-            "year": yearValue.map { $0 as Any } ?? NSNull(),
-            "wikipedia_song": link(wikiSong), "wikipedia_artist": link(wikiArtist),
-            "musicbrainz_url": link(musicbrainzURL),
-            "tags": commitPending(),
-        ]
+        var changes = editChanges()
+        changes["wikipedia_song"] = link(wikiSong)
+        changes["wikipedia_artist"] = link(wikiArtist)
+        changes["musicbrainz_url"] = link(musicbrainzURL)
+        changes["tags"] = commitPending()
         do {
             let updated = try await api.patch(id, changes: changes)
             library.update(updated.track)
@@ -292,6 +289,19 @@ struct MacSongFormSheet: View {
         }
     }
 
+    private func moves(from kind: TokenKind) -> [TokenMove] {
+        let texts: [TokenKind: Binding<String>] = [.title: $form.title, .artist: $form.artist, .remixer: $form.remixer]
+        return [TokenKind.title, .artist, .remixer].filter { $0 != kind && !(form.remixLocked && $0 == .remixer) }
+            .compactMap { k in texts[k].map { TokenMove(kind: k, text: $0) } }
+    }
+
+    private func readOnly(_ label: String, _ text: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label).font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.inkMuted)
+            Text(text).font(T.body).foregroundStyle(DS.Color.ink)
+        }
+    }
+
     private func labeled(_ label: String, _ text: Binding<String>) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(label).font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.inkMuted)
@@ -308,9 +318,14 @@ struct MacSongFormSheet: View {
 
     @ViewBuilder private var fields: some View {
         VStack(alignment: .leading, spacing: DS.Space.space3) {
-            tokenField(.title, $form.title, [TokenMove(kind: .artist, text: $form.artist), TokenMove(kind: .remixer, text: $form.remixer)])
-            tokenField(.artist, $form.artist, [TokenMove(kind: .title, text: $form.title), TokenMove(kind: .remixer, text: $form.remixer)])
-            tokenField(.remixer, $form.remixer, [TokenMove(kind: .title, text: $form.title), TokenMove(kind: .artist, text: $form.artist)])
+            tokenField(.title, $form.title, moves(from: .title))
+            tokenField(.artist, $form.artist, moves(from: .artist))
+            if let featured = form.featuredSummary { readOnly("Featured", featured) }
+            if form.remixLocked, let version = form.versionSummary {
+                readOnly("Version", version)
+            } else {
+                tokenField(.remixer, $form.remixer, moves(from: .remixer))
+            }
             if let h = form.hint { hint(h) }
             HStack(spacing: DS.Space.space3) {
                 Button { form.launch { await form.getMetadata(api: api, sources: sources) } } label: {

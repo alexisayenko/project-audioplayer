@@ -91,14 +91,28 @@ struct CatalogResponse: Decodable {
     let songs: [ServerSong]
 
     private enum Keys: String, CodingKey { case ids, songs }
+    private enum IDKey: String, CodingKey { case id }
     private struct Lossy: Decodable {
         let song: ServerSong?
-        init(from decoder: Decoder) throws { song = try? ServerSong(from: decoder) }
+        let failure: String?
+
+        init(from decoder: Decoder) throws {
+            do {
+                song = try ServerSong(from: decoder)
+                failure = nil
+            } catch {
+                song = nil
+                let id = (try? decoder.container(keyedBy: IDKey.self).decodeIfPresent(String.self, forKey: .id)).flatMap { $0 } ?? "?"
+                failure = "\(id): \(error)"
+            }
+        }
     }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: Keys.self)
         ids = try c.decodeIfPresent([String].self, forKey: .ids) ?? []
-        songs = (try c.decodeIfPresent([Lossy].self, forKey: .songs) ?? []).compactMap(\.song)
+        let decoded = try c.decodeIfPresent([Lossy].self, forKey: .songs) ?? []
+        for failure in decoded.compactMap(\.failure) { NSLog("catalog: skipped a song that failed to decode: %@", failure) }
+        songs = decoded.compactMap(\.song)
     }
 }

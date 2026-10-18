@@ -121,6 +121,9 @@ func decadeTag(_ year: Int?) -> String? {
     return String(format: "decade:%02ds", y % 100 - y % 10)
 }
 
+/// The year a song is shown with and its decade follows: its version's year when the version has one, else the release year (as the server does).
+func displayYear(_ year: Int?, versionYear: Int?) -> Int? { versionYear ?? year }
+
 func withDecade(_ tags: [String], _ year: Int?) -> [String] {
     guard let derived = decadeTag(year) else { return tags }
     var out: [String] = []

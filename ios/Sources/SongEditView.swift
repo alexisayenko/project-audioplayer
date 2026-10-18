@@ -173,14 +173,11 @@ struct SongEditView: View {
         saving = true; note = nil
         defer { saving = false }
         let finalTagList = form.commitPending()
-        let changes: [String: Any] = [
-            "title": form.title, "artist": form.artist, "album": form.album,
-            "remixer": link(form.remixer),
-            "year": form.yearValue.map { $0 as Any } ?? NSNull(),
-            "wikipedia_song": link(form.wikiSong), "wikipedia_artist": link(form.wikiArtist),
-            "musicbrainz_url": link(form.musicbrainzURL),
-            "tags": finalTagList,
-        ]
+        var changes = form.editChanges()
+        changes["wikipedia_song"] = link(form.wikiSong)
+        changes["wikipedia_artist"] = link(form.wikiArtist)
+        changes["musicbrainz_url"] = link(form.musicbrainzURL)
+        changes["tags"] = finalTagList
         do {
             let updated = try await api.patch(song.id, changes: changes)
             library.update(updated.track)
