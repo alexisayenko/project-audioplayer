@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-18 (sidebar toggle)
+
+- Web: the sidebar collapse chevron is a small round button on the sidebar's right edge, half over the page, at the height between the logo and the first menu item.
+
 ## 2026-10-18 (Library chips under the search, built, not deployed)
 
 - Web: the Library search field takes the remaining toolbar width with the action buttons (Clear filters, Show playing, Play all, Add all) at its right end, and the category chips (Tags, Genres, Years, Countries) sit on their own line directly below it at every width; under 720px the buttons wrap after the chips and the sort bar keeps only the sort select and the summary (LIB-030).

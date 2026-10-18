@@ -101,14 +101,14 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + var(--dock-b) + var(--m
 .side-toggle { display: none; }
 @media (min-width: 720px) {
   .side, .stage, .mini { transition: width var(--dur-base) var(--ease-io), margin-left var(--dur-base) var(--ease-io), left var(--dur-base) var(--ease-io), max-width var(--dur-base) var(--ease-io); }
-  .side { overflow: hidden; }
-  .side-toggle { display: grid; place-items: center; align-self: flex-end; width: var(--hit); height: var(--hit); flex: none; padding: 0; border: 0; border-radius: var(--radius-key); background: transparent; color: var(--ink-muted); }
+  .brand, #nav a, .server, .build-line { overflow: hidden; }
+  .side-toggle { display: grid; place-items: center; align-self: flex-end; width: var(--control-sm); height: var(--control-sm); flex: none; padding: 0; border: var(--stroke-hairline) solid var(--line); border-radius: var(--radius-pill); background-color: var(--surface); color: var(--ink-muted); margin-block: calc((var(--hit) - var(--control-sm)) / 2); }
   .brand { order: -1; }
-  body:not(.side-collapsed) .side-toggle { margin-right: calc(var(--space-2) * -1); }
+  body:not(.side-collapsed) .side-toggle { margin-right: calc(-1 * (var(--space-4) + var(--stroke-hairline) / 2 + var(--control-sm) / 2)); }
   .side-toggle svg { width: var(--icon-action); height: var(--icon-action); transition: transform var(--dur-base) var(--ease-io); }
   body.side-collapsed { --rail-w: 64px; }
   body.side-collapsed .side { padding: var(--space-4) var(--space-2); }
-  body.side-collapsed .side-toggle { align-self: center; }
+  body.side-collapsed .side-toggle { margin-right: calc(-1 * (var(--space-2) + var(--stroke-hairline) / 2 + var(--control-sm) / 2)); }
   body.side-collapsed .side-toggle svg { transform: rotate(180deg); }
   body.side-collapsed .brand { align-items: center; padding: var(--space-1) 0 0; }
   body.side-collapsed .brand-name, body.side-collapsed .brand-sub { display: none; }
