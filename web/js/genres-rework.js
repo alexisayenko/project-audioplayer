@@ -71,9 +71,9 @@ export function renderGenresRework(root, opts = {}) {
   const details = el('div', { class: 'gmr-details', role: 'group', 'aria-label': 'Genre details', hidden: true });
   const empty = el('p', { class: 'gmr-empty muted t-body', hidden: true });
   const outlineEl = el('section', { class: 'gmr-outline', id: 'gmr-outline', 'aria-label': 'Outline' });
-  const side = el('div', { class: 'gmr-side' });
+  const side = el('div', { class: 'gmr-side', id: 'gmr-panel' });
   const outlineBtn = el('button', {
-    class: 'gm-tbtn gmr-outline-btn', type: 'button', 'aria-controls': 'gmr-outline', 'aria-expanded': 'false', onclick: () => setOutline(!outlineOpen),
+    class: 'gm-tbtn gmr-outline-btn', type: 'button', 'aria-controls': 'gmr-panel', 'aria-expanded': 'false', onclick: () => setOutline(true),
   }, 'Outline');
   const wrap = el('div', { class: 'gm gmr' });
   const work = el('div', { class: 'gm-work' });
@@ -116,8 +116,11 @@ export function renderGenresRework(root, opts = {}) {
 
   function setOutline(open) {
     outlineOpen = open;
+    side.hidden = !open;
     outlineEl.hidden = !open;
+    outlineBtn.hidden = open;
     outlineBtn.setAttribute('aria-expanded', String(open));
+    closeBtn.setAttribute('aria-expanded', String(open));
     wrap.classList.toggle('outline-open', open);
     if (open && narrow() && legendOpen) setLegend(false);
   }
@@ -195,7 +198,7 @@ export function renderGenresRework(root, opts = {}) {
   }
   function markMatches() { view.setMatches(tree && query ? [...searchMatches(tree, query, { populatedOnly: true }).keys()] : []); }
   function panelInset() {
-    if (!outlineOpen || outlineEl.hidden) return { r: 0, b: 0 };
+    if (!outlineOpen || side.hidden) return { r: 0, b: 0 };
     const rect = side.getBoundingClientRect?.() || { width: 0, height: 0 };
     return narrow() ? { r: 0, b: rect.height } : { r: rect.width, b: 0 };
   }
@@ -478,17 +481,21 @@ export function renderGenresRework(root, opts = {}) {
       el('li', {}, el('span', { class: 'gmr-key nodisc', 'aria-hidden': 'true' }), 'Dashed ring: not in Discogs'),
       el('li', {}, el('span', { class: 'gmr-key q', 'aria-hidden': 'true' }), 'Question badge: under question')));
 
+  const closeBtn = el('button', {
+    class: 'gm-x', type: 'button', 'aria-label': 'Close outline', title: 'Close outline', 'aria-controls': 'gmr-panel', 'aria-expanded': 'true', onclick: () => setOutline(false),
+  }, icon('clear', 'nav'));
+
   outlineEl.append(
-    el('div', { class: 'gm-outline-head' },
-      el('h2', { class: 't-headline' }, 'Outline'),
-      el('button', { class: 'gm-x', type: 'button', 'aria-label': 'Close outline', title: 'Close outline', onclick: () => setOutline(false) }, icon('clear', 'nav'))),
     details,
     el('div', { class: 'gmr-scroll' },
       el('div', { class: 'gmr-tools' }, search, expandAll, collapseAll, statusRow, flavourRow),
       treeEl, empty));
 
-  side.append(el('div', { class: 'gmr-bar' }, status, legendBtn, nowBtn, reload, outlineBtn, familyRow), outlineEl);
-  work.append(canvas, side, zoomBar, legend, tip);
+  side.append(
+    el('div', { class: 'gm-outline-head' }, el('h2', { class: 't-headline' }, 'Outline'), closeBtn),
+    el('div', { class: 'gmr-bar' }, status, legendBtn, nowBtn, reload, familyRow),
+    outlineEl);
+  work.append(canvas, side, outlineBtn, zoomBar, legend, tip);
   wrap.append(pageHead('Genres map'), work);
   root.append(wrap);
   setOutline(outlineOpen);

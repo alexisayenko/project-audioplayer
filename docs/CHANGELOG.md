@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-18 (Genres map panel collapses as one, not deployed)
+
+- Web: on the Genres map the header block (status chip, Show legend, Now playing, Reload, family chips) and the Outline are one panel with a single collapse button in its title row; collapsed, only a compact "Outline" button remains to bring the whole panel back, also on phones ([WEB-085](specs/web.md), WEB-086, GEN-054). Not checked in a browser.
+
 ## 2026-10-18 (Pill pencil edits directly, not deployed)
 
 - Web: the pencil on a song form pill (Title, Artists, Featuring, With, Remix by, Cover / mashup sources) now starts editing the pill text directly; the popup menu (Edit text, Move to ..., Remove) is gone, so pills move between fields only by drag and drop and the Title "Move to Artists?" hint; the X still removes. Not checked in a browser.

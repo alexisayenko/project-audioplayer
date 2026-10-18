@@ -76,12 +76,22 @@ test('zoom controls exist and the outline toggle reports its state', async () =>
   const { root } = await mount();
   for (const l of ['Zoom in', 'Zoom out', 'Reset view']) assert.ok(root.querySelectorAll('button').some((b) => b.getAttribute('aria-label') === l), l);
   const toggle = btn(root, 'Outline');
-  assert.equal(toggle.getAttribute('aria-controls'), 'gmr-outline');
-  assert.ok(['true', 'false'].includes(toggle.getAttribute('aria-expanded')));
+  const close = root.querySelectorAll('button').find((b) => b.getAttribute('aria-label') === 'Close outline');
+  for (const b of [toggle, close]) assert.equal(b.getAttribute('aria-controls'), 'gmr-panel');
+  assert.equal(root.querySelector('#gmr-panel'), root.querySelector('.gmr-side'));
+  assert.equal(toggle.getAttribute('aria-expanded'), 'false');
+  assert.equal(toggle.hidden, false);
+  assert.equal(root.querySelector('#gmr-panel').hidden, true);
   toggle.click();
-  const before = toggle.getAttribute('aria-expanded');
-  toggle.click();
-  assert.notEqual(toggle.getAttribute('aria-expanded'), before);
+  assert.equal(root.querySelector('#gmr-panel').hidden, false);
+  assert.equal(toggle.getAttribute('aria-expanded'), 'true');
+  assert.equal(close.getAttribute('aria-expanded'), 'true');
+  assert.equal(toggle.hidden, true);
+  close.click();
+  assert.equal(root.querySelector('#gmr-panel').hidden, true);
+  assert.equal(toggle.getAttribute('aria-expanded'), 'false');
+  assert.equal(close.getAttribute('aria-expanded'), 'false');
+  assert.equal(toggle.hidden, false);
 });
 
 test('the outline lists only genres with library songs and the ancestors that nest them', async () => {
@@ -332,27 +342,37 @@ test('Genres map shows one page title inside the standard page head and no small
   cleanup();
 });
 
-test('the toolbar is the header of the one side panel and stays reachable when the outline is closed', async () => {
+test('the header block and the outline are one panel that collapses and expands as a whole', async () => {
   mode = 'ok';
   const { root, cleanup } = await mount();
   const side = root.querySelector('.gmr-side');
   const bar = side.querySelector('.gmr-bar');
   assert.equal(root.querySelectorAll('.gmr-side').length, 1);
-  assert.equal(bar, side.children[0]);
-  assert.equal(side.children[1], root.querySelector('#gmr-outline'));
+  assert.equal(side.children[0].querySelector('h2').textContent, 'Outline');
+  assert.equal(bar, side.children[1]);
+  assert.equal(side.children[2], root.querySelector('#gmr-outline'));
   assert.ok(bar.querySelector('[role="status"]').textContent.includes('genres in Electronic'));
-  for (const l of ['Show legend', 'Reload', 'Outline']) assert.ok(bar.contains(btn(root, l)), l);
+  for (const l of ['Show legend', 'Now playing', 'Reload']) assert.ok(bar.contains(btn(root, l)), l);
+  assert.ok(bar.contains(root.querySelector('.gmr-family-row')));
   assert.equal(root.querySelectorAll('.gmr-bar').length, 1);
+  const toggle = btn(root, 'Outline');
+  assert.ok(!side.contains(toggle));
+  toggle.click();
+  assert.equal(toggle.hidden, true);
   const close = root.querySelectorAll('button').find((x) => x.getAttribute('aria-label') === 'Close outline');
+  assert.ok(side.children[0].contains(close));
   assert.ok(!bar.contains(close));
   close.click();
+  assert.equal(side.hidden, true);
   assert.equal(root.querySelector('#gmr-outline').hidden, true);
-  assert.ok(side.contains(bar));
-  assert.equal(bar.contains(btn(root, 'Outline')), true);
+  assert.equal(toggle.hidden, false);
+  assert.ok(!root.querySelector('.gm').classList.contains('outline-open'));
+  toggle.click();
+  assert.equal(side.hidden, false);
+  assert.equal(root.querySelector('#gmr-outline').hidden, false);
+  assert.equal(toggle.hidden, true);
   btn(root, 'Show legend').click();
   assert.equal(root.querySelector('#gmr-legend').hidden, false);
-  btn(root, 'Outline').click();
-  assert.equal(root.querySelector('#gmr-outline').hidden, false);
   cleanup();
 });
 
@@ -364,7 +384,7 @@ test('the details live inside the one outline panel: heading structure, close bu
   assert.equal(root.querySelector('.gmr-panel'), null);
   assert.ok(outline.contains(panelOf(root)));
   assert.equal(panelOf(root).hidden, true);
-  assert.equal(outline.querySelector('h2').textContent, 'Outline');
+  assert.equal(root.querySelector('.gmr-side h2').textContent, 'Outline');
   openInfo(root, 'house');
   assert.equal(panelOf(root).hidden, false);
   assert.equal(panelOf(root).getAttribute('aria-label'), 'Genre details');

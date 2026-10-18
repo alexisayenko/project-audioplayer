@@ -218,13 +218,14 @@ body[data-route="genres"] main { max-width: none; padding: 0; }
   position: absolute; z-index: 5; top: var(--space-3); right: var(--space-3); bottom: calc(var(--space-3) + var(--player-h)); width: min(360px, calc(100% - 2 * var(--space-3)));
   display: flex; flex-direction: column; overflow: hidden; border-radius: var(--radius-key); background: var(--surface); box-shadow: var(--shadow-float);
 }
-.gm:not(.outline-open) .gmr-side { bottom: auto; }
+.gmr-side[hidden] { display: none; }
 .gmr-bar { flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); min-width: 0; padding: var(--space-3); }
 .gmr-bar .gm-status { flex: 0 1 auto; max-width: 100%; margin: 0; }
-.gm.outline-open .gmr-outline-btn { display: none; }
+.gmr-outline-btn { position: absolute; z-index: 5; top: var(--space-3); right: var(--space-3); min-height: var(--control); background-color: var(--surface); box-shadow: var(--shadow-float); }
+.gmr-outline-btn[hidden] { display: none; }
 .gmr-outline { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; overflow: hidden; border-top: var(--stroke-hairline) solid var(--line); }
 .gmr-outline[hidden] { display: none; }
-.gmr-outline .gm-outline-head { position: static; flex: none; margin: 0; padding: var(--space-3) var(--space-3) var(--space-2); }
+.gmr-side > .gm-outline-head { position: static; flex: none; margin: 0; padding: var(--space-3) var(--space-3) var(--space-2); }
 .gmr-details {
   flex: none; display: grid; gap: var(--space-3); max-height: 50%; overflow-y: auto; padding: var(--space-3); background: var(--surface-sunken);
   border-bottom: var(--stroke-hairline) solid var(--line);
@@ -234,7 +235,6 @@ body[data-route="genres"] main { max-width: none; padding: 0; }
 .gmr-details, .gmr-scroll { scrollbar-width: var(--scrollbar-width); scrollbar-color: var(--line) transparent; }
 @media (max-width: 719px) {
   .gmr-side { top: auto; left: var(--space-3); width: auto; height: 55%; }
-  .gm:not(.outline-open) .gmr-side { top: var(--space-3); height: auto; }
   .gm.outline-open .gmr-side.has-details { height: 70%; }
 }
 @keyframes gmr-flash { from { background-color: var(--accent); color: var(--on-accent); } to { background-color: var(--accent-tint); color: var(--accent-ink); } }
