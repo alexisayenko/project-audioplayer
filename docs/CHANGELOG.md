@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-18 (remaster year)
+
+- Web: a remaster shows the original year with its own year in brackets, "1985 (2003 remaster)", in the Library row, song card, dock and Now playing subtitle; Library sort by Year and Song stats use the original year (LIB-150).
+
 ## 2026-10-18 (data model 3)
 
 - Server: countries are `country:` tags on the song again, any number per song; the Artist table, `artists` in `GET /library` and the `/artists` routes are gone (ADR-0031, [task-0049](tasks/task-0049.md)). A startup migration (`migrate_model3`) moves each library to schema 3 and keeps a backup in `backups-model3/`.

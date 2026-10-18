@@ -135,3 +135,23 @@ test('displayed year is the version year, else the original, never the upload da
   assert.equal(c.subtitle({ title: 'S', artist: 'A', year: 1985, remix_year: null, upload_date: '2024-01-01' }), 'A · 1985');
   assert.equal(c.displayYear({ title: 'S' }), null);
 });
+
+test('a remaster keeps the original year for sort and stats and appends its own year as text', () => {
+  const M = { title: 'Song', mainArtists: ['Band'], releaseYear: 1985, version: { type: 'remaster', name: '2003 Remaster', releaseYear: 2003 } };
+  assert.equal(c.displayYear(M), 1985);
+  assert.equal(c.subtitle(M), 'Band · 1985 (2003 remaster)');
+  assert.equal(c.yearText(M), '1985 (2003 remaster)');
+  assert.equal(c.yearFact(M), '1985 (2003 remaster)');
+  assert.equal(c.versionTooltip(M), '2003 Remaster');
+  assert.equal(c.titleNodes(M)[2].title, '');
+  assert.deepEqual(c.detailsLines(M).filter((l) => /year|released/i.test(l.label)).map((l) => l.value), ['2003', '1985']);
+  const same = { ...M, version: { ...M.version, releaseYear: 1985 } };
+  assert.equal(c.subtitle(same), 'Band · 1985');
+  const noVy = { ...M, version: { ...M.version, releaseYear: null } };
+  assert.equal(c.subtitle(noVy), 'Band · 1985');
+  assert.equal(c.yearFact(noVy), '');
+  assert.equal(c.displayYear({ ...M, releaseYear: null }), null);
+  assert.equal(c.subtitle({ ...M, releaseYear: null }), 'Band · 2003 remaster');
+  assert.equal(c.displayYear({ ...M, version: { ...M.version, type: 'Remix' } }), 2003);
+  assert.equal(c.subtitle({ ...M, version: { ...M.version, type: 'remix' } }), 'Band · 2003');
+});

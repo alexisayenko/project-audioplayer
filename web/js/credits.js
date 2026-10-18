@@ -71,10 +71,10 @@ export function tooltipLine(song) {
 }
 
 export function versionTooltip(song) {
-  const { remix, version, structured } = creditParts(song);
+  const { remix } = creditParts(song);
   if (!remix) return '';
-  const year = structured ? version?.releaseYear : song?.remix_year;
-  return Number.isInteger(year) ? `${remix} (${year})` : remix;
+  const year = isRemaster(song) ? null : versionYear(song);
+  return year == null ? remix : `${remix} (${year})`;
 }
 
 export function titleNodes(song, titleClass = 'ttl', remixClass = 'rmx') {
@@ -98,23 +98,41 @@ export function releasedYear(song) {
   return song?.year ?? null;
 }
 
+const isRemaster = (song) => text(song?.version?.type).toLowerCase() === 'remaster';
+
 export function versionYear(song) {
   const y = song?.version?.releaseYear ?? song?.version?.year ?? song?.remix_year;
   return Number.isInteger(y) ? y : null;
 }
 
-export const displayYear = (song) => versionYear(song) ?? (Number.isInteger(releasedYear(song)) ? releasedYear(song) : null);
+const original = (song) => (Number.isInteger(releasedYear(song)) ? releasedYear(song) : null);
+
+export const displayYear = (song) => (isRemaster(song) ? original(song) : versionYear(song) ?? original(song));
+
+function remasterText(song) {
+  const v = versionYear(song);
+  const o = original(song);
+  if (v == null) return o == null ? '' : String(o);
+  if (o == null) return `${v} remaster`;
+  return v === o ? String(o) : `${o} (${v} remaster)`;
+}
+
+export function yearText(song) {
+  if (isRemaster(song)) return remasterText(song);
+  const y = displayYear(song);
+  return y == null ? '' : String(y);
+}
 
 export function yearFact(song) {
   const v = versionYear(song);
   if (v == null) return '';
-  const o = releasedYear(song);
-  return Number.isInteger(o) && o !== v ? `${v} · original ${o}` : String(v);
+  if (isRemaster(song)) return remasterText(song);
+  const o = original(song);
+  return o != null && o !== v ? `${v} · original ${o}` : String(v);
 }
 
 export function subtitle(song) {
-  const year = String(displayYear(song) ?? '').trim();
-  return [artistLine(song), year].filter(Boolean).join(' · ');
+  return [artistLine(song), yearText(song)].filter(Boolean).join(' · ');
 }
 
 const KIND_LABEL = (k) => (k ? k[0].toUpperCase() + k.slice(1) : '');
