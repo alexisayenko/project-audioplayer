@@ -9,7 +9,7 @@ import { signInErrorText } from './signin-error.js';
 import { serviceIcon } from './service-icons.js';
 import { isGuest, ownerLabel } from './guest.js';
 import { bpmCard, metadataCard } from './backfill-card.js';
-import { downloadAllCard } from './bulk-download.js';
+import { downloadAllRow } from './bulk-download.js';
 import { isSupported as vizSupported } from './audio-graph.js';
 import {
   vizCaps, vizMode, setVizMode, vizHeightId, setVizHeight,
@@ -117,7 +117,7 @@ function accountCard() {
   return el('section', { class: 'card' }, el('h2', { class: 't-headline' }, 'Account'), accountSection());
 }
 
-function libraryCard() {
+function libraryCard(downloadAll) {
   const songs = store.songs.length;
   const secs = store.songs.reduce((n, s) => n + (s.duration || 0), 0);
   const hours = secs >= 3600 ? `${(secs / 3600).toFixed(1)} h of music` : `${Math.round(secs / 60)} min of music`;
@@ -144,8 +144,7 @@ function libraryCard() {
     el('div', { class: 'cell' }, el('span', { class: 'muted t-caption' }, 'Storage'), meter),
     el('div', { class: 'cell' }, el('span', { class: 'muted t-caption' }, 'Sync'), el('span', { class: 't-caption' }, sync)),
     el('div', { class: 'cell' }, el('span', { class: 'muted t-caption' }, 'Server'), el('span', { class: 't-caption' }, location.host)),
-    ...(store.build ? [el('div', { class: 'cell' }, el('span', { class: 'muted t-caption' }, 'Build'),
-      el('span', { class: 't-caption', title: store.build.title }, store.build.text))] : []));
+    ...(downloadAll ? [el('div', { class: 'divider' }), downloadAll] : []));
 }
 
 function playbackCard() {
@@ -212,12 +211,13 @@ export function renderSettings(root) {
     root.append(pageHead('Settings', `You are viewing ${ownerLabel()}'s library.`), el('div', { class: 'settings-grid' }, accountCard()));
     return null;
   }
-  let card = libraryCard();
-  const rebuild = () => { const next = libraryCard(); card.replaceWith(next); card = next; };
+  const downloadAll = auth.email ? downloadAllRow() : null;
+  let card = libraryCard(downloadAll);
+  const rebuild = () => { const next = libraryCard(downloadAll); card.replaceWith(next); card = next; };
   const unsub = store.subscribe(rebuild);
   window.addEventListener('sync-changed', rebuild);
   root.append(pageHead('Settings', 'Your library and storage on this server.'), el('div', { class: 'settings-grid' },
-    el('div', { class: 'settings-col' }, accountCard(), ...(auth.email ? [card, bpmCard(), metadataCard(), downloadAllCard()] : [])),
+    el('div', { class: 'settings-col' }, accountCard(), ...(auth.email ? [card, bpmCard(), metadataCard()] : [])),
     el('div', { class: 'settings-col' }, playbackCard(), visualizerCard())));
   return () => { unsub(); window.removeEventListener('sync-changed', rebuild); };
 }

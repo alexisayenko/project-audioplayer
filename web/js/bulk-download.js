@@ -70,8 +70,8 @@ async function copy(text, area) {
   }
 }
 
-export function downloadAllCard() {
-  const lead = el('p', { class: 'muted t-subhead' }, '');
+export function downloadAllRow() {
+  const lead = el('span', { class: 'muted t-caption bulk-lead' }, '');
   const fill = el('div', { class: 'bf-fill' });
   const bar = el('div', { class: 'bf-bar', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': '0', 'aria-label': 'Download progress', hidden: true }, fill);
   const note = el('p', { class: 't-caption', role: 'status', 'aria-live': 'polite' }, '');
@@ -83,8 +83,9 @@ export function downloadAllCard() {
   const longBox = el('input', { type: 'checkbox', id: 'bulk-long' });
   const longRow = el('label', { class: 'check-row', for: 'bulk-long', hidden: true }, longBox, el('span', { class: 't-subhead' }, 'Include long songs'));
   const copyBtn = el('button', { class: 'btn outline small', type: 'button', hidden: true }, 'Copy failed songs');
-  const card = el('section', { class: 'card' }, el('h2', { class: 't-headline' }, 'Download all songs'), lead, bar, note, longRow, list,
-    el('div', { class: 'head-actions' }, start, go, back, stop, copyBtn));
+  const card = el('div', { class: 'bulk-row' },
+    el('div', { class: 'cell' }, lead, el('div', { class: 'bulk-actions' }, start, go, back, stop, copyBtn)),
+    bar, note, longRow, list);
   let confirming = false;
   let confirmNote = '';
   let longNote = '';

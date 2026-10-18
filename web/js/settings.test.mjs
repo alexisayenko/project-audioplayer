@@ -219,19 +219,22 @@ test('timer not installed is spelled out on the card', async () => {
   store.sync = null;
 });
 
-test('the library card shows a Build row only when /health carried a build', async () => {
+test('the library card has no Build row and holds the Download all control', async () => {
   auth.email = 'me@x.y';
   store.sync = 'ok';
-  store.build = null;
-  route({ cfg: {} });
-  let m = mount();
-  await flush();
-  assert.doesNotMatch(m.root.textContent, /Build/);
-  m.cleanup();
   store.build = { text: '68df2bf · 17 Oct 14:05', title: 'Commit x' };
-  m = mount();
+  store.songs = [{ id: 'aaaaaaaaaaa', title: 'S', duration: 60, audio_state: 'none' }];
+  route({ cfg: {} });
+  const m = mount();
   await flush();
-  assert.match(m.root.textContent, /Build68df2bf · 17 Oct 14:05/);
+  assert.doesNotMatch(m.root.textContent, /Build|68df2bf/);
+  const cards = [...m.root.querySelectorAll('section.card')];
+  const lib = cards.find((c) => /Library/.test(c.querySelector('h2').textContent));
+  assert.match(lib.textContent, /1 song is not downloaded yet/);
+  assert.ok([...lib.querySelectorAll('button')].some((b) => b.textContent === 'Download all'));
+  assert.ok(!cards.some((c) => c !== lib && /Download all/.test(c.textContent)));
+  assert.ok(!cards.some((c) => c.querySelector('h2').textContent === 'Download all songs'));
   m.cleanup();
   store.build = null;
+  store.songs = [];
 });

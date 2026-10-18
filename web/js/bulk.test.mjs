@@ -8,7 +8,7 @@ const b = await import('./bulk.js');
 const { LONG_SONG_SECONDS } = await import('./constants.js');
 const { store } = await import('./store.js');
 const { metadataCard } = await import('./backfill-card.js');
-const { downloadAllCard, bulkDownload } = await import('./bulk-download.js');
+const { downloadAllRow, bulkDownload } = await import('./bulk-download.js');
 
 test('metadata texts', () => {
   assert.equal(b.metaLead(0), 'Every downloaded song has its metadata.');
@@ -84,7 +84,7 @@ test('download card skips long songs unless included', async () => {
   });
   store.songs = [{ id: 'aaaaaaaaaaa', title: 'Short', duration: 200, audio_state: 'none' }, { id: 'bbbbbbbbbbb', title: 'Long', duration: 4000, audio_state: 'none' }];
   bulkDownload.reset();
-  const card = downloadAllCard();
+  const card = downloadAllRow();
   document.body.append(card);
   assert.match(card.textContent, /2 songs are not downloaded yet/);
   fire(card.querySelectorAll('button')[0], 'click');
