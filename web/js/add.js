@@ -14,12 +14,15 @@ import { can } from './guest.js';
 import { fetchSteps } from './add-progress.js';
 import { playlistLink, watchUrl, MIX_MESSAGE, PRIVATE_MESSAGE } from './playlist-link.js';
 import { playlistImport } from './playlist-import.js';
+import { addPlan } from './drafts-model.js';
 
 const BULK = new Set(['insertFromPaste', 'insertFromPasteAsQuotation', 'insertFromDrop', 'insertReplacementText']);
 const PREVIEW_ONLY = 'Preview only \u2014 SoundCloud Go+ track, can\'t be downloaded in full.';
 
-export function openAdd() {
+export function openAdd(opts) {
   if (!can('add')) return;
+  const draft = opts?.draft ?? null;
+  const plan = draft ? addPlan(draft) : null;
   const dlg = document.getElementById('add-dialog');
   let preview = null;
   let sf = null;
@@ -149,7 +152,7 @@ export function openAdd() {
     if (sf) sf.destroy();
     sf = songForm({
       mode: 'add',
-      song: { ...preview, wikipedia_song: preview.wikipedia_song, wikipedia_artist: preview.wikipedia_artist, wikipedia_album: preview.wikipedia_album },
+      song: { ...preview, wikipedia_song: preview.wikipedia_song, wikipedia_artist: preview.wikipedia_artist, wikipedia_album: preview.wikipedia_album, ...(plan?.credits ? { ...plan.credits, title_raw: plan.credits.title } : {}) },
       source: () => preview?.source_url || null,
     });
 
@@ -201,6 +204,7 @@ export function openAdd() {
         if (autoDownloadOn() && added?.id) autodl.request([added.id], { front: true });
         dlg.close();
         toast('Saved to library');
+        if (draft) opts.onSaved?.(added);
       } catch (ex) {
         save.disabled = !!preview.in_library;
         err.replaceChildren(el('p', { class: 'msg error' }, sf.saveError(ex) || ex.message));
@@ -226,9 +230,15 @@ export function openAdd() {
   };
   dlg.replaceChildren(
     dialogHead('Add from YouTube or SoundCloud', 'Save the song\'s details; play it from the original link or on your iPhone.', () => dlg.close()),
+    ...(plan ? [el('p', { class: 'msg draft-note t-caption', role: 'note' }, plan.note)] : []),
     form, known, message, body);
   dlg.onclick = (e) => { if (e.target === dlg) dlg.close(); };
   dlg.showModal();
   url.focus();
+  if (plan?.url) {
+    url.value = plan.url;
+    checkKnown();
+    form.dispatchEvent(new Event('submit', { cancelable: true }));
+  }
   if (!store.loaded) store.refresh().then(checkKnown).catch(() => {});
 }

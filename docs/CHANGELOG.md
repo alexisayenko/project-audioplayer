@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-18 (Library draft list)
+
+- Server and web: the Library has a "Songs | Drafts N" switch. In Drafts the owner and every signed-in user paste "Artist - Title" lines and links (one per line, Ctrl or Cmd+Enter), get a quick YouTube or SoundCloud lookup (title, channel, length, upload year, thumbnail; two lookups at a time, stops on a 429) and keep them as a per-user list in `users/<uid>/drafts.json` (not in `library.json`; guests get 401; up to 500 drafts, 100 lines and 300 characters per line per paste). Rows show an "In library" mark, Refresh, Edit, Delete with undo and "Add properly" (opens the Add dialog with the link, removes the draft after saving); "Clear all drafts" asks first. New routes `GET/POST/DELETE /drafts`, `PATCH /drafts/{id}`, `POST /drafts/{id}/refresh`, `DELETE /drafts/{id}`. [ADR-0032](tech/decisions.md), [task-0050](tasks/task-0050.md).
+
 ## 2026-10-18 (Genres map panel collapses as one, not deployed)
 
 - Web: on the Genres map the header block (status chip, Show legend, Now playing, Reload, family chips) and the Outline are one panel with a single collapse button in its title row; collapsed, only a compact "Outline" button remains to bring the whole panel back, also on phones ([WEB-085](specs/web.md), WEB-086, GEN-054). Not checked in a browser.

@@ -16,6 +16,8 @@ test('limits', () => {
   assert.equal(friendly('hourly_limit', { retry_after_minutes: 12 }, 'x'), 'Hourly limit reached. Try again in 12 minutes.');
   assert.equal(friendly('hourly_limit', { retry_after_minutes: 1 }, 'x'), 'Hourly limit reached. Try again in 1 minute.');
   assert.equal(friendly('hourly_limit', {}, 'x'), 'Hourly limit reached. Try again in 1 minute.');
+  assert.equal(friendly('draft_limit', { retry_after_minutes: 4 }, 'x'), 'Draft lookup limit reached. Try again in 4 minutes.');
+  assert.equal(friendly('draft_limit', {}, 'x'), 'Draft lookup limit reached. Try again in 1 minute.');
   assert.match(friendly('library_full_songs', {}, 'x'), /library is full/);
   assert.match(friendly('library_full_bytes', {}, 'x'), /storage is full/);
   assert.match(friendly('server_full', {}, 'x'), /out of storage/);

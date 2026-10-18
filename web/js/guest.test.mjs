@@ -7,7 +7,7 @@ const g = await import('./guest.js');
 
 test('signed in: every capability is available and no banner is built', () => {
   g.clearGuest();
-  for (const cap of ['edit', 'add', 'remove', 'download', 'fetch', 'identify', 'tags', 'autodl', 'fill', 'play', 'queue']) assert.equal(g.can(cap), true, cap);
+  for (const cap of ['edit', 'add', 'remove', 'download', 'fetch', 'identify', 'tags', 'autodl', 'fill', 'drafts', 'play', 'queue']) assert.equal(g.can(cap), true, cap);
   assert.equal(g.isGuest(), false);
   assert.equal(g.banner(() => {}), null);
   assert.equal(g.streamable(), true);
@@ -15,7 +15,7 @@ test('signed in: every capability is available and no banner is built', () => {
 
 test('guest: write capabilities are off, read ones stay on, unknown ones are denied', () => {
   g.setGuest({ guest: true, audio: true, owner_label: 'Alex' });
-  for (const cap of ['edit', 'add', 'remove', 'download', 'fetch', 'identify', 'tags', 'autodl', 'fill']) assert.equal(g.can(cap), false, cap);
+  for (const cap of ['edit', 'add', 'remove', 'download', 'fetch', 'identify', 'tags', 'autodl', 'fill', 'drafts']) assert.equal(g.can(cap), false, cap);
   for (const cap of ['play', 'queue', 'filter', 'search', 'sort', 'card']) assert.equal(g.can(cap), true, cap);
   assert.equal(g.can('something-new'), false);
   assert.equal(g.isGuest(), true);

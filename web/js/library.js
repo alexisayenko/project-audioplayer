@@ -17,6 +17,8 @@ import { isRowControl, keepCovers } from './row-cover.js';
 import { openSongCard } from './song-card.js';
 import { openFilterSheet } from './library-toolbar.js';
 import { mountScrollTop } from './scroll-top.js';
+import { draftStore, mountDrafts } from './drafts.js';
+import { countText } from './drafts-model.js';
 
 export { filterByTags, visibleSongs } from './library-data.js';
 
@@ -68,13 +70,26 @@ export function renderLibrary(root) {
   });
   const group = el('div', { class: 'group' }, head, list);
 
+  const drafting = can('drafts');
+  const tabSongs = el('button', { class: 'seg-btn', type: 'button', role: 'tab', id: 'lib-tab-songs', 'aria-controls': 'lib-songs' }, 'Songs');
+  const draftCount = el('small', { class: 't-caption' });
+  const tabDrafts = el('button', { class: 'seg-btn', type: 'button', role: 'tab', id: 'lib-tab-drafts', 'aria-controls': 'lib-drafts' }, 'Drafts', draftCount);
+  const switcher = drafting ? el('div', { class: 'seg', role: 'tablist', 'aria-label': 'Library view' }, tabSongs, tabDrafts) : null;
+  const songsPane = el('div', { class: 'lib-pane', id: 'lib-songs', role: drafting ? 'tabpanel' : null, 'aria-labelledby': drafting ? 'lib-tab-songs' : null });
+  const draftsPane = el('div', { class: 'lib-pane drafts', id: 'lib-drafts', role: 'tabpanel', 'aria-labelledby': 'lib-tab-drafts', hidden: true });
+  let unmountDrafts = null;
+
   root.append(
     el('header', { class: 'page-head lib-head' },
       el('div', { class: 'page-title' },
         el('p', { class: 't-eyebrow' }, 'ELECTROPHONE'),
         el('h1', { class: 't-display' }, 'Library')),
       el('div', { class: 'head-actions' }, total,
-        can('add') ? el('button', { class: 'btn primary glow', type: 'button', onclick: openAdd }, icon('plus', 'action'), 'Add song') : null)),
+        can('add') ? el('button', { class: 'btn primary glow', type: 'button', onclick: () => openAdd() }, icon('plus', 'action'), 'Add song') : null)),
+    ...(switcher ? [switcher] : []),
+    songsPane,
+    draftsPane);
+  songsPane.append(
     el('div', { class: 'toolbar' },
       el('label', { class: 'search' }, icon('search', 'action'), search),
       showPlaying,
@@ -84,6 +99,31 @@ export function renderLibrary(root) {
       summary, el('div', { class: 'sort-actions' }, clearFilters, playAll, addAll)),
     group,
     status);
+
+  function paintTotal() {
+    if (prefs.view === 'drafts') total.textContent = draftStore.loaded ? countText(draftStore.count) : '';
+    else total.textContent = store.loaded ? `${store.songs.length} ${plural(store.songs.length, 'song', 'songs')}` : '';
+  }
+
+  function paintSwitch() {
+    draftCount.textContent = draftStore.loaded ? String(draftStore.count) : '';
+    tabDrafts.setAttribute('aria-label', draftStore.loaded ? `Drafts, ${draftStore.count}` : 'Drafts');
+    paintTotal();
+  }
+
+  function setView(view) {
+    prefs.view = drafting && view === 'drafts' ? 'drafts' : 'songs';
+    const onDrafts = prefs.view === 'drafts';
+    songsPane.hidden = onDrafts;
+    draftsPane.hidden = !onDrafts;
+    for (const [tab, on] of [[tabSongs, !onDrafts], [tabDrafts, onDrafts]]) {
+      tab.setAttribute('aria-selected', String(on));
+      tab.tabIndex = on ? 0 : -1;
+      tab.classList.toggle('on', on);
+    }
+    if (onDrafts && !unmountDrafts) unmountDrafts = mountDrafts(draftsPane);
+    paintTotal();
+  }
 
   function renderChips() {
     for (const t of prefs.sel) if (!isUnsetKey(t) && !store.tags.some((x) => x.tag.toLocaleLowerCase() === t)) prefs.sel.delete(t);
@@ -109,7 +149,7 @@ export function renderLibrary(root) {
     const songs = visibleSongs();
     const cur = player.current;
     const filtered = !!(prefs.sel.size || prefs.query.trim());
-    total.textContent = store.loaded ? `${store.songs.length} ${plural(store.songs.length, 'song', 'songs')}` : '';
+    paintTotal();
     summary.textContent = store.loaded && store.songs.length && filtered ? matchSummary(songs.length) : '';
     playAll.hidden = !(store.loaded && songs.length);
     playAll.textContent = `Play all ${songs.length}`;
@@ -190,6 +230,22 @@ export function renderLibrary(root) {
   const unregister = registerRevealer(reveal);
 
   const unsub = store.subscribe(renderAll);
+  let unsubDrafts = null;
+  if (drafting) {
+    tabSongs.addEventListener('click', () => setView('songs'));
+    tabDrafts.addEventListener('click', () => setView('drafts'));
+    switcher.addEventListener('keydown', (e) => {
+      const next = { ArrowRight: 'drafts', ArrowLeft: 'songs', Home: 'songs', End: 'drafts' }[e.key];
+      if (!next) return;
+      e.preventDefault();
+      setView(next);
+      (next === 'drafts' ? tabDrafts : tabSongs).focus();
+    });
+    unsubDrafts = draftStore.subscribe(paintSwitch);
+    if (!draftStore.loaded) void draftStore.load();
+    paintSwitch();
+    setView(prefs.view);
+  }
   const unsubPlayer = player.onChange(renderList);
   const unsubDl = autodl.onChange(paintDownloads);
 
@@ -205,7 +261,7 @@ export function renderLibrary(root) {
       status.replaceChildren(el('div', { class: 'state card' },
         el('p', { class: 't-headline' }, 'No songs yet'),
         el('p', { class: 'muted t-subhead' }, 'Paste a YouTube or SoundCloud link to save the song to your library.'),
-        can('add') ? el('button', { class: 'btn primary glow', type: 'button', onclick: openAdd }, icon('plus', 'action'), 'Add song') : null));
+        can('add') ? el('button', { class: 'btn primary glow', type: 'button', onclick: () => openAdd() }, icon('plus', 'action'), 'Add song') : null));
     } else {
       status.replaceChildren();
     }
@@ -216,5 +272,5 @@ export function renderLibrary(root) {
 
   const unmountScrollTop = mountScrollTop();
 
-  return () => { unmountScrollTop(); unsub(); unsubPlayer(); unsubDl(); unregister(); clearTimeout(flashTimer); flashId = null; const d = document.getElementById('filter-sheet'); if (d.open) d.close(); };
+  return () => { unmountScrollTop(); unsub(); unsubDrafts?.(); unmountDrafts?.(); unsubPlayer(); unsubDl(); unregister(); clearTimeout(flashTimer); flashId = null; const d = document.getElementById('filter-sheet'); if (d.open) d.close(); };
 }

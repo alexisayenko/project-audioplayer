@@ -3,7 +3,7 @@ import { el } from './dom.js';
 const state = { guest: false, audio: true, owner: 'Alex' };
 
 const CAPS = {
-  edit: false, add: false, remove: false, download: false, fetch: false, identify: false, tags: false, autodl: false, fill: false,
+  edit: false, add: false, remove: false, download: false, fetch: false, identify: false, tags: false, autodl: false, fill: false, drafts: false,
   play: true, queue: true, filter: true, search: true, sort: true, card: true,
 };
 

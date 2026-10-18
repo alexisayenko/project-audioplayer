@@ -22,7 +22,7 @@ export function unsetCount(catId, songs = store.songs) {
   return unsetKey(catId) ? songs.filter((s) => !hasValueIn(s, catId)).length : 0;
 }
 
-export const prefs = { query: '', sel: new Set(), sort: 'added' };
+export const prefs = { query: '', sel: new Set(), sort: 'added', view: 'songs' };
 
 export function filterByTags(tags) {
   const have = new Set(store.tags.map((t) => t.tag.toLocaleLowerCase()));
