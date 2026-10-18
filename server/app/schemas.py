@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 MAX_ID_TOKEN_LEN = 8192
 MIN_BPM, MAX_BPM = 20, 300
+MAX_PASTE_ITEM = 100_000
 
 
 class SessionRequest(BaseModel):
@@ -110,3 +111,19 @@ class PlaylistImportRequest(BaseModel):
 
 class PlaylistDetailsRequest(BaseModel):
     ids: list[str] = Field(min_length=1, max_length=10)
+
+
+class DraftLinesRequest(BaseModel):
+    lines: list[str] = Field(max_length=1000)
+
+    @field_validator("lines")
+    @classmethod
+    def _bounded(cls, lines: list[str]) -> list[str]:
+        if any(len(line) > MAX_PASTE_ITEM for line in lines):
+            raise ValueError("a pasted item is too long")
+        return lines
+
+
+class DraftPatchRequest(BaseModel):
+    text: str | None = Field(default=None, max_length=300)
+    url: str | None = Field(default=None, max_length=300)

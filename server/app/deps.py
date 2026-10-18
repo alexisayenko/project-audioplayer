@@ -61,6 +61,10 @@ def library_path(uid: str) -> Path:
     return data_root() / "users" / uid / "library.json"
 
 
+def drafts_path(uid: str) -> Path:
+    return data_root() / "users" / uid / "drafts.json"
+
+
 def profile_path(uid: str) -> Path:
     return data_root() / "users" / uid / "profile.json"
 

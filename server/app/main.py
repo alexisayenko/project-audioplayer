@@ -10,7 +10,7 @@ from fastapi.responses import JSONResponse
 from . import deps, genre_vocab, guest, hosts, legal, migrate_model2, migrate_model3, migrate_tags, web
 from .problems import Problem
 from .routes import playlist_import as playlist_import_routes
-from .routes import analyze, auth, backfill, catalog, covers, files, genres, health, legacy, legal as legal_routes, lookup, me, metafill, removal, songs
+from .routes import analyze, auth, backfill, catalog, covers, drafts, files, genres, health, legacy, legal as legal_routes, lookup, me, metafill, removal, songs
 
 app = FastAPI(title="Electrophone")
 
@@ -66,7 +66,7 @@ def _shutdown() -> None:
         deps.SYNC.stop()
 
 
-for _module in (auth, me, health, legal_routes, legacy, files, catalog, covers, genres, lookup, playlist_import_routes, songs, analyze, backfill, metafill, removal):
+for _module in (auth, me, health, legal_routes, legacy, files, catalog, covers, genres, lookup, playlist_import_routes, drafts, songs, analyze, backfill, metafill, removal):
     app.include_router(_module.router)
 
 web.mount(app)

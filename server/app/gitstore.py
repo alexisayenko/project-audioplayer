@@ -22,7 +22,7 @@ FAILS_BEFORE_ERROR = 5
 STATE_NAME = "gitsync-state.json"
 ADD_SPEC = ("--", "audioplayer", ":(exclude)*.tmp")
 REPO_NAMES = ("data", "covers")
-WATCHED_JSON = ("library.json", "profile.json")
+WATCHED_JSON = ("library.json", "profile.json", "drafts.json")
 DEFAULT_OWNED = ("audioplayer/",)
 FLOCK_WAIT_S = 30.0
 UNPUSHED_RANGE = "@{u}..HEAD"
@@ -858,6 +858,8 @@ def check_inbound_json(rel: str, text: str) -> str | None:
             return f"library schema: {type(exc).__name__}"
     elif not isinstance(raw, dict):
         return "not an object"
+    elif rel.endswith("drafts.json") and not isinstance(raw.get("drafts", []), list):
+        return "not a draft list"
     return None
 
 

@@ -1,0 +1,13 @@
+[
+  {"line": "Daft Punk - Around the World", "text": "Daft Punk - Around the World", "url": "", "source": null},
+  {"line": "  Foo  -   Bar  ", "text": "Foo - Bar", "url": "", "source": null},
+  {"line": "just a title", "text": "just a title", "url": "", "source": null},
+  {"line": "https://youtu.be/dQw4w9WgXcQ?si=abc", "text": "", "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ", "source": "youtube"},
+  {"line": "Artist - Title [https://soundcloud.com/a/b]", "text": "Artist - Title", "url": "https://soundcloud.com/a/b", "source": "soundcloud"},
+  {"line": "https://www.youtube.com/watch?v=dQw4w9WgXcQ&feature=share Foo - Bar", "text": "Foo - Bar", "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ", "source": "youtube"},
+  {"line": "youtu.be/dQw4w9WgXcQ - Foo - Bar", "text": "Foo - Bar", "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ", "source": "youtube"},
+  {"line": "Foo - Bar (https://youtu.be/dQw4w9WgXcQ).", "text": "Foo - Bar", "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ", "source": "youtube"},
+  {"line": "https://example.com/x?utm_source=a&b=1", "text": "", "url": "https://example.com/x?b=1", "source": "link"},
+  {"line": "Foo - Bar <https://on.soundcloud.com/AbC123>", "text": "Foo - Bar", "url": "https://on.soundcloud.com/AbC123", "source": "soundcloud"},
+  {"line": "https://soundcloud.com/discover", "text": "", "url": "https://soundcloud.com/discover", "source": "link"}
+]
