@@ -101,3 +101,10 @@ class MetadataRequest(BaseModel):
     version_kind: str | None = None
     version_type: str | None = None
 
+
+class PlaylistImportRequest(BaseModel):
+    url: str = Field(max_length=2048)
+
+
+class PlaylistDetailsRequest(BaseModel):
+    ids: list[str] = Field(min_length=1, max_length=25)

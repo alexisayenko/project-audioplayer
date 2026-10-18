@@ -10,7 +10,7 @@ from typing import Any
 from . import extractor
 
 TTL_S = 600.0
-MAX_ENTRIES = 64
+MAX_ENTRIES = 256
 
 _lock = threading.Lock()
 _items: dict[str, tuple[float, dict[str, Any]]] = {}

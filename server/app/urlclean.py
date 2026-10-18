@@ -202,3 +202,36 @@ def clean_soundcloud_link(value: Any) -> str | None:
         return None
     c = classify_soundcloud(text)
     return c[1] if c and c[0] == "track" else None
+
+
+PLAYLIST_ID_RE = re.compile(r"^[A-Za-z0-9_-]{2,80}$")
+_PLAYLIST_HOSTS = {"youtube.com", "www.youtube.com", "m.youtube.com", "music.youtube.com"}
+_PRIVATE_LISTS = {"WL", "LL"}
+MIX_MESSAGE = "This is a YouTube Mix (an automatic radio list), not a playlist. Open a real playlist and paste its link."
+PRIVATE_LIST_MESSAGE = "Liked videos and Watch later are private lists. Put the songs in a public or unlisted playlist and paste that link."
+
+
+def parse_playlist(text: str) -> tuple[str, str] | None:
+    """`("playlist", id)`, `("mix", id)` (an automatic `RD...` radio list) or `("private", id)` (Liked, Watch later) for a YouTube link that names a list: youtube.com/playlist?list=, youtube.com/watch?v=..&list=, youtu.be/<id>?list=; None for anything else."""
+    try:
+        parts = urlsplit(text.strip() if re.match(r"^\s*https?://", text, re.I) else f"https://{text.strip()}")
+        host = (parts.hostname or "").lower()
+    except ValueError:
+        return None
+    path = parts.path.rstrip("/")
+    if host in _PLAYLIST_HOSTS:
+        if path not in ("/playlist", "/watch"):
+            return None
+    elif host != "youtu.be" or not path[1:]:
+        return None
+    ids = [v for k, v in parse_qsl(parts.query, keep_blank_values=True) if k == "list"]
+    list_id = ids[0] if ids else ""
+    if not PLAYLIST_ID_RE.fullmatch(list_id):
+        return None
+    if list_id.startswith("RD"):
+        return ("mix", list_id)
+    return ("private", list_id) if list_id in _PRIVATE_LISTS else ("playlist", list_id)
+
+
+def playlist_url(list_id: str) -> str:
+    return f"https://www.youtube.com/playlist?list={list_id}"

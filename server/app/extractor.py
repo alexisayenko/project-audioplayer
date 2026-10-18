@@ -177,7 +177,12 @@ def preview(video_id: str) -> dict[str, Any]:
     opts = {"quiet": True, "noplaylist": True, "skip_download": True}
     with yt_dlp.YoutubeDL(opts) as ydl:
         info = ydl.extract_info(watch_url(video_id), download=False)
-    raw_artist = info.get("artist") or info.get("creator") or info.get("uploader") or ""
+    return meta_from_info(video_id, info)
+
+
+def meta_from_info(video_id: str, info: dict[str, Any]) -> dict[str, Any]:
+    """The preview fields of one YouTube video from what yt-dlp reports (a full page or a flat playlist entry)."""
+    raw_artist = info.get("artist") or info.get("creator") or info.get("uploader") or info.get("channel") or ""
     raw_title = info.get("track") or info.get("title") or ""
     artist, title, remixer = split_title(raw_artist, raw_title)
     return {
@@ -197,6 +202,25 @@ def preview(video_id: str) -> dict[str, Any]:
         "duration": info.get("duration"),
         "thumbnail": cover_url(video_id),
     }
+
+
+PLAYLIST_TIMEOUT_S = 25
+
+
+def playlist(list_id: str, limit: int) -> dict[str, Any]:
+    """Flat listing of a public YouTube playlist: `{title, uploader, total, entries}` with at most `limit` entries and no per-video requests."""
+    opts = {
+        "quiet": True, "extract_flat": "in_playlist", "skip_download": True, "playlistend": limit,
+        "socket_timeout": PLAYLIST_TIMEOUT_S, "noplaylist": False,
+    }
+    with yt_dlp.YoutubeDL(opts) as ydl:
+        info = ydl.extract_info(urlclean.playlist_url(list_id), download=False)
+    if not isinstance(info, dict):
+        raise ValueError("playlist not found")
+    entries = [e for e in info.get("entries") or [] if isinstance(e, dict)]
+    count = info.get("playlist_count")
+    total = count if isinstance(count, int) and not isinstance(count, bool) and count >= len(entries) else len(entries)
+    return {"title": info.get("title") or "", "uploader": info.get("uploader") or info.get("channel") or "", "total": total, "entries": entries}
 
 
 def _file_seconds(path: Path) -> float | None:
