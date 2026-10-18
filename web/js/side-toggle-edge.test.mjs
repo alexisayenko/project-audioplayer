@@ -23,3 +23,15 @@ test('the sidebar itself does not clip, so the toggle can sit half outside it', 
 test('the toggle exists only from 720px', () => {
   assert.match(css, /^\.side-toggle \{ display: none; \}/m);
 });
+
+test('collapsed and expanded sidebars share vertical padding and keep the brand text line boxes so nothing moves', () => {
+  assert.match(rule('body.side-collapsed .side'), /padding: var\(--space-6\) var\(--space-2\)/);
+  assert.match(css, /^\s*\.side \{ padding: var\(--space-6\) var\(--space-4\); \}/m);
+  const hidden = rule('body.side-collapsed .brand-name, body.side-collapsed .brand-sub');
+  assert.match(hidden, /display: block/);
+  assert.match(hidden, /visibility: hidden/);
+  assert.match(hidden, /max-width: 0/);
+  assert.match(hidden, /white-space: nowrap/);
+  assert.doesNotMatch(hidden, /display: none/);
+  assert.match(rule('body.side-collapsed .brand'), /padding: var\(--space-1\) 0 0/);
+});
