@@ -3,7 +3,7 @@ export const GENRE_CAP = 12;
 const COUNTRY_CAP = 1;
 const CAPS = { genre: GENRE_CAP, country: COUNTRY_CAP };
 const SERVICES = ['youtube', 'soundcloud', 'wikipedia', 'spotify', 'musicbrainz', 'discogs'];
-export const INERT = new Set(['spotify', 'discogs']);
+export const INERT = new Set(['spotify']);
 
 const tagKey = (t) => { const i = t.indexOf(':'); return i > 0 ? t.slice(0, i).trim().toLowerCase() : ''; };
 const hasTag = (tags, t) => tags.some((x) => x.toLowerCase() === t.toLowerCase());
@@ -52,9 +52,20 @@ export function serviceState(services) {
     const s = services && typeof services === 'object' ? services[name] : null;
     const on = !INERT.has(name) && !!s && s.found === true;
     out[name] = { on, url: on && typeof s.url === 'string' && /^https?:\/\//i.test(s.url) ? s.url : null };
+    if (on && s.from_link === true) out[name].fromLink = true;
+    if (!on && typeof s?.skipped === 'string') out[name].skipped = s.skipped;
   }
   return out;
 }
+
+const SKIPPED = { not_configured: 'not configured on the server', no_match: 'no match', error: 'lookup failed' };
+
+export function discogsNote(state) {
+  if (state?.fromLink) return 'Discogs: from link';
+  return state?.skipped ? `Discogs: ${SKIPPED[state.skipped] || 'skipped'}` : '';
+}
+
+export const metaMessage = (plan, state) => [statusText(plan), discogsNote(state)].filter(Boolean).join('. ');
 
 const norm = (v) => String(v ?? '').trim().toLowerCase();
 

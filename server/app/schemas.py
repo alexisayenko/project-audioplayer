@@ -101,6 +101,7 @@ class MetadataRequest(BaseModel):
     wiki_album: str | None = None
     version_kind: str | None = None
     version_type: str | None = None
+    discogs_url: str | None = Field(default=None, max_length=2048)
 
 
 class PlaylistImportRequest(BaseModel):

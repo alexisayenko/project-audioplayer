@@ -40,7 +40,8 @@ def upstream(monkeypatch):
     monkeypatch.setattr(wl, "from_links", lambda s, a, al=None: {"tags": ["genre:blues rock"], "year": 1980, "wikipedia_song": "https://en.wikipedia.org/wiki/X", "wikipedia_artist": None})
 
 
-def test_gather_merges_all_sources(upstream):
+def test_gather_merges_all_sources(upstream, monkeypatch):
+    monkeypatch.delenv("DISCOGS_TOKEN", raising=False)
     out = metadata.gather("T", "A", [lambda: {"album": None, "year": 2015, "tags": ["genre:Rock", "lang:en"]}], "https://en.wikipedia.org/wiki/X", None, source_urls=["https://youtu.be/dQw4w9WgXcQ"])
     assert out == {
         "suggest": {"artist": None, "title": None},
@@ -60,7 +61,7 @@ def test_gather_merges_all_sources(upstream):
             "wikipedia": {"found": True, "url": "https://en.wikipedia.org/wiki/X"},
             "spotify": {"found": False, "url": None},
             "musicbrainz": {"found": False, "url": None},
-            "discogs": {"found": False, "url": None},
+            "discogs": {"found": False, "url": None, "skipped": "not_configured"},
         },
     }
 
@@ -114,6 +115,7 @@ def test_gather_timeout_returns_what_finished(upstream):
 
 
 def test_metadata_endpoint(monkeypatch):
+    monkeypatch.delenv("DISCOGS_TOKEN", raising=False)
     from fastapi.testclient import TestClient
 
     from app import extractor, main
@@ -130,8 +132,9 @@ def test_metadata_endpoint(monkeypatch):
     body_out = r.json()
     assert {k: body_out[k] for k in ("album", "year", "tags")} == {"album": "Yt Album", "year": None, "tags": ["genre:pop", "country:au"]}
     assert body_out["services"]["youtube"] == {"found": True, "url": "https://youtu.be/dQw4w9WgXcQ"}
-    for inert in ("spotify", "musicbrainz", "discogs"):
+    for inert in ("spotify", "musicbrainz"):
         assert body_out["services"][inert] == {"found": False, "url": None}
+    assert body_out["services"]["discogs"] == {"found": False, "url": None, "skipped": "not_configured"}
     empty = client.post("/metadata", json={}, headers={"X-API-Token": "secret"}).json()
     assert (empty["album"], empty["year"], empty["tags"]) == (None, None, [])
 
@@ -236,11 +239,12 @@ def test_services_musicbrainz_lit_by_matched_recording():
 
 
 def test_gather_reports_musicbrainz_match(monkeypatch, upstream):
+    monkeypatch.delenv("DISCOGS_TOKEN", raising=False)
     url = f"https://musicbrainz.org/recording/{MBID}"
     monkeypatch.setattr(gl, "lookup", lambda a, t: {"tags": [], "year": None, "album": None, "mb_url": url})
     out = metadata.gather("T", "A", [], None, None)
     assert out["services"]["musicbrainz"] == {"found": True, "url": url}
-    assert out["services"]["discogs"] == {"found": False, "url": None}
+    assert out["services"]["discogs"] == {"found": False, "url": None, "skipped": "not_configured"}
 
 
 def test_merge_reports_the_platform_publish_year_apart_from_year():
@@ -318,3 +322,100 @@ def test_a_same_recording_version_keeps_the_original_genres(monkeypatch):
 ])
 def test_artist_is_remixer(artist, title, remixer, expect):
     assert metadata.artist_is_remixer(artist, title, remixer) is expect
+
+
+DISC_LINK = "https://www.discogs.com/master/101179-Kermesse-Mrs-Moon"
+
+
+def _no_other_lookups(monkeypatch):
+    monkeypatch.setattr(gl, "lookup", lambda a, t: {"tags": [], "year": None, "album": None})
+    monkeypatch.setattr(wl, "suggest", lambda a, t: {"tags": [], "year": None})
+
+
+def _disc_hit(**kw):
+    return {"tags": ["genre:italo-disco"], "year": 1983, "country": None, "url": "https://www.discogs.com/master/101179", "artist": "Kermesse", "title": "Mrs Moon", **kw}
+
+
+def test_gather_uses_the_discogs_link_before_searching(monkeypatch):
+    _no_other_lookups(monkeypatch)
+    monkeypatch.setattr(metadata.discogs_lookup, "from_url", lambda u: _disc_hit(from_link=True))
+    monkeypatch.setattr(metadata.discogs_lookup, "suggest", lambda a, t: pytest.fail("searched"))
+    out = metadata.gather("Mrs. Moon", "Kermesse", [], discogs_url=DISC_LINK)
+    assert out["services"]["discogs"] == {"found": True, "url": "https://www.discogs.com/master/101179", "from_link": True}
+    assert out["year"] == 1983 and "genre:italo disco" in out["tags"]
+
+
+def test_gather_with_only_a_discogs_link_needs_no_artist(monkeypatch):
+    _no_other_lookups(monkeypatch)
+    monkeypatch.setattr(metadata.discogs_lookup, "from_url", lambda u: _disc_hit(from_link=True))
+    out = metadata.gather("", "", [], discogs_url=DISC_LINK)
+    assert out["services"]["discogs"]["from_link"] is True
+
+
+def test_gather_falls_back_to_the_search_when_the_link_gives_nothing(monkeypatch):
+    _no_other_lookups(monkeypatch)
+    monkeypatch.setattr(metadata.discogs_lookup, "from_url", lambda u: {**_disc_hit(url=None), "error": True})
+    monkeypatch.setattr(metadata.discogs_lookup, "suggest", lambda a, t: _disc_hit())
+    out = metadata.gather("Mrs. Moon", "Kermesse", [], discogs_url=DISC_LINK)
+    assert out["services"]["discogs"] == {"found": True, "url": "https://www.discogs.com/master/101179"}
+
+
+def test_gather_ignores_a_discogs_link_on_another_host(monkeypatch):
+    _no_other_lookups(monkeypatch)
+    monkeypatch.setattr(metadata.discogs_lookup, "from_url", lambda u: pytest.fail("fetched"))
+    monkeypatch.setattr(metadata.discogs_lookup, "suggest", lambda a, t: _disc_hit())
+    out = metadata.gather("T", "A", [], discogs_url="https://evil.example/master/1")
+    assert out["services"]["discogs"]["found"] and "from_link" not in out["services"]["discogs"]
+
+
+@pytest.mark.parametrize("token, result, reason", [
+    ("", {"tags": [], "year": None, "url": None}, "not_configured"),
+    ("t", {"tags": [], "year": None, "url": None}, "no_match"),
+    ("t", {"tags": [], "year": None, "url": None, "error": True}, "error"),
+])
+def test_gather_reports_why_discogs_was_skipped(monkeypatch, token, result, reason):
+    _no_other_lookups(monkeypatch)
+    monkeypatch.setenv("DISCOGS_TOKEN", token)
+    monkeypatch.setattr(metadata.discogs_lookup, "suggest", lambda a, t: result)
+    out = metadata.gather("T", "A", [])
+    assert out["services"]["discogs"] == {"found": False, "url": None, "skipped": reason}
+
+
+def test_gather_reports_a_crashed_discogs_task_as_an_error(monkeypatch):
+    _no_other_lookups(monkeypatch)
+    monkeypatch.setenv("DISCOGS_TOKEN", "t")
+    monkeypatch.setattr(metadata.discogs_lookup, "suggest", lambda a, t: (_ for _ in ()).throw(RuntimeError("x")))
+    assert metadata.gather("T", "A", [])["services"]["discogs"]["skipped"] == "error"
+
+
+def test_gather_link_without_a_token_is_not_reported_as_unconfigured(monkeypatch):
+    _no_other_lookups(monkeypatch)
+    monkeypatch.delenv("DISCOGS_TOKEN", raising=False)
+    monkeypatch.setattr(metadata.discogs_lookup, "from_url", lambda u: _disc_hit(url=None))
+    monkeypatch.setattr(metadata.discogs_lookup, "suggest", lambda a, t: _disc_hit(url=None))
+    assert metadata.gather("T", "A", [], discogs_url=DISC_LINK)["services"]["discogs"]["skipped"] == "no_match"
+
+
+def test_gather_for_a_version_reports_no_discogs_skip(monkeypatch):
+    _no_other_lookups(monkeypatch)
+    monkeypatch.delenv("DISCOGS_TOKEN", raising=False)
+    out = metadata.gather("T", "A", [], version_kind="remix")
+    assert out["services"]["discogs"] == {"found": False, "url": None}
+
+
+def test_merge_takes_discogs_genres_first_and_its_country_last():
+    out = metadata.merge([], {"tags": ["genre:house", "country:fr"]}, None, None, {"tags": ["genre:italo-disco", "country:it"]})
+    assert out["tags"] == ["genre:italo disco", "genre:house", "country:fr"]
+
+
+def test_metadata_endpoint_passes_the_discogs_link(monkeypatch):
+    from fastapi.testclient import TestClient
+
+    from app import main
+
+    monkeypatch.setenv("AUDIO_API_TOKEN", "secret")
+    _no_other_lookups(monkeypatch)
+    monkeypatch.setattr(metadata.discogs_lookup, "from_url", lambda u: _disc_hit(from_link=True))
+    r = TestClient(main.app).post("/metadata", json={"title": "Mrs. Moon", "artist": "Kermesse", "discogs_url": DISC_LINK}, headers={"X-API-Token": "secret"})
+    assert r.status_code == 200
+    assert r.json()["services"]["discogs"]["from_link"] is True and r.json()["year"] == 1983

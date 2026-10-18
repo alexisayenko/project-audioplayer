@@ -185,7 +185,7 @@ async def get_metadata(req: MetadataRequest):
     fetchers = [(lambda u=u: source_info(u)) for u in urls]
     return await run_in_threadpool(
         metadata.gather, req.title.strip(), req.artist.strip(), fetchers, req.wiki_song, req.wiki_artist, metadata.TIMEOUT, urls, req.wiki_album,
-        version_type,
+        version_type, req.discogs_url,
     )
 
 

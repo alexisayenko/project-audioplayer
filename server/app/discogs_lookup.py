@@ -44,22 +44,29 @@ def _empty() -> dict[str, Any]:
     return {"tags": [], "year": None, "country": None, "url": None, "artist": "", "title": ""}
 
 
+def _failed() -> dict[str, Any]:
+    return {**_empty(), "error": True}
+
+
 def _acquire() -> None:
     """Global limiter: at most MAX_PER_MINUTE requests in any 60 s; waits briefly, else refuses."""
     _limiter.acquire()
 
 
 def _get(path: str, params: dict[str, str] | None = None) -> dict[str, Any]:
-    req = httpjson.build_request(
-        f"{API}/{path}",
-        params or None,
-        headers={"Authorization": f"Discogs token={_token()}", "Accept": "application/vnd.discogs.v2.discogs+json"},
-    )
+    headers = {"Accept": "application/vnd.discogs.v2.discogs+json"}
+    if _token():
+        headers["Authorization"] = f"Discogs token={_token()}"
+    req = httpjson.build_request(f"{API}/{path}", params or None, headers=headers)
     _acquire()
     return httpjson.fetch(req, TIMEOUT)
 
 
 _DISAMBIG = re.compile(r"\(\d+\)$")
+
+
+def _name_of(artist: dict[str, Any]) -> str:
+    return _DISAMBIG.sub("", str(artist["name"])).rstrip()
 
 
 def _name(value: str) -> str:
@@ -184,6 +191,36 @@ def _lookup(artist: str, title: str) -> dict[str, Any]:
     }
 
 
+def from_url(url: Any) -> dict[str, Any]:
+    """The same shape as `suggest` for one exact Discogs master or release link (`from_link` true); needs no token. Only discogs.com master/release links with numeric ids are fetched; anything else, an unknown id or an error gives an empty result (`error` set on a failure; never raises)."""
+    clean = clean_url(url)
+    if not clean or not genre_lookup.enabled():
+        return _empty()
+    kind, ident = clean.rsplit("/", 2)[1:]
+    key = ("link", clean)
+    try:
+        with _cache_lock:
+            hit = _cache.get(key)
+        if hit is None:
+            detail = _get(f"{kind}s/{int(ident)}")
+            country = _country_tag(detail.get("country")) if kind == "release" else None
+            hit = {
+                "tags": _tags(detail) + ([country] if country else []),
+                "year": _year(detail.get("year")),
+                "country": country,
+                "url": clean,
+                "artist": ", ".join(_name_of(a) for a in detail.get("artists") or [] if isinstance(a, dict) and a.get("name")),
+                "title": str(detail.get("title") or ""),
+                "from_link": True,
+            }
+            with _cache_lock:
+                _cache[key] = hit
+        return {**hit, "tags": list(hit["tags"])}
+    except Exception as exc:
+        log.warning("discogs link lookup failed: %s", type(exc).__name__)
+        return _failed()
+
+
 def suggest(artist: str, title: str) -> dict[str, Any]:
     """{tags (genre: styles, country:), year, country, url, artist, title} for a track; empty when off, unmatched or on any error (never raises)."""
     if not enabled():
@@ -206,4 +243,4 @@ def suggest(artist: str, title: str) -> dict[str, Any]:
         return {**hit, "tags": list(hit["tags"])}
     except Exception as exc:
         log.warning("discogs lookup failed: %s", type(exc).__name__)
-        return _empty()
+        return _failed()

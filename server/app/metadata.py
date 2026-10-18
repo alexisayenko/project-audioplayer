@@ -96,7 +96,12 @@ def merge(sources: list[dict[str, Any]], mb: dict[str, Any] | None, links: dict[
     yt = [t for s in sources for t in s.get("youtube_genres") or []]
     song_genres = links.get("song_genres") or guess.get("song_genres")
     own = [t for s in sources for t in s.get("tags") or []]
-    lookup = [t for r in (mb, links, guess) for t in r.get("tags") or []]
+    disc_tags = disc.get("tags") or []
+    lookup = [
+        *(t for t in disc_tags if namespace(t) == "genre"),
+        *(t for r in (mb, links, guess) for t in r.get("tags") or []),
+        *(t for t in disc_tags if namespace(t) != "genre"),
+    ]
     original: list[str] = []
     if versioned:
         tags, original = split_for_version([*own, *yt], lookup, song_genres)
@@ -126,8 +131,8 @@ def _useful(info: dict[str, Any]) -> bool:
     return bool(info.get("album") or _year(info.get("year")) or info.get("tags"))
 
 
-def services(source_urls: list[str], src_by_index: dict[int, dict[str, Any]], links: dict[str, Any] | None, guess: dict[str, Any] | None, mb: dict[str, Any] | None = None, disc: dict[str, Any] | None = None) -> dict[str, Any]:
-    """Per-service outcome for the UI's icons: {youtube, soundcloud, wikipedia, spotify, musicbrainz, discogs: {found, url}}."""
+def services(source_urls: list[str], src_by_index: dict[int, dict[str, Any]], links: dict[str, Any] | None, guess: dict[str, Any] | None, mb: dict[str, Any] | None = None, disc: dict[str, Any] | None = None, disc_skipped: str | None = None) -> dict[str, Any]:
+    """Per-service outcome for the UI's icons: {youtube, soundcloud, wikipedia, spotify, musicbrainz, discogs: {found, url}}; discogs adds `from_link` when the given link was used and, when not found, `skipped` (not_configured, no_match or error)."""
     out: dict[str, Any] = {k: {"found": False, "url": None} for k in ("youtube", "soundcloud", "wikipedia", "spotify", "musicbrainz", "discogs")}
     for i, url in enumerate(source_urls):
         svc = _service_of(url)
@@ -144,7 +149,9 @@ def services(source_urls: list[str], src_by_index: dict[int, dict[str, Any]], li
         out["musicbrainz"] = {"found": True, "url": mb_url}
     disc_url = (disc or {}).get("url")
     if disc_url:
-        out["discogs"] = {"found": True, "url": disc_url}
+        out["discogs"] = {"found": True, "url": disc_url, **({"from_link": True} if (disc or {}).get("from_link") else {})}
+    elif disc_skipped:
+        out["discogs"]["skipped"] = disc_skipped
     return out
 
 
@@ -177,6 +184,26 @@ def _run_all(tasks: list[Callable[[], None]], timeout: float) -> None:
         pool.shutdown(wait=False, cancel_futures=True)
 
 
+def _discogs_task(link: str | None, artist: str, title: str) -> Callable[[], dict[str, Any]]:
+    def run() -> dict[str, Any]:
+        failed = False
+        if link:
+            hit = discogs_lookup.from_url(link)
+            if hit.get("url") or not (artist and title):
+                return hit
+            failed = bool(hit.get("error"))
+        found = discogs_lookup.suggest(artist, title)
+        return {**found, "error": True} if failed and not found.get("url") else found
+
+    return run
+
+
+def _discogs_skipped(disc: dict[str, Any] | None, link: str | None) -> str | None:
+    if not discogs_lookup.enabled() and not (link and genre_lookup.enabled()):
+        return "not_configured"
+    return "error" if disc is None or disc.get("error") else "no_match"
+
+
 def gather(
     title: str,
     artist: str,
@@ -187,10 +214,12 @@ def gather(
     source_urls: list[str] | None = None,
     wiki_album: str | None = None,
     version_kind: str | None = None,
+    discogs_url: str | None = None,
 ) -> dict[str, Any]:
     """Run every source concurrently under one overall timeout; a failing or late source is skipped.
 
     Returns {album, year, version_year, tags, wikipedia_song, wikipedia_artist, wikipedia_album, suggest, services}; `suggest` is the song infobox's artist and title hint (never auto-filled); `services` only tells the UI which sources answered.
+    `discogs_url` (a Discogs master or release link) is looked up instead of searching; the search runs only when it gives nothing.
     `title` and `artist` name the original work; with a `version_kind` the MusicBrainz and Discogs links are withheld, they would point at the original (DATA-126)."""
     lock = threading.Lock()
     found: dict[str, Any] = {}
@@ -198,12 +227,15 @@ def gather(
     record = _recorder(lock, found, src_results)
 
     tasks = [record(f"src{i}", f) for i, f in enumerate(source_fetchers)]
+    link = discogs_lookup.clean_url(discogs_url)
+    attempt_disc = bool(link or (artist and title))
     if artist and title:
         tasks.extend([
             record("mb", lambda: genre_lookup.lookup(artist, title)),
             record("guess", lambda: wiki_lookup.suggest(artist, title)),
-            record("disc", lambda: discogs_lookup.suggest(artist, title)),
         ])
+    if attempt_disc:
+        tasks.append(record("disc", _discogs_task(link, artist, title)))
     if wiki_song or wiki_artist or wiki_album:
         tasks.append(record("links", lambda: wiki_lookup.from_links(wiki_song, wiki_artist, wiki_album)))
     _run_all(tasks, timeout)
@@ -216,7 +248,7 @@ def gather(
     for key in ("wikipedia_song", "wikipedia_artist", "wikipedia_album"):
         out[key] = (snapshot.get("links") or {}).get(key) or (snapshot.get("guess") or {}).get(key)
     out["suggest"] = {"artist": box["artist"], "title": box["title"]} if box else {"artist": None, "title": None}
-    out["services"] = services(source_urls or [], by_index, snapshot.get("links"), snapshot.get("guess"), snapshot.get("mb"), snapshot.get("disc"))
+    out["services"] = services(source_urls or [], by_index, snapshot.get("links"), snapshot.get("guess"), snapshot.get("mb"), snapshot.get("disc"), _discogs_skipped(snapshot.get("disc"), link) if attempt_disc else None)
     if version_kind:
         out["services"]["musicbrainz"] = {"found": False, "url": None}
         out["services"]["discogs"] = {"found": False, "url": None}

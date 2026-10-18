@@ -139,7 +139,7 @@ def test_failures_are_silent_and_not_cached(monkeypatch, exc):
         raise exc
 
     monkeypatch.setattr(dl, "_get", boom)
-    assert dl.suggest("A", "B") == dl._empty()
+    assert dl.suggest("A", "B") == {**dl._empty(), "error": True}
     dl.suggest("A", "B")
     assert len(calls) == 2
 
@@ -211,3 +211,80 @@ def test_clean_url(value, want):
 @pytest.mark.parametrize("value", [None, 3, "", "https://evil.example/release/1", "https://www.discogs.com/artist/1", "https://discogs.com.evil.example/release/1", "https://www.discogs.com/release/x", "javascript:1"])
 def test_clean_url_rejects_others(value):
     assert dl.clean_url(value) is None
+
+
+def master_detail(**kw):
+    return {"id": 101179, "title": "Mrs Moon", "year": 1983, "artists": [{"name": "Kermesse"}], "genres": ["Electronic"], "styles": ["Italo-Disco"], **kw}
+
+
+def test_from_url_reads_a_master_without_a_token(monkeypatch):
+    monkeypatch.delenv("DISCOGS_TOKEN")
+    paths = []
+
+    def get(path, params=None):
+        paths.append(path)
+        return master_detail()
+
+    monkeypatch.setattr(dl, "_get", get)
+    out = dl.from_url("https://www.discogs.com/master/101179-Kermesse-Mrs-Moon")
+    assert paths == ["masters/101179"]
+    assert out["url"] == "https://www.discogs.com/master/101179"
+    assert (out["year"], out["tags"], out["artist"], out["title"], out["from_link"]) == (1983, ["genre:italo-disco"], "Kermesse", "Mrs Moon", True)
+    dl.from_url("https://www.discogs.com/master/101179")
+    assert paths == ["masters/101179"]
+
+
+def test_from_url_reads_a_release_with_its_country(monkeypatch):
+    paths = []
+
+    def get(path, params=None):
+        paths.append(path)
+        return {"id": 523884, "title": "Mrs Moon", "year": 1984, "country": "Italy", "artists": [{"name": "Kermesse (2)"}], "genres": ["Electronic"], "styles": []}
+
+    monkeypatch.setattr(dl, "_get", get)
+    out = dl.from_url("https://www.discogs.com/de/release/523884-Kermesse-Mrs-Moon")
+    assert paths == ["releases/523884"]
+    assert (out["url"], out["year"], out["tags"], out["country"], out["artist"]) == ("https://www.discogs.com/release/523884", 1984, ["genre:electronic", "country:it"], "country:it", "Kermesse")
+
+
+@pytest.mark.parametrize("value", [None, "", "https://evil.example/master/1", "https://www.discogs.com.evil.example/master/1", "https://www.discogs.com/artist/1", "https://api.discogs.com/masters/1", "https://user@discogs.com/master/1", "https://www.discogs.com/master/x"])
+def test_from_url_never_fetches_other_hosts_or_paths(monkeypatch, value):
+    monkeypatch.setattr(dl, "_get", lambda *a, **k: pytest.fail("fetched"))
+    assert dl.from_url(value) == dl._empty()
+
+
+def test_from_url_failure_is_flagged_not_raised(monkeypatch):
+    def boom(path, params=None):
+        raise OSError("down")
+
+    monkeypatch.setattr(dl, "_get", boom)
+    out = dl.from_url("https://www.discogs.com/master/5")
+    assert out["url"] is None and out["error"] is True
+
+
+def test_get_sends_no_authorization_without_a_token(monkeypatch):
+    monkeypatch.delenv("DISCOGS_TOKEN")
+    seen = {}
+
+    class Resp:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def read(self):
+            return b"{}"
+
+    def urlopen(req, timeout):
+        seen["h"] = dict(req.header_items())
+        return Resp()
+
+    monkeypatch.setattr(httpjson.urllib.request, "urlopen", urlopen)
+    dl._get("masters/1")
+    assert "Authorization" not in seen["h"] and "audioplayer" in seen["h"]["User-agent"]
+
+
+def test_suggest_flags_a_failure(monkeypatch):
+    monkeypatch.setattr(dl, "_get", lambda *a, **k: (_ for _ in ()).throw(OSError("x")))
+    assert dl.suggest("A", "B")["error"] is True

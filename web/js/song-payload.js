@@ -111,5 +111,6 @@ export function metadataBody(v, sources) {
     ...(v.wikipedia_song ? { wiki_song: v.wikipedia_song } : {}),
     ...(v.wikipedia_artist ? { wiki_artist: v.wikipedia_artist } : {}),
     ...(v.wikipedia_album ? { wiki_album: v.wikipedia_album } : {}),
+    ...(v.discogs_url && !v.version?.type ? { discogs_url: v.discogs_url } : {}),
   };
 }

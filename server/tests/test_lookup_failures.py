@@ -200,7 +200,7 @@ def test_discogs_failed_verification_of_every_candidate_raises_and_suggest_is_em
         raise OSError("down")
 
     monkeypatch.setattr(dl, "_get", fake)
-    assert dl.suggest("Artist", "T") == dl._empty()
+    assert dl.suggest("Artist", "T") == {**dl._empty(), "error": True}
     assert len([c for c in calls if c.startswith("releases/")]) == dl.VERIFY_TRIES
 
 

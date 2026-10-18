@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-18 (Discogs in Get metadata, built, not deployed)
+
+- Web and server: "Get metadata" in the Add and Edit form now applies the Discogs result (link, year, genres), says why Discogs was skipped (not configured, no match, lookup failed), and a Discogs master or release link pasted into the Discogs link field is read directly instead of searching (ADD-172, ADD-173, API-172, API-173).
+
 ## 2026-10-18 (compact player on the right)
 
 - Web: the compact player pill (PLY-149) now sits at the right edge of the stage, 16px from the edge, instead of centred; the handle stays on its left and the expanded dock stays centred.

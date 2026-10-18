@@ -85,6 +85,66 @@ test('Get metadata fills only empty fields, never overwrites, and paints service
   assert.deepEqual(f.values().mainArtists, ['Real Artist']);
 });
 
+const DC = 'https://www.discogs.com/master/101179';
+const dcInput = (f) => inputs(f).find((i) => i.getAttribute('aria-label') === 'Discogs link');
+const metaSong = { id: 'sd', title: 'Mrs. Moon', mainArtists: ['Kermesse'], featuredArtists: [], albums: [], tags: [], file: 'x' };
+
+test('Get metadata applies the Discogs result: link, year, genres, and keeps typed values', async () => {
+  stubFetch(() => ({ body: { year: 1983, tags: ['genre:italo disco'], services: { discogs: { found: true, url: DC } } } }));
+  const f = songForm({ mode: 'edit', song: metaSong });
+  btn(f, 'Get metadata').click();
+  await flush();
+  const v = f.values();
+  assert.equal(v.discogs_url, DC);
+  assert.equal(String(v.releaseYear), '1983');
+  assert.ok(v.tags.includes('genre:italo disco'));
+  assert.ok(f.node.querySelector('a.svc-discogs'));
+  assert.equal(dcInput(f).value, DC);
+});
+
+test('Get metadata keeps a typed Discogs link and a typed year', async () => {
+  stubFetch(() => ({ body: { year: 1983, services: { discogs: { found: true, url: DC } } } }));
+  const f = songForm({ mode: 'edit', song: { ...metaSong, releaseYear: 1990, discogs_url: 'https://www.discogs.com/release/5' } });
+  btn(f, 'Get metadata').click();
+  await flush();
+  assert.equal(f.values().discogs_url, 'https://www.discogs.com/release/5');
+  assert.equal(String(f.values().releaseYear), '1990');
+});
+
+test('Get metadata says why Discogs was skipped', async () => {
+  for (const [reason, text] of [['not_configured', /Discogs: not configured on the server/], ['no_match', /Discogs: no match/], ['error', /Discogs: lookup failed/]]) {
+    stubFetch(() => ({ body: { services: { discogs: { found: false, url: null, skipped: reason } } } }));
+    const f = songForm({ mode: 'edit', song: metaSong });
+    btn(f, 'Get metadata').click();
+    await flush();
+    assert.match(f.node.textContent, text);
+    assert.equal(f.values().discogs_url, null);
+  }
+});
+
+test('a pasted Discogs link is sent with Get metadata and the result is labelled from link', async () => {
+  const calls = stubFetch(() => ({ body: { year: 1983, services: { discogs: { found: true, url: DC, from_link: true } } } }));
+  const f = songForm({ mode: 'edit', song: metaSong });
+  const typed = 'https://www.discogs.com/master/101179-Kermesse-Mrs-Moon';
+  dcInput(f).value = typed;
+  dcInput(f).dispatchEvent(makeEvent('input'));
+  btn(f, 'Get metadata').click();
+  await flush();
+  assert.equal(JSON.parse(calls.find((c) => c.url === '/metadata').opts.body).discogs_url, typed);
+  assert.match(f.node.textContent, /Discogs: from link/);
+  assert.equal(f.values().discogs_url, typed);
+});
+
+test('a pasted Discogs link in the Add form is sent too', async () => {
+  const calls = stubFetch(() => ({ body: {} }));
+  const f = songForm({ mode: 'add', song: { title: 'Mrs. Moon', mainArtists: ['Kermesse'], tags: [] }, source: { url: 'https://y/1' } });
+  dcInput(f).value = DC;
+  dcInput(f).dispatchEvent(makeEvent('input'));
+  btn(f, 'Get metadata').click();
+  await flush();
+  assert.equal(JSON.parse(calls.find((c) => c.url === '/metadata').opts.body).discogs_url, DC);
+});
+
 test('Get metadata failure shows a message and keeps the form usable', async () => {
   stubFetch(() => ({ status: 500, body: {} }));
   const f = songForm({ mode: 'edit', song: { id: 's5', title: 'Song', tags: [], file: 'x' } });

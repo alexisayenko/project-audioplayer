@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { addNamespaced, planMetadata, statusText, serviceState, suggestion, suggestionText, countryCode } from './metadata-apply.js';
+import { addNamespaced, planMetadata, statusText, discogsNote, metaMessage, serviceState, suggestion, suggestionText, countryCode } from './metadata-apply.js';
 
 test('fills only empty album and first released', () => {
   const r = { album: 'A', year: 1999, tags: [] };
@@ -38,7 +38,9 @@ test('services', () => {
   assert.equal(s.spotify.on, false);
   assert.deepEqual(s.musicbrainz, { on: true, url: 'https://m' });
   assert.equal(serviceState({ musicbrainz: { found: false, url: null } }).musicbrainz.on, false);
-  assert.equal(s.discogs.on, false);
+  assert.deepEqual(s.discogs, { on: true, url: 'https://d' });
+  assert.equal(serviceState({ discogs: { found: true, url: 'https://d', from_link: true } }).discogs.fromLink, true);
+  assert.equal(serviceState({ discogs: { found: false, url: null, skipped: 'no_match' } }).discogs.skipped, 'no_match');
   assert.equal(serviceState(undefined).youtube.on, false);
   assert.equal(serviceState({ youtube: { found: true, url: 'javascript:alert(1)' } }).youtube.url, null);
 });
@@ -85,4 +87,16 @@ test('a song with a version never takes the album of the original recording', ()
   const p = planMetadata(r, { album: '', released: '', tags: [], versioned: true });
   assert.equal(p.album, null);
   assert.equal(p.released, 1999);
+});
+
+test('discogs note names the link or the reason Discogs was skipped', () => {
+  assert.equal(discogsNote({ on: true, fromLink: true }), 'Discogs: from link');
+  assert.equal(discogsNote({ on: false, skipped: 'not_configured' }), 'Discogs: not configured on the server');
+  assert.equal(discogsNote({ on: false, skipped: 'no_match' }), 'Discogs: no match');
+  assert.equal(discogsNote({ on: false, skipped: 'error' }), 'Discogs: lookup failed');
+  assert.equal(discogsNote({ on: true, url: 'https://d' }), '');
+  assert.equal(discogsNote(null), '');
+  assert.equal(metaMessage({ status: 'current' }, { skipped: 'no_match' }), 'Already up to date. Discogs: no match');
+  assert.equal(metaMessage({ status: 'filled' }, { fromLink: true }), 'Discogs: from link');
+  assert.equal(metaMessage({ status: 'empty' }, null), 'Nothing found');
 });

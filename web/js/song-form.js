@@ -6,7 +6,7 @@ import { wikiFields } from './wiki-links.js';
 import { chipField } from './chip-field.js';
 import { linksPanel } from './links-panel.js';
 import { storedLinkStates, wikipediaLink, linkError, linkErrors, ownSourceKind } from './song-links.js';
-import { planMetadata, statusText, serviceState, suggestion, suggestionText } from './metadata-apply.js';
+import { planMetadata, metaMessage, serviceState, suggestion, suggestionText } from './metadata-apply.js';
 import { metadataBody, sourceList, artistString } from './song-payload.js';
 import { creditsBlock, initialCredits } from './song-form-credits.js';
 import { identifyBlock } from './identify-block.js';
@@ -124,6 +124,7 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
   if (isAdd) orig.set(originalGenres(initial, initial.tags || []));
   const hint = el('button', { class: 'link-btn t-caption wiki-hint', type: 'button', hidden: true });
   let suggest = null;
+  let discogsState = null;
   const emit = () => f.title.dispatchEvent(new Event('input', { bubbles: true }));
   const tc = titleCleaner({ f, isAdd, initial, first, emit });
   const cur = () => ({ title: f.title.value, artist: artistString({ mainArtists: credits.values().mainArtists }) });
@@ -145,6 +146,7 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
 
   const resetMeta = () => {
     suggest = null;
+    discogsState = null;
     resetIcons();
     metaMsg.textContent = '';
     orig.clear();
@@ -165,13 +167,13 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
     credits.setSpecific(resp?.version_year ?? resp?.remix_year);
     credits.setOriginal(resp?.suggest?.artist);
     f.album.dispatchEvent(new Event('input', { bubbles: true }));
-    metaMsg.textContent = statusText(plan);
+    metaMsg.textContent = metaMessage(plan, discogsState);
     orig.set(originalGenres(resp, editor.peek()));
   };
   metaBtn.addEventListener('click', async () => {
     const wv = wiki.values();
     const src = typeof source === 'function' ? source() : source;
-    const body = metadataBody({ title: f.title.value, ...credits.values(), ...wv }, sourceList(src));
+    const body = metadataBody({ title: f.title.value, ...credits.values(), ...wv, discogs_url: discogsUrl }, sourceList(src));
     const req = begin();
     resetMeta();
     metaBtn.disabled = true;
@@ -187,6 +189,8 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
         states.discogs = { on: false, url: null };
       }
       if (states.musicbrainz.url) mbUrl = states.musicbrainz.url;
+      if (states.discogs.url && !discogsUrl) discogsUrl = states.discogs.url;
+      discogsState = states.discogs;
       lastStates = states;
       paintIcons();
       suggest = resp?.suggest || null;

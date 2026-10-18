@@ -66,6 +66,12 @@ test('metadataBody sends the display artist string, version_kind, trims, adds wi
   assert.equal(artistString({ mainArtists: ['Solo'] }), 'Solo');
 });
 
+test('metadataBody sends the Discogs link only for a song without a version', () => {
+  assert.equal(metadataBody({ title: 'T', mainArtists: ['A'], discogs_url: 'https://www.discogs.com/master/1' }, []).discogs_url, 'https://www.discogs.com/master/1');
+  assert.ok(!('discogs_url' in metadataBody({ title: 'T', mainArtists: ['A'], discogs_url: null }, [])));
+  assert.ok(!('discogs_url' in metadataBody({ title: 'T', mainArtists: ['A'], version: { type: 'live' }, discogs_url: 'https://www.discogs.com/master/1' }, [])));
+});
+
 test('songSources merges sources and source_url without duplicates', () => {
   assert.deepEqual(songSources({ sources: [{ url: 'a' }, { url: 'b' }], source_url: 'a' }), [{ url: 'a' }, { url: 'b' }]);
   assert.deepEqual(songSources({ source_url: 'c' }), [{ url: 'c' }]);
