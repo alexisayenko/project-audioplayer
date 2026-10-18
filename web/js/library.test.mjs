@@ -284,7 +284,7 @@ test('Play all replaces the queue with the visible songs that have audio; Add al
   const { root, cleanup, search } = mount();
   await flush();
   search('a');
-  const bar = [...root.querySelectorAll('.toolbar button')];
+  const bar = [...root.querySelectorAll('.sortbar .sort-actions button')];
   const playAll = bar.find((b) => /^Play all/.test(b.textContent));
   const addAll = bar.find((b) => /^Add all/.test(b.textContent));
   assert.match(playAll.textContent, /^Play all \d/);
@@ -468,7 +468,7 @@ test('Clear filters appears with a search or a filter and resets both at once', 
   stubFetch(() => ({ body: { songs: SONGS } }));
   const { root, titles, cleanup, search } = mount();
   await flush();
-  const clear = () => [...root.querySelectorAll('.toolbar button')].find((b) => b.textContent === 'Clear filters');
+  const clear = () => [...root.querySelectorAll('.sortbar .sort-actions button')].find((b) => b.textContent === 'Clear filters');
   assert.equal(clear().hidden, true, 'hidden while nothing is filtered');
   search('alp');
   assert.equal(clear().hidden, false);
@@ -494,6 +494,8 @@ test('Show playing sits on the Library toolbar only while a song is current and 
   await flush();
   const show = () => [...root.querySelectorAll('.toolbar button')].find((b) => b.textContent === 'Show playing');
   assert.equal(show().hidden, true, 'nothing is current');
+  assert.equal(show().parentElement.className, 'toolbar', 'beside the search, not in the sort bar actions');
+  assert.deepEqual([...root.querySelectorAll('.sortbar .sort-actions button')].map((b) => b.textContent.replace(/ \d+.*/, '')), ['Clear filters', 'Play all', 'Add all']);
   player.playNow('a');
   assert.equal(show().hidden, false);
   assert.equal(show().getAttribute('aria-label'), 'Show the playing song in the list');

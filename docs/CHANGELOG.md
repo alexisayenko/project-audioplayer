@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-18 (Library actions under the chips)
+
+- Web: the Library toolbar keeps only Show playing beside the search field; Clear filters, Play all and Add all to playlist moved back to the sort bar row under the chips, right-aligned, and under 720px wrap onto their own line below the sort select (LIB-030).
+
 ## 2026-10-18 (sidebar stays put)
 
 - Web: collapsing or expanding the sidebar no longer moves the logo, the chevron button or the menu items vertically; only the width and the labels change (WEB-037).
