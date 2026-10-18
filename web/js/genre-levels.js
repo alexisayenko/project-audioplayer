@@ -99,6 +99,41 @@ export function ancestorIds(tree, id) {
   return out;
 }
 
+function familyIds(tree, id, seen = new Set()) {
+  const out = new Set();
+  if (seen.has(id)) return out;
+  seen.add(id);
+  for (const a of chain(tree, id)) {
+    if (a.level === 1) out.add(a.id);
+    for (const g of a.alsoIn) if (tree.byId.has(`g:${g}`)) out.add(`g:${g}`);
+    for (const p of a.alsoUnder) for (const f of familyIds(tree, `s:${p}`, seen)) out.add(f);
+  }
+  return out;
+}
+
+export function genreLines(tree, names) {
+  const lines = new Map(tree ? tree.roots.map((r) => [r.id, { family: r.name, rows: new Map() }]) : []);
+  const loose = new Map();
+  const seen = new Set();
+  for (const name of names || []) {
+    const node = resolveNode(name, tree);
+    const key = node ? node.id : `?${vkey(name)}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const fams = node ? [...familyIds(tree, node.id)] : [];
+    if (!fams.length) loose.set(key, { name, depth: 0 });
+    const depth = node && node.level > 1 ? chain(tree, node.id).length : 0;
+    for (const f of fams) lines.get(f).rows.set(key, { name, depth });
+  }
+  const order = (a, b) => a.depth - b.depth || a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+  const out = [...lines.values()].filter((l) => l.rows.size).map((l) => ({
+    family: l.family,
+    genres: [l.family, ...[...l.rows.values()].filter((r) => r.depth > 0).sort(order).map((r) => r.name)],
+  }));
+  if (loose.size) out.push({ family: null, genres: [...loose.values()].sort(order).map((r) => r.name) });
+  return out;
+}
+
 export function otherGenres(n, rootName) {
   return n.level === 2 ? [n.genre, ...n.alsoIn].filter((g) => g !== rootName) : [];
 }

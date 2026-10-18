@@ -9,6 +9,10 @@ const { store } = await import('./store.js');
 const { player, initPlayer } = await import('./player.js');
 initPlayer();
 const { cardModel, cardTags, openSongCard } = await import('./song-card.js');
+const { icon } = await import('./icons.js');
+const { resetGenreTree } = await import('./genre-tree.js');
+const { buildTree } = await import('./genre-levels.js');
+const { VOCAB } = await import('./genre-levels-fixture.mjs');
 
 const FULL = {
   id: 'a', title: 'Alpha', remixer: 'Kav', artist: 'Zed', album: 'LP', year: 1999, bpm: 120.4, duration: 125, file: 'a.mp3', cover: true,
@@ -72,8 +76,11 @@ test('the card opens read-only with links, actions and returns focus to the row 
   const hrefs = dlg.querySelectorAll('a.svc').map((a) => a.getAttribute('href'));
   assert.equal(hrefs.length, 3);
   assert.ok(dlg.querySelectorAll('a.svc').every((a) => a.getAttribute('target') === '_blank' && a.getAttribute('rel') === 'noopener'));
-  assert.deepEqual(names(dlg), ['Play next', 'Share link', 'Download', 'Edit', 'Add to playlist']);
+  assert.deepEqual(names(dlg), ['Play next', 'Add to playlist', 'Share link', 'Download', 'Edit']);
   assert.ok(dlg.querySelectorAll('.card-icons button').every((b) => b.getAttribute('aria-label') && b.title), 'icon buttons are labelled');
+  assert.ok(document.activeElement === dlg, 'opening focuses the dialog itself, not an action button');
+  assert.equal(dlg.getAttribute('tabindex'), '-1');
+  assert.ok(!dlg.querySelectorAll('.card-actions button').includes(document.activeElement), 'no action button shows a focus ring on open');
   assert.equal(dlg.querySelector('.card-bar .card-close').textContent, 'Close');
   assert.equal(dlg.querySelector('.card-actions .btn'), null, 'no text button in the action row');
   assert.equal(dlg.querySelector('.card-icons .key'), null, 'no dock key on the card');
@@ -157,6 +164,8 @@ test('the playlist button toggles, Play next queues the song after the current o
   assert.equal(on.getAttribute('aria-pressed'), 'true');
   assert.ok(on.classList.contains('on') && on.classList.contains('pl-toggle') && on.classList.contains('icon'), 'the same pressed round button as the Library row');
   assert.equal(on.title, 'In playlist - click to remove');
+  assert.equal(on.innerHTML, off.innerHTML, 'the pressed state keeps the list add icon');
+  assert.ok(!on.innerHTML.includes('m3 17 2 2'), 'no list check glyph');
   assert.equal(dlg.querySelector('.card-actions .btn'), null);
   assert.equal(btn('Play'), undefined, 'no Play/Pause toggle on the card');
   on.click();
@@ -165,6 +174,7 @@ test('the playlist button toggles, Play next queues the song after the current o
   assert.equal(player.current.id, 'o');
   const next = btn('Play next');
   assert.ok(next.classList.contains('icon') && next.classList.contains('round'));
+  assert.equal(next.querySelector('svg').innerHTML, icon('playPlus').innerHTML, 'a play triangle with a plus, not the list icon');
   next.click();
   assert.equal(player.inQueue('a'), true, 'queued');
   assert.equal(player.current.id, 'o', 'the current song keeps playing');
@@ -287,4 +297,37 @@ test('Copy title falls back to a hidden textarea when the clipboard API is missi
   assert.deepEqual(copied, ['Zed - Alpha (Kav)']);
   assert.equal($('toast').textContent, 'Title copied');
   dlg.close();
+});
+
+const lineTexts = (dlg) => dlg.querySelectorAll('.card-genre-line').map((l) => l.querySelectorAll('.tag').map((t) => t.textContent));
+
+test('the Genre row shows one line per inferred family, family chip first, then its genres by level', () => {
+  resetGenreTree(buildTree(VOCAB));
+  try {
+    const song = { ...BARE, id: 'g', tags: ['genre:deep house', 'genre:rock and roll', 'genre:house', 'genre:zzz thing', 'country:de'] };
+    publish([song]);
+    openSongCard(song);
+    const dlg = $('song-card');
+    assert.deepEqual(lineTexts(dlg), [['Electronic', 'house', 'deep house'], ['Rock', 'rock and roll'], ['zzz thing']]);
+    const names = dlg.querySelectorAll('.card-genre-line .group-name').map((n) => n.textContent);
+    assert.deepEqual(names, ['Genre', '', '']);
+    assert.ok(dlg.querySelectorAll('.card-genre-line .tag').every((t) => t.className === 'tag ns t-caption'), 'inferred and tagged chips share the chip style');
+    dlg.querySelector('.card-close').click();
+  } finally {
+    resetGenreTree(null);
+  }
+});
+
+test('the Genre row falls back to one line of tagged genres without a vocabulary, and is absent with none', () => {
+  const song = { ...BARE, id: 'g2', tags: ['genre:trap', 'genre:house'] };
+  publish([song, BARE]);
+  openSongCard(song);
+  let dlg = $('song-card');
+  assert.deepEqual(lineTexts(dlg), [['house', 'trap']]);
+  dlg.querySelector('.card-close').click();
+  openSongCard(BARE);
+  dlg = $('song-card');
+  assert.deepEqual(lineTexts(dlg), []);
+  assert.equal(dlg.querySelector('.card-genre-line'), null);
+  dlg.querySelector('.card-close').click();
 });

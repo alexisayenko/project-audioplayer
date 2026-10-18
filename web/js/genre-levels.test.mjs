@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  hasLevels, buildTree, resolveNode, applyCounts, count, chain, libraryTags, searchMatches, visibleRows, allExpandable, treeKey, otherGenres, filterIds, statusIds, flavourCount, statusKey,
+  hasLevels, buildTree, resolveNode, applyCounts, count, chain, libraryTags, genreLines, searchMatches, visibleRows, allExpandable, treeKey, otherGenres, filterIds, statusIds, flavourCount, statusKey,
 } from './genre-levels.js';
 import { VOCAB, SONGS } from './genre-levels-fixture.mjs';
 
@@ -219,4 +219,38 @@ test('songs under a two-genre umbrella count once per genre root and once per no
   const under = rows.find((r) => r.key === 'g:Rock|s:euro disco');
   assert.equal(under.parentKey, rows.filter((r) => r.node.name === 'disco')[1].key);
   assert.deepEqual(treeKey(rows, under.key, 'ArrowLeft'), { type: 'focus', id: under.parentKey });
+});
+
+test('genreLines infers the level 1 family even when only a deeper genre is tagged', () => {
+  assert.deepEqual(genreLines(make(), ['deep house']), [{ family: 'Electronic', genres: ['Electronic', 'deep house'] }]);
+});
+
+test('genreLines puts each family on its own line in family order, tagged level 1 and synonyms not repeated', () => {
+  assert.deepEqual(genreLines(make(), ['rock and roll', 'house', 'edm', 'Electronic']), [
+    { family: 'Electronic', genres: ['Electronic', 'house'] },
+    { family: 'Rock', genres: ['Rock', 'rock and roll'] },
+  ]);
+});
+
+test('genreLines orders a family by level, then alphabetically', () => {
+  assert.deepEqual(genreLines(make(), ['jungle', 'deep house', 'house', 'afro house', 'breakbeat'])[0].genres, ['Electronic', 'breakbeat', 'house', 'afro house', 'deep house', 'jungle']);
+});
+
+test('genreLines lists a genre under two families on both lines, with its children', () => {
+  const t = disco();
+  const lines = genreLines(t, ['euro disco', 'disco']);
+  assert.deepEqual(lines, [
+    { family: 'Electronic', genres: ['Electronic', 'disco', 'euro disco'] },
+    { family: 'Rock', genres: ['Rock', 'disco', 'euro disco'] },
+  ]);
+});
+
+test('genreLines sends unknown genres to a final line without a family and copes with empty input', () => {
+  assert.deepEqual(genreLines(make(), ['zzz thing', 'house', 'aaa thing']), [
+    { family: 'Electronic', genres: ['Electronic', 'house'] },
+    { family: null, genres: ['aaa thing', 'zzz thing'] },
+  ]);
+  assert.deepEqual(genreLines(make(), []), []);
+  assert.deepEqual(genreLines(make(), undefined), []);
+  assert.deepEqual(genreLines(null, ['trap', 'house']), [{ family: null, genres: ['house', 'trap'] }]);
 });

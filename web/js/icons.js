@@ -46,7 +46,7 @@ export const ICONS = {
   externalLink: { d: '<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>' },
   playOutline: { d: '<path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z"/>' },
   chevronUp: { d: '<path d="m18 15-6-6-6 6"/>' },
-  playNext: { d: '<path d="M3 3.5v7l6-3.5z"/><path d="M13 7h8"/><path d="M3 14h18"/><path d="M3 20h18"/>' },
+  playPlus: { d: '<path d="M3 8.75a1.5 1.5 0 0 1 2.256-1.296l8.998 5.249a1.5 1.5 0 0 1 .002 2.594l-9 5.25A1.5 1.5 0 0 1 3 19.25z"/><path d="M18 3v6"/><path d="M15 6h6"/>' },
   arrowUp: { d: '<path d="m5 12 7-7 7 7"/><path d="M12 19V5"/>' },
   ring: { d: '<circle cx="12" cy="12" r="3.5"/><path d="M12 3v2.5"/><path d="M12 18.5V21"/><path d="M3 12h2.5"/><path d="M18.5 12H21"/><path d="m16.6 7.4 1.8-1.8"/><path d="m16.6 16.6 1.8 1.8"/><path d="m7.4 16.6-1.8 1.8"/><path d="m7.4 7.4-1.8-1.8"/>' },
   mark: { d: '<circle cx="12" cy="12" r="10.6" style="fill:none;stroke:var(--copper);stroke-width:1"/><circle cx="12" cy="12" r="9.6" style="fill:var(--vinyl);stroke:none"/><circle cx="12" cy="12" r="3.9" style="fill:var(--accent);stroke:none"/><path d="M9.6 10.8h4.8M9.4 13.2h5.2" style="fill:none;stroke:var(--on-accent);stroke-width:1.3"/><circle cx="12" cy="12" r=".6" style="fill:var(--surface);stroke:none"/>' },

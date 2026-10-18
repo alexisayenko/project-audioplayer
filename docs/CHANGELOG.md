@@ -2,6 +2,22 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-18 (song card playlist icon, built, not deployed)
+
+- Web: the song card playlist toggle keeps the list add icon in the pressed state and differs only by the accent background; the accessible name still tells the state (LIB-149).
+
+## 2026-10-18 (song card genre lines, built, not deployed)
+
+- Web: the song card's Genre row now shows one line per level-1 genre inferred from the song's genre tags (family chip first even when untagged, then the tagged genres by level, a two-family genre on both lines, unknown genres on a last line); LIB-158.
+
+## 2026-10-18 (song card buttons)
+
+- Web: the song card's playlist toggle sits right after Play next (Play next, Playlist, Share, Download, Edit), and opening the card no longer draws a focus ring on the first button; the dialog itself takes the initial focus and Tab still shows the ring.
+
+## 2026-10-18 (Play next icon)
+
+- Web: the song card's round Play next button shows a play triangle with a plus at its top right (new icon `playPlus`) instead of the queue-list icon.
+
 ## 2026-10-18 (Other family colour fix, built, not deployed)
 
 - Web and macOS: Other and unknown genre families keep the neutral `--chart-15` after the family list shrank to 11 plus Other; the other 11 families keep their old colours (GEN-040).

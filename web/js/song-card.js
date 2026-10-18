@@ -10,7 +10,9 @@ import { editDialog } from './edit-dialog.js';
 import { creditParts, subtitle, titleNodes, detailsLines, yearFact, albumOf, displayLine } from './credits.js';
 import { icon } from './icons.js';
 import { bpmLabel } from './bpm-label.js';
-import { visibleTags, tagGroups, tagLabel } from './tagname.js';
+import { visibleTags, tagGroups, tagLabel, splitTag } from './tagname.js';
+import { genreLines } from './genre-levels.js';
+import { cachedTree, loadGenreTree } from './genre-tree.js';
 import { serviceIcons } from './service-icons.js';
 import { storedLinkStates } from './song-links.js';
 import { toggleQueue, playNextInQueue } from './queue-toggle.js';
@@ -25,13 +27,16 @@ const HIDDEN_DETAILS = new Set(['Version', 'Version name', 'Remix year', 'First 
 
 export function cardModel(song) {
   const { title, remix } = creditParts(song);
+  const groups = cardTags(song?.tags);
+  const genres = (groups.find((g) => g.key === 'genre')?.tags || []).map((t) => splitTag(t.tag).value);
   return {
     title,
     remix,
     sub: subtitle(song),
     album: albumOf(song),
     full: displayLine(song),
-    groups: cardTags(song?.tags),
+    groups,
+    genreLines: genreLines(cachedTree(), genres),
     yearFact: yearFact(song),
     details: detailsLines(song).filter(({ label }) => !HIDDEN_DETAILS.has(label)).map(({ label, value }) => (label === 'Cover of' ? `Cover of ${value}` : `${label}: ${value}`)),
     bpm: bpmLabel(song?.bpm),
@@ -62,11 +67,17 @@ function headBlock(song, m) {
   return [art, full ? el('div', { class: 'card-head' }, full) : null];
 }
 
-function tagBlock(groups) {
+function genreRows(name, lines) {
+  return lines.map((line, i) => el('div', { class: 'chip-group card-genre-line' },
+    el('span', { class: 'group-name t-caption', 'aria-hidden': i ? 'true' : null }, i ? '' : name),
+    line.genres.map((g) => el('span', { class: 'tag ns t-caption', title: `genre:${g}` }, g))));
+}
+
+function tagBlock(groups, lines) {
   if (!groups.length) return null;
-  return el('div', { class: 'chip-groups card-tags' }, groups.map((g) => el('div', { class: 'chip-group' },
+  return el('div', { class: 'chip-groups card-tags' }, groups.flatMap((g) => (g.key === 'genre' ? genreRows(g.name, lines) : [el('div', { class: 'chip-group' },
     el('span', { class: 'group-name t-caption' }, g.name),
-    g.tags.map((t) => el('span', { class: 'tag ns t-caption', title: t.tag }, t.label)))));
+    g.tags.map((t) => el('span', { class: 'tag ns t-caption', title: t.tag }, t.label)))])));
 }
 
 function linkBlock(links) {
@@ -87,11 +98,11 @@ function actionRow(song) {
   const dl = audio && can('download') ? ib('Download', 'download', () => downloadSong(song))
     : !audio && can('fetch') && (view.kind === 'none' || view.kind === 'failed') ? ib('Download to server', 'download', () => autodl.request([song.id], { front: true })) : null;
   const icons = [
-    queueable ? ib('Play next', 'playNext', () => playNextInQueue(song)) : null,
+    queueable ? ib('Play next', 'playPlus', () => playNextInQueue(song)) : null,
+    queueable ? el('button', { class: `icon round pl-toggle${queued ? ' on' : ''}`, type: 'button', title: queued ? 'In playlist - click to remove' : 'Add to playlist', 'aria-label': queued ? 'In playlist - click to remove' : 'Add to playlist', 'aria-pressed': String(queued), onclick: () => toggleQueue(song) }, icon('listAdd', 'nav')) : null,
     ib('Share link', 'share', () => openShareDialog(song)),
     dl,
     can('edit') ? ib('Edit', 'pencil', () => editDialog(song)) : null,
-    queueable ? el('button', { class: `icon round pl-toggle${queued ? ' on' : ''}`, type: 'button', title: queued ? 'In playlist - click to remove' : 'Add to playlist', 'aria-label': queued ? 'In playlist - click to remove' : 'Add to playlist', 'aria-pressed': String(queued), onclick: () => toggleQueue(song) }, icon(queued ? 'listCheck' : 'listAdd', 'nav')) : null,
   ].filter(Boolean);
   return el('div', { class: 'card-actions' },
     icons.length ? el('div', { class: 'card-icons' }, ...icons) : null,
@@ -121,7 +132,7 @@ function paint(dlg, song, close, m) {
     art,
     head,
     detailsBlock(m),
-    tagBlock(rest),
+    tagBlock(rest, m.genreLines),
     linkBlock(m.links),
     actionRow(song),
   ];
@@ -151,7 +162,9 @@ export function openSongCard(song, opener = null) {
   const dlg = document.getElementById('song-card');
   const id = song.id;
   const close = () => dlg.close();
+  dlg.setAttribute('tabindex', '-1');
   let last = '';
+  let live = true;
   const render = (force) => {
     const fresh = store.get(id);
     if (!fresh) { close(); return; }
@@ -163,11 +176,13 @@ export function openSongCard(song, opener = null) {
   const unsubs = [store.subscribe(() => render(true)), player.onChange(render), autodl.onChange(render)];
   dlg.onclick = (e) => { if (e.target === dlg) close(); };
   dlg.addEventListener('close', () => {
+    live = false;
     for (const u of unsubs) u();
     dlg.replaceChildren();
     focusRow(id, opener);
   }, { once: true });
   render(true);
+  if (!cachedTree()) loadGenreTree().then((t) => { if (t && live) render(true); });
   if (!dlg.open) dlg.showModal();
-  (dlg.querySelector('.card-actions button') || dlg.querySelector('.card-close'))?.focus();
+  dlg.focus();
 }

@@ -434,6 +434,7 @@ dialog.sheet { border-radius: var(--radius-tray) var(--radius-tray) 0 0; margin:
 .card-dlg .card-tags { margin-bottom: var(--space-3); }
 .card-dlg .facts { align-items: center; margin: var(--space-3) 0; }
 .card-dlg .svc-row { margin-bottom: var(--space-3); }
+.card-dlg:focus, .card-dlg:focus-visible { outline: none; }
 .card-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .card-dlg .card-bar { margin-bottom: var(--space-2); }
 .card-dlg .card-icons { display: flex; flex-wrap: wrap; gap: var(--space-3); width: 100%; }
