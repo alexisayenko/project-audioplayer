@@ -22,7 +22,7 @@ function hidden(seen, part) {
   return !n || ` ${seen} `.includes(` ${n} `);
 }
 
-function versionLabel(song, title) {
+function baseVersionLabel(song, title) {
   const v = song?.version;
   if (!v || typeof v !== 'object') return '';
   const seen = norm(title);
@@ -31,6 +31,16 @@ function versionLabel(song, title) {
   const kind = text(v.type).toLowerCase();
   if (!kind || kind === 'other' || hidden(seen, kind)) return '';
   return kind;
+}
+
+function versionLabel(song, title) {
+  const label = baseVersionLabel(song, title);
+  if (!label || !isRemaster(song)) return label;
+  const y = versionYear(song);
+  if (y == null || y === original(song)) return label;
+  const year = String(y);
+  if (new RegExp(`(?<!\\d)${year}(?!\\d)`).test(`${label} ${text(song.version.name)}`)) return label;
+  return `${year} ${label}`;
 }
 
 export function creditParts(song) {
@@ -109,16 +119,7 @@ const original = (song) => (Number.isInteger(releasedYear(song)) ? releasedYear(
 
 export const displayYear = (song) => (isRemaster(song) ? original(song) : versionYear(song) ?? original(song));
 
-function remasterText(song) {
-  const v = versionYear(song);
-  const o = original(song);
-  if (v == null) return o == null ? '' : String(o);
-  if (o == null) return `${v} remaster`;
-  return v === o ? String(o) : `${o} (${v} remaster)`;
-}
-
 export function yearText(song) {
-  if (isRemaster(song)) return remasterText(song);
   const y = displayYear(song);
   return y == null ? '' : String(y);
 }
@@ -126,7 +127,7 @@ export function yearText(song) {
 export function yearFact(song) {
   const v = versionYear(song);
   if (v == null) return '';
-  if (isRemaster(song)) return remasterText(song);
+  if (isRemaster(song)) return original(song) == null ? '' : String(original(song));
   const o = original(song);
   return o != null && o !== v ? `${v} · original ${o}` : String(v);
 }

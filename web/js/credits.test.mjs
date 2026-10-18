@@ -136,12 +136,13 @@ test('displayed year is the version year, else the original, never the upload da
   assert.equal(c.displayYear({ title: 'S' }), null);
 });
 
-test('a remaster keeps the original year for sort and stats and appends its own year as text', () => {
+test('a remaster keeps the original year in the year line and moves its own year into the title version', () => {
   const M = { title: 'Song', mainArtists: ['Band'], releaseYear: 1985, version: { type: 'remaster', name: '2003 Remaster', releaseYear: 2003 } };
   assert.equal(c.displayYear(M), 1985);
-  assert.equal(c.subtitle(M), 'Band · 1985 (2003 remaster)');
-  assert.equal(c.yearText(M), '1985 (2003 remaster)');
-  assert.equal(c.yearFact(M), '1985 (2003 remaster)');
+  assert.equal(c.subtitle(M), 'Band · 1985');
+  assert.equal(c.yearText(M), '1985');
+  assert.equal(c.yearFact(M), '1985');
+  assert.equal(c.displayLine(M), 'Band - Song (2003 Remaster)');
   assert.equal(c.versionTooltip(M), '2003 Remaster');
   assert.equal(c.titleNodes(M)[2].title, '');
   assert.deepEqual(c.detailsLines(M).filter((l) => /year|released/i.test(l.label)).map((l) => l.value), ['2003', '1985']);
@@ -151,7 +152,28 @@ test('a remaster keeps the original year for sort and stats and appends its own 
   assert.equal(c.subtitle(noVy), 'Band · 1985');
   assert.equal(c.yearFact(noVy), '');
   assert.equal(c.displayYear({ ...M, releaseYear: null }), null);
-  assert.equal(c.subtitle({ ...M, releaseYear: null }), 'Band · 2003 remaster');
+  assert.equal(c.subtitle({ ...M, releaseYear: null }), 'Band');
+  assert.equal(c.yearFact({ ...M, releaseYear: null }), '');
   assert.equal(c.displayYear({ ...M, version: { ...M.version, type: 'Remix' } }), 2003);
   assert.equal(c.subtitle({ ...M, version: { ...M.version, type: 'remix' } }), 'Band · 2003');
+});
+
+test('a remaster with a version year gets the year before its label in the title, once', () => {
+  const R = (v, extra = {}) => ({ title: 'Doctor Doctor', mainArtists: ['UFO'], releaseYear: 1979, version: { type: 'remaster', releaseYear: 2007, ...v }, ...extra });
+  assert.equal(c.titleLine(R({})), 'Doctor Doctor (2007 remaster)');
+  assert.equal(c.subtitle(R({})), 'UFO · 1979');
+  assert.equal(c.titleLine(R({ name: 'Remaster' })), 'Doctor Doctor (2007 Remaster)');
+  assert.equal(c.titleLine(R({ name: 'Deluxe remaster' })), 'Doctor Doctor (2007 Deluxe remaster)');
+  assert.equal(c.titleLine(R({ name: '2007 Remaster' })), 'Doctor Doctor (2007 Remaster)');
+  assert.equal(c.titleLine(R({ name: 'Remastered 2007' })), 'Doctor Doctor (Remastered 2007)');
+  assert.equal(c.titleLine(R({ name: 'Remaster' }, { releaseYear: 20071 })), 'Doctor Doctor (2007 Remaster)');
+  assert.equal(c.titleLine(R({ releaseYear: null })), 'Doctor Doctor (remaster)');
+  assert.equal(c.titleLine(R({ releaseYear: 1979 })), 'Doctor Doctor (remaster)');
+  assert.equal(c.titleLine(R({ type: 'remix' })), 'Doctor Doctor (remix)');
+  assert.equal(c.titleLine({ ...R({}), title: 'Doctor Doctor (remaster)' }), 'Doctor Doctor (remaster)');
+  const nodes = c.titleNodes(R({}));
+  assert.equal(nodes[2].textContent, '(2007 remaster)');
+  assert.equal(nodes[2].title, '');
+  assert.equal(c.versionTooltip(R({})), '2007 remaster');
+  assert.deepEqual(c.detailsLines(R({})).filter((l) => l.label === 'Version year').map((l) => l.value), ['2007']);
 });

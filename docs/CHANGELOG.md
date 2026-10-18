@@ -4,7 +4,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## 2026-10-18 (remaster year)
 
-- Web: a remaster shows the original year with its own year in brackets, "1985 (2003 remaster)", in the Library row, song card, dock and Now playing subtitle; Library sort by Year and Song stats use the original year (LIB-150).
+- Web: a remaster with its own year shows it in the title, "Doctor Doctor (2007 remaster)", and the year line keeps the original year only, "UFO · 1979"; Library sort by Year and Song stats use the original year (LIB-150).
 
 ## 2026-10-18 (data model 3)
 
