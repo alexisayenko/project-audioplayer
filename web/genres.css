@@ -204,7 +204,6 @@ body[data-route="genres"] main { max-width: none; padding: 0; }
 .gmr-dl dd { margin: 0; overflow-wrap: anywhere; }
 .gmr-key.neutral { background: var(--chart-15); }
 .gmr-status-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); flex: 1 1 100%; }
-.gmr-badge.ok { background: var(--ok); color: var(--surface); }
 .gmr-badge.q { background: var(--accent); color: var(--on-accent); }
 .gmr-key.q { background: var(--accent); }
 .gmr-flavour-row, .gmr-flav-group { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); }

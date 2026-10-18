@@ -74,6 +74,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 ## 2026-10-18 (genres map approved sign)
 
 - Web: the Genres map no longer draws the green check badge on approved genres, and the legend lost its "Check badge" entry; the question badge, the dashed ring, the outline badge and the data stay.
+- Web: the green "approved" pill is gone from the Genres rework outline rows, "Alex approved" from the genre details and the map hover tooltip, and "approved" from the Status filter chips; the question badge, the provisional badge, the dashed ring, the other status chips and the data stay.
 
 ## 2026-10-18 (genres map families)
 

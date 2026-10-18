@@ -195,7 +195,7 @@ export function searchMatches(tree, query, { populatedOnly = false } = {}) {
   return hits;
 }
 
-export const STATUS_FILTERS = ['all', 'approved', 'question', 'unreviewed'];
+export const STATUS_FILTERS = ['all', 'question', 'unreviewed'];
 export const STATUS_LABELS = { approved: 'Alex approved', question: 'Under question', unreviewed: 'Not reviewed yet' };
 export const statusKey = (n) => n.status || 'unreviewed';
 

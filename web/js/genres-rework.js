@@ -106,7 +106,7 @@ export function renderGenresRework(root, opts = {}) {
       t.synonyms.length ? el('span', { class: 'muted' }, ` | also: ${t.synonyms.join(', ')}`) : null,
       !t.discogs ? el('span', { class: 'muted' }, ' | not in Discogs') : null,
       t.alsoIn.length ? el('span', { class: 'muted' }, ` | also in ${otherGenres(t, rootGenre).join(', ')}`) : null,
-      t.status ? el('span', { class: 'muted' }, ` | ${STATUS_LABELS[t.status]}`) : null);
+      t.status === 'question' ? el('span', { class: 'muted' }, ` | ${STATUS_LABELS.question}`) : null);
     tip.style.left = `${pt.x - r.left + 12}px`;
     tip.style.top = `${pt.y - r.top + 14}px`;
     tip.hidden = false;
@@ -288,7 +288,6 @@ export function renderGenresRework(root, opts = {}) {
       n.provisional ? badge('provisional', 'Provisional: placement not reviewed yet', 'prov') : null,
       !n.discogs ? badge('not in Discogs', 'Not in Discogs', 'nodisc') : null,
       ...n.flavours.map((k) => el('span', { class: 'gmr-badge flav', title: tree.flavours.get(k).description || tree.flavours.get(k).name }, tree.flavours.get(k).name)),
-      n.status === 'approved' ? badge('approved', STATUS_LABELS.approved, 'ok') : null,
       n.status === 'question' ? badge('question', STATUS_LABELS.question, 'q') : null,
       ...n.alsoUnder.map((a) => {
         const target = tree.byKey.get(vkey(a));
@@ -342,7 +341,7 @@ export function renderGenresRework(root, opts = {}) {
     add('Synonyms', n.synonyms.length ? n.synonyms.join(', ') : 'None');
     if (n.level > 1) add('Also under', also.length ? chips(also) : 'None');
     add('In Discogs', n.discogs ? 'Yes' : 'No, a name added to this library');
-    if (n.level > 1) add('Review', STATUS_LABELS[statusKey(n)]);
+    if (n.level > 1 && n.status !== 'approved') add('Review', STATUS_LABELS[statusKey(n)]);
     if (n.level > 1 && n.flavours.length) add('Flavours', el('span', { class: 'gm-chips' }, n.flavours.map((k) => el('span', { class: 'gmr-badge flav', title: tree.flavours.get(k).description }, tree.flavours.get(k).name))));
     if (n.provisional) add('Status', 'Provisional: not yet reviewed');
     const exact = n.own.size !== total ? ` (${n.own.size} tagged exactly)` : '';
