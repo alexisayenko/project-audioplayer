@@ -44,6 +44,7 @@ class SongMeta(BaseModel):
     title: str | None = None
     mainArtists: list[str] | None = None
     featuredArtists: list[str] | None = None
+    withArtists: list[str] | None = None
     releaseYear: int | None = None
     albums: list[str] | None = None
     artists: list[str] | None = None

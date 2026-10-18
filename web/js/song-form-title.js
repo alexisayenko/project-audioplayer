@@ -1,6 +1,9 @@
 import { el, field } from './dom.js';
 import { cleanTitleEx } from './title-clean.js';
-import { splitTokens } from './tokens.js';
+import { splitTokens, joinTokens } from './tokens.js';
+import { parseCreditTitle } from './credit-title.js';
+
+const lowered = (names) => names.map((n) => n.toLowerCase());
 
 export function titleCleaner({ f, isAdd, initial, first, emit }) {
   const titleField = field('Title', f.title);
@@ -9,6 +12,19 @@ export function titleCleaner({ f, isAdd, initial, first, emit }) {
   titleField.append(cleaned, moveHint);
   let before = null;
   let restoredRaw = null;
+  let moved = { featured: [], withs: [] };
+  const addNames = (field, names) => {
+    const have = splitTokens(field.value);
+    const fresh = names.filter((n) => !lowered(have).includes(n.toLowerCase()));
+    if (fresh.length) field.value = joinTokens([...have, ...fresh]);
+    return fresh;
+  };
+  const takeBack = () => {
+    for (const [key, names] of Object.entries(moved)) {
+      if (names.length) f[key].value = joinTokens(splitTokens(f[key].value).filter((n) => !lowered(names).includes(n.toLowerCase())));
+    }
+    moved = { featured: [], withs: [] };
+  };
   const paintCleaned = (removed) => {
     cleaned.replaceChildren();
     cleaned.hidden = !removed.length;
@@ -17,6 +33,7 @@ export function titleCleaner({ f, isAdd, initial, first, emit }) {
     undo.addEventListener('click', () => {
       restoredRaw = before;
       f.title.value = before;
+      takeBack();
       paintCleaned([]);
       emit();
     });
@@ -26,11 +43,15 @@ export function titleCleaner({ f, isAdd, initial, first, emit }) {
     const now = f.title.value;
     if (now === restoredRaw) return;
     const r = cleanTitleEx(now);
-    if (r.title === now) return;
+    const credit = parseCreditTitle('', r.title);
+    const text = credit.removed.length ? credit.title : r.title;
+    if (text === now) return;
     before = now;
     restoredRaw = null;
-    f.title.value = r.title;
-    paintCleaned(r.removed);
+    takeBack();
+    f.title.value = text;
+    if (credit.removed.length) moved = { featured: addNames(f.featured, credit.featuredArtists), withs: addNames(f.withs, credit.withArtists) };
+    paintCleaned([...r.removed, ...credit.removed]);
     emit();
   };
   const paintMove = () => {

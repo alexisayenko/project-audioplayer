@@ -12,7 +12,7 @@ from urllib.parse import urlparse
 
 import yt_dlp
 
-from . import credits, credits_split, genre_filter, library, timeutil, urlclean, yt_genres
+from . import credit_title, credits, credits_split, genre_filter, library, timeutil, urlclean, yt_genres
 from .jsonio import write_bytes_atomic
 from .titles import cut_version, split_artist_title, split_title
 from .urlclean import is_valid_video_id, parse_video_id, source_of, watch_url  # noqa: F401
@@ -153,12 +153,16 @@ def soundcloud_probe(url: str) -> dict[str, Any]:
     raw_title = info.get("track") or info.get("title") or ""
     title, remixer = cut_version(raw_title)
     artist = _first(info.get("artists")) or info.get("artist") or info.get("creator") or info.get("uploader") or ""
+    shown = credit_title.split(artist, title)
     return {
         "id": urlclean.soundcloud_song_id(info["id"]),
         "source_url": urlclean.watch_url(urlclean.soundcloud_song_id(info["id"]), url),
         "source": "soundcloud",
-        "title": title,
-        "artist": artist,
+        "title": shown["title"],
+        "artist": shown["artist"],
+        "mainArtists": shown["mainArtists"],
+        "featuredArtists": shown["featuredArtists"],
+        "withArtists": shown["withArtists"],
         "album": info.get("album"),
         "remixer": remixer,
         "version_year": credits_split.version_year(remixer),
@@ -186,12 +190,16 @@ def meta_from_info(video_id: str, info: dict[str, Any]) -> dict[str, Any]:
     raw_artist = info.get("artist") or info.get("creator") or info.get("uploader") or info.get("channel") or ""
     raw_title = info.get("track") or info.get("title") or ""
     artist, title, remixer = split_title(raw_artist, raw_title)
+    shown = credit_title.split(artist, title)
     return {
         "id": video_id,
         "source": "youtube",
         "source_url": watch_url(video_id),
-        "title": title,
-        "artist": artist,
+        "title": shown["title"],
+        "artist": shown["artist"],
+        "mainArtists": shown["mainArtists"],
+        "featuredArtists": shown["featuredArtists"],
+        "withArtists": shown["withArtists"],
         "album": info.get("album"),
         "remixer": remixer,
         "version_year": credits_split.version_year(remixer),
@@ -279,7 +287,8 @@ def download_audio(video_id: str, out_dir: Path, progress: Callable[[float], Non
         info.get("artist") or info.get("creator") or info.get("uploader") or "",
         info.get("track") or info.get("title") or "",
     )
-    return {"id": video_id, "title": title, "artist": artist, "remixer": remixer, "duration": info.get("duration")}
+    shown = credit_title.split(artist, title)
+    return {"id": video_id, "title": shown["title"], "artist": shown["artist"], "remixer": remixer, "duration": info.get("duration")}
 
 
 def _download_soundcloud(video_id: str, out_dir: Path, hook: Callable[[dict[str, Any]], None], source_url: str | None) -> dict[str, Any]:
@@ -296,11 +305,13 @@ def _download_soundcloud(video_id: str, out_dir: Path, hook: Callable[[dict[str,
         target.unlink(missing_ok=True)
         raise PreviewOnly()
     title, remixer = cut_version(info.get("track") or info.get("title") or "")
+    artist = _first(info.get("artists")) or info.get("artist") or info.get("creator") or info.get("uploader") or ""
+    shown = credit_title.split(artist, title)
     return {
         "id": video_id,
-        "title": title,
+        "title": shown["title"],
         "remixer": remixer,
-        "artist": _first(info.get("artists")) or info.get("artist") or info.get("creator") or info.get("uploader") or "",
+        "artist": shown["artist"],
         "duration": info.get("duration"),
         "thumbnail": _artwork_of(info),
     }

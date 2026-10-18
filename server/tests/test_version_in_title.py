@@ -50,9 +50,9 @@ def test_single_link_preview_leaves_unrelated_brackets_alone(real_preview, clien
     assert "Official" not in body["title"] and "Lyrics" not in body["title"]
 
 
-def test_single_link_preview_keeps_a_feat_credit_in_the_title_and_cuts_the_version(real_preview, client):
+def test_single_link_preview_moves_a_feat_credit_out_of_the_title_and_cuts_the_version(real_preview, client):
     body = preview(real_preview, client, "Song (feat. X) (Slowed)")
-    assert (body["title"], body["remixer"]) == ("Song (feat. X)", "Slowed")
+    assert (body["title"], body["remixer"], body["featuredArtists"]) == ("Song", "Slowed", ["X"])
 
 
 @pytest.mark.parametrize("raw,year", [("Song (2011 Remaster)", 2011), ("Song [Remastered 2011]", 2011), ("Song (Remastered)", None), ("Song (Live 1994)", None)])

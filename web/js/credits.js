@@ -51,15 +51,16 @@ export function creditParts(song) {
     return { title, remix, artists: [], featured: [], version: null, structured: false };
   }
   const version = song.version && typeof song.version === 'object' ? song.version : null;
-  return { title, remix: versionLabel(song, title), artists: names(song.mainArtists), featured: names(song.featuredArtists), version, structured: true };
+  return { title, remix: versionLabel(song, title), artists: names(song.mainArtists), featured: names(song.featuredArtists), withArtists: names(song.withArtists), version, structured: true };
 }
 
 export function artistLine(song) {
   if (!isStructured(song)) return text(song?.artist);
   const main = joinNames(song.mainArtists);
   const feat = joinNames(song.featuredArtists);
-  if (!feat) return main;
-  return main ? `${main} feat. ${feat}` : `feat. ${feat}`;
+  const withs = joinNames(song.withArtists);
+  const guests = [feat && `feat. ${feat}`, withs && `with ${withs}`].filter(Boolean).join(' ');
+  return main && guests ? `${main} ${guests}` : main || guests;
 }
 
 export function titleLine(song) {
@@ -173,7 +174,7 @@ export function compareKeys(a, b) {
 export function searchText(song, extra = []) {
   const v = song?.version;
   const parts = isStructured(song)
-    ? [song.title, ...names(song.mainArtists), ...names(song.featuredArtists), v?.name, ...names(v?.artists), ...ofNames(v?.originalArtists), ...names(song.albums)]
+    ? [song.title, ...names(song.mainArtists), ...names(song.featuredArtists), ...names(song.withArtists), v?.name, ...names(v?.artists), ...ofNames(v?.originalArtists), ...names(song.albums)]
     : [song?.title, song?.artist, song?.album, song?.remixer];
   return [...parts, ...extra].join('\n').toLocaleLowerCase();
 }

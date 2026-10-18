@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-18 (clean credits on add, built, not deployed)
+
+- Server and web: a song added from a link or a playlist now stores clean credits: a trailing "(feat. X)", "[feat. X]" or " feat. X" in the title, a feat keyword inside an artist pill ("Kato Feat. Jon") and a trailing "(with X)" move into `featuredArtists` and the new optional `withArtists`, the title is saved without them; one parser (`credit_title.py`, twin `credit-title.js`) and one case table (`credit_title_cases.json`). The Add and Edit form has a With pill field, pasting a title with such a group into the Add form moves it, and the suggestions of one parse are one row with one Apply and one Dismiss. Not deployed; existing songs are untouched until the migration.
+
 ## 2026-10-18 (playlist import)
 
 - Web and server: pasting a YouTube playlist link in Add opens an import table (checkbox, title with version, artists, version, year, genres, length, status; "Select all"/"Select none", "N of M selected", "Add N songs"): songs over 5 minutes and songs already in the library are unticked and marked, private and deleted videos are shown as Unavailable, the first 200 videos are listed, and the ticked songs are saved as catalog entries one by one through `POST /songs` (quota respected, progress bar, "Added" marks, summary toast). Metadata comes from YouTube data only, no AcoustID, Discogs, MusicBrainz or Wikipedia calls. New endpoints `POST /import/youtube-playlist` and `POST /import/youtube-playlist/details` (ADD-150 to ADD-158, API-160 to API-162).

@@ -1,0 +1,1005 @@
+{
+ "parse": [
+  {
+   "artist": "Gotye",
+   "title": "Somebody That I Used To Know (feat. Kimbra)",
+   "expect": {
+    "mainArtists": [
+     "Gotye"
+    ],
+    "featuredArtists": [
+     "Kimbra"
+    ],
+    "withArtists": [],
+    "title": "Somebody That I Used To Know",
+    "notes": []
+   }
+  },
+  {
+   "artist": "The Chemical Brothers",
+   "title": "Go feat. Q-Tip",
+   "expect": {
+    "mainArtists": [
+     "The Chemical Brothers"
+    ],
+    "featuredArtists": [
+     "Q-Tip"
+    ],
+    "withArtists": [],
+    "title": "Go",
+    "notes": []
+   }
+  },
+  {
+   "artist": "Alesso",
+   "title": "Heroes (we could be) feat. Tove Lo",
+   "expect": {
+    "mainArtists": [
+     "Alesso"
+    ],
+    "featuredArtists": [
+     "Tove Lo"
+    ],
+    "withArtists": [],
+    "title": "Heroes (we could be)",
+    "notes": []
+   }
+  },
+  {
+   "artist": "SNBRN",
+   "title": "Raindrops Feat. Kerli",
+   "expect": {
+    "mainArtists": [
+     "SNBRN"
+    ],
+    "featuredArtists": [
+     "Kerli"
+    ],
+    "withArtists": [],
+    "title": "Raindrops",
+    "notes": []
+   }
+  },
+  {
+   "artist": "Kato Feat. Jon",
+   "title": "Turn The Lights Off",
+   "expect": {
+    "mainArtists": [
+     "Kato"
+    ],
+    "featuredArtists": [
+     "Jon"
+    ],
+    "withArtists": [],
+    "title": "Turn The Lights Off",
+    "notes": []
+   }
+  },
+  {
+   "artist": "Maduk ft Veela",
+   "title": "Song",
+   "expect": {
+    "mainArtists": [
+     "Maduk"
+    ],
+    "featuredArtists": [
+     "Veela"
+    ],
+    "withArtists": [],
+    "title": "Song",
+    "notes": []
+   }
+  },
+  {
+   "artist": "Stadiumx feat Angelika Vee",
+   "title": "Song",
+   "expect": {
+    "mainArtists": [
+     "Stadiumx"
+    ],
+    "featuredArtists": [
+     "Angelika Vee"
+    ],
+    "withArtists": [],
+    "title": "Song",
+    "notes": []
+   }
+  },
+  {
+   "artist": "Lian July feat. Eli",
+   "title": "Song",
+   "expect": {
+    "mainArtists": [
+     "Lian July"
+    ],
+    "featuredArtists": [
+     "Eli"
+    ],
+    "withArtists": [],
+    "title": "Song",
+    "notes": []
+   }
+  },
+  {
+   "artist": "Vortex Involute feat. Yana Kay",
+   "title": "Song",
+   "expect": {
+    "mainArtists": [
+     "Vortex Involute"
+    ],
+    "featuredArtists": [
+     "Yana Kay"
+    ],
+    "withArtists": [],
+    "title": "Song",
+    "notes": []
+   }
+  },
+  {
+   "artist": "A",
+   "title": "T [feat. C]",
+   "expect": {
+    "mainArtists": [
+     "A"
+    ],
+    "featuredArtists": [
+     "C"
+    ],
+    "withArtists": [],
+    "title": "T",
+    "notes": []
+   }
+  },
+  {
+   "artist": "A",
+   "title": "T (ft. C)",
+   "expect": {
+    "mainArtists": [
+     "A"
+    ],
+    "featuredArtists": [
+     "C"
+    ],
+    "withArtists": [],
+    "title": "T",
+    "notes": []
+   }
+  },
+  {
+   "artist": "A",
+   "title": "T (Featuring C)",
+   "expect": {
+    "mainArtists": [
+     "A"
+    ],
+    "featuredArtists": [
+     "C"
+    ],
+    "withArtists": [],
+    "title": "T",
+    "notes": []
+   }
+  },
+  {
+   "artist": "A",
+   "title": "T (FEAT C)",
+   "expect": {
+    "mainArtists": [
+     "A"
+    ],
+    "featuredArtists": [
+     "C"
+    ],
+    "withArtists": [],
+    "title": "T",
+    "notes": []
+   }
+  },
+  {
+   "artist": "A",
+   "title": "T  (feat.   C )  ",
+   "expect": {
+    "mainArtists": [
+     "A"
+    ],
+    "featuredArtists": [
+     "C"
+    ],
+    "withArtists": [],
+    "title": "T",
+    "notes": []
+   }
+  },
+  {
+   "artist": "A",
+   "title": "T (feat. C, D & E)",
+   "expect": {
+    "mainArtists": [
+     "A"
+    ],
+    "featuredArtists": [
+     "C",
+     "D",
+     "E"
+    ],
+    "withArtists": [],
+    "title": "T",
+    "notes": [
+     "feat_split_guess"
+    ]
+   }
+  },
+  {
+   "artist": "A",
+   "title": "T (feat. C and D)",
+   "expect": {
+    "mainArtists": [
+     "A"
+    ],
+    "featuredArtists": [
+     "C",
+     "D"
+    ],
+    "withArtists": [],
+    "title": "T",
+    "notes": [
+     "feat_split_guess"
+    ]
+   }
+  },
+  {
+   "artist": "A",
+   "title": "T (feat. C + D)",
+   "expect": {
+    "mainArtists": [
+     "A"
+    ],
+    "featuredArtists": [
+     "C",
+     "D"
+    ],
+    "withArtists": [],
+    "title": "T",
+    "notes": [
+     "feat_split_guess"
+    ]
+   }
+  },
+  {
+   "artist": "A",
+   "title": "T (feat. C x D)",
+   "expect": {
+    "mainArtists": [
+     "A"
+    ],
+    "featuredArtists": [
+     "C",
+     "D"
+    ],
+    "withArtists": [],
+    "title": "T",
+    "notes": [
+     "feat_split_guess"
+    ]
+   }
+  },
+  {
+   "artist": "A",
+   "title": "T (feat. C vs. D)",
+   "expect": {
+    "mainArtists": [
+     "A"
+    ],
+    "featuredArtists": [
+     "C",
+     "D"
+    ],
+    "withArtists": [],
+    "title": "T",
+    "notes": [
+     "feat_split_guess"
+    ]
+   }
+  },
+  {
+   "artist": "A",
+   "title": "T (feat. Tyler, The Creator)",
+   "expect": {
+    "mainArtists": [
+     "A"
+    ],
+    "featuredArtists": [
+     "Tyler",
+     "The Creator"
+    ],
+    "withArtists": [],
+    "title": "T",
+    "notes": [
+     "feat_split_guess"
+    ]
+   }
+  },
+  {
+   "artist": "A",
+   "title": "T (feat. C&D)",
+   "expect": {
+    "mainArtists": [
+     "A"
+    ],
+    "featuredArtists": [
+     "C&D"
+    ],
+    "withArtists": [],
+    "title": "T",
+    "notes": []
+   }
+  },
+  {
+   "artist": "A - B",
+   "title": "T (feat. C)",
+   "expect": {
+    "mainArtists": [
+     "A",
+     "B"
+    ],
+    "featuredArtists": [
+     "C"
+    ],
+    "withArtists": [],
+    "title": "T",
+    "notes": []
+   }
+  },
+  {
+   "artist": "A & B",
+   "title": "T (feat. C)",
+   "expect": {
+    "mainArtists": [
+     "A & B"
+    ],
+    "featuredArtists": [
+     "C"
+    ],
+    "withArtists": [],
+    "title": "T",
+    "notes": []
+   }
+  },
+  {
+   "artist": "A x B",
+   "title": "T",
+   "expect": {
+    "mainArtists": [
+     "A x B"
+    ],
+    "featuredArtists": [],
+    "withArtists": [],
+    "title": "T",
+    "notes": []
+   }
+  },
+  {
+   "artist": "A vs. B",
+   "title": "T",
+   "expect": {
+    "mainArtists": [
+     "A vs. B"
+    ],
+    "featuredArtists": [],
+    "withArtists": [],
+    "title": "T",
+    "notes": []
+   }
+  },
+  {
+   "artist": "A & B feat. C",
+   "title": "T",
+   "expect": {
+    "mainArtists": [
+     "A & B"
+    ],
+    "featuredArtists": [
+     "C"
+    ],
+    "withArtists": [],
+    "title": "T",
+    "notes": []
+   }
+  },
+  {
+   "artist": "A",
+   "title": "T (with C)",
+   "expect": {
+    "mainArtists": [
+     "A"
+    ],
+    "featuredArtists": [],
+    "withArtists": [
+     "C"
+    ],
+    "title": "T",
+    "notes": []
+   }
+  },
+  {
+   "artist": "A",
+   "title": "T [with C]",
+   "expect": {
+    "mainArtists": [
+     "A"
+    ],
+    "featuredArtists": [],
+    "withArtists": [
+     "C"
+    ],
+    "title": "T",
+    "notes": []
+   }
+  },
+  {
+   "artist": "A",
+   "title": "T (With C & D)",
+   "expect": {
+    "mainArtists": [
+     "A"
+    ],
+    "featuredArtists": [],
+    "withArtists": [
+     "C",
+     "D"
+    ],
+    "title": "T",
+    "notes": [
+     "feat_split_guess"
+    ]
+   }
+  },
+  {
+   "artist": "A",
+   "title": "T (feat. C) (with W)",
+   "expect": {
+    "mainArtists": [
+     "A"
+    ],
+    "featuredArtists": [
+     "C"
+    ],
+    "withArtists": [
+     "W"
+    ],
+    "title": "T",
+    "notes": []
+   }
+  },
+  {
+   "artist": "A",
+   "title": "T (with W) (feat. C)",
+   "expect": {
+    "mainArtists": [
+     "A"
+    ],
+    "featuredArtists": [
+     "C"
+    ],
+    "withArtists": [
+     "W"
+    ],
+    "title": "T",
+    "notes": []
+   }
+  },
+  {
+   "artist": "A",
+   "title": "T (feat. C) (feat. D)",
+   "expect": {
+    "mainArtists": [
+     "A"
+    ],
+    "featuredArtists": [
+     "D"
+    ],
+    "withArtists": [],
+    "title": "T (feat. C)",
+    "notes": []
+   }
+  },
+  {
+   "artist": "A",
+   "title": "T feat. C | Live",
+   "expect": {
+    "mainArtists": [
+     "A"
+    ],
+    "featuredArtists": [
+     "C"
+    ],
+    "withArtists": [],
+    "title": "T | Live",
+    "notes": []
+   }
+  },
+  {
+   "artist": "A",
+   "title": "T feat. C (Extended)",
+   "expect": {
+    "mainArtists": [
+     "A"
+    ],
+    "featuredArtists": [
+     "C"
+    ],
+    "withArtists": [],
+    "title": "T (Extended)",
+    "notes": []
+   }
+  },
+  {
+   "artist": "A",
+   "title": "T (feat. A)",
+   "expect": {
+    "mainArtists": [
+     "A"
+    ],
+    "featuredArtists": [],
+    "withArtists": [],
+    "title": "T",
+    "notes": []
+   }
+  },
+  {
+   "artist": "A",
+   "title": "T (feat. a) (with A)",
+   "expect": {
+    "mainArtists": [
+     "A"
+    ],
+    "featuredArtists": [],
+    "withArtists": [],
+    "title": "T",
+    "notes": []
+   }
+  },
+  {
+   "artist": "Béla",
+   "title": "T (feat. bela)",
+   "expect": {
+    "mainArtists": [
+     "Béla"
+    ],
+    "featuredArtists": [],
+    "withArtists": [],
+    "title": "T",
+    "notes": []
+   }
+  },
+  {
+   "artist": "A",
+   "title": "T (feat. C) (with C)",
+   "expect": {
+    "mainArtists": [
+     "A"
+    ],
+    "featuredArtists": [
+     "C"
+    ],
+    "withArtists": [],
+    "title": "T",
+    "notes": []
+   }
+  },
+  {
+   "artist": "A",
+   "title": "Defeat",
+   "expect": {
+    "mainArtists": [
+     "A"
+    ],
+    "featuredArtists": [],
+    "withArtists": [],
+    "title": "Defeat",
+    "notes": []
+   }
+  },
+  {
+   "artist": "A",
+   "title": "Defeat (feat. X)",
+   "expect": {
+    "mainArtists": [
+     "A"
+    ],
+    "featuredArtists": [
+     "X"
+    ],
+    "withArtists": [],
+    "title": "Defeat",
+    "notes": []
+   }
+  },
+  {
+   "artist": "A",
+   "title": "5 ft tall",
+   "expect": {
+    "mainArtists": [
+     "A"
+    ],
+    "featuredArtists": [],
+    "withArtists": [],
+    "title": "5 ft tall",
+    "notes": []
+   }
+  },
+  {
+   "artist": "A",
+   "title": "Over 6 ft Tall",
+   "expect": {
+    "mainArtists": [
+     "A"
+    ],
+    "featuredArtists": [],
+    "withArtists": [],
+    "title": "Over 6 ft Tall",
+    "notes": []
+   }
+  },
+  {
+   "artist": "A",
+   "title": "Walk ft jon",
+   "expect": {
+    "mainArtists": [
+     "A"
+    ],
+    "featuredArtists": [],
+    "withArtists": [],
+    "title": "Walk ft jon",
+    "notes": []
+   }
+  },
+  {
+   "artist": "A",
+   "title": "Come With Me",
+   "expect": {
+    "mainArtists": [
+     "A"
+    ],
+    "featuredArtists": [],
+    "withArtists": [],
+    "title": "Come With Me",
+    "notes": []
+   }
+  },
+  {
+   "artist": "A",
+   "title": "Dancing with Myself",
+   "expect": {
+    "mainArtists": [
+     "A"
+    ],
+    "featuredArtists": [],
+    "withArtists": [],
+    "title": "Dancing with Myself",
+    "notes": []
+   }
+  },
+  {
+   "artist": "A",
+   "title": "T (with lyrics)",
+   "expect": {
+    "mainArtists": [
+     "A"
+    ],
+    "featuredArtists": [],
+    "withArtists": [],
+    "title": "T (with lyrics)",
+    "notes": []
+   }
+  },
+  {
+   "artist": "A",
+   "title": "Song with Friends (live)",
+   "expect": {
+    "mainArtists": [
+     "A"
+    ],
+    "featuredArtists": [],
+    "withArtists": [],
+    "title": "Song with Friends (live)",
+    "notes": []
+   }
+  },
+  {
+   "artist": "Sleeping with Sirens",
+   "title": "T",
+   "expect": {
+    "mainArtists": [
+     "Sleeping with Sirens"
+    ],
+    "featuredArtists": [],
+    "withArtists": [],
+    "title": "T",
+    "notes": []
+   }
+  },
+  {
+   "artist": "A",
+   "title": "Sticks & Stones",
+   "expect": {
+    "mainArtists": [
+     "A"
+    ],
+    "featuredArtists": [],
+    "withArtists": [],
+    "title": "Sticks & Stones",
+    "notes": []
+   }
+  },
+  {
+   "artist": "A",
+   "title": "Мозги & деньги",
+   "expect": {
+    "mainArtists": [
+     "A"
+    ],
+    "featuredArtists": [],
+    "withArtists": [],
+    "title": "Мозги & деньги",
+    "notes": []
+   }
+  },
+  {
+   "artist": "C&C Music Factory",
+   "title": "Gonna Make You Sweat",
+   "expect": {
+    "mainArtists": [
+     "C&C Music Factory"
+    ],
+    "featuredArtists": [],
+    "withArtists": [],
+    "title": "Gonna Make You Sweat",
+    "notes": []
+   }
+  },
+  {
+   "artist": "One-T + Cool-T",
+   "title": "The Magic Key",
+   "expect": {
+    "mainArtists": [
+     "One-T + Cool-T"
+    ],
+    "featuredArtists": [],
+    "withArtists": [],
+    "title": "The Magic Key",
+    "notes": []
+   }
+  },
+  {
+   "artist": "Pharrell Williams, Nile Rodgers",
+   "title": "T",
+   "expect": {
+    "mainArtists": [
+     "Pharrell Williams, Nile Rodgers"
+    ],
+    "featuredArtists": [],
+    "withArtists": [],
+    "title": "T",
+    "notes": []
+   }
+  },
+  {
+   "artist": "Simon & Garfunkel",
+   "title": "The Boxer",
+   "expect": {
+    "mainArtists": [
+     "Simon & Garfunkel"
+    ],
+    "featuredArtists": [],
+    "withArtists": [],
+    "title": "The Boxer",
+    "notes": []
+   }
+  },
+  {
+   "artist": "A",
+   "title": "feat. C",
+   "expect": {
+    "mainArtists": [
+     "A"
+    ],
+    "featuredArtists": [],
+    "withArtists": [],
+    "title": "feat. C",
+    "notes": [
+     "title_empty"
+    ]
+   }
+  },
+  {
+   "artist": "A",
+   "title": "(feat. C)",
+   "expect": {
+    "mainArtists": [
+     "A"
+    ],
+    "featuredArtists": [],
+    "withArtists": [],
+    "title": "(feat. C)",
+    "notes": [
+     "title_empty"
+    ]
+   }
+  },
+  {
+   "artist": "feat. C",
+   "title": "T",
+   "expect": {
+    "mainArtists": [
+     "feat. C"
+    ],
+    "featuredArtists": [],
+    "withArtists": [],
+    "title": "T",
+    "notes": []
+   }
+  },
+  {
+   "artist": "A",
+   "title": "Song feat. C) odd",
+   "expect": {
+    "mainArtists": [
+     "A"
+    ],
+    "featuredArtists": [],
+    "withArtists": [],
+    "title": "Song feat. C) odd",
+    "notes": []
+   }
+  },
+  {
+   "artist": "A",
+   "title": "Song (Live feat. C)",
+   "expect": {
+    "mainArtists": [
+     "A"
+    ],
+    "featuredArtists": [],
+    "withArtists": [],
+    "title": "Song (Live feat. C)",
+    "notes": []
+   }
+  },
+  {
+   "artist": "A",
+   "title": "Song (feat. C) Extended",
+   "expect": {
+    "mainArtists": [
+     "A"
+    ],
+    "featuredArtists": [],
+    "withArtists": [],
+    "title": "Song (feat. C) Extended",
+    "notes": []
+   }
+  },
+  {
+   "artist": "A",
+   "title": "",
+   "expect": {
+    "mainArtists": [
+     "A"
+    ],
+    "featuredArtists": [],
+    "withArtists": [],
+    "title": "",
+    "notes": []
+   }
+  },
+  {
+   "artist": "",
+   "title": "T (feat. C)",
+   "expect": {
+    "mainArtists": [],
+    "featuredArtists": [
+     "C"
+    ],
+    "withArtists": [],
+    "title": "T",
+    "notes": []
+   }
+  },
+  {
+   "artist": "Кино",
+   "title": "Песня (feat. Земфира)",
+   "expect": {
+    "mainArtists": [
+     "Кино"
+    ],
+    "featuredArtists": [
+     "Земфира"
+    ],
+    "withArtists": [],
+    "title": "Песня",
+    "notes": []
+   }
+  },
+  {
+   "artist": "A (feat. B)",
+   "title": "T",
+   "expect": {
+    "mainArtists": [
+     "A"
+    ],
+    "featuredArtists": [
+     "B"
+    ],
+    "withArtists": [],
+    "title": "T",
+    "notes": []
+   }
+  },
+  {
+   "artist": "A - B feat. C",
+   "title": "T",
+   "expect": {
+    "mainArtists": [
+     "A",
+     "B"
+    ],
+    "featuredArtists": [
+     "C"
+    ],
+    "withArtists": [],
+    "title": "T",
+    "notes": []
+   }
+  },
+  {
+   "artist": "A feat. B & C",
+   "title": "T",
+   "expect": {
+    "mainArtists": [
+     "A"
+    ],
+    "featuredArtists": [
+     "B",
+     "C"
+    ],
+    "withArtists": [],
+    "title": "T",
+    "notes": [
+     "feat_split_guess"
+    ]
+   }
+  },
+  {
+   "artist": "A",
+   "title": "T (feat. B) [with C]",
+   "expect": {
+    "mainArtists": [
+     "A"
+    ],
+    "featuredArtists": [
+     "B"
+    ],
+    "withArtists": [
+     "C"
+    ],
+    "title": "T",
+    "notes": []
+   }
+  },
+  {
+   "artist": "A",
+   "title": "T feat. B",
+   "expect": {
+    "mainArtists": [
+     "A"
+    ],
+    "featuredArtists": [
+     "B"
+    ],
+    "withArtists": [],
+    "title": "T",
+    "notes": []
+   }
+  }
+ ]
+}

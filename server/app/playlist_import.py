@@ -11,7 +11,7 @@ import unicodedata
 from concurrent.futures import ThreadPoolExecutor, wait
 from typing import Any
 
-from . import credits, credits_split, credits_v1, extractor, metadata, previewcache, titleclean, titles, urlclean
+from . import credit_title, credits, credits_split, credits_v1, extractor, metadata, previewcache, titleclean, titles, urlclean
 from .library import sources_of
 from .problems import Problem
 from .ratelimit import KeyedWindow
@@ -120,11 +120,16 @@ def view(video_id: str, meta: dict[str, Any], owned: Owned, *, detailed: bool) -
     published = meta.get("published_year")
     version = {"type": credits_split.kind_of(remixer), "name": remixer, "artists": credits_split.version_artists(remixer), "releaseYear": meta.get("version_year") or published} if remixer else None
     title = titleclean.clean(str(meta.get("title") or ""))
-    artist = meta.get("artist")
+    artists = meta["mainArtists"] if isinstance(meta.get("mainArtists"), list) else credits_v1.pills(meta.get("artist"))
+    featured = list(meta.get("featuredArtists") or [])
+    withs = list(meta.get("withArtists") or [])
     lead = None if meta.get("credited") else titles.lead_artist(title)
     if lead:
-        artist, title = lead
-    artists = credits_v1.pills(artist)
+        found = credit_title.parse(lead[0], lead[1])
+        artists, title = found["mainArtists"], found["title"]
+        taken = {credit_title.fold(a) for a in artists}
+        featured = credit_title.unique([*featured, *found["featuredArtists"]], taken)
+        withs = credit_title.unique([*withs, *found["withArtists"]], taken)
     duration = meta.get("duration")
     return {
         "id": video_id,
@@ -133,7 +138,8 @@ def view(video_id: str, meta: dict[str, Any], owned: Owned, *, detailed: bool) -
         "reason": None,
         "title": title,
         "mainArtists": artists,
-        "featuredArtists": [],
+        "featuredArtists": featured,
+        "withArtists": withs,
         "version": version,
         "releaseYear": None,
         "publishedYear": published,
@@ -150,7 +156,7 @@ def view(video_id: str, meta: dict[str, Any], owned: Owned, *, detailed: bool) -
 def _unavailable_view(video_id: str, info: dict[str, Any], reason: str) -> dict[str, Any]:
     return {
         "id": video_id, "url": urlclean.watch_url(video_id), "state": "unavailable", "reason": reason,
-        "title": str(info.get("title") or ""), "mainArtists": [], "featuredArtists": [], "version": None, "releaseYear": None,
+        "title": str(info.get("title") or ""), "mainArtists": [], "featuredArtists": [], "withArtists": [], "version": None, "releaseYear": None,
         "publishedYear": None, "tags": [], "duration": None, "long": False, "thumbnail": None, "raw": None,
         "duplicate": None, "detailed": True,
     }

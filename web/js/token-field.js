@@ -7,6 +7,7 @@ const KINDS = {
   title: { label: 'Title', move: 'Title', sep: SEPARATOR },
   artists: { label: 'Artists', move: 'Artists', sep: SEPARATOR },
   featured: { label: 'Featuring', move: 'Featuring', sep: SEPARATOR },
+  withs: { label: 'With', move: 'With', sep: SEPARATOR },
   by: { label: 'Remix by', move: 'Remix by', sep: SEPARATOR },
   of: { label: 'Cover of', move: 'Cover / mashup sources', sep: SEPARATOR },
 };

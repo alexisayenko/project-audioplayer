@@ -1,6 +1,6 @@
 """Structured credits and versions of a song, data model v2 (DATA-144..155): the stored shape, the legacy compatibility projection and the one place that turns requests into structure.
 
-Stored: `title`, `mainArtists`, `featuredArtists`, `releaseYear`, `albums`, optional `version {type, name, artists, releaseYear, originalArtists?}`, `rawTitle`.
+Stored: `title`, `mainArtists`, `featuredArtists`, optional `withArtists` (absent when empty, DATA-162), `releaseYear`, `albums`, optional `version {type, name, artists, releaseYear, originalArtists?}`, `rawTitle`.
 Requests may still use the ADR-0024 names (`artists`, `featured`, `released`, `version.kind/by/year/of`) and the flat legacy ones (`artist`, `remixer`, `remix_year`, `year`, `album`) for one release."""
 
 from __future__ import annotations
@@ -9,7 +9,7 @@ import copy
 import logging
 from typing import Any
 
-from . import credits_v1, timeutil
+from . import credit_title, credits_v1, timeutil
 from .credits_v1 import int_year as _int_year
 from .credits_v1 import join_names, kind_for
 from .credits_v1 import text as _text
@@ -27,7 +27,7 @@ MAX_RAW = 500
 ORIGINAL_TYPES = credits_v1.ORIGINAL_TYPES
 LEGACY_KEYS = credits_v1.LEGACY_KEYS
 OLD_NAME_KEYS = credits_v1.V1_KEYS
-STRUCTURE_ORDER = ("mainArtists", "featuredArtists", "releaseYear", "albums", "version", "rawTitle")
+STRUCTURE_ORDER = ("mainArtists", "featuredArtists", "withArtists", "releaseYear", "albums", "version", "rawTitle")
 _VERSION_KEYS = frozenset({"type", "name", "artists", "releaseYear", "originalArtists"})
 _OLD_VERSION_KEYS = {"kind": "type", "by": "artists", "year": "releaseYear", "of": "originalArtists"}
 
@@ -171,17 +171,15 @@ def project(song: dict[str, Any]) -> dict[str, Any]:
         return credits_v1.project_v1(song)
     main = [str(a) for a in song["mainArtists"]]
     featured = [str(f) for f in song.get("featuredArtists") or []]
+    withs = [str(w) for w in song.get("withArtists") or []]
     raw = song.get("raw") if isinstance(song.get("raw"), dict) else {}
     raw_artist = raw.get("artist")
-    if not main and not featured:
+    if not main and not featured and not withs:
         artist = None
-    elif not featured and isinstance(raw_artist, str) and raw_artist.strip() and split_tokens(raw_artist) == main:
+    elif not featured and not withs and isinstance(raw_artist, str) and raw_artist.strip() and split_tokens(raw_artist) == main:
         artist = raw_artist.strip()
     else:
-        line = join_names(main)
-        if featured:
-            line = f"{line} feat. {join_names(featured)}" if line else f"feat. {join_names(featured)}"
-        artist = line
+        artist = credit_title.artist_text(main, featured, withs, pills=False)
     version = song.get("version") if isinstance(song.get("version"), dict) else None
     return {
         "artist": artist,
@@ -272,6 +270,7 @@ def new_fields(meta: dict[str, Any], raw: dict[str, Any] | None = None) -> dict[
     fields: dict[str, Any] = {
         "mainArtists": resolved.get("mainArtists", []),
         "featuredArtists": resolved.get("featuredArtists", []),
+        **({"withArtists": resolved["withArtists"]} if resolved.get("withArtists") else {}),
         "releaseYear": resolved.get("releaseYear"),
         "albums": resolved.get("albums", []),
     }
@@ -307,8 +306,9 @@ def canon_request(changes: dict[str, Any]) -> dict[str, Any]:
             out[new] = changes[old]
     if "version" in changes:
         out["version"] = changes["version"]
-    if "albums" in changes:
-        out["albums"] = changes["albums"]
+    for key in ("withArtists", "albums"):
+        if key in changes:
+            out[key] = changes[key]
     for key in (*LEGACY_KEYS, "album"):
         if key in changes:
             out[key] = changes[key]
@@ -337,8 +337,13 @@ def clean_changes(changes: dict[str, Any], current: dict[str, Any] | None = None
     elif "artist" in changes:
         text = _legacy_text(changes, "artist")
         if text != _norm(proj["artist"]):
-            out["mainArtists"] = clean_names(credits_v1.pills(text), "mainArtists")
-            out["featuredArtists"] = []
+            parsed = credit_title.parse(" - ".join(credits_v1.pills(text)), "")
+            out["mainArtists"] = clean_names(parsed["mainArtists"], "mainArtists")
+            out["featuredArtists"] = clean_names(parsed["featuredArtists"], "featuredArtists")
+            out["withArtists"] = []
+
+    if "withArtists" in changes:
+        out["withArtists"] = clean_names(changes["withArtists"], "withArtists")
 
     stored = cur.get("version") if isinstance(cur.get("version"), dict) else None
     if "version" in changes:
@@ -395,6 +400,11 @@ def apply_changes(song: dict[str, Any], changes: dict[str, Any]) -> None:
     for key in ("mainArtists", "featuredArtists", "releaseYear", "albums"):
         if key in resolved:
             _place(song, key, resolved[key])
+    if "withArtists" in resolved:
+        if resolved["withArtists"]:
+            _place(song, "withArtists", resolved["withArtists"])
+        else:
+            song.pop("withArtists", None)
     if "version" in resolved:
         if resolved["version"] is None:
             song.pop("version", None)

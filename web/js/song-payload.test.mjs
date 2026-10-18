@@ -7,16 +7,27 @@ const v = { title: 'T', mainArtists: ['A'], featuredArtists: [], releaseYear: '1
 const LEGACY = ['artist', 'remixer', 'year', 'remix_year'];
 
 test('addBody sends the structure, no legacy key, no bpm, no tags, no version when none', () => {
-  assert.deepEqual(addBody(v), { title: 'T', albums: ['Al'], mainArtists: ['A'], featuredArtists: [], releaseYear: 1999, wikipedia_song: 'https://en.wikipedia.org/wiki/T', wikipedia_artist: null, wikipedia_album: null, musicbrainz_url: v.musicbrainz_url, discogs_url: null, spotify_url: null });
+  assert.deepEqual(addBody(v), { title: 'T', albums: ['Al'], mainArtists: ['A'], featuredArtists: [], withArtists: [], releaseYear: 1999, wikipedia_song: 'https://en.wikipedia.org/wiki/T', wikipedia_artist: null, wikipedia_album: null, musicbrainz_url: v.musicbrainz_url, discogs_url: null, spotify_url: null });
   for (const k of [...LEGACY, 'bpm', 'tags', 'version']) assert.ok(!(k in addBody(v)), k);
 });
 
 test('patchBody keys: structure only, version null removes it', () => {
-  assert.deepEqual(Object.keys(patchBody(v)).sort(), ['albums', 'discogs_url', 'featuredArtists', 'genres', 'mainArtists', 'musicbrainz_url', 'releaseYear', 'spotify_url', 'tags', 'title', 'version', 'wikipedia_album', 'wikipedia_artist', 'wikipedia_song']);
+  assert.deepEqual(Object.keys(patchBody(v)).sort(), ['albums', 'discogs_url', 'featuredArtists', 'genres', 'mainArtists', 'musicbrainz_url', 'releaseYear', 'spotify_url', 'tags', 'title', 'version', 'wikipedia_album', 'wikipedia_artist', 'wikipedia_song', 'withArtists']);
   assert.equal(patchBody(v).version, null);
   for (const k of LEGACY) assert.ok(!(k in patchBody(v)), k);
   assert.deepEqual(patchBody(v).tags, ['x', 'country:de'], 'decade and lang tags are never sent, genres travel in genres');
   assert.deepEqual(patchBody({ ...v, tags: ['genre:House', 'x', 'genre:'] }).genres, ['House']);
+});
+
+test('withArtists travel in the add body and the patch body, trimmed', () => {
+  assert.deepEqual(addBody({ ...v, withArtists: [' W ', '', 'X'] }).withArtists, ['W', 'X']);
+  assert.deepEqual(patchBody({ ...v, withArtists: ['W'] }).withArtists, ['W']);
+  assert.deepEqual(patchBody({ ...v, withArtists: [] }).withArtists, [], 'an empty list clears the stored one');
+});
+
+test('artistString appends feat. and with', () => {
+  assert.equal(artistString({ mainArtists: ['A', 'B'], featuredArtists: ['C'], withArtists: ['W'] }), 'A & B feat. C with W');
+  assert.equal(artistString({ mainArtists: ['A'], withArtists: ['W'] }), 'A with W');
 });
 
 test('version object: type, name, artists, releaseYear; originalArtists only for a cover; blank text is null', () => {

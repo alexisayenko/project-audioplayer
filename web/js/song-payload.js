@@ -61,6 +61,7 @@ function songFields(v, stored = {}) {
     albums: names(v.albums),
     mainArtists: names(v.mainArtists),
     featuredArtists: names(v.featuredArtists),
+    withArtists: names(v.withArtists),
     ...(yearKept(v.releaseYear, storedYears(stored).released) ? { releaseYear: yearValue(v.releaseYear) } : {}),
   };
 }
@@ -97,7 +98,8 @@ export function patchBody(v, stored = {}) {
 export function artistString(v) {
   const main = joinNames(names(v.mainArtists));
   const feat = joinNames(names(v.featuredArtists));
-  return feat ? `${main} feat. ${feat}`.trim() : main;
+  const withs = joinNames(names(v.withArtists));
+  return [main, feat && `feat. ${feat}`, withs && `with ${withs}`].filter(Boolean).join(' ');
 }
 
 export function metadataBody(v, sources) {

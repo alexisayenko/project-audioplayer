@@ -21,7 +21,7 @@ const warn = (f) => f.node.querySelector('.credits-warn');
 
 test('the form has every credits field with its label', () => {
   const f = mk({ mainArtists: ['A'], featuredArtists: [] });
-  for (const label of ['Title', 'Artists', 'Featuring', 'Version', 'Version name', 'Remix by', 'Remix year', 'Cover of', 'First released']) {
+  for (const label of ['Title', 'Artists', 'Featuring', 'With', 'Version', 'Version name', 'Remix by', 'Remix year', 'Cover of', 'First released']) {
     assert.ok(fieldOf(f, label), label);
   }
   assert.deepEqual([...kind(f).querySelectorAll('option')].map((o) => o.value), ['', 'remix', 'live', 'acoustic', 'extended', 'instrumental', 'remaster', 'edit', 'cover', 'mashup', 'other']);
@@ -91,15 +91,12 @@ test('Suggested split: Dismiss hides one suggestion and keeps the text', () => {
   assert.deepEqual(f.values().mainArtists, ['A, B']);
 });
 
-test('Suggested split: featuring in the artist moves to Featuring, version suggestion fills by', () => {
+test('Suggested split: featuring in the artist moves to Featuring, version suggestion fills by, in one row', () => {
   const f = mk({ mainArtists: ['Kato feat. Jon'], featuredArtists: [], version: { type: 'remix', name: 'Alesso Remix', artists: [], releaseYear: null } });
-  const text = panel(f).textContent;
-  assert.match(text, /Artists: Kato/);
-  assert.match(text, /Featuring: Jon/);
-  assert.match(text, /Version: by Alesso/);
   const rows = panel(f).querySelectorAll('.credits-suggest-row');
-  assert.equal(rows.length, 3);
-  for (let i = rows.length - 1; i >= 0; i -= 1) rowBtn(f, i, 'Apply').click();
+  assert.equal(rows.length, 1, 'one parse, one row');
+  assert.equal(rows[0].querySelector('span').textContent, 'Artists: Kato \u00b7 Featuring: Jon \u00b7 Version: by Alesso');
+  rowBtn(f, 0, 'Apply').click();
   const v = f.values();
   assert.deepEqual(v.mainArtists, ['Kato']);
   assert.deepEqual(v.featuredArtists, ['Jon']);
@@ -119,10 +116,69 @@ test('Suggested split is recomputed from the current field text', () => {
 
 test('Suggested split: a feat. credit in the title offers to move it, title text is the only change', () => {
   const f = mk({ title: 'Song (feat. Jon)', mainArtists: ['A'], featuredArtists: [] });
-  assert.match(panel(f).textContent, /Featuring: Jon/);
-  assert.match(panel(f).textContent, /Title: Song/);
-  rowBtn(f, 1, 'Apply').click();
+  assert.equal(panel(f).querySelectorAll('.credits-suggest-row').length, 1);
+  assert.equal(panel(f).querySelector('.credits-suggest-row span').textContent, 'Title: Song \u00b7 Featuring: Jon');
+  rowBtn(f, 0, 'Apply').click();
   assert.equal(f.values().title, 'Song');
+  assert.deepEqual(f.values().featuredArtists, ['Jon'], 'Apply sets every field of the row');
+  assert.equal(panel(f).hidden, true);
+});
+
+test('Suggested split: Dismiss drops the whole combined row and nothing is applied', () => {
+  const f = mk({ title: 'In The End (feat. Fleurie)', mainArtists: ['A'], featuredArtists: [] });
+  assert.equal(panel(f).querySelector('.credits-suggest-row span').textContent, 'Title: In The End \u00b7 Featuring: Fleurie');
+  rowBtn(f, 0, 'Dismiss').click();
+  assert.equal(panel(f).hidden, true);
+  assert.equal(f.values().title, 'In The End (feat. Fleurie)');
+  assert.deepEqual(f.values().featuredArtists, []);
+});
+
+test('Suggested split: the cover readings stay separate rows, one per reading', () => {
+  const f = mk({ title: 'A - Song', mainArtists: [], featuredArtists: [], version: { type: 'cover', name: 'B Cover', artists: [], releaseYear: null } });
+  const rows = panel(f).querySelectorAll('.credits-suggest-row');
+  assert.equal(rows.length, 2);
+  assert.match(rows[0].textContent, /^Reading 1:/);
+  assert.match(rows[1].textContent, /^Reading 2:/);
+  rowBtn(f, 1, 'Apply').click();
+  assert.equal(f.values().version.type, 'cover');
+  assert.equal(f.values().title, 'Song');
+});
+
+test('With is a pill field: loaded from the song, edited, sent, and part of the preview line', () => {
+  const f = mk({ title: 'T', mainArtists: ['A'], featuredArtists: ['C'], withArtists: ['W', 'X'] });
+  assert.deepEqual(pills(f, 'With'), ['W', 'X']);
+  assert.deepEqual(f.values().withArtists, ['W', 'X']);
+  assert.equal(preview(f).textContent, 'A feat. C with W & X - T');
+  f.setValues({ withArtists: ['Z'] });
+  assert.deepEqual(f.values().withArtists, ['Z']);
+  f.reset();
+  assert.deepEqual(f.values().withArtists, ['W', 'X']);
+  assert.deepEqual(mk({ mainArtists: ['A'], featuredArtists: [] }).values().withArtists, []);
+});
+
+test('Add preview data fills the credit fields and keeps the version of the preview text', () => {
+  const f = mk({ title: 'T', artist: 'A feat. C', mainArtists: ['A'], featuredArtists: ['C'], withArtists: ['W'], remixer: 'Foo Remix', year: null }, 'add');
+  assert.deepEqual(pills(f, 'Artists'), ['A']);
+  assert.deepEqual(pills(f, 'Featuring'), ['C']);
+  assert.deepEqual(pills(f, 'With'), ['W']);
+  assert.equal(f.values().version.type, 'remix');
+  assert.equal(f.values().version.name, 'Foo Remix');
+});
+
+test('add mode: a pasted title with a feat or with group moves it to the fields and Restore puts it back', () => {
+  const f = mk({ title: 'T', mainArtists: ['A'], featuredArtists: [] }, 'add');
+  const title = f.node.querySelectorAll('.token-field').find((n) => n.getAttribute('aria-label') === 'Title');
+  title.querySelector('.token-entry').value = '';
+  f.setValues({ title: 'Go (feat. Q-Tip) (with Bob)' });
+  fire(title, 'focusout');
+  assert.equal(f.values().title, 'Go');
+  assert.deepEqual(f.values().featuredArtists, ['Q-Tip']);
+  assert.deepEqual(f.values().withArtists, ['Bob']);
+  const restore = f.node.querySelectorAll('button').find((b) => b.textContent === 'Restore');
+  restore.click();
+  assert.equal(f.values().title, 'Go (feat. Q-Tip) (with Bob)');
+  assert.deepEqual(f.values().featuredArtists, []);
+  assert.deepEqual(f.values().withArtists, []);
 });
 
 test('warning when a Remix by name is not in the Version name; never blocks', () => {
@@ -143,7 +199,7 @@ test('no warning without a version name or without by names', () => {
 });
 
 test('legacy songs are mapped: artist string to pills, remixer to a version, years kept', () => {
-  assert.deepEqual(initialCredits({ artist: 'A - B', remixer: 'Mixed By DJ Gvozd', remix_year: 2012, year: 2000 }), { mainArtists: ['A', 'B'], featuredArtists: [], version: { type: 'other', name: 'Mixed By DJ Gvozd', artists: [], releaseYear: 2012 }, releaseYear: 2000 });
+  assert.deepEqual(initialCredits({ artist: 'A - B', remixer: 'Mixed By DJ Gvozd', remix_year: 2012, year: 2000 }), { mainArtists: ['A', 'B'], featuredArtists: [], withArtists: [], version: { type: 'other', name: 'Mixed By DJ Gvozd', artists: [], releaseYear: 2012 }, releaseYear: 2000 });
   assert.equal(kindFor('Alesso Remix'), 'remix');
   assert.equal(kindFor('Mixed By X'), 'other');
   assert.equal(kindFor('Mixed By X Remix'), 'remix');
