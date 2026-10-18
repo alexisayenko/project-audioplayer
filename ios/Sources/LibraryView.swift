@@ -22,6 +22,7 @@ struct LibraryView: View {
     @State private var showAdd = false
     @State private var queueTick = 0
     @State private var deleteTick = 0
+    @State private var revealID: String?
     @ScaledMetric(relativeTo: .title2) private var plusSize: CGFloat = 22
     @ScaledMetric(relativeTo: .body) private var moreSize: CGFloat = 18
     @ScaledMetric(relativeTo: .body) private var moreWidth: CGFloat = 24
@@ -73,6 +74,7 @@ struct LibraryView: View {
         let tracks = filtered(selection)
         let counts = counts
         NavigationStack {
+            ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     ScreenHeader(title: "Library") {
@@ -92,6 +94,7 @@ struct LibraryView: View {
                     } else {
                         HStack { sortMenu; Spacer(); downloadedChip }
                     }
+                    actionRow(tracks)
                     if server.reachable == false && !library.songs.isEmpty { offlineBanner }
                     list(tracks)
                 }
@@ -99,6 +102,12 @@ struct LibraryView: View {
             }
             .scrollDismissesKeyboard(.interactively)
             .refreshable { await server.syncCatalog(settings: settings, library: library) }
+            .onChange(of: revealID) { _, id in
+                guard let id else { return }
+                withAnimation { proxy.scrollTo(id, anchor: .center) }
+                revealID = nil
+            }
+            }
             .dsGround()
             .toolbar(.hidden, for: .navigationBar)
             .overlay(alignment: .top) {
@@ -129,6 +138,60 @@ struct LibraryView: View {
                 }
             } message: { Text("Removes the song from your library, on the server and on this iPhone.") }
         }
+    }
+
+    private var filtersActive: Bool { !search.isEmpty || !selection.isEmpty || onlyPhone }
+
+    private func clearFilters() { search = ""; selection = []; onlyPhone = false }
+
+    private func plural(_ n: Int) -> String { "\(n) \(n == 1 ? "song" : "songs")" }
+
+    @ViewBuilder
+    private func actionRow(_ tracks: [Track]) -> some View {
+        let canList = !tracks.isEmpty
+        let canShow = player.current != nil
+        if canList || canShow || filtersActive {
+            FlowLayout {
+                if canShow { ActionChip(title: "Show playing", icon: "scope", label: "Show the playing song in the list") { showPlaying(tracks) } }
+                if filtersActive { ActionChip(title: "Clear filters", icon: "xmark.circle", label: "Clear search and filters") { clearFilters() } }
+                if canList { ActionChip(title: "Play all \(tracks.count)", icon: "play.fill", label: "Play all \(plural(tracks.count))") { playAll(tracks) } }
+                if canList && (!search.isEmpty || !selection.isEmpty) {
+                    ActionChip(title: "Add all \(tracks.count)", icon: "text.badge.plus", label: "Add all \(plural(tracks.count)) to the queue") { addAll(tracks) }
+                }
+            }
+        }
+    }
+
+    private func skippedNote(_ tracks: [Track], _ playable: [Track]) -> String {
+        let skipped = tracks.count - playable.count
+        return skipped > 0 ? ", \(skipped) without audio skipped" : ""
+    }
+
+    private func playAll(_ tracks: [Track]) {
+        let playable = tracks.filter { library.contains($0.id) }
+        guard !playable.isEmpty else { toast = "No listed songs are on this iPhone"; return }
+        let replaced = player.index.map { $0 + 1 < player.queue.count } ?? false
+        player.playAll(playable)
+        queueTick += 1
+        toast = "Playing \(plural(playable.count))" + (replaced ? " (queue replaced)" : "") + skippedNote(tracks, playable)
+    }
+
+    private func addAll(_ tracks: [Track]) {
+        let playable = tracks.filter { library.contains($0.id) }
+        guard !playable.isEmpty else { toast = "No listed songs are on this iPhone"; return }
+        let added = player.enqueueAll(playable)
+        let dup = playable.count - added
+        if added > 0 { queueTick += 1 }
+        toast = "Added \(plural(added))" + (dup > 0 ? " (\(dup) already in queue)" : "") + skippedNote(tracks, playable)
+    }
+
+    private func showPlaying(_ tracks: [Track]) {
+        guard let id = player.current?.id else { return }
+        if tracks.contains(where: { $0.id == id }) { revealID = id; return }
+        guard library.songs.contains(where: { $0.id == id }) else { toast = "The playing song is not in the library"; return }
+        clearFilters()
+        toast = "Filters cleared"
+        Task { try? await Task.sleep(for: .milliseconds(120)); revealID = id }
     }
 
     private var searchField: some View {
@@ -200,7 +263,7 @@ struct LibraryView: View {
                 }
             } else {
                 unavailable("No songs match", "magnifyingglass", "Clear the search or the filters.") {
-                    Button("Clear filters") { search = ""; selection = [] }.buttonStyle(.bordered)
+                    Button("Clear filters") { clearFilters() }.buttonStyle(.bordered)
                 }
             }
         } else {
@@ -211,7 +274,7 @@ struct LibraryView: View {
                     divider
                 }
                 ForEach(Array(tracks.enumerated()), id: \.element.id) { i, track in
-                    row(track, in: tracks)
+                    row(track, in: tracks).id(track.id)
                     if i < tracks.count - 1, player.current?.id != track.id, player.current?.id != tracks[i + 1].id { divider }
                 }
             }
@@ -258,7 +321,7 @@ struct LibraryView: View {
         let removeAudio = { library.removeAudio(track.id); toast = "Removed from this iPhone" }
         let state: String
         if onPhone { state = "on iPhone" }
-        else if progress != nil { state = "downloading \(Int((progress ?? 0) * 100)) percent" }
+        else if progress != nil { state = server.waiting.contains(track.id) ? "waiting for the server" : "downloading \(Int((progress ?? 0) * 100)) percent" }
         else if hasAudio { state = "on server" }
         else { state = "no audio yet" }
         let tap = {
@@ -269,6 +332,7 @@ struct LibraryView: View {
         return LibrarySongRow(title: track.title, subtitle: subtitle(track), thumbnail: track.thumbnail,
                     duration: onPhone ? track.duration : nil,
                     downloading: onPhone ? nil : progress,
+                    waiting: server.waiting.contains(track.id),
                     onDownload: !onPhone && progress == nil && hasAudio ? { fetch() } : nil,
                     noAudio: !onPhone && !hasAudio && progress == nil,
                     playing: playing, a11yLabel: "\(track.title), \(track.artist), \(state)", onTap: tap, actions: {
@@ -329,6 +393,7 @@ struct LibrarySongRow<Menu: View, Actions: View>: View {
     let thumbnail: String?
     var duration: Double?
     var downloading: Double?
+    var waiting = false
     var onDownload: (() -> Void)?
     var noAudio = false
     var playing = false
@@ -359,7 +424,7 @@ struct LibrarySongRow<Menu: View, Actions: View>: View {
                             Text("No audio yet").font(T.caption).foregroundStyle(DS.Color.inkMuted)
                                 .multilineTextAlignment(.trailing).frame(maxWidth: 84, alignment: .trailing).fixedSize(horizontal: false, vertical: true)
                         } else if let downloading {
-                            Text("Downloading \(Int(downloading * 100))%").font(T.caption).foregroundStyle(DS.Color.accentInk)
+                            Text(waiting ? "Waiting\u{2026}" : "Downloading \(Int(downloading * 100))%").font(T.caption).foregroundStyle(DS.Color.accentInk)
                                 .lineLimit(typeSize.isAccessibilitySize ? 2 : 1).multilineTextAlignment(.trailing)
                                 .fixedSize(horizontal: !typeSize.isAccessibilitySize, vertical: true)
                         } else if let duration {
@@ -388,5 +453,27 @@ struct LibrarySongRow<Menu: View, Actions: View>: View {
         .padding(.horizontal, DS.Space.space3).padding(.vertical, DS.Space.space3)
         .frame(minHeight: DS.Space.hit)
         .background(playing ? DS.Color.accentTint : Color.clear)
+    }
+}
+
+private struct ActionChip: View {
+    let title: String
+    let icon: String
+    let label: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Image(systemName: icon).font(T.caption.weight(.semibold)).accessibilityHidden(true)
+                Text(title).font(T.caption.weight(.medium)).lineLimit(1)
+            }
+            .foregroundStyle(DS.Color.accentInk)
+            .padding(.horizontal, DS.Space.space3).frame(minHeight: 32)
+            .overlay(Capsule().stroke(DS.Color.accentInk, lineWidth: 1.5))
+            .contentShape(Capsule().inset(by: -6))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(label)
     }
 }

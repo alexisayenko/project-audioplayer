@@ -11,8 +11,15 @@ struct PlaybackView: View {
     @State private var repeatTaps = 0
     @State private var toggleTaps = 0
     @State private var showQueue = false
+    @State private var showShare = false
     @State private var toast: String?
     @State private var editing: ServerSong?
+    @GestureState private var drag: (id: String, dy: CGFloat)?
+    @State private var rowHeight: CGFloat = 40
+    @State private var hapticSlot: Int?
+    @State private var liftTick = 0
+    @State private var slotTick = 0
+    @State private var reorderTick = 0
 
     private var current: Track? { player.current }
     private var menuSize: CGFloat { min(max(menuHit, DS.Space.hit), DS.Space.hit * 1.5) }
@@ -44,6 +51,9 @@ struct PlaybackView: View {
         .sensoryFeedback(.selection, trigger: shuffleTaps)
         .sensoryFeedback(.selection, trigger: repeatTaps)
         .sensoryFeedback(.impact, trigger: toggleTaps)
+        .sensoryFeedback(.impact(weight: .light), trigger: liftTick)
+        .sensoryFeedback(.selection, trigger: slotTick)
+        .sensoryFeedback(.success, trigger: reorderTick)
         .overlay(alignment: .top) {
             if let toast {
                 Text(toast).font(T.caption).foregroundStyle(DS.Color.ink)
@@ -60,6 +70,9 @@ struct PlaybackView: View {
         }
         .sheet(isPresented: $showQueue) { QueueSheet() }
         .sheet(item: $editing) { SongEditView(song: $0) }
+        .sheet(isPresented: $showShare) {
+            if let t = current { ShareSheet(track: t, position: player.position, duration: player.duration) }
+        }
     }
 
     private var menu: some View {
@@ -67,6 +80,8 @@ struct PlaybackView: View {
             Button { showQueue = true } label: { Label("Queue", systemImage: "list.bullet") }
             Button { showTags = true } label: { Label("Add songs by tag", systemImage: "tag") }
             if let t = current { Button { editing = ServerSong(t) } label: { Label("Song details", systemImage: "info.circle") } }
+            Button { showShare = true } label: { Label("Share link", systemImage: "square.and.arrow.up") }
+                .disabled(current.map { !SongShare.isValidID($0.id) } ?? true)
             Button { player.skip(by: -5) } label: { Label("Back 5 seconds", systemImage: "gobackward.5") }
             Button { player.skip(by: 5) } label: { Label("Forward 5 seconds", systemImage: "goforward.5") }
             Button(role: .destructive) { player.clearQueue() } label: { Label("Clear queue", systemImage: "trash") }
@@ -85,8 +100,7 @@ struct PlaybackView: View {
             .overlay(alignment: .bottom) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(current?.title ?? "Nothing playing").font(T.title).lineLimit(3)
-                    (Text(current.map(subtitle) ?? "Pick a song in Library.").foregroundStyle(DS.Color.surface.opacity(0.8))
-                        + Text(current.map { " · " + sourceLabel($0.source) } ?? "").foregroundStyle(DS.Color.surface.opacity(0.6)))
+                    Text(current.map(subtitle) ?? "Pick a song in Library.").foregroundStyle(DS.Color.surface.opacity(0.8))
                         .font(T.body).lineLimit(2)
                 }
                 .foregroundStyle(DS.Color.surface)
@@ -101,7 +115,7 @@ struct PlaybackView: View {
             .clipShape(RoundedRectangle(cornerRadius: DS.Radius.radiusCard, style: .continuous))
             .shadow(color: DS.Color.vinyl.opacity(0.16), radius: 10, y: 2)
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel(current.map { "\($0.title), \(subtitle($0)), \(sourceLabel($0.source))" } ?? "Nothing playing")
+            .accessibilityLabel(current.map { "\($0.title), \(subtitle($0))" } ?? "Nothing playing")
     }
 
     private var progress: some View {
@@ -116,6 +130,67 @@ struct PlaybackView: View {
             }
             .font(T.time).foregroundStyle(DS.Color.inkMuted).accessibilityHidden(true)
         }
+    }
+
+    private var rowStep: CGFloat { rowHeight + 10 }
+
+    private func slot(of id: String, dy: CGFloat) -> Int? {
+        guard let i = upNext.firstIndex(where: { $0.id == id }) else { return nil }
+        return min(max(i + Int((dy / rowStep).rounded()), 0), upNext.count - 1)
+    }
+
+    private func move(_ id: String, by delta: Int) {
+        guard delta != 0, let base = player.index.map({ $0 + 1 }),
+              let i = upNext.firstIndex(where: { $0.id == id }), upNext.indices.contains(i + delta) else { return }
+        let from = base + i
+        player.moveQueueItem(from: IndexSet(integer: from), to: delta > 0 ? from + delta + 1 : from + delta)
+        reorderTick += 1
+    }
+
+    private func upNextRow(_ i: Int, _ t: Track) -> some View {
+        let id = t.id
+        let lifted = drag?.id == id
+        let dy = lifted ? min(max(drag?.dy ?? 0, -CGFloat(i) * rowStep), CGFloat(upNext.count - 1 - i) * rowStep) : 0
+        let reorderable = upNext.count > 1 && !player.shuffle
+        return HStack(spacing: DS.Space.space3) {
+            CoverImage(source: t.thumbnail).frame(width: 40, height: 40)
+                .clipShape(RoundedRectangle(cornerRadius: DS.Radius.radiusSm, style: .continuous))
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 0) {
+                Text(t.title).font(T.subhead.weight(.semibold)).foregroundStyle(DS.Color.ink).lineLimit(1)
+                Text(t.artist).font(T.caption).foregroundStyle(DS.Color.inkMuted).lineLimit(1)
+            }
+            Spacer(minLength: 0)
+            if reorderable {
+                Text("\u{22EE}\u{22EE}").font(.system(size: grip)).foregroundStyle(lifted ? DS.Color.accentInk : DS.Color.inkFaint)
+                    .frame(width: 44).frame(maxHeight: .infinity)
+                    .contentShape(Rectangle())
+                    .gesture(DragGesture(minimumDistance: 2, coordinateSpace: .global)
+                        .updating($drag) { v, state, _ in state = (id, v.translation.height) }
+                        .onChanged { v in
+                            guard let s = slot(of: id, dy: v.translation.height) else { return }
+                            if hapticSlot == nil { liftTick += 1 }
+                            if s != hapticSlot { hapticSlot = s; slotTick += 1 }
+                        }
+                        .onEnded { v in
+                            hapticSlot = nil
+                            if let s = slot(of: id, dy: v.translation.height), let i = upNext.firstIndex(where: { $0.id == id }) {
+                                move(id, by: s - i)
+                            }
+                        })
+                    .accessibilityHidden(true)
+            }
+        }
+        .background(GeometryReader { g in
+            Color.clear.onChange(of: g.size.height, initial: true) { _, h in if drag == nil { rowHeight = h } }
+        })
+        .background(lifted ? DS.Color.accentTint : Color.clear)
+        .offset(y: dy)
+        .shadow(color: DS.Color.vinyl.opacity(lifted ? 0.2 : 0), radius: 6, y: 2)
+        .zIndex(lifted ? 1 : 0)
+        .accessibilityElement(children: .combine)
+        .accessibilityAction(named: "Move up") { if reorderable { move(id, by: -1) } }
+        .accessibilityAction(named: "Move down") { if reorderable { move(id, by: 1) } }
     }
 
     private var upNextCard: some View {
@@ -133,24 +208,15 @@ struct PlaybackView: View {
                 Text(player.queue.isEmpty ? "Queue is empty. Add songs from Library." : "Nothing after this song.")
                     .font(T.subhead).foregroundStyle(DS.Color.inkMuted)
             }
-            ForEach(upNext) { t in
-                HStack(spacing: DS.Space.space3) {
-                    CoverImage(source: t.thumbnail).frame(width: 40, height: 40)
-                        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.radiusSm, style: .continuous))
-                        .accessibilityHidden(true)
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text(t.title).font(T.subhead.weight(.semibold)).foregroundStyle(DS.Color.ink).lineLimit(1)
-                        Text(t.artist).font(T.caption).foregroundStyle(DS.Color.inkMuted).lineLimit(1)
-                    }
-                    Spacer(minLength: 0)
-                    Text("\u{22EE}\u{22EE}").font(.system(size: grip)).foregroundStyle(DS.Color.inkFaint).accessibilityHidden(true)
-                }
-                .accessibilityElement(children: .combine)
+            ForEach(Array(upNext.enumerated()), id: \.element.id) { i, t in upNextRow(i, t) }
+            if player.shuffle && upNext.count > 1 {
+                Text("Shuffle is on, so songs play in random order.").font(T.caption).foregroundStyle(DS.Color.inkMuted)
             }
         }
         .padding(.horizontal, DS.Space.space4).padding(.vertical, DS.Space.space3)
         .frame(maxWidth: .infinity, alignment: .leading)
         .dsSlab()
+        .onChange(of: drag == nil) { _, idle in if idle { hapticSlot = nil } }
     }
 }
 
@@ -184,12 +250,16 @@ private struct QueueSheet: View {
                     .listRowSeparatorTint(DS.Color.line)
                 }
                 .onDelete { player.removeFromQueue(at: $0) }
+                .onMove { player.moveQueueItem(from: $0, to: $1) }
             }
             .listStyle(.plain).scrollContentBackground(.hidden).dsGround()
             .navigationTitle("Queue").navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Clear") { player.clearQueue() }.foregroundStyle(DS.Color.accentInk).disabled(player.queue.isEmpty)
+                }
+                ToolbarItem(placement: .principal) {
+                    EditButton().foregroundStyle(DS.Color.accentInk).disabled(player.queue.count < 2)
                 }
                 ToolbarItem(placement: .topBarTrailing) { Button("Done") { dismiss() }.foregroundStyle(DS.Color.accentInk) }
             }

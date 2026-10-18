@@ -289,20 +289,20 @@ struct CoverImage: View {
     let source: String?
     @EnvironmentObject var settings: Settings
     @State private var image: UIImage?
-
-    private static let cache = NSCache<NSString, UIImage>()
+    @State private var generation = 0
 
     var body: some View {
         Group {
             if let image {
                 Image(uiImage: image).resizable().scaledToFill()
-            } else if let url = CoverURL.resolve(source, baseURL: settings.serverURL, token: ""), source?.hasPrefix("/") != true {
+            } else if let url = CoverURL.resolve(source, baseURL: settings.serverURL, token: ""), !CoverCache.isServerCover(source) {
                 AsyncImage(url: url) { $0.resizable().scaledToFill() } placeholder: { placeholder }
             } else {
                 placeholder
             }
         }
-        .task(id: source) { await load() }
+        .task(id: "\(source ?? "")#\(generation)") { await load() }
+        .onReceive(NotificationCenter.default.publisher(for: .trackThumbnailChanged)) { _ in generation += 1 }
     }
 
     private var placeholder: some View {
@@ -317,12 +317,8 @@ struct CoverImage: View {
 
     /// Server covers are fetched with the auth header, never with a token in the URL.
     private func load() async {
-        guard let source, source.hasPrefix("/") else { image = nil; return }
-        if let hit = Self.cache.object(forKey: source as NSString) { image = hit; return }
-        guard let data = try? await APIClient(baseURL: settings.serverURL, token: settings.token).fetch(source),
-              let img = UIImage(data: data) else { return }
-        Self.cache.setObject(img, forKey: source as NSString)
-        image = img
+        guard let source, CoverCache.isServerCover(source) else { image = nil; return }
+        image = await CoverCache.image(for: source, baseURL: settings.serverURL, token: settings.token)
     }
 }
 

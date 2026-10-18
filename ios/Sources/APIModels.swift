@@ -23,6 +23,27 @@ struct SongStatus: Codable {
     let status: String
     var progress: Double?
     var error: String?
+    var code: String?
+    var state: String?
+    var error_code: String?
+
+    var isQueued: Bool { status == "queued" || state == "queued" }
+    var isConverting: Bool { state == "converting" }
+
+    /// A failed job in words for the person; the server's raw text is only a last resort.
+    var failureMessage: String {
+        switch error_code ?? code {
+        case "preview_only": return "This link is only a preview, so there is no full song to download."
+        case "unsupported": return "This link can't be downloaded."
+        case "library_full_bytes": return "Your storage is full. Delete some songs to free space."
+        case "library_full_songs": return "Your library is full. Delete some songs to add more."
+        case "server_full": return "The server is out of storage right now. Try again later."
+        case "hourly_limit": return "Hourly limit reached. Try again later."
+        default:
+            guard let e = error, !e.isEmpty else { return "The download failed. Try again." }
+            return "The download failed: \(e)"
+        }
+    }
 }
 
 /// `POST /lookup/wikipedia`.
@@ -69,9 +90,11 @@ enum CoverURL {
     static func resolve(_ source: String?, baseURL: String, token: String) -> URL? {
         guard let source, !source.isEmpty else { return nil }
         guard source.hasPrefix("/") else { return URL(string: source) }
-        guard var c = URLComponents(string: baseURL) else { return nil }
-        c.path = source
-        c.queryItems = token.isEmpty ? nil : [.init(name: "token", value: token)]
+        guard var c = URLComponents(string: baseURL), let ref = URLComponents(string: source) else { return nil }
+        c.path = ref.path
+        var items = ref.queryItems ?? []
+        if !token.isEmpty { items.append(.init(name: "token", value: token)) }
+        c.queryItems = items.isEmpty ? nil : items
         return c.url
     }
 

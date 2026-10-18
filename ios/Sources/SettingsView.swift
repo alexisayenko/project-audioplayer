@@ -132,7 +132,7 @@ struct SettingsView: View {
                         }
                     }
                     .accessibilityElement(children: .combine)
-                    Button("Sign out") { auth.signOut(); server.clearForbidden() }.buttonStyle(DSButtonStyle(kind: .danger))
+                    Button("Sign out") { auth.signOut(); server.cancelBackgroundWork(); server.clearForbidden() }.buttonStyle(DSButtonStyle(kind: .danger))
                 }
                 if !auth.isSignedIn || auth.expired {
                     VStack(spacing: DS.Space.space2) {
@@ -158,6 +158,38 @@ struct SettingsView: View {
         return Int64(v ?? 0)
     }
 
+    private var missingCount: Int {
+        library.songs.filter { $0.onServer != false && $0.localOnly != true && !library.contains($0.id) }.count
+    }
+
+    @ViewBuilder
+    private var downloadAllRow: some View {
+        let b = server.bulk
+        VStack(alignment: .leading, spacing: DS.Space.space2) {
+            if b.running {
+                ProgressView(value: b.fraction).tint(DS.Color.accent)
+                HStack {
+                    Text("Downloading \(b.processed) of \(b.total)\(b.failed > 0 ? ", \(b.failed) failed" : "")").dsCaption()
+                    Spacer()
+                    Button("Cancel") { server.cancelDownloadAll() }
+                        .font(T.subhead.weight(.semibold)).foregroundStyle(DS.Color.accentInk).frame(minHeight: DS.Space.hit)
+                }
+            } else {
+                Button { Task { await server.downloadAllMissing(settings: settings, library: library) } } label: {
+                    Text("Download all to iPhone").frame(maxWidth: .infinity)
+                }
+                .buttonStyle(DSButtonStyle(kind: .outline))
+                .disabled(missingCount == 0 || server.reachable == false)
+                if b.hasResult {
+                    Text(b.summary).dsCaption()
+                } else if missingCount == 0 {
+                    Text("Everything on the server is already on this iPhone.").dsCaption()
+                }
+            }
+        }
+        .padding(.top, DS.Space.space1)
+    }
+
     private var storageCard: some View {
         card("Storage") {
             VStack(alignment: .leading, spacing: DS.Space.space2) {
@@ -176,6 +208,7 @@ struct SettingsView: View {
                     .frame(height: 6).accessibilityHidden(true)
                     Text("of \(ByteCountFormatter.string(fromByteCount: capacity, countStyle: .file)) on this iPhone").dsCaption()
                 }
+                downloadAllRow
                 Button { confirmRemoveAll = true } label: { Text("Remove all downloads").frame(maxWidth: .infinity) }
                     .buttonStyle(DSButtonStyle(kind: .danger)).disabled(library.tracks.isEmpty)
                     .padding(.top, DS.Space.space1)

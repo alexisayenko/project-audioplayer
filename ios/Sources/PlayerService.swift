@@ -144,6 +144,35 @@ final class PlayerService: ObservableObject {
         return fresh.count
     }
 
+    /// Appends the songs not yet queued; returns how many were added.
+    @discardableResult
+    func enqueueAll(_ tracks: [Track]) -> Int { enqueue(tracks) }
+
+    /// Replaces the queue with the songs and starts the first, or a random one when shuffle is on.
+    func playAll(_ tracks: [Track]) {
+        guard !tracks.isEmpty else { return }
+        play(tracks, startAt: shuffle ? Int.random(in: tracks.indices) : 0)
+    }
+
+    /// With shuffle on the queue order is not the play order, so dragging rows does not decide what plays next.
+    var queueOrderIsRandom: Bool { shuffle }
+
+    /// Reorders queue rows (`onMove` semantics: `to` is an insertion offset in the old order); the current song stays current.
+    func moveQueueItem(from: IndexSet, to: Int) {
+        let source = from.filter { queue.indices.contains($0) }.sorted()
+        guard !source.isEmpty else { return }
+        let playingID = current?.id
+        let moved = source.map { queue[$0] }
+        var rest = queue
+        for i in source.reversed() { rest.remove(at: i) }
+        let target = min(max(to - source.filter { $0 < to }.count, 0), rest.count)
+        rest.insert(contentsOf: moved, at: target)
+        guard rest.map(\.id) != queue.map(\.id) else { return }
+        queue = rest
+        if let playingID, let at = queue.firstIndex(where: { $0.id == playingID }) { index = at }
+        updateNowPlaying()
+    }
+
     /// Union add by tag picks: every song with any picked tag joins the queue; picks become chips.
     @discardableResult
     func addTagged(_ picks: [String], from tracks: [Track]) -> Int {
@@ -455,7 +484,7 @@ final class PlayerService: ObservableObject {
         let (base, token) = await MainActor.run { (settings.serverURL, settings.token) }
         return try await withThrowingTaskGroup(of: Data?.self) { group in
             group.addTask {
-                if source.hasPrefix("/") { return try await APIClient(baseURL: base, token: token).fetch(source) }
+                if source.hasPrefix("/") { return await CoverCache.data(for: source, baseURL: base, token: token) }
                 guard let url = CoverURL.resolve(source, baseURL: base, token: "") else { return nil }
                 var req = URLRequest(url: url)
                 req.timeoutInterval = 10
