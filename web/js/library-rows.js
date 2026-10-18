@@ -69,8 +69,7 @@ function moreButton(s, full, { audio, queueable, queued }) {
 function playlistToggle(s, full, queued, queueable) {
   if (!queueable) return el('span', { class: 'pl-toggle ph', 'aria-hidden': 'true' });
   const label = queued ? 'In playlist - click to remove' : 'Add to playlist';
-  const glyph = queued ? 'listCheck' : 'listAdd';
-  return el('button', { class: `icon round pl-toggle${queued ? ' on' : ''}`, type: 'button', title: label, 'aria-label': `${label}: ${full}`, 'aria-pressed': String(queued), onclick: () => toggleQueue(s) }, icon(glyph, 'action'));
+  return el('button', { class: `icon round pl-toggle${queued ? ' on' : ''}`, type: 'button', title: label, 'aria-label': `${label}: ${full}`, 'aria-pressed': String(queued), onclick: () => toggleQueue(s) }, icon('listAdd', 'action'));
 }
 
 function openTitle(s, full, tip) {

@@ -343,8 +343,14 @@ test('row menu: Play now, queue toggle and Edit song', async () => {
   while (player.current) player.removeAt(0);
   const row = rows().find((r) => r.dataset.id === 'b');
   assert.ok(row.querySelector('.pl-toggle').classList.contains('round'), 'WEB-099: playlist toggle is a round icon');
+  const glyphOf = () => row.querySelector('.pl-toggle').innerHTML;
+  const before = glyphOf();
   row.querySelector('.pl-toggle').click();
   assert.equal(player.inQueue('b'), true);
+  const queuedRow = rows().find((r) => r.dataset.id === 'b');
+  assert.ok(queuedRow.querySelector('.pl-toggle').classList.contains('on'));
+  assert.equal(queuedRow.querySelector('.pl-toggle').getAttribute('aria-pressed'), 'true');
+  assert.equal(queuedRow.querySelector('.pl-toggle').innerHTML, before, 'the pressed button keeps the plus icon');
   assert.equal(document.getElementById('toast').textContent, 'Queued');
   rows().find((r) => r.dataset.id === 'b').querySelector('.more').click();
   const labels = document.body.querySelectorAll('.menu button').map((b) => b.textContent);
