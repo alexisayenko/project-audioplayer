@@ -83,7 +83,7 @@ function emitCell(lines, tris, cur, i, cols, flip, tri) {
   cur.t = t;
 }
 
-function emitRow(lines, tris, cur, r, rows, cols, tri, parity) {
+function emitRow(lines, tris, cur, r, rows, cols, tri, parity) { // NOSONAR parameter list is the render hot-loop signature; bundling would allocate per frame
   const down = r < rows - 1;
   for (let c = 0; c < cols; c += 1) {
     const i = r * cols + c;

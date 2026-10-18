@@ -10,7 +10,7 @@ export function prefersReduced(mm = globalThis.matchMedia) {
 }
 
 export function marqueeMetrics(overflow, reduced = false) {
-  if (reduced || !(overflow > MIN_OVERFLOW)) return { overflowing: false, dist: 0, dur: 0 };
+  if (reduced || !(overflow > MIN_OVERFLOW)) return { overflowing: false, dist: 0, dur: 0 }; // NOSONAR NaN must take the guard branch; the positive form would pass NaN through
   const dist = Math.ceil(overflow) + 2 * PAD;
   return { overflowing: true, dist, dur: Math.max(MIN_DUR, dist / SPEED + PAUSES) };
 }
@@ -84,7 +84,7 @@ function wrap(el) {
   if (first && el.childNodes.length === 1 && first.className === 'mq-track') return first;
   const track = document.createElement('span');
   track.className = 'mq-track';
-  for (const c of [...el.childNodes]) track.append(c);
+  for (const c of [...el.childNodes]) track.append(c); // NOSONAR childNodes is a live NodeList; the snapshot is needed while nodes move
   el.append(track);
   return track;
 }

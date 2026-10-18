@@ -701,12 +701,12 @@ def _find_article(query: str, name: str, kinds: tuple[str, ...], credited: list[
     return None
 
 
-def find_song(artist: str, title: str, names: list[str]) -> str | None:
+def find_song(title: str, names: list[str]) -> str | None:
     """English Wikipedia article of a song found by search ("<title> <artist>") when MusicBrainz has no link; None unless its song infobox names the artist."""
     return _find_article(f"{title} {names[0]}", title, ("song", "single"), names) or _find_foreign("song", title, names[0], names)
 
 
-def find_album(artist: str, album: str, names: list[str]) -> str | None:
+def find_album(album: str, names: list[str]) -> str | None:
     return _find_article(f"{album} {names[0]} album", album, ("album",), names) or _find_foreign("album", album, names[0], names)
 
 
@@ -716,7 +716,7 @@ def find_artist(artist: str) -> str | None:
     if not wanted:
         return None
     for title in _search(artist)[:MAX_CANDIDATES + 2]:
-        base = genre_lookup._norm(re.sub(r"\s*+\([^)]*+\)\s*+$", "", title))
+        base = genre_lookup._norm(re.sub(r"\s*+\([^)]*+\)\s*+$", "", title))  # NOSONAR linear-time proven by tests/test_regex_backtracking.py and test_credits_regex_equivalence.py
         if base != wanted:
             continue
         kind = infobox(_article_url(title))["kind"] or ""
@@ -735,7 +735,7 @@ def _suggest_into(out: dict[str, Any], artist: str, title: str, mb: dict[str, An
         song_link, song_q = None, None
         out["wikipedia_song"] = None
     if not song_link and title and names:
-        song_link = find_song(artist, title, names)
+        song_link = find_song(title, names)
         out["wikipedia_song"] = song_link
         song_q = None
     if not artist_link and names:
@@ -760,7 +760,7 @@ def _credits_other_artist(song_link: str, names: list[str]) -> bool:
 
 def _search_album(artist: str, names: list[str], candidates: tuple[str | None, str | None]) -> str | None:
     for album in dict.fromkeys(a for a in candidates if a):
-        found = find_album(artist, album, names)
+        found = find_album(album, names)
         if found:
             return found
     return None

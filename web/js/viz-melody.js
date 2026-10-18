@@ -99,7 +99,7 @@ export function samplePartsPlane(tl, plane, t, out) {
   const stride = bins * PLANES;
   const x = t * tl.rps;
   const last = Math.min(tl.total, tl.partsDone ?? 0) - 1;
-  if (!tl.parts || !(x >= 0) || x > last) { out.fill(0); return out; }
+  if (!tl.parts || !(x >= 0) || x > last) { out.fill(0); return out; } // NOSONAR NaN must take the guard branch; the positive form would pass NaN through
   const i = Math.floor(x);
   const f = x - i;
   const a = i * stride + plane * bins;
@@ -217,7 +217,7 @@ export function leadOf(row) {
   let k = 0;
   for (let i = 1; i < n; i += 1) if (row[i] > row[k]) k = i;
   const v = row[k];
-  if (!(v > 0)) return { at: k, x: 0.5, score: 0 };
+  if (!(v > 0)) return { at: k, x: 0.5, score: 0 }; // NOSONAR NaN must take the guard branch; the positive form would pass NaN through
   let sum = 0;
   let cnt = 0;
   for (let i = Math.max(0, k - ACCENT_SIDE_BINS); i <= Math.min(n - 1, k + ACCENT_SIDE_BINS); i += 1) {
@@ -232,7 +232,7 @@ export function selectLeads(scores, winRows) {
   const n = scores.length;
   for (let r = 0; r < n; r += 1) {
     const s = scores[r];
-    if (!(s >= ACCENT_MIN_SCORE)) continue;
+    if (!(s >= ACCENT_MIN_SCORE)) continue; // NOSONAR NaN must take the guard branch; the positive form would pass NaN through
     let best = true;
     for (let k = Math.max(0, r - winRows); k <= Math.min(n - 1, r + winRows) && best; k += 1) {
       if ((k < r && scores[k] >= s) || (k > r && scores[k] > s)) best = false;
@@ -298,7 +298,7 @@ export function samplePitch(tl, t, out = newPitchOut()) {
   const last = Math.min(tl.total, tl.pitchDone ?? 0) - 1;
   const x = t * tl.rps;
   out.s = 0;
-  if (!tl.pitch || !(x >= 0) || x > last) return out;
+  if (!tl.pitch || !(x >= 0) || x > last) return out; // NOSONAR NaN must take the guard branch; the positive form would pass NaN through
   const i = Math.floor(x);
   const f = x - i;
   const j = Math.min(last, i + 1);
@@ -323,7 +323,7 @@ export function fillLeadRidge(tl, base, rows, cols, heights, accent, k = 1) {
   const p = { u: 0, s: 0 };
   for (let r = 0; r < rows; r += 1) {
     samplePitch(tl, (base + r - nowRow) * dt, p);
-    if (!(p.s > 0)) continue;
+    if (!(p.s > 0)) continue; // NOSONAR NaN must take the guard branch; the positive form would pass NaN through
     const hn = softKnee((p.s * LEAD_GAIN * k) / AMP_MAX, cap);
     const c0 = p.u * (cols - 1);
     for (let c = Math.max(0, Math.floor(c0 - 3 * sigma)); c <= Math.min(cols - 1, Math.ceil(c0 + 3 * sigma)); c += 1) {

@@ -69,9 +69,13 @@ async function request(method, path, body, signal, raw = false) {
   return data;
 }
 
+function* parseLines(lines) {
+  for (const line of lines) if (line.trim()) yield JSON.parse(line);
+}
+
 async function* ndjson(res) {
   if (!res.body?.getReader) {
-    for (const line of (await res.text()).split('\n')) if (line.trim()) yield JSON.parse(line);
+    yield* parseLines((await res.text()).split('\n'));
     return;
   }
   const reader = res.body.getReader();
@@ -79,10 +83,10 @@ async function* ndjson(res) {
   let buf = '';
   for (;;) {
     const { done, value } = await reader.read();
-    buf += done ? dec.decode() : dec.decode(value, { stream: true });
+    buf += dec.decode(done ? undefined : value, { stream: !done });
     const lines = buf.split('\n');
     buf = done ? '' : lines.pop();
-    for (const line of lines) if (line.trim()) yield JSON.parse(line);
+    yield* parseLines(lines);
     if (done) return;
   }
 }
@@ -172,7 +176,7 @@ export const session = {
       } catch (ex) {
         const transient = !ex.status || ex.status >= 500;
         if (!transient || i >= session.retryMs.length) return;
-        await new Promise((r) => setTimeout(r, session.retryMs[i]));
+        await new Promise((r) => setTimeout(r, session.retryMs[i])); // NOSONAR retries must run sequentially with a delay between attempts
       }
     }
   },

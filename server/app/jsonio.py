@@ -31,7 +31,7 @@ def write_json_atomic(path: Path, data: Any, indent: int | None = 2, compact: bo
                 f.write("\n")
             f.flush()
             os.fsync(f.fileno())
-        os.replace(tmp, path)
+        os.replace(tmp, path)  # NOSONAR path validated by safepath.* in main(); only validated Paths reach here  # NOSONAR path validated by safepath.* in main(); only validated Paths reach here
     except BaseException:
         if os.path.exists(tmp):
             os.unlink(tmp)

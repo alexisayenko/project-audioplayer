@@ -9,7 +9,7 @@ const NUMBER = /^\d[\d.,'"′″]*$/;
 const TAIL_BRACKET = /[([]([^()[\]]*)[)\]]\s*$/;
 const WITH_HEAD = /^with\s+(?=\S)/i;
 const STOPS = [' - ', ' – ', ' — ', ' | ', ' ●● ', ' • ', ')', ']', '(', '['];
-const NAME_SEP = /(?<!\s)\s+(?:,\s*|(?:&|\+|x|[aA][nN][dD]|[vV][sS]\.?)\s+)|,\s*/;
+const NAME_SEP = /(?<!\s)\s+(?:,\s*|(?:&|\+|x|[aA][nN][dD]|[vV][sS]\.?)\s+)|,\s*/; // NOSONAR patterns are twins of the Python ones, pinned by shared fixtures and differential/timing tests; linear on bounded title input
 const VS = /(?<!\s)\s+vs\.?\s+/i;
 const EDGE = new Set([' ', '-', '|']);
 

@@ -6,10 +6,10 @@
 <body style="background:#111;color:#ddd;font:14px sans-serif">
 <pre id="log">running</pre>
 <script type="module">
-import { drawBars } from '/js/viz-bars.js';
-import { barCount, shapeBars } from '/js/viz-spectrum.js';
-import { readVizColors, FALLBACK_COLORS, rgba } from '/js/viz-color.js';
-import { MIRROR_PRESET_LIST } from '/js/viz-mirror-presets.js';
+import { drawBars } from '/js/viz-bars.js'; // NOSONAR served from the web root by serve.mjs
+import { barCount, shapeBars } from '/js/viz-spectrum.js'; // NOSONAR served from the web root by serve.mjs
+import { readVizColors, FALLBACK_COLORS, rgba } from '/js/viz-color.js'; // NOSONAR served from the web root by serve.mjs
+import { MIRROR_PRESET_LIST } from '/js/viz-mirror-presets.js'; // NOSONAR served from the web root by serve.mjs
 
 const W = 480;
 const H = 270;
@@ -50,9 +50,9 @@ for (const p of MIRROR_PRESET_LIST.filter((q) => ONLY.has(q.id))) {
   const s = p.settings;
   const bars = shapeBars(spectrum(barCount(W, s.density), 7), 0);
   drawBars(ctx, W, H, bars, { colors, alpha: 0.85, dpr: 1, horizon: 0.5, span: s.height, widthFraction: s.width, reflection: s.reflection, glow: s.horizon });
-  const blob = await (await fetch(canvas.toDataURL('image/png'))).blob();
-  const res = await fetch(`/save?id=${p.id}`, { method: 'POST', body: blob });
-  lines.push(`${p.id} ${await res.text()} bytes`);
+  const blob = await (await fetch(canvas.toDataURL('image/png'))).blob(); // NOSONAR sequential capture on purpose
+  const res = await fetch(`/save?id=${p.id}`, { method: 'POST', body: blob }); // NOSONAR sequential capture on purpose
+  lines.push(`${p.id} ${await res.text()} bytes`); // NOSONAR sequential capture on purpose
 }
 document.getElementById('log').textContent = `done\n${lines.join('\n')}`;
 document.title = 'done';

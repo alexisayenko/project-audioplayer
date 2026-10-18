@@ -7,7 +7,7 @@ import {
 const clamp01 = (v) => Math.min(1, Math.max(0, v));
 
 export function dbToUnit(db, minDb = -100, maxDb = -30) {
-  if (!Number.isFinite(db) || !(maxDb > minDb)) return 0;
+  if (!Number.isFinite(db) || !(maxDb > minDb)) return 0; // NOSONAR NaN must take the guard branch; the positive form would pass NaN through
   return clamp01((db - minDb) / (maxDb - minDb));
 }
 
@@ -38,7 +38,7 @@ function barPeakDb(db, lo, hi, binW) {
 export function barsDb(db, n, opts) {
   const { sampleRate, fftSize, tilt = 0 } = opts;
   const out = new Float32Array(n).fill(-Infinity);
-  if (!db?.length || !(n > 0)) return out;
+  if (!db?.length || !(n > 0)) return out; // NOSONAR NaN must take the guard branch; the positive form would pass NaN through
   const edges = barEdges(n, sampleRate, fftSize);
   const binW = sampleRate / fftSize;
   for (let i = 0; i < n; i += 1) {
@@ -195,7 +195,7 @@ export function makeGovernor({
 
 export function pickSpokes(bars, m) {
   const out = new Float32Array(m);
-  if (!bars.length || !(m > 0)) return out;
+  if (!bars.length || !(m > 0)) return out; // NOSONAR NaN must take the guard branch; the positive form would pass NaN through
   const per = bars.length / m;
   for (let i = 0; i < m; i += 1) {
     const a = Math.floor(i * per);
@@ -214,7 +214,7 @@ export const barCount = (width, scale = 1) => {
 
 export function pixelBars(width, barWidth, gap) {
   const w = Number.isFinite(width) ? width : 0;
-  if (!(barWidth > 0)) return { count: barCount(w), fraction: BAR_WIDTH_FRACTION, minGapCss: GAP_MIN_CSS };
+  if (!(barWidth > 0)) return { count: barCount(w), fraction: BAR_WIDTH_FRACTION, minGapCss: GAP_MIN_CSS }; // NOSONAR NaN must take the guard branch; the positive form would pass NaN through
   const pitch = Math.max(1, barWidth + Math.max(0, gap));
   const count = Math.min(PX_BAR_MAX, Math.max(barWidth > PX_WIDE_BAR ? PX_BAR_MIN_WIDE : PX_BAR_MIN, Math.round(w / pitch)));
   return { count, fraction: barWidth / pitch, minGapCss: gap > 0 ? GAP_MIN_CSS : 0 };
@@ -226,7 +226,7 @@ export function barHeight(v, knee = HEIGHT_KNEE, max = HEIGHT_MAX) {
 }
 
 export function edgeAlpha(x, width, fade = EDGE_FADE) {
-  if (!(width > 0)) return 1;
+  if (!(width > 0)) return 1; // NOSONAR NaN must take the guard branch; the positive form would pass NaN through
   const edge = Math.min(x, width - x) / (width * fade);
   return Math.min(1, Math.max(0, edge));
 }

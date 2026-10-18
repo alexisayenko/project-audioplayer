@@ -169,7 +169,7 @@ body > .viz-dock { display: none; }
 @keyframes viz-flash { from { opacity: 1; transform: scale(.9); } to { opacity: 0; transform: scale(1.15); } }
 @keyframes viz-flash-static { from { opacity: 1; } to { opacity: 0; } }
 /* the global reduced-motion rule forces animation durations to .01ms with !important; this keeps the flash visible for its normal length as a still frame */
-@media (prefers-reduced-motion: reduce) { .viz-flash.go { animation: viz-flash-static calc(var(--dur-slow) * 2) steps(1, end) !important; } }
+@media (prefers-reduced-motion: reduce) { .viz-flash.go { animation: viz-flash-static calc(var(--dur-slow) * 2) steps(1, end) !important; } } /* NOSONAR keeps the flash visible over the global reduced-motion reset */
 .viz-panel label { grid-template-columns: 96px minmax(0, 1fr); }
 .viz-panel select { grid-column: 2; }
 

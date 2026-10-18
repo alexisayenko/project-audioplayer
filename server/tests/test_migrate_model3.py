@@ -97,7 +97,7 @@ def run(tmp_path, apply=False, doc=None, legacy_songs=None, **kw):
 
 def test_each_song_gets_its_countries_by_the_rule(tmp_path):
     path, out = run(tmp_path, apply=True)
-    assert out["status"] == "migrated"
+    assert out["status"] == "migrated"  # NOSONAR actual-first assertion order is intended  # NOSONAR actual-first assertion order is intended
     assert out["anomalies"] == []
     got = tags_of(json.loads(path.read_text(encoding="utf-8")))
     assert got["kb1"] == ["country:gb"]

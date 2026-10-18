@@ -45,6 +45,6 @@ export function banner(onSignIn) {
 export function syncBanner(stage, before, onSignIn) {
   stage.querySelector?.(`#${BANNER_ID}`)?.remove();
   const node = banner(onSignIn);
-  if (node) stage.insertBefore(node, before);
+  if (node) stage.insertBefore(node, before); // NOSONAR before may be null, which insertBefore accepts and before.before would not
   return node;
 }

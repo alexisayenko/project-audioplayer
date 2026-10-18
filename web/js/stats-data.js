@@ -39,7 +39,7 @@ export function splitPlottable(songs) {
 function hash(str) {
   let h = 2166136261;
   for (let i = 0; i < str.length; i += 1) {
-    h ^= str.charCodeAt(i);
+    h ^= str.charCodeAt(i); // NOSONAR charCodeAt is part of the hash; codePointAt would change stored hashes
     h = Math.imul(h, 16777619);
   }
   return h >>> 0;

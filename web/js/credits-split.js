@@ -3,7 +3,7 @@ import { splitTokens } from './tokens.js';
 const FEAT_KEY = /\b(?:featuring|feat\.?|ft\.?)\s/i;
 const FEAT_STOPS = [' - ', ' – ', ' — ', ' | ', ' ●● ', ' • ', ')', ']', '(', '['];
 const CLOSERS = { '(': ')', '[': ']' };
-const SPLIT = /(?<!\s)\s+(?:[,&]\s*|(?:and|x|vs\.?)\s+)|[,&]\s*/i;
+const SPLIT = /(?<!\s)\s+(?:[,&]\s*|(?:and|x|vs\.?)\s+)|[,&]\s*/i; // NOSONAR patterns are twins of the Python ones, pinned by shared fixtures and differential/timing tests; linear on bounded title input
 const KIND_WORDS = [
   ['remix', /\bremix(?:ed)?\b|\bmashup\b|\bbootleg\b|\brework\b|\bvip\b/i],
   ['live', /\blive\b|\bunplugged\b|\bin concert\b/i],
@@ -23,7 +23,7 @@ const SOURCE_SPLIT = /(?<!\s)\s+(?:x|×|vs\.?)\s+/i;
 const DASH = /\s[-–—]\s/;
 const REMIX_OR_MASHUP = /\bremix\b|\bmashup\b/i;
 const REMIX_WORD = /\bremix\b|\bmashup\b|\bmixed\s+by\b/i;
-const BRACKET = /[([]([^)\]]*)[)\]]/g;
+const BRACKET = /[([]([^)\]]*)[)\]]/g; // NOSONAR patterns are twins of the Python ones, pinned by shared fixtures and differential/timing tests; linear on bounded title input
 const SEGMENT_SPLIT = /( \| | - | – | — )/;
 const PUNCT = new Set([' ', '-', '|']);
 
@@ -85,7 +85,7 @@ const DESCRIPTOR_KINDS = [['extended', 'extended'], ['instrumental', 'instrument
 function descriptorKind(text) {
   const m = MIX_TAIL.exec(text.trim());
   const words = m ? m.groups.x.split(/[\s,/+&-]+/).filter(Boolean).map((w) => w.toLowerCase()) : [];
-  if (!words.length || !words.every((w) => DESCRIPTOR_WORDS.has(w) || DESCRIPTOR_NUMBER.test(w))) return null;
+  if (!words.length || !words.every((w) => DESCRIPTOR_WORDS.has(w) || DESCRIPTOR_NUMBER.test(w))) return '';
   const hit = DESCRIPTOR_KINDS.find(([word]) => words.includes(word));
   return hit ? hit[1] : 'other';
 }
@@ -93,7 +93,7 @@ function descriptorKind(text) {
 export function kindOf(text) {
   if (MASHUP_WORD.test(text.trim())) return 'mashup';
   const descriptor = descriptorKind(text);
-  if (descriptor && !/\bremix\b|\bmashup\b|\bmixed\s+by\b/i.test(text)) return descriptor;
+  if (descriptor !== '' && !/\bremix\b|\bmashup\b|\bmixed\s+by\b/i.test(text)) return descriptor;
   if (MIXED_BY.test(text) && !REMIX_OR_MASHUP.test(text)) return 'other';
   for (const [kind, rx] of KIND_WORDS) if (rx.test(text)) return kind;
   return 'remix';
@@ -191,9 +191,9 @@ function sources(text) {
   return parts.length >= 2 && parts.every(Boolean) ? parts : [];
 }
 
-const MASHUP_BY = /^(?:mash[\s-]?up\s+by\s+(?<a>.+)|(?<b>.+?)(?:(?<!\s)|(?<=^\s))\s+mash[\s-]?up)$/is;
-const MAKERS = /(?<!\s)\s+(?:[,&]\s*|(?:and|x|feat\.?|ft\.?)\s+)|[,&]\s*/i;
-const MASH_SOURCES = /(?<!\s)\s+(?:(?:x|×|vs\.?|&|\+)\s+|,\s*)|,\s*/i;
+const MASHUP_BY = /^(?:mash[\s-]?up\s+by\s+(?<a>.+)|(?<b>.+?)(?:(?<!\s)|(?<=^\s))\s+mash[\s-]?up)$/is; // NOSONAR patterns are twins of the Python ones, pinned by shared fixtures and differential/timing tests; linear on bounded title input
+const MAKERS = /(?<!\s)\s+(?:[,&]\s*|(?:and|x|feat\.?|ft\.?)\s+)|[,&]\s*/i; // NOSONAR patterns are twins of the Python ones, pinned by shared fixtures and differential/timing tests; linear on bounded title input
+const MASH_SOURCES = /(?<!\s)\s+(?:(?:x|×|vs\.?|&|\+)\s+|,\s*)|,\s*/i; // NOSONAR patterns are twins of the Python ones, pinned by shared fixtures and differential/timing tests; linear on bounded title input
 
 function splitNames(text, pattern) {
   const out = [];
@@ -240,10 +240,10 @@ function mashup(base, artists, notes, name) {
 const CUE_DASH = / [-–—] /;
 const VERSION_MARK = /\b(?:remix(?:ed)?|mix|edit|mashup|bootleg|rework|vip|dub|version|live|acoustic|unplugged|instrumental|remaster(?:ed)?|cover|extended)\b/i;
 const FEAT_PLAIN = /\b(?:featuring|feat\.?|ft\.?)\s/i;
-const ANY_BRACKET = /[([][^)\]]*[)\]]/;
+const ANY_BRACKET = /[([][^)\]]*[)\]]/; // NOSONAR patterns are twins of the Python ones, pinned by shared fixtures and differential/timing tests; linear on bounded title input
 
 function markerBeforeDash(title) {
-  const blanked = title.replace(new RegExp(ANY_BRACKET, 'g'), (m) => 'x'.repeat(m.length));
+  const blanked = title.replace(new RegExp(ANY_BRACKET, 'g'), (m) => 'x'.repeat(m.length)); // NOSONAR patterns are twins of the Python ones, pinned by shared fixtures and differential/timing tests; linear on bounded title input
   const m = CUE_DASH.exec(blanked);
   if (!m) return false;
   return [...title.slice(0, m.index).matchAll(BRACKET)].some((b) => VERSION_MARK.test(b[1]));

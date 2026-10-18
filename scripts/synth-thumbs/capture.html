@@ -4,8 +4,8 @@
 <body style="background:#111;color:#ddd;font:14px sans-serif">
 <pre id="log">running</pre>
 <script type="module">
-import { createSynth } from '/js/viz-synth-gl.js';
-import { SYNTH_PRESET_LIST } from '/js/viz-synth-presets.js';
+import { createSynth } from '/js/viz-synth-gl.js'; // NOSONAR served from the web root by serve.mjs
+import { SYNTH_PRESET_LIST } from '/js/viz-synth-presets.js'; // NOSONAR served from the web root by serve.mjs
 
 const W = 480;
 const H = 270;
@@ -88,9 +88,9 @@ for (const p of SYNTH_PRESET_LIST) {
       const song = SONG_START_S * 1000 + (t - 1000);
       synth.draw(spectrum(song), t, { timeline, time: song / 1000 });
     }
-    const blob = await (await fetch(canvas.toDataURL('image/png'))).blob();
-    const res = await fetch(`/save?id=${p.id}`, { method: 'POST', body: blob });
-    lines.push(`${p.id} ${await res.text()} bytes`);
+    const blob = await (await fetch(canvas.toDataURL('image/png'))).blob(); // NOSONAR sequential capture on purpose
+    const res = await fetch(`/save?id=${p.id}`, { method: 'POST', body: blob }); // NOSONAR sequential capture on purpose
+    lines.push(`${p.id} ${await res.text()} bytes`); // NOSONAR sequential capture on purpose
   } catch (e) {
     lines.push(`${p.id} failed ${e.message}`);
   }

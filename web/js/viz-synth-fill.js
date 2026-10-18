@@ -9,7 +9,7 @@ export function clipRect(res, x0, y0, x1, y1) {
   const b = Math.max(0, Math.floor(Number.isFinite(y0) ? y0 : 0));
   const c = Math.min(w, Math.ceil(Number.isFinite(x1) ? x1 : w));
   const d = Math.min(h, Math.ceil(Number.isFinite(y1) ? y1 : h));
-  if (!(c > a) || !(d > b)) return null;
+  if (!(c > a) || !(d > b)) return null; // NOSONAR NaN must take the guard branch; the positive form would pass NaN through
   return { x: a, y: b, w: c - a, h: d - b };
 }
 

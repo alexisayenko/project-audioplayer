@@ -147,7 +147,7 @@ export function createPitchTracker({ lag = PITCH_LAG } = {}) {
   };
 
   const drain = () => {
-    while (given < fin.length && fin[given] !== undefined && (fin[given + 1] !== undefined || finished)) {
+    while (given < fin.length && fin[given] !== undefined && (fin[given + 1] !== undefined || finished)) { // NOSONAR loop ends through the closure flag finished set in finish(), which Sonar cannot see
       const prev = fin[given - 1];
       const cur = fin[given];
       const next = fin[given + 1];

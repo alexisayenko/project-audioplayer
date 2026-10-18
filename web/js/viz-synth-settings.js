@@ -167,7 +167,7 @@ function commit(next, path) {
   current = next;
   version += 1;
   persist();
-  for (const cb of [...listeners]) cb(current, path);
+  for (const cb of [...listeners]) cb(current, path); // NOSONAR listeners are snapshotted so callbacks may unsubscribe while iterating
 }
 
 function withValue(cur, path, value) {

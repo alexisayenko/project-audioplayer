@@ -117,6 +117,10 @@ function actionRow(song) {
 
 const SIDE_KEYS = new Set(['country']);
 
+function albumsLabel(albums) {
+  return albums.length === 1 ? 'Album' : 'Albums';
+}
+
 function detailsBlock(m) {
   const tagChip = (t) => el('span', { class: 'tag ns t-caption', title: t.tag }, t.label);
   const items = [
@@ -125,7 +129,7 @@ function detailsBlock(m) {
     m.duration ? el('span', { class: 'detail' }, `Length: ${m.duration}`) : null,
     m.yearFact ? el('span', { class: 'detail' }, `Year: ${m.yearFact}`) : null,
     ...m.details.map((d) => el('span', { class: 'detail' }, d)),
-    m.albums.length ? el('span', { class: 'detail' }, `${m.albums.length === 1 ? 'Album' : 'Albums'}: ${m.albums.join(', ')}`) : null,
+    m.albums.length ? el('span', { class: 'detail' }, `${albumsLabel(m.albums)}: ${m.albums.join(', ')}`) : null,
   ].filter(Boolean);
   return items.length ? el('p', { class: 'facts t-caption card-details' }, ...items) : null;
 }

@@ -24,7 +24,7 @@ export async function copyText(text, doc = document, nav = globalThis.navigator)
   ta.select();
   ta.setSelectionRange?.(0, text.length);
   let ok = false;
-  try { ok = !!doc.execCommand('copy'); } catch { ok = false; }
+  try { ok = !!doc.execCommand('copy'); } catch { ok = false; } // NOSONAR execCommand is the copy fallback for browsers without the async clipboard API
   ta.remove();
   return ok;
 }

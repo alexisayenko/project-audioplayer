@@ -218,24 +218,30 @@ def _fetch_details(ids: list[str]) -> dict[str, tuple[dict[str, Any] | None, Exc
     lock = threading.Lock()
     results: dict[str, tuple[dict[str, Any] | None, Exception | None]] = {}
 
+    def take() -> str | None:
+        with lock:
+            return pending.pop(0) if pending else None
+
+    def fetch_one(vid: str) -> None:
+        try:
+            results[vid] = (previewcache.youtube(vid), None)
+        except Exception as exc:
+            results[vid] = (None, exc)
+            if _RATE_LIMITED.search(str(exc)):
+                halted.set()
+
     def worker() -> None:
         first = True
         while not halted.is_set():
-            with lock:
-                if not pending:
-                    return
-                vid = pending.pop(0)
+            vid = take()
+            if vid is None:
+                return
             if not first:
                 time.sleep(random.uniform(*DETAIL_DELAY_S))
             first = False
             if halted.is_set():
                 return
-            try:
-                results[vid] = (previewcache.youtube(vid), None)
-            except Exception as exc:
-                results[vid] = (None, exc)
-                if _RATE_LIMITED.search(str(exc)):
-                    halted.set()
+            fetch_one(vid)
 
     pool = ThreadPoolExecutor(max_workers=DETAIL_WORKERS)
     futures = [pool.submit(worker) for _ in range(min(DETAIL_WORKERS, len(pending)))]

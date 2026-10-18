@@ -43,7 +43,7 @@ export function createBackdrop(makeCanvas) {
 
   return {
     draw(ctx, w, h, colors, bass = 0) {
-      if (!makeCanvas || !(w > 0) || !(h > 0)) return false;
+      if (!makeCanvas || !(w > 0) || !(h > 0)) return false; // NOSONAR NaN must take the guard branch; the positive form would pass NaN through
       if (!off) { off = makeCanvas(); octx = off?.getContext?.('2d') ?? null; }
       if (!octx) return false;
       const ow = Math.max(1, Math.round(w / 2));

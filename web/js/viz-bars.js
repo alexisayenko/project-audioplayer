@@ -391,7 +391,7 @@ const GLOW_REFLECT = 0.25;
 const GLOW_MIN_PX = 2;
 export const glowExpand = (j, rowH, dpr, size) => Math.max(GLOW_MIN_PX * dpr, GLOW_FRAC[j] * rowH) * size;
 
-function drawGlow(ctx, b, band, y0d, geo, alpha, plan, fx) {
+function drawGlow(ctx, b, band, y0d, geo, alpha, plan, fx) { // NOSONAR parameter list is the render hot-loop signature; bundling would allocate per frame
   ctx.globalCompositeOperation = 'lighter';
   ctx.fillStyle = fx.glowColor;
   for (let j = 2; j >= 0; j -= 1) {
@@ -409,7 +409,7 @@ function drawGlow(ctx, b, band, y0d, geo, alpha, plan, fx) {
   ctx.globalCompositeOperation = 'source-over';
 }
 
-function drawReflectedSector(ctx, b, band, y0d, geo, alpha, plan, fx) {
+function drawReflectedSector(ctx, b, band, y0d, geo, alpha, plan, fx) { // NOSONAR parameter list is the render hot-loop signature; bundling would allocate per frame
   const rows = plan.rows;
   const t = reflectFills(fx.path, fx.maxLevel, rows, fx.reflectMode, fx.reflectStrength);
   ctx.globalAlpha = alpha * TRAIL_ALPHA;
@@ -438,7 +438,7 @@ function drawReflectedSector(ctx, b, band, y0d, geo, alpha, plan, fx) {
   }
 }
 
-function drawSector(ctx, b, band, y0d, geo, alpha, plan, fx, reflected) {
+function drawSector(ctx, b, band, y0d, geo, alpha, plan, fx, reflected) { // NOSONAR parameter list is the render hot-loop signature; bundling would allocate per frame
   const rows = plan.rows;
   const x = (i) => barRect(i, geo)[0];
   if (reflected && fx.reflectMode !== 'alpha') {
@@ -511,7 +511,7 @@ function fillLit(ctx, b, y0d, geo, band, plan, k) {
   ctx.fill();
 }
 
-function drawLedBand(ctx, b, y0d, geo, a, res, plan, fx) {
+function drawLedBand(ctx, b, y0d, geo, a, res, plan, fx) { // NOSONAR parameter list is the render hot-loop signature; bundling would allocate per frame
   const band = res.bands.band;
   if (fx.jitter > 0) {
     for (let k = 0; k < JITTER_LEVELS.length; k += 1) {
@@ -526,7 +526,7 @@ function drawLedBand(ctx, b, y0d, geo, a, res, plan, fx) {
   if (fx.baseGlow > 0) drawBaseRow(ctx, b, band, y0d, geo, a, res, plan, fx);
 }
 
-function drawHalf(ctx, y0, geo, alpha, res, plan, fx = NO_FX, reflected = false) {
+function drawHalf(ctx, y0, geo, alpha, res, plan, fx = NO_FX, reflected = false) { // NOSONAR parameter list is the render hot-loop signature; bundling would allocate per frame
   const { band, counts, alphas } = res.bands;
   const y0d = y0 * geo.dpr;
   for (let b = 0; b < counts.length; b += 1) {
@@ -567,7 +567,7 @@ function fillPeakMarkers(ctx, b, band, y0d, geo, plan) {
   ctx.fill();
 }
 
-function drawPeak(ctx, b, band, y0d, geo, alpha, plan, fx) {
+function drawPeak(ctx, b, band, y0d, geo, alpha, plan, fx) { // NOSONAR parameter list is the render hot-loop signature; bundling would allocate per frame
   if (fx.afterimage > 0) {
     for (let k = 0; k < AFTER_BINS; k += 1) {
       ctx.globalAlpha = alpha * fx.afterimage * ((k + 0.5) / AFTER_BINS);
@@ -582,7 +582,7 @@ function drawPeak(ctx, b, band, y0d, geo, alpha, plan, fx) {
   fillPeakMarkers(ctx, b, band, y0d, geo, plan);
 }
 
-function drawBaseRow(ctx, b, band, y0d, geo, alpha, res, plan, fx, haloOnly = false) {
+function drawBaseRow(ctx, b, band, y0d, geo, alpha, res, plan, fx, haloOnly = false) { // NOSONAR parameter list is the render hot-loop signature; bundling would allocate per frame
   const d = geo.dpr;
   if (haloOnly) ctx.globalCompositeOperation = 'lighter';
   const [ry, rh] = segmentRect(0, y0d, plan);

@@ -143,7 +143,7 @@ export function beatAmp(strength) {
 }
 
 export function beatEnv(age) {
-  if (!(age > 0)) return 0;
+  if (!(age > 0)) return 0; // NOSONAR NaN must take the guard branch; the positive form would pass NaN through
   if (age < BEAT_RISE_S) return smoothstep(0, 1, age / BEAT_RISE_S);
   if (age >= BEAT_DECAY_S) return 0;
   const x = (age - BEAT_RISE_S) / (BEAT_DECAY_S - BEAT_RISE_S);
@@ -263,9 +263,9 @@ export function beatsBetween(beats, lo, hi) {
 
 function addBeatRow(out, at, n, live, style, T, mask) {
   for (const { b, env, a } of live) {
-    if (!(env > 0)) continue;
+    if (!(env > 0)) continue; // NOSONAR NaN must take the guard branch; the positive form would pass NaN through
     const w = beatTimeWeight(T - b.t) * env * mask * a;
-    if (!(w > 0)) continue;
+    if (!(w > 0)) continue; // NOSONAR NaN must take the guard branch; the positive form would pass NaN through
     const s = shapeOf(b, style, n);
     for (let c = 0; c < n; c += 1) out[at + c] += w * s[c];
   }
@@ -284,7 +284,7 @@ export function fillBeatHeights({ beats, style, tNow, base, rows, cols, out }) {
   for (let r = 0; r < rows; r += 1) {
     const T = (base + r - nowRow) * dt;
     const mask = 1 - smoothstep(0, BEAT_AHEAD_FADE_S, T - tNow);
-    if (!(mask > 0)) continue;
+    if (!(mask > 0)) continue; // NOSONAR NaN must take the guard branch; the positive form would pass NaN through
     const o = r * cols;
     addBeatRow(out, o + off, n, live, style, T, mask);
     for (let c = off; c < off + n; c += 1) out[o + c] = softKnee(out[o + c], BEAT_CAP);

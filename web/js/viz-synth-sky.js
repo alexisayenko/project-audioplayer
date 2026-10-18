@@ -57,7 +57,7 @@ export function starField(p, w, h) {
 }
 
 export function twinkleAt(phase, t, amount, q) {
-  if (!q?.starsAnimated || q.reduced || !(amount > 0) || !Number.isFinite(t)) return 1;
+  if (!q?.starsAnimated || q.reduced || !(amount > 0) || !Number.isFinite(t)) return 1; // NOSONAR NaN must take the guard branch; the positive form would pass NaN through
   return 1 - clamp01(amount) * 0.5 * (1 + Math.sin(phase + t * 1.3));
 }
 

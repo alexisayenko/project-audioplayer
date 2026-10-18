@@ -226,7 +226,7 @@ def _migrate_model2_file(raw: Any, path: Path, apply: bool, backup_dir: Path | N
     pre: list[str] = []
     if source is not None:
         try:
-            legacy = json.loads(source.read_text(encoding="utf-8"))
+            legacy = json.loads(source.read_text(encoding="utf-8"))  # NOSONAR path validated by safepath.* in main(); migrate() only gets validated Paths  # NOSONAR path validated by safepath.* in main(); migrate() only gets validated Paths
         except (OSError, ValueError) as exc:
             pre.append(f"the pre-v2 backup {source} cannot be read: {exc}")
     doc, out = convert(raw, legacy)
@@ -251,7 +251,7 @@ def _migrate_model2_file(raw: Any, path: Path, apply: bool, backup_dir: Path | N
 def migrate(path: Path, apply: bool = False, report_path: Path | None = None, backup_dir: Path | None = None, legacy_backup: Path | None = None) -> dict[str, Any]:
     """Convert one library file. `status`: `dry_run`, `migrated`, `already_migrated`, `not_model2` (run model 2 first), `missing` or `aborted` (the report says why; nothing but the report file is written then). `legacy_backup` is the pre-v2 file; without it the default place is searched, and a missing file is not an error."""
     try:
-        raw = json.loads(path.read_text(encoding="utf-8"))
+        raw = json.loads(path.read_text(encoding="utf-8"))  # NOSONAR path validated by safepath.* in main(); migrate() only gets validated Paths  # NOSONAR path validated by safepath.* in main(); migrate() only gets validated Paths
     except FileNotFoundError:
         return {"status": "missing"}
     if is_model3(raw):

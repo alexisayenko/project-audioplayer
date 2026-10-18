@@ -103,7 +103,7 @@ function commit(next, key) {
   current = next;
   version += 1;
   storeSet(MIRROR_KEY, JSON.stringify({ v: MIRROR_VERSION, ...current }));
-  for (const cb of [...listeners]) cb(current, key);
+  for (const cb of [...listeners]) cb(current, key); // NOSONAR listeners are snapshotted so callbacks may unsubscribe while iterating
 }
 
 export const mirrorVersion = () => version;

@@ -82,7 +82,7 @@ export function createFlight({ seed = 1 } = {}) {
     },
     offsets(base, aspect = 16 / 9) {
       const k = amount();
-      if (!(k > 0)) return { eye: 0, yaw: 0, pitch: 0 };
+      if (!(k > 0)) return { eye: 0, yaw: 0, pitch: 0 }; // NOSONAR NaN must take the guard branch; the positive form would pass NaN through
       const eye = s.eyeN * flightEyeAmp(base.eye) * k;
       const plan = flightYawPlan(base.yaw, aspect);
       const yaw = (plan.shift + s.yawN * plan.amp) * k;
@@ -95,7 +95,7 @@ export function createFlight({ seed = 1 } = {}) {
   };
 }
 
-export const flight = createFlight({ seed: Math.floor(Math.random() * 0xffffffff) });
+export const flight = createFlight({ seed: Math.floor(Math.random() * 0xffffffff) }); // NOSONAR Math.random only seeds a visual effect, no security use
 
 let stored = null;
 let reducedOverride = null;

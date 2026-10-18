@@ -114,13 +114,13 @@ class Reply:
 
 def http_get(scheme: str, host: str, port: int, path: str, ip: str) -> Reply:
     """One GET to the already-checked `ip` (no DNS again, so no rebinding); the body is read up to MAX_BYTES + 1."""
-    sock = socket.create_connection((ip, port), timeout=TIMEOUT)
+    sock = socket.create_connection((ip, port), timeout=TIMEOUT)  # NOSONAR host/IP validated and connection pinned to the checked IP (DNS-rebinding safe), see fetch()
     try:
         if scheme == "https":
             sock = ssl.create_default_context().wrap_socket(sock, server_hostname=host)
-        conn = http.client.HTTPConnection(host, port, timeout=TIMEOUT)
+        conn = http.client.HTTPConnection(host, port, timeout=TIMEOUT)  # NOSONAR host/IP validated and connection pinned to the checked IP (DNS-rebinding safe), see fetch()
         conn.sock = sock
-        conn.request("GET", path, headers={"Host": host, "User-Agent": USER_AGENT, "Accept": "image/*", "Connection": "close"})
+        conn.request("GET", path, headers={"Host": host, "User-Agent": USER_AGENT, "Accept": "image/*", "Connection": "close"})  # NOSONAR host/IP validated and connection pinned to the checked IP (DNS-rebinding safe), see fetch()
         resp = conn.getresponse()
         body = b"" if 300 <= resp.status < 400 else resp.read(MAX_BYTES + 1)
         return Reply(resp.status, resp.getheader("Location") or "", (resp.getheader("Content-Type") or "").split(";")[0].strip().lower(), body)

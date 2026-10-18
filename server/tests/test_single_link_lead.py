@@ -17,7 +17,7 @@ class TestPreviewReadsArtistDashTitle:
 
     def test_vs_names_and_use_note_bracket(self, real_preview, client):
         p = preview(real_preview, client, SOUNDTRACK, uploader="Mason")
-        assert p["mainArtists"] == ["Mason", "Princess Superstar"]
+        assert p["mainArtists"] == ["Mason", "Princess Superstar"]  # NOSONAR actual-first assertion order is intended  # NOSONAR actual-first assertion order is intended
         assert p["title"] == "Perfect (Exceeder)"
         assert p["raw"]["title"] == SOUNDTRACK
         assert p["raw"]["artist"] == "Mason"

@@ -63,7 +63,7 @@ function drawDots(ctx, cx, cy, r0, rot, colors) {
 
 export function drawRing(ctx, cx, cy, r, values, opts) {
   const { colors, bass = 0, rotation = 0, glow = false, alpha = 1 } = opts;
-  if (!(r > 0) || !values.length) return;
+  if (!(r > 0) || !values.length) return; // NOSONAR NaN must take the guard branch; the positive form would pass NaN through
   const r0 = pulseRadius(r, bass);
   ctx.save();
   ctx.globalAlpha = alpha;

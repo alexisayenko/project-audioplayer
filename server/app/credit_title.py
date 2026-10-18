@@ -17,7 +17,7 @@ _WITH_HEAD = re.compile(r"^with\s+(?=\S)", re.I)
 _STOPS = (" - ", " – ", " — ", " | ", " ●● ", " • ", ")", "]", "(", "[")
 _SEP_WORD = r"(?:[&+x]|[aA][nN][dD]|[vV][sS]\.?)"
 _NAME_SEP = re.compile(rf",\s*|(?<!\s)\s+(?:,\s*|{_SEP_WORD}\s+)")
-_VS = re.compile(r"(?<!\s)\s+vs\.?\s+", re.I)
+_VS = re.compile(r"(?<!\s)\s+vs\.?\s+", re.I)  # NOSONAR linear-time proven by tests/test_regex_backtracking.py and test_credits_regex_equivalence.py
 _EDGE = " -|"
 
 

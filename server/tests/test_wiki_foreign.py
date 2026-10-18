@@ -78,7 +78,7 @@ def test_latin_name_makes_no_extra_requests(monkeypatch):
     monkeypatch.setattr(wl, "_fetch_json", make_fetch(calls, hits={}))
     assert wl.find_artist("Some Unknown Band") is None
     assert hosts(calls) == ["en.wikipedia.org"]
-    assert wl.find_song("Some Unknown Band", "Some Song", ["Some Unknown Band"]) is None
+    assert wl.find_song("Some Song", ["Some Unknown Band"]) is None
     assert set(hosts(calls)) == {"en.wikipedia.org"}
 
 
@@ -132,14 +132,14 @@ def test_song_needs_a_music_work_item_and_the_artist_in_the_lead(monkeypatch):
     pages = {"ru": {"Что сравнится с юностью": "Q4"}}
     hits = {"ru": ["Что сравнится с юностью"]}
     monkeypatch.setattr(wl, "_fetch_json", make_fetch([], pages=pages, hits=hits, lead="«Что сравнится с юностью» — песня группы «Форум»."))
-    assert wl.find_song("Форум", title, ["Форум"]) == "https://ru.wikipedia.org/wiki/" + urllib.parse.quote("Что_сравнится_с_юностью")
+    assert wl.find_song(title, ["Форум"]) == "https://ru.wikipedia.org/wiki/" + urllib.parse.quote("Что_сравнится_с_юностью")
     monkeypatch.setattr(wl, "_foreign_cache", {})
     monkeypatch.setattr(wl, "_fetch_json", make_fetch([], pages=pages, hits=hits, lead="Песня группы «Кино»."))
-    assert wl.find_song("Форум", title, ["Форум"]) is None
+    assert wl.find_song(title, ["Форум"]) is None
 
 
 def test_album_is_found_with_its_suffix(monkeypatch):
     pages = {"ru": {"Белая ночь (альбом)": "Q5"}}
     claims = {**CLAIMS, "Q5": {"P31": ["Q482994"]}}
     monkeypatch.setattr(wl, "_fetch_json", make_fetch([], pages=pages, hits={}, claims=claims, lead="«Белая ночь» — альбом группы «Форум»."))
-    assert wl.find_album("Форум", "Белая ночь", ["Форум"]) == "https://ru.wikipedia.org/wiki/" + urllib.parse.quote("Белая_ночь_(альбом)", safe="_(),!'~*-.:")
+    assert wl.find_album("Белая ночь", ["Форум"]) == "https://ru.wikipedia.org/wiki/" + urllib.parse.quote("Белая_ночь_(альбом)", safe="_(),!'~*-.:")

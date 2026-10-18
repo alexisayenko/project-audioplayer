@@ -39,12 +39,12 @@ button { cursor: pointer; }
 button:disabled, [aria-disabled="true"] { cursor: default; }
 a { color: var(--accent-ink); }
 ::selection { background: var(--selection); }
-[hidden] { display: none !important; }
+[hidden] { display: none !important; } /* NOSONAR hidden must beat any display rule */
 .muted { color: var(--muted); }
 .strong { font-weight: 600; }
 :focus-visible, .search:focus-within, .well:has(input:focus-visible) { outline: var(--stroke-focus) solid var(--ring-color); outline-offset: var(--ring-offset); }
 /* one ring only: a pressed or lit control already draws its ring as a box-shadow, so focus replaces that ring with the outline */
-[aria-pressed="true"]:focus-visible, [aria-expanded="true"]:focus-visible, .on:focus-visible, .lit:focus-visible { box-shadow: none !important; outline-offset: 0; }
+[aria-pressed="true"]:focus-visible, [aria-expanded="true"]:focus-visible, .on:focus-visible, .lit:focus-visible { box-shadow: none !important; outline-offset: 0; } /* NOSONAR focus outline replaces the pressed ring, must beat component box-shadows */
 
 /* navigation: tab bar (< 480), icon rail (480-719), rail (>= 720) */
 .side {
@@ -844,7 +844,7 @@ body:has(.legal:not([hidden])) main, body:has(.legal:not([hidden])) .player { pa
 :where(.btn, .key, .chip, .cat-chip, .icon, .more, .menu-item, .link-btn, .token-btn, .cl-btn, .pl-toggle, .row-dl):disabled { opacity: var(--disabled-opacity); cursor: default; }
 
 @media (prefers-reduced-motion: reduce) {
-  *, ::before, ::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+  *, ::before, ::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } /* NOSONAR reduced-motion reset must beat all component animations */
   .mq-run { -webkit-mask-image: none; mask-image: none; }
   .mq-run .mq-track { animation: none; will-change: auto; padding-inline: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
   .dl-ring.indeterminate text { display: inline; }

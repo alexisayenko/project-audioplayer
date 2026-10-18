@@ -56,7 +56,7 @@ function poolColumns(out, rows, cols, radius) {
 }
 
 function facet(out, rows, cols, weight) {
-  if (!(weight > 0) || cols < FACET_COLS + 1) return;
+  if (!(weight > 0) || cols < FACET_COLS + 1) return; // NOSONAR NaN must take the guard branch; the positive form would pass NaN through
   for (let r = 0; r < rows; r += 1) {
     const o = r * cols;
     let a = 0;
@@ -83,7 +83,7 @@ export function shapePeaks(out, rows, cols, sharp) {
     if (v > m) m = v;
     sumIn += v;
   }
-  if (!(m > 0)) return out;
+  if (!(m > 0)) return out; // NOSONAR NaN must take the guard branch; the positive form would pass NaN through
   const g = s <= 0.5 ? lerp(0.65, 1, s / 0.5) : lerp(1, 3, (s - 0.5) / 0.5);
   let sumOut = 0;
   for (let i = 0; i < n; i += 1) {

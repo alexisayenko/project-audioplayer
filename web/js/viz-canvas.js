@@ -311,7 +311,7 @@ export function createViz({ canvas, mode: startMode = 'background', deps = {} })
 
   function paint(now, still) {
     const { w, h } = view;
-    if (!(w > 0) || !(h > 0)) return;
+    if (!(w > 0) || !(h > 0)) return; // NOSONAR NaN must take the guard branch; the positive form would pass NaN through
     ctx.clearRect(0, 0, w, h);
     const q = gov.quality();
     const bars = still ? idleBars(ensureBands(), 0) : st.bars;

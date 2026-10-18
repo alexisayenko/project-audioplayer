@@ -55,9 +55,9 @@ def test_song_page_found_by_search_when_musicbrainz_has_no_link(monkeypatch):
 
 def test_disambiguation_page_and_other_artist_are_rejected(monkeypatch):
     monkeypatch.setattr(wl, "_fetch_json", fake_wikipedia())
-    assert wl.find_song("Someone Else", "What Is Love", ["Someone Else"]) is None
+    assert wl.find_song("What Is Love", ["Someone Else"]) is None
     monkeypatch.setattr(wl, "_search_cache", {"What Is Love Haddaway": ["What Is Love (disambiguation)"]})
-    assert wl.find_song("Haddaway", "What Is Love", ["Haddaway"]) is None
+    assert wl.find_song("What Is Love", ["Haddaway"]) is None
 
 
 def test_artist_search_needs_title_equal_to_name_and_a_musician_infobox(monkeypatch):
@@ -70,8 +70,8 @@ def test_artist_search_needs_title_equal_to_name_and_a_musician_infobox(monkeypa
 
 def test_album_search_needs_album_infobox_credited_to_artist(monkeypatch):
     monkeypatch.setattr(wl, "_fetch_json", fake_wikipedia())
-    assert wl.find_album("Haddaway", "The Album", ["Haddaway"]) == "https://en.wikipedia.org/wiki/The_Album_(Haddaway_album)"
-    assert wl.find_album("Haddaway", "The Album", ["Another Band"]) is None
+    assert wl.find_album("The Album", ["Haddaway"]) == "https://en.wikipedia.org/wiki/The_Album_(Haddaway_album)"
+    assert wl.find_album("The Album", ["Another Band"]) is None
 
 
 def test_search_failure_gives_no_links(monkeypatch):

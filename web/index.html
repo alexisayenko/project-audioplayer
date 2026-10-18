@@ -108,7 +108,7 @@
   </div>
   <div class="mini-foot">
     <span class="t-time" id="mini-time">0:00 / 0:00</span>
-    <div id="mini-scrub" class="scrubber mini-progress" role="slider" tabindex="-1" aria-label="Seek" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0" aria-valuetext="0:00 of 0:00" aria-disabled="true"><span class="scrub-rail"><span class="scrub-fill"></span></span><span class="scrub-thumb"></span><span class="scrub-bubble" aria-hidden="true">0:00</span></div>
+    <div id="mini-scrub" class="scrubber mini-progress" role="slider" tabindex="-1" aria-label="Seek" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0" aria-valuetext="0:00 of 0:00" aria-disabled="true"><span class="scrub-rail"><span class="scrub-fill"></span></span><span class="scrub-thumb"></span><span class="scrub-bubble" aria-hidden="true">0:00</span></div> <!-- NOSONAR custom scrubber div: native input cannot render the rail and fill design -->
     <input type="range" id="mini-volume" class="slider" min="0" max="100" value="100" step="1" aria-label="Volume">
   </div>
 </section>
@@ -118,9 +118,9 @@
 <dialog id="song-card" class="sheet card-dlg" aria-labelledby="song-card-title"></dialog>
 <dialog id="filter-sheet" class="sheet" aria-labelledby="sheet-title"></dialog>
 <output id="toast" class="toast t-subhead" hidden></output>
-<div id="viz-full" class="viz-full" role="dialog" aria-label="Visualizer" aria-describedby="viz-exit-hint" tabindex="-1" hidden>
+<div id="viz-full" class="viz-full" role="dialog" aria-label="Visualizer" aria-describedby="viz-exit-hint" tabindex="-1" hidden> <!-- NOSONAR fullscreen overlay needs custom focus and Escape handling, not a modal dialog element -->
   <span class="viz-sr" id="viz-exit-hint">Press Escape or use the Exit button to leave. Click the picture to pause or play.</span>
-  <canvas id="viz-full-canvas" class="viz-canvas" aria-hidden="true"></canvas>
+  <canvas id="viz-full-canvas" class="viz-canvas" aria-hidden="true"></canvas> <!-- NOSONAR decorative canvas is not focusable -->
   <div class="viz-flash" id="viz-flash" aria-hidden="true"></div>
   <div class="viz-corner" id="viz-corner">
     <button class="viz-corner-btn" id="viz-share" type="button" aria-label="Share link" data-tip="Share link" hidden></button>
@@ -129,7 +129,7 @@
   </div>
   <div class="viz-ctl" id="viz-ctl">
     <div class="viz-meta"><b id="viz-title" class="t-title"></b><span id="viz-artist" class="t-subhead"></span></div>
-    <div id="viz-scrub" class="scrubber" role="slider" tabindex="-1" aria-label="Seek" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0" aria-valuetext="0:00 of 0:00" aria-disabled="true"><span class="scrub-rail"><span class="scrub-fill"></span></span><span class="scrub-thumb"></span><span class="scrub-bubble" aria-hidden="true">0:00</span></div>
+    <div id="viz-scrub" class="scrubber" role="slider" tabindex="-1" aria-label="Seek" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0" aria-valuetext="0:00 of 0:00" aria-disabled="true"><span class="scrub-rail"><span class="scrub-fill"></span></span><span class="scrub-thumb"></span><span class="scrub-bubble" aria-hidden="true">0:00</span></div> <!-- NOSONAR custom scrubber div: native input cannot render the rail and fill design -->
     <div class="viz-keys">
       <div class="viz-keys-main">
         <button class="key ghost toggle" id="viz-shuffle" type="button" aria-pressed="false" aria-label="Shuffle: off" title="Shuffle (S)"></button>

@@ -9,7 +9,7 @@ from typing import Any
 from . import credits, timeutil, titles
 from .tokens import split_tokens
 
-_SPLIT = re.compile(r"(?:(?<!\s)\s++)?+[,&]\s*+|(?<!\s)\s++(?:and|x|vs\.?)\s++", re.I)
+_SPLIT = re.compile(r"(?:(?<!\s)\s++)?+[,&]\s*+|(?<!\s)\s++(?:and|x|vs\.?)\s++", re.I)  # NOSONAR linear-time proven by tests/test_regex_backtracking.py and test_credits_regex_equivalence.py
 _KIND_WORDS = (
     ("remix", re.compile(r"\bremix(?:ed)?\b|\bmashup\b|\bbootleg\b|\brework\b|\bvip\b", re.I)),
     ("live", re.compile(r"\blive\b|\bunplugged\b|\bin concert\b", re.I)),
@@ -27,8 +27,8 @@ _MIXED_BY = re.compile(r"\bmixed\s+by\b", re.I)
 _REMIX_WORDISH = re.compile(r"\b(?:remix|mashup|mix|edit)\b", re.I)
 _PUNCT = " -|"
 _MASHUP_WORD = re.compile(r"^mash[\s-]?up$", re.I)
-_MASHUP_TAIL = re.compile(r"(?<!\s)\s*+[(\[]\s*+(mash[\s-]?up)\s*+[)\]]\s*+$", re.I)
-_SOURCE_SPLIT = re.compile(r"(?<!\s)\s++(?:x|×|vs\.?)\s++", re.I)
+_MASHUP_TAIL = re.compile(r"(?<!\s)\s*+[(\[]\s*+(mash[\s-]?up)\s*+[)\]]\s*+$", re.I)  # NOSONAR linear-time proven by tests/test_regex_backtracking.py and test_credits_regex_equivalence.py
+_SOURCE_SPLIT = re.compile(r"(?<!\s)\s++(?:x|×|vs\.?)\s++", re.I)  # NOSONAR linear-time proven by tests/test_regex_backtracking.py and test_credits_regex_equivalence.py
 _DASH = re.compile(r"\s[-–—]\s")
 FLAGS = (
     "feat_in_artist", "feat_in_title", "multi_artist_in_one_pill", "remix_text_in_title", "mixed_by", "live", "acoustic",
@@ -75,7 +75,7 @@ def _cut_feat(text: str) -> tuple[str, list[str]]:
             text = text[:i] + " " + text[stop:]
 
 
-_MIX_TAIL = re.compile(r"^(?P<x>.*?)(?<![\s,/-])[\s,/-]*+\b(?:mix|edit|version)\s*$", re.I)
+_MIX_TAIL = re.compile(r"^(?P<x>.*?)(?<![\s,/-])[\s,/-]*+\b(?:mix|edit|version)\s*$", re.I)  # NOSONAR linear-time proven by tests/test_regex_backtracking.py and test_credits_regex_equivalence.py
 _DESCRIPTOR_WORDS = frozenset((
     "extended", "radio", "club", "dub", "vip", "original", "instrumental", "acoustic", "short", "long", "album", "single",
     "full", "main", "extra", "maxi", "deep", "vocal",
@@ -119,7 +119,7 @@ def version_year(text: str | None) -> int | None:
     return timeutil.valid_year(int(m.group())) if m else None
 
 
-_COVER_TAIL = re.compile(r"^(.*?)(?<![\s,:-])[\s,:-]*+\bcover(?:\s++version)?+\s*+$", re.I)
+_COVER_TAIL = re.compile(r"^(.*?)(?<![\s,:-])[\s,:-]*+\bcover(?:\s++version)?+\s*+$", re.I)  # NOSONAR linear-time proven by tests/test_regex_backtracking.py and test_credits_regex_equivalence.py
 
 
 def _fold(text: str) -> str:
@@ -212,7 +212,7 @@ def _sources(text: str) -> list[str]:
     return parts if len(parts) >= 2 and all(parts) else []
 
 
-_MASHUP_BY = re.compile(r"mash[\s-]?up\s+by\s+(?P<a>.+)|(?P<b>.+?)\s++mash[\s-]?up", re.I)
+_MASHUP_BY = re.compile(r"mash[\s-]?up\s+by\s+(?P<a>.+)|(?P<b>.+?)\s++mash[\s-]?up", re.I)  # NOSONAR linear-time proven by tests/test_regex_backtracking.py and test_credits_regex_equivalence.py
 _MAKERS = re.compile(r"\s*+[,&]\s*+|\s++(?:and|x|feat\.?|ft\.?)\s++", re.I)
 _MASH_SOURCES = re.compile(r"\s+(?:x|×|vs\.?|&|\+)\s+|\s*,\s*", re.I)
 

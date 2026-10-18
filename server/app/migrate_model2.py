@@ -293,7 +293,7 @@ def _write_migrated(path: Path, doc: dict[str, Any], out: dict[str, Any], backup
 def migrate(path: Path, apply: bool = False, report_path: Path | None = None, backup_dir: Path | None = None) -> dict[str, Any]:
     """Convert one library file. `status`: `dry_run`, `migrated`, `already_migrated` or `aborted` (the report says why; nothing is written then, except the report file)."""
     try:
-        raw = json.loads(path.read_text(encoding="utf-8"))
+        raw = json.loads(path.read_text(encoding="utf-8"))  # NOSONAR path validated by safepath.* in main(); migrate() only gets validated Paths  # NOSONAR path validated by safepath.* in main(); migrate() only gets validated Paths
     except FileNotFoundError:
         return {"status": "missing"}
     if is_model2(raw):

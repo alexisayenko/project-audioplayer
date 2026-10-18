@@ -44,7 +44,7 @@ export function closeGate() {
 }
 
 function seekWhenReady(audio, t) {
-  if (!(t > 0)) return;
+  if (!(t > 0)) return; // NOSONAR NaN must take the guard branch; the positive form would pass NaN through
   const go = () => player.seek(clampT(t, audio.duration));
   if (audio.readyState >= 1) go(); else audio.addEventListener('loadedmetadata', go, { once: true });
 }

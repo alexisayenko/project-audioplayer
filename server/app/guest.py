@@ -16,7 +16,7 @@ from .problems import Problem
 from .ratelimit import KeyedWindow
 
 OWNER_LABEL = "Alex"
-LAN_NETS = tuple(ipaddress.ip_network(n) for n in ("10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "fc00::/7"))
+LAN_NETS = tuple(ipaddress.ip_network(n) for n in ("10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "fc00::/7"))  # NOSONAR private-range blocklist, not a bind or connect address  # NOSONAR private-range blocklist, not a bind or connect address
 MB = 1024 * 1024
 READ_PATHS = frozenset({"/library", "/tags", "/genres/graph", "/genres/vocabulary", "/catalog", "/me"})
 READ_PREFIXES = ("/files/", "/covers/")

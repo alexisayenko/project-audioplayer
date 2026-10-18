@@ -77,7 +77,7 @@ export const clamp01 = (v) => (Number.isFinite(v) ? Math.min(1, Math.max(0, v)) 
 
 export function softKnee(h, max = HEIGHT_CAP, k = KNEE) {
   const knee = k * max;
-  if (!(h > knee)) return h;
+  if (!(h > knee)) return h; // NOSONAR NaN must take the guard branch; the positive form would pass NaN through
   const span = (1 - k) * max;
   const x = (h - knee) / span;
   return knee + (span * x) / (1 + x);
@@ -113,7 +113,7 @@ export function tierHalfWidth(zEnd, aspect, yawDeg = 0, near = false) {
   const reach = COVER_MARGIN * (zEnd + LOD_FOOT);
   const base = Math.min(near ? gw : gw * FAR_WIDTH_MAX, Math.tan(COVER_HALF_FOV) * a * reach);
   const y = Math.abs(Number.isFinite(yawDeg) ? yawDeg : 0);
-  if (!(y > 0)) return base;
+  if (!(y > 0)) return base; // NOSONAR NaN must take the guard branch; the positive form would pass NaN through
   const capDeg = near ? NEAR_YAW_COVER_MAX_DEG : YAW_COVER_MAX_DEG;
   const ang = Math.min(Math.atan(Math.tan(COVER_HALF_FOV) * a) + y * (Math.PI / 180), capDeg * (Math.PI / 180));
   const wide = Math.tan(ang) * reach;
@@ -240,7 +240,7 @@ export function resampleTier(plan, src, dst, fracL, fracT, lo = 0, hi = Infinity
 export function resample(bins, n) {
   const out = new Float32Array(n);
   const len = bins?.length || 0;
-  if (!len || !(n > 0)) return out;
+  if (!len || !(n > 0)) return out; // NOSONAR NaN must take the guard branch; the positive form would pass NaN through
   if (len === 1) return out.fill(clamp01(bins[0]));
   for (let i = 0; i < n; i += 1) {
     const pos = n === 1 ? 0 : (i / (n - 1)) * (len - 1);
@@ -371,7 +371,7 @@ export function createFrame(rows, bins = HISTORY_BINS) {
 
 export function landmarkWeight(dt) {
   const d = Math.abs(dt);
-  if (!(d < LANDMARK_SPREAD_S)) return 0;
+  if (!(d < LANDMARK_SPREAD_S)) return 0; // NOSONAR NaN must take the guard branch; the positive form would pass NaN through
   const sigma = LANDMARK_SPREAD_S / 2;
   const edge = Math.exp(-0.5 * (LANDMARK_SPREAD_S / sigma) ** 2);
   return (Math.exp(-0.5 * (d / sigma) ** 2) - edge) / (1 - edge);
@@ -435,7 +435,7 @@ function landmarkWindow(tl, k) {
   const to = Math.min(tl.total, Math.round((k + 1) * span));
   const cache = tl.lmExtra || (tl.lmExtra = new Map());
   if (cache.has(k)) return cache.get(k);
-  if (!(from < tl.total) || uncoveredSpans(tl, from, to).length) return Number.NaN;
+  if (!(from < tl.total) || uncoveredSpans(tl, from, to).length) return Number.NaN; // NOSONAR NaN must take the guard branch; the positive form would pass NaN through
   const tmp = new Float32Array(tl.bins);
   let best = -1;
   let bestE = LANDMARK_MIN_ENERGY;
@@ -450,7 +450,7 @@ function landmarkWindow(tl, k) {
 }
 
 export function landmarkBoostAt(tl, t) {
-  if (!(t > -LANDMARK_SPREAD_S)) return 0;
+  if (!(t > -LANDMARK_SPREAD_S)) return 0; // NOSONAR NaN must take the guard branch; the positive form would pass NaN through
   const times = timelineLandmarks(tl);
   const k = Math.floor(t / LANDMARK_PERIOD_S);
   let w = 0;
@@ -464,12 +464,12 @@ export function landmarkBoostAt(tl, t) {
 export function applyLandmarks(out, rows, cols, boost) {
   for (let r = 0; r < rows; r += 1) {
     const w = boost[r];
-    if (!(w > 0)) continue;
+    if (!(w > 0)) continue; // NOSONAR NaN must take the guard branch; the positive form would pass NaN through
     const o = r * cols;
     let max = 0;
     for (let c = 0; c < cols; c += 1) if (out[o + c] > max) max = out[o + c];
     const world = max * AMP_MAX;
-    if (!(world > 0)) continue;
+    if (!(world > 0)) continue; // NOSONAR NaN must take the guard branch; the positive form would pass NaN through
     const target = softKnee(world * (1 + (LANDMARK_GAIN - 1) * w) + LANDMARK_BONUS * w, LANDMARK_MAX);
     const lift = Math.max(1, target / world) - 1;
     const x0 = rowPeak(out.subarray(o, o + cols), cols).x;
@@ -555,7 +555,7 @@ function rangesOf(tl) {
 export function markRows(tl, from, to) {
   const a = Math.max(0, Math.floor(from));
   const b = Math.min(tl.total, Math.ceil(to));
-  if (!(b > a)) return tl;
+  if (!(b > a)) return tl; // NOSONAR NaN must take the guard branch; the positive form would pass NaN through
   const r = tl.ranges || (tl.ranges = []);
   const out = [];
   let lo = a;
@@ -602,7 +602,7 @@ export function coveredRows(tl) {
 
 export function coverageWeight(tl, t, fade = EDGE_FADE_ROWS) {
   const x = t * tl.rps;
-  if (!(x >= 0)) return 0;
+  if (!(x >= 0)) return 0; // NOSONAR NaN must take the guard branch; the positive form would pass NaN through
   const i = Math.floor(x);
   for (const [a, b] of rangesOf(tl)) {
     if (i < a) return 0;
@@ -619,7 +619,7 @@ export function sampleTimeline(tl, t, out) {
   const bins = tl.bins;
   const x = t * tl.rps;
   const last = tl.total - 1;
-  if (!(x >= 0) || last < 0 || x > last + TIMELINE_END_FADE_ROWS) { out.fill(0); return out; }
+  if (!(x >= 0) || last < 0 || x > last + TIMELINE_END_FADE_ROWS) { out.fill(0); return out; } // NOSONAR NaN must take the guard branch; the positive form would pass NaN through
   const d = tl.data;
   if (x > last) {
     const g = 1 - smoothstep(0, TIMELINE_END_FADE_ROWS, x - last);
@@ -667,7 +667,7 @@ function blendData(a, b, k) {
   }
   for (let r = 0; r < a.rows; r += 1) {
     const kr = k * cov[r];
-    if (!(kr > 0)) continue;
+    if (!(kr > 0)) continue; // NOSONAR NaN must take the guard branch; the positive form would pass NaN through
     for (let i = r * bins, e = i + bins; i < e; i += 1) out[i] += (o[i] - out[i]) * kr;
   }
 }
@@ -748,7 +748,7 @@ export function lightFactor(slopeX, slopeZ, dir = LIGHT_DIR) {
   return d >= flat ? (d - flat) / (1 - flat) : (d - flat) / (1 + flat);
 }
 
-export function fillLight(heights, rows, cols, halfWidth, dz, out, amp = AMP_MAX, scratch = null) {
+export function fillLight(heights, rows, cols, halfWidth, dz, out, amp = AMP_MAX, scratch = null) { // NOSONAR parameter list is the render hot-loop signature; bundling would allocate per frame
   const xs = scratch && scratch.length >= cols ? scratch : new Float32Array(cols);
   for (let c = 0; c < cols; c += 1) xs[c] = columnX(cols <= 1 ? 0 : c / (cols - 1)) * halfWidth;
   for (let r = 0; r < rows; r += 1) {
@@ -1035,7 +1035,7 @@ const NOW_LINE_EDGE = Math.exp(-((NOW_LINE_REACH_S / NOW_FALLOFF_S) ** 2));
 
 export function nowLineWeight(dtSec) {
   const d = Math.abs(dtSec);
-  if (!(d < NOW_LINE_REACH_S)) return 0;
+  if (!(d < NOW_LINE_REACH_S)) return 0; // NOSONAR NaN must take the guard branch; the positive form would pass NaN through
   return (Math.exp(-((d / NOW_FALLOFF_S) ** 2)) - NOW_LINE_EDGE) / (1 - NOW_LINE_EDGE);
 }
 
@@ -1061,11 +1061,11 @@ export function addBaseRelief(out, relief, k = BEAT_BASE_RELIEF, cap = HEIGHT_CA
 }
 
 function layeredHeight(base, p, cap) {
-  if (!(p > 0)) return base;
+  if (!(p > 0)) return base; // NOSONAR NaN must take the guard branch; the positive form would pass NaN through
   return Math.min(Math.max(base, cap), base + softKnee(base + p, cap) - softKnee(base, cap));
 }
 
-export function layerFullRelief(beats, relief, rows, cols, frac, gain = NOW_LINE_GAIN_H_FULL, share = null, cap = HEIGHT_CAP) {
+export function layerFullRelief(beats, relief, rows, cols, frac, gain = NOW_LINE_GAIN_H_FULL, share = null, cap = HEIGHT_CAP) { // NOSONAR parameter list is the render hot-loop signature; bundling would allocate per frame
   const { dt, nowRow } = rowLayout(rows);
   const centre = nowRow + frac;
   for (let r = 0; r < rows; r += 1) {

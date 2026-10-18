@@ -143,7 +143,7 @@ export function makePaceGovernor({ top = PACE_TOP, start = PACE_START, shedMax =
     liteOkSince ??= ts;
     if (lite && ts - liteOkSince >= PACE_LITE_OFF_S * 1000) lite = false;
     const climbCap = cap < (shedTop > 0 ? Math.min(top, 2) : top);
-    if (!(ts - okSince >= PACE_UP_S * 1000)) return 0;
+    if (!(ts - okSince >= PACE_UP_S * 1000)) return 0; // NOSONAR NaN must take the guard branch; the positive form would pass NaN through
     if (!climbCap && shed > 0 && ts >= shedBanUntil[shed - 1] && ts >= lockUntil) {
       note = upNote(ts, ema, target, ' (render scale)');
       shed -= 1;
@@ -161,7 +161,7 @@ export function makePaceGovernor({ top = PACE_TOP, start = PACE_START, shedMax =
       let changed = 0;
       if (pendingGrace !== null) { graceUntil = Math.max(graceUntil, ts + pendingGrace); pendingGrace = null; }
       if (ts < graceUntil) { overSince = null; okSince = null; liteOkSince = null; stableSince = null; return changed; }
-      if (!valid || !(ema > 0)) { overSince = null; okSince = null; liteOkSince = null; return changed; }
+      if (!valid || !(ema > 0)) { overSince = null; okSince = null; liteOkSince = null; return changed; } // NOSONAR NaN must take the guard branch; the positive form would pass NaN through
       const over = ema > target * PACE_OVER;
       const ok = ema < target * PACE_OK;
       if (!over) {

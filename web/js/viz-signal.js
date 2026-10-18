@@ -17,7 +17,7 @@ export function frameStats(buf, silentDb = SILENT_DB) {
     sum += v;
     count += 1;
   }
-  return { max, mean: count ? sum / count : -Infinity, finite: count, silent: !(max > silentDb) };
+  return { max, mean: count ? sum / count : -Infinity, finite: count, silent: !(max > silentDb) }; // NOSONAR NaN must take the guard branch; the positive form would pass NaN through
 }
 
 export function byteMax(bytes) {
