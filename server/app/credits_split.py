@@ -19,6 +19,7 @@ _KIND_WORDS = (
     ("remaster", re.compile(r"\bremaster(?:ed)?\b", re.I)),
     ("edit", re.compile(r"\bedit\b", re.I)),
     ("cover", re.compile(r"\bcover\b", re.I)),
+    ("other", re.compile(r"\bslowed\b|\bsped[\s-]?up\b|\bspeed[\s-]?up\b|\bnightcore\b|\breverb\b", re.I)),
 )
 _BY_STRIP = re.compile(
     r"\b(?:remix(?:ed)?|mix(?:ed)?|edit|mashup|bootleg|rework|vip|dub|version|radio|club|extended|original|instrumental|vocal|chill|by)\b", re.I)
@@ -74,15 +75,48 @@ def _cut_feat(text: str) -> tuple[str, list[str]]:
             text = text[:i] + " " + text[stop:]
 
 
+_MIX_TAIL = re.compile(r"^(?P<x>.*?)[\s,/-]*\b(?:mix|edit|version)\s*$", re.I)
+_DESCRIPTOR_WORDS = frozenset((
+    "extended", "radio", "club", "dub", "vip", "original", "instrumental", "acoustic", "short", "long", "album", "single",
+    "full", "main", "extra", "maxi", "deep", "vocal",
+))
+_DESCRIPTOR_NUMBER = re.compile(r"^\d+(?:[\"'\u2033\u2032]|-?inch)?$", re.I)
+_DESCRIPTOR_KINDS = (("extended", "extended"), ("instrumental", "instrumental"), ("acoustic", "acoustic"), ("radio", "edit"))
+
+
+def _descriptor_kind(text: str) -> str | None:
+    """Type of a "<descriptor words> Mix/Edit/Version" text that names no person ("Extended Mix", "Radio Edit", "Club Mix", "12\" Mix"): extended, instrumental, acoustic or edit by its first matching word, else other; None when the text has another word (a person) or no descriptor."""
+    m = _MIX_TAIL.match(text.strip())
+    words = [w.lower() for w in re.split(r"[\s,/+&-]+", m.group("x")) if w] if m else []
+    if not words or not all(w in _DESCRIPTOR_WORDS or _DESCRIPTOR_NUMBER.match(w) for w in words):
+        return None
+    return next((kind for word, kind in _DESCRIPTOR_KINDS if word in words), "other")
+
+
 def _kind_of(text: str) -> str:
     if _MASHUP_WORD.match(text.strip()):
         return "mashup"
+    descriptor = _descriptor_kind(text)
+    if descriptor and not re.search(r"\bremix\b|\bmashup\b|\bmixed\s+by\b", text, re.I):
+        return descriptor
     if _MIXED_BY.search(text) and not re.search(r"\bremix\b|\bmashup\b", text, re.I):
         return "other"
     for kind, pattern in _KIND_WORDS:
         if pattern.search(text):
             return kind
     return credits.kind_for(text)
+
+
+kind_of = _kind_of
+_YEAR = re.compile(r"(?<!\d)(?:19|20)\d{2}(?!\d)")
+
+
+def version_year(text: str | None) -> int | None:
+    """The explicit 4-digit year in a remaster version's text ("2011 Remaster", "Remastered 2011"), else None; any other kind has none."""
+    if not text or _kind_of(text) != "remaster":
+        return None
+    m = _YEAR.search(text)
+    return timeutil.valid_year(int(m.group())) if m else None
 
 
 _COVER_TAIL = re.compile(r"^(.*?)[\s,:-]*+\bcover(?:\s++version)?+\s*+$", re.I)
@@ -152,9 +186,14 @@ def _cover_dash(left: str, right: str, text: str, name: str, credited: list[str]
 
 
 def _by_names(text: str, kind: str) -> list[str]:
-    if kind not in ("remix", "other"):
+    if kind not in ("remix", "other") or (kind == "other" and not _MIXED_BY.search(text)):
         return []
     return _names(_BY_STRIP.sub(" ", text))
+
+
+def version_artists(text: str) -> list[str]:
+    """The people named in a version text: "Moreno J Remix" gives [Moreno J]; descriptor-only texts ("Club Mix", "Slowed") give none."""
+    return _by_names(text, _kind_of(text))
 
 
 def _version(text: str) -> dict[str, Any]:
@@ -243,6 +282,14 @@ def _title_first(base: str, title_text: str, artists: list[str], ctx: dict[str, 
     return left, artists if all(_fold(n) in {_fold(a) for a in artists} for n in right_names) else right_names
 
 
+def _cover_reading(base: str, artists: list[str], featured: list[str], version: dict[str, Any], ctx: dict[str, Any], notes: list[str]) -> tuple[str, list[str], dict[str, Any], list[dict[str, Any]] | None]:
+    dash = _DASH.search(base)
+    cname = cover_name(version["name"])
+    if dash and cname and _squash(base[: dash.start()]) and _squash(base[dash.end() :]):
+        return _cover_dash(base[: dash.start()], base[dash.end() :], version["name"], cname, [*artists, *featured], featured, ctx, notes)
+    return base, artists, _cover_version(version["name"], [*artists, *featured], notes) or version, None
+
+
 def suggest(artist: str | None, title: str | None, remixer: str | None, ctx: dict[str, Any] | None = None) -> dict[str, Any]:
     """`{artists, featured, version, title, notes}` suggested from the current strings; `title` is the base title when it differs, `notes` are codes."""
     ctx = ctx or {}
@@ -292,16 +339,13 @@ def suggest(artist: str | None, title: str | None, remixer: str | None, ctx: dic
         notes.append("remixer_to_version")
         if from_title:
             notes.append("version_in_title")
+        if version["kind"] == "cover":
+            base, artists, version, alternatives = _cover_reading(base, artists, featured, version, ctx, notes)
     elif from_title:
         version = _version(_squash(from_title))
         notes.append("version_in_title")
         if version["kind"] == "cover":
-            dash = _DASH.search(base)
-            cname = cover_name(version["name"])
-            if dash and cname and _squash(base[: dash.start()]) and _squash(base[dash.end() :]):
-                base, artists, version, alternatives = _cover_dash(base[: dash.start()], base[dash.end() :], version["name"], cname, [*artists, *featured], featured, ctx, notes)
-            else:
-                version = _cover_version(version["name"], [*artists, *featured], notes) or version
+            base, artists, version, alternatives = _cover_reading(base, artists, featured, version, ctx, notes)
     elif release and release[1]:
         version = {"kind": "cover", "name": "Cover", "by": []}
         notes.append("cover_release")

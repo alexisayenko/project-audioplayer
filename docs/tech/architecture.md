@@ -124,7 +124,7 @@ python3 -m venv .venv && . .venv/bin/activate
 pip install -r requirements-dev.txt
 pytest                                   # tests stub yt-dlp
 AUDIO_API_TOKEN=$(openssl rand -hex 32) uvicorn app.main:app --host 0.0.0.0
-pip install -U yt-dlp                    # run daily (cron); YouTube breaks it often
+pip install -U 'yt-dlp[default]'                    # run daily (cron); YouTube breaks it often
 ```
 
 Then open `http://<host>:8000/`, sign in with Google or Apple (scripts send `X-API-Token`). Env:

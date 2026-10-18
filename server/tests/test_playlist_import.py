@@ -21,6 +21,7 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setattr(deps, "DOWNLOAD_DIR", tmp_path / "downloads")
     monkeypatch.setattr(deps, "DATA_DIR", tmp_path)
     monkeypatch.setattr(deps, "JOBS", {})
+    monkeypatch.setattr(playlist_import, "DETAIL_DELAY_S", (0, 0))
     playlist_import.reset_limits()
     return TestClient(main.app)
 
@@ -62,7 +63,42 @@ def test_listing_parses_credits_title_and_year_only_from_youtube_data(client, fa
     second = rows[B]
     assert second["title"] == "Song"
     assert second["mainArtists"] == ["Bar"]
-    assert second["version"] == {"type": "remix", "name": "Foo Remix", "artists": [], "releaseYear": None}
+    assert second["version"] == {"type": "remix", "name": "Foo Remix", "artists": ["Foo"], "releaseYear": None}
+
+
+def test_listing_turns_version_word_brackets_into_the_version(client, fake):
+    fake["entries"] = [
+        flat(A, "My Heart Is on Fire (Special Extended Version)", upload_date="20190301"),
+        flat(B, "Memory Reboot (Slowed)", upload_date="20200101"),
+        flat(C, "Passion (Moreno J Remix)", upload_date="20210101"),
+        flat(D, "Song (2011 Remaster)", upload_date="20190101"),
+        flat(E, "Song (Official Video)", upload_date="20190101"),
+    ]
+    rows = by_id(post(client).json())
+    assert (rows[A]["title"], rows[A]["version"]) == ("My Heart Is on Fire", {"type": "extended", "name": "Special Extended Version", "artists": [], "releaseYear": 2019})
+    assert (rows[B]["title"], rows[B]["version"]) == ("Memory Reboot", {"type": "other", "name": "Slowed", "artists": [], "releaseYear": 2020})
+    assert (rows[C]["title"], rows[C]["version"]) == ("Passion", {"type": "remix", "name": "Moreno J Remix", "artists": ["Moreno J"], "releaseYear": 2021})
+    assert (rows[D]["title"], rows[D]["version"]) == ("Song", {"type": "remaster", "name": "2011 Remaster", "artists": [], "releaseYear": 2011})
+    assert (rows[E]["title"], rows[E]["version"], rows[E]["releaseYear"]) == ("Song", None, None)
+
+
+def test_listing_classifies_mix_and_edit_brackets_by_their_descriptor_words(client, fake):
+    fake["entries"] = [
+        flat(A, "Song (Extended Mix)", upload_date="20190301"),
+        flat(B, "Song (Radio Edit)", upload_date="20190301"),
+        flat(C, "Song (Club Mix)", upload_date="20190301"),
+        flat(D, "Song (Original Mix)", upload_date="20190301"),
+        flat(E, "Song (Moreno J Mix)", upload_date="20190301"),
+    ]
+    rows = by_id(post(client).json())
+    got = {k: (r["title"], r["version"] and (r["version"]["type"], r["version"]["name"], r["version"]["artists"])) for k, r in rows.items()}
+    assert got == {
+        A: ("Song", ("extended", "Extended Mix", [])),
+        B: ("Song", ("edit", "Radio Edit", [])),
+        C: ("Song", ("other", "Club Mix", [])),
+        D: ("Song", None),
+        E: ("Song", ("remix", "Moreno J Mix", ["Moreno J"])),
+    }
 
 
 def test_listing_makes_no_lookup_calls(client, fake, monkeypatch):
@@ -90,6 +126,50 @@ def test_unavailable_entries_are_marked_not_parsed(client, fake):
     assert [(rows[i]["state"], rows[i]["reason"]) for i in (A, B, C)] == [("unavailable", "Private"), ("unavailable", "Deleted"), ("unavailable", "Unavailable")]
     assert rows[A]["title"] == "[Private video]" and rows[A]["mainArtists"] == []
     assert rows[D]["state"] == "ok"
+
+
+def test_entries_without_title_and_length_are_private_or_deleted_videos(client, fake):
+    fake["entries"] = [
+        {"id": A, "title": None, "duration": None, "channel": None, "uploader": None, "availability": None, "thumbnails": [{"url": "x"}]},
+        {"id": B, "title": "", "duration": 0},
+        {"id": C, "title": None, "duration": 190},
+        {"id": D, "title": "Lonely Title", "duration": None},
+    ]
+    rows = by_id(post(client).json())
+    assert (rows[A]["state"], rows[A]["reason"], rows[B]["state"], rows[B]["reason"]) == ("unavailable", "Private or deleted", "unavailable", "Private or deleted")
+    assert rows[A]["mainArtists"] == [] and rows[A]["duration"] is None and rows[A]["long"] is False and rows[A]["duplicate"] is None
+    assert rows[C]["state"] == "ok" and rows[D]["state"] == "ok"
+
+
+def test_artist_title_in_the_video_title_is_split_when_the_channel_is_not_the_artist(client, fake):
+    fake["entries"] = [
+        flat(A, "The Midnight - Love Is An Ocean (Lyrics)", channel="WaveMusic"),
+        flat(B, "Xalv - Oblivion | Ana de Armas (Music Video)", channel="Xalv"),
+        flat(C, "The Flirts - Passion (Moreno J Remix)", channel="Retro Channel"),
+        flat(D, "Live - Anything", channel="Chan"),
+        flat(E, "Song - Live at Wembley", channel="Chan"),
+    ]
+    rows = by_id(post(client).json())
+    assert (rows[A]["title"], rows[A]["mainArtists"], rows[A]["version"]) == ("Love Is An Ocean", ["The Midnight"], None)
+    assert (rows[B]["title"], rows[B]["mainArtists"]) == ("Oblivion | Ana de Armas", ["Xalv"])
+    assert (rows[C]["title"], rows[C]["mainArtists"]) == ("Passion", ["The Flirts"])
+    assert rows[C]["version"] == {"type": "remix", "name": "Moreno J Remix", "artists": ["Moreno J"], "releaseYear": None}
+    assert (rows[D]["title"], rows[D]["mainArtists"]) == ("Live - Anything", ["Chan"])
+    assert (rows[E]["title"], rows[E]["mainArtists"]) == ("Song - Live at Wembley", ["Chan"])
+
+
+def test_titles_with_two_separators_or_a_listed_artist_field_are_not_split(client, monkeypatch, fake):
+    fake["entries"] = [flat(A, "One - Two - Three", channel="Chan")]
+    assert by_id(post(client).json())[A]["mainArtists"] == ["Chan"]
+    monkeypatch.setattr(extractor, "preview", lambda vid: extractor.meta_from_info(vid, {"title": "Around the World - Radio Edit", "track": "Around the World - Radio Edit", "artist": "Daft Punk", "uploader": "Chan"}))
+    row = by_id(client.post("/import/youtube-playlist/details", json={"ids": [A]}, headers=H).json())[A]
+    assert (row["mainArtists"], row["title"]) == (["Daft Punk"], "Around the World - Radio Edit")
+
+
+def test_details_split_the_artist_from_the_title_like_the_listing(client, monkeypatch):
+    monkeypatch.setattr(extractor, "preview", lambda vid: extractor.meta_from_info(vid, {"title": "The Midnight - Love Is An Ocean (Lyrics)", "uploader": "WaveMusic", "channel": "WaveMusic", "upload_date": "20200101"}))
+    row = by_id(client.post("/import/youtube-playlist/details", json={"ids": [A]}, headers=H).json())[A]
+    assert (row["mainArtists"], row["title"], row["detailed"]) == (["The Midnight"], "Love Is An Ocean", True)
 
 
 def test_duplicates_by_video_id_source_and_title_artist_version(client, fake):
@@ -199,7 +279,7 @@ def test_details_return_year_for_a_version_and_genres_from_youtube(client, monke
     body = client.post("/import/youtube-playlist/details", json={"ids": [A, B]}, headers=H).json()
     assert body["failed"] == []
     row = by_id(body)[A]
-    assert row["version"] == {"type": "remix", "name": "Foo Remix", "artists": [], "releaseYear": 2021}
+    assert row["version"] == {"type": "remix", "name": "Foo Remix", "artists": ["Foo"], "releaseYear": 2021}
     assert row["releaseYear"] is None
     assert row["publishedYear"] == 2021
     assert row["tags"] == ["genre:house"]
@@ -230,6 +310,69 @@ def test_details_report_failed_ids_and_keep_the_rest(client, monkeypatch):
     body = client.post("/import/youtube-playlist/details", json={"ids": [A, B]}, headers=H).json()
     assert [e["id"] for e in body["entries"]] == [A]
     assert body["failed"] == [B]
+    assert body["unavailable"] == [B]
+
+
+def test_details_do_not_call_a_network_failure_unavailable(client, monkeypatch):
+    def preview(vid):
+        raise RuntimeError("ERROR: Unable to download webpage: Connection reset by peer")
+
+    monkeypatch.setattr(extractor, "preview", preview)
+    body = client.post("/import/youtube-playlist/details", json={"ids": [A]}, headers=H).json()
+    assert body == {"entries": [], "failed": [A], "unavailable": [], "rate_limited": False}
+
+
+def test_details_treat_a_content_block_as_unavailable(client, monkeypatch):
+    def preview(vid):
+        raise RuntimeError("ERROR: [youtube] x: It was blocked due to the claimed content by Someone.")
+
+    monkeypatch.setattr(extractor, "preview", preview)
+    assert client.post("/import/youtube-playlist/details", json={"ids": [A]}, headers=H).json()["unavailable"] == [A]
+
+
+def test_details_stop_after_a_rate_limit_and_say_so(client, monkeypatch):
+    ids = [f"{i:011d}" for i in range(6)]
+    calls = []
+
+    def preview(vid):
+        calls.append(vid)
+        if len(calls) == 3:
+            raise RuntimeError("ERROR: [youtube] x: Sign in to confirm you\u2019re not a bot.")
+        return full_meta(vid, remixer=None, title="Plain")
+
+    monkeypatch.setattr(playlist_import, "DETAIL_WORKERS", 1)
+    monkeypatch.setattr(extractor, "preview", preview)
+    body = client.post("/import/youtube-playlist/details", json={"ids": ids}, headers=H).json()
+    assert body["rate_limited"] is True
+    assert [e["id"] for e in body["entries"]] == ids[:2]
+    assert body["failed"] == ids[2:]
+    assert body["unavailable"] == []
+    assert calls == ids[:3]
+
+
+def test_a_429_error_is_also_a_rate_limit(client, monkeypatch):
+    def preview(vid):
+        raise RuntimeError("ERROR: Unable to download webpage: HTTP Error 429: Too Many Requests")
+
+    monkeypatch.setattr(extractor, "preview", preview)
+    body = client.post("/import/youtube-playlist/details", json={"ids": [A, B]}, headers=H).json()
+    assert body["rate_limited"] is True and body["unavailable"] == []
+
+
+def test_details_pause_between_one_workers_fetches(client, monkeypatch):
+    pauses = []
+    monkeypatch.setattr(playlist_import, "DETAIL_DELAY_S", (0.5, 1.5))
+    monkeypatch.setattr(playlist_import, "DETAIL_WORKERS", 1)
+    monkeypatch.setattr(playlist_import.time, "sleep", lambda seconds: pauses.append(seconds))
+    monkeypatch.setattr(extractor, "preview", lambda vid: full_meta(vid))
+    ids = [f"{i:011d}" for i in range(5)]
+    assert len(client.post("/import/youtube-playlist/details", json={"ids": ids}, headers=H).json()["entries"]) == 5
+    assert len(pauses) == 4
+    assert all(0.5 <= p <= 1.5 for p in pauses)
+
+
+def test_details_use_few_workers_and_small_batches():
+    assert playlist_import.DETAIL_WORKERS == 2 and playlist_import.MAX_DETAIL_IDS == 10 and playlist_import.DETAIL_DELAY_S == (0.5, 1.5)
 
 
 def test_details_time_out_per_batch(client, monkeypatch):
@@ -238,14 +381,14 @@ def test_details_time_out_per_batch(client, monkeypatch):
     monkeypatch.setattr(extractor, "preview", lambda vid: release.wait(5) and full_meta(vid))
     body = client.post("/import/youtube-playlist/details", json={"ids": [A]}, headers=H).json()
     release.set()
-    assert body == {"entries": [], "failed": [A]}
+    assert body == {"entries": [], "failed": [A], "unavailable": [], "rate_limited": False}
 
 
 def test_details_validate_ids_and_batch_size(client, monkeypatch):
     monkeypatch.setattr(extractor, "preview", lambda vid: full_meta(vid))
     assert client.post("/import/youtube-playlist/details", json={"ids": ["nope"]}, headers=H).status_code == 422
     assert client.post("/import/youtube-playlist/details", json={"ids": []}, headers=H).status_code == 422
-    assert client.post("/import/youtube-playlist/details", json={"ids": [f"{i:011d}" for i in range(26)]}, headers=H).status_code == 422
+    assert client.post("/import/youtube-playlist/details", json={"ids": [f"{i:011d}" for i in range(11)]}, headers=H).status_code == 422
     assert client.post("/import/youtube-playlist/details", json={"ids": ["soundcloud-123"]}, headers=H).status_code == 422
 
 

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  addLabel, canTick, counterText, defaultChecked, markOf, mergeDetails, playlistNote, postArgs, quotaNote, quotaPlan, runAdd, stops, summaryText,
+  addLabel, canTick, counterText, defaultChecked, markOf, markUnavailable, mergeDetails, playlistNote, postArgs, quotaNote, quotaPlan, runAdd, stops, summaryText,
 } from './playlist-model.js';
 
 const row = (id, extra = {}) => ({ id, url: `https://www.youtube.com/watch?v=${id}`, state: 'ok', title: `T ${id}`, mainArtists: ['A'], featuredArtists: [], version: null, tags: [], duration: 200, long: false, duplicate: null, raw: { title: 'x' }, ...extra });
@@ -42,6 +42,19 @@ test('details replace the parsed fields of listed rows only', () => {
   assert.equal(got.rows[0].title, 'New');
   assert.equal(got.rows[1].title, 'T b');
   assert.deepEqual(got.changed, ['a']);
+});
+
+test('ids YouTube refused to serve turn their listed rows into Unavailable rows', () => {
+  const rows = [row('a'), row('b', { duplicate: 'id', long: true }), row('c', { state: 'unavailable', reason: 'Private' })];
+  const got = markUnavailable(rows, ['b', 'c', 'zzz']);
+  assert.deepEqual(got.changed, ['b']);
+  assert.equal(got.rows[0], rows[0]);
+  assert.deepEqual([got.rows[1].state, got.rows[1].reason, got.rows[1].duplicate, got.rows[1].long], ['unavailable', 'Unavailable', null, false]);
+  assert.equal(got.rows[2], rows[2]);
+  assert.equal(canTick(got.rows[1]), false);
+  assert.equal(defaultChecked(got.rows[1]), false);
+  assert.equal(markOf(got.rows[1]).text, 'Unavailable');
+  assert.deepEqual(markUnavailable(rows, undefined).changed, []);
 });
 
 test('quota: everything fits without a cap, otherwise the room left decides', () => {

@@ -161,3 +161,18 @@ test('reset drops a suggestion', async () => {
   f.reset();
   assert.equal(f.values().version.releaseYear, '');
 });
+
+test('add form: a preview version_year (remaster year in the title) is the marked suggestion and beats the upload year', () => {
+  const f = songForm({ mode: 'add', song: { title: 'T', remixer: '2011 Remaster', version_year: 2011, published_year: 2019, tags: [] } });
+  assert.equal(kind(f).value, 'remaster');
+  assert.equal(vy(f).value, '2011');
+  assert.ok(vy(f).classList.contains('suggested'));
+  assert.equal(f.values().releaseYear, '');
+});
+
+test('add form: a preview version without version_year keeps the upload-year suggestion', () => {
+  const f = songForm({ mode: 'add', song: { title: 'T', remixer: 'Slowed', published_year: 2019, tags: [] } });
+  assert.equal(kind(f).value, 'other');
+  assert.equal(vy(f).value, '2019');
+  assert.ok(vy(f).classList.contains('suggested'));
+});

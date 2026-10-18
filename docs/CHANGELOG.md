@@ -5,6 +5,10 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 ## 2026-10-18 (playlist import)
 
 - Web and server: pasting a YouTube playlist link in Add opens an import table (checkbox, title with version, artists, version, year, genres, length, status; "Select all"/"Select none", "N of M selected", "Add N songs"): songs over 5 minutes and songs already in the library are unticked and marked, private and deleted videos are shown as Unavailable, the first 200 videos are listed, and the ticked songs are saved as catalog entries one by one through `POST /songs` (quota respected, progress bar, "Added" marks, summary toast). Metadata comes from YouTube data only, no AcoustID, Discogs, MusicBrainz or Wikipedia calls. New endpoints `POST /import/youtube-playlist` and `POST /import/youtube-playlist/details` (ADD-150 to ADD-158, API-160 to API-162).
+- Server: a version word in a trailing title bracket ("(Extended Mix)", "(Slowed)", "(Live from the Royal Albert Hall)", "(2011 Remaster)") becomes the song's version, in the single-link Add and in the playlist import alike; `POST /preview` returns `version_year` (ADD-159).
+- Server and web: the playlist import reads details 10 videos per request by 2 workers with short random pauses and stops when YouTube rate-limits; videos YouTube lists without a title or refuses to serve show as Unavailable rows; without a YouTube artist field a title "Artist - Title" gives the artist (API-161, ADD-154, ADD-158).
+- Server: yt-dlp is installed as `yt-dlp[default]` (brings `yt-dlp-ejs`); the server needs deno for YouTube challenges ([deploy](tech/deploy.md#deno)).
+
 ## 2026-10-18 (remaster year)
 
 - Web: a remaster with its own year shows it in the title, "Doctor Doctor (2007 remaster)", and the year line keeps the original year only, "UFO · 1979"; Library sort by Year and Song stats use the original year (LIB-150).

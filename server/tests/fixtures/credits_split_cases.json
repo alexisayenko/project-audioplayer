@@ -119,7 +119,19 @@
   {"artist": "", "title": "Artist - Title (Remix)", "remixer": null,
    "expect": {"artists": [], "featured": [], "version": {"kind": "remix", "name": "Remix", "by": []}, "title": "Artist - Title", "notes": ["version_in_title"]}},
   {"artist": "", "title": "Title - Artist", "remixer": null,
-   "expect": {"artists": [], "featured": [], "version": null, "title": null, "notes": []}}
+   "expect": {"artists": [], "featured": [], "version": null, "title": null, "notes": []}},
+  {"artist": "Chan", "title": "Memory Reboot", "remixer": "Slowed", "expect": {"artists": ["Chan"], "featured": [], "version": {"kind": "other", "name": "Slowed", "by": []}, "title": null, "notes": ["remixer_to_version"]}},
+  {"artist": "Chan", "title": "Memory Reboot (Slowed)", "remixer": null, "expect": {"artists": ["Chan"], "featured": [], "version": {"kind": "other", "name": "Slowed", "by": []}, "title": "Memory Reboot", "notes": ["version_in_title"]}},
+  {"artist": "Chan", "title": "My Heart Is on Fire", "remixer": "Special Extended Version", "expect": {"artists": ["Chan"], "featured": [], "version": {"kind": "extended", "name": "Special Extended Version", "by": []}, "title": null, "notes": ["remixer_to_version"]}},
+  {"artist": "Sam Smith", "title": "Writings On The Wall", "remixer": "Sofia Karlberg Cover", "expect": {"artists": ["Sam Smith"], "featured": [], "version": {"kind": "cover", "name": "Sofia Karlberg Cover", "by": [], "of": ["Sofia Karlberg"]}, "title": null, "notes": ["remixer_to_version"]}},
+  {"artist": "Chan", "title": "Song", "remixer": "Sped Up + Reverb", "expect": {"artists": ["Chan"], "featured": [], "version": {"kind": "other", "name": "Sped Up + Reverb", "by": []}, "title": null, "notes": ["remixer_to_version"]}},
+  {"artist": "Chan", "title": "Song", "remixer": "Nightcore Version", "expect": {"artists": ["Chan"], "featured": [], "version": {"kind": "other", "name": "Nightcore Version", "by": []}, "title": null, "notes": ["remixer_to_version"]}},
+  {"artist": "Chan", "title": "Song", "remixer": "Mixed By DJ Gvozd", "expect": {"artists": ["Chan"], "featured": [], "version": {"kind": "other", "name": "Mixed By DJ Gvozd", "by": ["DJ Gvozd"]}, "title": null, "notes": ["remixer_to_version"]}},
+  {"artist": "Chan", "title": "Song", "remixer": "Extended Mix", "expect": {"artists": ["Chan"], "featured": [], "version": {"kind": "extended", "name": "Extended Mix", "by": []}, "title": null, "notes": ["remixer_to_version"]}},
+  {"artist": "Chan", "title": "Song", "remixer": "Radio Edit", "expect": {"artists": ["Chan"], "featured": [], "version": {"kind": "edit", "name": "Radio Edit", "by": []}, "title": null, "notes": ["remixer_to_version"]}},
+  {"artist": "Chan", "title": "Song", "remixer": "Club Mix", "expect": {"artists": ["Chan"], "featured": [], "version": {"kind": "other", "name": "Club Mix", "by": []}, "title": null, "notes": ["remixer_to_version"]}},
+  {"artist": "Chan", "title": "Song", "remixer": "Alesso Club Mix", "expect": {"artists": ["Chan"], "featured": [], "version": {"kind": "remix", "name": "Alesso Club Mix", "by": ["Alesso"]}, "title": null, "notes": ["remixer_to_version"]}},
+  {"artist": "Chan", "title": "Song", "remixer": "Instrumental Mix", "expect": {"artists": ["Chan"], "featured": [], "version": {"kind": "instrumental", "name": "Instrumental Mix", "by": []}, "title": null, "notes": ["remixer_to_version"]}}
  ],
  "review": [
   {"raw": {"title": "Pressure", "artist": "Nadia Ali, Starkillers & Alex Kenji", "remixer": "Alesso Remix", "year": 2009, "remix_year": 2012},

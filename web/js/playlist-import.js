@@ -6,7 +6,7 @@ import { artistLine, subtitle, titleLine, titleNodes, yearText } from './credits
 import { KIND_LABELS } from './song-form-credits.js';
 import { genreText } from './genre-cell.js';
 import {
-  DETAIL_BATCH, DETAIL_PARALLEL, addLabel, canTick, counterText, defaultChecked, isListed, markOf, mergeDetails, playlistNote, quotaNote, quotaPlan,
+  DETAIL_BATCH, DETAIL_PARALLEL, RATE_LIMIT_NOTE, addLabel, canTick, counterText, defaultChecked, isListed, markOf, markUnavailable, mergeDetails, playlistNote, quotaNote, quotaPlan,
   runAdd, summaryText,
 } from './playlist-model.js';
 
@@ -123,9 +123,14 @@ export function playlistImport({ link, onBack, onSingle }) {
     for (const r of rows) if (defaultChecked(r)) checked.add(r.id);
   }
 
-  function applyDetails(entries) {
+  function applyDetails(entries, unavailable = []) {
     const merged = mergeDetails(rows, entries);
-    rows = merged.rows;
+    const gone = markUnavailable(merged.rows, unavailable);
+    rows = gone.rows;
+    for (const id of gone.changed) {
+      checked.delete(id);
+      swapRow(id);
+    }
     for (const id of merged.changed) {
       const row = rows.find((r) => r.id === id);
       if (!touched.has(id)) {
@@ -149,7 +154,11 @@ export function playlistImport({ link, onBack, onSingle }) {
         try {
           const got = await api.playlistDetails(batch, ctl.signal);
           if (destroyed) return;
-          applyDetails(got.entries || []);
+          applyDetails(got.entries || [], got.unavailable || []);
+          if (got.rate_limited) {
+            problem = `${RATE_LIMIT_NOTE}. Year and genre details are missing for some songs.`;
+            batches.length = 0;
+          }
         } catch (ex) {
           if (aborted(ex) || destroyed) return;
           problem = `Year and genre details are missing for some songs: ${ex.message}`;

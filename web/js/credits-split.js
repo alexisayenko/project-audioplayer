@@ -13,6 +13,7 @@ const KIND_WORDS = [
   ['remaster', /\bremaster(?:ed)?\b/i],
   ['edit', /\bedit\b/i],
   ['cover', /\bcover\b/i],
+  ['other', /\bslowed\b|\bsped[\s-]?up\b|\bspeed[\s-]?up\b|\bnightcore\b|\breverb\b/i],
 ];
 const BY_STRIP = /\b(?:remix(?:ed)?|mix(?:ed)?|edit|mashup|bootleg|rework|vip|dub|version|radio|club|extended|original|instrumental|vocal|chill|by)\b/gi;
 const MIXED_BY = /\bmixed\s+by\b/i;
@@ -76,8 +77,23 @@ function cutFeat(input) {
   }
 }
 
-function kindOf(text) {
+const MIX_TAIL = /^(?<x>.*?)[\s,/-]*\b(?:mix|edit|version)\s*$/i;
+const DESCRIPTOR_WORDS = new Set(['extended', 'radio', 'club', 'dub', 'vip', 'original', 'instrumental', 'acoustic', 'short', 'long', 'album', 'single', 'full', 'main', 'extra', 'maxi', 'deep', 'vocal']);
+const DESCRIPTOR_NUMBER = /^\d+(?:["'\u2033\u2032]|-?inch)?$/i;
+const DESCRIPTOR_KINDS = [['extended', 'extended'], ['instrumental', 'instrumental'], ['acoustic', 'acoustic'], ['radio', 'edit']];
+
+function descriptorKind(text) {
+  const m = MIX_TAIL.exec(text.trim());
+  const words = m ? m.groups.x.split(/[\s,/+&-]+/).filter(Boolean).map((w) => w.toLowerCase()) : [];
+  if (!words.length || !words.every((w) => DESCRIPTOR_WORDS.has(w) || DESCRIPTOR_NUMBER.test(w))) return null;
+  const hit = DESCRIPTOR_KINDS.find(([word]) => words.includes(word));
+  return hit ? hit[1] : 'other';
+}
+
+export function kindOf(text) {
   if (MASHUP_WORD.test(text.trim())) return 'mashup';
+  const descriptor = descriptorKind(text);
+  if (descriptor && !/\bremix\b|\bmashup\b|\bmixed\s+by\b/i.test(text)) return descriptor;
   if (MIXED_BY.test(text) && !REMIX_OR_MASHUP.test(text)) return 'other';
   for (const [kind, rx] of KIND_WORDS) if (rx.test(text)) return kind;
   return 'remix';
@@ -132,7 +148,7 @@ function coverDash(left, right, text, name, credited, featured, ctx, notes) {
   return [title, r2.artists, r2.version, [r2, r1]];
 }
 
-const byNames = (text, kind) => (kind === 'remix' || kind === 'other' ? names(text.replace(BY_STRIP, ' ')) : []);
+const byNames = (text, kind) => (kind === 'remix' || (kind === 'other' && MIXED_BY.test(text)) ? names(text.replace(BY_STRIP, ' ')) : []);
 
 function version(text) {
   const kind = kindOf(text);
@@ -298,19 +314,11 @@ function suggestInternal(artist, title, remixer, ctx = {}) {
     ver = version(remixerText);
     notes.push('remixer_to_version');
     if (fromTitle) notes.push('version_in_title');
+    if (ver.kind === 'cover') [base, artists, ver, alternatives] = coverReading(base, artists, featured, ver, ctx ?? {}, notes);
   } else if (fromTitle) {
     ver = version(squash(fromTitle));
     notes.push('version_in_title');
-    if (ver.kind === 'cover') {
-      const dash = DASH.exec(base);
-      const m = COVER_TAIL.exec(ver.name);
-      const cname = m ? squash(m[1]) : '';
-      if (dash && cname && squash(base.slice(0, dash.index)) && squash(base.slice(dash.index + dash[0].length))) {
-        [base, artists, ver, alternatives] = coverDash(base.slice(0, dash.index), base.slice(dash.index + dash[0].length), ver.name, cname, [...artists, ...featured], featured, ctx ?? {}, notes);
-      } else {
-        ver = coverVersion(ver.name, [...artists, ...featured], notes) ?? ver;
-      }
-    }
+    if (ver.kind === 'cover') [base, artists, ver, alternatives] = coverReading(base, artists, featured, ver, ctx ?? {}, notes);
   } else if (release && release.cover) {
     ver = { kind: 'cover', name: 'Cover', by: [] };
     notes.push('cover_release', 'version_in_title');
@@ -337,6 +345,16 @@ function v2Version(v) {
 
 function v2Reading({ artists, featured, version: v, ...rest }) {
   return { ...rest, mainArtists: artists, featuredArtists: featured, version: v2Version(v) };
+}
+
+function coverReading(base, artists, featured, ver, ctx, notes) {
+  const dash = DASH.exec(base);
+  const m = COVER_TAIL.exec(ver.name);
+  const cname = m ? squash(m[1]) : '';
+  if (dash && cname && squash(base.slice(0, dash.index)) && squash(base.slice(dash.index + dash[0].length))) {
+    return coverDash(base.slice(0, dash.index), base.slice(dash.index + dash[0].length), ver.name, cname, [...artists, ...featured], featured, ctx, notes);
+  }
+  return [base, artists, coverVersion(ver.name, [...artists, ...featured], notes) ?? ver, null];
 }
 
 export function suggest(artist, title, remixer, ctx = {}) {

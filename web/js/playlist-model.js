@@ -1,8 +1,9 @@
 import { plural } from './dom.js';
 import { addBody, storedTags } from './song-payload.js';
 
-export const DETAIL_BATCH = 25;
-export const DETAIL_PARALLEL = 2;
+export const DETAIL_BATCH = 10;
+export const DETAIL_PARALLEL = 1;
+export const RATE_LIMIT_NOTE = 'YouTube is rate-limiting this server, try again later';
 
 export const isListed = (row) => row.state === 'ok';
 
@@ -38,6 +39,17 @@ export function mergeDetails(rows, entries) {
     if (!found || row.state !== 'ok') return row;
     changed.push(found.id);
     return { ...found };
+  });
+  return { rows: next, changed };
+}
+
+export function markUnavailable(rows, ids) {
+  const gone = new Set(ids || []);
+  const changed = [];
+  const next = rows.map((row) => {
+    if (!gone.has(row.id) || row.state !== 'ok') return row;
+    changed.push(row.id);
+    return { ...row, state: 'unavailable', reason: 'Unavailable', duplicate: null, long: false };
   });
   return { rows: next, changed };
 }

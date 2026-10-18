@@ -3,25 +3,31 @@
 from __future__ import annotations
 
 import os
+import random
 import re
+import threading
+import time
 import unicodedata
 from concurrent.futures import ThreadPoolExecutor, wait
 from typing import Any
 
-from . import credits, credits_v1, extractor, metadata, previewcache, titleclean, urlclean
+from . import credits, credits_split, credits_v1, extractor, metadata, previewcache, titleclean, titles, urlclean
 from .library import sources_of
 from .problems import Problem
 from .ratelimit import KeyedWindow
 
 MAX_ENTRIES = 200
 LONG_SECONDS = 300
-MAX_DETAIL_IDS = 25
-DETAIL_WORKERS = 8
+MAX_DETAIL_IDS = 10
+DETAIL_WORKERS = 2
+DETAIL_DELAY_S = (0.5, 1.5)
 DETAIL_TIMEOUT_S = 40.0
 PERIOD_S = 3600.0
 NOT_A_PLAYLIST = "not a YouTube playlist link"
 
 _UNAVAILABLE_TITLE = re.compile(r"^\[(private|deleted|unavailable|removed)[^\]]*\]$", re.I)
+_TRANSIENT_ERROR = re.compile(r"HTTP Error (?:429|5\d\d)|too many requests|timed? ?out|connection|network|temporary failure|sign in to confirm|rate.?limit", re.I)
+_RATE_LIMITED = re.compile(r"HTTP Error 429|too many requests|confirm you.?re not a bot", re.I)
 _UNAVAILABLE_AVAILABILITY = {"private": "Private", "needs_auth": "Private", "premium_only": "Unavailable", "subscriber_only": "Unavailable"}
 
 _lists = KeyedWindow(12, PERIOD_S)
@@ -94,8 +100,10 @@ class Owned:
 
 
 def unavailable_reason(info: dict[str, Any]) -> str | None:
-    """"Private", "Deleted" or "Unavailable" for a playlist entry YouTube lists without a playable video; None for a normal one."""
+    """"Private", "Deleted", "Private or deleted" (no title and no length) or "Unavailable" for a playlist entry YouTube lists without a playable video; None for a normal one."""
     title = str(info.get("title") or "").strip()
+    if not title and not info.get("duration"):
+        return "Private or deleted"
     found = _UNAVAILABLE_TITLE.fullmatch(title)
     if found:
         return "Deleted" if found.group(1).lower() in ("deleted", "removed") else "Private" if found.group(1).lower() == "private" else "Unavailable"
@@ -110,9 +118,13 @@ def view(video_id: str, meta: dict[str, Any], owned: Owned, *, detailed: bool) -
     """One table row from parsed YouTube data: the credits and year the single-link Add form would hold with every lookup empty."""
     remixer = (meta.get("remixer") or "").strip() or None
     published = meta.get("published_year")
-    version = {"type": credits_v1.kind_for(remixer), "name": remixer, "artists": [], "releaseYear": published} if remixer else None
+    version = {"type": credits_split.kind_of(remixer), "name": remixer, "artists": credits_split.version_artists(remixer), "releaseYear": meta.get("version_year") or published} if remixer else None
     title = titleclean.clean(str(meta.get("title") or ""))
-    artists = credits_v1.pills(meta.get("artist"))
+    artist = meta.get("artist")
+    lead = None if meta.get("credited") else titles.lead_artist(title)
+    if lead:
+        artist, title = lead
+    artists = credits_v1.pills(artist)
     duration = meta.get("duration")
     return {
         "id": video_id,
@@ -169,17 +181,51 @@ def listing(list_id: str, songs: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def details(ids: list[str], songs: list[dict[str, Any]]) -> dict[str, Any]:
-    """Full YouTube data (artist and track fields, tags, upload date) for up to MAX_DETAIL_IDS videos, fetched in parallel within DETAIL_TIMEOUT_S; the ids that failed or timed out are listed in `failed`."""
+    """Full YouTube data (artist and track fields, tags, upload date) for up to MAX_DETAIL_IDS videos, fetched by DETAIL_WORKERS workers with a random pause of DETAIL_DELAY_S between one worker's fetches, within DETAIL_TIMEOUT_S; the ids that failed or timed out are listed in `failed`, those YouTube refused to serve (an error that is not a network, rate-limit or sign-in problem) also in `unavailable`. After a 429 or bot check the remaining ids are not fetched and `rate_limited` is true."""
     owned = Owned(songs)
+    halted = threading.Event()
+    pending = list(dict.fromkeys(ids))
+    lock = threading.Lock()
+    results: dict[str, tuple[dict[str, Any] | None, Exception | None]] = {}
+
+    def worker() -> None:
+        first = True
+        while not halted.is_set():
+            with lock:
+                if not pending:
+                    return
+                vid = pending.pop(0)
+            if not first:
+                time.sleep(random.uniform(*DETAIL_DELAY_S))
+            first = False
+            if halted.is_set():
+                return
+            try:
+                results[vid] = (previewcache.youtube(vid), None)
+            except Exception as exc:
+                results[vid] = (None, exc)
+                if _RATE_LIMITED.search(str(exc)):
+                    halted.set()
+
     pool = ThreadPoolExecutor(max_workers=DETAIL_WORKERS)
-    futures = {vid: pool.submit(previewcache.youtube, vid) for vid in dict.fromkeys(ids)}
-    wait(list(futures.values()), timeout=DETAIL_TIMEOUT_S)
+    futures = [pool.submit(worker) for _ in range(min(DETAIL_WORKERS, len(pending)))]
+    wait(futures, timeout=DETAIL_TIMEOUT_S)
+    halted.set()
     pool.shutdown(wait=False, cancel_futures=True)
     entries: list[dict[str, Any]] = []
     failed: list[str] = []
-    for vid, future in futures.items():
-        if future.done() and future.exception() is None:
-            entries.append(view(vid, future.result(), owned, detailed=True))
-        else:
-            failed.append(vid)
-    return {"entries": entries, "failed": failed}
+    unavailable: list[str] = []
+    limited = False
+    for vid in dict.fromkeys(ids):
+        meta, error = results.get(vid, (None, None))
+        if meta is not None:
+            entries.append(view(vid, meta, owned, detailed=True))
+            continue
+        failed.append(vid)
+        if error is None:
+            continue
+        if _RATE_LIMITED.search(str(error)):
+            limited = True
+        elif not _TRANSIENT_ERROR.search(str(error)):
+            unavailable.append(vid)
+    return {"entries": entries, "failed": failed, "unavailable": unavailable, "rate_limited": limited}

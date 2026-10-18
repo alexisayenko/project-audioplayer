@@ -189,3 +189,14 @@ test('mashup suggestion asks who made it and applies nothing by itself', () => {
   assert.deepEqual(f.values().mainArtists, ['Repost Channel']);
   assert.equal(f.values().version, null);
 });
+
+test('kindFor reads the known version words of the preview text', () => {
+  assert.equal(kindFor('Special Extended Version'), 'extended');
+  assert.equal(kindFor('Slowed'), 'other');
+  assert.equal(kindFor('Sped Up'), 'other');
+  assert.equal(kindFor('Live at Wembley'), 'live');
+  assert.equal(kindFor('2011 Remaster'), 'remaster');
+  assert.equal(kindFor('Foo Cover'), 'cover');
+  assert.equal(kindFor('Moreno J Remix'), 'remix');
+  assert.equal(kindFor('Something else'), 'remix');
+});

@@ -2,7 +2,7 @@ import { MIN_YEAR, maxYear } from './constants.js';
 import { el, field } from './dom.js';
 import { splitTokens, joinTokens } from './tokens.js';
 import { displayLine, ofNames } from './credits.js';
-import { suggest } from './credits-split.js';
+import { suggest, kindOf } from './credits-split.js';
 import { planVersionYear, validYear } from './remix-year.js';
 
 export const KIND_LABELS = {
@@ -26,7 +26,7 @@ const ofLabel = (kind) => (kind === 'mashup' ? 'Mashup of' : 'Cover of');
 const MAKERS_ASK = 'Who made this mashup? Confirm or edit Artists; sources go in Mashup of.';
 const COVER_ASK = 'Who performs this cover? Pick the reading that matches; the usual one is listed first.';
 
-export const kindFor = (text) => (/mixed\s+by/i.test(text) && !/remix|mashup/i.test(text) ? 'other' : 'remix');
+export const kindFor = kindOf;
 
 export function initialCredits(song = {}) {
   if (Array.isArray(song.mainArtists)) {
@@ -76,6 +76,7 @@ export function creditsBlock({ tg, song = {}, getTitle, setTitle, emit }) {
   const detailRow = el('div', { class: 'remix-row version-row' }, byField, yearField);
 
   let pubYear = validYear(song.published_year);
+  const titleYear = validYear(song.version_year);
   let specYear = null;
   let auto = false;
   let touched = false;
@@ -84,7 +85,7 @@ export function creditsBlock({ tg, song = {}, getTitle, setTitle, emit }) {
   const hasVersion = () => f.kind.value !== '';
   const syncYear = () => {
     if (touched) return;
-    const plan = planVersionYear({ kind: f.kind.value, name: f.name.value, current: f.vyear.value, auto, published: pubYear, specific: specYear });
+    const plan = planVersionYear({ kind: f.kind.value, name: f.name.value, current: f.vyear.value, auto, published: pubYear, specific: titleYear ?? specYear });
     auto = plan.auto;
     f.vyear.classList.toggle('suggested', auto);
     f.vyear.title = auto ? SUGGESTED_TIP : '';

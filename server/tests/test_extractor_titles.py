@@ -46,7 +46,7 @@ def test_preview_cuts_remix_into_remixer(monkeypatch):
 
 def test_preview_remixer_is_none_without_remix(monkeypatch):
     monkeypatch.setattr(extractor.yt_dlp, "YoutubeDL", FakeYDL)
-    monkeypatch.setattr(FakeYDL, "info", {"title": "A - B (Extended Mix)", "uploader": "X"})
+    monkeypatch.setattr(FakeYDL, "info", {"title": "A - B (Official Video)", "uploader": "X"})
     assert extractor.preview(YT)["remixer"] is None
 
 
@@ -69,11 +69,14 @@ def test_download_audio_cuts_remix(monkeypatch):
 LIVE = "Dua Lipa and Elton John - Cold Heart (Live from the Royal Albert Hall)"
 
 
-def test_preview_keeps_live_in_title(monkeypatch):
+def test_preview_cuts_live_bracket_into_the_version(monkeypatch):
     monkeypatch.setattr(extractor.yt_dlp, "YoutubeDL", FakeYDL)
     monkeypatch.setattr(FakeYDL, "info", {"title": LIVE, "uploader": "Dua Lipa", "duration": 200})
     p = extractor.preview(YT)
-    assert p["title"].endswith("(Live from the Royal Albert Hall)")
+    assert p["title"] == "Dua Lipa and Elton John - Cold Heart"
+    assert p["remixer"] == "Live from the Royal Albert Hall"
+    assert p["suggested_credits"]["version"]["type"] == "live"
+    assert p["version_year"] is None
 
 
 def test_preview_example_keeps_feat_and_cuts_remix_segment(monkeypatch):

@@ -13,7 +13,7 @@ Status: Accepted · 2026-10-14. Live at https://electrophone.cc since 2026-10-13
 | Env file | `/etc/audioplayer/env`, loaded by the unit (secrets; never in a repo, never printed). Keys present: `AUDIO_API_TOKEN`, `AUDIO_DATA_REPO`, `AUDIO_COVERS_REPO`, `AUDIO_HOSTS`, `AUDIO_DATA_DIR`, `ALLOWED_EMAIL`, `GOOGLE_WEB_CLIENT_ID`, `APPLE_WEB_CLIENT_ID`, `APPLE_AUDIENCE`, `GOOGLE_CLIENT_ID`, `AUDIO_SESSION_SECRET`; optional host keys `PUBLIC_HOSTS`, `CANONICAL_HOST`, `OAUTH_REDIRECT_URIS` (ADR-0019, see [Hostnames](#hostnames)); no limit keys are set, so the defaults apply |
 | Audio | ZFS dataset `pool-3/music` (single disk, no redundancy), mounted in the LXC at `/srv/music`; audio resolves via `AUDIO_MUSIC_ROOT` / `AUDIO_HOSTS` (STO-010; `AUDIO_DATA_DIR` holds only `library.json`, `covers/` and `genre-ontology.json`); files under `/srv/music/users/<uid>/` |
 | Metadata | the server's own clones, in `/var/lib/audioplayer/`, of `data-storage` (`audioplayer/users/<uid>/{profile,library}.json`) and `data-storage-lfs` (covers), committed on every write and pushed by the git sync timer (ADR-0005, ADR-0012, ADR-0026) |
-| yt-dlp | `audioplayer-ytdlp-update.timer` (`OnCalendar=weekly`, Mondays 00:00 UTC, `Persistent=true`) starts `audioplayer-ytdlp-update.service`: `venv/bin/pip install -q -U yt-dlp`, then restarts `audioplayer` (NFR-013) |
+| yt-dlp | `audioplayer-ytdlp-update.timer` (`OnCalendar=weekly`, Mondays 00:00 UTC, `Persistent=true`) starts `audioplayer-ytdlp-update.service`: `venv/bin/pip install -q -U 'yt-dlp[default]'` (the `default` extra brings `yt-dlp-ejs`, the YouTube challenge solver), then restarts `audioplayer` (NFR-013) |
 | Backups | `/var/backups/audioplayer-<YYYYMMDD-HHMMSS>/` with `data-storage.bundle`, `data-storage-lfs.bundle` and the SHA files `app.HEAD`, `data-storage.HEAD`, `data-storage-lfs.HEAD`; taken by hand, not by the deploy helper |
 
 ## Deploy
@@ -91,6 +91,7 @@ Deployed 2026-10-18 (ADR-0031, task-0049, DATA-164 to DATA-166). The server migr
 - Close signup: set `SIGNUP_OPEN=0` in `/etc/audioplayer/env` and `sudo systemctl restart audioplayer`. Existing users and the owner keep working, new sign-ins get 403 `signup_closed` (NFR-051). Set `1` (or remove the line) to reopen.
 - Change a limit (`USER_MAX_SONGS`, `USER_MAX_BYTES`, `USER_ADDS_PER_HOUR`, `POOL_MAX_BYTES`, ...): same file, same restart.
 - yt-dlp broken: `sudo systemctl start audioplayer-ytdlp-update.service` (upgrades and restarts).
+- <a id="deno"></a>JavaScript runtime for yt-dlp (deno): recent yt-dlp solves YouTube's challenges with `yt-dlp-ejs` (installed by `yt-dlp[default]`, which `server/requirements.txt` and the update service both use) and needs a JavaScript runtime, deno. The owner installs deno as root into `/usr/local/bin` (on the service PATH); check as the service user with `sudo -u audioplayer deno --version`, then `sudo systemctl restart audioplayer`. No code change is needed: yt-dlp finds deno on its own. Without it the server log shows "No supported JavaScript runtime could be found" and YouTube lookups fail or lose formats more often. If the update service unit on the server still says `pip install -q -U yt-dlp`, change it to `'yt-dlp[default]'` and run `sudo systemctl daemon-reload`.
 - Pool usage: `du -sh /srv/music/users`; the server refuses new audio at `POOL_MAX_BYTES` (API-044).
 
 ## Public guest view

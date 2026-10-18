@@ -110,7 +110,7 @@ test('cover rule is whole-word and parenthetical only', () => {
   assert.equal(suggest('A', 'Discovery (Recovery)', '').version, null);
   assert.deepEqual(suggest('A', 'Song (Discovery Cover)', '').version.originalArtists, ['Discovery']);
   assert.equal(suggest('A', 'Song (Cover)', '').version.originalArtists, undefined);
-  assert.equal(suggest('Sam Smith', 'Writings On The Wall', 'Sofia Karlberg Cover').version.originalArtists, undefined);
+  assert.deepEqual(suggest('Sam Smith', 'Writings On The Wall', 'Sofia Karlberg Cover').version.originalArtists, ['Sofia Karlberg']);
   assert.equal(suggest('A', 'Song (Remix) (X Cover)', '').version.type, 'remix');
 });
 

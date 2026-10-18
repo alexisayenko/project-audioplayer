@@ -232,7 +232,35 @@ def cut_remix(title: str) -> tuple[str, str | None]:
     return _cut_remix_segment(title)
 
 
-_VERSION_MARK = re.compile(r"\b(?:remix(?:ed)?|mix|edit|mashup|bootleg|rework|vip|dub|version|live|acoustic|unplugged|instrumental|remaster(?:ed)?|cover|extended)\b", re.I)
+_VERSION_WORDS = r"remix(?:ed)?|mix|edit|mashup|bootleg|rework|vip|dub|live|acoustic|unplugged|instrumental|remaster(?:ed)?|cover|extended|slowed|sped[\s-]?up|speed[\s-]?up|nightcore|reverb"
+_VERSION_MARK = re.compile(rf"\b(?:{_VERSION_WORDS}|version)\b", re.I)
+_VERSION_WORD = re.compile(rf"\b(?:{_VERSION_WORDS})\b", re.I)
+_RELEASE_END = re.compile(r"\brelease\s*$", re.I)
+
+
+def _is_version_group(inner: str) -> bool:
+    return bool(_VERSION_WORD.search(inner)) and not _RELEASE_END.search(inner) and not _FEAT_KEY.match(inner) and not titleclean._is_noise(inner)
+
+
+def cut_version(title: str) -> tuple[str, str | None]:
+    """cut_remix, else the first of the title's trailing bracket groups (round or square, only whitespace between them and the end) whose text holds a known version word (remix, mix, edit, rework, bootleg, vip, dub, mashup, extended, live, acoustic, unplugged, instrumental, remaster(ed), cover, slowed, sped up, speed up, nightcore, reverb) as a whole word and is not promo noise, a "... Release" tag or a feat. credit; later version groups stay in the title; return (title without it, its text)."""
+    cut, remix = cut_remix(title)
+    if remix or not isinstance(title, str):
+        return cut, remix
+    tail: list[re.Match[str]] = []
+    pos = len(title.rstrip())
+    for m in reversed(list(_BRACKET.finditer(title))):
+        if title[m.end() : pos].strip():
+            break
+        tail.append(m)
+        pos = m.start()
+    for m in reversed(tail):
+        inner = m.group(1).strip()
+        if inner and _is_version_group(inner):
+            rest = re.sub(r"\s+", " ", f"{title[: m.start()]} {title[m.end() :]}").strip(" -|")
+            if rest:
+                return rest, inner
+    return title, None
 
 
 def marker_before_dash(title: str) -> bool:
@@ -240,6 +268,20 @@ def marker_before_dash(title: str) -> bool:
     blanked = _BRACKET.sub(lambda m: "x" * len(m.group()), title)
     m = _CUE_DASH.search(blanked)
     return bool(m) and any(_VERSION_MARK.search(b.group(1)) for b in _BRACKET.finditer(title[: m.start()]))
+
+
+def lead_artist(title: str) -> tuple[str, str] | None:
+    """(artist, title) when the title is exactly "Artist - Title" with one spaced dash (hyphen, en or em dash) and non-empty sides, and neither side starts like a version or noise word ("Live - ...", "Song - Live at ..."); else None."""
+    t = clean_title(title)
+    parts = _CUE_DASH.split(t)
+    if len(parts) != 2:
+        return None
+    left, right = parts[0].strip(), parts[1].strip()
+    if not left or not right or _VERSION_MARK.search(left) or _NOISE_WORD.search(left) or _NUMBER.fullmatch(left):
+        return None
+    if _VERSION_MARK.match(right) or _VERSION_KEY.match(f"- {right}"):
+        return None
+    return clean_artist(left), clean_title(right)
 
 
 def _fold(text: str) -> str:
@@ -263,8 +305,8 @@ def _title_first(artist: str, title: str, cut: str) -> tuple[str, str] | None:
 
 
 def split_title(artist: str, title: str) -> tuple[str, str, str | None]:
-    """Cut the remix out of the title, then split artist and title as split_artist_title does; a feat credit left of the first spaced dash makes that left part the artist when nothing else split; a reversed "Title [Version] feat. X - Artist" is read title first (ADD-135)."""
-    cut, remix = cut_remix(title)
+    """Cut the remix or another version (cut_version) out of the title, then split artist and title as split_artist_title does; a feat credit left of the first spaced dash makes that left part the artist when nothing else split; a reversed "Title [Version] feat. X - Artist" is read title first (ADD-135)."""
+    cut, remix = cut_version(title)
     reversed_ = _title_first(artist, title, cut)
     if reversed_:
         return normalize_feat(clean_artist(reversed_[1])), normalize_feat(reversed_[0]), remix

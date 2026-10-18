@@ -1,6 +1,6 @@
 import pytest
 
-from app import credits_split
+from app import credits_split, titles
 from app.titles import split_title
 
 CH = "Melodic Techno & Progressive Trance Anthem Rework | Sadrican"
@@ -34,9 +34,50 @@ def test_case_insensitive_and_accents():
     assert split_title("", "A - B (DJ Tiësto's REMIX)") == ("A", "B", "DJ Tiësto's REMIX")
 
 
-@pytest.mark.parametrize("t", ["A - B (Extended Mix)", "A - B (Club Mix)", "A - B [Bootleg]", "A - B (Rework)", "A - B (Remastered)", "Remix Song", "A - B (Remixed)"])
-def test_non_remix_untouched(t):
+@pytest.mark.parametrize("t", ["Remix Song", "A - B (Official Video)", "A - B (Lyrics)", "A - B (Music Video)", "A - B (feat. X)", "A - B (feat. Live Nation)", "Alive (Official Video)", "Delivery [Music Video]", "A - B (Mixed)", "A - B (Original Mix)", "A - B (Magic Cover Release)", "A - B (Slowed) feat. X", "Slowed Song"])
+def test_non_version_untouched(t):
     assert split_title("", t)[2] is None
+
+
+@pytest.mark.parametrize(
+    "t,title,name",
+    [
+        ("My Heart Is on Fire (Special Extended Version)", "My Heart Is on Fire", "Special Extended Version"),
+        ("Memory Reboot (Slowed)", "Memory Reboot", "Slowed"),
+        ("Passion (Moreno J Remix)", "Passion", "Moreno J Remix"),
+        ("A - B (Extended Mix)", "B", "Extended Mix"),
+        ("A - B (Club Mix)", "B", "Club Mix"),
+        ("A - B [Bootleg]", "B", "Bootleg"),
+        ("A - B (Rework)", "B", "Rework"),
+        ("A - B (Remastered)", "B", "Remastered"),
+        ("A - B (Remixed)", "B", "Remixed"),
+        ("A - B (Live from the Royal Albert Hall)", "B", "Live from the Royal Albert Hall"),
+        ("A - B [Sped Up]", "B", "Sped Up"),
+        ("A - B (speed-up) [Official Video]", "B", "speed-up"),
+        ("A - B (Nightcore Version)", "B", "Nightcore Version"),
+        ("A - B (Slowed + Reverb)", "B", "Slowed + Reverb"),
+        ("A - B (Dub Mix)", "B", "Dub Mix"),
+        ("A - B (Unplugged)", "B", "Unplugged"),
+        ("A - B (Radio Edit) (Official Audio)", "B", "Radio Edit"),
+        ("A - B (Moreno J Mix)", "B", "Moreno J Mix"),
+    ],
+)
+def test_trailing_version_group_is_cut(t, title, name):
+    assert split_title("", t) == ("A" if " - " in t else "", title, name)
+
+
+def test_several_trailing_version_groups_first_wins_and_the_rest_stays():
+    assert split_title("Ch", "Song (Slowed) (Extended Mix)") == ("Ch", "Song (Extended Mix)", "Slowed")
+    assert split_title("Ch", "Song (Foo Remix) (Slowed)") == ("Ch", "Song (Slowed)", "Foo Remix")
+
+
+def test_only_trailing_groups_qualify():
+    assert split_title("Ch", "Song (Slowed) Part 2")[2] is None
+    assert split_title("Ch", "(Slowed)")[1:] == ("(Slowed)", None)
+
+
+def test_version_group_between_noise_groups():
+    assert split_title("Ch", "Song (Official Video) (Acoustic) [HD]") == ("Ch", "Song", "Acoustic")
 
 
 def test_noise_bracket_still_stripped_when_remix_is_elsewhere():
@@ -201,7 +242,7 @@ def test_mixed_by_segment_after_pipe():
     assert split_title("", "A - B | Mixed By DJ Gvozd") == ("A", "B", "Mixed By DJ Gvozd")
 
 
-@pytest.mark.parametrize("t", ["A - B (Mixed)", "A - B (Mixed Version)", "A - B (Extended Mix)"])
+@pytest.mark.parametrize("t", ["A - B (Mixed)", "A - B (Mixed Version)"])
 def test_mixed_without_by_untouched(t):
     assert split_title("", t)[2] is None
 
@@ -230,3 +271,20 @@ def test_ordinary_titles_unaffected():
     assert split_title("Artist", "Artist - Title (Remix)") == ("Artist", "Title", "Remix")
     assert split_title("", "Title - Artist") == ("Title", "Artist", None)
     assert split_title("Artist", "Artist feat. B - Title") == ("Artist feat. B", "Title", None)
+
+
+@pytest.mark.parametrize("title, expected", [
+    ("The Midnight - Love Is An Ocean", ("The Midnight", "Love Is An Ocean")),
+    ("Artist \u2013 Song", ("Artist", "Song")),
+    ("Artist \u2014 Song (Official Video)", ("Artist", "Song")),
+    ("One - Two - Three", None),
+    ("Just a title", None),
+    ("- Song", None),
+    ("Live - Anything", None),
+    ("Song - Live at Wembley", None),
+    ("Song [X Remix] - Artist", None),
+    ("07 - Song", None),
+    ("Artist-Song", None),
+])
+def test_lead_artist(title, expected):
+    assert titles.lead_artist(title) == expected

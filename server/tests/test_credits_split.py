@@ -56,7 +56,8 @@ def test_cover_rule_is_whole_word_and_parenthetical_only():
     assert credits_split.suggest("A", "Cover Me Up", None)["version"] is None
     assert credits_split.suggest("A", "Discovery (Recovery)", None)["version"] is None
     assert credits_split.suggest("A", "Song (Cover)", None)["version"].get("of") is None
-    assert credits_split.suggest("Sam Smith", "Writings On The Wall", "Sofia Karlberg Cover")["version"].get("of") is None
+    assert credits_split.suggest("Sam Smith", "Writings On The Wall", "Sofia Karlberg Cover")["version"]["of"] == ["Sofia Karlberg"]
+    assert credits_split.suggest("A", "Song", "Mixed By X Cover")["version"].get("of") is None
     assert credits_split.suggest("A", "Song (Remix) (X Cover)", None)["version"]["kind"] == "remix"
 
 

@@ -122,7 +122,7 @@ test('"first 200 of N" is said when the playlist is longer', async () => {
   imp.destroy();
 });
 
-test('details arrive in batches of 25 and fill year and genres', async () => {
+test('details arrive in batches of 10 and fill year and genres', async () => {
   const many = Array.from({ length: 30 }, (_, i) => entry(i + 1));
   const calls = server({
     entries: many,
@@ -135,7 +135,7 @@ test('details arrive in batches of 25 and fill year and genres', async () => {
   await imp.ready();
   await done(imp);
   const detailCalls = calls.filter((c) => c.url === '/import/youtube-playlist/details').map((c) => JSON.parse(c.opts.body).ids.length);
-  assert.deepEqual(detailCalls.sort((a, b) => a - b), [5, 25]);
+  assert.deepEqual(detailCalls, [10, 10, 10]);
   assert.equal(row(imp, 1).querySelector('.imp-year').textContent, '2021');
   assert.equal(row(imp, 1).querySelector('.imp-genres').textContent, 'house');
   imp.destroy();
@@ -161,6 +161,51 @@ test('details can flag a duplicate the listing missed; a row the user already to
   assert.match(row(imp, 1).textContent, /In library/);
   assert.equal(box(imp, 5).checked, true, 'touched row keeps the user choice');
   assert.equal(box(imp, 2).checked, true);
+  imp.destroy();
+});
+
+test('a video whose details YouTube refuses becomes an Unavailable row, unticked and disabled', async () => {
+  const { imp } = await mount({ details: (ids) => ({ body: { entries: ids.filter((i) => i !== id(1)).map((i) => ({ ...ENTRIES.find((e) => e.id === i), detailed: true })), failed: [id(1)], unavailable: [id(1)] } }) });
+  await done(imp);
+  assert.match(row(imp, 1).textContent, /Unavailable/);
+  assert.match(row(imp, 1).querySelector('.sub').textContent, /Unavailable video/);
+  assert.equal(box(imp, 1).checked, false);
+  assert.equal(box(imp, 1).disabled, true);
+  assert.equal(counter(imp), '1 of 3 selected');
+  imp.destroy();
+});
+
+test('a video that merely timed out keeps its row and tick', async () => {
+  const { imp } = await mount({ details: (ids) => ({ body: { entries: ids.filter((i) => i !== id(1)).map((i) => ({ ...ENTRIES.find((e) => e.id === i), detailed: true })), failed: [id(1)], unavailable: [] } }) });
+  await done(imp);
+  assert.equal(box(imp, 1).checked, true);
+  assert.equal(box(imp, 1).disabled, false);
+  assert.doesNotMatch(row(imp, 1).textContent, /Unavailable/);
+  imp.destroy();
+});
+
+test('a rate-limited details batch stops the loading, keeps what arrived and says so', async () => {
+  const many = Array.from({ length: 30 }, (_, i) => entry(i + 1));
+  let calls = 0;
+  const seen = server({
+    entries: many,
+    list: playlist({ total: 30, shown: 30 }),
+    details: (ids) => {
+      calls += 1;
+      const got = calls === 1 ? ids : ids.slice(0, 2);
+      return { body: { entries: got.map((i) => ({ ...many.find((e) => e.id === i), detailed: true, tags: ['genre:house'] })), failed: ids.filter((i) => !got.includes(i)), unavailable: [], rate_limited: calls === 2 } };
+    },
+  });
+  store.loaded = true;
+  const imp = playlistImport({ link: LINK });
+  document.body.append(imp.node);
+  await imp.ready();
+  await done(imp);
+  assert.equal(seen.filter((c) => c.url === '/import/youtube-playlist/details').length, 2);
+  assert.equal(row(imp, 1).querySelector('.imp-genres').textContent, 'house');
+  assert.equal(row(imp, 25).querySelector('.imp-genres').textContent, '');
+  assert.equal(box(imp, 25).disabled, false);
+  assert.match(imp.node.querySelector('.imp-status').textContent, /^YouTube is rate-limiting this server, try again later/);
   imp.destroy();
 });
 

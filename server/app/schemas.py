@@ -107,4 +107,4 @@ class PlaylistImportRequest(BaseModel):
 
 
 class PlaylistDetailsRequest(BaseModel):
-    ids: list[str] = Field(min_length=1, max_length=25)
+    ids: list[str] = Field(min_length=1, max_length=10)
