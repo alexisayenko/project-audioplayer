@@ -130,7 +130,10 @@ test('displayed year is the version year, else the original, never the upload da
   assert.equal(c.yearFact({ ...R, releaseYear: null }), '2012');
   const noYear = { ...R, version: { ...R.version, releaseYear: null } };
   assert.equal(c.subtitle(noYear), 'Kate Bush · 1985');
-  assert.equal(c.yearFact(noYear), '');
+  assert.equal(c.yearFact(noYear), '1985');
+  assert.equal(c.yearFact({ title: 'Wonderwall', mainArtists: ['Oasis'], releaseYear: 1995 }), '1995');
+  assert.equal(c.yearFact({ title: 'S', artist: 'A', year: 1990 }), '1990');
+  assert.equal(c.yearFact({ title: 'S' }), '');
   assert.equal(c.subtitle({ title: 'S', artist: 'A', year: 1985, remix_year: 2012 }), 'A · 2012');
   assert.equal(c.subtitle({ title: 'S', artist: 'A', year: 1985, remix_year: null, upload_date: '2024-01-01' }), 'A · 1985');
   assert.equal(c.displayYear({ title: 'S' }), null);
@@ -150,7 +153,7 @@ test('a remaster keeps the original year in the year line and moves its own year
   assert.equal(c.subtitle(same), 'Band · 1985');
   const noVy = { ...M, version: { ...M.version, releaseYear: null } };
   assert.equal(c.subtitle(noVy), 'Band · 1985');
-  assert.equal(c.yearFact(noVy), '');
+  assert.equal(c.yearFact(noVy), '1985');
   assert.equal(c.displayYear({ ...M, releaseYear: null }), null);
   assert.equal(c.subtitle({ ...M, releaseYear: null }), 'Band');
   assert.equal(c.yearFact({ ...M, releaseYear: null }), '');

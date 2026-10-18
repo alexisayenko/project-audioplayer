@@ -215,10 +215,11 @@ test('songs without audio get Download to server, not Download, and no Play when
   dlg.close();
 });
 
-test('card Year fact: version year plus the original when they differ, else one year; none without a version year', () => {
+test('card Year fact: version year plus the original when they differ, else one year; the original year without a version year; none without any year', () => {
   assert.equal(cardModel({ ...FULL, remix_year: 2024 }, { kind: 'none' }).yearFact, '2024 · original 1999');
-  assert.equal(cardModel(FULL, { kind: 'none' }).yearFact, '');
-  assert.equal(cardModel({ ...FULL, remix_year: null }, { kind: 'none' }).yearFact, '');
+  assert.equal(cardModel(FULL, { kind: 'none' }).yearFact, '1999');
+  assert.equal(cardModel({ ...FULL, remix_year: null }, { kind: 'none' }).yearFact, '1999');
+  assert.equal(cardModel({ ...FULL, year: null, releaseYear: null, remix_year: null }, { kind: 'none' }).yearFact, '');
 });
 
 test('the sub line shows the version year', () => {

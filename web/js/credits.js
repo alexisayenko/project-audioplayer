@@ -126,10 +126,10 @@ export function yearText(song) {
 }
 
 export function yearFact(song) {
-  const v = versionYear(song);
-  if (v == null) return '';
-  if (isRemaster(song)) return original(song) == null ? '' : String(original(song));
   const o = original(song);
+  if (isRemaster(song)) return o == null ? '' : String(o);
+  const v = versionYear(song);
+  if (v == null) return o == null ? '' : String(o);
   return o != null && o !== v ? `${v} · original ${o}` : String(v);
 }
 
