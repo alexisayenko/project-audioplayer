@@ -12,6 +12,8 @@ import { addBody, yearError, artistString, storedTags } from './song-payload.js'
 import { displayLine } from './credits.js';
 import { can } from './guest.js';
 import { fetchSteps } from './add-progress.js';
+import { playlistLink, watchUrl, MIX_MESSAGE, PRIVATE_MESSAGE } from './playlist-link.js';
+import { playlistImport } from './playlist-import.js';
 
 const BULK = new Set(['insertFromPaste', 'insertFromPasteAsQuotation', 'insertFromDrop', 'insertReplacementText']);
 const PREVIEW_ONLY = 'Preview only \u2014 SoundCloud Go+ track, can\'t be downloaded in full.';
@@ -23,6 +25,7 @@ export function openAdd() {
   let sf = null;
   let gen = 0;
   let steps = null;
+  let imp = null;
   const pending = new Set();
   const begin = () => {
     const ctl = new AbortController();
@@ -31,7 +34,7 @@ export function openAdd() {
     return { signal: ctl.signal, live: () => mine === gen && dlg.open, done: () => pending.delete(ctl) };
   };
 
-  const url = el('input', { type: 'text', placeholder: 'YouTube or SoundCloud link, or a YouTube video id', 'aria-label': 'YouTube or SoundCloud link, or a YouTube video id', autocomplete: 'off', inputMode: 'url' });
+  const url = el('input', { type: 'text', placeholder: 'YouTube or SoundCloud link, a YouTube playlist, or a video id', 'aria-label': 'YouTube or SoundCloud link, a YouTube playlist link, or a YouTube video id', autocomplete: 'off', inputMode: 'url' });
   const fetchBtn = el('button', { class: 'btn fill small', type: 'submit' }, 'Fetch');
   const form = el('form', { class: 'well' }, url, fetchBtn);
   const known = el('div', { class: 't-caption', role: 'status' });
@@ -40,7 +43,8 @@ export function openAdd() {
   const say = (text, kind = '') => message.replaceChildren(text ? el('p', { class: `msg ${kind}` }, text) : '');
 
   const tidy = () => {
-    const clean = cleanPasted(url.value);
+    const list = playlistLink(url.value);
+    const clean = list ? (list.kind === 'playlist' && !list.video ? list.url : url.value) : cleanPasted(url.value);
     if (clean === url.value) return;
     url.value = clean;
     checkKnown();
@@ -55,7 +59,7 @@ export function openAdd() {
     setTimeout(() => row.classList.remove('flash'), ADD_ROW_OUTLINE_MS);
   };
   const checkKnown = () => {
-    const song = store.loaded ? findInLibrary(url.value, store.songs) : null;
+    const song = store.loaded && !playlistLink(url.value) ? findInLibrary(url.value, store.songs) : null;
     fetchBtn.disabled = !!song;
     if (!song) { known.replaceChildren(); return; }
     const where = el('button', { class: 'link-btn t-caption', type: 'button' }, 'Show in library');
@@ -73,6 +77,12 @@ export function openAdd() {
     tidy();
     if (!url.value || fetchBtn.disabled) return;
     say('');
+    const list = playlistLink(url.value);
+    if (list) {
+      if (list.kind === 'playlist') startImport(list);
+      else say(list.kind === 'mix' ? MIX_MESSAGE : PRIVATE_MESSAGE, 'error');
+      return;
+    }
     body.replaceChildren();
     fetchBtn.disabled = true;
     fetchBtn.textContent = 'Fetching...';
@@ -104,6 +114,28 @@ export function openAdd() {
       }
     }
   });
+
+  function leaveImport() {
+    if (imp) imp.destroy();
+    imp = null;
+    dlg.classList.remove('import');
+    body.replaceChildren();
+    say('');
+    form.hidden = false;
+    checkKnown();
+  }
+  function startImport(list) {
+    body.replaceChildren();
+    form.hidden = true;
+    dlg.classList.add('import');
+    const video = list.video;
+    imp = playlistImport({
+      link: list,
+      onBack: () => { leaveImport(); url.focus(); },
+      onSingle: video ? () => { leaveImport(); url.value = watchUrl(video); checkKnown(); form.dispatchEvent(new Event('submit', { cancelable: true })); } : null,
+    });
+    body.replaceChildren(imp.node);
+  }
 
   function renderPreview() {
     if (sf) sf.destroy();
@@ -174,6 +206,9 @@ export function openAdd() {
     pending.clear();
     if (steps) steps.stop();
     steps = null;
+    if (imp) imp.destroy();
+    imp = null;
+    dlg.classList.remove('import');
     preview = null;
     if (sf) sf.destroy();
     sf = null;

@@ -20,6 +20,10 @@ export function friendly(code, data, fallback) {
       const m = Math.max(1, Number(d.retry_after_minutes) || 1);
       return `Hourly limit reached. Try again in ${m} ${m === 1 ? 'minute' : 'minutes'}.`;
     }
+    case 'import_limit': {
+      const m = Math.max(1, Number(d.retry_after_minutes) || 1);
+      return `Playlist import limit reached. Try again in ${m} ${m === 1 ? 'minute' : 'minutes'}.`;
+    }
     case 'library_full_songs': return 'Your library is full. Delete some songs to add more.';
     case 'library_full_bytes': return 'Your storage is full. Delete some songs to free space.';
     case 'server_full': return 'The server is out of storage right now. Try again later.';

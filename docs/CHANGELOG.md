@@ -2,6 +2,9 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-18 (playlist import)
+
+- Web and server: pasting a YouTube playlist link in Add opens an import table (checkbox, title with version, artists, version, year, genres, length, status; "Select all"/"Select none", "N of M selected", "Add N songs"): songs over 5 minutes and songs already in the library are unticked and marked, private and deleted videos are shown as Unavailable, the first 200 videos are listed, and the ticked songs are saved as catalog entries one by one through `POST /songs` (quota respected, progress bar, "Added" marks, summary toast). Metadata comes from YouTube data only, no AcoustID, Discogs, MusicBrainz or Wikipedia calls. New endpoints `POST /import/youtube-playlist` and `POST /import/youtube-playlist/details` (ADD-150 to ADD-158, API-160 to API-162).
 ## 2026-10-18 (remaster year)
 
 - Web: a remaster with its own year shows it in the title, "Doctor Doctor (2007 remaster)", and the year line keeps the original year only, "UFO · 1979"; Library sort by Year and Song stats use the original year (LIB-150).

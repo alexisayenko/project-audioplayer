@@ -44,7 +44,7 @@ test('pasting a messy link is cleaned; an empty field does nothing', async () =>
   submitFetch();
   await flush();
   assert.equal(calls.filter((c) => c.url === '/preview/stream').length, 0);
-  urlInput().value = `${YT}&utm_source=x&list=PL1`;
+  urlInput().value = `${YT}&utm_source=x&list=RDdQw4w9WgXcQ`;
   urlInput().dispatchEvent(makeEvent('input', { inputType: 'insertFromPaste' }));
   assert.equal(urlInput().value, YT);
   close();
