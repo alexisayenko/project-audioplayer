@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-18 (compact player on the right, built, not deployed)
+
+- Web: the compact player pill (PLY-149) now sits at the right edge of the stage, 16px from the edge, instead of centred; the handle stays on its left and the expanded dock stays centred.
+
 ## 2026-10-18 (sidebar toggle)
 
 - Web: the sidebar collapse chevron is a small round button on the sidebar's right edge, half over the page, at the height between the logo and the first menu item.

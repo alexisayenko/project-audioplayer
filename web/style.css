@@ -562,7 +562,7 @@ body.signed-out #nav a:not([data-route="settings"]), body.signed-out #mini { dis
   .mini-handle::after { content: ""; position: absolute; top: 0; bottom: 0; left: calc(-1 * var(--space-3)); width: var(--space-3); }
   @media (hover: hover) { .mini-handle:hover { background-image: linear-gradient(var(--hover-wash), var(--hover-wash)); color: var(--ink); } }
   .mini-handle:active { background-image: linear-gradient(var(--pressed-wash), var(--pressed-wash)); }
-  .mini.compact { grid-template-columns: var(--mini-keys-w); grid-template-rows: var(--hit) var(--control-sm); }
+  .mini.compact { margin: 0 var(--space-4) 0 auto; grid-template-columns: var(--mini-keys-w); grid-template-rows: var(--hit) var(--control-sm); }
   .mini.compact .mini-keys, .mini.compact .mini-foot { grid-column: 1; }
   .mini.compact .mini-lead, .mini.compact :is(#mini-viz, #mini-shuffle, #mini-prev, #mini-repeat), .mini.compact .mini-foot > :not(#mini-volume) { display: none; }
   .mini.compact .mini-foot > .slider { width: 100%; }

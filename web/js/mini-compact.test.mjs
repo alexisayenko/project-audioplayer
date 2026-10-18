@@ -54,7 +54,14 @@ test('css: compact shows only play, next and the volume slider', () => {
   for (const id of ['#mini-viz', '#mini-shuffle', '#mini-prev', '#mini-repeat']) assert.ok(hide[1].includes(id));
   for (const id of ['#mini-play', '#mini-next']) assert.ok(!hide[1].includes(id));
   assert.match(css, /\.mini\.compact \.mini-foot > \.slider \{ width: 100%; \}/);
-  assert.match(css, /\.mini\.compact \{ grid-template-columns: var\(--mini-keys-w\); grid-template-rows: var\(--hit\) var\(--control-sm\); \}/);
+  assert.match(css, /\.mini\.compact \{ margin: 0 var\(--space-4\) 0 auto; grid-template-columns: var\(--mini-keys-w\); grid-template-rows: var\(--hit\) var\(--control-sm\); \}/);
+});
+
+test('css: compact docks to the right edge of the stage with the dock padding token, only from 480px', () => {
+  const i = css.indexOf('@media (min-width: 480px) {\n  .mini {');
+  const j = css.indexOf('@media (min-width: 640px) { .mini .opt');
+  assert.match(css.slice(i, j), /\.mini\.compact \{ margin: 0 var\(--space-4\) 0 auto;/);
+  assert.ok(!/\.mini\.compact[^{]*\{[^}]*margin/.test(css.slice(0, i) + css.slice(j)));
 });
 
 test('css: compact sets the dock height and width through --mini-h and --mini-w, from 480px only', () => {
