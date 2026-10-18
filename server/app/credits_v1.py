@@ -5,6 +5,7 @@ Used to convert a loaded song to v2 in memory and as the oracle of the model-2 m
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
 from typing import Any
 
 from .tokens import split_tokens
@@ -127,25 +128,15 @@ def _raw_of(song: dict[str, Any]) -> dict[str, Any]:
     return raw
 
 
-def flat_to_v1(song: dict[str, Any]) -> None:
-    """Rewrite the flat legacy keys of one song in place into the ADR-0024 structure; nothing is split beyond the pill separators."""
-    raw = dict(song["raw"]) if isinstance(song.get("raw"), dict) else {}
-    for key, value in _raw_of(song).items():
-        raw.setdefault(key, value)
-    remixer = text(song.get("remixer"))
-    remix_year = int_year(song.get("remix_year"))
-    year = int_year(song["year"]) if "year" in song else int_year(song.get("released"))
-    version: dict[str, Any] | None = None
+def _flat_version(remixer: str | None, remix_year: int | None) -> dict[str, Any] | None:
     if remixer:
-        version = {"kind": kind_for(remixer), "name": remixer, "by": [], "year": remix_year}
-    elif remix_year is not None:
-        version = {"kind": "other", "name": None, "by": [], "year": remix_year}
-    fields: dict[str, Any] = {"artists": pills(song.get("artist")), "featured": [], "released": year}
-    if version is not None:
-        fields["version"] = version
-    if raw:
-        fields["raw"] = raw
-    items = list(song.items())
+        return {"kind": kind_for(remixer), "name": remixer, "by": [], "year": remix_year}
+    if remix_year is not None:
+        return {"kind": "other", "name": None, "by": [], "year": remix_year}
+    return None
+
+
+def _refill(song: dict[str, Any], items: list[tuple[str, Any]], fields: dict[str, Any]) -> None:
     anchor = next((k for k, _ in items if k == "artist"), None)
     if anchor is None:
         anchor = next((k for k, _ in items if k in LEGACY_KEYS), None)
@@ -160,6 +151,23 @@ def flat_to_v1(song: dict[str, Any]) -> None:
         song[k] = v
     if not placed:
         song.update(fields)
+
+
+def flat_to_v1(song: dict[str, Any]) -> None:
+    """Rewrite the flat legacy keys of one song in place into the ADR-0024 structure; nothing is split beyond the pill separators."""
+    raw = dict(song["raw"]) if isinstance(song.get("raw"), dict) else {}
+    for key, value in _raw_of(song).items():
+        raw.setdefault(key, value)
+    remixer = text(song.get("remixer"))
+    remix_year = int_year(song.get("remix_year"))
+    year = int_year(song["year"]) if "year" in song else int_year(song.get("released"))
+    version = _flat_version(remixer, remix_year)
+    fields: dict[str, Any] = {"artists": pills(song.get("artist")), "featured": [], "released": year}
+    if version is not None:
+        fields["version"] = version
+    if raw:
+        fields["raw"] = raw
+    _refill(song, list(song.items()), fields)
 
 
 def version_v2(version: dict[str, Any]) -> dict[str, Any]:
@@ -181,6 +189,44 @@ def keeps_raw(song: dict[str, Any]) -> bool:
     return project_v1(song)["artist"] != project_v1(after)["artist"]
 
 
+def _name_list(value: Any) -> list[Any]:
+    return list(value) if isinstance(value, list) else []
+
+
+def _album_list(value: Any) -> list[str]:
+    album = text(value)
+    return [album] if album else []
+
+
+_V2_RENAMES: dict[str, tuple[str, Callable[[Any], Any]]] = {
+    "artists": ("mainArtists", _name_list),
+    "featured": ("featuredArtists", _name_list),
+    "released": ("releaseYear", int_year),
+    "album": ("albums", _album_list),
+}
+
+
+def _raw_entries(value: Any, raw: dict[str, Any] | None, keep_raw: bool) -> list[tuple[str, Any]]:
+    entries: list[tuple[str, Any]] = []
+    title = text(raw.get("title")) if raw else None
+    if title:
+        entries.append(("rawTitle", title))
+    if keep_raw:
+        entries.append(("raw", value))
+    return entries
+
+
+def _v2_entries(key: str, value: Any, raw: dict[str, Any] | None, keep_raw: bool) -> list[tuple[str, Any]]:
+    if key in _V2_RENAMES:
+        new_key, convert = _V2_RENAMES[key]
+        return [(new_key, convert(value))]
+    if key == "version":
+        return [("version", version_v2(value))] if isinstance(value, dict) else []
+    if key == "raw":
+        return _raw_entries(value, raw, keep_raw)
+    return [(key, value)]
+
+
 def v1_to_v2(song: dict[str, Any]) -> None:
     """Rename the keys of one ADR-0024 song in place; the values are untouched except `album`, `version` and `raw`."""
     keep_raw = keeps_raw(song)
@@ -188,27 +234,8 @@ def v1_to_v2(song: dict[str, Any]) -> None:
     items = list(song.items())
     song.clear()
     for key, value in items:
-        if key == "artists":
-            song["mainArtists"] = list(value) if isinstance(value, list) else []
-        elif key == "featured":
-            song["featuredArtists"] = list(value) if isinstance(value, list) else []
-        elif key == "released":
-            song["releaseYear"] = int_year(value)
-        elif key == "album":
-            album = text(value)
-            song["albums"] = [album] if album else []
-        elif key == "version":
-            song["version"] = version_v2(value) if isinstance(value, dict) else None
-            if song["version"] is None:
-                del song["version"]
-        elif key == "raw":
-            title = text(raw.get("title")) if raw else None
-            if title:
-                song["rawTitle"] = title
-            if keep_raw:
-                song["raw"] = value
-        else:
-            song[key] = value
+        for new_key, new_value in _v2_entries(key, value, raw, keep_raw):
+            song[new_key] = new_value
     song.setdefault("featuredArtists", [])
     song.setdefault("albums", [])
     song.setdefault("releaseYear", None)

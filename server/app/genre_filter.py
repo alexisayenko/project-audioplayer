@@ -90,6 +90,7 @@ def is_genre(value: str) -> bool:
 
 _DNB = "drum and bass"
 _LIQUID_DNB = "liquid drum and bass"
+_UPLIFTING_TRANCE = "uplifting trance"
 _PROG_HOUSE = "progressive house"
 ALIASES: dict[str, str] = {
     "electronic dance music": "electronic",
@@ -142,9 +143,9 @@ ALIASES: dict[str, str] = {
     "melodic house": "house",
     "dream house": "dream trance",
     "dream dance": "dream trance",
-    "anthem trance": "uplifting trance",
-    "epic trance": "uplifting trance",
-    "euphoric trance": "uplifting trance",
+    "anthem trance": _UPLIFTING_TRANCE,
+    "epic trance": _UPLIFTING_TRANCE,
+    "euphoric trance": _UPLIFTING_TRANCE,
     "bubblegum dance": "eurodance",
     "techstep": _DNB,
     "liquid funk": _LIQUID_DNB,

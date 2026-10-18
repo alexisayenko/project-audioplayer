@@ -158,8 +158,11 @@ def test_other_user_gets_busy_and_isolation(multi, monkeypatch):
 def test_apply_respects_caps_and_blank_values():
     s = {"mainArtists": ["A"], "albums": [], "releaseYear": None, "tags": [f"genre:g{i}" for i in range(12)] + ["country:de"]}
     changed = metafill.apply(s, {"album": "X", "year": 2001, "tags": ["genre:new", "country:fr"]})
-    assert changed and s["albums"] == ["X"] and s["releaseYear"] == 2001
-    assert "genre:new" not in s["tags"] and "country:fr" not in s["tags"]
+    assert changed
+    assert s["albums"] == ["X"]
+    assert s["releaseYear"] == 2001
+    assert "genre:new" not in s["tags"]
+    assert "country:fr" not in s["tags"]
 
 
 def test_apply_fills_one_country_into_a_song_without_any_and_keeps_several_it_has():

@@ -342,7 +342,8 @@ def test_gather_uses_the_discogs_link_before_searching(monkeypatch):
     monkeypatch.setattr(metadata.discogs_lookup, "suggest", lambda a, t: pytest.fail("searched"))
     out = metadata.gather("Mrs. Moon", "Kermesse", [], discogs_url=DISC_LINK)
     assert out["services"]["discogs"] == {"found": True, "url": "https://www.discogs.com/master/101179", "from_link": True}
-    assert out["year"] == 1983 and "genre:italo disco" in out["tags"]
+    assert out["year"] == 1983
+    assert "genre:italo disco" in out["tags"]
 
 
 def test_gather_with_only_a_discogs_link_needs_no_artist(monkeypatch):
@@ -365,7 +366,8 @@ def test_gather_ignores_a_discogs_link_on_another_host(monkeypatch):
     monkeypatch.setattr(metadata.discogs_lookup, "from_url", lambda u: pytest.fail("fetched"))
     monkeypatch.setattr(metadata.discogs_lookup, "suggest", lambda a, t: _disc_hit())
     out = metadata.gather("T", "A", [], discogs_url="https://evil.example/master/1")
-    assert out["services"]["discogs"]["found"] and "from_link" not in out["services"]["discogs"]
+    assert out["services"]["discogs"]["found"]
+    assert "from_link" not in out["services"]["discogs"]
 
 
 @pytest.mark.parametrize("token, result, reason", [
@@ -418,4 +420,5 @@ def test_metadata_endpoint_passes_the_discogs_link(monkeypatch):
     monkeypatch.setattr(metadata.discogs_lookup, "from_url", lambda u: _disc_hit(from_link=True))
     r = TestClient(main.app).post("/metadata", json={"title": "Mrs. Moon", "artist": "Kermesse", "discogs_url": DISC_LINK}, headers={"X-API-Token": "secret"})
     assert r.status_code == 200
-    assert r.json()["services"]["discogs"]["from_link"] is True and r.json()["year"] == 1983
+    assert r.json()["services"]["discogs"]["from_link"] is True
+    assert r.json()["year"] == 1983

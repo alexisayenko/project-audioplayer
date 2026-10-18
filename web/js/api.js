@@ -87,7 +87,7 @@ async function* ndjson(res) {
   }
 }
 
-async function previewStream(url, signal, onEvent) {
+async function openPreviewStream(url, signal) {
   let res;
   try {
     res = await fetch('/preview/stream', { method: 'POST', headers: { ...CSRF, 'Content-Type': 'application/json' }, body: JSON.stringify({ url }), signal });
@@ -100,15 +100,22 @@ async function previewStream(url, signal, onEvent) {
     try { data = await res.json(); } catch { /* no body */ }
     throw failure(res, data);
   }
+  return res;
+}
+
+function streamError(ev) {
+  const err = new ApiError(ev.status || 500, friendly(ev.error || '', ev, ev.detail) || 'Lookup failed', ev.error || '');
+  err.data = ev;
+  err.stage = ev.stage || '';
+  return err;
+}
+
+async function previewStream(url, signal, onEvent) {
+  const res = await openPreviewStream(url, signal);
   try {
     for await (const ev of ndjson(res)) {
       if (ev.event === 'result') return ev.data;
-      if (ev.event === 'error') {
-        const err = new ApiError(ev.status || 500, friendly(ev.error || '', ev, ev.detail) || 'Lookup failed', ev.error || '');
-        err.data = ev;
-        err.stage = ev.stage || '';
-        throw err;
-      }
+      if (ev.event === 'error') throw streamError(ev);
       onEvent(ev);
     }
   } catch (ex) {

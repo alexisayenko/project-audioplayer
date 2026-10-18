@@ -74,6 +74,11 @@ export function playlistImport({ link, onBack, onSingle }) {
     selectNone.disabled = busy;
   }
 
+  function markElement(mark) {
+    const glyph = MARK_ICON[mark.kind] ? icon(MARK_ICON[mark.kind], 'inline') : null;
+    return el('span', { class: `imp-mark ${mark.kind}`, title: mark.tip || null }, glyph, mark.text);
+  }
+
   function rowNode(row) {
     const outcome = outcomes.get(row.id);
     const mark = markOf(row, outcome);
@@ -87,10 +92,9 @@ export function playlistImport({ link, onBack, onSingle }) {
       paintCount();
     });
     const sub = isListed(row) ? subtitle(row) : `${row.reason || 'Unavailable'} video`;
-    const markNode = mark
-      ? el('span', { class: `imp-mark ${mark.kind}`, title: mark.tip || null }, MARK_ICON[mark.kind] ? icon(MARK_ICON[mark.kind], 'inline') : null, mark.text)
-      : null;
-    return el('li', { class: `imp-row${mark ? ` is-${mark.kind}` : ''}`, 'data-id': row.id, 'aria-busy': busy && picked().includes(row) ? 'true' : null },
+    const markNode = mark ? markElement(mark) : null;
+    const rowClass = mark ? `imp-row is-${mark.kind}` : 'imp-row';
+    return el('li', { class: rowClass, 'data-id': row.id, 'aria-busy': busy && picked().includes(row) ? 'true' : null },
       el('label', { class: 'imp-check' }, box),
       el('div', { class: 'info' },
         el('div', { class: 'title-line' }, el('span', { class: 'open imp-title', title: titleLine(row) }, titleNodes(row))),
@@ -110,7 +114,7 @@ export function playlistImport({ link, onBack, onSingle }) {
 
   function swapRow(id) {
     const row = rows.find((r) => r.id === id);
-    const old = Array.from(list.children).find((li) => li.getAttribute('data-id') === id);
+    const old = Array.from(list.children).find((li) => li.dataset.id === id);
     if (!row || !old) return;
     const hadFocus = old.contains(globalThis.document?.activeElement);
     const next = rowNode(row);
@@ -148,22 +152,26 @@ export function playlistImport({ link, onBack, onSingle }) {
     let problem = '';
     const paint = () => { status.textContent = done < total ? `Reading year and genres: ${done} of ${total}...` : problem; };
     paint();
+    const fetchBatch = async (batch) => {
+      try {
+        const got = await api.playlistDetails(batch, ctl.signal);
+        if (destroyed) return false;
+        applyDetails(got.entries || [], got.unavailable || []);
+        if (got.rate_limited) {
+          problem = `${RATE_LIMIT_NOTE}. Year and genre details are missing for some songs.`;
+          batches.length = 0;
+        }
+      } catch (ex) {
+        if (aborted(ex) || destroyed) return false;
+        problem = `Year and genre details are missing for some songs: ${ex.message}`;
+        if (ex.status === 429) batches.length = 0;
+      }
+      return true;
+    };
     const worker = async () => {
       while (batches.length && !destroyed) {
         const batch = batches.shift();
-        try {
-          const got = await api.playlistDetails(batch, ctl.signal);
-          if (destroyed) return;
-          applyDetails(got.entries || [], got.unavailable || []);
-          if (got.rate_limited) {
-            problem = `${RATE_LIMIT_NOTE}. Year and genre details are missing for some songs.`;
-            batches.length = 0;
-          }
-        } catch (ex) {
-          if (aborted(ex) || destroyed) return;
-          problem = `Year and genre details are missing for some songs: ${ex.message}`;
-          if (ex.status === 429) batches.length = 0;
-        }
+        if (!(await fetchBatch(batch))) return;
         done += batch.length;
         if (!destroyed) paint();
       }

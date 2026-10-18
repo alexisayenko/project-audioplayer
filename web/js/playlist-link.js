@@ -14,21 +14,27 @@ function parse(text) {
   }
 }
 
+function trimSlashes(path) {
+  let end = path.length;
+  while (end > 0 && path[end - 1] === '/') end -= 1;
+  return path.slice(0, end);
+}
+
+function videoOf(u, host, path) {
+  if (HOSTS.has(host)) return path === '/playlist' || path === '/watch' ? u.searchParams.get('v') : undefined;
+  if (host === 'youtu.be' && path.length > 1) return path.slice(1).split('/')[0];
+  return undefined;
+}
+
 /** `{kind: 'playlist'|'mix'|'private', id, video, url}` for a YouTube link that names a list, else null. Port of urlclean.parse_playlist; a video link taken from a Mix is a plain video (null). */
 export function playlistLink(input) {
   const text = String(input ?? '').trim();
   const u = text ? parse(text) : null;
   if (!u) return null;
   const host = u.hostname.toLowerCase();
-  const path = u.pathname.replace(/\/+$/, '');
-  let video = u.searchParams.get('v');
-  if (HOSTS.has(host)) {
-    if (path !== '/playlist' && path !== '/watch') return null;
-  } else if (host === 'youtu.be' && path.length > 1) {
-    video = path.slice(1).split('/')[0];
-  } else {
-    return null;
-  }
+  const path = trimSlashes(u.pathname);
+  const video = videoOf(u, host, path);
+  if (video === undefined) return null;
   const id = u.searchParams.get('list') ?? '';
   if (!LIST_ID.test(id)) return null;
   const clip = video && VIDEO_ID.test(video) ? video : null;

@@ -80,25 +80,34 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
     id: isAdd ? 'song-links-add' : 'song-links-edit',
   });
   const icons = panel.summary;
+  const setUnlessFocused = (inp, value) => {
+    if (globalThis.document?.activeElement !== inp) inp.value = value || '';
+  };
+  const wikiEntry = (wv) => {
+    const https = (u) => (/^https:\/\/\S+$/i.test(u || '') ? u : null);
+    return wikipediaLink(wv) || (https(wv.wikipedia_album) ? { url: wv.wikipedia_album, label: 'Wikipedia (album)' } : null);
+  };
+  const applyLinkVals = (out) => {
+    for (const k of Object.keys(linkVals)) {
+      if (isAdd && k !== 'spotify') continue;
+      if (linkVals[k] && !linkError(k, linkVals[k])) out[k] = { on: true, url: linkVals[k] };
+      else delete out[k];
+      setUnlessFocused(srcInp[k], linkVals[k]);
+    }
+  };
   const paintIcons = () => {
     const base = stored();
     const out = { ...base };
     for (const [k, v] of Object.entries(lastStates)) if (v.on) out[k] = { ...base[k], ...v, url: v.url ?? base[k]?.url ?? null };
     const wv = wiki.values();
-    const https = (u) => (/^https:\/\/\S+$/i.test(u || '') ? u : null);
-    const wl = wikipediaLink(wv) || (https(wv.wikipedia_album) ? { url: wv.wikipedia_album, label: 'Wikipedia (album)' } : null);
+    const wl = wikiEntry(wv);
     if (wl) out.wikipedia = { on: true, url: wl.url, label: wl.label };
     else if (!lastStates.wikipedia?.on) delete out.wikipedia;
     if (mbUrl) out.musicbrainz = { on: true, url: mbUrl };
     if (discogsUrl) out.discogs = { on: true, url: discogsUrl };
-    for (const k of Object.keys(linkVals)) {
-      if (isAdd && k !== 'spotify') continue;
-      if (linkVals[k] && !linkError(k, linkVals[k])) out[k] = { on: true, url: linkVals[k] };
-      else delete out[k];
-      if (globalThis.document?.activeElement !== srcInp[k]) srcInp[k].value = linkVals[k] || '';
-    }
-    if (globalThis.document?.activeElement !== mbInp) mbInp.value = mbUrl || '';
-    if (globalThis.document?.activeElement !== dcInp) dcInp.value = discogsUrl || '';
+    applyLinkVals(out);
+    setUnlessFocused(mbInp, mbUrl);
+    setUnlessFocused(dcInp, discogsUrl);
     panel.paint({
       youtube: out.youtube?.url ?? '', soundcloud: out.soundcloud?.url ?? '', spotify: out.spotify?.url ?? '',
       wikipedia_song: wv.wikipedia_song, wikipedia_artist: wv.wikipedia_artist, wikipedia_album: wv.wikipedia_album,

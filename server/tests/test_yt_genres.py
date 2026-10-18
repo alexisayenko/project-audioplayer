@@ -91,7 +91,8 @@ def test_merge_without_youtube_genres_is_unchanged():
     meta = {"tags": ["genre:house"]}
     found, mb, wiki, disc = _empty()
     lookup._merge_suggestions(meta, found, mb, wiki, disc)
-    assert meta["tags"] == ["genre:house"] and meta["tag_sources"] == {}
+    assert meta["tags"] == ["genre:house"]
+    assert meta["tag_sources"] == {}
 
 
 @pytest.mark.parametrize("title,clean", [
@@ -104,11 +105,14 @@ def test_release_tags_are_noise_except_cover_ones(title, clean):
 
 def test_release_tag_never_a_version_or_original_artist():
     s = credits_split.suggest("A", "Song [NCS Release]", "")
-    assert s["version"] is None and s["title"] == "Song" and "release_tag" in s["notes"]
+    assert s["version"] is None
+    assert s["title"] == "Song"
+    assert "release_tag" in s["notes"]
     s = credits_split.suggest("Twin", "Song (Magic Cover Release)", "")
     assert s["version"] == {"kind": "cover", "name": "Cover", "by": []}
     s = credits_split.suggest("A", "Song (Foo Remix) (Free Release)", "")
-    assert s["version"]["kind"] == "remix" and s["title"] == "Song"
+    assert s["version"]["kind"] == "remix"
+    assert s["title"] == "Song"
     assert credits_split.suggest("A", "Song (Release)", "")["version"] is None
 
 

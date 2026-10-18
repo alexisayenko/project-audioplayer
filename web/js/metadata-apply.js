@@ -23,22 +23,38 @@ export function addNamespaced(tags, candidates) {
   return added;
 }
 
+const WIKI_KEYS = ['wikipedia_song', 'wikipedia_artist', 'wikipedia_album'];
+
+function returnedAlbum(r) {
+  const raw = Array.isArray(r.albums) ? r.albums[0] : r.album;
+  return typeof raw === 'string' ? raw.trim() : '';
+}
+
+function returnedYear(r) {
+  const raw = r.releaseYear ?? r.year;
+  return Number.isInteger(raw) ? raw : null;
+}
+
+function newWikiLinks(r, cur) {
+  const out = {};
+  for (const key of WIKI_KEYS) {
+    const link = typeof r[key] === 'string' && /^https:\/\/\S+$/i.test(r[key]) ? r[key] : null;
+    if (link && !String(cur[key] ?? '').trim()) out[key] = link;
+  }
+  return out;
+}
+
 export function planMetadata(resp, cur) {
   const r = resp || {};
-  const rawAlbum = Array.isArray(r.albums) ? r.albums[0] : r.album;
-  const album = typeof rawAlbum === 'string' ? rawAlbum.trim() : '';
-  const rawYear = r.releaseYear ?? r.year;
-  const year = Number.isInteger(rawYear) ? rawYear : null;
+  const album = returnedAlbum(r);
+  const year = returnedYear(r);
   const returnedTags = (Array.isArray(r.tags) ? r.tags : []).filter((t) => typeof t === 'string' && CAPS[tagKey(t)]);
   const plan = { album: null, released: null, tags: addNamespaced(cur.tags || [], returnedTags) };
   if (album && !cur.versioned && !String(cur.album ?? '').trim()) plan.album = album;
   if (year != null && String(cur.released ?? '').trim() === '') plan.released = year;
-  for (const key of ['wikipedia_song', 'wikipedia_artist', 'wikipedia_album']) {
-    const link = typeof r[key] === 'string' && /^https:\/\/\S+$/i.test(r[key]) ? r[key] : null;
-    if (link && !String(cur[key] ?? '').trim()) plan[key] = link;
-  }
+  Object.assign(plan, newWikiLinks(r, cur));
   const returned = !!album || year != null || returnedTags.length > 0;
-  const filled = plan.album != null || plan.released != null || plan.tags.length > 0 || !!(plan.wikipedia_song || plan.wikipedia_artist || plan.wikipedia_album);
+  const filled = plan.album != null || plan.released != null || plan.tags.length > 0 || WIKI_KEYS.some((k) => plan[k]);
   if (filled) plan.status = 'filled';
   else plan.status = returned ? 'current' : 'empty';
   return plan;

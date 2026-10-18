@@ -63,13 +63,15 @@ class TestFlatLegacyToV2:
 
     def test_the_source_title_is_kept_and_the_composite_raw_dropped_when_the_artist_is_unchanged(self):
         song = migrated(artist="  A & B ", remixer="Alesso Remix", year="1999", remix_year=2012)
-        assert song["rawTitle"] == "T" and "raw" not in song
+        assert song["rawTitle"] == "T"
+        assert "raw" not in song
         assert credits.project(song)["artist"] == "A & B"
 
     def test_raw_stays_when_dropping_it_would_change_the_derived_artist(self):
         song = migrated(artist="A - B")
         assert song["mainArtists"] == ["A", "B"]
-        assert song["raw"]["artist"] == "A - B" and song["rawTitle"] == "T"
+        assert song["raw"]["artist"] == "A - B"
+        assert song["rawTitle"] == "T"
         assert credits.project(song)["artist"] == "A - B"
 
     def test_album_becomes_a_list(self):
@@ -95,7 +97,8 @@ class TestFlatLegacyToV2:
         song = migrated(artist="A", year=2000)
         song["year"] = 2001
         assert credits.ensure(song) is True
-        assert song["releaseYear"] == 2001 and "year" not in song
+        assert song["releaseYear"] == 2001
+        assert "year" not in song
 
 
 ADR24 = {
@@ -110,8 +113,11 @@ class TestAdr0024ToV2:
         song = copy.deepcopy(ADR24)
         assert credits.ensure(song) is True
         assert list(song) == ["id", "title", "mainArtists", "featuredArtists", "releaseYear", "albums", "version", "rawTitle", "tags"]
-        assert song["mainArtists"] == ["A", "B"] and song["featuredArtists"] == ["C"] and song["releaseYear"] == 1999
-        assert song["albums"] == ["Al"] and song["rawTitle"] == "T raw"
+        assert song["mainArtists"] == ["A", "B"]
+        assert song["featuredArtists"] == ["C"]
+        assert song["releaseYear"] == 1999
+        assert song["albums"] == ["Al"]
+        assert song["rawTitle"] == "T raw"
         assert song["version"] == {"type": "cover", "name": "N", "artists": ["X"], "releaseYear": 2012, "originalArtists": ["Orig"]}
 
     def test_original_artists_only_for_cover_and_mashup_and_absent_when_empty(self):
@@ -128,11 +134,13 @@ class TestAdr0024ToV2:
     def test_the_composite_raw_is_kept_only_when_the_derived_artist_would_change(self):
         song = {**copy.deepcopy(ADR24), "featured": []}
         credits.ensure(song)
-        assert song["raw"]["artist"] == "A - B" and credits.project(song)["artist"] == "A - B"
+        assert song["raw"]["artist"] == "A - B"
+        assert credits.project(song)["artist"] == "A - B"
         plain = {**copy.deepcopy(ADR24), "featured": [], "raw": {"title": "T", "artist": "A & B"}}
         plain["artists"] = ["A & B"]
         credits.ensure(plain)
-        assert "raw" not in plain and plain["rawTitle"] == "T"
+        assert "raw" not in plain
+        assert plain["rawTitle"] == "T"
 
     def test_the_derived_legacy_fields_do_not_change(self):
         for song in (copy.deepcopy(ADR24), {**copy.deepcopy(ADR24), "featured": [], "album": None, "version": {"kind": "live", "name": None, "by": ["Q"], "year": None}}):
@@ -211,7 +219,8 @@ class TestProject:
         assert credits.release_year({"releaseYear": 1990, "mainArtists": []}) == 1990
         assert credits.release_year({"released": 1990, "artists": []}) == 1990
         assert credits.release_year({"year": 1991}) == 1991
-        assert credits.version_type(song) == "mashup" and credits.version_type({}) is None
+        assert credits.version_type(song) == "mashup"
+        assert credits.version_type({}) is None
 
 
 def stored(**over):
@@ -243,8 +252,10 @@ class TestApplyChanges:
     def test_a_v2_name_wins_over_the_adr0024_one(self):
         song = applied({"artists": ["Old"], "mainArtists": ["New"], "released": 1, "releaseYear": 2001,
                         "version": {"kind": "live", "type": "edit", "by": ["O"], "artists": ["N"]}})
-        assert song["mainArtists"] == ["New"] and song["releaseYear"] == 2001
-        assert song["version"]["type"] == "edit" and song["version"]["artists"] == ["N"]
+        assert song["mainArtists"] == ["New"]
+        assert song["releaseYear"] == 2001
+        assert song["version"]["type"] == "edit"
+        assert song["version"]["artists"] == ["N"]
 
     def test_structure_shadows_every_legacy_key_of_its_group(self):
         song = applied({"mainArtists": ["X"], "artist": "Totally Different", "version": None, "remixer": "Other Remix", "remix_year": 2030,
@@ -273,7 +284,9 @@ class TestApplyChanges:
         song = stored(mainArtists=[], featuredArtists=[], releaseYear=None, albums=[])
         song.pop("version")
         credits.apply_changes(song, {"artist": "  ", "remixer": "", "year": None, "remix_year": None, "album": ""})
-        assert song["mainArtists"] == [] and "version" not in song and song["albums"] == []
+        assert song["mainArtists"] == []
+        assert "version" not in song
+        assert song["albums"] == []
 
     def test_changed_legacy_artist_becomes_pills_and_clears_featured(self):
         song = applied({"artist": "X & Y - Z"})
@@ -317,7 +330,8 @@ class TestApplyChanges:
 
     def test_raw_and_raw_title_are_never_touched(self):
         song = applied({"mainArtists": ["Z"], "releaseYear": 2001, "version": None})
-        assert song["raw"] == {"title": "T", "artist": "A - B"} and song["rawTitle"] == "T"
+        assert song["raw"] == {"title": "T", "artist": "A - B"}
+        assert song["rawTitle"] == "T"
 
     def test_a_new_key_is_placed_in_the_documented_order(self):
         song = {"id": "x", "title": "T", "mainArtists": [], "featuredArtists": [], "releaseYear": None, "rawTitle": "T", "tags": []}
@@ -378,8 +392,9 @@ class TestValidation:
         ({"remix_year": 1899}, "remix_year must be from 1900 to 2027"),
     ])
     def test_rejections(self, changes, message):
+        song = stored()
         with pytest.raises(ValueError, match=message):
-            credits.clean_changes(changes, stored())
+            credits.clean_changes(changes, song)
 
     @pytest.mark.parametrize("year", [1900, 2027])
     def test_boundaries_pass(self, year):
@@ -388,7 +403,8 @@ class TestValidation:
     def test_an_unchanged_stored_out_of_range_year_passes(self):
         song = stored(releaseYear=1850, version={"type": "remix", "name": "R", "artists": [], "releaseYear": 2099})
         out = credits.clean_changes({"releaseYear": 1850, "version": {"type": "remix", "name": "R", "releaseYear": 2099}}, song)
-        assert out["releaseYear"] == 1850 and out["version"]["releaseYear"] == 2099
+        assert out["releaseYear"] == 1850
+        assert out["version"]["releaseYear"] == 2099
         with pytest.raises(ValueError):
             credits.clean_changes({"releaseYear": 1851}, song)
 
@@ -415,7 +431,8 @@ class TestNewFields:
     def test_legacy_remixer_years_and_album(self):
         fields = credits.new_fields({"title": "S", "artist": "A", "remixer": "X Remix", "year": 2000, "remix_year": 2012, "album": "Al"})
         assert fields["version"] == {"type": "remix", "name": "X Remix", "artists": [], "releaseYear": 2012}
-        assert fields["releaseYear"] == 2000 and fields["albums"] == ["Al"]
+        assert fields["releaseYear"] == 2000
+        assert fields["albums"] == ["Al"]
 
     def test_structure_wins_over_legacy_and_the_adr0024_names_work(self):
         fields = credits.new_fields({"artist": "Legacy", "artists": ["New"], "year": 1990, "released": 2001})
@@ -434,8 +451,10 @@ class TestAbsorb:
         song = stored()
         song["artist"], song["year"] = "Brand New", 2003
         assert credits.absorb(song) is True
-        assert song["mainArtists"] == ["Brand New"] and song["releaseYear"] == 2003
-        assert "artist" not in song and "year" not in song
+        assert song["mainArtists"] == ["Brand New"]
+        assert song["releaseYear"] == 2003
+        assert "artist" not in song
+        assert "year" not in song
 
     def test_values_equal_to_the_projection_change_nothing(self):
         song = stored()
@@ -450,7 +469,8 @@ class TestAbsorb:
         song = stored()
         song["year"] = 3000
         assert credits.absorb(song) is True
-        assert song["releaseYear"] == 1999 and "year" not in song
+        assert song["releaseYear"] == 1999
+        assert "year" not in song
         assert song["raw"]["rejected"] == {"year": 3000}
 
 
@@ -473,7 +493,8 @@ class TestEnsureRepairs:
         assert list(song) == ["id", "title", "mainArtists", "featuredArtists", "releaseYear", "albums", "rawTitle"]
         song = {"mainArtists": ["A"], "featuredArtists": None, "albums": "x"}
         assert credits.ensure(song) is True
-        assert song["featuredArtists"] == [] and song["albums"] == []
+        assert song["featuredArtists"] == []
+        assert song["albums"] == []
 
     def test_a_loose_version_is_put_in_shape(self):
         song = {"mainArtists": ["A"], "featuredArtists": [], "releaseYear": None, "albums": [],
@@ -488,7 +509,8 @@ class TestEnsureRepairs:
         assert song["version"] == {"type": "live", "name": "L", "artists": ["Z"], "releaseYear": 2000}
         song["version"] = {"type": "remix", "year": 2001, "name": "R"}
         credits.ensure(song)
-        assert song["version"]["releaseYear"] == 2001 and song["version"]["artists"] == []
+        assert song["version"]["releaseYear"] == 2001
+        assert song["version"]["artists"] == []
 
     def test_a_flat_song_is_converted_before_its_changes_are_resolved(self):
         flat = {"id": "a", "title": "T", "artist": "Band", "year": 1999}
@@ -496,8 +518,10 @@ class TestEnsureRepairs:
         assert credits.clean_changes({"artist": "Other"}, flat)["mainArtists"] == ["Other"]
         assert "artist" in flat
         credits.apply_changes(flat, {"releaseYear": 2000})
-        assert flat["mainArtists"] == ["Band"] and flat["releaseYear"] == 2000
+        assert flat["mainArtists"] == ["Band"]
+        assert flat["releaseYear"] == 2000
 
     def test_absorb_converts_a_flat_song(self):
         flat = {"id": "a", "title": "T", "artist": "Band"}
-        assert credits.absorb(flat) is True and flat["mainArtists"] == ["Band"]
+        assert credits.absorb(flat) is True
+        assert flat["mainArtists"] == ["Band"]

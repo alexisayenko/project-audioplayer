@@ -344,6 +344,16 @@ def unknown_countries(tags: list[str]) -> list[str]:
     return out
 
 
+def _genre_extra(raw: str) -> tuple[str, str | None] | None:
+    ns, sep, val = raw.partition(":")
+    if not sep or ns.strip().lower() != "genre":
+        return None
+    sp = genre_filter.split_prefix(" ".join(val.split()))
+    if sp and not genre_filter.is_dropped(sp[0]):
+        return sp[1], sp[2]
+    return None
+
+
 def clean_tags(tags: list[str]) -> list[str]:
     seen: set[str] = set()
     out: list[str] = []
@@ -351,11 +361,9 @@ def clean_tags(tags: list[str]) -> list[str]:
     genres = [" ".join(v.split()) for t in tags for ns, sep, v in [str(t).partition(":")] if sep and ns.strip().lower() == "genre"]
     for raw in tags:
         raw = str(raw)
-        ns, sep, val = raw.partition(":")
-        if sep and ns.strip().lower() == "genre":
-            sp = genre_filter.split_prefix(" ".join(val.split()))
-            if sp and not genre_filter.is_dropped(sp[0]):
-                extras.append((sp[1], sp[2]))
+        extra = _genre_extra(raw)
+        if extra:
+            extras.append(extra)
         t = clean_tag(raw, genres)
         if t and t.casefold() not in seen:
             seen.add(t.casefold())

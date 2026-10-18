@@ -259,7 +259,8 @@ def test_from_url_failure_is_flagged_not_raised(monkeypatch):
 
     monkeypatch.setattr(dl, "_get", boom)
     out = dl.from_url("https://www.discogs.com/master/5")
-    assert out["url"] is None and out["error"] is True
+    assert out["url"] is None
+    assert out["error"] is True
 
 
 def test_get_sends_no_authorization_without_a_token(monkeypatch):
@@ -282,7 +283,8 @@ def test_get_sends_no_authorization_without_a_token(monkeypatch):
 
     monkeypatch.setattr(httpjson.urllib.request, "urlopen", urlopen)
     dl._get("masters/1")
-    assert "Authorization" not in seen["h"] and "audioplayer" in seen["h"]["User-agent"]
+    assert "Authorization" not in seen["h"]
+    assert "audioplayer" in seen["h"]["User-agent"]
 
 
 def test_suggest_flags_a_failure(monkeypatch):

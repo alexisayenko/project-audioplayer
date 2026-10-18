@@ -18,14 +18,15 @@ export function rowValue(song, key, familyOf) {
   return song[key] ?? '';
 }
 
-export function sortRows(songs, key, dir = 1, familyOf) {
+export function sortRows(songs, key, dir, familyOf) {
+  const sign = dir === undefined ? 1 : dir;
   const num = NUMERIC.has(key);
   const cmp = (a, b) => {
     const x = rowValue(a, key, familyOf);
     const y = rowValue(b, key, familyOf);
     return num ? x - y : String(x).localeCompare(String(y), undefined, { sensitivity: 'base' });
   };
-  return [...songs].sort((a, b) => dir * cmp(a, b) || String(a.title).localeCompare(String(b.title)));
+  return [...songs].sort((a, b) => sign * cmp(a, b) || String(a.title).localeCompare(String(b.title)));
 }
 
 export const decadeLabel = (song) => `${decadeOf(displayYear(song))}s`;

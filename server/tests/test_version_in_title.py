@@ -36,7 +36,8 @@ def preview(real_preview, client, title, **info):
 def test_single_link_preview_moves_the_version_word_group_out_of_the_title(real_preview, client, raw, title, name, kind):
     body = preview(real_preview, client, raw)
     assert (body["title"], body["remixer"], body["version_year"]) == (title, name, None)
-    assert body["raw"]["title"] == raw and body["raw"]["remixer"] == name
+    assert body["raw"]["title"] == raw
+    assert body["raw"]["remixer"] == name
     assert body["published_year"] == 2019
     sug = body["suggested_credits"]["version"]
     assert (sug["type"], sug["name"]) == (kind, name)
@@ -46,8 +47,11 @@ def test_single_link_preview_moves_the_version_word_group_out_of_the_title(real_
 @pytest.mark.parametrize("raw", ["Song (Official Video)", "Song (Lyrics)", "Song (Music Video)", "Alive", "Delivery (Visualizer)", "Song (Olive Oil)"])
 def test_single_link_preview_leaves_unrelated_brackets_alone(real_preview, client, raw):
     body = preview(real_preview, client, raw)
-    assert body["remixer"] is None and body["version_year"] is None and body["suggested_credits"]["version"] is None
-    assert "Official" not in body["title"] and "Lyrics" not in body["title"]
+    assert body["remixer"] is None
+    assert body["version_year"] is None
+    assert body["suggested_credits"]["version"] is None
+    assert "Official" not in body["title"]
+    assert "Lyrics" not in body["title"]
 
 
 def test_single_link_preview_moves_a_feat_credit_out_of_the_title_and_cuts_the_version(real_preview, client):
@@ -59,7 +63,8 @@ def test_single_link_preview_moves_a_feat_credit_out_of_the_title_and_cuts_the_v
 def test_remaster_year_in_the_bracket_is_the_version_year_suggestion_only(real_preview, client, raw, year):
     body = preview(real_preview, client, raw)
     assert body["version_year"] == year
-    assert body["year"] is None and body["suggested_year"] is None
+    assert body["year"] is None
+    assert body["suggested_year"] is None
     assert body["published_year"] == 2019
 
 
@@ -102,7 +107,9 @@ def test_mix_and_edit_versions_are_classified_by_their_descriptor_words(real_pre
 @pytest.mark.parametrize("raw", ["Song (Original Mix)", "Song [Original Version]"])
 def test_original_mix_is_no_version_and_the_bracket_is_dropped(real_preview, client, raw):
     body = preview(real_preview, client, raw)
-    assert body["title"] == "Song" and body["remixer"] is None and body["suggested_credits"]["version"] is None
+    assert body["title"] == "Song"
+    assert body["remixer"] is None
+    assert body["suggested_credits"]["version"] is None
 
 
 def test_descriptor_kinds():

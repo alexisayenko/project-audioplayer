@@ -6,7 +6,11 @@ const names = (list) => (Array.isArray(list) ? list.map(text).filter(Boolean) : 
 
 export const KINDS = ['remix', 'live', 'acoustic', 'extended', 'instrumental', 'remaster', 'edit', 'cover', 'mashup', 'other'];
 
-export const ofNames = (v) => (Array.isArray(v) ? names(v) : text(v) ? [text(v)] : []);
+export function ofNames(v) {
+  if (Array.isArray(v)) return names(v);
+  const one = text(v);
+  return one ? [one] : [];
+}
 
 export const isStructured = (song) => Array.isArray(song?.mainArtists);
 
@@ -39,7 +43,7 @@ function versionLabel(song, title) {
   const y = versionYear(song);
   if (y == null || y === original(song)) return label;
   const year = String(y);
-  if (new RegExp(`(?<!\\d)${year}(?!\\d)`).test(`${label} ${text(song.version.name)}`)) return label;
+  if (new RegExp(String.raw`(?<!\d)${year}(?!\d)`).test(`${label} ${text(song.version.name)}`)) return label;
   return `${year} ${label}`;
 }
 

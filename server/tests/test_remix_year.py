@@ -14,7 +14,8 @@ def test_create_stores_remix_year_and_year_stays_separate(client):
     assert add(client, H, metadata={"title": "S", "year": 2003, "remix_year": 2024}).status_code == 202
     s = song(client)
     assert (s["year"], s["remix_year"]) == (2003, 2024)
-    assert "decade:20s" in s["tags"] and "decade:00s" not in s["tags"]
+    assert "decade:20s" in s["tags"]
+    assert "decade:00s" not in s["tags"]
 
 
 def test_create_without_audio_keeps_remix_year(client):

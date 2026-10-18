@@ -526,11 +526,12 @@ _DESCRIPTOR = re.compile(
     rf"^(?:вокально-инструментальный\s+ансамбль|ансамбль|виа|рок-группа|группа|гурт)(?:\s+|(?=[{re.escape(_QUOTE_CHARS)}]))(?P<quote>[{re.escape(_QUOTE_CHARS)}])?\s*",
     re.I,
 )
-_BRACKET_TAIL = re.compile(r"\s*[\(\[][^\)\]]*[\)\]]\s*$")
+_BRACKET_TAIL = re.compile(r"(?<!\s)\s*+[\(\[][^\)\]]*+[\)\]]\s*+$")
+_ALBUM_RU = "альбом"
 _WORK_SUFFIX = {
-    "ru": {"artist": "группа", "song": "песня", "album": "альбом"},
-    "uk": {"artist": "гурт", "song": "пісня", "album": "альбом"},
-    "be": {"artist": "гурт", "song": "песня", "album": "альбом"},
+    "ru": {"artist": "группа", "song": "песня", "album": _ALBUM_RU},
+    "uk": {"artist": "гурт", "song": "пісня", "album": _ALBUM_RU},
+    "be": {"artist": "гурт", "song": "песня", "album": _ALBUM_RU},
 }
 _DISAMBIGUATION = "Q4167410"
 _GROUP_CLASSES = {"Q215380", "Q2088357", "Q5741069"}

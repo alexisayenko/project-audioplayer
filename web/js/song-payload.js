@@ -41,11 +41,15 @@ export const songSources = (song) => sourceList([...(Array.isArray(song?.sources
 
 const names = (list) => (Array.isArray(list) ? list.map((n) => String(n ?? '').trim()).filter(Boolean) : []);
 const text = (v) => String(v ?? '').trim() || null;
-const ofNames = (v) => (Array.isArray(v) ? names(v) : text(v) ? [text(v)] : []);
+function ofNames(v) {
+  if (Array.isArray(v)) return names(v);
+  const one = text(v);
+  return one ? [one] : [];
+}
 
 function versionOf(v, storedYear) {
   const ver = v.version;
-  if (!ver || !ver.type) return null;
+  if (!ver?.type) return null;
   return {
     type: ver.type,
     name: text(ver.name),

@@ -143,88 +143,110 @@ def _tag_set(tags: Any) -> set[str]:
     return {str(t).casefold() for t in tags if isinstance(t, str)} if isinstance(tags, list) else set()
 
 
-def convert(raw: Any) -> tuple[dict[str, Any], dict[str, Any]]:
-    """`(new_doc, report)` for the raw JSON of one library file. Pure: the input is not modified."""
-    raw = copy.deepcopy(raw)
-    settings = dict(raw.get("settings") or {}) if isinstance(raw, dict) else {}
-    old_table = parse_table(raw.get("artists") if isinstance(raw, dict) else None)
-    removed: Counter[str] = Counter()
-    types: Counter[str] = Counter()
-    diffs: list[dict[str, Any]] = []
-    tag_changes: list[dict[str, Any]] = []
-    decade_off: list[str] = []
-    raw_kept: list[str] = []
-    leftovers: list[dict[str, Any]] = []
-    converted = 0
-    per_artist: dict[str, list[tuple[str, tuple[str, ...]]]] = {}
-    multi: list[dict[str, Any]] = []
-    new_songs: list[dict[str, Any]] = []
-    olds: list[dict[str, Any]] = []
-    for song in _songs_of(raw):
-        if not isinstance(song, dict):
-            continue
+class _Scan:
+    def __init__(self) -> None:
+        self.removed: Counter[str] = Counter()
+        self.types: Counter[str] = Counter()
+        self.diffs: list[dict[str, Any]] = []
+        self.decade_off: list[str] = []
+        self.raw_kept: list[str] = []
+        self.leftovers: list[dict[str, Any]] = []
+        self.converted = 0
+        self.per_artist: dict[str, list[tuple[str, tuple[str, ...]]]] = {}
+        self.multi: list[dict[str, Any]] = []
+        self.new_songs: list[dict[str, Any]] = []
+        self.olds: list[dict[str, Any]] = []
+
+    def _retag(self, old: dict[str, Any], new: dict[str, Any]) -> tuple[dict[str, Any], list[str]]:
+        if "tags" not in new and "genres" not in new:
+            return new, []
+        kept, countries, gone = library.split_tags(library.tag_list(new))
+        self.removed.update(gone)
+        year_decade = library.decade_tag(credits.release_year(new))
+        if any(t.startswith("decade:") and t.casefold() != (year_decade or "").casefold() for t in library.tag_list(old)):
+            self.decade_off.append(str(new.get("id")))
+        new.pop("genres", None)
+        new["tags"] = kept
+        new = library.stored_song(new)
+        if "tags" in new:
+            self.leftovers.append({"id": new.get("id"), "tags": new["tags"]})
+        return new, countries
+
+    def _note_countries(self, new: dict[str, Any], countries: list[str]) -> None:
+        names = credits.main_artists(new)
+        if countries and len(names) == 1:
+            self.per_artist.setdefault(table_key(names[0]), []).append((names[0], tuple(countries)))
+        elif countries:
+            self.multi.append({"id": new.get("id"), "mainArtists": names, "countries": countries})
+
+    def add(self, song: dict[str, Any]) -> None:
         old = copy.deepcopy(song)
         expected = _normalised(_oracle(old))
         new = copy.deepcopy(song)
         if credits.ensure(new):
-            converted += 1
-        if "tags" in new or "genres" in new:
-            kept, countries, gone = library.split_tags(library.tag_list(new))
-            removed.update(gone)
-            year_decade = library.decade_tag(credits.release_year(new))
-            if any(t.startswith("decade:") and t.casefold() != (year_decade or "").casefold() for t in library.tag_list(old)):
-                decade_off.append(str(new.get("id")))
-            new.pop("genres", None)
-            new["tags"] = kept
-            new = library.stored_song(new)
-            if "tags" in new:
-                leftovers.append({"id": new.get("id"), "tags": new["tags"]})
-        else:
-            countries = []
+            self.converted += 1
+        new, countries = self._retag(old, new)
         if isinstance(new.get("sources"), list):
             new["sources"] = library.clean_sources(new["sources"])
-        names = credits.main_artists(new)
-        if countries and len(names) == 1:
-            per_artist.setdefault(table_key(names[0]), []).append((names[0], tuple(countries)))
-        elif countries:
-            multi.append({"id": new.get("id"), "mainArtists": names, "countries": countries})
+        self._note_countries(new, countries)
         if new.get("raw"):
-            raw_kept.append(str(new.get("id")))
+            self.raw_kept.append(str(new.get("id")))
         if isinstance(new.get("version"), dict):
-            types[str(new["version"].get("type"))] += 1
+            self.types[str(new["version"].get("type"))] += 1
         actual = _normalised(credits.project(new))
         if actual != expected:
-            diffs.append({"id": new.get("id"), "before": expected, "after": actual})
-        new_songs.append(new)
-        olds.append(old)
+            self.diffs.append({"id": new.get("id"), "before": expected, "after": actual})
+        self.new_songs.append(new)
+        self.olds.append(old)
 
+
+def _merge_countries(old_table: list[dict[str, Any]], per_artist: dict[str, list[tuple[str, tuple[str, ...]]]]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     table = [dict(e) for e in old_table]
     conflicts: list[dict[str, Any]] = []
-    for k, found in per_artist.items():
+    for found in per_artist.values():
         sets = list(dict.fromkeys(c for _, c in found))
         if len(sets) == 1 and not (_find(table, found[0][0]) or {}).get("countries"):
             _set_countries(table, found[0][0], sets[0])
         elif len(sets) > 1:
             conflicts.append({"artist": found[0][0], "countries": [list(s) for s in sets]})
-    _sync_names(table, new_songs)
+    return table, conflicts
+
+
+def _tag_view_changes(olds: list[dict[str, Any]], new_songs: list[dict[str, Any]], table: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    changes: list[dict[str, Any]] = []
     for old, new in zip(olds, new_songs):
         before, after = _tag_set(library.tag_list(old)), _tag_set(_view_tags(new, table))
         if before != after:
-            tag_changes.append({"id": new.get("id"), "removed": sorted(before - after), "added": sorted(after - before)})
+            changes.append({"id": new.get("id"), "removed": sorted(before - after), "added": sorted(after - before)})
+    return changes
 
-    doc = {"settings": {**settings, "credits_schema": SCHEMA}, "songs": new_songs, "artists": table}
+
+def convert(raw: Any) -> tuple[dict[str, Any], dict[str, Any]]:
+    """`(new_doc, report)` for the raw JSON of one library file. Pure: the input is not modified."""
+    raw = copy.deepcopy(raw)
+    settings = dict(raw.get("settings") or {}) if isinstance(raw, dict) else {}
+    old_table = parse_table(raw.get("artists") if isinstance(raw, dict) else None)
+    scan = _Scan()
+    for song in _songs_of(raw):
+        if isinstance(song, dict):
+            scan.add(song)
+    table, conflicts = _merge_countries(old_table, scan.per_artist)
+    _sync_names(table, scan.new_songs)
+    tag_changes = _tag_view_changes(scan.olds, scan.new_songs, table)
+
+    doc = {"settings": {**settings, "credits_schema": SCHEMA}, "songs": scan.new_songs, "artists": table}
     report = {
-        "songs": len(new_songs),
-        "songs_converted": converted,
-        "tags_removed": {k: removed.get(k, 0) for k in ("decade", "lang", "country")},
-        "decade_tags_disagreeing_with_release_year": len(decade_off),
-        "version_types": dict(sorted(types.items())),
-        "raw_kept": raw_kept,
+        "songs": len(scan.new_songs),
+        "songs_converted": scan.converted,
+        "tags_removed": {k: scan.removed.get(k, 0) for k in ("decade", "lang", "country")},
+        "decade_tags_disagreeing_with_release_year": len(scan.decade_off),
+        "version_types": dict(sorted(scan.types.items())),
+        "raw_kept": scan.raw_kept,
         "artists": {"total": len(table), "with_countries": sum(1 for e in table if e["countries"])},
-        "review": {"multi_artist_countries": multi, "conflicting_countries": conflicts, "leftover_tags": leftovers},
-        "legacy_diffs": diffs,
+        "review": {"multi_artist_countries": scan.multi, "conflicting_countries": conflicts, "leftover_tags": scan.leftovers},
+        "legacy_diffs": scan.diffs,
         "tag_view_changes": {"songs": len(tag_changes), "sample": tag_changes[:SAMPLE]},
-        "ok": not diffs,
+        "ok": not scan.diffs,
     }
     return doc, report
 
@@ -257,6 +279,17 @@ def _free(target: Path) -> Path:
     return numbered
 
 
+def _write_migrated(path: Path, doc: dict[str, Any], out: dict[str, Any], backup_dir: Path | None) -> None:
+    backup = _free(backup_path(path, backup_dir))
+    backup.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(path, backup)
+    out["backup"] = str(backup)
+    review = out["review"]
+    if review["multi_artist_countries"] or review["conflicting_countries"] or review["leftover_tags"] or out["raw_kept"]:
+        write_json_atomic(review_path(path, backup_dir), {"uid": path.parent.name, "review": review, "raw_kept": out["raw_kept"]})
+    write_json_atomic(path, doc)
+
+
 def migrate(path: Path, apply: bool = False, report_path: Path | None = None, backup_dir: Path | None = None) -> dict[str, Any]:
     """Convert one library file. `status`: `dry_run`, `migrated`, `already_migrated` or `aborted` (the report says why; nothing is written then, except the report file)."""
     try:
@@ -274,13 +307,7 @@ def migrate(path: Path, apply: bool = False, report_path: Path | None = None, ba
         else:
             out["status"] = "migrated" if apply else "dry_run"
             if apply:
-                backup = _free(backup_path(path, backup_dir))
-                backup.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(path, backup)
-                out["backup"] = str(backup)
-                if out["review"]["multi_artist_countries"] or out["review"]["conflicting_countries"] or out["review"]["leftover_tags"] or out["raw_kept"]:
-                    write_json_atomic(review_path(path, backup_dir), {"uid": path.parent.name, "review": out["review"], "raw_kept": out["raw_kept"]})
-                write_json_atomic(path, doc)
+                _write_migrated(path, doc, out, backup_dir)
     if report_path is not None:
         write_json_atomic(report_path, out)
     return out

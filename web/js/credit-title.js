@@ -2,15 +2,15 @@
 import { splitTokens, joinTokens } from './tokens.js';
 import { joinNames } from './credits.js';
 
-const WORD = '[\\p{L}\\p{N}_]';
-const KEY = new RegExp(`(?<!${WORD})(?:featuring|feat|ft)(?!${WORD})(\\.?)`, 'giu');
-const KEY_HEAD = new RegExp(`^(?:featuring|feat|ft)(?!${WORD})(\\.?)`, 'iu');
+const WORD = String.raw`[\p{L}\p{N}_]`;
+const KEY = new RegExp(String.raw`(?<!${WORD})(?:featuring|feat|ft)(?!${WORD})(\.?)`, 'giu');
+const KEY_HEAD = new RegExp(String.raw`^(?:featuring|feat|ft)(?!${WORD})(\.?)`, 'iu');
 const NUMBER = /^\d[\d.,'"′″]*$/;
 const TAIL_BRACKET = /[([]([^()[\]]*)[)\]]\s*$/;
 const WITH_HEAD = /^with\s+(?=\S)/i;
 const STOPS = [' - ', ' – ', ' — ', ' | ', ' ●● ', ' • ', ')', ']', '(', '['];
-const NAME_SEP = /\s*,\s*|\s+(?:&|\+|x|[aA][nN][dD]|[vV][sS]\.?)\s+/;
-const VS = /\s+vs\.?\s+/i;
+const NAME_SEP = /(?<!\s)\s+(?:,\s*|(?:&|\+|x|[aA][nN][dD]|[vV][sS]\.?)\s+)|,\s*/;
+const VS = /(?<!\s)\s+vs\.?\s+/i;
 const EDGE = new Set([' ', '-', '|']);
 
 const strip = (s) => {
@@ -107,11 +107,11 @@ function vsParts(pill) {
   return parts.length > 1 && parts.every(Boolean) ? parts : [pill];
 }
 
-export function parseCreditTitle(artist, title, { splitVs = false } = {}) {
-  const notes = [];
+const pillMains = (pill, splitVs) => (splitVs ? vsParts(pill) : [pill]);
+
+function artistCredits(artist, splitVs) {
   const mains = [];
   let featured = [];
-  let withs = [];
   let guessed = false;
   for (const pill of splitTokens(artist ?? '')) {
     const g = group(pill, false);
@@ -119,11 +119,18 @@ export function parseCreditTitle(artist, title, { splitVs = false } = {}) {
     if (g && names.length && g.rest) {
       guessed = guessed || names.length > 1;
       featured = [...featured, ...names];
-      mains.push(...(splitVs ? vsParts(g.rest) : [g.rest]));
-    } else mains.push(...(splitVs ? vsParts(pill) : [pill]));
+      mains.push(...pillMains(g.rest, splitVs));
+    } else mains.push(...pillMains(pill, splitVs));
   }
-  const text = title ?? '';
+  return { mains, featured, guessed };
+}
+
+function titleCredits(text) {
   let work = text.trim();
+  let featured = [];
+  let withs = [];
+  let guessed = false;
+  const notes = [];
   const removed = [];
   const done = new Set();
   for (let i = 0; i < 2; i += 1) {
@@ -141,10 +148,20 @@ export function parseCreditTitle(artist, title, { splitVs = false } = {}) {
     work = g.rest;
     done.add(g.kind);
   }
-  if (guessed) notes.unshift('feat_split_guess');
+  return { work, featured, withs, guessed, notes, removed };
+}
+
+export function parseCreditTitle(artist, title, { splitVs = false } = {}) {
+  const text = title ?? '';
+  const fromArtist = artistCredits(artist, splitVs);
+  const fromTitle = titleCredits(text);
+  const notes = fromTitle.notes;
+  if (fromArtist.guessed || fromTitle.guessed) notes.unshift('feat_split_guess');
+  const mains = fromArtist.mains;
   const taken = new Set(mains.map(fold));
-  featured = unique(featured, taken);
-  withs = unique(withs, taken);
+  const featured = unique([...fromArtist.featured, ...fromTitle.featured], taken);
+  const withs = unique(fromTitle.withs, taken);
+  const { removed, work } = fromTitle;
   return { mainArtists: mains, featuredArtists: featured, withArtists: withs, title: removed.length ? work : text, notes, removed };
 }
 
@@ -154,3 +171,5 @@ export function legacyArtist(mains, featured = [], withs = []) {
   if (withs.length) line = line ? `${line} with ${joinNames(withs)}` : `with ${joinNames(withs)}`;
   return line;
 }
+
+export const PATTERNS = { NAME_SEP, VS };

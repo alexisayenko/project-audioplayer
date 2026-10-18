@@ -101,6 +101,54 @@ def _union(table: dict[str, dict[str, Any]], names: list[str]) -> list[str]:
     return out
 
 
+def _choose_countries(own: list[str], names: list[str], by_table: list[str], by_backup: list[str]) -> tuple[list[str], str]:
+    if own:
+        return own, "song"
+    if len(names) == 1 and by_table:
+        return by_table, "table"
+    if by_backup:
+        return by_backup, "backup"
+    if len(names) > 1 and by_table:
+        return by_table, "table"
+    return [], "empty"
+
+
+def _convert_song(
+    i: int, song: Any, table: dict[str, dict[str, Any]], backup: dict[str, list[str]], seen: set[str],
+    anomalies: list[str], buckets: dict[str, list[str]], disagree: list[str],
+) -> Any:
+    if not isinstance(song, dict) or not isinstance(song.get("id"), str) or not song["id"]:
+        anomalies.append(f"song {i} has no id")
+        return song
+    if song["id"] in seen:
+        anomalies.append(f"duplicate song id {song['id']}")
+    seen.add(song["id"])
+    if "tags" in song and not isinstance(song["tags"], list):
+        anomalies.append(f"song {song['id']}: tags is not a list")
+        return song
+    names = credits.main_artists(song)
+    own = country_codes(song.get("tags"))
+    by_table = _union(table, names) if len(names) >= 1 else []
+    by_backup = backup.get(song["id"], [])
+    if by_table and by_backup and set(by_table) != set(by_backup):
+        disagree.append(song["id"])
+    chosen, bucket = _choose_countries(own, names, by_table, by_backup)
+    buckets[bucket].append(song["id"])
+    new = dict(song)
+    if chosen and chosen != own:
+        rest = [t for t in new.get("tags") or [] if not (isinstance(t, str) and namespace(t) == "country")]
+        new["tags"] = [*rest, *(f"country:{c}" for c in chosen)]
+    return new
+
+
+def _new_doc(raw: Any, new_songs: list[Any]) -> dict[str, Any]:
+    settings = dict(raw.get("settings") or {}) if isinstance(raw, dict) and isinstance(raw.get("settings"), dict) else {}
+    doc = {k: v for k, v in raw.items() if k != "artists"} if isinstance(raw, dict) else {}
+    doc["settings"] = {**settings, "credits_schema": SCHEMA}
+    doc["songs"] = new_songs
+    return doc
+
+
 def convert(raw: Any, legacy: Any = None) -> tuple[dict[str, Any], dict[str, Any]]:
     """`(new_doc, report)` for the raw JSON of one v2 library file and, when there is one, the raw JSON of its pre-v2 backup. Pure: the inputs are not modified. Anomalies are listed in `report["anomalies"]`; the caller must not write when there are any."""
     raw = copy.deepcopy(raw)
@@ -113,57 +161,20 @@ def convert(raw: Any, legacy: Any = None) -> tuple[dict[str, Any], dict[str, Any
     table = {migrate_model2.table_key(e["name"]): e for e in table_list}
     backup, unknown_in_backup = _legacy_countries(legacy, anomalies) if legacy is not None else ({}, 0)
     seen: set[str] = set()
-    new_songs: list[dict[str, Any]] = []
-    from_backup, from_table, from_song, empty = [], [], [], []
+    buckets: dict[str, list[str]] = {"backup": [], "table": [], "song": [], "empty": []}
     disagree: list[str] = []
-    for i, song in enumerate(songs_in):
-        if not isinstance(song, dict) or not isinstance(song.get("id"), str) or not song["id"]:
-            anomalies.append(f"song {i} has no id")
-            new_songs.append(song)
-            continue
-        if song["id"] in seen:
-            anomalies.append(f"duplicate song id {song['id']}")
-        seen.add(song["id"])
-        if "tags" in song and not isinstance(song["tags"], list):
-            anomalies.append(f"song {song['id']}: tags is not a list")
-            new_songs.append(song)
-            continue
-        names = credits.main_artists(song)
-        own = country_codes(song.get("tags"))
-        by_table = _union(table, names) if len(names) >= 1 else []
-        by_backup = backup.get(song["id"], [])
-        if by_table and by_backup and set(by_table) != set(by_backup):
-            disagree.append(song["id"])
-        if own:
-            chosen, bucket = own, from_song
-        elif len(names) == 1 and by_table:
-            chosen, bucket = by_table, from_table
-        elif by_backup:
-            chosen, bucket = by_backup, from_backup
-        elif len(names) > 1 and by_table:
-            chosen, bucket = by_table, from_table
-        else:
-            chosen, bucket = [], empty
-        bucket.append(song["id"])
-        new = dict(song)
-        if chosen and chosen != own:
-            rest = [t for t in new.get("tags") or [] if not (isinstance(t, str) and namespace(t) == "country")]
-            new["tags"] = [*rest, *(f"country:{c}" for c in chosen)]
-        new_songs.append(new)
-    settings = dict(raw.get("settings") or {}) if isinstance(raw, dict) and isinstance(raw.get("settings"), dict) else {}
-    doc = {k: v for k, v in raw.items() if k != "artists"} if isinstance(raw, dict) else {}
-    doc["settings"] = {**settings, "credits_schema": SCHEMA}
-    doc["songs"] = new_songs
+    new_songs = [_convert_song(i, song, table, backup, seen, anomalies, buckets, disagree) for i, song in enumerate(songs_in)]
+    doc = _new_doc(raw, new_songs)
     for old, new in zip(songs_in, new_songs):
         if isinstance(old, dict) and isinstance(new, dict) and _without_countries(old) != _without_countries(new):
             anomalies.append(f"song {old.get('id')}: a field other than the countries would change")
             break
     report = {
         "songs": len(new_songs),
-        "countries_restored_from_backup": len(from_backup),
-        "countries_taken_from_table": len(from_table),
-        "countries_already_on_song": len(from_song),
-        "left_empty": len(empty),
+        "countries_restored_from_backup": len(buckets["backup"]),
+        "countries_taken_from_table": len(buckets["table"]),
+        "countries_already_on_song": len(buckets["song"]),
+        "left_empty": len(buckets["empty"]),
         "table_and_backup_disagree": {"songs": len(disagree), "ids": disagree},
         "artists_table_removed": len(table_list),
         "backup_found": legacy is not None,
@@ -209,6 +220,34 @@ def _free(target: Path) -> Path:
     return numbered
 
 
+def _migrate_model2_file(raw: Any, path: Path, apply: bool, backup_dir: Path | None, legacy_backup: Path | None) -> dict[str, Any]:
+    source = legacy_backup if legacy_backup is not None else legacy_backup_path(path)
+    legacy: Any = None
+    pre: list[str] = []
+    if source is not None:
+        try:
+            legacy = json.loads(source.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            pre.append(f"the pre-v2 backup {source} cannot be read: {exc}")
+    doc, out = convert(raw, legacy)
+    out["anomalies"] = [*pre, *out["anomalies"]]
+    out["ok"] = not out["anomalies"]
+    out["legacy_backup"] = str(source) if source is not None else None
+    try:
+        check(out)
+    except MigrationAborted:
+        out["status"] = "aborted"
+        return out
+    out["status"] = "migrated" if apply else "dry_run"
+    if apply:
+        backup = _free(backup_path(path, backup_dir))
+        backup.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(path, backup)
+        out["backup"] = str(backup)
+        write_json_atomic(path, doc)
+    return out
+
+
 def migrate(path: Path, apply: bool = False, report_path: Path | None = None, backup_dir: Path | None = None, legacy_backup: Path | None = None) -> dict[str, Any]:
     """Convert one library file. `status`: `dry_run`, `migrated`, `already_migrated`, `not_model2` (run model 2 first), `missing` or `aborted` (the report says why; nothing but the report file is written then). `legacy_backup` is the pre-v2 file; without it the default place is searched, and a missing file is not an error."""
     try:
@@ -220,30 +259,7 @@ def migrate(path: Path, apply: bool = False, report_path: Path | None = None, ba
     elif not is_model2(raw):
         out = {"status": "not_model2", "credits_schema": _stamp(raw)}
     else:
-        source = legacy_backup if legacy_backup is not None else legacy_backup_path(path)
-        legacy: Any = None
-        pre: list[str] = []
-        if source is not None:
-            try:
-                legacy = json.loads(source.read_text(encoding="utf-8"))
-            except (OSError, ValueError) as exc:
-                pre.append(f"the pre-v2 backup {source} cannot be read: {exc}")
-        doc, out = convert(raw, legacy)
-        out["anomalies"] = [*pre, *out["anomalies"]]
-        out["ok"] = not out["anomalies"]
-        out["legacy_backup"] = str(source) if source is not None else None
-        try:
-            check(out)
-        except MigrationAborted:
-            out["status"] = "aborted"
-        else:
-            out["status"] = "migrated" if apply else "dry_run"
-            if apply:
-                backup = _free(backup_path(path, backup_dir))
-                backup.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(path, backup)
-                out["backup"] = str(backup)
-                write_json_atomic(path, doc)
+        out = _migrate_model2_file(raw, path, apply, backup_dir, legacy_backup)
     if report_path is not None:
         write_json_atomic(report_path, out)
     return out

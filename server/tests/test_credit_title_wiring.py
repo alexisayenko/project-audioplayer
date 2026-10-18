@@ -79,7 +79,9 @@ class TestPreview:
     @pytest.mark.parametrize("title", ["Come With Me", "Sticks & Stones", "Defeat", "Dancing with Myself", "5 ft tall"])
     def test_ambiguous_titles_are_left_alone(self, real_preview, client, title):
         body = preview(real_preview, client, title, artist="A")
-        assert body["title"] == title and body["featuredArtists"] == [] and body["withArtists"] == []
+        assert body["title"] == title
+        assert body["featuredArtists"] == []
+        assert body["withArtists"] == []
         assert body["artist"] == "A"
 
     def test_soundcloud_probe_moves_the_credit_too(self, ydl):  # noqa: F811
@@ -102,7 +104,8 @@ class TestPlaylistImport:
 
     def test_unavailable_rows_have_empty_lists(self):
         row = playlist_import._unavailable_view("x", {"title": "[Private video]"}, "Private")
-        assert row["featuredArtists"] == [] and row["withArtists"] == []
+        assert row["featuredArtists"] == []
+        assert row["withArtists"] == []
 
 
 class TestWithArtistsStorage:
@@ -110,7 +113,8 @@ class TestWithArtistsStorage:
         r = post(client, {"mainArtists": ["A"], "featuredArtists": ["B"], "withArtists": ["W", "X"]})
         assert r.status_code == 201
         got = r.json()["song"]
-        assert got["withArtists"] == ["W", "X"] and got["artist"] == "A feat. B with W & X"
+        assert got["withArtists"] == ["W", "X"]
+        assert got["artist"] == "A feat. B with W & X"
         assert on_disk(tmp_path)["withArtists"] == ["W", "X"]
         assert list(on_disk(tmp_path))[:5] == ["id", "title", "mainArtists", "featuredArtists", "withArtists"]
 
@@ -136,7 +140,8 @@ class TestWithArtistsStorage:
 
     def test_legacy_artist_without_a_keyword_is_unchanged(self, client):
         got = post(client, {"artist": "Pharrell Williams, Nile Rodgers"}).json()["song"]
-        assert got["mainArtists"] == ["Pharrell Williams, Nile Rodgers"] and got["featuredArtists"] == []
+        assert got["mainArtists"] == ["Pharrell Williams, Nile Rodgers"]
+        assert got["featuredArtists"] == []
 
     def test_guest_sees_with_artists(self, client):
         post(client, {"mainArtists": ["A"], "withArtists": ["W"]})

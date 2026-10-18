@@ -9,7 +9,7 @@ from typing import Any
 from . import credits, timeutil, titles
 from .tokens import split_tokens
 
-_SPLIT = re.compile(r"\s*+[,&]\s*+|\s++(?:and|x|vs\.?)\s++", re.I)
+_SPLIT = re.compile(r"(?:(?<!\s)\s++)?+[,&]\s*+|(?<!\s)\s++(?:and|x|vs\.?)\s++", re.I)
 _KIND_WORDS = (
     ("remix", re.compile(r"\bremix(?:ed)?\b|\bmashup\b|\bbootleg\b|\brework\b|\bvip\b", re.I)),
     ("live", re.compile(r"\blive\b|\bunplugged\b|\bin concert\b", re.I)),
@@ -27,8 +27,8 @@ _MIXED_BY = re.compile(r"\bmixed\s+by\b", re.I)
 _REMIX_WORDISH = re.compile(r"\b(?:remix|mashup|mix|edit)\b", re.I)
 _PUNCT = " -|"
 _MASHUP_WORD = re.compile(r"^mash[\s-]?up$", re.I)
-_MASHUP_TAIL = re.compile(r"\s*+[(\[]\s*+(mash[\s-]?up)\s*+[)\]]\s*+$", re.I)
-_SOURCE_SPLIT = re.compile(r"\s++(?:x|×|vs\.?)\s++", re.I)
+_MASHUP_TAIL = re.compile(r"(?<!\s)\s*+[(\[]\s*+(mash[\s-]?up)\s*+[)\]]\s*+$", re.I)
+_SOURCE_SPLIT = re.compile(r"(?<!\s)\s++(?:x|×|vs\.?)\s++", re.I)
 _DASH = re.compile(r"\s[-–—]\s")
 FLAGS = (
     "feat_in_artist", "feat_in_title", "multi_artist_in_one_pill", "remix_text_in_title", "mixed_by", "live", "acoustic",
@@ -75,7 +75,7 @@ def _cut_feat(text: str) -> tuple[str, list[str]]:
             text = text[:i] + " " + text[stop:]
 
 
-_MIX_TAIL = re.compile(r"^(?P<x>.*?)[\s,/-]*\b(?:mix|edit|version)\s*$", re.I)
+_MIX_TAIL = re.compile(r"^(?P<x>.*?)(?<![\s,/-])[\s,/-]*+\b(?:mix|edit|version)\s*$", re.I)
 _DESCRIPTOR_WORDS = frozenset((
     "extended", "radio", "club", "dub", "vip", "original", "instrumental", "acoustic", "short", "long", "album", "single",
     "full", "main", "extra", "maxi", "deep", "vocal",
@@ -119,7 +119,7 @@ def version_year(text: str | None) -> int | None:
     return timeutil.valid_year(int(m.group())) if m else None
 
 
-_COVER_TAIL = re.compile(r"^(.*?)[\s,:-]*+\bcover(?:\s++version)?+\s*+$", re.I)
+_COVER_TAIL = re.compile(r"^(.*?)(?<![\s,:-])[\s,:-]*+\bcover(?:\s++version)?+\s*+$", re.I)
 
 
 def _fold(text: str) -> str:
@@ -171,13 +171,7 @@ def _cover_dash(left: str, right: str, text: str, name: str, credited: list[str]
     elif hit(a_names, original):
         chosen = r2
     else:
-        for pool in (credit, uploader):
-            if hit(a_names, pool):
-                chosen = r1
-            elif hit(x_names, pool):
-                chosen = r2
-            if chosen:
-                break
+        chosen = next((r1 if hit(a_names, pool) else r2 for pool in (credit, uploader) if hit(a_names, pool) or hit(x_names, pool)), None)
     notes.append("cover_dash")
     if chosen:
         return title, chosen["artists"], chosen["version"], None
@@ -233,7 +227,7 @@ def _split_names(text: str, pattern: re.Pattern[str]) -> list[str]:
 
 
 def _mashup_by(base: str, artists: list[str], name: str, makers: str) -> tuple[str, list[str], dict[str, Any]]:
-    """"A x B - Title (mashup by X)": X are the main artists, A and B the sources (\`of\`), the text after the dash is the title as is."""
+    """"A x B - Title (mashup by X)": X are the main artists, A and B the sources (`of`), the text after the dash is the title as is."""
     version: dict[str, Any] = {"kind": "mashup", "name": name, "by": []}
     m = _DASH.search(base)
     left, right = (base[: m.start()], base[m.end():]) if m else ("", "")
@@ -290,25 +284,74 @@ def _cover_reading(base: str, artists: list[str], featured: list[str], version: 
     return base, artists, _cover_version(version["name"], [*artists, *featured], notes) or version, None
 
 
-def suggest(artist: str | None, title: str | None, remixer: str | None, ctx: dict[str, Any] | None = None) -> dict[str, Any]:
-    """`{artists, featured, version, title, notes}` suggested from the current strings; `title` is the base title when it differs, `notes` are codes."""
-    ctx = ctx or {}
-    alternatives: list[dict[str, Any]] | None = None
-    notes: list[str] = []
-    artist_text = _squash(artist or "")
-    primary, featured = _cut_feat(artist_text)
-    if featured:
-        notes.append("feat_in_artist")
+def _credited_names(primary: str, notes: list[str]) -> list[str]:
     artists: list[str] = []
     seen: set[str] = set()
-    for pill in split_tokens(primary):
+    pills = split_tokens(primary)
+    for pill in pills:
         for name in _names(pill):
             if name.casefold() not in seen:
                 seen.add(name.casefold())
                 artists.append(name)
-    if len(artists) > len(split_tokens(primary)):
+    if len(artists) > len(pills):
         notes.append("multi_artist")
-    title_text = (title or "").strip()
+    return artists
+
+
+Reading = tuple[str, list[str], dict[str, Any] | None, list[dict[str, Any]] | None]
+
+
+def _plain_version(
+    base: str, artists: list[str], featured: list[str], version: dict[str, Any], ctx: dict[str, Any], notes: list[str]
+) -> Reading:
+    if version["kind"] == "cover":
+        return _cover_reading(base, artists, featured, version, ctx, notes)
+    return base, artists, version, None
+
+
+def _mashup_reading(
+    base: str, artists: list[str], from_title: str | None, tail: re.Match[str] | None, remixer_text: str, notes: list[str]
+) -> Reading | None:
+    by_text = next((t for t in (remixer_text, _squash(from_title or "")) if t and _MASHUP_BY.fullmatch(t)), None)
+    if by_text and not tail:
+        m = _MASHUP_BY.fullmatch(by_text)
+        assert m is not None
+        base, artists, version = _mashup_by(base, artists, by_text, m.group("a") or m.group("b"))
+        notes.append("mashup_by")
+        notes.append("remixer_to_version" if by_text == remixer_text else "version_in_title")
+        return base, artists, version, None
+    if tail or _MASHUP_WORD.match(remixer_text):
+        base, artists, version = _mashup(base, artists, notes, tail.group(1) if tail else remixer_text)
+        notes.append("version_in_title" if tail else "remixer_to_version")
+        return base, artists, version, None
+    return None
+
+
+def _version_reading(
+    base: str, artists: list[str], featured: list[str], from_title: str | None, tail: re.Match[str] | None,
+    remixer_text: str, release: tuple[int, bool] | None, ctx: dict[str, Any], notes: list[str],
+) -> Reading:
+    mashup = _mashup_reading(base, artists, from_title, tail, remixer_text, notes)
+    if mashup:
+        return mashup
+    if remixer_text:
+        notes.append("remixer_to_version")
+        if from_title:
+            notes.append("version_in_title")
+        return _plain_version(base, artists, featured, _version(remixer_text), ctx, notes)
+    if from_title:
+        notes.append("version_in_title")
+        return _plain_version(base, artists, featured, _version(_squash(from_title)), ctx, notes)
+    if release and release[1]:
+        notes.append("cover_release")
+        notes.append("version_in_title")
+        return base, artists, {"kind": "cover", "name": "Cover", "by": []}, None
+    return base, artists, None, None
+
+
+def _title_stage(
+    title_text: str, featured: list[str], notes: list[str]
+) -> tuple[str, list[str], tuple[int, bool] | None, re.Match[str] | None, str | None]:
     base, title_feat = _cut_feat(title_text)
     if title_feat:
         notes.append("feat_in_title")
@@ -319,37 +362,23 @@ def suggest(artist: str | None, title: str | None, remixer: str | None, ctx: dic
         notes.append("release_tag")
     tail = _MASHUP_TAIL.search(base)
     if tail:
-        base, from_title = _squash(base[: tail.start()]), None
-    else:
-        base, from_title = _title_version(base)
-    remixer_text = _squash(remixer or "")
-    version: dict[str, Any] | None = None
-    by_text = next((t for t in (remixer_text, _squash(from_title or "")) if t and _MASHUP_BY.fullmatch(t)), None)
-    if by_text and not tail:
-        m = _MASHUP_BY.fullmatch(by_text)
-        assert m is not None
-        base, artists, version = _mashup_by(base, artists, by_text, m.group("a") or m.group("b"))
-        notes.append("mashup_by")
-        notes.append("remixer_to_version" if by_text == remixer_text else "version_in_title")
-    elif tail or _MASHUP_WORD.match(remixer_text):
-        base, artists, version = _mashup(base, artists, notes, tail.group(1) if tail else remixer_text)
-        notes.append("version_in_title" if tail else "remixer_to_version")
-    elif remixer_text:
-        version = _version(remixer_text)
-        notes.append("remixer_to_version")
-        if from_title:
-            notes.append("version_in_title")
-        if version["kind"] == "cover":
-            base, artists, version, alternatives = _cover_reading(base, artists, featured, version, ctx, notes)
-    elif from_title:
-        version = _version(_squash(from_title))
-        notes.append("version_in_title")
-        if version["kind"] == "cover":
-            base, artists, version, alternatives = _cover_reading(base, artists, featured, version, ctx, notes)
-    elif release and release[1]:
-        version = {"kind": "cover", "name": "Cover", "by": []}
-        notes.append("cover_release")
-        notes.append("version_in_title")
+        return _squash(base[: tail.start()]), featured, release, tail, None
+    base, from_title = _title_version(base)
+    return base, featured, release, None, from_title
+
+
+def suggest(artist: str | None, title: str | None, remixer: str | None, ctx: dict[str, Any] | None = None) -> dict[str, Any]:
+    """`{artists, featured, version, title, notes}` suggested from the current strings; `title` is the base title when it differs, `notes` are codes."""
+    ctx = ctx or {}
+    notes: list[str] = []
+    primary, featured = _cut_feat(_squash(artist or ""))
+    if featured:
+        notes.append("feat_in_artist")
+    artists = _credited_names(primary, notes)
+    title_text = (title or "").strip()
+    base, featured, release, tail, from_title = _title_stage(title_text, featured, notes)
+    base, artists, version, alternatives = _version_reading(
+        base, artists, featured, from_title, tail, _squash(remixer or ""), release, ctx, notes)
     if not tail and not alternatives and (version is None or version["kind"] not in ("cover", "mashup")):
         first = _title_first(base, title_text, artists, ctx)
         if first:
@@ -362,12 +391,30 @@ def suggest(artist: str | None, title: str | None, remixer: str | None, ctx: dic
     return out
 
 
-def review_flags(raw: dict[str, Any]) -> list[str]:
-    """Flags of the original strings that deserve a human look, in the fixed `FLAGS` order."""
-    artist = raw.get("artist") if isinstance(raw.get("artist"), str) else ""
-    title = raw.get("title") if isinstance(raw.get("title"), str) else ""
-    remixer = raw.get("remixer") if isinstance(raw.get("remixer"), str) else ""
+def _year_of(value: Any) -> int | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str) and value.strip().isdigit():
+        return int(value)
+    return None
+
+
+def _text_flags(title: str, remixer: str) -> set[str]:
     text = f"{title} {remixer}"
+    found: set[str] = set()
+    if _MIXED_BY.search(text):
+        found.add("mixed_by")
+    for flag, pattern in _FLAG_WORDS.items():
+        if re.search(pattern, text, re.I):
+            found.add(flag)
+    if remixer.strip() and not _REMIX_WORDISH.search(remixer):
+        found.add("remixer_without_remix_word")
+    return found
+
+
+def _artist_flags(artist: str, title: str) -> set[str]:
     found: set[str] = set()
     if titles._FEAT_KEY.search(artist):
         found.add("feat_in_artist")
@@ -378,23 +425,27 @@ def review_flags(raw: dict[str, Any]) -> list[str]:
         found.add("multi_artist_in_one_pill")
     if titles._REMIX_WORD.search(title) and not _MIXED_BY.search(title):
         found.add("remix_text_in_title")
-    if _MIXED_BY.search(text):
-        found.add("mixed_by")
-    for flag, pattern in _FLAG_WORDS.items():
-        if re.search(pattern, text, re.I):
-            found.add(flag)
-    if remixer.strip() and not _REMIX_WORDISH.search(remixer):
-        found.add("remixer_without_remix_word")
+    if not artist.strip():
+        found.add("blank_artist")
+    return found
+
+
+def _year_flags(raw: dict[str, Any], remixer: str) -> set[str]:
+    found: set[str] = set()
     remix_year = raw.get("remix_year")
     if isinstance(remix_year, (int, str)) and not isinstance(remix_year, bool) and str(remix_year).strip() and not remixer.strip():
         found.add("remix_year_without_remixer")
-    if not artist.strip():
-        found.add("blank_artist")
     for key in ("year", "remix_year"):
-        value = raw.get(key)
-        if isinstance(value, bool):
-            continue
-        year = value if isinstance(value, int) else int(value) if isinstance(value, str) and value.strip().isdigit() else None
+        year = _year_of(raw.get(key))
         if year is not None and timeutil.valid_year(year) is None:
             found.add("year_out_of_range")
+    return found
+
+
+def review_flags(raw: dict[str, Any]) -> list[str]:
+    """Flags of the original strings that deserve a human look, in the fixed `FLAGS` order."""
+    artist = raw.get("artist") if isinstance(raw.get("artist"), str) else ""
+    title = raw.get("title") if isinstance(raw.get("title"), str) else ""
+    remixer = raw.get("remixer") if isinstance(raw.get("remixer"), str) else ""
+    found = _artist_flags(artist, title) | _text_flags(title, remixer) | _year_flags(raw, remixer)
     return [f for f in FLAGS if f in found]

@@ -106,7 +106,10 @@ def unavailable_reason(info: dict[str, Any]) -> str | None:
         return "Private or deleted"
     found = _UNAVAILABLE_TITLE.fullmatch(title)
     if found:
-        return "Deleted" if found.group(1).lower() in ("deleted", "removed") else "Private" if found.group(1).lower() == "private" else "Unavailable"
+        word = found.group(1).lower()
+        if word in ("deleted", "removed"):
+            return "Deleted"
+        return "Private" if word == "private" else "Unavailable"
     return _UNAVAILABLE_AVAILABILITY.get(str(info.get("availability") or "").lower())
 
 
@@ -189,6 +192,27 @@ def listing(list_id: str, songs: list[dict[str, Any]]) -> dict[str, Any]:
 def details(ids: list[str], songs: list[dict[str, Any]]) -> dict[str, Any]:
     """Full YouTube data (artist and track fields, tags, upload date) for up to MAX_DETAIL_IDS videos, fetched by DETAIL_WORKERS workers with a random pause of DETAIL_DELAY_S between one worker's fetches, within DETAIL_TIMEOUT_S; the ids that failed or timed out are listed in `failed`, those YouTube refused to serve (an error that is not a network, rate-limit or sign-in problem) also in `unavailable`. After a 429 or bot check the remaining ids are not fetched and `rate_limited` is true."""
     owned = Owned(songs)
+    results = _fetch_details(ids)
+    entries: list[dict[str, Any]] = []
+    failed: list[str] = []
+    unavailable: list[str] = []
+    limited = False
+    for vid in dict.fromkeys(ids):
+        meta, error = results.get(vid, (None, None))
+        if meta is not None:
+            entries.append(view(vid, meta, owned, detailed=True))
+            continue
+        failed.append(vid)
+        if error is None:
+            continue
+        if _RATE_LIMITED.search(str(error)):
+            limited = True
+        elif not _TRANSIENT_ERROR.search(str(error)):
+            unavailable.append(vid)
+    return {"entries": entries, "failed": failed, "unavailable": unavailable, "rate_limited": limited}
+
+
+def _fetch_details(ids: list[str]) -> dict[str, tuple[dict[str, Any] | None, Exception | None]]:
     halted = threading.Event()
     pending = list(dict.fromkeys(ids))
     lock = threading.Lock()
@@ -218,20 +242,4 @@ def details(ids: list[str], songs: list[dict[str, Any]]) -> dict[str, Any]:
     wait(futures, timeout=DETAIL_TIMEOUT_S)
     halted.set()
     pool.shutdown(wait=False, cancel_futures=True)
-    entries: list[dict[str, Any]] = []
-    failed: list[str] = []
-    unavailable: list[str] = []
-    limited = False
-    for vid in dict.fromkeys(ids):
-        meta, error = results.get(vid, (None, None))
-        if meta is not None:
-            entries.append(view(vid, meta, owned, detailed=True))
-            continue
-        failed.append(vid)
-        if error is None:
-            continue
-        if _RATE_LIMITED.search(str(error)):
-            limited = True
-        elif not _TRANSIENT_ERROR.search(str(error)):
-            unavailable.append(vid)
-    return {"entries": entries, "failed": failed, "unavailable": unavailable, "rate_limited": limited}
+    return results

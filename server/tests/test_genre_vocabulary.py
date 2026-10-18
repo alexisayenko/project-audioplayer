@@ -36,7 +36,8 @@ def test_styles_are_lowercase_trimmed_and_filed_under_a_genre():
     styles = STYLES["styles"]
     assert len(styles) >= 450
     for style, genre in styles.items():
-        assert style and style == " ".join(style.lower().split()), style
+        assert style, style
+        assert style == " ".join(style.lower().split()), style
         assert genre in GENRES, (style, genre)
 
 
@@ -45,7 +46,8 @@ def test_no_style_in_two_genres_unless_marked_multi_genre():
     assert all(isinstance(g, str) for g in styles.values())
     for style, others in also.items():
         assert style in styles, style
-        assert others and len(set(others)) == len(others), style
+        assert others, style
+        assert len(set(others)) == len(others), style
         assert styles[style] not in others, style
         assert set(others) <= set(GENRES), style
     assert genre_vocab.load().also_under == {s: tuple(o) for s, o in also.items()}
@@ -62,7 +64,9 @@ def test_names_are_unique_after_folding_case_spaces_hyphens_and_ampersand():
 
 def test_discogs_names_belong_to_styles():
     for ours, theirs in STYLES["discogs_names"].items():
-        assert ours in STYLES["styles"] and isinstance(theirs, str) and theirs.strip()
+        assert ours in STYLES["styles"]
+        assert isinstance(theirs, str)
+        assert theirs.strip()
 
 
 def test_extras_have_family_and_a_canonical_parent_without_cycles():
@@ -144,12 +148,14 @@ def test_family_of_also_reads_the_music_form():
     assert genre_vocab.family_of("house") == "Electronic"
     assert genre_vocab.family_of("house music") == "Electronic"
     assert genre_vocab.family_of("zzz") is None
-    assert genre_vocab.is_style("house") and not genre_vocab.is_style("electronic")
+    assert genre_vocab.is_style("house")
+    assert not genre_vocab.is_style("electronic")
 
 
 def test_suggest_returns_up_to_five_close_names():
     got = genre_vocab.suggest("tecno")
-    assert "techno" in got and len(got) <= 5
+    assert "techno" in got
+    assert len(got) <= 5
     assert genre_vocab.suggest("prog")[0].startswith("prog")
     assert all(genre_vocab.is_canonical(g) for g in genre_vocab.suggest("trans"))
     assert genre_vocab.suggest("   ") == []
@@ -164,16 +170,21 @@ def test_reject_unknown_genre_lists_suggestions():
     with pytest.raises(Problem) as err:
         reject_unknown_genre(["genre:tecno", "genre:house"])
     body = err.value.body()
-    assert err.value.status == 422 and body["error"] == "unknown_genre"
-    assert body["value"] == "tecno" and "techno" in body["suggestions"] and len(body["suggestions"]) <= 5
-    assert "Did you mean" in body["detail"] and "techno" in body["detail"]
+    assert err.value.status == 422
+    assert body["error"] == "unknown_genre"
+    assert body["value"] == "tecno"
+    assert "techno" in body["suggestions"]
+    assert len(body["suggestions"]) <= 5
+    assert "Did you mean" in body["detail"]
+    assert "techno" in body["detail"]
     assert body["unknown"][0]["value"] == "tecno"
 
 
 def test_reject_unknown_genre_without_close_names_points_to_the_list():
     with pytest.raises(Problem) as err:
         reject_unknown_genre(["genre:qqqqzzzz"])
-    assert err.value.body()["suggestions"] == [] and "/genres/vocabulary" in err.value.body()["detail"]
+    assert err.value.body()["suggestions"] == []
+    assert "/genres/vocabulary" in err.value.body()["detail"]
 
 
 def test_reject_unknown_genre_passes_known_other_namespaces_and_stored_values():
@@ -187,7 +198,8 @@ def test_create_rejects_unknown_genre_and_applies_nothing(client):
     r = add(client, tags=["genre:tecno", "80s"])
     assert r.status_code == 422
     body = r.json()
-    assert body["error"] == "unknown_genre" and "techno" in body["suggestions"]
+    assert body["error"] == "unknown_genre"
+    assert "techno" in body["suggestions"]
     assert client.get("/library", headers=H).json()["songs"] == []
 
 
@@ -207,9 +219,11 @@ def test_patch_rejects_unknown_genre_and_keeps_the_song(client):
     add(client, audio=False, tags=["genre:house"])
     r = client.patch(f"/songs/{VID}", json={"tags": ["genre:house", "genre:housee"], "title": "New"}, headers=H)
     assert r.status_code == 422
-    assert r.json()["error"] == "unknown_genre" and "house" in r.json()["suggestions"]
+    assert r.json()["error"] == "unknown_genre"
+    assert "house" in r.json()["suggestions"]
     song = client.get("/library", headers=H).json()["songs"][0]
-    assert song["title"] == "Song" and "genre:housee" not in song["tags"]
+    assert song["title"] == "Song"
+    assert "genre:housee" not in song["tags"]
 
 
 def test_patch_lets_a_stored_unmappable_tag_stay(client, tmp_path):
@@ -224,7 +238,8 @@ def test_patch_lets_a_stored_unmappable_tag_stay(client, tmp_path):
     assert ok.status_code == 200
     assert ok.json()["tags"][:3] == ["genre:house", "genre:zzqq", "genre:trance"]
     bad = client.patch(f"/songs/{VID}", json={"tags": ["genre:house", "genre:zzqq", "genre:zzzz"]}, headers=H)
-    assert bad.status_code == 422 and bad.json()["value"] == "zzzz"
+    assert bad.status_code == 422
+    assert bad.json()["value"] == "zzzz"
 
 
 def test_patch_without_tags_never_validates(client):
@@ -276,11 +291,16 @@ def test_vocabulary_endpoint_lists_every_name_with_family_and_level(client):
     assert body["families"] == GENRES
     assert body["count"] == len(body["genres"]) == len(names())
     by = {g["name"]: g for g in body["genres"]}
-    assert by["house"]["family"] == "Electronic" and by["house"]["level"] == "style" and not by["house"]["extra"]
-    assert by["rock"]["level"] == "genre" and by["rock"]["family"] == "Rock"
-    assert by["neurofunk"]["extra"] and by["neurofunk"]["parent"] == "drum and bass"
+    assert by["house"]["family"] == "Electronic"
+    assert by["house"]["level"] == "style"
+    assert not by["house"]["extra"]
+    assert by["rock"]["level"] == "genre"
+    assert by["rock"]["family"] == "Rock"
+    assert by["neurofunk"]["extra"]
+    assert by["neurofunk"]["parent"] == "drum and bass"
     assert [g["name"] for g in body["genres"]] == sorted(by)
-    assert body["aliases"]["dnb"] == "drum and bass" and body["aliases"]["indie"] == "indie rock"
+    assert body["aliases"]["dnb"] == "drum and bass"
+    assert body["aliases"]["indie"] == "indie rock"
     assert "progressive" not in body["aliases"]
     assert set(body["aliases"].values()) <= set(by)
 
@@ -298,7 +318,8 @@ def test_vocabulary_endpoint_is_readable_by_guests(client, monkeypatch):
     monkeypatch.setenv("PUBLIC_VIEW", "1")
     add(client, audio=False)
     guest = client.get("/genres/vocabulary")
-    assert guest.status_code == 200 and guest.json()["count"] == len(names())
+    assert guest.status_code == 200
+    assert guest.json()["count"] == len(names())
     assert guest.headers["cache-control"] == "private, no-cache"
 
 
@@ -348,7 +369,8 @@ def test_review_report_is_rewritten_only_when_it_changes(datadir):
     first = target.stat().st_mtime_ns
     text = target.read_text()
     migrate_tags.run()
-    assert target.stat().st_mtime_ns == first and target.read_text() == text
+    assert target.stat().st_mtime_ns == first
+    assert target.read_text() == text
     assert json.loads(lib.read_text())["songs"][0]["tags"] == ["genre:zzqq"]
     _lib(datadir, "u1", [{"id": "a", "title": "A", "tags": ["genre:house"]}])
     migrate_tags.run()
@@ -428,7 +450,8 @@ def test_the_graph_exposes_a_style_per_node(client):
 
     nodes = gg.build(songs(("s1", ["house", "neurofunk"]), ("s2", ["electronic"])), {"labels": {}, "entities": {}})["nodes"]
     by = {n["label"]: n for n in nodes}
-    assert by["house"]["style"] == "house" and by["neurofunk"]["style"] == "neurofunk"
+    assert by["house"]["style"] == "house"
+    assert by["neurofunk"]["style"] == "neurofunk"
     assert by["electronic"]["style"] is None
     assert all("style" in n for n in nodes)
 

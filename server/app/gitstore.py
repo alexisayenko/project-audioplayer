@@ -504,7 +504,7 @@ class GitSync:
             state["last_push_at"] = now_iso
             return 0
         if result.status == "rejected" and self.inbound and self.rebase_foreign and self._foreign_overlap(repo) is None:
-            return self._record_moved_remote(repo, name, rs, state)
+            return self._record_moved_remote(name, rs, state)
         if result.status == "rejected" and self.inbound:
             message = self.diverged_message(name)
             rs.update(behind=self.probe(repo, fresh=True).behind, inbound_error=message)
@@ -522,7 +522,7 @@ class GitSync:
         pass_log.log(level, "%s push failed (%d in a row): %s", name, rs["failures"], result.error)
         return 1
 
-    def _record_moved_remote(self, repo: Path, name: str, rs: dict[str, Any], state: dict[str, Any]) -> int:
+    def _record_moved_remote(self, name: str, rs: dict[str, Any], state: dict[str, Any]) -> int:
         """The push lost a race with a foreign push outside the owned paths: the next run rebases; it only counts as a failure."""
         rs["failures"] = int(rs.get("failures", 0)) + 1
         state["last_error"] = f"{name}: push rejected, GitHub moved; retrying"

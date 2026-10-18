@@ -28,7 +28,9 @@ def derived(song):
 
 def test_the_live_shapes_convert_with_the_real_derived_values_unchanged():
     doc, report = migrate_model2.convert(LIVE)
-    assert report["ok"] is True and report["legacy_diffs"] == [] and report["songs"] == len(LIVE["songs"])
+    assert report["ok"] is True
+    assert report["legacy_diffs"] == []
+    assert report["songs"] == len(LIVE["songs"])
     for song in doc["songs"]:
         want = {k: (v.strip() or None) if isinstance(v, str) else v for k, v in EXPECTED[song["id"]].items()}
         assert derived(song) == want, song["id"]
@@ -52,7 +54,10 @@ def test_the_converted_songs_have_only_v2_keys():
 def test_the_tag_counts_match_the_input():
     _, report = migrate_model2.convert(LIVE)
     want = {p: sum(1 for s in LIVE["songs"] for t in s.get("tags", []) if t.startswith(p + ":")) for p in ("decade", "lang", "country")}
-    assert report["tags_removed"] == want and want["decade"] > 0 and want["lang"] > 0 and want["country"] > 0
+    assert report["tags_removed"] == want
+    assert want["decade"] > 0
+    assert want["lang"] > 0
+    assert want["country"] > 0
     assert report["decade_tags_disagreeing_with_release_year"] == 0
 
 
@@ -62,7 +67,8 @@ def test_the_artist_table_comes_from_single_main_artists_and_unassignable_countr
     names = {n.casefold() for s in doc["songs"] for n in s["mainArtists"]}
     assert {n.casefold() for n in table} == names
     for entry in report["review"]["multi_artist_countries"]:
-        assert len(entry["mainArtists"]) > 1 and entry["countries"]
+        assert len(entry["mainArtists"]) > 1
+        assert entry["countries"]
     single = [s for s in LIVE["songs"] if len(s["artists"]) == 1]
     countries = {s["artists"][0]: [t[8:] for t in s["tags"] if t.startswith("country:")] for s in single}
     reviewed = {c["artist"].casefold() for c in report["review"]["conflicting_countries"]}
@@ -143,8 +149,10 @@ def test_a_difference_in_a_derived_field_aborts_and_writes_nothing(tmp_path, mon
     real = credits.project
     monkeypatch.setattr(credits, "project", lambda song: {**real(song), "year": 1} if song.get("id") == LIVE["songs"][3]["id"] else real(song))
     out = migrate_model2.migrate(path, apply=True, backup_dir=tmp_path / "bk")
-    assert out["status"] == "aborted" and [d["id"] for d in out["legacy_diffs"]] == [LIVE["songs"][3]["id"]]
-    assert path.read_bytes() == original and not (tmp_path / "bk").exists()
+    assert out["status"] == "aborted"
+    assert [d["id"] for d in out["legacy_diffs"]] == [LIVE["songs"][3]["id"]]
+    assert path.read_bytes() == original
+    assert not (tmp_path / "bk").exists()
     with pytest.raises(migrate_model2.MigrationAborted):
         migrate_model2.check(out)
 
@@ -156,8 +164,12 @@ def test_raw_stays_only_where_the_artist_text_would_change():
     ]}
     doc, report = migrate_model2.convert(old)
     a, b = doc["songs"]
-    assert report["raw_kept"] == ["a"] and a["raw"]["artist"] == "X - Y" and a["rawTitle"] == "A raw"
-    assert "raw" not in b and b["rawTitle"] == "B raw" and b["albums"] == ["Al"]
+    assert report["raw_kept"] == ["a"]
+    assert a["raw"]["artist"] == "X - Y"
+    assert a["rawTitle"] == "A raw"
+    assert "raw" not in b
+    assert b["rawTitle"] == "B raw"
+    assert b["albums"] == ["Al"]
     assert report["ok"] is True
 
 
@@ -176,7 +188,8 @@ def test_countries_go_to_single_artists_conflicts_and_groups_are_reviewed():
     assert report["review"]["multi_artist_countries"] == [{"id": "e", "mainArtists": ["P", "Q"], "countries": ["gb"]}]
     assert report["tags_removed"] == {"decade": 2, "lang": 1, "country": 5}
     assert report["decade_tags_disagreeing_with_release_year"] == 1
-    assert doc["songs"][0]["genres"] == ["house"] and "tags" not in doc["songs"][0]
+    assert doc["songs"][0]["genres"] == ["house"]
+    assert "tags" not in doc["songs"][0]
 
 
 def test_review_file_is_written_on_apply(tmp_path):
@@ -198,7 +211,8 @@ def test_flat_legacy_songs_round_trip_old_to_new_to_derived(seed):
     assert report["ok"], report["legacy_diffs"][:2]
     assert [{k: v for k, v in derived(s).items() if k != "album"} for s in doc["songs"]] == expected
     again, _ = migrate_model2.convert(doc)
-    assert again["songs"] == doc["songs"] and again["artists"] == doc["artists"]
+    assert again["songs"] == doc["songs"]
+    assert again["artists"] == doc["artists"]
 
 
 def credits_v1_view(song):
@@ -212,7 +226,8 @@ def test_conversion_is_idempotent_on_the_live_shapes():
     doc, _ = migrate_model2.convert(LIVE)
     assert migrate_model2.is_model2(doc)
     again, report = migrate_model2.convert(doc)
-    assert again == doc and report["songs_converted"] == 0
+    assert again == doc
+    assert report["songs_converted"] == 0
 
 
 @pytest.mark.parametrize("raw", [

@@ -97,30 +97,38 @@ def run(tmp_path, apply=False, doc=None, legacy_songs=None, **kw):
 
 def test_each_song_gets_its_countries_by_the_rule(tmp_path):
     path, out = run(tmp_path, apply=True)
-    assert out["status"] == "migrated" and out["anomalies"] == []
+    assert out["status"] == "migrated"
+    assert out["anomalies"] == []
     got = tags_of(json.loads(path.read_text(encoding="utf-8")))
-    assert got["kb1"] == ["country:gb"] and got["kb2"] == ["country:fi"] and got["kb3"] == ["country:gb"]
-    assert got["ka1"] == ["country:us"] and got["ka2"] == ["country:dk"]
-    assert got["ed1"] == ["country:de"] and got["ed2"] == ["country:de"]
+    assert got["kb1"] == ["country:gb"]
+    assert got["kb2"] == ["country:fi"]
+    assert got["kb3"] == ["country:gb"]
+    assert got["ka1"] == ["country:us"]
+    assert got["ka2"] == ["country:dk"]
+    assert got["ed1"] == ["country:de"]
+    assert got["ed2"] == ["country:de"]
     assert got["duo"] == ["country:gb", "country:it"]
     assert got["duo2"] == ["country:gb", "country:fr"]
     assert got["duo3"] == ["country:gb"]
     assert got["new"] == ["country:es"]
-    assert got["none"] == [] and got["tagged"] == ["country:it"]
+    assert got["none"] == []
+    assert got["tagged"] == ["country:it"]
     assert got["ussr"] == ["country:su"]
     assert got["many"] == ["country:gb", "country:fr", "country:de"]
 
 
 def test_report_counts_and_lists_disagreements(tmp_path):
     _, out = run(tmp_path)
-    assert out["status"] == "dry_run" and out["songs"] == 15
+    assert out["status"] == "dry_run"
+    assert out["songs"] == 15
     assert out["artists_table_removed"] == 11
     assert out["countries_restored_from_backup"] == 8
     assert out["countries_taken_from_table"] == 5
     assert out["countries_already_on_song"] == 1
     assert out["left_empty"] == 1
     assert out["table_and_backup_disagree"] == {"songs": 3, "ids": ["ed1", "ed2", "duo"]}
-    assert out["unknown_country_values_in_backup"] == 1 and out["backup_found"] is True
+    assert out["unknown_country_values_in_backup"] == 1
+    assert out["backup_found"] is True
 
 
 def test_a_single_artist_edit_after_model_2_wins_over_the_backup(tmp_path):
@@ -139,14 +147,20 @@ def test_several_main_artists_without_a_backup_entry_take_the_table_union_and_no
     path, out = run(tmp_path, apply=True, doc=lib, legacy_songs=[])
     got = tags_of(json.loads(path.read_text(encoding="utf-8")))
     assert got == {"a": ["country:gb", "country:fr", "country:de"], "b": []}
-    assert out["countries_taken_from_table"] == 1 and out["left_empty"] == 1
+    assert out["countries_taken_from_table"] == 1
+    assert out["left_empty"] == 1
 
 
 def test_without_a_backup_file_only_the_table_rules_apply(tmp_path):
     path, out = run(tmp_path, apply=True, legacy_songs="none")
-    assert out["status"] == "migrated" and out["backup_found"] is False and out["legacy_backup"] is None
+    assert out["status"] == "migrated"
+    assert out["backup_found"] is False
+    assert out["legacy_backup"] is None
     got = tags_of(json.loads(path.read_text(encoding="utf-8")))
-    assert got["kb1"] == [] and got["ed1"] == ["country:de"] and got["duo"] == ["country:gb", "country:fr"] and got["tagged"] == ["country:it"]
+    assert got["kb1"] == []
+    assert got["ed1"] == ["country:de"]
+    assert got["duo"] == ["country:gb", "country:fr"]
+    assert got["tagged"] == ["country:it"]
     assert out["countries_restored_from_backup"] == 0
 
 
@@ -154,7 +168,8 @@ def test_the_table_is_removed_and_the_stamp_is_3_and_nothing_else_changes(tmp_pa
     before = library_v2()
     path, _ = run(tmp_path, apply=True)
     after = json.loads(path.read_text(encoding="utf-8"))
-    assert "artists" not in after and after["settings"] == {"music_root": "perkunas://data/music/", "credits_schema": 3}
+    assert "artists" not in after
+    assert after["settings"] == {"music_root": "perkunas://data/music/", "credits_schema": 3}
     assert [s["id"] for s in after["songs"]] == [s["id"] for s in before["songs"]]
     for old, new in zip(before["songs"], after["songs"]):
         assert {k: v for k, v in old.items() if k != "tags"} == {k: v for k, v in new.items() if k != "tags"}
@@ -175,7 +190,8 @@ def test_a_second_run_does_nothing(tmp_path):
     path, _ = run(tmp_path, apply=True)
     first = digest(path)
     out = migrate_model3.migrate(path, apply=True, backup_dir=tmp_path / "bk", legacy_backup=tmp_path / "backups-model2" / "u1" / "library.json")
-    assert out["status"] == "already_migrated" and digest(path) == first
+    assert out["status"] == "already_migrated"
+    assert digest(path) == first
     assert sorted(p.name for p in (tmp_path / "bk").iterdir()) == ["library.json"]
 
 
@@ -199,8 +215,10 @@ def test_the_backup_is_a_byte_copy_and_a_restored_file_gets_a_numbered_one(tmp_p
     assert (tmp_path / "bk" / "library.json").read_bytes() == original
     path.write_bytes(original)
     out = migrate_model3.migrate(path, apply=True, backup_dir=tmp_path / "bk", legacy_backup=src)
-    assert out["status"] == "migrated" and out["backup"].endswith("library.1.json")
-    assert (tmp_path / "bk" / "library.json").read_bytes() == original and (tmp_path / "bk" / "library.1.json").read_bytes() == original
+    assert out["status"] == "migrated"
+    assert out["backup"].endswith("library.1.json")
+    assert (tmp_path / "bk" / "library.json").read_bytes() == original
+    assert (tmp_path / "bk" / "library.1.json").read_bytes() == original
 
 
 def test_the_write_is_atomic_and_leaves_no_temp_files(tmp_path):
@@ -232,7 +250,9 @@ def test_an_anomaly_aborts_and_leaves_the_file_unchanged(tmp_path, what):
     else:
         lib["songs"] = {"oops": 1}
     path, out = run(tmp_path, apply=True, doc=lib)
-    assert out["status"] == "aborted" and out["anomalies"] and out["ok"] is False
+    assert out["status"] == "aborted"
+    assert out["anomalies"]
+    assert out["ok"] is False
     assert json.loads(path.read_text(encoding="utf-8")) == lib
     assert not (tmp_path / "bk").exists()
 
@@ -244,7 +264,8 @@ def test_an_unreadable_backup_aborts(tmp_path):
     bad.write_text("{not json", encoding="utf-8")
     original = path.read_bytes()
     out = migrate_model3.migrate(path, apply=True, backup_dir=tmp_path / "bk", legacy_backup=bad)
-    assert out["status"] == "aborted" and "cannot be read" in out["anomalies"][0]
+    assert out["status"] == "aborted"
+    assert "cannot be read" in out["anomalies"][0]
     assert path.read_bytes() == original
 
 
@@ -259,7 +280,8 @@ def test_an_older_or_missing_file_is_reported_and_not_touched(tmp_path):
     flat = write(tmp_path, {"songs": [{"id": "a", "title": "A", "artist": "X", "tags": ["country:gb"]}]})
     original = flat.read_bytes()
     assert migrate_model3.migrate(flat, apply=True, backup_dir=tmp_path / "bk")["status"] == "not_model2"
-    assert flat.read_bytes() == original and not (tmp_path / "bk").exists()
+    assert flat.read_bytes() == original
+    assert not (tmp_path / "bk").exists()
     assert migrate_model3.migrate(tmp_path / "nope.json")["status"] == "missing"
 
 
@@ -272,7 +294,8 @@ def test_the_oldest_numbered_copy_of_the_pre_v2_backup_is_the_original(datadir):
     write_legacy(datadir, library_backup(), name="library.json")
     assert migrate_model3.legacy_backup_path(path).name == "library.json"
     out = migrate_model3.migrate(path)
-    assert out["countries_restored_from_backup"] == 8 and out["legacy_backup"].endswith("library.json")
+    assert out["countries_restored_from_backup"] == 8
+    assert out["legacy_backup"].endswith("library.json")
 
 
 def test_the_command_line_runs_a_dry_run_then_an_apply(tmp_path, capsys):
@@ -281,7 +304,9 @@ def test_the_command_line_runs_a_dry_run_then_an_apply(tmp_path, capsys):
     args = ["--library", str(path), "--legacy-backup", str(src)]
     assert migrate_model3.main([*args, "--report", str(tmp_path / "r.json")]) == 0
     brief = json.loads(capsys.readouterr().out)
-    assert brief["status"] == "dry_run" and brief["countries_restored_from_backup"] == 8 and brief["table_and_backup_disagree"] == 3
+    assert brief["status"] == "dry_run"
+    assert brief["countries_restored_from_backup"] == 8
+    assert brief["table_and_backup_disagree"] == 3
     assert migrate_model3.main([*args, "--apply", "--backup-dir", str(tmp_path / "bk")]) == 0
     assert json.loads(capsys.readouterr().out)["status"] == "migrated"
     assert migrate_model3.main([*args, "--apply", "--backup-dir", str(tmp_path / "bk")]) == 0
@@ -309,10 +334,12 @@ def test_startup_migrates_every_user_once_after_model_2_from_a_legacy_file(datad
         assert migrate_model3.run() == 2
     for p in paths:
         doc = json.loads(p.read_text(encoding="utf-8"))
-        assert "artists" not in doc and doc["settings"]["credits_schema"] == 3
+        assert "artists" not in doc
+        assert doc["settings"]["credits_schema"] == 3
         assert tags_of(doc) == {"kb1": ["country:gb"], "kb2": ["country:fi"], "ed1": ["country:fr", "country:de"]}
     assert (datadir / "backups-model3" / "u1" / "library.json").exists()
-    assert migrate_model3.run() == 0 and migrate_model2.run() == 0
+    assert migrate_model3.run() == 0
+    assert migrate_model2.run() == 0
     assert "data model 3 migrated for u1" in caplog.text
 
 
@@ -337,7 +364,8 @@ def test_startup_logs_an_abort_and_leaves_the_file(datadir, caplog):
     path = write(datadir, lib)
     original = path.read_bytes()
     assert migrate_model3.run() == 0
-    assert path.read_bytes() == original and "aborted" in caplog.text
+    assert path.read_bytes() == original
+    assert "aborted" in caplog.text
 
 
 def test_startup_skips_a_library_that_is_not_at_schema_2_and_survives_a_corrupt_one(datadir, caplog):
@@ -347,7 +375,9 @@ def test_startup_skips_a_library_that_is_not_at_schema_2_and_survives_a_corrupt_
     bad.write_text("{not json")
     original = flat.read_bytes()
     assert migrate_model3.run() == 0
-    assert flat.read_bytes() == original and "not at schema 2" in caplog.text and "failed" in caplog.text
+    assert flat.read_bytes() == original
+    assert "not at schema 2" in caplog.text
+    assert "failed" in caplog.text
 
 
 def test_startup_without_users_does_nothing(datadir):
@@ -358,11 +388,13 @@ def test_is_model3_needs_the_stamp_and_no_table():
     assert migrate_model3.is_model3({"settings": {"credits_schema": 3}, "songs": []})
     assert not migrate_model3.is_model3({"settings": {"credits_schema": 3}, "songs": [], "artists": []})
     assert not migrate_model3.is_model3({"settings": {"credits_schema": 2}, "songs": []})
-    assert not migrate_model3.is_model3(None) and not migrate_model3.is_model3({"songs": []})
+    assert not migrate_model3.is_model3(None)
+    assert not migrate_model3.is_model3({"songs": []})
 
 
 def test_model_2_leaves_a_v3_file_alone(datadir):
     path, _ = run(datadir, apply=True)
     before = path.read_bytes()
     assert migrate_model2.is_model2(json.loads(before))
-    assert migrate_model2.run() == 0 and path.read_bytes() == before
+    assert migrate_model2.run() == 0
+    assert path.read_bytes() == before

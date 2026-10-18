@@ -131,19 +131,33 @@ def _useful(info: dict[str, Any]) -> bool:
     return bool(info.get("album") or _year(info.get("year")) or info.get("tags"))
 
 
-def services(source_urls: list[str], src_by_index: dict[int, dict[str, Any]], links: dict[str, Any] | None, guess: dict[str, Any] | None, mb: dict[str, Any] | None = None, disc: dict[str, Any] | None = None, disc_skipped: str | None = None) -> dict[str, Any]:
-    """Per-service outcome for the UI's icons: {youtube, soundcloud, wikipedia, spotify, musicbrainz, discogs: {found, url}}; discogs adds `from_link` when the given link was used and, when not found, `skipped` (not_configured, no_match or error)."""
-    out: dict[str, Any] = {k: {"found": False, "url": None} for k in ("youtube", "soundcloud", "wikipedia", "spotify", "musicbrainz", "discogs")}
+def _mark_sources(out: dict[str, Any], source_urls: list[str], src_by_index: dict[int, dict[str, Any]]) -> None:
     for i, url in enumerate(source_urls):
         svc = _service_of(url)
         if svc and not out[svc]["found"] and i in src_by_index and _useful(src_by_index[i]):
             out[svc] = {"found": True, "url": url.strip()}
-    links, guess = links or {}, guess or {}
-    links_hit = bool(links.get("tags") or links.get("year") or links.get("infobox_album") or links.get("infobox_year"))
+
+
+def _has_infobox_or_tags(info: dict[str, Any]) -> bool:
+    return bool(info.get("tags") or info.get("year") or info.get("infobox_album") or info.get("infobox_year"))
+
+
+def _wikipedia_service(links: dict[str, Any], guess: dict[str, Any]) -> dict[str, Any] | None:
+    links_hit = _has_infobox_or_tags(links)
     urls = [links.get("wikipedia_song") if links_hit else None, guess.get("wikipedia_song"), links.get("wikipedia_artist") if links_hit else None, guess.get("wikipedia_artist")]
     page = next((u for u in urls if u), None)
-    if page or links_hit or guess.get("tags") or guess.get("year") or guess.get("infobox_album") or guess.get("infobox_year"):
-        out["wikipedia"] = {"found": True, "url": page}
+    if page or links_hit or _has_infobox_or_tags(guess):
+        return {"found": True, "url": page}
+    return None
+
+
+def services(source_urls: list[str], src_by_index: dict[int, dict[str, Any]], links: dict[str, Any] | None, guess: dict[str, Any] | None, mb: dict[str, Any] | None = None, disc: dict[str, Any] | None = None, disc_skipped: str | None = None) -> dict[str, Any]:
+    """Per-service outcome for the UI's icons: {youtube, soundcloud, wikipedia, spotify, musicbrainz, discogs: {found, url}}; discogs adds `from_link` when the given link was used and, when not found, `skipped` (not_configured, no_match or error)."""
+    out: dict[str, Any] = {k: {"found": False, "url": None} for k in ("youtube", "soundcloud", "wikipedia", "spotify", "musicbrainz", "discogs")}
+    _mark_sources(out, source_urls, src_by_index)
+    wiki = _wikipedia_service(links or {}, guess or {})
+    if wiki:
+        out["wikipedia"] = wiki
     mb_url = (mb or {}).get("mb_url")
     if mb_url:
         out["musicbrainz"] = {"found": True, "url": mb_url}
@@ -204,6 +218,19 @@ def _discogs_skipped(disc: dict[str, Any] | None, link: str | None) -> str | Non
     return "error" if disc is None or disc.get("error") else "no_match"
 
 
+def _assemble(sources: list[dict[str, Any]], snapshot: dict[str, Any], by_index: dict[int, dict[str, Any]], source_urls: list[str], link: str | None, attempt_disc: bool, version_kind: str | None) -> dict[str, Any]:
+    out = merge(sources, snapshot.get("mb"), snapshot.get("links"), snapshot.get("guess"), snapshot.get("disc"), versioned=is_versioned(version_kind))
+    box = (snapshot.get("links") or {}).get("infobox_suggest") or (snapshot.get("guess") or {}).get("infobox_suggest")
+    for key in ("wikipedia_song", "wikipedia_artist", "wikipedia_album"):
+        out[key] = (snapshot.get("links") or {}).get(key) or (snapshot.get("guess") or {}).get(key)
+    out["suggest"] = {"artist": box["artist"], "title": box["title"]} if box else {"artist": None, "title": None}
+    out["services"] = services(source_urls, by_index, snapshot.get("links"), snapshot.get("guess"), snapshot.get("mb"), snapshot.get("disc"), _discogs_skipped(snapshot.get("disc"), link) if attempt_disc else None)
+    if version_kind:
+        out["services"]["musicbrainz"] = {"found": False, "url": None}
+        out["services"]["discogs"] = {"found": False, "url": None}
+    return out
+
+
 def gather(
     title: str,
     artist: str,
@@ -243,13 +270,4 @@ def gather(
         sources = [src_results[i] for i in sorted(src_results)]
         snapshot = dict(found)
         by_index = dict(src_results)
-    out = merge(sources, snapshot.get("mb"), snapshot.get("links"), snapshot.get("guess"), snapshot.get("disc"), versioned=is_versioned(version_kind))
-    box = (snapshot.get("links") or {}).get("infobox_suggest") or (snapshot.get("guess") or {}).get("infobox_suggest")
-    for key in ("wikipedia_song", "wikipedia_artist", "wikipedia_album"):
-        out[key] = (snapshot.get("links") or {}).get(key) or (snapshot.get("guess") or {}).get(key)
-    out["suggest"] = {"artist": box["artist"], "title": box["title"]} if box else {"artist": None, "title": None}
-    out["services"] = services(source_urls or [], by_index, snapshot.get("links"), snapshot.get("guess"), snapshot.get("mb"), snapshot.get("disc"), _discogs_skipped(snapshot.get("disc"), link) if attempt_disc else None)
-    if version_kind:
-        out["services"]["musicbrainz"] = {"found": False, "url": None}
-        out["services"]["discogs"] = {"found": False, "url": None}
-    return out
+    return _assemble(sources, snapshot, by_index, source_urls or [], link, attempt_disc, version_kind)

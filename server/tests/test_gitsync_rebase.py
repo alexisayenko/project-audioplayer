@@ -51,7 +51,8 @@ def test_foreign_push_between_passes_is_rebased_and_pushed(tmp_path, caplog):
     assert (clone / MOOD).read_text() == "[1]"
     assert any("rebased 2 local commits over 2 foreign commits (paths outside audioplayer/)" in r.getMessage() for r in caplog.records)
     st = s.sync_status(True)
-    assert st["state"] == "ok" and st["last_error"] is None
+    assert st["state"] == "ok"
+    assert st["last_error"] is None
     assert st["inbound"]["foreign_commits"] == 2
     assert st["inbound"]["last_rebase_at"]
     assert git(clone, "status", "--porcelain") == ""
@@ -67,7 +68,8 @@ def test_incident_replay_two_local_commits_four_foreign_commits(tmp_path):
     assert subjects(bare) == ["edit: a - c", "edit: a - b", "mood 3", "mood 2", "mood 1", "mood 0", "init"]
     assert json.loads((clone / "audioplayer" / LIB).read_text())["songs"][0]["title"] == "T2"
     st = s.sync_status(True)
-    assert st["state"] == "ok" and st["inbound"]["foreign_commits"] == 4
+    assert st["state"] == "ok"
+    assert st["inbound"]["foreign_commits"] == 4
     assert s.push_pass() == 0
     assert s.sync_status(True)["inbound"]["foreign_commits"] == 4
 
@@ -84,7 +86,8 @@ def test_foreign_commit_touching_the_owned_prefix_is_still_an_error(tmp_path, ca
     assert git(bare, "rev-parse", "main") == remote_head
     assert not (clone / MOOD).exists()
     st = s.sync_status(True)
-    assert st["state"] == "error" and st["last_error"] == MSG
+    assert st["state"] == "error"
+    assert st["last_error"] == MSG
     assert st["inbound"]["foreign_commits"] == 0
     assert s.push_pass() == 2
 
@@ -111,7 +114,8 @@ def test_a_rebase_conflict_is_aborted_and_head_restored(tmp_path, monkeypatch, c
     assert git(clone, "rev-parse", "HEAD") == head
     assert git(bare, "rev-parse", "main") == remote_head
     assert git(clone, "status", "--porcelain") == ""
-    assert not (clone / ".git" / "rebase-merge").exists() and not (clone / ".git" / "rebase-apply").exists()
+    assert not (clone / ".git" / "rebase-merge").exists()
+    assert not (clone / ".git" / "rebase-apply").exists()
     assert (clone / "audioplayer" / LIB).read_text() == GOOD
     assert s.sync_status(True)["last_error"] == MSG
     assert any("rebase failed, restored" in r.getMessage() for r in caplog.records)
@@ -227,12 +231,14 @@ def test_a_push_that_loses_a_second_race_retries_and_is_an_error_only_after_five
         assert gitstore.load_state(s.state_file)["repos"]["data"]["failures"] == i
     assert s.push_pass() == 1
     st = s.sync_status(True)
-    assert st["state"] == "error" and st["last_error"] == "data: not reaching git"
+    assert st["state"] == "error"
+    assert st["last_error"] == "data: not reaching git"
     monkeypatch.setattr(s, "push_repo", real)
     assert s.push_pass() == 0
     assert subjects(bare)[0] == "mine"
     st = s.sync_status(True)
-    assert st["state"] == "ok" and st["last_error"] is None
+    assert st["state"] == "ok"
+    assert st["last_error"] is None
     assert gitstore.load_state(s.state_file)["repos"]["data"]["failures"] == 0
 
 
@@ -258,7 +264,8 @@ def test_covers_repo_is_rebased_too(tmp_path):
 def test_custom_owned_prefixes(tmp_path):
     s, bare, clone, *_ = make_sync(tmp_path, owned_prefixes=("audioplayer/covers", "extra"))
     assert s.owned_prefixes == ("audioplayer/covers/", "extra/")
-    assert s.is_owned("extra/x") and not s.is_owned("audioplayer/users/x")
+    assert s.is_owned("extra/x")
+    assert not s.is_owned("audioplayer/users/x")
     save(s, clone, "users/u/a.json", "1", "mine")
     foreign(tmp_path, bare, "extra/y.json", "{}", "touches extra")
     assert s.push_pass() == 2

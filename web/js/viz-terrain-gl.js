@@ -14,6 +14,12 @@ import { fillBeatHeights, timelineBeats, createLiveBeats } from './viz-beats.js'
 
 const DPR_CAP = 2;
 const BEAT_SMOOTH_PASSES = 1;
+
+function resolveAhead(ahead, style) {
+  if (!ahead?.timeline) return null;
+  return ahead.partial && (isBeatStyle(style) || isMelodyStyle(style)) ? null : ahead;
+}
+
 export const TERRAIN_MAX_DPR = 1.5;
 const ACC_NAMES = ['u_acc0', 'u_acc1', 'u_acc2', 'u_acc3'];
 const STAR_COUNT = STAR_VISIBLE.at(-1);
@@ -824,11 +830,6 @@ export function createTerrain(canvas, opts = {}) {
       gl.bindBuffer(gl.ARRAY_BUFFER, g.ribbon.m);
       gl.bufferSubData(gl.ARRAY_BUFFER, 0, m2);
     }
-  }
-
-  function resolveAhead(ahead, style) {
-    if (!ahead?.timeline) return null;
-    return ahead.partial && (isBeatStyle(style) || isMelodyStyle(style)) ? null : ahead;
   }
 
   function lookBlend(sec, tl) {

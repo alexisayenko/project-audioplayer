@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -131,6 +132,31 @@ _SOURCE_FIELDS = (
 )
 
 
+def _source_link(field: str, raw: Any, clean: Callable[[str], str | None], what: str) -> str | None:
+    if not (isinstance(raw, str) and raw.strip()):
+        return None
+    link = clean(raw)
+    if link is None:
+        raise HTTPException(status_code=422, detail=f"{field} must be {what}")
+    return link
+
+
+def _with_source(sources: list[dict[str, Any]], field: str, kind: str, link: str | None, is_primary: bool) -> list[dict[str, Any]]:
+    mine = [e for e in sources if e.get("source") == kind]
+    if link is None:
+        if is_primary:
+            raise HTTPException(status_code=422, detail=f"{field} cannot be cleared: it is the link this song's audio comes from")
+        return [e for e in sources if e.get("source") != kind]
+    if mine:
+        mine[0]["url"] = link
+        if kind == "youtube":
+            mine[0]["id"] = urlclean.parse_video_id(link) or mine[0]["id"]
+    else:
+        ident = urlclean.parse_video_id(link) if kind == "youtube" else link.split("soundcloud.com/", 1)[1]
+        sources.append({"source": kind, "id": ident, "url": link})
+    return sources
+
+
 def _apply_source_links(updated: dict[str, Any], changes: dict[str, Any]) -> None:
     """Edit the YouTube / SoundCloud entries of `sources`. The song id never changes; the entry of the id's own kind cannot be cleared."""
     primary = urlclean.source_of(str(updated.get("id", "")))
@@ -139,29 +165,27 @@ def _apply_source_links(updated: dict[str, Any], changes: dict[str, Any]) -> Non
     for field, kind, clean, what in _SOURCE_FIELDS:
         if field not in changes:
             continue
-        raw = changes[field]
-        link = None
-        if isinstance(raw, str) and raw.strip():
-            link = clean(raw)
-            if link is None:
-                raise HTTPException(status_code=422, detail=f"{field} must be {what}")
-        mine = [e for e in sources if e.get("source") == kind]
-        if link is None:
-            if kind == primary:
-                raise HTTPException(status_code=422, detail=f"{field} cannot be cleared: it is the link this song's audio comes from")
-            sources = [e for e in sources if e.get("source") != kind]
-        elif mine:
-            mine[0]["url"] = link
-            if kind == "youtube":
-                mine[0]["id"] = urlclean.parse_video_id(link) or mine[0]["id"]
-        else:
-            ident = urlclean.parse_video_id(link) if kind == "youtube" else link.split("soundcloud.com/", 1)[1]
-            sources.append({"source": kind, "id": ident, "url": link})
+        link = _source_link(field, changes[field], clean, what)
+        sources = _with_source(sources, field, kind, link, kind == primary)
         if kind == primary:
             updated["source_url"] = link
         touched = True
     if touched:
         updated["sources"] = library.clean_sources(sources)
+
+
+def _apply_tag_changes(updated: dict[str, Any], song: dict[str, Any], changes: dict[str, Any]) -> None:
+    sent_tags, sent_genres = changes.get("tags"), changes.get("genres")
+    if sent_tags is None and sent_genres is None:
+        return
+    own = sent_tags if sent_tags is not None else song.get("tags") or []
+    if sent_genres is not None:
+        own = [t for t in own if namespace(str(t)) != "genre"]
+    cleaned = library.merge_genres(sent_genres, own)
+    stored = library.clean_tags(song.get("tags") or [])
+    reject_unknown_country(cleaned, stored)
+    reject_unknown_genre(cleaned, stored)
+    updated["tags"] = library.drop_derived_tags(cleaned)
 
 
 def _edited(song: dict[str, Any], changes: dict[str, Any]) -> dict[str, Any]:
@@ -176,16 +200,7 @@ def _edited(song: dict[str, Any], changes: dict[str, Any]) -> dict[str, Any]:
     if "bpm" in changes:
         updated["bpm"] = round(changes["bpm"]) if changes["bpm"] is not None else None
     _apply_links(updated, changes)
-    sent_tags, sent_genres = changes.get("tags"), changes.get("genres")
-    if sent_tags is not None or sent_genres is not None:
-        own = sent_tags if sent_tags is not None else song.get("tags") or []
-        if sent_genres is not None:
-            own = [t for t in own if namespace(str(t)) != "genre"]
-        cleaned = library.merge_genres(sent_genres, own)
-        stored = library.clean_tags(song.get("tags") or [])
-        reject_unknown_country(cleaned, stored)
-        reject_unknown_genre(cleaned, stored)
-        updated["tags"] = library.drop_derived_tags(cleaned)
+    _apply_tag_changes(updated, song, changes)
     if not updated.get("title"):
         raise HTTPException(status_code=422, detail="title must not be empty")
     updated["updated_at"] = library.now_utc()

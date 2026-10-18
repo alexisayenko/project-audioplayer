@@ -83,6 +83,17 @@ function emitCell(lines, tris, cur, i, cols, flip, tri) {
   cur.t = t;
 }
 
+function emitRow(lines, tris, cur, r, rows, cols, tri, parity) {
+  const down = r < rows - 1;
+  for (let c = 0; c < cols; c += 1) {
+    const i = r * cols + c;
+    const right = c < cols - 1;
+    if (down) { lines[cur.l++] = i; lines[cur.l++] = i + cols; }
+    if (right) { lines[cur.l++] = i; lines[cur.l++] = i + 1; }
+    if (down && right) emitCell(lines, tris, cur, i, cols, tri && ((r + c + parity) & 1) === 1, tri);
+  }
+}
+
 export function buildMesh(tier, style, parity = 0) {
   const { rows, cols } = tier;
   const n = rows * cols;
@@ -94,13 +105,6 @@ export function buildMesh(tier, style, parity = 0) {
   const lines = new Idx(nLines * 2);
   const tris = new Idx(cells * 6);
   const cur = { l: 0, t: 0 };
-  for (let r = 0; r < rows; r += 1) {
-    for (let c = 0; c < cols; c += 1) {
-      const i = r * cols + c;
-      if (r < rows - 1) { lines[cur.l++] = i; lines[cur.l++] = i + cols; }
-      if (c < cols - 1) { lines[cur.l++] = i; lines[cur.l++] = i + 1; }
-      if (r < rows - 1 && c < cols - 1) emitCell(lines, tris, cur, i, cols, tri && ((r + c + parity) & 1) === 1, tri);
-    }
-  }
+  for (let r = 0; r < rows; r += 1) emitRow(lines, tris, cur, r, rows, cols, tri, parity);
   return { xz, lines, tris, lineCount: nLines, triCount: cells * 2, rows, cols, vertices: n };
 }

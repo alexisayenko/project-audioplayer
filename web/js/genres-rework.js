@@ -16,10 +16,19 @@ import {
 const songs = (n) => `${n} ${plural(n, 'song', 'songs')}`;
 const LEVEL_NAMES = { 1: 'Genre (level 1)', 2: 'Umbrella or standalone genre (level 2)', 3: 'Specific genre (level 3)' };
 const EMPTY_TEXT = 'No genres yet. Add songs with genres to see them here.';
-const canvasLabel = (name) => `Map of ${name ? `${name} ` : ''}genres. Drag to pan, scroll or pinch to zoom. The outline lists the same genres and is the keyboard alternative.`;
+const canvasLabel = (name) => {
+  const of = name ? `${name} ` : '';
+  return `Map of ${of}genres. Drag to pan, scroll or pinch to zoom. The outline lists the same genres and is the keyboard alternative.`;
+};
 const NARROW_PX = 720;
 const FLASH_MS = 1400;
 export const LEGEND_KEY = 'electrophone.genresLegend';
+
+function failureText(v, vocab) {
+  if (v.status === 'rejected') return 'Vocabulary unavailable';
+  if (!hasLevels(vocab)) return 'Genre levels unavailable: the server has no level data yet';
+  return 'Library unavailable: song counts are needed to show genres';
+}
 
 function loadFlag(storage, key) {
   try { return storage?.getItem(key) === '1'; } catch { return false; }
@@ -410,6 +419,12 @@ export function renderGenresRework(root, opts = {}) {
     });
   }
 
+  function dropStale() {
+    if (selectedId && !tree.byId.has(selectedId)) selectedId = null;
+    if (panelId && !tree.byId.has(panelId)) panelId = null;
+    for (const k of flavourSel) if (!tree.flavours.has(k)) flavourSel.delete(k);
+  }
+
   async function load() {
     status.textContent = 'Loading...';
     reload.disabled = true;
@@ -427,9 +442,7 @@ export function renderGenresRework(root, opts = {}) {
       renderTree();
       renderPanel();
       refreshNow();
-      if (v.status === 'rejected') status.textContent = 'Vocabulary unavailable';
-      else if (!hasLevels(vocab)) status.textContent = 'Genre levels unavailable: the server has no level data yet';
-      else status.textContent = 'Library unavailable: song counts are needed to show genres';
+      status.textContent = failureText(v, vocab);
       return;
     }
     tree = buildTree(vocab);
@@ -441,10 +454,8 @@ export function renderGenresRework(root, opts = {}) {
     renderFamilies();
     layout = rootGenre ? layoutRadial(tree, rootGenre) : null;
     view.setLayout(layout, tree);
-    if (selectedId && !tree.byId.has(selectedId)) selectedId = null;
-    if (panelId && !tree.byId.has(panelId)) panelId = null;
+    dropStale();
     view.select(selectedId);
-    for (const k of flavourSel) if (!tree.flavours.has(k)) flavourSel.delete(k);
     view.setFilter(filterIds(tree, { status: statusFilter, flavours: flavourSel }));
     markMatches();
     renderFlavours();

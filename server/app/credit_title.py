@@ -15,8 +15,9 @@ _NUMBER = re.compile(r"\d[\d.,'\"′″]*", re.ASCII)
 _TAIL_BRACKET = re.compile(r"[(\[]([^()\[\]]*)[)\]]\s*$")
 _WITH_HEAD = re.compile(r"^with\s+(?=\S)", re.I)
 _STOPS = (" - ", " – ", " — ", " | ", " ●● ", " • ", ")", "]", "(", "[")
-_NAME_SEP = re.compile(r"\s*,\s*|\s+(?:&|\+|x|[aA][nN][dD]|[vV][sS]\.?)\s+")
-_VS = re.compile(r"\s+vs\.?\s+", re.I)
+_SEP_WORD = r"(?:[&+x]|[aA][nN][dD]|[vV][sS]\.?)"
+_NAME_SEP = re.compile(rf",\s*|(?<!\s)\s+(?:,\s*|{_SEP_WORD}\s+)")
+_VS = re.compile(r"(?<!\s)\s+vs\.?\s+", re.I)
 _EDGE = " -|"
 
 
@@ -123,12 +124,9 @@ def unique(names: list[str], taken: set[str]) -> list[str]:
     return out
 
 
-def parse(artist: str | None, title: str | None, *, split_vs: bool = False) -> dict[str, Any]:
-    """`{mainArtists, featuredArtists, withArtists, title, notes, removed}` of a source artist text (pills) and a title already cut of noise and version: a feat keyword inside a pill splits that pill at the keyword only; a trailing "(feat. X)", "[feat. X]", unbracketed " feat. X" or "(with X)" of the title moves out. `removed` lists the exact title groups taken out. Primary names are never split, except at a spaced "vs" / "vs." between two non-empty names when `split_vs` is set (the add paths; stored artists never pass it); a name already in a stronger role is dropped (CRD-003); a title that would end up empty stays whole (note `title_empty`)."""
-    notes: list[str] = []
+def _artist_parts(artist: str | None, split_vs: bool) -> tuple[list[str], list[str], bool]:
     mains: list[str] = []
     featured: list[str] = []
-    withs: list[str] = []
     guessed = False
     for pill in split_tokens(artist or ""):
         g = _group(pill, False)
@@ -139,10 +137,17 @@ def parse(artist: str | None, title: str | None, *, split_vs: bool = False) -> d
             mains.extend(_vs_parts(g.rest) if split_vs else [g.rest])
         else:
             mains.extend(_vs_parts(pill) if split_vs else [pill])
-    text = title or ""
-    work = text.strip()
+    return mains, featured, guessed
+
+
+def _title_parts(text: str) -> tuple[str, list[str], list[str], list[str], list[str], bool]:
+    notes: list[str] = []
+    featured: list[str] = []
+    withs: list[str] = []
     removed: list[str] = []
     done: set[str] = set()
+    guessed = False
+    work = text.strip()
     for _ in range(2):
         g = _group(work, True)
         names = _names(g.names) if g else []
@@ -156,7 +161,16 @@ def parse(artist: str | None, title: str | None, *, split_vs: bool = False) -> d
         removed.append(g.removed)
         work = g.rest
         done.add(g.kind)
-    if guessed:
+    return work, featured, withs, removed, notes, guessed
+
+
+def parse(artist: str | None, title: str | None, *, split_vs: bool = False) -> dict[str, Any]:
+    """`{mainArtists, featuredArtists, withArtists, title, notes, removed}` of a source artist text (pills) and a title already cut of noise and version: a feat keyword inside a pill splits that pill at the keyword only; a trailing "(feat. X)", "[feat. X]", unbracketed " feat. X" or "(with X)" of the title moves out. `removed` lists the exact title groups taken out. Primary names are never split, except at a spaced "vs" / "vs." between two non-empty names when `split_vs` is set (the add paths; stored artists never pass it); a name already in a stronger role is dropped (CRD-003); a title that would end up empty stays whole (note `title_empty`)."""
+    mains, featured, guessed = _artist_parts(artist, split_vs)
+    text = title or ""
+    work, title_featured, withs, removed, notes, title_guessed = _title_parts(text)
+    featured += title_featured
+    if guessed or title_guessed:
         notes.insert(0, "feat_split_guess")
     taken = {fold(p) for p in mains}
     featured = unique(featured, taken)

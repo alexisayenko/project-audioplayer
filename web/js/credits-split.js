@@ -3,7 +3,7 @@ import { splitTokens } from './tokens.js';
 const FEAT_KEY = /\b(?:featuring|feat\.?|ft\.?)\s/i;
 const FEAT_STOPS = [' - ', ' – ', ' — ', ' | ', ' ●● ', ' • ', ')', ']', '(', '['];
 const CLOSERS = { '(': ')', '[': ']' };
-const SPLIT = /\s*,\s*|\s*&\s*|\s+and\s+|\s+x\s+|\s+vs\.?\s+/i;
+const SPLIT = /(?<!\s)\s+(?:[,&]\s*|(?:and|x|vs\.?)\s+)|[,&]\s*/i;
 const KIND_WORDS = [
   ['remix', /\bremix(?:ed)?\b|\bmashup\b|\bbootleg\b|\brework\b|\bvip\b/i],
   ['live', /\blive\b|\bunplugged\b|\bin concert\b/i],
@@ -18,8 +18,8 @@ const KIND_WORDS = [
 const BY_STRIP = /\b(?:remix(?:ed)?|mix(?:ed)?|edit|mashup|bootleg|rework|vip|dub|version|radio|club|extended|original|instrumental|vocal|chill|by)\b/gi;
 const MIXED_BY = /\bmixed\s+by\b/i;
 const MASHUP_WORD = /^mash[\s-]?up$/i;
-const MASHUP_TAIL = /\s*[(\[]\s*(mash[\s-]?up)\s*[)\]]\s*$/i;
-const SOURCE_SPLIT = /\s+(?:x|×|vs\.?)\s+/i;
+const MASHUP_TAIL = /(?<!\s)\s*[([]\s*(mash[\s-]?up)\s*[)\]]\s*$/i;
+const SOURCE_SPLIT = /(?<!\s)\s+(?:x|×|vs\.?)\s+/i;
 const DASH = /\s[-–—]\s/;
 const REMIX_OR_MASHUP = /\bremix\b|\bmashup\b/i;
 const REMIX_WORD = /\bremix\b|\bmashup\b|\bmixed\s+by\b/i;
@@ -77,7 +77,7 @@ function cutFeat(input) {
   }
 }
 
-const MIX_TAIL = /^(?<x>.*?)[\s,/-]*\b(?:mix|edit|version)\s*$/i;
+const MIX_TAIL = /^(?<x>.*?)(?<![\s,/-])[\s,/-]*\b(?:mix|edit|version)\s*$/i;
 const DESCRIPTOR_WORDS = new Set(['extended', 'radio', 'club', 'dub', 'vip', 'original', 'instrumental', 'acoustic', 'short', 'long', 'album', 'single', 'full', 'main', 'extra', 'maxi', 'deep', 'vocal']);
 const DESCRIPTOR_NUMBER = /^\d+(?:["'\u2033\u2032]|-?inch)?$/i;
 const DESCRIPTOR_KINDS = [['extended', 'extended'], ['instrumental', 'instrumental'], ['acoustic', 'acoustic'], ['radio', 'edit']];
@@ -99,7 +99,7 @@ export function kindOf(text) {
   return 'remix';
 }
 
-const RELEASE_TAG = /\s*[(\[]\s*([^()\[\]]*?\brelease)\s*[)\]]\s*$/i;
+const RELEASE_TAG = /(?<!\s)\s*[([]\s*((?:[^\s()[\]][^()[\]]*?)??\brelease)\s*[)\]]\s*$/i;
 const RELEASE_SKIP = /\bremix(?:ed)?\b|\bmashup\b|\bmixed\s+by\b/i;
 
 function releaseTag(title) {
@@ -108,7 +108,7 @@ function releaseTag(title) {
   return { start: m.index, cover: /\bcover\b/i.test(m[1]) };
 }
 
-const COVER_TAIL = /^(.*?)[\s,:-]*\bcover(?:\s+version)?\s*$/i;
+const COVER_TAIL = /^(.*?)(?<![\s,:-])[\s,:-]*\bcover(?:\s+version)?\s*$/i;
 const fold = (text) => text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
 
 function coverVersion(text, credited, notes) {
@@ -122,7 +122,7 @@ function coverVersion(text, credited, notes) {
   return ver;
 }
 
-function coverDash(left, right, text, name, credited, featured, ctx, notes) {
+function coverDash({ left, right, text, name, credited, featured, ctx, notes }) {
   const aNames = names(left);
   const xNames = names(name);
   const title = squash(right);
@@ -191,9 +191,9 @@ function sources(text) {
   return parts.length >= 2 && parts.every(Boolean) ? parts : [];
 }
 
-const MASHUP_BY = /^(?:mash[\s-]?up\s+by\s+(?<a>.+)|(?<b>.+?)\s+mash[\s-]?up)$/is;
-const MAKERS = /\s*,\s*|\s*&\s*|\s+and\s+|\s+x\s+|\s+feat\.?\s+|\s+ft\.?\s+/i;
-const MASH_SOURCES = /\s+(?:x|×|vs\.?|&|\+)\s+|\s*,\s*/i;
+const MASHUP_BY = /^(?:mash[\s-]?up\s+by\s+(?<a>.+)|(?<b>.+?)(?:(?<!\s)|(?<=^\s))\s+mash[\s-]?up)$/is;
+const MAKERS = /(?<!\s)\s+(?:[,&]\s*|(?:and|x|feat\.?|ft\.?)\s+)|[,&]\s*/i;
+const MASH_SOURCES = /(?<!\s)\s+(?:(?:x|×|vs\.?|&|\+)\s+|,\s*)|,\s*/i;
 
 function splitNames(text, pattern) {
   const out = [];
@@ -264,13 +264,8 @@ function titleFirst(base, titleText, artists, ctx) {
   return [left, rightNames.every((n) => have.has(fold(n))) ? artists : rightNames];
 }
 
-function suggestInternal(artist, title, remixer, ctx = {}) {
-  const notes = [];
-  let alternatives = null;
-  const [primary, feat] = cutFeat(squash(artist ?? ''));
-  let featured = feat;
-  if (featured.length) notes.push('feat_in_artist');
-  let artists = [];
+function collectArtists(primary) {
+  const artists = [];
   const seen = new Set();
   const pills = splitTokens(primary);
   for (const pill of pills) {
@@ -281,13 +276,60 @@ function suggestInternal(artist, title, remixer, ctx = {}) {
       }
     }
   }
-  if (artists.length > pills.length) notes.push('multi_artist');
+  return { artists, multi: artists.length > pills.length };
+}
+
+function mergeFeatured(featured, titleFeat) {
+  const have = new Set(featured.map((f) => f.toLowerCase()));
+  return [...featured, ...titleFeat.filter((n) => !have.has(n.toLowerCase()))];
+}
+
+function coverOrPlain(base, artists, featured, ver, ctx, notes) {
+  if (ver.kind !== 'cover') return [base, artists, ver, null];
+  return coverReading(base, artists, featured, ver, ctx, notes);
+}
+
+function chooseVersion(base, artists, featured, ctx, notes, { tail, fromTitle, remixerText, release }) {
+  const byText = [remixerText, squash(fromTitle ?? '')].find((t) => t && MASHUP_BY.test(t));
+  if (byText && !tail) {
+    const mb = MASHUP_BY.exec(byText);
+    const [b, a, ver] = mashupBy(base, artists, byText, mb.groups.a ?? mb.groups.b);
+    notes.push('mashup_by', byText === remixerText ? 'remixer_to_version' : 'version_in_title');
+    return [b, a, ver, null];
+  }
+  if (tail || MASHUP_WORD.test(remixerText)) {
+    const [b, a, ver] = mashup(base, artists, notes, tail ? tail[1] : remixerText);
+    notes.push(tail ? 'version_in_title' : 'remixer_to_version');
+    return [b, a, ver, null];
+  }
+  if (remixerText) {
+    notes.push('remixer_to_version');
+    if (fromTitle) notes.push('version_in_title');
+    return coverOrPlain(base, artists, featured, version(remixerText), ctx, notes);
+  }
+  if (fromTitle) {
+    notes.push('version_in_title');
+    return coverOrPlain(base, artists, featured, version(squash(fromTitle)), ctx, notes);
+  }
+  if (release?.cover) {
+    notes.push('cover_release', 'version_in_title');
+    return [base, artists, { kind: 'cover', name: 'Cover', by: [] }, null];
+  }
+  return [base, artists, null, null];
+}
+
+function suggestInternal(artist, title, remixer, ctx = {}) {
+  const notes = [];
+  const [primary, feat] = cutFeat(squash(artist ?? ''));
+  let featured = feat;
+  if (featured.length) notes.push('feat_in_artist');
+  const collected = collectArtists(primary);
+  if (collected.multi) notes.push('multi_artist');
   const titleText = String(title ?? '').trim();
   const [cut, titleFeat] = cutFeat(titleText);
   if (titleFeat.length) {
     notes.push('feat_in_title');
-    const have = new Set(featured.map((f) => f.toLowerCase()));
-    featured = [...featured, ...titleFeat.filter((n) => !have.has(n.toLowerCase()))];
+    featured = mergeFeatured(featured, titleFeat);
   }
   let cutBase = cut;
   const release = releaseTag(cutBase);
@@ -296,35 +338,12 @@ function suggestInternal(artist, title, remixer, ctx = {}) {
     notes.push('release_tag');
   }
   const tail = MASHUP_TAIL.exec(cutBase);
-  let base;
-  let fromTitle = null;
-  if (tail) base = squash(cutBase.slice(0, tail.index));
-  else [base, fromTitle] = titleVersion(cutBase);
+  const [base0, fromTitle] = tail ? [squash(cutBase.slice(0, tail.index)), null] : titleVersion(cutBase);
   const remixerText = squash(remixer ?? '');
-  let ver = null;
-  const byText = [remixerText, squash(fromTitle ?? '')].find((t) => t && MASHUP_BY.test(t));
-  if (byText && !tail) {
-    const mb = MASHUP_BY.exec(byText);
-    [base, artists, ver] = mashupBy(base, artists, byText, mb.groups.a ?? mb.groups.b);
-    notes.push('mashup_by', byText === remixerText ? 'remixer_to_version' : 'version_in_title');
-  } else if (tail || MASHUP_WORD.test(remixerText)) {
-    [base, artists, ver] = mashup(base, artists, notes, tail ? tail[1] : remixerText);
-    notes.push(tail ? 'version_in_title' : 'remixer_to_version');
-  } else if (remixerText) {
-    ver = version(remixerText);
-    notes.push('remixer_to_version');
-    if (fromTitle) notes.push('version_in_title');
-    if (ver.kind === 'cover') [base, artists, ver, alternatives] = coverReading(base, artists, featured, ver, ctx ?? {}, notes);
-  } else if (fromTitle) {
-    ver = version(squash(fromTitle));
-    notes.push('version_in_title');
-    if (ver.kind === 'cover') [base, artists, ver, alternatives] = coverReading(base, artists, featured, ver, ctx ?? {}, notes);
-  } else if (release && release.cover) {
-    ver = { kind: 'cover', name: 'Cover', by: [] };
-    notes.push('cover_release', 'version_in_title');
-  }
+  const context = ctx ?? {};
+  let [base, artists, ver, alternatives] = chooseVersion(base0, collected.artists, featured, context, notes, { tail, fromTitle, remixerText, release });
   if (!tail && !alternatives && !(ver && (ver.kind === 'cover' || ver.kind === 'mashup'))) {
-    const first = titleFirst(base, titleText, artists, ctx ?? {});
+    const first = titleFirst(base, titleText, artists, context);
     if (first) {
       [base, artists] = first;
       notes.push('title_first');
@@ -352,7 +371,9 @@ function coverReading(base, artists, featured, ver, ctx, notes) {
   const m = COVER_TAIL.exec(ver.name);
   const cname = m ? squash(m[1]) : '';
   if (dash && cname && squash(base.slice(0, dash.index)) && squash(base.slice(dash.index + dash[0].length))) {
-    return coverDash(base.slice(0, dash.index), base.slice(dash.index + dash[0].length), ver.name, cname, [...artists, ...featured], featured, ctx, notes);
+    const left = base.slice(0, dash.index);
+    const right = base.slice(dash.index + dash[0].length);
+    return coverDash({ left, right, text: ver.name, name: cname, credited: [...artists, ...featured], featured, ctx, notes });
   }
   return [base, artists, coverVersion(ver.name, [...artists, ...featured], notes) ?? ver, null];
 }
@@ -361,3 +382,5 @@ export function suggest(artist, title, remixer, ctx = {}) {
   const { alternatives, ...out } = v2Reading(suggestInternal(artist, title, remixer, ctx));
   return alternatives ? { ...out, alternatives: alternatives.map(v2Reading) } : out;
 }
+
+export const PATTERNS = { SPLIT, MASHUP_TAIL, SOURCE_SPLIT, MIX_TAIL, RELEASE_TAG, COVER_TAIL, MASHUP_BY, MAKERS, MASH_SOURCES };

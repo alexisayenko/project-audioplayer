@@ -117,11 +117,13 @@ def test_legacy_migrated_and_new_songs_decode_as_server_song(client, tmp_path, r
             check(s, "ServerSong")
             for key in CONTRACT["always_present"]:
                 assert key in s, (stage, s["id"], key)
-            assert isinstance(s["title"], str) and s["title"]
+            assert isinstance(s["title"], str)
+            assert s["title"]
             assert s["artist"] is None or isinstance(s["artist"], str)
             assert s["year"] is None or (isinstance(s["year"], int) and not isinstance(s["year"], bool))
             assert s["remixer"] is None or isinstance(s["remixer"], str)
-            assert isinstance(s["sources"], list) and all({"source", "id", "url", "platform"} == set(e) for e in s["sources"])
+            assert isinstance(s["sources"], list)
+            assert all({"source", "id", "url", "platform"} == set(e) for e in s["sources"])
         migrate_model2.migrate(path, apply=True, backup_dir=tmp_path / "bk")
 
 
@@ -161,7 +163,8 @@ def test_ios_add_from_the_fixture_body_matches_what_the_migration_would_store(cl
     credits_v1.to_v2(legacy)
     for key in ("mainArtists", "featuredArtists", "releaseYear", "version"):
         assert got[key] == legacy[key], key
-    assert got["rawTitle"] == "Song" and "raw" not in got
+    assert got["rawTitle"] == "Song"
+    assert "raw" not in got
     assert (got["artist"], got["remixer"], got["year"]) == (body["metadata"]["artist"], "Alesso Remix", 2009)
 
 

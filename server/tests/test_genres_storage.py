@@ -10,7 +10,8 @@ from tests.test_library import H, VID, client  # noqa: F401
 def test_genres_are_stored_bare_and_the_prefixed_view_is_derived(client, tmp_path):
     post(client, {"artist": "Solo"}, genres=["house", "Techno"], tags=["x", "country:us", "decade:90s", "lang:en"])
     stored = on_disk(tmp_path)
-    assert stored["genres"] == ["house", "techno"] and stored["tags"] == ["x", "country:us"]
+    assert stored["genres"] == ["house", "techno"]
+    assert stored["tags"] == ["x", "country:us"]
     got = song(client)
     assert got["genres"] == ["house", "techno"]
     assert got["tags"] == ["genre:house", "genre:techno", "x", "decade:80s", "country:us"]
@@ -18,7 +19,8 @@ def test_genres_are_stored_bare_and_the_prefixed_view_is_derived(client, tmp_pat
 
 def test_a_song_without_leftover_tags_stores_no_tags_key(client, tmp_path):
     post(client, genres=["house"])
-    assert "tags" not in on_disk(tmp_path) and on_disk(tmp_path)["genres"] == ["house"]
+    assert "tags" not in on_disk(tmp_path)
+    assert on_disk(tmp_path)["genres"] == ["house"]
 
 
 def test_patch_accepts_genres_and_keeps_other_tags_and_countries(client, tmp_path):
@@ -28,19 +30,22 @@ def test_patch_accepts_genres_and_keeps_other_tags_and_countries(client, tmp_pat
     assert got["tags"] == ["genre:trance", "genre:techno", "x", "decade:80s", "country:us"]
     assert on_disk(tmp_path)["genres"] == ["trance", "techno"]
     legacy = client.patch(f"/songs/{VID}", json={"tags": ["genre:house", "x", "country:us"]}, headers=H).json()
-    assert legacy["genres"] == ["house"] and "country:us" in legacy["tags"]
+    assert legacy["genres"] == ["house"]
+    assert "country:us" in legacy["tags"]
 
 
 def test_patch_genres_win_over_the_genre_tags_of_the_same_request(client):
     post(client, {"artist": "Solo"})
     got = client.patch(f"/songs/{VID}", json={"genres": ["house"], "tags": ["genre:trance", "y"]}, headers=H).json()
-    assert got["genres"] == ["house"] and "y" in got["tags"]
+    assert got["genres"] == ["house"]
+    assert "y" in got["tags"]
 
 
 def test_an_unknown_genre_in_genres_is_refused(client):
     post(client, {"artist": "Solo"})
     r = client.patch(f"/songs/{VID}", json={"genres": ["housee"]}, headers=H)
-    assert r.status_code == 422 and r.json()["error"] == "unknown_genre"
+    assert r.status_code == 422
+    assert r.json()["error"] == "unknown_genre"
 
 
 def test_the_loader_reads_both_forms_and_save_writes_the_bare_one(tmp_path):
@@ -84,8 +89,10 @@ def test_the_migration_stores_bare_genres_and_lists_leftovers():
     doc, report = migrate_model2.convert(old)
     a, b, c = doc["songs"]
     assert (a["genres"], a["tags"]) == (["house", "Deep House"], ["80s"])
-    assert b["genres"] == ["trance"] and "tags" not in b
-    assert "genres" not in c and "tags" not in c
+    assert b["genres"] == ["trance"]
+    assert "tags" not in b
+    assert "genres" not in c
+    assert "tags" not in c
     assert report["review"]["leftover_tags"] == [{"id": "a", "tags": ["80s"]}]
     assert report["ok"] is True
     again, _ = migrate_model2.convert(doc)

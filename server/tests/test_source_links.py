@@ -45,7 +45,8 @@ def test_patch_links_edit_sources_and_keep_the_audio(client):
     r = client.patch(f"/songs/{VID}", json={"youtube_url": f"https://youtu.be/{VID2}", "soundcloud_url": "https://soundcloud.com/a/b"}, headers=H)
     assert r.status_code == 200
     body = r.json()
-    assert body["audio_state"] == "server" and body["id"] == VID
+    assert body["audio_state"] == "server"
+    assert body["id"] == VID
     assert body["source_url"] == f"https://www.youtube.com/watch?v={VID2}"
     assert {(e["source"], e["url"]) for e in body["sources"]} == {("youtube", body["source_url"]), ("soundcloud", "https://soundcloud.com/a/b")}
     r = client.patch(f"/songs/{VID}", json={"soundcloud_url": None}, headers=H)
@@ -88,7 +89,8 @@ def test_download_uses_the_edited_youtube_link(monkeypatch, tmp_path):
 
     monkeypatch.setattr(extractor.yt_dlp, "YoutubeDL", FakeYDL)
     extractor.download_audio(VID, tmp_path, None, f"https://www.youtube.com/watch?v={VID2}")
-    assert seen[1] == f"https://www.youtube.com/watch?v={VID2}" and seen[0].endswith(f"{VID}.%(ext)s")
+    assert seen[1] == f"https://www.youtube.com/watch?v={VID2}"
+    assert seen[0].endswith(f"{VID}.%(ext)s")
     seen.clear()
     extractor.download_audio(VID, tmp_path)
     assert seen[1] == f"https://www.youtube.com/watch?v={VID}"

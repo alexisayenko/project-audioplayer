@@ -21,7 +21,9 @@ export const KIND_LABELS = {
 const SUGGESTED_TIP = 'Suggested from the YouTube or SoundCloud publish date; type a year to replace it';
 const lower = (s) => String(s ?? '').trim().toLowerCase();
 const nameList = (v) => splitTokens(v);
-const OF_KINDS = ['cover', 'mashup'];
+const OF_KINDS = new Set(['cover', 'mashup']);
+const COVER_SUFFIX = /(?<![\s,:-])[\s,:-]*\bcover(?:\s+version)?\s*$/i;
+const ORIGINAL_SPLIT = /(?<!\s)\s+(?:,|&|\band\b)\s*|(?:,|&|\band\b)\s*/i;
 const ofLabel = (kind) => (kind === 'mashup' ? 'Mashup of' : 'Cover of');
 const MAKERS_ASK = 'Who made this mashup? Confirm or edit Artists; sources go in Mashup of.';
 const COVER_ASK = 'Who performs this cover? Pick the reading that matches; the usual one is listed first.';
@@ -41,7 +43,7 @@ export function initialCredits(song = {}) {
       mainArtists: song.mainArtists,
       featuredArtists: Array.isArray(song.featuredArtists) ? song.featuredArtists : [],
       withArtists: Array.isArray(song.withArtists) ? song.withArtists : [],
-      version: song.version && song.version.type ? song.version : legacyVersion(song),
+      version: song.version?.type ? song.version : legacyVersion(song),
       releaseYear: song.releaseYear ?? song.year ?? null,
     };
   }
@@ -107,7 +109,7 @@ export function creditsBlock({ tg, song = {}, getTitle, setTitle, emit }) {
   });
 
   const versionObject = () => (hasVersion()
-    ? { type: f.kind.value, name: f.name.value.trim() || null, artists: nameList(f.by.value), releaseYear: validYear(Number(f.vyear.value)), originalArtists: OF_KINDS.includes(f.kind.value) ? nameList(f.of.value) : null }
+    ? { type: f.kind.value, name: f.name.value.trim() || null, artists: nameList(f.by.value), releaseYear: validYear(Number(f.vyear.value)), originalArtists: OF_KINDS.has(f.kind.value) ? nameList(f.of.value) : null }
     : null);
 
   let ask = '';
@@ -128,6 +130,44 @@ export function creditsBlock({ tg, song = {}, getTitle, setTitle, emit }) {
       },
     };
   };
+  const titlePart = (s, cur) => (s.title && s.title !== cur.title.trim() ? [{ key: `title:${s.title}`, text: `Title: ${s.title}`, apply: () => setTitle(s.title) }] : []);
+  const artistsPart = (s, cur) => {
+    if (!s.mainArtists.length || sameList(s.mainArtists, cur.mainArtists)) return [];
+    return [{ key: `artists:${s.mainArtists.join('|')}`, text: `Artists: ${s.mainArtists.join(' | ')}`, apply: () => { f.artists.value = joinTokens(s.mainArtists); } }];
+  };
+  const featuredPart = (s, cur) => {
+    const newFeat = missing(cur.featuredArtists, s.featuredArtists);
+    if (!newFeat.length) return [];
+    return [{ key: `featured:${newFeat.join('|')}`, text: `Featuring: ${newFeat.join(' | ')}`, apply: () => { f.featured.value = joinTokens([...cur.featuredArtists, ...newFeat]); } }];
+  };
+  const versionBits = (s, cur, newName, newBy) => {
+    const v = s.version;
+    const bits = [];
+    if (!cur.type) bits.push(v.type);
+    if (newName) bits.push(`"${newName}"`);
+    if (newBy.length) bits.push(`by ${newBy.join(' | ')}`);
+    if (OF_KINDS.has(v.type) && v.originalArtists?.length) bits.push(`${ofLabel(v.type)} ${v.originalArtists.join(', ')}`);
+    else if (v.type === 'cover' && s.notes.includes('cover_performer')) bits.push(`Cover performed by ${v.name.replace(COVER_SUFFIX, '').trim()}`);
+    return bits;
+  };
+  const applyVersion = (v, cur, newName, newBy) => {
+    if (!cur.type) { f.kind.value = v.type; syncYear(); }
+    if (newName) f.name.value = newName;
+    if (newBy.length) f.by.value = joinTokens([...cur.artists, ...newBy]);
+    if (OF_KINDS.has(v.type) && v.originalArtists?.length && !f.of.value.trim()) f.of.value = joinTokens(v.originalArtists);
+  };
+  const versionPart = (s, cur) => {
+    const v = s.version;
+    if (!v) return [];
+    const newBy = missing(cur.artists, v.artists);
+    const newName = !f.name.value.trim() && v.name ? v.name : '';
+    if (!newBy.length && !newName && cur.type) return [];
+    return [{
+      key: `version:${v.type}:${newName}:${newBy.join('|')}`,
+      text: `Version: ${versionBits(s, cur, newName, newBy).join(', ')}`,
+      apply: () => applyVersion(v, cur, newName, newBy),
+    }];
+  };
   const items = () => {
     const cur = current();
     const s = suggest(f.artists.value, cur.title, f.name.value, { uploader: song.raw?.artist ?? '', original: knownOriginal });
@@ -136,36 +176,9 @@ export function creditsBlock({ tg, song = {}, getTitle, setTitle, emit }) {
       ask = COVER_ASK;
       return s.alternatives.map((r, i) => readingRow(r, i, cur)).filter((i) => !dismissed.has(i.key));
     }
-    const parts = [];
-    if (s.title && s.title !== cur.title.trim()) parts.push({ key: `title:${s.title}`, text: `Title: ${s.title}`, apply: () => setTitle(s.title) });
-    if (s.mainArtists.length && !sameList(s.mainArtists, cur.mainArtists)) parts.push({ key: `artists:${s.mainArtists.join('|')}`, text: `Artists: ${s.mainArtists.join(' | ')}`, apply: () => { f.artists.value = joinTokens(s.mainArtists); } });
-    const newFeat = missing(cur.featuredArtists, s.featuredArtists);
-    if (newFeat.length) parts.push({ key: `featured:${newFeat.join('|')}`, text: `Featuring: ${newFeat.join(' | ')}`, apply: () => { f.featured.value = joinTokens([...cur.featuredArtists, ...newFeat]); } });
-    if (s.version) {
-      const v = s.version;
-      const newBy = missing(cur.artists, v.artists);
-      const newName = !f.name.value.trim() && v.name ? v.name : '';
-      if (newBy.length || newName || !cur.type) {
-        const bits = [];
-        if (!cur.type) bits.push(v.type);
-        if (newName) bits.push(`"${newName}"`);
-        if (newBy.length) bits.push(`by ${newBy.join(' | ')}`);
-        if (OF_KINDS.includes(v.type) && v.originalArtists?.length) bits.push(`${ofLabel(v.type)} ${v.originalArtists.join(', ')}`);
-        else if (v.type === 'cover' && s.notes.includes('cover_performer')) bits.push(`Cover performed by ${v.name.replace(/[\s,:-]*\bcover(?:\s+version)?\s*$/i, '').trim()}`);
-        parts.push({
-          key: `version:${v.type}:${newName}:${newBy.join('|')}`,
-          text: `Version: ${bits.join(', ')}`,
-          apply: () => {
-            if (!cur.type) { f.kind.value = v.type; syncYear(); }
-            if (newName) f.name.value = newName;
-            if (newBy.length) f.by.value = joinTokens([...cur.artists, ...newBy]);
-            if (OF_KINDS.includes(v.type) && v.originalArtists?.length && !f.of.value.trim()) f.of.value = joinTokens(v.originalArtists);
-          },
-        });
-      }
-    }
+    const parts = [...titlePart(s, cur), ...artistsPart(s, cur), ...featuredPart(s, cur), ...versionPart(s, cur)];
     if (!parts.length) return [];
-    const row = { key: parts.map((p) => p.key).join('+'), text: parts.map((p) => p.text).join(' \u00b7 '), apply: () => parts.forEach((p) => p.apply()) };
+    const row = { key: parts.map((p) => p.key).join('+'), text: parts.map((p) => p.text).join(' · '), apply: () => parts.forEach((p) => p.apply()) };
     return dismissed.has(row.key) ? [] : [row];
   };
 
@@ -189,14 +202,15 @@ export function creditsBlock({ tg, song = {}, getTitle, setTitle, emit }) {
     const name = lower(f.name.value);
     const bad = name ? nameList(f.by.value).filter((n) => !name.includes(lower(n))) : [];
     warn.hidden = !bad.length;
-    warn.textContent = bad.length ? `${bad.map((n) => `"${n}"`).join(', ')} not in the version name` : '';
+    const quoted = bad.map((n) => `"${n}"`).join(', ');
+    warn.textContent = bad.length ? `${quoted} not in the version name` : '';
   };
 
   const paintVisibility = () => {
     const on = hasVersion();
     nameField.hidden = !on;
     detailRow.hidden = !on;
-    ofField.hidden = !OF_KINDS.includes(f.kind.value);
+    ofField.hidden = !OF_KINDS.has(f.kind.value);
     const label = ofLabel(f.kind.value);
     ofField.children[0].textContent = label;
     f.of.setLabel(label);
@@ -239,7 +253,7 @@ export function creditsBlock({ tg, song = {}, getTitle, setTitle, emit }) {
       withArtists: nameList(f.withs.value),
       releaseYear: f.released.value,
       version: hasVersion()
-        ? { type: f.kind.value, name: f.name.value, artists: nameList(f.by.value), releaseYear: f.vyear.value, ...(OF_KINDS.includes(f.kind.value) ? { originalArtists: nameList(f.of.value) } : {}) }
+        ? { type: f.kind.value, name: f.name.value, artists: nameList(f.by.value), releaseYear: f.vyear.value, ...(OF_KINDS.has(f.kind.value) ? { originalArtists: nameList(f.of.value) } : {}) }
         : null,
     }),
     set(p = {}) {
@@ -277,7 +291,7 @@ export function creditsBlock({ tg, song = {}, getTitle, setTitle, emit }) {
       paint();
     },
     setOriginal(artist) {
-      knownOriginal = typeof artist === 'string' ? splitTokens(artist).flatMap((a) => a.split(/\s*(?:,|&|\band\b)\s*/i)).filter(Boolean) : [];
+      knownOriginal = typeof artist === 'string' ? splitTokens(artist).flatMap((a) => a.split(ORIGINAL_SPLIT)).filter(Boolean) : [];
       paint();
     },
     setPublished(y) {
@@ -299,3 +313,4 @@ export function creditsBlock({ tg, song = {}, getTitle, setTitle, emit }) {
     syncYear,
   };
 }
+export const PATTERNS = { COVER_SUFFIX, ORIGINAL_SPLIT };

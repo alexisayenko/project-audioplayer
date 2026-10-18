@@ -13,7 +13,7 @@ import { MIRROR_PRESET_LIST } from '/js/viz-mirror-presets.js';
 
 const W = 480;
 const H = 270;
-const ONLY = ['classic'];
+const ONLY = new Set(['classic']);
 const lines = [];
 
 function rng(seed) {
@@ -38,7 +38,7 @@ function spectrum(n, seed) {
   return out;
 }
 
-for (const p of MIRROR_PRESET_LIST.filter((q) => ONLY.includes(q.id))) {
+for (const p of MIRROR_PRESET_LIST.filter((q) => ONLY.has(q.id))) {
   const canvas = document.createElement('canvas');
   canvas.width = W;
   canvas.height = H;

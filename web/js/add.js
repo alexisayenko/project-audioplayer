@@ -42,9 +42,13 @@ export function openAdd() {
   const body = el('div', { class: 'add-body' });
   const say = (text, kind = '') => message.replaceChildren(text ? el('p', { class: `msg ${kind}` }, text) : '');
 
-  const tidy = () => {
+  const cleanedUrl = () => {
     const list = playlistLink(url.value);
-    const clean = list ? (list.kind === 'playlist' && !list.video ? list.url : url.value) : cleanPasted(url.value);
+    if (!list) return cleanPasted(url.value);
+    return list.kind === 'playlist' && !list.video ? list.url : url.value;
+  };
+  const tidy = () => {
+    const clean = cleanedUrl();
     if (clean === url.value) return;
     url.value = clean;
     checkKnown();
@@ -72,17 +76,7 @@ export function openAdd() {
   url.addEventListener('drop', () => setTimeout(tidy));
   url.addEventListener('blur', tidy);
 
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    tidy();
-    if (!url.value || fetchBtn.disabled) return;
-    say('');
-    const list = playlistLink(url.value);
-    if (list) {
-      if (list.kind === 'playlist') startImport(list);
-      else say(list.kind === 'mix' ? MIX_MESSAGE : PRIVATE_MESSAGE, 'error');
-      return;
-    }
+  async function runPreview() {
     body.replaceChildren();
     fetchBtn.disabled = true;
     fetchBtn.textContent = 'Fetching...';
@@ -113,6 +107,20 @@ export function openAdd() {
         checkKnown();
       }
     }
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    tidy();
+    if (!url.value || fetchBtn.disabled) return;
+    say('');
+    const list = playlistLink(url.value);
+    if (list) {
+      if (list.kind === 'playlist') startImport(list);
+      else say(list.kind === 'mix' ? MIX_MESSAGE : PRIVATE_MESSAGE, 'error');
+      return;
+    }
+    await runPreview();
   });
 
   function leaveImport() {

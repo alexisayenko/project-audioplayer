@@ -315,6 +315,88 @@ def canon_request(changes: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
+def _artist_changes(changes: dict[str, Any], proj: dict[str, Any], out: dict[str, Any]) -> None:
+    if "mainArtists" in changes or "featuredArtists" in changes:
+        for key in ("mainArtists", "featuredArtists"):
+            if key in changes:
+                out[key] = clean_names(changes[key], key)
+        return
+    if "artist" not in changes:
+        return
+    text = _legacy_text(changes, "artist")
+    if text != _norm(proj["artist"]):
+        parsed = credit_title.parse(" - ".join(credits_v1.pills(text)), "")
+        out["mainArtists"] = clean_names(parsed["mainArtists"], "mainArtists")
+        out["featuredArtists"] = clean_names(parsed["featuredArtists"], "featuredArtists")
+        out["withArtists"] = []
+
+
+def _with_remixer(version: dict[str, Any] | None, text: str | None) -> dict[str, Any] | None:
+    if text is None:
+        return None
+    if version is not None:
+        version["name"] = text
+        return version
+    return {"type": kind_for(text), "name": text, "artists": [], "releaseYear": None}
+
+
+def _with_remix_year(version: dict[str, Any] | None, year: int | None) -> dict[str, Any] | None:
+    if version is None:
+        if year is not None:
+            return {"type": "other", "name": None, "artists": [], "releaseYear": year}
+        return None
+    version["releaseYear"] = year
+    return version
+
+
+def _legacy_version_change(
+    changes: dict[str, Any], proj: dict[str, Any], stored: dict[str, Any] | None, out: dict[str, Any]
+) -> None:
+    version = copy.deepcopy(stored)
+    touched = False
+    if "remixer" in changes:
+        text = _legacy_text(changes, "remixer")
+        if text != _norm(proj["remixer"]):
+            touched = True
+            version = _with_remixer(version, text)
+    if "remix_year" in changes:
+        year = _year_checked(changes["remix_year"], "remix_year", proj["remix_year"])
+        if year != proj["remix_year"]:
+            touched = True
+            version = _with_remix_year(version, year)
+    if touched:
+        out["version"] = _clean_version(version, stored) if version is not None else None
+
+
+def _year_change(changes: dict[str, Any], proj: dict[str, Any], cur: dict[str, Any], out: dict[str, Any]) -> None:
+    if "releaseYear" in changes:
+        out["releaseYear"] = _year_checked(changes["releaseYear"], "releaseYear", cur.get("releaseYear"))
+    elif "year" in changes:
+        value = changes["year"]
+        if value is not None and _int_year(value) is None:
+            raise ValueError(f"year must be {timeutil.year_range_text()}")
+        year = _int_year(value) if value is not None else None
+        if year != proj["year"]:
+            out["releaseYear"] = _year_checked(year, "year", cur.get("releaseYear"))
+
+
+def _version_change(changes: dict[str, Any], proj: dict[str, Any], cur: dict[str, Any], out: dict[str, Any]) -> None:
+    stored = cur.get("version") if isinstance(cur.get("version"), dict) else None
+    if "version" in changes:
+        out["version"] = _clean_version(changes["version"], stored)
+    elif "remixer" in changes or "remix_year" in changes:
+        _legacy_version_change(changes, proj, stored, out)
+
+
+def _album_change(changes: dict[str, Any], proj: dict[str, Any], out: dict[str, Any]) -> None:
+    if "albums" in changes:
+        out["albums"] = clean_names(changes["albums"], "albums")
+    elif "album" in changes:
+        text = _legacy_text(changes, "album")
+        if text != _norm(proj["album"]):
+            out["albums"] = [text] if text else []
+
+
 def clean_changes(changes: dict[str, Any], current: dict[str, Any] | None = None) -> dict[str, Any]:
     """Validate the credit keys of a request and resolve them into structure changes `{mainArtists?, featuredArtists?, version?, releaseYear?, albums?}`.
 
@@ -329,66 +411,13 @@ def clean_changes(changes: dict[str, Any], current: dict[str, Any] | None = None
     proj = project(cur) if cur else {"artist": None, "remixer": None, "year": None, "remix_year": None, "album": None}
     out: dict[str, Any] = {}
 
-    if "mainArtists" in changes or "featuredArtists" in changes:
-        if "mainArtists" in changes:
-            out["mainArtists"] = clean_names(changes["mainArtists"], "mainArtists")
-        if "featuredArtists" in changes:
-            out["featuredArtists"] = clean_names(changes["featuredArtists"], "featuredArtists")
-    elif "artist" in changes:
-        text = _legacy_text(changes, "artist")
-        if text != _norm(proj["artist"]):
-            parsed = credit_title.parse(" - ".join(credits_v1.pills(text)), "")
-            out["mainArtists"] = clean_names(parsed["mainArtists"], "mainArtists")
-            out["featuredArtists"] = clean_names(parsed["featuredArtists"], "featuredArtists")
-            out["withArtists"] = []
-
+    _artist_changes(changes, proj, out)
     if "withArtists" in changes:
         out["withArtists"] = clean_names(changes["withArtists"], "withArtists")
 
-    stored = cur.get("version") if isinstance(cur.get("version"), dict) else None
-    if "version" in changes:
-        out["version"] = _clean_version(changes["version"], stored)
-    elif "remixer" in changes or "remix_year" in changes:
-        version = copy.deepcopy(stored)
-        touched = False
-        if "remixer" in changes:
-            text = _legacy_text(changes, "remixer")
-            if text != _norm(proj["remixer"]):
-                touched = True
-                if text is None:
-                    version = None
-                elif version is not None:
-                    version["name"] = text
-                else:
-                    version = {"type": kind_for(text), "name": text, "artists": [], "releaseYear": None}
-        if "remix_year" in changes:
-            year = _year_checked(changes["remix_year"], "remix_year", proj["remix_year"])
-            if year != proj["remix_year"]:
-                touched = True
-                if version is None:
-                    if year is not None:
-                        version = {"type": "other", "name": None, "artists": [], "releaseYear": year}
-                else:
-                    version["releaseYear"] = year
-        if touched:
-            out["version"] = _clean_version(version, stored) if version is not None else None
-
-    if "releaseYear" in changes:
-        out["releaseYear"] = _year_checked(changes["releaseYear"], "releaseYear", cur.get("releaseYear"))
-    elif "year" in changes:
-        value = changes["year"]
-        if value is not None and _int_year(value) is None:
-            raise ValueError(f"year must be {timeutil.year_range_text()}")
-        year = _int_year(value) if value is not None else None
-        if year != proj["year"]:
-            out["releaseYear"] = _year_checked(year, "year", cur.get("releaseYear"))
-
-    if "albums" in changes:
-        out["albums"] = clean_names(changes["albums"], "albums")
-    elif "album" in changes:
-        text = _legacy_text(changes, "album")
-        if text != _norm(proj["album"]):
-            out["albums"] = [text] if text else []
+    _version_change(changes, proj, cur, out)
+    _year_change(changes, proj, cur, out)
+    _album_change(changes, proj, out)
     return out
 
 

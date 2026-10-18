@@ -59,7 +59,8 @@ def test_listing_parses_credits_title_and_year_only_from_youtube_data(client, fa
     assert (first["title"], first["mainArtists"], first["version"], first["state"]) == ("Around the World", ["Daft Punk"], None, "ok")
     assert first["releaseYear"] is None
     assert first["url"] == f"https://www.youtube.com/watch?v={A}"
-    assert first["duration"] == 200 and first["detailed"] is False
+    assert first["duration"] == 200
+    assert first["detailed"] is False
     second = rows[B]
     assert second["title"] == "Song"
     assert second["mainArtists"] == ["Bar"]
@@ -124,7 +125,8 @@ def test_unavailable_entries_are_marked_not_parsed(client, fake):
     fake["entries"] = [flat(A, "[Private video]", duration=None), flat(B, "[Deleted video]", duration=None), flat(C, "[Unavailable video]"), flat(D, "Fine - One")]
     rows = by_id(post(client).json())
     assert [(rows[i]["state"], rows[i]["reason"]) for i in (A, B, C)] == [("unavailable", "Private"), ("unavailable", "Deleted"), ("unavailable", "Unavailable")]
-    assert rows[A]["title"] == "[Private video]" and rows[A]["mainArtists"] == []
+    assert rows[A]["title"] == "[Private video]"
+    assert rows[A]["mainArtists"] == []
     assert rows[D]["state"] == "ok"
 
 
@@ -137,8 +139,12 @@ def test_entries_without_title_and_length_are_private_or_deleted_videos(client, 
     ]
     rows = by_id(post(client).json())
     assert (rows[A]["state"], rows[A]["reason"], rows[B]["state"], rows[B]["reason"]) == ("unavailable", "Private or deleted", "unavailable", "Private or deleted")
-    assert rows[A]["mainArtists"] == [] and rows[A]["duration"] is None and rows[A]["long"] is False and rows[A]["duplicate"] is None
-    assert rows[C]["state"] == "ok" and rows[D]["state"] == "ok"
+    assert rows[A]["mainArtists"] == []
+    assert rows[A]["duration"] is None
+    assert rows[A]["long"] is False
+    assert rows[A]["duplicate"] is None
+    assert rows[C]["state"] == "ok"
+    assert rows[D]["state"] == "ok"
 
 
 def test_artist_title_in_the_video_title_is_split_when_the_channel_is_not_the_artist(client, fake):
@@ -199,7 +205,9 @@ def test_cap_of_200_entries_reports_the_playlist_total(client, fake):
     body = post(client).json()
     assert fake["calls"] == [(LIST, 200)]
     assert len(body["entries"]) == 200
-    assert body["playlist"]["total"] == 250 and body["playlist"]["shown"] == 200 and body["playlist"]["truncated"] is True
+    assert body["playlist"]["total"] == 250
+    assert body["playlist"]["shown"] == 200
+    assert body["playlist"]["truncated"] is True
 
 
 def test_exactly_200_is_not_truncated(client, fake):
@@ -289,7 +297,9 @@ def test_details_return_year_for_a_version_and_genres_from_youtube(client, monke
 def test_details_year_without_a_version_stays_out_of_the_original_year(client, monkeypatch):
     monkeypatch.setattr(extractor, "preview", lambda vid: full_meta(vid, remixer=None, title="Plain"))
     row = by_id(client.post("/import/youtube-playlist/details", json={"ids": [A]}, headers=H).json())[A]
-    assert row["version"] is None and row["releaseYear"] is None and row["publishedYear"] == 2021
+    assert row["version"] is None
+    assert row["releaseYear"] is None
+    assert row["publishedYear"] == 2021
 
 
 def test_details_seed_the_preview_cache_so_adding_does_not_ask_youtube_again(client, monkeypatch):
@@ -356,7 +366,8 @@ def test_a_429_error_is_also_a_rate_limit(client, monkeypatch):
 
     monkeypatch.setattr(extractor, "preview", preview)
     body = client.post("/import/youtube-playlist/details", json={"ids": [A, B]}, headers=H).json()
-    assert body["rate_limited"] is True and body["unavailable"] == []
+    assert body["rate_limited"] is True
+    assert body["unavailable"] == []
 
 
 def test_details_pause_between_one_workers_fetches(client, monkeypatch):
@@ -372,7 +383,9 @@ def test_details_pause_between_one_workers_fetches(client, monkeypatch):
 
 
 def test_details_use_few_workers_and_small_batches():
-    assert playlist_import.DETAIL_WORKERS == 2 and playlist_import.MAX_DETAIL_IDS == 10 and playlist_import.DETAIL_DELAY_S == (0.5, 1.5)
+    assert playlist_import.DETAIL_WORKERS == 2
+    assert playlist_import.MAX_DETAIL_IDS == 10
+    assert playlist_import.DETAIL_DELAY_S == (0.5, 1.5)
 
 
 def test_details_time_out_per_batch(client, monkeypatch):
@@ -435,20 +448,22 @@ class FakeYDL:
 
 
 def test_extractor_playlist_is_one_flat_bounded_call_on_the_canonical_url(monkeypatch):
-    FakeYDL.seen = []
-    FakeYDL.info = {"title": "T", "channel": "C", "playlist_count": 300, "entries": [{"id": A}, None, {"id": B}]}
+    monkeypatch.setattr(FakeYDL, "seen", [])
+    monkeypatch.setattr(FakeYDL, "info", {"title": "T", "channel": "C", "playlist_count": 300, "entries": [{"id": A}, None, {"id": B}]})
     monkeypatch.setattr(extractor.yt_dlp, "YoutubeDL", FakeYDL)
     got = extractor.playlist(LIST, 200)
     opts, call = FakeYDL.seen
-    assert opts["extract_flat"] and opts["playlistend"] == 200 and opts["socket_timeout"] == extractor.PLAYLIST_TIMEOUT_S
+    assert opts["extract_flat"]
+    assert opts["playlistend"] == 200
+    assert opts["socket_timeout"] == extractor.PLAYLIST_TIMEOUT_S
     assert call == (URL, False)
     assert got == {"title": "T", "uploader": "C", "total": 300, "entries": [{"id": A}, {"id": B}]}
 
 
 def test_extractor_playlist_without_a_count_uses_the_entries(monkeypatch):
-    FakeYDL.info = {"entries": [{"id": A}]}
+    monkeypatch.setattr(FakeYDL, "info", {"entries": [{"id": A}]})
     monkeypatch.setattr(extractor.yt_dlp, "YoutubeDL", FakeYDL)
     assert extractor.playlist(LIST, 200)["total"] == 1
-    FakeYDL.info = None
+    monkeypatch.setattr(FakeYDL, "info", None)
     with pytest.raises(ValueError):
         extractor.playlist(LIST, 200)

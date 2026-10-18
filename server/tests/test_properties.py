@@ -187,14 +187,17 @@ def test_migration_is_idempotent_and_cleans_legacy_fields():
     assert a["bpm"] == 121
     assert "genre" not in a
     assert "original" not in a
-    assert "remixer" not in a and a["mainArtists"] == [] and "version" not in a
+    assert "remixer" not in a
+    assert a["mainArtists"] == []
+    assert "version" not in a
     assert a["source_url"] == "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
     assert a["wikipedia_song"] is None
     assert sorted(a["tags"]) == ["Rock", "genre:house"]
     assert a["releaseYear"] == 1994
     assert b["tags"] == ["country:de"]
     assert b["sources"] == [{"platform": "youtube", "url": "https://www.youtube.com/watch?v=9bZkp7q19f0"}]
-    assert c["file"] is None and c["releaseYear"] == 2007
+    assert c["file"] is None
+    assert c["releaseYear"] == 2007
 
 
 def test_normalize_accepts_every_legacy_shape():

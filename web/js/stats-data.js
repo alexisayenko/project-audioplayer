@@ -1,6 +1,6 @@
 import { hasAudio } from './playable.js';
 import { displayYear } from './credits.js';
-import { familyIndex, FAMILY_PALETTE_SIZE } from './genre-data.js';
+import { familyIndex } from './genre-data.js';
 import { songGenres, mapToNodes } from './genre-playing.js';
 
 export const BPM_DEFAULT = { lo: 60, hi: 200 };
@@ -10,7 +10,7 @@ export const MIN_ZOOM_BPM = 8;
 export const JITTER_YEAR = 0.34;
 export const JITTER_BPM = 1.4;
 export const PALETTE_SIZE = 12;
-export { FAMILY_PALETTE_SIZE };
+export { FAMILY_PALETTE_SIZE } from './genre-data.js';
 export const DEFAULT_MODE = 'family';
 export const NEUTRAL = -1;
 export const COLOR_MODES = [

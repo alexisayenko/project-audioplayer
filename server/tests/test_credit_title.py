@@ -23,7 +23,8 @@ def test_parse_is_idempotent(case):
     again = credit_title.parse(" - ".join(first["mainArtists"]), first["title"], split_vs=case.get("splitVs", False))
     assert again["mainArtists"] == first["mainArtists"]
     assert again["title"] == first["title"]
-    assert again["featuredArtists"] == [] and again["withArtists"] == []
+    assert again["featuredArtists"] == []
+    assert again["withArtists"] == []
 
 
 def test_removed_lists_the_exact_groups():

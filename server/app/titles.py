@@ -163,7 +163,7 @@ _BRACKET = re.compile(r"[\(\[]([^\)\]]*)[\)\]]")
 _REMIX_WORD = re.compile(r"\bremix\b|\bmashup\b|\bmixed\s+by\b", re.I)
 
 
-RELEASE_TAG = re.compile(r"\s*+[(\[]\s*+([^()\[\]]*?\brelease)\s*+[)\]]\s*+$", re.I)
+RELEASE_TAG = re.compile(r"(?<!\s)\s*+[(\[]\s*+([^()\[\]]*?\brelease)\s*+[)\]]\s*+$", re.I)
 _RELEASE_TAG_TAIL = RELEASE_TAG
 _RELEASE_SKIP = re.compile(r"\bremix(?:ed)?\b|\bmashup\b|\bmixed\s+by\b", re.I)
 

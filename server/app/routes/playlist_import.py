@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends
 from fastapi.concurrency import run_in_threadpool
@@ -17,7 +17,7 @@ _STATUS_BY_CODE = {"not_found": 404, "private": 403}
 
 
 @router.post("/import/youtube-playlist", responses=deps.responses(403, 404, 422, 429, 502))
-async def preview_playlist(req: PlaylistImportRequest, user: dict[str, Any] = Depends(deps.require_token)):
+async def preview_playlist(req: PlaylistImportRequest, user: Annotated[dict[str, Any], Depends(deps.require_token)]):
     ref = urlclean.parse_playlist(req.url)
     if ref is None:
         return error_response(422, "unsupported", playlist_import.NOT_A_PLAYLIST)
@@ -36,7 +36,7 @@ async def preview_playlist(req: PlaylistImportRequest, user: dict[str, Any] = De
 
 
 @router.post("/import/youtube-playlist/details", responses=deps.responses(422, 429))
-async def playlist_details(req: PlaylistDetailsRequest, user: dict[str, Any] = Depends(deps.require_token)):
+async def playlist_details(req: PlaylistDetailsRequest, user: Annotated[dict[str, Any], Depends(deps.require_token)]):
     bad = [i for i in req.ids if not urlclean.VIDEO_ID_RE.fullmatch(i)]
     if bad:
         return error_response(422, "unsupported", "ids must be 11-character YouTube video ids")

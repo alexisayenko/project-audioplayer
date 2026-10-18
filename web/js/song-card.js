@@ -88,6 +88,12 @@ function linkBlock(links) {
   return row.node;
 }
 
+function downloadIcon(song, audio, view, ib) {
+  if (audio) return can('download') ? ib('Download', 'download', () => downloadSong(song)) : null;
+  const fetchable = can('fetch') && (view.kind === 'none' || view.kind === 'failed');
+  return fetchable ? ib('Download to server', 'download', () => autodl.request([song.id], { front: true })) : null;
+}
+
 function actionRow(song) {
   const audio = hasAudio(song);
   const queueable = audio || autoDownloadOn();
@@ -96,13 +102,12 @@ function actionRow(song) {
   const link = sourceLink(song);
   const btn = (label, run, cls = 'btn outline') => el('button', { class: cls, type: 'button', onclick: run }, label);
   const ib = (label, name, run, cls = 'icon round') => el('button', { class: cls, type: 'button', title: label, 'aria-label': label, onclick: run }, icon(name, 'nav'));
-  const dl = audio && can('download') ? ib('Download', 'download', () => downloadSong(song))
-    : !audio && can('fetch') && (view.kind === 'none' || view.kind === 'failed') ? ib('Download to server', 'download', () => autodl.request([song.id], { front: true })) : null;
+  const plLabel = queued ? 'In playlist - click to remove' : 'Add to playlist';
   const icons = [
     queueable ? ib('Play next', 'playPlus', () => playNextInQueue(song)) : null,
-    queueable ? el('button', { class: `icon round pl-toggle${queued ? ' on' : ''}`, type: 'button', title: queued ? 'In playlist - click to remove' : 'Add to playlist', 'aria-label': queued ? 'In playlist - click to remove' : 'Add to playlist', 'aria-pressed': String(queued), onclick: () => toggleQueue(song) }, icon('listAdd', 'nav')) : null,
+    queueable ? el('button', { class: `icon round pl-toggle${queued ? ' on' : ''}`, type: 'button', title: plLabel, 'aria-label': plLabel, 'aria-pressed': String(queued), onclick: () => toggleQueue(song) }, icon('listAdd', 'nav')) : null,
     ib('Share link', 'share', () => openShareDialog(song)),
-    dl,
+    downloadIcon(song, audio, view, ib),
     can('edit') ? ib('Edit', 'pencil', () => editDialog(song)) : null,
   ].filter(Boolean);
   return el('div', { class: 'card-actions' },
@@ -110,12 +115,12 @@ function actionRow(song) {
     !audio && !can('fetch') && link ? btn(link.label, () => window.open(link.url, '_blank', 'noopener')) : null);
 }
 
-const SIDE_KEYS = ['country'];
+const SIDE_KEYS = new Set(['country']);
 
 function detailsBlock(m) {
   const tagChip = (t) => el('span', { class: 'tag ns t-caption', title: t.tag }, t.label);
   const items = [
-    ...m.groups.filter((g) => SIDE_KEYS.includes(g.key)).map((g) => el('span', { class: 'detail' }, `${g.name}: `, ...g.tags.map(tagChip))),
+    ...m.groups.filter((g) => SIDE_KEYS.has(g.key)).map((g) => el('span', { class: 'detail' }, `${g.name}: `, ...g.tags.map(tagChip))),
     m.bpm ? el('span', { class: 'detail' }, el('span', { class: 'bpm-badge', title: 'Beats per minute (estimated)' }, m.bpm, el('small', { 'aria-hidden': 'true' }, 'BPM'))) : null,
     m.duration ? el('span', { class: 'detail' }, `Length: ${m.duration}`) : null,
     m.yearFact ? el('span', { class: 'detail' }, `Year: ${m.yearFact}`) : null,
@@ -127,7 +132,7 @@ function detailsBlock(m) {
 
 function paint(dlg, song, close, m) {
   const [art, head] = headBlock(song, m);
-  const rest = m.groups.filter((g) => !SIDE_KEYS.includes(g.key));
+  const rest = m.groups.filter((g) => !SIDE_KEYS.has(g.key));
   const parts = [
     el('span', { class: 'grab', 'aria-hidden': 'true' }),
     el('div', { class: 'dlg-head card-bar' }, el('span'), el('button', { type: 'button', class: 'link-btn t-headline card-close', onclick: close }, 'Close')),

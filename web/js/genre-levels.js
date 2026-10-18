@@ -125,6 +125,10 @@ export function genreLines(tree, names) {
     const depth = node && node.level > 1 ? chain(tree, node.id).length : 0;
     for (const f of fams) lines.get(f).rows.set(key, { name, depth });
   }
+  return lineGroups(lines, loose);
+}
+
+function lineGroups(lines, loose) {
   const order = (a, b) => a.depth - b.depth || a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
   const out = [...lines.values()].filter((l) => l.rows.size).map((l) => ({
     family: l.family,

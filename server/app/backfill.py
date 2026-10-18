@@ -146,7 +146,7 @@ def _flush(job: Job, results: dict[str, int]) -> None:
     results.clear()
 
 
-def _process(job: Job, uid: str, vid: str) -> int | None:
+def _process(uid: str, vid: str) -> int | None:
     """The detected BPM, -1 when detection failed, None when the song is not eligible."""
     song = library.find_song(deps.load_songs(uid), vid)
     path = deps.audio_dir(uid) / library.file_name(song) if song and library.has_file(song) else None
@@ -173,7 +173,7 @@ def _run(job: Job, ids: list[str]) -> None:
         for vid in ids:
             if job.cancel.is_set():
                 break
-            outcome = _process(job, uid, vid)
+            outcome = _process(uid, vid)
             if outcome is None:
                 job.skipped += 1
                 continue

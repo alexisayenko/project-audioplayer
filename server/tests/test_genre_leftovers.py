@@ -32,7 +32,8 @@ def _tags(path):
     "Party Music", "west coast swing", "West Coast Swing",
 ])
 def test_leftover_tags_are_dropped(value):
-    assert gf.is_dropped(value) and not gf.is_genre(value)
+    assert gf.is_dropped(value)
+    assert not gf.is_genre(value)
     assert library.clean_tag(f"genre:{value}") == ""
 
 
@@ -49,7 +50,8 @@ def test_symbol_tag_keeps_a_non_empty_key_and_retags_to_glitch_hop():
     assert library.clean_tag("genre:\u2688\u2688") == "genre:glitch hop"
     assert library.clean_tag("genre:\u2688") != "genre:glitch hop"
     assert library.clean_tag("genre:house") == "genre:house"
-    assert not gf.is_dropped("\u2688\u2688") and not gf.is_dropped("house")
+    assert not gf.is_dropped("\u2688\u2688")
+    assert not gf.is_dropped("house")
 
 
 def _live_songs():
@@ -108,7 +110,9 @@ def test_one_off_targets_are_canonical():
 def test_rave_breakbeat_hardcore_and_raggacore_folds():
     assert library.clean_tag("genre:rave") == "genre:electronic"
     assert library.clean_tag("genre:breakbeat hardcore") == "genre:breakbeat"
-    assert gf.is_dropped("raggacore") and gf.is_dropped("Raggacore") and not gf.is_genre("raggacore")
+    assert gf.is_dropped("raggacore")
+    assert gf.is_dropped("Raggacore")
+    assert not gf.is_genre("raggacore")
     assert "raggacore" not in gf.ALIASES
     assert library.clean_tag("genre:raggacore") == ""
     assert library.clean_tags(["genre:raggacore", "genre:house"]) == ["genre:house"]
@@ -157,7 +161,8 @@ def test_one_off_noise_tags_idempotent_and_owner_only(datadir):
 def test_one_off_noise_entries_remove_only_and_leave_no_song_without_a_genre():
     for sid in ("JYIaWeVL1JM", "ylpNEb31k4U", "soundcloud-193950580"):
         remove, add = migrate_tags.ONE_OFF[sid]
-        assert remove and not add
+        assert remove
+        assert not add
     songs = _noise_songs()[:3]
     migrate_tags.apply_one_off(songs)
     assert all(any(t.startswith("genre:") for t in s["tags"]) for s in songs)

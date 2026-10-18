@@ -103,13 +103,14 @@ def drop_use_notes(s: str, removed: list[str] | None = None) -> str:
         base = s.rstrip()
         m = _TAIL_GROUP.search(base)
         if not m or not is_use_note(m.group(1)):
-            return s
+            break
         head = _rstrip_seps(base[: m.start()])
         if not head.strip():
-            return s
+            break
         if removed is not None:
             removed.append(_WS.sub(" ", m.group()))
         s = head
+    return s
 
 
 def _split_segments(s: str) -> list[str]:
