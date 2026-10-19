@@ -7,8 +7,8 @@ device unless a line says so.
 
 ## Shell and navigation
 
-- IOS-001 MUST: the app has three tabs, Library, Playback, Settings (web `#/library`, `#/playback`, `#/settings`); Add is not a tab: a + button in the Library header opens the AddSheet (ADR-0009). The queue length is shown on Playback ("Queue (N)"), not as a tab badge. Status: implemented
-- IOS-002 MUST: a mini-player bar sits above the tab bar on the other tabs and opens the Playback tab on tap; it is hidden on Playback. Status: implemented
+- IOS-001 MUST: the app has three destinations in a left panel (side drawer, `Drawer.swift`) in the web order and with the web labels and icons: "Now playing", "Library", "Settings" (web `#/playback`, `#/library`, `#/settings`); there is no bottom tab bar. The drawer opens from a menu (hamburger) button at the leading edge of each root screen header ("Open menu") or a swipe from the left edge on a root screen, is 80% of the screen wide (at most 320pt) over a dimming scrim, and closes by tapping the scrim, swiping left, choosing an item (selection haptic) or Escape; the active item has the accent-tint pill; the signed-in email or "Not signed in" shows at its bottom. It is a VoiceOver modal (focus moves in, "Close menu" action, `isSelected` on the active item), items are at least 44pt, text scales to accessibility2, and with Reduce Motion it appears without sliding. Add is not a destination: a + button in the Library header opens the AddSheet (ADR-0009). The queue length is shown on Playback ("Queue (N)"). Status: implemented (verified in the simulator)
+- IOS-002 MUST: the mini-player bar is the only panel at the bottom: it shows on Library and Settings while a song is loaded, opens Playback on tap and is hidden on Playback. Status: implemented
 - IOS-003 MUST: the app runs on iPhone only, portrait only. Status: implemented
 
 ## Settings and auth

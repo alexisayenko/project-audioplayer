@@ -70,7 +70,8 @@ struct ScreenHeader<Trailing: View>: View {
     @ViewBuilder var trailing: () -> Trailing
 
     var body: some View {
-        HStack(alignment: align) {
+        HStack(alignment: align, spacing: DS.Space.space1) {
+            MenuButton()
             Text(title).font(T.display).foregroundStyle(DS.Color.ink).lineLimit(2).minimumScaleFactor(0.7)
                 .accessibilityAddTraits(.isHeader)
             Spacer(minLength: DS.Space.space2)

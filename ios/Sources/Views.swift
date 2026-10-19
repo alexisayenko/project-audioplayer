@@ -1,15 +1,15 @@
 import SwiftUI
 
 enum AppTab: Hashable, CaseIterable {
-    case library, playback, settings
+    case playback, library, settings
 
     var title: String {
-        switch self { case .library: "Library"; case .playback: "Playback"; case .settings: "Settings" }
+        switch self { case .playback: "Now playing"; case .library: "Library"; case .settings: "Settings" }
     }
     var symbol: String {
         switch self {
-        case .library: "music.note.list"
-        case .playback: "play.fill"
+        case .playback: "play"
+        case .library: "books.vertical"
         case .settings: "gearshape"
         }
     }
@@ -22,6 +22,8 @@ struct RootView: View {
     @EnvironmentObject var library: LibraryStore
     @Environment(\.scenePhase) private var scenePhase
     @State private var tab = AppTab.library
+    @State private var menuOpen = false
+    @State private var selectTick = 0
 
     var body: some View {
         ZStack {
@@ -29,14 +31,31 @@ struct RootView: View {
             page(.playback) { PlaybackView() }
             page(.settings) { SettingsView() }
         }
+        .environment(\.openMenu, { menuOpen = true })
+        .accessibilityHidden(menuOpen)
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            VStack(spacing: 12) {
-                if tab != .playback, player.current != nil { MiniPlayer { tab = .playback } }
-                DSTabBar(selection: $tab)
+            if tab != .playback, player.current != nil {
+                MiniPlayer { tab = .playback }
+                    .padding(.horizontal, DS.Space.space4).padding(.top, DS.Space.space2).padding(.bottom, DS.Space.space2)
+                    .ignoresSafeArea(.keyboard)
+                    .accessibilityHidden(menuOpen)
             }
-            .padding(.horizontal, DS.Space.space4).padding(.top, DS.Space.space2).padding(.bottom, DS.Space.space2)
-            .ignoresSafeArea(.keyboard)
         }
+        .overlay(alignment: .leading) {
+            if !menuOpen {
+                Color.clear.frame(width: DS.Space.space5).contentShape(Rectangle())
+                    .gesture(DragGesture(minimumDistance: 12).onEnded { if $0.translation.width > 40 { menuOpen = true } })
+                    .accessibilityHidden(true)
+            }
+        }
+        .overlay {
+            SideDrawer(open: menuOpen, selection: $tab, close: { menuOpen = false }) { t in
+                selectTick += 1
+                tab = t
+                menuOpen = false
+            }
+        }
+        .sensoryFeedback(.selection, trigger: selectTick)
         .dynamicTypeSize(...DynamicTypeSize.accessibility2)
         .task { await server.check(settings: settings); await server.syncCatalog(settings: settings, library: library) }
         .onChange(of: scenePhase) { _, p in
@@ -46,47 +65,13 @@ struct RootView: View {
 }
 
 extension RootView {
-    /// All three screens stay alive so a filter or search survives a tab switch.
+    /// All three screens stay alive so a filter or search survives a menu switch.
     fileprivate func page<V: View>(_ t: AppTab, @ViewBuilder _ content: () -> V) -> some View {
         content()
             .opacity(tab == t ? 1 : 0)
             .allowsHitTesting(tab == t)
             .accessibilityHidden(tab != t)
             .zIndex(tab == t ? 1 : 0)
-    }
-}
-
-/// Floating tab bar: a surface slab with the active item in an accent-tint pill.
-struct DSTabBar: View {
-    @Binding var selection: AppTab
-    @ScaledMetric(relativeTo: .title3) private var icon: CGFloat = 22
-
-    var body: some View {
-        HStack(spacing: 0) {
-            ForEach(AppTab.allCases, id: \.self) { tab in
-                let active = tab == selection
-                Button { selection = tab } label: {
-                    VStack(spacing: DS.Space.space1) {
-                        Image(systemName: tab.symbol).font(.system(size: icon, weight: active ? .semibold : .regular))
-                            .foregroundStyle(active ? DS.Color.accent : DS.Color.inkMuted)
-                            .frame(minHeight: icon + DS.Space.space1 / 2)
-                        Text(tab.title).font(.caption.weight(.medium)).lineLimit(1).minimumScaleFactor(0.7)
-                            .foregroundStyle(active ? DS.Color.accentInk : DS.Color.inkMuted)
-                    }
-                    .frame(maxWidth: .infinity, minHeight: DS.Space.hit + DS.Space.space2)
-                    .background(RoundedRectangle(cornerRadius: DS.Radius.radiusCard, style: .continuous)
-                        .fill(active ? DS.Color.accentTint : Color.clear))
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(tab.title)
-                .accessibilityAddTraits(active ? [.isSelected, .isButton] : .isButton)
-            }
-        }
-        .padding(DS.Space.space1 + 2)
-        .accessibilityElement(children: .contain)
-        .accessibilityAddTraits(.isTabBar)
-        .dsFloat(radius: DS.Radius.radiusTray)
     }
 }
 

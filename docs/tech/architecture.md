@@ -155,7 +155,7 @@ Playback tab and the Media Session lock-screen controls. The web UI uses the ses
 
 ## App (`ios/`)
 
-SwiftUI, iOS 17, iPhone only, XcodeGen (`project.yml`). Three tabs, Library, Playback,
+SwiftUI, iOS 17, iPhone only, XcodeGen (`project.yml`). Three destinations in a left drawer, Now playing, Library,
 Settings; Add is a sheet from the Library header (ADR-0009, spec [`../specs/ios.md`](../specs/ios.md)).
 Sources in `ios/Sources/`:
 
