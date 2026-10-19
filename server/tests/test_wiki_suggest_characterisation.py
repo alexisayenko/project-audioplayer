@@ -17,7 +17,7 @@ PICKS = {
 SONG = PICKS["song-rel"][0]
 ARTIST = PICKS["artist-rel"][0]
 EMPTY_OUT = {
-    "wikipedia_song": None, "wikipedia_artist": None, "wikipedia_album": None, "tags": [], "song_genres": [], "year": None,
+    "wikipedia_song": None, "wikipedia_artist": None, "wikipedia_album": None, "tags": [], "song_genres": [], "artist_genres": [], "year": None,
     "infobox_album": None, "infobox_year": None, "infobox_suggest": None,
 }
 

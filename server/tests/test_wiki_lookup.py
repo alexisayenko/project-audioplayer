@@ -154,7 +154,7 @@ def test_facts_mapping(monkeypatch):
     calls = []
     monkeypatch.setattr(wl, "_fetch_json", fake_fetch(calls))
     out = wl.facts("Q100", "Q200")
-    assert out == {"tags": ["genre:house music", "genre:electronic", "genre:disco", "country:fr"], "song_genres": ["genre:house music", "genre:electronic"], "year": 1997}
+    assert out == {"tags": ["genre:house music", "genre:electronic", "genre:disco", "country:fr"], "song_genres": ["genre:house music", "genre:electronic"], "artist_genres": ["genre:disco", "genre:house music"], "year": 1997}
     label_calls = [c for c in calls if "props=labels" in c]
     assert len(label_calls) == 1
     assert "languages=en" in label_calls[0]
@@ -220,9 +220,9 @@ def test_failures_give_nothing(monkeypatch):
         raise OSError("down")
 
     monkeypatch.setattr(wl, "_fetch_json", boom)
-    assert wl.facts("Q100", "Q200") == {"tags": [], "song_genres": [], "year": None}
+    assert wl.facts("Q100", "Q200") == {"tags": [], "song_genres": [], "artist_genres": [], "year": None}
     assert wl.from_links("https://en.wikipedia.org/wiki/X", None) == {
-        "tags": [], "song_genres": [], "year": None, "infobox_album": None, "infobox_year": None, "infobox_suggest": None,
+        "tags": [], "song_genres": [], "artist_genres": [], "year": None, "infobox_album": None, "infobox_year": None, "infobox_suggest": None,
         "wikipedia_song": "https://en.wikipedia.org/wiki/X", "wikipedia_artist": None, "wikipedia_album": None
     }
     monkeypatch.setattr(gl, "_get", fake_mb({}, {}))
@@ -238,7 +238,7 @@ def test_labels_failure_keeps_other_facts(monkeypatch):
         return base(url)
 
     monkeypatch.setattr(wl, "_fetch_json", partial)
-    assert wl.facts("Q100", "Q200") == {"tags": ["country:fr"], "song_genres": [], "year": 1997}
+    assert wl.facts("Q100", "Q200") == {"tags": ["country:fr"], "song_genres": [], "artist_genres": [], "year": 1997}
 
 
 def test_suggest_from_musicbrainz_relations(monkeypatch):
@@ -281,9 +281,9 @@ def test_year_falls_back_to_musicbrainz_first_release(monkeypatch):
 def test_suggest_disabled(monkeypatch):
     monkeypatch.setenv("AUDIO_TAG_LOOKUP", "0")
     monkeypatch.setattr(wl, "_fetch_json", lambda u: pytest.fail("called"))
-    assert wl.suggest("Daft Punk", "X") == {"wikipedia_song": None, "wikipedia_artist": None, "wikipedia_album": None, "tags": [], "song_genres": [], "year": None, "infobox_album": None, "infobox_year": None, "infobox_suggest": None}
+    assert wl.suggest("Daft Punk", "X") == {"wikipedia_song": None, "wikipedia_artist": None, "wikipedia_album": None, "tags": [], "song_genres": [], "artist_genres": [], "year": None, "infobox_album": None, "infobox_year": None, "infobox_suggest": None}
     assert wl.from_links("https://en.wikipedia.org/wiki/X", None) == {
-        "tags": [], "song_genres": [], "year": None, "infobox_album": None, "infobox_year": None, "infobox_suggest": None,
+        "tags": [], "song_genres": [], "artist_genres": [], "year": None, "infobox_album": None, "infobox_year": None, "infobox_suggest": None,
         "wikipedia_song": None, "wikipedia_artist": None, "wikipedia_album": None
     }
 
@@ -321,7 +321,8 @@ def test_preview_returns_links_tags_and_year(client, monkeypatch):
     assert body["wikipedia_artist"] == "https://en.wikipedia.org/wiki/Daft_Punk"
     assert body["suggested_year"] == 1997
     assert body["year"] == 1997
-    assert body["tags"] == ["genre:house", "genre:electronic", "genre:disco", "country:fr"]
+    assert body["tags"] == ["genre:house", "genre:electronic", "country:fr"], "electronic: the song page and (through disco) the artist page; house: only the song page, but it shares the family"
+    assert {s["genre"]: s["sources"] for s in body["genre_suggestions"]} == {"disco": ["wikipedia_artist"]}
 
 
 def test_preview_survives_total_failure(client):
@@ -375,15 +376,17 @@ def test_lookup_endpoint(client, monkeypatch):
     body = {"wikipedia_song": "https://en.wikipedia.org/wiki/Around_the_World_(Daft_Punk_song)", "wikipedia_artist": "https://www.wikidata.org/wiki/Q200"}
     r = client.post("/lookup/wikipedia", json=body, headers=H)
     assert r.status_code == 200
-    assert r.json() == {"tags": ["genre:house", "genre:electronic", "genre:disco", "country:fr"], "year": 1997}
+    assert r.json()["tags"] == ["genre:house", "genre:electronic", "country:fr"]
+    assert r.json()["year"] == 1997
+    assert r.json()["genre_suggestions"] == [{"genre": "disco", "sources": ["wikipedia_artist"], "reason": "single_source"}]
 
 
 def test_lookup_endpoint_empty_bad_and_failing(client):
-    assert client.post("/lookup/wikipedia", json={}, headers=H).json() == {"tags": [], "year": None}
+    assert client.post("/lookup/wikipedia", json={}, headers=H).json() == {"tags": [], "genre_suggestions": [], "year": None}
     bad = {"wikipedia_song": "https://evil.example/wiki/X", "wikipedia_artist": ""}
-    assert client.post("/lookup/wikipedia", json=bad, headers=H).json() == {"tags": [], "year": None}
+    assert client.post("/lookup/wikipedia", json=bad, headers=H).json() == {"tags": [], "genre_suggestions": [], "year": None}
     ok = {"wikipedia_song": "https://en.wikipedia.org/wiki/X"}
-    assert client.post("/lookup/wikipedia", json=ok, headers=H).json() == {"tags": [], "year": None}
+    assert client.post("/lookup/wikipedia", json=ok, headers=H).json() == {"tags": [], "genre_suggestions": [], "year": None}
     assert client.post("/lookup/wikipedia", json={}).status_code == 401
 
 

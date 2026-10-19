@@ -1,0 +1,41 @@
+{
+  "_note": "Recorded source evidence of 2026-10-19 (the EH1 measurement): the genres each independent group named, already mapped to the vocabulary. Wikipedia song = infobox plus Wikidata of the song page; Wikipedia artist = Wikidata of the artist (the artist infobox is read only when the song page has none).",
+  "taylor_dayne_tell_it_to_my_heart": {
+    "groups": {
+      "musicbrainz": ["dance pop", "pop", "electronic"],
+      "wikipedia_song": ["dance pop", "synthpop", "freestyle", "hi-nrg"],
+      "wikipedia_artist": ["pop", "soul", "house", "contemporary r&b"],
+      "youtube": ["acoustic", "instrumental"]
+    },
+    "applied": ["electronic", "dance pop", "pop", "hi-nrg", "synthpop"],
+    "suggested": ["freestyle", "soul", "house", "contemporary r&b"]
+  },
+  "massive_attack_angel": {
+    "groups": {
+      "musicbrainz": ["trip hop", "electronic", "downtempo"],
+      "wikipedia_song": ["trip hop", "industrial rock", "electronic"],
+      "wikipedia_artist": ["electronic"]
+    },
+    "applied": ["trip hop", "electronic"],
+    "suggested": ["industrial rock"]
+  },
+  "prodigy_voodoo_people_remaster": {
+    "groups": {
+      "musicbrainz": ["big beat", "electronic", "breakbeat"],
+      "wikipedia_song": ["techno", "breakbeat", "hardcore"],
+      "wikipedia_artist": ["alternative rock", "techno", "electronic", "big beat", "breakbeat", "electronic rock"]
+    },
+    "applied": ["big beat", "techno", "electronic"],
+    "suggested": ["hardcore", "alternative rock", "electronic rock"]
+  },
+  "prodigy_voodoo_people_pendulum_remix": {
+    "versioned": true,
+    "groups": {
+      "musicbrainz": ["big beat", "electronic", "breakbeat"],
+      "wikipedia_song": ["techno", "breakbeat", "hardcore"],
+      "wikipedia_artist": ["alternative rock", "techno", "electronic", "big beat", "breakbeat", "electronic rock"]
+    },
+    "applied": [],
+    "suggested": ["breakbeat", "electronic", "big beat", "techno", "hardcore", "alternative rock", "electronic rock"]
+  }
+}

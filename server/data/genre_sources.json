@@ -1,0 +1,7037 @@
+{
+ "_meta": {
+  "generated_at": "2026-10-19T13:49:24.071Z",
+  "counts": {
+   "genres": 549,
+   "discogs_true": 486,
+   "discogs_false": 63,
+   "musicbrainz": 455,
+   "wikipedia": 472,
+   "apple_music": 142
+  },
+  "matches_by_kind": {
+   "wikipedia": {
+    "name": 465,
+    "synonym": 7
+   },
+   "musicbrainz": {
+    "name": 451,
+    "synonym": 4
+   },
+   "apple_music": {
+    "name": 138,
+    "synonym": 4
+   }
+  },
+  "catalogue_sizes": {
+   "musicbrainz": 2216,
+   "apple_music": 525,
+   "wikipedia": 678
+  },
+  "unreachable": [],
+  "link_rules": {
+   "note": "URLs are never stored; server/app/genre_sources.py genre_source_links builds them (GET /genres/vocabulary source_links). Order: wikipedia, apple_music, spotify, discogs, musicbrainz.",
+   "wikipedia": "page https://en.wikipedia.org/wiki/<title> when matched, else search https://en.wikipedia.org/w/index.php?search=<key> music genre",
+   "apple_music": "search https://music.apple.com/us/search?term=<matched Apple name or key> (Apple genre pages no longer resolve: they redirect to the search page)",
+   "spotify": "not stored (Spotify has no genre catalogue); always search https://open.spotify.com/search/genre%3A%22<key>%22",
+   "discogs": "only when the genre is in Discogs: search https://www.discogs.com/search/?style=<name>&type=release (genre= for a family); none otherwise",
+   "musicbrainz": "page https://musicbrainz.org/genre/<id> when matched, else none"
+  },
+  "how": "A genre matches a catalogue entry when the normalised name is equal (match: name), else when a normalised listed synonym or display name is equal (match: synonym); entries from genre_sources_manual.json are match: manual. Normalisation: lowercase, accents folded, '&' read as 'and', hyphens, spaces and punctuation ignored, a trailing 'music' word dropped. Wikipedia: Wikidata items found by label search that are an instance or subclass of 'music genre' (Q188451) and have an English Wikipedia article. Several candidates, or a target claimed by two genres without exactly one name match, go to genre_sources_review.json and are not stored. Discogs is the genre_levels.json flag (true for the 11 families); discogs_name is Discogs's own spelling where it differs from the key."
+ },
+ "aboriginal": {
+  "discogs": true,
+  "wikipedia": {
+   "title": "Indigenous music",
+   "wikidata": "Q6024704",
+   "match": "name"
+  }
+ },
+ "abstract": {
+  "discogs": true
+ },
+ "acid": {
+  "discogs": true
+ },
+ "acid house": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "54c01942-22fd-4184-9877-1db0089b18f1",
+   "name": "acid house",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Acid house",
+   "wikidata": "Q341364",
+   "match": "name"
+  }
+ },
+ "acid jazz": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "7dc2b20f-3953-4874-b9bf-41b8ba06d20c",
+   "name": "acid jazz",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Acid jazz",
+   "wikidata": "Q221772",
+   "match": "name"
+  }
+ },
+ "acid rock": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "ef063b60-3206-466c-a7d8-7d317fcdf9fc",
+   "name": "acid rock",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Acid rock",
+   "wikidata": "Q236932",
+   "match": "name"
+  }
+ },
+ "acid trance": {
+  "discogs": false,
+  "musicbrainz": {
+   "id": "267433bc-721d-4d60-8455-e6ed1e0b922f",
+   "name": "acid trance",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Acid trance",
+   "wikidata": "Q481900",
+   "match": "name"
+  }
+ },
+ "acoustic": {
+  "discogs": true,
+  "wikipedia": {
+   "title": "Acoustic music",
+   "wikidata": "Q286080",
+   "match": "name"
+  }
+ },
+ "african": {
+  "discogs": true,
+  "apple_music": {
+   "id": "1203",
+   "name": "African",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Music of Africa",
+   "wikidata": "Q369820",
+   "match": "name"
+  }
+ },
+ "afro-cuban": {
+  "discogs": true,
+  "wikipedia": {
+   "title": "Music of African heritage in Cuba",
+   "wikidata": "Q20715191",
+   "match": "name"
+  }
+ },
+ "afro-cuban jazz": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "cdb11433-1ff1-4c88-be16-717567e1342f",
+   "name": "afro-cuban jazz",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Afro-Cuban jazz",
+   "wikidata": "Q3163340",
+   "match": "name"
+  }
+ },
+ "afrobeat": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "fcc58a18-9326-4c92-8b29-c294d44379c3",
+   "name": "afrobeat",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1177",
+   "name": "Afro-Beat",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Afrobeat",
+   "wikidata": "Q388296",
+   "match": "name"
+  }
+ },
+ "alternative metal": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "7983ff25-ddf9-411e-a7f9-6cca238bff79",
+   "name": "alternative metal",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Alternative metal",
+   "wikidata": "Q20378",
+   "match": "name"
+  }
+ },
+ "alternative pop": {
+  "discogs": false,
+  "musicbrainz": {
+   "id": "d3ebe947-7c03-43f5-b333-09379881b0f6",
+   "name": "alternative pop",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Alternative pop",
+   "wikidata": "Q95469495",
+   "match": "name"
+  }
+ },
+ "alternative r&b": {
+  "discogs": false,
+  "musicbrainz": {
+   "id": "4e03fb35-d571-4111-824d-88c9f8a3d0c9",
+   "name": "alternative r&b",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Alternative R&B",
+   "wikidata": "Q7118426",
+   "match": "name"
+  }
+ },
+ "alternative rock": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "ceeaa283-5d7b-4202-8d1d-e25d116b2a18",
+   "name": "alternative rock",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Alternative rock",
+   "wikidata": "Q11366",
+   "match": "name"
+  }
+ },
+ "amapiano": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "de3f8f85-1d8a-499f-9a1e-edad65a26dad",
+   "name": "amapiano",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "42",
+   "name": "Amapiano",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Amapiano",
+   "wikidata": "Q85741139",
+   "match": "name"
+  }
+ },
+ "ambient": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "608b0471-7531-4854-a348-e698c69cb699",
+   "name": "ambient",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1056",
+   "name": "Ambient",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Ambient music",
+   "wikidata": "Q193207",
+   "match": "name"
+  }
+ },
+ "ambient house": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "cc2327cf-88a3-476b-950c-296c382eabd9",
+   "name": "ambient house",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Ambient house",
+   "wikidata": "Q2465085",
+   "match": "name"
+  }
+ },
+ "anarcho-punk": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "e12fe025-4c13-485e-a2fe-ad5bf2cd75eb",
+   "name": "anarcho-punk",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Anarcho-punk",
+   "wikidata": "Q486365",
+   "match": "name"
+  }
+ },
+ "andean music": {
+  "discogs": true,
+  "wikipedia": {
+   "title": "Andean music",
+   "wikidata": "Q492096",
+   "match": "name"
+  }
+ },
+ "aor": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "aca1caab-09d1-44b5-ae84-590ff1d218fc",
+   "name": "aor",
+   "match": "name"
+  }
+ },
+ "arena rock": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "26af3760-750a-4b5e-a699-78c87697585a",
+   "name": "arena rock",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1146",
+   "name": "Arena Rock",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Arena rock",
+   "wikidata": "Q379033",
+   "match": "name"
+  }
+ },
+ "art pop": {
+  "discogs": false,
+  "musicbrainz": {
+   "id": "930ef127-3653-4677-9b95-ecc90c7c1a14",
+   "name": "art pop",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Art pop",
+   "wikidata": "Q25094849",
+   "match": "name"
+  }
+ },
+ "art rock": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "b7ef058e-6d83-4ca4-8123-9724bff4648b",
+   "name": "art rock",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Art rock",
+   "wikidata": "Q217467",
+   "match": "name"
+  }
+ },
+ "art song": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "a93d203b-7399-4bcb-8600-579a508698d9",
+   "name": "art song",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "100001",
+   "name": "Art Song",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Art song",
+   "wikidata": "Q4797274",
+   "match": "name"
+  }
+ },
+ "atmospheric black metal": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "d14a4c4a-bea5-4b08-b945-59b048acd2d5",
+   "name": "atmospheric black metal",
+   "match": "name"
+  }
+ },
+ "avant-garde jazz": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "8d901306-d4a3-436c-a1c3-75550e5b6eaf",
+   "name": "avant-garde jazz",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1106",
+   "name": "Avant-Garde Jazz",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Avant-garde jazz",
+   "wikidata": "Q790188",
+   "match": "name"
+  }
+ },
+ "avantgarde": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "b1c0c2ad-e5ae-4bb6-a1be-d66e195fd2d7",
+   "name": "avant-garde",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1017",
+   "name": "Avant-Garde",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Avant-garde music",
+   "wikidata": "Q2332751",
+   "match": "name"
+  }
+ },
+ "axé": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "32cb036c-1f11-47e9-869e-ede70c307cfe",
+   "name": "axé",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1220",
+   "name": "Axé",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Axé",
+   "wikidata": "Q1435485",
+   "match": "name"
+  }
+ },
+ "bachata": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "b413acf5-112a-4d44-a61f-9abe28f0dfac",
+   "name": "bachata",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Bachata (music)",
+   "wikidata": "Q40461",
+   "match": "name"
+  }
+ },
+ "baião": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "8baa6f41-4b0a-476b-9b38-fcb296f07fd1",
+   "name": "baião",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Baião (music)",
+   "wikidata": "Q2879962",
+   "match": "name"
+  }
+ },
+ "bakersfield sound": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "a9364233-6158-4fab-bbc2-35579a74378e",
+   "name": "bakersfield sound",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Bakersfield sound",
+   "wikidata": "Q804401",
+   "match": "name"
+  }
+ },
+ "balearic": {
+  "discogs": true,
+  "wikipedia": {
+   "title": "Balearic beat",
+   "wikidata": "Q2866725",
+   "match": "name"
+  }
+ },
+ "ballad": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "17b58d38-1110-4f5a-9412-b0314329622b",
+   "name": "ballad",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Sentimental ballad",
+   "wikidata": "Q1077388",
+   "match": "name"
+  }
+ },
+ "ballroom": {
+  "discogs": true
+ },
+ "baltimore club": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "6889a005-a736-4131-b399-510094d86db0",
+   "name": "baltimore club",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Baltimore club",
+   "wikidata": "Q4852979",
+   "match": "name"
+  }
+ },
+ "banda": {
+  "discogs": true,
+  "wikipedia": {
+   "title": "Banda music",
+   "wikidata": "Q2812726",
+   "match": "name"
+  }
+ },
+ "barbershop": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "f8f6157d-5ace-4844-90c2-2e2a829b8932",
+   "name": "barbershop",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Barbershop music",
+   "wikidata": "Q807820",
+   "match": "name"
+  }
+ },
+ "baroque": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "9e44c2c9-8c44-4aa6-9de3-0f3e75b49f1b",
+   "name": "baroque",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "50000201",
+   "name": "Baroque",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Baroque music",
+   "wikidata": "Q8361",
+   "match": "name"
+  }
+ },
+ "baroque pop": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "150eb95a-7739-4fde-a5fe-b62ca576a928",
+   "name": "baroque pop",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Baroque pop",
+   "wikidata": "Q46046",
+   "match": "name"
+  }
+ },
+ "bass music": {
+  "discogs": true,
+  "apple_music": {
+   "id": "100015",
+   "name": "Bass",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Bass music",
+   "wikidata": "Q96740854",
+   "match": "name"
+  }
+ },
+ "bassline": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "8ae6fbbe-2dd0-432e-a176-6678f48dffb4",
+   "name": "bassline",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Bassline (music genre)",
+   "wikidata": "Q4846346",
+   "match": "name"
+  }
+ },
+ "batucada": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "5ed45c54-2d5c-4b5f-adc2-55adb19269ea",
+   "name": "batucada",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Batucada",
+   "wikidata": "Q19816",
+   "match": "name"
+  }
+ },
+ "beat": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "decc967b-5b70-453b-9107-0b4e7a00505f",
+   "name": "beat music",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Beat music",
+   "wikidata": "Q546264",
+   "match": "name"
+  }
+ },
+ "beatbox": {
+  "discogs": true,
+  "wikipedia": {
+   "title": "Beatboxing",
+   "wikidata": "Q213608",
+   "match": "name"
+  }
+ },
+ "beguine": {
+  "discogs": true,
+  "wikipedia": {
+   "title": "Biguine",
+   "wikidata": "Q814402",
+   "match": "name"
+  }
+ },
+ "berlin-school": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "ae93e318-c563-4bb7-9a48-eb2f4e4df96f",
+   "name": "berlin school",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Berlin School of electronic music",
+   "wikidata": "Q530750",
+   "match": "name"
+  }
+ },
+ "bhangra": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "59a849e1-73fe-428d-8a61-3788875f9644",
+   "name": "bhangra",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Bhangra (music)",
+   "wikidata": "Q854844",
+   "match": "name"
+  }
+ },
+ "big band": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "e7bb9a21-9556-4b85-bc78-5f69a3d0577d",
+   "name": "big band",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1052",
+   "name": "Big Band",
+   "match": "name"
+  }
+ },
+ "big beat": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "aac07ae0-8acf-4249-b5c0-2762b53947a2",
+   "name": "big beat",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Big beat",
+   "wikidata": "Q858579",
+   "match": "name"
+  }
+ },
+ "black metal": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "12568698-97cc-49a9-80ab-9c5e3fe4dd33",
+   "name": "black metal",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Black metal",
+   "wikidata": "Q132438",
+   "match": "name"
+  }
+ },
+ "blackgaze": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "a687ea57-487a-440d-b5fd-2f1b2f8b1f57",
+   "name": "blackgaze",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Blackgaze",
+   "wikidata": "Q16855754",
+   "match": "name"
+  }
+ },
+ "bleep": {
+  "discogs": true,
+  "wikipedia": {
+   "title": "Bleep techno",
+   "wikidata": "Q106522080",
+   "match": "name"
+  }
+ },
+ "bluegrass": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "a1a7b40d-f6e6-48c1-a5fc-b15af73d7381",
+   "name": "bluegrass",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1035",
+   "name": "Bluegrass",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Bluegrass music",
+   "wikidata": "Q213714",
+   "match": "name"
+  }
+ },
+ "blues": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "fe12b346-a10e-450f-bf81-fa20894b5ea2",
+   "name": "blues",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "2",
+   "name": "Blues",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Blues",
+   "wikidata": "Q9759",
+   "match": "name"
+  }
+ },
+ "blues rock": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "58e325d5-54fd-4e98-b39a-3aa6bc319273",
+   "name": "blues rock",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1147",
+   "name": "Blues-Rock",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Blues rock",
+   "wikidata": "Q193355",
+   "match": "name"
+  }
+ },
+ "bolero": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "49fa872d-561c-4f8a-aea4-fbe7f67e1bd6",
+   "name": "bolero",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "100029",
+   "name": "Bolero",
+   "match": "name"
+  }
+ },
+ "bollywood": {
+  "discogs": true,
+  "apple_music": {
+   "id": "1263",
+   "name": "Bollywood",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Hindi film music",
+   "wikidata": "Q6942022",
+   "match": "name"
+  }
+ },
+ "bomba": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "bfcda809-1a59-49a5-abe9-e51d26ac8594",
+   "name": "bomba",
+   "match": "name"
+  }
+ },
+ "boogaloo": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "e195386e-6140-4b20-be18-4fbe4fd6ea5a",
+   "name": "boogaloo",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Boogaloo",
+   "wikidata": "Q892958",
+   "match": "name"
+  }
+ },
+ "boogie": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "10fd28e3-51aa-4110-a3dd-032d8a141f99",
+   "name": "boogie",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Boogie (genre)",
+   "wikidata": "Q4942839",
+   "match": "name"
+  }
+ },
+ "boogie woogie": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "310c2c5c-38a7-49ce-9d24-6f27e22bd203",
+   "name": "boogie-woogie",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Boogie-woogie",
+   "wikidata": "Q212952",
+   "match": "name"
+  }
+ },
+ "boom bap": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "d8048b43-9edb-4e1a-aa88-bb91fa847d4a",
+   "name": "boom bap",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Boom bap",
+   "wikidata": "Q529742",
+   "match": "name"
+  }
+ },
+ "bop": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "ac30756b-55a7-4dc3-8908-8f94c93318d0",
+   "name": "bebop",
+   "match": "synonym"
+  },
+  "apple_music": {
+   "id": "1053",
+   "name": "Bop",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Bebop",
+   "wikidata": "Q105513",
+   "match": "synonym"
+  }
+ },
+ "bossa nova": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "573a284f-2ae3-4636-af36-10fc1078d295",
+   "name": "bossa nova",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1221",
+   "name": "Bossa Nova",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Bossa nova",
+   "wikidata": "Q486263",
+   "match": "name"
+  }
+ },
+ "bounce": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "ccd103a5-bf71-43a2-b715-244a81ac9950",
+   "name": "bounce",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Bounce music",
+   "wikidata": "Q4949812",
+   "match": "name"
+  }
+ },
+ "breakbeat": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "3b8f3f65-6caa-47c8-b076-fa59dfb69c43",
+   "name": "breakbeat",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1044",
+   "name": "Breakbeat",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Breakbeat",
+   "wikidata": "Q663519",
+   "match": "name"
+  }
+ },
+ "breakcore": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "8aad8a03-be38-48e4-aa43-5ca0f826c569",
+   "name": "breakcore",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Breakcore",
+   "wikidata": "Q903735",
+   "match": "name"
+  }
+ },
+ "breaks": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "63eddc75-dbad-4a05-a365-e30d1e87bca8",
+   "name": "breaks",
+   "match": "name"
+  }
+ },
+ "british invasion": {
+  "discogs": false,
+  "apple_music": {
+   "id": "1148",
+   "name": "British Invasion",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "British Invasion",
+   "wikidata": "Q211418",
+   "match": "name"
+  }
+ },
+ "britpop": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "f1c9b874-7ef2-4e79-9419-c0bcb5f33a30",
+   "name": "britpop",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1132",
+   "name": "Britpop",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Britpop",
+   "wikidata": "Q189045",
+   "match": "name"
+  }
+ },
+ "broken beat": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "cf9daa9d-74e2-4eff-b0eb-7269bbca6501",
+   "name": "broken beat",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Broken beat",
+   "wikidata": "Q2406633",
+   "match": "name"
+  }
+ },
+ "brutal death metal": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "12d11d01-cecc-4f9b-8d3a-99e4590952fe",
+   "name": "brutal death metal",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Brutal death metal",
+   "wikidata": "Q2265866",
+   "match": "name"
+  }
+ },
+ "bubblegum": {
+  "discogs": true,
+  "wikipedia": {
+   "title": "Bubblegum music",
+   "wikidata": "Q997481",
+   "match": "name"
+  }
+ },
+ "cabaret": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "b8a07a90-2b50-4257-8f1e-69846b582432",
+   "name": "cabaret",
+   "match": "name"
+  }
+ },
+ "cajun": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "0af301ff-3e33-4f5f-934f-5916cfc04157",
+   "name": "cajun",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1179",
+   "name": "Cajun",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Cajun music",
+   "wikidata": "Q1026089",
+   "match": "name"
+  }
+ },
+ "calypso": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "b44a8ffd-e717-4d73-99ea-9fe5d245339d",
+   "name": "calypso",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1276",
+   "name": "Calypso",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Calypso music",
+   "wikidata": "Q752785",
+   "match": "name"
+  }
+ },
+ "candombe": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "b72d3108-3360-447e-bb08-0895deff7ae5",
+   "name": "candombe",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Candombe",
+   "wikidata": "Q1033073",
+   "match": "name"
+  }
+ },
+ "cantata": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "ce70ed18-0f2d-47a9-bcee-45a1b3cc3225",
+   "name": "cantata",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "100006",
+   "name": "Cantata",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Cantata",
+   "wikidata": "Q174873",
+   "match": "name"
+  }
+ },
+ "cantopop": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "78caea3b-84fd-4664-878a-fe70a6e1d9d1",
+   "name": "cantopop",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Cantopop",
+   "wikidata": "Q853873",
+   "match": "name"
+  }
+ },
+ "canzone napoletana": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "44638d99-fd4a-424c-aaeb-48d849bad72a",
+   "name": "canzone napoletana",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Canzone napoletana",
+   "wikidata": "Q1195630",
+   "match": "name"
+  }
+ },
+ "carnatic": {
+  "discogs": true,
+  "wikipedia": {
+   "title": "Carnatic music",
+   "wikidata": "Q956883",
+   "match": "name"
+  }
+ },
+ "catalan music": {
+  "discogs": true,
+  "wikipedia": {
+   "title": "Music of Catalonia",
+   "wikidata": "Q3808055",
+   "match": "name"
+  }
+ },
+ "celtic": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "34edc6ac-d431-4b36-be15-ecd17533e5e2",
+   "name": "celtic",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1180",
+   "name": "Celtic",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Celtic music",
+   "wikidata": "Q854451",
+   "match": "name"
+  }
+ },
+ "cha-cha": {
+  "discogs": true,
+  "wikipedia": {
+   "title": "Cha-cha-chá (music)",
+   "wikidata": "Q16986699",
+   "match": "name"
+  }
+ },
+ "chamber music": {
+  "discogs": true,
+  "apple_music": {
+   "id": "1019",
+   "name": "Chamber Music",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Chamber music",
+   "wikidata": "Q189201",
+   "match": "name"
+  }
+ },
+ "champeta": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "55d05e59-4829-4e98-8cb7-5d769cafb576",
+   "name": "champeta",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Champeta",
+   "wikidata": "Q1061165",
+   "match": "name"
+  }
+ },
+ "chanson": {
+  "discogs": true,
+  "apple_music": {
+   "id": "50000193",
+   "name": "Chanson",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Chanson",
+   "wikidata": "Q1062400",
+   "match": "name"
+  }
+ },
+ "charanga": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "566b35dc-6b54-4ebe-9837-87a3850d2703",
+   "name": "charanga",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Quebradita",
+   "wikidata": "Q3413969",
+   "match": "name"
+  }
+ },
+ "chicago blues": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "f1e26a78-3e85-4365-a34d-dc4b5389b29d",
+   "name": "chicago blues",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1007",
+   "name": "Chicago Blues",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Chicago blues",
+   "wikidata": "Q1071873",
+   "match": "name"
+  }
+ },
+ "chillwave": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "18d52a87-bbbf-42f0-8338-189c8c314523",
+   "name": "chillwave",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Chillwave",
+   "wikidata": "Q2626684",
+   "match": "name"
+  }
+ },
+ "chinese classical": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "4e4c4eac-fb33-4d31-8797-26adc0da0341",
+   "name": "chinese classical",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1233",
+   "name": "Chinese Classical",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Chinese classical music",
+   "wikidata": "Q106634987",
+   "match": "name"
+  }
+ },
+ "chiptune": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "103a65bb-35d9-4d27-9c9b-f35a458621ba",
+   "name": "chiptune",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Chiptune",
+   "wikidata": "Q135637",
+   "match": "name"
+  }
+ },
+ "choral": {
+  "discogs": true,
+  "apple_music": {
+   "id": "1021",
+   "name": "Choral",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Choral music",
+   "wikidata": "Q1076513",
+   "match": "name"
+  }
+ },
+ "choro": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "600367ac-a24d-49dc-bd5c-d7e5b4d24d4c",
+   "name": "choro",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1222",
+   "name": "Choro",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Choro",
+   "wikidata": "Q1076539",
+   "match": "name"
+  }
+ },
+ "city pop": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "5fef47af-772b-48e2-8e49-855f7d999e81",
+   "name": "city pop",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "City pop",
+   "wikidata": "Q11307326",
+   "match": "name"
+  }
+ },
+ "classic rock": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "93244085-20e5-4f16-9067-1d19143b3810",
+   "name": "classic rock",
+   "match": "name"
+  }
+ },
+ "classical": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "6ed4e4d1-9a97-4e2c-b8df-083754f154f4",
+   "name": "classical",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "5",
+   "name": "Classical",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Classical music",
+   "wikidata": "Q9730",
+   "match": "name"
+  }
+ },
+ "cloud rap": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "2346fb3e-8546-4119-a929-601db8e0a733",
+   "name": "cloud rap",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Cloud rap",
+   "wikidata": "Q16829781",
+   "match": "name"
+  }
+ },
+ "coldwave": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "6f411023-a59f-4546-b8a3-ae8127911cec",
+   "name": "coldwave",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Cold wave (music)",
+   "wikidata": "Q2343562",
+   "match": "name"
+  }
+ },
+ "college rock": {
+  "discogs": false,
+  "apple_music": {
+   "id": "1001",
+   "name": "College Rock",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "College rock",
+   "wikidata": "Q783097",
+   "match": "name"
+  }
+ },
+ "compas": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "cbb6cb49-6671-46ba-8d35-c5f703d881a3",
+   "name": "compas",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Compas",
+   "wikidata": "Q2726026",
+   "match": "name"
+  }
+ },
+ "concerto": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "7969288f-182d-4cef-b68d-870cc4c753da",
+   "name": "concerto",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "50000173",
+   "name": "Concerto",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Concerto",
+   "wikidata": "Q9748",
+   "match": "name"
+  }
+ },
+ "conjunto": {
+  "discogs": true,
+  "wikipedia": {
+   "title": "Conjunto",
+   "wikidata": "Q4797",
+   "match": "name"
+  }
+ },
+ "conscious": {
+  "discogs": true
+ },
+ "contemporary": {
+  "discogs": true
+ },
+ "contemporary jazz": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "e2b06d21-13df-4a48-aa81-6ddd99344dc7",
+   "name": "contemporary jazz",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1107",
+   "name": "Contemporary Jazz",
+   "match": "name"
+  }
+ },
+ "contemporary r&b": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "4bb4043a-0ee5-4b84-93fa-6ba4567a6ba0",
+   "name": "contemporary r&b",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1136",
+   "name": "Contemporary R&B",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Contemporary R&B",
+   "wikidata": "Q850412",
+   "match": "name"
+  }
+ },
+ "cool jazz": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "5fc86669-d9ba-4716-8090-eff39081090e",
+   "name": "cool jazz",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1209",
+   "name": "Cool Jazz",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Cool jazz",
+   "wikidata": "Q327547",
+   "match": "name"
+  }
+ },
+ "corrido": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "d60ef35c-e367-4272-9b25-e3f2ecebb2aa",
+   "name": "corrido",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Corrido",
+   "wikidata": "Q869210",
+   "match": "name"
+  }
+ },
+ "country": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "5f665615-7fb3-49d8-b541-62a7b239edbe",
+   "name": "country",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "6",
+   "name": "Country",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Country music",
+   "wikidata": "Q83440",
+   "match": "name"
+  }
+ },
+ "country blues": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "1a46845c-ed4d-48c5-a93f-45bb85cf56d1",
+   "name": "country blues",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1011",
+   "name": "Country Blues",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Country blues",
+   "wikidata": "Q649823",
+   "match": "name"
+  }
+ },
+ "country rock": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "fb07b1e3-411d-4146-a0d6-3479c0e7557b",
+   "name": "country rock",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Country rock",
+   "wikidata": "Q613408",
+   "match": "name"
+  }
+ },
+ "cretan": {
+  "discogs": true,
+  "wikipedia": {
+   "title": "Music of Crete",
+   "wikidata": "Q3564665",
+   "match": "name"
+  }
+ },
+ "crunk": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "44c375ed-1041-4aa7-a2a0-05fb28135da3",
+   "name": "crunk",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Crunk",
+   "wikidata": "Q936573",
+   "match": "name"
+  }
+ },
+ "crust": {
+  "discogs": true,
+  "wikipedia": {
+   "title": "Crust punk",
+   "wikidata": "Q825769",
+   "match": "name"
+  }
+ },
+ "cuatro": {
+  "discogs": true
+ },
+ "cubano": {
+  "discogs": true,
+  "wikipedia": {
+   "title": "Music of Cuba",
+   "wikidata": "Q1544863",
+   "match": "name"
+  }
+ },
+ "cumbia": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "7cd4173c-fef8-4e99-a527-98a25b6487c0",
+   "name": "cumbia",
+   "match": "name"
+  }
+ },
+ "cut-up/dj": {
+  "discogs": true
+ },
+ "dance pop": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "b739a895-85ed-4ad3-8717-4e9ef5387dd8",
+   "name": "dance-pop",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Dance-pop",
+   "wikidata": "Q211756",
+   "match": "name"
+  }
+ },
+ "dance-punk": {
+  "discogs": false,
+  "musicbrainz": {
+   "id": "509c006f-67c2-4c54-a568-d2b415cb0642",
+   "name": "dance-punk",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Dance-punk",
+   "wikidata": "Q1643549",
+   "match": "name"
+  }
+ },
+ "dance-rock": {
+  "discogs": false,
+  "musicbrainz": {
+   "id": "2c473395-9cd5-465d-8d85-c308de067c04",
+   "name": "dance-rock",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Dance-rock",
+   "wikidata": "Q2281409",
+   "match": "name"
+  }
+ },
+ "dancehall": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "6c3503e3-bae3-42de-9e4c-7861f2053fbe",
+   "name": "dancehall",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Dancehall",
+   "wikidata": "Q474027",
+   "match": "name"
+  }
+ },
+ "dangdut": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "a05721d4-22e3-4763-8a65-218f7e023495",
+   "name": "dangdut",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1274",
+   "name": "Dangdut",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Dangdut",
+   "wikidata": "Q1159539",
+   "match": "name"
+  }
+ },
+ "dark ambient": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "01ecf8e4-7f7a-4145-ae97-504d3109633d",
+   "name": "dark ambient",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Dark ambient",
+   "wikidata": "Q756956",
+   "match": "name"
+  }
+ },
+ "dark electro": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "24db3574-7c54-4d9b-b238-8d17eb7e8d63",
+   "name": "dark electro",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Dark electro",
+   "wikidata": "Q4155078",
+   "match": "name"
+  }
+ },
+ "dark jazz": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "fd7b5582-e69c-40ad-90b1-d31db33be612",
+   "name": "dark jazz",
+   "match": "name"
+  }
+ },
+ "dark metal": {
+  "discogs": false
+ },
+ "dark psytrance": {
+  "discogs": false,
+  "musicbrainz": {
+   "id": "9e70bec0-18b3-4bcd-b96c-1a607661f3b8",
+   "name": "dark psytrance",
+   "match": "name"
+  }
+ },
+ "darksynth": {
+  "discogs": false,
+  "musicbrainz": {
+   "id": "c3632505-be72-487c-8430-f85bd6b3f7c9",
+   "name": "darksynth",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Darksynth",
+   "wikidata": "Q60973191",
+   "match": "name"
+  }
+ },
+ "darkwave": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "c4a72fcd-e291-43c8-a546-9ce1764ff31b",
+   "name": "dark wave",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Dark wave",
+   "wikidata": "Q3840596",
+   "match": "name"
+  }
+ },
+ "death metal": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "eacfa027-2fad-413f-a2f1-80fa43674f0b",
+   "name": "death metal",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Death metal",
+   "wikidata": "Q483251",
+   "match": "name"
+  }
+ },
+ "death-doom": {
+  "discogs": false,
+  "wikipedia": {
+   "title": "Death-doom",
+   "wikidata": "Q2089511",
+   "match": "name"
+  }
+ },
+ "deathcore": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "d39cbc30-7dc6-4194-8f99-6d35dd602451",
+   "name": "deathcore",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Deathcore",
+   "wikidata": "Q475221",
+   "match": "name"
+  }
+ },
+ "deathrock": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "d5e21e4f-f6fe-464d-b269-14cf670a6949",
+   "name": "deathrock",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Deathrock",
+   "wikidata": "Q1164252",
+   "match": "name"
+  }
+ },
+ "deep house": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "7fa479e7-3d35-40d1-96f7-b619a5ca9d9f",
+   "name": "deep house",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Deep house",
+   "wikidata": "Q874038",
+   "match": "name"
+  }
+ },
+ "deep techno": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "6d9ae1bf-be62-4cf4-aa70-f6f831eea80f",
+   "name": "deep techno",
+   "match": "name"
+  }
+ },
+ "deep trance": {
+  "discogs": false
+ },
+ "delta blues": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "b0702eb4-2951-4e1f-bbcd-dd9b0ec63c7c",
+   "name": "delta blues",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1012",
+   "name": "Delta Blues",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Delta blues",
+   "wikidata": "Q1127539",
+   "match": "name"
+  }
+ },
+ "depressive black metal": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "8b6f2489-4f8a-4bff-80d6-9f39ef672493",
+   "name": "depressive black metal",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Depressive suicidal black metal",
+   "wikidata": "Q28949059",
+   "match": "name"
+  }
+ },
+ "descarga": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "396d532a-19e2-47da-9f05-f98ff961407d",
+   "name": "descarga",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Descarga",
+   "wikidata": "Q28219760",
+   "match": "name"
+  }
+ },
+ "desert blues": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "47394ce1-1a4d-45d2-8ee2-9b6340bb124a",
+   "name": "desert blues",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Desert blues",
+   "wikidata": "Q7800608",
+   "match": "name"
+  }
+ },
+ "disco": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "a04d680b-b5c5-4f6a-87a3-f9f1ff98e3ea",
+   "name": "disco",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1137",
+   "name": "Disco",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Disco",
+   "wikidata": "Q58339",
+   "match": "name"
+  }
+ },
+ "disco polo": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "303b85e8-1b07-4b39-9af8-a87fb984eb30",
+   "name": "disco polo",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Disco polo",
+   "wikidata": "Q1185390",
+   "match": "name"
+  }
+ },
+ "dixieland": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "a5a946eb-e068-42d5-bf17-cb73bfc6c192",
+   "name": "dixieland",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1109",
+   "name": "Dixieland",
+   "match": "name"
+  }
+ },
+ "dj battle tool": {
+  "discogs": true
+ },
+ "donk": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "7c42bdd8-e8c6-42d4-930b-02f04abc9f8a",
+   "name": "donk",
+   "match": "name"
+  }
+ },
+ "doo-wop": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "1696f12e-9f01-4309-be9d-116e31ac65b7",
+   "name": "doo-wop",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1138",
+   "name": "Doo Wop",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Doo-wop",
+   "wikidata": "Q546359",
+   "match": "name"
+  }
+ },
+ "doom metal": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "db815815-60fe-44a3-9859-2232df479dc9",
+   "name": "doom metal",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Doom metal",
+   "wikidata": "Q186170",
+   "match": "name"
+  }
+ },
+ "doomcore": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "4bd9ad1b-ed76-4c68-a1ca-bf6025d675fb",
+   "name": "doomcore",
+   "match": "name"
+  }
+ },
+ "downtempo": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "cc38aba3-48ed-439a-83b9-f81a34a66598",
+   "name": "downtempo",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1057",
+   "name": "Downtempo",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Downtempo",
+   "wikidata": "Q251192",
+   "match": "name"
+  }
+ },
+ "dream pop": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "6242615b-5620-465b-b6fb-2e593e90cbad",
+   "name": "dream pop",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Dream pop",
+   "wikidata": "Q592330",
+   "match": "name"
+  }
+ },
+ "dream trance": {
+  "discogs": false,
+  "musicbrainz": {
+   "id": "f32ff972-f3ea-41a4-80ae-650fe317abfc",
+   "name": "dream trance",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Dream trance",
+   "wikidata": "Q1339027",
+   "match": "name"
+  }
+ },
+ "dreamsynth": {
+  "discogs": false
+ },
+ "dreamwave": {
+  "discogs": false,
+  "musicbrainz": {
+   "id": "6fc0962d-52b9-4b38-ae43-26bd4b6af749",
+   "name": "dreamwave",
+   "match": "name"
+  }
+ },
+ "drill": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "1e5e18e5-4e70-4a73-942a-c6c79c1aefe2",
+   "name": "drill",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Drill music",
+   "wikidata": "Q15697534",
+   "match": "name"
+  }
+ },
+ "drone": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "75c5866f-0212-4c02-9650-de475dda157e",
+   "name": "drone",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Drone music",
+   "wikidata": "Q650316",
+   "match": "name"
+  }
+ },
+ "drum and bass": {
+  "discogs": true,
+  "discogs_name": "Drum n Bass",
+  "musicbrainz": {
+   "id": "462f9321-6103-49c9-b6db-96219bce6f62",
+   "name": "drum and bass",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Drum and bass",
+   "wikidata": "Q188994",
+   "match": "name"
+  }
+ },
+ "dub": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "c72a5d45-75a8-4b35-9f48-67e49eb4b5e5",
+   "name": "dub",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1193",
+   "name": "Dub",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Dub music",
+   "wikidata": "Q212688",
+   "match": "name"
+  }
+ },
+ "dub poetry": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "df15ab0b-603c-47da-ae11-e861eebaa255",
+   "name": "dub poetry",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Dub poetry",
+   "wikidata": "Q1113204",
+   "match": "name"
+  }
+ },
+ "dub techno": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "16aab171-3dce-454e-bb96-2636f15813fc",
+   "name": "dub techno",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Dub techno",
+   "wikidata": "Q1262781",
+   "match": "name"
+  }
+ },
+ "dubstep": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "1b50083b-1afa-4778-82c8-548b309af783",
+   "name": "dubstep",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "100014",
+   "name": "Dubstep",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Dubstep",
+   "wikidata": "Q20474",
+   "match": "name"
+  }
+ },
+ "dungeon synth": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "c89a76aa-2149-499e-946b-8299aa2f4ab3",
+   "name": "dungeon synth",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Dungeon synth",
+   "wikidata": "Q48971892",
+   "match": "name"
+  }
+ },
+ "early": {
+  "discogs": true,
+  "apple_music": {
+   "id": "1023",
+   "name": "Early Music",
+   "match": "name"
+  }
+ },
+ "east coast blues": {
+  "discogs": true,
+  "wikipedia": {
+   "title": "East Coast blues",
+   "wikidata": "Q2746494",
+   "match": "name"
+  }
+ },
+ "easy listening": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "ca06817d-8622-4120-b49d-96921c8bb767",
+   "name": "easy listening",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "25",
+   "name": "Easy Listening",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Easy listening",
+   "wikidata": "Q848399",
+   "match": "name"
+  }
+ },
+ "ebm": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "f3818817-6235-48d5-82f7-b223eb0261d9",
+   "name": "ebm",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Electronic body music",
+   "wikidata": "Q372103",
+   "match": "name"
+  }
+ },
+ "edm": {
+  "discogs": false,
+  "musicbrainz": {
+   "id": "3976e9ba-16d0-461d-b732-99408a0374ba",
+   "name": "edm",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "17",
+   "name": "Dance",
+   "match": "synonym"
+  },
+  "wikipedia": {
+   "title": "Electronic dance music",
+   "wikidata": "Q851213",
+   "match": "synonym"
+  }
+ },
+ "electric blues": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "8164d906-055d-4ca8-9ab2-14204b301cc3",
+   "name": "electric blues",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1013",
+   "name": "Electric Blues",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Electric blues",
+   "wikidata": "Q640097",
+   "match": "name"
+  }
+ },
+ "electro": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "60f00d05-df4d-496e-8f5a-c45c03a56ad4",
+   "name": "electro",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Electro (music)",
+   "wikidata": "Q217597",
+   "match": "name"
+  }
+ },
+ "electro house": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "05247982-e44f-4c58-96f8-a5453be69f5f",
+   "name": "electro house",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Electro house",
+   "wikidata": "Q627906",
+   "match": "name"
+  }
+ },
+ "electro swing": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "9b1af4d0-2196-43d4-bbca-845a2e02d962",
+   "name": "electro swing",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Electro swing",
+   "wikidata": "Q602561",
+   "match": "name"
+  }
+ },
+ "electroclash": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "cae57e98-c939-4b0e-ae49-8e0cb1bdc91d",
+   "name": "electroclash",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Electroclash",
+   "wikidata": "Q861823",
+   "match": "name"
+  }
+ },
+ "electronic": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "89255676-1f14-4dd8-bbad-fca839d6aff4",
+   "name": "electronic",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "7",
+   "name": "Electronic",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Electronic music",
+   "wikidata": "Q9778",
+   "match": "name"
+  }
+ },
+ "electronic rock": {
+  "discogs": false,
+  "musicbrainz": {
+   "id": "c4a69842-f891-4569-9506-1882aa5db433",
+   "name": "electronic rock",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Electronic rock",
+   "wikidata": "Q325504",
+   "match": "name"
+  }
+ },
+ "emo": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "ef0c2769-9c8f-49fc-b66e-27b8242b004a",
+   "name": "emo",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "100018",
+   "name": "EMO",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Emo",
+   "wikidata": "Q10926",
+   "match": "name"
+  }
+ },
+ "enka": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "b73d4a65-091e-4f08-8422-93f1b90f95d7",
+   "name": "enka",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "28",
+   "name": "Enka",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Enka",
+   "wikidata": "Q873478",
+   "match": "name"
+  }
+ },
+ "éntekhno": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "a74bf60f-2df6-46dc-b640-3ae22a3872f1",
+   "name": "éntekhno",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Éntekhno",
+   "wikidata": "Q53806314",
+   "match": "name"
+  }
+ },
+ "epic": {
+  "discogs": false
+ },
+ "estrada": {
+  "discogs": false,
+  "musicbrainz": {
+   "id": "b97edf00-f31c-4ae0-92dc-2cd6fa2c64c6",
+   "name": "estrada",
+   "match": "name"
+  }
+ },
+ "ethereal": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "348a3ac2-4cad-4c93-8b3d-ec595ba60f80",
+   "name": "ethereal wave",
+   "match": "synonym"
+  },
+  "wikipedia": {
+   "title": "Ethereal wave",
+   "wikidata": "Q284543",
+   "match": "synonym"
+  }
+ },
+ "euro disco": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "b8881630-243e-4c9b-b091-fc79ef3a16d3",
+   "name": "euro-disco",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Eurodisco",
+   "wikidata": "Q1374731",
+   "match": "name"
+  }
+ },
+ "euro house": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "8f8cbcde-3948-4be5-8bf0-8073f13e4b60",
+   "name": "euro house",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Eurohouse",
+   "wikidata": "Q30917612",
+   "match": "name"
+  }
+ },
+ "euro trance": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "5549175d-c972-4038-b610-57e482c83608",
+   "name": "euro-trance",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Eurotrance",
+   "wikidata": "Q890887",
+   "match": "name"
+  }
+ },
+ "eurodance": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "e9a67960-9b49-4967-a1c9-c26360e9c612",
+   "name": "eurodance",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Eurodance",
+   "wikidata": "Q216961",
+   "match": "name"
+  }
+ },
+ "europop": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "50e3ff0e-1abb-4577-9bf3-95d5c539ce2d",
+   "name": "europop",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Europop",
+   "wikidata": "Q517415",
+   "match": "name"
+  }
+ },
+ "exotica": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "1b757a82-3b28-4522-81d9-82d3d10b00c0",
+   "name": "exotica",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Exotica",
+   "wikidata": "Q916387",
+   "match": "name"
+  }
+ },
+ "experimental": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "68c81274-5770-4e7b-a4bf-ab0d7d425d99",
+   "name": "experimental",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Experimental music",
+   "wikidata": "Q1640319",
+   "match": "name"
+  }
+ },
+ "experimental rock": {
+  "discogs": false,
+  "musicbrainz": {
+   "id": "65c97e89-b42b-45c2-a70e-0eca1b8f0ff7",
+   "name": "experimental rock",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Experimental rock",
+   "wikidata": "Q1641839",
+   "match": "name"
+  }
+ },
+ "extreme metal": {
+  "discogs": false,
+  "wikipedia": {
+   "title": "Extreme metal",
+   "wikidata": "Q465978",
+   "match": "name"
+  }
+ },
+ "fado": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "2fb0a213-28f9-4e67-bb02-3df6d396d2de",
+   "name": "fado",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1297",
+   "name": "Fado",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Fado",
+   "wikidata": "Q185676",
+   "match": "name"
+  }
+ },
+ "favela funk": {
+  "discogs": true
+ },
+ "flamenco": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "961c6dad-8cf0-47ab-bc09-ccd011f9ef28",
+   "name": "flamenco",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1295",
+   "name": "Flamenco",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Flamenco",
+   "wikidata": "Q9764",
+   "match": "name"
+  }
+ },
+ "folk": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "a91eed3a-fdd0-494e-ade0-95ea4117f6eb",
+   "name": "folk",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1289",
+   "name": "Folk",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Folk music",
+   "wikidata": "Q43343",
+   "match": "name"
+  }
+ },
+ "folk metal": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "f5b0242a-ede0-4929-9361-4eddeb0516b5",
+   "name": "folk metal",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Folk metal",
+   "wikidata": "Q484179",
+   "match": "name"
+  }
+ },
+ "folk pop": {
+  "discogs": false,
+  "musicbrainz": {
+   "id": "abb2374f-30e5-4d3e-b417-2caf78ef1f6c",
+   "name": "folk pop",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Folk-pop",
+   "wikidata": "Q11700058",
+   "match": "name"
+  }
+ },
+ "folk punk": {
+  "discogs": false,
+  "musicbrainz": {
+   "id": "6cec5b4d-3c64-44a6-914d-3e833432f631",
+   "name": "folk punk",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Folk punk",
+   "wikidata": "Q1425661",
+   "match": "name"
+  }
+ },
+ "folk rock": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "445dc48f-5233-4b4f-987f-867ff9ade836",
+   "name": "folk rock",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1065",
+   "name": "Folk-Rock",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Folk rock",
+   "wikidata": "Q186472",
+   "match": "name"
+  }
+ },
+ "folk, world, & country": {
+  "discogs": true,
+  "wikipedia": {
+   "title": "World music",
+   "wikidata": "Q205049",
+   "match": "synonym"
+  }
+ },
+ "footwork": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "405b97cf-e1d9-48aa-97cd-53212730589c",
+   "name": "footwork",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Footwork (genre)",
+   "wikidata": "Q5466607",
+   "match": "name"
+  }
+ },
+ "forest psytrance": {
+  "discogs": false,
+  "musicbrainz": {
+   "id": "80a85e62-8500-4b02-a5e1-1741b66e8536",
+   "name": "forest psytrance",
+   "match": "name"
+  }
+ },
+ "forró": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "8b8567eb-b8b8-466f-962d-948942eef8c2",
+   "name": "forró",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1223",
+   "name": "Forró",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Forró",
+   "wikidata": "Q586110",
+   "match": "name"
+  }
+ },
+ "free funk": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "fed27b98-6da1-4a15-b56a-6c1a92d4011a",
+   "name": "free funk",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Free funk",
+   "wikidata": "Q5500244",
+   "match": "name"
+  }
+ },
+ "free improvisation": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "6a1ba2f9-1e5b-446f-9ffa-c0b0963aa08f",
+   "name": "free improvisation",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Free improvisation",
+   "wikidata": "Q592060",
+   "match": "name"
+  }
+ },
+ "free jazz": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "3c31635b-a5a7-44eb-ab9d-4bbde11da2d4",
+   "name": "free jazz",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Free jazz",
+   "wikidata": "Q211781",
+   "match": "name"
+  }
+ },
+ "freestyle": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "c37edb66-6712-46e2-b5fd-c4d386cf844f",
+   "name": "freestyle",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Freestyle music",
+   "wikidata": "Q655514",
+   "match": "name"
+  }
+ },
+ "french house": {
+  "discogs": false,
+  "musicbrainz": {
+   "id": "5acda04e-995d-4f79-9a66-5fe6a977ce15",
+   "name": "french house",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "French house",
+   "wikidata": "Q1455292",
+   "match": "name"
+  }
+ },
+ "full-on psytrance": {
+  "discogs": false,
+  "musicbrainz": {
+   "id": "0d89844c-d79e-427a-96ef-8117dd2769c5",
+   "name": "full-on",
+   "match": "synonym"
+  }
+ },
+ "funeral doom metal": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "20d04371-4b82-41be-9a56-fd0833d99a85",
+   "name": "funeral doom metal",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Funeral doom",
+   "wikidata": "Q2738113",
+   "match": "name"
+  }
+ },
+ "funk": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "fe4ba6a1-9873-4fd0-a12b-a70c81818514",
+   "name": "funk",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1139",
+   "name": "Funk",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Funk",
+   "wikidata": "Q164444",
+   "match": "name"
+  }
+ },
+ "funk / soul": {
+  "discogs": true
+ },
+ "funk metal": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "0caaa092-27c4-413e-841c-7c4deeec57a7",
+   "name": "funk metal",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Funk metal",
+   "wikidata": "Q667659",
+   "match": "name"
+  }
+ },
+ "fusion": {
+  "discogs": true,
+  "apple_music": {
+   "id": "1110",
+   "name": "Fusion",
+   "match": "name"
+  }
+ },
+ "future bass": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "e254f865-58ea-4483-9b2f-1bc65febcd71",
+   "name": "future bass",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Future bass",
+   "wikidata": "Q22908553",
+   "match": "name"
+  }
+ },
+ "future house": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "593ac826-8e72-4544-abc1-53192b683751",
+   "name": "future house",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Future house",
+   "wikidata": "Q20021059",
+   "match": "name"
+  }
+ },
+ "future jazz": {
+  "discogs": true,
+  "wikipedia": {
+   "title": "Nu jazz",
+   "wikidata": "Q1136331",
+   "match": "name"
+  }
+ },
+ "g-funk": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "b37aef4d-0029-4fc7-b634-6338197335a8",
+   "name": "g-funk",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "G-funk",
+   "wikidata": "Q1045541",
+   "match": "name"
+  }
+ },
+ "gabber": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "2f2118d7-315b-4241-bf40-d5d6ca11348d",
+   "name": "gabber",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Gabber",
+   "wikidata": "Q820049",
+   "match": "name"
+  }
+ },
+ "gagaku": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "07b217fc-7798-4e74-aad6-2c08b32c2810",
+   "name": "gagaku",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Gagaku",
+   "wikidata": "Q718540",
+   "match": "name"
+  }
+ },
+ "gamelan": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "404a769d-cc30-431a-9ca9-1091cf0c833e",
+   "name": "gamelan",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Gamelan",
+   "wikidata": "Q194492",
+   "match": "name"
+  }
+ },
+ "gangsta": {
+  "discogs": true
+ },
+ "garage house": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "092f40b5-9157-41f2-8243-68b704cd0ed1",
+   "name": "garage house",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Garage house",
+   "wikidata": "Q928825",
+   "match": "name"
+  }
+ },
+ "garage rock": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "b7bb11c3-bb83-4047-af65-1e8aba89039f",
+   "name": "garage rock",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Garage rock",
+   "wikidata": "Q211573",
+   "match": "name"
+  }
+ },
+ "ghazal": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "e8afd324-9781-4dcb-9bac-31277de2db7b",
+   "name": "ghazal",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Ghazal",
+   "wikidata": "Q281111",
+   "match": "name"
+  }
+ },
+ "ghetto": {
+  "discogs": true
+ },
+ "ghetto house": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "75ddea23-a5f4-466c-951c-900d45fc352c",
+   "name": "ghetto house",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Ghetto house",
+   "wikidata": "Q2748817",
+   "match": "name"
+  }
+ },
+ "ghettotech": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "511a3aa8-abdb-4e63-b11c-2d50ab19b373",
+   "name": "ghettotech",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Ghettotech",
+   "wikidata": "Q1521688",
+   "match": "name"
+  }
+ },
+ "glam": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "bc08993e-b188-43e8-b358-b84f2db6bfe6",
+   "name": "glam",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1150",
+   "name": "Glam Rock",
+   "match": "synonym"
+  },
+  "wikipedia": {
+   "title": "Glam rock",
+   "wikidata": "Q76092",
+   "match": "synonym"
+  }
+ },
+ "glam metal": {
+  "discogs": false,
+  "musicbrainz": {
+   "id": "818134e3-9392-4624-a13c-c4b19c54bccd",
+   "name": "glam metal",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1151",
+   "name": "Hair Metal",
+   "match": "synonym"
+  },
+  "wikipedia": {
+   "title": "Glam metal",
+   "wikidata": "Q188539",
+   "match": "name"
+  }
+ },
+ "glitch": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "18b010d7-7d85-4445-a4a8-1889a4688308",
+   "name": "glitch",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Glitch (music)",
+   "wikidata": "Q1100989",
+   "match": "name"
+  }
+ },
+ "glitch hop": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "aa3215ae-28e6-4993-908e-ed3807e1ce54",
+   "name": "glitch hop",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Glitch hop",
+   "wikidata": "Q3108920",
+   "match": "name"
+  }
+ },
+ "gnawa": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "e44125f6-b60a-4b23-bb57-cb7aad35990d",
+   "name": "gnawa",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Gnawa music",
+   "wikidata": "Q2000173",
+   "match": "name"
+  }
+ },
+ "go-go": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "6a84e9c9-87e8-423a-8c14-6d176d2a26b8",
+   "name": "go-go",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Go-go",
+   "wikidata": "Q2697917",
+   "match": "name"
+  }
+ },
+ "goa trance": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "ade8f293-c049-438a-a5f0-b51e6776d9c5",
+   "name": "goa trance",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Goa trance",
+   "wikidata": "Q835131",
+   "match": "name"
+  }
+ },
+ "goregrind": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "ca315be3-733b-4630-92d9-cd8ecafe0419",
+   "name": "goregrind",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Goregrind",
+   "wikidata": "Q1147692",
+   "match": "name"
+  }
+ },
+ "gospel": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "08289b42-7e41-4987-9263-c28bb4c59da0",
+   "name": "gospel",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1101",
+   "name": "Gospel",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Gospel music",
+   "wikidata": "Q180268",
+   "match": "name"
+  }
+ },
+ "goth rock": {
+  "discogs": true,
+  "apple_music": {
+   "id": "1002",
+   "name": "Goth Rock",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Gothic rock",
+   "wikidata": "Q485395",
+   "match": "name"
+  }
+ },
+ "gothic metal": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "c73392a9-adaf-4ee4-b911-97a5892ac917",
+   "name": "gothic metal",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Gothic metal",
+   "wikidata": "Q178145",
+   "match": "name"
+  }
+ },
+ "gqom": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "51183839-ce7a-4d3b-9e04-78bd9de8c8d5",
+   "name": "gqom",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "100055",
+   "name": "Gqom",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Gqom",
+   "wikidata": "Q29973057",
+   "match": "name"
+  }
+ },
+ "grime": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "51cfaac4-6696-480b-8f1b-27cfc789109c",
+   "name": "grime",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Grime music",
+   "wikidata": "Q1166726",
+   "match": "name"
+  }
+ },
+ "grindcore": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "093149ea-d1bc-4f93-bd5a-8fdcd055ea2f",
+   "name": "grindcore",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Grindcore",
+   "wikidata": "Q188534",
+   "match": "name"
+  }
+ },
+ "groove metal": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "1a85800e-945e-4a9d-824e-dbd21ca15757",
+   "name": "groove metal",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Groove metal",
+   "wikidata": "Q241662",
+   "match": "name"
+  }
+ },
+ "grunge": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "3f08faa9-6c3e-4b6d-b4b8-08eea45954e2",
+   "name": "grunge",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1003",
+   "name": "Grunge",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Grunge",
+   "wikidata": "Q11365",
+   "match": "name"
+  }
+ },
+ "guaguancó": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "2cd172f7-d191-4cfd-8c4f-0a648b155fdf",
+   "name": "guaguancó",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Guaguancó",
+   "wikidata": "Q3322619",
+   "match": "name"
+  }
+ },
+ "guajira": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "e17eaeab-2d3f-4dae-8344-1dd5d9cb3c00",
+   "name": "guajira",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "100027",
+   "name": "Guajira",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Guajira (music)",
+   "wikidata": "Q787663",
+   "match": "name"
+  }
+ },
+ "guaracha": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "3c9097f9-10d9-4086-98e3-e8c54ef470b3",
+   "name": "guaracha",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "100030",
+   "name": "Guaracha",
+   "match": "name"
+  }
+ },
+ "gypsy jazz": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "f9f0bdd7-47aa-447a-80a9-578655bf721b",
+   "name": "gypsy jazz",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Gypsy jazz",
+   "wikidata": "Q844245",
+   "match": "name"
+  }
+ },
+ "halftime": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "c37219bd-6d4d-464a-accb-fe70c767dcb7",
+   "name": "halftime",
+   "match": "name"
+  }
+ },
+ "hands up": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "e7e26200-8939-4623-af75-32ba5e04e854",
+   "name": "hands up",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Hands up (music genre)",
+   "wikidata": "Q733804",
+   "match": "name"
+  }
+ },
+ "happy hardcore": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "bd477a3e-9235-4597-9ce5-3caa994baef7",
+   "name": "happy hardcore",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Happy hardcore",
+   "wikidata": "Q339906",
+   "match": "name"
+  }
+ },
+ "hard bop": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "8c083468-2dce-4a31-ae77-433af3deafd3",
+   "name": "hard bop",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1207",
+   "name": "Hard Bop",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Hard bop",
+   "wikidata": "Q181010",
+   "match": "name"
+  }
+ },
+ "hard house": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "9c5052e0-36ff-4b92-9447-58f44ffdf682",
+   "name": "hard house",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "UK hard house",
+   "wikidata": "Q1585015",
+   "match": "name"
+  }
+ },
+ "hard rock": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "51cb9f91-e6a2-41bf-891f-e78e3f1e52ab",
+   "name": "hard rock",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1152",
+   "name": "Hard Rock",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Hard rock",
+   "wikidata": "Q83270",
+   "match": "name"
+  }
+ },
+ "hard techno": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "ed2e5e6b-2af6-4c7c-a9fb-e2e886bfda38",
+   "name": "hard techno",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Hard techno",
+   "wikidata": "Q3084222",
+   "match": "name"
+  }
+ },
+ "hard trance": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "c8acb78a-8337-4eae-9d19-48220dba03ac",
+   "name": "hard trance",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Hard trance",
+   "wikidata": "Q832665",
+   "match": "name"
+  }
+ },
+ "hardcore": {
+  "discogs": true,
+  "apple_music": {
+   "id": "1047",
+   "name": "Hardcore",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Hardcore (electronic dance music genre)",
+   "wikidata": "Q388906",
+   "match": "name"
+  }
+ },
+ "hardcore hip hop": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "12b013ff-cf03-4fa0-8e1b-c9b7f5d27f90",
+   "name": "hardcore hip hop",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Hardcore hip-hop",
+   "wikidata": "Q966564",
+   "match": "name"
+  }
+ },
+ "hardcore punk": {
+  "discogs": false,
+  "musicbrainz": {
+   "id": "055a6e4d-d929-42ac-ba7a-9d063b254ea5",
+   "name": "hardcore punk",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Hardcore punk",
+   "wikidata": "Q10922",
+   "match": "name"
+  }
+ },
+ "hardstyle": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "4a74a604-f702-424c-984f-93c5b04360ea",
+   "name": "hardstyle",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Hardstyle",
+   "wikidata": "Q223840",
+   "match": "name"
+  }
+ },
+ "harmonica blues": {
+  "discogs": true
+ },
+ "harsh noise wall": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "344dc18a-b982-49e7-918c-23c7d69fb6ba",
+   "name": "harsh noise wall",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Harsh noise wall",
+   "wikidata": "Q39046859",
+   "match": "name"
+  }
+ },
+ "hawaiian": {
+  "discogs": true,
+  "wikipedia": {
+   "title": "Music of Hawaii",
+   "wikidata": "Q1071834",
+   "match": "name"
+  }
+ },
+ "heavy metal": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "a6719055-99c4-47eb-beaa-71081f2376f9",
+   "name": "heavy metal",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1153",
+   "name": "Metal",
+   "match": "synonym"
+  },
+  "wikipedia": {
+   "title": "Heavy metal music",
+   "wikidata": "Q38848",
+   "match": "name"
+  }
+ },
+ "hi-nrg": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "61d50e81-17bb-4b8b-ab36-7ae1759bc589",
+   "name": "hi-nrg",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Hi-NRG",
+   "wikidata": "Q606393",
+   "match": "name"
+  }
+ },
+ "highlife": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "a394e4ba-1fff-4fca-a2e8-30e789a8b6e8",
+   "name": "highlife",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "100056",
+   "name": "Highlife",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Highlife",
+   "wikidata": "Q963061",
+   "match": "name"
+  }
+ },
+ "hill country blues": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "8c992c10-bc0d-465e-8b53-f4d37559dff1",
+   "name": "hill country blues",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Hill country blues",
+   "wikidata": "Q5762403",
+   "match": "name"
+  }
+ },
+ "hillbilly": {
+  "discogs": true
+ },
+ "hindustani": {
+  "discogs": true,
+  "wikipedia": {
+   "title": "Hindustani classical music",
+   "wikidata": "Q1770695",
+   "match": "name"
+  }
+ },
+ "hip hop": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "52faa157-6bad-4d86-a0ab-d4dec7d2513c",
+   "name": "hip hop",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1073",
+   "name": "Hip-Hop",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Hip-hop",
+   "wikidata": "Q11401",
+   "match": "name"
+  }
+ },
+ "hip house": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "b99d935b-cc28-404f-a306-50b7d468304f",
+   "name": "hip house",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Hip house",
+   "wikidata": "Q601235",
+   "match": "name"
+  }
+ },
+ "honky tonk": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "59b8a806-8bdd-45b5-978a-b5e404c910aa",
+   "name": "honky tonk",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1039",
+   "name": "Honky Tonk",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Honky tonk music",
+   "wikidata": "Q3140141",
+   "match": "name"
+  }
+ },
+ "horrorcore": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "66d01f06-21dc-4216-ac63-c5efb7b6338e",
+   "name": "horrorcore",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Horrorcore",
+   "wikidata": "Q1139136",
+   "match": "name"
+  }
+ },
+ "house": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "a2782cb6-1cd0-477c-a61d-b3f8b42dd1b3",
+   "name": "house",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1048",
+   "name": "House",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "House music",
+   "wikidata": "Q20502",
+   "match": "name"
+  }
+ },
+ "hyperpop": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "a8a72860-0bf8-44fd-90a1-b947a8ac2c56",
+   "name": "hyperpop",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Hyperpop",
+   "wikidata": "Q104695865",
+   "match": "name"
+  }
+ },
+ "hyphy": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "0822d395-7bf7-4b43-b944-54c4457f76c1",
+   "name": "hyphy",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Hyphy",
+   "wikidata": "Q2043175",
+   "match": "name"
+  }
+ },
+ "idm": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "8eb583f1-4fd7-460c-8246-dcdccc0e3ef9",
+   "name": "idm",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Intelligent dance music",
+   "wikidata": "Q660984",
+   "match": "synonym"
+  }
+ },
+ "illbient": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "da52c9d1-73f2-456e-a0d0-94bd854cb338",
+   "name": "illbient",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Illbient",
+   "wikidata": "Q1658757",
+   "match": "name"
+  }
+ },
+ "impressionist": {
+  "discogs": true,
+  "apple_music": {
+   "id": "1024",
+   "name": "Impressionist",
+   "match": "name"
+  }
+ },
+ "indian classical": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "4a2f8fe1-477a-4dfd-9a40-41c59ca3c0d8",
+   "name": "indian classical",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1269",
+   "name": "Indian Classical",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Indian classical music",
+   "wikidata": "Q1323698",
+   "match": "name"
+  }
+ },
+ "indie pop": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "f390be72-360b-41bb-a310-6a2e638779d2",
+   "name": "indie pop",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "100020",
+   "name": "Indie Pop",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Indie pop",
+   "wikidata": "Q842324",
+   "match": "name"
+  }
+ },
+ "indie rock": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "ccd19ebf-052c-4afe-8ad9-fbb0a73f94a7",
+   "name": "indie rock",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1004",
+   "name": "Indie Rock",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Indie rock",
+   "wikidata": "Q183504",
+   "match": "name"
+  }
+ },
+ "industrial": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "060beed7-e597-4c42-8e25-5bf8bd5dd3cb",
+   "name": "industrial",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1061",
+   "name": "Industrial",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Industrial music",
+   "wikidata": "Q487965",
+   "match": "name"
+  }
+ },
+ "industrial metal": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "d4df54b5-67b4-4fb7-8f73-79e71717a501",
+   "name": "industrial metal",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Industrial metal",
+   "wikidata": "Q208494",
+   "match": "name"
+  }
+ },
+ "industrial rock": {
+  "discogs": false,
+  "musicbrainz": {
+   "id": "ffbc9907-c9be-4ace-876b-b7fd5b9d51f9",
+   "name": "industrial rock",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Industrial rock",
+   "wikidata": "Q968730",
+   "match": "name"
+  }
+ },
+ "instrumental": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "4ae63770-68af-4fae-b0f1-5e53f372c743",
+   "name": "instrumental",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "53",
+   "name": "Instrumental",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Instrumental",
+   "wikidata": "Q639197",
+   "match": "name"
+  }
+ },
+ "italo disco": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "97a4a75a-6e49-4519-9684-ae2ccb2fc0f9",
+   "name": "italo-disco",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Italo disco",
+   "wikidata": "Q744417",
+   "match": "name"
+  }
+ },
+ "italo house": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "0abc808d-5d95-4839-8d60-f48ca244d68a",
+   "name": "italo house",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Italo house",
+   "wikidata": "Q2702280",
+   "match": "name"
+  }
+ },
+ "italodance": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "0e246476-8dc7-4806-9493-21a510a7d63d",
+   "name": "italo dance",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Italo dance",
+   "wikidata": "Q930592",
+   "match": "name"
+  }
+ },
+ "j-pop": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "eba7715e-ee26-4989-8d49-9db382955419",
+   "name": "j-pop",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "27",
+   "name": "J-Pop",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "J-pop",
+   "wikidata": "Q131578",
+   "match": "name"
+  }
+ },
+ "jangle pop": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "6c207307-cac0-43cf-be8f-e2dde68a92f1",
+   "name": "jangle pop",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Jangle pop",
+   "wikidata": "Q1190565",
+   "match": "name"
+  }
+ },
+ "jazz": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "a715278f-1580-409f-8078-4ffbc800e08b",
+   "name": "jazz",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "11",
+   "name": "Jazz",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Jazz",
+   "wikidata": "Q8341",
+   "match": "name"
+  }
+ },
+ "jazz funk": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "f3c43ae8-839a-4523-b295-cfa4eba6c911",
+   "name": "jazz-funk",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Jazz-funk",
+   "wikidata": "Q38656",
+   "match": "name"
+  }
+ },
+ "jazz-rock": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "5eea976c-1ab2-4d94-9b63-7d1297d5dba5",
+   "name": "jazz rock",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Jazz rock",
+   "wikidata": "Q944465",
+   "match": "name"
+  }
+ },
+ "jazzdance": {
+  "discogs": true
+ },
+ "jazzy hip-hop": {
+  "discogs": true
+ },
+ "juke": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "36cdb9a1-a19e-4c8f-a887-c451e71cca46",
+   "name": "juke",
+   "match": "name"
+  }
+ },
+ "jump blues": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "fd63003f-01aa-4f4c-a21d-036c46470257",
+   "name": "jump blues",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Jump blues",
+   "wikidata": "Q1515757",
+   "match": "name"
+  }
+ },
+ "jumpstyle": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "22253c29-0e14-4463-915e-1e563de4efe1",
+   "name": "jumpstyle",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Jumpstyle",
+   "wikidata": "Q389631",
+   "match": "name"
+  }
+ },
+ "jungle": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "ea9b6ec3-fc8f-4c55-b2f9-19bd4511a986",
+   "name": "jungle",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Jungle music",
+   "wikidata": "Q1102161",
+   "match": "name"
+  }
+ },
+ "k-pop": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "b74b3b6c-0700-46b1-aa55-1f2869a3bd1a",
+   "name": "k-pop",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "51",
+   "name": "K-Pop",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "K-pop",
+   "wikidata": "Q213665",
+   "match": "name"
+  }
+ },
+ "kaseko": {
+  "discogs": true
+ },
+ "kayōkyoku": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "7054e8e2-7c7b-4432-83b9-93423b361792",
+   "name": "kayōkyoku",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "30",
+   "name": "Kayokyoku",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Kayōkyoku",
+   "wikidata": "Q1418683",
+   "match": "name"
+  }
+ },
+ "keroncong": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "98c1a0fe-f460-4521-bcff-760d719cd958",
+   "name": "keroncong",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Kroncong",
+   "wikidata": "Q1930107",
+   "match": "name"
+  }
+ },
+ "kizomba": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "5c8b654c-0f2b-40d5-990b-e070a527b1df",
+   "name": "kizomba",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "100058",
+   "name": "Kizomba",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Kizomba",
+   "wikidata": "Q1597549",
+   "match": "name"
+  }
+ },
+ "klezmer": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "06eeec6e-f389-4783-b601-909bb10bd04e",
+   "name": "klezmer",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Klezmer",
+   "wikidata": "Q212944",
+   "match": "name"
+  }
+ },
+ "krautrock": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "ba318056-9ddf-46cd-8b95-61fc993b962d",
+   "name": "krautrock",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Krautrock",
+   "wikidata": "Q320592",
+   "match": "name"
+  }
+ },
+ "kuduro": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "8134acbd-8822-4042-8e17-276599a3a843",
+   "name": "kuduro",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "100057",
+   "name": "Kuduro",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Kuduro",
+   "wikidata": "Q1191544",
+   "match": "name"
+  }
+ },
+ "kwaito": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "8894628d-7f01-4936-913f-949fcf6ae91b",
+   "name": "kwaito",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "100059",
+   "name": "Kwaito",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Kwaito",
+   "wikidata": "Q956717",
+   "match": "name"
+  }
+ },
+ "laïko": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "13a4b543-46d4-4cb8-85a1-1ef3a8a81e8f",
+   "name": "laiko",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Laïko",
+   "wikidata": "Q2087267",
+   "match": "name"
+  }
+ },
+ "latin": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "7369bb8b-3399-4180-8cb2-4e37e0e7b0e7",
+   "name": "latin",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "12",
+   "name": "Latin",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Latin music",
+   "wikidata": "Q18345375",
+   "match": "name"
+  }
+ },
+ "latin jazz": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "48095aaf-c31d-4bfc-9578-8755c71d44af",
+   "name": "latin jazz",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Latin jazz",
+   "wikidata": "Q837389",
+   "match": "name"
+  }
+ },
+ "latin pop": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "2b9b7ea8-cb90-428c-adb2-d55b2faa4f1d",
+   "name": "latin pop",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Latin pop",
+   "wikidata": "Q547137",
+   "match": "name"
+  }
+ },
+ "leftfield": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "32bea60c-e201-4241-8ed4-228636d34a97",
+   "name": "leftfield",
+   "match": "name"
+  }
+ },
+ "lento violento": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "8d4fc5b0-f1b2-4784-9db8-cc37bb7a151a",
+   "name": "lento violento",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Lento violento",
+   "wikidata": "Q1243254",
+   "match": "name"
+  }
+ },
+ "levenslied": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "6882d709-c05a-44fb-9614-45124384fc17",
+   "name": "levenslied",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Levenslied",
+   "wikidata": "Q2138639",
+   "match": "name"
+  }
+ },
+ "light music": {
+  "discogs": true,
+  "wikipedia": {
+   "title": "Light music",
+   "wikidata": "Q1537056",
+   "match": "name"
+  }
+ },
+ "liquid drum and bass": {
+  "discogs": false,
+  "musicbrainz": {
+   "id": "f1eaf2fd-46de-4ee3-81b8-5c064a33ce82",
+   "name": "liquid funk",
+   "match": "synonym"
+  },
+  "wikipedia": {
+   "title": "Liquid drum and bass",
+   "wikidata": "Q2082572",
+   "match": "name"
+  }
+ },
+ "lo-fi": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "65e2f3ad-e0bd-4627-bd83-cba7c8b6d011",
+   "name": "lo-fi",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Lo-fi music",
+   "wikidata": "Q1507298",
+   "match": "name"
+  }
+ },
+ "louisiana blues": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "effc87e4-295b-40df-b64d-7413dfe67efa",
+   "name": "louisiana blues",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Louisiana blues",
+   "wikidata": "Q515074",
+   "match": "name"
+  }
+ },
+ "lounge": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "de2785b2-f282-4718-a422-37dc93964bdd",
+   "name": "lounge",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1054",
+   "name": "Lounge",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Lounge music",
+   "wikidata": "Q1141081",
+   "match": "name"
+  }
+ },
+ "lovers rock": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "97b15117-c3e2-47ec-9d64-79f90b528a9c",
+   "name": "lovers rock",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "100017",
+   "name": "Lovers Rock",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Lovers rock",
+   "wikidata": "Q1872505",
+   "match": "name"
+  }
+ },
+ "lowercase": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "449e6224-5a56-4146-9463-3feda95a5f15",
+   "name": "lowercase",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Lowercase (music)",
+   "wikidata": "Q310871",
+   "match": "name"
+  }
+ },
+ "makina": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "79719082-6fda-4461-ba89-c923d155cc45",
+   "name": "makina",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Mákina",
+   "wikidata": "Q3048168",
+   "match": "name"
+  }
+ },
+ "mambo": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "f6fb8e67-cd02-4fb4-b256-2970000dcb46",
+   "name": "mambo",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "100025",
+   "name": "Mambo",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Mambo (music)",
+   "wikidata": "Q1646666",
+   "match": "name"
+  }
+ },
+ "mandopop": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "489cf2f9-0edd-4fbc-aa05-ae248706cb3e",
+   "name": "mandopop",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1253",
+   "name": "Mandopop",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Mandopop",
+   "wikidata": "Q973150",
+   "match": "name"
+  }
+ },
+ "mariachi": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "55fe39b6-1675-42cd-90ac-feeb7362a986",
+   "name": "mariachi",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Mariachi",
+   "wikidata": "Q464129",
+   "match": "name"
+  }
+ },
+ "math rock": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "a6b55d73-bba3-49fc-a361-ca4bde004717",
+   "name": "math rock",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Math rock",
+   "wikidata": "Q1132152",
+   "match": "name"
+  }
+ },
+ "mathcore": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "8df1241b-2ba1-40b8-bb8f-2dc15ce6dc1e",
+   "name": "mathcore",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Mathcore",
+   "wikidata": "Q616679",
+   "match": "name"
+  }
+ },
+ "mbalax": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "38364c7f-06d0-4307-bd5c-efa83ed30c65",
+   "name": "mbalax",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "100060",
+   "name": "Mbalax",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Mbalax",
+   "wikidata": "Q556959",
+   "match": "name"
+  }
+ },
+ "medieval": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "4fc769b7-acac-4061-9129-ee8c6875b4c3",
+   "name": "medieval",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "50000200",
+   "name": "Medieval",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Medieval music",
+   "wikidata": "Q163775",
+   "match": "name"
+  }
+ },
+ "melodic death metal": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "5eeb0431-8160-40a7-ae44-c2ad01fed156",
+   "name": "melodic death metal",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Melodic death metal",
+   "wikidata": "Q253918",
+   "match": "name"
+  }
+ },
+ "melodic hardcore": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "9f29e83b-d093-47d2-8d36-d836a247a640",
+   "name": "melodic hardcore",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Melodic hardcore",
+   "wikidata": "Q542703",
+   "match": "name"
+  }
+ },
+ "melodic techno": {
+  "discogs": false,
+  "musicbrainz": {
+   "id": "7fc914c1-a44e-43fd-ace8-63a2c6550057",
+   "name": "melodic techno",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Melodic techno",
+   "wikidata": "Q110185782",
+   "match": "name"
+  }
+ },
+ "memphis blues": {
+  "discogs": true,
+  "wikipedia": {
+   "title": "Memphis blues",
+   "wikidata": "Q509901",
+   "match": "name"
+  }
+ },
+ "memphis rap": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "2f38ceb3-0ed0-475d-9ebd-bee14a2ca28e",
+   "name": "memphis rap",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Memphis rap",
+   "wikidata": "Q6010117",
+   "match": "name"
+  }
+ },
+ "mento": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "ce41a887-cdb3-4c52-bbce-604287d74573",
+   "name": "mento",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Mento",
+   "wikidata": "Q1262697",
+   "match": "name"
+  }
+ },
+ "merengue": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "3f5f955d-f505-484a-b397-d0bf0760d8f3",
+   "name": "merengue",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Merengue music",
+   "wikidata": "Q282131",
+   "match": "name"
+  }
+ },
+ "metalcore": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "62f88295-0605-4ce8-958b-2e0063ece47e",
+   "name": "metalcore",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Metalcore",
+   "wikidata": "Q183862",
+   "match": "name"
+  }
+ },
+ "miami bass": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "432290bd-f667-4871-9fdc-127996f3ad93",
+   "name": "miami bass",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Miami bass",
+   "wikidata": "Q546206",
+   "match": "name"
+  }
+ },
+ "microhouse": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "bbce54eb-a477-4b23-ac81-d3b9aac43756",
+   "name": "microhouse",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Microhouse",
+   "wikidata": "Q1931555",
+   "match": "name"
+  }
+ },
+ "middle of the road": {
+  "discogs": false,
+  "wikipedia": {
+   "title": "Middle of the road (radio format)",
+   "wikidata": "Q3328660",
+   "match": "name"
+  }
+ },
+ "midwest emo": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "e85a2565-d33d-4697-b55b-82803901d1a0",
+   "name": "midwest emo",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Midwest emo",
+   "wikidata": "Q39052425",
+   "match": "name"
+  }
+ },
+ "min'yō": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "b0ac2e92-b41d-46e9-8c88-cd254f3a86e0",
+   "name": "min'yō",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Min'yō",
+   "wikidata": "Q901610",
+   "match": "name"
+  }
+ },
+ "minimal": {
+  "discogs": true
+ },
+ "minimal techno": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "c1313278-b276-4a79-9fc1-770dd62a8b83",
+   "name": "minimal techno",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Minimal techno",
+   "wikidata": "Q1430587",
+   "match": "name"
+  }
+ },
+ "minimalism": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "8d9a00db-0b8b-41ff-9af7-d0f96793bdc5",
+   "name": "minimalism",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1026",
+   "name": "Minimalism",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Minimal music",
+   "wikidata": "Q572901",
+   "match": "name"
+  }
+ },
+ "mod": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "f5ce6b81-b277-4a23-ba23-2e1e2a7e51ac",
+   "name": "mod",
+   "match": "name"
+  }
+ },
+ "modal": {
+  "discogs": true,
+  "wikipedia": {
+   "title": "Modal jazz",
+   "wikidata": "Q1127530",
+   "match": "name"
+  }
+ },
+ "modern": {
+  "discogs": true
+ },
+ "modern classical": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "e328c306-8e35-46d2-93c3-623412ec7c13",
+   "name": "modern classical",
+   "match": "name"
+  }
+ },
+ "modern electric blues": {
+  "discogs": true
+ },
+ "moombahton": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "ce92d27c-2d7a-439e-8182-e4ccdeee522a",
+   "name": "moombahton",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Moombahton",
+   "wikidata": "Q21092",
+   "match": "name"
+  }
+ },
+ "mouth music": {
+  "discogs": true,
+  "wikipedia": {
+   "title": "Puirt à beul",
+   "wikidata": "Q1540495",
+   "match": "name"
+  }
+ },
+ "mpb": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "7b447f98-1e94-4e57-9bb8-373743fbcdd8",
+   "name": "mpb",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1225",
+   "name": "MPB",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Música popular brasileira",
+   "wikidata": "Q1046768",
+   "match": "name"
+  }
+ },
+ "musette": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "09c62321-3f2c-496b-9f3c-bf36ca891371",
+   "name": "musette",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Bal-musette",
+   "wikidata": "Q7770873",
+   "match": "name"
+  }
+ },
+ "music hall": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "3b389785-3857-4316-9e80-3bbaaa2778ab",
+   "name": "music hall",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Music hall",
+   "wikidata": "Q940462",
+   "match": "name"
+  }
+ },
+ "música criolla": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "d7987fd0-82d3-4800-b4a7-da11e77f6b2c",
+   "name": "música criolla",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Música criolla",
+   "wikidata": "Q6950428",
+   "match": "name"
+  }
+ },
+ "musique concrète": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "edc96a6f-e8d0-4006-b065-d0fe188191c9",
+   "name": "musique concrète",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "50000228",
+   "name": "Musique concrète",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Musique concrète",
+   "wikidata": "Q823560",
+   "match": "name"
+  }
+ },
+ "neo soul": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "286f9168-9c46-4e41-94a1-1aa4aeb93b8c",
+   "name": "neo soul",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1141",
+   "name": "Neo-Soul",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Neo soul",
+   "wikidata": "Q268253",
+   "match": "name"
+  }
+ },
+ "neo trance": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "1c0ee5c1-2ee7-4eed-989f-8c0a7b62b7f8",
+   "name": "neo-trance",
+   "match": "name"
+  }
+ },
+ "neo-psychedelia": {
+  "discogs": false,
+  "musicbrainz": {
+   "id": "cd99451c-f6d5-47c7-8d49-6c08b51e61aa",
+   "name": "neo-psychedelia",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Neo-psychedelia",
+   "wikidata": "Q703778",
+   "match": "name"
+  }
+ },
+ "neo-romantic": {
+  "discogs": true
+ },
+ "neoclassical": {
+  "discogs": true
+ },
+ "neofolk": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "e94c28db-21a2-43de-9e58-8113fba2c732",
+   "name": "neofolk",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Neofolk",
+   "wikidata": "Q775614",
+   "match": "name"
+  }
+ },
+ "neurofunk": {
+  "discogs": false,
+  "musicbrainz": {
+   "id": "9094f251-8379-4ced-9541-a1c91045c327",
+   "name": "neurofunk",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Neurofunk",
+   "wikidata": "Q967654",
+   "match": "name"
+  }
+ },
+ "new age": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "6c76d9ec-0924-4fc9-bb22-91a695ca09d6",
+   "name": "new age",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "13",
+   "name": "New Age",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "New-age music",
+   "wikidata": "Q213121",
+   "match": "name"
+  }
+ },
+ "new beat": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "637d81ef-90b2-4385-9726-5ecf47daf4e4",
+   "name": "new beat",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "New beat",
+   "wikidata": "Q1890098",
+   "match": "name"
+  }
+ },
+ "new jack swing": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "dd497eac-e915-49a9-b1e4-482792acf397",
+   "name": "new jack swing",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "New jack swing",
+   "wikidata": "Q840065",
+   "match": "name"
+  }
+ },
+ "new romantic": {
+  "discogs": false,
+  "musicbrainz": {
+   "id": "391a797d-50d7-46df-b380-39ccacd52a09",
+   "name": "new romantic",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "New Romantic",
+   "wikidata": "Q597240",
+   "match": "name"
+  }
+ },
+ "new wave": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "56407f9d-3398-4bf3-bbbd-ea372fa5adeb",
+   "name": "new wave",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1005",
+   "name": "New Wave",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "New wave music",
+   "wikidata": "Q187760",
+   "match": "name"
+  }
+ },
+ "no wave": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "3188a961-88e0-4b12-9b9e-47f79e53d780",
+   "name": "no wave",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "No wave",
+   "wikidata": "Q823080",
+   "match": "name"
+  }
+ },
+ "noise": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "89c7c9b3-215e-482f-bce3-3219ffd0a222",
+   "name": "noise",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Noise music",
+   "wikidata": "Q726239",
+   "match": "name"
+  }
+ },
+ "noise rock": {
+  "discogs": false,
+  "musicbrainz": {
+   "id": "8e5474b7-f445-49a7-866d-0f8e34b0a519",
+   "name": "noise rock",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Noise rock",
+   "wikidata": "Q181861",
+   "match": "name"
+  }
+ },
+ "noisecore": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "0cd76818-fdde-4f56-93a1-040f09ca7f23",
+   "name": "noisecore",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Noisecore",
+   "wikidata": "Q89423271",
+   "match": "name"
+  }
+ },
+ "nordic": {
+  "discogs": true
+ },
+ "norteño": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "3e226375-1286-40e3-92b3-d257e3a1babb",
+   "name": "norteño",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Norteño (music)",
+   "wikidata": "Q1780056",
+   "match": "name"
+  }
+ },
+ "nu metal": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "bbad9cda-bde2-448e-821c-7ebf85a54020",
+   "name": "nu metal",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Nu metal",
+   "wikidata": "Q263734",
+   "match": "name"
+  }
+ },
+ "nu-disco": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "351424dd-91a3-4cf2-9edb-5df647743ec0",
+   "name": "nu disco",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Nu-disco",
+   "wikidata": "Q4045538",
+   "match": "name"
+  }
+ },
+ "nu-nrg": {
+  "discogs": false,
+  "wikipedia": {
+   "title": "Hard NRG",
+   "wikidata": "Q5402470",
+   "match": "name"
+  }
+ },
+ "nueva canción": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "ebf28819-ebd3-4c00-9c42-3b8dc00f897c",
+   "name": "nueva canción",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Nueva canción",
+   "wikidata": "Q1151259",
+   "match": "name"
+  }
+ },
+ "oi": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "221ff39c-4521-49e3-ab52-e4dde85efd1e",
+   "name": "oi",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Oi!",
+   "wikidata": "Q274401",
+   "match": "name"
+  }
+ },
+ "opera": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "56e0b906-1018-4a55-8ec7-86746272116e",
+   "name": "opera",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Opera",
+   "wikidata": "Q1344",
+   "match": "name"
+  }
+ },
+ "operetta": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "b8a54c35-dbf1-4c8d-bb93-f75eddd08074",
+   "name": "operetta",
+   "match": "name"
+  }
+ },
+ "oratorio": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "373a3d38-23cb-48e3-baf1-6737eac93a29",
+   "name": "oratorio",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "100005",
+   "name": "Oratorio",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Oratorio",
+   "wikidata": "Q85477",
+   "match": "name"
+  }
+ },
+ "orchestral pop": {
+  "discogs": false,
+  "wikipedia": {
+   "title": "Orchestral pop",
+   "wikidata": "Q48834745",
+   "match": "name"
+  }
+ },
+ "p-funk": {
+  "discogs": true,
+  "discogs_name": "P.Funk",
+  "musicbrainz": {
+   "id": "fadab481-3ced-466e-b828-74aed72d5c2f",
+   "name": "p-funk",
+   "match": "name"
+  }
+ },
+ "pachanga": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "bbe70cad-e184-42e5-9b90-e14438ba4363",
+   "name": "pachanga",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Pachanga",
+   "wikidata": "Q367751",
+   "match": "name"
+  }
+ },
+ "pacific": {
+  "discogs": true
+ },
+ "pagode": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "4bcd6118-46ff-4903-a466-e1485005a3ba",
+   "name": "pagode",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1226",
+   "name": "Pagode",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Pagode",
+   "wikidata": "Q3360459",
+   "match": "name"
+  }
+ },
+ "paisley underground": {
+  "discogs": false,
+  "musicbrainz": {
+   "id": "77f67575-46ed-4447-afc1-ebcd2ab36b66",
+   "name": "paisley underground",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Paisley Underground",
+   "wikidata": "Q1432934",
+   "match": "name"
+  }
+ },
+ "pasodoble": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "5ca92d4c-1d4e-4964-be1b-8e1fd60c15a6",
+   "name": "pasodoble",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Pasodoble",
+   "wikidata": "Q208341",
+   "match": "name"
+  }
+ },
+ "persian classical": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "73f08ab4-72fa-42be-8395-6698bb33042a",
+   "name": "persian classical",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Persian traditional music",
+   "wikidata": "Q11223087",
+   "match": "name"
+  }
+ },
+ "phonk": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "38dd5ce2-96d8-4202-b477-75a857d78adb",
+   "name": "phonk",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Phonk",
+   "wikidata": "Q90568328",
+   "match": "name"
+  }
+ },
+ "piano blues": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "e671e0de-b37d-4a49-8bb3-7fec87f49975",
+   "name": "piano blues",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Piano blues",
+   "wikidata": "Q2603965",
+   "match": "name"
+  }
+ },
+ "piedmont blues": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "5a59a652-e5fb-45ae-9ebe-26940b78a268",
+   "name": "piedmont blues",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Piedmont blues",
+   "wikidata": "Q1109497",
+   "match": "name"
+  }
+ },
+ "plena": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "9605c40d-cb3a-4301-8be2-90e929357572",
+   "name": "plena",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Plena",
+   "wikidata": "Q2715398",
+   "match": "name"
+  }
+ },
+ "plunderphonics": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "8302fd70-150f-4f74-b11c-10a7ff7586b9",
+   "name": "plunderphonics",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Plunderphonics",
+   "wikidata": "Q7205507",
+   "match": "name"
+  }
+ },
+ "polka": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "df6d324a-ff39-4055-9289-b14da57ab4e4",
+   "name": "polka",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1188",
+   "name": "Polka",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Polka music",
+   "wikidata": "Q11821889",
+   "match": "name"
+  }
+ },
+ "pop": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "911c7bbb-172d-4df8-9478-dbff4296e791",
+   "name": "pop",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "14",
+   "name": "Pop",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Pop music",
+   "wikidata": "Q37073",
+   "match": "name"
+  }
+ },
+ "pop punk": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "60e21d01-ce21-4127-86b7-aada79558dab",
+   "name": "pop punk",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "100019",
+   "name": "Pop Punk",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Pop-punk",
+   "wikidata": "Q487914",
+   "match": "name"
+  }
+ },
+ "pop rap": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "da2fc3b4-b97d-491a-ac0f-8a731bee7237",
+   "name": "pop rap",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Pop rap",
+   "wikidata": "Q2572585",
+   "match": "name"
+  }
+ },
+ "pop rock": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "797e2e85-5ffd-495c-a757-8b4079052f0e",
+   "name": "pop rock",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1133",
+   "name": "Pop/Rock",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Pop rock",
+   "wikidata": "Q484641",
+   "match": "name"
+  }
+ },
+ "pop soul": {
+  "discogs": false,
+  "musicbrainz": {
+   "id": "64e0bd76-822f-4549-a6fe-9858561282d1",
+   "name": "pop soul",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Pop soul",
+   "wikidata": "Q11700065",
+   "match": "name"
+  }
+ },
+ "pornogrind": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "aef2077e-6cbc-47ba-9698-9eb5f842a412",
+   "name": "pornogrind",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Pornogrind",
+   "wikidata": "Q584752",
+   "match": "name"
+  }
+ },
+ "porro": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "2251832b-c7a8-464e-b0bc-374ffbffdd21",
+   "name": "porro",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Porro",
+   "wikidata": "Q3069904",
+   "match": "name"
+  }
+ },
+ "post-bop": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "94ce0ba0-9043-4b5b-87d6-3c1a8458f75d",
+   "name": "post-bop",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Post-bop",
+   "wikidata": "Q1092837",
+   "match": "name"
+  }
+ },
+ "post-britpop": {
+  "discogs": false,
+  "musicbrainz": {
+   "id": "a493b79c-4072-4371-a14c-446b1027982a",
+   "name": "post-britpop",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Post-Britpop",
+   "wikidata": "Q3231749",
+   "match": "name"
+  }
+ },
+ "post-disco": {
+  "discogs": false,
+  "wikipedia": {
+   "title": "Post-disco",
+   "wikidata": "Q1190485",
+   "match": "name"
+  }
+ },
+ "post-grunge": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "bbb1310c-24cb-4fc9-97c4-f93e4549f1e2",
+   "name": "post-grunge",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Post-grunge",
+   "wikidata": "Q379671",
+   "match": "name"
+  }
+ },
+ "post-hardcore": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "aec382b7-b635-470c-9051-2f84e0b5ea1e",
+   "name": "post-hardcore",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Post-hardcore",
+   "wikidata": "Q377910",
+   "match": "name"
+  }
+ },
+ "post-metal": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "e214700e-dae1-4b69-81e9-276e4e88fa32",
+   "name": "post-metal",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Post-metal",
+   "wikidata": "Q41343",
+   "match": "name"
+  }
+ },
+ "post-modern": {
+  "discogs": true,
+  "wikipedia": {
+   "title": "Postmodern music",
+   "wikidata": "Q2568406",
+   "match": "name"
+  }
+ },
+ "post-punk": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "f6d8cadd-6a5e-4ec9-9c2b-996b5332a639",
+   "name": "post-punk",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Post-punk",
+   "wikidata": "Q598929",
+   "match": "name"
+  }
+ },
+ "post-punk revival": {
+  "discogs": false,
+  "musicbrainz": {
+   "id": "b8495241-e3c7-445b-82db-cea5ebe9ea7a",
+   "name": "post-punk revival",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Post-punk revival",
+   "wikidata": "Q1899347",
+   "match": "name"
+  }
+ },
+ "post-rock": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "0bfffa19-4e4a-4bf7-bf53-6ec44f0a2f8e",
+   "name": "post-rock",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Post-rock",
+   "wikidata": "Q209137",
+   "match": "name"
+  }
+ },
+ "power electronics": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "18527512-634e-48bb-81b2-6bfcf1818b95",
+   "name": "power electronics",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Power electronics (music genre)",
+   "wikidata": "Q2687544",
+   "match": "name"
+  }
+ },
+ "power metal": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "f0b0aa5f-ed81-456b-85ab-492002a29eeb",
+   "name": "power metal",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Power metal",
+   "wikidata": "Q57143",
+   "match": "name"
+  }
+ },
+ "power pop": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "618704fc-daac-44a2-92c9-89e3b1a2fc8c",
+   "name": "power pop",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Power pop",
+   "wikidata": "Q837837",
+   "match": "name"
+  }
+ },
+ "progressive breaks": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "93b7938a-ff65-4eae-8b95-4301ce161b27",
+   "name": "progressive breaks",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Progressive breaks",
+   "wikidata": "Q25389262",
+   "match": "name"
+  }
+ },
+ "progressive house": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "70adb285-e1f7-458a-823f-5cbda5e291c4",
+   "name": "progressive house",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Progressive house",
+   "wikidata": "Q915152",
+   "match": "name"
+  }
+ },
+ "progressive metal": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "5c7785e6-a0b4-4441-a1e6-4fd4c0066a5f",
+   "name": "progressive metal",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Progressive metal",
+   "wikidata": "Q484344",
+   "match": "name"
+  }
+ },
+ "progressive pop": {
+  "discogs": false,
+  "musicbrainz": {
+   "id": "489ebed8-1299-4761-ba0b-29d381085f82",
+   "name": "progressive pop",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Progressive pop",
+   "wikidata": "Q3397882",
+   "match": "name"
+  }
+ },
+ "progressive psytrance": {
+  "discogs": false,
+  "musicbrainz": {
+   "id": "050ec099-b9b5-4f5d-82fa-2238a8c9c650",
+   "name": "progressive psytrance",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Progressive psytrance",
+   "wikidata": "Q2385862",
+   "match": "name"
+  }
+ },
+ "progressive rock": {
+  "discogs": true,
+  "discogs_name": "Prog Rock",
+  "musicbrainz": {
+   "id": "ae9b8279-3959-48d8-8a88-741a7f6d4a48",
+   "name": "progressive rock",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Progressive rock",
+   "wikidata": "Q49451",
+   "match": "name"
+  }
+ },
+ "progressive trance": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "6bd228be-3374-4c4e-bc0a-46779fafe8f1",
+   "name": "progressive trance",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Progressive trance",
+   "wikidata": "Q2260696",
+   "match": "name"
+  }
+ },
+ "psybient": {
+  "discogs": false,
+  "musicbrainz": {
+   "id": "fee8ccf9-8def-4855-9e6a-7d03da945f32",
+   "name": "psybient",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Psybient",
+   "wikidata": "Q749475",
+   "match": "name"
+  }
+ },
+ "psychedelic rock": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "146ef761-5ad9-48b4-b0b3-483104f7da48",
+   "name": "psychedelic rock",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Psychedelic rock",
+   "wikidata": "Q206159",
+   "match": "name"
+  }
+ },
+ "psychedelic soul": {
+  "discogs": false,
+  "musicbrainz": {
+   "id": "8e30c7c0-f268-4138-9aff-1403e07eb2c6",
+   "name": "psychedelic soul",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Psychedelic soul",
+   "wikidata": "Q2743435",
+   "match": "name"
+  }
+ },
+ "psychobilly": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "8a14f570-7297-438d-996d-8797f9b8cfcc",
+   "name": "psychobilly",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Psychobilly",
+   "wikidata": "Q13627677",
+   "match": "name"
+  }
+ },
+ "psytrance": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "b3cccf71-e843-4546-87fa-728055ba3147",
+   "name": "psytrance",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Psychedelic trance",
+   "wikidata": "Q622871",
+   "match": "synonym"
+  }
+ },
+ "pub rock": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "86c3d53d-c9db-44a2-930c-d3145cbf7b7b",
+   "name": "pub rock",
+   "match": "name"
+  }
+ },
+ "punk": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "8cc9b280-230b-4a3a-b1e2-8acab0744dd3",
+   "name": "punk",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1006",
+   "name": "Punk",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Punk rock",
+   "wikidata": "Q3071",
+   "match": "name"
+  }
+ },
+ "qawwali": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "ab01fbff-c7da-462a-93a9-71ad62b64d80",
+   "name": "qawwali",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Qawwali",
+   "wikidata": "Q512410",
+   "match": "name"
+  }
+ },
+ "r&b": {
+  "discogs": false,
+  "musicbrainz": {
+   "id": "31be54b2-4d0c-42df-aa44-c496c7b4c3c3",
+   "name": "r&b",
+   "match": "name"
+  }
+ },
+ "ragga": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "0d15e596-3374-4590-bdb0-0a95d38ab4dc",
+   "name": "ragga",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Ragga",
+   "wikidata": "Q740911",
+   "match": "name"
+  }
+ },
+ "ragga hiphop": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "4080e55b-ac2e-4907-a724-491b3bfdba63",
+   "name": "ragga hip-hop",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Ragga hip hop",
+   "wikidata": "Q1109947",
+   "match": "name"
+  }
+ },
+ "ragtime": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "d017dd87-704b-4ad4-8b67-39fb401b8339",
+   "name": "ragtime",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1113",
+   "name": "Ragtime",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Ragtime",
+   "wikidata": "Q185652",
+   "match": "name"
+  }
+ },
+ "rai": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "deec5f2f-ccfc-4e0c-b1ac-8e5a17cd5cb7",
+   "name": "raï",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Raï",
+   "wikidata": "Q839029",
+   "match": "name"
+  }
+ },
+ "ranchera": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "ca20f188-68d2-4af5-966e-8e2e0f848758",
+   "name": "ranchera",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Ranchera",
+   "wikidata": "Q727634",
+   "match": "name"
+  }
+ },
+ "rap metal": {
+  "discogs": false,
+  "musicbrainz": {
+   "id": "22623d74-4676-4853-aed9-921ae6fad495",
+   "name": "rap metal",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Rap metal",
+   "wikidata": "Q856872",
+   "match": "name"
+  }
+ },
+ "rebetiko": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "1c49631f-2329-4c65-967d-1852de2a9dfb",
+   "name": "rebetiko",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Rebetiko",
+   "wikidata": "Q220528",
+   "match": "name"
+  }
+ },
+ "reggae": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "02b2f720-d06e-42ce-85c2-1ecd4191ffcb",
+   "name": "reggae",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "24",
+   "name": "Reggae",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Reggae",
+   "wikidata": "Q9794",
+   "match": "name"
+  }
+ },
+ "reggae gospel": {
+  "discogs": true,
+  "wikipedia": {
+   "title": "Gospel reggae",
+   "wikidata": "Q3931695",
+   "match": "name"
+  }
+ },
+ "reggae-pop": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "125f8214-a25d-4047-a96e-0fee46d30716",
+   "name": "reggae-pop",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Reggae pop",
+   "wikidata": "Q98528253",
+   "match": "name"
+  }
+ },
+ "reggaeton": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "bb14fb18-af6b-4547-9130-47fc4b208f48",
+   "name": "reggaeton",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Reggaeton",
+   "wikidata": "Q202930",
+   "match": "name"
+  }
+ },
+ "renaissance": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "54a4ff47-c153-4337-8a0c-c6e3a4ee9aa9",
+   "name": "renaissance",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1030",
+   "name": "Renaissance",
+   "match": "name"
+  }
+ },
+ "requiem": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "627d27d1-4ea4-44c2-a6a7-74daf9445ba7",
+   "name": "requiem",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Music for the Requiem Mass",
+   "wikidata": "Q6941842",
+   "match": "name"
+  }
+ },
+ "rhythm and blues": {
+  "discogs": true,
+  "wikipedia": {
+   "title": "Rhythm and blues",
+   "wikidata": "Q45981",
+   "match": "name"
+  }
+ },
+ "rhythmic noise": {
+  "discogs": true,
+  "wikipedia": {
+   "title": "Power noise",
+   "wikidata": "Q1913888",
+   "match": "name"
+  }
+ },
+ "rnb/swing": {
+  "discogs": true
+ },
+ "rock": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "0e3fc579-2d24-4f20-9dae-736e1ec78798",
+   "name": "rock",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "21",
+   "name": "Rock",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Rock music",
+   "wikidata": "Q11399",
+   "match": "name"
+  }
+ },
+ "rock and roll": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "e4581b76-a842-440b-9b0f-1aa7a00a5c57",
+   "name": "rock and roll",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1157",
+   "name": "Rock & Roll",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Rock and roll",
+   "wikidata": "Q7749",
+   "match": "name"
+  }
+ },
+ "rock opera": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "baaf713d-1e4e-459e-a058-60d89ce1f9df",
+   "name": "rock opera",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Rock opera",
+   "wikidata": "Q253137",
+   "match": "name"
+  }
+ },
+ "rockabilly": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "f1a053eb-61bb-448a-964d-35784c4ae8c1",
+   "name": "rockabilly",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1158",
+   "name": "Rockabilly",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Rockabilly",
+   "wikidata": "Q203720",
+   "match": "name"
+  }
+ },
+ "rocksteady": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "81638671-c67c-47cf-b21d-e92261068cf6",
+   "name": "rocksteady",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Rocksteady",
+   "wikidata": "Q573484",
+   "match": "name"
+  }
+ },
+ "romani": {
+  "discogs": true
+ },
+ "roots reggae": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "f2d4991d-97fa-4c1c-8e09-15ec7668aa43",
+   "name": "roots reggae",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1192",
+   "name": "Roots Reggae",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Roots reggae",
+   "wikidata": "Q1299260",
+   "match": "name"
+  }
+ },
+ "roots rock": {
+  "discogs": false,
+  "musicbrainz": {
+   "id": "883d75d5-1365-46ee-8cbe-d3ae2facdd93",
+   "name": "roots rock",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1159",
+   "name": "Roots Rock",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Roots rock",
+   "wikidata": "Q1929352",
+   "match": "name"
+  }
+ },
+ "rumba": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "190bba5b-909f-4501-9a00-f96969983459",
+   "name": "rumba",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Rumba",
+   "wikidata": "Q21684437",
+   "match": "name"
+  }
+ },
+ "sadcore": {
+  "discogs": false,
+  "wikipedia": {
+   "title": "Sadcore",
+   "wikidata": "Q7397641",
+   "match": "name"
+  }
+ },
+ "salsa": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "717f442d-59d1-4349-a14e-c4874acd3509",
+   "name": "salsa",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Salsa music",
+   "wikidata": "Q208239",
+   "match": "name"
+  }
+ },
+ "samba": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "2447a0ec-e65f-48c7-b402-05cfe5c62cb7",
+   "name": "samba",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1227",
+   "name": "Samba",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Samba",
+   "wikidata": "Q11403",
+   "match": "name"
+  }
+ },
+ "samba-canção": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "77a3669c-d74b-4a08-aa68-d8858bac931a",
+   "name": "samba-canção",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Samba-canção",
+   "wikidata": "Q4215151",
+   "match": "name"
+  }
+ },
+ "schlager": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "7edde935-8094-409e-ba33-34779b4668f8",
+   "name": "schlager",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Schlager music",
+   "wikidata": "Q959583",
+   "match": "name"
+  }
+ },
+ "schranz": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "23b9af26-1442-4dd9-8b40-a0db8a22e149",
+   "name": "schranz",
+   "match": "name"
+  }
+ },
+ "screamo": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "8fea0cb0-4205-49cb-95e8-bc1122857c7d",
+   "name": "screamo",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Screamo",
+   "wikidata": "Q11363",
+   "match": "name"
+  }
+ },
+ "screw": {
+  "discogs": true,
+  "wikipedia": {
+   "title": "Chopped and screwed",
+   "wikidata": "Q2261628",
+   "match": "name"
+  }
+ },
+ "séga": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "9e5dc752-6f6b-460a-9068-e9220394d7b8",
+   "name": "séga",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Sega (genre)",
+   "wikidata": "Q1781796",
+   "match": "name"
+  }
+ },
+ "sephardic": {
+  "discogs": true,
+  "wikipedia": {
+   "title": "Sephardic music",
+   "wikidata": "Q2271589",
+   "match": "name"
+  }
+ },
+ "seresta": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "a833a00d-97f2-4e2e-be8f-1b4ffc9f2972",
+   "name": "seresta",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Seresta (music)",
+   "wikidata": "Q10370216",
+   "match": "name"
+  }
+ },
+ "sertanejo": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "8f34dcd7-4e90-4bec-ba28-872da1eda808",
+   "name": "sertanejo",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1228",
+   "name": "Sertanejo",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Sertanejo music",
+   "wikidata": "Q1958273",
+   "match": "name"
+  }
+ },
+ "shock rock": {
+  "discogs": false,
+  "wikipedia": {
+   "title": "Shock rock",
+   "wikidata": "Q2045695",
+   "match": "name"
+  }
+ },
+ "shoegaze": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "a4012b2e-5c27-4f81-8781-9ae5998d882c",
+   "name": "shoegaze",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Shoegaze",
+   "wikidata": "Q272167",
+   "match": "name"
+  }
+ },
+ "singer-songwriter": {
+  "discogs": false,
+  "musicbrainz": {
+   "id": "455f264b-db00-4716-991d-fbd32dc24523",
+   "name": "singer-songwriter",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "10",
+   "name": "Singer/Songwriter",
+   "match": "name"
+  }
+ },
+ "ska": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "65877068-2116-4af6-89a2-838179a7e103",
+   "name": "ska",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1194",
+   "name": "Ska",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Ska",
+   "wikidata": "Q54365",
+   "match": "name"
+  }
+ },
+ "skiffle": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "9322a638-95ba-467c-992d-d1e641e8ee9a",
+   "name": "skiffle",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Skiffle",
+   "wikidata": "Q606089",
+   "match": "name"
+  }
+ },
+ "skweee": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "f3bab7c4-d649-4738-8a9a-d3874650c485",
+   "name": "skweee",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Skweee",
+   "wikidata": "Q888137",
+   "match": "name"
+  }
+ },
+ "slowcore": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "8d3d9402-79df-4d91-946c-ea041acfb3cc",
+   "name": "slowcore",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Slowcore",
+   "wikidata": "Q1490170",
+   "match": "name"
+  }
+ },
+ "sludge metal": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "66544dbb-08a8-44c2-a21a-4d251481d2b6",
+   "name": "sludge metal",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Sludge metal",
+   "wikidata": "Q720959",
+   "match": "name"
+  }
+ },
+ "smooth jazz": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "a1f1dcc8-6078-4c12-90b7-47e3080e330c",
+   "name": "smooth jazz",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1114",
+   "name": "Smooth Jazz",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Smooth jazz",
+   "wikidata": "Q831354",
+   "match": "name"
+  }
+ },
+ "soca": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "b251cd9a-990c-49f6-8da3-db3457aa2114",
+   "name": "soca",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1277",
+   "name": "Soca",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Soca music",
+   "wikidata": "Q1051735",
+   "match": "name"
+  }
+ },
+ "soft rock": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "7d0c6a6b-5d56-4b1e-a8c7-e32194f246b9",
+   "name": "soft rock",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1134",
+   "name": "Soft Rock",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Soft rock",
+   "wikidata": "Q217191",
+   "match": "name"
+  }
+ },
+ "son": {
+  "discogs": true,
+  "apple_music": {
+   "id": "100028",
+   "name": "Son",
+   "match": "name"
+  }
+ },
+ "son montuno": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "7f0d2b34-d0ea-4ab5-a169-934f131bc40c",
+   "name": "son montuno",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Son montuno",
+   "wikidata": "Q290869",
+   "match": "name"
+  }
+ },
+ "sonata": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "ef8227d2-a286-47af-85c8-d5b6bec1f9db",
+   "name": "sonata",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "50000176",
+   "name": "Sonata",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Sonata",
+   "wikidata": "Q131269",
+   "match": "name"
+  }
+ },
+ "soukous": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "215a1932-5ca1-4316-9378-9cdccc6d389c",
+   "name": "soukous",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "100063",
+   "name": "Soukous",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Soukous",
+   "wikidata": "Q1752683",
+   "match": "name"
+  }
+ },
+ "soul": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "1b5e7b16-336b-473e-a364-5120413a9827",
+   "name": "soul",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1143",
+   "name": "Soul",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Soul music",
+   "wikidata": "Q131272",
+   "match": "name"
+  }
+ },
+ "soul jazz": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "e70f0aa3-9531-448c-8182-7ff34e3d74f8",
+   "name": "soul jazz",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Soul jazz",
+   "wikidata": "Q1615483",
+   "match": "name"
+  }
+ },
+ "sound art": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "1ec74b4b-4f9f-4aa4-9a46-b840382f3a59",
+   "name": "sound art",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Sound art",
+   "wikidata": "Q1744327",
+   "match": "name"
+  }
+ },
+ "sound collage": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "dd5ad210-043c-4af3-86bd-91bedd9ca827",
+   "name": "sound collage",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Sound collage",
+   "wikidata": "Q1744304",
+   "match": "name"
+  }
+ },
+ "southern rock": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "905c1899-3027-4d29-8d9c-bbeef2c8628a",
+   "name": "southern rock",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1161",
+   "name": "Southern Rock",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Southern rock",
+   "wikidata": "Q852767",
+   "match": "name"
+  }
+ },
+ "sovietwave": {
+  "discogs": false,
+  "musicbrainz": {
+   "id": "fa50a85d-fb61-441c-84a4-599482e190b6",
+   "name": "sovietwave",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Sovietwave",
+   "wikidata": "Q30895273",
+   "match": "name"
+  }
+ },
+ "space disco": {
+  "discogs": false,
+  "musicbrainz": {
+   "id": "0e0b8d87-7a4c-44d1-a279-1076782af19f",
+   "name": "space disco",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Space disco",
+   "wikidata": "Q2608506",
+   "match": "name"
+  }
+ },
+ "space rock": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "532dcf83-5641-446d-b007-51292b401650",
+   "name": "space rock",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Space rock",
+   "wikidata": "Q236913",
+   "match": "name"
+  }
+ },
+ "space-age": {
+  "discogs": true
+ },
+ "spacesynth": {
+  "discogs": false,
+  "musicbrainz": {
+   "id": "4e45ed10-6896-4911-8b5d-366f38af0f40",
+   "name": "spacesynth",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Spacesynth",
+   "wikidata": "Q4049849",
+   "match": "name"
+  }
+ },
+ "speed garage": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "59c7776f-fd87-4cfb-a7a5-9fe66ec02b1b",
+   "name": "speed garage",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Speed garage",
+   "wikidata": "Q780517",
+   "match": "name"
+  }
+ },
+ "speed metal": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "13b9a3d0-cadd-483d-9bf5-9c2b32a946a7",
+   "name": "speed metal",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Speed metal",
+   "wikidata": "Q211723",
+   "match": "name"
+  }
+ },
+ "speedcore": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "03544ca7-48ef-449b-abed-67aebdcd8120",
+   "name": "speedcore",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Speedcore",
+   "wikidata": "Q848457",
+   "match": "name"
+  }
+ },
+ "spiritual jazz": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "b37ceb94-0e7b-4d60-bcb1-662148b75a92",
+   "name": "spiritual jazz",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Spiritual jazz",
+   "wikidata": "Q98528204",
+   "match": "name"
+  }
+ },
+ "stoner rock": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "aa5f0254-403e-496a-a388-c01abf62f39a",
+   "name": "stoner rock",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Stoner rock",
+   "wikidata": "Q617240",
+   "match": "name"
+  }
+ },
+ "sunshine house": {
+  "discogs": false
+ },
+ "sunshine pop": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "68b80b55-c919-4258-ac7a-55fb6c927ed9",
+   "name": "sunshine pop",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Sunshine pop",
+   "wikidata": "Q2461933",
+   "match": "name"
+  }
+ },
+ "surf": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "6a325db6-8c10-44e1-b17a-b7c8dda50546",
+   "name": "surf",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1162",
+   "name": "Surf",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Surf music",
+   "wikidata": "Q220830",
+   "match": "name"
+  }
+ },
+ "swing": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "063d0461-1e12-4246-87bf-69c5ca611cc2",
+   "name": "swing",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1055",
+   "name": "Swing",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Swing music",
+   "wikidata": "Q203775",
+   "match": "name"
+  }
+ },
+ "swingbeat": {
+  "discogs": true
+ },
+ "symphonic metal": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "2a4cae89-5a5a-44b7-9cf8-bf92c38a31dc",
+   "name": "symphonic metal",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Symphonic metal",
+   "wikidata": "Q486415",
+   "match": "name"
+  }
+ },
+ "symphonic rock": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "f729e6f8-30dc-4b81-9ff4-f4e7de82225d",
+   "name": "symphonic rock",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Symphonic rock",
+   "wikidata": "Q719927",
+   "match": "name"
+  }
+ },
+ "symphony": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "50294a4d-61f0-4dc8-a20f-4708d52fe78a",
+   "name": "symphony",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "50000174",
+   "name": "Symphony",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Symphony",
+   "wikidata": "Q9734",
+   "match": "name"
+  }
+ },
+ "synth-funk": {
+  "discogs": false,
+  "musicbrainz": {
+   "id": "4dcf868a-cbcb-4969-beff-d75c91d0bd47",
+   "name": "synth funk",
+   "match": "name"
+  }
+ },
+ "synth-rock": {
+  "discogs": false
+ },
+ "synthpop": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "988e91a3-3341-416d-b7f8-7dbef6848dac",
+   "name": "synth-pop",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Synth-pop",
+   "wikidata": "Q1298934",
+   "match": "name"
+  }
+ },
+ "synthwave": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "19565d07-8460-4773-8d54-149208a61bb4",
+   "name": "synthwave",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Synthwave",
+   "wikidata": "Q19938910",
+   "match": "name"
+  }
+ },
+ "taarab": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "8d28a99e-69a8-452e-a34e-6f2f69398cb3",
+   "name": "taarab",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "100064",
+   "name": "Taarab",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Taarab",
+   "wikidata": "Q1564596",
+   "match": "name"
+  }
+ },
+ "tango": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "267b14aa-3e3c-4615-803c-0255a81c8203",
+   "name": "tango",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1296",
+   "name": "Tango",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Tango music",
+   "wikidata": "Q14390274",
+   "match": "name"
+  }
+ },
+ "tech house": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "1f9c4b4a-c43d-40bd-b806-357153641fd0",
+   "name": "tech house",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Tech house",
+   "wikidata": "Q598593",
+   "match": "name"
+  }
+ },
+ "tech trance": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "ec039eb4-e175-44af-82ed-f152349eca35",
+   "name": "tech trance",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Tech trance",
+   "wikidata": "Q2302695",
+   "match": "name"
+  }
+ },
+ "technical death metal": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "db37c56d-e6a7-4809-b549-6f1cb559b559",
+   "name": "technical death metal",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Technical death metal",
+   "wikidata": "Q1076092",
+   "match": "name"
+  }
+ },
+ "techno": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "41fe3260-fcc1-450b-bd5a-803886c56912",
+   "name": "techno",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1050",
+   "name": "Techno",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Techno",
+   "wikidata": "Q170611",
+   "match": "name"
+  }
+ },
+ "tejano": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "1e6f2b7a-bab4-4194-bd42-d1836ce95650",
+   "name": "tejano",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Tejano music",
+   "wikidata": "Q431415",
+   "match": "name"
+  }
+ },
+ "texas blues": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "6a579e9e-69ae-42ce-ad7d-d16baaec8255",
+   "name": "texas blues",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Texas blues",
+   "wikidata": "Q1271752",
+   "match": "name"
+  }
+ },
+ "thrash": {
+  "discogs": true,
+  "wikipedia": {
+   "title": "Thrash metal",
+   "wikidata": "Q483352",
+   "match": "name"
+  }
+ },
+ "thug rap": {
+  "discogs": true
+ },
+ "timba": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "6b8e3c88-add3-4b27-b2ec-a2135edf6e95",
+   "name": "timba",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "100031",
+   "name": "Timba",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Timba",
+   "wikidata": "Q371745",
+   "match": "name"
+  }
+ },
+ "trance": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "2afc2320-384f-43a4-a71e-1b763c485045",
+   "name": "trance",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1051",
+   "name": "Trance",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Trance music",
+   "wikidata": "Q170435",
+   "match": "name"
+  }
+ },
+ "trap": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "9a339aa8-a0e5-450c-95a7-b11517bb508f",
+   "name": "trap",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Trap music",
+   "wikidata": "Q2913982",
+   "match": "name"
+  }
+ },
+ "tribal": {
+  "discogs": true
+ },
+ "tribal house": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "57159d7c-faa8-4266-abe1-7504e312fc88",
+   "name": "tribal house",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Tribal house",
+   "wikidata": "Q202925",
+   "match": "name"
+  }
+ },
+ "trip hop": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "45eb1d9c-588c-4dc8-9394-a14b7c8f02bc",
+   "name": "trip hop",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Trip hop",
+   "wikidata": "Q205560",
+   "match": "name"
+  }
+ },
+ "tropical house": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "fb56e5c9-2063-4664-9293-b4aa369d5286",
+   "name": "tropical house",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Tropical house",
+   "wikidata": "Q18342587",
+   "match": "name"
+  }
+ },
+ "trova": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "2227647c-a849-40d1-9ba8-24c2cc01c411",
+   "name": "trova",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Trova",
+   "wikidata": "Q2420447",
+   "match": "name"
+  }
+ },
+ "turntablism": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "cfe47781-460e-498a-92f5-399d68076727",
+   "name": "turntablism",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Turntablism",
+   "wikidata": "Q1046801",
+   "match": "name"
+  }
+ },
+ "uk garage": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "95c57cd7-7fb8-4405-ade1-775c2d27e54e",
+   "name": "uk garage",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "UK garage",
+   "wikidata": "Q1165777",
+   "match": "name"
+  }
+ },
+ "uk street soul": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "cd1ad933-1ca9-4de4-a60d-ad5fe143c827",
+   "name": "uk street soul",
+   "match": "name"
+  }
+ },
+ "uplifting trance": {
+  "discogs": false,
+  "wikipedia": {
+   "title": "Uplifting trance",
+   "wikidata": "Q1136765",
+   "match": "name"
+  }
+ },
+ "vallenato": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "bff33e5d-d591-498f-927f-b26c5527d817",
+   "name": "vallenato",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Vallenato",
+   "wikidata": "Q1574985",
+   "match": "name"
+  }
+ },
+ "vaporwave": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "e837fa08-f314-428f-af96-ceed9858e3b2",
+   "name": "vaporwave",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Vaporwave",
+   "wikidata": "Q15733887",
+   "match": "name"
+  }
+ },
+ "viking metal": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "fc736acd-9413-4b86-b8d4-47e9ce61d561",
+   "name": "viking metal",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Viking metal",
+   "wikidata": "Q213149",
+   "match": "name"
+  }
+ },
+ "vocal": {
+  "discogs": true,
+  "apple_music": {
+   "id": "23",
+   "name": "Vocal",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Vocal music",
+   "wikidata": "Q685884",
+   "match": "name"
+  }
+ },
+ "vocal trance": {
+  "discogs": false,
+  "musicbrainz": {
+   "id": "f4dec9c1-abe2-4f3f-adee-5aa8f395d5ce",
+   "name": "vocal trance",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Vocal trance",
+   "wikidata": "Q1027999",
+   "match": "name"
+  }
+ },
+ "volksmusik": {
+  "discogs": true
+ },
+ "western swing": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "60e19df0-99e8-4863-be31-7ec7e5c98c7a",
+   "name": "western swing",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Western swing",
+   "wikidata": "Q1730388",
+   "match": "name"
+  }
+ },
+ "witch house": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "34ec5538-a91a-454f-b500-18253bb45c20",
+   "name": "witch house",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Witch house",
+   "wikidata": "Q1840167",
+   "match": "name"
+  }
+ },
+ "worldbeat": {
+  "discogs": false,
+  "musicbrainz": {
+   "id": "497e03b3-68fd-405b-bce3-16f89177adc0",
+   "name": "worldbeat",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1190",
+   "name": "Worldbeat",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Worldbeat",
+   "wikidata": "Q2064394",
+   "match": "name"
+  }
+ },
+ "yé-yé": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "e6d6a58f-6c00-484e-9bc7-12e2c4d024e2",
+   "name": "yé-yé",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Yé-yé",
+   "wikidata": "Q1636684",
+   "match": "name"
+  }
+ },
+ "zouk": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "34d6235e-91cd-452f-95fb-2f8ce6508471",
+   "name": "zouk",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Zouk",
+   "wikidata": "Q227045",
+   "match": "name"
+  }
+ },
+ "zydeco": {
+  "discogs": true,
+  "musicbrainz": {
+   "id": "498229df-4956-4ed7-91f7-a9d4b1877af1",
+   "name": "zydeco",
+   "match": "name"
+  },
+  "apple_music": {
+   "id": "1191",
+   "name": "Zydeco",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Zydeco",
+   "wikidata": "Q245296",
+   "match": "name"
+  }
+ }
+}

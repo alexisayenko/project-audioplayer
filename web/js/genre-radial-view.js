@@ -1,6 +1,8 @@
 import { fitTransform, recenterOnResize, hitNode, isDragMove } from './genre-view.js';
 import { highlightSets, selectLabels } from './genre-radial.js';
 import { FAMILY_PALETTE_SIZE } from './genre-data.js';
+import { fillDisc } from './genre-disc.js';
+import { shadeTable } from './genre-shade.js';
 
 const MIN_K = 0.15;
 const MAX_K = 8;
@@ -98,8 +100,11 @@ export function createRadialView(canvas, { onSelect, onHover, reducedMotion = fa
       if (sel) alpha = on ? 0.95 : 0.1;
       ctx.globalAlpha = alpha;
       ctx.strokeStyle = on ? colors.accent : colors.edge;
-      ctx.lineWidth = (on ? 2 : 1) / k;
+      ctx.lineWidth = (on ? 2 : e.dotted ? 0.7 : 1) / k;
+      ctx.setLineDash(e.dotted ? [1 / k, 3 / k] : []);
+      if (e.dotted && !on) ctx.globalAlpha = alpha * 0.7;
       ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+      ctx.setLineDash([]);
     }
   }
 
@@ -109,10 +114,16 @@ export function createRadialView(canvas, { onSelect, onHover, reducedMotion = fa
     return matches.has(n.id) ? 2.5 : 0;
   }
 
+  let shadeCache = null;
+  const shades = () => {
+    if (!shadeCache || shadeCache.base !== colors.fam[layout.subIdx]) shadeCache = { base: colors.fam[layout.subIdx], table: shadeTable(colors.fam[layout.subIdx]) };
+    return shadeCache.table;
+  };
+
   function drawNode(n, k) {
     ctx.globalAlpha = alphaOf(n);
-    ctx.fillStyle = colors.fam[n.hue] || colors.ink;
-    ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, 2 * Math.PI); ctx.fill();
+    const sub = n.subOrder && layout.subIdx >= 0 ? layout.subIdx : -1;
+    fillDisc(ctx, n.x, n.y, n.r, colors.fam, n.hues || [n.hue], colors.ink, sub, sub >= 0 ? shades()[n.subOrder] : null);
     if (!n.node.discogs) {
       ctx.strokeStyle = colors.ink;
       ctx.lineWidth = 1.5 / k;

@@ -1,4 +1,5 @@
 import { store } from './store.js';
+import { storeGet, storeSet } from './storage.js';
 import { sortKey, compareKeys, displayYear } from './credits.js';
 import { songSearchText } from './search-text.js';
 import { filterableTags, canonicalTag, tagSearchText, categoryOf, withRuntimeDecade } from './tagname.js';
@@ -23,6 +24,16 @@ export function unsetCount(catId, songs = store.songs) {
 }
 
 export const prefs = { query: '', sel: new Set(), sort: 'added', view: 'songs' };
+
+export const LIBRARY_VIEW_KEY = 'electrophone.libraryView';
+
+export function readLibraryView(canDrafts) {
+  return canDrafts && storeGet(LIBRARY_VIEW_KEY) === 'drafts' ? 'drafts' : 'songs';
+}
+
+export function saveLibraryView(view) {
+  storeSet(LIBRARY_VIEW_KEY, view === 'drafts' ? 'drafts' : 'songs');
+}
 
 export function filterByTags(tags) {
   const have = new Set(store.tags.map((t) => t.tag.toLocaleLowerCase()));

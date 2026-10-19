@@ -23,6 +23,7 @@ function clampV(v) {
 }
 
 const REST = 0.012;
+const ASSOC_STRENGTH = 0.03;
 
 function quad(x0, y0, size) {
   return { x0, y0, size, mass: 0, cx: 0, cy: 0, kids: null, leaf: null };
@@ -52,7 +53,7 @@ function insert(cell, n, w, depth = 0) {
   insert(cell.kids[i], n, w, depth + 1);
 }
 
-export function createSim({ nodes, links = [], seed = 1, breathing = true, charge = 70, linkDistance = 56, gravity = 0.035 }) {
+export function createSim({ nodes, links = [], seed = 1, breathing = true, charge = 70, linkDistance = 56, gravity = 0.035, home = 0 }) {
   const rng = mulberry32(seed);
   const byId = new Map();
   nodes.forEach((n, i) => {
@@ -76,16 +77,18 @@ export function createSim({ nodes, links = [], seed = 1, breathing = true, charg
     const s = byId.get(l.source?.id ?? l.source);
     const t = byId.get(l.target?.id ?? l.target);
     if (!s || !t || s === t) continue;
-    ls.push({ s, t, related: l.kind === 'related' });
+    const assoc = l.kind === 'assoc';
+    ls.push({ s, t, related: l.kind === 'related', assoc });
+    if (assoc) continue;
     deg.set(s.id, deg.get(s.id) + 1);
     deg.set(t.id, deg.get(t.id) + 1);
   }
   for (const l of ls) {
-    const ds = deg.get(l.s.id);
-    const dt = deg.get(l.t.id);
-    l.strength = (l.related ? 0.15 : 1) / Math.min(ds, dt);
-    l.dist = (l.related ? 1.6 : 1) * linkDistance + l.s.r + l.t.r;
-    l.bias = ds / (ds + dt);
+    const ds = Math.max(1, deg.get(l.s.id));
+    const dt = Math.max(1, deg.get(l.t.id));
+    l.strength = (l.assoc ? ASSOC_STRENGTH : l.related ? 0.15 : 1) / Math.min(ds, dt);
+    l.dist = (l.assoc ? 2.5 : l.related ? 1.6 : 1) * linkDistance + l.s.r + l.t.r;
+    l.bias = dt / (ds + dt);
   }
   const weight = (n) => 1 + n.r * 0.12;
   let alpha = 1;
@@ -202,6 +205,10 @@ export function createSim({ nodes, links = [], seed = 1, breathing = true, charg
   function integrate(n, amp) {
     n.vx -= n.x * gravity * alpha;
     n.vy -= n.y * gravity * alpha;
+    if (home && n.hx !== undefined && n.hy !== undefined) {
+      n.vx += (n.hx - n.x) * home;
+      n.vy += (n.hy - n.y) * home;
+    }
     if (amp) {
       n.vx += Math.cos(ticks * 0.021 + n.phase) * amp;
       n.vy += Math.sin(ticks * 0.017 + n.phase * 1.7) * amp;

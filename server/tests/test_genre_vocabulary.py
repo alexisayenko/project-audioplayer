@@ -218,7 +218,7 @@ def test_create_rejects_unknown_genre_and_applies_nothing(client):
 def test_create_accepts_aliases_and_canonicalises(client):
     r = add(client, metadata={"title": "S"}, audio=False, tags=["genre:Drum & Bass", "genre:house music", "genre:EDM"])
     assert r.status_code == 201
-    assert r.json()["song"]["tags"][:3] == ["genre:drum and bass", "genre:house", "genre:electronic"]
+    assert r.json()["song"]["tags"][:3] == ["genre:drum and bass", "genre:house", "genre:edm"]
 
 
 def test_create_still_drops_junk_silently(client):
@@ -472,12 +472,34 @@ def test_the_graph_exposes_an_anchor_per_node(client):
 
 
 
-@pytest.mark.parametrize("raw", ["Soviet Wave", "sovietwave", "Soviet-Wave", "советская волна", "Советская-волна"])
+@pytest.mark.parametrize("raw", ["soviet wave", "Soviet Wave", "sovietwave", "Soviet-Wave", "soviet-wave", "советская волна", "Советская-волна", "советская-волна"])
 def test_soviet_wave_spellings_resolve(raw):
-    assert gf.vocabulary_name(raw) == "soviet wave"
+    assert gf.vocabulary_name(raw) == "sovietwave"
+
+
+def test_the_payload_has_sovietwave_and_not_soviet_wave():
+    genre_vocab.reset()
+    body = genre_vocab.vocabulary()
+    assert "sovietwave" in body["levels"] and "soviet wave" not in body["levels"]
+    names = {r["name"] for r in body["genres"]}
+    assert "sovietwave" in names and "soviet wave" not in names
+
+
+def test_migration_rewrites_a_stored_soviet_wave_to_sovietwave_with_a_backup(datadir):
+    original = json.dumps({"settings": {}, "songs": [{"id": "a", "title": "A", "tags": ["genre:soviet wave", "genre:synthwave"]}, {"id": "b", "title": "B", "tags": ["genre:Soviet Wave", "genre:sovietwave"]}]})
+    d = datadir / "users" / "u4"
+    d.mkdir(parents=True)
+    (d / "library.json").write_text(original)
+    assert migrate_tags.run() == 1
+    stored = json.loads((d / "library.json").read_text())["songs"]
+    assert library.tag_list(stored[0]) == ["genre:sovietwave", "genre:synthwave"]
+    assert library.tag_list(stored[1]) == ["genre:sovietwave"]
+    assert (datadir / "backups-genre-merge" / "u4" / "library.json").read_text() == original
+    assert migrate_tags.run() == 0
 
 
 def test_soviet_wave_hashtag_is_a_youtube_genre():
     from app import yt_genres
 
-    assert yt_genres.genre_of("#SovietWave") == "soviet wave"
+    assert yt_genres.genre_of("#SovietWave") == "sovietwave"
+    assert yt_genres.genre_of("Soviet Wave") == "sovietwave"

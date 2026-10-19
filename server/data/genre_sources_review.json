@@ -1,0 +1,362 @@
+{
+ "_meta": {
+  "generated_at": "2026-10-19T13:49:24.071Z",
+  "note": "Candidates that were not stored. To accept one, add it to server/data/genre_sources_manual.json and rebuild."
+ },
+ "review": [
+  {
+   "source": "apple_music",
+   "genre": "klezmer",
+   "candidate": "Music > Jewish Music > Klezmer (50000127)",
+   "reason": "several name candidates"
+  },
+  {
+   "source": "apple_music",
+   "genre": "klezmer",
+   "candidate": "Music > Worldwide > Klezmer (1187)",
+   "reason": "several name candidates"
+  },
+  {
+   "source": "apple_music",
+   "genre": "latin jazz",
+   "candidate": "Music > Jazz > Latin Jazz (1111)",
+   "reason": "several name candidates"
+  },
+  {
+   "source": "apple_music",
+   "genre": "latin jazz",
+   "candidate": "Music > Latin > Latin Jazz (1115)",
+   "reason": "several name candidates"
+  },
+  {
+   "source": "apple_music",
+   "genre": "opera",
+   "candidate": "Music > Classical > Opera (1028)",
+   "reason": "several name candidates"
+  },
+  {
+   "source": "apple_music",
+   "genre": "opera",
+   "candidate": "Music > Classical > Opera (9)",
+   "reason": "several name candidates"
+  },
+  {
+   "source": "musicbrainz",
+   "genre": "funk / soul",
+   "candidate": "r&b (31be54b2-4d0c-42df-aa44-c496c7b4c3c3)",
+   "reason": "already matched by name to \"r&b\""
+  },
+  {
+   "source": "musicbrainz",
+   "genre": "kaseko",
+   "candidate": "kaseko (57a6dcc1-c3cd-4ce1-9fb2-e1783992a683)",
+   "reason": "several name candidates"
+  },
+  {
+   "source": "musicbrainz",
+   "genre": "kaseko",
+   "candidate": "kasékò (c1f813d2-d21f-4eda-85e3-e8bfac92b3e1)",
+   "reason": "several name candidates"
+  },
+  {
+   "source": "wikipedia",
+   "genre": "acid",
+   "candidate": "Acid house (Q341364)",
+   "reason": "several name candidates"
+  },
+  {
+   "source": "wikipedia",
+   "genre": "acid",
+   "candidate": "Psychedelic music (Q846119)",
+   "reason": "several name candidates"
+  },
+  {
+   "source": "wikipedia",
+   "genre": "aor",
+   "candidate": "Album-oriented rock (Q428656)",
+   "reason": "several name candidates"
+  },
+  {
+   "source": "wikipedia",
+   "genre": "aor",
+   "candidate": "Arena rock (Q379033)",
+   "reason": "several name candidates"
+  },
+  {
+   "source": "wikipedia",
+   "genre": "ballroom",
+   "candidate": "Ballroom (Q805353)",
+   "reason": "label matches but the Wikidata item is not a music genre (instance of nothing)"
+  },
+  {
+   "source": "wikipedia",
+   "genre": "big band",
+   "candidate": "Big band (Q207378)",
+   "reason": "label matches but the Wikidata item is not a music genre (instance of Q105756498)"
+  },
+  {
+   "source": "wikipedia",
+   "genre": "bolero",
+   "candidate": "Bolero (Q15830404)",
+   "reason": "several name candidates"
+  },
+  {
+   "source": "wikipedia",
+   "genre": "bolero",
+   "candidate": "Bolero (Spanish dance) (Q489913)",
+   "reason": "several name candidates"
+  },
+  {
+   "source": "wikipedia",
+   "genre": "bomba",
+   "candidate": "Bomba (Ecuador) (Q4940448)",
+   "reason": "several name candidates"
+  },
+  {
+   "source": "wikipedia",
+   "genre": "bomba",
+   "candidate": "Bomba (Puerto Rico) (Q2278063)",
+   "reason": "several name candidates"
+  },
+  {
+   "source": "wikipedia",
+   "genre": "cabaret",
+   "candidate": "Cabaret (Q131183)",
+   "reason": "label matches but the Wikidata item is not a music genre (instance of nothing)"
+  },
+  {
+   "source": "wikipedia",
+   "genre": "classic rock",
+   "candidate": "Classic rock (Q1096120)",
+   "reason": "label matches but the Wikidata item is not a music genre (instance of Q589183)"
+  },
+  {
+   "source": "wikipedia",
+   "genre": "contemporary jazz",
+   "candidate": "Contemporary jazz (Q5165030)",
+   "reason": "label matches but the Wikidata item is not a music genre (instance of Q4167410)"
+  },
+  {
+   "source": "wikipedia",
+   "genre": "cumbia",
+   "candidate": "Cumbia (Colombia) (Q723418)",
+   "reason": "several name candidates"
+  },
+  {
+   "source": "wikipedia",
+   "genre": "cumbia",
+   "candidate": "Cumbia (Panama) (Q97276030)",
+   "reason": "several name candidates"
+  },
+  {
+   "source": "wikipedia",
+   "genre": "cumbia",
+   "candidate": "Cumbia (Q107740285)",
+   "reason": "several name candidates"
+  },
+  {
+   "source": "wikipedia",
+   "genre": "estrada",
+   "candidate": "Estrada (Q21491267)",
+   "reason": "label matches but the Wikidata item is not a music genre (instance of Q101352)"
+  },
+  {
+   "source": "wikipedia",
+   "genre": "favela funk",
+   "candidate": "Brazilian funk (Q117745223)",
+   "reason": "several name candidates"
+  },
+  {
+   "source": "wikipedia",
+   "genre": "favela funk",
+   "candidate": "Funk carioca (Q1931130)",
+   "reason": "several name candidates"
+  },
+  {
+   "source": "wikipedia",
+   "genre": "funk / soul",
+   "candidate": "British rhythm and blues (Q4971442)",
+   "reason": "several synonym candidates"
+  },
+  {
+   "source": "wikipedia",
+   "genre": "funk / soul",
+   "candidate": "Contemporary R&B (Q850412)",
+   "reason": "several synonym candidates"
+  },
+  {
+   "source": "wikipedia",
+   "genre": "funk / soul",
+   "candidate": "Rhythm and blues (Q45981)",
+   "reason": "several synonym candidates"
+  },
+  {
+   "source": "wikipedia",
+   "genre": "fusion",
+   "candidate": "Jazz fusion (Q105527)",
+   "reason": "several name candidates"
+  },
+  {
+   "source": "wikipedia",
+   "genre": "fusion",
+   "candidate": "Jazz rock (Q944465)",
+   "reason": "several name candidates"
+  },
+  {
+   "source": "wikipedia",
+   "genre": "ghetto",
+   "candidate": "Ghetto (Q152018)",
+   "reason": "label matches but the Wikidata item is not a music genre (instance of nothing)"
+  },
+  {
+   "source": "wikipedia",
+   "genre": "guaracha",
+   "candidate": "Guaracha (Colombia) (Q111678759)",
+   "reason": "several name candidates"
+  },
+  {
+   "source": "wikipedia",
+   "genre": "guaracha",
+   "candidate": "Guaracha (Q1552806)",
+   "reason": "several name candidates"
+  },
+  {
+   "source": "wikipedia",
+   "genre": "halftime",
+   "candidate": "Half-time (Q1321220)",
+   "reason": "label matches but the Wikidata item is not a music genre (instance of nothing)"
+  },
+  {
+   "source": "wikipedia",
+   "genre": "hillbilly",
+   "candidate": "Hillbilly (Q1448)",
+   "reason": "label matches but the Wikidata item is not a music genre (instance of Q1624245, Q217438)"
+  },
+  {
+   "source": "wikipedia",
+   "genre": "jazzdance",
+   "candidate": "Jazz dance (Q936055)",
+   "reason": "label matches but the Wikidata item is not a music genre (instance of Q107357104)"
+  },
+  {
+   "source": "wikipedia",
+   "genre": "kaseko",
+   "candidate": "Kasékò (Q60722009)",
+   "reason": "several name candidates"
+  },
+  {
+   "source": "wikipedia",
+   "genre": "kaseko",
+   "candidate": "Kaseko (Q610022)",
+   "reason": "several name candidates"
+  },
+  {
+   "source": "wikipedia",
+   "genre": "leftfield",
+   "candidate": "Leftfield (Q277479)",
+   "reason": "label matches but the Wikidata item is not a music genre (instance of Q215380)"
+  },
+  {
+   "source": "wikipedia",
+   "genre": "minimal",
+   "candidate": "Microhouse (Q1931555)",
+   "reason": "several name candidates"
+  },
+  {
+   "source": "wikipedia",
+   "genre": "minimal",
+   "candidate": "Minimal music (Q572901)",
+   "reason": "several name candidates"
+  },
+  {
+   "source": "wikipedia",
+   "genre": "operetta",
+   "candidate": "Operetta (Q170384)",
+   "reason": "label matches but the Wikidata item is not a music genre (instance of Q20643324, Q862597, Q112248470)"
+  },
+  {
+   "source": "wikipedia",
+   "genre": "pub rock",
+   "candidate": "Pub rock (Australia) (Q16250593)",
+   "reason": "several name candidates"
+  },
+  {
+   "source": "wikipedia",
+   "genre": "pub rock",
+   "candidate": "Pub rock (United Kingdom) (Q1431327)",
+   "reason": "several name candidates"
+  },
+  {
+   "source": "wikipedia",
+   "genre": "r&b",
+   "candidate": "British rhythm and blues (Q4971442)",
+   "reason": "several name candidates"
+  },
+  {
+   "source": "wikipedia",
+   "genre": "r&b",
+   "candidate": "Contemporary R&B (Q850412)",
+   "reason": "several name candidates"
+  },
+  {
+   "source": "wikipedia",
+   "genre": "r&b",
+   "candidate": "Rhythm and blues (Q45981)",
+   "reason": "several name candidates"
+  },
+  {
+   "source": "wikipedia",
+   "genre": "renaissance",
+   "candidate": "Renaissance (Q4692)",
+   "reason": "label matches but the Wikidata item is not a music genre (instance of Q968159, Q2198855)"
+  },
+  {
+   "source": "wikipedia",
+   "genre": "schranz",
+   "candidate": "Schranz (Q37465735)",
+   "reason": "label matches but the Wikidata item is not a music genre (instance of Q101352)"
+  },
+  {
+   "source": "wikipedia",
+   "genre": "singer-songwriter",
+   "candidate": "Singer-songwriter (Q488205)",
+   "reason": "label matches but the Wikidata item is not a music genre (instance of Q66715801, Q12737077)"
+  },
+  {
+   "source": "wikipedia",
+   "genre": "son",
+   "candidate": "Son (Q177232)",
+   "reason": "label matches but the Wikidata item is not a music genre (instance of Q171318)"
+  },
+  {
+   "source": "wikipedia",
+   "genre": "space-age",
+   "candidate": "Space Age (Q938328)",
+   "reason": "label matches but the Wikidata item is not a music genre (instance of Q11514315)"
+  },
+  {
+   "source": "wikipedia",
+   "genre": "swingbeat",
+   "candidate": "New jack swing (Q840065)",
+   "reason": "alias of an item already matched by label to another genre"
+  },
+  {
+   "source": "wikipedia",
+   "genre": "synth-rock",
+   "candidate": "Electronic rock (Q325504)",
+   "reason": "alias of an item already matched by label to another genre"
+  },
+  {
+   "source": "wikipedia",
+   "genre": "tribal",
+   "candidate": "Tribal guarachero (Q7844612)",
+   "reason": "several name candidates"
+  },
+  {
+   "source": "wikipedia",
+   "genre": "tribal",
+   "candidate": "Tribal house (Q202925)",
+   "reason": "several name candidates"
+  }
+ ]
+}

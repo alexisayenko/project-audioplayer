@@ -1,6 +1,6 @@
 """The canonical `genre:` vocabulary (TAG-077, TAG-078, ADR-0023, ADR-0030): the families (level 1), the Discogs genres and the reviewed extras, loaded once from `server/data`.
 
-Every name below the families has `parents`: a list of family names and genre names; `parents[0]` is the primary parent and decides the level and the family."""
+Every name below the families has `parents`: a list of family names and genre names; `parents[0]` is the primary parent and decides the level and the family. A genre may also carry `related` (associations and influences; no effect on the tree, levels, families or counts)."""
 
 from __future__ import annotations
 
@@ -11,6 +11,8 @@ import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+
+from . import genre_sources
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 DISCOGS_FILE = DATA_DIR / "genre_discogs.json"
@@ -133,6 +135,7 @@ def reset() -> None:
     with _lock:
         _vocab = None
         _payload = None
+    genre_sources.reset()
 
 
 def lookup(value: str) -> str | None:
@@ -243,7 +246,7 @@ def _parse_flavours(doc: dict[str, Any], name: str) -> dict[str, dict[str, str]]
     return flavours
 
 
-def _parse_entry(k: str, v: Any, name: str, families: dict[str, list[str]], flavours: dict[str, dict[str, str]]) -> dict[str, Any]:
+def _parse_entry(k: str, v: Any, name: str, families: dict[str, list[str]], flavours: dict[str, dict[str, str]], subfamilies: dict[str, dict[str, Any]]) -> dict[str, Any]:
     if not isinstance(v, dict):
         raise ValueError(f"{name}: entry {k!r} is not an object")
     parents = _strings(v.get("parents"), f"entry {k!r} parents")
@@ -257,9 +260,17 @@ def _parse_entry(k: str, v: Any, name: str, families: dict[str, list[str]], flav
     status = v.get("status")
     if status not in (None, "approved", "question"):
         raise ValueError(f"{name}: entry {k!r} has an invalid status {status!r} (approved, question or absent)")
+    fusion = v.get("fusion")
+    if fusion is not None and not isinstance(fusion, bool):
+        raise ValueError(f"{name}: entry {k!r} fusion must be a boolean")
+    if fusion is not None and not any(p in families for p in parents[1:]):
+        raise ValueError(f"{name}: entry {k!r} has 'fusion' but no family among its extra parents")
     display = v.get("display")
     if display is not None and (not isinstance(display, str) or not display.strip()):
         raise ValueError(f"{name}: entry {k!r} display must be a non-empty string")
+    subfamily = v.get("subfamily")
+    if subfamily is not None and subfamily not in subfamilies:
+        raise ValueError(f"{name}: entry {k!r} has an unknown subfamily {subfamily!r}")
     entry = {
         "family": family,
         "parents": parents,
@@ -270,6 +281,16 @@ def _parse_entry(k: str, v: Any, name: str, families: dict[str, list[str]], flav
         "display": display,
         "flavours": _strings(v.get("flavours", []), f"entry {k!r} flavours"),
     }
+    if fusion:
+        entry["fusion"] = True
+    if subfamily is not None:
+        entry["subfamily"] = subfamily
+    if "related" in v:
+        related = _strings(v["related"], f"entry {k!r} related")
+        if len(set(related)) != len(related) or k in related or any(r in parents for r in related):
+            raise ValueError(f"{name}: entry {k!r} related {related!r} must be unique names other than the entry and its parents")
+        if related:
+            entry["related"] = related
     unknown = [f for f in entry["flavours"] if f not in flavours]
     if unknown:
         raise ValueError(f"{name}: entry {k!r} has unknown flavours {unknown!r}")
@@ -297,6 +318,74 @@ def _check_parents(levels: dict[str, dict[str, Any]], families: dict[str, list[s
 
     for k in levels:
         visit(k)
+
+
+def parse_subfamilies(doc: Any) -> dict[str, dict[str, Any]]:
+    """The declared subfamilies of `genre_levels.json` (`subfamilies`: name to `{family, order}`; optional, empty when absent), sorted by order."""
+    name = LEVELS_FILE.name
+    block = doc.get("subfamilies", {}) if isinstance(doc, dict) else {}
+    if not isinstance(block, dict):
+        raise ValueError(f"{name}: 'subfamilies' is not an object")
+    out: dict[str, dict[str, Any]] = {}
+    for sk, spec in block.items():
+        if not isinstance(spec, dict) or not isinstance(spec.get("family"), str) or not isinstance(spec.get("order"), int) or isinstance(spec.get("order"), bool):
+            raise ValueError(f"{name}: subfamily {sk!r} needs a family and an integer order")
+        out[sk] = {"name": sk, "family": spec["family"], "order": spec["order"]}
+    return dict(sorted(out.items(), key=lambda kv: (kv[1]["order"], kv[0])))
+
+
+def _resolve_subfamilies(levels: dict[str, dict[str, Any]], families: dict[str, list[str]], subfamilies: dict[str, dict[str, Any]], name: str) -> None:
+    """A genre's `subfamily`: its own (the declared family of that subfamily must be one of the genre's families: its family or a family among its parents), else the one of its `parents[0]` genre when that fits the same rule; absent when none."""
+    for sk, sp in subfamilies.items():
+        if sp["family"] not in families:
+            raise ValueError(f"{name}: subfamily {sk!r} has an unknown family {sp['family']!r}")
+
+    def fams(v: dict[str, Any]) -> set[str]:
+        return {v["family"], *[p for p in v["parents"] if p in families]}
+
+    for k, v in levels.items():
+        own = v.get("subfamily")
+        if own is not None and subfamilies[own]["family"] not in fams(v):
+            raise ValueError(f"{name}: entry {k!r} subfamily {own!r} belongs to {subfamilies[own]['family']!r}, which is not one of the families of the entry")
+    done: set[str] = set()
+
+    def fill(k: str) -> str | None:
+        v = levels[k]
+        if k not in done:
+            done.add(k)
+            if v.get("subfamily") is None:
+                first = v["parents"][0]
+                got = fill(first) if first in levels else None
+                if got is not None and subfamilies[got]["family"] in fams(v):
+                    v["subfamily"] = got
+        return v.get("subfamily")
+
+    for k in levels:
+        fill(k)
+
+
+def _check_related(levels: dict[str, dict[str, Any]], families: dict[str, list[str]], name: str) -> None:
+    """Every `related` name is a family or an entry and not a descendant of the entry (related is no tree edge, so it never creates a cycle)."""
+    children: dict[str, list[str]] = {}
+    for k, v in levels.items():
+        for p in v["parents"]:
+            children.setdefault(p, []).append(k)
+    for k, v in levels.items():
+        if not v.get("related"):
+            continue
+        for r in v["related"]:
+            if r not in families and r not in levels:
+                raise ValueError(f"{name}: entry {k!r} related {r!r} is not a family or an entry")
+        seen: set[str] = set()
+        stack = [k]
+        while stack:
+            for c in children.get(stack.pop(), []):
+                if c not in seen:
+                    seen.add(c)
+                    stack.append(c)
+        bad = [r for r in v["related"] if r in seen]
+        if bad:
+            raise ValueError(f"{name}: entry {k!r} related {bad!r} is a descendant of the entry")
 
 
 def _resolve(levels: dict[str, dict[str, Any]], families: dict[str, list[str]], name: str) -> None:
@@ -332,13 +421,16 @@ def parse_levels(doc: Any) -> tuple[dict[str, dict[str, Any]], dict[str, list[st
     name = LEVELS_FILE.name
     synonyms = _parse_synonyms(doc, name)
     flavours = _parse_flavours(doc, name)
-    entries = {k: v for k, v in doc.items() if k not in ("_meta", "families", "flavours")}
-    levels = {k: _parse_entry(k, v, name, synonyms, flavours) for k, v in entries.items()}
+    entries = {k: v for k, v in doc.items() if k not in ("_meta", "families", "flavours", "subfamilies")}
+    subfamilies = parse_subfamilies(doc)
+    levels = {k: _parse_entry(k, v, name, synonyms, flavours, subfamilies) for k, v in entries.items()}
     for k, v in levels.items():
         if v["display"] and v["display"].lower() != k and v["display"].lower() in levels:
             raise ValueError(f"{name}: entry {k!r} display {v['display']!r} collides with another entry")
     _check_parents(levels, synonyms, name)
+    _check_related(levels, synonyms, name)
     _resolve(levels, synonyms, name)
+    _resolve_subfamilies(levels, synonyms, subfamilies, name)
     return levels, synonyms, flavours
 
 
@@ -356,9 +448,10 @@ def vocabulary() -> dict[str, Any]:
     with _lock:
         if _payload is None:
             rows = sorted(
-                ({"name": e.name, "family": e.family, "level": e.level, "parents": list(e.parents), "extra": e.extra} for e in v.entries.values()),
+                ({"name": e.name, "family": e.family, "level": e.level, "parents": list(e.parents), "extra": e.extra, **genre_sources.payload_fields(e.name, e.level == "family")} for e in v.entries.values()),
                 key=lambda r: r["name"],
             )
             levels, family_synonyms, flavours = load_levels()
-            _payload = {"families": list(v.families), "genres": rows, "count": len(rows), "aliases": _aliases(v), "levels": levels, "family_synonyms": family_synonyms, "flavours": flavours}
+            subfamilies = list(parse_subfamilies(_read(LEVELS_FILE)).values())
+            _payload = {"families": list(v.families), "genres": rows, "count": len(rows), "aliases": _aliases(v), "levels": levels, "family_synonyms": family_synonyms, "flavours": flavours, "subfamilies": subfamilies}
         return _payload

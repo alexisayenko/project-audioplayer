@@ -239,6 +239,10 @@ label { display: block; color: var(--ink-muted); font: var(--font-caption); marg
   border-radius: var(--radius-key); background: var(--surface); box-shadow: var(--shadow-card); color: var(--ink-muted);
 }
 .search input { flex: 1; min-width: 0; min-height: 0; height: 100%; padding: 0; border-radius: 0; background: transparent; font: var(--font-subhead); outline: none; }
+.search input::-webkit-search-cancel-button, .search input::-webkit-search-decoration { -webkit-appearance: none; appearance: none; }
+.search .search-clear { margin-right: calc(-1 * var(--space-3)); }
+.search .search-clear[hidden] { display: none; }
+.search .search-clear svg { width: var(--space-5); height: var(--space-5); }
 .cats { display: flex; flex-wrap: wrap; gap: var(--space-2); flex-basis: 100%; }
 .cat-chip {
   display: inline-flex; align-items: center; justify-content: center; gap: var(--space-1); min-width: 0; height: var(--control); padding: 0 var(--space-3);
@@ -449,6 +453,10 @@ dialog.sheet { border-radius: var(--radius-tray) var(--radius-tray) 0 0; margin:
 .chip.on { background: var(--fill); color: var(--on-fill); font-weight: 600; }
 .chip.on small { color: var(--on-fill); font-weight: 500; }
 .chip.tint { min-height: var(--control-sm); padding: 0 var(--space-3); background: var(--accent-tint); color: var(--on-tint); }
+.suggested-genres { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin: var(--space-2) 0 var(--space-3); }
+.chip.suggest { gap: var(--space-1); padding: 0 var(--space-2) 0 var(--space-3); background: transparent; border: var(--stroke-hairline) dashed var(--line); }
+.chip.suggest .sg-add { min-height: var(--hit); display: inline-flex; align-items: center; border: 0; background: none; padding: 0; color: var(--ink); font: inherit; }
+.chip.suggest .sg-badge { padding: 0 var(--space-1); border-radius: var(--radius-pill); background: var(--surface-sunken); color: var(--ink-muted); font: var(--font-caption); }
 .chip .x { display: inline-grid; place-items: center; border: 0; background: none; padding: 0 0 0 var(--space-1); color: inherit; font: inherit; }
 .well + div, .add-body { margin-top: var(--space-4); }
 .add-body:empty, .add-card > div:empty { display: none; }

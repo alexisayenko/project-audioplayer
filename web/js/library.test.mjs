@@ -510,3 +510,38 @@ test('Show playing sits on the Library toolbar only while a song is current and 
   while (player.current) player.removeAt(0);
   cleanup();
 });
+
+test('the search clear button: hidden when empty, shown on input, click clears, refocuses and refreshes the list', () => {
+  setStore(SONGS);
+  const { root, cleanup, titles, search } = mount();
+  const input = root.querySelector('input[type=search]');
+  const btn = root.querySelector('.search-clear');
+  assert.equal(btn.getAttribute('aria-label'), 'Clear search');
+  assert.equal(btn.getAttribute('title'), 'Clear search');
+  assert.equal(btn.hidden, true);
+  search('alp');
+  assert.equal(btn.hidden, false);
+  assert.deepEqual(titles(), ['Alpha']);
+  assert.match(root.querySelector('[role=status]').textContent, /1 song matches/);
+  btn.click();
+  assert.equal(input.value, '');
+  assert.equal(btn.hidden, true);
+  assert.equal(titles().length, 4);
+  assert.equal(root.querySelector('[role=status]').textContent, '', 'the match counter is gone with the query');
+  assert.ok(document.activeElement === input, 'focus returns to the search box');
+  cleanup();
+});
+
+test('Escape in the search box clears it only when it has text', () => {
+  setStore(SONGS);
+  const { root, cleanup, titles, search } = mount();
+  const input = root.querySelector('input[type=search]');
+  const esc = () => { const e = makeEvent('keydown', { key: 'Escape' }); input.dispatchEvent(e); return e; };
+  assert.equal(esc().defaultPrevented, false, 'empty box: Escape is left alone');
+  search('alp');
+  assert.equal(esc().defaultPrevented, true);
+  assert.equal(input.value, '');
+  assert.equal(titles().length, 4);
+  assert.equal(root.querySelector('.search-clear').hidden, true);
+  cleanup();
+});

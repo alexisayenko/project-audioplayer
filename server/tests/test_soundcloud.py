@@ -308,7 +308,8 @@ def test_preview_soundcloud(client):
     assert j["source_url"] == SC_URL
     assert "preview_only" not in j
     assert j["in_library"] is False
-    assert j["tags"] == ["genre:house"]
+    assert j["tags"] == []
+    assert j["genre_suggestions"] == [{"genre": "house", "sources": ["youtube"], "reason": "single_source"}]
 
 
 def test_preview_short_link_resolved(client, monkeypatch):

@@ -10,7 +10,7 @@ import { can } from './guest.js';
 import { ROW_FLASH_MS } from './constants.js';
 import { findRowIndex, scrollTarget, registerRevealer } from './reveal.js';
 import { tagLabel, categoryOf, CATEGORIES } from './tagname.js';
-import { prefs, SORTS, visibleSongs, selectedIn, isUnsetKey, unsetCount } from './library-data.js';
+import { prefs, readLibraryView, saveLibraryView, SORTS, visibleSongs, selectedIn, isUnsetKey, unsetCount } from './library-data.js';
 import { songRow } from './library-rows.js';
 import { disposeAll } from './marquee.js';
 import { isRowControl, keepCovers } from './row-cover.js';
@@ -22,6 +22,8 @@ import { countText } from './drafts-model.js';
 
 export { filterByTags, visibleSongs } from './library-data.js';
 
+if (typeof window !== 'undefined') window.addEventListener('auth-changed', () => { prefs.view = 'songs'; });
+
 let flashId = null;
 let flashTimer;
 
@@ -29,8 +31,19 @@ export function renderLibrary(root) {
   const search = el('input', {
     type: 'search', placeholder: 'Search title, artist, album, remix or tag', value: prefs.query,
     'aria-label': 'Search',
-    oninput: (e) => { prefs.query = e.target.value; renderList(); },
+    oninput: (e) => { prefs.query = e.target.value; paintClear(); renderList(); },
+    onkeydown: (e) => { if (e.key === 'Escape' && search.value) { e.preventDefault(); clearSearch(); } },
   });
+  const clearSearchBtn = el('button', { class: 'icon search-clear', type: 'button', hidden: !prefs.query, 'aria-label': 'Clear search', title: 'Clear search' }, icon('clear', 'inline'));
+  clearSearchBtn.addEventListener('click', () => clearSearch());
+  function paintClear() { clearSearchBtn.hidden = !search.value; }
+  function clearSearch() {
+    search.value = '';
+    prefs.query = '';
+    paintClear();
+    renderList();
+    search.focus();
+  }
   const sort = el('select', {
     'aria-label': 'Sort',
     onchange: (e) => { prefs.sort = e.target.value; renderList(); },
@@ -91,7 +104,7 @@ export function renderLibrary(root) {
     draftsPane);
   songsPane.append(
     el('div', { class: 'toolbar' },
-      el('label', { class: 'search' }, icon('search', 'action'), search),
+      el('label', { class: 'search' }, icon('search', 'action'), search, clearSearchBtn),
       showPlaying,
       cats),
     el('div', { class: 'sortbar' },
@@ -113,6 +126,7 @@ export function renderLibrary(root) {
 
   function setView(view) {
     prefs.view = drafting && view === 'drafts' ? 'drafts' : 'songs';
+    if (drafting) saveLibraryView(prefs.view);
     const onDrafts = prefs.view === 'drafts';
     songsPane.hidden = onDrafts;
     draftsPane.hidden = !onDrafts;
@@ -195,6 +209,7 @@ export function renderLibrary(root) {
     prefs.query = '';
     prefs.sel.clear();
     search.value = '';
+    paintClear();
     renderAll();
   }
 
@@ -244,8 +259,8 @@ export function renderLibrary(root) {
     unsubDrafts = draftStore.subscribe(paintSwitch);
     if (!draftStore.loaded) void draftStore.load();
     paintSwitch();
-    setView(prefs.view);
-  }
+    setView(readLibraryView(true));
+  } else prefs.view = 'songs';
   const unsubPlayer = player.onChange(renderList);
   const unsubDl = autodl.onChange(paintDownloads);
 

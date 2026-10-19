@@ -9,10 +9,12 @@
    "families: family name plus lowercase synonyms; genre entries may carry an optional synonyms list (carried over from ALIASES in genre_filter.py, read-only). A synonym never equals a vocabulary key, a family name or another synonym; typos are input normalisation, not synonyms.",
    "flavours: optional list of keys of the top-level 'flavours' block ({name, kind sound|scene, description}); a modifier alongside the tree, not a level. Only Electronic entries carry them so far.",
    "status: optional 'approved' (Alex approved; only on entries with discogs false, because Discogs outranks his approval) or 'question' (under question, any entry); absent means unreviewed.",
-   "display: optional display name of a genre (default: the key); never equal, when lowercased, to another vocabulary key."
+   "display: optional display name of a genre (default: the key); never equal, when lowercased, to another vocabulary key.",
+   "related: optional list of unique names (a family or the key of another entry), never the entry itself, one of its parents or one of its descendants. Associations and influences, not subgenre-of: no effect on the tree, levels, families, counts or colours; shown as information and a faint link in the map (ADR-0030, GEN-064)."
   ],
   "drafted": [
-   "Electronic"
+   "Electronic",
+   "Rock"
   ],
   "counts": {
    "Blues": {
@@ -31,13 +33,13 @@
     "level3": 95
    },
    "Folk, World, & Country": {
-    "total": 66,
-    "level2": 66,
+    "total": 67,
+    "level2": 67,
     "level3": 0
    },
    "Funk / Soul": {
-    "total": 23,
-    "level2": 23,
+    "total": 22,
+    "level2": 22,
     "level3": 0
    },
    "Hip Hop": {
@@ -66,16 +68,16 @@
     "level3": 0
    },
    "Rock": {
-    "total": 102,
-    "level2": 102,
-    "level3": 0
+    "total": 111,
+    "level2": 42,
+    "level3": 69
    }
   },
-  "total": 521,
+  "total": 530,
   "non_discogs": {
    "Blues": 0,
    "Classical": 1,
-   "Electronic": 14,
+   "Electronic": 15,
    "Folk, World, & Country": 3,
    "Funk / Soul": 6,
    "Hip Hop": 0,
@@ -83,7 +85,7 @@
    "Latin": 0,
    "Pop": 7,
    "Reggae": 0,
-   "Rock": 14
+   "Rock": 23
   }
  },
  "families": {
@@ -100,13 +102,7 @@
   "Electronic": {
    "name": "Electronic",
    "synonyms": [
-    "electronic dance music",
-    "edm",
-    "dance music",
-    "club music",
     "electronic music",
-    "dance",
-    "electronic dance",
     "electronica",
     "indietronica",
     "alternative dance",
@@ -242,6 +238,40 @@
    "description": "Tied to the Berlin scene."
   }
  },
+ "subfamilies": {
+  "House": {
+   "family": "Electronic",
+   "order": 1
+  },
+  "Techno": {
+   "family": "Electronic",
+   "order": 2
+  },
+  "Trance": {
+   "family": "Electronic",
+   "order": 3
+  },
+  "Breaks & bass": {
+   "family": "Electronic",
+   "order": 4
+  },
+  "Synth & wave": {
+   "family": "Electronic",
+   "order": 5
+  },
+  "Experimental, industrial & noise": {
+   "family": "Electronic",
+   "order": 6
+  },
+  "Ambient & downtempo": {
+   "family": "Electronic",
+   "order": 7
+  },
+  "Eurodance & disco": {
+   "family": "Electronic",
+   "order": 8
+  }
+ },
  "aboriginal": {
   "parents": [
    "Folk, World, & Country"
@@ -253,6 +283,7 @@
   "parents": [
    "Electronic"
   ],
+  "subfamily": "Experimental, industrial & noise",
   "discogs": true
  },
  "acid": {
@@ -261,6 +292,7 @@
    "techno",
    "house"
   ],
+  "subfamily": "House",
   "discogs": true
  },
  "acid house": {
@@ -273,14 +305,16 @@
   "parents": [
    "Jazz"
   ],
+  "related": [
+   "Electronic"
+  ],
   "provisional": true,
   "discogs": true
  },
  "acid rock": {
   "parents": [
-   "Rock"
+   "psychedelic rock"
   ],
-  "provisional": true,
   "discogs": true
  },
  "acid trance": {
@@ -327,9 +361,9 @@
  },
  "alternative metal": {
   "parents": [
-   "Rock"
+   "heavy metal",
+   "alternative rock"
   ],
-  "provisional": true,
   "discogs": true
  },
  "alternative pop": {
@@ -350,7 +384,6 @@
   "parents": [
    "Rock"
   ],
-  "provisional": true,
   "discogs": true
  },
  "amapiano": {
@@ -364,6 +397,7 @@
   "parents": [
    "Electronic"
   ],
+  "subfamily": "Ambient & downtempo",
   "discogs": true
  },
  "ambient house": {
@@ -375,9 +409,8 @@
  },
  "anarcho-punk": {
   "parents": [
-   "Rock"
+   "punk"
   ],
-  "provisional": true,
   "discogs": true
  },
  "andean music": {
@@ -412,7 +445,6 @@
   "parents": [
    "Rock"
   ],
-  "provisional": true,
   "discogs": true
  },
  "art song": {
@@ -424,9 +456,8 @@
  },
  "atmospheric black metal": {
   "parents": [
-   "Rock"
+   "black metal"
   ],
-  "provisional": true,
   "discogs": true
  },
  "avant-garde jazz": {
@@ -475,6 +506,7 @@
   "parents": [
    "Electronic"
   ],
+  "subfamily": "House",
   "discogs": true
  },
  "ballad": {
@@ -530,6 +562,7 @@
   "parents": [
    "Electronic"
   ],
+  "subfamily": "Breaks & bass",
   "discogs": true
  },
  "bassline": {
@@ -556,6 +589,7 @@
   "parents": [
    "Electronic"
   ],
+  "subfamily": "Experimental, industrial & noise",
   "discogs": true
  },
  "beguine": {
@@ -593,22 +627,24 @@
  },
  "black metal": {
   "parents": [
-   "Rock"
+   "Rock",
+   "heavy metal",
+   "extreme metal"
   ],
-  "provisional": true,
   "discogs": true
  },
  "blackgaze": {
   "parents": [
-   "Rock"
+   "black metal",
+   "shoegaze"
   ],
-  "provisional": true,
   "discogs": true
  },
  "bleep": {
   "parents": [
    "Electronic"
   ],
+  "subfamily": "Techno",
   "discogs": true
  },
  "bluegrass": {
@@ -620,10 +656,12 @@
  },
  "blues rock": {
   "parents": [
-   "Blues"
+   "Blues",
+   "Rock"
   ],
   "provisional": true,
-  "discogs": true
+  "discogs": true,
+  "fusion": true
  },
  "bolero": {
   "parents": [
@@ -686,7 +724,8 @@
  },
  "bossa nova": {
   "parents": [
-   "Latin"
+   "Latin",
+   "Jazz"
   ],
   "provisional": true,
   "discogs": true
@@ -702,6 +741,7 @@
   "parents": [
    "Electronic"
   ],
+  "subfamily": "Breaks & bass",
   "discogs": true,
   "synonyms": [
    "jersey club",
@@ -710,8 +750,10 @@
  },
  "breakcore": {
   "parents": [
-   "breakbeat",
    "hardcore"
+  ],
+  "related": [
+   "breakbeat"
   ],
   "discogs": true
  },
@@ -730,22 +772,21 @@
  },
  "britpop": {
   "parents": [
-   "Rock"
+   "alternative rock"
   ],
-  "provisional": true,
   "discogs": true
  },
  "broken beat": {
   "parents": [
    "Electronic"
   ],
+  "subfamily": "Breaks & bass",
   "discogs": true
  },
  "brutal death metal": {
   "parents": [
-   "Rock"
+   "death metal"
   ],
-  "provisional": true,
   "discogs": true
  },
  "bubblegum": {
@@ -869,7 +910,9 @@
  },
  "chillwave": {
   "parents": [
-   "synthwave",
+   "synthwave"
+  ],
+  "related": [
    "downtempo"
   ],
   "discogs": true
@@ -885,6 +928,7 @@
   "parents": [
    "Electronic"
   ],
+  "subfamily": "Synth & wave",
   "discogs": true
  },
  "choral": {
@@ -912,7 +956,6 @@
   "parents": [
    "Rock"
   ],
-  "provisional": true,
   "discogs": true
  },
  "cloud rap": {
@@ -924,10 +967,17 @@
  },
  "coldwave": {
   "parents": [
-   "Rock"
+   "post-punk",
+   "darkwave"
   ],
-  "provisional": true,
   "discogs": true
+ },
+ "college rock": {
+  "parents": [
+   "alternative rock"
+  ],
+  "discogs": false,
+  "status": "approved"
  },
  "compas": {
   "parents": [
@@ -1008,10 +1058,12 @@
  },
  "country rock": {
   "parents": [
-   "Folk, World, & Country"
+   "Folk, World, & Country",
+   "Rock"
   ],
   "provisional": true,
-  "discogs": true
+  "discogs": true,
+  "fusion": true
  },
  "cretan": {
   "parents": [
@@ -1029,9 +1081,13 @@
  },
  "crust": {
   "parents": [
-   "Rock"
+   "punk",
+   "anarcho-punk",
+   "extreme metal"
   ],
-  "provisional": true,
+  "related": [
+   "grindcore"
+  ],
   "discogs": true
  },
  "cuatro": {
@@ -1071,9 +1127,12 @@
  },
  "dance-punk": {
   "parents": [
-   "Rock"
+   "post-punk"
   ],
-  "provisional": true,
+  "related": [
+   "disco",
+   "new wave"
+  ],
   "discogs": false
  },
  "dance-rock": {
@@ -1105,7 +1164,9 @@
  },
  "dark electro": {
   "parents": [
-   "industrial",
+   "industrial"
+  ],
+  "related": [
    "electro"
   ],
   "discogs": true
@@ -1128,7 +1189,7 @@
   "parents": [
    "psytrance"
   ],
-  "display": "Dark Psy-Trance",
+  "display": "dark psy-trance",
   "synonyms": [
    "darkpsy",
    "dark psy",
@@ -1139,7 +1200,9 @@
  },
  "darksynth": {
   "parents": [
-   "synthwave",
+   "synthwave"
+  ],
+  "related": [
    "industrial"
   ],
   "discogs": false,
@@ -1149,27 +1212,41 @@
   "parents": [
    "Electronic"
   ],
+  "subfamily": "Synth & wave",
   "discogs": true
  },
  "death metal": {
   "parents": [
-   "Rock"
+   "Rock",
+   "heavy metal",
+   "extreme metal"
   ],
-  "provisional": true,
   "discogs": true
+ },
+ "death-doom": {
+  "parents": [
+   "death metal",
+   "doom metal"
+  ],
+  "synonyms": [
+   "death/doom",
+   "death doom"
+  ],
+  "discogs": false,
+  "status": "approved"
  },
  "deathcore": {
   "parents": [
-   "Rock"
+   "death metal",
+   "metalcore"
   ],
-  "provisional": true,
   "discogs": true
  },
  "deathrock": {
   "parents": [
-   "Rock"
+   "punk",
+   "goth rock"
   ],
-  "provisional": true,
   "discogs": true
  },
  "deep house": {
@@ -1200,9 +1277,8 @@
  },
  "depressive black metal": {
   "parents": [
-   "Rock"
+   "black metal"
   ],
-  "provisional": true,
   "discogs": true
  },
  "descarga": {
@@ -1224,6 +1300,7 @@
    "Funk / Soul",
    "Electronic"
   ],
+  "subfamily": "Eurodance & disco",
   "provisional": true,
   "synonyms": [
    "red disco"
@@ -1234,6 +1311,7 @@
   "parents": [
    "Electronic"
   ],
+  "subfamily": "Eurodance & disco",
   "discogs": true
  },
  "dixieland": {
@@ -1266,9 +1344,9 @@
  },
  "doom metal": {
   "parents": [
-   "Rock"
+   "heavy metal",
+   "extreme metal"
   ],
-  "provisional": true,
   "discogs": true
  },
  "doomcore": {
@@ -1281,6 +1359,7 @@
   "parents": [
    "Electronic"
   ],
+  "subfamily": "Ambient & downtempo",
   "discogs": true,
   "synonyms": [
    "chillout"
@@ -1288,9 +1367,9 @@
  },
  "dream pop": {
   "parents": [
-   "Rock"
+   "alternative rock",
+   "neo-psychedelia"
   ],
-  "provisional": true,
   "discogs": true
  },
  "dream trance": {
@@ -1335,6 +1414,7 @@
   "parents": [
    "Electronic"
   ],
+  "subfamily": "Breaks & bass",
   "synonyms": [
    "dnb",
    "drum & bass",
@@ -1346,11 +1426,12 @@
    "drum & bass music"
   ],
   "discogs": true,
-  "display": "Drum & Bass"
+  "display": "drum & bass"
  },
  "dub": {
   "parents": [
-   "Reggae"
+   "Reggae",
+   "Electronic"
   ],
   "provisional": true,
   "discogs": true
@@ -1376,7 +1457,9 @@
  },
  "dungeon synth": {
   "parents": [
-   "ambient",
+   "ambient"
+  ],
+  "related": [
    "synthwave"
   ],
   "discogs": true
@@ -1409,6 +1492,21 @@
   ],
   "discogs": true
  },
+ "edm": {
+  "parents": [
+   "Electronic"
+  ],
+  "subfamily": "House",
+  "synonyms": [
+   "electronic dance music",
+   "dance music",
+   "club music",
+   "electronic dance",
+   "dance"
+  ],
+  "discogs": false,
+  "status": "approved"
+ },
  "electric blues": {
   "parents": [
    "Blues"
@@ -1418,9 +1516,15 @@
  },
  "electro": {
   "parents": [
-   "Electronic"
+   "Electronic",
+   "Hip Hop"
   ],
-  "discogs": true
+  "subfamily": "Breaks & bass",
+  "discogs": true,
+  "synonyms": [
+   "electro-funk",
+   "electrofunk"
+  ]
  },
  "electro house": {
   "parents": [
@@ -1433,6 +1537,7 @@
   "parents": [
    "Electronic"
   ],
+  "subfamily": "House",
   "discogs": true
  },
  "electroclash": {
@@ -1444,16 +1549,17 @@
  },
  "electronic rock": {
   "parents": [
-   "Rock"
+   "Rock",
+   "Electronic"
   ],
-  "provisional": true,
-  "discogs": false
+  "discogs": false,
+  "fusion": true
  },
  "emo": {
   "parents": [
-   "Rock"
+   "punk",
+   "hardcore punk"
   ],
-  "provisional": true,
   "discogs": true
  },
  "enka": {
@@ -1481,6 +1587,7 @@
   "parents": [
    "Electronic"
   ],
+  "subfamily": "Synth & wave",
   "synonyms": [
    "ethereal wave"
   ],
@@ -1511,19 +1618,15 @@
   ],
   "discogs": true
  },
- "eurobeat": {
-  "parents": [
-   "Electronic"
-  ],
-  "discogs": true
- },
  "eurodance": {
   "parents": [
    "Electronic"
   ],
+  "subfamily": "Eurodance & disco",
   "synonyms": [
    "euroda",
-   "bubblegum dance"
+   "bubblegum dance",
+   "eurobeat"
   ],
   "discogs": true
  },
@@ -1546,9 +1649,25 @@
  },
  "experimental": {
   "parents": [
-   "Electronic"
+   "Electronic",
+   "Rock"
   ],
+  "subfamily": "Experimental, industrial & noise",
   "discogs": true
+ },
+ "experimental rock": {
+  "parents": [
+   "Rock"
+  ],
+  "discogs": false,
+  "status": "approved"
+ },
+ "extreme metal": {
+  "parents": [
+   "heavy metal"
+  ],
+  "discogs": false,
+  "status": "approved"
  },
  "fado": {
   "parents": [
@@ -1580,10 +1699,11 @@
  },
  "folk metal": {
   "parents": [
-   "Rock"
+   "heavy metal",
+   "Folk, World, & Country"
   ],
-  "provisional": true,
-  "discogs": true
+  "discogs": true,
+  "fusion": true
  },
  "folk pop": {
   "parents": [
@@ -1594,29 +1714,33 @@
  },
  "folk punk": {
   "parents": [
-   "Rock"
+   "punk",
+   "Folk, World, & Country"
   ],
-  "provisional": true,
-  "discogs": false
+  "discogs": false,
+  "fusion": true
  },
  "folk rock": {
   "parents": [
-   "Folk, World, & Country"
+   "Folk, World, & Country",
+   "Rock"
   ],
   "provisional": true,
-  "discogs": true
+  "discogs": true,
+  "fusion": true
  },
  "footwork": {
   "parents": [
    "Electronic"
   ],
+  "subfamily": "Breaks & bass",
   "discogs": true
  },
  "forest psytrance": {
   "parents": [
    "psytrance"
   ],
-  "display": "Forest Psy-Trance",
+  "display": "forest psy-trance",
   "synonyms": [
    "forest psy",
    "forest psy-trance"
@@ -1665,13 +1789,14 @@
   "parents": [
    "Electronic"
   ],
+  "subfamily": "Eurodance & disco",
   "discogs": true
  },
  "full-on psytrance": {
   "parents": [
    "psytrance"
   ],
-  "display": "Full-On Psy-Trance",
+  "display": "full-on psy-trance",
   "synonyms": [
    "full on",
    "fullon",
@@ -1684,9 +1809,10 @@
  },
  "funeral doom metal": {
   "parents": [
-   "Rock"
+   "death metal",
+   "death-doom",
+   "doom metal"
   ],
-  "provisional": true,
   "discogs": true
  },
  "funk": {
@@ -1698,10 +1824,11 @@
  },
  "funk metal": {
   "parents": [
-   "Rock"
+   "heavy metal",
+   "Funk / Soul"
   ],
-  "provisional": true,
-  "discogs": true
+  "discogs": true,
+  "fusion": true
  },
  "fusion": {
   "parents": [
@@ -1712,7 +1839,9 @@
  },
  "future bass": {
   "parents": [
-   "bass music",
+   "bass music"
+  ],
+  "related": [
    "house"
   ],
   "discogs": true
@@ -1727,6 +1856,7 @@
   "parents": [
    "Electronic"
   ],
+  "subfamily": "Experimental, industrial & noise",
   "discogs": true
  },
  "g-funk": {
@@ -1771,9 +1901,8 @@
  },
  "garage rock": {
   "parents": [
-   "Rock"
+   "rock and roll"
   ],
-  "provisional": true,
   "discogs": true
  },
  "ghazal": {
@@ -1787,6 +1916,7 @@
   "parents": [
    "Electronic"
   ],
+  "subfamily": "House",
   "discogs": true
  },
  "ghetto house": {
@@ -1799,17 +1929,28 @@
   "parents": [
    "Electronic"
   ],
+  "subfamily": "House",
   "discogs": true
  },
  "glam": {
   "parents": [
    "Rock"
   ],
-  "provisional": true,
   "synonyms": [
    "glam rock"
   ],
   "discogs": true
+ },
+ "glam metal": {
+  "parents": [
+   "heavy metal"
+  ],
+  "synonyms": [
+   "hair metal",
+   "pop metal"
+  ],
+  "discogs": false,
+  "status": "approved"
  },
  "glitch": {
   "parents": [
@@ -1846,13 +1987,16 @@
  },
  "goregrind": {
   "parents": [
-   "Rock"
+   "death metal",
+   "grindcore"
   ],
-  "provisional": true,
   "discogs": true
  },
  "gospel": {
   "parents": [
+   "Folk, World, & Country"
+  ],
+  "related": [
    "Funk / Soul"
   ],
   "provisional": true,
@@ -1860,16 +2004,15 @@
  },
  "goth rock": {
   "parents": [
-   "Rock"
+   "post-punk"
   ],
-  "provisional": true,
   "discogs": true
  },
  "gothic metal": {
   "parents": [
-   "Rock"
+   "heavy metal",
+   "goth rock"
   ],
-  "provisional": true,
   "discogs": true
  },
  "gqom": {
@@ -1883,27 +2026,33 @@
   "parents": [
    "Electronic"
   ],
+  "subfamily": "Breaks & bass",
+  "related": [
+   "Hip Hop"
+  ],
   "discogs": true
  },
  "grindcore": {
   "parents": [
-   "Rock"
+   "heavy metal",
+   "hardcore punk"
   ],
-  "provisional": true,
   "discogs": true
  },
  "groove metal": {
   "parents": [
-   "Rock"
+   "heavy metal",
+   "thrash"
   ],
-  "provisional": true,
+  "related": [
+   "hardcore punk"
+  ],
   "discogs": true
  },
  "grunge": {
   "parents": [
-   "Rock"
+   "alternative rock"
   ],
-  "provisional": true,
   "discogs": true
  },
  "guaguancó": {
@@ -1938,6 +2087,7 @@
   "parents": [
    "Electronic"
   ],
+  "subfamily": "Breaks & bass",
   "discogs": true
  },
  "hands up": {
@@ -1971,7 +2121,6 @@
   "parents": [
    "Rock"
   ],
-  "provisional": true,
   "discogs": true
  },
  "hard techno": {
@@ -1991,6 +2140,10 @@
   "parents": [
    "Electronic"
   ],
+  "subfamily": "Techno",
+  "related": [
+   "Rock"
+  ],
   "discogs": true
  },
  "hardcore hip hop": {
@@ -1999,6 +2152,13 @@
   ],
   "provisional": true,
   "discogs": true
+ },
+ "hardcore punk": {
+  "parents": [
+   "punk"
+  ],
+  "discogs": false,
+  "status": "approved"
  },
  "hardstyle": {
   "parents": [
@@ -2031,7 +2191,6 @@
   "parents": [
    "Rock"
   ],
-  "provisional": true,
   "synonyms": [
    "metal"
   ],
@@ -2074,9 +2233,11 @@
  },
  "hip house": {
   "parents": [
-   "house"
+   "house",
+   "Hip Hop"
   ],
-  "discogs": true
+  "discogs": true,
+  "fusion": true
  },
  "honky tonk": {
   "parents": [
@@ -2096,6 +2257,7 @@
   "parents": [
    "Electronic"
   ],
+  "subfamily": "House",
   "discogs": true,
   "synonyms": [
    "afro house",
@@ -2121,6 +2283,7 @@
   "parents": [
    "Electronic"
   ],
+  "subfamily": "Experimental, industrial & noise",
   "synonyms": [
    "intelligent dance music"
   ],
@@ -2157,7 +2320,6 @@
   "parents": [
    "Rock"
   ],
-  "provisional": true,
   "synonyms": [
    "rock and indie"
   ],
@@ -2167,20 +2329,25 @@
   "parents": [
    "Electronic"
   ],
+  "subfamily": "Experimental, industrial & noise",
   "discogs": true
  },
  "industrial metal": {
   "parents": [
-   "Rock"
+   "heavy metal",
+   "industrial",
+   "industrial rock"
   ],
-  "provisional": true,
   "discogs": true
  },
  "industrial rock": {
   "parents": [
-   "Rock"
+   "Rock",
+   "industrial"
   ],
-  "provisional": true,
+  "related": [
+   "noise rock"
+  ],
   "discogs": false
  },
  "instrumental": {
@@ -2225,10 +2392,12 @@
  },
  "jazz funk": {
   "parents": [
-   "Jazz"
+   "Jazz",
+   "Funk / Soul"
   ],
   "provisional": true,
-  "discogs": true
+  "discogs": true,
+  "fusion": true
  },
  "jazz-rock": {
   "parents": [
@@ -2241,6 +2410,7 @@
   "parents": [
    "Electronic"
   ],
+  "subfamily": "Experimental, industrial & noise",
   "discogs": true
  },
  "jazzy hip-hop": {
@@ -2254,6 +2424,7 @@
   "parents": [
    "Electronic"
   ],
+  "subfamily": "Breaks & bass",
   "discogs": true
  },
  "jump blues": {
@@ -2271,8 +2442,10 @@
  },
  "jungle": {
   "parents": [
-   "drum and bass",
    "breakbeat"
+  ],
+  "related": [
+   "drum and bass"
   ],
   "discogs": true
  },
@@ -2320,15 +2493,18 @@
  },
  "krautrock": {
   "parents": [
-   "Rock"
+   "experimental rock"
   ],
-  "provisional": true,
+  "related": [
+   "psychedelic rock"
+  ],
   "discogs": true
  },
  "kuduro": {
   "parents": [
    "Electronic"
   ],
+  "subfamily": "Breaks & bass",
   "discogs": true
  },
  "kwaito": {
@@ -2340,10 +2516,12 @@
  },
  "latin jazz": {
   "parents": [
-   "Jazz"
+   "Jazz",
+   "Latin"
   ],
   "provisional": true,
-  "discogs": true
+  "discogs": true,
+  "fusion": true
  },
  "latin pop": {
   "parents": [
@@ -2363,12 +2541,14 @@
   "parents": [
    "Electronic"
   ],
+  "subfamily": "Experimental, industrial & noise",
   "discogs": true
  },
  "lento violento": {
   "parents": [
    "Electronic"
   ],
+  "subfamily": "Techno",
   "discogs": true
  },
  "levenslied": {
@@ -2401,7 +2581,7 @@
   ],
   "discogs": false,
   "status": "approved",
-  "display": "Liquid Drum & Bass"
+  "display": "liquid drum & bass"
  },
  "lo-fi": {
   "parents": [
@@ -2466,16 +2646,22 @@
  },
  "math rock": {
   "parents": [
-   "Rock"
+   "indie rock",
+   "experimental rock",
+   "progressive rock"
   ],
-  "provisional": true,
   "discogs": true
  },
  "mathcore": {
   "parents": [
-   "Rock"
+   "heavy metal",
+   "metalcore",
+   "hardcore punk"
   ],
-  "provisional": true,
+  "related": [
+   "math rock",
+   "post-hardcore"
+  ],
   "discogs": true
  },
  "mbalax": {
@@ -2494,21 +2680,26 @@
  },
  "melodic death metal": {
   "parents": [
-   "Rock"
+   "death metal"
   ],
-  "provisional": true,
   "discogs": true
  },
  "melodic hardcore": {
   "parents": [
-   "Rock"
+   "punk",
+   "hardcore punk"
   ],
-  "provisional": true,
+  "related": [
+   "pop punk",
+   "emo"
+  ],
   "discogs": true
  },
  "melodic techno": {
   "parents": [
-   "techno",
+   "techno"
+  ],
+  "related": [
    "trance"
   ],
   "discogs": false,
@@ -2544,9 +2735,9 @@
  },
  "metalcore": {
   "parents": [
-   "Rock"
+   "heavy metal",
+   "hardcore punk"
   ],
-  "provisional": true,
   "discogs": true
  },
  "miami bass": {
@@ -2558,7 +2749,9 @@
  },
  "microhouse": {
   "parents": [
-   "house",
+   "house"
+  ],
+  "related": [
    "techno"
   ],
   "discogs": true
@@ -2575,9 +2768,10 @@
  },
  "midwest emo": {
   "parents": [
-   "Rock"
+   "punk",
+   "emo",
+   "math rock"
   ],
-  "provisional": true,
   "discogs": true
  },
  "min'yō": {
@@ -2590,14 +2784,19 @@
  "minimal": {
   "parents": [
    "Electronic",
-   "techno",
+   "techno"
+  ],
+  "subfamily": "Techno",
+  "related": [
    "house"
   ],
   "discogs": true
  },
  "minimal techno": {
   "parents": [
-   "techno",
+   "techno"
+  ],
+  "related": [
    "house"
   ],
   "discogs": true
@@ -2633,6 +2832,9 @@
  "modern classical": {
   "parents": [
    "Classical"
+  ],
+  "related": [
+   "Electronic"
   ],
   "provisional": true,
   "discogs": true
@@ -2704,6 +2906,13 @@
   ],
   "discogs": true
  },
+ "neo-psychedelia": {
+  "parents": [
+   "psychedelic rock"
+  ],
+  "discogs": false,
+  "status": "approved"
+ },
  "neo-romantic": {
   "parents": [
    "Classical"
@@ -2722,11 +2931,14 @@
   "parents": [
    "Electronic"
   ],
+  "subfamily": "Experimental, industrial & noise",
   "discogs": true
  },
  "neurofunk": {
   "parents": [
-   "drum and bass",
+   "drum and bass"
+  ],
+  "related": [
    "industrial"
   ],
   "discogs": false,
@@ -2736,12 +2948,14 @@
   "parents": [
    "Electronic"
   ],
+  "subfamily": "Ambient & downtempo",
   "discogs": true
  },
  "new beat": {
   "parents": [
    "Electronic"
   ],
+  "subfamily": "Experimental, industrial & noise",
   "discogs": true
  },
  "new jack swing": {
@@ -2762,27 +2976,45 @@
   "parents": [
    "Rock"
   ],
-  "provisional": true,
+  "related": [
+   "Electronic"
+  ],
   "discogs": true
  },
  "no wave": {
   "parents": [
    "Rock"
   ],
-  "provisional": true,
+  "related": [
+   "experimental rock",
+   "post-punk"
+  ],
   "discogs": true
  },
  "noise": {
   "parents": [
    "Electronic"
   ],
+  "subfamily": "Experimental, industrial & noise",
+  "related": [
+   "Rock"
+  ],
   "discogs": true
  },
- "noisecore": {
+ "noise rock": {
   "parents": [
    "Rock"
   ],
-  "provisional": true,
+  "discogs": false,
+  "status": "approved"
+ },
+ "noisecore": {
+  "parents": [
+   "punk",
+   "grindcore",
+   "hardcore punk",
+   "noise rock"
+  ],
   "discogs": true
  },
  "nordic": {
@@ -2801,9 +3033,13 @@
  },
  "nu metal": {
   "parents": [
-   "Rock"
+   "heavy metal",
+   "alternative metal"
   ],
-  "provisional": true,
+  "related": [
+   "rap metal",
+   "industrial metal"
+  ],
   "discogs": true
  },
  "nu-disco": {
@@ -2829,9 +3065,8 @@
  },
  "oi": {
   "parents": [
-   "Rock"
+   "punk"
   ],
-  "provisional": true,
   "discogs": true
  },
  "opera": {
@@ -2954,9 +3189,9 @@
  },
  "pop punk": {
   "parents": [
-   "Rock"
+   "punk",
+   "power pop"
   ],
-  "provisional": true,
   "discogs": true
  },
  "pop rap": {
@@ -2970,7 +3205,6 @@
   "parents": [
    "Rock"
   ],
-  "provisional": true,
   "discogs": true
  },
  "pop soul": {
@@ -2982,9 +3216,10 @@
  },
  "pornogrind": {
   "parents": [
-   "Rock"
+   "death metal",
+   "goregrind",
+   "grindcore"
   ],
-  "provisional": true,
   "discogs": true
  },
  "porro": {
@@ -3003,9 +3238,9 @@
  },
  "post-britpop": {
   "parents": [
-   "Rock"
+   "alternative rock",
+   "britpop"
   ],
-  "provisional": true,
   "discogs": false
  },
  "post-disco": {
@@ -3017,23 +3252,28 @@
  },
  "post-grunge": {
   "parents": [
-   "Rock"
+   "alternative rock",
+   "grunge"
   ],
-  "provisional": true,
   "discogs": true
  },
  "post-hardcore": {
   "parents": [
-   "Rock"
+   "punk",
+   "post-punk"
   ],
-  "provisional": true,
+  "related": [
+   "hardcore punk",
+   "noise rock"
+  ],
   "discogs": true
  },
  "post-metal": {
   "parents": [
-   "Rock"
+   "heavy metal",
+   "post-rock",
+   "sludge metal"
   ],
-  "provisional": true,
   "discogs": true
  },
  "post-modern": {
@@ -3045,23 +3285,22 @@
  },
  "post-punk": {
   "parents": [
-   "Rock"
+   "Rock",
+   "punk"
   ],
-  "provisional": true,
   "discogs": true
  },
  "post-punk revival": {
   "parents": [
-   "Rock"
+   "indie rock",
+   "post-punk"
   ],
-  "provisional": true,
   "discogs": false
  },
  "post-rock": {
   "parents": [
-   "Rock"
+   "experimental rock"
   ],
-  "provisional": true,
   "discogs": true
  },
  "power electronics": {
@@ -3072,16 +3311,15 @@
  },
  "power metal": {
   "parents": [
-   "Rock"
+   "heavy metal",
+   "speed metal"
   ],
-  "provisional": true,
   "discogs": true
  },
  "power pop": {
   "parents": [
-   "Rock"
+   "pop rock"
   ],
-  "provisional": true,
   "discogs": true
  },
  "progressive breaks": {
@@ -3103,9 +3341,9 @@
  },
  "progressive metal": {
   "parents": [
-   "Rock"
+   "heavy metal",
+   "progressive rock"
   ],
-  "provisional": true,
   "discogs": true
  },
  "progressive pop": {
@@ -3119,7 +3357,7 @@
   "parents": [
    "psytrance"
   ],
-  "display": "Progressive Psy-Trance",
+  "display": "progressive psy-trance",
   "synonyms": [
    "prog psy",
    "progressive psy",
@@ -3132,7 +3370,6 @@
   "parents": [
    "Rock"
   ],
-  "provisional": true,
   "discogs": true
  },
  "progressive trance": {
@@ -3153,7 +3390,6 @@
   "parents": [
    "Rock"
   ],
-  "provisional": true,
   "discogs": true
  },
  "psychedelic soul": {
@@ -3174,7 +3410,8 @@
   "parents": [
    "Electronic"
   ],
-  "display": "Psy-Trance",
+  "subfamily": "Trance",
+  "display": "psy-trance",
   "synonyms": [
    "psychedelic trance",
    "psy trance",
@@ -3193,7 +3430,6 @@
   "parents": [
    "Rock"
   ],
-  "provisional": true,
   "synonyms": [
    "punk rock"
   ],
@@ -3250,10 +3486,11 @@
  },
  "rap metal": {
   "parents": [
-   "Rock"
+   "heavy metal",
+   "Hip Hop"
   ],
-  "provisional": true,
-  "discogs": false
+  "discogs": false,
+  "fusion": true
  },
  "rebetiko": {
   "parents": [
@@ -3299,7 +3536,8 @@
  },
  "rhythm and blues": {
   "parents": [
-   "Funk / Soul"
+   "Funk / Soul",
+   "Blues"
   ],
   "provisional": true,
   "discogs": true
@@ -3322,7 +3560,6 @@
   "parents": [
    "Rock"
   ],
-  "provisional": true,
   "discogs": true
  },
  "rock opera": {
@@ -3334,9 +3571,8 @@
  },
  "rockabilly": {
   "parents": [
-   "Rock"
+   "rock and roll"
   ],
-  "provisional": true,
   "discogs": true
  },
  "rocksteady": {
@@ -3359,6 +3595,13 @@
   ],
   "provisional": true,
   "discogs": true
+ },
+ "roots rock": {
+  "parents": [
+   "Rock"
+  ],
+  "discogs": false,
+  "status": "approved"
  },
  "rumba": {
   "parents": [
@@ -3410,9 +3653,10 @@
  },
  "screamo": {
   "parents": [
-   "Rock"
+   "punk",
+   "emo",
+   "post-hardcore"
   ],
-  "provisional": true,
   "discogs": true
  },
  "screw": {
@@ -3452,9 +3696,9 @@
  },
  "shoegaze": {
   "parents": [
-   "Rock"
+   "alternative rock",
+   "indie rock"
   ],
-  "provisional": true,
   "discogs": true
  },
  "singer-songwriter": {
@@ -3482,20 +3726,21 @@
   "parents": [
    "Electronic"
   ],
+  "subfamily": "Synth & wave",
   "discogs": true
  },
  "slowcore": {
   "parents": [
-   "Rock"
+   "indie rock"
   ],
-  "provisional": true,
   "discogs": true
  },
  "sludge metal": {
   "parents": [
-   "Rock"
+   "heavy metal",
+   "doom metal",
+   "hardcore punk"
   ],
-  "provisional": true,
   "discogs": true
  },
  "smooth jazz": {
@@ -3556,10 +3801,12 @@
  },
  "soul jazz": {
   "parents": [
-   "Jazz"
+   "Jazz",
+   "Funk / Soul"
   ],
   "provisional": true,
-  "discogs": true
+  "discogs": true,
+  "fusion": true
  },
  "sound art": {
   "parents": [
@@ -3580,13 +3827,12 @@
   "provisional": true,
   "discogs": true
  },
- "soviet wave": {
+ "sovietwave": {
   "parents": [
    "synthwave"
   ],
-  "display": "Soviet Wave",
   "synonyms": [
-   "sovietwave",
+   "soviet wave",
    "soviet-wave",
    "советская волна",
    "советская-волна"
@@ -3601,16 +3847,15 @@
   "family": "Electronic",
   "discogs": false,
   "status": "approved",
-  "display": "Space Disco",
   "synonyms": [
    "space-disco"
   ]
  },
  "space rock": {
   "parents": [
-   "Rock"
+   "psychedelic rock",
+   "progressive rock"
   ],
-  "provisional": true,
   "discogs": true
  },
  "space-age": {
@@ -3637,9 +3882,8 @@
  },
  "speed metal": {
   "parents": [
-   "Rock"
+   "heavy metal"
   ],
-  "provisional": true,
   "discogs": true
  },
  "speedcore": {
@@ -3678,9 +3922,8 @@
  },
  "surf": {
   "parents": [
-   "Rock"
+   "rock and roll"
   ],
-  "provisional": true,
   "discogs": true
  },
  "swing": {
@@ -3699,16 +3942,14 @@
  },
  "symphonic metal": {
   "parents": [
-   "Rock"
+   "heavy metal"
   ],
-  "provisional": true,
   "discogs": true
  },
  "symphonic rock": {
   "parents": [
-   "Rock"
+   "progressive rock"
   ],
-  "provisional": true,
   "discogs": true
  },
  "symphony": {
@@ -3734,8 +3975,10 @@
  },
  "synthpop": {
   "parents": [
-   "Electronic"
+   "Electronic",
+   "Pop"
   ],
+  "subfamily": "Synth & wave",
   "discogs": true,
   "synonyms": [
    "techno pop",
@@ -3743,12 +3986,14 @@
    "russian electro pop",
    "russian electropop",
    "electronic pop"
-  ]
+  ],
+  "fusion": true
  },
  "synthwave": {
   "parents": [
    "Electronic"
   ],
+  "subfamily": "Synth & wave",
   "synonyms": [
    "retro-synth"
   ],
@@ -3791,15 +4036,15 @@
  },
  "technical death metal": {
   "parents": [
-   "Rock"
+   "death metal"
   ],
-  "provisional": true,
   "discogs": true
  },
  "techno": {
   "parents": [
    "Electronic"
   ],
+  "subfamily": "Techno",
   "discogs": true
  },
  "tejano": {
@@ -3818,9 +4063,9 @@
  },
  "thrash": {
   "parents": [
-   "Rock"
+   "heavy metal",
+   "extreme metal"
   ],
-  "provisional": true,
   "discogs": true
  },
  "thug rap": {
@@ -3841,11 +4086,15 @@
   "parents": [
    "Electronic"
   ],
+  "subfamily": "Trance",
   "discogs": true
  },
  "trap": {
   "parents": [
    "Hip Hop"
+  ],
+  "related": [
+   "Electronic"
   ],
   "provisional": true,
   "synonyms": [
@@ -3858,6 +4107,7 @@
    "Electronic",
    "house"
   ],
+  "subfamily": "House",
   "discogs": true
  },
  "tribal house": {
@@ -3868,9 +4118,11 @@
  },
  "trip hop": {
   "parents": [
-   "downtempo"
+   "downtempo",
+   "Hip Hop"
   ],
-  "discogs": true
+  "discogs": true,
+  "fusion": true
  },
  "tropical house": {
   "parents": [
@@ -3896,6 +4148,7 @@
   "parents": [
    "Electronic"
   ],
+  "subfamily": "Breaks & bass",
   "discogs": true
  },
  "uk street soul": {
@@ -3926,16 +4179,20 @@
  },
  "vaporwave": {
   "parents": [
-   "synthwave",
+   "synthwave"
+  ],
+  "related": [
    "downtempo"
   ],
   "discogs": true
  },
  "viking metal": {
   "parents": [
-   "Rock"
+   "black metal"
   ],
-  "provisional": true,
+  "related": [
+   "folk metal"
+  ],
   "discogs": true
  },
  "vocal": {
@@ -3968,7 +4225,10 @@
  },
  "witch house": {
   "parents": [
-   "Electronic",
+   "Electronic"
+  ],
+  "subfamily": "Experimental, industrial & noise",
+  "related": [
    "industrial"
   ],
   "discogs": true

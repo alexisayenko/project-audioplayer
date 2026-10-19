@@ -297,11 +297,15 @@ def test_preview_includes_discogs_when_the_token_is_set(client, monkeypatch):
     monkeypatch.setattr(gl, "suggest_tags", lambda a, t: ["genre:house", "country:fr"])
     monkeypatch.setattr(dl, "suggest", lambda a, t: disc_result())
     body = client.post("/preview", json={"url": f"https://youtu.be/{VID}"}, headers=H).json()
-    assert body["tags"][:2] == ["genre:deep house", "genre:disco"]
-    assert "genre:house" in body["tags"]
+    assert body["tags"] == ["country:fr"], "a Discogs search hit counts half: with MusicBrainz it does not reach two"
+    assert {s["genre"]: s["sources"] for s in body["genre_suggestions"]} == {"house": ["musicbrainz"], "deep house": ["discogs"], "disco": ["discogs"]}
     assert body["discogs_url"] == "https://www.discogs.com/release/5"
     assert body["suggested_year"] == 1996
+    monkeypatch.setattr(dl, "suggest", lambda a, t: disc_result(url="https://www.discogs.com/master/5"))
+    body = client.post("/preview", json={"url": f"https://youtu.be/{VID}"}, headers=H).json()
+    assert body["tags"] == ["genre:house", "country:fr"], "a Discogs master counts fully: house agrees through deep house"
     monkeypatch.setattr(dl, "suggest", lambda a, t: dl._empty())
     body = client.post("/preview", json={"url": f"https://youtu.be/{VID}"}, headers=H).json()
-    assert body["tags"] == ["genre:house", "country:fr"]
+    assert body["tags"] == ["country:fr"]
+    assert [s["genre"] for s in body["genre_suggestions"]] == ["house"]
     assert body["discogs_url"] is None

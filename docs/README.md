@@ -132,6 +132,7 @@ and rules):
   store metadata and legal-page drafts
 - [`tasks/README.md`](tasks/README.md) — task spec + frontmatter
 - [`tech/README.md`](tech/README.md) — stack + decisions frame
+- [`tech/genre-terminology.md`](tech/genre-terminology.md) — what "genre", "family" and "style" mean here and elsewhere, and the aspects of describing music (ADR-0034)
 - [`tech/deploy.md`](tech/deploy.md) — deploy runbook for the live
   server (where things live, deploy, rollback, verify, signup off)
 - [`tech/domain-migration.md`](tech/domain-migration.md) — runbook for moving

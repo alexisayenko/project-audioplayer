@@ -595,7 +595,7 @@ def test_soviet_union_is_a_first_class_country(client, raw):
 def test_genre_tags_canonical_on_write_and_dedupe():
     assert library.clean_tag("genre:House Music") == "genre:house"
     assert library.clean_tag("genre:electronic music") == "genre:electronic"
-    assert library.clean_tag("genre:Electronic Dance Music") == "genre:electronic"
+    assert library.clean_tag("genre:Electronic Dance Music") == "genre:edm"
     assert library.clean_tag("genre:punk rock") == "genre:punk"
     assert library.clean_tag("genre:bass music") == "genre:bass music"
     assert library.clean_tags(["genre:house", "genre:house music", "genre:electronic", "genre:electronic music"]) == ["genre:house", "genre:electronic"]
@@ -704,7 +704,7 @@ def test_migration_merges_dnb_retags_and_drops_idempotent(tmp_path, monkeypatch)
     assert migrate_tags.run() == 1
     tags = [library.tag_list(s) for s in json.loads(lib.read_text())["songs"]]
     assert tags == [
-        ["genre:drum and bass", "genre:liquid drum and bass", "genre:electronic"],
+        ["genre:drum and bass", "genre:liquid drum and bass", "genre:edm"],
         ["genre:melodic techno", "genre:progressive house"],
         ["genre:progressive rock", "genre:rock"],
         ["genre:indie rock", "genre:indie pop", "genre:swing", "x"],

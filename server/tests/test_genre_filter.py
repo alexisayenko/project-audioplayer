@@ -19,8 +19,8 @@ def test_kept(v):
 def test_canonical_strips_music_and_uses_builtin_spelling():
     assert gf.canonical("house music") == "house"
     assert gf.canonical("Electronic Music") == "electronic"
-    assert gf.canonical("Electronic Dance") == "electronic"
-    assert gf.canonical("electronic-dance-music") == "electronic"
+    assert gf.canonical("Electronic Dance") == "edm"
+    assert gf.canonical("electronic-dance-music") == "edm"
     assert gf.canonical("punk rock") == "punk"
     for keep in ("trap", "downtempo", "dance-pop", "pop-punk", "chillwave", "soft-rock", "synth-rock", "new age", "indie pop", "classical", "country"):
         assert gf.canonical(keep) == keep or gf.canonical(keep) == keep.replace("-", " ")
@@ -39,19 +39,26 @@ def test_filter_tags_keeps_other_namespaces():
 def test_merge_dedupes_and_does_not_waste_slots():
     junk = [f"genre:{w}" for w in ("danish", "dj", "seen live", "2010", "english", "music")]
     tags = [*junk, "genre:house music", "genre:house", *[f"genre:{REAL[i]}" for i in range(8)]]
-    out = metadata.merge([], {"tags": tags}, None, None)["tags"]
-    assert out == ["genre:house", *[f"genre:{REAL[i]}" for i in range(7)]]
+    out = metadata.merge([], {"tags": tags}, {"tags": tags}, None)
+    applied = [t[6:] for t in out["tags"]]
+    suggested = [s["genre"] for s in out["genre_suggestions"]]
+    assert len(applied) == 5 and len(set(applied)) == 5
+    assert sorted([*applied, *suggested]) == sorted({"house", *REAL[:8]}), "junk takes no slot, house music and house are one genre"
 
 
-def test_merge_song_genres_filtered_and_priority_counts_distinct():
-    song = ["genre:house music", "genre:house", "genre:danish", *[f"genre:{REAL[i]}" for i in range(10)]]
-    out = metadata.merge([], {"tags": ["genre:folk"]}, {"song_genres": song, "tags": song}, None)["tags"]
-    assert out == ["genre:house", *[f"genre:{REAL[i]}" for i in range(10)]]
+def test_merge_song_genres_are_filtered_like_every_other_source():
+    song = ["genre:house music", "genre:house", "genre:danish", *[f"genre:{REAL[i]}" for i in range(3)]]
+    out = metadata.merge([], {"tags": ["genre:house"]}, {"song_genres": song, "tags": song}, None)
+    assert out["tags"][0] != "genre:danish" and "genre:danish" not in out["tags"]
+    assert sorted(out["tags"]) == sorted(["genre:house", *[f"genre:{REAL[i]}" for i in range(3)]]), "house: MusicBrainz and the song page agree; the rest of the song page shares its family"
+    assert out["genre_suggestions"] == []
 
 
 def test_kato_example():
     mb = {"tags": ["genre:house", "genre:dance", "genre:hip-hop", "genre:danish", "genre:dj", "genre:house music", "country:dk"]}
-    assert metadata.merge([], mb, None, None)["tags"] == ["genre:house", "genre:electronic", "genre:hip hop", "country:dk"]
+    out = metadata.merge([], mb, None, None)
+    assert out["tags"] == ["country:dk"], "one source alone applies nothing"
+    assert sorted(s["genre"] for s in out["genre_suggestions"]) == ["edm", "hip hop", "house"]
 
 
 def test_user_entered_genre_tags_are_not_filtered():
@@ -88,7 +95,7 @@ def test_musicbrainz_url_is_stored_cleaned_and_listed(client):
     ("melodic progressive house", "progressive house"), ("hip-hop & rap", "hip hop"), ("rock and indie", "indie rock"),
     ("pop and chart", "pop"), ("russian electro pop", "synthpop"), ("Russian Electropop", "synthpop"),
     ("dnb", "drum and bass"), ("DnB", "drum and bass"), ("drum & bass", "drum and bass"), ("drum n bass", "drum and bass"), ("Drum-and-Bass", "drum and bass"),
-    ("edm", "electronic"), ("EDM", "electronic"), ("d&b", "drum and bass"), ("drum'n'bass", "drum and bass"), ("Drum and Bass Music", "drum and bass"), ("Drum & Bass music", "drum and bass"), ("euro pop", "europop"), ("europop", "europop"), ("euro disco", "euro disco"),
+    ("edm", "edm"), ("EDM", "edm"), ("d&b", "drum and bass"), ("drum'n'bass", "drum and bass"), ("Drum and Bass Music", "drum and bass"), ("Drum & Bass music", "drum and bass"), ("euro pop", "europop"), ("europop", "europop"), ("euro disco", "euro disco"),
     ("euro-disco", "euro disco"), ("eurodisco", "euro disco"), ("eurohouse", "euro house"), ("euro house", "euro house"), ("electronic pop", "synthpop"),
     ("festival progressive house", "progressive house"), ("festival trap", "trap"), ("red disco", "disco"),
 ])
@@ -126,7 +133,7 @@ def test_progressive_goes_to_house_with_an_electronic_tag_else_rock():
 
     assert library.clean_tags(["genre:progressive", "genre:house"]) == ["genre:progressive house", "genre:house"]
     assert library.clean_tags(["genre:melodic techno", "genre:progressive"]) == ["genre:melodic techno", "genre:progressive house"]
-    assert library.clean_tags(["genre:progressive", "genre:edm"]) == ["genre:progressive house", "genre:electronic"]
+    assert library.clean_tags(["genre:progressive", "genre:edm"]) == ["genre:progressive house", "genre:edm"]
     assert library.clean_tags(["genre:progressive", "genre:trance", "genre:rock"]) == ["genre:progressive house", "genre:trance", "genre:rock"]
     assert library.clean_tags(["genre:progressive", "genre:rock"]) == ["genre:progressive rock", "genre:rock"]
     assert library.clean_tags(["genre:progressive", "genre:indie"]) == ["genre:progressive rock", "genre:indie rock"]

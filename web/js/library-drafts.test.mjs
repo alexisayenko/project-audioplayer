@@ -18,7 +18,8 @@ const SONGS = [
 ];
 const draft = (id, extra = {}) => ({ id, text: `Artist - ${id}`, url: '', source: null, title: id, mainArtists: ['Artist'], featuredArtists: [], withArtists: [], version: null, year: null, duration: null, thumbnail: null, state: 'new', inLibrary: false, createdAt: '2026-10-18T10:00:00Z', ...extra });
 
-function setup({ drafts = [draft('d1'), draft('d2')], fail = false } = {}) {
+function setup({ drafts = [draft('d1'), draft('d2')], fail = false, keepStored = false } = {}) {
+  if (!keepStored) localStorage.clear();
   draftStore.reset();
   prefs.view = 'songs';
   prefs.query = '';
@@ -156,4 +157,59 @@ test('cleaning up stops listening to the draft store', async () => {
   await flush();
   v.cleanup();
   assert.equal(draftStore.subs.size, 0);
+});
+
+const KEY = 'electrophone.libraryView';
+
+test('a stored Drafts choice restores the Drafts tab; choosing a tab stores it', async () => {
+  localStorage.setItem(KEY, 'drafts');
+  const v = setup({ keepStored: true });
+  assert.equal(v.tabs()[1].getAttribute('aria-selected'), 'true');
+  assert.equal(v.draftsPane().hidden, false);
+  v.tabs()[0].click();
+  assert.equal(localStorage.getItem(KEY), 'songs');
+  v.tabs()[1].click();
+  assert.equal(localStorage.getItem(KEY), 'drafts');
+  v.cleanup();
+});
+
+test('an invalid stored value is ignored and the Songs tab shows', async () => {
+  localStorage.setItem(KEY, 'playlists');
+  const v = setup({ keepStored: true });
+  assert.equal(v.tabs()[0].getAttribute('aria-selected'), 'true');
+  assert.equal(v.draftsPane().hidden, true);
+  v.cleanup();
+});
+
+test('a guest always gets Songs and the stored value is left alone', async () => {
+  localStorage.setItem(KEY, 'drafts');
+  guest.setGuest({ guest: true, audio: true });
+  const v = setup({ keepStored: true });
+  assert.equal(v.root.querySelectorAll('[role=tablist]').length, 0);
+  assert.equal(v.songsPane().hidden, false);
+  assert.equal(prefs.view, 'songs');
+  assert.equal(localStorage.getItem(KEY), 'drafts');
+  v.cleanup();
+  guest.clearGuest();
+});
+
+test('signing out resets the view to Songs', async () => {
+  prefs.view = 'drafts';
+  window.dispatchEvent(makeEvent('auth-changed'));
+  assert.equal(prefs.view, 'songs');
+});
+
+test('blocked storage (reads and writes throw) does not break the tabs', async () => {
+  const real = localStorage;
+  const boom = () => { throw new Error('blocked'); };
+  Object.defineProperty(globalThis, 'localStorage', { value: { getItem: boom, setItem: boom, removeItem: boom, clear() {} }, configurable: true, writable: true });
+  try {
+    const v = setup({ keepStored: true });
+    assert.equal(v.tabs()[0].getAttribute('aria-selected'), 'true');
+    v.tabs()[1].click();
+    assert.equal(v.draftsPane().hidden, false);
+    v.cleanup();
+  } finally {
+    Object.defineProperty(globalThis, 'localStorage', { value: real, configurable: true, writable: true });
+  }
 });

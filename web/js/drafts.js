@@ -92,14 +92,6 @@ export const draftStore = {
     this.emit();
   },
   flush() { return Promise.all([...this.timers.keys()].map((id) => this.commitDelete(id))); },
-  async clearAll() {
-    await api.clearDrafts();
-    for (const t of this.timers.values()) clearTimeout(t);
-    this.timers.clear();
-    this.hidden.clear();
-    this.items = [];
-    this.emit();
-  },
   async dropAfterAdd(id) {
     this.hidden.add(id);
     this.emit();
@@ -145,7 +137,6 @@ export function mountDrafts(host) {
   const editing = new Map();
   const editError = new Map();
   const busy = new Set();
-  let confirmClear = false;
   let focusId = null;
 
   const box = el('textarea', { class: 'drafts-box', rows: 4, placeholder: PLACEHOLDER, 'aria-label': 'Paste songs for the draft list', spellcheck: false, autocomplete: 'off' });
@@ -267,17 +258,7 @@ export function mountDrafts(host) {
   function paintBar() {
     const n = draftStore.count;
     if (!n) { bar.replaceChildren(); return; }
-    const clear = confirmClear
-      ? el('span', { class: 'drafts-confirm', role: 'group', 'aria-label': 'Confirm clearing the draft list' },
-        el('span', { class: 't-subhead' }, `Delete all ${countText(n)}?`),
-        el('button', { class: 'btn danger small', type: 'button', onclick: async () => {
-          try { await draftStore.clearAll(); say('Cleared the draft list.', 'ok'); } catch (ex) { say(ex.message, 'error'); }
-          confirmClear = false;
-          paint();
-        } }, 'Yes, clear'),
-        el('button', { class: 'btn outline small', type: 'button', onclick: () => { confirmClear = false; paintBar(); } }, 'Cancel'))
-      : el('button', { class: 'btn outline small', type: 'button', onclick: () => { confirmClear = true; paintBar(); } }, 'Clear all drafts');
-    bar.replaceChildren(el('p', { class: 'muted t-caption' }, `${countText(n)} of ${draftStore.limit}`), clear);
+    bar.replaceChildren(el('p', { class: 'muted t-caption' }, `${countText(n)} of ${draftStore.limit}`));
   }
 
   function paintState(n) {

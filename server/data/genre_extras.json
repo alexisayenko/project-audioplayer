@@ -34,6 +34,12 @@
    ],
    "note": "established name, TAG-074"
   },
+  "college rock": {
+   "parents": [
+    "alternative rock"
+   ],
+   "note": "reviewed 2026-10-19: Wikipedia article College_rock, https://en.wikipedia.org/wiki/College_rock (not in Discogs; added by Alex, DN3)"
+  },
   "dance-punk": {
    "parents": [
     "post-punk"
@@ -64,6 +70,13 @@
    ],
    "note": "kept subgenre, TAG-076"
   },
+  "death-doom": {
+   "parents": [
+    "death metal",
+    "doom metal"
+   ],
+   "note": "reviewed 2026-10-19: Wikipedia article Death-doom, https://en.wikipedia.org/wiki/Death-doom (not in Discogs; added by Alex, DN3)"
+  },
   "deep trance": {
    "parents": [
     "trance"
@@ -88,6 +101,12 @@
    ],
    "note": "kept subgenre, TAG-076"
   },
+  "edm": {
+   "parents": [
+    "Electronic"
+   ],
+   "note": "reviewed: dance-oriented electronic umbrella; house/techno/trance etc. stay at level 2 under Electronic (owner decision DY1/EDM, 2026-10-19; not in Discogs)"
+  },
   "electronic rock": {
    "parents": [
     "alternative rock"
@@ -105,6 +124,18 @@
     "Pop"
    ],
    "note": "kept subgenre, TAG-076"
+  },
+  "experimental rock": {
+   "parents": [
+    "Rock"
+   ],
+   "note": "reviewed 2026-10-19: Wikipedia article Experimental_rock, https://en.wikipedia.org/wiki/Experimental_rock (not in Discogs; added by Alex, DN3)"
+  },
+  "extreme metal": {
+   "parents": [
+    "heavy metal"
+   ],
+   "note": "reviewed 2026-10-19: Wikipedia article Extreme_metal, https://en.wikipedia.org/wiki/Extreme_metal (not in Discogs; added by Alex, DN3)"
   },
   "folk pop": {
    "parents": [
@@ -136,6 +167,18 @@
    ],
    "note": "added by Alex, 2026-10-16 (not in Discogs, verified)"
   },
+  "glam metal": {
+   "parents": [
+    "heavy metal"
+   ],
+   "note": "reviewed 2026-10-19: Wikipedia article Glam_metal, https://en.wikipedia.org/wiki/Glam_metal (not in Discogs; added by Alex, DN3)"
+  },
+  "hardcore punk": {
+   "parents": [
+    "punk"
+   ],
+   "note": "reviewed 2026-10-19: Wikipedia article Hardcore_punk, https://en.wikipedia.org/wiki/Hardcore_punk (not in Discogs; added by Alex, DN3)"
+  },
   "industrial rock": {
    "parents": [
     "alternative rock"
@@ -160,6 +203,12 @@
    ],
    "note": "alias target, TAG-071"
   },
+  "neo-psychedelia": {
+   "parents": [
+    "psychedelic rock"
+   ],
+   "note": "reviewed 2026-10-19: Wikipedia article Neo-psychedelia, https://en.wikipedia.org/wiki/Neo-psychedelia (not in Discogs; added by Alex, DN3)"
+  },
   "neurofunk": {
    "parents": [
     "drum and bass"
@@ -171,6 +220,12 @@
     "Pop"
    ],
    "note": "live library tag, reviewed 2026-10-16"
+  },
+  "noise rock": {
+   "parents": [
+    "Rock"
+   ],
+   "note": "reviewed 2026-10-19: Wikipedia article Noise_rock, https://en.wikipedia.org/wiki/Noise_rock (not in Discogs; added by Alex, DN3)"
   },
   "nu-nrg": {
    "parents": [
@@ -198,7 +253,7 @@
   },
   "post-britpop": {
    "parents": [
-    "britpop"
+    "alternative rock"
    ],
    "note": "live library tag, reviewed 2026-10-16"
   },
@@ -210,7 +265,7 @@
   },
   "post-punk revival": {
    "parents": [
-    "post-punk"
+    "indie rock"
    ],
    "note": "live library tag, reviewed 2026-10-16"
   },
@@ -250,6 +305,12 @@
    ],
    "note": "live library tag, reviewed 2026-10-16"
   },
+  "roots rock": {
+   "parents": [
+    "Rock"
+   ],
+   "note": "reviewed 2026-10-19: Wikipedia article Roots_rock, https://en.wikipedia.org/wiki/Roots_rock (not in Discogs; added by Alex, DN3)"
+  },
   "sadcore": {
    "parents": [
     "indie rock"
@@ -268,7 +329,7 @@
    ],
    "note": "kept subgenre, TAG-076"
   },
-  "soviet wave": {
+  "sovietwave": {
    "parents": [
     "synthwave"
    ],

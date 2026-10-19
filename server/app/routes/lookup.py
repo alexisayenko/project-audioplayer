@@ -57,15 +57,15 @@ async def _apply_suggestions(meta: dict[str, Any]) -> None:
 
 def _merge_suggestions(meta: dict[str, Any], found: list[str], mb: dict[str, Any], wiki: dict[str, Any], disc: dict[str, Any]) -> None:
     disc_genres = [t for t in disc["tags"] if t.startswith("genre:")]
-    disc_rest = [t for t in disc["tags"] if not t.startswith("genre:")]
     yt = list(meta.get("youtube_genres") or [])
     own = list(meta.get("tags", []))
     remixer_is_artist = metadata.artist_is_remixer(meta.get("artist", ""), meta.get("title_raw") or meta.get("title", ""), meta.get("remixer"))
-    if meta.get("remixer") or remixer_is_artist:
-        meta["tags"], meta["original_genres"] = metadata.split_for_version([*own, *yt], [*disc_genres, *found, *wiki["tags"], *disc_rest], wiki.get("song_genres"))
-    else:
-        meta["tags"] = metadata.finalize_tags([*meta.get("tags", []), *disc_genres, *found, *wiki["tags"], *yt, *disc_rest], wiki.get("song_genres"))
-        meta["original_genres"] = []
+    song, artist = metadata.wiki_groups(wiki, None)
+    resolved = metadata.resolve(
+        own=own, youtube=yt, mb=found, wiki_song=song, wiki_artist=artist, wiki_tags=wiki["tags"], disc=disc["tags"], disc_full=metadata.disc_is_full(disc),
+        versioned=bool(meta.get("remixer") or remixer_is_artist), remixer_artist=remixer_is_artist,
+    )
+    meta.update(resolved)
     others = {*own, *disc_genres, *found, *wiki["tags"]}
     meta["tag_sources"] = {t: "youtube" for t in meta["tags"] if t in yt and t not in others}
     meta["wikipedia_song"] = wiki["wikipedia_song"]
@@ -192,4 +192,6 @@ async def get_metadata(req: MetadataRequest):
 @router.post("/lookup/wikipedia", dependencies=[Depends(deps.require_token)])
 async def lookup_wikipedia(req: WikipediaLookupRequest):
     found = await run_in_threadpool(wiki_lookup.from_links, req.wikipedia_song, req.wikipedia_artist, req.wikipedia_album)
-    return {"tags": metadata.finalize_tags(found["tags"], found.get("song_genres")), "year": found["year"]}
+    song, artist = metadata.wiki_groups(found, None)
+    resolved = metadata.resolve(wiki_song=song, wiki_artist=artist, wiki_tags=found["tags"])
+    return {"tags": resolved["tags"], "genre_suggestions": resolved["genre_suggestions"], "year": found["year"]}

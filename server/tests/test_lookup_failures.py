@@ -395,8 +395,8 @@ def test_wiki_infobox_is_cached_and_callers_cannot_mutate_it(monkeypatch, wiki):
 def test_wiki_facts_degrade_on_failure(monkeypatch, wiki):
     monkeypatch.setattr(wl, "_entity", lambda q: {"claims": {"P136": [{"mainsnak": {"snaktype": "value", "datavalue": {"value": {"id": "Q5"}}}}]}})
     monkeypatch.setattr(wl, "_label_map", boom)
-    assert wl.facts("Q1", "Q2") == {"tags": [], "song_genres": [], "year": None}
-    assert wl.facts(None, None) == {"tags": [], "song_genres": [], "year": None}
+    assert wl.facts("Q1", "Q2") == {"tags": [], "song_genres": [], "artist_genres": [], "year": None}
+    assert wl.facts(None, None) == {"tags": [], "song_genres": [], "artist_genres": [], "year": None}
 
 
 def test_wiki_suggest_and_from_links_never_raise(monkeypatch, wiki):

@@ -59,12 +59,12 @@ async function mount(initial = [], handlers = {}) {
   return { host, q, qa, rows, button, paste, unmount, ...s };
 }
 
-test('an empty list shows the specified text, the paste box with its placeholder and no Clear button', async () => {
+test('an empty list shows the specified text, the paste box with its placeholder and no Clear all button', async () => {
   const v = await mount([]);
   assert.equal(v.q('.drafts-empty').textContent, 'No drafts yet. Paste "Artist - Title" or links above to collect songs to add later.');
   assert.equal(v.q('textarea').placeholder, 'Paste "Artist - Title" or links, one per line');
   assert.ok(v.button(/^Add to drafts$/));
-  assert.equal(v.button(/Clear all drafts/), undefined);
+  assert.equal(v.button(/Clear all/), undefined);
   assert.equal(v.rows().length, 0);
   v.unmount();
 });
@@ -274,25 +274,6 @@ test('an unundone delete is sent when the undo window ends, on leaving the view,
   assert.equal(draftStore.items.some((d) => d.id === 'c'), true);
   assert.equal(draftStore.hidden.has('c'), false);
   assert.match(toast().textContent, /Could not delete the draft: nope/);
-});
-
-test('Clear all drafts asks first; Cancel keeps everything, Yes deletes the whole list', async () => {
-  const v = await mount([draft('a'), draft('b')]);
-  assert.match(v.q('.drafts-bar').textContent, /2 drafts of 500/);
-  v.button(/^Clear all drafts$/).click();
-  assert.match(v.q('.drafts-confirm').textContent, /Delete all 2 drafts\?/);
-  v.button(/^Cancel$/).click();
-  assert.equal(v.qa('.drafts-confirm').length, 0);
-  assert.equal(v.rows().length, 2);
-  v.button(/^Clear all drafts$/).click();
-  v.button(/^Yes, clear$/).click();
-  await flush();
-  await flush();
-  assert.ok(v.calls.some((c) => c.url === '/drafts' && c.opts.method === 'DELETE'));
-  assert.equal(v.rows().length, 0);
-  assert.equal(v.qa('.drafts-empty').length, 1);
-  assert.equal(v.qa('.drafts-bar button').length, 0);
-  v.unmount();
 });
 
 const PREVIEW = { id: 'dQw4w9WgXcQ', title: 'Rick - Never Gonna', title_raw: 'Rick - Never Gonna', artist: 'Rick', mainArtists: ['Rick'], featuredArtists: [], withArtists: [], source: 'youtube', source_url: YT, thumbnail: 'https://i/t.jpg', duration: 212, tags: [], in_library: false };

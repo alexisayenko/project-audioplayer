@@ -15,7 +15,7 @@ import { cleanTitleEx } from './title-clean.js';
 import { titleCleaner } from './song-form-title.js';
 import { bpmRow } from './song-form-bpm.js';
 import { unknownGenre } from './genre-vocab.js';
-import { originalGenres, originalBox } from './original-genres.js';
+import { suggestedGenres, suggestedBox } from './suggested-genres.js';
 
 const firstAlbum = (s) => (Array.isArray(s.albums) ? s.albums[0] : s.album) || '';
 
@@ -129,8 +129,9 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
   resetIcons();
   const metaBtn = el('button', { class: 'btn outline small', type: 'button' }, 'Get metadata');
   const metaMsg = el('p', { class: 't-caption muted', role: 'status' });
-  const orig = originalBox((tag) => editor.addTags([tag]));
-  if (isAdd) orig.set(originalGenres(initial, initial.tags || []));
+  const orig = suggestedBox({ have: () => editor.peek(), onPick: (tag) => editor.addTags([tag]) });
+  if (isAdd) orig.set(suggestedGenres(initial, initial.tags || []));
+  editor.subscribe(() => orig.refresh());
   const hint = el('button', { class: 'link-btn t-caption wiki-hint', type: 'button', hidden: true });
   let suggest = null;
   let discogsState = null;
@@ -176,8 +177,8 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
     credits.setSpecific(resp?.version_year ?? resp?.remix_year);
     credits.setOriginal(resp?.suggest?.artist);
     f.album.dispatchEvent(new Event('input', { bubbles: true }));
-    metaMsg.textContent = metaMessage(plan, discogsState);
-    orig.set(originalGenres(resp, editor.peek()));
+    orig.set(suggestedGenres(resp, editor.peek()));
+    metaMsg.textContent = metaMessage(plan, discogsState, orig.count());
   };
   metaBtn.addEventListener('click', async () => {
     const wv = wiki.values();
@@ -240,11 +241,10 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
     el('div', { class: 'meta-row' }, el('div', { class: 'lk-slot' }, panel.bar), el('div', { class: 'meta-btns' }, metaBtn, ident.button)),
     panel.clip,
     metaMsg,
-    orig.node,
     ident.node,
     el('div', { class: 'grid2' }, field('Album', f.album), field('First released', f.released)),
     bpmEl,
-    genres.node, countries.node,
+    genres.node, orig.node, countries.node,
     el('div', { class: 'field' }, el('label', {}, 'Tags'), editor.node));
   node.addEventListener('input', credits.paint);
   if (onChange) node.addEventListener('input', onChange);
@@ -306,6 +306,7 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
       panel.setErrors({});
       ident.reset();
       resetMeta();
+      orig.forget();
       metaBtn.disabled = false;
       metaBtn.textContent = 'Get metadata';
       tc.clearRestored();

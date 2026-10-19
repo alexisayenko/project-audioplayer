@@ -36,10 +36,10 @@ const { player } = await import('./player.js');
 let current = null;
 Object.defineProperty(player, 'current', { get: () => current, configurable: true });
 
-async function mount() {
+async function mount(opts = { view: 'radial' }) {
   const root = document.createElement('div');
   document.body.append(root);
-  const cleanup = renderGenresRework(root);
+  const cleanup = renderGenresRework(root, opts);
   await flush();
   return { root, cleanup };
 }
@@ -187,11 +187,13 @@ test('clicking a row opens the detail panel with chain, synonyms, flags and coun
   openInfo(root, 'house');
   assert.equal(panelOf(root).hidden, false);
   assert.equal(panelOf(root).querySelector('h3').textContent, 'house');
-  assert.ok(panelOf(root).textContent.includes('Genre, level 2 (sub-genre)'));
-  assert.ok(panelOf(root).textContent.includes('2 in your library (1 tagged exactly)'));
+  assert.ok(!panelOf(root).textContent.includes('Level'), 'no Level row');
+  assert.ok(panelOf(root).textContent.includes('2 in your library (1 tagged exactly with it, the rest with genres below it)'));
   openInfo(root, 'afro house');
-  assert.ok(panelOf(root).textContent.includes('No, a name added to this library'));
-  assert.deepEqual(panelOf(root).querySelectorAll('.gm-chip').map((c) => c.textContent), ['Electronic', 'house']);
+  assert.ok(!panelOf(root).textContent.includes('In Discogs'), 'sources replace the Discogs fact row');
+  assert.deepEqual(panelOf(root).querySelectorAll('.gm-chip').map((c) => c.textContent), ['house']);
+  openInfo(root, 'house');
+  assert.deepEqual(panelOf(root).querySelectorAll('.gm-chip').map((c) => c.textContent), ['Electronic']);
   panelOf(root).querySelectorAll('.gm-chip').find((c) => c.textContent === 'Electronic').click();
   assert.ok(panelOf(root).textContent.includes('edm, dance music'));
   row(root, 'house').click();
@@ -206,8 +208,8 @@ test('also under chip jumps to the other parent when it has songs; library butto
   const { root } = await mount();
   btn(root, 'Expand all').click();
   const chip = row(root, 'jungle').querySelector('.gmr-also');
-  assert.equal(chip.textContent, 'also under breakbeat');
-  assert.equal(chip.getAttribute('aria-label'), 'Also under breakbeat: jump to breakbeat');
+  assert.equal(chip.textContent, 'parent breakbeat');
+  assert.equal(chip.getAttribute('aria-label'), 'Parent breakbeat: jump to breakbeat');
   chip.click();
   assert.equal(row(root, 'breakbeat').getAttribute('aria-selected'), 'true');
   assert.equal(panelOf(root).hidden, true, 'the also-under jump is an outline action: no infobox');
@@ -389,26 +391,28 @@ test('the header block and the outline are one panel that collapses and expands 
   cleanup();
 });
 
-test('the details live inside the one outline panel: heading structure, close button, no floating panel', async () => {
+test('the infobox is its own panel next to the outline: heading structure, source slot, close button and Escape', async () => {
   mode = 'ok';
   const { root, cleanup } = await mount();
   const outline = root.querySelector('#gmr-outline');
   assert.equal(root.querySelectorAll('section').length, 1);
   assert.equal(root.querySelector('.gmr-panel'), null);
-  assert.ok(outline.contains(panelOf(root)));
+  assert.ok(!outline.contains(panelOf(root)), 'the infobox is not inside the outline panel');
+  assert.ok(root.querySelector('.gm-work').contains(panelOf(root)));
   assert.equal(panelOf(root).hidden, true);
   assert.equal(root.querySelector('.gmr-side h2').textContent, 'Outline');
   openInfo(root, 'house');
   assert.equal(panelOf(root).hidden, false);
   assert.equal(panelOf(root).getAttribute('aria-label'), 'Genre details');
   assert.equal(panelOf(root).querySelector('h3').textContent, 'house');
-  assert.ok(outline.classList.contains('has-details'));
+  assert.equal(panelOf(root).querySelector('[data-slot="source-icons"]'), null, 'no Sources row without source links');
   assert.ok(outline.contains(root.querySelector('[role="tree"]')));
   assert.ok(btn(root, 'Show 2 songs in Library'));
   panelOf(root).querySelectorAll('button').find((b) => b.getAttribute('aria-label') === 'Close details').click();
   assert.equal(panelOf(root).hidden, true);
-  assert.equal(outline.classList.contains('has-details'), false);
-  assert.equal(outline.hidden, false);
+  openInfo(root, 'house');
+  fire(root.querySelector('.gm'), 'keydown', { key: 'Escape' });
+  assert.equal(panelOf(root).hidden, true, 'Escape closes the infobox');
   cleanup();
 });
 
@@ -452,7 +456,6 @@ test('no user-visible text uses the word style for genres', async () => {
   openInfo(root, 'deep house');
   const text = root.textContent + root.querySelectorAll('[aria-label],[title]').map((n) => `${n.getAttribute('aria-label')} ${n.getAttribute('title')}`).join(' ');
   assert.equal(/\bstyles?\b/i.test(text), false);
-  assert.ok(panelOf(root).textContent.includes('Genre, level 3 (sub-sub-genre)'));
   cleanup();
 });
 
@@ -618,7 +621,7 @@ test('the hover tooltip never prints the text null and has exactly the parts tha
   assert.ok(!full.textContent.includes('null'));
   const house = hover(root, 'house');
   assert.ok(house, 'house can be hovered');
-  assert.equal(house.textContent, 'house 3 songs');
+  assert.equal(house.textContent, 'house 3 songs (2 exactly)');
   cleanup();
   mode = 'ok';
 });

@@ -58,6 +58,6 @@ def test_levels_equal_genre_levels_json_for_parents_family_and_level(body):
 
 
 def test_web_fixture_is_the_payload(body):
-    keys = ("families", "family_synonyms", "flavours", "levels")
+    keys = ("families", "family_synonyms", "flavours", "levels", "subfamilies")
     want = {k: body[k] for k in keys}
     assert json.loads(FIXTURE.read_text(encoding="utf-8")) == want, "regenerate the fixture from genre_vocab.vocabulary() (keys families, family_synonyms, flavours, levels; json sort_keys, indent 1)"

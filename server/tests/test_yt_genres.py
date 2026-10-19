@@ -71,27 +71,38 @@ def _empty():
     return [], {}, {"tags": [], "wikipedia_song": None, "wikipedia_artist": None}, {"tags": [], "url": None}
 
 
-def test_merge_uses_youtube_genres_last_and_names_the_source():
+def test_a_youtube_genre_alone_is_only_suggested():
     meta = {"tags": [], "youtube_genres": ["genre:deep house"]}
+    found, mb, wiki, disc = _empty()
+    lookup._merge_suggestions(meta, found, mb, wiki, disc)
+    assert meta["tags"] == []
+    assert meta["genre_suggestions"] == [{"genre": "deep house", "sources": ["youtube"], "reason": "single_source"}]
+    assert meta["tag_sources"] == {}
+
+
+def test_a_youtube_genre_that_another_source_names_is_applied():
+    meta = {"tags": [], "youtube_genres": ["genre:deep house", "genre:techno"]}
+    found, mb, wiki, disc = _empty()
+    lookup._merge_suggestions(meta, ["genre:techno"], mb, wiki, disc)
+    assert meta["tags"] == ["genre:techno"]
+    assert meta["genre_suggestions"] == [{"genre": "deep house", "sources": ["youtube"], "reason": "single_source"}]
+    assert meta["tag_sources"] == {}
+
+
+def test_a_youtube_genre_names_the_source_when_it_is_the_versions_own_link():
+    meta = {"tags": [], "youtube_genres": ["genre:deep house"], "remixer": "Somebody"}
     found, mb, wiki, disc = _empty()
     lookup._merge_suggestions(meta, found, mb, wiki, disc)
     assert meta["tags"] == ["genre:deep house"]
     assert meta["tag_sources"] == {"genre:deep house": "youtube"}
 
 
-def test_merge_other_sources_win_the_label_and_the_order():
-    meta = {"tags": [], "youtube_genres": ["genre:deep house", "genre:techno"]}
-    found, mb, wiki, disc = _empty()
-    lookup._merge_suggestions(meta, ["genre:techno"], mb, wiki, disc)
-    assert meta["tags"] == ["genre:techno", "genre:deep house"]
-    assert meta["tag_sources"] == {"genre:deep house": "youtube"}
-
-
-def test_merge_without_youtube_genres_is_unchanged():
+def test_merge_without_youtube_genres_applies_nothing_from_one_source():
     meta = {"tags": ["genre:house"]}
     found, mb, wiki, disc = _empty()
     lookup._merge_suggestions(meta, found, mb, wiki, disc)
-    assert meta["tags"] == ["genre:house"]
+    assert meta["tags"] == []
+    assert meta["genre_suggestions"] == [{"genre": "house", "sources": ["youtube"], "reason": "single_source"}]
     assert meta["tag_sources"] == {}
 
 

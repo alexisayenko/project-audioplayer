@@ -6,7 +6,7 @@ import { layoutRadial, highlightSets, radius, selectLabels, labelBox } from './g
 
 const doc = JSON.parse(readFileSync(new URL('../../server/data/genre_levels.json', import.meta.url), 'utf8'));
 const discogs = JSON.parse(readFileSync(new URL('../../server/data/genre_discogs.json', import.meta.url), 'utf8'));
-const entries = Object.fromEntries(Object.entries(doc).filter(([k]) => k !== '_meta' && !['genres', 'families', 'flavours'].includes(k)));
+const entries = Object.fromEntries(Object.entries(doc).filter(([k]) => k !== '_meta' && !['genres', 'families', 'flavours', 'subfamilies'].includes(k)));
 const vocab = {
   families: discogs.families,
   family_synonyms: Object.fromEntries(Object.entries(doc.families).map(([k, v]) => [k, v.synonyms])),
@@ -104,9 +104,9 @@ test('a style without songs of its own but with a populated child is drawn as a 
 test('an extra parent that is a genre becomes a cross-link between level 2 nodes only', () => {
   const l = layoutRadial(sample());
   const t = buildTree(vocab);
-  applyCounts(t, [{ id: 'a', tags: ['genre:jungle'] }, { id: 'b', tags: ['genre:breakbeat'] }]);
-  const jungle = layoutRadial(t).links.filter((x) => x.from === 's:jungle');
-  assert.deepEqual(jungle.map((x) => x.to).sort(), ['s:breakbeat']);
+  applyCounts(t, [{ id: 'a', tags: ['genre:psybient'] }, { id: 'b', tags: ['genre:ambient'] }]);
+  const psybient = layoutRadial(t).links.filter((x) => x.from === 's:psybient');
+  assert.deepEqual(psybient.map((x) => x.to).sort(), ['s:ambient']);
   assert.ok(l.links.length > 0);
   for (const x of l.links) assert.equal(l.byId.get(x.to).level, 2);
 });
@@ -183,7 +183,7 @@ test('psytrance is a level 2 sibling of trance with its own level 3 children; co
   assert.equal(count(psy), 3);
   assert.equal(count(t.byId.get('s:trance')), 1);
   assert.deepEqual(chain(t, 's:dark psytrance').map((n) => n.name), ['Electronic', 'psytrance', 'dark psytrance']);
-  assert.equal(t.byId.get('s:dark psytrance').display, 'Dark Psy-Trance');
+  assert.equal(t.byId.get('s:dark psytrance').display, 'dark psy-trance');
   assert.equal(resolveNode('darkpsy', t).id, 's:dark psytrance');
   assert.equal(resolveNode('prog psy', t).id, 's:progressive psytrance');
   assert.ok(searchMatches(t, 'darkpsy').has('s:dark psytrance'));

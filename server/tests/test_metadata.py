@@ -20,13 +20,14 @@ def test_merge_precedence():
         links={"year": 1997, "tags": ["genre:disco", "country:fr"]},
         guess={"year": 1980, "tags": ["genre:soul"]},
     )
-    assert out == {"album": "Src Album", "year": 1997, "published_year": None, "remix_year": None, "version_year": None, "tags": ["genre:pop", "genre:house", "genre:funk", "country:au", "genre:disco", "genre:soul"], "original_genres": []}
+    assert {k: v for k, v in out.items() if k != "genre_suggestions"} == {"album": "Src Album", "year": 1997, "published_year": None, "remix_year": None, "version_year": None, "tags": ["country:au"], "original_genres": []}
+    assert {s["genre"]: s["sources"] for s in out["genre_suggestions"]} == {"pop": ["youtube"], "house": ["youtube"], "funk": ["musicbrainz"], "disco": ["wikipedia_artist"]}, "no two groups agree, the guess is ignored beside the user's links"
 
 
 def test_merge_falls_back_through_sources():
-    assert metadata.merge([], {"album": "MB", "year": 1999}, None, {"year": 1980}) == {"album": "MB", "year": 1980, "published_year": None, "remix_year": None, "version_year": None, "tags": [], "original_genres": []}
-    assert metadata.merge([{"year": 2003}], None, None, None) == {"album": None, "year": None, "published_year": None, "remix_year": None, "version_year": None, "tags": [], "original_genres": []}
-    assert metadata.merge([], None, None, None) == {"album": None, "year": None, "published_year": None, "remix_year": None, "version_year": None, "tags": [], "original_genres": []}
+    assert metadata.merge([], {"album": "MB", "year": 1999}, None, {"year": 1980}) == {"album": "MB", "year": 1980, "published_year": None, "remix_year": None, "version_year": None, "tags": [], "original_genres": [], "genre_suggestions": []}
+    assert metadata.merge([{"year": 2003}], None, None, None) == {"album": None, "year": None, "published_year": None, "remix_year": None, "version_year": None, "tags": [], "original_genres": [], "genre_suggestions": []}
+    assert metadata.merge([], None, None, None) == {"album": None, "year": None, "published_year": None, "remix_year": None, "version_year": None, "tags": [], "original_genres": [], "genre_suggestions": []}
 
 
 def test_merge_ignores_bad_years():
@@ -53,8 +54,9 @@ def test_gather_merges_all_sources(upstream, monkeypatch):
         "published_year": None,
         "remix_year": None,
         "version_year": None,
-        "tags": ["genre:rock", "country:au", "genre:blues rock", "genre:hard rock"],
+        "tags": ["genre:rock", "country:au"],
         "original_genres": [],
+        "genre_suggestions": [{"genre": "blues rock", "sources": ["wikipedia_artist"], "reason": "single_source"}],
         "services": {
             "youtube": {"found": True, "url": "https://youtu.be/dQw4w9WgXcQ"},
             "soundcloud": {"found": False, "url": None},
@@ -74,7 +76,8 @@ def test_gather_skips_failing_sources(monkeypatch):
     monkeypatch.setattr(wl, "suggest", boom)
     monkeypatch.setattr(wl, "from_links", boom)
     out = metadata.gather("T", "A", [boom, lambda: {"album": "Alb", "year": 2000, "tags": ["genre:pop"]}], "x", "y")
-    assert {k: out[k] for k in ("album", "year", "tags")} == {"album": "Alb", "year": None, "tags": ["genre:pop"]}
+    assert {k: out[k] for k in ("album", "year", "tags")} == {"album": "Alb", "year": None, "tags": []}
+    assert out["genre_suggestions"] == [{"genre": "pop", "sources": ["youtube"], "reason": "single_source"}]
     assert out["services"]["wikipedia"] == {"found": False, "url": None}
 
 
@@ -130,7 +133,8 @@ def test_metadata_endpoint(monkeypatch):
     r = client.post("/metadata", json=body, headers={"X-API-Token": "secret"})
     assert r.status_code == 200
     body_out = r.json()
-    assert {k: body_out[k] for k in ("album", "year", "tags")} == {"album": "Yt Album", "year": None, "tags": ["genre:pop", "country:au"]}
+    assert {k: body_out[k] for k in ("album", "year", "tags")} == {"album": "Yt Album", "year": None, "tags": ["country:au"]}
+    assert body_out["genre_suggestions"] == [{"genre": "pop", "sources": ["youtube"], "reason": "single_source"}]
     assert body_out["services"]["youtube"] == {"found": True, "url": "https://youtu.be/dQw4w9WgXcQ"}
     for inert in ("spotify", "musicbrainz"):
         assert body_out["services"][inert] == {"found": False, "url": None}
@@ -139,24 +143,26 @@ def test_metadata_endpoint(monkeypatch):
     assert (empty["album"], empty["year"], empty["tags"]) == (None, None, [])
 
 
-def test_merge_song_genres_first_and_all_artist_after():
-    song = [f"genre:{REAL[i]}" for i in range(7)]
+def test_merge_song_page_and_artist_page_are_separate_groups():
+    song = ["genre:techno", "genre:trance", "genre:house"]
     out = metadata.merge(
         sources=[{"tags": ["genre:folk"]}],
-        mb={"tags": ["genre:hip hop", "genre:trap", "genre:rap", "country:us"]},
-        links={"tags": [*song, "genre:soul", "genre:funk"], "song_genres": song},
+        mb={"tags": ["genre:hip hop", "country:us"]},
+        links={"tags": [*song, "genre:soul"], "song_genres": song, "artist_genres": ["genre:techno", "genre:trance", "genre:soul"]},
         guess=None,
     )
-    assert out["tags"][:7] == song
-    assert out["tags"][7] == "genre:folk"
-    assert len([t for t in out["tags"] if t.startswith("genre:")]) == 8
-    assert "genre:soul" not in out["tags"]
+    assert sorted(out["tags"]) == ["country:us", "genre:house", "genre:techno", "genre:trance"], "techno and trance: song page and artist page agree; house: song page only, same family"
+    assert {s["genre"] for s in out["genre_suggestions"]} == {"soul", "folk", "hip hop"}
 
 
-def test_merge_song_genres_exceed_cap_up_to_all():
+def test_merge_applies_at_most_five_and_suggests_the_rest():
     song = [f"genre:{REAL[i]}" for i in range(10)]
-    out = metadata.merge([{"tags": ["genre:folk"]}], None, None, {"tags": song, "song_genres": song})
-    assert out["tags"] == song
+    out = metadata.merge([{"tags": ["genre:folk"]}], None, None, {"tags": song, "song_genres": song, "artist_genres": song})
+    applied = [t for t in out["tags"] if t.startswith("genre:")]
+    assert len(applied) == 5
+    over = [s for s in out["genre_suggestions"] if s["reason"] == "over_cap"]
+    assert len(over) >= 4, "a genre that is the ancestor of an applied one is dropped, not suggested"
+    assert {t[6:] for t in applied} | {s["genre"] for s in over} <= set(REAL[:10])
 
 
 def test_services_wikipedia_found_from_infobox_genres(monkeypatch):
@@ -164,14 +170,9 @@ def test_services_wikipedia_found_from_infobox_genres(monkeypatch):
     monkeypatch.setattr(wl, "_infobox_cache", {})
     monkeypatch.setattr(wl, "_fetch_json", lambda url: {"parse": {"wikitext": "{{Infobox song\n| genre = [[Neo soul]], [[funk]]\n}}"}})
     out = metadata.gather("T", "", [], "https://en.wikipedia.org/wiki/Crazy_(Gnarls_Barkley_song)", None)
-    assert out["tags"] == ["genre:neo soul", "genre:funk"]
+    assert out["tags"] == []
+    assert sorted((s["genre"], tuple(s["sources"])) for s in out["genre_suggestions"]) == [("funk", ("wikipedia_song",)), ("neo soul", ("wikipedia_song",))]
     assert out["services"]["wikipedia"] == {"found": True, "url": "https://en.wikipedia.org/wiki/Crazy_(Gnarls_Barkley_song)"}
-
-
-def test_infobox_genres_beyond_cap_kept():
-    song = [f"genre:{REAL[i]}" for i in range(11)]
-    out = metadata.merge([{"tags": ["genre:folk"]}], None, {"song_genres": song, "tags": song}, None)
-    assert out["tags"] == song
 
 
 def test_merge_album_infobox_between_ytdlp_and_musicbrainz():
@@ -202,7 +203,8 @@ def test_gather_infobox_album_and_year_end_to_end(monkeypatch):
     text = "{{Infobox song\n| album = [[Invaders Must Die]]\n| released = {{Start date|df=yes|2009|5|11}}\n| genre = [[Big beat]]\n}}"
     monkeypatch.setattr(wl, "_fetch_json", lambda url: {"parse": {"wikitext": text}})
     out = metadata.gather("T", "", [], "https://en.wikipedia.org/wiki/Warrior%27s_Dance", None)
-    assert (out["album"], out["year"], out["tags"]) == ("Invaders Must Die", 2009, ["genre:big beat"])
+    assert (out["album"], out["year"], out["tags"]) == ("Invaders Must Die", 2009, [])
+    assert [s["genre"] for s in out["genre_suggestions"]] == ["big beat"]
     assert out["services"]["wikipedia"]["found"] is True
 
 
@@ -217,7 +219,7 @@ def test_gather_suggest_from_song_infobox(monkeypatch):
     out = _gather_with_box(monkeypatch, "{{Infobox song\n| name = Warrior's Dance\n| artist = [[the Prodigy]]\n| album = X\n}}")
     assert out["suggest"] == {"artist": "The Prodigy", "title": "Warrior's Dance"}
     assert out["album"] == "X"
-    assert set(out) == {"album", "year", "published_year", "remix_year", "version_year", "tags", "original_genres", "wikipedia_song", "wikipedia_artist", "wikipedia_album", "suggest", "services"}
+    assert set(out) == {"album", "year", "published_year", "remix_year", "version_year", "tags", "original_genres", "genre_suggestions", "wikipedia_song", "wikipedia_artist", "wikipedia_album", "suggest", "services"}
 
 
 def test_gather_suggest_nulls_without_name_artist_or_infobox(monkeypatch):
@@ -293,8 +295,9 @@ def test_gather_for_a_remix_applies_only_the_sources_own_genres(monkeypatch):
     remix = metadata.gather("T", "A", [src], version_kind="remix")
     assert "genre:art pop" in plain["tags"]
     assert plain["original_genres"] == []
-    assert remix["tags"] == ["genre:trance", "genre:progressive trance", "country:gb"]
-    assert remix["original_genres"] == ["genre:art pop", "genre:new wave", "genre:synthpop"]
+    assert remix["tags"] == ["genre:progressive trance", "country:gb"], "trance is pruned beside its child"
+    assert sorted(remix["original_genres"]) == ["genre:art pop", "genre:new wave", "genre:synthpop"]
+    assert all(s["sources"][0] == "original" for s in remix["genre_suggestions"])
 
 
 def test_a_version_with_no_own_source_has_no_genres_and_the_original_is_a_hint(monkeypatch):
@@ -343,7 +346,8 @@ def test_gather_uses_the_discogs_link_before_searching(monkeypatch):
     out = metadata.gather("Mrs. Moon", "Kermesse", [], discogs_url=DISC_LINK)
     assert out["services"]["discogs"] == {"found": True, "url": "https://www.discogs.com/master/101179", "from_link": True}
     assert out["year"] == 1983
-    assert "genre:italo disco" in out["tags"]
+    assert out["tags"] == []
+    assert out["genre_suggestions"] == [{"genre": "italo disco", "sources": ["discogs"], "reason": "single_source"}]
 
 
 def test_gather_with_only_a_discogs_link_needs_no_artist(monkeypatch):
@@ -407,7 +411,8 @@ def test_gather_for_a_version_reports_no_discogs_skip(monkeypatch):
 
 def test_merge_takes_discogs_genres_first_and_its_country_last():
     out = metadata.merge([], {"tags": ["genre:house", "country:fr"]}, None, None, {"tags": ["genre:italo-disco", "country:it"]})
-    assert out["tags"] == ["genre:italo disco", "genre:house", "country:fr"]
+    assert out["tags"] == ["country:fr"]
+    assert {s["genre"]: s["sources"] for s in out["genre_suggestions"]} == {"italo disco": ["discogs"], "house": ["musicbrainz"]}
 
 
 def test_metadata_endpoint_passes_the_discogs_link(monkeypatch):

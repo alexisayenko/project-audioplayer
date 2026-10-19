@@ -224,6 +224,9 @@ def test_preview_and_metadata_responses_still_decode(client, monkeypatch, ydl): 
     for service in metadata_body["services"].values():
         check(service, "Service")
     check(metadata_body["suggest"], "Suggest")
+    for body in (preview, metadata_body):
+        assert isinstance(body["genre_suggestions"], list), "additive field (API-186): the iOS models ignore it, the contract keys above are unchanged"
+        assert all(set(s) == {"genre", "sources", "reason"} for s in body["genre_suggestions"])
 
 
 def test_song_status_still_decodes(client):

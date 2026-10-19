@@ -22,6 +22,13 @@ done
 echo "web: $total files, $failed failed"
 [ "$failed" -eq 0 ] && [ "$empty" -eq 0 ] || exit 1
 
+if ! out=$(node --test scripts/*.test.mjs 2>&1) || echo "$out" | grep -q -E '^[[:space:]]*not ok'; then
+  echo "$out" | grep -E '^[[:space:]]*not ok|Error' | head -10
+  echo "FAIL: scripts tests"
+  exit 1
+fi
+echo "scripts: ok"
+
 dups=$(cat docs/specs/*.md | grep -o -E '^- [A-Z]{2,5}-[0-9]+' | sort | uniq -d)
 if [ -n "$dups" ]; then
   echo "FAIL: duplicate rule IDs:"

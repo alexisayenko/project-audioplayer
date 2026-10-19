@@ -399,37 +399,42 @@ def _norm(tag: str) -> str:
 
 
 def _with_infobox(found: dict[str, Any], song_page: str | None, artist_page: str | None) -> None:
-    """Record the song page's infobox album and year; put its genres (else the artist page's) first in `song_genres` and `tags`, deduplicated against Wikidata's."""
+    """Record the song page's infobox album and year; put its genres first in `song_genres` and `tags`, deduplicated against Wikidata's. The artist page's infobox genres are artist evidence (`artist_genres`), read only when the song page has no infobox genres, and never become the song's own (TAG-102)."""
     song_box = infobox(song_page)
     found["infobox_album"], found["infobox_year"] = song_box["album"], song_box["year"]
     has_both = bool(song_box["name"] and song_box["artist"])
     found["infobox_suggest"] = {"artist": song_box["artist"], "title": song_box["name"]} if has_both else None
-    box = song_box["genres"] or infobox_genres(artist_page)
-    if not box:
+    song_first = [f"genre:{g}" for g in song_box["genres"]]
+    artist_first = [] if song_first else [f"genre:{g}" for g in infobox_genres(artist_page)]
+    if not song_first and not artist_first:
         return
-    first = [f"genre:{g}" for g in box]
-    seen = {_norm(t) for t in first}
-    song = [*first, *(t for t in found["song_genres"] if _norm(t) not in seen)]
-    in_song = {_norm(t) for t in song}
-    found["tags"] = [*song, *(t for t in found["tags"] if not t.startswith("genre:") or _norm(t) not in in_song)]
+    seen = {_norm(t) for t in song_first}
+    song = [*song_first, *(t for t in found["song_genres"] if _norm(t) not in seen)]
+    seen_artist = {_norm(t) for t in artist_first}
+    artist = [*artist_first, *(t for t in found.get("artist_genres", []) if _norm(t) not in seen_artist)]
+    in_song = {_norm(t) for t in [*song, *artist_first]}
+    found["tags"] = [*song, *artist_first, *(t for t in found["tags"] if not t.startswith("genre:") or _norm(t) not in in_song)]
     found["song_genres"] = song
+    found["artist_genres"] = artist
 
 
 def facts(song_qid: str | None, artist_qid: str | None) -> dict[str, Any]:
     """Tag suggestions and the song's publication year from Wikidata; empty on any failure.
 
-    `song_genres` are the song entity's own genres (all of them); `tags` are those, then the artist's, then the country."""
-    result: dict[str, Any] = {"tags": [], "song_genres": [], "year": None}
+    `song_genres` are the song entity's own genres (all of them); `artist_genres` are the artist entity's (all of them, also those the song lists too: the song page and the artist page are separate source groups, TAG-100); `tags` are the song's, then the artist's not already listed, then the country."""
+    result: dict[str, Any] = {"tags": [], "song_genres": [], "artist_genres": [], "year": None}
     try:
         song = (_entity(song_qid) or {}).get("claims") or {} if song_qid else {}
         artist = (_entity(artist_qid) or {}).get("claims") or {} if artist_qid else {}
         song_ids = list(dict.fromkeys(_ids(song, "P136")))[:MAX_GENRES]
         artist_ids = [i for i in dict.fromkeys(_ids(artist, "P136")) if i not in song_ids][:MAX_GENRES]
-        all_ids = [*song_ids, *artist_ids]
+        artist_all = list(dict.fromkeys(_ids(artist, "P136")))[:MAX_GENRES]
+        all_ids = list(dict.fromkeys([*song_ids, *artist_ids, *artist_all]))
         labels = _label_map(all_ids) if all_ids else {}
         song_genres = _genre_tags(song_ids, labels)
         artist_genres = [t for t in _genre_tags(artist_ids, labels) if t not in song_genres]
         result["song_genres"] = song_genres
+        result["artist_genres"] = _genre_tags(artist_all, labels)
         result["tags"] = [*song_genres, *artist_genres, *_country_tags(artist, song)]
         result["year"] = _year(song)
     except Exception as exc:
@@ -747,6 +752,7 @@ def _suggest_into(out: dict[str, Any], artist: str, title: str, mb: dict[str, An
     found = facts(song_q, artist_q)
     out["tags"] = found["tags"]
     out["song_genres"] = found["song_genres"]
+    out["artist_genres"] = found.get("artist_genres", [])
     out["year"] = found["year"] or mb["year"]
     _with_infobox(out, song_link, artist_link)
     if not out["wikipedia_album"] and names:
@@ -770,7 +776,7 @@ def suggest(artist: str, title: str, mb: dict[str, Any] | None = None) -> dict[s
     """{wikipedia_song, wikipedia_artist, wikipedia_album, tags, year} for a track via MusicBrainz + Wikidata; empty values on any failure.
 
     `mb` is an already looked-up MusicBrainz result (`lookup` or `lookup_recording`) used instead of searching."""
-    out: dict[str, Any] = {"wikipedia_song": None, "wikipedia_artist": None, "wikipedia_album": None, "tags": [], "song_genres": [], "year": None, "infobox_album": None, "infobox_year": None, "infobox_suggest": None}
+    out: dict[str, Any] = {"wikipedia_song": None, "wikipedia_artist": None, "wikipedia_album": None, "tags": [], "song_genres": [], "artist_genres": [], "year": None, "infobox_album": None, "infobox_year": None, "infobox_suggest": None}
     if not genre_lookup.enabled():
         return out
     try:
@@ -790,7 +796,7 @@ def _page_url(url: str | None) -> str | None:
 
 def from_links(song_link: Any, artist_link: Any, album_link: Any = None) -> dict[str, Any]:
     """Tags, year and page URLs (`wikipedia_song`, `wikipedia_artist`, `wikipedia_album`) for user-edited Wikipedia/Wikidata links; empty when disabled or on any failure."""
-    out: dict[str, Any] = {"tags": [], "song_genres": [], "year": None, "infobox_album": None, "infobox_year": None, "infobox_suggest": None, "wikipedia_song": None, "wikipedia_artist": None, "wikipedia_album": None}
+    out: dict[str, Any] = {"tags": [], "song_genres": [], "artist_genres": [], "year": None, "infobox_album": None, "infobox_year": None, "infobox_suggest": None, "wikipedia_song": None, "wikipedia_artist": None, "wikipedia_album": None}
     if not genre_lookup.enabled():
         return out
     try:
