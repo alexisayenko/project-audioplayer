@@ -1,10 +1,12 @@
 # Library genre cleanup (2026-10-19)
 
+Status: applied at server start by app.migrate_removals, file server/data/library_genre_removals.json (56 songs, 106 genre removals; not deployed yet).
+
 Review of genres that were put on songs by mistake (removal only). Evidence is English Wikipedia (song page first, artist page second). The owner approved all HIGH-confidence rows (his edits included) plus the descriptor genres acoustic and instrumental (they are version types), and is reading the list row by row. Everything under "Proposed removals" and "Approved removals" is applied as one reviewed list at a server start, with a backup first (file `server/data/library_genre_removals.json`).
 
 Conventions: "(also: X)" in an owner message means X was removed too; a "(maybe also: X)" that the owner did not repeat stays on the song.
 
-Counts: 26 rows still to read, 30 rows confirmed by the owner, 73 MEDIUM-only songs.
+Counts: 15 rows still to read, 41 rows confirmed by the owner, 73 MEDIUM-only songs.
 
 ## Proposed removals: HIGH-confidence rows not yet reviewed
 
@@ -24,93 +26,51 @@ Counts: 26 rows still to read, 30 rows confirmed by the owner, 73 MEDIUM-only so
    - remove: **downtempo, trip hop**
    - why: Chainsmokers remix is future bass/EDM; Banks original page: electronica, R&B
    - source: https://en.wikipedia.org/wiki/Change_(Banks_song)
-5. **Daft Punk - Around The World** (`K0HSD_i2DvA`)
-   - remove: **electronic rock, synthpop**
-   - why: Song page: French house, funk, disco, dance
-   - source: https://en.wikipedia.org/wiki/Around_the_World_(Daft_Punk_song)
-6. **Daft Punk - Get Lucky** (`5NV6Rdv1a3I`)
+5. **Daft Punk - Get Lucky** (`5NV6Rdv1a3I`)
    - remove: **electronic rock, synthpop**
    - why: Song page: disco, funk, pop; house/synthpop/electronic rock are the duo, not this song
    - source: https://en.wikipedia.org/wiki/Get_Lucky_(Daft_Punk_song)
-7. **New Order - Blue Monday** (`c1GxjzHm5us`)
+6. **New Order - Blue Monday** (`c1GxjzHm5us`)
    - remove: **progressive house, hard trance**
    - why: Song page: synth-pop, Eurodisco, alternative dance, hi-NRG, dance-pop
    - source: https://en.wikipedia.org/wiki/Blue_Monday_(New_Order_song)
-8. **The Verve - Bitter Sweet Symphony** (`1lyu1KKwC74`)
-   - remove: **trip hop, downtempo**
-   - why: Song page: Britpop, alternative rock, pop rock, chamber pop, post-Britpop
-   - source: https://en.wikipedia.org/wiki/Bitter_Sweet_Symphony
-9. **Boney M. - Sunny** (`S-u6qdeaPoE`)
-   - remove: **italo disco**
-   - why: Boney M. version is Eurodisco per the page (soul jazz/pop belong to the Bobby Hebb original); Italo disco is a different (Italian) scene
-   - source: https://en.wikipedia.org/wiki/Sunny_(Bobby_Hebb_song)
-10. **C&C Music Factory - Gonna Make You Sweat (Everybody Dance Now)** (`LaTGrV58wec`)
-   - remove: **rock and roll**
-   - why: Song page: hip house, diva house, funk, dance-pop
-   - source: https://en.wikipedia.org/wiki/Gonna_Make_You_Sweat_(Everybody_Dance_Now)
-11. **Daft Punk - One More Time** (`FGBhQbmPwH8`)
-   - remove: **indie rock**
-   - why: Song page: French house, disco, club, electropop
-   - source: https://en.wikipedia.org/wiki/One_More_Time_(Daft_Punk_song)
-12. **Dire Straits - Money For Nothing** (`2zXTaB_9JQg`)
-   - remove: **progressive rock**
-   - why: Song page: pop rock
-   - source: https://en.wikipedia.org/wiki/Money_for_Nothing_(song)
-13. **Gossip - Heavy Cross** (`5mQVljB7JGw`)
-   - remove: **acoustic**
-   - why: Song page: dance-rock, dance-punk; band page does not mention acoustic
-   - source: https://en.wikipedia.org/wiki/Heavy_Cross
-14. **Laura Branigan - Self Control** (`RP0_8J7uxhs`)
+7. **Laura Branigan - Self Control** (`RP0_8J7uxhs`)
    - remove: **folk rock**
    - why: Self Control is a synth/Euro disco-style song (Raf original: Italo disco)
    - source: https://en.wikipedia.org/wiki/Self_Control_(Laura_Branigan_song)
-15. **Maduk ft Veela - Ghost Assassin VIP** (`soundcloud-165722418`)
+8. **Maduk ft Veela - Ghost Assassin VIP** (`soundcloud-165722418`)
    - remove: **uk garage**
    - why: Maduk page: drum and bass; garage is the ambiguous-name pattern
    - source: https://en.wikipedia.org/wiki/Maduk
-16. **Massive Attack - Angel** (`hbe3CQamF8k`)
+9. **Massive Attack - Angel** (`hbe3CQamF8k`)
    - remove: **industrial rock**
    - why: Owner perception example (the page infobox does list industrial rock, but the owner says remove)
    - source: https://en.wikipedia.org/wiki/Angel_(Massive_Attack_song)
-17. **Miami Horror - Make You Mine (Fred Falke remix)** (`UhIdvAJE7nA`)
+10. **Miami Horror - Make You Mine (Fred Falke remix)** (`UhIdvAJE7nA`)
    - remove: **punk**
    - why: Miami Horror page: electropop, synth-pop, dance-pop, nu-disco; punk not mentioned; Fred Falke remix is disco/house
    - source: https://en.wikipedia.org/wiki/Miami_Horror
-18. **Rockwell - Somebody's Watching Me** (`7YvAYIJSSZY`)
-   - remove: **indie rock**
-   - why: Song page: synth-funk, synth-pop, new wave, R&B; no indie rock
-   - source: https://en.wikipedia.org/wiki/Somebody%27s_Watching_Me
-19. **RÜFÜS DU SOL - Innerbloom** (`Tx9zMFodNtA`)
+11. **RÜFÜS DU SOL - Innerbloom** (`Tx9zMFodNtA`)
    - remove: **dancehall**
    - why: Song page: electronic, deep house, progressive house; dancehall is unrelated
    - source: https://en.wikipedia.org/wiki/Innerbloom
-20. **Space - Magic Fly** (`ZavwtJxmqJI`)
-   - remove: **instrumental**
-21. **Static-X - The Only** (`vMCbJB4yNXo`)
-   - remove: **pop**
-   - why: Static-X page: industrial metal, nu metal, alternative metal; pop not mentioned
-   - source: https://en.wikipedia.org/wiki/Static-X
-22. **System Of A Down - Lonely Day** (`DnGdoEa1tPg`)
+12. **System Of A Down - Lonely Day** (`DnGdoEa1tPg`)
    - remove: **speed metal**
    - kept on the song (maybe-also, not approved): nu metal, heavy metal
    - why: Song page: alternative metal, hard rock; Lonely Day is a ballad
    - source: https://en.wikipedia.org/wiki/Lonely_Day
-23. **The Castaways - Liar, Liar** (`vIvUVdvNeBE`)
+13. **The Castaways - Liar, Liar** (`vIvUVdvNeBE`)
    - remove: **indie rock**
    - why: Song page: garage rock, proto-punk (1965); indie rock anachronistic
    - source: https://en.wikipedia.org/wiki/Liar,_Liar_(The_Castaways_song)
-24. **Vicetone, Tony Igy - Astronomia** (`iLBBRuVDOo4`)
+14. **Vicetone, Tony Igy - Astronomia** (`iLBBRuVDOo4`)
    - remove: **dancehall**
    - why: Vicetone page: progressive/electro/deep/future house, nu-disco; no dancehall
    - source: https://en.wikipedia.org/wiki/Vicetone
-25. **Елена Темникова - Тепло** (`_yejiN8Sl9s`)
+15. **Елена Темникова - Тепло** (`_yejiN8Sl9s`)
    - remove: **cloud rap**
    - why: Temnikova page: pop, dance-pop, Europop, house; no hip hop family
    - source: https://en.wikipedia.org/wiki/Yelena_Temnikova
-26. **Один в каное - У мене немає дому** (`gw2nclcoFNE`)
-   - remove: **acoustic**
-   - why: Band has electric indie rock sound; acoustic pattern
-   - source: https://en.wikipedia.org/wiki/Odyn_v_kanoe
 
 ## Approved removals (confirmed row by row)
 
@@ -130,110 +90,152 @@ Counts: 26 rows still to read, 30 rows confirmed by the owner, 73 MEDIUM-only so
    - remove: **rock and roll, post-punk, power pop, rock**
    - why: Club remix (Oliver & Thee Mike B) carries the original band genres; recording is disco/dance
    - source: https://en.wikipedia.org/wiki/Heart_of_Glass_(song)
-5. **Concord Dawn - Don't Tell Me** (`v8JuiRQGNZA`) CONFIRMED
+5. **Boney M. - Sunny** (`S-u6qdeaPoE`) CONFIRMED
+   - remove: **italo disco**
+   - why: Boney M. version is Eurodisco per the page (soul jazz/pop belong to the Bobby Hebb original); Italo disco is a different (Italian) scene
+   - source: https://en.wikipedia.org/wiki/Sunny_(Bobby_Hebb_song)
+6. **C&C Music Factory - Gonna Make You Sweat (Everybody Dance Now)** (`LaTGrV58wec`) CONFIRMED
+   - remove: **rock and roll**
+   - why: Song page: hip house, diva house, funk, dance-pop
+   - source: https://en.wikipedia.org/wiki/Gonna_Make_You_Sweat_(Everybody_Dance_Now)
+7. **Concord Dawn - Don't Tell Me** (`v8JuiRQGNZA`) CONFIRMED
    - remove: **trance, dubstep**
    - why: Concord Dawn page: drum and bass group
    - source: https://en.wikipedia.org/wiki/Concord_Dawn
-6. **Concord Dawn - Morning Light** (`jxDZ-1sf9Bg`) CONFIRMED
+8. **Concord Dawn - Morning Light** (`jxDZ-1sf9Bg`) CONFIRMED
    - remove: **trance**
    - why: Concord Dawn page: drum and bass group
    - source: https://en.wikipedia.org/wiki/Concord_Dawn
-7. **Concord Dawn - Take Me Away** (`GmTFURNrIJQ`) CONFIRMED
+9. **Concord Dawn - Take Me Away** (`GmTFURNrIJQ`) CONFIRMED
    - remove: **trance**
    - why: Concord Dawn page: drum and bass group
    - source: https://en.wikipedia.org/wiki/Concord_Dawn
-8. **Donna Summer - I Feel Love** (`yEbaeLv-aOo`) CONFIRMED
+10. **Daft Punk - Around The World** (`K0HSD_i2DvA`) CONFIRMED
+   - remove: **electronic rock, synthpop**
+   - why: Song page: French house, funk, disco, dance
+   - source: https://en.wikipedia.org/wiki/Around_the_World_(Daft_Punk_song)
+11. **Daft Punk - One More Time** (`FGBhQbmPwH8`) CONFIRMED
+   - remove: **indie rock**
+   - why: Song page: French house, disco, club, electropop
+   - source: https://en.wikipedia.org/wiki/One_More_Time_(Daft_Punk_song)
+12. **Dire Straits - Money For Nothing** (`2zXTaB_9JQg`) CONFIRMED
+   - remove: **progressive rock**
+   - why: Song page: pop rock
+   - source: https://en.wikipedia.org/wiki/Money_for_Nothing_(song)
+13. **Donna Summer - I Feel Love** (`yEbaeLv-aOo`) CONFIRMED
    - remove: **rock, contemporary r&b**
    - why: Song page: synth-pop, Eurodisco, dance
    - source: https://en.wikipedia.org/wiki/I_Feel_Love
-9. **Duran Duran - Come Undone** (`Epj84QVw2rc`) CONFIRMED
+14. **Duran Duran - Come Undone** (`Epj84QVw2rc`) CONFIRMED
    - remove: **hard rock**
    - why: Song page: soft rock and dance-rock; hard rock contradicts a soft-rock ballad
    - source: https://en.wikipedia.org/wiki/Come_Undone_(Duran_Duran_song)
-10. **Gotye - Somebody That I Used To Know** (`8UVNT4wvIGY`) CONFIRMED
+15. **Gossip - Heavy Cross** (`5mQVljB7JGw`) CONFIRMED
+   - remove: **acoustic**
+   - why: Song page: dance-rock, dance-punk; band page does not mention acoustic
+   - source: https://en.wikipedia.org/wiki/Heavy_Cross
+16. **Gotye - Somebody That I Used To Know** (`8UVNT4wvIGY`) CONFIRMED
    - remove: **electro house, house, hard rock**
    - why: Song page: art pop and alternative rock; house and hard rock are unrelated
    - source: https://en.wikipedia.org/wiki/Somebody_That_I_Used_to_Know
-11. **Kate Bush - Running Up That Hill (Pure Orkidea Pure Progressive Mix)** (`soundcloud-598690569`) CONFIRMED
+17. **Kate Bush - Running Up That Hill (Pure Orkidea Pure Progressive Mix)** (`soundcloud-598690569`) CONFIRMED
    - remove: **art pop, progressive pop, art rock, new wave, singer-songwriter, baroque pop**
    - why: Pure Orkidea progressive trance remix carries the original Kate Bush genres
    - source: https://en.wikipedia.org/wiki/Running_Up_That_Hill
-12. **Khaled - Aicha** (`gzlHucbD76U`) CONFIRMED
+18. **Khaled - Aicha** (`gzlHucbD76U`) CONFIRMED
    - remove: **jazz**
    - why: Song page lists only rai
    - source: https://en.wikipedia.org/wiki/Aicha_(song)
-13. **Kid Rock - Bawitdaba** (`1OrNS2zbTZg`) CONFIRMED
+19. **Kid Rock - Bawitdaba** (`1OrNS2zbTZg`) CONFIRMED
    - remove: **country, country rock**
    - why: Song page lists nu metal, rap metal, hard rock; country belongs to the artist only
    - source: https://en.wikipedia.org/wiki/Bawitdaba
-14. **Lana Del Rey - Young and Beautiful (Jazz Foxtrot Version) -** (`o61zJ7_uVdA`) CONFIRMED
+20. **Lana Del Rey - Young and Beautiful (Jazz Foxtrot Version) -** (`o61zJ7_uVdA`) CONFIRMED
    - remove: **trip hop, indie rock, slowcore**
    - why: Jazz foxtrot version carries the original album-style genres; song page lists orchestral pop / classical crossover, none of these
    - source: https://en.wikipedia.org/wiki/Young_and_Beautiful_(Lana_Del_Rey_song)
-15. **M83 - Midnight City** (`dX3k_QDnzHE`) CONFIRMED
+21. **M83 - Midnight City** (`dX3k_QDnzHE`) CONFIRMED
    - remove: **post-rock, ambient**
    - why: Song page: synth-pop, dream pop, new wave, electropop
    - source: https://en.wikipedia.org/wiki/Midnight_City
-16. **Michael Jackson - Beat It** (`8fO8jVZ3T9g`) CONFIRMED
+22. **Michael Jackson - Beat It** (`8fO8jVZ3T9g`) CONFIRMED
    - remove: **disco, electronic**
    - why: Song page: hard rock, dance-rock, funk rock
    - source: https://en.wikipedia.org/wiki/Beat_It
-17. **Nadia Ali, Starkillers & Alex Kenji - Pressure (Alesso Remix)** (`SU88c0f5-h0`) CONFIRMED
+23. **Nadia Ali, Starkillers & Alex Kenji - Pressure (Alesso Remix)** (`SU88c0f5-h0`) CONFIRMED
    - remove: **blues, singer-songwriter**
    - why: Alesso remix of a vocal trance/house song; blues and singer-songwriter belong to neither the remix nor Nadia Ali (house/trance); version carries wrong genres
    - source: https://en.wikipedia.org/wiki/Nadia_Ali
-18. **Nickelback - How You Remind Me** (`Aiay8I5IPB8`) CONFIRMED
+24. **Nickelback - How You Remind Me** (`Aiay8I5IPB8`) CONFIRMED
    - remove: **acoustic**
    - why: Song page: post-grunge, hard rock, alternative rock; electric band song
    - source: https://en.wikipedia.org/wiki/How_You_Remind_Me
-19. **Nora En Pure - Come With Me** (`spIyzp8XDn4`) CONFIRMED
+25. **Nora En Pure - Come With Me** (`spIyzp8XDn4`) CONFIRMED
    - remove: **indie rock, nu-disco**
    - why: Nora En Pure page: deep house, indie dance, tech house, progressive house; no indie rock
    - source: https://en.wikipedia.org/wiki/Nora_En_Pure
-20. **Paul van Dyk - We Are Alive** (`6I64KxnINy8`) CONFIRMED
+26. **Paul van Dyk - We Are Alive** (`6I64KxnINy8`) CONFIRMED
    - remove: **psytrance, electro house**
    - why: Paul van Dyk page lists uplifting/progressive trance, house, techno; never psytrance
    - source: https://en.wikipedia.org/wiki/Paul_van_Dyk
-21. **Red Hot Chili Peppers - Californication** (`YlUKcNNmywk`) CONFIRMED
+27. **Red Hot Chili Peppers - Californication** (`YlUKcNNmywk`) CONFIRMED
    - remove: **heavy metal, funk metal, alternative metal, hard rock, classic rock**
    - why: Song page: alternative rock only
    - source: https://en.wikipedia.org/wiki/Californication_(song)
-22. **Red Hot Chili Peppers - Otherside** (`rn_YodiJO6k`) CONFIRMED
+28. **Red Hot Chili Peppers - Otherside** (`rn_YodiJO6k`) CONFIRMED
    - remove: **heavy metal, funk metal, alternative metal, hard rock, classic rock**
    - why: Same band, mellow alternative rock song (RHCP page lists alternative rock)
    - source: https://en.wikipedia.org/wiki/Red_Hot_Chili_Peppers
-23. **Sandra - In the Heat of the Night** (`dFdVQ0fLOj4`) CONFIRMED
+29. **Rockwell - Somebody's Watching Me** (`7YvAYIJSSZY`) CONFIRMED
+   - remove: **indie rock**
+   - why: Song page: synth-funk, synth-pop, new wave, R&B; no indie rock
+   - source: https://en.wikipedia.org/wiki/Somebody%27s_Watching_Me
+30. **Sandra - In the Heat of the Night** (`dFdVQ0fLOj4`) CONFIRMED
    - remove: **pop rock**
    - why: Sandra is Eurodisco/synthpop
    - source: https://en.wikipedia.org/wiki/In_the_Heat_of_the_Night_(Sandra_song)
-24. **Taylor Dayne - Tell It to My Heart** (`Ud6sU3AclT4`) CONFIRMED
+31. **Space - Magic Fly** (`ZavwtJxmqJI`) CONFIRMED
+   - remove: **instrumental**
+32. **Static-X - The Only** (`vMCbJB4yNXo`) CONFIRMED
+   - remove: **pop**
+   - why: Static-X page: industrial metal, nu metal, alternative metal; pop not mentioned
+   - source: https://en.wikipedia.org/wiki/Static-X
+33. **Taylor Dayne - Tell It to My Heart** (`Ud6sU3AclT4`) CONFIRMED
    - remove: **soul, house, freestyle**
    - why: Owner perception example (page: dance-pop, synth-pop, freestyle, hi-NRG; soul and house not listed)
    - source: https://en.wikipedia.org/wiki/Tell_It_to_My_Heart_(Taylor_Dayne_song)
-25. **The Animals - House Of The Rising Sun** (`N4bFqW_eu2I`) CONFIRMED
+34. **The Animals - House Of The Rising Sun** (`N4bFqW_eu2I`) CONFIRMED
    - remove: **progressive rock, psychedelic rock**
    - why: Page lists the Animals version as folk rock and blues rock; progressive rock is a different style
    - source: https://en.wikipedia.org/wiki/House_of_the_Rising_Sun
-26. **The Chemical Brothers - Go** (`LO2RPDZkY88`) CONFIRMED
+35. **The Chemical Brothers - Go** (`LO2RPDZkY88`) CONFIRMED
    - remove: **rock, pop rock**
    - why: Song page: electronica, trip hop, funk; no rock
    - source: https://en.wikipedia.org/wiki/Go_(The_Chemical_Brothers_song)
-27. **The Cranberries - Zombie** (`6Ejga4kJUts`) CONFIRMED
+36. **The Cranberries - Zombie** (`6Ejga4kJUts`) CONFIRMED
    - remove: **dream pop, jangle pop**
    - why: Song page: alternative rock, grunge; soft dream/jangle pop contradict this heavy protest song
    - source: https://en.wikipedia.org/wiki/Zombie_(Cranberries_song)
-28. **The Prodigy - Voodoo People (Pendulum Remix)** (`soundcloud-42327170`) CONFIRMED
+37. **The Prodigy - Voodoo People (Pendulum Remix)** (`soundcloud-42327170`) CONFIRMED
    - remove: **techno, hardcore, alternative rock**
    - why: Pendulum remix is drum and bass; techno/breakbeat hardcore is the original (page: techno, breakbeat, breakbeat hardcore)
    - source: https://en.wikipedia.org/wiki/Voodoo_People
-29. **Youssou N'Dour - 7 Seconds** (`wqCpjFMvz-k`) CONFIRMED
+38. **The Verve - Bitter Sweet Symphony** (`1lyu1KKwC74`) CONFIRMED
+   - remove: **trip hop, downtempo**
+   - why: Song page: Britpop, alternative rock, pop rock, chamber pop, post-Britpop
+   - source: https://en.wikipedia.org/wiki/Bitter_Sweet_Symphony
+39. **Youssou N'Dour - 7 Seconds** (`wqCpjFMvz-k`) CONFIRMED
    - remove: **instrumental, afrobeat, folk**
    - why: 7 Seconds is a vocal duet (Youssou N Dour and Neneh Cherry)
    - source: https://en.wikipedia.org/wiki/Seven_Seconds_(Youssou_N%27Dour_and_Neneh_Cherry_song)
-30. **Алексей Вишня - Шприц** (`3JOzPE-8GHw`) CONFIRMED
+40. **Алексей Вишня - Шприц** (`3JOzPE-8GHw`) CONFIRMED
    - remove: **techno**
    - why: Vishnya 1989 is new wave/synthpop; techno anachronistic
    - source: https://en.wikipedia.org/wiki/Aleksei_Vishnya
+41. **Один в каное - У мене немає дому** (`gw2nclcoFNE`) CONFIRMED
+   - remove: **acoustic**
+   - why: Band has electric indie rock sound; acoustic pattern
+   - source: https://en.wikipedia.org/wiki/Odyn_v_kanoe
 
 ## MEDIUM only (not proposed for removal)
 

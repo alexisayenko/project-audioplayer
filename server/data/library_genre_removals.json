@@ -1,0 +1,394 @@
+{
+ "version": 1,
+ "approved": "2026-10-19",
+ "scope": "owner",
+ "note": "removal list approved row by row by the owner; see docs/tech/library-genre-cleanup.md",
+ "songs": {
+  "SU88c0f5-h0": {
+   "remove": [
+    "blues",
+    "singer-songwriter"
+   ],
+   "title": "Nadia Ali, Starkillers & Alex Kenji - Pressure"
+  },
+  "N4bFqW_eu2I": {
+   "remove": [
+    "progressive rock",
+    "psychedelic rock"
+   ],
+   "title": "The Animals - House Of The Rising Sun"
+  },
+  "o61zJ7_uVdA": {
+   "remove": [
+    "trip hop",
+    "indie rock",
+    "slowcore"
+   ],
+   "title": "Lana Del Rey - Young and Beautiful (Jazz Foxtrot Version) -"
+  },
+  "S-u6qdeaPoE": {
+   "remove": [
+    "italo disco"
+   ],
+   "title": "Boney M. - Sunny"
+  },
+  "WGU_4-5RaxU": {
+   "remove": [
+    "rock and roll"
+   ],
+   "title": "Blondie - Heart Of Glass"
+  },
+  "Epj84QVw2rc": {
+   "remove": [
+    "hard rock"
+   ],
+   "title": "Duran Duran - Come Undone"
+  },
+  "7YvAYIJSSZY": {
+   "remove": [
+    "indie rock"
+   ],
+   "title": "Rockwell - Somebody's Watching Me"
+  },
+  "8UVNT4wvIGY": {
+   "remove": [
+    "electro house",
+    "house",
+    "hard rock"
+   ],
+   "title": "Gotye - Somebody That I Used To Know"
+  },
+  "Tx9zMFodNtA": {
+   "remove": [
+    "dancehall"
+   ],
+   "title": "RÜFÜS DU SOL - Innerbloom"
+  },
+  "Le8325thBt4": {
+   "remove": [
+    "drum and bass",
+    "dance pop",
+    "eurodance"
+   ],
+   "title": "ATB - Ecstasy"
+  },
+  "eqLtSWmKkJE": {
+   "remove": [
+    "psytrance"
+   ],
+   "title": "Armin van Buuren - In And Out Of Love"
+  },
+  "1OrNS2zbTZg": {
+   "remove": [
+    "country",
+    "country rock"
+   ],
+   "title": "Kid Rock - Bawitdaba"
+  },
+  "LO2RPDZkY88": {
+   "remove": [
+    "rock",
+    "pop rock"
+   ],
+   "title": "The Chemical Brothers - Go"
+  },
+  "_yejiN8Sl9s": {
+   "remove": [
+    "cloud rap"
+   ],
+   "title": "Елена Темникова - Тепло"
+  },
+  "3HVuMlaNcOM": {
+   "remove": [
+    "rock and roll",
+    "post-punk",
+    "power pop",
+    "rock"
+   ],
+   "title": "Blondie - Heart Of Glass"
+  },
+  "spIyzp8XDn4": {
+   "remove": [
+    "indie rock",
+    "nu-disco"
+   ],
+   "title": "Nora En Pure - Come With Me"
+  },
+  "Ud6sU3AclT4": {
+   "remove": [
+    "soul",
+    "house",
+    "freestyle"
+   ],
+   "title": "Taylor Dayne - Tell It to My Heart"
+  },
+  "hbe3CQamF8k": {
+   "remove": [
+    "industrial rock"
+   ],
+   "title": "Massive Attack - Angel"
+  },
+  "6I64KxnINy8": {
+   "remove": [
+    "psytrance",
+    "electro house"
+   ],
+   "title": "Paul van Dyk - We Are Alive"
+  },
+  "GmTFURNrIJQ": {
+   "remove": [
+    "trance"
+   ],
+   "title": "Concord Dawn - Take Me Away"
+  },
+  "jxDZ-1sf9Bg": {
+   "remove": [
+    "trance"
+   ],
+   "title": "Concord Dawn - Morning Light"
+  },
+  "v8JuiRQGNZA": {
+   "remove": [
+    "trance",
+    "dubstep"
+   ],
+   "title": "Concord Dawn - Don't Tell Me"
+  },
+  "a5uQMwRMHcs": {
+   "remove": [
+    "punk",
+    "house",
+    "french house"
+   ],
+   "title": "Daft Punk - Instant Crush"
+  },
+  "5NV6Rdv1a3I": {
+   "remove": [
+    "electronic rock",
+    "synthpop"
+   ],
+   "title": "Daft Punk - Get Lucky"
+  },
+  "0QVOc1aagSE": {
+   "remove": [
+    "house",
+    "french house",
+    "synthpop"
+   ],
+   "title": "Daft Punk - Get lucky"
+  },
+  "soundcloud-598690569": {
+   "remove": [
+    "art pop",
+    "progressive pop",
+    "art rock",
+    "new wave",
+    "singer-songwriter",
+    "baroque pop"
+   ],
+   "title": "Kate Bush - Running Up That Hill"
+  },
+  "soundcloud-165722418": {
+   "remove": [
+    "uk garage"
+   ],
+   "title": "Maduk ft Veela - Ghost Assassin VIP"
+  },
+  "soundcloud-42327170": {
+   "remove": [
+    "techno",
+    "hardcore",
+    "alternative rock"
+   ],
+   "title": "The Prodigy - Voodoo People"
+  },
+  "vIvUVdvNeBE": {
+   "remove": [
+    "indie rock"
+   ],
+   "title": "The Castaways - Liar, Liar"
+  },
+  "5mQVljB7JGw": {
+   "remove": [
+    "acoustic"
+   ],
+   "title": "Gossip - Heavy Cross"
+  },
+  "UhIdvAJE7nA": {
+   "remove": [
+    "punk"
+   ],
+   "title": "Miami Horror - Make You Mine"
+  },
+  "K0HSD_i2DvA": {
+   "remove": [
+    "electronic rock",
+    "synthpop"
+   ],
+   "title": "Daft Punk - Around The World"
+  },
+  "FGBhQbmPwH8": {
+   "remove": [
+    "indie rock"
+   ],
+   "title": "Daft Punk - One More Time"
+  },
+  "sFZjqVnWBhc": {
+   "remove": [
+    "house",
+    "french house",
+    "nu-disco"
+   ],
+   "title": "Daft Punk - Robot Rock"
+  },
+  "YlUKcNNmywk": {
+   "remove": [
+    "heavy metal",
+    "funk metal",
+    "alternative metal",
+    "hard rock",
+    "classic rock"
+   ],
+   "title": "Red Hot Chili Peppers - Californication"
+  },
+  "rn_YodiJO6k": {
+   "remove": [
+    "heavy metal",
+    "funk metal",
+    "alternative metal",
+    "hard rock",
+    "classic rock"
+   ],
+   "title": "Red Hot Chili Peppers - Otherside"
+  },
+  "2zXTaB_9JQg": {
+   "remove": [
+    "progressive rock"
+   ],
+   "title": "Dire Straits - Money For Nothing"
+  },
+  "6Ejga4kJUts": {
+   "remove": [
+    "dream pop",
+    "jangle pop"
+   ],
+   "title": "The Cranberries - Zombie"
+  },
+  "LaTGrV58wec": {
+   "remove": [
+    "rock and roll"
+   ],
+   "title": "C&C Music Factory - Gonna Make You Sweat (Everybody Dance Now)"
+  },
+  "dFdVQ0fLOj4": {
+   "remove": [
+    "pop rock"
+   ],
+   "title": "Sandra - In the Heat of the Night"
+  },
+  "gzlHucbD76U": {
+   "remove": [
+    "jazz"
+   ],
+   "title": "Khaled - Aicha"
+  },
+  "RP0_8J7uxhs": {
+   "remove": [
+    "folk rock"
+   ],
+   "title": "Laura Branigan - Self Control"
+  },
+  "wqCpjFMvz-k": {
+   "remove": [
+    "instrumental",
+    "afrobeat",
+    "folk"
+   ],
+   "title": "Youssou N'Dour - 7 Seconds"
+  },
+  "8fO8jVZ3T9g": {
+   "remove": [
+    "disco",
+    "electronic"
+   ],
+   "title": "Michael Jackson - Beat It"
+  },
+  "iLBBRuVDOo4": {
+   "remove": [
+    "dancehall"
+   ],
+   "title": "Vicetone, Tony Igy - Astronomia"
+  },
+  "c1GxjzHm5us": {
+   "remove": [
+    "progressive house",
+    "hard trance"
+   ],
+   "title": "New Order - Blue Monday"
+  },
+  "dX3k_QDnzHE": {
+   "remove": [
+    "post-rock",
+    "ambient"
+   ],
+   "title": "M83 - Midnight City"
+  },
+  "yEbaeLv-aOo": {
+   "remove": [
+    "rock",
+    "contemporary r&b"
+   ],
+   "title": "Donna Summer - I Feel Love"
+  },
+  "1lyu1KKwC74": {
+   "remove": [
+    "trip hop",
+    "downtempo"
+   ],
+   "title": "The Verve - Bitter Sweet Symphony"
+  },
+  "DnGdoEa1tPg": {
+   "remove": [
+    "speed metal"
+   ],
+   "title": "System Of A Down - Lonely Day"
+  },
+  "Aiay8I5IPB8": {
+   "remove": [
+    "acoustic"
+   ],
+   "title": "Nickelback - How You Remind Me"
+  },
+  "vMCbJB4yNXo": {
+   "remove": [
+    "pop"
+   ],
+   "title": "Static-X - The Only"
+  },
+  "FcVOsoBIGq0": {
+   "remove": [
+    "downtempo",
+    "trip hop"
+   ],
+   "title": "BANKS - Change"
+  },
+  "3JOzPE-8GHw": {
+   "remove": [
+    "techno"
+   ],
+   "title": "Алексей Вишня - Шприц"
+  },
+  "gw2nclcoFNE": {
+   "remove": [
+    "acoustic"
+   ],
+   "title": "Один в каное - У мене немає дому"
+  },
+  "ZavwtJxmqJI": {
+   "remove": [
+    "instrumental"
+   ],
+   "title": "Space - Magic Fly"
+  }
+ }
+}

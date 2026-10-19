@@ -2,13 +2,17 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-19 (Library genre removals, not deployed)
+
+- Server and data: a one-off, owner-approved removal of wrong genres (56 songs, 106 genres, `server/data/library_genre_removals.json`) runs once at server start for the owner library only, with backup, report and marker in `backups-genre-removals/<uid>/` and one git commit; switch `AUDIO_GENRE_REMOVALS=0` (TAG-109, [runbook](tech/deploy.md#genre-removals), tests `test_migrate_removals.py`). Not deployed.
+
 ## 2026-10-19 (Genre suggestion rule, not deployed)
 
 - Server and web: genres from the lookups are applied only when independent sources agree, the rest are suggestions (decision EH1, ADR-0035, TAG-099 to TAG-108, API-186, ADD-181). Two groups out of MusicBrainz, Wikipedia song page, Wikipedia artist page, Discogs and the link's own tags must name a genre (a child counts for its ancestor); the Wikipedia song page alone also applies a genre that is not ambiguous and shares a family with an applied one; at most 5 are applied, a non-family ancestor is dropped beside its child. `POST /preview`, `/preview/stream`, `/metadata` and `/lookup/wikipedia` share one function (`metadata.resolve`), `tags` holds only the applied genres and the new `genre_suggestions` lists the rest with source badges; the Add and Edit forms show them as a "Suggested genres" row (click adds, x dismisses) and the old "From the original (not applied)" line is part of it. The artist infobox is no longer promoted to the song's own genres. Stored songs are not changed. Not deployed.
 
 ## 2026-10-19 (Genre terminology and parents lists, not deployed)
 
-- Docs: new [tech/genre-terminology.md](tech/genre-terminology.md) (glossary, how "genre" is used in Wikipedia and catalogues, the genre by form, medium and purpose axes, open facets decision) and ADR-0034. Not deployed.
+- Docs: new [tech/genre-terminology.md](tech/genre-terminology.md) (glossary, how "genre" is used in Wikipedia and catalogues, the genre by form, medium and purpose axes plus the subjective mood axis, open facets decision) and ADR-0034. Not deployed.
 - Web: the Library search box has a clear (x) button on its right edge, shown while it has text; click or Escape clears the box and the filter and keeps focus (LIB-160). Not deployed.
 - Web: the Library remembers the last used tab (Songs or Drafts) across reloads and navigation (localStorage key `electrophone.libraryView`, LIB-159); the Drafts view lost its "Clear all drafts" button and confirmation (per-draft Delete with undo stays; the API route `DELETE /drafts` is unchanged). Not deployed.
 - Server data, docs and tests: the Rock family is drafted (owner decision DR1, GEN-067): 91 of the 111 Rock genres are placed under reviewed parents from Wikipedia lead sentences (42 level 2, 69 level 3, no level 4; krautrock and post-rock under experimental rock, hardcore punk and extreme metal as extra parents, folk metal, folk punk, rap metal and electronic rock marked as fusion genres, 11 genres gained `related`), 20 genres with an unsure review stay at Rock and provisional. Not deployed.

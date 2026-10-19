@@ -23,15 +23,20 @@ Decision record: ADR-0034 (terms) and ADR-0030 (levels and parents) in [decision
 
 ## Aspects (axes) of describing music
 
-Our own working model, not an established standard. Real taxonomies mix three main axes:
+Our own working model, not an established standard. Real taxonomies mix three main axes, and we add a fourth, subjective one:
 
 | Axis | Question | Examples |
 |---|---|---|
 | **Genre by form** (the genre tree) | What kind of music is it? | house, techno, rock, hip hop, jazz |
 | **Genre by medium** | What is it made with? | electronic, acoustic, orchestral, guitar |
 | **Genre by purpose** | What is it for? | dance, film score, military, children's |
+| **Mood** (subjective) | How does it feel? | melancholic, uplifting, epic, calm, dreamy, aggressive |
 
 "Form" in "genre by form" is our design word for the lineage axis (how the music is built and what it descends from); "lineage" was the alternative word considered. In musicology "form" also means structure, such as twelve-bar blues or verse-chorus; that is not meant here. The user-facing label stays "genre". Geography or region, era and scene are secondary aspects that mix into the tree (Latin, European, Italian, 80s, rave). Other purposes seen: ceremonial, background, study.
+
+Mood is the listener's subjective perception, so it is a personal tag that belongs to a listener, not shared vocabulary that a source such as Wikipedia can confirm. Some genre names already blend lineage with a mood word (uplifting trance, happy hardcore, dark ambient, dream pop, chillwave). "Epic" is a mood, which is why it never fitted as a genre. Mood would support finding music ("play something calm"). Not built: there is no data model yet.
+
+Clarified examples: acoustic and instrumental are genre by medium (instrumental means no vocals; a cappella is the opposite). They are also version types in the data model: an acoustic or instrumental version of a song is a version of an original, whereas a piece that was always instrumental is not a version, it is a medium attribute. Lo-fi is a production style (medium). Beat is a format.
 
 Consequences seen in Discogs' top level: some genres are purpose-based (Stage & Screen, Children's, Brass & Military, Non-Music; we dropped these four), some region-based (Latin; Folk, World, & Country; Reggae has an origin place), and Electronic is mainly defined by medium (electronic production). "Dance" (EDM) is a purpose. So families are uneven and Electronic is a super-umbrella (about 145 genres). Handling now: subfamily shading.
 
@@ -46,6 +51,8 @@ Consequences seen in Discogs' top level: some genres are purpose-based (Stage & 
 ## Open decisions
 
 Facets versus families (proposed): promote the Electronic subfamilies to families and keep "electronic" and "dance" as separate facets (attributes), or keep the single Electronic family with subfamilies. Owner's current preference: finish the release first, then decide.
+
+Next step: the facets (medium, purpose, mood) as attributes beside the genre tree; mood is a personal per-listener tag. Not built.
 
 ## Sources
 
