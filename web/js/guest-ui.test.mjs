@@ -77,7 +77,8 @@ test('guest without audio: the card offers the source link and rows cannot be qu
   assert.ok(labels($('song-card')).includes('Open on YouTube'));
   $('song-card').close?.();
   const row = songRow(WITH, null, null);
-  assert.ok(row.querySelector('.pl-toggle.ph'));
+  assert.equal(row.querySelector('.pl-toggle'), null);
+  assert.equal(row.querySelector('.q-mark'), null);
   g.clearGuest();
 });
 

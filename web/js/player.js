@@ -128,6 +128,11 @@ export const player = {
     return qsSet.ids.has(id);
   },
 
+  queuePosition(id) {
+    const i = qs.items.findIndex((it) => it.id === id);
+    return i < 0 ? null : { pos: i + 1, total: qs.items.length };
+  },
+
   toggleInPlaylist(id) {
     const i = qs.items.findIndex((it) => it.id === id);
     if (i >= 0) { player.removeAt(i); return 'removed'; }

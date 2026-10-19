@@ -75,7 +75,7 @@ export function renderLibrary(root) {
   clearFilters.addEventListener('click', () => clearAllFilters());
   const status = el('div');
   const head = el('div', { class: 'table-head t-eyebrow', 'aria-hidden': 'true' },
-    el('span'), el('span', {}, 'Track'), el('span', { class: 'c-genres' }, 'Genres'), el('span', { class: 'c-dur' }, 'Time'), el('span'), el('span'));
+    el('span'), el('span', {}, 'Track'), el('span', { class: 'c-genres' }, 'Genres'), el('span', { class: 'c-dur' }, 'Time'), el('span'));
   list.addEventListener('click', (e) => {
     const row = e.target.closest('li.song');
     const song = row && !isRowControl(e.target) ? store.get(row.dataset.id) : null;

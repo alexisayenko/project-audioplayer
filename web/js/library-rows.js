@@ -53,7 +53,7 @@ function moreButton(s, full, { audio, queueable, queued }) {
   const items = [
     ...(queueable ? [
       { label: 'Play now', run: () => player.playNow(s.id) },
-      { label: queued ? 'Remove from playlist' : 'Add to playlist', run: () => toggleQueue(s) },
+      { label: queued ? 'Remove from queue' : 'Add to queue', run: () => toggleQueue(s) },
     ] : []),
     ...(audio && can('download') ? [{ label: 'Download', run: () => downloadSong(s) }] : []),
     ...(!audio && can('fetch') && autodl.view(s.id).kind === 'none' ? [{ label: 'Download to server', run: () => fetchAudio(s) }] : []),
@@ -66,11 +66,6 @@ function moreButton(s, full, { audio, queueable, queued }) {
   return more;
 }
 
-function playlistToggle(s, full, queued, queueable) {
-  if (!queueable) return el('span', { class: 'pl-toggle ph', 'aria-hidden': 'true' });
-  const label = queued ? 'In playlist - click to remove' : 'Add to playlist';
-  return el('button', { class: `icon round pl-toggle${queued ? ' on' : ''}`, type: 'button', title: label, 'aria-label': `${label}: ${full}`, 'aria-pressed': String(queued), onclick: () => toggleQueue(s) }, icon('listAdd', 'action'));
-}
 
 function openTitle(s, full, tip) {
   return el('button', { class: 'open t-headline', type: 'button', title: tip, 'aria-label': `Open: ${full}` }, titleNodes(s));
@@ -83,9 +78,9 @@ function runCover(s, action, link) {
   else if (action === 'download') fetchAudio(s);
 }
 
-function coverCell(s, full, { audio, queueable, here, link }) {
+function coverCell(s, full, { audio, queueable, here, link, queued }) {
   const model = coverModel({ audio, queueable, here, playing: player.playing, dl: autodl.view(s.id).kind, source: !!link });
-  return coverButton(cover(s), model, full, { run: (action) => runCover(s, action, link) });
+  return coverButton(cover(s), model, full, { run: (action) => runCover(s, action, link), queued });
 }
 
 function durationContent(s, audio, link, dl) {
@@ -104,20 +99,18 @@ export function songRow(s, cur, flashId) {
   const here = audio && cur && cur.id === s.id;
   const queued = player.inQueue(s.id);
   const more = moreButton(s, full, { audio, queueable, queued });
-  const pl = playlistToggle(s, full, queued, queueable);
   const open = openTitle(s, full, tip);
   const genres = genreText(s.tags);
   const dl = audio ? null : ringModel(autodl.view(s.id));
   const durText = durationContent(s, audio, link, dl);
   const dur = el('span', { class: audio ? 'c-dur t-time' : 'c-dur t-caption' }, durText);
   const row = el('li', { class: `song${here ? ' current' : ''}${audio ? '' : ' no-audio'}${flashId === s.id ? ' flash' : ''}`, 'aria-current': here ? 'true' : null, 'data-id': s.id },
-    coverCell(s, full, { audio, queueable, here, link }),
+    coverCell(s, full, { audio, queueable, here, link, queued: queued ? player.queuePosition(s.id) : null }),
     el('div', { class: 'info' },
       el('div', { class: 'title-line' }, open),
       subtitle(s) ? el('small', { class: 'sub t-subhead', title: subtitle(s) }, subtitle(s)) : null),
     el('div', { class: 'c-genres t-subhead' }, bpmBadge(s), el('span', { class: 'g-txt', title: genres || null }, genres)),
     dur,
-    pl,
     more,
     dl ? lineNode(dl) : null);
   marquee(open, { auto: !!here, host: row });

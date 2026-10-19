@@ -131,3 +131,20 @@ test('keepCovers moves a loaded cover into the rebuilt row with the same source 
   assert.equal(next[3].querySelector('img').getAttribute('src'), '/covers/d');
   assert.equal(prev[0].querySelector('img'), null);
 });
+
+test('coverButton queue mark: passive corner badge only when queued; the playing control stays and keeps its label', () => {
+  const img = document.createElement('img');
+  const base = { audio: true, queueable: true, here: true, playing: true };
+  const plain = coverButton(img, coverModel(base), 'Alpha', { run() {}, touch: false });
+  assert.equal(plain.querySelector('.q-mark'), null);
+  assert.equal(plain.getAttribute('aria-label'), 'Pause Alpha');
+  const q = coverButton(document.createElement('img'), coverModel(base), 'Alpha', { run() {}, touch: true, queued: { pos: 2, total: 5 } });
+  const mark = q.querySelector('.q-mark');
+  assert.equal(mark.getAttribute('aria-hidden'), 'true');
+  assert.equal(mark.querySelector('button'), null);
+  assert.ok(q.classList.contains('act-pause') && q.classList.contains('persist') && q.classList.contains('queued'));
+  assert.ok(q.querySelector('.rc-ov'), 'the playing overlay is still there');
+  assert.equal(q.getAttribute('aria-label'), 'Pause Alpha');
+  assert.equal(q.getAttribute('aria-description'), 'In the queue, position 2 of 5');
+  assert.equal(q.title, 'Pause Alpha. In the queue, position 2 of 5');
+});

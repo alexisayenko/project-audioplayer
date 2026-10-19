@@ -342,26 +342,37 @@ test('row menu: Play now, queue toggle and Edit song', async () => {
   await flush();
   while (player.current) player.removeAt(0);
   const row = rows().find((r) => r.dataset.id === 'b');
-  assert.ok(row.querySelector('.pl-toggle').classList.contains('round'), 'WEB-099: playlist toggle is a round icon');
-  const glyphOf = () => row.querySelector('.pl-toggle').innerHTML;
-  const before = glyphOf();
-  row.querySelector('.pl-toggle').click();
+  assert.equal(row.querySelector('.pl-toggle'), null, 'ER1: no playlist toggle button on the row');
+  assert.equal(row.querySelector('.q-mark'), null, 'not queued: no queue mark');
+  row.querySelector('.more').click();
+  let menu = document.body.querySelectorAll('.menu button');
+  assert.deepEqual(menu.map((b) => b.textContent), ['Play now', 'Add to queue', 'Download', 'Share link', 'Edit song']);
+  menu.find((b) => b.textContent === 'Add to queue').click();
   assert.equal(player.inQueue('b'), true);
+  document.body.querySelectorAll('.menu').forEach((m) => m.remove());
   const queuedRow = rows().find((r) => r.dataset.id === 'b');
-  assert.ok(queuedRow.querySelector('.pl-toggle').classList.contains('on'));
-  assert.equal(queuedRow.querySelector('.pl-toggle').getAttribute('aria-pressed'), 'true');
-  assert.equal(queuedRow.querySelector('.pl-toggle').innerHTML, before, 'the pressed button keeps the plus icon');
+  const mark = queuedRow.querySelector('.q-mark');
+  assert.ok(mark, 'queued: the cover shows the queue mark');
+  assert.equal(mark.tagName, 'SPAN');
+  assert.equal(mark.getAttribute('aria-hidden'), 'true');
+  assert.equal(mark.closest('button'), queuedRow.querySelector('.row-cover'), 'part of the cover, not a button of its own');
+  assert.match(queuedRow.querySelector('.row-cover').getAttribute('aria-description'), /In the queue, position 1 of 1$/);
+  assert.match(queuedRow.querySelector('.row-cover').title, /In the queue, position 1 of 1$/);
   assert.equal(document.getElementById('toast').textContent, 'Queued');
-  rows().find((r) => r.dataset.id === 'b').querySelector('.more').click();
+  queuedRow.querySelector('.more').click();
   const labels = document.body.querySelectorAll('.menu button').map((b) => b.textContent);
-  assert.deepEqual(labels, ['Play now', 'Remove from playlist', 'Download', 'Share link', 'Edit song']);
+  assert.deepEqual(labels, ['Play now', 'Remove from queue', 'Download', 'Share link', 'Edit song']);
+  document.body.querySelectorAll('.menu button').find((b) => b.textContent === 'Remove from queue').click();
+  assert.equal(player.inQueue('b'), false);
+  assert.equal(rows().find((r) => r.dataset.id === 'b').querySelector('.q-mark'), null, 'removed: the mark goes');
+  rows().find((r) => r.dataset.id === 'b').querySelector('.more').click();
   document.body.querySelectorAll('.menu button').find((b) => b.textContent === 'Edit song').click();
   assert.equal(document.getElementById('edit-dialog').open, true);
   assert.equal(document.getElementById('edit-dialog').querySelector('h2').textContent, 'Edit song');
   cleanup();
 });
 
-test('tapping a row opens the song card, but not the cover, toggle, menu or links', async () => {
+test('tapping a row opens the song card, but not the cover, menu or links', async () => {
   setStore(SONGS);
   filterByTags([]);
   stubFetch(() => ({ body: { songs: SONGS } }));
@@ -369,7 +380,7 @@ test('tapping a row opens the song card, but not the cover, toggle, menu or link
   await flush();
   const card = document.getElementById('song-card');
   const row = () => rows().find((r) => r.dataset.id === 'a');
-  for (const sel of ['.pl-toggle', '.more', '.row-cover']) {
+  for (const sel of ['.more', '.row-cover']) {
     row().querySelector(sel).click();
     assert.equal(card.open, false, sel);
     document.body.querySelectorAll('.menu').forEach((m) => m.remove());

@@ -2,6 +2,14 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-19 (Library search words, not deployed)
+
+- Web: the Library search finds a pasted "Maduk ft Veela - Ghost Assassin VIP" (words matched separately, ft/feat/&/dashes ignored, diacritics folded; LIB-162).
+
+## 2026-10-19 (Library queue mark, not deployed)
+
+- Web: the Library row loses its round "Add to playlist" toggle button and its column; a song in the queue shows a small passive list mark on its cover (tooltip "In the queue, position N of M"), and the row menu offers "Add to queue" / "Remove from queue" (LIB-161, LIB-095, LIB-096).
+
 ## 2026-10-19 (Library genre removals, not deployed)
 
 - Server and data: a one-off, owner-approved removal of wrong genres (56 songs, 106 genres, `server/data/library_genre_removals.json`) runs once at server start for the owner library only, with backup, report and marker in `backups-genre-removals/<uid>/` and one git commit; switch `AUDIO_GENRE_REMOVALS=0` (TAG-109, [runbook](tech/deploy.md#genre-removals), tests `test_migrate_removals.py`). Not deployed.

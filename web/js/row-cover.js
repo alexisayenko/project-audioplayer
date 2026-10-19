@@ -70,12 +70,17 @@ export function paintCover(btn, model, name, { touch = touchOnly(), size = 20, e
 // Cover of the current song: always the current song's play/pause state (a song without server audio is handled by player.toggle).
 export const currentCoverModel = (playing) => coverModel({ audio: true, queueable: true, here: true, playing });
 
-export function coverButton(img, model, name, { run, touch = touchOnly() }) {
-  const { cls, label, title, disabled } = coverAttrs(model, name, touch);
+export const queueNote = (q) => (q ? `In the queue, position ${q.pos} of ${q.total}` : '');
+
+export function coverButton(img, model, name, { run, touch = touchOnly(), queued = null }) {
+  const a = coverAttrs(model, name, touch);
+  const note = queueNote(queued);
+  const tip = note ? `${a.label}. ${note}` : a.title;
   return el('button', {
-    class: cls, type: 'button', 'aria-label': label, title, disabled,
+    class: note ? `${a.cls} queued` : a.cls, type: 'button', 'aria-label': a.label, 'aria-description': note || null, title: tip, disabled: a.disabled,
     onclick: () => run(model.action),
-  }, el('span', { class: 'cover-mark', 'aria-hidden': 'true' }, icon('mark')), img, el('span', { class: 'rc-ov', 'aria-hidden': 'true' }, icon(model.icon, 20)));
+  }, el('span', { class: 'cover-mark', 'aria-hidden': 'true' }, icon('mark')), img, el('span', { class: 'rc-ov', 'aria-hidden': 'true' }, icon(model.icon, 20)),
+  note ? el('span', { class: 'q-mark', 'aria-hidden': 'true' }, icon('playlist', 'inline')) : null);
 }
 
 // Cover button of a Now playing row: the current row follows play/pause, any other row starts that queue item.

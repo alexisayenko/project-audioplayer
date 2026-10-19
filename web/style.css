@@ -281,6 +281,7 @@ label { display: block; color: var(--ink-muted); font: var(--font-caption); marg
 .row-cover.persist .rc-ov { opacity: .75; }
 .row-cover:focus-visible .rc-ov { opacity: 1; }
 .row-cover:disabled .rc-ov { display: none; }
+.q-mark { position: absolute; right: var(--space-1); bottom: var(--space-1); display: grid; place-items: center; width: calc(var(--icon-inline) + var(--space-1)); height: calc(var(--icon-inline) + var(--space-1)); border-radius: var(--radius-sm); background: color-mix(in srgb, var(--vinyl) 72%, transparent); color: var(--accent); pointer-events: none; }
 @media (hover: hover) { .row-cover:hover .rc-ov { opacity: 1; } .row-cover.persist:hover .rc-ov { opacity: .9; } }
 .song .c-genres { display: none; }
 .song .info { min-width: 0; overflow: hidden; display: flex; flex-direction: column; }
@@ -317,10 +318,7 @@ label { display: block; color: var(--ink-muted); font: var(--font-caption); marg
 .song .sub { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; min-width: 0; max-width: 100%; color: var(--muted); overflow: hidden; overflow-wrap: anywhere; }
 .song .c-dur { color: var(--muted); text-align: right; }
 .song .more { width: var(--control-sm); height: var(--hit); border-radius: var(--radius-sm); }
-.pl-toggle { width: var(--hit); height: var(--hit); }
-.pl-toggle.on { background: var(--accent); color: var(--on-accent); }
-.pl-toggle.ph, .more.ph { visibility: hidden; }
-@media (max-width: 719px) { .song > .pl-toggle { display: none; } }
+.more.ph { visibility: hidden; }
 .song.flash { outline: var(--stroke-focus) solid var(--accent-ink); outline-offset: calc(-1 * var(--stroke-focus)); border-radius: var(--radius-key); animation: song-flash calc(var(--dur-slow) * 5) var(--ease-out); }
 @keyframes song-flash { from { background: var(--accent-tint); } to { background: transparent; } }
 .song.current, .qrow.current {
@@ -360,7 +358,7 @@ label { display: block; color: var(--ink-muted); font: var(--font-caption); marg
 
 @media (min-width: 720px) {
   .group { --row-pad: var(--space-4); padding: 0 var(--space-4); }
-  .songs .song, .table-head { --row-cover-size: 60px; --cols: var(--row-cover-size) minmax(0, 1fr) 56px var(--control) var(--control-sm); }
+  .songs .song, .table-head { --row-cover-size: 60px; --cols: var(--row-cover-size) minmax(0, 1fr) 56px var(--control-sm); }
   .table-head {
     display: grid; grid-template-columns: var(--cols); gap: var(--space-3); align-items: center; height: var(--control);
     color: var(--ink-muted); border-bottom: var(--stroke-hairline) solid var(--line);
@@ -374,14 +372,14 @@ label { display: block; color: var(--ink-muted); font: var(--font-caption); marg
   .songs .song.current { height: calc(var(--row-cover-size) + var(--space-4)); padding: 0 var(--row-pad); border-radius: var(--radius-key); }
 }
 @media (min-width: 900px) {
-  .songs .song, .table-head { --cols: var(--row-cover-size) minmax(160px, var(--track-w)) minmax(160px, 1fr) 64px var(--control) var(--control-sm); }
+  .songs .song, .table-head { --cols: var(--row-cover-size) minmax(160px, var(--track-w)) minmax(160px, 1fr) 64px var(--control-sm); }
   .table-head .c-genres { display: block; }
   .songs .song .c-genres { display: flex; align-items: center; gap: var(--space-2); min-width: 0; color: var(--muted); }
   .songs .song .c-genres .g-txt { flex: 0 1 auto; min-width: 0; display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow-wrap: break-word; }
 }
 
 @media (min-width: 1100px) {
-  .songs .song, .table-head { --cols: var(--row-cover-size) var(--track-w) minmax(120px, 1fr) 64px var(--control) var(--control-sm); }
+  .songs .song, .table-head { --cols: var(--row-cover-size) var(--track-w) minmax(120px, 1fr) 64px var(--control-sm); }
 }
 
 /* sheets and dialogs */
@@ -833,23 +831,23 @@ body:has(.legal:not([hidden])) main, body:has(.legal:not([hidden])) .player { pa
 .bf-list { width: 100%; margin: var(--space-3) 0; font: inherit; }
 
 /* shared control states: hover and pressed washes, disabled */
-:where(.btn, .key, .chip, .cat-chip, .icon, .more, .menu-item, .link-btn, #nav a, .token-btn, .cl-btn, .pl-toggle, .row-dl, .side-toggle) {
+:where(.btn, .key, .chip, .cat-chip, .icon, .more, .menu-item, .link-btn, #nav a, .token-btn, .cl-btn, .row-dl, .side-toggle) {
   transition: background-color var(--dur-fast) var(--ease-out), background-image var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
 }
 @media (hover: hover) {
-  :where(.btn, .key, .chip, .cat-chip, .icon, .more, .menu-item, .link-btn, #nav a, .token-btn, .cl-btn, .pl-toggle, .row-dl, .side-toggle):not(:disabled):not([aria-disabled="true"]):hover {
+  :where(.btn, .key, .chip, .cat-chip, .icon, .more, .menu-item, .link-btn, #nav a, .token-btn, .cl-btn, .row-dl, .side-toggle):not(:disabled):not([aria-disabled="true"]):hover {
     background-image: linear-gradient(var(--hover-wash), var(--hover-wash));
   }
-  :where(.icon, .more, .pl-toggle, .row-dl, .token-btn, .cl-btn):not(:disabled):hover { color: var(--ink); }
+  :where(.icon, .more, .row-dl, .token-btn, .cl-btn):not(:disabled):hover { color: var(--ink); }
   .song:not(.current):hover, .qrow:not(.current):hover { background-image: linear-gradient(var(--hover-wash), var(--hover-wash)); }
   .song.current .more:hover { background-color: var(--surface); }
   .dl-ring.failed:hover { background-color: var(--accent-tint); }
 }
-:where(.btn, .key, .chip, .cat-chip, .icon, .more, .menu-item, .link-btn, #nav a, .token-btn, .cl-btn, .pl-toggle, .row-dl, .side-toggle):not(:disabled):not([aria-disabled="true"]):active {
+:where(.btn, .key, .chip, .cat-chip, .icon, .more, .menu-item, .link-btn, #nav a, .token-btn, .cl-btn, .row-dl, .side-toggle):not(:disabled):not([aria-disabled="true"]):active {
   background-image: linear-gradient(var(--pressed-wash), var(--pressed-wash));
   transform: scale(var(--pressed-scale));
 }
-:where(.btn, .key, .chip, .cat-chip, .icon, .more, .menu-item, .link-btn, .token-btn, .cl-btn, .pl-toggle, .row-dl):disabled { opacity: var(--disabled-opacity); cursor: default; }
+:where(.btn, .key, .chip, .cat-chip, .icon, .more, .menu-item, .link-btn, .token-btn, .cl-btn, .row-dl):disabled { opacity: var(--disabled-opacity); cursor: default; }
 
 @media (prefers-reduced-motion: reduce) {
   *, ::before, ::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } /* NOSONAR reduced-motion reset must beat all component animations */
