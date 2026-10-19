@@ -60,6 +60,12 @@ async function mount(opts = {}) {
   await flush();
   return { root, cleanup, spy };
 }
+
+async function mountAll(opts = {}) {
+  const m = await mount(opts);
+  btn(m.root, 'All genres').click();
+  return m;
+}
 const rowsOf = (root) => root.querySelectorAll('[role="treeitem"]');
 const names = (root) => rowsOf(root).map((r) => r.querySelector('.gmr-name').textContent);
 const row = (root, name) => rowsOf(root).find((r) => r.querySelector('.gmr-name').textContent === name);
@@ -69,7 +75,7 @@ const chip = (root, name) => chipsOf(root).find((c) => c.textContent === name);
 const shown = (root) => ({ graph: !root.querySelector('.gmr-graph').hidden, radial: !root.querySelector('.gmr-canvas:not(.gmr-graph)').hidden });
 const status = (root) => root.querySelector('[role="status"]').textContent;
 
-test('Graph is the default view, with the Graph | Radial switch and the whole vocabulary on the map', async () => {
+test('Graph is the default view, with the Graph | Radial switch and the library genres and their ancestors on the map', async () => {
   mode = 'ok';
   const { root, cleanup, spy } = await mount();
   assert.deepEqual(shown(root), { graph: true, radial: false });
@@ -78,10 +84,11 @@ test('Graph is the default view, with the Graph | Radial switch and the whole vo
   assert.deepEqual(sw.querySelectorAll('button').map((b) => [b.textContent, b.getAttribute('aria-pressed')]), [['Graph', 'true'], ['Radial', 'false']]);
   const g = spy.last('setGraph')[1];
   assert.equal(g.nodes.length, 9);
-  assert.ok(g.nodes.some((n) => n.id === 's:breakbeat' && n.em === 0), 'a genre with no library song is on the map');
+  assert.ok(g.nodes.some((n) => n.id === 's:breakbeat' && n.em === 0), 'the graph data has the whole vocabulary');
   assert.ok(g.links.some((l) => l.kind === 'related' && l.source === 's:breakbeat' && l.target === 's:jungle'));
-  assert.equal(spy.last('setVisible')[1], null);
-  assert.equal(status(root), '7 genres, 5 in your library');
+  assert.deepEqual([...spy.last('setVisible')[1]].sort(), ['g:Electronic', 'g:Rock', 's:afro house', 's:deep house', 's:drum and bass', 's:house', 's:jungle', 's:rock and roll']);
+  assert.equal(status(root), '5 genres in your library');
+  assert.equal(btn(root, 'All genres').getAttribute('aria-pressed'), 'false');
   assert.ok(root.querySelector('.gmr-graph').getAttribute('aria-label').includes('Drag a circle'));
   cleanup();
   assert.ok(spy.calls.some((c) => c[0] === 'destroy'));
@@ -89,7 +96,7 @@ test('Graph is the default view, with the Graph | Radial switch and the whole vo
 
 test('the graph outline lists genres without library songs and the chips are All plus every family', async () => {
   mode = 'ok';
-  const { root, cleanup } = await mount();
+  const { root, cleanup } = await mountAll();
   btn(root, 'Expand all').click();
   const list = names(root);
   for (const n of ['Electronic', 'breakbeat', 'drum and bass', 'house', 'afro house', 'deep house', 'Rock', 'rock and roll']) assert.ok(list.includes(n), n);
@@ -100,7 +107,7 @@ test('the graph outline lists genres without library songs and the chips are All
 
 test('a family chip narrows the map and the outline, pressing it again shows everything', async () => {
   mode = 'ok';
-  const { root, cleanup, spy } = await mount();
+  const { root, cleanup, spy } = await mountAll();
   chip(root, 'Rock').click();
   assert.deepEqual([...spy.last('setVisible')[1]].sort(), ['g:Rock', 's:rock and roll']);
   assert.deepEqual(chipsOf(root).map((c) => c.getAttribute('aria-pressed')), ['false', 'false', 'true']);
@@ -115,22 +122,60 @@ test('a family chip narrows the map and the outline, pressing it again shows eve
   cleanup();
 });
 
-test('Library only hides genres without songs and combines with a family', async () => {
+test('All genres is an explicit opt-in: off on every open, adds the genres without songs and combines with a family', async () => {
   mode = 'ok';
   const { root, cleanup, spy } = await mount();
-  const lib = btn(root, 'Library only');
-  assert.equal(lib.getAttribute('aria-pressed'), 'false');
-  lib.click();
-  assert.equal(lib.getAttribute('aria-pressed'), 'true');
+  const all = btn(root, 'All genres');
+  assert.equal(all.getAttribute('aria-pressed'), 'false');
   const ids = spy.last('setVisible')[1];
   assert.ok(ids.has('s:house') && ids.has('s:jungle') && !ids.has('s:breakbeat'));
   btn(root, 'Expand all').click();
   assert.ok(!names(root).includes('breakbeat'));
+  all.click();
+  assert.equal(all.getAttribute('aria-pressed'), 'true');
+  assert.equal(spy.last('setVisible')[1], null);
+  assert.equal(status(root), '7 genres, 5 in your library');
   chip(root, 'Rock').click();
   assert.deepEqual([...spy.last('setVisible')[1]].sort(), ['g:Rock', 's:rock and roll']);
-  lib.click();
+  all.click();
+  assert.deepEqual([...spy.last('setVisible')[1]].sort(), ['g:Rock', 's:rock and roll']);
   chip(root, 'All').click();
-  assert.equal(spy.last('setVisible')[1], null);
+  assert.equal(spy.last('setVisible')[1].has('s:breakbeat'), false);
+  cleanup();
+});
+
+test('a stored all-genres, family or subfamily choice never hides the library map on open', async () => {
+  mode = 'subs';
+  const store = new Map([['electrophone.genresSubfamilies', JSON.stringify(['Breaks and bass'])], ['electrophone.genresLibraryOnly', '0'], ['electrophone.genresAll', '1'], ['electrophone.genresFamily', 'Rock']]);
+  const saved = globalThis.localStorage;
+  globalThis.localStorage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, v), removeItem: (k) => store.delete(k) };
+  try {
+    const { root, cleanup, spy } = await mount();
+    assert.equal(store.has('electrophone.genresSubfamilies'), false, 'the old subfamily choice is cleared on read');
+    assert.equal(btn(root, 'All genres').getAttribute('aria-pressed'), 'false');
+    const ids = spy.last('setVisible')[1];
+    for (const id of ['g:Electronic', 'g:Rock', 's:house', 's:deep house', 's:jungle', 's:rock and roll']) assert.ok(ids.has(id), id);
+    assert.ok(!ids.has('s:breakbeat'));
+    cleanup();
+    const radial = await mount({ view: 'radial' });
+    assert.equal(chipsOf(radial.root)[0].getAttribute('aria-pressed'), 'true');
+    assert.equal(status(radial.root), '5 genres in Electronic');
+    assert.ok(names(radial.root).includes('house'));
+    radial.cleanup();
+  } finally { globalThis.localStorage = saved; mode = 'ok'; }
+});
+
+test('a genre without songs is not found in the library map; All genres makes it findable', async () => {
+  mode = 'ok';
+  const { root, cleanup, spy } = await mount();
+  const input = root.querySelector('input');
+  input.value = 'breakbeat';
+  fire(input, 'input');
+  assert.equal(names(root).length, 0);
+  btn(root, 'All genres').click();
+  assert.deepEqual(names(root), ['Electronic', 'breakbeat']);
+  fire(input, 'keydown', { key: 'Enter' });
+  assert.deepEqual(spy.last('select').slice(1), ['s:breakbeat']);
   cleanup();
 });
 
@@ -144,12 +189,12 @@ test('the Radial button swaps the canvases, keeps the radial map as it was and r
   assert.deepEqual(shown(root), { graph: false, radial: true });
   assert.deepEqual(chipsOf(root).map((c) => [c.textContent, c.getAttribute('aria-pressed')]), [['Electronic', 'true'], ['Rock', 'false']], 'Radial has one family at a time and no All chip');
   assert.equal(store.get('electrophone.genresView'), 'radial');
-  assert.equal(btn(root, 'Library only').hidden, true);
+  assert.equal(btn(root, 'All genres').hidden, true);
   assert.equal(status(root), '5 genres in Electronic');
   assert.deepEqual(names(root), ['Electronic', 'drum and bass', 'house', 'Rock']);
   btn(root, 'Graph').click();
   assert.deepEqual(shown(root), { graph: true, radial: false });
-  assert.equal(status(root), '7 genres, 5 in your library');
+  assert.equal(status(root), '5 genres in your library');
   assert.equal(store.get('electrophone.genresView'), 'graph');
   btn(root, 'Radial').click();
   cleanup();
@@ -168,7 +213,7 @@ test('a genre the map filters hide is revealed by search: filters clear and it i
   input.value = 'jungle';
   fire(input, 'input');
   fire(input, 'keydown', { key: 'Enter' });
-  assert.equal(spy.last('setVisible')[1], null);
+  assert.equal(spy.last('setVisible')[1].has('s:jungle'), true);
   assert.equal(chip(root, 'All').getAttribute('aria-pressed'), 'true');
   assert.deepEqual(spy.last('select').slice(1), ['s:jungle']);
   assert.equal(root.querySelector('.gmr-details').hidden, false);
@@ -223,7 +268,7 @@ test('the Fusion genres switch is off by default, remembers its state, rebuilds 
   const saved = globalThis.localStorage;
   globalThis.localStorage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, v) };
   try {
-    const { root, cleanup, spy } = await mount();
+    const { root, cleanup, spy } = await mountAll();
     const sw = btn(root, 'Fusion genres');
     assert.equal(sw.getAttribute('role'), 'switch');
     assert.equal(sw.getAttribute('aria-checked'), 'false');
@@ -274,9 +319,9 @@ test('the header: status is plain text above one non-wrapping button row, the fa
   assert.deepEqual(bar.children.map((c) => c.getAttribute('role') || c.className.split(' ')[0]), ['status', 'gmr-btns', 'gmr-btns', 'group', 'group']);
   const rows = bar.querySelectorAll('.gmr-btns');
   assert.deepEqual(rows[0].querySelectorAll('button').map((b) => b.textContent), ['Show legend', 'Now playing', 'Reload']);
-  assert.deepEqual(rows[1].querySelectorAll('button').map((b) => b.textContent), ['Graph', 'Radial', 'Library only', 'Fusion genres', 'Related', 'Reset layout', 'Use saved layout', 'Export layout']);
+  assert.deepEqual(rows[1].querySelectorAll('button').map((b) => b.textContent), ['Graph', 'Radial', 'All genres', 'Fusion genres', 'Related', 'Reset layout', 'Use saved layout', 'Export layout']);
   const labels = rows.flatMap((r) => r.querySelectorAll('button').map((b) => b.textContent));
-  for (const l of ['Show legend', 'Reload', 'Graph', 'Radial', 'Library only', 'Fusion genres']) assert.ok(labels.includes(l), l);
+  for (const l of ['Show legend', 'Reload', 'Graph', 'Radial', 'All genres', 'Fusion genres']) assert.ok(labels.includes(l), l);
   assert.equal(root.querySelector('.gmr-family-row').parentNode, bar);
   cleanup();
 });
@@ -308,7 +353,7 @@ test('the Related switch is off by default, persists, reaches the graph, and the
   const saved = globalThis.localStorage;
   globalThis.localStorage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, v) };
   try {
-    const { root, cleanup, spy } = await mount();
+    const { root, cleanup, spy } = await mountAll();
     const sw = btn(root, 'Related');
     assert.equal(sw.getAttribute('role'), 'switch');
     assert.equal(sw.getAttribute('aria-checked'), 'false');
@@ -335,7 +380,7 @@ test('the Related switch is off by default, persists, reaches the graph, and the
 
 test('the infobox Sources row shows only the icons the vocabulary links, filled for pages and muted for searches, with safe link attributes', async () => {
   mode = 'sources';
-  const { root, cleanup } = await mount();
+  const { root, cleanup } = await mountAll();
   const input = root.querySelector('input');
   const open = (name) => { input.value = name; fire(input, 'input'); fire(input, 'keydown', { key: 'Enter' }); };
   open('soviet wave');
@@ -364,7 +409,7 @@ test('the infobox Sources row shows only the icons the vocabulary links, filled 
 
 test('layout actions: Reset layout is a Graph action, Use saved layout needs a layout file, Export layout is for the owner only', async () => {
   mode = 'ok';
-  const plain = await mount();
+  const plain = await mountAll();
   assert.equal(btn(plain.root, 'Reset layout').hidden, false);
   assert.equal(btn(plain.root, 'Use saved layout').hidden, true, 'no layout file');
   assert.equal(btn(plain.root, 'Export layout').hidden, true, 'not the owner');
@@ -419,11 +464,11 @@ test('Export layout copies the normalised layout JSON to the clipboard and falls
   }
 });
 
-test('subfamily chips appear for Electronic only, filter the map and the outline, persist, and the legend and infobox name the subfamilies', async () => {
+test('subfamily chips appear for Electronic only, filter the map and the outline, are not stored, and the legend and infobox name the subfamilies', async () => {
   mode = 'subs';
   const store = new Map();
   const saved = globalThis.localStorage;
-  globalThis.localStorage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, v) };
+  globalThis.localStorage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, v), removeItem: (k) => store.delete(k) };
   try {
     const { root, cleanup, spy } = await mount({ view: 'graph' });
     const row = root.querySelector('.gmr-sub-row');
@@ -447,12 +492,11 @@ test('subfamily chips appear for Electronic only, filter the map and the outline
     assert.ok(!ids.has('s:house') && !ids.has('s:deep house'));
     btn(root, 'Expand all').click();
     assert.ok(names(root).includes('jungle') && !names(root).includes('house'), 'the outline follows the filter');
-    assert.deepEqual(JSON.parse(store.get('electrophone.genresSubfamilies')), ['Breaks and bass']);
     subs()[1].click();
     assert.ok(spy.last('setVisible')[1].has('s:house'), 'multi-select adds a subfamily');
     subs()[0].click();
     assert.equal(spy.last('setVisible')[1].has('s:house') && spy.last('setVisible')[1].has('s:jungle'), true);
-    assert.deepEqual(JSON.parse(store.get('electrophone.genresSubfamilies')), []);
+    assert.equal(store.has('electrophone.genresSubfamilies'), false, 'the subfamily choice is not stored');
     subs()[1].click();
     const input = root.querySelector('input');
     input.value = 'jungle';
@@ -464,7 +508,7 @@ test('subfamily chips appear for Electronic only, filter the map and the outline
     cleanup();
     const again = await mount({ view: 'graph' });
     chip(again.root, 'Electronic').click();
-    assert.deepEqual(again.root.querySelector('.gmr-sub-row').querySelectorAll('button').map((b) => b.getAttribute('aria-pressed')), ['false', 'true', 'false'], 'the choice is restored');
+    assert.deepEqual(again.root.querySelector('.gmr-sub-row').querySelectorAll('button').map((b) => b.getAttribute('aria-pressed')), ['true', 'false', 'false'], 'the choice is not restored');
     again.cleanup();
   } finally { globalThis.localStorage = saved; mode = 'ok'; }
 });

@@ -32,14 +32,8 @@ export const LEGEND_KEY = 'electrophone.genresLegend';
 export const VIEW_KEY = 'electrophone.genresView';
 export const VIEWS = ['graph', 'radial'];
 export const SUB_KEY = 'electrophone.genresSubfamilies';
-export function loadSubfamilies(storage) {
-  try {
-    const v = JSON.parse(storage?.getItem(SUB_KEY) ?? '[]');
-    return Array.isArray(v) ? v.filter((x) => typeof x === 'string') : [];
-  } catch { return []; }
-}
-export function saveSubfamilies(storage, set) {
-  try { storage?.setItem(SUB_KEY, JSON.stringify([...set])); } catch { /* storage unavailable */ }
+export function clearSubfamilies(storage) {
+  try { storage?.removeItem?.(SUB_KEY); } catch { /* storage unavailable */ }
 }
 export const RELATED_KEY = 'electrophone.genresRelated';
 export const FUSION_KEY = 'electrophone.genresFusion';
@@ -97,11 +91,12 @@ export function renderGenresRework(root, opts = {}) {
   let kind = VIEWS.includes(opts?.view) ? opts.view : loadView(globalThis.localStorage);
   let graph = null;
   let graphFamily = null;
-  let libraryOnly = false;
+  let allGenres = false;
   let fusion = loadFusion(globalThis.localStorage);
   let related = loadRelated(globalThis.localStorage);
   let lastData = null;
-  const subSel = new Set(loadSubfamilies(globalThis.localStorage));
+  const subSel = new Set();
+  clearSubfamilies(globalThis.localStorage);
   let savedLayout = null;
   let isOwner = false;
 
@@ -129,9 +124,19 @@ export function renderGenresRework(root, opts = {}) {
   const subRow = el('div', { class: 'gmr-sub-row', role: 'group', 'aria-label': 'Subfamily', hidden: true });
   const legendSub = el('div', { class: 'gmr-legend-sub', hidden: true });
 
+  function setAllGenres(on, { apply = false } = {}) {
+    allGenres = on;
+    libBtn.setAttribute('aria-pressed', String(on));
+    if (!on && graphFamily && !families.includes(graphFamily)) graphFamily = null;
+    if (apply) {
+      applyFilters();
+      if (selectedId && !onMap(selectedId)) deselect();
+    }
+  }
+
   function renderFamilies() {
     if (kind === 'graph') {
-      const all = tree ? tree.roots.map((r) => r.name) : [];
+      const all = tree ? (allGenres ? tree.roots.map((r) => r.name) : families) : [];
       familyRow.hidden = !all.length;
       familyRow.replaceChildren(...(all.length ? [el('button', {
         class: 'gm-tbtn', type: 'button', 'data-family': '', 'aria-pressed': String(!graphFamily), onclick: () => setGraphFamily(null),
@@ -163,9 +168,9 @@ export function renderGenresRework(root, opts = {}) {
   }, v === 'graph' ? 'Graph' : 'Radial'));
   const viewRow = el('div', { class: 'gmr-view-row', role: 'group', 'aria-label': 'Map view' }, ...viewBtns);
   const libBtn = el('button', {
-    class: 'gm-tbtn gmr-lib', type: 'button', 'aria-pressed': 'false', hidden: kind !== 'graph', title: 'Hide genres that have no song in your library',
-    onclick: () => { libraryOnly = !libraryOnly; libBtn.setAttribute('aria-pressed', String(libraryOnly)); applyFilters(); },
-  }, 'Library only');
+    class: 'gm-tbtn gmr-lib', type: 'button', 'aria-pressed': 'false', hidden: kind !== 'graph', title: 'Also show the genres that have no song in your library (this visit only)',
+    onclick: () => setAllGenres(!allGenres, { apply: true }),
+  }, 'All genres');
   const fusionBtn = el('button', {
     class: 'gm-tbtn gmr-fusion', type: 'button', role: 'switch', 'aria-checked': String(fusion), title: 'Also show fusion genres (blues rock, trip hop, ...) under their second family',
     onclick: () => setFusion(!fusion),
@@ -282,7 +287,7 @@ export function renderGenresRework(root, opts = {}) {
 
   const subFamilyName = () => tree?.subfamilies?.[0]?.family || null;
   const subActive = () => !!subSel.size && !!subFamilyName() && (kind === 'graph' ? graphFamily === subFamilyName() : rootGenre === subFamilyName());
-  const currentVisible = () => (tree ? visibleIds(tree, { family: graphFamily, libraryOnly, status: statusFilter, flavours: flavourSel, subfamilies: subActive() ? subSel : null }) : null);
+  const currentVisible = () => (tree ? visibleIds(tree, { family: graphFamily, libraryOnly: !allGenres, status: statusFilter, flavours: flavourSel, subfamilies: subActive() ? subSel : null }) : null);
   const radialKeep = () => {
     if (!tree) return null;
     const base = filterIds(tree, { status: statusFilter, flavours: flavourSel });
@@ -317,10 +322,10 @@ export function renderGenresRework(root, opts = {}) {
       const shades = subShades();
       subRow.replaceChildren(
         el('span', { class: 't-caption muted' }, 'Subfamily:'),
-        el('button', { class: 'gm-tbtn', type: 'button', 'data-sub': '', 'aria-pressed': String(!subSel.size), onclick: () => { subSel.clear(); saveSubfamilies(globalThis.localStorage, subSel); applyFilters(); } }, 'All'),
+        el('button', { class: 'gm-tbtn', type: 'button', 'data-sub': '', 'aria-pressed': String(!subSel.size), onclick: () => { subSel.clear(); applyFilters(); } }, 'All'),
         ...list.map((s) => el('button', {
           class: 'gm-tbtn', type: 'button', 'data-sub': s.name, 'aria-pressed': String(subSel.has(s.name)),
-          onclick: () => { if (subSel.has(s.name)) subSel.delete(s.name); else subSel.add(s.name); saveSubfamilies(globalThis.localStorage, subSel); applyFilters(); },
+          onclick: () => { if (subSel.has(s.name)) subSel.delete(s.name); else subSel.add(s.name); applyFilters(); },
         }, el('span', { class: 'gm-dot sub', style: shades[s.order] ? `background:${shades[s.order]}` : '', 'aria-hidden': 'true' }), s.name)));
     }
     renderLegendSub();
@@ -393,7 +398,7 @@ export function renderGenresRework(root, opts = {}) {
     return !!graph?.byId.has(id) && (currentVisible()?.has(id) ?? true);
   };
   const rowOpts = () => ({
-    expanded, query, onlyWithSongs: kind === 'radial', status: statusFilter, flavours: flavourSel, only: kind === 'graph' ? currentVisible() : (subActive() ? visibleIds(tree, { subfamilies: subSel }) : null),
+    expanded, query, onlyWithSongs: kind === 'radial' || !allGenres, status: statusFilter, flavours: flavourSel, only: kind === 'graph' ? currentVisible() : (subActive() ? visibleIds(tree, { subfamilies: subSel }) : null),
   });
 
   const flavourRow = el('div', { class: 'gmr-flavour-row', role: 'group', 'aria-label': 'Flavour filter', hidden: true });
@@ -425,7 +430,7 @@ export function renderGenresRework(root, opts = {}) {
       el('button', { class: 'gm-tbtn', type: 'button', disabled: !flavourSel.size, onclick: () => { flavourSel.clear(); applyFilters(); } }, 'Clear flavours'));
   }
 
-  const searchOpts = () => ({ populatedOnly: kind === 'radial' });
+  const searchOpts = () => ({ populatedOnly: kind === 'radial' || !allGenres });
   function matchIds() {
     return tree && query ? [...searchMatches(tree, query, searchOpts()).keys()].filter((id) => (kind === 'radial' ? onMap(id) : graph?.byId.has(id))) : [];
   }
@@ -459,8 +464,7 @@ export function renderGenresRework(root, opts = {}) {
       query = '';
       search.value = '';
       graphFamily = null;
-      libraryOnly = false;
-      libBtn.setAttribute('aria-pressed', 'false');
+      if (!tree.byId.get(id)?.all.size) setAllGenres(true);
       if (statusFilter !== 'all') { statusFilter = 'all'; for (const b of statusRow.querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.dataset.status === 'all')); }
       if (flavourSel.size) flavourSel.clear();
       applyFilters();
@@ -480,6 +484,11 @@ export function renderGenresRework(root, opts = {}) {
     const mine = libraryCount(tree);
     const shownIds = kind === 'graph' ? currentVisible() : null;
     const shown = shownIds ? [...shownIds].filter((id) => tree.byId.get(id)?.level > 1).length : total;
+    const libShown = visibleIds(tree, { libraryOnly: true });
+    if (!allGenres && shownIds && libShown && shownIds.size === libShown.size) {
+      status.textContent = `${mine} ${plural(mine, 'genre', 'genres')} in your library`;
+      return;
+    }
     const scope = shown === total ? '' : ` (${shown} shown)`;
     status.textContent = `${total} ${plural(total, 'genre', 'genres')}${scope}, ${mine} in your library`;
   }
