@@ -9,6 +9,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 - Server: the flat `genres` row of `spacesynth` (from `genre_extras.json`) now lists synthwave first and italo disco second like its `levels` entry; new tests (`test_genre_payload_agrees.py`, `web/js/genre-payload.test.mjs`, fixture `server/tests/fixtures/genre_payload_levels.json`) fail when the served payload and `genre_levels.json` disagree. Not deployed.
 - Web: the Genres map hover tooltip no longer prints the text "null" for the parts a node does not have (regression test added). Not deployed.
 - Web: the Drafts button "Add properly" is now "Add to Library" (label, aria-label, docs). Not deployed.
+- Web: the Songs | Drafts switch in the Library was unstyled (plain browser buttons, the count as tiny text) because `drafts.css` was never linked from `index.html`; it is now linked, the buttons are 44 px tall and the count is a badge; new test `css-linked.test.mjs` fails when a stylesheet is not linked. Not deployed.
 
 ## 2026-10-19 (Version artists label follows the version type, not deployed)
 

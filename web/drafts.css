@@ -1,10 +1,11 @@
 /* Library draft list (LIB-170..LIB-174): the Songs | Drafts switch, the paste box and the draft rows */
-.seg { display: inline-flex; gap: var(--space-1); margin: var(--space-1) 0 var(--space-3); padding: var(--space-1); border-radius: var(--radius-pill); background: var(--surface-sunken); max-width: 100%; }
+.seg { display: inline-flex; gap: 0; margin: var(--space-1) 0 var(--space-3); padding: 0; border-radius: var(--radius-pill); background: var(--surface-sunken); max-width: 100%; }
 .seg-btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); min-height: var(--control); padding: 0 var(--space-4);
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); min-height: var(--hit); padding: 0 var(--space-4);
   border: 0; border-radius: var(--radius-pill); background: transparent; color: var(--ink-muted); font: var(--font-subhead-strong); white-space: nowrap;
 }
-.seg-btn small { color: inherit; font: var(--font-caption); font-variant-numeric: tabular-nums; }
+.seg-btn small { display: inline-flex; align-items: center; justify-content: center; min-width: 1.5em; padding: 0 var(--space-2); border-radius: var(--radius-pill); background: var(--surface); color: var(--ink); font: var(--font-caption); font-weight: 600; line-height: 1.5; font-variant-numeric: tabular-nums; }
+.seg-btn.on small { background: var(--on-fill); color: var(--fill); }
 .seg-btn small:empty { display: none; }
 .seg-btn.on { background: var(--fill); color: var(--on-fill); }
 .seg-btn:not(.on):hover { color: var(--ink); }
