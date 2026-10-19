@@ -1,12 +1,12 @@
 # Library genre cleanup (2026-10-19)
 
-Status: applied at server start by app.migrate_removals, file server/data/library_genre_removals.json (114 songs, 190 genre removals, 15 genre additions, 1 song cleared; not deployed yet).
+Status: applied at server start by app.migrate_removals, file server/data/library_genre_removals.json (115 songs, 192 genre removals, 15 genre additions, 1 song cleared; not deployed yet).
 
 Review of genres that were put on songs by mistake (removal, with a few owner-approved additions). Evidence is English Wikipedia (song page first, artist page second). The owner approved all HIGH-confidence rows (his edits included) plus the descriptor genres acoustic and instrumental (they are version types), and approved the remaining rows one by one in chat. Everything under "Approved removals" is applied as one reviewed list at a server start, with a backup first (file `server/data/library_genre_removals.json`).
 
 Conventions: "(also: X)" in an owner message means X was removed too; a "(maybe also: X)" that the owner did not repeat stays on the song.
 
-Counts: 0 rows still to read, 121 rows approved by the owner.
+Counts: 0 rows still to read, 122 rows approved by the owner.
 
 ## Approved removals (confirmed row by row)
 
@@ -413,6 +413,9 @@ Counts: 0 rows still to read, 121 rows approved by the owner.
 121. **CREMATORY - Ist es wahr** (`waS3top6nzs`) approved 2026-10-20, asked for by the owner
    - remove: **melodic death metal**
    - keeps: gothic metal, industrial metal, death metal, heavy metal
+122. **Mr.Kitty - After Dark** (`sVx1mJDeUjY`) approved 2026-10-20, asked for by the owner
+   - remove: **new wave**, **electronic**
+   - keeps: synthwave, synthpop, witch house, darkwave
 
 ## MEDIUM only (not proposed for removal)
 

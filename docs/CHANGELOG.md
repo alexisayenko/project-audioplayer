@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-20 (Owner genre fixes: After Dark)
+
+- Data: the owner-approved genre list removes new wave and electronic from Mr.Kitty - After Dark (synthwave, synthpop, witch house and darkwave kept), now 115 songs, 192 genres removed and 15 added in all (TAG-109). Deployed.
+
 ## 2026-10-20 (Owner genre fixes: 5 more wrong genres)
 
 - Data: the owner-approved genre list removes 5 more wrong genres from 5 songs, now 114 songs, 190 genres removed and 15 added in all (TAG-109): arena rock (KISS - I Was Made For Lovin' You), deep trance (Lasgo - Something), hardcore hip hop (Eminem - Stan, horrorcore kept), jungle (Concord Dawn - Morning Light, whose row is extended) and melodic death metal (CREMATORY - Ist es wahr, the other four genres kept). Deployed.

@@ -6887,6 +6887,60 @@
 "heavy metal"
 ],
 "audio_state": "none"
+},
+{
+"id": "sVx1mJDeUjY",
+"title": "After Dark",
+"mainArtists": [
+"Mr.Kitty"
+],
+"featuredArtists": [],
+"releaseYear": 2014,
+"albums": [
+"Time"
+],
+"bpm": 143,
+"wikipedia_song": "https://en.wikipedia.org/wiki/After_Dark_(Mr.Kitty_song)",
+"wikipedia_artist": "https://en.wikipedia.org/wiki/Mr.Kitty",
+"musicbrainz_url": "https://musicbrainz.org/recording/02e05ef7-3f0b-467d-a042-5ef23f255348",
+"discogs_url": null,
+"spotify_url": null,
+"source_url": "https://www.youtube.com/watch?v=sVx1mJDeUjY",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=sVx1mJDeUjY",
+"source": "youtube",
+"id": "sVx1mJDeUjY"
+}
+],
+"cover": "covers/sVx1mJDeUjY.jpg",
+"duration": 257,
+"added_at": "2026-10-17T23:24:00Z",
+"tags": [
+"genre:synthwave",
+"genre:synthpop",
+"genre:new wave",
+"genre:witch house",
+"genre:darkwave",
+"genre:electronic",
+"decade:10s",
+"country:us"
+],
+"artist": "Mr.Kitty",
+"remixer": null,
+"year": 2014,
+"remix_year": null,
+"album": "Time",
+"genres": [
+"synthwave",
+"synthpop",
+"new wave",
+"witch house",
+"darkwave",
+"electronic"
+],
+"audio_state": "server"
 }
 ]
 }
