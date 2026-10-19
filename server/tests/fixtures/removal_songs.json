@@ -5760,6 +5760,61 @@
 "size": 2020424,
 "duration": 125
 }
+},
+{
+"id": "6OW1JJwqVRQ",
+"title": "Save Your Kisses For Me",
+"mainArtists": [
+"Brotherhood Of Man"
+],
+"featuredArtists": [],
+"releaseYear": 1976,
+"albums": [
+"Love and Kisses"
+],
+"bpm": 94,
+"source_url": "https://www.youtube.com/watch?v=6OW1JJwqVRQ",
+"cover": "covers/6OW1JJwqVRQ.jpg",
+"duration": 182,
+"added_at": "2026-10-12T14:57:44Z",
+"wikipedia_song": null,
+"wikipedia_artist": null,
+"musicbrainz_url": "https://musicbrainz.org/recording/eae20429-679c-4da3-b557-5bc172d5d443",
+"discogs_url": null,
+"updated_at": "2026-10-15T21:31:14Z",
+"tags": [
+"genre:pop",
+"genre:middle of the road",
+"genre:schlager",
+"genre:disco",
+"decade:70s",
+"country:gb"
+],
+"artist": "Brotherhood Of Man",
+"remixer": null,
+"year": 1976,
+"remix_year": null,
+"album": "Love and Kisses",
+"genres": [
+"pop",
+"middle of the road",
+"schlager",
+"disco"
+],
+"audio_state": "server",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=6OW1JJwqVRQ",
+"source": "youtube",
+"id": "6OW1JJwqVRQ"
+}
+],
+"audio": {
+"format": "m4a",
+"size": 2937823,
+"duration": 182
+}
 }
 ]
 }

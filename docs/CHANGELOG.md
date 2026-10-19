@@ -4,6 +4,8 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## 2026-10-19 (Owner genre fixes: removals and darkwave retag)
 
+- Data: the owner-approved genre list gains one row and changes one, now 96 songs, 163 genres removed and 12 added in all (TAG-109): Brotherhood Of Man - Save Your Kisses For Me loses middle of the road, schlager and disco and keeps pop; the Baby K feat. Giusy Ferreri - Roma-Bangkok row now ends with synthpop and moombahton only (Wikipedia: electropop, moombahton), so its earlier removal of those two is dropped. Deployed.
+
 - Data: the owner-approved genre list (`server/data/library_genre_removals.json`) gains five rows, now 95 songs, 159 genres removed and 10 added in all (TAG-109): Roma-Bangkok loses synthpop, house, hip hop and moombahton; Lana Del Rey - Young and Beautiful loses trip hop and indie rock; Militant (Future Fate), Cruise (Crockett) and Dark Time (Weightlessness) are retagged from darkwave to darksynth with the existing `remove` plus `add` row (the added genre goes after the song's last genre; no code change). Deployed.
 
 ## 2026-10-19 (genre map shows the library, built, not deployed)

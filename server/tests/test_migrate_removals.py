@@ -213,8 +213,9 @@ def test_the_real_file_owner_requested_rows():
     songs = library.normalize({"songs": copy.deepcopy(live)})["songs"]
     mr.apply_plan(songs, plan, adds, mr.load_clears(mr.DATA_FILE))
     after = {s["id"]: [t.partition(":")[2] for t in s["tags"] if t.startswith("genre:")] for s in songs}
-    assert after["tUOpXeagVcg"] == ["dancehall", "pop", "reggaeton"]
+    assert after["tUOpXeagVcg"] == ["synthpop", "moombahton"]
     assert after["o_1aF54DO60"] == ["indie pop", "pop", "dream pop", "baroque pop", "sadcore", "slowcore"]
     assert after["zCz3jDPoAtc"] == ["synthwave", "techno", "electronic", "darksynth"]
     assert after["SDfXbCwmBYg"] == ["synthwave", "spacesynth", "darksynth"]
     assert after["3L21HnrZzxc"] == ["synthwave", "dream pop", "electronic", "darksynth"]
+    assert after["6OW1JJwqVRQ"] == ["pop"]

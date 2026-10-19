@@ -622,12 +622,17 @@
   },
   "tUOpXeagVcg": {
    "remove": [
-    "synthpop",
     "house",
     "hip hop",
-    "moombahton"
+    "dancehall",
+    "pop",
+    "reggaeton"
    ],
-   "title": "Baby K feat. Giusy Ferreri - Roma-Bangkok"
+   "title": "Baby K feat. Giusy Ferreri - Roma-Bangkok",
+   "add": [
+    "synthpop",
+    "moombahton"
+   ]
   },
   "o_1aF54DO60": {
    "remove": [
@@ -662,6 +667,14 @@
    "add": [
     "darksynth"
    ]
+  },
+  "6OW1JJwqVRQ": {
+   "remove": [
+    "middle of the road",
+    "schlager",
+    "disco"
+   ],
+   "title": "Brotherhood Of Man - Save Your Kisses For Me"
   }
  }
 }

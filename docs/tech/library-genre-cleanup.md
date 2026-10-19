@@ -1,12 +1,12 @@
 # Library genre cleanup (2026-10-19)
 
-Status: applied at server start by app.migrate_removals, file server/data/library_genre_removals.json (95 songs, 159 genre removals, 10 genre additions, 1 song cleared; not deployed yet).
+Status: applied at server start by app.migrate_removals, file server/data/library_genre_removals.json (96 songs, 163 genre removals, 12 genre additions, 1 song cleared; not deployed yet).
 
 Review of genres that were put on songs by mistake (removal, with a few owner-approved additions). Evidence is English Wikipedia (song page first, artist page second). The owner approved all HIGH-confidence rows (his edits included) plus the descriptor genres acoustic and instrumental (they are version types), and approved the remaining rows one by one in chat. Everything under "Approved removals" is applied as one reviewed list at a server start, with a backup first (file `server/data/library_genre_removals.json`).
 
 Conventions: "(also: X)" in an owner message means X was removed too; a "(maybe also: X)" that the owner did not repeat stays on the song.
 
-Counts: 0 rows still to read, 95 rows approved by the owner.
+Counts: 0 rows still to read, 96 rows approved by the owner.
 
 ## Approved removals (confirmed row by row)
 
@@ -341,8 +341,8 @@ Counts: 0 rows still to read, 95 rows approved by the owner.
    - why: Temnikova page: pop, dance-pop, Europop, house; no hip hop family
    - source: https://en.wikipedia.org/wiki/Yelena_Temnikova
 91. **Baby K feat. Giusy Ferreri - Roma-Bangkok** (`tUOpXeagVcg`) approved 2026-10-19, asked for by the owner
-   - remove: **synthpop**, **house**, **hip hop**, **moombahton**
-   - keeps: dancehall, pop, reggaeton
+   - remove: **house**, **hip hop**, **dancehall**, **pop**, **reggaeton**; add: **synthpop**, **moombahton**
+   - result: synthpop, moombahton (Wikipedia: electropop, moombahton); the earlier row removed synthpop and moombahton, which is reversed here because the whole file is re-applied when its hash changes
 92. **Lana Del Rey - Young and Beautiful** (`o_1aF54DO60`) approved 2026-10-19, asked for by the owner
    - remove: **trip hop**, **indie rock**
    - keeps: indie pop, pop, dream pop, baroque pop, sadcore, slowcore
@@ -352,6 +352,9 @@ Counts: 0 rows still to read, 95 rows approved by the owner.
    - remove: **darkwave**; add: **darksynth**
 95. **Weightlessness - Dark Time** (`3L21HnrZzxc`) retag asked for by the owner
    - remove: **darkwave**; add: **darksynth**
+96. **Brotherhood Of Man - Save Your Kisses For Me** (`6OW1JJwqVRQ`) approved 2026-10-19, asked for by the owner
+   - remove: **middle of the road**, **schlager**, **disco**
+   - keeps: pop
 
 ## MEDIUM only (not proposed for removal)
 
