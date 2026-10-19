@@ -204,3 +204,17 @@ def test_the_real_file_against_the_live_shape():
         assert set(adds.get(new["id"], [])) <= set(genres)
         assert {k: v for k, v in new.items() if k != "tags"} == {k: v for k, v in old.items() if k != "tags"}
         assert [t for t in new["tags"] if not t.startswith("genre:")] == [t for t in old["tags"] if not t.startswith("genre:")]
+
+
+def test_the_real_file_owner_requested_rows():
+    plan, _ = mr.load_plan(mr.DATA_FILE)
+    adds = mr.load_adds(mr.DATA_FILE)
+    live = json.loads(FIXTURE.read_text(encoding="utf-8"))["songs"]
+    songs = library.normalize({"songs": copy.deepcopy(live)})["songs"]
+    mr.apply_plan(songs, plan, adds, mr.load_clears(mr.DATA_FILE))
+    after = {s["id"]: [t.partition(":")[2] for t in s["tags"] if t.startswith("genre:")] for s in songs}
+    assert after["tUOpXeagVcg"] == ["dancehall", "pop", "reggaeton"]
+    assert after["o_1aF54DO60"] == ["indie pop", "pop", "dream pop", "baroque pop", "sadcore", "slowcore"]
+    assert after["zCz3jDPoAtc"] == ["synthwave", "techno", "electronic", "darksynth"]
+    assert after["SDfXbCwmBYg"] == ["synthwave", "spacesynth", "darksynth"]
+    assert after["3L21HnrZzxc"] == ["synthwave", "dream pop", "electronic", "darksynth"]

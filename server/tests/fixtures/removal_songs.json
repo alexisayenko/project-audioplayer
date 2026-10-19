@@ -5483,6 +5483,283 @@
 "size": 4345653,
 "duration": 269
 }
+},
+{
+"id": "tUOpXeagVcg",
+"title": "Roma-Bangkok",
+"mainArtists": [
+"Baby K"
+],
+"featuredArtists": [
+"Giusy Ferreri"
+],
+"releaseYear": 2015,
+"albums": [
+"Kiss Kiss Bang Bang"
+],
+"bpm": 101,
+"wikipedia_song": "https://en.wikipedia.org/wiki/Roma-Bangkok",
+"wikipedia_artist": "https://en.wikipedia.org/wiki/Baby_K_(artist)",
+"musicbrainz_url": "https://musicbrainz.org/recording/9989ced4-4184-4eb6-a791-c4cd6b010851",
+"source_url": "https://www.youtube.com/watch?v=tUOpXeagVcg",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=tUOpXeagVcg",
+"source": "youtube",
+"id": "tUOpXeagVcg"
+}
+],
+"cover": "covers/tUOpXeagVcg.jpg",
+"duration": 175,
+"added_at": "2026-10-16T23:38:04Z",
+"updated_at": "2026-10-16T23:59:31Z",
+"tags": [
+"genre:synthpop",
+"genre:moombahton",
+"genre:dancehall",
+"genre:hip hop",
+"genre:house",
+"genre:pop",
+"genre:reggaeton",
+"decade:10s",
+"country:it"
+],
+"artist": "Baby K feat. Giusy Ferreri",
+"remixer": null,
+"year": 2015,
+"remix_year": null,
+"album": "Kiss Kiss Bang Bang",
+"genres": [
+"synthpop",
+"moombahton",
+"dancehall",
+"hip hop",
+"house",
+"pop",
+"reggaeton"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 2826294,
+"duration": 175
+}
+},
+{
+"id": "o_1aF54DO60",
+"title": "Lana Del Rey - Young and Beautiful",
+"mainArtists": [
+"Lana Del Rey"
+],
+"featuredArtists": [],
+"releaseYear": 2013,
+"albums": [],
+"bpm": 126,
+"wikipedia_song": null,
+"wikipedia_artist": null,
+"musicbrainz_url": "https://musicbrainz.org/recording/a01eb9d7-32b9-4447-8561-101116ab9641",
+"source_url": "https://www.youtube.com/watch?v=o_1aF54DO60",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=o_1aF54DO60",
+"source": "youtube",
+"id": "o_1aF54DO60"
+}
+],
+"cover": "covers/o_1aF54DO60.jpg",
+"duration": 239,
+"added_at": "2026-10-12T14:55:45Z",
+"updated_at": "2026-10-15T23:44:23Z",
+"tags": [
+"genre:indie pop",
+"genre:pop",
+"genre:dream pop",
+"genre:baroque pop",
+"genre:trip hop",
+"genre:sadcore",
+"genre:indie rock",
+"genre:slowcore",
+"decade:10s",
+"country:us"
+],
+"artist": "Lana Del Rey",
+"remixer": null,
+"year": 2013,
+"remix_year": null,
+"album": null,
+"genres": [
+"indie pop",
+"pop",
+"dream pop",
+"baroque pop",
+"trip hop",
+"sadcore",
+"indie rock",
+"slowcore"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 3859363,
+"duration": 239
+}
+},
+{
+"id": "zCz3jDPoAtc",
+"title": "Militant",
+"mainArtists": [
+"Future Fate"
+],
+"featuredArtists": [],
+"releaseYear": 2023,
+"albums": [],
+"bpm": 103,
+"wikipedia_song": null,
+"wikipedia_artist": null,
+"musicbrainz_url": null,
+"source_url": "https://www.youtube.com/watch?v=zCz3jDPoAtc",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=zCz3jDPoAtc",
+"source": "youtube",
+"id": "zCz3jDPoAtc"
+}
+],
+"cover": "covers/zCz3jDPoAtc.jpg",
+"duration": 252,
+"added_at": "2026-10-18T21:04:38Z",
+"updated_at": "2026-10-18T21:39:15Z",
+"tags": [
+"genre:synthwave",
+"genre:techno",
+"genre:darkwave",
+"genre:electronic",
+"decade:20s",
+"country:au"
+],
+"artist": "Future Fate",
+"remixer": null,
+"year": 2023,
+"remix_year": null,
+"album": null,
+"genres": [
+"synthwave",
+"techno",
+"darkwave",
+"electronic"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 4077341,
+"duration": 252
+}
+},
+{
+"id": "SDfXbCwmBYg",
+"title": "Cruise",
+"mainArtists": [
+"Crockett"
+],
+"featuredArtists": [],
+"releaseYear": 2015,
+"albums": [
+"The Heist"
+],
+"bpm": 91,
+"wikipedia_song": null,
+"wikipedia_artist": null,
+"musicbrainz_url": "https://musicbrainz.org/recording/200e05f5-fb45-4cf0-9adf-68a8558408d4",
+"source_url": "https://www.youtube.com/watch?v=SDfXbCwmBYg",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=SDfXbCwmBYg",
+"source": "youtube",
+"id": "SDfXbCwmBYg"
+}
+],
+"cover": "covers/SDfXbCwmBYg.jpg",
+"duration": 300,
+"added_at": "2026-10-18T20:26:08Z",
+"updated_at": "2026-10-18T21:35:30Z",
+"tags": [
+"genre:synthwave",
+"genre:darkwave",
+"genre:spacesynth",
+"decade:10s",
+"country:us"
+],
+"artist": "Crockett",
+"remixer": null,
+"year": 2015,
+"remix_year": null,
+"album": "The Heist",
+"genres": [
+"synthwave",
+"darkwave",
+"spacesynth"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 4854493,
+"duration": 300
+}
+},
+{
+"id": "3L21HnrZzxc",
+"title": "Dark Time",
+"mainArtists": [
+"Weightlessness"
+],
+"featuredArtists": [],
+"releaseYear": 2025,
+"albums": [],
+"bpm": 112,
+"wikipedia_song": null,
+"wikipedia_artist": null,
+"musicbrainz_url": "https://musicbrainz.org/recording/d1099dd1-2130-4662-a793-9c63118767df",
+"source_url": "https://www.youtube.com/watch?v=3L21HnrZzxc",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=3L21HnrZzxc",
+"source": "youtube",
+"id": "3L21HnrZzxc"
+}
+],
+"cover": "covers/3L21HnrZzxc.jpg",
+"duration": 125,
+"added_at": "2026-10-18T19:46:36Z",
+"updated_at": "2026-10-18T19:46:50Z",
+"tags": [
+"genre:synthwave",
+"genre:darkwave",
+"genre:dream pop",
+"genre:electronic",
+"decade:20s"
+],
+"artist": "Weightlessness",
+"remixer": null,
+"year": 2025,
+"remix_year": null,
+"album": null,
+"genres": [
+"synthwave",
+"darkwave",
+"dream pop",
+"electronic"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 2020424,
+"duration": 125
+}
 }
 ]
 }

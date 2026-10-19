@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-19 (Owner genre fixes: removals and darkwave retag)
+
+- Data: the owner-approved genre list (`server/data/library_genre_removals.json`) gains five rows, now 95 songs, 159 genres removed and 10 added in all (TAG-109): Roma-Bangkok loses synthpop, house, hip hop and moombahton; Lana Del Rey - Young and Beautiful loses trip hop and indie rock; Militant (Future Fate), Cruise (Crockett) and Dark Time (Weightlessness) are retagged from darkwave to darksynth with the existing `remove` plus `add` row (the added genre goes after the song's last genre; no code change). Deployed.
+
 ## 2026-10-19 (genre map shows the library, built, not deployed)
 
 - Web: the Genres map opens on every visit with the genres that have songs in the library and their ancestors, not the whole vocabulary: the Graph's "Library only" toggle is replaced by an opt-in "All genres" button that is off at each open and not stored, the family chips list only families with library songs, the search and the Outline follow the same scope, and the stored Electronic subfamily choice is cleared on read instead of hiding library genres (WEB-108, WEB-114, GEN-060).

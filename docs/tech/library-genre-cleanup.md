@@ -1,12 +1,12 @@
 # Library genre cleanup (2026-10-19)
 
-Status: applied at server start by app.migrate_removals, file server/data/library_genre_removals.json (90 songs, 150 genre removals, 7 genre additions, 1 song cleared; not deployed yet).
+Status: applied at server start by app.migrate_removals, file server/data/library_genre_removals.json (95 songs, 159 genre removals, 10 genre additions, 1 song cleared; not deployed yet).
 
 Review of genres that were put on songs by mistake (removal, with a few owner-approved additions). Evidence is English Wikipedia (song page first, artist page second). The owner approved all HIGH-confidence rows (his edits included) plus the descriptor genres acoustic and instrumental (they are version types), and approved the remaining rows one by one in chat. Everything under "Approved removals" is applied as one reviewed list at a server start, with a backup first (file `server/data/library_genre_removals.json`).
 
 Conventions: "(also: X)" in an owner message means X was removed too; a "(maybe also: X)" that the owner did not repeat stays on the song.
 
-Counts: 0 rows still to read, 90 rows approved by the owner.
+Counts: 0 rows still to read, 95 rows approved by the owner.
 
 ## Approved removals (confirmed row by row)
 
@@ -340,6 +340,18 @@ Counts: 0 rows still to read, 90 rows approved by the owner.
    - remove: **cloud rap**
    - why: Temnikova page: pop, dance-pop, Europop, house; no hip hop family
    - source: https://en.wikipedia.org/wiki/Yelena_Temnikova
+91. **Baby K feat. Giusy Ferreri - Roma-Bangkok** (`tUOpXeagVcg`) approved 2026-10-19, asked for by the owner
+   - remove: **synthpop**, **house**, **hip hop**, **moombahton**
+   - keeps: dancehall, pop, reggaeton
+92. **Lana Del Rey - Young and Beautiful** (`o_1aF54DO60`) approved 2026-10-19, asked for by the owner
+   - remove: **trip hop**, **indie rock**
+   - keeps: indie pop, pop, dream pop, baroque pop, sadcore, slowcore
+93. **Future Fate - Militant** (`zCz3jDPoAtc`) retag asked for by the owner
+   - remove: **darkwave**; add: **darksynth**
+94. **Crockett - Cruise** (`SDfXbCwmBYg`) retag asked for by the owner
+   - remove: **darkwave**; add: **darksynth**
+95. **Weightlessness - Dark Time** (`3L21HnrZzxc`) retag asked for by the owner
+   - remove: **darkwave**; add: **darksynth**
 
 ## MEDIUM only (not proposed for removal)
 

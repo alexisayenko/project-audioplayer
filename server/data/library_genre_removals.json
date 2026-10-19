@@ -619,6 +619,49 @@
     "eurobeat"
    ],
    "title": "Мираж - Музыка нас связала"
+  },
+  "tUOpXeagVcg": {
+   "remove": [
+    "synthpop",
+    "house",
+    "hip hop",
+    "moombahton"
+   ],
+   "title": "Baby K feat. Giusy Ferreri - Roma-Bangkok"
+  },
+  "o_1aF54DO60": {
+   "remove": [
+    "trip hop",
+    "indie rock"
+   ],
+   "title": "Lana Del Rey - Young and Beautiful"
+  },
+  "zCz3jDPoAtc": {
+   "remove": [
+    "darkwave"
+   ],
+   "title": "Future Fate - Militant",
+   "add": [
+    "darksynth"
+   ]
+  },
+  "SDfXbCwmBYg": {
+   "remove": [
+    "darkwave"
+   ],
+   "title": "Crockett - Cruise",
+   "add": [
+    "darksynth"
+   ]
+  },
+  "3L21HnrZzxc": {
+   "remove": [
+    "darkwave"
+   ],
+   "title": "Weightlessness - Dark Time",
+   "add": [
+    "darksynth"
+   ]
   }
  }
 }
