@@ -12,7 +12,7 @@ export function treeFacts(vocab) {
   const out = { nodes: {}, trees: {}, familyCounts: {} };
   for (const n of t0.byId.values()) {
     out.nodes[n.id] = {
-      level: n.level, family: n.family, parent: n.parent, children: n.children.map((c) => c.id), alsoIn: n.alsoIn, alsoUnder: n.alsoUnder,
+      level: n.level, family: n.family, fams: n.fams, parent: n.parent, parents: n.parents, children: n.children.map((c) => c.id),
       ancestors: sortSet(ancestorIds(t0, n.id)), lines: genreLines(t0, [n.name]),
     };
   }
@@ -27,7 +27,7 @@ export function treeFacts(vocab) {
       const l = layoutRadial(t, r.name);
       layouts[r.name] = l && {
         nodes: l.nodes.map((n) => [n.id, n.level, n.connector ?? null, n.hue, Math.round(n.x * 1000), Math.round(n.y * 1000), Math.round(n.r * 1000)]),
-        edges: l.edges.map((e) => [e.from, e.to]), links: l.links.map((e) => [e.from, e.to]),
+        edges: l.edges.map((e) => [e.from, e.to, e.cross ? 1 : 0]),
       };
     }
     out.trees[label] = {
@@ -40,8 +40,9 @@ export function treeFacts(vocab) {
   out.lines = genreLines(t0, ['house', 'disco', 'italo disco', 'acid', 'spacesynth', 'jungle', 'nonexistent thing', 'rock']);
   for (const r of t0.roots) {
     out.familyCounts[r.name] = {
-      level2: r.children.filter((c) => c.level === 2).length,
-      level3: [...t0.byId.values()].filter((n) => n.level === 3 && (n.family) === r.name).length,
+      level2: [...t0.byId.values()].filter((n) => n.level === 2 && n.fams.includes(r.name)).length,
+      level3: [...t0.byId.values()].filter((n) => n.level === 3 && n.fams.includes(r.name)).length,
+      level4: [...t0.byId.values()].filter((n) => n.level === 4 && n.fams.includes(r.name)).length,
     };
   }
   return out;

@@ -199,7 +199,7 @@ export function createRadialView(canvas, { onSelect, onHover, reducedMotion = fa
       return n.level === 1 ? 3 : 4 + n.level;
     };
     const list = layout.nodes
-      .filter((n) => isForced(n) || n.level <= 2 || (n.level === 3 && (zoomed || lit3(n))))
+      .filter((n) => isForced(n) || n.level <= 2 || (n.level >= 3 && (zoomed || lit3(n))))
       .sort((p, q) => (prio(p) - prio(q)) || (q.node.all.size - p.node.all.size) || p.name.localeCompare(q.name));
     const items = list.map((n) => ({
       id: n.id, x: n.x * k + tf.x, y: n.y * k + tf.y + (n.r + (n.discogs ? 2 : 5)) * k + 1,
@@ -230,7 +230,7 @@ export function createRadialView(canvas, { onSelect, onHover, reducedMotion = fa
     ctx.globalAlpha = 1;
   }
 
-  const lit3 = (n) => n.level === 3 && !!sel && (hl.kids.has(n.id) || hl.chain.has(n.id));
+  const lit3 = (n) => n.level >= 3 && !!sel && (hl.kids.has(n.id) || hl.chain.has(n.id));
 
   function frame() {
     raf = 0;

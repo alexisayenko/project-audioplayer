@@ -6,31 +6,32 @@ await installPage();
 globalThis.location = { hash: '', href: 'http://localhost/', host: 'localhost' };
 const { VOCAB, SONGS } = await import('./genre-levels-fixture.mjs');
 const { buildTree, applyCounts } = await import('./genre-levels.js');
+const BASE = { ...VOCAB, levels: { ...VOCAB.levels, jungle: { ...VOCAB.levels.jungle, parents: ['drum and bass'] } } };
 const TIP_VOCAB = {
-  ...VOCAB,
-  levels: { ...VOCAB.levels, 'full tip': { parents: ['Electronic', 'Rock'], discogs: false, synonyms: [], provisional: false } },
+  ...BASE,
+  levels: { ...BASE.levels, 'full tip': { parents: ['Electronic', 'Rock'], discogs: false, synonyms: [], provisional: false } },
 };
 const { FUSION_VOCAB, FUSION_SONGS } = await import('./genre-fusion-fixture.mjs');
-const REL_VOCAB = { ...VOCAB, levels: { ...VOCAB.levels, 'dark house': { parents: ['house'], discogs: true, related: ['afro house', 'Rock'] } } };
-const SRC_VOCAB = { ...VOCAB, levels: { ...VOCAB.levels, 'soviet wave': { parents: ['house'], discogs: true, source_links: [{ source: 'Discogs', url: 'https://www.discogs.com/search?q=soviet', kind: 'page' }, { source: 'wikipedia', url: 'https://en.wikipedia.org/wiki/Sovietwave', kind: 'page' }, { source: 'spotify', url: 'https://open.spotify.com/search/soviet', kind: 'search' }, { source: 'apple music', url: 'javascript:alert(1)', kind: 'page' }] } } };
+const REL_VOCAB = { ...BASE, levels: { ...BASE.levels, 'dark house': { parents: ['house'], discogs: true, related: ['afro house', 'Rock'] } } };
+const SRC_VOCAB = { ...BASE, levels: { ...BASE.levels, 'soviet wave': { parents: ['house'], discogs: true, source_links: [{ source: 'Discogs', url: 'https://www.discogs.com/search?q=soviet', kind: 'page' }, { source: 'wikipedia', url: 'https://en.wikipedia.org/wiki/Sovietwave', kind: 'page' }, { source: 'spotify', url: 'https://open.spotify.com/search/soviet', kind: 'search' }, { source: 'apple music', url: 'javascript:alert(1)', kind: 'page' }] } } };
 const SUB_VOCAB = {
-  ...VOCAB,
+  ...BASE,
   subfamilies: [{ name: 'House and techno', family: 'Electronic', order: 1 }, { name: 'Breaks and bass', family: 'Electronic', order: 2 }],
   levels: {
-    ...VOCAB.levels,
-    house: { ...VOCAB.levels.house, subfamily: 'House and techno' },
-    'deep house': { ...VOCAB.levels['deep house'], subfamily: 'House and techno' },
-    'afro house': { ...VOCAB.levels['afro house'], subfamily: 'House and techno' },
-    'drum and bass': { ...VOCAB.levels['drum and bass'], subfamily: 'Breaks and bass' },
-    breakbeat: { ...VOCAB.levels.breakbeat, subfamily: 'Breaks and bass' },
-    jungle: { ...VOCAB.levels.jungle, subfamily: 'Breaks and bass' },
+    ...BASE.levels,
+    house: { ...BASE.levels.house, subfamily: 'House and techno' },
+    'deep house': { ...BASE.levels['deep house'], subfamily: 'House and techno' },
+    'afro house': { ...BASE.levels['afro house'], subfamily: 'House and techno' },
+    'drum and bass': { ...BASE.levels['drum and bass'], subfamily: 'Breaks and bass' },
+    breakbeat: { ...BASE.levels.breakbeat, subfamily: 'Breaks and bass' },
+    jungle: { ...BASE.levels.jungle, subfamily: 'Breaks and bass' },
   },
 };
 let mode = 'ok';
 const calls = stubFetch((u) => {
   if (u.includes('vocabulary')) {
     if (mode === 'vocab-fail') return { status: 500, body: { error: 'x' } };
-    return { body: mode === 'tips' ? TIP_VOCAB : mode === 'fusion' ? FUSION_VOCAB : mode === 'related' ? REL_VOCAB : mode === 'sources' ? SRC_VOCAB : mode === 'subs' ? SUB_VOCAB : VOCAB };
+    return { body: mode === 'tips' ? TIP_VOCAB : mode === 'fusion' ? FUSION_VOCAB : mode === 'related' ? REL_VOCAB : mode === 'sources' ? SRC_VOCAB : mode === 'subs' ? SUB_VOCAB : mode === 'twoparents' ? VOCAB : BASE };
   }
   if (u.endsWith('/me')) return { body: { email: 'a@b.c', owner: mode === 'owner' || mode === 'layoutfile' } };
   if (u.includes('genre-layout.json')) return mode === 'layoutfile' ? { body: { version: 1, genres: { house: [1, 2] }, families: { Electronic: [0, 0] } } } : { status: 404, body: {} };
@@ -83,9 +84,11 @@ test('Graph is the default view, with the Graph | Radial switch and the library 
   assert.equal(sw.getAttribute('aria-label'), 'Map view');
   assert.deepEqual(sw.querySelectorAll('button').map((b) => [b.textContent, b.getAttribute('aria-pressed')]), [['Graph', 'true'], ['Radial', 'false']]);
   const g = spy.last('setGraph')[1];
-  assert.equal(g.nodes.length, 9);
+  assert.equal(g.nodes.length, 8, 'the whole vocabulary except the hidden Electronic circle');
   assert.ok(g.nodes.some((n) => n.id === 's:breakbeat' && n.em === 0), 'the graph data has the whole vocabulary');
-  assert.ok(g.links.some((l) => l.kind === 'related' && l.source === 's:breakbeat' && l.target === 's:jungle'));
+  assert.equal(g.byId.has('g:Electronic'), false);
+  assert.ok(g.links.some((l) => l.kind === 'parent' && l.source === 's:drum and bass' && l.target === 's:jungle'));
+  assert.ok(!g.links.some((l) => l.source === 'g:Electronic' || l.target === 'g:Electronic'));
   assert.deepEqual([...spy.last('setVisible')[1]].sort(), ['g:Electronic', 'g:Rock', 's:afro house', 's:deep house', 's:drum and bass', 's:house', 's:jungle', 's:rock and roll']);
   assert.equal(status(root), '5 genres in your library');
   assert.equal(btn(root, 'All genres').getAttribute('aria-pressed'), 'false');
@@ -159,7 +162,7 @@ test('a stored all-genres, family or subfamily choice never hides the library ma
     cleanup();
     const radial = await mount({ view: 'radial' });
     assert.equal(chipsOf(radial.root)[0].getAttribute('aria-pressed'), 'true');
-    assert.equal(status(radial.root), '5 genres in Electronic');
+    assert.equal(status(radial.root), '4 genres in Electronic');
     assert.ok(names(radial.root).includes('house'));
     radial.cleanup();
   } finally { globalThis.localStorage = saved; mode = 'ok'; }
@@ -190,7 +193,7 @@ test('the Radial button swaps the canvases, keeps the radial map as it was and r
   assert.deepEqual(chipsOf(root).map((c) => [c.textContent, c.getAttribute('aria-pressed')]), [['Electronic', 'true'], ['Rock', 'false']], 'Radial has one family at a time and no All chip');
   assert.equal(store.get('electrophone.genresView'), 'radial');
   assert.equal(btn(root, 'All genres').hidden, true);
-  assert.equal(status(root), '5 genres in Electronic');
+  assert.equal(status(root), '4 genres in Electronic');
   assert.deepEqual(names(root), ['Electronic', 'drum and bass', 'house', 'Rock']);
   btn(root, 'Graph').click();
   assert.deepEqual(shown(root), { graph: true, radial: false });
@@ -216,7 +219,7 @@ test('a genre the map filters hide is revealed by search: filters clear and it i
   assert.equal(spy.last('setVisible')[1].has('s:jungle'), true);
   assert.equal(chip(root, 'All').getAttribute('aria-pressed'), 'true');
   assert.deepEqual(spy.last('select').slice(1), ['s:jungle']);
-  assert.equal(root.querySelector('.gmr-details').hidden, false);
+  assert.equal(root.querySelector('.gmr-details'), null, 'no infobox');
   cleanup();
 });
 
@@ -242,7 +245,7 @@ test('a failed vocabulary clears the graph and leaves the failure text', async (
   mode = 'ok';
 });
 
-test('the hover tooltip on the graph names only the other families of a cross-linked genre', async () => {
+test('hovering a node on the graph shows no tooltip and never opens the panel or selects', async () => {
   mode = 'tips';
   let opts = null;
   const spy = spyViews();
@@ -250,12 +253,9 @@ test('the hover tooltip on the graph names only the other families of a cross-li
   document.body.append(root);
   const cleanup = renderGenresRework(root, { forceViewFactory: (c, o) => { opts = o; return spy.factory(); } });
   await flush();
-  const tree = buildTree(TIP_VOCAB);
-  applyCounts(tree, [{ id: 't', tags: ['genre:full tip'] }]);
-  opts.onHover({ node: tree.byId.get('s:full tip') }, { x: 5, y: 5 });
-  const tip = root.querySelector('[role="tooltip"]').textContent;
-  assert.ok(tip.includes('also in Rock') && !tip.includes('also in Electronic') && !tip.includes('null'), tip);
-  assert.equal(root.querySelector('.gmr-details').hidden, true, 'hover never opens the panel');
+  assert.equal(opts.onHover, undefined);
+  assert.equal(root.querySelector('[role="tooltip"]'), null);
+  assert.equal(root.querySelector('.gmr-details'), null, 'there is no infobox');
   assert.equal(rowsOf(root).filter((r) => r.getAttribute('aria-selected') === 'true').length, 0, 'hover never selects');
   assert.deepEqual(spy.calls.filter((c) => c[0] === 'select' && c[1]), []);
   cleanup();
@@ -326,28 +326,20 @@ test('the header: status is plain text above one non-wrapping button row, the fa
   cleanup();
 });
 
-test('selection syncs between map, outline and the separate infobox; hover never opens it', async () => {
+test('selection syncs between map and outline; there is no infobox', async () => {
   mode = 'ok';
   const { root, cleanup, spy } = await mount();
-  const info = root.querySelector('#gmr-info');
-  assert.equal(info.hidden, true);
-  assert.equal(root.querySelector('#gmr-outline').contains(info), false);
+  assert.equal(root.querySelector('#gmr-info'), null);
   const input = root.querySelector('input');
   input.value = 'house';
   fire(input, 'input');
   fire(input, 'keydown', { key: 'Enter' });
-  assert.equal(info.hidden, false);
   assert.deepEqual(spy.last('select').slice(1), ['s:house']);
-  assert.ok(info.textContent.includes('Parents'));
-  assert.ok(!info.textContent.includes('Children') && !info.textContent.includes('Level') && !info.textContent.includes('Families') && !info.textContent.includes('Parent chain'), 'no Children, Level, Families or Parent chain row');
-  assert.ok(!/also under|primary|secondary|extra/i.test(info.textContent));
-  info.querySelectorAll('button').find((b) => b.getAttribute('aria-label') === 'Close details').click();
-  assert.equal(info.hidden, true);
-  assert.deepEqual(spy.last('select').slice(1), [null]);
+  assert.equal(root.querySelector('#gmr-info'), null);
   cleanup();
 });
 
-test('the Related switch is off by default, persists, reaches the graph, and the infobox lists clickable related genres', async () => {
+test('the Related switch is off by default, persists and reaches the graph', async () => {
   mode = 'related';
   const store = new Map();
   const saved = globalThis.localStorage;
@@ -364,47 +356,8 @@ test('the Related switch is off by default, persists, reaches the graph, and the
     assert.equal(spy.last('setRelated')[1], true);
     assert.ok(spy.last('setGraph')[1].links.some((l) => l.kind === 'assoc' && l.source === 's:dark house' && l.target === 's:afro house'));
     assert.ok(root.querySelector('#gmr-legend').textContent.includes('Dotted: related (influence, not a parent)'));
-    const input = root.querySelector('input');
-    input.value = 'dark house';
-    fire(input, 'input');
-    fire(input, 'keydown', { key: 'Enter' });
-    const info = root.querySelector('#gmr-info');
-    assert.ok(info.textContent.includes('Related'));
-    const chips = info.querySelectorAll('.gm-chip').map((c) => c.textContent);
-    assert.ok(chips.includes('afro house') && chips.includes('Rock'));
-    info.querySelectorAll('.gm-chip').find((c) => c.textContent === 'Rock').click();
-    assert.deepEqual(spy.last('select').slice(1), ['g:Rock'], 'a family name selects the family');
     cleanup();
   } finally { globalThis.localStorage = saved; mode = 'ok'; }
-});
-
-test('the infobox Sources row shows only the icons the vocabulary links, filled for pages and muted for searches, with safe link attributes', async () => {
-  mode = 'sources';
-  const { root, cleanup } = await mountAll();
-  const input = root.querySelector('input');
-  const open = (name) => { input.value = name; fire(input, 'input'); fire(input, 'keydown', { key: 'Enter' }); };
-  open('soviet wave');
-  const info = root.querySelector('#gmr-info');
-  assert.ok(!info.textContent.includes('In Discogs'), 'the old In Discogs row is gone');
-  const slot = info.querySelector('[data-slot="source-icons"]');
-  const links = slot.querySelectorAll('a');
-  assert.deepEqual(links.map((a) => a.getAttribute('data-source')), ['wikipedia', 'spotify', 'discogs'], 'fixed order, only linked sources');
-  const wiki = links[0];
-  assert.equal(wiki.getAttribute('href'), 'https://en.wikipedia.org/wiki/Sovietwave');
-  assert.equal(wiki.getAttribute('target'), '_blank');
-  assert.equal(wiki.getAttribute('rel'), 'noopener noreferrer');
-  assert.equal(wiki.getAttribute('aria-label'), 'Wikipedia: soviet wave');
-  assert.equal(wiki.getAttribute('title'), 'Open on Wikipedia');
-  assert.ok(wiki.classList.contains('page') && !wiki.classList.contains('search'));
-  const spot = links[1];
-  assert.ok(spot.classList.contains('search'));
-  assert.equal(spot.getAttribute('title'), 'Search on Spotify');
-  assert.ok(wiki.querySelector('svg'));
-  assert.equal(info.textContent.includes('javascript'), false, 'a non-http link is dropped');
-  open('house');
-  assert.equal(info.querySelector('[data-slot="source-icons"]'), null, 'no row without links');
-  cleanup();
-  mode = 'ok';
 });
 
 test('layout actions: Reset layout is a Graph action, Use saved layout needs a layout file, Export layout is for the owner only', async () => {
@@ -464,7 +417,7 @@ test('Export layout copies the normalised layout JSON to the clipboard and falls
   }
 });
 
-test('subfamily chips appear for Electronic only, filter the map and the outline, are not stored, and the legend and infobox name the subfamilies', async () => {
+test('subfamily chips appear for Electronic only, filter the map and the outline, are not stored, and the legend names the subfamilies', async () => {
   mode = 'subs';
   const store = new Map();
   const saved = globalThis.localStorage;
@@ -498,13 +451,6 @@ test('subfamily chips appear for Electronic only, filter the map and the outline
     assert.equal(spy.last('setVisible')[1].has('s:house') && spy.last('setVisible')[1].has('s:jungle'), true);
     assert.equal(store.has('electrophone.genresSubfamilies'), false, 'the subfamily choice is not stored');
     subs()[1].click();
-    const input = root.querySelector('input');
-    input.value = 'jungle';
-    fire(input, 'input');
-    fire(input, 'keydown', { key: 'Enter' });
-    const info = root.querySelector('#gmr-info');
-    assert.ok(info.textContent.includes('Subfamily'));
-    assert.ok(info.textContent.includes('Breaks and bass'));
     cleanup();
     const again = await mount({ view: 'graph' });
     chip(again.root, 'Electronic').click();
@@ -526,5 +472,53 @@ test('without subfamily data there is no subfamily row and no legend section; Ra
   assert.equal(radial.root.querySelector('.gmr-sub-row').hidden, false, 'Electronic is the radial family');
   assert.equal(radial.root.querySelector('.gmr-legend-sub').hidden, false);
   radial.cleanup();
+  mode = 'ok';
+});
+
+test('the Electronic circle is hidden on the graph, yet its outline row still selects: it rings and centres its children', async () => {
+  mode = 'ok';
+  globalThis.localStorage = { getItem: () => null, setItem: () => {} };
+  const { root, cleanup, spy } = await mount();
+  const g = spy.last('setGraph')[1];
+  assert.equal(g.byId.has('g:Electronic'), false);
+  assert.equal(g.links.some((l) => l.source === 'g:Electronic'), false);
+  assert.ok(g.byId.has('s:house') && g.byId.has('s:drum and bass'));
+  row(root, 'Electronic').click();
+  assert.equal(row(root, 'Electronic').getAttribute('aria-selected'), 'true');
+  const marked = spy.last('setMatches')[1];
+  assert.ok(marked.includes('s:house') && marked.includes('s:drum and bass') && !marked.includes('g:Electronic') && !marked.includes('s:rock and roll'));
+  assert.equal(spy.last('focusNode')[1], 's:house', 'it centres on the child with the most songs');
+  row(root, 'Rock').click();
+  assert.equal(spy.last('setMatches')[1].length, 0, 'the rings go away with the selection');
+  cleanup();
+  delete globalThis.localStorage;
+});
+
+test('on the radial the Electronic row selects the hidden root without a circle and the chip stays selectable', async () => {
+  mode = 'ok';
+  globalThis.localStorage = { getItem: () => null, setItem: () => {} };
+  const { root, cleanup } = await mount();
+  btn(root, 'Radial').click();
+  assert.equal(chip(root, 'Electronic').getAttribute('aria-pressed'), 'true');
+  row(root, 'Electronic').click();
+  assert.equal(row(root, 'Electronic').getAttribute('aria-selected'), 'true');
+  assert.equal(status(root), '4 genres in Electronic');
+  chip(root, 'Rock').click();
+  chip(root, 'Electronic').click();
+  assert.equal(chip(root, 'Electronic').getAttribute('aria-pressed'), 'true');
+  cleanup();
+  delete globalThis.localStorage;
+});
+
+test('the two-parent genre is listed under each parent in the outline and has a line to each parent in the graph', async () => {
+  mode = 'twoparents';
+  globalThis.localStorage = { getItem: () => null, setItem: () => {} };
+  const { root, cleanup, spy } = await mountAll();
+  btn(root, 'Expand all').click();
+  assert.equal(rowsOf(root).filter((r) => r.querySelector('.gmr-name').textContent === 'jungle').length, 2);
+  const g = spy.last('setGraph')[1];
+  assert.equal(g.links.filter((l) => l.target === 's:jungle').length, 2);
+  cleanup();
+  delete globalThis.localStorage;
   mode = 'ok';
 });

@@ -7,18 +7,24 @@ export const uniqueIndices = (names, indexOf) => {
   return out;
 };
 
+const FULL = 2 * Math.PI;
+
+export function segmentsFor(idx, start = -Math.PI / 2) {
+  if (!idx || idx.length < 2) return [{ idx: idx?.[0], a0: 0, a1: FULL }];
+  const step = FULL / idx.length;
+  return idx.map((i, n) => ({ idx: i, a0: start + n * step, a1: start + (n + 1) * step }));
+}
+
 export function fillDisc(ctx, x, y, r, palette, idx, fallback, shadeIdx = -1, shade = null) {
   const col = (i) => (i === shadeIdx && shade ? shade : palette[i] || fallback);
   if (idx.length < 2) {
     ctx.fillStyle = col(idx[0]);
-    ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI); ctx.fill();
+    ctx.beginPath(); ctx.arc(x, y, r, 0, FULL); ctx.fill();
     return;
   }
-  const step = (2 * Math.PI) / idx.length;
-  for (let i = 0; i < idx.length; i++) {
-    const a0 = -Math.PI / 2 + i * step;
-    ctx.fillStyle = col(idx[i]);
-    ctx.beginPath(); ctx.moveTo(x, y); ctx.arc(x, y, r, a0, a0 + step); ctx.closePath(); ctx.fill();
+  for (const seg of segmentsFor(idx)) {
+    ctx.fillStyle = col(seg.idx);
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.arc(x, y, r, seg.a0, seg.a1); ctx.closePath(); ctx.fill();
   }
-  ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI);
+  ctx.beginPath(); ctx.arc(x, y, r, 0, FULL);
 }

@@ -21,6 +21,19 @@ export const familyIndex = (family) => {
   return i < 0 || family === 'Other' ? OTHER_COLOR : i;
 };
 
+export const HIDDEN_FAMILY_NODES = ['Electronic'];
+
+export const isHiddenFamily = (name) => HIDDEN_FAMILY_NODES.includes(name);
+
+export const pieIndices = (names) => {
+  const out = [];
+  for (const f of [...(names || [])].sort((a, b) => familyOrder(a) - familyOrder(b))) {
+    const i = familyIndex(f);
+    if (!out.includes(i)) out.push(i);
+  }
+  return out;
+};
+
 export const nodeRadius = (count) => Math.min(30, 4 + 2.4 * Math.sqrt(Math.max(0, count)));
 
 const byCountThenLabel = (a, b) => b.count - a.count || a.label.localeCompare(b.label);

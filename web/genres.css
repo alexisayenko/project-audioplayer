@@ -160,8 +160,6 @@ body[data-route="genres"] main { max-width: none; padding: 0; }
 .gmr-tools { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2); }
 .gmr-tools .gm-tbtn { margin-left: 0; }
 .gmr-search { flex: 1 1 100%; min-width: 0; background: var(--surface); border: var(--stroke-hairline) solid var(--ink-muted); }
-.gmr-tip { position: absolute; z-index: 6; max-width: 280px; padding: var(--space-1) var(--space-2); border-radius: var(--radius-sm); background: var(--surface); color: var(--ink); box-shadow: var(--shadow-float); pointer-events: none; }
-.gmr-tip[hidden] { display: none; }
 .gmr-legend {
   position: absolute; z-index: 4; left: calc(var(--space-3) * 2 + var(--control) + var(--space-2)); bottom: calc(var(--space-3) + var(--player-h));
   max-width: calc(100% - var(--space-3) * 3 - var(--control) - var(--space-2)); max-height: 50%; overflow-y: auto; box-sizing: border-box;
@@ -200,8 +198,13 @@ body[data-route="genres"] main { max-width: none; padding: 0; }
 .gmr-badge.prov { background: var(--accent-tint); color: var(--accent-ink); }
 .gmr-also { min-height: var(--control-sm); padding: 0 var(--space-2); border: 0; border-radius: var(--radius-pill); background: var(--surface-sunken); color: var(--ink); font: var(--font-micro); font-weight: 400; cursor: pointer; }
 .gmr-count { margin-left: auto; color: var(--ink-muted); font-weight: 400; }
-.gmr-dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: var(--space-2) var(--space-3); margin: 0; }
-.gmr-dl dd { margin: 0; overflow-wrap: anywhere; }
+.gmr-lib-btn { flex: none; display: inline-grid; place-items: center; width: var(--control-sm); height: var(--control-sm); padding: 0; border: 0; border-radius: var(--radius-pill); background: transparent; color: var(--ink-muted); cursor: pointer; }
+.gmr-lib-btn:hover, .gmr-lib-btn:focus-visible { background-color: var(--surface-sunken); color: var(--ink); }
+.gmr-lib-btn:focus-visible { outline: var(--stroke-focus) solid var(--ring-color); }
+@media (hover: hover) {
+  .gmr-lib-btn { opacity: 0; }
+  .gmr-row:hover .gmr-lib-btn, .gmr-row:focus-within .gmr-lib-btn, .gmr-row.sel .gmr-lib-btn, .gmr-lib-btn:focus-visible { opacity: 1; }
+}
 .gmr-key.neutral { background: var(--chart-15); }
 .gmr-status-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); flex: 1 1 100%; }
 .gmr-badge.q { background: var(--accent); color: var(--on-accent); }
@@ -225,35 +228,21 @@ body[data-route="genres"] main { max-width: none; padding: 0; }
 .gmr-outline { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; overflow: hidden; border-top: var(--stroke-hairline) solid var(--line); }
 .gmr-outline[hidden] { display: none; }
 .gmr-side > .gm-outline-head { position: static; flex: none; margin: 0; padding: var(--space-3) var(--space-3) var(--space-2); }
-.gmr-details {
-  position: absolute; z-index: 6; top: var(--space-3); max-height: calc(100% - 2 * var(--space-3) - var(--player-h)); right: var(--space-3); width: min(320px, calc(100% - 2 * var(--space-3)));
-  display: grid; align-content: start; gap: var(--space-3); overflow-y: auto; box-sizing: border-box; padding: var(--space-3); border-radius: var(--radius-key);
-  background: var(--surface); box-shadow: var(--shadow-float);
-}
-.gm.outline-open .gmr-details { right: calc(var(--space-3) * 2 + min(360px, calc(100% - 2 * var(--space-3)))); }
-.gmr-details[hidden] { display: none; }
 .gmr-scroll { flex: 1 1 auto; min-height: 0; overflow-x: hidden; overflow-y: auto; padding: var(--space-3) var(--space-3) var(--space-4); }
-.gmr-details, .gmr-scroll { scrollbar-width: var(--scrollbar-width); scrollbar-color: var(--line) transparent; }
+.gmr-scroll { scrollbar-width: var(--scrollbar-width); scrollbar-color: var(--line) transparent; }
 @media (max-width: 719px) {
   .gmr-side { top: auto; left: var(--space-3); width: auto; height: 55%; }
-  .gmr-details, .gm.outline-open .gmr-details { top: auto; bottom: calc(var(--space-3) + var(--player-h)); left: var(--space-3); right: var(--space-3); width: auto; max-height: 50%; }
 }
 @keyframes gmr-flash { from { background-color: var(--accent); color: var(--on-accent); } to { background-color: var(--accent-tint); color: var(--accent-ink); } }
 .gmr-row.flash { animation: gmr-flash 1.4s var(--ease-out) 1; }
 @media (prefers-reduced-motion: reduce) { .gmr-row.flash { animation: none; background-color: var(--accent); color: var(--on-accent); } }
 .gmr-now[hidden] { display: none; }
-.gmr-canvas[hidden], .gmr-lib[hidden] { display: none; }
+.gmr-canvas[hidden], .gmr-lib[hidden], .gmr-drill[hidden], .gmr-collapse-map[hidden] { display: none; }
 .gmr-view-row { display: inline-flex; align-items: center; gap: var(--space-1); }
 .gmr-legend:not(.is-graph) .gmr-g, .gmr-legend.is-graph .gmr-r { display: none; }
 .gmr-key.faint { opacity: 0.34; }
 .gmr-line { flex: none; display: inline-block; width: 14px; height: 0; border-top: var(--stroke-hairline) solid var(--ink-muted); }
 .gmr-key.split { background: conic-gradient(var(--chart-5) 0 50%, var(--chart-0) 0 100%); }
-.gmr-sources { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); }
-.gmr-src { display: inline-grid; place-items: center; min-width: var(--control); min-height: var(--control); border-radius: var(--radius-pill); text-decoration: none; box-sizing: border-box; }
-.gmr-src.page { background: var(--accent-tint); color: var(--accent-ink); }
-.gmr-src.search { background: transparent; color: var(--ink-muted); box-shadow: inset 0 0 0 var(--stroke-hairline) var(--line); }
-.gmr-src:focus-visible { outline: var(--stroke-focus) solid var(--ring-color); outline-offset: 2px; }
-@media (hover: hover) { .gmr-src:hover { background-image: linear-gradient(var(--hover-wash), var(--hover-wash)); } }
 .gmr-fusion[aria-checked="true"] { background-color: var(--accent-tint); color: var(--accent-ink); box-shadow: inset 0 0 0 var(--stroke-hairline) var(--accent-ink); font-weight: 600; }
 .gmr-bar .gm-status { flex: 1 1 100%; max-width: 100%; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; color: var(--ink-muted); }
 .gmr-btns {

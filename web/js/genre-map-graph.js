@@ -1,5 +1,4 @@
-import { familyIndex, FAMILY_ORDER } from './genre-data.js';
-import { uniqueIndices } from './genre-disc.js';
+import { familyIndex, pieIndices, isHiddenFamily, FAMILY_ORDER } from './genre-data.js';
 import { mulberry32 } from './genre-sim.js';
 import { ancestorIds, filterIds, subfamilyOrder } from './genre-levels.js';
 
@@ -18,8 +17,9 @@ export function buildMapGraph(tree) {
   if (!tree) return { nodes: [], links: [], byId: new Map() };
   const nodes = [];
   for (const n of tree.byId.values()) {
+    if (n.level === 1 && isHiddenFamily(n.name)) continue;
     nodes.push({
-      id: n.id, name: n.name, label: n.label || n.name, level: n.level, family: n.family, fi: familyIndex(n.family), sub: n.subfamily, subOrder: n.subfamily ? subfamilyOrder(tree, n.subfamily) : 0, fis: n.fams.length ? uniqueIndices(n.fams, familyIndex) : [familyIndex(n.family)],
+      id: n.id, name: n.name, label: n.label || n.name, level: n.level, family: n.family, fi: familyIndex(n.family), sub: n.subfamily, subOrder: n.subfamily ? subfamilyOrder(tree, n.subfamily) : 0, fis: n.fams.length ? pieIndices(n.fams) : [familyIndex(n.family)],
       own: n.own.size, all: n.all.size, em: emphasis(n.own.size, n.all.size), r: mapRadius(n.level, n.all.size), node: n,
     });
   }
@@ -34,16 +34,14 @@ export function buildMapGraph(tree) {
     links.push({ source, target, kind });
   };
   for (const n of tree.byId.values()) {
-    if (n.parent) add(n.parent, n.id, 'parent');
-    for (const q of n.alsoIn) add(`g:${q}`, n.id, 'related');
-    for (const q of n.alsoUnder) add(`s:${q}`, n.id, 'related');
+    for (const p of n.parents) add(p, n.id, 'parent');
   }
   const assoc = new Set();
   for (const n of tree.byId.values()) {
     for (const r of n.related) {
       const t = tree.byId.get(`g:${r}`) || tree.byId.get(`s:${r}`);
       const key = t && [n.id, t.id].sort().join('|');
-      if (!t || t.id === n.id || assoc.has(key)) continue;
+      if (!t || t.id === n.id || assoc.has(key) || !byId.has(n.id) || !byId.has(t.id)) continue;
       assoc.add(key);
       links.push({ source: n.id, target: t.id, kind: 'assoc' });
     }
@@ -66,7 +64,7 @@ export function seedPositions(graph, seed = 1, { ring = 240 } = {}) {
   const parentOf = new Map();
   const kids = new Map();
   for (const l of graph.links) {
-    if (l.kind !== 'parent') continue;
+    if (l.kind !== 'parent' || parentOf.has(l.target)) continue;
     parentOf.set(l.target, l.source);
     if (!kids.has(l.source)) kids.set(l.source, []);
     kids.get(l.source).push(l.target);

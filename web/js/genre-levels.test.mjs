@@ -22,7 +22,7 @@ test('tree has three levels, children sorted, level 1 follows families order', (
   assert.deepEqual(chain(t, 's:deep house').map((n) => n.name), ['Electronic', 'house', 'deep house']);
 });
 
-test('counts roll up across three levels and a cross-link parent does not double count', () => {
+test('counts roll up across levels and a genre with two parents counts under both without double counting', () => {
   const t = make();
   assert.equal(count(t.byId.get('s:deep house')), 2);
   assert.equal(count(t.byId.get('s:afro house')), 1);
@@ -30,7 +30,8 @@ test('counts roll up across three levels and a cross-link parent does not double
   assert.equal(t.byId.get('s:house').own.size, 1);
   assert.equal(count(t.byId.get('s:jungle')), 1);
   assert.equal(count(t.byId.get('s:drum and bass')), 1);
-  assert.equal(count(t.byId.get('s:breakbeat')), 0);
+  assert.equal(count(t.byId.get('s:breakbeat')), 1);
+  assert.equal(t.byId.get('s:breakbeat').own.size, 0);
   assert.equal(count(t.byId.get('g:Electronic')), 4);
   assert.equal(t.byId.get('g:Electronic').own.size, 1);
   assert.equal(count(t.byId.get('g:Rock')), 1);
@@ -56,9 +57,13 @@ test('search matches names and synonyms and expands to the match', () => {
   const t = make();
   assert.deepEqual([...searchMatches(t, 'dnb')], [['s:drum and bass', 'dnb']]);
   const rows = visibleRows(t, { query: 'jung' });
-  assert.deepEqual(rows.map((r) => r.node.name), ['Electronic', 'drum and bass', 'jungle']);
+  assert.deepEqual(rows.map((r) => r.node.name), ['Electronic', 'breakbeat', 'jungle', 'drum and bass', 'jungle']);
   assert.equal(rows[1].expanded, true);
   assert.equal(rows[2].matched, true);
+  assert.equal(rows[4].matched, true);
+  assert.deepEqual(rows.map((r) => r.level), [1, 2, 3, 2, 3]);
+  assert.equal(rows[4].key, `${rows[3].key}|s:jungle`);
+  assert.deepEqual([rows[2].parentId, rows[4].parentId], ['s:breakbeat', 's:drum and bass']);
   const syn = visibleRows(t, { query: 'sound' });
   assert.deepEqual(syn.map((r) => r.node.name), ['Electronic', 'house', 'deep house']);
   assert.equal(syn[2].via, 'deephouse sound');
@@ -70,17 +75,18 @@ test('collapsed by default, expand sets, only-with-songs hides empty nodes', () 
   assert.deepEqual(visibleRows(t).map((r) => r.node.name), ['Electronic', 'Rock']);
   const open = visibleRows(t, { expanded: new Set(['g:Electronic', 's:house']) });
   assert.deepEqual(open.map((r) => r.node.name), ['Electronic', 'breakbeat', 'drum and bass', 'house', 'afro house', 'deep house', 'Rock']);
+  assert.equal(open[1].hasChildren, true);
   const some = visibleRows(t, { expanded: allExpandable(t), onlyWithSongs: true });
-  assert.deepEqual(some.map((r) => r.node.name), ['Electronic', 'drum and bass', 'jungle', 'house', 'afro house', 'deep house', 'Rock', 'rock and roll']);
+  assert.deepEqual(some.map((r) => r.node.name), ['Electronic', 'breakbeat', 'jungle', 'drum and bass', 'jungle', 'house', 'afro house', 'deep house', 'Rock', 'rock and roll']);
 });
 
 test('populatedOnly search skips genres without library songs; populated rows keep their ancestors', () => {
   const t = make();
   assert.ok(searchMatches(t, 'breakbeat').has('s:breakbeat'));
-  assert.equal(searchMatches(t, 'breakbeat', { populatedOnly: true }).size, 0);
+  assert.deepEqual([...searchMatches(t, 'breakbeat', { populatedOnly: true }).keys()], ['s:breakbeat']);
   assert.deepEqual([...searchMatches(t, 'dnb', { populatedOnly: true }).keys()], ['s:drum and bass']);
-  assert.deepEqual(visibleRows(t, { query: 'breakbeat', onlyWithSongs: true }).map((r) => r.node.name), []);
-  assert.deepEqual(visibleRows(t, { query: 'jungle', onlyWithSongs: true }).map((r) => r.node.name), ['Electronic', 'drum and bass', 'jungle']);
+  assert.deepEqual(visibleRows(t, { query: 'zzz', onlyWithSongs: true }).map((r) => r.node.name), []);
+  assert.deepEqual(visibleRows(t, { query: 'jungle', onlyWithSongs: true }).map((r) => r.node.name), ['Electronic', 'breakbeat', 'jungle', 'drum and bass', 'jungle']);
 });
 
 test('populatedFamilies lists families with songs, most songs first, ties by name', () => {
@@ -105,13 +111,16 @@ test('provisional and discogs flags are on the nodes', () => {
   assert.equal(t.byId.get('s:rock and roll').provisional, true);
   assert.equal(t.byId.get('s:afro house').discogs, false);
   assert.equal(t.byId.get('s:house').discogs, true);
-  assert.deepEqual(t.byId.get('s:jungle').alsoUnder, ['breakbeat']);
+  assert.deepEqual(t.byId.get('s:jungle').parentNames, ['drum and bass', 'breakbeat']);
+  assert.deepEqual(t.byId.get('s:jungle').parents, ['s:drum and bass', 's:breakbeat']);
+  assert.equal(t.byId.get('s:jungle').parent, 's:breakbeat');
 });
 
-test('libraryTags lists the node and everything below it, not extra parents', () => {
+test('libraryTags lists the node and everything below it, through every parent', () => {
   const t = make();
   assert.deepEqual(libraryTags(t, 's:house').sort(), ['genre:afro house', 'genre:deep house', 'genre:house']);
-  assert.deepEqual(libraryTags(t, 's:breakbeat'), ['genre:breakbeat']);
+  assert.deepEqual(libraryTags(t, 's:breakbeat'), ['genre:breakbeat', 'genre:jungle']);
+  assert.equal(libraryTags(t, 'g:Electronic').filter((x) => x === 'genre:jungle').length, 1);
   assert.ok(libraryTags(t, 'g:Electronic').includes('genre:jungle'));
   assert.ok(libraryTags(t, 'g:Electronic').includes('genre:Electronic'), 'the genre own tag is part of its filter, so songs tagged only with the genre are found');
 });
@@ -127,7 +136,7 @@ test('treeKey: arrows, home/end, expand/collapse, enter and space', () => {
   assert.deepEqual(treeKey(rows, 's:house', 'ArrowRight'), { type: 'expand', id: 's:house', node: 's:house' });
   assert.deepEqual(treeKey(rows, 's:house', 'ArrowLeft'), { type: 'focus', id: 'g:Electronic' });
   assert.deepEqual(treeKey(rows, 'g:Rock', 'Enter'), { type: 'activate', id: 'g:Rock', node: 'g:Rock', toggle: true });
-  assert.deepEqual(treeKey(rows, 's:breakbeat', ' '), { type: 'activate', id: 's:breakbeat', node: 's:breakbeat', toggle: false });
+  assert.deepEqual(treeKey(rows, 's:breakbeat', ' '), { type: 'activate', id: 's:breakbeat', node: 's:breakbeat', toggle: true });
   assert.deepEqual(treeKey(rows, 'g:Rock', 'Home'), { type: 'focus', id: 'g:Electronic' });
   assert.deepEqual(treeKey(rows, 'g:Electronic', 'End'), { type: 'focus', id: 'g:Rock' });
   assert.equal(treeKey(rows, 'g:Rock', 'x'), null);
@@ -170,15 +179,15 @@ test('flavours: unknown keys dropped, counts are distinct songs at styles that c
 test('flavour filter is any-of, lists matching styles, and combines with status and search', () => {
   const t = make();
   assert.equal(filterIds(t, { flavours: [] }), null);
-  assert.deepEqual([...filterIds(t, { flavours: ['dark'] })].sort(), ['g:Electronic', 's:afro house', 's:drum and bass', 's:house', 's:jungle']);
-  assert.deepEqual([...filterIds(t, { flavours: ['club', 'dark'] })].sort(), ['g:Electronic', 's:afro house', 's:deep house', 's:drum and bass', 's:house', 's:jungle']);
+  assert.deepEqual([...filterIds(t, { flavours: ['dark'] })].sort(), ['g:Electronic', 's:afro house', 's:breakbeat', 's:drum and bass', 's:house', 's:jungle']);
+  assert.deepEqual([...filterIds(t, { flavours: ['club', 'dark'] })].sort(), ['g:Electronic', 's:afro house', 's:breakbeat', 's:deep house', 's:drum and bass', 's:house', 's:jungle']);
   assert.deepEqual([...filterIds(t, { flavours: ['club'], status: 'question' })].sort(), ['g:Electronic', 's:deep house', 's:house']);
   assert.deepEqual([...filterIds(t, { flavours: ['dark'], status: 'question' })], []);
   const rows = visibleRows(t, { flavours: new Set(['dark']) }).map((r) => r.node.name);
-  assert.deepEqual(rows, ['Electronic', 'drum and bass', 'jungle', 'house', 'afro house']);
+  assert.deepEqual(rows, ['Electronic', 'breakbeat', 'jungle', 'drum and bass', 'jungle', 'house', 'afro house']);
   const both = visibleRows(t, { flavours: ['dark'], query: 'jung' }).map((r) => r.node.name);
-  assert.deepEqual(both, ['Electronic', 'drum and bass', 'jungle']);
-  assert.deepEqual(visibleRows(t, { flavours: ['dark'], onlyWithSongs: true }).map((r) => r.node.name), ['Electronic', 'drum and bass', 'jungle', 'house', 'afro house']);
+  assert.deepEqual(both, ['Electronic', 'breakbeat', 'jungle', 'drum and bass', 'jungle']);
+  assert.deepEqual(visibleRows(t, { flavours: ['dark'], onlyWithSongs: true }).map((r) => r.node.name), ['Electronic', 'breakbeat', 'jungle', 'drum and bass', 'jungle', 'house', 'afro house']);
 });
 
 const withLevels = (patch) => buildTree({ ...VOCAB, levels: Object.fromEntries(Object.entries(VOCAB.levels).map(([k, v]) => [k, { ...v, ...(patch[k] || {}) }])) });
@@ -210,7 +219,7 @@ const disco = () => {
     levels: {
       ...VOCAB.levels,
       disco: { parents: ['Rock', 'Electronic'], discogs: true, synonyms: [], provisional: true },
-      'euro disco': { parents: ['disco'], family: 'Electronic', discogs: true, synonyms: [], provisional: false },
+      'euro disco': { parents: ['disco'], discogs: true, synonyms: [], provisional: false },
     },
   });
   applyCounts(t, [...SONGS, { id: 's7', tags: ['genre:euro disco'] }, { id: 's8', tags: ['genre:disco', 'genre:euro disco'] }, { id: 's9', tags: ['genre:disco'] }]);
@@ -221,8 +230,9 @@ test('an umbrella that sits in two genres appears under both with its children',
   const t = disco();
   assert.ok(t.byId.get('g:Electronic').children.some((c) => c.name === 'disco'));
   assert.ok(t.byId.get('g:Rock').children.some((c) => c.name === 'disco'));
-  assert.equal(t.byId.get('s:disco').family, 'Rock');
-  assert.deepEqual(t.byId.get('s:disco').alsoIn, ['Electronic']);
+  assert.deepEqual(t.byId.get('s:disco').fams, ['Electronic', 'Rock']);
+  assert.deepEqual(t.byId.get('s:euro disco').fams, ['Electronic', 'Rock']);
+  assert.equal(t.byId.get('s:disco').family, 'Electronic');
   assert.deepEqual(t.byId.get('s:euro disco').parent, 's:disco');
   assert.deepEqual(otherGenres(t.byId.get('s:disco'), 'Electronic'), ['Rock']);
   assert.deepEqual(otherGenres(t.byId.get('s:disco'), 'Rock'), ['Electronic']);
@@ -241,8 +251,9 @@ test('songs under a two-genre umbrella count once per genre root and once per no
   assert.equal(new Set(keys).size, keys.length);
   const second = rows.filter((r) => r.node.name === 'euro disco');
   assert.equal(second.length, 2);
-  assert.ok(second[0].key === 's:euro disco' && second[1].key === 'g:Rock|s:euro disco');
-  const under = rows.find((r) => r.key === 'g:Rock|s:euro disco');
+  const discoRows = rows.filter((r) => r.node.name === 'disco');
+  assert.ok(second[0].key === 's:euro disco' && second[1].key === `${discoRows[1].key}|s:euro disco`);
+  const under = rows.find((r) => r.key === `${discoRows[1].key}|s:euro disco`);
   assert.equal(under.parentKey, rows.filter((r) => r.node.name === 'disco')[1].key);
   assert.deepEqual(treeKey(rows, under.key, 'ArrowLeft'), { type: 'focus', id: under.parentKey });
 });
@@ -279,4 +290,69 @@ test('genreLines sends unknown genres to a final line without a family and copes
   assert.deepEqual(genreLines(make(), []), []);
   assert.deepEqual(genreLines(make(), undefined), []);
   assert.deepEqual(genreLines(null, ['trap', 'house']), [{ family: null, genres: ['house', 'trap'] }]);
+});
+
+const MULTI = {
+  families: ['Electronic', 'Funk / Soul', 'Pop', 'Rock'], genres: [], aliases: {}, family_synonyms: {}, flavours: {},
+  levels: {
+    house: { parents: ['Electronic'], discogs: true },
+    'deep house': { parents: ['house'], discogs: true },
+    disco: { parents: ['Funk / Soul', 'Electronic'], discogs: true },
+    'euro disco': { parents: ['disco'], discogs: true },
+    eurodance: { parents: ['house', 'euro disco', 'Pop'], discogs: true },
+    'hands up': { parents: ['eurodance'], discogs: true },
+    'new wave': { parents: ['Rock'], discogs: true },
+    synthpop: { parents: ['Electronic', 'Pop', 'new wave'], discogs: true },
+    ebm: { parents: ['synthpop'], discogs: true },
+  },
+};
+const multi = (songs) => { const t = buildTree(MULTI); applyCounts(t, songs.map((tags, i) => ({ id: `m${i}`, tags }))); return t; };
+
+test('a song counts in every family its genre belongs to, once per node, and a family chip lists each of them', () => {
+  const t = multi([['genre:euro disco'], ['genre:synthpop'], ['genre:deep house']]);
+  assert.deepEqual(t.byId.get('s:euro disco').fams, ['Electronic', 'Funk / Soul']);
+  assert.equal(count(t.byId.get('g:Electronic')), 3);
+  assert.equal(count(t.byId.get('g:Funk / Soul')), 1);
+  assert.equal(count(t.byId.get('g:Pop')), 1);
+  assert.equal(count(t.byId.get('g:Rock')), 1);
+  assert.deepEqual(populatedFamilies(t), ['Electronic', 'Funk / Soul', 'Pop', 'Rock']);
+  assert.equal(count(t.byId.get('s:disco')), 1);
+  assert.equal(count(t.byId.get('s:new wave')), 1);
+  assert.equal(count(t.byId.get('s:house')), 1);
+});
+
+test('a genre of three families counts in all three and in every ancestor, a song with several such genres counts once', () => {
+  const t = multi([['genre:hands up', 'genre:eurodance']]);
+  for (const id of ['g:Electronic', 'g:Funk / Soul', 'g:Pop', 's:eurodance', 's:house', 's:euro disco', 's:disco']) assert.equal(count(t.byId.get(id)), 1, id);
+  assert.equal(count(t.byId.get('g:Rock')), 0);
+  assert.equal(t.byId.get('s:hands up').level, 3);
+  assert.equal(t.byId.get('s:eurodance').level, 2, 'level 2 through the Pop family parent, the shortest path');
+  assert.equal(t.byId.get('s:ebm').level, 3);
+});
+
+test('the outline lists a genre under each of its parents with its own depth along that path; a deep chain has no cap', () => {
+  const t = multi([['genre:hands up']]);
+  const rows = visibleRows(t, { expanded: allExpandable(t) });
+  const euro = rows.filter((r) => r.node.name === 'eurodance');
+  assert.deepEqual(euro.map((r) => [r.parentId, r.level]).sort(), [['g:Pop', 2], ['s:euro disco', 4], ['s:euro disco', 4], ['s:house', 3]].sort());
+  assert.equal(new Set(rows.map((r) => r.key)).size, rows.length);
+  const hands = rows.filter((r) => r.node.name === 'hands up');
+  assert.equal(hands.length, 4, 'once under each of the four eurodance rows');
+  assert.ok(hands.every((r) => r.hasChildren === false));
+  const deep = buildTree({ families: ['Rock'], levels: { a: { parents: ['Rock'] }, b: { parents: ['a'] }, c: { parents: ['b'] }, d: { parents: ['c'] }, e: { parents: ['d'] } }, flavours: {}, genres: [] });
+  applyCounts(deep, [{ id: '1', tags: ['genre:e'] }]);
+  assert.deepEqual(visibleRows(deep, { expanded: allExpandable(deep) }).map((r) => [r.node.name, r.level]), [['Rock', 1], ['a', 2], ['b', 3], ['c', 4], ['d', 5], ['e', 6]]);
+  assert.deepEqual(genreLines(deep, ['e']), [{ family: 'Rock', genres: ['Rock', 'e'] }]);
+});
+
+test('genreLines puts a multi-family genre on each family line with its depth along that family', () => {
+  const t = multi([]);
+  assert.deepEqual(genreLines(t, ['eurodance']), [
+    { family: 'Electronic', genres: ['Electronic', 'eurodance'] },
+    { family: 'Funk / Soul', genres: ['Funk / Soul', 'eurodance'] },
+    { family: 'Pop', genres: ['Pop', 'eurodance'] },
+  ]);
+  const lines = genreLines(t, ['hands up', 'house', 'euro disco', 'disco']);
+  assert.deepEqual(lines.find((l) => l.family === 'Electronic').genres, ['Electronic', 'disco', 'house', 'euro disco', 'hands up']);
+  assert.deepEqual(lines.find((l) => l.family === 'Funk / Soul').genres, ['Funk / Soul', 'disco', 'euro disco', 'hands up']);
 });

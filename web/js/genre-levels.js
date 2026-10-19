@@ -11,7 +11,7 @@ const effectiveStatus = (v) => (v.status === 'question' || (v.status === 'approv
 
 function makeNode(id, name, level, family, extra = {}) {
   return {
-    id, name, level, family, parent: null, parentNames: [], fams: [], children: [], alsoUnder: [], subfamily: null, discogs: true, fusion: false, related: [], sourceLinks: [], synonyms: [], provisional: false, status: null, flavours: [], display: null, label: name, alsoIn: [],
+    id, name, level, family, parent: null, parents: [], parentNames: [], fams: [], children: [], subfamily: null, discogs: true, fusion: false, related: [], sourceLinks: [], synonyms: [], provisional: false, status: null, flavours: [], display: null, label: name,
     own: new Set(), all: new Set(), ...extra,
   };
 }
@@ -30,33 +30,33 @@ function genreNode(k, v) {
 
 const parentList = (v) => (Array.isArray(v?.parents) ? v.parents.filter((p) => typeof p === 'string' && p) : []);
 
+const knownParent = (byId, genres, p) => byId.has(`g:${p}`) || genres.has(p);
+
+function keptParents(v, byId, genres, fusion) {
+  const all = [...new Set(parentList(v))].filter((p) => knownParent(byId, genres, p));
+  if (fusion || !v.fusion) return all;
+  const ofGenres = all.filter((p) => !byId.has(`g:${p}`));
+  return ofGenres.length ? ofGenres : all.slice(0, 1);
+}
+
 function linkGenres(levels, genres, byId, fusion) {
-  const done = new Set();
+  const state = new Map();
   const settle = (k) => {
-    if (done.has(k)) return;
-    done.add(k);
-    const v = levels[k];
+    if (state.has(k)) return;
+    state.set(k, 1);
     const n = genres.get(k);
-    const [first, ...all] = parentList(v);
-    const extra = all.filter((q) => fusion || !v.fusion || !byId.has(`g:${q}`));
-    n.parentNames = first === undefined ? [] : [first, ...extra];
-    const p = byId.get(`g:${first}`) || (first !== k ? genres.get(first) : null);
-    if (!p) {
-      n.level = 2;
-      n.family = v.family || null;
-      return;
+    const names = keptParents(levels[k], byId, genres, fusion).filter((p) => p !== k && state.get(p) !== 1);
+    const nodes = names.map((p) => byId.get(`g:${p}`) || genres.get(p));
+    for (const [i, p] of nodes.entries()) if (p.level === 0) settle(names[i]);
+    n.parentNames = names;
+    n.parents = nodes.map((p) => p.id);
+    if (!nodes.length) n.level = 2;
+    else {
+      n.level = 1 + Math.min(...nodes.map((p) => p.level));
+      n.parent = nodes.filter((p) => p.level === n.level - 1).sort(byName)[0].id;
+      for (const p of nodes) p.children.push(n);
     }
-    if (p.level === 0) settle(first);
-    n.level = p.level + 1;
-    n.family = v.family || p.family;
-    n.parent = p.id;
-    p.children.push(n);
-    for (const q of extra) {
-      if (byId.has(`g:${q}`)) {
-        n.alsoIn.push(q);
-        byId.get(`g:${q}`).children.push(n);
-      } else n.alsoUnder.push(q);
-    }
+    state.set(k, 2);
   };
   for (const k of Object.keys(levels)) settle(k);
   for (const n of byId.values()) n.children.sort(byName);
@@ -88,7 +88,7 @@ export function buildTree(vocab, { fusion = true } = {}) {
     byId.set(n.id, n);
   }
   linkGenres(levels, genres, byId, fusion);
-  assignFamilies(byId);
+  assignFamilies(roots, byId);
   const flavours = new Map(Object.entries(vocab?.flavours || {}).map(([key, f]) => [key, { key, name: f.name || key, kind: f.kind === 'scene' ? 'scene' : 'sound', description: f.description || '', songs: new Set() }]));
   for (const n of byId.values()) n.flavours = n.flavours.filter((f) => flavours.has(f));
   const { byKey, bySyn } = nodeLookups(byId);
@@ -113,23 +113,28 @@ export function chain(tree, id) {
 
 export function ancestorIds(tree, id) {
   const out = new Set();
-  for (const a of chain(tree, id)) {
-    out.add(a.id);
-    for (const g of a.alsoIn) if (tree.byId.has(`g:${g}`)) out.add(`g:${g}`);
+  const stack = [id];
+  while (stack.length) {
+    const x = stack.pop();
+    const n = out.has(x) ? null : tree.byId.get(x);
+    if (!n) continue;
+    out.add(x);
+    stack.push(...n.parents);
   }
   return out;
 }
 
-function familyIds(tree, id, seen = new Set()) {
-  const out = new Set();
-  if (seen.has(id)) return out;
-  seen.add(id);
-  for (const a of chain(tree, id)) {
-    if (a.level === 1) out.add(a.id);
-    for (const g of a.alsoIn) if (tree.byId.has(`g:${g}`)) out.add(`g:${g}`);
-    for (const p of a.alsoUnder) for (const f of familyIds(tree, `s:${p}`, seen)) out.add(f);
-  }
-  return out;
+export function depthIn(tree, id, rootId) {
+  const memo = new Map();
+  const go = (x) => {
+    if (x === rootId) return 1;
+    if (memo.has(x)) return memo.get(x);
+    memo.set(x, Infinity);
+    const best = Math.min(Infinity, ...(tree.byId.get(x)?.parents || []).map((p) => go(p) + 1));
+    memo.set(x, best);
+    return best;
+  };
+  return go(id);
 }
 
 export function genreLines(tree, names) {
@@ -141,10 +146,9 @@ export function genreLines(tree, names) {
     const key = node ? node.id : `?${vkey(name)}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    const fams = node ? [...familyIds(tree, node.id)] : [];
+    const fams = node ? node.fams.map((f) => `g:${f}`) : [];
     if (!fams.length) loose.set(key, { name, depth: 0 });
-    const depth = node && node.level > 1 ? chain(tree, node.id).length : 0;
-    for (const f of fams) lines.get(f).rows.set(key, { name, depth });
+    for (const f of fams) lines.get(f).rows.set(key, { name, depth: node.level > 1 ? depthIn(tree, node.id, f) : 0 });
   }
   return lineGroups(lines, loose);
 }
@@ -160,7 +164,7 @@ function lineGroups(lines, loose) {
 }
 
 export function otherGenres(n, rootName) {
-  return n.level === 2 ? [n.family, ...n.alsoIn].filter((g) => g !== rootName) : [];
+  return n.level > 1 ? n.fams.filter((g) => g !== rootName) : [];
 }
 
 function songGenreNames(s) {
@@ -200,13 +204,16 @@ export function genresWithSongs(layout) {
 }
 
 export function libraryTags(tree, id) {
-  const out = [];
+  const out = new Set();
+  const seen = new Set();
   const walk = (n) => {
-    if (n.level > 1 || n.name !== 'Other') out.push(`genre:${n.name}`);
+    if (seen.has(n.id)) return;
+    seen.add(n.id);
+    if (n.level > 1 || n.name !== 'Other') out.add(`genre:${n.name}`);
     n.children.forEach(walk);
   };
   walk(tree.byId.get(id));
-  return out;
+  return [...out];
 }
 
 export function searchMatches(tree, query, { populatedOnly = false } = {}) {
@@ -253,28 +260,29 @@ export function visibleRows(tree, { expanded = new Set(), query = '', onlyWithSo
   const searching = !!vkey(query);
   const open = new Set();
   const keep = new Set();
-  if (byStatus) for (const id of byStatus) { const n = tree.byId.get(id); if (n.parent) open.add(n.parent); }
+  if (byStatus) for (const id of byStatus) for (const p of tree.byId.get(id).parents) open.add(p);
   if (searching) {
     for (const id of hits.keys()) {
       keep.add(id);
-      const c = chain(tree, id);
-      for (const a of c) keep.add(a.id);
-      for (const a of c.slice(0, -1)) open.add(a.id);
+      for (const a of ancestorIds(tree, id)) {
+        keep.add(a);
+        if (a !== id) open.add(a);
+      }
     }
   }
   const rows = [];
   const seen = new Set();
-  const walk = (n, parentKey = null, rootId = n.id) => {
+  const walk = (n, parentKey = null, parentId = null, depth = 1) => {
     if (searching && !keep.has(n.id)) return;
     if (byStatus && !byStatus.has(n.id)) return;
     if (only && !only.has(n.id)) return;
     if (onlyWithSongs && !n.all.size) return;
     const kids = n.children.filter((c) => (!searching || keep.has(c.id)) && (!byStatus || byStatus.has(c.id)) && (!only || only.has(c.id)) && (!onlyWithSongs || c.all.size));
     const isOpen = kids.length > 0 && (expanded.has(n.id) || open.has(n.id));
-    const key = seen.has(n.id) ? `${rootId}|${n.id}` : n.id;
+    const key = seen.has(n.id) ? `${parentKey}|${n.id}` : n.id;
     seen.add(n.id);
-    rows.push({ key, parentKey, node: n, level: n.level, hasChildren: kids.length > 0, expanded: isOpen, via: hits.get(n.id) ?? null, matched: hits.has(n.id) });
-    if (isOpen) kids.forEach((c) => walk(c, key, rootId));
+    rows.push({ key, parentKey, parentId, node: n, level: depth, hasChildren: kids.length > 0, expanded: isOpen, via: hits.get(n.id) ?? null, matched: hits.has(n.id) });
+    if (isOpen) kids.forEach((c) => walk(c, key, n.id, depth + 1));
   };
   tree.roots.forEach((r) => walk(r));
   return rows;
@@ -315,8 +323,6 @@ export function treeKey(rows, id, key) {
   }
 }
 
-export const MAX_FAMILIES = 3;
-
 export function cleanSubfamilies(list) {
   if (!Array.isArray(list)) return [];
   return list
@@ -327,21 +333,18 @@ export function cleanSubfamilies(list) {
 
 export const subfamilyOrder = (tree, name) => tree?.subfamilies?.find((s) => s.name === name)?.order || 0;
 
-function assignFamilies(byId) {
+function assignFamilies(roots, byId) {
+  const order = new Map(roots.map((r, i) => [r.name, i]));
   const memo = new Map();
-  const of = (id) => {
-    if (memo.has(id)) return memo.get(id);
-    const n = byId.get(id);
-    if (!n) return [];
-    memo.set(id, []);
-    if (n.level === 1) { memo.set(id, [n.name]); return [n.name]; }
-    const out = n.family ? [n.family] : [];
-    for (const p of n.parentNames) {
-      for (const f of of(byId.has(`g:${p}`) ? `g:${p}` : `s:${p}`)) if (!out.includes(f)) out.push(f);
-    }
-    const capped = out.slice(0, MAX_FAMILIES);
-    memo.set(id, capped);
-    return capped;
+  const of = (n) => {
+    if (memo.has(n.id)) return memo.get(n.id);
+    const out = new Set(n.level === 1 ? [n.name] : []);
+    memo.set(n.id, out);
+    for (const p of n.parents) for (const f of of(byId.get(p))) out.add(f);
+    return out;
   };
-  for (const n of byId.values()) n.fams = of(n.id);
+  for (const n of byId.values()) {
+    n.fams = [...of(n)].sort((x, y) => order.get(x) - order.get(y));
+    n.family = n.fams[0] || null;
+  }
 }

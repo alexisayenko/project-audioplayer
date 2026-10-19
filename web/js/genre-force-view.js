@@ -12,19 +12,33 @@ const FOCUS_K = 1.8;
 const FONT_PX = 12;
 const EMPHASIS_ALPHA = [0.34, 0.72, 1];
 const DIM = 0.2;
+const ANCESTOR_LEVELS = 12;
+const FADE_STEP = 0.12;
+const fadeAt = (d, floor) => (d > 1 ? Math.max(floor, 1 - FADE_STEP * (d - 1)) : 1);
 const FADE_MS = 130;
 const MOVE_MS = 380;
 const FLASH_MS = 1400;
-const DRAG_ALPHA = 0.3;
+const DRAG_ALPHA = 0.1;
 const RELEASE_ALPHA = 0.35;
 const SETTLE_STATIC = 400;
-const SIM = { charge: 6, linkDistance: 20, gravity: 0, home: 0.05 };
+const CHILD_FOLLOW_MS = 300;
+const CHILD_FOLLOW_TAU_DIV = 3;
+const FOLLOW_EPS = 0.05;
+const PARENT_REACTION = 0.02;
+const REVEAL_ALPHA = 0.25;
+const RING_GAP = 6;
+const RING_MAX = 70;
+const RING_PITCH = 6;
+const RING_MULTI_MIN = 14;
+const RING_STEP = 0.85;
+const RING_ARC = (300 * Math.PI) / 180;
+const SIM = { charge: 6, linkDistance: 20, gravity: 0, home: 0.05, velocityDecay: 0.34, parentStrength: 1.4, linkFloor: 0.15, parentReaction: PARENT_REACTION };
 const LAYOUT_SLICE_MS = 6;
 const LAYOUT_STATIC_MS = 1500;
 const PAD = { t: 16, r: 0, b: 16, l: 16 };
 
 const inert = () => ({
-  setGraph() {}, setVisible() {}, setRelated() {}, resetLayout() {}, useSavedLayout() {}, exportPositions: () => [], select() {}, setMatches() {}, focusNode() {}, flash() {}, setFocusInset() {}, reset() {}, zoomBy() {}, resize() {}, destroy() {}, stats: () => ({}), nodeScreen: () => null,
+  setGraph() {}, setVisible() {}, setMarks() {}, setRelated() {}, resetLayout() {}, useSavedLayout() {}, exportPositions: () => [], select() {}, setMatches() {}, focusNode() {}, flash() {}, setFocusInset() {}, reset() {}, zoomBy() {}, resize() {}, destroy() {}, stats: () => ({}), nodeScreen: () => null,
 });
 
 const clampK = (k) => Math.min(MAX_K, Math.max(MIN_K, k));
@@ -48,7 +62,8 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
   let byId = new Map();
   let adj = new Map();
   let incident = new Map();
-  let parentLink = new Map();
+  let parentLinks = new Map();
+  let childrenOf = new Map();
   let sim = null;
   let awake = false;
   let sel = null;
@@ -56,6 +71,7 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
   let focus = null;
   let matches = new Set();
   let visibleSet = null;
+  let marks = new Map();
   let flashing = null;
   let raf = 0;
   let last = 0;
@@ -67,6 +83,7 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
   let focusInset = { r: 0, b: 0 };
   let colors = {};
   let drag = null;
+  let pull = null;
   let pinch = null;
   let hoverRaf = 0;
   let hoverAt = null;
@@ -155,7 +172,8 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
     if (!sim) return;
     for (const l of sim.links) {
       if (l.assoc || l.s.hx === undefined || l.t.hx === undefined) continue;
-      l.dist = Math.hypot(l.s.hx - l.t.hx, l.s.hy - l.t.hy);
+      if (l.tree && l.t.ringPar === l.s.id) { l.dist = l.t.ringRad; continue; }
+      l.dist =Math.hypot(l.s.hx - l.t.hx, l.s.hy - l.t.hy);
     }
   }
 
@@ -163,6 +181,7 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
     if (!rawGraph) return;
     layout = createCrossingLayout({ nodes, links: rawGraph.links }, { saved });
     layout.apply();
+    for (const n of nodes) n.ringPar = null;
     if (reducedMotion) {
       layout.run(LAYOUT_STATIC_MS);
       layout.apply();
@@ -225,6 +244,7 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
       }
       again = true;
     }
+    if (pull && stepPull(dt)) again = true;
     if (sim && awake && !reducedMotion) {
       awake = sim.tick();
       perf.ticks++;
@@ -247,16 +267,22 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
     if (!n) return null;
     const set = new Set([n]);
     const edges = new Set(incident.get(n.id) || []);
+    const depth = new Map();
+    const edgeDepth = new Map();
     for (const id of adj.get(n.id) || []) set.add(byId.get(id));
     if (n === sel) {
-      for (let c = n; c; ) {
-        const l = parentLink.get(c.id);
-        if (!l) break;
-        set.add(l.s); edges.add(l);
-        c = l.s;
+      const seen = new Map([[n.id, 0]]);
+      const queue = [n];
+      for (let i = 0; i < queue.length && seen.get(queue[i].id) < ANCESTOR_LEVELS; i++) {
+        const d = seen.get(queue[i].id) + 1;
+        for (const l of parentLinks.get(queue[i].id) || []) {
+          set.add(l.s); edges.add(l);
+          if (!edgeDepth.has(l)) edgeDepth.set(l, d);
+          if (!seen.has(l.s.id)) { seen.set(l.s.id, d); depth.set(l.s, d); queue.push(l.s); }
+        }
       }
     }
-    return { n, set, edges };
+    return { n, set, edges, depth, edgeDepth };
   }
 
   function refocus() { focus = focusState(sel); }
@@ -275,6 +301,7 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
   function drawLinks(k) {
     const plain = [];
     const lit = [];
+    const litFar = new Map();
     const dotted = [];
     const litDotted = [];
     const fading = [];
@@ -283,13 +310,16 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
       if (v < 0.02) continue;
       if (v < 0.99) { fading.push(l); continue; }
       const on = focus?.edges.has(l);
-      if (l.assoc) (on ? litDotted : dotted).push(l); else (on ? lit : plain).push(l);
+      const d = on ? focus.edgeDepth.get(l) || 1 : 1;
+      if (on && d > 1 && !l.assoc) litFar.set(d, [...(litFar.get(d) || []), l]);
+      else if (l.assoc) (on ? litDotted : dotted).push(l); else (on ? lit : plain).push(l);
     }
     const base = focus ? 0.06 : 0.2;
     strokeLinks(plain, k, base, colors.edge, 1);
     for (const l of fading) strokeLinks([l], k, 0.3 * Math.min(l.s.vis, l.t.vis), colors.edge, 1, l.assoc);
     strokeLinks(dotted, k, base * 0.8, colors.edge, 0.7, true);
     strokeLinks(lit, k, 0.95, colors.accent, 1.8);
+    for (const [d, list] of litFar) strokeLinks(list, k, Math.max(0.45, 0.95 - FADE_STEP * (d - 1)), colors.accent, 1.8);
     strokeLinks(litDotted, k, 0.95, colors.accent, 1.2, true);
     ctx.setLineDash([]);
   }
@@ -304,6 +334,7 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
   function nodeAlpha(n) {
     let a = n.level === 1 ? 1 : EMPHASIS_ALPHA[n.em];
     if (focus && !focus.set.has(n)) a *= DIM;
+    else if (focus?.depth.has(n)) a = fadeAt(focus.depth.get(n), 0.55);
     return a * n.vis;
   }
 
@@ -330,6 +361,7 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
     else if (n === hover) ring(n, 3, 2, colors.accent, k);
     else if (matches.has(n.id)) ring(n, 3, 2.5, colors.accent, k);
     if (n.node.status === 'question' && r * k >= 4) drawBadge(n, r, a, k);
+    if (marks.has(n.id) && r * k >= 4) drawMark(n, r, a, k, marks.get(n.id));
     if (flashing && flashing.id === n.id) drawFlash(n, k);
   }
 
@@ -349,6 +381,26 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('?', bx, by + 0.5 / k);
+  }
+
+  function drawMark(n, r, a, k, state) {
+    ctx.globalAlpha = Math.max(a, 0.7);
+    const br = 5 / k;
+    const off = (r + 3 / k) * 0.72;
+    const bx = n.x + off;
+    const by = n.y + off;
+    ctx.fillStyle = colors.ink;
+    ctx.beginPath(); ctx.arc(bx, by, br, 0, 2 * Math.PI); ctx.fill();
+    ctx.strokeStyle = colors.halo;
+    ctx.lineWidth = 1.5 / k;
+    ctx.stroke();
+    ctx.strokeStyle = colors.halo;
+    ctx.lineWidth = 1.4 / k;
+    const d = 2.4 / k;
+    ctx.beginPath();
+    ctx.moveTo(bx - d, by); ctx.lineTo(bx + d, by);
+    if (state === 'closed') { ctx.moveTo(bx, by - d); ctx.lineTo(bx, by + d); }
+    ctx.stroke();
   }
 
   function drawFlash(n, k) {
@@ -466,9 +518,97 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
 
   function unpin(n) { n.fx = null; n.fy = null; }
 
+  const pinnedOutside = (c, inside) => (parentLinks.get(c.id) || []).some((l) => l.s.target === 1 && l.s.fx != null && !inside.has(l.s.id));
+
+  function subtreeOf(root) {
+    const seen = new Set([root.id]);
+    const out = [];
+    let level = [root];
+    for (let depth = 1; level.length; depth++) {
+      const next = [];
+      for (const p of level) {
+        for (const c of childrenOf.get(p.id) || []) {
+          if (seen.has(c.id) || pinnedOutside(c, seen)) continue;
+          seen.add(c.id);
+          out.push({ c, depth });
+          next.push(c);
+        }
+      }
+      level = next;
+    }
+    return out;
+  }
+
+  function shift(c, dx, dy) {
+    if (c.hx !== undefined) { c.hx += dx; c.hy += dy; }
+    if (c.target !== 1 || c.fx != null) return;
+    c.x += dx; c.y += dy;
+  }
+
+  const spot = (n) => (n.fx != null ? [n.fx, n.fy] : n.target === 1 || n.hx === undefined ? [n.x, n.y] : [n.hx, n.hy]);
+
+  function leashItems(root, sub) {
+    const inside = new Set([root.id, ...sub.map((it) => it.c.id)]);
+    const simLinks = new Map();
+    for (const sl of sim?.links || []) if (sl.tree) simLinks.set(`${sl.s.id}>${sl.t.id}`, sl);
+    const muted = [];
+    const items = sub.map(({ c }) => {
+      const ups = (parentLinks.get(c.id) || []).filter((l) => inside.has(l.s.id)).map((l) => {
+        const sl = simLinks.get(`${l.s.id}>${c.id}`);
+        if (sl) { sl.mute = true; muted.push(sl); }
+        const [px, py] = spot(l.s);
+        const [cx, cy] = spot(c);
+        const own = l.s.hx !== undefined && c.hx !== undefined ? Math.hypot(l.s.hx - c.hx, l.s.hy - c.hy) : Math.hypot(px - cx, py - cy);
+        return { p: l.s, rest: sl ? sl.dist : own };
+      });
+      return { c, ups };
+    });
+    return { items, muted };
+  }
+
+  function clearPull() {
+    if (!pull) return;
+    for (const sl of pull.muted) sl.mute = false;
+    pull = null;
+  }
+
+  function stepLeash(f) {
+    let busy = false;
+    for (const { c, ups } of pull.items) {
+      const [cx, cy] = spot(c);
+      let best = 0;
+      let ux = 0;
+      let uy = 0;
+      for (const { p, rest } of ups) {
+        const [px, py] = spot(p);
+        const dx = px - cx;
+        const dy = py - cy;
+        const d = Math.hypot(dx, dy);
+        if (d - rest > best) { best = d - rest; ux = dx / d; uy = dy / d; }
+      }
+      if (best < FOLLOW_EPS) continue;
+      shift(c, ux * best * f, uy * best * f);
+      busy = true;
+    }
+    if (busy) hashDirty = true;
+    return busy;
+  }
+
+  function stepPull(dt) {
+    if (!pull) return false;
+    const busy = stepLeash(1 - Math.exp(-dt / (CHILD_FOLLOW_MS / CHILD_FOLLOW_TAU_DIV)));
+    if (!busy && !drag?.node) clearPull();
+    return busy;
+  }
+
   function startNodeDrag() {
     drag.node.fx = drag.node.x;
     drag.node.fy = drag.node.y;
+    clearPull();
+    drag.sub = subtreeOf(drag.node);
+    drag.ax = drag.node.x;
+    drag.ay = drag.node.y;
+    pull = leashItems(drag.node, drag.sub);
     follow = false;
     userMoved = true;
     if (sim && !reducedMotion) { sim.setAlphaTarget(DRAG_ALPHA); awake = true; }
@@ -477,7 +617,12 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
   function moveDragNode(p) {
     const w = toWorld(p.x, p.y);
     const n = drag.node;
-    if (reducedMotion || !sim) { n.x = w.x; n.y = w.y; hashDirty = true; } else { n.fx = w.x; n.fy = w.y; }
+    drag.ax = w.x; drag.ay = w.y;
+    hashDirty = true;
+    if (reducedMotion || !sim) {
+      n.x = w.x; n.y = w.y; n.fx = w.x; n.fy = w.y;
+      if (pull) stepLeash(1);
+    } else { n.fx = w.x; n.fy = w.y; }
     setHover(n, null);
   }
 
@@ -486,7 +631,7 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
     drag = null;
     if (!d) return;
     if (d.node) {
-      if (d.moved) { d.node.hx = d.node.x; d.node.hy = d.node.y; syncLinkLength(); }
+      if (d.moved) { d.node.hx = d.ax; d.node.hy = d.ay; syncLinkLength(); }
       unpin(d.node);
       if (sim && d.moved && !reducedMotion) { sim.setAlphaTarget(sim.restTarget()); sim.reheat(RELEASE_ALPHA); awake = true; }
       if (!d.moved && ev.type === 'pointerup') onSelect?.(d.node.id);
@@ -598,12 +743,16 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
     byId = new Map(nodes.map((n) => [n.id, n]));
     adj = new Map(nodes.map((n) => [n.id, new Set()]));
     incident = new Map(nodes.map((n) => [n.id, []]));
-    parentLink = new Map();
+    parentLinks = new Map();
+    childrenOf = new Map();
     for (const l of links) {
       adj.get(l.s.id).add(l.t.id); adj.get(l.t.id).add(l.s.id);
       incident.get(l.s.id).push(l); incident.get(l.t.id).push(l);
-      if (!l.related && !l.assoc) parentLink.set(l.t.id, l);
+      if (l.related || l.assoc) continue;
+      if (parentLinks.has(l.t.id)) parentLinks.get(l.t.id).push(l); else parentLinks.set(l.t.id, [l]);
+      if (childrenOf.has(l.s.id)) childrenOf.get(l.s.id).push(l.t); else childrenOf.set(l.s.id, [l.t]);
     }
+    pull = null;
     order = [...nodes].sort((a, b) => b.r - a.r || a.id.localeCompare(b.id));
   }
 
@@ -620,13 +769,82 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
     refocus();
   }
 
-  function enterNodes(entering) {
-    for (const n of entering) {
-      const near = [...(adj.get(n.id) || [])].map((id) => byId.get(id)).filter((m) => m.target === 1 && m.vis > 0.3 && !entering.includes(m));
-      if (!near.length) continue;
-      n.x = near.reduce((s, m) => s + m.x, 0) / near.length + ((n.id.length % 7) - 3);
-      n.y = near.reduce((s, m) => s + m.y, 0) / near.length + ((n.id.length % 5) - 2);
+  function fanSlots(rs, par, center, arc) {
+    const count = rs.length;
+    const maxR = Math.max(...rs);
+    const pitch = 2 * (rs.reduce((s, r) => s + r, 0) / count) + RING_PITCH;
+    const first = par.r + maxR + RING_GAP;
+    const at = (ang, rad) => ({ ang, rad });
+    if (count <= RING_MULTI_MIN) {
+      const rad = Math.min(RING_MAX, Math.max(first, (count * pitch) / arc));
+      return rs.map((_, i) => at(center - arc / 2 + (arc * (i + 0.5)) / count, rad));
+    }
+    const step = pitch * RING_STEP;
+    const radii = [];
+    for (let cap = 0, k = 0; cap < count && k < 24; k++) {
+      radii.push(first + k * step);
+      cap += (arc * radii[k]) / pitch;
+    }
+    const total = radii.reduce((s, r) => s + r, 0);
+    const per = radii.map((r) => Math.floor((count * r) / total));
+    const order = radii.map((r, k) => ({ k, rem: (count * r) / total - per[k] })).sort((a, b) => b.rem - a.rem);
+    for (let left = count - per.reduce((s, c) => s + c, 0), i = 0; left > 0; left--, i++) per[order[i % order.length].k]++;
+    const slots = [];
+    radii.forEach((rad, k) => {
+      for (let j = 0; j < per[k]; j++) slots.push(at(center - arc / 2 + (arc * (j + (k % 2 ? 0.25 : 0.75))) / per[k], rad));
+    });
+    return slots.sort((a, b) => a.ang - b.ang || a.rad - b.rad);
+  }
+
+  function fanCenter(par, ready) {
+    const ups = (parentLinks.get(par.id) || []).map((l) => l.s).filter(ready);
+    if (!ups.length) return { center: (par.id.length % 11) * 0.3, arc: 2 * Math.PI };
+    const gx = ups.reduce((s, m) => s + m.x, 0) / ups.length;
+    const gy = ups.reduce((s, m) => s + m.y, 0) / ups.length;
+    if (Math.hypot(par.x - gx, par.y - gy) < 1) return { center: (par.id.length % 11) * 0.3, arc: 2 * Math.PI };
+    return { center: Math.atan2(par.y - gy, par.x - gx), arc: RING_ARC };
+  }
+
+  function enterNodes(entering, chained = false) {
+    const fresh = new Set(entering);
+    const placed = new Set();
+    const ready = (m) => m.target === 1 && ((chained && placed.has(m)) || (!fresh.has(m) && m.vis > 0.3));
+    const pending = new Set(entering);
+    const fan = (par, kids) => {
+      const { center, arc } = fanCenter(par, ready);
+      const slots = fanSlots(kids.map((n) => n.r), par, center, arc);
+      kids.forEach((n, i) => {
+        const { ang, rad } = slots[i];
+        n.x = par.x + Math.cos(ang) * rad;
+        n.y = par.y + Math.sin(ang) * rad;
+        n.vx = 0; n.vy = 0;
+        n.hx = n.x; n.hy = n.y;
+        n.ringPar = par.id; n.ringRad = rad;
+        placed.add(n);
+        pending.delete(n);
+      });
+    };
+    const near = (n) => {
+      const nb = [...(adj.get(n.id) || [])].map((id) => byId.get(id)).filter(ready);
+      if (!nb.length) return false;
+      n.x = nb.reduce((s, m) => s + m.x, 0) / nb.length + ((n.id.length % 7) - 3);
+      n.y = nb.reduce((s, m) => s + m.y, 0) / nb.length + ((n.id.length % 5) - 2);
       n.vx = 0; n.vy = 0;
+      n.ringPar = null;
+      placed.add(n);
+      pending.delete(n);
+      return true;
+    };
+    for (let moved = true; moved && pending.size; ) {
+      moved = false;
+      const groups = new Map();
+      for (const n of pending) {
+        const par = (parentLinks.get(n.id) || []).map((l) => l.s).find(ready);
+        if (par) groups.set(par, [...(groups.get(par) || []), n]);
+      }
+      for (const [par, kids] of groups) { fan(par, kids); moved = true; }
+      for (const n of [...pending]) if (near(n)) moved = true;
+      if (!chained) break;
     }
   }
 
@@ -659,7 +877,7 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
       if (fresh && W > 10 && H > 10) { follow = true; userMoved = false; snapFit(); }
       request();
     },
-    setVisible(ids) {
+    setVisible(ids, { heat = 0.7, keepCamera = false, chained = false } = {}) {
       visibleSet = ids ? new Set(ids) : null;
       if (!nodes.length) return;
       const before = new Map(nodes.map((n) => [n.id, n.target]));
@@ -667,15 +885,15 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
       const entering = nodes.filter((n) => n.target === 1 && before.get(n.id) === 0);
       const changed = entering.length > 0 || nodes.some((n) => n.target === 0 && before.get(n.id) === 1);
       if (!changed) return;
-      enterNodes(entering);
-      rebuildSim(0.7);
-      if (reducedMotion) { sim.settle(SETTLE_STATIC); awake = false; snapFit(); }
-      follow = true;
-      userMoved = false;
-      anim = null;
+      enterNodes(entering, chained);
+      rebuildSim(chained ? Math.min(heat, REVEAL_ALPHA) : heat);
+      const hold = keepCamera && userMoved;
+      if (reducedMotion) { sim.settle(SETTLE_STATIC); awake = false; if (!hold) snapFit(); }
+      if (!hold) { follow = true; userMoved = false; anim = null; }
       hashDirty = true;
       request();
     },
+    setMarks(map) { marks = map instanceof Map ? map : new Map(); request(); },
     select(id) {
       const n = id ? byId.get(id) : null;
       sel = n && n.target === 1 ? n : null;

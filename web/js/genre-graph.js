@@ -1,5 +1,6 @@
 import { createSim } from './genre-sim.js';
-import { familyIndex, nodeRadius, FAMILY_PALETTE_SIZE, ancestorsOf } from './genre-data.js';
+import { familyIndex, nodeRadius, pieIndices, FAMILY_PALETTE_SIZE, ancestorsOf } from './genre-data.js';
+import { fillDisc } from './genre-disc.js';
 import { fitTransform, recenterOnResize, placeLabels, diffGraph, mixColor, hitNode, isDragMove } from './genre-view.js';
 
 const MIN_K = 0.15;
@@ -209,10 +210,13 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
 
   function drawNode(n, alpha, k) {
     ctx.globalAlpha = alpha;
-    ctx.beginPath();
-    ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
-    ctx.fillStyle = nodeColor(n);
-    ctx.fill();
+    if (n.fis.length > 1 && n.mix >= 1) fillDisc(ctx, n.x, n.y, n.r, colors.fam, n.fis, colors.label);
+    else {
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+      ctx.fillStyle = nodeColor(n);
+      ctx.fill();
+    }
     ctx.lineWidth = 1.5 / k;
     ctx.strokeStyle = colors.halo;
     ctx.stroke();
@@ -496,7 +500,7 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
     nodes = graph.nodes.map((d) => {
       const prev = old.get(d.id);
       return {
-        id: d.id, label: d.label, data: d, r: nodeRadius(d.count), fi: familyIndex(d.family),
+        id: d.id, label: d.label, data: d, r: nodeRadius(d.count), fi: familyIndex(d.family), fis: pieIndices(d.families?.length ? d.families : [d.family]),
         x: prev?.x, y: prev?.y, vx: prev?.vx || 0, vy: prev?.vy || 0, fiPrev: prev?.fi ?? familyIndex(d.family), mix: 1,
       };
     });
@@ -530,6 +534,7 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
       const n = byId.get(d.id);
       n.data = d;
       n.r = nodeRadius(d.count);
+      n.fis = pieIndices(d.families?.length ? d.families : [d.family]);
       const fi = familyIndex(d.family);
       if (fi !== n.fi) { n.fiPrev = n.fi; n.fi = fi; n.mix = reducedMotion ? 1 : 0; }
     }

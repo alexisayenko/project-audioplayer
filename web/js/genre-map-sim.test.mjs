@@ -47,7 +47,7 @@ test('the simulation sleeps when cooled and wakes on a reheat', () => {
 test('a pinned node stays exactly where it is held while the neighbourhood follows, and is released afterwards', () => {
   const { g, sim } = build();
   sim.settle(400);
-  const hub = g.byId.get('g:Electronic');
+  const hub = g.byId.get('g:Rock');
   const kid = g.links.find((l) => l.kind === 'parent' && l.source === hub.id);
   const child = g.byId.get(kid.target);
   const gap0 = Math.hypot(hub.x - child.x, hub.y - child.y);

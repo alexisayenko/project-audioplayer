@@ -47,7 +47,7 @@ const run = (n = 1) => {
 const settle = (n = 1500) => { for (let i = 0; i < n && frames.length; i++) run(1); };
 
 function fixtureGraph() {
-  const tree = buildTree(VOCAB);
+  const tree = buildTree({ ...VOCAB, levels: { ...VOCAB.levels, 'empty tip': { parents: ['Rock'], discogs: true } } });
   applyCounts(tree, SONGS);
   return buildMapGraph(tree);
 }

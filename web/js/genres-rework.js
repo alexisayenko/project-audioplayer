@@ -1,22 +1,21 @@
 import { api } from './api.js';
 import { el, plural, pageHead, toast } from './dom.js';
 import { icon } from './icons.js';
-import { familyIndex } from './genre-data.js';
-import { vkey } from './genre-vocab.js';
+import { familyIndex, isHiddenFamily } from './genre-data.js';
 import { filterByTags } from './library-data.js';
 import { outlineDefaultOpen } from './genre-view.js';
 import { layoutRadial } from './genre-radial.js';
 import { createRadialView } from './genre-radial-view.js';
 import { createForceView } from './genre-force-view.js';
-import { sourceIcons } from './genre-sources-ui.js';
 import { shadeTable } from './genre-shade.js';
 import { loadLayoutFile, exportLayout } from './genre-layout-io.js';
 import { isGuest } from './guest.js';
 import { buildMapGraph, visibleIds, libraryCount, genreCount } from './genre-map-graph.js';
+import { loadDrill, saveDrill, newDrill, drillEmpty, pruneDrill, drillVisible, clickDrill, revealDrill, collapseDrill, drillMarks } from './genre-drill.js';
 import { player } from './player.js';
 import { songGenres } from './genre-playing.js';
 import {
-  hasLevels, buildTree, applyCounts, count, populatedFamilies, genresWithSongs, chain, ancestorIds, resolveNode, libraryTags, otherGenres, searchMatches, visibleRows, allExpandable, treeKey, filterIds, flavourCount, STATUS_FILTERS, STATUS_LABELS, statusKey,
+  hasLevels, buildTree, applyCounts, count, populatedFamilies, genresWithSongs, ancestorIds, resolveNode, libraryTags, otherGenres, searchMatches, visibleRows, allExpandable, treeKey, filterIds, flavourCount, STATUS_FILTERS, STATUS_LABELS,
 } from './genre-levels.js';
 
 const songs = (n) => `${n} ${plural(n, 'song', 'songs')}`;
@@ -37,6 +36,7 @@ export function clearSubfamilies(storage) {
 }
 export const RELATED_KEY = 'electrophone.genresRelated';
 export const FUSION_KEY = 'electrophone.genresFusion';
+export { loadDrill, saveDrill, DRILL_KEY } from './genre-drill.js';
 export const loadRelated = (storage) => loadFlag(storage, RELATED_KEY);
 export const saveRelated = (storage, on) => saveFlag(storage, RELATED_KEY, on);
 export const loadFusion = (storage) => loadFlag(storage, FUSION_KEY);
@@ -81,7 +81,6 @@ export function renderGenresRework(root, opts = {}) {
   let expanded = new Set();
   let activeId = null;
   let selectedId = null;
-  let panelId = null;
   let rows = [];
   let statusFilter = 'all';
   const flavourSel = new Set();
@@ -92,6 +91,8 @@ export function renderGenresRework(root, opts = {}) {
   let graph = null;
   let graphFamily = null;
   let allGenres = false;
+  let drill = loadDrill(globalThis.localStorage);
+  const drillState = newDrill();
   let fusion = loadFusion(globalThis.localStorage);
   let related = loadRelated(globalThis.localStorage);
   let lastData = null;
@@ -109,9 +110,7 @@ export function renderGenresRework(root, opts = {}) {
   const graphCanvas = el('canvas', {
     class: 'gmr-canvas gmr-graph', role: 'img', tabindex: '-1', hidden: kind !== 'graph', 'aria-label': graphLabel,
   });
-  const tip = el('div', { class: 'gmr-tip t-caption', role: 'tooltip', hidden: true });
   const treeEl = el('div', { class: 'gmr-tree', role: 'tree', 'aria-label': 'Genre hierarchy' });
-  const details = el('div', { class: 'gmr-details gmr-info', id: 'gmr-info', role: 'group', 'aria-label': 'Genre details', hidden: true });
   const empty = el('p', { class: 'gmr-empty muted t-body', hidden: true });
   const outlineEl = el('section', { class: 'gmr-outline', id: 'gmr-outline', 'aria-label': 'Outline' });
   const side = el('div', { class: 'gmr-side', id: 'gmr-panel' });
@@ -135,6 +134,11 @@ export function renderGenresRework(root, opts = {}) {
   }
 
   function renderFamilies() {
+    if (kind === 'graph' && drill) {
+      familyRow.hidden = true;
+      familyRow.replaceChildren();
+      return;
+    }
     if (kind === 'graph') {
       const all = tree ? (allGenres ? tree.roots.map((r) => r.name) : families) : [];
       familyRow.hidden = !all.length;
@@ -157,8 +161,9 @@ export function renderGenresRework(root, opts = {}) {
 
   const viewOpts = {
     reducedMotion: reduced,
-    onSelect: (id) => (id ? select(id, { reveal: true, info: true }) : deselect()),
-    onHover: (n, pt) => showTip(n, pt),
+    onSelect: (id) => {
+      if (id && drill && kind === 'graph') { drillClick(id); select(id, { reveal: true, map: true }); } else if (id) select(id, { reveal: true }); else if (drill && kind === 'graph') { collapseMap(); deselect(); } else deselect();
+    },
   };
   const radialView = createRadialView(canvas, viewOpts);
   const graphView = (opts?.forceViewFactory || createForceView)(graphCanvas, viewOpts);
@@ -171,6 +176,14 @@ export function renderGenresRework(root, opts = {}) {
     class: 'gm-tbtn gmr-lib', type: 'button', 'aria-pressed': 'false', hidden: kind !== 'graph', title: 'Also show the genres that have no song in your library (this visit only)',
     onclick: () => setAllGenres(!allGenres, { apply: true }),
   }, 'All genres');
+  const drillBtn = el('button', {
+    class: 'gm-tbtn gmr-drill', type: 'button', 'aria-pressed': String(drill), hidden: kind !== 'graph', title: 'Show the families first and open a genre to see the genres below it (Esc collapses everything)',
+    onclick: () => setDrill(!drill, { save: true }),
+  }, 'Drill-down');
+  const collapseMapBtn = el('button', {
+    class: 'gm-tbtn gmr-collapse-map', type: 'button', hidden: kind !== 'graph' || !drill, 'aria-label': 'Collapse all branches on the map', title: 'Back to the families only (Esc)',
+    onclick: () => collapseMap(),
+  }, 'Collapse all');
   const fusionBtn = el('button', {
     class: 'gm-tbtn gmr-fusion', type: 'button', role: 'switch', 'aria-checked': String(fusion), title: 'Also show fusion genres (blues rock, trip hop, ...) under their second family',
     onclick: () => setFusion(!fusion),
@@ -192,23 +205,6 @@ export function renderGenresRework(root, opts = {}) {
     onclick: () => setRelated(!related),
   }, 'Related');
 
-  function showTip(n, pt) {
-    if (!n || !pt) { tip.hidden = true; return; }
-    const r = work.getBoundingClientRect?.() || { left: 0, top: 0 };
-    const t = n.node;
-    tip.replaceChildren(...[
-      el('strong', {}, t.label),
-      el('span', {}, ` ${songs(count(t))}${t.own.size !== count(t) ? ` (${t.own.size} exactly)` : ''}`),
-      t.synonyms.length ? el('span', { class: 'muted' }, ` | also: ${t.synonyms.join(', ')}`) : null,
-      !t.discogs ? el('span', { class: 'muted' }, ' | not in Discogs') : null,
-      t.alsoIn.length ? el('span', { class: 'muted' }, ` | also in ${otherGenres(t, kind === 'radial' ? rootGenre : t.family).join(', ')}`) : null,
-      t.status === 'question' ? el('span', { class: 'muted' }, ` | ${STATUS_LABELS.question}`) : null,
-    ].filter(Boolean));
-    tip.style.left = `${pt.x - r.left + 12}px`;
-    tip.style.top = `${pt.y - r.top + 14}px`;
-    tip.hidden = false;
-  }
-
   const narrow = () => (window.innerWidth || 1200) < NARROW_PX;
 
   function setOutline(open) {
@@ -229,6 +225,14 @@ export function renderGenresRework(root, opts = {}) {
     graphView.setFocusInset(inset);
   }
 
+  function familyFor(id) {
+    const n = tree?.byId.get(id);
+    if (!n) return null;
+    const own = n.level === 1 ? [n.name] : n.fams;
+    const open = own.filter((f) => families.includes(f));
+    return open.includes(rootGenre) ? rootGenre : open[0] || null;
+  }
+
   function setView(next, { save = false } = {}) {
     if (!VIEWS.includes(next) || next === kind) return;
     kind = next;
@@ -237,10 +241,11 @@ export function renderGenresRework(root, opts = {}) {
     canvas.hidden = next !== 'radial';
     graphCanvas.hidden = next !== 'graph';
     libBtn.hidden = next !== 'graph';
+    syncDrillUi();
     syncLayoutButtons();
     renderSubfamilies();
-    const fam = next === 'radial' && tree && selectedId ? chain(tree, selectedId)[0]?.name : null;
-    if (fam && families.includes(fam)) setFamily(fam);
+    const fam = next === 'radial' && tree && selectedId ? familyFor(selectedId) : null;
+    if (fam) setFamily(fam);
     legend.classList.toggle('is-graph', next === 'graph');
     view = next === 'graph' ? graphView : radialView;
     syncInset();
@@ -266,7 +271,7 @@ export function renderGenresRework(root, opts = {}) {
     oninput: () => { query = search.value; renderTree(); markMatches(); if (matchIds().length === 1) centre(matchIds()[0]); },
     onkeydown: (e) => {
       if (e.key === 'Escape') { search.value = ''; query = ''; renderTree(); markMatches(); }
-      if (e.key === 'Enter' && matchIds().length) { e.preventDefault(); select(matchIds()[0], { reveal: true, center: true, info: true }); }
+      if (e.key === 'Enter' && matchIds().length) { e.preventDefault(); select(matchIds()[0], { reveal: true, center: true }); }
       if (e.key === 'ArrowDown' && rows.length) { e.preventDefault(); focusRow(activeId && rows.some((r) => r.key === activeId) ? activeId : rows[0].key); }
     },
   });
@@ -287,7 +292,51 @@ export function renderGenresRework(root, opts = {}) {
 
   const subFamilyName = () => tree?.subfamilies?.[0]?.family || null;
   const subActive = () => !!subSel.size && !!subFamilyName() && (kind === 'graph' ? graphFamily === subFamilyName() : rootGenre === subFamilyName());
-  const currentVisible = () => (tree ? visibleIds(tree, { family: graphFamily, libraryOnly: !allGenres, status: statusFilter, flavours: flavourSel, subfamilies: subActive() ? subSel : null }) : null);
+  const baseVisible = () => (tree ? visibleIds(tree, { family: drill ? null : graphFamily, libraryOnly: !allGenres, status: statusFilter, flavours: flavourSel, subfamilies: subActive() ? subSel : null }) : null);
+  const currentVisible = () => {
+    const base = baseVisible();
+    return drill && tree && graph ? drillVisible(tree, graph, drillState, base) : base;
+  };
+  const drillOn = () => drill && kind === 'graph';
+
+  function syncDrillUi() {
+    drillBtn.hidden = kind !== 'graph';
+    drillBtn.setAttribute('aria-pressed', String(drill));
+    collapseMapBtn.hidden = !drillOn();
+    collapseMapBtn.disabled = drillEmpty(drillState);
+  }
+
+  function syncMap() {
+    const vis = currentVisible();
+    if (drill) {
+      graphView.setVisible(vis, { heat: 0.4, keepCamera: true, chained: true });
+      graphView.setMarks?.(tree && graph ? drillMarks(graph, drillState, baseVisible(), vis) : new Map());
+    } else {
+      graphView.setVisible(vis);
+      graphView.setMarks?.(new Map());
+    }
+    syncDrillUi();
+    renderStatus();
+  }
+
+  function drillClick(id) {
+    if (clickDrill(tree, graph, drillState, id, baseVisible())) syncMap();
+  }
+
+  function collapseMap() {
+    if (collapseDrill(drillState)) syncMap();
+    if (selectedId && !onMap(selectedId)) deselect();
+  }
+
+  function setDrill(on, { save = false } = {}) {
+    drill = on;
+    if (save) saveDrill(globalThis.localStorage, on);
+    if (on) graphFamily = null;
+    syncDrillUi();
+    if (!tree) return;
+    applyFilters();
+    if (selectedId && !onMap(selectedId)) deselect();
+  }
   const radialKeep = () => {
     if (!tree) return null;
     const base = filterIds(tree, { status: statusFilter, flavours: flavourSel });
@@ -298,7 +347,7 @@ export function renderGenresRework(root, opts = {}) {
 
   function applyFilters() {
     radialView.setFilter(radialKeep());
-    graphView.setVisible(currentVisible());
+    syncMap();
     renderTree();
     renderFlavours();
     renderFamilies();
@@ -398,7 +447,7 @@ export function renderGenresRework(root, opts = {}) {
     return !!graph?.byId.has(id) && (currentVisible()?.has(id) ?? true);
   };
   const rowOpts = () => ({
-    expanded, query, onlyWithSongs: kind === 'radial' || !allGenres, status: statusFilter, flavours: flavourSel, only: kind === 'graph' ? currentVisible() : (subActive() ? visibleIds(tree, { subfamilies: subSel }) : null),
+    expanded, query, onlyWithSongs: kind === 'radial' || !allGenres, status: statusFilter, flavours: flavourSel, only: kind === 'graph' ? baseVisible() : (subActive() ? visibleIds(tree, { subfamilies: subSel }) : null),
   });
 
   const flavourRow = el('div', { class: 'gmr-flavour-row', role: 'group', 'aria-label': 'Flavour filter', hidden: true });
@@ -434,18 +483,28 @@ export function renderGenresRework(root, opts = {}) {
   function matchIds() {
     return tree && query ? [...searchMatches(tree, query, searchOpts()).keys()].filter((id) => (kind === 'radial' ? onMap(id) : graph?.byId.has(id))) : [];
   }
+  const hiddenSel = () => {
+    const n = tree && selectedId ? tree.byId.get(selectedId) : null;
+    return n && n.level === 1 && isHiddenFamily(n.name) ? n : null;
+  };
   function markMatches() {
     const ids = tree && query ? [...searchMatches(tree, query, searchOpts()).keys()] : [];
     radialView.setMatches(ids);
-    graphView.setMatches(ids);
+    const h = hiddenSel();
+    graphView.setMatches(h ? [...new Set([...ids, ...h.children.filter((c) => kind === 'graph' && onMap(c.id)).map((c) => c.id)])] : ids);
   }
   function panelInset() {
     const box = (e, open) => (open && !e.hidden ? e.getBoundingClientRect?.() || { width: 0, height: 0 } : { width: 0, height: 0 });
     const a = box(side, outlineOpen);
-    const b = box(details, true);
-    return narrow() ? { r: 0, b: Math.max(a.height, b.height) } : { r: a.width + b.width, b: 0 };
+    return narrow() ? { r: 0, b: a.height } : { r: a.width, b: 0 };
   }
   function centre(id) {
+    const n = tree?.byId.get(id);
+    if (kind === 'graph' && n && n.level === 1 && isHiddenFamily(n.name)) {
+      const best = n.children.filter((c) => onMap(c.id)).sort((a, b) => count(b) - count(a))[0];
+      if (best) { view.setFocusInset(panelInset()); view.focusNode(best.id); }
+      return;
+    }
     if (!onMap(id)) return;
     view.setFocusInset(panelInset());
     view.focusNode(id);
@@ -459,7 +518,7 @@ export function renderGenresRework(root, opts = {}) {
   }
 
   function reveal(id) {
-    for (const a of chain(tree, id).slice(0, -1)) expanded.add(a.id);
+    for (const a of ancestorIds(tree, id)) if (a !== id) expanded.add(a);
     if (!visibleRows(tree, rowOpts()).some((r) => r.node.id === id)) {
       query = '';
       search.value = '';
@@ -482,15 +541,16 @@ export function renderGenresRework(root, opts = {}) {
     if (kind === 'radial') { if (rootGenre) showTotals(); else status.textContent = EMPTY_TEXT; return; }
     const total = genreCount(tree);
     const mine = libraryCount(tree);
-    const shownIds = kind === 'graph' ? currentVisible() : null;
+    const shownIds = kind === 'graph' ? baseVisible() : null;
     const shown = shownIds ? [...shownIds].filter((id) => tree.byId.get(id)?.level > 1).length : total;
     const libShown = visibleIds(tree, { libraryOnly: true });
+    const onMapNow = drillOn() ? `, ${[...currentVisible()].filter((id) => tree.byId.get(id)?.level > 1).length} on the map` : '';
     if (!allGenres && shownIds && libShown && shownIds.size === libShown.size) {
-      status.textContent = `${mine} ${plural(mine, 'genre', 'genres')} in your library`;
+      status.textContent = `${mine} ${plural(mine, 'genre', 'genres')} in your library${onMapNow}`;
       return;
     }
     const scope = shown === total ? '' : ` (${shown} shown)`;
-    status.textContent = `${total} ${plural(total, 'genre', 'genres')}${scope}, ${mine} in your library`;
+    status.textContent = `${total} ${plural(total, 'genre', 'genres')}${scope}, ${mine} in your library${onMapNow}`;
   }
 
   const buildLayout = () => (rootGenre ? layoutRadial(tree, rootGenre, { related }) : null);
@@ -514,30 +574,28 @@ export function renderGenresRework(root, opts = {}) {
     renderFlavours();
   }
 
-  function select(id, { reveal: rv = false, center = false, toggle = false, info = false } = {}) {
-    const family = kind === 'radial' && tree && !layout?.byId.has(id) ? chain(tree, id)[0]?.name : null;
-    if (family && families.includes(family)) setFamily(family);
+  function select(id, { reveal: rv = false, center = false, toggle = false, map = false } = {}) {
+    if (drill && tree && !map && revealDrill(tree, graph, drillState, id, baseVisible())) syncMap();
+    const family = kind === 'radial' && tree && !layout?.byId.has(id) ? familyFor(id) : null;
+    if (family) setFamily(family);
     selectedId = id;
-    panelId = info ? id : null;
     activeId = id;
     radialView.select(id);
     graphView.select(id);
-    if (info && narrow() && outlineOpen) setOutline(false);
+    markMatches();
     if (rv) { reveal(id); graphView.select(id); }
     if (toggle) { if (expanded.has(id)) expanded.delete(id); else expanded.add(id); }
     if (center) centre(id);
     renderTree();
-    renderPanel();
     if (rv || center || toggle) focusRow(id);
   }
 
   function deselect() {
     selectedId = null;
-    panelId = null;
     radialView.select(null);
     graphView.select(null);
+    markMatches();
     renderTree();
-    renderPanel();
   }
 
   function badge(text, label, cls = '') {
@@ -557,8 +615,8 @@ export function renderGenresRework(root, opts = {}) {
       !n.discogs ? badge('not in Discogs', 'Not in Discogs', 'nodisc') : null,
       ...n.flavours.map((k) => el('span', { class: 'gmr-badge flav', title: tree.flavours.get(k).description || tree.flavours.get(k).name }, tree.flavours.get(k).name)),
       n.status === 'question' ? badge('question', STATUS_LABELS.question, 'q') : null,
-      ...n.alsoUnder.map((a) => {
-        const target = tree.byKey.get(vkey(a));
+      ...n.parents.filter((id) => id !== r.parentId && !id.startsWith('g:')).map((id) => {
+        const target = tree.byId.get(id);
         if (!target || (kind === 'radial' && !count(target))) return null;
         return el('button', {
           class: 'gmr-also', type: 'button', tabindex: '-1', 'aria-label': `Parent ${target.label}: jump to ${target.label}`, title: `Parent ${target.label}`,
@@ -566,10 +624,14 @@ export function renderGenresRework(root, opts = {}) {
         }, `parent ${target.label}`);
       }),
       total ? el('span', { class: 'gmr-count t-caption', role: 'img', 'aria-label': songs(total) }, String(total)) : null,
+      total ? el('button', {
+        class: 'gmr-lib-btn', type: 'button', 'aria-label': `Show ${songs(total)} in the Library`, title: `Show ${songs(total)} in the Library`,
+        onclick: (e) => { e.stopPropagation(); filterByTags(libraryTags(tree, n.id)); location.hash = '#/library'; },
+      }, icon('library', 'inline')) : null,
     ];
     const attrs = {
-      class: `gmr-row l${n.level}${selectedId === n.id ? ' sel' : ''}${r.matched ? ' hit' : ''}`,
-      role: 'treeitem', 'data-id': r.key, 'data-node': n.id, tabindex: r.key === activeId ? '0' : '-1', 'aria-level': String(n.level),
+      class: `gmr-row l${Math.min(r.level, 3)}${selectedId === n.id ? ' sel' : ''}${r.matched ? ' hit' : ''}`,
+      role: 'treeitem', 'data-id': r.key, 'data-node': n.id, tabindex: r.key === activeId ? '0' : '-1', 'aria-level': String(r.level), style: `--lvl:${r.level}`,
       'aria-selected': String(selectedId === n.id), 'aria-posinset': String(i + 1), 'aria-setsize': String(rows.length),
       onclick: () => select(n.id, { center: true, toggle: r.hasChildren }),
     };
@@ -594,47 +656,6 @@ export function renderGenresRework(root, opts = {}) {
     empty.textContent = emptyText;
   }
 
-  const chipButton = (id, label) => el('button', { class: 'gm-chip', type: 'button', onclick: () => select(id, { reveal: true, center: true, info: true }) }, label);
-
-  function panelItems(n, total) {
-    const parents = n.parentNames.map((p) => tree.byId.get(`g:${p}`) || tree.byId.get(`s:${p}`)).filter(Boolean);
-    const rel = n.related.map((r) => tree.byId.get(`g:${r}`) || tree.byId.get(`s:${r}`)).filter(Boolean);
-    const chips = (list) => el('span', { class: 'gm-chips' }, list.map((p) => chipButton(p.id, p.label)));
-    const items = [];
-    const add = (k, ...v) => items.push(el('dt', { class: 't-caption muted' }, k), el('dd', { class: 't-body' }, ...v));
-    if (n.display) add('Vocabulary key', n.name);
-    if (n.level > 1) add('Parents', chips(parents));
-    if (n.subfamily) add('Subfamily', n.subfamily);
-    add('Synonyms', n.synonyms.length ? n.synonyms.join(', ') : 'None');
-    if (rel.length) add('Related', chips(rel));
-    const src = sourceIcons(n.sourceLinks, n.label);
-    if (src) add('Sources', src);
-    if (n.level > 1 && n.status !== 'approved') add('Review', STATUS_LABELS[statusKey(n)]);
-    if (n.level > 1 && n.flavours.length) add('Flavours', el('span', { class: 'gm-chips' }, n.flavours.map((k) => el('span', { class: 'gmr-badge flav', title: tree.flavours.get(k).description }, tree.flavours.get(k).name))));
-    if (n.provisional) add('Status', 'Provisional: not yet reviewed');
-    const exact = n.own.size !== total ? ` (${n.own.size} tagged exactly with it, the rest with genres below it)` : '';
-    add('Songs', `${total} in your library${exact}`);
-    return items;
-  }
-
-  function renderPanel() {
-    const n = tree && panelId ? tree.byId.get(panelId) : null;
-    details.hidden = !n;
-    if (!n) { details.replaceChildren(); return; }
-    const total = count(n);
-    const items = panelItems(n, total);
-    details.replaceChildren(
-      el('div', { class: 'gm-panel-head' },
-        n.level === 1 ? el('span', { class: `gm-dot f${familyIndex(n.name)}`, 'aria-hidden': 'true' }) : null,
-        el('h3', { class: 't-headline' }, n.label),
-        el('button', { class: 'gm-x', type: 'button', 'aria-label': 'Close details', title: 'Close details', onclick: () => deselect() }, icon('clear', 'nav'))),
-      el('dl', { class: 'gmr-dl' }, items),
-      el('button', {
-        class: 'btn primary small', type: 'button', disabled: !total,
-        onclick: () => { filterByTags(libraryTags(tree, n.id)); location.hash = '#/library'; },
-      }, `Show ${songs(total)} in Library`));
-  }
-
   function nowNode() {
     if (!tree) return null;
     if (kind === 'radial' && !layout) return null;
@@ -645,7 +666,20 @@ export function renderGenresRework(root, opts = {}) {
       if (n && (!rootId || ancestorIds(tree, n.id).has(rootId))) found.set(n.id, n);
     }
     const best = [...found.values()].sort((a, b) => b.level - a.level || count(b) - count(a) || a.name.localeCompare(b.name))[0];
-    for (let n = best; n; n = n.parent ? tree.byId.get(n.parent) : null) if (kind === 'radial' ? layout.byId.has(n.id) : graph?.byId.has(n.id)) return n;
+    const drawn = (n) => (kind === 'radial' ? layout.byId.has(n.id) : graph?.byId.has(n.id));
+    const seen = new Set();
+    for (let level = best ? [best] : []; level.length; ) {
+      const hit = level.find(drawn);
+      if (hit) return hit;
+      const next = [];
+      for (const n of level) {
+        for (const pid of n.parents || []) {
+          const p = tree.byId.get(pid);
+          if (p && !seen.has(p.id)) { seen.add(p.id); next.push(p); }
+        }
+      }
+      level = next;
+    }
     return null;
   }
 
@@ -690,7 +724,6 @@ export function renderGenresRework(root, opts = {}) {
 
   function dropStale() {
     if (selectedId && !tree.byId.has(selectedId)) selectedId = null;
-    if (panelId && !tree.byId.has(panelId)) panelId = null;
     for (const k of flavourSel) if (!tree.flavours.has(k)) flavourSel.delete(k);
   }
 
@@ -712,7 +745,6 @@ export function renderGenresRework(root, opts = {}) {
       radialView.setLayout(null, null);
       graphView.setGraph({ nodes: [], links: [] });
       renderTree();
-      renderPanel();
       refreshNow();
       status.textContent = failureText(v, vocab);
       return;
@@ -731,6 +763,7 @@ export function renderGenresRework(root, opts = {}) {
     layout = buildLayout();
     radialView.setLayout(layout, tree);
     graph = buildMapGraph(tree);
+    pruneDrill(drillState, graph);
     if (graphFamily && !tree.byId.has(`g:${graphFamily}`)) graphFamily = null;
     graphView.setGraph(graph, { saved: savedLayout });
     graphView.setRelated?.(related);
@@ -738,14 +771,13 @@ export function renderGenresRework(root, opts = {}) {
     dropStale();
     radialView.select(selectedId);
     radialView.setFilter(radialKeep());
-    graphView.setVisible(currentVisible());
+    syncMap();
     graphView.select(selectedId);
     renderFamilies();
     renderSubfamilies();
     markMatches();
     renderFlavours();
     renderTree();
-    renderPanel();
     renderStatus();
     refreshNow();
   }
@@ -782,13 +814,16 @@ export function renderGenresRework(root, opts = {}) {
 
   side.append(
     el('div', { class: 'gm-outline-head' }, el('h2', { class: 't-headline' }, 'Outline'), closeBtn),
-    el('div', { class: 'gmr-bar' }, status, el('div', { class: 'gmr-btns' }, legendBtn, nowBtn, reload), el('div', { class: 'gmr-btns' }, viewRow, libBtn, fusionBtn, relatedBtn, resetLayoutBtn, useSavedBtn, exportBtn), familyRow, subRow),
+    el('div', { class: 'gmr-bar' }, status, el('div', { class: 'gmr-btns' }, legendBtn, nowBtn, reload), el('div', { class: 'gmr-btns' }, viewRow, libBtn, drillBtn, collapseMapBtn, fusionBtn, relatedBtn, resetLayoutBtn, useSavedBtn, exportBtn), familyRow, subRow),
     outlineEl);
-  work.append(canvas, graphCanvas, side, details, outlineBtn, zoomBar, legend, tip);
+  work.append(canvas, graphCanvas, side, outlineBtn, zoomBar, legend);
   wrap.append(pageHead('Genres map'), work);
   root.append(wrap);
   setOutline(outlineOpen);
-  wrap.addEventListener('keydown', (e) => { if (e.key === 'Escape' && panelId && e.target !== search) deselect(); });
+  wrap.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape' || e.target === search) return;
+    if (drillOn() && !drillEmpty(drillState)) collapseMap();
+  });
   const unsubPlayer = player.onChange(refreshNow);
   if (!isGuest()) api.me().then((m) => { if (!dead) { isOwner = m?.owner === true; syncLayoutButtons(); } }).catch(() => {});
   start();

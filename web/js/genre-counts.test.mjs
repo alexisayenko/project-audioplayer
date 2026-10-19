@@ -45,7 +45,9 @@ test('map nodes carry own and subtree counts and emphasis follows the own count'
 test('genre labels are used as the vocabulary gives them: lowercase genres, capitalised families', () => {
   const t = buildTree(realVocab());
   const g = buildMapGraph(t);
-  assert.equal(g.byId.get('g:Electronic').label, 'Electronic');
+  assert.equal(g.byId.get('g:Rock').label, 'Rock');
+  assert.equal(g.byId.has('g:Electronic'), false);
+  assert.equal(t.byId.get('g:Electronic').label, 'Electronic');
   assert.equal(g.byId.get('s:drum and bass').label, g.byId.get('s:drum and bass').node.display || 'drum and bass');
   const t2 = buildTree({ families: ['Electronic'], genres: [], aliases: {}, family_synonyms: {}, flavours: {}, levels: { 'soviet wave': { parents: ['Electronic'], display: 'soviet wave' }, 'uk garage': { parents: ['Electronic'] } } });
   assert.equal(buildMapGraph(t2).byId.get('s:soviet wave').label, 'soviet wave');

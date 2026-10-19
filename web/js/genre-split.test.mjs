@@ -1,10 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildTree, applyCounts, MAX_FAMILIES } from './genre-levels.js';
+import { buildTree, applyCounts } from './genre-levels.js';
 import { buildMapGraph } from './genre-map-graph.js';
 import { layoutRadial, hueSet } from './genre-radial.js';
-import { fillDisc, uniqueIndices } from './genre-disc.js';
-import { familyIndex } from './genre-data.js';
+import { fillDisc, uniqueIndices, segmentsFor } from './genre-disc.js';
+import { familyIndex, pieIndices } from './genre-data.js';
 import { realVocab } from './genre-real-vocab.mjs';
 
 const VOCAB = {
@@ -15,52 +15,82 @@ const VOCAB = {
     house: { parents: ['Electronic'], discogs: true },
     tri: { parents: ['Electronic', 'Rock', 'disco'], discogs: false },
     quad: { parents: ['Electronic', 'Rock', 'Funk / Soul', 'Blues'], discogs: true },
-    'space disco': { parents: ['disco'], family: 'Electronic', discogs: false },
+    'space disco': { parents: ['disco'], discogs: false },
   },
 };
 const tree = () => { const t = buildTree(VOCAB); applyCounts(t, [{ id: 'a', tags: ['genre:disco', 'genre:tri'] }]); return t; };
 const fams = (t, id) => t.byId.get(id).fams;
 
-test('a family set follows the parents order, inherits from genre parents and caps at three', () => {
+test('a family set is every family the genre descends from, in the vocabulary family order, without a cap', () => {
   const t = tree();
   assert.deepEqual(fams(t, 'g:Rock'), ['Rock']);
   assert.deepEqual(fams(t, 's:house'), ['Electronic']);
-  assert.deepEqual(fams(t, 's:disco'), ['Funk / Soul', 'Electronic']);
-  assert.deepEqual(fams(t, 's:disco dub'), ['Funk / Soul', 'Electronic']);
-  assert.deepEqual(fams(t, 's:tri'), ['Electronic', 'Rock', 'Funk / Soul']);
-  assert.deepEqual(fams(t, 's:quad'), ['Electronic', 'Rock', 'Funk / Soul']);
-  assert.equal(MAX_FAMILIES, 3);
-  assert.deepEqual(fams(t, 's:space disco'), ['Electronic', 'Funk / Soul'], 'the family override comes first');
+  assert.deepEqual(fams(t, 's:disco'), ['Electronic', 'Funk / Soul']);
+  assert.deepEqual(fams(t, 's:disco dub'), ['Electronic', 'Funk / Soul']);
+  assert.deepEqual(fams(t, 's:tri'), ['Electronic', 'Funk / Soul', 'Rock']);
+  assert.deepEqual(fams(t, 's:quad'), ['Electronic', 'Funk / Soul', 'Rock', 'Blues'], 'four families, no cap');
+  assert.deepEqual(fams(t, 's:space disco'), ['Electronic', 'Funk / Soul'], 'no override: it descends from disco');
+  assert.equal(t.byId.get('s:disco').family, 'Electronic');
 });
 
-test('graph nodes carry the distinct palette indices of their families, single families stay flat', () => {
+test('parent order does not matter: the same parents in another order give the same families, level and children', () => {
+  const swap = (levels) => Object.fromEntries(Object.entries(levels).map(([k, v]) => [k, { ...v, parents: [...v.parents].reverse() }]));
+  const a = buildTree(VOCAB);
+  const b = buildTree({ ...VOCAB, levels: swap(VOCAB.levels) });
+  for (const [id, n] of a.byId) {
+    const m = b.byId.get(id);
+    assert.deepEqual([m.level, m.fams, m.children.map((c) => c.id), [...m.parents].sort()], [n.level, n.fams, n.children.map((c) => c.id), [...n.parents].sort()], id);
+  }
+});
+
+test('graph nodes carry the distinct palette indices of their families in the fixed family order, single families stay flat', () => {
   const g = buildMapGraph(tree());
-  assert.deepEqual(g.byId.get('s:disco').fis, [familyIndex('Funk / Soul'), familyIndex('Electronic')]);
-  assert.equal(g.byId.get('s:disco').fi, familyIndex('Funk / Soul'));
+  assert.deepEqual(g.byId.get('s:disco').fis, [familyIndex('Electronic'), familyIndex('Funk / Soul')]);
+  assert.equal(g.byId.get('s:disco').fi, familyIndex('Electronic'));
   assert.deepEqual(g.byId.get('s:house').fis, [0]);
-  assert.equal(g.byId.get('s:tri').fis.length, 3);
+  assert.deepEqual(g.byId.get('s:tri').fis, [0, 5, 1]);
+  assert.deepEqual(g.byId.get('s:quad').fis, [9, 0, 5, 1], 'segments follow FAMILY_ORDER: Blues, Electronic, Funk / Soul, Rock');
   assert.deepEqual(g.byId.get('g:Rock').fis, [familyIndex('Rock')]);
   assert.deepEqual(uniqueIndices(['Other', 'Foo', 'Rock'], familyIndex), [15, 1]);
+  assert.deepEqual(pieIndices(['Rock', 'Blues', 'Electronic', 'Rock']), [9, 0, 1]);
+  assert.deepEqual(pieIndices(['Foo', 'Rock']), [1, 15]);
+  assert.deepEqual(pieIndices(undefined), []);
 });
 
-test('on the real vocabulary only multi-family genres are split and every set is within the cap', () => {
+test('on the real vocabulary only multi-family genres are split and every set is a set of family colours', () => {
   const g = buildMapGraph(buildTree(realVocab()));
   const split = g.nodes.filter((n) => n.fis.length > 1);
   assert.ok(split.length > 0 && split.length < g.nodes.length / 2);
-  assert.ok(g.nodes.every((n) => n.fis.length >= 1 && n.fis.length <= 3));
-  assert.ok(split.some((n) => n.id === 's:disco' && n.fis[0] === familyIndex('Funk / Soul') && n.fis[1] === familyIndex('Electronic')));
+  assert.ok(g.nodes.every((n) => n.fis.length >= 1));
+  assert.ok(split.some((n) => n.id === 's:disco' && n.fis[0] === familyIndex('Electronic') && n.fis[1] === familyIndex('Funk / Soul')));
+  assert.ok(split.some((n) => n.id === 's:eurodance' && n.fis.length === 3));
 });
 
-test('radial hues keep the umbrella hue first and add the other families', () => {
+test('radial hues keep the umbrella hue for single families and split a multi-family genre into its family colours', () => {
   const t = tree();
-  const layout = layoutRadial(t, 'Electronic');
+  const layout = layoutRadial(t, 'Electronic', { hidden: false });
   const disco = layout.byId.get('s:disco');
-  assert.deepEqual(disco.hues, [familyIndex('Funk / Soul'), familyIndex('Electronic')], 'a split genre uses family colours only, never an umbrella hue');
-  assert.equal(layout.byId.get('s:house') === undefined || layout.byId.get('s:house').hues.length >= 1, true);
+  assert.deepEqual(disco.hues, [familyIndex('Electronic'), familyIndex('Funk / Soul')], 'a split genre uses family colours only, never an umbrella hue');
   assert.deepEqual(layout.byId.get('g:Electronic').hues, [0]);
-  assert.deepEqual(hueSet(3, { fams: ['Rock', 'Electronic'] }), [1, 0]);
+  assert.deepEqual(hueSet(3, { fams: ['Rock', 'Electronic'] }), [0, 1]);
   assert.deepEqual(hueSet(3, { fams: ['Electronic'] }), [3], 'a single family keeps the umbrella hue');
   assert.deepEqual(hueSet(3, {}), [3]);
+  assert.equal(hueSet(3, { fams: ['Blues', 'Classical', 'Electronic', 'Folk, World, & Country', 'Rock'] }).length, 5);
+});
+
+test('segmentsFor gives one full circle for a single colour and equal contiguous segments, starting at the top, for several', () => {
+  assert.deepEqual(segmentsFor([4]), [{ idx: 4, a0: 0, a1: 2 * Math.PI }]);
+  assert.equal(segmentsFor([]).length, 1);
+  const three = segmentsFor([9, 0, 5]);
+  assert.equal(three.length, 3);
+  assert.deepEqual(three.map((x) => x.idx), [9, 0, 5]);
+  assert.equal(three[0].a0, -Math.PI / 2);
+  for (let i = 0; i < 3; i++) assert.ok(Math.abs(three[i].a1 - three[i].a0 - (2 * Math.PI) / 3) < 1e-12);
+  for (let i = 1; i < 3; i++) assert.equal(three[i].a0, three[i - 1].a1);
+  assert.ok(Math.abs(three[2].a1 - (-Math.PI / 2 + 2 * Math.PI)) < 1e-12);
+  const eleven = segmentsFor([...Array(11).keys()]);
+  assert.ok(Math.abs(eleven.reduce((s, x) => s + x.a1 - x.a0, 0) - 2 * Math.PI) < 1e-9);
+  assert.equal(segmentsFor([0, 1], 0)[0].a0, 0);
 });
 
 test('fillDisc paints a flat disc once and a split disc as fixed wedges, then leaves the full circle path for the outline', () => {
@@ -82,7 +112,7 @@ test('fillDisc paints a flat disc once and a split disc as fixed wedges, then le
   assert.deepEqual(calls.find((c) => c[0] === 'set'), ['set', 'fillStyle', '#f']);
 });
 
-test('regression: every multi-family genre of the vocabulary is coloured by exactly its families, in parents order, from the family palette', () => {
+test('regression: every genre of the vocabulary is coloured by exactly the families it descends from, in the fixed family order, from the family palette', () => {
   const vocab = realVocab();
   const tree = buildTree(vocab);
   const g = buildMapGraph(tree);
@@ -91,23 +121,21 @@ test('regression: every multi-family genre of the vocabulary is coloured by exac
     if (vocab.families.includes(k)) return [k];
     if (seen.has(k) || !vocab.levels[k]) return [];
     seen.add(k);
-    const v = vocab.levels[k];
-    const out = v.family ? [v.family] : [];
-    for (const p of v.parents) for (const f of famOf(p, seen)) if (!out.includes(f)) out.push(f);
-    return out;
+    return vocab.levels[k].parents.flatMap((p) => famOf(p, new Set(seen)));
   };
   let multi = 0;
-  for (const [k, v] of Object.entries(vocab.levels)) {
-    const want = [...new Set(famOf(k).slice(0, 3).map((f) => familyIndex(f)))];
+  for (const k of Object.keys(vocab.levels)) {
+    const want = pieIndices(famOf(k));
     const node = g.byId.get(`s:${k}`);
     assert.deepEqual(node.fis, want, k);
     for (const i of node.fis) assert.ok(palette.has(i), `${k}: colour ${i} is not a family colour`);
     if (want.length > 1) multi++;
-    void v;
   }
-  assert.ok(multi > 0);
-  assert.deepEqual(g.byId.get('s:disco').fis, [familyIndex('Funk / Soul'), familyIndex('Electronic')]);
-  assert.deepEqual([familyIndex('Funk / Soul'), familyIndex('Electronic')], [5, 0]);
-  const layout = layoutRadial((() => { const t2 = buildTree(vocab); applyCounts(t2, [{ id: 'x', tags: ['genre:disco'] }]); return t2; })(), 'Electronic');
-  assert.deepEqual(layout.byId.get('s:disco').hues, [5, 0], 'the Radial colours disco by Funk / Soul and Electronic, not by its umbrella hue');
+  assert.ok(multi > 20);
+  assert.deepEqual(g.byId.get('s:disco').fis, [0, 5]);
+  assert.deepEqual(g.byId.get('s:euro disco').fis, [0, 5]);
+  const t2 = buildTree(vocab);
+  applyCounts(t2, [{ id: 'x', tags: ['genre:disco'] }]);
+  const layout = layoutRadial(t2, 'Electronic', { hidden: false });
+  assert.deepEqual(layout.byId.get('s:disco').hues, [0, 5], 'the Radial colours disco by Electronic and Funk / Soul, not by its umbrella hue');
 });

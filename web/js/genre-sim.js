@@ -53,7 +53,7 @@ function insert(cell, n, w, depth = 0) {
   insert(cell.kids[i], n, w, depth + 1);
 }
 
-export function createSim({ nodes, links = [], seed = 1, breathing = true, charge = 70, linkDistance = 56, gravity = 0.035, home = 0 }) {
+export function createSim({ nodes, links = [], seed = 1, breathing = true, charge = 70, linkDistance = 56, gravity = 0.035, home = 0, velocityDecay = VELOCITY_DECAY, parentStrength = 0, linkFloor = 0, parentReaction = null }) {
   const rng = mulberry32(seed);
   const byId = new Map();
   nodes.forEach((n, i) => {
@@ -78,7 +78,7 @@ export function createSim({ nodes, links = [], seed = 1, breathing = true, charg
     const t = byId.get(l.target?.id ?? l.target);
     if (!s || !t || s === t) continue;
     const assoc = l.kind === 'assoc';
-    ls.push({ s, t, related: l.kind === 'related', assoc });
+    ls.push({ s, t, related: l.kind === 'related', assoc, tree: !assoc && l.kind !== 'related' });
     if (assoc) continue;
     deg.set(s.id, deg.get(s.id) + 1);
     deg.set(t.id, deg.get(t.id) + 1);
@@ -86,9 +86,25 @@ export function createSim({ nodes, links = [], seed = 1, breathing = true, charg
   for (const l of ls) {
     const ds = Math.max(1, deg.get(l.s.id));
     const dt = Math.max(1, deg.get(l.t.id));
-    l.strength = (l.assoc ? ASSOC_STRENGTH : l.related ? 0.15 : 1) / Math.min(ds, dt);
+    const m = Math.min(ds, dt);
+    l.strength = l.tree && parentStrength ? parentStrength / Math.sqrt(m) : (l.assoc ? ASSOC_STRENGTH : l.related ? 0.15 : 1) / m;
     l.dist = (l.assoc ? 2.5 : l.related ? 1.6 : 1) * linkDistance + l.s.r + l.t.r;
     l.bias = dt / (ds + dt);
+  }
+  const leash = parentReaction !== null;
+  const pairLink = new Map();
+  if (leash) {
+    for (const l of ls) {
+      if (!l.tree) continue;
+      if (!pairLink.has(l.s)) pairLink.set(l.s, new Map());
+      if (!pairLink.has(l.t)) pairLink.set(l.t, new Map());
+      pairLink.get(l.s).set(l.t, l);
+      pairLink.get(l.t).set(l.s, l);
+    }
+  }
+  function slackPair(a, b, d2) {
+    const l = pairLink.get(a)?.get(b);
+    return l !== undefined && (l.mute || a.fx != null || b.fx != null) && d2 < l.dist * l.dist;
   }
   const weight = (n) => 1 + n.r * 0.12;
   let alpha = 1;
@@ -97,13 +113,19 @@ export function createSim({ nodes, links = [], seed = 1, breathing = true, charg
 
   function linkForce() {
     for (const l of ls) {
+      if (l.mute) continue;
       const { s, t } = l;
       let dx = t.x + t.vx - s.x - s.vx || (rng() - 0.5) * 1e-4;
       let dy = t.y + t.vy - s.y - s.vy || (rng() - 0.5) * 1e-4;
       const d = Math.hypot(dx, dy) || 1e-6;
-      const k = ((d - l.dist) / d) * alpha * l.strength;
+      if (leash && l.tree && d <= l.dist) continue;
+      const k = ((d - l.dist) / d) * (l.tree && parentStrength ? Math.max(alpha, linkFloor) : alpha) * l.strength;
       dx *= k; dy *= k;
       t.vx -= dx * (1 - l.bias); t.vy -= dy * (1 - l.bias);
+      if (l.tree && leash) {
+        s.vx += dx * l.bias * parentReaction; s.vy += dy * l.bias * parentReaction;
+        continue;
+      }
       s.vx += dx * l.bias; s.vy += dy * l.bias;
     }
   }
@@ -124,6 +146,7 @@ export function createSim({ nodes, links = [], seed = 1, breathing = true, charg
       let ex = o.x - n.x; let ey = o.y - n.y;
       let e2 = ex * ex + ey * ey;
       if (e2 === 0) { ex = (rng() - 0.5) * 1e-3; ey = (rng() - 0.5) * 1e-3; e2 = ex * ex + ey * ey; }
+      if (leash && slackPair(n, o, e2)) continue;
       if (e2 < 25) e2 = Math.sqrt(25 * e2);
       const f = (charge * alpha * c.leaf[i + 1]) / e2;
       n.vx -= ex * f; n.vy -= ey * f;
@@ -167,6 +190,7 @@ export function createSim({ nodes, links = [], seed = 1, breathing = true, charg
     const min = a.r + b.r + 4;
     let d2 = dx * dx + dy * dy;
     if (d2 >= min * min) return;
+    if (leash && slackPair(a, b, d2)) return;
     if (d2 === 0) { dx = (rng() - 0.5) * 1e-3; dy = (rng() - 0.5) * 1e-3; d2 = dx * dx + dy * dy; }
     const d = Math.sqrt(d2);
     const push = ((min - d) / d) * 0.7;
@@ -214,11 +238,11 @@ export function createSim({ nodes, links = [], seed = 1, breathing = true, charg
       n.vy += Math.sin(ticks * 0.017 + n.phase * 1.7) * amp;
     }
     if (n.fx == null) {
-      n.vx = clampV(n.vx * (1 - VELOCITY_DECAY));
+      n.vx = clampV(n.vx * (1 - velocityDecay));
       n.x += n.vx;
     } else { n.x = n.fx; n.vx = 0; }
     if (n.fy == null) {
-      n.vy = clampV(n.vy * (1 - VELOCITY_DECAY));
+      n.vy = clampV(n.vy * (1 - velocityDecay));
       n.y += n.vy;
     } else { n.y = n.fy; n.vy = 0; }
     if (!Number.isFinite(n.x) || !Number.isFinite(n.y)) { n.x = (rng() - 0.5) * 10; n.y = (rng() - 0.5) * 10; n.vx = 0; n.vy = 0; }
