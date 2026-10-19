@@ -1,12 +1,12 @@
 # Library genre cleanup (2026-10-19)
 
-Status: applied at server start by app.migrate_removals, file server/data/library_genre_removals.json (110 songs, 185 genre removals, 15 genre additions, 1 song cleared; not deployed yet).
+Status: applied at server start by app.migrate_removals, file server/data/library_genre_removals.json (114 songs, 190 genre removals, 15 genre additions, 1 song cleared; not deployed yet).
 
 Review of genres that were put on songs by mistake (removal, with a few owner-approved additions). Evidence is English Wikipedia (song page first, artist page second). The owner approved all HIGH-confidence rows (his edits included) plus the descriptor genres acoustic and instrumental (they are version types), and approved the remaining rows one by one in chat. Everything under "Approved removals" is applied as one reviewed list at a server start, with a backup first (file `server/data/library_genre_removals.json`).
 
 Conventions: "(also: X)" in an owner message means X was removed too; a "(maybe also: X)" that the owner did not repeat stays on the song.
 
-Counts: 0 rows still to read, 116 rows approved by the owner.
+Counts: 0 rows still to read, 121 rows approved by the owner.
 
 ## Approved removals (confirmed row by row)
 
@@ -401,6 +401,18 @@ Counts: 0 rows still to read, 116 rows approved by the owner.
    - remove: **shoegaze**
 116. **Lana Del Rey - Young and Beautiful** (`o_1aF54DO60`) approved 2026-10-20, asked for by the owner
    - remove: **slowcore**
+117. **KISS - I Was Made For Lovin' You** (`ZhIsAZO5gl0`) approved 2026-10-20, asked for by the owner
+   - remove: **arena rock**
+118. **Lasgo - Something** (`TTvcivjxHNY`) approved 2026-10-20, asked for by the owner
+   - remove: **deep trance**
+119. **Eminem feat. Dido - Stan** (`S-smUALTlFM`) approved 2026-10-20, asked for by the owner
+   - remove: **hardcore hip hop**
+   - keeps: horrorcore and hip hop
+120. **Concord Dawn - Morning Light** (`jxDZ-1sf9Bg`) approved 2026-10-20, asked for by the owner
+   - remove: **jungle** (the row already removed trance)
+121. **CREMATORY - Ist es wahr** (`waS3top6nzs`) approved 2026-10-20, asked for by the owner
+   - remove: **melodic death metal**
+   - keeps: gothic metal, industrial metal, death metal, heavy metal
 
 ## MEDIUM only (not proposed for removal)
 

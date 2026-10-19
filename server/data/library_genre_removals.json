@@ -144,7 +144,8 @@
   },
   "jxDZ-1sf9Bg": {
    "remove": [
-    "trance"
+    "trance",
+    "jungle"
    ],
    "title": "Concord Dawn - Morning Light"
   },
@@ -774,6 +775,30 @@
     "rnb/swing"
    ],
    "title": "Mattafix - Big City Life"
+  },
+  "ZhIsAZO5gl0": {
+   "remove": [
+    "arena rock"
+   ],
+   "title": "KISS - I Was Made For Lovin' You"
+  },
+  "TTvcivjxHNY": {
+   "remove": [
+    "deep trance"
+   ],
+   "title": "Lasgo - Something"
+  },
+  "S-smUALTlFM": {
+   "remove": [
+    "hardcore hip hop"
+   ],
+   "title": "Eminem feat. Dido - Stan"
+  },
+  "waS3top6nzs": {
+   "remove": [
+    "melodic death metal"
+   ],
+   "title": "CREMATORY - Ist es wahr"
   }
  }
 }

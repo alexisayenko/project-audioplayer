@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-20 (Owner genre fixes: 5 more wrong genres)
+
+- Data: the owner-approved genre list removes 5 more wrong genres from 5 songs, now 114 songs, 190 genres removed and 15 added in all (TAG-109): arena rock (KISS - I Was Made For Lovin' You), deep trance (Lasgo - Something), hardcore hip hop (Eminem - Stan, horrorcore kept), jungle (Concord Dawn - Morning Light, whose row is extended) and melodic death metal (CREMATORY - Ist es wahr, the other four genres kept). Deployed.
+
 ## 2026-10-20 (Owner genre fixes: 19 wrong genres)
 
 - Data: the owner-approved genre list removes 19 more wrong genres from 18 songs, now 110 songs, 185 genres removed and 15 added in all (TAG-109): acid house (Ya Mama), bassline (Petrichor), cool jazz (Soul Lament), country rock (Money For Nothing), dark ambient (Innocente), electroclash (The World is Mine), garage house (Power To The Beats), italodance (Self Control), jangle pop and paisley underground (Walk Like an Egyptian), krautrock (Radioactivity), melodic hardcore (The Kids Aren't Alright), polka (Immigraniada), new romantic (Come Undone), post-disco (Cold Heart, Royal Albert Hall), progressive rock (Oxygene, Pt. 4), rnb/swing (Big City Life), shoegaze (Midnight City) and slowcore (Young and Beautiful). Six of the songs already had a row, which is extended. Deployed.

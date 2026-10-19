@@ -6651,6 +6651,242 @@
 "size": 3919822,
 "duration": 242
 }
+},
+{
+"id": "ZhIsAZO5gl0",
+"title": "I Was Made For Lovin' You",
+"mainArtists": [
+"KISS"
+],
+"featuredArtists": [],
+"releaseYear": 1979,
+"albums": [
+"Dynasty"
+],
+"bpm": 130,
+"wikipedia_song": "https://en.wikipedia.org/wiki/I_Was_Made_for_Lovin%27_You",
+"wikipedia_artist": "https://en.wikipedia.org/wiki/Kiss_(band)",
+"wikipedia_album": "https://en.wikipedia.org/wiki/Dynasty_(Kiss_album)",
+"musicbrainz_url": "https://musicbrainz.org/recording/7bf4275b-5be7-4dea-84d3-839706584331",
+"discogs_url": null,
+"spotify_url": null,
+"source_url": "https://www.youtube.com/watch?v=ZhIsAZO5gl0",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=ZhIsAZO5gl0",
+"source": "youtube",
+"id": "ZhIsAZO5gl0"
+}
+],
+"cover": "covers/ZhIsAZO5gl0.jpg",
+"duration": 238,
+"added_at": "2026-10-18T02:21:57Z",
+"tags": [
+"genre:hard rock",
+"genre:disco",
+"genre:arena rock",
+"genre:heavy metal",
+"genre:rock",
+"genre:glam",
+"decade:70s",
+"country:us"
+],
+"updated_at": "2026-10-18T21:12:46Z",
+"artist": "KISS",
+"remixer": null,
+"year": 1979,
+"remix_year": null,
+"album": "Dynasty",
+"genres": [
+"hard rock",
+"disco",
+"arena rock",
+"heavy metal",
+"rock",
+"glam"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 3852967,
+"duration": 238
+}
+},
+{
+"id": "TTvcivjxHNY",
+"title": "Something",
+"mainArtists": [
+"Lasgo"
+],
+"featuredArtists": [],
+"releaseYear": 2026,
+"albums": [
+"Some Things"
+],
+"bpm": 125,
+"wikipedia_song": null,
+"wikipedia_artist": null,
+"musicbrainz_url": "https://musicbrainz.org/recording/3c07d554-c0dc-4d21-9ac8-5cdf88c71b6e",
+"source_url": "https://www.youtube.com/watch?v=TTvcivjxHNY",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=TTvcivjxHNY",
+"source": "youtube",
+"id": "TTvcivjxHNY"
+}
+],
+"cover": "covers/TTvcivjxHNY.jpg",
+"duration": 250,
+"added_at": "2026-10-13T18:45:08Z",
+"tags": [
+"genre:progressive house",
+"genre:deep trance",
+"genre:melodic techno",
+"genre:trance",
+"genre:electronic",
+"genre:eurodance",
+"genre:vocal trance",
+"genre:dance pop",
+"decade:20s",
+"country:be"
+],
+"updated_at": "2026-10-15T23:51:29Z",
+"artist": "Lasgo",
+"remixer": "Sadrican 2026 Remix",
+"year": 2026,
+"remix_year": null,
+"album": "Some Things",
+"genres": [
+"progressive house",
+"deep trance",
+"melodic techno",
+"trance",
+"electronic",
+"eurodance",
+"vocal trance",
+"dance pop"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 4042229,
+"duration": 250
+},
+"version": {
+"type": "remix",
+"name": "Sadrican 2026 Remix",
+"artists": [],
+"releaseYear": null
+}
+},
+{
+"id": "S-smUALTlFM",
+"title": "Stan",
+"mainArtists": [
+"Eminem"
+],
+"featuredArtists": [
+"Dido"
+],
+"releaseYear": 2000,
+"albums": [
+"The Marshall Mathers LP"
+],
+"bpm": 163,
+"wikipedia_song": "https://en.wikipedia.org/wiki/Stan_(song)",
+"wikipedia_artist": "https://en.wikipedia.org/wiki/Eminem",
+"wikipedia_album": "https://en.wikipedia.org/wiki/The_Marshall_Mathers_LP_2",
+"musicbrainz_url": "https://musicbrainz.org/recording/7cbe7993-18a6-4a7d-b7db-daf8432d3837",
+"discogs_url": null,
+"spotify_url": null,
+"source_url": "https://www.youtube.com/watch?v=S-smUALTlFM",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=S-smUALTlFM",
+"source": "youtube",
+"id": "S-smUALTlFM"
+}
+],
+"cover": "covers/S-smUALTlFM.jpg",
+"duration": 405,
+"added_at": "2026-10-17T23:57:17Z",
+"tags": [
+"genre:horrorcore",
+"genre:hip hop",
+"genre:hardcore hip hop",
+"decade:00s",
+"country:us"
+],
+"updated_at": "2026-10-18T11:49:20Z",
+"artist": "Eminem feat. Dido",
+"remixer": null,
+"year": 2000,
+"remix_year": null,
+"album": "The Marshall Mathers LP",
+"genres": [
+"horrorcore",
+"hip hop",
+"hardcore hip hop"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 6543599,
+"duration": 405
+}
+},
+{
+"id": "waS3top6nzs",
+"title": "Ist es wahr",
+"mainArtists": [
+"CREMATORY"
+],
+"featuredArtists": [],
+"releaseYear": 1996,
+"albums": [],
+"bpm": null,
+"wikipedia_song": null,
+"wikipedia_artist": "https://en.wikipedia.org/wiki/Crematory_(band)",
+"musicbrainz_url": null,
+"discogs_url": "https://www.discogs.com/release/2207388",
+"spotify_url": null,
+"source_url": "https://www.youtube.com/watch?v=waS3top6nzs",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=waS3top6nzs",
+"source": "youtube",
+"id": "waS3top6nzs"
+}
+],
+"cover": "covers/waS3top6nzs.jpg",
+"duration": 360,
+"added_at": "2026-10-19T13:46:06Z",
+"tags": [
+"genre:gothic metal",
+"genre:melodic death metal",
+"genre:industrial metal",
+"genre:death metal",
+"genre:heavy metal",
+"decade:90s",
+"country:de"
+],
+"artist": "CREMATORY",
+"remixer": null,
+"year": 1996,
+"remix_year": null,
+"album": null,
+"genres": [
+"gothic metal",
+"melodic death metal",
+"industrial metal",
+"death metal",
+"heavy metal"
+],
+"audio_state": "none"
 }
 ]
 }
