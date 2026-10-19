@@ -219,3 +219,5 @@ def test_the_real_file_owner_requested_rows():
     assert after["SDfXbCwmBYg"] == ["synthwave", "spacesynth", "darksynth"]
     assert after["3L21HnrZzxc"] == ["synthwave", "dream pop", "electronic", "darksynth"]
     assert after["6OW1JJwqVRQ"] == ["pop"]
+    assert after["8BphNy9ZQMU"] == ["dubstep"]
+    assert after["0XFudmaObLI"] == ["deep house", "nu-disco"]

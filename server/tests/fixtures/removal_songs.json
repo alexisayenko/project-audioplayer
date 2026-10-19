@@ -5815,6 +5815,106 @@
 "size": 2937823,
 "duration": 182
 }
+},
+{
+"id": "8BphNy9ZQMU",
+"title": "Babel",
+"mainArtists": [
+"Gustavo Bravetti"
+],
+"featuredArtists": [],
+"releaseYear": 2021,
+"albums": [],
+"bpm": 122,
+"wikipedia_song": null,
+"wikipedia_artist": null,
+"source_url": "https://www.youtube.com/watch?v=8BphNy9ZQMU",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=8BphNy9ZQMU",
+"source": "youtube",
+"id": "8BphNy9ZQMU"
+}
+],
+"cover": "covers/8BphNy9ZQMU.jpg",
+"duration": 172,
+"added_at": "2026-10-13T22:12:19Z",
+"updated_at": "2026-10-16T16:08:35Z",
+"musicbrainz_url": "https://musicbrainz.org/recording/3b344314-bde9-47e6-a6aa-1696466621a7",
+"tags": [
+"genre:dancehall",
+"decade:20s",
+"country:uy"
+],
+"artist": "Gustavo Bravetti",
+"remixer": null,
+"year": 2021,
+"remix_year": null,
+"album": null,
+"genres": [
+"dancehall"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 2786864,
+"duration": 172
+}
+},
+{
+"id": "0XFudmaObLI",
+"title": "Dancin",
+"mainArtists": [
+"Aaron Smith"
+],
+"featuredArtists": [],
+"releaseYear": 2013,
+"version": {
+"type": "remix",
+"name": "KRONO Remix",
+"artists": [],
+"releaseYear": null
+},
+"albums": [],
+"bpm": 122,
+"wikipedia_song": null,
+"wikipedia_artist": null,
+"musicbrainz_url": "https://musicbrainz.org/recording/ec872d6b-1830-4416-958e-2bb1576c21c8",
+"source_url": "https://www.youtube.com/watch?v=0XFudmaObLI",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=0XFudmaObLI",
+"source": "youtube",
+"id": "0XFudmaObLI"
+}
+],
+"cover": "covers/0XFudmaObLI.jpg",
+"duration": 256,
+"added_at": "2026-10-13T23:04:29Z",
+"updated_at": "2026-10-15T23:57:54Z",
+"tags": [
+"genre:dancehall",
+"genre:house",
+"decade:10s",
+"country:us"
+],
+"artist": "Aaron Smith",
+"remixer": "KRONO Remix",
+"year": 2013,
+"remix_year": null,
+"album": null,
+"genres": [
+"dancehall",
+"house"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 4145497,
+"duration": 256
+}
 }
 ]
 }

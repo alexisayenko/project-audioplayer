@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-20 (Owner genre fixes: Babel and Dancin)
+
+- Data: the owner-approved genre list gains two rows, now 98 songs, 166 genres removed and 15 added in all (TAG-109): Gustavo Bravetti - Babel is retagged from dancehall to dubstep (Discogs and Qobuz: electronic, dubstep, grime, club/dance; no grime added), and Aaron Smith - Dancin (KRONO Remix) is retagged from dancehall and house to deep house and nu-disco. Deployed.
+
 ## 2026-10-19 (Owner genre fixes: removals and darkwave retag)
 
 - Data: the owner-approved genre list gains one row and changes one, now 96 songs, 163 genres removed and 12 added in all (TAG-109): Brotherhood Of Man - Save Your Kisses For Me loses middle of the road, schlager and disco and keeps pop; the Baby K feat. Giusy Ferreri - Roma-Bangkok row now ends with synthpop and moombahton only (Wikipedia: electropop, moombahton), so its earlier removal of those two is dropped. Deployed.

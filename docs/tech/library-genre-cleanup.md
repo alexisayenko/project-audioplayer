@@ -1,12 +1,12 @@
 # Library genre cleanup (2026-10-19)
 
-Status: applied at server start by app.migrate_removals, file server/data/library_genre_removals.json (96 songs, 163 genre removals, 12 genre additions, 1 song cleared; not deployed yet).
+Status: applied at server start by app.migrate_removals, file server/data/library_genre_removals.json (98 songs, 166 genre removals, 15 genre additions, 1 song cleared; not deployed yet).
 
 Review of genres that were put on songs by mistake (removal, with a few owner-approved additions). Evidence is English Wikipedia (song page first, artist page second). The owner approved all HIGH-confidence rows (his edits included) plus the descriptor genres acoustic and instrumental (they are version types), and approved the remaining rows one by one in chat. Everything under "Approved removals" is applied as one reviewed list at a server start, with a backup first (file `server/data/library_genre_removals.json`).
 
 Conventions: "(also: X)" in an owner message means X was removed too; a "(maybe also: X)" that the owner did not repeat stays on the song.
 
-Counts: 0 rows still to read, 96 rows approved by the owner.
+Counts: 0 rows still to read, 98 rows approved by the owner.
 
 ## Approved removals (confirmed row by row)
 
@@ -355,6 +355,12 @@ Counts: 0 rows still to read, 96 rows approved by the owner.
 96. **Brotherhood Of Man - Save Your Kisses For Me** (`6OW1JJwqVRQ`) approved 2026-10-19, asked for by the owner
    - remove: **middle of the road**, **schlager**, **disco**
    - keeps: pop
+97. **Gustavo Bravetti - Babel** (`8BphNy9ZQMU`) approved 2026-10-20, asked for by the owner
+   - remove: **dancehall**; add: **dubstep**
+   - result: dubstep (Discogs and Qobuz describe it as electronic: dubstep, grime, club/dance); grime exists in the vocabulary but is not added
+98. **Aaron Smith - Dancin (KRONO Remix)** (`0XFudmaObLI`) approved 2026-10-20, asked for by the owner
+   - remove: **dancehall**, **house**; add: **deep house**, **nu-disco**
+   - result: deep house, nu-disco (owner choice: the KRONO remix is deep house, the song is neither reggae nor dancehall)
 
 ## MEDIUM only (not proposed for removal)
 
@@ -385,7 +391,7 @@ Counts: 0 rows still to read, 96 rows approved by the owner.
 25. **Total - Бьет по глазам** (`SnYjy-WNn90`): alternative rock, indie rock - Total is Russian pop/R&B group
 26. **Русский размер - Ангел дня** (`DqgCZ1CkzOY`): techno, trance - Russky Razmer is Russian pop/eurodance; techno and trance are not supported
 27. **2 Unlimited - No Limit** (`r6FVk2k4qsM`): hi-nrg - Song page: eurodance, techno, trance; hi-nrg not mentioned
-28. **Aaron Smith - Dancin (KRONO Remix)** (`0XFudmaObLI`): dancehall - KRONO remix is deep house
+28. **Aaron Smith - Dancin (KRONO Remix)** (`0XFudmaObLI`): dancehall - KRONO remix is deep house; removed later, see row 98
 29. **Ace of Base - All That She Wants** (`d73tiBBzvFM`): soft rock - Ace of Base is eurodance/reggae-pop
 30. **Baby K - Roma-Bangkok** (`tUOpXeagVcg`): synthpop - Roma-Bangkok is reggaeton/dance pop
 31. **Dua Lipa, Elton John - Cold Heart (Live from the Royal Albert Hall)** (`IbxPoaTdrz0`): contemporary r&b - Song page lists dance-pop, synth-pop, disco; no R&B
@@ -396,4 +402,4 @@ Counts: 0 rows still to read, 96 rows approved by the owner.
 36. **Pierce Fulton - Kuaga (Lost Time)** (`pmsqm0khgII`): indie pop - Kuaga is progressive/electro house
 37. **Rick Astley - Never Gonna Give You Up** (`dQw4w9WgXcQ`): disco - Song page: dance-pop, synth-pop, blue-eyed soul, house; no disco
 38. **The Bangles - Walk Like an Egyptian** (`vth-T1u7A58`): paisley underground - Song page lists pop rock, new wave, novelty; paisley underground is a band-level scene tag
-39. **Gustavo Bravetti - Babel** (`8BphNy9ZQMU`):  - Gustavo Bravetti is a tech house/techno DJ; sole genre is lookup noise (removal would leave zero: keep one)
+39. **Gustavo Bravetti - Babel** (`8BphNy9ZQMU`):  - Gustavo Bravetti is a tech house/techno DJ; sole genre is lookup noise (removal would leave zero: keep one); later retagged to dubstep, see row 97

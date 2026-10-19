@@ -675,6 +675,26 @@
     "disco"
    ],
    "title": "Brotherhood Of Man - Save Your Kisses For Me"
+  },
+  "8BphNy9ZQMU": {
+   "remove": [
+    "dancehall"
+   ],
+   "title": "Gustavo Bravetti - Babel",
+   "add": [
+    "dubstep"
+   ]
+  },
+  "0XFudmaObLI": {
+   "remove": [
+    "dancehall",
+    "house"
+   ],
+   "title": "Aaron Smith - Dancin (KRONO Remix)",
+   "add": [
+    "deep house",
+    "nu-disco"
+   ]
   }
  }
 }
