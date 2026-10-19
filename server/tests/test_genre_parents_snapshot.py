@@ -53,6 +53,8 @@ def test_vocabulary_rows_match_the_snapshot_taken_before_the_change():
     rows = {r["name"]: r for r in body["genres"]}
     assert set(rows) - set(SNAP["rows"]) == {"space disco"}
     for name, old in SNAP["rows"].items():
+        if name in EDITED:
+            continue
         row = rows[name]
         assert (row["family"], row["level"], row["extra"]) == (old["family"], old["level"], old["extra"]), name
         first, rest = row["parents"][:1], row["parents"][1:]

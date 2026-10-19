@@ -283,6 +283,7 @@
   },
   "spacesynth": {
    "parents": [
+    "synthwave",
     "italo disco"
    ],
    "note": "live library tag, reviewed 2026-10-16"
