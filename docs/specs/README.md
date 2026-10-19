@@ -20,7 +20,7 @@ Each requirement is one line:
 `ID MUST|SHOULD: statement. Status: implemented | planned | to-confirm`
 
 - IDs are `<AREA>-<NNN>`, stable, never reused. Areas: `DATA`, `API`,
-  `TAG`, `ADD`, `LIB`, `STO`, `PLY`, `IOS`, `WEB`, `NFR`, `CAT`, `GEN`, `STA`, `VIZ`, `SHARE`, `YTC`, `PLS`.
+  `TAG`, `ADD`, `LIB`, `STO`, `PLY`, `IOS`, `WEB`, `NFR`, `CAT`, `GEN`, `STA`, `VIZ`, `SHARE`, `YTC`, `PLS`, `CRD`.
 - **MUST** is mandatory; **SHOULD** is desirable and may be waived with a reason.
 - **implemented**: verified in code (last full pass 2026-10-14); "(not browser-verified)" means read in code and unit-tested, not yet checked in a browser. **proposal**: an idea under discussion. **planned**: decided, not
   built. **to-confirm**: behaviour exists or is proposed but nobody has
@@ -45,6 +45,7 @@ Each requirement is one line:
 | [visualizer.md](visualizer.md) | VIZ | Audio visualizer: lazy Web Audio graph, Mirrored spectrum, Ring, Terrain and Synthwave terrain (styles, lookahead, camera flight, 60 fps pacing), background and full-screen modes, controls, performance and flash safety (task-0023) |
 | [terrain-concept.md](terrain-concept.md) | VIZ | Terrain visualizer concept in plain language for designers (companion to VIZ-043 to VIZ-067 and VIZ-074) |
 | [../product/concept-digital-phosphor-led.md](../product/concept-digital-phosphor-led.md) | VIZ | Digital phosphor LED display (Ice Blue Mirror 2) concept in plain language for designers (companion to VIZ-104, VIZ-105) |
+| [credits.md](credits.md) | CRD | Credit roles, title parsing on import (feat., with, x, vs., remix), the "Credit display" setting with the Apple / YouTube and Spotify / MusicBrainz presets, display functions, credit-title migration (ADR-0036, task-0048) |
 | [terminology.md](terminology.md) | all | Glossary: one name per thing and its aliases (now line, relief, parts, camera, quality, overlay, share link, baselines) |
 | [share.md](share.md) | SHARE | Share link: song id, start time and visualizer settings in a hash route, share dialog, tap-to-play gate (task-0028) |
 | [macos-gui.md](macos-gui.md) | MAC | Native macOS app: web-matching GUI, pages in or out of v1, streaming only, Settings, shortcuts (task-0047, ADR-0029) |

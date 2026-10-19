@@ -1,6 +1,6 @@
 # Concept: songs, versions and credits
 
-Status: accepted 2026-10-16 ([ADR-0024](../tech/decisions.md), [ADR-0025](../tech/decisions.md)); the cover rule, mashup and the `of` list are built, data model v2 is planned ([task-0043](../tasks/task-0043.md)). Specs: [data-model.md](../specs/data-model.md) (DATA-120 to DATA-155), [add-song.md](../specs/add-song.md), [library.md](../specs/library.md). The Music theory page tells the same ideas in short terms.
+Status: accepted 2026-10-16 ([ADR-0024](../tech/decisions.md), [ADR-0025](../tech/decisions.md)); the cover rule, mashup and the `of` list are built, data model v2 is planned ([task-0043](../tasks/task-0043.md)). Specs: [credits.md](../specs/credits.md) (CRD, planned), [data-model.md](../specs/data-model.md) (DATA-120 to DATA-155), [add-song.md](../specs/add-song.md), [library.md](../specs/library.md). The Music theory page tells the same ideas in short terms.
 
 ## The idea
 
@@ -38,6 +38,17 @@ Rules behind the table:
 
 - MusicBrainz credits one recording "Gisele & Bob Sinclar" (both main) while the video title says "Gisele Bündchen - Heart of Glass ft. Bob Sinclar". The structured credit beats the typed title: the app suggests both as main artists, for the user to confirm.
 - "Crazy (Gnarls Barkley Cover)" names the original artist, but "(Sofia Karlberg Cover)" could name the performer instead. When the name in the brackets is a credited artist it is read as the performer; with no artist to compare, the reading is ambiguous and nothing is applied.
+
+## Featured artists and how titles are shown (planned, ADR-0036)
+
+A featured artist is a credit, not part of the title: the stored title of "Song (feat. C)" is just "Song" and C is in the Featuring list. How the credits are put back together is a per-user setting, "Credit display" in Settings:
+
+| Preset | Shown as |
+| --- | --- |
+| Apple / YouTube (default) | `Artist A & Artist B - Title (feat. Artist C) [Version]` |
+| Spotify / MusicBrainz | `Artist A & Artist B feat. Artist C - Title [Version]` |
+
+The version (remix, cover, live, edit, ...) is written the same way in both and always comes after the title; a remix is `[Tiesto Remix]` or `(Tiesto Remix)` after the title, the original artist stays the artist. Existing songs with "(feat. X)" in the title are moved to credits once by a safe migration. Rules: [credits.md](../specs/credits.md).
 
 ## Derived legacy fields
 

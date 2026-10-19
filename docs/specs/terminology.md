@@ -123,3 +123,6 @@ One name per thing. "Also called" lists informal names the owner or the code use
 | Audio state | `none` (no file), `server` (on the server), `phone` (local copy). | Not: catalog | CAT-002 |
 | Guest | A signed-out visitor: read-only view of the owner's library, with per-IP limits. | Not: owner | WEB-060 |
 | Owner | Alex: exempt from quotas; the API token is his. | Not: signed-in user | ADR-0012 |
+| Featuring | A guest credited on a song (role Featuring, `featuredArtists`); shown as `feat.` in the title or the artist part by the Credit display preset. | Also called: featured artist. Not: Primary, remixer, "featuring" as displayed text | CRD-001 |
+| Version slot | The label after the title that names the version (`[Tiesto Remix]`, `(cover)`), identical in both Credit display presets. | Not: the guest group `(feat. X)` | CRD-031 |
+| Credit display | The per-user preset that decides whether `feat.` follows the title (Apple / YouTube) or the artists (Spotify / MusicBrainz). | Not: sort order, search | CRD-030, WEB-104 |

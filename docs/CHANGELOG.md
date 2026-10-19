@@ -174,7 +174,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## 2026-10-18 (clean credits on add)
 
-- Server and web: a song added from a link or a playlist now stores clean credits: a trailing "(feat. X)", "[feat. X]" or " feat. X" in the title, a feat keyword inside an artist pill ("Kato Feat. Jon") and a trailing "(with X)" move into `featuredArtists` and the new optional `withArtists`, the title is saved without them; one parser (`credit_title.py`, twin `credit-title.js`) and one case table (`credit_title_cases.json`). The Add and Edit form has a With pill field, pasting a title with such a group into the Add form moves it, and the suggestions of one parse are one row with one Apply and one Dismiss. Not deployed; existing songs are untouched until the migration.
+- Server and web: a song added from a link or a playlist now stores clean credits (task-0048 phase 1, [credits.md](specs/credits.md)): a trailing "(feat. X)", "[feat. X]" or " feat. X" in the title, a feat keyword inside an artist pill ("Kato Feat. Jon") and a trailing "(with X)" move into `featuredArtists` and the new optional `withArtists`, the title is saved without them; one parser (`credit_title.py`, twin `credit-title.js`) and one case table (`credit_title_cases.json`). The Add and Edit form has a With pill field, pasting a title with such a group into the Add form moves it, and the suggestions of one parse are one row with one Apply and one Dismiss. Not deployed; existing songs are untouched until the migration.
 
 ## 2026-10-18 (playlist import)
 
@@ -225,6 +225,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## 2026-10-17 (built, not deployed)
 
+- Docs only: decision DR (ADR-0036, [task-0048](tasks/task-0048.md)): featured artists become credits (Featuring / With roles), never part of the stored title, and a per-user Settings option "Credit display" chooses the shape, Apple / YouTube (default) `A & B - Title (feat. C) [Version]` or Spotify / MusicBrainz `A & B feat. C - Title [Version]`; spec [credits.md](specs/credits.md) (CRD-001 to CRD-054, WEB-104, DATA-162, DATA-163, API-148), title parsing on import and a one-time migration planned; nothing built.
 - iOS: removing the playing song from the queue now pauses and cues the neighbouring song instead of leaving the old one playing; songs cued after a restart or tag add now advance to the next song when they end.
 - Mac: native macOS app `ElectrophoneMac` (task-0047, ADR-0029): sign-in, Library, Playback with a transport bar and media keys, Add and Edit, Settings; it streams from the server and never downloads audio to the Mac. Builds; not tested with a real account, no signing team or icon yet; the visualizer, share link and song info are not built.
 
