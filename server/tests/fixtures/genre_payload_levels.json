@@ -133,6 +133,9 @@
   "aboriginal": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -146,6 +149,9 @@
   "abstract": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 2,
@@ -160,6 +166,9 @@
   "acid": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 2,
@@ -176,6 +185,9 @@
   "acid house": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -190,6 +202,9 @@
   "acid jazz": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Jazz"
+   ],
    "family": "Jazz",
    "flavours": [],
    "level": 2,
@@ -206,6 +221,9 @@
   "acid rock": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -219,6 +237,9 @@
   "acid trance": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -233,6 +254,9 @@
   "acoustic": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 2,
@@ -246,6 +270,9 @@
   "african": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -259,6 +286,9 @@
   "afro-cuban": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -272,6 +302,9 @@
   "afro-cuban jazz": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Jazz"
+   ],
    "family": "Jazz",
    "flavours": [],
    "level": 2,
@@ -285,6 +318,9 @@
   "afrobeat": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Funk / Soul"
+   ],
    "family": "Funk / Soul",
    "flavours": [],
    "level": 2,
@@ -298,6 +334,9 @@
   "alternative metal": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -312,6 +351,9 @@
   "alternative pop": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Pop"
+   ],
    "family": "Pop",
    "flavours": [],
    "level": 2,
@@ -325,6 +367,9 @@
   "alternative r&b": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Funk / Soul"
+   ],
    "family": "Funk / Soul",
    "flavours": [],
    "level": 2,
@@ -338,6 +383,9 @@
   "alternative rock": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 2,
@@ -351,6 +399,9 @@
   "amapiano": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -364,6 +415,9 @@
   "ambient": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 2,
@@ -378,6 +432,9 @@
   "ambient house": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -393,6 +450,9 @@
   "anarcho-punk": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -406,6 +466,9 @@
   "andean music": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -419,6 +482,9 @@
   "aor": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 2,
@@ -432,6 +498,9 @@
   "arena rock": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 2,
@@ -445,6 +514,9 @@
   "art pop": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Pop"
+   ],
    "family": "Pop",
    "flavours": [],
    "level": 2,
@@ -458,6 +530,9 @@
   "art rock": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 2,
@@ -471,6 +546,9 @@
   "art song": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Classical"
+   ],
    "family": "Classical",
    "flavours": [],
    "level": 2,
@@ -484,6 +562,9 @@
   "atmospheric black metal": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -497,6 +578,9 @@
   "avant-garde jazz": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Jazz"
+   ],
    "family": "Jazz",
    "flavours": [],
    "level": 2,
@@ -510,6 +594,9 @@
   "avantgarde": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Classical"
+   ],
    "family": "Classical",
    "flavours": [],
    "level": 2,
@@ -523,6 +610,9 @@
   "axé": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -536,6 +626,9 @@
   "bachata": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -549,6 +642,9 @@
   "baião": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -562,6 +658,9 @@
   "bakersfield sound": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -575,6 +674,9 @@
   "balearic": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 2,
@@ -589,6 +691,9 @@
   "ballad": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Pop"
+   ],
    "family": "Pop",
    "flavours": [],
    "level": 2,
@@ -602,6 +707,9 @@
   "ballroom": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Pop"
+   ],
    "family": "Pop",
    "flavours": [],
    "level": 2,
@@ -615,6 +723,9 @@
   "baltimore club": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -630,6 +741,9 @@
   "banda": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -643,6 +757,9 @@
   "barbershop": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Pop"
+   ],
    "family": "Pop",
    "flavours": [],
    "level": 2,
@@ -656,6 +773,9 @@
   "baroque": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Classical"
+   ],
    "family": "Classical",
    "flavours": [],
    "level": 2,
@@ -669,6 +789,9 @@
   "baroque pop": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Pop"
+   ],
    "family": "Pop",
    "flavours": [],
    "level": 2,
@@ -682,6 +805,9 @@
   "bass music": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 2,
@@ -696,6 +822,9 @@
   "bassline": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -710,6 +839,9 @@
   "batucada": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -723,6 +855,9 @@
   "beat": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 2,
@@ -736,6 +871,9 @@
   "beatbox": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 2,
@@ -750,6 +888,9 @@
   "beguine": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -763,6 +904,9 @@
   "berlin-school": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -777,6 +921,9 @@
   "bhangra": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -790,6 +937,9 @@
   "big band": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Jazz"
+   ],
    "family": "Jazz",
    "flavours": [],
    "level": 2,
@@ -803,6 +953,9 @@
   "big beat": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -817,6 +970,9 @@
   "black metal": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 2,
@@ -832,6 +988,9 @@
   "blackgaze": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -846,6 +1005,9 @@
   "bleep": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 2,
@@ -860,6 +1022,9 @@
   "bluegrass": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -873,6 +1038,10 @@
   "blues rock": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Blues",
+    "Rock"
+   ],
    "family": "Blues",
    "flavours": [],
    "fusion": true,
@@ -888,6 +1057,9 @@
   "bolero": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -901,6 +1073,9 @@
   "bollywood": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -914,6 +1089,9 @@
   "bomba": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -927,6 +1105,9 @@
   "boogaloo": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -940,6 +1121,9 @@
   "boogie": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Funk / Soul"
+   ],
    "family": "Funk / Soul",
    "flavours": [],
    "level": 2,
@@ -953,6 +1137,9 @@
   "boogie woogie": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Blues"
+   ],
    "family": "Blues",
    "flavours": [],
    "level": 2,
@@ -966,6 +1153,9 @@
   "boom bap": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Hip Hop"
+   ],
    "family": "Hip Hop",
    "flavours": [],
    "level": 2,
@@ -979,6 +1169,9 @@
   "bop": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Jazz"
+   ],
    "family": "Jazz",
    "flavours": [],
    "level": 2,
@@ -994,7 +1187,11 @@
   "bossa nova": {
    "discogs": true,
    "display": null,
-   "family": "Latin",
+   "families": [
+    "Jazz",
+    "Latin"
+   ],
+   "family": "Jazz",
    "flavours": [],
    "level": 2,
    "parents": [
@@ -1008,6 +1205,9 @@
   "bounce": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Hip Hop"
+   ],
    "family": "Hip Hop",
    "flavours": [],
    "level": 2,
@@ -1021,6 +1221,9 @@
   "breakbeat": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 2,
@@ -1038,6 +1241,9 @@
   "breakcore": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -1055,6 +1261,9 @@
   "breaks": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -1069,6 +1278,9 @@
   "british invasion": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 2,
@@ -1082,6 +1294,9 @@
   "britpop": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -1095,6 +1310,9 @@
   "broken beat": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 2,
@@ -1109,6 +1327,9 @@
   "brutal death metal": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -1122,6 +1343,9 @@
   "bubblegum": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Pop"
+   ],
    "family": "Pop",
    "flavours": [],
    "level": 2,
@@ -1135,6 +1359,9 @@
   "cabaret": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Pop"
+   ],
    "family": "Pop",
    "flavours": [],
    "level": 2,
@@ -1148,6 +1375,9 @@
   "cajun": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -1161,6 +1391,9 @@
   "calypso": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Reggae"
+   ],
    "family": "Reggae",
    "flavours": [],
    "level": 2,
@@ -1174,6 +1407,9 @@
   "candombe": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -1187,6 +1423,9 @@
   "cantata": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Classical"
+   ],
    "family": "Classical",
    "flavours": [],
    "level": 2,
@@ -1200,6 +1439,9 @@
   "cantopop": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Pop"
+   ],
    "family": "Pop",
    "flavours": [],
    "level": 2,
@@ -1213,6 +1455,9 @@
   "canzone napoletana": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -1226,6 +1471,9 @@
   "carnatic": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -1239,6 +1487,9 @@
   "catalan music": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -1252,6 +1503,9 @@
   "celtic": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -1265,6 +1519,9 @@
   "cha-cha": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -1278,6 +1535,9 @@
   "chamber music": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Classical"
+   ],
    "family": "Classical",
    "flavours": [],
    "level": 2,
@@ -1291,6 +1551,9 @@
   "champeta": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -1304,6 +1567,9 @@
   "chanson": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Pop"
+   ],
    "family": "Pop",
    "flavours": [],
    "level": 2,
@@ -1317,6 +1583,9 @@
   "charanga": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -1330,6 +1599,9 @@
   "chicago blues": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Blues"
+   ],
    "family": "Blues",
    "flavours": [],
    "level": 2,
@@ -1343,6 +1615,9 @@
   "chillwave": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -1360,6 +1635,9 @@
   "chinese classical": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -1373,6 +1651,9 @@
   "chiptune": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 2,
@@ -1387,6 +1668,9 @@
   "choral": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Classical"
+   ],
    "family": "Classical",
    "flavours": [],
    "level": 2,
@@ -1400,6 +1684,9 @@
   "choro": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -1413,6 +1700,9 @@
   "city pop": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Pop"
+   ],
    "family": "Pop",
    "flavours": [],
    "level": 2,
@@ -1426,6 +1716,9 @@
   "classic rock": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 2,
@@ -1439,6 +1732,9 @@
   "cloud rap": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Hip Hop"
+   ],
    "family": "Hip Hop",
    "flavours": [],
    "level": 2,
@@ -1452,6 +1748,9 @@
   "coldwave": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -1466,6 +1765,9 @@
   "college rock": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -1479,6 +1781,9 @@
   "compas": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -1492,6 +1797,9 @@
   "concerto": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Classical"
+   ],
    "family": "Classical",
    "flavours": [],
    "level": 2,
@@ -1505,6 +1813,9 @@
   "conjunto": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -1518,6 +1829,9 @@
   "conscious": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Hip Hop"
+   ],
    "family": "Hip Hop",
    "flavours": [],
    "level": 2,
@@ -1531,6 +1845,9 @@
   "contemporary": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Classical"
+   ],
    "family": "Classical",
    "flavours": [],
    "level": 2,
@@ -1544,6 +1861,9 @@
   "contemporary jazz": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Jazz"
+   ],
    "family": "Jazz",
    "flavours": [],
    "level": 2,
@@ -1557,6 +1877,9 @@
   "contemporary r&b": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Funk / Soul"
+   ],
    "family": "Funk / Soul",
    "flavours": [],
    "level": 2,
@@ -1570,6 +1893,9 @@
   "cool jazz": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Jazz"
+   ],
    "family": "Jazz",
    "flavours": [],
    "level": 2,
@@ -1583,6 +1909,9 @@
   "corrido": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -1596,6 +1925,9 @@
   "country": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -1609,6 +1941,9 @@
   "country blues": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Blues"
+   ],
    "family": "Blues",
    "flavours": [],
    "level": 2,
@@ -1622,6 +1957,10 @@
   "country rock": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country",
+    "Rock"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "fusion": true,
@@ -1637,6 +1976,9 @@
   "cretan": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -1650,6 +1992,9 @@
   "crunk": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Hip Hop"
+   ],
    "family": "Hip Hop",
    "flavours": [],
    "level": 2,
@@ -1663,6 +2008,9 @@
   "crust": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -1681,6 +2029,9 @@
   "cuatro": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -1694,6 +2045,9 @@
   "cubano": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -1707,6 +2061,9 @@
   "cumbia": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -1720,6 +2077,9 @@
   "cut-up/dj": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Hip Hop"
+   ],
    "family": "Hip Hop",
    "flavours": [],
    "level": 2,
@@ -1733,6 +2093,9 @@
   "dance pop": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Pop"
+   ],
    "family": "Pop",
    "flavours": [],
    "level": 2,
@@ -1746,6 +2109,9 @@
   "dance-punk": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -1763,6 +2129,9 @@
   "dance-rock": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 2,
@@ -1776,6 +2145,9 @@
   "dancehall": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Reggae"
+   ],
    "family": "Reggae",
    "flavours": [],
    "level": 2,
@@ -1789,6 +2161,9 @@
   "dangdut": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -1802,6 +2177,9 @@
   "dark ambient": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -1816,11 +2194,14 @@
   "dark electro": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "parents": [
-    "industrial"
+    "Electronic"
    ],
    "provisional": false,
    "related": [
@@ -1833,6 +2214,9 @@
   "dark jazz": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Jazz"
+   ],
    "family": "Jazz",
    "flavours": [],
    "level": 2,
@@ -1846,6 +2230,9 @@
   "dark metal": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 2,
@@ -1859,9 +2246,12 @@
   "dark psytrance": {
    "discogs": false,
    "display": "dark psy-trance",
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
-   "level": 3,
+   "level": 4,
    "parents": [
     "psytrance"
    ],
@@ -1877,6 +2267,9 @@
   "darksynth": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -1884,9 +2277,6 @@
     "synthwave"
    ],
    "provisional": false,
-   "related": [
-    "industrial"
-   ],
    "status": "approved",
    "subfamily": "Synth & wave",
    "synonyms": []
@@ -1894,20 +2284,26 @@
   "darkwave": {
    "discogs": true,
    "display": null,
-   "family": "Electronic",
+   "families": [
+    "Rock"
+   ],
+   "family": "Rock",
    "flavours": [],
-   "level": 2,
+   "level": 3,
    "parents": [
-    "Electronic"
+    "post-punk",
+    "new wave"
    ],
    "provisional": false,
    "status": null,
-   "subfamily": "Synth & wave",
    "synonyms": []
   },
   "death metal": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 2,
@@ -1923,6 +2319,9 @@
   "death-doom": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -1940,6 +2339,9 @@
   "deathcore": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -1954,6 +2356,9 @@
   "deathrock": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -1968,6 +2373,9 @@
   "deep house": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -1982,6 +2390,9 @@
   "deep techno": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -1996,6 +2407,9 @@
   "deep trance": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -2010,6 +2424,9 @@
   "delta blues": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Blues"
+   ],
    "family": "Blues",
    "flavours": [],
    "level": 2,
@@ -2023,6 +2440,9 @@
   "depressive black metal": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -2036,6 +2456,9 @@
   "descarga": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -2049,6 +2472,9 @@
   "desert blues": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -2062,7 +2488,11 @@
   "disco": {
    "discogs": true,
    "display": null,
-   "family": "Funk / Soul",
+   "families": [
+    "Electronic",
+    "Funk / Soul"
+   ],
+   "family": "Electronic",
    "flavours": [],
    "level": 2,
    "parents": [
@@ -2079,6 +2509,9 @@
   "disco polo": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 2,
@@ -2093,6 +2526,9 @@
   "dixieland": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Jazz"
+   ],
    "family": "Jazz",
    "flavours": [],
    "level": 2,
@@ -2106,6 +2542,9 @@
   "dj battle tool": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Hip Hop"
+   ],
    "family": "Hip Hop",
    "flavours": [],
    "level": 2,
@@ -2119,6 +2558,9 @@
   "donk": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -2134,6 +2576,9 @@
   "doo-wop": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Funk / Soul"
+   ],
    "family": "Funk / Soul",
    "flavours": [],
    "level": 2,
@@ -2147,6 +2592,9 @@
   "doom metal": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -2161,6 +2609,9 @@
   "doomcore": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -2175,6 +2626,9 @@
   "downtempo": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 2,
@@ -2191,6 +2645,9 @@
   "dream pop": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -2205,6 +2662,9 @@
   "dream trance": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -2222,6 +2682,9 @@
   "dreamsynth": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -2236,6 +2699,9 @@
   "dreamwave": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -2250,6 +2716,9 @@
   "drill": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Hip Hop"
+   ],
    "family": "Hip Hop",
    "flavours": [],
    "level": 2,
@@ -2263,6 +2732,9 @@
   "drone": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -2277,6 +2749,9 @@
   "drum and bass": {
    "discogs": true,
    "display": "drum & bass",
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 2,
@@ -2300,7 +2775,11 @@
   "dub": {
    "discogs": true,
    "display": null,
-   "family": "Reggae",
+   "families": [
+    "Electronic",
+    "Reggae"
+   ],
+   "family": "Electronic",
    "flavours": [],
    "level": 2,
    "parents": [
@@ -2314,6 +2793,9 @@
   "dub poetry": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Reggae"
+   ],
    "family": "Reggae",
    "flavours": [],
    "level": 2,
@@ -2327,6 +2809,9 @@
   "dub techno": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -2341,6 +2826,9 @@
   "dubstep": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -2355,6 +2843,9 @@
   "dungeon synth": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -2372,6 +2863,9 @@
   "early": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Classical"
+   ],
    "family": "Classical",
    "flavours": [],
    "level": 2,
@@ -2385,6 +2879,9 @@
   "east coast blues": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Blues"
+   ],
    "family": "Blues",
    "flavours": [],
    "level": 2,
@@ -2398,6 +2895,9 @@
   "easy listening": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Pop"
+   ],
    "family": "Pop",
    "flavours": [],
    "level": 2,
@@ -2411,11 +2911,15 @@
   "ebm": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic",
+    "Pop",
+    "Rock"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
    "parents": [
-    "industrial",
     "synthpop"
    ],
    "provisional": false,
@@ -2426,6 +2930,9 @@
   "edm": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 2,
@@ -2446,6 +2953,9 @@
   "electric blues": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Blues"
+   ],
    "family": "Blues",
    "flavours": [],
    "level": 2,
@@ -2459,6 +2969,10 @@
   "electro": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic",
+    "Hip Hop"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 2,
@@ -2477,14 +2991,19 @@
   "electro house": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
    "parents": [
-    "house",
-    "electro"
+    "house"
    ],
    "provisional": false,
+   "related": [
+    "electro"
+   ],
    "status": null,
    "subfamily": "House",
    "synonyms": []
@@ -2492,6 +3011,9 @@
   "electro swing": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 2,
@@ -2506,6 +3028,12 @@
   "electroclash": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic",
+    "Hip Hop",
+    "Pop",
+    "Rock"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -2521,7 +3049,11 @@
   "electronic rock": {
    "discogs": false,
    "display": null,
-   "family": "Rock",
+   "families": [
+    "Electronic",
+    "Rock"
+   ],
+   "family": "Electronic",
    "flavours": [],
    "fusion": true,
    "level": 2,
@@ -2536,6 +3068,9 @@
   "emo": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -2550,6 +3085,9 @@
   "enka": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -2563,6 +3101,9 @@
   "epic": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Classical"
+   ],
    "family": "Classical",
    "flavours": [],
    "level": 2,
@@ -2576,6 +3117,9 @@
   "estrada": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Pop"
+   ],
    "family": "Pop",
    "flavours": [],
    "level": 2,
@@ -2586,25 +3130,13 @@
    "status": null,
    "synonyms": []
   },
-  "ethereal": {
-   "discogs": true,
-   "display": null,
-   "family": "Electronic",
-   "flavours": [],
-   "level": 2,
-   "parents": [
-    "Electronic"
-   ],
-   "provisional": false,
-   "status": null,
-   "subfamily": "Synth & wave",
-   "synonyms": [
-    "ethereal wave"
-   ]
-  },
   "euro disco": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic",
+    "Funk / Soul"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -2621,6 +3153,9 @@
   "euro house": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -2637,6 +3172,9 @@
   "euro trance": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -2651,11 +3189,19 @@
   "eurodance": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic",
+    "Funk / Soul",
+    "Pop"
+   ],
    "family": "Electronic",
    "flavours": [],
+   "fusion": true,
    "level": 2,
    "parents": [
-    "Electronic"
+    "house",
+    "euro disco",
+    "Pop"
    ],
    "provisional": false,
    "status": null,
@@ -2669,6 +3215,9 @@
   "europop": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Pop"
+   ],
    "family": "Pop",
    "flavours": [],
    "level": 2,
@@ -2684,6 +3233,9 @@
   "exotica": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Jazz"
+   ],
    "family": "Jazz",
    "flavours": [],
    "level": 2,
@@ -2697,6 +3249,10 @@
   "experimental": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic",
+    "Rock"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 2,
@@ -2712,6 +3268,9 @@
   "experimental rock": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 2,
@@ -2725,6 +3284,9 @@
   "extreme metal": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -2738,6 +3300,9 @@
   "fado": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -2751,6 +3316,9 @@
   "favela funk": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -2764,6 +3332,9 @@
   "flamenco": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -2777,6 +3348,9 @@
   "folk": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -2790,10 +3364,14 @@
   "folk metal": {
    "discogs": true,
    "display": null,
-   "family": "Rock",
+   "families": [
+    "Folk, World, & Country",
+    "Rock"
+   ],
+   "family": "Folk, World, & Country",
    "flavours": [],
    "fusion": true,
-   "level": 3,
+   "level": 2,
    "parents": [
     "heavy metal",
     "Folk, World, & Country"
@@ -2805,6 +3383,9 @@
   "folk pop": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -2818,10 +3399,14 @@
   "folk punk": {
    "discogs": false,
    "display": null,
-   "family": "Rock",
+   "families": [
+    "Folk, World, & Country",
+    "Rock"
+   ],
+   "family": "Folk, World, & Country",
    "flavours": [],
    "fusion": true,
-   "level": 3,
+   "level": 2,
    "parents": [
     "punk",
     "Folk, World, & Country"
@@ -2833,6 +3418,10 @@
   "folk rock": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country",
+    "Rock"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "fusion": true,
@@ -2848,6 +3437,9 @@
   "footwork": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 2,
@@ -2862,9 +3454,12 @@
   "forest psytrance": {
    "discogs": false,
    "display": "forest psy-trance",
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
-   "level": 3,
+   "level": 4,
    "parents": [
     "psytrance"
    ],
@@ -2879,6 +3474,9 @@
   "forró": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -2892,6 +3490,9 @@
   "free funk": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Funk / Soul"
+   ],
    "family": "Funk / Soul",
    "flavours": [],
    "level": 2,
@@ -2905,6 +3506,9 @@
   "free improvisation": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Jazz"
+   ],
    "family": "Jazz",
    "flavours": [],
    "level": 2,
@@ -2918,6 +3522,9 @@
   "free jazz": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Jazz"
+   ],
    "family": "Jazz",
    "flavours": [],
    "level": 2,
@@ -2931,6 +3538,9 @@
   "freestyle": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 2,
@@ -2945,6 +3555,9 @@
   "french house": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -2961,9 +3574,12 @@
   "full-on psytrance": {
    "discogs": false,
    "display": "full-on psy-trance",
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
-   "level": 3,
+   "level": 4,
    "parents": [
     "psytrance"
    ],
@@ -2981,6 +3597,9 @@
   "funeral doom metal": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -2996,6 +3615,9 @@
   "funk": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Funk / Soul"
+   ],
    "family": "Funk / Soul",
    "flavours": [],
    "level": 2,
@@ -3009,10 +3631,14 @@
   "funk metal": {
    "discogs": true,
    "display": null,
-   "family": "Rock",
+   "families": [
+    "Funk / Soul",
+    "Rock"
+   ],
+   "family": "Funk / Soul",
    "flavours": [],
    "fusion": true,
-   "level": 3,
+   "level": 2,
    "parents": [
     "heavy metal",
     "Funk / Soul"
@@ -3024,6 +3650,9 @@
   "fusion": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Jazz"
+   ],
    "family": "Jazz",
    "flavours": [],
    "level": 2,
@@ -3037,6 +3666,9 @@
   "future bass": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -3054,6 +3686,9 @@
   "future house": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -3068,6 +3703,9 @@
   "future jazz": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 2,
@@ -3082,6 +3720,9 @@
   "g-funk": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Hip Hop"
+   ],
    "family": "Hip Hop",
    "flavours": [],
    "level": 2,
@@ -3095,6 +3736,9 @@
   "gabber": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -3109,6 +3753,9 @@
   "gagaku": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -3122,6 +3769,9 @@
   "gamelan": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -3135,6 +3785,9 @@
   "gangsta": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Hip Hop"
+   ],
    "family": "Hip Hop",
    "flavours": [],
    "level": 2,
@@ -3148,6 +3801,9 @@
   "garage house": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -3162,6 +3818,9 @@
   "garage rock": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -3175,6 +3834,9 @@
   "ghazal": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -3188,6 +3850,9 @@
   "ghetto": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 2,
@@ -3202,6 +3867,9 @@
   "ghetto house": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -3216,6 +3884,9 @@
   "ghettotech": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 2,
@@ -3230,6 +3901,9 @@
   "glam": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 2,
@@ -3245,6 +3919,9 @@
   "glam metal": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -3261,6 +3938,10 @@
   "glitch": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic",
+    "Rock"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -3275,6 +3956,9 @@
   "glitch hop": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -3290,6 +3974,9 @@
   "gnawa": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -3303,6 +3990,9 @@
   "go-go": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Funk / Soul"
+   ],
    "family": "Funk / Soul",
    "flavours": [],
    "level": 2,
@@ -3316,9 +4006,12 @@
   "goa trance": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
-   "level": 3,
+   "level": 4,
    "parents": [
     "psytrance"
    ],
@@ -3330,6 +4023,9 @@
   "goregrind": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -3344,6 +4040,9 @@
   "gospel": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -3360,6 +4059,9 @@
   "goth rock": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -3373,6 +4075,9 @@
   "gothic metal": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -3387,6 +4092,9 @@
   "gqom": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -3400,6 +4108,9 @@
   "grime": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 2,
@@ -3417,6 +4128,9 @@
   "grindcore": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -3431,6 +4145,9 @@
   "groove metal": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -3448,6 +4165,9 @@
   "grunge": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -3461,6 +4181,9 @@
   "guaguancó": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -3474,6 +4197,9 @@
   "guajira": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -3487,6 +4213,9 @@
   "guaracha": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -3500,6 +4229,9 @@
   "gypsy jazz": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Jazz"
+   ],
    "family": "Jazz",
    "flavours": [],
    "level": 2,
@@ -3513,6 +4245,9 @@
   "halftime": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 2,
@@ -3527,6 +4262,11 @@
   "hands up": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic",
+    "Funk / Soul",
+    "Pop"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -3542,6 +4282,9 @@
   "happy hardcore": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -3556,6 +4299,9 @@
   "hard bop": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Jazz"
+   ],
    "family": "Jazz",
    "flavours": [],
    "level": 2,
@@ -3569,6 +4315,9 @@
   "hard house": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -3584,6 +4333,9 @@
   "hard rock": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 2,
@@ -3597,6 +4349,9 @@
   "hard techno": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -3611,6 +4366,9 @@
   "hard trance": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -3626,6 +4384,9 @@
   "hardcore": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 2,
@@ -3643,6 +4404,9 @@
   "hardcore hip hop": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Hip Hop"
+   ],
    "family": "Hip Hop",
    "flavours": [],
    "level": 2,
@@ -3656,6 +4420,9 @@
   "hardcore punk": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -3669,6 +4436,9 @@
   "hardstyle": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -3684,6 +4454,9 @@
   "harmonica blues": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Blues"
+   ],
    "family": "Blues",
    "flavours": [],
    "level": 2,
@@ -3697,11 +4470,14 @@
   "harsh noise wall": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "parents": [
-    "industrial"
+    "Electronic"
    ],
    "provisional": false,
    "status": null,
@@ -3711,6 +4487,9 @@
   "hawaiian": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -3724,6 +4503,9 @@
   "heavy metal": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 2,
@@ -3739,6 +4521,10 @@
   "hi-nrg": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic",
+    "Funk / Soul"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -3753,6 +4539,9 @@
   "highlife": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -3766,6 +4555,9 @@
   "hill country blues": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Blues"
+   ],
    "family": "Blues",
    "flavours": [],
    "level": 2,
@@ -3779,6 +4571,9 @@
   "hillbilly": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -3792,6 +4587,9 @@
   "hindustani": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -3805,10 +4603,14 @@
   "hip house": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic",
+    "Hip Hop"
+   ],
    "family": "Electronic",
    "flavours": [],
    "fusion": true,
-   "level": 3,
+   "level": 2,
    "parents": [
     "house",
     "Hip Hop"
@@ -3821,6 +4623,9 @@
   "honky tonk": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -3834,6 +4639,9 @@
   "horrorcore": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Hip Hop"
+   ],
    "family": "Hip Hop",
    "flavours": [],
    "level": 2,
@@ -3847,6 +4655,9 @@
   "house": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 2,
@@ -3854,6 +4665,9 @@
     "Electronic"
    ],
    "provisional": false,
+   "related": [
+    "disco"
+   ],
    "status": null,
    "subfamily": "House",
    "synonyms": [
@@ -3865,6 +4679,9 @@
   "hyperpop": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Pop"
+   ],
    "family": "Pop",
    "flavours": [],
    "level": 2,
@@ -3878,6 +4695,9 @@
   "hyphy": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Hip Hop"
+   ],
    "family": "Hip Hop",
    "flavours": [],
    "level": 2,
@@ -3891,6 +4711,9 @@
   "idm": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 2,
@@ -3907,6 +4730,9 @@
   "illbient": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -3921,6 +4747,9 @@
   "impressionist": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Classical"
+   ],
    "family": "Classical",
    "flavours": [],
    "level": 2,
@@ -3934,6 +4763,9 @@
   "indian classical": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -3947,6 +4779,9 @@
   "indie pop": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Pop"
+   ],
    "family": "Pop",
    "flavours": [],
    "level": 2,
@@ -3960,6 +4795,9 @@
   "indie rock": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 2,
@@ -3972,29 +4810,17 @@
     "rock and indie"
    ]
   },
-  "industrial": {
-   "discogs": true,
-   "display": null,
-   "family": "Electronic",
-   "flavours": [],
-   "level": 2,
-   "parents": [
-    "Electronic"
-   ],
-   "provisional": false,
-   "status": null,
-   "subfamily": "Experimental, industrial & noise",
-   "synonyms": []
-  },
   "industrial metal": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
    "parents": [
     "heavy metal",
-    "industrial",
     "industrial rock"
    ],
    "provisional": false,
@@ -4004,12 +4830,14 @@
   "industrial rock": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 2,
    "parents": [
-    "Rock",
-    "industrial"
+    "Rock"
    ],
    "provisional": false,
    "related": [
@@ -4021,6 +4849,9 @@
   "instrumental": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Hip Hop"
+   ],
    "family": "Hip Hop",
    "flavours": [],
    "level": 2,
@@ -4034,6 +4865,10 @@
   "italo disco": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic",
+    "Funk / Soul"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -4048,6 +4883,9 @@
   "italo house": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -4062,6 +4900,11 @@
   "italodance": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic",
+    "Funk / Soul",
+    "Pop"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -4076,6 +4919,9 @@
   "j-pop": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Pop"
+   ],
    "family": "Pop",
    "flavours": [],
    "level": 2,
@@ -4089,6 +4935,9 @@
   "jangle pop": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 2,
@@ -4102,7 +4951,11 @@
   "jazz funk": {
    "discogs": true,
    "display": null,
-   "family": "Jazz",
+   "families": [
+    "Funk / Soul",
+    "Jazz"
+   ],
+   "family": "Funk / Soul",
    "flavours": [],
    "fusion": true,
    "level": 2,
@@ -4117,6 +4970,9 @@
   "jazz-rock": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Jazz"
+   ],
    "family": "Jazz",
    "flavours": [],
    "level": 2,
@@ -4130,6 +4986,9 @@
   "jazzdance": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 2,
@@ -4144,6 +5003,9 @@
   "jazzy hip-hop": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Hip Hop"
+   ],
    "family": "Hip Hop",
    "flavours": [],
    "level": 2,
@@ -4157,6 +5019,9 @@
   "juke": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 2,
@@ -4171,6 +5036,9 @@
   "jump blues": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Blues"
+   ],
    "family": "Blues",
    "flavours": [],
    "level": 2,
@@ -4184,6 +5052,9 @@
   "jumpstyle": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -4198,6 +5069,9 @@
   "jungle": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -4215,6 +5089,9 @@
   "k-pop": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Pop"
+   ],
    "family": "Pop",
    "flavours": [],
    "level": 2,
@@ -4228,6 +5105,9 @@
   "kaseko": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -4241,6 +5121,9 @@
   "kayōkyoku": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -4254,6 +5137,9 @@
   "keroncong": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -4267,6 +5153,9 @@
   "kizomba": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -4280,6 +5169,9 @@
   "klezmer": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -4293,6 +5185,9 @@
   "krautrock": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -4309,6 +5204,9 @@
   "kuduro": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 2,
@@ -4323,6 +5221,9 @@
   "kwaito": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -4336,6 +5237,10 @@
   "latin jazz": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Jazz",
+    "Latin"
+   ],
    "family": "Jazz",
    "flavours": [],
    "fusion": true,
@@ -4351,6 +5256,9 @@
   "latin pop": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -4364,6 +5272,9 @@
   "laïko": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -4377,6 +5288,9 @@
   "leftfield": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 2,
@@ -4391,6 +5305,9 @@
   "lento violento": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 2,
@@ -4405,6 +5322,9 @@
   "levenslied": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Pop"
+   ],
    "family": "Pop",
    "flavours": [],
    "level": 2,
@@ -4418,6 +5338,9 @@
   "light music": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Pop"
+   ],
    "family": "Pop",
    "flavours": [],
    "level": 2,
@@ -4431,6 +5354,9 @@
   "liquid drum and bass": {
    "discogs": false,
    "display": "liquid drum & bass",
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -4451,22 +5377,12 @@
     "liquid drum & bass music"
    ]
   },
-  "lo-fi": {
-   "discogs": true,
-   "display": null,
-   "family": "Rock",
-   "flavours": [],
-   "level": 2,
-   "parents": [
-    "Rock"
-   ],
-   "provisional": true,
-   "status": null,
-   "synonyms": []
-  },
   "louisiana blues": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Blues"
+   ],
    "family": "Blues",
    "flavours": [],
    "level": 2,
@@ -4480,6 +5396,9 @@
   "lounge": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Pop"
+   ],
    "family": "Pop",
    "flavours": [],
    "level": 2,
@@ -4493,6 +5412,9 @@
   "lovers rock": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Reggae"
+   ],
    "family": "Reggae",
    "flavours": [],
    "level": 2,
@@ -4506,6 +5428,9 @@
   "lowercase": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -4520,6 +5445,9 @@
   "makina": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -4534,6 +5462,9 @@
   "mambo": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -4547,6 +5478,9 @@
   "mandopop": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Pop"
+   ],
    "family": "Pop",
    "flavours": [],
    "level": 2,
@@ -4560,6 +5494,9 @@
   "mariachi": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -4573,6 +5510,9 @@
   "math rock": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -4588,6 +5528,9 @@
   "mathcore": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -4607,6 +5550,9 @@
   "mbalax": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -4620,6 +5566,9 @@
   "medieval": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Classical"
+   ],
    "family": "Classical",
    "flavours": [],
    "level": 2,
@@ -4633,6 +5582,9 @@
   "melodic death metal": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -4646,6 +5598,9 @@
   "melodic hardcore": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -4664,6 +5619,9 @@
   "melodic techno": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -4681,6 +5639,9 @@
   "memphis blues": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Blues"
+   ],
    "family": "Blues",
    "flavours": [],
    "level": 2,
@@ -4694,6 +5655,9 @@
   "memphis rap": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Hip Hop"
+   ],
    "family": "Hip Hop",
    "flavours": [],
    "level": 2,
@@ -4707,6 +5671,9 @@
   "mento": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Reggae"
+   ],
    "family": "Reggae",
    "flavours": [],
    "level": 2,
@@ -4720,6 +5687,9 @@
   "merengue": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -4733,6 +5703,9 @@
   "metalcore": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -4747,6 +5720,9 @@
   "miami bass": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Hip Hop"
+   ],
    "family": "Hip Hop",
    "flavours": [],
    "level": 2,
@@ -4760,6 +5736,9 @@
   "microhouse": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -4777,6 +5756,9 @@
   "middle of the road": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Pop"
+   ],
    "family": "Pop",
    "flavours": [],
    "level": 2,
@@ -4792,6 +5774,9 @@
   "midwest emo": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -4807,6 +5792,9 @@
   "min'yō": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -4820,6 +5808,9 @@
   "minimal": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 2,
@@ -4838,6 +5829,9 @@
   "minimal techno": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -4855,6 +5849,9 @@
   "minimalism": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Classical"
+   ],
    "family": "Classical",
    "flavours": [],
    "level": 2,
@@ -4868,6 +5865,9 @@
   "mod": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 2,
@@ -4881,6 +5881,9 @@
   "modal": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Jazz"
+   ],
    "family": "Jazz",
    "flavours": [],
    "level": 2,
@@ -4894,6 +5897,9 @@
   "modern": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Classical"
+   ],
    "family": "Classical",
    "flavours": [],
    "level": 2,
@@ -4907,6 +5913,9 @@
   "modern classical": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Classical"
+   ],
    "family": "Classical",
    "flavours": [],
    "level": 2,
@@ -4923,6 +5932,9 @@
   "modern electric blues": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Blues"
+   ],
    "family": "Blues",
    "flavours": [],
    "level": 2,
@@ -4936,6 +5948,9 @@
   "moombahton": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -4950,6 +5965,9 @@
   "mouth music": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -4963,6 +5981,9 @@
   "mpb": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -4976,6 +5997,9 @@
   "musette": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -4989,6 +6013,9 @@
   "music hall": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Pop"
+   ],
    "family": "Pop",
    "flavours": [],
    "level": 2,
@@ -5002,6 +6029,10 @@
   "musique concrète": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic",
+    "Rock"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -5016,6 +6047,9 @@
   "música criolla": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -5029,6 +6063,9 @@
   "neo soul": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Funk / Soul"
+   ],
    "family": "Funk / Soul",
    "flavours": [],
    "level": 2,
@@ -5042,6 +6079,9 @@
   "neo trance": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -5056,6 +6096,9 @@
   "neo-psychedelia": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -5069,6 +6112,9 @@
   "neo-romantic": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Classical"
+   ],
    "family": "Classical",
    "flavours": [],
    "level": 2,
@@ -5082,6 +6128,9 @@
   "neoclassical": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Classical"
+   ],
    "family": "Classical",
    "flavours": [],
    "level": 2,
@@ -5095,6 +6144,9 @@
   "neofolk": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 2,
@@ -5109,6 +6161,9 @@
   "neurofunk": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -5116,9 +6171,6 @@
     "drum and bass"
    ],
    "provisional": false,
-   "related": [
-    "industrial"
-   ],
    "status": "approved",
    "subfamily": "Breaks & bass",
    "synonyms": []
@@ -5126,6 +6178,9 @@
   "new age": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 2,
@@ -5140,6 +6195,9 @@
   "new beat": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 2,
@@ -5154,6 +6212,9 @@
   "new jack swing": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Funk / Soul"
+   ],
    "family": "Funk / Soul",
    "flavours": [],
    "level": 2,
@@ -5167,6 +6228,9 @@
   "new romantic": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Pop"
+   ],
    "family": "Pop",
    "flavours": [],
    "level": 2,
@@ -5180,6 +6244,9 @@
   "new wave": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 2,
@@ -5196,6 +6263,9 @@
   "no wave": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 2,
@@ -5213,6 +6283,9 @@
   "noise": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 2,
@@ -5230,6 +6303,9 @@
   "noise rock": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 2,
@@ -5243,6 +6319,9 @@
   "noisecore": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -5259,6 +6338,9 @@
   "nordic": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -5272,6 +6354,9 @@
   "norteño": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -5285,6 +6370,9 @@
   "nu metal": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -5303,6 +6391,10 @@
   "nu-disco": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic",
+    "Funk / Soul"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -5317,6 +6409,9 @@
   "nu-nrg": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -5331,6 +6426,9 @@
   "nueva canción": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -5344,6 +6442,9 @@
   "oi": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -5357,6 +6458,9 @@
   "opera": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Classical"
+   ],
    "family": "Classical",
    "flavours": [],
    "level": 2,
@@ -5370,6 +6474,9 @@
   "operetta": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Classical"
+   ],
    "family": "Classical",
    "flavours": [],
    "level": 2,
@@ -5383,6 +6490,9 @@
   "oratorio": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Classical"
+   ],
    "family": "Classical",
    "flavours": [],
    "level": 2,
@@ -5396,6 +6506,9 @@
   "orchestral pop": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Pop"
+   ],
    "family": "Pop",
    "flavours": [],
    "level": 2,
@@ -5409,6 +6522,9 @@
   "p-funk": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Funk / Soul"
+   ],
    "family": "Funk / Soul",
    "flavours": [],
    "level": 2,
@@ -5422,6 +6538,9 @@
   "pachanga": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -5435,6 +6554,9 @@
   "pacific": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -5448,6 +6570,9 @@
   "pagode": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -5461,6 +6586,9 @@
   "paisley underground": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 2,
@@ -5474,6 +6602,9 @@
   "pasodoble": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -5487,6 +6618,9 @@
   "persian classical": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -5500,6 +6634,9 @@
   "phonk": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Hip Hop"
+   ],
    "family": "Hip Hop",
    "flavours": [],
    "level": 2,
@@ -5513,6 +6650,9 @@
   "piano blues": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Blues"
+   ],
    "family": "Blues",
    "flavours": [],
    "level": 2,
@@ -5526,6 +6666,9 @@
   "piedmont blues": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Blues"
+   ],
    "family": "Blues",
    "flavours": [],
    "level": 2,
@@ -5539,6 +6682,9 @@
   "plena": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -5552,6 +6698,10 @@
   "plunderphonics": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic",
+    "Rock"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -5566,6 +6716,9 @@
   "polka": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -5579,6 +6732,9 @@
   "pop punk": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -5593,6 +6749,9 @@
   "pop rap": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Hip Hop"
+   ],
    "family": "Hip Hop",
    "flavours": [],
    "level": 2,
@@ -5606,6 +6765,9 @@
   "pop rock": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 2,
@@ -5619,6 +6781,9 @@
   "pop soul": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Funk / Soul"
+   ],
    "family": "Funk / Soul",
    "flavours": [],
    "level": 2,
@@ -5632,6 +6797,9 @@
   "pornogrind": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -5647,6 +6815,9 @@
   "porro": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -5660,6 +6831,9 @@
   "post-bop": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Jazz"
+   ],
    "family": "Jazz",
    "flavours": [],
    "level": 2,
@@ -5673,6 +6847,9 @@
   "post-britpop": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -5687,19 +6864,27 @@
   "post-disco": {
    "discogs": false,
    "display": null,
-   "family": "Funk / Soul",
-   "flavours": [],
-   "level": 2,
-   "parents": [
+   "families": [
+    "Electronic",
     "Funk / Soul"
+   ],
+   "family": "Electronic",
+   "flavours": [],
+   "level": 3,
+   "parents": [
+    "disco"
    ],
    "provisional": true,
    "status": null,
+   "subfamily": "Eurodance & disco",
    "synonyms": []
   },
   "post-grunge": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -5714,6 +6899,9 @@
   "post-hardcore": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -5732,6 +6920,9 @@
   "post-metal": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -5747,6 +6938,9 @@
   "post-modern": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Classical"
+   ],
    "family": "Classical",
    "flavours": [],
    "level": 2,
@@ -5760,6 +6954,9 @@
   "post-punk": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 2,
@@ -5774,6 +6971,9 @@
   "post-punk revival": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -5788,6 +6988,9 @@
   "post-rock": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -5801,11 +7004,14 @@
   "power electronics": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "parents": [
-    "industrial"
+    "Electronic"
    ],
    "provisional": false,
    "status": null,
@@ -5815,6 +7021,9 @@
   "power metal": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -5829,6 +7038,9 @@
   "power pop": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -5842,6 +7054,9 @@
   "progressive breaks": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -5856,6 +7071,9 @@
   "progressive house": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -5874,6 +7092,9 @@
   "progressive metal": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -5888,6 +7109,9 @@
   "progressive pop": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Pop"
+   ],
    "family": "Pop",
    "flavours": [],
    "level": 2,
@@ -5901,9 +7125,12 @@
   "progressive psytrance": {
    "discogs": false,
    "display": "progressive psy-trance",
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
-   "level": 3,
+   "level": 4,
    "parents": [
     "psytrance"
    ],
@@ -5919,6 +7146,9 @@
   "progressive rock": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 2,
@@ -5932,6 +7162,9 @@
   "progressive trance": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -5946,6 +7179,9 @@
   "psybient": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -5961,6 +7197,9 @@
   "psychedelic rock": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 2,
@@ -5974,6 +7213,9 @@
   "psychedelic soul": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Funk / Soul"
+   ],
    "family": "Funk / Soul",
    "flavours": [],
    "level": 2,
@@ -5987,6 +7229,9 @@
   "psychobilly": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 2,
@@ -6000,11 +7245,14 @@
   "psytrance": {
    "discogs": true,
    "display": "psy-trance",
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
-   "level": 2,
+   "level": 3,
    "parents": [
-    "Electronic"
+    "trance"
    ],
    "provisional": false,
    "status": null,
@@ -6018,6 +7266,9 @@
   "pub rock": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 2,
@@ -6031,6 +7282,9 @@
   "punk": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 2,
@@ -6046,6 +7300,9 @@
   "qawwali": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -6059,6 +7316,9 @@
   "r&b": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Funk / Soul"
+   ],
    "family": "Funk / Soul",
    "flavours": [],
    "level": 2,
@@ -6072,6 +7332,9 @@
   "ragga": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Reggae"
+   ],
    "family": "Reggae",
    "flavours": [],
    "level": 2,
@@ -6085,6 +7348,9 @@
   "ragga hiphop": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Hip Hop"
+   ],
    "family": "Hip Hop",
    "flavours": [],
    "level": 2,
@@ -6098,6 +7364,9 @@
   "ragtime": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Jazz"
+   ],
    "family": "Jazz",
    "flavours": [],
    "level": 2,
@@ -6111,6 +7380,9 @@
   "rai": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -6124,6 +7396,9 @@
   "ranchera": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -6137,10 +7412,14 @@
   "rap metal": {
    "discogs": false,
    "display": null,
-   "family": "Rock",
+   "families": [
+    "Hip Hop",
+    "Rock"
+   ],
+   "family": "Hip Hop",
    "flavours": [],
    "fusion": true,
-   "level": 3,
+   "level": 2,
    "parents": [
     "heavy metal",
     "Hip Hop"
@@ -6152,6 +7431,9 @@
   "rebetiko": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -6165,6 +7447,9 @@
   "reggae gospel": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Reggae"
+   ],
    "family": "Reggae",
    "flavours": [],
    "level": 2,
@@ -6178,6 +7463,9 @@
   "reggae-pop": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Reggae"
+   ],
    "family": "Reggae",
    "flavours": [],
    "level": 2,
@@ -6191,6 +7479,9 @@
   "reggaeton": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -6204,6 +7495,9 @@
   "renaissance": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Classical"
+   ],
    "family": "Classical",
    "flavours": [],
    "level": 2,
@@ -6217,6 +7511,9 @@
   "requiem": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Classical"
+   ],
    "family": "Classical",
    "flavours": [],
    "level": 2,
@@ -6230,7 +7527,11 @@
   "rhythm and blues": {
    "discogs": true,
    "display": null,
-   "family": "Funk / Soul",
+   "families": [
+    "Blues",
+    "Funk / Soul"
+   ],
+   "family": "Blues",
    "flavours": [],
    "level": 2,
    "parents": [
@@ -6244,11 +7545,13 @@
   "rhythmic noise": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
    "parents": [
-    "industrial",
     "noise"
    ],
    "provisional": false,
@@ -6259,6 +7562,9 @@
   "rnb/swing": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Funk / Soul"
+   ],
    "family": "Funk / Soul",
    "flavours": [],
    "level": 2,
@@ -6272,6 +7578,9 @@
   "rock and roll": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 2,
@@ -6285,6 +7594,9 @@
   "rock opera": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 2,
@@ -6298,6 +7610,9 @@
   "rockabilly": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -6311,6 +7626,9 @@
   "rocksteady": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Reggae"
+   ],
    "family": "Reggae",
    "flavours": [],
    "level": 2,
@@ -6324,6 +7642,9 @@
   "romani": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -6337,6 +7658,9 @@
   "roots reggae": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Reggae"
+   ],
    "family": "Reggae",
    "flavours": [],
    "level": 2,
@@ -6350,6 +7674,9 @@
   "roots rock": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 2,
@@ -6363,6 +7690,9 @@
   "rumba": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -6376,6 +7706,9 @@
   "sadcore": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 2,
@@ -6389,6 +7722,9 @@
   "salsa": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -6402,6 +7738,9 @@
   "samba": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -6415,6 +7754,9 @@
   "samba-canção": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -6428,6 +7770,9 @@
   "schlager": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Pop"
+   ],
    "family": "Pop",
    "flavours": [],
    "level": 2,
@@ -6441,6 +7786,9 @@
   "schranz": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -6455,6 +7803,9 @@
   "screamo": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -6470,6 +7821,9 @@
   "screw": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Hip Hop"
+   ],
    "family": "Hip Hop",
    "flavours": [],
    "level": 2,
@@ -6483,6 +7837,9 @@
   "sephardic": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -6496,6 +7853,9 @@
   "seresta": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -6509,6 +7869,9 @@
   "sertanejo": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -6522,6 +7885,9 @@
   "shock rock": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 2,
@@ -6535,6 +7901,9 @@
   "shoegaze": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -6549,6 +7918,9 @@
   "singer-songwriter": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -6562,6 +7934,9 @@
   "ska": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Reggae"
+   ],
    "family": "Reggae",
    "flavours": [],
    "level": 2,
@@ -6575,6 +7950,9 @@
   "skiffle": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -6588,6 +7966,9 @@
   "skweee": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 2,
@@ -6602,6 +7983,9 @@
   "slowcore": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -6615,6 +7999,9 @@
   "sludge metal": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -6630,6 +8017,9 @@
   "smooth jazz": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Jazz"
+   ],
    "family": "Jazz",
    "flavours": [],
    "level": 2,
@@ -6643,6 +8033,9 @@
   "soca": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Reggae"
+   ],
    "family": "Reggae",
    "flavours": [],
    "level": 2,
@@ -6656,6 +8049,9 @@
   "soft rock": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 2,
@@ -6669,6 +8065,9 @@
   "son": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -6682,6 +8081,9 @@
   "son montuno": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -6695,6 +8097,9 @@
   "sonata": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Classical"
+   ],
    "family": "Classical",
    "flavours": [],
    "level": 2,
@@ -6708,6 +8113,9 @@
   "soukous": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -6721,6 +8129,9 @@
   "soul": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Funk / Soul"
+   ],
    "family": "Funk / Soul",
    "flavours": [],
    "level": 2,
@@ -6734,7 +8145,11 @@
   "soul jazz": {
    "discogs": true,
    "display": null,
-   "family": "Jazz",
+   "families": [
+    "Funk / Soul",
+    "Jazz"
+   ],
+   "family": "Funk / Soul",
    "flavours": [],
    "fusion": true,
    "level": 2,
@@ -6749,6 +8164,10 @@
   "sound art": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic",
+    "Rock"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -6763,6 +8182,10 @@
   "sound collage": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic",
+    "Rock"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -6777,6 +8200,9 @@
   "southern rock": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 2,
@@ -6790,6 +8216,9 @@
   "sovietwave": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -6809,6 +8238,10 @@
   "space disco": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Electronic",
+    "Funk / Soul"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -6825,6 +8258,9 @@
   "space rock": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -6839,6 +8275,9 @@
   "space-age": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Jazz"
+   ],
    "family": "Jazz",
    "flavours": [],
    "level": 2,
@@ -6852,6 +8291,10 @@
   "spacesynth": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Electronic",
+    "Funk / Soul"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -6867,6 +8310,9 @@
   "speed garage": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -6882,6 +8328,9 @@
   "speed metal": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -6895,6 +8344,9 @@
   "speedcore": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -6909,6 +8361,9 @@
   "spiritual jazz": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Jazz"
+   ],
    "family": "Jazz",
    "flavours": [],
    "level": 2,
@@ -6922,6 +8377,9 @@
   "stoner rock": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 2,
@@ -6935,6 +8393,9 @@
   "sunshine house": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -6949,6 +8410,9 @@
   "sunshine pop": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Pop"
+   ],
    "family": "Pop",
    "flavours": [],
    "level": 2,
@@ -6962,6 +8426,9 @@
   "surf": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -6975,6 +8442,9 @@
   "swing": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Jazz"
+   ],
    "family": "Jazz",
    "flavours": [],
    "level": 2,
@@ -6988,6 +8458,9 @@
   "swingbeat": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Funk / Soul"
+   ],
    "family": "Funk / Soul",
    "flavours": [],
    "level": 2,
@@ -7001,6 +8474,9 @@
   "symphonic metal": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -7014,6 +8490,9 @@
   "symphonic rock": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -7027,6 +8506,9 @@
   "symphony": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Classical"
+   ],
    "family": "Classical",
    "flavours": [],
    "level": 2,
@@ -7040,6 +8522,9 @@
   "synth-funk": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Funk / Soul"
+   ],
    "family": "Funk / Soul",
    "flavours": [],
    "level": 2,
@@ -7053,6 +8538,9 @@
   "synth-rock": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 2,
@@ -7066,13 +8554,18 @@
   "synthpop": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic",
+    "Pop",
+    "Rock"
+   ],
    "family": "Electronic",
    "flavours": [],
-   "fusion": true,
    "level": 2,
    "parents": [
     "Electronic",
-    "Pop"
+    "Pop",
+    "new wave"
    ],
    "provisional": false,
    "status": null,
@@ -7088,6 +8581,9 @@
   "synthwave": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 2,
@@ -7104,6 +8600,9 @@
   "séga": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -7117,6 +8616,9 @@
   "taarab": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -7130,6 +8632,9 @@
   "tango": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -7143,6 +8648,9 @@
   "tech house": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -7158,6 +8666,9 @@
   "tech trance": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -7173,6 +8684,9 @@
   "technical death metal": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -7186,6 +8700,9 @@
   "techno": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 2,
@@ -7200,6 +8717,9 @@
   "tejano": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -7213,6 +8733,9 @@
   "texas blues": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Blues"
+   ],
    "family": "Blues",
    "flavours": [],
    "level": 2,
@@ -7226,6 +8749,9 @@
   "thrash": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -7240,6 +8766,9 @@
   "thug rap": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Hip Hop"
+   ],
    "family": "Hip Hop",
    "flavours": [],
    "level": 2,
@@ -7253,6 +8782,9 @@
   "timba": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -7266,6 +8798,9 @@
   "trance": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 2,
@@ -7280,6 +8815,9 @@
   "trap": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Hip Hop"
+   ],
    "family": "Hip Hop",
    "flavours": [],
    "level": 2,
@@ -7298,6 +8836,9 @@
   "tribal": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 2,
@@ -7313,6 +8854,9 @@
   "tribal house": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -7327,10 +8871,14 @@
   "trip hop": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic",
+    "Hip Hop"
+   ],
    "family": "Electronic",
    "flavours": [],
    "fusion": true,
-   "level": 3,
+   "level": 2,
    "parents": [
     "downtempo",
     "Hip Hop"
@@ -7343,6 +8891,9 @@
   "tropical house": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -7357,6 +8908,9 @@
   "trova": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -7370,6 +8924,9 @@
   "turntablism": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Hip Hop"
+   ],
    "family": "Hip Hop",
    "flavours": [],
    "level": 2,
@@ -7383,6 +8940,9 @@
   "uk garage": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 2,
@@ -7397,6 +8957,9 @@
   "uk street soul": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Funk / Soul"
+   ],
    "family": "Funk / Soul",
    "flavours": [],
    "level": 2,
@@ -7410,6 +8973,9 @@
   "uplifting trance": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -7428,6 +8994,9 @@
   "vallenato": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -7441,6 +9010,9 @@
   "vaporwave": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -7458,6 +9030,9 @@
   "viking metal": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Rock"
+   ],
    "family": "Rock",
    "flavours": [],
    "level": 3,
@@ -7474,6 +9049,9 @@
   "vocal": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Pop"
+   ],
    "family": "Pop",
    "flavours": [],
    "level": 2,
@@ -7487,6 +9065,9 @@
   "vocal trance": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 3,
@@ -7501,6 +9082,9 @@
   "volksmusik": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -7514,6 +9098,9 @@
   "western swing": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -7527,6 +9114,9 @@
   "witch house": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Electronic"
+   ],
    "family": "Electronic",
    "flavours": [],
    "level": 2,
@@ -7534,9 +9124,6 @@
     "Electronic"
    ],
    "provisional": false,
-   "related": [
-    "industrial"
-   ],
    "status": null,
    "subfamily": "Experimental, industrial & noise",
    "synonyms": []
@@ -7544,6 +9131,9 @@
   "worldbeat": {
    "discogs": false,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -7557,6 +9147,9 @@
   "yé-yé": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Pop"
+   ],
    "family": "Pop",
    "flavours": [],
    "level": 2,
@@ -7570,6 +9163,9 @@
   "zouk": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Latin"
+   ],
    "family": "Latin",
    "flavours": [],
    "level": 2,
@@ -7583,6 +9179,9 @@
   "zydeco": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
@@ -7596,6 +9195,9 @@
   "éntekhno": {
    "discogs": true,
    "display": null,
+   "families": [
+    "Folk, World, & Country"
+   ],
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,

@@ -2,8 +2,8 @@
  "_meta": {
   "rules": [
    "One entry per vocabulary genre (a Discogs genre or an extra); the 11 families themselves are level 1 and not listed (the top-level 'families' block holds their synonyms). Every node below a family is a genre (ADR-0030).",
-   "parents: a non-empty list of unique names, each a family (level 1 name) or the key of another entry. parents[0] is the primary parent: it decides the level (2 when it is a family, else 1 + the level of that parent; hard cap three levels), the family (the family of parents[0]) and the default outline position. Further entries are extra parents, drawn as cross-links (an extra parent that is a family lists the genre in that family's tree too). Validation: every parent resolves, parents are unique, no cycle through any parent (so an extra parent is never a descendant), no level 4.",
-   "family: optional override, only for a level 3 genre whose primary parent sits in several families (disco is in Funk / Soul and Electronic): it names which of those families the genre belongs to. It must be one of them.",
+   "parents: a non-empty unordered set (stored as a list) of unique names, each a family (level 1 name) or the key of another entry; all parents are equal, there is no primary parent (ADR-0037). The families of a genre are every family it descends from through any parent. The level is the shortest path depth to a family root (2 when a parent is a family, else 1 + the smallest level among its parents); there is no depth cap (the cap of three levels was lifted on 2026-10-19), only a sanity bound of 12 levels against bad data. Validation: every parent resolves, parents are unique and never the entry itself, no cycle through any parent.",
+   "family: not allowed on an entry; the families of a genre are derived from all its parents (the old override for the disco children is gone, they descend from disco, which sits in Funk / Soul and Electronic).",
    "provisional: true marks an undrafted placeholder (all families except Electronic); parents is just the family.",
    "discogs: true when the key is in genre_discogs.json, false when it exists only in genre_extras.json.",
    "families: family name plus lowercase synonyms; genre entries may carry an optional synonyms list (carried over from ALIASES in genre_filter.py, read-only). A synonym never equals a vocabulary key, a family name or another synonym; typos are input normalisation, not synonyms.",
@@ -18,69 +18,80 @@
   ],
   "counts": {
    "Blues": {
-    "total": 16,
-    "level2": 16,
-    "level3": 0
+    "total": 17,
+    "level2": 17,
+    "level3": 0,
+    "level4": 0
    },
    "Classical": {
     "total": 25,
     "level2": 25,
-    "level3": 0
+    "level3": 0,
+    "level4": 0
    },
    "Electronic": {
-    "total": 145,
-    "level2": 50,
-    "level3": 95
+    "total": 146,
+    "level2": 54,
+    "level3": 87,
+    "level4": 5
    },
    "Folk, World, & Country": {
-    "total": 67,
-    "level2": 67,
-    "level3": 0
+    "total": 69,
+    "level2": 69,
+    "level3": 0,
+    "level4": 0
    },
    "Funk / Soul": {
-    "total": 22,
-    "level2": 22,
-    "level3": 0
+    "total": 34,
+    "level2": 25,
+    "level3": 9,
+    "level4": 0
    },
    "Hip Hop": {
-    "total": 24,
-    "level2": 24,
-    "level3": 0
+    "total": 29,
+    "level2": 28,
+    "level3": 1,
+    "level4": 0
    },
    "Jazz": {
-    "total": 26,
-    "level2": 26,
-    "level3": 0
+    "total": 27,
+    "level2": 27,
+    "level3": 0,
+    "level4": 0
    },
    "Latin": {
-    "total": 57,
-    "level2": 57,
-    "level3": 0
+    "total": 58,
+    "level2": 58,
+    "level3": 0,
+    "level4": 0
    },
    "Pop": {
-    "total": 32,
-    "level2": 32,
-    "level3": 0
+    "total": 38,
+    "level2": 34,
+    "level3": 4,
+    "level4": 0
    },
    "Reggae": {
     "total": 13,
     "level2": 13,
-    "level3": 0
+    "level3": 0,
+    "level4": 0
    },
    "Rock": {
-    "total": 111,
-    "level2": 42,
-    "level3": 69
+    "total": 123,
+    "level2": 50,
+    "level3": 73,
+    "level4": 0
    }
   },
-  "total": 530,
+  "total": 535,
   "non_discogs": {
    "Blues": 0,
    "Classical": 1,
-   "Electronic": 15,
-   "Folk, World, & Country": 3,
-   "Funk / Soul": 6,
-   "Hip Hop": 0,
+   "Electronic": 25,
+   "Folk, World, & Country": 4,
+   "Funk / Soul": 8,
+   "Hip Hop": 1,
    "Jazz": 0,
    "Latin": 0,
    "Pop": 7,
@@ -1164,12 +1175,13 @@
  },
  "dark electro": {
   "parents": [
-   "industrial"
+   "Electronic"
   ],
   "related": [
    "electro"
   ],
-  "discogs": true
+  "discogs": true,
+  "subfamily": "Experimental, industrial & noise"
  },
  "dark jazz": {
   "parents": [
@@ -1202,17 +1214,14 @@
   "parents": [
    "synthwave"
   ],
-  "related": [
-   "industrial"
-  ],
   "discogs": false,
   "status": "approved"
  },
  "darkwave": {
   "parents": [
-   "Electronic"
+   "post-punk",
+   "new wave"
   ],
-  "subfamily": "Synth & wave",
   "discogs": true
  },
  "death metal": {
@@ -1487,10 +1496,10 @@
  },
  "ebm": {
   "parents": [
-   "industrial",
    "synthpop"
   ],
-  "discogs": true
+  "discogs": true,
+  "subfamily": "Experimental, industrial & noise"
  },
  "edm": {
   "parents": [
@@ -1528,7 +1537,9 @@
  },
  "electro house": {
   "parents": [
-   "house",
+   "house"
+  ],
+  "related": [
    "electro"
   ],
   "discogs": true
@@ -1583,21 +1594,10 @@
   "provisional": true,
   "discogs": false
  },
- "ethereal": {
-  "parents": [
-   "Electronic"
-  ],
-  "subfamily": "Synth & wave",
-  "synonyms": [
-   "ethereal wave"
-  ],
-  "discogs": true
- },
  "euro disco": {
   "parents": [
    "disco"
   ],
-  "family": "Electronic",
   "synonyms": [
    "euro-disco"
   ],
@@ -1620,7 +1620,9 @@
  },
  "eurodance": {
   "parents": [
-   "Electronic"
+   "house",
+   "euro disco",
+   "Pop"
   ],
   "subfamily": "Eurodance & disco",
   "synonyms": [
@@ -1628,7 +1630,8 @@
    "bubblegum dance",
    "eurobeat"
   ],
-  "discogs": true
+  "discogs": true,
+  "fusion": true
  },
  "europop": {
   "parents": [
@@ -2176,9 +2179,10 @@
  },
  "harsh noise wall": {
   "parents": [
-   "industrial"
+   "Electronic"
   ],
-  "discogs": true
+  "discogs": true,
+  "subfamily": "Experimental, industrial & noise"
  },
  "hawaiian": {
   "parents": [
@@ -2200,7 +2204,6 @@
   "parents": [
    "disco"
   ],
-  "family": "Electronic",
   "discogs": true
  },
  "highlife": {
@@ -2256,6 +2259,9 @@
  "house": {
   "parents": [
    "Electronic"
+  ],
+  "related": [
+   "disco"
   ],
   "subfamily": "House",
   "discogs": true,
@@ -2325,25 +2331,16 @@
   ],
   "discogs": true
  },
- "industrial": {
-  "parents": [
-   "Electronic"
-  ],
-  "subfamily": "Experimental, industrial & noise",
-  "discogs": true
- },
  "industrial metal": {
   "parents": [
    "heavy metal",
-   "industrial",
    "industrial rock"
   ],
   "discogs": true
  },
  "industrial rock": {
   "parents": [
-   "Rock",
-   "industrial"
+   "Rock"
   ],
   "related": [
    "noise rock"
@@ -2361,7 +2358,6 @@
   "parents": [
    "disco"
   ],
-  "family": "Electronic",
   "discogs": true
  },
  "italo house": {
@@ -2582,13 +2578,6 @@
   "discogs": false,
   "status": "approved",
   "display": "liquid drum & bass"
- },
- "lo-fi": {
-  "parents": [
-   "Rock"
-  ],
-  "provisional": true,
-  "discogs": true
  },
  "louisiana blues": {
   "parents": [
@@ -2938,9 +2927,6 @@
   "parents": [
    "drum and bass"
   ],
-  "related": [
-   "industrial"
-  ],
   "discogs": false,
   "status": "approved"
  },
@@ -3046,7 +3032,6 @@
   "parents": [
    "disco"
   ],
-  "family": "Electronic",
   "discogs": true
  },
  "nu-nrg": {
@@ -3245,7 +3230,7 @@
  },
  "post-disco": {
   "parents": [
-   "Funk / Soul"
+   "disco"
   ],
   "provisional": true,
   "discogs": false
@@ -3305,9 +3290,10 @@
  },
  "power electronics": {
   "parents": [
-   "industrial"
+   "Electronic"
   ],
-  "discogs": true
+  "discogs": true,
+  "subfamily": "Experimental, industrial & noise"
  },
  "power metal": {
   "parents": [
@@ -3408,7 +3394,7 @@
  },
  "psytrance": {
   "parents": [
-   "Electronic"
+   "trance"
   ],
   "subfamily": "Trance",
   "display": "psy-trance",
@@ -3544,7 +3530,6 @@
  },
  "rhythmic noise": {
   "parents": [
-   "industrial",
    "noise"
   ],
   "discogs": true
@@ -3844,7 +3829,6 @@
   "parents": [
    "disco"
   ],
-  "family": "Electronic",
   "discogs": false,
   "status": "approved",
   "synonyms": [
@@ -3976,7 +3960,8 @@
  "synthpop": {
   "parents": [
    "Electronic",
-   "Pop"
+   "Pop",
+   "new wave"
   ],
   "subfamily": "Synth & wave",
   "discogs": true,
@@ -3986,8 +3971,7 @@
    "russian electro pop",
    "russian electropop",
    "electronic pop"
-  ],
-  "fusion": true
+  ]
  },
  "synthwave": {
   "parents": [
@@ -4228,9 +4212,6 @@
    "Electronic"
   ],
   "subfamily": "Experimental, industrial & noise",
-  "related": [
-   "industrial"
-  ],
   "discogs": true
  },
  "worldbeat": {

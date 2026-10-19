@@ -107,11 +107,18 @@ def test_r3_a_family_agreed_through_its_children_is_applied_when_listed():
     assert by_name(d)["house"]["sources"] == [WA]
 
 
-def test_r3_ancestors_use_the_primary_parent_only():
+def test_r3_ancestors_and_families_use_every_parent():
     t = gs.get_tree()
     assert gs.ancestors("deep house", t) == ["house", "electronic"]
     assert gs.ancestors("electronic", t) == []
     assert gs.ancestors("hi-nrg", t)[0] == "disco"
+    assert set(gs.ancestors("hi-nrg", t)) == {"disco", "electronic", "funk / soul"}
+    assert set(gs.ancestors("industrial rock", t)) == {"rock"}
+    assert t.family["hi-nrg"] == {"electronic", "funk / soul"}
+    assert t.family["industrial rock"] == {"rock"}
+    assert t.family["hip house"] == {"electronic", "hip hop"}
+    assert t.family["deep house"] == {"electronic"}
+    assert (t.depth["hi-nrg"], t.depth["hip house"], t.depth["deep house"]) == (3, 2, 3)
 
 
 def test_r4_the_song_page_alone_applies_a_fitting_unambiguous_genre():
@@ -190,7 +197,7 @@ def test_r6_ambiguous_names_need_two_groups(name):
 
 
 def test_r6_the_ambiguity_list_is_a_data_constant():
-    assert {"freestyle", "hardcore", "soul", "garage", "industrial"} <= set(gs.AMBIGUOUS)
+    assert {"freestyle", "hardcore", "soul", "garage"} <= set(gs.AMBIGUOUS) and "industrial" not in gs.AMBIGUOUS
     assert isinstance(gs.AMBIGUOUS, frozenset)
 
 

@@ -50,7 +50,7 @@ def test_no_discogs_genre_in_two_families_unless_it_lists_more_parents():
     for name, e in genre_vocab.load().entries.items():
         if name in genres:
             assert e.parents == tuple(genres[name]), name
-            assert e.family == genres[name][0], name
+            assert e.family == e.families[0], name
 
 
 def test_names_are_unique_after_folding_case_spaces_hyphens_and_ampersand():
@@ -89,11 +89,14 @@ def test_extras_have_parents_and_a_family_without_cycles():
             cur = EXTRAS[cur]["parents"][0]
 
 
-def test_an_extra_family_is_derived_from_parents_zero_unless_overridden():
+def test_an_extra_has_every_family_it_descends_from_through_any_parent():
     entries = genre_vocab.load().entries
+    flat = genre_vocab.build(json.loads(genre_vocab.DISCOGS_FILE.read_text(encoding="utf-8")), json.loads(genre_vocab.EXTRAS_FILE.read_text(encoding="utf-8")))
+    parents = {n: tuple(e.parents) for n, e in flat.entries.items()}
     for name, spec in EXTRAS.items():
-        derived = genre_vocab._resolve_family(name, {n: tuple(e.parents) for n, e in entries.items()}, genre_vocab.load().families)
-        assert entries[name].family == (spec.get("family") or derived), name
+        assert "family" not in spec, name
+        assert genre_vocab._resolve_families(name, parents, genre_vocab.load().families), name
+        assert entries[name].families == tuple(f for f in genre_vocab.load().families if f in entries[name].families), name
 
 
 REQUIRED_EXTRAS = (
@@ -503,3 +506,11 @@ def test_soviet_wave_hashtag_is_a_youtube_genre():
 
     assert yt_genres.genre_of("#SovietWave") == "sovietwave"
     assert yt_genres.genre_of("Soviet Wave") == "sovietwave"
+
+
+def test_lofi_is_removed_everywhere_and_its_tag_is_dropped():
+    assert "lo-fi" not in DISCOGS["genres"] and "lo-fi" not in EXTRAS
+    assert genre_vocab.lookup("lo-fi") is None and "lo-fi" not in names()
+    assert gf.is_dropped("lo-fi") and gf.is_dropped("Lo-Fi") and not gf.is_dropped("lo-fi hip hop")
+    assert "lo-fi" not in gf.ALIASES.values()
+    assert library.clean_tags(["genre:lo-fi", "genre:shoegaze"]) == ["genre:shoegaze"]

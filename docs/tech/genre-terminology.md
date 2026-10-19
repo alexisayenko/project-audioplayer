@@ -8,10 +8,10 @@ Decision record: ADR-0034 (terms) and ADR-0030 (levels and parents) in [decision
 |---|---|
 | genre | Any node of our vocabulary, at any level. Subgenres are genres too. Shown in lowercase. |
 | family | A level 1 genre (11 kept Discogs level-1 names, e.g. Rock, Electronic). Shown capitalised. This is what many catalogues call "the genre". |
-| sub-genre, sub-sub-genre | Level 2 and level 3 genres. Hard cap: three levels. |
-| `parents[]` | Subgenre-of links. `parents[0]` is the placement parent (decides level, family, tree position); the others are extra parents drawn as cross-links. |
+| sub-genre, sub-sub-genre | Level 2 and level 3 genres, and deeper ones: there is no depth cap (ADR-0037); the interface says "genre" for every level. |
+| `parents[]` | Subgenre-of links, an unordered set: all parents are equal, there is no primary parent (ADR-0037). A genre belongs to every family it descends from; its level is the shortest path depth to a family. A genre with several parents appears under each of them. |
 | `related[]` | Influences and associations. Not parents: no effect on tree, counts or colours. |
-| `fusion` | Flag on a blend of two families; its extra family parent shows only with the map's "Fusion genres" switch. |
+| `fusion` | Flag on a blend of two or more families; with the map's "Fusion genres" switch off it keeps its genre parents (else the first family listed) and its other family parents are hidden. |
 | subfamily | A label on Electronic genres (eight groups, e.g. House, Techno). Not a tree node; used for shading and filtering. |
 | Discogs "style" | What Discogs calls a genre of ours at level 2 or 3. The API names `styles` and `style=` stay in code that talks to Discogs. |
 

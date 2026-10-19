@@ -23,7 +23,7 @@ def test_every_row_is_in_levels_with_the_same_family_and_a_level_of_two_or_three
             continue
         lv = body["levels"][row["name"]]
         assert row["family"] == lv["family"], row["name"]
-        assert lv["level"] in (2, 3), row["name"]
+        assert lv["level"] in (2, 3, 4), row["name"]
     assert {r["name"] for r in body["genres"] if r["level"] != "family"} == set(body["levels"])
 
 
@@ -61,3 +61,26 @@ def test_web_fixture_is_the_payload(body):
     keys = ("families", "family_synonyms", "flavours", "levels", "subfamilies")
     want = {k: body[k] for k in keys}
     assert json.loads(FIXTURE.read_text(encoding="utf-8")) == want, "regenerate the fixture from genre_vocab.vocabulary() (keys families, family_synonyms, flavours, levels; json sort_keys, indent 1)"
+
+
+def test_every_row_and_level_carries_all_families_and_the_legacy_family_is_the_first(body):
+    order = body["families"]
+    for row in body["genres"]:
+        lv = body["levels"].get(row["name"])
+        assert row["families"] and row["family"] == row["families"][0], row["name"]
+        assert row["families"] == [f for f in order if f in row["families"]], row["name"]
+        if lv:
+            assert row["families"] == lv["families"] and lv["family"] == lv["families"][0], row["name"]
+    rows = {r["name"]: r for r in body["genres"]}
+    assert rows["disco"]["families"] == ["Electronic", "Funk / Soul"] == body["levels"]["euro disco"]["families"]
+    assert rows["post-disco"]["families"] == ["Electronic", "Funk / Soul"] and body["levels"]["post-disco"]["parents"] == ["disco"]
+    assert rows["electronic"]["families"] == ["Electronic"] and rows["electronic"]["level"] == "family"
+
+
+def test_the_graph_table_families_list_every_family_of_the_genre():
+    from app import genre_graph
+
+    assert genre_graph.table_families("Disco") == ("Electronic", "Funk / Soul")
+    assert genre_graph.table_families("Zorbo", ["hip house"]) == ("Electronic", "Hip Hop")
+    assert genre_graph.table_families("Zorbo") == ()
+    assert genre_graph.table_family("disco") == "Electronic"

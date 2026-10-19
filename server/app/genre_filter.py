@@ -68,7 +68,7 @@ REMOVED_GENRES: tuple[str, ...] = (
     "political", "promotional", "public service announcement", "radioplay", "religious", "sermon",
     "sound poetry", "soundtrack", "speech", "spoken", "spoken word", "story",
     "technical", "therapy", "trailer", "stage & screen", "stage and screen", "soundtracks", "film and tv", "stage, screen",
-    "incidental music", "musical", "score", "film score", "theme", "vaudeville", "video game music",
+    "incidental music", "musical", "score", "film score", "theme", "vaudeville", "video game music", "industrial", "ethereal", "ethereal wave", "lo-fi",
 )
 DROP = DROP | frozenset(key(v) for v in REMOVED_GENRES)
 
@@ -131,7 +131,6 @@ ALIASES: dict[str, str] = {
     "psychedelic trance": "psytrance",
     "glam rock": "glam",
     "bebop": "bop",
-    "ethereal wave": "ethereal",
     "dance music": "edm",
     "club": "electronic",
     "club music": "edm",
@@ -223,9 +222,9 @@ def _spelling(value: str) -> str:
 
 
 def is_electronic(value: str) -> bool:
-    """True when the genre belongs to the Electronic family: `ELECTRONIC_CONTEXT`, or the vocabulary family (`genre_vocab.family_of`, bare form or "<value> music")."""
+    """True when the genre belongs to the Electronic family: `ELECTRONIC_CONTEXT`, or Electronic is one of its vocabulary families (`genre_vocab.families_of`, bare form or "<value> music")."""
     v = _spelling(value).lower()
-    return key(v) in ELECTRONIC_CONTEXT or genre_vocab.family_of(v) == "Electronic"
+    return key(v) in ELECTRONIC_CONTEXT or "Electronic" in genre_vocab.families_of(v)
 
 
 def retag(value: str, song_genres: Iterable[str] = ()) -> str:

@@ -1,6 +1,6 @@
 """The genre suggestion rule (TAG-099 to TAG-108, decision EH1, variant B): which of the genres the lookups found are APPLIED to a song and which are only SUGGESTED.
 
-The input is, per independent source group, the genres that group named. A genre is applied when two independent groups agree on it (a child counts for its ancestor along the primary parent chain), or when the Wikipedia song page alone names it, it is not an ambiguous name and it shares a family with a genre applied by agreement. Everything else is a suggestion with its source badges; nothing is applied by a single source."""
+The input is, per independent source group, the genres that group named. A genre is applied when two independent groups agree on it (a child counts for every ancestor above it, through all its parents), or when the Wikipedia song page alone names it, it is not an ambiguous name and it shares a family (any of its families) with a genre applied by agreement. Everything else is a suggestion with its source badges; nothing is applied by a single source."""
 
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ DISCOGS_SEARCH_WEIGHT = 0.5
 MAX_APPLIED = 5
 MAX_SUGGESTED = 12
 
-AMBIGUOUS: frozenset[str] = frozenset({"freestyle", "hardcore", "soul", "garage", "industrial"})
+AMBIGUOUS: frozenset[str] = frozenset({"freestyle", "hardcore", "soul", "garage"})
 YOUTUBE_IGNORED: frozenset[str] = frozenset({"acoustic", "instrumental", "live", "remix"})
 
 SINGLE_SOURCE = "single_source"
@@ -39,8 +39,9 @@ FROM_REMIXER = "remixer"
 
 @dataclass(frozen=True)
 class Tree:
-    parent: dict[str, str]
-    family: dict[str, str]
+    parents: dict[str, tuple[str, ...]]
+    family: dict[str, frozenset[str]]
+    depth: dict[str, int]
     families: frozenset[str]
 
 
@@ -51,28 +52,30 @@ _cache: tuple[Any, Tree] | None = None
 def _build_tree() -> Tree:
     vocab = genre_vocab.load()
     families = frozenset(f.lower() for f in vocab.families)
-    parent: dict[str, str] = {}
-    family: dict[str, str] = {}
+    parents: dict[str, tuple[str, ...]] = {}
+    family: dict[str, frozenset[str]] = {}
+    depth: dict[str, int] = {}
     try:
         levels = genre_vocab.load_levels()[0]
     except ValueError:
         levels = {}
     for name, e in vocab.entries.items():
         if name in families:
-            family[name] = name
+            family[name] = frozenset({name})
+            depth[name] = 1
             continue
         lv = levels.get(name)
-        parents = (lv or {}).get("parents") or e.parents
-        fam = (lv or {}).get("family") or e.family
-        if parents:
-            parent[name] = str(parents[0]).lower()
-        if fam:
-            family[name] = str(fam).lower()
-    return Tree(parent, family, families)
+        ps = (lv or {}).get("parents") or e.parents
+        if ps:
+            parents[name] = tuple(str(p).lower() for p in ps)
+        family[name] = frozenset(str(f).lower() for f in ((lv or {}).get("families") or e.families))
+        if lv:
+            depth[name] = int(lv["level"])
+    return Tree(parents, family, depth, families)
 
 
 def get_tree() -> Tree:
-    """Primary parent and family of every vocabulary name (the `parents[0]` chain of `genre_levels.json`, else the Discogs/extras parents); rebuilt when the vocabulary is reloaded."""
+    """Every parent of each vocabulary name, all its families and its level (the tree of `genre_levels.json`, else the Discogs/extras parents); rebuilt when the vocabulary is reloaded. All parents are equal."""
     global _cache
     vocab = genre_vocab.load()
     with _lock:
@@ -82,18 +85,26 @@ def get_tree() -> Tree:
 
 
 def ancestors(name: str, tree: Tree | None = None) -> list[str]:
-    """The primary parent chain above `name` (nearest first, ending at its family)."""
+    """Every name above `name` through all its parents (nearest first, breadth first; families included)."""
     tree = tree or get_tree()
     out: list[str] = []
-    cur = name
-    while cur in tree.parent and tree.parent[cur] not in out and tree.parent[cur] != name:
-        cur = tree.parent[cur]
-        out.append(cur)
+    seen = {name}
+    frontier = [name]
+    while frontier:
+        nxt: list[str] = []
+        for cur in frontier:
+            for p in tree.parents.get(cur, ()):
+                if p not in seen:
+                    seen.add(p)
+                    out.append(p)
+                    nxt.append(p)
+        frontier = nxt
     return out
 
 
 def _depth(name: str, tree: Tree) -> int:
-    return 1 + len(ancestors(name, tree))
+    """The shortest path depth to a family root (family 1, a genre under a family 2)."""
+    return tree.depth.get(name) or 1 + len(ancestors(name, tree))
 
 
 def _normalise(values: list[str]) -> list[str]:
@@ -140,7 +151,7 @@ def decide(groups: dict[str, list[str]], *, weights: dict[str, float] | None = N
     if versioned:
         return _versioned(listed, direct, support, tree, origin or {})
     consensus = [n for n in direct if support[n] >= APPLY_WEIGHT]
-    consensus_families = {tree.family.get(n) for n in consensus} - {None}
+    consensus_families = set().union(*(tree.family.get(n, frozenset()) for n in consensus)) if consensus else set()
     eligible = list(consensus)
     declined: dict[str, str] = {}
     for n in direct:
@@ -149,7 +160,7 @@ def decide(groups: dict[str, list[str]], *, weights: dict[str, float] | None = N
         if WIKIPEDIA_SONG in direct[n]:
             if n in AMBIGUOUS:
                 declined[n] = AMBIGUOUS_NAME
-            elif tree.family.get(n) in consensus_families:
+            elif tree.family.get(n, frozenset()) & consensus_families:
                 eligible.append(n)
             else:
                 declined[n] = NO_FAMILY
@@ -178,7 +189,7 @@ def _suggest_key(n: str, direct: dict[str, set[str]], support: dict[str, float])
 
 
 def _drop_ancestors(suggestions: list[dict[str, Any]], applied: set[str], tree: Tree) -> list[dict[str, Any]]:
-    """A non-family genre that is a primary ancestor of an applied genre is redundant beside it and is not suggested."""
+    """A non-family genre that is an ancestor of an applied genre is redundant beside it and is not suggested."""
     above = {a for n in applied for a in ancestors(n, tree) if a not in tree.families}
     return [s for s in suggestions if s["genre"] not in above]
 

@@ -241,6 +241,7 @@ def test_nodes_carry_the_user_tags_that_resolve_to_them(wd):
     n = by_label(g)
     assert n["house music"]["tags"] == ["house"]
     assert n["electronic music"]["tags"] == []
+    assert n["house music"]["families"] == [n["house music"]["family"]] == ["Electronic"]
 
 
 # None: a Wikidata label outside the vocabulary, its family comes from its ancestors (GEN-038)

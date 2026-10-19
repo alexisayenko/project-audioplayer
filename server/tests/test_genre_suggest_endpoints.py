@@ -67,11 +67,11 @@ def test_metadata_gives_the_same_tags_and_suggestions_as_preview(client):
 def test_lookup_wikipedia_applies_the_same_rule_to_the_wikipedia_evidence(client):
     body = client.post("/lookup/wikipedia", json={"wikipedia_song": WIKI["wikipedia_song"], "wikipedia_artist": WIKI["wikipedia_artist"]}, headers=H).json()
     assert body["year"] == 1987
-    assert sorted(t for t in body["tags"] if t.startswith("genre:")) == ["genre:dance pop", "genre:pop"]
+    assert sorted(t for t in body["tags"] if t.startswith("genre:")) == ["genre:dance pop", "genre:pop", "genre:synthpop"]
     assert "country:us" in body["tags"]
     assert {s["genre"]: s["sources"] for s in body["genre_suggestions"]} == {
-        "synthpop": ["wikipedia_song"], "freestyle": ["wikipedia_song"], "hi-nrg": ["wikipedia_song"], "soul": ["wikipedia_artist"], "house": ["wikipedia_artist"],
-    }, "without MusicBrainz no Electronic genre agrees, so nothing in that family is rescued"
+        "freestyle": ["wikipedia_song"], "hi-nrg": ["wikipedia_song"], "soul": ["wikipedia_artist"], "house": ["wikipedia_artist"],
+    }, "synthpop is also a Pop genre (all parents are equal), so it shares the family Pop with the agreed genres and is applied; without MusicBrainz no Electronic genre agrees, so nothing else in that family is rescued"
 
 
 def test_a_version_gives_the_same_split_on_preview_and_metadata(client, monkeypatch):

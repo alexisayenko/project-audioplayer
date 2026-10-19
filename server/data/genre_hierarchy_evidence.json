@@ -2,10 +2,10 @@
  "_meta": {
   "generated_at": "2026-10-19T13:49:33.730Z",
   "review_only": "Not loaded by the server and not in the payload. Compare with scripts/hierarchy-diff.mjs.",
-  "genres_with_wikipedia_match": 472,
-  "with_wikidata_parents": 472,
-  "with_lead_parents": 250,
-  "with_origins": 394,
+  "genres_with_wikipedia_match": 469,
+  "with_wikidata_parents": 469,
+  "with_lead_parents": 248,
+  "with_origins": 392,
   "fetch_failures": [],
   "how": "subclass_of / instance_of: Wikidata P279 / P31 of the matched item (instance of 'music genre' left out), labels in English. lead_parents: links in the first sentence after 'subgenre of', 'genre/style/form of', 'fusion of', 'offshoot/derivative of', 'derived/evolved/emerged from' (phrase_kind subgenre, genre_of, fusion, offshoot). origins / derivatives: links of the infobox fields stylistic_origins and derivatives. key: the vocabulary key the label maps to through the Wikipedia title, then the name, then a synonym (null: not in our vocabulary or ambiguous)."
  },
@@ -167,7 +167,7 @@
    },
    {
     "label": "Industrial music",
-    "key": "industrial"
+    "key": null
    },
    {
     "label": "neo soul",
@@ -1686,7 +1686,7 @@
    },
    {
     "label": "industrial music",
-    "key": "industrial"
+    "key": null
    },
    {
     "label": "post-punk",
@@ -2731,7 +2731,7 @@
    },
    {
     "label": "industrial music",
-    "key": "industrial"
+    "key": null
    },
    {
     "label": "chiptune",
@@ -4281,7 +4281,7 @@
    },
    {
     "label": "lo-fi music",
-    "key": "lo-fi"
+    "key": null
    },
    {
     "label": "hauntology (music)",
@@ -6334,7 +6334,7 @@
    },
    {
     "label": "ethereal wave",
-    "key": "ethereal"
+    "key": null
    },
    {
     "label": "gothic rock",
@@ -6524,7 +6524,7 @@
    },
    {
     "label": "Industrial music",
-    "key": "industrial"
+    "key": null
    }
   ],
   "derivatives": [
@@ -7001,7 +7001,7 @@
   "origins": [
    {
     "label": "Industrial music",
-    "key": "industrial"
+    "key": null
    },
    {
     "label": "synth-punk",
@@ -7419,58 +7419,6 @@
    }
   ],
   "derivatives": []
- },
- "ethereal": {
-  "wikidata": "Q284543",
-  "wikipedia": "Ethereal wave",
-  "subclass_of": [
-   {
-    "q": "Q3840596",
-    "label": "dark wave",
-    "key": "darkwave"
-   },
-   {
-    "q": "Q598929",
-    "label": "post-punk",
-    "key": "post-punk"
-   }
-  ],
-  "instance_of": [],
-  "lead_parents": [
-   {
-    "label": "dark wave",
-    "key": "darkwave",
-    "phrase_kind": "subgenre"
-   }
-  ],
-  "origins": [
-   {
-    "label": "Dark wave",
-    "key": "darkwave"
-   },
-   {
-    "label": "gothic rock",
-    "key": "goth rock"
-   },
-   {
-    "label": "post-punk",
-    "key": "post-punk"
-   },
-   {
-    "label": "New wave music",
-    "key": "new wave"
-   }
-  ],
-  "derivatives": [
-   {
-    "label": "Dream pop",
-    "key": "dream pop"
-   },
-   {
-    "label": "shoegaze",
-    "key": "shoegaze"
-   }
-  ]
  },
  "euro disco": {
   "wikidata": "Q1374731",
@@ -9490,7 +9438,7 @@
   "derivatives": [
    {
     "label": "Ethereal wave",
-    "key": "ethereal"
+    "key": null
    },
    {
     "label": "Cold wave (music)",
@@ -9704,7 +9652,7 @@
    },
    {
     "label": "industrial music",
-    "key": "industrial"
+    "key": null
    },
    {
     "label": "noise music",
@@ -10412,7 +10360,7 @@
    },
    {
     "label": "Industrial music",
-    "key": "industrial"
+    "key": null
    },
    {
     "label": "mainstream hardcore",
@@ -10463,7 +10411,7 @@
    },
    {
     "label": "industrial music",
-    "key": "industrial"
+    "key": null
    },
    {
     "label": "power electronics (music)",
@@ -11270,104 +11218,6 @@
    }
   ]
  },
- "industrial": {
-  "wikidata": "Q487965",
-  "wikipedia": "Industrial music",
-  "subclass_of": [
-   {
-    "q": "Q1640319",
-    "label": "experimental music",
-    "key": "experimental"
-   }
-  ],
-  "instance_of": [],
-  "lead_parents": [
-   {
-    "label": "experimental music",
-    "key": "experimental",
-    "phrase_kind": "subgenre"
-   }
-  ],
-  "origins": [
-   {
-    "label": "Experimental rock",
-    "key": "experimental rock"
-   },
-   {
-    "label": "Electronic music",
-    "key": "electronic"
-   },
-   {
-    "label": "Avant-garde music",
-    "key": "avantgarde"
-   },
-   {
-    "label": "noise music",
-    "key": "noise"
-   },
-   {
-    "label": "musique concrète",
-    "key": "musique concrète"
-   },
-   {
-    "label": "electroacoustic music",
-    "key": null
-   },
-   {
-    "label": "free improvisation",
-    "key": "free improvisation"
-   },
-   {
-    "label": "performance art",
-    "key": null
-   },
-   {
-    "label": "sound collage",
-    "key": "sound collage"
-   },
-   {
-    "label": "tape music",
-    "key": null
-   },
-   {
-    "label": "futurism",
-    "key": null
-   },
-   {
-    "label": "dada",
-    "key": null
-   },
-   {
-    "label": "fluxus",
-    "key": null
-   },
-   {
-    "label": "sound poetry",
-    "key": null
-   },
-   {
-    "label": "indeterminacy (music)",
-    "key": null
-   },
-   {
-    "label": "sound art",
-    "key": "sound art"
-   },
-   {
-    "label": "found sound",
-    "key": null
-   },
-   {
-    "label": "aleatoric music",
-    "key": null
-   },
-   {
-    "label": "Viennese Actionism",
-    "key": null
-   }
-  ],
-  "derivatives": []
- },
  "industrial metal": {
   "wikidata": "Q208494",
   "wikipedia": "Industrial metal",
@@ -11392,7 +11242,7 @@
    },
    {
     "label": "industrial music",
-    "key": "industrial",
+    "key": null,
     "phrase_kind": "fusion"
    }
   ],
@@ -11403,7 +11253,7 @@
    },
    {
     "label": "Industrial music",
-    "key": "industrial"
+    "key": null
    },
    {
     "label": "industrial rock",
@@ -11901,7 +11751,7 @@
    },
    {
     "label": "Industrial music",
-    "key": "industrial"
+    "key": null
    },
    {
     "label": "techno",
@@ -12716,21 +12566,6 @@
    }
   ]
  },
- "lo-fi": {
-  "wikidata": "Q1507298",
-  "wikipedia": "Lo-fi music",
-  "subclass_of": [
-   {
-    "q": "Q115484611",
-    "label": "music",
-    "key": null
-   }
-  ],
-  "instance_of": [],
-  "lead_parents": [],
-  "origins": [],
-  "derivatives": []
- },
  "louisiana blues": {
   "wikidata": "Q515074",
   "wikipedia": "Louisiana blues",
@@ -13502,7 +13337,7 @@
    },
    {
     "label": "lo-fi music",
-    "key": "lo-fi"
+    "key": null
    }
   ],
   "derivatives": []
@@ -14805,7 +14640,7 @@
    },
    {
     "label": "industrial music",
-    "key": "industrial"
+    "key": null
    },
    {
     "label": "Post-industrial music",
@@ -14868,7 +14703,7 @@
    },
    {
     "label": "industrial music",
-    "key": "industrial"
+    "key": null
    }
   ],
   "derivatives": []
@@ -16300,7 +16135,7 @@
    {
     "q": "Q487965",
     "label": "industrial music",
-    "key": "industrial"
+    "key": null
    }
   ],
   "instance_of": [],
@@ -16312,14 +16147,14 @@
    },
    {
     "label": "industrial music",
-    "key": "industrial",
+    "key": null,
     "phrase_kind": "subgenre"
    }
   ],
   "origins": [
    {
     "label": "Industrial music",
-    "key": "industrial"
+    "key": null
    },
    {
     "label": "noise music",
@@ -16969,7 +16804,7 @@
    },
    {
     "label": "Industrial music",
-    "key": "industrial"
+    "key": null
    },
    {
     "label": "acid rock",
@@ -17057,7 +16892,7 @@
    },
    {
     "label": "industrial music",
-    "key": "industrial"
+    "key": null
    },
    {
     "label": "no wave",
@@ -18484,7 +18319,7 @@
    },
    {
     "label": "ethereal wave",
-    "key": "ethereal"
+    "key": null
    },
    {
     "label": "punk rock",
@@ -20187,7 +20022,7 @@
    },
    {
     "label": "Industrial music",
-    "key": "industrial"
+    "key": null
    },
    {
     "label": "krautrock",
@@ -21186,7 +21021,7 @@
    },
    {
     "label": "industrial music",
-    "key": "industrial"
+    "key": null
    },
    {
     "label": "gothic rock",
@@ -22438,7 +22273,7 @@
   "origins": [
    {
     "label": "Industrial music",
-    "key": "industrial"
+    "key": null
    },
    {
     "label": "Rock music",
@@ -22697,7 +22532,7 @@
    },
    {
     "label": "industrial music",
-    "key": "industrial"
+    "key": null
    },
    {
     "label": "film score",
@@ -22786,7 +22621,7 @@
    },
    {
     "label": "industrial music",
-    "key": "industrial"
+    "key": null
    },
    {
     "label": "post-punk",
@@ -23284,7 +23119,7 @@
    },
    {
     "label": "Industrial music",
-    "key": "industrial"
+    "key": null
    },
    {
     "label": "acid rock",
@@ -23366,7 +23201,7 @@
    },
    {
     "label": "Industrial music",
-    "key": "industrial"
+    "key": null
    },
    {
     "label": "acid rock",

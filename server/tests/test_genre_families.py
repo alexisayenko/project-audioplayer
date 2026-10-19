@@ -77,8 +77,8 @@ def test_table_lookup_by_label_then_tag():
     assert gg.table_family("Zorbo") is None
 
 
-@pytest.mark.parametrize("label,family", [("disco", "Funk / Soul"), ("new wave", "Rock"), ("acid jazz", "Jazz"), ("trip hop", "Electronic")])
-def test_reviewed_overrides_win_over_the_order_rule(label, family):
+@pytest.mark.parametrize("label,family", [("disco", "Electronic"), ("new wave", "Rock"), ("acid jazz", "Jazz"), ("trip hop", "Electronic")])
+def test_the_graph_family_is_the_first_family_in_the_fixed_order(label, family):
     assert gg.table_family(label) == family
 
 
@@ -87,7 +87,7 @@ KEPT = {
     "darksynth": "Electronic", "dreamwave": "Electronic", "dance-rock": "Rock",
     "psybient": "Electronic", "electronic": "Electronic", "experimental": "Electronic",
     "singer-songwriter": "Folk, World, & Country", "estrada": "Pop", "shock rock": "Rock", "dark metal": "Rock", "epic": "Classical",
-    "chillwave": "Electronic", "darkwave": "Electronic", "nu-nrg": "Electronic", "uplifting trance": "Electronic",
+    "chillwave": "Electronic", "darkwave": "Rock", "nu-nrg": "Electronic", "uplifting trance": "Electronic",
 }
 
 
@@ -104,7 +104,7 @@ def test_alias_and_retag_targets_have_a_family():
     from app import genre_filter as gf
 
     want = {"drum and bass": "Electronic", "electronic": "Electronic", "europop": "Pop", "euro disco": "Electronic", "euro house": "Electronic",
-            "synthpop": "Electronic", "progressive house": "Electronic", "trap": "Hip Hop", "disco": "Funk / Soul", "folk": "Folk, World, & Country",
+            "synthpop": "Electronic", "progressive house": "Electronic", "trap": "Hip Hop", "disco": "Electronic", "folk": "Folk, World, & Country",
             "classical": "Classical", "psychedelic rock": "Rock", "pop": "Pop", "modern classical": "Classical",
             "alternative rock": "Rock", "indie rock": "Rock", "progressive rock": "Rock", "glitch hop": "Electronic"}
     targets = {*gf.ALIASES.values(), *gf.RETAGS.values(), gf.PROGRESSIVE_ELECTRONIC}

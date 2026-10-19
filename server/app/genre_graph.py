@@ -500,6 +500,15 @@ def table_family(label: str, keys: Any = ()) -> str | None:
     return None
 
 
+def table_families(label: str, keys: Any = ()) -> tuple[str, ...]:
+    """Every vocabulary family of a node (all families of its genre, in the fixed family order); empty when neither its label nor a tag is in the vocabulary."""
+    for text in (label, *sorted(keys)):
+        name = vocab_name(text)
+        if name:
+            return genre_vocab.load().entries[name].families
+    return ()
+
+
 def own_anchor(label: str, keys: Any = ()) -> str | None:
     """The vocabulary genre (a Discogs genre or extras entry, never a family) a node is itself, label first then its tags; None for the families and for names outside the vocabulary."""
     for text in (label, *sorted(keys)):
@@ -565,6 +574,11 @@ def _kid_songs(kids: list[str], family: dict[str, str], reach: dict[str, set[Any
     return songs
 
 
+def _node_families(n: dict[str, Any], family: str) -> list[str]:
+    own = table_families(n["label"], n["keys"])
+    return list(own) if family in own else [family]
+
+
 def build(songs: list[dict[str, Any]], cache: dict[str, Any]) -> dict[str, Any]:
     nodes = _own_nodes(user_genres(songs), cache)
     ontology = any(n["qid"] for n in nodes.values())
@@ -587,7 +601,7 @@ def build(songs: list[dict[str, Any]], cache: dict[str, Any]) -> dict[str, Any]:
     # "style" repeats "anchor" for the macOS app, which still decodes the old name
     out_nodes = [
         {
-            "id": ids[nid], "label": n["label"], "qid": n["qid"], "wikipedia": _wikipedia(cache, n["qid"]), "family": fams[nid], "anchor": anchors[nid], "style": anchors[nid],
+            "id": ids[nid], "label": n["label"], "qid": n["qid"], "wikipedia": _wikipedia(cache, n["qid"]), "family": fams[nid], "families": _node_families(n, fams[nid]), "anchor": anchors[nid], "style": anchors[nid],
             "count": len(reach[nid]), "ownCount": len(n["own"]), "parents": sorted(ids[p] for p in parents[nid]),
             "tags": sorted(n["keys"]),
         }
