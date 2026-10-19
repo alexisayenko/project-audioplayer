@@ -1,12 +1,12 @@
 # Library genre cleanup (2026-10-19)
 
-Status: applied at server start by app.migrate_removals, file server/data/library_genre_removals.json (98 songs, 166 genre removals, 15 genre additions, 1 song cleared; not deployed yet).
+Status: applied at server start by app.migrate_removals, file server/data/library_genre_removals.json (110 songs, 185 genre removals, 15 genre additions, 1 song cleared; not deployed yet).
 
 Review of genres that were put on songs by mistake (removal, with a few owner-approved additions). Evidence is English Wikipedia (song page first, artist page second). The owner approved all HIGH-confidence rows (his edits included) plus the descriptor genres acoustic and instrumental (they are version types), and approved the remaining rows one by one in chat. Everything under "Approved removals" is applied as one reviewed list at a server start, with a backup first (file `server/data/library_genre_removals.json`).
 
 Conventions: "(also: X)" in an owner message means X was removed too; a "(maybe also: X)" that the owner did not repeat stays on the song.
 
-Counts: 0 rows still to read, 98 rows approved by the owner.
+Counts: 0 rows still to read, 116 rows approved by the owner.
 
 ## Approved removals (confirmed row by row)
 
@@ -361,6 +361,46 @@ Counts: 0 rows still to read, 98 rows approved by the owner.
 98. **Aaron Smith - Dancin (KRONO Remix)** (`0XFudmaObLI`) approved 2026-10-20, asked for by the owner
    - remove: **dancehall**, **house**; add: **deep house**, **nu-disco**
    - result: deep house, nu-disco (owner choice: the KRONO remix is deep house, the song is neither reggae nor dancehall)
+99. **Fatboy Slim - Ya Mama** (`dS7Eu05OUH8`) approved 2026-10-20, asked for by the owner
+   - remove: **acid house**
+100. **Whilefalse - Petrichor** (`pwtT8ysDuDY`) approved 2026-10-20, asked for by the owner
+   - remove: **bassline**
+101. **Kenny Burrell - Soul Lament** (`S_HBlzRJxaM`) approved 2026-10-20, asked for by the owner
+   - remove: **cool jazz**
+102. **Dire Straits - Money For Nothing** (`2zXTaB_9JQg`) approved 2026-10-20, asked for by the owner
+   - remove: **country rock**
+103. **Delerium - Innocente** (`dQ03F36U5qg`) approved 2026-10-20, asked for by the owner
+   - remove: **dark ambient**
+   - keeps: worldbeat and the rest
+104. **David Guetta - The World is Mine** (`13EsiCjsssY`) approved 2026-10-20, asked for by the owner
+   - remove: **electroclash**
+105. **Utah Saints - Power To The Beats** (`VLCPkGZ0gpw`) approved 2026-10-20, asked for by the owner
+   - remove: **garage house**
+106. **Laura Branigan - Self Control** (`RP0_8J7uxhs`) approved 2026-10-20, asked for by the owner
+   - remove: **italodance**
+107. **The Bangles - Walk Like an Egyptian** (`vth-T1u7A58`) approved 2026-10-20, asked for by the owner
+   - remove: **jangle pop**, **paisley underground**
+108. **Kraftwerk - Radioactivity** (`X--F5b5IdqU`) approved 2026-10-20, asked for by the owner
+   - remove: **krautrock**
+109. **The Offspring - The Kids Aren't Alright** (`7iNbnineUCI`) approved 2026-10-20, asked for by the owner
+   - remove: **melodic hardcore**
+   - keeps: pop punk and the rest
+110. **Gogol Bordello - Immigraniada (We Comin' Rougher)** (`aKpgb2WrGo0`) approved 2026-10-20, asked for by the owner
+   - remove: **polka**
+   - keeps: romani and the rest
+111. **Duran Duran - Come Undone** (`Epj84QVw2rc`) approved 2026-10-20, asked for by the owner
+   - remove: **new romantic**
+   - keeps: the rest (ethereal is handled by a separate change)
+112. **Dua Lipa, Elton John - Cold Heart (Live from the Royal Albert Hall)** (`IbxPoaTdrz0`) approved 2026-10-20, asked for by the owner
+   - remove: **post-disco**
+113. **Jean-Michel Jarre - Oxygene, Pt. 4** (`kSIMVnPA994`) approved 2026-10-20, asked for by the owner
+   - remove: **progressive rock**
+114. **Mattafix - Big City Life** (`4mtfnfQoAco`) approved 2026-10-20, asked for by the owner
+   - remove: **rnb/swing**
+115. **M83 - Midnight City** (`dX3k_QDnzHE`) approved 2026-10-20, asked for by the owner
+   - remove: **shoegaze**
+116. **Lana Del Rey - Young and Beautiful** (`o_1aF54DO60`) approved 2026-10-20, asked for by the owner
+   - remove: **slowcore**
 
 ## MEDIUM only (not proposed for removal)
 

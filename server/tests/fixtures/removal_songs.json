@@ -5915,6 +5915,742 @@
 "size": 4145497,
 "duration": 256
 }
+},
+{
+"id": "dS7Eu05OUH8",
+"title": "Ya Mama",
+"mainArtists": [
+"Fatboy Slim"
+],
+"featuredArtists": [],
+"releaseYear": 2000,
+"albums": [
+"Halfway Between the Gutter and the Stars"
+],
+"bpm": 121,
+"wikipedia_song": null,
+"wikipedia_artist": "https://en.wikipedia.org/wiki/Fatboy_Slim",
+"wikipedia_album": "https://en.wikipedia.org/wiki/Halfway_Between_the_Gutter_and_the_Stars",
+"musicbrainz_url": "https://musicbrainz.org/recording/530123b9-7c3e-46cd-a975-bf5c881748b8",
+"discogs_url": "https://www.discogs.com/master/1092549",
+"spotify_url": null,
+"source_url": "https://www.youtube.com/watch?v=dS7Eu05OUH8",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=dS7Eu05OUH8",
+"source": "youtube",
+"id": "dS7Eu05OUH8"
+}
+],
+"cover": "covers/dS7Eu05OUH8.jpg",
+"duration": 340,
+"added_at": "2026-10-18T11:41:10Z",
+"tags": [
+"genre:big beat",
+"genre:electronic",
+"genre:acid house",
+"genre:house",
+"genre:techno",
+"decade:00s",
+"country:gb"
+],
+"updated_at": "2026-10-18T11:55:35Z",
+"artist": "Fatboy Slim",
+"remixer": null,
+"year": 2000,
+"remix_year": null,
+"album": "Halfway Between the Gutter and the Stars",
+"genres": [
+"big beat",
+"electronic",
+"acid house",
+"house",
+"techno"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 5504509,
+"duration": 340
+}
+},
+{
+"id": "pwtT8ysDuDY",
+"title": "Petrichor",
+"mainArtists": [
+"Whilefalse"
+],
+"featuredArtists": [],
+"releaseYear": 2022,
+"albums": [
+"Petrichor"
+],
+"bpm": 96,
+"wikipedia_song": null,
+"wikipedia_artist": null,
+"musicbrainz_url": "https://musicbrainz.org/recording/992220f7-327c-4535-91e3-b73d4716f2e4",
+"discogs_url": "https://www.discogs.com/release/22702745",
+"spotify_url": null,
+"source_url": "https://www.youtube.com/watch?v=pwtT8ysDuDY",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=pwtT8ysDuDY",
+"source": "youtube",
+"id": "pwtT8ysDuDY"
+}
+],
+"cover": "covers/pwtT8ysDuDY.jpg",
+"duration": 187,
+"added_at": "2026-10-18T20:27:04Z",
+"tags": [
+"genre:chillwave",
+"genre:bassline",
+"genre:synthwave",
+"decade:20s",
+"country:us"
+],
+"updated_at": "2026-10-18T21:35:38Z",
+"artist": "Whilefalse",
+"remixer": null,
+"year": 2022,
+"remix_year": null,
+"album": "Petrichor",
+"genres": [
+"chillwave",
+"bassline",
+"synthwave"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 3030535,
+"duration": 187
+}
+},
+{
+"id": "S_HBlzRJxaM",
+"title": "Soul Lament",
+"mainArtists": [
+"Kenny Burrell"
+],
+"featuredArtists": [],
+"releaseYear": 1963,
+"albums": [
+"Midnight Blue"
+],
+"version": {
+"type": "remaster",
+"name": "Remastered 1999/Rudy Van Gelder Edition",
+"artists": [
+"Rudy Van Gelder"
+],
+"releaseYear": 1999
+},
+"bpm": 111,
+"wikipedia_song": null,
+"wikipedia_artist": "https://en.wikipedia.org/wiki/Kenny_Burrell",
+"musicbrainz_url": null,
+"discogs_url": "https://www.discogs.com/master/178718",
+"spotify_url": null,
+"source_url": "https://www.youtube.com/watch?v=S_HBlzRJxaM",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=S_HBlzRJxaM",
+"source": "youtube",
+"id": "S_HBlzRJxaM"
+}
+],
+"cover": "covers/S_HBlzRJxaM.jpg",
+"duration": 164,
+"added_at": "2026-10-19T08:02:18Z",
+"tags": [
+"genre:jazz",
+"genre:blues",
+"genre:soul jazz",
+"genre:cool jazz",
+"genre:hard bop",
+"genre:soul",
+"decade:90s",
+"country:us"
+],
+"updated_at": "2026-10-19T16:11:06Z",
+"artist": "Kenny Burrell",
+"remixer": "Remastered 1999/Rudy Van Gelder Edition",
+"year": 1963,
+"remix_year": 1999,
+"album": "Midnight Blue",
+"genres": [
+"jazz",
+"blues",
+"soul jazz",
+"cool jazz",
+"hard bop",
+"soul"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 2650550,
+"duration": 164
+}
+},
+{
+"id": "dQ03F36U5qg",
+"title": "Innocente",
+"mainArtists": [
+"Delerium"
+],
+"featuredArtists": [],
+"releaseYear": 2026,
+"version": {
+"type": "remix",
+"name": "Sadrican 2026 Remix",
+"artists": [],
+"releaseYear": null
+},
+"albums": [],
+"bpm": 127,
+"wikipedia_song": null,
+"wikipedia_artist": null,
+"source_url": "https://www.youtube.com/watch?v=dQ03F36U5qg",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=dQ03F36U5qg",
+"source": "youtube",
+"id": "dQ03F36U5qg"
+}
+],
+"cover": "covers/dQ03F36U5qg.jpg",
+"duration": 248,
+"added_at": "2026-10-13T18:52:19Z",
+"musicbrainz_url": "https://musicbrainz.org/recording/0c7cdd48-210b-414b-ba1d-dcfa3a02e620",
+"discogs_url": null,
+"updated_at": "2026-10-15T23:51:47Z",
+"tags": [
+"genre:melodic techno",
+"genre:progressive trance",
+"genre:new age",
+"genre:electronic",
+"genre:worldbeat",
+"genre:trance",
+"genre:ambient house",
+"genre:dark ambient",
+"genre:ambient",
+"decade:20s",
+"country:ca"
+],
+"artist": "Delerium",
+"remixer": "Sadrican 2026 Remix",
+"year": 2026,
+"remix_year": null,
+"album": null,
+"genres": [
+"melodic techno",
+"progressive trance",
+"new age",
+"electronic",
+"worldbeat",
+"trance",
+"ambient house",
+"dark ambient",
+"ambient"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 4008057,
+"duration": 248
+}
+},
+{
+"id": "13EsiCjsssY",
+"title": "The World is Mine",
+"mainArtists": [
+"David Guetta"
+],
+"featuredArtists": [],
+"releaseYear": 2004,
+"albums": [
+"Guetta Blaster"
+],
+"bpm": 130,
+"wikipedia_song": "https://en.wikipedia.org/wiki/The_World_Is_Mine_(David_Guetta_song)",
+"wikipedia_artist": "https://en.wikipedia.org/wiki/David_Guetta",
+"wikipedia_album": "https://en.wikipedia.org/wiki/Guetta_Blaster",
+"musicbrainz_url": "https://musicbrainz.org/recording/922f692e-9414-4c72-9129-2d1ffb550151",
+"discogs_url": null,
+"spotify_url": null,
+"source_url": "https://www.youtube.com/watch?v=13EsiCjsssY",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=13EsiCjsssY",
+"source": "youtube",
+"id": "13EsiCjsssY"
+}
+],
+"cover": "covers/13EsiCjsssY.jpg",
+"duration": 210,
+"added_at": "2026-10-17T23:40:04Z",
+"tags": [
+"genre:house",
+"genre:tech house",
+"genre:dance pop",
+"genre:electronic",
+"genre:electroclash",
+"genre:electro house",
+"decade:00s",
+"country:fr"
+],
+"updated_at": "2026-10-18T11:32:18Z",
+"artist": "David Guetta",
+"remixer": null,
+"year": 2004,
+"remix_year": null,
+"album": "Guetta Blaster",
+"genres": [
+"house",
+"tech house",
+"dance pop",
+"electronic",
+"electroclash",
+"electro house"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 3398601,
+"duration": 210
+}
+},
+{
+"id": "VLCPkGZ0gpw",
+"title": "Power To The Beats",
+"mainArtists": [
+"Utah Saints"
+],
+"featuredArtists": [],
+"releaseYear": 2000,
+"albums": [],
+"bpm": 139,
+"wikipedia_song": null,
+"wikipedia_artist": "https://en.wikipedia.org/wiki/Utah_Saints",
+"wikipedia_album": "https://en.wikipedia.org/wiki/Two_(Utah_Saints_album)",
+"musicbrainz_url": null,
+"discogs_url": "https://www.discogs.com/master/94813",
+"spotify_url": null,
+"source_url": "https://www.youtube.com/watch?v=VLCPkGZ0gpw",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=VLCPkGZ0gpw",
+"source": "youtube",
+"id": "VLCPkGZ0gpw"
+}
+],
+"cover": "covers/VLCPkGZ0gpw.jpg",
+"duration": 280,
+"added_at": "2026-10-19T13:50:57Z",
+"tags": [
+"genre:electronic",
+"genre:house",
+"genre:big beat",
+"genre:hip hop",
+"genre:trance",
+"genre:trip hop",
+"genre:breakbeat",
+"genre:garage house",
+"decade:00s",
+"country:gb"
+],
+"updated_at": "2026-10-19T13:51:15Z",
+"artist": "Utah Saints",
+"remixer": null,
+"year": 2000,
+"remix_year": null,
+"album": null,
+"genres": [
+"electronic",
+"house",
+"big beat",
+"hip hop",
+"trance",
+"trip hop",
+"breakbeat",
+"garage house"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 4530408,
+"duration": 280
+}
+},
+{
+"id": "vth-T1u7A58",
+"title": "Walk Like an Egyptian",
+"mainArtists": [
+"The Bangles"
+],
+"featuredArtists": [],
+"releaseYear": 1986,
+"albums": [
+"Different Light"
+],
+"bpm": 105,
+"source_url": "https://www.youtube.com/watch?v=vth-T1u7A58",
+"cover": "covers/vth-T1u7A58.jpg",
+"duration": 204,
+"added_at": "2026-10-12T15:18:52Z",
+"wikipedia_song": null,
+"wikipedia_artist": null,
+"musicbrainz_url": "https://musicbrainz.org/recording/0ec23ab4-9d80-41aa-b749-cf1661829968",
+"updated_at": "2026-10-14T09:34:19Z",
+"tags": [
+"genre:pop rock",
+"genre:new wave",
+"genre:pop",
+"genre:jangle pop",
+"genre:paisley underground",
+"genre:alternative rock",
+"decade:80s",
+"country:us"
+],
+"artist": "The Bangles",
+"remixer": null,
+"year": 1986,
+"remix_year": null,
+"album": "Different Light",
+"genres": [
+"pop rock",
+"new wave",
+"pop",
+"jangle pop",
+"paisley underground",
+"alternative rock"
+],
+"audio_state": "server",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=vth-T1u7A58",
+"source": "youtube",
+"id": "vth-T1u7A58"
+}
+],
+"audio": {
+"format": "m4a",
+"size": 3299827,
+"duration": 204
+}
+},
+{
+"id": "7iNbnineUCI",
+"title": "The Kids Aren't Alright",
+"mainArtists": [
+"The Offspring"
+],
+"featuredArtists": [],
+"releaseYear": 1999,
+"albums": [
+"Americana"
+],
+"bpm": 101,
+"wikipedia_song": "https://en.wikipedia.org/wiki/The_Kids_Aren%27t_Alright",
+"wikipedia_artist": "https://en.wikipedia.org/wiki/The_Offspring",
+"wikipedia_album": "https://en.wikipedia.org/wiki/Americana_(The_Offspring_album)",
+"musicbrainz_url": "https://musicbrainz.org/recording/32dd5bf3-121b-44df-8b67-9448b56d3aaa",
+"discogs_url": "https://www.discogs.com/master/77243",
+"spotify_url": null,
+"source_url": "https://www.youtube.com/watch?v=7iNbnineUCI",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=7iNbnineUCI",
+"source": "youtube",
+"id": "7iNbnineUCI"
+}
+],
+"cover": "covers/7iNbnineUCI.jpg",
+"duration": 180,
+"added_at": "2026-10-19T13:51:50Z",
+"tags": [
+"genre:punk",
+"genre:pop punk",
+"genre:alternative rock",
+"genre:pop rock",
+"genre:melodic hardcore",
+"decade:90s",
+"country:us"
+],
+"updated_at": "2026-10-19T16:15:57Z",
+"artist": "The Offspring",
+"remixer": null,
+"year": 1999,
+"remix_year": null,
+"album": "Americana",
+"genres": [
+"punk",
+"pop punk",
+"alternative rock",
+"pop rock",
+"melodic hardcore"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 2905528,
+"duration": 180
+}
+},
+{
+"id": "aKpgb2WrGo0",
+"title": "Immigraniada (We Comin' Rougher)",
+"mainArtists": [
+"Gogol Bordello"
+],
+"featuredArtists": [],
+"releaseYear": 2010,
+"albums": [
+"Trans-Continental Hustle"
+],
+"bpm": 100,
+"wikipedia_song": null,
+"wikipedia_artist": "https://en.wikipedia.org/wiki/Gogol_Bordello",
+"wikipedia_album": "https://en.wikipedia.org/wiki/Trans-Continental_Hustle",
+"musicbrainz_url": "https://musicbrainz.org/recording/d7943e29-55b9-4442-b83d-e683830c6c53",
+"discogs_url": null,
+"spotify_url": null,
+"source_url": "https://www.youtube.com/watch?v=aKpgb2WrGo0",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=aKpgb2WrGo0",
+"source": "youtube",
+"id": "aKpgb2WrGo0"
+}
+],
+"cover": "covers/aKpgb2WrGo0.jpg",
+"duration": 241,
+"added_at": "2026-10-16T22:05:01Z",
+"updated_at": "2026-10-16T23:55:01Z",
+"tags": [
+"genre:punk",
+"genre:folk punk",
+"genre:polka",
+"genre:folk rock",
+"genre:dub",
+"genre:romani",
+"genre:rock",
+"decade:10s",
+"country:us"
+],
+"artist": "Gogol Bordello",
+"remixer": null,
+"year": 2010,
+"remix_year": null,
+"album": "Trans-Continental Hustle",
+"genres": [
+"punk",
+"folk punk",
+"polka",
+"folk rock",
+"dub",
+"romani",
+"rock"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 3891270,
+"duration": 241
+}
+},
+{
+"id": "IbxPoaTdrz0",
+"title": "Cold Heart (Live from the Royal Albert Hall)",
+"mainArtists": [
+"Dua Lipa",
+"Elton John"
+],
+"featuredArtists": [],
+"releaseYear": 2024,
+"albums": [
+"The Lockdown Sessions"
+],
+"bpm": 120,
+"source_url": "https://www.youtube.com/watch?v=IbxPoaTdrz0",
+"cover": "covers/IbxPoaTdrz0.jpg",
+"duration": 295,
+"added_at": "2026-10-12T14:49:20Z",
+"wikipedia_song": null,
+"wikipedia_artist": null,
+"musicbrainz_url": "https://musicbrainz.org/recording/c1906902-d402-43de-9228-182beccbd7d6",
+"updated_at": "2026-10-15T23:43:39Z",
+"tags": [
+"genre:electronic",
+"genre:dance pop",
+"genre:synthpop",
+"genre:disco",
+"genre:pop",
+"genre:contemporary r&b",
+"genre:post-disco",
+"decade:20s",
+"country:gb"
+],
+"artist": "Dua Lipa - Elton John",
+"remixer": null,
+"year": 2024,
+"remix_year": null,
+"album": "The Lockdown Sessions",
+"genres": [
+"electronic",
+"dance pop",
+"synthpop",
+"disco",
+"pop",
+"contemporary r&b",
+"post-disco"
+],
+"audio_state": "server",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=IbxPoaTdrz0",
+"source": "youtube",
+"id": "IbxPoaTdrz0"
+}
+],
+"audio": {
+"format": "m4a",
+"size": 4767748,
+"duration": 295
+}
+},
+{
+"id": "kSIMVnPA994",
+"title": "Oxygene, Pt. 4",
+"mainArtists": [
+"Jean-Michel Jarre"
+],
+"featuredArtists": [],
+"releaseYear": 1980,
+"albums": [],
+"bpm": 128,
+"wikipedia_song": null,
+"wikipedia_artist": "https://en.wikipedia.org/wiki/Jean-Michel_Jarre",
+"musicbrainz_url": null,
+"discogs_url": "https://www.discogs.com/master/290893",
+"spotify_url": null,
+"source_url": "https://www.youtube.com/watch?v=kSIMVnPA994",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=kSIMVnPA994",
+"source": "youtube",
+"id": "kSIMVnPA994"
+}
+],
+"cover": "covers/kSIMVnPA994.jpg",
+"duration": 208,
+"added_at": "2026-10-18T21:32:51Z",
+"tags": [
+"genre:ambient",
+"genre:new age",
+"genre:electronic",
+"genre:trance",
+"genre:progressive rock",
+"genre:synthpop",
+"genre:techno",
+"genre:electro",
+"decade:80s",
+"country:fr"
+],
+"updated_at": "2026-10-18T21:39:25Z",
+"artist": "Jean-Michel Jarre",
+"remixer": null,
+"year": 1980,
+"remix_year": null,
+"album": null,
+"genres": [
+"ambient",
+"new age",
+"electronic",
+"trance",
+"progressive rock",
+"synthpop",
+"techno",
+"electro"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 3362915,
+"duration": 208
+}
+},
+{
+"id": "4mtfnfQoAco",
+"title": "Big City Life",
+"mainArtists": [
+"Mattafix"
+],
+"featuredArtists": [],
+"releaseYear": 2005,
+"albums": [
+"Signs of a Struggle"
+],
+"bpm": 177,
+"wikipedia_song": "https://en.wikipedia.org/wiki/Big_City_Life",
+"wikipedia_artist": "https://en.wikipedia.org/wiki/Mattafix",
+"wikipedia_album": "https://en.wikipedia.org/wiki/Signs_of_a_Struggle",
+"musicbrainz_url": "https://musicbrainz.org/recording/315aa776-0092-47da-a82b-64cd3967652d",
+"discogs_url": "https://www.discogs.com/master/103384",
+"spotify_url": null,
+"source_url": "https://www.youtube.com/watch?v=4mtfnfQoAco",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=4mtfnfQoAco",
+"source": "youtube",
+"id": "4mtfnfQoAco"
+}
+],
+"cover": "covers/4mtfnfQoAco.jpg",
+"duration": 242,
+"added_at": "2026-10-18T11:39:24Z",
+"tags": [
+"genre:electronic",
+"genre:hip hop",
+"genre:dancehall",
+"genre:rnb/swing",
+"genre:trip hop",
+"decade:00s",
+"country:gb"
+],
+"updated_at": "2026-10-18T11:55:09Z",
+"artist": "Mattafix",
+"remixer": null,
+"year": 2005,
+"remix_year": null,
+"album": "Signs of a Struggle",
+"genres": [
+"electronic",
+"hip hop",
+"dancehall",
+"rnb/swing",
+"trip hop"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 3919822,
+"duration": 242
+}
 }
 ]
 }

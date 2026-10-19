@@ -40,7 +40,8 @@
   },
   "Epj84QVw2rc": {
    "remove": [
-    "hard rock"
+    "hard rock",
+    "new romantic"
    ],
    "title": "Duran Duran - Come Undone"
   },
@@ -263,7 +264,8 @@
   },
   "2zXTaB_9JQg": {
    "remove": [
-    "progressive rock"
+    "progressive rock",
+    "country rock"
    ],
    "title": "Dire Straits - Money For Nothing"
   },
@@ -294,7 +296,8 @@
   },
   "RP0_8J7uxhs": {
    "remove": [
-    "folk rock"
+    "folk rock",
+    "italodance"
    ],
    "title": "Laura Branigan - Self Control"
   },
@@ -329,7 +332,8 @@
   "dX3k_QDnzHE": {
    "remove": [
     "post-rock",
-    "ambient"
+    "ambient",
+    "shoegaze"
    ],
    "title": "M83 - Midnight City"
   },
@@ -579,7 +583,8 @@
   },
   "X--F5b5IdqU": {
    "remove": [
-    "techno"
+    "techno",
+    "krautrock"
    ],
    "title": "Kraftwerk - Radioactivity"
   },
@@ -637,7 +642,8 @@
   "o_1aF54DO60": {
    "remove": [
     "trip hop",
-    "indie rock"
+    "indie rock",
+    "slowcore"
    ],
    "title": "Lana Del Rey - Young and Beautiful"
   },
@@ -695,6 +701,79 @@
     "deep house",
     "nu-disco"
    ]
+  },
+  "dS7Eu05OUH8": {
+   "remove": [
+    "acid house"
+   ],
+   "title": "Fatboy Slim - Ya Mama"
+  },
+  "pwtT8ysDuDY": {
+   "remove": [
+    "bassline"
+   ],
+   "title": "Whilefalse - Petrichor"
+  },
+  "S_HBlzRJxaM": {
+   "remove": [
+    "cool jazz"
+   ],
+   "title": "Kenny Burrell - Soul Lament"
+  },
+  "dQ03F36U5qg": {
+   "remove": [
+    "dark ambient"
+   ],
+   "title": "Delerium - Innocente"
+  },
+  "13EsiCjsssY": {
+   "remove": [
+    "electroclash"
+   ],
+   "title": "David Guetta - The World is Mine"
+  },
+  "VLCPkGZ0gpw": {
+   "remove": [
+    "garage house"
+   ],
+   "title": "Utah Saints - Power To The Beats"
+  },
+  "vth-T1u7A58": {
+   "remove": [
+    "jangle pop",
+    "paisley underground"
+   ],
+   "title": "The Bangles - Walk Like an Egyptian"
+  },
+  "7iNbnineUCI": {
+   "remove": [
+    "melodic hardcore"
+   ],
+   "title": "The Offspring - The Kids Aren't Alright"
+  },
+  "aKpgb2WrGo0": {
+   "remove": [
+    "polka"
+   ],
+   "title": "Gogol Bordello - Immigraniada (We Comin' Rougher)"
+  },
+  "IbxPoaTdrz0": {
+   "remove": [
+    "post-disco"
+   ],
+   "title": "Dua Lipa, Elton John - Cold Heart (Live from the Royal Albert Hall)"
+  },
+  "kSIMVnPA994": {
+   "remove": [
+    "progressive rock"
+   ],
+   "title": "Jean-Michel Jarre - Oxygene, Pt. 4"
+  },
+  "4mtfnfQoAco": {
+   "remove": [
+    "rnb/swing"
+   ],
+   "title": "Mattafix - Big City Life"
   }
  }
 }

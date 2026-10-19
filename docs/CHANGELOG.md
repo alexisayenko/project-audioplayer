@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-20 (Owner genre fixes: 19 wrong genres)
+
+- Data: the owner-approved genre list removes 19 more wrong genres from 18 songs, now 110 songs, 185 genres removed and 15 added in all (TAG-109): acid house (Ya Mama), bassline (Petrichor), cool jazz (Soul Lament), country rock (Money For Nothing), dark ambient (Innocente), electroclash (The World is Mine), garage house (Power To The Beats), italodance (Self Control), jangle pop and paisley underground (Walk Like an Egyptian), krautrock (Radioactivity), melodic hardcore (The Kids Aren't Alright), polka (Immigraniada), new romantic (Come Undone), post-disco (Cold Heart, Royal Albert Hall), progressive rock (Oxygene, Pt. 4), rnb/swing (Big City Life), shoegaze (Midnight City) and slowcore (Young and Beautiful). Six of the songs already had a row, which is extended. Deployed.
+
 ## 2026-10-20 (Owner genre fixes: Babel and Dancin)
 
 - Data: the owner-approved genre list gains two rows, now 98 songs, 166 genres removed and 15 added in all (TAG-109): Gustavo Bravetti - Babel is retagged from dancehall to dubstep (Discogs and Qobuz: electronic, dubstep, grime, club/dance; no grime added), and Aaron Smith - Dancin (KRONO Remix) is retagged from dancehall and house to deep house and nu-disco. Deployed.
