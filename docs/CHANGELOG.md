@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-20 (Genres graph: wider rings, steadier selection)
+
+- Web: in Genres graph drill-down the children of an opened genre sit on a ring three times as wide (`RING_SCALE` = 3 in `genre-force-view.js`: first ring, count-based radius, cap and the spacing of concentric rings, and the link rest length is the ring radius), so Rock's children are several circle radii from Rock and their labels no longer pile up on it; selecting a genre with several parents (house, then eurodance) no longer makes it jerk: newly drawn extra parents are placed on a small arc just outside the ring of its children with their rest positions there, and the camera stays put when the revealed set still fits the view (headless, real vocabulary: under 5 px in the first 300 ms). GEN-075 (2) and (6a), WEB-125. Deployed.
+
 ## 2026-10-20 (Owner genre fixes: After Dark)
 
 - Data: the owner-approved genre list removes new wave and electronic from Mr.Kitty - After Dark (synthwave, synthpop, witch house and darkwave kept), now 115 songs, 192 genres removed and 15 added in all (TAG-109). Deployed.

@@ -27,10 +27,12 @@ const FOLLOW_EPS = 0.05;
 const PARENT_REACTION = 0.02;
 const REVEAL_ALPHA = 0.25;
 const RING_GAP = 6;
-const RING_MAX = 70;
+const RING_SCALE = 3;
+const RING_MAX = 70 * RING_SCALE;
 const RING_PITCH = 6;
 const RING_MULTI_MIN = 14;
 const RING_STEP = 0.85;
+const NEAR_STEP = 0.5;
 const RING_ARC = (300 * Math.PI) / 180;
 const SIM = { charge: 6, linkDistance: 20, gravity: 0, home: 0.05, velocityDecay: 0.34, parentStrength: 1.4, linkFloor: 0.15, parentReaction: PARENT_REACTION };
 const LAYOUT_SLICE_MS = 6;
@@ -128,6 +130,17 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
   }
 
   const liveNodes = () => nodes.filter((n) => n.target === 1);
+
+  function inView() {
+    const x1 = W - focusInset.r;
+    const y1 = H - PAD.b - focusInset.b;
+    return liveNodes().every((n) => {
+      const r = n.r * tf.k;
+      const x = n.x * tf.k + tf.x;
+      const y = n.y * tf.k + tf.y;
+      return x - r >= PAD.l && x + r <= x1 && y - r >= PAD.t && y + r <= y1;
+    });
+  }
 
   function moveTo(to) {
     follow = false;
@@ -773,13 +786,13 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
     const count = rs.length;
     const maxR = Math.max(...rs);
     const pitch = 2 * (rs.reduce((s, r) => s + r, 0) / count) + RING_PITCH;
-    const first = par.r + maxR + RING_GAP;
+    const first = RING_SCALE * (par.r + maxR + RING_GAP);
     const at = (ang, rad) => ({ ang, rad });
     if (count <= RING_MULTI_MIN) {
-      const rad = Math.min(RING_MAX, Math.max(first, (count * pitch) / arc));
+      const rad = Math.min(RING_MAX, Math.max(first, (RING_SCALE * count * pitch) / arc));
       return rs.map((_, i) => at(center - arc / 2 + (arc * (i + 0.5)) / count, rad));
     }
-    const step = pitch * RING_STEP;
+    const step = RING_SCALE * pitch * RING_STEP;
     const radii = [];
     for (let cap = 0, k = 0; cap < count && k < 24; k++) {
       radii.push(first + k * step);
@@ -824,6 +837,31 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
         pending.delete(n);
       });
     };
+    const seeds = new Map(entering.map((n) => [n, { x: n.hx ?? n.x, y: n.hy ?? n.y }]));
+    const anchored = new Map();
+    const reach = (a, n) => {
+      const rings = nodes.filter((m) => m.ringPar === a.id && m.target === 1 && !fresh.has(m)).map((m) => m.ringRad);
+      const kids = [...pending].filter((m) => (parentLinks.get(m.id) || []).some((l) => l.s === a));
+      if (kids.length) {
+        const { center, arc } = fanCenter(a, ready);
+        rings.push(...fanSlots(kids.map((m) => m.r), a, center, arc).map((o) => o.rad));
+      }
+      return rings.length ? Math.max(...rings) + RING_SCALE * RING_GAP + n.r : RING_SCALE * (a.r + n.r + RING_GAP);
+    };
+    const nearArc = (n, a) => {
+      const from = seeds.get(a) || { x: a.hx ?? a.x, y: a.hy ?? a.y };
+      const to = seeds.get(n) || { x: n.hx ?? n.x, y: n.hy ?? n.y };
+      const k = anchored.get(a) || 0;
+      anchored.set(a, k + 1);
+      const base = Math.hypot(to.x - from.x, to.y - from.y) > 1 ? Math.atan2(to.y - from.y, to.x - from.x) : (n.id.length % 11) * 0.6;
+      const ang = base + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * NEAR_STEP;
+      const rad = reach(a, n);
+      n.x = a.x + Math.cos(ang) * rad;
+      n.y = a.y + Math.sin(ang) * rad;
+      n.vx = 0; n.vy = 0;
+      n.hx = n.x; n.hy = n.y;
+      n.ringPar = null;
+    };
     const near = (n) => {
       const nb = [...(adj.get(n.id) || [])].map((id) => byId.get(id)).filter(ready);
       if (!nb.length) return false;
@@ -835,8 +873,25 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
       pending.delete(n);
       return true;
     };
+    const lift = () => {
+      let any = false;
+      for (let again = true; again; ) {
+        again = false;
+        for (const n of [...pending]) {
+          const kid = (childrenOf.get(n.id) || []).find(ready);
+          if (!kid) continue;
+          nearArc(n, kid);
+          placed.add(n);
+          pending.delete(n);
+          again = true;
+          any = true;
+        }
+      }
+      return any;
+    };
     for (let moved = true; moved && pending.size; ) {
       moved = false;
+      if (chained && lift()) moved = true;
       const groups = new Map();
       for (const n of pending) {
         const par = (parentLinks.get(n.id) || []).map((l) => l.s).find(ready);
@@ -887,7 +942,8 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
       if (!changed) return;
       enterNodes(entering, chained);
       rebuildSim(chained ? Math.min(heat, REVEAL_ALPHA) : heat);
-      const hold = keepCamera && userMoved;
+      const hold = keepCamera && (userMoved || (chained && inView()));
+      if (hold && !userMoved) follow = false;
       if (reducedMotion) { sim.settle(SETTLE_STATIC); awake = false; if (!hold) snapFit(); }
       if (!hold) { follow = true; userMoved = false; anim = null; }
       hashDirty = true;
