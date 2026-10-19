@@ -389,6 +389,236 @@
     "instrumental"
    ],
    "title": "Space - Magic Fly"
+  },
+  "WuiCOPve18I": {
+   "remove": [
+    "rock"
+   ],
+   "title": "Ласковый Май - Белые розы"
+  },
+  "HWOIEAZLgx0": {
+   "remove": [
+    "electronic rock"
+   ],
+   "title": "Pendulum - Blood Sugar (Mixed By DJ Gvozd)"
+  },
+  "xarC5jAiO7w": {
+   "remove": [
+    "trap"
+   ],
+   "title": "ODESZA - A Moment Apart"
+  },
+  "RVmG_d3HKBA": {
+   "remove": [
+    "alternative rock"
+   ],
+   "title": "MIKA - Relax, Take It Easy"
+  },
+  "QUvVdTlA23w": {
+   "remove": [
+    "glam"
+   ],
+   "title": "Marilyn Manson - Sweet Dreams (Are Made Of This)"
+  },
+  "W7hAo28NCXc": {
+   "remove": [
+    "chanson",
+    "folk pop"
+   ],
+   "title": "Комбинация - American Boy"
+  },
+  "6_PAHbqq-o4": {
+   "remove": [
+    "alternative rock",
+    "techno"
+   ],
+   "title": "The Prodigy - Breathe"
+  },
+  "q6gr5LW7Dqs": {
+   "remove": [
+    "r&b",
+    "rhythm and blues"
+   ],
+   "title": "Отпетые Мошенники - Люби меня люби"
+  },
+  "XEjLoHdbVeE": {
+   "remove": [
+    "glam"
+   ],
+   "title": "ABBA - Gimme! Gimme! Gimme! (A Man After Midnight)"
+  },
+  "6ZAWNgEbdqA": {
+   "remove": [
+    "post-punk"
+   ],
+   "title": "Blondie - Maria"
+  },
+  "F-pK9KHoCsg": {
+   "remove": [
+    "hip hop"
+   ],
+   "title": "DJ Mehdi - Signatune (Thomas Bangalter Edit)"
+  },
+  "qetW6R9Jxs4": {
+   "remove": [
+    "techno"
+   ],
+   "title": "Eric Prydz - Call On Me"
+  },
+  "cb6WpqqN1ww": {
+   "remove": [
+    "eurodance",
+    "pop"
+   ],
+   "title": "Haddaway - What is Love (Deepjack & Mr Nu Remix)",
+   "add": [
+    "deep house"
+   ]
+  },
+  "9K7rmxjk5RQ": {
+   "remove": [
+    "rock"
+   ],
+   "title": "Desire - Under Your Spell"
+  },
+  "LpUogjU99NY": {
+   "remove": [
+    "hip hop"
+   ],
+   "title": "Kato feat. Jon - Turn The Lights Off (S.A.R.A.H. Remix)",
+   "add": [
+    "melodic techno",
+    "progressive house"
+   ]
+  },
+  "wp43OdtAAkM": {
+   "remove": [
+    "baroque pop"
+   ],
+   "title": "Kate Bush - Running Up That Hill"
+  },
+  "yQR_NLeXKtw": {
+   "remove": [
+    "house",
+    "alternative rock"
+   ],
+   "title": "АИГЕЛ - Татарин",
+   "add": [
+    "hip hop",
+    "electronic"
+   ]
+  },
+  "s5IIWKZr_2w": {
+   "remove": [
+    "tropical house",
+    "eurodance"
+   ],
+   "title": "Edward Maya - Stereo Love (Sadrican 2026 Remix)",
+   "add": [
+    "progressive house"
+   ]
+  },
+  "ylGjvwXV3HA": {
+   "remove": [
+    "cool jazz",
+    "soul"
+   ],
+   "title": "Kenny Burrell - Chitlins Con Carne"
+  },
+  "Zb5sUzQc-_I": {
+   "remove": [
+    "eurodance",
+    "dance pop"
+   ],
+   "title": "Culture Beat - Mr. Vain (Paul Da Breda Remix)",
+   "add": [
+    "progressive house"
+   ]
+  },
+  "1V_xRb0x9aw": {
+   "remove": [
+    "art pop",
+    "synthpop"
+   ],
+   "title": "Gorillaz - Clint Eastwood"
+  },
+  "ymNFyxvIdaM": {
+   "remove": [
+    "techno",
+    "big beat"
+   ],
+   "title": "Bomfunk MC's - Freestyler"
+  },
+  "srGCQfzh1OI": {
+   "remove": [
+    "trap"
+   ],
+   "title": "Каспийский Груз - Табор уходит в небо"
+  },
+  "P9HjbqMIZTA": {
+   "remove": [
+    "chanson"
+   ],
+   "title": "Юрий Шатунов - Седая ночь"
+  },
+  "_mej5wS7viw": {
+   "remove": [
+    "alternative rock"
+   ],
+   "title": "The Prodigy - Poison"
+  },
+  "hynVT6ixpkI": {
+   "remove": [
+    "progressive rock"
+   ],
+   "title": "Thirty Seconds To Mars - This Is War (Radio Edit)"
+  },
+  "1wJPSSITKZI": {
+   "clear": true,
+   "title": "Альфа - Я сделан из такого вещества"
+  },
+  "X--F5b5IdqU": {
+   "remove": [
+    "techno"
+   ],
+   "title": "Kraftwerk - Radioactivity"
+  },
+  "zIh5AHxh-Ok": {
+   "remove": [
+    "dubstep"
+   ],
+   "title": "LMFAO - Party Rock Anthem"
+  },
+  "4kQMDSw3Aqo": {
+   "remove": [
+    "nu metal"
+   ],
+   "title": "Marilyn Manson - This Is The New Shit"
+  },
+  "szLTDSw11kw": {
+   "remove": [
+    "hip hop"
+   ],
+   "title": "Kato Feat. Jon - Turn The Lights Off (DEEPO Remix Long Version)"
+  },
+  "9VpW8Atlj7k": {
+   "remove": [
+    "psychedelic rock"
+   ],
+   "title": "Antinomy - State of Mind"
+  },
+  "0FSE57u58rs": {
+   "remove": [
+    "baroque pop"
+   ],
+   "title": "Murray Head - One Night In Bangkok"
+  },
+  "AEwTnmIM1YM": {
+   "remove": [
+    "pop rock",
+    "eurobeat"
+   ],
+   "title": "Мираж - Музыка нас связала"
   }
  }
 }

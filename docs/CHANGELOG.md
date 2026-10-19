@@ -2,17 +2,37 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-19 (faster cold start, not deployed)
+
+- Web: the BPM badge is a rounded rectangle (`--radius-xs`, 4px) instead of a pill; the owner asked for about 3px, which needs a new radius token in the Design System.
+- Web: the Library BPM badge moved out of the Genres cell to the right end of the subtitle line, after the in-queue icon and right-aligned under the song length; the Genres cell is plain text again and the reserved empty slot is gone; the badge shows at all widths (LIB-019, LIB-161, LIB-175, not deployed).
+
+- Web: `/auth/me`, `/me` and `/library` start together and the Library is fetched once instead of twice (WEB-116); Settings, Genres map, Playlists, Song stats, Music theory and the visualizer load only when needed (WEB-117, WEB-118); the page tells the browser to fetch the whole startup module graph at once with generated `modulepreload` hints (WEB-119). Local cold start (60 ms latency, 5 Mbit/s): 173 to 110 JS files, DOMContentLoaded 7.7 s to 4.6 s.
+- Web: two-tier loading, no build step: tier 1 (preloaded with `modulepreload`, 56 modules, 210 KB) is only what paints the Library list and the shell; the song card, Add and Edit with the song form, share dialog and links, tag picker, filter sheet and Drafts view load on a click with an inline "Loading..." note (WEB-120); once the first rows and their first 12 covers are in, the other 123 modules are warmed in the background 6 at a time when idle, never on data saver or 2g (tier 2, WEB-121, generated from the import graph); the first 12 covers load eagerly with high priority (WEB-122). Local cold start (60 ms, 5 Mbit/s): 110 to 58 JS requests before the first row, DOMContentLoaded 4.6 s to 2.5 s, first library row 6.0 s to about 3.7 s; all lazy modules cached after about 9 s.
+
+## 2026-10-19 (song card copy icon, not deployed)
+
+- Web: the song card's Copy title is a round icon button right of the title text, azure, shown on hover or focus (always on touch) and turning into a check for 1.5 s after copying (LIB-155); the confirmation shows inline on that line instead of a toast (WEB-115). Close in the song card is a floating round X over the cover corner and the empty header row is gone (LIB-177). The card's playlist button is accent-filled with a list-check icon and its position while the song is in the queue (LIB-149).
+
+## 2026-10-19 (song card width, not deployed)
+
+- Web: the song card dialog is as wide as its cover plus padding instead of leaving empty space beside the cover (LIB-176).
+
+## 2026-10-19 (Library row length, not deployed)
+
+- Web: the Library row shows the song length right-aligned on the title line instead of a lone Time column; the header label is gone, rows without audio keep their logo, Download button and ring (LIB-175).
+
 ## 2026-10-19 (Library search words, not deployed)
 
 - Web: the Library search finds a pasted "Maduk ft Veela - Ghost Assassin VIP" (words matched separately, ft/feat/&/dashes ignored, diacritics folded; LIB-162).
 
 ## 2026-10-19 (Library queue mark, not deployed)
 
-- Web: the Library row loses its round "Add to playlist" toggle button and its column; a song in the queue shows a small passive list mark on its cover (tooltip "In the queue, position N of M"), and the row menu offers "Add to queue" / "Remove from queue" (LIB-161, LIB-095, LIB-096).
+- Web: the Library row loses its round "Add to playlist" toggle button and its column; a song in the queue shows a small list icon right-aligned on the subtitle line under the length (no number; tooltip "In the queue, position N of M", also on the cover), and the row menu offers "Add to queue" / "Remove from queue" (LIB-161, LIB-095, LIB-096).
 
 ## 2026-10-19 (Library genre removals, not deployed)
 
-- Server and data: a one-off, owner-approved removal of wrong genres (56 songs, 106 genres, `server/data/library_genre_removals.json`) runs once at server start for the owner library only, with backup, report and marker in `backups-genre-removals/<uid>/` and one git commit; switch `AUDIO_GENRE_REMOVALS=0` (TAG-109, [runbook](tech/deploy.md#genre-removals), tests `test_migrate_removals.py`). Not deployed.
+- Server and data: a one-off, owner-approved removals and additions of genres (90 songs, 150 genres removed, 7 added, 1 song cleared, `server/data/library_genre_removals.json`) runs once at server start for the owner library only, with backup, report and marker in `backups-genre-removals/<uid>/` and one git commit; switch `AUDIO_GENRE_REMOVALS=0` (TAG-109, [runbook](tech/deploy.md#genre-removals), tests `test_migrate_removals.py`). Not deployed.
 
 ## 2026-10-19 (Genre suggestion rule, not deployed)
 

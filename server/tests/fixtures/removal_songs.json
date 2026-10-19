@@ -3461,6 +3461,2028 @@
 "size": 4216094,
 "duration": 261
 }
+},
+{
+"id": "WuiCOPve18I",
+"title": "\u0411\u0435\u043b\u044b\u0435 \u0440\u043e\u0437\u044b",
+"mainArtists": [
+"\u041b\u0430\u0441\u043a\u043e\u0432\u044b\u0439 \u041c\u0430\u0439"
+],
+"featuredArtists": [],
+"releaseYear": 1989,
+"albums": [],
+"bpm": 121,
+"wikipedia_song": "https://ru.wikipedia.org/wiki/%D0%91%D0%B5%D0%BB%D1%8B%D0%B5_%D1%80%D0%BE%D0%B7%D1%8B_(%D0%BF%D0%B5%D1%81%D0%BD%D1%8F)",
+"wikipedia_artist": "https://ru.wikipedia.org/wiki/%D0%9B%D0%B0%D1%81%D0%BA%D0%BE%D0%B2%D1%8B%D0%B9_%D0%BC%D0%B0%D0%B9",
+"musicbrainz_url": "https://musicbrainz.org/recording/576b605a-9678-4d91-8243-6a69bb528bb6",
+"discogs_url": null,
+"spotify_url": null,
+"source_url": "https://www.youtube.com/watch?v=WuiCOPve18I",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=WuiCOPve18I",
+"source": "youtube",
+"id": "WuiCOPve18I"
+}
+],
+"cover": "covers/WuiCOPve18I.jpg",
+"duration": 345,
+"added_at": "2026-10-18T01:48:11Z",
+"tags": [
+"genre:pop",
+"genre:euro disco",
+"genre:synthpop",
+"genre:disco",
+"genre:rock",
+"decade:80s",
+"country:ru"
+],
+"updated_at": "2026-10-18T21:11:17Z",
+"artist": "\u041b\u0430\u0441\u043a\u043e\u0432\u044b\u0439 \u041c\u0430\u0439",
+"remixer": null,
+"year": 1989,
+"remix_year": null,
+"album": null,
+"genres": [
+"pop",
+"euro disco",
+"synthpop",
+"disco",
+"rock"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 5579190,
+"duration": 345
+}
+},
+{
+"id": "HWOIEAZLgx0",
+"title": "Blood Sugar",
+"mainArtists": [
+"Pendulum"
+],
+"featuredArtists": [],
+"releaseYear": 2018,
+"version": {
+"type": "other",
+"name": "Mixed By DJ Gvozd",
+"artists": [],
+"releaseYear": null
+},
+"albums": [],
+"bpm": 122,
+"wikipedia_song": null,
+"wikipedia_artist": null,
+"source_url": "https://www.youtube.com/watch?v=HWOIEAZLgx0",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=HWOIEAZLgx0",
+"source": "youtube",
+"id": "HWOIEAZLgx0"
+}
+],
+"cover": "covers/HWOIEAZLgx0.jpg",
+"duration": 129,
+"added_at": "2026-10-13T21:06:28Z",
+"updated_at": "2026-10-15T23:58:17Z",
+"tags": [
+"genre:drum and bass",
+"genre:electronic rock",
+"genre:electronic",
+"genre:neurofunk",
+"decade:10s",
+"country:au"
+],
+"artist": "Pendulum",
+"remixer": "Mixed By DJ Gvozd",
+"year": 2018,
+"remix_year": null,
+"album": null,
+"genres": [
+"drum and bass",
+"electronic rock",
+"electronic",
+"neurofunk"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 2091002,
+"duration": 129
+}
+},
+{
+"id": "xarC5jAiO7w",
+"title": "A Moment Apart",
+"mainArtists": [
+"ODESZA"
+],
+"featuredArtists": [],
+"releaseYear": 2017,
+"albums": [
+"A Moment Apart"
+],
+"bpm": 122,
+"wikipedia_song": null,
+"wikipedia_artist": null,
+"musicbrainz_url": "https://musicbrainz.org/recording/2c6378c0-0415-41a9-8990-52e0b8bb3869",
+"source_url": "https://www.youtube.com/watch?v=xarC5jAiO7w",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=xarC5jAiO7w",
+"source": "youtube",
+"id": "xarC5jAiO7w"
+}
+],
+"cover": "covers/xarC5jAiO7w.jpg",
+"duration": 234,
+"added_at": "2026-10-13T22:36:53Z",
+"updated_at": "2026-10-16T00:13:29Z",
+"tags": [
+"genre:electronic",
+"genre:synthpop",
+"genre:chillwave",
+"genre:future bass",
+"genre:trap",
+"genre:electro",
+"decade:10s",
+"country:us"
+],
+"artist": "ODESZA",
+"remixer": null,
+"year": 2017,
+"remix_year": null,
+"album": "A Moment Apart",
+"genres": [
+"electronic",
+"synthpop",
+"chillwave",
+"future bass",
+"trap",
+"electro"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 3786602,
+"duration": 234
+}
+},
+{
+"id": "RVmG_d3HKBA",
+"title": "Relax, Take It Easy",
+"mainArtists": [
+"MIKA"
+],
+"featuredArtists": [],
+"releaseYear": 2006,
+"albums": [
+"Life in Cartoon Motion"
+],
+"bpm": 124,
+"source_url": "https://www.youtube.com/watch?v=RVmG_d3HKBA",
+"cover": "covers/RVmG_d3HKBA.jpg",
+"duration": 235,
+"added_at": "2026-10-12T15:02:52Z",
+"wikipedia_song": null,
+"wikipedia_artist": null,
+"musicbrainz_url": "https://musicbrainz.org/recording/ccf89ee5-8f64-4981-a45e-bd889c72aa67",
+"updated_at": "2026-10-15T23:45:06Z",
+"tags": [
+"genre:pop",
+"genre:singer-songwriter",
+"genre:synthpop",
+"genre:dance pop",
+"genre:power pop",
+"genre:glam",
+"genre:alternative rock",
+"decade:00s",
+"country:gb"
+],
+"artist": "MIKA",
+"remixer": null,
+"year": 2006,
+"remix_year": null,
+"album": "Life in Cartoon Motion",
+"genres": [
+"pop",
+"singer-songwriter",
+"synthpop",
+"dance pop",
+"power pop",
+"glam",
+"alternative rock"
+],
+"audio_state": "server",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=RVmG_d3HKBA",
+"source": "youtube",
+"id": "RVmG_d3HKBA"
+}
+],
+"audio": {
+"format": "m4a",
+"size": 3804150,
+"duration": 235
+}
+},
+{
+"id": "QUvVdTlA23w",
+"title": "Sweet Dreams (Are Made Of This)",
+"mainArtists": [
+"Marilyn Manson"
+],
+"featuredArtists": [],
+"releaseYear": null,
+"albums": [],
+"bpm": null,
+"wikipedia_song": null,
+"wikipedia_artist": "https://en.wikipedia.org/wiki/Marilyn_Manson",
+"musicbrainz_url": null,
+"discogs_url": null,
+"spotify_url": null,
+"source_url": "https://www.youtube.com/watch?v=QUvVdTlA23w",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=QUvVdTlA23w",
+"source": "youtube",
+"id": "QUvVdTlA23w"
+}
+],
+"cover": "covers/QUvVdTlA23w.jpg",
+"duration": 298,
+"added_at": "2026-10-19T13:48:39Z",
+"tags": [
+"genre:industrial rock",
+"genre:industrial metal",
+"genre:alternative metal",
+"genre:shock rock",
+"genre:rock",
+"genre:gothic metal",
+"genre:glam",
+"genre:hard rock",
+"country:us"
+],
+"artist": "Marilyn Manson",
+"remixer": null,
+"year": null,
+"remix_year": null,
+"album": null,
+"genres": [
+"industrial rock",
+"industrial metal",
+"alternative metal",
+"shock rock",
+"rock",
+"gothic metal",
+"glam",
+"hard rock"
+],
+"audio_state": "none"
+},
+{
+"id": "W7hAo28NCXc",
+"title": "American Boy",
+"mainArtists": [
+"\u041a\u043e\u043c\u0431\u0438\u043d\u0430\u0446\u0438\u044f"
+],
+"featuredArtists": [],
+"releaseYear": 1991,
+"albums": [],
+"bpm": 132,
+"source_url": "https://www.youtube.com/watch?v=W7hAo28NCXc",
+"cover": "covers/W7hAo28NCXc.jpg",
+"duration": 270,
+"added_at": "2026-10-12T14:42:48Z",
+"wikipedia_song": null,
+"wikipedia_artist": null,
+"musicbrainz_url": "https://musicbrainz.org/recording/ff7b715d-5e39-4be1-87dc-9da471eaafb0",
+"updated_at": "2026-10-15T23:43:11Z",
+"tags": [
+"genre:chanson",
+"genre:disco",
+"genre:pop",
+"genre:folk pop",
+"genre:synthpop",
+"decade:90s",
+"country:ru"
+],
+"artist": "\u041a\u043e\u043c\u0431\u0438\u043d\u0430\u0446\u0438\u044f",
+"remixer": null,
+"year": 1991,
+"remix_year": null,
+"album": null,
+"genres": [
+"chanson",
+"disco",
+"pop",
+"folk pop",
+"synthpop"
+],
+"audio_state": "server",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=W7hAo28NCXc",
+"source": "youtube",
+"id": "W7hAo28NCXc"
+}
+],
+"audio": {
+"format": "m4a",
+"size": 4370824,
+"duration": 270
+}
+},
+{
+"id": "6_PAHbqq-o4",
+"title": "Breathe",
+"mainArtists": [
+"The Prodigy"
+],
+"featuredArtists": [],
+"releaseYear": 1996,
+"albums": [
+"The Fat of the Land"
+],
+"bpm": 132,
+"wikipedia_song": "https://en.wikipedia.org/wiki/Breathe_(The_Prodigy_song)",
+"wikipedia_artist": "https://en.wikipedia.org/wiki/The_Prodigy",
+"wikipedia_album": "https://en.wikipedia.org/wiki/The_Fat_of_the_Land",
+"musicbrainz_url": "https://musicbrainz.org/recording/ac0f3ef6-c838-45b1-9966-dd231199c2c4",
+"discogs_url": null,
+"spotify_url": null,
+"source_url": "https://www.youtube.com/watch?v=6_PAHbqq-o4",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=6_PAHbqq-o4",
+"source": "youtube",
+"id": "6_PAHbqq-o4"
+}
+],
+"cover": "covers/6_PAHbqq-o4.jpg",
+"duration": 240,
+"added_at": "2026-10-17T23:32:59Z",
+"tags": [
+"genre:electronic rock",
+"genre:big beat",
+"genre:electronic",
+"genre:breakbeat",
+"genre:alternative rock",
+"genre:techno",
+"decade:90s",
+"country:gb"
+],
+"updated_at": "2026-10-18T11:31:34Z",
+"artist": "The Prodigy",
+"remixer": null,
+"year": 1996,
+"remix_year": null,
+"album": "The Fat of the Land",
+"genres": [
+"electronic rock",
+"big beat",
+"electronic",
+"breakbeat",
+"alternative rock",
+"techno"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 3877364,
+"duration": 240
+}
+},
+{
+"id": "q6gr5LW7Dqs",
+"title": "\u041b\u044e\u0431\u0438 \u043c\u0435\u043d\u044f \u043b\u044e\u0431\u0438",
+"mainArtists": [
+"\u041e\u0442\u043f\u0435\u0442\u044b\u0435 \u041c\u043e\u0448\u0435\u043d\u043d\u0438\u043a\u0438"
+],
+"featuredArtists": [],
+"releaseYear": 1999,
+"albums": [
+"\u0424\u0438\u0433\u043d\u044f"
+],
+"bpm": 98,
+"wikipedia_song": null,
+"wikipedia_artist": "https://ru.wikipedia.org/wiki/\u041e\u0442\u043f\u0435\u0442\u044b\u0435_\u043c\u043e\u0448\u0435\u043d\u043d\u0438\u043a\u0438_(\u0433\u0440\u0443\u043f\u043f\u0430)",
+"musicbrainz_url": "https://musicbrainz.org/recording/addf3dd3-fedd-41f2-9a2c-87880fe21840",
+"discogs_url": null,
+"spotify_url": null,
+"source_url": "https://www.youtube.com/watch?v=q6gr5LW7Dqs",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=q6gr5LW7Dqs",
+"source": "youtube",
+"id": "q6gr5LW7Dqs"
+}
+],
+"cover": "covers/q6gr5LW7Dqs.jpg",
+"duration": 243,
+"added_at": "2026-10-18T02:03:46Z",
+"tags": [
+"genre:pop",
+"genre:hip house",
+"genre:r&b",
+"genre:rhythm and blues",
+"genre:house",
+"genre:pop rap",
+"genre:eurodance",
+"genre:euro house",
+"decade:90s",
+"country:ru"
+],
+"updated_at": "2026-10-18T21:12:02Z",
+"artist": "\u041e\u0442\u043f\u0435\u0442\u044b\u0435 \u041c\u043e\u0448\u0435\u043d\u043d\u0438\u043a\u0438",
+"remixer": null,
+"year": 1999,
+"remix_year": null,
+"album": "\u0424\u0438\u0433\u043d\u044f",
+"genres": [
+"pop",
+"hip house",
+"r&b",
+"rhythm and blues",
+"house",
+"pop rap",
+"eurodance",
+"euro house"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 3931826,
+"duration": 243
+}
+},
+{
+"id": "XEjLoHdbVeE",
+"title": "ABBA - Gimme! Gimme! Gimme! (A Man After Midnight)",
+"mainArtists": [
+"ABBA"
+],
+"featuredArtists": [],
+"releaseYear": 1979,
+"albums": [
+"Greatest Hits Vol. 2"
+],
+"bpm": 121,
+"source_url": "https://www.youtube.com/watch?v=XEjLoHdbVeE",
+"cover": "covers/XEjLoHdbVeE.jpg",
+"duration": 196,
+"added_at": "2026-10-12T15:13:46Z",
+"wikipedia_song": null,
+"wikipedia_artist": null,
+"musicbrainz_url": "https://musicbrainz.org/recording/559561d7-2fd4-4c34-997c-edaf406b261b",
+"updated_at": "2026-10-15T23:46:22Z",
+"tags": [
+"genre:europop",
+"genre:disco",
+"genre:euro disco",
+"genre:electronic",
+"genre:pop",
+"genre:pop rock",
+"genre:glam",
+"decade:70s",
+"country:se"
+],
+"artist": "ABBA",
+"remixer": null,
+"year": 1979,
+"remix_year": null,
+"album": "Greatest Hits Vol. 2",
+"genres": [
+"europop",
+"disco",
+"euro disco",
+"electronic",
+"pop",
+"pop rock",
+"glam"
+],
+"audio_state": "server",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=XEjLoHdbVeE",
+"source": "youtube",
+"id": "XEjLoHdbVeE"
+}
+],
+"audio": {
+"format": "m4a",
+"size": 3177404,
+"duration": 196
+}
+},
+{
+"id": "6ZAWNgEbdqA",
+"title": "Maria",
+"mainArtists": [
+"Blondie"
+],
+"featuredArtists": [],
+"releaseYear": 1999,
+"albums": [
+"No Exit"
+],
+"bpm": 163,
+"source_url": "https://www.youtube.com/watch?v=6ZAWNgEbdqA",
+"cover": "covers/6ZAWNgEbdqA.jpg",
+"duration": 248,
+"added_at": "2026-10-12T15:15:30Z",
+"wikipedia_song": null,
+"wikipedia_artist": null,
+"musicbrainz_url": "https://musicbrainz.org/recording/4613731d-54ea-4c51-a19b-50a0c136c221",
+"updated_at": "2026-10-15T23:46:41Z",
+"tags": [
+"genre:power pop",
+"genre:alternative rock",
+"genre:new wave",
+"genre:rock",
+"genre:disco",
+"genre:post-punk",
+"genre:dance-rock",
+"decade:90s",
+"country:us"
+],
+"artist": "Blondie",
+"remixer": null,
+"year": 1999,
+"remix_year": null,
+"album": "No Exit",
+"genres": [
+"power pop",
+"alternative rock",
+"new wave",
+"rock",
+"disco",
+"post-punk",
+"dance-rock"
+],
+"audio_state": "server",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=6ZAWNgEbdqA",
+"source": "youtube",
+"id": "6ZAWNgEbdqA"
+}
+],
+"audio": {
+"format": "m4a",
+"size": 4016088,
+"duration": 248
+}
+},
+{
+"id": "F-pK9KHoCsg",
+"title": "Signatune",
+"mainArtists": [
+"DJ Mehdi"
+],
+"featuredArtists": [],
+"releaseYear": 2006,
+"version": {
+"type": "edit",
+"name": "Thomas Bangalter Edit",
+"artists": [
+"Thomas Bangalter"
+],
+"releaseYear": 2007
+},
+"albums": [
+"Lucky Girl"
+],
+"bpm": 125,
+"wikipedia_song": null,
+"wikipedia_artist": "https://en.wikipedia.org/wiki/DJ_Mehdi",
+"musicbrainz_url": null,
+"discogs_url": null,
+"spotify_url": null,
+"source_url": "https://www.youtube.com/watch?v=F-pK9KHoCsg",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=F-pK9KHoCsg",
+"source": "youtube",
+"id": "F-pK9KHoCsg"
+}
+],
+"cover": "covers/F-pK9KHoCsg.jpg",
+"duration": 379,
+"added_at": "2026-10-17T16:07:43Z",
+"updated_at": "2026-10-17T19:09:31Z",
+"tags": [
+"genre:hip hop",
+"genre:house",
+"genre:breakbeat",
+"genre:breaks",
+"genre:electronic",
+"genre:electro",
+"decade:00s",
+"country:fr"
+],
+"artist": "DJ Mehdi",
+"remixer": "Thomas Bangalter Edit",
+"year": 2006,
+"remix_year": 2007,
+"album": "Lucky Girl",
+"genres": [
+"hip hop",
+"house",
+"breakbeat",
+"breaks",
+"electronic",
+"electro"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 6134644,
+"duration": 379
+}
+},
+{
+"id": "qetW6R9Jxs4",
+"title": "Call On Me",
+"mainArtists": [
+"Eric Prydz"
+],
+"featuredArtists": [],
+"releaseYear": 2004,
+"albums": [],
+"bpm": 128,
+"wikipedia_song": "https://en.wikipedia.org/wiki/Call_on_Me_(Eric_Prydz_song)",
+"wikipedia_artist": "https://en.wikipedia.org/wiki/Eric_Prydz",
+"musicbrainz_url": "https://musicbrainz.org/recording/59550c93-df20-48f7-83ac-10c89b4f5603",
+"discogs_url": null,
+"spotify_url": null,
+"source_url": "https://www.youtube.com/watch?v=qetW6R9Jxs4",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=qetW6R9Jxs4",
+"source": "youtube",
+"id": "qetW6R9Jxs4"
+}
+],
+"cover": "covers/qetW6R9Jxs4.jpg",
+"duration": 174,
+"added_at": "2026-10-17T23:37:29Z",
+"tags": [
+"genre:electronic",
+"genre:electro",
+"genre:house",
+"genre:techno",
+"genre:progressive house",
+"genre:tech house",
+"genre:nu-disco",
+"decade:00s",
+"country:se"
+],
+"updated_at": "2026-10-18T11:32:00Z",
+"artist": "Eric Prydz",
+"remixer": null,
+"year": 2004,
+"remix_year": null,
+"album": null,
+"genres": [
+"electronic",
+"electro",
+"house",
+"techno",
+"progressive house",
+"tech house",
+"nu-disco"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 2815028,
+"duration": 174
+}
+},
+{
+"id": "cb6WpqqN1ww",
+"title": "What is Love",
+"mainArtists": [
+"Haddaway"
+],
+"featuredArtists": [],
+"releaseYear": 2002,
+"version": {
+"type": "remix",
+"name": "Deepjack & Mr  Nu Remix",
+"artists": [],
+"releaseYear": null
+},
+"albums": [],
+"bpm": 120,
+"wikipedia_song": null,
+"wikipedia_artist": null,
+"musicbrainz_url": "https://musicbrainz.org/recording/13d6a7da-a487-4452-a895-a129ad76e072",
+"source_url": "https://www.youtube.com/watch?v=cb6WpqqN1ww",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=cb6WpqqN1ww",
+"source": "youtube",
+"id": "cb6WpqqN1ww"
+}
+],
+"cover": "covers/cb6WpqqN1ww.jpg",
+"duration": 345,
+"added_at": "2026-10-13T23:01:24Z",
+"updated_at": "2026-10-15T23:57:41Z",
+"tags": [
+"genre:eurodance",
+"genre:pop",
+"genre:electronic",
+"decade:00s",
+"country:de"
+],
+"artist": "Haddaway",
+"remixer": "Deepjack & Mr  Nu Remix",
+"year": 2002,
+"remix_year": null,
+"album": null,
+"genres": [
+"eurodance",
+"pop",
+"electronic"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 5581890,
+"duration": 345
+}
+},
+{
+"id": "9K7rmxjk5RQ",
+"title": "Under Your Spell",
+"mainArtists": [
+"Desire"
+],
+"featuredArtists": [],
+"releaseYear": 2011,
+"albums": [],
+"bpm": 107,
+"wikipedia_song": null,
+"wikipedia_artist": "https://en.wikipedia.org/wiki/Desire_(band)",
+"musicbrainz_url": null,
+"discogs_url": "https://www.discogs.com/master/176246",
+"spotify_url": null,
+"source_url": "https://www.youtube.com/watch?v=9K7rmxjk5RQ",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=9K7rmxjk5RQ",
+"source": "youtube",
+"id": "9K7rmxjk5RQ"
+}
+],
+"cover": "covers/9K7rmxjk5RQ.jpg",
+"duration": 300,
+"added_at": "2026-10-18T20:07:53Z",
+"tags": [
+"genre:synthpop",
+"genre:italo disco",
+"genre:new wave",
+"genre:electro",
+"genre:disco",
+"genre:electronic",
+"genre:pop",
+"genre:rock",
+"decade:10s",
+"country:ca"
+],
+"updated_at": "2026-10-18T21:34:24Z",
+"artist": "Desire",
+"remixer": null,
+"year": 2011,
+"remix_year": null,
+"album": null,
+"genres": [
+"synthpop",
+"italo disco",
+"new wave",
+"electro",
+"disco",
+"electronic",
+"pop",
+"rock"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 4846971,
+"duration": 300
+}
+},
+{
+"id": "LpUogjU99NY",
+"title": "Turn The Lights Off",
+"mainArtists": [
+"Kato feat. Jon"
+],
+"featuredArtists": [],
+"releaseYear": 2026,
+"version": {
+"type": "remix",
+"name": "S.A.R.A.H. Remix",
+"artists": [],
+"releaseYear": null
+},
+"albums": [],
+"bpm": 130,
+"wikipedia_song": null,
+"wikipedia_artist": null,
+"musicbrainz_url": "https://musicbrainz.org/recording/d51a2bb6-57a2-4cf8-8d72-88c14b747f6f",
+"discogs_url": null,
+"source_url": "https://www.youtube.com/watch?v=LpUogjU99NY",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=LpUogjU99NY",
+"source": "youtube",
+"id": "LpUogjU99NY"
+}
+],
+"cover": "covers/LpUogjU99NY.jpg",
+"duration": 335,
+"added_at": "2026-10-14T14:08:08Z",
+"updated_at": "2026-10-16T00:06:31Z",
+"tags": [
+"genre:melodic techno",
+"genre:progressive house",
+"genre:house",
+"genre:electronic",
+"genre:hip hop",
+"decade:20s",
+"country:dk"
+],
+"artist": "Kato feat. Jon",
+"remixer": "S.A.R.A.H. Remix",
+"year": 2026,
+"remix_year": null,
+"album": null,
+"genres": [
+"melodic techno",
+"progressive house",
+"house",
+"electronic",
+"hip hop"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 5420017,
+"duration": 335
+}
+},
+{
+"id": "wp43OdtAAkM",
+"title": "Running Up That Hill",
+"mainArtists": [
+"Kate Bush"
+],
+"featuredArtists": [],
+"releaseYear": 1985,
+"albums": [
+"Hounds of Love"
+],
+"bpm": 110,
+"wikipedia_song": "https://en.wikipedia.org/wiki/Running_Up_That_Hill",
+"wikipedia_artist": "https://en.wikipedia.org/wiki/Kate_Bush",
+"source_url": "https://www.youtube.com/watch?v=wp43OdtAAkM",
+"cover": "covers/wp43OdtAAkM.jpg",
+"duration": 296,
+"added_at": "2026-10-12T16:03:03Z",
+"musicbrainz_url": "https://musicbrainz.org/recording/193022aa-f8a8-4318-bec9-644d05d4ec59",
+"updated_at": "2026-10-15T23:49:39Z",
+"tags": [
+"genre:synthpop",
+"genre:new wave",
+"genre:art pop",
+"genre:art rock",
+"genre:progressive pop",
+"genre:singer-songwriter",
+"genre:baroque pop",
+"decade:80s",
+"country:gb"
+],
+"artist": "Kate Bush",
+"remixer": null,
+"year": 1985,
+"remix_year": null,
+"album": "Hounds of Love",
+"genres": [
+"synthpop",
+"new wave",
+"art pop",
+"art rock",
+"progressive pop",
+"singer-songwriter",
+"baroque pop"
+],
+"audio_state": "server",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=wp43OdtAAkM",
+"source": "youtube",
+"id": "wp43OdtAAkM"
+}
+],
+"audio": {
+"format": "m4a",
+"size": 4786888,
+"duration": 296
+}
+},
+{
+"id": "yQR_NLeXKtw",
+"title": "\u0422\u0430\u0442\u0430\u0440\u0438\u043d",
+"mainArtists": [
+"\u0410\u0418\u0413\u0415\u041b"
+],
+"featuredArtists": [],
+"releaseYear": null,
+"albums": [],
+"bpm": 113,
+"wikipedia_song": null,
+"wikipedia_artist": "https://en.wikipedia.org/wiki/Aigel_(band)",
+"musicbrainz_url": "https://musicbrainz.org/recording/1dc0b3e7-137b-42df-b61d-3c430d611e34",
+"discogs_url": null,
+"spotify_url": null,
+"source_url": "https://www.youtube.com/watch?v=yQR_NLeXKtw",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=yQR_NLeXKtw",
+"source": "youtube",
+"id": "yQR_NLeXKtw"
+}
+],
+"cover": "covers/yQR_NLeXKtw.jpg",
+"duration": 233,
+"added_at": "2026-10-16T22:52:10Z",
+"wikipedia_album": null,
+"updated_at": "2026-10-17T00:07:45Z",
+"tags": [
+"genre:electronic",
+"genre:experimental",
+"genre:hip hop",
+"genre:pop",
+"genre:synthpop",
+"genre:house",
+"genre:trap",
+"genre:alternative rock",
+"country:ru"
+],
+"artist": "\u0410\u0418\u0413\u0415\u041b",
+"remixer": null,
+"year": null,
+"remix_year": null,
+"album": null,
+"genres": [
+"electronic",
+"experimental",
+"hip hop",
+"pop",
+"synthpop",
+"house",
+"trap",
+"alternative rock"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 3776476,
+"duration": 233
+}
+},
+{
+"id": "s5IIWKZr_2w",
+"title": "Stereo Love",
+"mainArtists": [
+"Edward Maya"
+],
+"featuredArtists": [],
+"releaseYear": 2026,
+"version": {
+"type": "remix",
+"name": "Sadrican 2026 Remix",
+"artists": [],
+"releaseYear": null
+},
+"albums": [],
+"bpm": 130,
+"wikipedia_song": null,
+"wikipedia_artist": null,
+"source_url": "https://www.youtube.com/watch?v=s5IIWKZr_2w",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=s5IIWKZr_2w",
+"source": "youtube",
+"id": "s5IIWKZr_2w"
+}
+],
+"cover": "covers/s5IIWKZr_2w.jpg",
+"duration": 241,
+"added_at": "2026-10-13T19:18:45Z",
+"updated_at": "2026-10-15T23:52:01Z",
+"musicbrainz_url": "https://musicbrainz.org/recording/16dae382-a64a-4f1f-86f1-b9e662d9f5cf",
+"tags": [
+"genre:progressive house",
+"genre:house",
+"genre:deep house",
+"genre:electronic",
+"genre:electro house",
+"genre:eurodance",
+"genre:tropical house",
+"decade:20s",
+"country:ro"
+],
+"artist": "Edward Maya",
+"remixer": "Sadrican 2026 Remix",
+"year": 2026,
+"remix_year": null,
+"album": null,
+"genres": [
+"progressive house",
+"house",
+"deep house",
+"electronic",
+"electro house",
+"eurodance",
+"tropical house"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 3906291,
+"duration": 241
+}
+},
+{
+"id": "ylGjvwXV3HA",
+"title": "Chitlins Con Carne",
+"mainArtists": [
+"Kenny Burrell"
+],
+"featuredArtists": [],
+"releaseYear": 1963,
+"albums": [
+"Midnight Blue"
+],
+"bpm": null,
+"wikipedia_song": "https://en.wikipedia.org/wiki/Chitlins_con_Carne",
+"wikipedia_artist": "https://en.wikipedia.org/wiki/Kenny_Burrell",
+"wikipedia_album": "https://en.wikipedia.org/wiki/Midnight_Blue_(Kenny_Burrell_album)",
+"musicbrainz_url": null,
+"discogs_url": "https://www.discogs.com/master/178718",
+"spotify_url": null,
+"source_url": "https://www.youtube.com/watch?v=ylGjvwXV3HA",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=ylGjvwXV3HA",
+"source": "youtube",
+"id": "ylGjvwXV3HA"
+}
+],
+"cover": "covers/ylGjvwXV3HA.jpg",
+"duration": 330,
+"added_at": "2026-10-19T08:03:05Z",
+"tags": [
+"genre:soul jazz",
+"genre:jazz",
+"genre:cool jazz",
+"genre:hard bop",
+"genre:blues",
+"genre:soul",
+"decade:60s",
+"country:us"
+],
+"artist": "Kenny Burrell",
+"remixer": null,
+"year": 1963,
+"remix_year": null,
+"album": "Midnight Blue",
+"genres": [
+"soul jazz",
+"jazz",
+"cool jazz",
+"hard bop",
+"blues",
+"soul"
+],
+"audio_state": "none"
+},
+{
+"id": "Zb5sUzQc-_I",
+"title": "Mr. Vain",
+"mainArtists": [
+"Culture Beat"
+],
+"featuredArtists": [],
+"releaseYear": 2026,
+"version": {
+"type": "remix",
+"name": "Paul Da Breda Remix",
+"artists": [],
+"releaseYear": null
+},
+"albums": [
+"Serenity"
+],
+"bpm": 132,
+"wikipedia_song": null,
+"wikipedia_artist": null,
+"source_url": "https://www.youtube.com/watch?v=Zb5sUzQc-_I",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=Zb5sUzQc-_I",
+"source": "youtube",
+"id": "Zb5sUzQc-_I"
+}
+],
+"cover": "covers/Zb5sUzQc-_I.jpg",
+"duration": 265,
+"added_at": "2026-10-13T19:23:44Z",
+"updated_at": "2026-10-15T23:52:16Z",
+"musicbrainz_url": "https://musicbrainz.org/recording/36b232d2-d44a-4b2c-91f7-1a759c35447a",
+"tags": [
+"genre:melodic techno",
+"genre:progressive house",
+"genre:eurodance",
+"genre:dance pop",
+"genre:house",
+"decade:20s",
+"country:de"
+],
+"artist": "Culture Beat",
+"remixer": "Paul Da Breda Remix",
+"year": 2026,
+"remix_year": null,
+"album": "Serenity",
+"genres": [
+"melodic techno",
+"progressive house",
+"eurodance",
+"dance pop",
+"house"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 4283316,
+"duration": 265
+}
+},
+{
+"id": "1V_xRb0x9aw",
+"title": "Clint Eastwood",
+"mainArtists": [
+"Gorillaz"
+],
+"featuredArtists": [],
+"releaseYear": 2001,
+"albums": [],
+"bpm": null,
+"wikipedia_song": "https://en.wikipedia.org/wiki/Clint_Eastwood_(song)",
+"wikipedia_artist": "https://en.wikipedia.org/wiki/Gorillaz",
+"wikipedia_album": "https://en.wikipedia.org/wiki/Demon_Days",
+"musicbrainz_url": null,
+"discogs_url": "https://www.discogs.com/master/58013",
+"spotify_url": null,
+"source_url": "https://www.youtube.com/watch?v=1V_xRb0x9aw",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=1V_xRb0x9aw",
+"source": "youtube",
+"id": "1V_xRb0x9aw"
+}
+],
+"cover": "covers/1V_xRb0x9aw.jpg",
+"duration": 267,
+"added_at": "2026-10-19T13:50:15Z",
+"tags": [
+"genre:trip hop",
+"genre:alternative rock",
+"genre:dub",
+"genre:electronic",
+"genre:downtempo",
+"genre:hip hop",
+"genre:art pop",
+"genre:synthpop",
+"decade:00s",
+"country:gb"
+],
+"artist": "Gorillaz",
+"remixer": null,
+"year": 2001,
+"remix_year": null,
+"album": null,
+"genres": [
+"trip hop",
+"alternative rock",
+"dub",
+"electronic",
+"downtempo",
+"hip hop",
+"art pop",
+"synthpop"
+],
+"audio_state": "none"
+},
+{
+"id": "ymNFyxvIdaM",
+"title": "Freestyler",
+"mainArtists": [
+"Bomfunk MC's"
+],
+"featuredArtists": [],
+"releaseYear": 1999,
+"albums": [
+"In Stereo"
+],
+"bpm": 167,
+"wikipedia_song": "https://en.wikipedia.org/wiki/Freestyler",
+"wikipedia_artist": "https://en.wikipedia.org/wiki/Bomfunk_MC%27s",
+"wikipedia_album": "https://en.wikipedia.org/wiki/In_Stereo_(Bomfunk_MC's_album)",
+"musicbrainz_url": "https://musicbrainz.org/recording/fcd48476-01a3-4a17-ad10-f11992d28bf2",
+"discogs_url": null,
+"spotify_url": null,
+"source_url": "https://www.youtube.com/watch?v=ymNFyxvIdaM",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=ymNFyxvIdaM",
+"source": "youtube",
+"id": "ymNFyxvIdaM"
+}
+],
+"cover": "covers/ymNFyxvIdaM.jpg",
+"duration": 292,
+"added_at": "2026-10-17T23:35:08Z",
+"tags": [
+"genre:pop",
+"genre:breakbeat",
+"genre:big beat",
+"genre:hip hop",
+"genre:electro",
+"genre:techno",
+"decade:90s",
+"country:fi"
+],
+"updated_at": "2026-10-18T11:31:54Z",
+"artist": "Bomfunk MC's",
+"remixer": null,
+"year": 1999,
+"remix_year": null,
+"album": "In Stereo",
+"genres": [
+"pop",
+"breakbeat",
+"big beat",
+"hip hop",
+"electro",
+"techno"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 4730560,
+"duration": 292
+}
+},
+{
+"id": "srGCQfzh1OI",
+"title": "\u0422\u0430\u0431\u043e\u0440 \u0443\u0445\u043e\u0434\u0438\u0442 \u0432 \u043d\u0435\u0431\u043e",
+"mainArtists": [
+"\u041a\u0430\u0441\u043f\u0438\u0439\u0441\u043a\u0438\u0439 \u0413\u0440\u0443\u0437"
+],
+"featuredArtists": [],
+"releaseYear": 2015,
+"albums": [
+"\u0421\u0442\u043e\u0440\u043e\u043d\u0430 \u0410 | \u0421\u0442\u043e\u0440\u043e\u043d\u0430 \u0411"
+],
+"bpm": 157,
+"wikipedia_song": null,
+"wikipedia_artist": null,
+"musicbrainz_url": "https://musicbrainz.org/recording/41e5e279-ca6d-430a-8235-40d2d3cc9d6f",
+"discogs_url": null,
+"spotify_url": null,
+"source_url": "https://www.youtube.com/watch?v=srGCQfzh1OI",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=srGCQfzh1OI",
+"source": "youtube",
+"id": "srGCQfzh1OI"
+}
+],
+"cover": "covers/srGCQfzh1OI.jpg",
+"duration": 214,
+"added_at": "2026-10-16T22:08:52Z",
+"wikipedia_album": null,
+"updated_at": "2026-10-16T23:55:07Z",
+"tags": [
+"genre:hip hop",
+"genre:trap",
+"decade:10s",
+"country:az"
+],
+"artist": "\u041a\u0430\u0441\u043f\u0438\u0439\u0441\u043a\u0438\u0439 \u0413\u0440\u0443\u0437",
+"remixer": null,
+"year": 2015,
+"remix_year": null,
+"album": "\u0421\u0442\u043e\u0440\u043e\u043d\u0430 \u0410 | \u0421\u0442\u043e\u0440\u043e\u043d\u0430 \u0411",
+"genres": [
+"hip hop",
+"trap"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 3465431,
+"duration": 214
+}
+},
+{
+"id": "P9HjbqMIZTA",
+"title": "\u0421\u0435\u0434\u0430\u044f \u043d\u043e\u0447\u044c",
+"mainArtists": [
+"\u042e\u0440\u0438\u0439 \u0428\u0430\u0442\u0443\u043d\u043e\u0432"
+],
+"featuredArtists": [],
+"releaseYear": 2002,
+"albums": [
+"\u0417\u043e\u043b\u043e\u0442\u043e\u0439 \u0410\u043b\u044c\u0431\u043e\u043c"
+],
+"bpm": 131,
+"wikipedia_song": null,
+"wikipedia_artist": "https://en.wikipedia.org/wiki/Yuri_Shatunov",
+"musicbrainz_url": "https://musicbrainz.org/recording/6ca36bc4-5095-4cd1-8fb8-31eff5db1ddd",
+"discogs_url": null,
+"spotify_url": null,
+"source_url": "https://www.youtube.com/watch?v=P9HjbqMIZTA",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=P9HjbqMIZTA",
+"source": "youtube",
+"id": "P9HjbqMIZTA"
+}
+],
+"cover": "covers/P9HjbqMIZTA.jpg",
+"duration": 335,
+"added_at": "2026-10-18T01:54:51Z",
+"tags": [
+"genre:pop",
+"genre:disco",
+"genre:chanson",
+"genre:electronic",
+"genre:synthpop",
+"genre:euro disco",
+"genre:dance pop",
+"genre:ballad",
+"decade:00s",
+"country:ru"
+],
+"updated_at": "2026-10-18T21:11:42Z",
+"artist": "\u042e\u0440\u0438\u0439 \u0428\u0430\u0442\u0443\u043d\u043e\u0432",
+"remixer": null,
+"year": 2002,
+"remix_year": null,
+"album": "\u0417\u043e\u043b\u043e\u0442\u043e\u0439 \u0410\u043b\u044c\u0431\u043e\u043c",
+"genres": [
+"pop",
+"disco",
+"chanson",
+"electronic",
+"synthpop",
+"euro disco",
+"dance pop",
+"ballad"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 5415147,
+"duration": 335
+}
+},
+{
+"id": "_mej5wS7viw",
+"title": "Poison",
+"mainArtists": [
+"The Prodigy"
+],
+"featuredArtists": [],
+"releaseYear": 1995,
+"albums": [
+"Music for the Jilted Generation"
+],
+"bpm": 105,
+"wikipedia_song": "https://en.wikipedia.org/wiki/Poison_(The_Prodigy_song)",
+"wikipedia_artist": "https://en.wikipedia.org/wiki/The_Prodigy",
+"wikipedia_album": "https://en.wikipedia.org/wiki/Music_for_the_Jilted_Generation",
+"musicbrainz_url": "https://musicbrainz.org/recording/d5b34fd6-cbb7-40dc-81cf-764e18f96f02",
+"discogs_url": null,
+"spotify_url": null,
+"source_url": "https://www.youtube.com/watch?v=_mej5wS7viw",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=_mej5wS7viw",
+"source": "youtube",
+"id": "_mej5wS7viw"
+}
+],
+"cover": "covers/_mej5wS7viw.jpg",
+"duration": 241,
+"added_at": "2026-10-18T00:52:46Z",
+"tags": [
+"genre:hip hop",
+"genre:techno",
+"genre:reggae",
+"genre:big beat",
+"genre:electronic",
+"genre:breakbeat",
+"genre:alternative rock",
+"genre:electronic rock",
+"decade:90s",
+"country:gb"
+],
+"updated_at": "2026-10-18T11:34:26Z",
+"artist": "The Prodigy",
+"remixer": null,
+"year": 1995,
+"remix_year": null,
+"album": "Music for the Jilted Generation",
+"genres": [
+"hip hop",
+"techno",
+"reggae",
+"big beat",
+"electronic",
+"breakbeat",
+"alternative rock",
+"electronic rock"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 3899520,
+"duration": 241
+}
+},
+{
+"id": "hynVT6ixpkI",
+"title": "This Is War",
+"mainArtists": [
+"Thirty Seconds To Mars"
+],
+"featuredArtists": [],
+"releaseYear": 2010,
+"albums": [
+"This Is War"
+],
+"version": {
+"type": "edit",
+"name": "Radio Edit",
+"artists": [],
+"releaseYear": 2010
+},
+"bpm": 126,
+"wikipedia_song": "https://en.wikipedia.org/wiki/This_Is_War_(Thirty_Seconds_to_Mars_song)",
+"wikipedia_artist": "https://en.wikipedia.org/wiki/Thirty_Seconds_to_Mars",
+"wikipedia_album": "https://en.wikipedia.org/wiki/This_Is_War",
+"musicbrainz_url": null,
+"discogs_url": null,
+"spotify_url": null,
+"source_url": "https://www.youtube.com/watch?v=hynVT6ixpkI",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=hynVT6ixpkI",
+"source": "youtube",
+"id": "hynVT6ixpkI"
+}
+],
+"cover": "covers/hynVT6ixpkI.jpg",
+"duration": 286,
+"added_at": "2026-10-17T23:54:36Z",
+"tags": [
+"genre:alternative rock",
+"genre:progressive rock",
+"decade:10s",
+"country:us"
+],
+"updated_at": "2026-10-18T11:33:18Z",
+"artist": "Thirty Seconds To Mars",
+"remixer": "Radio Edit",
+"year": 2010,
+"remix_year": 2010,
+"album": "This Is War",
+"genres": [
+"alternative rock",
+"progressive rock"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 4628794,
+"duration": 286
+}
+},
+{
+"id": "1wJPSSITKZI",
+"title": "\u042f \u0441\u0434\u0435\u043b\u0430\u043d \u0438\u0437 \u0442\u0430\u043a\u043e\u0433\u043e \u0432\u0435\u0449\u0435\u0441\u0442\u0432\u0430",
+"mainArtists": [
+"\u0410\u043b\u044c\u0444\u0430"
+],
+"featuredArtists": [],
+"releaseYear": 1984,
+"albums": [
+"\u0410\u043b\u044c\u0444\u0430 - 3"
+],
+"bpm": 147,
+"wikipedia_song": null,
+"wikipedia_artist": null,
+"source_url": "https://www.youtube.com/watch?v=1wJPSSITKZI",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=1wJPSSITKZI",
+"source": "youtube",
+"id": "1wJPSSITKZI"
+}
+],
+"cover": "covers/1wJPSSITKZI.jpg",
+"duration": 264,
+"added_at": "2026-10-13T20:54:22Z",
+"updated_at": "2026-10-15T23:53:52Z",
+"tags": [
+"genre:rock",
+"genre:hard rock",
+"genre:pop rock",
+"decade:80s",
+"country:su"
+],
+"artist": "\u0410\u043b\u044c\u0444\u0430",
+"remixer": null,
+"year": 1984,
+"remix_year": null,
+"album": "\u0410\u043b\u044c\u0444\u0430 - 3",
+"genres": [
+"rock",
+"hard rock",
+"pop rock"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 4269087,
+"duration": 264
+}
+},
+{
+"id": "X--F5b5IdqU",
+"title": "Radioactivity",
+"mainArtists": [
+"Kraftwerk"
+],
+"featuredArtists": [],
+"releaseYear": 1975,
+"albums": [
+"Radio-Activity"
+],
+"bpm": 124,
+"wikipedia_song": "https://en.wikipedia.org/wiki/Radioactivity_(song)",
+"wikipedia_artist": "https://en.wikipedia.org/wiki/Kraftwerk",
+"musicbrainz_url": "https://musicbrainz.org/recording/ad703f72-1eac-4227-8e88-4b9e26220d19",
+"source_url": "https://www.youtube.com/watch?v=X--F5b5IdqU",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=X--F5b5IdqU",
+"source": "youtube",
+"id": "X--F5b5IdqU"
+}
+],
+"cover": "covers/X--F5b5IdqU.jpg",
+"duration": 401,
+"added_at": "2026-10-13T23:37:00Z",
+"updated_at": "2026-10-14T13:34:33Z",
+"tags": [
+"genre:synthpop",
+"genre:electronic",
+"genre:krautrock",
+"genre:electro",
+"genre:techno",
+"genre:experimental",
+"decade:70s",
+"country:de"
+],
+"artist": "Kraftwerk",
+"remixer": null,
+"year": 1975,
+"remix_year": null,
+"album": "Radio-Activity",
+"genres": [
+"synthpop",
+"electronic",
+"krautrock",
+"electro",
+"techno",
+"experimental"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 6491160,
+"duration": 401
+}
+},
+{
+"id": "zIh5AHxh-Ok",
+"title": "Party Rock Anthem",
+"mainArtists": [
+"LMFAO"
+],
+"featuredArtists": [
+"Lauren Bennett",
+"GoonRock"
+],
+"releaseYear": 2011,
+"albums": [
+"Sorry for Party Rocking"
+],
+"bpm": 132,
+"wikipedia_song": null,
+"wikipedia_artist": "https://en.wikipedia.org/wiki/LMFAO",
+"musicbrainz_url": "https://musicbrainz.org/recording/c5a22907-22a9-46e9-bcdf-59daa9fc84fe",
+"discogs_url": null,
+"spotify_url": null,
+"source_url": "https://www.youtube.com/watch?v=zIh5AHxh-Ok",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=zIh5AHxh-Ok",
+"source": "youtube",
+"id": "zIh5AHxh-Ok"
+}
+],
+"cover": "covers/zIh5AHxh-Ok.jpg",
+"duration": 264,
+"added_at": "2026-10-18T00:01:51Z",
+"tags": [
+"genre:electronic",
+"genre:pop rap",
+"genre:hip hop",
+"genre:synthpop",
+"genre:house",
+"genre:dance pop",
+"genre:electro",
+"genre:pop",
+"genre:electro house",
+"genre:dubstep",
+"genre:euro house",
+"decade:10s",
+"country:us"
+],
+"updated_at": "2026-10-18T21:10:45Z",
+"wikipedia_album": "https://en.wikipedia.org/wiki/Sorry_for_Party_Rocking",
+"artist": "LMFAO feat. Lauren Bennett & GoonRock",
+"remixer": null,
+"year": 2011,
+"remix_year": null,
+"album": "Sorry for Party Rocking",
+"genres": [
+"electronic",
+"pop rap",
+"hip hop",
+"synthpop",
+"house",
+"dance pop",
+"electro",
+"pop",
+"electro house",
+"dubstep",
+"euro house"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 4275806,
+"duration": 264
+}
+},
+{
+"id": "4kQMDSw3Aqo",
+"title": "This Is The New Shit",
+"mainArtists": [
+"Marilyn Manson"
+],
+"featuredArtists": [],
+"releaseYear": 2003,
+"albums": [
+"The Golden Age of Grotesque"
+],
+"bpm": 120,
+"wikipedia_song": "https://en.wikipedia.org/wiki/This_Is_the_New_Shit",
+"wikipedia_artist": "https://en.wikipedia.org/wiki/Marilyn_Manson_(band)",
+"musicbrainz_url": "https://musicbrainz.org/recording/2fc157f5-5239-46de-ab21-48302b1d361b",
+"source_url": "https://www.youtube.com/watch?v=4kQMDSw3Aqo",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=4kQMDSw3Aqo",
+"source": "youtube",
+"id": "4kQMDSw3Aqo"
+}
+],
+"cover": "covers/4kQMDSw3Aqo.jpg",
+"duration": 261,
+"added_at": "2026-10-13T23:15:30Z",
+"updated_at": "2026-10-15T23:08:46Z",
+"tags": [
+"genre:nu metal",
+"genre:industrial metal",
+"genre:industrial rock",
+"genre:alternative metal",
+"genre:shock rock",
+"decade:00s",
+"country:us"
+],
+"artist": "Marilyn Manson",
+"remixer": null,
+"year": 2003,
+"remix_year": null,
+"album": "The Golden Age of Grotesque",
+"genres": [
+"nu metal",
+"industrial metal",
+"industrial rock",
+"alternative metal",
+"shock rock"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 4222854,
+"duration": 261
+}
+},
+{
+"id": "szLTDSw11kw",
+"title": "Turn The Lights Off",
+"mainArtists": [
+"Kato Feat. Jon"
+],
+"featuredArtists": [],
+"releaseYear": 2026,
+"version": {
+"type": "remix",
+"name": "DEEPO Remix Long Version",
+"artists": [],
+"releaseYear": null
+},
+"albums": [],
+"bpm": 126,
+"wikipedia_song": null,
+"wikipedia_artist": null,
+"source_url": "https://www.youtube.com/watch?v=szLTDSw11kw",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=szLTDSw11kw",
+"source": "youtube",
+"id": "szLTDSw11kw"
+}
+],
+"cover": "covers/szLTDSw11kw.jpg",
+"duration": 578,
+"added_at": "2026-10-13T19:46:58Z",
+"updated_at": "2026-10-15T23:52:47Z",
+"musicbrainz_url": "https://musicbrainz.org/recording/d51a2bb6-57a2-4cf8-8d72-88c14b747f6f",
+"tags": [
+"genre:house",
+"genre:electronic",
+"genre:hip hop",
+"decade:20s",
+"country:us"
+],
+"artist": "Kato Feat. Jon",
+"remixer": "DEEPO Remix Long Version",
+"year": 2026,
+"remix_year": null,
+"album": null,
+"genres": [
+"house",
+"electronic",
+"hip hop"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 9343091,
+"duration": 578
+}
+},
+{
+"id": "9VpW8Atlj7k",
+"title": "State of Mind",
+"mainArtists": [
+"Antinomy"
+],
+"featuredArtists": [],
+"releaseYear": 2022,
+"albums": [
+"State of Mind"
+],
+"bpm": 127,
+"wikipedia_song": null,
+"wikipedia_artist": null,
+"source_url": "https://www.youtube.com/watch?v=9VpW8Atlj7k",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=9VpW8Atlj7k",
+"source": "youtube",
+"id": "9VpW8Atlj7k"
+}
+],
+"cover": "covers/9VpW8Atlj7k.jpg",
+"duration": 542,
+"added_at": "2026-10-13T21:44:40Z",
+"updated_at": "2026-10-14T19:47:23Z",
+"tags": [
+"genre:electronic",
+"genre:psychedelic rock",
+"genre:psytrance",
+"decade:20s",
+"country:il"
+],
+"artist": "Antinomy",
+"remixer": null,
+"year": 2022,
+"remix_year": null,
+"album": "State of Mind",
+"genres": [
+"electronic",
+"psychedelic rock",
+"psytrance"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 8763325,
+"duration": 542
+}
+},
+{
+"id": "0FSE57u58rs",
+"title": "One Night In Bangkok",
+"mainArtists": [
+"Murray Head"
+],
+"featuredArtists": [],
+"releaseYear": 1984,
+"albums": [
+"One Night In Bangkok"
+],
+"bpm": 110,
+"wikipedia_song": "https://en.wikipedia.org/wiki/One_Night_in_Bangkok",
+"wikipedia_artist": "https://en.wikipedia.org/wiki/Murray_Head",
+"musicbrainz_url": "https://musicbrainz.org/recording/5b92adbf-c388-4864-abdd-cb9197423a1a",
+"discogs_url": null,
+"spotify_url": null,
+"source_url": "https://www.youtube.com/watch?v=0FSE57u58rs",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=0FSE57u58rs",
+"source": "youtube",
+"id": "0FSE57u58rs"
+}
+],
+"cover": "covers/0FSE57u58rs.jpg",
+"duration": 193,
+"added_at": "2026-10-18T01:36:09Z",
+"tags": [
+"genre:new wave",
+"genre:hip hop",
+"genre:pop",
+"genre:synthpop",
+"genre:pop rock",
+"genre:baroque pop",
+"genre:dance pop",
+"decade:80s",
+"country:gb"
+],
+"updated_at": "2026-10-18T11:34:56Z",
+"artist": "Murray Head",
+"remixer": null,
+"year": 1984,
+"remix_year": null,
+"album": "One Night In Bangkok",
+"genres": [
+"new wave",
+"hip hop",
+"pop",
+"synthpop",
+"pop rock",
+"baroque pop",
+"dance pop"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 3130089,
+"duration": 193
+}
+},
+{
+"id": "AEwTnmIM1YM",
+"title": "\u041c\u0443\u0437\u044b\u043a\u0430 \u043d\u0430\u0441 \u0441\u0432\u044f\u0437\u0430\u043b\u0430",
+"mainArtists": [
+"\u041c\u0438\u0440\u0430\u0436"
+],
+"featuredArtists": [],
+"releaseYear": 1994,
+"albums": [
+"\u0421\u043d\u043e\u0432\u0430 \u0432\u043c\u0435\u0441\u0442\u0435 (Remastered 1994)"
+],
+"bpm": 134,
+"wikipedia_song": null,
+"wikipedia_artist": null,
+"musicbrainz_url": null,
+"source_url": "https://www.youtube.com/watch?v=AEwTnmIM1YM",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=AEwTnmIM1YM",
+"source": "youtube",
+"id": "AEwTnmIM1YM"
+}
+],
+"cover": "covers/AEwTnmIM1YM.jpg",
+"duration": 269,
+"added_at": "2026-10-13T22:19:20Z",
+"updated_at": "2026-10-14T11:53:59Z",
+"tags": [
+"genre:euro disco",
+"genre:eurodance",
+"genre:italo disco",
+"genre:hi-nrg",
+"genre:disco",
+"genre:pop",
+"genre:pop rock",
+"decade:90s",
+"country:ru"
+],
+"artist": "\u041c\u0438\u0440\u0430\u0436",
+"remixer": null,
+"year": 1994,
+"remix_year": null,
+"album": "\u0421\u043d\u043e\u0432\u0430 \u0432\u043c\u0435\u0441\u0442\u0435 (Remastered 1994)",
+"genres": [
+"euro disco",
+"eurodance",
+"italo disco",
+"hi-nrg",
+"disco",
+"pop",
+"pop rock"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 4345653,
+"duration": 269
+}
 }
 ]
 }
