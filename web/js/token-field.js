@@ -1,4 +1,5 @@
 import { el } from './dom.js';
+import { byLabel } from './credits.js';
 import { icon } from './icons.js';
 import { MIME, dragState, clearMarks, locate, mark, startTouchDrag } from './token-drag.js';
 import { tokenize, isBlankToken, removeToken, replaceToken, appendToken, moveToken, moveTokenTo, stripEdges, commitTyped, SEPARATOR } from './tokens.js';
@@ -8,7 +9,7 @@ const KINDS = {
   artists: { label: 'Artists', sep: SEPARATOR },
   featured: { label: 'Featuring', sep: SEPARATOR },
   withs: { label: 'With', sep: SEPARATOR },
-  by: { label: 'Remix by', sep: SEPARATOR },
+  by: { label: byLabel(''), sep: SEPARATOR },
   of: { label: 'Cover of', sep: SEPARATOR },
 };
 

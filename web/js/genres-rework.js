@@ -100,13 +100,14 @@ export function renderGenresRework(root, opts = {}) {
     if (!n || !pt) { tip.hidden = true; return; }
     const r = work.getBoundingClientRect?.() || { left: 0, top: 0 };
     const t = n.node;
-    tip.replaceChildren(
+    tip.replaceChildren(...[
       el('strong', {}, t.label),
       el('span', {}, ` ${songs(count(t))}`),
       t.synonyms.length ? el('span', { class: 'muted' }, ` | also: ${t.synonyms.join(', ')}`) : null,
       !t.discogs ? el('span', { class: 'muted' }, ' | not in Discogs') : null,
       t.alsoIn.length ? el('span', { class: 'muted' }, ` | also in ${otherGenres(t, rootGenre).join(', ')}`) : null,
-      t.status === 'question' ? el('span', { class: 'muted' }, ` | ${STATUS_LABELS.question}`) : null);
+      t.status === 'question' ? el('span', { class: 'muted' }, ` | ${STATUS_LABELS.question}`) : null,
+    ].filter(Boolean));
     tip.style.left = `${pt.x - r.left + 12}px`;
     tip.style.top = `${pt.y - r.top + 14}px`;
     tip.hidden = false;

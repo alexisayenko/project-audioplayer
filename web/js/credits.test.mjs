@@ -180,3 +180,13 @@ test('a remaster with a version year gets the year before its label in the title
   assert.equal(c.versionTooltip(R({})), '2007 remaster');
   assert.deepEqual(c.detailsLines(R({})).filter((l) => l.label === 'Remix year').map((l) => l.value), ['2007']);
 });
+
+test('byLabel follows the version type', () => {
+  const want = { remix: 'Remix by', remaster: 'Remaster by', edit: 'Edit by', live: 'Live by', acoustic: 'Acoustic by', extended: 'Extended by', instrumental: 'Instrumental by', mashup: 'Mashup by', cover: 'Cover by', other: 'Version by', weird: 'Version by', '': 'Version by' };
+  for (const [k, l] of Object.entries(want)) assert.equal(c.byLabel(k), l, k);
+  assert.equal(c.byLabel(undefined), 'Version by');
+  for (const [k, l] of Object.entries(want)) {
+    const d = c.detailsLines({ title: 'T', mainArtists: ['A'], featuredArtists: [], version: { type: k, name: 'N', artists: ['Kav'] } });
+    assert.ok(d.some((x) => x.label === l && x.value === 'Kav'), k);
+  }
+});

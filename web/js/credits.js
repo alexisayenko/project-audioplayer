@@ -143,6 +143,13 @@ export function subtitle(song) {
   return [artistLine(song), yearText(song)].filter(Boolean).join(' · ');
 }
 
+const BY_LABELS = {
+  remix: 'Remix by', remaster: 'Remaster by', edit: 'Edit by', live: 'Live by', acoustic: 'Acoustic by',
+  extended: 'Extended by', instrumental: 'Instrumental by', mashup: 'Mashup by', cover: 'Cover by',
+};
+
+export const byLabel = (kind) => BY_LABELS[String(kind ?? '').toLowerCase()] ?? 'Version by';
+
 const KIND_LABEL = (k) => (k ? k[0].toUpperCase() + k.slice(1) : '');
 
 export function detailsLines(song) {
@@ -152,7 +159,7 @@ export function detailsLines(song) {
     const add = (label, value) => { if (value) out.push({ label, value }); };
     add('Version', KIND_LABEL(text(v.type).toLowerCase()));
     add('Version name', text(v.name));
-    add('Remix by', joinNames(v.artists));
+    add(byLabel(v.type), joinNames(v.artists));
     add('Remix year', Number.isInteger(v.releaseYear) ? String(v.releaseYear) : '');
     const kind = text(v.type).toLowerCase();
     add(kind === 'mashup' ? 'Mashup of' : 'Cover of', ofNames(v.originalArtists).join(', '));

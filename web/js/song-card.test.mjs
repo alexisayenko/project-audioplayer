@@ -39,6 +39,12 @@ test('cardModel builds title, sub line, grouped tags, BPM, duration and links', 
   assert.equal('download' in m, false);
 });
 
+test('the card by-row label follows the version type', () => {
+  const m = cardModel({ ...FULL, mainArtists: ['Zed'], version: { type: 'remaster', name: 'Remastered', artists: ['Kav'] } });
+  assert.ok(m.details.includes('Remaster by: Kav'));
+  assert.ok(!m.details.some((d) => d.startsWith('Remix by')));
+});
+
 test('the card hides the version type and version name lines and keeps the other details', () => {
   const m = cardModel({ ...FULL, mainArtists: ['Zed'], version: { type: 'remix', name: 'MKJ Remix', artists: ['Kav'] } });
   assert.deepEqual(m.details.filter((d) => /^Version/.test(d)), []);

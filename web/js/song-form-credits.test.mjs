@@ -21,7 +21,7 @@ const warn = (f) => f.node.querySelector('.credits-warn');
 
 test('the form has every credits field with its label', () => {
   const f = mk({ mainArtists: ['A'], featuredArtists: [] });
-  for (const label of ['Title', 'Artists', 'Featuring', 'With', 'Version', 'Version name', 'Remix by', 'Remix year', 'Cover of', 'First released']) {
+  for (const label of ['Title', 'Artists', 'Featuring', 'With', 'Version', 'Version name', 'Version by', 'Remix year', 'Cover of', 'First released']) {
     assert.ok(fieldOf(f, label), label);
   }
   assert.deepEqual([...kind(f).querySelectorAll('option')].map((o) => o.value), ['', 'remix', 'live', 'acoustic', 'extended', 'instrumental', 'remaster', 'edit', 'cover', 'mashup', 'other']);
@@ -39,7 +39,7 @@ test('Artists, Featuring and Remix by are pill fields', () => {
 test('without a version the version details are hidden and values().version is null', () => {
   const f = mk({ mainArtists: ['A'], featuredArtists: [] });
   assert.equal(fieldOf(f, 'Version name').hidden, true);
-  assert.equal(fieldOf(f, 'Remix by').parentNode.hidden, true);
+  assert.equal(fieldOf(f, 'Version by').parentNode.hidden, true);
   setKind(f, 'remix');
   assert.equal(fieldOf(f, 'Version name').hidden, false);
   assert.equal(fieldOf(f, 'Remix by').parentNode.hidden, false);
@@ -255,4 +255,23 @@ test('kindFor reads the known version words of the preview text', () => {
   assert.equal(kindFor('Foo Cover'), 'cover');
   assert.equal(kindFor('Moreno J Remix'), 'remix');
   assert.equal(kindFor('Something else'), 'remix');
+});
+
+test('the version artists label and aria-label follow the Version type live', () => {
+  const want = { remix: 'Remix by', remaster: 'Remaster by', edit: 'Edit by', live: 'Live by', acoustic: 'Acoustic by', extended: 'Extended by', instrumental: 'Instrumental by', mashup: 'Mashup by', cover: 'Cover by', other: 'Version by' };
+  const f = mk({ mainArtists: ['A'], featuredArtists: [], version: { type: 'remix', name: 'R', artists: ['X'], releaseYear: null } });
+  for (const [k, label] of Object.entries(want)) {
+    setKind(f, k);
+    assert.ok(fieldOf(f, label), label);
+    assert.equal(f.node.querySelectorAll('.field').filter((d) => /^(Remix|Remaster|Edit|Live|Acoustic|Extended|Instrumental|Mashup|Cover|Version) by$/.test(d.children[0].textContent)).length, 1, label);
+    assert.deepEqual(pills(f, label), ['X'], label);
+  }
+  setKind(f, '');
+  assert.ok(fieldOf(f, 'Version by'));
+});
+
+test('an existing remaster opens with Remaster by', () => {
+  const f = mk({ mainArtists: ['A'], featuredArtists: [], version: { type: 'remaster', name: 'Remastered', artists: ['M'], releaseYear: 2011 } });
+  assert.ok(fieldOf(f, 'Remaster by'));
+  assert.equal(fieldOf(f, 'Remix by'), undefined);
 });

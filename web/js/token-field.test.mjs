@@ -196,7 +196,7 @@ test('featured and by fields use the same pill rules and can move to each other'
   document.body.append(artists, featured, by);
   assert.deepEqual(pills(featured), ['C']);
   assert.equal(featured.getAttribute('aria-label'), 'Featuring');
-  assert.equal(by.getAttribute('aria-label'), 'Remix by');
+  assert.equal(by.getAttribute('aria-label'), 'Version by');
   featured.moveTo(0, 'by');
   assert.deepEqual(pills(by), ['D', 'C']);
   assert.deepEqual(pills(featured), []);

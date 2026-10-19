@@ -1,7 +1,7 @@
 import { MIN_YEAR, maxYear } from './constants.js';
 import { el, field } from './dom.js';
 import { splitTokens, joinTokens } from './tokens.js';
-import { displayLine, ofNames } from './credits.js';
+import { displayLine, ofNames, byLabel } from './credits.js';
 import { suggest, kindOf } from './credits-split.js';
 import { planVersionYear, validYear } from './remix-year.js';
 
@@ -76,7 +76,7 @@ export function creditsBlock({ tg, song = {}, getTitle, setTitle, emit }) {
   const warn = el('p', { class: 't-caption credits-warn', role: 'status', hidden: true });
   const panel = el('div', { class: 'credits-suggest', hidden: true });
   const nameField = field('Version name', f.name);
-  const byField = field('Remix by', f.by);
+  const byField = field(byLabel(iv?.type), f.by);
   const yearField = field('Remix year', f.vyear);
   const ofField = field(ofLabel(iv?.type), f.of);
   const versionRow = el('div', { class: 'remix-row credits-version' }, field('Version', f.kind), nameField);
@@ -214,6 +214,9 @@ export function creditsBlock({ tg, song = {}, getTitle, setTitle, emit }) {
     const label = ofLabel(f.kind.value);
     ofField.children[0].textContent = label;
     f.of.setLabel(label);
+    const by = byLabel(f.kind.value);
+    byField.children[0].textContent = by;
+    f.by.setLabel(by);
   };
 
   function paint() {

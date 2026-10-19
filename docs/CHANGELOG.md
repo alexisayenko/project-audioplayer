@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-19 (Version artists label follows the version type, not deployed)
+
+- Web: the field and song card row for the version's artists is labelled by the version type (Remix by, Remaster by, Edit by, Live by, Acoustic by, Extended by, Instrumental by, Mashup by, Cover by, Version by for Other or none) instead of always "Remix by"; the form label updates when the Version dropdown changes (ADD-180). Not checked in a browser.
+
 ## 2026-10-18 (Library draft list)
 
 - Server and web: the Library has a "Songs | Drafts N" switch. In Drafts the owner and every signed-in user paste "Artist - Title" lines and links (one per line, Ctrl or Cmd+Enter), get a quick YouTube or SoundCloud lookup (title, channel, length, upload year, thumbnail; two lookups at a time, stops on a 429) and keep them as a per-user list in `users/<uid>/drafts.json` (not in `library.json`; guests get 401; up to 500 drafts, 100 lines and 300 characters per line per paste). Rows show an "In library" mark, Refresh, Edit, Delete with undo and "Add properly" (opens the Add dialog with the link, removes the draft after saving); "Clear all drafts" asks first. New routes `GET/POST/DELETE /drafts`, `PATCH /drafts/{id}`, `POST /drafts/{id}/refresh`, `DELETE /drafts/{id}`. [ADR-0032](tech/decisions.md), [task-0050](tasks/task-0050.md).
@@ -181,6 +185,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 - Server and web: the git sync timer also fast-forwards data fixed in GitHub (or pushed from another clone) onto the server within 60 s, under a shared write lock, with invalid JSON refused and a diverged repo shown as a sync error; `GIT_SYNC_INBOUND=0` turns it off (ADR-0027, STO-057 to STO-060, NFR-118, API-144, WEB-101); not deployed.
 
 - Server and web: staying signed in across deploys: the boot session check retries while the server restarts (WEB-100) and `GET /auth/me` renews a session cookie past half its life (API-143); not deployed.
+- Web: Library is now the first navigation item, followed by Now playing and Playlists, in the side rail, icon rail and phone tab bar; it stays the default landing page (WEB-012); not deployed.
 - Web: fix in Add, typing in the Tags field turned every letter into its own chip (the live title preview read the form with `values()`, which committed the Tags text on each keystroke, LIB-055); text now stays in the input until Enter, comma or Save; not deployed.
 - Server and web: saving a new web song takes about 1 s instead of 3 to 5: the link lookup Fetch already did is reused (API-142) and the web patches the saved song into its list instead of reloading the library (ADD-134); not deployed.
 
