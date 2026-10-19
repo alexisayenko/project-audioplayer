@@ -65,7 +65,7 @@ def _valid_year(value: Any) -> int | None:
 def merge_tags(mb: dict[str, Any], disc: dict[str, Any], wiki: dict[str, Any]) -> list[str]:
     """Suggested tags: at most 4 genre and 1 country, deduped and canonical (`lang:` is no longer looked up, DATA-147).
 
-    genre: Discogs styles first, then the song's own Wikidata genres, MusicBrainz, the artist's Wikidata genres;
+    genre: Discogs genres (the styles field of Discogs) first, then the song's own Wikidata genres, MusicBrainz, the artist's Wikidata genres;
     country: MusicBrainz, then Discogs, then Wikidata."""
     song_genres = [g if ":" in str(g) else f"genre:{g}" for g in wiki.get("song_genres") or []]
     mb_tags, disc_tags, wiki_tags = mb.get("tags") or [], disc.get("tags") or [], wiki.get("tags") or []

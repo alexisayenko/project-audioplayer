@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { buildIndex, resolveGenre, searchGenres, didYouMean, unknownGenre, vkey } from './genre-vocab.js';
 import { ApiError } from './api.js';
 
-const row = (name, family = 'Rock', level = 'style') => ({ name, family, level, parent: null, extra: false, also_under: [] });
+const row = (name, family = 'Rock', level = 'genre') => ({ name, family, level, parents: [family], extra: false });
 const idx = buildIndex({
   genres: [row('rock', 'Rock', 'genre'), row('hip hop', 'Hip Hop', 'genre'), row('house', 'Electronic'), row('drum and bass', 'Electronic'), row('rhythm & blues', 'Funk / Soul'), row('progressive house', 'Electronic'), row('synth-pop', 'Pop')],
   aliases: { dnb: 'drum and bass', 'drum n bass': 'drum and bass', ghost: 'not in list' },

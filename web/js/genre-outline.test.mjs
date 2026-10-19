@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { indexGraph, outlineRows, pathKeys, hasStyles } from './genre-data.js';
+import { indexGraph, outlineRows, pathKeys, hasAnchors } from './genre-data.js';
 
-const n = (id, label, family, style, parents = [], count = 0, ownCount = count, tags = [label]) => ({ id, label, qid: null, family, style, count, ownCount, parents, tags });
+const n = (id, label, family, anchor, parents = [], count = 0, ownCount = count, tags = [label]) => ({ id, label, qid: null, family, anchor, count, ownCount, parents, tags });
 const nodes = [
   n('electronic', 'electronic music', 'Electronic', null, [], 12, 0, []),
   n('trance', 'trance', 'Electronic', 'trance', ['electronic'], 6, 2),
@@ -26,47 +26,47 @@ const open = (rows0 = outlineRows(g, new Set())) => {
 };
 const shape = (rows) => rows.map((r) => `${'  '.repeat(r.depth)}${r.label}`);
 
-test('hasStyles tells a hybrid graph from an old one', () => {
-  assert.equal(hasStyles(g), true);
-  assert.equal(hasStyles(indexGraph({ nodes: [n('a', 'a', 'Other', null)] })), false);
+test('hasAnchors tells a hybrid graph from an old one', () => {
+  assert.equal(hasAnchors(g), true);
+  assert.equal(hasAnchors(indexGraph({ nodes: [n('a', 'a', 'Other', null)] })), false);
 });
 
 test('family order is stable and families with nothing to show are left out', () => {
   const rows = outlineRows(g, new Set());
   assert.deepEqual(rows.map((r) => r.label), ['Electronic', 'Pop', 'Rock', 'Other']);
   assert.deepEqual(rows.map((r) => r.size), [3, 1, 1, 1]);
-  assert.equal(rows[0].unit, 'style');
+  assert.equal(rows[0].unit, 'genre');
   assert.equal(rows[2].unit, 'root');
 });
 
-test('family > style > subgenre, the umbrella chain skipped, styles flat at level two', () => {
+test('family > genre > sub-genre, the umbrella chain skipped, genres flat at level two', () => {
   const rows = outlineRows(g, open());
   assert.deepEqual(shape(rows).slice(0, 8), [
     'Electronic', '  trance', '    festival trance', '  house', '    electro swing pop', '  progressive trance', 'Pop', '  synth-pop',
   ]);
   assert.ok(!rows.some((r) => r.label === 'electronic music' || r.label === 'trance subgenre'));
-  assert.equal(rows.find((r) => r.id === 'trance').kind, 'style');
+  assert.equal(rows.find((r) => r.id === 'trance').kind, 'genre');
   assert.equal(rows.find((r) => r.id === 'festival').depth, 2);
 });
 
-test('a style row counts its own songs and everything below it, once', () => {
+test('a genre row counts its own songs and everything below it, once', () => {
   const rows = outlineRows(g, new Set());
   assert.equal(outlineRows(g, new Set(['f:Electronic'])).find((r) => r.id === 'trance').count, 6);
   assert.deepEqual(rows.find((r) => r.kind === 'family' && r.label === 'Electronic').count, null);
 });
 
-test('a style with no songs and nothing below it is hidden', () => {
+test('a genre with no songs and nothing below it is hidden', () => {
   assert.ok(!outlineRows(g, open()).some((r) => r.id === 'empty'));
 });
 
-test('a node with two styles appears under each, in each family, with also-under notes', () => {
+test('a node with two anchor genres appears under each, in each family, with also-under notes', () => {
   const rows = outlineRows(g, open()).filter((r) => r.id === 'both');
   assert.equal(rows.length, 2);
   assert.deepEqual(rows.map((r) => r.key), ['f:Electronic>house>both', 'f:Pop>synthpop>both']);
   assert.deepEqual(rows.map((r) => r.alsoUnder), [['synth-pop'], ['house']]);
 });
 
-test('a node without a style falls back to the skip logic in its own family', () => {
+test('a node without an anchor genre falls back to the skip logic in its own family', () => {
   const rows = outlineRows(g, open());
   const rock = rows.find((r) => r.id === 'rock');
   assert.deepEqual([rock.depth, rock.family, rock.count], [1, 'Rock', 5]);
@@ -79,14 +79,14 @@ test('an umbrella with no songs of its own and nothing shown below it is not a r
   assert.ok(!outlineRows(g, open()).some((r) => r.id === 'electronic'));
 });
 
-test('collapsed style rows hide their subgenres; expanded state is by key', () => {
+test('collapsed genre rows hide their sub-genres; expanded state is by key', () => {
   const rows = outlineRows(g, new Set(['f:Electronic']));
   assert.deepEqual(shape(rows).slice(0, 4), ['Electronic', '  trance', '  house', '  progressive trance']);
   assert.equal(rows[1].hasChildren, true);
   assert.equal(rows[1].expanded, false);
 });
 
-test('pathKeys: style, subgenre under its style, hidden umbrella, fallback node', () => {
+test('pathKeys: genre, sub-genre under its genre, hidden umbrella, fallback node', () => {
   assert.deepEqual(pathKeys(g, 'trance'), ['f:Electronic', 'f:Electronic>trance']);
   assert.deepEqual(pathKeys(g, 'festival'), ['f:Electronic', 'f:Electronic>trance', 'f:Electronic>trance>festival']);
   assert.deepEqual(pathKeys(g, 'mid'), ['f:Electronic', 'f:Electronic>trance']);

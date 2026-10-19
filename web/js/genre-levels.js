@@ -8,37 +8,53 @@ export function hasLevels(vocab) {
 
 const effectiveStatus = (v) => (v.status === 'question' || (v.status === 'approved' && v.discogs === false) ? v.status : null);
 
-function makeNode(id, name, level, genre, extra = {}) {
+function makeNode(id, name, level, family, extra = {}) {
   return {
-    id, name, level, genre, parent: null, children: [], alsoUnder: [], discogs: true, synonyms: [], provisional: false, status: null, flavours: [], display: null, label: name, alsoIn: [],
+    id, name, level, family, parent: null, children: [], alsoUnder: [], discogs: true, synonyms: [], provisional: false, status: null, flavours: [], display: null, label: name, alsoIn: [],
     own: new Set(), all: new Set(), ...extra,
   };
 }
 
 const byName = (a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
 
-function styleNode(k, v) {
+function genreNode(k, v) {
   const display = typeof v.display === 'string' && v.display.trim() ? v.display.trim() : null;
-  const n = makeNode(`s:${k}`, k, v.parent ? 3 : 2, v.genre, {
-    discogs: v.discogs !== false, synonyms: [...(v.synonyms || [])], provisional: v.provisional === true, status: effectiveStatus(v), display, flavours: Array.isArray(v.flavours) ? [...v.flavours] : [], alsoUnder: [...(v.also_under || [])],
+  const n = makeNode(`s:${k}`, k, 0, null, {
+    discogs: v.discogs !== false, synonyms: [...(v.synonyms || [])], provisional: v.provisional === true, status: effectiveStatus(v), display, flavours: Array.isArray(v.flavours) ? [...v.flavours] : [],
   });
   n.label = n.display || k;
-  n.alsoIn = Array.isArray(v.also_in_genres) ? v.also_in_genres.filter((g) => g !== v.genre) : [];
   return n;
 }
 
-function linkStyles(levels, styles, byId) {
-  for (const [k, v] of Object.entries(levels)) {
-    const n = styles.get(k);
-    const p = v.parent ? styles.get(v.parent) : byId.get(`g:${v.genre}`);
-    if (!p) continue;
+const parentList = (v) => (Array.isArray(v?.parents) ? v.parents.filter((p) => typeof p === 'string' && p) : []);
+
+function linkGenres(levels, genres, byId) {
+  const done = new Set();
+  const settle = (k) => {
+    if (done.has(k)) return;
+    done.add(k);
+    const v = levels[k];
+    const n = genres.get(k);
+    const [first, ...extra] = parentList(v);
+    const p = byId.get(`g:${first}`) || (first !== k ? genres.get(first) : null);
+    if (!p) {
+      n.level = 2;
+      n.family = v.family || null;
+      return;
+    }
+    if (p.level === 0) settle(first);
+    n.level = p.level + 1;
+    n.family = v.family || p.family;
     n.parent = p.id;
     p.children.push(n);
-  }
-  for (const n of styles.values()) {
-    if (n.level !== 2) continue;
-    for (const g of n.alsoIn) byId.get(`g:${g}`)?.children.push(n);
-  }
+    for (const q of extra) {
+      if (byId.has(`g:${q}`)) {
+        n.alsoIn.push(q);
+        byId.get(`g:${q}`).children.push(n);
+      } else n.alsoUnder.push(q);
+    }
+  };
+  for (const k of Object.keys(levels)) settle(k);
   for (const n of byId.values()) n.children.sort(byName);
 }
 
@@ -53,7 +69,7 @@ function nodeLookups(byId) {
 
 export function buildTree(vocab) {
   const levels = vocab?.levels || {};
-  const gsyn = vocab?.genre_synonyms || {};
+  const gsyn = vocab?.family_synonyms || {};
   const names = Array.isArray(vocab?.families) && vocab.families.length ? vocab.families : Object.keys(gsyn);
   const byId = new Map();
   const roots = names.map((g) => {
@@ -61,13 +77,13 @@ export function buildTree(vocab) {
     byId.set(n.id, n);
     return n;
   });
-  const styles = new Map();
+  const genres = new Map();
   for (const [k, v] of Object.entries(levels)) {
-    const n = styleNode(k, v);
-    styles.set(k, n);
+    const n = genreNode(k, v);
+    genres.set(k, n);
     byId.set(n.id, n);
   }
-  linkStyles(levels, styles, byId);
+  linkGenres(levels, genres, byId);
   const flavours = new Map(Object.entries(vocab?.flavours || {}).map(([key, f]) => [key, { key, name: f.name || key, kind: f.kind === 'scene' ? 'scene' : 'sound', description: f.description || '', songs: new Set() }]));
   for (const n of byId.values()) n.flavours = n.flavours.filter((f) => flavours.has(f));
   const { byKey, bySyn } = nodeLookups(byId);
@@ -139,7 +155,7 @@ function lineGroups(lines, loose) {
 }
 
 export function otherGenres(n, rootName) {
-  return n.level === 2 ? [n.genre, ...n.alsoIn].filter((g) => g !== rootName) : [];
+  return n.level === 2 ? [n.family, ...n.alsoIn].filter((g) => g !== rootName) : [];
 }
 
 function countSong(tree, s, sid) {

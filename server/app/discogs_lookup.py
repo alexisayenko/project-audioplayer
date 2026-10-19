@@ -1,4 +1,4 @@
-"""Genre/style, country and year suggestions from Discogs (optional: needs DISCOGS_TOKEN, a free personal access token).
+"""Genre, country and year suggestions from Discogs (optional: needs DISCOGS_TOKEN, a free personal access token).
 
 Terms: suggestions only; no images, no stored dumps. Responses live only in the in-memory per-query cache."""
 
@@ -21,7 +21,7 @@ API = "https://api.discogs.com"
 TIMEOUT = 8
 MAX_PER_MINUTE = 50
 MAX_WAIT = 15.0
-MAX_STYLES = 4
+MAX_GENRES = 4
 SEARCH_LIMIT = 10
 VERIFY_TRIES = 3
 FUZZY = 0.85
@@ -144,10 +144,10 @@ def clean_url(value: Any) -> str | None:
 
 
 def _tags(detail: dict[str, Any]) -> list[str]:
-    styles = [str(s).strip().casefold() for s in detail.get("styles") or [] if str(s).strip()]
-    if not styles:
-        styles = [g.casefold() for g in map(str, detail.get("genres") or []) if g.strip() and "," not in g]
-    return [f"genre:{s}" for s in dict.fromkeys(styles)][:MAX_STYLES]
+    genres = [str(s).strip().casefold() for s in detail.get("styles") or [] if str(s).strip()]
+    if not genres:
+        genres = [g.casefold() for g in map(str, detail.get("genres") or []) if g.strip() and "," not in g]
+    return [f"genre:{s}" for s in dict.fromkeys(genres)][:MAX_GENRES]
 
 
 def _country_tag(value: Any) -> str | None:
@@ -222,7 +222,7 @@ def from_url(url: Any) -> dict[str, Any]:
 
 
 def suggest(artist: str, title: str) -> dict[str, Any]:
-    """{tags (genre: styles, country:), year, country, url, artist, title} for a track; empty when off, unmatched or on any error (never raises)."""
+    """{tags (genre: tags from Discogs's styles, country:), year, country, url, artist, title} for a track; empty when off, unmatched or on any error (never raises)."""
     if not enabled():
         return _empty()
     try:

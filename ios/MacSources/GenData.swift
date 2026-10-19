@@ -354,7 +354,7 @@ final class GenGraph {
             let open = expanded.contains(key)
             let styled = ids.filter { v.styles.contains($0) }.count
             rows.append(GenOutlineRow(key: key, id_: nil, depth: 0, label: family, count: nil, family: family, hasChildren: true, expanded: open,
-                                      alsoUnder: [], kind: .family, size: ids.count, unit: styled == ids.count ? "style" : "root"))
+                                      alsoUnder: [], kind: .family, size: ids.count, unit: styled == ids.count ? "genre" : "root"))
             if open { for id in ids { walk(id, 1, "\(key)>\(id)", nil, []) } }
         }
         return rows

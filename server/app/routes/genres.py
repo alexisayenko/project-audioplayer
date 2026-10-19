@@ -35,5 +35,5 @@ def get_genre_graph(user: Annotated[dict[str, Any], Depends(deps.read_user)]):
 
 @router.get("/genres/vocabulary")
 def get_genre_vocabulary(user: Annotated[dict[str, Any], Depends(deps.read_user)]):
-    """The canonical genre list for the picker (TAG-077, TAG-080): `genres` with name, family, level (genre or style), parent, extra, also_under; `families` in display order. Same for every user, built once."""
+    """The canonical genre list for the picker (TAG-077, TAG-080): `genres` with name, family, level (family or genre), parents, extra; `families` in display order. Same for every user, built once."""
     return genre_vocab.vocabulary()

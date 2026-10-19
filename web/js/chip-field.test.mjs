@@ -6,10 +6,10 @@ installDom();
 const VOCAB = {
   families: [],
   genres: [
-    ['rock', 'Rock', 'genre'], ['jazz', 'Jazz', 'genre'], ['blues', 'Blues', 'genre'], ['hip hop', 'Hip Hop', 'genre'], ['funk', 'Funk / Soul', 'style'], ['soul', 'Funk / Soul', 'style'],
-    ['punk', 'Rock', 'style'], ['ska', 'Reggae', 'style'], ['trance', 'Electronic', 'style'], ['rap', 'Hip Hop', 'style'], ['drum and bass', 'Electronic', 'style'], ['house', 'Electronic', 'style'],
-    ['rhythm & blues', 'Funk / Soul', 'style'],
-  ].map(([name, family, level]) => ({ name, family, level, parent: null, extra: false, also_under: [] })),
+    ['rock', 'Rock', 'family'], ['jazz', 'Jazz', 'family'], ['blues', 'Blues', 'family'], ['hip hop', 'Hip Hop', 'family'], ['funk', 'Funk / Soul', 'genre'], ['soul', 'Funk / Soul', 'genre'],
+    ['punk', 'Rock', 'genre'], ['ska', 'Reggae', 'genre'], ['trance', 'Electronic', 'genre'], ['rap', 'Hip Hop', 'genre'], ['drum and bass', 'Electronic', 'genre'], ['house', 'Electronic', 'genre'],
+    ['rhythm & blues', 'Funk / Soul', 'genre'],
+  ].map(([name, family, level]) => ({ name, family, level, parents: [], extra: false })),
   aliases: { dnb: 'drum and bass', indie: 'rock' },
 };
 stubFetch((url) => (url === '/genres/vocabulary' ? { body: VOCAB } : { body: {} }));

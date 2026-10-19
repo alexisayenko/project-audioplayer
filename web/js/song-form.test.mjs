@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { installDom, makeEvent, stubFetch, flush } from './test-dom.mjs';
 
 installDom();
-const VOCAB = { genres: ['ambient', 'dub', 'rock'].map((name) => ({ name, family: 'Electronic', level: 'style', parent: null, extra: false, also_under: [] })), aliases: {} };
+const VOCAB = { genres: ['ambient', 'dub', 'rock'].map((name) => ({ name, family: 'Electronic', level: 'genre', parents: ['Electronic'], extra: false })), aliases: {} };
 stubFetch((url) => ({ body: url === '/genres/vocabulary' ? VOCAB : {} }));
 const { songForm } = await import('./song-form.js');
 const { loadVocabulary } = await import('./genre-vocab.js');

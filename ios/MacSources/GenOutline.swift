@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The outline tree (GEN-016, GEN-046): family, Discogs style, finer Wikidata subgenres; selection and hover mirror the map.
+/// The outline tree (GEN-016, GEN-046): family, genre (level 2), finer Wikidata sub-genres; selection and hover mirror the map.
 struct GenOutline: View {
     @ObservedObject var model: GenModel
 
@@ -89,7 +89,7 @@ private struct GenOutlineRowView: View {
     private var trailing: String {
         if row.kind == .family {
             let n = row.size
-            return row.unit == "style" ? "\(n) \(n == 1 ? "style" : "styles")" : "\(n) \(n == 1 ? "root" : "roots")"
+            return row.unit == "genre" ? "\(n) \(n == 1 ? "genre" : "genres")" : "\(n) \(n == 1 ? "root" : "roots")"
         }
         return String(row.count ?? 0)
     }

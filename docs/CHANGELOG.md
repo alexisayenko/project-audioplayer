@@ -2,6 +2,12 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-19 (Genre terminology and parents lists, not deployed)
+
+- Server, web and docs: every node of the genre vocabulary is a genre and level 1 is a family (ADR-0030, GEN-057, GEN-058); the word "style" is gone from the UI, the docs, the data keys and the code except where it quotes the Discogs API. `genre_styles.json` is now `genre_discogs.json` (`families`, `genres`), and a genre has `parents` (a list: the first is the primary parent, the rest are cross-links) instead of `parent`, `also_under` and `also_in_genres`; the tree, the counts, the cross-links and the Genres map are unchanged (checked against a snapshot taken before the change). `GET /genres/vocabulary` now serves `level` family or genre, `parents`, `family` and `family_synonyms`; `GET /genres/graph` nodes carry `anchor` (and still `style` for the macOS app). Not deployed.
+- Server and web: genre `spacesynth` is now level 3 under synthwave with italo disco as a cross-link, and the new genre `space disco` (a disco subgenre, approved, not in Discogs) sits at level 3 under disco in Electronic; Electronic now has 50 level 2 and 95 level 3 genres. Not deployed.
+- Web: the Genres map hover tooltip no longer prints the text "null" for the parts a node does not have (regression test added). Not deployed.
+
 ## 2026-10-19 (Version artists label follows the version type, not deployed)
 
 - Web: the field and song card row for the version's artists is labelled by the version type (Remix by, Remaster by, Edit by, Live by, Acoustic by, Extended by, Instrumental by, Mashup by, Cover by, Version by for Other or none) instead of always "Remix by"; the form label updates when the Version dropdown changes (ADD-180). Not checked in a browser.
@@ -190,6 +196,8 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 - Server and web: saving a new web song takes about 1 s instead of 3 to 5: the link lookup Fetch already did is reused (API-142) and the web patches the saved song into its list instead of reloading the library (ADD-134); not deployed.
 
 - Server and web: a reversed YouTube title "In The End [Mellen Gi Remix] feat. Fleurie - Tommee Profitt" is read title first, so Add fills Title, Artists, Featuring and the remixer correctly instead of swapping title and artist (ADD-135); not deployed.
+- Web: Library is now the first navigation item, followed by Now playing and Playlists, in the side rail, icon rail and phone tab bar; it stays the default landing page (WEB-012); not deployed.
+- Server and web: genre "Soviet Wave" (a synthwave subgenre, not in Discogs; aliases sovietwave, soviet-wave, Russian "советская волна"), level 3 under synthwave; not deployed.
 - Server and web: "A - T (X Cover)" titles (Pharrell Williams - Happy (EFIX & ALLISON Cover)) suggest performer and original from evidence or offer both readings (ADD-133); not deployed.
 - Server and web: for a song with a version the original recording's genres from MusicBrainz, Discogs and Wikipedia are no longer applied, they are listed as "From the original (not applied)" (`original_genres`, TAG-096), and the preview never links the remixer's Wikipedia page as the artist (TAG-097); not deployed.
 - Web: a song whose version has a year shows that year, not the original one, in the Library row, the song card, the dock and Now playing, the Media Session, Library sort by Year and Song stats; the card facts show "2012 · original 1985" when they differ; falls back to the original year; one helper in `credits.js` (LIB-150, not deployed).

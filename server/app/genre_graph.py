@@ -500,23 +500,23 @@ def table_family(label: str, keys: Any = ()) -> str | None:
     return None
 
 
-def node_style(label: str, keys: Any = ()) -> str | None:
-    """The Discogs style or extras entry a node is itself (label first, then its tags); None for the 15 genres and for names outside the vocabulary."""
+def own_anchor(label: str, keys: Any = ()) -> str | None:
+    """The vocabulary genre (a Discogs genre or extras entry, never a family) a node is itself, label first then its tags; None for the families and for names outside the vocabulary."""
     for text in (label, *sorted(keys)):
         name = vocab_name(text)
-        if name and genre_vocab.load().entries[name].level == "style":
+        if name and genre_vocab.load().entries[name].level == "genre":
             return name
     return None
 
 
-def resolve_styles(
+def resolve_anchors(
     own: dict[str, str | None], parents: dict[str, list[str]], reach: dict[str, set[Any]]
 ) -> dict[str, str | None]:
-    """GEN-047: a node's own style, else the style of its nearest ancestors (breadth-first over parent edges, closest first, ties by song count then name), else None."""
-    return {nid: own[nid] if own[nid] is not None else _nearest_style(nid, own, parents, reach) for nid in own}
+    """GEN-047: a node's own anchor genre, else the anchor of its nearest ancestors (breadth-first over parent edges, closest first, ties by song count then name), else None."""
+    return {nid: own[nid] if own[nid] is not None else _nearest_anchor(nid, own, parents, reach) for nid in own}
 
 
-def _nearest_style(nid: str, own: dict[str, str | None], parents: dict[str, list[str]], reach: dict[str, set[Any]]) -> str | None:
+def _nearest_anchor(nid: str, own: dict[str, str | None], parents: dict[str, list[str]], reach: dict[str, set[Any]]) -> str | None:
     seen = {nid}
     frontier = [nid]
     while frontier:
@@ -583,10 +583,11 @@ def build(songs: list[dict[str, Any]], cache: dict[str, Any]) -> dict[str, Any]:
         resolve_families({nid: table_family(n["label"], n["keys"]) for nid, n in nodes.items()}, parents, reach), parents, reach
     )
 
-    styles = resolve_styles({nid: node_style(n["label"], n["keys"]) for nid, n in nodes.items()}, parents, reach)
+    anchors = resolve_anchors({nid: own_anchor(n["label"], n["keys"]) for nid, n in nodes.items()}, parents, reach)
+    # "style" repeats "anchor" for the macOS app, which still decodes the old name
     out_nodes = [
         {
-            "id": ids[nid], "label": n["label"], "qid": n["qid"], "wikipedia": _wikipedia(cache, n["qid"]), "family": fams[nid], "style": styles[nid],
+            "id": ids[nid], "label": n["label"], "qid": n["qid"], "wikipedia": _wikipedia(cache, n["qid"]), "family": fams[nid], "anchor": anchors[nid], "style": anchors[nid],
             "count": len(reach[nid]), "ownCount": len(n["own"]), "parents": sorted(ids[p] for p in parents[nid]),
             "tags": sorted(n["keys"]),
         }

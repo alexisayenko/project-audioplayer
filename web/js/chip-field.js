@@ -27,11 +27,11 @@ export function libraryGenres() {
   return [...counts].sort((a, b) => b[1] - a[1]).map(([g]) => g);
 }
 
-const levelText = (e) => (e.level === 'genre' || !e.family ? 'genre' : e.family);
+const levelText = (e) => (e.level === 'family' || !e.family ? 'family' : e.family);
 
 let listSeq = 0;
 
-const fallbackIndex = () => buildIndex({ genres: libraryGenres().map((name) => ({ name, family: null, level: 'style' })) });
+const fallbackIndex = () => buildIndex({ genres: libraryGenres().map((name) => ({ name, family: null, level: 'genre' })) });
 
 export function chipField(ns, editor) {
   const kind = KINDS[ns];

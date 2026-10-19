@@ -22,7 +22,7 @@ test('tree has three levels, children sorted, level 1 follows families order', (
   assert.deepEqual(chain(t, 's:deep house').map((n) => n.name), ['Electronic', 'house', 'deep house']);
 });
 
-test('counts roll up across three levels and also_under does not double count', () => {
+test('counts roll up across three levels and a cross-link parent does not double count', () => {
   const t = make();
   assert.equal(count(t.byId.get('s:deep house')), 2);
   assert.equal(count(t.byId.get('s:afro house')), 1);
@@ -108,7 +108,7 @@ test('provisional and discogs flags are on the nodes', () => {
   assert.deepEqual(t.byId.get('s:jungle').alsoUnder, ['breakbeat']);
 });
 
-test('libraryTags lists the node and everything below it, not also_under parents', () => {
+test('libraryTags lists the node and everything below it, not extra parents', () => {
   const t = make();
   assert.deepEqual(libraryTags(t, 's:house').sort(), ['genre:afro house', 'genre:deep house', 'genre:house']);
   assert.deepEqual(libraryTags(t, 's:breakbeat'), ['genre:breakbeat']);
@@ -209,8 +209,8 @@ const disco = () => {
     ...VOCAB,
     levels: {
       ...VOCAB.levels,
-      disco: { genre: 'Rock', parent: null, also_under: [], discogs: true, synonyms: [], provisional: true, also_in_genres: ['Electronic'] },
-      'euro disco': { genre: 'Electronic', parent: 'disco', also_under: [], discogs: true, synonyms: [], provisional: false },
+      disco: { parents: ['Rock', 'Electronic'], discogs: true, synonyms: [], provisional: true },
+      'euro disco': { parents: ['disco'], family: 'Electronic', discogs: true, synonyms: [], provisional: false },
     },
   });
   applyCounts(t, [...SONGS, { id: 's7', tags: ['genre:euro disco'] }, { id: 's8', tags: ['genre:disco', 'genre:euro disco'] }, { id: 's9', tags: ['genre:disco'] }]);
@@ -221,7 +221,7 @@ test('an umbrella that sits in two genres appears under both with its children',
   const t = disco();
   assert.ok(t.byId.get('g:Electronic').children.some((c) => c.name === 'disco'));
   assert.ok(t.byId.get('g:Rock').children.some((c) => c.name === 'disco'));
-  assert.equal(t.byId.get('s:disco').genre, 'Rock');
+  assert.equal(t.byId.get('s:disco').family, 'Rock');
   assert.deepEqual(t.byId.get('s:disco').alsoIn, ['Electronic']);
   assert.deepEqual(t.byId.get('s:euro disco').parent, 's:disco');
   assert.deepEqual(otherGenres(t.byId.get('s:disco'), 'Electronic'), ['Rock']);

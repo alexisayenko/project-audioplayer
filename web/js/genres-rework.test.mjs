@@ -5,6 +5,13 @@ import { installPage, stubFetch, flush, fire } from './test-dom.mjs';
 await installPage();
 globalThis.location = { hash: '', href: 'http://localhost/', host: 'localhost' };
 const { VOCAB, SONGS } = await import('./genre-levels-fixture.mjs');
+const TIP_VOCAB = {
+  ...VOCAB,
+  levels: {
+    ...VOCAB.levels,
+    'full tip': { parents: ['Electronic', 'Rock'], discogs: false, synonyms: ['tipsy', 'tip tip'], provisional: false, status: 'question' },
+  },
+};
 let mode = 'ok';
 const calls = stubFetch((u) => {
   if (mode === 'fail') return { status: 500, body: { error: 'x' } };
@@ -12,9 +19,11 @@ const calls = stubFetch((u) => {
     if (mode === 'vocab-fail') return { status: 500, body: { error: 'x' } };
     if (mode === 'hostile') return { body: { levels: { x: null }, families: ['F'] } };
     if (mode === 'old') return { body: { families: ['Electronic'], genres: [] } };
+    if (mode === 'tips') return { body: TIP_VOCAB };
     return { body: VOCAB };
   }
   if (mode === 'lib-fail') return { status: 500, body: { error: 'x' } };
+  if (mode === 'tips') return { body: { songs: [{ id: 't1', tags: ['genre:afro house'] }, { id: 't2', tags: ['genre:full tip', 'genre:house'] }, { id: 't3', tags: ['genre:house'] }] } };
   if (mode === 'breakbeat') return { body: { songs: [...SONGS, { id: 's7', tags: ['genre:breakbeat'] }] } };
   if (mode === 'rock-heavy') return { body: { songs: [...SONGS, ...[1, 2, 3, 4].map((i) => ({ id: `r${i}`, tags: ['genre:rock and roll'] }))] } };
   if (mode === 'no-genres') return { body: { songs: [{ id: 'x', tags: ['mood:calm'] }, { id: 'y', tags: ['genre:unknown thing'] }] } };
@@ -178,7 +187,7 @@ test('clicking a row opens the detail panel with chain, synonyms, flags and coun
   openInfo(root, 'house');
   assert.equal(panelOf(root).hidden, false);
   assert.equal(panelOf(root).querySelector('h3').textContent, 'house');
-  assert.ok(panelOf(root).textContent.includes('Umbrella or standalone genre (level 2)'));
+  assert.ok(panelOf(root).textContent.includes('Genre, level 2 (sub-genre)'));
   assert.ok(panelOf(root).textContent.includes('2 in your library (1 tagged exactly)'));
   openInfo(root, 'afro house');
   assert.ok(panelOf(root).textContent.includes('No, a name added to this library'));
@@ -443,7 +452,7 @@ test('no user-visible text uses the word style for genres', async () => {
   openInfo(root, 'deep house');
   const text = root.textContent + root.querySelectorAll('[aria-label],[title]').map((n) => `${n.getAttribute('aria-label')} ${n.getAttribute('title')}`).join(' ');
   assert.equal(/\bstyles?\b/i.test(text), false);
-  assert.ok(panelOf(root).textContent.includes('Specific genre (level 3)'));
+  assert.ok(panelOf(root).textContent.includes('Genre, level 3 (sub-sub-genre)'));
   cleanup();
 });
 
@@ -571,4 +580,45 @@ test('selecting an outline row of another map family switches the map to it', as
   assert.equal(root.querySelectorAll('.gmr-family-row button').find((c) => c.textContent === 'Rock').getAttribute('aria-pressed'), 'true');
   assert.equal(root.querySelector('[role="status"]').textContent, '1 genre in Rock');
   cleanup();
+});
+
+const canvasProto = Object.getPrototypeOf(document.createElement('canvas'));
+for (const [k, v] of [['clientWidth', 800], ['clientHeight', 600]]) Object.defineProperty(canvasProto, k, { get: () => v, configurable: true });
+const drawn = new Proxy({}, { get: (t, k) => (k === 'measureText' ? () => ({ width: 30 }) : () => {}), set: () => true });
+canvasProto.getContext = () => drawn;
+const frames = [];
+globalThis.requestAnimationFrame = (cb) => { frames.push(cb); return frames.length; };
+globalThis.cancelAnimationFrame = () => {};
+globalThis.getComputedStyle ??= () => ({ getPropertyValue: () => '#123456', fontFamily: 'sans-serif' });
+const runFrames = () => { for (let i = 0; i < 20 && frames.length; i += 1) frames.splice(0).forEach((fn) => fn()); };
+
+function hover(root, label) {
+  runFrames();
+  const canvas = root.querySelector('canvas');
+  const tip = root.querySelector('.gmr-tip');
+  for (let y = 0; y <= 600; y += 3) {
+    for (let x = 0; x <= 800; x += 3) {
+      fire(canvas, 'pointermove', { clientX: x, clientY: y, buttons: 0, pointerId: 1 });
+      if (!tip.hidden && tip.querySelector('strong')?.textContent === label) return tip;
+    }
+  }
+  return null;
+}
+
+test('the hover tooltip never prints the text null and has exactly the parts that apply', async () => {
+  mode = 'tips';
+  const { root, cleanup } = await mount();
+  const plain = hover(root, 'afro house');
+  assert.ok(plain, 'afro house can be hovered');
+  assert.equal(plain.textContent, 'afro house 1 song | not in Discogs');
+  assert.ok(!plain.textContent.includes('null'));
+  const full = hover(root, 'full tip');
+  assert.ok(full, 'full tip can be hovered');
+  assert.equal(full.textContent, 'full tip 1 song | also: tipsy, tip tip | not in Discogs | also in Rock | Under question');
+  assert.ok(!full.textContent.includes('null'));
+  const house = hover(root, 'house');
+  assert.ok(house, 'house can be hovered');
+  assert.equal(house.textContent, 'house 3 songs');
+  cleanup();
+  mode = 'ok';
 });

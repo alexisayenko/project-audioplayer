@@ -1,10 +1,10 @@
 # Flavour assignments (proposal, not attached)
 
-Status: not attached, awaiting Alex. This file is not loaded by any code. The `flavours` block in `server/data/genre_levels.json` is defined and served, but no style carries a `flavours` list (decision of 2026-10-16). Below is the full assignment that was removed, kept so nothing is lost; to attach it, add `"flavours": [...]` back to the listed entries.
+Status: not attached, awaiting Alex. This file is not loaded by any code. The `flavours` block in `server/data/genre_levels.json` is defined and served, but no genre carries a `flavours` list (decision of 2026-10-16). Below is the full assignment that was removed, kept so nothing is lost; to attach it, add `"flavours": [...]` back to the listed entries.
 
-## Style to flavours
+## Genre to flavours
 
-| style | flavours |
+| genre | flavours |
 |---|---|
 | acid house | acid |
 | acid trance | acid |
@@ -31,9 +31,9 @@ Status: not attached, awaiting Alex. This file is not loaded by any code. The `f
 | uplifting trance | uplifting |
 | vocal trance | vocal |
 
-## Flavour to styles
+## Flavour to genres
 
-| flavour | kind | styles |
+| flavour | kind | genres |
 |---|---|---|
 | acid | sound | acid house, acid trance |
 | baltimore | scene | baltimore club |

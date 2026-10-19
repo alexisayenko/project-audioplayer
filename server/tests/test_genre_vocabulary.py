@@ -11,10 +11,10 @@ from tests.test_library import H, VID, VID2, add, client  # noqa: F401
 from tests.vocab import REAL
 
 DATA = Path(genre_vocab.__file__).resolve().parent.parent / "data"
-STYLES = json.loads((DATA / "genre_styles.json").read_text(encoding="utf-8"))
+DISCOGS = json.loads((DATA / "genre_discogs.json").read_text(encoding="utf-8"))
 EXTRAS = json.loads((DATA / "genre_extras.json").read_text(encoding="utf-8"))["extras"]
 LIVE = json.loads((Path(__file__).parent / "fixtures" / "genre_live_tags.json").read_text(encoding="utf-8"))
-GENRES = ["Blues", "Classical", "Electronic", "Folk, World, & Country", "Funk / Soul", "Hip Hop", "Jazz", "Latin", "Pop", "Reggae", "Rock"]
+FAMILIES = ["Blues", "Classical", "Electronic", "Folk, World, & Country", "Funk / Soul", "Hip Hop", "Jazz", "Latin", "Pop", "Reggae", "Rock"]
 
 # Tags of the live library (2026-10-16) that no rule maps: kept on the songs and listed in the review file (TAG-082).
 LIVE_UNMAPPABLE: set[str] = set()
@@ -27,61 +27,73 @@ def names() -> set[str]:
 # --- the data files (TAG-078, TAG-083) -------------------------------------------------------
 
 
-def test_the_11_genres_in_the_fixed_order():
-    assert STYLES["genres"] == GENRES
-    assert genre_vocab.load().families == tuple(GENRES)
+def test_the_11_families_in_the_fixed_order():
+    assert DISCOGS["families"] == FAMILIES
+    assert genre_vocab.load().families == tuple(FAMILIES)
 
 
-def test_styles_are_lowercase_trimmed_and_filed_under_a_genre():
-    styles = STYLES["styles"]
-    assert len(styles) >= 450
-    for style, genre in styles.items():
-        assert style, style
-        assert style == " ".join(style.lower().split()), style
-        assert genre in GENRES, (style, genre)
+def test_discogs_genres_are_lowercase_trimmed_and_filed_under_a_family():
+    genres = DISCOGS["genres"]
+    assert len(genres) >= 450
+    for name, parents in genres.items():
+        assert name, name
+        assert name == " ".join(name.lower().split()), name
+        assert parents and all(p in FAMILIES for p in parents), (name, parents)
 
 
-def test_no_style_in_two_genres_unless_marked_multi_genre():
-    styles, also = STYLES["styles"], STYLES["also_under"]
-    assert all(isinstance(g, str) for g in styles.values())
-    for style, others in also.items():
-        assert style in styles, style
-        assert others, style
-        assert len(set(others)) == len(others), style
-        assert styles[style] not in others, style
-        assert set(others) <= set(GENRES), style
-    assert genre_vocab.load().also_under == {s: tuple(o) for s, o in also.items()}
+def test_no_discogs_genre_in_two_families_unless_it_lists_more_parents():
+    genres = DISCOGS["genres"]
+    assert all(isinstance(ps, list) for ps in genres.values())
+    for name, parents in genres.items():
+        assert len(set(parents)) == len(parents), name
+    assert "also_under" not in DISCOGS
+    for name, e in genre_vocab.load().entries.items():
+        if name in genres:
+            assert e.parents == tuple(genres[name]), name
+            assert e.family == genres[name][0], name
 
 
 def test_names_are_unique_after_folding_case_spaces_hyphens_and_ampersand():
     seen: dict[str, str] = {}
-    for name in [*(g.lower() for g in GENRES), *STYLES["styles"], *EXTRAS]:
+    for name in [*(g.lower() for g in FAMILIES), *DISCOGS["genres"], *EXTRAS]:
         k = genre_vocab.vkey(name)
         assert k not in seen, (name, seen.get(k))
         seen[k] = name
     assert len(genre_vocab.load().entries) == len(seen)
 
 
-def test_discogs_names_belong_to_styles():
-    for ours, theirs in STYLES["discogs_names"].items():
-        assert ours in STYLES["styles"]
+def test_discogs_names_belong_to_discogs_genres():
+    for ours, theirs in DISCOGS["discogs_names"].items():
+        assert ours in DISCOGS["genres"]
         assert isinstance(theirs, str)
         assert theirs.strip()
 
 
-def test_extras_have_family_and_a_canonical_parent_without_cycles():
+def test_extras_have_parents_and_a_family_without_cycles():
     assert len(EXTRAS) >= 25
+    entries = genre_vocab.load().entries
     for name, spec in EXTRAS.items():
         assert name == " ".join(name.lower().split()), name
-        assert name not in STYLES["styles"], name
-        assert spec["family"] in GENRES, name
-        assert spec["parent"] is None or spec["parent"] in names() - {name}, (name, spec["parent"])
+        assert name not in DISCOGS["genres"], name
+        assert "parent" not in spec and "also_under" not in spec, name
+        parents = spec["parents"]
+        assert parents and len(set(parents)) == len(parents), name
+        assert all(p in FAMILIES or p in names() - {name} for p in parents), (name, parents)
+        assert entries[name].family in FAMILIES, name
+        assert entries[name].parents == tuple(parents), name
     for name in EXTRAS:
-        seen, cur = {name}, EXTRAS[name]["parent"]
+        seen, cur = {name}, EXTRAS[name]["parents"][0]
         while cur in EXTRAS:
             assert cur not in seen, f"parent cycle at {name}"
             seen.add(cur)
-            cur = EXTRAS[cur]["parent"]
+            cur = EXTRAS[cur]["parents"][0]
+
+
+def test_an_extra_family_is_derived_from_parents_zero_unless_overridden():
+    entries = genre_vocab.load().entries
+    for name, spec in EXTRAS.items():
+        derived = genre_vocab._resolve_family(name, {n: tuple(e.parents) for n, e in entries.items()}, genre_vocab.load().families)
+        assert entries[name].family == (spec.get("family") or derived), name
 
 
 REQUIRED_EXTRAS = (
@@ -129,7 +141,7 @@ def test_prefix_words_do_not_eat_canonical_names():
 
 
 def test_every_family_is_used():
-    assert {e.family for e in genre_vocab.load().entries.values()} == set(GENRES)
+    assert {e.family for e in genre_vocab.load().entries.values()} == set(FAMILIES)
 
 
 # --- lookup and suggestions ------------------------------------------------------------------
@@ -148,8 +160,8 @@ def test_family_of_also_reads_the_music_form():
     assert genre_vocab.family_of("house") == "Electronic"
     assert genre_vocab.family_of("house music") == "Electronic"
     assert genre_vocab.family_of("zzz") is None
-    assert genre_vocab.is_style("house")
-    assert not genre_vocab.is_style("electronic")
+    assert genre_vocab.is_below_family("house")
+    assert not genre_vocab.is_below_family("electronic")
 
 
 def test_suggest_returns_up_to_five_close_names():
@@ -288,16 +300,19 @@ def test_vocabulary_endpoint_lists_every_name_with_family_and_level(client):
     r = client.get("/genres/vocabulary", headers=H)
     assert r.status_code == 200
     body = r.json()
-    assert body["families"] == GENRES
+    assert body["families"] == FAMILIES
     assert body["count"] == len(body["genres"]) == len(names())
     by = {g["name"]: g for g in body["genres"]}
     assert by["house"]["family"] == "Electronic"
-    assert by["house"]["level"] == "style"
+    assert by["house"]["level"] == "genre"
     assert not by["house"]["extra"]
-    assert by["rock"]["level"] == "genre"
+    assert by["rock"]["level"] == "family"
+    assert by["rock"]["parents"] == []
     assert by["rock"]["family"] == "Rock"
     assert by["neurofunk"]["extra"]
-    assert by["neurofunk"]["parent"] == "drum and bass"
+    assert by["neurofunk"]["parents"] == ["drum and bass"]
+    assert by["house"]["parents"] == ["Electronic"]
+    assert "parent" not in by["house"] and "also_under" not in by["house"]
     assert [g["name"] for g in body["genres"]] == sorted(by)
     assert body["aliases"]["dnb"] == "drum and bass"
     assert body["aliases"]["indie"] == "indie rock"
@@ -415,15 +430,15 @@ def test_live_library_mapping_is_idempotent():
         assert library.clean_tag(once) == once
 
 
-# --- the node style for the outline (GEN-047) ------------------------------------------------
+# --- the anchor genre of a graph node for the outline (GEN-047) ------------------------------------------------
 
 
-def test_node_style_is_the_nodes_own_vocabulary_style():
-    assert gg.node_style("House music", ["house"]) == "house"
-    assert gg.node_style("zzz", ["trance"]) == "trance"
-    assert gg.node_style("electronic music") is None
-    assert gg.node_style("popular music") is None
-    assert gg.node_style("neurofunk") == "neurofunk"
+def test_own_anchor_is_the_nodes_own_vocabulary_genre():
+    assert gg.own_anchor("House music", ["house"]) == "house"
+    assert gg.own_anchor("zzz", ["trance"]) == "trance"
+    assert gg.own_anchor("electronic music") is None
+    assert gg.own_anchor("popular music") is None
+    assert gg.own_anchor("neurofunk") == "neurofunk"
 
 
 @pytest.mark.parametrize(
@@ -439,21 +454,21 @@ def test_node_style_is_the_nodes_own_vocabulary_style():
         ({"a": None, "b": None}, {"a": ["b"], "b": ["a"]}, {"a": {1}, "b": {1}}, {"a": None}),
     ],
 )
-def test_resolve_styles(own, parents, reach, expect):
-    got = gg.resolve_styles(own, parents, reach)
+def test_resolve_anchors(own, parents, reach, expect):
+    got = gg.resolve_anchors(own, parents, reach)
     for k, v in expect.items():
         assert got[k] == v
 
 
-def test_the_graph_exposes_a_style_per_node(client):
+def test_the_graph_exposes_an_anchor_per_node(client):
     from tests.test_genre_graph import songs
 
     nodes = gg.build(songs(("s1", ["house", "neurofunk"]), ("s2", ["electronic"])), {"labels": {}, "entities": {}})["nodes"]
     by = {n["label"]: n for n in nodes}
-    assert by["house"]["style"] == "house"
-    assert by["neurofunk"]["style"] == "neurofunk"
-    assert by["electronic"]["style"] is None
-    assert all("style" in n for n in nodes)
+    assert by["house"]["anchor"] == "house"
+    assert by["neurofunk"]["anchor"] == "neurofunk"
+    assert by["electronic"]["anchor"] is None
+    assert all("anchor" in n and n["style"] == n["anchor"] for n in nodes)
 
 
 

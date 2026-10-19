@@ -186,37 +186,37 @@ function familyGroups(g, roots) {
 const own = (n) => n.ownCount ?? n.count;
 const foldName = (s) => String(s).toLowerCase().replace(/\s+/g, ' ').trim().replace(/ music$/, '');
 
-export const hasStyles = (g) => g.nodes.some((n) => n.style);
+export const hasAnchors = (g) => g.nodes.some((n) => n.anchor);
 
-function isOwnStyle(g, n) {
-  if (!n.style) return false;
-  const s = foldName(n.style);
+function isOwnAnchor(g, n) {
+  if (!n.anchor) return false;
+  const s = foldName(n.anchor);
   if (foldName(n.label) === s || n.tags.some((t) => foldName(t) === s)) return true;
-  return !n.parents.some((p) => g.byId.get(p).style === n.style);
+  return !n.parents.some((p) => g.byId.get(p).anchor === n.anchor);
 }
 
 function hybridView(g) {
   if (hybridViews.has(g)) return hybridViews.get(g);
-  const styles = new Set(g.nodes.filter((n) => isOwnStyle(g, n)).map((n) => n.id));
-  const shownHung = new Set(g.nodes.filter((n) => n.style && !styles.has(n.id) && own(n) > 0).map((n) => n.id));
+  const anchors = new Set(g.nodes.filter((n) => isOwnAnchor(g, n)).map((n) => n.id));
+  const shownHung = new Set(g.nodes.filter((n) => n.anchor && !anchors.has(n.id) && own(n) > 0).map((n) => n.id));
   const upMemo = new Map();
   const up = (id) => {
     if (upMemo.has(id)) return upMemo.get(id);
     upMemo.set(id, []);
     const out = [];
     for (const p of g.byId.get(id).parents) {
-      for (const q of styles.has(p) || shownHung.has(p) ? [p] : up(p)) if (q !== id && !out.includes(q)) out.push(q);
+      for (const q of anchors.has(p) || shownHung.has(p) ? [p] : up(p)) if (q !== id && !out.includes(q)) out.push(q);
     }
     upMemo.set(id, out);
     return out;
   };
   const sset = new Map();
-  const styleSet = (id, path = new Set()) => {
-    if (styles.has(id)) return new Set([id]);
+  const anchorSet = (id, path = new Set()) => {
+    if (anchors.has(id)) return new Set([id]);
     if (sset.has(id)) return sset.get(id);
     if (path.has(id)) return new Set();
     const out = new Set();
-    for (const p of up(id)) for (const s of styleSet(p, new Set(path).add(id))) out.add(s);
+    for (const p of up(id)) for (const s of anchorSet(p, new Set(path).add(id))) out.add(s);
     sset.set(id, out);
     return out;
   };
@@ -225,11 +225,11 @@ function hybridView(g) {
   for (const id of shownHung) {
     const ups = up(id);
     if (!ups.length) { orphans.add(id); continue; }
-    const hungParents = ups.filter((x) => !styles.has(x));
-    const keep = ups.filter((x) => !styles.has(x) || !hungParents.some((m) => styleSet(m).has(x)));
+    const hungParents = ups.filter((x) => !anchors.has(x));
+    const keep = ups.filter((x) => !anchors.has(x) || !hungParents.some((m) => anchorSet(m).has(x)));
     placed.set(id, keep.length ? keep : ups);
   }
-  const fb = buildView(g, (n) => !n.style || orphans.has(n.id));
+  const fb = buildView(g, (n) => !n.anchor || orphans.has(n.id));
   const kids = new Map();
   for (const [id, ps] of placed) for (const p of ps) kids.set(p, [...(kids.get(p) || []), id]);
   const seen = new Map();
@@ -241,21 +241,21 @@ function hybridView(g) {
     seen.set(id, ok);
     return ok;
   };
-  const roots = [...styles].filter((id) => g.byId.get(id).count > 0).concat(fb.roots.filter((id) => fbVisible(id)));
+  const roots = [...anchors].filter((id) => g.byId.get(id).count > 0).concat(fb.roots.filter((id) => fbVisible(id)));
   roots.sort((a, b) => byCountThenLabel(g.byId.get(a), g.byId.get(b)));
-  const row = (id) => styles.has(id) || placed.has(id) || (fb.parents.has(id) && fbVisible(id));
+  const row = (id) => anchors.has(id) || placed.has(id) || (fb.parents.has(id) && fbVisible(id));
   const parentsOf = (id) => {
-    if (styles.has(id)) return [];
+    if (anchors.has(id)) return [];
     if (placed.has(id)) return placed.get(id);
     if (fb.parents.has(id) && fbVisible(id)) return fb.parents.get(id).filter((p) => row(p));
     const n = g.byId.get(id);
-    return (n.style && !orphans.has(id) ? up(id) : fb.eff(id)).filter(row);
+    return (n.anchor && !orphans.has(id) ? up(id) : fb.eff(id)).filter(row);
   };
   const children = (id) => {
     const fbKids = (fb.children.get(id) || []).filter((c) => fbVisible(c));
     return [...new Set([...(kids.get(id) || []), ...fbKids])];
   };
-  const view = { styles, roots, row, parentsOf, children };
+  const view = { anchors, roots, row, parentsOf, children };
   hybridViews.set(g, view);
   return view;
 }
@@ -270,7 +270,7 @@ function hybridRows(g, expanded) {
     rows.push({
       key, id, depth, label: n.label, count: n.count, family: n.family, hasChildren: kids.length > 0, expanded: open,
       alsoUnder: v.parentsOf(id).filter((p) => p !== via).map((p) => g.byId.get(p).label),
-      ...(v.styles.has(id) ? { kind: 'style' } : {}),
+      ...(v.anchors.has(id) ? { kind: 'genre' } : {}),
     });
     if (!open) return;
     for (const c of kids.map((x) => g.byId.get(x)).sort(byCountThenLabel)) walk(c.id, depth + 1, `${key}>${c.id}`, id, new Set(path).add(id));
@@ -278,15 +278,15 @@ function hybridRows(g, expanded) {
   for (const [family, ids] of familyGroups(g, v.roots)) {
     const key = familyKey(family);
     const open = expanded.has(key);
-    const styled = ids.filter((id) => v.styles.has(id)).length;
-    rows.push({ key, id: null, depth: 0, label: family, count: null, family, hasChildren: true, expanded: open, alsoUnder: [], kind: 'family', size: ids.length, unit: styled === ids.length ? 'style' : 'root' });
+    const anchored = ids.filter((id) => v.anchors.has(id)).length;
+    rows.push({ key, id: null, depth: 0, label: family, count: null, family, hasChildren: true, expanded: open, alsoUnder: [], kind: 'family', size: ids.length, unit: anchored === ids.length ? 'genre' : 'root' });
     if (open) for (const id of ids) walk(id, 1, `${key}>${id}`, null, new Set());
   }
   return rows;
 }
 
 export function outlineRows(g, expanded) {
-  if (hasStyles(g)) return hybridRows(g, expanded);
+  if (hasAnchors(g)) return hybridRows(g, expanded);
   const v = outlineView(g);
   const rows = [];
   const walk = (id, depth, key, via, path) => {
@@ -333,7 +333,7 @@ function hybridPath(g, id) {
 
 export function pathKeys(g, id) {
   if (!g.byId.get(id)) return [];
-  if (hasStyles(g)) return hybridPath(g, id);
+  if (hasAnchors(g)) return hybridPath(g, id);
   const v = outlineView(g);
   if (v.skip.has(id)) id = v.eff(id).sort((a, b) => byCountThenLabel(g.byId.get(a), g.byId.get(b)))[0];
   const n = g.byId.get(id);

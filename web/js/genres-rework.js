@@ -14,7 +14,7 @@ import {
 } from './genre-levels.js';
 
 const songs = (n) => `${n} ${plural(n, 'song', 'songs')}`;
-const LEVEL_NAMES = { 1: 'Genre (level 1)', 2: 'Umbrella or standalone genre (level 2)', 3: 'Specific genre (level 3)' };
+const LEVEL_NAMES = { 1: 'Family (level 1)', 2: 'Genre, level 2 (sub-genre)', 3: 'Genre, level 3 (sub-sub-genre)' };
 const EMPTY_TEXT = 'No genres yet. Add songs with genres to see them here.';
 const canvasLabel = (name) => {
   const of = name ? `${name} ` : '';
@@ -337,7 +337,7 @@ export function renderGenresRework(root, opts = {}) {
     const add = (k, ...v) => items.push(el('dt', { class: 't-caption muted' }, k), el('dd', { class: 't-body' }, ...v));
     if (n.display) add('Vocabulary key', n.name);
     add('Level', LEVEL_NAMES[n.level]);
-    if (n.alsoIn.length) add('Also in genres', [n.genre, ...n.alsoIn].join(', '));
+    if (n.alsoIn.length) add('Also in families', [n.family, ...n.alsoIn].join(', '));
     add('Parent chain', path.length ? chips(path) : 'None (top level)');
     add('Synonyms', n.synonyms.length ? n.synonyms.join(', ') : 'None');
     if (n.level > 1) add('Also under', also.length ? chips(also) : 'None');

@@ -5,15 +5,15 @@ import { buildTree, applyCounts } from './genre-levels.js';
 import { layoutRadial, highlightSets, radius, selectLabels, labelBox } from './genre-radial.js';
 
 const doc = JSON.parse(readFileSync(new URL('../../server/data/genre_levels.json', import.meta.url), 'utf8'));
-const styles = JSON.parse(readFileSync(new URL('../../server/data/genre_styles.json', import.meta.url), 'utf8'));
-const entries = Object.fromEntries(Object.entries(doc).filter(([k]) => k !== '_meta' && k !== 'genres'));
+const discogs = JSON.parse(readFileSync(new URL('../../server/data/genre_discogs.json', import.meta.url), 'utf8'));
+const entries = Object.fromEntries(Object.entries(doc).filter(([k]) => k !== '_meta' && !['genres', 'families', 'flavours'].includes(k)));
 const vocab = {
-  families: styles.genres,
-  genre_synonyms: Object.fromEntries(Object.entries(doc.genres).map(([k, v]) => [k, v.synonyms])),
-  levels: Object.fromEntries(Object.entries(entries).map(([k, v]) => [k, { also_under: [], synonyms: [], provisional: false, ...v }])),
+  families: discogs.families,
+  family_synonyms: Object.fromEntries(Object.entries(doc.families).map(([k, v]) => [k, v.synonyms])),
+  levels: Object.fromEntries(Object.entries(entries).map(([k, v]) => [k, { synonyms: [], provisional: false, ...v }])),
   genres: [],
 };
-const electronic = Object.entries(entries).filter(([, v]) => v.genre === 'Electronic' || (v.also_in_genres || []).includes('Electronic'));
+const electronic = [...buildTree(vocab).byId.values()].filter((n) => n.id.startsWith('s:') && (n.family === 'Electronic' || n.alsoIn.includes('Electronic'))).map((n) => [n.name]);
 
 function sample() {
   const t = buildTree(vocab);
@@ -101,7 +101,7 @@ test('a style without songs of its own but with a populated child is drawn as a 
   assert.equal(l.byId.get('g:Electronic').connector, undefined);
 });
 
-test('also_under becomes a cross-link between level 2 nodes only', () => {
+test('an extra parent that is a genre becomes a cross-link between level 2 nodes only', () => {
   const l = layoutRadial(sample());
   const t = buildTree(vocab);
   applyCounts(t, [{ id: 'a', tags: ['genre:jungle'] }, { id: 'b', tags: ['genre:breakbeat'] }]);
@@ -118,11 +118,11 @@ test('the root genre is a parameter; unknown roots give null', () => {
   assert.equal(layoutRadial(t, 'Nope'), null);
 });
 
-test('Blues, Jazz and Rock lay out like Electronic: family hue on the root, only styles with songs around it', () => {
+test('Blues, Jazz and Rock lay out like Electronic: family hue on the root, only genres with songs around it', () => {
   const t = buildTree(vocab);
   for (const [name, hue] of [['Blues', 9], ['Jazz', 4], ['Rock', 1]]) {
-    const own = Object.entries(entries).filter(([, v]) => v.genre === name);
-    assert.ok(own.length > 2, `${name} has styles in genre_levels.json`);
+    const own = Object.entries(entries).filter(([, v]) => v.parents[0] === name);
+    assert.ok(own.length > 2, `${name} has genres in genre_levels.json`);
     assert.equal(layoutRadial(t, name).nodes.length, 1);
     applyCounts(t, own.slice(0, 2).map(([k], i) => ({ id: `${name}${i}`, tags: [`genre:${k}`] })));
     const l = layoutRadial(t, name);

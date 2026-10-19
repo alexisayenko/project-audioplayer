@@ -1,17 +1,15 @@
 {
  "_meta": {
   "rules": [
-   "One entry per vocabulary style or extra; the 11 genres themselves are level 1 and not listed.",
-   "genre: level 1 name (the 11 kept Discogs genres).",
-   "parent: null for level 2 (umbrella or standalone style), else a level 2 key; hard cap three levels.",
-   "also_under: other level 2 keys a style could sit under; the primary parent stays in parent.",
-   "provisional: true marks an undrafted placeholder (all genres except Electronic); parent null.",
-   "discogs: true when the key is in genre_styles.json, false when it exists only in genre_extras.json.",
-   "genres: level 1 name plus lowercase synonyms; style entries may carry an optional synonyms list (carried over from ALIASES in genre_filter.py, read-only). A synonym never equals a vocabulary key, a genre name or another synonym; typos are input normalisation, not synonyms.",
+   "One entry per vocabulary genre (a Discogs genre or an extra); the 11 families themselves are level 1 and not listed (the top-level 'families' block holds their synonyms). Every node below a family is a genre (ADR-0030).",
+   "parents: a non-empty list of unique names, each a family (level 1 name) or the key of another entry. parents[0] is the primary parent: it decides the level (2 when it is a family, else 1 + the level of that parent; hard cap three levels), the family (the family of parents[0]) and the default outline position. Further entries are extra parents, drawn as cross-links (an extra parent that is a family lists the genre in that family's tree too). Validation: every parent resolves, parents are unique, no cycle through any parent (so an extra parent is never a descendant), no level 4.",
+   "family: optional override, only for a level 3 genre whose primary parent sits in several families (disco is in Funk / Soul and Electronic): it names which of those families the genre belongs to. It must be one of them.",
+   "provisional: true marks an undrafted placeholder (all families except Electronic); parents is just the family.",
+   "discogs: true when the key is in genre_discogs.json, false when it exists only in genre_extras.json.",
+   "families: family name plus lowercase synonyms; genre entries may carry an optional synonyms list (carried over from ALIASES in genre_filter.py, read-only). A synonym never equals a vocabulary key, a family name or another synonym; typos are input normalisation, not synonyms.",
    "flavours: optional list of keys of the top-level 'flavours' block ({name, kind sound|scene, description}); a modifier alongside the tree, not a level. Only Electronic entries carry them so far.",
    "status: optional 'approved' (Alex approved; only on entries with discogs false, because Discogs outranks his approval) or 'question' (under question, any entry); absent means unreviewed.",
-   "display: optional display name of a style (default: the key); never equal, when lowercased, to another vocabulary key.",
-   "also_in_genres: optional list of other genres (level 1 names) in whose tree a level 2 entry also appears as a node, because children of those genres hang under it (disco: Electronic). A child keeps its own genre; its parent may sit in a genre listed here. also_under may point at any other entry (a level 3 target is allowed, e.g. spacesynth -> italo disco)."
+   "display: optional display name of a genre (default: the key); never equal, when lowercased, to another vocabulary key."
   ],
   "drafted": [
    "Electronic"
@@ -28,9 +26,9 @@
     "level3": 0
    },
    "Electronic": {
-    "total": 139,
+    "total": 145,
     "level2": 50,
-    "level3": 89
+    "level3": 95
    },
    "Folk, World, & Country": {
     "total": 66,
@@ -88,7 +86,7 @@
    "Rock": 14
   }
  },
- "genres": {
+ "families": {
   "Blues": {
    "name": "Blues",
    "synonyms": []
@@ -245,383 +243,441 @@
   }
  },
  "aboriginal": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "abstract": {
-  "genre": "Electronic",
-  "parent": null,
+  "parents": [
+   "Electronic"
+  ],
   "discogs": true
  },
  "acid": {
-  "genre": "Electronic",
-  "parent": null,
-  "also_under": [
+  "parents": [
+   "Electronic",
    "techno",
    "house"
   ],
   "discogs": true
  },
  "acid house": {
-  "genre": "Electronic",
-  "parent": "house",
+  "parents": [
+   "house"
+  ],
   "discogs": true
  },
  "acid jazz": {
-  "genre": "Jazz",
-  "parent": null,
+  "parents": [
+   "Jazz"
+  ],
   "provisional": true,
   "discogs": true
  },
  "acid rock": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "acid trance": {
-  "genre": "Electronic",
-  "parent": "trance",
+  "parents": [
+   "trance"
+  ],
   "discogs": false,
   "status": "question"
  },
  "acoustic": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "african": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "afro-cuban": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "afro-cuban jazz": {
-  "genre": "Jazz",
-  "parent": null,
+  "parents": [
+   "Jazz"
+  ],
   "provisional": true,
   "discogs": true
  },
  "afrobeat": {
-  "genre": "Funk / Soul",
-  "parent": null,
+  "parents": [
+   "Funk / Soul"
+  ],
   "provisional": true,
   "discogs": true
  },
  "alternative metal": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "alternative pop": {
-  "genre": "Pop",
-  "parent": null,
+  "parents": [
+   "Pop"
+  ],
   "provisional": true,
   "discogs": false
  },
  "alternative r&b": {
-  "genre": "Funk / Soul",
-  "parent": null,
+  "parents": [
+   "Funk / Soul"
+  ],
   "provisional": true,
   "discogs": false
  },
  "alternative rock": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "amapiano": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "ambient": {
-  "genre": "Electronic",
-  "parent": null,
+  "parents": [
+   "Electronic"
+  ],
   "discogs": true
  },
  "ambient house": {
-  "genre": "Electronic",
-  "parent": "house",
-  "also_under": [
+  "parents": [
+   "house",
    "ambient"
   ],
   "discogs": true
  },
  "anarcho-punk": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "andean music": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "aor": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "arena rock": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "art pop": {
-  "genre": "Pop",
-  "parent": null,
+  "parents": [
+   "Pop"
+  ],
   "provisional": true,
   "discogs": false
  },
  "art rock": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "art song": {
-  "genre": "Classical",
-  "parent": null,
+  "parents": [
+   "Classical"
+  ],
   "provisional": true,
   "discogs": true
  },
  "atmospheric black metal": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "avant-garde jazz": {
-  "genre": "Jazz",
-  "parent": null,
+  "parents": [
+   "Jazz"
+  ],
   "provisional": true,
   "discogs": true
  },
  "avantgarde": {
-  "genre": "Classical",
-  "parent": null,
+  "parents": [
+   "Classical"
+  ],
   "provisional": true,
   "discogs": true
  },
  "axé": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "bachata": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "baião": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "bakersfield sound": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "balearic": {
-  "genre": "Electronic",
-  "parent": null,
+  "parents": [
+   "Electronic"
+  ],
   "discogs": true
  },
  "ballad": {
-  "genre": "Pop",
-  "parent": null,
+  "parents": [
+   "Pop"
+  ],
   "provisional": true,
   "discogs": true
  },
  "ballroom": {
-  "genre": "Pop",
-  "parent": null,
+  "parents": [
+   "Pop"
+  ],
   "provisional": true,
   "discogs": true
  },
  "baltimore club": {
-  "genre": "Electronic",
-  "parent": "breakbeat",
-  "also_under": [
+  "parents": [
+   "breakbeat",
    "house"
   ],
   "discogs": true
  },
  "banda": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "barbershop": {
-  "genre": "Pop",
-  "parent": null,
+  "parents": [
+   "Pop"
+  ],
   "provisional": true,
   "discogs": true
  },
  "baroque": {
-  "genre": "Classical",
-  "parent": null,
+  "parents": [
+   "Classical"
+  ],
   "provisional": true,
   "discogs": true
  },
  "baroque pop": {
-  "genre": "Pop",
-  "parent": null,
+  "parents": [
+   "Pop"
+  ],
   "provisional": true,
   "discogs": true
  },
  "bass music": {
-  "genre": "Electronic",
-  "parent": null,
+  "parents": [
+   "Electronic"
+  ],
   "discogs": true
  },
  "bassline": {
-  "genre": "Electronic",
-  "parent": "uk garage",
+  "parents": [
+   "uk garage"
+  ],
   "discogs": true
  },
  "batucada": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "beat": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "beatbox": {
-  "genre": "Electronic",
-  "parent": null,
+  "parents": [
+   "Electronic"
+  ],
   "discogs": true
  },
  "beguine": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "berlin-school": {
-  "genre": "Electronic",
-  "parent": "ambient",
+  "parents": [
+   "ambient"
+  ],
   "discogs": true
  },
  "bhangra": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "big band": {
-  "genre": "Jazz",
-  "parent": null,
+  "parents": [
+   "Jazz"
+  ],
   "provisional": true,
   "discogs": true
  },
  "big beat": {
-  "genre": "Electronic",
-  "parent": "breakbeat",
+  "parents": [
+   "breakbeat"
+  ],
   "discogs": true
  },
  "black metal": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "blackgaze": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "bleep": {
-  "genre": "Electronic",
-  "parent": null,
+  "parents": [
+   "Electronic"
+  ],
   "discogs": true
  },
  "bluegrass": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "blues rock": {
-  "genre": "Blues",
-  "parent": null,
+  "parents": [
+   "Blues"
+  ],
   "provisional": true,
   "discogs": true
  },
  "bolero": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "bollywood": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "bomba": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "boogaloo": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "boogie": {
-  "genre": "Funk / Soul",
-  "parent": null,
+  "parents": [
+   "Funk / Soul"
+  ],
   "provisional": true,
   "discogs": true
  },
  "boogie woogie": {
-  "genre": "Blues",
-  "parent": null,
+  "parents": [
+   "Blues"
+  ],
   "provisional": true,
   "discogs": true
  },
  "boom bap": {
-  "genre": "Hip Hop",
-  "parent": null,
+  "parents": [
+   "Hip Hop"
+  ],
   "provisional": true,
   "discogs": true
  },
  "bop": {
-  "genre": "Jazz",
-  "parent": null,
+  "parents": [
+   "Jazz"
+  ],
   "provisional": true,
   "synonyms": [
    "bebop"
@@ -629,20 +685,23 @@
   "discogs": true
  },
  "bossa nova": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "bounce": {
-  "genre": "Hip Hop",
-  "parent": null,
+  "parents": [
+   "Hip Hop"
+  ],
   "provisional": true,
   "discogs": true
  },
  "breakbeat": {
-  "genre": "Electronic",
-  "parent": null,
+  "parents": [
+   "Electronic"
+  ],
   "discogs": true,
   "synonyms": [
    "jersey club",
@@ -650,370 +709,425 @@
   ]
  },
  "breakcore": {
-  "genre": "Electronic",
-  "parent": "breakbeat",
-  "also_under": [
+  "parents": [
+   "breakbeat",
    "hardcore"
   ],
   "discogs": true
  },
  "breaks": {
-  "genre": "Electronic",
-  "parent": "breakbeat",
+  "parents": [
+   "breakbeat"
+  ],
   "discogs": true
  },
  "british invasion": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": false
  },
  "britpop": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "broken beat": {
-  "genre": "Electronic",
-  "parent": null,
+  "parents": [
+   "Electronic"
+  ],
   "discogs": true
  },
  "brutal death metal": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "bubblegum": {
-  "genre": "Pop",
-  "parent": null,
+  "parents": [
+   "Pop"
+  ],
   "provisional": true,
   "discogs": true
  },
  "cabaret": {
-  "genre": "Pop",
-  "parent": null,
+  "parents": [
+   "Pop"
+  ],
   "provisional": true,
   "discogs": true
  },
  "cajun": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "calypso": {
-  "genre": "Reggae",
-  "parent": null,
+  "parents": [
+   "Reggae"
+  ],
   "provisional": true,
   "discogs": true
  },
  "candombe": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "cantata": {
-  "genre": "Classical",
-  "parent": null,
+  "parents": [
+   "Classical"
+  ],
   "provisional": true,
   "discogs": true
  },
  "cantopop": {
-  "genre": "Pop",
-  "parent": null,
+  "parents": [
+   "Pop"
+  ],
   "provisional": true,
   "discogs": true
  },
  "canzone napoletana": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "carnatic": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "catalan music": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "celtic": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "cha-cha": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "chamber music": {
-  "genre": "Classical",
-  "parent": null,
+  "parents": [
+   "Classical"
+  ],
   "provisional": true,
   "discogs": true
  },
  "champeta": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "chanson": {
-  "genre": "Pop",
-  "parent": null,
+  "parents": [
+   "Pop"
+  ],
   "provisional": true,
   "discogs": true
  },
  "charanga": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "chicago blues": {
-  "genre": "Blues",
-  "parent": null,
+  "parents": [
+   "Blues"
+  ],
   "provisional": true,
   "discogs": true
  },
  "chillwave": {
-  "genre": "Electronic",
-  "parent": "synthwave",
-  "also_under": [
+  "parents": [
+   "synthwave",
    "downtempo"
   ],
   "discogs": true
  },
  "chinese classical": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "chiptune": {
-  "genre": "Electronic",
-  "parent": null,
+  "parents": [
+   "Electronic"
+  ],
   "discogs": true
  },
  "choral": {
-  "genre": "Classical",
-  "parent": null,
+  "parents": [
+   "Classical"
+  ],
   "provisional": true,
   "discogs": true
  },
  "choro": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "city pop": {
-  "genre": "Pop",
-  "parent": null,
+  "parents": [
+   "Pop"
+  ],
   "provisional": true,
   "discogs": true
  },
  "classic rock": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "cloud rap": {
-  "genre": "Hip Hop",
-  "parent": null,
+  "parents": [
+   "Hip Hop"
+  ],
   "provisional": true,
   "discogs": true
  },
  "coldwave": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "compas": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "concerto": {
-  "genre": "Classical",
-  "parent": null,
+  "parents": [
+   "Classical"
+  ],
   "provisional": true,
   "discogs": true
  },
  "conjunto": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "conscious": {
-  "genre": "Hip Hop",
-  "parent": null,
+  "parents": [
+   "Hip Hop"
+  ],
   "provisional": true,
   "discogs": true
  },
  "contemporary": {
-  "genre": "Classical",
-  "parent": null,
+  "parents": [
+   "Classical"
+  ],
   "provisional": true,
   "discogs": true
  },
  "contemporary jazz": {
-  "genre": "Jazz",
-  "parent": null,
+  "parents": [
+   "Jazz"
+  ],
   "provisional": true,
   "discogs": true
  },
  "contemporary r&b": {
-  "genre": "Funk / Soul",
-  "parent": null,
+  "parents": [
+   "Funk / Soul"
+  ],
   "provisional": true,
   "discogs": true
  },
  "cool jazz": {
-  "genre": "Jazz",
-  "parent": null,
+  "parents": [
+   "Jazz"
+  ],
   "provisional": true,
   "discogs": true
  },
  "corrido": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "country": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "country blues": {
-  "genre": "Blues",
-  "parent": null,
+  "parents": [
+   "Blues"
+  ],
   "provisional": true,
   "discogs": true
  },
  "country rock": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "cretan": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "crunk": {
-  "genre": "Hip Hop",
-  "parent": null,
+  "parents": [
+   "Hip Hop"
+  ],
   "provisional": true,
   "discogs": true
  },
  "crust": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "cuatro": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "cubano": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "cumbia": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "cut-up/dj": {
-  "genre": "Hip Hop",
-  "parent": null,
+  "parents": [
+   "Hip Hop"
+  ],
   "provisional": true,
   "discogs": true
  },
  "dance pop": {
-  "genre": "Pop",
-  "parent": null,
+  "parents": [
+   "Pop"
+  ],
   "provisional": true,
   "discogs": true
  },
  "dance-punk": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": false
  },
  "dance-rock": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": false
  },
  "dancehall": {
-  "genre": "Reggae",
-  "parent": null,
+  "parents": [
+   "Reggae"
+  ],
   "provisional": true,
   "discogs": true
  },
  "dangdut": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "dark ambient": {
-  "genre": "Electronic",
-  "parent": "ambient",
+  "parents": [
+   "ambient"
+  ],
   "discogs": true
  },
  "dark electro": {
-  "genre": "Electronic",
-  "parent": "industrial",
-  "also_under": [
+  "parents": [
+   "industrial",
    "electro"
   ],
   "discogs": true
  },
  "dark jazz": {
-  "genre": "Jazz",
-  "parent": null,
+  "parents": [
+   "Jazz"
+  ],
   "provisional": true,
   "discogs": true
  },
  "dark metal": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": false
  },
  "dark psytrance": {
-  "genre": "Electronic",
-  "parent": "psytrance",
+  "parents": [
+   "psytrance"
+  ],
   "display": "Dark Psy-Trance",
   "synonyms": [
    "darkpsy",
@@ -1024,148 +1138,165 @@
   "status": "approved"
  },
  "darksynth": {
-  "genre": "Electronic",
-  "parent": "synthwave",
-  "also_under": [
+  "parents": [
+   "synthwave",
    "industrial"
   ],
   "discogs": false,
   "status": "approved"
  },
  "darkwave": {
-  "genre": "Electronic",
-  "parent": null,
+  "parents": [
+   "Electronic"
+  ],
   "discogs": true
  },
  "death metal": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "deathcore": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "deathrock": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "deep house": {
-  "genre": "Electronic",
-  "parent": "house",
+  "parents": [
+   "house"
+  ],
   "discogs": true
  },
  "deep techno": {
-  "genre": "Electronic",
-  "parent": "techno",
+  "parents": [
+   "techno"
+  ],
   "discogs": true
  },
  "deep trance": {
-  "genre": "Electronic",
-  "parent": "trance",
+  "parents": [
+   "trance"
+  ],
   "discogs": false,
   "status": "question"
  },
  "delta blues": {
-  "genre": "Blues",
-  "parent": null,
+  "parents": [
+   "Blues"
+  ],
   "provisional": true,
   "discogs": true
  },
  "depressive black metal": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "descarga": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "desert blues": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "disco": {
-  "genre": "Funk / Soul",
-  "parent": null,
+  "parents": [
+   "Funk / Soul",
+   "Electronic"
+  ],
   "provisional": true,
   "synonyms": [
    "red disco"
   ],
-  "discogs": true,
-  "also_in_genres": [
-   "Electronic"
-  ]
+  "discogs": true
  },
  "disco polo": {
-  "genre": "Electronic",
-  "parent": null,
+  "parents": [
+   "Electronic"
+  ],
   "discogs": true
  },
  "dixieland": {
-  "genre": "Jazz",
-  "parent": null,
+  "parents": [
+   "Jazz"
+  ],
   "provisional": true,
   "discogs": true
  },
  "dj battle tool": {
-  "genre": "Hip Hop",
-  "parent": null,
+  "parents": [
+   "Hip Hop"
+  ],
   "provisional": true,
   "discogs": true
  },
  "donk": {
-  "genre": "Electronic",
-  "parent": "hardcore",
-  "also_under": [
+  "parents": [
+   "hardcore",
    "house"
   ],
   "discogs": true
  },
  "doo-wop": {
-  "genre": "Funk / Soul",
-  "parent": null,
+  "parents": [
+   "Funk / Soul"
+  ],
   "provisional": true,
   "discogs": true
  },
  "doom metal": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "doomcore": {
-  "genre": "Electronic",
-  "parent": "hardcore",
+  "parents": [
+   "hardcore"
+  ],
   "discogs": true
  },
  "downtempo": {
-  "genre": "Electronic",
-  "parent": null,
+  "parents": [
+   "Electronic"
+  ],
   "discogs": true,
   "synonyms": [
    "chillout"
   ]
  },
  "dream pop": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "dream trance": {
-  "genre": "Electronic",
-  "parent": "trance",
+  "parents": [
+   "trance"
+  ],
   "synonyms": [
    "dream house",
    "dream dance"
@@ -1174,31 +1305,36 @@
   "status": "approved"
  },
  "dreamsynth": {
-  "genre": "Electronic",
-  "parent": "synthwave",
+  "parents": [
+   "synthwave"
+  ],
   "discogs": false,
   "status": "approved"
  },
  "dreamwave": {
-  "genre": "Electronic",
-  "parent": "synthwave",
+  "parents": [
+   "synthwave"
+  ],
   "discogs": false,
   "status": "approved"
  },
  "drill": {
-  "genre": "Hip Hop",
-  "parent": null,
+  "parents": [
+   "Hip Hop"
+  ],
   "provisional": true,
   "discogs": true
  },
  "drone": {
-  "genre": "Electronic",
-  "parent": "ambient",
+  "parents": [
+   "ambient"
+  ],
   "discogs": true
  },
  "drum and bass": {
-  "genre": "Electronic",
-  "parent": null,
+  "parents": [
+   "Electronic"
+  ],
   "synonyms": [
    "dnb",
    "drum & bass",
@@ -1213,160 +1349,178 @@
   "display": "Drum & Bass"
  },
  "dub": {
-  "genre": "Reggae",
-  "parent": null,
+  "parents": [
+   "Reggae"
+  ],
   "provisional": true,
   "discogs": true
  },
  "dub poetry": {
-  "genre": "Reggae",
-  "parent": null,
+  "parents": [
+   "Reggae"
+  ],
   "provisional": true,
   "discogs": true
  },
  "dub techno": {
-  "genre": "Electronic",
-  "parent": "techno",
+  "parents": [
+   "techno"
+  ],
   "discogs": true
  },
  "dubstep": {
-  "genre": "Electronic",
-  "parent": "bass music",
+  "parents": [
+   "bass music"
+  ],
   "discogs": true
  },
  "dungeon synth": {
-  "genre": "Electronic",
-  "parent": "ambient",
-  "also_under": [
+  "parents": [
+   "ambient",
    "synthwave"
   ],
   "discogs": true
  },
  "early": {
-  "genre": "Classical",
-  "parent": null,
+  "parents": [
+   "Classical"
+  ],
   "provisional": true,
   "discogs": true
  },
  "east coast blues": {
-  "genre": "Blues",
-  "parent": null,
+  "parents": [
+   "Blues"
+  ],
   "provisional": true,
   "discogs": true
  },
  "easy listening": {
-  "genre": "Pop",
-  "parent": null,
+  "parents": [
+   "Pop"
+  ],
   "provisional": true,
   "discogs": true
  },
  "ebm": {
-  "genre": "Electronic",
-  "parent": "industrial",
-  "also_under": [
+  "parents": [
+   "industrial",
    "synthpop"
   ],
   "discogs": true
  },
  "electric blues": {
-  "genre": "Blues",
-  "parent": null,
+  "parents": [
+   "Blues"
+  ],
   "provisional": true,
   "discogs": true
  },
  "electro": {
-  "genre": "Electronic",
-  "parent": null,
+  "parents": [
+   "Electronic"
+  ],
   "discogs": true
  },
  "electro house": {
-  "genre": "Electronic",
-  "parent": "house",
-  "also_under": [
+  "parents": [
+   "house",
    "electro"
   ],
   "discogs": true
  },
  "electro swing": {
-  "genre": "Electronic",
-  "parent": null,
+  "parents": [
+   "Electronic"
+  ],
   "discogs": true
  },
  "electroclash": {
-  "genre": "Electronic",
-  "parent": "synthpop",
-  "also_under": [
+  "parents": [
+   "synthpop",
    "electro"
   ],
   "discogs": true
  },
  "electronic rock": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": false
  },
  "emo": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "enka": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "epic": {
-  "genre": "Classical",
-  "parent": null,
+  "parents": [
+   "Classical"
+  ],
   "provisional": true,
   "discogs": false
  },
  "estrada": {
-  "genre": "Pop",
-  "parent": null,
+  "parents": [
+   "Pop"
+  ],
   "provisional": true,
   "discogs": false
  },
  "ethereal": {
-  "genre": "Electronic",
-  "parent": null,
+  "parents": [
+   "Electronic"
+  ],
   "synonyms": [
    "ethereal wave"
   ],
   "discogs": true
  },
  "euro disco": {
-  "genre": "Electronic",
-  "parent": "disco",
+  "parents": [
+   "disco"
+  ],
+  "family": "Electronic",
   "synonyms": [
    "euro-disco"
   ],
   "discogs": true
  },
  "euro house": {
-  "genre": "Electronic",
-  "parent": "house",
+  "parents": [
+   "house"
+  ],
   "synonyms": [
    "eurohouse"
   ],
   "discogs": true
  },
  "euro trance": {
-  "genre": "Electronic",
-  "parent": "trance",
+  "parents": [
+   "trance"
+  ],
   "discogs": true
  },
  "eurobeat": {
-  "genre": "Electronic",
-  "parent": null,
+  "parents": [
+   "Electronic"
+  ],
   "discogs": true
  },
  "eurodance": {
-  "genre": "Electronic",
-  "parent": null,
+  "parents": [
+   "Electronic"
+  ],
   "synonyms": [
    "euroda",
    "bubblegum dance"
@@ -1374,8 +1528,9 @@
   "discogs": true
  },
  "europop": {
-  "genre": "Pop",
-  "parent": null,
+  "parents": [
+   "Pop"
+  ],
   "provisional": true,
   "synonyms": [
    "euro pop"
@@ -1383,72 +1538,84 @@
   "discogs": true
  },
  "exotica": {
-  "genre": "Jazz",
-  "parent": null,
+  "parents": [
+   "Jazz"
+  ],
   "provisional": true,
   "discogs": true
  },
  "experimental": {
-  "genre": "Electronic",
-  "parent": null,
+  "parents": [
+   "Electronic"
+  ],
   "discogs": true
  },
  "fado": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "favela funk": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "flamenco": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "folk": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "folk metal": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "folk pop": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": false
  },
  "folk punk": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": false
  },
  "folk rock": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "footwork": {
-  "genre": "Electronic",
-  "parent": null,
+  "parents": [
+   "Electronic"
+  ],
   "discogs": true
  },
  "forest psytrance": {
-  "genre": "Electronic",
-  "parent": "psytrance",
+  "parents": [
+   "psytrance"
+  ],
   "display": "Forest Psy-Trance",
   "synonyms": [
    "forest psy",
@@ -1458,45 +1625,52 @@
   "status": "approved"
  },
  "forró": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "free funk": {
-  "genre": "Funk / Soul",
-  "parent": null,
+  "parents": [
+   "Funk / Soul"
+  ],
   "provisional": true,
   "discogs": true
  },
  "free improvisation": {
-  "genre": "Jazz",
-  "parent": null,
+  "parents": [
+   "Jazz"
+  ],
   "provisional": true,
   "discogs": true
  },
  "free jazz": {
-  "genre": "Jazz",
-  "parent": null,
+  "parents": [
+   "Jazz"
+  ],
   "provisional": true,
   "discogs": true
  },
  "french house": {
-  "genre": "Electronic",
-  "parent": "house",
+  "parents": [
+   "house"
+  ],
   "synonyms": [
    "french touch"
   ],
   "discogs": false
  },
  "freestyle": {
-  "genre": "Electronic",
-  "parent": null,
+  "parents": [
+   "Electronic"
+  ],
   "discogs": true
  },
  "full-on psytrance": {
-  "genre": "Electronic",
-  "parent": "psytrance",
+  "parents": [
+   "psytrance"
+  ],
   "display": "Full-On Psy-Trance",
   "synonyms": [
    "full on",
@@ -1509,111 +1683,128 @@
   "status": "approved"
  },
  "funeral doom metal": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "funk": {
-  "genre": "Funk / Soul",
-  "parent": null,
+  "parents": [
+   "Funk / Soul"
+  ],
   "provisional": true,
   "discogs": true
  },
  "funk metal": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "fusion": {
-  "genre": "Jazz",
-  "parent": null,
+  "parents": [
+   "Jazz"
+  ],
   "provisional": true,
   "discogs": true
  },
  "future bass": {
-  "genre": "Electronic",
-  "parent": "bass music",
-  "also_under": [
+  "parents": [
+   "bass music",
    "house"
   ],
   "discogs": true
  },
  "future house": {
-  "genre": "Electronic",
-  "parent": "house",
+  "parents": [
+   "house"
+  ],
   "discogs": true
  },
  "future jazz": {
-  "genre": "Electronic",
-  "parent": null,
+  "parents": [
+   "Electronic"
+  ],
   "discogs": true
  },
  "g-funk": {
-  "genre": "Hip Hop",
-  "parent": null,
+  "parents": [
+   "Hip Hop"
+  ],
   "provisional": true,
   "discogs": true
  },
  "gabber": {
-  "genre": "Electronic",
-  "parent": "hardcore",
+  "parents": [
+   "hardcore"
+  ],
   "discogs": true
  },
  "gagaku": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "gamelan": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "gangsta": {
-  "genre": "Hip Hop",
-  "parent": null,
+  "parents": [
+   "Hip Hop"
+  ],
   "provisional": true,
   "discogs": true
  },
  "garage house": {
-  "genre": "Electronic",
-  "parent": "house",
+  "parents": [
+   "house"
+  ],
   "discogs": true
  },
  "garage rock": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "ghazal": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "ghetto": {
-  "genre": "Electronic",
-  "parent": null,
+  "parents": [
+   "Electronic"
+  ],
   "discogs": true
  },
  "ghetto house": {
-  "genre": "Electronic",
-  "parent": "house",
+  "parents": [
+   "house"
+  ],
   "discogs": true
  },
  "ghettotech": {
-  "genre": "Electronic",
-  "parent": null,
+  "parents": [
+   "Electronic"
+  ],
   "discogs": true
  },
  "glam": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "synonyms": [
    "glam rock"
@@ -1621,202 +1812,225 @@
   "discogs": true
  },
  "glitch": {
-  "genre": "Electronic",
-  "parent": "experimental",
+  "parents": [
+   "experimental"
+  ],
   "discogs": true
  },
  "glitch hop": {
-  "genre": "Electronic",
-  "parent": "bass music",
-  "also_under": [
+  "parents": [
+   "bass music",
    "breakbeat"
   ],
   "discogs": true
  },
  "gnawa": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "go-go": {
-  "genre": "Funk / Soul",
-  "parent": null,
+  "parents": [
+   "Funk / Soul"
+  ],
   "provisional": true,
   "discogs": true
  },
  "goa trance": {
-  "genre": "Electronic",
-  "parent": "psytrance",
+  "parents": [
+   "psytrance"
+  ],
   "discogs": true
  },
  "goregrind": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "gospel": {
-  "genre": "Funk / Soul",
-  "parent": null,
+  "parents": [
+   "Funk / Soul"
+  ],
   "provisional": true,
   "discogs": true
  },
  "goth rock": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "gothic metal": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "gqom": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "grime": {
-  "genre": "Electronic",
-  "parent": null,
+  "parents": [
+   "Electronic"
+  ],
   "discogs": true
  },
  "grindcore": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "groove metal": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "grunge": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "guaguancó": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "guajira": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "guaracha": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "gypsy jazz": {
-  "genre": "Jazz",
-  "parent": null,
+  "parents": [
+   "Jazz"
+  ],
   "provisional": true,
   "discogs": true
  },
  "halftime": {
-  "genre": "Electronic",
-  "parent": null,
+  "parents": [
+   "Electronic"
+  ],
   "discogs": true
  },
  "hands up": {
-  "genre": "Electronic",
-  "parent": "eurodance",
-  "also_under": [
+  "parents": [
+   "eurodance",
    "trance"
   ],
   "discogs": true
  },
  "happy hardcore": {
-  "genre": "Electronic",
-  "parent": "hardcore",
+  "parents": [
+   "hardcore"
+  ],
   "discogs": true
  },
  "hard bop": {
-  "genre": "Jazz",
-  "parent": null,
+  "parents": [
+   "Jazz"
+  ],
   "provisional": true,
   "discogs": true
  },
  "hard house": {
-  "genre": "Electronic",
-  "parent": "house",
-  "also_under": [
+  "parents": [
+   "house",
    "hardcore"
   ],
   "discogs": true
  },
  "hard rock": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "hard techno": {
-  "genre": "Electronic",
-  "parent": "techno",
+  "parents": [
+   "techno"
+  ],
   "discogs": true
  },
  "hard trance": {
-  "genre": "Electronic",
-  "parent": "trance",
-  "also_under": [
+  "parents": [
+   "trance",
    "hardcore"
   ],
   "discogs": true
  },
  "hardcore": {
-  "genre": "Electronic",
-  "parent": null,
+  "parents": [
+   "Electronic"
+  ],
   "discogs": true
  },
  "hardcore hip hop": {
-  "genre": "Hip Hop",
-  "parent": null,
+  "parents": [
+   "Hip Hop"
+  ],
   "provisional": true,
   "discogs": true
  },
  "hardstyle": {
-  "genre": "Electronic",
-  "parent": "hardcore",
-  "also_under": [
+  "parents": [
+   "hardcore",
    "trance"
   ],
   "discogs": true
  },
  "harmonica blues": {
-  "genre": "Blues",
-  "parent": null,
+  "parents": [
+   "Blues"
+  ],
   "provisional": true,
   "discogs": true
  },
  "harsh noise wall": {
-  "genre": "Electronic",
-  "parent": "industrial",
+  "parents": [
+   "industrial"
+  ],
   "discogs": true
  },
  "hawaiian": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "heavy metal": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "synonyms": [
    "metal"
@@ -1824,54 +2038,64 @@
   "discogs": true
  },
  "hi-nrg": {
-  "genre": "Electronic",
-  "parent": "disco",
+  "parents": [
+   "disco"
+  ],
+  "family": "Electronic",
   "discogs": true
  },
  "highlife": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "hill country blues": {
-  "genre": "Blues",
-  "parent": null,
+  "parents": [
+   "Blues"
+  ],
   "provisional": true,
   "discogs": true
  },
  "hillbilly": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "hindustani": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "hip house": {
-  "genre": "Electronic",
-  "parent": "house",
+  "parents": [
+   "house"
+  ],
   "discogs": true
  },
  "honky tonk": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "horrorcore": {
-  "genre": "Hip Hop",
-  "parent": null,
+  "parents": [
+   "Hip Hop"
+  ],
   "provisional": true,
   "discogs": true
  },
  "house": {
-  "genre": "Electronic",
-  "parent": null,
+  "parents": [
+   "Electronic"
+  ],
   "discogs": true,
   "synonyms": [
    "afro house",
@@ -1880,51 +2104,59 @@
   ]
  },
  "hyperpop": {
-  "genre": "Pop",
-  "parent": null,
+  "parents": [
+   "Pop"
+  ],
   "provisional": true,
   "discogs": true
  },
  "hyphy": {
-  "genre": "Hip Hop",
-  "parent": null,
+  "parents": [
+   "Hip Hop"
+  ],
   "provisional": true,
   "discogs": true
  },
  "idm": {
-  "genre": "Electronic",
-  "parent": null,
+  "parents": [
+   "Electronic"
+  ],
   "synonyms": [
    "intelligent dance music"
   ],
   "discogs": true
  },
  "illbient": {
-  "genre": "Electronic",
-  "parent": "ambient",
+  "parents": [
+   "ambient"
+  ],
   "discogs": true
  },
  "impressionist": {
-  "genre": "Classical",
-  "parent": null,
+  "parents": [
+   "Classical"
+  ],
   "provisional": true,
   "discogs": true
  },
  "indian classical": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "indie pop": {
-  "genre": "Pop",
-  "parent": null,
+  "parents": [
+   "Pop"
+  ],
   "provisional": true,
   "discogs": true
  },
  "indie rock": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "synonyms": [
    "rock and indie"
@@ -1932,198 +2164,231 @@
   "discogs": true
  },
  "industrial": {
-  "genre": "Electronic",
-  "parent": null,
+  "parents": [
+   "Electronic"
+  ],
   "discogs": true
  },
  "industrial metal": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "industrial rock": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": false
  },
  "instrumental": {
-  "genre": "Hip Hop",
-  "parent": null,
+  "parents": [
+   "Hip Hop"
+  ],
   "provisional": true,
   "discogs": true
  },
  "italo disco": {
-  "genre": "Electronic",
-  "parent": "disco",
+  "parents": [
+   "disco"
+  ],
+  "family": "Electronic",
   "discogs": true
  },
  "italo house": {
-  "genre": "Electronic",
-  "parent": "house",
+  "parents": [
+   "house"
+  ],
   "discogs": true
  },
  "italodance": {
-  "genre": "Electronic",
-  "parent": "eurodance",
+  "parents": [
+   "eurodance"
+  ],
   "discogs": true
  },
  "j-pop": {
-  "genre": "Pop",
-  "parent": null,
+  "parents": [
+   "Pop"
+  ],
   "provisional": true,
   "discogs": true
  },
  "jangle pop": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "jazz funk": {
-  "genre": "Jazz",
-  "parent": null,
+  "parents": [
+   "Jazz"
+  ],
   "provisional": true,
   "discogs": true
  },
  "jazz-rock": {
-  "genre": "Jazz",
-  "parent": null,
+  "parents": [
+   "Jazz"
+  ],
   "provisional": true,
   "discogs": true
  },
  "jazzdance": {
-  "genre": "Electronic",
-  "parent": null,
+  "parents": [
+   "Electronic"
+  ],
   "discogs": true
  },
  "jazzy hip-hop": {
-  "genre": "Hip Hop",
-  "parent": null,
+  "parents": [
+   "Hip Hop"
+  ],
   "provisional": true,
   "discogs": true
  },
  "juke": {
-  "genre": "Electronic",
-  "parent": null,
+  "parents": [
+   "Electronic"
+  ],
   "discogs": true
  },
  "jump blues": {
-  "genre": "Blues",
-  "parent": null,
+  "parents": [
+   "Blues"
+  ],
   "provisional": true,
   "discogs": true
  },
  "jumpstyle": {
-  "genre": "Electronic",
-  "parent": "hardcore",
+  "parents": [
+   "hardcore"
+  ],
   "discogs": true
  },
  "jungle": {
-  "genre": "Electronic",
-  "parent": "drum and bass",
-  "also_under": [
+  "parents": [
+   "drum and bass",
    "breakbeat"
   ],
   "discogs": true
  },
  "k-pop": {
-  "genre": "Pop",
-  "parent": null,
+  "parents": [
+   "Pop"
+  ],
   "provisional": true,
   "discogs": true
  },
  "kaseko": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "kayōkyoku": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "keroncong": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "kizomba": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "klezmer": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "krautrock": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "kuduro": {
-  "genre": "Electronic",
-  "parent": null,
+  "parents": [
+   "Electronic"
+  ],
   "discogs": true
  },
  "kwaito": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "latin jazz": {
-  "genre": "Jazz",
-  "parent": null,
+  "parents": [
+   "Jazz"
+  ],
   "provisional": true,
   "discogs": true
  },
  "latin pop": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "laïko": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "leftfield": {
-  "genre": "Electronic",
-  "parent": null,
+  "parents": [
+   "Electronic"
+  ],
   "discogs": true
  },
  "lento violento": {
-  "genre": "Electronic",
-  "parent": null,
+  "parents": [
+   "Electronic"
+  ],
   "discogs": true
  },
  "levenslied": {
-  "genre": "Pop",
-  "parent": null,
+  "parents": [
+   "Pop"
+  ],
   "provisional": true,
   "discogs": true
  },
  "light music": {
-  "genre": "Pop",
-  "parent": null,
+  "parents": [
+   "Pop"
+  ],
   "provisional": true,
   "discogs": true
  },
  "liquid drum and bass": {
-  "genre": "Electronic",
-  "parent": "drum and bass",
+  "parents": [
+   "drum and bass"
+  ],
   "synonyms": [
    "liquid dnb",
    "liquid drum & bass",
@@ -2139,149 +2404,169 @@
   "display": "Liquid Drum & Bass"
  },
  "lo-fi": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "louisiana blues": {
-  "genre": "Blues",
-  "parent": null,
+  "parents": [
+   "Blues"
+  ],
   "provisional": true,
   "discogs": true
  },
  "lounge": {
-  "genre": "Pop",
-  "parent": null,
+  "parents": [
+   "Pop"
+  ],
   "provisional": true,
   "discogs": true
  },
  "lovers rock": {
-  "genre": "Reggae",
-  "parent": null,
+  "parents": [
+   "Reggae"
+  ],
   "provisional": true,
   "discogs": true
  },
  "lowercase": {
-  "genre": "Electronic",
-  "parent": "ambient",
+  "parents": [
+   "ambient"
+  ],
   "discogs": true
  },
  "makina": {
-  "genre": "Electronic",
-  "parent": "hardcore",
+  "parents": [
+   "hardcore"
+  ],
   "discogs": true
  },
  "mambo": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "mandopop": {
-  "genre": "Pop",
-  "parent": null,
+  "parents": [
+   "Pop"
+  ],
   "provisional": true,
   "discogs": true
  },
  "mariachi": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "math rock": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "mathcore": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "mbalax": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "medieval": {
-  "genre": "Classical",
-  "parent": null,
+  "parents": [
+   "Classical"
+  ],
   "provisional": true,
   "discogs": true
  },
  "melodic death metal": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "melodic hardcore": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "melodic techno": {
-  "genre": "Electronic",
-  "parent": "techno",
-  "also_under": [
+  "parents": [
+   "techno",
    "trance"
   ],
   "discogs": false,
   "status": "approved"
  },
  "memphis blues": {
-  "genre": "Blues",
-  "parent": null,
+  "parents": [
+   "Blues"
+  ],
   "provisional": true,
   "discogs": true
  },
  "memphis rap": {
-  "genre": "Hip Hop",
-  "parent": null,
+  "parents": [
+   "Hip Hop"
+  ],
   "provisional": true,
   "discogs": true
  },
  "mento": {
-  "genre": "Reggae",
-  "parent": null,
+  "parents": [
+   "Reggae"
+  ],
   "provisional": true,
   "discogs": true
  },
  "merengue": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "metalcore": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "miami bass": {
-  "genre": "Hip Hop",
-  "parent": null,
+  "parents": [
+   "Hip Hop"
+  ],
   "provisional": true,
   "discogs": true
  },
  "microhouse": {
-  "genre": "Electronic",
-  "parent": "house",
-  "also_under": [
+  "parents": [
+   "house",
    "techno"
   ],
   "discogs": true
  },
  "middle of the road": {
-  "genre": "Pop",
-  "parent": null,
+  "parents": [
+   "Pop"
+  ],
   "provisional": true,
   "synonyms": [
    "mor"
@@ -2289,455 +2574,526 @@
   "discogs": false
  },
  "midwest emo": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "min'yō": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "minimal": {
-  "genre": "Electronic",
-  "parent": null,
-  "also_under": [
+  "parents": [
+   "Electronic",
    "techno",
    "house"
   ],
   "discogs": true
  },
  "minimal techno": {
-  "genre": "Electronic",
-  "parent": "techno",
-  "also_under": [
+  "parents": [
+   "techno",
    "house"
   ],
   "discogs": true
  },
  "minimalism": {
-  "genre": "Classical",
-  "parent": null,
+  "parents": [
+   "Classical"
+  ],
   "provisional": true,
   "discogs": true
  },
  "mod": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "modal": {
-  "genre": "Jazz",
-  "parent": null,
+  "parents": [
+   "Jazz"
+  ],
   "provisional": true,
   "discogs": true
  },
  "modern": {
-  "genre": "Classical",
-  "parent": null,
+  "parents": [
+   "Classical"
+  ],
   "provisional": true,
   "discogs": true
  },
  "modern classical": {
-  "genre": "Classical",
-  "parent": null,
+  "parents": [
+   "Classical"
+  ],
   "provisional": true,
   "discogs": true
  },
  "modern electric blues": {
-  "genre": "Blues",
-  "parent": null,
+  "parents": [
+   "Blues"
+  ],
   "provisional": true,
   "discogs": true
  },
  "moombahton": {
-  "genre": "Electronic",
-  "parent": "bass music",
+  "parents": [
+   "bass music"
+  ],
   "discogs": true
  },
  "mouth music": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "mpb": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "musette": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "music hall": {
-  "genre": "Pop",
-  "parent": null,
+  "parents": [
+   "Pop"
+  ],
   "provisional": true,
   "discogs": true
  },
  "musique concrète": {
-  "genre": "Electronic",
-  "parent": "experimental",
+  "parents": [
+   "experimental"
+  ],
   "discogs": true
  },
  "música criolla": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "neo soul": {
-  "genre": "Funk / Soul",
-  "parent": null,
+  "parents": [
+   "Funk / Soul"
+  ],
   "provisional": true,
   "discogs": true
  },
  "neo trance": {
-  "genre": "Electronic",
-  "parent": "trance",
+  "parents": [
+   "trance"
+  ],
   "discogs": true
  },
  "neo-romantic": {
-  "genre": "Classical",
-  "parent": null,
+  "parents": [
+   "Classical"
+  ],
   "provisional": true,
   "discogs": true
  },
  "neoclassical": {
-  "genre": "Classical",
-  "parent": null,
+  "parents": [
+   "Classical"
+  ],
   "provisional": true,
   "discogs": true
  },
  "neofolk": {
-  "genre": "Electronic",
-  "parent": null,
+  "parents": [
+   "Electronic"
+  ],
   "discogs": true
  },
  "neurofunk": {
-  "genre": "Electronic",
-  "parent": "drum and bass",
-  "also_under": [
+  "parents": [
+   "drum and bass",
    "industrial"
   ],
   "discogs": false,
   "status": "approved"
  },
  "new age": {
-  "genre": "Electronic",
-  "parent": null,
+  "parents": [
+   "Electronic"
+  ],
   "discogs": true
  },
  "new beat": {
-  "genre": "Electronic",
-  "parent": null,
+  "parents": [
+   "Electronic"
+  ],
   "discogs": true
  },
  "new jack swing": {
-  "genre": "Funk / Soul",
-  "parent": null,
+  "parents": [
+   "Funk / Soul"
+  ],
   "provisional": true,
   "discogs": true
  },
  "new romantic": {
-  "genre": "Pop",
-  "parent": null,
+  "parents": [
+   "Pop"
+  ],
   "provisional": true,
   "discogs": false
  },
  "new wave": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "no wave": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "noise": {
-  "genre": "Electronic",
-  "parent": null,
+  "parents": [
+   "Electronic"
+  ],
   "discogs": true
  },
  "noisecore": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "nordic": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "norteño": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "nu metal": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "nu-disco": {
-  "genre": "Electronic",
-  "parent": "disco",
+  "parents": [
+   "disco"
+  ],
+  "family": "Electronic",
   "discogs": true
  },
  "nu-nrg": {
-  "genre": "Electronic",
-  "parent": "trance",
+  "parents": [
+   "trance"
+  ],
   "discogs": false,
   "status": "approved"
  },
  "nueva canción": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "oi": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "opera": {
-  "genre": "Classical",
-  "parent": null,
+  "parents": [
+   "Classical"
+  ],
   "provisional": true,
   "discogs": true
  },
  "operetta": {
-  "genre": "Classical",
-  "parent": null,
+  "parents": [
+   "Classical"
+  ],
   "provisional": true,
   "discogs": true
  },
  "oratorio": {
-  "genre": "Classical",
-  "parent": null,
+  "parents": [
+   "Classical"
+  ],
   "provisional": true,
   "discogs": true
  },
  "orchestral pop": {
-  "genre": "Pop",
-  "parent": null,
+  "parents": [
+   "Pop"
+  ],
   "provisional": true,
   "discogs": false
  },
  "p-funk": {
-  "genre": "Funk / Soul",
-  "parent": null,
+  "parents": [
+   "Funk / Soul"
+  ],
   "provisional": true,
   "discogs": true
  },
  "pachanga": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "pacific": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "pagode": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "paisley underground": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": false
  },
  "pasodoble": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "persian classical": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "phonk": {
-  "genre": "Hip Hop",
-  "parent": null,
+  "parents": [
+   "Hip Hop"
+  ],
   "provisional": true,
   "discogs": true
  },
  "piano blues": {
-  "genre": "Blues",
-  "parent": null,
+  "parents": [
+   "Blues"
+  ],
   "provisional": true,
   "discogs": true
  },
  "piedmont blues": {
-  "genre": "Blues",
-  "parent": null,
+  "parents": [
+   "Blues"
+  ],
   "provisional": true,
   "discogs": true
  },
  "plena": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "plunderphonics": {
-  "genre": "Electronic",
-  "parent": "experimental",
+  "parents": [
+   "experimental"
+  ],
   "discogs": true
  },
  "polka": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "pop punk": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "pop rap": {
-  "genre": "Hip Hop",
-  "parent": null,
+  "parents": [
+   "Hip Hop"
+  ],
   "provisional": true,
   "discogs": true
  },
  "pop rock": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "pop soul": {
-  "genre": "Funk / Soul",
-  "parent": null,
+  "parents": [
+   "Funk / Soul"
+  ],
   "provisional": true,
   "discogs": false
  },
  "pornogrind": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "porro": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "post-bop": {
-  "genre": "Jazz",
-  "parent": null,
+  "parents": [
+   "Jazz"
+  ],
   "provisional": true,
   "discogs": true
  },
  "post-britpop": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": false
  },
  "post-disco": {
-  "genre": "Funk / Soul",
-  "parent": null,
+  "parents": [
+   "Funk / Soul"
+  ],
   "provisional": true,
   "discogs": false
  },
  "post-grunge": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "post-hardcore": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "post-metal": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "post-modern": {
-  "genre": "Classical",
-  "parent": null,
+  "parents": [
+   "Classical"
+  ],
   "provisional": true,
   "discogs": true
  },
  "post-punk": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "post-punk revival": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": false
  },
  "post-rock": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "power electronics": {
-  "genre": "Electronic",
-  "parent": "industrial",
+  "parents": [
+   "industrial"
+  ],
   "discogs": true
  },
  "power metal": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "power pop": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "progressive breaks": {
-  "genre": "Electronic",
-  "parent": "breakbeat",
+  "parents": [
+   "breakbeat"
+  ],
   "discogs": true
  },
  "progressive house": {
-  "genre": "Electronic",
-  "parent": "house",
+  "parents": [
+   "house"
+  ],
   "synonyms": [
    "deep progressive",
    "melodic progressive house",
@@ -2746,20 +3102,23 @@
   "discogs": true
  },
  "progressive metal": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "progressive pop": {
-  "genre": "Pop",
-  "parent": null,
+  "parents": [
+   "Pop"
+  ],
   "provisional": true,
   "discogs": false
  },
  "progressive psytrance": {
-  "genre": "Electronic",
-  "parent": "psytrance",
+  "parents": [
+   "psytrance"
+  ],
   "display": "Progressive Psy-Trance",
   "synonyms": [
    "prog psy",
@@ -2770,46 +3129,51 @@
   "status": "approved"
  },
  "progressive rock": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "progressive trance": {
-  "genre": "Electronic",
-  "parent": "trance",
+  "parents": [
+   "trance"
+  ],
   "discogs": true
  },
  "psybient": {
-  "genre": "Electronic",
-  "parent": "psytrance",
-  "also_under": [
+  "parents": [
+   "psytrance",
    "ambient"
   ],
   "discogs": false,
   "status": "approved"
  },
  "psychedelic rock": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "psychedelic soul": {
-  "genre": "Funk / Soul",
-  "parent": null,
+  "parents": [
+   "Funk / Soul"
+  ],
   "provisional": true,
   "discogs": false
  },
  "psychobilly": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "psytrance": {
-  "genre": "Electronic",
-  "parent": null,
+  "parents": [
+   "Electronic"
+  ],
   "display": "Psy-Trance",
   "synonyms": [
    "psychedelic trance",
@@ -2819,14 +3183,16 @@
   "discogs": true
  },
  "pub rock": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "punk": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "synonyms": [
    "punk rock"
@@ -2834,336 +3200,390 @@
   "discogs": true
  },
  "qawwali": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "r&b": {
-  "genre": "Funk / Soul",
-  "parent": null,
+  "parents": [
+   "Funk / Soul"
+  ],
   "provisional": true,
   "discogs": false
  },
  "ragga": {
-  "genre": "Reggae",
-  "parent": null,
+  "parents": [
+   "Reggae"
+  ],
   "provisional": true,
   "discogs": true
  },
  "ragga hiphop": {
-  "genre": "Hip Hop",
-  "parent": null,
+  "parents": [
+   "Hip Hop"
+  ],
   "provisional": true,
   "discogs": true
  },
  "ragtime": {
-  "genre": "Jazz",
-  "parent": null,
+  "parents": [
+   "Jazz"
+  ],
   "provisional": true,
   "discogs": true
  },
  "rai": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "ranchera": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "rap metal": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": false
  },
  "rebetiko": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "reggae gospel": {
-  "genre": "Reggae",
-  "parent": null,
+  "parents": [
+   "Reggae"
+  ],
   "provisional": true,
   "discogs": true
  },
  "reggae-pop": {
-  "genre": "Reggae",
-  "parent": null,
+  "parents": [
+   "Reggae"
+  ],
   "provisional": true,
   "discogs": true
  },
  "reggaeton": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "renaissance": {
-  "genre": "Classical",
-  "parent": null,
+  "parents": [
+   "Classical"
+  ],
   "provisional": true,
   "discogs": true
  },
  "requiem": {
-  "genre": "Classical",
-  "parent": null,
+  "parents": [
+   "Classical"
+  ],
   "provisional": true,
   "discogs": true
  },
  "rhythm and blues": {
-  "genre": "Funk / Soul",
-  "parent": null,
+  "parents": [
+   "Funk / Soul"
+  ],
   "provisional": true,
   "discogs": true
  },
  "rhythmic noise": {
-  "genre": "Electronic",
-  "parent": "industrial",
-  "also_under": [
+  "parents": [
+   "industrial",
    "noise"
   ],
   "discogs": true
  },
  "rnb/swing": {
-  "genre": "Funk / Soul",
-  "parent": null,
+  "parents": [
+   "Funk / Soul"
+  ],
   "provisional": true,
   "discogs": true
  },
  "rock and roll": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "rock opera": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "rockabilly": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "rocksteady": {
-  "genre": "Reggae",
-  "parent": null,
+  "parents": [
+   "Reggae"
+  ],
   "provisional": true,
   "discogs": true
  },
  "romani": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "roots reggae": {
-  "genre": "Reggae",
-  "parent": null,
+  "parents": [
+   "Reggae"
+  ],
   "provisional": true,
   "discogs": true
  },
  "rumba": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "sadcore": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": false
  },
  "salsa": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "samba": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "samba-canção": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "schlager": {
-  "genre": "Pop",
-  "parent": null,
+  "parents": [
+   "Pop"
+  ],
   "provisional": true,
   "discogs": true
  },
  "schranz": {
-  "genre": "Electronic",
-  "parent": "techno",
+  "parents": [
+   "techno"
+  ],
   "discogs": true
  },
  "screamo": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "screw": {
-  "genre": "Hip Hop",
-  "parent": null,
+  "parents": [
+   "Hip Hop"
+  ],
   "provisional": true,
   "discogs": true
  },
  "sephardic": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "seresta": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "sertanejo": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "shock rock": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": false
  },
  "shoegaze": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "singer-songwriter": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": false
  },
  "ska": {
-  "genre": "Reggae",
-  "parent": null,
+  "parents": [
+   "Reggae"
+  ],
   "provisional": true,
   "discogs": true
  },
  "skiffle": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "skweee": {
-  "genre": "Electronic",
-  "parent": null,
+  "parents": [
+   "Electronic"
+  ],
   "discogs": true
  },
  "slowcore": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "sludge metal": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "smooth jazz": {
-  "genre": "Jazz",
-  "parent": null,
+  "parents": [
+   "Jazz"
+  ],
   "provisional": true,
   "discogs": true
  },
  "soca": {
-  "genre": "Reggae",
-  "parent": null,
+  "parents": [
+   "Reggae"
+  ],
   "provisional": true,
   "discogs": true
  },
  "soft rock": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "son": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "son montuno": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "sonata": {
-  "genre": "Classical",
-  "parent": null,
+  "parents": [
+   "Classical"
+  ],
   "provisional": true,
   "discogs": true
  },
  "soukous": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "soul": {
-  "genre": "Funk / Soul",
-  "parent": null,
+  "parents": [
+   "Funk / Soul"
+  ],
   "provisional": true,
   "discogs": true
  },
  "soul jazz": {
-  "genre": "Jazz",
-  "parent": null,
+  "parents": [
+   "Jazz"
+  ],
   "provisional": true,
   "discogs": true
  },
  "sound art": {
-  "genre": "Electronic",
-  "parent": "experimental",
+  "parents": [
+   "experimental"
+  ],
   "discogs": true
  },
  "sound collage": {
-  "genre": "Electronic",
-  "parent": "experimental",
+  "parents": [
+   "experimental"
+  ],
   "discogs": true
  },
  "southern rock": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "soviet wave": {
-  "genre": "Electronic",
-  "parent": "synthwave",
+  "parents": [
+   "synthwave"
+  ],
   "display": "Soviet Wave",
   "synonyms": [
    "sovietwave",
@@ -3174,121 +3594,148 @@
   "discogs": false,
   "status": "approved"
  },
+ "space disco": {
+  "parents": [
+   "disco"
+  ],
+  "family": "Electronic",
+  "discogs": false,
+  "status": "approved",
+  "display": "Space Disco",
+  "synonyms": [
+   "space-disco"
+  ]
+ },
  "space rock": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "space-age": {
-  "genre": "Jazz",
-  "parent": null,
+  "parents": [
+   "Jazz"
+  ],
   "provisional": true,
   "discogs": true
  },
  "spacesynth": {
-  "genre": "Electronic",
-  "parent": null,
-  "also_under": [
+  "parents": [
+   "synthwave",
    "italo disco"
   ],
   "discogs": false,
   "status": "approved"
  },
  "speed garage": {
-  "genre": "Electronic",
-  "parent": "uk garage",
-  "also_under": [
+  "parents": [
+   "uk garage",
    "house"
   ],
   "discogs": true
  },
  "speed metal": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "speedcore": {
-  "genre": "Electronic",
-  "parent": "hardcore",
+  "parents": [
+   "hardcore"
+  ],
   "discogs": true
  },
  "spiritual jazz": {
-  "genre": "Jazz",
-  "parent": null,
+  "parents": [
+   "Jazz"
+  ],
   "provisional": true,
   "discogs": true
  },
  "stoner rock": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "sunshine house": {
-  "genre": "Electronic",
-  "parent": "house",
+  "parents": [
+   "house"
+  ],
   "discogs": false,
   "status": "approved"
  },
  "sunshine pop": {
-  "genre": "Pop",
-  "parent": null,
+  "parents": [
+   "Pop"
+  ],
   "provisional": true,
   "discogs": true
  },
  "surf": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "swing": {
-  "genre": "Jazz",
-  "parent": null,
+  "parents": [
+   "Jazz"
+  ],
   "provisional": true,
   "discogs": true
  },
  "swingbeat": {
-  "genre": "Funk / Soul",
-  "parent": null,
+  "parents": [
+   "Funk / Soul"
+  ],
   "provisional": true,
   "discogs": true
  },
  "symphonic metal": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "symphonic rock": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "symphony": {
-  "genre": "Classical",
-  "parent": null,
+  "parents": [
+   "Classical"
+  ],
   "provisional": true,
   "discogs": true
  },
  "synth-funk": {
-  "genre": "Funk / Soul",
-  "parent": null,
+  "parents": [
+   "Funk / Soul"
+  ],
   "provisional": true,
   "discogs": false
  },
  "synth-rock": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": false
  },
  "synthpop": {
-  "genre": "Electronic",
-  "parent": null,
+  "parents": [
+   "Electronic"
+  ],
   "discogs": true,
   "synonyms": [
    "techno pop",
@@ -3299,96 +3746,107 @@
   ]
  },
  "synthwave": {
-  "genre": "Electronic",
-  "parent": null,
+  "parents": [
+   "Electronic"
+  ],
   "synonyms": [
    "retro-synth"
   ],
   "discogs": true
  },
  "séga": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "taarab": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "tango": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "tech house": {
-  "genre": "Electronic",
-  "parent": "house",
-  "also_under": [
+  "parents": [
+   "house",
    "techno"
   ],
   "discogs": true
  },
  "tech trance": {
-  "genre": "Electronic",
-  "parent": "trance",
-  "also_under": [
+  "parents": [
+   "trance",
    "techno"
   ],
   "discogs": true
  },
  "technical death metal": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "techno": {
-  "genre": "Electronic",
-  "parent": null,
+  "parents": [
+   "Electronic"
+  ],
   "discogs": true
  },
  "tejano": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "texas blues": {
-  "genre": "Blues",
-  "parent": null,
+  "parents": [
+   "Blues"
+  ],
   "provisional": true,
   "discogs": true
  },
  "thrash": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "thug rap": {
-  "genre": "Hip Hop",
-  "parent": null,
+  "parents": [
+   "Hip Hop"
+  ],
   "provisional": true,
   "discogs": true
  },
  "timba": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "trance": {
-  "genre": "Electronic",
-  "parent": null,
+  "parents": [
+   "Electronic"
+  ],
   "discogs": true
  },
  "trap": {
-  "genre": "Hip Hop",
-  "parent": null,
+  "parents": [
+   "Hip Hop"
+  ],
   "provisional": true,
   "synonyms": [
    "festival trap"
@@ -3396,54 +3854,61 @@
   "discogs": true
  },
  "tribal": {
-  "genre": "Electronic",
-  "parent": null,
-  "also_under": [
+  "parents": [
+   "Electronic",
    "house"
   ],
   "discogs": true
  },
  "tribal house": {
-  "genre": "Electronic",
-  "parent": "house",
+  "parents": [
+   "house"
+  ],
   "discogs": true
  },
  "trip hop": {
-  "genre": "Electronic",
-  "parent": "downtempo",
+  "parents": [
+   "downtempo"
+  ],
   "discogs": true
  },
  "tropical house": {
-  "genre": "Electronic",
-  "parent": "house",
+  "parents": [
+   "house"
+  ],
   "discogs": true
  },
  "trova": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "turntablism": {
-  "genre": "Hip Hop",
-  "parent": null,
+  "parents": [
+   "Hip Hop"
+  ],
   "provisional": true,
   "discogs": true
  },
  "uk garage": {
-  "genre": "Electronic",
-  "parent": null,
+  "parents": [
+   "Electronic"
+  ],
   "discogs": true
  },
  "uk street soul": {
-  "genre": "Funk / Soul",
-  "parent": null,
+  "parents": [
+   "Funk / Soul"
+  ],
   "provisional": true,
   "discogs": true
  },
  "uplifting trance": {
-  "genre": "Electronic",
-  "parent": "trance",
+  "parents": [
+   "trance"
+  ],
   "synonyms": [
    "anthem trance",
    "epic trance",
@@ -3453,84 +3918,93 @@
   "status": "approved"
  },
  "vallenato": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "vaporwave": {
-  "genre": "Electronic",
-  "parent": "synthwave",
-  "also_under": [
+  "parents": [
+   "synthwave",
    "downtempo"
   ],
   "discogs": true
  },
  "viking metal": {
-  "genre": "Rock",
-  "parent": null,
+  "parents": [
+   "Rock"
+  ],
   "provisional": true,
   "discogs": true
  },
  "vocal": {
-  "genre": "Pop",
-  "parent": null,
+  "parents": [
+   "Pop"
+  ],
   "provisional": true,
   "discogs": true
  },
  "vocal trance": {
-  "genre": "Electronic",
-  "parent": "trance",
+  "parents": [
+   "trance"
+  ],
   "discogs": false,
   "status": "approved"
  },
  "volksmusik": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "western swing": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "witch house": {
-  "genre": "Electronic",
-  "parent": null,
-  "also_under": [
+  "parents": [
+   "Electronic",
    "industrial"
   ],
   "discogs": true
  },
  "worldbeat": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": false
  },
  "yé-yé": {
-  "genre": "Pop",
-  "parent": null,
+  "parents": [
+   "Pop"
+  ],
   "provisional": true,
   "discogs": true
  },
  "zouk": {
-  "genre": "Latin",
-  "parent": null,
+  "parents": [
+   "Latin"
+  ],
   "provisional": true,
   "discogs": true
  },
  "zydeco": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  },
  "éntekhno": {
-  "genre": "Folk, World, & Country",
-  "parent": null,
+  "parents": [
+   "Folk, World, & Country"
+  ],
   "provisional": true,
   "discogs": true
  }
