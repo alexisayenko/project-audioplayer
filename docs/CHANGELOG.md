@@ -8,6 +8,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 - Server and web: genre `spacesynth` is now level 3 under synthwave with italo disco as a cross-link, and the new genre `space disco` (a disco subgenre, approved, not in Discogs) sits at level 3 under disco in Electronic; Electronic now has 50 level 2 and 95 level 3 genres. Not deployed.
 - Server: the flat `genres` row of `spacesynth` (from `genre_extras.json`) now lists synthwave first and italo disco second like its `levels` entry; new tests (`test_genre_payload_agrees.py`, `web/js/genre-payload.test.mjs`, fixture `server/tests/fixtures/genre_payload_levels.json`) fail when the served payload and `genre_levels.json` disagree. Not deployed.
 - Web: the Genres map hover tooltip no longer prints the text "null" for the parts a node does not have (regression test added). Not deployed.
+- Web: the Drafts button "Add properly" is now "Add to Library" (label, aria-label, docs). Not deployed.
 
 ## 2026-10-19 (Version artists label follows the version type, not deployed)
 
@@ -15,7 +16,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## 2026-10-18 (Library draft list)
 
-- Server and web: the Library has a "Songs | Drafts N" switch. In Drafts the owner and every signed-in user paste "Artist - Title" lines and links (one per line, Ctrl or Cmd+Enter), get a quick YouTube or SoundCloud lookup (title, channel, length, upload year, thumbnail; two lookups at a time, stops on a 429) and keep them as a per-user list in `users/<uid>/drafts.json` (not in `library.json`; guests get 401; up to 500 drafts, 100 lines and 300 characters per line per paste). Rows show an "In library" mark, Refresh, Edit, Delete with undo and "Add properly" (opens the Add dialog with the link, removes the draft after saving); "Clear all drafts" asks first. New routes `GET/POST/DELETE /drafts`, `PATCH /drafts/{id}`, `POST /drafts/{id}/refresh`, `DELETE /drafts/{id}`. [ADR-0032](tech/decisions.md), [task-0050](tasks/task-0050.md).
+- Server and web: the Library has a "Songs | Drafts N" switch. In Drafts the owner and every signed-in user paste "Artist - Title" lines and links (one per line, Ctrl or Cmd+Enter), get a quick YouTube or SoundCloud lookup (title, channel, length, upload year, thumbnail; two lookups at a time, stops on a 429) and keep them as a per-user list in `users/<uid>/drafts.json` (not in `library.json`; guests get 401; up to 500 drafts, 100 lines and 300 characters per line per paste). Rows show an "In library" mark, Refresh, Edit, Delete with undo and "Add to Library" (opens the Add dialog with the link, removes the draft after saving); "Clear all drafts" asks first. New routes `GET/POST/DELETE /drafts`, `PATCH /drafts/{id}`, `POST /drafts/{id}/refresh`, `DELETE /drafts/{id}`. [ADR-0032](tech/decisions.md), [task-0050](tasks/task-0050.md).
 
 ## 2026-10-18 (Genres map panel collapses as one, not deployed)
 

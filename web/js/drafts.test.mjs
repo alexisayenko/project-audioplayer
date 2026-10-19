@@ -304,11 +304,11 @@ const addHandlers = (extra = {}) => ({
   ...extra,
 });
 
-test('Add properly with a YouTube link opens the Add dialog and runs the preview as if the link was pasted', async () => {
+test('Add to Library with a YouTube link opens the Add dialog and runs the preview as if the link was pasted', async () => {
   store.loaded = true;
   store.songs = [];
   const v = await mount([draft('a', { url: YT, source: 'youtube', text: 'Rick - Never Gonna' })], addHandlers());
-  v.button(/Add properly/).click();
+  v.button(/Add to Library/).click();
   assert.equal(dlg().open, true);
   assert.equal(dlg().querySelector('input').value, YT);
   assert.match(dlg().querySelector('.draft-note').textContent, /From your drafts: /);
@@ -321,11 +321,11 @@ test('Add properly with a YouTube link opens the Add dialog and runs the preview
   v.unmount();
 });
 
-test('saving from Add properly removes the draft; cancelling keeps it', async () => {
+test('saving from Add to Library removes the draft; cancelling keeps it', async () => {
   store.loaded = true;
   store.songs = [];
   const v = await mount([draft('a', { url: YT, source: 'youtube' }), draft('b')], addHandlers());
-  v.button(/Add properly/, v.rows()[0]).click();
+  v.button(/Add to Library/, v.rows()[0]).click();
   await flush();
   await flush();
   dlg().close();
@@ -333,7 +333,7 @@ test('saving from Add properly removes the draft; cancelling keeps it', async ()
   assert.equal(v.rows().length, 2, 'cancel keeps the draft');
   assert.equal(v.calls.filter((c) => c.opts.method === 'DELETE').length, 0);
 
-  v.button(/Add properly/, v.rows()[0]).click();
+  v.button(/Add to Library/, v.rows()[0]).click();
   await flush();
   await flush();
   dlg().querySelector('form.add-card').dispatchEvent(makeEvent('submit'));
@@ -346,12 +346,12 @@ test('saving from Add properly removes the draft; cancelling keeps it', async ()
   v.unmount();
 });
 
-test('Add properly for a text-only draft opens the dialog with a note and no fetch; the form starts from the draft text', async () => {
+test('Add to Library for a text-only draft opens the dialog with a note and no fetch; the form starts from the draft text', async () => {
   store.loaded = true;
   store.songs = [];
   const text = draft('t', { text: 'Mine - Own Title', title: 'Own Title', mainArtists: ['Mine'] });
   const v = await mount([text], addHandlers());
-  v.button(/Add properly/).click();
+  v.button(/Add to Library/).click();
   assert.equal(dlg().querySelector('input').value, '');
   assert.match(dlg().querySelector('.draft-note').textContent, /Paste its YouTube or SoundCloud link to continue\. Title and Artists start from your text\./);
   await flush();

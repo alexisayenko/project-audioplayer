@@ -1,4 +1,4 @@
-"""Draft list: lines and links the user collected to add properly later (API-180..API-185). Per user, never visible to guests."""
+"""Draft list: lines and links the user collected to add to the Library later (API-180..API-185). Per user, never visible to guests."""
 
 from __future__ import annotations
 

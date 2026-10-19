@@ -70,7 +70,7 @@ test('only unfetched YouTube and SoundCloud drafts can be refreshed', () => {
   assert.equal(M.canRefresh({ source: null, state: 'new' }), false);
 });
 
-test('Add properly: a supported link is loaded as pasted; otherwise a note and the draft credits wait for the link', () => {
+test('Add to Library: a supported link is loaded as pasted; otherwise a note and the draft credits wait for the link', () => {
   const link = { id: 'd_1', source: 'youtube', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', text: 'A - B', title: 'B', mainArtists: ['A'], featuredArtists: [], withArtists: [], version: null };
   const plan = M.addPlan(link);
   assert.equal(plan.url, link.url);

@@ -183,7 +183,7 @@ export function mountDrafts(host) {
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); void submit(); }
   });
 
-  function addProperly(d) {
+  function addToLibrary(d) {
     openAdd({ draft: d, onSaved: () => { void draftStore.dropAfterAdd(d.id); } });
   }
 
@@ -244,7 +244,7 @@ export function mountDrafts(host) {
     const working = busy.has(d.id);
     return el('div', { class: 'draft-actions' },
       srcLink(d),
-      el('button', { class: 'btn fill small', type: 'button', 'aria-label': `Add properly: ${name}`, onclick: () => addProperly(d) }, icon('plus', 'inline'), 'Add properly'),
+      el('button', { class: 'btn fill small', type: 'button', 'aria-label': `Add to Library: ${name}`, onclick: () => addToLibrary(d) }, icon('plus', 'inline'), 'Add to Library'),
       canRefresh(d) ? el('button', { class: 'link-btn', type: 'button', disabled: working, 'aria-label': `Refresh: ${name}`, onclick: () => { void refresh(d); } }, working ? 'Fetching...' : 'Refresh') : null,
       el('button', { class: 'link-btn', type: 'button', 'aria-label': `Edit: ${name}`, onclick: () => startEdit(d) }, 'Edit'),
       el('button', { class: 'link-btn danger-text', type: 'button', 'aria-label': `Delete: ${name}`, onclick: () => remove(d) }, 'Delete'));
