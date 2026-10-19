@@ -22,9 +22,9 @@ const DRAG_ALPHA = 0.1;
 const RELEASE_ALPHA = 0.35;
 const SETTLE_STATIC = 400;
 const CHILD_FOLLOW_MS = 300;
-const CHILD_FOLLOW_TAU_DIV = 3;
+const CHILD_FOLLOW_TAU = CHILD_FOLLOW_MS / 3;
 const FOLLOW_EPS = 0.05;
-const PARENT_REACTION = 0.02;
+const PARENT_REACTION = 0;
 const REVEAL_ALPHA = 0.25;
 const RING_GAP = 6;
 const RING_SCALE = 3;
@@ -264,6 +264,10 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
       hashDirty = true;
       again = awake;
       if (!awake) perf.sleeps++;
+    }
+    if (pull && !drag?.node && (reducedMotion || !awake)) {
+      stepFollow(1);
+      clearPull();
     }
     const t1 = performance.now();
     if (stepVis(dt)) again = true;
@@ -554,64 +558,50 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
 
   function shift(c, dx, dy) {
     if (c.hx !== undefined) { c.hx += dx; c.hy += dy; }
-    if (c.target !== 1 || c.fx != null) return;
+    if (c.target !== 1) return;
     c.x += dx; c.y += dy;
+    c.fx = c.x; c.fy = c.y;
   }
 
-  const spot = (n) => (n.fx != null ? [n.fx, n.fy] : n.target === 1 || n.hx === undefined ? [n.x, n.y] : [n.hx, n.hy]);
-
-  function leashItems(root, sub) {
-    const inside = new Set([root.id, ...sub.map((it) => it.c.id)]);
-    const simLinks = new Map();
-    for (const sl of sim?.links || []) if (sl.tree) simLinks.set(`${sl.s.id}>${sl.t.id}`, sl);
+  function followItems(root, sub) {
+    const inside = new Set(sub.map((it) => it.c.id));
     const muted = [];
-    const items = sub.map(({ c }) => {
-      const ups = (parentLinks.get(c.id) || []).filter((l) => inside.has(l.s.id)).map((l) => {
-        const sl = simLinks.get(`${l.s.id}>${c.id}`);
-        if (sl) { sl.mute = true; muted.push(sl); }
-        const [px, py] = spot(l.s);
-        const [cx, cy] = spot(c);
-        const own = l.s.hx !== undefined && c.hx !== undefined ? Math.hypot(l.s.hx - c.hx, l.s.hy - c.hy) : Math.hypot(px - cx, py - cy);
-        return { p: l.s, rest: sl ? sl.dist : own };
-      });
-      return { c, ups };
-    });
-    return { items, muted };
+    for (const sl of sim?.links || []) {
+      if (sl.tree && inside.has(sl.t.id)) { sl.mute = true; muted.push(sl); }
+    }
+    return { root, items: sub.map(({ c }) => ({ c, ax: 0, ay: 0 })), muted, ox: root.x, oy: root.y };
   }
 
   function clearPull() {
     if (!pull) return;
     for (const sl of pull.muted) sl.mute = false;
+    for (const { c } of pull.items) if (c.target === 1) unpin(c);
+    const settled = pull.muted.length > 0;
     pull = null;
+    if (settled) syncLinkLength();
   }
 
-  function stepLeash(f) {
+  function stepFollow(f) {
+    const root = pull.root;
+    const dx = (root.fx ?? root.x) - pull.ox;
+    const dy = (root.fy ?? root.y) - pull.oy;
     let busy = false;
-    for (const { c, ups } of pull.items) {
-      const [cx, cy] = spot(c);
-      let best = 0;
-      let ux = 0;
-      let uy = 0;
-      for (const { p, rest } of ups) {
-        const [px, py] = spot(p);
-        const dx = px - cx;
-        const dy = py - cy;
-        const d = Math.hypot(dx, dy);
-        if (d - rest > best) { best = d - rest; ux = dx / d; uy = dy / d; }
-      }
-      if (best < FOLLOW_EPS) continue;
-      shift(c, ux * best * f, uy * best * f);
-      busy = true;
+    for (const it of pull.items) {
+      const rx = dx - it.ax;
+      const ry = dy - it.ay;
+      const len = Math.hypot(rx, ry);
+      if (len === 0) continue;
+      const k = len < FOLLOW_EPS ? 1 : f;
+      shift(it.c, rx * k, ry * k);
+      it.ax += rx * k; it.ay += ry * k;
+      if (len >= FOLLOW_EPS) busy = true;
     }
     if (busy) hashDirty = true;
     return busy;
   }
 
   function stepPull(dt) {
-    if (!pull) return false;
-    const busy = stepLeash(1 - Math.exp(-dt / (CHILD_FOLLOW_MS / CHILD_FOLLOW_TAU_DIV)));
-    if (!busy && !drag?.node) clearPull();
-    return busy;
+    return stepFollow(1 - Math.exp(-dt / CHILD_FOLLOW_TAU));
   }
 
   function startNodeDrag() {
@@ -621,7 +611,14 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
     drag.sub = subtreeOf(drag.node);
     drag.ax = drag.node.x;
     drag.ay = drag.node.y;
-    pull = leashItems(drag.node, drag.sub);
+    pull = followItems(drag.node, drag.sub);
+    drag.held = [];
+    for (const l of parentLinks.get(drag.node.id) || []) {
+      const p = l.s;
+      if (p.target !== 1 || p.fx != null || drag.held.includes(p)) continue;
+      p.fx = p.x; p.fy = p.y;
+      drag.held.push(p);
+    }
     follow = false;
     userMoved = true;
     if (sim && !reducedMotion) { sim.setAlphaTarget(DRAG_ALPHA); awake = true; }
@@ -634,7 +631,7 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
     hashDirty = true;
     if (reducedMotion || !sim) {
       n.x = w.x; n.y = w.y; n.fx = w.x; n.fy = w.y;
-      if (pull) stepLeash(1);
+      if (pull) stepFollow(1);
     } else { n.fx = w.x; n.fy = w.y; }
     setHover(n, null);
   }
@@ -644,6 +641,7 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
     drag = null;
     if (!d) return;
     if (d.node) {
+      for (const p of d.held || []) unpin(p);
       if (d.moved) { d.node.hx = d.ax; d.node.hy = d.ay; syncLinkLength(); }
       unpin(d.node);
       if (sim && d.moved && !reducedMotion) { sim.setAlphaTarget(sim.restTarget()); sim.reheat(RELEASE_ALPHA); awake = true; }
@@ -658,6 +656,7 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
     for (const n of nodes) if (n.fx != null) unpin(n);
     if (sim) sim.setAlphaTarget(sim.restTarget());
     pointers.clear(); pinch = null; drag = null;
+    clearPull();
   };
 
   canvas.addEventListener('pointerdown', (ev) => {
@@ -765,7 +764,7 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
       if (parentLinks.has(l.t.id)) parentLinks.get(l.t.id).push(l); else parentLinks.set(l.t.id, [l]);
       if (childrenOf.has(l.s.id)) childrenOf.get(l.s.id).push(l.t); else childrenOf.set(l.s.id, [l.t]);
     }
-    pull = null;
+    clearPull();
     order = [...nodes].sort((a, b) => b.r - a.r || a.id.localeCompare(b.id));
   }
 

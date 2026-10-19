@@ -16,8 +16,9 @@ export function segmentsFor(idx, start = -Math.PI / 2) {
 }
 
 export function fillDisc(ctx, x, y, r, palette, idx, fallback, shadeIdx = -1, shade = null) {
-  const col = (i) => (i === shadeIdx && shade ? shade : palette[i] || fallback);
-  if (idx.length < 2) {
+  const single = idx.length < 2;
+  const col = (i) => (single && i === shadeIdx && shade ? shade : palette[i] || fallback);
+  if (single) {
     ctx.fillStyle = col(idx[0]);
     ctx.beginPath(); ctx.arc(x, y, r, 0, FULL); ctx.fill();
     return;

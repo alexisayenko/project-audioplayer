@@ -104,7 +104,7 @@ export function createSim({ nodes, links = [], seed = 1, breathing = true, charg
   }
   function slackPair(a, b, d2) {
     const l = pairLink.get(a)?.get(b);
-    return l !== undefined && (l.mute || a.fx != null || b.fx != null) && d2 < l.dist * l.dist;
+    return l !== undefined && (l.mute || ((a.fx != null || b.fx != null) && d2 < l.dist * l.dist));
   }
   const weight = (n) => 1 + n.r * 0.12;
   let alpha = 1;
