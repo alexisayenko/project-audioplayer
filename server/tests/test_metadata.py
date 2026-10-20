@@ -151,8 +151,8 @@ def test_merge_song_page_and_artist_page_are_separate_groups():
         links={"tags": [*song, "genre:soul"], "song_genres": song, "artist_genres": ["genre:techno", "genre:trance", "genre:soul"]},
         guess=None,
     )
-    assert sorted(out["tags"]) == ["country:us", "genre:house", "genre:techno", "genre:trance"], "techno and trance: song page and artist page agree; house: song page only, same family"
-    assert {s["genre"] for s in out["genre_suggestions"]} == {"soul", "folk", "hip hop"}
+    assert sorted(out["tags"]) == ["country:us", "genre:techno", "genre:trance"], "techno and trance: song page and artist page agree; house: song page only, and house is level 1 of its own (2026-10-20), so it shares no family"
+    assert {s["genre"] for s in out["genre_suggestions"]} == {"soul", "folk", "hip hop", "house"}
 
 
 def test_merge_applies_at_most_five_and_suggests_the_rest():

@@ -155,7 +155,9 @@ test('the real vocabulary builds with Others as the only group and no electronic
   assert.deepEqual(t.roots.filter((r) => r.group).map((r) => r.name), ['Others']);
   assert.equal(t.byId.has('s:electronic'), false);
   assert.equal(familyIndex('Others'), OTHER_COLOR);
-  assert.equal(t.byId.get('s:house').fams[0], 'Others');
-  assert.equal(genreLines(t, ['house', 'trance'])[0].family, 'Others');
-  assert.equal(genreLines(t, ['house', 'trance']).length, 1);
+  assert.equal(t.byId.get('g:house').fams[0], 'house', 'house is a level 1 form since 2026-10-20');
+  assert.equal(t.byId.get('s:breakbeat').fams[0], 'Others');
+  assert.equal(genreLines(t, ['breakbeat', 'ambient'])[0].family, 'Others');
+  assert.equal(genreLines(t, ['breakbeat', 'ambient']).length, 1);
+  assert.deepEqual(genreLines(t, ['house', 'trance']).map((l) => l.family), ['house', 'trance']);
 });

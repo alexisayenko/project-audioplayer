@@ -2,6 +2,11 @@
  "families": [
   "Blues",
   "Classical",
+  "house",
+  "techno",
+  "trance",
+  "drum and bass",
+  "synthwave",
   "Others",
   "Folk, World, & Country",
   "Funk / Soul",
@@ -66,7 +71,12 @@
   ],
   "Rock": [
    "rock music"
-  ]
+  ],
+  "drum and bass": [],
+  "house": [],
+  "synthwave": [],
+  "techno": [],
+  "trance": []
  },
  "flavours": {
   "acid": {
@@ -135,6 +145,176 @@
    "name": "vocal"
   }
  },
+ "forms": {
+  "drum and bass": {
+   "colour": "Others",
+   "discogs": true,
+   "display": "drum & bass",
+   "families": [
+    "drum and bass"
+   ],
+   "family": "drum and bass",
+   "form": true,
+   "level": 1,
+   "modifiers": [],
+   "parents": [],
+   "provisional": false,
+   "status": null,
+   "subfamily": "Breaks & bass",
+   "synonyms": [
+    "dnb",
+    "drum & bass",
+    "drum n bass",
+    "techstep",
+    "d&b",
+    "drum'n'bass",
+    "drum and bass music",
+    "drum & bass music"
+   ]
+  },
+  "house": {
+   "colour": "Others",
+   "discogs": true,
+   "display": null,
+   "families": [
+    "house"
+   ],
+   "family": "house",
+   "form": true,
+   "level": 1,
+   "modifiers": [],
+   "parents": [],
+   "provisional": false,
+   "related": [
+    "disco"
+   ],
+   "status": null,
+   "subfamily": "House",
+   "synonyms": [
+    "afro house",
+    "big room house",
+    "melodic house"
+   ]
+  },
+  "synthwave": {
+   "colour": "Others",
+   "discogs": true,
+   "display": null,
+   "families": [
+    "synthwave"
+   ],
+   "family": "synthwave",
+   "form": true,
+   "level": 1,
+   "modifiers": [],
+   "parents": [],
+   "provisional": false,
+   "status": null,
+   "subfamily": "Synth & wave",
+   "synonyms": [
+    "retro-synth"
+   ]
+  },
+  "techno": {
+   "colour": "Others",
+   "discogs": true,
+   "display": null,
+   "families": [
+    "techno"
+   ],
+   "family": "techno",
+   "form": true,
+   "level": 1,
+   "modifiers": [],
+   "parents": [],
+   "provisional": false,
+   "status": null,
+   "subfamily": "Techno",
+   "synonyms": []
+  },
+  "trance": {
+   "colour": "Others",
+   "discogs": true,
+   "display": null,
+   "families": [
+    "trance"
+   ],
+   "family": "trance",
+   "form": true,
+   "level": 1,
+   "modifiers": [],
+   "parents": [],
+   "provisional": false,
+   "status": null,
+   "subfamily": "Trance",
+   "synonyms": []
+  }
+ },
+ "groups": {
+  "Others": {
+   "assignable": false,
+   "colour": "Electronic",
+   "kind": "organisational",
+   "members": [
+    "abstract",
+    "acid",
+    "ambient",
+    "balearic",
+    "bass music",
+    "beatbox",
+    "bleep",
+    "breakbeat",
+    "broken beat",
+    "chiptune",
+    "dark electro",
+    "disco polo",
+    "downtempo",
+    "dub",
+    "edm",
+    "electro",
+    "electro swing",
+    "electronic rock",
+    "experimental",
+    "footwork",
+    "freestyle",
+    "future jazz",
+    "ghetto",
+    "ghettotech",
+    "grime",
+    "halftime",
+    "hardcore techno",
+    "harsh noise wall",
+    "idm",
+    "jazzdance",
+    "juke",
+    "kuduro",
+    "leftfield",
+    "lento violento",
+    "minimal",
+    "neofolk",
+    "new age",
+    "new beat",
+    "noise",
+    "power electronics",
+    "skweee",
+    "tribal",
+    "uk garage",
+    "witch house"
+   ],
+   "note": "",
+   "order": 8,
+   "synonyms": [
+    "electronic music",
+    "electronica",
+    "indietronica",
+    "alternative dance",
+    "rave",
+    "dance & edm",
+    "electronic"
+   ],
+   "temporary": true
+  }
+ },
  "levels": {
   "aboriginal": {
    "discogs": true,
@@ -175,9 +355,11 @@
    "discogs": true,
    "display": null,
    "families": [
+    "house",
+    "techno",
     "Others"
    ],
-   "family": "Others",
+   "family": "house",
    "flavours": [],
    "level": 2,
    "modifiers": [],
@@ -195,11 +377,11 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Others"
+    "house"
    ],
-   "family": "Others",
+   "family": "house",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "modifiers": [],
    "parents": [
     "house"
@@ -250,11 +432,11 @@
    "discogs": false,
    "display": null,
    "families": [
-    "Others"
+    "trance"
    ],
-   "family": "Others",
+   "family": "trance",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "modifiers": [],
    "parents": [
     "trance"
@@ -457,11 +639,12 @@
    "discogs": true,
    "display": null,
    "families": [
+    "house",
     "Others"
    ],
-   "family": "Others",
+   "family": "house",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "modifiers": [],
    "parents": [
     "house",
@@ -766,11 +949,12 @@
    "discogs": true,
    "display": null,
    "families": [
+    "house",
     "Others"
    ],
-   "family": "Others",
+   "family": "house",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "modifiers": [],
    "parents": [
     "breakbeat",
@@ -1712,11 +1896,11 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Others"
+    "synthwave"
    ],
-   "family": "Others",
+   "family": "synthwave",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "modifiers": [],
    "parents": [
     "synthwave"
@@ -2381,11 +2565,11 @@
    "discogs": false,
    "display": "dark psy-trance",
    "families": [
-    "Others"
+    "trance"
    ],
-   "family": "Others",
+   "family": "trance",
    "flavours": [],
-   "level": 4,
+   "level": 3,
    "modifiers": [],
    "parents": [
     "psytrance"
@@ -2403,11 +2587,11 @@
    "discogs": false,
    "display": null,
    "families": [
-    "Others"
+    "synthwave"
    ],
-   "family": "Others",
+   "family": "synthwave",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "modifiers": [],
    "parents": [
     "synthwave"
@@ -2515,11 +2699,11 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Others"
+    "house"
    ],
-   "family": "Others",
+   "family": "house",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "modifiers": [],
    "parents": [
     "house"
@@ -2533,11 +2717,11 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Others"
+    "techno"
    ],
-   "family": "Others",
+   "family": "techno",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "modifiers": [],
    "parents": [
     "techno"
@@ -2551,11 +2735,11 @@
    "discogs": false,
    "display": null,
    "families": [
-    "Others"
+    "trance"
    ],
-   "family": "Others",
+   "family": "trance",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "modifiers": [],
    "parents": [
     "trance"
@@ -2637,16 +2821,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Others",
     "Funk / Soul"
    ],
-   "family": "Others",
+   "family": "Funk / Soul",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Funk / Soul",
-    "Others"
+    "Funk / Soul"
    ],
    "provisional": true,
    "status": null,
@@ -2711,11 +2893,12 @@
    "discogs": true,
    "display": null,
    "families": [
+    "house",
     "Others"
    ],
-   "family": "Others",
+   "family": "house",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "modifiers": [],
    "parents": [
     "hardcore techno",
@@ -2821,11 +3004,11 @@
    "discogs": false,
    "display": null,
    "families": [
-    "Others"
+    "trance"
    ],
-   "family": "Others",
+   "family": "trance",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "modifiers": [],
    "parents": [
     "trance"
@@ -2842,11 +3025,11 @@
    "discogs": false,
    "display": null,
    "families": [
-    "Others"
+    "synthwave"
    ],
-   "family": "Others",
+   "family": "synthwave",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "modifiers": [],
    "parents": [
     "synthwave"
@@ -2860,11 +3043,11 @@
    "discogs": false,
    "display": null,
    "families": [
-    "Others"
+    "synthwave"
    ],
-   "family": "Others",
+   "family": "synthwave",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "modifiers": [],
    "parents": [
     "synthwave"
@@ -2909,33 +3092,6 @@
    "subfamily": "Ambient & downtempo",
    "synonyms": []
   },
-  "drum and bass": {
-   "discogs": true,
-   "display": "drum & bass",
-   "families": [
-    "Others"
-   ],
-   "family": "Others",
-   "flavours": [],
-   "level": 2,
-   "modifiers": [],
-   "parents": [
-    "Others"
-   ],
-   "provisional": false,
-   "status": null,
-   "subfamily": "Breaks & bass",
-   "synonyms": [
-    "dnb",
-    "drum & bass",
-    "drum n bass",
-    "techstep",
-    "d&b",
-    "drum'n'bass",
-    "drum and bass music",
-    "drum & bass music"
-   ]
-  },
   "dub": {
    "discogs": true,
    "display": null,
@@ -2976,11 +3132,11 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Others"
+    "techno"
    ],
-   "family": "Others",
+   "family": "techno",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "modifiers": [],
    "parents": [
     "techno"
@@ -3084,11 +3240,10 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Others",
     "Pop",
     "Rock"
    ],
-   "family": "Others",
+   "family": "Pop",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -3168,11 +3323,11 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Others"
+    "house"
    ],
-   "family": "Others",
+   "family": "house",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "modifiers": [],
    "parents": [
     "house"
@@ -3301,10 +3456,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Others",
     "Funk / Soul"
    ],
-   "family": "Others",
+   "family": "Funk / Soul",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -3322,11 +3476,11 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Others"
+    "house"
    ],
-   "family": "Others",
+   "family": "house",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "modifiers": [],
    "parents": [
     "house"
@@ -3342,11 +3496,11 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Others"
+    "trance"
    ],
-   "family": "Others",
+   "family": "trance",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "modifiers": [],
    "parents": [
     "trance"
@@ -3360,11 +3514,11 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Others",
+    "house",
     "Funk / Soul",
     "Pop"
    ],
-   "family": "Others",
+   "family": "house",
    "flavours": [],
    "fusion": true,
    "level": 2,
@@ -3640,11 +3794,11 @@
    "discogs": false,
    "display": "forest psy-trance",
    "families": [
-    "Others"
+    "trance"
    ],
-   "family": "Others",
+   "family": "trance",
    "flavours": [],
-   "level": 4,
+   "level": 3,
    "modifiers": [],
    "parents": [
     "psytrance"
@@ -3747,11 +3901,11 @@
    "discogs": false,
    "display": null,
    "families": [
-    "Others"
+    "house"
    ],
-   "family": "Others",
+   "family": "house",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "modifiers": [],
    "parents": [
     "house"
@@ -3767,11 +3921,11 @@
    "discogs": false,
    "display": "full-on psy-trance",
    "families": [
-    "Others"
+    "trance"
    ],
-   "family": "Others",
+   "family": "trance",
    "flavours": [],
-   "level": 4,
+   "level": 3,
    "modifiers": [],
    "parents": [
     "psytrance"
@@ -3885,11 +4039,11 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Others"
+    "house"
    ],
-   "family": "Others",
+   "family": "house",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "modifiers": [],
    "parents": [
     "house"
@@ -4007,11 +4161,11 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Others"
+    "house"
    ],
-   "family": "Others",
+   "family": "house",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "modifiers": [],
    "parents": [
     "house"
@@ -4077,11 +4231,11 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Others"
+    "house"
    ],
-   "family": "Others",
+   "family": "house",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "modifiers": [],
    "parents": [
     "house"
@@ -4224,11 +4378,11 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Others"
+    "trance"
    ],
-   "family": "Others",
+   "family": "trance",
    "flavours": [],
-   "level": 4,
+   "level": 3,
    "modifiers": [],
    "parents": [
     "psytrance"
@@ -4495,13 +4649,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Others",
+    "house",
+    "trance",
     "Funk / Soul",
     "Pop"
    ],
-   "family": "Others",
+   "family": "house",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "modifiers": [],
    "parents": [
     "eurodance",
@@ -4551,11 +4706,12 @@
    "discogs": true,
    "display": null,
    "families": [
+    "house",
     "Others"
    ],
-   "family": "Others",
+   "family": "house",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "modifiers": [],
    "parents": [
     "house",
@@ -4587,11 +4743,11 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Others"
+    "techno"
    ],
-   "family": "Others",
+   "family": "techno",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "modifiers": [],
    "parents": [
     "techno"
@@ -4605,11 +4761,12 @@
    "discogs": true,
    "display": null,
    "families": [
+    "trance",
     "Others"
    ],
-   "family": "Others",
+   "family": "trance",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "modifiers": [],
    "parents": [
     "trance",
@@ -4679,11 +4836,12 @@
    "discogs": true,
    "display": null,
    "families": [
+    "trance",
     "Others"
    ],
-   "family": "Others",
+   "family": "trance",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "modifiers": [],
    "parents": [
     "hardcore techno",
@@ -4769,10 +4927,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Others",
     "Funk / Soul"
    ],
-   "family": "Others",
+   "family": "Funk / Soul",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -4856,10 +5013,10 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Others",
+    "house",
     "Hip Hop"
    ],
-   "family": "Others",
+   "family": "house",
    "flavours": [],
    "fusion": true,
    "level": 2,
@@ -4906,31 +5063,6 @@
    "provisional": true,
    "status": null,
    "synonyms": []
-  },
-  "house": {
-   "discogs": true,
-   "display": null,
-   "families": [
-    "Others"
-   ],
-   "family": "Others",
-   "flavours": [],
-   "level": 2,
-   "modifiers": [],
-   "parents": [
-    "Others"
-   ],
-   "provisional": false,
-   "related": [
-    "disco"
-   ],
-   "status": null,
-   "subfamily": "House",
-   "synonyms": [
-    "afro house",
-    "big room house",
-    "melodic house"
-   ]
   },
   "hyperpop": {
    "discogs": true,
@@ -5133,10 +5265,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Others",
     "Funk / Soul"
    ],
-   "family": "Others",
+   "family": "Funk / Soul",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -5152,11 +5283,11 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Others"
+    "house"
    ],
-   "family": "Others",
+   "family": "house",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "modifiers": [],
    "parents": [
     "house"
@@ -5170,11 +5301,11 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Others",
+    "house",
     "Funk / Soul",
     "Pop"
    ],
-   "family": "Others",
+   "family": "house",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -5651,11 +5782,11 @@
    "discogs": false,
    "display": "liquid drum & bass",
    "families": [
-    "Others"
+    "drum and bass"
    ],
-   "family": "Others",
+   "family": "drum and bass",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "modifiers": [],
    "parents": [
     "drum and bass"
@@ -5931,11 +6062,11 @@
    "discogs": false,
    "display": null,
    "families": [
-    "Others"
+    "techno"
    ],
-   "family": "Others",
+   "family": "techno",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "modifiers": [],
    "parents": [
     "techno"
@@ -6055,11 +6186,11 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Others"
+    "house"
    ],
-   "family": "Others",
+   "family": "house",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "modifiers": [],
    "parents": [
     "house"
@@ -6131,9 +6262,10 @@
    "discogs": true,
    "display": null,
    "families": [
+    "techno",
     "Others"
    ],
-   "family": "Others",
+   "family": "techno",
    "flavours": [],
    "level": 2,
    "modifiers": [],
@@ -6153,11 +6285,11 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Others"
+    "techno"
    ],
-   "family": "Others",
+   "family": "techno",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "modifiers": [],
    "parents": [
     "techno"
@@ -6418,11 +6550,11 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Others"
+    "trance"
    ],
-   "family": "Others",
+   "family": "trance",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "modifiers": [],
    "parents": [
     "trance"
@@ -6505,11 +6637,11 @@
    "discogs": false,
    "display": null,
    "families": [
-    "Others"
+    "drum and bass"
    ],
-   "family": "Others",
+   "family": "drum and bass",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "modifiers": [],
    "parents": [
     "drum and bass"
@@ -6748,10 +6880,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Others",
     "Funk / Soul"
    ],
-   "family": "Others",
+   "family": "Funk / Soul",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -6767,11 +6898,11 @@
    "discogs": false,
    "display": null,
    "families": [
-    "Others"
+    "trance"
    ],
-   "family": "Others",
+   "family": "trance",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "modifiers": [],
    "parents": [
     "trance"
@@ -7250,10 +7381,9 @@
    "discogs": false,
    "display": null,
    "families": [
-    "Others",
     "Funk / Soul"
    ],
-   "family": "Others",
+   "family": "Funk / Soul",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -7469,11 +7599,11 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Others"
+    "house"
    ],
-   "family": "Others",
+   "family": "house",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "modifiers": [],
    "parents": [
     "house"
@@ -7526,11 +7656,11 @@
    "discogs": false,
    "display": "progressive psy-trance",
    "families": [
-    "Others"
+    "trance"
    ],
-   "family": "Others",
+   "family": "trance",
    "flavours": [],
-   "level": 4,
+   "level": 3,
    "modifiers": [],
    "parents": [
     "psytrance"
@@ -7565,11 +7695,11 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Others"
+    "trance"
    ],
-   "family": "Others",
+   "family": "trance",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "modifiers": [],
    "parents": [
     "trance"
@@ -7583,9 +7713,10 @@
    "discogs": false,
    "display": null,
    "families": [
+    "trance",
     "Others"
    ],
-   "family": "Others",
+   "family": "trance",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -7653,11 +7784,11 @@
    "discogs": true,
    "display": "psy-trance",
    "families": [
-    "Others"
+    "trance"
    ],
-   "family": "Others",
+   "family": "trance",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "modifiers": [],
    "parents": [
     "trance"
@@ -8227,11 +8358,11 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Others"
+    "techno"
    ],
-   "family": "Others",
+   "family": "techno",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "modifiers": [],
    "parents": [
     "techno"
@@ -8683,11 +8814,11 @@
    "discogs": false,
    "display": null,
    "families": [
-    "Others"
+    "synthwave"
    ],
-   "family": "Others",
+   "family": "synthwave",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "modifiers": [],
    "parents": [
     "synthwave"
@@ -8706,10 +8837,9 @@
    "discogs": false,
    "display": null,
    "families": [
-    "Others",
     "Funk / Soul"
    ],
-   "family": "Others",
+   "family": "Funk / Soul",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -8762,12 +8892,12 @@
    "discogs": false,
    "display": null,
    "families": [
-    "Others",
+    "synthwave",
     "Funk / Soul"
    ],
-   "family": "Others",
+   "family": "synthwave",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "modifiers": [],
    "parents": [
     "synthwave",
@@ -8782,11 +8912,12 @@
    "discogs": true,
    "display": null,
    "families": [
+    "house",
     "Others"
    ],
-   "family": "Others",
+   "family": "house",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "modifiers": [],
    "parents": [
     "uk garage",
@@ -8870,11 +9001,11 @@
    "discogs": false,
    "display": null,
    "families": [
-    "Others"
+    "house"
    ],
-   "family": "Others",
+   "family": "house",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "modifiers": [],
    "parents": [
     "house"
@@ -9041,16 +9172,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Others",
     "Pop",
     "Rock"
    ],
-   "family": "Others",
+   "family": "Pop",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Others",
     "Pop",
     "new wave"
    ],
@@ -9063,26 +9192,6 @@
     "russian electro pop",
     "russian electropop",
     "electronic pop"
-   ]
-  },
-  "synthwave": {
-   "discogs": true,
-   "display": null,
-   "families": [
-    "Others"
-   ],
-   "family": "Others",
-   "flavours": [],
-   "level": 2,
-   "modifiers": [],
-   "parents": [
-    "Others"
-   ],
-   "provisional": false,
-   "status": null,
-   "subfamily": "Synth & wave",
-   "synonyms": [
-    "retro-synth"
    ]
   },
   "séga": {
@@ -9140,11 +9249,12 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Others"
+    "house",
+    "techno"
    ],
-   "family": "Others",
+   "family": "house",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "modifiers": [],
    "parents": [
     "house",
@@ -9159,11 +9269,12 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Others"
+    "techno",
+    "trance"
    ],
-   "family": "Others",
+   "family": "techno",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "modifiers": [],
    "parents": [
     "trance",
@@ -9189,24 +9300,6 @@
    ],
    "provisional": false,
    "status": null,
-   "synonyms": []
-  },
-  "techno": {
-   "discogs": true,
-   "display": null,
-   "families": [
-    "Others"
-   ],
-   "family": "Others",
-   "flavours": [],
-   "level": 2,
-   "modifiers": [],
-   "parents": [
-    "Others"
-   ],
-   "provisional": false,
-   "status": null,
-   "subfamily": "Techno",
    "synonyms": []
   },
   "tejano": {
@@ -9295,24 +9388,6 @@
    "status": null,
    "synonyms": []
   },
-  "trance": {
-   "discogs": true,
-   "display": null,
-   "families": [
-    "Others"
-   ],
-   "family": "Others",
-   "flavours": [],
-   "level": 2,
-   "modifiers": [],
-   "parents": [
-    "Others"
-   ],
-   "provisional": false,
-   "status": null,
-   "subfamily": "Trance",
-   "synonyms": []
-  },
   "trap": {
    "discogs": true,
    "display": null,
@@ -9339,9 +9414,10 @@
    "discogs": true,
    "display": null,
    "families": [
+    "house",
     "Others"
    ],
-   "family": "Others",
+   "family": "house",
    "flavours": [],
    "level": 2,
    "modifiers": [],
@@ -9358,11 +9434,11 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Others"
+    "house"
    ],
-   "family": "Others",
+   "family": "house",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "modifiers": [],
    "parents": [
     "house"
@@ -9397,11 +9473,11 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Others"
+    "house"
    ],
-   "family": "Others",
+   "family": "house",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "modifiers": [],
    "parents": [
     "house"
@@ -9484,11 +9560,11 @@
    "discogs": false,
    "display": null,
    "families": [
-    "Others"
+    "trance"
    ],
-   "family": "Others",
+   "family": "trance",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "modifiers": [],
    "parents": [
     "trance"
@@ -9523,11 +9599,11 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Others"
+    "synthwave"
    ],
-   "family": "Others",
+   "family": "synthwave",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "modifiers": [],
    "parents": [
     "synthwave"
@@ -9581,11 +9657,11 @@
    "discogs": false,
    "display": null,
    "families": [
-    "Others"
+    "trance"
    ],
-   "family": "Others",
+   "family": "trance",
    "flavours": [],
-   "level": 3,
+   "level": 2,
    "modifiers": [],
    "parents": [
     "trance"

@@ -11,7 +11,7 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
-from . import countrycodes, credits, discogs_lookup, genre_filter, genre_lookup, langcodes, urlclean, wiki_lookup
+from . import countrycodes, credits, discogs_lookup, genre_filter, genre_lookup, langcodes, loops, urlclean, wiki_lookup
 from .jsonio import write_json_atomic
 from .tags import namespace, namespaced_values
 from .timeutil import max_year, now_utc  # noqa: F401
@@ -183,6 +183,12 @@ def normalize_song(song: dict[str, Any]) -> dict[str, Any]:
         s["discogs_url"] = discogs_lookup.clean_url(s["discogs_url"])
     if "spotify_url" in s:
         s["spotify_url"] = urlclean.clean_spotify_url(s["spotify_url"])
+    if "loops" in s:
+        kept = loops.tolerant(s["loops"])
+        if kept:
+            s["loops"] = kept
+        else:
+            del s["loops"]
     s.pop("original", None)
     normalize_tags(s)
     return s

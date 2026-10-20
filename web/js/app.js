@@ -1,6 +1,6 @@
-import { api, isSignedIn, session } from './api.js';
+import { api, isSignedIn, session, startup } from './api.js';
 import { isGuest, setGuest, streamable, syncBanner } from './guest.js';
-import { toast } from './dom.js';
+import { el, toast } from './dom.js';
 import { player as playerApi, initPlayer, pausePlayer } from './player.js';
 import { lazyVisualizer } from './viz-lazy.js';
 import { lazyRoute } from './lazy-route.js';
@@ -17,6 +17,7 @@ import { describeSync } from './sync-status.js';
 import { describeBuild } from './build-info.js';
 import { initHelpNav, isHelpRoute } from './nav-help.js';
 
+const STARTING_RECHECK_MS = 3000;
 const player = document.getElementById('player');
 const renderPlayback = () => { player.hidden = false; return () => { player.hidden = true; }; };
 const routes = {
@@ -160,6 +161,10 @@ async function onAuthChanged() {
 window.addEventListener('auth-changed', () => { void onAuthChanged(); });
 window.addEventListener('guest-limit', (e) => toast(e.detail));
 
+window.addEventListener('server-starting', () => {
+  if (startup.waiting && !view.firstChild) view.replaceChildren(el('p', { class: 'muted t-subhead state', role: 'status' }, 'Server is starting...'));
+});
+
 const early = { me: api.me(), library: store.refresh() };
 early.me.catch(() => {});
 early.library.catch(() => {});
@@ -193,24 +198,30 @@ function markSettingsLink(view) {
   }
 }
 
+let recheck = null;
+
 async function checkSync() {
   let raw = 'ok';
   let build = null;
   let online = false;
+  let starting = false;
   try {
     const res = await fetch('/health');
     online = res.ok;
     if (res.ok) {
       const body = await res.json();
+      starting = body.ready === false;
       raw = body.sync || 'ok';
       build = describeBuild(body.build);
     }
   } catch { /* server unreachable: api calls report that */ }
   led.classList.toggle('down', !online);
-  const serverText = online ? `Server online · ${location.host}` : 'Server unavailable';
+  led.classList.toggle('starting', starting);
+  let serverText = online ? `Server online · ${location.host}` : 'Server unavailable';
+  if (starting) serverText = 'Server starting';
   led.parentElement.title = serverText;
   led.parentElement.setAttribute('aria-label', serverText);
-  if (online) store.sync = raw;
+  if (online && !starting) store.sync = raw;
   store.build = online ? build : null;
   buildEl.hidden = !store.build;
   buildEl.textContent = store.build ? store.build.text : '';
@@ -221,6 +232,8 @@ async function checkSync() {
   warn.textContent = shown.level === 'none' ? '' : view.text;
   markSettingsLink(shown);
   window.dispatchEvent(new Event('sync-changed'));
+  clearTimeout(recheck);
+  recheck = starting ? setTimeout(() => checkSync().catch(() => {}), STARTING_RECHECK_MS) : null;
 }
 
 await checkSync().catch(() => {});

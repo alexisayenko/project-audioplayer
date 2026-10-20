@@ -104,7 +104,7 @@ def test_only_the_owner_sees_counts(api):
     assert owner["sync"]["mode"] == "timer"
     assert owner["sync"]["timer_seen"] is False
     assert isinstance(owner["sync"]["stale_after_s"], int)
-    assert client.get("/health").json() == {"status": "ok", "sync": {"state": "ok"}}
+    assert client.get("/health").json() == {"status": "ok", "sync": {"state": "ok"}, "ready": True, "startup": {"state": "ready", "step": None}}
     assert client.get("/health", headers={"X-API-Token": "wrong"}).json()["sync"] == {"state": "ok"}
     assert client.get("/health", headers={"Authorization": "Bearer junk"}).json()["sync"] == {"state": "ok"}
     guest = TestClient(main.app)
@@ -136,7 +136,7 @@ def test_degraded_for_everyone_else_when_stale_or_error(api):
 def test_no_store_and_default_mode(monkeypatch):
     monkeypatch.setattr(deps, "SYNC", None)
     c = TestClient(main.app)
-    assert c.get("/health").json() == {"status": "ok", "sync": {"state": "ok"}}
+    assert c.get("/health").json() == {"status": "ok", "sync": {"state": "ok"}, "ready": True, "startup": {"state": "ready", "step": None}}
     monkeypatch.setenv("AUDIO_API_TOKEN", "secret")
     owner = c.get("/health", headers={"X-API-Token": "secret"}).json()["sync"]
     assert owner["unpushed"] == 0

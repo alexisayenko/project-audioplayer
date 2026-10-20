@@ -22,8 +22,9 @@ def commit(sha, day, subject, body="", files=(), hour=12):
 
 def test_clean_subject_filters_types_and_strips_prefix():
     assert gf.clean_subject("feat(web): help menu in the sidebar") == "Help menu in the sidebar"
-    assert gf.clean_subject("fix: crash on empty queue") == "Crash on empty queue"
-    assert gf.clean_subject("perf(web)!: faster start") == "Faster start"
+    for s in ("fix: crash on empty queue", "perf(web)!: faster start", "refactor: tidy", "fix(web): x"):
+        assert gf.clean_subject(s) is None, s
+    assert gf.clean_subject("feat(web)!: faster start") == "Faster start"
     for s in ("docs(tasks): task-0067", "chore: bump", "test: add", "style: x", "Merge branch main", "no prefix at all", "Revert feat: x", "feat: "):
         assert gf.clean_subject(s) is None
 
@@ -34,7 +35,7 @@ def test_clean_subject_trims_at_a_word_boundary():
 
 
 def test_by_day_groups_by_utc_day_with_last_commit_hash():
-    commits = [commit("a", 19, "feat: first", hour=9), commit("b", 19, "fix: second", hour=18), commit("c", 20, "feat: third"), commit("d", 20, "docs: only docs", hour=20)]
+    commits = [commit("a", 19, "feat: first", hour=9), commit("b", 19, "feat: second", hour=18), commit("c", 20, "feat: third"), commit("d", 20, "docs: only docs", hour=20)]
     out = gf.by_day(commits, {}, {})
     by_date = {r["date"]: r for r in out}
     assert by_date["2026-10-19"]["hash"] == "bbbbbbb" and by_date["2026-10-19"]["full"] == "b" * 40
@@ -90,7 +91,7 @@ def test_map_file_by_keyword_prefix_and_explicit_none():
 
 def test_by_deploys_uses_ranges_and_skips_empty_ones():
     h1, h2, h3 = "1" * 40, "2" * 40, "3" * 40
-    ranges = {(None, h1): [commit("a", 19, "feat: one")], (h1, h2): [commit("b", 20, "docs: nope")], (h2, h3): [commit("c", 20, "fix: three")]}
+    ranges = {(None, h1): [commit("a", 19, "feat: one")], (h1, h2): [commit("b", 20, "docs: nope")], (h2, h3): [commit("c", 20, "feat: three")]}
     deploys = [{"hash": h1, "date": "2026-10-19"}, {"hash": h2, "date": "2026-10-20"}, {"hash": h3, "date": "2026-10-20"}]
     out = gf.by_deploys(lambda p, h: ranges[(p, h)], deploys, {}, {})
     assert [(r["hash"], r["date"]) for r in out] == [("1111111", "2026-10-19"), ("3333333", "2026-10-20")]
@@ -102,12 +103,19 @@ def test_planned_from_front_matter_newest_first(tmp_path):
 
     task(1, "done")
     task(2, "to do")
+    task(3, "to do (waiting for a design)")
     task(10, "in progress")
+    task(11, "in progress (iOS done 2026-10-13, web open)")
     task(5, "proposal")
+    task(6, "obsolete")
+    task(8, "deferred")
     task(7, "blocked", "[]")
-    rows = gf.planned(gf.read_tasks(tmp_path))
-    assert [r["id"] for r in rows] == ["task-0010", "task-0002"]
-    assert rows[0] == {"id": "task-0010", "title": "Title 10", "status": "in progress", "tags": ["web", "nav"]}
+    tasks = gf.read_tasks(tmp_path)
+    assert [r["id"] for r in gf.planned(tasks)] == ["task-0003", "task-0002"]
+    rows = gf.in_progress(tasks)
+    assert [r["id"] for r in rows] == ["task-0011", "task-0010"]
+    assert rows[1] == {"id": "task-0010", "title": "Title 10", "status": "in progress", "tags": ["web", "nav"]}
+    assert rows[0]["status"] == "in progress"
 
 
 def run(cwd, *args, env=None):
@@ -176,7 +184,7 @@ def test_record_deploy_appends_once_per_head(tmp_path):
     assert gf.record_deploy(repo, state, now) is True
     assert gf.record_deploy(repo, state, now) is False
     assert json.loads(state.read_text()) == [{"hash": head(repo), "date": "2026-10-21"}]
-    add_commit(repo, "h.txt", "fix: more")
+    add_commit(repo, "h.txt", "feat: more")
     assert gf.record_deploy(repo, state, now) is True
     assert [d["hash"] for d in json.loads(state.read_text())][-1] == head(repo) and len(json.loads(state.read_text())) == 2
 
@@ -220,7 +228,7 @@ def test_route_is_public_with_shape_and_no_cache(served):
     r = client.get("/features/data")
     assert r.status_code == 200 and r.headers["cache-control"] == "no-cache"
     body = r.json()
-    assert set(body) == {"releases", "planned", "unavailable"} and body["unavailable"] is False
+    assert set(body) == {"releases", "planned", "in_progress", "unavailable"} and body["unavailable"] is False
     assert body["releases"][0]["date"] == "2026-10-19" and len(body["releases"][0]["full"]) == 40
     assert body["planned"] == [{"id": "task-0001", "title": "Sidebar help", "status": "to do", "tags": ["web"]}]
 
@@ -238,7 +246,8 @@ def test_route_cache_follows_task_files(served):
     repo, client = served
     client.get("/features/data")
     (repo / "docs" / "tasks" / "task-0009.md").write_text("---\ntask_id: task-0009\ntitle: Fresh\nstatus: in progress\n---\n", encoding="utf-8")
-    assert [p["id"] for p in client.get("/features/data").json()["planned"]] == ["task-0009", "task-0001"]
+    body = client.get("/features/data").json()
+    assert [p["id"] for p in body["in_progress"]] == ["task-0009"] and [p["id"] for p in body["planned"]] == ["task-0001"]
 
 
 def test_data_scope_and_removal_subjects_are_skipped():
@@ -264,7 +273,7 @@ def test_release_with_only_data_edits_is_omitted():
 
 def test_exclude_patterns_come_from_the_map_file():
     assert gf.clean_subject("feat: shiny new widget", ["shiny"]) is None
-    assert gf.clean_subject("fix: remove genre of song", ["shiny"]) == "Remove genre of song"
+    assert gf.clean_subject("feat: remove genre of song", ["shiny"]) == "Remove genre of song"
     out = gf.by_day([commit("a", 19, "feat: shiny new widget"), commit("b", 19, "feat: other thing")], {}, {"exclude": ["shiny"]})
     assert [i["text"] for i in out[0]["items"]] == ["Other thing"]
 
@@ -274,7 +283,7 @@ def test_reviewed_extra_subject_is_excluded():
 
 
 def test_vocabulary_rows_subject_is_excluded():
-    assert gf.clean_subject("fix: List spacesynth under synthwave in the vocabulary rows, test the served payload") is None
+    assert gf.clean_subject("feat: List spacesynth under synthwave in the vocabulary rows, test the served payload") is None
 
 
 def test_same_day_releases_newest_first_without_duplicates(tmp_path):
@@ -297,3 +306,12 @@ def test_same_day_releases_newest_first_without_duplicates(tmp_path):
 def test_backfilled_days_sort_by_last_commit_time():
     commits = [commit("a", 20, "feat: later", hour=1), commit("b", 19, "feat: earlier", hour=23), commit("c", 20, "feat: latest", hour=22)]
     assert [r["date"] for r in gf.by_day(commits, {}, {})] == ["2026-10-20", "2026-10-19"]
+
+
+def test_release_with_only_fix_and_perf_commits_is_omitted_but_anchors_the_range():
+    commits = [commit("a", 19, "fix: crash"), commit("b", 19, "perf: faster")]
+    assert gf.by_day(commits, {}, {}) == []
+    h1, h2 = "1" * 40, "2" * 40
+    ranges = {(None, h1): [commit("c", 19, "feat: one")], (h1, h2): commits}
+    deploys = [{"hash": h1, "date": "2026-10-19"}, {"hash": h2, "date": "2026-10-20"}]
+    assert [r["hash"] for r in gf.by_deploys(lambda p, h: ranges[(p, h)], deploys, {}, {})] == ["1111111"]

@@ -105,7 +105,7 @@ def test_add_edit_delete_commit_and_push(client, repos):
     assert log(data_bare)[0] == f"audioplayer: {U8} delete {VID}"
     assert log(cov_bare)[0] == f"audioplayer: {U8} delete {VID}"
     assert json.loads(git(data_bare, "show", LIBP))["songs"] == []
-    assert client.get("/health").json() == {"status": "ok", "sync": {"state": "ok"}}
+    assert client.get("/health").json() == {"status": "ok", "sync": {"state": "ok"}, "ready": True, "startup": {"state": "ready", "step": None}}
     assert client.get("/health", headers=H).json()["sync"]["state"] == "ok"
 
 

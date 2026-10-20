@@ -88,7 +88,7 @@ def test_multi_parent_family_and_edges(wd):
     assert set(n) == {"synthpop", "electronic music", "pop music"}
     sp = n["synthpop"]
     assert sorted(sp["parents"]) == sorted([n["electronic music"]["id"], n["pop music"]["id"]])
-    assert sp["family"] == "Electronic"
+    assert sp["family"] == "Pop", "synthpop left Others (2026-10-20): its colour family is Pop"
     assert sp["qid"] == "Q101"
     assert n["pop music"]["family"] == "Pop"
     assert {"source": sp["id"], "target": n["pop music"]["id"], "kind": "parent"} in g["edges"]

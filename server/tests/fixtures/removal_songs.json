@@ -7154,6 +7154,432 @@
 "album": "The Lockdown Sessions",
 "genres": [],
 "audio_state": "none"
+},
+{
+"id": "3kjfrgkD9K0",
+"title": "Voodoo People",
+"mainArtists": [
+"The Prodigy"
+],
+"featuredArtists": [],
+"releaseYear": 1994,
+"albums": [
+"More Music for the Jilted Generation"
+],
+"version": {
+"type": "remaster",
+"name": null,
+"artists": [],
+"releaseYear": 2007
+},
+"bpm": 152,
+"wikipedia_song": "https://en.wikipedia.org/wiki/Voodoo_People",
+"wikipedia_artist": "https://en.wikipedia.org/wiki/The_Prodigy",
+"wikipedia_album": "https://en.wikipedia.org/wiki/Music_for_the_Jilted_Generation",
+"musicbrainz_url": null,
+"discogs_url": null,
+"spotify_url": null,
+"source_url": "https://www.youtube.com/watch?v=3kjfrgkD9K0",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=3kjfrgkD9K0",
+"source": "youtube",
+"id": "3kjfrgkD9K0"
+}
+],
+"cover": "covers/3kjfrgkD9K0.jpg",
+"duration": 387,
+"added_at": "2026-10-18T00:54:08Z",
+"tags": [
+"genre:techno",
+"genre:breakbeat",
+"genre:hardcore techno",
+"genre:big beat",
+"genre:alternative rock",
+"genre:electronic rock",
+"decade:00s",
+"country:gb"
+],
+"updated_at": "2026-10-18T11:51:11Z",
+"artist": "The Prodigy",
+"remixer": "Remaster",
+"year": 1994,
+"remix_year": 2007,
+"album": "More Music for the Jilted Generation",
+"genres": [
+"techno",
+"breakbeat",
+"hardcore techno",
+"big beat",
+"alternative rock",
+"electronic rock"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 6261556,
+"duration": 387
+}
+},
+{
+"id": "e2IpYd6Pu3s",
+"title": "White Tiger",
+"mainArtists": [
+"Izzy Bizu"
+],
+"featuredArtists": [],
+"releaseYear": 2015,
+"albums": [
+"Coolbeanz"
+],
+"bpm": 120,
+"wikipedia_song": null,
+"wikipedia_artist": null,
+"musicbrainz_url": "https://musicbrainz.org/recording/d94a4fa7-f2f6-41af-8b70-88ba6bfdbc64",
+"source_url": "https://www.youtube.com/watch?v=e2IpYd6Pu3s",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=e2IpYd6Pu3s",
+"source": "youtube",
+"id": "e2IpYd6Pu3s"
+}
+],
+"cover": "covers/e2IpYd6Pu3s.jpg",
+"duration": 176,
+"added_at": "2026-10-14T00:01:19Z",
+"updated_at": "2026-10-16T00:00:09Z",
+"tags": [
+"genre:soul",
+"genre:pop",
+"genre:r&b",
+"genre:contemporary r&b",
+"genre:pop soul",
+"decade:10s",
+"country:gb"
+],
+"artist": "Izzy Bizu",
+"remixer": null,
+"year": 2015,
+"remix_year": null,
+"album": "Coolbeanz",
+"genres": [
+"soul",
+"pop",
+"r&b",
+"contemporary r&b",
+"pop soul"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 2846196,
+"duration": 176
+}
+},
+{
+"id": "-N4jf6rtyuw",
+"title": "Crazy",
+"mainArtists": [
+"Gnarls Barkley"
+],
+"featuredArtists": [],
+"releaseYear": 2006,
+"albums": [
+"St. Elsewhere"
+],
+"bpm": 114,
+"wikipedia_song": "https://en.wikipedia.org/wiki/Crazy_(Gnarls_Barkley_song)",
+"wikipedia_artist": "https://en.wikipedia.org/wiki/Gnarls_Barkley",
+"wikipedia_album": "https://en.wikipedia.org/wiki/St._Elsewhere_(album)",
+"musicbrainz_url": "https://musicbrainz.org/recording/0a20a1c6-150c-4517-8858-7854e803de08",
+"discogs_url": null,
+"spotify_url": null,
+"source_url": "https://www.youtube.com/watch?v=-N4jf6rtyuw",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=-N4jf6rtyuw",
+"source": "youtube",
+"id": "-N4jf6rtyuw"
+}
+],
+"cover": "covers/-N4jf6rtyuw.jpg",
+"duration": 181,
+"added_at": "2026-10-16T14:32:34Z",
+"updated_at": "2026-10-16T14:38:03Z",
+"tags": [
+"genre:neo soul",
+"genre:psychedelic soul",
+"genre:funk",
+"genre:r&b",
+"genre:alternative r&b",
+"genre:pop",
+"genre:contemporary r&b",
+"decade:00s",
+"country:us"
+],
+"artist": "Gnarls Barkley",
+"remixer": null,
+"year": 2006,
+"remix_year": null,
+"album": "St. Elsewhere",
+"genres": [
+"neo soul",
+"psychedelic soul",
+"funk",
+"r&b",
+"alternative r&b",
+"pop",
+"contemporary r&b"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 2922426,
+"duration": 181
+}
+},
+{
+"id": "ECIU3SQyUU4",
+"title": "Dalinda",
+"mainArtists": [
+"Alex Mica"
+],
+"featuredArtists": [],
+"releaseYear": null,
+"albums": [],
+"bpm": 130,
+"wikipedia_song": null,
+"wikipedia_artist": "https://en.wikipedia.org/wiki/Alex_Mica",
+"musicbrainz_url": "https://musicbrainz.org/recording/f5430446-bc7e-4325-a054-5bbb2d88bf27",
+"discogs_url": null,
+"spotify_url": null,
+"source_url": "https://www.youtube.com/watch?v=ECIU3SQyUU4",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=ECIU3SQyUU4",
+"source": "youtube",
+"id": "ECIU3SQyUU4"
+}
+],
+"cover": "covers/ECIU3SQyUU4.jpg",
+"duration": 206,
+"added_at": "2026-10-16T23:47:01Z",
+"updated_at": "2026-10-17T00:00:00Z",
+"tags": [
+"genre:pop",
+"genre:r&b",
+"genre:house",
+"country:ro"
+],
+"artist": "Alex Mica",
+"remixer": null,
+"year": null,
+"remix_year": null,
+"album": null,
+"genres": [
+"pop",
+"r&b",
+"house"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 3333261,
+"duration": 206
+}
+},
+{
+"id": "y7ZEVA5dy-Y",
+"title": "Mercy",
+"mainArtists": [
+"Duffy"
+],
+"featuredArtists": [],
+"releaseYear": 2008,
+"albums": [
+"Rockferry"
+],
+"bpm": 132,
+"wikipedia_song": "https://en.wikipedia.org/wiki/Mercy_(Duffy_song)",
+"wikipedia_artist": "https://en.wikipedia.org/wiki/Duffy_(singer)",
+"wikipedia_album": "https://en.wikipedia.org/wiki/Rockferry",
+"musicbrainz_url": "https://musicbrainz.org/recording/8faf7f3c-621c-4c82-802f-183023224504",
+"discogs_url": null,
+"spotify_url": null,
+"source_url": "https://www.youtube.com/watch?v=y7ZEVA5dy-Y",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=y7ZEVA5dy-Y",
+"source": "youtube",
+"id": "y7ZEVA5dy-Y"
+}
+],
+"cover": "covers/y7ZEVA5dy-Y.jpg",
+"duration": 209,
+"added_at": "2026-10-16T23:39:49Z",
+"updated_at": "2026-10-16T23:59:39Z",
+"tags": [
+"genre:soul",
+"genre:pop",
+"genre:blues",
+"genre:rhythm and blues",
+"decade:00s",
+"country:gb"
+],
+"artist": "Duffy",
+"remixer": null,
+"year": 2008,
+"remix_year": null,
+"album": "Rockferry",
+"genres": [
+"soul",
+"pop",
+"blues",
+"rhythm and blues"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 3384319,
+"duration": 209
+}
+},
+{
+"id": "SOW00_B4wE8",
+"title": "Anybody Seen My Baby?",
+"mainArtists": [
+"The Rolling Stones"
+],
+"featuredArtists": [],
+"releaseYear": 1997,
+"albums": [
+"Forty Licks"
+],
+"version": {
+"type": "remaster",
+"name": null,
+"artists": [],
+"releaseYear": 2023
+},
+"bpm": 107,
+"wikipedia_song": "https://en.wikipedia.org/wiki/Anybody_Seen_My_Baby%3F",
+"wikipedia_artist": "https://en.wikipedia.org/wiki/The_Rolling_Stones",
+"wikipedia_album": "https://en.wikipedia.org/wiki/Bridges_to_Babylon",
+"musicbrainz_url": null,
+"discogs_url": null,
+"spotify_url": null,
+"source_url": "https://www.youtube.com/watch?v=SOW00_B4wE8",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=SOW00_B4wE8",
+"source": "youtube",
+"id": "SOW00_B4wE8"
+}
+],
+"cover": "covers/SOW00_B4wE8.jpg",
+"duration": 247,
+"added_at": "2026-10-17T23:48:21Z",
+"tags": [
+"genre:rock",
+"genre:blues rock",
+"genre:classic rock",
+"genre:psychedelic rock",
+"genre:rhythm and blues",
+"genre:rock and roll",
+"genre:blues",
+"decade:20s",
+"country:gb"
+],
+"updated_at": "2026-10-18T11:32:56Z",
+"artist": "The Rolling Stones",
+"remixer": "Remaster",
+"year": 1997,
+"remix_year": 2023,
+"album": "Forty Licks",
+"genres": [
+"rock",
+"blues rock",
+"classic rock",
+"psychedelic rock",
+"rhythm and blues",
+"rock and roll",
+"blues"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 4002185,
+"duration": 247
+}
+},
+{
+"id": "Hphwfq1wLJs",
+"title": "Da Ya Think I'm Sexy?",
+"mainArtists": [
+"Rod Stewart"
+],
+"featuredArtists": [],
+"releaseYear": 1978,
+"albums": [
+"Blondes Have More Fun"
+],
+"bpm": 113,
+"wikipedia_song": "https://en.wikipedia.org/wiki/Da_Ya_Think_I'm_Sexy%3F",
+"wikipedia_artist": "https://en.wikipedia.org/wiki/Rod_Stewart",
+"wikipedia_album": "https://en.wikipedia.org/wiki/Blondes_Have_More_Fun",
+"musicbrainz_url": "https://musicbrainz.org/recording/23eca564-52dc-4707-b4e1-40563d433158",
+"discogs_url": null,
+"spotify_url": null,
+"source_url": "https://www.youtube.com/watch?v=Hphwfq1wLJs",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=Hphwfq1wLJs",
+"source": "youtube",
+"id": "Hphwfq1wLJs"
+}
+],
+"cover": "covers/Hphwfq1wLJs.jpg",
+"duration": 278,
+"added_at": "2026-10-18T02:26:12Z",
+"tags": [
+"genre:disco",
+"genre:rock",
+"genre:blues rock",
+"genre:pop rock",
+"genre:rhythm and blues",
+"genre:pop",
+"genre:new wave",
+"decade:70s",
+"country:gb"
+],
+"updated_at": "2026-10-18T08:23:55Z",
+"artist": "Rod Stewart",
+"remixer": null,
+"year": 1978,
+"remix_year": null,
+"album": "Blondes Have More Fun",
+"genres": [
+"disco",
+"rock",
+"blues rock",
+"pop rock",
+"rhythm and blues",
+"pop",
+"new wave"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 4497362,
+"duration": 278
+}
 }
 ]
 }

@@ -860,6 +860,7 @@ Status: Accepted for the terms (owner, 2026-10-19); Proposed for facets. Full te
 - No migration: stored songs keep their genres; a read-only dry run that diffs the rule against the stored genres is possible later on request.
 - Supersedes for what is applied: TAG-094's source ranking; amends TAG-088 to TAG-090, TAG-095, TAG-096. Requirements: TAG-099 to TAG-108, API-186, ADD-181.
 
+- Amendment 2026-10-20 (CZ, TAG-112): `electronic` and the names of the group Others are ignored evidence: never suggested, never agreement or a source group, no special unlock path for song-page genres.
 ## ADR-0037 Genre parents are equal: families by descent, level by shortest path, no depth cap
 
 - Status: accepted 2026-10-19 (owner decisions BY1, BX, CB2); built, not deployed. Spec: GEN-070 to GEN-072; task: [task-0055](../tasks/task-0055.md). Amends ADR-0030 (the first parent no longer is primary; the hard cap of three levels is lifted on 2026-10-19), ADR-0035 (the suggestion rule uses every parent).

@@ -63,6 +63,22 @@ Notes:
 - Medium: acoustic and instrumental are medium (instrumental means no vocals; a cappella is the opposite). They are also version types in the data model: an acoustic or instrumental version of a song is a version of an original, whereas a piece that was always instrumental is a medium attribute, not a version. Lo-fi is a production aesthetic (medium); beat is a format.
 - Other purposes seen: ceremonial, background, study. Discogs' top level mixes axes: purpose (Stage & Screen, Children's, Brass & Military, Non-Music; we dropped these four on 2026-10-18), region (Latin; Folk, World, & Country; Reggae has an origin place) and medium (Electronic). That is why our families are uneven.
 
+## Genres are prototype categories
+
+Decided 2026-10-20 (CW1). Genres are not purely subjective: people agree on the centre of a genre (nobody argues that Kraftwerk is electronic or Metallica is heavy metal), but the borders cannot be defined formally. The border is a soft gradient and depends on scene, country and decade.
+
+Colour terms behave the same way: everyone agrees on green and on blue, and where blue turns into green is a convention. Russian has two basic blues, голубой and синий. In psychology this is prototype theory (Eleanor Rosch; Berlin and Kay for colour terms): a category is held together by good examples, not by a definition.
+
+Consequences in our model:
+
+- A song may have several equal parents (ADR-0037); `related` links and fusion flags express soft membership.
+- The evidence rule is "Wikipedia consensus at the centre": we do not try to fix borders, only whether a genre name is widely used for the song.
+- A future distance measure and the named feature space ([task-0070](../tasks/task-0070.md), see also [task-0064](../tasks/task-0064.md)) would place songs by closeness to a genre's prototype songs.
+
+The reference songs of a genre (its etalon songs, see the etalon test in [How to decide a new label](#how-to-decide-a-new-label)) are the **prototype songs**: the good examples that hold the category together, and the anchors of the future feature space.
+
+Differences from colour: colour has one physical continuum, a genre has several dimensions (hence the axes above), and genres have history and names.
+
 ## Tests and rules
 
 All decided 2026-10-20 (owner), except where a date is given.
@@ -104,6 +120,8 @@ All owner decisions of 2026-10-20 (the full list with letter ids is at the end).
 - **AN1. Start the restructure.** The Electronic family stops being a node; `electronic` stops being a genre pill; the Electronic medium is derived from the tree. Not built.
 - **Level 1 forms of Electronic (CB1).** house, techno, trance, drum and bass (separate from breakbeat), breakbeat, ambient, eurodance, synthwave, experimental; each is the genre itself, like Rock. `industrial` is a modifier of kind sound, not a node. uk garage is proposed (CG, open).
 - **Groups.** Electronic, EDM (a purpose set: electronic dance music), Latin and World are groups, never assigned to a song. Electronic is not a genre.
+- **`electronic` is ignored as suggestion evidence (CZ).** A source that names `electronic` or another name of the group Others is never a suggestion, never agreement, never a source group and never unlocks a genre (TAG-112).
+- **Step 1 of the Others plan (2026-10-20).** "Move dnb, trance, synthwave, techno, house, synthpop, disco out of Others": house, techno, trance, drum and bass and synthwave became level 1 forms; synthpop lost the parent Others (parents Pop and new wave, level 2, still not level 1); disco lost the parent Others (parent Funk / Soul, level 2). Built, not deployed; details and numbers in [task-0066](../tasks/task-0066.md), rule GEN-084.
 - **synthpop (CC1, CD1).** Not level 1: parents Pop and new wave (Rock), `related` disco, electronic by medium. Synonyms `techno-pop` and `technopop`.
 - **jungle (BZ1).** Parents breakbeat and drum and bass, `related` reggae.
 - **bass music (CA).** Not a form: it names a sound, so its genres are redistributed (proposal in the mapping doc, pending as CG).
@@ -161,6 +179,14 @@ Ask in this order; the first yes wins.
 4. Does it say what the music is for (dance, film score, military, children's)? It is a **purpose**, not a genre.
 5. Does it name a tradition, scene or country (Latin, Berlin, Italo, K-)? It is a **tradition**: a group if it means nothing as a style, a modifier or an origin attribute if it qualifies a style.
 
+### The etalon test
+
+Can you name a reference (etalon) song of this genre? A rock song has one ("Johnny B. Goode", "Satisfaction"); house ("Your Love"), techno ("No UFOs"), trance ("For an Angel"), drum and bass ("Brown Paper Bag"), synthwave ("Nightcall") and ambient ("Music for Airports") each have one. Electronic has none, because any answer is really a house, techno or ambient track: so it is a group, not a genre.
+
+- A genre has a reference song; a group does not.
+- It is also the criterion for promoting a form to level 1: if you cannot name a reference track, it is a drawer, not a form.
+- The reference songs are the genre's prototype songs ([task-0070](../tasks/task-0070.md), `prototypes`).
+
 If none fits, it is probably a mood or a descriptor (epic, ethereal): leave it out of the vocabulary.
 
 ## Sources
@@ -205,6 +231,8 @@ Owner decisions from the chat of 2026-10-20 ("Decided" = owner decision; "Defaul
 | CE | Disco kin and electronic rock keep the medium? | Open (recommended: override flag) |
 | CF/CG | uk garage as a form; bass-music genres | Open (recommended: proposal table) |
 | groups | Electronic, EDM, Latin, World | Groups, never assigned; Electronic is not a genre |
+| CW1 | Are genres arbitrary? | No: prototype categories, a clear centre and a soft border (like colour names); recorded here and on the About page |
+| CY1 | Etalon test | A genre has a reference (etalon) song, a group does not; also the criterion for a level 1 form; the etalon songs are the prototype songs |
 | axes | Four axes | Form, Medium, Purpose, Tradition (+ personal Mood) |
 | epic | Is epic a genre? | No, removed |
 | kinds | dark, deep, uplifting | mood |

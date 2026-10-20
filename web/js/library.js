@@ -1,4 +1,5 @@
 import { store } from './store.js';
+import { startup } from './api.js';
 import { player } from './player.js';
 import { el, toast, plural } from './dom.js';
 import { icon } from './icons.js';
@@ -300,7 +301,7 @@ export function renderLibrary(root) {
         el('p', { class: 'msg error' }, loadError),
         el('button', { class: 'btn', type: 'button', onclick: () => { loadError = null; void load(); renderList(); } }, 'Retry')));
     } else if (!store.loaded) {
-      status.replaceChildren(el('p', { class: 'muted t-subhead state', role: 'status' }, 'Loading your library...'));
+      status.replaceChildren(el('p', { class: 'muted t-subhead state', role: 'status' }, startup.waiting ? 'Server is starting...' : 'Loading your library...'));
     } else if (nothing) {
       status.replaceChildren(el('div', { class: 'state card' },
         el('p', { class: 't-headline' }, 'No songs yet'),
@@ -311,10 +312,12 @@ export function renderLibrary(root) {
     }
   }
   const load = () => store.refresh({ maxAgeMs: LIBRARY_FRESH_MS }).catch((e) => { loadError = e.message; renderList(); });
+  const onStarting = () => { if (!store.loaded && !gone) renderList(); };
+  window.addEventListener('server-starting', onStarting);
   void load();
   renderAll();
 
   const unmountScrollTop = mountScrollTop();
 
-  return () => { gone = true; unmountScrollTop(); unsub(); unsubDrafts?.(); unmountDrafts?.(); unsubPlayer(); unsubDl(); unregister(); clearTimeout(flashTimer); flashId = null; const d = document.getElementById('filter-sheet'); if (d.open) d.close(); };
+  return () => { gone = true; window.removeEventListener('server-starting', onStarting); unmountScrollTop(); unsub(); unsubDrafts?.(); unmountDrafts?.(); unsubPlayer(); unsubDl(); unregister(); clearTimeout(flashTimer); flashId = null; const d = document.getElementById('filter-sheet'); if (d.open) d.close(); };
 }

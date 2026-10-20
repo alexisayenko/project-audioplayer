@@ -93,11 +93,11 @@ def test_the_second_family_additions_left_are_the_only_other_differences():
 
 def test_the_data_edits_of_2026_10_19():
     levels = payload()["levels"]
-    assert (levels["spacesynth"]["parents"], levels["spacesynth"]["level"], levels["spacesynth"]["status"]) == (["synthwave", "italo disco"], 3, "approved")
+    assert (levels["spacesynth"]["parents"], levels["spacesynth"]["level"], levels["spacesynth"]["status"]) == (["synthwave", "italo disco"], 2, "approved")  # level 2: synthwave is level 1 since 2026-10-20 (task-0066)
     sd = levels["space disco"]
-    assert (sd["parents"], sd["family"], sd["level"], sd["discogs"], sd["status"], sd["display"], sd["synonyms"]) == (["disco"], "Others", 3, False, "approved", None, ["space-disco"])
+    assert (sd["parents"], sd["family"], sd["level"], sd["discogs"], sd["status"], sd["display"], sd["synonyms"]) == (["disco"], "Funk / Soul", 3, False, "approved", None, ["space-disco"])  # disco left Others (task-0066, 2026-10-20)
     sw = levels["sovietwave"]
-    assert (sw["parents"], sw["family"], sw["level"], sw["display"]) == (["synthwave"], "Others", 3, None)
+    assert (sw["parents"], sw["family"], sw["level"], sw["display"]) == (["synthwave"], "synthwave", 2, None)  # synthwave is level 1 (task-0066, 2026-10-20)
 
 
 def test_vocabulary_rows_match_the_snapshot_taken_before_the_change():

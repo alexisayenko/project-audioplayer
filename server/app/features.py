@@ -13,7 +13,7 @@ from typing import Any
 
 from . import buildinfo
 
-KEEP_TYPES = {"feat", "fix", "perf"}
+KEEP_TYPES = {"feat"}
 MAX_ITEMS = 12
 MAX_TEXT = 110
 SUBJECT = re.compile(r"^(\w+)(?:\(([^)]*)\))?!?:\s*(.+)$")
@@ -24,7 +24,8 @@ EXCLUDE = (
 )
 TASK_REF = re.compile(r"\btask-(\d{4})\b")
 TASK_FILE = re.compile(r"^docs/tasks/(task-\d{4})\.md$")
-PLANNED = {"to do", "in progress"}
+PLANNED = "to do"
+IN_PROGRESS = "in progress"
 STOP = {"with", "that", "this", "from", "into", "when", "what", "their", "have", "will", "only", "also", "than", "then", "each", "page", "view"}
 SEP = "\x1f"
 REC = "\x1e"
@@ -65,7 +66,7 @@ def read_log(repo: Path, rev: str) -> list[dict[str, Any]]:
 
 
 def clean_subject(subject: str, exclude: tuple[str, ...] | list[str] | None = None) -> str | None:
-    """Feature sentence of a feat, fix or perf subject; None for anything else, for data scope and for library data edits.
+    """Feature sentence of a feat subject; None for anything else, for data scope and for library data edits.
 
     A subject that joins clauses with ';' keeps the clauses that are not data edits.
     """
@@ -189,8 +190,23 @@ def read_tasks(tasks_dir: Path) -> dict[str, dict[str, Any]]:
     return tasks
 
 
+def status_kind(status: str) -> str:
+    """"in progress" or "to do" for a status that starts with it (suffixes allowed), else ""."""
+    s = status.strip().lower()
+    return IN_PROGRESS if s.startswith(IN_PROGRESS) else PLANNED if s.startswith(PLANNED) else ""
+
+
+def tasks_with(tasks: dict[str, Any], kind: str) -> list[dict[str, Any]]:
+    rows = [{**t, "status": kind} for t in tasks.values() if status_kind(t["status"]) == kind]
+    return sorted(rows, key=lambda t: t["id"], reverse=True)
+
+
 def planned(tasks: dict[str, Any]) -> list[dict[str, Any]]:
-    return sorted((t for t in tasks.values() if t["status"] in PLANNED), key=lambda t: t["id"], reverse=True)
+    return tasks_with(tasks, PLANNED)
+
+
+def in_progress(tasks: dict[str, Any]) -> list[dict[str, Any]]:
+    return tasks_with(tasks, IN_PROGRESS)
 
 
 def load_json(path: Path, default: Any) -> Any:
@@ -206,8 +222,8 @@ def build(repo: Path, deploys: list[dict[str, str]], rmap: dict[str, str | None]
     try:
         releases = _releases(repo, deploys, tasks, rmap)
     except (OSError, subprocess.SubprocessError):
-        return {"releases": [], "planned": planned(tasks), "unavailable": True}
-    return {"releases": releases, "planned": planned(tasks), "unavailable": False}
+        return {"releases": [], "planned": planned(tasks), "in_progress": in_progress(tasks), "unavailable": True}
+    return {"releases": releases, "planned": planned(tasks), "in_progress": in_progress(tasks), "unavailable": False}
 
 
 def _releases(repo: Path, deploys: list[dict[str, str]], tasks: dict[str, Any], rmap: dict[str, str | None]) -> list[dict[str, Any]]:

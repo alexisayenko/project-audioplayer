@@ -14,7 +14,8 @@
   "N4bFqW_eu2I": {
    "remove": [
     "progressive rock",
-    "psychedelic rock"
+    "psychedelic rock",
+    "r&b"
    ],
    "title": "The Animals - House Of The Rising Sun"
   },
@@ -29,7 +30,8 @@
   "S-u6qdeaPoE": {
    "remove": [
     "italo disco",
-    "reggae"
+    "reggae",
+    "r&b"
    ],
    "title": "Boney M. - Sunny"
   },
@@ -48,7 +50,8 @@
   },
   "7YvAYIJSSZY": {
    "remove": [
-    "indie rock"
+    "indie rock",
+    "r&b"
    ],
    "title": "Rockwell - Somebody's Watching Me"
   },
@@ -837,6 +840,48 @@
     "dance pop",
     "house"
    ]
+  },
+  "3kjfrgkD9K0": {
+   "remove": [
+    "hardcore techno"
+   ],
+   "title": "The Prodigy - Voodoo People (2007 Remaster)"
+  },
+  "e2IpYd6Pu3s": {
+   "remove": [
+    "r&b"
+   ],
+   "title": "Izzy Bizu - White Tiger"
+  },
+  "-N4jf6rtyuw": {
+   "remove": [
+    "r&b"
+   ],
+   "title": "Gnarls Barkley - Crazy"
+  },
+  "ECIU3SQyUU4": {
+   "remove": [
+    "r&b"
+   ],
+   "title": "Alex Mica - Dalinda"
+  },
+  "y7ZEVA5dy-Y": {
+   "remove": [
+    "rhythm and blues"
+   ],
+   "title": "Duffy - Mercy"
+  },
+  "SOW00_B4wE8": {
+   "remove": [
+    "rhythm and blues"
+   ],
+   "title": "The Rolling Stones - Anybody Seen My Baby?"
+  },
+  "Hphwfq1wLJs": {
+   "remove": [
+    "rhythm and blues"
+   ],
+   "title": "Rod Stewart - Da Ya Think I'm Sexy?"
   }
  }
 }

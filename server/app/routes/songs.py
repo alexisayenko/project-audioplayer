@@ -8,7 +8,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 
-from .. import credits, deps, discogs_lookup, genre_lookup, jobs, library, limits, titleclean, urlclean, users, wiki_lookup
+from .. import credits, deps, discogs_lookup, genre_lookup, jobs, library, limits, loops, titleclean, urlclean, users, wiki_lookup
 from ..downloads import (
     add_metadata_only, mark_started, new_job, reject_unknown_country, reject_unknown_genre, run_download, run_fetch_audio,
 )
@@ -199,6 +199,15 @@ def _edited(song: dict[str, Any], changes: dict[str, Any]) -> dict[str, Any]:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     if "bpm" in changes:
         updated["bpm"] = round(changes["bpm"]) if changes["bpm"] is not None else None
+    if "loops" in changes:
+        try:
+            saved = loops.clean(changes["loops"], song.get("duration"))
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        if saved:
+            updated["loops"] = saved
+        else:
+            updated.pop("loops", None)
     _apply_links(updated, changes)
     _apply_tag_changes(updated, song, changes)
     if not updated.get("title"):

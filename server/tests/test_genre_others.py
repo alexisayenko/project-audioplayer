@@ -50,24 +50,46 @@ def test_others_is_a_level_1_group_that_is_not_a_vocabulary_entry():
     assert set(v.groups) == {"Others"} and v.groups["Others"]["temporary"] is True and v.groups["Others"]["kind"] == "organisational"
     assert genre_vocab.lookup("others") is None and not genre_vocab.is_canonical("others")
     body = genre_vocab.vocabulary()
-    assert "Others" in body["families"] and body["families"].index("Others") == 2, "Others keeps the slot of Electronic"
+    assert "Others" in body["families"] and body["families"].index("Others") == 7, "the five promoted genres sit before the group Others in the families list"
     g = body["groups"]["Others"]
     assert (g["assignable"], g["temporary"], g["colour"], g["kind"]) == (False, True, "Electronic", "organisational")
-    assert len(g["members"]) == 51 and "house" in g["members"] and "disco" in g["members"] and "electronic" not in g["members"]
+    assert len(g["members"]) == 44 and "electronic" not in g["members"]
+    assert not {"house", "techno", "trance", "drum and bass", "synthwave", "synthpop", "disco"} & set(g["members"]), "level 1 forms, synthpop and disco are no members of Others (2026-10-20)"
+    assert {"breakbeat", "ambient", "dub", "edm", "uk garage"} <= set(g["members"])
     assert not {r["name"] for r in body["genres"]} & {"others", "electronic"}
-    assert body["forms"] == {} and "flavours" in body and "family_synonyms" in body and "Others" in body["family_synonyms"]
+    assert set(body["forms"]) == {"house", "techno", "trance", "drum and bass", "synthwave"} and "flavours" in body and "family_synonyms" in body and "Others" in body["family_synonyms"]
     assert "electronic" in body["family_synonyms"]["Others"]
 
 
-def test_every_former_electronic_genre_sits_under_others_and_the_tree_below_is_unchanged():
-    levels = genre_vocab.load_levels()[0]
+def test_the_former_electronic_genres_after_house_techno_trance_dnb_synthwave_left_others_and_synthpop_and_disco_lost_the_parent():
+    levels, forms = genre_vocab.load_levels()[0], genre_vocab.load_forms()
     under = [k for k, v in levels.items() if "Others" in v["families"]]
-    assert len(under) == 146
-    assert levels["house"]["parents"] == ["Others"] and levels["deep house"]["parents"] == ["house"] and levels["goa trance"]["parents"] == ["psytrance"]
-    assert levels["disco"]["parents"] == ["Funk / Soul", "Others"] and levels["dub"]["parents"] == ["Reggae", "Others"]
-    assert levels["goa trance"]["level"] == 4 and levels["house"]["level"] == 2
+    assert len(under) == 82
+    assert set(forms) == {"house", "techno", "trance", "drum and bass", "synthwave"} and all(f["level"] == 1 and f["families"][0] == k and f["colour"] == "Others" for k, f in forms.items())
+    assert "house" not in levels and levels["deep house"]["parents"] == ["house"] and levels["goa trance"]["parents"] == ["psytrance"]
+    assert (levels["deep house"]["level"], levels["deep house"]["families"], levels["psytrance"]["level"], levels["goa trance"]["level"]) == (2, ["house"], 2, 3)
+    assert levels["synthpop"]["parents"] == ["Pop", "new wave"] and levels["synthpop"]["level"] == 2 and levels["synthpop"]["families"] == ["Pop", "Rock"] and "Others" not in levels["synthpop"]["families"]
+    assert levels["disco"]["parents"] == ["Funk / Soul"] and levels["disco"]["level"] == 2 and levels["disco"]["families"] == ["Funk / Soul"]
+    assert all(levels[k]["parents"] == ["disco"] and levels[k]["families"] == ["Funk / Soul"] for k in ("italo disco", "euro disco", "nu-disco", "hi-nrg", "space disco", "post-disco"))
+    assert levels["dub"]["parents"] == ["Reggae", "Others"]
     assert not [k for k, v in levels.items() if "Electronic" in v["parents"] or "Electronic" in v.get("related", [])]
-    assert levels["house"]["subfamily"] == "House"
+    assert levels["deep house"]["subfamily"] == "House" and forms["house"]["subfamily"] == "House", "the subfamily labels are kept"
+    assert max(v["level"] for v in levels.values()) == 3
+
+
+def test_the_five_level_1_forms_are_listed_and_the_level_counts_moved_as_recorded():
+    body = genre_vocab.vocabulary()
+    assert list(body["forms"]) == ["house", "techno", "trance", "drum and bass", "synthwave"]
+    assert [f for f in body["families"] if f in body["forms"]] == list(body["forms"])
+    levels = genre_vocab.load_levels()[0]
+    assert sum(v["level"] == 2 for v in levels.values()) == 420 and sum(v["level"] == 3 for v in levels.values()) == 109 and sum(v["level"] == 4 for v in levels.values()) == 0
+    assert genre_vocab.load().entries["trance"].level == "family" and genre_vocab.family_of("goa trance") == "trance"
+
+
+def test_genres_under_several_forms_keep_all_their_families():
+    levels = genre_vocab.load_levels()[0]
+    assert levels["acid"]["families"] == ["house", "techno", "Others"] and levels["tech house"]["families"] == ["house", "techno"]
+    assert levels["hands up"]["families"] == ["house", "trance", "Funk / Soul", "Pop"] and levels["hands up"]["level"] == 2
 
 
 def test_electronic_is_not_a_genre_it_is_unmappable_and_writes_are_rejected():
@@ -96,43 +118,47 @@ def test_a_source_naming_electronic_or_others_never_applies_or_suggests_it():
     assert d.applied == ["house"]
 
 
-def test_an_agreed_group_still_lets_the_song_page_apply_a_genre_of_the_group():
+def test_an_agreed_group_name_unlocks_nothing_for_the_song_page():
     S = genre_suggest
-    d = genre_suggest.decide({S.MUSICBRAINZ: ["electronic"], S.WIKIPEDIA_ARTIST: ["electronic"], S.WIKIPEDIA_SONG: ["techno"]})
-    assert d.applied == ["techno"]
-    alone = genre_suggest.decide({S.WIKIPEDIA_SONG: ["techno"]})
-    assert alone.applied == []
+    for song in ("breakbeat", "techno"):
+        d = genre_suggest.decide({S.MUSICBRAINZ: ["electronic"], S.WIKIPEDIA_ARTIST: ["electronic"], S.WIKIPEDIA_SONG: [song]})
+        assert d.applied == [], "electronic is ignored evidence (CZ, 2026-10-20)"
+    assert genre_suggest.decide({S.WIKIPEDIA_SONG: ["breakbeat"]}).applied == []
 
 
 def test_the_graph_payload_keeps_the_11_legacy_families():
     assert genre_graph.table_family("house") == "Electronic" == genre_graph.table_family("Electronic music")
     assert set(genre_graph.families().values()) == set(genre_graph.FAMILIES)
-    assert genre_graph.table_families("disco") == ("Electronic", "Funk / Soul")
+    assert genre_graph.table_families("disco") == ("Funk / Soul",) and genre_graph.table_family("disco") == "Funk / Soul"
+    assert genre_graph.table_families("synthpop") == ("Pop", "Rock")
+    for form in ("house", "techno", "trance", "drum and bass", "synthwave"):
+        assert genre_graph.table_family(form) == "Electronic" == genre_graph.table_families(form)[0] and genre_graph.table_families(form) == ("Electronic",), form
 
 
 def test_promote_makes_a_level_1_genre_and_its_children_rise_one_level(docs, data_dir):
     ops = _ops()
     levels, discogs, extras = (copy.deepcopy(d) for d in docs)
     before = genre_vocab.parse_levels(levels)[0]
-    assert before["deep house"]["level"] == 3 and before["house"]["level"] == 2
-    ops.promote(levels, discogs, extras, "house", None)
+    assert before["jungle"]["level"] == 3 and before["breakbeat"]["level"] == 2
+    ops.promote(levels, discogs, extras, "breakbeat", None)
     ops.refresh_meta(levels)
     entries, forms, _, _ = genre_vocab.parse_all(levels)
-    assert "house" not in entries and forms["house"]["level"] == 1 and forms["house"]["families"] == ["house"] and forms["house"]["parents"] == []
-    assert forms["house"]["synonyms"] == before["house"]["synonyms"] and forms["house"]["related"] == ["disco"]
-    assert (entries["deep house"]["level"], entries["deep house"]["families"], entries["deep house"]["parents"]) == (2, ["house"], ["house"])
-    assert entries["hip house"]["families"] == ["house", "Hip Hop"] and entries["acid"]["families"] == ["house", "Others"], "acid also sits under Others and techno (not promoted yet)"
-    assert levels["_meta"]["counts"]["house"]["total"] == len([k for k, v in entries.items() if "house" in v["families"]])
-    assert levels["_meta"]["total"] == len(entries) == 533
+    assert "breakbeat" not in entries and forms["breakbeat"]["level"] == 1 and forms["breakbeat"]["families"] == ["breakbeat"] and forms["breakbeat"]["parents"] == []
+    assert forms["breakbeat"]["synonyms"] == before["breakbeat"]["synonyms"] and forms["breakbeat"]["subfamily"] == "Breaks & bass"
+    assert (entries["jungle"]["level"], entries["jungle"]["families"], entries["jungle"]["parents"]) == (2, ["breakbeat"], ["breakbeat"])
+    assert entries["jungle"]["subfamily"] == "Breaks & bass", "the children keep the subfamily label of the promoted genre"
+    assert entries["baltimore club"]["families"] == ["house", "breakbeat"] and entries["baltimore club"]["level"] == 2
+    assert levels["_meta"]["counts"]["breakbeat"]["total"] == len([k for k, v in entries.items() if "breakbeat" in v["families"]])
+    assert levels["_meta"]["total"] == len(entries) == 528
     data_dir(levels, discogs, extras)
     v = genre_vocab.load()
-    assert v.entries["house"].level == "family" and v.entries["house"].form and v.entries["house"].family == "house"
-    assert genre_vocab.is_canonical("house") and genre_vocab.is_below_family("house") is False and genre_vocab.family_of("deep house") == "house"
+    assert v.entries["breakbeat"].level == "family" and v.entries["breakbeat"].form and v.entries["breakbeat"].family == "breakbeat"
+    assert genre_vocab.is_canonical("breakbeat") and genre_vocab.is_below_family("breakbeat") is False and genre_vocab.family_of("jungle") == "breakbeat"
     body = genre_vocab.vocabulary()
-    assert "house" in body["families"] and body["forms"]["house"]["level"] == 1 and "house" not in body["levels"]
-    assert genre_vocab.colour_family("house") == "Electronic", "a promoted genre keeps the legacy colour of Others"
-    assert genre_graph.table_family("deep house") == "Electronic"
-    assert genre_suggest.get_tree().depth["house"] == 1 and "house" not in genre_suggest.get_tree().families
+    assert "breakbeat" in body["families"] and body["forms"]["breakbeat"]["level"] == 1 and "breakbeat" not in body["levels"]
+    assert genre_vocab.colour_family("breakbeat") == "Electronic", "a promoted genre keeps the legacy colour of Others"
+    assert genre_graph.table_family("jungle") == "Electronic"
+    assert genre_suggest.get_tree().depth["breakbeat"] == 1 and "breakbeat" not in genre_suggest.get_tree().families
 
 
 def test_promote_keeps_extra_parents_and_stays_level_1(docs, data_dir):
@@ -141,7 +167,7 @@ def test_promote_keeps_extra_parents_and_stays_level_1(docs, data_dir):
     ops.promote(levels, discogs, extras, "eurodance", None)
     entries, forms, _, _ = genre_vocab.parse_all(levels)
     assert forms["eurodance"]["parents"] == ["house", "euro disco", "Pop"] and forms["eurodance"]["level"] == 1
-    assert forms["eurodance"]["families"] == ["eurodance", "Others", "Funk / Soul", "Pop"]
+    assert forms["eurodance"]["families"] == ["house", "eurodance", "Funk / Soul", "Pop"]
     assert entries["italodance"]["level"] == 2 and "eurodance" in entries["italodance"]["families"]
 
 
@@ -152,9 +178,41 @@ def test_promote_refuses_what_is_not_a_genre_or_already_level_1(docs):
         ops.promote(levels, discogs, extras, "rock", None)
     with pytest.raises(SystemExit):
         ops.promote(levels, discogs, extras, "nonsense genre", None)
-    ops.promote(levels, discogs, extras, "house", None)
     with pytest.raises(SystemExit):
         ops.promote(levels, discogs, extras, "house", None)
+    ops.promote(levels, discogs, extras, "breakbeat", None)
+    with pytest.raises(SystemExit):
+        ops.promote(levels, discogs, extras, "breakbeat", None)
+
+
+def test_unparent_removes_one_parent_and_keeps_the_rest(docs):
+    ops = _ops()
+    levels, discogs, extras = (copy.deepcopy(d) for d in docs)
+    levels["synthpop"]["parents"] = ["Others", "Pop", "new wave"]
+    levels["disco"]["parents"] = ["Funk / Soul", "Others"]
+    before = genre_vocab.parse_levels(levels)[0]
+    assert before["synthpop"]["families"] == ["Others", "Pop", "Rock"] and before["disco"]["families"] == ["Others", "Funk / Soul"]
+    ops.unparent(levels, "synthpop", "Others")
+    ops.unparent(levels, "disco", "Others")
+    after = genre_vocab.parse_levels(levels)[0]
+    assert levels["synthpop"]["parents"] == ["Pop", "new wave"] and levels["disco"]["parents"] == ["Funk / Soul"]
+    assert (after["synthpop"]["level"], after["synthpop"]["families"]) == (2, ["Pop", "Rock"]) and (after["disco"]["level"], after["disco"]["families"]) == (2, ["Funk / Soul"])
+    assert after["euro disco"]["families"] == ["Funk / Soul"] and after["ebm"]["families"] == ["Pop", "Rock"], "the children follow"
+    with pytest.raises(SystemExit):
+        ops.unparent(levels, "synthpop", "Others")
+    with pytest.raises(SystemExit):
+        ops.unparent(levels, "deep house", "house")
+    with pytest.raises(SystemExit):
+        ops.unparent(levels, "nonsense genre", "Others")
+
+
+def test_unparent_works_on_a_promoted_genre_too(docs):
+    ops = _ops()
+    levels, discogs, extras = (copy.deepcopy(d) for d in docs)
+    ops.promote(levels, discogs, extras, "eurodance", None)
+    ops.unparent(levels, "eurodance", "Pop")
+    forms = genre_vocab.parse_all(levels)[1]
+    assert forms["eurodance"]["parents"] == ["house", "euro disco"] and forms["eurodance"]["level"] == 1
 
 
 def test_move_replaces_the_group_parent_and_a_bad_move_is_rejected(docs):
@@ -183,3 +241,7 @@ def test_a_built_graph_payload_only_carries_legacy_families_never_others():
     assert out["nodes"] and {n["family"] for n in out["nodes"]} <= legacy
     assert all(set(n["families"]) <= legacy for n in out["nodes"])
     assert not [n for n in out["nodes"] if "Others" in (n["family"], *n["families"])]
+    by_label = {n["label"].lower(): n for n in out["nodes"]}
+    for form in ("house", "techno", "trance", "drum and bass", "synthwave"):
+        assert by_label[form]["family"] == "Electronic", form
+    assert "Others" not in {n["family"] for n in out["nodes"]}

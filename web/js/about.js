@@ -7,7 +7,7 @@ export const ABOUT = {
   intro: 'Electrophone is a personal music library: songs the owner picks, kept so they play reliably, offline, with the screen locked. The web UI is open to anyone with a Google or Apple sign-in, and each user gets their own library.',
   genres: {
     heading: 'How genres are organised',
-    text: 'Genres are social categories, and there is no official standard. We do not claim one. The model here is consistent for one library, and the documentation says where each decision came from. A song is described along four axes.',
+    text: 'Genres are social categories, and there is no official standard. We do not claim one. The model here is consistent for one library, and the documentation says where each decision came from. Genres work like colour names: everyone agrees on the centre of green, but nobody can say exactly where blue turns into green, so a genre has a clear centre and a soft border. A song is described along four axes.',
     table: {
       caption: 'The four axes',
       note: 'Mood stays personal: it is how a song feels to you, so it is not shared vocabulary.',

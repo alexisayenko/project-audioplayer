@@ -42,6 +42,10 @@ Or run `scripts/deploy.sh` (same command, then prints the deployed revision and 
 Full runbook (paths, backup, rollback, verification): [deploy.md](deploy.md). The script runs `git pull --ff-only`, `pip install`, restarts the
 service and checks `/health`.
 
+### Startup sequence (task-0071, CV1; built, not deployed)
+
+`_startup` (`server/app/main.py`) does only the cheap checks (`legal.check_startup`, `genre_vocab.check`) and starts a background worker (`server/app/readiness.py`), so uvicorn accepts connections at once. The worker runs, in this order: git recovery (`deps.SYNC.recover_on_startup()`, when a data repo is configured), `migrate_model2`, `migrate_model3`, `migrate_tags`, `migrate_removals`, `migrate_renames`, `migrate_retired`, `features.record_startup`. The module-level `readiness` object (`idle` -> `starting` -> `ready` | `failed`, `overdue` after the cap) is thread-safe and holds the current step. An outermost ASGI middleware answers 503 `starting` for every request except the allow-list (`/health`, `/robots.txt`, `/legal`, the page and its static files), so no route touches user data while a migration rewrites it; `/health` reports `ready` and `startup`. A failing step is logged and skipped, a worker crash or the `AUDIO_STARTUP_MAX_S` cap releases the gate. Details: API-188, [deploy.md](deploy.md#restart).
+
 ## Library storage (ADR-0005, implemented)
 
 Layout since ADR-0012 (one library per user, `<uid>` = first 16 hex of

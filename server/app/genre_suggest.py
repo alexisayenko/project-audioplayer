@@ -1,6 +1,6 @@
 """The genre suggestion rule (TAG-099 to TAG-108, decision EH1, variant B): which of the genres the lookups found are APPLIED to a song and which are only SUGGESTED.
 
-The input is, per independent source group, the genres that group named. A genre is applied when two independent groups agree on it (a child counts for every ancestor above it, through all its parents), or when the Wikipedia song page alone names it, it is not an ambiguous name and it shares a family (any of its families) with a genre applied by agreement. A source that names a group (`electronic`, a retired name of Others) is not a genre and is never applied or suggested, but when the group is agreed (two independent groups name it or its children) its family counts like an agreed genre's family for the song-page rule above. Everything else is a suggestion with its source badges; nothing is applied by a single source."""
+The input is, per independent source group, the genres that group named. A genre is applied when two independent groups agree on it (a child counts for every ancestor above it, through all its parents), or when the Wikipedia song page alone names it, it is not an ambiguous name and it shares a family (any of its families) with a genre applied by agreement. A name of the group Others (`electronic` and the group's synonyms: electronic music, electronica, rave, ...) is ignored evidence (CZ, 2026-10-20): it is never applied or suggested, never counts as agreement or support, never unlocks a song-page genre and is never listed as a source; only the real genres a source names count. Everything else is a suggestion with its source badges; nothing is applied by a single source."""
 
 from __future__ import annotations
 
@@ -75,7 +75,7 @@ def _build_tree() -> Tree:
 
 
 def get_tree() -> Tree:
-    """Every parent of each vocabulary name, all its families and its level (the tree of `genre_levels.json`, else the Discogs/extras parents); rebuilt when the vocabulary is reloaded. All parents are equal. `families` holds the plain families and the group `others` (never a name a source can apply): a promoted genre (house once promoted) is a genre that is also level 1, so it is pruned as an ancestor of its own children like any other genre. `electronic` is not in the vocabulary, so a source naming it is never applied or suggested."""
+    """Every parent of each vocabulary name, all its families and its level (the tree of `genre_levels.json`, else the Discogs/extras parents); rebuilt when the vocabulary is reloaded. All parents are equal. `families` holds the plain families and the group `others` (never a name a source can apply): a promoted genre (house once promoted) is a genre that is also level 1, so it is pruned as an ancestor of its own children like any other genre. """
     global _cache
     vocab = genre_vocab.load()
     with _lock:
@@ -107,10 +107,17 @@ def _depth(name: str, tree: Tree) -> int:
     return tree.depth.get(name) or 1 + len(ancestors(name, tree))
 
 
+def ignored(name: str) -> bool:
+    """True for `electronic` and every name of the group Others (also with a trailing " music"): evidence that is never used."""
+    text = str(name).strip()
+    return text.casefold() == "electronic" or genre_vocab.group_colour(text) is not None
+
+
 def _normalise(values: list[str]) -> list[str]:
-    """Vocabulary names (aliases, synonyms and spelling folded by `genre_filter`), in order and unique; non-genre tags are dropped."""
+    """Vocabulary names (aliases, synonyms and spelling folded by `genre_filter`), in order and unique; non-genre tags and ignored group names are dropped."""
     tags = [v if ":" in str(v) else f"genre:{v}" for v in values or []]
-    names = [t.partition(":")[2] for t in genre_filter.filter_tags([t for t in tags if str(t).partition(":")[0].strip().casefold() == "genre"])]
+    names = [t.partition(":")[2] for t in genre_filter.filter_tags([t for t in tags if str(t).partition(":")[0].strip().casefold() == "genre" and not ignored(str(t).partition(":")[2])])]
+    names = [n for n in names if not ignored(n)]
     return list(dict.fromkeys(names))
 
 
@@ -140,25 +147,18 @@ def decide(groups: dict[str, list[str]], *, weights: dict[str, float] | None = N
         listed[g] = names
     direct: dict[str, set[str]] = {}
     support: dict[str, float] = {}
-    group_listed: set[str] = set()
     for g, names in listed.items():
         reach: set[str] = set()
         for n in names:
             direct.setdefault(n, set()).add(g)
             reach.add(n)
             reach.update(ancestors(n, tree))
-        for raw in groups.get(g) or []:
-            named = genre_vocab.group(str(raw).partition(":")[2] if ":" in str(raw) else str(raw))
-            if named:
-                reach.add(named.lower())
-                group_listed.add(named.lower())
         for n in reach:
             support[n] = support.get(n, 0.0) + weight.get(g, 1.0)
     if versioned:
         return _versioned(listed, direct, support, tree, origin or {})
     consensus = [n for n in direct if support[n] >= APPLY_WEIGHT]
     consensus_families = set().union(*(tree.family.get(n, frozenset()) for n in consensus)) if consensus else set()
-    consensus_families |= {n for n in group_listed if support.get(n, 0.0) >= APPLY_WEIGHT}
     eligible = list(consensus)
     declined: dict[str, str] = {}
     for n in direct:

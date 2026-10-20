@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 MAX_ID_TOKEN_LEN = 8192
@@ -81,6 +83,7 @@ class PatchSongRequest(SongMeta):
     genres: list[str] | None = None
     youtube_url: str | None = None
     soundcloud_url: str | None = None
+    loops: list[dict[str, Any]] | None = None
 
 
 class WikipediaLookupRequest(BaseModel):

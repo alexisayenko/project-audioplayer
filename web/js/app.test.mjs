@@ -185,3 +185,20 @@ test('the owner build line follows /health and disappears without a build or whe
   state.healthOk = true;
   state.health = { sync: 'ok' };
 });
+
+test('the led shows "Server starting" while /health says ready:false, then returns to online', async () => {
+  const led = document.getElementById('server-led');
+  const status = led.parentElement;
+  state.health = { sync: { state: 'pending' }, ready: false, startup: { state: 'starting', step: 'migrate tags' } };
+  await globalThis.__poll();
+  await flush();
+  assert.ok(led.classList.contains('starting'));
+  assert.ok(!led.classList.contains('down'));
+  assert.equal(status.title, 'Server starting');
+  assert.equal(document.getElementById('sync-warn').hidden, true);
+  state.health = { sync: 'ok', ready: true, startup: { state: 'ready', step: null } };
+  await globalThis.__poll();
+  await flush();
+  assert.ok(!led.classList.contains('starting'));
+  assert.equal(status.title, 'Server online · music.example');
+});

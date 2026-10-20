@@ -273,3 +273,21 @@ test('tag picker adds songs by tag and the Apply label counts new tags', async (
   assert.equal(dlg.open, false);
   assert.deepEqual(queueTitles(), ['Alpha', 'Gamma']);
 });
+
+test('a failed media request shows the play icon and the Reconnecting note, then recovers', async () => {
+  reset();
+  player.playNow('a');
+  assert.equal($('mini-play').getAttribute('aria-label'), 'Pause');
+  audio.error = { code: 4 };
+  const real = globalThis.fetch;
+  globalThis.fetch = async () => ({ status: 502 });
+  audio.dispatchEvent(makeEvent('error'));
+  await flush();
+  await new Promise((r) => setTimeout(r, 0));
+  globalThis.fetch = real;
+  assert.equal($('mini-play').getAttribute('aria-label'), 'Play', 'not progressing: play icon');
+  assert.equal($('mini-conn').hidden, false);
+  audio.dispatchEvent(makeEvent('playing'));
+  assert.equal($('mini-conn').hidden, true);
+  assert.equal($('mini-play').getAttribute('aria-label'), 'Pause');
+});

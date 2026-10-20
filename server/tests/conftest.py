@@ -2,7 +2,7 @@ import pytest
 
 from datetime import UTC, datetime
 
-from app import deps, features, genre_lookup, guest, httpjson, limits, previewcache, timeutil, wiki_lookup
+from app import deps, features, readiness as readiness_mod, genre_lookup, guest, httpjson, limits, previewcache, timeutil, wiki_lookup
 
 ENV = (
     "OWNER_EMAIL", "ALLOWED_EMAIL", "ALLOWED_APPLE_SUB", "SIGNUP_OPEN", "USER_MAX_SONGS", "USER_MAX_BYTES",
@@ -28,6 +28,9 @@ def _hermetic(monkeypatch):
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setattr(timeutil, "_utc_now", lambda: datetime(2026, 6, 1, tzinfo=UTC))
     monkeypatch.setattr(deps.SCHED, "inline", True)
+    monkeypatch.setenv("AUDIO_STARTUP_SYNC", "1")
+    monkeypatch.delenv("AUDIO_STARTUP_MAX_S", raising=False)
+    readiness_mod.readiness.reset()
     limits.RATE.reset()
     deps.SUBS.clear()
     guest.reset()

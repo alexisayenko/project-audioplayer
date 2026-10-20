@@ -83,25 +83,25 @@ test('umbrellas with songs of their own get distinct hues, children share them, 
 
 test('a style without songs of its own but with a populated child is drawn as a neutral connector node', () => {
   const t = buildTree(vocab);
-  applyCounts(t, [{ id: 'a', tags: ['genre:deep house'] }]);
+  applyCounts(t, [{ id: 'a', tags: ['genre:jungle'] }]);
   const l = lay(t);
-  assert.deepEqual(l.nodes.map((n) => n.id).sort(), ['g:Others', 's:deep house', 's:house']);
-  const house = l.byId.get('s:house');
+  assert.deepEqual(l.nodes.map((n) => n.id).sort(), ['g:Others', 's:breakbeat', 's:jungle']);
+  const house = l.byId.get('s:breakbeat');
   assert.equal(house.connector, true);
   assert.equal(house.hue, 15);
   assert.equal(house.node.own.size, 0);
   assert.equal(house.node.all.size, 1);
-  assert.equal(l.byId.get('s:deep house').connector, false);
+  assert.equal(l.byId.get('s:jungle').connector, false);
   assert.equal(l.byId.get('g:Others').connector, undefined);
 });
 
 test('every other parent of a drawn node gets an edge: the node is drawn once with a line to each parent', () => {
   const t = buildTree(vocab);
-  applyCounts(t, [{ id: 'a', tags: ['genre:psybient'] }, { id: 'b', tags: ['genre:ambient'] }, { id: 'c', tags: ['genre:psytrance'] }]);
+  applyCounts(t, [{ id: 'a', tags: ['genre:glitch hop'] }, { id: 'b', tags: ['genre:bass music'] }, { id: 'c', tags: ['genre:breakbeat'] }]);
   const l = lay(t);
-  assert.equal(l.nodes.filter((n) => n.id === 's:psybient').length, 1);
-  const into = l.edges.filter((x) => x.to === 's:psybient');
-  assert.deepEqual(into.map((x) => x.from).sort(), ['s:ambient', 's:psytrance']);
+  assert.equal(l.nodes.filter((n) => n.id === 's:glitch hop').length, 1);
+  const into = l.edges.filter((x) => x.to === 's:glitch hop');
+  assert.deepEqual(into.map((x) => x.from).sort(), ['s:bass music', 's:breakbeat']);
   assert.equal(into.filter((x) => x.cross).length, 1);
   const all = lay(sample());
   const ids = all.nodes.map((n) => n.id);
@@ -134,9 +134,9 @@ test('Blues, Jazz and Rock lay out like other families: family hue on the root, 
 
 test('highlightSets returns the ancestor chain and the direct children', () => {
   const t = sample();
-  const h = highlightSets(t, 's:house');
-  assert.deepEqual([...h.chain].sort(), ['g:Others', 's:house']);
-  assert.ok(h.kids.has('s:deep house') && !h.kids.has('s:house'));
+  const h = highlightSets(t, 's:breakbeat');
+  assert.deepEqual([...h.chain].sort(), ['g:Others', 's:breakbeat']);
+  assert.ok(h.kids.has('s:jungle') && !h.kids.has('s:breakbeat'));
   assert.equal(highlightSets(t, 'nope').chain.size, 0);
 });
 
@@ -170,28 +170,28 @@ test('the layout draws the other parents as edges but the map draws no dashed cr
   assert.doesNotMatch(view, /drawCrossLinks|visibleCrossLinks/);
 });
 
-test('psytrance sits under trance at level 3 and its own children go down to level 4; counts roll up to trance', async () => {
+test('psytrance sits under trance (level 1) at level 2 and its own children are level 3; counts roll up to trance', async () => {
   const { chain, count, searchMatches, resolveNode } = await import('./genre-levels.js');
   const t = buildTree(vocab);
   applyCounts(t, [{ id: 'a', tags: ['genre:dark psytrance'] }, { id: 'b', tags: ['genre:goa trance'] }, { id: 'c', tags: ['genre:psytrance'] }, { id: 'd', tags: ['genre:trance'] }]);
   const psy = t.byId.get('s:psytrance');
-  assert.equal(psy.level, 3);
-  assert.deepEqual(psy.parents, ['s:trance']);
+  assert.equal(psy.level, 2);
+  assert.deepEqual(psy.parents, ['g:trance']);
   assert.deepEqual(psy.children.map((c) => c.name).sort(), ['dark psytrance', 'forest psytrance', 'full-on psytrance', 'goa trance', 'progressive psytrance', 'psybient']);
-  assert.deepEqual(psy.children.map((c) => [c.name, c.level]).filter(([, l]) => l === 4).map(([n]) => n).sort(), ['dark psytrance', 'forest psytrance', 'full-on psytrance', 'goa trance', 'progressive psytrance']);
+  assert.deepEqual(psy.children.map((c) => [c.name, c.level]).filter(([, l]) => l === 3).map(([n]) => n).sort(), ['dark psytrance', 'forest psytrance', 'full-on psytrance', 'goa trance', 'progressive psytrance', 'psybient']);
   assert.equal(t.byId.get('s:psybient').level, 3, 'psybient is also under ambient, a level 2 genre, so its shortest path is level 3');
   assert.equal(count(psy), 3);
-  assert.equal(count(t.byId.get('s:trance')), 4);
-  assert.deepEqual(chain(t, 's:dark psytrance').map((n) => n.name), ['Others', 'trance', 'psytrance', 'dark psytrance']);
+  assert.equal(count(t.byId.get('g:trance')), 4);
+  assert.deepEqual(chain(t, 's:dark psytrance').map((n) => n.name), ['trance', 'psytrance', 'dark psytrance']);
   assert.equal(t.byId.get('s:dark psytrance').display, 'dark psy-trance');
   assert.equal(resolveNode('darkpsy', t).id, 's:dark psytrance');
   assert.equal(resolveNode('prog psy', t).id, 's:progressive psytrance');
   assert.ok(searchMatches(t, 'darkpsy').has('s:dark psytrance'));
   assert.ok(searchMatches(t, 'prog psy').has('s:progressive psytrance'));
-  assert.equal(t.byId.get('s:progressive trance').level, 3);
-  const l = lay(t);
+  assert.equal(t.byId.get('s:progressive trance').level, 2);
+  const l = lay(t, 'trance');
   assert.equal(l.nodes.filter((n) => n.id === 's:psytrance').length, 1);
-  assert.equal(l.byId.get('s:dark psytrance').level, 4);
+  assert.equal(l.byId.get('s:dark psytrance').level, 3);
   assert.ok(Math.hypot(l.byId.get('s:dark psytrance').x, l.byId.get('s:dark psytrance').y) > Math.hypot(l.byId.get('s:psytrance').x, l.byId.get('s:psytrance').y));
 });
 
@@ -272,8 +272,8 @@ test('the hidden-family mechanism: a name in HIDDEN_FAMILY_NODES leaves the fami
     assert.deepEqual([root.hidden, root.x, root.y, root.r], [true, 0, 0, 0]);
     for (const n of l.nodes) assert.deepEqual([n.x, n.y], [shown.byId.get(n.id).x, shown.byId.get(n.id).y]);
     const h = highlightSets(t, 'g:Others');
-    assert.ok(h.kids.has('s:house') && h.chain.has('g:Others'));
-    assert.equal(l.byId.has('s:house'), true);
+    assert.ok(h.kids.has('s:breakbeat') && h.chain.has('g:Others'));
+    assert.equal(l.byId.has('s:breakbeat'), true);
     assert.equal(layoutRadial(t, 'Rock').hiddenRoot, false);
   } finally { HIDDEN_FAMILY_NODES.pop(); }
   assert.equal(layoutRadial(t, 'Others').hiddenRoot, false);

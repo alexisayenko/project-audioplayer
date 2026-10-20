@@ -38,44 +38,45 @@ test('every parent is equal: level is the shortest path depth, families are all 
 test('house, deep house and the blends: level 2 through a family parent, level 3 through a genre parent', () => {
   const t = tree();
   const node = (k) => t.byId.get(`s:${k}`);
-  assert.equal(node('house').level, 2);
-  assert.equal(node('deep house').level, 3);
-  assert.equal(node('deep house').parent, 's:house');
-  assert.equal(node('deep house').family, 'Others');
+  const house = t.byId.get('g:house');
+  assert.equal(house.level, 1, 'house is a level 1 form since 2026-10-20');
+  assert.equal(node('deep house').level, 2);
+  assert.equal(node('deep house').parent, 'g:house');
+  assert.equal(node('deep house').family, 'house');
   assert.equal(node('hip house').level, 2);
-  assert.deepEqual(node('hip house').fams, ['Others', 'Hip Hop']);
-  assert.ok(t.byId.get('g:Hip Hop').children.includes(node('hip house')) && node('house').children.includes(node('hip house')));
-  assert.equal(depthIn(t, 's:hip house', 'g:Others'), 3);
+  assert.deepEqual(node('hip house').fams, ['house', 'Hip Hop']);
+  assert.ok(t.byId.get('g:Hip Hop').children.includes(node('hip house')) && house.children.includes(node('hip house')));
+  assert.equal(depthIn(t, 's:hip house', 'g:house'), 2);
   assert.equal(depthIn(t, 's:hip house', 'g:Hip Hop'), 2);
   assert.equal(node('gospel').family, 'Folk, World, & Country');
   assert.equal(node('jungle').parent, 's:breakbeat');
 });
 
-test('disco is in Funk / Soul and Others with no override; its children and post-disco follow by descent', () => {
+test('disco is in Funk / Soul only (it left Others on 2026-10-20) with no override; its children and post-disco follow by descent', () => {
   const t = tree();
   const node = (k) => t.byId.get(`s:${k}`);
-  assert.deepEqual(node('disco').fams, ['Others', 'Funk / Soul']);
-  assert.ok(t.byId.get('g:Others').children.includes(node('disco')) && t.byId.get('g:Funk / Soul').children.includes(node('disco')));
+  assert.deepEqual(node('disco').fams, ['Funk / Soul']);
+  assert.ok(!t.byId.get('g:Others').children.includes(node('disco')) && t.byId.get('g:Funk / Soul').children.includes(node('disco')));
   for (const k of ['euro disco', 'nu-disco', 'hi-nrg', 'italo disco', 'space disco', 'post-disco']) {
     assert.equal(node(k).level, 3, k);
     assert.deepEqual(node(k).parents, ['s:disco'].concat(k === 'italo disco' ? [] : []), k);
-    assert.deepEqual(node(k).fams, ['Others', 'Funk / Soul'], k);
+    assert.deepEqual(node(k).fams, ['Funk / Soul'], k);
   }
   assert.ok(!('family' in entries.disco) && !Object.values(entries).some((v) => 'family' in v));
-  assert.deepEqual(genreLines(t, ['euro disco']).map((l) => l.family), ['Others', 'Funk / Soul']);
+  assert.deepEqual(genreLines(t, ['euro disco']).map((l) => l.family), ['Funk / Soul']);
 });
 
-test('spacesynth is level 3 under synthwave and italo disco, and has the families of both', () => {
+test('spacesynth is level 2 under synthwave (level 1) and italo disco, and has the families of both', () => {
   const t = tree();
   const n = t.byId.get('s:spacesynth');
-  assert.equal(n.level, 3);
-  assert.deepEqual(n.parents.sort(), ['s:italo disco', 's:synthwave']);
-  assert.deepEqual(n.fams, ['Others', 'Funk / Soul']);
+  assert.equal(n.level, 2);
+  assert.deepEqual(n.parents.sort(), ['g:synthwave', 's:italo disco']);
+  assert.deepEqual(n.fams, ['synthwave', 'Funk / Soul']);
   assert.equal(n.status, 'approved');
-  assert.ok(t.byId.get('s:synthwave').children.includes(n) && t.byId.get('s:italo disco').children.includes(n));
+  assert.ok(t.byId.get('g:synthwave').children.includes(n) && t.byId.get('s:italo disco').children.includes(n));
 });
 
-test('space disco is an approved extra, level 3 under disco, in Others and Funk / Soul', () => {
+test('space disco is an approved extra, level 3 under disco, in Funk / Soul', () => {
   const t = tree();
   const n = t.byId.get('s:space disco');
   assert.equal(n.level, 3);
@@ -87,15 +88,15 @@ test('space disco is an approved extra, level 3 under disco, in Others and Funk 
   assert.ok(t.byId.get('s:disco').children.includes(n));
 });
 
-test('psytrance sits under trance and its children reach level 4; there is no depth cap', () => {
+test('psytrance sits under trance (level 1) and its children reach level 3; there is no depth cap', () => {
   const t = tree();
   const levels = [...t.byId.values()].map((n) => n.level);
-  assert.equal(Math.max(...levels), 4);
-  assert.equal(t.byId.get('s:psytrance').level, 3);
-  assert.deepEqual(t.byId.get('s:psytrance').parents, ['s:trance']);
-  assert.equal(t.byId.get('s:goa trance').level, 4);
-  assert.equal(depthIn(t, 's:goa trance', 'g:Others'), 4);
-  assert.deepEqual(genreLines(t, ['goa trance']), [{ family: 'Others', genres: ['Others', 'goa trance'] }]);
+  assert.equal(Math.max(...levels), 3);
+  assert.equal(t.byId.get('s:psytrance').level, 2);
+  assert.deepEqual(t.byId.get('s:psytrance').parents, ['g:trance']);
+  assert.equal(t.byId.get('s:goa trance').level, 3);
+  assert.equal(depthIn(t, 's:goa trance', 'g:trance'), 3);
+  assert.deepEqual(genreLines(t, ['goa trance']), [{ family: 'trance', genres: ['trance', 'goa trance'] }]);
   const deep = buildTree({ families: ['Rock'], levels: { a: { parents: ['Rock'] }, b: { parents: ['a'] }, c: { parents: ['b'] }, d: { parents: ['c'] }, e: { parents: ['d'] } }, modifiers: {}, genres: [] });
   assert.deepEqual(['a', 'b', 'c', 'd', 'e'].map((k) => deep.byId.get(`s:${k}`).level), [2, 3, 4, 5, 6]);
 });
@@ -103,12 +104,12 @@ test('psytrance sits under trance and its children reach level 4; there is no de
 test('eurodance has house, euro disco and Pop as equal parents and belongs to three families', () => {
   const t = tree();
   const n = t.byId.get('s:eurodance');
-  assert.deepEqual(n.parents.sort(), ['g:Pop', 's:euro disco', 's:house']);
+  assert.deepEqual(n.parents.sort(), ['g:Pop', 'g:house', 's:euro disco']);
   assert.equal(n.level, 2);
-  assert.deepEqual(n.fams, ['Others', 'Funk / Soul', 'Pop']);
+  assert.deepEqual(n.fams, ['house', 'Funk / Soul', 'Pop']);
   const off = buildTree(vocabOf(entries), { fusion: false });
-  assert.deepEqual(off.byId.get('s:eurodance').parents.sort(), ['s:euro disco', 's:house'], 'fusion off drops only the Pop family link');
-  assert.equal(off.byId.get('s:eurodance').level, 3);
+  assert.deepEqual(off.byId.get('s:eurodance').parents.sort(), ['s:euro disco'], 'fusion off drops the family links: Pop, and house since it is a level 1 genre now');
+  assert.equal(off.byId.get('s:eurodance').level, 4);
 });
 
 test('industrial is no longer a genre; its children kept their other parents', () => {

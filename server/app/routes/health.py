@@ -5,6 +5,7 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends
 
 from .. import buildinfo, deps
+from ..readiness import readiness
 
 router = APIRouter()
 
@@ -15,13 +16,18 @@ NO_STORE = {
 }
 
 
-@router.get("/health")
+@router.api_route("/health", methods=["GET", "HEAD"])
 def health(viewer: Annotated[str, Depends(deps.sync_viewer)]) -> dict[str, Any]:
     owner = viewer == "owner"
-    if deps.SYNC is None:
-        body: dict[str, Any] = {"status": "ok", "sync": dict(NO_STORE) if owner else {"state": "ok"}}
+    ready = readiness.snapshot(owner=owner)
+    if deps.SYNC is None or readiness.starting():
+        sync = dict(NO_STORE) if owner else {"state": "ok"}
+        if readiness.starting():
+            sync["state"] = "pending"
+        body: dict[str, Any] = {"status": "ok", "sync": sync}
     else:
         body = {"status": "ok", "sync": deps.SYNC.sync_status(owner=owner)}
+    body.update(ready)
     if owner:
         body["build"] = buildinfo.build()
     return body

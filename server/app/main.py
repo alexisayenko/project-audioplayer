@@ -7,10 +7,10 @@ from collections.abc import Awaitable, Callable
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
 
-from . import deps, features, genre_vocab, guest, hosts, legal, migrate_model2, migrate_model3, migrate_removals, migrate_renames, migrate_retired, migrate_tags, web
+from . import deps, features, genre_vocab, guest, hosts, legal, migrate_model2, migrate_model3, migrate_removals, migrate_renames, migrate_retired, migrate_tags, readiness, web
 from .problems import Problem
 from .routes import playlist_import as playlist_import_routes
-from .routes import analyze, auth, backfill, catalog, covers, drafts, features as features_routes, files, genres, health, legacy, legal as legal_routes, lookup, me, metafill, removal, songs
+from .routes import analyze, auth, backfill, catalog, covers, drafts, features as features_routes, files, genres, health, legacy, legal as legal_routes, lookup, me, metafill, peaks as peaks_routes, removal, songs
 
 app = FastAPI(title="Electrophone")
 
@@ -48,19 +48,23 @@ async def _no_index(request: Request, call_next: Callable[[Request], Awaitable[R
     return response
 
 
+def _startup_steps() -> list[tuple[str, Callable[[], object]]]:
+    steps: list[tuple[str, Callable[[], object]]] = []
+    if deps.SYNC:
+        steps.append(("git recovery", deps.SYNC.recover_on_startup))
+    steps += [
+        ("migrate model 2", migrate_model2.run), ("migrate model 3", migrate_model3.run), ("migrate tags", migrate_tags.run),
+        ("migrate removals", migrate_removals.run), ("migrate renames", migrate_renames.run), ("migrate retired", migrate_retired.run),
+        ("record startup", features.record_startup),
+    ]
+    return steps
+
+
 @app.on_event("startup")
 def _startup() -> None:
     legal.check_startup()
     genre_vocab.check()
-    if deps.SYNC:
-        deps.SYNC.recover_on_startup()
-    migrate_model2.run()
-    migrate_model3.run()
-    migrate_tags.run()
-    migrate_removals.run()
-    migrate_renames.run()
-    migrate_retired.run()
-    features.record_startup()
+    readiness.start_worker(_startup_steps())
 
 
 @app.on_event("shutdown")
@@ -70,7 +74,9 @@ def _shutdown() -> None:
         deps.SYNC.stop()
 
 
-for _module in (auth, me, health, legal_routes, legacy, features_routes, files, catalog, covers, genres, lookup, playlist_import_routes, drafts, songs, analyze, backfill, metafill, removal):
+app.add_middleware(readiness.ReadinessMiddleware)
+
+for _module in (auth, me, health, legal_routes, legacy, features_routes, files, peaks_routes, catalog, covers, genres, lookup, playlist_import_routes, drafts, songs, analyze, backfill, metafill, removal):
     app.include_router(_module.router)
 
 web.mount(app)

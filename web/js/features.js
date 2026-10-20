@@ -8,7 +8,11 @@ export const FAIL_TEXT = 'Could not load the features. Reload to try again.';
 export const NO_RELEASES = 'No releases yet.';
 export const UNAVAILABLE = 'The release history is not available on this server.';
 export const NO_PLANNED = 'Nothing is planned.';
-const TABS = [['releases', 'Releases'], ['planned', 'Planned']];
+const TABS = [['released', 'Released'], ['in_progress', 'In progress'], ['planned', 'Planned']];
+export const NO_PROGRESS = 'Nothing in progress right now.';
+
+const tasksOf = (list) => (Array.isArray(list) ? list : []).filter((t) => t && /^task-\d+$/.test(t.id))
+  .sort((a, b) => (a.id < b.id ? 1 : a.id > b.id ? -1 : 0));
 
 export async function loadFeatures(fetchFn = globalThis.fetch) {
   const res = await fetchFn(DATA_URL);
@@ -19,8 +23,8 @@ export async function loadFeatures(fetchFn = globalThis.fetch) {
     unavailable: data.unavailable === true,
     releases: data.releases.filter((r) => r && typeof r.hash === 'string' && /^\d{4}-\d{2}-\d{2}/.test(r.date) && Array.isArray(r.items))
       .map((r) => ({ ...r, date: r.date.slice(0, 10) })),
-    planned: data.planned.filter((t) => t && /^task-\d+$/.test(t.id))
-      .sort((a, b) => (a.id < b.id ? 1 : a.id > b.id ? -1 : 0)),
+    planned: tasksOf(data.planned),
+    in_progress: tasksOf(data.in_progress),
   };
 }
 
@@ -28,43 +32,64 @@ const taskLink = (id) => el('a', { class: 'ft-task', href: `${TASK_URL}${id}.md`
 
 export function releaseBlock(r) {
   return el('li', { class: 'ft-rel' },
-    el('h3', { class: 'ft-head t-subhead' },
-      el('span', { class: 'ft-hash', title: r.full || r.hash }, r.hash),
-      el('time', { class: 'ft-date', datetime: r.date }, r.date)),
+    el('p', { class: 'ft-head t-subhead' }, el('span', { class: 'ft-hash', title: r.full || r.hash }, r.hash)),
     el('ul', { class: 'ft-items' }, ...r.items.map((i) =>
       el('li', { class: 'ft-item t-body' }, i.text, i.task ? [' ', taskLink(i.task)] : null))));
+}
+
+export function groupDays(releases) {
+  const days = [];
+  for (const r of releases) {
+    if (!r.items.length) continue;
+    const last = days[days.length - 1];
+    if (last && last.date === r.date) last.releases.push(r);
+    else days.push({ date: r.date, releases: [r] });
+  }
+  return days;
+}
+
+export function dayBlock(day) {
+  return el('section', { class: 'ft-day' },
+    el('h3', { class: 'ft-dayhead t-subhead' }, el('time', { datetime: day.date }, day.date)),
+    el('ol', { class: 'ft-list' }, ...day.releases.map(releaseBlock)));
 }
 
 export function plannedRow(t) {
   return el('li', { class: 'ft-plan' },
     el('span', { class: 'ft-ptitle t-body' }, t.title || t.id),
     el('span', { class: 'ft-pmeta t-caption muted' },
-      taskLink(t.id), t.status ? ` ${t.status}` : null, ...(t.tags || []).map((g) => el('span', { class: 'ft-tag' }, g))));
+      taskLink(t.id), ...(t.tags || []).map((g) => el('span', { class: 'ft-tag' }, g))));
 }
 
 function releasesPanel(releases, unavailable) {
-  if (unavailable && !releases.length) return el('p', { class: 'muted t-body', role: 'status' }, UNAVAILABLE);
-  if (!releases.length) return el('p', { class: 'muted t-body', role: 'status' }, NO_RELEASES);
-  let shown = 0;
-  const list = el('ol', { class: 'ft-list' });
+  const days = groupDays(releases);
+  if (unavailable && !days.length) return el('p', { class: 'muted t-body', role: 'status' }, UNAVAILABLE);
+  if (!days.length) return el('p', { class: 'muted t-body', role: 'status' }, NO_RELEASES);
+  let next = 0;
+  let count = 0;
+  const list = el('div', { class: 'ft-days' });
   const more = el('button', { class: 'btn ft-more', type: 'button' }, 'Show older');
   const fill = () => {
-    list.append(...releases.slice(shown, shown + PAGE_SIZE).map(releaseBlock));
-    shown += PAGE_SIZE;
-    more.hidden = shown >= releases.length;
+    const target = count + PAGE_SIZE;
+    while (next < days.length && count < target) {
+      list.append(dayBlock(days[next]));
+      count += days[next].releases.length;
+      next += 1;
+    }
+    more.hidden = next >= days.length;
   };
   more.addEventListener('click', fill);
   fill();
   return el('div', {}, list, more);
 }
 
-function plannedPanel(planned) {
-  if (!planned.length) return el('p', { class: 'muted t-body', role: 'status' }, NO_PLANNED);
+function plannedPanel(planned, empty = NO_PLANNED) {
+  if (!planned.length) return el('p', { class: 'muted t-body', role: 'status' }, empty);
   return el('ul', { class: 'ft-list ft-planned' }, ...planned.map(plannedRow));
 }
 
 function readTab() {
-  try { const v = globalThis.localStorage?.getItem(TAB_KEY); return TABS.some(([k]) => k === v) ? v : TABS[0][0]; } catch { return TABS[0][0]; }
+  try { let v = globalThis.localStorage?.getItem(TAB_KEY); if (v === 'releases') v = 'released'; return TABS.some(([k]) => k === v) ? v : TABS[0][0]; } catch { return TABS[0][0]; }
 }
 function saveTab(v) { try { globalThis.localStorage?.setItem(TAB_KEY, v); } catch { /* storage may be blocked */ } }
 
@@ -82,7 +107,8 @@ export function renderFeatures(root) {
     });
     panel.setAttribute('aria-labelledby', `ft-tab-${current}`);
     if (failed) panel.replaceChildren(el('p', { class: 'muted t-body', role: 'status' }, FAIL_TEXT));
-    else if (data) panel.replaceChildren(current === 'releases' ? releasesPanel(data.releases, data.unavailable) : plannedPanel(data.planned));
+    else if (data) panel.replaceChildren(current === 'released' ? releasesPanel(data.releases, data.unavailable) : current === 'planned' ? plannedPanel(data.planned) : plannedPanel(data.in_progress, NO_PROGRESS));
+    if (data) TABS.forEach(([key, label], i) => { tabs[i].textContent = `${label} ${key === 'released' ? data.releases.length : data[key].length}`; });
   };
   const pick = (i, focus) => {
     current = TABS[i][0];

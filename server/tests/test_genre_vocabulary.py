@@ -15,6 +15,8 @@ DISCOGS = json.loads((DATA / "genre_discogs.json").read_text(encoding="utf-8"))
 EXTRAS = json.loads((DATA / "genre_extras.json").read_text(encoding="utf-8"))["extras"]
 LIVE = json.loads((Path(__file__).parent / "fixtures" / "genre_live_tags.json").read_text(encoding="utf-8"))
 FAMILIES = ["Blues", "Classical", "Others", "Folk, World, & Country", "Funk / Soul", "Hip Hop", "Jazz", "Latin", "Pop", "Reggae", "Rock"]
+FORMS = ["house", "techno", "trance", "drum and bass", "synthwave"]  # promoted out of Others (task-0066, 2026-10-20): level 1 genres, listed in the vocabulary families before the group
+ALL_FAMILIES = [*FAMILIES[:2], *FORMS, *FAMILIES[2:]]
 
 # Tags of the live library (2026-10-16) that no rule maps: kept on the songs and listed in the review file (TAG-082).
 LIVE_UNMAPPABLE: set[str] = {"electronic"}  # electronic is not a genre since the group Others replaced the Electronic family: kept on the songs and reported until the song-side strip (task-0066 T2)
@@ -29,7 +31,7 @@ def names() -> set[str]:
 
 def test_the_11_families_in_the_fixed_order():
     assert DISCOGS["families"] == FAMILIES
-    assert genre_vocab.load().families == tuple(FAMILIES)
+    assert genre_vocab.load().families == tuple(ALL_FAMILIES), "the five promoted genres sit before the group Others"
 
 
 def test_discogs_genres_are_lowercase_trimmed_and_filed_under_a_family():
@@ -55,7 +57,7 @@ def test_no_discogs_genre_in_two_families_unless_it_lists_more_parents():
 
 def test_names_are_unique_after_folding_case_spaces_hyphens_and_ampersand():
     seen: dict[str, str] = {}
-    for name in [*(g.lower() for g in FAMILIES if g != "Others"), *DISCOGS["genres"], *EXTRAS]:
+    for name in [*(g.lower() for g in FAMILIES if g != "Others"), *FORMS, *DISCOGS["genres"], *EXTRAS]:
         k = genre_vocab.vkey(name)
         assert k not in seen, (name, seen.get(k))
         seen[k] = name
@@ -64,7 +66,7 @@ def test_names_are_unique_after_folding_case_spaces_hyphens_and_ampersand():
 
 def test_discogs_names_belong_to_discogs_genres():
     for ours, theirs in DISCOGS["discogs_names"].items():
-        assert ours in DISCOGS["genres"]
+        assert ours in DISCOGS["genres"] or ours in FORMS
         assert isinstance(theirs, str)
         assert theirs.strip()
 
@@ -78,8 +80,8 @@ def test_extras_have_parents_and_a_family_without_cycles():
         assert "parent" not in spec and "also_under" not in spec, name
         parents = spec["parents"]
         assert parents and len(set(parents)) == len(parents), name
-        assert all(p in FAMILIES or p in names() - {name} for p in parents), (name, parents)
-        assert entries[name].family in FAMILIES, name
+        assert all(p in ALL_FAMILIES or p in names() - {name} for p in parents), (name, parents)
+        assert entries[name].family in ALL_FAMILIES, name
         assert entries[name].parents == tuple(parents), name
     for name in EXTRAS:
         seen, cur = {name}, EXTRAS[name]["parents"][0]
@@ -91,8 +93,7 @@ def test_extras_have_parents_and_a_family_without_cycles():
 
 def test_an_extra_has_every_family_it_descends_from_through_any_parent():
     entries = genre_vocab.load().entries
-    flat = genre_vocab.build(json.loads(genre_vocab.DISCOGS_FILE.read_text(encoding="utf-8")), json.loads(genre_vocab.EXTRAS_FILE.read_text(encoding="utf-8")))
-    parents = {n: tuple(e.parents) for n, e in flat.entries.items()}
+    parents = {**{n: tuple(ps) for n, ps in DISCOGS["genres"].items()}, **{n: tuple(s["parents"]) for n, s in EXTRAS.items()}}
     for name, spec in EXTRAS.items():
         assert "family" not in spec, name
         assert genre_vocab._resolve_families(name, parents, genre_vocab.load().families), name
@@ -154,7 +155,7 @@ def test_prefix_words_do_not_eat_canonical_names():
 
 
 def test_every_family_is_used():
-    assert {e.family for e in genre_vocab.load().entries.values()} == set(FAMILIES)
+    assert {e.family for e in genre_vocab.load().entries.values()} == set(ALL_FAMILIES)
 
 
 # --- lookup and suggestions ------------------------------------------------------------------
@@ -170,10 +171,10 @@ def test_lookup(raw, want):
 
 
 def test_family_of_also_reads_the_music_form():
-    assert genre_vocab.family_of("house") == "Others"
-    assert genre_vocab.family_of("house music") == "Others"
+    assert genre_vocab.family_of("house") == "house" == genre_vocab.family_of("house music")
+    assert genre_vocab.family_of("deep house") == "house" and genre_vocab.family_of("disco") == "Funk / Soul" and genre_vocab.family_of("dub") == "Others"
     assert genre_vocab.family_of("zzz") is None
-    assert genre_vocab.is_below_family("house")
+    assert not genre_vocab.is_below_family("house") and genre_vocab.is_below_family("deep house")
     assert not genre_vocab.is_below_family("electronic")
 
 
@@ -313,18 +314,18 @@ def test_vocabulary_endpoint_lists_every_name_with_family_and_level(client):
     r = client.get("/genres/vocabulary", headers=H)
     assert r.status_code == 200
     body = r.json()
-    assert body["families"] == FAMILIES
+    assert body["families"] == ALL_FAMILIES
     assert body["count"] == len(body["genres"]) == len(names())
     by = {g["name"]: g for g in body["genres"]}
-    assert by["house"]["family"] == "Others"
-    assert by["house"]["level"] == "genre"
-    assert not by["house"]["extra"]
+    assert by["house"]["family"] == "house" and by["house"]["level"] == "family", "house is a level 1 genre (promoted out of Others)"
+    assert not by["house"]["extra"] and set(body["forms"]) == set(FORMS)
+    assert by["deep house"]["family"] == "house" and by["deep house"]["level"] == "genre"
     assert by["rock"]["level"] == "family"
     assert by["rock"]["parents"] == []
     assert by["rock"]["family"] == "Rock"
     assert by["neurofunk"]["extra"]
     assert by["neurofunk"]["parents"] == ["drum and bass"]
-    assert by["house"]["parents"] == ["Others"]
+    assert by["house"]["parents"] == []
     assert "parent" not in by["house"] and "also_under" not in by["house"]
     assert [g["name"] for g in body["genres"]] == sorted(by)
     assert body["aliases"]["dnb"] == "drum and bass"

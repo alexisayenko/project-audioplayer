@@ -27,9 +27,12 @@ def by_name(d):
     return {s["genre"]: s for s in d.suggestions}
 
 
+AFTER_LEAVING_OTHERS = {"taylor_dayne_tell_it_to_my_heart": {"applied": ["dance pop", "pop", "synthpop"], "suggested": ["freestyle", "hi-nrg", "soul", "house", "contemporary r&b"]}}  # 2026-10-20: hi-nrg (under disco) left Others, so the agreed `electronic` no longer rescues it
+
+
 @pytest.mark.parametrize("case", sorted(CASES))
 def test_owner_examples_as_recorded_evidence(case):
-    c = CASES[case]
+    c = {**CASES[case], **AFTER_LEAVING_OTHERS.get(case, {})}
     d = decide(c["groups"], versioned=c.get("versioned", False))
     assert sorted(d.applied) == sorted(c["applied"])
     assert sorted(names(d)) == sorted(c["suggested"])
@@ -37,8 +40,8 @@ def test_owner_examples_as_recorded_evidence(case):
 
 def test_taylor_dayne_applies_the_owner_genres_and_never_soul_house_or_freestyle():
     d = decide(CASES["taylor_dayne_tell_it_to_my_heart"]["groups"])
-    assert set(d.applied) == {"dance pop", "pop", "hi-nrg", "synthpop"}, "electronic is never applied; its agreed family still rescues hi-nrg"
-    assert not {"soul", "house", "freestyle"} & set(d.applied)
+    assert set(d.applied) == {"dance pop", "pop", "synthpop"}, "electronic is never applied; hi-nrg left Others (2026-10-20), so the agreed group no longer rescues it"
+    assert not {"soul", "house", "freestyle", "hi-nrg"} & set(d.applied) and by_name(d)["hi-nrg"]["reason"] == gs.NO_FAMILY
     assert by_name(d)["freestyle"]["reason"] == gs.AMBIGUOUS_NAME
     assert by_name(d)["soul"]["sources"] == [WA]
     assert by_name(d)["house"]["reason"] == gs.SINGLE_SOURCE
@@ -100,31 +103,53 @@ def test_r3_a_genre_nobody_listed_is_never_invented():
     assert "electronic" not in names(d)
 
 
-def test_r3_a_family_agreed_through_its_children_is_applied_when_listed():
-    d = decide({MB: ["electronic"], WS: ["techno"], WA: ["house"]})
-    assert set(d.applied) == {"techno"}, "electronic is a retired name of the group Others: never applied; techno: song page, and the agreed group makes it a fitting genre"
-    assert "electronic" not in names(d) and "electronic" not in d.applied
-    assert by_name(d)["house"]["sources"] == [WA]
+def test_r3_electronic_is_ignored_evidence_and_never_unlocks_a_song_page_genre():
+    d = decide({MB: ["electronic"], WS: ["breakbeat", "techno"], WA: ["house"]})
+    assert d.applied == []
+    assert "electronic" not in names(d)
+    assert by_name(d)["breakbeat"]["reason"] == gs.NO_FAMILY and by_name(d)["house"]["sources"] == [WA]
 
 
 def test_r3_ancestors_and_families_use_every_parent():
     t = gs.get_tree()
-    assert gs.ancestors("deep house", t) == ["house", "others"]
+    assert gs.ancestors("deep house", t) == ["house"]
     assert gs.ancestors("others", t) == []
     assert gs.ancestors("hi-nrg", t)[0] == "disco"
-    assert set(gs.ancestors("hi-nrg", t)) == {"disco", "others", "funk / soul"}
+    assert set(gs.ancestors("hi-nrg", t)) == {"disco", "funk / soul"}
     assert set(gs.ancestors("industrial rock", t)) == {"rock"}
-    assert t.family["hi-nrg"] == {"others", "funk / soul"}
+    assert t.family["hi-nrg"] == {"funk / soul"}
     assert t.family["industrial rock"] == {"rock"}
-    assert t.family["hip house"] == {"others", "hip hop"}
-    assert t.family["deep house"] == {"others"}
-    assert (t.depth["hi-nrg"], t.depth["hip house"], t.depth["deep house"]) == (3, 2, 3)
+    assert t.family["hip house"] == {"house", "hip hop"}
+    assert t.family["deep house"] == {"house"} and t.family["breakbeat"] == {"others"}
+    assert (t.depth["hi-nrg"], t.depth["hip house"], t.depth["deep house"]) == (3, 2, 2)
 
 
-def test_r4_the_song_page_alone_applies_a_fitting_unambiguous_genre():
-    d = decide({MB: ["electronic"], WA: ["electronic"], WS: ["techno"]})
-    assert set(d.applied) == {"techno"}
-    assert d.sources["techno"] == [WS]
+def test_r4_the_song_page_alone_applies_a_genre_sharing_a_real_family_with_an_agreed_one():
+    d = decide({MB: ["house"], WA: ["house"], WS: ["tech house"]})
+    assert d.applied == ["tech house"], "house is pruned as the non-family ancestor of tech house"
+    assert d.sources["tech house"] == [WS]
+    d = decide({MB: ["electronic"], WA: ["electronic"], WS: ["breakbeat"]})
+    assert d.applied == [] and by_name(d)["breakbeat"]["reason"] == gs.NO_FAMILY
+
+
+def test_r4_electronic_never_counts_as_agreement_or_a_source_group():
+    d = decide({MB: ["electronic"], WA: ["electronic music"], YT: ["electronica"]})
+    assert d.applied == [] and d.suggestions == []
+    d = decide({MB: ["electronic", "house"], WA: ["electronic"], WS: ["electronic"]})
+    assert d.applied == [] and names(d) == ["house"] and by_name(d)["house"] == {"genre": "house", "sources": [MB], "reason": gs.SINGLE_SOURCE}
+    d = decide({MB: ["electronic", "house"], WA: ["house"]})
+    assert d.applied == ["house"] and d.sources["house"] == [MB, WA]
+
+
+def test_r4_the_ignored_names_are_electronic_and_the_group_synonyms():
+    from app import genre_vocab
+
+    syn = genre_vocab.load().groups["Others"]["synonyms"]
+    assert "electronic" in syn and "rave" in syn
+    for n in ["electronic", "Electronic Music", "others", *syn]:
+        assert gs.ignored(n), n
+    for n in ["house", "edm", "synthpop", "electropop"]:
+        assert not gs.ignored(n), n
 
 
 def test_r4_without_a_shared_family_the_song_page_alone_is_only_suggested():
@@ -208,14 +233,14 @@ def test_r6_youtube_own_values_ignore_acoustic_instrumental_live_remix():
     assert by_name(d)["acoustic"]["sources"] == [MB], "only the link's own group ignores them"
 
 
-GENRES_8 = ["deep house", "french house", "hi-nrg", "techno", "trance", "others", "pop", "rock"]
+GENRES_8 = ["deep house", "french house", "hi-nrg", "breakbeat", "ambient", "others", "pop", "rock"]
 
 
 def test_r7_at_most_five_most_specific_first():
     d = decide({MB: GENRES_8, WA: GENRES_8})
     assert len(d.applied) == 5
-    assert set(d.applied[:3]) == {"deep house", "french house", "hi-nrg"}
-    assert set(d.applied[3:]) == {"techno", "trance"}
+    assert d.applied[0] == "hi-nrg", "the only level 3 genre comes first"
+    assert set(d.applied[1:]) == {"deep house", "french house", "breakbeat", "ambient"}
     over = {s["genre"] for s in d.suggestions if s["reason"] == gs.OVER_CAP}
     assert over == {"pop", "rock"}, "others is a group, not a genre: never a candidate"
 

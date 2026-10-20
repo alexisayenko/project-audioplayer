@@ -30,7 +30,9 @@ def test_families_come_from_the_vocabulary_files():
         assert name == name.lower().strip(), name
         assert name, name
         assert family in gg.FAMILIES, (name, family)
-    assert table["house"] == table["deep house"] == table["trance"] == table["jungle"] == table["synthpop"] == table["disco"] == table["dub"] == "Electronic", "the group Others keeps the legacy colour family Electronic"
+    assert table["house"] == table["deep house"] == table["trance"] == table["jungle"] == table["dub"] == "Electronic", "the group Others and the genres promoted out of it keep the legacy colour family Electronic"
+    assert table["drum and bass"] == table["techno"] == table["synthwave"] == "Electronic"
+    assert table["synthpop"] == "Pop" and table["disco"] == "Funk / Soul" and table["italo disco"] == "Funk / Soul", "synthpop and disco left Others (2026-10-20): their colour family is their first remaining family"
     assert table["rock"] == "Rock" and table["edm"] == "Electronic"
     assert "electronic" not in table and "others" not in table
     assert len(gg.FAMILIES) == 11
@@ -79,7 +81,7 @@ def test_table_lookup_by_label_then_tag():
     assert gg.table_family("Zorbo") is None
 
 
-@pytest.mark.parametrize("label,family", [("disco", "Electronic"), ("new wave", "Rock"), ("acid jazz", "Jazz"), ("trip hop", "Electronic")])
+@pytest.mark.parametrize("label,family", [("disco", "Funk / Soul"), ("new wave", "Rock"), ("acid jazz", "Jazz"), ("trip hop", "Electronic")])
 def test_the_graph_family_is_the_first_family_in_the_fixed_order(label, family):
     assert gg.table_family(label) == family
 
@@ -105,8 +107,8 @@ def test_kept_subgenres_have_a_family_entry(tag, family):
 def test_alias_and_retag_targets_have_a_family():
     from app import genre_filter as gf
 
-    want = {"drum and bass": "Electronic", "europop": "Pop", "euro disco": "Electronic", "euro house": "Electronic",
-            "synthpop": "Electronic", "progressive house": "Electronic", "trap": "Hip Hop", "disco": "Electronic", "folk": "Folk, World, & Country",
+    want = {"drum and bass": "Electronic", "europop": "Pop", "euro disco": "Funk / Soul", "euro house": "Electronic",
+            "synthpop": "Pop", "progressive house": "Electronic", "trap": "Hip Hop", "disco": "Funk / Soul", "folk": "Folk, World, & Country",
             "classical": "Classical", "psychedelic rock": "Rock", "pop": "Pop", "modern classical": "Classical",
             "alternative rock": "Rock", "indie rock": "Rock", "progressive rock": "Rock", "glitch hop": "Electronic"}
     targets = {*gf.ALIASES.values(), *gf.RETAGS.values(), gf.PROGRESSIVE_ELECTRONIC}
@@ -144,6 +146,6 @@ def test_group_labels_keep_the_electronic_colour_in_the_graph():
         assert gg.table_families(label) == ("Electronic",), label
         assert gg.own_anchor(label) is None, label
     assert gg.table_family("dance music") == "Electronic"
-    assert gg.table_families("synthpop") == ("Electronic", "Pop", "Rock")
+    assert gg.table_families("synthpop") == ("Pop", "Rock") and gg.table_families("disco") == ("Funk / Soul",)
     assert gg.table_families("house") == ("Electronic",) and gg.table_families("eurodance") == ("Electronic", "Funk / Soul", "Pop")
     assert gg.own_anchor("house") == "house"

@@ -43,8 +43,8 @@ def test_spacesynth_and_space_disco_in_the_payload(body):
     rows = {r["name"]: r for r in body["genres"]}
     for src in (rows["spacesynth"], body["levels"]["spacesynth"]):
         assert src["parents"] == ["synthwave", "italo disco"]
-    assert body["levels"]["spacesynth"]["level"] == 3
-    assert rows["spacesynth"]["family"] == "Others"
+    assert body["levels"]["spacesynth"]["level"] == 2, "synthwave is level 1 (promoted out of Others)"
+    assert rows["spacesynth"]["family"] == "synthwave"
     assert rows["space disco"]["parents"] == ["disco"]
     assert body["levels"]["space disco"]["parents"] == ["disco"]
     assert body["levels"]["space disco"]["level"] == 3
@@ -58,9 +58,9 @@ def test_levels_equal_genre_levels_json_for_parents_family_and_level(body):
 
 
 def test_web_fixture_is_the_payload(body):
-    keys = ("families", "family_synonyms", "modifiers", "flavours", "levels", "subfamilies")
+    keys = ("families", "family_synonyms", "modifiers", "flavours", "levels", "subfamilies", "forms", "groups")
     want = {k: body[k] for k in keys}
-    assert json.loads(FIXTURE.read_text(encoding="utf-8")) == want, "regenerate the fixture from genre_vocab.vocabulary() (keys families, family_synonyms, modifiers, flavours, levels; json sort_keys, indent 1)"
+    assert json.loads(FIXTURE.read_text(encoding="utf-8")) == want, "regenerate the fixture from genre_vocab.vocabulary() (keys families, family_synonyms, modifiers, flavours, levels, subfamilies, forms, groups; json sort_keys, indent 1)"
 
 
 def test_every_row_and_level_carries_all_families_and_the_legacy_family_is_the_first(body):
@@ -72,8 +72,8 @@ def test_every_row_and_level_carries_all_families_and_the_legacy_family_is_the_f
         if lv:
             assert row["families"] == lv["families"] and lv["family"] == lv["families"][0], row["name"]
     rows = {r["name"]: r for r in body["genres"]}
-    assert rows["disco"]["families"] == ["Others", "Funk / Soul"] == body["levels"]["euro disco"]["families"]
-    assert rows["post-disco"]["families"] == ["Others", "Funk / Soul"] and body["levels"]["post-disco"]["parents"] == ["disco"]
+    assert rows["disco"]["families"] == ["Funk / Soul"] == body["levels"]["euro disco"]["families"], "disco left Others (task-0066, 2026-10-20)"
+    assert rows["post-disco"]["families"] == ["Funk / Soul"] and body["levels"]["post-disco"]["parents"] == ["disco"]
     assert "electronic" not in rows and "others" not in rows, "Others is a group and electronic is not a genre: neither is a vocabulary row"
     assert "Others" in body["families"] and body["groups"]["Others"]["assignable"] is False and body["groups"]["Others"]["temporary"] is True
 
@@ -81,7 +81,7 @@ def test_every_row_and_level_carries_all_families_and_the_legacy_family_is_the_f
 def test_the_graph_table_families_list_every_family_of_the_genre():
     from app import genre_graph
 
-    assert genre_graph.table_families("Disco") == ("Electronic", "Funk / Soul")
+    assert genre_graph.table_families("Disco") == ("Funk / Soul",)
     assert genre_graph.table_families("Zorbo", ["hip house"]) == ("Electronic", "Hip Hop")
     assert genre_graph.table_families("Zorbo") == ()
-    assert genre_graph.table_family("disco") == "Electronic"
+    assert genre_graph.table_family("disco") == "Funk / Soul"

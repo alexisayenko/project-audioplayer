@@ -24,15 +24,19 @@ From the PC, after `scripts/check.sh` prints `check ok` and the change is pushed
 scripts/deploy.sh
 ```
 
-It runs `sudo -n /usr/local/sbin/audioplayer-deploy` over SSH (`claude@192.168.0.10`), then prints the deployed revision and the HTTP status of the web index. The root-owned helper does:
+It runs `sudo -n /usr/local/sbin/audioplayer-deploy` over SSH (`claude@192.168.0.10`), prints the deployed revision and the HTTP status of the web index, then waits for the server to be ready (below). The root-owned helper does:
 
 1. As user `audioplayer`: `git pull --ff-only` in `/opt/audioplayer` (never a merge; a diverged clone fails the deploy), then `venv/bin/pip install -q -r server/requirements.txt`.
 2. `systemctl restart audioplayer` (the LXC is not restarted), wait 3 s, print `is-active`.
-3. `curl http://127.0.0.1:8000/health` and print the status.
+3. `curl http://127.0.0.1:8000/health` and print the status (once, so right after the restart it can print `000`; the wait below is the real check).
 
 After the helper, `scripts/deploy.sh` also writes `/opt/audioplayer/BUILD` (`sha=`, `committed_at=`, `deployed_at=`, git-ignored) over the same SSH user, best effort: if the `claude` user cannot write there the script prints a note and carries on. The server reports its build in the owner form of `/health` (`build`, NFR-119) from git, falls back to `BUILD`, and uses its own start time as the deploy time when `BUILD` is missing or older than the restart. The sidebar and Settings show it to the owner only (WEB-102). Check: `curl -s -H "X-API-Token: $T" https://electrophone.cc/health`.
 
 Features screen (WEB-134, WEB-138, API-187, task-0068): nothing to do in the deploy. The service records `{HEAD, UTC date}` at every start in `<data repo root>/_state/deploys.json` (only when HEAD changed) and serves the release list at `GET /features/data` from the checkout in `/opt/audioplayer` (read with `git -c safe.directory`, so the `audioplayer` user needs read access to `.git`, which it has as the owner of the clone). Past deploys are known only from this file; the history before the first recorded start is grouped by UTC day from git. Check: `curl -s https://electrophone.cc/features/data | head -c 300`.
+
+<a id="restart"></a>What happens during a restart (API-188, task-0071, built, not deployed): uvicorn starts listening after about 1 to 2 s (imports only). The slow work, git recovery (up to 30 s per repo when the remote is slow) and the six migrations, then runs in a background thread. Until it is done the site answers: the page shell and static files normally; `/health` 200 with `"ready":false`; everything else `503` `{"detail":"starting","step":"..."}` with `Retry-After: 3`. The web page retries those by itself for about 20 s and shows "Server is starting..."; the LED is amber. Cloudflare therefore gets a 503 from the app, no longer a 502 from a closed port. Normal restart: ready in 1 to 3 s with no remote delay (measured 1.4 to 2.3 s on a copy of the 423-song library). `scripts/deploy.sh` ends by polling `http://127.0.0.1:8000/health` over SSH for up to 60 s: it prints `health: starting` and then `health: ready after Ns`, or exits 1 when it is not ready after 60 s. An older server without `ready` counts as ready once `status` is `ok`.
+
+Reading `/health`: `curl -s https://electrophone.cc/health` gives `{"status":"ok","sync":{...},"ready":true,"startup":{"state":"ready","step":null}}`. `ready:false` with `startup.step` names the work in progress (`git recovery`, `migrate tags`, ...). `startup.state` `failed` (the worker crashed; the server serves anyway, see the journal) or `overdue` (still running after `AUDIO_STARTUP_MAX_S`, default 300 s, set in `/etc/audioplayer/env`) both release the gate; the owner form adds `elapsed_s` and `error`. The journal has "startup step <name> failed" for a failing migration and "startup finished in N s".
 
 It takes no backup. Before a deploy that touches data handling, bundle the clones by hand: `git bundle create /var/backups/audioplayer-<ts>/<name>.bundle --all` in each clone under `/var/lib/audioplayer/`, and record the `HEAD` SHAs.
 
@@ -81,7 +85,7 @@ Deployed 2026-10-18 (ADR-0031, task-0049, DATA-164 to DATA-166). The server migr
 ## Verify
 
 1. `scripts/deploy.sh` ends with the new short SHA and `web index: 200`.
-2. `curl -s https://electrophone.cc/health` gives `{"status":"ok","sync":"ok"}`.
+2. `curl -s https://electrophone.cc/health` gives `"status":"ok"` and `"ready":true` (`scripts/deploy.sh` waits for it and prints `health: ready after Ns`).
 3. `systemctl status audioplayer` is active, `journalctl -u audioplayer -n 50` has no traceback.
 4. Open the site signed in: Library lists songs, one song plays, cover loads.
 5. The page `<script>` URLs start with `/_v/<version>/` and the version changed (API-051).

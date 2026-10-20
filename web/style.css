@@ -68,6 +68,7 @@ a { color: var(--accent-ink); }
 .server { display: none; align-items: center; gap: var(--space-2); margin-top: auto; padding: var(--space-3); color: var(--ink-muted); }
 .led { width: var(--space-2); height: var(--space-2); border-radius: var(--radius-pill); background: var(--ok); flex: none; }
 .led.down { background: var(--power); }
+.led.starting { background: var(--copper); }
 .build-line { display: none; margin: 0; padding: 0 var(--space-3) var(--space-3); color: var(--ink-muted); overflow-wrap: anywhere; }
 
 #nav :where(a, .nav-parent) .nav-label { font: var(--font-micro); max-width: 100%; text-align: center; text-wrap: balance; overflow-wrap: break-word; }
@@ -590,6 +591,9 @@ body.signed-out #nav a:not([data-route="settings"]):not(.help-link), body.signed
 .mini-foot > :not(.mini-progress) { display: none; }
 .vol-note { position: absolute; right: var(--space-4); top: calc(-1 * var(--space-6)); padding: var(--space-1) var(--space-3); border-radius: var(--radius-pill); background: var(--surface); box-shadow: var(--shadow-key); color: var(--ink); opacity: 0; pointer-events: none; transition: opacity var(--dur-fast) var(--ease-out); }
 .vol-note.show { opacity: 1; }
+.conn-note { position: absolute; left: var(--space-4); top: calc(-1 * var(--space-6)); padding: var(--space-1) var(--space-3); border-radius: var(--radius-pill); background: var(--surface); box-shadow: var(--shadow-key); color: var(--ink); }
+.conn-note[hidden] { display: none; }
+.conn-retry { margin-left: var(--space-2); text-decoration: underline; color: inherit; }
 .vol-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .scrubber {
   --p: 0; --fill-min: calc(var(--thumb-seek) * .7); position: relative; display: block; height: var(--control-sm); touch-action: none; cursor: pointer;

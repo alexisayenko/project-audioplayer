@@ -94,7 +94,7 @@ def client(tmp_path, monkeypatch):
 def test_health_build_is_owner_only(client):
     expected = {"sha": SHA, "committed_at": "2026-10-17T09:00:00Z", "deployed_at": "2026-10-17T12:00:00Z"}
     assert client.get("/health", headers={"X-API-Token": "secret"}).json()["build"] == expected
-    assert client.get("/health").json() == {"status": "ok", "sync": {"state": "ok"}}
+    assert client.get("/health").json() == {"status": "ok", "sync": {"state": "ok"}, "ready": True, "startup": {"state": "ready", "step": None}}
     assert "build" not in client.get("/health", headers={"X-API-Token": "wrong"}).json()
 
 

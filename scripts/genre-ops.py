@@ -6,6 +6,7 @@ Run from the repo root with the server's Python (stdlib only plus the app's own 
   python scripts/genre-ops.py promote house techno trance      # level 1 genres; their children rise one level
   python scripts/genre-ops.py move "psychedelic trance" --to trance            # Others (or --from Z) replaced by trance
   python scripts/genre-ops.py parents "acid" "techno,house"                    # set the full parents list
+  python scripts/genre-ops.py unparent synthpop disco --from Others            # drop one parent (never the last one) from each genre
   python scripts/genre-ops.py report                                           # review of the working tree against git HEAD
 
 Every mutating command validates the result with the app's parser, rewrites server/data/genre_levels.json (and drops a promoted genre from genre_discogs.json and genre_extras.json), refreshes the `_meta` counts and prints the review: changed genres (old parents/level -> new), level and family counts, checks. `--dry-run` prints without writing; `--base REV` compares with another git revision (default HEAD), `--base-dir DIR` with a directory holding an old genre_levels.json; `--out FILE` also saves the review.
@@ -64,7 +65,7 @@ def promote(levels: dict, discogs: dict, extras: dict, name: str, colour: str | 
     node: dict = {"name": name, "synonyms": e.get("synonyms", [])}
     if keep:
         node["parents"] = keep
-    for f in ("related", "modifiers", "display"):
+    for f in ("related", "modifiers", "display", "subfamily"):
         if e.get(f):
             node[f] = e[f]
     if e.get("fusion"):
@@ -73,7 +74,7 @@ def promote(levels: dict, discogs: dict, extras: dict, name: str, colour: str | 
     inherit = colour or (left[0] if left else None)
     if inherit:
         node["colour"] = inherit
-    for f in ("provisional", "status", "subfamily"):
+    for f in ("provisional", "status"):
         if e.get(f):
             print(f"note: {name} had {f}={e[f]!r}; a level 1 node carries neither", file=sys.stderr)
     fams = collections.OrderedDict()
@@ -104,6 +105,20 @@ def reparent(levels: dict, name: str, new_parents: list[str]) -> None:
         levels[name]["parents"] = new_parents
     else:
         raise SystemExit(f"{name}: not a genre or a promoted genre")
+
+
+def unparent(levels: dict, name: str, parent: str) -> None:
+    """Remove the single parent `parent` from `name`, keeping its other parents; the last parent of a genre cannot be removed."""
+    spec = levels["families"].get(name) if name in levels["families"] else levels.get(name)
+    if not isinstance(spec, dict) or name in ("_meta", "modifiers", "subfamilies"):
+        raise SystemExit(f"{name}: unknown genre")
+    cur = list(spec.get("parents", []))
+    if parent not in cur:
+        raise SystemExit(f"{name}: parents are {cur}; {parent} is not one of them")
+    left = [p for p in cur if p != parent]
+    if not left and name not in levels["families"]:
+        raise SystemExit(f"{name}: {parent} is its only parent; use move or promote")
+    reparent(levels, name, left)
 
 
 def refresh_meta(levels: dict) -> None:
@@ -178,7 +193,7 @@ def review(base: dict, new: dict, base_name: str) -> str:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("command", choices=["promote", "move", "parents", "report"])
+    ap.add_argument("command", choices=["promote", "move", "parents", "unparent", "report"])
     ap.add_argument("names", nargs="*")
     ap.add_argument("--to")
     ap.add_argument("--from", dest="frm")
@@ -210,6 +225,11 @@ def main() -> None:
         if len(a.names) != 2:
             raise SystemExit('parents: parents "<genre>" "A,B"')
         reparent(levels, a.names[0], [p.strip() for p in a.names[1].split(",") if p.strip()])
+    elif a.command == "unparent":
+        if not a.names or not a.frm:
+            raise SystemExit("unparent: unparent <genre> [<genre> ...] --from <parent>")
+        for name in a.names:
+            unparent(levels, name, a.frm)
     if a.command != "report":
         try:
             gv.parse_all(levels)

@@ -13,6 +13,41 @@ export function isSignedIn() {
 
 const CSRF = { 'X-Requested-With': 'audioplayer' };
 
+export const startup = {
+  maxMs: 20000,
+  waiting: false,
+  sleep: (ms) => new Promise((r) => setTimeout(r, ms)),
+  now: () => Date.now(),
+};
+
+function setWaiting(on) {
+  if (startup.waiting === on) return;
+  startup.waiting = on;
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event('server-starting'));
+}
+
+async function isStarting(res) {
+  if (res.status !== 503) return false;
+  try { return (await (res.clone?.() ?? res).json())?.detail === 'starting'; } catch { return false; }
+}
+
+/** fetch that waits out a server that is still starting (503 {detail: "starting"}, nothing was processed so every method is safe to repeat); gives the 503 back after startup.maxMs. */
+export async function fetchWhenReady(path, init) {
+  const began = startup.now();
+  try {
+    for (;;) {
+      const res = await fetch(path, init);
+      if (!(await isStarting(res))) return res;
+      const wait = Math.max(1, Number(res.headers?.get?.('Retry-After')) || 3) * 1000;
+      if (startup.now() - began + wait > startup.maxMs) return res;
+      setWaiting(true);
+      await startup.sleep(wait); // NOSONAR the next attempt must follow the delay
+    }
+  } finally {
+    setWaiting(false);
+  }
+}
+
 function lostSession() {
   if (!auth.email) return;
   auth.email = '';
@@ -37,6 +72,7 @@ function failure(res, data) {
     detail = 'Not signed in (see Settings)';
     lostSession();
   }
+  if (res.status === 503 && detail === 'starting') detail = 'The server is starting. Try again in a moment.';
   const code = data?.error || '';
   const err = new ApiError(res.status, friendly(code, data, detail) || `Request failed (${res.status})`, code, Number(data?.retry_after_minutes) || 0);
   err.data = data;
@@ -53,7 +89,7 @@ async function request(method, path, body, signal, raw = false) {
   if (body !== undefined) headers['Content-Type'] = raw ? body.type : 'application/json';
   let res;
   try {
-    res = await fetch(path, {
+    res = await fetchWhenReady(path, {
       method,
       headers,
       body: body === undefined || raw ? body : JSON.stringify(body),
@@ -94,7 +130,7 @@ async function* ndjson(res) {
 async function openPreviewStream(url, signal) {
   let res;
   try {
-    res = await fetch('/preview/stream', { method: 'POST', headers: { ...CSRF, 'Content-Type': 'application/json' }, body: JSON.stringify({ url }), signal });
+    res = await fetchWhenReady('/preview/stream', { method: 'POST', headers: { ...CSRF, 'Content-Type': 'application/json' }, body: JSON.stringify({ url }), signal });
   } catch (ex) {
     if (ex?.name === 'AbortError') throw ex;
     throw new ApiError(0, 'Server unreachable');
@@ -136,7 +172,7 @@ async function authCall(method, path, body) {
   if (body !== undefined) headers['Content-Type'] = 'application/json';
   let res;
   try {
-    res = await fetch(path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
+    res = await fetchWhenReady(path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
   } catch {
     throw new ApiError(0, 'Server unreachable');
   }

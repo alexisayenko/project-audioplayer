@@ -340,7 +340,7 @@ def parse_groups(doc: Any) -> dict[str, dict[str, Any]]:
 
 
 def _parse_forms(doc: dict[str, Any], modifiers: dict[str, dict[str, str]], name: str) -> dict[str, dict[str, Any]]:
-    """The promoted genres (families-block entries with `discogs`) as level 1 nodes keyed by their lowercase name: `parents` (optional: a promoted genre may also sit under other nodes), `related`, `synonyms`, `modifiers`, `discogs`, `display`, `fusion`, `colour`. A promoted genre is level 1 whether or not it lists parents."""
+    """The promoted genres (families-block entries with `discogs`) as level 1 nodes keyed by their lowercase name: `parents` (optional: a promoted genre may also sit under other nodes), `related`, `synonyms`, `modifiers`, `discogs`, `display`, `fusion`, `colour`, `subfamily`. A promoted genre is level 1 whether or not it lists parents."""
     forms: dict[str, dict[str, Any]] = {}
     for member, spec in doc["families"].items():
         if not isinstance(spec, dict) or "discogs" not in spec:
@@ -365,6 +365,8 @@ def _parse_forms(doc: dict[str, Any], modifiers: dict[str, dict[str, str]], name
             node["colour"] = spec["colour"]
         if spec.get("fusion") is True:
             node["fusion"] = True
+        if spec.get("subfamily") is not None:
+            node["subfamily"] = spec["subfamily"]
         if "related" in spec:
             related = _strings(spec["related"], f"promoted genre {member!r} related")
             if len(set(related)) != len(related) or member in related or any(r in parents for r in related):
@@ -480,12 +482,14 @@ def parse_subfamilies(doc: Any) -> dict[str, dict[str, Any]]:
 
 
 def _resolve_subfamilies(levels: dict[str, dict[str, Any]], families: dict[str, list[str]], subfamilies: dict[str, dict[str, Any]], name: str, groups: Iterable[str] = ()) -> None:
-    """A genre's `subfamily`: its own (the declared family of that subfamily must be one of the genre's families, unless it is a group: the subfamilies of the temporary group Others are display labels that survive a promotion), else the first one a parent has (in `parents` order, only used to break a tie) whose declared family is one of the genre's families; absent when none. Runs after `_resolve`."""
+    """A genre's `subfamily`: its own (the declared family of that subfamily must be one of the genre's families, unless it is a group: the subfamilies of the temporary group Others are display labels that survive a promotion), else the first one a parent (a promoted genre too) has (in `parents` order, only used to break a tie) whose declared family is one of the genre's families or a group (so a genre that left Others, or sits under a promoted genre, keeps its label); absent when none. Runs after `_resolve`."""
     for sk, sp in subfamilies.items():
         if sp["family"] not in families:
             raise ValueError(f"{name}: subfamily {sk!r} has an unknown family {sp['family']!r}")
     for k, v in levels.items():
         own = v.get("subfamily")
+        if own is not None and own not in subfamilies:
+            raise ValueError(f"{name}: entry {k!r} has an unknown subfamily {own!r}")
         if own is not None and subfamilies[own]["family"] not in v["families"] and subfamilies[own]["family"] not in groups:
             raise ValueError(f"{name}: entry {k!r} subfamily {own!r} belongs to {subfamilies[own]['family']!r}, which is not one of the families of the entry")
     done: set[str] = set()
@@ -497,7 +501,7 @@ def _resolve_subfamilies(levels: dict[str, dict[str, Any]], families: dict[str, 
             if v.get("subfamily") is None:
                 for p in v["parents"]:
                     got = fill(p) if p in levels else None
-                    if got is not None and subfamilies[got]["family"] in v["families"]:
+                    if got is not None and (subfamilies[got]["family"] in v["families"] or subfamilies[got]["family"] in groups):
                         v["subfamily"] = got
                         break
         return v.get("subfamily")
@@ -598,7 +602,7 @@ def parse_all(doc: Any) -> tuple[dict[str, dict[str, Any]], dict[str, dict[str, 
     _check_parents(nodes, synonyms, name, refs)
     _check_related(nodes, synonyms, name, refs)
     _resolve(nodes, synonyms, name, refs)
-    _resolve_subfamilies(levels, synonyms, subfamilies, name, groups)
+    _resolve_subfamilies(nodes, synonyms, subfamilies, name, groups)
     return levels, forms, synonyms, modifiers
 
 

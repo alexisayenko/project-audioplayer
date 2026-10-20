@@ -13,6 +13,7 @@ FAMILIES = LEVELS["families"]
 MODIFIERS = LEVELS["modifiers"]
 RAW = {k: v for k, v in LEVELS.items() if k not in ("_meta", "families", "modifiers")}
 ENTRIES = genre_vocab.parse_levels(LEVELS)[0]
+FORMS = {k for k, v in FAMILIES.items() if "discogs" in v}  # genres promoted out of Others (task-0066): level 1 nodes of the families block
 
 
 def family_parents(k):
@@ -32,8 +33,8 @@ def test_every_vocabulary_genre_appears_once():
 
 def test_families_are_among_the_eleven_in_the_fixed_order_and_the_first_is_the_legacy_family():
     for k, v in ENTRIES.items():
-        assert v["families"] and set(v["families"]) <= set(DISCOGS["families"]), k
-        assert v["families"] == [f for f in DISCOGS["families"] if f in v["families"]], k
+        assert v["families"] and set(v["families"]) <= set(FAMILIES), k
+        assert v["families"] == [f for f in FAMILIES if f in v["families"]], k
         assert v["family"] == v["families"][0], k
 
 
@@ -50,7 +51,7 @@ def test_level_is_the_shortest_path_depth_and_has_no_cap():
         assert k not in v["parents"], k
         assert len(set(v["parents"])) == len(v["parents"]), k
         assert all(p in FAMILIES or p in ENTRIES for p in v["parents"]), k
-    assert {v["level"] for v in ENTRIES.values()} == {2, 3, 4}
+    assert {v["level"] for v in ENTRIES.values()} == {2, 3}, "no level 4: the psytrance branch rose one level when trance became level 1"
     assert genre_vocab.MAX_LEVEL == 12
 
 
@@ -85,12 +86,13 @@ def test_only_electronic_and_rock_are_drafted_and_rock_keeps_the_held_genres_pro
             assert v["provisional"] is False, k
         elif v["families"] == ["Rock"]:
             assert v["provisional"] is (k in HELD_ROCK), k
-        elif "Others" not in v["families"] and "Rock" not in v["families"]:
+        elif not ({"Others", "Rock"} | FORMS) & set(v["families"]) and "subfamily" not in v:
             assert v["provisional"] is True, k
 
 
 def test_families_block_names_match_the_eleven():
-    assert list(FAMILIES) == DISCOGS["families"]
+    assert [k for k in FAMILIES if k not in FORMS] == DISCOGS["families"]
+    assert [k for k in FAMILIES if k in FORMS] == ["house", "techno", "trance", "drum and bass", "synthwave"]
     assert all(v["name"] == k for k, v in FAMILIES.items())
 
 
@@ -157,7 +159,7 @@ def test_removed_names_are_synonyms_of_their_target_or_dropped_as_redundant():
         if target == "electronic":
             assert old in FAMILIES["Others"]["synonyms"], old
         else:
-            assert old in ENTRIES[target]["synonyms"], old
+            assert old in (ENTRIES.get(target) or FAMILIES[target])["synonyms"], old
     assert "electropop" in ENTRIES["synthpop"]["synonyms"]
 
 
@@ -178,7 +180,7 @@ def test_approved_never_sits_on_a_discogs_genre():
 
 def test_liquid_drum_and_bass_entry():
     e = ENTRIES["liquid drum and bass"]
-    assert (e["family"], e["parents"], e["discogs"]) == ("Others", ["drum and bass"], False)
+    assert (e["family"], e["parents"], e["discogs"]) == ("drum and bass", ["drum and bass"], False)
     assert EXTRAS["liquid drum and bass"]["parents"] == ["drum and bass"]
     assert "liquid funk" in e["synonyms"]
     assert len(set(e["synonyms"])) == len(e["synonyms"])
@@ -211,10 +213,10 @@ def test_vocabulary_payload_carries_levels_and_family_synonyms():
     genre_vocab.reset()
     body = genre_vocab.vocabulary()
     assert set(body["levels"]) == set(ENTRIES)
-    assert set(body["family_synonyms"]) == set(DISCOGS["families"])
+    assert set(body["family_synonyms"]) == set(DISCOGS["families"]) | FORMS
     assert "genre_synonyms" not in body
     dh = body["levels"]["deep house"]
-    assert dh == {"family": "Others", "families": ["Others"], "parents": ["house"], "level": 3, "discogs": True, "synonyms": [], "provisional": False, "subfamily": "House", "status": ENTRIES["deep house"]["status"], "modifiers": ENTRIES["deep house"]["modifiers"], "flavours": ENTRIES["deep house"]["modifiers"], "display": ENTRIES["deep house"]["display"]}
+    assert dh == {"family": "house", "families": ["house"], "parents": ["house"], "level": 2, "discogs": True, "synonyms": [], "provisional": False, "subfamily": "House", "status": ENTRIES["deep house"]["status"], "modifiers": ENTRIES["deep house"]["modifiers"], "flavours": ENTRIES["deep house"]["modifiers"], "display": ENTRIES["deep house"]["display"]}
     assert body["levels"]["jungle"]["parents"] == RAW["jungle"]["parents"] == ["breakbeat"]
     assert not any(k in dh for k in ("genre", "parent", "also_under", "also_in_genres"))
     nd = next(k for k, v in ENTRIES.items() if v["discogs"] is False)
@@ -298,7 +300,7 @@ def test_malformed_levels_files_raise_a_clear_error(tmp_path, monkeypatch):
 
 
 def test_display_names():
-    assert ENTRIES["drum and bass"]["display"] == "drum & bass"
+    assert FAMILIES["drum and bass"]["display"] == "drum & bass" and genre_vocab.vocabulary()["forms"]["drum and bass"]["display"] == "drum & bass"
     assert ENTRIES["liquid drum and bass"]["display"] == "liquid drum & bass"
     assert [k for k, v in ENTRIES.items() if v["display"] and v["display"] != v["display"].lower()] == []
     assert not [k for k, v in ENTRIES.items() if v["display"] == k]
@@ -310,8 +312,8 @@ def test_display_names():
             assert d, k
             assert d.lower() == k or d.lower() not in ENTRIES, k
     for syn in ("dnb", "d&b", "drum n bass", "drum'n'bass", "drum and bass music", "drum & bass music"):
-        assert syn in ENTRIES["drum and bass"]["synonyms"], syn
-    assert "drum and bass" not in ENTRIES["drum and bass"]["synonyms"]
+        assert syn in FAMILIES["drum and bass"]["synonyms"], syn
+    assert "drum and bass" not in FAMILIES["drum and bass"]["synonyms"]
 
 
 def test_display_is_validated_and_served():
@@ -327,7 +329,7 @@ def test_display_is_validated_and_served():
         with pytest.raises(ValueError, match="display"):
             genre_vocab.parse_levels(d)
     genre_vocab.reset()
-    assert genre_vocab.vocabulary()["levels"]["drum and bass"]["display"] == "drum & bass"
+    assert genre_vocab.vocabulary()["forms"]["drum and bass"]["display"] == "drum & bass"
 
 
 def test_migration_folds_removed_styles_idempotently_and_keeps_a_backup(tmp_path, monkeypatch):
@@ -355,21 +357,22 @@ def test_migration_folds_removed_styles_idempotently_and_keeps_a_backup(tmp_path
     assert {s["id"]: library.tag_list(s) for s in json.loads(lib.read_text())["songs"]} == songs
 
 
-def test_disco_belongs_to_funk_soul_and_electronic_and_so_do_its_children():
-    assert ENTRIES["disco"]["families"] == ["Others", "Funk / Soul"]
-    assert set(ENTRIES["disco"]["parents"]) == {"Funk / Soul", "Others"}
+def test_disco_belongs_to_funk_soul_only_and_so_do_its_children():
+    assert ENTRIES["disco"]["families"] == ["Funk / Soul"], "disco left Others (task-0066, 2026-10-20)"
+    assert ENTRIES["disco"]["parents"] == ["Funk / Soul"]
     assert ENTRIES["disco"]["level"] == 2
     kids = {k for k, v in ENTRIES.items() if "disco" in v["parents"]}
     assert kids == {"euro disco", "italo disco", "hi-nrg", "nu-disco", "space disco", "post-disco"}
     assert not any("family" in RAW[k] for k in kids)
-    assert all(ENTRIES[k]["families"] == ["Others", "Funk / Soul"] and ENTRIES[k]["level"] == 3 for k in kids)
+    assert all(ENTRIES[k]["families"] == ["Funk / Soul"] and ENTRIES[k]["level"] == 3 for k in kids)
     assert ENTRIES["post-disco"]["parents"] == ["disco"] == EXTRAS["post-disco"]["parents"]
     assert "italo disco" in ENTRIES["spacesynth"]["parents"]
     assert "disco polo" not in kids
 
 
 def test_a_blend_is_level_two_through_its_family_parent_and_level_three_through_its_genre_parent():
-    for k in ("hip house", "trip hop", "folk metal", "folk punk", "rap metal", "funk metal"):
+    assert ENTRIES["hip house"]["level"] == 2 and all(p in FAMILIES for p in ENTRIES["hip house"]["parents"]), "house is level 1: hip house is a level 2 blend of two level 1 genres"
+    for k in ("trip hop", "folk metal", "folk punk", "rap metal", "funk metal"):
         assert ENTRIES[k]["level"] == 2, k
         assert any(p in FAMILIES for p in ENTRIES[k]["parents"]) and any(p not in FAMILIES for p in ENTRIES[k]["parents"]), k
         assert min(1 + ENTRIES[p]["level"] for p in ENTRIES[k]["parents"] if p not in FAMILIES) == 3, k
@@ -421,19 +424,19 @@ def test_parents_are_validated_and_served():
             genre_vocab.parse_levels(doc)
     genre_vocab.reset()
     body = genre_vocab.vocabulary()["levels"]
-    assert set(body["disco"]["parents"]) == {"Funk / Soul", "Others"} and body["disco"]["families"] == ["Others", "Funk / Soul"]
+    assert body["disco"]["parents"] == ["Funk / Soul"] and body["disco"]["families"] == ["Funk / Soul"]
     assert body["deep house"]["parents"] == ["house"]
 
 
-def test_psytrance_sits_under_trance_and_its_branch_goes_down_to_level_four():
+def test_psytrance_sits_under_trance_and_its_branch_ends_at_level_three():
     p = ENTRIES["psytrance"]
-    assert (p["parents"], p["discogs"], p["display"], p["level"], p["families"]) == (["trance"], True, "psy-trance", 3, ["Others"])
-    assert [k for k, v in ENTRIES.items() if v["level"] == 4] == sorted(k for k in ENTRIES if ENTRIES[k]["level"] == 4) == ["dark psytrance", "forest psytrance", "full-on psytrance", "goa trance", "progressive psytrance"]
+    assert (p["parents"], p["discogs"], p["display"], p["level"], p["families"]) == (["trance"], True, "psy-trance", 2, ["trance"])
+    assert [k for k, v in ENTRIES.items() if v["level"] == 4] == []
     assert ENTRIES["psybient"]["level"] == 3 and RAW["psytrance"]["subfamily"] == "Trance"
     kids = {k for k, v in ENTRIES.items() if "psytrance" in v["parents"]}
     assert kids == {"dark psytrance", "forest psytrance", "progressive psytrance", "full-on psytrance", "goa trance", "psybient"}
     for k in kids:
-        assert ENTRIES[k]["family"] == "Others"
+        assert ENTRIES[k]["family"] == "trance" and ENTRIES[k]["level"] == 3
     assert ENTRIES["goa trance"]["parents"] == ["psytrance"]
     assert ENTRIES["goa trance"]["discogs"] is True
     assert ENTRIES["psybient"]["parents"] == ["psytrance", "ambient"]
@@ -453,7 +456,7 @@ def test_psytrance_sits_under_trance_and_its_branch_goes_down_to_level_four():
 
 def test_sovietwave_is_an_approved_extra_under_synthwave():
     e = ENTRIES["sovietwave"]
-    assert e["family"] == "Others"
+    assert e["family"] == "synthwave"
     assert e["parents"] == ["synthwave"]
     assert e["display"] is None
     assert "soviet wave" not in ENTRIES
@@ -471,16 +474,16 @@ def test_french_house_is_an_extra_under_house_and_french_touch_is_its_alias():
 
     genre_vocab.reset()
     e = ENTRIES["french house"]
-    assert e["family"] == "Others"
+    assert e["family"] == "house"
     assert e["parents"] == ["house"]
     assert e["discogs"] is False
     assert "french house" in EXTRAS
     assert "french house" not in DISCOGS["genres"]
     assert EXTRAS["french house"]["parents"] == ["house"]
-    assert genre_vocab.entry("french house").family == "Others"
+    assert genre_vocab.entry("french house").family == "house"
     assert "french touch" in e["synonyms"]
-    assert "french touch" not in ENTRIES["house"]["synonyms"]
-    assert "french house" not in ENTRIES["house"]["synonyms"]
+    assert "french touch" not in FAMILIES["house"]["synonyms"]
+    assert "french house" not in FAMILIES["house"]["synonyms"]
     assert genre_vocab.lookup("French House") == "french house"
     assert genre_vocab.lookup("french touch") is None
     for raw in ("french touch", "French Touch", "french-touch", "french house"):
@@ -497,12 +500,12 @@ def test_dream_trance_is_an_approved_extra_under_trance_with_two_synonyms():
 
     genre_vocab.reset()
     e = ENTRIES["dream trance"]
-    assert (e["family"], e["parents"], e["discogs"], e["status"]) == ("Others", ["trance"], False, "approved")
+    assert (e["family"], e["parents"], e["discogs"], e["status"]) == ("trance", ["trance"], False, "approved")
     assert e["synonyms"] == ["dream house", "dream dance"]
     assert "dream trance" in EXTRAS
     assert "dream trance" not in DISCOGS["genres"]
     assert EXTRAS["dream trance"]["parents"] == ["trance"]
-    assert ENTRIES["trance"]["parents"] == ["Others"]
+    assert FAMILIES["trance"].get("colour") == "Others" and "parents" not in FAMILIES["trance"]
     assert "dream" not in ENTRIES
     assert "dream" not in gf.ALIASES
     assert genre_vocab.lookup("Dream Trance") == "dream trance"
@@ -581,9 +584,9 @@ def test_epic_is_a_descriptor_and_is_removed_everywhere_and_its_tag_is_dropped()
 
 def test_space_disco_is_an_approved_extra_level_three_under_disco_in_electronic():
     e = ENTRIES["space disco"]
-    assert (e["parents"], e["level"], e["family"], e["discogs"], e["status"], e["display"], e["synonyms"]) == (["disco"], 3, "Others", False, "approved", None, ["space-disco"])
+    assert (e["parents"], e["level"], e["family"], e["discogs"], e["status"], e["display"], e["synonyms"]) == (["disco"], 3, "Funk / Soul", False, "approved", None, ["space-disco"])
     assert EXTRAS["space disco"]["parents"] == ["disco"]
-    assert "family" not in EXTRAS["space disco"] and e["families"] == ["Others", "Funk / Soul"]
+    assert "family" not in EXTRAS["space disco"] and e["families"] == ["Funk / Soul"]
     assert "space disco" not in DISCOGS["genres"]
     assert genre_vocab.entry("space-disco").name == "space disco"
     assert genre_vocab.entry("space disco").parents == ("disco",)
@@ -592,12 +595,12 @@ def test_space_disco_is_an_approved_extra_level_three_under_disco_in_electronic(
 
 def test_electronic_counts_in_the_meta_block_match_the_data():
     counts = LEVELS["_meta"]["counts"]
-    for family in DISCOGS["families"]:
+    for family in counts:
         mine = [v for v in ENTRIES.values() if family in v["families"]]
         assert counts[family] == {"total": len(mine), "level2": sum(v["level"] == 2 for v in mine), "level3": sum(v["level"] == 3 for v in mine), "level4": sum(v["level"] == 4 for v in mine)}, family
-    assert (counts["Others"]["level2"], counts["Others"]["level3"], counts["Others"]["level4"]) == (54, 87, 5)
-    assert LEVELS["_meta"]["total"] == len(ENTRIES) == 534
-    assert sum(c["total"] for c in counts.values()) == sum(len(v["families"]) for v in ENTRIES.values()) == 578
+    assert (counts["Others"]["level2"], counts["Others"]["level3"], counts["Others"]["level4"]) == (52, 30, 0)
+    assert LEVELS["_meta"]["total"] == len(ENTRIES) == 529
+    assert sum(c["total"] for c in counts.values()) == sum(len(v["families"]) for v in ENTRIES.values()) == 579
 
 
 ROCK_FUSION = {"folk metal", "folk punk", "rap metal", "electronic rock"}
@@ -615,24 +618,24 @@ def test_fusion_genres_are_the_fourteen_blends_and_each_belongs_to_two_families(
 
 def test_the_two_family_genres_of_the_vocabulary_are_the_20_blends_plus_the_descent_ones():
     multi = {k for k, v in ENTRIES.items() if len(v["families"]) > 1}
-    assert (FUSION | TWO_SCENES) <= multi and len(multi) == 37
+    assert (FUSION | (TWO_SCENES - {"disco"})) <= multi and len(multi) == 43
     for k, fam in MOVED_TO_RELATED.items():
         assert fam in ENTRIES[k]["related"] and fam not in ENTRIES[k]["parents"] and k not in multi, k
-    assert {k for k in multi if k not in FUSION | TWO_SCENES and len(family_parents(k)) < 2 and k not in {"post-disco"}} >= {"euro disco", "hi-nrg", "italo disco", "nu-disco", "space disco", "spacesynth"}
+    assert {k for k in multi if k not in FUSION | TWO_SCENES and len(family_parents(k)) < 2 and k not in {"post-disco"}} >= {"spacesynth"}, "the disco kids are Funk / Soul only since disco left Others"
 
 
 def test_the_second_families_left_are_appended_and_parents_zero_is_unchanged():
     got = {k: ENTRIES[k]["parents"] for k in (FUSION - {"eurodance"}) | (TWO_SCENES - {"disco"})}
     assert got["hip house"] == ["house", "Hip Hop"] and got["trip hop"] == ["downtempo", "Hip Hop"]
-    assert ENTRIES["hip house"]["families"] == ["Others", "Hip Hop"] and ENTRIES["hip house"]["level"] == 2
+    assert ENTRIES["hip house"]["families"] == ["house", "Hip Hop"] and ENTRIES["hip house"]["level"] == 2
     assert ENTRIES["trap"]["parents"] == ["Hip Hop"] and got["blues rock"] == ["Blues", "Rock"]
     assert all(len(v) == 2 for v in got.values())
-    assert ENTRIES["disco"]["parents"] == ["Funk / Soul", "Others"]
+    assert ENTRIES["disco"]["parents"] == ["Funk / Soul"]
 
 
-def test_the_deepest_level_is_four_and_only_the_psytrance_branch_reaches_it():
-    assert max(v["level"] for v in ENTRIES.values()) == 4
-    assert {k for k, v in ENTRIES.items() if v["level"] == 4} == {c for c, v in ENTRIES.items() if "psytrance" in v["parents"]} - {"psybient"}
+def test_the_deepest_level_is_three_since_trance_is_level_one():
+    assert max(v["level"] for v in ENTRIES.values()) == 3
+    assert {k for k, v in ENTRIES.items() if v["level"] == 3 and "psytrance" in v["parents"]} == {c for c, v in ENTRIES.items() if "psytrance" in v["parents"]}
 
 
 def test_fusion_is_validated_and_served():
@@ -762,7 +765,7 @@ def test_electro_funk_is_a_synonym_of_electro_and_electropop_stays_on_synthpop()
 
 
 SUBFAMILIES = ["House", "Techno", "Trance", "Breaks & bass", "Synth & wave", "Experimental, industrial & noise", "Ambient & downtempo", "Eurodance & disco"]
-SUBFAMILY_COUNTS = {"House": 26, "Techno": 20, "Trance": 19, "Breaks & bass": 24, "Synth & wave": 12, "Experimental, industrial & noise": 21, "Ambient & downtempo": 10, "Eurodance & disco": 12}
+SUBFAMILY_COUNTS = {"House": 25, "Techno": 19, "Trance": 18, "Breaks & bass": 23, "Synth & wave": 11, "Experimental, industrial & noise": 21, "Ambient & downtempo": 10, "Eurodance & disco": 12}
 
 
 def test_edm_is_an_approved_extra_level_two_under_electronic():
@@ -784,13 +787,14 @@ def test_every_electronic_level_two_genre_has_exactly_one_subfamily():
     names = [n for n, s in LEVELS["subfamilies"].items()]
     assert names == SUBFAMILIES and [s["order"] for s in LEVELS["subfamilies"].values()] == [1, 2, 3, 4, 5, 6, 7, 8]
     assert all(s["family"] == "Others" for s in LEVELS["subfamilies"].values())
-    lvl2 = {k for k, v in ENTRIES.items() if "Others" in v["parents"] and k not in {"dub", "electronic rock"}}
-    assert len(lvl2) == 49
+    lvl2 = {k for k, v in ENTRIES.items() if "Others" in v["parents"] and k not in {"dub", "electronic rock", "synthpop"}}
+    assert len(lvl2) == 42
     for k in lvl2:
         assert RAW[k].get("subfamily") in SUBFAMILIES, k
-    assert {k for k, v in RAW.items() if v.get("subfamily")} == lvl2 | {"psytrance", "eurodance", "ebm"}
+    assert {k for k, v in RAW.items() if v.get("subfamily")} == lvl2 | {"psytrance", "eurodance", "ebm", "disco", "synthpop"}
+    assert {k for k in FORMS if FAMILIES[k].get("subfamily") in SUBFAMILIES} == FORMS, "a promoted genre keeps its subfamily label (task-0066)"
     for k, v in ENTRIES.items():
-        if "Others" not in v["families"]:
+        if "Others" not in v["families"] and not FORMS & set(v["families"]) and k not in {"disco", "ebm", "synthpop"} and "disco" not in v["parents"] and "synthpop" not in v["parents"]:
             assert "subfamily" not in v, k
 
 
@@ -798,10 +802,10 @@ def test_subfamily_inheritance_counts_and_the_disco_children():
     from collections import Counter
 
     c = Counter(v["subfamily"] for v in ENTRIES.values() if v.get("subfamily"))
-    assert dict(c) == SUBFAMILY_COUNTS and sum(c.values()) == 144
+    assert dict(c) == SUBFAMILY_COUNTS and sum(c.values()) == 139
     assert ENTRIES["deep house"]["subfamily"] == "House" and "subfamily" not in RAW["deep house"]
     assert ENTRIES["spacesynth"]["subfamily"] == "Synth & wave" and ENTRIES["hardstyle"]["subfamily"] == "Techno"
-    assert RAW["disco"]["subfamily"] == "Eurodance & disco" and ENTRIES["disco"]["families"] == ["Others", "Funk / Soul"]
+    assert RAW["disco"]["subfamily"] == "Eurodance & disco" and ENTRIES["disco"]["families"] == ["Funk / Soul"], "disco keeps its label after leaving Others"
     for k in ("euro disco", "hi-nrg", "italo disco", "nu-disco", "space disco"):
         assert "subfamily" not in RAW[k] and ENTRIES[k]["subfamily"] == "Eurodance & disco" and ENTRIES[k]["parents"] == ["disco"], k
     assert ENTRIES["hands up"]["subfamily"] == "Eurodance & disco" and ENTRIES["freestyle"]["subfamily"] == "Eurodance & disco"
@@ -856,9 +860,10 @@ def test_subfamily_is_validated_and_served():
 def test_eurodance_has_house_euro_disco_and_pop_as_equal_parents():
     e = ENTRIES["eurodance"]
     assert set(e["parents"]) == {"house", "euro disco", "Pop"} and len(e["parents"]) == 3
-    assert (e["level"], e["families"], e["fusion"], e["subfamily"]) == (2, ["Others", "Funk / Soul", "Pop"], True, "Eurodance & disco")
+    assert (e["level"], e["families"], e["fusion"], e["subfamily"]) == (2, ["house", "Funk / Soul", "Pop"], True, "Eurodance & disco")
     assert {k for k, v in ENTRIES.items() if "eurodance" in v["parents"]} == {"hands up", "italodance"}
-    assert all(ENTRIES[k]["level"] == 3 and ENTRIES[k]["families"] == e["families"] for k in ("hands up", "italodance"))
+    assert all(set(e["families"]) <= set(ENTRIES[k]["families"]) for k in ("hands up", "italodance"))
+    assert (ENTRIES["hands up"]["level"], ENTRIES["italodance"]["level"]) == (2, 3), "hands up is also a child of trance, a level 1 genre"
     assert "eurobeat" in e["synonyms"]
 
 
@@ -891,12 +896,12 @@ def test_darkwave_has_post_punk_and_new_wave_as_equal_parents_and_is_only_in_roc
     assert {k for k, v in ENTRIES.items() if "darkwave" in v["parents"]} == {"coldwave"}
 
 
-def test_synthpop_has_electronic_pop_and_new_wave_as_equal_parents_and_its_children_follow():
+def test_synthpop_has_pop_and_new_wave_as_equal_parents_no_longer_others_and_its_children_follow():
     e = ENTRIES["synthpop"]
-    assert set(e["parents"]) == {"Others", "Pop", "new wave"} and "fusion" not in e
-    assert (e["level"], e["families"], e["subfamily"]) == (2, ["Others", "Pop", "Rock"], "Synth & wave")
+    assert set(e["parents"]) == {"Pop", "new wave"} and "fusion" not in e, "Others was removed from the parents (task-0066, 2026-10-20); synthpop is not level 1 (CC1)"
+    assert (e["level"], e["families"], e["subfamily"]) == (2, ["Pop", "Rock"], "Synth & wave")
     assert {k for k, v in ENTRIES.items() if "synthpop" in v["parents"]} == {"ebm", "electroclash"}
-    assert ENTRIES["electroclash"]["families"] == ["Others", "Hip Hop", "Pop", "Rock"] and ENTRIES["ebm"]["families"] == ["Others", "Pop", "Rock"]
+    assert ENTRIES["electroclash"]["families"] == ["Others", "Hip Hop", "Pop", "Rock"] and ENTRIES["ebm"]["families"] == ["Pop", "Rock"]
 
 
 def test_ethereal_is_removed_everywhere_and_its_alias_is_gone():

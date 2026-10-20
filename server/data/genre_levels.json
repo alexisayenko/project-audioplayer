@@ -31,11 +31,41 @@
     "level3": 0,
     "level4": 0
    },
+   "house": {
+    "total": 26,
+    "level2": 25,
+    "level3": 1,
+    "level4": 0
+   },
+   "techno": {
+    "total": 10,
+    "level2": 10,
+    "level3": 0,
+    "level4": 0
+   },
+   "trance": {
+    "total": 20,
+    "level2": 14,
+    "level3": 6,
+    "level4": 0
+   },
+   "drum and bass": {
+    "total": 2,
+    "level2": 2,
+    "level3": 0,
+    "level4": 0
+   },
+   "synthwave": {
+    "total": 7,
+    "level2": 7,
+    "level3": 0,
+    "level4": 0
+   },
    "Others": {
-    "total": 146,
-    "level2": 54,
-    "level3": 87,
-    "level4": 5
+    "total": 82,
+    "level2": 52,
+    "level3": 30,
+    "level4": 0
    },
    "Folk, World, & Country": {
     "total": 69,
@@ -45,8 +75,8 @@
    },
    "Funk / Soul": {
     "total": 34,
-    "level2": 25,
-    "level3": 9,
+    "level2": 27,
+    "level3": 7,
     "level4": 0
    },
    "Hip Hop": {
@@ -69,8 +99,8 @@
    },
    "Pop": {
     "total": 38,
-    "level2": 34,
-    "level3": 4,
+    "level2": 35,
+    "level3": 3,
     "level4": 0
    },
    "Reggae": {
@@ -86,11 +116,16 @@
     "level4": 0
    }
   },
-  "total": 534,
+  "total": 529,
   "non_discogs": {
    "Blues": 0,
    "Classical": 0,
-   "Others": 25,
+   "house": 2,
+   "techno": 1,
+   "trance": 11,
+   "drum and bass": 2,
+   "synthwave": 5,
+   "Others": 3,
    "Folk, World, & Country": 4,
    "Funk / Soul": 8,
    "Hip Hop": 1,
@@ -111,6 +146,60 @@
    "synonyms": [
     "classical music"
    ]
+  },
+  "house": {
+   "name": "house",
+   "synonyms": [
+    "afro house",
+    "big room house",
+    "melodic house"
+   ],
+   "related": [
+    "disco"
+   ],
+   "subfamily": "House",
+   "discogs": true,
+   "colour": "Others"
+  },
+  "techno": {
+   "name": "techno",
+   "synonyms": [],
+   "subfamily": "Techno",
+   "discogs": true,
+   "colour": "Others"
+  },
+  "trance": {
+   "name": "trance",
+   "synonyms": [],
+   "subfamily": "Trance",
+   "discogs": true,
+   "colour": "Others"
+  },
+  "drum and bass": {
+   "name": "drum and bass",
+   "synonyms": [
+    "dnb",
+    "drum & bass",
+    "drum n bass",
+    "techstep",
+    "d&b",
+    "drum'n'bass",
+    "drum and bass music",
+    "drum & bass music"
+   ],
+   "display": "drum & bass",
+   "subfamily": "Breaks & bass",
+   "discogs": true,
+   "colour": "Others"
+  },
+  "synthwave": {
+   "name": "synthwave",
+   "synonyms": [
+    "retro-synth"
+   ],
+   "subfamily": "Synth & wave",
+   "discogs": true,
+   "colour": "Others"
   },
   "Others": {
    "name": "Others",
@@ -1317,8 +1406,7 @@
  },
  "disco": {
   "parents": [
-   "Funk / Soul",
-   "Others"
+   "Funk / Soul"
   ],
   "subfamily": "Eurodance & disco",
   "provisional": true,
@@ -1429,24 +1517,6 @@
    "ambient"
   ],
   "discogs": true
- },
- "drum and bass": {
-  "parents": [
-   "Others"
-  ],
-  "subfamily": "Breaks & bass",
-  "synonyms": [
-   "dnb",
-   "drum & bass",
-   "drum n bass",
-   "techstep",
-   "d&b",
-   "drum'n'bass",
-   "drum and bass music",
-   "drum & bass music"
-  ],
-  "discogs": true,
-  "display": "drum & bass"
  },
  "dub": {
   "parents": [
@@ -2259,21 +2329,6 @@
   ],
   "provisional": true,
   "discogs": true
- },
- "house": {
-  "parents": [
-   "Others"
-  ],
-  "related": [
-   "disco"
-  ],
-  "subfamily": "House",
-  "discogs": true,
-  "synonyms": [
-   "afro house",
-   "big room house",
-   "melodic house"
-  ]
  },
  "hyperpop": {
   "parents": [
@@ -3963,7 +4018,6 @@
  },
  "synthpop": {
   "parents": [
-   "Others",
    "Pop",
    "new wave"
   ],
@@ -3976,16 +4030,6 @@
    "russian electropop",
    "electronic pop"
   ]
- },
- "synthwave": {
-  "parents": [
-   "Others"
-  ],
-  "subfamily": "Synth & wave",
-  "synonyms": [
-   "retro-synth"
-  ],
-  "discogs": true
  },
  "séga": {
   "parents": [
@@ -4028,13 +4072,6 @@
   ],
   "discogs": true
  },
- "techno": {
-  "parents": [
-   "Others"
-  ],
-  "subfamily": "Techno",
-  "discogs": true
- },
  "tejano": {
   "parents": [
    "Latin"
@@ -4068,13 +4105,6 @@
    "Latin"
   ],
   "provisional": true,
-  "discogs": true
- },
- "trance": {
-  "parents": [
-   "Others"
-  ],
-  "subfamily": "Trance",
   "discogs": true
  },
  "trap": {

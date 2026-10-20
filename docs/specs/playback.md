@@ -117,6 +117,10 @@ The layout is two columns (one below 900px); the player column keeps at most 420
 - PLY-101 MUST: Library "Play all" (LIB-092) calls `player.playListed` (`playListed` in `queue-logic.js`): the queue items become the listed songs, the shuffle round and history reset, the chips become the selected filter tags (`tags` of each item: those of the selected tags the song has; songs matching none are manual), the current index is 0 or random when Shuffle is on, and the first song plays at once. Status: implemented
 - PLY-102 MUST: the Playback screen has a download icon button (aria-label "Download", WEB-034) for the current song, hidden when it has no server audio; it sits beside the Edit button (PLY-072) and is the only Download control on the card. Status: implemented
 
+
+## Reconnecting
+
+When the audio request fails with a network or server error (for example a 502 while the server restarts), the player reloads the same source and resumes the position after 0.5 s, 1 s, 1.5 s and 2 s (`MEDIA_RETRY_DELAYS_MS`, about 5 s in all). The dock shows "Reconnecting..." and the play icon while nothing plays; after the last attempt it shows "Cannot reach the server. Retry". A missing file (4xx), a pause or a change of song ends the retry.
 ## Auto-download (ADR-0010 sub-decision, 2026-10-14)
 
 - PLY-110 MUST: Settings has a "Playback" card with a checkbox "Auto-download songs" (`localStorage` key `ap2.autodl`, default off, every access in try/catch; WEB-036). It only changes what the client requests automatically; nothing is downloaded to the device (NFR-041). Status: implemented

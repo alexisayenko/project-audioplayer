@@ -262,7 +262,7 @@ def test_static_ui_served_without_shadowing_api(tmp_path, monkeypatch):
     try:
         c = TestClient(m.app)
         assert "ui" in c.get("/").text
-        assert c.get("/health").json() == {"status": "ok", "sync": {"state": "ok"}}
+        assert c.get("/health").json() == {"status": "ok", "sync": {"state": "ok"}, "ready": True, "startup": {"state": "ready", "step": None}}
         assert c.get("/library").status_code == 401
     finally:
         monkeypatch.delenv("AUDIO_WEB_DIR")

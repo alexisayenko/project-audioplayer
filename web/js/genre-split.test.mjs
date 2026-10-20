@@ -63,7 +63,8 @@ test('on the real vocabulary only multi-family genres are split and every set is
   const split = g.nodes.filter((n) => n.fis.length > 1);
   assert.ok(split.length > 0 && split.length < g.nodes.length / 2);
   assert.ok(g.nodes.every((n) => n.fis.length >= 1));
-  assert.ok(split.some((n) => n.id === 's:disco' && n.fis[0] === familyIndex('Others') && n.fis[1] === familyIndex('Funk / Soul')));
+  assert.ok(split.some((n) => n.id === 's:hip house' && n.fis[0] === familyIndex('house') && n.fis[1] === familyIndex('Hip Hop')));
+  assert.ok(!split.some((n) => n.id === 's:disco'), 'disco left Others (2026-10-20): Funk / Soul only');
   assert.ok(split.some((n) => n.id === 's:eurodance' && n.fis.length === 3));
 });
 
@@ -133,10 +134,11 @@ test('regression: every genre of the vocabulary is coloured by exactly the famil
     if (want.length > 1) multi++;
   }
   assert.ok(multi > 20);
-  assert.deepEqual(g.byId.get('s:disco').fis, [15, 5]);
-  assert.deepEqual(g.byId.get('s:euro disco').fis, [15, 5]);
+  assert.deepEqual(g.byId.get('s:disco').fis, [5]);
+  assert.deepEqual(g.byId.get('s:euro disco').fis, [5]);
   const t2 = buildTree(vocab);
   applyCounts(t2, [{ id: 'x', tags: ['genre:disco'] }]);
-  const layout = layoutRadial(t2, 'Others', { hidden: false });
-  assert.deepEqual(layout.byId.get('s:disco').hues, [15, 5], 'the Radial colours disco by the grey Others group and Funk / Soul, not by its umbrella hue');
+  const layout = layoutRadial(t2, 'Funk / Soul', { hidden: false });
+  assert.equal(layout.byId.get('s:disco').hues.length, 1, 'one family (Funk / Soul) since disco left Others: no grey slice');
+  assert.ok(!layout.byId.get('s:disco').hues.includes(15));
 });

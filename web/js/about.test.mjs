@@ -48,3 +48,9 @@ test('about: no placeholder text, no private details, works without a session', 
   assert.doesNotMatch(text, /@|localhost/);
   assert.ok(text.includes(ABOUT.intro));
 });
+
+test('about: the prototype-category sentence is in the genres intro', () => {
+  const sentence = 'Genres work like colour names: everyone agrees on the centre of green, but nobody can say exactly where blue turns into green, so a genre has a clear centre and a soft border.';
+  assert.ok(ABOUT.genres.text.includes(sentence));
+  assert.ok(mount().textContent.includes(sentence));
+});

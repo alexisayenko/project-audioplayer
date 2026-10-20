@@ -19,9 +19,15 @@ import { titleLine, tooltipLine, artistLine, subtitle, titleNodes } from './cred
 import { marquee, disposeAll } from './marquee.js';
 import { can } from './guest.js';
 import { createQueueFollow } from './queue-follow.js';
+import { createMediaRetry } from './media-retry.js';
 import { openSongCard, openTagPicker, loadUi } from './lazy-ui.js';
+import { createLoop } from './loop-engine.js';
+import { initLoopChip } from './loop-chip.js';
 
 const audio = document.getElementById('audio');
+const loop = createLoop(audio);
+const retry = createMediaRetry({ audio, onChange: () => { paintConn(); render(true); }, onGone: () => fail() });
+const shownPlaying = () => !audio.paused && !retry.stalled();
 let followQueue = null;
 
 const REPEAT_NEXT = { off: 'all', all: 'one' };
@@ -98,6 +104,7 @@ function jumpTo(i, remember = true) {
 const qsSet = { for: null, ids: new Set() };
 
 export const player = {
+  loop,
   get current() { const it = qs.items[qs.index]; return it ? store.get(it.id) || null : null; },
   get playing() { return !audio.paused; },
   onChange(fn) { listeners.add(fn); return () => listeners.delete(fn); },
@@ -240,6 +247,7 @@ export const player = {
     const song = player.current;
     if (!song) return;
     if (!hasAudio(song)) { wantAudio(song); return; }
+    if (retry.state === 'failed') { retry.retryNow(); return; }
     if (audio.paused) audio.play().catch(fail); else audio.pause();
   },
 
@@ -324,6 +332,17 @@ export const player = {
   seek(t) { if (Number.isFinite(audio.duration)) audio.currentTime = Math.max(0, Math.min(t, audio.duration)); },
 };
 
+function paintConn() {
+  const host = $('mini-conn');
+  if (!host) return;
+  host.hidden = retry.state === 'ok';
+  if (host.hidden) { host.replaceChildren(); return; }
+  if (retry.state === 'reconnecting') { host.replaceChildren('Reconnecting...'); return; }
+  const btn = el('button', { class: 'conn-retry', type: 'button' }, 'Retry');
+  btn.addEventListener('click', () => retry.retryNow());
+  host.replaceChildren('Cannot reach the server. ', btn);
+}
+
 function fail() { toast('Cannot play this song'); }
 
 function skipNote(n) {
@@ -352,6 +371,8 @@ function startDownload(song) {
 
 function load(autoplay) {
   const song = player.current;
+  retry.reset();
+  loop.clear();
   if (!song) return;
   updateMediaSession(song);
   if (!hasAudio(song)) {
@@ -441,7 +462,7 @@ function render(coversOnly = false) {
   const song = player.current;
   const n = qs.items.length;
   document.body.classList.toggle('has-mini', !!song);
-  renderTransport(song, !audio.paused);
+  renderTransport(song, shownPlaying());
   $('queue-count').textContent = n ? `${n} ${plural(n, 'song', 'songs')}` : '';
   renderPlaylistControls();
   if (!song) {
@@ -450,7 +471,7 @@ function render(coversOnly = false) {
   }
   renderMini(song);
   renderDetails(song);
-  if (coversOnly) paintQueueCovers($('queue-list'), qs.index, !audio.paused, (row) => row.querySelector('.row-cover').dataset.title);
+  if (coversOnly) paintQueueCovers($('queue-list'), qs.index, shownPlaying(), (row) => row.querySelector('.row-cover').dataset.title);
   else renderQueue();
   followQueue ||= createQueueFollow($('queue-list'));
   followQueue(song.id, qs.index);
@@ -480,7 +501,7 @@ const queueCtx = () => ({
   removeAt: (i) => player.removeAt(i),
   playAt: (i) => player.playAt(i),
   openCard: (song, opener) => { void openSongCard(song, opener); },
-  playing: !audio.paused,
+  playing: shownPlaying(),
 });
 
 function renderQueue() {
@@ -522,8 +543,8 @@ export function initPlayer() {
   audio.addEventListener('pause', () => render(true));
   audio.addEventListener('timeupdate', renderProgress);
   audio.addEventListener('durationchange', renderProgress);
-  audio.addEventListener('ended', () => player.next(true));
-  audio.addEventListener('error', () => { if (audio.src) fail(); });
+  audio.addEventListener('ended', () => { if (!loop.onEnded()) player.next(true); });
+  initLoopChip($('mini-loop'), loop, (t) => player.seek(t));
 
   initMiniCompact();
   setIcon('mini-prev', 'prev', 'action');
@@ -615,6 +636,7 @@ export function initPlayer() {
 }
 
 export function pausePlayer() {
+  loop.clear();
   audio.pause();
   audio.removeAttribute('src');
   audio.load();

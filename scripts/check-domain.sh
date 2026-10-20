@@ -99,9 +99,11 @@ check_host() { # host which -> sets COUNT_<which>
   # (c) app
   body="$(get "$url/health")"
   flat="$(printf '%s' "$body" | tr -d ' ')"
+  case "$flat" in *'"ready":false'*) warn "/health $h" "server is starting (startup work still running): $body"; flat="" ;; esac
+  flat="$(printf '%s' "$flat" | sed 's/,"ready":true,"startup":{[^}]*}//')"
   if [[ "$flat" = '{"status":"ok","sync":{"state":"ok"}}' ]] || [[ "$flat" = '{"status":"ok","sync":"ok"}' ]]; then pass "/health $h" "$body"
   elif [[ "$flat" = '{"status":"ok","sync":{"state":"degraded"}}' ]]; then warn "/health $h" "git sync degraded (stale or error): $body"
-  else fail "/health $h" "got: ${body:0:80}"; fi
+  elif [[ -n "$flat" ]]; then fail "/health $h" "got: ${body:0:80}"; fi
 
   body="$(get "$url/")"
   if printf '%s' "$body" | grep -qi '<title>Electrophone'; then pass "/ HTML title $h" "Electrophone"

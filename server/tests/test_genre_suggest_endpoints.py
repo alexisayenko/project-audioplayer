@@ -18,8 +18,8 @@ WIKI = {
     "year": 1987, "wikipedia_song": "https://en.wikipedia.org/wiki/Tell_It_to_My_Heart_(Taylor_Dayne_song)", "wikipedia_artist": "https://en.wikipedia.org/wiki/Taylor_Dayne",
 }
 MB = ["genre:dance pop", "genre:pop", "genre:electronic"]
-APPLIED = ["genre:hi-nrg", "genre:dance pop", "genre:synthpop", "genre:pop", "country:us"]
-SUGGESTED = {"freestyle": ["wikipedia_song"], "soul": ["wikipedia_artist"], "house": ["wikipedia_artist"]}
+APPLIED = ["genre:dance pop", "genre:synthpop", "genre:pop", "country:us"]
+SUGGESTED = {"freestyle": ["wikipedia_song"], "hi-nrg": ["wikipedia_song"], "soul": ["wikipedia_artist"], "house": ["wikipedia_artist"]}
 
 
 @pytest.fixture
@@ -47,7 +47,7 @@ def test_preview_applies_the_owner_genres_and_suggests_the_rest(client):
     assert sorted(body["tags"]) == sorted(APPLIED)
     assert view(body)["genre_suggestions"] == SUGGESTED
     assert body["original_genres"] == []
-    assert {s["reason"] for s in body["genre_suggestions"]} == {"ambiguous_name", "single_source"}
+    assert {s["reason"] for s in body["genre_suggestions"]} == {"ambiguous_name", "single_source", "no_shared_family"}, "hi-nrg left Others (2026-10-20): the agreed group no longer covers it"
 
 
 def test_preview_stream_result_equals_preview(client):
@@ -84,3 +84,9 @@ def test_a_version_gives_the_same_split_on_preview_and_metadata(client, monkeypa
     assert sorted(preview["original_genres"]) == sorted(meta["original_genres"])
     assert "genre:pop" in preview["original_genres"]
     assert all(s["sources"][0] == "original" for s in preview["genre_suggestions"])
+
+
+def test_the_payload_never_lists_electronic_as_a_suggestion_or_a_source(client):
+    body = client.post("/preview", json={"url": URL}, headers=H).json()
+    assert "genre:electronic" not in body["tags"]
+    assert all(s["genre"] != "electronic" and "electronic" not in s["sources"] for s in body["genre_suggestions"])
