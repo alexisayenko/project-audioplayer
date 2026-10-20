@@ -2,6 +2,18 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-21 (listening history, server, to deploy)
+
+- Server (task-0056 phase 1, API-196..198): `POST /plays` (idempotent batches by `batch_key`) and `GET /stats/listening` (listened and skipped per song for today, 7 days, 30 days, all time); the history is a CSV per user in `<music root>/.plays/<uid>/` (`AUDIO_PLAYS_DIR`) outside git, copied once a day into `users/<uid>/play-history.csv` in one commit (`AUDIO_PLAYS_SYNC=0` disables). The directory must be backed up with the audio dataset. `server/app/plays.py`, `server/app/routes/plays.py`, `server/tests/test_plays.py` (not run).
+
+## 2026-10-21 (listening in Library and Song stats, to deploy)
+
+- Web (task-0056 phase 3, LIB-190, STA-060): Library "Never listened" chip and "Last listened" sort; Song stats "Listening" view (most listened, most skipped); owner and signed-in only, from `GET /stats/listening`. No per-day chart (no series in the API). Not run, not seen.
+
+## 2026-10-21 (listening recording and song card table, to deploy)
+
+- Web (task-0056 phase 2, PLY-170..177, LIB-195, LIB-196): plays are recorded (listened seconds, queued locally, batched to `POST /plays`) for owner and signed-in users; the song card shows Listened/Skipped by Today, Last 7 days, Last 30 days, All time, Total listened and Last listened from `GET /stats/listening`. Needs the server routes. Tests written, not run; not seen.
+
 ## 2026-10-21 (Studio uses the full page width, built, not deployed)
 
 - Web (task-0072, WEB-156): the Studio drops the 1100px page cap and fills the width between the nav rail and the right edge; the waveform is taller on large screens (`clamp(140px, 22vh, 260px)`) and redraws on resize. Phones unchanged. Not run, not seen.

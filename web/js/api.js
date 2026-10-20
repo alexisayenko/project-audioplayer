@@ -84,7 +84,7 @@ function failure(res, data) {
   return err;
 }
 
-async function request(method, path, body, signal, raw = false) {
+async function request(method, path, body, signal, raw = false, keepalive = false) {
   const headers = { ...CSRF };
   if (body !== undefined) headers['Content-Type'] = raw ? body.type : 'application/json';
   let res;
@@ -94,6 +94,7 @@ async function request(method, path, body, signal, raw = false) {
       headers,
       body: body === undefined || raw ? body : JSON.stringify(body),
       signal,
+      ...(keepalive ? { keepalive: true } : {}),
     });
   } catch {
     throw new ApiError(0, 'Server unreachable');
@@ -224,6 +225,7 @@ export const api = {
   library: () => request('GET', '/library').then((d) => d.songs.map(withRuntimeDecade)),
   tags: () => request('GET', '/tags'),
   genreGraph: () => request('GET', '/genres/graph'),
+  listening: () => request('GET', '/stats/listening'),
   genres: () => request('GET', '/genres').then((d) => (Array.isArray(d?.genres) ? d.genres : [])),
   genreVocabulary: () => request('GET', '/genres/vocabulary'),
   preview: (url, signal, onEvent) => (onEvent ? previewStream(url, signal, onEvent) : request('POST', '/preview', { url }, signal)),
@@ -250,6 +252,7 @@ export const api = {
   refreshDraft: (id) => request('POST', `/drafts/${q(id)}/refresh`),
   removeDraft: (id) => request('DELETE', `/drafts/${q(id)}`),
   clearDrafts: () => request('DELETE', '/drafts'),
+  postPlays: (batch, keepalive = false) => request('POST', '/plays', batch, undefined, false, keepalive),
   fileUrl: (id) => `/files/${q(id)}`,
   downloadUrl: (id) => `/files/${q(id)}?download=1`,
   uploadCover: (id, file) => request('PUT', `/songs/${q(id)}/cover`, file, undefined, true),

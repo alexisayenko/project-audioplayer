@@ -74,3 +74,10 @@ def test_draft_routes_need_credentials_and_are_not_guest_readable():
     assert drafts <= _routes({"require_token"})
     assert drafts.isdisjoint(_routes(GUEST_AUTH))
     assert not any(p.startswith("/drafts") for _, p in GUEST_READABLE)
+
+
+def test_listening_routes_need_credentials_and_are_not_guest_readable():
+    plays = {(m, r.path) for r in main.app.routes if isinstance(r, APIRoute) and r.path in ("/plays", "/stats/listening") for m in r.methods - {"HEAD"}}
+    assert plays == {("POST", "/plays"), ("GET", "/stats/listening")}
+    assert plays <= _routes({"require_token"})
+    assert plays.isdisjoint(_routes(GUEST_AUTH))

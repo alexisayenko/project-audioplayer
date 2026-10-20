@@ -130,3 +130,16 @@ class DraftLinesRequest(BaseModel):
 class DraftPatchRequest(BaseModel):
     text: str | None = Field(default=None, max_length=300)
     url: str | None = Field(default=None, max_length=300)
+
+
+class PlayIn(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    timestamp: str = Field(max_length=64)
+    song_id: str = Field(max_length=64)
+    listened_s: float
+
+
+class PlaysRequest(BaseModel):
+    batch_key: str = Field(min_length=1, max_length=128)
+    plays: list[PlayIn] = Field(max_length=500)

@@ -111,3 +111,15 @@ body.has-mini .st { --player-h: calc(64px + 2 * var(--space-2)); }
 .gm-now-count { display: none; }
 .gm-now > .gm-now-head .gm-now-count { display: none; }
 .gm-now:has(> .cl.collapsed) .gm-now-count { display: block; }
+
+.st-listenbox { display: grid; align-content: start; gap: var(--space-4); }
+.st-lis { display: grid; gap: var(--space-5, var(--space-4)); width: 100%; max-width: 900px; }
+.st-lis-block { display: grid; gap: var(--space-2); }
+.st-lis-block h2 { margin: 0; }
+.st-lis-list { display: grid; gap: var(--space-1); margin: 0; padding: 0; list-style: none; }
+.st-lis-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(60px, 30%) auto; align-items: center; gap: var(--space-2); }
+.st-lis-row .st-open { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.st-lis-bar { height: 8px; border-radius: var(--radius-pill); background: var(--surface-sunken); overflow: hidden; }
+.st-lis-bar i { display: block; height: 100%; background: var(--accent-ink); border-radius: var(--radius-pill); }
+.st-lis-val { color: var(--ink-muted); white-space: nowrap; }
+.st-empty-inline { margin: 0; }

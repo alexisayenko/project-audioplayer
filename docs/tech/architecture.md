@@ -7,6 +7,7 @@ browser (web UI)  --same origin, session cookie or X-API-Token-->  server (FastA
 iPhone (SwiftUI)  --http, Bearer ID token or X-API-Token-->  same server
   audio/<id>.m4a  <-- /files/<id> --  <music_root>/users/<uid>/<id>.m4a   (per user, ADR-0012)
   users/<uid>/{profile,library}.json + covers  <-- local clones of data-storage / data-storage-lfs (ADR-0005, ADR-0012)
+  <music_root>/.plays/<uid>/play-history.csv   (listening history, outside git; copied daily into users/<uid>/, task-0056)
 ```
 
 ## Why a server
@@ -249,3 +250,7 @@ Env (all optional): `USER_MAX_SONGS` (500), `USER_MAX_BYTES` (5 GB),
 `OWNER_EMAIL`. Code: `server/app/limits.py` (checks), `jobs.py` (download
 queue), `users.py` (identity, owner, locks). Details and error codes: [`../specs/api.md`](../specs/api.md)
 API-040..047, [`../specs/non-functional.md`](../specs/non-functional.md) NFR-050..055.
+
+## Listening history storage (task-0056)
+
+The play history is the one per-user file that is NOT written through git on every change: a play must never cost a commit. The live file is `play-history.csv` at `$AUDIO_PLAYS_DIR/<uid>/` (default `<music root>/.plays/<uid>/`, beside the audio pool and `.peaks/`, so it is a directory the service user already writes), with `batch-keys.json` (last 200 batch keys) next to it and `.last-sync` (time of the last copy) in the root. Once a day a background thread (`AUDIO_PLAYS_SYNC=0` turns it off) copies changed files to `users/<uid>/play-history.csv` in the data repo, one commit `sync listening history`. The outside directory is the source of truth and must be part of the audio dataset backups; the in-repo copy is only a snapshot up to a day old. Contract: API-196 to API-198 in [api.md](../specs/api.md).

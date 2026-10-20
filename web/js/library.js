@@ -7,11 +7,12 @@ import { autodl } from './autodl.js';
 import { ringModel } from './dl-progress.js';
 import { paintRing, paintLine } from './dl-ring.js';
 import { openAdd, openSongCard, openFilterSheet, loadUi } from './lazy-ui.js';
-import { can } from './guest.js';
+import { can, isGuest } from './guest.js';
+import { getListening } from './listening-data.js';
 import { ROW_FLASH_MS, LIBRARY_FRESH_MS, EAGER_COVERS } from './constants.js';
 import { findRowIndex, scrollTarget, registerRevealer } from './reveal.js';
 import { tagLabel, categoryOf, CATEGORIES } from './tagname.js';
-import { prefs, readLibraryView, saveLibraryView, SORTS, visibleSongs, selectedIn, isUnsetKey, unsetCount } from './library-data.js';
+import { prefs, readLibraryView, saveLibraryView, SORTS, visibleSongs, selectedIn, isUnsetKey, unsetCount, setListening, hasListening, neverCount } from './library-data.js';
 import { songRow } from './library-rows.js';
 import { disposeAll } from './marquee.js';
 import { isRowControl, keepCovers } from './row-cover.js';
@@ -21,7 +22,7 @@ import { countText } from './drafts-model.js';
 
 export { filterByTags, visibleSongs } from './library-data.js';
 
-if (typeof window !== 'undefined') window.addEventListener('auth-changed', () => { prefs.view = 'songs'; });
+if (typeof window !== 'undefined') window.addEventListener('auth-changed', () => { prefs.view = 'songs'; setListening(null); });
 
 let flashId = null;
 let flashTimer;
@@ -55,7 +56,12 @@ export function renderLibrary(root) {
   const sort = el('select', {
     'aria-label': 'Sort',
     onchange: (e) => { prefs.sort = e.target.value; renderList(); },
-  }, Object.entries(SORTS).map(([k, [label]]) => el('option', { value: k, selected: k === prefs.sort }, label)));
+  });
+  function paintSort() {
+    sort.replaceChildren(...Object.entries(SORTS).filter(([k]) => k !== 'listened' || hasListening())
+      .map(([k, [label]]) => el('option', { value: k, selected: k === prefs.sort }, label)));
+  }
+  paintSort();
   const cats = el('div', { class: 'cats', role: 'group', 'aria-label': 'Filter by category' });
   const total = el('span', { class: 'muted t-caption' });
   const summary = el('p', { class: 'muted t-caption', role: 'status' });
@@ -168,6 +174,11 @@ export function renderLibrary(root) {
 
   function renderChips() {
     for (const t of prefs.sel) if (!isUnsetKey(t) && !store.tags.some((x) => x.tag.toLocaleLowerCase() === t)) prefs.sel.delete(t);
+    const never = hasListening() ? neverCount() : 0;
+    const neverBtn = hasListening() ? el('button', {
+      class: `cat-chip${prefs.never ? ' on' : ''}`, type: 'button', 'aria-pressed': String(prefs.never), 'data-cat': 'never', disabled: !never && !prefs.never,
+      onclick: () => { prefs.never = !prefs.never; renderAll(); },
+    }, 'Never listened', el('small', { class: 't-caption' }, never)) : null;
     cats.replaceChildren(...CATEGORIES.map((c) => {
       const values = store.tags.filter((t) => categoryOf(t.tag) === c.id).length;
       const n = selectedIn(c.id);
@@ -178,7 +189,7 @@ export function renderLibrary(root) {
       }, c.name, el('small', { class: 't-caption' }, n || values));
       b.setAttribute('aria-label', n ? `${c.name}, ${n} selected` : `${c.name}, ${values}`);
       return b;
-    }));
+    }), ...(neverBtn ? [neverBtn] : []));
   }
 
   function selectedNames() {
@@ -189,7 +200,7 @@ export function renderLibrary(root) {
   function renderList() {
     const songs = visibleSongs();
     const cur = player.current;
-    const filtered = !!(prefs.sel.size || prefs.query.trim());
+    const filtered = !!(prefs.sel.size || prefs.never || prefs.query.trim());
     paintTotal();
     summary.textContent = store.loaded && store.songs.length && filtered ? matchSummary(songs.length) : '';
     playAll.hidden = !(store.loaded && songs.length);
@@ -238,6 +249,7 @@ export function renderLibrary(root) {
   function clearAllFilters() {
     prefs.query = '';
     prefs.sel.clear();
+    prefs.never = false;
     search.value = '';
     paintClear();
     renderAll();
@@ -316,6 +328,14 @@ export function renderLibrary(root) {
   window.addEventListener('server-starting', onStarting);
   void load();
   renderAll();
+  if (!isGuest()) {
+    void getListening().then((d) => {
+      if (gone || !d) return;
+      setListening(d);
+      paintSort();
+      renderAll();
+    });
+  }
 
   const unmountScrollTop = mountScrollTop();
 

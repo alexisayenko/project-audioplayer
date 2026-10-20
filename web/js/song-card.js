@@ -3,7 +3,8 @@ import { store } from './store.js';
 import { player } from './player.js';
 import { el, fmtTime, toast } from './dom.js';
 import { hasAudio, sourceLink } from './playable.js';
-import { can } from './guest.js';
+import { can, isGuest } from './guest.js';
+import { cachedListening, getListening, hasListening, listeningRows, formatTotal, formatDay, WINDOWS } from './listening-stats.js';
 import { autodl, autoDownloadOn } from './autodl.js';
 import { downloadSong } from './download.js';
 import { editDialog } from './edit-dialog.js';
@@ -219,6 +220,28 @@ function detailsBlock(m, songId) {
   return items.length ? el('p', { class: 'facts t-caption card-details' }, ...items) : null;
 }
 
+export function listeningNode(entry) {
+  if (!hasListening(entry)) return el('p', { class: 'card-listen-none muted t-caption' }, 'Not listened yet');
+  const head = el('tr', {}, el('td', {}), ...WINDOWS.map(([, label]) => el('th', { scope: 'col' }, label)));
+  const body = listeningRows(entry).map((r) => el('tr', {}, el('th', { scope: 'row' }, r.label), ...r.cells.map((c) => el('td', {}, c))));
+  const last = entry.last_listened ? el('span', { class: 'detail' }, `Last listened: ${formatDay(entry.last_listened)}`) : null;
+  return el('div', {},
+    el('table', { class: 'card-listen-table t-caption' }, el('thead', {}, head), el('tbody', {}, ...body)),
+    el('p', { class: 'facts t-caption' }, el('span', { class: 'detail' }, `Total listened: ${formatTotal(entry.total_listened_s)}`), last));
+}
+
+function listeningBlock(songId) {
+  if (isGuest()) return null;
+  const box = el('section', { class: 'card-listen', 'aria-label': 'Listening' }, el('h3', { class: 'card-listen-title t-caption muted' }, 'Listening'));
+  const body = el('div', { class: 'card-listen-body' });
+  box.append(body);
+  const show = (songs) => body.replaceChildren(listeningNode(songs[songId]));
+  const seen = cachedListening();
+  if (seen) show(seen);
+  getListening().then(show, () => { if (!seen) box.remove(); });
+  return box;
+}
+
 function paint(dlg, song, close, m) {
   closePartPopover();
   const [art, head] = headBlock(song, m);
@@ -233,6 +256,7 @@ function paint(dlg, song, close, m) {
     detailsBlock(m, song.id),
     tagBlock(rest, m.genreLines),
     linkBlock(m.links),
+    listeningBlock(song.id),
     actionRow(song),
   ];
   dlg.replaceChildren(...parts.filter(Boolean));

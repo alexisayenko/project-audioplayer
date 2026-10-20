@@ -12,6 +12,9 @@ import { createChart } from './stats-chart.js';
 import { watchPlayerInset } from './player-inset.js';
 import { createCollapsible, loadCollapsed, saveCollapsed, PANEL_KEYS } from './collapsible.js';
 import { renderTable } from './stats-table.js';
+import { isGuest } from './guest.js';
+import { getListening } from './listening-data.js';
+import { renderListening } from './stats-listening.js';
 import {
   COLOR_MODES, DEFAULT_MODE, PALETTE_SIZE, FAMILY_PALETTE_SIZE, splitPlottable, makePoint, assignGroups, colorIndex, songFamilies, countText, skippedText, chartLabel,
 } from './stats-data.js';
@@ -94,6 +97,13 @@ export function renderStats(root) {
     class: 'st-btn t-caption', type: 'button', 'aria-pressed': 'false',
     onclick: () => { asTable = !asTable; syncMode(); },
   }, 'View as table');
+  let asListening = false;
+  let listening = null;
+  const listeningBox = el('div', { class: 'st-tablebox st-listenbox', hidden: true });
+  const listeningBtn = el('button', {
+    class: 'st-btn t-caption', type: 'button', hidden: true, 'aria-pressed': 'false',
+    onclick: () => { asListening = !asListening; syncMode(); },
+  }, 'Listening');
   const centerBtn = el('button', { class: 'st-btn t-caption', type: 'button', 'aria-label': 'Center chart', title: 'Center chart (C)', onclick: () => chart.center() }, icon('crosshair', 'inline'));
   const resetBtn = el('button', { class: 'st-btn t-caption', type: 'button', hidden: true, onclick: () => chart.reset() }, 'Reset');
 
@@ -161,14 +171,32 @@ export function renderStats(root) {
   function syncMode() {
     tableBtn.setAttribute('aria-pressed', String(asTable));
     tableBtn.textContent = asTable ? 'View as chart' : 'View as table';
-    tableBox.hidden = !asTable;
-    base.hidden = asTable;
-    top.hidden = asTable;
+    listeningBtn.setAttribute('aria-pressed', String(asListening));
+    const plot = !asListening;
+    tableBtn.hidden = asListening;
+    tableBox.hidden = !asTable || asListening;
+    listeningBox.hidden = !asListening;
+    base.hidden = asTable || asListening;
+    top.hidden = asTable || asListening;
     tip.hidden = true;
-    resetBtn.hidden = asTable || !chart.isZoomed();
-    centerBtn.hidden = asTable;
-    renderRows();
-    if (!asTable) chart.resize();
+    resetBtn.hidden = asTable || asListening || !chart.isZoomed();
+    centerBtn.hidden = asTable || asListening;
+    if (asListening) paintListening();
+    else renderRows();
+    if (!asTable && plot) chart.resize();
+  }
+
+  function paintListening() {
+    listeningBox.replaceChildren(renderListening(listening, store.songs, (s) => { void openSong(s); }));
+  }
+
+  if (!isGuest()) {
+    void getListening().then((d) => {
+      if (dead || !d) return;
+      listening = d;
+      listeningBtn.hidden = false;
+      if (asListening) paintListening();
+    });
   }
 
   function selectedSongs() {
@@ -281,7 +309,7 @@ export function renderStats(root) {
     collapsed: loadCollapsed(globalThis.localStorage, PANEL_KEYS.stats, window.innerWidth),
     onToggle: (v) => saveCollapsed(globalThis.localStorage, PANEL_KEYS.stats, v),
     content: [
-      el('div', { class: 'st-row st-tools', title: 'Drag: select - Right-drag or Shift-drag: pan - C: center - Wheel: zoom - Double-click: reset' }, select, legendBtn, tableBtn, centerBtn, resetBtn),
+      el('div', { class: 'st-row st-tools', title: 'Drag: select - Right-drag or Shift-drag: pan - C: center - Wheel: zoom - Double-click: reset' }, select, legendBtn, tableBtn, listeningBtn, centerBtn, resetBtn),
       note,
       legend],
   });
@@ -289,7 +317,7 @@ export function renderStats(root) {
   const st = el('div', { class: 'st' },
     pageHead('Song stats'),
     el('div', { class: 'st-work' },
-      el('div', { class: 'st-stage' }, base, top, tip, live, empty, tableBox),
+      el('div', { class: 'st-stage' }, base, top, tip, live, empty, tableBox, listeningBox),
       el('div', { class: 'st-bar' },
         el('div', { class: 'st-row' }, status, barCl.button),
         barCl.root),

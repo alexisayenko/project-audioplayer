@@ -24,7 +24,27 @@ export function unsetCount(catId, songs = store.songs) {
   return unsetKey(catId) ? songs.filter((s) => !hasValueIn(s, catId)).length : 0;
 }
 
-export const prefs = { query: '', sel: new Set(), sort: 'added', view: 'songs' };
+export const prefs = { query: '', sel: new Set(), sort: 'added', view: 'songs', never: false };
+
+let listening = null;
+
+export function setListening(data) {
+  listening = data && data.songs ? data : null;
+  if (listening) return;
+  prefs.never = false;
+  if (prefs.sort === 'listened') prefs.sort = 'added';
+}
+
+export const hasListening = () => !!listening;
+
+const lastListened = (song) => listening?.songs?.[song.id]?.last_listened || '';
+
+export function neverListened(song) {
+  const e = listening?.songs?.[song.id];
+  return !e || (e.listened?.all || 0) + (e.skipped?.all || 0) === 0;
+}
+
+export const neverCount = (songs = store.songs) => songs.filter(neverListened).length;
 
 export const LIBRARY_VIEW_KEY = 'electrophone.libraryView';
 
@@ -47,6 +67,7 @@ export const SORTS = {
   title: ['Title', (a, b) => compareKeys(sortKey(a, 'title'), sortKey(b, 'title'))],
   artist: ['Artist', (a, b) => compareKeys(sortKey(a, 'artist'), sortKey(b, 'artist'))],
   year: ['Year', (a, b) => (displayYear(b) || 0) - (displayYear(a) || 0)],
+  listened: ['Last listened', (a, b) => lastListened(b).localeCompare(lastListened(a))],
   bpm: ['BPM', (a, b) => (a.bpm == null) - (b.bpm == null) || (a.bpm || 0) - (b.bpm || 0)],
 };
 
@@ -65,6 +86,7 @@ export function visibleSongs(sel = prefs.sel) {
   const q = prefs.query.trim().toLocaleLowerCase();
   const list = store.songs.filter((s) => {
     if (!matchesSelection(s, sel)) return false;
+    if (prefs.never && listening && !neverListened(s)) return false;
     if (!q) return true;
     const hay = songSearchText(s, filterableTags(withRuntimeDecade(s).tags).map(tagSearchText));
     return matchesQuery(hay, q);

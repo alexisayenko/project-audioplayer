@@ -939,3 +939,11 @@ body:has(.legal:not([hidden])) main, body:has(.legal:not([hidden])) .player { pa
 }
 #nav a[data-sync="error"]::after { background: var(--power); box-shadow: 0 0 0 var(--stroke-hairline) var(--surface); }
 
+
+.card-dlg .card-listen { margin: var(--space-3) 0; }
+.card-dlg .card-listen-title { margin: 0 0 var(--space-1); font-weight: 600; }
+.card-dlg .card-listen-none { margin: 0; }
+.card-listen-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.card-listen-table th, .card-listen-table td { padding: var(--space-1) var(--space-2); text-align: right; border-bottom: 1px solid var(--line); }
+.card-listen-table thead th { font-weight: 400; color: var(--ink-muted); }
+.card-listen-table tbody th { text-align: left; padding-left: 0; font-weight: 400; color: var(--ink-muted); }

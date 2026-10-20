@@ -17,7 +17,8 @@ import { canSetVolume } from './volume-logic.js';
 import { attachDockWheel } from './dock-wheel.js';
 import { titleLine, tooltipLine, artistLine, subtitle, titleNodes } from './credits.js';
 import { marquee, disposeAll } from './marquee.js';
-import { can } from './guest.js';
+import { can, isGuest } from './guest.js';
+import { createPlayRecorder } from './play-recorder.js';
 import { createQueueFollow } from './queue-follow.js';
 import { createMediaRetry } from './media-retry.js';
 import { openSongCard, openTagPicker, loadUi } from './lazy-ui.js';
@@ -549,6 +550,14 @@ export function initPlayer() {
   audio.addEventListener('durationchange', renderProgress);
   audio.addEventListener('ended', () => { if (!loop.onEnded()) player.next(true); });
   initLoopChip($('mini-loop'), loop);
+  const recorder = createPlayRecorder({
+    audio,
+    getSongId: () => player.current?.id ?? null,
+    canRecord: () => !isGuest(),
+    post: (batch, opts) => api.postPlays(batch, !!opts?.keepalive),
+    onFlushed: () => window.dispatchEvent(new Event('plays-flushed')),
+  });
+  listeners.add(() => recorder.sync());
 
   initMiniCompact();
   setIcon('mini-prev', 'prev', 'action');
