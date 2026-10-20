@@ -4,7 +4,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## 2026-10-20 (epic removed from the genres, not deployed)
 
-- Data: `epic` is a descriptor (a mood), not a genre, and it pulled songs into the Classical family, so it is removed from the vocabulary (Classical 24 genres, 534 in all) and dropped from songs at the next start (`REMOVED_GENRES`); 2 songs in the owner removal list (116 songs, 194 removals; [genre-levels.md](tech/genre-levels.md#epic-removed-owner-2026-10-20)).
+- Data: `epic` is a descriptor (a mood), not a genre, and it pulled songs into the Classical family, so it is removed from the vocabulary (Classical 24 genres, 534 in all) and dropped from songs at the next start (`REMOVED_GENRES`); 2 songs in the owner removal list (116 songs, 195 removals after `dub` left Gogol Bordello - Immigraniada; [genre-levels.md](tech/genre-levels.md#epic-removed-owner-2026-10-20)).
 
 ## 2026-10-20 (Genres map: Electronic circle shown again, built, not deployed)
 
@@ -16,7 +16,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## 2026-10-20 (Help menu in the sidebar; built, not deployed)
 
-- Web: new expandable "Help" item in the sidebar (WEB-131, task-0061) with Music theory, About and Features; collapsed on every load, shown to everyone including signed-out visitors; inline list in the wide rail, flyout in the icon rail, bottom sheet on the phone tab bar (Help takes Music theory's slot, so the tab bar keeps seven entries). Music theory moved under it; `#/about` and `#/features` are placeholder pages (WEB-132, WEB-133); About and Features are tier-2 lazy routes. Not deployed.
+- Web: new expandable "Help" item in the sidebar (WEB-131, task-0061) with Music theory, About and Features; collapsed on every load, shown to everyone including signed-out visitors; inline list in the wide rail, flyout in the icon rail, bottom sheet on the phone tab bar (Help takes Music theory's slot, so the tab bar keeps seven entries). Music theory moved under it; `#/about` and `#/features` are placeholder pages (WEB-132, WEB-133); About and Features are tier-2 lazy routes. The header has no chevron and the sub items are indented one icon column in the wide rail (Alex feedback). Not deployed.
 
 ## 2026-10-20 (Dock: mouse wheel sets the volume, built, not deployed)
 
