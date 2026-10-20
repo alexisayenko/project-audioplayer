@@ -21,7 +21,8 @@ Don't pre-create — extract on first real entry. See
 - **`metadata-model-design.md`** — design of the structured credits and versions (ADR-0024, task-0036): schema, compatibility projection, migration, API and test plan. Data model v2 (final names, version block, Artist table): ADR-0025 and [task-0043](../tasks/task-0043.md).
 - **`ddex-terminology.md`** — which DDEX words Electrophone adopts and which it does not, checked against the official allowed-value file (ADR-0025).
 - **`metadata-model-decisions-AR.md`** — decision AR: where the release year may come from.
-- **`genre-levels.md`**, **`genre-flavours-proposal.md`** — the three-level genre tree and the modifiers (formerly flavours; the proposal file keeps its name) (ADR-0023).
+- **`genre-terminology.md`** — glossary, the genre model (genres, groups, modifiers, four axes), tests and open decisions (ADR-0038, ADR-0034).
+- **`genre-levels.md`**, **`genre-flavours-proposal.md`** — the genre tree (no depth cap since ADR-0037) and the modifiers (formerly flavours; the proposal file keeps its name) (ADR-0023).
 - **`decisions.md`** (or **`decisions/adr-NNNN-<slug>.md`** once a
   decision warrants its own file) — ADRs. Substantive
   architectural decisions with date, alternatives considered,

@@ -1,10 +1,10 @@
 # Genre levels (draft data, served and drawn)
 
-See [genre-terminology.md](genre-terminology.md) for the glossary and the classification aspects.
+See [genre-terminology.md](genre-terminology.md) for the glossary and the genre model (genres, groups, modifiers, four axes; ADR-0038).
 
 Terminology (ADR-0030): every node of the vocabulary is a **genre**; level 1 is a **family** (the 11 kept Discogs level-1 names, which Discogs calls genres); level 2 is a sub-genre, level 3 a sub-sub-genre and so on (no depth cap since 2026-10-19; the interface says "genre" for every level). A Discogs genre (Discogs calls it a style) is a genre of ours at level 2 or 3; the word "style" is not used for our genres, and the Discogs API names (`styles`, `style=`) stay in code that talks to Discogs.
 
-`server/data/genre_levels.json` places every vocabulary genre and extra (`genre_discogs.json`, `genre_extras.json`) in a three-level tree. The server serves it in `GET /genres/vocabulary` as `levels` and `family_synonyms` (GEN-051, GEN-052, API-119) and the rework map (`#/genres-rework`, WEB-085 to WEB-087, GEN-054) draws it. Tracked in [task-0037](../tasks/task-0037.md).
+`server/data/genre_levels.json` places every vocabulary genre and extra (`genre_discogs.json`, `genre_extras.json`) in a tree (no depth cap since ADR-0037; four levels exist). The server serves it in `GET /genres/vocabulary` as `levels` and `family_synonyms` (GEN-051, GEN-052, API-119) and the rework map (`#/genres-rework`, WEB-085 to WEB-087, GEN-054) draws it. Tracked in [task-0037](../tasks/task-0037.md).
 
 Electronic and Rock are drafted. Entry fields added later: `status`, `modifiers`, `display` (sections below). The other 10 families are provisional placeholders (every genre level 2, `parents` just the family, `"provisional": true`) until Alex reviews them.
 
@@ -46,7 +46,7 @@ Dropped candidates because they equal a vocabulary key or a family name: r&b (a 
 
 Decided: "dance music" and "club music" fold into Electronic (see Decisions).
 
-## Counts (Electronic and Rock drafted; others provisional)
+## Counts (historical; current counts are in the equal-parents section below and in genre-terminology.md)
 
 Electronic 145 (50 level 2, 95 level 3, 22 not in Discogs; after the 2026-10-16 removals, the psytrance branch below and the two edits of 2026-10-19; before them 141, 55 and 86). Rock 110 (41 level 2, 69 level 3, drafted by DR1; 19 of them held and provisional; 14 not in Discogs plus the nine of DN3). Others, all level 2 and provisional: Folk, World, & Country 66, Latin 57, Pop 32, Jazz 26, Classical 25 (includes `epic`), Hip Hop 24, Funk / Soul 23, Blues 16, Reggae 13. Total 529 (476 Discogs genres and 53 extras; the family counts in `_meta` are the reference). Non-Discogs elsewhere: Rock 14, Pop 7, Funk / Soul 6, Folk, World, & Country 3, Classical 1 (`epic`).
 

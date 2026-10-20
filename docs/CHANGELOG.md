@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-20 (genre model written down, docs only, not deployed)
+
+- Docs: ADR-0038 and a rewritten [genre-terminology.md](tech/genre-terminology.md) record the owner's genre model: genres versus groups (Electronic and EDM are groups), four axes (Form, Medium, Purpose, Tradition) plus personal Mood, modifiers as qualifiers of Form, the place, modifier and ambiguous-name tests, and the open decisions AN to AY; no data or code change.
+
 ## 2026-10-20 (flavour renamed modifier, not deployed)
 
 - Data and server: the `flavours` block and per-genre `flavours` lists in `genre_levels.json` are now `modifiers`; `genre_vocab.py` has `MODIFIER_KINDS` (sound, mood, scene); `GET /genres/vocabulary` serves `modifiers` and, as a deprecated alias for one release, the same content under `flavours` (GEN-082).
