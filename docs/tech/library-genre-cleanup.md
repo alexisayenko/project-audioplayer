@@ -1,6 +1,6 @@
 # Library genre cleanup (2026-10-19)
 
-Status: done. Applied at server start by `app.migrate_removals`, file `server/data/library_genre_removals.json` (117 songs, 197 genre removals, 15 genre additions, 1 song cleared; the second batch of 25 songs is not deployed yet). 0 HIGH rows pending, 37 MEDIUM rows left unproposed (below), 1 open decision (below).
+Status: done. Applied at server start by `app.migrate_removals`, file `server/data/library_genre_removals.json` (119 songs, 198 genre removals, 16 genre additions, 1 song cleared; the second batch of 25 songs is not deployed yet). 0 HIGH rows pending, 37 MEDIUM rows left unproposed (below), 1 open decision (below).
 
 Review of genres that were put on songs by mistake (removal, with a few owner-approved additions). Evidence is English Wikipedia (song page first, artist page second). The owner approved all HIGH-confidence rows (his edits included) plus the descriptor genres acoustic and instrumental (they are version types), and approved the remaining rows one by one in chat.
 
@@ -13,6 +13,7 @@ Conventions: "(also: X)" in an owner message means X was removed too; a "(maybe 
 - 2026-10-20 (not deployed yet): `epic` removed from 2 songs (descriptor, not a genre; Alex, 2026-10-20): one new row (Thomas Bergersen - Final Frontier) and one added to an existing row (Concord Dawn - Take Me Away), which makes 116 songs and 194 removals in total. No song had `epic` as its only genre. The vocabulary node is dropped as well (see [genre-levels.md](genre-levels.md#epic-removed-owner-2026-10-20)).
 - 2026-10-20 (not deployed yet): `dub` removed from Gogol Bordello - Immigraniada (We Comin' Rougher) (Alex; `dub` appears only on the artist page, an artist-level pattern); the song already had a row (`polka`), so it is one more removal on an existing row: 116 songs and 195 removals in total.
 - 2026-10-20 (not deployed yet): `soft rock` and `eurodance` removed from Ace of Base - All That She Wants (Alex; the Wikipedia song page infobox lists dance-pop, reggae pop, synth-pop and europop, neither of these): one new row, which makes 117 songs and 197 removals in total.
+- 2026-10-20 (not deployed yet): `reggae` removed from Boney M. - Sunny (Wikipedia: the Boney M. version infobox lists only Eurodisco; reggae is artist and album level), one more removal on an existing row; `darksynth` added to ZOMBIENICK - OSCILLATIONS (2018, album CREEPER; it had synthwave only; `darksynth` is a vocabulary child of synthwave): one new add-only row. 119 songs, 198 removals and 18 additions in total. Also `dance pop` and `house` added to Elton John, Dua Lipa - Cold Heart (PNAU Remix) (Wikipedia: dance-pop in the infobox and lead, house beats in the text; synthpop skipped on the owner's ear).
 - Record: `server/data/library_genre_removals.json` (machine-readable; per song `remove` / `add` / `clear` and the title). The per-row evidence (Wikipedia links) lived in the earlier revisions of this file (git history before this prune).
 - Mechanism: `app.migrate_removals` runs at server start, backs up each library to `backups-genre-removals/` first, and is idempotent (a second start changes nothing).
 

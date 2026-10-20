@@ -2,6 +2,18 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-20 (Features screen: releases and planned, built, not deployed)
+
+- Web and server: the Features page (Help menu) has two tabs, Releases (one block per deploy, newest on top, short hash, date, feature sentences with links to the task files) and Planned (tasks `to do` or `in progress`), fed by the public `GET /features/data`, which the server builds from its own git checkout and `docs/tasks`; the service records each start on a new HEAD as a deploy, so no deploy step or file write is needed (WEB-134 to WEB-138, API-187, [task-0068](tasks/task-0068.md)). History before the first recorded deploy is backfilled one release per day (`docs/releases-map.json` fixes task links).
+
+## 2026-10-20 (Now playing queue follows the current song, not deployed)
+
+- Web: the Now playing queue list auto-scrolls to centre the current song on every song change and when the page opens, like an automatic "Show playing" (PLY-151).
+
+## 2026-10-20 (genre box: Enter places the only suggestion, suggestion label no longer gapped, not deployed)
+
+- Web: in the Add and Edit genre box, Enter places the single shown suggestion (an exact name or synonym still wins, an arrow-highlighted item wins over both, never during IME composition, ADD-182); a suggestion such as "folk" is one continuous word again (the matched part is bold, no gap between the spans).
+
 ## 2026-10-20 (Electronic restructure planned, docs only, not deployed)
 
 - Docs: [task-0066](tasks/task-0066.md) plans the Electronic restructure (forms at level 1, Electronic and EDM as groups; owner decision AN1), [genre-electronic-forms.md](tech/genre-electronic-forms.md) holds the proposed placement of the 146 genres, genre-terminology.md and ADR-0038 record the decisions and the remaining open ones; no data or code change.
@@ -25,7 +37,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## 2026-10-20 (epic removed from the genres, not deployed)
 
-- Data: `epic` is a descriptor (a mood), not a genre, and it pulled songs into the Classical family, so it is removed from the vocabulary (Classical 24 genres, 534 in all) and dropped from songs at the next start (`REMOVED_GENRES`); 2 songs in the owner removal list (117 songs, 197 removals after `dub` left Gogol Bordello - Immigraniada and `soft rock` and `eurodance` left Ace of Base - All That She Wants; [genre-levels.md](tech/genre-levels.md#epic-removed-owner-2026-10-20)).
+- Data: `epic` is a descriptor (a mood), not a genre, and it pulled songs into the Classical family, so it is removed from the vocabulary (Classical 24 genres, 534 in all) and dropped from songs at the next start (`REMOVED_GENRES`); 2 songs in the owner removal list (119 songs, 198 removals and 18 additions after `dub` left Gogol Bordello - Immigraniada, `soft rock` and `eurodance` left Ace of Base - All That She Wants, `reggae` left Boney M. - Sunny and `darksynth` was added to ZOMBIENICK - OSCILLATIONS; [genre-levels.md](tech/genre-levels.md#epic-removed-owner-2026-10-20)).
 
 ## 2026-10-20 (Genres map: Electronic circle shown again, built, not deployed)
 

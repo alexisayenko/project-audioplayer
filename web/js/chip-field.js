@@ -108,13 +108,13 @@ export function chipField(ns, editor) {
     if (!shown.length || mine().length >= kind.cap) { closeList(); return; }
     list.replaceChildren(...shown.map((e, i) => {
       const r = matchRange(e.name, q);
-      const label = r ? [e.name.slice(0, r[0]), el('b', {}, e.name.slice(r[0], r[1])), e.name.slice(r[1])] : [e.name];
+      const label = el('span', { class: 'sg-name' }, ...(r ? [e.name.slice(0, r[0]), el('b', {}, e.name.slice(r[0], r[1])), e.name.slice(r[1])] : [e.name]));
       return el('button', {
         type: 'button', class: 'chip', role: 'option', id: `${list.id}-${i}`, 'aria-selected': 'false', tabIndex: -1,
         title: e.family ? `${e.name}: genre in ${familyText(e)}` : e.name, 'data-genre': e.name,
         onmousedown: (ev) => ev.preventDefault(),
         onclick: () => { accept(e.name); input.focus(); },
-      }, dot(e), ...label, e.level ? el('small', {}, levelText(e)) : null);
+      }, dot(e), label, e.level ? el('small', {}, levelText(e)) : null);
     }));
     list.style.display = '';
     input.setAttribute('aria-expanded', 'true');
@@ -181,6 +181,7 @@ export function chipField(ns, editor) {
       }
       if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeList(); return; }
       if ((e.key === 'Enter' || e.key === 'Tab') && active >= 0) { e.preventDefault(); accept(shown[active].name); return; }
+      if (e.key === 'Enter' && !e.isComposing && shown.length === 1 && !resolveGenre(input.value, vocab())) { e.preventDefault(); accept(shown[0].name); input.focus(); return; }
     }
     if (e.key === 'Enter' || e.key === ',' || e.key === '/') { e.preventDefault(); commit(); }
   });

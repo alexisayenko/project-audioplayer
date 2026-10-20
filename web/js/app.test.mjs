@@ -57,7 +57,7 @@ test('WEB-131: the Help pages open while signed out; the other pages are still r
     assert.ok(document.body.classList.contains('signed-out'));
   }
   await flush();
-  assert.match(document.getElementById('view').textContent, /Features are coming soon/);
+  assert.equal(document.getElementById('view').querySelector('h1').textContent, 'Features');
   location.hash = '#/library';
   dom.window.dispatch('hashchange');
   assert.equal(location.hash, '#/settings');

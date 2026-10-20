@@ -18,9 +18,11 @@ import { attachDockWheel } from './dock-wheel.js';
 import { titleLine, tooltipLine, artistLine, subtitle, titleNodes } from './credits.js';
 import { marquee, disposeAll } from './marquee.js';
 import { can } from './guest.js';
+import { createQueueFollow } from './queue-follow.js';
 import { openSongCard, openTagPicker, loadUi } from './lazy-ui.js';
 
 const audio = document.getElementById('audio');
+let followQueue = null;
 
 const REPEAT_NEXT = { off: 'all', all: 'one' };
 const REPEAT_LABEL = { one: 'one song', all: 'whole list' };
@@ -407,6 +409,7 @@ function renderIdle() {
   renderProgress();
   $('player-dl').hidden = true;
   renderQueue();
+  followQueue?.(null, -1);
   listeners.forEach((fn) => fn());
 }
 
@@ -449,6 +452,8 @@ function render(coversOnly = false) {
   renderDetails(song);
   if (coversOnly) paintQueueCovers($('queue-list'), qs.index, !audio.paused, (row) => row.querySelector('.row-cover').dataset.title);
   else renderQueue();
+  followQueue ||= createQueueFollow($('queue-list'));
+  followQueue(song.id, qs.index);
   document.title = `${titleLine(song)} - Electrophone`;
   renderProgress();
   listeners.forEach((fn) => fn());

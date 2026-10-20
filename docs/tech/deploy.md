@@ -32,6 +32,8 @@ It runs `sudo -n /usr/local/sbin/audioplayer-deploy` over SSH (`claude@192.168.0
 
 After the helper, `scripts/deploy.sh` also writes `/opt/audioplayer/BUILD` (`sha=`, `committed_at=`, `deployed_at=`, git-ignored) over the same SSH user, best effort: if the `claude` user cannot write there the script prints a note and carries on. The server reports its build in the owner form of `/health` (`build`, NFR-119) from git, falls back to `BUILD`, and uses its own start time as the deploy time when `BUILD` is missing or older than the restart. The sidebar and Settings show it to the owner only (WEB-102). Check: `curl -s -H "X-API-Token: $T" https://electrophone.cc/health`.
 
+Features screen (WEB-134, WEB-138, API-187, task-0068): nothing to do in the deploy. The service records `{HEAD, UTC date}` at every start in `<data repo root>/_state/deploys.json` (only when HEAD changed) and serves the release list at `GET /features/data` from the checkout in `/opt/audioplayer` (read with `git -c safe.directory`, so the `audioplayer` user needs read access to `.git`, which it has as the owner of the clone). Past deploys are known only from this file; the history before the first recorded start is grouped by UTC day from git. Check: `curl -s https://electrophone.cc/features/data | head -c 300`.
+
 It takes no backup. Before a deploy that touches data handling, bundle the clones by hand: `git bundle create /var/backups/audioplayer-<ts>/<name>.bundle --all` in each clone under `/var/lib/audioplayer/`, and record the `HEAD` SHAs.
 
 In-flight downloads are forgotten by a restart (API-013); deploy when none is running.

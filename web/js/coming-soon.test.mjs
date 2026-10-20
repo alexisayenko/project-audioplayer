@@ -5,12 +5,10 @@ import { installDom } from './test-dom.mjs';
 installDom();
 const { renderPlaylists } = await import('./playlists.js');
 const { renderAbout } = await import('./about.js');
-const { renderFeatures } = await import('./features.js');
 
 for (const [name, render, title, text] of [
   ['Playlists', renderPlaylists, 'Playlists', 'Playlists are coming soon.'],
   ['About', renderAbout, 'About', 'About is coming soon.'],
-  ['Features', renderFeatures, 'Features', 'Features are coming soon.'],
 ]) {
   test(`${name}: the placeholder page has the standard head and the coming-soon text`, () => {
     const root = document.createElement('div');

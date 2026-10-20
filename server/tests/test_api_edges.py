@@ -17,7 +17,7 @@ from tests.test_library import ADIR, H, ODIR, OWNER_UID, VID, VID2, client  # no
 from tests.test_users import ALICE, BOB, CSRF, VID3, VID4, add, key, multi, token, uid, who  # noqa: F401
 
 SC_URL = "https://soundcloud.com/some-artist/some-track"
-PUBLIC = {"/auth/config", "/auth/session", "/auth/logout", "/health", "/legal", "/robots.txt", "/", "/index.html", "/_v/{version}/{path:path}"}
+PUBLIC = {"/auth/config", "/auth/session", "/auth/logout", "/health", "/features/data", "/legal", "/robots.txt", "/", "/index.html", "/_v/{version}/{path:path}"}
 
 
 def owner_add(client, vid=VID, **kw):

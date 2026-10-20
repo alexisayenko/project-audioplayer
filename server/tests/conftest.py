@@ -2,7 +2,7 @@ import pytest
 
 from datetime import UTC, datetime
 
-from app import deps, genre_lookup, guest, httpjson, limits, previewcache, timeutil, wiki_lookup
+from app import deps, features, genre_lookup, guest, httpjson, limits, previewcache, timeutil, wiki_lookup
 
 ENV = (
     "OWNER_EMAIL", "ALLOWED_EMAIL", "ALLOWED_APPLE_SUB", "SIGNUP_OPEN", "USER_MAX_SONGS", "USER_MAX_BYTES",
@@ -18,6 +18,7 @@ def _no_network(*args, **kwargs):
 @pytest.fixture(autouse=True)
 def _hermetic(monkeypatch):
     monkeypatch.setattr(httpjson.urllib.request, "urlopen", _no_network)
+    monkeypatch.setattr(features, "record_startup", lambda: None)
     monkeypatch.setattr(genre_lookup.time, "sleep", lambda s: None)
     genre_lookup._cache.clear()
     previewcache.clear()

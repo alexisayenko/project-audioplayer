@@ -253,3 +253,85 @@ test('the tag editor does not take a free-text genre: tag', () => {
   assert.equal(editor.node.querySelector('.country-note').hidden, false);
   assert.match(editor.node.querySelector('.country-note').textContent, /genre/);
 });
+
+async function suggest(v, tags = []) {
+  const r = make('genre', tags);
+  r.input.focus();
+  r.type(v);
+  await flush();
+  return { ...r, list: r.f.node.querySelector('[role=listbox]') };
+}
+
+test('Enter places the only suggestion, keeps focus, clears the box, and does not submit', async () => {
+  const { editor, key, input, list } = await suggest('hip');
+  assert.equal(list.children.length, 1);
+  const e = key('Enter');
+  assert.equal(e.defaultPrevented, true);
+  assert.deepEqual(editor.peek(), ['genre:hip hop']);
+  assert.equal(input.value, '');
+  assert.equal(document.activeElement, input);
+  assert.equal(input.getAttribute('aria-invalid'), 'false');
+});
+
+test('Enter on a synonym resolves to the canonical genre', async () => {
+  const { editor, key } = await suggest('dnb');
+  key('Enter');
+  assert.deepEqual(editor.peek(), ['genre:drum and bass']);
+});
+
+test('Enter on an exact name places it even when more suggestions are shown', async () => {
+  const r = await suggest('r');
+  assert.ok(r.list.children.length > 1);
+  r.type('rock');
+  await flush();
+  r.key('Enter');
+  assert.deepEqual(r.editor.peek(), ['genre:rock']);
+});
+
+test('Enter with several suggestions and none highlighted keeps today: unknown text is rejected with a hint', async () => {
+  const { editor, key, input, f, list } = await suggest('r');
+  assert.ok(list.children.length > 1);
+  key('Enter');
+  assert.deepEqual(editor.peek(), []);
+  assert.equal(input.value, 'r');
+  assert.equal(input.getAttribute('aria-invalid'), 'true');
+  assert.equal(f.node.querySelector('.genre-hint').hidden, false);
+});
+
+test('an arrow-highlighted suggestion wins over the single-match rule', async () => {
+  const { editor, key } = await suggest('hip');
+  key('ArrowDown');
+  key('Enter');
+  assert.deepEqual(editor.peek(), ['genre:hip hop']);
+});
+
+test('unknown text with no suggestion is not created as a free genre', async () => {
+  const { editor, key, input } = await suggest('zzzzq');
+  assert.equal(key('Enter').defaultPrevented, true);
+  assert.deepEqual(editor.peek(), []);
+  assert.equal(input.getAttribute('aria-invalid'), 'true');
+});
+
+test('Enter on an empty box adds nothing and is still swallowed', async () => {
+  const { editor, key } = await suggest('');
+  assert.equal(key('Enter').defaultPrevented, true);
+  assert.deepEqual(editor.peek(), []);
+});
+
+test('Enter during IME composition never places the single suggestion', async () => {
+  const { editor, input, list } = await suggest('hip');
+  assert.equal(list.children.length, 1);
+  const e = makeEvent('keydown', { key: 'Enter', isComposing: true });
+  input.dispatchEvent(e);
+  assert.ok(!editor.peek().includes('genre:hip hop'));
+});
+
+for (const [q, name] of [['hip', 'hip hop'], ['ip', 'hip hop'], ['dnb', 'drum and bass']]) {
+  test(`suggestion label for "${q}" reads as one word`, async () => {
+    const { list } = await suggest(q);
+    const b = list.children.find((c) => c.getAttribute('data-genre') === name);
+    const label = b.querySelector('.sg-name');
+    assert.equal(label.textContent, name);
+    for (const n of label.childNodes || label.children) assert.ok(typeof n === 'string' ? n.trim() : true);
+  });
+}
