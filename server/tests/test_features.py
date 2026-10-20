@@ -94,7 +94,7 @@ def test_by_deploys_uses_ranges_and_skips_empty_ones():
     ranges = {(None, h1): [commit("a", 19, "feat: one")], (h1, h2): [commit("b", 20, "docs: nope")], (h2, h3): [commit("c", 20, "feat: three")]}
     deploys = [{"hash": h1, "date": "2026-10-19"}, {"hash": h2, "date": "2026-10-20"}, {"hash": h3, "date": "2026-10-20"}]
     out = gf.by_deploys(lambda p, h: ranges[(p, h)], deploys, {}, {})
-    assert [(r["hash"], r["date"]) for r in out] == [("1111111", "2026-10-19"), ("3333333", "2026-10-20")]
+    assert [(r["hash"], r["date"]) for r in out] == [("3333333", "2026-10-20"), ("1111111", "2026-10-19")]
 
 
 def test_planned_from_front_matter_newest_first(tmp_path):
@@ -286,7 +286,7 @@ def test_vocabulary_rows_subject_is_excluded():
     assert gf.clean_subject("feat: List spacesynth under synthwave in the vocabulary rows, test the served payload") is None
 
 
-def test_same_day_releases_newest_first_without_duplicates(tmp_path):
+def test_same_day_deploys_are_one_release(tmp_path):
     repo = make_repo(tmp_path)
     first = head(repo)
     add_commit(repo, "a1.txt", "feat: second deploy feature")
@@ -296,8 +296,9 @@ def test_same_day_releases_newest_first_without_duplicates(tmp_path):
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     deploys = [{"hash": first, "date": "2026-10-19"}, {"hash": second, "date": today}, {"hash": third, "date": today}]
     out = gf.build(repo, deploys, {})["releases"]
-    assert [r["full"] for r in out[:3]] == [third, second, first]
-    assert out[0]["date"] == out[1]["date"] == today
+    assert [r["full"] for r in out[:2]] == [third, first]
+    assert out[0]["date"] == today and out[1]["date"] == "2026-10-19"
+    assert sorted(i["text"] for i in out[0]["items"]) == ["Second deploy feature", "Third deploy feature"]
     texts = [i["text"] for r in out for i in r["items"]]
     assert len(texts) == len(set(texts))
     assert out[-1]["date"] == "2026-10-18"
@@ -315,3 +316,16 @@ def test_release_with_only_fix_and_perf_commits_is_omitted_but_anchors_the_range
     ranges = {(None, h1): [commit("c", 19, "feat: one")], (h1, h2): commits}
     deploys = [{"hash": h1, "date": "2026-10-19"}, {"hash": h2, "date": "2026-10-20"}]
     assert [r["hash"] for r in gf.by_deploys(lambda p, h: ranges[(p, h)], deploys, {}, {})] == ["1111111"]
+
+
+def test_deploys_on_the_same_date_become_one_release_with_merged_deduplicated_items():
+    h1, h2, h3 = "1" * 40, "2" * 40, "3" * 40
+    ranges = {
+        (None, h1): [commit("a", 20, "feat: shared", hour=1), commit("b", 20, "feat: first", hour=2)],
+        (h1, h2): [commit("c", 20, "feat: shared", hour=5), commit("d", 20, "feat: second", hour=6)],
+        (h2, h3): [commit("e", 21, "feat: next day")],
+    }
+    deploys = [{"hash": h1, "date": "2026-10-20"}, {"hash": h2, "date": "2026-10-20"}, {"hash": h3, "date": "2026-10-21"}]
+    out = gf.by_deploys(lambda p, h: ranges[(p, h)], deploys, {}, {})
+    assert [(r["date"], r["hash"]) for r in out] == [("2026-10-21", "3333333"), ("2026-10-20", "2222222")]
+    assert [i["text"] for i in out[1]["items"]] == ["Second", "Shared", "First"]

@@ -152,18 +152,24 @@ def by_day(commits: list[dict[str, Any]], tasks: dict[str, Any], rmap: dict[str,
 
 
 def by_deploys(commits_for: Any, deploys: list[dict[str, str]], tasks: dict[str, Any], rmap: dict[str, str | None]) -> list[dict[str, Any]]:
-    """Releases between recorded deploys; commits_for(prev_hash or None, hash) lists the commits of a range."""
-    out: list[dict[str, Any]] = []
+    """One release per date from the recorded deploys, newest first; commits_for(prev_hash or None, hash) lists the commits of a range."""
+    days: dict[str, dict[str, Any]] = {}
     prev = None
     for d in deploys:
         try:
-            made = make_release(commits_for(prev, d["hash"]), tasks, rmap)
+            commits = commits_for(prev, d["hash"])
         except (OSError, subprocess.SubprocessError):
-            made = None
-        if made:
-            out.append({"hash": d["hash"][:7], "full": d["hash"], "date": d["date"], "items": made[1]})
+            commits = []
         prev = d["hash"]
-    return out
+        day = days.setdefault(d["date"], {"hash": d["hash"], "commits": {}})
+        day["hash"] = d["hash"]
+        day["commits"].update({c["sha"]: c for c in commits})
+    out = []
+    for date, day in days.items():
+        made = make_release(list(day["commits"].values()), tasks, rmap)
+        if made:
+            out.append({"hash": day["hash"][:7], "full": day["hash"], "date": date, "items": made[1]})
+    return sorted(out, key=lambda r: r["date"], reverse=True)
 
 
 def front_matter(text: str) -> dict[str, str]:
@@ -241,7 +247,7 @@ def _releases(repo: Path, deploys: list[dict[str, str]], tasks: dict[str, Any], 
         return read_log(repo, f"{prev}..{h}")
 
     recorded = by_deploys(commits_for, deploys, tasks, rmap)
-    return recorded[::-1] + by_day([c for c in head_commits if c["date"] < first["date"]], tasks, rmap)
+    return recorded + by_day([c for c in head_commits if c["date"] < first["date"]], tasks, rmap)
 
 
 def state_path() -> Path:

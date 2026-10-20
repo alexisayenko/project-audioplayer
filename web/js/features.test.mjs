@@ -35,8 +35,7 @@ test('releases tab: newest on top, hash, date without time, task link', async ()
   const root = await mount(DATA);
   const blocks = root.querySelectorAll('.ft-rel');
   assert.equal(blocks.length, 2);
-  assert.equal(blocks[0].querySelector('.ft-hash').textContent, '2222222');
-  assert.equal(blocks[0].querySelector('.ft-hash').getAttribute('title'), '2'.repeat(40));
+  assert.equal(blocks[0].querySelector('.ft-hash'), null);
   const days = root.querySelectorAll('.ft-day');
   assert.equal(days.length, 2);
   const time = days[0].querySelector('h3 time');
@@ -160,23 +159,26 @@ test('the data comes from the server route and an unavailable history says so, p
   assert.equal(root.querySelectorAll('.ft-plan').length, 2);
 });
 
-test('the page keeps the server order, same-date releases are not re-sorted', async () => {
-  const same = ['3333333', '2222222', '1111111'].map((h) => ({ hash: h, date: '2026-10-20', items: [{ text: h, task: null }] }));
+test('same-date releases are merged into one entry, items newest first and de-duplicated', async () => {
+  const same = [['3333333', 'Shared'], ['2222222', 'Shared'], ['1111111', 'Own']].map(([h, t], i) => ({ hash: h, date: '2026-10-20', items: [{ text: i === 2 ? t : `${t} ${h === '3333333' ? 'new' : ''}`.trim(), task: null }, { text: 'Common', task: null }] }));
   const root = await mount({ releases: same, planned: [] });
-  assert.deepEqual([...root.querySelectorAll('.ft-hash')].map((n) => n.textContent), ['3333333', '2222222', '1111111']);
+  assert.equal(root.querySelectorAll('section.ft-day').length, 1);
+  assert.equal(root.querySelectorAll('.ft-rel').length, 1);
+  assert.deepEqual([...root.querySelectorAll('.ft-item')].map((n) => n.textContent), ['Shared new', 'Common', 'Shared', 'Own']);
+  assert.equal(tab(root, 0).textContent, 'Released 1');
 });
 
 const day = (date, hashes) => hashes.map((h) => ({ hash: h, full: h.repeat(6).slice(0, 40), date, items: [{ text: `Item ${h}`, task: null }] }));
 
-test('released tab groups consecutive same-date releases under one day heading, server order kept, date not repeated', async () => {
+test('released tab shows one entry per date with a single date heading', async () => {
   const releases = [...day('2026-10-20', ['ccccccc', 'bbbbbbb', 'aaaaaaa']), ...day('2026-10-19', ['eeeeeee', 'ddddddd'])];
   const root = await mount({ releases, planned: [] });
   const days = root.querySelectorAll('section.ft-day');
   assert.equal(days.length, 2);
-  assert.deepEqual([...days[0].querySelectorAll('.ft-hash')].map((n) => n.textContent), ['ccccccc', 'bbbbbbb', 'aaaaaaa']);
-  assert.deepEqual([...days[1].querySelectorAll('.ft-hash')].map((n) => n.textContent), ['eeeeeee', 'ddddddd']);
+  assert.equal(days[0].querySelectorAll('li.ft-rel').length, 1);
+  assert.deepEqual([...days[0].querySelectorAll('.ft-item')].map((n) => n.textContent), ['Item ccccccc', 'Item bbbbbbb', 'Item aaaaaaa']);
+  assert.deepEqual([...days[1].querySelectorAll('.ft-item')].map((n) => n.textContent), ['Item eeeeeee', 'Item ddddddd']);
   assert.equal(root.querySelectorAll('time').length, 2);
-  assert.equal(days[0].querySelectorAll('li.ft-rel time').length, 0);
 });
 
 test('a day whose releases have no items does not appear', () => {
@@ -184,16 +186,11 @@ test('a day whose releases have no items does not appear', () => {
   assert.deepEqual(groupDays(rs).map((d) => d.date), ['2026-10-19']);
 });
 
-test('paging by releases never splits a day', async () => {
-  const releases = [...day('2026-10-20', Array.from({ length: 28 }, (_, i) => `a${String(i).padStart(6, '0')}`)), ...day('2026-10-19', Array.from({ length: 5 }, (_, i) => `b${String(i).padStart(6, '0')}`)), ...day('2026-10-18', ['ccccccc'])];
+test('paging counts dates', async () => {
+  const releases = [...day('2026-10-20', ['aaaaaaa', 'bbbbbbb']), ...day('2026-10-19', ['ccccccc'])];
   const root = await mount({ releases, planned: [] });
   assert.equal(root.querySelectorAll('.ft-day').length, 2);
-  assert.equal(root.querySelectorAll('.ft-rel').length, 33);
-  const more = root.querySelector('.ft-more');
-  assert.equal(more.hidden, false);
-  more.click();
-  assert.equal(root.querySelectorAll('.ft-day').length, 3);
-  assert.equal(more.hidden, true);
+  assert.equal(root.querySelector('.ft-more').hidden, true);
 });
 
 test('an item without a task has no link and no separator text', async () => {

@@ -2,6 +2,14 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-21 (Features: one release per date, deployed)
+
+- Web, server (task-0068, WEB-135, API-187): all deploys and features of the same date are combined into one release entry on the Features screen (one date heading, one merged list, newest first, de-duplicated, hash of the newest deploy of the day). Not deployed.
+
+## 2026-10-21 (live BPM on the song card, deployed)
+
+- Web (task-0073, LIB-019a): the BPM badge in the song card is a toggle; on, it turns azure and shows the tempo measured live from the playing audio (visualizer analyser, onset detection over a 10 s window, stored BPM as half/double hint); the choice persists in `localStorage` (`ap.liveBpm`). Not deployed.
+
 ## 2026-10-20 (Studio: waveform, A-B loop and saved loops, built, not deployed)
 
 - Web, server (task-0072, WEB-150..156, PLY-160, API-195, DATA-190): new main-menu page Studio (`#/studio`): waveform of the playing song (server peaks via ffmpeg, cached beside the audio; browser decode under 12 MB as fallback), marks A and B (handles, Set here, m:ss.s fields, nudges), a loop that lives in the player with a dock chip, and named loops saved on the song (`loops`). Guests can loop but not save. Not deployed.

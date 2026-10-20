@@ -32,7 +32,6 @@ const taskLink = (id) => el('a', { class: 'ft-task', href: `${TASK_URL}${id}.md`
 
 export function releaseBlock(r) {
   return el('li', { class: 'ft-rel' },
-    el('p', { class: 'ft-head t-subhead' }, el('span', { class: 'ft-hash', title: r.full || r.hash }, r.hash)),
     el('ul', { class: 'ft-items' }, ...r.items.map((i) =>
       el('li', { class: 'ft-item t-body' }, i.text, i.task ? [' ', taskLink(i.task)] : null))));
 }
@@ -42,8 +41,10 @@ export function groupDays(releases) {
   for (const r of releases) {
     if (!r.items.length) continue;
     const last = days[days.length - 1];
-    if (last && last.date === r.date) last.releases.push(r);
-    else days.push({ date: r.date, releases: [r] });
+    if (last && last.date === r.date) {
+      const seen = new Set(last.releases[0].items.map((i) => i.text));
+      last.releases[0].items.push(...r.items.filter((i) => !seen.has(i.text)));
+    } else days.push({ date: r.date, releases: [{ ...r, items: [...r.items] }] });
   }
   return days;
 }
@@ -108,7 +109,7 @@ export function renderFeatures(root) {
     panel.setAttribute('aria-labelledby', `ft-tab-${current}`);
     if (failed) panel.replaceChildren(el('p', { class: 'muted t-body', role: 'status' }, FAIL_TEXT));
     else if (data) panel.replaceChildren(current === 'released' ? releasesPanel(data.releases, data.unavailable) : current === 'planned' ? plannedPanel(data.planned) : plannedPanel(data.in_progress, NO_PROGRESS));
-    if (data) TABS.forEach(([key, label], i) => { tabs[i].textContent = `${label} ${key === 'released' ? data.releases.length : data[key].length}`; });
+    if (data) TABS.forEach(([key, label], i) => { tabs[i].textContent = `${label} ${key === 'released' ? groupDays(data.releases).length : data[key].length}`; });
   };
   const pick = (i, focus) => {
     current = TABS[i][0];

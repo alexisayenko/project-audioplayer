@@ -20,6 +20,8 @@ import { openShareDialog, copyText } from './share-ui.js';
 import { lineParts, partInfo } from './part-info.js';
 import { togglePartPopover, closePartPopover, initPartPopovers } from './part-popover.js';
 import { prefs } from './library-data.js';
+import * as audioGraph from './audio-graph.js';
+import { createLiveBpmController } from './live-bpm-ctl.js';
 
 export function cardTags(tags) {
   const counts = visibleTags(tags).map((tag) => ({ tag, count: 1 }));
@@ -163,11 +165,52 @@ function albumsLabel(albums) {
   return albums.length === 1 ? 'Album' : 'Albums';
 }
 
-function detailsBlock(m) {
+let liveCtl = null;
+
+export function liveBpm() {
+  if (!liveCtl) {
+    liveCtl = createLiveBpmController({
+      audio: document.getElementById('audio'),
+      player,
+      getAnalyser: () => audioGraph.getAnalyser(),
+      getSampleRate: () => audioGraph.getContext()?.sampleRate,
+    });
+  }
+  return liveCtl;
+}
+
+export function resetLiveBpmForTests() {
+  liveCtl?.dispose();
+  liveCtl = null;
+}
+
+function bpmView(stored, songId) {
+  const ctl = liveBpm();
+  if (!ctl.on) return { text: stored, label: `BPM ${stored}`, on: false };
+  const live = player.current?.id === songId ? ctl.value : null;
+  return { text: live === null ? `~${stored}` : String(live), label: live === null ? `Live BPM, about ${stored}` : `Live BPM ${live}`, on: true };
+}
+
+function paintBpmBadge(btn) {
+  const v = bpmView(btn.getAttribute('data-stored'), btn.getAttribute('data-id'));
+  btn.firstChild.data = v.text;
+  btn.setAttribute('aria-pressed', String(v.on));
+  btn.setAttribute('aria-label', v.label);
+  btn.title = v.on ? 'Live BPM measured while the song plays (click for the stored value)' : 'Stored BPM (click to measure live while playing)';
+  btn.classList.toggle('on', v.on);
+}
+
+function bpmBadge(stored, songId) {
+  const btn = el('button', { class: 'bpm-badge bpm-toggle', type: 'button', 'data-stored': stored, 'data-id': songId, onclick: () => liveBpm().setOn(!liveBpm().on) }, stored, el('small', { 'aria-hidden': 'true' }, 'BPM'));
+  paintBpmBadge(btn);
+  return btn;
+}
+
+function detailsBlock(m, songId) {
   const tagChip = (t) => el('span', { class: 'tag ns t-caption', title: t.tag }, t.label);
   const items = [
     ...m.groups.filter((g) => SIDE_KEYS.has(g.key)).map((g) => el('span', { class: 'detail' }, `${g.name}: `, ...g.tags.map(tagChip))),
-    m.bpm ? el('span', { class: 'detail' }, el('span', { class: 'bpm-badge', title: 'Beats per minute (estimated)' }, m.bpm, el('small', { 'aria-hidden': 'true' }, 'BPM'))) : null,
+    m.bpm ? el('span', { class: 'detail' }, bpmBadge(m.bpm, songId)) : null,
     m.duration ? el('span', { class: 'detail' }, `Length: ${m.duration}`) : null,
     m.yearFact ? el('span', { class: 'detail' }, `Year: ${m.yearFact}`) : null,
     ...m.details.map((d) => el('span', { class: 'detail' }, d)),
@@ -187,7 +230,7 @@ function paint(dlg, song, close, m) {
     art.classList.contains('card-art') ? null : closeBtn,
     art,
     head,
-    detailsBlock(m),
+    detailsBlock(m, song.id),
     tagBlock(rest, m.genreLines),
     linkBlock(m.links),
     actionRow(song),
@@ -229,7 +272,8 @@ export function openSongCard(song, opener = null) {
     last = sig;
     repaint(dlg, fresh, close);
   };
-  const unsubs = [store.subscribe(() => render(true)), player.onChange(render), autodl.onChange(render)];
+  const paintBadges = () => { for (const b of dlg.querySelectorAll('.bpm-toggle')) paintBpmBadge(b); };
+  const unsubs = [store.subscribe(() => render(true)), player.onChange(render), autodl.onChange(render), liveBpm().onChange(paintBadges)];
   initPartPopovers();
   dlg.onclick = (e) => { if (e.target === dlg) close(); };
   dlg.addEventListener('close', () => {
