@@ -2,6 +2,14 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-20 (epic removed from the genres, not deployed)
+
+- Data: `epic` is a descriptor (a mood), not a genre, and it pulled songs into the Classical family, so it is removed from the vocabulary (Classical 24 genres, 534 in all) and dropped from songs at the next start (`REMOVED_GENRES`); 2 songs in the owner removal list (116 songs, 194 removals; [genre-levels.md](tech/genre-levels.md#epic-removed-owner-2026-10-20)).
+
+## 2026-10-20 (Genres map: Electronic circle shown again, built, not deployed)
+
+- Web: the Electronic family circle is drawn again on the Genres Graph and Radial, like every other family (label, ring, lines to its children with arrowheads, selection); `HIDDEN_FAMILY_NODES` is kept as an empty list so a family can be hidden again (GEN-072, owner decision 2026-10-20); the earlier radial centre title for a hidden family only shows when a family is hidden.
+
 ## 2026-10-20 (Genres map arrows, built, not deployed)
 
 - Web: parent-to-child lines on the Genres map (Graph and Radial) get an arrowhead at the child end (GEN-081); dotted related lines stay plain; skipped for short lines and at low zoom.

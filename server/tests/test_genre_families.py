@@ -86,7 +86,7 @@ KEPT = {
     "neurofunk": "Electronic", "liquid drum and bass": "Electronic", "melodic techno": "Electronic",
     "darksynth": "Electronic", "dreamwave": "Electronic", "dance-rock": "Rock",
     "psybient": "Electronic", "electronic": "Electronic", "experimental": "Electronic",
-    "singer-songwriter": "Folk, World, & Country", "estrada": "Pop", "shock rock": "Rock", "dark metal": "Rock", "epic": "Classical",
+    "singer-songwriter": "Folk, World, & Country", "estrada": "Pop", "shock rock": "Rock", "dark metal": "Rock",
     "chillwave": "Electronic", "darkwave": "Rock", "nu-nrg": "Electronic", "uplifting trance": "Electronic",
 }
 

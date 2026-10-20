@@ -10,12 +10,12 @@ import { VOCAB, SONGS } from './genre-levels-fixture.mjs';
 const fixture = () => { const t = buildTree(VOCAB); applyCounts(t, SONGS); return t; };
 const linkKey = (l) => `${l.kind}:${l.source}>${l.target}`;
 
-test('every vocabulary node except the hidden Electronic family circle is on the graph, with or without library songs', () => {
+test('every vocabulary node, the Electronic family circle included, is on the graph, with or without library songs', () => {
   const tree = fixture();
   const g = buildMapGraph(tree);
-  assert.equal(g.nodes.length, tree.byId.size - 1);
-  assert.deepEqual(new Set(g.nodes.map((n) => n.id)), new Set([...tree.byId.keys()].filter((id) => id !== 'g:Electronic')));
-  assert.equal(g.byId.has('g:Electronic'), false);
+  assert.equal(g.nodes.length, tree.byId.size);
+  assert.deepEqual(new Set(g.nodes.map((n) => n.id)), new Set(tree.byId.keys()));
+  assert.equal(g.byId.has('g:Electronic'), true);
   const breakbeat = g.byId.get('s:breakbeat');
   assert.deepEqual([breakbeat.own, breakbeat.all, breakbeat.em], [0, 1, 1], 'a genre counts under every parent, so its songs also count at the second parent');
   assert.deepEqual(g.byId.get('s:house').fis, [0]);
@@ -23,15 +23,15 @@ test('every vocabulary node except the hidden Electronic family circle is on the
   assert.equal(g.byId.get('g:Rock').em, 1);
 });
 
-test('a genre has a line to each parent: one layout parent link, the others as cross-links; no line to the hidden family', () => {
+test('a genre has a line to each parent: one layout parent link, the others as cross-links; the Electronic family has lines to its children', () => {
   const g = buildMapGraph(fixture());
   const keys = new Set(g.links.map(linkKey));
-  assert.equal(g.links.some((l) => l.source === 'g:Electronic' || l.target === 'g:Electronic'), false);
+  assert.ok(g.links.some((l) => l.source === 'g:Electronic' && l.target === 's:house'));
   assert.ok(keys.has('parent:s:house>s:deep house'));
   assert.ok(keys.has('parent:s:breakbeat>s:jungle'));
   assert.ok(keys.has('related:s:drum and bass>s:jungle'));
   assert.equal(g.links.filter((l) => l.target === 's:jungle').length, 2);
-  assert.equal(g.links.filter((l) => l.target === 's:house').length, 0, 'a level 2 genre of the hidden family is a root of its own branch');
+  assert.equal(g.links.filter((l) => l.target === 's:house').length, 1, 'a level 2 genre of Electronic hangs from the family circle');
   for (const l of g.links) assert.ok(g.byId.has(l.source) && g.byId.has(l.target) && l.source !== l.target);
 });
 
@@ -40,7 +40,8 @@ test('a genre in two families has a line to each visible family hub and a pie fi
   const g = buildMapGraph(tree);
   const keys = new Set(g.links.map(linkKey));
   assert.ok(keys.has('parent:g:Rock>s:full tip'));
-  assert.equal(g.links.filter((l) => l.target === 's:full tip').length, 1);
+  assert.ok(keys.has('parent:g:Rock>s:full tip') || keys.has('parent:g:Electronic>s:full tip'));
+  assert.equal(g.links.filter((l) => l.target === 's:full tip').length, 2);
   assert.ok(keys.has('parent:s:house>s:hard tip') || keys.has('parent:g:Rock>s:hard tip'));
   assert.equal(g.links.filter((l) => l.target === 's:hard tip').length, 2);
   assert.deepEqual(g.byId.get('s:full tip').fis, [0, 1]);
@@ -60,13 +61,13 @@ test('the real vocabulary draws every genre once with a line to each visible par
   const g = buildMapGraph(tree);
   const genres = Object.keys(vocab.levels);
   assert.ok(genres.length > 500);
-  assert.equal(g.nodes.length, genres.length + vocab.families.length - 1);
+  assert.equal(g.nodes.length, genres.length + vocab.families.length);
   assert.equal(genreCount(tree), genres.length);
   assert.equal(new Set(g.nodes.map((n) => n.id)).size, g.nodes.length);
   let lines = 0;
   for (const [k, v] of Object.entries(vocab.levels)) {
     const id = `s:${k}`;
-    const shown = [...new Set(v.parents)].filter((p) => p !== 'Electronic').map((p) => (vocab.families.includes(p) ? `g:${p}` : `s:${p}`));
+    const shown = [...new Set(v.parents)].map((p) => (vocab.families.includes(p) ? `g:${p}` : `s:${p}`));
     const into = g.links.filter((l) => l.target === id && l.kind !== 'assoc');
     assert.deepEqual(into.map((l) => l.source).sort(), [...shown].sort(), k);
     assert.equal(into.filter((l) => l.kind === 'parent').length, shown.length ? 1 : 0, k);

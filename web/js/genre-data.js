@@ -21,7 +21,7 @@ export const familyIndex = (family) => {
   return i < 0 || family === 'Other' ? OTHER_COLOR : i;
 };
 
-export const HIDDEN_FAMILY_NODES = ['Electronic'];
+export const HIDDEN_FAMILY_NODES = [];
 
 export const ARROW_BASE_PX = 7;
 export const ARROW_MIN_PX = 5;

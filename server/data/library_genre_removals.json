@@ -138,7 +138,8 @@
   },
   "GmTFURNrIJQ": {
    "remove": [
-    "trance"
+    "trance",
+    "epic"
    ],
    "title": "Concord Dawn - Take Me Away"
   },
@@ -806,6 +807,12 @@
     "electronic"
    ],
    "title": "Mr.Kitty - After Dark"
+  },
+  "BAzCf0ascW8": {
+   "remove": [
+    "epic"
+   ],
+   "title": "Thomas Bergersen - Final Frontier"
   }
  }
 }

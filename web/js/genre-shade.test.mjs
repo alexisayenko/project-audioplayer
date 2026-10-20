@@ -96,7 +96,7 @@ test('graph and radial nodes carry the shade order; hubs and plain genres carry 
   const g = buildMapGraph(t);
   assert.equal(g.subIdx, 0);
   assert.deepEqual([g.byId.get('s:house').subOrder, g.byId.get('s:jungle').subOrder, g.byId.get('s:plain').subOrder, g.byId.get('g:Rock').subOrder], [1, 2, 0, 0]);
-  assert.equal(g.byId.has('g:Electronic'), false, 'the Electronic circle is not drawn');
+  assert.equal(g.byId.get('g:Electronic').subOrder, 0, 'the Electronic circle is drawn and keeps no shade');
   assert.equal(g.byId.get('s:electro punk').subOrder, 3, 'a multi-family genre keeps its subfamily for the Electronic wedge');
   const l = layoutRadial(t, 'Electronic', { hidden: false });
   assert.equal(l.subIdx, 0);

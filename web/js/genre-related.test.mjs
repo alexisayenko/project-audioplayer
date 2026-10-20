@@ -31,8 +31,8 @@ test('related has no effect on the tree, levels, families, counts or split colou
 test('graph data carries related links as their own kind, deduplicated, resolved to genres and families only', () => {
   const g = buildMapGraph(tree(true));
   const assoc = g.links.filter((l) => l.kind === 'assoc').map((l) => `${l.source}>${l.target}`).sort();
-  assert.deepEqual(assoc, ['s:chillwave>s:downtempo', 's:darksynth>s:industrial'], 'a related link to the hidden Electronic circle is dropped');
-  assert.equal(g.links.filter((l) => l.kind === 'parent').length, 2);
+  assert.deepEqual(assoc, ['s:chillwave>s:downtempo', 's:darksynth>s:industrial', 's:industrial>g:Electronic'], 'a related link to the Electronic family is kept like any other');
+  assert.equal(g.links.filter((l) => l.kind === 'parent').length, 5);
   assert.equal(buildMapGraph(tree(false)).links.some((l) => l.kind === 'assoc'), false);
 });
 

@@ -2,9 +2,9 @@
  "_meta": {
   "generated_at": "2026-10-19T13:49:24.071Z",
   "counts": {
-   "genres": 546,
+   "genres": 545,
    "discogs_true": 483,
-   "discogs_false": 63,
+   "discogs_false": 62,
    "musicbrainz": 452,
    "wikipedia": 469,
    "apple_music": 141
@@ -2314,9 +2314,6 @@
    "wikidata": "Q53806314",
    "match": "name"
   }
- },
- "epic": {
-  "discogs": false
  },
  "estrada": {
   "discogs": false,

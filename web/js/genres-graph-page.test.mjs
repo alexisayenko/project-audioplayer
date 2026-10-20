@@ -84,9 +84,9 @@ test('Graph is the default view, with the Graph | Radial switch and the library 
   assert.equal(sw.getAttribute('aria-label'), 'Map view');
   assert.deepEqual(sw.querySelectorAll('button').map((b) => [b.textContent, b.getAttribute('aria-pressed')]), [['Graph', 'true'], ['Radial', 'false']]);
   const g = spy.last('setGraph')[1];
-  assert.equal(g.nodes.length, 8, 'the whole vocabulary except the hidden Electronic circle');
+  assert.equal(g.nodes.length, 9, 'the whole vocabulary, the Electronic circle included');
   assert.ok(g.nodes.some((n) => n.id === 's:breakbeat' && n.em === 0), 'the graph data has the whole vocabulary');
-  assert.equal(g.byId.has('g:Electronic'), false);
+  assert.equal(g.byId.has('g:Electronic'), true);
   assert.ok(g.links.some((l) => l.kind === 'parent' && l.source === 's:drum and bass' && l.target === 's:jungle'));
   assert.ok(!g.links.some((l) => l.source === 'g:Electronic' || l.target === 'g:Electronic'));
   assert.deepEqual([...spy.last('setVisible')[1]].sort(), ['g:Electronic', 'g:Rock', 's:afro house', 's:deep house', 's:drum and bass', 's:house', 's:jungle', 's:rock and roll']);
@@ -162,7 +162,7 @@ test('a stored all-genres, family or subfamily choice never hides the library ma
     cleanup();
     const radial = await mount({ view: 'radial' });
     assert.equal(chipsOf(radial.root)[0].getAttribute('aria-pressed'), 'true');
-    assert.equal(status(radial.root), '4 genres in Electronic');
+    assert.equal(status(radial.root), '5 genres in Electronic');
     assert.ok(names(radial.root).includes('house'));
     radial.cleanup();
   } finally { globalThis.localStorage = saved; mode = 'ok'; }
@@ -193,7 +193,7 @@ test('the Radial button swaps the canvases, keeps the radial map as it was and r
   assert.deepEqual(chipsOf(root).map((c) => [c.textContent, c.getAttribute('aria-pressed')]), [['Electronic', 'true'], ['Rock', 'false']], 'Radial has one family at a time and no All chip');
   assert.equal(store.get('electrophone.genresView'), 'radial');
   assert.equal(btn(root, 'All genres').hidden, true);
-  assert.equal(status(root), '4 genres in Electronic');
+  assert.equal(status(root), '5 genres in Electronic');
   assert.deepEqual(names(root), ['Electronic', 'drum and bass', 'house', 'Rock']);
   btn(root, 'Graph').click();
   assert.deepEqual(shown(root), { graph: true, radial: false });
@@ -475,26 +475,24 @@ test('without subfamily data there is no subfamily row and no legend section; Ra
   mode = 'ok';
 });
 
-test('the Electronic circle is hidden on the graph, yet its outline row still selects: it rings and centres its children', async () => {
+test('Electronic is drawn on the graph like other families: lines to its children, its row selects and centres it', async () => {
   mode = 'ok';
   globalThis.localStorage = { getItem: () => null, setItem: () => {} };
   const { root, cleanup, spy } = await mount();
   const g = spy.last('setGraph')[1];
-  assert.equal(g.byId.has('g:Electronic'), false);
-  assert.equal(g.links.some((l) => l.source === 'g:Electronic'), false);
+  assert.equal(g.byId.has('g:Electronic'), true);
+  assert.ok(g.links.some((l) => l.source === 'g:Electronic' && l.target === 's:house'));
   assert.ok(g.byId.has('s:house') && g.byId.has('s:drum and bass'));
   row(root, 'Electronic').click();
   assert.equal(row(root, 'Electronic').getAttribute('aria-selected'), 'true');
-  const marked = spy.last('setMatches')[1];
-  assert.ok(marked.includes('s:house') && marked.includes('s:drum and bass') && !marked.includes('g:Electronic') && !marked.includes('s:rock and roll'));
-  assert.equal(spy.last('focusNode')[1], 's:house', 'it centres on the child with the most songs');
-  row(root, 'Rock').click();
-  assert.equal(spy.last('setMatches')[1].length, 0, 'the rings go away with the selection');
+  assert.deepEqual(spy.last('select').slice(1), ['g:Electronic']);
+  assert.equal(spy.last('focusNode')[1], 'g:Electronic', 'it centres on the family circle itself');
+  assert.equal(spy.calls.some((c) => c[0] === 'setMatches' && c[1].includes('s:house')), false, 'no extra rings around its children');
   cleanup();
   delete globalThis.localStorage;
 });
 
-test('on the radial the Electronic row selects the hidden root without a circle and the chip stays selectable', async () => {
+test('on the radial the Electronic row selects the family circle and the chip stays selectable', async () => {
   mode = 'ok';
   globalThis.localStorage = { getItem: () => null, setItem: () => {} };
   const { root, cleanup } = await mount();
@@ -502,7 +500,7 @@ test('on the radial the Electronic row selects the hidden root without a circle 
   assert.equal(chip(root, 'Electronic').getAttribute('aria-pressed'), 'true');
   row(root, 'Electronic').click();
   assert.equal(row(root, 'Electronic').getAttribute('aria-selected'), 'true');
-  assert.equal(status(root), '4 genres in Electronic');
+  assert.equal(status(root), '5 genres in Electronic');
   chip(root, 'Rock').click();
   chip(root, 'Electronic').click();
   assert.equal(chip(root, 'Electronic').getAttribute('aria-pressed'), 'true');

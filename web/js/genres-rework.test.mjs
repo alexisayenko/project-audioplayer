@@ -63,7 +63,7 @@ test('page loads vocabulary and library, shows the map canvas, legend and the tr
   assert.equal(row(root, 'house').getAttribute('aria-expanded'), 'false');
   assert.equal(row(root, 'drum and bass').getAttribute('aria-expanded'), 'false');
   assert.equal(row(root, 'house').getAttribute('aria-level'), '2');
-  assert.equal(root.querySelector('[role="status"]').textContent, '4 genres in Electronic', 'the hidden Electronic circle is not counted');
+  assert.equal(root.querySelector('[role="status"]').textContent, '5 genres in Electronic', 'the Electronic circle, which has songs of its own, is counted');
   assert.equal(row(root, 'Electronic').querySelector('.gmr-count').textContent, '4');
   assert.equal(row(root, 'Rock').querySelector('.gmr-count').textContent, '1');
   assert.equal(row(root, 'drum and bass').querySelector('.gmr-count').textContent, '1');
@@ -526,7 +526,7 @@ test('a family chip switches the map root, the status chip, the canvas label and
   btn(root, 'Now playing').click();
   assert.equal(row(root, 'rock and roll').getAttribute('aria-selected'), 'true');
   chip('Electronic').click();
-  assert.equal(root.querySelector('[role="status"]').textContent, '4 genres in Electronic');
+  assert.equal(root.querySelector('[role="status"]').textContent, '5 genres in Electronic');
   btn(root, 'Now playing').click();
   assert.equal(document.getElementById('toast').textContent, 'The playing song has no Electronic genre');
   cleanup();

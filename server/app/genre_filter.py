@@ -68,7 +68,7 @@ REMOVED_GENRES: tuple[str, ...] = (
     "political", "promotional", "public service announcement", "radioplay", "religious", "sermon",
     "sound poetry", "soundtrack", "speech", "spoken", "spoken word", "story",
     "technical", "therapy", "trailer", "stage & screen", "stage and screen", "soundtracks", "film and tv", "stage, screen",
-    "incidental music", "musical", "score", "film score", "theme", "vaudeville", "video game music", "industrial", "ethereal", "ethereal wave", "lo-fi",
+    "incidental music", "musical", "score", "film score", "theme", "vaudeville", "video game music", "industrial", "ethereal", "ethereal wave", "lo-fi", "epic",
 )
 DROP = DROP | frozenset(key(v) for v in REMOVED_GENRES)
 

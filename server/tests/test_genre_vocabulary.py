@@ -102,7 +102,7 @@ def test_an_extra_has_every_family_it_descends_from_through_any_parent():
 REQUIRED_EXTRAS = (
     "singer-songwriter", "psybient", "darksynth", "dreamwave", "neurofunk", "liquid drum and bass", "melodic techno",
     "dance-rock", "estrada", "shock rock", "nu-nrg", "uplifting trance", "dream trance", "chillwave", "darkwave",
-    "folk", "dark metal", "epic", "dreamsynth", "sunshine house", "synth-rock", "electronic",
+    "folk", "dark metal", "dreamsynth", "sunshine house", "synth-rock", "electronic",
 )
 
 

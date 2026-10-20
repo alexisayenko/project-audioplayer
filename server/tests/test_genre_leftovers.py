@@ -183,7 +183,7 @@ def test_removed_family_genres_are_dropped_from_every_library_with_a_backup_and_
     assert migrate_tags.run() == 2
     for lib in (mine, other):
         genres = {s["id"]: s.get("genres", []) for s in json.loads(lib.read_text(encoding="utf-8"))["songs"]}
-        assert genres == {"gb": ["funk", "pop"], "ak": [], "ww": ["rock"], "ep": ["modern classical", "epic"]}
+        assert genres == {"gb": ["funk", "pop"], "ak": [], "ww": ["rock"], "ep": ["modern classical"]}
     assert (datadir / "backups-genre-merge" / OWNER / "library.json").exists()
     first = mine.read_text(encoding="utf-8")
     assert migrate_tags.run() == 0

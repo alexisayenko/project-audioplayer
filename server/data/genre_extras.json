@@ -113,12 +113,6 @@
    ],
    "note": "live library tag, reviewed 2026-10-16"
   },
-  "epic": {
-   "parents": [
-    "Classical"
-   ],
-   "note": "kept subgenre, TAG-076; manual parent: re-homed under Classical when the Stage & Screen family was removed (owner, 2026-10-18)"
-  },
   "estrada": {
    "parents": [
     "Pop"

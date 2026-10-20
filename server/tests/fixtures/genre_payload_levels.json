@@ -3098,22 +3098,6 @@
    "status": null,
    "synonyms": []
   },
-  "epic": {
-   "discogs": false,
-   "display": null,
-   "families": [
-    "Classical"
-   ],
-   "family": "Classical",
-   "flavours": [],
-   "level": 2,
-   "parents": [
-    "Classical"
-   ],
-   "provisional": true,
-   "status": null,
-   "synonyms": []
-  },
   "estrada": {
    "discogs": false,
    "display": null,

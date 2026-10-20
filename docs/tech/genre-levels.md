@@ -312,7 +312,7 @@ Alex decided that the genre list describes how music sounds, not where or how it
 - Brass & Military: brass band, concert band, marches, military, pipe & drum; synonyms brass and military, military and brass, military & brass.
 - Non-Music: audiobook, dialogue, education, field recording, interview, karaoke, medical, monolog, poetry, political, promotional, public service announcement, radioplay, religious, sermon, sound poetry, speech, spoken word, technical, therapy; synonyms non music, nonmusic, spoken.
 
-One exception: `epic` stays, as a level 2 genre of Classical next to `modern classical` (extras entry: parents `["Classical"]`; the `epic trance` synonym of `uplifting trance` is unchanged).
+`epic` was kept at first as a level 2 genre of Classical; it was removed on 2026-10-20 (see below). The `epic trance` synonym of `uplifting trance` is unchanged.
 
 Songs: every removed name, the family names and their synonyms are in `genre_filter.REMOVED_GENRES`, which joins `DROP` (TAG-073). The existing genre-tag migration (`migrate_tags`, run at startup) sees the stored tag change under `clean_tags`, backs the file up once (`backups-genre-merge/<uid>/library.json`) and rewrites it, so each song loses these genres on the next start; a song left without a genre stays valid. No new migration step and no `credits_schema` change. The ALIASES entry "film score" to "score" is gone.
 
@@ -349,3 +349,8 @@ House and disco (owner decision DF1, 2026-10-20): `house` lists `disco` under `r
 Counts after the edits and the darkwave decision DB2 below: 535 genres, 579 family memberships (Electronic 146: 54 level 2, 87 level 3, 5 level 4; Rock 123: 50 and 73; Funk / Soul and Pop gained the disco and eurodance branches); subfamilies House 26, Techno 20, Trance 19, Breaks & bass 24, Synth & wave 12, Experimental, industrial & noise 21, Ambient & downtempo 10, Eurodance & disco 12. Level changes of blends (shortest path): hip house, trip hop, folk metal, folk punk, funk metal and rap metal are level 2; post-disco is level 3. 37 genres belong to more than one family.
 
 Held back by the owner (not applied): the larger nesting proposal CA1 and BV (moves under soul, bop, dancehall, roots rock and others, the 13 held Rock genres).
+
+
+## epic removed (owner, 2026-10-20)
+
+`epic` is a descriptor (a mood), not a genre, and it wrongly pulled songs into the Classical family, so it is removed like `lo-fi`: the rows in `genre_levels.json` (Classical now has 24 genres, 534 entries in all), `genre_extras.json`, `genre_sources.json` and the built-in list in `genres.py`; `epic` is added to `genre_filter.REMOVED_GENRES`, which joins `DROP` (TAG-073), so the stored tag `genre:epic` is dropped at startup and the suggester (which only proposes vocabulary names) cannot suggest it again. `epic trance` stays a synonym of `uplifting trance`. The two songs that had it are in the removal list (TAG-109); no song had it as its only genre.

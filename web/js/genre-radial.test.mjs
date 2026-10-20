@@ -247,39 +247,44 @@ test('hidden labels reappear when zooming in because spacing grows', () => {
   assert.ok(at(3) >= at(1));
 });
 
-test('the Electronic family circle is not drawn: its level 2 genres form the first ring around an empty centre, the family stays addressable', async () => {
+test('Electronic is drawn like other families: circle, lines to its level 2 genres, nothing hidden', async () => {
   const { HIDDEN_FAMILY_NODES, isHiddenFamily } = await import('./genre-data.js');
-  assert.deepEqual(HIDDEN_FAMILY_NODES, ['Electronic']);
-  assert.equal(isHiddenFamily('Electronic'), true);
-  assert.equal(isHiddenFamily('Rock'), false);
+  assert.deepEqual(HIDDEN_FAMILY_NODES, []);
+  assert.equal(isHiddenFamily('Electronic'), false);
   const t = sample();
-  const shown = layoutRadial(t, 'Electronic', { hidden: false });
   const l = layoutRadial(t, 'Electronic');
-  assert.equal(l.hiddenRoot, true);
-  assert.equal(l.nodes.some((n) => n.id === 'g:Electronic'), false);
-  assert.equal(l.nodes.length, shown.nodes.length - 1);
-  assert.equal(l.edges.some((e) => e.from === 'g:Electronic' || e.to === 'g:Electronic'), false);
-  assert.equal(l.edges.filter((e) => !e.cross).length, shown.edges.filter((e) => !e.cross).length - shown.nodes.filter((n) => n.level === 2).length, 'only the root edges are missing');
+  assert.equal(l.hiddenRoot, false);
   const root = l.byId.get('g:Electronic');
-  assert.deepEqual([root.hidden, root.x, root.y, root.r], [true, 0, 0, 0]);
+  assert.deepEqual([root.hidden, root.x, root.y, root.r], [undefined, 0, 0, 26]);
+  assert.ok(l.nodes.some((n) => n.id === 'g:Electronic'));
   const ring = l.nodes.filter((n) => n.level === 2);
   assert.ok(ring.length > 5);
-  for (const n of ring) assert.ok(Math.hypot(n.x, n.y) >= 220 - 1, n.name);
-  const ref = shown.byId;
-  for (const n of l.nodes) assert.deepEqual([n.x, n.y, n.hue], [ref.get(n.id).x, ref.get(n.id).y, ref.get(n.id).hue], 'the ring keeps the layout of the visible-root version');
-  assert.ok(l.bounds.x1 > 0 && l.bounds.x0 < 0);
-  for (const n of l.nodes) assert.ok(n.x - n.r >= l.bounds.x0 && n.x + n.r <= l.bounds.x1);
-  assert.equal(lay(t, 'Rock', { hidden: undefined }).hiddenRoot, false);
-  assert.equal(layoutRadial(t, 'Rock').hiddenRoot, false);
+  for (const n of ring) assert.ok(l.edges.some((e) => e.from === 'g:Electronic' && e.to === n.id), n.name);
+  assert.deepEqual(l.nodes.map((n) => [n.id, n.x, n.y]), layoutRadial(t, 'Electronic', { hidden: false }).nodes.map((n) => [n.id, n.x, n.y]));
 });
 
-test('selecting the hidden family still highlights its children and the layout keeps it as a target', () => {
+test('the hidden-family mechanism: a name in HIDDEN_FAMILY_NODES leaves the family circle undrawn around an empty centre and keeps it addressable', async () => {
+  const { HIDDEN_FAMILY_NODES, isHiddenFamily } = await import('./genre-data.js');
   const t = sample();
-  const l = layoutRadial(t, 'Electronic');
-  const h = highlightSets(t, 'g:Electronic');
-  assert.ok(h.kids.has('s:house') && h.chain.has('g:Electronic'));
-  assert.equal(l.byId.has('g:Electronic'), true);
-  assert.equal(l.byId.has('s:house'), true);
+  const shown = layoutRadial(t, 'Electronic');
+  HIDDEN_FAMILY_NODES.push('Electronic');
+  try {
+    assert.equal(isHiddenFamily('Electronic'), true);
+    assert.equal(isHiddenFamily('Rock'), false);
+    const l = layoutRadial(t, 'Electronic');
+    assert.equal(l.hiddenRoot, true);
+    assert.equal(l.nodes.some((n) => n.id === 'g:Electronic'), false);
+    assert.equal(l.nodes.length, shown.nodes.length - 1);
+    assert.equal(l.edges.some((e) => e.from === 'g:Electronic' || e.to === 'g:Electronic'), false);
+    const root = l.byId.get('g:Electronic');
+    assert.deepEqual([root.hidden, root.x, root.y, root.r], [true, 0, 0, 0]);
+    for (const n of l.nodes) assert.deepEqual([n.x, n.y], [shown.byId.get(n.id).x, shown.byId.get(n.id).y]);
+    const h = highlightSets(t, 'g:Electronic');
+    assert.ok(h.kids.has('s:house') && h.chain.has('g:Electronic'));
+    assert.equal(l.byId.has('s:house'), true);
+    assert.equal(layoutRadial(t, 'Rock').hiddenRoot, false);
+  } finally { HIDDEN_FAMILY_NODES.pop(); }
+  assert.equal(layoutRadial(t, 'Electronic').hiddenRoot, false);
 });
 
 test('a genre beyond level 3 is drawn on a ring further out, under its parent, with an edge to it', () => {

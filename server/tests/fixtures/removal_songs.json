@@ -6941,6 +6941,57 @@
 "electronic"
 ],
 "audio_state": "server"
+},
+{
+"id": "BAzCf0ascW8",
+"title": "Final Frontier",
+"mainArtists": [
+"Thomas Bergersen"
+],
+"featuredArtists": [],
+"releaseYear": 2014,
+"albums": [
+"Sun"
+],
+"bpm": 138,
+"wikipedia_song": null,
+"wikipedia_artist": null,
+"musicbrainz_url": "https://musicbrainz.org/recording/5f0b33b6-5b82-48a3-a907-e0b61224d6fb",
+"discogs_url": null,
+"source_url": "https://www.youtube.com/watch?v=BAzCf0ascW8",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=BAzCf0ascW8",
+"source": "youtube",
+"id": "BAzCf0ascW8"
+}
+],
+"cover": "covers/BAzCf0ascW8.jpg",
+"duration": 284,
+"added_at": "2026-10-14T11:49:50Z",
+"updated_at": "2026-10-15T20:39:45Z",
+"tags": [
+"genre:modern classical",
+"genre:epic",
+"decade:10s",
+"country:no"
+],
+"artist": "Thomas Bergersen",
+"remixer": null,
+"year": 2014,
+"remix_year": null,
+"album": "Sun",
+"genres": [
+"modern classical",
+"epic"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 4595373,
+"duration": 284
+}
 }
 ]
 }

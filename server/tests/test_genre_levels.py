@@ -530,8 +530,6 @@ def test_uplifting_trance_has_three_synonyms_that_do_not_touch_epic():
         assert not gf.unmappable(raw), raw
     for name in ("commercial trance", "stadium trance"):
         assert name not in gf.ALIASES
-    assert gf.canonical("epic") == "epic"
-    assert ENTRIES["epic"]["family"] == "Classical"
     payload = genre_vocab.vocabulary()
     assert payload["aliases"]["epic trance"] == "uplifting trance"
     assert payload["levels"]["uplifting trance"]["synonyms"] == ["anthem trance", "epic trance", "euphoric trance"]
@@ -562,20 +560,19 @@ def test_removed_genres_are_dropped_from_songs_by_the_tag_cleaner():
     for name in (*RM_GENRES, "soundtracks", "film score", "kids"):
         assert gf.is_dropped(name), name
         assert not gf.is_genre(name), name
-    assert library.clean_tags(["genre:Soundtrack", "genre:trailer", "genre:Score", "genre:house", "genre:epic"]) == ["genre:house", "genre:epic"]
+    assert library.clean_tags(["genre:Soundtrack", "genre:trailer", "genre:Score", "genre:house", "genre:epic"]) == ["genre:house"]
     assert library.clean_tags(["genre:trailer"]) == []
 
 
-def test_epic_is_a_level_two_classical_genre_next_to_modern_classical():
-    assert ENTRIES["epic"]["family"] == "Classical"
-    assert ENTRIES["epic"]["parents"] == ["Classical"]
-    assert ENTRIES["modern classical"]["family"] == "Classical"
-    assert EXTRAS["epic"]["parents"] == ["Classical"]
+def test_epic_is_a_descriptor_and_is_removed_everywhere_and_its_tag_is_dropped():
+    from app import genre_filter as gf
+    from app import genre_vocab
+    from app import library
 
-
-def test_spacesynth_is_level_three_under_synthwave_with_italo_disco_as_a_cross_link():
-    e = ENTRIES["spacesynth"]
-    assert (e["parents"], e["level"], e["family"], e["status"], e["discogs"]) == (["synthwave", "italo disco"], 3, "Electronic", "approved", False)
+    assert "epic" not in ENTRIES and "epic" not in DISCOGS["genres"] and "epic" not in EXTRAS
+    assert genre_vocab.lookup("epic") is None
+    assert gf.is_dropped("epic") and gf.is_dropped("Epic") and not gf.is_dropped("epic trance")
+    assert library.clean_tags(["genre:epic", "genre:modern classical"]) == ["genre:modern classical"]
 
 
 def test_space_disco_is_an_approved_extra_level_three_under_disco_in_electronic():
@@ -586,7 +583,7 @@ def test_space_disco_is_an_approved_extra_level_three_under_disco_in_electronic(
     assert "space disco" not in DISCOGS["genres"]
     assert genre_vocab.entry("space-disco").name == "space disco"
     assert genre_vocab.entry("space disco").parents == ("disco",)
-    assert len(EXTRAS) == 63
+    assert len(EXTRAS) == 62
 
 
 def test_electronic_counts_in_the_meta_block_match_the_data():
@@ -595,8 +592,8 @@ def test_electronic_counts_in_the_meta_block_match_the_data():
         mine = [v for v in ENTRIES.values() if family in v["families"]]
         assert counts[family] == {"total": len(mine), "level2": sum(v["level"] == 2 for v in mine), "level3": sum(v["level"] == 3 for v in mine), "level4": sum(v["level"] == 4 for v in mine)}, family
     assert (counts["Electronic"]["level2"], counts["Electronic"]["level3"], counts["Electronic"]["level4"]) == (54, 87, 5)
-    assert LEVELS["_meta"]["total"] == len(ENTRIES) == 535
-    assert sum(c["total"] for c in counts.values()) == sum(len(v["families"]) for v in ENTRIES.values()) == 579
+    assert LEVELS["_meta"]["total"] == len(ENTRIES) == 534
+    assert sum(c["total"] for c in counts.values()) == sum(len(v["families"]) for v in ENTRIES.values()) == 578
 
 
 ROCK_FUSION = {"folk metal", "folk punk", "rap metal", "electronic rock"}

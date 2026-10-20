@@ -24,8 +24,8 @@
     "level4": 0
    },
    "Classical": {
-    "total": 25,
-    "level2": 25,
+    "total": 24,
+    "level2": 24,
     "level3": 0,
     "level4": 0
    },
@@ -84,10 +84,10 @@
     "level4": 0
    }
   },
-  "total": 535,
+  "total": 534,
   "non_discogs": {
    "Blues": 0,
-   "Classical": 1,
+   "Classical": 0,
    "Electronic": 25,
    "Folk, World, & Country": 4,
    "Funk / Soul": 8,
@@ -1579,13 +1579,6 @@
   ],
   "provisional": true,
   "discogs": true
- },
- "epic": {
-  "parents": [
-   "Classical"
-  ],
-  "provisional": true,
-  "discogs": false
  },
  "estrada": {
   "parents": [

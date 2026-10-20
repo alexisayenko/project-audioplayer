@@ -1,6 +1,6 @@
 # Library genre cleanup (2026-10-19)
 
-Status: done. Applied at server start by `app.migrate_removals`, file `server/data/library_genre_removals.json` (115 songs, 192 genre removals, 15 genre additions, 1 song cleared; the second batch of 25 songs is not deployed yet). 0 HIGH rows pending, 37 MEDIUM rows left unproposed (below), 1 open decision (below).
+Status: done. Applied at server start by `app.migrate_removals`, file `server/data/library_genre_removals.json` (116 songs, 194 genre removals, 15 genre additions, 1 song cleared; the second batch of 25 songs is not deployed yet). 0 HIGH rows pending, 37 MEDIUM rows left unproposed (below), 1 open decision (below).
 
 Review of genres that were put on songs by mistake (removal, with a few owner-approved additions). Evidence is English Wikipedia (song page first, artist page second). The owner approved all HIGH-confidence rows (his edits included) plus the descriptor genres acoustic and instrumental (they are version types), and approved the remaining rows one by one in chat.
 
@@ -10,6 +10,7 @@ Conventions: "(also: X)" in an owner message means X was removed too; a "(maybe 
 
 - 2026-10-19 (commit 9a48455, deployed; verified on https://electrophone.cc/library): 90 songs, 150 genre removals, 7 genre additions, 1 song cleared.
 - 2026-10-20 (more owner-approved rows; not deployed yet): 25 more songs, 42 more removals, 8 more additions, which makes the totals in Status. Two former MEDIUM rows (Aaron Smith - Dancin (KRONO Remix), Gustavo Bravetti - Babel) were approved in that batch.
+- 2026-10-20 (not deployed yet): `epic` removed from 2 songs (descriptor, not a genre; Alex, 2026-10-20): one new row (Thomas Bergersen - Final Frontier) and one added to an existing row (Concord Dawn - Take Me Away), which makes 116 songs and 194 removals in total. No song had `epic` as its only genre. The vocabulary node is dropped as well (see [genre-levels.md](genre-levels.md#epic-removed-owner-2026-10-20)).
 - Record: `server/data/library_genre_removals.json` (machine-readable; per song `remove` / `add` / `clear` and the title). The per-row evidence (Wikipedia links) lived in the earlier revisions of this file (git history before this prune).
 - Mechanism: `app.migrate_removals` runs at server start, backs up each library to `backups-genre-removals/` first, and is idempotent (a second start changes nothing).
 

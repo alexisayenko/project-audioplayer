@@ -27,11 +27,11 @@ function makeCanvas() {
   };
 }
 
-async function setup() {
+async function setup(opts) {
   const { createRadialView } = await import('./genre-radial-view.js');
   const tree = buildTree(VOCAB);
   applyCounts(tree, SONGS);
-  const layout = layoutRadial(tree, 'Electronic');
+  const layout = layoutRadial(tree, 'Electronic', opts);
   const canvas = makeCanvas();
   const picked = [];
   const view = createRadialView(canvas, { onSelect: (id) => picked.push(id), onHover: () => {} });
@@ -115,8 +115,19 @@ test('labels never use leader lines: only edges are stroked as lines, none for l
   assert.ok((zoomed.fillText || []).length >= 1);
 });
 
-test('the hidden Electronic family shows its name as the title at the centre', async () => {
-  const { view } = await setup();
+test('Electronic is drawn like other families: its circle and its label once, no extra centre title', async () => {
+  const { view, layout } = await setup();
+  assert.equal(layout.hiddenRoot, false);
+  while (frames.length) frames.splice(0).forEach((fn) => fn());
+  drawCalls = {};
+  view.zoomBy(1);
+  while (frames.length) frames.splice(0).forEach((fn) => fn());
+  assert.equal((drawCalls.fillText || []).filter((a) => a[0] === 'Electronic').length, 1, 'one label');
+});
+
+test('a hidden family (mechanism, tested with an explicit flag) shows its name as the title at the centre', async () => {
+  const { view, layout } = await setup({ hidden: true });
+  assert.equal(layout.hiddenRoot, true);
   while (frames.length) frames.splice(0).forEach((fn) => fn());
   drawCalls = {};
   view.zoomBy(1);
