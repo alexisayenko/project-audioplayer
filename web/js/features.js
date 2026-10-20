@@ -18,8 +18,7 @@ export async function loadFeatures(fetchFn = globalThis.fetch) {
   return {
     unavailable: data.unavailable === true,
     releases: data.releases.filter((r) => r && typeof r.hash === 'string' && /^\d{4}-\d{2}-\d{2}/.test(r.date) && Array.isArray(r.items))
-      .map((r) => ({ ...r, date: r.date.slice(0, 10) }))
-      .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0)),
+      .map((r) => ({ ...r, date: r.date.slice(0, 10) })),
     planned: data.planned.filter((t) => t && /^task-\d+$/.test(t.id))
       .sort((a, b) => (a.id < b.id ? 1 : a.id > b.id ? -1 : 0)),
   };

@@ -275,3 +275,25 @@ def test_reviewed_extra_subject_is_excluded():
 
 def test_vocabulary_rows_subject_is_excluded():
     assert gf.clean_subject("fix: List spacesynth under synthwave in the vocabulary rows, test the served payload") is None
+
+
+def test_same_day_releases_newest_first_without_duplicates(tmp_path):
+    repo = make_repo(tmp_path)
+    first = head(repo)
+    add_commit(repo, "a1.txt", "feat: second deploy feature")
+    second = head(repo)
+    add_commit(repo, "a2.txt", "feat: third deploy feature")
+    third = head(repo)
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    deploys = [{"hash": first, "date": "2026-10-19"}, {"hash": second, "date": today}, {"hash": third, "date": today}]
+    out = gf.build(repo, deploys, {})["releases"]
+    assert [r["full"] for r in out[:3]] == [third, second, first]
+    assert out[0]["date"] == out[1]["date"] == today
+    texts = [i["text"] for r in out for i in r["items"]]
+    assert len(texts) == len(set(texts))
+    assert out[-1]["date"] == "2026-10-18"
+
+
+def test_backfilled_days_sort_by_last_commit_time():
+    commits = [commit("a", 20, "feat: later", hour=1), commit("b", 19, "feat: earlier", hour=23), commit("c", 20, "feat: latest", hour=22)]
+    assert [r["date"] for r in gf.by_day(commits, {}, {})] == ["2026-10-20", "2026-10-19"]

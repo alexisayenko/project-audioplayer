@@ -8,8 +8,8 @@ const { renderFeatures, loadFeatures, releaseBlock, TASK_URL, PAGE_SIZE, FAIL_TE
 const rel = (n) => ({ hash: `abc${String(n).padStart(4, '0')}`, full: `abc${String(n).padStart(4, '0')}${'0'.repeat(33)}`, date: `2026-01-${String(n % 28 + 1).padStart(2, '0')}`, items: [{ text: `Feature ${n}`, task: n % 2 ? 'task-0061' : null }] });
 const DATA = {
   releases: [
-    { hash: '1111111', full: '1'.repeat(40), date: '2026-10-18', items: [{ text: 'Older', task: null }] },
     { hash: '2222222', full: '2'.repeat(40), date: '2026-10-20', items: [{ text: 'Newer one', task: 'task-0063' }, { text: 'No task here', task: null }] },
+    { hash: '1111111', full: '1'.repeat(40), date: '2026-10-18', items: [{ text: 'Older', task: null }] },
   ],
   planned: [
     { id: 'task-0010', title: 'Old plan', tags: ['ios'], status: 'to do' },
@@ -128,4 +128,10 @@ test('the data comes from the server route and an unavailable history says so, p
   assert.equal(root.querySelector('[role="tabpanel"]').textContent, UNAVAILABLE);
   tab(root, 1).click();
   assert.equal(root.querySelectorAll('.ft-plan').length, 2);
+});
+
+test('the page keeps the server order, same-date releases are not re-sorted', async () => {
+  const same = ['3333333', '2222222', '1111111'].map((h) => ({ hash: h, date: '2026-10-20', items: [{ text: h, task: null }] }));
+  const root = await mount({ releases: same, planned: [] });
+  assert.deepEqual([...root.querySelectorAll('.ft-hash')].map((n) => n.textContent), ['3333333', '2222222', '1111111']);
 });

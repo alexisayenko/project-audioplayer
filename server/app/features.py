@@ -146,8 +146,8 @@ def by_day(commits: list[dict[str, Any]], tasks: dict[str, Any], rmap: dict[str,
     for day, group in days.items():
         made = make_release(group, tasks, rmap)
         if made:
-            out.append({"hash": made[0][:7], "full": made[0], "date": day, "items": made[1]})
-    return out
+            out.append(({"hash": made[0][:7], "full": made[0], "date": day, "items": made[1]}, max(c["ts"] for c in group)))
+    return [r for r, _ in sorted(out, key=lambda p: p[1], reverse=True)]
 
 
 def by_deploys(commits_for: Any, deploys: list[dict[str, str]], tasks: dict[str, Any], rmap: dict[str, str | None]) -> list[dict[str, Any]]:
@@ -207,7 +207,6 @@ def build(repo: Path, deploys: list[dict[str, str]], rmap: dict[str, str | None]
         releases = _releases(repo, deploys, tasks, rmap)
     except (OSError, subprocess.SubprocessError):
         return {"releases": [], "planned": planned(tasks), "unavailable": True}
-    releases.sort(key=lambda r: r["date"], reverse=True)
     return {"releases": releases, "planned": planned(tasks), "unavailable": False}
 
 
@@ -225,7 +224,8 @@ def _releases(repo: Path, deploys: list[dict[str, str]], tasks: dict[str, Any], 
             return [c for c in head_commits if c["date"] >= first["date"]]
         return read_log(repo, f"{prev}..{h}")
 
-    return by_deploys(commits_for, deploys, tasks, rmap) + by_day([c for c in head_commits if c["date"] < first["date"]], tasks, rmap)
+    recorded = by_deploys(commits_for, deploys, tasks, rmap)
+    return recorded[::-1] + by_day([c for c in head_commits if c["date"] < first["date"]], tasks, rmap)
 
 
 def state_path() -> Path:
