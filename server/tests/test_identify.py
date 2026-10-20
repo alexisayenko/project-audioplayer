@@ -61,7 +61,7 @@ def test_full_merge_priorities_and_caps(monkeypatch):
     out = identify.run(SONG, "x.m4a")
     assert out["status"] == "ok"
     assert out["matched"] == {"artist": "Daft Punk", "title": "Around the World", "confidence": 0.974, "source": "acoustid"}
-    assert out["suggested_tags"] == ["genre:deep house", "genre:disco", "genre:house", "genre:electronic", "country:fr"]
+    assert out["suggested_tags"] == ["genre:deep house", "genre:disco", "genre:house", "country:fr"]
     assert out["suggested_year"] == 1997
     assert out["links"] == {"musicbrainz": MB_URL, "discogs": "https://www.discogs.com/release/5",
                             "wikipedia_song": "https://en.wikipedia.org/wiki/Around_the_World_(Daft_Punk_song)", "wikipedia_artist": "https://en.wikipedia.org/wiki/Daft_Punk", "wikipedia_album": None}
@@ -121,7 +121,7 @@ def test_a_failing_source_is_skipped(monkeypatch):
     out = identify.run(SONG, "x.m4a")
     assert out["status"] == "ok"
     assert "discogs" not in out["sources"]
-    assert out["suggested_tags"][:2] == ["genre:house", "genre:electronic"]
+    assert out["suggested_tags"][:2] == ["genre:house", "country:fr"]
 
 
 def test_year_priority_wiki_then_musicbrainz_then_discogs(monkeypatch):

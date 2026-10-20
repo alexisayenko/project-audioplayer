@@ -18,7 +18,7 @@ WIKI = {
     "year": 1987, "wikipedia_song": "https://en.wikipedia.org/wiki/Tell_It_to_My_Heart_(Taylor_Dayne_song)", "wikipedia_artist": "https://en.wikipedia.org/wiki/Taylor_Dayne",
 }
 MB = ["genre:dance pop", "genre:pop", "genre:electronic"]
-APPLIED = ["genre:hi-nrg", "genre:dance pop", "genre:synthpop", "genre:pop", "genre:electronic", "country:us"]
+APPLIED = ["genre:hi-nrg", "genre:dance pop", "genre:synthpop", "genre:pop", "country:us"]
 SUGGESTED = {"freestyle": ["wikipedia_song"], "soul": ["wikipedia_artist"], "house": ["wikipedia_artist"]}
 
 

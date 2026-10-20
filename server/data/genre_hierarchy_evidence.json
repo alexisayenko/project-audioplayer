@@ -2,10 +2,10 @@
  "_meta": {
   "generated_at": "2026-10-19T13:49:33.730Z",
   "review_only": "Not loaded by the server and not in the payload. Compare with scripts/hierarchy-diff.mjs.",
-  "genres_with_wikipedia_match": 469,
-  "with_wikidata_parents": 469,
+  "genres_with_wikipedia_match": 468,
+  "with_wikidata_parents": 468,
   "with_lead_parents": 248,
-  "with_origins": 392,
+  "with_origins": 391,
   "fetch_failures": [],
   "how": "subclass_of / instance_of: Wikidata P279 / P31 of the matched item (instance of 'music genre' left out), labels in English. lead_parents: links in the first sentence after 'subgenre of', 'genre/style/form of', 'fusion of', 'offshoot/derivative of', 'derived/evolved/emerged from' (phrase_kind subgenre, genre_of, fusion, offshoot). origins / derivatives: links of the infobox fields stylistic_origins and derivatives. key: the vocabulary key the label maps to through the Wikipedia title, then the name, then a synonym (null: not in our vocabulary or ambiguous)."
  },
@@ -105,103 +105,6 @@
   "lead_parents": [],
   "origins": [],
   "derivatives": []
- },
- "electronic": {
-  "wikidata": "Q9778",
-  "wikipedia": "Electronic music",
-  "subclass_of": [
-   {
-    "q": "Q115484611",
-    "label": "music",
-    "key": null
-   }
-  ],
-  "instance_of": [],
-  "lead_parents": [],
-  "origins": [
-   {
-    "label": "Modernism (music)",
-    "key": null
-   },
-   {
-    "label": "Futurism (music)",
-    "key": null
-   }
-  ],
-  "derivatives": [
-   {
-    "label": "alternative pop",
-    "key": "alternative pop"
-   },
-   {
-    "label": "Ambient music",
-    "key": "ambient"
-   },
-   {
-    "label": "contemporary R&B",
-    "key": "contemporary r&b"
-   },
-   {
-    "label": "Drone music",
-    "key": "drone"
-   },
-   {
-    "label": "Dub music",
-    "key": "dub"
-   },
-   {
-    "label": "Electronic body music",
-    "key": "ebm"
-   },
-   {
-    "label": "Electronic dance music",
-    "key": "edm"
-   },
-   {
-    "label": "hip-hop",
-    "key": "hip hop"
-   },
-   {
-    "label": "Intelligent dance music",
-    "key": "idm"
-   },
-   {
-    "label": "Industrial music",
-    "key": null
-   },
-   {
-    "label": "neo soul",
-    "key": "neo soul"
-   },
-   {
-    "label": "new musick",
-    "key": null
-   },
-   {
-    "label": "New wave music",
-    "key": "new wave"
-   },
-   {
-    "label": "New-age music",
-    "key": "new age"
-   },
-   {
-    "label": "Noise music",
-    "key": "noise"
-   },
-   {
-    "label": "Psychedelic music",
-    "key": null
-   },
-   {
-    "label": "synth-pop",
-    "key": "synthpop"
-   },
-   {
-    "label": "synthedelia",
-    "key": null
-   }
-  ]
  },
  "folk, world, & country": {
   "wikidata": "Q205049",
@@ -704,7 +607,7 @@
    {
     "q": "Q898709",
     "label": "rave music",
-    "key": "electronic"
+    "key": null
    },
    {
     "q": "Q106528337",
@@ -1251,7 +1154,7 @@
    },
    {
     "label": "Electronic music",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "experimental music",
@@ -1894,7 +1797,7 @@
    },
    {
     "label": "electronica",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "post-disco",
@@ -2426,7 +2329,7 @@
    },
    {
     "label": "electronic music",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "deutschrock",
@@ -2569,7 +2472,7 @@
   "origins": [
    {
     "label": "Electronic music",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "breakbeat hardcore",
@@ -2985,7 +2888,7 @@
   "lead_parents": [
    {
     "label": "electronic music",
-    "key": "electronic",
+    "key": null,
     "phrase_kind": "genre_of"
    },
    {
@@ -3276,7 +3179,7 @@
   "lead_parents": [
    {
     "label": "electronic music",
-    "key": "electronic",
+    "key": null,
     "phrase_kind": "genre_of"
    }
   ],
@@ -3498,7 +3401,7 @@
    {
     "q": "Q817138",
     "label": "electronica",
-    "key": "electronic"
+    "key": null
    }
   ],
   "instance_of": [],
@@ -3870,7 +3773,7 @@
    },
    {
     "label": "electronic music",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "Synth-Pop",
@@ -4265,7 +4168,7 @@
    {
     "q": "Q9778",
     "label": "electronic music",
-    "key": "electronic"
+    "key": null
    }
   ],
   "instance_of": [],
@@ -4293,7 +4196,7 @@
    },
    {
     "label": "Electronic music",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "indie pop",
@@ -4408,14 +4311,14 @@
   "lead_parents": [
    {
     "label": "electronic music",
-    "key": "electronic",
+    "key": null,
     "phrase_kind": "genre_of"
    }
   ],
   "origins": [
    {
     "label": "Electronic music",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "video game music",
@@ -4580,7 +4483,7 @@
    },
    {
     "label": "Electronic music",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "soft rock",
@@ -4765,7 +4668,7 @@
    },
    {
     "label": "electronic music",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "new musick",
@@ -4779,7 +4682,7 @@
    },
    {
     "label": "electronica",
-    "key": "electronic"
+    "key": null
    }
   ]
  },
@@ -4927,7 +4830,7 @@
    },
    {
     "label": "Electronic music",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "hip-hop",
@@ -5470,7 +5373,7 @@
    },
    {
     "label": "Electronic music",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "ska",
@@ -6266,7 +6169,7 @@
   "origins": [
    {
     "label": "Electronic music",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "ambient music",
@@ -6441,7 +6344,7 @@
    },
    {
     "label": "electronic music",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "Indian classical music",
@@ -6516,7 +6419,7 @@
    },
    {
     "label": "electronica",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "breakbeat",
@@ -6565,7 +6468,7 @@
    },
    {
     "label": "Electronic music",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "ska",
@@ -6812,7 +6715,7 @@
    {
     "q": "Q9778",
     "label": "electronic music",
-    "key": "electronic"
+    "key": null
    }
   ],
   "instance_of": [],
@@ -6829,7 +6732,7 @@
    },
    {
     "label": "electronic music",
-    "key": "electronic",
+    "key": null,
     "phrase_kind": "genre_of"
    }
   ],
@@ -6994,7 +6897,7 @@
   "lead_parents": [
    {
     "label": "electronic music",
-    "key": "electronic",
+    "key": null,
     "phrase_kind": "genre_of"
    }
   ],
@@ -7125,7 +7028,7 @@
   "origins": [
    {
     "label": "Electronic music",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "synth-pop",
@@ -7217,7 +7120,7 @@
    },
    {
     "label": "electronica",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "electropop",
@@ -7454,7 +7357,7 @@
    },
    {
     "label": "electronic music",
-    "key": "electronic"
+    "key": null
    }
   ],
   "derivatives": [
@@ -8475,7 +8378,7 @@
    {
     "q": "Q817138",
     "label": "electronica",
-    "key": "electronic"
+    "key": null
    }
   ],
   "instance_of": [],
@@ -8487,7 +8390,7 @@
    },
    {
     "label": "electronic music",
-    "key": "electronic",
+    "key": null,
     "phrase_kind": "genre_of"
    }
   ],
@@ -8514,7 +8417,7 @@
    },
    {
     "label": "electronica",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "free jazz",
@@ -8526,7 +8429,7 @@
    },
    {
     "label": "electronic music",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "jazz rap",
@@ -8717,7 +8620,7 @@
    },
    {
     "label": "Electronic music",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "house music",
@@ -9078,14 +8981,14 @@
    },
    {
     "label": "electronic music",
-    "key": "electronic",
+    "key": null,
     "phrase_kind": "genre_of"
    }
   ],
   "origins": [
    {
     "label": "Electronic music",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "sound art",
@@ -9119,7 +9022,7 @@
    },
    {
     "label": "indietronica",
-    "key": "electronic"
+    "key": null
    }
   ]
  },
@@ -9152,14 +9055,14 @@
    },
    {
     "label": "electronic music",
-    "key": "electronic",
+    "key": null,
     "phrase_kind": "genre_of"
    }
   ],
   "origins": [
    {
     "label": "Electronic music",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "sound art",
@@ -9193,7 +9096,7 @@
    },
    {
     "label": "indietronica",
-    "key": "electronic"
+    "key": null
    }
   ]
  },
@@ -10511,7 +10414,7 @@
   "origins": [
    {
     "label": "Electronic music",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "disco",
@@ -10778,7 +10681,7 @@
    },
    {
     "label": "Electronic music",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "hi-NRG",
@@ -10824,7 +10727,7 @@
   "derivatives": [
    {
     "label": "Alternative dance",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "budots",
@@ -10868,7 +10771,7 @@
   "origins": [
    {
     "label": "Electronic music",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "pop music",
@@ -11026,14 +10929,14 @@
    {
     "q": "Q9778",
     "label": "electronic music",
-    "key": "electronic"
+    "key": null
    }
   ],
   "instance_of": [],
   "lead_parents": [
    {
     "label": "electronic music",
-    "key": "electronic",
+    "key": null,
     "phrase_kind": "genre_of"
    },
    {
@@ -11774,7 +11677,7 @@
   "lead_parents": [
    {
     "label": "electronic music",
-    "key": "electronic",
+    "key": null,
     "phrase_kind": "genre_of"
    }
   ],
@@ -12096,7 +11999,7 @@
    },
    {
     "label": "electronic music",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "deutschrock",
@@ -13756,7 +13659,7 @@
    },
    {
     "label": "Electronic music",
-    "key": "electronic"
+    "key": null
    }
   ],
   "derivatives": [
@@ -14094,7 +13997,7 @@
    },
    {
     "label": "electronic music",
-    "key": "electronic"
+    "key": null
    }
   ],
   "derivatives": [
@@ -14184,7 +14087,7 @@
   "origins": [
    {
     "label": "Electronic music",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "Ambient music",
@@ -14279,7 +14182,7 @@
    },
    {
     "label": "rave music",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "hardstyle",
@@ -14375,7 +14278,7 @@
    },
    {
     "label": "Electronic music",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "krautrock",
@@ -14413,7 +14316,7 @@
   "derivatives": [
    {
     "label": "Alternative dance",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "alternative rock",
@@ -14578,7 +14481,7 @@
    },
    {
     "label": "electronic music",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "Futurism (music)",
@@ -15197,7 +15100,7 @@
    {
     "q": "Q9778",
     "label": "electronic music",
-    "key": "electronic"
+    "key": null
    }
   ],
   "instance_of": [],
@@ -15408,7 +15311,7 @@
    },
    {
     "label": "Electronic music",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "musique concrete",
@@ -15894,7 +15797,7 @@
    },
    {
     "label": "Electronic music",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "krautrock",
@@ -15940,7 +15843,7 @@
    },
    {
     "label": "alternative dance",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "avant-funk",
@@ -16073,7 +15976,7 @@
    },
    {
     "label": "electronica",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "Contemporary classical music",
@@ -16275,7 +16178,7 @@
   "lead_parents": [
    {
     "label": "electronic music",
-    "key": "electronic",
+    "key": null,
     "phrase_kind": "genre_of"
    }
   ],
@@ -16636,7 +16539,7 @@
    },
    {
     "label": "electronic music",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "raga",
@@ -17021,7 +16924,7 @@
    },
    {
     "label": "Electronic music",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "rocksteady",
@@ -17073,7 +16976,7 @@
    },
    {
     "label": "Electronic music",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "rocksteady",
@@ -17382,7 +17285,7 @@
    },
    {
     "label": "electronic music",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "latin music",
@@ -19177,7 +19080,7 @@
   "lead_parents": [
    {
     "label": "electronic music",
-    "key": "electronic",
+    "key": null,
     "phrase_kind": "genre_of"
    }
   ],
@@ -19657,7 +19560,7 @@
    },
    {
     "label": "alternative dance",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "futurepop",
@@ -19680,7 +19583,7 @@
    {
     "q": "Q9778",
     "label": "electronic music",
-    "key": "electronic"
+    "key": null
    }
   ],
   "instance_of": [],
@@ -19688,7 +19591,7 @@
   "origins": [
    {
     "label": "Electronic music",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "synth-pop",
@@ -19979,7 +19882,7 @@
   "lead_parents": [
    {
     "label": "electronic music",
-    "key": "electronic",
+    "key": null,
     "phrase_kind": "genre_of"
    }
   ],
@@ -20032,7 +19935,7 @@
   "derivatives": [
    {
     "label": "Alternative dance",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "trance music",
@@ -20388,7 +20291,7 @@
    },
    {
     "label": "electronic music",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "bounce music",
@@ -20504,14 +20407,14 @@
    },
    {
     "label": "electronica",
-    "key": "electronic",
+    "key": null,
     "phrase_kind": "fusion"
    }
   ],
   "origins": [
    {
     "label": "Electronica",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "hip-hop",
@@ -20685,7 +20588,7 @@
   "lead_parents": [
    {
     "label": "electronic music",
-    "key": "electronic",
+    "key": null,
     "phrase_kind": "genre_of"
    }
   ],
@@ -20812,7 +20715,7 @@
    },
    {
     "label": "Electronic music",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "elevator music",
@@ -20985,7 +20888,7 @@
    {
     "q": "Q9778",
     "label": "electronic music",
-    "key": "electronic"
+    "key": null
    }
   ],
   "instance_of": [],
@@ -21299,7 +21202,7 @@
    },
    {
     "label": "Electronic music",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "dream pop",
@@ -21343,7 +21246,7 @@
    },
    {
     "label": "Electronic music",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "progressive soul",
@@ -21592,7 +21495,7 @@
   "derivatives": [
    {
     "label": "Alternative dance",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "grebo (music)",
@@ -21619,7 +21522,7 @@
   "origins": [
    {
     "label": "Electronic music",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "synth-pop",
@@ -21754,7 +21657,7 @@
    {
     "q": "Q9778",
     "label": "electronic music",
-    "key": "electronic"
+    "key": null
    }
   ],
   "instance_of": [],
@@ -21774,7 +21677,7 @@
    {
     "q": "Q9778",
     "label": "electronic music",
-    "key": "electronic"
+    "key": null
    }
   ],
   "instance_of": [],
@@ -21786,7 +21689,7 @@
    },
    {
     "label": "electronic music",
-    "key": "electronic",
+    "key": null,
     "phrase_kind": "fusion"
    }
   ],
@@ -21797,7 +21700,7 @@
    },
    {
     "label": "Electronic music",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "musique concrète",
@@ -22899,7 +22802,7 @@
    },
    {
     "label": "electronic music",
-    "key": "electronic"
+    "key": null
    },
    {
     "label": "hi-NRG",

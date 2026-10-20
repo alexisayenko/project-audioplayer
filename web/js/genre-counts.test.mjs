@@ -23,7 +23,7 @@ test('library songs are counted from genre: tags and from bare genres, case, spa
   assert.ok(count(synth) > synth.own.size);
   assert.equal(t.byId.get('s:drum and bass').own.size, 2);
   assert.equal(t.byId.get('s:r&b').own.has('d'), true);
-  assert.equal(t.byId.get('g:Electronic').all.has('c'), true);
+  assert.equal(t.byId.get('g:Others').all.has('c'), true);
   assert.equal(resolveNode('Soviet  Wave', t).id, 's:sovietwave');
 });
 
@@ -46,8 +46,8 @@ test('genre labels are used as the vocabulary gives them: lowercase genres, capi
   const t = buildTree(realVocab());
   const g = buildMapGraph(t);
   assert.equal(g.byId.get('g:Rock').label, 'Rock');
-  assert.equal(g.byId.has('g:Electronic'), true);
-  assert.equal(t.byId.get('g:Electronic').label, 'Electronic');
+  assert.equal(g.byId.has('g:Others'), true);
+  assert.equal(t.byId.get('g:Others').label, 'Others');
   assert.equal(g.byId.get('s:drum and bass').label, g.byId.get('s:drum and bass').node.display || 'drum and bass');
   const t2 = buildTree({ families: ['Electronic'], genres: [], aliases: {}, family_synonyms: {}, modifiers: {}, levels: { 'soviet wave': { parents: ['Electronic'], display: 'soviet wave' }, 'uk garage': { parents: ['Electronic'] } } });
   assert.equal(buildMapGraph(t2).byId.get('s:soviet wave').label, 'soviet wave');

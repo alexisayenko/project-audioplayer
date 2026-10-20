@@ -6,13 +6,13 @@ import { buildTree } from './genre-levels.js';
 const payload = JSON.parse(readFileSync(new URL('../../server/tests/fixtures/genre_payload_levels.json', import.meta.url), 'utf8'));
 const tree = buildTree({ ...payload, genres: [] });
 
-test('the tree built from the served payload puts spacesynth at level 3 under both synthwave and italo disco, and in Electronic and Funk / Soul', () => {
+test('the tree built from the served payload puts spacesynth at level 3 under both synthwave and italo disco, and in Others and Funk / Soul', () => {
   const n = tree.byId.get('s:spacesynth');
   assert.equal(n.level, 3);
   assert.deepEqual([...n.parents].sort(), ['s:italo disco', 's:synthwave']);
   assert.equal(n.parent, 's:synthwave', 'the display chain follows the parent on the shortest path');
-  assert.deepEqual(n.fams, ['Electronic', 'Funk / Soul']);
-  assert.equal(n.family, 'Electronic');
+  assert.deepEqual(n.fams, ['Others', 'Funk / Soul']);
+  assert.equal(n.family, 'Others');
   assert.ok(tree.byId.get('s:synthwave').children.includes(n));
   assert.ok(tree.byId.get('s:italo disco').children.includes(n));
 });
@@ -26,10 +26,10 @@ test('the served payload agrees with the tree built in the browser: level, famil
   }
 });
 
-test('disco belongs to Funk / Soul and Electronic and so do its children; post-disco is under disco', () => {
-  for (const k of ['disco', 'euro disco', 'nu-disco', 'hi-nrg', 'italo disco', 'space disco', 'post-disco']) assert.deepEqual(tree.byId.get(`s:${k}`).fams, ['Electronic', 'Funk / Soul'], k);
+test('disco belongs to Funk / Soul and Others and so do its children; post-disco is under disco', () => {
+  for (const k of ['disco', 'euro disco', 'nu-disco', 'hi-nrg', 'italo disco', 'space disco', 'post-disco']) assert.deepEqual(tree.byId.get(`s:${k}`).fams, ['Others', 'Funk / Soul'], k);
   assert.deepEqual(tree.byId.get('s:post-disco').parents, ['s:disco']);
-  assert.ok(tree.byId.get('g:Funk / Soul').children.some((c) => c.name === 'disco') && tree.byId.get('g:Electronic').children.some((c) => c.name === 'disco'));
+  assert.ok(tree.byId.get('g:Funk / Soul').children.some((c) => c.name === 'disco') && tree.byId.get('g:Others').children.some((c) => c.name === 'disco'));
 });
 
 test('the tree built from the served payload puts space disco at level 3 under disco', () => {

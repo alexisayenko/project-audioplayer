@@ -1,6 +1,6 @@
 {
  "_notes": [
-  "Reviewed extras (TAG-078, ADR-0023, ADR-0030): real genres Discogs lacks, each with parents, a list of canonical names or family names: parents[0] is the primary parent (a family name makes the genre a direct child of that family) and decides the family; further entries are extra parents. The optional family overrides the family derived from parents[0] (space disco: under disco, which is a Funk / Soul genre, but a genre of Electronic). Entries are reviewed in git; 'electronic' is a family and therefore not listed here.",
+  "Reviewed extras (TAG-078, ADR-0023, ADR-0030): real genres Discogs lacks, each with parents, a list of canonical names or family names: parents[0] is the primary parent (a family name makes the genre a direct child of that family) and decides the family; further entries are extra parents. The optional family overrides the family derived from parents[0] (space disco: under disco, which is a Funk / Soul genre, but a genre of Electronic). Entries are reviewed in git; 'electronic' is not a genre (the group Others replaced the Electronic family) and is not listed here.",
   "Origin: the kept sub-genres of TAG-076 and the manual parents of GEN-045, plus library tags that are real genres Discogs does not list (reviewed 2026-10-16). note says where each came from."
  ],
  "extras": {
@@ -103,7 +103,7 @@
   },
   "edm": {
    "parents": [
-    "Electronic"
+    "Others"
    ],
    "note": "reviewed: dance-oriented electronic umbrella; house/techno/trance etc. stay at level 2 under Electronic (owner decision DY1/EDM, 2026-10-19; not in Discogs)"
   },

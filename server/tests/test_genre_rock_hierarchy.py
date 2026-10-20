@@ -78,7 +78,7 @@ def test_extreme_metal_is_an_extra_parent_of_thrash_doom_death_and_black_metal_a
 
 
 def test_rock_blends_with_another_family_carry_the_family_and_the_fusion_flag():
-    want = {"folk metal": "Folk, World, & Country", "folk punk": "Folk, World, & Country", "rap metal": "Hip Hop", "funk metal": "Funk / Soul", "electronic rock": "Electronic"}
+    want = {"folk metal": "Folk, World, & Country", "folk punk": "Folk, World, & Country", "rap metal": "Hip Hop", "funk metal": "Funk / Soul", "electronic rock": "Others"}
     for k, fam in want.items():
         assert fam in ENTRIES[k]["parents"] and ENTRIES[k]["fusion"] is True and "Rock" in ENTRIES[k]["families"] and fam in ENTRIES[k]["families"], k
     for k in ("coldwave", "industrial metal", "industrial rock"):

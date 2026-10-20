@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from app import library, migrate_removals as mr
+from app import genre_vocab, library, migrate_removals as mr
 
 OWNER = "owneruid"
 FIXTURE = Path(__file__).parent / "fixtures" / "removal_songs.json"
@@ -193,7 +193,7 @@ def test_the_real_file_against_the_live_shape():
     songs = library.normalize({"songs": copy.deepcopy(live)})["songs"]
     before = copy.deepcopy(songs)
     result = mr.apply_plan(songs, plan, adds, clears)
-    assert not result["skipped"] and not result["unknown"]
+    assert not result["skipped"] and result["unknown"] == {"yQR_NLeXKtw": ["electronic"]}, "the owner's 2026-10-19 row added electronic, a group now (history, already applied live): reported as unknown, not added"
     present = {s["id"]: {t.partition(":")[2] for t in s["tags"] if t.startswith("genre:")} for s in before}
     assert set(result["cleared"]) == clears
     assert sum(len(v) for v in result["removed"].values()) == sum(len(set(v) & present[sid]) for sid, v in plan.items())
@@ -201,7 +201,7 @@ def test_the_real_file_against_the_live_shape():
     for old, new in zip(before, songs):
         genres = [t.partition(":")[2] for t in new["tags"] if t.startswith("genre:")]
         assert (genres or new["id"] in clears) and not (new["id"] in clears and genres) and not set(plan[new["id"]]) & set(genres)
-        assert set(adds.get(new["id"], [])) <= set(genres)
+        assert {a for a in adds.get(new["id"], []) if genre_vocab.is_canonical(a)} <= set(genres)
         assert {k: v for k, v in new.items() if k != "tags"} == {k: v for k, v in old.items() if k != "tags"}
         assert [t for t in new["tags"] if not t.startswith("genre:")] == [t for t in old["tags"] if not t.startswith("genre:")]
 

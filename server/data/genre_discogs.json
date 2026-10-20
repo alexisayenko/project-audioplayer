@@ -4,12 +4,13 @@
   "families: the Discogs level-1 names kept (11 of the 15; Brass & Military, Children's, Non-Music and Stage & Screen are removed) in the fixed order of GEN-037. genres: lowercase genre name to its parents, a list of families: parents[0] is the family Discogs files it under (the first in the GEN-037 order, or a reviewed override: disco, new wave, acid jazz, gospel, rhythm and blues, dub and the older overrides of ADR-0021); any further entry is another family Discogs also files it under (GEN-039).",
   "Spelling: the name is Discogs's lowercased, except where the project already used another spelling (drum and bass, rock and roll, rhythm and blues, psytrance, synthpop, hi-nrg, hip house, euro disco, dance pop and the like): lookups ignore case, spaces, hyphens and '&' versus 'and', and one spelling is stored. discogs_names lists the names that differ beyond that.",
   "Source: the Discogs genres and styles list (support.discogs.com help article, Database Guidelines, Genres and Styles). Only names and the relation of a Discogs style to its Discogs genre are used, no release data. The article is behind a bot check, so the list was written from memory of it and each name was checked against the public Discogs database search (the style=<name> query parameter, no token, 2026-10-16): a name is kept when releases with exactly that Discogs style exist. The relation of a name to its family cannot be read from the search (Discogs genre and style filter independently), so it comes from the reviewed table of ADR-0021 and the Discogs list as remembered; see README.md.",
-  "unverified: names kept without a successful search check (see README.md); empty means every name was found in the Discogs database."
+  "unverified: names kept without a successful search check (see README.md); empty means every name was found in the Discogs database.",
+  "Electronic is now the temporary group Others (task-0066, 2026-10-20): it still lists as a family here but is not a vocabulary entry (a group is never assigned to a song)."
  ],
  "families": [
   "Blues",
   "Classical",
-  "Electronic",
+  "Others",
   "Folk, World, & Country",
   "Funk / Soul",
   "Hip Hop",
@@ -24,17 +25,17 @@
    "Folk, World, & Country"
   ],
   "abstract": [
-   "Electronic"
+   "Others"
   ],
   "acid": [
-   "Electronic"
+   "Others"
   ],
   "acid house": [
-   "Electronic"
+   "Others"
   ],
   "acid jazz": [
    "Jazz",
-   "Electronic"
+   "Others"
   ],
   "acid rock": [
    "Rock"
@@ -64,10 +65,10 @@
    "Folk, World, & Country"
   ],
   "ambient": [
-   "Electronic"
+   "Others"
   ],
   "ambient house": [
-   "Electronic"
+   "Others"
   ],
   "anarcho-punk": [
    "Rock"
@@ -109,7 +110,7 @@
    "Folk, World, & Country"
   ],
   "balearic": [
-   "Electronic"
+   "Others"
   ],
   "ballad": [
    "Pop"
@@ -118,7 +119,7 @@
    "Pop"
   ],
   "baltimore club": [
-   "Electronic"
+   "Others"
   ],
   "banda": [
    "Latin"
@@ -133,10 +134,10 @@
    "Pop"
   ],
   "bass music": [
-   "Electronic"
+   "Others"
   ],
   "bassline": [
-   "Electronic"
+   "Others"
   ],
   "batucada": [
    "Latin"
@@ -145,13 +146,13 @@
    "Rock"
   ],
   "beatbox": [
-   "Electronic"
+   "Others"
   ],
   "beguine": [
    "Latin"
   ],
   "berlin-school": [
-   "Electronic"
+   "Others"
   ],
   "bhangra": [
    "Folk, World, & Country"
@@ -160,7 +161,7 @@
    "Jazz"
   ],
   "big beat": [
-   "Electronic"
+   "Others"
   ],
   "black metal": [
    "Rock"
@@ -169,7 +170,7 @@
    "Rock"
   ],
   "bleep": [
-   "Electronic"
+   "Others"
   ],
   "bluegrass": [
    "Folk, World, & Country"
@@ -210,19 +211,19 @@
    "Hip Hop"
   ],
   "breakbeat": [
-   "Electronic"
+   "Others"
   ],
   "breakcore": [
-   "Electronic"
+   "Others"
   ],
   "breaks": [
-   "Electronic"
+   "Others"
   ],
   "britpop": [
    "Rock"
   ],
   "broken beat": [
-   "Electronic"
+   "Others"
   ],
   "brutal death metal": [
    "Rock"
@@ -279,13 +280,13 @@
    "Blues"
   ],
   "chillwave": [
-   "Electronic"
+   "Others"
   ],
   "chinese classical": [
    "Folk, World, & Country"
   ],
   "chiptune": [
-   "Electronic"
+   "Others"
   ],
   "choral": [
    "Classical"
@@ -373,10 +374,10 @@
    "Folk, World, & Country"
   ],
   "dark ambient": [
-   "Electronic"
+   "Others"
   ],
   "dark electro": [
-   "Electronic"
+   "Others"
   ],
   "dark jazz": [
    "Jazz"
@@ -394,10 +395,10 @@
    "Rock"
   ],
   "deep house": [
-   "Electronic"
+   "Others"
   ],
   "deep techno": [
-   "Electronic"
+   "Others"
   ],
   "delta blues": [
    "Blues"
@@ -413,10 +414,10 @@
   ],
   "disco": [
    "Funk / Soul",
-   "Electronic"
+   "Others"
   ],
   "disco polo": [
-   "Electronic"
+   "Others"
   ],
   "dixieland": [
    "Jazz"
@@ -425,7 +426,7 @@
    "Hip Hop"
   ],
   "donk": [
-   "Electronic"
+   "Others"
   ],
   "doo-wop": [
    "Funk / Soul"
@@ -434,10 +435,10 @@
    "Rock"
   ],
   "doomcore": [
-   "Electronic"
+   "Others"
   ],
   "downtempo": [
-   "Electronic"
+   "Others"
   ],
   "dream pop": [
    "Rock"
@@ -446,26 +447,26 @@
    "Hip Hop"
   ],
   "drone": [
-   "Electronic"
+   "Others"
   ],
   "drum and bass": [
-   "Electronic"
+   "Others"
   ],
   "dub": [
    "Reggae",
-   "Electronic"
+   "Others"
   ],
   "dub poetry": [
    "Reggae"
   ],
   "dub techno": [
-   "Electronic"
+   "Others"
   ],
   "dubstep": [
-   "Electronic"
+   "Others"
   ],
   "dungeon synth": [
-   "Electronic"
+   "Others"
   ],
   "early": [
    "Classical"
@@ -477,23 +478,23 @@
    "Pop"
   ],
   "ebm": [
-   "Electronic"
+   "Others"
   ],
   "electric blues": [
    "Blues"
   ],
   "electro": [
-   "Electronic",
+   "Others",
    "Hip Hop"
   ],
   "electro house": [
-   "Electronic"
+   "Others"
   ],
   "electro swing": [
-   "Electronic"
+   "Others"
   ],
   "electroclash": [
-   "Electronic"
+   "Others"
   ],
   "emo": [
    "Rock"
@@ -502,16 +503,16 @@
    "Folk, World, & Country"
   ],
   "euro disco": [
-   "Electronic"
+   "Others"
   ],
   "euro house": [
-   "Electronic"
+   "Others"
   ],
   "euro trance": [
-   "Electronic"
+   "Others"
   ],
   "eurodance": [
-   "Electronic"
+   "Others"
   ],
   "europop": [
    "Pop"
@@ -520,7 +521,7 @@
    "Jazz"
   ],
   "experimental": [
-   "Electronic",
+   "Others",
    "Rock"
   ],
   "fado": [
@@ -543,7 +544,7 @@
    "Rock"
   ],
   "footwork": [
-   "Electronic"
+   "Others"
   ],
   "forró": [
    "Latin"
@@ -558,7 +559,7 @@
    "Jazz"
   ],
   "freestyle": [
-   "Electronic"
+   "Others"
   ],
   "funeral doom metal": [
    "Rock"
@@ -574,19 +575,19 @@
    "Jazz"
   ],
   "future bass": [
-   "Electronic"
+   "Others"
   ],
   "future house": [
-   "Electronic"
+   "Others"
   ],
   "future jazz": [
-   "Electronic"
+   "Others"
   ],
   "g-funk": [
    "Hip Hop"
   ],
   "gabber": [
-   "Electronic"
+   "Others"
   ],
   "gagaku": [
    "Folk, World, & Country"
@@ -598,7 +599,7 @@
    "Hip Hop"
   ],
   "garage house": [
-   "Electronic"
+   "Others"
   ],
   "garage rock": [
    "Rock"
@@ -607,22 +608,22 @@
    "Folk, World, & Country"
   ],
   "ghetto": [
-   "Electronic"
+   "Others"
   ],
   "ghetto house": [
-   "Electronic"
+   "Others"
   ],
   "ghettotech": [
-   "Electronic"
+   "Others"
   ],
   "glam": [
    "Rock"
   ],
   "glitch": [
-   "Electronic"
+   "Others"
   ],
   "glitch hop": [
-   "Electronic"
+   "Others"
   ],
   "gnawa": [
    "Folk, World, & Country"
@@ -631,7 +632,7 @@
    "Funk / Soul"
   ],
   "goa trance": [
-   "Electronic"
+   "Others"
   ],
   "goregrind": [
    "Rock"
@@ -650,7 +651,7 @@
    "Folk, World, & Country"
   ],
   "grime": [
-   "Electronic",
+   "Others",
    "Hip Hop"
   ],
   "grindcore": [
@@ -675,44 +676,44 @@
    "Jazz"
   ],
   "halftime": [
-   "Electronic"
+   "Others"
   ],
   "hands up": [
-   "Electronic"
+   "Others"
   ],
   "happy hardcore": [
-   "Electronic"
+   "Others"
   ],
   "hard bop": [
    "Jazz"
   ],
   "hard house": [
-   "Electronic"
+   "Others"
   ],
   "hard rock": [
    "Rock"
   ],
   "hard techno": [
-   "Electronic"
+   "Others"
   ],
   "hard trance": [
-   "Electronic"
+   "Others"
   ],
   "hardcore hip hop": [
    "Hip Hop"
   ],
   "hardcore techno": [
-   "Electronic",
+   "Others",
    "Rock"
   ],
   "hardstyle": [
-   "Electronic"
+   "Others"
   ],
   "harmonica blues": [
    "Blues"
   ],
   "harsh noise wall": [
-   "Electronic"
+   "Others"
   ],
   "hawaiian": [
    "Folk, World, & Country"
@@ -721,7 +722,7 @@
    "Rock"
   ],
   "hi-nrg": [
-   "Electronic"
+   "Others"
   ],
   "highlife": [
    "Folk, World, & Country"
@@ -736,7 +737,7 @@
    "Folk, World, & Country"
   ],
   "hip house": [
-   "Electronic",
+   "Others",
    "Hip Hop"
   ],
   "honky tonk": [
@@ -746,7 +747,7 @@
    "Hip Hop"
   ],
   "house": [
-   "Electronic"
+   "Others"
   ],
   "hyperpop": [
    "Pop"
@@ -755,10 +756,10 @@
    "Hip Hop"
   ],
   "idm": [
-   "Electronic"
+   "Others"
   ],
   "illbient": [
-   "Electronic"
+   "Others"
   ],
   "impressionist": [
    "Classical"
@@ -779,13 +780,13 @@
    "Hip Hop"
   ],
   "italo disco": [
-   "Electronic"
+   "Others"
   ],
   "italo house": [
-   "Electronic"
+   "Others"
   ],
   "italodance": [
-   "Electronic"
+   "Others"
   ],
   "j-pop": [
    "Pop"
@@ -801,22 +802,22 @@
    "Jazz"
   ],
   "jazzdance": [
-   "Electronic"
+   "Others"
   ],
   "jazzy hip-hop": [
    "Hip Hop"
   ],
   "juke": [
-   "Electronic"
+   "Others"
   ],
   "jump blues": [
    "Blues"
   ],
   "jumpstyle": [
-   "Electronic"
+   "Others"
   ],
   "jungle": [
-   "Electronic"
+   "Others"
   ],
   "k-pop": [
    "Pop"
@@ -840,7 +841,7 @@
    "Rock"
   ],
   "kuduro": [
-   "Electronic"
+   "Others"
   ],
   "kwaito": [
    "Folk, World, & Country"
@@ -856,10 +857,10 @@
    "Folk, World, & Country"
   ],
   "leftfield": [
-   "Electronic"
+   "Others"
   ],
   "lento violento": [
-   "Electronic"
+   "Others"
   ],
   "levenslied": [
    "Pop"
@@ -877,10 +878,10 @@
    "Reggae"
   ],
   "lowercase": [
-   "Electronic"
+   "Others"
   ],
   "makina": [
-   "Electronic"
+   "Others"
   ],
   "mambo": [
    "Latin"
@@ -928,7 +929,7 @@
    "Hip Hop"
   ],
   "microhouse": [
-   "Electronic"
+   "Others"
   ],
   "midwest emo": [
    "Rock"
@@ -937,10 +938,10 @@
    "Folk, World, & Country"
   ],
   "minimal": [
-   "Electronic"
+   "Others"
   ],
   "minimal techno": [
-   "Electronic"
+   "Others"
   ],
   "minimalism": [
    "Classical"
@@ -956,13 +957,13 @@
   ],
   "modern classical": [
    "Classical",
-   "Electronic"
+   "Others"
   ],
   "modern electric blues": [
    "Blues"
   ],
   "moombahton": [
-   "Electronic"
+   "Others"
   ],
   "mouth music": [
    "Folk, World, & Country"
@@ -977,7 +978,7 @@
    "Pop"
   ],
   "musique concrète": [
-   "Electronic"
+   "Others"
   ],
   "música criolla": [
    "Latin"
@@ -986,7 +987,7 @@
    "Funk / Soul"
   ],
   "neo trance": [
-   "Electronic"
+   "Others"
   ],
   "neo-romantic": [
    "Classical"
@@ -995,26 +996,26 @@
    "Classical"
   ],
   "neofolk": [
-   "Electronic"
+   "Others"
   ],
   "new age": [
-   "Electronic"
+   "Others"
   ],
   "new beat": [
-   "Electronic"
+   "Others"
   ],
   "new jack swing": [
    "Funk / Soul"
   ],
   "new wave": [
    "Rock",
-   "Electronic"
+   "Others"
   ],
   "no wave": [
    "Rock"
   ],
   "noise": [
-   "Electronic",
+   "Others",
    "Rock"
   ],
   "noisecore": [
@@ -1030,7 +1031,7 @@
    "Rock"
   ],
   "nu-disco": [
-   "Electronic"
+   "Others"
   ],
   "nueva canción": [
    "Folk, World, & Country"
@@ -1078,7 +1079,7 @@
    "Latin"
   ],
   "plunderphonics": [
-   "Electronic"
+   "Others"
   ],
   "polka": [
    "Folk, World, & Country"
@@ -1120,7 +1121,7 @@
    "Rock"
   ],
   "power electronics": [
-   "Electronic"
+   "Others"
   ],
   "power metal": [
    "Rock"
@@ -1129,10 +1130,10 @@
    "Rock"
   ],
   "progressive breaks": [
-   "Electronic"
+   "Others"
   ],
   "progressive house": [
-   "Electronic"
+   "Others"
   ],
   "progressive metal": [
    "Rock"
@@ -1141,7 +1142,7 @@
    "Rock"
   ],
   "progressive trance": [
-   "Electronic"
+   "Others"
   ],
   "psychedelic rock": [
    "Rock"
@@ -1150,7 +1151,7 @@
    "Rock"
   ],
   "psytrance": [
-   "Electronic"
+   "Others"
   ],
   "pub rock": [
    "Rock"
@@ -1199,7 +1200,7 @@
    "Blues"
   ],
   "rhythmic noise": [
-   "Electronic"
+   "Others"
   ],
   "rnb/swing": [
    "Funk / Soul"
@@ -1238,7 +1239,7 @@
    "Pop"
   ],
   "schranz": [
-   "Electronic"
+   "Others"
   ],
   "screamo": [
    "Rock"
@@ -1265,7 +1266,7 @@
    "Folk, World, & Country"
   ],
   "skweee": [
-   "Electronic"
+   "Others"
   ],
   "slowcore": [
    "Rock"
@@ -1302,10 +1303,10 @@
    "Funk / Soul"
   ],
   "sound art": [
-   "Electronic"
+   "Others"
   ],
   "sound collage": [
-   "Electronic"
+   "Others"
   ],
   "southern rock": [
    "Rock"
@@ -1317,13 +1318,13 @@
    "Jazz"
   ],
   "speed garage": [
-   "Electronic"
+   "Others"
   ],
   "speed metal": [
    "Rock"
   ],
   "speedcore": [
-   "Electronic"
+   "Others"
   ],
   "spiritual jazz": [
    "Jazz"
@@ -1353,11 +1354,11 @@
    "Classical"
   ],
   "synthpop": [
-   "Electronic",
+   "Others",
    "Pop"
   ],
   "synthwave": [
-   "Electronic"
+   "Others"
   ],
   "séga": [
    "Folk, World, & Country"
@@ -1369,16 +1370,16 @@
    "Latin"
   ],
   "tech house": [
-   "Electronic"
+   "Others"
   ],
   "tech trance": [
-   "Electronic"
+   "Others"
   ],
   "technical death metal": [
    "Rock"
   ],
   "techno": [
-   "Electronic"
+   "Others"
   ],
   "tejano": [
    "Latin"
@@ -1396,24 +1397,24 @@
    "Latin"
   ],
   "trance": [
-   "Electronic"
+   "Others"
   ],
   "trap": [
    "Hip Hop",
-   "Electronic"
+   "Others"
   ],
   "tribal": [
-   "Electronic"
+   "Others"
   ],
   "tribal house": [
-   "Electronic"
+   "Others"
   ],
   "trip hop": [
-   "Electronic",
+   "Others",
    "Hip Hop"
   ],
   "tropical house": [
-   "Electronic"
+   "Others"
   ],
   "trova": [
    "Latin"
@@ -1422,7 +1423,7 @@
    "Hip Hop"
   ],
   "uk garage": [
-   "Electronic"
+   "Others"
   ],
   "uk street soul": [
    "Funk / Soul"
@@ -1431,7 +1432,7 @@
    "Latin"
   ],
   "vaporwave": [
-   "Electronic"
+   "Others"
   ],
   "viking metal": [
    "Rock"
@@ -1446,7 +1447,7 @@
    "Folk, World, & Country"
   ],
   "witch house": [
-   "Electronic"
+   "Others"
   ],
   "yé-yé": [
    "Pop"

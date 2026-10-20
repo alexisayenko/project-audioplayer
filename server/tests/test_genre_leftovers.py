@@ -76,7 +76,7 @@ def test_one_off_table_fixes_only_the_listed_songs_and_backs_up(datadir, caplog)
     assert tags["soundcloud-168294142"] == ["genre:glitch hop"]
     assert tags["soundcloud-122880128"] == ["genre:house", "country:fr"]
     assert tags["soundcloud-158983912"] == ["genre:house"]
-    assert tags["wL8DVHuWI7Y"] == ["genre:electronic"]
+    assert tags["wL8DVHuWI7Y"] == []
     assert tags["0XFudmaObLI"] == ["genre:house"]
     assert tags["other"] == ["genre:swing", "genre:house"]
     assert (datadir / "backups-genre-merge" / OWNER / "library.json").read_text(encoding="utf-8") == original
@@ -104,11 +104,11 @@ def test_one_off_table_keeps_an_existing_genre_and_skips_other_users(datadir):
 def test_one_off_targets_are_canonical():
     for _remove, add in migrate_tags.ONE_OFF.values():
         for t in add:
-            assert genre_vocab.is_canonical(t.partition(":")[2])
+            assert genre_vocab.is_canonical(t.partition(":")[2]) or genre_vocab.group(t.partition(":")[2]), "the one-off add of electronic is history (a group now; the owner's song already carries it, T2 handles the pill)"
 
 
 def test_rave_breakbeat_hardcore_and_raggacore_folds():
-    assert library.clean_tag("genre:rave") == "genre:electronic"
+    assert library.clean_tag("genre:rave") == "", "rave was an alias of electronic, which is a group now: dropped"
     assert library.clean_tag("genre:breakbeat hardcore") == "genre:breakbeat"
     assert gf.is_dropped("raggacore")
     assert gf.is_dropped("Raggacore")

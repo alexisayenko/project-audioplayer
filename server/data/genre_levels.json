@@ -10,10 +10,12 @@
    "modifiers: optional list of keys of the top-level 'modifiers' block ({name, kind sound|mood|scene, description}); a modifier alongside the tree, not a level. Only Electronic entries carry them so far.",
    "status: optional 'approved' (Alex approved; only on entries with discogs false, because Discogs outranks his approval) or 'question' (under question, any entry); absent means unreviewed.",
    "display: optional display name of a genre (default: the key); never equal, when lowercased, to another vocabulary key.",
-   "related: optional list of unique names (a family or the key of another entry), never the entry itself, one of its parents or one of its descendants. Associations and influences, not subgenre-of: no effect on the tree, levels, families, counts or colours; shown as information and a faint link in the map (ADR-0030, GEN-064)."
+   "related: optional list of unique names (a family or the key of another entry), never the entry itself, one of its parents or one of its descendants. Associations and influences, not subgenre-of: no effect on the tree, levels, families, counts or colours; shown as information and a faint link in the map (ADR-0030, GEN-064).",
+   "Others: a family-block node with `group: true` and `temporary: true` is an organisational group (the former Electronic family, renamed 2026-10-20, task-0066): a level 1 node that is never a vocabulary entry, never a genre and never assigned to a song. Every genre that sat under Electronic has Others as parent instead. The `colour` of the group (Electronic) is the legacy colour family of the 11-family graph payload.",
+   "promoted genre: a family-block node that carries `discogs` (a boolean) is a genre promoted to level 1 (like Rock): it is a vocabulary entry (`level` family), its key is the family name, it may keep extra `parents` (a promoted node is level 1 whatever its parents), `related`, `synonyms`, `modifiers`, `fusion`, `display` and a `colour` (a family or group name, the colour family of the legacy graph; default its own name). Its children keep the same `parents` text and rise one level. Done by scripts/genre-ops.py promote."
   ],
   "drafted": [
-   "Electronic",
+   "Others",
    "Rock"
   ],
   "counts": {
@@ -29,7 +31,7 @@
     "level3": 0,
     "level4": 0
    },
-   "Electronic": {
+   "Others": {
     "total": 146,
     "level2": 54,
     "level3": 87,
@@ -88,7 +90,7 @@
   "non_discogs": {
    "Blues": 0,
    "Classical": 0,
-   "Electronic": 25,
+   "Others": 25,
    "Folk, World, & Country": 4,
    "Funk / Soul": 8,
    "Hip Hop": 1,
@@ -110,16 +112,20 @@
     "classical music"
    ]
   },
-  "Electronic": {
-   "name": "Electronic",
+  "Others": {
+   "name": "Others",
    "synonyms": [
     "electronic music",
     "electronica",
     "indietronica",
     "alternative dance",
     "rave",
-    "dance & edm"
-   ]
+    "dance & edm",
+    "electronic"
+   ],
+   "group": true,
+   "temporary": true,
+   "colour": "Electronic"
   },
   "Folk, World, & Country": {
    "name": "Folk, World, & Country",
@@ -256,35 +262,35 @@
  },
  "subfamilies": {
   "House": {
-   "family": "Electronic",
+   "family": "Others",
    "order": 1
   },
   "Techno": {
-   "family": "Electronic",
+   "family": "Others",
    "order": 2
   },
   "Trance": {
-   "family": "Electronic",
+   "family": "Others",
    "order": 3
   },
   "Breaks & bass": {
-   "family": "Electronic",
+   "family": "Others",
    "order": 4
   },
   "Synth & wave": {
-   "family": "Electronic",
+   "family": "Others",
    "order": 5
   },
   "Experimental, industrial & noise": {
-   "family": "Electronic",
+   "family": "Others",
    "order": 6
   },
   "Ambient & downtempo": {
-   "family": "Electronic",
+   "family": "Others",
    "order": 7
   },
   "Eurodance & disco": {
-   "family": "Electronic",
+   "family": "Others",
    "order": 8
   }
  },
@@ -297,14 +303,14 @@
  },
  "abstract": {
   "parents": [
-   "Electronic"
+   "Others"
   ],
   "subfamily": "Experimental, industrial & noise",
   "discogs": true
  },
  "acid": {
   "parents": [
-   "Electronic",
+   "Others",
    "techno",
    "house"
   ],
@@ -322,7 +328,7 @@
    "Jazz"
   ],
   "related": [
-   "Electronic"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -411,7 +417,7 @@
  },
  "ambient": {
   "parents": [
-   "Electronic"
+   "Others"
   ],
   "subfamily": "Ambient & downtempo",
   "discogs": true
@@ -520,7 +526,7 @@
  },
  "balearic": {
   "parents": [
-   "Electronic"
+   "Others"
   ],
   "subfamily": "House",
   "discogs": true
@@ -576,7 +582,7 @@
  },
  "bass music": {
   "parents": [
-   "Electronic"
+   "Others"
   ],
   "subfamily": "Breaks & bass",
   "discogs": true
@@ -603,7 +609,7 @@
  },
  "beatbox": {
   "parents": [
-   "Electronic"
+   "Others"
   ],
   "subfamily": "Experimental, industrial & noise",
   "discogs": true
@@ -658,7 +664,7 @@
  },
  "bleep": {
   "parents": [
-   "Electronic"
+   "Others"
   ],
   "subfamily": "Techno",
   "discogs": true
@@ -755,7 +761,7 @@
  },
  "breakbeat": {
   "parents": [
-   "Electronic"
+   "Others"
   ],
   "subfamily": "Breaks & bass",
   "discogs": true,
@@ -794,7 +800,7 @@
  },
  "broken beat": {
   "parents": [
-   "Electronic"
+   "Others"
   ],
   "subfamily": "Breaks & bass",
   "discogs": true
@@ -942,7 +948,7 @@
  },
  "chiptune": {
   "parents": [
-   "Electronic"
+   "Others"
   ],
   "subfamily": "Synth & wave",
   "discogs": true
@@ -1180,7 +1186,7 @@
  },
  "dark electro": {
   "parents": [
-   "Electronic"
+   "Others"
   ],
   "related": [
    "electro"
@@ -1312,7 +1318,7 @@
  "disco": {
   "parents": [
    "Funk / Soul",
-   "Electronic"
+   "Others"
   ],
   "subfamily": "Eurodance & disco",
   "provisional": true,
@@ -1323,7 +1329,7 @@
  },
  "disco polo": {
   "parents": [
-   "Electronic"
+   "Others"
   ],
   "subfamily": "Eurodance & disco",
   "discogs": true
@@ -1371,7 +1377,7 @@
  },
  "downtempo": {
   "parents": [
-   "Electronic"
+   "Others"
   ],
   "subfamily": "Ambient & downtempo",
   "discogs": true,
@@ -1426,7 +1432,7 @@
  },
  "drum and bass": {
   "parents": [
-   "Electronic"
+   "Others"
   ],
   "subfamily": "Breaks & bass",
   "synonyms": [
@@ -1445,7 +1451,7 @@
  "dub": {
   "parents": [
    "Reggae",
-   "Electronic"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -1508,7 +1514,7 @@
  },
  "edm": {
   "parents": [
-   "Electronic"
+   "Others"
   ],
   "subfamily": "House",
   "synonyms": [
@@ -1530,7 +1536,7 @@
  },
  "electro": {
   "parents": [
-   "Electronic",
+   "Others",
    "Hip Hop"
   ],
   "subfamily": "Breaks & bass",
@@ -1551,7 +1557,7 @@
  },
  "electro swing": {
   "parents": [
-   "Electronic"
+   "Others"
   ],
   "subfamily": "House",
   "discogs": true
@@ -1566,7 +1572,7 @@
  "electronic rock": {
   "parents": [
    "Rock",
-   "Electronic"
+   "Others"
   ],
   "discogs": false,
   "fusion": true
@@ -1650,7 +1656,7 @@
  },
  "experimental": {
   "parents": [
-   "Electronic",
+   "Others",
    "Rock"
   ],
   "subfamily": "Experimental, industrial & noise",
@@ -1732,7 +1738,7 @@
  },
  "footwork": {
   "parents": [
-   "Electronic"
+   "Others"
   ],
   "subfamily": "Breaks & bass",
   "discogs": true
@@ -1788,7 +1794,7 @@
  },
  "freestyle": {
   "parents": [
-   "Electronic"
+   "Others"
   ],
   "subfamily": "Eurodance & disco",
   "discogs": true
@@ -1855,7 +1861,7 @@
  },
  "future jazz": {
   "parents": [
-   "Electronic"
+   "Others"
   ],
   "subfamily": "Experimental, industrial & noise",
   "discogs": true
@@ -1915,7 +1921,7 @@
  },
  "ghetto": {
   "parents": [
-   "Electronic"
+   "Others"
   ],
   "subfamily": "House",
   "discogs": true
@@ -1928,7 +1934,7 @@
  },
  "ghettotech": {
   "parents": [
-   "Electronic"
+   "Others"
   ],
   "subfamily": "House",
   "discogs": true
@@ -2025,7 +2031,7 @@
  },
  "grime": {
   "parents": [
-   "Electronic"
+   "Others"
   ],
   "subfamily": "Breaks & bass",
   "related": [
@@ -2086,7 +2092,7 @@
  },
  "halftime": {
   "parents": [
-   "Electronic"
+   "Others"
   ],
   "subfamily": "Breaks & bass",
   "discogs": true
@@ -2153,7 +2159,7 @@
  },
  "hardcore techno": {
   "parents": [
-   "Electronic"
+   "Others"
   ],
   "subfamily": "Techno",
   "related": [
@@ -2177,7 +2183,7 @@
  },
  "harsh noise wall": {
   "parents": [
-   "Electronic"
+   "Others"
   ],
   "discogs": true,
   "subfamily": "Experimental, industrial & noise"
@@ -2256,7 +2262,7 @@
  },
  "house": {
   "parents": [
-   "Electronic"
+   "Others"
   ],
   "related": [
    "disco"
@@ -2285,7 +2291,7 @@
  },
  "idm": {
   "parents": [
-   "Electronic"
+   "Others"
   ],
   "subfamily": "Experimental, industrial & noise",
   "synonyms": [
@@ -2402,7 +2408,7 @@
  },
  "jazzdance": {
   "parents": [
-   "Electronic"
+   "Others"
   ],
   "subfamily": "Experimental, industrial & noise",
   "discogs": true
@@ -2416,7 +2422,7 @@
  },
  "juke": {
   "parents": [
-   "Electronic"
+   "Others"
   ],
   "subfamily": "Breaks & bass",
   "discogs": true
@@ -2496,7 +2502,7 @@
  },
  "kuduro": {
   "parents": [
-   "Electronic"
+   "Others"
   ],
   "subfamily": "Breaks & bass",
   "discogs": true
@@ -2533,14 +2539,14 @@
  },
  "leftfield": {
   "parents": [
-   "Electronic"
+   "Others"
   ],
   "subfamily": "Experimental, industrial & noise",
   "discogs": true
  },
  "lento violento": {
   "parents": [
-   "Electronic"
+   "Others"
   ],
   "subfamily": "Techno",
   "discogs": true
@@ -2770,7 +2776,7 @@
  },
  "minimal": {
   "parents": [
-   "Electronic",
+   "Others",
    "techno"
   ],
   "subfamily": "Techno",
@@ -2821,7 +2827,7 @@
    "Classical"
   ],
   "related": [
-   "Electronic"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -2916,7 +2922,7 @@
  },
  "neofolk": {
   "parents": [
-   "Electronic"
+   "Others"
   ],
   "subfamily": "Experimental, industrial & noise",
   "discogs": true
@@ -2930,14 +2936,14 @@
  },
  "new age": {
   "parents": [
-   "Electronic"
+   "Others"
   ],
   "subfamily": "Ambient & downtempo",
   "discogs": true
  },
  "new beat": {
   "parents": [
-   "Electronic"
+   "Others"
   ],
   "subfamily": "Experimental, industrial & noise",
   "discogs": true
@@ -2961,7 +2967,7 @@
    "Rock"
   ],
   "related": [
-   "Electronic"
+   "Others"
   ],
   "discogs": true
  },
@@ -2977,7 +2983,7 @@
  },
  "noise": {
   "parents": [
-   "Electronic"
+   "Others"
   ],
   "subfamily": "Experimental, industrial & noise",
   "related": [
@@ -3288,7 +3294,7 @@
  },
  "power electronics": {
   "parents": [
-   "Electronic"
+   "Others"
   ],
   "discogs": true,
   "subfamily": "Experimental, industrial & noise"
@@ -3707,7 +3713,7 @@
  },
  "skweee": {
   "parents": [
-   "Electronic"
+   "Others"
   ],
   "subfamily": "Synth & wave",
   "discogs": true
@@ -3957,7 +3963,7 @@
  },
  "synthpop": {
   "parents": [
-   "Electronic",
+   "Others",
    "Pop",
    "new wave"
   ],
@@ -3973,7 +3979,7 @@
  },
  "synthwave": {
   "parents": [
-   "Electronic"
+   "Others"
   ],
   "subfamily": "Synth & wave",
   "synonyms": [
@@ -4024,7 +4030,7 @@
  },
  "techno": {
   "parents": [
-   "Electronic"
+   "Others"
   ],
   "subfamily": "Techno",
   "discogs": true
@@ -4066,7 +4072,7 @@
  },
  "trance": {
   "parents": [
-   "Electronic"
+   "Others"
   ],
   "subfamily": "Trance",
   "discogs": true
@@ -4076,7 +4082,7 @@
    "Hip Hop"
   ],
   "related": [
-   "Electronic"
+   "Others"
   ],
   "provisional": true,
   "synonyms": [
@@ -4086,7 +4092,7 @@
  },
  "tribal": {
   "parents": [
-   "Electronic",
+   "Others",
    "house"
   ],
   "subfamily": "House",
@@ -4128,7 +4134,7 @@
  },
  "uk garage": {
   "parents": [
-   "Electronic"
+   "Others"
   ],
   "subfamily": "Breaks & bass",
   "discogs": true
@@ -4207,7 +4213,7 @@
  },
  "witch house": {
   "parents": [
-   "Electronic"
+   "Others"
   ],
   "subfamily": "Experimental, industrial & noise",
   "discogs": true

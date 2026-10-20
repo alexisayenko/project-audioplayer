@@ -54,8 +54,14 @@ _manual: dict[str, list[str]] | None = None
 
 
 def families() -> dict[str, str]:
-    """Canonical genre name to family (a Discogs genre), from the vocabulary files (GEN-038 step 1, TAG-078)."""
-    return {name: e.family for name, e in genre_vocab.load().entries.items()}
+    """Canonical genre name to colour family (one of the 11 `FAMILIES`: a form such as house takes the colour family of its group, Electronic), from the vocabulary files (GEN-038 step 1, TAG-078)."""
+    return {name: _colours(name)[0] for name in genre_vocab.load().entries}
+
+
+def _colours(name: str) -> tuple[str, ...]:
+    """The colour families (of the 11 `FAMILIES`, in their fixed order, no repeats) of a vocabulary name: its level 1 families with Others and every genre promoted out of it folded into the legacy colour family Electronic, so the legacy graph and the Mac app are unchanged."""
+    fams = list(genre_vocab.colour_families(genre_vocab.load().entries[name].families))
+    return tuple(f for f in FAMILIES if f in fams) + tuple(f for f in fams if f not in FAMILIES)
 
 
 def manual_parents() -> dict[str, list[str]]:
@@ -492,28 +498,36 @@ def vocab_name(label: str) -> str | None:
 
 
 def table_family(label: str, keys: Any = ()) -> str | None:
-    """The vocabulary family of a node: its label, else one of its tags (sorted); None when neither is in the vocabulary."""
+    """The colour family (one of the 11 `FAMILIES`) of a node: its label, else one of its tags (sorted); None when neither is in the vocabulary."""
     for text in (label, *sorted(keys)):
         name = vocab_name(text)
         if name:
-            return genre_vocab.load().entries[name].family
+            return _colours(name)[0]
+    for text in (label, *sorted(keys)):
+        colour = genre_vocab.group_colour(text)
+        if colour:
+            return colour
     return None
 
 
 def table_families(label: str, keys: Any = ()) -> tuple[str, ...]:
-    """Every vocabulary family of a node (all families of its genre, in the fixed family order); empty when neither its label nor a tag is in the vocabulary."""
+    """Every colour family of a node (all families of its genre as the 11 `FAMILIES`, forms folded into their group's colour, in the fixed family order, no repeats); empty when neither its label nor a tag is in the vocabulary."""
     for text in (label, *sorted(keys)):
         name = vocab_name(text)
         if name:
-            return genre_vocab.load().entries[name].families
+            return _colours(name)
+    for text in (label, *sorted(keys)):
+        colour = genre_vocab.group_colour(text)
+        if colour:
+            return (colour,)
     return ()
 
 
 def own_anchor(label: str, keys: Any = ()) -> str | None:
-    """The vocabulary genre (a Discogs genre or extras entry, never a family) a node is itself, label first then its tags; None for the families and for names outside the vocabulary."""
+    """The vocabulary genre (a Discogs genre, an extras entry or a form such as house; never a plain family or a group) a node is itself, label first then its tags; None for the families and for names outside the vocabulary."""
     for text in (label, *sorted(keys)):
         name = vocab_name(text)
-        if name and genre_vocab.load().entries[name].level == "genre":
+        if name and (genre_vocab.load().entries[name].level == "genre" or genre_vocab.load().entries[name].form):
             return name
     return None
 

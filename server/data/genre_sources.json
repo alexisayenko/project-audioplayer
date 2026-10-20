@@ -2,24 +2,24 @@
  "_meta": {
   "generated_at": "2026-10-19T13:49:24.071Z",
   "counts": {
-   "genres": 545,
-   "discogs_true": 483,
+   "genres": 544,
+   "discogs_true": 482,
    "discogs_false": 62,
-   "musicbrainz": 452,
-   "wikipedia": 469,
-   "apple_music": 141
+   "musicbrainz": 451,
+   "wikipedia": 468,
+   "apple_music": 140
   },
   "matches_by_kind": {
    "wikipedia": {
-    "name": 464,
+    "name": 463,
     "synonym": 6
    },
    "musicbrainz": {
-    "name": 450,
+    "name": 449,
     "synonym": 3
    },
    "apple_music": {
-    "name": 137,
+    "name": 136,
     "synonym": 4
    }
   },
@@ -2232,24 +2232,6 @@
   "wikipedia": {
    "title": "Electroclash",
    "wikidata": "Q861823",
-   "match": "name"
-  }
- },
- "electronic": {
-  "discogs": true,
-  "musicbrainz": {
-   "id": "89255676-1f14-4dd8-bbad-fca839d6aff4",
-   "name": "electronic",
-   "match": "name"
-  },
-  "apple_music": {
-   "id": "7",
-   "name": "Electronic",
-   "match": "name"
-  },
-  "wikipedia": {
-   "title": "Electronic music",
-   "wikidata": "Q9778",
    "match": "name"
   }
  },

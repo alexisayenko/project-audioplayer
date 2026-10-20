@@ -1,4 +1,4 @@
-"""One-time rewrite of stored genre tags to their canonical spelling, junk drops, demonym prefixes and retags (TAG-060, TAG-073, TAG-074, TAG-075); idempotent, run at startup. Tags the vocabulary cannot map are kept and listed in a review file (TAG-082)."""
+"""One-time rewrite of stored genre tags to their canonical spelling, junk drops, demonym prefixes and retags (TAG-060, TAG-073, TAG-074, TAG-075); idempotent, run at startup. Tags the vocabulary cannot map are kept and listed in a review file (TAG-082); retired genres (TAG-111) are not listed, they are removed at the end of the same start."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ import shutil
 from pathlib import Path
 from typing import Any
 
-from . import deps, genre_filter, library, users
+from . import deps, genre_filter, genre_vocab, library, migrate_retired, users
 from .jsonio import write_json_atomic
 from .tags import namespace, namespaced_values
 
@@ -21,21 +21,27 @@ ONE_OFF: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
     "soundcloud-168294142": ((), ("genre:glitch hop",)),
     "soundcloud-122880128": ((), ("genre:house",)),
     "soundcloud-158983912": ((), ("genre:house",)),
-    "wL8DVHuWI7Y": ((), ("genre:electronic",)),
     "JYIaWeVL1JM": (("genre:hardcore",), ()),
     "ylpNEb31k4U": (("genre:hardcore", "genre:dubstep", "genre:techno"), ()),
     "soundcloud-193950580": (("genre:hip hop", "genre:pop punk", "genre:hardstyle"), ()),
 }
 
 
+def _addable(tag: str, retired: set[str]) -> bool:
+    name = " ".join(tag.partition(":")[2].lower().split())
+    return name not in retired and genre_vocab.is_canonical(name)
+
+
 def apply_one_off(songs: list[dict[str, Any]]) -> list[str]:
-    """TAG-085, one-off: per song id, remove a wrong genre tag and give a song left without any `genre:` tag its target genre. Returns the ids changed; a rerun changes nothing."""
+    """TAG-085, one-off: per song id, remove a wrong genre tag and give a song left without any `genre:` tag its target genre. A target that is retired (TAG-111) or not a canonical genre is never added and counts as satisfied. Returns the ids changed; a rerun changes nothing."""
     changed: list[str] = []
+    retired = set(migrate_retired.load_names())
     for song in songs:
         rule = ONE_OFF.get(str(song.get("id")))
         if not rule:
             continue
         remove, add = rule
+        add = tuple(t for t in add if _addable(t, retired))
         tags = [str(t) for t in song.get("tags") or []]
         new = [t for t in tags if t not in remove]
         if add and not any(namespace(t) == "genre" for t in new):
@@ -84,11 +90,12 @@ def review_path(path: Path) -> Path:
 
 
 def unmappable_report(path: Path) -> dict[str, Any]:
-    """Genre values of the stored library that are neither junk nor in the vocabulary after ALIASES and RETAGS, with song counts and sample ids (TAG-082)."""
+    """Genre values of the stored library that are neither junk nor in the vocabulary after ALIASES and RETAGS, with song counts and sample ids (TAG-082); retired genres (TAG-111) are not listed, they are removed at the end of the same start."""
     found: dict[str, list[str]] = {}
+    retired = set(migrate_retired.load_names())
     for song in library.load(path):
         for value in dict.fromkeys(namespaced_values(song.get("tags") or [], "genre")):
-            if genre_filter.unmappable(value):
+            if value not in retired and genre_filter.unmappable(value):
                 found.setdefault(value, []).append(str(song.get("id")))
     rows = [{"tag": tag, "songs": len(ids), "sample_ids": ids[:SAMPLE_IDS]} for tag, ids in found.items()]
     rows.sort(key=lambda r: (-r["songs"], r["tag"]))

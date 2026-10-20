@@ -1,5 +1,5 @@
 import { familyIndex, isHiddenFamily, pieIndices, OTHER_COLOR } from './genre-data.js';
-import { ancestorIds, subfamilyOrder } from './genre-levels.js';
+import { ancestorIds, subfamilyOrder, populatedFamilies } from './genre-levels.js';
 export const R2 = 220;
 export const STAGGER2 = 30;
 export const R3 = 420;
@@ -19,7 +19,9 @@ const weight = (kids) => Math.max(MIN_WEIGHT, kids.length);
 
 const RING_STEP = 56;
 
-export function layoutRadial(tree, rootGenre = 'Electronic', { related = false, hidden: hideRoot } = {}) {
+export const defaultRoot = (tree) => (tree ? populatedFamilies(tree)[0] ?? tree.roots[0]?.name ?? null : null);
+
+export function layoutRadial(tree, rootGenre = defaultRoot(tree), { related = false, hidden: hideRoot } = {}) {
   const root = tree?.roots.find((r) => r.name === rootGenre);
   if (!root) return null;
   const hidden = hideRoot ?? isHiddenFamily(root.name);

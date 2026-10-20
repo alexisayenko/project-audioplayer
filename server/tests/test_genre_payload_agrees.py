@@ -44,7 +44,7 @@ def test_spacesynth_and_space_disco_in_the_payload(body):
     for src in (rows["spacesynth"], body["levels"]["spacesynth"]):
         assert src["parents"] == ["synthwave", "italo disco"]
     assert body["levels"]["spacesynth"]["level"] == 3
-    assert rows["spacesynth"]["family"] == "Electronic"
+    assert rows["spacesynth"]["family"] == "Others"
     assert rows["space disco"]["parents"] == ["disco"]
     assert body["levels"]["space disco"]["parents"] == ["disco"]
     assert body["levels"]["space disco"]["level"] == 3
@@ -72,9 +72,10 @@ def test_every_row_and_level_carries_all_families_and_the_legacy_family_is_the_f
         if lv:
             assert row["families"] == lv["families"] and lv["family"] == lv["families"][0], row["name"]
     rows = {r["name"]: r for r in body["genres"]}
-    assert rows["disco"]["families"] == ["Electronic", "Funk / Soul"] == body["levels"]["euro disco"]["families"]
-    assert rows["post-disco"]["families"] == ["Electronic", "Funk / Soul"] and body["levels"]["post-disco"]["parents"] == ["disco"]
-    assert rows["electronic"]["families"] == ["Electronic"] and rows["electronic"]["level"] == "family"
+    assert rows["disco"]["families"] == ["Others", "Funk / Soul"] == body["levels"]["euro disco"]["families"]
+    assert rows["post-disco"]["families"] == ["Others", "Funk / Soul"] and body["levels"]["post-disco"]["parents"] == ["disco"]
+    assert "electronic" not in rows and "others" not in rows, "Others is a group and electronic is not a genre: neither is a vocabulary row"
+    assert "Others" in body["families"] and body["groups"]["Others"]["assignable"] is False and body["groups"]["Others"]["temporary"] is True
 
 
 def test_the_graph_table_families_list_every_family_of_the_genre():

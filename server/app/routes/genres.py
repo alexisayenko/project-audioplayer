@@ -20,7 +20,7 @@ def get_genres(user: Annotated[dict[str, Any], Depends(deps.require_token)]):
             n = genres.normalise(value)
             if n:
                 counts[n] = counts.get(n, 0) + 1
-    used = sorted(counts, key=lambda g: (-counts[g], g))
+    used = sorted((g for g in counts if not genre_vocab.group(g)), key=lambda g: (-counts[g], g))
     vocab = genre_vocab.load().entries
     rest = [g for g in genres.BUILTIN if g not in counts and g in vocab]
     listed = set(rest)

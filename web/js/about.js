@@ -24,7 +24,7 @@ export const ABOUT = {
     heading: 'Genres, groups and modifiers',
     items: [
       'A genre is a style you can assign to a song, such as house, rock or synthpop.',
-      'A group such as Electronic or Latin only organises genres and is never assigned to a song.',
+      'A group such as Others (a temporary one) only organises genres and is never assigned to a song.',
       'A modifier such as dark, progressive or hardcore qualifies a genre and is never a genre alone.',
       'A bare word that two styles share carries a qualifier: hardcore punk and hardcore techno.',
     ],

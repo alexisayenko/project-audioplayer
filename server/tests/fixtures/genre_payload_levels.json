@@ -2,7 +2,7 @@
  "families": [
   "Blues",
   "Classical",
-  "Electronic",
+  "Others",
   "Folk, World, & Country",
   "Funk / Soul",
   "Hip Hop",
@@ -16,14 +16,6 @@
   "Blues": [],
   "Classical": [
    "classical music"
-  ],
-  "Electronic": [
-   "electronic music",
-   "electronica",
-   "indietronica",
-   "alternative dance",
-   "rave",
-   "dance & edm"
   ],
   "Folk, World, & Country": [
    "folk world and country",
@@ -55,6 +47,15 @@
   "Latin": [
    "latin music",
    "latino"
+  ],
+  "Others": [
+   "electronic music",
+   "electronica",
+   "indietronica",
+   "alternative dance",
+   "rave",
+   "dance & edm",
+   "electronic"
   ],
   "Pop": [
    "pop music",
@@ -156,14 +157,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Electronic"
+    "Others"
    ],
    "provisional": false,
    "status": null,
@@ -174,14 +175,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Electronic",
+    "Others",
     "techno",
     "house"
    ],
@@ -194,9 +195,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -223,7 +224,7 @@
    ],
    "provisional": true,
    "related": [
-    "Electronic"
+    "Others"
    ],
    "status": null,
    "synonyms": []
@@ -249,9 +250,9 @@
    "discogs": false,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -438,14 +439,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Electronic"
+    "Others"
    ],
    "provisional": false,
    "status": null,
@@ -456,9 +457,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -713,14 +714,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Electronic"
+    "Others"
    ],
    "provisional": false,
    "status": null,
@@ -765,9 +766,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -852,14 +853,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Electronic"
+    "Others"
    ],
    "provisional": false,
    "status": null,
@@ -870,9 +871,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -922,14 +923,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Electronic"
+    "Others"
    ],
    "provisional": false,
    "status": null,
@@ -957,9 +958,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -1009,9 +1010,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -1064,14 +1065,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Electronic"
+    "Others"
    ],
    "provisional": false,
    "status": null,
@@ -1293,14 +1294,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Electronic"
+    "Others"
    ],
    "provisional": false,
    "status": null,
@@ -1314,9 +1315,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -1335,9 +1336,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -1387,14 +1388,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Electronic"
+    "Others"
    ],
    "provisional": false,
    "status": null,
@@ -1711,9 +1712,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -1749,14 +1750,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Electronic"
+    "Others"
    ],
    "provisional": false,
    "status": null,
@@ -2307,9 +2308,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -2325,14 +2326,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Electronic"
+    "Others"
    ],
    "provisional": false,
    "related": [
@@ -2380,9 +2381,9 @@
    "discogs": false,
    "display": "dark psy-trance",
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 4,
    "modifiers": [],
@@ -2402,9 +2403,9 @@
    "discogs": false,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -2514,9 +2515,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -2532,9 +2533,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -2550,9 +2551,9 @@
    "discogs": false,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -2636,16 +2637,16 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic",
+    "Others",
     "Funk / Soul"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
     "Funk / Soul",
-    "Electronic"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -2658,14 +2659,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Electronic"
+    "Others"
    ],
    "provisional": false,
    "status": null,
@@ -2710,9 +2711,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -2764,9 +2765,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -2782,14 +2783,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Electronic"
+    "Others"
    ],
    "provisional": false,
    "status": null,
@@ -2820,9 +2821,9 @@
    "discogs": false,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -2841,9 +2842,9 @@
    "discogs": false,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -2859,9 +2860,9 @@
    "discogs": false,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -2894,9 +2895,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -2912,14 +2913,14 @@
    "discogs": true,
    "display": "drum & bass",
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Electronic"
+    "Others"
    ],
    "provisional": false,
    "status": null,
@@ -2939,16 +2940,16 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic",
+    "Others",
     "Reggae"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
     "Reggae",
-    "Electronic"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -2975,9 +2976,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -2993,9 +2994,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -3011,9 +3012,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -3083,11 +3084,11 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic",
+    "Others",
     "Pop",
     "Rock"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -3103,14 +3104,14 @@
    "discogs": false,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Electronic"
+    "Others"
    ],
    "provisional": false,
    "status": "approved",
@@ -3144,15 +3145,15 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic",
+    "Others",
     "Hip Hop"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Electronic",
+    "Others",
     "Hip Hop"
    ],
    "provisional": false,
@@ -3167,9 +3168,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -3188,14 +3189,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Electronic"
+    "Others"
    ],
    "provisional": false,
    "status": null,
@@ -3206,12 +3207,12 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic",
+    "Others",
     "Hip Hop",
     "Pop",
     "Rock"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -3228,17 +3229,17 @@
    "discogs": false,
    "display": null,
    "families": [
-    "Electronic",
+    "Others",
     "Rock"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "fusion": true,
    "level": 2,
    "modifiers": [],
    "parents": [
     "Rock",
-    "Electronic"
+    "Others"
    ],
    "provisional": false,
    "status": null,
@@ -3300,10 +3301,10 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic",
+    "Others",
     "Funk / Soul"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -3321,9 +3322,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -3341,9 +3342,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -3359,11 +3360,11 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic",
+    "Others",
     "Funk / Soul",
     "Pop"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "fusion": true,
    "level": 2,
@@ -3422,15 +3423,15 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic",
+    "Others",
     "Rock"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Electronic",
+    "Others",
     "Rock"
    ],
    "provisional": false,
@@ -3621,14 +3622,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Electronic"
+    "Others"
    ],
    "provisional": false,
    "status": null,
@@ -3639,9 +3640,9 @@
    "discogs": false,
    "display": "forest psy-trance",
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 4,
    "modifiers": [],
@@ -3728,14 +3729,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Electronic"
+    "Others"
    ],
    "provisional": false,
    "status": null,
@@ -3746,9 +3747,9 @@
    "discogs": false,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -3766,9 +3767,9 @@
    "discogs": false,
    "display": "full-on psy-trance",
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 4,
    "modifiers": [],
@@ -3863,9 +3864,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -3884,9 +3885,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -3902,14 +3903,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Electronic"
+    "Others"
    ],
    "provisional": false,
    "status": null,
@@ -3937,9 +3938,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -4006,9 +4007,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -4058,14 +4059,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Electronic"
+    "Others"
    ],
    "provisional": false,
    "status": null,
@@ -4076,9 +4077,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -4094,14 +4095,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Electronic"
+    "Others"
    ],
    "provisional": false,
    "status": null,
@@ -4151,10 +4152,10 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic",
+    "Others",
     "Rock"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -4170,9 +4171,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -4223,9 +4224,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 4,
    "modifiers": [],
@@ -4331,14 +4332,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Electronic"
+    "Others"
    ],
    "provisional": false,
    "related": [
@@ -4476,14 +4477,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Electronic"
+    "Others"
    ],
    "provisional": false,
    "status": null,
@@ -4494,11 +4495,11 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic",
+    "Others",
     "Funk / Soul",
     "Pop"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -4515,9 +4516,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -4550,9 +4551,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -4586,9 +4587,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -4604,9 +4605,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -4657,14 +4658,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Electronic"
+    "Others"
    ],
    "provisional": false,
    "related": [
@@ -4678,9 +4679,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -4714,14 +4715,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Electronic"
+    "Others"
    ],
    "provisional": false,
    "status": null,
@@ -4768,10 +4769,10 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic",
+    "Others",
     "Funk / Soul"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -4855,10 +4856,10 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic",
+    "Others",
     "Hip Hop"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "fusion": true,
    "level": 2,
@@ -4910,14 +4911,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Electronic"
+    "Others"
    ],
    "provisional": false,
    "related": [
@@ -4969,14 +4970,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Electronic"
+    "Others"
    ],
    "provisional": false,
    "status": null,
@@ -4989,9 +4990,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -5132,10 +5133,10 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic",
+    "Others",
     "Funk / Soul"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -5151,9 +5152,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -5169,11 +5170,11 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic",
+    "Others",
     "Funk / Soul",
     "Pop"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -5260,14 +5261,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Electronic"
+    "Others"
    ],
    "provisional": false,
    "status": null,
@@ -5295,14 +5296,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Electronic"
+    "Others"
    ],
    "provisional": false,
    "status": null,
@@ -5330,9 +5331,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -5348,9 +5349,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -5491,14 +5492,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Electronic"
+    "Others"
    ],
    "provisional": false,
    "status": null,
@@ -5580,14 +5581,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Electronic"
+    "Others"
    ],
    "provisional": false,
    "status": null,
@@ -5598,14 +5599,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Electronic"
+    "Others"
    ],
    "provisional": false,
    "status": null,
@@ -5650,9 +5651,9 @@
    "discogs": false,
    "display": "liquid drum & bass",
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -5728,9 +5729,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -5746,9 +5747,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -5930,9 +5931,9 @@
    "discogs": false,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -6054,9 +6055,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -6130,14 +6131,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Electronic",
+    "Others",
     "techno"
    ],
    "provisional": false,
@@ -6152,9 +6153,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -6252,7 +6253,7 @@
    ],
    "provisional": true,
    "related": [
-    "Electronic"
+    "Others"
    ],
    "status": null,
    "synonyms": []
@@ -6278,9 +6279,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -6364,10 +6365,10 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic",
+    "Others",
     "Rock"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -6417,9 +6418,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -6486,14 +6487,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Electronic"
+    "Others"
    ],
    "provisional": false,
    "status": null,
@@ -6504,9 +6505,9 @@
    "discogs": false,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -6522,14 +6523,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Electronic"
+    "Others"
    ],
    "provisional": false,
    "status": null,
@@ -6540,14 +6541,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Electronic"
+    "Others"
    ],
    "provisional": false,
    "status": null,
@@ -6603,7 +6604,7 @@
    ],
    "provisional": false,
    "related": [
-    "Electronic"
+    "Others"
    ],
    "status": null,
    "synonyms": []
@@ -6633,14 +6634,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Electronic"
+    "Others"
    ],
    "provisional": false,
    "related": [
@@ -6747,10 +6748,10 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic",
+    "Others",
     "Funk / Soul"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -6766,9 +6767,9 @@
    "discogs": false,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -7073,10 +7074,10 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic",
+    "Others",
     "Rock"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -7249,10 +7250,10 @@
    "discogs": false,
    "display": null,
    "families": [
-    "Electronic",
+    "Others",
     "Funk / Soul"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -7397,14 +7398,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Electronic"
+    "Others"
    ],
    "provisional": false,
    "status": null,
@@ -7450,9 +7451,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -7468,9 +7469,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -7525,9 +7526,9 @@
    "discogs": false,
    "display": "progressive psy-trance",
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 4,
    "modifiers": [],
@@ -7564,9 +7565,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -7582,9 +7583,9 @@
    "discogs": false,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -7652,9 +7653,9 @@
    "discogs": true,
    "display": "psy-trance",
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -7970,9 +7971,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -8226,9 +8227,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -8417,14 +8418,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Electronic"
+    "Others"
    ],
    "provisional": false,
    "status": null,
@@ -8627,10 +8628,10 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic",
+    "Others",
     "Rock"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -8646,10 +8647,10 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic",
+    "Others",
     "Rock"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -8682,9 +8683,9 @@
    "discogs": false,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -8705,10 +8706,10 @@
    "discogs": false,
    "display": null,
    "families": [
-    "Electronic",
+    "Others",
     "Funk / Soul"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -8761,10 +8762,10 @@
    "discogs": false,
    "display": null,
    "families": [
-    "Electronic",
+    "Others",
     "Funk / Soul"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -8781,9 +8782,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -8817,9 +8818,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -8869,9 +8870,9 @@
    "discogs": false,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -9040,16 +9041,16 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic",
+    "Others",
     "Pop",
     "Rock"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Electronic",
+    "Others",
     "Pop",
     "new wave"
    ],
@@ -9068,14 +9069,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Electronic"
+    "Others"
    ],
    "provisional": false,
    "status": null,
@@ -9139,9 +9140,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -9158,9 +9159,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -9194,14 +9195,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Electronic"
+    "Others"
    ],
    "provisional": false,
    "status": null,
@@ -9298,14 +9299,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Electronic"
+    "Others"
    ],
    "provisional": false,
    "status": null,
@@ -9327,7 +9328,7 @@
    ],
    "provisional": true,
    "related": [
-    "Electronic"
+    "Others"
    ],
    "status": null,
    "synonyms": [
@@ -9338,14 +9339,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Electronic",
+    "Others",
     "house"
    ],
    "provisional": false,
@@ -9357,9 +9358,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -9375,10 +9376,10 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic",
+    "Others",
     "Hip Hop"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "fusion": true,
    "level": 2,
@@ -9396,9 +9397,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -9448,14 +9449,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Electronic"
+    "Others"
    ],
    "provisional": false,
    "status": null,
@@ -9483,9 +9484,9 @@
    "discogs": false,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -9522,9 +9523,9 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -9580,9 +9581,9 @@
    "discogs": false,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 3,
    "modifiers": [],
@@ -9632,14 +9633,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Electronic"
+    "Others"
    ],
-   "family": "Electronic",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Electronic"
+    "Others"
    ],
    "provisional": false,
    "status": null,
@@ -9801,42 +9802,42 @@
  },
  "subfamilies": [
   {
-   "family": "Electronic",
+   "family": "Others",
    "name": "House",
    "order": 1
   },
   {
-   "family": "Electronic",
+   "family": "Others",
    "name": "Techno",
    "order": 2
   },
   {
-   "family": "Electronic",
+   "family": "Others",
    "name": "Trance",
    "order": 3
   },
   {
-   "family": "Electronic",
+   "family": "Others",
    "name": "Breaks & bass",
    "order": 4
   },
   {
-   "family": "Electronic",
+   "family": "Others",
    "name": "Synth & wave",
    "order": 5
   },
   {
-   "family": "Electronic",
+   "family": "Others",
    "name": "Experimental, industrial & noise",
    "order": 6
   },
   {
-   "family": "Electronic",
+   "family": "Others",
    "name": "Ambient & downtempo",
    "order": 7
   },
   {
-   "family": "Electronic",
+   "family": "Others",
    "name": "Eurodance & disco",
    "order": 8
   }

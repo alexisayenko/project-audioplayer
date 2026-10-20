@@ -390,6 +390,14 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
       ctx.beginPath(); ctx.arc(n.x, n.y, r + 2.5 / k, 0, 2 * Math.PI); ctx.stroke();
       ctx.setLineDash([]);
     }
+    if (n.node.group) {
+      ctx.globalAlpha = a;
+      ctx.strokeStyle = colors.ink;
+      ctx.lineWidth = 1.5 / k;
+      ctx.setLineDash([4 / k, 3 / k]);
+      ctx.beginPath(); ctx.arc(n.x, n.y, r + 4 / k, 0, 2 * Math.PI); ctx.stroke();
+      ctx.setLineDash([]);
+    }
     if (n === sel) ring(n, 3.5, 3, colors.accent, k);
     else if (n === hover) ring(n, 3, 2, colors.accent, k);
     else if (matches.has(n.id)) ring(n, 3, 2.5, colors.accent, k);

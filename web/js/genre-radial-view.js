@@ -136,6 +136,13 @@ export function createRadialView(canvas, { onSelect, onHover, reducedMotion = fa
       ctx.beginPath(); ctx.arc(n.x, n.y, n.r + 3 / k, 0, 2 * Math.PI); ctx.stroke();
       ctx.setLineDash([]);
     }
+    if (n.node.group) {
+      ctx.strokeStyle = colors.ink;
+      ctx.lineWidth = 1.5 / k;
+      ctx.setLineDash([4 / k, 3 / k]);
+      ctx.beginPath(); ctx.arc(n.x, n.y, n.r + 4 / k, 0, 2 * Math.PI); ctx.stroke();
+      ctx.setLineDash([]);
+    }
     const ring = ringWidth(n);
     if (ring) {
       ctx.globalAlpha = 1;

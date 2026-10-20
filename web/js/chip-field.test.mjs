@@ -335,3 +335,31 @@ for (const [q, name] of [['hip', 'hip hop'], ['ip', 'hip hop'], ['dnb', 'drum an
     for (const n of label.childNodes || label.children) assert.ok(typeof n === 'string' ? n.trim() : true);
   });
 }
+
+test('a group (Others) and electronic are never offered or accepted: a hint says so and no chip is added', async () => {
+  const { buildIndex } = await import('./genre-vocab.js');
+  resetVocabulary(buildIndex({
+    ...VOCAB,
+    genres: [...VOCAB.genres, { name: 'Others', family: 'Others', level: 'family' }],
+    groups: { Others: { kind: 'organisational', temporary: true, synonyms: ['electronic music', 'electronic'], assignable: false } },
+    family_synonyms: { Others: ['electronic music', 'electronic'] },
+  }));
+  try {
+    const { editor, type, key, input, f } = make('genre');
+    type('oth');
+    assert.equal(f.node.querySelectorAll('[role="option"]').some((b) => b.dataset.genre === 'Others'), false);
+    for (const text of ['Others', 'electronic', 'Electronic music']) {
+      type(text);
+      key('Enter');
+      assert.deepEqual(editor.peek(), [], text);
+      assert.equal(input.value, text);
+      assert.ok(f.node.querySelector('.genre-hint').textContent.includes('only groups genres and is never assigned to a song'), text);
+    }
+    type('house');
+    key('Enter');
+    assert.deepEqual(editor.peek(), ['genre:house']);
+  } finally {
+    resetVocabulary(null);
+    await loadVocabulary();
+  }
+});

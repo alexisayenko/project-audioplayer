@@ -4,7 +4,7 @@ import { tagLabel } from './tagname.js';
 import { splitAll, splitChips } from './chip-split.js';
 import { store } from './store.js';
 import { matchRange } from './genre-suggest.js';
-import { buildIndex, resolveGenre, searchGenres, didYouMean, cachedIndex, loadVocabulary } from './genre-vocab.js';
+import { buildIndex, resolveGenre, searchGenres, didYouMean, cachedIndex, loadVocabulary, isGroupText } from './genre-vocab.js';
 import { familyIndex } from './genre-data.js';
 import { countryCode, GENRE_CAP } from './metadata-apply.js';
 import { isKnownCountry } from './countries.js';
@@ -132,7 +132,8 @@ export function chipField(ns, editor) {
     const idx = vocab();
     const hit = resolveGenre(p, idx);
     if (!hit) {
-      rejected = rejected || { value: p, names: idx ? didYouMean(p, idx, 5, mine().map((t) => t.slice(prefix.length))) : [], loading: !idx };
+      const group = isGroupText(p, idx);
+      rejected = rejected || { value: p, names: idx && !group ? didYouMean(p, idx, 5, mine().map((t) => t.slice(prefix.length))) : [], loading: !idx, group };
       return true;
     }
     if (mine().length >= kind.cap) return true;
@@ -150,7 +151,7 @@ export function chipField(ns, editor) {
       if (mine().length >= kind.cap) { bad = true; continue; }
       editor.addTags([tag]);
     }
-    if (rejected) showHint(rejected.value, rejected.names, rejected.loading ? 'The genre list is still loading. Try again in a moment.' : '');
+    if (rejected) showHint(rejected.value, rejected.names, rejected.loading ? 'The genre list is still loading. Try again in a moment.' : rejected.group ? `"${rejected.value}" only groups genres and is never assigned to a song. Pick a genre under it.` : '');
     return bad;
   }
 

@@ -1,5 +1,6 @@
 import { buildIndex, resolveGenre, vkey } from './genre-vocab.js';
 import { cleanSourceLinks } from './genre-source-links.js';
+import { setLevelOneNames, legacySlot, OTHER_COLOR, SPARE_SLOTS } from './genre-data.js';
 
 const MODIFIER_KINDS = ['sound', 'mood', 'scene'];
 const spaced = (s) => String(s).trim().toLowerCase().replace(/\s+/g, ' ');
@@ -72,13 +73,87 @@ function nodeLookups(byId) {
   return { byKey, bySyn };
 }
 
+const objectOf = (v) => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
+const text = (v) => (typeof v === 'string' && v.trim() ? v.trim() : null);
+
+function rootNode(g, vocab, gsyn) {
+  const group = objectOf(vocab?.groups)[g];
+  const form = objectOf(vocab?.forms)[g];
+  if (group) {
+    const syn = [...new Set([...(gsyn[g] || []), ...(Array.isArray(group.synonyms) ? group.synonyms : [])])];
+    return makeNode(`g:${g}`, g, 1, g, { group: true, temporary: group.temporary === true, note: typeof group.note === 'string' ? group.note : '', colourName: text(group.colour), synonyms: syn });
+  }
+  if (!form) return makeNode(`g:${g}`, g, 1, g, { synonyms: [...(gsyn[g] || [])] });
+  const display = text(form.display);
+  const modifiers = Array.isArray(form.modifiers) ? [...form.modifiers] : [];
+  const n = makeNode(`g:${g}`, g, 1, g, {
+    form: true, display, discogs: form.discogs !== false, fusion: form.fusion === true, colourName: text(form.colour), modifiers, parentNames: [],
+    related: Array.isArray(form.related) ? form.related.filter((r) => typeof r === 'string' && r) : [], synonyms: [...new Set([...(gsyn[g] || []), ...(Array.isArray(form.synonyms) ? form.synonyms : [])])],
+    sourceLinks: cleanSourceLinks(form.source_links), provisional: form.provisional === true, status: effectiveStatus(form),
+  });
+  n.label = display || g;
+  return n;
+}
+
+function linkForms(roots, genres, byId, vocab) {
+  const forms = objectOf(vocab?.forms);
+  for (const f of roots) {
+    if (!f.form) continue;
+    const names = [...new Set(parentList(forms[f.name]))].filter((p) => p !== f.name && knownParent(byId, genres, p));
+    f.parentNames = names;
+    for (const p of names) {
+      const node = byId.get(`g:${p}`) || genres.get(p);
+      f.parents.push(node.id);
+      node.children.push(f);
+    }
+  }
+  for (const n of byId.values()) n.children.sort(byName);
+}
+
+function slotOf(name, ctx, seen = new Set()) {
+  if (ctx.done.has(name)) return ctx.done.get(name);
+  const n = ctx.roots.get(name);
+  if (seen.has(name)) return -1;
+  seen.add(name);
+  let slot = -1;
+  if (!n) slot = legacySlot(name);
+  else if (n.group) slot = OTHER_COLOR;
+  else if (n.form) slot = formSlot(n, ctx, seen);
+  else slot = name === 'Other' ? OTHER_COLOR : legacySlot(name);
+  if (n && !n.group && slot < 0) slot = SPARE_SLOTS[ctx.spare++ % SPARE_SLOTS.length];
+  if (slot >= 0) ctx.done.set(name, slot);
+  return slot;
+}
+
+function inheritSlot(name, ctx, seen) {
+  const n = ctx.roots.get(name);
+  if (n?.group) return n.colourName ? legacySlot(n.colourName) : -1;
+  return slotOf(name, ctx, seen);
+}
+
+function formSlot(n, ctx, seen) {
+  for (const c of [n.colourName, ...n.parentNames]) {
+    if (!c || c === n.name) continue;
+    const s = inheritSlot(c, ctx, seen);
+    if (s >= 0) return s;
+  }
+  return -1;
+}
+
+function assignColours(roots) {
+  const ctx = { roots: new Map(roots.map((r) => [r.name, r])), done: new Map(), spare: 0 };
+  for (const r of roots) slotOf(r.name, ctx);
+  return ctx.done;
+}
+
 export function buildTree(vocab, { fusion = true } = {}) {
   const levels = vocab?.levels || {};
   const gsyn = vocab?.family_synonyms || {};
-  const names = Array.isArray(vocab?.families) && vocab.families.length ? vocab.families : Object.keys(gsyn);
+  const base = Array.isArray(vocab?.families) && vocab.families.length ? vocab.families : Object.keys(gsyn);
+  const names = [...new Set([...base, ...Object.keys(objectOf(vocab?.forms)), ...Object.keys(objectOf(vocab?.groups))])];
   const byId = new Map();
   const roots = names.map((g) => {
-    const n = makeNode(`g:${g}`, g, 1, g, { synonyms: [...(gsyn[g] || [])] });
+    const n = rootNode(g, vocab, gsyn);
     byId.set(n.id, n);
     return n;
   });
@@ -89,7 +164,9 @@ export function buildTree(vocab, { fusion = true } = {}) {
     byId.set(n.id, n);
   }
   linkGenres(levels, genres, byId, fusion);
+  linkForms(roots, genres, byId, vocab);
   assignFamilies(roots, byId);
+  setLevelOneNames(names, assignColours(roots));
   const modifiers = new Map(Object.entries(vocab?.modifiers || vocab?.flavours || {}).map(([key, f]) => [key, { key, name: f.name || key, kind: MODIFIER_KINDS.includes(f.kind) ? f.kind : 'sound', description: f.description || '', songs: new Set() }]));
   for (const n of byId.values()) n.modifiers = n.modifiers.filter((f) => modifiers.has(f));
   const { byKey, bySyn } = nodeLookups(byId);
@@ -104,6 +181,13 @@ export function resolveNode(text, tree) {
   if (direct) return direct;
   const hit = resolveGenre(raw, tree.index);
   return hit ? tree.byKey.get(vkey(hit.name)) || null : null;
+}
+
+export const isGroup = (n) => n?.group === true;
+
+export function assignableNode(text, tree) {
+  const n = resolveNode(text, tree);
+  return n && !n.group ? n : null;
 }
 
 export function chain(tree, id) {
@@ -139,11 +223,11 @@ export function depthIn(tree, id, rootId) {
 }
 
 export function genreLines(tree, names) {
-  const lines = new Map(tree ? tree.roots.map((r) => [r.id, { family: r.name, rows: new Map() }]) : []);
+  const lines = new Map(tree ? tree.roots.map((r) => [r.id, { family: r.name, label: r.label, rows: new Map() }]) : []);
   const loose = new Map();
   const seen = new Set();
   for (const name of names || []) {
-    const node = resolveNode(name, tree);
+    const node = assignableNode(name, tree);
     const key = node ? node.id : `?${vkey(name)}`;
     if (seen.has(key)) continue;
     seen.add(key);
@@ -158,7 +242,7 @@ function lineGroups(lines, loose) {
   const order = (a, b) => a.depth - b.depth || a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
   const out = [...lines.values()].filter((l) => l.rows.size).map((l) => ({
     family: l.family,
-    genres: [l.family, ...[...l.rows.values()].filter((r) => r.depth > 0).sort(order).map((r) => r.name)],
+    genres: [l.label, ...[...l.rows.values()].filter((r) => r.depth > 0).sort(order).map((r) => r.name)],
   }));
   if (loose.size) out.push({ family: null, genres: [...loose.values()].sort(order).map((r) => r.name) });
   return out;
@@ -178,7 +262,7 @@ function songGenreNames(s) {
 function countSong(tree, s, sid) {
   const done = new Set();
   for (const name of songGenreNames(s)) {
-    const node = resolveNode(name, tree);
+    const node = assignableNode(name, tree);
     if (!node || done.has(node.id)) continue;
     done.add(node.id);
     node.own.add(sid);
@@ -210,7 +294,7 @@ export function libraryTags(tree, id) {
   const walk = (n) => {
     if (seen.has(n.id)) return;
     seen.add(n.id);
-    if (n.level > 1 || n.name !== 'Other') out.add(`genre:${n.name}`);
+    if (!n.group && (n.level > 1 || n.name !== 'Other')) out.add(`genre:${n.name}`);
     n.children.forEach(walk);
   };
   walk(tree.byId.get(id));

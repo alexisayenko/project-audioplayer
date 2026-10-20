@@ -14,7 +14,7 @@ REVIEW = Path(__file__).resolve().parent.parent / "data" / "genre_sources_review
 DOC = {
     "_meta": {"generated_at": "2026-10-19T00:00:00Z"},
     "house": {"discogs": True, "musicbrainz": {"id": "mb-1", "name": "house", "match": "name"}, "wikipedia": {"title": "House music", "wikidata": "Q11", "match": "name"}},
-    "electronic": {"discogs": True, "apple_music": {"id": "7", "name": "Electronic", "match": "name"}},
+    "funk / soul": {"discogs": True, "apple_music": {"id": "7", "name": "Funk / Soul", "match": "name"}},
     "neurofunk": {"discogs": False},
     "dub": {"discogs": True, "discogs_name": "Dub (x)"},
 }
@@ -87,15 +87,17 @@ def test_sources_for_returns_stored_ids_without_urls(sources_file):
     assert genre_sources.sources_for("neurofunk") == {}
     assert genre_sources.sources_for("nowhere") == {}
     assert genre_sources.sources_for("dub")["discogs"]["name"] == "Dub (x)"
-    assert genre_sources.sources_for("electronic", True)["discogs"] == {"name": "electronic", "family": True}
+    assert genre_sources.sources_for("funk / soul", True)["discogs"] == {"name": "funk / soul", "family": True}
 
 
 def test_payload_rows_carry_sources(sources_file):
     sources_file()
     rows = {r["name"]: r for r in genre_vocab.vocabulary()["genres"]}
     assert rows["house"]["sources"]["musicbrainz"]["id"] == "mb-1"
-    assert rows["electronic"]["sources"]["apple_music"]["name"] == "Electronic"
-    assert rows["electronic"]["source_links"][3]["url"].startswith("https://www.discogs.com/search/?genre=")
+    assert rows["funk / soul"]["sources"]["apple_music"]["name"] == "Funk / Soul"
+    assert rows["funk / soul"]["source_links"][3]["url"].startswith("https://www.discogs.com/search/?genre=")
+    assert rows["house"]["level"] == "genre" and rows["house"]["sources"]["discogs"]["family"] is False
+    assert "electronic" not in rows and "others" not in rows
     assert rows["neurofunk"]["sources"] == {}
     assert [x["source"] for x in rows["neurofunk"]["source_links"]] == ["wikipedia", "apple_music", "spotify"]
     assert rows["house"]["source_links"][0]["url"] == "https://en.wikipedia.org/wiki/House_music"

@@ -9,12 +9,12 @@ from pathlib import Path
 
 from app import genre_vocab
 
-SNAP = json.loads((Path(__file__).parent / "fixtures" / "genre_parents_snapshot_server.json").read_text(encoding="utf-8"))
+SNAP = json.loads((Path(__file__).parent / "fixtures" / "genre_parents_snapshot_server.json").read_text(encoding="utf-8").replace('"Others"', '"Others"'))  # the snapshot predates the rename of the Electronic family to the group Others
 RELATED_MOVED = {
     "minimal": ["house"], "witch house": ["industrial"], "breakcore": ["breakbeat"], "chillwave": ["downtempo"], "vaporwave": ["downtempo"], "dark electro": ["electro"],
     "dungeon synth": ["synthwave"], "future bass": ["house"], "jungle": ["drum and bass"], "melodic techno": ["trance"], "microhouse": ["techno"], "minimal techno": ["house"],
-    "neurofunk": ["industrial"], "darksynth": ["industrial"], "hardcore techno": ["Rock"], "noise": ["Rock"], "grime": ["Hip Hop"], "trap": ["Electronic"], "acid jazz": ["Electronic"],
-    "new wave": ["Electronic"], "modern classical": ["Electronic"], "gospel": ["Funk / Soul"],
+    "neurofunk": ["industrial"], "darksynth": ["industrial"], "hardcore techno": ["Rock"], "noise": ["Rock"], "grime": ["Hip Hop"], "trap": ["Others"], "acid jazz": ["Others"],
+    "new wave": ["Others"], "modern classical": ["Others"], "gospel": ["Funk / Soul"],
 }
 ADDED = {"edm", "hardcore punk", "experimental rock", "extreme metal", "noise rock", "roots rock", "neo-psychedelia", "glam metal", "college rock", "death-doom"}
 # Rock hierarchy (ADR-0030 note, GEN-067): every Rock genre whose parents changed from [Rock] or the old pair; the 20 held genres and everything else are unchanged.
@@ -32,10 +32,10 @@ INDUSTRIAL_REMOVED = {"industrial", "ethereal"}
 INDUSTRIAL_AFFECTED = {"dark electro", "ebm", "harsh noise wall", "power electronics", "rhythmic noise", "industrial metal", "industrial rock", "witch house", "neurofunk", "darksynth"}
 EDITED = {*INDUSTRIAL_AFFECTED, *INDUSTRIAL_REMOVED, "spacesynth", "space disco", "soviet wave", "sovietwave", "eurobeat", *RELATED_MOVED, *ROCK_EDITED}
 SECOND_FAMILY = {
-    "acid jazz": "Electronic", "blues rock": "Rock", "bossa nova": "Jazz", "country rock": "Rock", "dub": "Electronic", "electro": "Hip Hop",
+    "acid jazz": "Others", "blues rock": "Rock", "bossa nova": "Jazz", "country rock": "Rock", "dub": "Others", "electro": "Hip Hop",
     "experimental": "Rock", "folk rock": "Rock", "funk metal": "Funk / Soul", "gospel": "Folk, World, & Country", "grime": "Hip Hop",
-    "hardcore techno": "Rock", "hip house": "Hip Hop", "jazz funk": "Funk / Soul", "latin jazz": "Latin", "modern classical": "Electronic",
-    "new wave": "Electronic", "noise": "Rock", "rhythm and blues": "Blues", "soul jazz": "Funk / Soul", "synthpop": "Pop", "trap": "Electronic",
+    "hardcore techno": "Rock", "hip house": "Hip Hop", "jazz funk": "Funk / Soul", "latin jazz": "Latin", "modern classical": "Others",
+    "new wave": "Others", "noise": "Rock", "rhythm and blues": "Blues", "soul jazz": "Funk / Soul", "synthpop": "Pop", "trap": "Others",
     "trip hop": "Hip Hop",
 }
 LOFI_REMOVED = {"lo-fi"}
@@ -71,7 +71,7 @@ def test_the_tree_changes_only_by_the_links_moved_to_related():
         old = SNAP["levels"][name]
         before = old_set(old) | ({SECOND_FAMILY[name]} if name in SECOND_FAMILY else set())
         lv = body["levels"][name]
-        assert set(lv["parents"]) == (before - set(moved) - INDUSTRIAL_REMOVED or {"Electronic"}), name
+        assert set(lv["parents"]) == (before - set(moved) - INDUSTRIAL_REMOVED or {"Others"}), name
         assert lv.get("related", []) == [m for m in moved if m not in INDUSTRIAL_REMOVED], name
         assert len(lv["parents"]) == len(set(lv["parents"])) and lv["parents"], name
     assert body["levels"]["gospel"]["families"] == ["Folk, World, & Country"] and families >= {"Folk, World, & Country"}
@@ -95,9 +95,9 @@ def test_the_data_edits_of_2026_10_19():
     levels = payload()["levels"]
     assert (levels["spacesynth"]["parents"], levels["spacesynth"]["level"], levels["spacesynth"]["status"]) == (["synthwave", "italo disco"], 3, "approved")
     sd = levels["space disco"]
-    assert (sd["parents"], sd["family"], sd["level"], sd["discogs"], sd["status"], sd["display"], sd["synonyms"]) == (["disco"], "Electronic", 3, False, "approved", None, ["space-disco"])
+    assert (sd["parents"], sd["family"], sd["level"], sd["discogs"], sd["status"], sd["display"], sd["synonyms"]) == (["disco"], "Others", 3, False, "approved", None, ["space-disco"])
     sw = levels["sovietwave"]
-    assert (sw["parents"], sw["family"], sw["level"], sw["display"]) == (["synthwave"], "Electronic", 3, None)
+    assert (sw["parents"], sw["family"], sw["level"], sw["display"]) == (["synthwave"], "Others", 3, None)
 
 
 def test_vocabulary_rows_match_the_snapshot_taken_before_the_change():

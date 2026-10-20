@@ -73,7 +73,7 @@ test('the same seed gives the same layout', () => {
 
 test('a subset of the nodes (a filtered map) simulates on its own', () => {
   const { g } = build();
-  const keep = new Set(g.nodes.filter((n) => n.family === 'Electronic').map((n) => n.id));
+  const keep = new Set(g.nodes.filter((n) => n.family === 'Others').map((n) => n.id));
   const nodes = g.nodes.filter((n) => keep.has(n.id));
   const links = g.links.filter((l) => keep.has(l.source) && keep.has(l.target));
   const sim = createSim({ nodes, links, seed: 1, breathing: false, ...OPTS });

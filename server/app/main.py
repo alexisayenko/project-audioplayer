@@ -7,7 +7,7 @@ from collections.abc import Awaitable, Callable
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
 
-from . import deps, features, genre_vocab, guest, hosts, legal, migrate_model2, migrate_model3, migrate_removals, migrate_renames, migrate_tags, web
+from . import deps, features, genre_vocab, guest, hosts, legal, migrate_model2, migrate_model3, migrate_removals, migrate_renames, migrate_retired, migrate_tags, web
 from .problems import Problem
 from .routes import playlist_import as playlist_import_routes
 from .routes import analyze, auth, backfill, catalog, covers, drafts, features as features_routes, files, genres, health, legacy, legal as legal_routes, lookup, me, metafill, removal, songs
@@ -59,6 +59,7 @@ def _startup() -> None:
     migrate_tags.run()
     migrate_removals.run()
     migrate_renames.run()
+    migrate_retired.run()
     features.record_startup()
 
 

@@ -7,17 +7,30 @@ const CLOSE = 0.6;
 export const vkey = (s) => String(s).normalize('NFKD').replaceAll(/[̀-ͯ]/g, '').toLowerCase().replaceAll('&', ' and ').replaceAll(/[\s\-_]+/g, '');
 const spaced = (s) => String(s).trim().toLowerCase().replace(/\s+/g, ' ');
 
+function groupKeys(data) {
+  const out = new Set();
+  const groups = data?.groups && typeof data.groups === 'object' ? data.groups : {};
+  for (const [name, g] of Object.entries(groups)) {
+    out.add(vkey(name));
+    for (const s of [...(g?.synonyms || []), ...(data?.family_synonyms?.[name] || [])]) out.add(vkey(s));
+  }
+  return out;
+}
+
 export function buildIndex(data) {
-  const genres = Array.isArray(data?.genres) ? data.genres : [];
+  const reserved = groupKeys(data);
+  const genres = (Array.isArray(data?.genres) ? data.genres : []).filter((e) => e.assignable !== false && !reserved.has(vkey(e.name)));
   const byKey = new Map();
   for (const e of genres) byKey.set(vkey(e.name), e);
   const aliases = new Map();
   for (const [a, target] of Object.entries(data?.aliases || {})) {
     const e = byKey.get(vkey(target));
-    if (e) aliases.set(vkey(a), { alias: a, entry: e });
+    if (e && !reserved.has(vkey(a))) aliases.set(vkey(a), { alias: a, entry: e });
   }
-  return { genres, byKey, aliases, names: genres.map((e) => e.name) };
+  return { genres, byKey, aliases, names: genres.map((e) => e.name), reserved };
 }
+
+export const isGroupText = (text, index) => !!index?.reserved?.has(vkey(String(text).trim().replace(/ music$/i, ''))) || !!index?.reserved?.has(vkey(text));
 
 export function resolveGenre(text, index) {
   const raw = spaced(text);

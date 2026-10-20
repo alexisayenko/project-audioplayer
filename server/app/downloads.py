@@ -233,7 +233,9 @@ def reject_unknown_genre(tags: list[str], existing: list[str] | None = None) -> 
     suggestions = {v: genre_vocab.suggest(v, aliases) for v in bad}
     first = bad[0]
     hint = f" Did you mean: {', '.join(suggestions[first])}?" if suggestions[first] else " Pick a name from GET /genres/vocabulary."
-    raise Problem(422, "unknown_genre", f"Unknown genre: {first}.{hint}", value=first, suggestions=suggestions[first],
+    grp = genre_vocab.group(first)
+    lead = f"{first} is not a genre ({grp} is a temporary group) and cannot be assigned to a song." if grp else f"Unknown genre: {first}."
+    raise Problem(422, "unknown_genre", f"{lead}{hint}", value=first, suggestions=suggestions[first],
                   unknown=[{"value": v, "suggestions": suggestions[v]} for v in bad])
 
 

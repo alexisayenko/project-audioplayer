@@ -4,7 +4,7 @@ import { buildTree, applyCounts } from './genre-levels.js';
 import { buildMapGraph } from './genre-map-graph.js';
 import { layoutRadial, hueSet } from './genre-radial.js';
 import { fillDisc, uniqueIndices, segmentsFor } from './genre-disc.js';
-import { familyIndex, pieIndices } from './genre-data.js';
+import { familyIndex, pieIndices, setLevelOneNames } from './genre-data.js';
 import { realVocab } from './genre-real-vocab.mjs';
 
 const VOCAB = {
@@ -49,9 +49,10 @@ test('graph nodes carry the distinct palette indices of their families in the fi
   assert.equal(g.byId.get('s:disco').fi, familyIndex('Electronic'));
   assert.deepEqual(g.byId.get('s:house').fis, [0]);
   assert.deepEqual(g.byId.get('s:tri').fis, [0, 5, 1]);
-  assert.deepEqual(g.byId.get('s:quad').fis, [9, 0, 5, 1], 'segments follow FAMILY_ORDER: Blues, Electronic, Funk / Soul, Rock');
+  assert.deepEqual(g.byId.get('s:quad').fis, [0, 5, 1, 9], 'segments follow the vocabulary family order: Electronic, Funk / Soul, Rock, Blues');
   assert.deepEqual(g.byId.get('g:Rock').fis, [familyIndex('Rock')]);
   assert.deepEqual(uniqueIndices(['Other', 'Foo', 'Rock'], familyIndex), [15, 1]);
+  setLevelOneNames(['Blues', 'Classical', 'Electronic', 'Folk, World, & Country', 'Funk / Soul', 'Hip Hop', 'Jazz', 'Latin', 'Pop', 'Reggae', 'Rock']);
   assert.deepEqual(pieIndices(['Rock', 'Blues', 'Electronic', 'Rock']), [9, 0, 1]);
   assert.deepEqual(pieIndices(['Foo', 'Rock']), [1, 15]);
   assert.deepEqual(pieIndices(undefined), []);
@@ -62,7 +63,7 @@ test('on the real vocabulary only multi-family genres are split and every set is
   const split = g.nodes.filter((n) => n.fis.length > 1);
   assert.ok(split.length > 0 && split.length < g.nodes.length / 2);
   assert.ok(g.nodes.every((n) => n.fis.length >= 1));
-  assert.ok(split.some((n) => n.id === 's:disco' && n.fis[0] === familyIndex('Electronic') && n.fis[1] === familyIndex('Funk / Soul')));
+  assert.ok(split.some((n) => n.id === 's:disco' && n.fis[0] === familyIndex('Others') && n.fis[1] === familyIndex('Funk / Soul')));
   assert.ok(split.some((n) => n.id === 's:eurodance' && n.fis.length === 3));
 });
 
@@ -132,10 +133,10 @@ test('regression: every genre of the vocabulary is coloured by exactly the famil
     if (want.length > 1) multi++;
   }
   assert.ok(multi > 20);
-  assert.deepEqual(g.byId.get('s:disco').fis, [0, 5]);
-  assert.deepEqual(g.byId.get('s:euro disco').fis, [0, 5]);
+  assert.deepEqual(g.byId.get('s:disco').fis, [15, 5]);
+  assert.deepEqual(g.byId.get('s:euro disco').fis, [15, 5]);
   const t2 = buildTree(vocab);
   applyCounts(t2, [{ id: 'x', tags: ['genre:disco'] }]);
-  const layout = layoutRadial(t2, 'Electronic', { hidden: false });
-  assert.deepEqual(layout.byId.get('s:disco').hues, [0, 5], 'the Radial colours disco by Electronic and Funk / Soul, not by its umbrella hue');
+  const layout = layoutRadial(t2, 'Others', { hidden: false });
+  assert.deepEqual(layout.byId.get('s:disco').hues, [15, 5], 'the Radial colours disco by the grey Others group and Funk / Soul, not by its umbrella hue');
 });

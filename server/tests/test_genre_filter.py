@@ -21,6 +21,7 @@ def test_canonical_strips_music_and_uses_builtin_spelling():
     assert gf.canonical("Electronic Music") == "electronic"
     assert gf.canonical("Electronic Dance") == "edm"
     assert gf.canonical("electronic-dance-music") == "edm"
+    assert gf.is_dropped("electronica") and gf.is_dropped("rave") and gf.is_dropped("club") and gf.is_dropped("dance & edm") and gf.is_dropped("alternative dance") and gf.is_dropped("indietronica"), "the aliases of electronic are dropped: electronic is not a genre"
     assert gf.canonical("punk rock") == "punk"
     for keep in ("trap", "downtempo", "dance-pop", "pop-punk", "chillwave", "soft-rock", "synth-rock", "new age", "indie pop", "classical", "country"):
         assert gf.canonical(keep) == keep or gf.canonical(keep) == keep.replace("-", " ")
@@ -133,7 +134,7 @@ def test_progressive_goes_to_house_with_an_electronic_tag_else_rock():
 
     assert library.clean_tags(["genre:progressive", "genre:house"]) == ["genre:progressive house", "genre:house"]
     assert library.clean_tags(["genre:melodic techno", "genre:progressive"]) == ["genre:melodic techno", "genre:progressive house"]
-    assert library.clean_tags(["genre:progressive", "genre:edm"]) == ["genre:progressive house", "genre:edm"]
+    assert library.clean_tags(["genre:progressive", "genre:eurodance"]) == ["genre:progressive house", "genre:eurodance"]
     assert library.clean_tags(["genre:progressive", "genre:trance", "genre:rock"]) == ["genre:progressive house", "genre:trance", "genre:rock"]
     assert library.clean_tags(["genre:progressive", "genre:rock"]) == ["genre:progressive rock", "genre:rock"]
     assert library.clean_tags(["genre:progressive", "genre:indie"]) == ["genre:progressive rock", "genre:indie rock"]
@@ -142,10 +143,10 @@ def test_progressive_goes_to_house_with_an_electronic_tag_else_rock():
     assert library.clean_tags(["genre:progressive", "genre:progressive"]) == ["genre:progressive rock"]
     assert gf.filter_tags(["genre:progressive", "genre:trance"]) == ["genre:progressive house", "genre:trance"]
     assert gf.is_electronic("house")
-    assert gf.is_electronic("Electronic")
-    assert gf.is_electronic("dance")
-    assert gf.is_electronic("edm")
-    assert gf.is_electronic("eurodance")
+    assert gf.is_electronic("Electronic"), "the raw source word counts as context for the progressive retag"
+    assert gf.is_electronic("club")
+    assert gf.is_electronic("dance") and gf.is_electronic("edm")
+    assert gf.is_electronic("eurodance") and gf.is_electronic("deep house") and gf.is_electronic("disco") and gf.is_electronic("synthpop")
     assert not gf.is_electronic("rock")
     assert not gf.is_electronic("progressive")
     assert not gf.is_electronic("zzz-weird")

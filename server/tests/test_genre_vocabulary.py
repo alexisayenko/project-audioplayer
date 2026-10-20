@@ -14,10 +14,10 @@ DATA = Path(genre_vocab.__file__).resolve().parent.parent / "data"
 DISCOGS = json.loads((DATA / "genre_discogs.json").read_text(encoding="utf-8"))
 EXTRAS = json.loads((DATA / "genre_extras.json").read_text(encoding="utf-8"))["extras"]
 LIVE = json.loads((Path(__file__).parent / "fixtures" / "genre_live_tags.json").read_text(encoding="utf-8"))
-FAMILIES = ["Blues", "Classical", "Electronic", "Folk, World, & Country", "Funk / Soul", "Hip Hop", "Jazz", "Latin", "Pop", "Reggae", "Rock"]
+FAMILIES = ["Blues", "Classical", "Others", "Folk, World, & Country", "Funk / Soul", "Hip Hop", "Jazz", "Latin", "Pop", "Reggae", "Rock"]
 
 # Tags of the live library (2026-10-16) that no rule maps: kept on the songs and listed in the review file (TAG-082).
-LIVE_UNMAPPABLE: set[str] = set()
+LIVE_UNMAPPABLE: set[str] = {"electronic"}  # electronic is not a genre since the group Others replaced the Electronic family: kept on the songs and reported until the song-side strip (task-0066 T2)
 
 
 def names() -> set[str]:
@@ -55,7 +55,7 @@ def test_no_discogs_genre_in_two_families_unless_it_lists_more_parents():
 
 def test_names_are_unique_after_folding_case_spaces_hyphens_and_ampersand():
     seen: dict[str, str] = {}
-    for name in [*(g.lower() for g in FAMILIES), *DISCOGS["genres"], *EXTRAS]:
+    for name in [*(g.lower() for g in FAMILIES if g != "Others"), *DISCOGS["genres"], *EXTRAS]:
         k = genre_vocab.vkey(name)
         assert k not in seen, (name, seen.get(k))
         seen[k] = name
@@ -102,7 +102,7 @@ def test_an_extra_has_every_family_it_descends_from_through_any_parent():
 REQUIRED_EXTRAS = (
     "singer-songwriter", "psybient", "darksynth", "dreamwave", "neurofunk", "liquid drum and bass", "melodic techno",
     "dance-rock", "estrada", "shock rock", "nu-nrg", "uplifting trance", "dream trance", "chillwave", "darkwave",
-    "folk", "dark metal", "dreamsynth", "sunshine house", "synth-rock", "electronic",
+    "folk", "dark metal", "dreamsynth", "sunshine house", "synth-rock",
 )
 
 
@@ -110,6 +110,16 @@ REQUIRED_EXTRAS = (
 def test_kept_subgenres_are_canonical(name):
     assert genre_vocab.is_canonical(name)
     assert gf.canonical(name) == name
+
+
+def test_electronic_and_the_group_others_are_not_vocabulary_names():
+    assert not genre_vocab.is_canonical("electronic") and genre_vocab.lookup("electronic") is None
+    assert not genre_vocab.is_canonical("others") and genre_vocab.lookup("others") is None
+    assert gf.vocabulary_name("Electronic") is None and gf.vocabulary_name("electronic music") is None
+    assert gf.unmappable("electronic")
+    assert genre_vocab.group("electronic") == "Others" == genre_vocab.group("Electronic Music") == genre_vocab.group("others")
+    assert genre_vocab.group("house") is None
+    assert genre_vocab.suggest("electronic") == [] or "electronic" not in genre_vocab.suggest("electronic")
 
 
 def test_alias_and_retag_targets_are_canonical():
@@ -160,8 +170,8 @@ def test_lookup(raw, want):
 
 
 def test_family_of_also_reads_the_music_form():
-    assert genre_vocab.family_of("house") == "Electronic"
-    assert genre_vocab.family_of("house music") == "Electronic"
+    assert genre_vocab.family_of("house") == "Others"
+    assert genre_vocab.family_of("house music") == "Others"
     assert genre_vocab.family_of("zzz") is None
     assert genre_vocab.is_below_family("house")
     assert not genre_vocab.is_below_family("electronic")
@@ -306,7 +316,7 @@ def test_vocabulary_endpoint_lists_every_name_with_family_and_level(client):
     assert body["families"] == FAMILIES
     assert body["count"] == len(body["genres"]) == len(names())
     by = {g["name"]: g for g in body["genres"]}
-    assert by["house"]["family"] == "Electronic"
+    assert by["house"]["family"] == "Others"
     assert by["house"]["level"] == "genre"
     assert not by["house"]["extra"]
     assert by["rock"]["level"] == "family"
@@ -314,7 +324,7 @@ def test_vocabulary_endpoint_lists_every_name_with_family_and_level(client):
     assert by["rock"]["family"] == "Rock"
     assert by["neurofunk"]["extra"]
     assert by["neurofunk"]["parents"] == ["drum and bass"]
-    assert by["house"]["parents"] == ["Electronic"]
+    assert by["house"]["parents"] == ["Others"]
     assert "parent" not in by["house"] and "also_under" not in by["house"]
     assert [g["name"] for g in body["genres"]] == sorted(by)
     assert body["aliases"]["dnb"] == "drum and bass"

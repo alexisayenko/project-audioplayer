@@ -69,6 +69,7 @@ REMOVED_GENRES: tuple[str, ...] = (
     "sound poetry", "soundtrack", "speech", "spoken", "spoken word", "story",
     "technical", "therapy", "trailer", "stage & screen", "stage and screen", "soundtracks", "film and tv", "stage, screen",
     "incidental music", "musical", "score", "film score", "theme", "vaudeville", "video game music", "industrial", "ethereal", "ethereal wave", "lo-fi", "epic",
+    "dance & edm", "club", "electronica", "indietronica", "alternative dance", "rave",
 )
 DROP = DROP | frozenset(key(v) for v in REMOVED_GENRES)
 
@@ -93,8 +94,8 @@ _LIQUID_DNB = "liquid drum and bass"
 _UPLIFTING_TRANCE = "uplifting trance"
 _PROG_HOUSE = "progressive house"
 ALIASES: dict[str, str] = {
-    "electronic dance music": "edm",
     "punk rock": "punk",
+    "electronic dance music": "edm",
     "euroda": "eurodance",
     "deep progressive": _PROG_HOUSE,
     "mor": "middle of the road",
@@ -126,19 +127,14 @@ ALIASES: dict[str, str] = {
     "festival trap": "trap",
     "red disco": "disco",
     "intelligent dance music": "idm",
-    "dance & edm": "electronic",
+    "dance music": "edm",
+    "club music": "edm",
+    "electronic dance": "edm",
+    "dance": "edm",
     "metal": "heavy metal",
     "psychedelic trance": "psytrance",
     "glam rock": "glam",
     "bebop": "bop",
-    "dance music": "edm",
-    "club": "electronic",
-    "club music": "edm",
-    "electronic dance": "edm",
-    "dance": "edm",
-    "electronica": "electronic",
-    "indietronica": "electronic",
-    "alternative dance": "electronic",
     "chillout": "downtempo",
     "afro house": "house",
     "big room house": "house",
@@ -156,7 +152,6 @@ ALIASES: dict[str, str] = {
     "liquid drum n bass": _LIQUID_DNB,
     "liquid drum & bass": _LIQUID_DNB,
     "breakbeat hardcore": "breakbeat",
-    "rave": "electronic",
     "jersey club": "breakbeat",
     "techno pop": "synthpop",
     "electropop": "synthpop",
@@ -222,9 +217,9 @@ def _spelling(value: str) -> str:
 
 
 def is_electronic(value: str) -> bool:
-    """True when the genre belongs to the Electronic family: `ELECTRONIC_CONTEXT`, or Electronic is one of its vocabulary families (`genre_vocab.families_of`, bare form or "<value> music")."""
+    """True when the genre sits under the former Electronic family: `ELECTRONIC_CONTEXT` (the raw source words `electronic` and `club`, which are not genres), or one of its vocabulary families has the legacy colour family Electronic (the group Others and every genre promoted out of it; `genre_vocab.families_of`, bare form or "<value> music")."""
     v = _spelling(value).lower()
-    return key(v) in ELECTRONIC_CONTEXT or "Electronic" in genre_vocab.families_of(v)
+    return key(v) in ELECTRONIC_CONTEXT or "Electronic" in genre_vocab.colour_families(genre_vocab.families_of(v))
 
 
 def retag(value: str, song_genres: Iterable[str] = ()) -> str:

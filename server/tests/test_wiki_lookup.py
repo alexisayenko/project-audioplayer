@@ -321,7 +321,7 @@ def test_preview_returns_links_tags_and_year(client, monkeypatch):
     assert body["wikipedia_artist"] == "https://en.wikipedia.org/wiki/Daft_Punk"
     assert body["suggested_year"] == 1997
     assert body["year"] == 1997
-    assert body["tags"] == ["genre:house", "genre:electronic", "country:fr"], "electronic: the song page and (through disco) the artist page; house: only the song page, but it shares the family"
+    assert body["tags"] == ["genre:house", "country:fr"], "electronic is a group, never applied; house: the song page alone, applied because it is not ambiguous"
     assert {s["genre"]: s["sources"] for s in body["genre_suggestions"]} == {"disco": ["wikipedia_artist"]}
 
 
@@ -376,7 +376,7 @@ def test_lookup_endpoint(client, monkeypatch):
     body = {"wikipedia_song": "https://en.wikipedia.org/wiki/Around_the_World_(Daft_Punk_song)", "wikipedia_artist": "https://www.wikidata.org/wiki/Q200"}
     r = client.post("/lookup/wikipedia", json=body, headers=H)
     assert r.status_code == 200
-    assert r.json()["tags"] == ["genre:house", "genre:electronic", "country:fr"]
+    assert r.json()["tags"] == ["genre:house", "country:fr"]
     assert r.json()["year"] == 1997
     assert r.json()["genre_suggestions"] == [{"genre": "disco", "sources": ["wikipedia_artist"], "reason": "single_source"}]
 

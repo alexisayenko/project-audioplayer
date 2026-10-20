@@ -1,20 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { buildTree, applyCounts } from './genre-levels.js';
+import { realVocab } from './genre-real-vocab.mjs';
 import { layoutRadial, highlightSets, radius, selectLabels, labelBox } from './genre-radial.js';
 
-const doc = JSON.parse(readFileSync(new URL('../../server/data/genre_levels.json', import.meta.url), 'utf8'));
-const discogs = JSON.parse(readFileSync(new URL('../../server/data/genre_discogs.json', import.meta.url), 'utf8'));
-const entries = Object.fromEntries(Object.entries(doc).filter(([k]) => k !== '_meta' && !['genres', 'families', 'modifiers', 'subfamilies'].includes(k)));
-const vocab = {
-  families: discogs.families,
-  family_synonyms: Object.fromEntries(Object.entries(doc.families).map(([k, v]) => [k, v.synonyms])),
-  levels: Object.fromEntries(Object.entries(entries).map(([k, v]) => [k, { synonyms: [], provisional: false, ...v }])),
-  genres: [],
-};
-const lay = (t, root = 'Electronic', o = {}) => layoutRadial(t, root, { hidden: false, ...o });
-const electronic = [...buildTree(vocab).byId.values()].filter((n) => n.id.startsWith('s:') && n.fams.includes('Electronic')).map((n) => [n.name]);
+const vocab = realVocab();
+const lay = (t, root = 'Others', o = {}) => layoutRadial(t, root, { hidden: false, ...o });
+const electronic = [...buildTree(vocab).byId.values()].filter((n) => n.id.startsWith('s:') && n.fams.includes('Others')).map((n) => [n.name]);
 
 function sample() {
   const t = buildTree(vocab);
@@ -23,7 +15,7 @@ function sample() {
   return t;
 }
 
-test('every Electronic style with library songs appears exactly once, plus the root', () => {
+test('every Others style with library songs appears exactly once, plus the root', () => {
   const t = sample();
   const l = lay(t);
   const withSongs = electronic.filter(([k]) => t.byId.get(`s:${k}`).all.size > 0);
@@ -31,7 +23,7 @@ test('every Electronic style with library songs appears exactly once, plus the r
   assert.equal(l.nodes.length, withSongs.length + 1);
   const ids = l.nodes.map((n) => n.id);
   assert.equal(new Set(ids).size, ids.length);
-  assert.deepEqual(new Set(ids), new Set(['g:Electronic', ...withSongs.map(([k]) => `s:${k}`)]));
+  assert.deepEqual(new Set(ids), new Set(['g:Others', ...withSongs.map(([k]) => `s:${k}`)]));
   assert.equal(l.edges.filter((e) => !e.cross).length, withSongs.length);
   assert.ok(l.edges.some((e) => e.cross));
 });
@@ -68,7 +60,7 @@ test('level 3 nodes keep apart within a tolerance and sit in their umbrella sect
 
 test('size follows the song count, the root is centred, bounds contain all nodes', () => {
   const l = lay(sample());
-  assert.equal(l.byId.get('g:Electronic').x, 0);
+  assert.equal(l.byId.get('g:Others').x, 0);
   assert.ok(radius(2, 25) > radius(2, 0) && radius(3, 9) > radius(3, 0));
   assert.ok(radius(2, 10000) <= 14 && radius(3, 10000) <= 8);
   for (const n of l.nodes) assert.ok(n.x - n.r >= l.bounds.x0 && n.x + n.r <= l.bounds.x1 && n.y - n.r >= l.bounds.y0 && n.y + n.r <= l.bounds.y1);
@@ -93,14 +85,14 @@ test('a style without songs of its own but with a populated child is drawn as a 
   const t = buildTree(vocab);
   applyCounts(t, [{ id: 'a', tags: ['genre:deep house'] }]);
   const l = lay(t);
-  assert.deepEqual(l.nodes.map((n) => n.id).sort(), ['g:Electronic', 's:deep house', 's:house']);
+  assert.deepEqual(l.nodes.map((n) => n.id).sort(), ['g:Others', 's:deep house', 's:house']);
   const house = l.byId.get('s:house');
   assert.equal(house.connector, true);
   assert.equal(house.hue, 15);
   assert.equal(house.node.own.size, 0);
   assert.equal(house.node.all.size, 1);
   assert.equal(l.byId.get('s:deep house').connector, false);
-  assert.equal(l.byId.get('g:Electronic').connector, undefined);
+  assert.equal(l.byId.get('g:Others').connector, undefined);
 });
 
 test('every other parent of a drawn node gets an edge: the node is drawn once with a line to each parent', () => {
@@ -126,10 +118,10 @@ test('the root genre is a parameter; unknown roots give null', () => {
   assert.equal(layoutRadial(t, 'Nope'), null);
 });
 
-test('Blues, Jazz and Rock lay out like Electronic: family hue on the root, only genres with songs around it', () => {
+test('Blues, Jazz and Rock lay out like other families: family hue on the root, only genres with songs around it', () => {
   const t = buildTree(vocab);
   for (const [name, hue] of [['Blues', 9], ['Jazz', 4], ['Rock', 1]]) {
-    const own = Object.entries(entries).filter(([, v]) => v.parents[0] === name);
+    const own = Object.entries(vocab.levels).filter(([, v]) => v.parents[0] === name);
     assert.ok(own.length > 2, `${name} has genres in genre_levels.json`);
     assert.equal(lay(t, name).nodes.length, 1);
     applyCounts(t, own.slice(0, 2).map(([k], i) => ({ id: `${name}${i}`, tags: [`genre:${k}`] })));
@@ -143,7 +135,7 @@ test('Blues, Jazz and Rock lay out like Electronic: family hue on the root, only
 test('highlightSets returns the ancestor chain and the direct children', () => {
   const t = sample();
   const h = highlightSets(t, 's:house');
-  assert.deepEqual([...h.chain].sort(), ['g:Electronic', 's:house']);
+  assert.deepEqual([...h.chain].sort(), ['g:Others', 's:house']);
   assert.ok(h.kids.has('s:deep house') && !h.kids.has('s:house'));
   assert.equal(highlightSets(t, 'nope').chain.size, 0);
 });
@@ -190,7 +182,7 @@ test('psytrance sits under trance at level 3 and its own children go down to lev
   assert.equal(t.byId.get('s:psybient').level, 3, 'psybient is also under ambient, a level 2 genre, so its shortest path is level 3');
   assert.equal(count(psy), 3);
   assert.equal(count(t.byId.get('s:trance')), 4);
-  assert.deepEqual(chain(t, 's:dark psytrance').map((n) => n.name), ['Electronic', 'trance', 'psytrance', 'dark psytrance']);
+  assert.deepEqual(chain(t, 's:dark psytrance').map((n) => n.name), ['Others', 'trance', 'psytrance', 'dark psytrance']);
   assert.equal(t.byId.get('s:dark psytrance').display, 'dark psy-trance');
   assert.equal(resolveNode('darkpsy', t).id, 's:dark psytrance');
   assert.equal(resolveNode('prog psy', t).id, 's:progressive psytrance');
@@ -239,7 +231,7 @@ test('forced labels (selected, hovered, matched) are always drawn even over othe
 });
 
 test('hidden labels reappear when zooming in because spacing grows', () => {
-  const l = layoutRadial(sample(), 'Electronic');
+  const l = layoutRadial(sample(), 'Others');
   const at = (k) => selectLabels(l.nodes.filter((n) => n.level === 2).sort((p, q) => q.node.all.size - p.node.all.size).map((n) => box(n.id, n.x * k, n.y * k + n.r * k, 7 * n.name.length, 14))).size;
   const lvl2 = l.nodes.filter((n) => n.level === 2).length;
   assert.ok(at(0.2) < lvl2);
@@ -247,44 +239,44 @@ test('hidden labels reappear when zooming in because spacing grows', () => {
   assert.ok(at(3) >= at(1));
 });
 
-test('Electronic is drawn like other families: circle, lines to its level 2 genres, nothing hidden', async () => {
+test('Others is drawn like other families: circle, lines to its level 2 genres, nothing hidden', async () => {
   const { HIDDEN_FAMILY_NODES, isHiddenFamily } = await import('./genre-data.js');
   assert.deepEqual(HIDDEN_FAMILY_NODES, []);
-  assert.equal(isHiddenFamily('Electronic'), false);
+  assert.equal(isHiddenFamily('Others'), false);
   const t = sample();
-  const l = layoutRadial(t, 'Electronic');
+  const l = layoutRadial(t, 'Others');
   assert.equal(l.hiddenRoot, false);
-  const root = l.byId.get('g:Electronic');
+  const root = l.byId.get('g:Others');
   assert.deepEqual([root.hidden, root.x, root.y, root.r], [undefined, 0, 0, 26]);
-  assert.ok(l.nodes.some((n) => n.id === 'g:Electronic'));
+  assert.ok(l.nodes.some((n) => n.id === 'g:Others'));
   const ring = l.nodes.filter((n) => n.level === 2);
   assert.ok(ring.length > 5);
-  for (const n of ring) assert.ok(l.edges.some((e) => e.from === 'g:Electronic' && e.to === n.id), n.name);
-  assert.deepEqual(l.nodes.map((n) => [n.id, n.x, n.y]), layoutRadial(t, 'Electronic', { hidden: false }).nodes.map((n) => [n.id, n.x, n.y]));
+  for (const n of ring) assert.ok(l.edges.some((e) => e.from === 'g:Others' && e.to === n.id), n.name);
+  assert.deepEqual(l.nodes.map((n) => [n.id, n.x, n.y]), layoutRadial(t, 'Others', { hidden: false }).nodes.map((n) => [n.id, n.x, n.y]));
 });
 
 test('the hidden-family mechanism: a name in HIDDEN_FAMILY_NODES leaves the family circle undrawn around an empty centre and keeps it addressable', async () => {
   const { HIDDEN_FAMILY_NODES, isHiddenFamily } = await import('./genre-data.js');
   const t = sample();
-  const shown = layoutRadial(t, 'Electronic');
-  HIDDEN_FAMILY_NODES.push('Electronic');
+  const shown = layoutRadial(t, 'Others');
+  HIDDEN_FAMILY_NODES.push('Others');
   try {
-    assert.equal(isHiddenFamily('Electronic'), true);
+    assert.equal(isHiddenFamily('Others'), true);
     assert.equal(isHiddenFamily('Rock'), false);
-    const l = layoutRadial(t, 'Electronic');
+    const l = layoutRadial(t, 'Others');
     assert.equal(l.hiddenRoot, true);
-    assert.equal(l.nodes.some((n) => n.id === 'g:Electronic'), false);
+    assert.equal(l.nodes.some((n) => n.id === 'g:Others'), false);
     assert.equal(l.nodes.length, shown.nodes.length - 1);
-    assert.equal(l.edges.some((e) => e.from === 'g:Electronic' || e.to === 'g:Electronic'), false);
-    const root = l.byId.get('g:Electronic');
+    assert.equal(l.edges.some((e) => e.from === 'g:Others' || e.to === 'g:Others'), false);
+    const root = l.byId.get('g:Others');
     assert.deepEqual([root.hidden, root.x, root.y, root.r], [true, 0, 0, 0]);
     for (const n of l.nodes) assert.deepEqual([n.x, n.y], [shown.byId.get(n.id).x, shown.byId.get(n.id).y]);
-    const h = highlightSets(t, 'g:Electronic');
-    assert.ok(h.kids.has('s:house') && h.chain.has('g:Electronic'));
+    const h = highlightSets(t, 'g:Others');
+    assert.ok(h.kids.has('s:house') && h.chain.has('g:Others'));
     assert.equal(l.byId.has('s:house'), true);
     assert.equal(layoutRadial(t, 'Rock').hiddenRoot, false);
   } finally { HIDDEN_FAMILY_NODES.pop(); }
-  assert.equal(layoutRadial(t, 'Electronic').hiddenRoot, false);
+  assert.equal(layoutRadial(t, 'Others').hiddenRoot, false);
 });
 
 test('a genre beyond level 3 is drawn on a ring further out, under its parent, with an edge to it', () => {
