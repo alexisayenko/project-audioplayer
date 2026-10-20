@@ -93,9 +93,9 @@ export function seedPositions(graph, seed = 1, { ring = 240 } = {}) {
   return graph;
 }
 
-export function visibleIds(tree, { family = null, libraryOnly = false, status = 'all', flavours = [], subfamilies = null } = {}) {
+export function visibleIds(tree, { family = null, libraryOnly = false, status = 'all', modifiers = [], subfamilies = null } = {}) {
   if (!tree) return null;
-  const byFilter = filterIds(tree, { status, flavours });
+  const byFilter = filterIds(tree, { status, modifiers });
   const subs = subfamilies && subfamilies.size ? subfamilies : null;
   if (!family && !libraryOnly && !byFilter && !subs) return null;
   const root = family ? `g:${family}` : null;

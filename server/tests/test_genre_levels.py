@@ -10,8 +10,8 @@ DISCOGS = json.loads((DATA / "genre_discogs.json").read_text(encoding="utf-8"))
 EXTRAS = json.loads((DATA / "genre_extras.json").read_text(encoding="utf-8"))["extras"]
 LEVELS = json.loads((DATA / "genre_levels.json").read_text(encoding="utf-8"))
 FAMILIES = LEVELS["families"]
-FLAVOURS = LEVELS["flavours"]
-RAW = {k: v for k, v in LEVELS.items() if k not in ("_meta", "families", "flavours")}
+MODIFIERS = LEVELS["modifiers"]
+RAW = {k: v for k, v in LEVELS.items() if k not in ("_meta", "families", "modifiers")}
 ENTRIES = genre_vocab.parse_levels(LEVELS)[0]
 
 
@@ -182,18 +182,19 @@ def test_liquid_drum_and_bass_entry():
     assert len(set(e["synonyms"])) == len(e["synonyms"])
 
 
-def test_flavours_block_and_assignments():
-    assert FLAVOURS
-    for k, f in FLAVOURS.items():
+def test_modifiers_block_and_assignments():
+    assert MODIFIERS
+    for k, f in MODIFIERS.items():
         assert k == k.lower(), k
         assert k.strip() == k, k
         assert k, k
-        assert f["kind"] in ("sound", "scene"), k
+        assert f["kind"] in ("sound", "mood", "scene"), k
         assert f["name"], k
         assert f["description"], k
-    assert not any(v["flavours"] for v in ENTRIES.values()), "flavours are defined but not attached (awaiting Alex)"
-    assert any(f["kind"] == "scene" for f in FLAVOURS.values())
-    assert any(f["kind"] == "sound" for f in FLAVOURS.values())
+    assert not any(v["modifiers"] for v in ENTRIES.values()), "modifiers are defined but not attached (awaiting Alex)"
+    assert any(f["kind"] == "scene" for f in MODIFIERS.values())
+    assert any(f["kind"] == "sound" for f in MODIFIERS.values())
+    assert {k for k, f in MODIFIERS.items() if f["kind"] == "mood"} == {"dark", "deep", "uplifting"}
 
 
 def _payload_with(doc):
@@ -211,14 +212,15 @@ def test_vocabulary_payload_carries_levels_and_family_synonyms():
     assert set(body["family_synonyms"]) == set(DISCOGS["families"])
     assert "genre_synonyms" not in body
     dh = body["levels"]["deep house"]
-    assert dh == {"family": "Electronic", "families": ["Electronic"], "parents": ["house"], "level": 3, "discogs": True, "synonyms": [], "provisional": False, "subfamily": "House", "status": ENTRIES["deep house"]["status"], "flavours": ENTRIES["deep house"]["flavours"], "display": ENTRIES["deep house"]["display"]}
+    assert dh == {"family": "Electronic", "families": ["Electronic"], "parents": ["house"], "level": 3, "discogs": True, "synonyms": [], "provisional": False, "subfamily": "House", "status": ENTRIES["deep house"]["status"], "modifiers": ENTRIES["deep house"]["modifiers"], "flavours": ENTRIES["deep house"]["modifiers"], "display": ENTRIES["deep house"]["display"]}
     assert body["levels"]["jungle"]["parents"] == RAW["jungle"]["parents"] == ["breakbeat"]
     assert not any(k in dh for k in ("genre", "parent", "also_under", "also_in_genres"))
     nd = next(k for k, v in ENTRIES.items() if v["discogs"] is False)
     assert body["levels"][nd]["discogs"] is False
     assert body["levels"]["rock and roll"]["provisional"] is False and body["levels"]["mod"]["provisional"] is True
     assert "edm" not in body["family_synonyms"]["Electronic"] and "edm" in body["levels"]
-    assert body["flavours"] == FLAVOURS
+    assert body["modifiers"] == MODIFIERS
+    assert body["flavours"] == body["modifiers"]
     assert body["levels"]["deep trance"]["status"] == "question"
     assert len(json.dumps(body["levels"])) < 130_000
 
@@ -238,12 +240,12 @@ def test_display_name_passes_through_the_parser():
     assert levels["b"]["display"] is None
 
 
-def test_flavours_pass_through_the_parser():
-    doc = {"families": {"Rock": {"name": "Rock", "synonyms": []}}, "flavours": {"dark": {"name": "Dark", "kind": "sound", "description": "d"}},
-           "a": {"parents": ["Rock"], "discogs": True, "flavours": ["dark"]}}
-    levels, _, flavours = _payload_with(doc)
-    assert flavours == {"dark": {"name": "Dark", "kind": "sound", "description": "d"}}
-    assert levels["a"]["flavours"] == ["dark"]
+def test_modifiers_pass_through_the_parser():
+    doc = {"families": {"Rock": {"name": "Rock", "synonyms": []}}, "modifiers": {"dark": {"name": "Dark", "kind": "sound", "description": "d"}},
+           "a": {"parents": ["Rock"], "discogs": True, "modifiers": ["dark"]}}
+    levels, _, modifiers = _payload_with(doc)
+    assert modifiers == {"dark": {"name": "Dark", "kind": "sound", "description": "d"}}
+    assert levels["a"]["modifiers"] == ["dark"]
 
 
 def test_malformed_levels_files_raise_a_clear_error(tmp_path, monkeypatch):
@@ -275,9 +277,9 @@ def test_malformed_levels_files_raise_a_clear_error(tmp_path, monkeypatch):
         (broken(lambda d: d.update(c="x")), "not an object"),
         (broken(lambda d: d["a"].update(status="maybe")), "status"),
         (broken(lambda d: d["a"].update(display=3)), "display"),
-        (broken(lambda d: d["a"].update(flavours=["nope"])), "unknown flavours"),
-        (broken(lambda d: d.update(flavours={"x": {"name": "X", "kind": "mood"}})), "kind"),
-        (broken(lambda d: d.update(flavours=[])), "flavours"),
+        (broken(lambda d: d["a"].update(modifiers=["nope"])), "unknown modifiers"),
+        (broken(lambda d: d.update(modifiers={"x": {"name": "X", "kind": "vibe"}})), "kind"),
+        (broken(lambda d: d.update(modifiers=[])), "modifiers"),
     ]
     for doc, word in bad:
         with pytest.raises(ValueError, match=word):
@@ -907,3 +909,13 @@ def test_ethereal_is_removed_everywhere_and_its_alias_is_gone():
     assert library.clean_tags(["genre:Ethereal", "genre:ethereal wave", "genre:darkwave"]) == ["genre:darkwave"]
     assert not any("ethereal" in v["parents"] or "ethereal" in v.get("related", []) for v in ENTRIES.values())
     assert not [k for k in ENTRIES if "ethereal" in k]
+
+
+def test_deprecated_flavours_alias_equals_modifiers():
+    from app import genre_vocab
+
+    genre_vocab.reset()
+    body = genre_vocab.vocabulary()
+    assert genre_vocab.DEPRECATED_ALIASES == {"modifiers": "flavours"}
+    assert body["flavours"] == body["modifiers"]
+    assert all(v["flavours"] == v["modifiers"] for v in body["levels"].values())

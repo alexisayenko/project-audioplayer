@@ -6,7 +6,7 @@ import { layoutRadial, highlightSets, radius, selectLabels, labelBox } from './g
 
 const doc = JSON.parse(readFileSync(new URL('../../server/data/genre_levels.json', import.meta.url), 'utf8'));
 const discogs = JSON.parse(readFileSync(new URL('../../server/data/genre_discogs.json', import.meta.url), 'utf8'));
-const entries = Object.fromEntries(Object.entries(doc).filter(([k]) => k !== '_meta' && !['genres', 'families', 'flavours', 'subfamilies'].includes(k)));
+const entries = Object.fromEntries(Object.entries(doc).filter(([k]) => k !== '_meta' && !['genres', 'families', 'modifiers', 'subfamilies'].includes(k)));
 const vocab = {
   families: discogs.families,
   family_synonyms: Object.fromEntries(Object.entries(doc.families).map(([k, v]) => [k, v.synonyms])),
@@ -288,7 +288,7 @@ test('the hidden-family mechanism: a name in HIDDEN_FAMILY_NODES leaves the fami
 });
 
 test('a genre beyond level 3 is drawn on a ring further out, under its parent, with an edge to it', () => {
-  const deep = buildTree({ families: ['Rock'], levels: { a: { parents: ['Rock'] }, b: { parents: ['a'] }, c: { parents: ['b'] }, d: { parents: ['c'] }, e: { parents: ['d'] } }, flavours: {}, genres: [] });
+  const deep = buildTree({ families: ['Rock'], levels: { a: { parents: ['Rock'] }, b: { parents: ['a'] }, c: { parents: ['b'] }, d: { parents: ['c'] }, e: { parents: ['d'] } }, modifiers: {}, genres: [] });
   applyCounts(deep, [{ id: '1', tags: ['genre:e'] }]);
   const l = layoutRadial(deep, 'Rock');
   assert.deepEqual(['a', 'b', 'c', 'd', 'e'].map((k) => l.byId.get(`s:${k}`).level), [2, 3, 4, 5, 6]);

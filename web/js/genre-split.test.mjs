@@ -8,7 +8,7 @@ import { familyIndex, pieIndices } from './genre-data.js';
 import { realVocab } from './genre-real-vocab.mjs';
 
 const VOCAB = {
-  families: ['Electronic', 'Funk / Soul', 'Rock', 'Blues'], genres: [], aliases: {}, family_synonyms: {}, flavours: {},
+  families: ['Electronic', 'Funk / Soul', 'Rock', 'Blues'], genres: [], aliases: {}, family_synonyms: {}, modifiers: {},
   levels: {
     disco: { parents: ['Funk / Soul', 'Electronic'], discogs: true },
     'disco dub': { parents: ['disco'], discogs: true },

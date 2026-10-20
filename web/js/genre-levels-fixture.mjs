@@ -3,17 +3,17 @@ export const VOCAB = {
   genres: [{ name: 'electronic', level: 'family' }, { name: 'rock', level: 'family' }, { name: 'house', level: 'genre' }, { name: 'deep house', level: 'genre' }],
   aliases: {},
   family_synonyms: { Electronic: ['edm', 'dance music'], Rock: [] },
-  flavours: {
-    dark: { name: 'Dark', kind: 'sound', description: 'Menacing, minor-key sound' },
+  modifiers: {
+    dark: { name: 'Dark', kind: 'mood', description: 'Menacing, minor-key sound' },
     club: { name: 'Club', kind: 'scene', description: 'Made for the dance floor' },
   },
   levels: {
     house: { parents: ['Electronic'], discogs: true, synonyms: [], provisional: false },
-    'deep house': { parents: ['house'], discogs: true, synonyms: ['deephouse sound'], provisional: false, status: 'question', flavours: ['club'] },
-    'afro house': { parents: ['house'], discogs: false, synonyms: [], provisional: false, status: 'approved', flavours: ['club', 'dark', 'ghost'] },
+    'deep house': { parents: ['house'], discogs: true, synonyms: ['deephouse sound'], provisional: false, status: 'question', modifiers: ['club'] },
+    'afro house': { parents: ['house'], discogs: false, synonyms: [], provisional: false, status: 'approved', modifiers: ['club', 'dark', 'ghost'] },
     'drum and bass': { parents: ['Electronic'], discogs: true, synonyms: ['dnb'], provisional: false },
     breakbeat: { parents: ['Electronic'], discogs: true, synonyms: [], provisional: false },
-    jungle: { parents: ['drum and bass', 'breakbeat'], discogs: true, synonyms: [], provisional: false, flavours: ['dark'] },
+    jungle: { parents: ['drum and bass', 'breakbeat'], discogs: true, synonyms: [], provisional: false, modifiers: ['dark'] },
     'rock and roll': { parents: ['Rock'], discogs: true, synonyms: [], provisional: true },
   },
 };

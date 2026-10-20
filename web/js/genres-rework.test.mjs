@@ -259,12 +259,13 @@ test('status badges show in the list and the status filter narrows the list', as
   assert.equal(names(root).includes('deep house'), true);
 });
 
-test('flavour chips have counts in their label and filter the list; clear resets', async () => {
+test('modifier chips have counts in their label and filter the list; clear resets', async () => {
   mode = 'ok';
   const { root } = await mount();
-  const chip = (k) => root.querySelectorAll('[data-flavour]').find((b) => b.getAttribute('data-flavour') === k);
+  const chip = (k) => root.querySelectorAll('[data-modifier]').find((b) => b.getAttribute('data-modifier') === k);
   assert.equal(chip('club').getAttribute('aria-label'), 'Club, 2 songs');
   assert.ok(chip('dark').getAttribute('title').includes('Menacing'));
+  assert.deepEqual(root.querySelectorAll('.gmr-mod-group').map((g) => g.getAttribute('aria-label')), ['Mood modifiers', 'Scene modifiers']);
   chip('dark').click();
   assert.equal(chip('dark').getAttribute('aria-pressed'), 'true');
   assert.deepEqual(names(root), ['Electronic', 'breakbeat', 'jungle', 'drum and bass', 'jungle', 'house', 'afro house']);
@@ -272,7 +273,7 @@ test('flavour chips have counts in their label and filter the list; clear resets
   assert.deepEqual(names(root), []);
   btn(root, 'all').click();
   assert.ok(row(root, 'house'));
-  btn(root, 'Clear flavours').click();
+  btn(root, 'Clear modifiers').click();
   assert.equal(chip('dark').getAttribute('aria-pressed'), 'false');
   assert.deepEqual(names(root), ['Electronic', 'breakbeat', 'drum and bass', 'house', 'Rock']);
 });

@@ -120,3 +120,12 @@ test('icon rail: a flyout opens on click and closes when a Help route is entered
   help.sync('theory');
   assert.deepEqual(state(), ['false', true]);
 });
+
+test('WEB-131: no chevron in the header; sub items are indented in the wide rail only', () => {
+  const btn = nav.match(/<button[^>]*id="help-toggle"[\s\S]*?<\/button>/)[0];
+  assert.doesNotMatch(btn, /chev/);
+  const css = readFileSync(new URL('../style.css', import.meta.url), 'utf8');
+  assert.doesNotMatch(css, /nav-chev/);
+  assert.match(css, /data-mode="inline"\] \.nav-sub a \{[^}]*margin-left: calc\(var\(--icon-nav\) \+ var\(--space-3\)\)/);
+  assert.doesNotMatch(css, /data-mode="flyout"\] \.nav-sub a \{[^}]*margin-left/);
+});

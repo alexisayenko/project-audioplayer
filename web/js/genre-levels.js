@@ -1,6 +1,7 @@
 import { buildIndex, resolveGenre, vkey } from './genre-vocab.js';
 import { cleanSourceLinks } from './genre-source-links.js';
 
+const MODIFIER_KINDS = ['sound', 'mood', 'scene'];
 const spaced = (s) => String(s).trim().toLowerCase().replace(/\s+/g, ' ');
 
 export function hasLevels(vocab) {
@@ -11,7 +12,7 @@ const effectiveStatus = (v) => (v.status === 'question' || (v.status === 'approv
 
 function makeNode(id, name, level, family, extra = {}) {
   return {
-    id, name, level, family, parent: null, parents: [], parentNames: [], fams: [], children: [], subfamily: null, discogs: true, fusion: false, related: [], sourceLinks: [], synonyms: [], provisional: false, status: null, flavours: [], display: null, label: name,
+    id, name, level, family, parent: null, parents: [], parentNames: [], fams: [], children: [], subfamily: null, discogs: true, fusion: false, related: [], sourceLinks: [], synonyms: [], provisional: false, status: null, modifiers: [], display: null, label: name,
     own: new Set(), all: new Set(), ...extra,
   };
 }
@@ -22,7 +23,7 @@ function genreNode(k, v) {
   const display = typeof v.display === 'string' && v.display.trim() ? v.display.trim() : null;
   const n = makeNode(`s:${k}`, k, 0, null, {
     subfamily: typeof v.subfamily === 'string' && v.subfamily.trim() ? v.subfamily.trim() : null,
-    discogs: v.discogs !== false, fusion: v.fusion === true, related: Array.isArray(v.related) ? v.related.filter((r) => typeof r === 'string' && r) : [], sourceLinks: cleanSourceLinks(v.source_links), synonyms: [...(v.synonyms || [])], provisional: v.provisional === true, status: effectiveStatus(v), display, flavours: Array.isArray(v.flavours) ? [...v.flavours] : [],
+    discogs: v.discogs !== false, fusion: v.fusion === true, related: Array.isArray(v.related) ? v.related.filter((r) => typeof r === 'string' && r) : [], sourceLinks: cleanSourceLinks(v.source_links), synonyms: [...(v.synonyms || [])], provisional: v.provisional === true, status: effectiveStatus(v), display, modifiers: Array.isArray(v.modifiers) ? [...v.modifiers] : Array.isArray(v.flavours) ? [...v.flavours] : [],
   });
   n.label = n.display || k;
   return n;
@@ -89,10 +90,10 @@ export function buildTree(vocab, { fusion = true } = {}) {
   }
   linkGenres(levels, genres, byId, fusion);
   assignFamilies(roots, byId);
-  const flavours = new Map(Object.entries(vocab?.flavours || {}).map(([key, f]) => [key, { key, name: f.name || key, kind: f.kind === 'scene' ? 'scene' : 'sound', description: f.description || '', songs: new Set() }]));
-  for (const n of byId.values()) n.flavours = n.flavours.filter((f) => flavours.has(f));
+  const modifiers = new Map(Object.entries(vocab?.modifiers || vocab?.flavours || {}).map(([key, f]) => [key, { key, name: f.name || key, kind: MODIFIER_KINDS.includes(f.kind) ? f.kind : 'sound', description: f.description || '', songs: new Set() }]));
+  for (const n of byId.values()) n.modifiers = n.modifiers.filter((f) => modifiers.has(f));
   const { byKey, bySyn } = nodeLookups(byId);
-  return { roots, byId, byKey, bySyn, flavours, subfamilies: cleanSubfamilies(vocab?.subfamilies), index: buildIndex(vocab) };
+  return { roots, byId, byKey, bySyn, modifiers, subfamilies: cleanSubfamilies(vocab?.subfamilies), index: buildIndex(vocab) };
 }
 
 export function resolveNode(text, tree) {
@@ -181,14 +182,14 @@ function countSong(tree, s, sid) {
     if (!node || done.has(node.id)) continue;
     done.add(node.id);
     node.own.add(sid);
-    for (const f of node.flavours) tree.flavours.get(f).songs.add(sid);
+    for (const f of node.modifiers) tree.modifiers.get(f).songs.add(sid);
     for (const a of ancestorIds(tree, node.id)) tree.byId.get(a).all.add(sid);
   }
 }
 
 export function applyCounts(tree, songs) {
   for (const n of tree.byId.values()) { n.own = new Set(); n.all = new Set(); }
-  for (const f of tree.flavours.values()) f.songs = new Set();
+  for (const f of tree.modifiers.values()) f.songs = new Set();
   for (const [i, s] of (songs || []).entries()) countSong(tree, s, s.id ?? `#${i}`);
 }
 
@@ -235,14 +236,14 @@ export const STATUS_FILTERS = ['all', 'question', 'unreviewed'];
 export const STATUS_LABELS = { approved: 'Alex approved', question: 'Under question', unreviewed: 'Not reviewed yet' };
 export const statusKey = (n) => n.status || 'unreviewed';
 
-export function filterIds(tree, { status = 'all', flavours = [] } = {}) {
-  const wanted = [...flavours];
+export function filterIds(tree, { status = 'all', modifiers = [] } = {}) {
+  const wanted = [...modifiers];
   if (!tree || (status === 'all' && !wanted.length)) return null;
   const keep = new Set();
   for (const n of tree.byId.values()) {
     if (n.level < 2) continue;
     if (status !== 'all' && statusKey(n) !== status) continue;
-    if (wanted.length && !n.flavours.some((f) => wanted.includes(f))) continue;
+    if (wanted.length && !n.modifiers.some((f) => wanted.includes(f))) continue;
     for (const a of ancestorIds(tree, n.id)) keep.add(a);
   }
   return keep;
@@ -250,13 +251,13 @@ export function filterIds(tree, { status = 'all', flavours = [] } = {}) {
 
 export const statusIds = (tree, status) => filterIds(tree, { status });
 
-export function flavourCount(tree, key) {
-  return tree?.flavours.get(key)?.songs.size || 0;
+export function modifierCount(tree, key) {
+  return tree?.modifiers.get(key)?.songs.size || 0;
 }
 
-export function visibleRows(tree, { expanded = new Set(), query = '', onlyWithSongs = false, status = 'all', flavours = [], only = null } = {}) {
+export function visibleRows(tree, { expanded = new Set(), query = '', onlyWithSongs = false, status = 'all', modifiers = [], only = null } = {}) {
   const hits = searchMatches(tree, query, { populatedOnly: onlyWithSongs });
-  const byStatus = filterIds(tree, { status, flavours });
+  const byStatus = filterIds(tree, { status, modifiers });
   const searching = !!vkey(query);
   const open = new Set();
   const keep = new Set();

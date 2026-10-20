@@ -20,7 +20,7 @@ const levels = readJson("genre_levels.json");
 const evidence = readJson("genre_hierarchy_evidence.json");
 const familyNames = Object.keys(levels.families);
 const familyKey = new Map(familyNames.map((f) => [f.toLowerCase(), f]));
-const skip = new Set(["_meta", "families", "flavours", "subfamilies"]);
+const skip = new Set(["_meta", "families", "modifiers", "subfamilies"]);
 const genres = Object.keys(levels).filter((k) => !skip.has(k));
 
 const parentsOf = (k) => (levels[k]?.parents || []).map((p) => p.toLowerCase());

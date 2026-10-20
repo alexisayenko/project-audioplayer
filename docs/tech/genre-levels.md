@@ -6,7 +6,7 @@ Terminology (ADR-0030): every node of the vocabulary is a **genre**; level 1 is 
 
 `server/data/genre_levels.json` places every vocabulary genre and extra (`genre_discogs.json`, `genre_extras.json`) in a three-level tree. The server serves it in `GET /genres/vocabulary` as `levels` and `family_synonyms` (GEN-051, GEN-052, API-119) and the rework map (`#/genres-rework`, WEB-085 to WEB-087, GEN-054) draws it. Tracked in [task-0037](../tasks/task-0037.md).
 
-Electronic and Rock are drafted. Entry fields added later: `status`, `flavours`, `display` (sections below). The other 10 families are provisional placeholders (every genre level 2, `parents` just the family, `"provisional": true`) until Alex reviews them.
+Electronic and Rock are drafted. Entry fields added later: `status`, `modifiers`, `display` (sections below). The other 10 families are provisional placeholders (every genre level 2, `parents` just the family, `"provisional": true`) until Alex reviews them.
 
 ## Format
 
@@ -134,26 +134,38 @@ Added: `liquid drum and bass` (extras, level 3 under drum and bass, approved, di
 
 `french house` came back on 2026-10-17 (DQ1): an extra (level 3 under house, `discogs: false`, not Discogs), and `french touch` is an `ALIASES` entry and a synonym of it, no longer a house fold. Stored `french touch` is rewritten to `french house` by the startup migration; stored `french house` stays (songs folded to house earlier stay house).
 
-`melodic house` is intentionally not a genre any more; the `melodic` flavour stays (used by melodic techno). `french` is not a flavour for now.
+`melodic house` is intentionally not a genre any more; the `melodic` modifier stays (used by melodic techno). `french` is not a modifier for now.
 
-## Flavours
+## Modifiers
 
-Status: defined, not attached (decision of 2026-10-16). The top-level `flavours` block exists and is served, but no genre entry carries a `flavours` list yet; every `levels[<genre>].flavours` is `[]`, and the map hides the Flavour selector and chips while no genre carries one. The earlier assignment (genres per flavour, kept so nothing is lost) is in [genre-flavours-proposal.md](genre-flavours-proposal.md), not loaded by any code, awaiting Alex. The per-genre lists described below and the counts listed under them are therefore the proposal, not the data.
+Status: defined, not attached (decision of 2026-10-16). The top-level `modifiers` block exists and is served, but no genre entry carries a `modifiers` list yet; every `levels[<genre>].modifiers` is `[]`, and the map hides the Modifier selector and chips while no genre carries one. The earlier assignment (genres per modifier, kept so nothing is lost) is in [genre-flavours-proposal.md](genre-flavours-proposal.md), not loaded by any code, awaiting Alex. The per-genre lists described below and the counts listed under them are therefore the proposal, not the data.
 
-A flavour is a modifier that runs alongside the tree, not a level. Top-level `flavours` block in `genre_levels.json`: `{"<key>": {"name", "kind": "sound" | "scene", "description"}}` (lowercase unique keys; a flavour key may equal a genre key, e.g. `acid`, they are separate namespaces). A genre entry may carry `"flavours": ["<key>", ...]` (no repeats, every key in the block). Only Electronic entries carry them so far; stored tags do not change.
+A modifier is a modifier that runs alongside the tree, not a level. Top-level `modifiers` block in `genre_levels.json`: `{"<key>": {"name", "kind": "sound" | "mood" | "scene", "description"}}` (lowercase unique keys; a modifier key may equal a genre key, e.g. `acid`, they are separate namespaces). A genre entry may carry `"modifiers": ["<key>", ...]` (no repeats, every key in the block). Only Electronic entries carry them so far; stored tags do not change.
 
-Served by `GET /genres/vocabulary`: top-level `flavours` (the block as is) and per genre `levels[<genre>].flavours` (always a list, `[]` when none).
+Kinds (2026-10-20, Alex BA1: the former single `sound` kind is split; `scene` was already separate):
 
-Flavours and the genres that carry them:
+| kind | meaning | modifiers |
+|---|---|---|
+| sound | a sonic technique, instrument or production feature | acid (TB-303 bassline), progressive (layered, slowly evolving arrangement), melodic (lead melody and chords), vocal (sung vocals), hard (kicks and edge; ambiguous, see below), minimal (few repeating elements), tech (techno-leaning percussion and bass) |
+| mood | an atmosphere or feeling shared by a sub-style | dark (gloomy, ominous), deep (low-key, warm, subdued), uplifting (euphoric) |
+| scene | a place | baltimore, berlin |
+
+Rule: a modifier is a shared, source-checkable modifier that appears in genre names by convention (dark ambient, deep house, uplifting trance). A mood-kind modifier is still genre-bound: it is vocabulary that a source can confirm for a named sub-style, and is different from the personal per-listener mood axis in [genre-terminology.md](genre-terminology.md). Ambiguous, kept as sound: hard ("more aggressive edge" reads like a mood, but it names harder-hitting kicks, a production feature).
+
+Served by `GET /genres/vocabulary`: top-level `modifiers` (the block as is) and per genre `levels[<genre>].modifiers` (always a list, `[]` when none). The old names `flavours` (top-level and per genre) are still served with identical content, deprecated for one release ([GEN-082](../specs/genres.md)); readers prefer `modifiers` and fall back to `flavours`.
+
+Scene and the Tradition axis: a `scene` modifier (berlin, baltimore) is a place or scene, i.e. a value of the Tradition axis (place and scene lineage, see [genre-terminology.md](genre-terminology.md)) that appears in genre names by convention (berlin school, baltimore club). It stays a modifier: never a level, never assigned to a song alone. Dark psytrance, progressive house and acid house show the same pattern for `mood` and `sound`.
+
+Modifiers and the genres that carry them:
 
 - acid (sound, 2): acid house, acid trance
 - progressive (sound, 3): progressive breaks, progressive house, progressive trance
 - melodic (sound, 1): melodic techno
 - vocal (sound, 1): vocal trance
-- deep (sound, 3): deep house, deep techno, deep trance
+- deep (mood, 3): deep house, deep techno, deep trance
 - hard (sound, 3): hard house, hard techno, hard trance
-- dark (sound, 3): dark ambient, dark electro, darksynth
-- uplifting (sound, 1): uplifting trance
+- dark (mood, 3): dark ambient, dark electro, darksynth
+- uplifting (mood, 1): uplifting trance
 - minimal (sound, 1): minimal techno
 - tech (sound, 2): tech house, tech trance
 - baltimore (scene, 1): baltimore club
@@ -299,7 +311,7 @@ The three relations of the old format became one list, `parents`, with no change
 
 ## Psytrance branch (Alex, 2026-10-16)
 
-Alex: "trance and psy-trance are way too different". `psytrance` (display "psy-trance", a Discogs genre) is a plain level 2 umbrella, a sibling of `trance`: `parents: ["Electronic"]`, no extra parent, no link of any kind to trance. The three-level cap is unchanged (a fourth level was considered and rejected). Children (level 3, `parents` start with `"psytrance"`): `dark psytrance`, `forest psytrance`, `progressive psytrance`, `full-on psytrance` (new extras, `discogs` false, status approved, displays "Dark Psy-Trance" and so on; the Discogs search `style=<name>` (the Discogs API parameter) returned no results for any of them on 2026-10-16), `goa trance` (Discogs; moved from trance) and `psybient` (approved; also under ambient; moved from trance). Flavours: dark psytrance `dark`, progressive psytrance `progressive`. Synonyms: darkpsy, dark psy, dark psy-trance; forest psy, forest psy-trance; prog psy, progressive psy, progressive psy-trance; full on, fullon, full-on psy, full on psytrance, full-on psy-trance.
+Alex: "trance and psy-trance are way too different". `psytrance` (display "psy-trance", a Discogs genre) is a plain level 2 umbrella, a sibling of `trance`: `parents: ["Electronic"]`, no extra parent, no link of any kind to trance. The three-level cap is unchanged (a fourth level was considered and rejected). Children (level 3, `parents` start with `"psytrance"`): `dark psytrance`, `forest psytrance`, `progressive psytrance`, `full-on psytrance` (new extras, `discogs` false, status approved, displays "Dark Psy-Trance" and so on; the Discogs search `style=<name>` (the Discogs API parameter) returned no results for any of them on 2026-10-16), `goa trance` (Discogs; moved from trance) and `psybient` (approved; also under ambient; moved from trance). Modifiers: dark psytrance `dark`, progressive psytrance `progressive`. Synonyms: darkpsy, dark psy, dark psy-trance; forest psy, forest psy-trance; prog psy, progressive psy, progressive psy-trance; full on, fullon, full-on psy, full on psytrance, full-on psy-trance.
 
 Judgement call: `goa trance` sits under psytrance only (no extra parent trance), so trance's children and counts no longer include goa trance or psytrance songs. `progressive trance` stays under trance and is not merged with `progressive psytrance`. Known psy genres not added: hi-tech psytrance, suomisaundi, psychill.
 

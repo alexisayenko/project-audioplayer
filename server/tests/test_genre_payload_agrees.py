@@ -58,9 +58,9 @@ def test_levels_equal_genre_levels_json_for_parents_family_and_level(body):
 
 
 def test_web_fixture_is_the_payload(body):
-    keys = ("families", "family_synonyms", "flavours", "levels", "subfamilies")
+    keys = ("families", "family_synonyms", "modifiers", "flavours", "levels", "subfamilies")
     want = {k: body[k] for k in keys}
-    assert json.loads(FIXTURE.read_text(encoding="utf-8")) == want, "regenerate the fixture from genre_vocab.vocabulary() (keys families, family_synonyms, flavours, levels; json sort_keys, indent 1)"
+    assert json.loads(FIXTURE.read_text(encoding="utf-8")) == want, "regenerate the fixture from genre_vocab.vocabulary() (keys families, family_synonyms, modifiers, flavours, levels; json sort_keys, indent 1)"
 
 
 def test_every_row_and_level_carries_all_families_and_the_legacy_family_is_the_first(body):

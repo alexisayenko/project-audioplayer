@@ -88,7 +88,8 @@ test('rows are sorted by recently added; counts, durations and BPM are shown', a
   assert.match(root.textContent, /4 songs/);
   const alpha = rows().find((r) => r.dataset.id === 'a');
   assert.equal(alpha.querySelector('.c-dur'), null);
-  assert.equal(alpha.querySelector('.title-line').children.at(-1), alpha.querySelector('.sq-btn'), 'the state button follows the length');
+  assert.equal(alpha.querySelector('.title-line').children.at(-1), alpha.querySelector('.title-len'), 'the length is the rightmost item');
+  assert.equal(alpha.querySelector('.title-line').children.at(-2), alpha.querySelector('.sq-btn'), 'the state button precedes the length');
   assert.equal(alpha.querySelector('.sq-btn').getAttribute('aria-pressed'), 'false');
   assert.equal(alpha.querySelector('.sq-btn').title, 'Add to queue');
   assert.equal(alpha.querySelector('.sub').textContent, 'Zed · 1999');
@@ -374,7 +375,7 @@ test('row state button toggles the queue inline; the row has no More menu', asyn
   assert.equal(qi.getAttribute('aria-pressed'), 'true');
   assert.equal(qi.title, 'In the queue, position 1 of 1. Click to remove');
   assert.match(qi.getAttribute('aria-label'), /^Remove from queue/);
-  assert.equal(qi.parentNode.children.at(-1), qi);
+  assert.equal(qi.parentNode.children.at(-2), qi, 'the button sits left of the length');
   assert.equal(queuedRow.querySelector('.q-mark'), null, 'no cover badge');
   assert.match(queuedRow.querySelector('.row-cover').getAttribute('aria-description'), /In the queue, position 1 of 1$/);
   assert.match(queuedRow.querySelector('.row-cover').title, /In the queue, position 1 of 1$/);

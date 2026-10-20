@@ -85,12 +85,12 @@
   },
   "dark": {
    "description": "Gloomy, ominous or menacing atmosphere.",
-   "kind": "sound",
+   "kind": "mood",
    "name": "dark"
   },
   "deep": {
    "description": "Low-key, warm, subdued mood with soft bass and little harshness.",
-   "kind": "sound",
+   "kind": "mood",
    "name": "deep"
   },
   "hard": {
@@ -120,7 +120,7 @@
   },
   "uplifting": {
    "description": "Euphoric, emotional lifting melodies and big breakdowns.",
-   "kind": "sound",
+   "kind": "mood",
    "name": "uplifting"
   },
   "vocal": {
@@ -139,6 +139,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -155,6 +156,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Electronic"
    ],
@@ -172,6 +174,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Electronic",
     "techno",
@@ -191,6 +194,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "house"
    ],
@@ -208,6 +212,7 @@
    "family": "Jazz",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Jazz"
    ],
@@ -227,6 +232,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "psychedelic rock"
    ],
@@ -243,6 +249,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "trance"
    ],
@@ -260,6 +267,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Rock"
    ],
@@ -276,6 +284,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -292,6 +301,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -308,6 +318,7 @@
    "family": "Jazz",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Jazz"
    ],
@@ -324,6 +335,7 @@
    "family": "Funk / Soul",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Funk / Soul"
    ],
@@ -340,6 +352,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "heavy metal",
     "alternative rock"
@@ -357,6 +370,7 @@
    "family": "Pop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Pop"
    ],
@@ -373,6 +387,7 @@
    "family": "Funk / Soul",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Funk / Soul"
    ],
@@ -389,6 +404,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Rock"
    ],
@@ -405,6 +421,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -421,6 +438,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Electronic"
    ],
@@ -438,6 +456,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "house",
     "ambient"
@@ -456,6 +475,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "punk"
    ],
@@ -472,6 +492,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -488,6 +509,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Rock"
    ],
@@ -504,6 +526,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Rock"
    ],
@@ -520,6 +543,7 @@
    "family": "Pop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Pop"
    ],
@@ -536,6 +560,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Rock"
    ],
@@ -552,6 +577,7 @@
    "family": "Classical",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Classical"
    ],
@@ -568,6 +594,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "black metal"
    ],
@@ -584,6 +611,7 @@
    "family": "Jazz",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Jazz"
    ],
@@ -600,6 +628,7 @@
    "family": "Classical",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Classical"
    ],
@@ -616,6 +645,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -632,6 +662,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -648,6 +679,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -664,6 +696,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -680,6 +713,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Electronic"
    ],
@@ -697,6 +731,7 @@
    "family": "Pop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Pop"
    ],
@@ -713,6 +748,7 @@
    "family": "Pop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Pop"
    ],
@@ -729,6 +765,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "breakbeat",
     "house"
@@ -747,6 +784,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -763,6 +801,7 @@
    "family": "Pop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Pop"
    ],
@@ -779,6 +818,7 @@
    "family": "Classical",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Classical"
    ],
@@ -795,6 +835,7 @@
    "family": "Pop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Pop"
    ],
@@ -811,6 +852,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Electronic"
    ],
@@ -828,6 +870,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "uk garage"
    ],
@@ -845,6 +888,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -861,6 +905,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Rock"
    ],
@@ -877,6 +922,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Electronic"
    ],
@@ -894,6 +940,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -910,6 +957,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "ambient"
    ],
@@ -927,6 +975,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -943,6 +992,7 @@
    "family": "Jazz",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Jazz"
    ],
@@ -959,6 +1009,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "breakbeat"
    ],
@@ -976,6 +1027,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Rock",
     "heavy metal",
@@ -994,6 +1046,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "black metal",
     "shoegaze"
@@ -1011,6 +1064,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Electronic"
    ],
@@ -1028,6 +1082,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -1046,6 +1101,7 @@
    "flavours": [],
    "fusion": true,
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Blues",
     "Rock"
@@ -1063,6 +1119,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -1079,6 +1136,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -1095,6 +1153,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -1111,6 +1170,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -1127,6 +1187,7 @@
    "family": "Funk / Soul",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Funk / Soul"
    ],
@@ -1143,6 +1204,7 @@
    "family": "Blues",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Blues"
    ],
@@ -1159,6 +1221,7 @@
    "family": "Hip Hop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Hip Hop"
    ],
@@ -1175,6 +1238,7 @@
    "family": "Jazz",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Jazz"
    ],
@@ -1194,6 +1258,7 @@
    "family": "Jazz",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin",
     "Jazz"
@@ -1211,6 +1276,7 @@
    "family": "Hip Hop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Hip Hop"
    ],
@@ -1227,6 +1293,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Electronic"
    ],
@@ -1247,6 +1314,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "hardcore"
    ],
@@ -1267,6 +1335,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "breakbeat"
    ],
@@ -1284,6 +1353,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Rock"
    ],
@@ -1300,6 +1370,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "alternative rock"
    ],
@@ -1316,6 +1387,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Electronic"
    ],
@@ -1333,6 +1405,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "death metal"
    ],
@@ -1349,6 +1422,7 @@
    "family": "Pop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Pop"
    ],
@@ -1365,6 +1439,7 @@
    "family": "Pop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Pop"
    ],
@@ -1381,6 +1456,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -1397,6 +1473,7 @@
    "family": "Reggae",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Reggae"
    ],
@@ -1413,6 +1490,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -1429,6 +1507,7 @@
    "family": "Classical",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Classical"
    ],
@@ -1445,6 +1524,7 @@
    "family": "Pop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Pop"
    ],
@@ -1461,6 +1541,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -1477,6 +1558,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -1493,6 +1575,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -1509,6 +1592,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -1525,6 +1609,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -1541,6 +1626,7 @@
    "family": "Classical",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Classical"
    ],
@@ -1557,6 +1643,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -1573,6 +1660,7 @@
    "family": "Pop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Pop"
    ],
@@ -1589,6 +1677,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -1605,6 +1694,7 @@
    "family": "Blues",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Blues"
    ],
@@ -1621,6 +1711,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "synthwave"
    ],
@@ -1641,6 +1732,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -1657,6 +1749,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Electronic"
    ],
@@ -1674,6 +1767,7 @@
    "family": "Classical",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Classical"
    ],
@@ -1690,6 +1784,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -1706,6 +1801,7 @@
    "family": "Pop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Pop"
    ],
@@ -1722,6 +1818,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Rock"
    ],
@@ -1738,6 +1835,7 @@
    "family": "Hip Hop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Hip Hop"
    ],
@@ -1754,6 +1852,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "post-punk",
     "darkwave"
@@ -1771,6 +1870,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "alternative rock"
    ],
@@ -1787,6 +1887,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -1803,6 +1904,7 @@
    "family": "Classical",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Classical"
    ],
@@ -1819,6 +1921,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -1835,6 +1938,7 @@
    "family": "Hip Hop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Hip Hop"
    ],
@@ -1851,6 +1955,7 @@
    "family": "Classical",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Classical"
    ],
@@ -1867,6 +1972,7 @@
    "family": "Jazz",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Jazz"
    ],
@@ -1883,6 +1989,7 @@
    "family": "Funk / Soul",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Funk / Soul"
    ],
@@ -1899,6 +2006,7 @@
    "family": "Jazz",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Jazz"
    ],
@@ -1915,6 +2023,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -1931,6 +2040,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -1947,6 +2057,7 @@
    "family": "Blues",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Blues"
    ],
@@ -1965,6 +2076,7 @@
    "flavours": [],
    "fusion": true,
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country",
     "Rock"
@@ -1982,6 +2094,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -1998,6 +2111,7 @@
    "family": "Hip Hop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Hip Hop"
    ],
@@ -2014,6 +2128,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "punk",
     "anarcho-punk",
@@ -2035,6 +2150,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -2051,6 +2167,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -2067,6 +2184,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -2083,6 +2201,7 @@
    "family": "Hip Hop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Hip Hop"
    ],
@@ -2099,6 +2218,7 @@
    "family": "Pop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Pop"
    ],
@@ -2115,6 +2235,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "post-punk"
    ],
@@ -2135,6 +2256,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Rock"
    ],
@@ -2151,6 +2273,7 @@
    "family": "Reggae",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Reggae"
    ],
@@ -2167,6 +2290,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -2183,6 +2307,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "ambient"
    ],
@@ -2200,6 +2325,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Electronic"
    ],
@@ -2220,6 +2346,7 @@
    "family": "Jazz",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Jazz"
    ],
@@ -2236,6 +2363,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Rock"
    ],
@@ -2252,6 +2380,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 4,
+   "modifiers": [],
    "parents": [
     "psytrance"
    ],
@@ -2273,6 +2402,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "synthwave"
    ],
@@ -2290,6 +2420,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "post-punk",
     "new wave"
@@ -2307,6 +2438,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Rock",
     "heavy metal",
@@ -2325,6 +2457,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "death metal",
     "doom metal"
@@ -2345,6 +2478,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "death metal",
     "metalcore"
@@ -2362,6 +2496,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "punk",
     "goth rock"
@@ -2379,6 +2514,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "house"
    ],
@@ -2396,6 +2532,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "techno"
    ],
@@ -2413,6 +2550,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "trance"
    ],
@@ -2430,6 +2568,7 @@
    "family": "Blues",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Blues"
    ],
@@ -2446,6 +2585,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "black metal"
    ],
@@ -2462,6 +2602,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -2478,6 +2619,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -2495,6 +2637,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Funk / Soul",
     "Electronic"
@@ -2515,6 +2658,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Electronic"
    ],
@@ -2532,6 +2676,7 @@
    "family": "Jazz",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Jazz"
    ],
@@ -2548,6 +2693,7 @@
    "family": "Hip Hop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Hip Hop"
    ],
@@ -2564,6 +2710,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "hardcore",
     "house"
@@ -2582,6 +2729,7 @@
    "family": "Funk / Soul",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Funk / Soul"
    ],
@@ -2598,6 +2746,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "heavy metal",
     "extreme metal"
@@ -2615,6 +2764,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "hardcore"
    ],
@@ -2632,6 +2782,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Electronic"
    ],
@@ -2651,6 +2802,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "alternative rock",
     "neo-psychedelia"
@@ -2668,6 +2820,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "trance"
    ],
@@ -2688,6 +2841,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "synthwave"
    ],
@@ -2705,6 +2859,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "synthwave"
    ],
@@ -2722,6 +2877,7 @@
    "family": "Hip Hop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Hip Hop"
    ],
@@ -2738,6 +2894,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "ambient"
    ],
@@ -2755,6 +2912,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Electronic"
    ],
@@ -2782,6 +2940,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Reggae",
     "Electronic"
@@ -2799,6 +2958,7 @@
    "family": "Reggae",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Reggae"
    ],
@@ -2815,6 +2975,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "techno"
    ],
@@ -2832,6 +2993,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "bass music"
    ],
@@ -2849,6 +3011,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "ambient"
    ],
@@ -2869,6 +3032,7 @@
    "family": "Classical",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Classical"
    ],
@@ -2885,6 +3049,7 @@
    "family": "Blues",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Blues"
    ],
@@ -2901,6 +3066,7 @@
    "family": "Pop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Pop"
    ],
@@ -2919,6 +3085,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "synthpop"
    ],
@@ -2936,6 +3103,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Electronic"
    ],
@@ -2959,6 +3127,7 @@
    "family": "Blues",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Blues"
    ],
@@ -2976,6 +3145,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Electronic",
     "Hip Hop"
@@ -2997,6 +3167,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "house"
    ],
@@ -3017,6 +3188,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Electronic"
    ],
@@ -3037,6 +3209,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "synthpop",
     "electro"
@@ -3057,6 +3230,7 @@
    "flavours": [],
    "fusion": true,
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Rock",
     "Electronic"
@@ -3074,6 +3248,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "punk",
     "hardcore punk"
@@ -3091,6 +3266,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -3107,6 +3283,7 @@
    "family": "Pop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Pop"
    ],
@@ -3124,6 +3301,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "disco"
    ],
@@ -3143,6 +3321,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "house"
    ],
@@ -3162,6 +3341,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "trance"
    ],
@@ -3182,6 +3362,7 @@
    "flavours": [],
    "fusion": true,
    "level": 2,
+   "modifiers": [],
    "parents": [
     "house",
     "euro disco",
@@ -3205,6 +3386,7 @@
    "family": "Pop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Pop"
    ],
@@ -3223,6 +3405,7 @@
    "family": "Jazz",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Jazz"
    ],
@@ -3240,6 +3423,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Electronic",
     "Rock"
@@ -3258,6 +3442,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Rock"
    ],
@@ -3274,6 +3459,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "heavy metal"
    ],
@@ -3290,6 +3476,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -3306,6 +3493,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -3322,6 +3510,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -3338,6 +3527,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -3356,6 +3546,7 @@
    "flavours": [],
    "fusion": true,
    "level": 2,
+   "modifiers": [],
    "parents": [
     "heavy metal",
     "Folk, World, & Country"
@@ -3373,6 +3564,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -3391,6 +3583,7 @@
    "flavours": [],
    "fusion": true,
    "level": 2,
+   "modifiers": [],
    "parents": [
     "punk",
     "Folk, World, & Country"
@@ -3410,6 +3603,7 @@
    "flavours": [],
    "fusion": true,
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country",
     "Rock"
@@ -3427,6 +3621,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Electronic"
    ],
@@ -3444,6 +3639,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 4,
+   "modifiers": [],
    "parents": [
     "psytrance"
    ],
@@ -3464,6 +3660,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -3480,6 +3677,7 @@
    "family": "Funk / Soul",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Funk / Soul"
    ],
@@ -3496,6 +3694,7 @@
    "family": "Jazz",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Jazz"
    ],
@@ -3512,6 +3711,7 @@
    "family": "Jazz",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Jazz"
    ],
@@ -3528,6 +3728,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Electronic"
    ],
@@ -3545,6 +3746,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "house"
    ],
@@ -3564,6 +3766,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 4,
+   "modifiers": [],
    "parents": [
     "psytrance"
    ],
@@ -3587,6 +3790,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "death metal",
     "death-doom",
@@ -3605,6 +3809,7 @@
    "family": "Funk / Soul",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Funk / Soul"
    ],
@@ -3623,6 +3828,7 @@
    "flavours": [],
    "fusion": true,
    "level": 2,
+   "modifiers": [],
    "parents": [
     "heavy metal",
     "Funk / Soul"
@@ -3640,6 +3846,7 @@
    "family": "Jazz",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Jazz"
    ],
@@ -3656,6 +3863,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "bass music"
    ],
@@ -3676,6 +3884,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "house"
    ],
@@ -3693,6 +3902,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Electronic"
    ],
@@ -3710,6 +3920,7 @@
    "family": "Hip Hop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Hip Hop"
    ],
@@ -3726,6 +3937,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "hardcore"
    ],
@@ -3743,6 +3955,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -3759,6 +3972,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -3775,6 +3989,7 @@
    "family": "Hip Hop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Hip Hop"
    ],
@@ -3791,6 +4006,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "house"
    ],
@@ -3808,6 +4024,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "rock and roll"
    ],
@@ -3824,6 +4041,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -3840,6 +4058,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Electronic"
    ],
@@ -3857,6 +4076,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "house"
    ],
@@ -3874,6 +4094,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Electronic"
    ],
@@ -3891,6 +4112,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Rock"
    ],
@@ -3909,6 +4131,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "heavy metal"
    ],
@@ -3929,6 +4152,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "experimental"
    ],
@@ -3946,6 +4170,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "bass music",
     "breakbeat"
@@ -3964,6 +4189,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -3980,6 +4206,7 @@
    "family": "Funk / Soul",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Funk / Soul"
    ],
@@ -3996,6 +4223,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 4,
+   "modifiers": [],
    "parents": [
     "psytrance"
    ],
@@ -4013,6 +4241,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "death metal",
     "grindcore"
@@ -4030,6 +4259,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -4049,6 +4279,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "post-punk"
    ],
@@ -4065,6 +4296,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "heavy metal",
     "goth rock"
@@ -4082,6 +4314,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -4098,6 +4331,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Electronic"
    ],
@@ -4118,6 +4352,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "heavy metal",
     "hardcore punk"
@@ -4135,6 +4370,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "heavy metal",
     "thrash"
@@ -4155,6 +4391,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "alternative rock"
    ],
@@ -4171,6 +4408,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -4187,6 +4425,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -4203,6 +4442,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -4219,6 +4459,7 @@
    "family": "Jazz",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Jazz"
    ],
@@ -4235,6 +4476,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Electronic"
    ],
@@ -4254,6 +4496,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "eurodance",
     "trance"
@@ -4272,6 +4515,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "hardcore"
    ],
@@ -4289,6 +4533,7 @@
    "family": "Jazz",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Jazz"
    ],
@@ -4305,6 +4550,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "house",
     "hardcore"
@@ -4323,6 +4569,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Rock"
    ],
@@ -4339,6 +4586,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "techno"
    ],
@@ -4356,6 +4604,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "trance",
     "hardcore"
@@ -4374,6 +4623,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Electronic"
    ],
@@ -4394,6 +4644,7 @@
    "family": "Hip Hop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Hip Hop"
    ],
@@ -4410,6 +4661,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "punk"
    ],
@@ -4426,6 +4678,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "hardcore",
     "trance"
@@ -4444,6 +4697,7 @@
    "family": "Blues",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Blues"
    ],
@@ -4460,6 +4714,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Electronic"
    ],
@@ -4477,6 +4732,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -4493,6 +4749,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Rock"
    ],
@@ -4512,6 +4769,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "disco"
    ],
@@ -4529,6 +4787,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -4545,6 +4804,7 @@
    "family": "Blues",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Blues"
    ],
@@ -4561,6 +4821,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -4577,6 +4838,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -4595,6 +4857,7 @@
    "flavours": [],
    "fusion": true,
    "level": 2,
+   "modifiers": [],
    "parents": [
     "house",
     "Hip Hop"
@@ -4613,6 +4876,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -4629,6 +4893,7 @@
    "family": "Hip Hop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Hip Hop"
    ],
@@ -4645,6 +4910,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Electronic"
    ],
@@ -4669,6 +4935,7 @@
    "family": "Pop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Pop"
    ],
@@ -4685,6 +4952,7 @@
    "family": "Hip Hop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Hip Hop"
    ],
@@ -4701,6 +4969,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Electronic"
    ],
@@ -4720,6 +4989,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "ambient"
    ],
@@ -4737,6 +5007,7 @@
    "family": "Classical",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Classical"
    ],
@@ -4753,6 +5024,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -4769,6 +5041,7 @@
    "family": "Pop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Pop"
    ],
@@ -4785,6 +5058,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Rock"
    ],
@@ -4803,6 +5077,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "heavy metal",
     "industrial rock"
@@ -4820,6 +5095,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Rock"
    ],
@@ -4839,6 +5115,7 @@
    "family": "Hip Hop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Hip Hop"
    ],
@@ -4856,6 +5133,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "disco"
    ],
@@ -4873,6 +5151,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "house"
    ],
@@ -4892,6 +5171,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "eurodance"
    ],
@@ -4909,6 +5189,7 @@
    "family": "Pop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Pop"
    ],
@@ -4925,6 +5206,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Rock"
    ],
@@ -4943,6 +5225,7 @@
    "flavours": [],
    "fusion": true,
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Jazz",
     "Funk / Soul"
@@ -4960,6 +5243,7 @@
    "family": "Jazz",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Jazz"
    ],
@@ -4976,6 +5260,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Electronic"
    ],
@@ -4993,6 +5278,7 @@
    "family": "Hip Hop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Hip Hop"
    ],
@@ -5009,6 +5295,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Electronic"
    ],
@@ -5026,6 +5313,7 @@
    "family": "Blues",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Blues"
    ],
@@ -5042,6 +5330,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "hardcore"
    ],
@@ -5059,6 +5348,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "breakbeat"
    ],
@@ -5079,6 +5369,7 @@
    "family": "Pop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Pop"
    ],
@@ -5095,6 +5386,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -5111,6 +5403,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -5127,6 +5420,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -5143,6 +5437,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -5159,6 +5454,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -5175,6 +5471,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "experimental rock"
    ],
@@ -5194,6 +5491,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Electronic"
    ],
@@ -5211,6 +5509,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -5229,6 +5528,7 @@
    "flavours": [],
    "fusion": true,
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Jazz",
     "Latin"
@@ -5246,6 +5546,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -5262,6 +5563,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -5278,6 +5580,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Electronic"
    ],
@@ -5295,6 +5598,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Electronic"
    ],
@@ -5312,6 +5616,7 @@
    "family": "Pop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Pop"
    ],
@@ -5328,6 +5633,7 @@
    "family": "Pop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Pop"
    ],
@@ -5344,6 +5650,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "drum and bass"
    ],
@@ -5370,6 +5677,7 @@
    "family": "Blues",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Blues"
    ],
@@ -5386,6 +5694,7 @@
    "family": "Pop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Pop"
    ],
@@ -5402,6 +5711,7 @@
    "family": "Reggae",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Reggae"
    ],
@@ -5418,6 +5728,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "ambient"
    ],
@@ -5435,6 +5746,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "hardcore"
    ],
@@ -5452,6 +5764,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -5468,6 +5781,7 @@
    "family": "Pop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Pop"
    ],
@@ -5484,6 +5798,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -5500,6 +5815,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "indie rock",
     "experimental rock",
@@ -5518,6 +5834,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "heavy metal",
     "metalcore",
@@ -5540,6 +5857,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -5556,6 +5874,7 @@
    "family": "Classical",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Classical"
    ],
@@ -5572,6 +5891,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "death metal"
    ],
@@ -5588,6 +5908,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "punk",
     "hardcore punk"
@@ -5609,6 +5930,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "techno"
    ],
@@ -5629,6 +5951,7 @@
    "family": "Blues",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Blues"
    ],
@@ -5645,6 +5968,7 @@
    "family": "Hip Hop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Hip Hop"
    ],
@@ -5661,6 +5985,7 @@
    "family": "Reggae",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Reggae"
    ],
@@ -5677,6 +6002,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -5693,6 +6019,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "heavy metal",
     "hardcore punk"
@@ -5710,6 +6037,7 @@
    "family": "Hip Hop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Hip Hop"
    ],
@@ -5726,6 +6054,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "house"
    ],
@@ -5746,6 +6075,7 @@
    "family": "Pop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Pop"
    ],
@@ -5764,6 +6094,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "punk",
     "emo",
@@ -5782,6 +6113,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -5798,6 +6130,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Electronic",
     "techno"
@@ -5819,6 +6152,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "techno"
    ],
@@ -5839,6 +6173,7 @@
    "family": "Classical",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Classical"
    ],
@@ -5855,6 +6190,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Rock"
    ],
@@ -5871,6 +6207,7 @@
    "family": "Jazz",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Jazz"
    ],
@@ -5887,6 +6224,7 @@
    "family": "Classical",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Classical"
    ],
@@ -5903,6 +6241,7 @@
    "family": "Classical",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Classical"
    ],
@@ -5922,6 +6261,7 @@
    "family": "Blues",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Blues"
    ],
@@ -5938,6 +6278,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "bass music"
    ],
@@ -5955,6 +6296,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -5971,6 +6313,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -5987,6 +6330,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -6003,6 +6347,7 @@
    "family": "Pop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Pop"
    ],
@@ -6020,6 +6365,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "experimental"
    ],
@@ -6037,6 +6383,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -6053,6 +6400,7 @@
    "family": "Funk / Soul",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Funk / Soul"
    ],
@@ -6069,6 +6417,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "trance"
    ],
@@ -6086,6 +6435,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "psychedelic rock"
    ],
@@ -6102,6 +6452,7 @@
    "family": "Classical",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Classical"
    ],
@@ -6118,6 +6469,7 @@
    "family": "Classical",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Classical"
    ],
@@ -6134,6 +6486,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Electronic"
    ],
@@ -6151,6 +6504,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "drum and bass"
    ],
@@ -6168,6 +6522,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Electronic"
    ],
@@ -6185,6 +6540,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Electronic"
    ],
@@ -6202,6 +6558,7 @@
    "family": "Funk / Soul",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Funk / Soul"
    ],
@@ -6218,6 +6575,7 @@
    "family": "Pop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Pop"
    ],
@@ -6234,6 +6592,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Rock"
    ],
@@ -6253,6 +6612,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Rock"
    ],
@@ -6273,6 +6633,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Electronic"
    ],
@@ -6293,6 +6654,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Rock"
    ],
@@ -6309,6 +6671,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "punk",
     "grindcore",
@@ -6328,6 +6691,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -6344,6 +6708,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -6360,6 +6725,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "heavy metal",
     "alternative metal"
@@ -6382,6 +6748,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "disco"
    ],
@@ -6399,6 +6766,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "trance"
    ],
@@ -6416,6 +6784,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -6432,6 +6801,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "punk"
    ],
@@ -6448,6 +6818,7 @@
    "family": "Classical",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Classical"
    ],
@@ -6464,6 +6835,7 @@
    "family": "Classical",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Classical"
    ],
@@ -6480,6 +6852,7 @@
    "family": "Classical",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Classical"
    ],
@@ -6496,6 +6869,7 @@
    "family": "Pop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Pop"
    ],
@@ -6512,6 +6886,7 @@
    "family": "Funk / Soul",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Funk / Soul"
    ],
@@ -6528,6 +6903,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -6544,6 +6920,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -6560,6 +6937,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -6576,6 +6954,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Rock"
    ],
@@ -6592,6 +6971,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -6608,6 +6988,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -6624,6 +7005,7 @@
    "family": "Hip Hop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Hip Hop"
    ],
@@ -6640,6 +7022,7 @@
    "family": "Blues",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Blues"
    ],
@@ -6656,6 +7039,7 @@
    "family": "Blues",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Blues"
    ],
@@ -6672,6 +7056,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -6689,6 +7074,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "experimental"
    ],
@@ -6706,6 +7092,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -6722,6 +7109,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "punk",
     "power pop"
@@ -6739,6 +7127,7 @@
    "family": "Hip Hop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Hip Hop"
    ],
@@ -6755,6 +7144,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Rock"
    ],
@@ -6771,6 +7161,7 @@
    "family": "Funk / Soul",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Funk / Soul"
    ],
@@ -6787,6 +7178,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "death metal",
     "goregrind",
@@ -6805,6 +7197,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -6821,6 +7214,7 @@
    "family": "Jazz",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Jazz"
    ],
@@ -6837,6 +7231,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "alternative rock",
     "britpop"
@@ -6855,6 +7250,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "disco"
    ],
@@ -6872,6 +7268,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "alternative rock",
     "grunge"
@@ -6889,6 +7286,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "punk",
     "post-punk"
@@ -6910,6 +7308,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "heavy metal",
     "post-rock",
@@ -6928,6 +7327,7 @@
    "family": "Classical",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Classical"
    ],
@@ -6944,6 +7344,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Rock",
     "punk"
@@ -6961,6 +7362,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "indie rock",
     "post-punk"
@@ -6978,6 +7380,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "experimental rock"
    ],
@@ -6994,6 +7397,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Electronic"
    ],
@@ -7011,6 +7415,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "heavy metal",
     "speed metal"
@@ -7028,6 +7433,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "pop rock"
    ],
@@ -7044,6 +7450,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "breakbeat"
    ],
@@ -7061,6 +7468,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "house"
    ],
@@ -7082,6 +7490,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "heavy metal",
     "progressive rock"
@@ -7099,6 +7508,7 @@
    "family": "Pop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Pop"
    ],
@@ -7115,6 +7525,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 4,
+   "modifiers": [],
    "parents": [
     "psytrance"
    ],
@@ -7136,6 +7547,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Rock"
    ],
@@ -7152,6 +7564,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "trance"
    ],
@@ -7169,6 +7582,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "psytrance",
     "ambient"
@@ -7187,6 +7601,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Rock"
    ],
@@ -7203,6 +7618,7 @@
    "family": "Funk / Soul",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Funk / Soul"
    ],
@@ -7219,6 +7635,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Rock"
    ],
@@ -7235,6 +7652,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "trance"
    ],
@@ -7256,6 +7674,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Rock"
    ],
@@ -7272,6 +7691,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Rock"
    ],
@@ -7290,6 +7710,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -7306,6 +7727,7 @@
    "family": "Funk / Soul",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Funk / Soul"
    ],
@@ -7322,6 +7744,7 @@
    "family": "Reggae",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Reggae"
    ],
@@ -7338,6 +7761,7 @@
    "family": "Hip Hop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Hip Hop"
    ],
@@ -7354,6 +7778,7 @@
    "family": "Jazz",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Jazz"
    ],
@@ -7370,6 +7795,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -7386,6 +7812,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -7404,6 +7831,7 @@
    "flavours": [],
    "fusion": true,
    "level": 2,
+   "modifiers": [],
    "parents": [
     "heavy metal",
     "Hip Hop"
@@ -7421,6 +7849,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -7437,6 +7866,7 @@
    "family": "Reggae",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Reggae"
    ],
@@ -7453,6 +7883,7 @@
    "family": "Reggae",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Reggae"
    ],
@@ -7469,6 +7900,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -7485,6 +7917,7 @@
    "family": "Classical",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Classical"
    ],
@@ -7501,6 +7934,7 @@
    "family": "Classical",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Classical"
    ],
@@ -7518,6 +7952,7 @@
    "family": "Blues",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Funk / Soul",
     "Blues"
@@ -7535,6 +7970,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "noise"
    ],
@@ -7552,6 +7988,7 @@
    "family": "Funk / Soul",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Funk / Soul"
    ],
@@ -7568,6 +8005,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Rock"
    ],
@@ -7584,6 +8022,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Rock"
    ],
@@ -7600,6 +8039,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "rock and roll"
    ],
@@ -7616,6 +8056,7 @@
    "family": "Reggae",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Reggae"
    ],
@@ -7632,6 +8073,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -7648,6 +8090,7 @@
    "family": "Reggae",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Reggae"
    ],
@@ -7664,6 +8107,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Rock"
    ],
@@ -7680,6 +8124,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -7696,6 +8141,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Rock"
    ],
@@ -7712,6 +8158,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -7728,6 +8175,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -7744,6 +8192,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -7760,6 +8209,7 @@
    "family": "Pop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Pop"
    ],
@@ -7776,6 +8226,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "techno"
    ],
@@ -7793,6 +8244,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "punk",
     "emo",
@@ -7811,6 +8263,7 @@
    "family": "Hip Hop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Hip Hop"
    ],
@@ -7827,6 +8280,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -7843,6 +8297,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -7859,6 +8314,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -7875,6 +8331,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Rock"
    ],
@@ -7891,6 +8348,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "alternative rock",
     "indie rock"
@@ -7908,6 +8366,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -7924,6 +8383,7 @@
    "family": "Reggae",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Reggae"
    ],
@@ -7940,6 +8400,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -7956,6 +8417,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Electronic"
    ],
@@ -7973,6 +8435,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "indie rock"
    ],
@@ -7989,6 +8452,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "heavy metal",
     "doom metal",
@@ -8007,6 +8471,7 @@
    "family": "Jazz",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Jazz"
    ],
@@ -8023,6 +8488,7 @@
    "family": "Reggae",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Reggae"
    ],
@@ -8039,6 +8505,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Rock"
    ],
@@ -8055,6 +8522,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -8071,6 +8539,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -8087,6 +8556,7 @@
    "family": "Classical",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Classical"
    ],
@@ -8103,6 +8573,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -8119,6 +8590,7 @@
    "family": "Funk / Soul",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Funk / Soul"
    ],
@@ -8137,6 +8609,7 @@
    "flavours": [],
    "fusion": true,
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Jazz",
     "Funk / Soul"
@@ -8155,6 +8628,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "experimental"
    ],
@@ -8173,6 +8647,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "experimental"
    ],
@@ -8190,6 +8665,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Rock"
    ],
@@ -8206,6 +8682,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "synthwave"
    ],
@@ -8229,6 +8706,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "disco"
    ],
@@ -8248,6 +8726,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "psychedelic rock",
     "progressive rock"
@@ -8265,6 +8744,7 @@
    "family": "Jazz",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Jazz"
    ],
@@ -8282,6 +8762,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "synthwave",
     "italo disco"
@@ -8300,6 +8781,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "uk garage",
     "house"
@@ -8318,6 +8800,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "heavy metal"
    ],
@@ -8334,6 +8817,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "hardcore"
    ],
@@ -8351,6 +8835,7 @@
    "family": "Jazz",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Jazz"
    ],
@@ -8367,6 +8852,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Rock"
    ],
@@ -8383,6 +8869,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "house"
    ],
@@ -8400,6 +8887,7 @@
    "family": "Pop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Pop"
    ],
@@ -8416,6 +8904,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "rock and roll"
    ],
@@ -8432,6 +8921,7 @@
    "family": "Jazz",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Jazz"
    ],
@@ -8448,6 +8938,7 @@
    "family": "Funk / Soul",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Funk / Soul"
    ],
@@ -8464,6 +8955,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "heavy metal"
    ],
@@ -8480,6 +8972,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "progressive rock"
    ],
@@ -8496,6 +8989,7 @@
    "family": "Classical",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Classical"
    ],
@@ -8512,6 +9006,7 @@
    "family": "Funk / Soul",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Funk / Soul"
    ],
@@ -8528,6 +9023,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Rock"
    ],
@@ -8546,6 +9042,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Electronic",
     "Pop",
@@ -8571,6 +9068,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Electronic"
    ],
@@ -8590,6 +9088,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -8606,6 +9105,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -8622,6 +9122,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -8638,6 +9139,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "house",
     "techno"
@@ -8656,6 +9158,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "trance",
     "techno"
@@ -8674,6 +9177,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "death metal"
    ],
@@ -8690,6 +9194,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Electronic"
    ],
@@ -8707,6 +9212,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -8723,6 +9229,7 @@
    "family": "Blues",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Blues"
    ],
@@ -8739,6 +9246,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "heavy metal",
     "extreme metal"
@@ -8756,6 +9264,7 @@
    "family": "Hip Hop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Hip Hop"
    ],
@@ -8772,6 +9281,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -8788,6 +9298,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Electronic"
    ],
@@ -8805,6 +9316,7 @@
    "family": "Hip Hop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Hip Hop"
    ],
@@ -8826,6 +9338,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Electronic",
     "house"
@@ -8844,6 +9357,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "house"
    ],
@@ -8863,6 +9377,7 @@
    "flavours": [],
    "fusion": true,
    "level": 2,
+   "modifiers": [],
    "parents": [
     "downtempo",
     "Hip Hop"
@@ -8881,6 +9396,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "house"
    ],
@@ -8898,6 +9414,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -8914,6 +9431,7 @@
    "family": "Hip Hop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Hip Hop"
    ],
@@ -8930,6 +9448,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Electronic"
    ],
@@ -8947,6 +9466,7 @@
    "family": "Funk / Soul",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Funk / Soul"
    ],
@@ -8963,6 +9483,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "trance"
    ],
@@ -8984,6 +9505,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -9000,6 +9522,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "synthwave"
    ],
@@ -9020,6 +9543,7 @@
    "family": "Rock",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "black metal"
    ],
@@ -9039,6 +9563,7 @@
    "family": "Pop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Pop"
    ],
@@ -9055,6 +9580,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 3,
+   "modifiers": [],
    "parents": [
     "trance"
    ],
@@ -9072,6 +9598,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -9088,6 +9615,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -9104,6 +9632,7 @@
    "family": "Electronic",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Electronic"
    ],
@@ -9121,6 +9650,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -9137,6 +9667,7 @@
    "family": "Pop",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Pop"
    ],
@@ -9153,6 +9684,7 @@
    "family": "Latin",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Latin"
    ],
@@ -9169,6 +9701,7 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
@@ -9185,12 +9718,75 @@
    "family": "Folk, World, & Country",
    "flavours": [],
    "level": 2,
+   "modifiers": [],
    "parents": [
     "Folk, World, & Country"
    ],
    "provisional": true,
    "status": null,
    "synonyms": []
+  }
+ },
+ "modifiers": {
+  "acid": {
+   "description": "The squelching, resonant Roland TB-303 bassline sound.",
+   "kind": "sound",
+   "name": "acid"
+  },
+  "baltimore": {
+   "description": "Tied to the Baltimore scene.",
+   "kind": "scene",
+   "name": "baltimore"
+  },
+  "berlin": {
+   "description": "Tied to the Berlin scene.",
+   "kind": "scene",
+   "name": "berlin"
+  },
+  "dark": {
+   "description": "Gloomy, ominous or menacing atmosphere.",
+   "kind": "mood",
+   "name": "dark"
+  },
+  "deep": {
+   "description": "Low-key, warm, subdued mood with soft bass and little harshness.",
+   "kind": "mood",
+   "name": "deep"
+  },
+  "hard": {
+   "description": "Faster, harder-hitting kicks and a more aggressive edge.",
+   "kind": "sound",
+   "name": "hard"
+  },
+  "melodic": {
+   "description": "Lead melody and chord progressions carry the track.",
+   "kind": "sound",
+   "name": "melodic"
+  },
+  "minimal": {
+   "description": "Stripped to a few repeating elements with a lot of space.",
+   "kind": "sound",
+   "name": "minimal"
+  },
+  "progressive": {
+   "description": "Slowly evolving, layered arrangements that build over long stretches.",
+   "kind": "sound",
+   "name": "progressive"
+  },
+  "tech": {
+   "description": "Techno-leaning percussion and bass applied to another style.",
+   "kind": "sound",
+   "name": "tech"
+  },
+  "uplifting": {
+   "description": "Euphoric, emotional lifting melodies and big breakdowns.",
+   "kind": "mood",
+   "name": "uplifting"
+  },
+  "vocal": {
+   "description": "Sung vocals are the centre of the track.",
+   "kind": "sound",
+   "name": "vocal"
   }
  },
  "subfamilies": [

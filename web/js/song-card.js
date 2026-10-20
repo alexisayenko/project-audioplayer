@@ -85,7 +85,17 @@ function fullRow(line, song) {
       copy.replaceChildren(icon('copy', 'nav'));
     }, 1800);
   };
-  return el('div', { class: 'card-full-row' }, el('p', { class: 'card-full muted t-subhead' }, ...partNodes(song, line), copy), note);
+  const nodes = partNodes(song, line);
+  if (typeof nodes[0] === 'string') {
+    const at = line.search(/\S+$/);
+    nodes.splice(0, 1, line.slice(0, at), line.slice(at));
+  }
+  const glued = (n) => !/^\s|\s$/.test(typeof n === 'string' ? n : n.textContent || 'x');
+  let from = nodes.length;
+  while (from > 0 && glued(nodes[from - 1])) from -= 1;
+  if (from === nodes.length) from -= 1;
+  const tail = el('span', { class: 'card-full-tail' }, ...nodes.slice(from), copy);
+  return el('div', { class: 'card-full-row' }, el('p', { class: 'card-full muted t-subhead' }, ...nodes.slice(0, from), tail), note);
 }
 
 function headBlock(song, m) {

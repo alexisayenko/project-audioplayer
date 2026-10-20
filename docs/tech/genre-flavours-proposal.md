@@ -48,4 +48,4 @@ Status: not attached, awaiting Alex. This file is not loaded by any code. The `f
 | uplifting | sound | uplifting trance |
 | vocal | sound | vocal trance |
 
-Uncertain assignments are listed in [genre-levels.md](genre-levels.md#flavours) (darksynth, dark electro, minimal techno, baltimore club, berlin-school, progressive breaks, the single-use sound words).
+Uncertain assignments are listed in [genre-levels.md](genre-levels.md#modifiers) (darksynth, dark electro, minimal techno, baltimore club, berlin-school, progressive breaks, the single-use sound words).

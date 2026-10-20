@@ -12,7 +12,7 @@ const SUBS = [
   { name: 'Synth & wave', family: 'Electronic', order: 3 },
 ];
 const vocab = (subfamilies = SUBS) => ({
-  families: ['Electronic', 'Rock'], genres: [], aliases: {}, family_synonyms: {}, flavours: {}, subfamilies,
+  families: ['Electronic', 'Rock'], genres: [], aliases: {}, family_synonyms: {}, modifiers: {}, subfamilies,
   levels: {
     house: { parents: ['Electronic'], subfamily: 'House & techno' },
     jungle: { parents: ['Electronic'], subfamily: 'Breaks & bass' },

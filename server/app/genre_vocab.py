@@ -241,7 +241,8 @@ def _strings(value: Any, where: str) -> list[str]:
     return list(value)
 
 
-FLAVOUR_KINDS = ("sound", "scene")
+MODIFIER_KINDS = ("sound", "mood", "scene")
+DEPRECATED_ALIASES = {"modifiers": "flavours"}
 
 
 def _parse_synonyms(doc: Any, name: str) -> dict[str, list[str]]:
@@ -255,22 +256,22 @@ def _parse_synonyms(doc: Any, name: str) -> dict[str, list[str]]:
     return synonyms
 
 
-def _parse_flavours(doc: dict[str, Any], name: str) -> dict[str, dict[str, str]]:
-    flavours: dict[str, dict[str, str]] = {}
-    block = doc.get("flavours", {})
+def _parse_modifiers(doc: dict[str, Any], name: str) -> dict[str, dict[str, str]]:
+    modifiers: dict[str, dict[str, str]] = {}
+    block = doc.get("modifiers", {})
     if not isinstance(block, dict):
-        raise ValueError(f"{name}: 'flavours' is not an object")
+        raise ValueError(f"{name}: 'modifiers' is not an object")
     for fk, spec in block.items():
-        if not isinstance(spec, dict) or not isinstance(spec.get("name"), str) or not spec["name"] or spec.get("kind") not in FLAVOUR_KINDS:
-            raise ValueError(f"{name}: flavour {fk!r} needs a name and a kind of {' or '.join(FLAVOUR_KINDS)}")
+        if not isinstance(spec, dict) or not isinstance(spec.get("name"), str) or not spec["name"] or spec.get("kind") not in MODIFIER_KINDS:
+            raise ValueError(f"{name}: modifier {fk!r} needs a name and a kind of {' or '.join(MODIFIER_KINDS)}")
         desc = spec.get("description", "")
         if not isinstance(desc, str):
-            raise ValueError(f"{name}: flavour {fk!r} description must be a string")
-        flavours[fk] = {"name": spec["name"], "kind": spec["kind"], "description": desc}
-    return flavours
+            raise ValueError(f"{name}: modifier {fk!r} description must be a string")
+        modifiers[fk] = {"name": spec["name"], "kind": spec["kind"], "description": desc}
+    return modifiers
 
 
-def _parse_entry(k: str, v: Any, name: str, families: dict[str, list[str]], flavours: dict[str, dict[str, str]], subfamilies: dict[str, dict[str, Any]]) -> dict[str, Any]:
+def _parse_entry(k: str, v: Any, name: str, families: dict[str, list[str]], modifiers: dict[str, dict[str, str]], subfamilies: dict[str, dict[str, Any]]) -> dict[str, Any]:
     if not isinstance(v, dict):
         raise ValueError(f"{name}: entry {k!r} is not an object")
     parents = _strings(v.get("parents"), f"entry {k!r} parents")
@@ -299,7 +300,7 @@ def _parse_entry(k: str, v: Any, name: str, families: dict[str, list[str]], flav
         "provisional": v.get("provisional") is True,
         "status": status,
         "display": display,
-        "flavours": _strings(v.get("flavours", []), f"entry {k!r} flavours"),
+        "modifiers": _strings(v.get("modifiers", []), f"entry {k!r} modifiers"),
     }
     if fusion:
         entry["fusion"] = True
@@ -311,9 +312,9 @@ def _parse_entry(k: str, v: Any, name: str, families: dict[str, list[str]], flav
             raise ValueError(f"{name}: entry {k!r} related {related!r} must be unique names other than the entry and its parents")
         if related:
             entry["related"] = related
-    unknown = [f for f in entry["flavours"] if f not in flavours]
+    unknown = [f for f in entry["modifiers"] if f not in modifiers]
     if unknown:
-        raise ValueError(f"{name}: entry {k!r} has unknown flavours {unknown!r}")
+        raise ValueError(f"{name}: entry {k!r} has unknown modifiers {unknown!r}")
     return entry
 
 
@@ -439,13 +440,13 @@ def _resolve(levels: dict[str, dict[str, Any]], families: dict[str, list[str]], 
 
 
 def parse_levels(doc: Any) -> tuple[dict[str, dict[str, Any]], dict[str, list[str]], dict[str, dict[str, str]]]:
-    """Validate the genre tree data (GEN-051): returns (`levels` per genre, `family_synonyms` per family, `flavours` block). Raises ValueError naming the file and the bad entry."""
+    """Validate the genre tree data (GEN-051): returns (`levels` per genre, `family_synonyms` per family, `modifiers` block). Raises ValueError naming the file and the bad entry."""
     name = LEVELS_FILE.name
     synonyms = _parse_synonyms(doc, name)
-    flavours = _parse_flavours(doc, name)
-    entries = {k: v for k, v in doc.items() if k not in ("_meta", "families", "flavours", "subfamilies")}
+    modifiers = _parse_modifiers(doc, name)
+    entries = {k: v for k, v in doc.items() if k not in ("_meta", "families", "modifiers", "subfamilies")}
     subfamilies = parse_subfamilies(doc)
-    levels = {k: _parse_entry(k, v, name, synonyms, flavours, subfamilies) for k, v in entries.items()}
+    levels = {k: _parse_entry(k, v, name, synonyms, modifiers, subfamilies) for k, v in entries.items()}
     for k, v in levels.items():
         if v["display"] and v["display"].lower() != k and v["display"].lower() in levels:
             raise ValueError(f"{name}: entry {k!r} display {v['display']!r} collides with another entry")
@@ -453,7 +454,7 @@ def parse_levels(doc: Any) -> tuple[dict[str, dict[str, Any]], dict[str, list[st
     _check_related(levels, synonyms, name)
     _resolve(levels, synonyms, name)
     _resolve_subfamilies(levels, synonyms, subfamilies, name)
-    return levels, synonyms, flavours
+    return levels, synonyms, modifiers
 
 
 def load_levels() -> tuple[dict[str, dict[str, Any]], dict[str, list[str]], dict[str, dict[str, str]]]:
@@ -461,6 +462,10 @@ def load_levels() -> tuple[dict[str, dict[str, Any]], dict[str, list[str]], dict
         return parse_levels(_read(LEVELS_FILE))
     except (OSError, json.JSONDecodeError) as e:
         raise ValueError(f"{LEVELS_FILE.name}: unreadable ({e})") from e
+
+
+def _with_aliases(levels: dict[str, dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    return {k: {**v, DEPRECATED_ALIASES["modifiers"]: list(v["modifiers"])} for k, v in levels.items()}
 
 
 def vocabulary() -> dict[str, Any]:
@@ -473,7 +478,8 @@ def vocabulary() -> dict[str, Any]:
                 ({"name": e.name, "family": e.family, "families": list(e.families), "level": e.level, "parents": list(e.parents), "extra": e.extra, **genre_sources.payload_fields(e.name, e.level == "family")} for e in v.entries.values()),
                 key=lambda r: r["name"],
             )
-            levels, family_synonyms, flavours = load_levels()
+            levels, family_synonyms, modifiers = load_levels()
             subfamilies = list(parse_subfamilies(_read(LEVELS_FILE)).values())
-            _payload = {"families": list(v.families), "genres": rows, "count": len(rows), "aliases": _aliases(v), "levels": levels, "family_synonyms": family_synonyms, "flavours": flavours, "subfamilies": subfamilies}
+            _payload = {"families": list(v.families), "genres": rows, "count": len(rows), "aliases": _aliases(v), "levels": _with_aliases(levels), "family_synonyms": family_synonyms, "modifiers": modifiers, "subfamilies": subfamilies}
+            _payload[DEPRECATED_ALIASES["modifiers"]] = modifiers
         return _payload

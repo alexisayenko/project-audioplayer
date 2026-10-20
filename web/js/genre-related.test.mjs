@@ -6,7 +6,7 @@ import { layoutRadial } from './genre-radial.js';
 import { createSim } from './genre-sim.js';
 
 const vocab = (withRelated) => ({
-  families: ['Electronic', 'Rock'], genres: [], aliases: {}, family_synonyms: {}, flavours: {},
+  families: ['Electronic', 'Rock'], genres: [], aliases: {}, family_synonyms: {}, modifiers: {},
   levels: {
     synthwave: { parents: ['Electronic'], discogs: true },
     darksynth: { parents: ['synthwave'], discogs: true, ...(withRelated ? { related: ['industrial'] } : {}) },

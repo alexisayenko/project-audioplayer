@@ -310,7 +310,7 @@ test('Copy title writes exactly the displayed line to the clipboard and toasts',
   assert.ok(copy.classList.contains('icon') && copy.classList.contains('round'));
   assert.equal(copy.textContent, '');
   assert.ok(copy.querySelector('svg'));
-  assert.equal(dlg.querySelector('.card-full').children.at(-1), copy);
+  assert.equal(dlg.querySelector('.card-full').children.at(-1).children.at(-1), copy);
   dlg.close();
 });
 

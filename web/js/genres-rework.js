@@ -15,7 +15,7 @@ import { loadDrill, saveDrill, newDrill, drillEmpty, pruneDrill, drillVisible, c
 import { player } from './player.js';
 import { songGenres } from './genre-playing.js';
 import {
-  hasLevels, buildTree, applyCounts, count, populatedFamilies, genresWithSongs, ancestorIds, resolveNode, libraryTags, otherGenres, searchMatches, visibleRows, allExpandable, treeKey, filterIds, flavourCount, STATUS_FILTERS, STATUS_LABELS,
+  hasLevels, buildTree, applyCounts, count, populatedFamilies, genresWithSongs, ancestorIds, resolveNode, libraryTags, otherGenres, searchMatches, visibleRows, allExpandable, treeKey, filterIds, modifierCount, STATUS_FILTERS, STATUS_LABELS,
 } from './genre-levels.js';
 
 const songs = (n) => `${n} ${plural(n, 'song', 'songs')}`;
@@ -83,7 +83,7 @@ export function renderGenresRework(root, opts = {}) {
   let selectedId = null;
   let rows = [];
   let statusFilter = 'all';
-  const flavourSel = new Set();
+  const modifierSel = new Set();
   let legendOpen = loadLegend(globalThis.localStorage);
   let flashTimer = 0;
   let outlineOpen = outlineDefaultOpen(window.innerWidth || 1200);
@@ -292,7 +292,7 @@ export function renderGenresRework(root, opts = {}) {
 
   const subFamilyName = () => tree?.subfamilies?.[0]?.family || null;
   const subActive = () => !!subSel.size && !!subFamilyName() && (kind === 'graph' ? graphFamily === subFamilyName() : rootGenre === subFamilyName());
-  const baseVisible = () => (tree ? visibleIds(tree, { family: drill ? null : graphFamily, libraryOnly: !allGenres, status: statusFilter, flavours: flavourSel, subfamilies: subActive() ? subSel : null }) : null);
+  const baseVisible = () => (tree ? visibleIds(tree, { family: drill ? null : graphFamily, libraryOnly: !allGenres, status: statusFilter, modifiers: modifierSel, subfamilies: subActive() ? subSel : null }) : null);
   const currentVisible = () => {
     const base = baseVisible();
     return drill && tree && graph ? drillVisible(tree, graph, drillState, base) : base;
@@ -339,7 +339,7 @@ export function renderGenresRework(root, opts = {}) {
   }
   const radialKeep = () => {
     if (!tree) return null;
-    const base = filterIds(tree, { status: statusFilter, flavours: flavourSel });
+    const base = filterIds(tree, { status: statusFilter, modifiers: modifierSel });
     const subs = subActive() && kind === 'radial' ? visibleIds(tree, { subfamilies: subSel }) : null;
     if (!subs) return base;
     return base ? new Set([...base].filter((id) => subs.has(id))) : subs;
@@ -349,7 +349,7 @@ export function renderGenresRework(root, opts = {}) {
     radialView.setFilter(radialKeep());
     syncMap();
     renderTree();
-    renderFlavours();
+    renderModifiers();
     renderFamilies();
     renderSubfamilies();
     renderStatus();
@@ -447,36 +447,36 @@ export function renderGenresRework(root, opts = {}) {
     return !!graph?.byId.has(id) && (currentVisible()?.has(id) ?? true);
   };
   const rowOpts = () => ({
-    expanded, query, onlyWithSongs: kind === 'radial' || !allGenres, status: statusFilter, flavours: flavourSel, only: kind === 'graph' ? baseVisible() : (subActive() ? visibleIds(tree, { subfamilies: subSel }) : null),
+    expanded, query, onlyWithSongs: kind === 'radial' || !allGenres, status: statusFilter, modifiers: modifierSel, only: kind === 'graph' ? baseVisible() : (subActive() ? visibleIds(tree, { subfamilies: subSel }) : null),
   });
 
-  const flavourRow = el('div', { class: 'gmr-flavour-row', role: 'group', 'aria-label': 'Flavour filter', hidden: true });
+  const modifierRow = el('div', { class: 'gmr-modifier-row', role: 'group', 'aria-label': 'Modifier filter', hidden: true });
 
-  function flavourChip(f) {
-    const n = flavourCount(tree, f.key);
+  function modifierChip(f) {
+    const n = modifierCount(tree, f.key);
     const described = f.description ? `${f.description} - ` : '';
     return el('button', {
-      class: 'gm-tbtn gmr-flav', type: 'button', 'data-flavour': f.key, 'aria-pressed': String(flavourSel.has(f.key)),
+      class: 'gm-tbtn gmr-mod', type: 'button', 'data-modifier': f.key, 'aria-pressed': String(modifierSel.has(f.key)),
       'aria-label': `${f.name}, ${songs(n)}`, title: `${described}${songs(n)}`,
       onclick: () => {
-        if (flavourSel.has(f.key)) flavourSel.delete(f.key); else flavourSel.add(f.key);
+        if (modifierSel.has(f.key)) modifierSel.delete(f.key); else modifierSel.add(f.key);
         applyFilters();
       },
     }, f.name);
   }
 
-  function renderFlavours() {
-    const used = new Set(tree ? [...tree.byId.values()].filter((n) => kind === 'graph' || count(n)).flatMap((n) => n.flavours) : []);
-    const all = tree ? [...tree.flavours.values()].filter((f) => used.has(f.key)) : [];
-    flavourRow.hidden = !all.length;
-    if (!all.length) { flavourRow.replaceChildren(); return; }
+  function renderModifiers() {
+    const used = new Set(tree ? [...tree.byId.values()].filter((n) => kind === 'graph' || count(n)).flatMap((n) => n.modifiers) : []);
+    const all = tree ? [...tree.modifiers.values()].filter((f) => used.has(f.key)) : [];
+    modifierRow.hidden = !all.length;
+    if (!all.length) { modifierRow.replaceChildren(); return; }
     const group = (kind, label) => {
       const list = all.filter((f) => f.kind === kind).sort((a, b) => a.name.localeCompare(b.name));
-      return list.length ? el('div', { class: 'gmr-flav-group', role: 'group', 'aria-label': `${label} flavours` }, el('span', { class: 't-caption muted' }, `${label}:`), ...list.map(flavourChip)) : null;
+      return list.length ? el('div', { class: 'gmr-mod-group', role: 'group', 'aria-label': `${label} modifiers` }, el('span', { class: 't-caption muted' }, `${label}:`), ...list.map(modifierChip)) : null;
     };
-    flavourRow.replaceChildren(
-      group('sound', 'Sound'), group('scene', 'Scene'),
-      el('button', { class: 'gm-tbtn', type: 'button', disabled: !flavourSel.size, onclick: () => { flavourSel.clear(); applyFilters(); } }, 'Clear flavours'));
+    modifierRow.replaceChildren(
+      ...[group('sound', 'Sound'), group('mood', 'Mood'), group('scene', 'Scene')].filter(Boolean),
+      el('button', { class: 'gm-tbtn', type: 'button', disabled: !modifierSel.size, onclick: () => { modifierSel.clear(); applyFilters(); } }, 'Clear modifiers'));
   }
 
   const searchOpts = () => ({ populatedOnly: kind === 'radial' || !allGenres });
@@ -525,7 +525,7 @@ export function renderGenresRework(root, opts = {}) {
       graphFamily = null;
       if (!tree.byId.get(id)?.all.size) setAllGenres(true);
       if (statusFilter !== 'all') { statusFilter = 'all'; for (const b of statusRow.querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.dataset.status === 'all')); }
-      if (flavourSel.size) flavourSel.clear();
+      if (modifierSel.size) modifierSel.clear();
       applyFilters();
       markMatches();
     }
@@ -571,7 +571,7 @@ export function renderGenresRework(root, opts = {}) {
     markMatches();
     renderTree();
     if (kind === 'radial') renderStatus();
-    renderFlavours();
+    renderModifiers();
   }
 
   function select(id, { reveal: rv = false, center = false, toggle = false, map = false } = {}) {
@@ -613,7 +613,7 @@ export function renderGenresRework(root, opts = {}) {
       ...otherGenres(n, rootName).map((g) => badge(`also in ${g}`, `Also in ${g}`, 'alsoin')),
       n.provisional ? badge('provisional', 'Provisional: placement not reviewed yet', 'prov') : null,
       !n.discogs ? badge('not in Discogs', 'Not in Discogs', 'nodisc') : null,
-      ...n.flavours.map((k) => el('span', { class: 'gmr-badge flav', title: tree.flavours.get(k).description || tree.flavours.get(k).name }, tree.flavours.get(k).name)),
+      ...n.modifiers.map((k) => el('span', { class: 'gmr-badge mod', title: tree.modifiers.get(k).description || tree.modifiers.get(k).name }, tree.modifiers.get(k).name)),
       n.status === 'question' ? badge('question', STATUS_LABELS.question, 'q') : null,
       ...n.parents.filter((id) => id !== r.parentId && !id.startsWith('g:')).map((id) => {
         const target = tree.byId.get(id);
@@ -651,7 +651,7 @@ export function renderGenresRework(root, opts = {}) {
     }));
     empty.hidden = rows.length > 0;
     let emptyText = EMPTY_TEXT;
-    if ((statusFilter !== 'all' || flavourSel.size) && !query) emptyText = 'No genres match the filters.';
+    if ((statusFilter !== 'all' || modifierSel.size) && !query) emptyText = 'No genres match the filters.';
     else if (query) emptyText = `No genre or synonym matches "${query.trim()}".`;
     empty.textContent = emptyText;
   }
@@ -724,7 +724,7 @@ export function renderGenresRework(root, opts = {}) {
 
   function dropStale() {
     if (selectedId && !tree.byId.has(selectedId)) selectedId = null;
-    for (const k of flavourSel) if (!tree.flavours.has(k)) flavourSel.delete(k);
+    for (const k of modifierSel) if (!tree.modifiers.has(k)) modifierSel.delete(k);
   }
 
   async function load() {
@@ -776,7 +776,7 @@ export function renderGenresRework(root, opts = {}) {
     renderFamilies();
     renderSubfamilies();
     markMatches();
-    renderFlavours();
+    renderModifiers();
     renderTree();
     renderStatus();
     refreshNow();
@@ -809,7 +809,7 @@ export function renderGenresRework(root, opts = {}) {
 
   outlineEl.append(
     el('div', { class: 'gmr-scroll' },
-      el('div', { class: 'gmr-tools' }, search, expandAll, collapseAll, statusRow, flavourRow),
+      el('div', { class: 'gmr-tools' }, search, expandAll, collapseAll, statusRow, modifierRow),
       treeEl, empty));
 
   side.append(

@@ -49,7 +49,7 @@ test('genre labels are used as the vocabulary gives them: lowercase genres, capi
   assert.equal(g.byId.has('g:Electronic'), true);
   assert.equal(t.byId.get('g:Electronic').label, 'Electronic');
   assert.equal(g.byId.get('s:drum and bass').label, g.byId.get('s:drum and bass').node.display || 'drum and bass');
-  const t2 = buildTree({ families: ['Electronic'], genres: [], aliases: {}, family_synonyms: {}, flavours: {}, levels: { 'soviet wave': { parents: ['Electronic'], display: 'soviet wave' }, 'uk garage': { parents: ['Electronic'] } } });
+  const t2 = buildTree({ families: ['Electronic'], genres: [], aliases: {}, family_synonyms: {}, modifiers: {}, levels: { 'soviet wave': { parents: ['Electronic'], display: 'soviet wave' }, 'uk garage': { parents: ['Electronic'] } } });
   assert.equal(buildMapGraph(t2).byId.get('s:soviet wave').label, 'soviet wave');
   assert.equal(buildMapGraph(t2).byId.get('s:uk garage').label, 'uk garage');
 });

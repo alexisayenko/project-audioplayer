@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { installPage, makeEvent, stubFetch, fire } from './test-dom.mjs';
 
 await installPage();
@@ -98,6 +99,29 @@ test('a song without data says No details yet and the copy button stays last in 
   assert.equal(pops()[0].querySelector('.tp-empty').textContent, 'No details yet');
   const copy = dlg().querySelector('.card-copy');
   assert.ok(copy);
-  assert.equal(dlg().querySelector('.card-full').children.at(-1), copy);
+  assert.equal(dlg().querySelector('.card-full').children.at(-1).children.at(-1), copy);
+  dlg().close();
+});
+
+test('css: title parts turn azure on hover, focus and while open, never underlined', () => {
+  const css = readFileSync(new URL('../style.css', import.meta.url), 'utf8');
+  const rules = css.split('\n').filter((l) => l.startsWith('.tp-part'));
+  assert.ok(rules.length >= 3);
+  assert.ok(!rules.some((l) => /underline/.test(l)));
+  assert.match(css, /\.tp-part:hover, \.tp-part:focus-visible \{ color: var\(--accent-ink\); \}/);
+  assert.match(css, /\.tp-part\[aria-expanded="true"\] \{ color: var\(--accent-strong\); \}/);
+  assert.match(css, /\.tp-part \{[^}]*transition: color var\(--dur-fast\)/);
+  assert.match(css, /\.card-full-tail \{ white-space: nowrap; \}/);
+});
+
+test('the copy icon shares a nowrap tail with the last glued words and stays last in the DOM', () => {
+  publish([SONG, BARE]);
+  open(SONG);
+  const p = dlg().querySelector('.card-full');
+  const tail = p.querySelector('.card-full-tail');
+  assert.ok(tail);
+  assert.equal(p.lastChild, tail);
+  assert.equal(tail.lastChild, dlg().querySelector('.card-copy'));
+  assert.equal(tail.textContent.replace(/\s/g, ''), '(AlessoRemix)');
   dlg().close();
 });

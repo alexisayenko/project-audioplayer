@@ -8,11 +8,11 @@ const read = (path) => JSON.parse(readFileSync(new URL(path, import.meta.url), '
 const doc = read('../../server/data/genre_levels.json');
 const discogs = read('../../server/data/genre_discogs.json');
 
-const entries = Object.fromEntries(Object.entries(doc).filter(([k]) => !['_meta', 'families', 'flavours', 'subfamilies'].includes(k)));
+const entries = Object.fromEntries(Object.entries(doc).filter(([k]) => !['_meta', 'families', 'modifiers', 'subfamilies'].includes(k)));
 const vocabOf = (levels) => ({
   families: discogs.families,
   family_synonyms: Object.fromEntries(Object.entries(doc.families).map(([k, v]) => [k, v.synonyms])),
-  flavours: doc.flavours,
+  modifiers: doc.modifiers,
   levels: Object.fromEntries(Object.entries(levels).map(([k, v]) => [k, { synonyms: [], provisional: false, ...v }])),
   genres: [],
 });
@@ -95,7 +95,7 @@ test('psytrance sits under trance and its children reach level 4; there is no de
   assert.equal(t.byId.get('s:goa trance').level, 4);
   assert.equal(depthIn(t, 's:goa trance', 'g:Electronic'), 4);
   assert.deepEqual(genreLines(t, ['goa trance']), [{ family: 'Electronic', genres: ['Electronic', 'goa trance'] }]);
-  const deep = buildTree({ families: ['Rock'], levels: { a: { parents: ['Rock'] }, b: { parents: ['a'] }, c: { parents: ['b'] }, d: { parents: ['c'] }, e: { parents: ['d'] } }, flavours: {}, genres: [] });
+  const deep = buildTree({ families: ['Rock'], levels: { a: { parents: ['Rock'] }, b: { parents: ['a'] }, c: { parents: ['b'] }, d: { parents: ['c'] }, e: { parents: ['d'] } }, modifiers: {}, genres: [] });
   assert.deepEqual(['a', 'b', 'c', 'd', 'e'].map((k) => deep.byId.get(`s:${k}`).level), [2, 3, 4, 5, 6]);
 });
 

@@ -1,5 +1,5 @@
 export const FUSION_VOCAB = {
-  families: ['Blues', 'Electronic', 'Funk / Soul', 'Rock'], genres: [], aliases: {}, family_synonyms: {}, flavours: {},
+  families: ['Blues', 'Electronic', 'Funk / Soul', 'Rock'], genres: [], aliases: {}, family_synonyms: {}, modifiers: {},
   levels: {
     'blues rock': { parents: ['Blues', 'Rock'], discogs: true, fusion: true },
     'hard blues rock': { parents: ['blues rock'], discogs: true },

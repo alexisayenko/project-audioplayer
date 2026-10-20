@@ -2,6 +2,15 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-20 (flavour renamed modifier, not deployed)
+
+- Data and server: the `flavours` block and per-genre `flavours` lists in `genre_levels.json` are now `modifiers`; `genre_vocab.py` has `MODIFIER_KINDS` (sound, mood, scene); `GET /genres/vocabulary` serves `modifiers` and, as a deprecated alias for one release, the same content under `flavours` (GEN-082).
+- Web: the Genres map reads `modifiers` (falls back to `flavours`), the filter row says "Modifier" and shows Sound, Mood and Scene groups separately, "Clear modifiers" (GEN-055, WEB-088, [genre-levels.md](tech/genre-levels.md#modifiers)).
+
+## 2026-10-20 (flavour kinds split into sound, mood and scene, not deployed)
+
+- Data: in `genre_levels.json` the flavours `dark`, `deep` and `uplifting` change `kind` from `sound` to `mood` (sound: acid, progressive, melodic, vocal, hard, minimal, tech; scene: baltimore, berlin); `FLAVOUR_KINDS` and the test accept all three; the web still treats any non-scene kind as sound until the Genres map groups mood (GEN-055, [genre-levels.md](tech/genre-levels.md#modifiers)).
+
 ## 2026-10-20 (epic removed from the genres, not deployed)
 
 - Data: `epic` is a descriptor (a mood), not a genre, and it pulled songs into the Classical family, so it is removed from the vocabulary (Classical 24 genres, 534 in all) and dropped from songs at the next start (`REMOVED_GENRES`); 2 songs in the owner removal list (116 songs, 195 removals after `dub` left Gogol Bordello - Immigraniada; [genre-levels.md](tech/genre-levels.md#epic-removed-owner-2026-10-20)).
@@ -24,7 +33,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## 2026-10-20 (song card title line parts, built, not deployed)
 
-- Web: in the song card the artists, the title and the version in the `Artist - Title (Version)` line are buttons that open a small info popover on click or tap (underlined on hover and focus; Escape, outside click or another part closes it): artist (Country, Genres, Years of activity, filter link; stub data for now, LIB-188), title and version (Year of release, Albums, Genres of the song) ([task-0062](tasks/task-0062.md), LIB-185 to LIB-189).
+- Web: in the song card the artists, the title and the version in the `Artist - Title (Version)` line are buttons that open a small info popover on click or tap (the part turns azure on hover and focus, not underlined; the copy icon stays glued to the last word of a wrapping line; Escape, outside click or another part closes it): artist (Country, Genres, Years of activity, filter link; stub data for now, LIB-188), title and version (Year of release, Albums, Genres of the song) ([task-0062](tasks/task-0062.md), LIB-185 to LIB-189).
 
 ## 2026-10-20 (Genres graph: wider rings, steadier selection)
 
@@ -91,7 +100,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 - Web: the radial view of the hidden Electronic family shows "Electronic" as the title at the centre (the circle stays hidden; GEN-072, not deployed).
 - Web: the BPM badge is a rounded rectangle (`--radius-xs`, 4px) instead of a pill; the owner asked for about 3px, which needs a new radius token in the Design System.
 - Web: the Library BPM badge moved out of the Genres cell to the right end of the subtitle line, after the in-queue icon and right-aligned under the song length; the Genres cell is plain text again and the reserved empty slot is gone; the badge shows at all widths (LIB-019, LIB-161, LIB-175, not deployed).
-- Web: Library rows lose the "..." menu, the source logo and the right-hand cell (all duplicated by the song card). Each row ends its title line with one glyph-only azure state button after the length: Download to the server (no audio), Add to queue (shown on row hover or focus), or the playlist glyph for a queued song (always visible, click removes); the progress ring replaces it during a download; no toast, the glyph changes. This reverses the passive in-queue icon of LIB-161. The only thing reachable solely through the old menu was "Play now", which the cover button still does (LIB-180, not deployed).
+- Web: Library rows lose the "..." menu, the source logo and the right-hand cell (all duplicated by the song card). Each row ends its title line with one glyph-only azure state button left of the length: Download to the server (no audio), Add to queue (shown on row hover or focus), or the playlist glyph for a queued song (always visible, click removes); the progress ring replaces it during a download; no toast, the glyph changes. This reverses the passive in-queue icon of LIB-161. The only thing reachable solely through the old menu was "Play now", which the cover button still does (LIB-180, not deployed).
 
 - Web: `/auth/me`, `/me` and `/library` start together and the Library is fetched once instead of twice (WEB-116); Settings, Genres map, Playlists, Song stats, Music theory and the visualizer load only when needed (WEB-117, WEB-118); the page tells the browser to fetch the whole startup module graph at once with generated `modulepreload` hints (WEB-119). Local cold start (60 ms latency, 5 Mbit/s): 173 to 110 JS files, DOMContentLoaded 7.7 s to 4.6 s.
 - Web: two-tier loading, no build step: tier 1 (preloaded with `modulepreload`, 56 modules, 210 KB) is only what paints the Library list and the shell; the song card, Add and Edit with the song form, share dialog and links, tag picker, filter sheet and Drafts view load on a click with an inline "Loading..." note (WEB-120); once the first rows and their first 12 covers are in, the other 123 modules are warmed in the background 6 at a time when idle, never on data saver or 2g, and paused while a click is loading a module (tier 2, WEB-121, generated from the import graph); the first 12 covers load eagerly with high priority (WEB-122). Local cold start (60 ms, 5 Mbit/s): 110 to 58 JS requests before the first row, DOMContentLoaded 4.6 s to 2.5 s, first library row 6.0 s to about 3.7 s; all lazy modules cached after about 9 s.

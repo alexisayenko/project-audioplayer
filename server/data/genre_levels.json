@@ -7,7 +7,7 @@
    "provisional: true marks an undrafted placeholder (all families except Electronic); parents is just the family.",
    "discogs: true when the key is in genre_discogs.json, false when it exists only in genre_extras.json.",
    "families: family name plus lowercase synonyms; genre entries may carry an optional synonyms list (carried over from ALIASES in genre_filter.py, read-only). A synonym never equals a vocabulary key, a family name or another synonym; typos are input normalisation, not synonyms.",
-   "flavours: optional list of keys of the top-level 'flavours' block ({name, kind sound|scene, description}); a modifier alongside the tree, not a level. Only Electronic entries carry them so far.",
+   "modifiers: optional list of keys of the top-level 'modifiers' block ({name, kind sound|mood|scene, description}); a modifier alongside the tree, not a level. Only Electronic entries carry them so far.",
    "status: optional 'approved' (Alex approved; only on entries with discogs false, because Discogs outranks his approval) or 'question' (under question, any entry); absent means unreviewed.",
    "display: optional display name of a genre (default: the key); never equal, when lowercased, to another vocabulary key.",
    "related: optional list of unique names (a family or the key of another entry), never the entry itself, one of its parents or one of its descendants. Associations and influences, not subgenre-of: no effect on the tree, levels, families, counts or colours; shown as information and a faint link in the map (ADR-0030, GEN-064)."
@@ -187,7 +187,7 @@
    ]
   }
  },
- "flavours": {
+ "modifiers": {
   "acid": {
    "name": "acid",
    "kind": "sound",
@@ -210,7 +210,7 @@
   },
   "deep": {
    "name": "deep",
-   "kind": "sound",
+   "kind": "mood",
    "description": "Low-key, warm, subdued mood with soft bass and little harshness."
   },
   "hard": {
@@ -220,12 +220,12 @@
   },
   "dark": {
    "name": "dark",
-   "kind": "sound",
+   "kind": "mood",
    "description": "Gloomy, ominous or menacing atmosphere."
   },
   "uplifting": {
    "name": "uplifting",
-   "kind": "sound",
+   "kind": "mood",
    "description": "Euphoric, emotional lifting melodies and big breakdowns."
   },
   "minimal": {
