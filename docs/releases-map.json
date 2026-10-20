@@ -3,5 +3,17 @@
   "title part popovers": "task-0062",
   "wheel volume": "task-0063",
   "listening statistics": "task-0056",
-  "hardcore is a modifier": null
+  "exclude": [
+    "remov(e|al|als) .*genre",
+    "genres? (of|for|on|off) ",
+    "fix the genres",
+    "wrong genres",
+    "removal list",
+    "approved removals",
+    "add(ed)? .* genre to",
+    "^genre data:",
+    "^.* removal$",
+    "reviewed extra",
+    "vocabulary rows"
+  ]
 }

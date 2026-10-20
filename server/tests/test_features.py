@@ -239,3 +239,39 @@ def test_route_cache_follows_task_files(served):
     client.get("/features/data")
     (repo / "docs" / "tasks" / "task-0009.md").write_text("---\ntask_id: task-0009\ntitle: Fresh\nstatus: in progress\n---\n", encoding="utf-8")
     assert [p["id"] for p in client.get("/features/data").json()["planned"]] == ["task-0009", "task-0001"]
+
+
+def test_data_scope_and_removal_subjects_are_skipped():
+    for s in ("fix(data): remove dub from Gogol Bordello - Immigraniada", "feat(data): approved removals applied", "feat(genres): remove epic as a genre",
+              "fix: Fix the genres of After Dark", "fix: Remove five more wrong genres", "feat: add rock genre to Song X", "feat: Genre data: lots"):
+        assert gf.clean_subject(s) is None, s
+
+
+def test_combined_subject_is_split_on_semicolons_and_filtered():
+    s = "feat(genres): hardcore is a modifier and the node is hardcore techno; Ace of Base removal; remaster stays plain text"
+    assert gf.clean_subject(s) == "Hardcore is a modifier and the node is hardcore techno; remaster stays plain text"
+    assert gf.clean_subject("feat: Ace of Base removal; wrong genres fixed") is None
+
+
+def test_clause_without_a_data_word_is_kept():
+    assert gf.clean_subject("feat(web): removal of a song from the queue is undoable") == "Removal of a song from the queue is undoable"
+
+
+def test_release_with_only_data_edits_is_omitted():
+    commits = [commit("a", 19, "fix(data): remove dub from X"), commit("b", 19, "feat: remove epic as a genre")]
+    assert gf.by_day(commits, {}, {}) == []
+
+
+def test_exclude_patterns_come_from_the_map_file():
+    assert gf.clean_subject("feat: shiny new widget", ["shiny"]) is None
+    assert gf.clean_subject("fix: remove genre of song", ["shiny"]) == "Remove genre of song"
+    out = gf.by_day([commit("a", 19, "feat: shiny new widget"), commit("b", 19, "feat: other thing")], {}, {"exclude": ["shiny"]})
+    assert [i["text"] for i in out[0]["items"]] == ["Other thing"]
+
+
+def test_reviewed_extra_subject_is_excluded():
+    assert gf.clean_subject("feat: Add Soviet Wave as a reviewed extra under synthwave") is None
+
+
+def test_vocabulary_rows_subject_is_excluded():
+    assert gf.clean_subject("fix: List spacesynth under synthwave in the vocabulary rows, test the served payload") is None

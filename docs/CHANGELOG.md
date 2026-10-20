@@ -4,7 +4,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## 2026-10-20 (Features screen: releases and planned, built, not deployed)
 
-- Web and server: the Features page (Help menu) has two tabs, Releases (one block per deploy, newest on top, short hash, date, feature sentences with links to the task files) and Planned (tasks `to do` or `in progress`), fed by the public `GET /features/data`, which the server builds from its own git checkout and `docs/tasks`; the service records each start on a new HEAD as a deploy, so no deploy step or file write is needed (WEB-134 to WEB-138, API-187, [task-0068](tasks/task-0068.md)). History before the first recorded deploy is backfilled one release per day (`docs/releases-map.json` fixes task links).
+- Web and server: the Features page (Help menu) has two tabs, Releases (one block per deploy, newest on top, short hash, date, feature sentences with links to the task files) and Planned (tasks `to do` or `in progress`), fed by the public `GET /features/data`, which the server builds from its own git checkout and `docs/tasks`; the service records each start on a new HEAD as a deploy, so no deploy step or file write is needed (WEB-134 to WEB-138, API-187, [task-0068](tasks/task-0068.md)). Library data edits (genre removals and fixes, scope `data`) are left out of the releases. History before the first recorded deploy is backfilled one release per day (`docs/releases-map.json` fixes task links).
 
 ## 2026-10-20 (Now playing queue follows the current song, not deployed)
 

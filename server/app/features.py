@@ -16,7 +16,12 @@ from . import buildinfo
 KEEP_TYPES = {"feat", "fix", "perf"}
 MAX_ITEMS = 12
 MAX_TEXT = 110
-SUBJECT = re.compile(r"^(\w+)(?:\([^)]*\))?!?:\s*(.+)$")
+SUBJECT = re.compile(r"^(\w+)(?:\(([^)]*)\))?!?:\s*(.+)$")
+SKIP_SCOPES = {"data"}
+EXCLUDE = (
+    r"remov(e|al|als) .*genre", r"genres? (of|for|on|off) ", r"fix the genres", r"wrong genres", r"removal list", r"approved removals",
+    r"add(ed)? .* genre to", r"^genre data:", r"^.* removal$", r"reviewed extra", r"vocabulary rows",
+)
 TASK_REF = re.compile(r"\btask-(\d{4})\b")
 TASK_FILE = re.compile(r"^docs/tasks/(task-\d{4})\.md$")
 PLANNED = {"to do", "in progress"}
@@ -59,14 +64,19 @@ def read_log(repo: Path, rev: str) -> list[dict[str, Any]]:
     return parse_log(git(repo, "log", "--topo-order", f"--format={fmt}", "--name-only", rev))
 
 
-def clean_subject(subject: str) -> str | None:
-    """Feature sentence of a feat, fix or perf subject; None for anything else."""
+def clean_subject(subject: str, exclude: tuple[str, ...] | list[str] | None = None) -> str | None:
+    """Feature sentence of a feat, fix or perf subject; None for anything else, for data scope and for library data edits.
+
+    A subject that joins clauses with ';' keeps the clauses that are not data edits.
+    """
     if subject.startswith(("Merge", "Revert")):
         return None
     m = SUBJECT.match(subject.strip())
-    if not m or m.group(1).lower() not in KEEP_TYPES:
+    if not m or m.group(1).lower() not in KEEP_TYPES or (m.group(2) or "").strip().lower() in SKIP_SCOPES:
         return None
-    text = m.group(2).strip()
+    patterns = [re.compile(p, re.I) for p in (EXCLUDE if exclude is None else exclude)]
+    clauses = [c.strip() for c in m.group(3).split(";")]
+    text = "; ".join(c for c in clauses if c and not any(p.search(c) for p in patterns))
     if not text:
         return None
     text = text[0].upper() + text[1:]
@@ -88,6 +98,8 @@ def task_of(commit: dict[str, Any], tasks: dict[str, dict[str, Any]], release_fi
             return tid
     subject = commit["subject"].lower()
     for key, tid in rmap.items():
+        if key == "exclude":
+            continue
         if commit["sha"].startswith(key) or key.lower() in subject:
             return tid or None
     sw = words(commit["subject"])
@@ -113,7 +125,7 @@ def make_release(commits: list[dict[str, Any]], tasks: dict[str, Any], rmap: dic
     items: list[dict[str, Any]] = []
     seen: set[str] = set()
     for c in ordered:
-        text = clean_subject(c["subject"])
+        text = clean_subject(c["subject"], rmap.get("exclude"))
         if not text or text in seen:
             continue
         seen.add(text)
