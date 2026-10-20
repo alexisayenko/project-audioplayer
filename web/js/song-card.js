@@ -17,6 +17,9 @@ import { serviceIcons } from './service-icons.js';
 import { storedLinkStates } from './song-links.js';
 import { toggleQueue, playNextInQueue } from './queue-toggle.js';
 import { openShareDialog, copyText } from './share-ui.js';
+import { lineParts, partInfo } from './part-info.js';
+import { togglePartPopover, closePartPopover, initPartPopovers } from './part-popover.js';
+import { prefs } from './library-data.js';
 
 export function cardTags(tags) {
   const counts = visibleTags(tags).map((tag) => ({ tag, count: 1 }));
@@ -46,7 +49,29 @@ export function cardModel(song) {
   };
 }
 
-function fullRow(line) {
+function filterByArtist(name) {
+  prefs.query = name;
+  prefs.sel.clear();
+  document.getElementById('song-card')?.close();
+  if (/^#?\/?(library)?$/.test(location.hash)) window.dispatchEvent(new Event('hashchange'));
+  else location.hash = '#/library';
+}
+
+function partNodes(song, line) {
+  const parts = lineParts(song);
+  if (parts.map((p) => p.text).join('') !== line) return [line];
+  return parts.map((p) => {
+    if (p.kind === 'text') return document.createTextNode(p.text);
+    const btn = el('button', { type: 'button', class: `tp-part tp-${p.kind}`, 'aria-haspopup': 'dialog', 'aria-expanded': 'false' }, p.text);
+    btn.onclick = () => {
+      const info = partInfo(song, p);
+      togglePartPopover(btn, { ...info, filter: info.filter ? { run: () => filterByArtist(info.filter) } : null });
+    };
+    return btn;
+  });
+}
+
+function fullRow(line, song) {
   const copy = el('button', { type: 'button', class: 'icon round card-copy', title: 'Copy title', 'aria-label': 'Copy title' }, icon('copy', 'nav'));
   const note = el('span', { class: 'card-copy-note muted t-caption', role: 'status', 'aria-live': 'polite' });
   let timer = 0;
@@ -60,13 +85,13 @@ function fullRow(line) {
       copy.replaceChildren(icon('copy', 'nav'));
     }, 1800);
   };
-  return el('div', { class: 'card-full-row' }, el('p', { class: 'card-full muted t-subhead' }, line, copy), note);
+  return el('div', { class: 'card-full-row' }, el('p', { class: 'card-full muted t-subhead' }, ...partNodes(song, line), copy), note);
 }
 
 function headBlock(song, m) {
   const title = el('h2', { id: 'song-card-title', class: 't-title' }, titleNodes(song));
   const sub = m.sub ? el('p', { class: 'card-sub t-subhead' }, m.sub) : null;
-  const full = m.full ? fullRow(m.full) : null;
+  const full = m.full ? fullRow(m.full, song) : null;
   if (!song.cover) return [el('div', { class: 'card-head' }, title, sub, full)];
   const img = el('img', { class: 'cover card-cover', alt: '', src: api.coverUrl(song.id, song.cover_v) });
   const art = el('div', { class: 'card-art' }, img, el('div', { class: 'cover-text' }, title, sub));
@@ -142,6 +167,7 @@ function detailsBlock(m) {
 }
 
 function paint(dlg, song, close, m) {
+  closePartPopover();
   const [art, head] = headBlock(song, m);
   const rest = m.groups.filter((g) => !SIDE_KEYS.has(g.key));
   const closeBtn = el('button', { type: 'button', class: 'card-close', title: 'Close', 'aria-label': 'Close', onclick: close }, icon('clear', 'nav'));
@@ -194,9 +220,11 @@ export function openSongCard(song, opener = null) {
     repaint(dlg, fresh, close);
   };
   const unsubs = [store.subscribe(() => render(true)), player.onChange(render), autodl.onChange(render)];
+  initPartPopovers();
   dlg.onclick = (e) => { if (e.target === dlg) close(); };
   dlg.addEventListener('close', () => {
     live = false;
+    closePartPopover();
     for (const u of unsubs) u();
     dlg.replaceChildren();
     focusRow(id, opener);

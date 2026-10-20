@@ -1,6 +1,6 @@
 import { fitTransform, recenterOnResize, hitNode, isDragMove } from './genre-view.js';
 import { highlightSets, selectLabels } from './genre-radial.js';
-import { FAMILY_PALETTE_SIZE } from './genre-data.js';
+import { FAMILY_PALETTE_SIZE, arrowHead } from './genre-data.js';
 import { fillDisc } from './genre-disc.js';
 import { shadeTable } from './genre-shade.js';
 
@@ -105,6 +105,11 @@ export function createRadialView(canvas, { onSelect, onHover, reducedMotion = fa
       if (e.dotted && !on) ctx.globalAlpha = alpha * 0.7;
       ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
       ctx.setLineDash([]);
+      const h = e.dotted ? null : arrowHead(a.x, a.y, a.r, b.x, b.y, b.r, k);
+      if (h) {
+        ctx.fillStyle = ctx.strokeStyle;
+        ctx.beginPath(); ctx.moveTo(h.tx, h.ty); ctx.lineTo(h.ax, h.ay); ctx.lineTo(h.bx, h.by); ctx.closePath(); ctx.fill();
+      }
     }
   }
 

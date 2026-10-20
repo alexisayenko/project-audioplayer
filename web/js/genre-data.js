@@ -23,6 +23,29 @@ export const familyIndex = (family) => {
 
 export const HIDDEN_FAMILY_NODES = ['Electronic'];
 
+export const ARROW_BASE_PX = 7;
+export const ARROW_MIN_PX = 5;
+export const ARROW_MAX_PX = 10;
+export const ARROW_MIN_K = 0.35;
+export const ARROW_HALF_WIDTH = 0.45;
+
+export function arrowHead(px, py, pr, cx, cy, cr, k) {
+  if (!(k >= ARROW_MIN_K)) return null;
+  const dx = cx - px;
+  const dy = cy - py;
+  const len = Math.hypot(dx, dy);
+  const size = Math.min(ARROW_MAX_PX, Math.max(ARROW_MIN_PX, ARROW_BASE_PX * k)) / k;
+  if (len === 0 || len < size + pr + cr) return null;
+  const ux = dx / len;
+  const uy = dy / len;
+  const tx = cx - ux * cr;
+  const ty = cy - uy * cr;
+  const bx = tx - ux * size;
+  const by = ty - uy * size;
+  const w = size * ARROW_HALF_WIDTH;
+  return { tx, ty, angle: Math.atan2(dy, dx), size, ax: bx - uy * w, ay: by + ux * w, bx: bx + uy * w, by: by - ux * w };
+}
+
 export const isHiddenFamily = (name) => HIDDEN_FAMILY_NODES.includes(name);
 
 export const pieIndices = (names) => {

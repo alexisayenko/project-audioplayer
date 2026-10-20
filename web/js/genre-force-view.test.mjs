@@ -4,10 +4,12 @@ import { buildTree, applyCounts } from './genre-levels.js';
 import { buildMapGraph } from './genre-map-graph.js';
 import { VOCAB, SONGS } from './genre-levels-fixture.mjs';
 import { realVocab } from './genre-real-vocab.mjs';
+import { ARROW_MIN_K } from './genre-data.js';
 
 let frames = [];
 let clock = 0;
 let fills = [];
+let arrowFills = [];
 let texts = [];
 globalThis.window = { devicePixelRatio: 1, addEventListener() {}, removeEventListener() {} };
 globalThis.getComputedStyle = () => ({ getPropertyValue: () => '#123456', fontFamily: 'sans-serif' });
@@ -20,7 +22,9 @@ function makeCanvas({ noContext = false } = {}) {
   const state = {};
   const ctx = new Proxy(state, {
     get: (t, k) => {
-      if (k === 'fill') return () => fills.push({ alpha: t.globalAlpha, style: t.fillStyle });
+      if (k === 'beginPath') return () => { t.lines = 0; };
+      if (k === 'lineTo') return () => { t.lines = (t.lines || 0) + 1; };
+      if (k === 'fill') return () => (t.lines ? arrowFills : fills).push({ alpha: t.globalAlpha, style: t.fillStyle, lines: t.lines || 0 });
       if (k === 'fillText') return (s, x, y) => texts.push({ s, x, y });
       if (k === 'measureText') return () => ({ width: 30 });
       if (k in t) return t[k];
@@ -345,4 +349,17 @@ test('with reduced motion the layout is complete at once and nothing animates', 
   for (const n of graph.nodes) assert.ok(Math.hypot(n.x - n.hx, n.y - n.hy) < 4, `${n.id} rests near its layout position`);
   run(3);
   assert.equal(view.stats().ticks, 0);
+});
+
+test('parent lines get an arrowhead at the child end; none below the zoom threshold', () => {
+  const { view, graph } = setup();
+  settle();
+  arrowFills = []; view.zoomBy(1); run(1);
+  const arrows = arrowFills.reduce((n, f) => n + f.lines / 2, 0);
+  const parentLinks = graph.links.filter((l) => l.kind !== 'assoc' && l.kind !== 'related').length;
+  assert.ok(arrows > 0 && arrows <= parentLinks);
+  view.zoomBy(0.05); settle(); run(2);
+  arrowFills = []; view.zoomBy(1); run(1);
+  assert.ok(ARROW_MIN_K > 0.05);
+  assert.equal(arrowFills.length, 0);
 });

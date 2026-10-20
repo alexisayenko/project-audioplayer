@@ -14,6 +14,7 @@ import { paintCover, currentCoverModel, paintQueueCovers } from './row-cover.js'
 import { $, setIcon, setToggle, setCover, queueRow, updateDl, paintTimes, initMiniCompact } from './player-ui.js';
 import { updateMediaSession, setupMediaSession, updatePositionState, setVolume, storedVolume } from './player-media.js';
 import { canSetVolume } from './volume-logic.js';
+import { attachDockWheel } from './dock-wheel.js';
 import { titleLine, tooltipLine, artistLine, subtitle, titleNodes } from './credits.js';
 import { marquee, disposeAll } from './marquee.js';
 import { can } from './guest.js';
@@ -573,6 +574,7 @@ export function initPlayer() {
   document.body.classList.toggle('vol-readonly', !volumeOk);
   setVolume(audio, storedVolume(), false);
   $('mini-volume').addEventListener('input', (e) => player.setVolume(e.target.value / 100));
+  attachDockWheel($('mini'), { player, note: $('mini-vol-note'), pct: $('mini-vol-pct'), sr: $('mini-vol-sr') });
 
   for (const id of ['mini-cover', 'player-cover']) {
     $(id).addEventListener('error', () => { $(id).removeAttribute('src'); $(id).dataset.src = ''; });

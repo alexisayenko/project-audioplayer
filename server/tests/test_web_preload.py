@@ -10,7 +10,7 @@ from app.web import dynamic_imports, lazy_modules, module_closure, static_import
 
 REAL_WEB = Path(__file__).resolve().parents[2] / "web"
 LAZY = [
-    "settings", "genres", "genres-rework", "playlists", "stats", "theory", "viz-ui", "song-card", "add", "edit-dialog", "song-form", "drafts",
+    "settings", "genres", "genres-rework", "playlists", "stats", "theory", "about", "features", "viz-ui", "song-card", "add", "edit-dialog", "song-form", "drafts",
     "share-ui", "share-open", "player-tag-picker", "player-actions", "library-toolbar", "viz-modes", "viz-terrain-gl",
 ]
 ORPHANS = {"js/display-title.js", "js/track-sub.js", "js/viz-deltae.js", "js/viz-timeline-worker.js"}

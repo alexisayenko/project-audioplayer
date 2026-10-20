@@ -48,6 +48,21 @@ test('other routes are refused while signed out', () => {
   assert.equal(location.hash, '#/settings');
 });
 
+test('WEB-131: the Help pages open while signed out; the other pages are still refused', async () => {
+  for (const r of ['theory', 'about', 'features']) {
+    location.hash = `#/${r}`;
+    dom.window.dispatch('hashchange');
+    assert.equal(location.hash, `#/${r}`);
+    assert.equal(document.body.dataset.route, r);
+    assert.ok(document.body.classList.contains('signed-out'));
+  }
+  await flush();
+  assert.match(document.getElementById('view').textContent, /Features are coming soon/);
+  location.hash = '#/library';
+  dom.window.dispatch('hashchange');
+  assert.equal(location.hash, '#/settings');
+});
+
 test('server led and sync warning reflect /health', async () => {
   assert.equal(document.getElementById('server-text'), null);
   const status = document.getElementById('server-led').parentElement;

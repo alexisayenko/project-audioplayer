@@ -2,6 +2,22 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-20 (Genres map arrows, built, not deployed)
+
+- Web: parent-to-child lines on the Genres map (Graph and Radial) get an arrowhead at the child end (GEN-081); dotted related lines stay plain; skipped for short lines and at low zoom.
+
+## 2026-10-20 (Help menu in the sidebar; built, not deployed)
+
+- Web: new expandable "Help" item in the sidebar (WEB-131, task-0061) with Music theory, About and Features; collapsed on every load, shown to everyone including signed-out visitors; inline list in the wide rail, flyout in the icon rail, bottom sheet on the phone tab bar (Help takes Music theory's slot, so the tab bar keeps seven entries). Music theory moved under it; `#/about` and `#/features` are placeholder pages (WEB-132, WEB-133); About and Features are tier-2 lazy routes. Not deployed.
+
+## 2026-10-20 (Dock: mouse wheel sets the volume, built, not deployed)
+
+- Web: the mouse wheel over the mini-player dock changes the volume (PLY-150, task-0063): 5 points per notch, Shift 1 point, accumulated for touchpads, clamped 0..100, unmutes on a raise, with an inline "62%" note for about 1 s; Ctrl+wheel and a hidden dock are left alone. Not deployed.
+
+## 2026-10-20 (song card title line parts, built, not deployed)
+
+- Web: in the song card the artists, the title and the version in the `Artist - Title (Version)` line are buttons that open a small info popover on click or tap (underlined on hover and focus; Escape, outside click or another part closes it): artist (Country, Genres, Years of activity, filter link; stub data for now, LIB-188), title and version (Year of release, Albums, Genres of the song) ([task-0062](tasks/task-0062.md), LIB-185 to LIB-189).
+
 ## 2026-10-20 (Genres graph: wider rings, steadier selection)
 
 - Web: Genres graph and Radial: a genre with several families (disco, euro disco, eurodance) is painted with the plain family colours in every wedge (Funk / Soul orange, Electronic teal, Pop pink) instead of the Electronic wedge taking the subfamily shade, which turned purple for the Eurodance & disco subfamily (`fillDisc` shades single-family discs only); dragging a child never moves its parent (`PARENT_REACTION` = 0). WEB-114, GEN-075, WEB-125. Deployed.

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   indexGraph, flatGraph, descendantIds, filterTags, localCounts, searchNodes, outlineRows, pathKeys,
-  loadExpanded, saveExpanded, nodeRadius, familyIndex, FAMILIES, FAMILY_PALETTE_SIZE, isCategoryNode, familyOrder, FAMILY_ORDER,
+  loadExpanded, saveExpanded, nodeRadius, familyIndex, arrowHead, ARROW_MIN_K, ARROW_MAX_PX, ARROW_MIN_PX, FAMILIES, FAMILY_PALETTE_SIZE, isCategoryNode, familyOrder, FAMILY_ORDER,
 } from './genre-data.js';
 
 const node = (id, label, family, parents = [], count = 0, tags = [id]) => ({ id, label, qid: null, family, count, ownCount: 0, parents, tags });
@@ -190,4 +190,24 @@ test('families are ordered as the Discogs genres with Other last, colours keep t
   assert.deepEqual(FAMILIES.slice(0, 11).map(familyIndex), [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
   assert.equal(familyIndex('Other'), 15);
   assert.equal(FAMILY_PALETTE_SIZE, 16);
+});
+
+test('arrowHead: tip on the child circle edge, points parent to child, size clamped in screen px', () => {
+  const a = arrowHead(0, 0, 5, 100, 0, 10, 1);
+  assert.ok(Math.abs(a.tx - 90) < 1e-9 && Math.abs(a.ty) < 1e-9 && a.angle === 0);
+  assert.ok(a.ax < a.tx && a.bx < a.tx && Math.abs(a.ay + a.by) < 1e-9 && a.ay !== a.by);
+  assert.equal(a.size * 1, 7);
+  const big = arrowHead(0, 0, 5, 0, 1000, 10, 4);
+  assert.ok(Math.abs(big.size * 4 - ARROW_MAX_PX) < 1e-9 && Math.abs(big.ty - 990) < 1e-9);
+  const small = arrowHead(0, 0, 5, 0, 1000, 10, 0.4);
+  assert.ok(Math.abs(small.size * 0.4 - ARROW_MIN_PX) < 1e-9);
+  assert.ok(Math.abs(arrowHead(0, 0, 1, -30, 40, 2, 1).angle - Math.atan2(40, -30)) < 1e-9);
+});
+
+test('arrowHead: skipped for short edges, coincident circles and low zoom', () => {
+  assert.equal(arrowHead(0, 0, 5, 20, 0, 10, 1), null);
+  assert.ok(arrowHead(0, 0, 5, 23, 0, 10, 1));
+  assert.equal(arrowHead(3, 3, 0, 3, 3, 0, 1), null);
+  assert.equal(arrowHead(0, 0, 5, 500, 0, 10, ARROW_MIN_K - 0.01), null);
+  assert.ok(arrowHead(0, 0, 5, 500, 0, 10, ARROW_MIN_K));
 });

@@ -15,6 +15,7 @@ import { loadCollapsed, saveCollapsed } from './sidebar-state.js';
 import { SYNC_POLL_MS } from './constants.js';
 import { describeSync } from './sync-status.js';
 import { describeBuild } from './build-info.js';
+import { initHelpNav, isHelpRoute } from './nav-help.js';
 
 const player = document.getElementById('player');
 const renderPlayback = () => { player.hidden = false; return () => { player.hidden = true; }; };
@@ -26,6 +27,8 @@ const routes = {
   'genres-classic': lazyRoute(() => import('./genres.js'), 'renderGenres'),
   stats: lazyRoute(() => import('./stats.js'), 'renderStats'),
   theory: lazyRoute(() => import('./theory.js'), 'renderTheory'),
+  about: lazyRoute(() => import('./about.js'), 'renderAbout'),
+  features: lazyRoute(() => import('./features.js'), 'renderFeatures'),
   settings: lazyRoute(() => import('./settings.js'), 'renderSettings'),
 };
 const view = document.getElementById('view');
@@ -58,7 +61,7 @@ function route() {
     history.replaceState(null, '', '#/genres');
   }
   if (!routes[name]) name = 'library';
-  if (!isSignedIn() && !isGuest() && name !== 'settings') {
+  if (!isSignedIn() && !isGuest() && name !== 'settings' && !isHelpRoute(name)) {
     location.hash = '#/settings';
     return;
   }
@@ -74,6 +77,7 @@ function route() {
     a.classList.toggle('active', on);
     if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
   }
+  help?.sync(name);
   window.scrollTo(0, 0);
   if (wantsAdd) void openAdd();
   if (shared) void openSharedLink(shared);
@@ -82,9 +86,11 @@ function route() {
 initPlayer();
 const viz = lazyVisualizer({ player: playerApi });
 initShare();
+const help = initHelpNav();
 const sideToggle = document.getElementById('side-toggle');
 function setCollapsed(collapsed) {
   document.body.classList.toggle('side-collapsed', collapsed);
+  help?.refresh();
   const label = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
   sideToggle.setAttribute('aria-expanded', String(!collapsed));
   sideToggle.setAttribute('aria-label', label);

@@ -33,7 +33,14 @@
     <a href="#/playlists" data-route="playlists" title="Playlists"><span data-icon="playlist" aria-hidden="true"></span><span class="nav-label">Playlists</span></a>
     <a href="#/genres" data-route="genres" title="Genres map"><span data-icon="genresMap" aria-hidden="true"></span><span class="nav-label">Genres map</span></a>
     <a href="#/stats" data-route="stats" title="Song stats"><span data-icon="stats" aria-hidden="true"></span><span class="nav-label">Song stats</span></a>
-    <a href="#/theory" data-route="theory" title="Music theory"><span data-icon="theory" aria-hidden="true"></span><span class="nav-label">Music theory</span></a>
+    <div class="nav-group" id="nav-help">
+      <button type="button" class="nav-parent" id="help-toggle" aria-expanded="false" aria-controls="help-sub" title="Help"><span data-icon="help" aria-hidden="true"></span><span class="nav-label">Help</span><span class="nav-chev" aria-hidden="true"><span data-icon="chevron"></span></span></button>
+      <ul class="nav-sub" id="help-sub" hidden>
+        <li><a class="help-link" href="#/theory" data-route="theory" title="Music theory"><span data-icon="theory" aria-hidden="true"></span><span class="nav-label">Music theory</span></a></li>
+        <li><a class="help-link" href="#/about" data-route="about" title="About"><span data-icon="info" aria-hidden="true"></span><span class="nav-label">About</span></a></li>
+        <li><a class="help-link" href="#/features" data-route="features" title="Features"><span data-icon="features" aria-hidden="true"></span><span class="nav-label">Features</span></a></li>
+      </ul>
+    </div>
     <a href="#/settings" data-route="settings" title="Settings"><span data-icon="settings" aria-hidden="true"></span><span class="nav-label">Settings</span></a>
   </nav>
   <output class="server t-caption"><span class="led" id="server-led"></span></output>
@@ -112,12 +119,14 @@
     <div id="mini-scrub" class="scrubber mini-progress" role="slider" tabindex="-1" aria-label="Seek" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0" aria-valuetext="0:00 of 0:00" aria-disabled="true"><span class="scrub-rail"><span class="scrub-fill"></span></span><span class="scrub-thumb"></span><span class="scrub-bubble" aria-hidden="true">0:00</span></div> <!-- NOSONAR custom scrubber div: native input cannot render the rail and fill design -->
     <input type="range" id="mini-volume" class="slider" min="0" max="100" value="100" step="1" aria-label="Volume">
   </div>
+  <span id="mini-vol-note" class="vol-note t-time" role="status" aria-live="polite"><span id="mini-vol-pct" aria-hidden="true"></span><span class="vol-sr" id="mini-vol-sr"></span></span>
 </section>
 
 <dialog id="add-dialog" aria-label="Add from YouTube or SoundCloud"></dialog>
 <dialog id="edit-dialog"></dialog>
 <dialog id="song-card" class="sheet card-dlg" aria-labelledby="song-card-title"></dialog>
 <dialog id="filter-sheet" class="sheet" aria-labelledby="sheet-title"></dialog>
+<dialog id="help-sheet" class="sheet" aria-labelledby="help-sheet-title"></dialog>
 <output id="toast" class="toast t-subhead" hidden></output>
 <div id="viz-full" class="viz-full" role="dialog" aria-label="Visualizer" aria-describedby="viz-exit-hint" tabindex="-1" hidden> <!-- NOSONAR fullscreen overlay needs custom focus and Escape handling, not a modal dialog element -->
   <span class="viz-sr" id="viz-exit-hint">Press Escape or use the Exit button to leave. Click the picture to pause or play.</span>

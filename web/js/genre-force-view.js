@@ -2,7 +2,7 @@ import { createSim } from './genre-sim.js';
 import { fitTransform, recenterOnResize, placeLabels, isDragMove } from './genre-view.js';
 import { createHash } from './genre-spatial.js';
 import { createCrossingLayout } from './genre-layout.js';
-import { FAMILY_PALETTE_SIZE } from './genre-data.js';
+import { FAMILY_PALETTE_SIZE, arrowHead } from './genre-data.js';
 import { fillDisc } from './genre-disc.js';
 import { shadeTable } from './genre-shade.js';
 
@@ -315,6 +315,18 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
     ctx.stroke();
   }
 
+  function arrowLinks(list, k, alpha, color) {
+    let any = false;
+    for (const l of list) {
+      if (l.related) continue;
+      const a = arrowHead(l.s.x, l.s.y, l.s.r, l.t.x, l.t.y, l.t.r * (0.4 + 0.6 * l.t.vis), k);
+      if (!a) continue;
+      if (!any) { ctx.globalAlpha = alpha; ctx.fillStyle = color; ctx.beginPath(); any = true; }
+      ctx.moveTo(a.tx, a.ty); ctx.lineTo(a.ax, a.ay); ctx.lineTo(a.bx, a.by); ctx.closePath();
+    }
+    if (any) ctx.fill();
+  }
+
   function drawLinks(k) {
     const plain = [];
     const lit = [];
@@ -339,6 +351,10 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
     for (const [d, list] of litFar) strokeLinks(list, k, Math.max(0.45, 0.95 - FADE_STEP * (d - 1)), colors.accent, 1.8);
     strokeLinks(litDotted, k, 0.95, colors.accent, 1.2, true);
     ctx.setLineDash([]);
+    arrowLinks(plain, k, base, colors.edge);
+    for (const l of fading) if (!l.assoc) arrowLinks([l], k, 0.3 * Math.min(l.s.vis, l.t.vis), colors.edge);
+    arrowLinks(lit, k, 0.95, colors.accent);
+    for (const [d, list] of litFar) arrowLinks(list, k, Math.max(0.45, 0.95 - FADE_STEP * (d - 1)), colors.accent);
   }
 
   function ring(n, extra, w, color, k) {

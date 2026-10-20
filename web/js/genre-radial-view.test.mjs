@@ -98,8 +98,10 @@ test('labels never use leader lines: only edges are stroked as lines, none for l
   const run = (f = 1) => { drawCalls = {}; while (frames.length) frames.splice(0).forEach((fn) => fn()); drawCalls = {}; view.zoomBy(f); frames.splice(0).forEach((f) => f()); return drawCalls; };
   pan();
   const c = run();
-  assert.equal((c.lineTo || []).length, layout.edges.length);
-  assert.equal((c.moveTo || []).length, layout.edges.length);
+  const arrows = (c.closePath || []).length;
+  assert.ok(arrows > 0 && arrows <= layout.edges.filter((e) => !e.dotted).length);
+  assert.equal((c.lineTo || []).length, layout.edges.length + 2 * arrows);
+  assert.equal((c.moveTo || []).length, layout.edges.length + arrows);
   const texts = (c.fillText || []).map(([t, x, y]) => ({ t, x, y }));
   assert.ok(texts.length > 0);
   const boxes = texts.map((p) => ({ x: p.x - 15, y: p.y, w: 30, h: 14 }));
