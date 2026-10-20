@@ -4,6 +4,9 @@ import { serviceIcon, LABELS } from './service-icons.js';
 import { artistLine, titleNodes } from './credits.js';
 import { openAdd } from './add.js';
 import { draftStore } from './drafts-store.js';
+import { store } from './store.js';
+import { api } from './api.js';
+import { hasPlaylist, runImport, summarizeImport, existingVideoIds } from './drafts-import.js';
 import {
   MAX_LINE, PLACEHOLDER, EMPTY_TEXT, LINK_NOTE, prepare, lineParts, rawLine, isFetchable, canRefresh, titleOf, statusOf, countText, summarize,
 } from './drafts-model.js';
@@ -55,21 +58,62 @@ export function mountDrafts(host) {
   const hint = el('span', { class: 'muted t-caption' }, 'Ctrl+Enter or Cmd+Enter adds too.');
   const form = el('form', { class: 'drafts-paste card' }, box, el('div', { class: 'drafts-foot' }, hint, addBtn));
   const message = el('div', { class: 'drafts-msg', role: 'status' });
+  const progress = el('div', { class: 'drafts-import', role: 'status', hidden: true });
   const bar = el('div', { class: 'drafts-bar' });
   const list = el('ul', { class: 'drafts-list' });
   const group = el('div', { class: 'group' }, list);
   const state = el('div', { class: 'drafts-state' });
-  host.replaceChildren(form, message, bar, group, state);
+  host.replaceChildren(form, message, progress, bar, group, state);
 
   const say = (text, kind = '') => message.replaceChildren(text ? el('p', { class: `msg ${kind}`.trim() }, text) : '');
 
+  let importing = false;
+
+  function paintProgress(p, cancel) {
+    const text = p.phase === 'reading' ? 'Reading the playlist...' : `Adding ${p.done} of ${p.total}...`;
+    const bits = [el('span', { class: 't-subhead' }, text)];
+    if (p.phase === 'adding' && p.total) bits.push(el('progress', { max: p.total, value: p.done, 'aria-label': text }));
+    bits.push(el('button', { class: 'btn outline small', type: 'button', disabled: cancel.aborted, onclick: () => { cancel.aborted = true; paintProgress(p, cancel); } }, cancel.aborted ? 'Stopping...' : 'Cancel'));
+    progress.replaceChildren(...bits);
+    progress.hidden = false;
+  }
+
+  async function importLists(prep) {
+    const cancel = { aborted: false };
+    importing = true;
+    say('');
+    paintProgress({ phase: 'reading', done: 0, total: 0 }, cancel);
+    let r;
+    try {
+      r = await runImport({
+        lines: prep.lines,
+        fetchPlaylist: (url) => api.youtubePlaylist(url),
+        addLines: (part) => draftStore.paste(part),
+        ids: existingVideoIds({ drafts: draftStore.visible, songs: store.songs }),
+        onProgress: (p) => paintProgress(p, cancel),
+        isCancelled: () => cancel.aborted,
+      });
+    } finally {
+      importing = false;
+      progress.hidden = true;
+      progress.replaceChildren();
+    }
+    if (!r.cancelled && !r.failed && !r.errors.length) box.value = prep.rest.join('\n');
+    say(summarizeImport(r), r.failed || r.errors.length ? 'error' : r.added ? 'ok' : '');
+  }
+
   async function submit() {
+    if (importing) return;
     const prep = prepare(box.value);
     if (!prep.lines.length) { say(prep.counts.tooLong ? `Every line is over the ${MAX_LINE} character limit.` : 'Paste at least one line first.', 'error'); return; }
     addBtn.disabled = true;
     addBtn.lastChild.textContent = 'Adding...';
-    say('Adding and looking up the links...');
     try {
+      if (hasPlaylist(prep.lines)) {
+        await importLists(prep);
+        return;
+      }
+      say('Adding and looking up the links...');
       const resp = await draftStore.paste(prep.lines);
       box.value = prep.rest.join('\n');
       say(summarize(resp.counts, prep.counts), resp.counts.created || resp.counts.updated ? 'ok' : '');

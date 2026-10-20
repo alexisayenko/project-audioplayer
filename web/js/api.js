@@ -252,6 +252,7 @@ export const api = {
   refreshDraft: (id) => request('POST', `/drafts/${q(id)}/refresh`),
   removeDraft: (id) => request('DELETE', `/drafts/${q(id)}`),
   clearDrafts: () => request('DELETE', '/drafts'),
+  youtubePlaylist: (url) => request('GET', `/youtube/playlist?url=${encodeURIComponent(url)}`),
   postPlays: (batch, keepalive = false) => request('POST', '/plays', batch, undefined, false, keepalive),
   fileUrl: (id) => `/files/${q(id)}`,
   downloadUrl: (id) => `/files/${q(id)}?download=1`,

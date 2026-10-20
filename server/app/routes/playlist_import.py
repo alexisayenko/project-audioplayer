@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from fastapi.concurrency import run_in_threadpool
 
 from .. import deps, extractor, playlist_import, urlclean
@@ -43,3 +43,26 @@ async def playlist_details(req: PlaylistDetailsRequest, user: Annotated[dict[str
     playlist_import.charge_details(user["uid"], user["owner"], len(req.ids))
     songs = await run_in_threadpool(deps.load_songs, user["uid"])
     return await run_in_threadpool(playlist_import.details, req.ids, songs)
+
+
+_UNAVAILABLE_MESSAGE = "This playlist is not available: it is private, needs a login, or is an automatic Mix. Use a public or unlisted playlist."
+
+
+@router.get("/youtube/playlist", responses=deps.responses(400, 422, 429, 502, 504))
+async def youtube_playlist(user: Annotated[dict[str, Any], Depends(deps.require_token)], url: Annotated[str, Query(max_length=2000)] = ""):
+    ref = urlclean.parse_playlist(url) if url.strip().lower().startswith("https://") else None
+    if ref is None:
+        return error_response(400, "bad_url", playlist_import.NOT_A_PLAYLIST)
+    kind, list_id = ref
+    if kind != "playlist":
+        return error_response(422, "playlist_unavailable", _UNAVAILABLE_MESSAGE)
+    playlist_import.charge_listing(user["uid"], user["owner"])
+    try:
+        return await run_in_threadpool(playlist_import.draft_listing, list_id)
+    except Exception as exc:
+        text = str(exc).lower()
+        if extractor.error_code(exc) in _STATUS_BY_CODE:
+            return error_response(422, "playlist_unavailable", _UNAVAILABLE_MESSAGE)
+        if "timed out" in text or "timeout" in text:
+            return error_response(504, "timeout", f"playlist lookup timed out: {short_error(exc)}")
+        return error_response(502, "failed", f"playlist lookup failed: {short_error(exc)}")

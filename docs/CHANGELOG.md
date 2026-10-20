@@ -2,6 +2,14 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-21 (Drafts import of YouTube playlists, web, to deploy)
+
+- Web (task-0080, LIB-200..205): a YouTube playlist link pasted into Drafts is resolved through `GET /youtube/playlist` and its videos are added as drafts in chunks of 10 with "Adding 12 of 87..." progress and Cancel; unavailable videos and ones already in Drafts or the Library are skipped and counted; friendly inline errors. Needs the server route. `web/js/drafts-import.js`, tests written, not run, not seen.
+
+## 2026-10-21 (YouTube playlist resolver for Drafts, server, to deploy)
+
+- Server (task-0080, API-199): `GET /youtube/playlist?url=` lists a public playlist for the Drafts import (max 500, private and deleted skipped, 5 minute cache, shared import limit; Mix, Liked and Watch later answer 422 `playlist_unavailable`). `server/app/routes/playlist_import.py`, `server/tests/test_youtube_playlist.py` (not run). The web flow is separate.
+
 ## 2026-10-21 (listening history, server, to deploy)
 
 - Server (task-0056 phase 1, API-196..198): `POST /plays` (idempotent batches by `batch_key`) and `GET /stats/listening` (listened and skipped per song for today, 7 days, 30 days, all time); the history is a CSV per user in `<music root>/.plays/<uid>/` (`AUDIO_PLAYS_DIR`) outside git, copied once a day into `users/<uid>/play-history.csv` in one commit (`AUDIO_PLAYS_SYNC=0` disables). The directory must be backed up with the audio dataset. `server/app/plays.py`, `server/app/routes/plays.py`, `server/tests/test_plays.py` (not run).

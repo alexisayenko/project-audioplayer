@@ -249,3 +249,49 @@ def _fetch_details(ids: list[str]) -> dict[str, tuple[dict[str, Any] | None, Exc
     halted.set()
     pool.shutdown(wait=False, cancel_futures=True)
     return results
+
+
+DRAFT_MAX_ENTRIES = 500
+DRAFT_CACHE_S = 300.0
+
+
+def draft_listing(list_id: str) -> dict[str, Any]:
+    """Flat video list of a public playlist for the Drafts import: at most DRAFT_MAX_ENTRIES unique, playable videos, with the count of skipped private or deleted ones."""
+    key = f"pl:{list_id}"
+    cached = previewcache.recall(key)
+    if cached is not None and time.monotonic() - cached["at"] <= DRAFT_CACHE_S:
+        return cached["body"]
+    found = extractor.playlist(list_id, DRAFT_MAX_ENTRIES + 1)
+    seen: set[str] = set()
+    entries: list[dict[str, Any]] = []
+    skipped = 0
+    for info in found["entries"]:
+        video_id = str(info.get("id") or "")
+        if not urlclean.VIDEO_ID_RE.fullmatch(video_id) or video_id in seen:
+            continue
+        seen.add(video_id)
+        if unavailable_reason(info):
+            skipped += 1
+            continue
+        duration = info.get("duration")
+        entries.append({
+            "id": video_id,
+            "title": str(info.get("title") or "").strip(),
+            "channel": info.get("channel") or info.get("uploader") or None,
+            "duration": duration if isinstance(duration, (int, float)) and not isinstance(duration, bool) else None,
+            "url": urlclean.watch_url(video_id),
+            "available": True,
+        })
+    truncated = len(entries) > DRAFT_MAX_ENTRIES or found["total"] > DRAFT_MAX_ENTRIES
+    entries = entries[:DRAFT_MAX_ENTRIES]
+    body = {
+        "playlist_id": list_id,
+        "title": found["title"] or None,
+        "channel": found["uploader"] or None,
+        "count": len(entries),
+        "truncated": truncated,
+        "skipped": skipped,
+        "entries": entries,
+    }
+    previewcache.remember(key, {"at": time.monotonic(), "body": body})
+    return body

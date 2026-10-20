@@ -28,12 +28,14 @@ UNKNOWN_SONG = "unknown song"
 CSRF_DETAIL = "missing or foreign CSRF header"
 
 _STATUS_TEXT = {
+    400: "Bad request",
     403: "Forbidden",
     404: "Not found",
     409: "Conflict",
     429: "Guest limit",
     422: "Unprocessable",
     502: "Upstream failure",
+    504: "Upstream timeout",
     503: "Not configured",
 }
 
