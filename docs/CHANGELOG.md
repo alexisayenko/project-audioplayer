@@ -2,6 +2,14 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-20 (Electronic restructure planned, docs only, not deployed)
+
+- Docs: [task-0066](tasks/task-0066.md) plans the Electronic restructure (forms at level 1, Electronic and EDM as groups; owner decision AN1), [genre-electronic-forms.md](tech/genre-electronic-forms.md) holds the proposed placement of the 146 genres, genre-terminology.md and ADR-0038 record the decisions and the remaining open ones; no data or code change.
+
+## 2026-10-20 (hardcore renamed hardcore techno, built, not deployed)
+
+- Data and server: the genre `hardcore` (Electronic, UK hardcore) is renamed `hardcore techno` in the genre data files and as the parent of happy hardcore, hard house, hard trance, hardstyle and the others (owner decision AX1); `hardcore` is a new `sound` modifier (defined, not attached, task-0065); no synonym. `app.migrate_renames` rewrites stored `genre:hardcore` tags to `genre:hardcore techno` once at start for every user (backup `backups-genre-rename/`, marker, idempotent, TAG-110, [deploy.md](tech/deploy.md#genre-rename)); the Discogs style "Hardcore" maps to `hardcore techno`. The Wikipedia lookup no longer suggests a bare `hardcore` (The Prodigy - Voodoo People loses that suggestion).
+
 ## 2026-10-20 (genre model written down, docs only, not deployed)
 
 - Docs: ADR-0038 and a rewritten [genre-terminology.md](tech/genre-terminology.md) record the owner's genre model: genres versus groups (Electronic and EDM are groups), four axes (Form, Medium, Purpose, Tradition) plus personal Mood, modifiers as qualifiers of Form, the place, modifier and ambiguous-name tests, and the open decisions AN to AY; no data or code change.
@@ -17,7 +25,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## 2026-10-20 (epic removed from the genres, not deployed)
 
-- Data: `epic` is a descriptor (a mood), not a genre, and it pulled songs into the Classical family, so it is removed from the vocabulary (Classical 24 genres, 534 in all) and dropped from songs at the next start (`REMOVED_GENRES`); 2 songs in the owner removal list (116 songs, 195 removals after `dub` left Gogol Bordello - Immigraniada; [genre-levels.md](tech/genre-levels.md#epic-removed-owner-2026-10-20)).
+- Data: `epic` is a descriptor (a mood), not a genre, and it pulled songs into the Classical family, so it is removed from the vocabulary (Classical 24 genres, 534 in all) and dropped from songs at the next start (`REMOVED_GENRES`); 2 songs in the owner removal list (117 songs, 197 removals after `dub` left Gogol Bordello - Immigraniada and `soft rock` and `eurodance` left Ace of Base - All That She Wants; [genre-levels.md](tech/genre-levels.md#epic-removed-owner-2026-10-20)).
 
 ## 2026-10-20 (Genres map: Electronic circle shown again, built, not deployed)
 

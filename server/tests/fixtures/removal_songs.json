@@ -6992,6 +6992,69 @@
 "size": 4595373,
 "duration": 284
 }
+},
+{
+"id": "d73tiBBzvFM",
+"title": "All That She Wants",
+"mainArtists": [
+"Ace of Base"
+],
+"featuredArtists": [],
+"releaseYear": 1992,
+"albums": [
+"Happy Nation The Sign"
+],
+"bpm": 96,
+"wikipedia_song": "https://en.wikipedia.org/wiki/All_That_She_Wants",
+"wikipedia_artist": "https://en.wikipedia.org/wiki/Ace_of_Base",
+"wikipedia_album": "https://en.wikipedia.org/wiki/Happy_Nation",
+"musicbrainz_url": "https://musicbrainz.org/recording/30aa4f5e-995b-4f54-9e9e-6aef7ac6ae84",
+"discogs_url": null,
+"spotify_url": null,
+"source_url": "https://www.youtube.com/watch?v=d73tiBBzvFM",
+"sources": [
+{
+"platform": "youtube",
+"url": "https://www.youtube.com/watch?v=d73tiBBzvFM",
+"source": "youtube",
+"id": "d73tiBBzvFM"
+}
+],
+"cover": "covers/d73tiBBzvFM.jpg",
+"duration": 214,
+"added_at": "2026-10-18T01:38:12Z",
+"tags": [
+"genre:dance pop",
+"genre:reggae-pop",
+"genre:synthpop",
+"genre:europop",
+"genre:pop",
+"genre:eurodance",
+"genre:soft rock",
+"decade:90s",
+"country:se"
+],
+"updated_at": "2026-10-18T11:37:48Z",
+"artist": "Ace of Base",
+"remixer": null,
+"year": 1992,
+"remix_year": null,
+"album": "Happy Nation The Sign",
+"genres": [
+"dance pop",
+"reggae-pop",
+"synthpop",
+"europop",
+"pop",
+"eurodance",
+"soft rock"
+],
+"audio_state": "server",
+"audio": {
+"format": "m4a",
+"size": 3453790,
+"duration": 214
+}
 }
 ]
 }

@@ -98,6 +98,11 @@
    "kind": "sound",
    "name": "hard"
   },
+  "hardcore": {
+   "description": "The hard, fast, aggressive variant of a style: hardcore punk, hardcore techno, hardcore hip hop.",
+   "kind": "sound",
+   "name": "hardcore"
+  },
   "melodic": {
    "description": "Lead melody and chord progressions carry the track.",
    "kind": "sound",
@@ -1316,7 +1321,7 @@
    "level": 3,
    "modifiers": [],
    "parents": [
-    "hardcore"
+    "hardcore techno"
    ],
    "provisional": false,
    "related": [
@@ -2712,7 +2717,7 @@
    "level": 3,
    "modifiers": [],
    "parents": [
-    "hardcore",
+    "hardcore techno",
     "house"
    ],
    "provisional": false,
@@ -2766,7 +2771,7 @@
    "level": 3,
    "modifiers": [],
    "parents": [
-    "hardcore"
+    "hardcore techno"
    ],
    "provisional": false,
    "status": null,
@@ -3939,7 +3944,7 @@
    "level": 3,
    "modifiers": [],
    "parents": [
-    "hardcore"
+    "hardcore techno"
    ],
    "provisional": false,
    "status": null,
@@ -4517,7 +4522,7 @@
    "level": 3,
    "modifiers": [],
    "parents": [
-    "hardcore"
+    "hardcore techno"
    ],
    "provisional": false,
    "status": null,
@@ -4553,7 +4558,7 @@
    "modifiers": [],
    "parents": [
     "house",
-    "hardcore"
+    "hardcore techno"
    ],
    "provisional": false,
    "status": null,
@@ -4607,32 +4612,11 @@
    "modifiers": [],
    "parents": [
     "trance",
-    "hardcore"
+    "hardcore techno"
    ],
    "provisional": false,
    "status": null,
    "subfamily": "Trance",
-   "synonyms": []
-  },
-  "hardcore": {
-   "discogs": true,
-   "display": null,
-   "families": [
-    "Electronic"
-   ],
-   "family": "Electronic",
-   "flavours": [],
-   "level": 2,
-   "modifiers": [],
-   "parents": [
-    "Electronic"
-   ],
-   "provisional": false,
-   "related": [
-    "Rock"
-   ],
-   "status": null,
-   "subfamily": "Techno",
    "synonyms": []
   },
   "hardcore hip hop": {
@@ -4669,6 +4653,27 @@
    "status": "approved",
    "synonyms": []
   },
+  "hardcore techno": {
+   "discogs": true,
+   "display": null,
+   "families": [
+    "Electronic"
+   ],
+   "family": "Electronic",
+   "flavours": [],
+   "level": 2,
+   "modifiers": [],
+   "parents": [
+    "Electronic"
+   ],
+   "provisional": false,
+   "related": [
+    "Rock"
+   ],
+   "status": null,
+   "subfamily": "Techno",
+   "synonyms": []
+  },
   "hardstyle": {
    "discogs": true,
    "display": null,
@@ -4680,7 +4685,7 @@
    "level": 3,
    "modifiers": [],
    "parents": [
-    "hardcore",
+    "hardcore techno",
     "trance"
    ],
    "provisional": false,
@@ -5332,7 +5337,7 @@
    "level": 3,
    "modifiers": [],
    "parents": [
-    "hardcore"
+    "hardcore techno"
    ],
    "provisional": false,
    "status": null,
@@ -5748,7 +5753,7 @@
    "level": 3,
    "modifiers": [],
    "parents": [
-    "hardcore"
+    "hardcore techno"
    ],
    "provisional": false,
    "status": null,
@@ -8819,7 +8824,7 @@
    "level": 3,
    "modifiers": [],
    "parents": [
-    "hardcore"
+    "hardcore techno"
    ],
    "provisional": false,
    "status": null,
@@ -9757,6 +9762,11 @@
    "description": "Faster, harder-hitting kicks and a more aggressive edge.",
    "kind": "sound",
    "name": "hard"
+  },
+  "hardcore": {
+   "description": "The hard, fast, aggressive variant of a style: hardcore punk, hardcore techno, hardcore hip hop.",
+   "kind": "sound",
+   "name": "hardcore"
   },
   "melodic": {
    "description": "Lead melody and chord progressions carry the track.",

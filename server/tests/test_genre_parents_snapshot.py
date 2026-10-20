@@ -13,7 +13,7 @@ SNAP = json.loads((Path(__file__).parent / "fixtures" / "genre_parents_snapshot_
 RELATED_MOVED = {
     "minimal": ["house"], "witch house": ["industrial"], "breakcore": ["breakbeat"], "chillwave": ["downtempo"], "vaporwave": ["downtempo"], "dark electro": ["electro"],
     "dungeon synth": ["synthwave"], "future bass": ["house"], "jungle": ["drum and bass"], "melodic techno": ["trance"], "microhouse": ["techno"], "minimal techno": ["house"],
-    "neurofunk": ["industrial"], "darksynth": ["industrial"], "hardcore": ["Rock"], "noise": ["Rock"], "grime": ["Hip Hop"], "trap": ["Electronic"], "acid jazz": ["Electronic"],
+    "neurofunk": ["industrial"], "darksynth": ["industrial"], "hardcore techno": ["Rock"], "noise": ["Rock"], "grime": ["Hip Hop"], "trap": ["Electronic"], "acid jazz": ["Electronic"],
     "new wave": ["Electronic"], "modern classical": ["Electronic"], "gospel": ["Funk / Soul"],
 }
 ADDED = {"edm", "hardcore punk", "experimental rock", "extreme metal", "noise rock", "roots rock", "neo-psychedelia", "glam metal", "college rock", "death-doom"}
@@ -34,7 +34,7 @@ EDITED = {*INDUSTRIAL_AFFECTED, *INDUSTRIAL_REMOVED, "spacesynth", "space disco"
 SECOND_FAMILY = {
     "acid jazz": "Electronic", "blues rock": "Rock", "bossa nova": "Jazz", "country rock": "Rock", "dub": "Electronic", "electro": "Hip Hop",
     "experimental": "Rock", "folk rock": "Rock", "funk metal": "Funk / Soul", "gospel": "Folk, World, & Country", "grime": "Hip Hop",
-    "hardcore": "Rock", "hip house": "Hip Hop", "jazz funk": "Funk / Soul", "latin jazz": "Latin", "modern classical": "Electronic",
+    "hardcore techno": "Rock", "hip house": "Hip Hop", "jazz funk": "Funk / Soul", "latin jazz": "Latin", "modern classical": "Electronic",
     "new wave": "Electronic", "noise": "Rock", "rhythm and blues": "Blues", "soul jazz": "Funk / Soul", "synthpop": "Pop", "trap": "Electronic",
     "trip hop": "Hip Hop",
 }

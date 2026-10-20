@@ -26,7 +26,7 @@
       "wikipedia_artist": ["alternative rock", "techno", "electronic", "big beat", "breakbeat", "electronic rock"]
     },
     "applied": ["big beat", "techno", "electronic"],
-    "suggested": ["hardcore", "alternative rock", "electronic rock"]
+    "suggested": ["alternative rock", "electronic rock"]
   },
   "prodigy_voodoo_people_pendulum_remix": {
     "versioned": true,
@@ -36,6 +36,6 @@
       "wikipedia_artist": ["alternative rock", "techno", "electronic", "big beat", "breakbeat", "electronic rock"]
     },
     "applied": [],
-    "suggested": ["breakbeat", "electronic", "big beat", "techno", "hardcore", "alternative rock", "electronic rock"]
+    "suggested": ["breakbeat", "electronic", "big beat", "techno", "alternative rock", "electronic rock"]
   }
 }

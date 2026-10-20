@@ -3280,19 +3280,6 @@
    "match": "name"
   }
  },
- "hardcore": {
-  "discogs": true,
-  "apple_music": {
-   "id": "1047",
-   "name": "Hardcore",
-   "match": "name"
-  },
-  "wikipedia": {
-   "title": "Hardcore (electronic dance music genre)",
-   "wikidata": "Q388906",
-   "match": "name"
-  }
- },
  "hardcore hip hop": {
   "discogs": true,
   "musicbrainz": {
@@ -3316,6 +3303,19 @@
   "wikipedia": {
    "title": "Hardcore punk",
    "wikidata": "Q10922",
+   "match": "name"
+  }
+ },
+ "hardcore techno": {
+  "discogs": true,
+  "apple_music": {
+   "id": "1047",
+   "name": "Hardcore",
+   "match": "name"
+  },
+  "wikipedia": {
+   "title": "Hardcore (electronic dance music genre)",
+   "wikidata": "Q388906",
    "match": "name"
   }
  },

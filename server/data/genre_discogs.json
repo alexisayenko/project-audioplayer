@@ -698,12 +698,12 @@
   "hard trance": [
    "Electronic"
   ],
-  "hardcore": [
-   "Electronic",
-   "Rock"
-  ],
   "hardcore hip hop": [
    "Hip Hop"
+  ],
+  "hardcore techno": [
+   "Electronic",
+   "Rock"
   ],
   "hardstyle": [
    "Electronic"
@@ -1463,6 +1463,7 @@
  },
  "discogs_names": {
   "drum and bass": "Drum n Bass",
+  "hardcore techno": "Hardcore",
   "p-funk": "P.Funk",
   "progressive rock": "Prog Rock"
  },

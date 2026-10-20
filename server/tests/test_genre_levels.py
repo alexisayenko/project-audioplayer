@@ -601,7 +601,7 @@ def test_electronic_counts_in_the_meta_block_match_the_data():
 ROCK_FUSION = {"folk metal", "folk punk", "rap metal", "electronic rock"}
 FUSION = {"eurodance", "blues rock", "folk rock", "country rock", "funk metal", "jazz funk", "soul jazz", "latin jazz", "hip house", "trip hop"} | ROCK_FUSION
 TWO_SCENES = {"disco", "dub", "experimental", "electro", "bossa nova", "rhythm and blues"}
-MOVED_TO_RELATED = {"hardcore": "Rock", "noise": "Rock", "grime": "Hip Hop", "trap": "Electronic", "acid jazz": "Electronic", "new wave": "Electronic", "modern classical": "Electronic", "gospel": "Funk / Soul"}
+MOVED_TO_RELATED = {"hardcore techno": "Rock", "noise": "Rock", "grime": "Hip Hop", "trap": "Electronic", "acid jazz": "Electronic", "new wave": "Electronic", "modern classical": "Electronic", "gospel": "Funk / Soul"}
 
 
 def test_fusion_genres_are_the_fourteen_blends_and_each_belongs_to_two_families():
@@ -741,9 +741,9 @@ def test_the_nine_reviewed_rock_extras():
         assert (e["parents"], e["family"], e["level"], e["discogs"], e["status"], e["display"], e["synonyms"]) == (parents, "Rock", e["level"], False, "approved", None, syn), k
         assert e["level"] == (3 if first else 2), k
         assert k in EXTRAS and k not in DISCOGS["genres"] and "reviewed 2026-10-19" in EXTRAS[k]["note"], k
-    assert "hardcore" not in ENTRIES["hardcore punk"]["synonyms"] and ENTRIES["hardcore"]["family"] == "Electronic"
+    assert "hardcore" not in ENTRIES["hardcore punk"]["synonyms"] and ENTRIES["hardcore techno"]["family"] == "Electronic"
     assert max(v["level"] for v in ENTRIES.values()) <= 4
-    for spelling, want in [("Hair Metal", "glam metal"), ("pop metal", "glam metal"), ("death/doom", "death-doom"), ("Death Doom", "death-doom"), ("hardcore", "hardcore"), ("Hardcore Punk", "hardcore punk"), ("Neo Psychedelia", "neo-psychedelia")]:
+    for spelling, want in [("Hair Metal", "glam metal"), ("pop metal", "glam metal"), ("death/doom", "death-doom"), ("Death Doom", "death-doom"), ("hardcore techno", "hardcore techno"), ("Hardcore Punk", "hardcore punk"), ("Neo Psychedelia", "neo-psychedelia")]:
         from app import genre_filter as gf
         assert gf.vocabulary_name(spelling) == want, spelling
     assert {k for k, v in ENTRIES.items() if v["parents"][0] in NINE} == {"krautrock", "post-rock"}
@@ -807,7 +807,7 @@ def test_subfamily_inheritance_counts_and_the_disco_children():
     want = {"disco": "Eurodance & disco", "dub": None, "trip hop": "Ambient & downtempo", "hip house": "House", "electro house": "House"}
     for k, sub in want.items():
         assert ENTRIES[k].get("subfamily") == sub, k
-    assert ENTRIES["hardcore"]["subfamily"] == "Techno" and ENTRIES["breakcore"]["subfamily"] == "Techno" and ENTRIES["psytrance"]["subfamily"] == "Trance" and ENTRIES["psybient"]["subfamily"] == "Trance"
+    assert ENTRIES["hardcore techno"]["subfamily"] == "Techno" and ENTRIES["breakcore"]["subfamily"] == "Techno" and ENTRIES["psytrance"]["subfamily"] == "Trance" and ENTRIES["psybient"]["subfamily"] == "Trance"
     small = {"acid": "House", "balearic": "House", "ghetto": "House", "tribal": "House", "electro swing": "House", "ghettotech": "House", "bleep": "Techno", "minimal": "Techno", "lento violento": "Techno", "edm": "House"}
     assert {k: ENTRIES[k]["subfamily"] for k in small} == small and ENTRIES["grime"]["subfamily"] == "Breaks & bass"
 

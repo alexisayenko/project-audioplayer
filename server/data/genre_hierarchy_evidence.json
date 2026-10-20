@@ -3344,7 +3344,7 @@
    {
     "q": "Q388906",
     "label": "hardcore",
-    "key": "hardcore"
+    "key": "hardcore techno"
    }
   ],
   "instance_of": [],
@@ -3356,7 +3356,7 @@
    },
    {
     "label": "Hardcore (electronic dance music genre)",
-    "key": "hardcore",
+    "key": "hardcore techno",
     "phrase_kind": "offshoot"
    },
    {
@@ -3373,7 +3373,7 @@
   "origins": [
    {
     "label": "Hardcore (electronic dance music genre)",
-    "key": "hardcore"
+    "key": "hardcore techno"
    },
    {
     "label": "jungle music",
@@ -8602,14 +8602,14 @@
    {
     "q": "Q388906",
     "label": "hardcore",
-    "key": "hardcore"
+    "key": "hardcore techno"
    }
   ],
   "instance_of": [],
   "lead_parents": [
    {
     "label": "Hardcore (electronic dance music genre)",
-    "key": "hardcore",
+    "key": "hardcore techno",
     "phrase_kind": "subgenre"
    },
    {
@@ -8625,7 +8625,7 @@
    },
    {
     "label": "Hardcore (electronic dance music genre)",
-    "key": "hardcore"
+    "key": "hardcore techno"
    },
    {
     "label": "new beat",
@@ -9916,7 +9916,7 @@
    {
     "q": "Q388906",
     "label": "hardcore",
-    "key": "hardcore"
+    "key": "hardcore techno"
    }
   ],
   "instance_of": [],
@@ -9928,7 +9928,7 @@
    },
    {
     "label": "hardcore (electronic dance music genre)",
-    "key": "hardcore"
+    "key": "hardcore techno"
    }
   ],
   "derivatives": [
@@ -10045,7 +10045,7 @@
    },
    {
     "label": "Hardcore (electronic dance music genre)",
-    "key": "hardcore"
+    "key": "hardcore techno"
    },
    {
     "label": "breakbeat hardcore",
@@ -10232,7 +10232,7 @@
    }
   ]
  },
- "hardcore": {
+ "hardcore techno": {
   "wikidata": "Q388906",
   "wikipedia": "Hardcore (electronic dance music genre)",
   "subclass_of": [
@@ -11739,7 +11739,7 @@
    },
    {
     "label": "Hardcore (electronic dance music genre)",
-    "key": "hardcore"
+    "key": "hardcore techno"
    },
    {
     "label": "UK hard house",
@@ -16573,7 +16573,7 @@
    },
    {
     "label": "hardcore (electronic dance music genre)",
-    "key": "hardcore"
+    "key": "hardcore techno"
    },
    {
     "label": "new-age music",
@@ -19170,7 +19170,7 @@
    {
     "q": "Q388906",
     "label": "hardcore",
-    "key": "hardcore"
+    "key": "hardcore techno"
    }
   ],
   "instance_of": [],
@@ -19184,7 +19184,7 @@
   "origins": [
    {
     "label": "hardcore (electronic dance music genre)",
-    "key": "hardcore"
+    "key": "hardcore techno"
    },
    {
     "label": "breakcore",
@@ -20321,7 +20321,7 @@
    },
    {
     "label": "hardcore (electronic dance music genre)",
-    "key": "hardcore"
+    "key": "hardcore techno"
    },
    {
     "label": "new-age music",
@@ -22691,7 +22691,7 @@
    },
    {
     "label": "Hardcore (electronic dance music genre)",
-    "key": "hardcore"
+    "key": "hardcore techno"
    },
    {
     "label": "hard trance",
@@ -23747,7 +23747,7 @@
    },
    {
     "label": "hardcore (electronic dance music genre)",
-    "key": "hardcore"
+    "key": "hardcore techno"
    },
    {
     "label": "new-age music",

@@ -22,6 +22,7 @@ Don't pre-create — extract on first real entry. See
 - **`ddex-terminology.md`** — which DDEX words Electrophone adopts and which it does not, checked against the official allowed-value file (ADR-0025).
 - **`metadata-model-decisions-AR.md`** — decision AR: where the release year may come from.
 - **`genre-terminology.md`** — glossary, the genre model (genres, groups, modifiers, four axes), tests and open decisions (ADR-0038, ADR-0034).
+- **`genre-electronic-forms.md`** — PROPOSAL (not applied): where the 146 Electronic genres go when Electronic becomes a group and the forms move to level 1 (task-0066).
 - **`genre-levels.md`**, **`genre-flavours-proposal.md`** — the genre tree (no depth cap since ADR-0037) and the modifiers (formerly flavours; the proposal file keeps its name) (ADR-0023).
 - **`decisions.md`** (or **`decisions/adr-NNNN-<slug>.md`** once a
   decision warrants its own file) — ADRs. Substantive

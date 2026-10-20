@@ -5,7 +5,7 @@ electronic, techno, melodic techno, minimal techno, acid techno, hard techno, du
 house, deep house, tropical house, tech house, progressive house, acid house, chicago house, electro house, big room house, future house,, afro house, funky house, latin house, soulful house, jackin house, french house, minimal house, organic house, melodic house, bass house,, disco house, lo-fi house
 trance, progressive trance, uplifting trance, psytrance, goa trance, vocal trance, tech trance, hard trance, full-on, dark psytrance, melodic trance
 drum and bass, liquid drum and bass, neurofunk, jungle, jump up, darkstep, techstep, breakbeat, big beat, breaks, uk garage, speed garage, 2-step, future garage
-dubstep, brostep, riddim, grime, trap, future bass, bass music, glitch hop,, hardstyle, hardcore, gabber, happy hardcore, frenchcore, uk hardcore, hard dance, makina
+dubstep, brostep, riddim, grime, trap, future bass, bass music, glitch hop,, hardstyle, hardcore techno, gabber, happy hardcore, frenchcore, uk hardcore, hard dance, makina
 edm, electro, electroclash, electropop, synthpop, synthwave, retrowave, sovietwave, vaporwave, future funk, italo disco, eurodance, eurobeat, hi-nrg, nu-disco, disco, space disco, euro disco
 idm, intelligent dance music, glitch, microsound, braindance, acid, electronica, downtempo, trip hop, chillout, chillwave, lounge, nu jazz, psybient, dark ambient, drone, ambient, space music, new age, dungeon synth
 ebm, electro-industrial, darkwave, coldwave, minimal wave, new wave, synth-punk, aggrotech, dark electro, futurepop, witch house

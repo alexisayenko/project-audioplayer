@@ -39,13 +39,15 @@ function legacyArtists(song) {
 }
 
 export function lineParts(song) {
-  const { title, remix } = creditParts(song);
+  const { title, remix, version } = creditParts(song);
+  const plain = remix && (String(version?.type).toLowerCase() === 'remaster' || /remaster/i.test(remix));
   const out = isStructured(song) ? structuredArtists(song) : legacyArtists(song);
   if (out.length && (title || remix)) out.push({ kind: 'text', text: ' - ' });
   if (title) out.push({ kind: 'title', text: title });
   if (remix) {
     if (title) out.push({ kind: 'text', text: ' ' });
-    out.push({ kind: 'text', text: '(' }, { kind: 'version', text: remix }, { kind: 'text', text: ')' });
+    if (plain) out.push({ kind: 'text', text: `(${remix})` });
+    else out.push({ kind: 'text', text: '(' }, { kind: 'version', text: remix }, { kind: 'text', text: ')' });
   }
   return out;
 }

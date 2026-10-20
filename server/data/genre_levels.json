@@ -247,6 +247,11 @@
    "name": "berlin",
    "kind": "scene",
    "description": "Tied to the Berlin scene."
+  },
+  "hardcore": {
+   "name": "hardcore",
+   "kind": "sound",
+   "description": "The hard, fast, aggressive variant of a style: hardcore punk, hardcore techno, hardcore hip hop."
   }
  },
  "subfamilies": {
@@ -761,7 +766,7 @@
  },
  "breakcore": {
   "parents": [
-   "hardcore"
+   "hardcore techno"
   ],
   "related": [
    "breakbeat"
@@ -1339,7 +1344,7 @@
  },
  "donk": {
   "parents": [
-   "hardcore",
+   "hardcore techno",
    "house"
   ],
   "discogs": true
@@ -1360,7 +1365,7 @@
  },
  "doomcore": {
   "parents": [
-   "hardcore"
+   "hardcore techno"
   ],
   "discogs": true
  },
@@ -1864,7 +1869,7 @@
  },
  "gabber": {
   "parents": [
-   "hardcore"
+   "hardcore techno"
   ],
   "discogs": true
  },
@@ -2095,7 +2100,7 @@
  },
  "happy hardcore": {
   "parents": [
-   "hardcore"
+   "hardcore techno"
   ],
   "discogs": true
  },
@@ -2109,7 +2114,7 @@
  "hard house": {
   "parents": [
    "house",
-   "hardcore"
+   "hardcore techno"
   ],
   "discogs": true
  },
@@ -2128,17 +2133,7 @@
  "hard trance": {
   "parents": [
    "trance",
-   "hardcore"
-  ],
-  "discogs": true
- },
- "hardcore": {
-  "parents": [
-   "Electronic"
-  ],
-  "subfamily": "Techno",
-  "related": [
-   "Rock"
+   "hardcore techno"
   ],
   "discogs": true
  },
@@ -2156,9 +2151,19 @@
   "discogs": false,
   "status": "approved"
  },
+ "hardcore techno": {
+  "parents": [
+   "Electronic"
+  ],
+  "subfamily": "Techno",
+  "related": [
+   "Rock"
+  ],
+  "discogs": true
+ },
  "hardstyle": {
   "parents": [
-   "hardcore",
+   "hardcore techno",
    "trance"
   ],
   "discogs": true
@@ -2425,7 +2430,7 @@
  },
  "jumpstyle": {
   "parents": [
-   "hardcore"
+   "hardcore techno"
   ],
   "discogs": true
  },
@@ -2601,7 +2606,7 @@
  },
  "makina": {
   "parents": [
-   "hardcore"
+   "hardcore techno"
   ],
   "discogs": true
  },
@@ -3865,7 +3870,7 @@
  },
  "speedcore": {
   "parents": [
-   "hardcore"
+   "hardcore techno"
   ],
   "discogs": true
  },

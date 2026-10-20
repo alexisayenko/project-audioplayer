@@ -143,8 +143,11 @@ def clean_url(value: Any) -> str | None:
     return release_url(match.group(1), match.group(2)) if match else None
 
 
+STYLE_NAMES = {"hardcore": "hardcore techno"}
+
+
 def _tags(detail: dict[str, Any]) -> list[str]:
-    genres = [str(s).strip().casefold() for s in detail.get("styles") or [] if str(s).strip()]
+    genres = [STYLE_NAMES.get(g, g) for g in (str(s).strip().casefold() for s in detail.get("styles") or []) if g]
     if not genres:
         genres = [g.casefold() for g in map(str, detail.get("genres") or []) if g.strip() and "," not in g]
     return [f"genre:{s}" for s in dict.fromkeys(genres)][:MAX_GENRES]

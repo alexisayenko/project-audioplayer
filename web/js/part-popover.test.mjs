@@ -125,3 +125,27 @@ test('the copy icon shares a nowrap tail with the last glued words and stays las
   assert.equal(tail.textContent.replace(/\s/g, ''), '(AlessoRemix)');
   dlg().close();
 });
+
+test('a remaster version is plain text, other versions and a line with no artist keep their parts', () => {
+  const mk = (id, version, extra = {}) => ({ id, title: 'Minor Earth, Major Sky', mainArtists: ['A-ha'], featuredArtists: [], tags: [], version, file: null, audio_state: 'none', ...extra });
+  const cases = [
+    [mk('r1', { type: 'remaster', name: '2019 Remaster' }), false],
+    [mk('r2', { type: 'other', name: 'Remastered 2011' }), false],
+    [mk('r3', { type: 'edit', name: 'Radio Edit' }), true],
+    [mk('r4', { type: 'remix', name: 'Alesso Remix', artists: ['Alesso'] }), true],
+  ];
+  for (const [song, versionPart] of cases) {
+    open(song);
+    const kinds = [...parts()].map((p) => p.className.replace('tp-part ', ''));
+    assert.equal(kinds.includes('tp-version'), versionPart, song.version.name);
+    assert.ok(kinds.includes('tp-title'));
+    assert.ok(dlg().querySelector('.card-full').textContent.includes(`(${song.version.name})`));
+    dlg().close();
+  }
+  open(mk('r5', { type: 'remaster', name: 'Remaster' }, { mainArtists: [] }));
+  const only = [...parts()];
+  assert.equal(only.length, 1);
+  only[0].click();
+  assert.equal(pops().length, 1);
+  dlg().close();
+});
