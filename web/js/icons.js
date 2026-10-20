@@ -24,6 +24,7 @@ export const ICONS = {
   srcAppleMusic: { d: '<rect x="3" y="3" width="18" height="18" rx="5"/><path d="M15.5 7v8"/><circle cx="13" cy="15.5" r="2.5"/><path d="m15.5 7-5 1.2V16"/>' },
   srcSpotify: { d: '<circle cx="12" cy="12" r="10"/><path d="M6.5 9.5c3.7-1.1 7.5-.8 11 1"/><path d="M7.3 13c3-.8 6-.5 8.7.9"/><path d="M8 16.2c2.3-.6 4.6-.4 6.5.6"/>' },
   srcDiscogs: { d: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3.2"/><circle cx="12" cy="12" r=".4"/>' },
+  srcRym: { d: '<circle cx="12" cy="12" r="10"/><path d="M9 16V8h3.5a2.2 2.2 0 0 1 0 4.4H9m3.5 0L15 16"/>' },
   srcMusicbrainz: { d: '<path d="M12 2.5 21.5 12 12 21.5 2.5 12z"/><path d="M12 7v10"/><path d="M8.5 10.5 12 7l3.5 3.5"/>' },
   playlist: { d: '<path d="M16 5H3"/><path d="M11 12H3"/><path d="M11 19H3"/><path d="M21 16V5"/><circle cx="18" cy="16" r="3"/>' },
   playlistRemove: { d: '<path d="M11 5H3"/><path d="M16 12H3"/><path d="M16 19H3"/><path d="M21 5h-6"/>' },

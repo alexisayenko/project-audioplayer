@@ -180,7 +180,7 @@ export function createSim({ nodes, links = [], seed = 1, breathing = true, charg
     const { x0, y0, x1, y1 } = bounds();
     const size = Math.max(x1 - x0, y1 - y0, 1) + 1;
     const root = quad(x0, y0, size);
-    for (const n of nodes) insert(root, n, weight(n));
+    for (const n of nodes) if (!n.ghost) insert(root, n, weight(n));
     for (const n of nodes) chargeOn(n, root);
   }
 
@@ -189,6 +189,7 @@ export function createSim({ nodes, links = [], seed = 1, breathing = true, charg
     let dy = b.y + b.vy - a.y - a.vy;
     const min = a.r + b.r + 4;
     let d2 = dx * dx + dy * dy;
+    if (a.ghost || b.ghost) return;
     if (d2 >= min * min) return;
     if (leash && slackPair(a, b, d2)) return;
     if (d2 === 0) { dx = (rng() - 0.5) * 1e-3; dy = (rng() - 0.5) * 1e-3; d2 = dx * dx + dy * dy; }

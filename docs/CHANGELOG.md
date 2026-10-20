@@ -2,6 +2,18 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-21 (genre colours, built, not deployed)
+
+- Web, server: own colours on the genre map, chips and Outline for Blues #0068F7, Jazz #8F4997, Pop #F664A5, Funk / Soul #F7690A, house #F7DF6A, techno #535353, drum and bass #E8BD0C and synthwave #881DF7 (subgenres follow); a new `hex` table in `genre_levels.json` is served in the vocabulary payload; the legacy graph colour families are unchanged.
+
+## 2026-10-21 (Genres map drag, built, not deployed)
+
+- Web (task-0075): dragging a parent on the genre map only pulls its children (they follow when it moves farther than their link length, never when it moves closer) and never pushes other circles; a dragged circle stays where it was dropped instead of springing back to its parent. Not deployed.
+
+## 2026-10-21 (genre source links, built, not deployed)
+
+- Web, server (task-0074, GEN-066): selecting a genre on the genre map shows Wikipedia, Apple Music and Discogs links, plus Rate Your Music where a curated URL exists (`genre_rym.json`, empty until Alex supplies the URLs) (new tab); Discogs now links every genre (a plain release search when the genre is not in Discogs).
+
 ## 2026-10-21 (Features: one release per date, deployed)
 
 - Web, server (task-0068, WEB-135, API-187): all deploys and features of the same date are combined into one release entry on the Features screen (one date heading, one merged list, newest first, de-duplicated, hash of the newest deploy of the day). Not deployed.

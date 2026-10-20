@@ -111,9 +111,62 @@ test('dragging a circle pins it under the pointer, pulls its neighbour, does not
   assert.ok(Math.hypot(kid.x - kidBefore.x, kid.y - kidBefore.y) > 5, 'the neighbour was pulled along');
   canvas.fire('pointerup', { clientX: p.x + 140, clientY: p.y + 60, buttons: 0 });
   assert.deepEqual(picked, []);
-  assert.equal(graph.byId.get('s:house').fx, null);
+  assert.notEqual(graph.byId.get('s:house').fx, null, 'a dropped circle stays pinned where it was dropped');
   settle();
   assert.equal(view.stats().awake, false);
+});
+
+function dragTo(canvas, from, to) {
+  canvas.fire('pointerdown', { clientX: from.x, clientY: from.y });
+  canvas.fire('pointermove', { clientX: from.x + 20, clientY: from.y });
+  canvas.fire('pointermove', { clientX: to.x, clientY: to.y });
+  run(40);
+}
+
+test('a parent only pulls its children: moving it closer leaves them, moving it away tows them at link length', () => {
+  const { canvas, view, graph } = setup();
+  settle();
+  const p = at(view, 's:house');
+  const house = graph.byId.get('s:house');
+  const kid = graph.byId.get('s:deep house');
+  const len = Math.hypot(kid.x - house.x, kid.y - house.y);
+  const kid0 = { x: kid.x, y: kid.y };
+  const k = view.nodeScreen('s:deep house');
+  const towards = { x: p.x + (k.x - p.x) * 0.4, y: p.y + (k.y - p.y) * 0.4 };
+  dragTo(canvas, p, towards);
+  assert.ok(Math.hypot(kid.x - kid0.x, kid.y - kid0.y) < 1e-6, 'moving closer does not move the child');
+  canvas.fire('pointermove', { clientX: p.x - 200, clientY: p.y - 120 });
+  run(60);
+  const d = Math.hypot(kid.x - house.x, kid.y - house.y);
+  assert.ok(d <= len + 0.5, 'the child is held within its link length');
+  assert.ok(Math.hypot(kid.x - kid0.x, kid.y - kid0.y) > 5, 'the child was towed');
+  canvas.fire('pointerup', { clientX: p.x - 200, clientY: p.y - 120, buttons: 0 });
+});
+
+test('a dragged circle never pushes another one', () => {
+  const { canvas, view, graph } = setup();
+  settle();
+  const p = at(view, 's:house');
+  const other = graph.byId.get('s:rock') || graph.nodes?.find((n) => n.id !== 's:house' && n.id !== 's:deep house');
+  const o = view.nodeScreen(other.id);
+  const before = { x: other.x, y: other.y };
+  dragTo(canvas, p, o);
+  assert.ok(Math.hypot(other.x - before.x, other.y - before.y) < 3, 'passing over a circle does not shove it');
+  canvas.fire('pointerup', { clientX: o.x, clientY: o.y, buttons: 0 });
+});
+
+test('a dragged child stays where it was dropped and is not pulled back to its parent', () => {
+  const { canvas, view, graph } = setup();
+  settle();
+  const kid = graph.byId.get('s:deep house');
+  const p = at(view, 's:deep house');
+  const to = { x: p.x + 150, y: p.y + 90 };
+  dragTo(canvas, p, to);
+  canvas.fire('pointerup', { clientX: to.x, clientY: to.y, buttons: 0 });
+  const dropped = { x: kid.x, y: kid.y };
+  settle(300);
+  run(200);
+  assert.ok(Math.hypot(kid.x - dropped.x, kid.y - dropped.y) < 1e-6, 'no spring-back after release');
 });
 
 test('dragging the background pans without selecting; the wheel zooms around the pointer; pinch zooms', () => {

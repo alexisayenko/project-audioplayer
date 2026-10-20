@@ -1,6 +1,7 @@
 import { api } from './api.js';
 import { el, plural, pageHead, toast } from './dom.js';
 import { icon } from './icons.js';
+import { shownSourceLinks } from './genre-source-links.js';
 import { familyIndex, isHiddenFamily } from './genre-data.js';
 import { filterByTags } from './library-data.js';
 import { outlineDefaultOpen } from './genre-view.js';
@@ -126,8 +127,19 @@ export function renderGenresRework(root, opts = {}) {
   const legendSub = el('div', { class: 'gmr-legend-sub', hidden: true });
   const groupNote = el('p', { class: 'gmr-group-note t-caption', role: 'note', hidden: true });
 
+  const linksRow = el('div', { class: 'gmr-links t-caption', role: 'group', 'aria-label': 'Genre sources', hidden: true });
+
+  function renderLinks(n) {
+    const shown = n && !n.group ? shownSourceLinks(n.sourceLinks) : [];
+    linksRow.hidden = !shown.length;
+    linksRow.replaceChildren(...shown.map((l) => el('a', {
+      href: l.url, target: '_blank', rel: 'noopener noreferrer', 'data-source': l.source, title: `${l.label}: ${n.label}`, 'aria-label': `${l.label}: ${n.label}`,
+    }, icon(l.icon, 'inline'), l.label)));
+  }
+
   function renderGroupNote() {
     const n = tree && selectedId ? tree.byId.get(selectedId) : null;
+    renderLinks(n);
     groupNote.hidden = !n?.group;
     groupNote.textContent = n?.group ? GROUP_TEXT(n) : '';
   }
@@ -830,7 +842,7 @@ export function renderGenresRework(root, opts = {}) {
 
   side.append(
     el('div', { class: 'gm-outline-head' }, el('h2', { class: 't-headline' }, 'Outline'), closeBtn),
-    el('div', { class: 'gmr-bar' }, status, el('div', { class: 'gmr-btns' }, legendBtn, nowBtn, reload), el('div', { class: 'gmr-btns' }, viewRow, libBtn, drillBtn, collapseMapBtn, fusionBtn, relatedBtn, resetLayoutBtn, useSavedBtn, exportBtn), familyRow, subRow, groupNote),
+    el('div', { class: 'gmr-bar' }, status, el('div', { class: 'gmr-btns' }, legendBtn, nowBtn, reload), el('div', { class: 'gmr-btns' }, viewRow, libBtn, drillBtn, collapseMapBtn, fusionBtn, relatedBtn, resetLayoutBtn, useSavedBtn, exportBtn), familyRow, subRow, groupNote, linksRow),
     outlineEl);
   work.append(canvas, graphCanvas, side, outlineBtn, zoomBar, legend);
   wrap.append(pageHead('Genres map'), work);

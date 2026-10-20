@@ -239,11 +239,11 @@ async function main() {
     catalogue_sizes: sources,
     unreachable,
     link_rules: {
-      note: "URLs are never stored; server/app/genre_sources.py genre_source_links builds them (GET /genres/vocabulary source_links). Order: wikipedia, apple_music, spotify, discogs, musicbrainz.",
+      note: "URLs are never stored; server/app/genre_sources.py genre_source_links builds them (GET /genres/vocabulary source_links). Order: wikipedia, apple_music, spotify, discogs, rym, musicbrainz. Rate Your Music: only the curated URL in `genre_rym.json` ({genre: url}, empty for now, Alex supplies the URLs), kind page; none for a genre without an entry.",
       wikipedia: "page https://en.wikipedia.org/wiki/<title> when matched, else search https://en.wikipedia.org/w/index.php?search=<key> music genre",
       apple_music: "search https://music.apple.com/us/search?term=<matched Apple name or key> (Apple genre pages no longer resolve: they redirect to the search page)",
       spotify: "not stored (Spotify has no genre catalogue); always search https://open.spotify.com/search/genre%3A%22<key>%22",
-      discogs: "only when the genre is in Discogs: search https://www.discogs.com/search/?style=<name>&type=release (genre= for a family); none otherwise",
+      discogs: "search https://www.discogs.com/search/?style=<name>&type=release (genre= for a family) when the genre is in Discogs, else search https://www.discogs.com/search/?q=<key>&type=release",
       musicbrainz: "page https://musicbrainz.org/genre/<id> when matched, else none",
     },
     how: "A genre matches a catalogue entry when the normalised name is equal (match: name), else when a normalised listed synonym or display name is equal (match: synonym); entries from genre_sources_manual.json are match: manual. Normalisation: lowercase, accents folded, '&' read as 'and', hyphens, spaces and punctuation ignored, a trailing 'music' word dropped. Wikipedia: Wikidata items found by label search that are an instance or subclass of 'music genre' (Q188451) and have an English Wikipedia article. Several candidates, or a target claimed by two genres without exactly one name match, go to genre_sources_review.json and are not stored. Discogs is the genre_levels.json flag (true for the 11 families); discogs_name is Discogs's own spelling where it differs from the key.",

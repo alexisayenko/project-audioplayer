@@ -161,3 +161,11 @@ test('the real vocabulary builds with Others as the only group and no electronic
   assert.equal(genreLines(t, ['breakbeat', 'ambient']).length, 1);
   assert.deepEqual(genreLines(t, ['house', 'trance']).map((l) => l.family), ['house', 'trance']);
 });
+
+test('the hex table colours forms from their own spare slot and families on their legacy slot; bad values are ignored', () => {
+  const vocab = { ...promote(promote(OTHERS_VOCAB, 'house'), 'techno'), hex: { house: '#F7DF6A', Rock: '#112233', Blues: 'red' } };
+  treeOf(vocab);
+  assert.ok(SPARE_SLOTS.includes(familyIndex('house')), 'a form takes a spare slot');
+  assert.equal(familyIndex('techno'), 0, 'a form without hex keeps its group slot');
+  assert.equal(familyIndex('Rock'), 1, 'a family keeps its legacy slot');
+});

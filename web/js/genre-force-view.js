@@ -192,6 +192,7 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
 
   function startLayout(saved) {
     if (!rawGraph) return;
+    for (const n of nodes) if (n.dropped) { n.dropped = false; unpin(n); }
     layout = createCrossingLayout({ nodes, links: rawGraph.links }, { saved });
     layout.apply();
     for (const n of nodes) n.ringPar = null;
@@ -559,7 +560,7 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
 
   function unpin(n) { n.fx = null; n.fy = null; }
 
-  const pinnedOutside = (c, inside) => (parentLinks.get(c.id) || []).some((l) => l.s.target === 1 && l.s.fx != null && !inside.has(l.s.id));
+  const pinnedOutside = (c, inside) => (parentLinks.get(c.id) || []).some((l) => l.s.target === 1 && l.s.fx != null && !l.s.dropped && !inside.has(l.s.id));
 
   function subtreeOf(root) {
     const seen = new Set([root.id]);
@@ -593,11 +594,30 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
     for (const sl of sim?.links || []) {
       if (sl.tree && inside.has(sl.t.id)) { sl.mute = true; muted.push(sl); }
     }
-    return { root, items: sub.map(({ c }) => ({ c, ax: 0, ay: 0 })), muted, ox: root.x, oy: root.y };
+    const items = sub.map(({ c }) => ({ c, px: c.x, py: c.y, parent: null, len: 0, tethered: false }));
+    const byItem = new Map(items.map((it) => [it.c.id, it]));
+    for (const it of items) {
+      const l = (parentLinks.get(it.c.id) || []).find((pl) => pl.s === root || byItem.has(pl.s.id));
+      if (!l) continue;
+      it.parent = l.s === root ? null : byItem.get(l.s.id);
+      const o = it.parent || root;
+      it.len = Math.hypot(it.px - (it.parent ? o.px : o.x), it.py - (it.parent ? o.py : o.y));
+      it.tethered = true;
+    }
+    for (const n of [root, ...items.map((it) => it.c)]) n.ghost = true;
+    for (const it of items) if (it.c.target === 1) { it.c.fx = it.c.x; it.c.fy = it.c.y; }
+    return { root, items, muted };
+  }
+
+  function releaseGhosts() {
+    if (!pull) return;
+    pull.root.ghost = false;
+    for (const { c } of pull.items) c.ghost = false;
   }
 
   function clearPull() {
     if (!pull) return;
+    releaseGhosts();
     for (const sl of pull.muted) sl.mute = false;
     for (const { c } of pull.items) if (c.target === 1) unpin(c);
     const settled = pull.muted.length > 0;
@@ -607,18 +627,22 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
 
   function stepFollow(f) {
     const root = pull.root;
-    const dx = (root.fx ?? root.x) - pull.ox;
-    const dy = (root.fy ?? root.y) - pull.oy;
+    const rx = root.fx ?? root.x;
+    const ry = root.fy ?? root.y;
     let busy = false;
     for (const it of pull.items) {
-      const rx = dx - it.ax;
-      const ry = dy - it.ay;
-      const len = Math.hypot(rx, ry);
-      if (len === 0) continue;
-      const k = len < FOLLOW_EPS ? 1 : f;
-      shift(it.c, rx * k, ry * k);
-      it.ax += rx * k; it.ay += ry * k;
-      if (len >= FOLLOW_EPS) busy = true;
+      if (!it.tethered) continue;
+      const ox = it.parent ? it.parent.px : rx;
+      const oy = it.parent ? it.parent.py : ry;
+      const dx = ox - it.px;
+      const dy = oy - it.py;
+      const d = Math.hypot(dx, dy);
+      const excess = d - it.len;
+      if (excess <= 0) continue;
+      const k = (excess < FOLLOW_EPS ? 1 : f) * (excess / d);
+      shift(it.c, dx * k, dy * k);
+      it.px += dx * k; it.py += dy * k;
+      if (excess >= FOLLOW_EPS) busy = true;
     }
     if (busy) hashDirty = true;
     return busy;
@@ -666,8 +690,9 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
     if (!d) return;
     if (d.node) {
       for (const p of d.held || []) unpin(p);
+      releaseGhosts();
       if (d.moved) { d.node.hx = d.ax; d.node.hy = d.ay; syncLinkLength(); }
-      unpin(d.node);
+      if (d.moved) { d.node.dropped = true; d.node.fx = d.ax; d.node.fy = d.ay; } else if (!d.node.dropped) unpin(d.node);
       if (sim && d.moved && !reducedMotion) { sim.setAlphaTarget(sim.restTarget()); sim.reheat(RELEASE_ALPHA); awake = true; }
       if (!d.moved && ev.type === 'pointerup') onSelect?.(d.node.id);
     } else if (!d.moved && ev.type === 'pointerup') onSelect?.(null);
@@ -677,7 +702,7 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
   }
 
   const stop = () => {
-    for (const n of nodes) if (n.fx != null) unpin(n);
+    for (const n of nodes) if (n.fx != null && !n.dropped) unpin(n);
     if (sim) sim.setAlphaTarget(sim.restTarget());
     pointers.clear(); pinch = null; drag = null;
     clearPull();
@@ -691,7 +716,7 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
     if (pointers.size === 2) {
       const [a, b] = [...pointers.values()];
       pinch = { d: Math.hypot(a.x - b.x, a.y - b.y) || 1 };
-      if (drag?.node) unpin(drag.node);
+      if (drag?.node) { drag.node.dropped = false; unpin(drag.node); }
       drag = null;
       return;
     }

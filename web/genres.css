@@ -263,3 +263,7 @@ body[data-route="genres"] main { max-width: none; padding: 0; }
 .gmr-legend-sub { margin-top: var(--space-2); }
 .gm-dot.sub { background: var(--chart-0); }
 .gmr-key.sub { background: var(--chart-0); }
+.gmr-links { display: flex; flex-wrap: wrap; gap: var(--space-3); margin: var(--space-2) 0 0; }
+.gmr-links[hidden] { display: none; }
+.gmr-links a { display: inline-flex; align-items: center; gap: var(--space-1); color: var(--ink-muted); text-decoration: none; }
+.gmr-links a:hover, .gmr-links a:focus-visible { color: var(--ink); text-decoration: underline; }

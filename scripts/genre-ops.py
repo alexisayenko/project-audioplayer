@@ -49,7 +49,7 @@ def groups_of(doc: dict) -> list[str]:
 
 
 def is_entry(doc: dict, name: str) -> bool:
-    return name not in ("_meta", "families", "modifiers", "subfamilies") and isinstance(doc.get(name), dict)
+    return name not in ("_meta", "families", "modifiers", "subfamilies", "hex") and isinstance(doc.get(name), dict)
 
 
 def promote(levels: dict, discogs: dict, extras: dict, name: str, colour: str | None) -> None:
@@ -110,7 +110,7 @@ def reparent(levels: dict, name: str, new_parents: list[str]) -> None:
 def unparent(levels: dict, name: str, parent: str) -> None:
     """Remove the single parent `parent` from `name`, keeping its other parents; the last parent of a genre cannot be removed."""
     spec = levels["families"].get(name) if name in levels["families"] else levels.get(name)
-    if not isinstance(spec, dict) or name in ("_meta", "modifiers", "subfamilies"):
+    if not isinstance(spec, dict) or name in ("_meta", "modifiers", "subfamilies", "hex"):
         raise SystemExit(f"{name}: unknown genre")
     cur = list(spec.get("parents", []))
     if parent not in cur:

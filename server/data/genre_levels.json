@@ -136,6 +136,16 @@
    "Rock": 23
   }
  },
+ "hex": {
+  "Blues": "#0068F7",
+  "Jazz": "#8F4997",
+  "Pop": "#F664A5",
+  "house": "#F7DF6A",
+  "techno": "#535353",
+  "drum and bass": "#E8BD0C",
+  "synthwave": "#881DF7",
+  "Funk / Soul": "#F7690A"
+ },
  "families": {
   "Blues": {
    "name": "Blues",

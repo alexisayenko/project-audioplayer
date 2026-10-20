@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import difflib
 import json
+import re
 import threading
 import unicodedata
 from collections.abc import Iterable
@@ -304,7 +305,7 @@ def _strings(value: Any, where: str) -> list[str]:
 
 
 MODIFIER_KINDS = ("sound", "mood", "scene")
-ENTRY_BLOCKS = ("_meta", "families", "modifiers", "subfamilies")
+ENTRY_BLOCKS = ("_meta", "families", "modifiers", "subfamilies", "hex")
 DEPRECATED_ALIASES = {"modifiers": "flavours"}
 
 
@@ -465,6 +466,19 @@ def _check_parents(levels: dict[str, dict[str, Any]], families: dict[str, list[s
 
     for k in levels:
         visit(k)
+
+
+def parse_hex(doc: dict[str, Any]) -> dict[str, str]:
+    """The `hex` table of `genre_levels.json`: level 1 name to its display colour `#RRGGBB` (upper case); the web draws that node and its descendants in it instead of a palette token. The legacy graph payload ignores it."""
+    table = doc.get("hex", {})
+    if not isinstance(table, dict):
+        raise ValueError(f"{LEVELS_FILE.name}: hex must be an object")
+    out = {}
+    for k, v in table.items():
+        if k not in doc["families"] or not isinstance(v, str) or not re.fullmatch(r"#[0-9A-Fa-f]{6}", v):
+            raise ValueError(f"{LEVELS_FILE.name}: hex {k!r} must name a level 1 node and be a colour like #E8BD0C")
+        out[k] = v.upper()
+    return out
 
 
 def parse_subfamilies(doc: Any) -> dict[str, dict[str, Any]]:
@@ -648,7 +662,7 @@ def vocabulary() -> dict[str, Any]:
             direct = {n: [k for k, lv in {**levels, **form_nodes}.items() if n in lv["parents"]] for n in groups}
             _payload = {
                 "families": list(v.families), "genres": rows, "count": len(rows), "aliases": _aliases(v), "levels": _with_aliases(levels), "family_synonyms": family_synonyms,
-                "modifiers": modifiers, "subfamilies": subfamilies, "forms": {k: dict(f) for k, f in form_nodes.items()},
+                "modifiers": modifiers, "subfamilies": subfamilies, "forms": {k: dict(f) for k, f in form_nodes.items()}, "hex": parse_hex(raw),
                 "groups": {n: {"kind": g["kind"], "temporary": g["temporary"], "order": g["order"], "synonyms": g["synonyms"], "members": direct[n], "assignable": False, "note": g["note"], **({"colour": g["colour"]} if g.get("colour") else {})} for n, g in groups.items()},
             }
             _payload[DEPRECATED_ALIASES["modifiers"]] = modifiers

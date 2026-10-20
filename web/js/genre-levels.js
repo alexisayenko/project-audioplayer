@@ -1,6 +1,6 @@
 import { buildIndex, resolveGenre, vkey } from './genre-vocab.js';
 import { cleanSourceLinks } from './genre-source-links.js';
-import { setLevelOneNames, legacySlot, OTHER_COLOR, SPARE_SLOTS } from './genre-data.js';
+import { setLevelOneNames, setSlotColours, legacySlot, OTHER_COLOR, SPARE_SLOTS } from './genre-data.js';
 
 const MODIFIER_KINDS = ['sound', 'mood', 'scene'];
 const spaced = (s) => String(s).trim().toLowerCase().replace(/\s+/g, ' ');
@@ -118,7 +118,10 @@ function slotOf(name, ctx, seen = new Set()) {
   let slot = -1;
   if (!n) slot = legacySlot(name);
   else if (n.group) slot = OTHER_COLOR;
-  else if (n.form) slot = formSlot(n, ctx, seen);
+  else if (n.form && ctx.hex.has(name)) {
+    slot = SPARE_SLOTS[ctx.spare++ % SPARE_SLOTS.length];
+    ctx.hexes.set(slot, ctx.hex.get(name));
+  } else if (n.form) slot = formSlot(n, ctx, seen);
   else slot = name === 'Other' ? OTHER_COLOR : legacySlot(name);
   if (n && !n.group && slot < 0) slot = SPARE_SLOTS[ctx.spare++ % SPARE_SLOTS.length];
   if (slot >= 0) ctx.done.set(name, slot);
@@ -140,9 +143,14 @@ function formSlot(n, ctx, seen) {
   return -1;
 }
 
-function assignColours(roots) {
-  const ctx = { roots: new Map(roots.map((r) => [r.name, r])), done: new Map(), spare: 0 };
+function assignColours(roots, hex = new Map()) {
+  const ctx = { roots: new Map(roots.map((r) => [r.name, r])), done: new Map(), hex, hexes: new Map(), spare: 0 };
   for (const r of roots) slotOf(r.name, ctx);
+  for (const [name, colour] of hex) {
+    const slot = ctx.done.get(name);
+    if (slot >= 0 && slot !== OTHER_COLOR && !ctx.hexes.has(slot)) ctx.hexes.set(slot, colour);
+  }
+  setSlotColours(ctx.hexes);
   return ctx.done;
 }
 
@@ -166,7 +174,7 @@ export function buildTree(vocab, { fusion = true } = {}) {
   linkGenres(levels, genres, byId, fusion);
   linkForms(roots, genres, byId, vocab);
   assignFamilies(roots, byId);
-  setLevelOneNames(names, assignColours(roots));
+  setLevelOneNames(names, assignColours(roots, hexTable(vocab)));
   const modifiers = new Map(Object.entries(vocab?.modifiers || vocab?.flavours || {}).map(([key, f]) => [key, { key, name: f.name || key, kind: MODIFIER_KINDS.includes(f.kind) ? f.kind : 'sound', description: f.description || '', songs: new Set() }]));
   for (const n of byId.values()) n.modifiers = n.modifiers.filter((f) => modifiers.has(f));
   const { byKey, bySyn } = nodeLookups(byId);
@@ -432,4 +440,8 @@ function assignFamilies(roots, byId) {
     n.fams = [...of(n)].sort((x, y) => order.get(x) - order.get(y));
     n.family = n.fams[0] || null;
   }
+}
+
+function hexTable(vocab) {
+  return new Map(Object.entries(objectOf(vocab?.hex)).filter(([, v]) => /^#[0-9a-f]{6}$/i.test(v)));
 }

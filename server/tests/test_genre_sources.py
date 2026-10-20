@@ -26,6 +26,7 @@ def sources_file(tmp_path, monkeypatch):
         p = tmp_path / "genre_sources.json"
         p.write_text(raw if raw is not None else json.dumps(doc), encoding="utf-8")
         monkeypatch.setattr(genre_sources, "SOURCES_FILE", p)
+        monkeypatch.setattr(genre_sources, "RYM_FILE", tmp_path / "genre_rym.json")
         genre_vocab.reset()
         return p
 
@@ -41,23 +42,26 @@ def links(key, sources):
 def test_links_for_a_genre_matched_everywhere_in_the_fixed_order():
     sources = {
         "discogs": {"name": "tech house", "family": False},
+        "rym": {"url": "https://rateyourmusic.com/genre/tech-house/"},
         "musicbrainz": {"id": "abc-1", "name": "tech house", "match": "name"},
         "wikipedia": {"title": "Tech house", "wikidata": "Q5", "match": "name"},
         "apple_music": {"id": "21", "name": "Tech House", "match": "name"},
     }
     got = genre_sources.genre_source_links("tech house", sources)
-    assert [x["source"] for x in got] == ["wikipedia", "apple_music", "spotify", "discogs", "musicbrainz"]
+    assert [x["source"] for x in got] == ["wikipedia", "apple_music", "spotify", "discogs", "rym", "musicbrainz"]
     by = {x["source"]: x for x in got}
     assert (by["wikipedia"]["url"], by["wikipedia"]["kind"]) == ("https://en.wikipedia.org/wiki/Tech_house", "page")
     assert (by["apple_music"]["url"], by["apple_music"]["kind"]) == ("https://music.apple.com/us/search?term=Tech%20House", "search")
     assert (by["spotify"]["url"], by["spotify"]["kind"]) == ("https://open.spotify.com/search/genre%3A%22tech%20house%22", "search")
     assert (by["discogs"]["url"], by["discogs"]["kind"]) == ("https://www.discogs.com/search/?style=tech%20house&type=release", "search")
     assert (by["musicbrainz"]["url"], by["musicbrainz"]["kind"]) == ("https://musicbrainz.org/genre/abc-1", "page")
+    assert (by["rym"]["url"], by["rym"]["kind"]) == ("https://rateyourmusic.com/genre/tech-house/", "page")
 
 
-def test_links_for_an_unmatched_genre_fall_back_to_searches_and_omit_discogs_and_musicbrainz():
+def test_links_for_an_unmatched_genre_fall_back_to_searches_and_omit_musicbrainz():
     by = links("neurofunk", {})
-    assert list(by) == ["wikipedia", "apple_music", "spotify"]
+    assert list(by) == ["wikipedia", "apple_music", "spotify", "discogs"]
+    assert by["discogs"]["url"] == "https://www.discogs.com/search/?q=neurofunk&type=release"
     assert by["wikipedia"]["kind"] == "search"
     assert by["wikipedia"]["url"] == "https://en.wikipedia.org/w/index.php?search=neurofunk%20music%20genre"
     assert by["apple_music"]["url"] == "https://music.apple.com/us/search?term=neurofunk"
@@ -99,7 +103,7 @@ def test_payload_rows_carry_sources(sources_file):
     assert rows["house"]["level"] == "family" and rows["house"]["sources"]["discogs"]["family"] is False, "house is a level 1 genre (promoted), not a Discogs family"
     assert "electronic" not in rows and "others" not in rows
     assert rows["neurofunk"]["sources"] == {}
-    assert [x["source"] for x in rows["neurofunk"]["source_links"]] == ["wikipedia", "apple_music", "spotify"]
+    assert [x["source"] for x in rows["neurofunk"]["source_links"]] == ["wikipedia", "apple_music", "spotify", "discogs"]
     assert rows["house"]["source_links"][0]["url"] == "https://en.wikipedia.org/wiki/House_music"
     assert all("sources" in r and r["source_links"] for r in rows.values())
 
@@ -226,3 +230,19 @@ def test_hierarchy_evidence_keys_are_vocabulary_names_and_it_is_not_in_the_paylo
         for ref in [*ev["subclass_of"], *ev["lead_parents"], *ev["origins"], *ev["derivatives"]]:
             assert ref["key"] is None or ref["key"] in names
     assert "hierarchy" not in json.dumps(genre_vocab.vocabulary())
+
+
+def test_rym_link_comes_only_from_the_curated_file(sources_file, tmp_path, monkeypatch):
+    sources_file()
+    rym = tmp_path / "genre_rym.json"
+    rym.write_text(json.dumps({"house": "https://rateyourmusic.com/genre/house/", "bad": "http://evil.example/x"}), encoding="utf-8")
+    monkeypatch.setattr(genre_sources, "RYM_FILE", rym)
+    genre_sources.reset()
+    assert genre_sources.sources_for("house")["rym"] == {"url": "https://rateyourmusic.com/genre/house/"}
+    assert "rym" not in genre_sources.sources_for("bad")
+    assert "rym" not in [x["source"] for x in genre_sources.payload_fields("neurofunk")["source_links"]]
+    got = {x["source"]: x for x in genre_sources.payload_fields("house")["source_links"]}
+    assert (got["rym"]["url"], got["rym"]["kind"]) == ("https://rateyourmusic.com/genre/house/", "page")
+    monkeypatch.setattr(genre_sources, "RYM_FILE", tmp_path / "missing.json")
+    genre_sources.reset()
+    assert "rym" not in genre_sources.sources_for("house")

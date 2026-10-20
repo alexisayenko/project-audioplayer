@@ -245,3 +245,18 @@ def test_a_built_graph_payload_only_carries_legacy_families_never_others():
     for form in ("house", "techno", "trance", "drum and bass", "synthwave"):
         assert by_label[form]["family"] == "Electronic", form
     assert "Others" not in {n["family"] for n in out["nodes"]}
+
+
+def test_the_hex_table_is_served_and_the_legacy_families_are_unchanged():
+    body = genre_vocab.vocabulary()
+    assert body["hex"] == {"Blues": "#0068F7", "Jazz": "#8F4997", "Pop": "#F664A5", "house": "#F7DF6A", "techno": "#535353", "drum and bass": "#E8BD0C", "synthwave": "#881DF7", "Funk / Soul": "#F7690A"}
+    assert genre_graph.table_family("drum and bass") == "Electronic" and genre_graph.table_family("jazz") == "Jazz"
+    assert set(genre_graph.families().values()) == set(genre_graph.FAMILIES)
+
+
+@pytest.mark.parametrize("key,bad", [("Jazz", "red"), ("Jazz", "#fff"), ("Jazz", 5), ("nonsense", "#112233")])
+def test_a_malformed_hex_entry_is_rejected(key, bad):
+    doc = json.loads((DATA / "genre_levels.json").read_text(encoding="utf-8"))
+    doc["hex"] = {key: bad}
+    with pytest.raises(ValueError, match="hex"):
+        genre_vocab.parse_hex(doc)

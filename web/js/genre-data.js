@@ -25,6 +25,19 @@ export function setLevelOneNames(names, colourSlots = new Map()) {
   for (const [name, slot] of colourSlots) slots.set(name, slot);
 }
 
+const slotOverrides = new Set();
+
+export function setSlotColours(hexes) {
+  if (typeof document === 'undefined') return;
+  const style = document.documentElement.style;
+  for (const slot of slotOverrides) style.removeProperty(`--chart-${slot}`);
+  slotOverrides.clear();
+  for (const [slot, hex] of hexes) {
+    style.setProperty(`--chart-${slot}`, hex);
+    slotOverrides.add(slot);
+  }
+}
+
 export const legacySlot = (name) => {
   const i = FAMILIES.indexOf(name);
   return i < 0 || name === 'Other' ? -1 : i;
