@@ -8,11 +8,9 @@
   "drum and bass",
   "synthwave",
   "Others",
-  "Folk, World, & Country",
   "Funk / Soul",
   "Hip Hop",
   "Jazz",
-  "Latin",
   "Pop",
   "Reggae",
   "Rock"
@@ -21,13 +19,6 @@
   "Blues": [],
   "Classical": [
    "classical music"
-  ],
-  "Folk, World, & Country": [
-   "folk world and country",
-   "folk, world and country",
-   "world music",
-   "folk and country",
-   "world and country"
   ],
   "Funk / Soul": [
    "funk and soul",
@@ -49,10 +40,6 @@
   "Jazz": [
    "jazz music"
   ],
-  "Latin": [
-   "latin music",
-   "latino"
-  ],
   "Others": [
    "electronic music",
    "electronica",
@@ -60,7 +47,16 @@
    "alternative dance",
    "rave",
    "dance & edm",
-   "electronic"
+   "electronic",
+   "latin",
+   "folk, world, & country",
+   "latin music",
+   "latino",
+   "folk world and country",
+   "folk, world and country",
+   "world music",
+   "folk and country",
+   "world and country"
   ],
   "Pop": [
    "pop music",
@@ -256,17 +252,57 @@
    "colour": "Electronic",
    "kind": "organisational",
    "members": [
+    "aboriginal",
     "abstract",
     "acid",
+    "african",
+    "afro-cuban",
+    "amapiano",
     "ambient",
+    "andean music",
+    "axé",
+    "bachata",
+    "baião",
+    "bakersfield sound",
     "balearic",
+    "banda",
     "bass music",
+    "batucada",
     "beatbox",
+    "beguine",
+    "bhangra",
     "bleep",
+    "bluegrass",
+    "bolero",
+    "bollywood",
+    "bomba",
+    "boogaloo",
     "breakbeat",
     "broken beat",
+    "cajun",
+    "candombe",
+    "canzone napoletana",
+    "carnatic",
+    "catalan music",
+    "celtic",
+    "cha-cha",
+    "champeta",
+    "charanga",
+    "chinese classical",
     "chiptune",
+    "choro",
+    "compas",
+    "conjunto",
+    "corrido",
+    "country",
+    "cretan",
+    "cuatro",
+    "cubano",
+    "cumbia",
+    "dangdut",
     "dark electro",
+    "descarga",
+    "desert blues",
     "disco polo",
     "downtempo",
     "dub",
@@ -274,32 +310,113 @@
     "electro",
     "electro swing",
     "electronic rock",
+    "enka",
     "experimental",
+    "fado",
+    "favela funk",
+    "flamenco",
+    "folk",
+    "folk pop",
     "footwork",
+    "forró",
     "freestyle",
     "future jazz",
+    "gagaku",
+    "gamelan",
+    "ghazal",
     "ghetto",
     "ghettotech",
+    "gnawa",
+    "gospel",
+    "gqom",
     "grime",
+    "guaguancó",
+    "guajira",
+    "guaracha",
     "halftime",
     "hardcore techno",
     "harsh noise wall",
+    "hawaiian",
+    "highlife",
+    "hillbilly",
+    "hindustani",
+    "honky tonk",
     "idm",
+    "indian classical",
     "jazzdance",
     "juke",
+    "kaseko",
+    "kayōkyoku",
+    "keroncong",
+    "kizomba",
+    "klezmer",
     "kuduro",
+    "kwaito",
+    "latin pop",
+    "laïko",
     "leftfield",
     "lento violento",
+    "mambo",
+    "mariachi",
+    "mbalax",
+    "merengue",
+    "min'yō",
     "minimal",
+    "mouth music",
+    "mpb",
+    "musette",
+    "música criolla",
     "neofolk",
     "new age",
     "new beat",
     "noise",
+    "nordic",
+    "norteño",
+    "nueva canción",
+    "pachanga",
+    "pacific",
+    "pagode",
+    "pasodoble",
+    "persian classical",
+    "plena",
+    "polka",
+    "porro",
     "power electronics",
+    "qawwali",
+    "rai",
+    "ranchera",
+    "rebetiko",
+    "reggaeton",
+    "romani",
+    "rumba",
+    "salsa",
+    "samba",
+    "samba-canção",
+    "sephardic",
+    "seresta",
+    "sertanejo",
+    "singer-songwriter",
+    "skiffle",
     "skweee",
+    "son",
+    "son montuno",
+    "soukous",
+    "séga",
+    "taarab",
+    "tango",
+    "tejano",
+    "timba",
     "tribal",
+    "trova",
     "uk garage",
-    "witch house"
+    "vallenato",
+    "volksmusik",
+    "western swing",
+    "witch house",
+    "worldbeat",
+    "zouk",
+    "zydeco",
+    "éntekhno"
    ],
    "note": "",
    "order": 8,
@@ -310,7 +427,16 @@
     "alternative dance",
     "rave",
     "dance & edm",
-    "electronic"
+    "electronic",
+    "latin",
+    "folk, world, & country",
+    "latin music",
+    "latino",
+    "folk world and country",
+    "folk, world and country",
+    "world music",
+    "folk and country",
+    "world and country"
    ],
    "temporary": true
   }
@@ -320,14 +446,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -467,14 +593,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -484,14 +610,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -604,14 +730,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -676,14 +802,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -829,14 +955,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -846,14 +972,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -863,14 +989,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -880,14 +1006,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -969,14 +1095,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -1073,14 +1199,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -1125,14 +1251,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -1160,14 +1286,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -1267,14 +1393,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -1304,14 +1430,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -1321,14 +1447,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -1338,14 +1464,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -1355,14 +1481,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -1442,15 +1568,13 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Jazz",
-    "Latin"
+    "Jazz"
    ],
    "family": "Jazz",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin",
     "Jazz"
    ],
    "provisional": true,
@@ -1641,14 +1765,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -1675,14 +1799,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -1726,14 +1850,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -1743,14 +1867,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -1760,14 +1884,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -1777,14 +1901,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -1794,14 +1918,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -1828,14 +1952,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -1862,14 +1986,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -1917,14 +2041,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -1969,14 +2093,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -2072,14 +2196,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -2106,14 +2230,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -2208,14 +2332,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -2225,14 +2349,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -2259,16 +2383,13 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country",
     "Rock"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Rock",
    "flavours": [],
-   "fusion": true,
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country",
     "Rock"
    ],
    "provisional": true,
@@ -2279,14 +2400,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -2335,14 +2456,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -2352,14 +2473,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -2369,14 +2490,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -2475,14 +2596,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -2787,14 +2908,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -2804,14 +2925,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -3422,14 +3543,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -3631,14 +3752,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -3648,14 +3769,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -3665,14 +3786,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -3682,14 +3803,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -3699,17 +3820,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country",
     "Rock"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Rock",
    "flavours": [],
-   "fusion": true,
-   "level": 2,
+   "level": 3,
    "modifiers": [],
    "parents": [
-    "heavy metal",
-    "Folk, World, & Country"
+    "heavy metal"
    ],
    "provisional": false,
    "status": null,
@@ -3719,14 +3837,14 @@
    "discogs": false,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -3736,17 +3854,14 @@
    "discogs": false,
    "display": null,
    "families": [
-    "Folk, World, & Country",
     "Rock"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Rock",
    "flavours": [],
-   "fusion": true,
-   "level": 2,
+   "level": 3,
    "modifiers": [],
    "parents": [
-    "punk",
-    "Folk, World, & Country"
+    "punk"
    ],
    "provisional": false,
    "status": null,
@@ -3756,16 +3871,13 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country",
     "Rock"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Rock",
    "flavours": [],
-   "fusion": true,
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country",
     "Rock"
    ],
    "provisional": true,
@@ -3815,14 +3927,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -4110,14 +4222,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -4127,14 +4239,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -4196,14 +4308,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -4344,14 +4456,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -4414,14 +4526,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "related": [
@@ -4469,14 +4581,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -4563,14 +4675,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -4580,14 +4692,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -4597,14 +4709,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -4891,14 +5003,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -4945,14 +5057,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -4979,14 +5091,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -4996,14 +5108,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -5034,14 +5146,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -5157,14 +5269,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -5518,14 +5630,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -5535,14 +5647,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -5552,14 +5664,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -5569,14 +5681,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -5586,14 +5698,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -5641,14 +5753,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -5658,17 +5770,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Jazz",
-    "Latin"
+    "Jazz"
    ],
    "family": "Jazz",
    "flavours": [],
-   "fusion": true,
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Jazz",
-    "Latin"
+    "Jazz"
    ],
    "provisional": true,
    "status": null,
@@ -5678,14 +5787,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -5695,14 +5804,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -5896,14 +6005,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -5930,14 +6039,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -5989,14 +6098,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -6134,14 +6243,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -6245,14 +6354,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -6429,14 +6538,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -6446,14 +6555,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -6463,14 +6572,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -6516,14 +6625,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -6824,14 +6933,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -6841,14 +6950,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -6916,14 +7025,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -7035,14 +7144,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -7052,14 +7161,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -7069,14 +7178,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -7103,14 +7212,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -7120,14 +7229,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -7188,14 +7297,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -7224,14 +7333,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -7329,14 +7438,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -7842,14 +7951,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -7927,14 +8036,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -7944,14 +8053,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -7981,14 +8090,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -8032,14 +8141,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -8205,14 +8314,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -8256,14 +8365,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -8290,14 +8399,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -8307,14 +8416,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -8324,14 +8433,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -8412,14 +8521,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -8429,14 +8538,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -8446,14 +8555,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -8498,14 +8607,14 @@
    "discogs": false,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -8532,14 +8641,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -8654,14 +8763,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -8671,14 +8780,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -8705,14 +8814,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -9198,14 +9307,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -9215,14 +9324,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -9232,14 +9341,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -9306,14 +9415,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -9375,14 +9484,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -9491,14 +9600,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -9582,14 +9691,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -9675,14 +9784,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -9692,14 +9801,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -9727,14 +9836,14 @@
    "discogs": false,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -9761,14 +9870,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Latin"
+    "Others"
    ],
-   "family": "Latin",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Latin"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -9778,14 +9887,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,
@@ -9795,14 +9904,14 @@
    "discogs": true,
    "display": null,
    "families": [
-    "Folk, World, & Country"
+    "Others"
    ],
-   "family": "Folk, World, & Country",
+   "family": "Others",
    "flavours": [],
    "level": 2,
    "modifiers": [],
    "parents": [
-    "Folk, World, & Country"
+    "Others"
    ],
    "provisional": true,
    "status": null,

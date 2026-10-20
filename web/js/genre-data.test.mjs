@@ -183,11 +183,11 @@ test('ancestorsOf: chain, diamond, cycle, root, orphan, cap, related ignored', a
 });
 
 test('families are ordered as the Discogs genres with Other last, colours keep their own index', () => {
-  assert.equal(FAMILY_ORDER.length, 12);
+  assert.equal(FAMILY_ORDER.length, 10);
   assert.ok(familyOrder('Blues') < familyOrder('Electronic') && familyOrder('Rock') < familyOrder('Other'));
-  assert.equal(familyOrder('nope'), 11);
+  assert.equal(familyOrder('nope'), 9);
   assert.equal(familyIndex('Electronic'), 0);
-  assert.deepEqual(FAMILIES.slice(0, 11).map(familyIndex), [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+  assert.deepEqual(FAMILIES.slice(0, 9).map(familyIndex), [0, 1, 2, 3, 4, 5, 6, 7, 9]);
   assert.equal(familyIndex('Other'), 15);
   assert.equal(FAMILY_PALETTE_SIZE, 16);
 });
@@ -210,4 +210,26 @@ test('arrowHead: skipped for short edges, coincident circles and low zoom', () =
   assert.equal(arrowHead(3, 3, 0, 3, 3, 0, 1), null);
   assert.equal(arrowHead(0, 0, 5, 500, 0, 10, ARROW_MIN_K - 0.01), null);
   assert.ok(arrowHead(0, 0, 5, 500, 0, 10, ARROW_MIN_K));
+});
+
+test('setSlotColours notifies subscribers so canvas views re-read colours, and unsubscribe stops it', async () => {
+  const { onSlotColours, setSlotColours } = await import('./genre-data.js');
+  let calls = 0;
+  const off = onSlotColours(() => { calls += 1; });
+  setSlotColours(new Map([[9, '#0068f7']]));
+  assert.equal(calls, 1);
+  off();
+  setSlotColours(new Map());
+  assert.equal(calls, 1);
+});
+
+test('a throwing subscriber does not break the others', async () => {
+  const { onSlotColours, setSlotColours } = await import('./genre-data.js');
+  let ok = 0;
+  const offA = onSlotColours(() => { throw new Error('no canvas'); });
+  const offB = onSlotColours(() => { ok += 1; });
+  setSlotColours(new Map());
+  assert.equal(ok, 1);
+  offA();
+  offB();
 });

@@ -250,8 +250,8 @@ ROOT_CASES = [
     ("progressive house", "Electronic"), ("drum and bass", "Electronic"), ("tech house", "Electronic"), ("future garage", None),
     ("rock music", "Rock"), ("pop rock", "Rock"), ("alternative rock", "Rock"), ("pop music", "Pop"), ("dance-pop", "Pop"), ("indie pop", "Pop"),
     ("k-pop", "Pop"), ("hip hop music", "Hip Hop"), ("trip hop", "Electronic"), ("fusion", "Jazz"), ("northern soul", None),
-    ("baroque music", "Classical"), ("romantic music", "Classical"), ("ska punk", None), ("latin pop", "Latin"), ("mambo", "Latin"),
-    ("delta blues", "Blues"), ("country rock", "Folk, World, & Country"), ("music of europe", None), ("regional music", None),
+    ("baroque music", "Classical"), ("romantic music", "Classical"), ("ska punk", None), ("latin pop", "Electronic"), ("mambo", "Electronic"),
+    ("delta blues", "Blues"), ("country rock", "Rock"), ("music of europe", None), ("regional music", None),
     ("alternative music", "Rock"),
 ]
 

@@ -2,7 +2,7 @@ import { api } from './api.js';
 import { el, plural, pageHead, toast } from './dom.js';
 import { icon } from './icons.js';
 import { shownSourceLinks } from './genre-source-links.js';
-import { familyIndex, isHiddenFamily } from './genre-data.js';
+import { familyIndex, isHiddenFamily, dotClass } from './genre-data.js';
 import { filterByTags } from './library-data.js';
 import { outlineDefaultOpen } from './genre-view.js';
 import { layoutRadial } from './genre-radial.js';
@@ -169,13 +169,13 @@ export function renderGenresRework(root, opts = {}) {
         class: 'gm-tbtn', type: 'button', 'data-family': '', 'aria-pressed': String(!graphFamily), onclick: () => setGraphFamily(null),
       }, 'All')] : []), ...all.map((f) => el('button', {
         class: 'gm-tbtn', type: 'button', 'data-family': f, 'aria-pressed': String(f === graphFamily), onclick: () => setGraphFamily(f === graphFamily ? null : f),
-      }, el('span', { class: `gm-dot f${familyIndex(f)}`, 'aria-hidden': 'true' }), labelOf(f))));
+      }, el('span', { class: dotClass(familyIndex(f)), 'aria-hidden': 'true' }), labelOf(f))));
       return;
     }
     familyRow.hidden = !families.length;
     familyRow.replaceChildren(...families.map((f) => el('button', {
       class: 'gm-tbtn', type: 'button', 'data-family': f, 'aria-pressed': String(f === rootGenre), onclick: () => setFamily(f),
-    }, el('span', { class: `gm-dot f${familyIndex(f)}`, 'aria-hidden': 'true' }), labelOf(f))));
+    }, el('span', { class: dotClass(familyIndex(f)), 'aria-hidden': 'true' }), labelOf(f))));
   }
   const legendBtn = el('button', {
     class: 'gm-tbtn', type: 'button', 'aria-controls': 'gmr-legend', 'aria-expanded': String(legendOpen), onclick: () => setLegend(!legendOpen, { save: true }),
@@ -632,7 +632,7 @@ export function renderGenresRework(root, opts = {}) {
     const total = n.group ? 0 : count(n);
     const kids = [
       el('span', { class: `gmr-chev${r.hasChildren ? '' : ' none'}`, 'aria-hidden': 'true' }, r.hasChildren ? icon('chevron', 'inline') : null),
-      n.level === 1 ? el('span', { class: `gm-dot f${familyIndex(n.name)}`, 'aria-hidden': 'true' }) : null,
+      n.level === 1 ? el('span', { class: dotClass(familyIndex(n.name)), 'aria-hidden': 'true' }) : null,
       el('span', { class: 'gmr-name' }, n.label),
       r.via ? el('span', { class: 'gmr-via t-caption muted' }, `also called ${r.via}`) : null,
       ...otherGenres(n, rootName).map((g) => badge(`also in ${labelOf(g)}`, `Also in ${labelOf(g)}`, 'alsoin')),

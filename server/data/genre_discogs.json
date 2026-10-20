@@ -11,18 +11,16 @@
   "Blues",
   "Classical",
   "Others",
-  "Folk, World, & Country",
   "Funk / Soul",
   "Hip Hop",
   "Jazz",
-  "Latin",
   "Pop",
   "Reggae",
   "Rock"
  ],
  "genres": {
   "aboriginal": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "abstract": [
    "Others"
@@ -44,10 +42,10 @@
    "Rock"
   ],
   "african": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "afro-cuban": [
-   "Latin"
+   "Others"
   ],
   "afro-cuban jazz": [
    "Jazz"
@@ -62,7 +60,7 @@
    "Rock"
   ],
   "amapiano": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "ambient": [
    "Others"
@@ -74,7 +72,7 @@
    "Rock"
   ],
   "andean music": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "aor": [
    "Rock"
@@ -98,16 +96,16 @@
    "Classical"
   ],
   "axé": [
-   "Latin"
+   "Others"
   ],
   "bachata": [
-   "Latin"
+   "Others"
   ],
   "baião": [
-   "Latin"
+   "Others"
   ],
   "bakersfield sound": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "balearic": [
    "Others"
@@ -122,7 +120,7 @@
    "Others"
   ],
   "banda": [
-   "Latin"
+   "Others"
   ],
   "barbershop": [
    "Pop"
@@ -140,7 +138,7 @@
    "Others"
   ],
   "batucada": [
-   "Latin"
+   "Others"
   ],
   "beat": [
    "Rock"
@@ -149,13 +147,13 @@
    "Others"
   ],
   "beguine": [
-   "Latin"
+   "Others"
   ],
   "berlin-school": [
    "Others"
   ],
   "bhangra": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "big band": [
    "Jazz"
@@ -173,23 +171,23 @@
    "Others"
   ],
   "bluegrass": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "blues rock": [
    "Blues",
    "Rock"
   ],
   "bolero": [
-   "Latin"
+   "Others"
   ],
   "bollywood": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "bomba": [
-   "Latin"
+   "Others"
   ],
   "boogaloo": [
-   "Latin"
+   "Others"
   ],
   "boogie": [
    "Funk / Soul"
@@ -204,7 +202,6 @@
    "Jazz"
   ],
   "bossa nova": [
-   "Latin",
    "Jazz"
   ],
   "bounce": [
@@ -235,13 +232,13 @@
    "Pop"
   ],
   "cajun": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "calypso": [
    "Reggae"
   ],
   "candombe": [
-   "Latin"
+   "Others"
   ],
   "cantata": [
    "Classical"
@@ -250,31 +247,31 @@
    "Pop"
   ],
   "canzone napoletana": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "carnatic": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "catalan music": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "celtic": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "cha-cha": [
-   "Latin"
+   "Others"
   ],
   "chamber music": [
    "Classical"
   ],
   "champeta": [
-   "Latin"
+   "Others"
   ],
   "chanson": [
    "Pop"
   ],
   "charanga": [
-   "Latin"
+   "Others"
   ],
   "chicago blues": [
    "Blues"
@@ -283,7 +280,7 @@
    "Others"
   ],
   "chinese classical": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "chiptune": [
    "Others"
@@ -292,7 +289,7 @@
    "Classical"
   ],
   "choro": [
-   "Latin"
+   "Others"
   ],
   "city pop": [
    "Pop"
@@ -307,13 +304,13 @@
    "Rock"
   ],
   "compas": [
-   "Latin"
+   "Others"
   ],
   "concerto": [
    "Classical"
   ],
   "conjunto": [
-   "Latin"
+   "Others"
   ],
   "conscious": [
    "Hip Hop"
@@ -331,20 +328,19 @@
    "Jazz"
   ],
   "corrido": [
-   "Latin"
+   "Others"
   ],
   "country": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "country blues": [
    "Blues"
   ],
   "country rock": [
-   "Folk, World, & Country",
    "Rock"
   ],
   "cretan": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "crunk": [
    "Hip Hop"
@@ -353,13 +349,13 @@
    "Rock"
   ],
   "cuatro": [
-   "Latin"
+   "Others"
   ],
   "cubano": [
-   "Latin"
+   "Others"
   ],
   "cumbia": [
-   "Latin"
+   "Others"
   ],
   "cut-up/dj": [
    "Hip Hop"
@@ -371,7 +367,7 @@
    "Reggae"
   ],
   "dangdut": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "dark ambient": [
    "Others"
@@ -407,10 +403,10 @@
    "Rock"
   ],
   "descarga": [
-   "Latin"
+   "Others"
   ],
   "desert blues": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "disco": [
    "Funk / Soul",
@@ -497,7 +493,7 @@
    "Rock"
   ],
   "enka": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "euro disco": [
    "Others"
@@ -522,29 +518,28 @@
    "Rock"
   ],
   "fado": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "favela funk": [
-   "Latin"
+   "Others"
   ],
   "flamenco": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "folk": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "folk metal": [
    "Rock"
   ],
   "folk rock": [
-   "Folk, World, & Country",
    "Rock"
   ],
   "footwork": [
    "Others"
   ],
   "forró": [
-   "Latin"
+   "Others"
   ],
   "free funk": [
    "Funk / Soul"
@@ -587,10 +582,10 @@
    "Others"
   ],
   "gagaku": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "gamelan": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "gangsta": [
    "Hip Hop"
@@ -602,7 +597,7 @@
    "Rock"
   ],
   "ghazal": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "ghetto": [
    "Others"
@@ -623,7 +618,7 @@
    "Others"
   ],
   "gnawa": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "go-go": [
    "Funk / Soul"
@@ -635,7 +630,6 @@
    "Rock"
   ],
   "gospel": [
-   "Folk, World, & Country",
    "Funk / Soul"
   ],
   "goth rock": [
@@ -645,7 +639,7 @@
    "Rock"
   ],
   "gqom": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "grime": [
    "Others",
@@ -661,13 +655,13 @@
    "Rock"
   ],
   "guaguancó": [
-   "Latin"
+   "Others"
   ],
   "guajira": [
-   "Latin"
+   "Others"
   ],
   "guaracha": [
-   "Latin"
+   "Others"
   ],
   "gypsy jazz": [
    "Jazz"
@@ -713,7 +707,7 @@
    "Others"
   ],
   "hawaiian": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "heavy metal": [
    "Rock"
@@ -722,23 +716,23 @@
    "Others"
   ],
   "highlife": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "hill country blues": [
    "Blues"
   ],
   "hillbilly": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "hindustani": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "hip house": [
    "Others",
    "Hip Hop"
   ],
   "honky tonk": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "horrorcore": [
    "Hip Hop"
@@ -759,7 +753,7 @@
    "Classical"
   ],
   "indian classical": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "indie pop": [
    "Pop"
@@ -817,19 +811,19 @@
    "Pop"
   ],
   "kaseko": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "kayōkyoku": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "keroncong": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "kizomba": [
-   "Latin"
+   "Others"
   ],
   "klezmer": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "krautrock": [
    "Rock"
@@ -838,17 +832,16 @@
    "Others"
   ],
   "kwaito": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "latin jazz": [
-   "Jazz",
-   "Latin"
+   "Jazz"
   ],
   "latin pop": [
-   "Latin"
+   "Others"
   ],
   "laïko": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "leftfield": [
    "Others"
@@ -878,13 +871,13 @@
    "Others"
   ],
   "mambo": [
-   "Latin"
+   "Others"
   ],
   "mandopop": [
    "Pop"
   ],
   "mariachi": [
-   "Latin"
+   "Others"
   ],
   "math rock": [
    "Rock"
@@ -893,7 +886,7 @@
    "Rock"
   ],
   "mbalax": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "medieval": [
    "Classical"
@@ -914,7 +907,7 @@
    "Reggae"
   ],
   "merengue": [
-   "Latin"
+   "Others"
   ],
   "metalcore": [
    "Rock"
@@ -929,7 +922,7 @@
    "Rock"
   ],
   "min'yō": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "minimal": [
    "Others"
@@ -960,13 +953,13 @@
    "Others"
   ],
   "mouth music": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "mpb": [
-   "Latin"
+   "Others"
   ],
   "musette": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "music hall": [
    "Pop"
@@ -975,7 +968,7 @@
    "Others"
   ],
   "música criolla": [
-   "Latin"
+   "Others"
   ],
   "neo soul": [
    "Funk / Soul"
@@ -1016,10 +1009,10 @@
    "Rock"
   ],
   "nordic": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "norteño": [
-   "Latin"
+   "Others"
   ],
   "nu metal": [
    "Rock"
@@ -1028,7 +1021,7 @@
    "Others"
   ],
   "nueva canción": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "oi": [
    "Rock"
@@ -1046,19 +1039,19 @@
    "Funk / Soul"
   ],
   "pachanga": [
-   "Latin"
+   "Others"
   ],
   "pacific": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "pagode": [
-   "Latin"
+   "Others"
   ],
   "pasodoble": [
-   "Latin"
+   "Others"
   ],
   "persian classical": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "phonk": [
    "Hip Hop"
@@ -1070,13 +1063,13 @@
    "Blues"
   ],
   "plena": [
-   "Latin"
+   "Others"
   ],
   "plunderphonics": [
    "Others"
   ],
   "polka": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "pop punk": [
    "Rock"
@@ -1091,7 +1084,7 @@
    "Rock"
   ],
   "porro": [
-   "Latin"
+   "Others"
   ],
   "post-bop": [
    "Jazz"
@@ -1154,7 +1147,7 @@
    "Rock"
   ],
   "qawwali": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "ragga": [
    "Reggae"
@@ -1166,13 +1159,13 @@
    "Jazz"
   ],
   "rai": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "ranchera": [
-   "Latin"
+   "Others"
   ],
   "rebetiko": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "reggae gospel": [
    "Reggae"
@@ -1181,7 +1174,7 @@
    "Reggae"
   ],
   "reggaeton": [
-   "Latin"
+   "Others"
   ],
   "renaissance": [
    "Classical"
@@ -1212,22 +1205,22 @@
    "Reggae"
   ],
   "romani": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "roots reggae": [
    "Reggae"
   ],
   "rumba": [
-   "Latin"
+   "Others"
   ],
   "salsa": [
-   "Latin"
+   "Others"
   ],
   "samba": [
-   "Latin"
+   "Others"
   ],
   "samba-canção": [
-   "Latin"
+   "Others"
   ],
   "schlager": [
    "Pop"
@@ -1242,13 +1235,13 @@
    "Hip Hop"
   ],
   "sephardic": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "seresta": [
-   "Latin"
+   "Others"
   ],
   "sertanejo": [
-   "Latin"
+   "Others"
   ],
   "shoegaze": [
    "Rock"
@@ -1257,7 +1250,7 @@
    "Reggae"
   ],
   "skiffle": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "skweee": [
    "Others"
@@ -1278,16 +1271,16 @@
    "Rock"
   ],
   "son": [
-   "Latin"
+   "Others"
   ],
   "son montuno": [
-   "Latin"
+   "Others"
   ],
   "sonata": [
    "Classical"
   ],
   "soukous": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "soul": [
    "Funk / Soul"
@@ -1352,13 +1345,13 @@
    "Pop"
   ],
   "séga": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "taarab": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "tango": [
-   "Latin"
+   "Others"
   ],
   "tech house": [
    "Others"
@@ -1370,7 +1363,7 @@
    "Rock"
   ],
   "tejano": [
-   "Latin"
+   "Others"
   ],
   "texas blues": [
    "Blues"
@@ -1382,7 +1375,7 @@
    "Hip Hop"
   ],
   "timba": [
-   "Latin"
+   "Others"
   ],
   "trap": [
    "Hip Hop",
@@ -1402,7 +1395,7 @@
    "Others"
   ],
   "trova": [
-   "Latin"
+   "Others"
   ],
   "turntablism": [
    "Hip Hop"
@@ -1414,7 +1407,7 @@
    "Funk / Soul"
   ],
   "vallenato": [
-   "Latin"
+   "Others"
   ],
   "vaporwave": [
    "Others"
@@ -1426,10 +1419,10 @@
    "Pop"
   ],
   "volksmusik": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "western swing": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "witch house": [
    "Others"
@@ -1438,13 +1431,13 @@
    "Pop"
   ],
   "zouk": [
-   "Latin"
+   "Others"
   ],
   "zydeco": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "éntekhno": [
-   "Folk, World, & Country"
+   "Others"
   ]
  },
  "discogs_names": {

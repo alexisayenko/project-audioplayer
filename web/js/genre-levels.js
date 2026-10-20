@@ -117,13 +117,13 @@ function slotOf(name, ctx, seen = new Set()) {
   seen.add(name);
   let slot = -1;
   if (!n) slot = legacySlot(name);
-  else if (n.group) slot = OTHER_COLOR;
-  else if (n.form && ctx.hex.has(name)) {
+  else if (n.group && !ctx.hex.has(name)) slot = OTHER_COLOR;
+  else if ((n.form || n.group) && ctx.hex.has(name)) {
     slot = SPARE_SLOTS[ctx.spare++ % SPARE_SLOTS.length];
     ctx.hexes.set(slot, ctx.hex.get(name));
   } else if (n.form) slot = formSlot(n, ctx, seen);
   else slot = name === 'Other' ? OTHER_COLOR : legacySlot(name);
-  if (n && !n.group && slot < 0) slot = SPARE_SLOTS[ctx.spare++ % SPARE_SLOTS.length];
+  if (n && slot < 0) slot = SPARE_SLOTS[ctx.spare++ % SPARE_SLOTS.length];
   if (slot >= 0) ctx.done.set(name, slot);
   return slot;
 }

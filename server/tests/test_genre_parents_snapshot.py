@@ -51,6 +51,16 @@ def old_set(old):
     return {old["parent"] or old["family"], *old["also_under"], *old["also_in_genres"]}
 
 
+KILLED = {"Latin", "Folk, World, & Country"}
+KILLED_ROWS = {"latin", "folk, world, & country"}
+KILLED_EDITED = {n for n, o in SNAP["levels"].items() if old_set(o) & KILLED}
+EDITED |= KILLED_EDITED
+
+
+def after_kill(parents):
+    return (set(parents) - KILLED) or {"Others"}
+
+
 def test_levels_entries_match_the_snapshot_taken_before_the_change():
     body = payload()
     assert set(body["levels"]) - set(SNAP["levels"]) == {"space disco", "sovietwave"} | ADDED
@@ -71,10 +81,10 @@ def test_the_tree_changes_only_by_the_links_moved_to_related():
         old = SNAP["levels"][name]
         before = old_set(old) | ({SECOND_FAMILY[name]} if name in SECOND_FAMILY else set())
         lv = body["levels"][name]
-        assert set(lv["parents"]) == (before - set(moved) - INDUSTRIAL_REMOVED or {"Others"}), name
+        assert set(lv["parents"]) == after_kill(before - set(moved) - INDUSTRIAL_REMOVED), name
         assert lv.get("related", []) == [m for m in moved if m not in INDUSTRIAL_REMOVED], name
         assert len(lv["parents"]) == len(set(lv["parents"])) and lv["parents"], name
-    assert body["levels"]["gospel"]["families"] == ["Folk, World, & Country"] and families >= {"Folk, World, & Country"}
+    assert body["levels"]["gospel"]["families"] == ["Others"] and families >= {"Others"}
     assert {n for n, lv in body["levels"].items() if lv.get("related")} == set(RELATED_MOVED) - {"witch house", "neurofunk", "darksynth"} | ROCK_RELATED
 
 
@@ -82,6 +92,9 @@ def test_the_second_family_additions_left_are_the_only_other_differences():
     assert len(SECOND_FAMILY) == 23
     levels = payload()["levels"]
     for name, family in SECOND_FAMILY.items():
+        if family in KILLED:
+            assert family not in levels[name]["parents"], name
+            continue
         if name in RELATED_MOVED:
             assert (family in levels[name]["parents"]) == (name == "gospel"), name
             continue
@@ -106,7 +119,7 @@ def test_vocabulary_rows_match_the_snapshot_taken_before_the_change():
     rows = {r["name"]: r for r in body["genres"]}
     assert set(rows) - set(SNAP["rows"]) == {"space disco", "sovietwave"} | ADDED
     for name, old in SNAP["rows"].items():
-        if name in EDITED:
+        if name in EDITED or name in KILLED_ROWS:
             continue
         row = rows[name]
         assert (row["level"], row["extra"]) == (old["level"], old["extra"]), name
@@ -129,3 +142,17 @@ def test_the_rock_edits_are_exactly_the_genres_whose_parents_changed():
     for name in ROCK_EDITED - {"industrial rock"}:
         assert "Rock" in body["levels"][name]["families"] and SNAP["levels"][name]["family"] == "Rock", name
         assert set(body["levels"][name]["parents"]) != old_set(SNAP["levels"][name]), name
+
+
+def test_the_killed_families_2026_10_21_left_no_genre_without_a_parent():
+    body = payload()
+    assert len(KILLED_EDITED) >= 100
+    assert not KILLED & set(body["families"]) and not KILLED_ROWS & {r["name"] for r in body["genres"]}
+    for name in KILLED_EDITED & set(body["levels"]):
+        parents = set(body["levels"][name]["parents"])
+        assert parents and not parents & KILLED, name
+    keep = {"bossa nova": ["Jazz"], "latin jazz": ["Jazz"], "country rock": ["Rock"], "folk rock": ["Rock"], "folk metal": ["heavy metal"], "folk punk": ["punk"]}
+    for name, parents in keep.items():
+        assert body["levels"][name]["parents"] == parents, name
+        assert "fusion" not in body["levels"][name] or not body["levels"][name]["fusion"], name
+    assert body["levels"]["folk"]["parents"] == ["Others"] and "latin" not in body["levels"]

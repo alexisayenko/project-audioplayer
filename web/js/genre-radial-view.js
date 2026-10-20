@@ -1,7 +1,7 @@
 import { fitTransform, recenterOnResize, hitNode, isDragMove } from './genre-view.js';
 import { highlightSets, selectLabels } from './genre-radial.js';
-import { FAMILY_PALETTE_SIZE, arrowHead } from './genre-data.js';
-import { fillDisc } from './genre-disc.js';
+import { FAMILY_PALETTE_SIZE, arrowHead, onSlotColours, isOutlinedSlot } from './genre-data.js';
+import { fillDisc, outlineDisc } from './genre-disc.js';
 import { shadeTable } from './genre-shade.js';
 
 const MIN_K = 0.15;
@@ -49,7 +49,7 @@ export function createRadialView(canvas, { onSelect, onHover, reducedMotion = fa
     const v = (n) => cs.getPropertyValue(n).trim();
     colors = {
       fam: Array.from({ length: FAMILY_PALETTE_SIZE }, (_, i) => v(`--chart-${i}`)),
-      edge: v('--ink-muted'), accent: v('--accent-ink'), ink: v('--ink'), halo: v('--surface'), warn: v('--accent'), font: cs.fontFamily || 'sans-serif',
+      edge: v('--ink-muted'), rim: v('--chart-rim'), accent: v('--accent-ink'), ink: v('--ink'), halo: v('--surface'), warn: v('--accent'), font: cs.fontFamily || 'sans-serif',
     };
   }
 
@@ -129,6 +129,7 @@ export function createRadialView(canvas, { onSelect, onHover, reducedMotion = fa
     ctx.globalAlpha = alphaOf(n);
     const sub = n.subOrder && layout.subIdx >= 0 ? layout.subIdx : -1;
     fillDisc(ctx, n.x, n.y, n.r, colors.fam, n.hues || [n.hue], colors.ink, sub, sub >= 0 ? shades()[n.subOrder] : null);
+    outlineDisc(ctx, n.x, n.y, n.r, n.hues || [n.hue], isOutlinedSlot, colors.rim, k);
     if (!n.node.discogs) {
       ctx.strokeStyle = colors.ink;
       ctx.lineWidth = 1.5 / k;
@@ -351,6 +352,10 @@ export function createRadialView(canvas, { onSelect, onHover, reducedMotion = fa
     zoomAt(p.x, p.y, Math.exp(-ev.deltaY * (ev.deltaMode === 1 ? 0.05 : 0.0015)));
   }, { passive: false });
 
+  const scheme = globalThis.matchMedia ? globalThis.matchMedia('(prefers-color-scheme: dark)') : null;
+  const onScheme = () => { readColors(); request(); };
+  scheme?.addEventListener?.('change', onScheme);
+  const offColours = onSlotColours(onScheme);
   if (typeof ResizeObserver === 'function') { ro = new ResizeObserver(() => resize()); ro.observe(canvas); }
 
   return {
@@ -380,6 +385,8 @@ export function createRadialView(canvas, { onSelect, onHover, reducedMotion = fa
     resize,
     destroy() {
       window.removeEventListener?.('blur', onBlur);
+      scheme?.removeEventListener?.('change', onScheme);
+      offColours();
       ro?.disconnect();
       if (raf && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(raf);
       raf = 0;

@@ -52,7 +52,7 @@ test('graph nodes carry the distinct palette indices of their families in the fi
   assert.deepEqual(g.byId.get('s:quad').fis, [0, 5, 1, 9], 'segments follow the vocabulary family order: Electronic, Funk / Soul, Rock, Blues');
   assert.deepEqual(g.byId.get('g:Rock').fis, [familyIndex('Rock')]);
   assert.deepEqual(uniqueIndices(['Other', 'Foo', 'Rock'], familyIndex), [15, 1]);
-  setLevelOneNames(['Blues', 'Classical', 'Electronic', 'Folk, World, & Country', 'Funk / Soul', 'Hip Hop', 'Jazz', 'Latin', 'Pop', 'Reggae', 'Rock']);
+  setLevelOneNames(['Blues', 'Classical', 'Electronic', 'Funk / Soul', 'Hip Hop', 'Jazz', 'Pop', 'Reggae', 'Rock']);
   assert.deepEqual(pieIndices(['Rock', 'Blues', 'Electronic', 'Rock']), [9, 0, 1]);
   assert.deepEqual(pieIndices(['Foo', 'Rock']), [1, 15]);
   assert.deepEqual(pieIndices(undefined), []);
@@ -77,7 +77,7 @@ test('radial hues keep the umbrella hue for single families and split a multi-fa
   assert.deepEqual(hueSet(3, { fams: ['Rock', 'Electronic'] }), [0, 1]);
   assert.deepEqual(hueSet(3, { fams: ['Electronic'] }), [3], 'a single family keeps the umbrella hue');
   assert.deepEqual(hueSet(3, {}), [3]);
-  assert.equal(hueSet(3, { fams: ['Blues', 'Classical', 'Electronic', 'Folk, World, & Country', 'Rock'] }).length, 5);
+  assert.equal(hueSet(3, { fams: ['Blues', 'Classical', 'Electronic', 'Reggae', 'Rock'] }).length, 5);
 });
 
 test('segmentsFor gives one full circle for a single colour and equal contiguous segments, starting at the top, for several', () => {

@@ -1,12 +1,14 @@
 export const FAMILIES = [
-  'Electronic', 'Rock', 'Pop', 'Hip Hop', 'Jazz', 'Funk / Soul', 'Classical', 'Reggae', 'Latin',
-  'Blues', 'Folk, World, & Country', 'Other',
+  'Electronic', 'Rock', 'Pop', 'Hip Hop', 'Jazz', 'Funk / Soul', 'Classical', 'Reggae', 'Blues', 'Other',
 ];
 
 export const FAMILY_ORDER = [
-  'Blues', 'Classical', 'Electronic', 'Folk, World, & Country', 'Funk / Soul', 'Hip Hop', 'Jazz',
-  'Latin', 'Pop', 'Reggae', 'Rock', 'Other',
+  'Blues', 'Classical', 'Electronic', 'Funk / Soul', 'Hip Hop', 'Jazz', 'Pop', 'Reggae', 'Rock', 'Other',
 ];
+
+const LEGACY_SLOTS = new Map([
+  ['Electronic', 0], ['Rock', 1], ['Pop', 2], ['Hip Hop', 3], ['Jazz', 4], ['Funk / Soul', 5], ['Classical', 6], ['Reggae', 7], ['Blues', 9],
+]);
 
 export const familyOrder = (family) => {
   const i = FAMILY_ORDER.indexOf(family);
@@ -15,7 +17,11 @@ export const familyOrder = (family) => {
 
 export const FAMILY_PALETTE_SIZE = 16;
 export const OTHER_COLOR = FAMILY_PALETTE_SIZE - 1;
-export const SPARE_SLOTS = [11, 12, 13, 14];
+export const SPARE_SLOTS = [8, 10, 11, 12, 13, 14];
+export const isWhite = (hex) => /^#f{3}(f{3})?$/i.test(hex);
+export const outlinedSlots = new Set();
+export const isOutlinedSlot = (slot) => outlinedSlots.has(slot);
+export const dotClass = (slot) => `gm-dot f${slot}${outlinedSlots.has(slot) ? ' w' : ''}`;
 
 const slots = new Map();
 
@@ -26,22 +32,31 @@ export function setLevelOneNames(names, colourSlots = new Map()) {
 }
 
 const slotOverrides = new Set();
+const colourListeners = new Set();
+
+export function onSlotColours(fn) {
+  colourListeners.add(fn);
+  return () => colourListeners.delete(fn);
+}
 
 export function setSlotColours(hexes) {
-  if (typeof document === 'undefined') return;
-  const style = document.documentElement.style;
-  for (const slot of slotOverrides) style.removeProperty(`--chart-${slot}`);
-  slotOverrides.clear();
-  for (const [slot, hex] of hexes) {
-    style.setProperty(`--chart-${slot}`, hex);
-    slotOverrides.add(slot);
+  outlinedSlots.clear();
+  for (const [slot, hex] of hexes) if (isWhite(hex)) outlinedSlots.add(slot);
+  if (typeof document !== 'undefined') {
+    const style = document.documentElement.style;
+    for (const slot of slotOverrides) style.removeProperty(`--chart-${slot}`);
+    slotOverrides.clear();
+    for (const [slot, hex] of hexes) {
+      style.setProperty(`--chart-${slot}`, hex);
+      slotOverrides.add(slot);
+    }
+  }
+  for (const fn of colourListeners) {
+    try { fn(); } catch { /* a view without a canvas context yet */ }
   }
 }
 
-export const legacySlot = (name) => {
-  const i = FAMILIES.indexOf(name);
-  return i < 0 || name === 'Other' ? -1 : i;
-};
+export const legacySlot = (name) => LEGACY_SLOTS.get(name) ?? -1;
 
 export const familyIndex = (family) => {
   if (slots.has(family)) return slots.get(family);

@@ -14,7 +14,7 @@ DATA = Path(genre_vocab.__file__).resolve().parent.parent / "data"
 DISCOGS = json.loads((DATA / "genre_discogs.json").read_text(encoding="utf-8"))
 EXTRAS = json.loads((DATA / "genre_extras.json").read_text(encoding="utf-8"))["extras"]
 LIVE = json.loads((Path(__file__).parent / "fixtures" / "genre_live_tags.json").read_text(encoding="utf-8"))
-FAMILIES = ["Blues", "Classical", "Others", "Folk, World, & Country", "Funk / Soul", "Hip Hop", "Jazz", "Latin", "Pop", "Reggae", "Rock"]
+FAMILIES = ["Blues", "Classical", "Others", "Funk / Soul", "Hip Hop", "Jazz", "Pop", "Reggae", "Rock"]
 FORMS = ["house", "techno", "trance", "drum and bass", "synthwave"]  # promoted out of Others (task-0066, 2026-10-20): level 1 genres, listed in the vocabulary families before the group
 ALL_FAMILIES = [*FAMILIES[:2], *FORMS, *FAMILIES[2:]]
 
@@ -29,7 +29,7 @@ def names() -> set[str]:
 # --- the data files (TAG-078, TAG-083) -------------------------------------------------------
 
 
-def test_the_11_families_in_the_fixed_order():
+def test_the_9_families_in_the_fixed_order():
     assert DISCOGS["families"] == FAMILIES
     assert genre_vocab.load().families == tuple(ALL_FAMILIES), "the five promoted genres sit before the group Others"
 

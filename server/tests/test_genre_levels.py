@@ -114,6 +114,7 @@ def test_synonyms_are_lowercase_and_collision_free():
 def test_electronic_synonyms():
     assert FAMILIES["Others"]["synonyms"] == [
         "electronic music", "electronica", "indietronica", "alternative dance", "rave", "dance & edm", "electronic",
+        "latin", "folk, world, & country", "latin music", "latino", "folk world and country", "folk, world and country", "world music", "folk and country", "world and country",
     ]
 
 
@@ -372,7 +373,7 @@ def test_disco_belongs_to_funk_soul_only_and_so_do_its_children():
 
 def test_a_blend_is_level_two_through_its_family_parent_and_level_three_through_its_genre_parent():
     assert ENTRIES["hip house"]["level"] == 2 and all(p in FAMILIES for p in ENTRIES["hip house"]["parents"]), "house is level 1: hip house is a level 2 blend of two level 1 genres"
-    for k in ("trip hop", "folk metal", "folk punk", "rap metal", "funk metal"):
+    for k in ("trip hop", "rap metal", "funk metal"):
         assert ENTRIES[k]["level"] == 2, k
         assert any(p in FAMILIES for p in ENTRIES[k]["parents"]) and any(p not in FAMILIES for p in ENTRIES[k]["parents"]), k
         assert min(1 + ENTRIES[p]["level"] for p in ENTRIES[k]["parents"] if p not in FAMILIES) == 3, k
@@ -598,27 +599,27 @@ def test_electronic_counts_in_the_meta_block_match_the_data():
     for family in counts:
         mine = [v for v in ENTRIES.values() if family in v["families"]]
         assert counts[family] == {"total": len(mine), "level2": sum(v["level"] == 2 for v in mine), "level3": sum(v["level"] == 3 for v in mine), "level4": sum(v["level"] == 4 for v in mine)}, family
-    assert (counts["Others"]["level2"], counts["Others"]["level3"], counts["Others"]["level4"]) == (52, 30, 0)
+    assert (counts["Others"]["level2"], counts["Others"]["level3"], counts["Others"]["level4"]) == (173, 30, 0)
     assert LEVELS["_meta"]["total"] == len(ENTRIES) == 529
-    assert sum(c["total"] for c in counts.values()) == sum(len(v["families"]) for v in ENTRIES.values()) == 579
+    assert sum(c["total"] for c in counts.values()) == sum(len(v["families"]) for v in ENTRIES.values()) == 573
 
 
-ROCK_FUSION = {"folk metal", "folk punk", "rap metal", "electronic rock"}
-FUSION = {"eurodance", "blues rock", "folk rock", "country rock", "funk metal", "jazz funk", "soul jazz", "latin jazz", "hip house", "trip hop"} | ROCK_FUSION
-TWO_SCENES = {"disco", "dub", "experimental", "electro", "bossa nova", "rhythm and blues"}
+ROCK_FUSION = {"rap metal", "electronic rock"}
+FUSION = {"eurodance", "blues rock", "funk metal", "jazz funk", "soul jazz", "hip house", "trip hop"} | ROCK_FUSION
+TWO_SCENES = {"disco", "dub", "experimental", "electro", "rhythm and blues"}
 MOVED_TO_RELATED = {"hardcore techno": "Rock", "noise": "Rock", "grime": "Hip Hop", "trap": "Others", "acid jazz": "Others", "new wave": "Others", "modern classical": "Others", "gospel": "Funk / Soul"}
 
 
-def test_fusion_genres_are_the_fourteen_blends_and_each_belongs_to_two_families():
+def test_fusion_genres_are_the_nine_blends_and_each_belongs_to_two_families():
     flagged = {k for k, v in ENTRIES.items() if v.get("fusion")}
-    assert flagged == FUSION and len(flagged) == 14 and "synthpop" not in flagged
+    assert flagged == FUSION and len(flagged) == 9 and "synthpop" not in flagged
     assert all(len(ENTRIES[k]["families"]) >= 2 for k in flagged)
     assert all(v.get("fusion", True) is True for v in ENTRIES.values())
 
 
 def test_the_two_family_genres_of_the_vocabulary_are_the_20_blends_plus_the_descent_ones():
     multi = {k for k, v in ENTRIES.items() if len(v["families"]) > 1}
-    assert (FUSION | (TWO_SCENES - {"disco"})) <= multi and len(multi) == 43
+    assert (FUSION | (TWO_SCENES - {"disco"})) <= multi and len(multi) == 37
     for k, fam in MOVED_TO_RELATED.items():
         assert fam in ENTRIES[k]["related"] and fam not in ENTRIES[k]["parents"] and k not in multi, k
     assert {k for k in multi if k not in FUSION | TWO_SCENES and len(family_parents(k)) < 2 and k not in {"post-disco"}} >= {"spacesynth"}, "the disco kids are Funk / Soul only since disco left Others"

@@ -5,7 +5,7 @@ import { icon } from './icons.js';
 import { serviceIcon } from './service-icons.js';
 import { createGraphView } from './genre-graph.js';
 import {
-  FAMILIES, familyIndex, indexGraph, flatGraph, localCounts, filterTags, searchNodes, outlineRows, pathKeys,
+  FAMILIES, familyIndex, dotClass, indexGraph, flatGraph, localCounts, filterTags, searchNodes, outlineRows, pathKeys,
   loadExpanded, saveExpanded, hasStoredExpanded,
 } from './genre-data.js';
 import { filterByTags } from './library.js';
@@ -191,7 +191,7 @@ export function renderGenres(root) {
         el('button', {
           class: 'gm-hit', type: 'button', onclick: () => view.select(n.id, { center: true }),
           onpointerenter: () => view.hoverId(n.id), onpointerleave: () => view.hoverId(null),
-        }, el('span', { class: `gm-dot f${familyIndex(n.family)}`, 'aria-hidden': 'true' }), n.label, el('small', {}, songsText(n.count))))))]);
+        }, el('span', { class: dotClass(familyIndex(n.family)), 'aria-hidden': 'true' }), n.label, el('small', {}, songsText(n.count))))))]);
     orphPop.replaceChildren(
       el('div', { class: 'gm-now-head' },
         el('div', { class: 'gm-now-text' }, el('b', { class: 'gm-now-title' }, `Orphans (${list.length})`),
@@ -273,7 +273,7 @@ export function renderGenres(root) {
     const hits = g ? searchNodes(g, search.value) : [];
     results.replaceChildren(...hits.map((n) => el('li', { role: 'option' },
       el('button', { type: 'button', class: 'gm-hit', onclick: () => pick(n.id) },
-        el('span', { class: `gm-dot f${familyIndex(n.family)}`, 'aria-hidden': 'true' }), n.label, el('small', {}, songsText(n.count))))));
+        el('span', { class: dotClass(familyIndex(n.family)), 'aria-hidden': 'true' }), n.label, el('small', {}, songsText(n.count))))));
     results.hidden = !hits.length;
   }
 
@@ -299,7 +299,7 @@ export function renderGenres(root) {
       }, `Show ${songsText(n.count)} in Library`)]);
     panel.replaceChildren(
       el('div', { class: 'gm-panel-head' },
-        el('span', { class: `gm-dot f${familyIndex(n.family)}`, 'aria-hidden': 'true' }),
+        el('span', { class: dotClass(familyIndex(n.family)), 'aria-hidden': 'true' }),
         el('h2', { class: 't-headline' }, n.label),
         wikiButton(n),
         cl.button,
@@ -332,7 +332,7 @@ export function renderGenres(root) {
           if (isFamily) { toggle.click(); return; }
           view.select(r.id, { center: true });
         },
-      }, el('span', { class: `gm-dot f${familyIndex(r.family)}`, 'aria-hidden': 'true' }), r.label);
+      }, el('span', { class: dotClass(familyIndex(r.family)), 'aria-hidden': 'true' }), r.label);
       const unitWord = plural(r.size, 'genre', 'genres');
       const countText = isFamily ? `${r.size} ${unitWord}` : String(r.count);
       return el('li', {
@@ -361,7 +361,7 @@ export function renderGenres(root) {
         class: `gm-key${hidden.has(family) ? ' off' : ''}`, type: 'button', 'aria-pressed': String(!hidden.has(family)),
         title: hidden.has(family) ? `Show ${family}` : `Hide ${family}`,
         onclick: () => { hidden = toggleHidden(hidden, family); view.setHiddenFamilies(hidden); renderLegend(); },
-      }, el('span', { class: `gm-dot f${familyIndex(family)}`, 'aria-hidden': 'true' }), family, el('small', {}, String(count))))));
+      }, el('span', { class: dotClass(familyIndex(family)), 'aria-hidden': 'true' }), family, el('small', {}, String(count))))));
     if (hidden.size) legend.append(el('li', {}, el('button', {
       class: 'gm-key', type: 'button', onclick: () => { hidden = new Set(); view.setHiddenFamilies(hidden); renderLegend(); },
     }, 'Show all')));

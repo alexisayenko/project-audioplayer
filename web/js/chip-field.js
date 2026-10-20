@@ -5,7 +5,7 @@ import { splitAll, splitChips } from './chip-split.js';
 import { store } from './store.js';
 import { matchRange } from './genre-suggest.js';
 import { buildIndex, resolveGenre, searchGenres, didYouMean, cachedIndex, loadVocabulary, isGroupText } from './genre-vocab.js';
-import { familyIndex } from './genre-data.js';
+import { familyIndex, dotClass } from './genre-data.js';
 import { countryCode, GENRE_CAP } from './metadata-apply.js';
 import { isKnownCountry } from './countries.js';
 
@@ -58,7 +58,7 @@ export function chipField(ns, editor) {
     loadVocabulary().then((idx) => { loadFailed = !idx; paintChips(); });
   }
 
-  const dot = (e) => (e?.family ? el('span', { class: `gm-dot f${familyIndex(e.family)}`, 'aria-hidden': 'true' }) : null);
+  const dot = (e) => (e?.family ? el('span', { class: dotClass(familyIndex(e.family)), 'aria-hidden': 'true' }) : null);
 
   function closeList() {
     shown = [];

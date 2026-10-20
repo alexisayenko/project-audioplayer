@@ -9,6 +9,7 @@ export function initLoopChip(host, loop) {
     if (!s.active) { host.replaceChildren(); return; }
     host.replaceChildren(
       el('span', { class: 'loop-text' }, 'Loop A-B ', el('span', { class: 't-time' }, `${fmtClock(s.start)} - ${fmtClock(s.end)}`)),
+      ...(loop.preparing ? [el('span', { class: 'loop-prep' }, 'Preparing loop...')] : []),
       el('button', { class: 'loop-off', type: 'button', 'aria-label': 'Turn loop off', title: 'Turn loop off', onclick: () => loop.setOn(false) }, icon('clear', 'action')));
   };
   paint(loop.get());

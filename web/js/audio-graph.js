@@ -16,6 +16,7 @@ const ctorOf = (win) => win.AudioContext || win.webkitAudioContext;
 export const isSupported = (win = globalThis) => typeof ctorOf(win) === 'function';
 export const getState = () => state;
 export const getGain = () => graph?.gain ?? null;
+export const getSource = () => graph?.source ?? null;
 export const getAnalyser = () => (graph?.ctx.state === 'running' ? graph.analyser : null);
 export const getContext = () => graph?.ctx ?? pending?.ctx ?? null;
 export const hasGraph = () => graph !== null;

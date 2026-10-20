@@ -81,7 +81,7 @@ export function parseClock(text) {
   return Number.isFinite(t) ? round3(t) : null;
 }
 
-export function createLoop(audio, timers = { set: (fn, ms) => setTimeout(fn, ms), clear: (id) => clearTimeout(id) }) {
+export function createLoop(audio, timers = { set: (fn, ms) => setTimeout(fn, ms), clear: (id) => clearTimeout(id) }, gapless = null) {
   let region = emptyRegion();
   let on = false;
   let timer = null;
@@ -92,13 +92,16 @@ export function createLoop(audio, timers = { set: (fn, ms) => setTimeout(fn, ms)
   const snapshot = () => ({ start: region.start, end: region.end, on, active: on && validRegion(region, dur()) });
   const emit = () => { const s = snapshot(); listeners.forEach((fn) => fn(s)); };
   const disarm = () => { if (timer != null) { timers.clear(timer); timer = null; } };
+  const sync = () => gapless?.sync(on && validRegion(region, dur()) ? { start: region.start, end: region.end } : null);
 
   function tick() {
     disarm();
     if (!on || audio.seeking) return;
+    sync();
     const d = decide({ time: audio.currentTime, region, rate: audio.playbackRate, playing: !audio.paused });
     if (d.kind === 'seek') {
       wraps += 1;
+      gapless?.markSelf(d.to);
       audio.currentTime = d.to;
     } else if (d.kind === 'wait') {
       timer = timers.set(tick, d.ms);
@@ -110,20 +113,26 @@ export function createLoop(audio, timers = { set: (fn, ms) => setTimeout(fn, ms)
     if (on && !audio.paused) tick();
   }
 
-  for (const ev of ['play', 'playing', 'seeked', 'ratechange']) audio.addEventListener(ev, () => { if (on) arm(); });
+  for (const ev of ['play', 'playing', 'ratechange']) audio.addEventListener(ev, () => { if (on) arm(); sync(); });
+  audio.addEventListener('seeked', () => { gapless?.noteSeeked(); if (on) arm(); sync(); });
   audio.addEventListener('timeupdate', () => { if (on) tick(); });
-  audio.addEventListener('pause', disarm);
+  audio.addEventListener('pause', () => { disarm(); sync(); });
+  audio.addEventListener('volumechange', sync);
+  gapless?.onStatus(emit);
 
   const change = (next, turnOn = on) => {
     region = next;
     on = turnOn && validRegion(region, dur());
     arm();
+    sync();
     emit();
   };
 
   return {
     get: snapshot,
     get wraps() { return wraps; },
+    get buffered() { return !!gapless?.engaged; },
+    get preparing() { return gapless?.status === 'preparing'; },
     onChange(fn) { listeners.add(fn); return () => listeners.delete(fn); },
     setMark(which, t) { change(setMark(region, which, t, dur())); },
     nudge(which, delta) { change(nudge(region, which, delta, dur())); },
@@ -141,6 +150,7 @@ export function createLoop(audio, timers = { set: (fn, ms) => setTimeout(fn, ms)
     onEnded() {
       const d = dur();
       if (!on || !validRegion(region, d) || region.end < d - 0.25) return false;
+      gapless?.markSelf(region.start);
       audio.currentTime = region.start;
       audio.play?.();
       return true;

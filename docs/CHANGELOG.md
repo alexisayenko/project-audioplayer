@@ -2,15 +2,35 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
-## 2026-10-21 (genre colours, built, not deployed)
+## 2026-10-21 (Latin and Folk, World, & Country removed, built, not deployed)
+
+- Server data and web (task-0079): Latin and Folk, World, & Country are no longer level 1 nodes. 121 genres moved under the group Others, 6 (bossa nova, latin jazz, country rock, folk rock, folk metal, folk punk) keep only their other parent and lost `fusion`; all genres stay in the vocabulary. The old family names are synonyms of Others. The legacy `GET /genres/graph` has 9 colour families (Mac app unaffected otherwise). Songs tagged `genre:latin` or `genre:folk, world, & country` are not changed and keep the value as an unmappable tag.
+
+## 2026-10-21 (white genre nodes get a rim, built, not deployed)
+
+- Web, server data (task-0075 notes): `Hip Hop` and `Others` are drawn white (`#FFFFFF` in the `hex` table of `genre_levels.json`, with all their descendants); white slots (`isWhite` in `genre-data.js`) get a thin neutral rim (`--chart-rim`, #8A8F93; the `--line` token in dark mode) on the force and radial map nodes, family chips, song-card genre chips, outline and legend swatches. Other colours are unchanged. Not run, not seen.
+
+## 2026-10-21 (Song stats field limits, built, not deployed)
+
+- Web (task-0078, STA-025): the Song stats chart fits its view to the plotted points plus 20% of the width and height on every side; zoom-out and pan stop at these limits. `web/js/field-limits.js`.
+
+## 2026-10-21 (gapless A-B loop, built, not deployed)
+
+- Web (task-0077, PLY-160, PLY-161, WEB-152): the Studio A-B loop plays from a decoded buffer (`AudioBufferSourceNode`, loopStart/loopEnd) through the shared gain and analyser chain, so the wrap has no decoder gap; files up to 24 MB and 10 min, otherwise (or on any failure) the timer-seek loop as before. Tests written, not run; not verified with real audio in a browser.
+
+## 2026-10-21 (genre colours drawn on the map canvas, built, not deployed)
+
+- Web: the per-genre `hex` colours now reach the Genres map circles: the canvas views cached `--chart-N` before the vocabulary loaded and never re-read them; `setSlotColours` now notifies `onSlotColours` subscribers (force, radial, legacy graph views) which re-read colours, as they do on a theme change (task-0075).
+
+## 2026-10-21 (genre colours, deployed)
 
 - Web, server: own colours on the genre map, chips and Outline for Blues #0068F7, Jazz #8F4997, Pop #F664A5, Funk / Soul #F7690A, house #F7DF6A, techno #535353, drum and bass #E8BD0C and synthwave #881DF7 (subgenres follow); a new `hex` table in `genre_levels.json` is served in the vocabulary payload; the legacy graph colour families are unchanged.
 
-## 2026-10-21 (Genres map drag, built, not deployed)
+## 2026-10-21 (Genres map drag, deployed)
 
 - Web (task-0075): dragging a parent on the genre map only pulls its children (they follow when it moves farther than their link length, never when it moves closer) and never pushes other circles; a dragged circle stays where it was dropped instead of springing back to its parent. Not deployed.
 
-## 2026-10-21 (genre source links, built, not deployed)
+## 2026-10-21 (genre source links, deployed)
 
 - Web, server (task-0074, GEN-066): selecting a genre on the genre map shows Wikipedia, Apple Music and Discogs links, plus Rate Your Music where a curated URL exists (`genre_rym.json`, empty until Alex supplies the URLs) (new tab); Discogs now links every genre (a plain release search when the genre is not in Discogs).
 

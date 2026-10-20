@@ -62,15 +62,9 @@
     "level4": 0
    },
    "Others": {
-    "total": 82,
-    "level2": 52,
+    "total": 203,
+    "level2": 173,
     "level3": 30,
-    "level4": 0
-   },
-   "Folk, World, & Country": {
-    "total": 69,
-    "level2": 69,
-    "level3": 0,
     "level4": 0
    },
    "Funk / Soul": {
@@ -91,12 +85,6 @@
     "level3": 0,
     "level4": 0
    },
-   "Latin": {
-    "total": 58,
-    "level2": 58,
-    "level3": 0,
-    "level4": 0
-   },
    "Pop": {
     "total": 38,
     "level2": 35,
@@ -111,8 +99,8 @@
    },
    "Rock": {
     "total": 123,
-    "level2": 50,
-    "level3": 73,
+    "level2": 48,
+    "level3": 75,
     "level4": 0
    }
   },
@@ -125,12 +113,10 @@
    "trance": 11,
    "drum and bass": 2,
    "synthwave": 5,
-   "Others": 3,
-   "Folk, World, & Country": 4,
+   "Others": 6,
    "Funk / Soul": 8,
    "Hip Hop": 1,
    "Jazz": 0,
-   "Latin": 0,
    "Pop": 7,
    "Reggae": 0,
    "Rock": 23
@@ -144,7 +130,10 @@
   "techno": "#535353",
   "drum and bass": "#E8BD0C",
   "synthwave": "#881DF7",
-  "Funk / Soul": "#F7690A"
+  "trance": "#51F724",
+  "Funk / Soul": "#F7690A",
+  "Hip Hop": "#FFFFFF",
+  "Others": "#FFFFFF"
  },
  "families": {
   "Blues": {
@@ -220,21 +209,20 @@
     "alternative dance",
     "rave",
     "dance & edm",
-    "electronic"
-   ],
-   "group": true,
-   "temporary": true,
-   "colour": "Electronic"
-  },
-  "Folk, World, & Country": {
-   "name": "Folk, World, & Country",
-   "synonyms": [
+    "electronic",
+    "latin",
+    "folk, world, & country",
+    "latin music",
+    "latino",
     "folk world and country",
     "folk, world and country",
     "world music",
     "folk and country",
     "world and country"
-   ]
+   ],
+   "group": true,
+   "temporary": true,
+   "colour": "Electronic"
   },
   "Funk / Soul": {
    "name": "Funk / Soul",
@@ -263,13 +251,6 @@
    "name": "Jazz",
    "synonyms": [
     "jazz music"
-   ]
-  },
-  "Latin": {
-   "name": "Latin",
-   "synonyms": [
-    "latin music",
-    "latino"
    ]
   },
   "Pop": {
@@ -395,7 +376,7 @@
  },
  "aboriginal": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -454,14 +435,14 @@
  },
  "african": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
  },
  "afro-cuban": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -509,7 +490,7 @@
  },
  "amapiano": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -536,7 +517,7 @@
  },
  "andean music": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -597,28 +578,28 @@
  },
  "axé": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
  },
  "bachata": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
  },
  "baião": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
  },
  "bakersfield sound": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -653,7 +634,7 @@
  },
  "banda": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -694,7 +675,7 @@
  },
  "batucada": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -715,7 +696,7 @@
  },
  "beguine": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -728,7 +709,7 @@
  },
  "bhangra": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -770,7 +751,7 @@
  },
  "bluegrass": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -786,28 +767,28 @@
  },
  "bolero": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
  },
  "bollywood": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
  },
  "bomba": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
  },
  "boogaloo": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -845,7 +826,6 @@
  },
  "bossa nova": {
   "parents": [
-   "Latin",
    "Jazz"
   ],
   "provisional": true,
@@ -926,7 +906,7 @@
  },
  "cajun": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -940,7 +920,7 @@
  },
  "candombe": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -961,35 +941,35 @@
  },
  "canzone napoletana": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
  },
  "carnatic": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
  },
  "catalan music": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
  },
  "celtic": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
  },
  "cha-cha": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -1003,7 +983,7 @@
  },
  "champeta": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -1017,7 +997,7 @@
  },
  "charanga": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -1040,7 +1020,7 @@
  },
  "chinese classical": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -1061,7 +1041,7 @@
  },
  "choro": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -1102,7 +1082,7 @@
  },
  "compas": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -1116,7 +1096,7 @@
  },
  "conjunto": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -1158,14 +1138,14 @@
  },
  "corrido": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
  },
  "country": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -1179,16 +1159,14 @@
  },
  "country rock": {
   "parents": [
-   "Folk, World, & Country",
    "Rock"
   ],
   "provisional": true,
-  "discogs": true,
-  "fusion": true
+  "discogs": true
  },
  "cretan": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -1213,21 +1191,21 @@
  },
  "cuatro": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
  },
  "cubano": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
  },
  "cumbia": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -1272,7 +1250,7 @@
  },
  "dangdut": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -1402,14 +1380,14 @@
  },
  "descarga": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
  },
  "desert blues": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -1666,7 +1644,7 @@
  },
  "enka": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -1758,63 +1736,57 @@
  },
  "fado": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
  },
  "favela funk": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
  },
  "flamenco": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
  },
  "folk": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
  },
  "folk metal": {
   "parents": [
-   "heavy metal",
-   "Folk, World, & Country"
+   "heavy metal"
   ],
-  "discogs": true,
-  "fusion": true
+  "discogs": true
  },
  "folk pop": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": false
  },
  "folk punk": {
   "parents": [
-   "punk",
-   "Folk, World, & Country"
+   "punk"
   ],
-  "discogs": false,
-  "fusion": true
+  "discogs": false
  },
  "folk rock": {
   "parents": [
-   "Folk, World, & Country",
    "Rock"
   ],
   "provisional": true,
-  "discogs": true,
-  "fusion": true
+  "discogs": true
  },
  "footwork": {
   "parents": [
@@ -1837,7 +1809,7 @@
  },
  "forró": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -1961,14 +1933,14 @@
  },
  "gagaku": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
  },
  "gamelan": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -1994,7 +1966,7 @@
  },
  "ghazal": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -2054,7 +2026,7 @@
  },
  "gnawa": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -2081,7 +2053,7 @@
  },
  "gospel": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "related": [
    "Funk / Soul"
@@ -2104,7 +2076,7 @@
  },
  "gqom": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -2144,21 +2116,21 @@
  },
  "guaguancó": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
  },
  "guajira": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
  },
  "guaracha": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -2270,7 +2242,7 @@
  },
  "hawaiian": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -2292,7 +2264,7 @@
  },
  "highlife": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -2306,14 +2278,14 @@
  },
  "hillbilly": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
  },
  "hindustani": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -2328,7 +2300,7 @@
  },
  "honky tonk": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -2379,7 +2351,7 @@
  },
  "indian classical": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -2523,35 +2495,35 @@
  },
  "kaseko": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
  },
  "kayōkyoku": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
  },
  "keroncong": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
  },
  "kizomba": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
  },
  "klezmer": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -2574,30 +2546,28 @@
  },
  "kwaito": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
  },
  "latin jazz": {
   "parents": [
-   "Jazz",
-   "Latin"
+   "Jazz"
   ],
   "provisional": true,
-  "discogs": true,
-  "fusion": true
+  "discogs": true
  },
  "latin pop": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
  },
  "laïko": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -2683,7 +2653,7 @@
  },
  "mambo": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -2697,7 +2667,7 @@
  },
  "mariachi": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -2724,7 +2694,7 @@
  },
  "mbalax": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -2786,7 +2756,7 @@
  },
  "merengue": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -2834,7 +2804,7 @@
  },
  "min'yō": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -2912,21 +2882,21 @@
  },
  "mouth music": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
  },
  "mpb": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
  },
  "musette": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -2946,7 +2916,7 @@
  },
  "música criolla": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -3074,14 +3044,14 @@
  },
  "nordic": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
  },
  "norteño": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -3112,7 +3082,7 @@
  },
  "nueva canción": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -3160,21 +3130,21 @@
  },
  "pachanga": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
  },
  "pacific": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
  },
  "pagode": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -3188,14 +3158,14 @@
  },
  "pasodoble": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
  },
  "persian classical": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -3223,7 +3193,7 @@
  },
  "plena": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -3236,7 +3206,7 @@
  },
  "polka": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -3278,7 +3248,7 @@
  },
  "porro": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -3492,7 +3462,7 @@
  },
  "qawwali": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -3527,14 +3497,14 @@
  },
  "rai": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
  },
  "ranchera": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -3549,7 +3519,7 @@
  },
  "rebetiko": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -3570,7 +3540,7 @@
  },
  "reggaeton": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -3638,7 +3608,7 @@
  },
  "romani": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -3659,7 +3629,7 @@
  },
  "rumba": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -3673,21 +3643,21 @@
  },
  "salsa": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
  },
  "samba": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
  },
  "samba-canção": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -3722,21 +3692,21 @@
  },
  "sephardic": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
  },
  "seresta": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
  },
  "sertanejo": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -3757,7 +3727,7 @@
  },
  "singer-songwriter": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": false
@@ -3771,7 +3741,7 @@
  },
  "skiffle": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -3820,14 +3790,14 @@
  },
  "son": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
  },
  "son montuno": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -3841,7 +3811,7 @@
  },
  "soukous": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -4043,21 +4013,21 @@
  },
  "séga": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
  },
  "taarab": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
  },
  "tango": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -4084,7 +4054,7 @@
  },
  "tejano": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -4112,7 +4082,7 @@
  },
  "timba": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -4160,7 +4130,7 @@
  },
  "trova": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -4200,7 +4170,7 @@
  },
  "vallenato": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -4239,14 +4209,14 @@
  },
  "volksmusik": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
  },
  "western swing": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
@@ -4260,7 +4230,7 @@
  },
  "worldbeat": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": false
@@ -4274,21 +4244,21 @@
  },
  "zouk": {
   "parents": [
-   "Latin"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
  },
  "zydeco": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true
  },
  "éntekhno": {
   "parents": [
-   "Folk, World, & Country"
+   "Others"
   ],
   "provisional": true,
   "discogs": true

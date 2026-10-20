@@ -29,3 +29,12 @@ export function fillDisc(ctx, x, y, r, palette, idx, fallback, shadeIdx = -1, sh
   }
   ctx.beginPath(); ctx.arc(x, y, r, 0, FULL);
 }
+
+export const OUTLINE_WIDTH = 1.25;
+
+export function outlineDisc(ctx, x, y, r, idx, isOutlined, color, k = 1) {
+  if (!color || !idx.some(isOutlined)) return;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = OUTLINE_WIDTH / k;
+  ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI); ctx.stroke();
+}

@@ -2,12 +2,12 @@
  "_meta": {
   "generated_at": "2026-10-19T13:49:24.071Z",
   "counts": {
-   "genres": 544,
-   "discogs_true": 482,
+   "genres": 542,
+   "discogs_true": 480,
    "discogs_false": 62,
-   "musicbrainz": 451,
-   "wikipedia": 468,
-   "apple_music": 140
+   "musicbrainz": 450,
+   "wikipedia": 466,
+   "apple_music": 139
   },
   "matches_by_kind": {
    "wikipedia": {
@@ -2531,14 +2531,6 @@
    "match": "name"
   }
  },
- "folk, world, & country": {
-  "discogs": true,
-  "wikipedia": {
-   "title": "World music",
-   "wikidata": "Q205049",
-   "match": "synonym"
-  }
- },
  "footwork": {
   "discogs": true,
   "musicbrainz": {
@@ -3958,24 +3950,6 @@
   "wikipedia": {
    "title": "Laïko",
    "wikidata": "Q2087267",
-   "match": "name"
-  }
- },
- "latin": {
-  "discogs": true,
-  "musicbrainz": {
-   "id": "7369bb8b-3399-4180-8cb2-4e37e0e7b0e7",
-   "name": "latin",
-   "match": "name"
-  },
-  "apple_music": {
-   "id": "12",
-   "name": "Latin",
-   "match": "name"
-  },
-  "wikipedia": {
-   "title": "Latin music",
-   "wikidata": "Q18345375",
    "match": "name"
   }
  },

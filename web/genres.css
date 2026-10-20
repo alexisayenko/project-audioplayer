@@ -267,3 +267,8 @@ body[data-route="genres"] main { max-width: none; padding: 0; }
 .gmr-links[hidden] { display: none; }
 .gmr-links a { display: inline-flex; align-items: center; gap: var(--space-1); color: var(--ink-muted); text-decoration: none; }
 .gmr-links a:hover, .gmr-links a:focus-visible { color: var(--ink); text-decoration: underline; }
+
+:root { --chart-rim: #8A8F93; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --chart-rim: var(--line); } }
+:root[data-theme="dark"] { --chart-rim: var(--line); }
+.gm-dot.w, .gmr-key.w { box-shadow: inset 0 0 0 1.25px var(--chart-rim); }

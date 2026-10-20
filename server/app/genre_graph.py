@@ -35,8 +35,7 @@ RETRY_AFTER = 300
 INLINE = False
 
 FAMILIES = (
-    "Blues", "Classical", "Electronic", "Folk, World, & Country", "Funk / Soul", "Hip Hop", "Jazz",
-    "Latin", "Pop", "Reggae", "Rock",
+    "Blues", "Classical", "Electronic", "Funk / Soul", "Hip Hop", "Jazz", "Pop", "Reggae", "Rock",
 )
 OTHER = "Other"
 _MUSIC = " music"
@@ -54,12 +53,12 @@ _manual: dict[str, list[str]] | None = None
 
 
 def families() -> dict[str, str]:
-    """Canonical genre name to colour family (one of the 11 `FAMILIES`: a form such as house takes the colour family of its group, Electronic), from the vocabulary files (GEN-038 step 1, TAG-078)."""
+    """Canonical genre name to colour family (one of the 9 `FAMILIES`: a form such as house takes the colour family of its group, Electronic), from the vocabulary files (GEN-038 step 1, TAG-078)."""
     return {name: _colours(name)[0] for name in genre_vocab.load().entries}
 
 
 def _colours(name: str) -> tuple[str, ...]:
-    """The colour families (of the 11 `FAMILIES`, in their fixed order, no repeats) of a vocabulary name: its level 1 families with Others and every genre promoted out of it folded into the legacy colour family Electronic, so the legacy graph and the Mac app are unchanged."""
+    """The colour families (of the 9 `FAMILIES`, in their fixed order, no repeats) of a vocabulary name: its level 1 families with Others and every genre promoted out of it folded into the legacy colour family Electronic, so the legacy graph and the Mac app are unchanged."""
     fams = list(genre_vocab.colour_families(genre_vocab.load().entries[name].families))
     return tuple(f for f in FAMILIES if f in fams) + tuple(f for f in fams if f not in FAMILIES)
 
@@ -498,7 +497,7 @@ def vocab_name(label: str) -> str | None:
 
 
 def table_family(label: str, keys: Any = ()) -> str | None:
-    """The colour family (one of the 11 `FAMILIES`) of a node: its label, else one of its tags (sorted); None when neither is in the vocabulary."""
+    """The colour family (one of the 9 `FAMILIES`) of a node: its label, else one of its tags (sorted); None when neither is in the vocabulary."""
     for text in (label, *sorted(keys)):
         name = vocab_name(text)
         if name:
@@ -511,7 +510,7 @@ def table_family(label: str, keys: Any = ()) -> str | None:
 
 
 def table_families(label: str, keys: Any = ()) -> tuple[str, ...]:
-    """Every colour family of a node (all families of its genre as the 11 `FAMILIES`, forms folded into their group's colour, in the fixed family order, no repeats); empty when neither its label nor a tag is in the vocabulary."""
+    """Every colour family of a node (all families of its genre as the 9 `FAMILIES`, forms folded into their group's colour, in the fixed family order, no repeats); empty when neither its label nor a tag is in the vocabulary."""
     for text in (label, *sorted(keys)):
         name = vocab_name(text)
         if name:

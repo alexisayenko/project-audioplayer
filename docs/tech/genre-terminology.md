@@ -106,7 +106,7 @@ The API serves `modifiers` and, for one release, the deprecated alias `flavours`
 
 ## Current state (Built, verified against `server/data/genre_levels.json` on 2026-10-20)
 
-- 534 genres in 11 families: Blues, Classical, Electronic, Folk World & Country, Funk / Soul, Hip Hop, Jazz, Latin, Pop, Reggae, Rock. The data calls them families; under the model above Electronic, Latin and Folk, World & Country are groups or mixed.
+- (Amended 2026-10-21, task-0079: Latin and Folk, World & Country were removed as level 1 nodes, their genres moved under Others; 9 families remain.) 534 genres in 11 families: Blues, Classical, Electronic, Folk World & Country, Funk / Soul, Hip Hop, Jazz, Latin, Pop, Reggae, Rock. The data calls them families; under the model above Electronic, Latin and Folk, World & Country are groups or mixed.
 - Electronic 146 members (54 at level 2, 87 at level 3, 5 at level 4: dark psytrance, forest psytrance, full-on psytrance, goa trance, progressive psytrance). Rock 123 (50, 73, 0). Memberships count a genre in every family it descends from.
 - The level is computed from the shortest path through all parents. Four levels exist in the data.
 - Eight Electronic subfamilies: House, Techno, Trance, Breaks & bass, Synth & wave, Ambient & downtempo, Experimental industrial & noise (the data name is "Experimental, industrial & noise"), Eurodance & disco. These are the nodes of the data today; AN1 (decided) replaces them by the forms in [genre-electronic-forms.md](genre-electronic-forms.md) (proposal, not applied).

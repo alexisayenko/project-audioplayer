@@ -2,8 +2,8 @@ import { createSim } from './genre-sim.js';
 import { fitTransform, recenterOnResize, placeLabels, isDragMove } from './genre-view.js';
 import { createHash } from './genre-spatial.js';
 import { createCrossingLayout } from './genre-layout.js';
-import { FAMILY_PALETTE_SIZE, arrowHead } from './genre-data.js';
-import { fillDisc } from './genre-disc.js';
+import { FAMILY_PALETTE_SIZE, arrowHead, onSlotColours, isOutlinedSlot } from './genre-data.js';
+import { fillDisc, outlineDisc } from './genre-disc.js';
 import { shadeTable } from './genre-shade.js';
 
 const MIN_K = 0.08;
@@ -100,7 +100,7 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
     const v = (n) => cs.getPropertyValue(n).trim();
     colors = {
       fam: Array.from({ length: FAMILY_PALETTE_SIZE }, (_, i) => v(`--chart-${i}`)),
-      edge: v('--ink-muted'), accent: v('--accent-ink'), ink: v('--ink'), halo: v('--surface'), warn: v('--accent'), font: cs.fontFamily || 'sans-serif',
+      edge: v('--ink-muted'), rim: v('--chart-rim'), accent: v('--accent-ink'), ink: v('--ink'), halo: v('--surface'), warn: v('--accent'), font: cs.fontFamily || 'sans-serif',
     };
     widths.clear();
     colors.shades = shadeIdx >= 0 ? shadeTable(colors.fam[shadeIdx]) : [];
@@ -382,6 +382,7 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
       ctx.lineWidth = 1.5 / k;
       ctx.stroke();
     }
+    outlineDisc(ctx, n.x, n.y, r, n.fis, isOutlinedSlot, colors.rim, k);
     if (n.vis < 0.99) return;
     if (!n.node.discogs && n.level > 1 && r * k >= 3) {
       ctx.globalAlpha = a;
@@ -798,6 +799,7 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
   const scheme = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
   const onScheme = () => { readColors(); request(); };
   scheme?.addEventListener?.('change', onScheme);
+  const offColours = onSlotColours(onScheme);
   if (typeof ResizeObserver === 'function') { ro = new ResizeObserver(() => resize()); ro.observe(canvas); }
 
   function index() {
@@ -1060,6 +1062,7 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
       window.removeEventListener?.('blur', onBlur);
       globalThis.document?.removeEventListener?.('visibilitychange', onVisibility);
       scheme?.removeEventListener?.('change', onScheme);
+      offColours();
       ro?.disconnect();
       if (raf && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(raf);
       raf = 0;

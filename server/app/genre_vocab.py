@@ -2,7 +2,7 @@
 
 Every name below the families has `parents`: an unordered set (kept as a list) of family names and genre names; all parents are equal, there is no primary parent (ADR-0037). The families of a genre are all the level 1 ancestors it descends from; its level is the shortest path depth to a family root (family 1, a genre under a family 2; no depth cap). A genre may also carry `related` (associations and influences; no effect on the tree, levels, families or counts).
 
-Level 1 is the families plus the promoted genres (task-0066): a promoted genre (house, ...) is a level 1 node that is a genre itself, like Rock, and stays level 1 even where it also sits under other nodes. A group (`Others`, temporary, the former Electronic family) is a level 1 node that is never an entry in the vocabulary and never assigned to a song; `electronic` is not a genre and cannot be assigned. A promoted genre or a group may carry a `colour` (the colour family of the legacy graph payload, which keeps its 11 families)."""
+Level 1 is the families plus the promoted genres (task-0066): a promoted genre (house, ...) is a level 1 node that is a genre itself, like Rock, and stays level 1 even where it also sits under other nodes. A group (`Others`, temporary, the former Electronic family) is a level 1 node that is never an entry in the vocabulary and never assigned to a song; `electronic` is not a genre and cannot be assigned. A promoted genre or a group may carry a `colour` (the colour family of the legacy graph payload, which keeps its 9 families (Latin and Folk, World, & Country were removed in task-0079))."""
 
 from __future__ import annotations
 
@@ -234,7 +234,7 @@ def group(value: str) -> str | None:
 
 
 def colour_family(family: str) -> str:
-    """The legacy colour family of a level 1 name: its `colour` when it declares one (the group Others says Electronic; a genre promoted out of it says Others, so Electronic too), else itself. The legacy graph payload and the Mac app keep the 11 families."""
+    """The legacy colour family of a level 1 name: its `colour` when it declares one (the group Others says Electronic; a genre promoted out of it says Others, so Electronic too), else itself. The legacy graph payload and the Mac app keep the 9 families."""
     colours = load().colours
     seen = {family}
     while family in colours and colours[family] not in seen:

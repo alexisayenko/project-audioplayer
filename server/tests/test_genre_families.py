@@ -35,7 +35,7 @@ def test_families_come_from_the_vocabulary_files():
     assert table["synthpop"] == "Pop" and table["disco"] == "Funk / Soul" and table["italo disco"] == "Funk / Soul", "synthpop and disco left Others (2026-10-20): their colour family is their first remaining family"
     assert table["rock"] == "Rock" and table["edm"] == "Electronic"
     assert "electronic" not in table and "others" not in table
-    assert len(gg.FAMILIES) == 11
+    assert len(gg.FAMILIES) == 9
     assert not (Path(gg.__file__).resolve().parent.parent / "data" / "genre_families.json").exists()
 
 
@@ -90,7 +90,7 @@ KEPT = {
     "neurofunk": "Electronic", "liquid drum and bass": "Electronic", "melodic techno": "Electronic",
     "darksynth": "Electronic", "dreamwave": "Electronic", "dance-rock": "Rock",
     "psybient": "Electronic", "electronic": "Electronic", "experimental": "Electronic",
-    "singer-songwriter": "Folk, World, & Country", "estrada": "Pop", "shock rock": "Rock", "dark metal": "Rock",
+    "singer-songwriter": "Electronic", "estrada": "Pop", "shock rock": "Rock", "dark metal": "Rock",
     "chillwave": "Electronic", "darkwave": "Rock", "nu-nrg": "Electronic", "uplifting trance": "Electronic",
 }
 
@@ -108,7 +108,7 @@ def test_alias_and_retag_targets_have_a_family():
     from app import genre_filter as gf
 
     want = {"drum and bass": "Electronic", "europop": "Pop", "euro disco": "Funk / Soul", "euro house": "Electronic",
-            "synthpop": "Pop", "progressive house": "Electronic", "trap": "Hip Hop", "disco": "Funk / Soul", "folk": "Folk, World, & Country",
+            "synthpop": "Pop", "progressive house": "Electronic", "trap": "Hip Hop", "disco": "Funk / Soul", "folk": "Electronic",
             "classical": "Classical", "psychedelic rock": "Rock", "pop": "Pop", "modern classical": "Classical",
             "alternative rock": "Rock", "indie rock": "Rock", "progressive rock": "Rock", "glitch hop": "Electronic"}
     targets = {*gf.ALIASES.values(), *gf.RETAGS.values(), gf.PROGRESSIVE_ELECTRONIC}

@@ -48,7 +48,7 @@ test('house, deep house and the blends: level 2 through a family parent, level 3
   assert.ok(t.byId.get('g:Hip Hop').children.includes(node('hip house')) && house.children.includes(node('hip house')));
   assert.equal(depthIn(t, 's:hip house', 'g:house'), 2);
   assert.equal(depthIn(t, 's:hip house', 'g:Hip Hop'), 2);
-  assert.equal(node('gospel').family, 'Folk, World, & Country');
+  assert.equal(node('gospel').family, 'Others');
   assert.equal(node('jungle').parent, 's:breakbeat');
 });
 

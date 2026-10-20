@@ -1,5 +1,5 @@
 import { createSim } from './genre-sim.js';
-import { familyIndex, nodeRadius, pieIndices, FAMILY_PALETTE_SIZE, ancestorsOf } from './genre-data.js';
+import { familyIndex, nodeRadius, pieIndices, FAMILY_PALETTE_SIZE, ancestorsOf, onSlotColours } from './genre-data.js';
 import { fillDisc } from './genre-disc.js';
 import { fitTransform, recenterOnResize, placeLabels, diffGraph, mixColor, hitNode, isDragMove } from './genre-view.js';
 
@@ -567,6 +567,7 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
   const scheme = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
   const onScheme = () => { colors = readColors(); request(); };
   scheme?.addEventListener?.('change', onScheme);
+  const offColours = onSlotColours(onScheme);
   resize();
   canvas.style.cursor = 'grab';
 
@@ -583,6 +584,7 @@ export function createGraphView(canvas, { onSelect, onHover, reducedMotion = fal
       barRo?.disconnect();
       document.removeEventListener('visibilitychange', onVisible);
       scheme?.removeEventListener?.('change', onScheme);
+      offColours();
     },
   };
 }

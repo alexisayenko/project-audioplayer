@@ -1,5 +1,6 @@
+import { fieldLimits, clampRange } from './field-limits.js';
 import {
-  PALETTE_SIZE, FAMILY_PALETTE_SIZE, MIN_ZOOM_YEARS, MIN_ZOOM_BPM, extentX, extentY, tickStep, ticks, clampLo, makeScale, zoomRange, panRange,
+  PALETTE_SIZE, FAMILY_PALETTE_SIZE, MIN_ZOOM_YEARS, MIN_ZOOM_BPM, extentX, extentY, tickStep, ticks, makeScale, zoomRange,
   colorIndex, centerRange, buildIndex, inRect, neighbour, firstItem,
 } from './stats-data.js';
 
@@ -194,6 +195,9 @@ export function createChart(base, top, { onHover, onOpen, onSelect, onFocus, onV
     redraw();
   }
 
+  const limitX = (r) => clampRange(r.lo, r.hi, full.x);
+  const limitY = (r) => clampRange(r.lo, r.hi, full.y);
+
   function setView(next) {
     view = next;
     zoomed = true;
@@ -215,7 +219,7 @@ export function createChart(base, top, { onHover, onOpen, onSelect, onFocus, onV
   function setData(next, nextHidden) {
     points = next;
     hidden = nextHidden;
-    full = { x: extentX(points.map((p) => p.year)), y: extentY(points.map((p) => p.bpm)) };
+    full = fieldLimits(points, { floorY: 0, fallback: { x: extentX([]), y: extentY([]) } });
     if (!zoomed) view = { x: { ...full.x }, y: { ...full.y } };
     hover = -1;
     focus = -1;
@@ -223,8 +227,8 @@ export function createChart(base, top, { onHover, onOpen, onSelect, onFocus, onV
   }
 
   function center() {
-    const x = centerRange(view.x.lo, view.x.hi, full.x);
-    const y = clampLo(centerRange(view.y.lo, view.y.hi, full.y));
+    const x = limitX(centerRange(view.x.lo, view.x.hi, full.x));
+    const y = limitY(centerRange(view.y.lo, view.y.hi, full.y));
     if (Math.abs(x.lo - view.x.lo) < 1e-9 && Math.abs(y.lo - view.y.lo) < 1e-9) return;
     setView({ x, y });
   }
@@ -257,9 +261,9 @@ export function createChart(base, top, { onHover, onOpen, onSelect, onFocus, onV
     const { sx, sy, p } = scales();
     if (pos.x < p.x0 - 40 || pos.y > p.y1 + 40) return;
     const factor = Math.exp((ev.deltaY || 0) * 0.0015);
-    const xr = zoomRange(view.x.lo, view.x.hi, sx.from(pos.x), factor, { minSpan: MIN_ZOOM_YEARS, maxSpan: (full.x.hi - full.x.lo) * 3 });
-    const yr = zoomRange(view.y.lo, view.y.hi, sy.from(pos.y), factor, { minSpan: MIN_ZOOM_BPM, maxSpan: (full.y.hi - full.y.lo) * 3 });
-    setView({ x: xr, y: clampLo(yr) });
+    const xr = zoomRange(view.x.lo, view.x.hi, sx.from(pos.x), factor, { minSpan: MIN_ZOOM_YEARS, maxSpan: full.x.hi - full.x.lo });
+    const yr = zoomRange(view.y.lo, view.y.hi, sy.from(pos.y), factor, { minSpan: MIN_ZOOM_BPM, maxSpan: full.y.hi - full.y.lo });
+    setView({ x: limitX(xr), y: limitY(yr) });
   }
 
   function down(ev) {
@@ -275,7 +279,7 @@ export function createChart(base, top, { onHover, onOpen, onSelect, onFocus, onV
     const { sx, sy } = scales();
     const dx = sx.from(drag.last.x) - sx.from(pos.x);
     const dy = sy.from(drag.last.y) - sy.from(pos.y);
-    setView({ x: panRange(view.x.lo, view.x.hi, dx, full.x), y: clampLo(panRange(view.y.lo, view.y.hi, dy, full.y)) });
+    setView({ x: clampRange(view.x.lo + dx, view.x.hi + dx, full.x), y: clampRange(view.y.lo + dy, view.y.hi + dy, full.y) });
   }
 
   function dragMove(pos) {
