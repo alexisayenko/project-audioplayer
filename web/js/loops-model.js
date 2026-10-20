@@ -24,6 +24,8 @@ export function cleanName(name) {
 export function addLoop(loops, region, duration, name = '') {
   if (loops.length >= MAX_LOOPS) return fail(FULL_TEXT);
   if (!validRegion(region, duration + 1)) return fail('Mark a start and an end first.');
+  const twin = loops.find((l) => sameRegion(l, region));
+  if (twin) return fail(`Already saved as ${twin.name}.`);
   const label = cleanName(name) || defaultName(loops);
   return ok([...loops, { name: label, start: round3(region.start), end: round3(region.end) }]);
 }

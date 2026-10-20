@@ -313,6 +313,9 @@ export const player = {
 
   get shuffleOn() { return shuffle; },
   get repeatMode() { return repeat; },
+  get position() { return audio.currentTime; },
+  get duration() { return audio.duration; },
+  play() { if (player.current && hasAudio(player.current) && audio.paused) audio.play().catch(fail); },
   get volume() { return audio.volume; },
   get muted() { return audio.muted; },
   get volumeAdjustable() { return volumeOk; },
@@ -544,7 +547,7 @@ export function initPlayer() {
   audio.addEventListener('timeupdate', renderProgress);
   audio.addEventListener('durationchange', renderProgress);
   audio.addEventListener('ended', () => { if (!loop.onEnded()) player.next(true); });
-  initLoopChip($('mini-loop'), loop, (t) => player.seek(t));
+  initLoopChip($('mini-loop'), loop);
 
   initMiniCompact();
   setIcon('mini-prev', 'prev', 'action');

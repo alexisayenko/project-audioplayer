@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-20 (Studio: waveform, A-B loop and saved loops, built, not deployed)
+
+- Web, server (task-0072, WEB-150..156, PLY-160, API-195, DATA-190): new main-menu page Studio (`#/studio`): waveform of the playing song (server peaks via ffmpeg, cached beside the audio; browser decode under 12 MB as fallback), marks A and B (handles, Set here, m:ss.s fields, nudges), a loop that lives in the player with a dock chip, and named loops saved on the song (`loops`). Guests can loop but not save. Not deployed.
+
 ## 2026-10-20 (electronic ignored in suggestions, built, not deployed)
 
 - Server (TAG-112, CZ): `electronic` and the names of the group Others are ignored evidence in the genre suggestion rule: never suggested, never agreement or a source group, and they no longer unlock song-page genres of the group.

@@ -36,10 +36,9 @@ export function setMark(region, which, t, dur) {
   return r;
 }
 
-export function nudge(region, which, delta, dur) {
+export function moveHandle(region, which, t, dur) {
   const r = { ...emptyRegion(), ...region };
-  const cur = r[which];
-  if (!num(cur)) return r;
+  if (!num(r[which])) return r;
   const other = which === 'start' ? r.end : r.start;
   let lo = 0;
   let hi = usable(dur) ? dur : Infinity;
@@ -47,8 +46,12 @@ export function nudge(region, which, delta, dur) {
     if (which === 'start') hi = Math.min(hi, other - MIN_LOOP);
     else lo = other + MIN_LOOP;
   }
-  const next = round3(Math.min(Math.max(cur + delta, lo), Math.max(lo, hi)));
-  return { ...r, [which]: next };
+  return { ...r, [which]: round3(Math.min(Math.max(num(t) ? t : r[which], lo), Math.max(lo, hi))) };
+}
+
+export function nudge(region, which, delta, dur) {
+  const cur = region?.[which];
+  return num(cur) ? moveHandle(region, which, cur + delta, dur) : { ...emptyRegion(), ...region };
 }
 
 export function decide({ time, region, rate = 1, playing = true, lookahead = LOOKAHEAD }) {
@@ -124,6 +127,7 @@ export function createLoop(audio, timers = { set: (fn, ms) => setTimeout(fn, ms)
     onChange(fn) { listeners.add(fn); return () => listeners.delete(fn); },
     setMark(which, t) { change(setMark(region, which, t, dur())); },
     nudge(which, delta) { change(nudge(region, which, delta, dur())); },
+    move(which, t) { change(moveHandle(region, which, t, dur())); },
     setRegion(start, end, turnOn = on) {
       const r = { start: clampTime(start, dur()), end: clampTime(end, dur()) };
       change(validRegion(r, dur()) ? r : emptyRegion(), turnOn);

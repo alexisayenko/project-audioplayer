@@ -7,9 +7,10 @@ const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const nav = html.match(/<nav id="nav"[\s\S]*?<\/nav>/)[0];
 const { helpMode, isHelpRoute, HELP_ROUTES, initHelpNav } = await import('./nav-help.js');
 
-test('WEB-131: Help sits between Song stats and Settings; the Help pages are its submenu only', () => {
+test('WEB-131: Help sits between Studio and Settings; the Help pages are its submenu only', () => {
   const top = nav.replace(/<ul class="nav-sub"[\s\S]*?<\/ul>/, '');
-  assert.deepEqual([...top.matchAll(/data-route="([^"]+)"/g)].map((m) => m[1]), ['library', 'playback', 'playlists', 'genres', 'stats', 'settings']);
+  assert.deepEqual([...top.matchAll(/data-route="([^"]+)"/g)].map((m) => m[1]), ['library', 'playback', 'playlists', 'genres', 'stats', 'studio', 'settings']);
+  assert.ok(top.indexOf('data-route="studio"') < top.indexOf('id="help-toggle"') && top.indexOf('id="help-toggle"') < top.indexOf('data-route="settings"'));
   assert.match(top, /id="help-toggle"/);
   const sub = nav.match(/<ul class="nav-sub"[\s\S]*?<\/ul>/)[0];
   assert.deepEqual([...sub.matchAll(/data-route="([^"]+)"/g)].map((m) => m[1]), ['theory', 'about', 'features']);

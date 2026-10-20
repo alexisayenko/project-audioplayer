@@ -23,7 +23,7 @@ _DYNAMIC_IMPORT = re.compile(r"""\bimport\(\s*['"](\.{1,2}/[^'"]+)['"]\s*\)""")
 _TIER2_FIRST = (
     "js/song-card.js", "js/library-toolbar.js", "js/add.js", "js/edit-dialog.js", "js/share-ui.js", "js/drafts.js",
     "js/player-tag-picker.js", "js/player-actions.js", "js/share-open.js", "js/share.js", "js/viz-ui.js",
-    "js/genres-rework.js", "js/stats.js", "js/settings.js", "js/theory.js", "js/playlists.js", "js/about.js", "js/features.js", "js/genres.js",
+    "js/genres-rework.js", "js/stats.js", "js/studio.js", "js/settings.js", "js/theory.js", "js/playlists.js", "js/about.js", "js/features.js", "js/genres.js",
 )
 _IMMUTABLE = "public, max-age=31536000, immutable"
 _VERSION_LEN = 10

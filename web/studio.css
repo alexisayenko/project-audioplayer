@@ -1,0 +1,49 @@
+.stu { display: grid; gap: var(--space-4); min-width: 0; }
+.stu-card, .stu-saved { min-width: 0; }
+.stu-song { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2) var(--space-3); min-width: 0; }
+.stu-song > * { overflow-wrap: anywhere; }
+.stu-wave { position: relative; height: 140px; border-radius: var(--radius-key); background: var(--surface-sunken); }
+.stu-canvas { display: block; width: 100%; height: 100%; border-radius: inherit; touch-action: pan-y; cursor: pointer; }
+.stu-handle { position: absolute; top: 0; bottom: 0; width: var(--hit); margin-left: calc(var(--hit) / -2); display: flex; justify-content: center; cursor: ew-resize; touch-action: none; }
+.stu-handle[hidden] { display: none; }
+.stu-handle::before { content: ""; width: 3px; height: 100%; background: var(--fill); border-radius: var(--radius-pill); }
+.stu-handle.dragging::before, .stu-handle:focus-visible::before { width: 5px; }
+.stu-handle:focus-visible { outline: var(--stroke-focus) solid var(--ring-color); outline-offset: calc(var(--stroke-focus) * -1); border-radius: var(--radius-sm); }
+.stu-flag { position: absolute; top: var(--space-1); display: grid; place-items: center; min-width: var(--space-5); height: var(--space-5); padding: 0 var(--space-1); border-radius: var(--radius-xs); background: var(--fill); color: var(--on-fill); font: var(--font-caption); pointer-events: none; }
+.stu-a .stu-flag { transform: translateX(calc(-50% - var(--space-3))); }
+.stu-b .stu-flag { transform: translateX(calc(-50% + var(--space-3))); }
+.stu-status { margin: 0; }
+.stu-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
+.stu-hint { margin-right: auto; }
+.stu-clock { margin-left: auto; color: var(--ink-muted); }
+.stu-toggle[aria-pressed="true"] { color: var(--on-fill); }
+.stu-marks { display: grid; gap: var(--space-4); }
+@media (min-width: 720px) { .stu-marks { grid-template-columns: 1fr 1fr; } }
+.stu-mark { display: grid; gap: var(--space-2); min-width: 0; }
+.stu-mark-label { margin: 0; }
+.stu-mark-row { display: flex; gap: var(--space-2); align-items: center; }
+.stu-time { flex: 1; min-width: 0; font-family: var(--font-mono); }
+.stu-nudges { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.stu-nudges .btn { flex: 1 1 auto; padding: 0 var(--space-3); }
+.stu-saved-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
+.stu-signin { margin: 0; }
+.stu-saved-head { margin: 0; }
+.stu-loops { display: flex; flex-wrap: wrap; gap: var(--space-3); margin: 0; padding: 0; list-style: none; }
+.stu-loops[hidden], .stu-saved-head[hidden] { display: none; }
+.stu-loop { display: flex; align-items: center; gap: var(--space-1); min-width: 0; }
+.stu-loop .icon { width: var(--control); height: var(--control); }
+.stu-pick { display: inline-flex; align-items: center; gap: var(--space-2); max-width: 100%; }
+.stu-loop-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 14ch; }
+.stu-rename { min-width: 0; width: 22ch; max-width: 100%; }
+.stu-note:empty { display: none; }
+.stu-note { min-height: calc(var(--space-5)); margin: 0; color: var(--ink-muted); }
+.stu-note.ok { color: var(--ink); }
+.stu-note.error { color: var(--power-text); }
+.stu-empty { gap: var(--space-4); }
+.stu-empty p { margin: 0; }
+
+.loop-chip { position: absolute; left: var(--space-4); top: calc(-1 * (var(--control) + var(--space-1))); display: inline-flex; align-items: center; gap: var(--space-2); height: var(--control); padding: 0 0 0 var(--space-3); border-radius: var(--radius-pill); background: var(--surface); box-shadow: var(--shadow-key); color: var(--accent-ink); white-space: nowrap; }
+.loop-chip[hidden] { display: none; }
+.conn-note:not([hidden]) ~ .loop-chip { top: calc(-1 * (var(--control) + var(--space-6) + var(--space-2))); }
+.loop-off { display: grid; place-items: center; width: var(--control); height: var(--control); padding: 0; border: 0; border-radius: var(--radius-pill); background: transparent; color: inherit; }
+@media (hover: hover) { .loop-off:hover { background-image: linear-gradient(var(--hover-wash), var(--hover-wash)); } }

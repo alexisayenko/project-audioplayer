@@ -21,6 +21,7 @@
 <link rel="stylesheet" href="theory.css">
 <link rel="stylesheet" href="features.css">
 <link rel="stylesheet" href="about.css">
+<link rel="stylesheet" href="studio.css">
 <link rel="stylesheet" href="viz.css">
 <link rel="stylesheet" href="viz-synth.css">
 </head>
@@ -35,6 +36,7 @@
     <a href="#/playlists" data-route="playlists" title="Playlists"><span data-icon="playlist" aria-hidden="true"></span><span class="nav-label">Playlists</span></a>
     <a href="#/genres" data-route="genres" title="Genres map"><span data-icon="genresMap" aria-hidden="true"></span><span class="nav-label">Genres map</span></a>
     <a href="#/stats" data-route="stats" title="Song stats"><span data-icon="stats" aria-hidden="true"></span><span class="nav-label">Song stats</span></a>
+    <a href="#/studio" data-route="studio" title="Studio"><span data-icon="studio" aria-hidden="true"></span><span class="nav-label">Studio</span></a>
     <div class="nav-group" id="nav-help">
       <button type="button" class="nav-parent" id="help-toggle" aria-expanded="false" aria-controls="help-sub" title="Help"><span data-icon="help" aria-hidden="true"></span><span class="nav-label">Help</span></button>
       <ul class="nav-sub" id="help-sub" hidden>
@@ -122,6 +124,7 @@
     <input type="range" id="mini-volume" class="slider" min="0" max="100" value="100" step="1" aria-label="Volume">
   </div>
   <span id="mini-conn" class="conn-note t-caption" role="status" aria-live="polite" hidden></span>
+  <span id="mini-loop" class="loop-chip t-caption" role="status" aria-live="polite" hidden></span>
   <span id="mini-vol-note" class="vol-note t-time" role="status" aria-live="polite"><span id="mini-vol-pct" aria-hidden="true"></span><span class="vol-sr" id="mini-vol-sr"></span></span>
 </section>
 

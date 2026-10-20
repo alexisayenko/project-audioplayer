@@ -29,6 +29,7 @@ const routes = {
   stats: lazyRoute(() => import('./stats.js'), 'renderStats'),
   theory: lazyRoute(() => import('./theory.js'), 'renderTheory'),
   about: lazyRoute(() => import('./about.js'), 'renderAbout'),
+  studio: lazyRoute(() => import('./studio.js').then((m) => ({ renderStudio: (root) => m.renderStudio(root, { player: playerApi }) })), 'renderStudio'),
   features: lazyRoute(() => import('./features.js'), 'renderFeatures'),
   settings: lazyRoute(() => import('./settings.js'), 'renderSettings'),
 };

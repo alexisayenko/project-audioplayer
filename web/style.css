@@ -72,7 +72,7 @@ a { color: var(--accent-ink); }
 .build-line { display: none; margin: 0; padding: 0 var(--space-3) var(--space-3); color: var(--ink-muted); overflow-wrap: anywhere; }
 
 #nav :where(a, .nav-parent) .nav-label { font: var(--font-micro); max-width: 100%; text-align: center; text-wrap: balance; overflow-wrap: break-word; }
-@media (max-width: 399px) { #nav :where(a, .nav-parent) { min-width: var(--hit); } }
+@media (max-width: 399px) { #nav :where(a, .nav-parent) { min-width: var(--hit); } #nav { gap: 0; padding-inline: 0; } .side { left: clamp(var(--space-1), calc((100vw - 8 * var(--hit)) / 2), var(--space-4)); right: clamp(var(--space-1), calc((100vw - 8 * var(--hit)) / 2), var(--space-4)); } }
 @media (max-width: 479px) { #nav :where(a[data-route], .nav-parent) .nav-label { overflow: visible; text-overflow: clip; white-space: normal; } }
 
 .stage { margin-left: var(--rail-w); min-height: 100dvh; }

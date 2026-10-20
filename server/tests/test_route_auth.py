@@ -22,6 +22,7 @@ GUEST_READABLE = {
     ("GET", "/catalog"),
     ("GET", "/files/{video_id}"),
     ("GET", "/covers/{video_id}"),
+    ("GET", "/songs/{video_id}/peaks"),
     ("GET", "/me"),
 }
 AUTH = {"require_token", "require_token_or_query"}
