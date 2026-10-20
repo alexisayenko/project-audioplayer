@@ -8,7 +8,7 @@ import { openMenu } from './menu.js';
 import { downloadSong } from './download.js';
 import { autodl } from './autodl.js';
 import { statusText } from './dl-progress.js';
-import { editDialog } from './edit-dialog.js';
+import { editDialog } from './lazy-ui.js';
 import { titleLine, artistLine, titleNodes } from './credits.js';
 import { marquee } from './marquee.js';
 import { can } from './guest.js';
@@ -70,7 +70,7 @@ export function queueRow(item, i, { count, index, move, removeAt, playAt, openCa
     class: 'more', type: 'button', title: 'Song menu', 'aria-label': `Song menu: ${title}`, 'aria-haspopup': 'menu', 'aria-expanded': 'false',
   }, icon('more', 'nav'));
   more.addEventListener('click', () => openMenu(more, [
-    ...(s && can('edit') ? [{ label: 'Edit song', run: () => editDialog(s) }] : []),
+    ...(s && can('edit') ? [{ label: 'Edit song', run: () => { void editDialog(s); } }] : []),
     ...(hasAudio(s) && can('download') ? [{ label: 'Download', run: () => downloadSong(s) }] : []),
     { label: 'Move up', disabled: i === 0, run: () => move(i, -1) },
     { label: 'Move down', disabled: i === count - 1, run: () => move(i, 1) },

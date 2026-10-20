@@ -43,6 +43,7 @@ test('the banner Sign in button goes to Settings, which shows only sign-in', asy
   document.getElementById('guest-banner').querySelector('button').click();
   assert.equal(location.hash, '#/settings');
   dom.window.dispatch('hashchange');
+  await flush();
   const text = document.getElementById('view').textContent;
   assert.match(text, /You are viewing Alex's library/);
   assert.doesNotMatch(text, /Auto-download/);

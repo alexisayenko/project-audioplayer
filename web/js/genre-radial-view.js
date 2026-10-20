@@ -228,6 +228,21 @@ export function createRadialView(canvas, { onSelect, onHover, reducedMotion = fa
     for (const it of items) if (shown.has(it.id) && !it.force) draw(it, false);
     for (const it of items) if (it.force) draw(it, true);
     ctx.globalAlpha = 1;
+    if (layout.hiddenRoot) drawTitle([...layout.byId.values()].find((n) => n.hidden));
+  }
+
+  function drawTitle(root) {
+    if (!root) return;
+    ctx.font = `bold ${FONT_PX + 4}px ${colors.font}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.lineWidth = 3;
+    ctx.lineJoin = 'round';
+    const label = root.label || root.name;
+    ctx.strokeStyle = colors.halo;
+    ctx.strokeText(label, tf.x, tf.y);
+    ctx.fillStyle = colors.ink;
+    ctx.fillText(label, tf.x, tf.y);
   }
 
   const lit3 = (n) => n.level >= 3 && !!sel && (hl.kids.has(n.id) || hl.chain.has(n.id));

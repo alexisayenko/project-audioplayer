@@ -14,12 +14,10 @@ import { paintCover, currentCoverModel, paintQueueCovers } from './row-cover.js'
 import { $, setIcon, setToggle, setCover, queueRow, updateDl, paintTimes, initMiniCompact } from './player-ui.js';
 import { updateMediaSession, setupMediaSession, updatePositionState, setVolume, storedVolume } from './player-media.js';
 import { canSetVolume } from './volume-logic.js';
-import { openTagPicker } from './player-tag-picker.js';
 import { titleLine, tooltipLine, artistLine, subtitle, titleNodes } from './credits.js';
 import { marquee, disposeAll } from './marquee.js';
 import { can } from './guest.js';
-import { paintServiceButtons } from './player-actions.js';
-import { openSongCard } from './song-card.js';
+import { openSongCard, openTagPicker, loadUi } from './lazy-ui.js';
 
 const audio = document.getElementById('audio');
 
@@ -367,6 +365,18 @@ function load(autoplay) {
   render();
 }
 
+let servicesSeq = 0;
+function paintServices(song) {
+  const seq = ++servicesSeq;
+  if (!song) {
+    const host = $('p-svc');
+    host.replaceChildren();
+    host.hidden = true;
+    return;
+  }
+  loadUi('actions').then((m) => { if (seq === servicesSeq) m.paintServiceButtons($('p-svc'), song); }, () => {});
+}
+
 function renderTransport(song, playing) {
   const label = playing ? 'Pause' : 'Play';
   $('mini').hidden = !song;
@@ -375,7 +385,7 @@ function renderTransport(song, playing) {
   $('details-body').hidden = !song;
   $('cover-text').hidden = !song;
   $('p-view').hidden = !song;
-  paintServiceButtons($('p-svc'), song);
+  paintServices(song);
   $('p-download').hidden = !hasAudio(song) || !can('download');
   setIcon('mini-play', playing ? 'pause' : 'play', 'action');
   const cover = $('cover-toggle');
@@ -463,7 +473,7 @@ const queueCtx = () => ({
   move: (i, d) => player.move(i, d),
   removeAt: (i) => player.removeAt(i),
   playAt: (i) => player.playAt(i),
-  openCard: (song, opener) => openSongCard(song, opener),
+  openCard: (song, opener) => { void openSongCard(song, opener); },
   playing: !audio.paused,
 });
 
@@ -533,7 +543,7 @@ export function initPlayer() {
   $('mini-prev').addEventListener('click', () => player.prev());
   $('mini-shuffle').addEventListener('click', () => player.setShuffle(!shuffle));
   $('mini-repeat').addEventListener('click', () => player.cycleRepeat());
-  $('tag-add').addEventListener('click', () => openTagPicker(player, () => qs.tags));
+  $('tag-add').addEventListener('click', (e) => openTagPicker(player, () => qs.tags, e.currentTarget));
   $('queue-clear').addEventListener('click', () => {
     const n = player.clearUpcoming();
     toast(n ? `Cleared ${n} ${plural(n, 'song', 'songs')}` : 'Tag chips cleared');

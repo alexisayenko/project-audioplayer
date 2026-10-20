@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { installPage, makeEvent, stubFetch } from './test-dom.mjs';
+import { installPage, makeEvent, stubFetch, flush } from './test-dom.mjs';
 
 await installPage();
 globalThis.location = { hash: '', href: 'http://localhost/', host: 'localhost' };
@@ -74,13 +74,15 @@ test('Wikipedia button: song article, else artist article, else none; sits after
   assert.equal($('player-links'), null);
 });
 
-test('Song info button opens the read-only card, not the edit dialog; guests keep it, Edit stays in the card for writers only', () => {
+test('Song info button opens the read-only card, not the edit dialog; guests keep it, Edit stays in the card for writers only', async () => {
+  await import('./song-card.js');
   store.songs = [both];
   store.loaded = true;
   player.playNow('a');
   assert.equal($('p-view').hidden, false);
   assert.equal($('p-edit'), null);
   $('p-view').dispatchEvent(makeEvent('click'));
+  await flush();
   const card = $('song-card');
   assert.ok(card.querySelector('.card-head'));
   const names = () => card.querySelectorAll('.card-actions button').map((b) => b.getAttribute('aria-label') || b.textContent);
@@ -89,6 +91,7 @@ test('Song info button opens the read-only card, not the edit dialog; guests kee
   card.close?.();
   g.setGuest({ guest: true, audio: true });
   $('p-view').dispatchEvent(makeEvent('click'));
+  await flush();
   assert.ok(!names().includes('Edit'));
   assert.equal($('p-view').hidden, false);
   card.close?.();

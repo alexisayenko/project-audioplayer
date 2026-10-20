@@ -47,14 +47,20 @@ export function cardModel(song) {
 }
 
 function fullRow(line) {
-  const copy = el('button', {
-    type: 'button',
-    class: 'link-btn card-copy',
-    title: 'Copy title',
-    'aria-label': 'Copy title',
-    onclick: async () => toast((await copyText(line)) ? 'Title copied' : 'Could not copy the title'),
-  }, 'Copy');
-  return el('div', { class: 'card-full-row' }, el('p', { class: 'card-full muted t-subhead' }, line), copy);
+  const copy = el('button', { type: 'button', class: 'icon round card-copy', title: 'Copy title', 'aria-label': 'Copy title' }, icon('copy', 'nav'));
+  const note = el('span', { class: 'card-copy-note muted t-caption', role: 'status', 'aria-live': 'polite' });
+  let timer = 0;
+  copy.onclick = async () => {
+    const ok = await copyText(line);
+    note.textContent = ok ? 'Title copied' : 'Could not copy the title';
+    if (ok) copy.replaceChildren(icon('check', 'nav'));
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      note.textContent = '';
+      copy.replaceChildren(icon('copy', 'nav'));
+    }, 1800);
+  };
+  return el('div', { class: 'card-full-row' }, el('p', { class: 'card-full muted t-subhead' }, line, copy), note);
 }
 
 function headBlock(song, m) {
@@ -102,10 +108,11 @@ function actionRow(song) {
   const link = sourceLink(song);
   const btn = (label, run, cls = 'btn outline') => el('button', { class: cls, type: 'button', onclick: run }, label);
   const ib = (label, name, run, cls = 'icon round') => el('button', { class: cls, type: 'button', title: label, 'aria-label': label, onclick: run }, icon(name, 'nav'));
-  const plLabel = queued ? 'In playlist - click to remove' : 'Add to playlist';
+  const qp = queued ? player.queuePosition(song.id) : null;
+  const plLabel = queued ? `In playlist${qp ? `, position ${qp.pos} of ${qp.total}` : ''} - click to remove` : 'Add to playlist';
   const icons = [
     queueable ? ib('Play next', 'playPlus', () => playNextInQueue(song)) : null,
-    queueable ? el('button', { class: `icon round pl-toggle${queued ? ' on' : ''}`, type: 'button', title: plLabel, 'aria-label': plLabel, 'aria-pressed': String(queued), onclick: () => toggleQueue(song) }, icon('listAdd', 'nav')) : null,
+    queueable ? el('button', { class: `icon round pl-toggle${queued ? ' on' : ''}`, type: 'button', title: plLabel, 'aria-label': plLabel, 'aria-pressed': String(queued), onclick: () => toggleQueue(song) }, icon(queued ? 'playlist' : 'listAdd', 'nav')) : null,
     ib('Share link', 'share', () => openShareDialog(song)),
     downloadIcon(song, audio, view, ib),
     can('edit') ? ib('Edit', 'pencil', () => editDialog(song)) : null,
@@ -137,9 +144,11 @@ function detailsBlock(m) {
 function paint(dlg, song, close, m) {
   const [art, head] = headBlock(song, m);
   const rest = m.groups.filter((g) => !SIDE_KEYS.has(g.key));
+  const closeBtn = el('button', { type: 'button', class: 'card-close', title: 'Close', 'aria-label': 'Close', onclick: close }, icon('clear', 'nav'));
+  if (art.classList.contains('card-art')) art.append(closeBtn);
   const parts = [
     el('span', { class: 'grab', 'aria-hidden': 'true' }),
-    el('div', { class: 'dlg-head card-bar' }, el('span'), el('button', { type: 'button', class: 'link-btn t-headline card-close', onclick: close }, 'Close')),
+    art.classList.contains('card-art') ? null : closeBtn,
     art,
     head,
     detailsBlock(m),
@@ -179,7 +188,7 @@ export function openSongCard(song, opener = null) {
   const render = (force) => {
     const fresh = store.get(id);
     if (!fresh) { close(); return; }
-    const sig = [hasAudio(fresh), autodl.view(id).kind, player.current?.id === id, player.playing, player.inQueue(id), autoDownloadOn()].join('|');
+    const sig = [hasAudio(fresh), autodl.view(id).kind, player.current?.id === id, player.playing, player.inQueue(id), JSON.stringify(player.queuePosition(id)), autoDownloadOn()].join('|');
     if (force !== true && sig === last) return;
     last = sig;
     repaint(dlg, fresh, close);

@@ -27,32 +27,22 @@ const publish = (songs) => { store.songs = songs; store.loaded = true; store.lis
 initPlayer();
 publish([WITH, WITHOUT]);
 
-function menuItems(row) {
-  row.querySelector('.more').click();
-  const items = document.querySelectorAll('[role=menuitem]').map((n) => n.textContent);
-  document.querySelectorAll('[role=menu]').forEach((n) => n.remove());
-  return items;
-}
-
 test('signed in: rows show the edit and download-to-server controls', () => {
   g.clearGuest();
   const row = songRow(WITHOUT, null, null);
-  assert.ok(row.querySelector('.row-dl'), 'download to server button');
-  assert.ok(menuItems(row).includes('Edit song'));
+  assert.ok(row.querySelector('.title-line .sq-btn'), 'download to server button');
+  assert.equal(row.querySelector('.src-logo'), null, 'no source logo on rows');
+  assert.equal(row.querySelector('.more'), null, 'no row menu');
 });
 
 test('guest: rows have no edit, no download-to-server, and the cover opens the source', () => {
   g.setGuest({ guest: true, audio: true });
   const row = songRow(WITHOUT, null, null);
-  assert.equal(row.querySelector('.row-dl'), null);
-  assert.ok(row.querySelector('.src-logo'));
+  assert.equal(row.querySelector('.sq-btn'), null);
+  assert.equal(row.querySelector('.src-logo'), null);
   assert.ok(row.querySelector('.row-cover.act-source'));
-  const items = menuItems(row);
-  assert.ok(!items.includes('Edit song'));
-  assert.ok(!items.some((l) => /Download/.test(l)));
-  const withAudio = menuItems(songRow(WITH, null, null));
-  assert.ok(!withAudio.includes('Edit song') && !withAudio.includes('Download'));
-  assert.ok(withAudio.includes('Play now'));
+  assert.equal(row.querySelector('.more'), null);
+  assert.equal(songRow(WITH, null, null).querySelector('.sq-btn').title, 'Add to queue');
   g.clearGuest();
 });
 
@@ -78,7 +68,7 @@ test('guest without audio: the card offers the source link and rows cannot be qu
   $('song-card').close?.();
   const row = songRow(WITH, null, null);
   assert.equal(row.querySelector('.pl-toggle'), null);
-  assert.equal(row.querySelector('.q-mark'), null);
+  assert.equal(row.querySelector('.sq-btn'), null);
   g.clearGuest();
 });
 

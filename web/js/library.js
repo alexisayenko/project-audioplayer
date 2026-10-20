@@ -5,19 +5,17 @@ import { icon } from './icons.js';
 import { autodl } from './autodl.js';
 import { ringModel } from './dl-progress.js';
 import { paintRing, paintLine } from './dl-ring.js';
-import { openAdd } from './add.js';
+import { openAdd, openSongCard, openFilterSheet, loadUi } from './lazy-ui.js';
 import { can } from './guest.js';
-import { ROW_FLASH_MS } from './constants.js';
+import { ROW_FLASH_MS, LIBRARY_FRESH_MS, EAGER_COVERS } from './constants.js';
 import { findRowIndex, scrollTarget, registerRevealer } from './reveal.js';
 import { tagLabel, categoryOf, CATEGORIES } from './tagname.js';
 import { prefs, readLibraryView, saveLibraryView, SORTS, visibleSongs, selectedIn, isUnsetKey, unsetCount } from './library-data.js';
 import { songRow } from './library-rows.js';
 import { disposeAll } from './marquee.js';
 import { isRowControl, keepCovers } from './row-cover.js';
-import { openSongCard } from './song-card.js';
-import { openFilterSheet } from './library-toolbar.js';
 import { mountScrollTop } from './scroll-top.js';
-import { draftStore, mountDrafts } from './drafts.js';
+import { draftStore } from './drafts-store.js';
 import { countText } from './drafts-model.js';
 
 export { filterByTags, visibleSongs } from './library-data.js';
@@ -26,6 +24,15 @@ if (typeof window !== 'undefined') window.addEventListener('auth-changed', () =>
 
 let flashId = null;
 let flashTimer;
+
+export function prioritizeCovers(rows, count = EAGER_COVERS) {
+  for (const row of rows.slice(0, count)) {
+    const img = row.querySelector?.('img.cover');
+    if (!img) continue;
+    img.setAttribute('fetchpriority', 'high');
+    img.loading = 'eager';
+  }
+}
 
 export function renderLibrary(root) {
   const search = el('input', {
@@ -75,11 +82,11 @@ export function renderLibrary(root) {
   clearFilters.addEventListener('click', () => clearAllFilters());
   const status = el('div');
   const head = el('div', { class: 'table-head t-eyebrow', 'aria-hidden': 'true' },
-    el('span'), el('span', {}, 'Track'), el('span', { class: 'c-genres' }, 'Genres'), el('span', { class: 'c-dur' }, 'Time'), el('span'));
+    el('span'), el('span', {}, 'Track'), el('span', { class: 'c-genres' }, 'Genres'));
   list.addEventListener('click', (e) => {
     const row = e.target.closest('li.song');
     const song = row && !isRowControl(e.target) ? store.get(row.dataset.id) : null;
-    if (song) openSongCard(song, row.querySelector('.open'));
+    if (song) void openSongCard(song, row.querySelector('.open'));
   });
   const group = el('div', { class: 'group' }, head, list);
 
@@ -91,6 +98,25 @@ export function renderLibrary(root) {
   const songsPane = el('div', { class: 'lib-pane', id: 'lib-songs', role: drafting ? 'tabpanel' : null, 'aria-labelledby': drafting ? 'lib-tab-songs' : null });
   const draftsPane = el('div', { class: 'lib-pane drafts', id: 'lib-drafts', role: 'tabpanel', 'aria-labelledby': 'lib-tab-drafts', hidden: true });
   let unmountDrafts = null;
+  let draftsLoading = false;
+  let gone = false;
+  function showDrafts() {
+    if (unmountDrafts || draftsLoading) return;
+    draftsLoading = true;
+    draftsPane.replaceChildren(el('p', { class: 'muted t-subhead state', role: 'status' }, 'Loading drafts...'));
+    loadUi('drafts').then((m) => {
+      draftsLoading = false;
+      if (gone) return;
+      draftsPane.replaceChildren();
+      unmountDrafts = m.mountDrafts(draftsPane);
+    }, () => {
+      draftsLoading = false;
+      if (gone) return;
+      draftsPane.replaceChildren(el('div', { class: 'state card' },
+        el('p', { class: 'msg error', role: 'alert' }, 'Drafts could not be loaded. Check the connection and try again.'),
+        el('button', { class: 'btn', type: 'button', onclick: showDrafts }, 'Retry')));
+    });
+  }
 
   root.append(
     el('header', { class: 'page-head lib-head' },
@@ -98,7 +124,7 @@ export function renderLibrary(root) {
         el('p', { class: 't-eyebrow' }, 'ELECTROPHONE'),
         el('h1', { class: 't-display' }, 'Library')),
       el('div', { class: 'head-actions' }, total,
-        can('add') ? el('button', { class: 'btn primary glow', type: 'button', onclick: () => openAdd() }, icon('plus', 'action'), 'Add song') : null)),
+        can('add') ? el('button', { class: 'btn primary glow', type: 'button', onclick: (e) => openAdd(undefined, e.currentTarget) }, icon('plus', 'action'), 'Add song') : null)),
     ...(switcher ? [switcher] : []),
     songsPane,
     draftsPane);
@@ -135,7 +161,7 @@ export function renderLibrary(root) {
       tab.tabIndex = on ? 0 : -1;
       tab.classList.toggle('on', on);
     }
-    if (onDrafts && !unmountDrafts) unmountDrafts = mountDrafts(draftsPane);
+    if (onDrafts) showDrafts();
     paintTotal();
   }
 
@@ -177,13 +203,16 @@ export function renderLibrary(root) {
     const empty = !songs.length && store.loaded && store.songs.length
       ? [el('li', { class: 'empty muted t-subhead' }, 'No songs match. Clear the search or the filters.')]
       : [];
-    const focusedId = document.activeElement?.classList?.contains('row-cover') ? document.activeElement.closest('li.song')?.dataset.id : null;
+    const focusedEl = document.activeElement;
+    const focusedCls = ['row-cover', 'sq-btn'].find((c) => focusedEl?.classList?.contains(c));
+    const focusedId = focusedCls ? focusedEl.closest('li.song')?.dataset.id : null;
     const prevRows = [...list.querySelectorAll('li.song')];
     const rows = songs.map((s) => songRow(s, cur, flashId));
+    prioritizeCovers(rows);
     keepCovers(prevRows, rows);
     disposeAll(list);
     list.replaceChildren(...empty, ...rows);
-    if (focusedId) [...list.querySelectorAll('li.song')].find((r) => r.dataset.id === focusedId)?.querySelector('.row-cover')?.focus();
+    if (focusedId) [...list.querySelectorAll('li.song')].find((r) => r.dataset.id === focusedId)?.querySelector(`.${focusedCls}`)?.focus();
   }
 
   // Progress ticks update the rings in place; a row gaining or losing its indicator rebuilds the list.
@@ -276,16 +305,16 @@ export function renderLibrary(root) {
       status.replaceChildren(el('div', { class: 'state card' },
         el('p', { class: 't-headline' }, 'No songs yet'),
         el('p', { class: 'muted t-subhead' }, 'Paste a YouTube or SoundCloud link to save the song to your library.'),
-        can('add') ? el('button', { class: 'btn primary glow', type: 'button', onclick: () => openAdd() }, icon('plus', 'action'), 'Add song') : null));
+        can('add') ? el('button', { class: 'btn primary glow', type: 'button', onclick: (e) => openAdd(undefined, e.currentTarget) }, icon('plus', 'action'), 'Add song') : null));
     } else {
       status.replaceChildren();
     }
   }
-  const load = () => store.refresh().catch((e) => { loadError = e.message; renderList(); });
+  const load = () => store.refresh({ maxAgeMs: LIBRARY_FRESH_MS }).catch((e) => { loadError = e.message; renderList(); });
   void load();
   renderAll();
 
   const unmountScrollTop = mountScrollTop();
 
-  return () => { unmountScrollTop(); unsub(); unsubDrafts?.(); unmountDrafts?.(); unsubPlayer(); unsubDl(); unregister(); clearTimeout(flashTimer); flashId = null; const d = document.getElementById('filter-sheet'); if (d.open) d.close(); };
+  return () => { gone = true; unmountScrollTop(); unsub(); unsubDrafts?.(); unmountDrafts?.(); unsubPlayer(); unsubDl(); unregister(); clearTimeout(flashTimer); flashId = null; const d = document.getElementById('filter-sheet'); if (d.open) d.close(); };
 }

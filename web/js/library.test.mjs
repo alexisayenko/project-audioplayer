@@ -17,6 +17,9 @@ const { player, initPlayer } = await import('./player.js');
 initPlayer();
 const { requestReveal } = await import('./reveal.js');
 const { setAutoDownload } = await import('./autodl.js');
+await import('./library-toolbar.js');
+await import('./song-card.js');
+await import('./edit-dialog.js');
 
 const SONGS = [
   { id: 'a', title: 'Alpha', artist: 'Zed', year: 1999, bpm: 120, file: 'a.mp3', duration: 125, added_at: '2024-01-01', tags: ['genre:rock', 'country:de', 'decade:90s'] },
@@ -27,6 +30,8 @@ const SONGS = [
 const setStore = (songs, loaded = true) => {
   store.songs = songs;
   store.loaded = loaded;
+  store.pending = null;
+  store.loadedAt = 0;
   store.tags = [];
   const counts = new Map();
   for (const s of songs) for (const t of s.tags || []) counts.set(t, (counts.get(t) || 0) + 1);
@@ -82,16 +87,28 @@ test('rows are sorted by recently added; counts, durations and BPM are shown', a
   assert.deepEqual(titles(), ['beta', 'Gamma', 'Alpha', 'Offline']);
   assert.match(root.textContent, /4 songs/);
   const alpha = rows().find((r) => r.dataset.id === 'a');
-  assert.equal(alpha.querySelector('.c-dur').textContent, '2:05');
+  assert.equal(alpha.querySelector('.c-dur'), null);
+  assert.equal(alpha.querySelector('.title-line').children.at(-1), alpha.querySelector('.sq-btn'), 'the state button follows the length');
+  assert.equal(alpha.querySelector('.sq-btn').getAttribute('aria-pressed'), 'false');
+  assert.equal(alpha.querySelector('.sq-btn').title, 'Add to queue');
+  assert.equal(alpha.querySelector('.sub').textContent, 'Zed · 1999');
+  assert.equal(alpha.querySelector('.title-line .title-len').textContent, '2:05');
   assert.equal(alpha.querySelector('.bpm-badge').getAttribute('aria-label'), 'BPM 120');
-  assert.match(alpha.querySelector('.sub').textContent, /Zed · 1999/);
   assert.equal(alpha.querySelector('.sub').getAttribute('title'), alpha.querySelector('.sub').textContent);
   assert.equal(alpha.querySelector('.c-genres .g-txt').textContent, 'rock');
-  assert.ok(alpha.querySelector('.c-genres .bpm-badge'));
-  assert.ok(alpha.querySelector('.c-genres').children[0].classList.contains('bpm-badge'));
+  assert.equal(alpha.querySelector('.c-genres .g-txt').getAttribute('title'), 'rock');
+  assert.equal(alpha.querySelector('.c-genres .bpm-badge'), null, 'the badge is not in the Genres cell');
+  assert.ok(alpha.querySelector('.sub-line > .sub-end > .bpm-badge'), 'badge ends the subtitle line');
+  assert.equal(alpha.querySelector('.sub-end').children.at(-1), alpha.querySelector('.bpm-badge'));
+  assert.equal(alpha.querySelector('.bpm-slot'), null);
   assert.equal(alpha.querySelector('.title-line .bpm-badge'), null);
   const offline = rows().find((r) => r.dataset.id !== 'a' && !r.querySelector('.bpm-badge'));
   assert.ok(offline, 'a row without BPM has no badge');
+  assert.equal(offline.querySelector('.bpm-slot'), null, 'no reserved slot');
+  assert.equal(offline.querySelector('.sub-end .bpm-badge'), null);
+  const off = rows().find((r) => r.classList.contains('no-audio'));
+  assert.equal(off.querySelector('.c-dur'), null, 'no right-hand cell any more');
+  assert.equal(off.querySelector('.title-len'), null);
   cleanup();
 });
 
@@ -166,7 +183,7 @@ test('category chips: counts, disabled when empty, filter sheet applies and clea
   const chips = root.querySelectorAll('.cat-chip');
   assert.deepEqual(chips.map((c) => c.getAttribute('aria-label')), ['Tags, 1', 'Genres, 2', 'Years, 2', 'Countries, 2']);
   const genres = chips[1];
-  genres.click();
+  genres.click(); await flush();
   const sheet = document.getElementById('filter-sheet');
   assert.equal(sheet.open, true);
   const rock = sheet.querySelectorAll('.pills button').find((b) => b.getAttribute('title') === 'genre:rock');
@@ -179,7 +196,7 @@ test('category chips: counts, disabled when empty, filter sheet applies and clea
   sheet.close();
   assert.match(root.querySelector('[role=status]').textContent, /2 songs match · rock/);
   assert.equal(root.querySelectorAll('.cat-chip')[1].getAttribute('aria-label'), 'Genres, 1 selected');
-  root.querySelectorAll('.cat-chip')[1].click();
+  root.querySelectorAll('.cat-chip')[1].click(); await flush();
   sheet.querySelector('.sheet-head button').click();
   assert.equal(titles().length, 4, 'Clear applies at once');
   assert.equal(sheet.open, true);
@@ -244,7 +261,7 @@ test('Years filter is derived from each song year, not from decade tags', async 
   await flush();
   const chips = root.querySelectorAll('.cat-chip');
   assert.equal(chips[2].getAttribute('aria-label'), 'Years, 3');
-  chips[2].click();
+  chips[2].click(); await flush();
   const sheet = document.getElementById('filter-sheet');
   const pills = sheet.querySelectorAll('.pills button');
   assert.deepEqual(pills.filter((b) => !b.classList.contains('unset')).map((b) => b.getAttribute('title')), ['decade:80s', 'decade:90s', 'decade:00s']);
@@ -263,7 +280,7 @@ test('"not set" pill in the filter sheet: first, italic, chip count stays real, 
   await flush();
   const chips = root.querySelectorAll('.cat-chip');
   assert.equal(chips[1].getAttribute('aria-label'), 'Genres, 2');
-  chips[1].click();
+  chips[1].click(); await flush();
   const sheet = document.getElementById('filter-sheet');
   const first = sheet.querySelector('.pills button');
   assert.equal(first.getAttribute('aria-label'), 'Songs with no genre');
@@ -297,7 +314,7 @@ test('Play all replaces the queue with the visible songs that have audio; Add al
   cleanup();
 });
 
-test('no-audio rows show the source logo and a Download button; clicking requests it and shows the failure ring', async () => {
+test('no-audio rows show a Download button and no source logo; clicking requests it and shows the failure ring', async () => {
   setStore(SONGS);
   filterByTags([]);
   const c = stubFetch((url, o) => {
@@ -309,12 +326,14 @@ test('no-audio rows show the source logo and a Download button; clicking request
   await flush();
   const row = rows().find((r) => r.dataset.id === 'n1');
   assert.ok(row.classList.contains('no-audio'));
-  assert.ok(row.querySelector('a.src-youtube'));
-  assert.equal(row.querySelector('a.src-youtube').getAttribute('href'), 'https://youtu.be/x');
+  assert.equal(row.querySelector('a.src-youtube'), null, 'the source logo is gone from rows');
+  assert.equal(row.querySelector('.title-line').children.at(-1), row.querySelector('.sq-btn'));
+  assert.equal(row.querySelector('.title-line .sq-btn').title, 'Download to the server', 'no length: the button sits alone at the end of the title line');
+  assert.equal(row.querySelector('.title-line').children.length, 2);
   assert.equal(row.querySelector('.open').localName, 'button', 'the title opens the song card');
   assert.equal(row.querySelector('.row-cover').getAttribute('aria-label'), 'Download Offline', 'with Auto-download off the cover downloads');
-  assert.ok(row.querySelector('.row-dl').classList.contains('round'), 'WEB-099: download is a round icon');
-  row.querySelector('.row-dl').click();
+  assert.ok(row.querySelector('.sq-btn').classList.contains('icon'), 'download is an icon button');
+  row.querySelector('.sq-btn').click();
   await flush();
   assert.ok(c.some((x) => x.url === '/songs/n1/audio' && x.opts.method === 'POST'));
   const again = rows().find((r) => r.dataset.id === 'n1');
@@ -334,45 +353,40 @@ test('with auto-download on, no-audio songs become playable rows', async () => {
   cleanup();
 });
 
-test('row menu: Play now, queue toggle and Edit song', async () => {
+test('row state button toggles the queue inline; the row has no More menu', async () => {
   setStore(SONGS);
   filterByTags([]);
   stubFetch(() => ({ body: { songs: SONGS } }));
   const { rows, cleanup } = mount();
   await flush();
   while (player.current) player.removeAt(0);
-  const row = rows().find((r) => r.dataset.id === 'b');
+  const find = () => rows().find((r) => r.dataset.id === 'b');
+  const row = find();
   assert.equal(row.querySelector('.pl-toggle'), null, 'ER1: no playlist toggle button on the row');
-  assert.equal(row.querySelector('.q-mark'), null, 'not queued: no queue mark');
-  row.querySelector('.more').click();
-  let menu = document.body.querySelectorAll('.menu button');
-  assert.deepEqual(menu.map((b) => b.textContent), ['Play now', 'Add to queue', 'Download', 'Share link', 'Edit song']);
-  menu.find((b) => b.textContent === 'Add to queue').click();
-  assert.equal(player.inQueue('b'), true);
-  document.body.querySelectorAll('.menu').forEach((m) => m.remove());
-  const queuedRow = rows().find((r) => r.dataset.id === 'b');
-  const mark = queuedRow.querySelector('.q-mark');
-  assert.ok(mark, 'queued: the cover shows the queue mark');
-  assert.equal(mark.tagName, 'SPAN');
-  assert.equal(mark.getAttribute('aria-hidden'), 'true');
-  assert.equal(mark.closest('button'), queuedRow.querySelector('.row-cover'), 'part of the cover, not a button of its own');
+  assert.equal(row.querySelector('.more'), null, 'the row has no More menu (the song card has every action)');
+  assert.equal(row.querySelector('.sq-btn.on'), null, 'not queued: the button is not pressed');
+  assert.equal(row.querySelector('.sq-btn').getAttribute('aria-pressed'), 'false');
+  row.querySelector('.sq-btn').click();
+  assert.equal(player.inQueue('b'), true, 'the row button adds to the queue');
+  const queuedRow = find();
+  const qi = queuedRow.querySelector('.title-line .sq-btn.on');
+  assert.ok(qi, 'queued: the title line ends with the pressed queue button');
+  assert.equal(qi.getAttribute('aria-pressed'), 'true');
+  assert.equal(qi.title, 'In the queue, position 1 of 1. Click to remove');
+  assert.match(qi.getAttribute('aria-label'), /^Remove from queue/);
+  assert.equal(qi.parentNode.children.at(-1), qi);
+  assert.equal(queuedRow.querySelector('.q-mark'), null, 'no cover badge');
   assert.match(queuedRow.querySelector('.row-cover').getAttribute('aria-description'), /In the queue, position 1 of 1$/);
   assert.match(queuedRow.querySelector('.row-cover').title, /In the queue, position 1 of 1$/);
-  assert.equal(document.getElementById('toast').textContent, 'Queued');
-  queuedRow.querySelector('.more').click();
-  const labels = document.body.querySelectorAll('.menu button').map((b) => b.textContent);
-  assert.deepEqual(labels, ['Play now', 'Remove from queue', 'Download', 'Share link', 'Edit song']);
-  document.body.querySelectorAll('.menu button').find((b) => b.textContent === 'Remove from queue').click();
-  assert.equal(player.inQueue('b'), false);
-  assert.equal(rows().find((r) => r.dataset.id === 'b').querySelector('.q-mark'), null, 'removed: the mark goes');
-  rows().find((r) => r.dataset.id === 'b').querySelector('.more').click();
-  document.body.querySelectorAll('.menu button').find((b) => b.textContent === 'Edit song').click();
-  assert.equal(document.getElementById('edit-dialog').open, true);
-  assert.equal(document.getElementById('edit-dialog').querySelector('h2').textContent, 'Edit song');
+  assert.notEqual(document.getElementById('toast').textContent, 'Queued', 'WEB-115: inline feedback, no toast');
+  qi.click();
+  assert.equal(player.inQueue('b'), false, 'and removes it');
+  assert.equal(find().querySelector('.sq-btn.on'), null, 'removed: the button is not pressed');
+  while (player.current) player.removeAt(0);
   cleanup();
 });
 
-test('tapping a row opens the song card, but not the cover, menu or links', async () => {
+test('tapping a row opens the song card, but not the cover or the state button', async () => {
   setStore(SONGS);
   filterByTags([]);
   stubFetch(() => ({ body: { songs: SONGS } }));
@@ -380,20 +394,21 @@ test('tapping a row opens the song card, but not the cover, menu or links', asyn
   await flush();
   const card = document.getElementById('song-card');
   const row = () => rows().find((r) => r.dataset.id === 'a');
-  for (const sel of ['.more', '.row-cover']) {
+  for (const sel of ['.sq-btn', '.row-cover']) {
     row().querySelector(sel).click();
     assert.equal(card.open, false, sel);
     document.body.querySelectorAll('.menu').forEach((m) => m.remove());
     while (player.current) player.removeAt(0);
   }
-  row().querySelector('.info').dispatchEvent(makeEvent('click', { bubbles: true }));
+  row().querySelector('.info').dispatchEvent(makeEvent('click', { bubbles: true })); await flush();
   assert.equal(card.open, true);
   assert.equal(card.querySelector('h2').textContent, 'Alpha');
   card.close();
-  row().querySelector('.open').click();
+  row().querySelector('.open').click(); await flush();
   assert.equal(card.open, true, 'the title button opens it too');
   card.close();
-  rows().find((r) => r.dataset.id === 'n1').querySelector('a.src-youtube').click();
+  rows().find((r) => r.dataset.id === 'b').querySelector('.sq-btn').click();
+  while (player.current) player.removeAt(0);
   assert.equal(card.open, false);
   cleanup();
 });
@@ -473,7 +488,7 @@ test('cleanup unregisters the revealer and closes an open sheet', async () => {
   stubFetch(() => ({ body: { songs: SONGS } }));
   const { root, cleanup } = mount();
   await flush();
-  root.querySelectorAll('.cat-chip')[1].click();
+  root.querySelectorAll('.cat-chip')[1].click(); await flush();
   assert.equal(document.getElementById('filter-sheet').open, true);
   cleanup();
   assert.equal(document.getElementById('filter-sheet').open, false);
@@ -490,7 +505,7 @@ test('Clear filters appears with a search or a filter and resets both at once', 
   search('alp');
   assert.equal(clear().hidden, false);
   assert.deepEqual(titles(), ['Alpha']);
-  root.querySelectorAll('.cat-chip')[1].click();
+  root.querySelectorAll('.cat-chip')[1].click(); await flush();
   const sheet = document.getElementById('filter-sheet');
   sheet.querySelectorAll('.pills button').find((b) => b.getAttribute('title') === 'genre:rock').click();
   sheet.close();
@@ -555,4 +570,20 @@ test('Escape in the search box clears it only when it has text', () => {
   assert.equal(titles().length, 4);
   assert.equal(root.querySelector('.search-clear').hidden, true);
   cleanup();
+});
+
+test('WEB-116: opening the Library right after a load reuses the loaded songs instead of fetching again', async () => {
+  setStore(SONGS);
+  store.loadedAt = Date.now();
+  const fresh = stubFetch(() => ({ body: { songs: SONGS } }));
+  const first = mount();
+  await flush();
+  assert.equal(fresh.length, 0);
+  assert.equal(first.rows().length, 4);
+  first.cleanup();
+  store.loadedAt = 0;
+  const again = mount();
+  await flush();
+  assert.equal(fresh.filter((c) => c.url === '/library').length, 1, 'older data is refreshed');
+  again.cleanup();
 });

@@ -87,7 +87,12 @@ test('the card opens read-only with links, actions and returns focus to the row 
   assert.ok(document.activeElement === dlg, 'opening focuses the dialog itself, not an action button');
   assert.equal(dlg.getAttribute('tabindex'), '-1');
   assert.ok(!dlg.querySelectorAll('.card-actions button').includes(document.activeElement), 'no action button shows a focus ring on open');
-  assert.equal(dlg.querySelector('.card-bar .card-close').textContent, 'Close');
+  const x = dlg.querySelector('.card-close');
+  assert.equal(x.getAttribute('aria-label'), 'Close');
+  assert.equal(x.title, 'Close');
+  assert.equal(x.textContent, '');
+  assert.equal(dlg.querySelector('.card-bar'), null, 'no header row');
+  assert.ok(x.parentElement === dlg || x.parentElement.classList.contains('card-art'), 'floats over the cover or the card corner');
   assert.equal(dlg.querySelector('.card-actions .btn'), null, 'no text button in the action row');
   assert.equal(dlg.querySelector('.card-icons .key'), null, 'no dock key on the card');
   assert.equal(dlg.querySelectorAll('.card-icons .icon.round').length, 5, 'every card action is a round icon button');
@@ -144,7 +149,7 @@ test('pressing the pressed playlist button removes the song from the list and th
   const btn = (t) => dlg.querySelectorAll('.card-actions button').find((b) => b.getAttribute('aria-label') === t);
   btn('Add to playlist').click();
   assert.equal(player.inQueue('a'), true);
-  btn('In playlist - click to remove').click();
+  btn('In playlist, position 1 of 1 - click to remove').click();
   assert.equal(player.inQueue('a'), false);
   const off = btn('Add to playlist');
   assert.ok(off, 'the card repaints to the unpressed button');
@@ -164,14 +169,14 @@ test('the playlist button toggles, Play next queues the song after the current o
   assert.equal(off.classList.contains('on'), false);
   off.click();
   assert.equal(player.inQueue('a'), true);
-  const on = btn('In playlist - click to remove');
+  const on = btn('In playlist, position 1 of 1 - click to remove');
   assert.ok(on, 'the card repaints after the toggle');
   assert.equal(btn('Add to playlist'), undefined, 'one toggle: the label follows the state');
   assert.equal(on.getAttribute('aria-pressed'), 'true');
   assert.ok(on.classList.contains('on') && on.classList.contains('pl-toggle') && on.classList.contains('icon'), 'the same pressed round button as the Library row');
-  assert.equal(on.title, 'In playlist - click to remove');
-  assert.equal(on.innerHTML, off.innerHTML, 'the pressed state keeps the list add icon');
-  assert.ok(!on.innerHTML.includes('m3 17 2 2'), 'no list check glyph');
+  assert.equal(on.title, 'In playlist, position 1 of 1 - click to remove');
+  assert.notEqual(on.querySelector('svg').innerHTML, off.querySelector('svg').innerHTML, 'the pressed state swaps to the playlist icon');
+  assert.equal(on.querySelector('svg').innerHTML, icon('playlist').innerHTML);
   assert.equal(dlg.querySelector('.card-actions .btn'), null);
   assert.equal(btn('Play'), undefined, 'no Play/Pause toggle on the card');
   on.click();
@@ -301,7 +306,11 @@ test('Copy title writes exactly the displayed line to the clipboard and toasts',
     await new Promise((r) => setTimeout(r, 0));
   });
   assert.deepEqual(written, ['Zed - Alpha (Kav)']);
-  assert.equal($('toast').textContent, 'Title copied');
+  assert.equal(dlg.querySelector('.card-copy-note').textContent, 'Title copied');
+  assert.ok(copy.classList.contains('icon') && copy.classList.contains('round'));
+  assert.equal(copy.textContent, '');
+  assert.ok(copy.querySelector('svg'));
+  assert.equal(dlg.querySelector('.card-full').children.at(-1), copy);
   dlg.close();
 });
 
@@ -321,7 +330,7 @@ test('Copy title falls back to a hidden textarea when the clipboard API is missi
   document.body.append = append;
   document.execCommand = exec;
   assert.deepEqual(copied, ['Zed - Alpha (Kav)']);
-  assert.equal($('toast').textContent, 'Title copied');
+  assert.equal(dlg.querySelector('.card-copy-note').textContent, 'Title copied');
   dlg.close();
 });
 
@@ -356,4 +365,24 @@ test('the Genre row falls back to one line of tagged genres without a vocabulary
   assert.deepEqual(lineTexts(dlg), []);
   assert.equal(dlg.querySelector('.card-genre-line'), null);
   dlg.querySelector('.card-close').click();
+});
+
+test('song card dialog width is derived from --cover-max plus its padding', async () => {
+  const { readFileSync } = await import('node:fs');
+  const css = readFileSync(new URL('../style.css', import.meta.url), 'utf8');
+  const rules = css.split('\n').filter((l) => l.includes('dialog.card-dlg {'));
+  assert.ok(rules.length >= 2);
+  for (const r of rules) assert.match(r, /var\(--cover-max\) \+ 2 \* var\(--card-pad\)/);
+  assert.equal((css.match(/--cover-max: \d+px;/g) || []).length, 1);
+});
+
+
+test('every round card button has hover, focus and pressed rules in one place, and the Close X is dark like the visualizer exit', async () => {
+  const { readFileSync } = await import('node:fs');
+  const css = readFileSync(new URL('../style.css', import.meta.url), 'utf8');
+  assert.match(css, /\.card-dlg \.icon\.round:hover \{[^}]*hover-wash/);
+  assert.match(css, /\.card-dlg \.icon\.round:focus-visible \{[^}]*hover-wash/);
+  assert.match(css, /\.card-dlg \.icon\.round:active \{[^}]*pressed-wash/);
+  assert.match(css, /\.card-dlg \.card-close \{[^}]*background-color: var\(--vinyl\)/);
+  assert.match(css, /\.card-dlg \.card-close:hover \{[^}]*close-wash/);
 });

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { installPage, makeEvent, stubFetch } from './test-dom.mjs';
+import { installPage, makeEvent, stubFetch, flush } from './test-dom.mjs';
 
 await installPage();
 globalThis.location = { hash: '', href: 'http://localhost/', host: 'localhost' };
@@ -258,9 +258,11 @@ test('song menu offers Move/Remove and edits through the dialog', () => {
   assert.deepEqual(queueTitles(), ['Gamma']);
 });
 
-test('tag picker adds songs by tag and the Apply label counts new tags', () => {
+test('tag picker adds songs by tag and the Apply label counts new tags', async () => {
+  await import('./player-tag-picker.js');
   reset();
   $('tag-add').click();
+  await flush();
   const dlg = $('edit-dialog');
   assert.equal(dlg.open, true);
   const apply = dlg.querySelectorAll('button').find((b) => /^Add songs/.test(b.textContent));

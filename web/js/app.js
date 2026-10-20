@@ -2,20 +2,15 @@ import { api, isSignedIn, session } from './api.js';
 import { isGuest, setGuest, streamable, syncBanner } from './guest.js';
 import { toast } from './dom.js';
 import { player as playerApi, initPlayer, pausePlayer } from './player.js';
-import { initVisualizer } from './viz-ui.js';
-import { isShareHash, parseShareParams } from './share.js';
-import { openShared, setShareHost } from './share-open.js';
-import { initShare } from './share-ui.js';
+import { lazyVisualizer } from './viz-lazy.js';
+import { lazyRoute } from './lazy-route.js';
+import { startBackgroundLoad } from './prefetch.js';
+import { isShareHash } from './share-hash.js';
+import { initShare } from './share-buttons.js';
 import { loadLegal, syncLegal } from './legal.js';
 import { store } from './store.js';
 import { renderLibrary } from './library.js';
-import { openAdd } from './add.js';
-import { renderSettings } from './settings.js';
-import { renderGenres } from './genres.js';
-import { renderGenresRework } from './genres-rework.js';
-import { renderPlaylists } from './playlists.js';
-import { renderStats } from './stats.js';
-import { renderTheory } from './theory.js';
+import { openAdd, loadUi } from './lazy-ui.js';
 import { loadCollapsed, saveCollapsed } from './sidebar-state.js';
 import { SYNC_POLL_MS } from './constants.js';
 import { describeSync } from './sync-status.js';
@@ -23,14 +18,33 @@ import { describeBuild } from './build-info.js';
 
 const player = document.getElementById('player');
 const renderPlayback = () => { player.hidden = false; return () => { player.hidden = true; }; };
-const routes = { library: renderLibrary, playback: renderPlayback, playlists: renderPlaylists, genres: renderGenresRework, 'genres-classic': renderGenres, stats: renderStats, theory: renderTheory, settings: renderSettings };
+const routes = {
+  library: renderLibrary,
+  playback: renderPlayback,
+  playlists: lazyRoute(() => import('./playlists.js'), 'renderPlaylists'),
+  genres: lazyRoute(() => import('./genres-rework.js'), 'renderGenresRework'),
+  'genres-classic': lazyRoute(() => import('./genres.js'), 'renderGenres'),
+  stats: lazyRoute(() => import('./stats.js'), 'renderStats'),
+  theory: lazyRoute(() => import('./theory.js'), 'renderTheory'),
+  settings: lazyRoute(() => import('./settings.js'), 'renderSettings'),
+};
 const view = document.getElementById('view');
 let cleanup = null;
+
+async function openSharedLink(hash) {
+  try {
+    const [{ parseShareParams }, open] = await Promise.all([import('./share.js'), loadUi('shareOpen')]);
+    open.setShareHost({ openFull: () => { void viz.openFull(); } });
+    open.openShared(parseShareParams(hash) ?? 'bad');
+  } catch {
+    toast('The shared link could not be opened. Check the connection and try again.');
+  }
+}
 
 function route() {
   let name = location.hash.replace(/^#\/?/, '') || 'library';
   const wantsAdd = name === 'add';
-  const shared = isShareHash(location.hash) ? parseShareParams(location.hash) ?? 'bad' : null;
+  const shared = isShareHash(location.hash) ? location.hash : null;
   if (shared) {
     name = 'library';
     history.replaceState(null, '', '#/library');
@@ -54,19 +68,19 @@ function route() {
   document.body.dataset.route = name;
   syncLegal(legalEl, legalCtx());
   cleanup = routes[name](view) || null;
+  if (name === 'playback') void viz.ensure().catch(() => {});
   for (const a of document.querySelectorAll('#nav a')) {
     const on = a.dataset.route === name;
     a.classList.toggle('active', on);
     if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
   }
   window.scrollTo(0, 0);
-  if (wantsAdd) openAdd();
-  if (shared) openShared(shared);
+  if (wantsAdd) void openAdd();
+  if (shared) void openSharedLink(shared);
 }
 
 initPlayer();
-const viz = initVisualizer({ player: playerApi });
-setShareHost({ openFull: () => viz.full.open() });
+const viz = lazyVisualizer({ player: playerApi });
 initShare();
 const sideToggle = document.getElementById('side-toggle');
 function setCollapsed(collapsed) {
@@ -99,14 +113,23 @@ function syncGuestUi() {
   syncLegal(legalEl, legalCtx());
 }
 
-async function enterGuest() {
+function resetUnloaded() {
+  store.songs = [];
+  store.loaded = false;
+}
+
+async function enterGuest(early) {
   try {
-    const me = await api.me();
+    const me = await (early?.me ?? api.me());
     if (me?.guest) {
       setGuest(me);
-      await store.refresh();
+      await (early?.library ?? store.refresh());
+    } else if (early) {
+      resetUnloaded();
     }
-  } catch { /* 401: the public view is off, the sign-in gate stays */ }
+  } catch {
+    if (early) resetUnloaded();
+  }
 }
 
 async function onAuthChanged() {
@@ -131,17 +154,21 @@ async function onAuthChanged() {
 window.addEventListener('auth-changed', () => { void onAuthChanged(); });
 window.addEventListener('guest-limit', (e) => toast(e.detail));
 
+const early = { me: api.me(), library: store.refresh() };
+early.me.catch(() => {});
+early.library.catch(() => {});
 try {
   await session.restore();
   if (isSignedIn()) {
-    try { await store.refresh(); } catch { /* refresh failure keeps the cached library */ }
+    try { await early.library; } catch { /* refresh failure keeps the cached library */ }
   } else {
-    await enterGuest();
+    await enterGuest(early);
   }
 } catch { /* restore failure leaves the app signed out */ }
 syncGuestUi();
 route();
 void loadLegal(legalEl, legalCtx);
+void startBackgroundLoad().catch(() => {});
 
 const warn = document.getElementById('sync-warn');
 const led = document.getElementById('server-led');

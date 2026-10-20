@@ -137,13 +137,4 @@ export function openShareDialog(song, audio = $('audio')) {
   time.focus();
 }
 
-export function initShare() {
-  const buttons = ['p-share', 'viz-share'].map($).filter(Boolean);
-  for (const b of buttons) {
-    b.replaceChildren(icon('share', 'nav'));
-    b.addEventListener('click', () => openShareDialog(player.current));
-  }
-  const sync = () => { for (const b of buttons) b.hidden = !player.current; };
-  player.onChange(sync);
-  sync();
-}
+export { initShare } from './share-buttons.js';

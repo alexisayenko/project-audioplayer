@@ -112,3 +112,12 @@ test('labels never use leader lines: only edges are stroked as lines, none for l
   const zoomed = run(3);
   assert.ok((zoomed.fillText || []).length >= 1);
 });
+
+test('the hidden Electronic family shows its name as the title at the centre', async () => {
+  const { view } = await setup();
+  while (frames.length) frames.splice(0).forEach((fn) => fn());
+  drawCalls = {};
+  view.zoomBy(1);
+  while (frames.length) frames.splice(0).forEach((fn) => fn());
+  assert.ok((drawCalls.fillText || []).some((a) => a[0] === 'Electronic'), 'title drawn');
+});

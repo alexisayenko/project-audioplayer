@@ -94,7 +94,7 @@ Built, not deployed (ADR-0026, task-0021): data flow is clients -> server API ->
 | `GET /me`, `GET /me/usage` | profile (`email`, `provider`, `owner`, `created_at`); quota usage (`max_*` null for the owner) |
 | `GET /me/backfill/bpm`, `POST /me/backfill/bpm`, `DELETE /me/backfill/bpm` | BPM detection for the user's songs without one: status, start (202; 409 if already running), cancel |
 | `GET /legal`, `GET /robots.txt` | legal page and robots rules, public |
-| `GET /`, `GET /_v/<version>/...` | web UI (`web/`, static, public): `index.html` with assets rewritten to a content-versioned URL (API-051) |
+| `GET /`, `GET /_v/<version>/...` | web UI (`web/`, static, public): `index.html` with assets rewritten to a content-versioned URL and `modulepreload` hints for tier 1 and the tier-2 module list as JSON (API-051, WEB-119, WEB-121) |
 
 Full contract: [`../specs/api.md`](../specs/api.md).
 
@@ -152,6 +152,8 @@ Plain HTML, CSS and ES modules; no build step, no framework, no CDN.
 `#/playback`, `#/play/<songId>?v=1&...` (a share link; opens Playback, [share.md](../specs/share.md)), `#/genres` (Genres map, [genres.md](../specs/genres.md)), `#/stats` (Song stats), `#/settings` (a signed-out visitor is sent to `#/settings`) and `#/add` (opens Library with the Add dialog over it; `wantsAdd` in `web/js/app.js`); Add and Edit are dialogs. The web is catalog-only: it saves entries with `audio:false` and plays and deletes only audio already on the server (ADR-0010). One `<audio>` element drives the mini-player, the
 Playback tab and the Media Session lock-screen controls. The web UI uses the session cookie only. Mounted by FastAPI at
 `/` after all API routes, so it never shadows them.
+
+**Web loading (no build step).** `GET /` is generated from the files: `server/app/web.py` walks the import graph from `js/app.js`. Tier 1 is its static closure (about 56 modules): `index.html` preloads exactly those with `modulepreload`, and they paint the Library list and the shell. Everything a click needs but the first paint does not (song card, Add/Edit and the song form, share, tag picker, filter sheet, Drafts, the routes, the visualizer) sits behind a dynamic `import()`, mostly through `web/js/lazy-ui.js` (a pending note next to the control, an inline error). Tier 2 is every module reachable only through those `import()` calls (about 123): `GET /` lists them in `<script type="application/json" id="tier2-modules">` and `web/js/prefetch.js` warms them with runtime `modulepreload` links, 6 at a time in idle slots, after the first rows, `load` and the first 12 covers, never on data saver or 2g. Both lists come from the graph, so a new import cannot leave them stale; `server/tests/test_web_preload.py` guards the split. Specs: WEB-117..WEB-122.
 
 ## App (`ios/`)
 

@@ -79,7 +79,8 @@ test('prev skips songs without audio when auto-download is off', () => {
   assert.match($('toast').textContent, /Skipped 1 not downloaded/);
 });
 
-test('media keys: mini buttons drive the same actions', () => {
+test('media keys: mini buttons drive the same actions', async () => {
+  await import('./song-card.js');
   player.playNow('a');
   $('mini-next').click();
   assert.equal(player.current.id !== 'a', true);
@@ -93,6 +94,7 @@ test('media keys: mini buttons drive the same actions', () => {
     location.hash = hash;
     $('song-card').close?.();
     $('mini-open').click();
+    await flush();
     assert.equal($('song-card').open, true, `the dock title opens the song card on ${hash}`);
     assert.equal(location.hash, hash, 'it does not navigate');
     $('song-card').close?.();

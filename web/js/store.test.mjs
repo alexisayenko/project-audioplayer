@@ -55,3 +55,18 @@ test('insert appends a song (replacing the same id), refreshes tags and notifies
   assert.deepEqual(store.tags.map((t) => t.tag).sort(), ['pop', 'rock']);
   assert.equal(n, 2);
 });
+
+test('WEB-116: concurrent refreshes share one request; maxAgeMs skips a fresh library', async () => {
+  const calls = stubFetch(() => ({ body: { songs: [{ id: 'a', tags: [] }] } }));
+  store.loaded = false;
+  store.pending = null;
+  await Promise.all([store.refresh(), store.refresh()]);
+  assert.equal(calls.length, 1);
+  await store.refresh({ maxAgeMs: 60000 });
+  assert.equal(calls.length, 1, 'fresh data is not fetched again');
+  await store.refresh();
+  assert.equal(calls.length, 2, 'a plain refresh always fetches');
+  store.loadedAt -= 120000;
+  await store.refresh({ maxAgeMs: 60000 });
+  assert.equal(calls.length, 3, 'stale data is fetched again');
+});

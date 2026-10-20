@@ -13,6 +13,7 @@ export const maxYear = (now = new Date()) => now.getFullYear() + 1;
 export const TOAST_MS = 3000;
 export const TOAST_ACTION_MS = 6000;
 export const SYNC_POLL_MS = 30000;
+export const LIBRARY_FRESH_MS = 15000;
 export const ROW_FLASH_MS = 1500;
 export const COVER_FLASH_MS = 1200;
 export const ADD_ROW_OUTLINE_MS = 2500;
@@ -25,3 +26,9 @@ export const CLICK_SWALLOW_MS = 400;
 export const VIBRATE_MS = 10;
 
 export const LONG_SONG_SECONDS = 300;
+export const EAGER_COVERS = 12;
+export const PREFETCH_BATCH = 6;
+export const PREFETCH_COVER_WAIT_MS = 4000;
+export const PREFETCH_BATCH_WAIT_MS = 2500;
+export const PREFETCH_IDLE_MS = 1500;
+export const PREFETCH_RESUME_MS = 600;

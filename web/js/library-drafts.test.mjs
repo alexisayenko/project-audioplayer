@@ -64,6 +64,7 @@ test('the Drafts tab swaps the song list for the draft list and hides search, ch
   search.value = 'alp';
   search.dispatchEvent(makeEvent('input', { target: search }));
   v.tabs()[1].click();
+  await flush();
   assert.equal(v.tabs()[1].getAttribute('aria-selected'), 'true');
   assert.equal(v.tabs()[0].getAttribute('aria-selected'), 'false');
   assert.equal(v.songsPane().hidden, true);
@@ -74,6 +75,7 @@ test('the Drafts tab swaps the song list for the draft list and hides search, ch
   assert.ok(v.draftsPane().querySelector('textarea'));
   assert.equal(v.root.querySelectorAll('li.song').length, 1, 'the song list keeps its filter');
   v.tabs()[0].click();
+  await flush();
   assert.equal(v.songsPane().hidden, false);
   assert.equal(v.draftsPane().hidden, true);
   assert.equal(v.total(), '2 songs');
@@ -105,6 +107,7 @@ test('the view is remembered when the Library is rendered again in the same page
   const first = setup();
   await flush();
   first.tabs()[1].click();
+  await flush();
   first.cleanup();
   const root = document.createElement('div');
   document.body.append(root);
@@ -119,6 +122,7 @@ test('pasting in the Drafts view raises the count on the tab and in the header',
   await flush();
   await flush();
   v.tabs()[1].click();
+  await flush();
   v.draftsPane().querySelector('textarea').value = 'New - Song';
   v.draftsPane().querySelector('form.drafts-paste').dispatchEvent(makeEvent('submit'));
   for (let i = 0; i < 4; i += 1) await flush();
@@ -134,6 +138,7 @@ test('a failing draft load shows the tab without a count and Retry in the Drafts
   assert.equal(v.tabs()[1].textContent, 'Drafts');
   assert.equal(v.tabs()[1].getAttribute('aria-label'), 'Drafts');
   v.tabs()[1].click();
+  await flush();
   assert.match(v.draftsPane().textContent, /down/);
   assert.equal(v.total(), '');
   v.cleanup();
@@ -167,8 +172,10 @@ test('a stored Drafts choice restores the Drafts tab; choosing a tab stores it',
   assert.equal(v.tabs()[1].getAttribute('aria-selected'), 'true');
   assert.equal(v.draftsPane().hidden, false);
   v.tabs()[0].click();
+  await flush();
   assert.equal(localStorage.getItem(KEY), 'songs');
   v.tabs()[1].click();
+  await flush();
   assert.equal(localStorage.getItem(KEY), 'drafts');
   v.cleanup();
 });
@@ -207,6 +214,7 @@ test('blocked storage (reads and writes throw) does not break the tabs', async (
     const v = setup({ keepStored: true });
     assert.equal(v.tabs()[0].getAttribute('aria-selected'), 'true');
     v.tabs()[1].click();
+    await flush();
     assert.equal(v.draftsPane().hidden, false);
     v.cleanup();
   } finally {

@@ -33,6 +33,8 @@ test('signed out at boot: the app redirects to Settings and marks the body signe
 test('settings renders for a signed-out user and nav marks it active', async () => {
   dom.window.dispatch('hashchange');
   assert.equal(document.body.dataset.route, 'settings');
+  assert.match(document.getElementById('view').textContent, /Loading/, 'the lazy route shows its loading state first');
+  await flush();
   assert.ok(document.body.classList.contains('signed-out'));
   const active = nav.querySelectorAll('a').filter((a) => a.classList.contains('active')).map((a) => a.dataset.route);
   assert.deepEqual(active, ['settings']);
@@ -78,6 +80,7 @@ test('#/add opens the add dialog over the library and rewrites the hash', async 
   location.hash = '#/add';
   dom.window.dispatch('hashchange');
   assert.equal(location.hash, '#/library');
+  await flush();
   assert.equal(document.getElementById('add-dialog').open, true);
   document.getElementById('add-dialog').close();
 });

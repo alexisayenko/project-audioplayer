@@ -9,17 +9,30 @@ export const store = {
   build: null,
   listeners: new Set(),
 
-  async refresh() {
-    this.songs = await api.library();
-    this.tags = tagCounts(this.songs);
-    this.loaded = true;
-    this.listeners.forEach((fn) => fn());
+  loadedAt: 0,
+  pending: null,
+
+  refresh({ maxAgeMs = 0 } = {}) {
+    if (this.pending) return this.pending;
+    if (maxAgeMs > 0 && this.loaded && Date.now() - this.loadedAt < maxAgeMs) return Promise.resolve();
+    const run = (async () => {
+      this.songs = await api.library();
+      this.tags = tagCounts(this.songs);
+      this.loaded = true;
+      this.loadedAt = Date.now();
+      this.listeners.forEach((fn) => fn());
+    })();
+    this.pending = run;
+    const clear = () => { if (this.pending === run) this.pending = null; };
+    run.then(clear, clear);
+    return run;
   },
 
   insert(song) {
     this.songs = [...this.songs.filter((s) => s.id !== song.id), song];
     this.tags = tagCounts(this.songs);
     this.loaded = true;
+    this.loadedAt = Date.now();
     this.listeners.forEach((fn) => fn());
   },
 
