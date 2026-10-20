@@ -87,18 +87,19 @@ export function renderStudio(root, env = {}) {
     if (!parts) return;
     const { canvas, wave } = parts;
     const width = Math.round(wave.clientWidth || FALLBACK_WIDTH);
+    const height = Math.round(wave.clientHeight || WAVE_HEIGHT);
     const dpr = globalThis.devicePixelRatio || 1;
     const ctx = canvas.getContext?.('2d');
     if (!ctx) return;
     const s = loop.get();
     const t = dragTime ?? position();
-    const key = [width, dpr, t.toFixed(2), s.start, s.end, status, peaks ? peaks.buckets : 0, duration()].join('|');
+    const key = [width, height, dpr, t.toFixed(2), s.start, s.end, status, peaks ? peaks.buckets : 0, duration()].join('|');
     if (key === lastKey) return;
     lastKey = key;
-    if (canvas.width !== Math.round(width * dpr) || canvas.height !== Math.round(WAVE_HEIGHT * dpr)) sizeCanvas(canvas, width, WAVE_HEIGHT, dpr);
+    if (canvas.width !== Math.round(width * dpr) || canvas.height !== Math.round(height * dpr)) sizeCanvas(canvas, width, height, dpr);
     const now = Date.now();
     if (!colors || now - colorsAt > 500) { colors = readColors(canvas); colorsAt = now; }
-    drawPeaks(ctx, peaks, { width, height: WAVE_HEIGHT, dpr, duration: duration(), playhead: t, region: validRegion(s) ? s : null, colors });
+    drawPeaks(ctx, peaks, { width, height, dpr, duration: duration(), playhead: t, region: validRegion(s) ? s : null, colors });
     parts.clock.textContent = `${fmtClock(t)} / ${fmtClock(duration())}`;
   }
 
@@ -369,6 +370,7 @@ export function renderStudio(root, env = {}) {
       el('div', { class: 'stu-saved-bar' }, save, saveable ? null : el('p', { class: 'muted t-subhead stu-signin' }, SIGN_IN_NOTE)),
       savedHead, list, note$));
     wireWave(wave, canvas);
+    ro?.observe(wave);
     lastKey = '';
     startPeaks(song);
     syncControls();

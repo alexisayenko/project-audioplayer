@@ -7580,6 +7580,35 @@
 "size": 4497362,
 "duration": 278
 }
+},
+{
+"id": "soundcloud-1188120031",
+"title": "Voiceless",
+"mainArtists": [
+"R-Tem"
+],
+"featuredArtists": [],
+"releaseYear": 2005,
+"version": {
+"type": "remix",
+"name": "Z05 Mix",
+"artists": [],
+"releaseYear": null
+},
+"albums": [],
+"bpm": 133,
+"source": "soundcloud",
+"cover": "covers/soundcloud-1188120031.jpg",
+"added_at": "2026-10-21T00:00:00Z",
+"updated_at": "2026-10-21T00:00:00Z",
+"tags": [],
+"artist": "R-Tem",
+"remixer": "Z05 Mix",
+"year": 2005,
+"remix_year": null,
+"album": null,
+"genres": [],
+"audio_state": "server"
 }
 ]
 }

@@ -2,6 +2,14 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-21 (Studio uses the full page width, built, not deployed)
+
+- Web (task-0072, WEB-156): the Studio drops the 1100px page cap and fills the width between the nav rail and the right edge; the waveform is taller on large screens (`clamp(140px, 22vh, 260px)`) and redraws on resize. Phones unchanged. Not run, not seen.
+
+## 2026-10-21 (R-Tem - Voiceless genres, to deploy)
+
+- Server data: the owner-approved genre list adds `progressive house` and `electro house` to R-Tem - Voiceless (Z05 mix, SoundCloud; it had no genre): one add-only row in `library_genre_removals.json` (TAG-109), applied once at the next server start.
+
 ## 2026-10-21 (Latin and Folk, World, & Country removed, built, not deployed)
 
 - Server data and web (task-0079): Latin and Folk, World, & Country are no longer level 1 nodes. 121 genres moved under the group Others, 6 (bossa nova, latin jazz, country rock, folk rock, folk metal, folk punk) keep only their other parent and lost `fusion`; all genres stay in the vocabulary. The old family names are synonyms of Others. The legacy `GET /genres/graph` has 9 colour families (Mac app unaffected otherwise). Songs tagged `genre:latin` or `genre:folk, world, & country` are not changed and keep the value as an unmappable tag.
