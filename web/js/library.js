@@ -133,12 +133,13 @@ export function renderLibrary(root) {
 
   root.append(
     el('header', { class: 'page-head lib-head' },
-      el('div', { class: 'page-title' },
-        el('p', { class: 't-eyebrow' }, 'ELECTROPHONE'),
-        el('h1', { class: 't-display' }, 'Library')),
+      el('div', { class: 'lib-lead' },
+        el('div', { class: 'page-title' },
+          el('p', { class: 't-eyebrow' }, 'ELECTROPHONE'),
+          el('h1', { class: 't-display' }, 'Library')),
+        switcher),
       el('div', { class: 'head-actions' }, total,
         can('add') ? el('button', { class: 'btn primary glow', type: 'button', onclick: (e) => openAdd(undefined, e.currentTarget) }, icon('plus', 'action'), 'Add song') : null)),
-    ...(switcher ? [switcher] : []),
     songsPane,
     draftsPane);
   songsPane.append(

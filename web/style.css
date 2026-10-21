@@ -158,6 +158,8 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + var(--dock-b) + var(--m
 .gm-work, .st-work { position: relative; flex: 1 1 auto; min-height: 0; }
 .lib-head { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: var(--space-3); padding-bottom: var(--space-4); }
 .page-title { display: grid; gap: 2px; }
+.lib-lead { display: flex; align-items: flex-end; flex-wrap: wrap; gap: var(--space-3) var(--space-5); min-width: 0; }
+@media (max-width: 719px) { .lib-lead { flex-direction: column; align-items: flex-start; } }
 .head-actions { display: flex; align-items: center; gap: var(--space-4); padding-bottom: var(--space-1); }
 
 /* buttons */
