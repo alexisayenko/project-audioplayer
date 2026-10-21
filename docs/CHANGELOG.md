@@ -2,6 +2,27 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-21 (song card: no Country field, no Genre caption, web, to deploy)
+
+- Web: the song card details line no longer shows the Country field and the genre chips have no "Genre" caption, they start at the left edge in a group labelled "Genres" for screen readers (LIB-120, LIB-142; tests updated, not run, not seen in a browser).
+
+## 2026-10-21 (Artist and Album entities, docs, to deploy)
+
+- Sources shape decided: {type, ref, trim_start, trim_end}, URL derived (to deploy): [ADR-0040](tech/decisions.md), [task-0045](tasks/task-0045.md).
+- ADR and task for Artist and Album entities (analysis, to deploy): [ADR-0039](tech/decisions.md), [task-0083](tasks/task-0083.md).
+- ADR-0039: shared owner-curated catalogue and cover fallback chain decided (to deploy).
+- Task-0045: trim on download decided (to deploy): [ADR-0040](tech/decisions.md), [task-0045](tasks/task-0045.md).
+- ADR-0039: the umbrella entity is called Release, B1 decided (decided, to deploy).
+
+## 2026-10-21 (View in Library from the title and artist popovers, web, to deploy)
+
+- Web: all part popovers (artist, title, version) show values only, no field captions (tooltip and `aria-label` carry the names): bold wrapping name, one row of values (title: year left, album right; artist: country left, years "2002 – 2014" right), genre pills below, "View in Library" at the bottom-right (LIB-187, LIB-210, not seen in a browser, tests not run).
+- Web: the title popover on the song card gets a "View in Library" button (the artist popover had a filter link, now the same button): it closes the card and opens the Library with the search set to the base title (all versions and artists of that song), chips and "Never listened" cleared, sort kept (LIB-210, not seen in a browser, tests not run).
+
+## 2026-10-21 (server LED moved to the logo, web, to deploy)
+
+- Web: the server health LED moved from the bottom of the nav to a small badge (9 px, 2 px ring in the nav colour) on the top-right corner of the round logo, so it shows on the collapsed icon rail too; tooltip, `aria-label` and colours (green, amber starting, red down) unchanged, the build text stays at the bottom; hidden under 480px with the brand block, as before (WEB-037, not seen in a browser, tests not run).
+
 ## 2026-10-21 (cover from a Discogs page, server and web, to deploy)
 
 - Server: `PUT /songs/{id}/cover` with `{url}` (and `POST /songs/{id}/cover/from-url`) accepts a Discogs master or release page address; the cover is looked up through the Discogs API and downloaded (`server/app/discogs_cover.py`, API-201), 422 `discogs_not_configured` without `DISCOGS_TOKEN`, 422 `cover_url_unreachable` when Discogs has no cover. `GET /songs/{id}/cover/suggestions` adds a Discogs entry for a song with a `discogs_url` (API-202). Never tried against live Discogs; `DISCOGS_TOKEN` must be set on the server.

@@ -58,4 +58,5 @@ test('artist info is the stub with the contract shape', () => {
   const p = partInfo({ title: 'T', mainArtists: ['Zed'] }, { kind: 'artist', text: 'Zed', name: 'Zed' });
   assert.equal(p.filter, 'Zed');
   assert.equal(p.heading, 'Zed');
+  assert.equal(partInfo({ title: 'Black Betty', mainArtists: ['Ram Jam'] }, { kind: 'title', text: 'Black Betty' }).filter, 'Black Betty');
 });

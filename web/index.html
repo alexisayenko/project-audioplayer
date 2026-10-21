@@ -29,7 +29,7 @@
 <div class="app">
 <aside class="side">
   <button class="side-toggle" id="side-toggle" type="button" aria-expanded="true" aria-label="Collapse sidebar" title="Collapse sidebar"><span data-icon="chevronLeft" aria-hidden="true"></span></button>
-  <div class="brand"><span class="brand-lockup"><span class="brand-mark"><span data-icon="mark" aria-hidden="true"></span></span><span class="brand-name">Electrophone</span></span><span class="brand-sub t-caption">Offline music player</span></div>
+  <div class="brand"><span class="brand-lockup"><span class="brand-mark"><span data-icon="mark" aria-hidden="true"></span><output class="server" id="server-status"><span class="led" id="server-led"></span></output></span><span class="brand-name">Electrophone</span></span><span class="brand-sub t-caption">Offline music player</span></div>
   <nav id="nav" aria-label="Main">
     <a href="#/library" data-route="library" title="Library"><span data-icon="library" aria-hidden="true"></span><span class="nav-label">Library</span></a>
     <a href="#/playback" data-route="playback" title="Now playing"><span data-icon="playOutline" aria-hidden="true"></span><span class="nav-label">Now playing</span></a>
@@ -47,7 +47,6 @@
     </div>
     <a href="#/settings" data-route="settings" title="Settings"><span data-icon="settings" aria-hidden="true"></span><span class="nav-label">Settings</span></a>
   </nav>
-  <output class="server t-caption"><span class="led" id="server-led"></span></output>
   <p class="build-line t-caption" id="server-build" hidden></p>
 </aside>
 

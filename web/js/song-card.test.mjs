@@ -254,7 +254,7 @@ test('with a cover the title and the artist line sit inside the cover box; witho
   dlg.close();
 });
 
-test('country, BPM, length and the credit details share one details block under the title line, in order', () => {
+test('BPM, length and the credit details share one details block under the title line, in order', () => {
   publish([FULL]);
   openSongCard(FULL);
   const dlg = $('song-card');
@@ -262,7 +262,7 @@ test('country, BPM, length and the credit details share one details block under 
   const details = dlg.querySelector('.card-details');
   assert.ok(details);
   const texts = details.querySelectorAll('.detail').map((n) => n.textContent);
-  assert.ok(texts[0].startsWith('Country:'));
+  assert.ok(!texts.some((t) => t.startsWith('Country')) && !details.querySelector('.tag'), 'the country is not in the card details');
   assert.ok(details.querySelector('.bpm-badge'));
   assert.ok(texts.some((t) => t.startsWith('Length: ')));
   assert.ok(!details.contains(dlg.querySelector('.card-tags')));
@@ -344,8 +344,8 @@ test('the Genre row shows one line per inferred family, family chip first, then 
     openSongCard(song);
     const dlg = $('song-card');
     assert.deepEqual(lineTexts(dlg), [['Electronic', 'house', 'deep house'], ['Rock', 'rock and roll'], ['zzz thing']]);
-    const names = dlg.querySelectorAll('.card-genre-line .group-name').map((n) => n.textContent);
-    assert.deepEqual(names, ['Genre', '', '']);
+    assert.equal(dlg.querySelectorAll('.card-genre-line .group-name').length, 0, 'no Genre caption');
+    assert.equal(dlg.querySelector('[aria-label="Genres"]').getAttribute('role'), 'group');
     assert.ok(dlg.querySelectorAll('.card-genre-line .tag').every((t) => t.className === 'tag ns t-caption'), 'inferred and tagged chips share the chip style');
     dlg.querySelector('.card-close').click();
   } finally {

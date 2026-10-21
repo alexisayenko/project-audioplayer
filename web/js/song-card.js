@@ -21,7 +21,7 @@ import { toggleQueue, playNextInQueue } from './queue-toggle.js';
 import { openShareDialog, copyText } from './share-ui.js';
 import { lineParts, partInfo } from './part-info.js';
 import { togglePartPopover, closePartPopover, initPartPopovers } from './part-popover.js';
-import { prefs } from './library-data.js';
+import { prefs, saveLibraryView } from './library-data.js';
 import * as audioGraph from './audio-graph.js';
 import { createLiveBpmController } from './live-bpm-ctl.js';
 
@@ -53,9 +53,12 @@ export function cardModel(song) {
   };
 }
 
-function filterByArtist(name) {
-  prefs.query = name;
+function viewInLibrary(term) {
+  prefs.query = term;
   prefs.sel.clear();
+  prefs.never = false;
+  prefs.view = 'songs';
+  saveLibraryView('songs');
   document.getElementById('song-card')?.close();
   if (/^#?\/?(library)?$/.test(location.hash)) window.dispatchEvent(new Event('hashchange'));
   else location.hash = '#/library';
@@ -69,7 +72,7 @@ function partNodes(song, line) {
     const btn = el('button', { type: 'button', class: `tp-part tp-${p.kind}`, 'aria-haspopup': 'dialog', 'aria-expanded': 'false' }, p.text);
     btn.onclick = () => {
       const info = partInfo(song, p);
-      togglePartPopover(btn, { ...info, filter: info.filter ? { run: () => filterByArtist(info.filter) } : null });
+      togglePartPopover(btn, { ...info, filter: info.filter ? { run: () => viewInLibrary(info.filter) } : null });
     };
     return btn;
   });
@@ -119,15 +122,14 @@ function headBlock(song, m) {
   return [art, full ? el('div', { class: 'card-head' }, full) : null];
 }
 
-function genreRows(name, lines) {
-  return lines.map((line, i) => el('div', { class: 'chip-group card-genre-line' },
-    el('span', { class: 'group-name t-caption', 'aria-hidden': i ? 'true' : null }, i ? '' : name),
-    line.genres.map((g) => el('span', { class: 'tag ns t-caption', title: `genre:${g}` }, g))));
+function genreRows(lines) {
+  return el('div', { class: 'chip-groups', role: 'group', 'aria-label': 'Genres' }, lines.map((line) => el('div', { class: 'chip-group card-genre-line' },
+    line.genres.map((g) => el('span', { class: 'tag ns t-caption', title: `genre:${g}` }, g)))));
 }
 
 function tagBlock(groups, lines) {
   if (!groups.length) return null;
-  return el('div', { class: 'chip-groups card-tags' }, groups.flatMap((g) => (g.key === 'genre' ? genreRows(g.name, lines) : [el('div', { class: 'chip-group' },
+  return el('div', { class: 'chip-groups card-tags' }, groups.flatMap((g) => (g.key === 'genre' ? [genreRows(lines)] : [el('div', { class: 'chip-group' },
     el('span', { class: 'group-name t-caption' }, g.name),
     g.tags.map((t) => el('span', { class: 'tag ns t-caption', title: t.tag }, t.label)))])));
 }
@@ -215,9 +217,7 @@ function bpmBadge(stored, songId) {
 }
 
 function detailsBlock(m, songId) {
-  const tagChip = (t) => el('span', { class: 'tag ns t-caption', title: t.tag }, t.label);
   const items = [
-    ...m.groups.filter((g) => SIDE_KEYS.has(g.key)).map((g) => el('span', { class: 'detail' }, `${g.name}: `, ...g.tags.map(tagChip))),
     m.bpm ? el('span', { class: 'detail' }, bpmBadge(m.bpm, songId)) : null,
     m.duration ? el('span', { class: 'detail' }, `Length: ${m.duration}`) : null,
     m.yearFact ? el('span', { class: 'detail' }, `Year: ${m.yearFact}`) : null,

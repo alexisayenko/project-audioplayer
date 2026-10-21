@@ -1,4 +1,5 @@
 import { el } from './dom.js';
+import { icon } from './icons.js';
 import { MENU_EDGE, MENU_GAP } from './constants.js';
 
 let open = null;
@@ -29,11 +30,19 @@ function place(btn, node, host) {
   node.style.top = `${top - h.top + (host.scrollTop || 0) - (host.clientTop || 0)}px`;
 }
 
-function rowNode({ label, value }) {
-  const body = Array.isArray(value)
-    ? el('span', { class: 'tp-pills' }, value.map((g) => el('span', { class: 'tag ns t-caption' }, g)))
-    : el('span', { class: 'tp-val' }, value);
-  return el('div', { class: 'tp-row' }, el('span', { class: 'tp-label muted t-caption' }, label), body);
+const yearsText = (v) => String(v).replace(/\s*[-–]\s*/g, ' – ');
+
+function valueNodes(rows) {
+  const out = [];
+  const meta = rows.filter((r) => !Array.isArray(r.value));
+  if (meta.length) {
+    out.push(el('div', { class: 'tp-meta t-caption' }, meta.map(({ label, value }) =>
+      el('span', { class: label === 'Years of activity' ? 'tp-val tp-years' : 'tp-val', title: label, 'aria-label': label }, label === 'Years of activity' ? yearsText(value) : value))));
+  }
+  rows.filter((r) => Array.isArray(r.value)).forEach(({ label, value }) => {
+    out.push(el('span', { class: 'tp-pills', role: 'group', 'aria-label': label }, value.map((g) => el('span', { class: 'tag ns t-caption' }, g))));
+  });
+  return out;
 }
 
 export function togglePartPopover(btn, { heading, rows, filter }) {
@@ -42,10 +51,10 @@ export function togglePartPopover(btn, { heading, rows, filter }) {
   if (again) return null;
   const id = `tp-pop-${++seq}`;
   const host = btn.closest('dialog') || document.body;
-  const filterBtn = filter ? el('button', { type: 'button', class: 'tp-link', onclick: () => { closePartPopover(); filter.run(); } }, 'Filter library by this artist') : null;
+  const filterBtn = filter ? el('button', { type: 'button', class: 'tp-link', onclick: () => { closePartPopover(); filter.run(); } }, icon('search', 'inline'), 'View in Library') : null;
   const node = el('div', { class: 'tp-pop', id, role: 'dialog', 'aria-labelledby': `${id}-h`, tabindex: '-1' },
     el('p', { class: 'tp-head t-subhead', id: `${id}-h` }, heading),
-    rows.length ? rows.map(rowNode) : el('p', { class: 'tp-empty muted t-caption' }, 'No details yet'),
+    rows.length ? valueNodes(rows) : el('p', { class: 'tp-empty muted t-caption' }, 'No details yet'),
     filterBtn);
   host.append(node);
   btn.setAttribute('aria-expanded', 'true');

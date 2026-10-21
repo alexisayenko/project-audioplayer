@@ -89,5 +89,5 @@ export function infoRows(kind, info) {
 export function partInfo(song, part) {
   if (part.kind === 'artist') return { heading: part.name, rows: infoRows('artist', artistInfoStub(part.name)), filter: part.name };
   if (part.kind === 'version') return { heading: part.text, rows: infoRows('version', versionInfo(song)) };
-  return { heading: part.text, rows: infoRows('title', titleInfo(song)) };
+  return { heading: part.text, rows: infoRows('title', titleInfo(song)), filter: part.text };
 }

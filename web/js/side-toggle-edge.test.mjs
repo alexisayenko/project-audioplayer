@@ -24,7 +24,7 @@ test('the toggle sits one space-2 below the brand block and one space-1 above th
 
 test('the sidebar itself does not clip, so the toggle can sit half outside it', () => {
   assert.doesNotMatch(css, /^\s*\.side \{ overflow: hidden; \}/m);
-  assert.match(css, /\.brand, #nav a, \.server, \.build-line \{ overflow: hidden; \}/);
+  assert.match(css, /\.brand, #nav a, \.build-line \{ overflow: hidden; \}/);
 });
 
 test('the toggle exists only from 720px', () => {
