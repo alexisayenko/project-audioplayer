@@ -259,8 +259,11 @@ export const player = {
     return removed;
   },
 
-  clearUpcoming() {
-    const { state, removed } = Q.clearUpcoming(qs);
+  clearOthers() {
+    const { state, removed } = Q.clearOthers(qs);
+    const cur = qs.items[qs.index];
+    played = cur ? [cur.id] : [];
+    history = [];
     commit(state);
     return removed;
   },
@@ -588,9 +591,9 @@ function render(coversOnly = false) {
 function renderPlaylistControls() {
   setToggle(['mini-shuffle'], shuffle, `Shuffle: ${shuffle ? 'on' : 'off'}`);
   setToggle(['mini-repeat'], repeat !== 'off', `Repeat: ${REPEAT_LABEL[repeat] || 'off'}`, repeat === 'one' ? 'repeatOne' : 'repeat');
-  const nothing = !Q.upcomingCount(qs) && !qs.tags.length;
+  const nothing = !Q.othersCount(qs) && !qs.tags.length;
   $('queue-clear').disabled = nothing;
-  $('queue-clear').title = nothing ? 'Nothing upcoming to clear' : 'Remove the upcoming songs and tag chips';
+  $('queue-clear').title = nothing ? 'Nothing to clear' : 'Remove every song except the one playing, and the tag chips';
   $('fill-tags').replaceChildren(...qs.tags.map((t) => el('span', { class: 'chip tint', title: t },
     tagText(t),
     el('button', {
@@ -690,7 +693,7 @@ export function initPlayer() {
   $('mini-repeat').addEventListener('click', () => player.cycleRepeat());
   $('tag-add').addEventListener('click', (e) => openTagPicker(player, () => qs.tags, e.currentTarget));
   $('queue-clear').addEventListener('click', () => {
-    const n = player.clearUpcoming();
+    const n = player.clearOthers();
     toast(n ? `Cleared ${n} ${plural(n, 'song', 'songs')}` : 'Tag chips cleared');
   });
   const miniOpen = $('mini-open');

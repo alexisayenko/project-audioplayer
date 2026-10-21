@@ -231,12 +231,13 @@ export function parseSaved(data) {
 
 export const upcomingCount = (state) => Math.max(0, state.items.length - Math.max(state.index, -1) - 1);
 
-// Queue "Clear": drops every song after the current one and all tag chips; the current and earlier songs stay.
-export function clearUpcoming(state) {
-  const keep = Math.max(state.index, -1) + 1;
-  const removed = Math.max(0, state.items.length - keep);
-  const items = state.items.slice(0, keep).map((it) => ({ ...it, tags: [] }));
-  return { state: { items, index: state.index, tags: [] }, removed };
+export const othersCount = (state) => state.index >= 0 && state.index < state.items.length ? state.items.length - 1 : state.items.length;
+
+// Queue "Clear": keeps only the current song (index 0) and drops every other song and all tag chips; with no current song the queue empties.
+export function clearOthers(state) {
+  const cur = state.index >= 0 ? state.items[state.index] : null;
+  const items = cur ? [{ ...cur, tags: [] }] : [];
+  return { state: { items, index: cur ? 0 : -1, tags: [] }, removed: state.items.length - items.length };
 }
 
 export const queuedSet = (state) => new Set(state.items.map((it) => it.id));

@@ -35,7 +35,7 @@ test('random edit sequences keep the queue consistent (seeded)', () => {
       else if (op === 2) s = Q.addTags(s, [rnd() < 0.5 ? 'rock' : 'jazz'], songs).state;
       else if (op === 3) s = Q.removeItem(s, Math.floor(rnd() * (s.items.length + 2)) - 1).state;
       else if (op === 4) s = Q.moveItem(s, Math.floor(rnd() * s.items.length), rnd() < 0.5 ? -1 : 1);
-      else if (op === 5) s = Q.clearUpcoming(s).state;
+      else if (op === 5) s = Q.clearOthers(s).state;
       else if (op === 6) { const at = s.items.findIndex((it) => it.id === id); s = at >= 0 ? Q.removeItem(s, at).state : Q.addManual(s, id).state; }
       else if (op === 7) s = Q.syncLibrary(s, (x) => x !== id).state;
       else if (op === 8) s = Q.addListed(s, songs.slice(0, Math.floor(rnd() * 12)), rnd() < 0.5 ? 'rock' : '').state;

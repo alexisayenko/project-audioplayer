@@ -5,6 +5,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 ## 2026-10-22 (web shuffle and scroll button, to deploy)
 
 - Web: the Library tools (Metadata for downloaded songs, BPM detection) moved from the Library page into the Settings Library card as two rows under Download all; the Library tools toggle, badge and hint are gone (WEB-070, WEB-081, WEB-082).
+- Web: queue "Clear" now keeps only the song that is playing (earlier and later songs and the tag chips are removed; with nothing playing the queue empties) (PLY-034).
 - Web: the Library "Scroll to top" button moved from the bottom right to the top centre of the content area (WEB-103).
 - Web: the shuffle order is built after the play counts have loaded (1.5 s timeout, rebuilt when they arrive) and Play all starts from the lowest-played tier, so recently played songs no longer come back while unplayed ones exist (PLY-178).
 

@@ -167,7 +167,7 @@ test('addTags adds every song with the tag and shows a removable chip', () => {
   assert.deepEqual(queueTitles(), ['Alpha']);
 });
 
-test('Clear drops upcoming songs and disables itself', () => {
+test('Clear keeps only the playing song and disables itself', () => {
   reset();
   player.add('a');
   player.add('b');
