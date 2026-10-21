@@ -61,7 +61,7 @@ export const ICONS = {
   arrowUpDown: { d: '<path d="m21 16-4 4-4-4"/><path d="M17 20V4"/><path d="m3 8 4-4 4 4"/><path d="M7 4v16"/>' },
   arrowUp: { d: '<path d="m5 12 7-7 7 7"/><path d="M12 19V5"/>' },
   ring: { d: '<circle cx="12" cy="12" r="3.5"/><path d="M12 3v2.5"/><path d="M12 18.5V21"/><path d="M3 12h2.5"/><path d="M18.5 12H21"/><path d="m16.6 7.4 1.8-1.8"/><path d="m16.6 16.6 1.8 1.8"/><path d="m7.4 16.6-1.8 1.8"/><path d="m7.4 7.4-1.8-1.8"/>' },
-  mark: { d: '<circle cx="12" cy="12" r="10.6" style="fill:none;stroke:var(--copper);stroke-width:1"/><circle cx="12" cy="12" r="9.6" style="fill:var(--vinyl);stroke:none"/><circle cx="12" cy="12" r="3.9" style="fill:var(--accent);stroke:none"/><path d="M9.6 10.8h4.8M9.4 13.2h5.2" style="fill:none;stroke:var(--on-accent);stroke-width:1.3"/><circle cx="12" cy="12" r=".6" style="fill:var(--surface);stroke:none"/>' },
+  mark: { d: '<image href="img/electrophone-vinyl.png" x="0" y="0" width="24" height="24" stroke="none"/>' },
   synthwave: { d: '<path d="M7 12a5 5 0 0 1 10 0"/><path d="M3 12h18"/><path d="M5 16h14"/><path d="M8 20h8"/>' },
 };
 

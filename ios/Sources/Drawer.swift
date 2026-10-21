@@ -108,7 +108,7 @@ struct SideDrawer: View {
                 layout {
                     Image("DrawerLogo").resizable().scaledToFit()
                         .frame(width: logo, height: logo)
-                        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.radiusSm, style: .continuous))
+                        .clipShape(Circle())
                         .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 0) {
                         Text("Electrophone").font(T.title.weight(.semibold)).foregroundStyle(DS.Color.ink)
