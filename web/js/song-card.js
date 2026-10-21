@@ -8,6 +8,7 @@ import { cachedListening, getListening, invalidateListening, hasListening, liste
 import { autodl, autoDownloadOn } from './autodl.js';
 import { downloadSong } from './download.js';
 import { editDialog } from './edit-dialog.js';
+import { changeCover } from './lazy-ui.js';
 import { creditParts, subtitle, titleNodes, detailsLines, yearFact, albumOf, albumsOf, displayLine } from './credits.js';
 import { icon } from './icons.js';
 import { bpmLabel } from './bpm-label.js';
@@ -101,13 +102,19 @@ function fullRow(line, song) {
   return el('div', { class: 'card-full-row' }, el('p', { class: 'card-full muted t-subhead' }, ...nodes.slice(0, from), tail), note);
 }
 
+function changeCoverBtn(song, cls) {
+  if (!can('edit')) return null;
+  const b = el('button', { type: 'button', class: cls, title: 'Change cover', 'aria-label': 'Change cover', onclick: () => changeCover(song, b) }, icon('image', 'nav'));
+  return b;
+}
+
 function headBlock(song, m) {
   const title = el('h2', { id: 'song-card-title', class: 't-title' }, titleNodes(song));
   const sub = m.sub ? el('p', { class: 'card-sub t-subhead' }, m.sub) : null;
   const full = m.full ? fullRow(m.full, song) : null;
-  if (!song.cover) return [el('div', { class: 'card-head' }, title, sub, full)];
+  if (!song.cover) return [el('div', { class: 'card-head' }, title, sub, full, changeCoverBtn(song, 'icon round cover-change inline'))];
   const img = el('img', { class: 'cover card-cover', alt: '', src: api.coverUrl(song.id, song.cover_v) });
-  const art = el('div', { class: 'card-art' }, img, el('div', { class: 'cover-text' }, title, sub));
+  const art = el('div', { class: 'card-art' }, img, el('div', { class: 'cover-text' }, title, sub), changeCoverBtn(song, 'icon round cover-change'));
   img.addEventListener('error', () => { img.removeAttribute('src'); art.classList.add('noart'); });
   return [art, full ? el('div', { class: 'card-head' }, full) : null];
 }

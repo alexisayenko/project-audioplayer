@@ -79,7 +79,7 @@ def test_listing_turns_version_word_brackets_into_the_version(client, fake):
     assert (rows[A]["title"], rows[A]["version"]) == ("My Heart Is on Fire", {"type": "extended", "name": "Special Extended Version", "artists": [], "releaseYear": 2019})
     assert (rows[B]["title"], rows[B]["version"]) == ("Memory Reboot", {"type": "other", "name": "Slowed", "artists": [], "releaseYear": 2020})
     assert (rows[C]["title"], rows[C]["version"]) == ("Passion", {"type": "remix", "name": "Moreno J Remix", "artists": ["Moreno J"], "releaseYear": 2021})
-    assert (rows[D]["title"], rows[D]["version"]) == ("Song", {"type": "remaster", "name": "2011 Remaster", "artists": [], "releaseYear": 2011})
+    assert (rows[D]["title"], rows[D]["version"]) == ("Song", {"type": "remaster", "name": "2011 remaster", "artists": [], "releaseYear": 2011})
     assert (rows[E]["title"], rows[E]["version"], rows[E]["releaseYear"]) == ("Song", None, None)
 
 

@@ -65,3 +65,16 @@ test('queue row: the title and the row open the song card, the cover plays, the 
   assert.deepEqual(calls.filter((c) => c[0] === 'play'), [['play', 0]], 'the cover still plays the song');
 });
 
+
+test('library row Stats cell: absent without listening data, muted 0, count with a Listened N times label', () => {
+  assert.equal(songRow(song, null, null).querySelector('.c-stats'), null);
+  const zero = songRow(song, null, null, 0).querySelector('.c-stats');
+  assert.equal(zero.textContent, '0');
+  assert.ok(zero.classList.contains('zero'));
+  assert.equal(zero.getAttribute('aria-label'), 'Listened 0 times');
+  const some = songRow(song, null, null, 3).querySelector('.c-stats');
+  assert.equal(some.textContent, '3');
+  assert.ok(!some.classList.contains('zero'));
+  assert.equal(some.title, 'Listened 3 times');
+  assert.equal(songRow(song, null, null, 1).querySelector('.c-stats').title, 'Listened 1 time');
+});

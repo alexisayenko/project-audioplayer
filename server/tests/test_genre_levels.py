@@ -682,7 +682,7 @@ def test_the_19_remaining_reviewed_associations_are_related_and_no_longer_parent
     for k, rel in RELATED_MOVES.items():
         assert ENTRIES[k]["related"] == rel, k
         assert not set(rel) & set(ENTRIES[k]["parents"]), k
-    assert {k for k, v in ENTRIES.items() if v.get("related")} == set(RELATED_MOVES) | set(ROCK_RELATED)
+    assert {k for k, v in ENTRIES.items() if v.get("related")} == set(RELATED_MOVES) | set(ROCK_RELATED) | {"outrun", "spacesynth"}
     assert ENTRIES["chillwave"]["parents"] == ["synthwave"] and ENTRIES["vaporwave"]["parents"] == ["synthwave"]
     assert ENTRIES["jungle"]["parents"] == ["breakbeat"] and ENTRIES["trap"]["parents"] == ["Hip Hop"] and "fusion" not in ENTRIES["trap"] and "fusion" not in ENTRIES["acid jazz"]
 

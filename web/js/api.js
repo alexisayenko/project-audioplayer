@@ -106,6 +106,21 @@ async function request(method, path, body, signal, raw = false, keepalive = fals
   return data;
 }
 
+async function sendCoverFile(id, file) {
+  const form = new FormData();
+  form.append('file', file, file.name || 'cover');
+  let res;
+  try {
+    res = await fetchWhenReady(`/songs/${encodeURIComponent(id)}/cover`, { method: 'PUT', headers: { ...CSRF }, body: form });
+  } catch {
+    throw new ApiError(0, 'Server unreachable');
+  }
+  let data = null;
+  try { data = await res.json(); } catch { /* no body */ }
+  if (!res.ok) throw failure(res, data);
+  return data;
+}
+
 function* parseLines(lines) {
   for (const line of lines) if (line.trim()) yield JSON.parse(line);
 }
@@ -259,5 +274,8 @@ export const api = {
   uploadCover: (id, file) => request('PUT', `/songs/${q(id)}/cover`, file, undefined, true),
   coverFromUrl: (id, url) => request('POST', `/songs/${q(id)}/cover/from-url`, { url }),
   removeCover: (id) => request('DELETE', `/songs/${q(id)}/cover`),
+  setCover: (id, choice) => (choice instanceof Blob ? sendCoverFile(id, choice) : request('PUT', `/songs/${q(id)}/cover`, choice)),
+  deleteCover: (id) => request('DELETE', `/songs/${q(id)}/cover`),
+  coverSuggestions: (id, signal) => request('GET', `/songs/${q(id)}/cover/suggestions`, undefined, signal),
   coverUrl: (id, v) => (v ? `/covers/${q(id)}?v=${encodeURIComponent(v)}` : `/covers/${q(id)}`),
 };

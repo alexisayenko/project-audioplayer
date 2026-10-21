@@ -34,3 +34,21 @@ test('api', async () => {
   assert.equal(isSignedIn(), false);
   console.log('api.test.mjs ok');
 });
+
+test('setCover sends multipart for a file and JSON otherwise; deleteCover and coverSuggestions use their routes', async () => {
+  const seen = [];
+  globalThis.fetch = async (path, init) => { seen.push([path, init.method, init.headers['Content-Type'], init.body]); return { ok: true, status: 200, json: async () => ({}) }; };
+  await api.setCover('abc', new Blob(['x'], { type: 'image/png' }));
+  await api.setCover('abc', { url: 'https://a.example/x.png' });
+  await api.setCover('abc', { default: true });
+  await api.deleteCover('abc');
+  await api.coverSuggestions('abc');
+  assert.equal(seen[0][0], '/songs/abc/cover');
+  assert.equal(seen[0][1], 'PUT');
+  assert.equal(seen[0][2], undefined);
+  assert.ok(seen[0][3] instanceof FormData);
+  assert.deepEqual(seen[1], ['/songs/abc/cover', 'PUT', 'application/json', '{"url":"https://a.example/x.png"}']);
+  assert.equal(seen[2][3], '{"default":true}');
+  assert.deepEqual(seen[3].slice(0, 2), ['/songs/abc/cover', 'DELETE']);
+  assert.deepEqual(seen[4].slice(0, 2), ['/songs/abc/cover/suggestions', 'GET']);
+});

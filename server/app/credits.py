@@ -10,6 +10,7 @@ import logging
 from typing import Any
 
 from . import credit_title, credits_v1, timeutil
+from .version_norm import normalize_version
 from .credits_v1 import int_year as _int_year
 from .credits_v1 import join_names, kind_for
 from .credits_v1 import text as _text
@@ -104,6 +105,8 @@ def _clean_version(value: Any, stored: dict[str, Any] | None) -> dict[str, Any] 
     if vtype not in TYPES:
         raise ValueError(f"version.type must be one of {', '.join(TYPES)}")
     name = _text(value.get("name"))
+    if name:
+        name = normalize_version(name)
     if name is not None and len(name) > MAX_VERSION_NAME:
         raise ValueError(f"version.name must be at most {MAX_VERSION_NAME} characters")
     artists = clean_names(value.get("artists"), "version.artists")
@@ -470,6 +473,8 @@ def suggestion(found: dict[str, Any]) -> dict[str, Any]:
     if isinstance(version, dict):
         renamed = {"kind": "type", "by": "artists", "of": "originalArtists"}
         out["version"] = {renamed.get(k, k): v for k, v in version.items()}
+        if isinstance(out["version"].get("name"), str):
+            out["version"]["name"] = normalize_version(out["version"]["name"])
     else:
         out["version"] = None
     return out

@@ -4,7 +4,7 @@ export const CHECK_MS = 5 * 60 * 1000;
 export const MIN_GAP_MS = 30 * 1000;
 
 export function versionFromUrl(url) {
-  const m = /\/_v\/([0-9a-f]+)\//.exec(String(url || ''));
+  const m = /(?:^|\/)_v\/([0-9a-f]+)\//.exec(String(url || ''));
   return m ? m[1] : null;
 }
 

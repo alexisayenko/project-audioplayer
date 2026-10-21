@@ -9037,9 +9037,18 @@
     "italo disco"
    ],
    "provisional": false,
+   "related": [
+    "hi-nrg",
+    "space disco"
+   ],
    "status": "approved",
    "subfamily": "Synth & wave",
-   "synonyms": []
+   "synonyms": [
+    "space synth",
+    "synthdance",
+    "synthesizer dance",
+    "spacedance"
+   ]
   },
   "speed garage": {
    "discogs": true,

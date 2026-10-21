@@ -54,7 +54,6 @@ def test_transparent_png_and_webp_decode(client, song):
 
 
 def test_delete_clears_the_cover_and_is_idempotent(client, song, tmp_path):
-    put(client, image())
     assert client.delete(f"/songs/{VID}/cover", headers=H).status_code == 204
     assert client.delete(f"/songs/{VID}/cover", headers=H).status_code == 204
     assert client.get(f"/covers/{VID}", headers=H).status_code == 404
@@ -247,3 +246,248 @@ def test_resolve_public_rejects_mixed_answers(monkeypatch):
     with pytest.raises(coverimg.Problem) as exc:
         coverimg.resolve_public("x.example", 80)
     assert exc.value.code == "cover_url_refused"
+
+
+# --- cover_source, JSON / multipart PUT, suggestions, rate limit ------------------------------
+
+import urllib.parse  # noqa: E402
+
+from app import downloads, wiki_lookup  # noqa: E402
+from app.routes import covers as covers_route  # noqa: E402
+
+
+def put_json(client, body, vid=VID):
+    return client.put(f"/songs/{vid}/cover", json=body, headers=H)
+
+
+def multipart(data, name="file", kind="image/png"):
+    boundary = "XBOUNDARYX"
+    head = f'--{boundary}\r\nContent-Disposition: form-data; name="{name}"; filename="a.png"\r\nContent-Type: {kind}\r\n\r\n'.encode()
+    body = head + data + f"\r\n--{boundary}--\r\n".encode()
+    return body, f"multipart/form-data; boundary={boundary}"
+
+
+def put_multipart(client, data, **kw):
+    body, ctype = multipart(data, **kw)
+    return client.put(f"/songs/{VID}/cover", content=body, headers={**H, "Content-Type": ctype})
+
+
+def test_upload_marks_the_cover_custom(client, song, tmp_path):
+    assert put(client, image()).json()["cover_source"] == "custom"
+    assert stored(tmp_path)["cover_source"] == "custom"
+
+
+def test_multipart_upload_is_stored(client, song):
+    r = put_multipart(client, image("PNG", (50, 50)))
+    assert r.status_code == 200
+    assert r.json()["cover_source"] == "custom"
+    assert len(r.json()["cover_v"]) == 10
+
+
+def test_multipart_without_file_part_or_with_bad_image(client, song):
+    assert put_multipart(client, image(), name="other").json()["error"] == "cover_no_file"
+    assert put_multipart(client, b"not an image").json()["error"] == "cover_bad_image"
+    assert put_multipart(client, image("GIF")).json()["error"] == "cover_bad_type"
+
+
+def test_multipart_too_large(client, song, monkeypatch):
+    monkeypatch.setattr(coverimg, "MAX_BYTES", 1000)
+    monkeypatch.setattr(covers_route, "MULTIPART_OVERHEAD", 200)
+    assert put_multipart(client, bytes(5000)).status_code == 413
+
+
+def test_json_url_downloads_and_stores(client, song, web):
+    web.pages[("img.example", "/a.png")] = reply(body=image())
+    r = put_json(client, {"url": "https://img.example/a.png"})
+    assert r.status_code == 200
+    assert r.json()["cover_source"] == "custom"
+    assert web.calls == [("https", "img.example", 443, "/a.png", "93.184.216.34")]
+
+
+@pytest.mark.parametrize("url", ["http://127.0.0.1/a.png", "http://meta.example/x", "file:///etc/passwd", "http://10.0.0.1/a.png"])
+def test_json_url_ssrf_refused(client, song, web, url):
+    r = put_json(client, {"url": url})
+    assert r.status_code == 422
+    assert r.json()["error"] == "cover_url_refused"
+    assert web.calls == []
+
+
+def test_json_url_non_image_and_oversize(client, song, web, monkeypatch):
+    web.pages[("img.example", "/p")] = reply(body=b"<html>", ctype="text/html")
+    assert put_json(client, {"url": "https://img.example/p"}).status_code == 415
+    monkeypatch.setattr(coverimg, "MAX_BYTES", 10)
+    web.pages[("img.example", "/big")] = reply(body=bytes(11))
+    assert put_json(client, {"url": "https://img.example/big"}).status_code == 413
+
+
+def test_json_bad_bodies(client, song):
+    assert put_json(client, {}).status_code == 422
+    assert put_json(client, {"url": 5}).status_code == 422
+    assert put_json(client, {"default": False}).status_code == 422
+    assert put_json(client, [1]).status_code == 422
+    r = client.put(f"/songs/{VID}/cover", content=b"{oops", headers={**H, "Content-Type": "application/json"})
+    assert r.status_code == 400
+    assert r.json()["error"] == "cover_bad_body"
+    assert put_json(client, {"default": True}, vid="aaaaaaaaaaa").status_code == 404
+
+
+def test_default_pin_removes_the_file_and_survives_audio_fetch(client, song, tmp_path, monkeypatch):
+    put(client, image())
+    r = put_json(client, {"default": True})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["cover_source"] == "default"
+    assert body["cover"] is None
+    assert body["cover_v"] is None
+    assert client.get(f"/covers/{VID}", headers=H).status_code == 404
+    fetched = []
+    monkeypatch.setattr(downloads, "_fetch_cover", lambda uid, vid, thumb: fetched.append(vid) or f"covers/{vid}.jpg")
+    assert client.post(f"/songs/{VID}/audio", headers=H).status_code == 202
+    rec = stored(tmp_path)
+    assert rec["cover_source"] == "default"
+    assert not rec.get("cover")
+    assert fetched == []
+
+
+def test_custom_cover_survives_audio_fetch(client, song, tmp_path):
+    cv = put(client, image()).json()["cover_v"]
+    assert client.post(f"/songs/{VID}/audio", headers=H).status_code == 202
+    rec = stored(tmp_path)
+    assert rec["cover_source"] == "custom"
+    assert rec["cover_v"] == cv
+
+
+def test_delete_resets_custom_to_automatic_and_bumps_the_version(client, song, tmp_path):
+    custom = put(client, image()).json()["cover_v"]
+    assert client.delete(f"/songs/{VID}/cover", headers=H).status_code == 204
+    rec = stored(tmp_path)
+    assert "cover_source" not in rec
+    assert rec["cover"] == f"covers/{VID}.jpg"
+    assert rec["cover_v"] and rec["cover_v"] != custom
+    assert not rec.get("cover_off")
+    assert client.get(f"/covers/{VID}", headers=H).content == b"jpg"
+
+
+def test_delete_resets_default_to_automatic(client, song, tmp_path):
+    put_json(client, {"default": True})
+    assert client.delete(f"/songs/{VID}/cover", headers=H).status_code == 204
+    rec = stored(tmp_path)
+    assert "cover_source" not in rec
+    assert rec["cover"] == f"covers/{VID}.jpg"
+
+
+def test_delete_reset_without_an_automatic_cover_leaves_none(client, song, tmp_path, monkeypatch):
+    put(client, image())
+    monkeypatch.setattr(downloads, "fetch_cover_bytes", lambda uid, vid: None)
+    assert client.delete(f"/songs/{VID}/cover", headers=H).status_code == 204
+    rec = stored(tmp_path)
+    assert rec["cover"] is None
+    assert rec["cover_v"] is None
+    assert not rec.get("cover_off")
+    assert "cover_source" not in rec
+    assert client.get(f"/covers/{VID}", headers=H).status_code == 404
+
+
+def test_delete_unknown_song_is_404(client, song):
+    assert client.delete("/songs/aaaaaaaaaaa/cover", headers=H).status_code == 404
+
+
+def wiki_api(pages):
+    def fetch(url):
+        for key, found in pages.items():
+            if url.endswith("titles=" + urllib.parse.quote(key, safe="")):
+                return {"query": {"pages": [found]}}
+        return {"query": {"pages": [{"title": "x", "missing": True}]}}
+    return fetch
+
+
+def page(title, name, width=1024, height=1024):
+    return {"title": title, "fullurl": f"https://en.wikipedia.org/wiki/{title.replace(' ', '_')}",
+            "thumbnail": {"source": f"https://upload.wikimedia.org/wikipedia/en/thumb/a/ab/{name}/1024px-{name}", "width": width, "height": height}}
+
+
+def link(client, **fields):
+    assert client.patch(f"/songs/{VID}", json=fields, headers=H).status_code == 200
+
+
+def test_suggestions_empty_without_links(client, song):
+    r = client.get(f"/songs/{VID}/cover/suggestions", headers=H)
+    assert r.status_code == 200
+    assert r.json() == {"suggestions": []}
+
+
+def test_suggestions_from_song_and_album_pages(client, song, monkeypatch):
+    link(client, wikipedia_song="https://en.wikipedia.org/wiki/Some_Song", wikipedia_album="https://en.wikipedia.org/wiki/Some_Album")
+    wiki_lookup._cover_cache.clear()
+    monkeypatch.setattr(wiki_lookup, "_fetch_json", wiki_api({"Some_Song": page("Some Song", "Song.jpg"), "Some_Album": page("Some Album", "Album.jpg", 800, None)}))
+    got = client.get(f"/songs/{VID}/cover/suggestions", headers=H).json()["suggestions"]
+    assert [s["title"] for s in got] == ["Some Song", "Some Album"]
+    first = got[0]
+    assert first["url"].startswith("https://upload.wikimedia.org/") and "/1024px-" in first["url"]
+    assert "/240px-" in first["thumb"]
+    assert first["source"] == "wikipedia"
+    assert first["page"] == "https://en.wikipedia.org/wiki/Some_Song"
+    assert (first["width"], first["height"]) == (1024, 1024)
+    assert (got[1]["width"], got[1]["height"]) == (800, None)
+
+
+def test_suggestions_dedupe_skip_failures_and_cache(client, song, monkeypatch):
+    link(client, wikipedia_song="https://en.wikipedia.org/wiki/Same", wikipedia_album="https://en.wikipedia.org/wiki/Same_Too")
+    wiki_lookup._cover_cache.clear()
+    calls = []
+    same = page("Same", "Cover.jpg")
+
+    def fetch(url):
+        calls.append(url)
+        return {"query": {"pages": [same]}}
+
+    monkeypatch.setattr(wiki_lookup, "_fetch_json", fetch)
+    assert len(client.get(f"/songs/{VID}/cover/suggestions", headers=H).json()["suggestions"]) == 1
+    n = len(calls)
+    client.get(f"/songs/{VID}/cover/suggestions", headers=H)
+    assert len(calls) == n
+
+    wiki_lookup._cover_cache.clear()
+
+    def boom(url):
+        raise OSError("down")
+
+    monkeypatch.setattr(wiki_lookup, "_fetch_json", boom)
+    assert client.get(f"/songs/{VID}/cover/suggestions", headers=H).json() == {"suggestions": []}
+
+
+def test_suggestions_ignore_non_https_images_and_missing_thumbnails(client, song, monkeypatch):
+    link(client, wikipedia_song="https://en.wikipedia.org/wiki/A", wikipedia_album="https://en.wikipedia.org/wiki/B")
+    wiki_lookup._cover_cache.clear()
+    plain = {"title": "A"}
+    insecure = {"title": "B", "thumbnail": {"source": "http://upload.wikimedia.org/x.jpg", "width": 1, "height": 1}}
+    monkeypatch.setattr(wiki_lookup, "_fetch_json", wiki_api({"A": plain, "B": insecure}))
+    assert client.get(f"/songs/{VID}/cover/suggestions", headers=H).json() == {"suggestions": []}
+
+
+def test_suggestions_are_capped_at_four(client, song, monkeypatch):
+    link(client, wikipedia_song="https://en.wikipedia.org/wiki/A")
+    monkeypatch.setattr(wiki_lookup, "cover_candidates", lambda links: [{"url": f"https://u/{i}"} for i in range(9)])
+    assert len(client.get(f"/songs/{VID}/cover/suggestions", headers=H).json()["suggestions"]) == 4
+
+
+def test_suggestions_unknown_song_and_auth(client, song):
+    assert client.get("/songs/aaaaaaaaaaa/cover/suggestions", headers=H).status_code == 404
+    assert client.get(f"/songs/{VID}/cover/suggestions").status_code == 401
+
+
+def test_put_json_requires_auth(client, song):
+    assert client.put(f"/songs/{VID}/cover", json={"default": True}).status_code == 401
+
+
+def test_non_owner_fetches_are_rate_limited():
+    covers_route.reset_limits()
+    user = {"uid": "u1", "owner": False}
+    for _ in range(30):
+        covers_route._charge(covers_route._fetches, user)
+    with pytest.raises(covers_route.Problem) as exc:
+        covers_route._charge(covers_route._fetches, user)
+    assert exc.value.status == 429
+    assert exc.value.code == "cover_limit"
+    covers_route._charge(covers_route._fetches, {"uid": "u1", "owner": True})
+    covers_route.reset_limits()

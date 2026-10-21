@@ -79,7 +79,12 @@ function subLine(s) {
     badge ? el('span', { class: 'sub-end' }, badge) : null);
 }
 
-export function songRow(s, cur, flashId) {
+function statsCell(n) {
+  const text = `Listened ${n} ${n === 1 ? 'time' : 'times'}`;
+  return el('div', { class: `c-stats t-subhead${n ? '' : ' zero'}`, title: text, 'aria-label': text }, String(n));
+}
+
+export function songRow(s, cur, flashId, listened = null) {
   const full = titleLine(s);
   const tip = tooltipLine(s);
   const audio = hasAudio(s);
@@ -96,6 +101,7 @@ export function songRow(s, cur, flashId) {
       el('div', { class: 'title-line' }, open, stateControl(s, { audio, queueable, queued, dl }), audio && s.duration ? el('span', { class: 'title-len t-time', title: 'Length' }, fmtTime(s.duration)) : null),
       subLine(s)),
     el('div', { class: 'c-genres t-subhead' }, el('span', { class: 'g-txt', title: genres || null }, genres)),
+    listened == null ? null : statsCell(listened),
     dl ? lineNode(dl) : null);
   marquee(open, { auto: !!here, host: row });
   return row;

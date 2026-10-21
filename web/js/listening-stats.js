@@ -45,7 +45,7 @@ export function cachedListening() {
 }
 
 export function invalidateListening() {
-  stamp = 0;
+  stamp = -Infinity;
   version += 1;
 }
 
@@ -65,7 +65,7 @@ export function getListening({ load = () => api.listening(), now = () => Date.no
 export function resetListeningForTests() {
   cache = null;
   pending = null;
-  stamp = 0;
+  stamp = -Infinity;
   version = 0;
 }
 

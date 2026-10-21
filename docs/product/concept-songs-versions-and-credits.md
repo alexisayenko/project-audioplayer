@@ -54,6 +54,10 @@ The version (remix, cover, live, edit, ...) is written the same way in both and 
 
 Old clients (the iOS app) read `artist`, `remixer`, `year`, `remix_year` and `album`. They are not stored: `artist` is the main artists joined plus "feat." and the featured ones; `remixer` is the version name, else the version artists; `year` is the release year; `remix_year` the version's year; `album` the first album. Decade (and the country, from the artist) are computed or looked up, not stored as tags.
 
+## Remaster spelling
+
+A remaster is written `remaster`, lowercase, with its year first when there is one (`2024 remaster`), whatever the source says ("Remastered", "re-mastered", "Remastered 2009", "Remastered Version"): the version name is a type like remix, cover or live, shorter, and sorts by year (DATA-191).
+
 ## Years
 
 `releaseYear` is the year of the original recording and comes only from Wikipedia, MusicBrainz or Discogs, never from the upload date. The upload year may suggest the version's own year, marked as a suggestion.

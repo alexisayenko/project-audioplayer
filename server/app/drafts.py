@@ -20,6 +20,7 @@ from .library import sources_of
 from .problems import Problem
 from .ratelimit import KeyedWindow
 from .timeutil import now_utc
+from .version_norm import normalize_version
 
 MAX_DRAFTS = 500
 MAX_LINES = 100
@@ -120,7 +121,7 @@ def parse_text(text: str) -> dict[str, Any] | None:
     found = credit_title.parse(artist, title, split_vs=True)
     version = None
     if remixer:
-        version = {"type": credits_split.kind_of(remixer), "name": remixer, "artists": credits_split.version_artists(remixer), "releaseYear": credits_split.version_year(remixer)}
+        version = {"type": credits_split.kind_of(remixer), "name": normalize_version(remixer), "artists": credits_split.version_artists(remixer), "releaseYear": credits_split.version_year(remixer)}
     return {"title": found["title"] or title, "mainArtists": found["mainArtists"], "featuredArtists": found["featuredArtists"],
             "withArtists": found["withArtists"], "version": version}
 

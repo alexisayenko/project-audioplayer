@@ -2,6 +2,24 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-21 (task-0060 merged, docs, to deploy)
+
+- Docs: Task-0060 merged into task-0038 (to deploy).
+
+## 2026-10-21 (change cover from the song card, web, to deploy)
+
+- Web: the song card has a round "Change cover" button; its dialog (`web/js/cover-dialog.js`, loaded on demand) offers From address, Upload (drag and drop), Wikipedia suggestions and Default image, previews the choice before "Save", and "Remove custom cover" returns to the automatic cover (LIB-197, LIB-198, task-0054; needs the server half, tests written, not run).
+- Server: `PUT /songs/{id}/cover` accepts multipart `file`, JSON `{url}` and JSON `{default: true}`, songs get `cover_source` (`custom` / `default`, never overwritten by an automatic cover fetch), `GET /songs/{id}/cover/suggestions` lists up to 4 Wikipedia images, and `DELETE` on a custom or default cover returns to the automatic one (API-201, API-202, API-203, DATA-192, task-0054, to deploy; its tests pass, full suite not run).
+
+## 2026-10-21 (remaster version names, server, to deploy)
+
+- Server: `app.migrate_version_norm` rewrites every stored remaster spelling in `version.name` of all users to the canonical one (EC1, to deploy; tests written, not run).
+- Server and web: `normalize_version` (`server/app/version_norm.py`, port `web/js/version-norm.js`) spells every new remaster version name `remaster` / `<year> remaster` when a song is added, edited, drafted or imported and in the song form; "re-mastered" now reads as a remaster kind (DATA-191, EC1, to deploy; tests written, not run).
+
+## 2026-10-21 (Library row layout, web, to deploy)
+
+- Web: Library rows place every cell in an explicit grid column (title next to the cover again) and the listened count (Stats) now also shows on phones as a narrow muted number at the end of the row (to deploy; not seen in a browser).
+
 ## 2026-10-21 (task statuses audited, docs, to deploy)
 
 - Docs: Task statuses audited (to deploy): every in-progress task checked against code and this changelog; task-0065 back to to do, status notes in task-0036 and task-0055.
@@ -11,10 +29,12 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 ## 2026-10-21 (genre outrun, server data, to deploy)
 
 - Server: new genre `outrun` (extra, level 2 under synthwave, approved; synonyms outrun music and outrun electro; related to electro house), a Rate Your Music link, and a Wikipedia link to the Synthwave article's Outrun section (a `#fragment` title from the new `genre_sources_manual.json`).
+- Server: genre `spacesynth` (already approved under synthwave and italo disco) gained synonyms space synth, synthdance, synthesizer dance and spacedance, related hi-nrg and space disco, and a Rate Your Music link (tests and fixture updated, not run).
 
 ## 2026-10-21 (Library table view, web, to deploy)
 
 - Web (LIB-209, task-0056): the Library has a List | Table switch (owner and signed-in users). The table shows the current result (search, filters, sort, Reverse order) with Song, Length, Times listened, Times skipped, Total listened; sortable headers (third click returns to the Library order), sticky header, row click opens the song card. `web/js/library-table.js`, `library.js`, `library-data.js`, `icons.js`, `web/style.css`, test `web/js/library-table.test.mjs` (not run).
+- Web (LIB-209, task-0056): the Table view is removed again (Library switch, `library-table.js`, `electrophone.libraryLayout`); the Library list gets a right-aligned "Stats" column with the listened count per song (muted 0 for no plays; owner and signed-in users once `GET /stats/listening` has loaded; none for guests; shown from 900 px wide). Not run, not seen.
 
 ## 2026-10-21 (resume playback position after reload, web, to deploy)
 

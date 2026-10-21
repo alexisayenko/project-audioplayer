@@ -9,7 +9,7 @@ from tests.test_library import H, client  # noqa: F401
 
 DATA_ROUTES = [("GET", "/library"), ("GET", "/me"), ("GET", "/genres/graph"), ("GET", "/files/dQw4w9WgXcQ"), ("GET", "/covers/dQw4w9WgXcQ"),
                ("GET", "/auth/me"), ("POST", "/songs"), ("GET", "/features/data"), ("GET", "/catalog"), ("GET", "/tags"), ("DELETE", "/songs/dQw4w9WgXcQ")]
-STEPS = ("migrate_model2", "migrate_model3", "migrate_tags", "migrate_removals", "migrate_renames", "migrate_retired")
+STEPS = ("migrate_model2", "migrate_model3", "migrate_tags", "migrate_removals", "migrate_renames", "migrate_retired", "migrate_version_norm")
 
 
 class Gate:
@@ -128,7 +128,7 @@ def test_a_failing_migration_is_logged_and_the_server_still_becomes_ready(client
         assert c.get("/library", headers=H).status_code == 200
         assert c.get("/health").json()["startup"]["state"] == "ready"
     assert "startup step migrate tags failed" in caplog.text
-    assert ran == ["migrate_model2", "migrate_model3", "migrate_removals", "migrate_renames", "migrate_retired"]
+    assert ran == ["migrate_model2", "migrate_model3", "migrate_removals", "migrate_renames", "migrate_retired", "migrate_version_norm"]
 
 
 def test_a_crashed_worker_marks_failed_and_stops_blocking(caplog):

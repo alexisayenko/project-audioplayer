@@ -12,9 +12,8 @@ import { getListening } from './listening-data.js';
 import { ROW_FLASH_MS, LIBRARY_FRESH_MS, EAGER_COVERS } from './constants.js';
 import { findRowIndex, scrollTarget, registerRevealer } from './reveal.js';
 import { tagLabel, categoryOf, CATEGORIES } from './tagname.js';
-import { prefs, readLibraryView, saveLibraryView, SORTS, visibleSongs, selectedIn, isUnsetKey, unsetCount, setListening, hasListening, neverCount, listeningData, readLibraryLayout, saveLibraryLayout } from './library-data.js';
+import { prefs, readLibraryView, saveLibraryView, SORTS, visibleSongs, selectedIn, isUnsetKey, unsetCount, setListening, hasListening, neverCount, listeningData } from './library-data.js';
 import { songRow } from './library-rows.js';
-import { renderLibraryTable } from './library-table.js';
 import { disposeAll } from './marquee.js';
 import { isRowControl, keepCovers } from './row-cover.js';
 import { mountScrollTop } from './scroll-top.js';
@@ -69,22 +68,6 @@ export function renderLibrary(root) {
     reverse.setAttribute('aria-pressed', String(prefs.reverse));
     renderList();
   });
-  const canTable = !isGuest();
-  const layoutBtns = canTable ? [['list', 'listView', 'List view'], ['table', 'tableView', 'Table view']].map(([k, ic, label]) => {
-    const b = el('button', { class: 'icon layout-btn', type: 'button', title: label, 'aria-label': label, 'aria-pressed': 'false', 'data-layout': k }, icon(ic, 'inline'));
-    b.addEventListener('click', () => { prefs.layout = k; saveLibraryLayout(k); paintLayout(); renderList(); });
-    return b;
-  }) : [];
-  const layoutSwitch = canTable ? el('div', { class: 'layout-switch', role: 'group', 'aria-label': 'Library layout' }, layoutBtns) : null;
-  function paintLayout() {
-    for (const b of layoutBtns) b.setAttribute('aria-pressed', String(b.dataset.layout === prefs.layout));
-  }
-  prefs.layout = readLibraryLayout(canTable);
-  paintLayout();
-  const tableState = { sort: null };
-  const tableBox = el('div', { class: 'lt-box', hidden: true });
-  let tableKey = '';
-  let listeningStamp = 0;
   const cats = el('div', { class: 'cats', role: 'group', 'aria-label': 'Filter by category' });
   const total = el('span', { class: 'muted t-caption' });
   const summary = el('p', { class: 'muted t-caption', role: 'status' });
@@ -112,7 +95,7 @@ export function renderLibrary(root) {
   clearFilters.addEventListener('click', () => clearAllFilters());
   const status = el('div');
   const head = el('div', { class: 'table-head t-eyebrow', 'aria-hidden': 'true' },
-    el('span'), el('span', {}, 'Track'), el('span', { class: 'c-genres' }, 'Genres'));
+    el('span'), el('span', {}, 'Track'), el('span', { class: 'c-genres' }, 'Genres'), el('span', { class: 'c-stats' }, 'Stats'));
   list.addEventListener('click', (e) => {
     const row = e.target.closest('li.song');
     const song = row && !isRowControl(e.target) ? store.get(row.dataset.id) : null;
@@ -164,10 +147,9 @@ export function renderLibrary(root) {
       showPlaying,
       cats),
     el('div', { class: 'sortbar' },
-      el('label', { class: 'sort t-headline' }, sort, icon('chevron', 'inline')), reverse, ...(layoutSwitch ? [layoutSwitch] : []),
+      el('label', { class: 'sort t-headline' }, sort, icon('chevron', 'inline')), reverse,
       summary, el('div', { class: 'sort-actions' }, clearFilters, playAll, addAll)),
     group,
-    tableBox,
     status);
 
   function paintTotal() {
@@ -234,14 +216,10 @@ export function renderLibrary(root) {
     clearFilters.hidden = !(store.loaded && filtered);
     showPlaying.hidden = !(store.loaded && cur);
     const nothing = store.loaded && !store.songs.length;
-    const asTable = canTable && prefs.layout === 'table';
-    group.hidden = nothing || !store.loaded || asTable;
+    group.hidden = nothing || !store.loaded;
     paintStatus(nothing);
-    if (asTable) {
-      paintTable(songs);
-      return;
-    }
-    tableBox.hidden = true;
+    const data = isGuest() ? null : listeningData();
+    group.classList.toggle('has-stats', !!data);
     const empty = !songs.length && store.loaded && store.songs.length
       ? [el('li', { class: 'empty muted t-subhead' }, 'No songs match. Clear the search or the filters.')]
       : [];
@@ -249,25 +227,12 @@ export function renderLibrary(root) {
     const focusedCls = ['row-cover', 'sq-btn'].find((c) => focusedEl?.classList?.contains(c));
     const focusedId = focusedCls ? focusedEl.closest('li.song')?.dataset.id : null;
     const prevRows = [...list.querySelectorAll('li.song')];
-    const rows = songs.map((s) => songRow(s, cur, flashId));
+    const rows = songs.map((s) => songRow(s, cur, flashId, data ? data.songs[s.id]?.listened?.all || 0 : null));
     prioritizeCovers(rows);
     keepCovers(prevRows, rows);
     disposeAll(list);
     list.replaceChildren(...empty, ...rows);
     if (focusedId) [...list.querySelectorAll('li.song')].find((r) => r.dataset.id === focusedId)?.querySelector(`.${focusedCls}`)?.focus();
-  }
-
-  function paintTable(songs) {
-    const show = store.loaded && store.songs.length > 0;
-    tableBox.hidden = !show;
-    if (!show) return;
-    const data = listeningData();
-    const key = `${songs.map((s) => s.id).join(',')}|${listeningStamp}`;
-    if (key === tableKey) return;
-    tableKey = key;
-    tableBox.replaceChildren(songs.length
-      ? renderLibraryTable(songs, data, (s) => { void openSongCard(s, null); }, tableState)
-      : el('p', { class: 'empty muted t-subhead' }, 'No songs match. Clear the search or the filters.'));
   }
 
   // Progress ticks update the rings in place; a row gaining or losing its indicator rebuilds the list.
@@ -287,7 +252,7 @@ export function renderLibrary(root) {
     return `${count} ${plural(count, 'song matches', 'songs match')}${names}`;
   }
 
-  function renderAll() { tableKey = ''; renderChips(); renderList(); }
+  function renderAll() { renderChips(); renderList(); }
 
   function clearAllFilters() {
     prefs.query = '';
@@ -375,7 +340,6 @@ export function renderLibrary(root) {
     void getListening().then((d) => {
       if (gone || !d) return;
       setListening(d);
-      listeningStamp += 1;
       paintSort();
       renderAll();
     });

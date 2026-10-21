@@ -16,7 +16,7 @@ _KIND_WORDS = (
     ("acoustic", re.compile(r"\bacoustic\b", re.I)),
     ("extended", re.compile(r"\bextended\b", re.I)),
     ("instrumental", re.compile(r"\binstrumental\b", re.I)),
-    ("remaster", re.compile(r"\bremaster(?:ed)?\b", re.I)),
+    ("remaster", re.compile(r"\bre[\s-]?master(?:ed)?\b", re.I)),
     ("edit", re.compile(r"\bedit\b", re.I)),
     ("cover", re.compile(r"\bcover\b", re.I)),
     ("other", re.compile(r"\bslowed\b|\bsped[\s-]?up\b|\bspeed[\s-]?up\b|\bnightcore\b|\breverb\b", re.I)),

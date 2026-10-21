@@ -168,6 +168,7 @@ def test_startup_recovers_git_only_when_configured(monkeypatch):
     monkeypatch.setattr(main.migrate_removals, "run", lambda: 0)
     monkeypatch.setattr(main.migrate_renames, "run", lambda: 0)
     monkeypatch.setattr(main.migrate_retired, "run", lambda: 0)
+    monkeypatch.setattr(main.migrate_version_norm, "run", lambda: 0)
     monkeypatch.setattr(main.migrate_model2, "run", lambda: 0)
     monkeypatch.setattr(main.migrate_model3, "run", lambda: 0)
     monkeypatch.setattr(deps, "SYNC", SimpleNamespace(recover_on_startup=lambda: calls.append(1)))

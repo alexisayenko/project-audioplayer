@@ -32,6 +32,8 @@ _STATUS_TEXT = {
     403: "Forbidden",
     404: "Not found",
     409: "Conflict",
+    413: "Payload too large",
+    415: "Unsupported media type",
     429: "Guest limit",
     422: "Unprocessable",
     502: "Upstream failure",

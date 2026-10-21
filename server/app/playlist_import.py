@@ -12,6 +12,7 @@ from concurrent.futures import ThreadPoolExecutor, wait
 from typing import Any
 
 from . import credit_title, credits, credits_split, credits_v1, extractor, metadata, previewcache, titleclean, titles, urlclean
+from .version_norm import normalize_version
 from .library import sources_of
 from .problems import Problem
 from .ratelimit import KeyedWindow
@@ -121,7 +122,7 @@ def view(video_id: str, meta: dict[str, Any], owned: Owned, *, detailed: bool) -
     """One table row from parsed YouTube data: the credits and year the single-link Add form would hold with every lookup empty."""
     remixer = (meta.get("remixer") or "").strip() or None
     published = meta.get("published_year")
-    version = {"type": credits_split.kind_of(remixer), "name": remixer, "artists": credits_split.version_artists(remixer), "releaseYear": meta.get("version_year") or published} if remixer else None
+    version = {"type": credits_split.kind_of(remixer), "name": normalize_version(remixer), "artists": credits_split.version_artists(remixer), "releaseYear": meta.get("version_year") or published} if remixer else None
     title = titleclean.clean(str(meta.get("title") or ""))
     artists = meta["mainArtists"] if isinstance(meta.get("mainArtists"), list) else credits_v1.pills(meta.get("artist"))
     featured = list(meta.get("featuredArtists") or [])

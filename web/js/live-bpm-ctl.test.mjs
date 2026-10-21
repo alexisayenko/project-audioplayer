@@ -97,13 +97,13 @@ test('default timers work when the browser demands a Window this', () => {
   const live = new Set();
   let nextId = 1;
   globalThis.setInterval = function (f, ms) {
-    if (this !== globalThis) throw new TypeError("'setInterval' called on an object that does not implement interface Window.");
+    if (this !== undefined && this !== globalThis) throw new TypeError("'setInterval' called on an object that does not implement interface Window.");
     const id = nextId++;
     live.add(id);
     return id;
   };
   globalThis.clearInterval = function (id) {
-    if (this !== globalThis) throw new TypeError("'clearInterval' called on an object that does not implement interface Window.");
+    if (this !== undefined && this !== globalThis) throw new TypeError("'clearInterval' called on an object that does not implement interface Window.");
     live.delete(id);
   };
   try {

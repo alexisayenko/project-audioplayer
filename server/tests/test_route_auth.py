@@ -7,6 +7,7 @@ PUBLIC = {
     ("POST", "/auth/session"),
     ("POST", "/auth/logout"),
     ("GET", "/health"),
+    ("GET", "/version"),
     ("GET", "/features/data"),
     ("GET", "/legal"),
     ("GET", "/robots.txt"),

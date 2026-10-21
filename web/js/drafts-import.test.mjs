@@ -98,7 +98,7 @@ test('plain lines and a playlist are processed in order of appearance', async ()
     fetchPlaylist: async () => ({ entries: [entry(1)] }),
     addLines: async (part) => { sent.push(...part); return { counts: { created: part.length } }; },
   });
-  assert.deepEqual(sent.map((l) => l.split(' https')[0]), ['First - Song', 'Last - Song', 'Artist - Song 1']);
+  assert.deepEqual(sent.map((l) => l.split(' https')[0]), ['First - Song', 'Artist - Song 1', 'Last - Song']);
 });
 
 test('cancel stops cleanly after the current chunk and keeps what was added', async () => {

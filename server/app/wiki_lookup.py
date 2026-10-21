@@ -5,6 +5,7 @@ from __future__ import annotations
 import html
 import logging
 import re
+import time
 import urllib.parse
 import urllib.request
 from typing import Any
@@ -811,3 +812,64 @@ def from_links(song_link: Any, artist_link: Any, album_link: Any = None) -> dict
     except Exception as exc:
         log.warning("wikipedia link lookup failed: %s", exc)
         return out
+
+
+COVER_TTL = 300
+COVER_SIZE = 1024
+THUMB_SIZE = 240
+_cover_cache: dict[str, tuple[float, dict[str, Any] | None]] = {}
+_THUMB_PX = re.compile(r"/(\d+)px-")
+
+
+def _thumb_of(url: str) -> str:
+    return _THUMB_PX.sub(f"/{THUMB_SIZE}px-", url, count=1)
+
+
+def _page_image(page_url: str) -> dict[str, Any] | None:
+    """The lead image of a Wikipedia article (the infobox picture of an album or song page) as a suggestion, or None."""
+    parts = urllib.parse.urlsplit(page_url)
+    host = (parts.hostname or "").lower()
+    if not _WP_HOST.match(host) or not parts.path.startswith(_WIKI_PATH):
+        return None
+    now = time.monotonic()
+    hit = _cover_cache.get(page_url)
+    if hit and now - hit[0] < COVER_TTL:
+        return hit[1]
+    title = urllib.parse.unquote(parts.path[len(_WIKI_PATH):])
+    api = (
+        f"https://{host}/w/api.php?action=query&prop=pageimages|info&piprop=thumbnail&pithumbsize={COVER_SIZE}&inprop=url&redirects=1&format=json&formatversion=2&titles="
+        + urllib.parse.quote(title, safe="")
+    )
+    pages = (_fetch_json(api).get("query") or {}).get("pages") or []
+    page = pages[0] if pages and isinstance(pages[0], dict) else {}
+    thumb = page.get("thumbnail") if isinstance(page.get("thumbnail"), dict) else None
+    source = thumb.get("source") if thumb else None
+    found: dict[str, Any] | None = None
+    if isinstance(source, str) and source.startswith("https://"):
+        width, height = thumb.get("width"), thumb.get("height")
+        found = {
+            "url": source,
+            "thumb": _thumb_of(source),
+            "title": str(page.get("title") or title.replace("_", " ")),
+            "source": "wikipedia",
+            "page": str(page.get("fullurl") or page_url),
+            "width": width if isinstance(width, int) and not isinstance(width, bool) else None,
+            "height": height if isinstance(height, int) and not isinstance(height, bool) else None,
+        }
+    _cover_cache[page_url] = (now, found)
+    return found
+
+
+def cover_candidates(links: list[str]) -> list[dict[str, Any]]:
+    """Cover suggestions from Wikipedia pages (song page first, then album page), deduplicated by image; a failing page is skipped."""
+    out: list[dict[str, Any]] = []
+    for link in links:
+        try:
+            page = _page_url(link)
+            found = _page_image(page) if page else None
+        except Exception as exc:
+            log.warning("wikipedia cover lookup failed for %s: %s", link, exc)
+            continue
+        if found and all(found["url"] != other["url"] for other in out):
+            out.append(found)
+    return out

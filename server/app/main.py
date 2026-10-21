@@ -7,7 +7,7 @@ from collections.abc import Awaitable, Callable
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
 
-from . import deps, features, genre_vocab, guest, hosts, legal, migrate_model2, migrate_model3, migrate_removals, migrate_renames, migrate_retired, migrate_tags, plays, readiness, web
+from . import deps, features, genre_vocab, guest, hosts, legal, migrate_model2, migrate_model3, migrate_removals, migrate_renames, migrate_retired, migrate_tags, migrate_version_norm, plays, readiness, web
 from .problems import Problem
 from .routes import playlist_import as playlist_import_routes
 from .routes import analyze, auth, backfill, catalog, covers, drafts, features as features_routes, files, genres, health, legacy, legal as legal_routes, lookup, me, metafill, peaks as peaks_routes, plays as plays_routes, removal, songs
@@ -54,7 +54,7 @@ def _startup_steps() -> list[tuple[str, Callable[[], object]]]:
         steps.append(("git recovery", deps.SYNC.recover_on_startup))
     steps += [
         ("migrate model 2", migrate_model2.run), ("migrate model 3", migrate_model3.run), ("migrate tags", migrate_tags.run),
-        ("migrate removals", migrate_removals.run), ("migrate renames", migrate_renames.run), ("migrate retired", migrate_retired.run),
+        ("migrate removals", migrate_removals.run), ("migrate renames", migrate_renames.run), ("migrate retired", migrate_retired.run), ("migrate version norm", migrate_version_norm.run),
         ("record startup", features.record_startup),
     ]
     return steps

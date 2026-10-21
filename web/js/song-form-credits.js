@@ -4,6 +4,7 @@ import { splitTokens, joinTokens } from './tokens.js';
 import { displayLine, ofNames, byLabel } from './credits.js';
 import { suggest, kindOf } from './credits-split.js';
 import { planVersionYear, validYear } from './remix-year.js';
+import { normalizeVersion } from './version-norm.js';
 
 export const KIND_LABELS = {
   remix: 'Remix',
@@ -75,6 +76,10 @@ export function creditsBlock({ tg, song = {}, getTitle, setTitle, emit }) {
   const preview = el('p', { class: 'credits-preview t-caption muted', role: 'status', 'aria-label': 'Preview' });
   const warn = el('p', { class: 't-caption credits-warn', role: 'status', hidden: true });
   const panel = el('div', { class: 'credits-suggest', hidden: true });
+  f.name.addEventListener('change', () => {
+    const fixed = normalizeVersion(f.name.value);
+    if (fixed !== f.name.value) { f.name.value = fixed; f.name.dispatchEvent(new Event('input', { bubbles: true })); }
+  });
   const nameField = field('Version name', f.name);
   const byField = field(byLabel(iv?.type), f.by);
   const yearField = field('Remix year', f.vyear);
@@ -109,7 +114,7 @@ export function creditsBlock({ tg, song = {}, getTitle, setTitle, emit }) {
   });
 
   const versionObject = () => (hasVersion()
-    ? { type: f.kind.value, name: f.name.value.trim() || null, artists: nameList(f.by.value), releaseYear: validYear(Number(f.vyear.value)), originalArtists: OF_KINDS.has(f.kind.value) ? nameList(f.of.value) : null }
+    ? { type: f.kind.value, name: normalizeVersion(f.name.value.trim()) || null, artists: nameList(f.by.value), releaseYear: validYear(Number(f.vyear.value)), originalArtists: OF_KINDS.has(f.kind.value) ? nameList(f.of.value) : null }
     : null);
 
   let ask = '';
@@ -125,7 +130,7 @@ export function creditsBlock({ tg, song = {}, getTitle, setTitle, emit }) {
         if (r.title && r.title !== cur.title.trim()) setTitle(r.title);
         f.kind.value = v.type;
         syncYear();
-        if (!f.name.value.trim() && v.name) f.name.value = v.name;
+        if (!f.name.value.trim() && v.name) f.name.value = normalizeVersion(v.name);
         f.of.value = joinTokens(of);
       },
     };
@@ -152,7 +157,7 @@ export function creditsBlock({ tg, song = {}, getTitle, setTitle, emit }) {
   };
   const applyVersion = (v, cur, newName, newBy) => {
     if (!cur.type) { f.kind.value = v.type; syncYear(); }
-    if (newName) f.name.value = newName;
+    if (newName) f.name.value = normalizeVersion(newName);
     if (newBy.length) f.by.value = joinTokens([...cur.artists, ...newBy]);
     if (OF_KINDS.has(v.type) && v.originalArtists?.length && !f.of.value.trim()) f.of.value = joinTokens(v.originalArtists);
   };
@@ -160,7 +165,7 @@ export function creditsBlock({ tg, song = {}, getTitle, setTitle, emit }) {
     const v = s.version;
     if (!v) return [];
     const newBy = missing(cur.artists, v.artists);
-    const newName = !f.name.value.trim() && v.name ? v.name : '';
+    const newName = !f.name.value.trim() && v.name ? normalizeVersion(v.name) : '';
     if (!newBy.length && !newName && cur.type) return [];
     return [{
       key: `version:${v.type}:${newName}:${newBy.join('|')}`,
@@ -256,7 +261,7 @@ export function creditsBlock({ tg, song = {}, getTitle, setTitle, emit }) {
       withArtists: nameList(f.withs.value),
       releaseYear: f.released.value,
       version: hasVersion()
-        ? { type: f.kind.value, name: f.name.value, artists: nameList(f.by.value), releaseYear: f.vyear.value, ...(OF_KINDS.has(f.kind.value) ? { originalArtists: nameList(f.of.value) } : {}) }
+        ? { type: f.kind.value, name: normalizeVersion(f.name.value), artists: nameList(f.by.value), releaseYear: f.vyear.value, ...(OF_KINDS.has(f.kind.value) ? { originalArtists: nameList(f.of.value) } : {}) }
         : null,
     }),
     set(p = {}) {

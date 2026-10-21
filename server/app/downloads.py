@@ -108,6 +108,13 @@ def _fetch_cover(uid: str, vid: str, thumbnail: str | None) -> str | None:
     return f"covers/{vid}.jpg"
 
 
+def fetch_cover_bytes(uid: str, vid: str) -> bytes | None:
+    """The automatic cover of a song, fetched and stored at covers/<id>.jpg; None when it cannot be fetched."""
+    if _fetch_cover(uid, vid, None) is None:
+        return None
+    return (deps.covers_dir(uid) / f"{vid}.jpg").read_bytes()
+
+
 def _detect_bpm(path: Path, vid: str) -> float | None:
     try:
         return bpm.detect_bpm(path)
@@ -189,7 +196,9 @@ def run_fetch_audio(uid: str, owner: bool, vid: str, source_url: str | None) -> 
         limits.check_capacity(owner, out, deps.pool_dir())
         info = extractor.download_audio(vid, out, jobs.Tracker(job), source_url)
         value = _detect_bpm(out / f"{vid}.m4a", vid)
-        cover_ok = (deps.covers_dir(uid) / f"{vid}.jpg").is_file() or _fetch_cover(uid, vid, info.get("thumbnail")) is not None
+        existing = library.find_song(deps.load_songs(uid), vid)
+        pinned = bool(existing) and existing.get("cover_source") in ("custom", "default")
+        cover_ok = not pinned and ((deps.covers_dir(uid) / f"{vid}.jpg").is_file() or _fetch_cover(uid, vid, info.get("thumbnail")) is not None)
         with deps.tx(uid, f"audio {vid}"):
             songs = library.load(deps.library_path(uid))
             song = library.find_song(songs, vid)

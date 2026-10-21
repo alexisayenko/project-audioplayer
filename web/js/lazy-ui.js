@@ -8,6 +8,7 @@ export const UI_LOADERS = {
   songCard: () => import('./song-card.js'),
   add: () => import('./add.js'),
   edit: () => import('./edit-dialog.js'),
+  cover: () => import('./cover-dialog.js'),
   share: () => import('./share-ui.js'),
   shareOpen: () => import('./share-open.js'),
   tagPicker: () => import('./player-tag-picker.js'),
@@ -65,6 +66,7 @@ export async function withUi(name, opener, use, loaders = UI_LOADERS) {
 export const openSongCard = (song, opener = null) => withUi('songCard', opener, (m) => m.openSongCard(song, opener));
 export const openAdd = (opts, opener = null) => withUi('add', opener, (m) => m.openAdd(opts));
 export const editDialog = (song, opener = null) => withUi('edit', opener, (m) => m.editDialog(song));
+export const changeCover = (song, opener = null) => withUi('cover', opener, (m) => m.openCoverDialog(song, opener));
 export const openShareDialog = (song, opener = null) => withUi('share', opener, (m) => m.openShareDialog(song));
 export const openTagPicker = (player, currentTags, opener = null) => withUi('tagPicker', opener, (m) => m.openTagPicker(player, currentTags));
 export const openFilterSheet = (cat, opener, onApply) => withUi('filters', opener, (m) => m.openFilterSheet(cat, opener, onApply));

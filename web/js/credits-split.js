@@ -10,7 +10,7 @@ const KIND_WORDS = [
   ['acoustic', /\bacoustic\b/i],
   ['extended', /\bextended\b/i],
   ['instrumental', /\binstrumental\b/i],
-  ['remaster', /\bremaster(?:ed)?\b/i],
+  ['remaster', /\bre[\s-]?master(?:ed)?\b/i],
   ['edit', /\bedit\b/i],
   ['cover', /\bcover\b/i],
   ['other', /\bslowed\b|\bsped[\s-]?up\b|\bspeed[\s-]?up\b|\bnightcore\b|\breverb\b/i],

@@ -131,6 +131,8 @@ Precedence rule: Discogs outranks Alex's approval. `approved` is only stored on 
 
 Added 2026-10-18: `dream trance` (extras, level 3 under trance, approved, not Discogs; synonyms dream house, dream dance, both also `ALIASES`; source https://en.wikipedia.org/wiki/Dream_trance).
 
+Updated 2026-10-21: `spacesynth` (already an approved extra, parents synthwave and italo disco, unchanged) gained synonyms space synth, synthdance, synthesizer dance, spacedance (also `ALIASES`), `related`: hi-nrg, space disco (synthwave is already a parent; eurobeat is a synonym of eurodance, so it cannot be linked), a Rate Your Music link in `genre_rym.json` and a longer note in `genre_extras.json`; its Wikipedia link (Spacesynth, matched by name) already existed, so `genre_sources_manual.json` is unchanged. Source: Alex and https://rateyourmusic.com/genre/spacesynth/.
+
 Added 2026-10-21: `outrun` (extras, level 2 under synthwave, approved, not Discogs; synonyms outrun music, outrun electro; `related`: electro house; source Alex and https://rateyourmusic.com/genre/outrun/ in `genre_rym.json`). It has no Wikipedia article of its own, so `genre_sources_manual.json` links the Outrun section of the Synthwave article (`Synthwave#Outrun`, match manual, no wikidata item; `_title` in `genre_sources.py` keeps a `#fragment`). French electro is not in the vocabulary, so it is not linked.
 
 Added 2026-10-18: `anthem trance`, `epic trance` and `euphoric trance` are synonyms of `uplifting trance` (also `ALIASES`); `commercial trance` and `stadium trance` stay out as too broad; the separate `epic` (Classical since 2026-10-18, see Removed families) is unaffected.
