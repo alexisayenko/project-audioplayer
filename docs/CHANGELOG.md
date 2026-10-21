@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-21 (genre outrun, server data, to deploy)
+
+- Server: new genre `outrun` (extra, level 2 under synthwave, approved; synonyms outrun music and outrun electro; related to electro house), a Rate Your Music link, and a Wikipedia link to the Synthwave article's Outrun section (a `#fragment` title from the new `genre_sources_manual.json`).
+
 ## 2026-10-21 (Library table view, web, to deploy)
 
 - Web (LIB-209, task-0056): the Library has a List | Table switch (owner and signed-in users). The table shows the current result (search, filters, sort, Reverse order) with Song, Length, Times listened, Times skipped, Total listened; sortable headers (third click returns to the Library order), sticky header, row click opens the song card. `web/js/library-table.js`, `library.js`, `library-data.js`, `icons.js`, `web/style.css`, test `web/js/library-table.test.mjs` (not run).

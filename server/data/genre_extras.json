@@ -233,6 +233,12 @@
    ],
    "note": "live library tag, reviewed 2026-10-16"
   },
+  "outrun": {
+   "parents": [
+    "synthwave"
+   ],
+   "note": "added by Alex, 2026-10-21 (not in Discogs); synthwave subgenre named after the 1986 arcade game Out Run, also the retro-80s look; Rate Your Music: https://rateyourmusic.com/genre/outrun/"
+  },
   "paisley underground": {
    "parents": [
     "psychedelic rock"

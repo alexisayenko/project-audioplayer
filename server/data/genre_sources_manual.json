@@ -1,0 +1,8 @@
+{
+ "_note": "Curated catalogue links applied over the generated matches by scripts/build-genre-sources.mjs (match: manual). outrun has no Wikipedia article of its own: it links to the Outrun section of the Synthwave article (title with a #fragment, no wikidata item).",
+ "outrun": {
+  "wikipedia": {
+   "title": "Synthwave#Outrun"
+  }
+ }
+}

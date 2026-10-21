@@ -124,7 +124,7 @@ REMOVED = {
     "liquid funk": "liquid drum and bass", "breakbeat hardcore": "breakbeat", "jersey club": "breakbeat",
     "techno pop": "synthpop", "electropop": "synthpop", "melodic house": "house",
 }
-APPROVED = {"dark psytrance", "forest psytrance", "progressive psytrance", "full-on psytrance", "vocal trance", "melodic techno", "psybient", "darksynth", "uplifting trance", "sunshine house", "dreamsynth", "dreamwave", "neurofunk",
+APPROVED = {"dark psytrance", "forest psytrance", "progressive psytrance", "full-on psytrance", "vocal trance", "melodic techno", "psybient", "darksynth", "uplifting trance", "sunshine house", "dreamsynth", "dreamwave", "outrun", "neurofunk",
             "spacesynth", "nu-nrg", "liquid drum and bass", "sovietwave", "dream trance", "space disco"} | {"hardcore punk", "experimental rock", "extreme metal", "noise rock", "roots rock", "neo-psychedelia", "glam metal", "college rock", "death-doom", "edm"}
 QUESTION = {"deep trance", "acid trance"}
 
@@ -591,7 +591,7 @@ def test_space_disco_is_an_approved_extra_level_three_under_disco_in_electronic(
     assert "space disco" not in DISCOGS["genres"]
     assert genre_vocab.entry("space-disco").name == "space disco"
     assert genre_vocab.entry("space disco").parents == ("disco",)
-    assert len(EXTRAS) == 62
+    assert len(EXTRAS) == 63
 
 
 def test_electronic_counts_in_the_meta_block_match_the_data():
@@ -600,8 +600,8 @@ def test_electronic_counts_in_the_meta_block_match_the_data():
         mine = [v for v in ENTRIES.values() if family in v["families"]]
         assert counts[family] == {"total": len(mine), "level2": sum(v["level"] == 2 for v in mine), "level3": sum(v["level"] == 3 for v in mine), "level4": sum(v["level"] == 4 for v in mine)}, family
     assert (counts["Others"]["level2"], counts["Others"]["level3"], counts["Others"]["level4"]) == (173, 30, 0)
-    assert LEVELS["_meta"]["total"] == len(ENTRIES) == 529
-    assert sum(c["total"] for c in counts.values()) == sum(len(v["families"]) for v in ENTRIES.values()) == 573
+    assert LEVELS["_meta"]["total"] == len(ENTRIES) == 530
+    assert sum(c["total"] for c in counts.values()) == sum(len(v["families"]) for v in ENTRIES.values()) == 574
 
 
 ROCK_FUSION = {"rap metal", "electronic rock"}

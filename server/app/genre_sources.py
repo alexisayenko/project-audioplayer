@@ -29,7 +29,11 @@ def _q(text: str) -> str:
 
 
 def _title(text: str) -> str:
-    return urllib.parse.quote(text.replace(" ", "_"), safe="_(),!*'~:@$")
+    page, _, fragment = text.partition("#")
+    out = urllib.parse.quote(page.replace(" ", "_"), safe="_(),!*'~:@$")
+    if fragment:
+        out += "#" + urllib.parse.quote(fragment.replace(" ", "_"), safe="_(),!*'~:@$")
+    return out
 
 
 def genre_source_links(key: str, sources: dict[str, dict[str, Any]]) -> list[dict[str, str]]:
@@ -83,6 +87,8 @@ def parse(doc: Any) -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
             spec = v.get(src)
             if spec is None:
                 continue
+            if isinstance(spec, dict) and src == "wikipedia" and spec.get("match") == "manual":
+                fields = ("title",)
             if not isinstance(spec, dict) or any(not isinstance(spec.get(f), str) or not spec[f] for f in fields) or spec.get("match") not in MATCH_KINDS:
                 raise ValueError(f"genre_sources.json: entry {k!r} {src} needs {', '.join(fields)} and a match of {'/'.join(MATCH_KINDS)}")
         rows[k] = v

@@ -131,6 +131,8 @@ Precedence rule: Discogs outranks Alex's approval. `approved` is only stored on 
 
 Added 2026-10-18: `dream trance` (extras, level 3 under trance, approved, not Discogs; synonyms dream house, dream dance, both also `ALIASES`; source https://en.wikipedia.org/wiki/Dream_trance).
 
+Added 2026-10-21: `outrun` (extras, level 2 under synthwave, approved, not Discogs; synonyms outrun music, outrun electro; `related`: electro house; source Alex and https://rateyourmusic.com/genre/outrun/ in `genre_rym.json`). It has no Wikipedia article of its own, so `genre_sources_manual.json` links the Outrun section of the Synthwave article (`Synthwave#Outrun`, match manual, no wikidata item; `_title` in `genre_sources.py` keeps a `#fragment`). French electro is not in the vocabulary, so it is not linked.
+
 Added 2026-10-18: `anthem trance`, `epic trance` and `euphoric trance` are synonyms of `uplifting trance` (also `ALIASES`); `commercial trance` and `stadium trance` stay out as too broad; the separate `epic` (Classical since 2026-10-18, see Removed families) is unaffected.
 
 Added: `liquid drum and bass` (extras, level 3 under drum and bass, approved, display "liquid drum & bass"; synonyms liquid dnb, liquid d&b, liquid drum & bass, liquid drum n bass, liquid drum'n'bass, liquid drum and bass music, liquid drum & bass music, liquid funk).

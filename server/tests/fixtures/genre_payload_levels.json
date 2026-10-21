@@ -7123,6 +7123,30 @@
    "status": null,
    "synonyms": []
   },
+  "outrun": {
+   "discogs": false,
+   "display": null,
+   "families": [
+    "synthwave"
+   ],
+   "family": "synthwave",
+   "flavours": [],
+   "level": 2,
+   "modifiers": [],
+   "parents": [
+    "synthwave"
+   ],
+   "provisional": false,
+   "related": [
+    "electro house"
+   ],
+   "status": "approved",
+   "subfamily": "Synth & wave",
+   "synonyms": [
+    "outrun music",
+    "outrun electro"
+   ]
+  },
   "p-funk": {
    "discogs": true,
    "display": null,

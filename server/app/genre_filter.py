@@ -141,6 +141,8 @@ ALIASES: dict[str, str] = {
     "french touch": "french house",
     "melodic house": "house",
     "dream house": "dream trance",
+    "outrun music": "outrun",
+    "outrun electro": "outrun",
     "dream dance": "dream trance",
     "anthem trance": _UPLIFTING_TRANCE,
     "epic trance": _UPLIFTING_TRANCE,

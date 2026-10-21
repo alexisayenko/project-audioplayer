@@ -56,8 +56,8 @@
     "level4": 0
    },
    "synthwave": {
-    "total": 7,
-    "level2": 7,
+    "total": 8,
+    "level2": 8,
     "level3": 0,
     "level4": 0
    },
@@ -104,7 +104,7 @@
     "level4": 0
    }
   },
-  "total": 529,
+  "total": 530,
   "non_discogs": {
    "Blues": 0,
    "Classical": 0,
@@ -112,7 +112,7 @@
    "techno": 1,
    "trance": 11,
    "drum and bass": 2,
-   "synthwave": 5,
+   "synthwave": 6,
    "Others": 6,
    "Funk / Soul": 8,
    "Hip Hop": 1,
@@ -3120,6 +3120,20 @@
   ],
   "provisional": true,
   "discogs": false
+ },
+ "outrun": {
+  "parents": [
+   "synthwave"
+  ],
+  "related": [
+   "electro house"
+  ],
+  "synonyms": [
+   "outrun music",
+   "outrun electro"
+  ],
+  "discogs": false,
+  "status": "approved"
  },
  "p-funk": {
   "parents": [

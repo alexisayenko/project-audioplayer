@@ -2,17 +2,18 @@
  "_meta": {
   "generated_at": "2026-10-19T13:49:24.071Z",
   "counts": {
-   "genres": 542,
+   "genres": 543,
    "discogs_true": 480,
-   "discogs_false": 62,
+   "discogs_false": 63,
    "musicbrainz": 450,
-   "wikipedia": 466,
+   "wikipedia": 467,
    "apple_music": 139
   },
   "matches_by_kind": {
    "wikipedia": {
     "name": 463,
-    "synonym": 6
+    "synonym": 6,
+    "manual": 1
    },
    "musicbrainz": {
     "name": 449,
@@ -4858,6 +4859,13 @@
    "title": "Orchestral pop",
    "wikidata": "Q48834745",
    "match": "name"
+  }
+ },
+ "outrun": {
+  "discogs": false,
+  "wikipedia": {
+   "title": "Synthwave#Outrun",
+   "match": "manual"
   }
  },
  "p-funk": {

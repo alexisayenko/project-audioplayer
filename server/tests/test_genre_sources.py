@@ -164,7 +164,7 @@ def test_committed_file_stores_no_urls_and_ids_have_the_right_shape():
         if "musicbrainz" in row:
             assert mbid.match(row["musicbrainz"]["id"]), key
         if "wikipedia" in row:
-            assert re.fullmatch(r"Q[1-9]\d*", row["wikipedia"]["wikidata"]), key
+            assert row["wikipedia"]["match"] == "manual" or re.fullmatch(r"Q[1-9]\d*", row["wikipedia"]["wikidata"]), key
         if "apple_music" in row:
             assert row["apple_music"]["id"].isdigit(), key
 
@@ -198,7 +198,9 @@ def test_no_catalogue_entry_is_matched_to_two_genres():
         for key, row in doc.items():
             if key == "_meta" or src not in row:
                 continue
-            target = row[src][field]
+            target = row[src].get(field)
+            if target is None:
+                continue
             assert target not in seen, (src, key, seen.get(target))
             seen[target] = key
 
@@ -246,3 +248,8 @@ def test_rym_link_comes_only_from_the_curated_file(sources_file, tmp_path, monke
     monkeypatch.setattr(genre_sources, "RYM_FILE", tmp_path / "missing.json")
     genre_sources.reset()
     assert "rym" not in genre_sources.sources_for("house")
+
+
+def test_a_manual_wikipedia_title_may_carry_a_section_fragment():
+    by = links("outrun", {"wikipedia": {"title": "Synthwave#Outrun", "match": "manual"}})
+    assert by["wikipedia"]["url"] == "https://en.wikipedia.org/wiki/Synthwave#Outrun"
