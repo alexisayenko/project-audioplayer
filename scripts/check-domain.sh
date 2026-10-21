@@ -5,10 +5,12 @@
 #   --old H   previous host, compared with HOST (default: none; with no
 #             --old only HOST is checked). Example: --old old.example.net
 # Checks: DNS (NS/A/AAAA/CNAME), TLS (certificate, HSTS), app (/health, /,
-# guest /me, /library, unauthenticated write, audio Range, cache header),
-# the old host's redirect behaviour, and equal song counts on both hosts.
-# No secrets, no writes (the POST /songs probe is unauthenticated and must
-# be refused). Needs curl and openssl; dig is optional (nslookup fallback).
+# anonymous /me, /library and /catalog refused with 401 because the public
+# view is off (ADR-0041), POST /anon/session issues a token, unauthenticated
+# write refused, Cloudflare blocks /wp-login.php and /.env), and the old
+# host's redirect behaviour.
+# No secrets, no library writes (the POST /songs probe is unauthenticated and
+# must be refused; /anon/session only mints a device token). Needs curl and openssl; dig is optional (nslookup fallback).
 # Exit code: 0 if no check FAILs, 1 otherwise. WARN does not fail.
 set -u
 
@@ -60,9 +62,8 @@ BODY="$(mktemp)"
 trap 'rm -f "$HDR" "$BODY"' EXIT
 status_of() { head -n1 "$HDR" | tr -d '\r' | awk '{print $2}'; return 0; }
 header_of() { local name="$1"; grep -i "^$name:" "$HDR" | tail -n1 | tr -d '\r' | cut -d' ' -f2-; return 0; }
-count_songs() { grep -o '"added_at":"' | wc -l | tr -d ' '; return 0; }
 
-check_host() { # host which -> sets COUNT_<which>
+check_host() { # host which
   local h="$1" which="$2" url="https://$1" t s body ids
   # (a) DNS
   local ns a aaaa cn
@@ -109,31 +110,30 @@ check_host() { # host which -> sets COUNT_<which>
   if printf '%s' "$body" | grep -qi '<title>Electrophone'; then pass "/ HTML title $h" "Electrophone"
   else fail "/ HTML title $h" "no Electrophone <title>"; fi
 
-  body="$(get "$url/me")"
-  keys="$(printf '%s' "$body" | grep -o '"[a-z_]*":' | tr -d '":' | sort | tr '\n' ' ')"
-  if [[ "$keys" = "audio guest owner_label public_view " ]]; then pass "guest /me keys $h" "$keys"
-  else fail "guest /me keys $h" "keys: ${keys:-none} (expect audio guest owner_label public_view)"; fi
+  s="$(curl -s -m 20 -o /dev/null -w "$HTTP_CODE" "$url/me")"
+  if [[ "$s" = "401" ]]; then pass "anon /me $h" "401 (public view off)"; else fail "anon /me $h" "status $s (expect 401)"; fi
 
-  get "$url/library" >"$BODY"
+  for p in /library /catalog; do
+    s="$(curl -s -m 20 -o /dev/null -w "$HTTP_CODE" "$url$p")"
+    if [[ "$s" = "401" ]]; then pass "anon $p $h" "401"; else fail "anon $p $h" "status $s (expect 401)"; fi
+  done
+
+  get "$url/anon/session" -X POST -o "$BODY"
   s="$(status_of)"
-  local n; n="$(count_songs <"$BODY")"
-  if [[ "$s" = "200" ]] && [[ "$n" -gt 0 ]]; then pass "/library $h" "200, $n songs"
-  else fail "/library $h" "status $s, $n songs"; fi
-  eval "COUNT_$which=$n"
-  local cc; cc="$(header_of cache-control)"
-  case "$cc" in *private*) pass "/library Cache-Control $h" "$cc" ;; *) fail "/library Cache-Control $h" "'${cc:-missing}' (expect private)" ;; esac
+  if [[ "$s" = "200" ]] && grep -q '"token":"' "$BODY"; then pass "POST /anon/session $h" "200, token issued"
+  else fail "POST /anon/session $h" "status $s (expect 200 with a token)"; fi
+  s="$(curl -s -m 20 -o /dev/null -w "$HTTP_CODE" -X POST -H 'Content-Type: application/json' -d '{"url":"x"}' "$url/anon/downloads")"
+  if [[ "$s" = "401" ]]; then pass "anon POST /anon/downloads no token $h" "401"; else fail "anon POST /anon/downloads no token $h" "status $s (expect 401)"; fi
 
   s="$(curl -s -m 20 -o /dev/null -w "$HTTP_CODE" -X POST -H 'Content-Type: application/json' -d '{}' "$url/songs")"
   if [[ "$s" = "401" ]]; then pass "unauth POST /songs $h" "401"; else fail "unauth POST /songs $h" "status $s (expect 401)"; fi
 
-  ids="$(tr '{' '\n' <"$BODY" | grep '"file":"' | grep -o '"id":"[^"]*"' | head -n1 | cut -d'"' -f4)"
-  if [[ -n "$ids" ]]; then
-    s="$(curl -s -m 30 -o /dev/null -w "$HTTP_CODE" -H 'Range: bytes=0-1023' "$url/files/$ids")"
-    if [[ "$s" = "206" ]]; then pass "/files/<id> Range $h" "206 ($ids)"; else fail "/files/<id> Range $h" "status $s for $ids (expect 206)"; fi
-  else warn "/files/<id> Range $h" "no song with audio file in /library"; fi
+  for p in /wp-login.php /.env; do
+    s="$(curl -s -m 20 -o /dev/null -w "$HTTP_CODE" "$url$p")"
+    if [[ "$s" = "403" ]]; then pass "Cloudflare block $p $h" "403"; else warn "Cloudflare block $p $h" "status $s (expect 403 from the WAF rule)"; fi
+  done
 }
 
-COUNT_new=0; COUNT_old=0
 check_host "$HOST" new
 
 # (d) + (e) old host
@@ -147,8 +147,6 @@ if [[ -n "$OLD" ]]; then
     200) info "old host redirect" "$OLD serves directly (dual-host, no redirect yet)" ;;
     *) fail "old host redirect" "status $s" ;;
   esac
-  if [[ "$COUNT_new" = "$COUNT_old" ]]; then pass "song counts equal" "$HOST=$COUNT_new $OLD=$COUNT_old"
-  else fail "song counts equal" "$HOST=$COUNT_new $OLD=$COUNT_old"; fi
 fi
 
 printf '%-5s | %-34s | %s\n' STATUS CHECK DETAIL
