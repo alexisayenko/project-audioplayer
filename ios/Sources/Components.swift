@@ -1,14 +1,14 @@
 import SwiftUI
 
-/// Dynamic Type counterparts of the DS.Font roles (same roles, same default sizes, but scalable).
+/// Dynamic Type counterparts of the DS.Font roles, generated from the design system (DS.Dynamic).
 enum T {
-    static let display = Font.largeTitle.bold()
-    static let title = Font.title2.bold()
-    static let headline = Font.headline
-    static let body = Font.body
-    static let subhead = Font.subheadline
-    static let caption = Font.footnote
-    static let time = Font.footnote.monospaced().weight(.medium)
+    static let display = DS.Dynamic.display
+    static let title = DS.Dynamic.title
+    static let headline = DS.Dynamic.headline
+    static let body = DS.Dynamic.body
+    static let subhead = DS.Dynamic.subhead
+    static let caption = DS.Dynamic.caption
+    static let time = DS.Dynamic.time
 }
 
 extension ColorScheme {

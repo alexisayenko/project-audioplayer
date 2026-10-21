@@ -56,6 +56,10 @@ enum DS {
         static let brandWikipedia = SwiftUI.Color(light: (0.106, 0.125, 0.141, 1.000), dark: (0.925, 0.910, 0.875, 1.000))
         /// Service icon next to Get metadata once that service returned data; icons only, never text or surfaces; inactive state uses ink-faint. MusicBrainz magenta (not the orange, which would read as SoundCloud): 4.1:1 on day ground, 3.5:1 on night ground, above the 3:1 icon minimum.
         static let brandMusicbrainz = SwiftUI.Color(light: (0.729, 0.278, 0.561, 1.000), dark: (0.729, 0.278, 0.561, 1.000))
+        /// Quiet wash behind the selected navigation row (iOS drawer). Paler than accent-tint by day and closer to surface by night; keeps accent-tint for the active tab pill and chips.
+        static let selectTint = SwiftUI.Color(light: (0.867, 0.953, 0.961, 1.000), dark: (0.173, 0.220, 0.235, 1.000))
+        /// Text and icon of the selected navigation row on select-tint. 4.5:1 on select-tint by day (the design feedback asked for about #007f91, which is 4.1:1), 9:1 by night.
+        static let selectInk = SwiftUI.Color(light: (0.000, 0.467, 0.553, 1.000), dark: (0.682, 0.914, 0.945, 1.000))
     }
 
     // MARK: Chart
@@ -119,6 +123,21 @@ enum DS {
         static let time = SwiftUI.Font.system(size: 13, weight: .medium, design: .monospaced)
     }
 
+    // MARK: Dynamic Type
+    /// Scalable counterparts of DS.Font: the same roles and default sizes, tied to the Dynamic Type text style of the same size.
+    enum Dynamic {
+        static let display = SwiftUI.Font.system(.largeTitle, design: .default, weight: .bold)
+        static let title = SwiftUI.Font.system(.title2, design: .default, weight: .bold)
+        static let headline = SwiftUI.Font.system(.headline, design: .default, weight: .semibold)
+        static let body = SwiftUI.Font.system(.body, design: .default, weight: .regular)
+        static let subhead = SwiftUI.Font.system(.subheadline, design: .default, weight: .regular)
+        static let subheadStrong = SwiftUI.Font.system(.subheadline, design: .default, weight: .semibold)
+        static let caption = SwiftUI.Font.system(.footnote, design: .default, weight: .regular)
+        static let micro = SwiftUI.Font.system(.caption2, design: .default, weight: .regular)
+        static let eyebrow = SwiftUI.Font.system(.caption, design: .default, weight: .semibold)
+        static let time = SwiftUI.Font.system(.footnote, design: .monospaced, weight: .medium)
+    }
+
     // MARK: Space
     enum Space {
         /// Icon-to-label gap, LED-to-text gap.
@@ -153,6 +172,8 @@ enum DS {
         static let radiusTray: CGFloat = 28
         /// Chips, the segmented control, the LED dot.
         static let radiusPill: CGFloat = 999
+        /// Selected navigation row (drawer) and other selection washes. Equals radius-card today; the feedback allowed 20 to 24.
+        static let radiusSelect: CGFloat = 20
     }
 
     // MARK: Stroke
@@ -163,6 +184,140 @@ enum DS {
         static let strokeFocus: CGFloat = 2
         /// Progress arcs and thin tracks (download ring, volume track).
         static let strokeProgress: CGFloat = 3
+        /// iOS outlines in use today: selected chip rim, error rim, toggle outline. The web retired 1.5px for stroke-hairline; iOS keeps it until the call-site sweep decides, then this token is removed or promoted.
+        static let strokeThin: CGFloat = 1.5
+        /// Active field outline and selected rings. Same weight as stroke-focus; use this name for non-focus emphasis.
+        static let strokeMedium: CGFloat = 2
+    }
+
+    // MARK: Shadow
+    enum Shadow {
+        /// iOS card and slab: vinyl at 16%, blur 10, y 2. Cards, list groups, pill chips on ground, cover art. The blur value is the SwiftUI shadow radius.
+        static let depthSlab = DSShadow(color: SwiftUI.Color(light: (0.063, 0.078, 0.090, 0.161), dark: (0.063, 0.078, 0.090, 0.161)), tintOpacity: 0.161, radius: 10, x: 0, y: 2)
+        /// iOS floating slab (mini player, tab bar, transport tray, sheets): vinyl at 16% by day, 70% by night, blur 12, y 8. Pair with a stroke-hairline line ring.
+        static let depthLift = DSShadow(color: SwiftUI.Color(light: (0.063, 0.078, 0.090, 0.161), dark: (0.063, 0.078, 0.090, 0.702)), tintOpacity: 0.161, radius: 12, x: 0, y: 8)
+        /// iOS toast and popover: vinyl at 30%, blur 12, y 6.
+        static let depthPop = DSShadow(color: SwiftUI.Color(light: (0.063, 0.078, 0.090, 0.302), dark: (0.063, 0.078, 0.090, 0.302)), tintOpacity: 0.302, radius: 12, x: 0, y: 6)
+        /// macOS transport bar: vinyl at 30%, blur 16, y 4.
+        static let depthBar = DSShadow(color: SwiftUI.Color(light: (0.063, 0.078, 0.090, 0.302), dark: (0.063, 0.078, 0.090, 0.302)), tintOpacity: 0.302, radius: 16, x: 0, y: 4)
+        /// iOS left drawer edge: vinyl at 30%, blur 12, cast to the right (x 4, y 0).
+        static let depthDrawer = DSShadow(color: SwiftUI.Color(light: (0.063, 0.078, 0.090, 0.302), dark: (0.063, 0.078, 0.090, 0.302)), tintOpacity: 0.302, radius: 12, x: 4, y: 0)
+        /// iOS unlit key, small raised capsule and toggle thumb: vinyl at 20%, blur 2, y 1.
+        static let depthKey = DSShadow(color: SwiftUI.Color(light: (0.063, 0.078, 0.090, 0.200), dark: (0.063, 0.078, 0.090, 0.200)), tintOpacity: 0.200, radius: 2, x: 0, y: 1)
+        /// iOS slider thumb: vinyl at 30%, blur 2, y 1.
+        static let depthThumb = DSShadow(color: SwiftUI.Color(light: (0.063, 0.078, 0.090, 0.302), dark: (0.063, 0.078, 0.090, 0.302)), tintOpacity: 0.302, radius: 2, x: 0, y: 1)
+        /// iOS row lifted while dragged: vinyl at 20%, blur 6, y 2.
+        static let depthHover = DSShadow(color: SwiftUI.Color(light: (0.063, 0.078, 0.090, 0.200), dark: (0.063, 0.078, 0.090, 0.200)), tintOpacity: 0.200, radius: 6, x: 0, y: 2)
+        /// iOS lit play key and the enabled primary action: accent at 50%, blur 12, no offset.
+        static let depthGlow = DSShadow(color: SwiftUI.Color(light: (0.341, 0.827, 0.914, 0.502), dark: (0.341, 0.827, 0.914, 0.502)), tintOpacity: 0.502, radius: 12, x: 0, y: 0)
+        /// iOS halo around a lit icon: accent at 25%, blur 6.
+        static let depthGlowSoft = DSShadow(color: SwiftUI.Color(light: (0.341, 0.827, 0.914, 0.251), dark: (0.341, 0.827, 0.914, 0.251)), tintOpacity: 0.251, radius: 6, x: 0, y: 0)
+        /// iOS LED dot glow: the LED colour (ok or power) at 80%, blur 3. The call site passes the colour; white here is a placeholder.
+        static let depthLed = DSShadow(color: SwiftUI.Color(light: (1.000, 1.000, 1.000, 0.800), dark: (1.000, 1.000, 1.000, 0.800)), tintOpacity: 0.800, radius: 3, x: 0, y: 0)
+        /// Legibility halo for white text on cover art: black at 50%, blur 2. The only text shadow.
+        static let depthText = DSShadow(color: SwiftUI.Color(light: (0.000, 0.000, 0.000, 0.502), dark: (0.000, 0.000, 0.000, 0.502)), tintOpacity: 0.502, radius: 2, x: 0, y: 0)
+    }
+
+    // MARK: Motion
+    enum Motion {
+        /// Hover, press, small toggles, thumb scale.
+        static let durFast: Double = 0.12
+        /// Menus, chips, panel changes, dialog fade.
+        static let durBase: Double = 0.2
+        /// Sheet slide, layout moves.
+        static let durSlow: Double = 0.3
+        /// Entrances and most transitions.
+        static let easeOut: DSBezier = DSBezier(0.2, 0.8, 0.2, 1)
+        /// Moves that start and end on screen (position, size).
+        static let easeIo: DSBezier = DSBezier(0.4, 0, 0.2, 1)
+        /// Vertical rise of an element entering (toasts, menus, banners) before it settles at its place; paired with enter-scale and dur-base.
+        static let enterOffset: CGFloat = 8
+        /// Starting scale of an entering dialog or menu; transitions to 1 over dur-base.
+        static let enterScale: CGFloat = 0.96
+        /// One breath of a pulsing indicator (LED while waiting); eased in and out and repeated, never under reduced motion.
+        static let durPulse: Double = 0.8
+    }
+
+    // MARK: Icon
+    enum Icon {
+        /// Inline and pill icons.
+        static let iconInline: CGFloat = 16
+        /// Row actions and mini-player transport.
+        static let iconAction: CGFloat = 18
+        /// Navigation and player action icons.
+        static let iconNav: CGFloat = 20
+        /// The main play key.
+        static let iconPlay: CGFloat = 24
+        /// Stroke width in viewBox units (unitless).
+        static let iconStroke: CGFloat = 1.8
+        /// viewBox size (unitless).
+        static let iconGrid: CGFloat = 24
+        /// Live drawing area inside the grid (unitless).
+        static let iconLive: CGFloat = 20
+        /// Glyphs inside pills, tags and token fields (xmark, pencil, chevron).
+        static let iconXs: CGFloat = 12
+        /// Navigation symbols in the drawer and the lit transport key; one step above icon-nav.
+        static let iconNavLg: CGFloat = 22
+        /// Weight of outline navigation symbols (SF Symbols regular). One value for all of them.
+        static let iconWeight: SwiftUI.Font.Weight = .regular
+        /// Weight of glyphs on pills, keys and the + action (SF Symbols semibold).
+        static let iconWeightStrong: SwiftUI.Font.Weight = .semibold
+    }
+
+    // MARK: Control
+    enum Control {
+        /// Compact control height: chips, token pills, small icon buttons (still padded to hit where tappable).
+        static let controlSm: CGFloat = 28
+        /// Standard control height: buttons, fields, selects, sort control.
+        static let control: CGFloat = 36
+        /// Large control height: the lit play key, sign-in buttons.
+        static let controlXl: CGFloat = 56
+        /// Seek bar track thickness.
+        static let trackSeek: CGFloat = 6
+        /// Volume slider track thickness; equals stroke-progress.
+        static let trackVolume: CGFloat = 3
+        /// Seek bar thumb diameter.
+        static let thumbSeek: CGFloat = 16
+        /// Volume slider thumb diameter.
+        static let thumbVolume: CGFloat = 12
+        /// transform: scale() of a slider thumb while dragged; eased over dur-fast.
+        static let dragScale: CGFloat = 1.25
+        /// Maximum width of a dialog.
+        static let dialogWidth: CGFloat = 560
+        /// Maximum width of a wide dialog (identify results, share, song edit with tables).
+        static let dialogWidthWide: CGFloat = 720
+        /// Sheet grab handle width.
+        static let grabW: CGFloat = 36
+        /// Sheet grab handle height; radius is half of it.
+        static let grabH: CGFloat = 5
+    }
+
+    // MARK: Component
+    enum Component {
+        /// Minimum height of a navigation row (iOS drawer): hit plus space-5.
+        static let navRowHeight: CGFloat = 64
+        /// Square the navigation icon sits in, so labels line up (icon-nav-lg 22 inside).
+        static let navIconFrame: CGFloat = 28
+        /// Minimum height of a settings, library and statistics list row on iOS.
+        static let rowHeight: CGFloat = 48
+        /// Minimum height of a text field on iOS (dsField). Off the control ladder; a candidate to move to control (36) or hit (44) in the call-site sweep.
+        static let fieldHeight: CGFloat = 40
+        /// Round icon button: add-tag toggle, play badge over a cover.
+        static let iconButton: CGFloat = 32
+        /// Diameter of the toggle thumb.
+        static let switchThumb: CGFloat = 24
+        /// Cover thumbnail in dense lists (info panel).
+        static let coverXs: CGFloat = 32
+        /// Cover thumbnail in the playback queue.
+        static let coverSm: CGFloat = 40
+        /// Cover thumbnail in a library row and the transport bar. 60 and 66 in macOS code fold into it.
+        static let coverMd: CGFloat = 64
+        /// Cover preview in the song form.
+        static let coverLg: CGFloat = 96
+        /// Status LED dot.
+        static let dotSm: CGFloat = 8
+        /// Chart legend dot.
+        static let dotMd: CGFloat = 10
     }
 
 }
@@ -183,4 +338,19 @@ extension SwiftUI.Color {
         })
 #endif
     }
+}
+
+/// One SwiftUI shadow level. `tintOpacity` is the alpha to apply when a call site supplies its own colour (see dsShadow in DSModifiers.swift).
+struct DSShadow {
+    let color: SwiftUI.Color
+    let tintOpacity: Double
+    let radius: CGFloat
+    let x: CGFloat
+    let y: CGFloat
+}
+
+/// A cubic-bezier easing curve (the x1 y1 x2 y2 of CSS cubic-bezier).
+struct DSBezier {
+    let x1: Double, y1: Double, x2: Double, y2: Double
+    init(_ x1: Double, _ y1: Double, _ x2: Double, _ y2: Double) { self.x1 = x1; self.y1 = y1; self.x2 = x2; self.y2 = y2 }
 }

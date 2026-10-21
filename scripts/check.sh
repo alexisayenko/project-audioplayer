@@ -37,6 +37,13 @@ if [ -n "$dups" ]; then
 fi
 echo "rule IDs ok"
 
+if ! python3 scripts/sync-design-system.py --check >/dev/null; then
+  python3 scripts/sync-design-system.py --check | head -20
+  echo "FAIL: generated design tokens are stale (run scripts/sync-design-system.py)"
+  exit 1
+fi
+echo "design tokens ok"
+
 py=python3
 for c in "$HOME/ap2venv/bin/python" "$HOME/ap2venv/bin/python3"; do [ -x "$c" ] && py="$c" && break; done
 if out=$(cd server && PYTHONPATH=. "$py" -m pytest -q --no-header -p no:cacheprovider 2>&1); then

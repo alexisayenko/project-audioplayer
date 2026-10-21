@@ -5,12 +5,15 @@ Source of truth: the "Electrophone" Design System artifact on claude.ai
 (see docs/brand/README.md). Its project/tokens.json is committed as
 docs/brand/tokens.json; this script turns that file into
 
-  ios/Sources/DesignTokens.swift   (SwiftUI: colours, chart colours, type, spacing, radius, stroke)
-  web/tokens.css                   (CSS custom properties, light + dark; families marked platform web are web only)
+  ios/Sources/DesignTokens.swift   (SwiftUI: colours, chart colours, type plus Dynamic Type counterparts, spacing, radius, stroke,
+                                    shadow, motion, icon, control, component)
+  web/tokens.css                   (CSS custom properties, light + dark; tokens marked platform web are web only, platform ios are skipped)
 
 All colour-valued tokens live in the color family (the artifact's parser accepts per-theme values and
 {name} aliases only there). Inside it, chart-N tokens go to DS.Chart on iOS, tokens marked
 "platform": "web" are skipped on iOS, and a "{name}" value resolves to var(--name) in CSS.
+Shadow tokens reach iOS only when marked "platform": "ios" (one box-shadow layer: x y blur #rrggbbaa; the blur number is the
+SwiftUI radius) and are then skipped in CSS. Motion durations become seconds, cubic-bezier curves become DSBezier.
 
 Never edit the generated files. Change the design system, re-export
 tokens.json, run:  python3 scripts/sync-design-system.py
@@ -68,6 +71,10 @@ def is_chart(token: dict) -> bool:
 
 def on_ios(token: dict) -> bool:
     return token.get("platform", "ios") != "web"
+
+
+def on_web(token: dict) -> bool:
+    return token.get("platform", "web") != "ios"
 
 
 def px(value) -> str:
@@ -142,6 +149,38 @@ def swift_fonts(tokens: dict) -> list[str]:
     return out
 
 
+TEXT_STYLES = {34: "largeTitle", 28: "title", 22: "title2", 20: "title3", 17: "body", 16: "callout", 15: "subheadline", 13: "footnote", 12: "caption", 11: "caption2"}
+
+
+def text_style(st: dict) -> str:
+    size = int(float(px(st["fontSize"])))
+    if size == 17 and (st["name"] == "headline" or int(st.get("fontWeight", 400)) >= 600):
+        return "headline"
+    if size not in TEXT_STYLES:
+        raise ValueError(f"no Dynamic Type text style for {st['name']} ({size}px)")
+    return TEXT_STYLES[size]
+
+
+def swift_dynamic_fonts(tokens: dict) -> list[str]:
+    out = [
+        "    // MARK: Dynamic Type",
+        "    /// Scalable counterparts of DS.Font: the same roles and default sizes, tied to the Dynamic Type text style of the same size.",
+        "    enum Dynamic {",
+    ]
+    families = tokens["type"].get("families", {})
+    for group in tokens["type"].get("groups", []):
+        fam = group.get("family", "sans")
+        design = ".monospaced" if "mono" in families.get(fam, fam).lower() else ".default"
+        for st in group["styles"]:
+            wname = FONT_WEIGHTS.get(int(st.get("fontWeight", 400)), "regular")
+            out.append(f"        static let {camel(st['name'])} = SwiftUI.Font.system(.{text_style(st)}, design: {design}, weight: .{wname})")
+    out.extend([
+        "    }",
+        "",
+    ])
+    return out
+
+
 def swift_scales(tokens: dict) -> list[str]:
     out: list[str] = []
     for family, enum_name in (("spacing", "Space"), ("radius", "Radius"), ("stroke", "Stroke")):
@@ -165,12 +204,78 @@ def swift_scales(tokens: dict) -> list[str]:
     return out
 
 
+def parse_shadow_layer(value: str) -> tuple[float, float, float, str]:
+    m = re.fullmatch(r"\s*(-?[\d.]+)(?:px)?\s+(-?[\d.]+)(?:px)?\s+([\d.]+)(?:px)?\s+(#[0-9a-fA-F]{6,8})\s*", value)
+    if not m:
+        raise ValueError(f"iOS shadow must be a single layer 'x y blur #rrggbbaa': {value}")
+    return float(m.group(1)), float(m.group(2)), float(m.group(3)), m.group(4)
+
+
+def num(value: float) -> str:
+    return str(int(value)) if float(value).is_integer() else f"{value:.3f}".rstrip("0").rstrip(".")
+
+
+def swift_shadows(tokens: dict, themes: list[str]) -> list[str]:
+    toks = [t for t in tokens.get("shadow", {}).get("tokens", []) if t.get("platform") == "ios"]
+    if not toks:
+        return []
+    light, dark = themes[0], (themes[1] if len(themes) > 1 else themes[0])
+    out = ["    // MARK: Shadow", "    enum Shadow {"]
+    for tok in toks:
+        vals = theme_values(tok, themes)
+        x, y, blur, lc = parse_shadow_layer(vals[light])
+        dx, dy, dblur, dc = parse_shadow_layer(vals[dark])
+        if (x, y, blur) != (dx, dy, dblur):
+            raise ValueError(f"{tok['name']}: geometry must match in both themes")
+        lr, lg, lb, la = hex_to_rgba(lc)
+        dr, dg, db, da = hex_to_rgba(dc)
+        usage = tok.get("usage", "").replace("\n", " ")
+        out.append(f"        /// {usage}")
+        out.append(
+            f"        static let {camel(tok['name'])} = DSShadow(color: SwiftUI.Color(light: ({lr:.3f}, {lg:.3f}, {lb:.3f}, {la:.3f}), dark: ({dr:.3f}, {dg:.3f}, {db:.3f}, {da:.3f})), tintOpacity: {la:.3f}, radius: {num(blur)}, x: {num(x)}, y: {num(y)})"
+        )
+    out.extend(["    }", ""])
+    return out
+
+
+def swift_value(tok: dict, family: str) -> tuple[str, str]:
+    name, raw = tok["name"], str(tok["value"]).strip()
+    if family == "icon" and name.startswith("icon-weight"):
+        return "SwiftUI.Font.Weight", "." + FONT_WEIGHTS[int(raw)]
+    if raw.endswith("ms"):
+        return "Double", num(float(raw[:-2]) / 1000)
+    m = re.fullmatch(r"cubic-bezier\(\s*([\d.\-]+)\s*,\s*([\d.\-]+)\s*,\s*([\d.\-]+)\s*,\s*([\d.\-]+)\s*\)", raw)
+    if m:
+        return "DSBezier", "DSBezier(" + ", ".join(num(float(g)) for g in m.groups()) + ")"
+    return "CGFloat", num(float(px(raw)))
+
+
+def swift_native_families(tokens: dict) -> list[str]:
+    out: list[str] = []
+    for family, enum_name in (("motion", "Motion"), ("icon", "Icon"), ("control", "Control"), ("component", "Component")):
+        fam = tokens.get(family)
+        if not fam:
+            continue
+        out.extend([f"    // MARK: {enum_name}", f"    enum {enum_name} {{"])
+        for tok in fam["tokens"]:
+            if not on_ios(tok):
+                continue
+            typ, val = swift_value(tok, family)
+            usage = tok.get("usage", "").replace("\n", " ")
+            out.extend([f"        /// {usage}", f"        static let {camel(tok['name'])}: {typ} = {val}"])
+        out.extend(["    }", ""])
+    return out
+
+
 def swift(tokens: dict) -> str:
     themes = [t["id"] for t in tokens["color"]["themes"]]
     out = [f"// {HEADER}", "", "import SwiftUI", "", "/// Electrophone design tokens. Colours adapt to light/dark automatically.", "enum DS {"]
     out.extend(swift_colors(tokens, themes))
     out.extend(swift_fonts(tokens))
+    out.extend(swift_dynamic_fonts(tokens))
     out.extend(swift_scales(tokens))
+    out.extend(swift_shadows(tokens, themes))
+    out.extend(swift_native_families(tokens))
 
     out.extend([
         "}",
@@ -192,17 +297,32 @@ def swift(tokens: dict) -> str:
         "#endif",
         "    }",
         "}",
+        "",
+        "/// One SwiftUI shadow level. `tintOpacity` is the alpha to apply when a call site supplies its own colour (see dsShadow in DSModifiers.swift).",
+        "struct DSShadow {",
+        "    let color: SwiftUI.Color",
+        "    let tintOpacity: Double",
+        "    let radius: CGFloat",
+        "    let x: CGFloat",
+        "    let y: CGFloat",
+        "}",
+        "",
+        "/// A cubic-bezier easing curve (the x1 y1 x2 y2 of CSS cubic-bezier).",
+        "struct DSBezier {",
+        "    let x1: Double, y1: Double, x2: Double, y2: Double",
+        "    init(_ x1: Double, _ y1: Double, _ x2: Double, _ y2: Double) { self.x1 = x1; self.y1 = y1; self.x2 = x2; self.y2 = y2 }",
+        "}",
     ])
     return "\n".join(out) + "\n"
 
 
-CSS_FAMILIES = ("spacing", "radius", "stroke", "shadow", "overlay", "state", "motion", "elevation", "icon", "control")
+CSS_FAMILIES = ("spacing", "radius", "stroke", "shadow", "overlay", "state", "motion", "elevation", "icon", "control", "component")
 
 
 def css_tokens(tokens: dict) -> list:
-    out = list(tokens["color"]["tokens"])
+    out = [t for t in tokens["color"]["tokens"] if on_web(t)]
     for family in CSS_FAMILIES:
-        out.extend(tokens.get(family, {}).get("tokens", []))
+        out.extend(t for t in tokens.get(family, {}).get("tokens", []) if on_web(t))
     return out
 
 
@@ -243,12 +363,14 @@ def css(tokens: dict) -> str:
     light, dark = themes[0], (themes[1] if len(themes) > 1 else themes[0])
     lines = [f"/* {HEADER} */", ":root {"]
     for tok in tokens["color"]["tokens"]:
-        lines.append(f"  --{tok['name']}: {css_values(tok, themes)[light]};")
+        if on_web(tok):
+            lines.append(f"  --{tok['name']}: {css_values(tok, themes)[light]};")
     for key, stack in tokens["type"].get("families", {}).items():
         lines.append(f"  --font-{key}: {stack};")
     for family in CSS_FAMILIES:
         for tok in tokens.get(family, {}).get("tokens", []):
-            lines.append(f"  --{tok['name']}: {css_values(tok, themes)[light]};")
+            if on_web(tok):
+                lines.append(f"  --{tok['name']}: {css_values(tok, themes)[light]};")
     for group in tokens["type"].get("groups", []):
         fam = group.get("family", "sans")
         lines.extend(css_font_shorthand(st, fam) for st in group["styles"])

@@ -141,3 +141,13 @@ The design system's own pairs that fail, and what the web uses instead:
 Static files are versioned by the server (WEB-017, ADR-0009 amendment): never
 link a web asset with an absolute path; use paths relative to `index.html`.
 
+## Design System changes for the drawer
+
+Added to the Electrophone Design System on 2026-10-21 (additive; `accent-tint` and `accent-ink` unchanged). `Drawer.swift` now uses them (call-site sweep done 2026-10-21: width 75%, title `T.title` semibold, subtitle `T.subhead`, 24pt side padding, nav rows 64pt with a 56pt selection capsule, header stacks vertically at accessibility sizes):
+
+- Selection wash: `select-tint` (`#DDF3F5` day, `#2C383C` night) as `DS.Color.selectTint`. Done.
+- Selected text and icon: `select-ink` (`#00778D` day, `#AEE9F1` night) as `DS.Color.selectInk`. The asked-for `#007F91` is 4.1:1 on the tint, so the token is slightly darker to reach 4.5:1. Done.
+- Selection radius: `radius-select` 20 as `DS.Radius.radiusSelect` (the feedback allowed 20 to 24; 20 matches `radius-card`). Done.
+- Icon size and weight: `icon-nav-lg` 22 as `DS.Icon.iconNavLg`; weight `icon-weight` (regular) as `DS.Icon.iconWeight`. Done.
+- Navigation row height: `nav-row-height` 64 as `DS.Component.navRowHeight`, icon frame `nav-icon-frame` 28. Done.
+- Drawer edge shadow: `depth-drawer` as `DS.Shadow.depthDrawer`. Done.
