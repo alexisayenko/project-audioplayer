@@ -18,12 +18,13 @@ struct SettingsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: DS.Space.space4) {
+            VStack(alignment: .leading, spacing: DS.Space.space3) {
                 ScreenHeader(title: "Settings")
                 accountCard
                 downloadsCard
                 storageCard
-                Text(versionLine).dsCaption().frame(maxWidth: .infinity)
+                Text(versionLine).font(DS.Dynamic.micro).foregroundStyle(DS.Color.inkMuted).frame(maxWidth: .infinity)
+                    .padding(.top, DS.Space.space4)
             }
             .padding(.horizontal, DS.Space.space4).padding(.top, DS.Space.space2).padding(.bottom, DS.Space.space4)
         }
@@ -64,7 +65,7 @@ struct SettingsView: View {
 
     /// A grouped card: section label above, surface slab with 16pt side padding, rows or content inside.
     private func card<C: View>(_ label: String, @ViewBuilder _ content: () -> C) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: DS.Space.space2) {
             SectionLabel(label)
             VStack(alignment: .leading, spacing: 0, content: content)
                 .padding(.horizontal, DS.Space.space4)
@@ -75,9 +76,9 @@ struct SettingsView: View {
     private var rule: some View { Rectangle().fill(DS.Color.line).frame(height: 1) }
 
     /// A 48pt settings row: label on the left, value or control on the right.
-    private func row<Trail: View>(_ label: String, @ViewBuilder trailing: () -> Trail) -> some View {
+    private func row<Trail: View>(_ label: String, color: Color = DS.Color.ink, @ViewBuilder trailing: () -> Trail) -> some View {
         HStack(spacing: DS.Space.space3) {
-            Text(label).font(T.subhead).foregroundStyle(DS.Color.ink)
+            Text(label).font(T.subhead).foregroundStyle(color)
             Spacer(minLength: DS.Space.space2)
             trailing()
         }
@@ -86,12 +87,8 @@ struct SettingsView: View {
 
     private var downloadsCard: some View {
         card("Downloads") {
-            row("Audio quality") {
-                HStack(spacing: 6) {
-                    Text("High \u{00B7} 192 kbps").font(T.subhead).foregroundStyle(DS.Color.inkMuted)
-                    Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(DS.Color.inkFaint)
-                        .accessibilityHidden(true)
-                }
+            row("Audio format") {
+                Text("AAC \u{00B7} best available").font(T.subhead).foregroundStyle(DS.Color.inkMuted)
             }
             .accessibilityElement(children: .combine)
             rule
@@ -101,8 +98,8 @@ struct SettingsView: View {
             }
             .accessibilityElement(children: .combine)
             rule
-            row("Use mobile data") {
-                Toggle("Use mobile data", isOn: $settings.useMobileData).labelsHidden().toggleStyle(DSSwitchStyle())
+            row("Download over mobile data") {
+                Toggle("Download over mobile data", isOn: $settings.useMobileData).labelsHidden().toggleStyle(DSSwitchStyle())
             }
             .accessibilityElement(children: .combine)
             if settings.hasCustomConnection {
@@ -173,11 +170,24 @@ struct SettingsView: View {
         library.songs.filter { $0.onServer != false && $0.localOnly != true && !library.contains($0.id) }.count
     }
 
+    private func linkRow(_ title: String, enabled: Bool = true, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            row(title) {
+                Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(DS.Color.inkFaint)
+                    .accessibilityHidden(true)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(!enabled)
+        .opacity(enabled ? 1 : 0.5)
+    }
+
     @ViewBuilder
     private var downloadAllRow: some View {
         let b = server.bulk
-        VStack(alignment: .leading, spacing: DS.Space.space2) {
-            if b.running {
+        if b.running {
+            VStack(alignment: .leading, spacing: DS.Space.space2) {
                 ProgressView(value: b.fraction).tint(DS.Color.accent)
                 HStack {
                     Text("Downloading \(b.processed) of \(b.total)\(b.failed > 0 ? ", \(b.failed) failed" : "")").dsCaption()
@@ -185,40 +195,35 @@ struct SettingsView: View {
                     Button("Cancel") { server.cancelDownloadAll() }
                         .font(T.subhead.weight(.semibold)).foregroundStyle(DS.Color.accentInk).frame(minHeight: DS.Space.hit)
                 }
-            } else {
-                Button { Task { await server.downloadAllMissing(settings: settings, library: library) } } label: {
-                    Text("Download all to iPhone").frame(maxWidth: .infinity)
+            }
+            .padding(.vertical, DS.Space.space3)
+        } else {
+            VStack(alignment: .leading, spacing: 0) {
+                linkRow("Download all to iPhone", enabled: missingCount > 0 && server.reachable != false) {
+                    Task { await server.downloadAllMissing(settings: settings, library: library) }
                 }
-                .buttonStyle(DSButtonStyle(kind: .outline))
-                .disabled(missingCount == 0 || server.reachable == false)
                 if b.hasResult {
-                    Text(b.summary).dsCaption()
+                    Text(b.summary).dsCaption().padding(.bottom, DS.Space.space3)
                 } else if missingCount == 0 {
-                    Text("Everything on the server is already on this iPhone.").dsCaption()
+                    Text("Everything on the server is already on this iPhone.").dsCaption().padding(.bottom, DS.Space.space3)
                 }
             }
         }
-        .padding(.top, DS.Space.space1)
     }
 
     #if os(iOS)
     private var openInFilesRow: some View {
-        VStack(alignment: .leading, spacing: DS.Space.space2) {
-            Button {
+        VStack(alignment: .leading, spacing: 0) {
+            linkRow("Open in Files") {
                 filesTick += 1
                 filesNotice = nil
                 let path = LibraryStore.documents.path.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? ""
                 guard let url = URL(string: "shareddocuments://" + path) else { filesNotice = Self.filesHint; return }
                 openURL(url) { if !$0 { filesNotice = Self.filesHint } }
-            } label: {
-                Label("Open in Files", systemImage: "folder").frame(maxWidth: .infinity)
             }
-            .buttonStyle(DSButtonStyle(kind: .outline))
-            .frame(minHeight: DS.Space.hit)
             .accessibilityLabel("Open downloaded songs in Files")
-            if let filesNotice { Text(filesNotice).dsCaption().fixedSize(horizontal: false, vertical: true) }
+            if let filesNotice { Text(filesNotice).dsCaption().fixedSize(horizontal: false, vertical: true).padding(.bottom, DS.Space.space3) }
         }
-        .padding(.top, DS.Space.space1)
     }
 
     private static let filesHint = "Open Files > On My iPhone > Electrophone"
@@ -229,11 +234,10 @@ struct SettingsView: View {
     private var storageCard: some View {
         card("Storage") {
             VStack(alignment: .leading, spacing: DS.Space.space2) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text(ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)).font(T.title).foregroundStyle(DS.Color.ink)
-                    Spacer()
-                    Text("\(library.tracks.count) \(library.tracks.count == 1 ? "song" : "songs") on iPhone").dsCaption()
-                }
+                (Text(ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)).font(T.title).foregroundColor(DS.Color.ink)
+                    + Text(" \u{00B7} Downloaded audio").font(T.subhead).foregroundColor(DS.Color.inkMuted))
+                    .fixedSize(horizontal: false, vertical: true)
+                Text("\(library.tracks.count) \(library.tracks.count == 1 ? "song" : "songs") on iPhone").dsCaption()
                 if freeBytes > 0 {
                     GeometryReader { g in
                         ZStack(alignment: .leading) {
@@ -245,18 +249,24 @@ struct SettingsView: View {
                     .frame(height: 6).accessibilityHidden(true)
                     Text("\(sizeText(freeBytes)) free on this iPhone")
                         .font(T.caption).foregroundStyle(lowSpace ? DS.Color.powerText : DS.Color.inkMuted)
-                        .accessibilityLabel("\(sizeText(bytes)) of songs, \(sizeText(freeBytes)) free\(lowSpace ? ", low space" : "")")
+                        .accessibilityLabel("\(sizeText(bytes)) of downloaded audio, \(sizeText(freeBytes)) free\(lowSpace ? ", low space" : "")")
                 }
-                Text("Audio is saved as AAC (m4a) at the best quality the source provides: usually 128 kbps, sometimes 160, 192 or more.")
-                    .dsCaption().fixedSize(horizontal: false, vertical: true)
-                if auth.isSignedIn { downloadAllRow }
-                openInFilesRow
-                Button { confirmRemoveAll = true } label: { Text("Remove all downloads").frame(maxWidth: .infinity) }
-                    .buttonStyle(DSButtonStyle(kind: .danger)).disabled(library.tracks.isEmpty)
-                    .padding(.top, DS.Space.space1)
+                Text("AAC audio \u{00B7} quality depends on the source").dsCaption().fixedSize(horizontal: false, vertical: true)
+                    .accessibilityHint("Saved as AAC (m4a) at the best quality the source provides: usually 128 kbps, sometimes 160, 192 or more.")
             }
-            .padding(.vertical, DS.Space.space3)
+            .padding(.vertical, DS.Space.space4)
             .accessibilityElement(children: .contain)
+            if auth.isSignedIn { rule; downloadAllRow }
+            #if os(iOS)
+            rule
+            openInFilesRow
+            #endif
+            rule
+            Button { confirmRemoveAll = true } label: {
+                row("Remove all downloads", color: library.tracks.isEmpty ? DS.Color.inkFaint : DS.Color.powerText) { EmptyView() }
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain).disabled(library.tracks.isEmpty)
         }
     }
 }

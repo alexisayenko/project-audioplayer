@@ -40,6 +40,30 @@ struct MenuButton: View {
     }
 }
 
+/// Fires its action when the touch lands; a release after that is ignored, while accessibility activation (no touch) still fires it.
+private struct TouchDownButton<Label: View>: View {
+    let action: () -> Void
+    @ViewBuilder let label: () -> Label
+    @State private var firedOnPress = false
+
+    var body: some View {
+        Button {
+            if firedOnPress { firedOnPress = false } else { action() }
+        } label: { label() }
+            .buttonStyle(TouchDownStyle { firedOnPress = true; action() })
+    }
+}
+
+private struct TouchDownStyle: ButtonStyle {
+    let onPress: () -> Void
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .opacity(configuration.isPressed ? 0.6 : 1)
+            .onChange(of: configuration.isPressed) { _, pressed in if pressed { onPress() } }
+    }
+}
+
 /// Left panel with the main menu: a scrim plus a surface slab sliding in from the leading edge.
 struct SideDrawer: View {
     let open: Bool
@@ -49,8 +73,10 @@ struct SideDrawer: View {
 
     @ObservedObject private var auth = AuthService.shared
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicType
     @AccessibilityFocusState private var titleFocused: Bool
-    @ScaledMetric(relativeTo: .title3) private var icon: CGFloat = 22
+    @ScaledMetric(relativeTo: .title3) private var icon: CGFloat = DS.Icon.iconNavLg
+    @ScaledMetric(relativeTo: .title3) private var iconFrame: CGFloat = DS.Component.navIconFrame
     @ScaledMetric(relativeTo: .title3) private var logo: CGFloat = 42
 
     var body: some View {
@@ -63,7 +89,7 @@ struct SideDrawer: View {
                         .accessibilityLabel("Close menu")
                         .transition(.opacity)
                     panel
-                        .frame(width: min(geo.size.width * 0.8, 320))
+                        .frame(width: min(geo.size.width * 0.75, 320))
                         .transition(.move(edge: .leading))
                         .zIndex(1)
                 }
@@ -77,28 +103,30 @@ struct SideDrawer: View {
 
     private var panel: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: DS.Space.space2) {
-                HStack(spacing: DS.Space.space3) {
+            VStack(alignment: .leading, spacing: 0) {
+                let layout = dynamicType.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: DS.Space.space3)) : AnyLayout(HStackLayout(spacing: DS.Space.space3))
+                layout {
                     Image("DrawerLogo").resizable().scaledToFit()
                         .frame(width: logo, height: logo)
                         .clipShape(RoundedRectangle(cornerRadius: DS.Radius.radiusSm, style: .continuous))
                         .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 0) {
-                        Text("Electrophone").font(T.title).foregroundStyle(DS.Color.ink)
+                        Text("Electrophone").font(T.title.weight(.semibold)).foregroundStyle(DS.Color.ink)
+                            .lineLimit(1).minimumScaleFactor(0.6)
                             .accessibilityAddTraits(.isHeader)
                             .accessibilityFocused($titleFocused)
-                        Text("Offline music player").dsCaption()
+                        Text("Offline music player").font(T.subhead).foregroundStyle(DS.Color.inkMuted)
                     }
                 }
-                .padding(.horizontal, DS.Space.space3).padding(.bottom, DS.Space.space4)
+                .padding(.horizontal, DS.Space.space6).padding(.bottom, DS.Space.space6)
                 ForEach(AppTab.allCases, id: \.self) { item($0) }
             }
-            .padding(DS.Space.space4)
+            .padding(.horizontal, DS.Space.space3).padding(.vertical, DS.Space.space4)
         }
         .safeAreaInset(edge: .bottom, spacing: 0) { account }
         .background(
             UnevenRoundedRectangle(bottomTrailingRadius: DS.Radius.radiusTray, topTrailingRadius: DS.Radius.radiusTray, style: .continuous)
-                .fill(DS.Color.surface).shadow(color: DS.Color.vinyl.opacity(0.3), radius: 12, x: 4).ignoresSafeArea()
+                .fill(DS.Color.surface).dsShadow(DS.Shadow.depthDrawer).ignoresSafeArea()
         )
         .accessibilityElement(children: .contain)
         .accessibilityAddTraits(.isModal)
@@ -107,35 +135,43 @@ struct SideDrawer: View {
         .task { try? await Task.sleep(for: .milliseconds(150)); titleFocused = true }
     }
 
+        private func row(symbol: String, label: String, active: Bool = false, lines: Int = 2) -> some View {
+        HStack(spacing: DS.Space.space3) {
+            Image(systemName: symbol).symbolRenderingMode(.monochrome)
+                .font(.system(size: icon, weight: DS.Icon.iconWeight))
+                .foregroundStyle(active ? DS.Color.selectInk : DS.Color.inkMuted)
+                .frame(width: iconFrame)
+            Text(label).font(T.body.weight(active ? .semibold : .medium))
+                .foregroundStyle(active ? DS.Color.selectInk : DS.Color.ink)
+                .lineLimit(lines).truncationMode(.middle)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, DS.Space.space3)
+        .frame(maxWidth: .infinity, minHeight: DS.Component.navRowHeight, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: DS.Radius.radiusSelect, style: .continuous)
+            .fill(active ? DS.Color.selectTint : Color.clear)
+            .padding(.vertical, DS.Space.space1))
+        .contentShape(Rectangle())
+    }
+
     private func item(_ tab: AppTab) -> some View {
         let active = tab == selection
-        return Button { select(tab) } label: {
-            HStack(spacing: DS.Space.space3) {
-                Image(systemName: tab.symbol).font(.system(size: icon, weight: active ? .semibold : .regular))
-                    .foregroundStyle(active ? DS.Color.accent : DS.Color.inkMuted)
-                    .frame(width: icon * 1.4)
-                Text(tab.title).font(T.headline).foregroundStyle(active ? DS.Color.accentInk : DS.Color.ink)
-                Spacer(minLength: 0)
-            }
-            .padding(.horizontal, DS.Space.space3)
-            .frame(maxWidth: .infinity, minHeight: DS.Space.hit + DS.Space.space2, alignment: .leading)
-            .background(RoundedRectangle(cornerRadius: DS.Radius.radiusCard, style: .continuous)
-                .fill(active ? DS.Color.accentTint : Color.clear))
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(tab.title)
-        .accessibilityAddTraits(active ? [.isSelected, .isButton] : .isButton)
+        return TouchDownButton(action: { select(tab) }) { row(symbol: tab.symbol, label: tab.title, active: active) }
+            .accessibilityLabel(tab.title)
+            .accessibilityAddTraits(active ? [.isSelected, .isButton] : .isButton)
     }
 
     private var account: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Rectangle().fill(DS.Color.line).frame(height: 1)
-            Text(auth.session.map { $0.email ?? "Signed in" } ?? "Not signed in").dsCaption()
-                .lineLimit(1).truncationMode(.middle)
-                .frame(maxWidth: .infinity, minHeight: DS.Space.hit, alignment: .leading)
-                .padding(.horizontal, DS.Space.space4)
+        let email = auth.session.map { $0.email ?? "Signed in" }
+        return VStack(alignment: .leading, spacing: DS.Space.space2) {
+            Rectangle().fill(DS.Color.line).frame(height: DS.Stroke.strokeHairline)
+                .padding(.horizontal, DS.Space.space6)
+            TouchDownButton(action: { select(.settings) }) {
+                row(symbol: "person.crop.circle", label: email ?? "Sign in", lines: 1)
+            }
+            .accessibilityLabel(email.map { "Account, \($0)" } ?? "Sign in")
+            .accessibilityAddTraits(.isButton)
         }
-        .accessibilityElement(children: .combine)
+        .padding(.horizontal, DS.Space.space3).padding(.top, DS.Space.space2).padding(.bottom, DS.Space.space2)
     }
 }

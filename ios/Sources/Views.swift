@@ -14,7 +14,7 @@ enum AppTab: Hashable, CaseIterable {
     }
     var symbol: String {
         switch self {
-        case .playback: "play"
+        case .playback: "waveform"
         case .library: "books.vertical"
         case .playlists: "music.note.list"
         case .statistics: "chart.xyaxis.line"
