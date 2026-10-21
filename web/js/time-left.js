@@ -30,6 +30,19 @@ export function setTimeLeft(on) {
   for (const fn of listeners) fn(showLeft);
 }
 
+export const DEFAULT_ELAPSED_CH = 6;
+
+export function elapsedWidthCh(durText) {
+  const t = typeof durText === 'string' ? durText.trim() : '';
+  if (!t) return DEFAULT_ELAPSED_CH;
+  return t.length + 1;
+}
+
+export function fitElapsed(btn, durText, known = true) {
+  const w = `${known ? elapsedWidthCh(durText) : DEFAULT_ELAPSED_CH}ch`;
+  if (btn.style.minWidth !== w) btn.style.minWidth = w;
+}
+
 export function paintElapsed(btn, elapsedText, remainingText) {
   const left = showLeft && remainingText != null;
   btn.textContent = left ? remainingText : elapsedText;

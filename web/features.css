@@ -13,10 +13,12 @@
 .ft-rel:last-child { padding-bottom: 0; }
 .ft-head { margin: 0 0 var(--space-2); color: var(--ink-muted); }
 .ft-hash { font-family: var(--font-mono); }
-.ft-items { display: grid; gap: var(--space-2); margin: 0; padding-left: var(--space-5); }
-.ft-item { color: var(--ink); overflow-wrap: anywhere; }
-.ft-task { color: var(--accent-ink); font-family: var(--font-mono); white-space: nowrap; }
-.ft-plan { display: grid; gap: var(--space-1); }
+.ft-items { display: grid; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+.ft-item { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-3); align-items: baseline; color: var(--ink); overflow-wrap: anywhere; }
+.ft-task { display: block; width: 9ch; color: var(--accent-ink); font-family: var(--font-mono); white-space: nowrap; }
+.ft-text, .ft-pbody { min-width: 0; }
+.ft-plan { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-3); align-items: baseline; }
+.ft-pbody { display: grid; gap: var(--space-1); }
 .ft-ptitle { color: var(--ink); overflow-wrap: anywhere; }
 .ft-pmeta { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2); }
 .ft-tag { padding: 0 var(--space-2); border: var(--stroke-hairline) solid var(--line); border-radius: var(--radius-pill); }

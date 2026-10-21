@@ -33,7 +33,7 @@ const taskLink = (id) => el('a', { class: 'ft-task', href: `${TASK_URL}${id}.md`
 export function releaseBlock(r) {
   return el('li', { class: 'ft-rel' },
     el('ul', { class: 'ft-items' }, ...r.items.map((i) =>
-      el('li', { class: 'ft-item t-body' }, i.text, i.task ? [' ', taskLink(i.task)] : null))));
+      el('li', { class: 'ft-item t-body' }, i.task ? taskLink(i.task) : el('span', { class: 'ft-task', 'aria-hidden': 'true' }), el('span', { class: 'ft-text' }, i.text)))));
 }
 
 export function groupDays(releases) {
@@ -57,9 +57,10 @@ export function dayBlock(day) {
 
 export function plannedRow(t) {
   return el('li', { class: 'ft-plan' },
-    el('span', { class: 'ft-ptitle t-body' }, t.title || t.id),
-    el('span', { class: 'ft-pmeta t-caption muted' },
-      taskLink(t.id), ...(t.tags || []).map((g) => el('span', { class: 'ft-tag' }, g))));
+    taskLink(t.id),
+    el('div', { class: 'ft-pbody' },
+      el('span', { class: 'ft-ptitle t-body' }, t.title || t.id),
+      el('span', { class: 'ft-pmeta t-caption muted' }, ...(t.tags || []).map((g) => el('span', { class: 'ft-tag' }, g)))));
 }
 
 function releasesPanel(releases, unavailable) {

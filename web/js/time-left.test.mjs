@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { fmtRemaining, fmtRemainingClock } from './time-left.js';
+import { fmtRemaining, fmtRemainingClock, elapsedWidthCh } from './time-left.js';
 
 test('remaining time rounds up so -0:00 appears only at the end', () => {
   assert.equal(fmtRemaining(221, 256), '-0:35');
@@ -26,4 +26,12 @@ test('studio clock remaining keeps tenths and rounds up', () => {
   assert.equal(fmtRemainingClock(1.23, 10), '-0:08.8');
   assert.equal(fmtRemainingClock(0, 75.5), '-1:15.5');
   assert.equal(fmtRemainingClock(10, 10), '-0:00.0');
+});
+
+test('elapsed width fits the longest value plus the minus sign', () => {
+  assert.equal(elapsedWidthCh('3:33'), 5);
+  assert.equal(elapsedWidthCh('1:02:03'), 8);
+  assert.equal(elapsedWidthCh('3:33.0'), 7);
+  assert.equal(elapsedWidthCh(''), 6);
+  assert.equal(elapsedWidthCh(undefined), 6);
 });

@@ -6,7 +6,7 @@ import { hasAudio } from './playable.js';
 import { can } from './guest.js';
 import { titleLine, artistLine } from './credits.js';
 import { fmtClock, parseClock, validRegion } from './loop-engine.js';
-import { fmtRemainingClock, paintElapsed, elapsedButton, onTimeLeftChange } from './time-left.js';
+import { fmtRemainingClock, paintElapsed, fitElapsed, elapsedButton, onTimeLeftChange } from './time-left.js';
 import { loadPeaks, drawPeaks, sizeCanvas, xToTime, timeToX } from './peaks.js';
 import { loopsOf, addLoop, renameLoop, removeLoop, sameRegion, MAX_LOOPS, MAX_NAME, FULL_TEXT } from './loops-model.js';
 
@@ -108,6 +108,7 @@ export function renderStudio(root, env = {}) {
     if (!parts) return;
     const dur = duration();
     paintElapsed(parts.elapsed, fmtClock(t), fmtRemainingClock(t, dur));
+    fitElapsed(parts.elapsed, fmtClock(dur), Number.isFinite(dur) && dur > 0);
     parts.dur.textContent = ` / ${fmtClock(dur)}`;
   }
 
@@ -360,6 +361,7 @@ export function renderStudio(root, env = {}) {
     const durText = el('span', {}, ' / 0:00.0');
     const clock = el('span', { class: 't-time stu-clock' }, elapsed, durText);
     paintElapsed(elapsed, '0:00.0', null);
+    fitElapsed(elapsed, '', false);
     const toggleText = el('span', {}, 'Loop off');
     const toggle = el('button', { class: 'btn outline small stu-toggle', type: 'button', 'aria-pressed': 'false', onclick: toggleLoop }, icon('repeat', 'action'), toggleText);
     const hint = el('span', { class: 'stu-hint muted t-caption' });

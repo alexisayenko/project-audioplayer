@@ -18,6 +18,47 @@
     "^jazz colou?r"
   ],
   "items": {
+    "0093b93": [
+      { "text": "Time readout: the elapsed part toggles to time left", "task": null }
+    ],
+    "220df48": [
+      { "text": "Songs keep their sources; a download can be trimmed, with migration of old songs", "task": "task-0045" },
+      { "text": "Trimmed download and re-download", "task": "task-0045" },
+      { "text": "Add and Edit: Advanced Start and End fields", "task": "task-0045" },
+      { "text": "Fades in Settings are a percent of the song length", "task": "task-0053" },
+      { "text": "Statistics page with Songs, Listening and Genres tabs", "task": "task-0056" },
+      { "text": "Shuffle plays the least-played songs first, in tiers", "task": "task-0056" },
+      { "text": "Studio: compact loop controls", "task": "task-0072" }
+    ],
+    "3913e72": [],
+    "6212b04": [
+      { "text": "Status dot on the logo", "task": null },
+      { "text": "View in Library and values-only popovers on the song title parts", "task": "task-0062" },
+      { "text": "Song card: no country, a Genre caption", "task": null }
+    ],
+    "3d6a438": [
+      { "text": "Cover dialog: covers from Wikipedia and Discogs", "task": "task-0054" }
+    ],
+    "60a141d": [
+      { "text": "Change a song's cover from the song card", "task": "task-0054" },
+      { "text": "Library: Stats column", "task": "task-0056" }
+    ],
+    "3663be1": [
+      { "text": "Genre map: outrun under synthwave, with Rate Your Music and Wikipedia links", "task": "task-0076" }
+    ],
+    "913ef24": [
+      { "text": "Playback position is remembered across reloads", "task": "task-0056" },
+      { "text": "Library table view with listening stats", "task": "task-0056" }
+    ],
+    "cff72bc": [
+      { "text": "A notice when a newer version of the app is available", "task": "task-0081" }
+    ],
+    "db39688": [],
+    "9e7a41c": [
+      { "text": "Library: sort by length and a reverse order toggle", "task": "task-0056" }
+    ],
+    "0038131": [],
+    "a5e1f7d": [],
     "f8d6c0e": [
       {
         "text": "Live BPM: the BPM badge on the song card is a toggle",

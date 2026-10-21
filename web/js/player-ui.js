@@ -2,7 +2,7 @@ import { api } from './api.js';
 import { store } from './store.js';
 import { hasAudio } from './playable.js';
 import { el, fmtTime } from './dom.js';
-import { fmtRemaining, paintElapsed, bindElapsed, onTimeLeftChange } from './time-left.js';
+import { fmtRemaining, paintElapsed, fitElapsed, bindElapsed, onTimeLeftChange } from './time-left.js';
 import { icon } from './icons.js';
 import { storeGet, storeSet } from './storage.js';
 import { openMenu } from './menu.js';
@@ -131,6 +131,7 @@ let lastTimes = [0, NaN];
 export function paintTimes(cur, dur) {
   lastTimes = [cur, dur];
   paintElapsed($('mini-elapsed'), fmtTime(cur), fmtRemaining(cur, dur));
+  fitElapsed($('mini-elapsed'), fmtTime(dur), Number.isFinite(dur) && dur > 0);
   $('mini-dur').textContent = ` / ${fmtTime(dur)}`;
 }
 

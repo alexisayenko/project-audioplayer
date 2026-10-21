@@ -54,7 +54,11 @@ test('a task link opens the task file on GitHub in a new tab; no task, no link',
   assert.equal(a.getAttribute('target'), '_blank');
   assert.equal(a.getAttribute('rel'), 'noopener');
   assert.equal(items[1].querySelector('a'), null);
-  assert.ok(items[0].textContent.startsWith('Newer one'));
+  assert.equal(items[0].firstElementChild, a);
+  assert.ok(items[0].textContent.startsWith('task-0063'));
+  assert.equal(items[0].querySelector('.ft-text').textContent, 'Newer one');
+  assert.equal(items[1].firstElementChild.className, 'ft-task');
+  assert.equal(items[1].firstElementChild.textContent, '');
 });
 
 test('date with a time part is cut to the day', async () => {
@@ -72,6 +76,7 @@ test('planned tab holds only to do tasks, newest id first, with title, id, tags,
   assert.equal(rows[0].querySelector('a').getAttribute('href'), `${TASK_URL}task-0070.md`);
   assert.deepEqual([...rows[0].querySelectorAll('.ft-tag')].map((n) => n.textContent), ['web', 'audio']);
   assert.equal(rows[1].querySelector('a').textContent, 'task-0010');
+  assert.equal(rows[0].firstElementChild, rows[0].querySelector('a'));
 });
 
 test('in progress tab: its own list, newest id first, empty state', async () => {

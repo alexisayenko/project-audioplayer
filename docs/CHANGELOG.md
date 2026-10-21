@@ -2,6 +2,23 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-21 (time readout no longer jerks, web, to deploy)
+
+- Web: the dock and Studio time readouts shifted sideways when digits or the minus sign changed ("9:59" to "10:00", "-2:12" vs "1:12"); the elapsed button now has a fixed minimum width in `ch` fitted to the longest value for the song (duration length plus one for the minus sign, 6 ch while unknown), right-aligned, with tabular numerals and no wrapping (PLY-185). Not seen in a browser; tests not run.
+
+## 2026-10-21 (Statistics Listening: most listened by count, web, to deploy)
+
+- Web (STA-060): "Most listened" ranks by how many times a song was listened to (`listened.all`, ties by listened time) and shows "12 times" instead of the time. Not run, not seen.
+
+## 2026-10-21 (Features: task link at the start of the line, curated recent items, web, to deploy)
+
+- Web (task-0068, WEB-135, WEB-136): on the Features page the `task-00NN` link moves to the start of each line in a fixed-width monospace column (empty placeholder when there is no task); the same on Planned and In progress. Not seen in a browser; tests adjusted, not run.
+- Data: `docs/releases-map.json` gets curated items for the commits since 3d6a438 (no more lines cut with "..."); regression-fix commits are hidden with empty lists.
+
+## 2026-10-21 (task statuses, docs, to deploy)
+
+- Task statuses 0045 and 0054 updated (to deploy).
+
 ## 2026-10-21 (time readouts: no selection, elapsed toggles to time left, web, to deploy)
 
 - Web: the dock time and the Studio clock can no longer be text-selected and show a default pointer; the elapsed part is a button that swaps to the time left ("-0:35", the same on both, kept in `ap2.timeLeft`) and back; unknown duration stays on elapsed (PLY-185). Written, not run or seen in a browser.

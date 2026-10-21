@@ -12,16 +12,18 @@ export function formatHm(seconds) {
   return m ? `${h} h ${m} min` : `${h} h`;
 }
 
-function top(data, songs, valueOf) {
+function top(data, songs, valueOf, tieOf) {
   const byId = new Map(songs.map((s) => [s.id, s]));
   return Object.entries(data?.songs || {})
-    .map(([id, e]) => ({ song: byId.get(id), value: valueOf(e) || 0 }))
+    .map(([id, e]) => ({ song: byId.get(id), value: valueOf(e) || 0, tie: tieOf ? tieOf(e) || 0 : 0 }))
     .filter((r) => r.song && r.value > 0)
-    .sort((a, b) => b.value - a.value)
+    .sort((a, b) => b.value - a.value || b.tie - a.tie || String(a.song.title || '').localeCompare(String(b.song.title || '')))
     .slice(0, TOP_N);
 }
 
-export const topListened = (data, songs) => top(data, songs, (e) => e.total_listened_s);
+export const formatTimes = (n) => `${n} ${plural(n, 'time', 'times')}`;
+
+export const topListened = (data, songs) => top(data, songs, (e) => e.listened?.all, (e) => e.total_listened_s);
 export const topSkipped = (data, songs) => top(data, songs, (e) => e.skipped?.all);
 
 export const hasListeningData = (data, songs) => topListened(data, songs).length > 0 || topSkipped(data, songs).length > 0;
@@ -42,6 +44,6 @@ function block(title, rows, label, onOpen) {
 export function renderListening(data, songs, onOpen) {
   if (!hasListeningData(data, songs)) return el('p', { class: 'st-empty-inline t-subhead muted' }, EMPTY_LISTENING);
   return el('div', { class: 'st-lis' },
-    block('Most listened', topListened(data, songs), formatHm, onOpen),
+    block('Most listened', topListened(data, songs), formatTimes, onOpen),
     block('Most skipped', topSkipped(data, songs), (n) => `${n} ${plural(n, 'skip', 'skips')}`, onOpen));
 }
