@@ -2,6 +2,14 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-21 (iOS build 20261026: local library, drawer, offline covers; server and web: public view off, anonymous downloads; iOS uploaded, server and web NOT deployed)
+
+- iOS (TestFlight build 20261026): signed out, the app keeps a local library only (no guest mode) and can add a song from a pasted link anonymously.
+- iOS: left menu drawer with Playlists and Statistics; Share link; covers kept offline; "Download all"; "Open in Files" with readable file names; smoother scrolling; free space and format notes. Not yet tested on a device.
+- Server and web (committed, not deployed): the public read-only view is off by default and signed-out visitors get a sign-in screen (ADR-0018 switched off).
+- Server (committed, not deployed): anonymous downloads staged temporarily, built for the signed-out iOS add; sign-in failure logging.
+- Cloudflare: scanner rules added.
+
 ## 2026-10-21 (time readout no longer jerks, web, to deploy)
 
 - Web: the dock and Studio time readouts shifted sideways when digits or the minus sign changed ("9:59" to "10:00", "-2:12" vs "1:12"); the elapsed button now has a fixed minimum width in `ch` fitted to the longest value for the song (duration length plus one for the minus sign, 6 ch while unknown), right-aligned, with tabular numerals and no wrapping (PLY-185). Not seen in a browser; tests not run.
@@ -963,7 +971,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 - Web: "Play all N" button on the Library sort bar (LIB-092).
 - Web and server: "Download" saves a song as `Artist - Title.m4a` via `GET /files/{id}?download=1` (WEB-034, API-061).
 - Server and web: MusicBrainz and Discogs icons in the song link row, `musicbrainz_url` stored on the song; "mashup" and "mixed by" are cut like "remix".
-- iOS: TestFlight builds 20261020 to 20261025 (latest 20261025).
+- iOS: TestFlight builds 20261020 to 20261026 (latest 20261026).
 
 ## 2026-10-13
 
