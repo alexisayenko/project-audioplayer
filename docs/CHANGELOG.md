@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-22 (web shuffle, to deploy)
+
+- Web: the shuffle order is built after the play counts have loaded (1.5 s timeout, rebuilt when they arrive) and Play all starts from the lowest-played tier, so recently played songs no longer come back while unplayed ones exist (PLY-178).
+
 ## 2026-10-21 (iOS build 20261027: refined drawer, Settings hierarchy, new icon and logo; iOS uploaded, server and web NOT deployed)
 
 - iOS (TestFlight build 20261027): refined menu drawer (75% width, select tint, selection on touch-down); Settings hierarchy with free-space and format notes; new app icon (full-bleed glass plate) and vinyl logo. Not yet tested on a device. The signed-out Add flow needs the server deploy.

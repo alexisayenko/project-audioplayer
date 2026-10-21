@@ -44,6 +44,10 @@ export function cachedListening() {
   return cache;
 }
 
+export function listeningStale(now = Date.now()) {
+  return !cache || now - stamp >= TTL_MS;
+}
+
 export function invalidateListening() {
   stamp = -Infinity;
   version += 1;

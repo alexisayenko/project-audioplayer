@@ -23,7 +23,7 @@ import { createPlayRecorder } from './play-recorder.js';
 import { createQueueFollow } from './queue-follow.js';
 import { createMediaRetry } from './media-retry.js';
 import { openSongCard, openTagPicker, loadUi } from './lazy-ui.js';
-import { cachedListening, getListening } from './listening-stats.js';
+import { cachedListening, getListening, listeningStale } from './listening-stats.js';
 import { createShuffleRank, countsFromListening, localPlayCounts, mergeCounts } from './shuffle-pick.js';
 import { createLoop } from './loop-engine.js';
 import { createGapless } from './gapless-loop.js';
@@ -96,6 +96,31 @@ const shuffleRank = createShuffleRank({
     return mergeCounts(server, localPlayCounts(r.plays, Date.now(), r.open));
   },
 });
+const COUNTS_WAIT_MS = 1500;
+const COUNTS_RETRY_MS = 30000;
+let countsMissAt = -Infinity;
+let startToken = 0;
+let advancing = false;
+
+function warmCounts() {
+  if (shuffle && !isGuest()) getListening().catch(() => {});
+}
+
+function countsWait(roundStart) {
+  if (!shuffle || isGuest()) return null;
+  const now = Date.now();
+  if (!cachedListening() && now - countsMissAt < COUNTS_RETRY_MS) return null;
+  if (cachedListening() && !(roundStart && listeningStale(now))) return null;
+  const timeout = new Promise((resolve) => setTimeout(() => resolve(false), COUNTS_WAIT_MS));
+  const load = getListening().then(() => true, () => false);
+  return Promise.race([load, timeout]).then((ok) => { if (!ok && !cachedListening()) countsMissAt = Date.now(); });
+}
+
+function roundStarts() {
+  const cur = player.currentId;
+  return !played.length || ids().every((id) => id === cur || played.includes(id));
+}
+
 const logic = () => ({ queue: ids(), index: qs.index, shuffle, repeat, played, shuffleRank });
 
 function saveQueue() {
@@ -112,6 +137,7 @@ function restore() {
     qs = Q.parseSaved(JSON.parse(storeGet(QUEUE_KEY) || 'null'));
     pendingRestore = qs.items.length > 0;
     shuffle = storeGet(SHUFFLE_KEY) === '1';
+    warmCounts();
     const r = storeGet(REPEAT_KEY);
     repeat = ['off', 'all', 'one'].includes(r) ? r : 'off';
   } catch { /* corrupt or unavailable: start empty */ }
@@ -203,14 +229,27 @@ export const player = {
 
   playListed(songs, tags) {
     const playable = songs.filter(canQueue);
-    const r = Q.playListed(qs, playable, tags, shuffle);
+    const r = Q.playListed(qs, playable, tags, false);
     if (!r.count) return { count: 0, skipped: songs.length, replaced: false };
-    played = [];
-    history = [];
-    qs = r.state;
-    saveQueue();
-    load(true);
-    syncDownloads();
+    const token = ++startToken;
+    const wasShuffle = shuffle;
+    const begin = () => {
+      if (token !== startToken) return;
+      let state = r.state;
+      if (wasShuffle) {
+        const order = state.items.map((it) => it.id);
+        const rank = shuffleRank(order, true);
+        state = { ...state, index: Math.max(0, order.findIndex((id) => rank.get(id) === 0)) };
+      }
+      played = [];
+      history = [];
+      qs = state;
+      saveQueue();
+      load(true);
+      syncDownloads();
+    };
+    const wait = countsWait(true);
+    if (wait) wait.then(begin); else begin();
     return { count: r.count, skipped: songs.length - playable.length, replaced: r.replaced, fetching: pendingDownloads() };
   },
 
@@ -263,6 +302,7 @@ export const player = {
     shuffle = !!on;
     played = [];
     history = [];
+    warmCounts();
     savePrefs();
     render();
   },
@@ -301,6 +341,18 @@ export const player = {
   },
 
   next(auto = false) {
+    if (advancing) return;
+    const wait = countsWait(roundStarts());
+    if (!wait) { player.advance(auto); return; }
+    advancing = true;
+    const from = player.currentId;
+    wait.then(() => {
+      advancing = false;
+      if (player.currentId === from) player.advance(auto);
+    });
+  },
+
+  advance(auto = false) {
     if (!autoDownloadOn()) {
       const step = Q.nextPlayable({ ...logic(), played }, !auto, hasAudioId, false);
       if (!step) { toast(shuffle ? 'No downloaded songs to shuffle' : 'No more downloaded songs in the playlist'); render(); return; }
