@@ -8,6 +8,8 @@ export const BATCH_MAX = 200;
 export const QUEUE_KEY = 'ap2.plays.queue';
 export const BATCH_KEY = 'ap2.plays.batch';
 export const OPEN_KEY = 'ap2.plays.open';
+export const LAST_KEY = 'ap2.plays.last';
+export const CONT_WINDOW_MS = 600000;
 
 const DROP_STATUSES = new Set([400, 404, 409, 410, 413, 422]);
 
@@ -51,7 +53,9 @@ export function createPlayRecorder({
 
   function enqueue(play) {
     if (play.listened_s < MIN_PLAY_S) return;
-    saveQueue([...loadQueue(), { timestamp: play.timestamp, song_id: play.song_id, listened_s: Math.round(play.listened_s * 10) / 10 }]);
+    const rec = { timestamp: play.timestamp, song_id: play.song_id, listened_s: Math.round(play.listened_s * 10) / 10 };
+    if (play.cont === true) rec.cont = true;
+    saveQueue([...loadQueue(), rec]);
   }
 
   function recover() {
@@ -67,6 +71,9 @@ export function createPlayRecorder({
   function begin(id) {
     if (!id || !canRecord()) return;
     open = { timestamp: now().toISOString(), song_id: id, listened_s: 0 };
+    const last = readJson(LAST_KEY, null);
+    storeRemove(LAST_KEY);
+    if (last && last.song_id === id && now().getTime() - last.at <= CONT_WINDOW_MS) open.cont = true;
     lastT = null;
   }
 
@@ -76,13 +83,14 @@ export function createPlayRecorder({
     open = null;
     lastT = null;
     storeRemove(OPEN_KEY);
+    storeRemove(LAST_KEY);
     enqueue(play);
     return play.listened_s >= MIN_PLAY_S;
   }
 
   function sync() {
     const id = getSongId();
-    if (open && open.song_id !== id) {
+    if (open && id && open.song_id !== id) {
       end();
       flush();
     }
@@ -137,12 +145,24 @@ export function createPlayRecorder({
     flush();
   };
   const onSeek = () => { lastT = null; };
-  const hide = () => {
+  const onHidden = () => {
     tick();
-    end();
+    persistOpen();
     flush({ keepalive: true });
   };
-  const onVisibility = () => { if (doc?.visibilityState === 'hidden') hide(); };
+  const onPageHide = () => {
+    tick();
+    if (open && open.listened_s >= MIN_PLAY_S) {
+      const closed = open;
+      enqueue(closed);
+      storeRemove(OPEN_KEY);
+      storeSet(LAST_KEY, JSON.stringify({ song_id: closed.song_id, at: now().getTime() }));
+      open = { timestamp: now().toISOString(), song_id: closed.song_id, listened_s: 0, cont: true };
+      lastT = null;
+    }
+    flush({ keepalive: true });
+  };
+  const onVisibility = () => { if (doc?.visibilityState === 'hidden') onHidden(); };
 
   audio.addEventListener('play', onPlay);
   audio.addEventListener('playing', onPlay);
@@ -152,7 +172,7 @@ export function createPlayRecorder({
   audio.addEventListener('seeking', onSeek);
   audio.addEventListener('seeked', onSeek);
   doc?.addEventListener('visibilitychange', onVisibility);
-  win?.addEventListener('pagehide', hide);
+  win?.addEventListener('pagehide', onPageHide);
   recover();
   timer = setInterval(() => { persistOpen(); flush(); }, intervalMs);
   timer?.unref?.();
@@ -172,7 +192,7 @@ export function createPlayRecorder({
       audio.removeEventListener('seeking', onSeek);
       audio.removeEventListener('seeked', onSeek);
       doc?.removeEventListener('visibilitychange', onVisibility);
-      win?.removeEventListener('pagehide', hide);
+      win?.removeEventListener('pagehide', onPageHide);
     },
   };
 }

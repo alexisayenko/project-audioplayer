@@ -138,6 +138,7 @@ class PlayIn(BaseModel):
     timestamp: str = Field(max_length=64)
     song_id: str = Field(max_length=64)
     listened_s: float
+    cont: bool = False
 
 
 class PlaysRequest(BaseModel):

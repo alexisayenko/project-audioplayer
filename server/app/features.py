@@ -23,6 +23,9 @@ EXCLUDE = (
     r"add(ed)? .* genre to", r"^genre data:", r"^.* removal$", r"reviewed extra", r"vocabulary rows",
 )
 TASK_REF = re.compile(r"\btask-(\d{4})\b")
+TASK_ID = re.compile(r"^task-d{4}$")
+HASH_KEY = re.compile(r"^[0-9a-f]{7,40}$")
+MAP_KEYS = {"exclude", "items"}
 TASK_FILE = re.compile(r"^docs/tasks/(task-\d{4})\.md$")
 PLANNED = "to do"
 IN_PROGRESS = "in progress"
@@ -99,7 +102,7 @@ def task_of(commit: dict[str, Any], tasks: dict[str, dict[str, Any]], release_fi
             return tid
     subject = commit["subject"].lower()
     for key, tid in rmap.items():
-        if key == "exclude":
+        if key in MAP_KEYS:
             continue
         if commit["sha"].startswith(key) or key.lower() in subject:
             return tid or None
@@ -117,6 +120,28 @@ def task_of(commit: dict[str, Any], tasks: dict[str, dict[str, Any]], release_fi
     return best(commit["files"], 1) or best(release_files, 2)
 
 
+def curated_items(rmap: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
+    """The valid part of the `items` table of the map file: {hash prefix of 7+ hex chars: [{text, task}]}; malformed keys, lists and entries are dropped."""
+    table = rmap.get("items") if isinstance(rmap, dict) else None
+    out: dict[str, list[dict[str, Any]]] = {}
+    if not isinstance(table, dict):
+        return out
+    for key, entries in table.items():
+        if not isinstance(key, str) or not HASH_KEY.match(key.lower()) or not isinstance(entries, list):
+            continue
+        good = []
+        for e in entries:
+            if not isinstance(e, dict) or not isinstance(e.get("text"), str) or not e["text"].strip():
+                continue
+            task = e.get("task")
+            if task is not None and not (isinstance(task, str) and TASK_ID.match(task)):
+                task = None
+            good.append({"text": e["text"].strip(), "task": task})
+        if good or not entries:
+            out[key.lower()] = good
+    return out
+
+
 def make_release(commits: list[dict[str, Any]], tasks: dict[str, Any], rmap: dict[str, str | None]) -> tuple[str, list[dict[str, Any]]] | None:
     """(full hash of the newest commit, items) of one release; None when it has no feature items."""
     if not commits:
@@ -125,12 +150,19 @@ def make_release(commits: list[dict[str, Any]], tasks: dict[str, Any], rmap: dic
     release_files = [f for c in ordered for f in c["files"]]
     items: list[dict[str, Any]] = []
     seen: set[str] = set()
+    curated = curated_items(rmap)
     for c in ordered:
-        text = clean_subject(c["subject"], rmap.get("exclude"))
-        if not text or text in seen:
-            continue
-        seen.add(text)
-        items.append({"text": text, "task": task_of(c, tasks, release_files, rmap)})
+        key = next((k for k in curated if c["sha"].startswith(k)), None)
+        if key is not None:
+            found = curated[key]
+        else:
+            text = clean_subject(c["subject"], rmap.get("exclude"))
+            found = [{"text": text, "task": task_of(c, tasks, release_files, rmap)}] if text else []
+        for item in found:
+            if item["text"] in seen:
+                continue
+            seen.add(item["text"])
+            items.append(dict(item))
     if not items:
         return None
     if len(items) > MAX_ITEMS:

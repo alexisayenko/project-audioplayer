@@ -94,3 +94,74 @@ def test_delete_user_removes_both(lib):
     plays.sync_once()
     plays.delete_user(uid())
     assert not plays.user_dir(uid()).exists() and not plays.repo_copy(uid()).exists()
+
+
+def lines_of(tmp_path):
+    return (tmp_path / "plays" / uid() / "play-history.csv").read_text().splitlines()
+
+
+def test_cont_merges_into_previous_record(lib, tmp_path):
+    post(lib, "k1", play(seconds=5, delta=timedelta(seconds=60)))
+    r = post(lib, "k2", {**play(seconds=2, delta=timedelta(seconds=55)), "cont": True})
+    assert r.json() == {"ok": True, "appended": 1, "duplicate": False, "ignored": 0}
+    lines = lines_of(tmp_path)
+    assert len(lines) == 2 and lines[1].endswith(f",{VID},7.0")
+    assert lib.get("/stats/listening", headers=H).json()["songs"][VID]["listened"]["all"] == 1
+
+
+def test_cont_without_match_appends_or_drops(lib, tmp_path):
+    r = post(lib, "k1", {**play(seconds=6), "cont": True}, {**play(seconds=1, delta=timedelta(hours=3)), "cont": True})
+    assert r.json()["appended"] == 1 and r.json()["ignored"] == 1
+    assert len(lines_of(tmp_path)) == 2
+
+
+def test_cont_far_gap_starts_new_record(lib, tmp_path):
+    post(lib, "k1", play(seconds=5, delta=timedelta(hours=2)))
+    post(lib, "k2", {**play(seconds=5), "cont": True})
+    assert len(lines_of(tmp_path)) == 3
+
+
+def test_cont_pieces_in_one_batch_merge(lib, tmp_path):
+    r = post(
+        lib, "k1",
+        play(seconds=5, delta=timedelta(seconds=60)),
+        {**play(seconds=1, delta=timedelta(seconds=55)), "cont": True},
+        {**play(seconds=1, delta=timedelta(seconds=54)), "cont": True},
+    )
+    assert r.json()["appended"] == 3
+    lines = lines_of(tmp_path)
+    assert len(lines) == 2 and lines[1].endswith(f",{VID},7.0")
+
+
+def day(seconds):
+    return datetime(2026, 10, 20, 12, 0, 0, tzinfo=UTC) + timedelta(seconds=seconds)
+
+
+def test_merge_fragments_joins_alexs_three_pieces():
+    rows = [(day(0), "s", 80.0), (day(80), "s", 80.0), (day(160), "s", 80.0)]
+    assert plays.merge_fragments(rows, {"s": 293.0}) == [(day(0), "s", 240.0)]
+    assert 240.0 < plays.LISTENED_THRESHOLD * 293.0
+
+
+def test_merge_fragments_keeps_skip_then_later_replay_apart():
+    rows = [(day(0), "s", 30.0), (day(30 + 121), "s", 200.0)]
+    assert plays.merge_fragments(rows, {"s": 293.0}) == rows
+
+
+def test_merge_fragments_keeps_finished_play_and_repeat_apart():
+    rows = [(day(0), "s", 280.0), (day(281), "s", 280.0)]
+    assert plays.merge_fragments(rows, {"s": 293.0}) == rows
+
+
+def test_merge_fragments_other_song_unknown_duration_and_order():
+    rows = [(day(0), "a", 50.0), (day(50), "b", 50.0), (day(100), "a", 50.0)]
+    assert plays.merge_fragments(rows, {"a": 293.0, "b": 293.0}) == rows
+    same = [(day(0), "u", 50.0), (day(50), "u", 50.0)]
+    assert plays.merge_fragments(same, {}) == same
+    back = [(day(100), "s", 50.0), (day(0), "s", 50.0)]
+    assert plays.merge_fragments(back, {"s": 293.0}) == back
+
+
+def test_merge_fragments_caps_the_sum():
+    rows = [(day(0), "s", 250.0), (day(250), "s", 250.0)]
+    assert plays.merge_fragments(rows, {"s": 293.0}) == [(day(0), "s", 322.3)]

@@ -108,6 +108,7 @@ const qsSet = { for: null, ids: new Set() };
 export const player = {
   loop,
   get current() { const it = qs.items[qs.index]; return it ? store.get(it.id) || null : null; },
+  get currentId() { return qs.items[qs.index]?.id ?? null; },
   get playing() { return !audio.paused; },
   onChange(fn) { listeners.add(fn); return () => listeners.delete(fn); },
 
@@ -552,7 +553,7 @@ export function initPlayer() {
   initLoopChip($('mini-loop'), loop);
   const recorder = createPlayRecorder({
     audio,
-    getSongId: () => player.current?.id ?? null,
+    getSongId: () => player.currentId,
     canRecord: () => !isGuest(),
     post: (batch, opts) => api.postPlays(batch, !!opts?.keepalive),
     onFlushed: () => window.dispatchEvent(new Event('plays-flushed')),

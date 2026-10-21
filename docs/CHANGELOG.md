@@ -2,6 +2,19 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-21 (play recorder split fix, web, to deploy)
+
+- Web (task-0056): one continuous listen was recorded as several short plays because every tab hide or screen lock closed the open play; hiding now keeps it open, and `pagehide` saves the seconds so far and continues with a `cont: true` record that the server merges. `web/js/play-recorder.js`, tests written, not run.
+
+## 2026-10-21 (listening continuation, server, to deploy)
+
+- Server (task-0056, API-196): `POST /plays` accepts `cont: true` and merges the piece into the previous record of the same song (within 15 minutes of its end) in place; `GET /stats/listening` repairs stored fragments of one listen (`plays.merge_fragments`). `server/app/plays.py`, `server/app/schemas.py`, `server/tests/test_plays.py` (not run).
+
+## 2026-10-21 (Features page, to deploy)
+
+- Web: Features page updated (to deploy): tasks 0073, 0074, 0075, 0077, 0078, 0079, 0080 marked done; Jazz colour data commit left out of the releases.
+- Server (task-0068, API-187): `docs/releases-map.json` accepts an `items` table of curated release lines per commit hash prefix (replaces the line generated from the commit; empty list hides it); lines written for the commits of 2026-10-20 and 2026-10-21 with long subjects. `server/app/features.py`, `server/tests/test_features.py` (not run).
+
 ## 2026-10-21 (Drafts import of YouTube playlists, web, to deploy)
 
 - Web (task-0080, LIB-200..205): a YouTube playlist link pasted into Drafts is resolved through `GET /youtube/playlist` and its videos are added as drafts in chunks of 10 with "Adding 12 of 87..." progress and Cancel; unavailable videos and ones already in Drafts or the Library are skipped and counted; friendly inline errors. Needs the server route. `web/js/drafts-import.js`, tests written, not run, not seen.

@@ -27,6 +27,8 @@ MARKER = ".last-sync"
 LISTENED_THRESHOLD = 0.9
 MIN_PLAY_S = 5.0
 MAX_BATCH = 500
+CONT_GAP_S = 900.0
+REPAIR_GAP_S = 120.0
 MAX_PLAY_S = 86400.0
 OVERRUN = 1.1
 KEEP_KEYS = 200
@@ -97,9 +99,46 @@ def _accept(raw: Any, songs: dict[str, dict[str, Any]]) -> tuple[str, str, float
     seconds = raw.get("listened_s")
     if when is None or song is None or isinstance(seconds, bool) or not isinstance(seconds, (int, float)) or not math.isfinite(seconds):
         return None
-    if seconds < MIN_PLAY_S:
+    cont = raw.get("cont") is True
+    if seconds < MIN_PLAY_S and not (cont and seconds > 0):
         return None
-    return stamp(when), song_id, round(min(float(seconds), _limit(song)), 1)
+    return when, song_id, round(min(float(seconds), _limit(song)), 1), cont
+
+
+def _continues(prev: list[Any], when: datetime, song_id: str) -> bool:
+    if prev[1] != song_id or when < prev[0]:
+        return False
+    return abs((when - prev[0]).total_seconds() - prev[2]) <= CONT_GAP_S
+
+
+def _last_record(text: str) -> list[Any] | None:
+    last = text.rstrip("\n").rsplit("\n", 1)[-1]
+    if not last or last.startswith(HEADER[0]):
+        return None
+    try:
+        row = next(csv.reader([last]))
+        when = parse_timestamp(row[0])
+        seconds = float(row[2])
+    except (StopIteration, IndexError, ValueError):
+        return None
+    if len(row) != 3 or when is None or not math.isfinite(seconds):
+        return None
+    return [when, row[1], seconds]
+
+
+def merge_fragments(rows: list[tuple[datetime, str, float]], durations: dict[str, float]) -> list[tuple[datetime, str, float]]:
+    """Read-side repair: consecutive records of one song that continue an unfinished play (previous under 0.9 x duration, gap at most 120 s, timestamps in order) become one record, the sum capped at 1.1 x duration."""
+    out: list[tuple[datetime, str, float]] = []
+    for when, song_id, seconds in rows:
+        duration = durations.get(song_id)
+        if out and duration:
+            prev_when, prev_id, prev_s = out[-1]
+            gap = (when - prev_when).total_seconds() - prev_s
+            if prev_id == song_id and when >= prev_when and prev_s < LISTENED_THRESHOLD * duration and gap <= REPAIR_GAP_S:
+                out[-1] = (prev_when, prev_id, round(min(prev_s + seconds, OVERRUN * duration), 1))
+                continue
+        out.append((when, song_id, seconds))
+    return out
 
 
 def _seen_keys(folder: Path) -> list[str]:
@@ -111,9 +150,9 @@ def _seen_keys(folder: Path) -> list[str]:
 
 
 def append(uid: str, batch_key: str, plays: list[Any]) -> dict[str, Any]:
-    """`{ok, appended, duplicate, ignored}`; a repeated batch key appends nothing."""
+    """`{ok, appended, duplicate, ignored}`; a repeated batch key appends nothing. A `cont` play joins the previous record of the same song (merged in place) when it starts within 15 minutes of that record's end; a merged play counts as appended."""
     songs = {s["id"]: s for s in deps.load_songs(uid)}
-    rows = [row for row in (_accept(p, songs) for p in plays[:MAX_BATCH]) if row]
+    items = [row for row in (_accept(p, songs) for p in plays[:MAX_BATCH]) if row]
     folder = user_dir(uid)
     with _lock(uid):
         keys = _seen_keys(folder)
@@ -122,18 +161,39 @@ def append(uid: str, batch_key: str, plays: list[Any]) -> dict[str, Any]:
         folder.mkdir(parents=True, exist_ok=True)
         path = folder / FILE
         fresh = not path.exists() or path.stat().st_size == 0
-        if rows or fresh:
-            buffer = io.StringIO()
-            writer = csv.writer(buffer, lineterminator="\n")
+        text = "" if fresh else path.read_text(encoding="utf-8")
+        stored = _last_record(text)
+        stored_edited = False
+        rows: list[list[Any]] = []
+        accepted = 0
+        for when, song_id, seconds, cont in items:
+            prev = rows[-1] if rows else stored
+            if cont and prev is not None and _continues(prev, when, song_id):
+                prev[2] = round(min(prev[2] + seconds, _limit(songs[song_id])), 1)
+                stored_edited = stored_edited or not rows
+                accepted += 1
+            elif seconds >= MIN_PLAY_S:
+                rows.append([when, song_id, seconds])
+                accepted += 1
+        lines = [[stamp(w), sid, sec] for w, sid, sec in rows]
+        buffer = io.StringIO()
+        writer = csv.writer(buffer, lineterminator="\n")
+        if stored_edited:
+            head = text.rstrip("\n").rsplit("\n", 1)[0]
+            writer.writerow([stamp(stored[0]), stored[1], stored[2]])
+            writer.writerows(lines)
+            write_bytes_atomic(path, (head + "\n" + buffer.getvalue()).encode("utf-8"))
+            _cache.pop(uid, None)
+        elif lines or fresh:
             if fresh:
                 writer.writerow(HEADER)
-            writer.writerows(rows)
+            writer.writerows(lines)
             with open(path, "a", encoding="utf-8", newline="") as f:
                 f.write(buffer.getvalue())
                 f.flush()
                 os.fsync(f.fileno())
         write_json_atomic(folder / KEYS_FILE, [*keys, batch_key][-KEEP_KEYS:], compact=True)
-    return {"ok": True, "appended": len(rows), "duplicate": False, "ignored": len(plays) - len(rows)}
+    return {"ok": True, "appended": accepted, "duplicate": False, "ignored": len(plays) - accepted}
 
 
 def _rows(uid: str) -> list[tuple[datetime, str, float]]:
@@ -179,7 +239,12 @@ def listening(uid: str, now: datetime | None = None) -> dict[str, Any]:
     edges = {"d7": now - timedelta(days=7), "d30": now - timedelta(days=30)}
     songs = {s["id"]: s for s in deps.load_songs(uid)}
     out: dict[str, dict[str, Any]] = {}
-    for when, song_id, seconds in _rows(uid):
+    durations = {
+        i: float(s["duration"])
+        for i, s in songs.items()
+        if isinstance(s.get("duration"), (int, float)) and not isinstance(s.get("duration"), bool) and s["duration"] > 0
+    }
+    for when, song_id, seconds in merge_fragments(_rows(uid), durations):
         song = songs.get(song_id)
         if song is None or when > now:
             continue

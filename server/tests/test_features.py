@@ -329,3 +329,45 @@ def test_deploys_on_the_same_date_become_one_release_with_merged_deduplicated_it
     out = gf.by_deploys(lambda p, h: ranges[(p, h)], deploys, {}, {})
     assert [(r["date"], r["hash"]) for r in out] == [("2026-10-21", "3333333"), ("2026-10-20", "2222222")]
     assert [i["text"] for i in out[1]["items"]] == ["Second", "Shared", "First"]
+
+
+def test_curated_items_replace_the_generated_item():
+    rmap = {"items": {"abcdef1": [{"text": "First thing", "task": "task-0061"}, {"text": "Second thing", "task": None}]}}
+    c = commit("abcdef1234", 19, "feat: a very long subject that would have been cut", hour=2)
+    other = commit("b", 19, "feat: other thing", hour=1)
+    items = gf.by_day([c, other], TASKS, rmap)[0]["items"]
+    assert items == [{"text": "First thing", "task": "task-0061"}, {"text": "Second thing", "task": None}, {"text": "Other thing", "task": None}]
+
+
+def test_curated_empty_list_hides_the_commit():
+    rmap = {"items": {"abcdef1": []}}
+    assert gf.by_day([commit("abcdef1234", 19, "feat: hidden thing")], {}, rmap) == []
+
+
+def test_malformed_curated_entries_are_ignored():
+    rmap = {"items": {"abc": [{"text": "short key"}], "zzzzzzz": [{"text": "not hex"}], "abcdef1": "oops", "abcdef2": [1, {"text": ""}, {"nope": 1}],
+                      "abcdef3": [{"text": "Kept", "task": "bad"}, {"text": "Kept too", "task": 5}]}}
+    table = gf.curated_items(rmap)
+    assert list(table) == ["abcdef3"] and table["abcdef3"] == [{"text": "Kept", "task": None}, {"text": "Kept too", "task": None}]
+    out = gf.by_day([commit("abcdef1234", 19, "feat: generated one"), commit("abcdef2345", 19, "feat: generated two", hour=13)], {}, rmap)
+    assert sorted(i["text"] for i in out[0]["items"]) == ["Generated one", "Generated two"]
+    for bad in ({"items": ["x"]}, {"items": None}, {"items": 3}):
+        assert gf.curated_items(bad) == {}
+        assert gf.by_day([commit("abcdef1234", 19, "feat: generated one")], {}, bad)[0]["items"][0]["text"] == "Generated one"
+
+
+def test_without_override_the_generated_item_is_unchanged():
+    out = gf.by_day([commit("abcdef1234", 19, "feat: plain thing task-0061")], TASKS, {"items": {"1234567": [{"text": "Elsewhere"}]}})
+    assert out[0]["items"] == [{"text": "Plain thing task-0061", "task": "task-0061"}]
+
+
+def test_items_key_is_not_read_as_a_task_keyword():
+    c = commit("abcdef1234", 19, "feat: the items shelf")
+    assert gf.task_of(c, TASKS, [], {"items": {"abcdef1": []}}) is None
+
+
+def test_map_file_items_are_valid_and_unique():
+    import pathlib
+    rmap = json.loads((pathlib.Path(__file__).resolve().parents[2] / "docs" / "releases-map.json").read_text(encoding="utf-8"))
+    assert len(gf.curated_items(rmap)) == len(rmap["items"])
+    assert all(len(i["text"]) <= 110 for v in rmap["items"].values() for i in v)

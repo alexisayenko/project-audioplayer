@@ -14,6 +14,121 @@
     "^genre data:",
     "^.* removal$",
     "reviewed extra",
-    "vocabulary rows"
-  ]
+    "vocabulary rows",
+    "^jazz colou?r"
+  ],
+  "items": {
+    "f8d6c0e": [
+      {
+        "text": "Live BPM: the BPM badge on the song card is a toggle",
+        "task": "task-0073"
+      },
+      {
+        "text": "Features lists one release per date",
+        "task": "task-0068"
+      }
+    ],
+    "28a1197": [
+      {
+        "text": "Genre map: each genre has its own colour",
+        "task": "task-0075"
+      },
+      {
+        "text": "Genre map: a dragged circle pulls its children and stays where you drop it",
+        "task": "task-0075"
+      },
+      {
+        "text": "Genre pages link to Wikipedia, Apple Music, Discogs and Rate Your Music",
+        "task": "task-0074"
+      }
+    ],
+    "266ef47": [
+      {
+        "text": "Gapless A-B loops",
+        "task": "task-0077"
+      },
+      {
+        "text": "Song stats: limits on the fields",
+        "task": "task-0078"
+      },
+      {
+        "text": "Genre map: Others and Hip Hop are white",
+        "task": null
+      },
+      {
+        "text": "Latin and Folk are no longer top-level genres",
+        "task": "task-0079"
+      }
+    ],
+    "e979ef3": [
+      {
+        "text": "Studio: waveform, A-B loop and saved loops, on the full page width",
+        "task": "task-0072"
+      },
+      {
+        "text": "Voiceless (SoundCloud) gets its genres",
+        "task": "task-0072"
+      }
+    ],
+    "0fce368": [
+      {
+        "text": "Listening statistics: plays are recorded, with a table on the song card",
+        "task": "task-0056"
+      },
+      {
+        "text": "Library filters: Never listened and Last listened",
+        "task": "task-0056"
+      },
+      {
+        "text": "Song stats: Listening view",
+        "task": "task-0056"
+      }
+    ],
+    "527bbdc": [
+      {
+        "text": "Import a YouTube playlist into Drafts, with progress",
+        "task": "task-0080"
+      }
+    ],
+    "f6275bc": [
+      {
+        "text": "The web app waits for the server and retries media that failed to load",
+        "task": null
+      },
+      {
+        "text": "Features screen: Releases, Planned and In progress tabs",
+        "task": "task-0068"
+      }
+    ],
+    "4bc15c4": [
+      {
+        "text": "Features screen with Releases and Planned tabs",
+        "task": "task-0068"
+      },
+      {
+        "text": "Enter places a single genre; Now playing follows the current song",
+        "task": null
+      }
+    ],
+    "7d8c0b0": [
+      {
+        "text": "Help menu in the sidebar",
+        "task": "task-0061"
+      },
+      {
+        "text": "Info popovers on the parts of the song title",
+        "task": "task-0062"
+      },
+      {
+        "text": "Mouse wheel over the dock changes the volume",
+        "task": "task-0063"
+      }
+    ],
+    "14f2049": [
+      {
+        "text": "Faster cold start, rebuilt Library rows and song card, word-by-word search",
+        "task": null
+      }
+    ]
+  }
 }

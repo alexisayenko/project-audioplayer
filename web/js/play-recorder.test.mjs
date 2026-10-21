@@ -21,7 +21,17 @@ function fakeAudio() {
   };
 }
 
-function setup({ guest = false, fail = false, status = 0 } = {}) {
+function fakeTarget() {
+  const h = {};
+  return {
+    visibilityState: 'visible',
+    addEventListener: (n, f) => { (h[n] ||= []).push(f); },
+    removeEventListener: () => {},
+    emit: (n) => (h[n] || []).forEach((f) => f()),
+  };
+}
+
+function setup({ guest = false, fail = false, status = 0, doc = null, win = null } = {}) {
   const audio = fakeAudio();
   const state = { id: 'a', guest, fail, posts: [] };
   const rec = createPlayRecorder({
@@ -34,8 +44,8 @@ function setup({ guest = false, fail = false, status = 0 } = {}) {
     },
     now: () => new Date('2026-10-21T10:00:00Z'),
     keyFn: () => `k${state.posts.length}`,
-    doc: null,
-    win: null,
+    doc,
+    win,
     intervalMs: 1e9,
   });
   const play = () => { audio.paused = false; audio.emit('play'); };
@@ -183,4 +193,72 @@ test('PLY-170: a play left open by a closed page is recovered into the queue', (
   assert.equal(queue()[0].song_id, 'z');
   assert.equal(mem.has(OPEN_KEY), false);
   s.rec.destroy();
+});
+
+test('PLY-178: pause, resume, flush, re-render, tab hide and show are one play of 160 s', async () => {
+  const doc = fakeTarget();
+  const s = setup({ doc, win: fakeTarget() });
+  s.play();
+  s.advance(80);
+  s.audio.paused = true;
+  s.audio.emit('pause');
+  await tick();
+  s.play();
+  s.rec.flush();
+  s.rec.sync();
+  s.rec.sync();
+  doc.visibilityState = 'hidden';
+  doc.emit('visibilitychange');
+  await tick();
+  doc.visibilityState = 'visible';
+  doc.emit('visibilitychange');
+  s.rec.sync();
+  s.advance(160);
+  s.audio.paused = true;
+  s.audio.emit('ended');
+  await tick();
+  const plays = s.state.posts.flatMap((p) => p.batch.plays);
+  assert.equal(plays.length, 1);
+  assert.ok(Math.abs(plays[0].listened_s - 160) < 1);
+  assert.equal(plays[0].cont, undefined);
+});
+
+test('PLY-179: page hide closes the accumulated seconds and the continuation is flagged cont', async () => {
+  const win = fakeTarget();
+  const s = setup({ win });
+  s.play();
+  s.advance(80);
+  win.emit('pagehide');
+  await tick();
+  const first = s.state.posts.flatMap((p) => p.batch.plays);
+  assert.equal(first.length, 1);
+  assert.ok(Math.abs(first[0].listened_s - 80) < 1);
+  s.advance(160);
+  s.audio.paused = true;
+  s.audio.emit('ended');
+  await tick();
+  const all = s.state.posts.flatMap((p) => p.batch.plays);
+  assert.equal(all.length, 2);
+  assert.equal(all[1].cont, true);
+  assert.ok(Math.abs(all[1].listened_s - 80) < 1);
+});
+
+test('PLY-179: a new page load of the same song within 10 minutes starts a cont play', () => {
+  mem.set('ap2.plays.last', JSON.stringify({ song_id: 'a', at: new Date('2026-10-21T09:55:00Z').getTime() }));
+  const s = setup();
+  s.play();
+  assert.equal(s.rec.open.cont, true);
+  s.rec.destroy();
+});
+
+test('PLY-172: a momentarily missing song id (library refresh) does not close the open play', () => {
+  const s = setup();
+  s.play();
+  s.advance(20);
+  s.state.id = null;
+  s.rec.sync();
+  s.audio.emit('timeupdate');
+  s.state.id = 'a';
+  s.advance(40);
+  assert.ok(s.rec.open.listened_s > 39);
 });
