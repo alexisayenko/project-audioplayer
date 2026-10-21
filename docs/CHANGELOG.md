@@ -4,13 +4,14 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## 2026-10-22 (web shuffle and scroll button, to deploy)
 
+- Web: the Library tools (Metadata for downloaded songs, BPM detection) moved from the Library page into the Settings Library card as two rows under Download all; the Library tools toggle, badge and hint are gone (WEB-070, WEB-081, WEB-082).
 - Web: the Library "Scroll to top" button moved from the bottom right to the top centre of the content area (WEB-103).
 - Web: the shuffle order is built after the play counts have loaded (1.5 s timeout, rebuilt when they arrive) and Play all starts from the lowest-played tier, so recently played songs no longer come back while unplayed ones exist (PLY-178).
 
 ## 2026-10-21 (iOS build 20261027: refined drawer, Settings hierarchy, new icon and logo; iOS uploaded, server and web NOT deployed)
 
 - iOS (TestFlight build 20261027): refined menu drawer (75% width, select tint, selection on touch-down); Settings hierarchy with free-space and format notes; new app icon (full-bleed glass plate) and vinyl logo. Not yet tested on a device. The signed-out Add flow needs the server deploy.
-- Web (committed, not deployed): Library tools panel.
+- Web (committed, not deployed): Library tools panel (moved to Settings 2026-10-22).
 - Design system (committed): Library v5 component tokens and brand section, Vega 108 style reference; Library v5 screen spec ([library-v5.md](ui-ux/library-v5.md)).
 
 ## 2026-10-21 (iOS build 20261026: local library, drawer, offline covers; server and web: public view off, anonymous downloads; iOS uploaded, server and web NOT deployed)

@@ -32,13 +32,15 @@ export const bpmCard = (onState) => backfillCard(BPM, onState);
 export const metadataCard = (onState) => backfillCard(META, onState);
 
 export function backfillCard(cfg, onState) {
-  const lead = el('p', { class: 'muted t-subhead' }, 'Checking...');
+  const lead = el('span', { class: 'muted t-caption bulk-lead' }, 'Checking...');
   const fill = el('div', { class: 'bf-fill' });
   const bar = el('div', { class: 'bf-bar', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': '0', 'aria-label': cfg.label, hidden: true }, fill);
   const note = el('p', { class: 't-caption', role: 'status', 'aria-live': 'polite' }, '');
   const start = el('button', { class: 'btn outline small', type: 'button', disabled: true }, cfg.button({ candidates: 1 }));
   const stop = el('button', { class: 'btn danger small', type: 'button', hidden: true }, 'Cancel');
-  const card = el('section', { class: 'card' }, el('h2', { class: 't-headline' }, cfg.title), lead, bar, note, el('div', { class: 'head-actions' }, start, stop));
+  const card = el('div', { class: 'bulk-row', role: 'group', 'aria-label': cfg.title },
+    el('div', { class: 'cell' }, lead, el('div', { class: 'bulk-actions' }, start, stop)),
+    bar, note);
   let timer = null;
   let last = null;
 

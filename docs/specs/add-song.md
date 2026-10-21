@@ -62,7 +62,7 @@ Code: `web/js/add.js`, `server/app/routes/lookup.py` (`preview`), `server/app/ro
 - ADD-021 MUST: detection decodes the saved file with `ffmpeg` to mono 44.1 kHz float PCM (120 s timeout), runs aubio tempo, takes the median of per-beat estimates (needs >= 4 beats), folds into 70..180 and rounds to a whole number. Status: implemented
 - ADD-022 MUST: any detection failure (no ffmpeg, no aubio, too few beats) is logged and stored as `bpm: null`; it never fails the download. Status: implemented
 - ADD-023 MUST: BPM is a heuristic and may be off by half or double; the UI says so and lets the user edit it or re-detect from the Edit dialog (`POST /songs/{id}/bpm/detect`). Status: implemented
-- ADD-110 MUST: songs added before detection existed (or whose detection failed) can be filled in bulk with Library > Library tools > BPM detection > Detect missing BPM (iOS and macOS: Settings) (API-110..112); it uses the same detector, rounding and octave heuristic as the download path (ADD-022, ADD-023). Status: implemented
+- ADD-110 MUST: songs added before detection existed (or whose detection failed) can be filled in bulk with Settings > Library > Detect missing BPM (web, iOS and macOS) (API-110..112); it uses the same detector, rounding and octave heuristic as the download path (ADD-022, ADD-023). Status: implemented
 - ADD-024 SHOULD: detection run off the request path for slow files. Status: implemented (the job runs in a background task; re-detect runs in a thread pool)
 
 ## Duplicates
