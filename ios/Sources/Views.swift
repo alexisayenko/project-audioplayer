@@ -28,8 +28,7 @@ struct RootView: View {
     @EnvironmentObject var settings: Settings
     @EnvironmentObject var server: ServerLink
     @EnvironmentObject var library: LibraryStore
-    @EnvironmentObject var guest: GuestCatalog
-    @Environment(\.openURL) private var openURL
+    @EnvironmentObject var anon: AnonDownloader
     @Environment(\.scenePhase) private var scenePhase
     @State private var tab = AppTab.library
     @State private var menuOpen = false
@@ -68,63 +67,32 @@ struct RootView: View {
                 menuOpen = false
             }
         }
-        .overlay(alignment: .top) { streamNoticeBanner }
         .sensoryFeedback(.selection, trigger: selectTick)
         .dynamicTypeSize(...DynamicTypeSize.accessibility2)
         .task {
-            installGuestSource()
+            anon.resumePending(library: library)
             await server.check(settings: settings)
             await server.syncCatalog(settings: settings, library: library)
         }
         .onChange(of: scenePhase) { _, p in
             if p == .active {
-                Task {
-                    await server.syncCatalog(settings: settings, library: library)
-                    if !ServerLink.hasCredentials(settings) { await guest.refresh(settings: settings) }
-                }
+                library.refreshPhone()
+                anon.resumePending(library: library)
+                Task { await server.syncCatalog(settings: settings, library: library) }
             }
         }
     }
 }
 
 extension RootView {
-    /// Guest mode: a song with no file on the phone streams from the owner's public library, anonymously.
-    fileprivate func installGuestSource() {
-        let settings = settings, guest = guest
-        player.guestSource = GuestSource(
-            streamURL: { guest.streamURL(for: $0, settings: settings) },
-            diagnose: { await GuestStream.diagnose(baseURL: settings.serverURL, id: $0.id) })
-    }
-
     fileprivate var statistics: some View {
         let signedIn = ServerLink.hasCredentials(settings)
         let settings = settings
         return StatisticsView(
-            songs: signedIn ? library.songs : guest.songs(mergedWith: library),
+            songs: library.songs,
             signedIn: signedIn,
-            loaded: signedIn ? (server.synced || !library.songs.isEmpty) : guest.settled,
+            loaded: !signedIn || server.synced || !library.songs.isEmpty,
             fetchListening: { try await APIClient(baseURL: settings.serverURL, token: settings.token).fetch(Endpoints.statsListening) })
-    }
-
-    @ViewBuilder
-    fileprivate var streamNoticeBanner: some View {
-        if let notice = player.streamNotice {
-            HStack(spacing: DS.Space.space3) {
-                Text(notice.message).font(T.caption).foregroundStyle(DS.Color.ink).frame(maxWidth: .infinity, alignment: .leading)
-                if let link = notice.link {
-                    Button("Open link") { openURL(link) }
-                        .font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.accentInk).frame(minHeight: 32)
-                }
-            }
-            .padding(.horizontal, DS.Space.space3).padding(.vertical, DS.Space.space2)
-            .dsSlab(radius: DS.Radius.radiusKey)
-            .padding(.horizontal, DS.Space.space4).padding(.top, DS.Space.space2)
-            .accessibilityElement(children: .combine)
-            .task(id: notice.id) {
-                try? await Task.sleep(for: .seconds(notice.link == nil ? 6 : 10))
-                if player.streamNotice?.id == notice.id { player.streamNotice = nil }
-            }
-        }
     }
 
     /// All screens stay alive so a filter or search survives a menu switch.

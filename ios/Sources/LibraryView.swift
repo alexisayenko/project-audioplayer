@@ -9,8 +9,6 @@ struct LibraryListCache {
     var tracks: [Track]
     var counts: [(tag: String, count: Int)]
     var phone: [Track]
-    var playable: [Track]
-    var listed: Set<String>
     var poolCount: Int
 }
 
@@ -19,12 +17,9 @@ struct LibraryView: View {
     @EnvironmentObject var player: PlayerService
     @EnvironmentObject var settings: Settings
     @EnvironmentObject var server: ServerLink
-    @EnvironmentObject var guest: GuestCatalog
-    @ObservedObject private var auth = AuthService.shared
+    @EnvironmentObject var anon: AnonDownloader
     @Environment(\.dynamicTypeSize) private var typeSize
-    @Environment(\.openURL) private var openURL
     @Environment(\.openSettings) private var openSettings
-    @State private var sharing: Track?
     @State private var search = ""
     @State private var sort = LibrarySort.newest
     @State private var selection: Set<String> = []
@@ -43,18 +38,7 @@ struct LibraryView: View {
     @ScaledMetric(relativeTo: .body) private var moreSize: CGFloat = 18
     @ScaledMetric(relativeTo: .body) private var moreWidth: CGFloat = 24
 
-    private var signedOut: Bool { !ServerLink.hasCredentials(settings) }
-
-    private var guestMode: Bool { signedOut }
-
-    /// Signed out, one list: the owner's public library plus the songs on the phone that it does not list. A song in both is one row.
-    private var pool: [Track] {
-        signedOut ? guest.songs(mergedWith: library) : library.songs
-    }
-
-    private func canPlay(_ t: Track) -> Bool {
-        library.contains(t.id) || (guestMode && guest.audioEnabled && guest.hasAudio(t))
-    }
+    private var pool: [Track] { library.songs }
 
     private func tagCounts(_ pool: [Track]) -> [(tag: String, count: Int)] {
         var counts: [String: (tag: String, count: Int)] = [:]
@@ -97,7 +81,7 @@ struct LibraryView: View {
         let pool = pool
         let list = filtered(pool)
         return LibraryListCache(tracks: list, counts: tagCounts(pool), phone: list.filter { library.contains($0.id) },
-                                playable: list.filter(canPlay), listed: Set(guest.songs.map(\.id)), poolCount: pool.count)
+                                poolCount: pool.count)
     }
 
     private var cache: LibraryListCache {
@@ -111,11 +95,10 @@ struct LibraryView: View {
         var inputs: Inputs
         var songs: [Track]
         var phoneIDs: Set<String>
-        var guestSongs: [Track]
     }
 
     private var cacheKey: CacheKey {
-        CacheKey(inputs: inputs, songs: library.songs, phoneIDs: library.phoneIDs, guestSongs: guest.songs)
+        CacheKey(inputs: inputs, songs: library.songs, phoneIDs: library.phoneIDs)
     }
 
     private struct Inputs: Equatable {
@@ -123,17 +106,14 @@ struct LibraryView: View {
         var sort: LibrarySort
         var selection: Set<String>
         var onlyPhone: Bool
-        var signedOut: Bool
-        var audioEnabled: Bool
     }
 
     private var inputs: Inputs {
-        Inputs(search: search, sort: sort, selection: selection, onlyPhone: onlyPhone, signedOut: signedOut, audioEnabled: guest.audioEnabled)
+        Inputs(search: search, sort: sort, selection: selection, onlyPhone: onlyPhone)
     }
 
     private var arriving: [Track] {
-        if signedOut { return [] }
-        return server.transfers.values.map(\.track).filter { t in !library.contains(t.id) && !library.songs.contains { $0.id == t.id } }.sorted { $0.title < $1.title }
+        return (Array(server.transfers.values) + Array(anon.transfers.values)).map(\.track).filter { t in !library.contains(t.id) && !library.songs.contains { $0.id == t.id } }.sorted { $0.title < $1.title }
     }
 
     private func subtitle(_ t: Track) -> String { t.artist }
@@ -149,16 +129,13 @@ struct LibraryView: View {
                     ScreenHeader(title: "Library") {
                         HStack(spacing: DS.Space.space3) {
                             Text("\(cache.poolCount) \(cache.poolCount == 1 ? "song" : "songs")").dsCaption()
-                            if !guestMode {
-                                Button { showAdd = true } label: {
-                                    Image(systemName: "plus").font(.system(size: plusSize, weight: .semibold))
-                                }
-                                .buttonStyle(LitCircleButtonStyle())
-                                .accessibilityLabel("Add a song")
+                            Button { showAdd = true } label: {
+                                Image(systemName: "plus").font(.system(size: plusSize, weight: .semibold))
                             }
+                            .buttonStyle(LitCircleButtonStyle())
+                            .accessibilityLabel("Add a song")
                         }
                     }
-                    if guestMode { guestBanner }
                     searchField
                     chips(counts)
                     if typeSize.isAccessibilitySize {
@@ -174,11 +151,7 @@ struct LibraryView: View {
             }
             .scrollDismissesKeyboard(.interactively)
             .refreshable {
-                if signedOut {
-                    if let message = await guest.refresh(settings: settings) { toast = message }
-                } else {
-                    await server.syncCatalog(settings: settings, library: library)
-                }
+                await server.syncCatalog(settings: settings, library: library)
             }
             .onChange(of: revealID) { _, id in
                 guard let id else { return }
@@ -191,7 +164,6 @@ struct LibraryView: View {
             .onChange(of: inputs) { _, _ in rebuild() }
             .onChange(of: library.songs) { _, _ in rebuild() }
             .onChange(of: library.phoneIDs) { _, _ in rebuild() }
-            .onChange(of: guest.songs) { _, _ in rebuild() }
             .toolbar(.hidden, for: .navigationBar)
             .overlay(alignment: .top) {
                 if let toast {
@@ -205,11 +177,12 @@ struct LibraryView: View {
             .sensoryFeedback(.warning, trigger: deleteTick)
             .sheet(item: $editing) { SongEditView(song: $0) }
             .sheet(isPresented: $showAdd) { AddSheet() }
-            .sheet(item: $sharing) { ShareSheet(track: $0, position: 0, duration: $0.duration ?? 0) }
-            .task(id: signedOut) { if signedOut { await guest.refresh(settings: settings) } }
             .onChange(of: library.phoneIDs) { _, _ in server.reconcile(library) }
             .onChange(of: server.notice) { _, n in
                 if let n { toast = n; server.notice = nil }
+            }
+            .onChange(of: anon.notice) { _, n in
+                if let n { toast = n; anon.notice = nil }
             }
             .sheet(item: $sheet) { category in
                 FilterSheet(category: category, values: category.values(counts), selection: $selection,
@@ -252,10 +225,10 @@ struct LibraryView: View {
         return skipped > 0 ? ", \(skipped) without audio skipped" : ""
     }
 
-    private var nothingPlayable: String { guestMode ? "No listed songs have audio" : "No listed songs are on this iPhone" }
+    private var nothingPlayable: String { "No listed songs are on this iPhone" }
 
     private func playAll(_ tracks: [Track]) {
-        let playable = tracks.filter(canPlay)
+        let playable = tracks.filter { library.contains($0.id) }
         guard !playable.isEmpty else { toast = nothingPlayable; return }
         let replaced = player.index.map { $0 + 1 < player.queue.count } ?? false
         player.playAll(playable)
@@ -264,7 +237,7 @@ struct LibraryView: View {
     }
 
     private func addAll(_ tracks: [Track]) {
-        let playable = tracks.filter(canPlay)
+        let playable = tracks.filter { library.contains($0.id) }
         guard !playable.isEmpty else { toast = nothingPlayable; return }
         let added = player.enqueueAll(playable)
         let dup = playable.count - added
@@ -327,13 +300,16 @@ struct LibraryView: View {
     @ViewBuilder
     private func list(_ cache: LibraryListCache) -> some View {
         let tracks = cache.tracks
-        if guestMode && cache.poolCount == 0 {
-            guestEmptyState
-        } else if cache.poolCount == 0 && arriving.isEmpty {
+        if cache.poolCount == 0 && arriving.isEmpty {
             if server.forbidden {
                 unavailable("Access denied", "lock.slash", APIError.forbiddenMessage)
             } else if !ServerLink.hasCredentials(settings) {
-                unavailable("Sign in to load your library", "person.crop.circle", "Open the Settings tab to sign in.")
+                unavailable("No songs yet", "iphone", "Your library is stored on this iPhone. Paste a YouTube or SoundCloud link to add songs, or sign in to search and sync.") {
+                    HStack(spacing: DS.Space.space3) {
+                        Button("Add") { showAdd = true }.buttonStyle(.borderedProminent).tint(DS.Color.accentStrong)
+                        Button("Sign in") { openSettings?() }.buttonStyle(.bordered)
+                    }
+                }
             } else if server.syncing || !server.synced && server.failureMessage == nil {
                 unavailable("Loading your library\u{2026}", "arrow.triangle.2.circlepath", nil)
             } else if !server.synced {
@@ -360,11 +336,11 @@ struct LibraryView: View {
             LazyVStack(spacing: 0) {
                 ForEach(arriving) { t in
                     SongRow(title: t.title, subtitle: subtitle(t), thumbnail: t.thumbnail,
-                            downloading: server.transfers[t.id]?.progress ?? 0)
+                            downloading: (server.transfers[t.id] ?? anon.transfers[t.id])?.progress ?? 0)
                     divider
                 }
                 ForEach(Array(tracks.enumerated()), id: \.element.id) { i, track in
-                    listRow(track, cache).id(track.id)
+                    row(track, cache).id(track.id)
                     if i < tracks.count - 1, player.current?.id != track.id, player.current?.id != tracks[i + 1].id { divider }
                 }
             }
@@ -384,44 +360,6 @@ struct LibraryView: View {
             if let detail { Text(detail).font(T.body).foregroundStyle(DS.Color.inkMuted) }
         } actions: { actions() }
         .frame(maxWidth: .infinity).padding(.vertical, DS.Space.space6)
-    }
-
-    @ViewBuilder
-    private var guestEmptyState: some View {
-        switch guest.phase {
-        case .idle, .loading:
-            unavailable("Loading \(guest.libraryName)\u{2026}", "arrow.triangle.2.circlepath", nil)
-        case .unavailable:
-            unavailable("Public library unavailable", "lock.slash", "Browsing without signing in is off right now. Sign in in Settings.")
-        case .failed(let message):
-            unavailable("Couldn't load \(guest.libraryName)", "wifi.slash", message) {
-                Button("Retry") { Task { await guest.refresh(settings: settings) } }
-                    .buttonStyle(.borderedProminent).tint(DS.Color.accentStrong)
-            }
-        case .loaded:
-            unavailable("No songs yet", "music.note.list", "This library has no songs to show.")
-        }
-    }
-
-    private var guestBannerText: String {
-        switch guest.phase {
-        case .unavailable, .failed: return "The public library isn't available. Showing songs on this iPhone."
-        default: return guest.bannerText
-        }
-    }
-
-    private var guestBanner: some View {
-        HStack(spacing: DS.Space.space3) {
-            Label(guestBannerText, systemImage: "eye").font(T.caption).foregroundStyle(DS.Color.ink)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            Button { openSettings?() } label: {
-                Text("Sign in").font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.accentInk)
-                    .frame(minHeight: 32).contentShape(Rectangle().inset(by: -6))
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(.horizontal, DS.Space.space3).padding(.vertical, DS.Space.space1)
-        .dsSlab(radius: DS.Radius.radiusKey)
     }
 
     private var offlineBanner: some View {
@@ -504,71 +442,8 @@ struct LibraryView: View {
         }
     }
 
-    @ViewBuilder
-    private func listRow(_ track: Track, _ cache: LibraryListCache) -> some View {
-        if guestMode { guestRow(track, cache) } else { row(track, cache) }
-    }
-
-    private func guestRow(_ track: Track, _ cache: LibraryListCache) -> some View {
-        let playing = player.current?.id == track.id
-        let onPhone = library.contains(track.id)
-        let hasAudio = onPhone || guest.hasAudio(track)
-        let playable = canPlay(track)
-        let link = track.sourceURL.flatMap { URL(string: $0) }
-        let phoneOnlySong = onPhone && !cache.listed.contains(track.id)
-        let removeAudio = { library.removeAudio(track.id); toast = "Removed from this iPhone" }
-        let start = { let queueable = cache.playable; player.play(queueable, startAt: queueable.firstIndex { $0.id == track.id } ?? 0) }
-        let playNext = { player.playNext(track); queueTick += 1; toast = "Plays next" }
-        let enqueue = {
-            if player.enqueue([track]) == 1 { toast = "Added to queue"; queueTick += 1 } else { toast = "Already in queue" }
-        }
-        let state = onPhone ? "on iPhone" : playable ? "streams from the server" : hasAudio ? "audio off for guests" : "no audio yet"
-        let tap = {
-            if playable { start() }
-            else if hasAudio, let link { toast = "Audio is off for guests. Opening the song's link."; openURL(link) }
-            else { toast = "No audio yet" }
-        }
-        return LibrarySongRow(title: track.title, subtitle: subtitle(track), thumbnail: track.thumbnail,
-                    duration: playable ? track.duration : nil, downloading: nil,
-                    noAudio: !hasAudio, playing: playing, a11yLabel: "\(track.title), \(track.artist), \(state)", onTap: tap, actions: {
-            if playable {
-                Button("Play next", action: playNext)
-                Button("Add to queue", action: enqueue)
-            }
-            Button("Share link") { sharing = track }
-            if let link { Button("Open source link") { openURL(link) } }
-            if onPhone { Button("Remove from iPhone", action: removeAudio) }
-            if phoneOnlySong { Button("Delete") { deleting = track } }
-        }) {
-            Menu {
-                if playable {
-                    Button(action: playNext) { Label("Play next", systemImage: "text.insert") }
-                    Button(action: enqueue) { Label("Add to queue", systemImage: "text.badge.plus") }
-                }
-                Button { sharing = track } label: { Label("Share link", systemImage: "square.and.arrow.up") }
-                if let link { Button { openURL(link) } label: { Label("Open source link", systemImage: "arrow.up.right.square") } }
-                if onPhone { Button(action: removeAudio) { Label("Remove from iPhone", systemImage: "iphone.slash") } }
-                if phoneOnlySong {
-                    Button(role: .destructive) { deleting = track } label: { Label("Delete from library", systemImage: "trash") }
-                }
-            } label: {
-                Image(systemName: "ellipsis").font(.system(size: moreSize)).foregroundStyle(playing ? DS.Color.accentInk : DS.Color.inkFaint)
-                    .frame(width: moreWidth, height: DS.Space.hit)
-                    .contentShape(Rectangle().inset(by: -10))
-            }
-            .accessibilityLabel("More actions for \(track.title)")
-        }
-        .contextMenu {
-            if playable {
-                Button(action: playNext) { Label("Play next", systemImage: "text.insert") }
-                Button(action: enqueue) { Label("Add to queue", systemImage: "text.badge.plus") }
-            }
-            Button { sharing = track } label: { Label("Share link", systemImage: "square.and.arrow.up") }
-        }
-    }
-
     private func delete(_ t: Track) async {
-        if t.localOnly != true && !guestMode {
+        if t.localOnly != true {
             do { try await APIClient(baseURL: settings.serverURL, token: settings.token).delete(t.id) }
             catch APIError.http(404, _) { library.delete(t.id); return }
             catch { toast = "Couldn't delete. Check the server and try again."; return }

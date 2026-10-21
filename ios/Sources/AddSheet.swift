@@ -88,6 +88,7 @@ struct AddSheet: View {
     @EnvironmentObject var settings: Settings
     @EnvironmentObject var server: ServerLink
     @Environment(\.dismiss) private var dismiss
+    @ObservedObject private var auth = AuthService.shared
     @ScaledMetric(relativeTo: .body) private var previewCover: CGFloat = 72
     @Environment(\.colorScheme) private var scheme
     @State private var path: [String] = []
@@ -99,6 +100,10 @@ struct AddSheet: View {
     private var hasPreview: Bool { flow.preview != nil && flow.phase != .idle && flow.phase != .loading }
 
     var body: some View {
+        if ServerLink.hasCredentials(settings) { signedInBody } else { AnonAddSheet() }
+    }
+
+    private var signedInBody: some View {
         NavigationStack(path: $path) {
             ScrollView {
                 VStack(alignment: .leading, spacing: DS.Space.space4) {

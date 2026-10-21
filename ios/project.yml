@@ -47,6 +47,8 @@ targets:
         CFBundleShortVersionString: $(MARKETING_VERSION)
         UILaunchScreen: {}
         UIBackgroundModes: [audio]
+        UIFileSharingEnabled: true
+        LSSupportsOpeningDocumentsInPlace: true
         ITSAppUsesNonExemptEncryption: false
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         CFBundleIconName: AppIcon
@@ -77,14 +79,15 @@ targets:
           - Platform.swift
           - APIClient.swift
           - APIModels.swift
+          - AudioFiles.swift
           - AuthService.swift
           - DesignTokens.swift
           - Endpoints.swift
           - GenreSuggest.swift
-          - GuestStream.swift
           - Keychain.swift
           - LibraryFilterModel.swift
           - LibraryStore.swift
+          - LocalCover.swift
           - PlayerService.swift
           - ServerLink.swift
           - ServiceIcons.swift

@@ -51,7 +51,7 @@ struct SideDrawer: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @AccessibilityFocusState private var titleFocused: Bool
     @ScaledMetric(relativeTo: .title3) private var icon: CGFloat = 22
-    @ScaledMetric(relativeTo: .title3) private var logo: CGFloat = 32
+    @ScaledMetric(relativeTo: .title3) private var logo: CGFloat = 42
 
     var body: some View {
         GeometryReader { geo in

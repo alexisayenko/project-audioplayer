@@ -26,6 +26,14 @@ struct TransferBook {
         items[id]?.progress = value
     }
 
+    /// Shows the same transfer under a better-known song, keeping its progress and generation.
+    mutating func replace(_ id: String, with track: Track) {
+        guard var item = items[id] else { return }
+        items[id] = nil
+        item.track = track
+        items[track.id] = item
+    }
+
     mutating func finish(_ id: String) { items[id] = nil }
 
     mutating func finish(_ id: String, generation: Int) {

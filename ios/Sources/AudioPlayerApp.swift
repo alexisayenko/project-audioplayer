@@ -6,7 +6,7 @@ struct AudioPlayerApp: App {
     @StateObject private var player = PlayerService()
     @StateObject private var settings = Settings()
     @StateObject private var server = ServerLink()
-    @StateObject private var guest = GuestCatalog()
+    @StateObject private var anon = AnonDownloader()
 
     var body: some Scene {
         WindowGroup {
@@ -16,7 +16,7 @@ struct AudioPlayerApp: App {
                 .environmentObject(player.clock)
                 .environmentObject(settings)
                 .environmentObject(server)
-                .environmentObject(guest)
+                .environmentObject(anon)
         }
     }
 }

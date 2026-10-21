@@ -3,9 +3,6 @@ import SwiftUI
 struct PlaybackView: View {
     @EnvironmentObject var player: PlayerService
     @EnvironmentObject var library: LibraryStore
-    @EnvironmentObject var guest: GuestCatalog
-    @EnvironmentObject var settings: Settings
-    @ObservedObject private var auth = AuthService.shared
     @ScaledMetric(relativeTo: .body) private var menuIcon: CGFloat = 20
     @ScaledMetric(relativeTo: .body) private var menuHit: CGFloat = DS.Space.hit
     @ScaledMetric(relativeTo: .body) private var grip: CGFloat = 16
@@ -25,14 +22,6 @@ struct PlaybackView: View {
     @State private var reorderTick = 0
 
     private var current: Track? { player.current }
-    private var signedOut: Bool { !ServerLink.hasCredentials(settings) }
-
-    /// The songs that can be added by tag: the ones on the phone, plus the public library's streamable ones when nobody is signed in.
-    private var taggable: [Track] {
-        guard signedOut, guest.audioEnabled else { return library.tracks }
-        let phone = Set(library.tracks.map(\.id))
-        return library.tracks + guest.songs.filter { !phone.contains($0.id) && guest.hasAudio($0) }
-    }
     private var menuSize: CGFloat { min(max(menuHit, DS.Space.hit), DS.Space.hit * 1.5) }
 
     private func subtitle(_ t: Track) -> String {
@@ -74,8 +63,8 @@ struct PlaybackView: View {
             }
         }
         .sheet(isPresented: $showTags) {
-            TagPickerSheet(tracks: taggable) { picks in
-                let n = player.addTagged(picks, from: taggable)
+            TagPickerSheet(tracks: library.tracks) { picks in
+                let n = player.addTagged(picks, from: library.tracks)
                 toast = n == 0 ? "No new songs for these tags" : "Added \(n) \(n == 1 ? "song" : "songs")"
             }
         }
@@ -90,7 +79,7 @@ struct PlaybackView: View {
         Menu {
             Button { showQueue = true } label: { Label("Queue", systemImage: "list.bullet") }
             Button { showTags = true } label: { Label("Add songs by tag", systemImage: "tag") }
-            if let t = current, !signedOut { Button { editing = ServerSong(t) } label: { Label("Song details", systemImage: "info.circle") } }
+            if let t = current { Button { editing = ServerSong(t) } label: { Label("Song details", systemImage: "info.circle") } }
             Button { showShare = true } label: { Label("Share link", systemImage: "square.and.arrow.up") }
                 .disabled(current.map { !SongShare.isValidID($0.id) } ?? true)
             Button { player.skip(by: -5) } label: { Label("Back 5 seconds", systemImage: "gobackward.5") }

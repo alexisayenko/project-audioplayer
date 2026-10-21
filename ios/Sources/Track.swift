@@ -16,7 +16,7 @@ struct SongVersion: Codable, Hashable {
     var originalArtists: [String]?
 }
 
-/// A song in the catalog. Its audio may be on the phone (`Documents/audio/<id>.m4a`), on the server only, or nowhere yet.
+/// A song in the catalog. Its audio may be on the phone (`Documents/audio/Artist - Title.m4a`, see `AudioFiles`), on the server only, or nowhere yet.
 struct Track: Codable, Identifiable, Hashable {
     let id: String          // YouTube video id
     var title: String
@@ -65,8 +65,8 @@ struct Track: Codable, Identifiable, Hashable {
         discogsURL = discogsURL ?? other.discogsURL
     }
 
-    /// Audio file inside the app's Documents directory.
-    var fileURL: URL { LibraryStore.audioDirectory.appendingPathComponent("\(id).m4a") }
+    /// Audio file inside the app's Documents directory, named through `AudioFiles`.
+    var fileURL: URL { AudioFiles.url(for: id) }
 }
 
 /// A search hit that has not been downloaded yet.

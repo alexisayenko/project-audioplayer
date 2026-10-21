@@ -78,7 +78,22 @@ final class AuthService: NSObject, ObservableObject {
             store(Session(provider: .apple, email: claims.email ?? cred.email, idToken: jwt,
                           expiry: claims.expiry, refreshToken: nil))
             error = nil
+            Task { await confirmAppleSession() }
         }
+    }
+
+    /// The server is the judge of an Apple token: a 401 means it rejected the audience, issuer or signature, so the local session is dropped instead of pretending to be signed in.
+    private func confirmAppleSession() async {
+        let base = UserDefaults.standard.string(forKey: "serverURL") ?? Endpoints.defaultServer
+        busy = true
+        defer { busy = false }
+        do {
+            try await APIClient(baseURL: base, token: "").verify()
+        } catch APIError.http(401, _) {
+            guard session?.provider == .apple else { return }
+            signOut()
+            error = "Sign in failed: the server did not accept the Apple token"
+        } catch {}
     }
 
     // MARK: Google (authorization code + PKCE, no SDK)

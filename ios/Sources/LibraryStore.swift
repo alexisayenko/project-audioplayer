@@ -9,7 +9,8 @@ import AppKit
 #endif
 
 /// The catalog on this iPhone: every song the server lists (cached for offline use) plus the songs whose audio is stored here.
-/// A song is "on the phone" when its file exists in `Documents/audio`; that is never written to `library.json`.
+/// A song is "on the phone" when its file exists in `Documents/audio` (named by `AudioFiles`); that is never written to `library.json`,
+/// which only holds the id -> file name map.
 @MainActor
 final class LibraryStore: ObservableObject {
     @Published private(set) var songs: [Track] = []
@@ -20,8 +21,14 @@ final class LibraryStore: ObservableObject {
     private var prefetchAgain = false
 
     static let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-    static let audioDirectory = documents.appendingPathComponent("audio", isDirectory: true)
-    private static let indexURL = documents.appendingPathComponent("library.json")
+    static let audioDirectory = AudioFiles.directory
+    static let support: URL = {
+        let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir
+    }()
+    private static let indexURL = support.appendingPathComponent("library.json")
+    private static let legacyIndexURL = documents.appendingPathComponent("library.json")
 
     /// Bumped when the cached song records gain fields, so the next sync refetches the catalog instead of answering 304.
     private static let schema = 2
@@ -30,6 +37,7 @@ final class LibraryStore: ObservableObject {
         var etag: String?
         var schema: Int?
         var songs: [Track]
+        var files: [String: String]?
     }
 
     /// Songs whose audio is on this iPhone.
@@ -37,9 +45,11 @@ final class LibraryStore: ObservableObject {
 
     init() {
         try? FileManager.default.createDirectory(at: Self.audioDirectory, withIntermediateDirectories: true)
+        Self.migrateLegacyIndex()
         if let data = try? Data(contentsOf: Self.indexURL) {
             if let stored = try? JSONDecoder().decode(Stored.self, from: data) {
                 songs = stored.songs
+                AudioFiles.load(stored.files)
                 etag = stored.schema == Self.schema ? stored.etag : nil
             } else if let legacy = try? JSONDecoder().decode([Track].self, from: data) {
                 songs = legacy
@@ -53,9 +63,38 @@ final class LibraryStore: ObservableObject {
             if changed { save() }
         }
         prefetchCovers()
+        migrateFileNames()
+    }
+
+    /// Gives files still named `<id>.m4a` (and files whose song was renamed elsewhere) readable names, off the main thread.
+    private func migrateFileNames() {
+        let tracks = songs
+        Task.detached(priority: .utility) { [weak self] in
+            guard AudioFiles.syncAll(tracks) else { return }
+            await MainActor.run { self?.fileNamesChanged() }
+        }
+    }
+
+    private func fileNamesChanged() {
+        save()
+        refreshPhone()
     }
 
     func contains(_ id: String) -> Bool { phoneIDs.contains(id) }
+
+    /// Re-reads which audio files exist, so files deleted or renamed in the Files app stop counting as on the phone.
+    /// A song counts when its mapped file exists, or, without a map entry, when `<id>.m4a` does.
+    func refreshPhone() {
+        let ids = Set(songs.filter { FileManager.default.fileExists(atPath: $0.fileURL.path) }.map(\.id))
+        if ids != phoneIDs { phoneIDs = ids }
+    }
+
+    private static func migrateLegacyIndex() {
+        let fm = FileManager.default
+        guard fm.fileExists(atPath: legacyIndexURL.path) else { return }
+        if !fm.fileExists(atPath: indexURL.path) { try? fm.copyItem(at: legacyIndexURL, to: indexURL) }
+        if fm.fileExists(atPath: indexURL.path) { try? fm.removeItem(at: legacyIndexURL) }
+    }
 
     /// A song whose file has just arrived on the phone.
     func add(_ track: Track) {
@@ -72,9 +111,27 @@ final class LibraryStore: ObservableObject {
             t.onServer = true
             songs.insert(t, at: 0)
         }
+        AudioFiles.sync(t)
         phoneIDs.insert(t.id)
         save()
         prefetchCovers()
+    }
+
+    /// A song added without an account: its file is on the phone and the server never had it in a library.
+    func addLocal(_ track: Track) {
+        var t = track
+        t.localOnly = true
+        t.onServer = false
+        if let i = songs.firstIndex(where: { $0.id == t.id }) {
+            t.addedAt = t.addedAt ?? songs[i].addedAt
+            songs[i] = t
+        } else {
+            t.addedAt = t.addedAt ?? Date()
+            songs.insert(t, at: 0)
+        }
+        AudioFiles.sync(t)
+        phoneIDs.insert(t.id)
+        save()
     }
 
     func update(_ track: Track) {
@@ -87,6 +144,7 @@ final class LibraryStore: ObservableObject {
         merged.localOnly = songs[i].localOnly
         let coverChanged = merged.thumbnail != songs[i].thumbnail
         songs[i] = merged
+        AudioFiles.sync(merged)
         save()
         if coverChanged { coverDidChange(track.id, merged.thumbnail) }
     }
@@ -132,8 +190,9 @@ final class LibraryStore: ObservableObject {
     func removeAudio(_ id: String) {
         guard let i = songs.firstIndex(where: { $0.id == id }) else { return }
         try? FileManager.default.removeItem(at: songs[i].fileURL)
+        AudioFiles.forget(id)
         phoneIDs.remove(id)
-        if songs[i].localOnly == true { songs.remove(at: i) }
+        if songs[i].localOnly == true { songs.remove(at: i); LocalCover.remove(id) }
         save()
     }
 
@@ -148,9 +207,11 @@ final class LibraryStore: ObservableObject {
     /// Removes the song everywhere on the phone: entry and file.
     func delete(_ id: String) {
         if let t = songs.first(where: { $0.id == id }) { try? FileManager.default.removeItem(at: t.fileURL) }
+        AudioFiles.forget(id)
         songs.removeAll { $0.id == id }
         phoneIDs.remove(id)
         CoverCache.invalidate(id)
+        LocalCover.remove(id)
         save()
     }
 
@@ -187,10 +248,12 @@ final class LibraryStore: ObservableObject {
                 result.append(t)
             } else {
                 CoverCache.invalidate(prev.id)
+                AudioFiles.forget(prev.id)
             }
         }
         songs = result
         phoneIDs = phoneIDs.intersection(Set(result.map(\.id)))
+        for t in result where phoneIDs.contains(t.id) { AudioFiles.sync(t) }
         etag = newTag ?? "synced"
         save()
         for change in coverChanges { coverDidChange(change.id, change.thumbnail) }
@@ -199,7 +262,7 @@ final class LibraryStore: ObservableObject {
     }
 
     private func save() {
-        if let data = try? JSONEncoder().encode(Stored(etag: etag, schema: Self.schema, songs: songs)) {
+        if let data = try? JSONEncoder().encode(Stored(etag: etag, schema: Self.schema, songs: songs, files: AudioFiles.snapshot(keeping: Set(songs.map(\.id))))) {
             try? data.write(to: Self.indexURL, options: .atomic)
         }
     }

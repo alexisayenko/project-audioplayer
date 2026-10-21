@@ -92,6 +92,10 @@ Code: `web/js/add.js`, `server/app/routes/lookup.py` (`preview`), `server/app/ro
 - ADD-042 MUST: server unreachable shows "Server unreachable"; 401 shows "Not signed in (see Settings)". Status: implemented
 - ADD-043 SHOULD: leaving the Add screen mid-download stops polling but not the server job; reopening Add does not resume the progress view. Status: to-confirm
 
+## Without an account (iOS)
+
+- ADD-190 MUST: on iOS, while nobody is signed in, a pasted YouTube or SoundCloud link can still be added: the audio is staged on the server for a short time (`/anon/downloads`, API-207..API-215), copied to the phone and checked by SHA-256, kept only in the local library (`localOnly`), and the server's copy is deleted after the phone's acknowledgement. No catalog entry, preview form or tags are created; search stays sign-in only. Details: [ios.md](ios.md) IOS-080..IOS-086. Web is unchanged (ADD-053). Status: implemented in the app, not run against a server
+
 ## Limits (ADR-0012)
 
 - ADD-054 MUST: the server checks the user's quotas before it resolves or downloads the link (API-041); the Add dialog shows a readable message for each refusal and keeps the form: 429 "Hourly limit reached. Try again in N minutes.", 403 `library_full_songs` "Your library is full. Delete some songs to add more.", 403 `library_full_bytes` "Your storage is full. Delete some songs to free space.", 503 `server_full` "The server is out of storage right now. Try again later." (`web/js/limits.js` `friendly`, tested). Status: implemented

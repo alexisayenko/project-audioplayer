@@ -6,8 +6,6 @@ enum APIError: LocalizedError {
     case refused(String, String)
     case unreachable
     case forbidden
-    case guestLimit(minutes: Int)
-    case guestAudioDisabled
 
     static let forbiddenMessage = "This account isn't allowed on this server. Sign out and use another account."
     static let forbiddenCodes: Set<String> = ["forbidden", "not_allowed", "signup_closed", "unverified_email", "no_email"]
@@ -17,8 +15,6 @@ enum APIError: LocalizedError {
         case .badURL: return "Invalid server URL"
         case .unreachable: return "Can't reach the server"
         case .forbidden: return Self.forbiddenMessage
-        case .guestLimit(let minutes): return "Too many guest requests from this connection. Try again in \(minutes) \(minutes == 1 ? "minute" : "minutes"), or sign in."
-        case .guestAudioDisabled: return "Audio is switched off for guests right now."
         case .refused(_, let detail): return detail
         case .http(let code, let detail):
             if code == 401 { return "Not signed in. Sign in in Settings" }
@@ -31,8 +27,6 @@ enum APIError: LocalizedError {
 struct APIClient {
     let baseURL: String
     let token: String
-    /// Guest mode: no Authorization and no X-API-Token, so the server answers as the public view (a legacy token would turn the call into the owner's).
-    var anonymous = false
 
     private func request(_ path: String, query: [URLQueryItem] = [], method: String = "GET",
                          body: Data? = nil) async throws -> URLRequest {
@@ -42,12 +36,10 @@ struct APIClient {
         guard let url = comps.url else { throw APIError.badURL }
         var req = URLRequest(url: url)
         req.httpMethod = method
-        if !anonymous {
-            if let bearer = await AuthService.shared.validToken() {
-                req.setValue("Bearer \(bearer)", forHTTPHeaderField: "Authorization")
-            } else if !token.isEmpty {
-                req.setValue(token, forHTTPHeaderField: "X-API-Token")
-            }
+        if let bearer = await AuthService.shared.validToken() {
+            req.setValue("Bearer \(bearer)", forHTTPHeaderField: "Authorization")
+        } else if !token.isEmpty {
+            req.setValue(token, forHTTPHeaderField: "X-API-Token")
         }
         if let body {
             req.httpBody = body
@@ -63,10 +55,6 @@ struct APIClient {
         guard (200..<300).contains(http.statusCode) else {
             var detail = data.flatMap { String(data: $0, encoding: .utf8) } ?? ""
             if let data, let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                if http.statusCode == 429, obj["error"] as? String == "guest_limit" {
-                    throw APIError.guestLimit(minutes: max(1, obj["retry_after_minutes"] as? Int ?? 1))
-                }
-                if http.statusCode == 403, obj["error"] as? String == "guest_audio_disabled" { throw APIError.guestAudioDisabled }
                 if http.statusCode == 403, let code = obj["error"] as? String, APIError.forbiddenCodes.contains(code) { throw APIError.forbidden }
                 if let code = obj["error"] as? String, let d = obj["detail"] as? String { throw APIError.refused(code, d) }
                 if let d = obj["detail"] as? String { detail = d }
@@ -80,7 +68,7 @@ struct APIClient {
     }
 
     /// File downloads honour Settings > Use mobile data; the small API calls always go through.
-    private static func downloadSession(delegate: URLSessionDelegate? = nil) -> URLSession {
+    static func downloadSession(delegate: URLSessionDelegate? = nil) -> URLSession {
         let cellular = UserDefaults.standard.bool(forKey: Settings.useMobileDataKey)
         let c = URLSessionConfiguration.default
         c.allowsCellularAccess = cellular
@@ -111,26 +99,6 @@ struct APIClient {
         try check(response, data: data)
         let tag = (response as? HTTPURLResponse)?.value(forHTTPHeaderField: "ETag")
         return (try JSONDecoder().decode(CatalogResponse.self, from: data), tag)
-    }
-
-    /// `GET /me` as a guest: the owner's label and whether guests may stream the audio.
-    func guestInfo() async throws -> (ownerLabel: String?, audio: Bool) {
-        var req = try await request(Endpoints.me)
-        req.timeoutInterval = 15
-        req.cachePolicy = .reloadIgnoringLocalCacheData
-        let (data, response) = try await URLSession.shared.data(for: req)
-        try check(response, data: data)
-        let obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
-        return (obj?["owner_label"] as? String, obj?["audio"] as? Bool ?? true)
-    }
-
-    /// One byte of a song's audio, to learn why a stream failed (429, 403, 404) without downloading anything.
-    func probeAudio(_ id: String) async throws {
-        var req = try await request(Endpoints.file(id))
-        req.timeoutInterval = 15
-        req.setValue("bytes=0-0", forHTTPHeaderField: "Range")
-        let (data, response) = try await URLSession.shared.data(for: req)
-        try check(response, data: data)
     }
 
     /// Asks the server to fetch a catalog song's audio from its stored link; progress is then read from the song status.
@@ -174,8 +142,9 @@ struct APIClient {
             throw APIError.http(0, "Mobile data is off for downloads. Turn on Use mobile data in Settings.")
         }
         try check(response)
-        try? FileManager.default.removeItem(at: track.fileURL)
-        try FileManager.default.moveItem(at: tmp, to: track.fileURL)
+        let dest = AudioFiles.reserve(track)
+        try? FileManager.default.removeItem(at: dest)
+        try FileManager.default.moveItem(at: tmp, to: dest)
     }
 
     /// Asks the server to fetch the audio, then copies the file into the app.
@@ -193,7 +162,7 @@ struct APIClient {
         defer { session.finishTasksAndInvalidate() }
         let (tmp, fileResponse) = try await session.download(for: try await request(Endpoints.file(track.id)))
         try check(fileResponse)
-        let dest = track.fileURL
+        let dest = AudioFiles.reserve(track)
         try? FileManager.default.removeItem(at: dest)
         try FileManager.default.moveItem(at: tmp, to: dest)
         return track

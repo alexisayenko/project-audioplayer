@@ -12,6 +12,9 @@ struct SettingsView: View {
     @State private var confirmRemoveAll = false
     @State private var removedTick = 0
     @State private var confirmReset = false
+    @State private var filesTick = 0
+    @State private var filesNotice: String?
+    @Environment(\.openURL) private var openURL
 
     var body: some View {
         ScrollView {
@@ -26,6 +29,7 @@ struct SettingsView: View {
         }
         .scrollDismissesKeyboard(.interactively)
         .sensoryFeedback(.success, trigger: removedTick)
+        .sensoryFeedback(.selection, trigger: filesTick)
         .dsGround()
         .confirmationDialog("Remove all \(library.tracks.filter { $0.localOnly != true }.count) downloads from this iPhone?", isPresented: $confirmRemoveAll, titleVisibility: .visible) {
             Button("Remove all downloads", role: .destructive) { library.removeAllAudio(); removedTick += 1 }
@@ -145,11 +149,6 @@ struct SettingsView: View {
                         GoogleSignInButton { Task { await auth.signInWithGoogle() } }.disabled(auth.busy)
                     }
                 }
-                if !ServerLink.hasCredentials(settings) {
-                    Text("Browsing as a guest: you can search and stream the public library here, and songs saved on this iPhone play offline. Sign in to keep your own library, add songs and download them.")
-                        .dsCaption()
-                        .fixedSize(horizontal: false, vertical: true)
-                }
                 if let e = auth.error {
                     Label { Text(e).font(T.caption).foregroundStyle(DS.Color.ink) } icon: {
                         Image(systemName: "exclamationmark.circle.fill").foregroundStyle(DS.Color.power)
@@ -202,6 +201,31 @@ struct SettingsView: View {
         .padding(.top, DS.Space.space1)
     }
 
+    #if os(iOS)
+    private var openInFilesRow: some View {
+        VStack(alignment: .leading, spacing: DS.Space.space2) {
+            Button {
+                filesTick += 1
+                filesNotice = nil
+                let path = LibraryStore.documents.path.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? ""
+                guard let url = URL(string: "shareddocuments://" + path) else { filesNotice = Self.filesHint; return }
+                openURL(url) { if !$0 { filesNotice = Self.filesHint } }
+            } label: {
+                Label("Open in Files", systemImage: "folder").frame(maxWidth: .infinity)
+            }
+            .buttonStyle(DSButtonStyle(kind: .outline))
+            .frame(minHeight: DS.Space.hit)
+            .accessibilityLabel("Open downloaded songs in Files")
+            if let filesNotice { Text(filesNotice).dsCaption().fixedSize(horizontal: false, vertical: true) }
+        }
+        .padding(.top, DS.Space.space1)
+    }
+
+    private static let filesHint = "Open Files > On My iPhone > Electrophone"
+    #else
+    private var openInFilesRow: some View { EmptyView() }
+    #endif
+
     private var storageCard: some View {
         card("Storage") {
             VStack(alignment: .leading, spacing: DS.Space.space2) {
@@ -223,7 +247,10 @@ struct SettingsView: View {
                         .font(T.caption).foregroundStyle(lowSpace ? DS.Color.powerText : DS.Color.inkMuted)
                         .accessibilityLabel("\(sizeText(bytes)) of songs, \(sizeText(freeBytes)) free\(lowSpace ? ", low space" : "")")
                 }
-                downloadAllRow
+                Text("Audio is saved as AAC (m4a) at the best quality the source provides: usually 128 kbps, sometimes 160, 192 or more.")
+                    .dsCaption().fixedSize(horizontal: false, vertical: true)
+                if auth.isSignedIn { downloadAllRow }
+                openInFilesRow
                 Button { confirmRemoveAll = true } label: { Text("Remove all downloads").frame(maxWidth: .infinity) }
                     .buttonStyle(DSButtonStyle(kind: .danger)).disabled(library.tracks.isEmpty)
                     .padding(.top, DS.Space.space1)

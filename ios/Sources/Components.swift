@@ -301,7 +301,7 @@ struct CoverImage: View {
         Group {
             if let shown {
                 Image(uiImage: shown).resizable().scaledToFill()
-            } else if let url = CoverURL.resolve(source, baseURL: settings.serverURL, token: ""), !CoverCache.isServerCover(source) {
+            } else if !LocalCover.isLocal(source), let url = CoverURL.resolve(source, baseURL: settings.serverURL, token: ""), !CoverCache.isServerCover(source) {
                 AsyncImage(url: url) { $0.resizable().scaledToFill() } placeholder: { placeholder }
             } else {
                 placeholder
@@ -323,6 +323,11 @@ struct CoverImage: View {
 
     /// Server covers are fetched with the auth header, never with a token in the URL.
     private func load() async {
+        if let source, LocalCover.isLocal(source) {
+            let local = await LocalCover.image(for: source, pixels: pixels)
+            loaded = local.map { (source, $0) }
+            return
+        }
         guard let source, CoverCache.isServerCover(source) else { loaded = nil; return }
         let fetched = await CoverCache.image(for: source, baseURL: settings.serverURL, token: settings.token, pixels: pixels)
         loaded = fetched.map { (source, $0) }

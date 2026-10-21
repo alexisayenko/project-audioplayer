@@ -7,7 +7,6 @@ enum Endpoints {
     static let googleToken = secure("oauth2.googleapis.com", "token")
 
     static let tags = path("tags")
-    static let me = path("me")
     static let catalog = path("catalog")
     static let search = path("search")
     static let download = path("download")
@@ -17,6 +16,14 @@ enum Endpoints {
     static let genres = path("genres")
     static let statsListening = path("stats", "listening")
     static let coversPrefix = path("covers") + "/"
+
+    static let anonSession = path("anon", "session")
+    static let anonDownloads = path("anon", "downloads")
+
+    static func anonDownload(_ id: String) -> String { path("anon", "downloads", id) }
+    static func anonFile(_ id: String) -> String { path("anon", "downloads", id, "file") }
+    static func anonCover(_ id: String) -> String { path("anon", "downloads", id, "cover") }
+    static func anonAck(_ id: String) -> String { path("anon", "downloads", id, "ack") }
 
     static func file(_ id: String) -> String { path("files", id) }
     static func song(_ id: String) -> String { path("songs", id) }
