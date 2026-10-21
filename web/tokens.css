@@ -49,6 +49,7 @@
   --selection: var(--accent-tint);
   --select-tint: #ddf3f5;
   --select-ink: #00778d;
+  --cover-scrim: #10141773;
   --font-sans: -apple-system, "SF Pro Display", "SF Pro Text", system-ui, "Helvetica Neue", sans-serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
   --space-1: 4px;
@@ -133,6 +134,12 @@
   --cover-lg: 96px;
   --dot-sm: 8px;
   --dot-md: 10px;
+  --cover-row: 56px;
+  --badge: 20px;
+  --chip-fade: 24px;
+  --sheet-tall: 0.8;
+  --details-cover: 200px;
+  --dim: 0.55;
   --font-display: 700 34px/41px var(--font-sans);
   --font-title: 700 22px/28px var(--font-sans);
   --font-headline: 600 17px/22px var(--font-sans);

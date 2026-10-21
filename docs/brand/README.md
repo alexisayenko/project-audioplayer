@@ -46,7 +46,7 @@ Prices, assessment, follow-up steps and the checks history: [`domains.md`](domai
 
 ### Rules for native code
 
-Everything that is not a colour, text style, spacing or radius still comes from tokens: strokes from `DS.Stroke` (never a literal `lineWidth`), shadows from `DS.Shadow` through `.dsShadow(_:)` (never a hand-built `.shadow(...)`), animation durations and curves from `DS.Motion` through `.dsAnimation(...)`, `dsWithAnimation` and `Animation.ds(...)` (Reduce Motion is honoured by the helpers), icon sizes and weights from `DS.Icon`, fixed part dimensions from `DS.Component` and `DS.Control`, text from `T.*` (which reads `DS.Dynamic`). `ios/Sources/DSModifiers.swift` is the one hand-written file beside the generated `DesignTokens.swift`. A value the system lacks is added to the system first.
+Everything that is not a colour, text style, spacing or radius still comes from tokens: strokes from `DS.Stroke` (never a literal `lineWidth`), shadows from `DS.Shadow` through `.dsShadow(_:)` (never a hand-built `.shadow(...)`), animation durations and curves from `DS.Motion` through `.dsAnimation(...)`, `dsWithAnimation` and `Animation.ds(...)` (Reduce Motion is honoured by the helpers), icon sizes and weights from `DS.Icon`, fixed part dimensions from `DS.Component` and `DS.Control` (the Library v5 parts: `coverRow`, `badge`, `chipFade`, `sheetTall`, `detailsCover`), opacity levels from `DS.Opacity` (`dim`), text from `T.*` (which reads `DS.Dynamic`). `ios/Sources/DSModifiers.swift` is the one hand-written file beside the generated `DesignTokens.swift`. A value the system lacks is added to the system first.
 
 ### How to add a token
 
@@ -56,7 +56,7 @@ Everything that is not a colour, text style, spacing or radius still comes from 
 4. A new family needs a line in `CSS_FAMILIES` (web) and in `swift_native_families` (iOS) in the script.
 
 Screens are designed in the Screens artifact before they are built; a
-component used on a screen must exist in the system.
+component used on a screen must exist in the system. The iPhone Library components (header, search field, chips, results row, song row, sheets, context menu, banners and toasts, empty and loading blocks) are in the system's "Library v5" component group, specified in [`../ui-ux/library-v5.md`](../ui-ux/library-v5.md); the system has a Library v5 section with the new tokens (`cover-scrim`, `cover-row`, `badge`, `chip-fade`, `sheet-tall`, `details-cover`, `dim`).
 
 ## Current state
 
@@ -65,10 +65,8 @@ component used on a screen must exist in the system.
 - **Direction**: Warm analog / Quiet glass — warm paper and charcoal
   grounds, copper rim, flat glass slabs, one cyan accent, day + night.
 - **Typography**: SF Pro (system) + SF Mono for times. No font files.
-- **Mark**: the record on the platter (cyan disc, teal stripes, paper
-  frame); the app icon is derived from it. Source file: the system's
-  `assets/Mockups2/mockup-11.png` until a vector mark is drawn.
-- **Token families**: colour (including the chart palette, `select-tint` / `select-ink` for the selected navigation row, and the web-only `scrim`, `fill`, `on-fill`, `ring-color`, `caret`, `selection`), type (also generated as `DS.Dynamic`, the Dynamic Type counterparts), space, radius (with `radius-select`), shadow plus `stroke`, `state`, `motion`, `elevation`, `overlay`, `icon`, `control` and `component`. Reach Swift: colour, chart, type, space, radius, stroke, motion, icon, control, component, and the shadow tokens marked `"platform": "ios"` (`depth-*`, as `DS.Shadow`). Web-only: `state`, `elevation`, `overlay` and the web shadows. Tokens marked `"platform": "ios"` are skipped in `web/tokens.css`.
+- **Mark**: the full-bleed glass plate with the vinyl (black record, copper rim, cyan label with stripes) is the app icon; the vinyl only is the in-app logo. Masters and rules: [logo/README.md](logo/README.md); also in the Design System (`assets/Logo/`, the Logo component and the Logo and app icon section). Earlier icons are archived in `logo/archive/`.
+- **Token families**: colour (including the chart palette, `select-tint` / `select-ink` for the selected navigation row, `cover-scrim` for the playing cover, and the web-only `scrim`, `fill`, `on-fill`, `ring-color`, `caret`, `selection`), type (also generated as `DS.Dynamic`, the Dynamic Type counterparts), space, radius (with `radius-select`), shadow plus `stroke`, `state`, `motion`, `elevation`, `overlay`, `icon`, `control`, `component` and `opacity` (`dim`, .55, Swift `DS.Opacity.dim`). Reach Swift: colour, chart, type, space, radius, stroke, motion, icon, control, component, opacity, and the shadow tokens marked `"platform": "ios"` (`depth-*`, as `DS.Shadow`). Web-only: `state`, `elevation`, `overlay` and the web shadows. Tokens marked `"platform": "ios"` are skipped in `web/tokens.css`.
 - **History**: Vega 108 skeuomorphic look (ADR-0007), sketches in
   `../ui-ux/vega-108/`, retired by ADR-0009.
 
@@ -86,4 +84,4 @@ The visualizer palettes (`--viz-*` in `web/viz.css`, including the Ice palette `
 
 ## Logo and app icon
 
-The vinyl logo and the app icon (masters, usage rules, archive of the first icon) are in [logo/README.md](logo/README.md).
+The vinyl logo and the app icon (masters, usage rules, archive of the first icon) are in [logo/README.md](logo/README.md) and are published in the Design System as the `assets/Logo/` group, the Logo component and the Logo and app icon section (2026-10-21).

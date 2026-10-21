@@ -60,6 +60,8 @@ enum DS {
         static let selectTint = SwiftUI.Color(light: (0.867, 0.953, 0.961, 1.000), dark: (0.173, 0.220, 0.235, 1.000))
         /// Text and icon of the selected navigation row on select-tint. 4.5:1 on select-tint by day (the design feedback asked for about #007f91, which is 4.1:1), 9:1 by night.
         static let selectInk = SwiftUI.Color(light: (0.000, 0.467, 0.553, 1.000), dark: (0.682, 0.914, 0.945, 1.000))
+        /// Dim layer over the playing song's cover in a Library row, under the equaliser glyph (surface). vinyl at 45%, the same in both themes. Glyph and scrim are theme-independent: surface on this scrim is above 7:1 on any cover.
+        static let coverScrim = SwiftUI.Color(light: (0.063, 0.078, 0.090, 0.451), dark: (0.063, 0.078, 0.090, 0.451))
     }
 
     // MARK: Chart
@@ -318,6 +320,22 @@ enum DS {
         static let dotSm: CGFloat = 8
         /// Chart legend dot.
         static let dotMd: CGFloat = 10
+        /// Cover in a Library song row (iOS). Scales with Dynamic Type up to 1.5x. cover-md (64) stays for the transport bar and the web row.
+        static let coverRow: CGFloat = 56
+        /// Minimum width and height of the count badge on a selected filter chip (capsule; number in caption semibold).
+        static let badge: CGFloat = 20
+        /// Width of the trailing fade on the Library chip row while more chips exist beyond the screen edge; removed when scrolled to the end.
+        static let chipFade: CGFloat = 24
+        /// Detent fraction (of screen height) of filter sheets that have a search field (Tags, Genres, Countries), so the sheet does not change height when the keyboard opens. A fraction, not a length.
+        static let sheetTall: CGFloat = 0.8
+        /// Cover on Song Details (between cover-lg 96 and full width). Swift name: DS.Component.detailsCover.
+        static let detailsCover: CGFloat = 200
+    }
+
+    // MARK: Opacity
+    enum Opacity {
+        /// A Library row with no audio anywhere ("No audio yet"): the cover and the text are drawn at this opacity; the row stays tappable. Swift name: DS.Opacity.dim.
+        static let dim: CGFloat = 0.55
     }
 
 }

@@ -6,7 +6,7 @@ Source of truth: the "Electrophone" Design System artifact on claude.ai
 docs/brand/tokens.json; this script turns that file into
 
   ios/Sources/DesignTokens.swift   (SwiftUI: colours, chart colours, type plus Dynamic Type counterparts, spacing, radius, stroke,
-                                    shadow, motion, icon, control, component)
+                                    shadow, motion, icon, control, component, opacity)
   web/tokens.css                   (CSS custom properties, light + dark; tokens marked platform web are web only, platform ios are skipped)
 
 All colour-valued tokens live in the color family (the artifact's parser accepts per-theme values and
@@ -252,7 +252,7 @@ def swift_value(tok: dict, family: str) -> tuple[str, str]:
 
 def swift_native_families(tokens: dict) -> list[str]:
     out: list[str] = []
-    for family, enum_name in (("motion", "Motion"), ("icon", "Icon"), ("control", "Control"), ("component", "Component")):
+    for family, enum_name in (("motion", "Motion"), ("icon", "Icon"), ("control", "Control"), ("component", "Component"), ("opacity", "Opacity")):
         fam = tokens.get(family)
         if not fam:
             continue
@@ -316,7 +316,7 @@ def swift(tokens: dict) -> str:
     return "\n".join(out) + "\n"
 
 
-CSS_FAMILIES = ("spacing", "radius", "stroke", "shadow", "overlay", "state", "motion", "elevation", "icon", "control", "component")
+CSS_FAMILIES = ("spacing", "radius", "stroke", "shadow", "overlay", "state", "motion", "elevation", "icon", "control", "component", "opacity")
 
 
 def css_tokens(tokens: dict) -> list:
