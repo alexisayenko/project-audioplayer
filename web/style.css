@@ -547,6 +547,14 @@ dialog .row.end .btn + .btn { margin-left: 0; }
   transition: opacity var(--dur-base) var(--ease-out);
 }
 @starting-style { .toast { opacity: 0; } }
+.update-bar {
+  position: fixed; top: calc(var(--space-3) + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); z-index: var(--z-toast); max-width: 92vw;
+  display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-3) var(--space-2) var(--space-4);
+  background: var(--ink); color: var(--ground); border-radius: var(--radius-key); box-shadow: var(--shadow-float);
+}
+.update-bar button { min-height: var(--control-sm); border: 0; background: none; color: var(--accent); font-weight: 600; padding: 0 var(--space-2); }
+.update-bar .update-reload { text-decoration: underline; }
+.update-bar .update-dismiss { color: var(--ground); font-size: 1.25em; line-height: 1; }
 @media (min-width: 480px) { .toast { bottom: calc(var(--dock-b) + var(--mini-h) + var(--space-4)); } }
 .scroll-top {
   position: fixed; z-index: var(--z-float); right: var(--gutter);

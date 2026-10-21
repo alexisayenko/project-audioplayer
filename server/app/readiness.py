@@ -22,7 +22,7 @@ log = logging.getLogger("audioplayer.readiness")
 
 RETRY_AFTER_S = 3
 DEFAULT_MAX_S = 300.0
-PUBLIC_EXACT = frozenset({"/health", "/robots.txt", "/legal", "/", "/index.html"})
+PUBLIC_EXACT = frozenset({"/health", "/robots.txt", "/legal", "/", "/index.html", "/version"})
 STATIC_PREFIXES = ("/_v/", "/js/", "/css/", "/img/", "/data/")
 STATIC_ROOT_SUFFIXES = (".css", ".png", ".svg", ".ico", ".webmanifest")
 _STATIC_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})

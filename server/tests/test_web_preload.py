@@ -11,7 +11,7 @@ from app.web import dynamic_imports, lazy_modules, module_closure, static_import
 REAL_WEB = Path(__file__).resolve().parents[2] / "web"
 LAZY = [
     "settings", "genres", "genres-rework", "playlists", "stats", "theory", "about", "features", "viz-ui", "song-card", "add", "edit-dialog", "song-form", "drafts",
-    "share-ui", "share-open", "player-tag-picker", "player-actions", "library-toolbar", "viz-modes", "viz-terrain-gl",
+    "share-ui", "share-open", "player-tag-picker", "player-actions", "library-toolbar", "viz-modes", "viz-terrain-gl", "update-check",
 ]
 ORPHANS = {"js/display-title.js", "js/track-sub.js", "js/viz-deltae.js", "js/viz-timeline-worker.js"}
 
@@ -162,6 +162,25 @@ def test_web_121_index_lists_the_tier2_modules_as_json_without_preloading_them(t
         listed = re.search(r'<script type="application/json" id="tier2-modules">(.*?)</script>', page).group(1)
         assert json.loads(listed) == [f"_v/{version}/js/lazy.js", f"_v/{version}/js/more.js"]
         assert page.index("tier2-modules") < page.index("</head>")
+    finally:
+        monkeypatch.delenv("AUDIO_WEB_DIR")
+        importlib.reload(main)
+
+
+def test_api_200_version_route_is_public_no_store_and_matches_the_served_page(tmp_path, monkeypatch):
+    web_root = tmp_path / "web"
+    _tree(web_root, {"index.html": '<html><head></head><body><script type="module" src="js/app.js"></script></body></html>', "js/app.js": "export {};"})
+    monkeypatch.setenv("AUDIO_API_TOKEN", "secret")
+    monkeypatch.setenv("AUDIO_WEB_DIR", str(web_root))
+    monkeypatch.setenv("PUBLIC_VIEW", "0")
+    m = importlib.reload(main)
+    try:
+        client = TestClient(m.app)
+        r = client.get("/version")
+        assert r.status_code == 200
+        assert r.json() == {"version": web_version()}
+        assert r.headers["cache-control"] == "no-store"
+        assert f"_v/{r.json()['version']}/js/app.js" in client.get("/").text
     finally:
         monkeypatch.delenv("AUDIO_WEB_DIR")
         importlib.reload(main)

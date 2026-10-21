@@ -2,6 +2,11 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-21 (New version available notice, web and server, to deploy)
+
+- Web (WEB-157, task-0081): an open tab checks `GET /version` when it becomes visible, on focus and every 5 minutes while visible, and shows "A new version is available." with Reload and dismiss when a deploy changed the code; never reloads by itself. `web/js/update-check.js`, `web/js/app.js`, `web/style.css`.
+- Server (API-200): public `GET /version` returns the current web version hash (no-store). `server/app/web.py`.
+
 ## 2026-10-21 (fix: song info card crash, web, to deploy)
 
 - Web: opening the song info card (the Now playing (i) button) threw "'setInterval' called on an object that does not implement interface Window" because the live BPM controller called browser timers as methods of a plain object; the default timers are now arrow wrappers. A sweep of `web/js` found no other occurrence. `web/js/live-bpm-ctl.js`, `web/js/live-bpm-ctl.test.mjs`.

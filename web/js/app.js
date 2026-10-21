@@ -181,6 +181,7 @@ syncGuestUi();
 route();
 void loadLegal(legalEl, legalCtx);
 void startBackgroundLoad().catch(() => {});
+void import('./update-check.js').then((m) => m.startUpdateCheck()).catch(() => {});
 
 const warn = document.getElementById('sync-warn');
 const led = document.getElementById('server-led');

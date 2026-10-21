@@ -9,7 +9,7 @@ import re
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request, Response
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.types import Scope
 
@@ -146,6 +146,10 @@ def _index_response(request: Request) -> Response:
     return HTMLResponse(page, headers=headers)
 
 
+def _version_response() -> JSONResponse:
+    return JSONResponse({"version": web_version()}, headers={"Cache-Control": "no-store"})
+
+
 def _versioned_file(version: str, path: str) -> FileResponse:
     target = safe_join(web_dir(), path)
     if target is None or not target.is_file():
@@ -162,5 +166,6 @@ def mount(app: FastAPI) -> None:
     if (root / "index.html").is_file():
         app.add_api_route("/", _index_response, methods=["GET"], include_in_schema=False)
         app.add_api_route("/index.html", _index_response, methods=["GET"], include_in_schema=False)
+    app.add_api_route("/version", _version_response, methods=["GET"], include_in_schema=False)
     app.add_api_route("/_v/{version}/{path:path}", _versioned_file, methods=["GET"], include_in_schema=False)
     app.mount("/", NoCacheStaticFiles(directory=root, html=True), name="web")
