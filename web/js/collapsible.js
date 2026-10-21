@@ -2,7 +2,7 @@ import { el } from './dom.js';
 import { icon } from './icons.js';
 
 export const PANEL_NARROW_PX = 480;
-export const PANEL_KEYS = { stats: 'ap2.panel.stats', genres: 'ap2.panel.genres', genreInfo: 'ap2.panel.genreInfo', links: 'ap2.panel.links' };
+export const PANEL_KEYS = { stats: 'ap2.panel.stats', genres: 'ap2.panel.genres', genreInfo: 'ap2.panel.genreInfo', links: 'ap2.panel.links', libTools: 'ap2.panel.libTools' };
 
 export function loadCollapsed(storage, key, width) {
   try {

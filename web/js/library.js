@@ -19,6 +19,7 @@ import { isRowControl, keepCovers } from './row-cover.js';
 import { mountScrollTop } from './scroll-top.js';
 import { draftStore } from './drafts-store.js';
 import { countText } from './drafts-model.js';
+import { libraryTools } from './library-tools.js';
 
 export { filterByTags, visibleSongs } from './library-data.js';
 
@@ -141,11 +142,13 @@ export function renderLibrary(root) {
     ...(switcher ? [switcher] : []),
     songsPane,
     draftsPane);
+  const tools = libraryTools();
   songsPane.append(
     el('div', { class: 'toolbar' },
       el('label', { class: 'search' }, icon('search', 'action'), search, clearSearchBtn),
       showPlaying,
       cats),
+    ...(tools ? [tools] : []),
     el('div', { class: 'sortbar' },
       el('label', { class: 'sort t-headline' }, sort, icon('chevron', 'inline')), reverse,
       summary, el('div', { class: 'sort-actions' }, clearFilters, playAll, addAll)),

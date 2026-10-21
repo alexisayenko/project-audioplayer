@@ -31,7 +31,7 @@ test('bad or missing storage never throws', () => {
 });
 
 test('panel keys', () => {
-  assert.deepEqual(Object.values(PANEL_KEYS), ['ap2.panel.stats', 'ap2.panel.genres', 'ap2.panel.genreInfo', 'ap2.panel.links']);
+  assert.deepEqual(Object.values(PANEL_KEYS), ['ap2.panel.stats', 'ap2.panel.genres', 'ap2.panel.genreInfo', 'ap2.panel.links', 'ap2.panel.libTools']);
 });
 
 test('chevron button carries aria state and toggles', () => {

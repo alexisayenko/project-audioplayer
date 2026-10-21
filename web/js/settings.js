@@ -7,7 +7,6 @@ import { autoDownloadOn, setAutoDownload } from './autodl.js';
 import { el, pageHead } from './dom.js';
 import { describeSync } from './sync-status.js';
 import { isGuest, ownerLabel } from './guest.js';
-import { bpmCard, metadataCard } from './backfill-card.js';
 import { downloadAllRow } from './bulk-download.js';
 import { isSupported as vizSupported } from './audio-graph.js';
 import {
@@ -161,7 +160,7 @@ export function renderSettings(root) {
   const unsub = store.subscribe(rebuild);
   window.addEventListener('sync-changed', rebuild);
   root.append(pageHead('Settings', 'Your library and storage on this server.'), el('div', { class: 'settings-grid' },
-    el('div', { class: 'settings-col' }, accountCard(), ...(auth.email ? [card, bpmCard(), metadataCard()] : [])),
+    el('div', { class: 'settings-col' }, accountCard(), ...(auth.email ? [card] : [])),
     el('div', { class: 'settings-col' }, playbackCard(), visualizerCard())));
   return () => { unsub(); window.removeEventListener('sync-changed', rebuild); };
 }

@@ -28,10 +28,10 @@ export const META = {
   },
 };
 
-export const bpmCard = () => backfillCard(BPM);
-export const metadataCard = () => backfillCard(META);
+export const bpmCard = (onState) => backfillCard(BPM, onState);
+export const metadataCard = (onState) => backfillCard(META, onState);
 
-export function backfillCard(cfg) {
+export function backfillCard(cfg, onState) {
   const lead = el('p', { class: 'muted t-subhead' }, 'Checking...');
   const fill = el('div', { class: 'bf-fill' });
   const bar = el('div', { class: 'bf-bar', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': '0', 'aria-label': cfg.label, hidden: true }, fill);
@@ -53,6 +53,7 @@ export function backfillCard(cfg) {
     start.textContent = cfg.button(s);
     start.disabled = !canStart(s);
     stop.hidden = !running;
+    onState?.(s);
   };
 
   const stopPolling = () => { clearTimeout(timer); timer = null; };
