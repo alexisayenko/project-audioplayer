@@ -2,6 +2,14 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-21 (Library table view, web, to deploy)
+
+- Web (LIB-209, task-0056): the Library has a List | Table switch (owner and signed-in users). The table shows the current result (search, filters, sort, Reverse order) with Song, Length, Times listened, Times skipped, Total listened; sortable headers (third click returns to the Library order), sticky header, row click opens the song card. `web/js/library-table.js`, `library.js`, `library-data.js`, `icons.js`, `web/style.css`, test `web/js/library-table.test.mjs` (not run).
+
+## 2026-10-21 (resume playback position after reload, web, to deploy)
+
+- Web (PLY-179): the position of the current song is saved (every 5 s, on pause, seek and page hide) and restored paused after a reload. `web/js/resume-position.js`, `web/js/player.js`, test `web/js/resume-position.test.mjs` (not run).
+
 ## 2026-10-21 (New version available notice, web and server, to deploy)
 
 - Web (WEB-157, task-0081): an open tab checks `GET /version` when it becomes visible, on focus and every 5 minutes while visible, and shows "A new version is available." with Reload and dismiss when a deploy changed the code; never reloads by itself. `web/js/update-check.js`, `web/js/app.js`, `web/style.css`.

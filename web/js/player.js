@@ -9,7 +9,8 @@ import { closeMenu, initMenus } from './menu.js';
 import { downloadSong } from './download.js';
 import { autodl, autoDownloadOn } from './autodl.js';
 import { attachScrubber } from './scrubber.js';
-import { storeGet, storeSet } from './storage.js';
+import { storeGet, storeSet, storeRemove } from './storage.js';
+import { createResumePosition } from './resume-position.js';
 import { paintCover, currentCoverModel, paintQueueCovers } from './row-cover.js';
 import { $, setIcon, setToggle, setCover, queueRow, updateDl, paintTimes, initMiniCompact } from './player-ui.js';
 import { updateMediaSession, setupMediaSession, updatePositionState, setVolume, storedVolume } from './player-media.js';
@@ -49,6 +50,29 @@ let history = [];
 let volumeOk = true;
 const scrubbers = [];
 let pendingRestore = false;
+let resumeOnce = false;
+let resumeGuard = false;
+const resume = createResumePosition({ storage: { get: storeGet, set: storeSet, remove: storeRemove } });
+
+function saveResume(force) {
+  if (resumeGuard || !audio.src || !(audio.readyState > 0)) return;
+  const id = player.currentId;
+  if (!id) return;
+  if (force) resume.save(id, audio.currentTime); else resume.tick(id, audio.currentTime);
+}
+
+function armResume(id) {
+  resumeGuard = true;
+  const onMeta = () => {
+    audio.removeEventListener('loadedmetadata', onMeta);
+    if (player.currentId === id) {
+      const pos = resume.positionFor(id, audio.duration);
+      if (pos > 0) audio.currentTime = pos;
+    }
+    resumeGuard = false;
+  };
+  audio.addEventListener('loadedmetadata', onMeta);
+}
 let awaiting = null;
 const listeners = new Set();
 
@@ -398,7 +422,12 @@ function load(autoplay) {
     return;
   }
   awaiting = null;
+  const restoring = resumeOnce && !autoplay;
+  resumeOnce = false;
+  resumeGuard = false;
+  if (!restoring) resume.clear();
   audio.src = api.fileUrl(song.id);
+  if (restoring) armResume(song.id);
   if (autoplay) audio.play().catch(fail);
   render();
 }
@@ -554,10 +583,13 @@ export function initPlayer() {
   });
   initMenus();
   audio.addEventListener('play', () => render(true));
-  audio.addEventListener('pause', () => render(true));
-  audio.addEventListener('timeupdate', renderProgress);
+  audio.addEventListener('pause', () => { saveResume(true); render(true); });
+  audio.addEventListener('timeupdate', () => { saveResume(false); renderProgress(); });
+  audio.addEventListener('seeked', () => saveResume(true));
+  window.addEventListener('pagehide', () => saveResume(true));
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') saveResume(true); });
   audio.addEventListener('durationchange', renderProgress);
-  audio.addEventListener('ended', () => { window.dispatchEvent(new Event('song-ended')); if (!loop.onEnded()) player.next(true); });
+  audio.addEventListener('ended', () => { resume.clear(); window.dispatchEvent(new Event('song-ended')); if (!loop.onEnded()) player.next(true); });
   initLoopChip($('mini-loop'), loop);
   const recorder = createPlayRecorder({
     audio,
@@ -643,6 +675,7 @@ export function initPlayer() {
     }
     if (pendingRestore && player.current) {
       pendingRestore = false;
+      resumeOnce = true;
       load(false);
       syncDownloads();
       return;

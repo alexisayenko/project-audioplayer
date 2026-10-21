@@ -24,7 +24,7 @@ export function unsetCount(catId, songs = store.songs) {
   return unsetKey(catId) ? songs.filter((s) => !hasValueIn(s, catId)).length : 0;
 }
 
-export const prefs = { query: '', sel: new Set(), sort: 'added', view: 'songs', never: false, reverse: false };
+export const prefs = { query: '', sel: new Set(), sort: 'added', view: 'songs', never: false, reverse: false, layout: 'list' };
 
 let listening = null;
 
@@ -36,6 +36,7 @@ export function setListening(data) {
 }
 
 export const hasListening = () => !!listening;
+export const listeningData = () => listening;
 
 const lastListened = (song) => listening?.songs?.[song.id]?.last_listened || '';
 
@@ -54,6 +55,16 @@ export function readLibraryView(canDrafts) {
 
 export function saveLibraryView(view) {
   storeSet(LIBRARY_VIEW_KEY, view === 'drafts' ? 'drafts' : 'songs');
+}
+
+export const LIBRARY_LAYOUT_KEY = 'electrophone.libraryLayout';
+
+export function readLibraryLayout(canTable) {
+  return canTable && storeGet(LIBRARY_LAYOUT_KEY) === 'table' ? 'table' : 'list';
+}
+
+export function saveLibraryLayout(layout) {
+  storeSet(LIBRARY_LAYOUT_KEY, layout === 'table' ? 'table' : 'list');
 }
 
 export function filterByTags(tags) {
