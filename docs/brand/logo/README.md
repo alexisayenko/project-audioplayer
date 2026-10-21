@@ -4,10 +4,12 @@ Source: a GPT-generated image chosen by Alex in October 2026 (glass plate, black
 
 | File | What it is |
 | --- | --- |
-| `source-gpt-2026-10.png` | The original image converted from webp (1254 px, opaque). |
-| `electrophone-app-icon.png` | App icon master: the plated image, 1024x1024, sRGB, no alpha. Used as `AppIcon.png` in the iOS asset catalog and, scaled to 180 px, as `web/apple-touch-icon.png`. |
+| `source-gpt-2026-10.png` | The first original image converted from webp (1254 px, opaque). |
+| `source-gpt-2026-10b.png` | The second original image (1254 px, opaque): glass rounded-square plate with the vinyl, on cream; source of the current app icon. |
+| `electrophone-app-icon.png` | App icon master: full-bleed liquid-glass plate with the vinyl, 1024x1024, sRGB, no alpha. Cropped just inside the plate outline of `source-gpt-2026-10b.png` (no ivory background, outline or shadow; the extreme corners filled from the plate edge). Used as `AppIcon.png` in the iOS asset catalog and, scaled to 180 px, as `web/apple-touch-icon.png`. |
 | `electrophone-vinyl.png` | Logo master: the vinyl disc only, 1024x1024, transparent, circular alpha mask exactly on the outer edge of the copper rim. |
 | `archive/v1-vinyl-2026-10/` | Archive: first icon, black vinyl with cyan label on ivory, used until build 20261026; kept for reference, not used in the app. |
+| `archive/v2-plated-2026-10/` | Archive: second icon, the glass plate as a small rounded square floating on ivory; replaced by the full-bleed version; kept for reference, not used in the app. |
 
 Derived files (regenerate from the masters, never edit by hand):
 
@@ -16,8 +18,12 @@ Derived files (regenerate from the masters, never edit by hand):
 
 ## Usage rules
 
-- App icon = the plated version. In-app and on the web the logo = the vinyl only, never the plate.
+- App icon = the full-bleed liquid-glass plate with the vinyl. In-app and on the web the logo = the vinyl only, never the plate.
 - No recolouring, no filters, no extra outline or shadow.
 - Minimum size 20 pt.
 - Clear space = 1/4 of the disc diameter on every side.
 - Do not pre-round the app icon; the system applies the mask.
+
+## Possible later upgrade
+
+A native iOS 26 Liquid Glass layered `.icon` (Icon Composer: glass plate and vinyl as separate layers) is a possible later upgrade; the flat 1024 master above is what ships now.
