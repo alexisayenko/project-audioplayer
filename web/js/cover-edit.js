@@ -12,7 +12,7 @@ export function fileProblem(file) {
   return '';
 }
 
-const DISCOGS_PAGE = /^/(?:[a-z]{2}(?:-[A-Z]{2})?/)?(?:master|release)/d+(?:-[^/]*)?/?$/;
+const DISCOGS_PAGE = /^\/(?:[a-z]{2}(?:-[A-Z]{2})?\/)?(?:master|release)\/\d+(?:-[^/]*)?\/?$/;
 
 export function isDiscogsPage(text) {
   let u;
