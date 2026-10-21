@@ -2,6 +2,12 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-21 (task statuses audited, docs, to deploy)
+
+- Docs: Task statuses audited (to deploy): every in-progress task checked against code and this changelog; task-0065 back to to do, status notes in task-0036 and task-0055.
+- Docs: Stale not-deployed task statuses fixed (to deploy).
+- Docs: Task statuses decided with Alex: 0037, 0055, 0036 (to deploy).
+
 ## 2026-10-21 (genre outrun, server data, to deploy)
 
 - Server: new genre `outrun` (extra, level 2 under synthwave, approved; synonyms outrun music and outrun electro; related to electro house), a Rate Your Music link, and a Wikipedia link to the Synthwave article's Outrun section (a `#fragment` title from the new `genre_sources_manual.json`).
