@@ -133,7 +133,11 @@ Added 2026-10-18: `dream trance` (extras, level 3 under trance, approved, not Di
 
 Updated 2026-10-21: `spacesynth` (already an approved extra, parents synthwave and italo disco, unchanged) gained synonyms space synth, synthdance, synthesizer dance, spacedance (also `ALIASES`), `related`: hi-nrg, space disco (synthwave is already a parent; eurobeat is a synonym of eurodance, so it cannot be linked), a Rate Your Music link in `genre_rym.json` and a longer note in `genre_extras.json`; its Wikipedia link (Spacesynth, matched by name) already existed, so `genre_sources_manual.json` is unchanged. Source: Alex and https://rateyourmusic.com/genre/spacesynth/.
 
+Updated 2026-10-21: `bard` is a synonym of the provisional `singer-songwriter` (not a separate genre), together with bard song, авторская песня and author song (also in `ALIASES`; the former `bard` to `folk` retag is removed); a Rate Your Music link in `genre_rym.json` and an own-words note in `genre_extras.json`. Source: Alex (EX2, EW), https://rateyourmusic.com/genre/singer-songwriter/.
+
 Added 2026-10-21: `outrun` (extras, level 2 under synthwave, approved, not Discogs; synonyms outrun music, outrun electro; `related`: electro house; source Alex and https://rateyourmusic.com/genre/outrun/ in `genre_rym.json`). It has no Wikipedia article of its own, so `genre_sources_manual.json` links the Outrun section of the Synthwave article (`Synthwave#Outrun`, match manual, no wikidata item; `_title` in `genre_sources.py` keeps a `#fragment`). French electro is not in the vocabulary, so it is not linked.
+
+Added 2026-10-21: `chillstep` (extras, level 4 under dubstep, which is level 3 under bass music, so the only level 4 genre; approved, not Discogs; synonym chill step, also `ALIASES`; `related`: downtempo, ambient; source Alex and https://rateyourmusic.com/genre/chillstep/ in `genre_rym.json`, which now also links `downtempo`). No Wikipedia link yet: `genre_sources.json` lists it with `discogs: false` only.
 
 Added 2026-10-18: `anthem trance`, `epic trance` and `euphoric trance` are synonyms of `uplifting trance` (also `ALIASES`); `commercial trance` and `stadium trance` stay out as too broad; the separate `epic` (Classical since 2026-10-18, see Removed families) is unaffected.
 

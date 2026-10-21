@@ -62,10 +62,10 @@
     "level4": 0
    },
    "Others": {
-    "total": 203,
+    "total": 204,
     "level2": 173,
     "level3": 30,
-    "level4": 0
+    "level4": 1
    },
    "Funk / Soul": {
     "total": 34,
@@ -104,7 +104,7 @@
     "level4": 0
    }
   },
-  "total": 530,
+  "total": 531,
   "non_discogs": {
    "Blues": 0,
    "Classical": 0,
@@ -113,7 +113,7 @@
    "trance": 11,
    "drum and bass": 2,
    "synthwave": 6,
-   "Others": 6,
+   "Others": 7,
    "Funk / Soul": 8,
    "Hip Hop": 1,
    "Jazz": 0,
@@ -1008,6 +1008,20 @@
   ],
   "provisional": true,
   "discogs": true
+ },
+ "chillstep": {
+  "parents": [
+   "dubstep"
+  ],
+  "related": [
+   "downtempo",
+   "ambient"
+  ],
+  "synonyms": [
+   "chill step"
+  ],
+  "discogs": false,
+  "status": "approved"
  },
  "chillwave": {
   "parents": [
@@ -3742,6 +3756,12 @@
  "singer-songwriter": {
   "parents": [
    "Others"
+  ],
+  "synonyms": [
+   "bard",
+   "bard song",
+   "авторская песня",
+   "author song"
   ],
   "provisional": true,
   "discogs": false

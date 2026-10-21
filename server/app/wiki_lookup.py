@@ -69,7 +69,9 @@ def qid_of(link: str | None) -> str | None:
 
 
 def _fetch_json(url: str) -> dict[str, Any]:
-    return httpjson.http_json(url, TIMEOUT)
+    host = (urllib.parse.urlsplit(url).hostname or "").lower()
+    headers = {"User-Agent": WIKIMEDIA_UA} if _WIKIMEDIA_HOST.search(host) else None
+    return httpjson.http_json(url, TIMEOUT, headers=headers)
 
 
 def _entity(qid: str) -> dict[str, Any] | None:
@@ -825,8 +827,128 @@ def _thumb_of(url: str) -> str:
     return _THUMB_PX.sub(f"/{THUMB_SIZE}px-", url, count=1)
 
 
+WIKIMEDIA_UA = "Electrophone/1.0 (https://electrophone.cc)"
+_WIKIMEDIA_HOST = re.compile(r"(?:^|\.)(?:wikipedia|wikimedia|wikidata)\.org$")
+_IMAGE_EXT = (".jpg", ".jpeg", ".png", ".webp")
+_NOT_COVER = re.compile(
+    r"commons-logo|flag_of|flag of|edit-clear|question_book|wikimedia|wikipedia[-_ ]logo|wikiquote|wikisource|wikidata|wikt|"
+    r"logo|symbol|ambox|portal|stub|speaker|padlock|crystal|nuvola|folder|disambig|searchtool|"
+    r"red_pog|gold_medal|silver_medal|bronze_medal|increase|decrease|steady|icon\.(?:png|jpe?g|webp)$",
+    re.I,
+)
+_COVER_WORDS = re.compile(r"cover|album|single|artwork", re.I)
+_TITLE_STOP = {"song", "album", "single", "the", "and", "film", "band", "music"}
+_WORD = re.compile(r"[^\W_]{3,}", re.UNICODE)
+
+
+def _strip_tracking(url: str) -> str:
+    parts = urllib.parse.urlsplit(url)
+    if not parts.query:
+        return url
+    kept = [(k, v) for k, v in urllib.parse.parse_qsl(parts.query, keep_blank_values=True) if not k.lower().startswith("utm_")]
+    return urllib.parse.urlunsplit(parts._replace(query=urllib.parse.urlencode(kept)))
+
+
+def _int(value: Any) -> int | None:
+    return value if isinstance(value, int) and not isinstance(value, bool) else None
+
+
+def _https(value: Any) -> str | None:
+    return _strip_tracking(value) if isinstance(value, str) and value.startswith("https://") else None
+
+
+def _suggestion(url: str, thumb: str, title: str, page_url: str, width: Any, height: Any) -> dict[str, Any]:
+    return {
+        "url": url, "thumb": thumb, "title": title, "source": "wikipedia", "page": page_url,
+        "width": _int(width), "height": _int(height),
+    }
+
+
+def _api(host: str, query: str) -> dict[str, Any]:
+    return _fetch_json(f"https://{host}/w/api.php?{query}&redirects=1&format=json&formatversion=2")
+
+
+def _first_page(data: dict[str, Any]) -> dict[str, Any]:
+    pages = (data.get("query") or {}).get("pages") or []
+    return pages[0] if pages and isinstance(pages[0], dict) else {}
+
+
+def _from_summary(host: str, title: str, page_url: str) -> dict[str, Any] | None:
+    """The lead image from the REST summary, which also has the non-free (fair use) infobox images that pageimages leaves out."""
+    data = _fetch_json(f"https://{host}/api/rest_v1/page/summary/" + urllib.parse.quote(title.replace(" ", "_"), safe=""))
+    thumb = data.get("thumbnail") if isinstance(data.get("thumbnail"), dict) else {}
+    orig = data.get("originalimage") if isinstance(data.get("originalimage"), dict) else {}
+    thumb_src, orig_src = _https(thumb.get("source")), _https(orig.get("source"))
+    if orig_src and orig_src.lower().split("?")[0].endswith(".svg"):
+        orig_src = None
+    orig_w, orig_h = _int(orig.get("width")), _int(orig.get("height"))
+    url, width, height = None, None, None
+    if orig_src and (orig_w is None or orig_w <= COVER_SIZE):
+        url, width, height = orig_src, orig_w, orig_h
+    elif thumb_src and _THUMB_PX.search(thumb_src) and orig_w:
+        url = _THUMB_PX.sub(f"/{COVER_SIZE}px-", thumb_src, count=1)
+        width, height = COVER_SIZE, round(orig_h * COVER_SIZE / orig_w) if orig_h else None
+    elif orig_src:
+        url, width, height = orig_src, orig_w, orig_h
+    elif thumb_src:
+        url, width, height = thumb_src, _int(thumb.get("width")), _int(thumb.get("height"))
+    if not url:
+        return None
+    desktop = (data.get("content_urls") or {}).get("desktop") or {}
+    return _suggestion(
+        url, thumb_src or _thumb_of(url), str(data.get("title") or title),
+        str(desktop.get("page") or page_url), width, height,
+    )
+
+
+def _from_pageimages(host: str, title: str, page_url: str) -> dict[str, Any] | None:
+    page = _first_page(_api(
+        host,
+        f"action=query&prop=pageimages|info&piprop=thumbnail&pithumbsize={COVER_SIZE}&inprop=url&titles=" + urllib.parse.quote(title, safe=""),
+    ))
+    thumb = page.get("thumbnail") if isinstance(page.get("thumbnail"), dict) else {}
+    source = _https(thumb.get("source"))
+    if not source:
+        return None
+    return _suggestion(source, _thumb_of(source), str(page.get("title") or title), str(page.get("fullurl") or page_url), thumb.get("width"), thumb.get("height"))
+
+
+def _looks_like_cover(file_title: str, page_title: str) -> bool:
+    name = file_title.split(":", 1)[-1]
+    if not name.lower().endswith(_IMAGE_EXT) or _NOT_COVER.search(name):
+        return False
+    if _COVER_WORDS.search(name):
+        return True
+    words = {w.lower() for w in _WORD.findall(page_title)} - _TITLE_STOP
+    lowered = name.lower()
+    return any(w in lowered for w in words)
+
+
+def _from_page_files(host: str, title: str, page_url: str) -> dict[str, Any] | None:
+    """The first file of the article that looks like a cover, resolved to a 1024 px url."""
+    listing = _first_page(_api(host, "action=query&prop=images&imlimit=50&titles=" + urllib.parse.quote(title, safe="")))
+    page_title = str(listing.get("title") or title)
+    files = [i["title"] for i in listing.get("images") or [] if isinstance(i, dict) and isinstance(i.get("title"), str)]
+    chosen = next((f for f in files if _looks_like_cover(f, page_title)), None)
+    if not chosen:
+        return None
+    info = _first_page(_api(host, f"action=query&prop=imageinfo&iiprop=url|size&iiurlwidth={COVER_SIZE}&titles=" + urllib.parse.quote(chosen, safe="")))
+    entry = (info.get("imageinfo") or [None])[0]
+    if not isinstance(entry, dict):
+        return None
+    url = _https(entry.get("thumburl")) or _https(entry.get("url"))
+    if not url:
+        return None
+    scaled = bool(entry.get("thumburl") and entry.get("thumbwidth"))
+    return _suggestion(
+        url, _thumb_of(url), page_title, page_url,
+        entry.get("thumbwidth") if scaled else entry.get("width"),
+        entry.get("thumbheight") if scaled else entry.get("height"),
+    )
+
+
 def _page_image(page_url: str) -> dict[str, Any] | None:
-    """The lead image of a Wikipedia article (the infobox picture of an album or song page) as a suggestion, or None."""
+    """The lead image of a Wikipedia article (the infobox picture of an album or song page): REST summary, then pageimages, then the article's file list; None when there is none."""
     parts = urllib.parse.urlsplit(page_url)
     host = (parts.hostname or "").lower()
     if not _WP_HOST.match(host) or not parts.path.startswith(_WIKI_PATH):
@@ -835,28 +957,19 @@ def _page_image(page_url: str) -> dict[str, Any] | None:
     hit = _cover_cache.get(page_url)
     if hit and now - hit[0] < COVER_TTL:
         return hit[1]
-    title = urllib.parse.unquote(parts.path[len(_WIKI_PATH):])
-    api = (
-        f"https://{host}/w/api.php?action=query&prop=pageimages|info&piprop=thumbnail&pithumbsize={COVER_SIZE}&inprop=url&redirects=1&format=json&formatversion=2&titles="
-        + urllib.parse.quote(title, safe="")
-    )
-    pages = (_fetch_json(api).get("query") or {}).get("pages") or []
-    page = pages[0] if pages and isinstance(pages[0], dict) else {}
-    thumb = page.get("thumbnail") if isinstance(page.get("thumbnail"), dict) else None
-    source = thumb.get("source") if thumb else None
+    title = urllib.parse.unquote(parts.path[len(_WIKI_PATH):]).replace("_", " ").strip()
     found: dict[str, Any] | None = None
-    if isinstance(source, str) and source.startswith("https://"):
-        width, height = thumb.get("width"), thumb.get("height")
-        found = {
-            "url": source,
-            "thumb": _thumb_of(source),
-            "title": str(page.get("title") or title.replace("_", " ")),
-            "source": "wikipedia",
-            "page": str(page.get("fullurl") or page_url),
-            "width": width if isinstance(width, int) and not isinstance(width, bool) else None,
-            "height": height if isinstance(height, int) and not isinstance(height, bool) else None,
-        }
-    _cover_cache[page_url] = (now, found)
+    failures = 0
+    for step in (_from_summary, _from_pageimages, _from_page_files):
+        try:
+            found = step(host, title, page_url)
+        except Exception as exc:
+            failures += 1
+            log.warning("wikipedia cover step %s failed for %s: %s", step.__name__, page_url, exc)
+        if found:
+            break
+    if found or failures < 3:
+        _cover_cache[page_url] = (now, found)
     return found
 
 

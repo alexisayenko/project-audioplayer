@@ -329,10 +329,8 @@ label { display: block; color: var(--ink-muted); font: var(--font-caption); marg
 .mq { --mq-pad: var(--space-4); --mq-fade: var(--space-3); overflow: hidden; white-space: nowrap; min-width: 0; }
 .mq-track { display: inline-block; max-width: 100%; vertical-align: top; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 0 1 auto; min-width: 0; }
 .mq-track .ttl, .mq-track .rmx { flex: none; overflow: visible; text-overflow: clip; margin-left: 0; }
-.mq-run { -webkit-mask-image: linear-gradient(90deg, transparent, #000 var(--mq-fade), #000 calc(100% - var(--mq-fade)), transparent); mask-image: linear-gradient(90deg, transparent, #000 var(--mq-fade), #000 calc(100% - var(--mq-fade)), transparent); }
-.mq-run .mq-track { padding-inline: var(--mq-pad); box-sizing: content-box; max-width: none; overflow: visible; text-overflow: clip; will-change: transform; animation: mq var(--mq-dur, 6s) var(--ease-io) infinite; }
-.mini-text b.mq-run { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - var(--mq-fade)), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - var(--mq-fade)), transparent); }
-.mini-text b.mq-run .mq-track { margin-inline-start: calc(-1 * var(--mq-pad)); }
+.mq-run { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - var(--mq-fade)), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - var(--mq-fade)), transparent); }
+.mq-run .mq-track { padding-inline: var(--mq-pad); margin-inline-start: calc(-1 * var(--mq-pad)); box-sizing: content-box; max-width: none; overflow: visible; text-overflow: clip; will-change: transform; animation: mq var(--mq-dur, 6s) var(--ease-io) infinite; }
 .doc-hidden .mq-track { animation-play-state: paused; }
 @keyframes mq {
   0%, 20% { transform: translateX(0); }
@@ -530,6 +528,7 @@ dialog.card-dlg { --card-pad: var(--space-4); width: min(calc(var(--cover-max) +
 .cover-dlg .cover-panel[hidden] { display: none; }
 .cover-dlg .cover-panel input[type="url"] { width: 100%; }
 .cover-dlg .cover-preview { --cover-size: 160px; display: grid; place-items: center; margin: var(--space-3) auto; }
+.cover-dlg .cover-preview[hidden] { display: none; }
 .cover-dlg .cover-preview-img { width: 160px; height: 160px; object-fit: cover; }
 .cover-dlg.dropping { outline: var(--stroke-hairline) dashed var(--accent-ink); }
 .cover-dlg .cover-suggestions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); width: 100%; }
@@ -964,7 +963,7 @@ body:has(.legal:not([hidden])) main, body:has(.legal:not([hidden])) .player { pa
 @media (prefers-reduced-motion: reduce) {
   *, ::before, ::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } /* NOSONAR reduced-motion reset must beat all component animations */
   .mq-run { -webkit-mask-image: none; mask-image: none; }
-  .mq-run .mq-track, .mini-text b.mq-run .mq-track { animation: none; will-change: auto; padding-inline: 0; margin-inline-start: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+  .mq-run .mq-track { animation: none; will-change: auto; padding-inline: 0; margin-inline-start: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
   .dl-ring.indeterminate text { display: inline; }
   .svc.pulse { opacity: .5; }
 }

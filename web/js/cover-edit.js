@@ -12,6 +12,14 @@ export function fileProblem(file) {
   return '';
 }
 
+const DISCOGS_PAGE = /^/(?:[a-z]{2}(?:-[A-Z]{2})?/)?(?:master|release)/d+(?:-[^/]*)?/?$/;
+
+export function isDiscogsPage(text) {
+  let u;
+  try { u = new URL(String(text || '').trim()); } catch { return false; }
+  return (u.protocol === 'http:' || u.protocol === 'https:') && (u.hostname === 'discogs.com' || u.hostname === 'www.discogs.com') && DISCOGS_PAGE.test(u.pathname);
+}
+
 export function urlProblem(text) {
   const t = String(text || '').trim();
   if (!t) return 'Enter an image address.';

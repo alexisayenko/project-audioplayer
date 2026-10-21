@@ -2016,6 +2016,30 @@
    "status": null,
    "synonyms": []
   },
+  "chillstep": {
+   "discogs": false,
+   "display": null,
+   "families": [
+    "Others"
+   ],
+   "family": "Others",
+   "flavours": [],
+   "level": 4,
+   "modifiers": [],
+   "parents": [
+    "dubstep"
+   ],
+   "provisional": false,
+   "related": [
+    "downtempo",
+    "ambient"
+   ],
+   "status": "approved",
+   "subfamily": "Breaks & bass",
+   "synonyms": [
+    "chill step"
+   ]
+  },
   "chillwave": {
    "discogs": true,
    "display": null,

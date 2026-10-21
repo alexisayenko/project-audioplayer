@@ -31,7 +31,7 @@ def test_rock_has_123_member_genres_and_the_counts_match():
 
 
 def test_the_level_is_the_shortest_path():
-    assert max(v["level"] for v in ENTRIES.values()) == 3, "no level 4 once trance is level 1 (the psytrance branch rose one level)"
+    assert max(v["level"] for k, v in ENTRIES.items() if k != "chillstep") == 3, "no level 4 once trance is level 1, except chillstep under dubstep"
     for k, v in ENTRIES.items():
         assert v["level"] == min(2 if p in FAMILIES else 1 + ENTRIES[p]["level"] for p in v["parents"]), k
 

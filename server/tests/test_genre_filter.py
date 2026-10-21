@@ -106,7 +106,7 @@ def test_new_aliases(raw, want):
 
 
 @pytest.mark.parametrize("raw,want", [
-    ("appalachian folk", "folk"), ("bard", "folk"), ("romantic", "classical"), ("Romantic music", "classical"),
+    ("appalachian folk", "folk"), ("romantic", "classical"), ("Romantic music", "classical"),
     ("psychedelic", "psychedelic rock"), ("psychedelic music", "psychedelic rock"), ("nederpop", "pop"), ("orchestral", "modern classical"),
     ("alternative", "alternative rock"), ("alternative music", "alternative rock"), ("indie", "indie rock"), ("Indie", "indie rock"),
     ("progressive", "progressive rock"), ("russian indie", "indie rock"),

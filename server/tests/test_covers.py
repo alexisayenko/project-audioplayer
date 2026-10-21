@@ -491,3 +491,129 @@ def test_non_owner_fetches_are_rate_limited():
     assert exc.value.code == "cover_limit"
     covers_route._charge(covers_route._fetches, {"uid": "u1", "owner": True})
     covers_route.reset_limits()
+
+
+SUMMARY = "https://en.wikipedia.org/api/rest_v1/page/summary/"
+
+
+def routed(routes, calls=None):
+    def fetch(url):
+        if calls is not None:
+            calls.append(url)
+        for marker, answer in routes:
+            if marker in url:
+                if isinstance(answer, Exception):
+                    raise answer
+                return answer
+        return {"query": {"pages": [{"title": "x", "missing": True}]}}
+    return fetch
+
+
+def summary(title, thumb=None, original=None):
+    doc = {"title": title, "content_urls": {"desktop": {"page": f"https://en.wikipedia.org/wiki/{title.replace(' ', '_')}"}}}
+    if thumb:
+        doc["thumbnail"] = {"source": thumb[0], "width": thumb[1], "height": thumb[2]}
+    if original:
+        doc["originalimage"] = {"source": original[0], "width": original[1], "height": original[2]}
+    return doc
+
+
+NONFREE = "https://upload.wikimedia.org/wikipedia/en/b/b7/Birdy-Wings.png"
+NONFREE_THUMB = "https://upload.wikimedia.org/wikipedia/en/thumb/b/b7/Birdy-Wings.png/250px-Birdy-Wings.png"
+
+
+def test_api_202_summary_gives_non_free_cover_with_parenthesised_title(monkeypatch):
+    wiki_lookup._cover_cache.clear()
+    calls = []
+    doc = summary("Wings (Birdy song)", (NONFREE_THUMB, 250, 250), (NONFREE, 300, 300))
+    monkeypatch.setattr(wiki_lookup, "_fetch_json", routed([("rest_v1/page/summary/Wings_%28Birdy_song%29", doc)], calls))
+    got = wiki_lookup.cover_candidates(["https://en.wikipedia.org/wiki/Wings_(Birdy_song)#Background"])
+    assert len(got) == 1
+    assert got[0]["url"] == NONFREE and got[0]["thumb"] == NONFREE_THUMB
+    assert got[0]["title"] == "Wings (Birdy song)" and got[0]["page"] == "https://en.wikipedia.org/wiki/Wings_(Birdy_song)"
+    assert (got[0]["width"], got[0]["height"]) == (300, 300)
+    assert len(calls) == 1
+
+
+def test_api_202_summary_large_original_is_rescaled_from_the_thumbnail(monkeypatch):
+    wiki_lookup._cover_cache.clear()
+    big = "https://upload.wikimedia.org/wikipedia/en/c/cd/Big.jpg"
+    thumb = "https://upload.wikimedia.org/wikipedia/en/thumb/c/cd/Big.jpg/320px-Big.jpg"
+    monkeypatch.setattr(wiki_lookup, "_fetch_json", routed([("rest_v1/page/summary/", summary("Big", (thumb, 320, 320), (big, 3000, 3000)))]))
+    got = wiki_lookup.cover_candidates(["https://de.wikipedia.org/wiki/Big"])
+    assert got[0]["url"].endswith("/1024px-Big.jpg") and got[0]["thumb"] == thumb
+    assert (got[0]["width"], got[0]["height"]) == (1024, 1024)
+
+
+def test_api_202_pageimages_used_when_summary_has_no_image(monkeypatch):
+    wiki_lookup._cover_cache.clear()
+    monkeypatch.setattr(wiki_lookup, "_fetch_json", routed([
+        ("rest_v1/page/summary/", {"title": "Some Song"}),
+        ("prop=pageimages", {"query": {"pages": [page("Some Song", "Song.jpg")]}}),
+    ]))
+    got = wiki_lookup.cover_candidates(["https://en.wikipedia.org/wiki/Some_Song"])
+    assert got[0]["url"].endswith("/1024px-Song.jpg") and "/240px-" in got[0]["thumb"]
+
+
+def test_api_202_summary_failure_falls_through_to_pageimages(monkeypatch):
+    wiki_lookup._cover_cache.clear()
+    monkeypatch.setattr(wiki_lookup, "_fetch_json", routed([
+        ("rest_v1/page/summary/", OSError("404")),
+        ("prop=pageimages", {"query": {"pages": [page("Some Song", "Song.jpg")]}}),
+    ]))
+    assert len(wiki_lookup.cover_candidates(["https://en.wikipedia.org/wiki/Some_Song"])) == 1
+
+
+def test_api_202_file_list_fallback_skips_icons_and_resolves_the_cover(monkeypatch):
+    wiki_lookup._cover_cache.clear()
+    images = [{"ns": 6, "title": t} for t in ("File:Commons-logo.svg", "File:Flag of Ireland.svg", "File:Edit-clear.svg", "File:Question book-new.svg", "File:Birdy-Wings.png")]
+    info = {"imageinfo": [{"url": NONFREE, "width": 300, "height": 300, "thumburl": NONFREE, "thumbwidth": 300, "thumbheight": 300}]}
+    monkeypatch.setattr(wiki_lookup, "_fetch_json", routed([
+        ("rest_v1/page/summary/", {"title": "Wings (Birdy song)"}),
+        ("prop=pageimages", {"query": {"pages": [{"title": "Wings (Birdy song)"}]}}),
+        ("prop=images", {"query": {"pages": [{"title": "Wings (Birdy song)", "images": images}]}}),
+        ("prop=imageinfo", {"query": {"pages": [info]}}),
+    ]))
+    got = wiki_lookup.cover_candidates(["https://en.wikipedia.org/wiki/Wings_(Birdy_song)"])
+    assert [g["url"] for g in got] == [NONFREE] and (got[0]["width"], got[0]["height"]) == (300, 300)
+
+
+def test_api_202_no_image_anywhere_is_an_empty_list(monkeypatch):
+    wiki_lookup._cover_cache.clear()
+    images = [{"ns": 6, "title": "File:Commons-logo.svg"}, {"ns": 6, "title": "File:Unrelated photo.jpg"}]
+    monkeypatch.setattr(wiki_lookup, "_fetch_json", routed([
+        ("rest_v1/page/summary/", {"title": "Plain"}),
+        ("prop=images", {"query": {"pages": [{"title": "Plain", "images": images}]}}),
+    ]))
+    assert wiki_lookup.cover_candidates(["https://en.wikipedia.org/wiki/Plain"]) == []
+
+
+def test_api_202_tracking_params_are_stripped_from_image_urls(monkeypatch):
+    wiki_lookup._cover_cache.clear()
+    tracked = NONFREE + "?utm_source=x&keep=1"
+    monkeypatch.setattr(wiki_lookup, "_fetch_json", routed([("rest_v1/page/summary/", summary("T", None, (tracked, 300, 300)))]))
+    assert wiki_lookup.cover_candidates(["https://en.wikipedia.org/wiki/T"])[0]["url"] == NONFREE + "?keep=1"
+
+
+def test_wikimedia_hosts_get_the_descriptive_user_agent(monkeypatch):
+    seen = {}
+
+    def fake(url, timeout, params=None, form=None, headers=None):
+        seen[url] = headers
+        return {}
+
+    monkeypatch.setattr(wiki_lookup.httpjson, "http_json", fake)
+    wiki_lookup._fetch_json("https://en.wikipedia.org/api/rest_v1/page/summary/X")
+    wiki_lookup._fetch_json("https://www.wikidata.org/w/api.php")
+    wiki_lookup._fetch_json("https://example.com/x")
+    assert seen["https://en.wikipedia.org/api/rest_v1/page/summary/X"] == {"User-Agent": "Electrophone/1.0 (https://electrophone.cc)"}
+    assert seen["https://www.wikidata.org/w/api.php"]["User-Agent"].startswith("Electrophone/")
+    assert seen["https://example.com/x"] is None
+
+
+def test_cover_fetch_uses_wikimedia_user_agent_and_drops_utm():
+    assert coverimg.user_agent_for("upload.wikimedia.org") == "Electrophone/1.0 (https://electrophone.cc)"
+    assert coverimg.user_agent_for("thumb.wikimedia.org") == "Electrophone/1.0 (https://electrophone.cc)"
+    assert coverimg.user_agent_for("example.com") == coverimg.USER_AGENT
+    assert coverimg.parse_url(NONFREE + "?utm_medium=a&x=1")[3].endswith("Birdy-Wings.png?x=1")
+    assert coverimg.parse_url(NONFREE + "?utm_medium=a")[3].endswith("Birdy-Wings.png")

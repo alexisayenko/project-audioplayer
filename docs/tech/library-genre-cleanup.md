@@ -1,6 +1,6 @@
 # Library genre cleanup (2026-10-19)
 
-Status: done. Applied at server start by `app.migrate_removals`, file `server/data/library_genre_removals.json` (127 songs, 208 genre removals, 20 genre additions, 1 song cleared; the second batch of 25 songs is not deployed yet). 0 HIGH rows pending, 37 MEDIUM rows left unproposed (below), 1 open decision (below).
+Status: done. Applied at server start by `app.migrate_removals`, file `server/data/library_genre_removals.json` (128 songs, 209 genre removals, 21 genre additions, 1 song cleared; the second batch of 25 songs is not deployed yet). 0 HIGH rows pending, 37 MEDIUM rows left unproposed (below), 1 open decision (below).
 
 Review of genres that were put on songs by mistake (removal, with a few owner-approved additions). Evidence is English Wikipedia (song page first, artist page second). The owner approved all HIGH-confidence rows (his edits included) plus the descriptor genres acoustic and instrumental (they are version types), and approved the remaining rows one by one in chat.
 
@@ -16,6 +16,7 @@ Conventions: "(also: X)" in an owner message means X was removed too; a "(maybe 
 - 2026-10-20 (not deployed yet): `reggae` removed from Boney M. - Sunny (Wikipedia: the Boney M. version infobox lists only Eurodisco; reggae is artist and album level), one more removal on an existing row; `darksynth` added to ZOMBIENICK - OSCILLATIONS (2018, album CREEPER; it had synthwave only; `darksynth` is a vocabulary child of synthwave): one new add-only row. 120 songs, 199 removals and 18 additions in total. Also `dance pop` and `house` added to Elton John, Dua Lipa - Cold Heart (PNAU Remix) (Wikipedia: dance-pop in the infobox and lead, house beats in the text; synthpop skipped on the owner's ear).
 - 2026-10-20 (not deployed yet): the bare `r&b` removed from 6 songs and `rhythm and blues` from 3 (Wikipedia evidence, approved by Alex as CT1): The Animals - House Of The Rising Sun, Boney M. - Sunny, Rockwell - Somebody's Watching Me (keeps contemporary r&b), Izzy Bizu - White Tiger, Gnarls Barkley - Crazy, Alex Mica - Dalinda (`r&b`); Duffy - Mercy, The Rolling Stones - Anybody Seen My Baby?, Rod Stewart - Da Ya Think I'm Sexy? (`rhythm and blues`); 3 rows extended, 6 new. 126 songs, 208 removals and 18 additions in total.
 - 2026-10-21 (to deploy): `progressive house` and `electro house` added to R-Tem - Voiceless (SoundCloud, Z05 mix, 2005, 133 bpm; it had no genre, approved by Alex): one new add-only row. 127 songs, 208 removals and 20 additions in total.
+- 2026-10-21 (to deploy): Тимур Муцураев - Погасли свечи (album Иерусалим, 1998): `folk` replaced by `singer-songwriter` (Alex; `bard` is now a synonym of it): one new row. 128 songs, 209 removals and 21 additions in total.
 - Record: `server/data/library_genre_removals.json` (machine-readable; per song `remove` / `add` / `clear` and the title). The per-row evidence (Wikipedia links) lived in the earlier revisions of this file (git history before this prune).
 - Mechanism: `app.migrate_removals` runs at server start, backs up each library to `backups-genre-removals/` first, and is idempotent (a second start changes nothing).
 

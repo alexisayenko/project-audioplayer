@@ -7609,6 +7609,33 @@
 "album": null,
 "genres": [],
 "audio_state": "server"
+},
+{
+"id": "gGA9dLvNmSU",
+"title": "Погасли свечи",
+"mainArtists": [
+"Тимур Муцураев"
+],
+"featuredArtists": [],
+"releaseYear": 1998,
+"version": null,
+"albums": [],
+"bpm": null,
+"source_url": "https://www.youtube.com/watch?v=gGA9dLvNmSU",
+"added_at": "2026-10-21T00:00:00Z",
+"updated_at": "2026-10-21T00:00:00Z",
+"tags": [
+"genre:folk"
+],
+"artist": "Тимур Муцураев",
+"remixer": null,
+"year": 1998,
+"remix_year": null,
+"album": "Иерусалим",
+"genres": [
+"folk"
+],
+"audio_state": "none"
 }
 ]
 }

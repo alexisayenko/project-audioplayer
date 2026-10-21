@@ -6,6 +6,7 @@ import hashlib
 import http.client
 import io
 import ipaddress
+import os
 import socket
 import ssl
 import urllib.parse
@@ -13,6 +14,7 @@ from dataclasses import dataclass
 
 from PIL import Image, ImageOps
 
+from . import httpjson
 from .problems import Problem
 
 MAX_BYTES = 5 * 1024 * 1024
@@ -23,6 +25,7 @@ TIMEOUT = 10.0
 ALLOWED_TYPES = ("image/jpeg", "image/png", "image/webp")
 ALLOWED_PORTS = (80, 443)
 USER_AGENT = "audioplayer/0.1 (cover fetch)"
+WIKIMEDIA_USER_AGENT = "Electrophone/1.0 (https://electrophone.cc)"
 NOT_ALLOWED = "That address is not allowed."
 
 Image.MAX_IMAGE_PIXELS = MAX_PIXELS
@@ -86,6 +89,29 @@ def resolve_public(host: str, port: int) -> str:
     return ips[0]
 
 
+def _is_discogs(host: str) -> bool:
+    return host == "discogs.com" or host.endswith(".discogs.com")
+
+
+def auth_headers(host: str) -> dict[str, str]:
+    """The Discogs token, only for discogs.com hosts (never for any other host a redirect leads to)."""
+    token = os.environ.get("DISCOGS_TOKEN", "").strip()
+    return {"Authorization": f"Discogs token={token}"} if token and _is_discogs(host) else {}
+
+
+def user_agent_for(host: str) -> str:
+    if _is_discogs(host):
+        return httpjson.user_agent()
+    return WIKIMEDIA_USER_AGENT if host == "wikimedia.org" or host.endswith(".wikimedia.org") else USER_AGENT
+
+
+def _without_tracking(query: str) -> str:
+    pairs = urllib.parse.parse_qsl(query, keep_blank_values=True)
+    if not any(k.lower().startswith("utm_") for k, _ in pairs):
+        return query
+    return urllib.parse.urlencode([(k, v) for k, v in pairs if not k.lower().startswith("utm_")])
+
+
 def parse_url(url: str) -> tuple[str, str, int, str]:
     """(scheme, host, port, path-with-query) of an http(s) URL on port 80 or 443 without credentials, else a refusal."""
     try:
@@ -101,7 +127,8 @@ def parse_url(url: str) -> tuple[str, str, int, str]:
     if port not in ALLOWED_PORTS:
         raise refuse(422, "cover_url_refused", NOT_ALLOWED)
     path = parts.path or "/"
-    return parts.scheme, host, port, f"{path}?{parts.query}" if parts.query else path
+    query = _without_tracking(parts.query)
+    return parts.scheme, host, port, f"{path}?{query}" if query else path
 
 
 @dataclass
@@ -120,7 +147,7 @@ def http_get(scheme: str, host: str, port: int, path: str, ip: str) -> Reply:
             sock = ssl.create_default_context().wrap_socket(sock, server_hostname=host)
         conn = http.client.HTTPConnection(host, port, timeout=TIMEOUT)  # NOSONAR host/IP validated and connection pinned to the checked IP (DNS-rebinding safe), see fetch()
         conn.sock = sock
-        conn.request("GET", path, headers={"Host": host, "User-Agent": USER_AGENT, "Accept": "image/*", "Connection": "close"})  # NOSONAR host/IP validated and connection pinned to the checked IP (DNS-rebinding safe), see fetch()
+        conn.request("GET", path, headers={"Host": host, "User-Agent": user_agent_for(host.lower()), "Accept": "image/*", "Connection": "close", **auth_headers(host.lower())})  # NOSONAR host/IP validated and connection pinned to the checked IP (DNS-rebinding safe), see fetch()
         resp = conn.getresponse()
         body = b"" if 300 <= resp.status < 400 else resp.read(MAX_BYTES + 1)
         return Reply(resp.status, resp.getheader("Location") or "", (resp.getheader("Content-Type") or "").split(";")[0].strip().lower(), body)

@@ -709,7 +709,7 @@ def test_migration_merges_dnb_retags_and_drops_idempotent(tmp_path, monkeypatch)
         ["genre:progressive rock", "genre:rock"],
         ["genre:indie rock", "genre:indie pop", "genre:swing", "x"],
         ["genre:europop", "genre:euro house", "genre:euro disco", "genre:disco", "genre:darksynth"],
-        ["genre:modern classical", "genre:classical", "genre:folk", "genre:psychedelic rock", "genre:alternative rock", "genre:pop"],
+        ["genre:modern classical", "genre:classical", "genre:singer-songwriter", "genre:folk", "genre:psychedelic rock", "genre:alternative rock", "genre:pop"],
     ]
     assert (tmp_path / "backups-genre-merge" / "u1" / "library.json").read_text() == original
     assert migrate_tags.run() == 0

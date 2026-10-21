@@ -2,9 +2,22 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-21 (cover from a Discogs page, server and web, to deploy)
+
+- Server: `PUT /songs/{id}/cover` with `{url}` (and `POST /songs/{id}/cover/from-url`) accepts a Discogs master or release page address; the cover is looked up through the Discogs API and downloaded (`server/app/discogs_cover.py`, API-201), 422 `discogs_not_configured` without `DISCOGS_TOKEN`, 422 `cover_url_unreachable` when Discogs has no cover. `GET /songs/{id}/cover/suggestions` adds a Discogs entry for a song with a `discogs_url` (API-202). Never tried against live Discogs; `DISCOGS_TOKEN` must be set on the server.
+- Web: the Change cover dialog shows "Discogs page: the cover will be fetched when you save." instead of an image preview for such addresses; the "Wikipedia" option is now "Suggestions".
+
+## 2026-10-21 (Wikipedia cover lookup fix, server and web, to deploy)
+
+- Server: the Change cover dialog found no Wikipedia cover for single and album pages because MediaWiki `pageimages` leaves out non-free (fair use) infobox images (Birdy - Wings); `cover_candidates` now tries the REST page summary first (`thumbnail` / `originalimage`, 1024 px url), then `pageimages`, then the article's file list (`prop=images` and `imageinfo`, skipping logos, flags and icons), for any `*.wikipedia.org` link; Wikimedia API calls and image downloads send `Electrophone/1.0 (https://electrophone.cc)` as User-Agent and `utm_*` parameters are dropped from fetched image URLs (API-202, task-0054, to deploy; tests written, not run, never tried against live Wikipedia).
+- Web: the Change cover dialog shows the preview frame only when an image or the default placeholder is selected, no empty dark square under "No Wikipedia covers found" (task-0054, to deploy; test written, not run).
+
 ## 2026-10-21 (task-0060 merged, docs, to deploy)
 
+- Genre model: descriptive aspects (beat, rhythm, texture) recorded in task-0070 (to deploy).
 - Docs: Task-0060 merged into task-0038 (to deploy).
+- Genres: new `chillstep` (level 4 under dubstep, synonym chill step, Rate Your Music link) and a Rate Your Music link for `downtempo` (to deploy).
+- Genres: `bard` is a synonym of `singer-songwriter` (with bard song, авторская песня, author song; also `ALIASES`, and the old `bard` to `folk` retag is dropped), a Rate Your Music link and an own-words note for it; Тимур Муцураев - Погасли свечи changes from `folk` to `singer-songwriter` through the removal file (to deploy).
 
 ## 2026-10-21 (change cover from the song card, web, to deploy)
 

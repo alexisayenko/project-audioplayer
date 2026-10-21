@@ -104,6 +104,10 @@ Decided AX1 (2026-10-20): `hardcore` is a modifier of kind sound (the hard, fast
 
 The API serves `modifiers` and, for one release, the deprecated alias `flavours` (GEN-082). Built: the block is defined and served, but no genre carries a modifier list yet (the proposed assignment is in [genre-flavours-proposal.md](genre-flavours-proposal.md)). Details: [genre-levels.md](genre-levels.md#modifiers).
 
+## Descriptive aspects (planned)
+
+Planned, not built (2026-10-21, Alex). Beyond the four axes a genre can be described by three groups of descriptors: beat and meter (time signature such as 4/4 or 3/4, tempo range, pulse), rhythm character (straight, syncopated, glitchy, loose) and texture and timbre (bright analog leads, warm muffled pads, tape hiss, gated reverb). They describe a genre; they are not tree levels and never move a genre. Terms, examples and open questions: [task-0070](../tasks/task-0070.md#descriptive-aspects-of-a-genre).
+
 ## Current state (Built, verified against `server/data/genre_levels.json` on 2026-10-20)
 
 - (Amended 2026-10-21, task-0079: Latin and Folk, World & Country were removed as level 1 nodes, their genres moved under Others; 9 families remain.) 534 genres in 11 families: Blues, Classical, Electronic, Folk World & Country, Funk / Soul, Hip Hop, Jazz, Latin, Pop, Reggae, Rock. The data calls them families; under the model above Electronic, Latin and Folk, World & Country are groups or mixed.

@@ -2,14 +2,17 @@ import { api } from './api.js';
 import { store } from './store.js';
 import { el, toast } from './dom.js';
 import { can } from './guest.js';
-import { fileProblem, urlProblem, coverError, COVER_TYPES } from './cover-edit.js';
+import { fileProblem, urlProblem, isDiscogsPage, coverError, COVER_TYPES } from './cover-edit.js';
 
 export const MAX_SUGGESTIONS = 4;
+export const DISCOGS_NOTE = 'Discogs page: the cover will be fetched when you save.';
+
+const suggestionImage = (s) => s.thumb || (isDiscogsPage(s.url) ? '' : s.url);
 
 const OPTIONS = [
   { key: 'url', label: 'From address' },
   { key: 'file', label: 'Upload' },
-  { key: 'wiki', label: 'Wikipedia' },
+  { key: 'wiki', label: 'Suggestions' },
   { key: 'default', label: 'Default image' },
 ];
 
@@ -47,7 +50,7 @@ export function openCoverDialog(song, opener = null) {
   const cancelTop = el('button', { type: 'button', class: 'link-btn t-headline', onclick: close }, 'Cancel');
   const head = el('div', { class: 'dlg-head' }, title, cancelTop);
 
-  const frame = el('div', { class: 'cover-preview' });
+  const frame = el('div', { class: 'cover-preview', hidden: true });
   const previewImg = el('img', { class: 'cover cover-preview-img noart', alt: '' });
   const previewNote = el('p', { class: 't-caption muted', role: 'status' });
   frame.append(previewImg);
@@ -92,7 +95,8 @@ export function openCoverDialog(song, opener = null) {
     err.hidden = !text;
   };
 
-  const showPreview = (src, note = '') => {
+  const showPreview = (src, note = '', placeholder = false) => {
+    frame.hidden = !src && !placeholder;
     if (src) previewImg.setAttribute('src', src); else previewImg.removeAttribute('src');
     previewImg.classList.toggle('noart', !src);
     previewNote.textContent = note;
@@ -115,13 +119,14 @@ export function openCoverDialog(song, opener = null) {
   const paintWiki = () => {
     wikiBody.replaceChildren();
     if (wikiState === 'loading') { wikiBody.append(el('p', { class: 't-caption muted', role: 'status' }, 'Looking for covers...')); return; }
-    if (wikiState === 'error') { wikiBody.append(el('p', { class: 't-caption muted', role: 'status' }, 'Could not load Wikipedia covers.')); return; }
-    if (!suggestions.length) { wikiBody.append(el('p', { class: 't-caption muted', role: 'status' }, 'No Wikipedia covers found for this song.')); return; }
-    const list = el('div', { class: 'cover-suggestions', role: 'group', 'aria-label': 'Wikipedia covers' });
+    if (wikiState === 'error') { wikiBody.append(el('p', { class: 't-caption muted', role: 'status' }, 'Could not load cover suggestions.')); return; }
+    if (!suggestions.length) { wikiBody.append(el('p', { class: 't-caption muted', role: 'status' }, 'No cover suggestions found for this song.')); return; }
+    const list = el('div', { class: 'cover-suggestions', role: 'group', 'aria-label': 'Cover suggestions' });
     for (const s of suggestions) {
-      const img = el('img', { class: 'cover', alt: '', src: s.thumb || s.url });
+      const src = suggestionImage(s);
+      const img = el('img', { class: src ? 'cover' : 'cover noart', alt: '', ...(src ? { src } : {}) });
       const b = el('button', {
-        type: 'button', class: 'cover-suggestion', 'aria-pressed': String(choice?.s === s), title: s.title || 'Wikipedia cover',
+        type: 'button', class: 'cover-suggestion', 'aria-pressed': String(choice?.s === s), title: s.title || 'Cover',
         onclick: () => pickSuggestion(s),
       }, img, el('span', { class: 't-caption' }, s.title || 'Wikipedia'));
       list.append(b);
@@ -131,7 +136,7 @@ export function openCoverDialog(song, opener = null) {
 
   function pickSuggestion(s) {
     setChoice({ kind: 'wiki', body: { url: s.url }, s });
-    showPreview(s.thumb || s.url);
+    showPreview(suggestionImage(s), isDiscogsPage(s.url) ? DISCOGS_NOTE : '');
     wikiSource.replaceChildren();
     if (s.page) {
       wikiSource.append('Source: ', el('a', { href: s.page, target: '_blank', rel: 'noopener noreferrer' }, s.title || 'Wikipedia'));
@@ -150,7 +155,7 @@ export function openCoverDialog(song, opener = null) {
       wikiState = 'done';
     } catch {
       wikiState = 'idle';
-      wikiBody.replaceChildren(el('p', { class: 't-caption muted', role: 'status' }, 'Could not load Wikipedia covers.'),
+      wikiBody.replaceChildren(el('p', { class: 't-caption muted', role: 'status' }, 'Could not load cover suggestions.'),
         el('button', { type: 'button', class: 'btn outline small', onclick: () => void loadWiki() }, 'Try again'));
       return;
     }
@@ -165,7 +170,7 @@ export function openCoverDialog(song, opener = null) {
     setError('');
     if (key === 'default') {
       setChoice({ kind: 'default', body: { default: true } });
-      showPreview('', 'The neutral placeholder.');
+      showPreview('', 'The neutral placeholder.', true);
     } else if (key === 'url') {
       onUrl();
       urlIn.focus();
@@ -185,6 +190,7 @@ export function openCoverDialog(song, opener = null) {
     const bad = urlProblem(text);
     if (bad) { setChoice(null, bad); showPreview(''); return; }
     setChoice({ kind: 'url', body: { url: text } });
+    if (isDiscogsPage(text)) { showPreview('', DISCOGS_NOTE); return; }
     showPreview(text);
   }
 

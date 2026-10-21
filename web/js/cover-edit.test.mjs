@@ -44,3 +44,14 @@ test('cover calls use the right method and path', async () => {
   assert.deepEqual(seen[1], ['/songs/abc/cover/from-url', 'POST', 'application/json', '{"url":"https://a.example/x.png"}']);
   assert.deepEqual(seen[2].slice(0, 2), ['/songs/abc/cover', 'DELETE']);
 });
+
+test('isDiscogsPage accepts master and release pages on discogs.com only', async () => {
+  const { isDiscogsPage } = await import('./cover-edit.js');
+  assert.equal(isDiscogsPage('https://www.discogs.com/master/5659-Hallucinogen-Twisted?redirected=true'), true);
+  assert.equal(isDiscogsPage('https://discogs.com/release/123'), true);
+  assert.equal(isDiscogsPage('https://www.discogs.com/en/release/123-Some-Title'), true);
+  assert.equal(isDiscogsPage('https://www.discogs.com/artist/123-Name'), false);
+  assert.equal(isDiscogsPage('https://discogs.com.evil.com/master/5659'), false);
+  assert.equal(isDiscogsPage('https://i.discogs.com/abc.jpeg'), false);
+  assert.equal(isDiscogsPage('nonsense'), false);
+});

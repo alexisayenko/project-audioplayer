@@ -11,7 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
 
-from .. import coverimg, deps, downloads, library, wiki_lookup
+from .. import coverimg, deps, discogs_cover, downloads, library, wiki_lookup
 from ..jsonio import write_bytes_atomic
 from ..problems import Problem
 from ..ratelimit import KeyedWindow
@@ -138,7 +138,7 @@ async def put_cover(video_id: str, request: Request, user: Annotated[dict[str, A
         if choice == "default":
             return await run_in_threadpool(_pin_default, uid, video_id)
         _charge(_fetches, user)
-        data = await run_in_threadpool(coverimg.fetch, address)
+        data = await run_in_threadpool(discogs_cover.fetch, address)
     elif kind == "multipart/form-data":
         data = multipart_file(content_type, await _body(request, coverimg.MAX_BYTES + MULTIPART_OVERHEAD))
     else:
@@ -153,22 +153,27 @@ def cover_from_url(video_id: str, req: CoverUrlRequest, user: Annotated[dict[str
     uid = user["uid"]
     _require_song(uid, video_id)
     _charge(_fetches, user)
-    jpeg = coverimg.normalize(coverimg.fetch(req.url))
+    jpeg = coverimg.normalize(discogs_cover.fetch(req.url))
     return _store(uid, video_id, jpeg)
 
 
 @router.get("/songs/{video_id}/cover/suggestions", responses=deps.responses(404, 422, 429))
 def cover_suggestions(video_id: str, user: Annotated[dict[str, Any], Depends(deps.require_token)]):
-    """Up to 4 candidate cover images from the song's Wikipedia song and album pages; empty when it has no such links."""
+    """Up to 4 candidate cover images from the song's Wikipedia song and album pages plus its stored Discogs release or master page (`source: discogs`, `url` is the page address; needs DISCOGS_TOKEN); empty when it has no such links."""
     deps.valid_id(video_id)
     song = library.find_song(deps.load_songs(user["uid"]), video_id)
     if song is None:
         raise HTTPException(status_code=404, detail=deps.UNKNOWN_SONG)
     links = [link for key in ("wikipedia_song", "wikipedia_album") if (link := wiki_lookup.clean_link(song.get(key)))]
-    if not links:
+    discogs = discogs_cover.parse_page(song.get("discogs_url") or "")
+    if not links and not discogs:
         return {"suggestions": []}
     _charge(_suggestions, user)
-    return {"suggestions": wiki_lookup.cover_candidates(links)[:MAX_SUGGESTIONS]}
+    found = wiki_lookup.cover_candidates(links)[:MAX_SUGGESTIONS] if links else []
+    extra = discogs_cover.suggestion(song.get("discogs_url")) if discogs else None
+    if extra:
+        found = [*found[:MAX_SUGGESTIONS - 1], extra]
+    return {"suggestions": found}
 
 
 @router.delete("/songs/{video_id}/cover", status_code=204, responses=deps.responses(404, 422))

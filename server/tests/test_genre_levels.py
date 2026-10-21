@@ -51,7 +51,7 @@ def test_level_is_the_shortest_path_depth_and_has_no_cap():
         assert k not in v["parents"], k
         assert len(set(v["parents"])) == len(v["parents"]), k
         assert all(p in FAMILIES or p in ENTRIES for p in v["parents"]), k
-    assert {v["level"] for v in ENTRIES.values()} == {2, 3}, "no level 4: the psytrance branch rose one level when trance became level 1"
+    assert {v["level"] for v in ENTRIES.values()} == {2, 3, 4}, "level 4 only chillstep (under dubstep under bass music)"
     assert genre_vocab.MAX_LEVEL == 12
 
 
@@ -124,7 +124,7 @@ REMOVED = {
     "liquid funk": "liquid drum and bass", "breakbeat hardcore": "breakbeat", "jersey club": "breakbeat",
     "techno pop": "synthpop", "electropop": "synthpop", "melodic house": "house",
 }
-APPROVED = {"dark psytrance", "forest psytrance", "progressive psytrance", "full-on psytrance", "vocal trance", "melodic techno", "psybient", "darksynth", "uplifting trance", "sunshine house", "dreamsynth", "dreamwave", "outrun", "neurofunk",
+APPROVED = {"dark psytrance", "forest psytrance", "progressive psytrance", "full-on psytrance", "vocal trance", "melodic techno", "psybient", "darksynth", "uplifting trance", "sunshine house", "dreamsynth", "dreamwave", "outrun", "chillstep", "neurofunk",
             "spacesynth", "nu-nrg", "liquid drum and bass", "sovietwave", "dream trance", "space disco"} | {"hardcore punk", "experimental rock", "extreme metal", "noise rock", "roots rock", "neo-psychedelia", "glam metal", "college rock", "death-doom", "edm"}
 QUESTION = {"deep trance", "acid trance"}
 
@@ -432,7 +432,7 @@ def test_parents_are_validated_and_served():
 def test_psytrance_sits_under_trance_and_its_branch_ends_at_level_three():
     p = ENTRIES["psytrance"]
     assert (p["parents"], p["discogs"], p["display"], p["level"], p["families"]) == (["trance"], True, "psy-trance", 2, ["trance"])
-    assert [k for k, v in ENTRIES.items() if v["level"] == 4] == []
+    assert [k for k, v in ENTRIES.items() if v["level"] == 4] == ["chillstep"]
     assert ENTRIES["psybient"]["level"] == 3 and RAW["psytrance"]["subfamily"] == "Trance"
     kids = {k for k, v in ENTRIES.items() if "psytrance" in v["parents"]}
     assert kids == {"dark psytrance", "forest psytrance", "progressive psytrance", "full-on psytrance", "goa trance", "psybient"}
@@ -591,7 +591,7 @@ def test_space_disco_is_an_approved_extra_level_three_under_disco_in_electronic(
     assert "space disco" not in DISCOGS["genres"]
     assert genre_vocab.entry("space-disco").name == "space disco"
     assert genre_vocab.entry("space disco").parents == ("disco",)
-    assert len(EXTRAS) == 63
+    assert len(EXTRAS) == 64
 
 
 def test_electronic_counts_in_the_meta_block_match_the_data():
@@ -599,9 +599,9 @@ def test_electronic_counts_in_the_meta_block_match_the_data():
     for family in counts:
         mine = [v for v in ENTRIES.values() if family in v["families"]]
         assert counts[family] == {"total": len(mine), "level2": sum(v["level"] == 2 for v in mine), "level3": sum(v["level"] == 3 for v in mine), "level4": sum(v["level"] == 4 for v in mine)}, family
-    assert (counts["Others"]["level2"], counts["Others"]["level3"], counts["Others"]["level4"]) == (173, 30, 0)
-    assert LEVELS["_meta"]["total"] == len(ENTRIES) == 530
-    assert sum(c["total"] for c in counts.values()) == sum(len(v["families"]) for v in ENTRIES.values()) == 574
+    assert (counts["Others"]["level2"], counts["Others"]["level3"], counts["Others"]["level4"]) == (173, 30, 1)
+    assert LEVELS["_meta"]["total"] == len(ENTRIES) == 531
+    assert sum(c["total"] for c in counts.values()) == sum(len(v["families"]) for v in ENTRIES.values()) == 575
 
 
 ROCK_FUSION = {"rap metal", "electronic rock"}
@@ -682,7 +682,7 @@ def test_the_19_remaining_reviewed_associations_are_related_and_no_longer_parent
     for k, rel in RELATED_MOVES.items():
         assert ENTRIES[k]["related"] == rel, k
         assert not set(rel) & set(ENTRIES[k]["parents"]), k
-    assert {k for k, v in ENTRIES.items() if v.get("related")} == set(RELATED_MOVES) | set(ROCK_RELATED) | {"outrun", "spacesynth"}
+    assert {k for k, v in ENTRIES.items() if v.get("related")} == set(RELATED_MOVES) | set(ROCK_RELATED) | {"outrun", "spacesynth", "chillstep"}
     assert ENTRIES["chillwave"]["parents"] == ["synthwave"] and ENTRIES["vaporwave"]["parents"] == ["synthwave"]
     assert ENTRIES["jungle"]["parents"] == ["breakbeat"] and ENTRIES["trap"]["parents"] == ["Hip Hop"] and "fusion" not in ENTRIES["trap"] and "fusion" not in ENTRIES["acid jazz"]
 

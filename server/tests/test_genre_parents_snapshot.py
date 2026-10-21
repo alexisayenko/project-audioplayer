@@ -85,7 +85,7 @@ def test_the_tree_changes_only_by_the_links_moved_to_related():
         assert lv.get("related", []) == [m for m in moved if m not in INDUSTRIAL_REMOVED], name
         assert len(lv["parents"]) == len(set(lv["parents"])) and lv["parents"], name
     assert body["levels"]["gospel"]["families"] == ["Others"] and families >= {"Others"}
-    assert {n for n, lv in body["levels"].items() if lv.get("related")} == set(RELATED_MOVED) - {"witch house", "neurofunk", "darksynth"} | ROCK_RELATED | {"outrun", "spacesynth"}
+    assert {n for n, lv in body["levels"].items() if lv.get("related")} == set(RELATED_MOVED) - {"witch house", "neurofunk", "darksynth"} | ROCK_RELATED | {"outrun", "spacesynth", "chillstep"}
 
 
 def test_the_second_family_additions_left_are_the_only_other_differences():

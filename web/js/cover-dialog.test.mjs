@@ -38,7 +38,7 @@ test('opens modally with four options, Save disabled and Remove visible for a cu
   const dlg = open();
   assert.equal(dlg.open, true);
   const labels = dlg.querySelectorAll('.cover-options button').map((b) => b.textContent);
-  assert.deepEqual(labels, ['From address', 'Upload', 'Wikipedia', 'Default image']);
+  assert.deepEqual(labels, ['From address', 'Upload', 'Suggestions', 'Default image']);
   assert.equal(btn(dlg, 'Save').disabled, true);
   assert.equal(btn(dlg, 'Remove custom cover').hidden, false);
   dlg.close();
@@ -117,12 +117,12 @@ test('dropping a file on the dialog switches to Upload', () => {
   dlg.close();
 });
 
-test('Wikipedia loads lazily, lists at most four, shows the source and saves the picked url', async () => {
+test('Suggestions load lazily, lists at most four, shows the source and saves the picked url', async () => {
   const list = Array.from({ length: 6 }, (_, i) => ({ url: `https://w/${i}.jpg`, thumb: `https://w/t${i}.jpg`, title: `Album ${i}`, page: `https://en.wikipedia.org/wiki/A${i}` }));
   const calls = stub((url) => (url === '/songs/s1/cover/suggestions' ? { body: { suggestions: list } } : null));
   const dlg = open();
   assert.equal(calls.some((c) => c.url.endsWith('/suggestions')), false);
-  btn(dlg, 'Wikipedia').click();
+  btn(dlg, 'Suggestions').click();
   assert.match(dlg.textContent, /Looking for covers\.\.\./);
   await flush();
   const picks = dlg.querySelectorAll('.cover-suggestion');
@@ -135,13 +135,31 @@ test('Wikipedia loads lazily, lists at most four, shows the source and saves the
   assert.equal(calls.find((c) => c.opts.method === 'PUT').opts.body, '{"url":"https://w/1.jpg"}');
 });
 
-test('Wikipedia with no suggestions says so', async () => {
+test('Suggestions with no suggestions says so', async () => {
   stub((url) => (url.endsWith('/suggestions') ? { body: { suggestions: [] } } : null));
   const dlg = open();
-  btn(dlg, 'Wikipedia').click();
+  btn(dlg, 'Suggestions').click();
   await flush();
-  assert.match(dlg.textContent, /No Wikipedia covers found for this song\./);
+  assert.match(dlg.textContent, /No cover suggestions found for this song./);
   assert.equal(btn(dlg, 'Save').disabled, true);
+  assert.equal(dlg.querySelector('.cover-preview').hidden, true);
+  dlg.close();
+});
+
+test('the preview frame shows only for an image or the placeholder', async () => {
+  stub((url) => (url.endsWith('/suggestions') ? { body: { suggestions: [{ url: 'https://w/1.jpg', thumb: 'https://w/t1.jpg', title: 'A' }] } } : null));
+  const dlg = open();
+  const frame = () => dlg.querySelector('.cover-preview');
+  assert.equal(frame().hidden, true);
+  btn(dlg, 'Suggestions').click();
+  await flush();
+  assert.equal(frame().hidden, true);
+  dlg.querySelectorAll('.cover-suggestion')[0].click();
+  assert.equal(frame().hidden, false);
+  btn(dlg, 'Upload').click();
+  assert.equal(frame().hidden, true);
+  btn(dlg, 'Default image').click();
+  assert.equal(frame().hidden, false);
   dlg.close();
 });
 
@@ -177,4 +195,34 @@ test('Remove custom cover calls DELETE, refreshes the store and closes', async (
   assert.equal(del.url, '/songs/s1/cover');
   assert.equal(store.songs[0].cover_v, 'b2');
   assert.equal(dlg.open, false);
+});
+
+test('a Discogs page address skips the image preview and is sent as the url', async () => {
+  const calls = stub();
+  const dlg = open();
+  const input = dlg.querySelector('input[type="url"]');
+  const page = 'https://www.discogs.com/master/5659-Hallucinogen-Twisted?redirected=true';
+  input.value = page;
+  input.dispatchEvent(makeEvent('input'));
+  assert.equal(dlg.querySelector('.cover-preview').hidden, true);
+  assert.equal(dlg.querySelector('.cover-preview-img').getAttribute('src'), null);
+  assert.match(dlg.textContent, /Discogs page: the cover will be fetched when you save\./);
+  assert.equal(dlg.querySelector('.msg.error').hidden, true);
+  assert.equal(btn(dlg, 'Save').disabled, false);
+  btn(dlg, 'Save').click();
+  await flush();
+  assert.equal(calls.find((c) => c.opts.method === 'PUT').opts.body, JSON.stringify({ url: page }));
+});
+
+test('a Discogs suggestion without a thumbnail shows no image and the page note', async () => {
+  stub((url) => (url.endsWith('/suggestions') ? { body: { suggestions: [{ url: 'https://www.discogs.com/release/12', thumb: null, title: 'Discogs', source: 'discogs', page: 'https://www.discogs.com/release/12' }] } } : null));
+  const dlg = open();
+  btn(dlg, 'Suggestions').click();
+  await flush();
+  const pick = dlg.querySelector('.cover-suggestion');
+  assert.equal(pick.querySelector('img').getAttribute('src'), null);
+  pick.click();
+  assert.match(dlg.textContent, /Discogs page: the cover will be fetched when you save\./);
+  assert.equal(dlg.querySelector('.cover-wiki a').getAttribute('href'), 'https://www.discogs.com/release/12');
+  dlg.close();
 });
