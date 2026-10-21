@@ -5,7 +5,7 @@ Per-release launch material. One release = one checklist task in
 release 1 is the first public release).
 
 Current state: internal TestFlight only, group "Alex", builds 20261012,
-20261013, 20261021, 20261022, 20261023, 20261024, 20261025 and 20261026 uploaded; see [ADR-0008](../tech/decisions.md) and
+20261013, 20261021, 20261022, 20261023, 20261024, 20261025, 20261026 and 20261027 uploaded; see [ADR-0008](../tech/decisions.md) and
 [`../tech/architecture.md`](../tech/architecture.md#testflight).
 The files below are templates for a public release that is not planned.
 

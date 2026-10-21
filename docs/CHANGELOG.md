@@ -2,6 +2,12 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-21 (iOS build 20261027: refined drawer, Settings hierarchy, new icon and logo; iOS uploaded, server and web NOT deployed)
+
+- iOS (TestFlight build 20261027): refined menu drawer (75% width, select tint, selection on touch-down); Settings hierarchy with free-space and format notes; new app icon (full-bleed glass plate) and vinyl logo. Not yet tested on a device. The signed-out Add flow needs the server deploy.
+- Web (committed, not deployed): Library tools panel.
+- Design system (committed): Library v5 component tokens and brand section, Vega 108 style reference; Library v5 screen spec ([library-v5.md](ui-ux/library-v5.md)).
+
 ## 2026-10-21 (iOS build 20261026: local library, drawer, offline covers; server and web: public view off, anonymous downloads; iOS uploaded, server and web NOT deployed)
 
 - iOS (TestFlight build 20261026): signed out, the app keeps a local library only (no guest mode) and can add a song from a pasted link anonymously.
@@ -972,7 +978,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 - Web: "Play all N" button on the Library sort bar (LIB-092).
 - Web and server: "Download" saves a song as `Artist - Title.m4a` via `GET /files/{id}?download=1` (WEB-034, API-061).
 - Server and web: MusicBrainz and Discogs icons in the song link row, `musicbrainz_url` stored on the song; "mashup" and "mixed by" are cut like "remix".
-- iOS: TestFlight builds 20261020 to 20261026 (latest 20261026).
+- iOS: TestFlight builds 20261020 to 20261027 (latest 20261027).
 
 ## 2026-10-13
 
