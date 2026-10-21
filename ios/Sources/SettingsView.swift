@@ -8,6 +8,7 @@ struct SettingsView: View {
     @ObservedObject private var auth = AuthService.shared
     @Environment(\.colorScheme) private var scheme
     @State private var bytes: Int64 = 0
+    @State private var freeBytes: Int64 = 0
     @State private var confirmRemoveAll = false
     @State private var removedTick = 0
     @State private var confirmReset = false
@@ -38,6 +39,7 @@ struct SettingsView: View {
             bytes = await Task.detached(priority: .utility) { [tracks = library.tracks] in
                 tracks.reduce(Int64(0)) { $0 + Int64((try? FileManager.default.attributesOfItem(atPath: $1.fileURL.path)[.size] as? Int) ?? 0) }
             }.value
+            freeBytes = await Task.detached(priority: .utility) { Self.freeSpace() }.value
         }
     }
 
@@ -143,6 +145,11 @@ struct SettingsView: View {
                         GoogleSignInButton { Task { await auth.signInWithGoogle() } }.disabled(auth.busy)
                     }
                 }
+                if !ServerLink.hasCredentials(settings) {
+                    Text("Browsing as a guest: you can search and stream the public library here, and songs saved on this iPhone play offline. Sign in to keep your own library, add songs and download them.")
+                        .dsCaption()
+                        .fixedSize(horizontal: false, vertical: true)
+                }
                 if let e = auth.error {
                     Label { Text(e).font(T.caption).foregroundStyle(DS.Color.ink) } icon: {
                         Image(systemName: "exclamationmark.circle.fill").foregroundStyle(DS.Color.power)
@@ -153,10 +160,15 @@ struct SettingsView: View {
         }
     }
 
-    private var capacity: Int64 {
-        let v = try? URL(fileURLWithPath: NSHomeDirectory()).resourceValues(forKeys: [.volumeTotalCapacityKey]).volumeTotalCapacity
-        return Int64(v ?? 0)
+    private nonisolated static func freeSpace() -> Int64 {
+        let keys: Set<URLResourceKey> = [.volumeAvailableCapacityForImportantUsageKey, .volumeAvailableCapacityKey]
+        guard let v = try? URL(fileURLWithPath: NSHomeDirectory()).resourceValues(forKeys: keys) else { return 0 }
+        return v.volumeAvailableCapacityForImportantUsage ?? Int64(v.volumeAvailableCapacity ?? 0)
     }
+
+    private var lowSpace: Bool { freeBytes > 0 && freeBytes < 1_000_000_000 }
+
+    private func sizeText(_ n: Int64) -> String { ByteCountFormatter.string(fromByteCount: n, countStyle: .file) }
 
     private var missingCount: Int {
         library.songs.filter { $0.onServer != false && $0.localOnly != true && !library.contains($0.id) }.count
@@ -198,15 +210,18 @@ struct SettingsView: View {
                     Spacer()
                     Text("\(library.tracks.count) \(library.tracks.count == 1 ? "song" : "songs") on iPhone").dsCaption()
                 }
-                if capacity > 0 {
+                if freeBytes > 0 {
                     GeometryReader { g in
                         ZStack(alignment: .leading) {
                             Capsule().fill(DS.Color.surfaceSunken)
-                            Capsule().fill(DS.Color.accent).frame(width: max(6, g.size.width * min(1, Double(bytes) / Double(capacity))))
+                            Capsule().fill(lowSpace ? DS.Color.power : DS.Color.accent)
+                                .frame(width: max(6, g.size.width * Double(bytes) / Double(max(1, bytes + freeBytes))))
                         }
                     }
                     .frame(height: 6).accessibilityHidden(true)
-                    Text("of \(ByteCountFormatter.string(fromByteCount: capacity, countStyle: .file)) on this iPhone").dsCaption()
+                    Text("\(sizeText(freeBytes)) free on this iPhone")
+                        .font(T.caption).foregroundStyle(lowSpace ? DS.Color.powerText : DS.Color.inkMuted)
+                        .accessibilityLabel("\(sizeText(bytes)) of songs, \(sizeText(freeBytes)) free\(lowSpace ? ", low space" : "")")
                 }
                 downloadAllRow
                 Button { confirmRemoveAll = true } label: { Text("Remove all downloads").frame(maxWidth: .infinity) }

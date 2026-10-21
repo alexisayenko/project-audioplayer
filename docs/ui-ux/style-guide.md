@@ -89,7 +89,7 @@ text on `accent-tint` rows is `ink` (`ink-muted` is 4.0:1 there at night).
 Colours, text roles, spacing and radii are `DS.Color` / `DS.Font` / `DS.Space` /
 `DS.Radius` from the generated `ios/Sources/DesignTokens.swift`; `Components.swift`
 holds the shared pieces (SongRow, category and value chips, FilterSheet is in
-`LibraryFilter.swift`, transport tray, buttons; the side drawer in `Drawer.swift`, the mini-player in `Views.swift`; the Add flow in
+`LibraryFilter.swift`, transport tray, buttons; the side drawer in `Drawer.swift` (Library, Now playing, Playlists, Statistics, Settings), the mini-player in `Views.swift`; the Add flow in
 `AddSheet.swift`; `ServerStatus` and `LED` in `Components.swift`). Screen titles stand alone: the eyebrow is web only (design system 1791840724-5234). Sheets (Add, filters, song) are sized to their content, so they do not change height when the keyboard opens; the last tag pill wraps together with the "+". Text uses scalable Dynamic Type styles (`T.*`) with the same roles as
 `DS.Font`; the layout caps at accessibility size 2. Day and night follow the system.
 

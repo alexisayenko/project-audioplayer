@@ -81,6 +81,7 @@ targets:
           - DesignTokens.swift
           - Endpoints.swift
           - GenreSuggest.swift
+          - GuestStream.swift
           - Keychain.swift
           - LibraryFilterModel.swift
           - LibraryStore.swift
@@ -88,6 +89,7 @@ targets:
           - ServerLink.swift
           - ServiceIcons.swift
           - SongFormState.swift
+          - StatData.swift
           - Settings.swift
           - TagLogic.swift
           - TokenField.swift

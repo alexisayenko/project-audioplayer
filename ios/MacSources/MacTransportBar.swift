@@ -2,6 +2,7 @@ import SwiftUI
 
 struct MacTransportBar: View {
     @EnvironmentObject var player: PlayerService
+    @EnvironmentObject var clock: PlaybackClock
     @EnvironmentObject var nav: MacNavigation
     @EnvironmentObject var settings: Settings
     @EnvironmentObject var library: LibraryStore
@@ -53,10 +54,10 @@ struct MacTransportBar: View {
                     keys
                 }
                 HStack(spacing: DS.Space.space3) {
-                    Text("\(macTime(player.position)) / \(macTime(player.duration))")
+                    Text("\(macTime(clock.position)) / \(macTime(clock.duration))")
                         .font(DS.Font.time).foregroundStyle(DS.Color.inkMuted).fixedSize()
-                    MacScrubber(value: player.position, range: 0...max(player.duration, 1), label: "Position",
-                                disabled: player.duration <= 0, bubble: macTime, keyStep: 5,
+                    MacScrubber(value: clock.position, range: 0...max(clock.duration, 1), label: "Position",
+                                disabled: clock.duration <= 0, bubble: macTime, keyStep: 5,
                                 onCommit: { player.seek(to: $0) })
                     volume
                 }

@@ -101,7 +101,7 @@ final class MacPlayback: ObservableObject {
             .store(in: &bag)
 
         player.$failedTrackID.compactMap { $0 }.sink { [weak self] id in self?.playbackFailed(id) }.store(in: &bag)
-        player.$position.sink { [weak self] p in if p > 0.5 { self?.skipped = 0 } }.store(in: &bag)
+        player.clock.$position.sink { [weak self] p in if p > 0.5 { self?.skipped = 0 } }.store(in: &bag)
 
         Task { _ = await AuthService.shared.validToken() }
         Timer.publish(every: 300, on: .main, in: .common).autoconnect()

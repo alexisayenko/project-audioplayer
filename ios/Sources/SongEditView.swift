@@ -41,7 +41,6 @@ struct SongEditView: View {
             parts.append(ByteCountFormatter.string(fromByteCount: Int64(size), countStyle: .file))
             parts.append(t.fileURL.pathExtension.uppercased())
         }
-        parts.append(sourceLabel(sourceOf(id: song.id)))
         return parts.joined(separator: " · ")
     }
 

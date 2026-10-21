@@ -3,6 +3,9 @@ import SwiftUI
 struct PlaybackView: View {
     @EnvironmentObject var player: PlayerService
     @EnvironmentObject var library: LibraryStore
+    @EnvironmentObject var guest: GuestCatalog
+    @EnvironmentObject var settings: Settings
+    @ObservedObject private var auth = AuthService.shared
     @ScaledMetric(relativeTo: .body) private var menuIcon: CGFloat = 20
     @ScaledMetric(relativeTo: .body) private var menuHit: CGFloat = DS.Space.hit
     @ScaledMetric(relativeTo: .body) private var grip: CGFloat = 16
@@ -22,6 +25,14 @@ struct PlaybackView: View {
     @State private var reorderTick = 0
 
     private var current: Track? { player.current }
+    private var signedOut: Bool { !ServerLink.hasCredentials(settings) }
+
+    /// The songs that can be added by tag: the ones on the phone, plus the public library's streamable ones when nobody is signed in.
+    private var taggable: [Track] {
+        guard signedOut, guest.audioEnabled else { return library.tracks }
+        let phone = Set(library.tracks.map(\.id))
+        return library.tracks + guest.songs.filter { !phone.contains($0.id) && guest.hasAudio($0) }
+    }
     private var menuSize: CGFloat { min(max(menuHit, DS.Space.hit), DS.Space.hit * 1.5) }
 
     private func subtitle(_ t: Track) -> String {
@@ -63,8 +74,8 @@ struct PlaybackView: View {
             }
         }
         .sheet(isPresented: $showTags) {
-            TagPickerSheet { picks in
-                let n = player.addTagged(picks, from: library.tracks)
+            TagPickerSheet(tracks: taggable) { picks in
+                let n = player.addTagged(picks, from: taggable)
                 toast = n == 0 ? "No new songs for these tags" : "Added \(n) \(n == 1 ? "song" : "songs")"
             }
         }
@@ -79,7 +90,7 @@ struct PlaybackView: View {
         Menu {
             Button { showQueue = true } label: { Label("Queue", systemImage: "list.bullet") }
             Button { showTags = true } label: { Label("Add songs by tag", systemImage: "tag") }
-            if let t = current { Button { editing = ServerSong(t) } label: { Label("Song details", systemImage: "info.circle") } }
+            if let t = current, !signedOut { Button { editing = ServerSong(t) } label: { Label("Song details", systemImage: "info.circle") } }
             Button { showShare = true } label: { Label("Share link", systemImage: "square.and.arrow.up") }
                 .disabled(current.map { !SongShare.isValidID($0.id) } ?? true)
             Button { player.skip(by: -5) } label: { Label("Back 5 seconds", systemImage: "gobackward.5") }
@@ -119,17 +130,7 @@ struct PlaybackView: View {
     }
 
     private var progress: some View {
-        VStack(spacing: 6) {
-            DSSlider(value: Binding(get: { player.position }, set: { player.seek(to: $0) }),
-                     range: 0...max(player.duration, 1), label: "Position", disabled: current == nil) { formatTime($0) }
-                .padding(.vertical, -19)
-            HStack {
-                Text(formatTime(player.position))
-                Spacer()
-                Text("-" + formatTime(max(player.duration - player.position, 0)))
-            }
-            .font(T.time).foregroundStyle(DS.Color.inkMuted).accessibilityHidden(true)
-        }
+        PlaybackProgress(hasSong: current != nil)
     }
 
     private var rowStep: CGFloat { rowHeight + 10 }
@@ -270,12 +271,12 @@ private struct QueueSheet: View {
 
 /// Pick tags from the songs on the phone and add every matching song to the queue.
 private struct TagPickerSheet: View {
-    @EnvironmentObject var library: LibraryStore
     @Environment(\.dismiss) private var dismiss
     @State private var picks: [String] = []
+    let tracks: [Track]
     let onAdd: ([String]) -> Void
 
-    private var groups: [TagGroup] { tagGroups(tagCounts(library.tracks.map { $0.tags ?? [] })) }
+    private var groups: [TagGroup] { tagGroups(tagCounts(tracks.map { $0.tags ?? [] })) }
 
     var body: some View {
         NavigationStack {
@@ -307,5 +308,25 @@ private struct TagPickerSheet: View {
             }
         }
         .presentationDetents([.medium, .large])
+    }
+}
+
+private struct PlaybackProgress: View {
+    @EnvironmentObject var player: PlayerService
+    @EnvironmentObject var clock: PlaybackClock
+    let hasSong: Bool
+
+    var body: some View {
+        VStack(spacing: 6) {
+            DSSlider(value: Binding(get: { clock.position }, set: { player.seek(to: $0) }),
+                     range: 0...max(clock.duration, 1), label: "Position", disabled: !hasSong) { formatTime($0) }
+                .padding(.vertical, -19)
+            HStack {
+                Text(formatTime(clock.position))
+                Spacer()
+                Text("-" + formatTime(max(clock.duration - clock.position, 0)))
+            }
+            .font(T.time).foregroundStyle(DS.Color.inkMuted).accessibilityHidden(true)
+        }
     }
 }

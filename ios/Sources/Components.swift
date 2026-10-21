@@ -289,21 +289,26 @@ struct FlowLayout: Layout {
 struct CoverImage: View {
     let source: String?
     @EnvironmentObject var settings: Settings
-    @State private var image: UIImage?
-    @State private var generation = 0
+    @Environment(\.displayScale) private var displayScale
+    @State private var loaded: (source: String, image: UIImage)?
+    @State private var side: CGFloat = 0
+
+    private var pixels: Int { CoverCache.bucket(forPixels: side * displayScale) }
 
     var body: some View {
+        let shown = source.flatMap { CoverCache.cached($0, baseURL: settings.serverURL, pixels: pixels) }
+            ?? loaded.flatMap { $0.source == source ? $0.image : nil }
         Group {
-            if let image {
-                Image(uiImage: image).resizable().scaledToFill()
+            if let shown {
+                Image(uiImage: shown).resizable().scaledToFill()
             } else if let url = CoverURL.resolve(source, baseURL: settings.serverURL, token: ""), !CoverCache.isServerCover(source) {
                 AsyncImage(url: url) { $0.resizable().scaledToFill() } placeholder: { placeholder }
             } else {
                 placeholder
             }
         }
-        .task(id: "\(source ?? "")#\(generation)") { await load() }
-        .onReceive(NotificationCenter.default.publisher(for: .trackThumbnailChanged)) { _ in generation += 1 }
+        .onGeometryChange(for: CGFloat.self) { max($0.size.width, $0.size.height) } action: { side = $0 }
+        .task(id: "\(source ?? "")#\(CoverEpoch.shared.value)#\(pixels)") { await load() }
     }
 
     private var placeholder: some View {
@@ -318,8 +323,9 @@ struct CoverImage: View {
 
     /// Server covers are fetched with the auth header, never with a token in the URL.
     private func load() async {
-        guard let source, CoverCache.isServerCover(source) else { image = nil; return }
-        image = await CoverCache.image(for: source, baseURL: settings.serverURL, token: settings.token)
+        guard let source, CoverCache.isServerCover(source) else { loaded = nil; return }
+        let fetched = await CoverCache.image(for: source, baseURL: settings.serverURL, token: settings.token, pixels: pixels)
+        loaded = fetched.map { (source, $0) }
     }
 }
 

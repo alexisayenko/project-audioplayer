@@ -1,5 +1,12 @@
+import Combine
 import CryptoKit
 import Foundation
+import ImageIO
+#if os(iOS)
+import UIKit
+#else
+import AppKit
+#endif
 
 /// The catalog on this iPhone: every song the server lists (cached for offline use) plus the songs whose audio is stored here.
 /// A song is "on the phone" when its file exists in `Documents/audio`; that is never written to `library.json`.
@@ -202,18 +209,33 @@ extension Notification.Name {
     static let trackThumbnailChanged = Notification.Name("trackThumbnailChanged")
 }
 
+/// One shared listener for cover changes; views read `value` so they refresh without each holding a subscription.
+@MainActor @Observable
+final class CoverEpoch {
+    static let shared = CoverEpoch()
+    private(set) var value = 0
+
+    private init() {
+        NotificationCenter.default.addObserver(forName: .trackThumbnailChanged, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.value += 1 }
+        }
+    }
+}
+
 /// Server covers, kept in memory and on disk (Application Support, excluded from backup) so they show offline.
 /// A source is `/covers/<id>`, optionally `?v=<cover_v>`; a different `v` means the cover changed and is fetched again.
 /// Files are named by a hash of the id, so no id can reach outside the folder or collide with a marker file.
 /// The cache belongs to one server host and account: another one empties it.
+/// Memory holds downsampled thumbnails per size bucket; `data(for:)` keeps the full bytes for lock-screen artwork.
 enum CoverCache {
     private final class Entry {
         let version: String
         let image: PlatformImage
-        init(version: String, image: PlatformImage) { self.version = version; self.image = image }
+        let cost: Int
+        init(version: String, image: PlatformImage, cost: Int) { self.version = version; self.image = image; self.cost = cost }
     }
 
-    private struct Ref {
+    private final class Ref: Sendable {
         let id: String
         let path: String
         let version: String
@@ -226,17 +248,46 @@ enum CoverCache {
         }
     }
 
-    private static let maxExtraBytes = 50_000_000
-    private static let memory = NSCache<NSString, Entry>()
-    private static let lock = NSLock()
-    nonisolated(unsafe) private static var activeScope: String?
+    private struct Stored { var version: String? }
 
-    private static var directory: URL {
+    static let thumbnailPixels = 192
+    private static let buckets = [192, 640, 1280]
+    private static let maxExtraBytes = 50_000_000
+    private static let memory: NSCache<NSString, Entry> = {
+        let c = NSCache<NSString, Entry>()
+        c.totalCostLimit = 48_000_000
+        return c
+    }()
+    private static let refs: NSCache<NSString, Ref> = {
+        let c = NSCache<NSString, Ref>()
+        c.countLimit = 4000
+        return c
+    }()
+    private static let lock = NSLock()
+    private static let ioLock = NSLock()
+    nonisolated(unsafe) private static var activeScope: String?
+    nonisolated(unsafe) private static var account: String?
+    nonisolated(unsafe) private static var accountObserver: AnyCancellable?
+    nonisolated(unsafe) private static var hostCache: (base: String, host: String)?
+    nonisolated(unsafe) private static var names: [String: String] = [:]
+    nonisolated(unsafe) private static var diskIndex: [String: Stored]?
+
+    private static let directory: URL = {
         FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("covers", isDirectory: true)
+    }()
+
+    private static func ref(_ source: String) -> Ref? {
+        if let hit = refs.object(forKey: source as NSString) { return hit }
+        guard let r = Ref(source) else { return nil }
+        refs.setObject(r, forKey: source as NSString)
+        return r
     }
 
     private static func name(_ id: String) -> String {
-        SHA256.hash(data: Data(id.utf8)).prefix(16).map { String(format: "%02x", $0) }.joined()
+        if let hit = lock.withLock({ names[id] }) { return hit }
+        let n = SHA256.hash(data: Data(id.utf8)).prefix(16).map { String(format: "%02x", $0) }.joined()
+        lock.withLock { names[id] = n }
+        return n
     }
 
     private static func file(_ id: String) -> URL { directory.appendingPathComponent(name(id) + ".img") }
@@ -244,6 +295,10 @@ enum CoverCache {
     private static var scopeFile: URL { directory.appendingPathComponent("scope.txt") }
 
     static func isServerCover(_ source: String?) -> Bool { source?.hasPrefix("/") == true }
+
+    static func bucket(forPixels pixels: CGFloat) -> Int {
+        buckets.first { CGFloat($0) >= pixels } ?? buckets[buckets.count - 1]
+    }
 
     private static func prepare() {
         let fm = FileManager.default
@@ -255,63 +310,179 @@ enum CoverCache {
         try? dir.setResourceValues(values)
     }
 
-    private static func ensureScope(baseURL: String) async {
-        let account = await MainActor.run { AuthService.shared.session?.email ?? "" }
-        let scope = (URL(string: baseURL)?.host ?? baseURL) + "|" + account
-        switchScope(to: scope)
+    private static func scopeKeyLocked(_ baseURL: String) -> String? {
+        guard let account else { return nil }
+        let host: String
+        if let c = hostCache, c.base == baseURL { host = c.host } else {
+            host = URL(string: baseURL)?.host ?? baseURL
+            hostCache = (baseURL, host)
+        }
+        return host + "|" + account
     }
 
-    private static func switchScope(to scope: String) {
+    private static func scopeReady(_ baseURL: String) -> Bool {
         lock.withLock {
-            if activeScope == nil { activeScope = try? String(contentsOf: scopeFile, encoding: .utf8) }
-            guard activeScope != scope else { return }
-            memory.removeAllObjects()
-            try? FileManager.default.removeItem(at: directory)
-            prepare()
-            try? scope.write(to: scopeFile, atomically: true, encoding: .utf8)
-            activeScope = scope
+            guard let key = scopeKeyLocked(baseURL), let active = activeScope else { return false }
+            return key == active
         }
     }
 
-    private static func isCached(_ ref: Ref) -> Bool {
-        guard FileManager.default.fileExists(atPath: file(ref.id).path) else { return false }
-        if ref.version.isEmpty { return true }
-        return (try? String(contentsOf: versionFile(ref.id), encoding: .utf8)) == ref.version
+    private static func ensureScope(baseURL: String) async {
+        if scopeReady(baseURL) { return }
+        if lock.withLock({ account }) == nil {
+            let email = await MainActor.run { () -> String in
+                if lock.withLock({ accountObserver }) == nil {
+                    let observer = AuthService.shared.$session.sink { s in lock.withLock { account = s?.email ?? "" } }
+                    lock.withLock { accountObserver = observer }
+                }
+                return AuthService.shared.session?.email ?? ""
+            }
+            lock.withLock { if account == nil { account = email } }
+        }
+        guard let key = lock.withLock({ scopeKeyLocked(baseURL) }) else { return }
+        switchScope(to: key)
+    }
+
+    private static func switchScope(to scope: String) {
+        ioLock.withLock {
+            let current = lock.withLock { activeScope } ?? (try? String(contentsOf: scopeFile, encoding: .utf8))
+            if current == scope {
+                lock.withLock { activeScope = scope }
+                return
+            }
+            try? FileManager.default.removeItem(at: directory)
+            prepare()
+            try? scope.write(to: scopeFile, atomically: true, encoding: .utf8)
+            lock.withLock {
+                memory.removeAllObjects()
+                activeScope = scope
+                diskIndex = [:]
+            }
+        }
+    }
+
+    private static func buildIndex() -> [String: Stored] {
+        var index: [String: Stored] = [:]
+        let files = (try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)) ?? []
+        for url in files where url.pathExtension == "img" {
+            let n = url.deletingPathExtension().lastPathComponent
+            let ver = try? String(contentsOf: directory.appendingPathComponent(n + ".ver"), encoding: .utf8)
+            index[n] = Stored(version: ver)
+        }
+        return index
+    }
+
+    private static func index() async -> [String: Stored] {
+        if let ready = lock.withLock({ diskIndex }) { return ready }
+        return await Task.detached(priority: .utility) {
+            let built = ioLock.withLock { lock.withLock { diskIndex } ?? buildIndex() }
+            return lock.withLock { () -> [String: Stored] in
+                if let ready = diskIndex { return ready }
+                diskIndex = built
+                return built
+            }
+        }.value
+    }
+
+    private static func setStored(_ n: String, _ stored: Stored?) async {
+        _ = await index()
+        lock.withLock { if var index = diskIndex { index[n] = stored; diskIndex = index } }
+    }
+
+    private static func isCached(_ ref: Ref) async -> Bool {
+        let n = name(ref.id)
+        guard let stored = await index()[n] else { return false }
+        return ref.version.isEmpty || stored.version == ref.version
+    }
+
+    private static func isImage(_ data: Data) -> Bool {
+        guard let src = CGImageSourceCreateWithData(data as CFData, [kCGImageSourceShouldCache: false] as CFDictionary),
+              CGImageSourceGetCount(src) > 0,
+              let props = CGImageSourceCopyPropertiesAtIndex(src, 0, nil) as? [CFString: Any],
+              props[kCGImagePropertyPixelWidth] != nil else { return false }
+        return true
+    }
+
+    private static func thumbnail(from data: Data, maxPixel: Int) -> (image: PlatformImage, cost: Int)? {
+        guard let src = CGImageSourceCreateWithData(data as CFData, [kCGImageSourceShouldCache: false] as CFDictionary) else { return nil }
+        var limit = maxPixel
+        if let props = CGImageSourceCopyPropertiesAtIndex(src, 0, nil) as? [CFString: Any],
+           let w = props[kCGImagePropertyPixelWidth] as? Int, let h = props[kCGImagePropertyPixelHeight] as? Int {
+            limit = min(maxPixel, max(w, h))
+        }
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceShouldCacheImmediately: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: limit
+        ]
+        guard let cg = CGImageSourceCreateThumbnailAtIndex(src, 0, options as CFDictionary) else { return nil }
+        let cost = cg.width * cg.height * 4
+        #if os(iOS)
+        return (UIImage(cgImage: cg), cost)
+        #else
+        return (NSImage(cgImage: cg, size: NSSize(width: cg.width, height: cg.height)), cost)
+        #endif
+    }
+
+    private static func memoryKey(_ id: String, _ pixels: Int) -> NSString { "\(id)@\(pixels)" as NSString }
+
+    private static func memoryHit(_ ref: Ref, pixels: Int) -> PlatformImage? {
+        guard let hit = memory.object(forKey: memoryKey(ref.id, pixels)), hit.version == ref.version || ref.version.isEmpty else { return nil }
+        return hit.image
     }
 
     /// The sources whose current cover is not stored yet.
     static func missing(_ sources: [String], baseURL: String) async -> [String] {
         await ensureScope(baseURL: baseURL)
-        return sources.filter { s in Ref(s).map { !isCached($0) } ?? false }
+        var out: [String] = []
+        for s in sources {
+            if let r = ref(s), !(await isCached(r)) { out.append(s) }
+        }
+        return out
     }
 
     /// The cover bytes: from disk when the stored version matches, else fetched; a failed fetch falls back to the stored copy.
     static func data(for source: String, baseURL: String, token: String) async -> Data? {
-        guard let ref = Ref(source) else { return nil }
+        guard let ref = ref(source) else { return nil }
         await ensureScope(baseURL: baseURL)
-        if isCached(ref), let stored = try? Data(contentsOf: file(ref.id)) { return stored }
-        if let fresh = try? await APIClient(baseURL: baseURL, token: token).fetch(ref.path), PlatformImage(data: fresh) != nil {
+        if await isCached(ref), let stored = try? Data(contentsOf: file(ref.id)) { return stored }
+        if let fresh = try? await APIClient(baseURL: baseURL, token: token).fetch(ref.path), isImage(fresh) {
             prepare()
             try? fresh.write(to: file(ref.id), options: .atomic)
             try? ref.version.write(to: versionFile(ref.id), atomically: true, encoding: .utf8)
+            await setStored(name(ref.id), Stored(version: ref.version))
             return fresh
         }
         return try? Data(contentsOf: file(ref.id))
     }
 
-    static func image(for source: String, baseURL: String, token: String) async -> PlatformImage? {
-        guard let ref = Ref(source) else { return nil }
-        await ensureScope(baseURL: baseURL)
-        if let hit = memory.object(forKey: ref.id as NSString), hit.version == ref.version || ref.version.isEmpty { return hit.image }
-        guard let data = await data(for: source, baseURL: baseURL, token: token), let img = PlatformImage(data: data) else { return nil }
-        memory.setObject(Entry(version: ref.version, image: img), forKey: ref.id as NSString)
-        return img
+    /// A downsampled cover already in memory, without any waiting; nil when it has to be loaded.
+    static func cached(_ source: String, baseURL: String, pixels: Int = thumbnailPixels) -> PlatformImage? {
+        guard scopeReady(baseURL), let ref = ref(source) else { return nil }
+        return memoryHit(ref, pixels: pixels)
+    }
+
+    /// A cover downsampled to at most `pixels` on its long side, decoded off the main thread.
+    static func image(for source: String, baseURL: String, token: String, pixels: Int = thumbnailPixels) async -> PlatformImage? {
+        guard let ref = ref(source) else { return nil }
+        if scopeReady(baseURL), let hit = memoryHit(ref, pixels: pixels) { return hit }
+        return await Task.detached(priority: .userInitiated) { () -> PlatformImage? in
+            await ensureScope(baseURL: baseURL)
+            if let hit = memoryHit(ref, pixels: pixels) { return hit }
+            guard let data = await data(for: source, baseURL: baseURL, token: token),
+                  let thumb = thumbnail(from: data, maxPixel: pixels) else { return nil }
+            memory.setObject(Entry(version: ref.version, image: thumb.image, cost: thumb.cost), forKey: memoryKey(ref.id, pixels), cost: thumb.cost)
+            return thumb.image
+        }.value
     }
 
     static func invalidate(_ id: String) {
-        memory.removeObject(forKey: id as NSString)
+        for pixels in buckets { memory.removeObject(forKey: memoryKey(id, pixels)) }
         try? FileManager.default.removeItem(at: file(id))
         try? FileManager.default.removeItem(at: versionFile(id))
+        let n = name(id)
+        lock.withLock { if var index = diskIndex { index[n] = nil; diskIndex = index } }
     }
 
     /// Keeps the covers of `keep` always; the others stay only while they fit in a size cap (oldest go first).
@@ -330,6 +501,8 @@ enum CoverCache {
         for e in extra.sorted(by: { $0.date < $1.date }) where total > maxExtraBytes {
             try? fm.removeItem(at: e.url)
             try? fm.removeItem(at: e.url.deletingPathExtension().appendingPathExtension("ver"))
+            let n = e.url.deletingPathExtension().lastPathComponent
+            lock.withLock { if var index = diskIndex { index[n] = nil; diskIndex = index } }
             total -= e.size
         }
     }

@@ -2,14 +2,28 @@ import AVFoundation
 import Combine
 import MediaPlayer
 
+/// Position and length of the current song; split from PlayerService so the 0.5 s ticks refresh only the views that show them.
+@MainActor
+final class PlaybackClock: ObservableObject {
+    @Published fileprivate(set) var position: Double = 0
+    @Published fileprivate(set) var duration: Double = 0
+}
+
 /// Plays a queue of local tracks with background audio and lock-screen controls.
 @MainActor
 final class PlayerService: ObservableObject {
     @Published private(set) var queue: [Track] = []
     @Published private(set) var index: Int?
     @Published private(set) var isPlaying = false
-    @Published private(set) var position: Double = 0
-    @Published private(set) var duration: Double = 0
+    let clock = PlaybackClock()
+    private(set) var position: Double {
+        get { clock.position }
+        set { clock.position = newValue }
+    }
+    private(set) var duration: Double {
+        get { clock.duration }
+        set { clock.duration = newValue }
+    }
 
     @Published private(set) var queueTags: [String] = []
     @Published var shuffle = UserDefaults.standard.bool(forKey: "shuffle") {
@@ -50,6 +64,10 @@ final class PlayerService: ObservableObject {
     var nowPlayingText: ((Track) -> (title: String, artist: String))?
     /// Called with the item that now plays, or nil when the player holds none.
     var itemObserver: ((AVPlayerItem?) -> Void)?
+    /// Set in guest mode (nobody signed in): a song with no file on the phone streams from the owner's public library.
+    var guestSource: GuestSource?
+    /// A guest stream that failed, in words; the app shows it once.
+    @Published var streamNotice: StreamNotice?
 
     private let player = AVPlayer()
     private var timeObserver: Any?
@@ -65,6 +83,8 @@ final class PlayerService: ObservableObject {
     private var itemTask: Task<Void, Never>?
     private var needsItem = false
     private var retriedID: String?
+    private var streamingID: String?
+    private var streamMisses = 0
 
     var current: Track? { index.flatMap { queue.indices.contains($0) ? queue[$0] : nil } }
 
@@ -76,6 +96,7 @@ final class PlayerService: ObservableObject {
             Task { @MainActor in
                 guard let self else { return }
                 self.position = time.seconds.isFinite ? time.seconds : 0
+                if self.position > 1 { self.streamMisses = 0 }
                 self.updateNowPlaying()
             }
         }
@@ -110,12 +131,14 @@ final class PlayerService: ObservableObject {
         queueTags = []
         played = []
         history = []
+        streamMisses = 0
         load(start, remember: false)
     }
 
     /// Inserts the song after the current one and plays it.
     func playNow(_ track: Track) {
         guard let index, current != nil else { return play([track], startAt: 0) }
+        streamMisses = 0
         manual.insert(track.id)
         if let at = queue.firstIndex(where: { $0.id == track.id }) {
             queue.remove(at: at)
@@ -213,7 +236,7 @@ final class PlayerService: ObservableObject {
         history = []
     }
 
-    func jump(to i: Int) { load(i) }
+    func jump(to i: Int) { streamMisses = 0; load(i) }
 
     func skip(by seconds: Double) { seek(to: min(max(position + seconds, 0), max(duration, 0))) }
 
@@ -319,7 +342,7 @@ final class PlayerService: ObservableObject {
         itemTask?.cancel()
         needsItem = false
         guard let itemFactory else {
-            attach(AVPlayerItem(url: track.fileURL))
+            attach(defaultItem(track))
             if play { resume() }
             return
         }
@@ -335,6 +358,44 @@ final class PlayerService: ObservableObject {
         }
     }
 
+    /// The song's file on the phone, which always wins; without one, a guest stream from the server.
+    private func defaultItem(_ track: Track) -> AVPlayerItem {
+        streamingID = nil
+        if !FileManager.default.fileExists(atPath: track.fileURL.path), let url = guestSource?.streamURL(track) {
+            streamingID = track.id
+            return AVPlayerItem(asset: AVURLAsset(url: url))
+        }
+        return AVPlayerItem(url: track.fileURL)
+    }
+
+    private func streamFailed(_ track: Track) {
+        failedTrackID = track.id
+        let wasPlaying = isPlaying
+        isPlaying = false
+        updateNowPlaying()
+        guard let source = guestSource else { return }
+        Task { [weak self] in
+            let problem = await source.diagnose(track)
+            guard let self, self.current?.id == track.id else { return }
+            self.handleStream(problem, for: track, wasPlaying: wasPlaying)
+        }
+    }
+
+    private func handleStream(_ problem: StreamProblem, for track: Track, wasPlaying: Bool) {
+        let perSong = problem == .missing || problem == .other
+        streamMisses += 1
+        let skipping = wasPlaying && (perSong ? streamMisses < 3 : nextOnPhone() != nil)
+        let link = problem == .audioDisabled ? track.sourceURL.flatMap { URL(string: $0) } : nil
+        streamNotice = StreamNotice(message: GuestStream.message(for: problem, title: track.title, skipping: skipping), link: link)
+        guard skipping else { return }
+        if perSong { advance(manual: true) } else if let i = nextOnPhone() { load(i) }
+    }
+
+    private func nextOnPhone() -> Int? {
+        guard let index else { return nil }
+        return queue.indices.dropFirst(index + 1).first { FileManager.default.fileExists(atPath: queue[$0].fileURL.path) }
+    }
+
     private func finishInstall(_ item: AVPlayerItem) {
         attach(item)
         if position > 0 { player.seek(to: CMTime(seconds: position, preferredTimescale: 600)) }
@@ -344,7 +405,7 @@ final class PlayerService: ObservableObject {
     private func cue(_ track: Track) {
         itemTask?.cancel()
         retriedID = nil
-        guard itemFactory != nil else { return attach(AVPlayerItem(url: track.fileURL)) }
+        guard itemFactory != nil else { return attach(defaultItem(track)) }
         detach()
         needsItem = true
     }
@@ -372,6 +433,10 @@ final class PlayerService: ObservableObject {
             guard status == .failed else { return }
             MainActor.assumeIsolated {
                 guard let self, self.current?.id == id else { return }
+                if let id, self.streamingID == id, let track = self.current {
+                    self.streamFailed(track)
+                    return
+                }
                 if let id, self.itemFactory != nil, self.retriedID != id, let track = self.current {
                     self.retriedID = id
                     self.install(track, play: self.isPlaying, refresh: true)

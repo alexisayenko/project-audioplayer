@@ -52,7 +52,7 @@ final class MacVisualizer: ObservableObject {
         player.itemObserver = { [weak self] item in
             MainActor.assumeIsolated { self?.activate(item) }
         }
-        player.$position.sink { [weak self] p in self?.tick(p) }.store(in: &bag)
+        player.clock.$position.sink { [weak self] p in self?.tick(p) }.store(in: &bag)
     }
 
     func toggle() {

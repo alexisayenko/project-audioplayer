@@ -13,6 +13,7 @@ struct ElectrophoneMacApp: App {
             MacRootView()
                 .environmentObject(library)
                 .environmentObject(player)
+                .environmentObject(player.clock)
                 .environmentObject(settings)
                 .environmentObject(server)
                 .environmentObject(AuthService.shared)

@@ -11,6 +11,17 @@ extension EnvironmentValues {
     }
 }
 
+private struct OpenSettingsKey: EnvironmentKey {
+    static let defaultValue: (() -> Void)? = nil
+}
+
+extension EnvironmentValues {
+    var openSettings: (() -> Void)? {
+        get { self[OpenSettingsKey.self] }
+        set { self[OpenSettingsKey.self] = newValue }
+    }
+}
+
 /// Hamburger at the leading edge of a root screen header; absent when no drawer is installed.
 struct MenuButton: View {
     @Environment(\.openMenu) private var openMenu
@@ -40,6 +51,7 @@ struct SideDrawer: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @AccessibilityFocusState private var titleFocused: Bool
     @ScaledMetric(relativeTo: .title3) private var icon: CGFloat = 22
+    @ScaledMetric(relativeTo: .title3) private var logo: CGFloat = 32
 
     var body: some View {
         GeometryReader { geo in
@@ -66,11 +78,17 @@ struct SideDrawer: View {
     private var panel: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: DS.Space.space2) {
-                VStack(alignment: .leading, spacing: 0) {
-                    Text("Electrophone").font(T.title).foregroundStyle(DS.Color.ink)
-                        .accessibilityAddTraits(.isHeader)
-                        .accessibilityFocused($titleFocused)
-                    Text("Offline music player").dsCaption()
+                HStack(spacing: DS.Space.space3) {
+                    Image("DrawerLogo").resizable().scaledToFit()
+                        .frame(width: logo, height: logo)
+                        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.radiusSm, style: .continuous))
+                        .accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text("Electrophone").font(T.title).foregroundStyle(DS.Color.ink)
+                            .accessibilityAddTraits(.isHeader)
+                            .accessibilityFocused($titleFocused)
+                        Text("Offline music player").dsCaption()
+                    }
                 }
                 .padding(.horizontal, DS.Space.space3).padding(.bottom, DS.Space.space4)
                 ForEach(AppTab.allCases, id: \.self) { item($0) }
