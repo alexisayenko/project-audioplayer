@@ -207,6 +207,7 @@ class TestListsAndGuest:
         assert [s["id"] for s in client.get("/catalog", params={"since": stamp}, headers=H).json()["songs"]] == [VID]
 
     def test_guest_gets_the_structure_but_not_raw(self, client, monkeypatch):
+        monkeypatch.setenv("PUBLIC_VIEW", "1")
         post(client, {"mainArtists": ["A"], "featuredArtists": ["B"], "releaseYear": 1999, "version": {"type": "remix", "name": "X Remix", "artists": ["X"]}}, source_raw={"title": "Original Upload Title"})
         owner = song(client)
         assert "rawTitle" in owner

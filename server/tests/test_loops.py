@@ -99,7 +99,8 @@ def test_loops_longer_than_the_stored_duration_are_refused(song):
     assert patch(song, {"loops": [{"name": "A", "start": 0, "end": dur}]}).status_code == 200
 
 
-def test_a_caller_without_credentials_cannot_save_and_guests_do_not_see_loops(song):
+def test_a_caller_without_credentials_cannot_save_and_guests_do_not_see_loops(song, monkeypatch):
+    monkeypatch.setenv("PUBLIC_VIEW", "1")
     assert song.patch(f"/songs/{VID}", json={"loops": []}, headers={"X-API-Token": "wrong"}).status_code in (401, 403)
     patch(song, {"loops": [{"name": "A", "start": 1, "end": 2}]})
     assert "loops" not in web().get("/library").json()["songs"][0]

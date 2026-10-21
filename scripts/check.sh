@@ -29,7 +29,7 @@ if ! out=$(node --test scripts/*.test.mjs 2>&1) || echo "$out" | grep -q -E '^[[
 fi
 echo "scripts: ok"
 
-dups=$(cat docs/specs/*.md | grep -o -E '^- [A-Z]{2,5}-[0-9]+' | sort | uniq -d)
+dups=$(cat docs/specs/*.md | grep -o -E '^- [A-Z]{2,5}-[0-9]+[a-z]*' | sort | uniq -d)
 if [ -n "$dups" ]; then
   echo "FAIL: duplicate rule IDs:"
   echo "$dups"

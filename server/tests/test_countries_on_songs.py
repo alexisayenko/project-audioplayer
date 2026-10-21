@@ -32,7 +32,8 @@ def test_the_artist_endpoints_are_gone(client):
     assert client.patch("/artists/Solo", json={"countries": ["us"]}, headers=H).status_code in (404, 405)
 
 
-def test_guests_see_the_country_tags_of_songs_and_no_artist_table(client):
+def test_guests_see_the_country_tags_of_songs_and_no_artist_table(client, monkeypatch):
+    monkeypatch.setenv("PUBLIC_VIEW", "1")
     post(client, {"artist": "Solo"}, tags=["country:fr"])
     body = web().get("/library").json()
     assert "artists" not in body

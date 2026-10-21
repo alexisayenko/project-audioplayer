@@ -24,43 +24,28 @@ stubFetch((url) => {
   return { body: {} };
 });
 
-test('signed out at boot: the app redirects to Settings and marks the body signed-out', async () => {
+test('signed out at boot: only the login screen renders and the body is marked signed-out', async () => {
   await import('./app.js');
-  assert.equal(location.hash, '#/settings');
-  assert.equal(document.body.dataset.route, undefined, 'redirect happens before rendering a route');
-});
-
-test('settings renders for a signed-out user and nav marks it active', async () => {
-  dom.window.dispatch('hashchange');
-  assert.equal(document.body.dataset.route, 'settings');
-  assert.match(document.getElementById('view').textContent, /Loading/, 'the lazy route shows its loading state first');
-  await flush();
+  assert.equal(document.body.dataset.route, 'login');
   assert.ok(document.body.classList.contains('signed-out'));
-  const active = nav.querySelectorAll('a').filter((a) => a.classList.contains('active')).map((a) => a.dataset.route);
-  assert.deepEqual(active, ['settings']);
-  assert.equal(nav.querySelector('.active').getAttribute('aria-current'), 'page');
-  assert.match(document.getElementById('view').textContent, /Settings/);
+  assert.equal(location.hash, '', 'the hash is kept for after the sign-in');
+  const view = document.getElementById('view');
+  assert.match(view.textContent, /Electrophone/);
+  assert.match(view.textContent, /Sign in to see your library/);
+  assert.doesNotMatch(view.textContent, /Alpha/);
+  assert.equal(document.getElementById('player').hidden, true);
 });
 
-test('other routes are refused while signed out', () => {
-  location.hash = '#/library';
-  dom.window.dispatch('hashchange');
-  assert.equal(location.hash, '#/settings');
-});
-
-test('WEB-131: the Help pages open while signed out; the other pages are still refused', async () => {
-  for (const r of ['theory', 'about', 'features']) {
-    location.hash = `#/${r}`;
+test('every route and share link shows the login screen while signed out and keeps its hash', async () => {
+  for (const hash of ['#/library', '#/settings', '#/theory', '#/about', '#/features', '#/play/abc?t=3', '#/add']) {
+    location.hash = hash;
     dom.window.dispatch('hashchange');
-    assert.equal(location.hash, `#/${r}`);
-    assert.equal(document.body.dataset.route, r);
-    assert.ok(document.body.classList.contains('signed-out'));
+    await flush();
+    assert.equal(document.body.dataset.route, 'login', hash);
+    assert.equal(location.hash, hash, `${hash} is not rewritten`);
+    assert.match(document.getElementById('view').textContent, /Sign in to see your library/);
+    assert.equal(nav.querySelectorAll('a').filter((a) => a.classList.contains('active')).length, 0);
   }
-  await flush();
-  assert.equal(document.getElementById('view').querySelector('h1').textContent, 'Features');
-  location.hash = '#/library';
-  dom.window.dispatch('hashchange');
-  assert.equal(location.hash, '#/settings');
 });
 
 test('server led and sync warning reflect /health', async () => {
@@ -91,6 +76,14 @@ test('after sign-in the library route renders and the nav follows hash changes',
   assert.equal(document.body.dataset.route, 'library', 'unknown routes fall back to the library');
 });
 
+test('a share link kept through the login is opened once signed in', async () => {
+  location.hash = '#/play/a';
+  dom.window.dispatch('hashchange');
+  assert.equal(location.hash, '#/library', 'the share route is consumed after the sign-in');
+  assert.equal(document.body.dataset.route, 'library');
+  await flush();
+});
+
 test('#/add opens the add dialog over the library and rewrites the hash', async () => {
   location.hash = '#/add';
   dom.window.dispatch('hashchange');
@@ -100,14 +93,15 @@ test('#/add opens the add dialog over the library and rewrites the hash', async 
   document.getElementById('add-dialog').close();
 });
 
-test('signing out pauses the player and bounces to Settings', async () => {
+test('signing out pauses the player and shows the login screen', async () => {
   const { auth } = await import('./api.js');
   const audio = document.getElementById('audio');
   audio.play();
   auth.email = '';
   dom.window.dispatch('auth-changed');
   assert.equal(audio.paused, true);
-  assert.equal(location.hash, '#/settings');
+  assert.equal(document.body.dataset.route, 'login');
+  assert.ok(document.body.classList.contains('signed-out'));
 });
 
 test('sidebar toggle flips the collapsed class, aria and persists', () => {

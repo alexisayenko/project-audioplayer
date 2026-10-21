@@ -104,7 +104,8 @@ def test_every_user_has_their_own_drafts(multi, fake):
     assert [d["id"] for d in listed(multi, a)["drafts"]] == [created["id"]]
 
 
-def test_nobody_without_credentials_and_no_public_viewer_reaches_the_drafts(client, fake):
+def test_nobody_without_credentials_and_no_public_viewer_reaches_the_drafts(client, fake, monkeypatch):
+    monkeypatch.setenv("PUBLIC_VIEW", "1")
     paste(client, "A - B")
     deps.save_songs(OWNER_UID, [])
     anon = web()

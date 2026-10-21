@@ -34,6 +34,7 @@ test('unsafe contacts are rejected', () => {
 test('visible in guest view and Settings, never in the full-screen visualizer', () => {
   assert.equal(legalVisible({ guest: true, route: 'library' }), true);
   assert.equal(legalVisible({ guest: false, route: 'settings' }), true);
+  assert.equal(legalVisible({ guest: false, route: 'login' }), true);
   assert.equal(legalVisible({ guest: false, route: 'library' }), false);
   assert.equal(legalVisible({ guest: true, route: 'settings', vizFull: true }), false);
 });

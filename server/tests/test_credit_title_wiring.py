@@ -143,7 +143,8 @@ class TestWithArtistsStorage:
         assert got["mainArtists"] == ["Pharrell Williams, Nile Rodgers"]
         assert got["featuredArtists"] == []
 
-    def test_guest_sees_with_artists(self, client):
+    def test_guest_sees_with_artists(self, client, monkeypatch):
+        monkeypatch.setenv("PUBLIC_VIEW", "1")
         post(client, {"mainArtists": ["A"], "withArtists": ["W"]})
         assert web().get("/library").json()["songs"][0]["withArtists"] == ["W"]
         assert "withArtists" in guest.SONG_KEYS

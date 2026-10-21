@@ -7,30 +7,10 @@ const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const nav = html.match(/<nav id="nav"[\s\S]*?<\/nav>/)[0];
 const { helpMode, isHelpRoute, HELP_ROUTES, initHelpNav } = await import('./nav-help.js');
 
-test('WEB-131: Help sits between Studio and Settings; the Help pages are its submenu only', () => {
-  const top = nav.replace(/<ul class="nav-sub"[\s\S]*?<\/ul>/, '');
-  assert.deepEqual([...top.matchAll(/data-route="([^"]+)"/g)].map((m) => m[1]), ['library', 'playback', 'playlists', 'genres', 'stats', 'studio', 'settings']);
-  assert.ok(top.indexOf('data-route="studio"') < top.indexOf('id="help-toggle"') && top.indexOf('id="help-toggle"') < top.indexOf('data-route="settings"'));
-  assert.match(top, /id="help-toggle"/);
-  const sub = nav.match(/<ul class="nav-sub"[\s\S]*?<\/ul>/)[0];
-  assert.deepEqual([...sub.matchAll(/data-route="([^"]+)"/g)].map((m) => m[1]), ['theory', 'about', 'features']);
-  assert.deepEqual([...sub.matchAll(/class="nav-label">([^<]+)</g)].map((m) => m[1]), ['Music theory', 'About', 'Features']);
-});
-
-test('WEB-131: the header is a button, collapsed by default, with aria-expanded and aria-controls', () => {
-  const btn = nav.match(/<button[^>]*id="help-toggle"[^>]*>/)[0];
-  assert.match(btn, /type="button"/);
-  assert.match(btn, /aria-expanded="false"/);
-  assert.match(btn, /aria-controls="help-sub"/);
-  assert.match(nav, /<ul class="nav-sub" id="help-sub" hidden>/);
-  assert.match(html, /<dialog id="help-sheet" class="sheet"/);
-});
-
-test('WEB-131: the Help links carry help-link so signed-out visitors keep them', () => {
-  const sub = nav.match(/<ul class="nav-sub"[\s\S]*?<\/ul>/)[0];
-  assert.equal([...sub.matchAll(/class="help-link"/g)].length, 3);
+test('WEB-131 (superseded by ADR-0041): signed out, the whole sidebar and the dock are hidden, so the Help links are too', () => {
   const css = readFileSync(new URL('../style.css', import.meta.url), 'utf8');
-  assert.match(css, /body\.signed-out #nav a:not\(\[data-route="settings"\]\):not\(\.help-link\)/);
+  assert.match(css, /body\.signed-out :is\(\.side, #mini, #player/);
+  assert.doesNotMatch(css, /body\.signed-out #nav a:not/);
 });
 
 test('help routes and display modes', () => {

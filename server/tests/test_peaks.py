@@ -98,6 +98,7 @@ def test_missing_audio_and_unknown_song_are_404(lib, tmp_path):
 
 
 def test_wrong_credentials_and_guest_access_follows_files(lib, monkeypatch):
+    monkeypatch.setenv("PUBLIC_VIEW", "1")
     assert lib.get(f"/songs/{VID}/peaks", headers={"X-API-Token": "wrong"}).status_code == 401
     seen = web().get(f"/songs/{VID}/peaks")
     assert seen.status_code == 200 and seen.json()["buckets"] == BUCKETS
@@ -105,7 +106,8 @@ def test_wrong_credentials_and_guest_access_follows_files(lib, monkeypatch):
     assert web().get(f"/songs/{VID}/peaks").status_code == 403
 
 
-def test_a_guest_cannot_peek_at_a_song_the_owner_does_not_have(lib):
+def test_a_guest_cannot_peek_at_a_song_the_owner_does_not_have(lib, monkeypatch):
+    monkeypatch.setenv("PUBLIC_VIEW", "1")
     assert web().get(f"/songs/{VID2}/peaks").status_code == 404
 
 

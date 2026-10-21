@@ -30,12 +30,14 @@ def test_owner_audio_supports_range(lib):
     assert_ranged(lib, headers=H)
 
 
-def test_guest_audio_supports_range(lib):
+def test_guest_audio_supports_range(lib, monkeypatch):
+    monkeypatch.setenv("PUBLIC_VIEW", "1")
     assert_ranged(web())
 
 
 @pytest.mark.parametrize("who", ["owner", "guest"])
-def test_head_advertises_ranges(lib, who):
+def test_head_advertises_ranges(lib, who, monkeypatch):
+    monkeypatch.setenv("PUBLIC_VIEW", "1")
     head = lib.head(f"/files/{VID}", headers=H) if who == "owner" else web().head(f"/files/{VID}")
     assert head.status_code == 200
     assert head.headers["accept-ranges"] == "bytes"

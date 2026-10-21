@@ -40,6 +40,11 @@ def audio_file(tmp_path, size=10_000):
     (d / f"{VID}.m4a").write_bytes(b"a" * size)
 
 
+@pytest.fixture(autouse=True)
+def _public_view_on(monkeypatch):
+    monkeypatch.setenv("PUBLIC_VIEW", "1")
+
+
 @pytest.fixture
 def lib(client, tmp_path):
     assert add(client, H, VID, tags=["genre:house"]).status_code == 202

@@ -7,10 +7,10 @@ from collections.abc import Awaitable, Callable
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
 
-from . import deps, features, genre_vocab, guest, hosts, legal, migrate_model2, migrate_model3, migrate_removals, migrate_renames, migrate_retired, migrate_sources, migrate_tags, migrate_version_norm, plays, readiness, web
+from . import anon, deps, features, genre_vocab, guest, hosts, legal, migrate_model2, migrate_model3, migrate_removals, migrate_renames, migrate_retired, migrate_sources, migrate_tags, migrate_version_norm, plays, readiness, web
 from .problems import Problem
 from .routes import playlist_import as playlist_import_routes
-from .routes import analyze, auth, backfill, catalog, covers, drafts, features as features_routes, files, genres, health, legacy, legal as legal_routes, lookup, me, metafill, peaks as peaks_routes, plays as plays_routes, removal, songs
+from .routes import analyze, anon as anon_routes, auth, backfill, catalog, covers, drafts, features as features_routes, files, genres, health, legacy, legal as legal_routes, lookup, me, metafill, peaks as peaks_routes, plays as plays_routes, removal, songs
 
 app = FastAPI(title="Electrophone")
 
@@ -66,11 +66,13 @@ def _startup() -> None:
     genre_vocab.check()
     readiness.start_worker(_startup_steps())
     plays.start_sync()
+    anon.start()
 
 
 @app.on_event("shutdown")
 def _shutdown() -> None:
     plays.stop_sync()
+    anon.stop()
     if deps.SYNC:
         deps.SYNC.flush()
         deps.SYNC.stop()
@@ -78,7 +80,7 @@ def _shutdown() -> None:
 
 app.add_middleware(readiness.ReadinessMiddleware)
 
-for _module in (auth, me, health, legal_routes, legacy, features_routes, files, peaks_routes, plays_routes, catalog, covers, genres, lookup, playlist_import_routes, drafts, songs, analyze, backfill, metafill, removal):
+for _module in (auth, me, health, legal_routes, legacy, features_routes, files, peaks_routes, plays_routes, catalog, covers, genres, lookup, playlist_import_routes, drafts, songs, analyze, backfill, metafill, removal, anon_routes):
     app.include_router(_module.router)
 
 web.mount(app)

@@ -40,7 +40,7 @@ def _number(name: str, default: int) -> int:
 
 
 def enabled() -> bool:
-    return _flag("PUBLIC_VIEW")
+    return os.environ.get("PUBLIC_VIEW", "").strip().lower() in ("1", "true", "yes", "on")
 
 
 def audio_enabled() -> bool:

@@ -15,7 +15,8 @@ import { loadCollapsed, saveCollapsed } from './sidebar-state.js';
 import { SYNC_POLL_MS } from './constants.js';
 import { describeSync } from './sync-status.js';
 import { describeBuild } from './build-info.js';
-import { initHelpNav, isHelpRoute } from './nav-help.js';
+import { initHelpNav } from './nav-help.js';
+import { renderLogin } from './login.js';
 
 const STARTING_RECHECK_MS = 3000;
 const player = document.getElementById('player');
@@ -46,7 +47,23 @@ async function openSharedLink(hash) {
   }
 }
 
+function showLogin() {
+  document.body.classList.add('signed-out');
+  if (document.body.dataset.route === 'login' && view.firstChild) return;
+  if (cleanup) cleanup();
+  view.replaceChildren();
+  document.body.dataset.route = 'login';
+  player.hidden = true;
+  syncLegal(legalEl, legalCtx());
+  cleanup = renderLogin(view);
+  window.scrollTo(0, 0);
+}
+
 function route() {
+  if (!isSignedIn() && !isGuest()) {
+    showLogin();
+    return;
+  }
   let name = location.hash.replace(/^#\/?/, '') || 'library';
   const wantsAdd = name === 'add';
   const shared = isShareHash(location.hash) ? location.hash : null;
@@ -63,11 +80,7 @@ function route() {
     history.replaceState(null, '', '#/genres');
   }
   if (!routes[name]) name = 'library';
-  if (!isSignedIn() && !isGuest() && name !== 'settings' && !isHelpRoute(name)) {
-    location.hash = '#/settings';
-    return;
-  }
-  document.body.classList.toggle('signed-out', !isSignedIn() && !isGuest());
+  document.body.classList.remove('signed-out');
   if (cleanup) cleanup();
   view.replaceChildren();
   document.body.dataset.route = name;

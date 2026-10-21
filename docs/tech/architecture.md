@@ -251,6 +251,10 @@ Env (all optional): `USER_MAX_SONGS` (500), `USER_MAX_BYTES` (5 GB),
 queue), `users.py` (identity, owner, locks). Details and error codes: [`../specs/api.md`](../specs/api.md)
 API-040..047, [`../specs/non-functional.md`](../specs/non-functional.md) NFR-050..055.
 
+## Anonymous temp staging (ADR-0042)
+
+Signed-out devices get a song through `/anon/*` without an account: the job runs on the same download scheduler, the audio lands in `<music_root>/.anon/<job-id>/` (outside `users/`, outside git, not in the pool), the phone fetches it with Range and confirms with the SHA-256, and the server deletes it at once (else a sweeper after 1 h; failed or queued jobs after 15 min; the folder is emptied on start). Job state is in memory; the device is a signed token, never a uid and never a library. Env and limits: [deploy.md](deploy.md#anonymous-downloads), API-207..215.
+
 ## Listening history storage (task-0056)
 
 The play history is the one per-user file that is NOT written through git on every change: a play must never cost a commit. The live file is `play-history.csv` at `$AUDIO_PLAYS_DIR/<uid>/` (default `<music root>/.plays/<uid>/`, beside the audio pool and `.peaks/`, so it is a directory the service user already writes), with `batch-keys.json` (last 200 batch keys) next to it and `.last-sync` (time of the last copy) in the root. Once a day a background thread (`AUDIO_PLAYS_SYNC=0` turns it off) copies changed files to `users/<uid>/play-history.csv` in the data repo, one commit `sync listening history`. The outside directory is the source of truth and must be part of the audio dataset backups; the in-repo copy is only a snapshot up to a day old. Contract: API-196 to API-198 in [api.md](../specs/api.md).

@@ -55,7 +55,7 @@ ADRs: ADR-0003 (web), ADR-0004 (hosting), ADR-0001 (storage scale).
 
 - NFR-080 MUST: guest abuse is bounded per client IP in memory (reset by a restart): `GUEST_REQ_PER_MIN` 240, `GUEST_AUDIO_MB_PER_HOUR` 1024, `GUEST_MAX_STREAMS` 3; 429 `guest_limit` with `Retry-After` (API-093). The caps limit one visitor, not a crowd. Status: implemented
 - NFR-081 MUST: privacy: guests get no email, uid, provider, quota data, server path or other user's data (API-091); the owner's profile stays private. The anonymous allow-list is fixed and tested (API-090). The guest song scrub (`guest.SONG_KEYS`) drops the top-level `file` name, and guest streaming returns 404 for a video id that is not in the owner's catalog (no `<video_id>.m4a` fallback). Status: implemented.
-- NFR-082 MUST: kill switches: `PUBLIC_VIEW=0` (no anonymous access at all) and `PUBLIC_AUDIO=0` (metadata only); both take effect on restart (ADR-0018, [deploy.md](../tech/deploy.md)). Status: implemented
+- NFR-082 MUST: `PUBLIC_VIEW` is off unless explicitly `1`, `true`, `yes` or `on` (no anonymous access at all; ADR-0041), and `PUBLIC_AUDIO=0` limits an enabled public view to metadata; both take effect on restart ([deploy.md](../tech/deploy.md)). Status: implemented
 - NFR-083 SHOULD: watch the copyright, bandwidth and Cloudflare-terms exposure of public audio streaming (ADR-0018); turn `PUBLIC_AUDIO` off first. Status: planned
 
 ## Hostnames (ADR-0019)

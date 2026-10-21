@@ -22,7 +22,7 @@ export function buildLegal(note = NOTE, contact = null) {
 }
 
 export function legalVisible({ guest = false, route = '', vizFull = false } = {}) {
-  return !vizFull && (guest || route === 'settings');
+  return !vizFull && (guest || route === 'settings' || route === 'login');
 }
 
 export function syncLegal(footer, ctx) {
