@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-21 (time readouts: no selection, elapsed toggles to time left, web, to deploy)
+
+- Web: the dock time and the Studio clock can no longer be text-selected and show a default pointer; the elapsed part is a button that swaps to the time left ("-0:35", the same on both, kept in `ap2.timeLeft`) and back; unknown duration stays on elapsed (PLY-185). Written, not run or seen in a browser.
+
 ## 2026-10-21 (shuffle in tiers by 30-day play count, web, to deploy)
 
 - Web: shuffle now plays the least-played songs first in tiers (no weights): the minimum 30-day count (server listened + skipped plus plays not yet flushed, at least 5 s) among the songs left in the round is drawn first, randomly among equals, then the next value; a new round re-reads the counts; no data means a uniform shuffle (PLY-178, [task-0056](tasks/task-0056.md)). Not run, not heard.

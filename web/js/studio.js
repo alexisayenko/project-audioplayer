@@ -6,6 +6,7 @@ import { hasAudio } from './playable.js';
 import { can } from './guest.js';
 import { titleLine, artistLine } from './credits.js';
 import { fmtClock, parseClock, validRegion } from './loop-engine.js';
+import { fmtRemainingClock, paintElapsed, elapsedButton, onTimeLeftChange } from './time-left.js';
 import { loadPeaks, drawPeaks, sizeCanvas, xToTime, timeToX } from './peaks.js';
 import { loopsOf, addLoop, renameLoop, removeLoop, sameRegion, MAX_LOOPS, MAX_NAME, FULL_TEXT } from './loops-model.js';
 
@@ -93,6 +94,7 @@ export function renderStudio(root, env = {}) {
     if (!ctx) return;
     const s = loop.get();
     const t = dragTime ?? position();
+    paintClock(t);
     const key = [width, height, dpr, t.toFixed(2), s.start, s.end, status, peaks ? peaks.buckets : 0, duration()].join('|');
     if (key === lastKey) return;
     lastKey = key;
@@ -100,7 +102,13 @@ export function renderStudio(root, env = {}) {
     const now = Date.now();
     if (!colors || now - colorsAt > 500) { colors = readColors(canvas); colorsAt = now; }
     drawPeaks(ctx, peaks, { width, height, dpr, duration: duration(), playhead: t, region: validRegion(s) ? s : null, colors });
-    parts.clock.textContent = `${fmtClock(t)} / ${fmtClock(duration())}`;
+  }
+
+  function paintClock(t) {
+    if (!parts) return;
+    const dur = duration();
+    paintElapsed(parts.elapsed, fmtClock(t), fmtRemainingClock(t, dur));
+    parts.dur.textContent = ` / ${fmtClock(dur)}`;
   }
 
   function placeHandles() {
@@ -348,7 +356,10 @@ export function renderStudio(root, env = {}) {
     const handles = { start: handle('start'), end: handle('end') };
     const wave = el('div', { class: 'stu-wave' }, canvas, handles.start, handles.end);
     const status$ = el('p', { class: 'stu-status muted t-caption', role: 'status', 'aria-live': 'polite', hidden: true });
-    const clock = el('span', { class: 't-time stu-clock' }, '0:00.0 / 0:00.0');
+    const elapsed = elapsedButton();
+    const durText = el('span', {}, ' / 0:00.0');
+    const clock = el('span', { class: 't-time stu-clock' }, elapsed, durText);
+    paintElapsed(elapsed, '0:00.0', null);
     const toggleText = el('span', {}, 'Loop off');
     const toggle = el('button', { class: 'btn outline small stu-toggle', type: 'button', 'aria-pressed': 'false', onclick: toggleLoop }, icon('repeat', 'action'), toggleText);
     const hint = el('span', { class: 'stu-hint muted t-caption' });
@@ -360,7 +371,7 @@ export function renderStudio(root, env = {}) {
     const list = saveable ? el('ul', { class: 'stu-loops', hidden: true }) : null;
     view = 'song';
     savedKey = '';
-    parts = { canvas, wave, handles, status: status$, clock, toggle, toggleText, hint, marks, save, note: note$, savedHead, list };
+    parts = { canvas, wave, handles, status: status$, clock, elapsed, dur: durText, toggle, toggleText, hint, marks, save, note: note$, savedHead, list };
     body.replaceChildren(el('section', { class: 'stu-card card', 'aria-label': 'Waveform' },
       el('div', { class: 'stu-song' }, el('b', { class: 't-subhead' }, titleLine(song)), el('span', { class: 'muted t-caption' }, artistLine(song))),
       wave, status$,
@@ -404,6 +415,7 @@ export function renderStudio(root, env = {}) {
 
   refresh();
   frame = raf(tick);
+  const stopTimeLeft = onTimeLeftChange(() => paintClock(position()));
 
   return () => {
     disposed = true;
@@ -413,6 +425,7 @@ export function renderStudio(root, env = {}) {
     ro?.disconnect();
     stopPlayer?.();
     stopLoop?.();
+    stopTimeLeft();
     parts = null;
   };
 }

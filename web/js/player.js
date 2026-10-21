@@ -12,7 +12,7 @@ import { attachScrubber } from './scrubber.js';
 import { storeGet, storeSet, storeRemove } from './storage.js';
 import { createResumePosition } from './resume-position.js';
 import { paintCover, currentCoverModel, paintQueueCovers } from './row-cover.js';
-import { $, setIcon, setToggle, setCover, queueRow, updateDl, paintTimes, initMiniCompact } from './player-ui.js';
+import { $, setIcon, setToggle, setCover, queueRow, updateDl, paintTimes, initTimeToggle, initMiniCompact } from './player-ui.js';
 import { updateMediaSession, setupMediaSession, updatePositionState, setVolume, storedVolume } from './player-media.js';
 import { canSetVolume } from './volume-logic.js';
 import { attachDockWheel } from './dock-wheel.js';
@@ -612,6 +612,7 @@ export function initPlayer() {
   listeners.add(() => recorder.sync());
 
   initMiniCompact();
+  initTimeToggle();
   setIcon('mini-prev', 'prev', 'action');
   setIcon('mini-next', 'next', 'action');
   setIcon('mini-shuffle', 'shuffle', 'action');

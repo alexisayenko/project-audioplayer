@@ -991,3 +991,7 @@ body:has(.legal:not([hidden])) main, body:has(.legal:not([hidden])) .player { pa
 .card-listen-table th, .card-listen-table td { padding: var(--space-1) var(--space-2); text-align: right; border-bottom: 1px solid var(--line); }
 .card-listen-table thead th { font-weight: 400; color: var(--ink-muted); }
 .card-listen-table tbody th { text-align: left; padding-left: 0; font-weight: 400; color: var(--ink-muted); }
+
+.t-time, .mini-foot { -webkit-user-select: none; user-select: none; cursor: default; }
+.t-elapsed { padding: 0; border: 0; border-radius: var(--radius-key); background: none; color: inherit; font: inherit; font-variant-numeric: tabular-nums; cursor: pointer; -webkit-user-select: none; user-select: none; }
+.t-elapsed:disabled { cursor: default; }

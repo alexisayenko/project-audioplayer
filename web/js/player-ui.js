@@ -2,6 +2,7 @@ import { api } from './api.js';
 import { store } from './store.js';
 import { hasAudio } from './playable.js';
 import { el, fmtTime } from './dom.js';
+import { fmtRemaining, paintElapsed, bindElapsed, onTimeLeftChange } from './time-left.js';
 import { icon } from './icons.js';
 import { storeGet, storeSet } from './storage.js';
 import { openMenu } from './menu.js';
@@ -125,6 +126,15 @@ export function updateDl(song) {
   for (const node of $('queue-list').querySelectorAll('[data-dl]')) paintDl(node, node.dataset.dl);
 }
 
+let lastTimes = [0, NaN];
+
 export function paintTimes(cur, dur) {
-  $('mini-time').textContent = `${fmtTime(cur)} / ${fmtTime(dur)}`;
+  lastTimes = [cur, dur];
+  paintElapsed($('mini-elapsed'), fmtTime(cur), fmtRemaining(cur, dur));
+  $('mini-dur').textContent = ` / ${fmtTime(dur)}`;
+}
+
+export function initTimeToggle() {
+  bindElapsed($('mini-elapsed'));
+  onTimeLeftChange(() => paintTimes(...lastTimes));
 }

@@ -118,7 +118,7 @@
     <button class="key ghost toggle opt" id="mini-repeat" type="button" aria-pressed="false" aria-label="Repeat: off"></button>
   </div>
   <div class="mini-foot">
-    <span class="t-time" id="mini-time">0:00 / 0:00</span>
+    <span class="t-time" id="mini-time"><button class="t-elapsed" id="mini-elapsed" type="button" aria-pressed="false" aria-label="Elapsed time, press to show time left" disabled>0:00</button><span id="mini-dur"> / 0:00</span></span>
     <div id="mini-scrub" class="scrubber mini-progress" role="slider" tabindex="-1" aria-label="Seek" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0" aria-valuetext="0:00 of 0:00" aria-disabled="true"><span class="scrub-rail"><span class="scrub-fill"></span></span><span class="scrub-thumb"></span><span class="scrub-bubble" aria-hidden="true">0:00</span></div> <!-- NOSONAR custom scrubber div: native input cannot render the rail and fill design -->
     <input type="range" id="mini-volume" class="slider" min="0" max="100" value="100" step="1" aria-label="Volume">
   </div>
