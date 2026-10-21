@@ -15,7 +15,7 @@ export function lowBandEnergy(bytes, sampleRate, binCount) {
   return sum / ((to - from + 1) * 255);
 }
 
-export function createLiveBpmController({ audio, player, getAnalyser, getSampleRate, now = () => performance.now() / 1000, timers = { setInterval, clearInterval }, read = () => storeGet(LIVE_BPM_KEY), write = (v) => storeSet(LIVE_BPM_KEY, v) }) {
+export function createLiveBpmController({ audio, player, getAnalyser, getSampleRate, now = () => performance.now() / 1000, timers = { setInterval: (fn, ms) => setInterval(fn, ms), clearInterval: (id) => clearInterval(id) }, read = () => storeGet(LIVE_BPM_KEY), write = (v) => storeSet(LIVE_BPM_KEY, v) }) {
   const det = createLiveBpm();
   const listeners = new Set();
   let on = read() === '1';

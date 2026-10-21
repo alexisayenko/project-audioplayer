@@ -91,3 +91,30 @@ test('lowBandEnergy averages only the bass bins', () => {
   assert.ok(lowBandEnergy(bytes, 48000, 4096) > 0.9);
   assert.equal(lowBandEnergy(new Uint8Array(4096), 48000, 4096), 0);
 });
+
+test('default timers work when the browser demands a Window this', () => {
+  const real = { si: globalThis.setInterval, ci: globalThis.clearInterval };
+  const live = new Set();
+  let nextId = 1;
+  globalThis.setInterval = function (f, ms) {
+    if (this !== globalThis) throw new TypeError("'setInterval' called on an object that does not implement interface Window.");
+    const id = nextId++;
+    live.add(id);
+    return id;
+  };
+  globalThis.clearInterval = function (id) {
+    if (this !== globalThis) throw new TypeError("'clearInterval' called on an object that does not implement interface Window.");
+    live.delete(id);
+  };
+  try {
+    const player = { current: { id: 's1', bpm: 120 }, playing: true, onChange: () => () => {} };
+    const audio = { addEventListener() {}, removeEventListener() {} };
+    const ctl = createLiveBpmController({ audio, player, getAnalyser: () => null, getSampleRate: () => 48000, read: () => '1', write: () => {} });
+    assert.equal(live.size, 2);
+    ctl.dispose();
+    assert.equal(live.size, 0);
+  } finally {
+    globalThis.setInterval = real.si;
+    globalThis.clearInterval = real.ci;
+  }
+});
