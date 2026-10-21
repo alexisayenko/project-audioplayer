@@ -11,7 +11,7 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
-from . import countrycodes, credits, discogs_lookup, genre_filter, genre_lookup, langcodes, loops, urlclean, wiki_lookup
+from . import countrycodes, credits, discogs_lookup, genre_filter, genre_lookup, langcodes, loops, sources, urlclean, wiki_lookup
 from .jsonio import write_json_atomic
 from .tags import namespace, namespaced_values
 from .timeutil import max_year, now_utc  # noqa: F401
@@ -36,37 +36,15 @@ def has_file(song: dict[str, Any]) -> bool:
     return bool(song.get("file"))
 
 
-def clean_sources(raw: Any) -> list[dict[str, Any]]:
-    """Stored sources `{platform, url}`; the older `{source, id, url}` entries are accepted (`source` is the platform, the id is derived again on output)."""
-    out: list[dict[str, Any]] = []
-    for e in raw if isinstance(raw, list) else []:
-        if not isinstance(e, dict):
-            continue
-        platform = e.get("platform") if isinstance(e.get("platform"), str) and e.get("platform") else e.get("source")
-        if not isinstance(platform, str) or not platform:
-            continue
-        url = urlclean.clean_url(e["url"]) if isinstance(e.get("url"), str) else None
-        out.append({"platform": platform, "url": url})
-    return out
-
-
-def _source_id(platform: str, url: str | None, song_id: str) -> str | None:
-    if platform == urlclean.source_of(song_id):
-        return song_id
-    if not url:
-        return None
-    if platform == "youtube":
-        return urlclean.parse_video_id(url)
-    return url.split("soundcloud.com/", 1)[1] if "soundcloud.com/" in url else None
+def clean_sources(raw: Any, song_id: str = "", source_url: Any = None) -> list[dict[str, Any]]:
+    """Stored sources `[{type, ref, trim_start, trim_end, duration?}]` (DATA-193); every older shape is accepted and converted, see `sources.normalize_sources`."""
+    return sources.normalize_sources({"id": song_id, "sources": raw, "source_url": source_url})
 
 
 def sources_of(song: dict[str, Any]) -> list[dict[str, Any]]:
-    """The sources of a song as `{platform, url, source, id}` (`source` and `id` are the legacy keys iOS decodes); the single source derived from the id and `source_url` for old records."""
+    """The sources of a song for the API: the new fields plus the legacy `url`, `platform`, `source` and `id` (iOS decodes `source`, `id` and `url`); the single source is derived from the id and `source_url` for old records."""
     sid = str(song.get("id", ""))
-    stored = clean_sources(song.get("sources")) if isinstance(song.get("sources"), list) else []
-    if not stored:
-        stored = [{"platform": urlclean.source_of(sid), "url": song.get("source_url")}]
-    return [{"platform": e["platform"], "url": e["url"], "source": e["platform"], "id": _source_id(e["platform"], e["url"], sid)} for e in stored]
+    return [sources.public_entry(e, sid) for e in sources.normalize_sources(song)]
 
 
 def audio_state(song: dict[str, Any], root: Path | None) -> str:
@@ -135,6 +113,8 @@ def public_song(song: dict[str, Any], root: Path | None) -> dict[str, Any]:
     state = audio_state(song, root)
     out["audio_state"] = state
     out["sources"] = sources_of(song)
+    if out["sources"]:
+        out["source_url"] = out["sources"][0]["url"]
     if state == "server":
         name = file_name(song)
         size = None
@@ -167,12 +147,11 @@ def normalize_song(song: dict[str, Any]) -> dict[str, Any]:
     credits.ensure(s)
     if "id" in s and (s.get("file") == "" or "file" not in s):
         s["file"] = f"{s['id']}.m4a"
-    if "sources" in s:
-        s["sources"] = clean_sources(s["sources"])
+    if "id" in s and ("sources" in s or "source_url" in s or "source" in s):
+        s["sources"] = sources.normalize_sources(s)
+        s.pop("source_url", None)
     if isinstance(s.get("bpm"), (int, float)) and not isinstance(s["bpm"], bool):
         s["bpm"] = round(s["bpm"])
-    if isinstance(s.get("source_url"), str):
-        s["source_url"] = urlclean.clean_url(s["source_url"])
     for key in ("wikipedia_song", "wikipedia_artist"):
         s[key] = wiki_lookup.clean_link(s.get(key))
     if "wikipedia_album" in s:

@@ -44,5 +44,6 @@ def test_invalid_input_untouched():
 
 def test_dirty_source_url_cleaned_on_load():
     doc = library.normalize({"songs": [{"id": VID, "source_url": f"https://youtu.be/{VID}?si=abc"}, {"id": "x"}]})
-    assert doc["songs"][0]["source_url"] == CLEAN
-    assert "source_url" not in doc["songs"][1]
+    assert doc["songs"][0]["sources"] == [{"type": "youtube", "ref": VID, "trim_start": None, "trim_end": None}]
+    assert "source_url" not in doc["songs"][0]
+    assert "sources" not in doc["songs"][1]

@@ -239,11 +239,11 @@ export function renderStudio(root, env = {}) {
     };
     input.addEventListener('change', commit);
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); commit(); } });
-    const nudges = NUDGES.map((d) => el('button', { class: 'btn outline small', type: 'button', 'aria-label': nudgeLabel(side, d), onclick: () => loop.nudge(side, d) }, nudgeText(d)));
-    const here = el('button', { class: 'btn small', type: 'button', onclick: () => loop.setMark(side, position()) }, meta.here);
+    const nudges = NUDGES.map((d) => el('button', { class: 'btn outline small stu-nudge', type: 'button', title: nudgeLabel(side, d), 'aria-label': nudgeLabel(side, d), onclick: () => loop.nudge(side, d) }, nudgeText(d)));
+    const here = el('button', { class: 'btn small stu-set', type: 'button', title: meta.here, 'aria-label': meta.here, onclick: () => loop.setMark(side, position()) }, icon('plus', 'action'), 'Set');
     const group = el('div', { class: 'stu-mark', role: 'group', 'aria-label': meta.text },
-      el('label', { class: 'stu-mark-label' }, `${meta.name}: ${meta.text.toLowerCase()}`),
-      el('div', { class: 'stu-mark-row' }, input, here),
+      el('div', { class: 'stu-mark-row' },
+        el('label', { class: 'stu-mark-label t-caption', title: `${meta.name}: ${meta.text.toLowerCase()}` }, meta.name), input, here),
       el('div', { class: 'stu-nudges' }, ...nudges));
     return { group, input, nudges };
   }

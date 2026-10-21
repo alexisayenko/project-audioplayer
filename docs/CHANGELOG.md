@@ -2,6 +2,31 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-21 (shuffle in tiers by 30-day play count, web, to deploy)
+
+- Web: shuffle now plays the least-played songs first in tiers (no weights): the minimum 30-day count (server listened + skipped plus plays not yet flushed, at least 5 s) among the songs left in the round is drawn first, randomly among equals, then the next value; a new round re-reads the counts; no data means a uniform shuffle (PLY-178, [task-0056](tasks/task-0056.md)). Not run, not heard.
+
+## 2026-10-21 (Statistics page: tabs and Genres table, web, to deploy)
+
+- Web: "Song stats" is now "Statistics" (route unchanged); it has tabs Songs (the Year x BPM chart), Listening (Most listened, Most skipped; replaces the toolbar toggle) and the new Genres tab: every genre of the library with its song count, total listened time and times listened, sortable and filterable, a total row, a row click opens the Library filtered by that genre (STA-070..075, [task-0056](tasks/task-0056.md)). Not run, not seen.
+
+## 2026-10-21 (Studio loop controls compact, web, to deploy)
+
+- Web: the Studio A and B editors are two compact side-by-side clusters (caption, 96 px time field, "Set" button, four small nudges) that wrap on narrow widths; ids, aria-labels and keyboard handling unchanged; not seen in a browser.
+
+## 2026-10-21 (sources shape type + ref, server, to deploy)
+
+- Server: song `sources` are stored as `[{type, ref, trim_start, trim_end, duration?}]` and the URL is derived (`server/app/sources.py`); `source_url` is no longer stored; API songs keep `url`, `source`, `id`, `source_url` and add `type`, `ref`, `trim_start`, `trim_end`, `duration`; `PATCH` takes `url`, `sources` and `trim`; `POST /preview` and `POST /songs` return a link's start time as `trim_start_hint` only; startup migration `app.migrate_sources` (backup `backups-sources/<uid>/`, `AUDIO_SOURCES_SHAPE=0` disables) (DATA-193, API-206, task-0045 phase 1; tests written, full suite not run).
+
+## 2026-10-21 (cut a song's start and end in Add and Edit, web, to deploy)
+
+- Web: Add and Edit get a collapsed "Advanced" section with Start and End (m:ss, h:mm:ss or seconds), validation, the resulting length, Start prefilled from a link's time, `trim` sent with the save and a "Re-download with this cut" button in Edit; needs the server trim support (task-0045 phase 2), not run or seen in a browser (ADD-183 to ADD-186).
+
+## 2026-10-21 (fade in and fade out, web, to deploy)
+
+- Web: Settings > Playback gets "Fade in" and "Fade out" sliders (0 to 12 s, step 0.5, Off by default; capped at half of the song, not at a Studio loop, not after a seek or restore); ramps run on a new "fade" gain node in the Web Audio chain (created only when a fade is on), with an "audio.volume" fallback while the page is visible; no crossfade yet (PLY-180 to PLY-184, task-0053; not run, not heard, not tried with the screen locked).
+- Web: the fade settings are a percent of the song length, not seconds: 0 to 15 % in 1 % steps (Off by default), with a live hint for the loaded song ("≈ 18 s on this song"); fade seconds = percent of the duration, at most 60 s and half of the song, no minimum, none while the duration is unknown; stored in `ap2.fadePct.in` and `ap2.fadePct.out` (the earlier seconds keys are ignored). Supersedes the seconds wording above; a real crossfade is still not built (PLY-180 to PLY-184, task-0053; not run, not heard).
+
 ## 2026-10-21 (song card: no Country field, no Genre caption, web, to deploy)
 
 - Web: the song card details line no longer shows the Country field and the genre chips have no "Genre" caption, they start at the left edge in a group labelled "Genres" for screen readers (LIB-120, LIB-142; tests updated, not run, not seen in a browser).
@@ -933,3 +958,13 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 - Web: Library cards with cover, tags, BPM and Wikipedia links; tag editor; decade tags derived from year (`decade:90s`, TAG-050); four-block Playback (details, controls, playlist controls, current playlist) with a client-side queue, shuffle, loop and Media Session.
 - Web: catalog-only Add (metadata saved without audio, ADR-0010); SoundCloud links and ids (ADR-0011); canonical `source_url`; integer BPM.
 - Server: catalog and audio state (`/catalog`, `audio_state`, `DELETE /songs/{id}/audio`).
+
+## 2026-10-21 (trim on download and re-download, server, to deploy)
+
+- Server: `POST /download`, `POST /songs` and `POST /songs/{id}/audio` take an optional `trim: {start, end}`; the stored audio is only the cut part (yt-dlp sections for YouTube, ffmpeg cut for SoundCloud, always re-encoded to AAC m4a), the trim is kept on the primary source, `duration` and `bpm` describe the cut (API-204, task-0045).
+- Server: new `POST /songs/{id}/redownload` replaces a song's audio with its stored or a new trim, one download per song at a time (API-205). Not run against real ffmpeg and yt-dlp yet.
+
+## 2026-10-21 (dock layout break on a failed lazy load, web, to deploy)
+
+- Web: "Could not load. Try again." was the lazy-UI failure note (song card chunk), inserted after the dock title button and breaking the dock grid; inside the dock it is now a toast (WEB-158). Not seen in a browser.
+- Web: a failed lazy UI load (song card from the dock title) retries once, then asks `GET /version`; a stale tab after a deploy shows the toast "This page is out of date. Reload to continue." with Reload (the update bar also shows), otherwise "Could not load. Try again." (WEB-158). Tests not run.

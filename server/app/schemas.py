@@ -15,8 +15,20 @@ class SessionRequest(BaseModel):
     id_token: str = Field(min_length=1, max_length=MAX_ID_TOKEN_LEN)
 
 
+class TrimIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    start: float | None = None
+    end: float | None = None
+
+
 class DownloadRequest(BaseModel):
     video_id: str
+    trim: TrimIn | None = None
+
+
+class AudioRequest(BaseModel):
+    trim: TrimIn | None = None
 
 
 class PreviewRequest(BaseModel):
@@ -68,6 +80,15 @@ class SongMeta(BaseModel):
     spotify_url: str | None = None
 
 
+class SourceIn(BaseModel):
+    url: str | None = Field(default=None, max_length=2048)
+    type: str | None = Field(default=None, max_length=32)
+    ref: str | None = Field(default=None, max_length=2048)
+    trim_start: float | None = None
+    trim_end: float | None = None
+    duration: float | None = None
+
+
 class CreateSongRequest(BaseModel):
     url: str
     audio: bool = True
@@ -76,6 +97,7 @@ class CreateSongRequest(BaseModel):
     genres: list[str] = []
     keep_title: bool = False
     source_raw: SourceRaw | None = None
+    trim: TrimIn | None = None
 
 
 class PatchSongRequest(SongMeta):
@@ -83,6 +105,9 @@ class PatchSongRequest(SongMeta):
     genres: list[str] | None = None
     youtube_url: str | None = None
     soundcloud_url: str | None = None
+    url: str | None = Field(default=None, max_length=2048)
+    trim: TrimIn | None = None
+    sources: list[SourceIn] | None = Field(default=None, max_length=20)
     loops: list[dict[str, Any]] | None = None
 
 

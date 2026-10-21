@@ -29,7 +29,7 @@ def test_legacy_record_unchanged_on_disk_and_derived_at_read(client, tmp_path):
     song = client.get("/library", headers=H).json()["songs"][0]
     assert (ODIR(tmp_path) / "library.json").read_bytes() == before
     assert song["audio_state"] == "server"
-    assert song["sources"] == [{"platform": "youtube", "url": LEGACY["source_url"], "source": "youtube", "id": VID}]
+    assert song["sources"] == [{"type": "youtube", "ref": VID, "trim_start": None, "trim_end": None, "platform": "youtube", "url": LEGACY["source_url"], "source": "youtube", "id": VID}]
     assert song["audio"] == {"file": f"{VID}.m4a", "format": "m4a", "size": 5, "duration": 213}
     assert {k: song[k] for k in LEGACY} == LEGACY
 
@@ -73,7 +73,8 @@ def test_metadata_only_add(client, tmp_path):
 def test_default_add_still_downloads_and_records_sources(client, tmp_path):
     assert add(client).status_code == 202
     stored = json.loads((ODIR(tmp_path) / "library.json").read_text())["songs"][0]
-    assert stored["sources"] == [{"platform": "youtube", "url": stored["source_url"]}]
+    assert stored["sources"] == [{"type": "youtube", "ref": VID, "trim_start": None, "trim_end": None}]
+    assert "source_url" not in stored
     assert client.get("/library", headers=H).json()["songs"][0]["audio_state"] == "server"
 
 

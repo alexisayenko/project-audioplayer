@@ -190,12 +190,13 @@ def test_migration_is_idempotent_and_cleans_legacy_fields():
     assert "remixer" not in a
     assert a["mainArtists"] == []
     assert "version" not in a
-    assert a["source_url"] == "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+    assert a["sources"] == [{"type": "youtube", "ref": "dQw4w9WgXcQ", "trim_start": None, "trim_end": None}]
+    assert "source_url" not in a
     assert a["wikipedia_song"] is None
     assert sorted(a["tags"]) == ["Rock", "genre:house"]
     assert a["releaseYear"] == 1994
     assert b["tags"] == ["country:de"]
-    assert b["sources"] == [{"platform": "youtube", "url": "https://www.youtube.com/watch?v=9bZkp7q19f0"}]
+    assert b["sources"] == [{"type": "youtube", "ref": "9bZkp7q19f0", "trim_start": None, "trim_end": None}]
     assert c["file"] is None
     assert c["releaseYear"] == 2007
 
@@ -221,7 +222,7 @@ def test_load_doc_survives_corrupt_and_missing_files(tmp_path):
 def test_clean_sources_drops_malformed_entries():
     raw = [{"source": "youtube", "id": "a", "url": "https://youtu.be/dQw4w9WgXcQ?si=1"}, {"source": 5, "id": "x"}, {"platform": "soundcloud"}, "junk", {"source": "s", "id": 7}, {"url": "https://x"}]
     got = library.clean_sources(raw)
-    assert got == [{"platform": "youtube", "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"}, {"platform": "soundcloud", "url": None}, {"platform": "s", "url": None}]
+    assert got == [{"type": "youtube", "ref": "dQw4w9WgXcQ", "trim_start": None, "trim_end": None}, {"type": "url", "ref": "https://x", "trim_start": None, "trim_end": None}]
     assert library.clean_sources("nope") == []
     assert library.clean_sources(None) == []
 

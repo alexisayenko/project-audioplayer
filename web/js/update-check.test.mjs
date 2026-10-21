@@ -129,3 +129,8 @@ test('fetchServerVersion reads the version field and treats errors as no answer'
   assert.equal(await fetchServerVersion(async () => ({ ok: false })), null);
   assert.equal(await fetchServerVersion(async () => ({ ok: true, json: async () => ({}) })), null);
 });
+
+test('check() resolves true when the server version differs from the loaded one', async () => {
+  const ctl = createUpdateCheck({ current: 'a', fetchVersion: async () => 'b', isVisible: () => false, show() {}, hide() {} });
+  assert.equal(await ctl.check({ force: true, always: true }), true);
+});

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import contextlib
 import logging
+import os
+import shutil
 import tempfile
 import threading
 from collections.abc import Callable
@@ -13,7 +15,8 @@ from typing import Any
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
 
-from . import bpm, credits, deps, discogs_lookup, extractor, genre_filter, genre_lookup, genre_vocab, identify, jobs, library, limits, previewcache, urlclean, wiki_lookup
+from . import bpm, coverimg, credits, deps, discogs_lookup, extractor, genre_filter, genre_lookup, genre_vocab, identify, jobs, library, limits, previewcache, sources, urlclean, wiki_lookup
+from . import trim as trimming
 from .jsonio import write_bytes_atomic
 from .links import Resolved, short_error
 from .problems import Problem
@@ -123,6 +126,13 @@ def _detect_bpm(path: Path, vid: str) -> float | None:
         return None
 
 
+def _new_sources(vid: str, url: str, trim: dict[str, Any] | None) -> list[dict[str, Any]]:
+    entries = library.clean_sources([{"platform": extractor.source_of(vid), "url": url}], vid)
+    if trim:
+        sources.apply_trim(entries, trim)
+    return entries
+
+
 def _link_fields(vid: str, meta: dict[str, Any], source_url: str | None) -> dict[str, Any]:
     """The reference fields of a new song record: cleaned links, the source and its URL."""
     url = extractor.watch_url(vid, source_url)
@@ -134,8 +144,7 @@ def _link_fields(vid: str, meta: dict[str, Any], source_url: str | None) -> dict
         "discogs_url": discogs_lookup.clean_url(meta.get("discogs_url")),
         "spotify_url": urlclean.clean_spotify_url(meta.get("spotify_url")),
         **({"source": "soundcloud"} if extractor.source_of(vid) == "soundcloud" else {}),
-        "source_url": url,
-        "sources": [{"platform": extractor.source_of(vid), "url": url}],
+        "sources": _new_sources(vid, url, meta.get("trim")),
     }
 
 
@@ -150,14 +159,21 @@ def _credit_meta(meta: dict[str, Any], found: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
+def _download_audio(vid: str, out: Path, job: dict[str, Any], source_url: str | None, trim: trimming.Trim | None) -> dict[str, Any]:
+    """`extractor.download_audio`; the trim is passed only when there is a cut, so an untrimmed download is the call it always was."""
+    if trimming.is_cut(trim):
+        return extractor.download_audio(vid, out, jobs.Tracker(job), source_url, trim=trim)
+    return extractor.download_audio(vid, out, jobs.Tracker(job), source_url)
+
+
 def _downloaded_song(uid: str, owner: bool, out: Path, vid: str, meta: dict[str, Any], tags: list[str],
-                     source_url: str | None, job: dict[str, Any]) -> dict[str, Any]:
+                     source_url: str | None, job: dict[str, Any], trim: trimming.Trim | None = None) -> dict[str, Any]:
     limits.check_capacity(owner, out, deps.pool_dir())
-    info = extractor.download_audio(vid, out, jobs.Tracker(job), source_url)
+    info = _download_audio(vid, out, job, source_url, trim)
     cover = _fetch_cover(uid, vid, info.get("thumbnail"))
     value = round(meta["bpm"]) if meta.get("bpm") is not None else _detect_bpm(out / f"{vid}.m4a", vid)
     fields = credits.new_fields(_credit_meta(meta, info), meta.get("source_raw"))
-    return {
+    record = {
         "id": vid,
         "title": meta.get("title") or info.get("title") or vid,
         **fields,
@@ -169,15 +185,18 @@ def _downloaded_song(uid: str, owner: bool, out: Path, vid: str, meta: dict[str,
         "added_at": library.now_utc(),
         "tags": tags,
     }
+    if trimming.is_cut(trim):
+        trimming.persist(record, info.get("trim") or trim, info.get("source_duration"))
+    return record
 
 
 def run_download(uid: str, owner: bool, vid: str, meta: dict[str, Any], tags: list[str],
-                 source_url: str | None = None) -> None:
+                 source_url: str | None = None, trim: trimming.Trim | None = None) -> None:
     job = deps.JOBS[(uid, vid)]
     out: Path | None = None
     try:
         out = deps.audio_dir(uid)
-        song = _downloaded_song(uid, owner, out, vid, meta, tags, source_url, job)
+        song = _downloaded_song(uid, owner, out, vid, meta, tags, source_url, job, trim)
         with deps.tx(uid, f"add {vid}"):
             songs = [s for s in library.load(deps.library_path(uid)) if s["id"] != vid]
             deps.save_songs(uid, songs + [song])
@@ -187,14 +206,15 @@ def run_download(uid: str, owner: bool, vid: str, meta: dict[str, Any], tags: li
         _fail_job(job, out, vid, exc)
 
 
-def run_fetch_audio(uid: str, owner: bool, vid: str, source_url: str | None) -> None:
-    """Download audio for a song already in the catalog and attach it to the record."""
+def run_fetch_audio(uid: str, owner: bool, vid: str, source_url: str | None, trim: trimming.Trim | None = None) -> None:
+    """Download audio for a song already in the catalog and attach it to the record. `trim` is a request override (persisted on the primary source); without one the stored trim applies."""
     job = deps.JOBS[(uid, vid)]
     out: Path | None = None
     try:
         out = deps.audio_dir(uid)
         limits.check_capacity(owner, out, deps.pool_dir())
-        info = extractor.download_audio(vid, out, jobs.Tracker(job), source_url)
+        cut = trim if trim is not None else trimming.stored(library.find_song(deps.load_songs(uid), vid))
+        info = _download_audio(vid, out, job, source_url, cut)
         value = _detect_bpm(out / f"{vid}.m4a", vid)
         existing = library.find_song(deps.load_songs(uid), vid)
         pinned = bool(existing) and existing.get("cover_source") in ("custom", "default")
@@ -205,8 +225,12 @@ def run_fetch_audio(uid: str, owner: bool, vid: str, source_url: str | None) -> 
             if song is None:
                 raise Problem(404, "unknown_song", deps.UNKNOWN_SONG)
             song["file"] = f"{vid}.m4a"
-            if info.get("duration") and not song.get("duration"):
+            if trimming.is_cut(cut):
+                song["duration"] = info.get("duration") or song.get("duration")
+            elif info.get("duration") and not song.get("duration"):
                 song["duration"] = info["duration"]
+            if trimming.is_cut(cut) or trim is not None:
+                trimming.persist(song, info.get("trim") or cut or trimming.NONE, info.get("source_duration"))
             if song.get("bpm") is None and value is not None:
                 song["bpm"] = round(value)
             if cover_ok and not song.get("cover") and not song.get("cover_off"):
@@ -217,6 +241,47 @@ def run_fetch_audio(uid: str, owner: bool, vid: str, source_url: str | None) -> 
         auto_identify(uid, vid)
     except Exception as exc:
         _fail_job(job, out, vid, exc)
+
+
+def run_redownload(uid: str, owner: bool, vid: str, source_url: str | None, trim: trimming.Trim | None = None) -> None:
+    """Download a song's audio again from its source and replace the stored file (the trim changed). `trim` is a request override persisted on the primary source; without one the stored trim applies. The old file stays until the new one is complete."""
+    job = deps.JOBS[(uid, vid)]
+    stage: Path | None = None
+    try:
+        out = deps.audio_dir(uid)
+        limits.check_capacity(owner, out, deps.pool_dir())
+        out.mkdir(parents=True, exist_ok=True)
+        existing = library.find_song(deps.load_songs(uid), vid)
+        cut = trim if trim is not None else trimming.stored(existing)
+        stage = Path(tempfile.mkdtemp(prefix=".redownload-", dir=out))
+        info = _download_audio(vid, stage, job, source_url, cut)
+        staged = stage / f"{vid}.m4a"
+        value = _detect_bpm(staged, vid)
+        pinned = bool(existing) and (existing.get("cover_source") in ("custom", "default") or bool(existing.get("cover_off")))
+        fresh = None if pinned else _fetch_cover(uid, vid, info.get("thumbnail"))
+        with deps.tx(uid, f"redownload {vid}"):
+            songs = library.load(deps.library_path(uid))
+            song = library.find_song(songs, vid)
+            if song is None:
+                raise Problem(404, "unknown_song", deps.UNKNOWN_SONG)
+            os.replace(staged, out / f"{vid}.m4a")
+            song["file"] = f"{vid}.m4a"
+            song["duration"] = info.get("duration") or song.get("duration")
+            if value is not None:
+                song["bpm"] = round(value)
+            if fresh:
+                song["cover"] = fresh
+                song["cover_v"] = coverimg.version_of((deps.covers_dir(uid) / f"{vid}.jpg").read_bytes())
+            if trimming.is_cut(cut) or trim is not None:
+                trimming.persist(song, info.get("trim") or cut or trimming.NONE, info.get("source_duration"))
+            song["updated_at"] = library.now_utc()
+            deps.save_songs(uid, songs)
+        job.update(status="done", progress=1.0)
+    except Exception as exc:
+        _fail_job(job, None, vid, exc)
+    finally:
+        if stage is not None:
+            shutil.rmtree(stage, ignore_errors=True)
 
 
 def _known_country_tags(tags: list[str]) -> list[str]:

@@ -11,7 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import StreamingResponse
 
-from .. import credits, deps, discogs_lookup, extractor, genre_lookup, library, metadata, previewcache, timeutil, titleclean, wiki_lookup
+from .. import credits, deps, discogs_lookup, extractor, genre_lookup, library, metadata, previewcache, sources, timeutil, titleclean, wiki_lookup
 from ..links import Refused, resolve_link, short_error
 from ..schemas import MetadataRequest, PreviewRequest, WikipediaLookupRequest
 
@@ -89,6 +89,13 @@ def _released_suggestion(wiki: dict[str, Any], mb: dict[str, Any], disc: dict[st
     return None
 
 
+def _add_hint(meta: dict[str, Any], url: str) -> None:
+    """The start time a pasted link carries, as a suggestion for the Add dialog (`trim_start_hint`, seconds); never stored."""
+    hint = sources.parse_source_url(url).get("trim_start")
+    if hint:
+        meta["trim_start_hint"] = hint
+
+
 @router.post("/preview", responses=deps.responses(502))
 async def preview(req: PreviewRequest, user: Annotated[dict[str, Any], Depends(deps.require_token)]):
     try:
@@ -106,6 +113,7 @@ async def preview(req: PreviewRequest, user: Annotated[dict[str, Any], Depends(d
     meta.update(clean_preview_title(meta))
     await _apply_suggestions(meta)
     meta["in_library"] = library.find_song(deps.load_songs(user["uid"]), vid) is not None
+    _add_hint(meta, req.url)
     return meta
 
 
@@ -165,6 +173,7 @@ async def _preview_events(req: PreviewRequest, user: dict[str, Any]) -> AsyncIte
         yield mark("done")
         _merge_suggestions(meta, found, mb, wiki, disc)
         meta["in_library"] = library.find_song(deps.load_songs(user["uid"]), link.vid) is not None
+        _add_hint(meta, req.url)
         yield _line({"event": "result", "data": meta})
     except Exception as exc:
         yield _line({"event": "error", "stage": stage, "status": 500, "error": "failed", "detail": short_error(exc) or "lookup failed"})

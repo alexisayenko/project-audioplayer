@@ -395,7 +395,7 @@ def test_delete_unknown_song_is_404(client, song):
 def wiki_api(pages):
     def fetch(url):
         for key, found in pages.items():
-            if url.endswith("titles=" + urllib.parse.quote(key, safe="")):
+            if urllib.parse.parse_qs(urllib.parse.urlsplit(url).query).get("titles") == [key]:
                 return {"query": {"pages": [found]}}
         return {"query": {"pages": [{"title": "x", "missing": True}]}}
     return fetch
@@ -419,7 +419,7 @@ def test_suggestions_empty_without_links(client, song):
 def test_suggestions_from_song_and_album_pages(client, song, monkeypatch):
     link(client, wikipedia_song="https://en.wikipedia.org/wiki/Some_Song", wikipedia_album="https://en.wikipedia.org/wiki/Some_Album")
     wiki_lookup._cover_cache.clear()
-    monkeypatch.setattr(wiki_lookup, "_fetch_json", wiki_api({"Some_Song": page("Some Song", "Song.jpg"), "Some_Album": page("Some Album", "Album.jpg", 800, None)}))
+    monkeypatch.setattr(wiki_lookup, "_fetch_json", wiki_api({"Some Song": page("Some Song", "Song.jpg"), "Some Album": page("Some Album", "Album.jpg", 800, None)}))
     got = client.get(f"/songs/{VID}/cover/suggestions", headers=H).json()["suggestions"]
     assert [s["title"] for s in got] == ["Some Song", "Some Album"]
     first = got[0]

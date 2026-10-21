@@ -729,6 +729,10 @@ body.has-mini .player { padding-bottom: calc(var(--tab-h) + var(--dock-b) + var(
 .switch-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); min-height: var(--hit); }
 .switch-row input[type="checkbox"] { width: var(--icon-nav); height: var(--icon-nav); accent-color: var(--fill); flex: none; }
 .switch-row select { flex: none; width: 14rem; max-width: 55%; }
+.fade-ctl { display: flex; align-items: center; gap: var(--space-3); flex: none; width: 14rem; max-width: 55%; }
+.fade-ctl input[type="range"] { flex: 1 1 auto; min-width: 0; margin: 0; accent-color: var(--fill); }
+.fade-ctl output { flex: none; min-width: 3.5em; text-align: right; }
+@media (max-width: 480px) { .fade-ctl { width: 100%; max-width: none; } .switch-row:has(.fade-ctl) { flex-wrap: wrap; } }
 @media (max-width: 480px) { .switch-row:has(select) { flex-wrap: wrap; } .switch-row select { width: 100%; max-width: none; } }
 .switch-row .t-caption { display: block; color: var(--ink-muted); }
 .empty-note { text-align: center; padding: var(--space-2) 0; }
@@ -841,6 +845,10 @@ body[data-route="playback"] main { display: none; }
 .add-fields > .t-caption:empty { display: none; }
 .add-fields > .field, .add-fields > .grid2 { margin-top: var(--space-3); }
 .wiki-hint { text-align: left; color: var(--accent-ink); }
+.trim-block { margin-top: var(--space-3); }
+.trim-block > summary { display: flex; align-items: center; min-height: var(--hit); cursor: pointer; font: var(--font-subhead); color: var(--ink-muted); }
+.trim-block > .grid2, .trim-block > .t-caption, .trim-block > .row { margin-top: var(--space-2); }
+.trim-block > .t-caption:empty, .trim-block > [hidden] { display: none; }
 .svc-row { display: flex; align-items: center; gap: var(--space-1); }
 .svc { display: inline-grid; place-items: center; min-width: var(--control-sm); min-height: var(--control-sm); color: var(--ink-faint); }
 .svc.on { color: var(--ink-faint); }

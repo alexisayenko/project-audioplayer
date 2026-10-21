@@ -36,6 +36,7 @@ test('api', async () => {
 });
 
 test('setCover sends multipart for a file and JSON otherwise; deleteCover and coverSuggestions use their routes', async () => {
+  const { api } = await import('./api.js');
   const seen = [];
   globalThis.fetch = async (path, init) => { seen.push([path, init.method, init.headers['Content-Type'], init.body]); return { ok: true, status: 200, json: async () => ({}) }; };
   await api.setCover('abc', new Blob(['x'], { type: 'image/png' }));

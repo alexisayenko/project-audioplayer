@@ -17,6 +17,8 @@ import {
 import { availableModes } from './viz-modes.js';
 import { TERRAIN_STYLES, getStyle, setStyle } from './viz-terrain-style.js';
 import { HEIGHT_OPTIONS } from './viz-constants.js';
+import { FADE_MAX, FADE_STEP, fadeLabel, fadeHint } from './fade.js';
+import { fadeSettings } from './fade-settings.js';
 
 const GSI = 'https://accounts.google.com/gsi/client';
 const APPLE = 'https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js';
@@ -147,6 +149,19 @@ function libraryCard(downloadAll) {
     ...(downloadAll ? [el('div', { class: 'divider' }), downloadAll] : []));
 }
 
+function fadeRow({ id, label, get, set }) {
+  const out = el('output', { for: id }, fadeLabel(get()));
+  const hint = el('small', { class: 't-caption' });
+  const range = el('input', { type: 'range', id, min: 0, max: FADE_MAX, step: FADE_STEP, value: get() });
+  const paint = (v) => { out.textContent = fadeLabel(v); hint.textContent = fadeHint(v, player.duration); };
+  paint(get());
+  range.addEventListener('input', () => { set(range.value); paint(range.value); });
+  return el('label', { class: 'switch-row', for: id },
+    el('span', { class: 't-subhead set-text' }, label,
+      el('small', { class: 't-caption' }, 'Share of the song length. Applied when a song starts or ends.'), hint),
+    el('span', { class: 'fade-ctl' }, range, out));
+}
+
 function playbackCard() {
   const box = el('input', { type: 'checkbox', id: 'auto-dl', checked: autoDownloadOn() });
   box.addEventListener('change', () => {
@@ -157,7 +172,9 @@ function playbackCard() {
     el('h2', { class: 't-headline' }, 'Playback'),
     el('label', { class: 'switch-row', for: 'auto-dl' },
       el('span', { class: 't-subhead set-text' }, 'Auto-download songs',
-        el('small', { class: 't-caption' }, 'Download songs you play or add to the playlist. Each download counts toward the hourly add limit.')), box));
+        el('small', { class: 't-caption' }, 'Download songs you play or add to the playlist. Each download counts toward the hourly add limit.')), box),
+    fadeRow({ id: 'fade-in', label: 'Fade in', get: fadeSettings.fadeIn, set: fadeSettings.setFadeIn }),
+    fadeRow({ id: 'fade-out', label: 'Fade out', get: fadeSettings.fadeOut, set: fadeSettings.setFadeOut }));
 }
 
 function visualizerCard() {

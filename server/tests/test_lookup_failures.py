@@ -449,6 +449,8 @@ def test_wiki_fetch_json_sends_agent_and_parses(monkeypatch):
     monkeypatch.setattr(httpjson.urllib.request, "urlopen", lambda req, timeout: seen.update(req=req, timeout=timeout) or Resp({"a": 1}))
     monkeypatch.setenv("AUDIO_MB_USER_AGENT", "ua/2")
     assert wl._fetch_json("https://www.wikidata.org/x") == {"a": 1}
+    assert seen["req"].get_header("User-agent") == wl.WIKIMEDIA_UA
+    assert wl._fetch_json("https://example.com/x") == {"a": 1}
     assert seen["req"].get_header("User-agent") == "ua/2"
     assert seen["timeout"] == wl.TIMEOUT
 

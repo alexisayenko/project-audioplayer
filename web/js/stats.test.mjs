@@ -45,7 +45,7 @@ test('renders title, count, skipped note, canvas label and legend', async () => 
   localStorage.setItem('stats.color', 'decade');
   const { root, cleanup } = mount();
   await flush();
-  assert.equal(root.querySelector('h1').textContent, 'Song stats');
+  assert.equal(root.querySelector('h1').textContent, 'Statistics');
   assert.equal(root.querySelector('.st-count').textContent, '3 of 5 songs plotted');
   assert.equal(root.querySelector('.st-note').textContent, '2 songs without year or BPM are not shown');
   assert.match(root.querySelector('canvas.st-top').getAttribute('aria-label'), /^Scatter plot of 3 songs/);
@@ -337,12 +337,12 @@ test('the panel has a chevron that collapses everything below the title row and 
   localStorage.removeItem('ap2.panel.stats');
 });
 
-test('Song stats shows one page title inside the standard page head and no small bar title', async () => {
+test('Statistics shows one page title inside the standard page head and no small bar title', async () => {
   const { root, cleanup } = mount();
   await flush();
   const h1s = root.querySelectorAll('h1');
   assert.equal(h1s.length, 1);
-  assert.equal(h1s[0].textContent, 'Song stats');
+  assert.equal(h1s[0].textContent, 'Statistics');
   assert.ok(h1s[0].className.includes('t-display'));
   const head = h1s[0].parentElement;
   assert.equal(head.tagName.toLowerCase(), 'header');

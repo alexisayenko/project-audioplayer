@@ -123,7 +123,7 @@ def test_legacy_migrated_and_new_songs_decode_as_server_song(client, tmp_path, r
             assert s["year"] is None or (isinstance(s["year"], int) and not isinstance(s["year"], bool))
             assert s["remixer"] is None or isinstance(s["remixer"], str)
             assert isinstance(s["sources"], list)
-            assert all({"source", "id", "url", "platform"} == set(e) for e in s["sources"])
+            assert all({"source", "id", "url", "platform"} <= set(e) for e in s["sources"])
         migrate_model2.migrate(path, apply=True, backup_dir=tmp_path / "bk")
 
 

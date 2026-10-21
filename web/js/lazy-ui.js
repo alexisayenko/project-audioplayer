@@ -3,6 +3,11 @@ import { beginClickLoad } from './load-gate.js';
 
 export const PENDING_DELAY_MS = 150;
 const NOTE_MS = 2000;
+export const STALE_TEXT = 'This page is out of date. Reload to continue.';
+
+async function checkStale() {
+  try { return await (await import('./update-check.js')).checkNow(); } catch { return false; }
+}
 
 export const UI_LOADERS = {
   songCard: () => import('./song-card.js'),
@@ -29,7 +34,7 @@ export function loadUi(name, loaders = UI_LOADERS) {
 }
 
 function noteAfter(opener, text, kind) {
-  if (!opener?.isConnected) return null;
+  if (!opener?.isConnected || opener.closest?.('.mini')) return null;
   const note = el('span', { class: `ui-note muted t-caption ${kind}`, role: 'status', 'aria-live': 'polite' }, text);
   opener.after(note);
   return note;
@@ -51,12 +56,16 @@ export async function withUi(name, opener, use, loaders = UI_LOADERS) {
   };
   let mod;
   try {
-    mod = await loadUi(name, loaders);
+    try { mod = await loadUi(name, loaders); } catch { mod = await loadUi(name, loaders); }
   } catch {
     settle();
+    if (await checkStale()) {
+      toast(STALE_TEXT, { label: 'Reload', run: () => globalThis.location?.reload() });
+      return undefined;
+    }
     const fail = noteAfter(opener, 'Could not load. Try again.', 'error');
     if (fail) setTimeout(() => fail.remove(), NOTE_MS);
-    else toast('Could not load. Check the connection and try again.');
+    else toast('Could not load. Try again.');
     return undefined;
   }
   settle();

@@ -22,7 +22,7 @@ _URL_ID_RES = [
     re.compile(rf"^(?:https?://)?youtu\.be/{_ID}(?:[/?#].*)?$", re.I),
 ]
 
-_TRACKING = {"si", "feature", "pp", "fbclid", "gclid"}
+_TRACKING = {"si", "feature", "pp", "fbclid", "gclid", "igshid", "mc_cid", "mc_eid", "yclid", "msclkid"}
 
 
 def is_valid_video_id(video_id: str) -> bool:

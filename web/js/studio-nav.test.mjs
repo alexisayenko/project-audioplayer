@@ -7,7 +7,7 @@ installDom();
 const { ICONS, STROKE_WIDTH, icon } = await import('./icons.js');
 const read = (rel) => readFileSync(new URL(rel, import.meta.url), 'utf8');
 
-test('WEB-150: Studio is a main menu item between Song stats and Help with its own icon', () => {
+test('WEB-150: Studio is a main menu item between Statistics and Help with its own icon', () => {
   const html = read('../index.html');
   const nav = html.match(/<nav id="nav"[\s\S]*?<\/nav>/)[0];
   assert.match(nav, /<a href="#\/studio" data-route="studio" title="Studio"><span data-icon="studio" aria-hidden="true"><\/span><span class="nav-label">Studio<\/span><\/a>/);

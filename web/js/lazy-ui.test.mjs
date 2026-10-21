@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { installDom } from './test-dom.mjs';
 
-installDom();
+installDom({ ids: ['toast'] });
 const { withUi, loadUi, PENDING_DELAY_MS } = await import('./lazy-ui.js');
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -45,15 +45,33 @@ test('WEB-120: a slow load shows an inline Loading note and aria-busy, removed w
   assert.equal(o.attrs['aria-busy'], undefined);
 });
 
-test('WEB-120: a failed load shows an inline error, does not run the action and is retried on the next call', async () => {
+test('WEB-120: a failed load shows an inline error, does not run the action and is retried once at once and again on the next call', async () => {
   const o = opener();
   let calls = 0;
-  const loaders = { flaky: async () => { calls += 1; if (calls === 1) throw new Error('net'); return { ok: 1 }; } };
+  const loaders = { flaky: async () => { calls += 1; if (calls <= 2) throw new Error('net'); return { ok: 1 }; } };
   let ran = 0;
   await withUi('flaky', o, () => { ran += 1; }, loaders);
   assert.equal(ran, 0);
   assert.match(o.notes[0].textContent, /Could not load/);
   await withUi('flaky', o, () => { ran += 1; }, loaders);
   assert.equal(ran, 1);
+  assert.equal(calls, 3);
+});
+
+test('WEB-158: a failed load from a control inside the dock adds no inline note to the dock', async () => {
+  const o = { ...opener(), closest: (sel) => (sel === '.mini' ? {} : null) };
+  const res = await withUi('bad', o, () => 'ran', { bad: async () => { throw new Error('net'); } });
+  assert.equal(res, undefined);
+  assert.equal(o.notes.length, 0);
+  assert.match(document.getElementById('toast').textContent, /Could not load/);
+});
+
+test('WEB-158: a failed load retries once at once, and a stale page gets the Reload toast', async () => {
+  let calls = 0;
+  const o = opener();
+  await withUi('retry', o, () => 'ran', { retry: async () => { calls += 1; if (calls === 1) throw new Error('net'); return {}; } });
   assert.equal(calls, 2);
+  const uc = await import('./update-check.js');
+  assert.equal(typeof uc.checkNow, 'function');
+  assert.equal(await uc.checkNow(), false);
 });

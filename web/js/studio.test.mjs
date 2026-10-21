@@ -55,7 +55,7 @@ async function mount({ player = makePlayer(), load = async () => ({ peaks: PEAKS
 const all = (root, sel) => root.querySelectorAll(sel);
 const one = (root, sel) => root.querySelector(sel);
 const byLabel = (root, label) => all(root, 'button').find((b) => b.getAttribute('aria-label') === label);
-const byText = (root, text) => all(root, 'button').find((b) => b.textContent.includes(text));
+const byText = (root, text) => all(root, 'button').find((b) => b.textContent.includes(text) || b.getAttribute('aria-label') === text);
 const typeTime = (input, value) => { input.value = value; fire(input, 'change'); };
 const inputs = (root) => all(root, '.stu-time');
 const handleA = (root) => one(root, '.stu-a');

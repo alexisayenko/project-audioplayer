@@ -13,6 +13,7 @@ from urllib.parse import urlparse
 import yt_dlp
 
 from . import credit_title, credits, credits_split, genre_filter, library, timeutil, titles, urlclean, yt_genres
+from . import trim as trimming
 from .jsonio import write_bytes_atomic
 from .titles import cut_version, split_artist_title, split_title
 from .urlclean import is_valid_video_id, parse_video_id, source_of, watch_url  # noqa: F401
@@ -51,25 +52,27 @@ def search(query: str, limit: int) -> list[dict[str, Any]]:
     return results
 
 
-def download(video_id: str, out_dir: Path) -> dict[str, Any]:
-    """Download the m4a audio stream for one video; return its metadata."""
+def download(video_id: str, out_dir: Path, trim: trimming.Trim | None = None) -> dict[str, Any]:
+    """Download the m4a audio stream for one video; return its metadata. With a `trim` only the cut part is stored."""
     out_dir.mkdir(parents=True, exist_ok=True)
     opts = {
         "quiet": True,
         "noplaylist": True,
         "format": "bestaudio[ext=m4a]/140",
         "outtmpl": str(out_dir / "%(id)s.%(ext)s"),
+        **_section_opts(trim),
     }
     url = f"https://www.youtube.com/watch?v={video_id}"
     with yt_dlp.YoutubeDL(opts) as ydl:
         info = ydl.extract_info(url, download=True)
-    return {
+    result = {
         "id": video_id,
         "title": info.get("title") or "",
         "artist": info.get("artist") or info.get("uploader") or "",
         "duration": info.get("duration"),
         "thumbnail": f"https://i.ytimg.com/vi/{video_id}/hqdefault.jpg",
     }
+    return _finish_trim(out_dir / f"{video_id}.m4a", result, trim, True) if trimming.is_cut(trim) else result
 
 
 def _is_sndcdn(url: str) -> bool:
@@ -278,19 +281,39 @@ def _progress_hook(progress: Callable[[float], None] | None) -> Callable[[dict[s
     return hook
 
 
-def download_audio(video_id: str, out_dir: Path, progress: Callable[[float], None] | None = None, source_url: str | None = None) -> dict[str, Any]:
-    """Download one song's audio (m4a); reports progress (0..1) via the callback."""
+def _section_opts(trim: trimming.Trim | None) -> dict[str, Any]:
+    if not trimming.is_cut(trim):
+        return {}
+    start, end = trimming.section(trim)
+    return {"download_ranges": yt_dlp.utils.download_range_func([], [(start, end)]), "force_keyframes_at_cuts": True}
+
+
+def _finish_trim(target: Path, info: dict[str, Any], trim: trimming.Trim, sectioned: bool) -> dict[str, Any]:
+    """Validate the cut against the source length yt-dlp reported, re-encode the file (cutting here unless yt-dlp already sectioned it) and report the cut length as `duration`."""
+    source = info.get("duration")
+    start, end = trimming.check(trim[0], trim[1], source)
+    length = trimming.reencode(target, trimming.NONE if sectioned else (start, end))
+    if length is None and source:
+        length = (end if end is not None else source) - (start or 0.0)
+    return {**info, "duration": length, "source_duration": source, "trim": (start, end)}
+
+
+def download_audio(video_id: str, out_dir: Path, progress: Callable[[float], None] | None = None, source_url: str | None = None,
+                   trim: trimming.Trim | None = None) -> dict[str, Any]:
+    """Download one song's audio (m4a); reports progress (0..1) via the callback. With a `trim` only the cut part is stored, re-encoded to m4a."""
     out_dir.mkdir(parents=True, exist_ok=True)
     hook = _progress_hook(progress)
 
     if source_of(video_id) == "soundcloud":
-        return _download_soundcloud(video_id, out_dir, hook, source_url)
+        info = _download_soundcloud(video_id, out_dir, hook, source_url)
+        return _finish_trim(out_dir / f"{video_id}.m4a", info, trim, False) if trimming.is_cut(trim) else info
     opts = {
         "quiet": True,
         "noplaylist": True,
         "format": "bestaudio[ext=m4a]/140",
         "outtmpl": str(out_dir / f"{video_id}.%(ext)s"),
         "progress_hooks": [hook],
+        **_section_opts(trim),
     }
     page = watch_url(parse_video_id(source_url) or video_id) if source_url and source_of(video_id) == "youtube" else watch_url(video_id)
     with yt_dlp.YoutubeDL(opts) as ydl:
@@ -301,7 +324,8 @@ def download_audio(video_id: str, out_dir: Path, progress: Callable[[float], Non
         lead=not (info.get("artist") or info.get("track")),
     )
     shown = credit_title.split(artist, title)
-    return {"id": video_id, "title": shown["title"], "artist": shown["artist"], "remixer": remixer, "duration": info.get("duration")}
+    result = {"id": video_id, "title": shown["title"], "artist": shown["artist"], "remixer": remixer, "duration": info.get("duration")}
+    return _finish_trim(out_dir / f"{video_id}.m4a", result, trim, True) if trimming.is_cut(trim) else result
 
 
 def _download_soundcloud(video_id: str, out_dir: Path, hook: Callable[[dict[str, Any]], None], source_url: str | None) -> dict[str, Any]:

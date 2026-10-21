@@ -70,7 +70,7 @@ test('a context already running at construction builds the graph synchronously a
   assert.equal(log.sources, 1);
   assert.equal(log.resumes, 0);
   assert.equal(graph.hasGraph(), true);
-  assert.deepEqual(log.connects, [['gain', 'analyser'], ['analyser', 'dest'], ['source', 'gain']]);
+  assert.deepEqual(log.connects, [['gain', 'gain'], ['gain', 'analyser'], ['analyser', 'dest'], ['source', 'gain']]);
   assert.equal(g.analyser.fftSize, 8192);
   assert.equal(g.analyser.smoothingTimeConstant, 0.5);
   assert.equal(graph.getAnalyser(), g.analyser);

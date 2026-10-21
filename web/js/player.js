@@ -24,13 +24,16 @@ import { createQueueFollow } from './queue-follow.js';
 import { createMediaRetry } from './media-retry.js';
 import { openSongCard, openTagPicker, loadUi } from './lazy-ui.js';
 import { cachedListening, getListening } from './listening-stats.js';
-import { createShuffleRank, countsFromListening } from './shuffle-pick.js';
+import { createShuffleRank, countsFromListening, localPlayCounts, mergeCounts } from './shuffle-pick.js';
 import { createLoop } from './loop-engine.js';
 import { createGapless } from './gapless-loop.js';
 import { initLoopChip } from './loop-chip.js';
+import { createFader } from './fade-control.js';
+import { fadeSettings } from './fade-settings.js';
 
 const audio = document.getElementById('audio');
 const loop = createLoop(audio, undefined, createGapless({ audio }));
+const fader = createFader({ audio, settings: fadeSettings, loop, volumeOk: () => volumeOk });
 const retry = createMediaRetry({ audio, onChange: () => { paintConn(); render(true); }, onGone: () => fail() });
 const shownPlaying = () => !audio.paused && !retry.stalled();
 let followQueue = null;
@@ -83,10 +86,14 @@ const usable = (item) => {
   return hasAudio(s) || (!!s && autoDownloadOn() && autodl.view(item.id).kind !== 'failed');
 };
 const hasAudioId = (id) => hasAudio(store.get(id));
+let recentPlaysFn = () => ({ plays: [], open: null });
 const shuffleRank = createShuffleRank({
   getCounts: () => {
     if (!isGuest()) getListening().catch(() => {});
-    return countsFromListening(cachedListening());
+    const server = countsFromListening(cachedListening());
+    if (!server) return null;
+    const r = recentPlaysFn();
+    return mergeCounts(server, localPlayCounts(r.plays, Date.now(), r.open));
   },
 });
 const logic = () => ({ queue: ids(), index: qs.index, shuffle, repeat, played, shuffleRank });
@@ -351,7 +358,7 @@ export const player = {
   get position() { return audio.currentTime; },
   get duration() { return audio.duration; },
   play() { if (player.current && hasAudio(player.current) && audio.paused) audio.play().catch(fail); },
-  get volume() { return audio.volume; },
+  get volume() { return fader.userVolume(); },
   get muted() { return audio.muted; },
   get volumeAdjustable() { return volumeOk; },
   setVolume(v) {
@@ -359,6 +366,7 @@ export const player = {
     if (audio.muted && v > 0) audio.muted = false;
   },
   toggleMute() {
+    fader.release();
     if (audio.muted || audio.volume === 0) {
       audio.muted = false;
       if (audio.volume === 0) setVolume(audio, 0.5);
@@ -411,6 +419,7 @@ function load(autoplay) {
   const song = player.current;
   retry.reset();
   loop.clear();
+  fader.reset();
   if (!song) return;
   updateMediaSession(song);
   if (!hasAudio(song)) {
@@ -427,6 +436,7 @@ function load(autoplay) {
   resumeGuard = false;
   if (!restoring) resume.clear();
   audio.src = api.fileUrl(song.id);
+  fader.apply();
   if (restoring) armResume(song.id);
   if (autoplay) audio.play().catch(fail);
   render();
@@ -598,6 +608,7 @@ export function initPlayer() {
     post: (batch, opts) => api.postPlays(batch, !!opts?.keepalive),
     onFlushed: () => window.dispatchEvent(new Event('plays-flushed')),
   });
+  recentPlaysFn = () => recorder.recentPlays();
   listeners.add(() => recorder.sync());
 
   initMiniCompact();
@@ -692,6 +703,7 @@ export function initPlayer() {
 
 export function pausePlayer() {
   loop.clear();
+  fader.reset();
   audio.pause();
   audio.removeAttribute('src');
   audio.load();

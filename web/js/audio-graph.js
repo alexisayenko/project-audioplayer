@@ -17,6 +17,7 @@ export const isSupported = (win = globalThis) => typeof ctorOf(win) === 'functio
 export const getState = () => state;
 export const getGain = () => graph?.gain ?? null;
 export const getSource = () => graph?.source ?? null;
+export const getFade = () => graph?.fade ?? null;
 export const getAnalyser = () => (graph?.ctx.state === 'running' ? graph.analyser : null);
 export const getContext = () => graph?.ctx ?? pending?.ctx ?? null;
 export const hasGraph = () => graph !== null;
@@ -45,7 +46,9 @@ function build(ctx, audio) {
   const analyser = ctx.createAnalyser();
   analyser.fftSize = FFT_SIZE;
   analyser.smoothingTimeConstant = ANALYSER_SMOOTHING;
-  gain.connect(analyser);
+  const fade = ctx.createGain();
+  gain.connect(fade);
+  fade.connect(analyser);
   analyser.connect(ctx.destination);
   const source = ctx.createMediaElementSource(audio);
   try {
@@ -55,7 +58,7 @@ function build(ctx, audio) {
     err.attached = true;
     throw err;
   }
-  return { ctx, gain, analyser, source };
+  return { ctx, gain, fade, analyser, source };
 }
 
 function finish(p) {

@@ -85,8 +85,14 @@ export function editDialog(song) {
       err.hidden = false;
       return;
     }
+    const badTrim = sf.trimProblem();
+    if (badTrim) {
+      err.textContent = badTrim;
+      err.hidden = false;
+      return;
+    }
     try {
-      await api.patch(song.id, patchBody(v, song));
+      await api.patch(song.id, { ...patchBody(v, song), ...(sf.trimChanged() ? { trim: sf.trimValue() } : {}) });
       dlg.close();
       await store.refresh();
       toast('Saved');

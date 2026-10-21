@@ -44,7 +44,7 @@ def test_the_converted_songs_have_only_v2_keys():
             assert old not in song, (song["id"], old)
         assert {"mainArtists", "featuredArtists", "releaseYear", "albums"} <= set(song)
         assert all(not str(t).startswith(("decade:", "lang:", "country:")) for t in song.get("tags", []))
-        assert all(set(e) == {"platform", "url"} for e in song.get("sources", []))
+        assert all({"type", "ref", "trim_start", "trim_end"} <= set(e) for e in song.get("sources", []))
         version = song.get("version")
         if version:
             assert set(version) - {"originalArtists"} == {"type", "name", "artists", "releaseYear"}

@@ -123,3 +123,33 @@ body.has-mini .st { --player-h: calc(64px + 2 * var(--space-2)); }
 .st-lis-bar i { display: block; height: 100%; background: var(--accent-ink); border-radius: var(--radius-pill); }
 .st-lis-val { color: var(--ink-muted); white-space: nowrap; }
 .st-empty-inline { margin: 0; }
+
+.st > .st-tabs { flex: none; display: flex; gap: var(--space-1); padding: var(--space-2) var(--gutter) 0; overflow-x: auto; box-shadow: inset 0 calc(-1 * var(--stroke-hairline)) 0 var(--line); }
+.st-tab {
+  flex: none; min-height: var(--control); padding: 0 var(--space-3); border: 0; border-radius: 0; background: none; color: var(--ink-muted);
+  box-shadow: inset 0 calc(-1 * var(--stroke-hairline)) 0 transparent;
+}
+.st-tab[hidden] { display: none; }
+.st-tab[aria-selected="true"] { color: var(--accent-ink); font-weight: 600; box-shadow: inset 0 -2px 0 var(--accent-ink); }
+@media (hover: hover) { .st-tab:hover { color: var(--ink); } }
+.st-songs { position: absolute; inset: 0; }
+.st-bar[hidden] { display: none; }
+.st-listenbox { padding-top: var(--space-3); }
+.st-genresbox { position: absolute; inset: 0; display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3) var(--space-3) var(--space-4); min-height: 0; }
+.st-genresbox[hidden] { display: none; }
+.st-gtools[hidden] { display: none; }
+.st-search {
+  width: min(280px, 100%); min-height: var(--control-sm); padding: 0 var(--space-3); border: 0; border-radius: var(--radius-pill);
+  background-color: var(--surface-sunken); color: var(--ink);
+}
+.st-ghost { flex: 1 1 auto; min-height: 0; display: flex; }
+.st-gwrap { flex: 1 1 auto; min-height: 0; min-width: 0; display: flex; flex-direction: column; gap: var(--space-2); width: 100%; max-width: 900px; }
+.st-gscroll { flex: 1 1 auto; min-height: 0; overflow: auto; scrollbar-width: var(--scrollbar-width); scrollbar-color: var(--line) transparent; }
+.st-gtable { width: 100%; min-width: 360px; }
+.st-gtable thead th { position: sticky; top: 0; z-index: 1; background: var(--surface); }
+.st-gtable tfoot th, .st-gtable tfoot td { position: sticky; bottom: 0; background: var(--surface); font-weight: 600; border-top: var(--stroke-hairline) solid var(--line); border-bottom: 0; }
+.st-gtable .st-num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.st-gtable th.st-num .st-th { justify-content: flex-end; }
+.st-gtable .st-edge { border-left: var(--stroke-hairline) solid var(--line); }
+.st-gtable td .st-open { cursor: pointer; text-align: left; }
+.st-gnote, .st-gnone { margin: 0; flex: none; }

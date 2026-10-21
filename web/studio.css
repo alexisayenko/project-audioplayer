@@ -18,14 +18,16 @@ body[data-route="studio"] main { max-width: none; }
 .stu-hint { margin-right: auto; }
 .stu-clock { margin-left: auto; color: var(--ink-muted); }
 .stu-toggle[aria-pressed="true"] { color: var(--on-fill); }
-.stu-marks { display: grid; gap: var(--space-4); }
-@media (min-width: 720px) { .stu-marks { grid-template-columns: 1fr 1fr; } }
-.stu-mark { display: grid; gap: var(--space-2); min-width: 0; }
-.stu-mark-label { margin: 0; }
+.stu-marks { display: flex; flex-wrap: wrap; gap: var(--space-3) var(--space-5); }
+.stu-mark { display: grid; gap: var(--space-2); flex: 0 1 300px; min-width: 0; }
+.stu-mark-label { margin: 0; flex: none; min-width: var(--space-4); font-weight: 600; color: var(--ink-muted); }
 .stu-mark-row { display: flex; gap: var(--space-2); align-items: center; }
-.stu-time { flex: 1; min-width: 0; font-family: var(--font-mono); }
-.stu-nudges { display: flex; flex-wrap: wrap; gap: var(--space-2); }
-.stu-nudges .btn { flex: 1 1 auto; padding: 0 var(--space-3); }
+.stu-time { flex: 0 0 96px; width: 96px; min-width: 0; text-align: center; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.stu-set { padding: 0 var(--space-3); gap: var(--space-1); }
+.stu-nudges { display: flex; gap: var(--space-1); }
+.stu-nudges .btn { flex: 1 1 0; min-width: 0; padding: 0 var(--space-1); min-height: var(--control-sm); font-size: 12px; font-variant-numeric: tabular-nums; }
+@media (pointer: coarse) { .stu-nudges .btn { min-height: var(--control); } }
+@media (max-width: 719px) { .stu-mark { flex-basis: 100%; } }
 .stu-saved-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
 .stu-signin { margin: 0; }
 .stu-saved-head { margin: 0; }

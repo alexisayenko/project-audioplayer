@@ -7,8 +7,10 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.concurrency import run_in_threadpool
 
-from .. import deps, extractor, limits, users
+from .. import deps, extractor, library, limits, users
+from .. import trim as trimming
 from ..downloads import run_scheduled
+from ..problems import Problem
 from ..schemas import DownloadRequest
 
 router = APIRouter()
@@ -26,6 +28,11 @@ async def download(req: DownloadRequest, user: dict[str, Any] = Depends(deps.req
     if not extractor.is_valid_video_id(req.video_id) or extractor.source_of(req.video_id) != "youtube":
         raise HTTPException(status_code=422, detail="invalid video id")
     uid, owner = user["uid"], user["owner"]
+    existing = library.find_song(deps.load_songs(uid), req.video_id)
+    if req.trim is not None:
+        cut = trimming.check(req.trim.start, req.trim.end, trimming.source_duration(existing))
+    else:
+        cut = trimming.stored(existing)
     with users.user_lock(uid):
         songs = deps.guard_add(uid, owner, True)
         limits.RATE.record(uid, songs)
@@ -33,10 +40,30 @@ async def download(req: DownloadRequest, user: dict[str, Any] = Depends(deps.req
 
     def fetch() -> dict[str, Any]:
         out.mkdir(parents=True, exist_ok=True)
+        if trimming.is_cut(cut):
+            return extractor.download(req.video_id, out, cut)
         return extractor.download(req.video_id, out)
 
     try:
         meta = await run_in_threadpool(run_scheduled, uid, owner, fetch)
+    except Problem:
+        raise
     except Exception as exc:  # yt-dlp raises many types; surface as 502
         raise HTTPException(status_code=502, detail=f"download failed: {exc}") from exc
-    return {**meta, "file_url": f"/files/{req.video_id}"}
+    if existing is not None and (req.trim is not None or trimming.is_cut(cut)):
+        await run_in_threadpool(_store_trim, uid, req.video_id, meta, cut)
+    return {**{k: v for k, v in meta.items() if k != "trim"}, "file_url": f"/files/{req.video_id}"}
+
+
+def _store_trim(uid: str, vid: str, meta: dict[str, Any], cut: trimming.Trim) -> None:
+    """The downloaded file is the cut: keep the trim on the primary source and the cut length as the duration."""
+    with deps.tx(uid, f"trim {vid}"):
+        songs = library.load(deps.library_path(uid))
+        song = library.find_song(songs, vid)
+        if song is None:
+            return
+        if trimming.is_cut(cut):
+            song["duration"] = meta.get("duration") or song.get("duration")
+        trimming.persist(song, meta.get("trim") or cut, meta.get("source_duration"))
+        song["updated_at"] = library.now_utc()
+        deps.save_songs(uid, songs)

@@ -187,7 +187,7 @@ class _Scan:
             self.converted += 1
         new, countries = self._retag(old, new)
         if isinstance(new.get("sources"), list):
-            new["sources"] = library.clean_sources(new["sources"])
+            new["sources"] = library.clean_sources(new["sources"], str(new.get("id") or ""), new.get("source_url"))
         self._note_countries(new, countries)
         if new.get("raw"):
             self.raw_kept.append(str(new.get("id")))

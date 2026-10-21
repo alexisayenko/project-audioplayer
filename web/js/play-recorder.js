@@ -209,6 +209,11 @@ export function createPlayRecorder({
     sync,
     flush,
     get open() { return open; },
+    recentPlays() {
+      const b = readJson(BATCH_KEY, null);
+      const sent = b && Array.isArray(b.plays) ? b.plays.filter(validPlay) : [];
+      return { plays: [...sent, ...loadQueue()], open: open ? { ...open } : null };
+    },
     destroy() {
       clearInterval(timer);
       audio.removeEventListener('play', onPlay);

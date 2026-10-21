@@ -274,7 +274,7 @@ test('the Albums row lists every album after the version credits, "Album" for on
     publish([song]);
     openSongCard(song);
     const dlg = $('song-card');
-    const out = dlg.querySelector('.card-details').querySelectorAll('.detail').map((n) => n.textContent);
+    const out = [...(dlg.querySelector('.card-details')?.querySelectorAll('.detail') ?? [])].map((n) => n.textContent);
     dlg.close();
     return out;
   };

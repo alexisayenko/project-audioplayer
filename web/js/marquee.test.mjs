@@ -142,8 +142,8 @@ test('css: padding matches PAD, covers the fade, mask sits on the container', ()
   const fade = px('--mq-fade');
   assert.equal(pad, PAD);
   assert.ok(pad >= fade);
-  assert.match(css, /\.mq-run \{ -webkit-mask-image: linear-gradient\(90deg, transparent, #000 var\(--mq-fade\), #000 calc\(100% - var\(--mq-fade\)\), transparent\)/);
-  assert.match(css, /\.mq-run \.mq-track \{ padding-inline: var\(--mq-pad\)/);
+  assert.match(css, /\.mq-run \{ -webkit-mask-image: linear-gradient\(90deg, #000 calc\(100% - var\(--mq-fade\)\), transparent\)/);
+  assert.match(css, /\.mq-run \.mq-track \{ padding-inline: var\(--mq-pad\); margin-inline-start: calc\(-1 \* var\(--mq-pad\)\)/);
   assert.doesNotMatch(css, /\.mq-track \{[^}]*mask-image/);
   const content = 300;
   const dist = 200 + 2 * pad;

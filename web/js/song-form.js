@@ -16,6 +16,7 @@ import { titleCleaner } from './song-form-title.js';
 import { bpmRow } from './song-form-bpm.js';
 import { unknownGenre } from './genre-vocab.js';
 import { suggestedGenres, suggestedBox } from './suggested-genres.js';
+import { trimBlock } from './trim-block.js';
 
 const firstAlbum = (s) => (Array.isArray(s.albums) ? s.albums[0] : s.album) || '';
 
@@ -234,6 +235,16 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
   const ident = identifyBlock({ id: isAdd ? null : initial.id, audio: !isAdd && hasAudio(initial), editor, getReleased: () => f.released.value, setReleased, applyLinks });
 
   const bpmEl = bpmRow({ isAdd, initial });
+  const src0 = isAdd || !initial.sources?.[0] || typeof initial.sources[0] !== 'object' ? {} : initial.sources[0];
+  const trim = trimBlock({
+    start: isAdd ? null : src0.trim_start ?? null,
+    end: isAdd ? null : src0.trim_end ?? null,
+    hint: isAdd ? initial.trim_start_hint ?? null : null,
+    duration: (isAdd ? initial.duration : src0.duration ?? initial.duration) || null,
+    audio: !isAdd && hasAudio(initial),
+    songId: initial.id,
+    redownload: isAdd ? null : (id, cut) => api.redownload(id, cut),
+  });
 
   const node = el('div', { class: 'add-fields' },
     tc.node, credits.node,
@@ -246,6 +257,7 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
     bpmEl,
     genres.node, orig.node, countries.node,
     el('div', { class: 'field' }, el('label', {}, 'Tags'), editor.node));
+  node.append(trim.node);
   node.addEventListener('input', credits.paint);
   if (onChange) node.addEventListener('input', onChange);
 
@@ -290,6 +302,9 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
     node,
     values,
     linkProblems,
+    trimProblem: () => trim.check(),
+    trimValue: () => trim.value(),
+    trimChanged: () => trim.changed(),
     setValues,
     focus: () => f.title.focus(),
     saveError(ex) {
@@ -309,6 +324,7 @@ export function songForm({ mode = 'add', song = {}, source = null, onChange = nu
       orig.forget();
       metaBtn.disabled = false;
       metaBtn.textContent = 'Get metadata';
+      trim.reset();
       tc.clearRestored();
       tc.paintCleaned(first.removed);
       setValues({ title: startTitle, ...initialCredits(initial), albums: [firstAlbum(initial)], wikipedia_song: initial.wikipedia_song || '', wikipedia_artist: initial.wikipedia_artist || '', wikipedia_album: initial.wikipedia_album || '' });

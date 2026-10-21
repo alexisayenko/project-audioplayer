@@ -15,11 +15,16 @@ import { renderTable } from './stats-table.js';
 import { isGuest } from './guest.js';
 import { getListening } from './listening-data.js';
 import { renderListening } from './stats-listening.js';
+import { renderGenres } from './stats-genres-view.js';
+import { DEFAULT_SORT, genreTag } from './stats-genres.js';
+import { filterByTags, prefs, saveLibraryView } from './library-data.js';
 import {
   COLOR_MODES, DEFAULT_MODE, PALETTE_SIZE, FAMILY_PALETTE_SIZE, splitPlottable, makePoint, assignGroups, colorIndex, songFamilies, countText, skippedText, chartLabel,
 } from './stats-data.js';
 
 const MODE_KEY = 'stats.color';
+const TAB_KEY = 'stats.tab';
+const TABS = [['songs', 'Songs'], ['listening', 'Listening'], ['genres', 'Genres']];
 const EMPTY_TEXT = 'Songs need a year and a BPM to appear here';
 
 const BAR_GAP = 8;
@@ -65,6 +70,12 @@ export function renderStats(root) {
   let asTable = false;
   let sort = { key: 'year', dir: 1 };
   let dead = false;
+  let wanted = storeGet(TAB_KEY, 'songs');
+  const songsWrap = el('div', { class: 'st-songs', id: 'st-panel-songs', role: 'tabpanel', 'aria-labelledby': 'st-tab-songs' });
+  const tabBtns = new Map(TABS.map(([k, label]) => [k, el('button', {
+    class: 'st-tab t-subhead', type: 'button', role: 'tab', id: `st-tab-${k}`, 'aria-controls': `st-panel-${k}`, 'aria-selected': 'false', tabindex: '-1',
+    hidden: k === 'listening', onclick: () => selectTab(k), onkeydown: onTabKey,
+  }, label)]));
 
   const base = el('canvas', { class: 'st-canvas', 'aria-hidden': 'true' });
   const top = el('canvas', { class: 'st-canvas st-top', tabindex: 0, role: 'img', 'aria-label': chartLabel(0) });
@@ -97,13 +108,18 @@ export function renderStats(root) {
     class: 'st-btn t-caption', type: 'button', 'aria-pressed': 'false',
     onclick: () => { asTable = !asTable; syncMode(); },
   }, 'View as table');
-  let asListening = false;
   let listening = null;
-  const listeningBox = el('div', { class: 'st-tablebox st-listenbox', hidden: true });
-  const listeningBtn = el('button', {
-    class: 'st-btn t-caption', type: 'button', hidden: true, 'aria-pressed': 'false',
-    onclick: () => { asListening = !asListening; syncMode(); },
-  }, 'Listening');
+  const listeningBox = el('div', { class: 'st-tablebox st-listenbox', id: 'st-panel-listening', role: 'tabpanel', 'aria-labelledby': 'st-tab-listening', hidden: true });
+  const genresBox = el('div', { class: 'st-genresbox', id: 'st-panel-genres', role: 'tabpanel', 'aria-labelledby': 'st-tab-genres', hidden: true });
+  const genreSearch = el('input', {
+    class: 'st-search t-caption', type: 'search', placeholder: 'Filter genres', 'aria-label': 'Filter genres',
+    oninput: (e) => { genreQuery = e.target.value; paintGenreTable(); },
+  });
+  const genreTools = el('div', { class: 'st-gtools' }, genreSearch);
+  const genreHost = el('div', { class: 'st-ghost' });
+  genresBox.append(genreTools, genreHost);
+  let genreQuery = '';
+  let genreSort = null;
   const centerBtn = el('button', { class: 'st-btn t-caption', type: 'button', 'aria-label': 'Center chart', title: 'Center chart (C)', onclick: () => chart.center() }, icon('crosshair', 'inline'));
   const resetBtn = el('button', { class: 'st-btn t-caption', type: 'button', hidden: true, onclick: () => chart.reset() }, 'Reset');
 
@@ -168,34 +184,92 @@ export function renderStats(root) {
     }));
   }
 
+  const available = () => TABS.filter(([k]) => k !== 'listening' || (!isGuest() && !!listening)).map(([k]) => k);
+  const effectiveTab = () => (available().includes(wanted) ? wanted : 'songs');
+
+  function syncTabs() {
+    const ok = available();
+    const cur = effectiveTab();
+    for (const [k, btn] of tabBtns) {
+      btn.hidden = !ok.includes(k);
+      btn.setAttribute('aria-selected', String(k === cur));
+      btn.tabIndex = k === cur ? 0 : -1;
+    }
+  }
+
+  function selectTab(k, focus = false) {
+    wanted = k;
+    storeSet(TAB_KEY, k);
+    syncMode();
+    if (focus) tabBtns.get(k)?.focus();
+  }
+
+  function onTabKey(e) {
+    const ok = available();
+    const i = ok.indexOf(effectiveTab());
+    let next = -1;
+    if (e.key === 'ArrowRight') next = (i + 1) % ok.length;
+    else if (e.key === 'ArrowLeft') next = (i - 1 + ok.length) % ok.length;
+    else if (e.key === 'Home') next = 0;
+    else if (e.key === 'End') next = ok.length - 1;
+    if (next < 0) return;
+    e.preventDefault();
+    selectTab(ok[next], true);
+  }
+
   function syncMode() {
+    const cur = effectiveTab();
+    const onSongs = cur === 'songs';
+    syncTabs();
+    songsWrap.hidden = !onSongs;
+    listeningBox.hidden = cur !== 'listening';
+    genresBox.hidden = cur !== 'genres';
+    barEl.hidden = !onSongs;
     tableBtn.setAttribute('aria-pressed', String(asTable));
     tableBtn.textContent = asTable ? 'View as chart' : 'View as table';
-    listeningBtn.setAttribute('aria-pressed', String(asListening));
-    const plot = !asListening;
-    tableBtn.hidden = asListening;
-    tableBox.hidden = !asTable || asListening;
-    listeningBox.hidden = !asListening;
-    base.hidden = asTable || asListening;
-    top.hidden = asTable || asListening;
+    tableBox.hidden = !asTable;
+    base.hidden = asTable;
+    top.hidden = asTable;
     tip.hidden = true;
-    resetBtn.hidden = asTable || asListening || !chart.isZoomed();
-    centerBtn.hidden = asTable || asListening;
-    if (asListening) paintListening();
+    resetBtn.hidden = asTable || !chart.isZoomed();
+    centerBtn.hidden = asTable;
+    panel.hidden = !onSongs || selected.size === 0;
+    measureBar();
+    if (cur === 'listening') paintListening();
+    else if (cur === 'genres') paintGenreTable();
     else renderRows();
-    if (!asTable && plot) chart.resize();
+    if (onSongs && !asTable) chart.resize();
   }
 
   function paintListening() {
     listeningBox.replaceChildren(renderListening(listening, store.songs, (s) => { void openSong(s); }));
   }
 
+  function openGenre(row) {
+    filterByTags([genreTag(row)]);
+    prefs.never = false;
+    prefs.view = 'songs';
+    saveLibraryView('songs');
+    location.hash = '#/library';
+  }
+
+  function paintGenreTable() {
+    const { empty: none, node } = renderGenres(store.songs, listening, {
+      sort: genreSort || (listening ? DEFAULT_SORT : { key: 'songs', dir: -1 }),
+      query: genreQuery,
+      onSort: (s) => { genreSort = s; paintGenreTable(); },
+      onOpen: openGenre,
+    });
+    genreTools.hidden = none;
+    genreHost.replaceChildren(node);
+  }
+
+
   if (!isGuest()) {
     void getListening().then((d) => {
       if (dead || !d) return;
       listening = d;
-      listeningBtn.hidden = false;
-      if (asListening) paintListening();
+      syncMode();
     });
   }
 
@@ -224,7 +298,7 @@ export function renderStats(root) {
   }
 
   function renderPanel() {
-    panel.hidden = selected.size === 0;
+    panel.hidden = effectiveTab() !== 'songs' || selected.size === 0;
     if (!selected.size) { panel.replaceChildren(); return; }
     panel.replaceChildren(
       el('span', { class: 't-subhead st-sel' }, `${selected.size} selected:`),
@@ -300,6 +374,8 @@ export function renderStats(root) {
     syncLegend();
     renderPanel();
     renderRows();
+    if (effectiveTab() === 'genres') paintGenreTable();
+    else if (effectiveTab() === 'listening') paintListening();
   }
 
   const unsub = store.subscribe(() => rebuild());
@@ -309,15 +385,14 @@ export function renderStats(root) {
     collapsed: loadCollapsed(globalThis.localStorage, PANEL_KEYS.stats, window.innerWidth),
     onToggle: (v) => saveCollapsed(globalThis.localStorage, PANEL_KEYS.stats, v),
     content: [
-      el('div', { class: 'st-row st-tools', title: 'Drag: select - Right-drag or Shift-drag: pan - C: center - Wheel: zoom - Double-click: reset' }, select, legendBtn, tableBtn, listeningBtn, centerBtn, resetBtn),
+      el('div', { class: 'st-row st-tools', title: 'Drag: select - Right-drag or Shift-drag: pan - C: center - Wheel: zoom - Double-click: reset' }, select, legendBtn, tableBtn, centerBtn, resetBtn),
       note,
       legend],
   });
 
+  songsWrap.append(base, top, tip, live, empty, tableBox);
   const st = el('div', { class: 'st' },
-    pageHead('Song stats'),
-    el('div', { class: 'st-work' },
-      el('div', { class: 'st-stage' }, base, top, tip, live, empty, tableBox, listeningBox),
+pageHead('Statistics'),    el('div', { class: 'st-tabs', role: 'tablist', 'aria-label': 'Statistics views' }, ...tabBtns.values()),    el('div', { class: 'st-work' },      el('div', { class: 'st-stage' }, songsWrap, listeningBox, genresBox),
       el('div', { class: 'st-bar' },
         el('div', { class: 'st-row' }, status, barCl.button),
         barCl.root),

@@ -1,18 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import * as Q from './queue-logic.js';
-import { weightFor, buildOrder, countsFromListening, createShuffleRank, pickByRank, rankMap } from './shuffle-pick.js';
+import { buildOrder, countsFromListening, localPlayCounts, mergeCounts, createShuffleRank, pickByRank, rankMap } from './shuffle-pick.js';
 
 const seq = (...v) => { let i = 0; return () => v[i++ % v.length]; };
 const lcg = (seed) => () => { seed = (seed * 1664525 + 1013904223) % 4294967296; return seed / 4294967296; };
-
-test('weightFor', () => {
-  assert.equal(weightFor(0), 1);
-  assert.equal(weightFor(1), 0.25);
-  assert.equal(weightFor(3), 1 / 16);
-  assert.equal(weightFor(-2), 1);
-  assert.equal(weightFor(NaN), 1);
-});
 
 test('countsFromListening sums listened and skipped d30', () => {
   assert.equal(countsFromListening(null), null);
@@ -20,29 +12,65 @@ test('countsFromListening sums listened and skipped d30', () => {
   assert.deepEqual(c, { a: 3, b: 0 });
 });
 
-test('buildOrder favours low counts and zero most', () => {
-  const ids = ['hot', 'warm', 'cold'];
-  const counts = { hot: 9, warm: 2 };
-  const first = { hot: 0, warm: 0, cold: 0 };
-  const rng = lcg(7);
-  for (let i = 0; i < 4000; i++) first[buildOrder(ids, counts, rng)[0]] += 1;
-  assert.ok(first.cold > first.warm && first.warm > first.hot);
-  assert.ok(first.hot > 0);
+test('buildOrder sorts by count ascending, absent songs are tier 0', () => {
+  const o = buildOrder(['hot', 'warm', 'cold'], { hot: 9, warm: 2 }, lcg(5));
+  assert.deepEqual(o, ['cold', 'warm', 'hot']);
 });
 
-test('buildOrder is a permutation and uniform without counts', () => {
+test('buildOrder: an exhausted tier moves up to the next value present', () => {
+  const o = buildOrder(['a', 'b', 'c', 'd', 'e'], { a: 1, b: 4, c: 1, d: 4, e: 7 }, lcg(9));
+  assert.deepEqual(o.map((id) => ({ a: 1, b: 4, c: 1, d: 4, e: 7 })[id]), [1, 1, 4, 4, 7]);
+});
+
+test('buildOrder ties are random and uniform inside a tier', () => {
   const ids = ['a', 'b', 'c', 'd'];
-  assert.deepEqual([...buildOrder(ids, { a: 5 }, lcg(1))].sort(), ids);
+  const first = { a: 0, b: 0, c: 0, d: 0 };
+  const rng = lcg(3);
+  for (let i = 0; i < 4000; i++) first[buildOrder(ids, { a: 0, b: 0, c: 0, d: 2 }, rng)[0]] += 1;
+  assert.equal(first.d, 0);
+  for (const k of ['a', 'b', 'c']) assert.ok(first[k] > 1100 && first[k] < 1560);
+});
+
+test('buildOrder without data is a uniform permutation', () => {
+  const ids = ['a', 'b', 'c', 'd'];
+  assert.deepEqual([...buildOrder(ids, null, lcg(1))].sort(), ids);
   const first = { a: 0, b: 0, c: 0, d: 0 };
   const rng = lcg(3);
   for (let i = 0; i < 4000; i++) first[buildOrder(ids, null, rng)[0]] += 1;
   for (const k of ids) assert.ok(first[k] > 800 && first[k] < 1200);
 });
 
-test('buildOrder with a fake rng is deterministic and avoids the last song at the seam', () => {
-  assert.deepEqual(buildOrder(['a', 'b', 'c'], null, seq(0.9, 0.5, 0.1)), ['a', 'b', 'c']);
-  assert.deepEqual(buildOrder(['a', 'b', 'c'], null, seq(0.9, 0.5, 0.1), 'a'), ['b', 'a', 'c']);
+test('buildOrder with a fake rng is deterministic and keeps the last song off the first slot', () => {
+  const a = buildOrder(['a', 'b', 'c'], null, seq(0.9, 0.5, 0.1));
+  assert.deepEqual(buildOrder(['a', 'b', 'c'], null, seq(0.9, 0.5, 0.1), a[0]).slice(1, 2), [a[0]]);
+  assert.notEqual(buildOrder(['a', 'b', 'c'], null, seq(0.9, 0.5, 0.1), a[0])[0], a[0]);
   assert.deepEqual(buildOrder(['a'], null, seq(0.5), 'a'), ['a']);
+});
+
+test('localPlayCounts counts pending plays of at least 5 s inside 30 days, plus the open play', () => {
+  const now = Date.parse('2026-10-21T12:00:00Z');
+  const plays = [
+    { song_id: 'a', listened_s: 5, timestamp: '2026-10-21T11:58:00Z' },
+    { song_id: 'a', listened_s: 4.9, timestamp: '2026-10-21T11:00:00Z' },
+    { song_id: 'b', listened_s: 90, timestamp: '2026-09-01T00:00:00Z' },
+    { song_id: 'c', listened_s: 60, timestamp: '2026-10-01T00:00:00Z' },
+    { listened_s: 60, timestamp: '2026-10-20T00:00:00Z' },
+  ];
+  assert.deepEqual(localPlayCounts(plays, now, { song_id: 'c', listened_s: 30, timestamp: '2026-10-21T11:59:00Z' }), { a: 1, c: 2 });
+  assert.deepEqual(localPlayCounts([], now, { song_id: 'c', listened_s: 2, timestamp: '2026-10-21T11:59:00Z' }), {});
+  assert.deepEqual(localPlayCounts(null, now, null), {});
+});
+
+test('mergeCounts adds local plays to server counts; no server data means no counts', () => {
+  assert.equal(mergeCounts(null, { a: 1 }), null);
+  assert.deepEqual(mergeCounts({ a: 2, b: 0 }, { a: 1, c: 1 }), { a: 3, b: 0, c: 1 });
+});
+
+test('a song heard locally drops behind unplayed songs in the order', () => {
+  const server = countsFromListening({ a: { listened: { d30: 0 } }, b: { listened: { d30: 0 } } });
+  const now = Date.parse('2026-10-21T12:00:00Z');
+  const counts = mergeCounts(server, localPlayCounts([{ song_id: 'a', listened_s: 120, timestamp: '2026-10-21T11:58:00Z' }], now));
+  assert.deepEqual(buildOrder(['a', 'b'], counts, lcg(2)), ['b', 'a']);
 });
 
 test('pickByRank takes the lowest rank among candidates, first when unranked', () => {

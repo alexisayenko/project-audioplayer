@@ -29,8 +29,8 @@ export function createUpdateCheck({ current, fetchVersion, isVisible, show, hide
   let timer = null;
   let running = false;
 
-  async function check({ force = false } = {}) {
-    if (!current || busy || !isVisible()) return;
+  async function check({ force = false, always = false } = {}) {
+    if (!current || busy || (!isVisible() && !always)) return;
     if (!force && now() - last < MIN_GAP_MS) return;
     busy = true;
     last = now();
@@ -40,6 +40,7 @@ export function createUpdateCheck({ current, fetchVersion, isVisible, show, hide
         shown = latest;
         show(latest);
       }
+      return !!latest && latest !== current;
     } catch {
     } finally {
       busy = false;
@@ -85,6 +86,12 @@ function buildBar(onReload, onDismiss) {
   return bar;
 }
 
+let active = null;
+
+export async function checkNow() {
+  try { return (await active?.check({ force: true, always: true })) === true; } catch { return false; }
+}
+
 export function startUpdateCheck({ doc = document, win = window, fetchImpl = globalThis.fetch } = {}) {
   const current = readVersion(doc);
   if (!current) return null;
@@ -107,5 +114,6 @@ export function startUpdateCheck({ doc = document, win = window, fetchImpl = glo
   win.addEventListener('focus', () => { void ctl.check(); });
   ctl.start();
   void ctl.check();
+  active = ctl;
   return ctl;
 }
