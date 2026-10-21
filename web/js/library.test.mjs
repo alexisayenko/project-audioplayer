@@ -172,6 +172,17 @@ test('sorting by title/artist/year changes the order', async () => {
   assert.deepEqual(titles(), ['Offline', 'Gamma', 'beta', 'Alpha']);
   pick('year');
   assert.deepEqual(titles().slice(0, 2), ['beta', 'Alpha']);
+  pick('length');
+  assert.deepEqual(titles(), ['beta', 'Alpha', 'Gamma', 'Offline']);
+  const rev = root.querySelector('.sort-reverse');
+  assert.equal(rev.getAttribute('aria-pressed'), 'false');
+  rev.dispatchEvent(makeEvent('click', { target: rev }));
+  assert.equal(rev.getAttribute('aria-pressed'), 'true');
+  assert.deepEqual(titles(), ['Alpha', 'beta', 'Gamma', 'Offline'], 'Length reversed: longest first, songs without a duration still last');
+  pick('title');
+  assert.deepEqual(titles(), ['Offline', 'Gamma', 'beta', 'Alpha']);
+  rev.dispatchEvent(makeEvent('click', { target: rev }));
+  assert.equal(rev.getAttribute('aria-pressed'), 'false');
   pick('added');
   cleanup();
 });

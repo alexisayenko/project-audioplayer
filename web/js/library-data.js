@@ -24,7 +24,7 @@ export function unsetCount(catId, songs = store.songs) {
   return unsetKey(catId) ? songs.filter((s) => !hasValueIn(s, catId)).length : 0;
 }
 
-export const prefs = { query: '', sel: new Set(), sort: 'added', view: 'songs', never: false };
+export const prefs = { query: '', sel: new Set(), sort: 'added', view: 'songs', never: false, reverse: false };
 
 let listening = null;
 
@@ -66,9 +66,10 @@ export const SORTS = {
   added: ['Recently added', (a, b) => (b.added_at || '').localeCompare(a.added_at || '')],
   title: ['Title', (a, b) => compareKeys(sortKey(a, 'title'), sortKey(b, 'title'))],
   artist: ['Artist', (a, b) => compareKeys(sortKey(a, 'artist'), sortKey(b, 'artist'))],
-  year: ['Year', (a, b) => (displayYear(b) || 0) - (displayYear(a) || 0)],
-  listened: ['Last listened', (a, b) => lastListened(b).localeCompare(lastListened(a))],
-  bpm: ['BPM', (a, b) => (a.bpm == null) - (b.bpm == null) || (a.bpm || 0) - (b.bpm || 0)],
+  year: ['Year', (a, b) => (displayYear(b) || 0) - (displayYear(a) || 0), (s) => !displayYear(s)],
+  listened: ['Last listened', (a, b) => lastListened(b).localeCompare(lastListened(a)), (s) => !lastListened(s)],
+  bpm: ['BPM', (a, b) => (a.bpm == null) - (b.bpm == null) || (a.bpm || 0) - (b.bpm || 0), (s) => s.bpm == null],
+  length: ['Length', (a, b) => (!(a.duration > 0)) - (!(b.duration > 0)) || (a.duration || 0) - (b.duration || 0) || compareKeys(sortKey(a, 'title'), sortKey(b, 'title')), (s) => !(s.duration > 0)],
 };
 
 function matchesSelection(song, sel) {
@@ -91,7 +92,11 @@ export function visibleSongs(sel = prefs.sel) {
     const hay = songSearchText(s, filterableTags(withRuntimeDecade(s).tags).map(tagSearchText));
     return matchesQuery(hay, q);
   });
-  return list.sort(SORTS[prefs.sort][1]);
+  const [, cmp, missing] = SORTS[prefs.sort];
+  list.sort(cmp);
+  if (!prefs.reverse) return list;
+  if (!missing) return list.reverse();
+  return [...list.filter((s) => !missing(s)).reverse(), ...list.filter(missing)];
 }
 
 export function selectedIn(catId) {

@@ -62,6 +62,12 @@ export function renderLibrary(root) {
       .map(([k, [label]]) => el('option', { value: k, selected: k === prefs.sort }, label)));
   }
   paintSort();
+  const reverse = el('button', { class: 'icon sort-reverse', type: 'button', title: 'Reverse order', 'aria-label': 'Reverse order', 'aria-pressed': String(!!prefs.reverse) }, icon('arrowUpDown', 'inline'));
+  reverse.addEventListener('click', () => {
+    prefs.reverse = !prefs.reverse;
+    reverse.setAttribute('aria-pressed', String(prefs.reverse));
+    renderList();
+  });
   const cats = el('div', { class: 'cats', role: 'group', 'aria-label': 'Filter by category' });
   const total = el('span', { class: 'muted t-caption' });
   const summary = el('p', { class: 'muted t-caption', role: 'status' });
@@ -141,7 +147,7 @@ export function renderLibrary(root) {
       showPlaying,
       cats),
     el('div', { class: 'sortbar' },
-      el('label', { class: 'sort t-headline' }, sort, icon('chevron', 'inline')),
+      el('label', { class: 'sort t-headline' }, sort, icon('chevron', 'inline')), reverse,
       summary, el('div', { class: 'sort-actions' }, clearFilters, playAll, addAll)),
     group,
     status);

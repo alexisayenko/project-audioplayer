@@ -286,6 +286,7 @@ label { display: block; color: var(--ink-muted); font: var(--font-caption); marg
 .sort select { appearance: none; -webkit-appearance: none; width: auto; min-height: var(--hit); padding: 0 var(--space-5) 0 0; background: transparent; color: var(--accent-ink); font: var(--font-subhead-strong); cursor: pointer; }
 .sort select option { color: var(--ink); background: var(--surface); }
 .sort svg { position: absolute; right: 0; pointer-events: none; }
+.sort-reverse[aria-pressed="true"] { color: var(--accent-ink); }
 .sortbar > p { margin-right: auto; margin-left: var(--space-4); }
 .sort-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--space-2); margin-left: auto; }
 

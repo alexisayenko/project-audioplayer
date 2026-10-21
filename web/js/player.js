@@ -22,6 +22,8 @@ import { createPlayRecorder } from './play-recorder.js';
 import { createQueueFollow } from './queue-follow.js';
 import { createMediaRetry } from './media-retry.js';
 import { openSongCard, openTagPicker, loadUi } from './lazy-ui.js';
+import { cachedListening, getListening } from './listening-stats.js';
+import { createShuffleRank, countsFromListening } from './shuffle-pick.js';
 import { createLoop } from './loop-engine.js';
 import { createGapless } from './gapless-loop.js';
 import { initLoopChip } from './loop-chip.js';
@@ -57,7 +59,13 @@ const usable = (item) => {
   return hasAudio(s) || (!!s && autoDownloadOn() && autodl.view(item.id).kind !== 'failed');
 };
 const hasAudioId = (id) => hasAudio(store.get(id));
-const logic = () => ({ queue: ids(), index: qs.index, shuffle, repeat, played });
+const shuffleRank = createShuffleRank({
+  getCounts: () => {
+    if (!isGuest()) getListening().catch(() => {});
+    return countsFromListening(cachedListening());
+  },
+});
+const logic = () => ({ queue: ids(), index: qs.index, shuffle, repeat, played, shuffleRank });
 
 function saveQueue() {
   storeSet(QUEUE_KEY, JSON.stringify(qs));

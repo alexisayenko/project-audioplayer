@@ -2,6 +2,15 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-21 (Library sort by length, web, to deploy)
+
+- Web (LIB-207): the Library sort menu has "Length": shortest first, songs without a known duration last, ties by title. `web/js/library-data.js`, `web/js/library.test.mjs`.
+- Web (LIB-208): a "Reverse order" toggle beside the Library sort select flips every sort; songs without a value stay last. `web/js/library-data.js`, `web/js/library.js`, `web/js/icons.js`, `web/style.css`.
+
+## 2026-10-21 (shuffle prefers less-played songs, web, to deploy)
+
+- Web (task-0056, PLY-178): shuffle builds each round order by weighted sampling, weight 1 / (1 + listened.d30 + skipped.d30)^2, uniform when no listening data. `web/js/shuffle-pick.js`, `web/js/queue-logic.js`, `web/js/player.js`, test `web/js/shuffle-pick.test.mjs` (not run).
+
 ## 2026-10-21 (song card: playing now, web, to deploy)
 
 - Web (task-0056, LIB-206): the card of the song playing now shows "·" instead of Skipped numbers and a note until the song ends, then refreshes. `web/js/song-card.js`, `web/js/player.js` (`song-ended` event), tests written, not run.

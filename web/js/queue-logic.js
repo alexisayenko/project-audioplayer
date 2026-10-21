@@ -1,10 +1,11 @@
 import { canonicalTag, withRuntimeDecade } from './tagname.js';
+import { pickByRank } from './shuffle-pick.js';
 
 
 // Returns { index, played } for the song to play next, or null to stop.
 // `played` is the list of ids already played in the current shuffle round.
 // manual: true for the Next button (repeat "one" does not pin it to the same song).
-export function nextStep({ queue, index, shuffle, repeat, played = [] }, manual, rand = Math.random) {
+export function nextStep({ queue, index, shuffle, repeat, played = [], shuffleRank = null }, manual, rand = Math.random) {
   const n = queue.length;
   if (n === 0 || index < 0 || index >= n) return null;
   const cur = queue[index];
@@ -12,13 +13,15 @@ export function nextStep({ queue, index, shuffle, repeat, played = [] }, manual,
   if (repeat === 'one' && !manual) return { index, played: seen };
   if (shuffle) {
     let cand = queue.map((id, i) => i).filter((i) => !seen.includes(queue[i]));
+    let fresh = false;
     if (!cand.length) {
       if (repeat !== 'all') return null;
       seen = [cur];
       cand = queue.map((id, i) => i).filter((i) => i !== index);
       if (!cand.length) return { index, played: seen };
+      fresh = true;
     }
-    const pick = cand[Math.min(cand.length - 1, Math.floor(rand() * cand.length))];
+    const pick = choose(cand, queue, shuffleRank, fresh, cur, rand);
     return { index: pick, played: seen };
   }
   if (index + 1 < n) return { index: index + 1, played: seen };
@@ -238,16 +241,24 @@ export function clearUpcoming(state) {
 
 export const queuedSet = (state) => new Set(state.items.map((it) => it.id));
 
-function shufflePlayable({ queue, index, repeat }, ok, seen0, rand) {
+function choose(cand, queue, shuffleRank, fresh, last, rand) {
+  const rank = shuffleRank ? shuffleRank(queue, fresh, last) : null;
+  if (rank) return pickByRank(cand, queue, rank);
+  return cand[Math.min(cand.length - 1, Math.floor(rand() * cand.length))];
+}
+
+function shufflePlayable({ queue, index, repeat, shuffleRank = null }, ok, seen0, rand) {
   const playable = queue.map((id, i) => i).filter((i) => i !== index && ok(queue[i]));
   let cand = playable.filter((i) => !seen0.includes(queue[i]));
   let seen = seen0;
+  let fresh = false;
   if (!cand.length) {
     if (repeat !== 'all' || !playable.length) return null;
     seen = [queue[index]];
     cand = playable;
+    fresh = true;
   }
-  const pick = cand[Math.min(cand.length - 1, Math.floor(rand() * cand.length))];
+  const pick = choose(cand, queue, shuffleRank, fresh, queue[index], rand);
   return { index: pick, played: seen, skipped: 0 };
 }
 
