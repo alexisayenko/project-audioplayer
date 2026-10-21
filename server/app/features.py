@@ -14,7 +14,6 @@ from typing import Any
 from . import buildinfo
 
 KEEP_TYPES = {"feat"}
-MAX_ITEMS = 12
 MAX_TEXT = 110
 SUBJECT = re.compile(r"^(\w+)(?:\(([^)]*)\))?!?:\s*(.+)$")
 SKIP_SCOPES = {"data"}
@@ -23,7 +22,7 @@ EXCLUDE = (
     r"add(ed)? .* genre to", r"^genre data:", r"^.* removal$", r"reviewed extra", r"vocabulary rows",
 )
 TASK_REF = re.compile(r"\btask-(\d{4})\b")
-TASK_ID = re.compile(r"^task-d{4}$")
+TASK_ID = re.compile(r"^task-\d{4}$")
 HASH_KEY = re.compile(r"^[0-9a-f]{7,40}$")
 MAP_KEYS = {"exclude", "items"}
 TASK_FILE = re.compile(r"^docs/tasks/(task-\d{4})\.md$")
@@ -165,9 +164,6 @@ def make_release(commits: list[dict[str, Any]], tasks: dict[str, Any], rmap: dic
             items.append(dict(item))
     if not items:
         return None
-    if len(items) > MAX_ITEMS:
-        extra = len(items) - MAX_ITEMS
-        items = [*items[:MAX_ITEMS], {"text": f"and {extra} more", "task": None}]
     return ordered[0]["sha"], items
 
 

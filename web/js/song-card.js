@@ -4,7 +4,7 @@ import { player } from './player.js';
 import { el, fmtTime, toast } from './dom.js';
 import { hasAudio, sourceLink } from './playable.js';
 import { can, isGuest } from './guest.js';
-import { cachedListening, getListening, hasListening, listeningRows, formatTotal, formatDay, WINDOWS } from './listening-stats.js';
+import { cachedListening, getListening, invalidateListening, hasListening, listeningRows, formatTotal, formatDay, WINDOWS } from './listening-stats.js';
 import { autodl, autoDownloadOn } from './autodl.js';
 import { downloadSong } from './download.js';
 import { editDialog } from './edit-dialog.js';
@@ -220,13 +220,23 @@ function detailsBlock(m, songId) {
   return items.length ? el('p', { class: 'facts t-caption card-details' }, ...items) : null;
 }
 
-export function listeningNode(entry) {
+export const ENDED_REFRESH_MS = 2500;
+let endedId = null;
+if (typeof window !== 'undefined') window.addEventListener('song-ended', () => { endedId = player.currentId; });
+
+export function isPlayingNow(songId) {
+  return player.currentId === songId && (player.playing || endedId !== songId);
+}
+
+export function listeningNode(entry, nowPlaying = false) {
   if (!hasListening(entry)) return el('p', { class: 'card-listen-none muted t-caption' }, 'Not listened yet');
   const head = el('tr', {}, el('td', {}), ...WINDOWS.map(([, label]) => el('th', { scope: 'col' }, label)));
-  const body = listeningRows(entry).map((r) => el('tr', {}, el('th', { scope: 'row' }, r.label), ...r.cells.map((c) => el('td', {}, c))));
+  const body = listeningRows(entry).map((r) => el('tr', {}, el('th', { scope: 'row' }, r.label),
+    ...r.cells.map((c) => (nowPlaying && r.label === 'Skipped' ? el('td', { class: 'muted', title: 'Counts when the song ends' }, '·') : el('td', {}, c)))));
   const last = entry.last_listened ? el('span', { class: 'detail' }, `Last listened: ${formatDay(entry.last_listened)}`) : null;
   return el('div', {},
     el('table', { class: 'card-listen-table t-caption' }, el('thead', {}, head), el('tbody', {}, ...body)),
+    nowPlaying ? el('p', { class: 'card-listen-note muted t-caption' }, 'Playing now: the result counts when the song ends.') : null,
     el('p', { class: 'facts t-caption' }, el('span', { class: 'detail' }, `Total listened: ${formatTotal(entry.total_listened_s)}`), last));
 }
 
@@ -235,10 +245,20 @@ function listeningBlock(songId) {
   const box = el('section', { class: 'card-listen', 'aria-label': 'Listening' }, el('h3', { class: 'card-listen-title t-caption muted' }, 'Listening'));
   const body = el('div', { class: 'card-listen-body' });
   box.append(body);
-  const show = (songs) => body.replaceChildren(listeningNode(songs[songId]));
+  const show = (songs) => body.replaceChildren(listeningNode(songs[songId], isPlayingNow(songId)));
   const seen = cachedListening();
   if (seen) show(seen);
   getListening().then(show, () => { if (!seen) box.remove(); });
+  const reshow = () => { if (!box.isConnected) return false; const c = cachedListening(); if (c) show(c); return true; };
+  const refresh = () => { if (reshow()) getListening().then(show, () => {}); };
+  const unsubs = [];
+  const stop = () => unsubs.forEach((u) => u());
+  const onEnded = () => { if (!reshow()) { stop(); return; } setTimeout(() => { invalidateListening(); refresh(); }, ENDED_REFRESH_MS); };
+  const onFlushed = () => { if (!box.isConnected) stop(); else refresh(); };
+  unsubs.push(player.onChange(() => { if (!reshow()) stop(); }));
+  window.addEventListener('song-ended', onEnded);
+  window.addEventListener('plays-flushed', onFlushed);
+  unsubs.push(() => { window.removeEventListener('song-ended', onEnded); window.removeEventListener('plays-flushed', onFlushed); });
   return box;
 }
 

@@ -8,7 +8,9 @@ globalThis.localStorage = {
   removeItem: (k) => { mem.delete(k); },
 };
 
-const { createPlayRecorder, QUEUE_KEY, BATCH_KEY, OPEN_KEY } = await import('./play-recorder.js');
+const mod = await import('./play-recorder.js');
+globalThis.__rec = mod;
+const { createPlayRecorder, QUEUE_KEY, BATCH_KEY, OPEN_KEY } = mod;
 
 function fakeAudio() {
   const h = {};
@@ -261,4 +263,48 @@ test('PLY-172: a momentarily missing song id (library refresh) does not close th
   s.state.id = 'a';
   s.advance(40);
   assert.ok(s.rec.open.listened_s > 39);
+});
+
+test('PLY-172: a transient other song id while the audio source is unchanged does not split the play', () => {
+  const s = setup();
+  s.audio.src = 'files/a';
+  s.play();
+  s.advance(20);
+  s.state.id = 'b';
+  s.rec.sync();
+  s.audio.emit('timeupdate');
+  s.state.id = 'a';
+  s.rec.sync();
+  s.advance(40);
+  assert.equal(s.rec.open.song_id, 'a');
+  assert.ok(s.rec.open.listened_s > 39);
+});
+
+test('PLY-174: a real song change (audio source changed) closes the play', async () => {
+  const s = setup();
+  s.audio.src = 'files/a';
+  s.play();
+  s.advance(20);
+  s.audio.src = 'files/b';
+  s.state.id = 'b';
+  s.rec.sync();
+  await tick();
+  assert.equal(s.state.posts[0].batch.plays[0].song_id, 'a');
+});
+
+test('PLY-180: opens, closes and ignored id flickers go to the ap2.plays.log ring buffer', () => {
+  const { LOG_KEY, LOG_CAP } = globalThis.__rec;
+  const s = setup();
+  s.audio.src = 'files/a';
+  s.play();
+  s.advance(10);
+  s.state.id = 'b';
+  s.rec.sync();
+  s.state.id = 'a';
+  s.audio.paused = true;
+  s.audio.emit('ended');
+  const log = JSON.parse(mem.get(LOG_KEY));
+  assert.deepEqual(log.map((e) => `${e.ev}:${e.reason}`), ['open:other', 'ignored:id-flicker', 'close:ended']);
+  assert.equal(log[1].id2, 'b');
+  assert.ok(log.length <= LOG_CAP);
 });

@@ -10,6 +10,9 @@ export const BATCH_KEY = 'ap2.plays.batch';
 export const OPEN_KEY = 'ap2.plays.open';
 export const LAST_KEY = 'ap2.plays.last';
 export const CONT_WINDOW_MS = 600000;
+export const LOG_KEY = 'ap2.plays.log';
+export const LOG_CAP = 40;
+const TRACKED = ['play', 'playing', 'pause', 'ended', 'seeking', 'seeked', 'waiting', 'stalled', 'emptied', 'loadstart', 'abort', 'error', 'durationchange'];
 
 const DROP_STATUSES = new Set([400, 404, 409, 410, 413, 422]);
 
@@ -42,6 +45,19 @@ export function createPlayRecorder({
 } = {}) {
   let open = null;
   let lastT = null;
+  let openSrc = null;
+  let lastEvent = '';
+  let mismatchLogged = null;
+  const note = (e) => { lastEvent = e?.type ?? lastEvent; };
+  function log(ev, reason, extra = {}) {
+    try {
+      const src = String(audio.src ?? '');
+      const entry = { t: new Date().toISOString(), ev, reason, id: open?.song_id ?? null, src: src.slice(-40), cur: Math.round(audio.currentTime || 0), len: Math.round(open?.listened_s || 0), lastEvent, ...extra };
+      const all = readJson(LOG_KEY, []);
+      storeSet(LOG_KEY, JSON.stringify([...(Array.isArray(all) ? all : []), entry].slice(-LOG_CAP)));
+    } catch { /* diagnostics never throw */ }
+  }
+  const srcOf = () => audio.getAttribute?.('src') ?? audio.src ?? null;
   let inflight = false;
   let timer = null;
 
@@ -71,14 +87,17 @@ export function createPlayRecorder({
   function begin(id) {
     if (!id || !canRecord()) return;
     open = { timestamp: now().toISOString(), song_id: id, listened_s: 0 };
+    openSrc = srcOf();
     const last = readJson(LAST_KEY, null);
     storeRemove(LAST_KEY);
     if (last && last.song_id === id && now().getTime() - last.at <= CONT_WINDOW_MS) open.cont = true;
     lastT = null;
+    log('open', open.cont ? 'cont' : 'other');
   }
 
-  function end() {
+  function end(reason = 'other') {
     if (!open) return false;
+    log('close', reason);
     const play = open;
     open = null;
     lastT = null;
@@ -91,9 +110,13 @@ export function createPlayRecorder({
   function sync() {
     const id = getSongId();
     if (open && id && open.song_id !== id) {
-      end();
-      flush();
-    }
+      if (openSrc && srcOf() === openSrc) {
+        if (mismatchLogged !== id) { mismatchLogged = id; log('ignored', 'id-flicker', { id2: id }); }
+      } else {
+        end(openSrc ? 'src-change' : 'id-change');
+        flush();
+      }
+    } else mismatchLogged = null;
     if (!open && id && !audio.paused && canRecord()) begin(id);
   }
 
@@ -141,12 +164,13 @@ export function createPlayRecorder({
   };
   const onEnded = () => {
     tick();
-    end();
+    end('ended');
     flush();
   };
   const onSeek = () => { lastT = null; };
   const onHidden = () => {
     tick();
+    log('info', 'hide');
     persistOpen();
     flush({ keepalive: true });
   };
@@ -154,6 +178,7 @@ export function createPlayRecorder({
     tick();
     if (open && open.listened_s >= MIN_PLAY_S) {
       const closed = open;
+      log('close', 'pagehide');
       enqueue(closed);
       storeRemove(OPEN_KEY);
       storeSet(LAST_KEY, JSON.stringify({ song_id: closed.song_id, at: now().getTime() }));
@@ -173,6 +198,8 @@ export function createPlayRecorder({
   audio.addEventListener('seeked', onSeek);
   doc?.addEventListener('visibilitychange', onVisibility);
   win?.addEventListener('pagehide', onPageHide);
+  for (const n of TRACKED) audio.addEventListener(n, note);
+  if (win) win.apPlaysLog = () => storeGet(LOG_KEY);
   recover();
   timer = setInterval(() => { persistOpen(); flush(); }, intervalMs);
   timer?.unref?.();
@@ -193,6 +220,7 @@ export function createPlayRecorder({
       audio.removeEventListener('seeked', onSeek);
       doc?.removeEventListener('visibilitychange', onVisibility);
       win?.removeEventListener('pagehide', onPageHide);
+      for (const n of TRACKED) audio.removeEventListener(n, note);
     },
   };
 }

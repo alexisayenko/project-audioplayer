@@ -549,7 +549,7 @@ export function initPlayer() {
   audio.addEventListener('pause', () => render(true));
   audio.addEventListener('timeupdate', renderProgress);
   audio.addEventListener('durationchange', renderProgress);
-  audio.addEventListener('ended', () => { if (!loop.onEnded()) player.next(true); });
+  audio.addEventListener('ended', () => { window.dispatchEvent(new Event('song-ended')); if (!loop.onEnded()) player.next(true); });
   initLoopChip($('mini-loop'), loop);
   const recorder = createPlayRecorder({
     audio,

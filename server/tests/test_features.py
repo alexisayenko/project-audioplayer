@@ -53,12 +53,12 @@ def test_utc_day_boundary():
     assert gf.utc_day(int(datetime(2026, 10, 20, 0, 1, tzinfo=timezone.utc).timestamp())) == "2026-10-20"
 
 
-def test_more_than_twelve_items_are_summarised():
+def test_all_items_of_a_release_are_kept():
     commits = [commit("a", 19, f"feat: thing {i}", hour=1) for i in range(15)]
     for i, c in enumerate(commits):
         c["ts"] += i
     items = gf.by_day(commits, {}, {})[0]["items"]
-    assert len(items) == 13 and items[-1] == {"text": "and 3 more", "task": None}
+    assert len(items) == 15 and all("more" not in i["text"] for i in items)
 
 
 def test_task_link_from_message_subject_and_body():

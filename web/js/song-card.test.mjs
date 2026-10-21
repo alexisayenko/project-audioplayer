@@ -8,7 +8,7 @@ stubFetch(() => ({ body: { songs: [] } }));
 const { store } = await import('./store.js');
 const { player, initPlayer } = await import('./player.js');
 initPlayer();
-const { cardModel, cardTags, openSongCard } = await import('./song-card.js');
+const { cardModel, cardTags, openSongCard, listeningNode, isPlayingNow } = await import('./song-card.js');
 const { icon } = await import('./icons.js');
 const { resetGenreTree } = await import('./genre-tree.js');
 const { buildTree } = await import('./genre-levels.js');
@@ -385,4 +385,26 @@ test('every round card button has hover, focus and pressed rules in one place, a
   assert.match(css, /\.card-dlg \.icon\.round:active \{[^}]*pressed-wash/);
   assert.match(css, /\.card-dlg \.card-close \{[^}]*background-color: var\(--vinyl\)/);
   assert.match(css, /\.card-dlg \.card-close:hover \{[^}]*close-wash/);
+});
+
+const ENTRY = { listened: { today: 2, d7: 3, d30: 4, all: 5 }, skipped: { today: 1, d7: 1, d30: 1, all: 2 }, total_listened_s: 600 };
+
+test('LIB-206 listeningNode shows real Skipped numbers by default', () => {
+  const node = listeningNode(ENTRY);
+  assert.ok(!node.querySelector('.card-listen-note'));
+  const rows = node.querySelectorAll('tbody tr');
+  assert.deepEqual(rows[1].querySelectorAll('td').map((c) => c.textContent), ['1', '1', '1', '2']);
+});
+
+test('LIB-206 for the song playing now the Skipped cells are a dot and a note explains it', () => {
+  const node = listeningNode(ENTRY, true);
+  const rows = node.querySelectorAll('tbody tr');
+  assert.deepEqual(rows[0].querySelectorAll('td').map((c) => c.textContent), ['2', '3', '4', '5']);
+  assert.deepEqual(rows[1].querySelectorAll('td').map((c) => c.textContent), ['·', '·', '·', '·']);
+  assert.equal(node.querySelector('.card-listen-note').textContent, 'Playing now: the result counts when the song ends.');
+  assert.match(node.textContent, /Total listened: 10 min/);
+});
+
+test('LIB-206 isPlayingNow is false for a song that is not the current one', () => {
+  assert.equal(isPlayingNow('not-in-the-queue'), false);
 });
