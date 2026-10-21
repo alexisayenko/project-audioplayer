@@ -8,6 +8,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 - iOS: left menu drawer with Playlists and Statistics; Share link; covers kept offline; "Download all"; "Open in Files" with readable file names; smoother scrolling; free space and format notes. Not yet tested on a device.
 - Server and web (committed, not deployed): the public read-only view is off by default and signed-out visitors get a sign-in screen (ADR-0018 switched off).
 - Server (committed, not deployed): anonymous downloads staged temporarily, built for the signed-out iOS add; sign-in failure logging.
+- Web: focus rings show for keyboard navigation only; a click or touch, or focus returned after a dialog closes by pointer, draws no ring (WEB-165).
 - Cloudflare: scanner rules added.
 
 ## 2026-10-21 (time readout no longer jerks, web, to deploy)

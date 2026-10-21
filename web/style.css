@@ -43,9 +43,10 @@ a { color: var(--accent-ink); }
 [hidden] { display: none !important; } /* NOSONAR hidden must beat any display rule */
 .muted { color: var(--muted); }
 .strong { font-weight: 600; }
-:focus-visible, .search:focus-within, .well:has(input:focus-visible) { outline: var(--stroke-focus) solid var(--ring-color); outline-offset: var(--ring-offset); }
+:where(html:not([data-input="pointer"])) :focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, .search:focus-within, .well:has(input:focus-visible) { outline: var(--stroke-focus) solid var(--ring-color); outline-offset: var(--ring-offset); }
+:where(html[data-input="pointer"]) :focus-visible:where(:not(input, textarea, select)) { outline: none; }
 /* one ring only: a pressed or lit control already draws its ring as a box-shadow, so focus replaces that ring with the outline */
-[aria-pressed="true"]:focus-visible, [aria-expanded="true"]:focus-visible, .on:focus-visible, .lit:focus-visible { box-shadow: none !important; outline-offset: 0; } /* NOSONAR focus outline replaces the pressed ring, must beat component box-shadows */
+:where(html:not([data-input="pointer"])) :is([aria-pressed="true"], [aria-expanded="true"], .on, .lit):focus-visible { box-shadow: none !important; outline-offset: 0; } /* NOSONAR focus outline replaces the pressed ring, must beat component box-shadows */
 
 /* navigation: tab bar (< 480), icon rail (480-719), rail (>= 720) */
 .side {

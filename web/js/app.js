@@ -1,3 +1,4 @@
+import './input-modality.js';
 import { api, isSignedIn, session, startup } from './api.js';
 import { isGuest, setGuest, streamable, syncBanner } from './guest.js';
 import { el, toast } from './dom.js';
