@@ -271,6 +271,7 @@ Every action-flow table has the columns: **User action → immediate UI response
 | +12 | Chip row (1.3) | 36 (44 hit) |
 | +12 | Results row (1.4) | 44 |
 | +8 | List slab (1.5) | rows of 80, radius 20 |
+| bottom | Safe area | 34 pt kept clear; the home indicator is not drawn |
 | bottom | Mini-player (reference only, unchanged) | overlays the bottom, the list gets bottom inset = mini-player height + `space4` |
 
 **Data.** Total from the catalog, rows from the filtered, sorted result set, queue marker from `player.queue`, audio state from `library` and `server.transfers`.
