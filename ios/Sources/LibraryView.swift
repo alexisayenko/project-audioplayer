@@ -132,7 +132,7 @@ struct LibraryView: View {
             Button { hideKeyboard(); showAdd = true } label: {
                 Image(systemName: "plus").font(.system(size: DS.Icon.iconNavLg, weight: DS.Icon.iconWeightStrong))
                     .foregroundStyle(DS.Color.onAccent).frame(width: DS.Space.hit, height: DS.Space.hit)
-                    .background(Circle().fill(DS.Color.accent).dsShadow(DS.Shadow.depthGlow))
+                    .background(Circle().fill(DS.Color.accent).dsShadow(DS.Shadow.depthGlowSoft))
             }.buttonStyle(LibraryPressStyle()).accessibilityLabel("Add a song")
         }.padding(.horizontal, DS.Space.space4).padding(.top, DS.Space.space2)
     }
@@ -183,8 +183,9 @@ struct LibraryView: View {
                     Color.clear.frame(width: 0, height: 0).background(GeometryReader { marker in
                         Color.clear.preference(key: LibraryChipEnd.self, value: marker.frame(in: .named("library.chips")).maxX)
                     })
-                }.padding(.horizontal, DS.Space.space4)
+                }.padding(.horizontal, DS.Space.space4).padding(.vertical, DS.Space.space2)
             }
+            .frame(height: DS.Space.hit + DS.Space.space2 * 2)
             .scrollBounceBehavior(.basedOnSize, axes: .vertical)
             .coordinateSpace(name: "library.chips").onPreferenceChange(LibraryChipEnd.self) { chipEnd = $0 }
             .mask {
@@ -195,7 +196,7 @@ struct LibraryView: View {
                     }
                 }
             }
-        }.frame(height: DS.Space.hit).padding(.vertical, DS.Space.space2)
+        }.frame(height: DS.Space.hit + DS.Space.space2 * 2)
     }
 
     @ViewBuilder private func content(_ matches: [Track], queued: Set<String>) -> some View {

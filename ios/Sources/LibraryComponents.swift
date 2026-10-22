@@ -216,15 +216,16 @@ struct LibrarySortSheet: View {
                         } label: {
                             HStack(spacing: DS.Space.space3) {
                                 Image(systemName: criterion.symbol).font(.system(size: DS.Icon.iconNav))
-                                    .foregroundStyle(query.sort == criterion ? DS.Color.accentInk : DS.Color.inkMuted)
+                                    .foregroundStyle(disabled ? DS.Color.inkFaint : (query.sort == criterion ? DS.Color.accentInk : DS.Color.inkMuted))
                                     .frame(width: DS.Icon.iconNav)
                                 VStack(alignment: .leading, spacing: DS.Space.space1) {
                                     Text(criterion.rawValue).font(query.sort == criterion ? T.body.weight(.semibold) : T.body)
-                                    if disabled { Text("Sign in to use this").font(T.caption).foregroundStyle(DS.Color.inkMuted) }
+                                        .foregroundStyle(disabled ? DS.Color.inkFaint : DS.Color.ink)
+                                    if disabled { Text("Sign in to use this").font(T.caption).foregroundStyle(DS.Color.inkFaint) }
                                 }
                                 Spacer()
                                 if query.sort == criterion {
-                                    Image(systemName: "checkmark").foregroundStyle(DS.Color.accentInk)
+                                    Image(systemName: "checkmark").foregroundStyle(disabled ? DS.Color.inkFaint : DS.Color.accentInk)
                                 }
                             }
                             .foregroundStyle(DS.Color.ink).frame(minHeight: DS.Component.rowHeight)

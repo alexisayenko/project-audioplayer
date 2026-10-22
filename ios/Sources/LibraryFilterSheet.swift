@@ -15,6 +15,10 @@ struct LibraryFilterSheet: View {
     @State private var detent: PresentationDetent
     @State private var height: CGFloat = 0
     @State private var valuesHeight: CGFloat = 0
+    @State private var contentHeight: CGFloat = 0
+    @State private var scrollHeight: CGFloat = 0
+    @State private var mediumScrollHeight: CGFloat = 0
+    @State private var didResolveInitialDetent = false
     @State private var contentOffset: CGFloat = 0
     @State private var tick = 0
 
@@ -39,8 +43,13 @@ struct LibraryFilterSheet: View {
     private var detents: Set<PresentationDetent> {
         if typeSize.isAccessibilitySize { return [.large] }
         if category == .era { return [.height(max(height, DS.Component.detailsCover)), .large] }
-        return [.medium, .large]
+        var values: Set<PresentationDetent> = [.medium, .large]
+        if contentHeight > 0, mediumScrollHeight > 0, contentHeight <= mediumScrollHeight {
+            values.insert(.height(compactHeight))
+        }
+        return values
     }
+    private var compactHeight: CGFloat { max(height - scrollHeight + contentHeight, DS.Component.detailsCover) }
     private var selectedDetent: Binding<PresentationDetent> {
         Binding(get: {
             if typeSize.isAccessibilitySize { return .large }
@@ -83,13 +92,24 @@ struct LibraryFilterSheet: View {
                     }
                 }
                 .padding(.horizontal, DS.Space.space4).padding(.bottom, DS.Space.space4 + DS.Component.chipFade)
+                .measuredHeight($contentHeight)
             }
             .frame(height: category == .era && !typeSize.isAccessibilitySize ? valuesHeight + DS.Space.space4 + DS.Space.space3 + DS.Component.chipFade : nil)
+            .background(GeometryReader { geometry in
+                Color.clear.preference(key: LibraryFilterViewport.self, value: geometry.size.height)
+            })
+            .onPreferenceChange(LibraryFilterViewport.self) { value in
+                scrollHeight = value
+                if !didResolveInitialDetent, detent == .medium, value > 0 { mediumScrollHeight = value }
+            }
+            .onChange(of: scrollHeight) { _, _ in resolveInitialDetent() }
             .coordinateSpace(name: "filter.values").onPreferenceChange(LibraryFilterOffset.self) { contentOffset = $0 }
             .scrollDismissesKeyboard(.interactively).scrollBounceBehavior(.basedOnSize)
             .overlay(alignment: .bottom) {
-                LinearGradient(colors: [DS.Color.surface.opacity(0), DS.Color.surface], startPoint: .top, endPoint: .bottom)
-                    .frame(height: DS.Component.chipFade).allowsHitTesting(false)
+                if contentHeight + contentOffset > scrollHeight + 1 {
+                    LinearGradient(colors: [DS.Color.surface.opacity(0), DS.Color.surface], startPoint: .top, endPoint: .bottom)
+                        .frame(height: DS.Component.chipFade).allowsHitTesting(false)
+                }
             }
         }
         .padding(.top, DS.Space.space6).measuredHeight($height)
@@ -97,6 +117,7 @@ struct LibraryFilterSheet: View {
         .presentationCornerRadius(DS.Radius.radiusTray).presentationDragIndicator(.visible)
         .presentationDetents(detents, selection: selectedDetent)
         .onAppear { if typeSize.isAccessibilitySize { detent = .large } }
+        .onChange(of: contentHeight) { _, _ in resolveInitialDetent() }
         .onChange(of: typeSize) { _, value in if value.isAccessibilitySize { detent = .large } }
         .sensoryFeedback(.selection, trigger: tick).accessibilityAction(.escape) { dismiss() }
     }
@@ -144,13 +165,19 @@ struct LibraryFilterSheet: View {
         return Text(count == 1 ? "1 song matches" : "\(count) songs match").font(T.caption)
             .foregroundStyle(DS.Color.inkMuted).monospacedDigit().accessibilityAddTraits(.updatesFrequently)
     }
+    private func resolveInitialDetent() {
+        guard !didResolveInitialDetent, !typeSize.isAccessibilitySize, category != .era,
+              detent == .medium, contentHeight > 0, mediumScrollHeight > 0 else { return }
+        didResolveInitialDetent = true
+        if contentHeight <= mediumScrollHeight { detent = .height(compactHeight) }
+    }
     private func chip(_ value: LibraryFacetValue, wide: Bool) -> some View {
         let on = selection.contains(value.id)
         return Button {
             if on { selection.remove(value.id) } else { selection.insert(value.id) }
             tick += 1
         } label: {
-            HStack(spacing: DS.Space.space1) {
+            HStack(spacing: DS.Space.space2) {
                 Text(chipLabel(value)).font(on ? T.subhead.weight(.semibold) : T.subhead)
                 if wide { Spacer(minLength: DS.Space.space1) }
                 Text("\(value.count)").font(T.caption).foregroundStyle(on ? scheme.onStrong : DS.Color.inkMuted)
@@ -172,4 +199,9 @@ struct LibraryFilterSheet: View {
 private struct LibraryFilterOffset: PreferenceKey {
     static var defaultValue: CGFloat = 0
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
+}
+
+private struct LibraryFilterViewport: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
 }

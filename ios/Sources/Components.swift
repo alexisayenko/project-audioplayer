@@ -316,8 +316,8 @@ struct CoverImage: View {
             Image("ThumbnailRecord")
                 .resizable()
                 .scaledToFit()
-                .frame(width: min(g.size.width, g.size.height) / 1.5,
-                       height: min(g.size.width, g.size.height) / 1.5)
+                .frame(width: min(g.size.width, g.size.height),
+                       height: min(g.size.width, g.size.height))
                 .position(x: g.size.width / 2, y: g.size.height / 2)
                 .accessibilityHidden(true)
         }
