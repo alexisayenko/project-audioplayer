@@ -1,4 +1,4 @@
-import { getListening as getSongs, invalidateListening } from './listening-stats.js';
+import { getListening as getSongs, refreshListening as refreshSongs } from './listening-stats.js';
 
 const wrap = (songs) => ({ songs });
 
@@ -7,6 +7,5 @@ export function getListening() {
 }
 
 export function refreshListening() {
-  invalidateListening();
-  return getListening();
+  return refreshSongs().then(wrap, () => null);
 }

@@ -13,7 +13,7 @@ import { watchPlayerInset } from './player-inset.js';
 import { createCollapsible, loadCollapsed, saveCollapsed, PANEL_KEYS } from './collapsible.js';
 import { renderTable } from './stats-table.js';
 import { isGuest } from './guest.js';
-import { getListening } from './listening-data.js';
+import { getListening, refreshListening } from './listening-data.js';
 import { renderListening } from './stats-listening.js';
 import { renderGenres } from './stats-genres-view.js';
 import { DEFAULT_SORT, genreTag } from './stats-genres.js';
@@ -29,6 +29,7 @@ const EMPTY_TEXT = 'Songs need a year and a BPM to appear here';
 
 const BAR_GAP = 8;
 const RESOLVING_TEXT = 'Resolving genre families...';
+const LISTENING_POLL_MS = 30000;
 
 export const loadMode = () => {
   const v = storeGet(MODE_KEY, DEFAULT_MODE);
@@ -65,6 +66,9 @@ export function renderStats(root) {
   let families = null;
   let polls = 0;
   let pollTimer = 0;
+  let listeningPollTimer = 0;
+  let listeningRequest = null;
+  let listeningRefreshQueued = false;
   let fetching = false;
   let legendOpen = true;
   let asTable = false;
@@ -201,6 +205,7 @@ export function renderStats(root) {
     wanted = k;
     storeSet(TAB_KEY, k);
     syncMode();
+    syncListeningPoll();
     if (focus) tabBtns.get(k)?.focus();
   }
 
@@ -245,6 +250,60 @@ export function renderStats(root) {
     listeningBox.replaceChildren(renderListening(listening, store.songs, (s) => { void openSong(s); }));
   }
 
+  function documentVisible() {
+    return document.visibilityState !== 'hidden';
+  }
+
+  function syncListeningPoll() {
+    if (listeningPollTimer) clearTimeout(listeningPollTimer);
+    listeningPollTimer = 0;
+    if (dead || isGuest() || !documentVisible()) return;
+    listeningPollTimer = setTimeout(async () => {
+      listeningPollTimer = 0;
+      await loadListening(true);
+      syncListeningPoll();
+    }, LISTENING_POLL_MS);
+  }
+
+  function loadListening(force = false) {
+    if (dead || isGuest()) return Promise.resolve(null);
+    if (listeningRequest) {
+      if (force) listeningRefreshQueued = true;
+      return listeningRequest;
+    }
+    listeningRequest = (force ? refreshListening() : getListening()).then((d) => {
+      if (!dead && d) {
+        const hadListening = !!listening;
+        listening = d;
+        if (!hadListening) syncMode();
+        else if (effectiveTab() === 'listening') paintListening();
+        else if (effectiveTab() === 'genres') paintGenreTable();
+      }
+      return d;
+    }).finally(() => {
+      listeningRequest = null;
+      if (listeningRefreshQueued && !dead && documentVisible()) {
+        listeningRefreshQueued = false;
+        void loadListening(true);
+      }
+    });
+    return listeningRequest;
+  }
+
+  function onPlaysFlushed() {
+    if (documentVisible()) void loadListening(true);
+  }
+
+  function onVisibilityChange() {
+    if (documentVisible()) {
+      void loadListening(true);
+      syncListeningPoll();
+    } else {
+      if (listeningPollTimer) clearTimeout(listeningPollTimer);
+      listeningPollTimer = 0;
+    }
+  }
+
   function openGenre(row) {
     filterByTags([genreTag(row)]);
     prefs.never = false;
@@ -266,11 +325,10 @@ export function renderStats(root) {
 
 
   if (!isGuest()) {
-    void getListening().then((d) => {
-      if (dead || !d) return;
-      listening = d;
-      syncMode();
-    });
+    window.addEventListener('plays-flushed', onPlaysFlushed);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    void loadListening();
+    syncListeningPoll();
   }
 
   function selectedSongs() {
@@ -414,6 +472,9 @@ pageHead('Statistics'),    el('div', { class: 'st-tabs', role: 'tablist', 'aria-
   return () => {
     dead = true;
     if (pollTimer) clearTimeout(pollTimer);
+    if (listeningPollTimer) clearTimeout(listeningPollTimer);
+    window.removeEventListener('plays-flushed', onPlaysFlushed);
+    document.removeEventListener('visibilitychange', onVisibilityChange);
     stopInset();
     barRo?.disconnect();
     unsub();

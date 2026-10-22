@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { formatTotal, formatDay, hasListening, listeningRows, getListening, resetListeningForTests, invalidateListening, TTL_MS } from './listening-stats.js';
+import { formatTotal, formatDay, hasListening, listeningRows, getListening, refreshListening, resetListeningForTests, invalidateListening, TTL_MS } from './listening-stats.js';
 
 test('LIB-195: total listened is shown as h and min', () => {
   assert.equal(formatTotal(7500), '2 h 5 min');
@@ -42,5 +42,32 @@ test('LIB-196: the response is cached for the page session and refreshed after i
   assert.equal(d.a.total_listened_s, 2);
   t += TTL_MS + 1;
   await getListening({ load, now });
+  assert.equal(n, 3);
+});
+
+test('forced refresh waits for an in-flight response and retries again after a newer invalidation', async () => {
+  resetListeningForTests();
+  const resolvers = [];
+  let n = 0;
+  const load = () => {
+    n += 1;
+    return new Promise((resolve) => resolvers.push(resolve));
+  };
+  const options = { load, now: () => 1000 };
+  const initial = getListening(options);
+  const firstRefresh = refreshListening(options);
+  resolvers.shift()({ songs: { a: { total_listened_s: 1 } } });
+  await initial;
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(n, 2);
+
+  const latestRefresh = refreshListening(options);
+  resolvers.shift()({ songs: { a: { total_listened_s: 2 } } });
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(n, 3);
+  resolvers.shift()({ songs: { a: { total_listened_s: 3 } } });
+  const [first, latest] = await Promise.all([firstRefresh, latestRefresh]);
+  assert.equal(first.a.total_listened_s, 3);
+  assert.equal(latest.a.total_listened_s, 3);
   assert.equal(n, 3);
 });

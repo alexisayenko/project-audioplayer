@@ -5,6 +5,7 @@ export const WINDOWS = [['today', 'Today'], ['d7', 'Last 7 days'], ['d30', 'Last
 
 let cache = null;
 let pending = null;
+let refreshing = null;
 let stamp = 0;
 let version = 0;
 
@@ -66,9 +67,29 @@ export function getListening({ load = () => api.listening(), now = () => Date.no
   return pending;
 }
 
+export function refreshListening(options = {}) {
+  invalidateListening();
+  if (refreshing) return refreshing;
+  const now = options.now || (() => Date.now());
+  refreshing = (async () => {
+    for (;;) {
+      const requestedVersion = version;
+      if (pending) {
+        await pending.catch(() => {});
+        continue;
+      }
+      if (requestedVersion !== version) continue;
+      const songs = await getListening(options);
+      if (requestedVersion === version && !listeningStale(now())) return songs;
+    }
+  })().finally(() => { refreshing = null; });
+  return refreshing;
+}
+
 export function resetListeningForTests() {
   cache = null;
   pending = null;
+  refreshing = null;
   stamp = -Infinity;
   version = 0;
 }

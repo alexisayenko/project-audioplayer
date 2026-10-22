@@ -74,6 +74,58 @@ test('shows the empty and loading states', async () => {
   loading.cleanup();
 });
 
+test('listening statistics refresh after plays are flushed and polling stops when hidden or unmounted', async () => {
+  const realSetTimeout = globalThis.setTimeout;
+  const realClearTimeout = globalThis.clearTimeout;
+  const scheduled = new Map();
+  let timerId = 0;
+  globalThis.setTimeout = (fn, ms, ...args) => {
+    if (ms !== 30000) return realSetTimeout(fn, ms, ...args);
+    const id = ++timerId;
+    scheduled.set(id, () => fn(...args));
+    return id;
+  };
+  globalThis.clearTimeout = (id) => {
+    if (!scheduled.delete(id)) realClearTimeout(id);
+  };
+  document.visibilityState = 'visible';
+  const listeningCalls = () => graphCalls.filter((c) => c.url.includes('/stats/listening')).length;
+  const { root, cleanup } = mount();
+  await flush();
+  const initialCalls = listeningCalls();
+  assert.ok(initialCalls > 0);
+  window.dispatch('plays-flushed');
+  await flush();
+  assert.equal(listeningCalls(), initialCalls + 1);
+  assert.equal(root.querySelector('#st-tab-listening').hidden, false);
+
+  const tick = [...scheduled.values()][0];
+  assert.equal(scheduled.size, 1);
+  scheduled.clear();
+  await tick();
+  await flush();
+  assert.equal(listeningCalls(), initialCalls + 2);
+  assert.equal(scheduled.size, 1);
+
+  document.visibilityState = 'hidden';
+  fire(document, 'visibilitychange');
+  assert.equal(scheduled.size, 0);
+  document.visibilityState = 'visible';
+  fire(document, 'visibilitychange');
+  await flush();
+  assert.equal(listeningCalls(), initialCalls + 3);
+  assert.equal(scheduled.size, 1);
+  cleanup();
+  assert.equal(scheduled.size, 0);
+  const afterCleanup = listeningCalls();
+  window.dispatch('plays-flushed');
+  await flush();
+  assert.equal(listeningCalls(), afterCleanup);
+  globalThis.setTimeout = realSetTimeout;
+  globalThis.clearTimeout = realClearTimeout;
+  document.visibilityState = 'visible';
+});
+
 test('colour mode is remembered and none hides the legend', async () => {
   const { root, cleanup } = mount();
   await flush();
