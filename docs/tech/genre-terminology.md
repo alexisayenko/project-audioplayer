@@ -195,6 +195,7 @@ If none fits, it is probably a mood or a descriptor (epic, ethereal): leave it o
 
 ## Sources
 
+- [Musicmap — The Genealogy and History of Popular Music Genres](https://musicmap.info/): reference for genre theory, history, genealogy and relationships between genres. Added at Alex's request, 2026-10-22.
 - Verified here: https://en.wikipedia.org/wiki/Music_genre (first 100,000 of 123,544 characters read; paraphrased above).
 - Not verified: Discogs help pages on genres and styles (blocked); the statements about iTunes/Apple Music, AllMusic and record stores are from memory.
 - From memory, not verified here: Franco Fabbri, "A Theory of Musical Genres" (the Wikipedia article attributes the "socially accepted rules" definition to him).
