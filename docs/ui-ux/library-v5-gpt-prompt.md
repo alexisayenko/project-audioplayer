@@ -1,3 +1,5 @@
+> Historical: superseded by docs/ui-ux/library-v5.md and the cloud artifacts.
+
 # Message for ChatGPT: Electrophone Library v5 (context + corrections)
 
 Thank you for v4: it is the most consistent so far. Before v5, here is the context you were missing, then the corrections. Treat this as the product brief; it overrides earlier assumptions.

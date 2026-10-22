@@ -1,3 +1,5 @@
+> Historical: superseded by docs/ui-ux/library-v5.md and the cloud artifacts.
+
 # Prompt for ChatGPT: Electrophone Library v4 (iPhone)
 
 You are a senior iOS product designer. Draw the Library of "Electrophone", an offline-first music player for iPhone, as ONE consistent set of screens. Visual goal: calm, warm, precise, "quiet glass" on warm paper; every pixel aligned, every component identical wherever it appears. Beauty comes from proportion, alignment, restraint and typographic hierarchy, not decoration.
