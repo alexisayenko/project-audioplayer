@@ -11,6 +11,8 @@ struct LibraryView: View {
     @ObservedObject private var auth = AuthService.shared
     @Environment(\.openSettings) private var openSettings
     @State private var facet: LibraryFacet?
+    @State private var showHiddenPlaying = false
+    @State private var pendingReveal: String?
     @State private var showSort = false
     @State private var showAdd = false
     @State private var editing: ServerSong?
@@ -81,6 +83,8 @@ struct LibraryView: View {
                                 .accessibilityHidden(collapsed || facet != nil).allowsHitTesting(!collapsed && facet == nil)
                                 LibraryControls(matches: matches.count, total: songs.count,
                                                 enabled: !matches.isEmpty && !loading && !failed,
+                                                canShowPlaying: player.current.map { current in songs.contains { $0.id == current.id } } ?? false,
+                                                showPlaying: { showPlaying(proxy) },
                                                 sort: { hideKeyboard(); showSort = true }, play: { playMatched(matches) },
                                                 scrollTop: { scrollTop(proxy) }).padding(.horizontal, DS.Space.space4)
                             }
@@ -96,6 +100,20 @@ struct LibraryView: View {
                     .onChange(of: query.sort) { _, _ in scrollTop(proxy) }
                     .onChange(of: query.reversed) { _, _ in scrollTop(proxy) }
                     .onChange(of: resetScroll) { _, _ in scrollTop(proxy) }
+                    .confirmationDialog("Song is hidden by the current filters", isPresented: $showHiddenPlaying, titleVisibility: .visible) {
+                        Button("Show") {
+                            pendingReveal = player.current?.id
+                            query.clear()
+                        }
+                    }
+                    .onChange(of: tracks.map(\.id)) { _, ids in
+                        guard let id = pendingReveal, ids.contains(id) else { return }
+                        pendingReveal = nil
+                        Task { @MainActor in
+                            await Task.yield()
+                            reveal(id, proxy: proxy)
+                        }
+                    }
                     .sheet(isPresented: $showSort) {
                         LibrarySortSheet(listeningAvailable: signedIn && listening.loaded, scrollTop: { scrollTop(proxy) })
                     }
@@ -311,6 +329,18 @@ struct LibraryView: View {
                     dsWithAnimation { self.toast = nil }
                 }
         }
+    }
+    private func showPlaying(_ proxy: ScrollViewProxy) {
+        guard let id = player.current?.id, songs.contains(where: { $0.id == id }) else { return }
+        hideKeyboard()
+        if tracks.contains(where: { $0.id == id }) { reveal(id, proxy: proxy) }
+        else { showHiddenPlaying = true }
+    }
+    private func reveal(_ id: String, proxy: ScrollViewProxy) {
+        collapsed = false
+        ignoreScrollUntil = Date().addingTimeInterval(DS.Motion.durSlow + DS.Motion.durFast)
+        proxy.scrollTo(id, anchor: .center)
+        rowFocus = id
     }
     private func scrollTop(_ proxy: ScrollViewProxy) {
         collapsed = false; ignoreScrollUntil = Date().addingTimeInterval(DS.Motion.durSlow + DS.Motion.durFast)

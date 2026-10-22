@@ -22,7 +22,12 @@ struct LibrarySongRow: View {
             Button(action: play) {
                 CoverImage(source: track.thumbnail).frame(width: cover, height: cover)
                     .overlay {
-                        if playing { DS.Color.coverScrim; LibraryEqualiser(active: isPlaying) }
+                        if playing {
+                            DS.Color.coverScrim
+                            Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+                                .font(.system(size: DS.Icon.iconPlay)).foregroundStyle(DS.Color.surface)
+                                .accessibilityHidden(true)
+                        }
                     }
                     .clipShape(RoundedRectangle(cornerRadius: DS.Radius.radiusSm)).opacity(noAudio ? DS.Opacity.dim : 1)
                     .padding(.horizontal, DS.Space.space3).padding(.vertical, DS.Space.space3).contentShape(Rectangle())
@@ -83,26 +88,5 @@ struct LibrarySongRow: View {
         let state = onPhone ? "on iPhone" : progress != nil ? waiting ? "waiting for the server" : "downloading \(Int((progress ?? 0) * 100)) percent" : noAudio ? "no audio yet" : "on server"
         return [track.title, track.libraryArtist, track.libraryYear.map(String.init) ?? "", track.duration.map(formatTime) ?? "", state,
                 queued ? "in queue" : "", playing ? isPlaying ? "playing" : "paused" : ""].filter { !$0.isEmpty }.joined(separator: ", ")
-    }
-}
-
-private struct LibraryEqualiser: View {
-    let active: Bool
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var pulse = false
-    var body: some View {
-        HStack(alignment: .bottom, spacing: DS.Stroke.strokeMedium) {
-            bar(pulse ? DS.Icon.iconInline : DS.Space.space2)
-            bar(pulse ? DS.Space.space3 : DS.Icon.iconPlay)
-            bar(pulse ? DS.Icon.iconPlay : DS.Space.space3)
-        }
-        .frame(width: DS.Icon.iconPlay, height: DS.Icon.iconPlay)
-        .animation(active && !reduceMotion ? .dsPulse : nil, value: pulse)
-        .onAppear { pulse = active && !reduceMotion }
-        .onChange(of: active) { _, value in pulse = value && !reduceMotion }
-        .onChange(of: reduceMotion) { _, value in pulse = active && !value }.accessibilityHidden(true)
-    }
-    private func bar(_ height: CGFloat) -> some View {
-        Capsule().fill(DS.Color.surface).frame(width: DS.Stroke.strokeProgress, height: height)
     }
 }

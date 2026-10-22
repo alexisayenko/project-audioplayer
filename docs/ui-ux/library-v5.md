@@ -2,8 +2,8 @@
 
 Status: spec, written 2026-10-21, brought in line with the cloud artifacts on 2026-10-22.
 Implementation 2026-10-22: the four batches are implemented in source in
-[task-0084](../tasks/task-0084.md). Xcode build, regression test execution,
-simulator comparison and device/VoiceOver verification are pending. The
+[task-0084](../tasks/task-0084.md). Xcode build and eight regression
+tests passed; simulator comparison and device/VoiceOver verification are pending. The
 "today" column below remains the pre-migration baseline. The dock and drawer
 are unchanged; the supplied PDF is a visual reference, not a replacement for
 the committed design tokens.
@@ -28,8 +28,8 @@ where a person finds a song and starts it, and nothing on it may get in the way 
 3. **Tokens only.** No hex, no literal radius, size or stroke in views. A value that has no token is listed in section 1.15.
 4. **44 pt targets.** Every tappable control has a 44 x 44 hit area (`DS.Space.hit`) even when it draws smaller (chips and the sort circles draw 36, Download pill 32).
 5. **Dynamic Type up to accessibility2.** Text uses `T.*`; the root caps at `.accessibility2`; layouts have an explicit large-text variant (screen S4).
-6. **Nothing moves when a number changes.** The controls line has fixed slots; the only count is the "N of total" stack at its right end; the header has no counter; the sheets' match count uses tabular figures.
-7. **One way to do each thing.** One Clear (under the count), one sort entry point (the Sort by icon), one way to apply a filter (live, no confirm button), one delete (in Song Details), one place per count.
+6. **Nothing moves when a number changes.** The controls line has fixed slots; the only count is the right-aligned "N of total" count beside the ellipsis menu; the header has no counter; the sheets' match count uses tabular figures.
+7. **One way to do each thing.** One Clear all filters action (in the ellipsis menu), one sort entry point (the Sort by icon), one way to apply a filter (live, no confirm button), one delete (in Song Details), one place per count.
 8. **Contrast.** Text pairs are 4.5:1 in both themes, using the substitutions of the style guide (`ink` on `accentTint`, `powerText` for red words, `selectInk` on `selectTint` 4.5:1 by day, `ink-faint` never on a working control).
 
 ---
@@ -80,36 +80,31 @@ One horizontally scrolling line, never wraps (at any text size). Order: **Tags, 
 | Pressed | opacity .8, `durFast`. |
 | Hidden | Never listened: shown only when listening data is loaded (signed in), otherwise hidden. Downloaded: hidden when signed out (everything is on the phone). Neither is ever shown disabled. |
 | VO | Category: label "Genres", value "2 selected" or "none selected", hint "Opens the filter", button. Toggle: label "Never listened", hint "Shows only songs you have not played", button + selected when on. |
-| Clear | There is no clear control in the row: the one Clear is under the count (1.4). |
+| Clear | There is no clear control in the row: Clear all filters is in the ellipsis menu (1.4). |
 
-The list is narrowed ("narrowing") by any category selection, Never listened, Downloaded, a tag selection or a non-empty search. Narrowing is what turns the count select-ink and shows Clear.
+The list is narrowed ("narrowing") by any category selection, Never listened, Downloaded, a tag selection or a non-empty search. Narrowing is what turns the count select-ink and enables Clear all filters in the ellipsis menu.
 
 ### 1.4 Controls and results line
 
-ONE 44 pt line, always, in this order. Nothing changes position when counts or states change. There is no separate results bar and no reset icon.
+One 44 pt line when its contents fit, in this order:
 
-`[Sort by icon 44] [Sort direction icon 44] [Play matched, middle] [count stack, right aligned]`
+`[Sort by icon 44] [Sort direction icon 44] [flexible space] [N of total] [ellipsis menu, right aligned]`
 
-Layout: a three-column grid (auto, flexible, auto), column gap `space2`, side inset `space4`. The two icon slots sit 4 pt left of the inset so that their 36 circles align with it. Play matched is centered in the flexible column; the count stack is right aligned.
+The sort controls align left and the match count aligns right. The count is plain text beside an ellipsis button. There are no standalone playback or Clear buttons. Tapping the ellipsis opens a native menu with **Play all matched**, **Show currently playing song** and **Clear all filters**.
 
-| Slot | Size and position | Spec |
-| --- | --- | --- |
-| Sort by | 44 slot, 36 circle | Custom glyph `sort.criteria` at 20 (`iconNav`) stroke 1.75 (see Sort glyphs below). Default: fill `surface` + `depthSlab`, glyph `ink`. Tinted when the criterion is not Recently added: fill `selectTint`, 1.5 (`strokeThin`) `selectInk` outline, glyph `selectInk`. Opens the Sort sheet (1.10). VO: "Sort by, <criterion>" (for example "Sort by, Recently added"), button. |
-| Sort direction | 44 slot, 36 circle | Custom glyph `sort.direction.desc` (bars shrinking top to bottom, arrow down) or `sort.direction.asc` (bars growing, arrow up), 20, stroke 1.75. It always shows the effective order: tap flips the arrow and reorders the bars. Default order for the criterion: like Sort by at default. Reversed from the default: tinted as above (`selectTint`, `selectInk`). VO: "Sort direction, descending" / "Sort direction, ascending". The default direction per criterion is in 3.5. |
-| Play matched | intrinsic width 136, height 36, hit 44 (`contentShape` inset -4 vertically) | Outlined capsule: `play.fill` 14 + "Play matched", `T.subhead` semibold, 1.5 (`strokeThin`) `accentInk` outline on a transparent fill, label and glyph `accentInk`, padding 10, gap 5. Never filled (the + stays the only filled cyan action) and the label never changes (never "Play all", never a number). Disabled at 0 matches, while loading and on the error block: outline and label `inkFaint`. VO: "Play 455 matching songs", "Play 128 matching songs", "Play 1 matching song"; disabled: "Play matched, no songs". Hint "Replaces the queue". |
-| Count stack | right aligned, 44 high, two lines, tabular figures | Line 1, `T.caption`, always the "N of total" form: "455 of 455" in `inkMuted` when nothing narrows, "128 of 455" in `selectInk` (weight medium) while narrowing, "0 of 455" when nothing matches. The word "songs" follows ("128 of 455 songs") when the row is wide enough and is dropped below 370 pt of row content width (screens under about 400 pt: 390, 375). VO always reads the full label "128 of 455 songs matched", one element. Line 2, only while narrowing: **Clear**, a text link in `selectInk`, `T.caption` semibold, 44 pt target through padding, VO "Clear search and filters", button. Clear resets the search text, all filters, tag selections and both toggles, keeps the sort and its direction, and leaves focus on the count. |
-| Loading and error | | Loading (S1): the count keeps "455 of 455", Play matched is disabled. Error (S3): the stack reads "0 of 0", Play matched is disabled, no Clear. |
-| Today | LV:141-146 and 207-221: a separate sort menu + Downloaded chip row, then a `FlowLayout` of Show playing, Clear filters, Play all N, Add all N chips that wraps and shifts. |
+| Control | Behaviour |
+| --- | --- |
+| Sort by | 44 pt target, 36 pt circle, custom `sort.criteria` glyph. Default `surface` slab and `ink`; non-default `selectTint` and `selectInk`. Opens Sort by. |
+| Sort direction | 44 pt target, 36 pt circle, custom ascending/descending glyph for the effective order. Tap reverses direction and scrolls to the top. Reversed state uses `selectTint` and `selectInk`. |
+| Count and actions | Always displays "N of total", optionally followed by "songs" when the row fits. Right aligned plain text in tabular `T.caption`, followed by a circular ellipsis menu button with a 44 pt target and the accessible label "Library actions". `inkMuted` normally and `selectInk` while narrowing. VoiceOver reads the count as "N of total songs matched"; Library actions is a separate menu control. |
+| Play all matched | First ellipsis-menu action; replaces the queue with matching phone songs and explains skipped non-phone songs in a toast. Disabled with zero matches, during loading or on the error block. |
+| Show currently playing song | Second ellipsis-menu action; scrolls to the current library song and restores accessibility focus. Disabled without a current song in the library. Like the web, a filtered-out song first offers Show in a confirmation; only Show clears filters before scrolling, retaining sort/direction. |
+| Clear all filters | Third ellipsis-menu action; clears search, selected tags/categories and both filter toggles, keeps sort and direction, scrolls to the top and returns accessibility focus to the count. Disabled when no narrowing is active. |
+| Loading and error | Loading retains the current count; error uses "0 of 0". The count stays visible and playback is disabled. |
 
-**Width budget** (row content = screen width - 32):
+**Width budget.** Prefer the full count with "songs", then the compact count without it. If neither fits, place sort controls on the first row and the count and ellipsis right aligned on the second.
 
-| Screen | Row content | Longest realistic state | Result |
-| --- | --- | --- | --- |
-| 428 | 396 | "1 248 of 1 248 songs" (134) + Play matched (136) + two icon slots (88) | one line, 21 free either side of the button |
-| 390 | 358 | "songs" dropped: "1 248 of 1 248" (93) | one line, 23 free |
-| 375 | 343 | "1 248 of 1 248" (93) | one line, 15 free (tight, open question Q9); Play matched keeps its full label |
-
-**Large text.** From `accessibility1` the line becomes two lines: line 1 [Sort by] [Sort direction] [Play matched], line 2 the count stack, left aligned (min height 52). Slots grow to 52, the circles to 48, the glyphs to 26 and Play matched to 56 high. This is the only exception to "one line".
+**Large text.** From `accessibility1`, use the stacked layout above and retain the larger sort-control targets. The count and ellipsis remain right aligned and accessible.
 
 **Sort glyphs.** `sort-criteria` (a card with three text lines and a funnel across its lower right corner), `sort-direction-desc` and `sort-direction-asc` (the second is the first mirrored top to bottom). 24 grid, stroke 1.75, round caps and joins, no fill, `currentColor`, drawn at 20 in the 36 circle. The SVG masters and the iOS delivery notes are in [`docs/brand/icons/`](../brand/icons/README.md). iOS ships them as custom symbols (template images in the asset catalog) named `sort.criteria`, `sort.direction.desc`, `sort.direction.asc`; until then the fallbacks are `line.3.horizontal.decrease.circle`, `arrow.down.to.line` and `arrow.up.to.line`. The reset glyph (`arrow.counterclockwise`) is not part of the set.
 
@@ -122,12 +117,12 @@ Row = `HStack(spacing: space3)` inside the list slab, padding `space3` all sides
 | --- | --- |
 | Cover | 56 x 56 (`cover-row` 56; `coverMd` stays 64 for the transport; today a literal in `@ScaledMetric` LV:468, scaled with Dynamic Type up to 1.5x), radius `radiusSm` 8, `CoverImage`. Tap zone: the cover plus the row padding around it (68 x 80, min 44). VO hidden (the row is one element, 1.5.1). |
 | Cover tap = play | On the phone: play (replaces the queue with the phone songs of the current result set, in current order, starting here; no toast). The song already current: toggle pause and resume. Server only: start the download (same as the Download pill, never auto-plays). Downloading or waiting: nothing (toast "Already downloading" once). No audio: toast "No audio yet". |
-| Playing cover | Overlay: fill `coverScrim` (`vinyl` at 45%, both themes) and an equaliser glyph (24, `surface`; bars animate while `isPlaying`, static when paused, static under Reduce Motion). The playing row also has the `accentTint` wash over the whole row. |
+| Playing cover | Overlay: fill `coverScrim` (`vinyl` at 45%, both themes) and a persistent Pause glyph while playing or Play glyph while paused, matching the web cover button. The playing row also has the `accentTint` wash over the whole row. |
 | Title | `T.headline` `ink`, max 2 lines (3 at large text), tail truncation. Tap zone with the artist line (details). |
 | Artist line | `T.subhead`, `inkMuted` (`ink` on the playing row: `inkMuted` is 4.0:1 on `accentTint` at night), 1 line: "Artist · Year" (year = the displayed year, version year first, LIB-150; missing parts and the dot are omitted). No source mark, no BPM badge. |
 | Trailing column | Right aligned, vertically centered, `VStack(alignment: .trailing, spacing: space1)`: line 1 = audio state (1.6); line 2 = in-queue marker, only when queued. Width follows content, min 44. |
 | In-queue marker | `text.badge.checkmark` 16 (`iconInline`), `accentInk`, shown ONLY while the song is in `player.queue`. VO: part of the row label ("in queue"). Hidden when the song is not queued; the space is not reserved (the column is vertically centered, so the duration stays put). |
-| Playing state | Row wash `accentTint`; title `ink`; artist and duration `ink`; cover scrim + equaliser; VO trait selected. |
+| Playing state | Row wash `accentTint`; title `ink`; artist and duration `ink`; cover scrim + persistent Pause/Play glyph; VO trait selected. |
 | Pressed | Zone under the finger fades to .8 opacity, `durFast`. |
 | Long press | Whole row. Opens the context menu (1.11); system haptic; the row lifts as the menu preview. |
 | Disabled | There is no disabled row. "No audio yet" dims the cover and the text to 55% (`dim` 0.55); it stays tappable (details, menu). |
@@ -196,17 +191,17 @@ Anatomy, top to bottom, side padding `space4`:
 | 2 | Title row (pinned) | Category name left, `T.title`, `ink`, header trait. **Done** right: `T.body` semibold `selectInk`, 44 target. VO: "Done", button. |
 | 3 | Meta line (pinned) | Left: "32 genres · 2 selected" (`T.caption` `inkMuted`); the noun follows the category: genres, tags, eras, countries ("1 genre"). Right: the live match count "128 songs match" ("1 song matches", "0 songs match"), `T.caption` `inkMuted`, tabular figures, updated on every tap. |
 | 4 | Search field | Tags, Genres, Countries only (not Era): same field as 1.2, height 40 (`DS.Component.fieldHeight`, `dsField`), placeholder "Search genres" / "Search tags" / "Search countries", clear x, no Cancel. Filters the visible values live (case, diacritics); selected values that do not match stay selected and are still counted in the meta line. It scrolls with the values. |
-| 5 | Values | Value chips (`TagChip`: 36 high, hit 44, horizontal padding 14, radius pill; off: `surfaceSunken` fill, `ink`; on: `scheme.strongFill` + `scheme.onStrong`, semibold) with the library-wide song count in `T.caption` (`inkMuted`, on: `scheme.onStrong`). Wrapped flow layout, gap `space2`. Era: a 2 column grid of equal chips with the count at the right (large text: 1 column). The search and the values scroll under the pinned rows, with a 24 pt fade at the bottom and a `line` hairline under the pinned rows once content scrolls. Bottom padding keeps the safe area clear. |
+| 5 | Values | Value chips (`TagChip`: 36 high, hit 44, horizontal padding 14, radius pill; off: `surfaceSunken` fill, `ink`; on: `scheme.strongFill` + `scheme.onStrong`, semibold) with the library-wide song count in `T.caption` (`inkMuted`, on: `scheme.onStrong`). Wrapped flow layout, gap `space2`. Era: separate chronological century blocks with underlined headings and compact wrapping decade chips (large text: a vertical stack in each block). The search and the values scroll under the pinned rows, with a 24 pt fade at the bottom and a `line` hairline under the pinned rows once content scrolls. Bottom padding keeps the safe area clear. |
 
 | Item | Spec |
 | --- | --- |
-| Value order | Era: newest first (’20s, ’10s, ...), then Unknown last. Others: selected-at-open first, then by song count descending, ties A-Z. The order is computed once when the sheet opens and is not updated while it is open (chips never jump under the finger). |
+| Value order | Era: centuries and decades oldest first, then Unknown last. Others: selected-at-open first, then by song count descending, ties A-Z. The order is computed once when the sheet opens and is not updated while it is open (chips never jump under the finger). |
 | Counts | Number of songs in the whole library that carry the value (not narrowed by other filters). The live match count in the meta line is the narrowed result. |
-| Era labels | Chips read ’20s, ’10s, ’00s, ’90s, ’80s, ’70s, ’60s and Unknown (the apostrophe is the typographic ’). VO reads the full decade: "2020s, 156 songs". |
+| Era labels | Underlined headings read "19xx", "20xx", and so on; chips read "the 60s", "the 70s", "the 00s", and so on, followed by Unknown. VO reads the full decade: "2020s, 156 songs". |
 | Unknown | Era "Unknown" (songs without a year), Genres "Unknown" (no genre), Countries "Unknown" (no country): always last, counted like any value, combine like any value (OR within the category). |
 | Detents | **Medium** (about 55%) by default, so the Library list stays visible above the sheet and visibly updates. **Large** (about 92%) when dragged up, when the sheet search is focused, for Tags (it opens at large, a long list) and at large text. **Era fits its content** (shorter than medium). Use the system `.medium` and `.large` detents (`sheet-tall` 0.8 is retired for filter sheets, 1.15). Dragging a large sheet down returns to medium before it dismisses. The sheet does not change height when the keyboard opens. |
 | Behind the sheet | Opening a filter sheet collapses the search field and the chip row so the list shows above it (1.14); closing restores them unless the list had scrolled them away. The list keeps its scroll position. |
-| Tap behaviour | Tap a chip toggles it; the list above updates immediately, then the count and Clear in the controls line, then the sheet's "N songs match"; no haptic except selection (`.selection`). Selecting until nothing matches reads "0 songs match", the count "0 of 455" with Clear, and Play matched is disabled; there is no button to disable. |
+| Tap behaviour | Tap a chip toggles it; the list above updates immediately, then the count and ellipsis-menu availability in the controls line, then the sheet's "N songs match"; no haptic except selection (`.selection`). Selecting until nothing matches reads "0 songs match", the count "0 of 455" with Clear all filters enabled in the ellipsis menu, and Play all matched is disabled; there is no button to disable. |
 | Dismiss | Done, swipe down or tap outside. Same result. The selection stays; the list keeps its scroll position; VO focus returns to the chip that opened it ("Genres, 2 selected"). |
 | VO | Chip: label "House, 48 songs", `isSelected` when on. Sheet: header trait on the title; Done is a button; the escape gesture closes. |
 | Today | LF:4-62: content-height sheet, no search, a "Clear" button, "Show N songs" button, a "Years" category built from `decade:` tags oldest first, values A-Z, subtitle "N in your library · M selected". |
@@ -246,11 +241,11 @@ System `contextMenu` with the row as preview (UIKit menu: system typography, sys
 
 ### 1.12 Empty and error blocks (`ContentUnavailableView` replacement)
 
-Centered block, `space6` vertical padding: icon 40 `inkMuted`, title `T.headline` `ink`, text `T.body` `inkMuted` (max 3 lines), then up to two buttons: primary `LitButtonStyle` capsule (min height 44, content width, never full width) and secondary `DSButtonStyle(.outline)` (1.5 `accentInk` outline). No-match shows no button, because Clear under the count is the only clear action. Today: system `.borderedProminent` / `.bordered` buttons (LV:309-310, 317-318, 322, 328, 332): not tokens.
+Centered block, `space6` vertical padding: icon 40 `inkMuted`, title `T.headline` `ink`, text `T.body` `inkMuted` (max 3 lines), then up to two buttons: primary `LitButtonStyle` capsule (min height 44, content width, never full width) and secondary `DSButtonStyle(.outline)` (1.5 `accentInk` outline). No-match shows no button, because Clear all filters in the ellipsis menu is the only clear action. Today: system `.borderedProminent` / `.bordered` buttons (LV:309-310, 317-318, 322, 328, 332): not tokens.
 
 ### 1.13 Loading skeleton
 
-Replaces the list slab only (header, search, chips and the controls line stay live; Play matched is disabled). 8 skeleton rows of 80 inside the same slab: cover 56 placeholder (`surfaceSunken`, radius `radiusSm`), title bar 60% width x 14 and artist bar 40% x 12 (radius `radiusXs` 4), trailing bar 36 x 12. Pulse: opacity 1 to .5, `durPulse` .8 s ease in-out, repeating. Reduce Motion: static at .7. VO: one element "Loading your library", no row stops. A cached library is never replaced by a skeleton.
+Replaces the list slab only (header, search, chips and the controls line stay live; Play all matched is disabled). 8 skeleton rows of 80 inside the same slab: cover 56 placeholder (`surfaceSunken`, radius `radiusSm`), title bar 60% width x 14 and artist bar 40% x 12 (radius `radiusXs` 4), trailing bar 36 x 12. Pulse: opacity 1 to .5, `durPulse` .8 s ease in-out, repeating. Reduce Motion: static at .7. VO: one element "Loading your library", no row stops. A cached library is never replaced by a skeleton.
 
 ### 1.14 Pinned block and scrolling rules
 
@@ -283,7 +278,7 @@ All of these are in the Design System and exported (`docs/brand/tokens.json`, `i
 | Token | Value | Use |
 | --- | --- | --- |
 | `cover-row` (`DS.Component.coverRow`) | 56 | Library row cover (replaces the literal; `coverMd` 64 stays for the transport) |
-| `cover-scrim` (`DS.Color.coverScrim`) | `vinyl` at 45%, both themes | Dim layer under the equaliser on the playing cover |
+| `cover-scrim` (`DS.Color.coverScrim`) | `vinyl` at 45%, both themes | Dim layer under the Pause/Play glyph on the playing cover |
 | `dim` (`DS.Opacity.dim`) | 0.55 | "No audio yet" cover and text (today a literal in LV:479, 485) |
 | `badge` (`DS.Component.badge`) | 20 | Count badge on a selected category chip |
 | `chip-fade` (`DS.Component.chipFade`) | 24 | Trailing scroll fade of the chip row |
@@ -324,8 +319,8 @@ Every action-flow table has the columns: **User action → immediate UI response
 
 | User action | Immediate UI response | Resulting state | Side effects | Focus / scroll |
 | --- | --- | --- | --- | --- |
-| Tap cover (on the phone) | Row wash, equaliser on the cover | Queue = phone songs of the current result set in current order, this song current, playing | `player.play(phoneSongs, startAt:)`; queue replaced; no toast | Scroll unchanged; VO stays on the row |
-| Tap cover of the playing song | Equaliser stops / starts | Paused / playing | `player.toggle()` | unchanged |
+| Tap cover (on the phone) | Row wash, Pause/Play glyph on the cover | Queue = phone songs of the current result set in current order, this song current, playing | `player.play(phoneSongs, startAt:)`; queue replaced; no toast | Scroll unchanged; VO stays on the row |
+| Tap cover of the playing song | Cover glyph changes to Play / Pause | Paused / playing | `player.toggle()` | unchanged |
 | Tap cover (server only) | Pill becomes "Downloading 0%" | Transfer started | `server.download`; never plays; no queue change | unchanged |
 | Tap cover (no audio) | Toast "No audio yet" | none | none | unchanged |
 | Tap title or artist | Push Song Details (screen I) | Library state kept in the app-level query object | none | Scroll and VO focus restored on return |
@@ -335,8 +330,8 @@ Every action-flow table has the columns: **User action → immediate UI response
 | Tap Tags, Genres, Era or Countries | Filter sheet opens (screens D, E, F); search and chips collapse | Sheet open | none | VO focus to the sheet title |
 | Tap the Sort by icon | Sort sheet (screen C); the icon is tinted when the criterion is not Recently added | Sheet open | none | VO focus to the sheet title |
 | Tap the Sort direction icon | Arrow flips (down: descending, up: ascending) and the bars reorder; circle tints / untints | Reversed flag toggles | none | Scroll to top |
-| Tap Play matched | Toast "Playing N songs"; the label never changes | Queue = the playable songs of the result set | `player.playAll` (random start under Shuffle); stays on Library | Scroll unchanged |
-| Tap Clear under the count | Search text, all filters, tag selections and both toggles clear; Clear disappears, the count turns `inkMuted` | Sort and direction untouched | none | Focus stays on the count; scroll to top; VO announces "Filters cleared, 455 songs" |
+| Tap Play all matched | Toast "Playing N songs"; the label never changes | Queue = the playable songs of the result set | `player.playAll` (random start under Shuffle); stays on Library | Scroll unchanged |
+| Tap Clear all filters in the ellipsis menu | Search text, all filters, tag selections and both toggles clear; Clear all filters becomes disabled, the count turns `inkMuted` | Sort and direction untouched | none | Focus stays on the count; scroll to top; VO announces "Filters cleared, 455 songs" |
 | Scroll the list down | Search and chips collapse; header and controls line stay pinned (96 pt) with a hairline under them (screen M) | | none | |
 | Scroll up, tap the status bar, or reach the top | Search and chips come back | | none | Status bar tap also scrolls to top |
 | Tap the menu button | Left drawer opens (screen J) | | none | |
@@ -346,7 +341,7 @@ Every action-flow table has the columns: **User action → immediate UI response
 ### B. Search results
 
 **Purpose.** Narrow by text. **Entry.** Typing in the search field.
-**Layout.** As A; the keyboard is open (list bottom inset follows it); the search field shows the clear x; the count stack reads "2 of 455" in `selectInk` with Clear beneath it; Play matched matches the count.
+**Layout.** As A; the keyboard is open (list bottom inset follows it); the search field shows the clear x; the count stack reads "2 of 455" in `selectInk` with Clear all filters enabled in the ellipsis menu; Play all matched matches the count.
 **Variants.** With filters on (G), with no results (K).
 
 | User action | Immediate UI response | Resulting state | Side effects | Focus / scroll |
@@ -380,14 +375,14 @@ Every action-flow table has the columns: **User action → immediate UI response
 | User action | Immediate UI response | Resulting state | Side effects | Focus / scroll |
 | --- | --- | --- | --- | --- |
 | Open a filter sheet | Medium detent (about 55%); search and chips collapse so the list shows above the sheet, dimmed only slightly; Tags opens at large | Sheet open | none | |
-| Tap a value | Chip toggles; the list above updates immediately, then the count and Clear in the controls line, then the sheet's "N songs match" (tabular figures, nothing jumps) | Selection changes (OR within the category, AND with other categories) | none | Sheet scroll unchanged; list keeps its scroll position |
+| Tap a value | Chip toggles; the list above updates immediately, then the count and ellipsis-menu availability in the controls line, then the sheet's "N songs match" (tabular figures, nothing jumps) | Selection changes (OR within the category, AND with other categories) | none | Sheet scroll unchanged; list keeps its scroll position |
 | Focus the sheet search, or drag the sheet up | Sheet grows to the large detent; values filter, selected non-matches stay selected | | none | Keyboard open |
 | Tap Done, swipe down, or tap outside | Sheet closes; the selection is already applied and stays | Selection kept | none | VO focus to the Genres chip (now "Genres, 2 selected"); the list keeps its scroll position |
-| Select until 0 results | Sheet reads "0 songs match", the count "0 of 455" with Clear, Play matched disabled | | none | |
+| Select until 0 results | Sheet reads "0 songs match", the count "0 of 455" with Clear all filters enabled in the ellipsis menu, Play all matched disabled | | none | |
 
 ### E. Era sheet
 
-**Purpose.** Pick eras. **Entry.** Tap Era. **Layout.** 1.9 without search; 2 column grid with the count at the right of each chip: ’20s 156, ’10s 128, ’00s 72, ’90s 48, ’80s 32, ’70s 12, ’60s 4, Unknown 3 (example); meta line "8 eras · 2 selected" and "284 songs match"; the sheet fits its content (shorter than medium).
+**Purpose.** Pick eras. **Entry.** Tap Era. **Layout.** 1.9 without search; separate century blocks with underlined headings such as "19xx" and "20xx", oldest first; compact wrapping chips such as "the 60s", "the 70s" and "the 00s", oldest first within each block, with a count in each chip; Unknown follows all century blocks; meta line "8 eras · 2 selected" and "284 songs match"; the sheet fits its content (shorter than medium).
 Era = the displayed year (version year first) floored to ten; a song without a year is "Unknown". Stored `decade:` tags are ignored. VO reads "2020s".
 
 | User action | Immediate UI response | Resulting state | Side effects | Focus / scroll |
@@ -406,13 +401,13 @@ Era = the displayed year (version year first) floored to ten; a song without a y
 
 ### G. Active filters (Genres 2)
 
-**Purpose.** Show that a filter is on without a second strip. **Layout.** As A, with: Genres chip on (tint, outline, badge "2"); the count "128 of 455" in `selectInk` with Clear beneath; Play matched (128 songs); no strip of values; no "N songs match" outside the sheets (the frame also shows the Sort by icon on Year).
+**Purpose.** Show that a filter is on without a second strip. **Layout.** As A, with: Genres chip on (tint, outline, badge "2"); the count "128 of 455" in `selectInk` with Clear all filters enabled in the ellipsis menu; Play all matched (128 songs); no strip of values; no "N songs match" outside the sheets (the frame also shows the Sort by icon on Year).
 Several categories on at once: each shows its own tinted chip; categories combine with AND.
 
 | User action | Immediate UI response | Resulting state | Side effects | Focus / scroll |
 | --- | --- | --- | --- | --- |
 | Tap the tinted Genres chip | Genres sheet with the 2 selected values first (D) | | none | |
-| Tap Clear under the count | Every chip returns to off, the count reads "455 of 455" in `inkMuted`, Clear disappears | all filters and search cleared, sort kept | none | Focus stays on the count; scroll to top |
+| Tap Clear all filters in the ellipsis menu | Every chip returns to off, the count reads "455 of 455" in `inkMuted`, Clear all filters becomes disabled | all filters and search cleared, sort kept | none | Focus stays on the count; scroll to top |
 | Toggle Downloaded | Chip tints, list narrows | AND with the rest | none | Scroll position kept |
 | Toggle Never listened | Chip tints, list narrows | Songs with no completed or skipped play, AND with the rest | needs `GET /stats/listening` (cached per session) | Scroll position kept |
 
@@ -471,14 +466,14 @@ Library state (search, filters, sort, direction, scroll position are kept), that
 
 ### K. Empty results (no match)
 
-**Entry.** Search and filters leave no song, while the library is not empty. **Layout.** As A, with the list slab replaced by the empty block (1.12): `magnifyingglass` icon, title "No songs found", text "Try a different search or clear the filters." No button: Clear under the count is the one clear action. The count stack reads "0 of 455" in `selectInk` with Clear; Play matched is disabled.
+**Entry.** Search and filters leave no song, while the library is not empty. **Layout.** As A, with the list slab replaced by the empty block (1.12): `magnifyingglass` icon, title "No songs found", text "Try a different search or clear the filters." No button: Clear all filters in the ellipsis menu is the one clear action. The count stack reads "0 of 455" in `selectInk` with Clear all filters enabled in the ellipsis menu; Play all matched is disabled.
 Variant (not drawn): only Downloaded is on and nothing is stored: title "Nothing on this iPhone yet", text "Turn off Downloaded to see every song."
 
 | User action | Immediate UI response | Resulting state | Side effects | Focus / scroll |
 | --- | --- | --- | --- | --- |
 | Tap Clear | List returns | All cleared | none | Scroll top |
 | Edit the search | List recomputes | | none | |
-| Tap Play matched (disabled) | Nothing | | | |
+| Tap Play all matched (disabled) | Nothing | | | |
 
 ### L. Signed out, empty library
 
@@ -499,11 +494,11 @@ Block: `music.note` icon, title "No songs yet", text "Your library is stored on 
 | Scroll up | Search and chips return (height and fade, 1.14) | | none | |
 | Tap the status bar | Scroll to top; search and chips return | | none | Top |
 | Reach the top | Search and chips return | | none | |
-| Use the controls | Sort by, Sort direction, Play matched, Clear work unchanged | as A | as A | Sort direction and Clear scroll to top, which brings search and chips back |
+| Use the controls | Sort by, Sort direction, Play all matched, Clear work unchanged | as A | as A | Sort direction and Clear scroll to top, which brings search and chips back |
 
 ### S1. Loading skeleton
 
-**Entry.** Signed in, first catalog sync, no cached songs (`server.syncing || !server.synced && no failure`). **Layout.** Header, search, chips and controls line as A (Play matched disabled; the count keeps its text); list = 1.13. A cached library is never replaced by a skeleton.
+**Entry.** Signed in, first catalog sync, no cached songs (`server.syncing || !server.synced && no failure`). **Layout.** Header, search, chips and controls line as A (Play all matched disabled; the count keeps its text); list = 1.13. A cached library is never replaced by a skeleton.
 
 | User action | Immediate UI response | Resulting state | Side effects | Focus / scroll |
 | --- | --- | --- | --- | --- |
@@ -524,7 +519,7 @@ Block: `music.note` icon, title "No songs yet", text "Your library is stored on 
 
 ### S3. Error with Retry (no songs cached)
 
-**Entry.** Signed in, sync failed, no cached songs. **Layout.** Header, search, chips and controls line as A, with the count "0 of 0", Play matched disabled and no Clear; empty block: `wifi.slash` (unreachable) or `exclamationmark.triangle`, title "Can't reach the server" / "Couldn't load your library", text = the failure message or "Check the connection and try again.", primary "Retry". "Access denied" (403) uses `lock.slash`, the server text, no button.
+**Entry.** Signed in, sync failed, no cached songs. **Layout.** Header, search, chips and controls line as A, with the count "0 of 0", Play all matched disabled and no Clear; empty block: `wifi.slash` (unreachable) or `exclamationmark.triangle`, title "Can't reach the server" / "Couldn't load your library", text = the failure message or "Check the connection and try again.", primary "Retry". "Access denied" (403) uses `lock.slash`, the server text, no button.
 
 | User action | Immediate UI response | Resulting state | Side effects | Focus / scroll |
 | --- | --- | --- | --- | --- |
@@ -539,9 +534,9 @@ Block: `music.note` icon, title "No songs yet", text "Your library is stored on 
 | Header | Title on up to 2 lines; Menu and Add stay on the title line |
 | Search | Height grows with the text (min 44) |
 | Chip row | Still one scrolling line, chips taller (min 44 drawn), peek and fade kept |
-| Controls line | Two lines (1.4): Sort by, Sort direction and Play matched first, the count stack below, left aligned |
+| Controls line | Two lines (1.4): sort controls left on the first row, count and ellipsis right on the second row |
 | Song row | Cover 56 scaled; title up to 3 lines; trailing column under the artist line, left aligned; cover tap zone stays on the cover |
-| Sheets | Filter sheets use the large detent; Era grid becomes 1 column |
+| Sheets | Filter sheets use the large detent; Era chips become a vertical stack within each century block |
 | Details | Facts rows stack label above value; statistics cells become 3 rows; cover 200 stays |
 | Cap | `dynamicTypeSize(...accessibility2)` on the root; beyond it the OS scales nothing more |
 
@@ -552,8 +547,8 @@ Colours come from the tokens, so every screen has a dark twin (A and M are drawn
 - Slabs: `surface` is only slightly lighter than `ground` at night: the chip, row and banner edges rely on `depthSlab`; lists get no extra border. Float slabs (toast, sheets) use the 1 pt `line` ring and `depthLift` at 70%.
 - On the value chips in sheets and the count badge: `scheme.strongFill` = `accent`, `scheme.onStrong` = `onAccent` (8.5:1); by day `accentStrong` + `ink` (4.8:1).
 - `accentTint` rows at night: secondary text is `ink`, never `inkMuted` (4.0:1).
-- `accentInk` is the pale cyan at night: Play matched outline, Download pill, queue marker and links stay 11:1. `selectInk` on `selectTint` (tinted sort icons, Done, Clear, the narrowed count) is 4.5:1 by day and the pale cyan at night.
-- Cover scrim and equaliser are theme-independent (`vinyl` 45%, `surface` glyph).
+- `accentInk` is the pale cyan at night: Download pill, queue marker and links stay 11:1. `selectInk` on `selectTint` (tinted sort icons, Done, Clear, the narrowed count) is 4.5:1 by day and the pale cyan at night.
+- Cover scrim and Pause/Play glyph use the established design tokens in both themes.
 - Skeleton bars `surfaceSunken` (darker than `surface` in both themes) keep the "below the surface" meaning.
 - Check every state in both themes on a device before TestFlight (batch 4).
 
@@ -568,7 +563,7 @@ Result set = `Library` songs, then AND of: search text; each category with a sel
 ```
 search text ──┐
 Tags ─────────┤
-Genres ───────┤  AND ──► result set ──► sort(criterion, direction) ──► rows ──► Play matched = rows
+Genres ───────┤  AND ──► result set ──► sort(criterion, direction) ──► rows ──► Play all matched = rows
 Era ──────────┤                                                     └──► count "N of total"
 Countries ────┤
 Never listened┤
@@ -579,7 +574,7 @@ Downloaded ───┘
 | --- | --- | --- | --- |
 | Type in search | nothing | filters, sort, direction | top |
 | Select a value in a filter sheet, toggle a chip | nothing | search, other filters, sort, direction | position kept (clamped to the new height) |
-| Clear (under the count) | search, all selections, Never listened, Downloaded | sort, direction | top |
+| Clear all filters (ellipsis menu) | search, all selections, Never listened, Downloaded | sort, direction | top |
 | Change the sort criterion | direction (to the criterion's default) | search, filters | top |
 | Sort direction icon | nothing | everything | top |
 | Pull to refresh, catalog sync, download finishes | nothing | everything | unchanged (rows update in place) |
@@ -594,7 +589,7 @@ State lives in one app-level object (NEW `LibraryQuery`: `search`, `selection`, 
 **Round trip to Song Details and back** keeps: search text, every selection and toggle, sort, direction, the scroll offset (the `ScrollView` stays in the stack), whether search and chips are collapsed, and the VO focus (back to the row that opened it). Returning from the Edit sheet, a
 sheet, the Add sheet or the drawer is the same.
 
-### 3.2 Play matched semantics
+### 3.2 Play all matched semantics
 
 - Set = the current result set in the current order (after search, filters, sort and direction). The count in the stack and in the VO label ("Play 128 matching songs") = its size (not the playable subset); the button label itself never carries a number.
 - Only songs on the phone can play; the others are skipped and counted in the toast ("15 not on this iPhone skipped"). None playable: toast "No listed songs are on this iPhone", queue untouched.
@@ -623,7 +618,7 @@ sheet, the Add sheet or the drawer is the same.
 | Duration, progress, "No audio yet", queue marker | Song Details | menu |
 | Download pill | download | menu |
 | Row anywhere else | Song Details | menu |
-| Equaliser glyph on the playing cover | toggle pause | menu |
+| Pause/Play glyph on the current cover | toggle pause | menu |
 
 No swipe actions on rows.
 
@@ -653,8 +648,8 @@ VO value of the Sort direction icon = "descending" or "ascending" from this tabl
 
 ### 3.7 Era values
 
-The displayed year floored to the decade and shown abbreviated: ’20s, ’10s, ’00s, ’90s, ..., ’60s, newest first, each with the count of songs in the whole library, then "Unknown" for songs with no year. VoiceOver reads the full decade ("2020s"). An era is listed only if at least one song belongs to it; Unknown only if at least one song has no year. The category is called Era (chip, sheet title, "8 eras · 2 selected").
-Example from the drawing: ’20s 156, ’10s 128, ’00s 72, ’90s 48, ’80s 32, ’70s 12, ’60s 4, Unknown 3.
+The displayed year floored to the decade and grouped into chronological century blocks labelled "19xx", "20xx", and so on. Chips read "the 60s", "the 70s", "the 00s", and so on, oldest first within each block, each with the count of songs in the whole library; "Unknown" follows all blocks for songs with no year. VoiceOver reads the full decade ("2020s"). An era is listed only if at least one song belongs to it; Unknown only if at least one song has no year. The category is called Era (chip, sheet title, "8 eras · 2 selected").
+Example: under "19xx", the 60s 4, the 70s 12, the 80s 32, the 90s 48; under "20xx", the 00s 72, the 10s 128, the 20s 156; Unknown 3 follows the blocks.
 Today the category is "Years", built from `decade:` tags, labelled "the 90s", sorted oldest first (LFM:5-6, 20-22; LF; `tagLabel`).
 
 ### 3.8 Signed out versus signed in
@@ -684,15 +679,15 @@ Corrections from Alex (the brief) and what they mean here. Entries marked "repla
 | # | Decision | Where |
 | --- | --- | --- |
 | 1 | No "..." button on rows; long press replaces it; trailing column = duration then audio state, nothing else (the queue marker sits under it, only when queued) | 1.5, 1.11 |
-| 2 | In-queue marker: queue glyph with a checkmark, only for songs in the queue; the playing song keeps the tint and the equaliser on its cover | 1.5 |
+| 2 | In-queue marker: queue glyph with a checkmark, only for songs in the queue; the playing song keeps the tint and the Pause/Play glyph on its cover | 1.5 |
 | 3 | No "N songs match" label in the Library; the header total never changes. Replaced by #29 and #31: the count is the "N of total" stack, the header has no counter, and "N songs match" lives only in the filter sheets | 1.1, 1.4, 1.9 |
 | 4 | No "Add all"; adding is per song from the menu | 3.2 |
 | 5 | ONE reset button in the results row; no "Clear all" elsewhere; no per-category Clear in sheets (removed to honour this; revisit if deselecting one by one proves slow); no Clear button in the empty state. Replaced by #30 for the form of the one clear (a text link, not an icon); the rest stands | 1.4, 1.9, K |
 | 6 | No strip of selected values; a category with selections is a tinted chip with a count badge | 1.3 |
-| 7 | Decades, not Years, computed from the displayed year, newest first, plus Unknown. Renamed Era by #33 (the rule itself stands) | 1.9, 3.7 |
+| 7 | Decades, not Years, computed from the displayed year, in chronological century blocks, plus Unknown. Renamed Era by #33 (the rule itself stands) | 1.9, 3.7 |
 | 8 | No Cancel on search; scroll or return dismisses the keyboard | 1.2 |
 | 9 | Delete from library only in Song Details, at the bottom, with a confirmation; never in the menu (reaffirmed in the 2026-10-22 artifacts) | 1.11, I |
-| 10 | The results row is one line with fixed slots: Sort pill, Direction, Reset, Play all N. Replaced by #27 to #32 (icons, Play matched, count stack) | 1.4 |
+| 10 | The results row is one line with fixed slots: Sort pill, Direction, Reset, Play all N. Replaced by #27 to #32 (icons, Play all matched, count stack) | 1.4 |
 | 11 | The last chip peeks off screen with a trailing fade, never clipped mid-word. Refined by #40 | 1.3 |
 | 12 | The mini-player, drawer and Now playing are not redrawn | scope |
 
@@ -704,7 +699,7 @@ Decisions made while writing this spec (beyond the brief):
 | 14 | The direction resets to the criterion's default whenever the criterion changes (web LIB-208 keeps it) | Defaults differ per criterion (A-Z, newest first, slowest first); a kept flag would surprise |
 | 15 | Sort and direction persist across relaunch; search and filters do not | A sort chosen is a preference, a search is a moment |
 | 16 | Cover tap on the playing song toggles pause; on a server-only song it downloads (never plays) | Cover = primary action, consistent with "downloading never auto-plays" |
-| 17 | Sheet values ordered by count (selected-at-open first), frozen while open; Era newest first; counts are library-wide | Predictable under the finger |
+| 17 | Sheet values ordered by count (selected-at-open first), frozen while open; Era uses chronological century blocks; counts are library-wide | Predictable under the finger |
 | 18 | Unknown is last in Era, Genres and Countries (web puts "not set" first, LIB-132) | Value order stays stable |
 | 19 | "Show playing" leaves the Library toolbar | The controls line has no slot for it; see Q1 |
 | 20 | Never listened and Last listened exist on iOS and need `GET /stats/listening` (signed in); they are hidden or disabled otherwise | Offline-first: no spinner for optional features |
@@ -713,7 +708,7 @@ Decisions made while writing this spec (beyond the brief):
 | 23 | Search placeholder "Search songs, artists, tags" | Says what is searched, fits at 375 |
 | 24 | Toast wording "not on this iPhone skipped" replaces "without audio skipped" | Accuracy |
 | 25 | Play next, Add to queue and Remove from iPhone are not offered for the song that is playing | Avoids a duplicate current song and deleting the open file |
-| 26 | Large text relaxes "one line" for the controls line only (two lines: the controls and Play matched, then the count stack) | Fixed slots cannot fit at accessibility sizes |
+| 26 | Large text relaxes "one line" for the controls line only (two lines: the controls and Play all matched, then the count stack) | Fixed slots cannot fit at accessibility sizes |
 
 Decisions from the 2026-10-22 artifacts (Screens v53, Design System v37). Numbers 13 to 26 above keep their meaning; the new ones start at 27.
 
@@ -721,11 +716,11 @@ Decisions from the 2026-10-22 artifacts (Screens v53, Design System v37). Number
 | --- | --- | --- | --- |
 | 27 | The sort criterion is an icon button (`sort.criteria`, a list with a funnel), tinted `selectInk` on `selectTint` when the criterion is not Recently added, VO "Sort by, <criterion>"; it opens the 7-criteria Sort sheet | The text Sort pill ("Sort: Recently added") and #10 | 1.4, 1.10 |
 | 28 | The sort direction is an icon button (`sort.direction.desc` / `.asc`: bars plus an arrow; the arrow flips with the effective order), tinted when reversed from the default, VO "Sort direction, descending"; default direction per criterion as before (3.5). Both glyphs are drawn at 20, stroke 1.75 (token `icon-stroke` is 1.8: mismatch, Q10), masters in `docs/brand/icons/` | The `arrow.up.arrow.down` button, VO "Reverse sort order", `accentTint` styling | 1.4, 3.5 |
-| 29 | The controls line is ONE 44 pt line: [Sort by][Sort direction][Play matched][count stack right aligned]; width budget at 428/390/375; at accessibility1 it wraps to two lines (controls and Play, then the count stack left aligned) | Results row `[Sort pill][Direction][Reset][Play all N]` (#10) and the two-line large-text rule of #26 (now covering the whole controls line) | 1.4, S4 |
-| 30 | The reset icon is gone. A "Clear" text link (`selectInk`) under the count appears only while narrowing and clears search, filters, tag selections and both toggles; sort and direction stay. Still the only clear action | The Reset icon button (#5, #10) | 1.4, 3.1, K |
+| 29 | The controls line uses [Sort by][Sort direction][count and ellipsis right]; compact counts adapt to width; narrow/accessibility layouts show sort first, then the count and ellipsis | Results row `[Sort pill][Direction][Reset][Play all N]` (#10) and the two-line large-text rule of #26 (now covering the whole controls line) | 1.4, S4 |
+| 30 | The reset icon is gone. The ellipsis menu offers Clear all filters, enabled only while narrowing, and clears search, filters, tag selections and both toggles; sort and direction stay. Still the only clear action | The Reset icon button (#5, #10) | 1.4, 3.1, K |
 | 31 | The count is the stack "N of M" (always that form; "songs" word dropped below 370 pt of row width; `selectInk` while narrowing, `inkMuted` otherwise); the header has no counter (menu, title, + only) | The header total "455 songs" and the count inside "Play all N" (#3) | 1.1, 1.4 |
-| 32 | "Play matched" replaces "Play all N": always that label, outlined (`accentInk` 1.5 outline, never filled), disabled at 0, VO "Play N matching songs"; the + stays the only filled cyan action | "Play all N" filled strong capsule with a fixed-width number | 1.4, 3.2 |
-| 33 | Category "Decades" is now "Era"; values ’20s, ’10s, ’00s ... ’60s and Unknown (VoiceOver reads "2020s"); sheet subtitles "N genres / tags / eras / countries · M selected" | "Decades" label, "2020s" labels, subtitle "32 in your library · 2 selected" (#7 label) | 1.3, 1.9, 3.7 |
+| 32 | "Play all matched" is an ellipsis-menu action, disabled at 0; the + stays the only filled cyan action | "Play all N" filled strong capsule with a fixed-width number | 1.4, 3.2 |
+| 33 | Category "Decades" is now "Era"; chronological century blocks with compact decade chips and Unknown (VoiceOver reads "2020s"); sheet subtitles "N genres / tags / eras / countries · M selected" | "Decades" label, "2020s" labels, subtitle "32 in your library · 2 selected" (#7 label) | 1.3, 1.9, 3.7 |
 | 34 | The header block is pinned (header 52 + controls line 44 = about 96 pt); search and chip row collapse when the list scrolls down past 24 pt and return on scroll up, a status bar tap or the top; a `line` hairline appears under the pinned block once content scrolls under it | "List is not pinned" (a note of #22) and open question Q5 | 1.14, M |
 | 35 | Scrolling rules for the other screens: the header stays pinned and only the content scrolls (Settings, Statistics, Song Details, Playlists); Now playing's main block does not scroll; sheets pin their title row (filter sheets also the meta line) and have no pinned bottom button | none (new) | 1.14 |
 | 36 | Filter sheets apply LIVE: no "Show N songs" button, no Cancel; **Done** (`selectInk`) in the title row; the meta line shows "N genres · M selected" on the left and the live "K songs match" on the right; dismiss by Done, swipe down or tap outside, the selection stays; per-category Clear stays absent | The bottom "Show N songs" button, the "closes by the bottom button" rule, the subtitle "N in your library · M selected" | 1.9 |
@@ -749,7 +744,7 @@ Decisions from the 2026-10-22 artifacts (Screens v53, Design System v37). Number
 | Search field | LV:257-270: height 48, literal radius 16 (LV:269), slab fill, placeholder "Search songs or artists" (LV:260), clear x without a 44 hit | 44 high, `radiusKey`, `surfaceSunken`, new placeholder, 44 hit x, focus ring |
 | Search scope | LV:54-60: title, artist, album, tags; no remixer, no diacritic folding | 1.2 |
 | Chips | LV:289-298: 4-column grid (2 at large text), flexible width, count shown, selected = strong fill; CMP:145-173 | One scrolling row, intrinsic width, icon, tint + badge, fade; 6 items |
-| Era | LFM:5-6, 12, 20-22: category "Years" built from `decade:` tags, oldest first | "Era": computed from the year, abbreviated ’20s, newest first, plus Unknown |
+| Era | LFM:5-6, 12, 20-22: category "Years" built from `decade:` tags, oldest first | "Era": computed from the year, chronological century blocks and compact decade labels, plus Unknown |
 | Downloaded toggle | LV:285-287, 141-145: a pill with a count beside the sort control; CMP:831-852 | Last chip of the row, no count |
 | Never listened | missing | NEW toggle (listening data) |
 | Sort control | LV:272-283: text `Menu` + `Picker` pill "Sort: Recently added" with a chevron (LV:282) | Sort by icon button opening a Sort sheet (1.4, 1.10) |
@@ -761,13 +756,13 @@ Decisions from the 2026-10-22 artifacts (Screens v53, Design System v37). Number
 | Clear | LV:214, 203 chip "Clear filters" shown only when active | Text link "Clear" under the count, only while narrowing |
 | Add all | LV:216-218, 239-246 | Removed |
 | Show playing | LV:213, 248-255 | Removed from the toolbar (Q1) |
-| Play all | LV:230-237: filled "Play all N" chip; toast uses "without audio skipped" (LV:223-226) | "Play matched" outlined capsule (1.4), 3.2, new toast wording |
+| Play all | LV:230-237: filled "Play all N" chip; toast uses "without audio skipped" (LV:223-226) | "Play all matched" outlined capsule (1.4), 3.2, new toast wording |
 | Song row | LV:455-522 `LibrarySongRow`: whole row is one button, one tap = play / download / toast; trailing "..." | Three zones, no "..." (1.5, 3.4) |
 | Row tap | LV:392-396, 379-380 | cover = play, text = details |
 | Row menu | LV:412-433 "..." menu; LV:435-442 context menu lacks Remove from iPhone and has Delete; a11y actions LV:403-410 have Delete | 1.11 (no Delete, no "...") |
 | Delete | LV:191-197, 427, 441, 410 in the menu | Only Song Details |
 | In-queue marker | missing | NEW (1.5) |
-| Playing cover | LV:520 tint only | + scrim + equaliser |
+| Playing cover | LV:520 tint only | + scrim + Pause/Play glyph |
 | Audio-state | LV:487-498, 506-515: literals `maxWidth: 84`, `lineWidth: 1.5`, 55% | tokens (`dim`), same behaviour |
 | Row accessibility | LV:503-505: one button, label with state, actions | 1.5.1 (adds Show details, Download, Get audio) |
 | Filter sheet | LF:4-62: content-height detent, no search, a "Clear" button, a "Show N songs" button (LF:49), N values A-Z, subtitle "N in your library · M selected" | 1.9: live apply, Done, meta line with live match count, medium/large detents, search, order and counts, no Clear |
@@ -788,7 +783,7 @@ To verify in code during batch 3: `PlayerService.enqueue` / `playNext` when noth
 
 | Batch | Scope | Files |
 | --- | --- | --- |
-| 1. Controls line, results, sort, rows | Header without the count; the ONE 44 pt controls line with fixed slots (Sort by icon, Sort direction icon, Play matched, "N of M" count stack with Clear; width budget 428/390/375; two-line variant at accessibility1); Sort sheet with 7 criteria, defaults, ties and direction; custom sort symbols in the asset catalog (fallbacks until then); Play matched wording and outlined style; remove Add all and Show playing; song row with three zones, queue marker, playing scrim and equaliser, no "..."; `LibraryQuery` app-level state with persisted sort; `ListeningStore` (for Last listened) | `LibraryView.swift` (split the row and the controls line out), `Components.swift` (SongRow pieces, icon buttons), NEW `LibraryQuery.swift`, NEW `LibrarySort.swift`, NEW `ListeningStore.swift`, `Assets.xcassets` (sort symbols from `docs/brand/icons/`) |
+| 1. Controls line, results, sort, rows | Header without the count; the ONE 44 pt controls line with fixed slots (Sort by icon, Sort direction icon, Play all matched, "N of M" count stack with Clear all filters enabled in the ellipsis menu; width budget 428/390/375; two-line variant at accessibility1); Sort sheet with 7 criteria, defaults, ties and direction; custom sort symbols in the asset catalog (fallbacks until then); Play all matched menu wording; remove Add all and expose Show currently playing song in the ellipsis menu; song row with three zones, queue marker, playing scrim and Pause/Play glyph, no "..."; `LibraryQuery` app-level state with persisted sort; `ListeningStore` (for Last listened) | `LibraryView.swift` (split the row and the controls line out), `Components.swift` (SongRow pieces, icon buttons), NEW `LibraryQuery.swift`, NEW `LibrarySort.swift`, NEW `ListeningStore.swift`, `Assets.xcassets` (sort symbols from `docs/brand/icons/`) |
 | 2. Filters and scrolling | Chip row (one line, icons, tint + badge, fade); Era from year with Unknown and abbreviated labels; filter sheets that apply live (Done in the title row, meta line with live "N songs match", medium and large detents, Era fits content, search, order, counts, Unknown values, no Clear, no bottom button); Never listened and Downloaded toggles; search scope; pinned header and controls line with the scroll collapse of search and chips, hairline, status bar tap | `LibraryFilter.swift`, `LibraryFilterModel.swift`, `Components.swift` (`CategoryChip`, `ToggleChip` replaced by one `FilterChip`), `LibraryView.swift` (header and controls outside the `ScrollView`, scroll offset tracking) |
 | 3. Menu and Details | Long-press menu with the new items; VO custom actions; Song Details screen (read-only, statistics, actions, Delete with confirmation); Edit entry from Details; delete moved out of rows; the Settings, Statistics and Playlists headers pinned per the scrolling rules | NEW `SongDetailsView.swift`, `LibraryView.swift`, `SongEditView.swift` (entry only), `PlayerService.swift` (only if the queue edge cases of 5.1 need a fix), `ShareSheet.swift` (reuse) |
 | 4. States and verification | Skeleton, offline banner with Retry, error and empty blocks on tokens, toast restyle, large-text variants, dark-mode and contrast verification on a device (including `selectInk` on `selectTint`), VO pass; docs: `docs/specs/ios.md` (IOS-030..033 rewritten), `docs/specs/library.md` iOS notes, `style-guide.md` gap closure | `LibraryView.swift`, `Components.swift`, `docs/specs/ios.md`, `docs/ui-ux/style-guide.md`, `docs/CHANGELOG.md` |
@@ -805,7 +800,7 @@ Each batch updates the docs that its code makes wrong, in the same commit (CLAUD
 | Q2 | Song Details "First played": the API only returns `last_listened` and `total_listened_s` | Show Total listened now; add `first_listened` to `GET /stats/listening` later and swap |
 | Q3 | Musical key: not in the data model; the sketch shows a Key row | Leave it out until a detector exists |
 | Q6 | Direction reset on criterion change differs from web LIB-208: change the web to match? | Yes, same rule on both platforms |
-| Q9 | At 375 pt the controls line leaves only 15 pt free (Play matched keeps its full label) and the fourth chip is clipped by the edge at 390 and 375; large text wraps | Verify on a 375 pt device in batch 4; if tight, shorten the Play matched padding before dropping the label |
+| Q9 | At 375 pt the controls line leaves only 15 pt free (Play all matched keeps its full label) and the fourth chip is clipped by the edge at 390 and 375; large text wraps | Verify on a 375 pt device in batch 4; if tight, shorten the Play all matched padding before dropping the label |
 | Q10 | The sort glyphs are drawn at stroke 1.75 while the token `icon-stroke` is 1.8 | Unify in the next token export (the 0.05 gap is invisible at 20 pt); until then the glyphs keep 1.75 |
 | Q11 | `sheet-tall` 0.8 is unused: filter sheets use the system medium and large detents; the Flows legend still calls it the Sort sheet's height cap while the Sort frame fits its content, and the token's usage text still says filter sheets with search | Fit the Sort sheet to its content, retire the token in the next export and fix its usage text |
 | Q12 | Never listened and Last listened need listening data (`GET /stats/listening`), so they are hidden or disabled until it loads | Ship `ListeningStore` in batch 1 and keep the hide/disable rule; no spinner |
@@ -817,5 +812,5 @@ Decided since the first version of this spec (kept so the numbers stay stable):
 | --- | --- | --- |
 | Q4 | Filter-sheet counts: library-wide or narrowed? | Library-wide on the chips; the narrowed result is the live "N songs match" in the meta line (1.9) |
 | Q5 | Pin the results row under the status bar while scrolling a 455-song list? | Yes: the header and the controls line are pinned, about 96 pt; search and chips collapse (decision 34, 1.14) |
-| Q7 | Play all N: show the result count or the playable count? | The button is "Play matched" and carries no number; the count and the VO label use the result count, the toast explains the skips (decision 32, 3.2) |
+| Q7 | Play all N: show the result count or the playable count? | The button is "Play all matched" and carries no number; the count and the VO label use the result count, the toast explains the skips (decision 32, 3.2) |
 | Q8 | Cover tap on a server-only song starts a download: acceptable? | Yes, it downloads and never plays (decision 16, 3.4) |

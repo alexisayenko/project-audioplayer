@@ -94,40 +94,40 @@ struct LibraryControls: View {
     @EnvironmentObject private var query: LibraryQuery
     @Environment(\.dynamicTypeSize) private var typeSize
     @AccessibilityFocusState private var countFocused: Bool
-    @State private var playWidth: CGFloat = DS.Component.coverMd * 2
     let matches: Int
     let total: Int
     let enabled: Bool
+    let canShowPlaying: Bool
+    let showPlaying: () -> Void
     let sort: () -> Void
     let play: () -> Void
     let scrollTop: () -> Void
 
     var body: some View {
-        Group {
-            if typeSize.isAccessibilitySize {
-                VStack(alignment: .leading, spacing: DS.Space.space2) {
-                    HStack(spacing: DS.Space.space2) { sortButtons; playButton; Spacer(minLength: 0) }
-                    count(showSongs: true)
-                }
-            } else {
-                GeometryReader { geometry in
-                    HStack(spacing: DS.Space.space2) {
-                        sortButtons
-                        playButton.fixedSize(horizontal: true, vertical: false)
-                            .background(GeometryReader { button in
-                                Color.clear.preference(key: LibraryPlayWidth.self, value: button.size.width)
-                            })
-                            .frame(maxWidth: .infinity)
-                        ViewThatFits(in: .horizontal) {
-                            count(showSongs: true)
-                            count(showSongs: false)
-                        }
-                        .frame(width: max(0, geometry.size.width - DS.Space.hit * 2 - DS.Space.space2 * 2 - playWidth), alignment: .trailing)
-                    }
-                }.frame(height: DS.Space.hit)
+        if typeSize.isAccessibilitySize {
+            stackedControls
+        } else {
+            ViewThatFits(in: .horizontal) {
+                controls(showSongs: true)
+                controls(showSongs: false)
+                stackedControls
             }
         }
-        .onPreferenceChange(LibraryPlayWidth.self) { playWidth = $0 }
+    }
+
+    private func controls(showSongs: Bool) -> some View {
+        HStack(spacing: DS.Space.space2) {
+            sortButtons.fixedSize()
+            Spacer(minLength: 0)
+            count(showSongs: showSongs)
+        }
+    }
+
+    private var stackedControls: some View {
+        VStack(alignment: .trailing, spacing: DS.Space.space2) {
+            sortButtons.frame(maxWidth: .infinity, alignment: .leading)
+            count(showSongs: false)
+        }
     }
 
     private var sortButtons: some View {
@@ -159,47 +159,37 @@ struct LibraryControls: View {
         }.buttonStyle(LibraryPressStyle()).accessibilityLabel(label)
     }
 
-    private var playButton: some View {
-        Button(action: play) {
-            HStack(spacing: DS.Space.space1) {
-                Image(systemName: "play.fill").font(T.caption)
-                Text("Play matched").font(T.subhead.weight(.semibold)).lineLimit(1).minimumScaleFactor(0.7)
-            }
-            .foregroundStyle(enabled ? DS.Color.accentInk : DS.Color.inkFaint)
-            .padding(.horizontal, DS.Space.space2)
-            .frame(minHeight: typeSize.isAccessibilitySize ? DS.Control.controlXl : DS.Control.control)
-            .overlay(Capsule().strokeBorder(enabled ? DS.Color.accentInk : DS.Color.inkFaint, lineWidth: DS.Stroke.strokeThin))
-            .frame(minHeight: DS.Space.hit).contentShape(Rectangle())
-        }
-        .buttonStyle(LibraryPressStyle()).disabled(!enabled)
-        .accessibilityLabel(enabled ? "Play \(matches) matching \(matches == 1 ? "song" : "songs")" : "Play matched, no songs")
-        .accessibilityHint("Replaces the queue")
-    }
-
     private func count(showSongs: Bool) -> some View {
         let suffix = showSongs ? " songs" : ""
-        return VStack(alignment: typeSize.isAccessibilitySize ? .leading : .trailing, spacing: 0) {
-            // Reserve the total's digit width so narrowing does not move the controls.
+        return HStack(spacing: DS.Space.space2) {
             Text("\(total) of \(total)\(suffix)").hidden()
-                .overlay(alignment: typeSize.isAccessibilitySize ? .leading : .trailing) {
+                .overlay(alignment: .trailing) {
                     Text("\(matches) of \(total)\(suffix)")
                         .foregroundStyle(query.narrowing ? DS.Color.selectInk : DS.Color.inkMuted)
                 }
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel("\(matches) of \(total) songs matched")
                 .accessibilityFocused($countFocused)
-                .frame(minHeight: DS.Space.hit / 2)
-            if query.narrowing {
-                Button("Clear") { query.clear(); scrollTop(); countFocused = true }
-                    .font(T.caption.weight(.semibold)).foregroundStyle(DS.Color.selectInk)
-                    .frame(minWidth: DS.Space.hit, minHeight: DS.Space.hit / 2)
-                    .contentShape(Rectangle().inset(by: -DS.Space.hit / 4))
-                    .accessibilityLabel("Clear search and filters")
+            Menu {
+                Button("Play all matched", action: play).disabled(!enabled)
+                Button("Show currently playing song", action: showPlaying).disabled(!canShowPlaying)
+                Button("Clear all filters") { query.clear(); scrollTop(); countFocused = true }
+                    .disabled(!query.narrowing)
+            } label: {
+                Image(systemName: "ellipsis")
+                    .font(.system(size: DS.Icon.iconNav, weight: DS.Icon.iconWeight))
+                    .foregroundStyle(DS.Color.ink)
+                    .frame(width: DS.Control.control, height: DS.Control.control)
+                    .background(Circle().fill(DS.Color.surface).dsShadow(DS.Shadow.depthSlab))
+                    .frame(width: DS.Space.hit, height: DS.Space.hit)
+                    .contentShape(Rectangle())
             }
+            .accessibilityLabel("Library actions")
         }
         .font(T.caption).monospacedDigit().fixedSize(horizontal: true, vertical: false)
-        .frame(minHeight: DS.Space.hit, alignment: .center)
+        .frame(minHeight: DS.Space.hit)
     }
+
 }
 
 struct LibrarySortSheet: View {
@@ -254,11 +244,6 @@ struct LibrarySortSheet: View {
         .presentationBackground(DS.Color.surface).background(DS.Color.surface)
         .accessibilityAction(.escape) { dismiss() }
     }
-}
-
-private struct LibraryPlayWidth: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
 }
 
 struct LibraryHairline: View {

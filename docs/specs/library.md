@@ -7,8 +7,8 @@ in `docs/product/wireframes/` yet; add a link here when it lands).
 ## Screen
 
 iOS uses [Library v5](../ui-ux/library-v5.md), implemented in source on
-2026-10-22 ([task-0084](../tasks/task-0084.md)); Xcode and device verification
-are pending. The LIB rules below describe the web unless explicitly marked
+2026-10-22 ([task-0084](../tasks/task-0084.md)); Xcode build and eight query
+tests passed; visual and device verification are pending. The LIB rules below describe the web unless explicitly marked
 iOS. iOS has a pinned count/controls row, live filter sheets, cover-to-play
 and text-to-details tap zones, and deletion only in Song Details. Its dock
 is unchanged.

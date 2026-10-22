@@ -77,10 +77,7 @@ struct LibraryFilterSheet: View {
                     if visible.isEmpty {
                         Text("Nothing here yet.").font(T.body).foregroundStyle(DS.Color.inkMuted)
                     } else if category == .era {
-                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: DS.Space.space2),
-                                                 count: typeSize.isAccessibilitySize ? 1 : 2), spacing: DS.Space.space2) {
-                            ForEach(visible) { chip($0, wide: true) }
-                        }.measuredHeight($valuesHeight)
+                        eraBlocks.measuredHeight($valuesHeight)
                     } else {
                         FlowLayout(spacing: DS.Space.space2) { ForEach(visible) { chip($0, wide: false) } }
                     }
@@ -106,6 +103,38 @@ struct LibraryFilterSheet: View {
     private var meta: some View {
         Text("\(values.count) \(category.noun(values.count)) · \(selected) selected").font(T.caption).foregroundStyle(DS.Color.inkMuted)
     }
+    private var eraBlocks: some View {
+        let grouped = Dictionary(grouping: visible.filter { eraYear($0) != nil }) { eraYear($0)! / 100 }
+        let unknown = visible.filter { eraYear($0) == nil }
+        return VStack(alignment: .leading, spacing: DS.Space.space4) {
+            ForEach(grouped.keys.sorted(), id: \.self) { century in
+                VStack(alignment: .leading, spacing: DS.Space.space2) {
+                    Text("\(century)xx").font(T.subhead).underline().foregroundStyle(DS.Color.inkMuted)
+                        .accessibilityAddTraits(.isHeader)
+                    eraChips((grouped[century] ?? []).sorted { eraYear($0)! < eraYear($1)! })
+                }
+            }
+            if !unknown.isEmpty { eraChips(unknown) }
+        }.frame(maxWidth: .infinity, alignment: .leading)
+    }
+    @ViewBuilder private func eraChips(_ values: [LibraryFacetValue]) -> some View {
+        if typeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: DS.Space.space2) {
+                ForEach(values) { chip($0, wide: false) }
+            }
+        } else {
+            FlowLayout(spacing: DS.Space.space2) { ForEach(values) { chip($0, wide: false) } }
+        }
+    }
+    private func eraYear(_ value: LibraryFacetValue) -> Int? {
+        Int(value.id.dropFirst(category.prefix.count))
+    }
+    private func chipLabel(_ value: LibraryFacetValue) -> String {
+        if category == .era, let year = eraYear(value) {
+            return String(format: "the %02ds", (year % 100 + 100) % 100)
+        }
+        return value.label
+    }
     private var matchCount: some View {
         // Observe query, library and listening so this is live while the sheet is presented.
         let _ = query.search
@@ -122,7 +151,7 @@ struct LibraryFilterSheet: View {
             tick += 1
         } label: {
             HStack(spacing: DS.Space.space1) {
-                Text(value.label).font(on ? T.subhead.weight(.semibold) : T.subhead)
+                Text(chipLabel(value)).font(on ? T.subhead.weight(.semibold) : T.subhead)
                 if wide { Spacer(minLength: DS.Space.space1) }
                 Text("\(value.count)").font(T.caption).foregroundStyle(on ? scheme.onStrong : DS.Color.inkMuted)
             }

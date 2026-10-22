@@ -2,9 +2,13 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
-## 2026-10-22 (iOS Library v5, source implemented; not built or uploaded)
+## 2026-10-22 (iOS Library refinements, simulator built; not uploaded)
 
-- iOS: Library v5 controls, seven sort options and direction, live filters and Era, separate play/details row zones, queue markers, Song Details with sharing and deletion, loading/offline/error states, and pinned headers. Dock/mini-player and drawer unchanged. Eight query regression tests added; Xcode tests and simulator/device verification pending ([task-0084](tasks/task-0084.md)).
+- iOS: keep a visible plain-text match count on the right with an adjacent ellipsis menu for Play all matched, Show currently playing song and Clear all filters, remove the separate playback/Clear buttons, and group Era chips chronologically under century headings, and show Pause/Play on the current cover like the web. Simulator build and code review passed; these refinements are newer than TestFlight build 20261028.
+
+## 2026-10-22 (iOS Library v5, build 20261028 uploaded to TestFlight)
+
+- iOS: Library v5 controls, seven sort options and direction, live filters and Era, separate play/details row zones, queue markers, Song Details with sharing and deletion, loading/offline/error states, and pinned headers. Dock/mini-player and drawer unchanged. All eight query regression tests passed in the iOS simulator; signed Release archive and internal TestFlight upload succeeded. Apple processing and visual/device verification pending ([task-0084](tasks/task-0084.md)).
 
 ## 2026-10-22 (web shuffle and scroll button, to deploy)
 
