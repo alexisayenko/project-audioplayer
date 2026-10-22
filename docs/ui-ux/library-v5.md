@@ -471,10 +471,14 @@ Several categories on at once: each shows its own tinted chip; categories combin
 | 2 | Cover | 200 x 200 (`details-cover`), radius `radiusCard`, centered, `depthSlab` |
 | 3 | Title block | Title `T.title` centered (max 3 lines); artist `T.body` `inkMuted`; version / year line `T.subhead` `inkMuted` ("Original Mix · 2024", or the version label and year) |
 | 4 | Primary button | `LitButtonStyle`, content width min 200, centered: "Play" (`play.fill`) on the phone; "Download to iPhone" for a server-only song; disabled "No audio yet" otherwise |
-| 5 | Facts card | Surface slab (radius 20), rows of `rowHeight` 48 with `line` hairlines: label `T.subhead` `inkMuted` left, value `T.subhead` `ink` right-aligned (wraps to the left column at large text). Rows, each omitted when empty: Duration, BPM ("122 BPM"), Release year, Genres (pills), Tags (pills), Country (name), Date added ("12 Mar 2026"), File name ("Artist - Title.m4a", only when on the phone, middle truncation, long press copies), Source (service name + chevron, opens the link). Pills: `TagPill` (`accentTint`, `ink`). There is no musical key (not in the data model, Q3). |
+| 5 | Facts card | Surface slab (radius 20), rows of `rowHeight` 48 with `line` hairlines: label `T.subhead` `inkMuted` left, value `T.subhead` `ink` right-aligned (wraps to the left column at large text). Rows, each omitted when empty: Duration, BPM ("122 BPM"), Release year, Genres (pills), Tags (pills), Country (name), File name ("Artist - Title.m4a", only when on the phone, middle truncation, long press copies), Source (service name + chevron, opens the link). Date added, file size, and file format are omitted. Pills: `TagPill` (`accentTint`, `ink`). There is no musical key (not in the data model, Q3). |
 | 6 | Playback statistics | Section label "Playback statistics" (`SectionLabel`), slab with three equal cells: Plays (number `T.title`, caption `inkMuted`), Last played ("2 days ago", full date as VO value), Total listened ("3 h 12 min"). Signed in only, from `GET /stats/listening`; hidden signed out or when never loaded. |
 | 7 | Actions card | Slab, rows of 48 with icon 20 + label `T.body` `ink`: Play next, Add to queue, Share link, then Download (server only) or Remove from iPhone (on the phone, not local only). Play next and Add to queue only when on the phone and not current. |
 | 8 | Delete | 32 below the actions card, centered text button "Delete from library" (`trash` 16 + `T.body`, `powerText`, hit 48), the last element of the scroll content; available for every song. The only delete in the app. |
+
+The Edit sheet's cover summary shows the thumbnail, optional Remix line,
+duration and BPM when available. It omits file size, file format, and date
+added; duration and BPM remain visible in both the summary and Facts card.
 
 **Variants.** On the phone / server only / no audio / downloading (primary button reads "Downloading NN%", disabled); signed out (no Edit, no statistics, Delete deletes the local song); the song vanished (deleted elsewhere): pop back with the toast "This song is no longer in your library".
 

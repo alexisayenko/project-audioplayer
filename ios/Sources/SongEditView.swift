@@ -38,15 +38,7 @@ struct SongEditView: View {
         var parts: [String] = []
         if let d = song.duration { parts.append(formatTime(d)) }
         if let b = bpm { parts.append("\(b) BPM") }
-        if let t = track, let size = try? FileManager.default.attributesOfItem(atPath: t.fileURL.path)[.size] as? Int {
-            parts.append(ByteCountFormatter.string(fromByteCount: Int64(size), countStyle: .file))
-            parts.append(t.fileURL.pathExtension.uppercased())
-        }
         return parts.joined(separator: " · ")
-    }
-
-    private var added: String? {
-        track?.addedAt.map { "Added " + $0.formatted(.dateTime.day().month(.abbreviated).year()) }
     }
 
     private struct SourceLink: Identifiable {
@@ -105,7 +97,6 @@ struct SongEditView: View {
             VStack(alignment: .leading, spacing: 6) {
                 if let r = (track?.remixer ?? song.remixer), !r.isEmpty { Text("Remix: \(r)").font(T.caption).foregroundStyle(DS.Color.inkMuted).lineLimit(2) }
                 if !facts.isEmpty { Text(facts).font(T.time).foregroundStyle(DS.Color.inkMuted) }
-                if let added { Text(added).dsCaption() }
             }
             Spacer(minLength: 0)
         }

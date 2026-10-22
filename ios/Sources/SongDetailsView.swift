@@ -111,7 +111,6 @@ struct SongDetailsView: View {
             if !tags.isEmpty { pills("Tags", tags) }
             let countries = LibraryFacet.countries.keys(track).filter { $0 != LibraryFacet.countries.unknown }.sorted().map { LibraryFacet.countries.label($0) }
             if !countries.isEmpty { fact("Country", countries.joined(separator: ", ")) }
-            if let added = track.addedAt { fact("Date added", added.formatted(.dateTime.day().month(.abbreviated).year())) }
             if library.contains(id) {
                 fact("File name", track.fileURL.lastPathComponent).contextMenu {
                     Button("Copy file name") { UIPasteboard.general.string = track.fileURL.lastPathComponent; notify("File name copied") }
