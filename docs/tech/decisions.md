@@ -950,3 +950,63 @@ Status: Accepted (Alex, 2026-10-21, AC2); supersedes [ADR-0018](#adr-0018-public
 - Limits (env-configurable): 5 downloads per device per hour, 1 concurrent per device, 30 per IP per day (IPv6 per /64), 20 sessions per IP per hour, 15 minutes and 60 MB per track, 20 anonymous jobs in the system, the global download cap shared with signed-in users, and no new job below 2 GB of free disk. A device id is free to mint, so the per-IP limits are the real bound; the per-device ones keep an honest client honest.
 - Consequences: signed-in storage is untouched (the pool and quotas never see anonymous files); no data about anonymous users is kept beyond short keyed hashes of device id and IP in the audit log; abuse is bounded by IP and disk, and one switch (`ANON_DOWNLOADS_ENABLED=0`) closes everything. Downloading may violate YouTube's ToS (as for signed-in users); the app is not for distribution.
 - Rejected: a guest account with a library (storage and identity we do not want to keep); streaming straight through the server without staging (the phone could not verify or resume, and a long yt-dlp run would hold the connection); a shared anonymous uid (would mix libraries and quotas); keeping the file until it expires (the ack frees disk at once).
+
+
+## ADR-0043 Persistent queue and ephemeral visible-song audition
+
+Status: Accepted (Alex, 2026-10-22); documentation only, not implemented.
+Task: [task-0085](../tasks/task-0085.md). Requirements:
+[playback](../specs/playback.md#two-independent-playback-contexts-adr-0043).
+Product model: [playback contexts](../product/concept-playback-contexts.md).
+
+### Context
+
+Library is the collection of all songs; the current playing queue is the
+sequence chosen for continuing playback, populated explicitly from Library
+and, later, Playlists. Currently iOS Library Play replaces that queue with the
+matching downloaded songs, and Song Details shares the same player. Browsing
+and trying a song must no longer disturb the continuing sequence.
+
+### Decision
+
+- The playback dock belongs exclusively to the current playing queue; it
+  controls that queue's playback and displays that queue's song and progress.
+- Library and Song Details have a separate, ephemeral single-song audition
+  player with **only Play/Pause**: no seek, volume, next/previous or extra
+  transport controls. Queue actions such as Add to queue remain separate.
+- Both players may be audible simultaneously. Starting or pausing audition
+  does not pause, replace, reorder, advance, seek or otherwise mutate the queue;
+  dock actions do not control audition. The queue continues its own progression.
+- Only one song can occupy audition; starting another replaces the audition
+  song, without affecting the queue. An audition has no sequence or auto-next.
+- Audition is allowed only while its owning Library row or Song Details view
+  is visible: stop when the row scrolls out of view or disappears, when that
+  screen is left or details dismissed, and on locking, backgrounding or app
+  exit. Returning to a surface does not automatically start audition.
+- The queue is the fundamental, continuing playback context; audition is
+  temporary and tied to the visible song. Queue playback continues independently
+  in the background and with the screen locked, using downloaded audio offline.
+- The dock/queue relationship is a presentation/state boundary within the
+  client, not a new network server or dependency on a remote playback service.
+
+### Consequences and alternatives
+
+Two independently controlled audio outputs are intentional, even when they
+sound together; the earlier suggestion to pause the queue for audition was
+rejected by Alex. No separate audition volume UI is added. Implementations
+must scope row/details Play/Pause to audition and keep queue membership,
+current-queue-song status and dock state distinct. Visibility and lifecycle
+handling must stop audition without stopping the queue.
+
+The existing web player is a reference for Library layout and explicit queue
+actions, not evidence that this two-player model is already implemented on
+any platform. iOS is the immediate target; web/macOS parity is not delivered
+by this decision. The existing queue persistence rules are unchanged; this
+decision does not promise restoring playback after process termination.
+
+### Open implementation decisions
+
+System/headphone/lock-screen control ownership (recommendation: queue only),
+existing Play all matched / Play now / Play next semantics, audio availability
+for audition, Pause/Play resume behavior, listening-statistics attribution and
+platform audio interruption handling remain open; see the playback spec.

@@ -8,6 +8,53 @@ Code: `web/js/player.js` (UI, audio, persistence), `web/js/queue-logic.js`
 [scrollbar](../product/wireframes/playback-v3-scrollbar.png). Product
 description: [`../product/screens.md`](../product/screens.md) section 3. Status values reflect code read on 2026-10-13; the web layout follows the Electrophone web artboards (WEB-014, WEB-016); the wireframes above are the older four-card layout and are history for layout.
 
+## Two independent playback contexts (ADR-0043)
+
+Status: agreed target on 2026-10-22, **not implemented**; implementation is
+[task-0085](../tasks/task-0085.md). The remaining sections describe existing
+web queue behavior unless explicitly marked otherwise; existing iOS behavior
+is in [ios.md](ios.md). The target is the iOS Library/Song Details flow;
+web/macOS migration is not claimed. Rationale: [ADR-0043](../tech/decisions.md#adr-0043-persistent-queue-and-ephemeral-visible-song-audition).
+
+- PLY-190 MUST: Library is the complete song collection; the current playing queue is a separate playback sequence, populated by explicit queue actions from Library and, when implemented, Playlists. Status: planned
+- PLY-191 MUST: the playback dock displays and controls only the queue context, including its current song and progress; audition must not replace dock information. Status: planned
+- PLY-192 MUST: Library cover Play/Pause and Song Details Play/Pause control a separate single-song audition context with only Play/Pause and no seek, volume, next/previous, queue or auto-next transport; explicit Add to queue is a different action. Status: planned
+- PLY-193 MUST: queue audio and audition audio may play simultaneously; starting, replacing, pausing or stopping audition must not pause, replace, reorder, seek or otherwise mutate the queue, and queue transport must not control audition. Status: planned
+- PLY-194 MUST: audition contains at most one song; starting a different audition stops and replaces the previous audition without changing queue playback. Status: planned
+- PLY-195 MUST: audition may play only while its owning Library row or Song Details view is visible; stop it when the row leaves the viewport or disappears from the results, the user leaves the corresponding view, details is dismissed, the device locks, or the app backgrounds or exits. Status: planned
+- PLY-196 MUST: returning to Library/details, scrolling a stopped song back into view, foregrounding or unlocking must not automatically restart audition. Status: planned
+- PLY-197 MUST: queue playback remains independent of audition lifecycle and continues in the background and with the screen locked; downloaded queue audio remains usable offline without sign-in. App exit does not promise that a terminated process continues playing or restores playback on relaunch. Status: planned
+- PLY-198 MUST: row/details Play/Pause state reflects audition; queue membership and the queue's current song remain separate states, including when the same song belongs to both contexts; temporary audition does not become the dock's current song. Status: planned
+
+### Target flows and checks
+
+| User action | Audition result | Queue/dock result |
+| --- | --- | --- |
+| Play a visible Library song while the queue plays | That song starts; prior audition stops | Existing song continues, both outputs audible |
+| Pause that Library/details song | Audition pauses | Queue keeps playing |
+| Use dock Play/Pause | Audition unchanged while its owner stays visible | Only queue playback changes |
+| Play another visible song | New song replaces previous audition | Queue continues normally |
+| Add a song to queue | Does not start or change audition | Explicit membership change, no automatic start |
+| Scroll audition row offscreen or filter it out | Stops | Queue continues normally |
+| Leave Library, including opening Song Details | Library-owned audition stops; details requires its own Play | Queue continues normally |
+| Leave/dismiss Song Details | Details-owned audition stops | Queue continues normally |
+| Lock or background | Stops | Queue may continue background/lock playback |
+| Return or unlock | Remains stopped until Play | Queue retains its independent state |
+
+Full paths: [user journeys](../ui-ux/journeys.md#queue-playback-and-temporary-audition-agreed-target).
+Visibility means the source song surface is still presented, not merely mounted
+in a navigation stack or lazy list; exact partial-row/occlusion thresholds are
+implementation details to settle without weakening the stop requirement.
+
+### Open decisions before implementation
+
+- **System controls:** queue-only ownership of headphones, lock-screen transport and media metadata is recommended, not yet separately accepted; audition must stop at lock regardless.
+- **Existing queue commands:** Play all matched currently explicitly replaces the queue and starts matching phone songs; Play now and Play next also change it. Decide which commands remain and their exact behavior under the new model; do not reinterpret them as single-song audition or silently remove them. Add to queue remains an explicit non-starting action.
+- **Audio availability:** iOS currently plays local files and downloads server-only songs without autoplay; whether audition can stream, download or only use phone audio is undecided. Do not introduce downloads/streaming by documenting a decision that was not made.
+- **Pause and completion:** decide whether an explicit Play after Pause resumes or restarts; natural end has no auto-next, but restart position and retention within a still-visible surface need definition. A stopped/hidden audition never resumes automatically.
+- **Statistics:** decide whether audition contributes to listening/skip counts and how overlapping playback is attributed; existing queue statistics must not silently double-count.
+- **Audio interruptions and routes:** define call/interruption, headphone unplug and route-change behavior for both outputs while preserving the queue's reliability.
+
 ## Screen
 
 The layout is two columns (one below 900px); the player column keeps at most 420px and the queue card fills all the remaining width up to the page gutters (no 1100px cap): the player column (cover, details; transport, seek bar, times and volume are the standard mini-player dock, PLY-146) and the queue card. The four numbered blocks below keep their IDs; they are regions, not stacked cards.

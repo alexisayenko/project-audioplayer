@@ -53,7 +53,7 @@ struct LibraryFilterSheet: View {
         VStack(spacing: DS.Space.space2) {
             VStack(spacing: DS.Space.space2) {
                 HStack {
-                    Text(category.rawValue).font(T.title).foregroundStyle(DS.Color.ink).accessibilityAddTraits(.isHeader)
+                    Text(category.title).font(T.title).foregroundStyle(DS.Color.ink).accessibilityAddTraits(.isHeader)
                     Spacer()
                     Button("Done") { dismiss() }.font(T.body.weight(.semibold)).foregroundStyle(DS.Color.selectInk)
                         .frame(minWidth: DS.Space.hit, minHeight: DS.Space.hit)

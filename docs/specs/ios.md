@@ -5,6 +5,21 @@ screen flow matches it (ADR-0007). Status values reflect code read on
 2026-10-13; "implemented" means built into the app, not yet proven on a
 device unless a line says so.
 
+## Accepted playback change: implementation pending
+
+[ADR-0043](../tech/decisions.md#adr-0043-persistent-queue-and-ephemeral-visible-song-audition)
+and [PLY-190 onward](playback.md#two-independent-playback-contexts-adr-0043)
+define the target: the dock belongs to the continuing queue; Library/Song
+Details use a separate visible-song audition with only Play/Pause, allowed to
+sound simultaneously with the queue. Audition stops on losing its owning
+surface, navigation, lock, background or exit, without changing queue playback.
+This is **not implemented** ([task-0085](../tasks/task-0085.md)); the current
+behavior below remains the implementation record, including Library cover
+Play replacing the queue (IOS-030) and Play all matched (IOS-031). Do not infer
+that the existing row/details controls already implement audition. The label
+in IOS-032 is now **Decade** (formerly Era); this is a UI label change, not a
+different filtering model.
+
 ## Shell and navigation
 
 - IOS-001 MUST: the app has five destinations in a left panel (side drawer, `Drawer.swift`) in the order "Library", "Now playing", "Playlists", "Statistics", "Settings" (Library first as the landing destination; this intentionally differs from the web order) with the web labels (web `#/library`, `#/playback`, `#/playlists`, `#/stats`, `#/settings`) and SF Symbols; there is no bottom tab bar. The drawer opens from a menu (hamburger) button at the leading edge of each root screen header ("Open menu") or a swipe from the left edge on a root screen, is 75% of the screen wide (at most 320pt) over a dimming scrim, and closes by tapping the scrim, swiping left, choosing an item (selection haptic) or Escape; items and the account row activate on touch-down, not on release (VoiceOver activation still works); the active item has the select-tint capsule with select-ink icon and label; an account row at its bottom (person icon with the signed-in email, or "Sign in" when signed out) opens Settings. It is a VoiceOver modal (focus moves in, "Close menu" action, `isSelected` on the active item), items are at least 44pt, text scales to accessibility2, and with Reduce Motion it appears without sliding. Add is not a destination: a + button in the Library header opens the AddSheet (ADR-0009). The queue length is shown on Playback ("Queue (N)"). Status: implemented (verified in the simulator)

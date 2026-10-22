@@ -55,73 +55,52 @@ struct LibraryView: View {
         NavigationStack(path: $path) {
             GeometryReader { screen in
                 ScrollViewReader { proxy in
-                    ScrollView {
-                        VStack(spacing: DS.Space.space3) {
-                            Color.clear.frame(height: 0).id("library.top")
-                                .background(GeometryReader { geometry in
-                                    Color.clear.preference(key: LibraryScrollOffset.self, value: geometry.frame(in: .named("library.scroll")).minY)
-                                })
-                            if signedIn && server.reachable == false && !songs.isEmpty { offlineBanner }
-                            content(matches, queued: queued)
-                                .frame(minHeight: !loading && (songs.isEmpty || matches.isEmpty) && arriving.isEmpty
-                                       ? max(0, screen.size.height - pinnedHeight - DS.Space.space4) : nil)
-                        }
-                        .padding(.horizontal, DS.Space.space4).padding(.bottom, DS.Space.space4)
-                        .frame(maxWidth: .infinity)
-                    }
-                    .coordinateSpace(name: "library.scroll")
-                    .safeAreaInset(edge: .top, spacing: 0) {
-                        VStack(spacing: 0) {
-                            header
-                            if !hideTools {
-                                VStack(spacing: 0) {
-                                    LibrarySearchField(text: $query.search).padding(.horizontal, DS.Space.space4)
-                                    chipRow
-                                }
-                                .frame(height: collapsed || facet != nil ? 0 : nil, alignment: .top)
-                                .opacity(collapsed || facet != nil ? 0 : 1).clipped()
-                                .accessibilityHidden(collapsed || facet != nil).allowsHitTesting(!collapsed && facet == nil)
-                                LibraryControls(matches: matches.count, total: songs.count,
-                                                enabled: !matches.isEmpty && !loading && !failed,
-                                                canShowPlaying: player.current.map { current in songs.contains { $0.id == current.id } } ?? false,
-                                                showPlaying: { showPlaying(proxy) },
-                                                sort: { hideKeyboard(); showSort = true }, play: { playMatched(matches) },
-                                                scrollTop: { scrollTop(proxy) }).padding(.horizontal, DS.Space.space4)
+                    VStack(spacing: 0) {
+                        pinnedHeader(matches, proxy: proxy)
+                        ScrollView {
+                            VStack(spacing: DS.Space.space3) {
+                                Color.clear.frame(height: 0).id("library.top")
+                                    .background(GeometryReader { geometry in
+                                        Color.clear.preference(key: LibraryScrollOffset.self, value: geometry.frame(in: .named("library.scroll")).minY)
+                                    })
+                                if signedIn && server.reachable == false && !songs.isEmpty { offlineBanner }
+                                content(matches, queued: queued)
+                                    .frame(minHeight: !loading && (songs.isEmpty || matches.isEmpty) && arriving.isEmpty
+                                           ? max(0, screen.size.height - pinnedHeight - DS.Space.space4) : nil)
                             }
-                            LibraryHairline().opacity(offset < -DS.Space.space1 ? 1 : 0)
+                            .padding(.horizontal, DS.Space.space4).padding(.bottom, DS.Space.space4)
+                            .frame(maxWidth: .infinity)
                         }
-                        .background(DS.Color.ground)
-                        .measuredHeight($pinnedHeight)
-                        .dsAnimation(DS.Motion.durSlow, curve: DS.Motion.easeIo, value: collapsed || facet != nil)
-                    }
-                    .scrollDismissesKeyboard(.interactively).onPreferenceChange(LibraryScrollOffset.self, perform: scrolled)
-                    .refreshable { await refresh() }
-                    .onChange(of: query.search) { _, _ in scrollTop(proxy) }
-                    .onChange(of: query.sort) { _, _ in scrollTop(proxy) }
-                    .onChange(of: query.reversed) { _, _ in scrollTop(proxy) }
-                    .onChange(of: resetScroll) { _, _ in scrollTop(proxy) }
-                    .confirmationDialog("Song is hidden by the current filters", isPresented: $showHiddenPlaying, titleVisibility: .visible) {
-                        Button("Show") {
-                            pendingReveal = player.current?.id
-                            query.clear()
+                        .coordinateSpace(name: "library.scroll")
+                        .scrollDismissesKeyboard(.interactively).onPreferenceChange(LibraryScrollOffset.self, perform: scrolled)
+                        .refreshable { await refresh() }
+                        .onChange(of: query.search) { _, _ in scrollTop(proxy) }
+                        .onChange(of: query.sort) { _, _ in scrollTop(proxy) }
+                        .onChange(of: query.reversed) { _, _ in scrollTop(proxy) }
+                        .onChange(of: resetScroll) { _, _ in scrollTop(proxy) }
+                        .confirmationDialog("Song is hidden by the current filters", isPresented: $showHiddenPlaying, titleVisibility: .visible) {
+                            Button("Show") {
+                                pendingReveal = player.current?.id
+                                query.clear()
+                            }
                         }
-                    }
-                    .onChange(of: tracks.map(\.id)) { _, ids in
-                        guard let id = pendingReveal, ids.contains(id) else { return }
-                        pendingReveal = nil
-                        Task { @MainActor in
-                            await Task.yield()
-                            reveal(id, proxy: proxy)
+                        .onChange(of: tracks.map(\.id)) { _, ids in
+                            guard let id = pendingReveal, ids.contains(id) else { return }
+                            pendingReveal = nil
+                            Task { @MainActor in
+                                await Task.yield()
+                                reveal(id, proxy: proxy)
+                            }
                         }
-                    }
-                    .sheet(isPresented: $showSort) {
-                        LibrarySortSheet(listeningAvailable: signedIn && listening.loaded, scrollTop: { scrollTop(proxy) })
-                    }
-                    .sheet(item: $facet, onDismiss: {
-                        ignoreScrollUntil = Date().addingTimeInterval(DS.Motion.durSlow + DS.Motion.durFast)
-                    }) { category in
-                        LibraryFilterSheet(category: category, values: category.values(songs), selection: $query.selection,
-                                           resultCount: { tracks.count }).onDisappear { facetFocus = category }
+                        .sheet(isPresented: $showSort) {
+                            LibrarySortSheet(listeningAvailable: signedIn && listening.loaded, scrollTop: { scrollTop(proxy) })
+                        }
+                        .sheet(item: $facet, onDismiss: {
+                            ignoreScrollUntil = Date().addingTimeInterval(DS.Motion.durSlow + DS.Motion.durFast)
+                        }) { category in
+                            LibraryFilterSheet(category: category, values: category.values(songs), selection: $query.selection,
+                                               resultCount: { tracks.count }).onDisappear { facetFocus = category }
+                        }
                     }
                 }
             }
@@ -158,13 +137,38 @@ struct LibraryView: View {
         }.padding(.horizontal, DS.Space.space4).padding(.top, DS.Space.space2)
     }
 
+    private func pinnedHeader(_ matches: [Track], proxy: ScrollViewProxy) -> some View {
+        VStack(spacing: 0) {
+            header
+            if !hideTools {
+                VStack(spacing: 0) {
+                    LibrarySearchField(text: $query.search).padding(.horizontal, DS.Space.space4)
+                    chipRow
+                }
+                .frame(height: collapsed ? 0 : nil, alignment: .top)
+                .opacity(collapsed ? 0 : 1).clipped()
+                .accessibilityHidden(collapsed || facet != nil).allowsHitTesting(!collapsed && facet == nil)
+                LibraryControls(matches: matches.count, total: songs.count,
+                                enabled: !matches.isEmpty && !loading && !failed,
+                                canShowPlaying: player.current.map { current in songs.contains { $0.id == current.id } } ?? false,
+                                showPlaying: { showPlaying(proxy) },
+                                sort: { hideKeyboard(); showSort = true }, play: { playMatched(matches) },
+                                scrollTop: { scrollTop(proxy) }).padding(.horizontal, DS.Space.space4)
+            }
+            LibraryHairline().opacity(offset < -DS.Space.space1 ? 1 : 0)
+        }
+        .background(DS.Color.ground)
+        .measuredHeight($pinnedHeight)
+        .dsAnimation(DS.Motion.durSlow, curve: DS.Motion.easeIo, value: collapsed)
+    }
+
     private var chipRow: some View {
         GeometryReader { geometry in
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: DS.Space.space2) {
                     ForEach(LibraryFacet.allCases) { category in
                         let selected = query.selection.filter { $0.hasPrefix(category.prefix) }.count
-                        LibraryFilterChip(title: category.rawValue, symbol: category.symbol, selected: selected > 0, count: selected) {
+                        LibraryFilterChip(title: category.title, symbol: category.symbol, selected: selected > 0, count: selected) {
                             hideKeyboard(); facet = category
                         }.accessibilityFocused($facetFocus, equals: category)
                     }
@@ -181,6 +185,7 @@ struct LibraryView: View {
                     })
                 }.padding(.horizontal, DS.Space.space4)
             }
+            .scrollBounceBehavior(.basedOnSize, axes: .vertical)
             .coordinateSpace(name: "library.chips").onPreferenceChange(LibraryChipEnd.self) { chipEnd = $0 }
             .mask {
                 HStack(spacing: 0) {
@@ -231,14 +236,18 @@ struct LibraryView: View {
         let current = player.current?.id == track.id
         let progress = (server.transfers[track.id] ?? anon.transfers[track.id])?.progress
         return LibrarySongRow(track: track, progress: progress, onPhone: onPhone, playing: current, isPlaying: player.isPlaying,
-                              queued: queued, waiting: server.waiting.contains(track.id), play: { hideKeyboard(); play(track, in: matches) },
+                              queued: queued, waiting: server.waiting.contains(track.id),
+                              listenedCount: signedIn && listening.loaded ? listening.entries[track.id]?.listened?.all ?? 0 : nil,
+                              toggleQueue: onPhone && !current ? { toggleQueued(track) } : nil,
+                              play: { hideKeyboard(); play(track, in: matches) },
                               details: { openDetails(track, matches: matches) }, download: { download(track) })
             .contextMenu { menu(track, onPhone: onPhone, current: current, transferring: progress != nil) }
             .accessibilityFocused($rowFocus, equals: track.id)
             .accessibilityActions {
                 Button("Show details") { openDetails(track, matches: matches) }
                 if onPhone && !current {
-                    Button("Play next") { playNext(track) }; Button("Add to queue") { enqueue(track) }
+                    Button("Play next") { playNext(track) }
+                    Button(queued ? "Remove from queue" : "Add to queue") { toggleQueued(track) }
                 }
                 if signedIn { Button("Edit") { editing = ServerSong(track) } }
                 if signedIn && !onPhone && progress == nil {
@@ -300,6 +309,12 @@ struct LibraryView: View {
     private func enqueue(_ track: Track) {
         let added = player.enqueue([track]) > 0
         if added { queueTick += 1 }; notify(added ? "Added to queue" : "Already in queue")
+    }
+    private func toggleQueued(_ track: Track) {
+        guard player.current?.id != track.id else { return }
+        if let index = player.queue.firstIndex(where: { $0.id == track.id }) {
+            player.removeFromQueue(at: IndexSet(integer: index)); queueTick += 1; notify("Removed from queue")
+        } else { enqueue(track) }
     }
     private func removeAudio(_ track: Track) { library.removeAudio(track.id); notify("Removed from this iPhone") }
     private func refresh() async {

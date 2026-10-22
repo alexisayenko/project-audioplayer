@@ -115,8 +115,12 @@ struct SideDrawer: View {
                             .lineLimit(1).minimumScaleFactor(0.6)
                             .accessibilityAddTraits(.isHeader)
                             .accessibilityFocused($titleFocused)
-                        Text("Offline music player").font(T.subhead).foregroundStyle(DS.Color.inkMuted)
+                        Image("Vega108Wordmark").resizable().scaledToFit()
+                            .frame(height: DS.Icon.iconNav)
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                            .accessibilityLabel("Vega 108")
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .padding(.horizontal, DS.Space.space6).padding(.bottom, DS.Space.space6)
                 ForEach(AppTab.allCases, id: \.self) { item($0) }

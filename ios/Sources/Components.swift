@@ -313,11 +313,13 @@ struct CoverImage: View {
 
     private var placeholder: some View {
         GeometryReader { g in
-            ZStack {
-                DS.Color.vinyl
-                Circle().fill(DS.Color.accent).frame(width: g.size.width * 0.4, height: g.size.width * 0.4)
-                    .position(x: g.size.width / 2, y: g.size.height * (g.size.width > 150 ? 0.42 : 0.5))
-            }
+            Image("ThumbnailRecord")
+                .resizable()
+                .scaledToFit()
+                .frame(width: min(g.size.width, g.size.height) / 1.5,
+                       height: min(g.size.width, g.size.height) / 1.5)
+                .position(x: g.size.width / 2, y: g.size.height / 2)
+                .accessibilityHidden(true)
         }
     }
 

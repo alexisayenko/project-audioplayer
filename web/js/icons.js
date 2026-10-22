@@ -61,6 +61,7 @@ export const ICONS = {
   arrowUp: { d: '<path d="m5 12 7-7 7 7"/><path d="M12 19V5"/>' },
   ring: { d: '<circle cx="12" cy="12" r="3.5"/><path d="M12 3v2.5"/><path d="M12 18.5V21"/><path d="M3 12h2.5"/><path d="M18.5 12H21"/><path d="m16.6 7.4 1.8-1.8"/><path d="m16.6 16.6 1.8 1.8"/><path d="m7.4 16.6-1.8 1.8"/><path d="m7.4 7.4-1.8-1.8"/>' },
   mark: { d: '<image href="img/electrophone-vinyl.png" x="0" y="0" width="24" height="24" stroke="none"/>' },
+  coverPlaceholder: { d: '<image href="img/thumbnail-record.png" x="0" y="0" width="24" height="24" stroke="none"/>' },
   synthwave: { d: '<path d="M7 12a5 5 0 0 1 10 0"/><path d="M3 12h18"/><path d="M5 16h14"/><path d="M8 20h8"/>' },
 };
 

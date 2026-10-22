@@ -36,6 +36,19 @@ tap (on Playback itself the tap does nothing). Tapping a Library row opens a rea
 Years, Countries) open a multi-select filter sheet (WEB-011). Web Playback has no background visualizer; the dock has a Visualizer key left of Shuffle that opens the full screen (the mode is picked inside it) and the settings panel lives only inside the full-screen window behind a gear button. Web Playback is two columns (below 900px the queue card sits under the player): the player column has the cover (title and artist on it), the details (the transport, seek bar, times and volume are the standard dock at the bottom, PLY-146; a selected Shuffle or Repeat shows an outlined, unfilled button, PLY-132); one visualizer at a time (Mirrored spectrum, Ring, or the WebGL Terrain and Synthwave terrain where WebGL exists), chosen with the mode dropdown in the dock or the `M` key (Terrain also has seven styles via `T` and an optional Camera flight via `F`) and sized by Settings > Playback > "Visualizer height" (Small, 1/6, by default); Playback also has a Visualizer button and the key `V` for a full-screen overlay (transport, shuffle, repeat and volume, a top-right Share link and Exit cluster, a left "Visualizer style" panel, all auto-hiding; a click on the picture pauses or plays), a Share link button, and an optional visualizer background layer (Settings > Playback, VIZ-020..024, controls cheat sheet in visualizer.md; SHARE-001..017); the queue card beside it has "Add by tag" and "Clear" and no tab badge (the queue length shows in its header; PLY-001, PLY-002). The iOS Settings screen shows Account (a quiet "Not allowed on this server" under the email when the server answers 403), Downloads (read-only audio quality, "Download new songs automatically", "Use mobile data"), and Storage, then the version line; the iOS Add sheet opens the edit form right after Fetch (link field, Fetch and the search link hidden) and pins "Add to library" and "Add and download to iPhone" at the bottom. The iOS app has its own tab bar with the same three destinations (its Playback has no volume row and its titles carry no eyebrow) (see
 [`../specs/ios.md`](../specs/ios.md)).
 
+## Playback model update (accepted 2026-10-22; not implemented)
+
+The screen descriptions below document the existing shared queue player.
+[ADR-0043](../tech/decisions.md#adr-0043-persistent-queue-and-ephemeral-visible-song-audition)
+changes the intended Library/Song Details flow: their only playback transport
+is Play/Pause for one temporary visible-song audition; the queue and its dock
+continue independently, including simultaneous audio. Audition ends when its
+owning surface disappears or the app locks/backgrounds/exits. Explicit Add
+to queue stays separate; future Playlists can populate that queue. See the
+[product concept](concept-playback-contexts.md),
+[user journeys](../ui-ux/journeys.md#queue-playback-and-temporary-audition-agreed-target)
+and [planned requirements](../specs/playback.md#two-independent-playback-contexts-adr-0043).
+
 ## Screens
 
 ### 1. Add song

@@ -13,8 +13,10 @@ Source: a GPT-generated image chosen by Alex in October 2026 (glass plate, black
 
 Derived files (regenerate from the masters, never edit by hand):
 
-- iOS: `ios/Sources/Assets.xcassets/AppIcon.appiconset/AppIcon.png`, `DrawerLogo.imageset/DrawerLogo@2x.png` (84 px) and `@3x.png` (126 px); the drawer shows the logo in a circle at 42 pt.
-- Web: `web/favicon-32.png`, `web/favicon.svg` (embeds a 128 px vinyl PNG), `web/apple-touch-icon.png`, `web/img/electrophone-vinyl.png` (192 px, the `mark` icon in `web/js/icons.js`: sidebar brand, login, cover placeholders).
+- iOS: `ios/Sources/Assets.xcassets/AppIcon.appiconset/AppIcon.png`, `DrawerLogo.imageset/DrawerLogo@2x.png` (84 px) and `@3x.png` (126 px); the drawer shows the logo in a circle at 42 pt; `VinylRecord.imageset/electrophone-vinyl.png` is an unchanged copy of the transparent 1024 px master retained from the first missing-cover placeholder iteration.
+- Web: `web/favicon-32.png`, `web/favicon.svg` (embeds a 128 px vinyl PNG), `web/apple-touch-icon.png`, `web/img/electrophone-vinyl.png` (192 px, the `mark` icon in `web/js/icons.js`: sidebar brand and login).
+
+The iOS drawer uses `Vega108Wordmark.imageset/vega108.png`, the unchanged 864x116 image supplied by Alex on 2026-10-22, right-aligned below "Electrophone" in place of the "Offline music player" subtitle; its original aspect ratio and colours are preserved.
 
 ## Usage rules
 
@@ -27,3 +29,9 @@ Derived files (regenerate from the masters, never edit by hand):
 ## Possible later upgrade
 
 A native iOS 26 Liquid Glass layered `.icon` (Icon Composer: glass plate and vinyl as separate layers) is a possible later upgrade; the flat 1024 master above is what ships now.
+
+## Missing-cover thumbnail artwork
+
+Missing-cover artwork is separate from the brand logo and app icon: `ios/Sources/Assets.xcassets/ThumbnailRecord.imageset/thumbnail-record.png` and `web/img/thumbnail-record.png` use the same generated transparent circular disc (1254x1254). On 2026-10-22, Alex requested the minimal style of his supplied black vinyl / copper rim / striped cyan label reference without its rounded rectangular plate. The built-in image generation tool produced the isolated disc; actual song covers, the brand masters, login mark and Vega 108 wordmark are unchanged.
+
+Generation prompt: keep the black circular disc, narrow copper-orange rim, cyan label with diagonal teal stripes and cream spindle hole; remove the whole rectangular tile/background, shadows, texture and grooves; use a clean circular edge and true transparent exterior for a minimal thumbnail.

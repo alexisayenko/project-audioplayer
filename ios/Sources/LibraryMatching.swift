@@ -22,6 +22,7 @@ enum LibrarySort: String, CaseIterable, Identifiable {
 enum LibraryFacet: String, CaseIterable, Identifiable {
     case tags = "Tags", genres = "Genres", era = "Era", countries = "Countries"
     var id: String { rawValue }
+    var title: String { self == .era ? "Decades" : rawValue }
     var prefix: String {
         switch self {
         case .tags: "tags:"
@@ -42,7 +43,7 @@ enum LibraryFacet: String, CaseIterable, Identifiable {
         switch self {
         case .tags: "tag"
         case .genres: "genre"
-        case .era: "era"
+        case .era: "decade"
         case .countries: "country"
         }
     }

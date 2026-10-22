@@ -1,0 +1,6 @@
+{
+  "images" : [
+    { "filename" : "electrophone-vinyl.png", "idiom" : "universal" }
+  ],
+  "info" : { "author" : "xcode", "version" : 1 }
+}

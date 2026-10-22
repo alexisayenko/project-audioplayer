@@ -16,6 +16,39 @@ Reference frame: iPhone 13 Pro Max, 428 x 926 pt, status bar 54, bottom safe are
 
 ---
 
+## Playback decision update — 2026-10-22 (accepted, not implemented)
+
+[ADR-0043](../tech/decisions.md#adr-0043-persistent-queue-and-ephemeral-visible-song-audition)
+supersedes the queue-replacement meaning of ordinary Library/Song Details
+Play in this baseline spec. The dock continues controlling the queue;
+Library/Song Details get a separate single-song audition with only Play/Pause,
+which may sound simultaneously with the queue and never pauses or mutates it.
+One audition replaces another. It stops when its owning row/details is no
+longer visible, the user navigates away, locks or backgrounds/exits the app;
+returning does not restart it. Opening Details ends a Library-owned audition
+and requires a new Play there.
+
+Implementation is pending in [task-0085](../tasks/task-0085.md); the cover tap
+contract in 1.5, playing-cover state, tap zones in 3.4 and decisions 2/16/25
+below record the current queue-based baseline, not the agreed audition target.
+The new Play/Pause glyph must reflect audition; queue membership/current-song
+status remains separate, including when both contexts have the same song.
+Existing queue membership/remove actions are separate from audition transport.
+
+The right-aligned count stays plain text beside an ellipsis button with
+Play all matched, Show currently playing song and Clear all filters; show-current
+continues referring to the queue song. Play all matched currently explicitly
+replaces the queue (3.2); whether that and existing Play next/Play now commands
+remain under the new model is unresolved, not silently redefined as audition.
+Duration stays right-aligned with the title, the quick queue control sits
+beneath it at 1.5 times its former glyph size, and listened count remains a
+separate right-aligned value when available; bitrate is absent from mobile
+Library rows. The filter label is **Decades**, formerly Era.
+
+The original artifact remains the visual system authority; the newer explicit
+owner playback decision controls behavior where the baseline differs.
+[Canonical requirements and open choices](../specs/playback.md#two-independent-playback-contexts-adr-0043).
+
 ## 0. Purpose and principles
 
 Key principle (CLAUDE.md): songs I pick are on my phone and play reliably, offline, with the screen locked. The Library is the place
@@ -67,13 +100,13 @@ Conventions: "hit" = 44 x 44 minimum; `surface slab` = `dsSlab` (`surface` fill 
 
 ### 1.3 Filter chip row
 
-One horizontally scrolling line, never wraps (at any text size). Order: **Tags, Genres, Era, Countries, Never listened, Downloaded**.
+One horizontally scrolling line, never wraps (at any text size). Order: **Tags, Genres, Decades, Countries, Never listened, Downloaded**.
 
 | Item | Spec |
 | --- | --- |
 | Row | `ScrollView(.horizontal)`, no indicators, content leading inset `space4`, trailing inset `space4`, item gap `space2`, 12 pt above and below. Height 36 (`DS.Control.control`), each chip's hit extended to 44 (`contentShape` inset -4). |
 | Peek | The row is masked with a 24 pt fade on the trailing edge (`chip-fade` 24) while more content exists, and the fade is removed when scrolled to the end, so the last visible chip is cut by the screen edge, never mid-word. At 428 pt the first four chips (77, 94, 105 and 112 pt wide, plus the gaps) end at the screen edge, so Never listened does not peek; only the fade shows that more exists. At 390 and 375 pt the fourth chip itself is cut by the edge (open question Q9). |
-| Category chip (Tags, Genres, Era, Countries) | Icon 16 (`DS.Icon.iconInline`) + label `T.subhead` medium, gap `space1`, horizontal padding `space3`. Icons (SF Symbols, regular weight): `tag`, `music.quarternote.3`, `calendar`, `globe`. Opens the category sheet (1.9). No count when nothing is selected. |
+| Category chip (Tags, Genres, Decades, Countries) | Icon 16 (`DS.Icon.iconInline`) + label `T.subhead` medium, gap `space1`, horizontal padding `space3`. Icons (SF Symbols, regular weight): `tag`, `music.quarternote.3`, `calendar`, `globe`. Opens the category sheet (1.9). No count when nothing is selected. |
 | Category chip, on | Fill `accentTint`, outline 1.5 pt (`strokeThin`) `accentInk`, label and icon `ink` (4.5:1 on `accentTint` in both themes) with semibold label, plus a count badge: capsule min 20 x 20 (`badge` 20), fill `scheme.strongFill`, number `T.caption` semibold in `scheme.onStrong`. Example "Genres [2]". |
 | Toggle chip (Never listened, Downloaded) | Same shape. Icons `speaker.slash` and `iphone`. Off: like an off category chip. On: like an on category chip without badge, `isSelected` trait. |
 | Off style | Fill `surface`, `DS.Shadow.depthSlab`, label `ink`, icon `inkMuted`. Today: off chips are `surface` slab, flexible width, with a count; toggles are an outline pill with count (CMP:145-173, 831-852). |
@@ -118,16 +151,17 @@ Row = `HStack(spacing: space3)` inside the list slab, padding `space3` all sides
 | Cover | 56 x 56 (`cover-row` 56; `coverMd` stays 64 for the transport; today a literal in `@ScaledMetric` LV:468, scaled with Dynamic Type up to 1.5x), radius `radiusSm` 8, `CoverImage`. Tap zone: the cover plus the row padding around it (68 x 80, min 44). VO hidden (the row is one element, 1.5.1). |
 | Cover tap = play | On the phone: play (replaces the queue with the phone songs of the current result set, in current order, starting here; no toast). The song already current: toggle pause and resume. Server only: start the download (same as the Download pill, never auto-plays). Downloading or waiting: nothing (toast "Already downloading" once). No audio: toast "No audio yet". |
 | Playing cover | Overlay: fill `coverScrim` (`vinyl` at 45%, both themes) and a persistent Pause glyph while playing or Play glyph while paused, matching the web cover button. The playing row also has the `accentTint` wash over the whole row. |
-| Title | `T.headline` `ink`, max 2 lines (3 at large text), tail truncation. Tap zone with the artist line (details). |
+| Title | `T.headline` `ink`, max 2 lines (3 at large text), tail truncation. A positive known duration for a song with audio sits at the title line's trailing edge in `T.time`, using `formatTime`; unavailable or zero durations are omitted. Title and duration open details. |
 | Artist line | `T.subhead`, `inkMuted` (`ink` on the playing row: `inkMuted` is 4.0:1 on `accentTint` at night), 1 line: "Artist · Year" (year = the displayed year, version year first, LIB-150; missing parts and the dot are omitted). No source mark, no BPM badge. |
-| Trailing column | Right aligned, vertically centered, `VStack(alignment: .trailing, spacing: space1)`: line 1 = audio state (1.6); line 2 = in-queue marker, only when queued. Width follows content, min 44. |
-| In-queue marker | `text.badge.checkmark` 16 (`iconInline`), `accentInk`, shown ONLY while the song is in `player.queue`. VO: part of the row label ("in queue"). Hidden when the song is not queued; the space is not reserved (the column is vertically centered, so the duration stays put). |
+| Audio controls | Audio state (1.6) and queue controls sit directly below duration in the same right-aligned column. |
+| Listened count | Like the mobile web, a separate far-right column shows the right-aligned muted `listened.all` number when signed in and listening statistics are loaded; missing entries show 0, unavailable statistics show nothing. VoiceOver announces "Listened N times". Uses the existing shared statistics request. |
+| Queue control | `queue.add` 24 (`iconPlay`, 1.5 times the previous `iconInline` glyph), `inkMuted`, with a `hit` target appends a downloaded non-current song without changing playback. A queued song instead shows `queue.included` at the same size in `accentInk`; tapping removes that song, preserving playback. Both glyphs use the exact web `listAdd` / `playlist` paths; the web Add action is also `ink-muted`, while queued status stays accented. The current song shows a non-interactive playlist status; unavailable audio has no add action. Existing add feedback and "Removed from queue" confirm changes; VO includes "in queue" and exposes the matching action. |
 | Playing state | Row wash `accentTint`; title `ink`; artist and duration `ink`; cover scrim + persistent Pause/Play glyph; VO trait selected. |
 | Pressed | Zone under the finger fades to .8 opacity, `durFast`. |
 | Long press | Whole row. Opens the context menu (1.11); system haptic; the row lifts as the menu preview. |
 | Disabled | There is no disabled row. "No audio yet" dims the cover and the text to 55% (`dim` 0.55); it stays tappable (details, menu). |
 | Focus (keyboard, Full Keyboard Access) | 2 pt `accentInk` ring around the row, radius `radiusSm`. |
-| Large text | Cover stays 56 scaled, text stack takes the width, the trailing column moves below the artist line, left aligned: audio state, then the queue marker on the same line as the duration. |
+| Large text | Cover stays 56 scaled, title wraps up to 3 lines with duration at the trailing edge of its first line; audio state and queue control stay below duration. |
 
 #### 1.5.1 Row VoiceOver
 
@@ -138,11 +172,11 @@ One accessibility element per row (the cover, the text and the Download pill are
 - Default activation: play (same as the cover; on a server-only song: download).
 - Custom actions in this order: Show details; Play next; Add to queue; Edit; Download (server only); Get audio (no audio only); Remove from iPhone. The same availability rules as the menu (1.11).
 
-### 1.6 Audio-state variants (trailing column, line 1)
+### 1.6 Audio-state variants (below duration)
 
 | State | Trigger | Element | Style |
 | --- | --- | --- | --- |
-| On the phone | `library.contains(id)` | Duration "6:47" | `T.time` (mono, medium), `inkMuted` (`ink` when playing) |
+| On the phone | `library.contains(id)` | Duration "6:47" at the title's trailing edge | `T.time` (mono, medium), `inkMuted` (`ink` when playing) |
 | Server only | `onServer != false`, not on the phone, no transfer | Outline pill "Download" | height 32, hit 44 (`contentShape` inset -6), 1.5 pt `accentInk` outline, label `T.caption` semibold `accentInk`, padding `space3`. Tap = download. VO label "Download Title" (action on the row, not a separate stop). |
 | Downloading | transfer in progress | "Downloading 62%" | `T.caption` `accentInk`, 1 line (2 at large text). Waiting for the server: "Waiting…". |
 | No audio yet | `onServer == false`, not on the phone, no transfer | "No audio yet" | `T.caption` `inkMuted`, right aligned, max width 84; cover and text opacity .55 |
@@ -179,7 +213,7 @@ Strings (English, sentence case, no blame): "Plays next"; "Added to queue"; "Alr
 server notices pass through unchanged (download failures, "Mobile data is off for downloads. Turn on Use mobile data in Settings.").
 Today the skipped note reads "without audio skipped", which is wrong for songs that are on the server (LV:223-226): the new wording is "not on this iPhone".
 
-### 1.9 Filter sheet (Tags, Genres, Countries, Era)
+### 1.9 Filter sheet (Tags, Genres, Countries, Decades)
 
 Bottom sheet, `surface` fill, `presentationCornerRadius` `radiusTray` 28 on the top corners, float shadow, system grab handle (`grabW` 36 x `grabH` 5), over the system scrim at a low strength (about 35%) so the list behind stays readable. **It applies live and has no bottom button**: no "Show N songs", no Cancel, no per-category Clear. It closes with Done, a swipe down or a tap outside; the selection is already applied and persists in every case.
 
@@ -189,18 +223,18 @@ Anatomy, top to bottom, side padding `space4`:
 | --- | --- | --- |
 | 1 | Grabber | System grab handle. |
 | 2 | Title row (pinned) | Category name left, `T.title`, `ink`, header trait. **Done** right: `T.body` semibold `selectInk`, 44 target. VO: "Done", button. |
-| 3 | Meta line (pinned) | Left: "32 genres · 2 selected" (`T.caption` `inkMuted`); the noun follows the category: genres, tags, eras, countries ("1 genre"). Right: the live match count "128 songs match" ("1 song matches", "0 songs match"), `T.caption` `inkMuted`, tabular figures, updated on every tap. |
-| 4 | Search field | Tags, Genres, Countries only (not Era): same field as 1.2, height 40 (`DS.Component.fieldHeight`, `dsField`), placeholder "Search genres" / "Search tags" / "Search countries", clear x, no Cancel. Filters the visible values live (case, diacritics); selected values that do not match stay selected and are still counted in the meta line. It scrolls with the values. |
-| 5 | Values | Value chips (`TagChip`: 36 high, hit 44, horizontal padding 14, radius pill; off: `surfaceSunken` fill, `ink`; on: `scheme.strongFill` + `scheme.onStrong`, semibold) with the library-wide song count in `T.caption` (`inkMuted`, on: `scheme.onStrong`). Wrapped flow layout, gap `space2`. Era: separate chronological century blocks with underlined headings and compact wrapping decade chips (large text: a vertical stack in each block). The search and the values scroll under the pinned rows, with a 24 pt fade at the bottom and a `line` hairline under the pinned rows once content scrolls. Bottom padding keeps the safe area clear. |
+| 3 | Meta line (pinned) | Left: "32 genres · 2 selected" (`T.caption` `inkMuted`); the noun follows the category: genres, tags, decades, countries ("1 genre"). Right: the live match count "128 songs match" ("1 song matches", "0 songs match"), `T.caption` `inkMuted`, tabular figures, updated on every tap. |
+| 4 | Search field | Tags, Genres, Countries only (not Decades): same field as 1.2, height 40 (`DS.Component.fieldHeight`, `dsField`), placeholder "Search genres" / "Search tags" / "Search countries", clear x, no Cancel. Filters the visible values live (case, diacritics); selected values that do not match stay selected and are still counted in the meta line. It scrolls with the values. |
+| 5 | Values | Value chips (`TagChip`: 36 high, hit 44, horizontal padding 14, radius pill; off: `surfaceSunken` fill, `ink`; on: `scheme.strongFill` + `scheme.onStrong`, semibold) with the library-wide song count in `T.caption` (`inkMuted`, on: `scheme.onStrong`). Wrapped flow layout, gap `space2`. Decades: separate chronological century blocks with underlined headings and compact wrapping decade chips (large text: a vertical stack in each block). The search and the values scroll under the pinned rows, with a 24 pt fade at the bottom and a `line` hairline under the pinned rows once content scrolls. Bottom padding keeps the safe area clear. |
 
 | Item | Spec |
 | --- | --- |
-| Value order | Era: centuries and decades oldest first, then Unknown last. Others: selected-at-open first, then by song count descending, ties A-Z. The order is computed once when the sheet opens and is not updated while it is open (chips never jump under the finger). |
+| Value order | Decades: centuries and decades oldest first, then Unknown last. Others: selected-at-open first, then by song count descending, ties A-Z. The order is computed once when the sheet opens and is not updated while it is open (chips never jump under the finger). |
 | Counts | Number of songs in the whole library that carry the value (not narrowed by other filters). The live match count in the meta line is the narrowed result. |
-| Era labels | Underlined headings read "19xx", "20xx", and so on; chips read "the 60s", "the 70s", "the 00s", and so on, followed by Unknown. VO reads the full decade: "2020s, 156 songs". |
-| Unknown | Era "Unknown" (songs without a year), Genres "Unknown" (no genre), Countries "Unknown" (no country): always last, counted like any value, combine like any value (OR within the category). |
-| Detents | **Medium** (about 55%) by default, so the Library list stays visible above the sheet and visibly updates. **Large** (about 92%) when dragged up, when the sheet search is focused, for Tags (it opens at large, a long list) and at large text. **Era fits its content** (shorter than medium). Use the system `.medium` and `.large` detents (`sheet-tall` 0.8 is retired for filter sheets, 1.15). Dragging a large sheet down returns to medium before it dismisses. The sheet does not change height when the keyboard opens. |
-| Behind the sheet | Opening a filter sheet collapses the search field and the chip row so the list shows above it (1.14); closing restores them unless the list had scrolled them away. The list keeps its scroll position. |
+| Decades labels | Underlined headings read "19xx", "20xx", and so on; chips read "the 60s", "the 70s", "the 00s", and so on, followed by Unknown. VO reads the full decade: "2020s, 156 songs". |
+| Unknown | Decades "Unknown" (songs without a year), Genres "Unknown" (no genre), Countries "Unknown" (no country): always last, counted like any value, combine like any value (OR within the category). |
+| Detents | **Medium** (about 55%) by default, so the Library list stays visible above the sheet and visibly updates. **Large** (about 92%) when dragged up, when the sheet search is focused, for Tags (it opens at large, a long list) and at large text. **Decades fits its content** (shorter than medium). Use the system `.medium` and `.large` detents (`sheet-tall` 0.8 is retired for filter sheets, 1.15). Dragging a large sheet down returns to medium before it dismisses. The sheet does not change height when the keyboard opens. |
+| Behind the sheet | Opening and closing a filter sheet preserves the search field, chip row, pinned-block height and list scroll position (1.14). The system sheet dims and scales the existing background without rearranging it; live filtering still updates matches. |
 | Tap behaviour | Tap a chip toggles it; the list above updates immediately, then the count and ellipsis-menu availability in the controls line, then the sheet's "N songs match"; no haptic except selection (`.selection`). Selecting until nothing matches reads "0 songs match", the count "0 of 455" with Clear all filters enabled in the ellipsis menu, and Play all matched is disabled; there is no button to disable. |
 | Dismiss | Done, swipe down or tap outside. Same result. The selection stays; the list keeps its scroll position; VO focus returns to the chip that opened it ("Genres, 2 selected"). |
 | VO | Chip: label "House, 48 songs", `isSelected` when on. Sheet: header trait on the title; Done is a button; the escape gesture closes. |
@@ -257,7 +291,7 @@ Replaces the list slab only (header, search, chips and the controls line stay li
 | Return | They return on any scroll up (more than about 4 pt), on a status bar tap, and at the top of the list. Scroll events are ignored for about 450 ms after a switch so the block does not flicker. |
 | Hairline | A `line` hairline (`strokeHairline`) fades in under the pinned block (`durFast`) once content scrolls under it. |
 | Reduce Motion | The block switches without sliding. |
-| Sheets | While a filter sheet is open the search field and chip row stay collapsed; they come back on close unless the list had scrolled them away (1.9). |
+| Sheets | Opening a filter sheet leaves the search field and chip row in their existing expanded or collapsed state; presentation and dismissal do not change the background layout or scroll position (1.9). |
 | Bottom | The 34 pt bottom safe area is kept clear; the list's bottom inset clears the mini-player (A). |
 | Today | The whole screen is one `ScrollView` (LV:154-194): the header, search and chips scroll away with the list. |
 
@@ -327,7 +361,7 @@ Every action-flow table has the columns: **User action → immediate UI response
 | Tap Download pill | Pill becomes "Downloading 0%" | Transfer | as above | unchanged |
 | Long press row | Long-press menu (screen H) | Menu open | none | VO: custom actions |
 | Tap search field | Keyboard, focus ring | Editing | none | Scroll unchanged |
-| Tap Tags, Genres, Era or Countries | Filter sheet opens (screens D, E, F); search and chips collapse | Sheet open | none | VO focus to the sheet title |
+| Tap Tags, Genres, Decades or Countries | Filter sheet opens (screens D, E, F); background layout stays in place | Sheet open | none | VO focus to the sheet title |
 | Tap the Sort by icon | Sort sheet (screen C); the icon is tinted when the criterion is not Recently added | Sheet open | none | VO focus to the sheet title |
 | Tap the Sort direction icon | Arrow flips (down: descending, up: ascending) and the bars reorder; circle tints / untints | Reversed flag toggles | none | Scroll to top |
 | Tap Play all matched | Toast "Playing N songs"; the label never changes | Queue = the playable songs of the result set | `player.playAll` (random start under Shuffle); stays on Library | Scroll unchanged |
@@ -374,25 +408,25 @@ Every action-flow table has the columns: **User action → immediate UI response
 
 | User action | Immediate UI response | Resulting state | Side effects | Focus / scroll |
 | --- | --- | --- | --- | --- |
-| Open a filter sheet | Medium detent (about 55%); search and chips collapse so the list shows above the sheet, dimmed only slightly; Tags opens at large | Sheet open | none | |
+| Open a filter sheet | Medium detent (about 55%); existing Library layout stays in place behind the system sheet; Tags opens at large | Sheet open | none | |
 | Tap a value | Chip toggles; the list above updates immediately, then the count and ellipsis-menu availability in the controls line, then the sheet's "N songs match" (tabular figures, nothing jumps) | Selection changes (OR within the category, AND with other categories) | none | Sheet scroll unchanged; list keeps its scroll position |
 | Focus the sheet search, or drag the sheet up | Sheet grows to the large detent; values filter, selected non-matches stay selected | | none | Keyboard open |
 | Tap Done, swipe down, or tap outside | Sheet closes; the selection is already applied and stays | Selection kept | none | VO focus to the Genres chip (now "Genres, 2 selected"); the list keeps its scroll position |
 | Select until 0 results | Sheet reads "0 songs match", the count "0 of 455" with Clear all filters enabled in the ellipsis menu, Play all matched disabled | | none | |
 
-### E. Era sheet
+### E. Decades sheet
 
-**Purpose.** Pick eras. **Entry.** Tap Era. **Layout.** 1.9 without search; separate century blocks with underlined headings such as "19xx" and "20xx", oldest first; compact wrapping chips such as "the 60s", "the 70s" and "the 00s", oldest first within each block, with a count in each chip; Unknown follows all century blocks; meta line "8 eras · 2 selected" and "284 songs match"; the sheet fits its content (shorter than medium).
-Era = the displayed year (version year first) floored to ten; a song without a year is "Unknown". Stored `decade:` tags are ignored. VO reads "2020s".
+**Purpose.** Pick decades. **Entry.** Tap Decades. **Layout.** 1.9 without search; separate century blocks with underlined headings such as "19xx" and "20xx", oldest first; compact wrapping chips such as "the 60s", "the 70s" and "the 00s", oldest first within each block, with a count in each chip; Unknown follows all century blocks; meta line "8 decades · 2 selected" and "284 songs match"; the sheet fits its content (shorter than medium).
+Decades = the displayed year (version year first) floored to ten; a song without a year is "Unknown". Stored `decade:` tags are ignored. VO reads "2020s".
 
 | User action | Immediate UI response | Resulting state | Side effects | Focus / scroll |
 | --- | --- | --- | --- | --- |
-| Tap an era | Applies at once; two eras show songs of either (OR) | Selection changes | none | |
+| Tap an decade | Applies at once; two decades show songs of either (OR) | Selection changes | none | |
 | Done, swipe down or tap outside | Same as the Genres sheet | Selection kept | none | Back to A; no search field |
 
 ### F. Tags sheet
 
-**Purpose.** Pick tags (every non-genre, non-era, non-country tag; `lang:` tags are never shown). **Entry.** Tap Tags. **Layout.** 1.9 with search "Search tags", 35+ values, opens at the large detent, scrolls. Meta line "35 tags · 2 selected" and "83 songs match".
+**Purpose.** Pick tags (every non-genre, non-decade, non-country tag; `lang:` tags are never shown). **Entry.** Tap Tags. **Layout.** 1.9 with search "Search tags", 35+ values, opens at the large detent, scrolls. Meta line "35 tags · 2 selected" and "83 songs match".
 
 | User action | Immediate UI response | Resulting state | Side effects | Focus / scroll |
 | --- | --- | --- | --- | --- |
@@ -536,7 +570,7 @@ Block: `music.note` icon, title "No songs yet", text "Your library is stored on 
 | Chip row | Still one scrolling line, chips taller (min 44 drawn), peek and fade kept |
 | Controls line | Two lines (1.4): sort controls left on the first row, count and ellipsis right on the second row |
 | Song row | Cover 56 scaled; title up to 3 lines; trailing column under the artist line, left aligned; cover tap zone stays on the cover |
-| Sheets | Filter sheets use the large detent; Era chips become a vertical stack within each century block |
+| Sheets | Filter sheets use the large detent; Decades chips become a vertical stack within each century block |
 | Details | Facts rows stack label above value; statistics cells become 3 rows; cover 200 stays |
 | Cap | `dynamicTypeSize(...accessibility2)` on the root; beyond it the OS scales nothing more |
 
@@ -564,7 +598,7 @@ Result set = `Library` songs, then AND of: search text; each category with a sel
 search text ──┐
 Tags ─────────┤
 Genres ───────┤  AND ──► result set ──► sort(criterion, direction) ──► rows ──► Play all matched = rows
-Era ──────────┤                                                     └──► count "N of total"
+Decades ──────────┤                                                     └──► count "N of total"
 Countries ────┤
 Never listened┤
 Downloaded ───┘
@@ -644,11 +678,11 @@ VO value of the Sort direction icon = "descending" or "ascending" from this tabl
 - **Within a category: OR.** The web does the same (`matchesSelection` in `web/js/library-data.js`: `tags.some(...)`; LIB-030 "values in a category are OR, categories are AND"), so iOS keeps it. A selected "Unknown" is one more OR value of its category (web: `__unset__` token).
 - **Never listened** and **Downloaded** are extra AND conditions. Never listened = no entry in `GET /stats/listening`, or listened plus skipped = 0; hidden until the data has loaded; if the request fails the toggle stays hidden and any earlier selection is dropped (as web LIB-190).
 - **Search** is AND with all of it (1.2).
-- Categories: Tags = every tag whose key is not genre, decade, country or lang (plain tags and other keys); Genres = genres; Countries = `country:` tags shown by name; Era = computed from the displayed year, never from stored tags.
+- Categories: Tags = every tag whose key is not genre, decade, country or lang (plain tags and other keys); Genres = genres; Countries = `country:` tags shown by name; Decades = computed from the displayed year, never from stored tags.
 
-### 3.7 Era values
+### 3.7 Decades values
 
-The displayed year floored to the decade and grouped into chronological century blocks labelled "19xx", "20xx", and so on. Chips read "the 60s", "the 70s", "the 00s", and so on, oldest first within each block, each with the count of songs in the whole library; "Unknown" follows all blocks for songs with no year. VoiceOver reads the full decade ("2020s"). An era is listed only if at least one song belongs to it; Unknown only if at least one song has no year. The category is called Era (chip, sheet title, "8 eras · 2 selected").
+The displayed year floored to the decade and grouped into chronological century blocks labelled "19xx", "20xx", and so on. Chips read "the 60s", "the 70s", "the 00s", and so on, oldest first within each block, each with the count of songs in the whole library; "Unknown" follows all blocks for songs with no year. VoiceOver reads the full decade ("2020s"). A decade is listed only if at least one song belongs to it; Unknown only if at least one song has no year. The category is called Decades (chip, sheet title, "8 decades · 2 selected").
 Example: under "19xx", the 60s 4, the 70s 12, the 80s 32, the 90s 48; under "20xx", the 00s 72, the 10s 128, the 20s 156; Unknown 3 follows the blocks.
 Today the category is "Years", built from `decade:` tags, labelled "the 90s", sorted oldest first (LFM:5-6, 20-22; LF; `tagLabel`).
 
@@ -658,7 +692,7 @@ Today the category is "Years", built from `decade:` tags, labelled "the 90s", so
 | --- | --- | --- |
 | Songs | Only the songs stored on the phone (local library); no catalog, no server | Whole catalog (hundreds of songs); rows may be on the phone, on the server, downloading, or with no audio |
 | Total in "N of total" | Phone songs | Catalog |
-| Chip row | Tags, Genres, Era, Countries | + Never listened (once listening data is loaded), + Downloaded |
+| Chip row | Tags, Genres, Decades, Countries | + Never listened (once listening data is loaded), + Downloaded |
 | Sort | 6 criteria; Last listened disabled ("Sign in to use this") | 7 |
 | Search | Over the phone songs; no YouTube search | Over the catalog; YouTube search lives in the Add sheet |
 | Row states | On the phone, downloading (arriving) | all four |
@@ -678,13 +712,13 @@ Corrections from Alex (the brief) and what they mean here. Entries marked "repla
 
 | # | Decision | Where |
 | --- | --- | --- |
-| 1 | No "..." button on rows; long press replaces it; trailing column = duration then audio state, nothing else (the queue marker sits under it, only when queued) | 1.5, 1.11 |
+| 1 | No "..." button on rows; long press opens the full menu; title-trailing duration and artist-trailing listened count accompany the quick queue action/status | 1.5, 1.11 |
 | 2 | In-queue marker: queue glyph with a checkmark, only for songs in the queue; the playing song keeps the tint and the Pause/Play glyph on its cover | 1.5 |
 | 3 | No "N songs match" label in the Library; the header total never changes. Replaced by #29 and #31: the count is the "N of total" stack, the header has no counter, and "N songs match" lives only in the filter sheets | 1.1, 1.4, 1.9 |
 | 4 | No "Add all"; adding is per song from the menu | 3.2 |
 | 5 | ONE reset button in the results row; no "Clear all" elsewhere; no per-category Clear in sheets (removed to honour this; revisit if deselecting one by one proves slow); no Clear button in the empty state. Replaced by #30 for the form of the one clear (a text link, not an icon); the rest stands | 1.4, 1.9, K |
 | 6 | No strip of selected values; a category with selections is a tinted chip with a count badge | 1.3 |
-| 7 | Decades, not Years, computed from the displayed year, in chronological century blocks, plus Unknown. Renamed Era by #33 (the rule itself stands) | 1.9, 3.7 |
+| 7 | Decades, not Years, computed from the displayed year, in chronological century blocks, plus Unknown. Renamed by #33 and #42 (the rule itself stands) | 1.9, 3.7 |
 | 8 | No Cancel on search; scroll or return dismisses the keyboard | 1.2 |
 | 9 | Delete from library only in Song Details, at the bottom, with a confirmation; never in the menu (reaffirmed in the 2026-10-22 artifacts) | 1.11, I |
 | 10 | The results row is one line with fixed slots: Sort pill, Direction, Reset, Play all N. Replaced by #27 to #32 (icons, Play all matched, count stack) | 1.4 |
@@ -699,8 +733,8 @@ Decisions made while writing this spec (beyond the brief):
 | 14 | The direction resets to the criterion's default whenever the criterion changes (web LIB-208 keeps it) | Defaults differ per criterion (A-Z, newest first, slowest first); a kept flag would surprise |
 | 15 | Sort and direction persist across relaunch; search and filters do not | A sort chosen is a preference, a search is a moment |
 | 16 | Cover tap on the playing song toggles pause; on a server-only song it downloads (never plays) | Cover = primary action, consistent with "downloading never auto-plays" |
-| 17 | Sheet values ordered by count (selected-at-open first), frozen while open; Era uses chronological century blocks; counts are library-wide | Predictable under the finger |
-| 18 | Unknown is last in Era, Genres and Countries (web puts "not set" first, LIB-132) | Value order stays stable |
+| 17 | Sheet values ordered by count (selected-at-open first), frozen while open; Decades uses chronological century blocks; counts are library-wide | Predictable under the finger |
+| 18 | Unknown is last in Decades, Genres and Countries (web puts "not set" first, LIB-132) | Value order stays stable |
 | 19 | "Show playing" leaves the Library toolbar | The controls line has no slot for it; see Q1 |
 | 20 | Never listened and Last listened exist on iOS and need `GET /stats/listening` (signed in); they are hidden or disabled otherwise | Offline-first: no spinner for optional features |
 | 21 | Song Details has no musical key row; the statistics card shows Plays, Last played, Total listened (no "First played": the API returns no first date) | Data that exists |
@@ -720,15 +754,17 @@ Decisions from the 2026-10-22 artifacts (Screens v53, Design System v37). Number
 | 30 | The reset icon is gone. The ellipsis menu offers Clear all filters, enabled only while narrowing, and clears search, filters, tag selections and both toggles; sort and direction stay. Still the only clear action | The Reset icon button (#5, #10) | 1.4, 3.1, K |
 | 31 | The count is the stack "N of M" (always that form; "songs" word dropped below 370 pt of row width; `selectInk` while narrowing, `inkMuted` otherwise); the header has no counter (menu, title, + only) | The header total "455 songs" and the count inside "Play all N" (#3) | 1.1, 1.4 |
 | 32 | "Play all matched" is an ellipsis-menu action, disabled at 0; the + stays the only filled cyan action | "Play all N" filled strong capsule with a fixed-width number | 1.4, 3.2 |
-| 33 | Category "Decades" is now "Era"; chronological century blocks with compact decade chips and Unknown (VoiceOver reads "2020s"); sheet subtitles "N genres / tags / eras / countries · M selected" | "Decades" label, "2020s" labels, subtitle "32 in your library · 2 selected" (#7 label) | 1.3, 1.9, 3.7 |
+| 33 | Category "Era" is now "Decades"; chronological century blocks with compact decade chips and Unknown (VoiceOver reads "2020s"); sheet subtitles "N genres / tags / decades / countries · M selected" | "Era" label, "2020s" labels, subtitle "32 in your library · 2 selected" (#7 label) | 1.3, 1.9, 3.7 |
 | 34 | The header block is pinned (header 52 + controls line 44 = about 96 pt); search and chip row collapse when the list scrolls down past 24 pt and return on scroll up, a status bar tap or the top; a `line` hairline appears under the pinned block once content scrolls under it | "List is not pinned" (a note of #22) and open question Q5 | 1.14, M |
 | 35 | Scrolling rules for the other screens: the header stays pinned and only the content scrolls (Settings, Statistics, Song Details, Playlists); Now playing's main block does not scroll; sheets pin their title row (filter sheets also the meta line) and have no pinned bottom button | none (new) | 1.14 |
 | 36 | Filter sheets apply LIVE: no "Show N songs" button, no Cancel; **Done** (`selectInk`) in the title row; the meta line shows "N genres · M selected" on the left and the live "K songs match" on the right; dismiss by Done, swipe down or tap outside, the selection stays; per-category Clear stays absent | The bottom "Show N songs" button, the "closes by the bottom button" rule, the subtitle "N in your library · M selected" | 1.9 |
-| 37 | Filter sheet detents: medium (about 55%) by default so the list stays visible and visibly updates, large (about 92%) for Tags, when the search field is focused or when dragged up; Era fits its content; search and chips collapse behind the sheet; the list keeps its scroll position on close | The fixed `.fraction(0.8)` detent (`sheet-tall`) and "Library scrolled to top when the sheet closes" | 1.9, D |
+| 37 | Filter sheet detents: medium (about 55%) by default so the list stays visible and visibly updates, large (about 92%) for Tags, when the search field is focused or when dragged up; Decades fits its content; background layout stays in place behind the sheet; the list keeps its scroll position on open and close | The fixed `.fraction(0.8)` detent (`sheet-tall`) and "Library scrolled to top when the sheet closes" | 1.9, D |
 | 38 | `selectTint` / `selectInk` (not `accentTint` / `accentInk`) mark non-default and narrowing states in the controls line and sheets (tinted sort icons, Clear, the narrowed count, Done); the chips keep `accentTint` + `accentInk` | Reset and Direction styled with `accentTint` and `accentInk` | 1.3, 1.4, 1.9 |
 | 39 | The bottom safe area (34 pt) stays clear and the home indicator is not drawn in the mockups; the reference frame is 428 x 926 and layouts must hold at 390 and 375 | Reference width 390 with 375 and 430 | notation, A |
 | 40 | At 428 pt the first four chips end at the screen edge, so Never listened does not peek and only the 24 pt fade shows that more exists | "At 375 pt the first four chips fill about 396 pt, so Never listened always peeks" (#11 detail) | 1.3 |
 | 41 | Selecting a value in a filter sheet or toggling a chip keeps the list's scroll position; text search, Clear, a new criterion and the direction icon scroll to the top | "Scroll to top" on every filter change | 3.1 |
+
+| 42 | iOS category is named "Decades"; century grouping and decade filtering are unchanged | "Era" label from #33 | 1.3, 1.9, 3.7 |
 
 ---
 
@@ -744,7 +780,7 @@ Decisions from the 2026-10-22 artifacts (Screens v53, Design System v37). Number
 | Search field | LV:257-270: height 48, literal radius 16 (LV:269), slab fill, placeholder "Search songs or artists" (LV:260), clear x without a 44 hit | 44 high, `radiusKey`, `surfaceSunken`, new placeholder, 44 hit x, focus ring |
 | Search scope | LV:54-60: title, artist, album, tags; no remixer, no diacritic folding | 1.2 |
 | Chips | LV:289-298: 4-column grid (2 at large text), flexible width, count shown, selected = strong fill; CMP:145-173 | One scrolling row, intrinsic width, icon, tint + badge, fade; 6 items |
-| Era | LFM:5-6, 12, 20-22: category "Years" built from `decade:` tags, oldest first | "Era": computed from the year, chronological century blocks and compact decade labels, plus Unknown |
+| Decades | LFM:5-6, 12, 20-22: category "Years" built from `decade:` tags, oldest first | "Decades": computed from the year, chronological century blocks and compact decade labels, plus Unknown |
 | Downloaded toggle | LV:285-287, 141-145: a pill with a count beside the sort control; CMP:831-852 | Last chip of the row, no count |
 | Never listened | missing | NEW toggle (listening data) |
 | Sort control | LV:272-283: text `Menu` + `Picker` pill "Sort: Recently added" with a chevron (LV:282) | Sort by icon button opening a Sort sheet (1.4, 1.10) |
@@ -784,7 +820,7 @@ To verify in code during batch 3: `PlayerService.enqueue` / `playNext` when noth
 | Batch | Scope | Files |
 | --- | --- | --- |
 | 1. Controls line, results, sort, rows | Header without the count; the ONE 44 pt controls line with fixed slots (Sort by icon, Sort direction icon, Play all matched, "N of M" count stack with Clear all filters enabled in the ellipsis menu; width budget 428/390/375; two-line variant at accessibility1); Sort sheet with 7 criteria, defaults, ties and direction; custom sort symbols in the asset catalog (fallbacks until then); Play all matched menu wording; remove Add all and expose Show currently playing song in the ellipsis menu; song row with three zones, queue marker, playing scrim and Pause/Play glyph, no "..."; `LibraryQuery` app-level state with persisted sort; `ListeningStore` (for Last listened) | `LibraryView.swift` (split the row and the controls line out), `Components.swift` (SongRow pieces, icon buttons), NEW `LibraryQuery.swift`, NEW `LibrarySort.swift`, NEW `ListeningStore.swift`, `Assets.xcassets` (sort symbols from `docs/brand/icons/`) |
-| 2. Filters and scrolling | Chip row (one line, icons, tint + badge, fade); Era from year with Unknown and abbreviated labels; filter sheets that apply live (Done in the title row, meta line with live "N songs match", medium and large detents, Era fits content, search, order, counts, Unknown values, no Clear, no bottom button); Never listened and Downloaded toggles; search scope; pinned header and controls line with the scroll collapse of search and chips, hairline, status bar tap | `LibraryFilter.swift`, `LibraryFilterModel.swift`, `Components.swift` (`CategoryChip`, `ToggleChip` replaced by one `FilterChip`), `LibraryView.swift` (header and controls outside the `ScrollView`, scroll offset tracking) |
+| 2. Filters and scrolling | Chip row (one line, icons, tint + badge, fade); Decades from year with Unknown and abbreviated labels; filter sheets that apply live (Done in the title row, meta line with live "N songs match", medium and large detents, Decades fits content, search, order, counts, Unknown values, no Clear, no bottom button); Never listened and Downloaded toggles; search scope; pinned header and controls line with the scroll collapse of search and chips, hairline, status bar tap | `LibraryFilter.swift`, `LibraryFilterModel.swift`, `Components.swift` (`CategoryChip`, `ToggleChip` replaced by one `FilterChip`), `LibraryView.swift` (header and controls outside the `ScrollView`, scroll offset tracking) |
 | 3. Menu and Details | Long-press menu with the new items; VO custom actions; Song Details screen (read-only, statistics, actions, Delete with confirmation); Edit entry from Details; delete moved out of rows; the Settings, Statistics and Playlists headers pinned per the scrolling rules | NEW `SongDetailsView.swift`, `LibraryView.swift`, `SongEditView.swift` (entry only), `PlayerService.swift` (only if the queue edge cases of 5.1 need a fix), `ShareSheet.swift` (reuse) |
 | 4. States and verification | Skeleton, offline banner with Retry, error and empty blocks on tokens, toast restyle, large-text variants, dark-mode and contrast verification on a device (including `selectInk` on `selectTint`), VO pass; docs: `docs/specs/ios.md` (IOS-030..033 rewritten), `docs/specs/library.md` iOS notes, `style-guide.md` gap closure | `LibraryView.swift`, `Components.swift`, `docs/specs/ios.md`, `docs/ui-ux/style-guide.md`, `docs/CHANGELOG.md` |
 

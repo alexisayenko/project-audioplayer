@@ -10,6 +10,8 @@ Catalog vs audio (proposed, ADR-0010): [`concept-catalog-and-audio.md`](concept-
 
 Songs, versions and credits (ADR-0024, ADR-0025): [`concept-songs-versions-and-credits.md`](concept-songs-versions-and-credits.md).
 
+Continuing queue and temporary audition (accepted, not implemented; ADR-0043): [`concept-playback-contexts.md`](concept-playback-contexts.md).
+
 For the wider docs/ map and what-lives-where, see
 [`../README.md`](../README.md).
 

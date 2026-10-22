@@ -11,7 +11,8 @@ and checked against [`../product/screens.md`](../product/screens.md),
   a choice was made and what it replaced.
 - **Specs** (this folder) say **what** the system does, as testable
   requirements. When a spec and an ADR disagree, fix the one that is
-  wrong in the same commit; the code is the tiebreaker.
+  wrong in the same commit; the code is the tiebreaker for implemented behavior,
+  while an accepted ADR with planned requirements defines an unimplemented target.
 
 ## Conventions
 

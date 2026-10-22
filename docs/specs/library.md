@@ -4,6 +4,21 @@ Code: `web/js/library.js`, `web/js/store.js`, `web/js/playable.js`, `web/js/trac
 [`../product/screens.md`](../product/screens.md) (no wireframe file exists
 in `docs/product/wireframes/` yet; add a link here when it lands).
 
+## Accepted iOS playback target (not implemented)
+
+Library remains the collection, separate from the current playing queue.
+Under [ADR-0043](../tech/decisions.md#adr-0043-persistent-queue-and-ephemeral-visible-song-audition),
+Library and Song Details Play/Pause will audition one visible song independently
+of queue playback, with both audible simultaneously; explicit Add to queue
+changes membership separately. Leaving the owning surface, scrolling the row
+away, locking or backgrounding stops audition. The dock remains bound to the
+queue. [Requirements and unresolved existing queue commands](playback.md#two-independent-playback-contexts-adr-0043).
+
+The LIB rules below describe the existing **web** implementation; its shared
+player controls are not evidence of an implemented independent audition.
+iOS implementation status and recent row/menu layout are in
+[ios.md](ios.md) and [Library v5](../ui-ux/library-v5.md).
+
 ## Screen
 
 iOS uses [Library v5](../ui-ux/library-v5.md), implemented in source on

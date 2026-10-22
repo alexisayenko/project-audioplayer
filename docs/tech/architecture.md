@@ -10,6 +10,26 @@ iPhone (SwiftUI)  --http, Bearer ID token or X-API-Token-->  same server
   <music_root>/.plays/<uid>/play-history.csv   (listening history, outside git; copied daily into users/<uid>/, task-0056)
 ```
 
+## Playback ownership: agreed target, not implemented (ADR-0043)
+
+The current iOS `PlayerService` owns one `AVPlayer` and its queue; Library and
+Song Details invoke it too. Library Play currently replaces the queue with
+matching downloaded songs. The accepted target introduces a separate
+single-song audition context, while the dock remains a view/controller of the
+queue context; both audio outputs may be audible simultaneously.
+
+Audition exposes only Play/Pause and is owned by the visible Library row or
+Song Details view. Navigation, row visibility loss, details dismissal,
+backgrounding, device locking and exit stop audition without stopping the
+queue. The queue retains background/lock playback and offline operation;
+there is no new playback server, remote queue or queue-sync requirement.
+This is an ownership boundary inside the client, not a client/server split.
+
+[ADR-0043](decisions.md#adr-0043-persistent-queue-and-ephemeral-visible-song-audition),
+[requirements and open implementation choices](../specs/playback.md#two-independent-playback-contexts-adr-0043),
+[task-0085](../tasks/task-0085.md). Code and platform audio lifecycle handling
+are unchanged by this documentation; web/macOS parity is not implemented.
+
 ## Why a server
 
 iOS cannot run `yt-dlp`. The server extracts the audio; the app only
