@@ -78,6 +78,7 @@ struct SideDrawer: View {
     @ScaledMetric(relativeTo: .title3) private var icon: CGFloat = DS.Icon.iconNavLg
     @ScaledMetric(relativeTo: .title3) private var iconFrame: CGFloat = DS.Component.navIconFrame
     @ScaledMetric(relativeTo: .title3) private var logo: CGFloat = 42
+    @ScaledMetric(relativeTo: .title3) private var brandLockupHeight: CGFloat = DS.Component.navRowHeight
 
     var body: some View {
         GeometryReader { geo in
@@ -110,17 +111,11 @@ struct SideDrawer: View {
                         .frame(width: logo, height: logo)
                         .clipShape(Circle())
                         .accessibilityHidden(true)
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text("Electrophone").font(T.title.weight(.semibold)).foregroundStyle(DS.Color.ink)
-                            .lineLimit(1).minimumScaleFactor(0.6)
-                            .accessibilityAddTraits(.isHeader)
-                            .accessibilityFocused($titleFocused)
-                        Image("Vega108Wordmark").resizable().scaledToFit()
-                            .frame(height: DS.Icon.iconNav)
-                            .frame(maxWidth: .infinity, alignment: .trailing)
-                            .accessibilityLabel("Vega 108")
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    Image("ElectrophoneVega108Lockup").resizable().scaledToFit()
+                        .frame(maxWidth: .infinity, maxHeight: brandLockupHeight, alignment: .trailing)
+                        .accessibilityLabel("Electrophone Vega 108")
+                        .accessibilityAddTraits(.isHeader)
+                        .accessibilityFocused($titleFocused)
                 }
                 .padding(.horizontal, DS.Space.space6).padding(.bottom, DS.Space.space6)
                 ForEach(AppTab.allCases, id: \.self) { item($0) }

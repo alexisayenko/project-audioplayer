@@ -93,6 +93,11 @@ holds the shared pieces (SongRow, category and value chips, FilterSheet is in
 `AddSheet.swift`; `ServerStatus` and `LED` in `Components.swift`). Screen titles stand alone: the eyebrow is web only (design system 1791840724-5234). Sheets (Add, filters, song) are sized to their content, so they do not change height when the keyboard opens; the last tag pill wraps together with the "+". Text uses scalable Dynamic Type styles (`T.*`) with the same roles as
 `DS.Font`; the layout caps at accessibility size 2. Day and night follow the system.
 
+The iOS drawer brand lockup pairs the circular vinyl mark at the leading edge
+with the transparent, two-line “Electrophone / Vega 108” artwork, trailing-
+aligned and aspect-fit. Preserve its supplied proportions and colors; keep it
+as one accessible header label and scale it with the drawer layout.
+
 Contrast: every text pair is held at 4.5:1 in both themes. Where the system's own
 pair falls short the app deviates: the primary button and selected chips use
 `accent-strong` + `ink` by day (4.8:1) and `accent` + `on-accent` by night
