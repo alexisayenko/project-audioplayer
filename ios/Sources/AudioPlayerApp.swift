@@ -7,6 +7,8 @@ struct AudioPlayerApp: App {
     @StateObject private var settings = Settings()
     @StateObject private var server = ServerLink()
     @StateObject private var anon = AnonDownloader()
+    @StateObject private var libraryQuery = LibraryQuery()
+    @StateObject private var listening = ListeningStore()
 
     var body: some Scene {
         WindowGroup {
@@ -17,6 +19,8 @@ struct AudioPlayerApp: App {
                 .environmentObject(settings)
                 .environmentObject(server)
                 .environmentObject(anon)
+                .environmentObject(libraryQuery)
+                .environmentObject(listening)
         }
     }
 }

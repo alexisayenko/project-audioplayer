@@ -4,6 +4,7 @@ import SwiftUI
 struct SongEditView: View {
     @EnvironmentObject var settings: Settings
     @EnvironmentObject var library: LibraryStore
+    @EnvironmentObject var player: PlayerService
     @Environment(\.dismiss) private var dismiss
     @ScaledMetric(relativeTo: .body) private var coverSize: CGFloat = 88
 
@@ -145,7 +146,7 @@ struct SongEditView: View {
                     }
                 }
                 if let note { FormNote(text: note, error: noteIsError) }
-                if library.contains(song.id), track?.localOnly != true {
+                if library.contains(song.id), track?.localOnly != true, player.current?.id != song.id {
                     Button("Remove from iPhone") { confirmDelete = true }
                         .buttonStyle(DSButtonStyle(kind: .danger)).disabled(busy)
                 }
@@ -162,7 +163,10 @@ struct SongEditView: View {
         .presentationCornerRadius(DS.Radius.radiusTray)
         .presentationBackground(DS.Color.surface)
         .confirmationDialog("Remove \"\(song.title)\" from this iPhone?", isPresented: $confirmDelete, titleVisibility: .visible) {
-            Button("Remove from iPhone", role: .destructive) { library.removeAudio(song.id); dismiss() }
+            Button("Remove from iPhone", role: .destructive) {
+                guard player.current?.id != song.id else { return }
+                library.removeAudio(song.id); dismiss()
+            }
         } message: { Text("The song stays on your server.") }
     }
 

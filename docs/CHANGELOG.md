@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-22 (iOS Library v5, source implemented; not built or uploaded)
+
+- iOS: Library v5 controls, seven sort options and direction, live filters and Era, separate play/details row zones, queue markers, Song Details with sharing and deletion, loading/offline/error states, and pinned headers. Dock/mini-player and drawer unchanged. Eight query regression tests added; Xcode tests and simulator/device verification pending ([task-0084](tasks/task-0084.md)).
+
 ## 2026-10-22 (web shuffle and scroll button, to deploy)
 
 - Web: the Library tools (Metadata for downloaded songs, BPM detection) moved from the Library page into the Settings Library card as two rows under Download all; the Library tools toggle, badge and hint are gone (WEB-070, WEB-081, WEB-082).

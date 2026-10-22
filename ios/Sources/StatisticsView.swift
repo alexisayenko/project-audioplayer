@@ -62,7 +62,6 @@ struct StatisticsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: DS.Space.space4) {
-                ScreenHeader(title: "Statistics")
                 StatsTabBar(tabs: tabs, selection: shown) { tab = $0 }
                 switch shown {
                 case .songs: StatsSongsTab(songs: songs, loaded: loaded, hasAudio: hasAudio)
@@ -71,6 +70,10 @@ struct StatisticsView: View {
                 }
             }
             .padding(.horizontal, DS.Space.space4).padding(.top, DS.Space.space2).padding(.bottom, DS.Space.space4)
+        }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            ScreenHeader(title: "Statistics").padding(.horizontal, DS.Space.space4).padding(.top, DS.Space.space2)
+                .background(DS.Color.ground)
         }
         .dsGround()
         .dynamicTypeSize(...DynamicTypeSize.accessibility2)

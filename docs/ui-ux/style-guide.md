@@ -70,7 +70,7 @@ a copper rim, flat glass slabs, one cyan accent, day and night. Tokens are
 generated into `ios/Sources/DesignTokens.swift` and `web/tokens.css`; the
 components (Transport, Chip + FilterSheet, Segment, TabBar, SongRow, Button)
 are specified in the system and built in SwiftUI from it. Library shows four
-category chips (Tags, Genres, Years, Countries) that open a filter sheet. On iOS this is being replaced by Library v5 ([`library-v5.md`](library-v5.md): Decades, toggles, results row).
+category chips (Tags, Genres, Years, Countries) that open a filter sheet. iOS Library v5 replaces this with a scrolling Tags, Genres, Era, Countries row and optional toggles, plus pinned controls ([`library-v5.md`](library-v5.md)); source implemented, Xcode and device verification pending.
 Decision: ADR-0009. Migration from the Vega 108 code: task-0005.
 
 Web: `web/style.css` uses only the `tokens.css` variables and the `.t-*` text
@@ -154,13 +154,13 @@ Added to the Electrophone Design System on 2026-10-21 (additive; `accent-tint` a
 
 ## Design System changes for Library v5
 
-Added to the Electrophone Design System on 2026-10-21 (additive; no existing name or value changed) for [`library-v5.md`](library-v5.md). Not used by the app yet: they arrive with the batches in section 5.2 of the spec. The components are specified, day and night, in the "Library v5" group of the Design System's Components (header, search field, chips, results row, song row, sheets, context menu, banners and toasts, empty and loading blocks).
+Added to the Electrophone Design System on 2026-10-21 (additive; no existing name or value changed) for [`library-v5.md`](library-v5.md). Used by the Library v5 source implementation (2026-10-22, [task-0084](../tasks/task-0084.md)); simulator, contrast and accessibility verification are pending. The dock styling is unchanged. The components are specified, day and night, in the "Library v5" group of the Design System's Components (header, search field, chips, results row, song row, sheets, context menu, banners and toasts, empty and loading blocks).
 
 - Playing cover scrim: `cover-scrim` (`vinyl` at 45%, both themes, `#10141773`) as `DS.Color.coverScrim`.
 - Library row cover: `cover-row` 56 as `DS.Component.coverRow` (`cover-md` 64 stays for the transport bar).
 - Chip count badge: `badge` 20 as `DS.Component.badge`.
 - Chip row trailing fade: `chip-fade` 24 as `DS.Component.chipFade`.
-- Filter sheet detent with search: `sheet-tall` 0.8 as `DS.Component.sheetTall` (a fraction of the screen height, not points).
-- Song Details cover: `details-cover` 200 as `DS.Component.detailsCover`. The spec table writes the Swift name `coverDetails`; the generated name follows the token name, so use `detailsCover`.
+- `sheet-tall` 0.8 remains exported but is unused by Library v5. Filter sheets use native medium/large detents; Era and Sort fit content. Its stale usage text awaits the next design-system export (Q11).
+- Song Details cover: `details-cover` 200 as `DS.Component.detailsCover`. Use the generated name `detailsCover`.
 - No-audio dimming: `dim` 0.55 as `DS.Opacity.dim`, the first member of a new `opacity` family (`sync-design-system.py` emits it as `enum Opacity` and as `--dim` on the web). The web `disabled-opacity` .45 is separate.
 - Brand: the plated app icon and the vinyl-only logo replace the first icon; masters and rules in [`../brand/logo/README.md`](../brand/logo/README.md), also published in the Design System (`assets/Logo/`, component Logo).

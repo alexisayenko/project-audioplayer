@@ -15,6 +15,8 @@ schemes:
     build:
       targets:
         AudioPlayer: all
+    test:
+      targets: [AudioPlayerTests]
     run:
       config: Debug
     archive:
@@ -28,6 +30,16 @@ schemes:
     archive:
       config: Release
 targets:
+  AudioPlayerTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [Tests]
+    dependencies:
+      - target: AudioPlayer
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.alexisayenko.audioplayer.tests
   AudioPlayer:
     type: application
     platform: iOS

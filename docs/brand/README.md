@@ -42,7 +42,7 @@ Prices, assessment, follow-up steps and the checks history: [`domains.md`](domai
    1 if the generated files differ from what the script would write.
 4. Run `--check`, then commit the export and the two generated files together. Never edit the
    generated files; never add a colour, size or radius in code that the
-   system does not define — add it to the system first. Partially followed: the web still has literal colours, radii, shadows and px sizes (WEB-010 Known gaps) and the iOS app has hand-built shadows, literal radius 16, literal sizes and `.white`/`.black` on the Sign in with Apple button (IOS-050 Known gaps); `sync-design-system.py --check` verifies only that the generated files are current, and `check.sh` has no literal-colour lint.
+   system does not define — add it to the system first. Partially followed: the web still has literal colours, radii, shadows and px sizes (WEB-010 Known gaps) and older iOS shared components and Add/Search still have hand-built shadows and literal dimensions, plus `.white`/`.black` on the Sign in with Apple button; Library v5 uses the token helpers without changing the dock (IOS-050 Known gaps); `sync-design-system.py --check` verifies only that the generated files are current, and `check.sh` has no literal-colour lint.
 
 ### Rules for native code
 

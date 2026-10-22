@@ -19,7 +19,6 @@ struct SettingsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: DS.Space.space3) {
-                ScreenHeader(title: "Settings")
                 accountCard
                 downloadsCard
                 storageCard
@@ -27,6 +26,10 @@ struct SettingsView: View {
                     .padding(.top, DS.Space.space4)
             }
             .padding(.horizontal, DS.Space.space4).padding(.top, DS.Space.space2).padding(.bottom, DS.Space.space4)
+        }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            ScreenHeader(title: "Settings").padding(.horizontal, DS.Space.space4).padding(.top, DS.Space.space2)
+                .background(DS.Color.ground)
         }
         .scrollDismissesKeyboard(.interactively)
         .sensoryFeedback(.success, trigger: removedTick)

@@ -1,6 +1,12 @@
 # Library v5: design spec (iOS)
 
 Status: spec, written 2026-10-21, brought in line with the cloud artifacts on 2026-10-22.
+Implementation 2026-10-22: the four batches are implemented in source in
+[task-0084](../tasks/task-0084.md). Xcode build, regression test execution,
+simulator comparison and device/VoiceOver verification are pending. The
+"today" column below remains the pre-migration baseline. The dock and drawer
+are unchanged; the supplied PDF is a visual reference, not a replacement for
+the committed design tokens.
 Source of truth: the "Electrophone Screens" Design artifact v53 (https://claude.ai/artifact/5K2BS7LFpb9qsKX7TtNyBm, page "Library v5": all frames, the clickable prototype, the Flows page and its legends) and the "Electrophone" Design System v37 (https://claude.ai/artifact/1SLwpCK4m4Xi5uWxFoFgSa: specimens, Icon section, Scrolling rules, READMEs). They are the latest design truth. This text is their written, implementation-oriented form: where the two differ, the artifacts win and this text is fixed. It replaces the ChatGPT sketches (`library-v5-gpt-prompt.md`, `library-v4-gpt-prompt.md`, both historical). Everything is expressed in the Electrophone design system ([brand README](../brand/README.md), [style guide](style-guide.md), `ios/Sources/DesignTokens.swift`).
 
 Out of scope, only referenced: the docked mini-player, Now playing, the left drawer content, Playlists, Statistics, Settings, and the Add sheet. The mini-player and drawer stay exactly as they are today.
