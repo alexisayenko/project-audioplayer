@@ -660,7 +660,7 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
     drag.sub = subtreeOf(drag.node);
     drag.ax = drag.node.x;
     drag.ay = drag.node.y;
-    pull = followItems(drag.node, drag.sub);
+    pull = reducedMotion ? null : followItems(drag.node, drag.sub);
     drag.held = [];
     for (const l of parentLinks.get(drag.node.id) || []) {
       const p = l.s;

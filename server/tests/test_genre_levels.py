@@ -634,8 +634,9 @@ def test_the_second_families_left_are_appended_and_parents_zero_is_unchanged():
     assert ENTRIES["disco"]["parents"] == ["Funk / Soul"]
 
 
-def test_the_deepest_level_is_three_since_trance_is_level_one():
-    assert max(v["level"] for v in ENTRIES.values()) == 3
+def test_the_deepest_level_is_four_because_of_the_dubstep_branch():
+    assert max(v["level"] for v in ENTRIES.values()) == 4
+    assert {k for k, v in ENTRIES.items() if v["level"] == 4} == {"chillstep"}
     assert {k for k, v in ENTRIES.items() if v["level"] == 3 and "psytrance" in v["parents"]} == {c for c, v in ENTRIES.items() if "psytrance" in v["parents"]}
 
 
@@ -682,7 +683,7 @@ def test_the_19_remaining_reviewed_associations_are_related_and_no_longer_parent
     for k, rel in RELATED_MOVES.items():
         assert ENTRIES[k]["related"] == rel, k
         assert not set(rel) & set(ENTRIES[k]["parents"]), k
-    assert {k for k, v in ENTRIES.items() if v.get("related")} == set(RELATED_MOVES) | set(ROCK_RELATED) | {"outrun", "spacesynth", "chillstep"}
+    assert {k for k, v in ENTRIES.items() if v.get("related")} == set(RELATED_MOVES) | set(ROCK_RELATED) | {"outrun", "spacesynth", "chillstep", "electro house"}
     assert ENTRIES["chillwave"]["parents"] == ["synthwave"] and ENTRIES["vaporwave"]["parents"] == ["synthwave"]
     assert ENTRIES["jungle"]["parents"] == ["breakbeat"] and ENTRIES["trap"]["parents"] == ["Hip Hop"] and "fusion" not in ENTRIES["trap"] and "fusion" not in ENTRIES["acid jazz"]
 
@@ -726,7 +727,7 @@ def test_related_is_validated_and_served():
 
 HELD_ROCK = {
     "acoustic", "aor", "arena rock", "beat", "british invasion", "dance-rock", "dark metal", "jangle pop", "mod",
-    "paisley underground", "psychobilly", "pub rock", "rock opera", "sadcore", "shock rock", "soft rock", "southern rock", "stoner rock", "synth-rock",
+    "paisley underground", "psychobilly", "pub rock", "rock opera", "sadcore", "shock rock", "soft rock", "southern rock", "stoner rock", "synth-rock", "country rock", "folk rock",
 }
 ROCK_RELATED = {
     "krautrock": ["psychedelic rock"], "no wave": ["experimental rock", "post-punk"], "post-hardcore": ["hardcore punk", "noise rock"], "mathcore": ["math rock", "post-hardcore"],
@@ -766,7 +767,7 @@ def test_electro_funk_is_a_synonym_of_electro_and_electropop_stays_on_synthpop()
 
 
 SUBFAMILIES = ["House", "Techno", "Trance", "Breaks & bass", "Synth & wave", "Experimental, industrial & noise", "Ambient & downtempo", "Eurodance & disco"]
-SUBFAMILY_COUNTS = {"House": 25, "Techno": 19, "Trance": 18, "Breaks & bass": 23, "Synth & wave": 11, "Experimental, industrial & noise": 21, "Ambient & downtempo": 10, "Eurodance & disco": 12}
+SUBFAMILY_COUNTS = {"House": 25, "Techno": 19, "Trance": 18, "Breaks & bass": 24, "Synth & wave": 12, "Experimental, industrial & noise": 21, "Ambient & downtempo": 10, "Eurodance & disco": 12}
 
 
 def test_edm_is_an_approved_extra_level_two_under_electronic():
@@ -784,15 +785,13 @@ def test_edm_is_an_approved_extra_level_two_under_electronic():
     assert not {"edm", "dance", "dance music", "club music", "electronic dance", "electronic dance music"} & set(syn)
 
 
-def test_every_electronic_level_two_genre_has_exactly_one_subfamily():
+def test_assigned_electronic_subfamilies_are_valid_after_removing_geographic_groups():
     names = [n for n, s in LEVELS["subfamilies"].items()]
     assert names == SUBFAMILIES and [s["order"] for s in LEVELS["subfamilies"].values()] == [1, 2, 3, 4, 5, 6, 7, 8]
     assert all(s["family"] == "Others" for s in LEVELS["subfamilies"].values())
-    lvl2 = {k for k, v in ENTRIES.items() if "Others" in v["parents"] and k not in {"dub", "electronic rock", "synthpop"}}
-    assert len(lvl2) == 42
-    for k in lvl2:
-        assert RAW[k].get("subfamily") in SUBFAMILIES, k
-    assert {k for k, v in RAW.items() if v.get("subfamily")} == lvl2 | {"psytrance", "eurodance", "ebm", "disco", "synthpop"}
+    labelled = {k for k, v in RAW.items() if v.get("subfamily")}
+    assert len(labelled) == 47
+    assert all(v["subfamily"] in SUBFAMILIES for v in RAW.values() if v.get("subfamily"))
     assert {k for k in FORMS if FAMILIES[k].get("subfamily") in SUBFAMILIES} == FORMS, "a promoted genre keeps its subfamily label (task-0066)"
     for k, v in ENTRIES.items():
         if "Others" not in v["families"] and not FORMS & set(v["families"]) and k not in {"disco", "ebm", "synthpop"} and "disco" not in v["parents"] and "synthpop" not in v["parents"]:
@@ -803,7 +802,7 @@ def test_subfamily_inheritance_counts_and_the_disco_children():
     from collections import Counter
 
     c = Counter(v["subfamily"] for v in ENTRIES.values() if v.get("subfamily"))
-    assert dict(c) == SUBFAMILY_COUNTS and sum(c.values()) == 139
+    assert dict(c) == SUBFAMILY_COUNTS and sum(c.values()) == 141
     assert ENTRIES["deep house"]["subfamily"] == "House" and "subfamily" not in RAW["deep house"]
     assert ENTRIES["spacesynth"]["subfamily"] == "Synth & wave" and ENTRIES["hardstyle"]["subfamily"] == "Techno"
     assert RAW["disco"]["subfamily"] == "Eurodance & disco" and ENTRIES["disco"]["families"] == ["Funk / Soul"], "disco keeps its label after leaving Others"

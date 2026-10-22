@@ -114,13 +114,14 @@ test('repeat all wraps on auto-advance; repeat one restarts the song', () => {
   player.cycleRepeat();
 });
 
-test('shuffle toggles, persists, and visits every song once', () => {
+test('shuffle toggles, persists, and visits every song once', async () => {
   player.setShuffle(true);
   assert.equal(localStorage.getItem('ap2.shuffle'), '1');
   assert.equal($('mini-shuffle').getAttribute('aria-pressed'), 'true');
   player.playAt(0);
+  await flush();
   const seen = new Set([player.current.id]);
-  for (let i = 0; i < 2; i += 1) { player.next(); seen.add(player.current.id); }
+  for (let i = 0; i < 2; i += 1) { player.next(); await flush(); seen.add(player.current.id); }
   assert.equal(seen.size, 3);
   player.setShuffle(false);
   assert.equal(localStorage.getItem('ap2.shuffle'), '0');
@@ -150,8 +151,9 @@ test('removing the current song loads the next one; removing the last empties th
   assert.equal(saved().items.length, 0);
 });
 
-test('playListed replaces the queue and reports skipped no-audio songs', () => {
+test('playListed replaces the queue and reports skipped no-audio songs', async () => {
   const r = player.playListed(store.songs, []);
+  await flush();
   assert.equal(r.count, 3);
   assert.equal(r.skipped, 1);
   assert.equal(player.current.id, 'a');

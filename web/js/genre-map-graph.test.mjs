@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { realVocab } from './genre-real-vocab.mjs';
 import { buildTree, applyCounts } from './genre-levels.js';
+import { pieIndices } from './genre-data.js';
 import { buildMapGraph, seedPositions, visibleIds, libraryCount, genreCount, mapRadius, emphasis } from './genre-map-graph.js';
 import { createHash } from './genre-spatial.js';
 import { VOCAB, SONGS } from './genre-levels-fixture.mjs';
@@ -23,13 +24,13 @@ test('every vocabulary node, the Electronic family circle included, is on the gr
   assert.equal(g.byId.get('g:Rock').em, 1);
 });
 
-test('a genre has a line to each parent: one layout parent link, the others as cross-links; the Electronic family has lines to its children', () => {
+test('a genre has a line to each equal parent; the Electronic family has lines to its children', () => {
   const g = buildMapGraph(fixture());
   const keys = new Set(g.links.map(linkKey));
   assert.ok(g.links.some((l) => l.source === 'g:Electronic' && l.target === 's:house'));
   assert.ok(keys.has('parent:s:house>s:deep house'));
   assert.ok(keys.has('parent:s:breakbeat>s:jungle'));
-  assert.ok(keys.has('related:s:drum and bass>s:jungle'));
+  assert.ok(keys.has('parent:s:drum and bass>s:jungle'));
   assert.equal(g.links.filter((l) => l.target === 's:jungle').length, 2);
   assert.equal(g.links.filter((l) => l.target === 's:house').length, 1, 'a level 2 genre of Electronic hangs from the family circle');
   for (const l of g.links) assert.ok(g.byId.has(l.source) && g.byId.has(l.target) && l.source !== l.target);
@@ -70,12 +71,13 @@ test('the real vocabulary draws every genre once with a line to each visible par
     const shown = [...new Set(v.parents)].map((p) => (vocab.families.includes(p) ? `g:${p}` : `s:${p}`));
     const into = g.links.filter((l) => l.target === id && l.kind !== 'assoc');
     assert.deepEqual(into.map((l) => l.source).sort(), [...shown].sort(), k);
-    assert.equal(into.filter((l) => l.kind === 'parent').length, shown.length ? 1 : 0, k);
+    assert.equal(into.filter((l) => l.kind === 'parent').length, shown.length, k);
     lines += shown.length;
-    assert.equal(g.byId.get(id).fis.length, tree.byId.get(id).fams.length, k);
+    assert.deepEqual(g.byId.get(id).fis, pieIndices(tree.byId.get(id).fams), k);
   }
   assert.equal(g.links.filter((l) => l.kind !== 'assoc').length, lines);
-  assert.ok(g.byId.get('s:disco').fis.length === 2 && g.byId.get('s:euro disco').fis.length === 2);
+  assert.equal(g.byId.get('s:disco').fis.length, 1);
+  assert.deepEqual(g.byId.get('s:euro disco').fis, g.byId.get('s:disco').fis);
   assert.equal(libraryCount(tree), 0);
 });
 

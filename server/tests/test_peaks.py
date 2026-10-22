@@ -1,4 +1,5 @@
 import json
+import shutil
 import subprocess
 import wave
 from pathlib import Path
@@ -12,6 +13,7 @@ from tests.test_library import ADIR, H, VID, VID2, client  # noqa: F401
 from tests.test_users import add
 
 BUCKETS = peaks.BUCKETS
+HAS_FFMPEG = shutil.which("ffmpeg") is not None
 
 
 def write_wav(path: Path, seconds=2.0, rate=8000):
@@ -56,6 +58,7 @@ def test_reduce_never_has_more_buckets_than_samples_and_rejects_no_audio():
         peaks.reduce(np.array([], dtype="<i2"))
 
 
+@pytest.mark.skipif(not HAS_FFMPEG, reason="real waveform decoding requires ffmpeg")
 def test_owner_gets_the_peaks_of_the_real_file(lib):
     r = lib.get(f"/songs/{VID}/peaks", headers=H)
     assert r.status_code == 200
@@ -68,6 +71,7 @@ def test_owner_gets_the_peaks_of_the_real_file(lib):
     assert r.headers["etag"].startswith('"p')
 
 
+@pytest.mark.skipif(not HAS_FFMPEG, reason="real waveform decoding requires ffmpeg")
 def test_the_result_is_cached_beside_the_audio_not_in_the_data_tree(lib, tmp_path, decodes):
     assert lib.get(f"/songs/{VID}/peaks", headers=H).status_code == 200
     assert lib.get(f"/songs/{VID}/peaks", headers=H).status_code == 200
@@ -78,6 +82,7 @@ def test_the_result_is_cached_beside_the_audio_not_in_the_data_tree(lib, tmp_pat
     assert not list((tmp_path / "users").rglob(".peaks"))
 
 
+@pytest.mark.skipif(not HAS_FFMPEG, reason="real waveform decoding requires ffmpeg")
 def test_etag_gives_304_and_a_changed_file_is_recomputed(lib, tmp_path, decodes):
     first = lib.get(f"/songs/{VID}/peaks", headers=H)
     again = lib.get(f"/songs/{VID}/peaks", headers={**H, "If-None-Match": first.headers["etag"]})
@@ -97,6 +102,7 @@ def test_missing_audio_and_unknown_song_are_404(lib, tmp_path):
     assert lib.get("/songs/not-an-id/peaks", headers=H).status_code == 422
 
 
+@pytest.mark.skipif(not HAS_FFMPEG, reason="real waveform decoding requires ffmpeg")
 def test_wrong_credentials_and_guest_access_follows_files(lib, monkeypatch):
     monkeypatch.setenv("PUBLIC_VIEW", "1")
     assert lib.get(f"/songs/{VID}/peaks", headers={"X-API-Token": "wrong"}).status_code == 401
@@ -121,6 +127,7 @@ def test_no_ffmpeg_answers_503_with_a_code_and_writes_no_cache(lib, tmp_path, mo
     assert not (ADIR(tmp_path) / ".peaks").exists()
 
 
+@pytest.mark.skipif(not HAS_FFMPEG, reason="undecodable-file verification requires ffmpeg")
 def test_an_undecodable_file_is_503_too(client, tmp_path):
     assert add(client, H, VID).status_code == 202
     (ADIR(tmp_path)).mkdir(parents=True, exist_ok=True)

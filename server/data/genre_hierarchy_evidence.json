@@ -2,8 +2,8 @@
  "_meta": {
   "generated_at": "2026-10-19T13:49:33.730Z",
   "review_only": "Not loaded by the server and not in the payload. Compare with scripts/hierarchy-diff.mjs.",
-  "genres_with_wikipedia_match": 468,
-  "with_wikidata_parents": 468,
+  "genres_with_wikipedia_match": 466,
+  "with_wikidata_parents": 466,
   "with_lead_parents": 248,
   "with_origins": 391,
   "fetch_failures": [],
@@ -105,31 +105,6 @@
   "lead_parents": [],
   "origins": [],
   "derivatives": []
- },
- "folk, world, & country": {
-  "wikidata": "Q205049",
-  "wikipedia": "World music",
-  "subclass_of": [
-   {
-    "q": "Q115484611",
-    "label": "music",
-    "key": null
-   },
-   {
-    "q": "Q373342",
-    "label": "popular music",
-    "key": "pop"
-   }
-  ],
-  "instance_of": [],
-  "lead_parents": [],
-  "origins": [],
-  "derivatives": [
-   {
-    "label": "Folktronica",
-    "key": null
-   }
-  ]
  },
  "hip hop": {
   "wikidata": "Q11401",
@@ -380,34 +355,6 @@
     "key": "contemporary r&b"
    }
   ]
- },
- "latin": {
-  "wikidata": "Q18345375",
-  "wikipedia": "Latin music",
-  "subclass_of": [
-   {
-    "q": "Q115484611",
-    "label": "music",
-    "key": null
-   }
-  ],
-  "instance_of": [],
-  "lead_parents": [],
-  "origins": [
-   {
-    "label": "Music of Latin America",
-    "key": null
-   },
-   {
-    "label": "Music of Spain",
-    "key": null
-   },
-   {
-    "label": "Music of Portugal",
-    "key": null
-   }
-  ],
-  "derivatives": []
  },
  "pop": {
   "wikidata": "Q37073",
@@ -2823,7 +2770,7 @@
    {
     "q": "Q18345375",
     "label": "Latin music",
-    "key": "latin"
+    "key": null
    },
    {
     "q": "Q11639",
@@ -2841,7 +2788,7 @@
   "lead_parents": [
    {
     "label": "Latin music",
-    "key": "latin",
+    "key": null,
     "phrase_kind": "genre_of"
    }
   ],
@@ -4519,7 +4466,7 @@
    },
    {
     "label": "Latin music",
-    "key": "latin"
+    "key": null
    },
    {
     "label": "Caribbean music",
@@ -7582,7 +7529,7 @@
    },
    {
     "label": "world music",
-    "key": "folk, world, & country"
+    "key": null
    },
    {
     "label": "light music",
@@ -7654,7 +7601,7 @@
    {
     "q": "Q18345375",
     "label": "Latin music",
-    "key": "latin"
+    "key": null
    },
    {
     "q": "Q201022",
@@ -7731,7 +7678,7 @@
    },
    {
     "label": "world music",
-    "key": "folk, world, & country"
+    "key": null
    }
   ],
   "derivatives": [
@@ -8068,7 +8015,7 @@
    },
    {
     "label": "Latin music (genre)",
-    "key": "latin"
+    "key": null
    },
    {
     "label": "Electro (music)",
@@ -9150,7 +9097,7 @@
    },
    {
     "label": "Latin music",
-    "key": "latin"
+    "key": null
    },
    {
     "label": "Rhythm and blues",
@@ -12222,7 +12169,7 @@
    {
     "q": "Q18345375",
     "label": "Latin music",
-    "key": "latin"
+    "key": null
    }
   ],
   "instance_of": [],
@@ -12261,7 +12208,7 @@
    {
     "q": "Q18345375",
     "label": "Latin music",
-    "key": "latin"
+    "key": null
    }
   ],
   "instance_of": [],
@@ -12269,7 +12216,7 @@
   "origins": [
    {
     "label": "Latin music",
-    "key": "latin"
+    "key": null
    },
    {
     "label": "Pop music",
@@ -14103,7 +14050,7 @@
    },
    {
     "label": "World music",
-    "key": "folk, world, & country"
+    "key": null
    },
    {
     "label": "Classical music",
@@ -17289,7 +17236,7 @@
    },
    {
     "label": "latin music",
-    "key": "latin"
+    "key": null
    }
   ],
   "derivatives": []
@@ -19698,7 +19645,7 @@
    {
     "q": "Q18345375",
     "label": "Latin music",
-    "key": "latin"
+    "key": null
    }
   ],
   "instance_of": [
@@ -22254,7 +22201,7 @@
    },
    {
     "label": "Latin music (genre)",
-    "key": "latin"
+    "key": null
    },
    {
     "label": "acid jazz",
@@ -23670,7 +23617,7 @@
    {
     "q": "Q205049",
     "label": "world music",
-    "key": "folk, world, & country"
+    "key": null
    },
    {
     "q": "Q373342",
@@ -23683,7 +23630,7 @@
   "origins": [
    {
     "label": "World music",
-    "key": "folk, world, & country"
+    "key": null
    },
    {
     "label": "rock music",

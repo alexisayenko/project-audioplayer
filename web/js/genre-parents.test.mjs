@@ -8,7 +8,7 @@ const read = (path) => JSON.parse(readFileSync(new URL(path, import.meta.url), '
 const doc = read('../../server/data/genre_levels.json');
 const FAMILIES = Object.keys(doc.families);
 
-const entries = Object.fromEntries(Object.entries(doc).filter(([k]) => !['_meta', 'families', 'modifiers', 'subfamilies'].includes(k)));
+const entries = Object.fromEntries(Object.entries(doc).filter(([k]) => !['_meta', 'families', 'modifiers', 'subfamilies', 'hex'].includes(k)));
 const vocabOf = (levels) => ({
   families: Object.keys(doc.families),
   groups: Object.fromEntries(Object.entries(doc.families).filter(([, v]) => v.group).map(([k, v]) => [k, { synonyms: v.synonyms, temporary: v.temporary === true, colour: v.colour }])),
@@ -91,7 +91,7 @@ test('space disco is an approved extra, level 3 under disco, in Funk / Soul', ()
 test('psytrance sits under trance (level 1) and its children reach level 3; there is no depth cap', () => {
   const t = tree();
   const levels = [...t.byId.values()].map((n) => n.level);
-  assert.equal(Math.max(...levels), 3);
+  assert.equal(Math.max(...levels), 4);
   assert.equal(t.byId.get('s:psytrance').level, 2);
   assert.deepEqual(t.byId.get('s:psytrance').parents, ['g:trance']);
   assert.equal(t.byId.get('s:goa trance').level, 3);
@@ -126,12 +126,12 @@ test('family counts of the tree count a genre in every family it belongs to', ()
   for (const name of FAMILIES) assert.deepEqual(f[name], { level2: doc._meta.counts[name].level2, level3: doc._meta.counts[name].level3, level4: doc._meta.counts[name].level4 }, name);
 });
 
-test('Rock: 51 level 2 and 72 level 3 member genres (a genre of two families counts in both), no level 4', () => {
+test('Rock family counts match the current vocabulary metadata', () => {
   const t = tree();
   const mine = [...t.byId.values()].filter((n) => n.fams.includes('Rock') && n.level > 1);
-  assert.equal(mine.filter((n) => n.level === 2).length, 51);
-  assert.equal(mine.filter((n) => n.level === 3).length, 72);
-  assert.ok(mine.every((n) => n.level <= 3));
+  assert.equal(mine.filter((n) => n.level === 2).length, doc._meta.counts.Rock.level2);
+  assert.equal(mine.filter((n) => n.level === 3).length, doc._meta.counts.Rock.level3);
+  assert.equal(mine.filter((n) => n.level === 4).length, doc._meta.counts.Rock.level4);
   for (const k of ['mod', 'soft rock', 'stoner rock', 'pub rock', 'southern rock']) assert.equal(t.byId.get(`s:${k}`).parent, 'g:Rock', k);
   assert.equal(t.byId.get('s:krautrock').parent, 's:experimental rock');
   assert.equal(t.byId.get('s:hardcore punk').level, 3);

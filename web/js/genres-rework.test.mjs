@@ -4,6 +4,7 @@ import { installPage, stubFetch, flush, fire } from './test-dom.mjs';
 
 await installPage();
 globalThis.location = { hash: '', href: 'http://localhost/', host: 'localhost' };
+globalThis.localStorage.setItem('electrophone.genresDrill', '0');
 const { VOCAB, SONGS } = await import('./genre-levels-fixture.mjs');
 let mode = 'ok';
 const calls = stubFetch((u) => {
@@ -27,6 +28,7 @@ let current = null;
 Object.defineProperty(player, 'current', { get: () => current, configurable: true });
 
 async function mount(opts = { view: 'radial' }) {
+  try { globalThis.localStorage.setItem('electrophone.genresDrill', '0'); } catch { /* storage is intentionally blocked in one test */ }
   const root = document.createElement('div');
   document.body.append(root);
   const cleanup = renderGenresRework(root, opts);
@@ -37,6 +39,7 @@ const rowsOf = (root) => root.querySelectorAll('[role="treeitem"]');
 const names = (root) => rowsOf(root).map((r) => r.querySelector('.gmr-name').textContent);
 const row = (root, name) => rowsOf(root).find((r) => r.querySelector('.gmr-name').textContent === name);
 const btn = (root, text) => root.querySelectorAll('button').find((b) => b.textContent === text);
+const outlineBtn = (root, text) => root.querySelectorAll('.gmr-tools button').find((b) => b.textContent === text);
 const noInfobox = (root) => root.querySelector('.gmr-details') === null && root.querySelector('#gmr-info') === null;
 const pick = (root, text) => {
   const input = root.querySelector('input');
@@ -120,14 +123,14 @@ test('expand all and collapse all', async () => {
   assert.ok(row(root, 'rock and roll').textContent.includes('provisional'));
   assert.equal(row(root, 'deep house').querySelector('.nodisc'), null);
   assert.equal(names(root).includes('breakbeat'), true);
-  btn(root, 'Collapse all').click();
+  outlineBtn(root, 'Collapse all').click();
   assert.deepEqual(names(root), ['Electronic', 'Rock']);
 });
 
 test('search finds a synonym, expands to it and clears with Escape', async () => {
   mode = 'ok';
   const { root } = await mount();
-  btn(root, 'Collapse all').click();
+  outlineBtn(root, 'Collapse all').click();
   const input = root.querySelector('input');
   input.value = 'dnb';
   fire(input, 'input');
@@ -441,7 +444,7 @@ test('Now playing selects the deepest matching genre without an infobox and flas
   mode = 'ok';
   current = { id: 's4', tags: ['genre:afro house', 'genre:house', 'genre:electronic', 'mood:calm'] };
   const { root, cleanup } = await mount();
-  btn(root, 'Collapse all').click();
+  outlineBtn(root, 'Collapse all').click();
   btn(root, 'Now playing').click();
   assert.equal(row(root, 'afro house').getAttribute('aria-selected'), 'true');
   assert.ok(row(root, 'afro house').classList.contains('flash'));

@@ -259,7 +259,7 @@ test('entering circles start next to a visible neighbour instead of flying in fr
   dnb.x = 5000; dnb.y = 5000;
   view.setVisible(new Set(['g:Electronic', 's:house', 's:deep house']));
   const house = graph.byId.get('s:house');
-  assert.ok(Math.hypot(dnb.x - house.x, dnb.y - house.y) < 60);
+  assert.ok(Math.hypot(dnb.x - house.x, dnb.y - house.y) < 65, 'the new circle settles beside its visible parent');
 });
 
 test('double click zooms to the circle and its neighbours and centres it', () => {

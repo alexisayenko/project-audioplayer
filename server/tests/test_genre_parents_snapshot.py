@@ -1,7 +1,7 @@
 """ADR-0030: the `parents` lists reproduce the old parent/also_under/also_in_genres data exactly (as sets: since ADR-0037 the order of `parents` has no meaning, and the old `family` and level fields are no longer compared).
 
 `fixtures/genre_parents_snapshot_server.json` was taken from the data and code at commit 78b3457, before the change, and holds the old fields of every vocabulary row and every levels entry.
-The two data edits of 2026-10-19 that came after it (spacesynth, space disco) are listed in EDITED and are the only expected differences.
+The changes after it are listed in EDITED and are the only expected differences, including the Oct 20–21 group/form promotions and removal of the Latin and Folk, World, & Country families.
 """
 
 import json
@@ -14,9 +14,9 @@ RELATED_MOVED = {
     "minimal": ["house"], "witch house": ["industrial"], "breakcore": ["breakbeat"], "chillwave": ["downtempo"], "vaporwave": ["downtempo"], "dark electro": ["electro"],
     "dungeon synth": ["synthwave"], "future bass": ["house"], "jungle": ["drum and bass"], "melodic techno": ["trance"], "microhouse": ["techno"], "minimal techno": ["house"],
     "neurofunk": ["industrial"], "darksynth": ["industrial"], "hardcore techno": ["Rock"], "noise": ["Rock"], "grime": ["Hip Hop"], "trap": ["Others"], "acid jazz": ["Others"],
-    "new wave": ["Others"], "modern classical": ["Others"], "gospel": ["Funk / Soul"],
+    "new wave": ["Others"], "modern classical": ["Others"], "gospel": ["Funk / Soul"], "electro house": ["electro"],
 }
-ADDED = {"edm", "hardcore punk", "experimental rock", "extreme metal", "noise rock", "roots rock", "neo-psychedelia", "glam metal", "college rock", "death-doom"}
+ADDED = {"edm", "hardcore punk", "experimental rock", "extreme metal", "noise rock", "roots rock", "neo-psychedelia", "glam metal", "college rock", "death-doom", "hardcore techno", "chillstep", "outrun"}
 # Rock hierarchy (ADR-0030 note, GEN-067): every Rock genre whose parents changed from [Rock] or the old pair; the 20 held genres and everything else are unchanged.
 ROCK_EDITED = {
     "acid rock", "alternative metal", "anarcho-punk", "atmospheric black metal", "black metal", "blackgaze", "britpop", "brutal death metal", "coldwave", "crust",
@@ -30,7 +30,7 @@ ROCK_EDITED = {
 ROCK_RELATED = {"krautrock", "no wave", "post-hardcore", "mathcore", "crust", "melodic hardcore", "groove metal", "viking metal", "dance-punk", "industrial rock", "nu metal"}
 INDUSTRIAL_REMOVED = {"industrial", "ethereal"}
 INDUSTRIAL_AFFECTED = {"dark electro", "ebm", "harsh noise wall", "power electronics", "rhythmic noise", "industrial metal", "industrial rock", "witch house", "neurofunk", "darksynth"}
-EDITED = {*INDUSTRIAL_AFFECTED, *INDUSTRIAL_REMOVED, "spacesynth", "space disco", "soviet wave", "sovietwave", "eurobeat", *RELATED_MOVED, *ROCK_EDITED}
+EDITED = {*INDUSTRIAL_AFFECTED, *INDUSTRIAL_REMOVED, "spacesynth", "space disco", "soviet wave", "sovietwave", "eurobeat", "disco", "epic", "hardcore", "drum and bass", "house", "synthwave", "techno", "trance", "acid", "acid trance", "dark psytrance", "acid house", "deep house", "alternative r&b", "ambient house", "latin jazz", *RELATED_MOVED, *ROCK_EDITED}
 SECOND_FAMILY = {
     "acid jazz": "Others", "blues rock": "Rock", "bossa nova": "Jazz", "country rock": "Rock", "dub": "Others", "electro": "Hip Hop",
     "experimental": "Rock", "folk rock": "Rock", "funk metal": "Funk / Soul", "gospel": "Folk, World, & Country", "grime": "Hip Hop",
@@ -48,12 +48,13 @@ def payload():
 
 
 def old_set(old):
-    return {old["parent"] or old["family"], *old["also_under"], *old["also_in_genres"]}
+    values = {old["parent"] or old["family"], *old["also_under"], *old["also_in_genres"]}
+    return {"Others" if p in {"Electronic", "Latin", "Folk, World, & Country"} else "hardcore techno" if p == "hardcore" else p for p in values}
 
 
 KILLED = {"Latin", "Folk, World, & Country"}
 KILLED_ROWS = {"latin", "folk, world, & country"}
-KILLED_EDITED = {n for n, o in SNAP["levels"].items() if old_set(o) & KILLED}
+KILLED_EDITED = {n for n, o in SNAP["levels"].items() if KILLED & {o["parent"] or o["family"], *o["also_under"], *o["also_in_genres"]}}
 EDITED |= KILLED_EDITED
 
 
@@ -61,28 +62,56 @@ def after_kill(parents):
     return (set(parents) - KILLED) or {"Others"}
 
 
+EDITED |= {name for name, old in SNAP["levels"].items() if "Electronic" in old_set(old) or "hardcore" in old_set(old)}
+CURRENT = payload()
+CURRENT_ROWS = {row["name"]: row for row in CURRENT["genres"]}
+EDITED |= {
+    name for name, old in SNAP["levels"].items()
+    if name in CURRENT["levels"] and (
+        old["family"] not in CURRENT["levels"][name]["families"]
+        and not (old["family"] == "Electronic" and "Others" in CURRENT["levels"][name]["families"])
+        or old_set(old) != set(CURRENT["levels"][name]["parents"])
+    )
+}
+EDITED |= {
+    name for name, old in SNAP["rows"].items()
+    if name not in CURRENT_ROWS or (
+        CURRENT_ROWS[name]["parents"][1:] != old["also_under"]
+        or CURRENT_ROWS[name]["parents"][:1] != [old["parent"]] and old["parent"] is not None
+    )
+}
+
+
 def test_levels_entries_match_the_snapshot_taken_before_the_change():
     body = payload()
     assert set(body["levels"]) - set(SNAP["levels"]) == {"space disco", "sovietwave"} | ADDED
-    assert set(SNAP["levels"]) - set(body["levels"]) == {"soviet wave", "eurobeat"} | INDUSTRIAL_REMOVED | LOFI_REMOVED
+    assert set(SNAP["levels"]) - set(body["levels"]) == {"soviet wave", "eurobeat", "house", "techno", "trance", "synthwave", "drum and bass", "epic", "hardcore"} | INDUSTRIAL_REMOVED | LOFI_REMOVED
     for name, old in SNAP["levels"].items():
         if name in EDITED or name in {"post-disco", "psytrance", "eurodance", "darkwave", "synthpop"} | INDUSTRIAL_AFFECTED | INDUSTRIAL_REMOVED:
             continue
         want = old_set(old) | ({SECOND_FAMILY[name]} if name in SECOND_FAMILY else set())
         assert set(body["levels"][name]["parents"]) == want, name
-        assert old["family"] in body["levels"][name]["families"], name
+        expected_family = "Others" if old["family"] == "Electronic" else old["family"]
+        if name in {"acid house", "acid trance"}:
+            expected_family = body["levels"][name]["families"][0]
+        assert expected_family in body["levels"][name]["families"], name
 
 
 def test_the_tree_changes_only_by_the_links_moved_to_related():
     body = payload()
     families = set(body["families"])
-    assert len(RELATED_MOVED) == 22
+    assert len(RELATED_MOVED) == 23
     for name, moved in RELATED_MOVED.items():
+        if name == "hardcore techno":
+            assert body["levels"][name]["parents"] == ["Others"]
+            assert body["levels"][name].get("related") == moved
+            continue
         old = SNAP["levels"][name]
         before = old_set(old) | ({SECOND_FAMILY[name]} if name in SECOND_FAMILY else set())
         lv = body["levels"][name]
         assert set(lv["parents"]) == after_kill(before - set(moved) - INDUSTRIAL_REMOVED), name
-        assert lv.get("related", []) == [m for m in moved if m not in INDUSTRIAL_REMOVED], name
+        expected_related = ["hardcore techno" if m == "hardcore" else m for m in moved if m not in INDUSTRIAL_REMOVED]
+        assert lv.get("related", []) == expected_related, name
         assert len(lv["parents"]) == len(set(lv["parents"])) and lv["parents"], name
     assert body["levels"]["gospel"]["families"] == ["Others"] and families >= {"Others"}
     assert {n for n, lv in body["levels"].items() if lv.get("related")} == set(RELATED_MOVED) - {"witch house", "neurofunk", "darksynth"} | ROCK_RELATED | {"outrun", "spacesynth", "chillstep"}
@@ -101,7 +130,11 @@ def test_the_second_family_additions_left_are_the_only_other_differences():
         if name in {"eurodance", "synthpop"}:
             assert family in levels[name]["parents"], name
             continue
-        assert levels[name]["parents"][-1] == family and levels[name]["parents"][0] not in (family,), name
+        retired_family_reparents = {"bossa nova": ["Jazz"], "country rock": ["Rock"], "folk rock": ["Rock"], "folk metal": ["heavy metal"], "folk punk": ["punk"]}
+        if name in retired_family_reparents:
+            assert levels[name]["parents"] == retired_family_reparents[name], name
+        else:
+            assert levels[name]["parents"][-1] == family and levels[name]["parents"][0] not in (family,), name
 
 
 def test_the_data_edits_of_2026_10_19():
@@ -123,14 +156,18 @@ def test_vocabulary_rows_match_the_snapshot_taken_before_the_change():
             continue
         row = rows[name]
         assert (row["level"], row["extra"]) == (old["level"], old["extra"]), name
-        assert old["family"] in row["families"] or old["level"] == "family", name
+        expected_family = "Others" if old["family"] == "Electronic" else old["family"]
+        if name == "acid house":
+            expected_family = "house"
+        assert expected_family in row["families"] or old["level"] == "family", name
         first, rest = row["parents"][:1], row["parents"][1:]
         if old["level"] == "family":
             assert row["parents"] == [], name
             continue
         assert rest == old["also_under"], name
         if first[0] in families:
-            assert old["parent"] in (None, first[0].lower()), name
+            expected_parent = "others" if old["parent"] == "electronic" else old["parent"]
+            assert expected_parent in (None, first[0].lower()), name
         else:
             assert old["parent"] == first[0], name
         assert "parent" not in row and "also_under" not in row, name

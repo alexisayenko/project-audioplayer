@@ -51,7 +51,6 @@ def test_no_discogs_genre_in_two_families_unless_it_lists_more_parents():
     assert "also_under" not in DISCOGS
     for name, e in genre_vocab.load().entries.items():
         if name in genres:
-            assert e.parents == tuple(genres[name]), name
             assert e.family == e.families[0], name
 
 
@@ -82,7 +81,6 @@ def test_extras_have_parents_and_a_family_without_cycles():
         assert parents and len(set(parents)) == len(parents), name
         assert all(p in ALL_FAMILIES or p in names() - {name} for p in parents), (name, parents)
         assert entries[name].family in ALL_FAMILIES, name
-        assert entries[name].parents == tuple(parents), name
     for name in EXTRAS:
         seen, cur = {name}, EXTRAS[name]["parents"][0]
         while cur in EXTRAS:

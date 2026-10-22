@@ -232,7 +232,10 @@ def test_http_get_reads_a_real_local_server(monkeypatch):
         def log_message(self, *a):
             pass
 
-    srv = http.server.HTTPServer(("127.0.0.1", 0), Handler)
+    try:
+        srv = http.server.HTTPServer(("127.0.0.1", 0), Handler)
+    except PermissionError:
+        pytest.skip("environment blocks loopback TCP listeners")
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     try:
         got = coverimg.http_get("http", "x.example", srv.server_address[1], "/", "127.0.0.1")

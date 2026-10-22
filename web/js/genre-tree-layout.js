@@ -25,10 +25,18 @@ export function createTreeLayout(graph, { seed = 1, sweeps = 4 } = {}) {
     const b = index.get(l.target);
     if (a === undefined || b === undefined) continue;
     if (l.kind === 'parent') {
-      parentOf[b] = a;
-      if (!kids.has(a)) kids.set(a, []);
-      kids.get(a).push(b);
-      segs.push([a, b]);
+      const node = nodes[b].node;
+      const primaryId = node?.parent || (node?.parents || []).find((id) => nodes[index.get(id)]?.level === nodes[b].level - 1);
+      const primary = primaryId ? index.get(primaryId) : undefined;
+      if (primary === a) {
+        parentOf[b] = a;
+        if (!kids.has(a)) kids.set(a, []);
+        kids.get(a).push(b);
+        segs.push([a, b]);
+      } else {
+        crossLinks.push([a, b]);
+        segs.push([a, b]);
+      }
     } else if (l.kind === 'related') {
       crossLinks.push([a, b]);
       segs.push([a, b]);
@@ -182,7 +190,6 @@ export function createTreeLayout(graph, { seed = 1, sweeps = 4 } = {}) {
   function orderFamilies() {
     const rootOf = (i) => { let x = i; while (parentOf[x] >= 0) x = parentOf[x]; return x; };
     const list = orders.get(ROOT);
-    const pos = new Map(list.map((r, k) => [r, k]));
     const w = new Map();
     for (const [a, b] of crossLinks) {
       const p = rootOf(a);
@@ -214,7 +221,6 @@ export function createTreeLayout(graph, { seed = 1, sweeps = 4 } = {}) {
       if (c <= curCost || rng() < Math.exp((curCost - c) / t)) { cur = next; curCost = c; if (c < bestCost) { best = next; bestCost = c; } }
       t = Math.max(0.05, t * 0.999);
     }
-    void pos;
     orders.set(ROOT, best);
   }
 

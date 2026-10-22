@@ -1,4 +1,4 @@
-"""The Rock tree (ADR-0030 note, GEN-067): 91 Rock genres placed from the Wikipedia review, 19 held at [Rock] and still provisional."""
+"""The Rock tree (ADR-0030 note, GEN-067): the current Rock counts come from the vocabulary metadata; provisional level-2 genres remain explicitly reviewed."""
 
 import json
 from pathlib import Path
@@ -27,7 +27,7 @@ def test_rock_has_123_member_genres_and_the_counts_match():
     assert len(ROCK) == 123
     level2 = sum(v["level"] == 2 for v in ROCK.values())
     assert LEVELS["_meta"]["counts"]["Rock"] == {"total": 123, "level2": level2, "level3": 123 - level2, "level4": 0}
-    assert (level2, 123 - level2) == (50, 73)
+    assert (level2, 123 - level2) == (48, 75)
 
 
 def test_the_level_is_the_shortest_path():
@@ -40,7 +40,7 @@ def test_every_held_genre_kept_parents_rock_and_stays_provisional():
     assert len(HELD) == 19
     for k in HELD:
         assert ENTRIES[k]["parents"] == ["Rock"] and ENTRIES[k]["level"] == 2 and ENTRIES[k]["provisional"] is True, k
-    assert not [k for k, v in ROCK.items() if v["provisional"] and k in ROCK_ONLY and k not in HELD]
+    assert not [k for k, v in ROCK.items() if v["provisional"] and k in ROCK_ONLY and k not in HELD | {"country rock", "folk rock"}]
 
 
 def test_nothing_is_placed_under_a_held_genre():

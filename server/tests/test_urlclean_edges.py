@@ -137,7 +137,10 @@ class _Redirector(http.server.BaseHTTPRequestHandler):
 
 @pytest.fixture
 def local_server():
-    srv = http.server.HTTPServer(("127.0.0.1", 0), _Redirector)
+    try:
+        srv = http.server.HTTPServer(("127.0.0.1", 0), _Redirector)
+    except PermissionError:
+        pytest.skip("environment blocks loopback TCP listeners")
     t = threading.Thread(target=srv.serve_forever, daemon=True)
     t.start()
     yield f"http://127.0.0.1:{srv.server_port}"

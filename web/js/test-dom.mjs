@@ -149,6 +149,7 @@ export class DomElement extends DomNode {
   }
 
   get children() { return this.childNodes.filter((n) => n._type === 1); }
+  get firstElementChild() { return this.children[0] || null; }
   get textContent() { return this.childNodes.map((c) => c.textContent).join(''); }
   set textContent(v) { this.childNodes.forEach((c) => { c.parentNode = null; }); this.childNodes = []; if (v !== '' && v != null) this.append(new Text(v)); }
   get offsetHeight() { return 40; }

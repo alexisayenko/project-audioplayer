@@ -4,6 +4,7 @@ import { installPage, stubFetch, flush, fire } from './test-dom.mjs';
 
 await installPage();
 globalThis.location = { hash: '', href: 'http://localhost/', host: 'localhost' };
+globalThis.localStorage.setItem('electrophone.genresDrill', '0');
 const { VOCAB, SONGS } = await import('./genre-levels-fixture.mjs');
 const { buildTree, applyCounts } = await import('./genre-levels.js');
 const BASE = { ...VOCAB, levels: { ...VOCAB.levels, jungle: { ...VOCAB.levels.jungle, parents: ['drum and bass'] } } };
@@ -54,6 +55,7 @@ function spyViews() {
 }
 
 async function mount(opts = {}) {
+  try { globalThis.localStorage.setItem('electrophone.genresDrill', '0'); } catch { /* storage is intentionally blocked in one test */ }
   const spy = spyViews();
   const root = document.createElement('div');
   document.body.append(root);
@@ -88,7 +90,7 @@ test('Graph is the default view, with the Graph | Radial switch and the library 
   assert.ok(g.nodes.some((n) => n.id === 's:breakbeat' && n.em === 0), 'the graph data has the whole vocabulary');
   assert.equal(g.byId.has('g:Electronic'), true);
   assert.ok(g.links.some((l) => l.kind === 'parent' && l.source === 's:drum and bass' && l.target === 's:jungle'));
-  assert.ok(!g.links.some((l) => l.source === 'g:Electronic' || l.target === 'g:Electronic'));
+  assert.ok(g.links.some((l) => l.source === 'g:Electronic' && l.target === 's:breakbeat'));
   assert.deepEqual([...spy.last('setVisible')[1]].sort(), ['g:Electronic', 'g:Rock', 's:afro house', 's:deep house', 's:drum and bass', 's:house', 's:jungle', 's:rock and roll']);
   assert.equal(status(root), '5 genres in your library');
   assert.equal(btn(root, 'All genres').getAttribute('aria-pressed'), 'false');
@@ -316,10 +318,10 @@ test('the header: status is plain text above one non-wrapping button row, the fa
   mode = 'ok';
   const { root, cleanup } = await mount();
   const bar = root.querySelector('.gmr-bar');
-  assert.deepEqual(bar.children.map((c) => c.getAttribute('role') || c.className.split(' ')[0]), ['status', 'gmr-btns', 'gmr-btns', 'group', 'group']);
+  assert.deepEqual(bar.children.map((c) => c.getAttribute('role') || c.className.split(' ')[0]), ['status', 'gmr-btns', 'gmr-btns', 'group', 'group', 'note', 'group']);
   const rows = bar.querySelectorAll('.gmr-btns');
   assert.deepEqual(rows[0].querySelectorAll('button').map((b) => b.textContent), ['Show legend', 'Now playing', 'Reload']);
-  assert.deepEqual(rows[1].querySelectorAll('button').map((b) => b.textContent), ['Graph', 'Radial', 'All genres', 'Fusion genres', 'Related', 'Reset layout', 'Use saved layout', 'Export layout']);
+  assert.deepEqual(rows[1].querySelectorAll('button').map((b) => b.textContent), ['Graph', 'Radial', 'All genres', 'Drill-down', 'Collapse all', 'Fusion genres', 'Related', 'Reset layout', 'Use saved layout', 'Export layout']);
   const labels = rows.flatMap((r) => r.querySelectorAll('button').map((b) => b.textContent));
   for (const l of ['Show legend', 'Reload', 'Graph', 'Radial', 'All genres', 'Fusion genres']) assert.ok(labels.includes(l), l);
   assert.equal(root.querySelector('.gmr-family-row').parentNode, bar);
