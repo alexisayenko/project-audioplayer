@@ -60,3 +60,16 @@ test('the cluster colour reaches the map slot of every circle', async () => {
   const slots = new Set(t.roots.map((r) => familyIndex(r.name)));
   assert.equal(slots.size, 1);
 });
+
+test('a later v1 tree build for cards does not overwrite the map colours', async () => {
+  const { buildTree } = await import('./genre-levels.js');
+  const { claimMapColours, mapOwnsColours, familyIndex } = await import('./genre-data.js');
+  const t = buildTree(adaptGenresV2(payload));
+  claimMapColours();
+  assert.equal(mapOwnsColours(), true);
+  const slot = familyIndex(t.roots[0].name);
+  const before = globalThis.document?.documentElement?.style?.getPropertyValue(`--chart-${slot}`);
+  buildTree({ families: ['Rock'], levels: {}, forms: {}, hex: {} }, { colours: false });
+  assert.equal(familyIndex(t.roots[0].name), slot);
+  assert.equal(globalThis.document?.documentElement?.style?.getPropertyValue(`--chart-${slot}`), before);
+});

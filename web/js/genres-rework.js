@@ -14,6 +14,7 @@ import { buildMapGraph, visibleIds, libraryCount, genreCount } from './genre-map
 import { loadDrill, saveDrill, newDrill, drillEmpty, pruneDrill, drillVisible, clickDrill, revealDrill, collapseDrill, drillMarks } from './genre-drill.js';
 import { player } from './player.js';
 import { createGenreDock } from './genre-dock.js';
+import { claimMapColours } from './genre-data.js';
 import { adaptGenresV2, hasStructure } from './genres-v2-adapter.js';
 import { createV2InfoRenderer } from './genres-v2-info.js';
 import { openGenreCard } from './lazy-ui.js';
@@ -830,6 +831,7 @@ export function renderGenresRework(root, opts = {}) {
 
   function applyData() {
     tree = buildTree(lastData.vocab, { fusion });
+    claimMapColours();
     applyCounts(tree, lastData.lib);
     families = populatedFamilies(tree);
     if (!families.includes(rootGenre)) rootGenre = families[0] || null;

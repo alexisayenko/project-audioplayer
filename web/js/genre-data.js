@@ -24,6 +24,9 @@ export const isOutlinedSlot = (slot) => outlinedSlots.has(slot);
 export const dotClass = (slot) => `gm-dot f${slot}${outlinedSlots.has(slot) ? ' w' : ''}`;
 
 const slots = new Map();
+let mapColours = false;
+export const mapOwnsColours = () => mapColours;
+export const claimMapColours = () => { mapColours = true; };
 
 export function setLevelOneNames(names, colourSlots = new Map()) {
   FAMILY_ORDER.splice(0, FAMILY_ORDER.length, ...names, 'Other');

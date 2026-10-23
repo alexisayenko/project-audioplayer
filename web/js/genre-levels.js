@@ -143,18 +143,18 @@ function formSlot(n, ctx, seen) {
   return -1;
 }
 
-function assignColours(roots, hex = new Map()) {
+function assignColours(roots, hex = new Map(), apply = true) {
   const ctx = { roots: new Map(roots.map((r) => [r.name, r])), done: new Map(), hex, hexes: new Map(), spare: 0 };
   for (const r of roots) slotOf(r.name, ctx);
   for (const [name, colour] of hex) {
     const slot = ctx.done.get(name);
     if (slot >= 0 && slot !== OTHER_COLOR && !ctx.hexes.has(slot)) ctx.hexes.set(slot, colour);
   }
-  setSlotColours(ctx.hexes);
+  if (apply) setSlotColours(ctx.hexes);
   return ctx.done;
 }
 
-export function buildTree(vocab, { fusion = true } = {}) {
+export function buildTree(vocab, { fusion = true, colours = true } = {}) {
   const levels = vocab?.levels || {};
   const gsyn = vocab?.family_synonyms || {};
   const base = Array.isArray(vocab?.families) && vocab.families.length ? vocab.families : Object.keys(gsyn);
@@ -174,7 +174,8 @@ export function buildTree(vocab, { fusion = true } = {}) {
   linkGenres(levels, genres, byId, fusion);
   linkForms(roots, genres, byId, vocab);
   assignFamilies(roots, byId);
-  setLevelOneNames(names, assignColours(roots, hexTable(vocab)));
+  const done = assignColours(roots, hexTable(vocab), colours);
+  if (colours) setLevelOneNames(names, done);
   const modifiers = new Map(Object.entries(vocab?.modifiers || vocab?.flavours || {}).map(([key, f]) => [key, { key, name: f.name || key, kind: MODIFIER_KINDS.includes(f.kind) ? f.kind : 'sound', description: f.description || '', songs: new Set() }]));
   for (const n of byId.values()) n.modifiers = n.modifiers.filter((f) => modifiers.has(f));
   const { byKey, bySyn } = nodeLookups(byId);
