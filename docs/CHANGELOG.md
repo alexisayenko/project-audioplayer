@@ -4,7 +4,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## 2026-10-23 (web brand lockup, to deploy)
 
-- Web: the genre info panel tempo line shows only the BPM chip (`.bpm-badge`) alone on its line: no "Tempo", no "about", no trailing period; a non-numeric tempo shows its text alone (GEN-088; to deploy, no tests run).
+- Web: the genre info panel tempo line shows only the BPM chip (`.bpm-badge`) alone on its line: no "Tempo", no "about", no trailing period; a non-numeric tempo shows its text alone (GEN-088; deployed 2026-10-23, no tests run).
 - Server and web: the `goa trance` genre description is Alex's new two-line text (`Tempo: about 135-150 BPM.` and one prose paragraph, DATA-196), and the genre info panel shows the Tempo line with its BPM chip on its own line above the justified paragraph instead of inline inside it (GEN-088; deployed 2026-10-23, no tests run).
 - Web: the sidebar and drawer brand lockup is the refreshed Electrophone Vega 108 master with the full lower edge and the `p` descender; the web copy `web/img/electrophone-lockup.png` is regenerated from it (task-0097, `docs/brand/logo`; deployed 2026-10-23, no tests run, not seen in a browser).
 - Server and web: the `goa trance` genre description is Alex's own prose, one paragraph with no Tempo line, so its card shows no BPM chip; a one-line description now renders as the same justified prose (`.gc-prose`) as a multi-line one (GEN-088, DATA-196; deployed 2026-10-23, no tests run).
