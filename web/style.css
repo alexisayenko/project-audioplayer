@@ -25,7 +25,7 @@
   :root:not([data-theme="light"]) { --tint-muted: var(--ink); --cover-ink: var(--ink); }
 }
 [data-theme="dark"] { --tint-muted: var(--ink); --cover-ink: var(--ink); }
-@media (min-width: 480px) { :root { --mini-h: 92px; --rail-w: 64px; --gutter: var(--space-6); --dock-b: var(--space-4); --mini-handle-w: calc(var(--control-sm) + var(--space-2)); } }
+@media (min-width: 480px) { :root { --mini-h: 92px; --rail-w: 64px; --gutter: var(--space-6); --dock-b: var(--space-4); } }
 @media (min-width: 480px) { body.mini-compact { --mini-h: 0px; } }
 @media (min-width: 720px) { :root { --rail-w: 220px; --gutter: var(--space-8); } }
 
@@ -682,7 +682,7 @@ body.signed-out main { padding-bottom: var(--space-6); }
 @media (min-width: 480px) {
   .mini {
     left: var(--rail-w); right: 0; margin: 0 auto; width: var(--mini-w); max-width: calc(100% - var(--rail-w) - 2 * var(--space-4));
-    bottom: var(--dock-b); height: var(--mini-h); padding: var(--space-2) var(--space-4) var(--space-2) calc(var(--mini-handle-w) + var(--space-1));
+    bottom: var(--dock-b); height: var(--mini-h); padding: var(--space-2) var(--space-4);
     transition: width var(--dur-base) var(--ease-io), height var(--dur-base) var(--ease-io), max-width var(--dur-base) var(--ease-io), left var(--dur-base) var(--ease-io);
     grid-template-columns: var(--mini-cover-size) minmax(0, 1fr) auto; grid-template-rows: var(--hit) var(--control-sm); align-content: center; gap: 0 var(--space-3);
   }
@@ -698,26 +698,37 @@ body.signed-out main { padding-bottom: var(--space-6); }
   .mini-progress .scrub-rail { top: 50%; bottom: auto; margin-top: calc(var(--track-seek) / -2); height: var(--track-seek); border-radius: var(--radius-pill); }
   .mini-progress .scrub-thumb { display: block; }
   .mini-handle {
-    position: absolute; z-index: 1; left: var(--space-1); top: 0; bottom: 0; margin-block: auto; width: var(--control-sm); height: var(--control-sm); display: grid; place-items: center; padding: 0;
-    border: 0; border-radius: var(--radius-pill); background-color: transparent; color: var(--ink); transition: background-image var(--dur-fast) var(--ease-out);
+    position: absolute; z-index: 1; left: calc(-1 * var(--control-sm) / 2); top: 0; bottom: 0; margin-block: auto; width: var(--control-sm); height: var(--control-sm); display: grid; place-items: center; padding: 0;
+    border: 0; border-radius: var(--radius-pill); background-color: var(--surface); color: var(--ink); box-shadow: var(--shadow-float);
+    opacity: 0; pointer-events: none; transform: translateX(calc(var(--control-sm) / 2));
+    transition: transform var(--dur-base) var(--ease-out) var(--dur-base), opacity var(--dur-base) var(--ease-out) var(--dur-base), pointer-events 0s linear var(--dur-base), background-image var(--dur-fast) var(--ease-out);
   }
   .mini-handle svg { stroke-width: var(--stroke-thin); }
   .mini-handle::after {
-    content: attr(aria-label); position: absolute; top: calc(100% + var(--space-1)); left: 0; padding: var(--space-1) var(--space-3); border-radius: var(--radius-key);
-    background: var(--surface-sunken); color: var(--ink); font: var(--font-caption); white-space: nowrap; box-shadow: var(--shadow-key); opacity: 0; pointer-events: none; transition: opacity var(--dur-fast) var(--ease-out);
+    content: attr(aria-label); position: absolute; top: calc(100% + var(--space-1)); left: 0; padding: var(--space-1) var(--space-3); border-radius: var(--radius-sm);
+    background: var(--ink); color: var(--ground); font: var(--font-caption); white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity var(--dur-fast) var(--ease-out);
   }
+  .mini:has(:focus-visible) .mini-handle { opacity: 1; pointer-events: auto; transform: none; transition-delay: 0s; }
   .mini-handle:focus-visible { background-image: linear-gradient(var(--hover-wash), var(--hover-wash)); }
-  .mini-handle:focus-visible::after { opacity: 1; }
+  .mini-handle:focus-visible::after { opacity: 1; transition-delay: var(--dur-base); }
   @media (hover: hover) {
+    .mini:hover .mini-handle { opacity: 1; pointer-events: auto; transform: none; transition-delay: 0s; }
     .mini-handle:hover { background-image: linear-gradient(var(--hover-wash), var(--hover-wash)); }
     .mini-handle:hover::after { opacity: 1; transition-delay: var(--dur-base); }
+  }
+  @media (hover: none) {
+    .mini-handle { opacity: 1; pointer-events: auto; transform: none; }
+    .mini-handle::after { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .mini-handle, .mini:has(:focus-visible) .mini-handle { transform: none; transition-delay: 0s; }
   }
   .mini-handle:active { background-image: linear-gradient(var(--pressed-wash), var(--pressed-wash)); }
   .mini.compact { display: none; }
 }
 @media (min-width: 640px) { .mini .opt { display: inline-grid; } }
 
-/* side mini-player: the dock folded into the sidebar footer (PLY-149, PLY-199); the open sidebar shows a flat row between two hairlines with the title and artist as one expand button, a thin progress line and a round play button, no cover; the icon rail only a larger round play button with a progress ring, plus an expand chevron above it at 480-719px only, where the sidebar cannot widen */
+/* side mini-player: the dock folded into the sidebar footer (PLY-149, PLY-199); the open sidebar shows a flat row below one hairline, closed by its own progress line, with the title and artist as one expand button, a thin progress line and a round play button, no cover; the icon rail only a larger round play button with a progress ring, plus an expand chevron above it at 480-719px only, where the sidebar cannot widen */
 .side-mini { display: none; position: relative; flex: none; margin-top: auto; min-width: 0; }
 body.mini-compact.has-mini .side-mini + .build-line { margin-top: 0; }
 .sm-play { --sm-size: var(--control-xl); --sm-face: var(--hit); position: relative; flex: none; display: grid; place-items: center; width: var(--sm-size); height: var(--sm-size); padding: 0; border: 0; border-radius: var(--radius-pill); background: transparent; color: var(--on-accent); }
@@ -741,7 +752,7 @@ body.guest-noaudio .sm-play { display: none; }
 @media (min-width: 720px) {
   body.mini-compact.has-mini:not(.side-collapsed) .side { padding-bottom: var(--space-4); }
   body.mini-compact.has-mini:not(.side-collapsed) #nav { margin-bottom: var(--space-6); }
-  body.mini-compact.has-mini:not(.side-collapsed) .side-mini { align-items: stretch; padding: var(--space-4) 0 var(--space-2); border-bottom: var(--stroke-hairline) solid var(--line); }
+  body.mini-compact.has-mini:not(.side-collapsed) .side-mini { align-items: stretch; padding: var(--space-4) 0 var(--space-2); }
   body.mini-compact:not(.side-collapsed) .sm-row { position: relative; justify-content: flex-start; align-items: center; gap: var(--space-2); }
   body.mini-compact:not(.side-collapsed) .sm-open { position: relative; display: flex; align-items: center; margin: calc(-1 * var(--space-1)); padding: var(--space-1); border-radius: var(--radius-key); background-color: transparent; transition: background-image var(--dur-fast) var(--ease-out); }
   body.mini-compact:not(.side-collapsed) .sm-open .mini-text { flex: 1; padding-bottom: calc(var(--stroke-progress) + var(--space-2)); }

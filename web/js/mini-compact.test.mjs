@@ -67,7 +67,9 @@ test('css: the collapsed dock is not displayed and frees its page space, from 48
 test('css: the sidebar mini-player shows only when collapsed and a song is loaded, from 480px', () => {
   assert.match(css, /\.side-mini \{ display: none; position: relative; flex: none; margin-top: auto;/);
   assert.match(css, /@media \(min-width: 480px\) \{\n  body\.mini-compact\.has-mini \.side-mini \{ display: flex;/);
-  assert.match(css, /body\.mini-compact\.has-mini:not\(\.side-collapsed\) \.side-mini \{[^}]*border-bottom: var\(--stroke-hairline\) solid var\(--line\)/);
+  const open = css.match(/body\.mini-compact\.has-mini:not\(\.side-collapsed\) \.side-mini \{[^}]*\}/)[0];
+  assert.ok(!/border-bottom/.test(open));
+  assert.match(css, /body\.mini-compact\.has-mini \.side-mini \{ display: flex;[^}]*border-top: var\(--stroke-hairline\) solid var\(--line\)/);
   assert.ok(!/\.side-mini \{[^}]*overflow: hidden/.test(css.slice(css.indexOf('side mini-player: the dock'))));
   assert.match(css, /\.sm-line \{[^}]*height: var\(--stroke-progress\); border-radius: var\(--radius-pill\)/);
   assert.match(css, /\.sm-line::after \{[^}]*width: calc\(var\(--ring-p, 0\) \* 1%\)/);
@@ -87,9 +89,14 @@ test('css: the handle is not displayed below 480px and is styled only inside the
   const j = css.indexOf('@media (min-width: 640px) { .mini .opt');
   const block = css.slice(i, j);
   assert.match(block, /\.mini-handle \{[^}]*position: absolute;[^}]*margin-block: auto; width: var\(--control-sm\); height: var\(--control-sm\)/);
-  assert.match(block, /\.mini-handle \{[^}]*border: 0; border-radius: var\(--radius-pill\)[^}]*background-color: transparent/);
+  assert.match(block, /\.mini-handle \{[^}]*left: calc\(-1 \* var\(--control-sm\) \/ 2\)/);
+  assert.match(block, /\.mini-handle \{[^}]*border: 0; border-radius: var\(--radius-pill\); background-color: var\(--surface\); color: var\(--ink\); box-shadow: var\(--shadow-float\)/);
+  assert.match(block, /\.mini-handle \{[^}]*opacity: 0; pointer-events: none; transform: translateX\(calc\(var\(--control-sm\) \/ 2\)\)/);
+  assert.match(block, /\.mini:hover \.mini-handle \{ opacity: 1; pointer-events: auto; transform: none; transition-delay: 0s; \}/);
+  assert.match(block, /\.mini:has\(:focus-visible\) \.mini-handle \{ opacity: 1;/);
+  assert.match(block, /@media \(hover: none\) \{\n    \.mini-handle \{ opacity: 1; pointer-events: auto; transform: none; \}/);
   assert.match(block, /\.mini-handle:hover[^}]*--hover-wash/);
-  assert.match(block, /\.mini-handle::after \{\s*content: attr\(aria-label\);/);
+  assert.match(block, /\.mini-handle::after \{\s*content: attr\(aria-label\);[^}]*border-radius: var\(--radius-sm\);\s*background: var\(--ink\); color: var\(--ground\)/);
   assert.match(block, /\.mini-handle:focus-visible \{ background-image/);
   assert.match(block, /\.mini-handle:active[^}]*--pressed-wash/);
   assert.ok(!/\.mini-handle[^{]*\{[^}]*display: none/.test(block));
