@@ -1,6 +1,6 @@
 # Genre reference tracks: goa trance (verified review)
 
-Read-only review for [task-0093](../tasks/task-0093.md) / [ADR-0044](decisions.md), 2026-10-23, goa trance only (Alex: "store them in docs, and for now let's go through goa-trance only"). Nothing here is saved in `genre_references.json`; Alex approves rows, then Claude saves them through the API. It supersedes the unverified goa trance rows of [genre-references-library-candidates](genre-references-library-candidates.md) and the memory-only list in [genre-references-wave1](genre-references-wave1.md#candidate-tracks).
+Verified review for [task-0093](../tasks/task-0093.md) / [ADR-0044](decisions.md), 2026-10-23, goa trance only (Alex: "store them in docs, and for now let's go through goa-trance only"). Alex approved the medium and high confidence rows on 2026-10-23 and they are saved (see [Saved](#saved)); #9, #11, #12, #13 and the reserve are not saved. It supersedes the unverified goa trance rows of [genre-references-library-candidates](genre-references-library-candidates.md) and the memory-only list in [genre-references-wave1](genre-references-wave1.md#candidate-tracks).
 
 ## Method
 
@@ -10,6 +10,26 @@ Read-only review for [task-0093](../tasks/task-0093.md) / [ADR-0044](decisions.m
 - Confidence: high = identity, year and role backed by 3+ sources; medium = identity and year backed by 2, role by 1-2; low = one weak source or conflicting dates.
 - Roles follow ADR-0044: archetype (typical), origin (early song that started the genre), landmark (defining release), breakthrough (brought it to a wide audience). Cap: 3 picks per role per era. Eras are the five in `server/data/genre_eras_seed.json` (ids in brackets).
 - Copyrighted text is not reproduced; notes are paraphrased.
+
+## Saved
+
+2026-10-23, data change only (no deploy): rows #1-#8 and #10 are in `genre_references.json` (`reviewed: true`, era set, sources as in the Sources table). The live API was not used (no owner token on the writing machine); the file was edited in the data repo and pushed, and the server picks it up by its inbound fast-forward (STO-057).
+
+| Row | Entry id | Action |
+| --- | --- | --- |
+| #1 Mahadeva | `425d83d6` | created |
+| #2 LSD | `6d7d0ba3` | existing entry updated (year 1994, note, sources, era, reviewed) |
+| #3 Kabalah | `9659041e` | created |
+| #4 Let's Turn On | `4abb072f` | created |
+| #5 Liquid Sun | `4e7d3d62` | created |
+| #6 Angelic Particles | `000a1def` | created |
+| #7 Teleport | `eda1f7a6` | created |
+| #8 Sugar Rush | `d8b64ef0` | created |
+| #10 Total Eclipse | `a62572c8` | created |
+
+Owner decisions (2026-10-23): LSD is dated 1994, its first release, with the 1995 Live Mix and the 1995 Twisted album named in the note; Teleport is dated 1994; Sugar Rush is dated 1994 (first on a compilation, closing Oakenfold's Goa Mix on 18 Dec 1994) and the note says the single is from 1996; Filteria is not an origin (#12 dropped).
+
+Still open and unverified: swapping Kabalah for Pleiadians - Alcyone, and the extras suggested by Gemini (Maya, Trash Box, Hyperscale, We Came in Peace, What Time Is Love?, Stardiver).
 
 ## Library songs
 

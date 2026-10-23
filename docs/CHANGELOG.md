@@ -4,6 +4,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## 2026-10-23 (web brand lockup, to deploy)
 
+- Data: nine goa trance reference tracks saved in `genre_references.json` (eight new entries, `Hallucinogen - LSD` updated; all reviewed, era and sources set; Alex approved the picks of [`tech/genre-references-goa-trance.md`](tech/genre-references-goa-trance.md#saved)); data change only, no deploy needed (task-0093).
 - Server and web: Genres map v2 saves the circles a signed-in user moved on the server, per user (`GET` and `PUT /me/genre-layout`, `users/<uid>/genre_layout.json`); the page sends them 5 seconds after the last drag or when it is hidden, keeps a local copy, and "Reset layout" clears them (API-227, API-228, DATA-198, GEN-109, ADR-0046; deployed 2026-10-23, no tests written or run).
 - Web: the genre info panel tempo line shows only the BPM chip (`.bpm-badge`) alone on its line: no "Tempo", no "about", no trailing period; a non-numeric tempo shows its text alone (GEN-088; deployed 2026-10-23, no tests run).
 - Docs: [`tech/genre-references-goa-trance.md`](tech/genre-references-goa-trance.md) is the verified goa trance reference-track review (13 picks with roles, eras, sources and confidence; supersedes the memory-only goa rows; read-only, nothing saved; task-0093).
