@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   indexGraph, flatGraph, descendantIds, filterTags, localCounts, searchNodes, outlineRows, pathKeys,
-  loadExpanded, saveExpanded, nodeRadius, familyIndex, arrowHead, ARROW_MIN_K, ARROW_MAX_PX, ARROW_MIN_PX, FAMILIES, FAMILY_PALETTE_SIZE, isCategoryNode, familyOrder, FAMILY_ORDER,
+  loadExpanded, saveExpanded, nodeRadius, familyIndex, arrowHead, clipLink, ARROW_MIN_K, ARROW_MAX_PX, ARROW_MIN_PX, FAMILIES, FAMILY_PALETTE_SIZE, isCategoryNode, familyOrder, FAMILY_ORDER,
 } from './genre-data.js';
 
 const node = (id, label, family, parents = [], count = 0, tags = [id]) => ({ id, label, qid: null, family, count, ownCount: 0, parents, tags });
@@ -232,4 +232,13 @@ test('a throwing subscriber does not break the others', async () => {
   assert.equal(ok, 1);
   offA();
   offB();
+});
+
+test('clipLink: starts at the parent edge, ends at the child edge; null when circles overlap or length is zero', () => {
+  assert.deepEqual(clipLink(0, 0, 5, 100, 0, 10), { x1: 5, y1: 0, x2: 90, y2: 0 });
+  const d = clipLink(0, 0, 3, 30, 40, 7);
+  assert.ok(Math.abs(d.x1 - 1.8) < 1e-9 && Math.abs(d.y2 - 34.4) < 1e-9);
+  assert.equal(clipLink(0, 0, 5, 12, 0, 10), null);
+  assert.equal(clipLink(0, 0, 5, 15, 0, 10), null);
+  assert.equal(clipLink(4, 4, 5, 4, 4, 10), null);
 });

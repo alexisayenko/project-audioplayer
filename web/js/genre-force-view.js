@@ -2,7 +2,7 @@ import { createSim } from './genre-sim.js';
 import { fitTransform, recenterOnResize, placeLabels, isDragMove } from './genre-view.js';
 import { createHash } from './genre-spatial.js';
 import { createCrossingLayout } from './genre-layout.js';
-import { FAMILY_PALETTE_SIZE, arrowHead, onSlotColours, isOutlinedSlot } from './genre-data.js';
+import { FAMILY_PALETTE_SIZE, arrowHead, clipLink, onSlotColours, isOutlinedSlot } from './genre-data.js';
 import { fillDisc, outlineDisc } from './genre-disc.js';
 import { shadeTable } from './genre-shade.js';
 
@@ -320,7 +320,10 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
     ctx.lineWidth = width / k;
     ctx.setLineDash(dotted ? [1 / k, 3 / k] : []);
     ctx.beginPath();
-    for (const l of list) { ctx.moveTo(l.s.x, l.s.y); ctx.lineTo(l.t.x, l.t.y); }
+    for (const l of list) {
+      const c = clipLink(l.s.x, l.s.y, l.s.r * (0.4 + 0.6 * l.s.vis), l.t.x, l.t.y, l.t.r * (0.4 + 0.6 * l.t.vis));
+      if (c) { ctx.moveTo(c.x1, c.y1); ctx.lineTo(c.x2, c.y2); }
+    }
     ctx.stroke();
   }
 

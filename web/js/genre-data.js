@@ -75,6 +75,16 @@ export const ARROW_MAX_PX = 10;
 export const ARROW_MIN_K = 0.35;
 export const ARROW_HALF_WIDTH = 0.45;
 
+export function clipLink(sx, sy, sr, tx, ty, tr) {
+  const dx = tx - sx;
+  const dy = ty - sy;
+  const len = Math.hypot(dx, dy);
+  if (len === 0 || len <= sr + tr) return null;
+  const ux = dx / len;
+  const uy = dy / len;
+  return { x1: sx + ux * sr, y1: sy + uy * sr, x2: tx - ux * tr, y2: ty - uy * tr };
+}
+
 export function arrowHead(px, py, pr, cx, cy, cr, k) {
   if (!(k >= ARROW_MIN_K)) return null;
   const dx = cx - px;
