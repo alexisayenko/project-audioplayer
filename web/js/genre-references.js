@@ -83,9 +83,9 @@ export function createReferencesPanel({ compact = false } = {}) {
     if (compact) {
       if (!url) return null;
       return el('button', {
-        class: 'ref-add-lib ref-add-quick t-caption', type: 'button', title: 'Add to library', 'aria-label': `Add to library: ${entryLine(e)}`,
+        class: 'icon sq-btn ref-add-lib ref-add-quick', type: 'button', title: 'Add to library', 'aria-label': `Add to library: ${entryLine(e)}`,
         onclick: (ev) => openAdd({ url, note: `Reference track: ${entryLine(e)}.` }, ev.currentTarget),
-      }, 'Add');
+      }, icon('plus', 'inline'));
     }
     if (url) return el('button', { class: 'btn outline small ref-add-lib', type: 'button', onclick: (ev) => openAdd({ url, note: `Reference track: ${entryLine(e)}.` }, ev.currentTarget) }, 'Add to library');
     return el('span', { class: 'muted t-caption ref-none' }, NOT_IN_LIBRARY);
