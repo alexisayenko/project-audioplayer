@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-24 (genre vocabulary rules, docs only)
+
+- Docs: two owner decisions on the genre vocabulary (2026-10-24): a new genre needs attestation by Rate Your Music, Discogs styles or Musicmap, and the genre tree depicts grouping, not lineage (the "lineage axis" wording is now "grouping"); nothing built or deployed. [genre-terminology.md](tech/genre-terminology.md#source-policy-for-new-genres), ADR-0038 amendment in [decisions.md](tech/decisions.md).
+
 ## 2026-10-24 (sidebar build stamp, deployed)
 
 - Web: the sidebar build stamp is pinned at one fixed bottom offset (owner request 2026-10-23 "make it static - bottom"; WEB-037, WEB-102, PLY-199; deployed 2026-10-24; node syntax check only, browser-checked on a local fixture page with the real stylesheet, no tests run, test assertion edited): the open sidebar (from 720px) always has `--space-4` of bottom padding, so the stamp sits 16px above the sidebar's bottom edge with or without the player row, where it was 8px higher without the row; identical at 700, 800 and 1000px window heights and at 440px, where the menu scrolls and the stamp keeps its height; the stamp is hidden in the rail and under 720px as before.

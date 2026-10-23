@@ -905,6 +905,7 @@ Status: Accepted for the terms (owner, 2026-10-19); Proposed for facets. Full te
   - AD: keep depth computed, no new names "subgenre" or "microgenre". Recommended; 5 level-4 genres exist today.
 - Consequences: the data still has 11 "families" and `electronic` and `edm` genres until AN1 is built (task-0066); the EDM purpose flag and the medium facet are not built; every doc that says "family" still means a level 1 node.
 - Rejected: modifiers as a fifth axis (they qualify a genre, they do not describe a separate dimension); calling Electronic a genre (it is a medium); new depth names for deep genres (depth is computed, AD).
+- Amendment 2026-10-24 (owner, "because we depict grouping, not lineage."): the genre tree depicts grouping, not lineage. `parents[]` and the levels say what a genre is classified under, not what it historically descends from, so goa trance under psytrance stands although psytrance developed from goa trance; "descends from", "lineage axis" and "by descent" in ADR-0030, ADR-0034 and ADR-0037 and in the specs mean "is classified under". History and influence belong to `related[]` and eras. Amendment 2026-10-24, source policy (owner): a style becomes a genre only when Rate Your Music, Discogs styles or Musicmap attest it; blog and guide pages alone are not enough ([genre-terminology.md](genre-terminology.md#source-policy-for-new-genres)).
 
 ## ADR-0039 Artist and Release as entities
 

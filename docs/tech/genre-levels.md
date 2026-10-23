@@ -167,7 +167,7 @@ Rule: a modifier is a shared, source-checkable modifier that appears in genre na
 
 Served by `GET /genres/vocabulary`: top-level `modifiers` (the block as is) and per genre `levels[<genre>].modifiers` (always a list, `[]` when none). The old names `flavours` (top-level and per genre) are still served with identical content, deprecated for one release ([GEN-082](../specs/genres.md)); readers prefer `modifiers` and fall back to `flavours`.
 
-Scene and the Tradition axis: a `scene` modifier (berlin, baltimore) is a place or scene, i.e. a value of the Tradition axis (place and scene lineage, see [genre-terminology.md](genre-terminology.md)) that appears in genre names by convention (berlin school, baltimore club). It stays a modifier: never a level, never assigned to a song alone. Dark psytrance, progressive house and acid house show the same pattern for `mood` and `sound`.
+Scene and the Tradition axis: a `scene` modifier (berlin, baltimore) is a place or scene, i.e. a value of the Tradition axis (place and scene, see [genre-terminology.md](genre-terminology.md)) that appears in genre names by convention (berlin school, baltimore club). It stays a modifier: never a level, never assigned to a song alone. Dark psytrance, progressive house and acid house show the same pattern for `mood` and `sound`.
 
 Modifiers and the genres that carry them:
 
@@ -336,6 +336,8 @@ Owner: "shall we create sub-genres?" with an overview of psytrance styles. Verif
 - `hi-tech psytrance` (display "hi-tech psy-trance"; synonyms hi-tech, hitech, hi-tech psy, hitech psy, hi-tech psy-trance; related dark psytrance, full-on psytrance): Wikipedia only lists "hitech psy"; Last.fm and the guides say it is shaped by dark psy and full-on. Tempo about 170-200 BPM (guides: 170-200, 170-220, 170-240; one 155-180 from a generator page, not used).
 
 Considered and left out because they are not on Rate Your Music, Discogs or Musicmap: `twilight psytrance` (Wikipedia: twilight and night full-on, full-on varieties) and `psycore` (Wikipedia: psytrance fusion with hardcore); both were added and removed again on 2026-10-23, and no library song carried either. Other candidates not added: suomisaundi, zenonesque, psybreaks, hard psy, psychill, psydub, psystep, nitzhonot.
+
+Source policy for every new genre (owner, 2026-10-24): attested by Rate Your Music, Discogs or Musicmap, otherwise a note, not a node; see [genre-terminology.md](genre-terminology.md#source-policy-for-new-genres).
 
 Parent choice: flat under `psytrance` like dark, forest and full-on (Wikipedia and Musicmap give no hi-tech parent chain, the guides only describe influence), so no level 4 is created. Musicmap lists "Goa Trance & Psytrance" as one entry and says psytrance offshoots vary too little to be listed. "Daytime/mainstage" and "nighttime/darker" are groupings of styles, not genres, and have no nodes.
 

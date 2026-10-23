@@ -13,7 +13,7 @@ Status words used below: **Decided** (owner decision, with date), **Built** (in 
 | family | A level 1 node of the tree (11 today, Discogs' level-1 names, e.g. Rock, Electronic). Shown capitalised. A family is a genre or a group depending on the test in the next section; the word describes the position, not the kind. |
 | sub-genre, sub-sub-genre | Level 2, level 3 and deeper genres. No depth cap (ADR-0037); the interface says "genre" for every level. |
 | modifier | A word that qualifies a genre without being one (acid, progressive, dark, deep, berlin). Renamed from "flavour" on 2026-10-20. See Modifiers. |
-| `parents[]` | Subgenre-of links, an unordered set: all parents are equal, there is no primary parent (ADR-0037). A genre belongs to every family it descends from; its level is the shortest path depth to a family. A genre with several parents appears under each of them. |
+| `parents[]` | Subgenre-of links, an unordered set: all parents are equal, there is no primary parent (ADR-0037). A genre belongs to every family it is classified under (grouping, not historical descent; see "Grouping, not lineage"); its level is the shortest path depth to a family. A genre with several parents appears under each of them. |
 | `related[]` | Influences and associations. Not parents: no effect on tree, counts or colours. |
 | `fusion` | Flag on a blend of two or more families; with the map's "Fusion genres" switch off it keeps its genre parents (else the first family listed) and its other family parents are hidden. |
 | subfamily | A label on Electronic genres (eight groups, e.g. House, Techno). Not a tree node; used for shading and filtering. Built today; replaced by level 1 forms when AN1 is built ([task-0066](../tasks/task-0066.md)). |
@@ -56,7 +56,7 @@ Decided 2026-10-20. Our own working model, not an established standard: a song i
 
 Notes:
 
-- Form is our design word for the lineage axis (how the music is built and what it descends from). In musicology "form" also means structure, such as twelve-bar blues; that is not meant here. The user-facing label stays "genre".
+- Form is our design word for the grouping axis (the genre tree: what a style is classified under; it is not a claim about historical descent, see "Grouping, not lineage"). In musicology "form" also means structure, such as twelve-bar blues; that is not meant here. The user-facing label stays "genre".
 - **Modifiers are not an axis.** They qualify a genre on the Form axis (see Modifiers).
 - Tradition: a country value (Italy, France, Korea) is the same data as the song's country and feeds the Countries filter. A scene value (Berlin, Baltimore) that shows up in genre names is carried by the `scene` kind of the modifiers.
 - Mood is the listener's subjective perception: a personal tag, not vocabulary that Wikipedia can confirm. The shared modifiers of kind `mood` (dark, deep, uplifting) are a different thing: genre-bound words for named sub-styles.
@@ -111,7 +111,7 @@ Planned, not built (2026-10-21, Alex). Beyond the four axes a genre can be descr
 ## Current state (Built, verified against `server/data/genre_levels.json` on 2026-10-20)
 
 - (Amended 2026-10-21, task-0079: Latin and Folk, World & Country were removed as level 1 nodes, their genres moved under Others; 9 families remain.) 534 genres in 11 families: Blues, Classical, Electronic, Folk World & Country, Funk / Soul, Hip Hop, Jazz, Latin, Pop, Reggae, Rock. The data calls them families; under the model above Electronic, Latin and Folk, World & Country are groups or mixed.
-- Electronic 146 members (54 at level 2, 87 at level 3, 5 at level 4: dark psytrance, forest psytrance, full-on psytrance, goa trance, progressive psytrance). Rock 123 (50, 73, 0). Memberships count a genre in every family it descends from.
+- Electronic 146 members (54 at level 2, 87 at level 3, 5 at level 4: dark psytrance, forest psytrance, full-on psytrance, goa trance, progressive psytrance). Rock 123 (50, 73, 0). Memberships count a genre in every family it is classified under.
 - The level is computed from the shortest path through all parents. Four levels exist in the data.
 - Eight Electronic subfamilies: House, Techno, Trance, Breaks & bass, Synth & wave, Ambient & downtempo, Experimental industrial & noise (the data name is "Experimental, industrial & noise"), Eurodance & disco. These are the nodes of the data today; AN1 (decided) replaces them by the forms in [genre-electronic-forms.md](genre-electronic-forms.md) (proposal, not applied).
 - Library mix, for scale (the owner's library, 2026-10-20): 0 country songs, about 8 folk, 4 world, 2 classical.
@@ -192,6 +192,18 @@ Can you name a reference (etalon) song of this genre? A rock song has one ("John
 - The reference songs are the genre's prototype songs ([task-0070](../tasks/task-0070.md), `prototypes`).
 
 If none fits, it is probably a mood or a descriptor (epic, ethereal): leave it out of the vocabulary.
+
+## Source policy for new genres
+
+Decided 2026-10-24 (owner: "I'd consider RYM (Rate Your Music) as a reliable source for subgenres. If a subgenre is not there, it is questionable whether it is a subgenre."). A style becomes a vocabulary genre or subgenre only when it is attested by Rate Your Music, by Discogs styles or by Musicmap. Blog, guide, Last.fm and Wikipedia pages alone are not enough.
+
+- Example: Rate Your Music lists under psytrance only Dark, Progressive, Forest, Full-On and Hi-Tech Psytrance, so `hi-tech psytrance` is a genre; `twilight psytrance` and `psycore` (sourced from Wikipedia and guides) were added and removed again in beee034.
+- Rate Your Music cannot be fetched by Claude (HTTP 403): when a check is needed, the owner pastes the Rate Your Music genre page.
+- A candidate without attestation is recorded as a note, not added. Considered and left out so far (psytrance): twilight psytrance, psycore, suomisaundi, zenonesque, psybreaks, hard psy, psychill, psydub, psystep, nitzhonot. Details: [genre-levels.md](genre-levels.md#psytrance-sub-genres-added-owner-2026-10-23).
+
+## Grouping, not lineage
+
+Decided 2026-10-24 (owner: "because we depict grouping, not lineage."). The genre tree (`parents[]`, levels, families) states what is classified under what; it does not claim historical descent. Goa trance under psytrance is fine although psytrance developed from goa trance. History and influence live in `related[]` and in eras, not in the parents. ADR-0038 has the dated amendment.
 
 ## Sources
 
