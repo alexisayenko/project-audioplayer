@@ -7,6 +7,7 @@ from tests.test_library import H, client  # noqa: F401
 
 NAMES = {"house", "techno", "trance", "drum and bass", "breakbeat", "hardcore techno"}
 SIX = ["Breakbeat", "Drum 'n' Bass", "Hardcore", "House", "Techno", "Trance"]
+ALL = SIX + ["Psytrance", "Goa Trance"]
 
 
 def doc(**over):
@@ -22,14 +23,17 @@ def genre(**over):
     return {"id": "a", "name": "A", "level": 1, "cluster": "edm", "parents": [], **over}
 
 
-def test_the_shipped_file_has_the_six_super_genres_without_children():
+def test_the_shipped_file_has_the_six_super_genres_and_the_two_approved_children():
     out = genres_v2.parse(json.loads(genres_v2.FILE.read_text(encoding="utf-8")), set(genre_vocab.load().entries))
-    assert [g["name"] for g in out["genres"]] == SIX
-    assert {g["level"] for g in out["genres"]} == {1}
-    assert all(g["parents"] == [] and g["cluster"] == "edm-dance" for g in out["genres"])
+    assert [g["name"] for g in out["genres"]] == ALL
+    by = {g["id"]: g for g in out["genres"]}
+    assert [g["level"] for g in out["genres"]] == [1] * 6 + [2, 3]
+    assert all(g["parents"] == [] for g in out["genres"][:6]) and all(g["cluster"] == "edm-dance" for g in out["genres"])
+    assert by["psytrance"]["parents"] == ["trance"] and by["goa-trance"]["parents"] == ["psytrance"]
+    assert by["psytrance"]["synonyms"] == ["psychedelic trance", "psy-trance"] and by["goa-trance"]["synonyms"] == ["goa"]
     assert [c["name"] for c in out["clusters"]] == ["EDM / Dance"]
     assert out["clusters"][0]["colour"] == "#D52633"
-    assert {g["v1"] for g in out["genres"]} == NAMES
+    assert {g["v1"] for g in out["genres"]} == NAMES | {"psytrance", "goa trance"}
 
 
 def test_a_valid_document_parses():
@@ -96,7 +100,7 @@ def test_the_route_serves_the_six_with_v1_descriptions_and_links(client):
     body = r.json()
     assert set(body) == {"version", "clusters", "genres"}
     by = {g["name"]: g for g in body["genres"]}
-    assert list(by) == SIX
+    assert list(by) == ALL
     house = by["House"]
     assert house["description"] == genre_vocab.load_descriptions()["house"]
     assert house["v1"] == "house" and house["source_links"]

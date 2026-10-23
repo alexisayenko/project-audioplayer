@@ -99,8 +99,8 @@ export function renderGenresRework(root, opts = {}) {
   const modifierSel = new Set();
   let legendOpen = loadLegend(globalThis.localStorage);
   let flashTimer = 0;
-  let outlineOpen = outlineDefaultOpen(window.innerWidth || 1200);
   const v2 = opts?.v2 === true;
+  let outlineOpen = v2 || outlineDefaultOpen(window.innerWidth || 1200);
   let kind = v2 ? 'graph' : VIEWS.includes(opts?.view) ? opts.view : loadView(globalThis.localStorage);
   let graph = null;
   let graphFamily = null;
@@ -272,11 +272,11 @@ export function renderGenresRework(root, opts = {}) {
     narrow,
     onNavigate: (name) => { const n = tree && resolveNode(name, tree); if (n) select(n.id, { reveal: true, center: true }); },
     onMap: (n) => { const x = tree && resolveNode(n.name, tree); if (x) select(x.id, { reveal: true, center: true }); },
-    onChange: (on) => wrap.classList.toggle('dock-rail', on),
     onExpand: () => { if (narrow() && outlineOpen) setOutline(false); },
   }) : null;
 
   function setOutline(open) {
+    if (v2) { syncInset(); return; }
     outlineOpen = open;
     side.hidden = !open;
     outlineEl.hidden = !open;
@@ -884,17 +884,21 @@ export function renderGenresRework(root, opts = {}) {
     class: 'gm-x', type: 'button', 'aria-label': 'Close outline', title: 'Close outline', 'aria-controls': 'gmr-panel', 'aria-expanded': 'true', onclick: () => setOutline(false),
   }, icon('clear', 'nav'));
 
-  outlineEl.append(
-    el('div', { class: 'gmr-scroll' },
-      el('div', { class: 'gmr-tools' }, search, expandAll, collapseAll, statusRow, modifierRow),
-      treeEl, empty));
-
-  side.append(
-    el('div', { class: 'gm-outline-head' }, el('h2', { class: 't-headline' }, 'Outline'), closeBtn),
-    el('div', { class: 'gmr-bar' }, status, el('div', { class: 'gmr-btns' }, legendBtn, nowBtn, reload), el('div', { class: 'gmr-btns' }, viewRow, libBtn, drillBtn, collapseMapBtn, fusionBtn, relatedBtn, resetLayoutBtn, useSavedBtn, exportBtn), familyRow, subRow, groupNote, dock ? null : preview),
-    outlineEl,
-    seeAlso);
-  work.append(canvas, graphCanvas, ...(dock ? [dock.node] : []), side, outlineBtn, zoomBar, legend);
+  const barEl = el('div', { class: 'gmr-bar' }, status, el('div', { class: 'gmr-btns' }, legendBtn, nowBtn, reload), el('div', { class: 'gmr-btns' }, viewRow, libBtn, drillBtn, collapseMapBtn, fusionBtn, relatedBtn, resetLayoutBtn, useSavedBtn, exportBtn), familyRow, subRow, groupNote, dock ? null : preview);
+  if (v2) {
+    side.append(barEl, el('div', { class: 'gmr-scroll' }, el('div', { class: 'gmr-tools' }, search, modifierRow)), seeAlso);
+  } else {
+    outlineEl.append(
+      el('div', { class: 'gmr-scroll' },
+        el('div', { class: 'gmr-tools' }, search, expandAll, collapseAll, statusRow, modifierRow),
+        treeEl, empty));
+    side.append(
+      el('div', { class: 'gm-outline-head' }, el('h2', { class: 't-headline' }, 'Outline'), closeBtn),
+      barEl,
+      outlineEl,
+      seeAlso);
+  }
+  work.append(canvas, graphCanvas, ...(dock ? [dock.node] : []), side, ...(v2 ? [] : [outlineBtn]), zoomBar, legend);
   wrap.append(pageHead(v2 ? 'Genres map v2' : dock ? 'Genres map v2' : 'Genres map'), work);
   root.append(wrap);
   setOutline(outlineOpen);

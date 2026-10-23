@@ -583,3 +583,25 @@ test('Genres screen has the right-hand preview and no dock; Genres map v2 has th
   assert.ok(v2.root.querySelector('.gmr-seealso'));
   v2.cleanup();
 });
+
+test('the dock overlays the map: collapsing it leaves the map and its wrapper classes untouched', async () => {
+  const v2 = await mount({ view: 'radial', dock: true });
+  const wrap = v2.root.querySelector('.gmr');
+  const before = wrap.className;
+  v2.root.querySelector('.gmr-dock-toggle').click();
+  assert.equal(wrap.className, before);
+  assert.ok(!/dock-rail/.test(wrap.className));
+  v2.cleanup();
+});
+
+test('Genres map v2 (v2 flag) has no outline panel, toggle or tree, but keeps search and See also', async () => {
+  const { root, cleanup } = await mount({ view: 'radial', dock: true, v2: true });
+  assert.equal(root.querySelector('#gmr-outline'), null);
+  assert.equal(root.querySelector('.gmr-outline-btn'), null);
+  assert.equal(root.querySelector('[role="tree"]'), null);
+  assert.equal(root.querySelectorAll('button').find((b) => b.getAttribute('aria-label') === 'Close outline'), undefined);
+  assert.ok(root.querySelector('.gmr-search'));
+  assert.ok(root.querySelector('.gmr-seealso'));
+  assert.ok(!root.querySelector('.gm').classList.contains('outline-open'));
+  cleanup();
+});

@@ -111,10 +111,13 @@ def parse(doc: Any, v1_names: set[str]) -> dict[str, Any]:
         v1 = _text(row, "v1", where, NAME_MAX)
         if v1 is not None and v1 not in v1_names:
             raise ValueError(f"{where}: v1 name {v1!r} is not in the v1 vocabulary")
+        syn = row.get("synonyms", [])
+        if not isinstance(syn, list) or not all(isinstance(x, str) and x.strip() and len(x.strip()) <= NAME_MAX for x in syn):
+            raise ValueError(f"{where}: synonyms must be a list of non-empty strings")
         url = _text(row, "musicmap_url", where, 300)
         if url is not None and not url.startswith("https://"):
             raise ValueError(f"{where}: musicmap_url must be an https URL")
-        rows[gid] = {"id": gid, "name": _text(row, "name", where, NAME_MAX, True), "level": level, "cluster": cluster, "parents": list(parents), "v1": v1, "description": _text(row, "description", where, TEXT_MAX), "musicmap_url": url}
+        rows[gid] = {"id": gid, "name": _text(row, "name", where, NAME_MAX, True), "level": level, "cluster": cluster, "parents": list(parents), "v1": v1, "description": _text(row, "description", where, TEXT_MAX), "synonyms": [x.strip() for x in syn], "details": _text(row, "details", where, TEXT_MAX), "musicmap_url": url}
     _check_parents(rows)
     return {"version": 2, "clusters": clusters, "genres": list(rows.values())}
 

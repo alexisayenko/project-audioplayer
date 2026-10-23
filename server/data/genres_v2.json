@@ -9,6 +9,8 @@
   {"id": "hardcore", "name": "Hardcore", "level": 1, "cluster": "edm-dance", "parents": [], "v1": "hardcore techno"},
   {"id": "house", "name": "House", "level": 1, "cluster": "edm-dance", "parents": [], "v1": "house"},
   {"id": "techno", "name": "Techno", "level": 1, "cluster": "edm-dance", "parents": [], "v1": "techno"},
-  {"id": "trance", "name": "Trance", "level": 1, "cluster": "edm-dance", "parents": [], "v1": "trance"}
+  {"id": "trance", "name": "Trance", "level": 1, "cluster": "edm-dance", "parents": [], "v1": "trance"},
+  {"id": "psytrance", "name": "Psytrance", "level": 2, "cluster": "edm-dance", "parents": ["trance"], "v1": "psytrance", "synonyms": ["psychedelic trance", "psy-trance"]},
+  {"id": "goa-trance", "name": "Goa Trance", "level": 3, "cluster": "edm-dance", "parents": ["psytrance"], "v1": "goa trance", "synonyms": ["goa"]}
  ]
 }

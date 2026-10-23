@@ -343,11 +343,10 @@ body[data-route="genres"] main, body[data-route="genres2"] main { max-width: non
 .gmr-preview[hidden] { display: none; }
 .gmr-preview-name { font: inherit; background: none; border: 0; padding: 0; color: var(--ink); cursor: pointer; text-align: left; text-decoration: underline; text-decoration-color: var(--line); }
 .gmr-preview-desc { margin: 0; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; line-clamp: 1; overflow: hidden; }
-.gmr.has-dock { --gmr-dock-space: 0px; }
 .gmr-dock {
   position: absolute; z-index: 5; display: flex; flex-direction: column; overflow: hidden; box-sizing: border-box;
   left: var(--space-3); right: var(--space-3); bottom: calc(var(--space-3) + var(--player-h)); height: 55%;
-  border-radius: var(--radius-key); background: var(--surface); box-shadow: var(--shadow-float);
+  border-radius: var(--radius-key); background: color-mix(in srgb, var(--surface) 90%, transparent); box-shadow: var(--shadow-float);
 }
 .gmr-dock.collapsed { height: auto; }
 .gmr-dock-head { flex: none; position: relative; display: flex; align-items: center; gap: var(--space-2); min-width: 0; padding: var(--space-3) var(--space-3) var(--space-2); }
@@ -369,11 +368,8 @@ body[data-route="genres"] main, body[data-route="genres2"] main { max-width: non
 .gmr-dock-empty { margin: 0; }
 .gmr-dock .gc-title h2 { font: var(--font-headline); }
 @media (min-width: 720px) {
-  .gmr.has-dock { --gmr-dock-space: calc(clamp(340px, 28vw, 380px) + 2 * var(--space-3)); }
-  .gmr.has-dock.dock-rail { --gmr-dock-space: calc(var(--control) + 2 * var(--space-2) + 2 * var(--space-3)); }
-  .gmr.has-dock .gmr-canvas { left: var(--gmr-dock-space); width: calc(100% - var(--gmr-dock-space)); }
-  .gmr.has-dock .gm-zoom { left: calc(var(--gmr-dock-space) + var(--space-3)); }
-  .gmr.has-dock .gmr-legend { left: calc(var(--gmr-dock-space) + var(--space-3) * 2 + var(--control) + var(--space-2)); max-width: calc(100% - var(--gmr-dock-space) - var(--space-3) * 3 - var(--control) - var(--space-2)); }
+  .gmr.has-dock .gm-zoom { left: auto; right: calc(min(360px, 100% - 2 * var(--space-3)) + 2 * var(--space-3)); }
+  .gmr.has-dock .gmr-legend { left: auto; right: calc(min(360px, 100% - 2 * var(--space-3)) + 3 * var(--space-3) + var(--control)); max-width: calc(100% - min(360px, 100% - 2 * var(--space-3)) - 4 * var(--space-3) - var(--control)); }
   .gmr-dock { top: var(--space-3); right: auto; height: auto; width: clamp(340px, 28vw, 380px); }
   .gmr-dock.collapsed { width: calc(var(--control) + 2 * var(--space-2)); height: auto; bottom: calc(var(--space-3) + var(--player-h)); }
   .gmr-dock-grab { display: none; }
