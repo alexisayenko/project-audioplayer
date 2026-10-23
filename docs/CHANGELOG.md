@@ -4,7 +4,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## 2026-10-23 (web brand lockup, to deploy)
 
-- Server and web: Genres map v2 saves the circles a signed-in user moved on the server, per user (`GET` and `PUT /me/genre-layout`, `users/<uid>/genre_layout.json`); the page sends them 5 seconds after the last drag or when it is hidden, keeps a local copy, and "Reset layout" clears them (API-227, API-228, DATA-198, GEN-109, ADR-0046; to deploy, no tests written or run).
+- Server and web: Genres map v2 saves the circles a signed-in user moved on the server, per user (`GET` and `PUT /me/genre-layout`, `users/<uid>/genre_layout.json`); the page sends them 5 seconds after the last drag or when it is hidden, keeps a local copy, and "Reset layout" clears them (API-227, API-228, DATA-198, GEN-109, ADR-0046; deployed 2026-10-23, no tests written or run).
 - Web: the genre info panel tempo line shows only the BPM chip (`.bpm-badge`) alone on its line: no "Tempo", no "about", no trailing period; a non-numeric tempo shows its text alone (GEN-088; deployed 2026-10-23, no tests run).
 - Docs: [`tech/genre-references-library-candidates.md`](tech/genre-references-library-candidates.md) proposes 91 reference-track candidates for 62 genres from the owner library (read-only analysis, nothing saved; task-0093).
 - Server and web: the `goa trance` genre description is Alex's new two-line text (`Tempo: about 135-150 BPM.` and one prose paragraph, DATA-196), and the genre info panel shows the Tempo line with its BPM chip on its own line above the justified paragraph instead of inline inside it (GEN-088; deployed 2026-10-23, no tests run).
