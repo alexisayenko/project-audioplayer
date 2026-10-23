@@ -186,6 +186,12 @@
    ],
    "note": "reviewed 2026-10-19: Wikipedia article Hardcore_punk, https://en.wikipedia.org/wiki/Hardcore_punk (not in Discogs; added by Alex, DN3)"
   },
+  "hi-tech psytrance": {
+   "parents": [
+    "psytrance"
+   ],
+   "note": "added 2026-10-23 (owner: psytrance sub-genres; not in Discogs; Wikipedia lists it under psychedelic trance, tempo from community psytrance guides)"
+  },
   "industrial rock": {
    "parents": [
     "alternative rock"
@@ -306,6 +312,12 @@
    ],
    "note": "live library tag, reviewed 2026-10-16"
   },
+  "psycore": {
+   "parents": [
+    "psytrance"
+   ],
+   "note": "added 2026-10-23 (owner: psytrance sub-genres; not in Discogs; Wikipedia lists it under psychedelic trance, tempo from community psytrance guides)"
+  },
   "r&b": {
    "parents": [
     "Funk / Soul"
@@ -378,6 +390,12 @@
     "new wave"
    ],
    "note": "manual parent, GEN-045"
+  },
+  "twilight psytrance": {
+   "parents": [
+    "psytrance"
+   ],
+   "note": "added 2026-10-23 (owner: psytrance sub-genres; not in Discogs; Wikipedia names twilight and night full-on as full-on varieties, tempo from community psytrance guides)"
   },
   "uplifting trance": {
    "parents": [

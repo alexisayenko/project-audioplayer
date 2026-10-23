@@ -44,9 +44,9 @@
     "level4": 0
    },
    "trance": {
-    "total": 20,
+    "total": 23,
     "level2": 14,
-    "level3": 6,
+    "level3": 9,
     "level4": 0
    },
    "drum and bass": {
@@ -104,13 +104,13 @@
     "level4": 0
    }
   },
-  "total": 532,
+  "total": 535,
   "non_discogs": {
    "Blues": 0,
    "Classical": 0,
    "house": 2,
    "techno": 2,
-   "trance": 11,
+   "trance": 14,
    "drum and bass": 2,
    "synthwave": 6,
    "Others": 8,
@@ -2294,6 +2294,25 @@
   ],
   "discogs": true
  },
+ "hi-tech psytrance": {
+  "parents": [
+   "psytrance"
+  ],
+  "related": [
+   "dark psytrance",
+   "full-on psytrance"
+  ],
+  "display": "hi-tech psy-trance",
+  "synonyms": [
+   "hi-tech",
+   "hitech",
+   "hi-tech psy",
+   "hitech psy",
+   "hi-tech psy-trance"
+  ],
+  "discogs": false,
+  "status": "approved"
+ },
  "highlife": {
   "parents": [
    "Others"
@@ -3477,6 +3496,19 @@
   "provisional": true,
   "discogs": true
  },
+ "psycore": {
+  "parents": [
+   "psytrance"
+  ],
+  "related": [
+   "hi-tech psytrance"
+  ],
+  "synonyms": [
+   "psy core"
+  ],
+  "discogs": false,
+  "status": "approved"
+ },
  "psytrance": {
   "parents": [
    "trance"
@@ -4203,6 +4235,26 @@
   ],
   "provisional": true,
   "discogs": true
+ },
+ "twilight psytrance": {
+  "parents": [
+   "psytrance"
+  ],
+  "related": [
+   "full-on psytrance",
+   "dark psytrance"
+  ],
+  "display": "twilight psy-trance",
+  "synonyms": [
+   "twilight",
+   "twilight psy",
+   "twilight psy-trance",
+   "night full-on",
+   "night full on",
+   "dark full-on"
+  ],
+  "discogs": false,
+  "status": "approved"
  },
  "uk garage": {
   "parents": [

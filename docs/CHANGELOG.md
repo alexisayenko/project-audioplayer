@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-23 (psytrance sub-genres, to deploy)
+
+- Server and web data: three psytrance sub-genres join the vocabulary as approved extras under `psytrance` (owner request 2026-10-23; not in Discogs; verified against Wikipedia, Musicmap, Last.fm and four community guides; GEN-056, DATA-196; no tests run, test assertions edited): `twilight psytrance` (about 145-150 BPM, synonyms twilight, night full-on), `hi-tech psytrance` (about 170-200 BPM, synonyms hi-tech, hitech) and `psycore` (about 190-250 BPM), each with an own-words description and a `Tempo:` line, `related` links to the neighbouring styles and no change elsewhere. The vocabulary is now 535 genres and 580 memberships; the web fixture `genre_payload_levels.json` is regenerated. Details and the candidates not added: [genre-levels.md](tech/genre-levels.md#psytrance-sub-genres-added-owner-2026-10-23).
+
 ## 2026-10-23 (web brand lockup, to deploy)
 
 - Web fix: the Genre info panel no longer shows the text "null" for a genre without a mapped v1 genre (Genres map v2 panel `genres-v2-info.js`, and the same pattern in the classic genre card `genre-card.js` for a card with no "Where it sits" section or a group; GEN-105, GEN-111; deployed 2026-10-23, node syntax check and static fixture check only, no tests run, none edited): empty sections are now left out of the panel instead of being passed to `replaceChildren` as `null`.

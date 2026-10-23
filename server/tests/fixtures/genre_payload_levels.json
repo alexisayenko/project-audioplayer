@@ -4550,7 +4550,7 @@
    "synonyms": []
   },
   "goa trance": {
-   "description": "An early, hypnotic form of psychedelic trance from the early 1990s, with rolling basslines, layered melodic synth lines and an upbeat, spiritual feel.",
+   "description": "Tempo: about 135-150 BPM.\nGoa trance is a psychedelic electronic style shaped by rapid, rolling arpeggios, driving basslines, and layered melodies that build into long, hypnotic journeys. Its synth lines often draw on Indian and other South Asian scales, while filter sweeps, distortion, and swirling effects create a vivid, hallucinatory atmosphere. Compared with later psytrance, classic Goa often has a warmer, more organic analogue sound. Tracks may weave in samples and imagery from mythology, science fiction, fantasy, or psychedelic culture. Rooted in Goa’s 1990s dance scene, the style remains known for its intricate arrangements, expansive builds, and sense of color and motion.",
    "discogs": true,
    "display": null,
    "families": [
@@ -5116,6 +5116,35 @@
    "status": null,
    "subfamily": "Eurodance & disco",
    "synonyms": []
+  },
+  "hi-tech psytrance": {
+   "description": "Tempo: about 170-200 BPM.\nAn extremely fast, synthetic branch of psytrance built on glitchy, computer-made sounds, dense rhythms and futuristic basslines. It was shaped by dark psy, psycore and full-on, and is usually playful and unpredictable rather than brooding. Tempos can climb well past 200 BPM.",
+   "discogs": false,
+   "display": "hi-tech psy-trance",
+   "families": [
+    "trance"
+   ],
+   "family": "trance",
+   "flavours": [],
+   "level": 3,
+   "modifiers": [],
+   "parents": [
+    "psytrance"
+   ],
+   "provisional": false,
+   "related": [
+    "dark psytrance",
+    "full-on psytrance"
+   ],
+   "status": "approved",
+   "subfamily": "Trance",
+   "synonyms": [
+    "hi-tech",
+    "hitech",
+    "hi-tech psy",
+    "hitech psy",
+    "hi-tech psy-trance"
+   ]
   },
   "highlife": {
    "discogs": true,
@@ -7981,6 +8010,30 @@
    "status": null,
    "synonyms": []
   },
+  "psycore": {
+   "description": "Tempo: about 190-250 BPM.\nThe hardest and fastest edge of psytrance, blending psychedelic trance with the aggression of hardcore. Its relentless kick and distorted, screeching sounds are darker and more intense than in the closely related hi-tech, and tempos often pass 200 BPM.",
+   "discogs": false,
+   "display": null,
+   "families": [
+    "trance"
+   ],
+   "family": "trance",
+   "flavours": [],
+   "level": 3,
+   "modifiers": [],
+   "parents": [
+    "psytrance"
+   ],
+   "provisional": false,
+   "related": [
+    "hi-tech psytrance"
+   ],
+   "status": "approved",
+   "subfamily": "Trance",
+   "synonyms": [
+    "psy core"
+   ]
+  },
   "psytrance": {
    "description": "Psychedelic trance: fast, driving electronic music with a rolling bassline and layered, twisting synth sounds, built for long, trance-like dancing.",
    "discogs": true,
@@ -9738,6 +9791,36 @@
    "provisional": true,
    "status": null,
    "synonyms": []
+  },
+  "twilight psytrance": {
+   "description": "Tempo: about 145-150 BPM.\nA darker, moodier relative of full-on psytrance, named for the dusk and early-night slots at festivals where it is played. It keeps full-on's rolling, galloping bassline and bright leads but moves to lower, heavier bass notes and more twisted synth sounds. It sits between daytime full-on and the harsher night-time styles such as dark psy.",
+   "discogs": false,
+   "display": "twilight psy-trance",
+   "families": [
+    "trance"
+   ],
+   "family": "trance",
+   "flavours": [],
+   "level": 3,
+   "modifiers": [],
+   "parents": [
+    "psytrance"
+   ],
+   "provisional": false,
+   "related": [
+    "full-on psytrance",
+    "dark psytrance"
+   ],
+   "status": "approved",
+   "subfamily": "Trance",
+   "synonyms": [
+    "twilight",
+    "twilight psy",
+    "twilight psy-trance",
+    "night full-on",
+    "night full on",
+    "dark full-on"
+   ]
   },
   "uk garage": {
    "discogs": true,

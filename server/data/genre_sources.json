@@ -2,9 +2,9 @@
  "_meta": {
   "generated_at": "2026-10-19T13:49:24.071Z",
   "counts": {
-   "genres": 545,
+   "genres": 548,
    "discogs_true": 480,
-   "discogs_false": 65,
+   "discogs_false": 68,
    "musicbrainz": 450,
    "wikipedia": 467,
    "apple_music": 139
@@ -3368,6 +3368,9 @@
    "match": "name"
   }
  },
+ "hi-tech psytrance": {
+  "discogs": false
+ },
  "highlife": {
   "discogs": true,
   "musicbrainz": {
@@ -5448,6 +5451,9 @@
    "match": "name"
   }
  },
+ "psycore": {
+  "discogs": false
+ },
  "psytrance": {
   "discogs": true,
   "musicbrainz": {
@@ -6771,6 +6777,9 @@
    "wikidata": "Q1046801",
    "match": "name"
   }
+ },
+ "twilight psytrance": {
+  "discogs": false
  },
  "uk garage": {
   "discogs": true,

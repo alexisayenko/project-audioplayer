@@ -59,7 +59,7 @@ All placements below are agent judgement, awaiting Alex's review.
 
 - house (22): acid house, afro house, ambient house, big room house, deep house, electro house, euro house, french house, future house, garage house, ghetto house, hard house, hip house, italo house, melodic house, microhouse, progressive house, sunshine house, tech house, tribal house, tropical house
 - trance (11): acid, deep, dream, euro, hard, neo, nu-nrg, progressive, tech, uplifting, vocal
-- psytrance (6): dark psytrance, forest psytrance, progressive psytrance, full-on psytrance, goa trance, psybient
+- psytrance (9): dark psytrance, forest psytrance, progressive psytrance, full-on psytrance, twilight psytrance, hi-tech psytrance, psycore, goa trance, psybient
 - techno (6): deep, dub, hard, melodic, minimal, schranz
 - drum and bass (4): jungle, liquid funk, neurofunk, techstep
 - breakbeat (7): big beat, breaks, progressive breaks, baltimore club, jersey club, breakbeat hardcore, breakcore
@@ -327,7 +327,19 @@ The three relations of the old format became one list, `parents`, with no change
 
 Alex: "trance and psy-trance are way too different". `psytrance` (display "psy-trance", a Discogs genre) is a plain level 2 umbrella, a sibling of `trance`: `parents: ["Electronic"]`, no extra parent, no link of any kind to trance. The three-level cap is unchanged (a fourth level was considered and rejected). Children (level 3, `parents` start with `"psytrance"`): `dark psytrance`, `forest psytrance`, `progressive psytrance`, `full-on psytrance` (new extras, `discogs` false, status approved, displays "Dark Psy-Trance" and so on; the Discogs search `style=<name>` (the Discogs API parameter) returned no results for any of them on 2026-10-16), `goa trance` (Discogs; moved from trance) and `psybient` (approved; also under ambient; moved from trance). Modifiers: dark psytrance `dark`, progressive psytrance `progressive`. Synonyms: darkpsy, dark psy, dark psy-trance; forest psy, forest psy-trance; prog psy, progressive psy, progressive psy-trance; full on, fullon, full-on psy, full on psytrance, full-on psy-trance.
 
-Judgement call: `goa trance` sits under psytrance only (no extra parent trance), so trance's children and counts no longer include goa trance or psytrance songs. `progressive trance` stays under trance and is not merged with `progressive psytrance`. Known psy genres not added: hi-tech psytrance, suomisaundi, psychill.
+Judgement call: `goa trance` sits under psytrance only (no extra parent trance), so trance's children and counts no longer include goa trance or psytrance songs. `progressive trance` stays under trance and is not merged with `progressive psytrance`. Known psy genres not added then: hi-tech psytrance, suomisaundi, psychill (hi-tech psytrance, twilight psytrance and psycore were added on 2026-10-23, see below).
+
+### Psytrance sub-genres added (owner, 2026-10-23)
+
+Owner: "shall we create sub-genres?" with an overview of psytrance styles. Verified against English Wikipedia (Psychedelic trance), Musicmap, Last.fm, and four community guides (psytranceguide.com, psymedia.co.za, neurotrance.org, psyfyi.com). Three genres were added as approved extras (`discogs` false: the Discogs style list has no Twilight, Hi-Tech or Psycore style), all `parents: ["psytrance"]` (level 3 like their siblings, family and subfamily Trance), with `related` links (no effect on tree or counts):
+
+- `twilight psytrance` (display "twilight psy-trance"; synonyms twilight, twilight psy, twilight psy-trance, night full-on, night full on, dark full-on; related full-on psytrance, dark psytrance): Wikipedia names twilight and night full-on (dark full-on) as styles derived from full-on with lower, bolder basslines; guides call it the darker counterpart of full-on and a bridge to night-time psy. Tempo about 145-150 BPM (guides: 145-150, 140-150, 148-150 for night full-on; one 144-156).
+- `hi-tech psytrance` (display "hi-tech psy-trance"; synonyms hi-tech, hitech, hi-tech psy, hitech psy, hi-tech psy-trance; related dark psytrance, full-on psytrance): Wikipedia only lists "hitech psy"; Last.fm and the guides say it is shaped by dark psy, psycore and full-on. Tempo about 170-200 BPM (guides: 170-200, 170-220, 170-240; one 155-180 from a generator page, not used).
+- `psycore` (no display; synonym psy core; related hi-tech psytrance): Wikipedia lists it as a psytrance fusion with hardcore; the 1996 Cenobite Records scene (a gabber-style hardcore, goa and hard trance blend, also called trancecore) predates hi-tech, so it is not a child of hi-tech. Tempo about 190-250 BPM (guide: 190-250 or 170-250; others: "over 200").
+
+Parent choice: flat under `psytrance` like dark, forest and full-on (Wikipedia and Musicmap give no hi-tech or psycore parent chain, the guides only describe influence), so no level 4 is created. Musicmap lists "Goa Trance & Psytrance" as one entry and says psytrance offshoots vary too little to be listed. Not added, candidates: suomisaundi (Wikipedia: Finland, mid-1990s; guides 130-145), zenonesque (Wikipedia: "minimal (Zenonesque)"), psybreaks (Wikipedia fusion), psychill/psydub/psystep (psybient offshoots), nitzhonot (Israeli goa; only a Wikipedia link), hard psy (Wikipedia fusion). "Daytime/mainstage" and "nighttime/darker" are groupings of styles, not genres, and have no nodes.
+
+Counts after the addition: 535 genres, 580 family memberships, trance family 23 (14 level 2, 9 level 3), trance non-Discogs 14, subfamily Trance 21 (144 subfamily-labelled genres in all). Descriptions with a `Tempo:` line were added for the three in `genre_descriptions.json` (DATA-196). The web fixture `server/tests/fixtures/genre_payload_levels.json` was regenerated (it also picks up the goa trance description change it was missing).
 
 ## Removed families (Alex, 2026-10-18)
 
@@ -388,7 +400,7 @@ The bare word is ambiguous (hardcore punk, hardcore hip hop, hardcore techno), s
 
 ## Current vocabulary snapshot (2026-10-22)
 
-The preceding dated counts describe the state at the time of those decisions. The current source of truth is `server/data/genre_levels.json`; the current vocabulary has 532 genres, 577 family memberships, and shortest-path levels of 420 at level 2, 111 at level 3, and one at level 4 (`chillstep`, under `dubstep`). The maximum observed depth is four; this is a data count, not a depth cap. Thirty-eight genres descend from more than one family.
+The preceding dated counts describe the state at the time of those decisions. The current source of truth is `server/data/genre_levels.json`; the current vocabulary has 532 genres, 577 family memberships, and shortest-path levels of 420 at level 2, 111 at level 3, and one at level 4 (`chillstep`, under `dubstep`). The maximum observed depth is four; this is a data count, not a depth cap. Thirty-eight genres descend from more than one family. Update 2026-10-23: the three psytrance sub-genres (see the Psytrance branch section) bring it to 535 genres and 580 family memberships; trance is 23/14/9/0, the Trance subfamily 21 and the labelled subfamily total 144; the other figures are unchanged.
 
 Current family membership counts (`total / level 2 / level 3 / level 4`) are: Blues 17/17/0/0; Classical 24/24/0/0; house 26/25/1/0; techno 11/11/0/0; trance 20/14/6/0; drum and bass 2/2/0/0; synthwave 8/8/0/0; Others 205/174/30/1; Funk / Soul 34/27/7/0; Hip Hop 29/28/1/0; Jazz 27/27/0/0; Pop 38/35/3/0; Reggae 13/13/0/0; Rock 123/48/75/0. These membership totals overlap for multi-family genres and sum to 577.
 
