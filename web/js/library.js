@@ -3,6 +3,7 @@ import { startup } from './api.js';
 import { player } from './player.js';
 import { el, toast, plural } from './dom.js';
 import { icon } from './icons.js';
+import { loadingNote } from './loading-note.js';
 import { autodl } from './autodl.js';
 import { ringModel } from './dl-progress.js';
 import { paintRing, paintLine } from './dl-ring.js';
@@ -342,7 +343,7 @@ export function renderLibrary(root) {
         el('p', { class: 'msg error' }, loadError),
         el('button', { class: 'btn', type: 'button', onclick: () => { loadError = null; void load(); renderList(); } }, 'Retry')));
     } else if (!store.loaded) {
-      status.replaceChildren(el('p', { class: 'muted t-subhead state', role: 'status' }, startup.waiting ? 'Server is starting...' : 'Loading your library...'));
+      status.replaceChildren(startup.waiting ? loadingNote('Server is starting...') : el('p', { class: 'muted t-subhead state', role: 'status' }, 'Loading your library...'));
     } else if (nothing) {
       status.replaceChildren(el('div', { class: 'state card' },
         el('p', { class: 't-headline' }, 'No songs yet'),

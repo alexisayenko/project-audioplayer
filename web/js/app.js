@@ -5,6 +5,7 @@ import { el, toast } from './dom.js';
 import { player as playerApi, initPlayer, pausePlayer } from './player.js';
 import { lazyVisualizer } from './viz-lazy.js';
 import { lazyRoute } from './lazy-route.js';
+import { loadingNote } from './loading-note.js';
 import { startBackgroundLoad } from './prefetch.js';
 import { isShareHash } from './share-hash.js';
 import { initShare } from './share-buttons.js';
@@ -178,7 +179,7 @@ window.addEventListener('auth-changed', () => { void onAuthChanged(); });
 window.addEventListener('guest-limit', (e) => toast(e.detail));
 
 window.addEventListener('server-starting', () => {
-  if (startup.waiting && !view.firstChild) view.replaceChildren(el('p', { class: 'muted t-subhead state', role: 'status' }, 'Server is starting...'));
+  if (startup.waiting && !view.firstChild) view.replaceChildren(loadingNote('Server is starting...'));
 });
 
 const early = { me: api.me(), library: store.refresh() };
