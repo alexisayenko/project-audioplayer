@@ -4,6 +4,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## 2026-10-23 (web brand lockup, to deploy)
 
+- Web: the plain "Loading..." state (page route loader, Features and Music theory panels) is a compact dark pill with a small spinner, the look of the "new version" update bar (WEB-117, WEB-134; to deploy, static browser check only, no tests run).
 - Web: genre info panel description is one justified paragraph instead of a bulleted list (GEN-088; hyphenated, `text-wrap: pretty`; deployed 2026-10-23, no tests run).
 - Web: genre info panel has no Tempo panel: the BPM chip sits inline at the start of the description paragraph ("Tempo about [135-150 BPM]. ..."), the beat pattern after the first comma is hidden for now, a non-numeric tempo is plain prose (GEN-088; to deploy, no tests run, static browser check only).
 - Server: the web session cookie lasts 30 days (was 12 h) and any signed-in request past half of its life renews it, so open tabs and overnight gaps no longer sign the owner out (API-020, API-143, ADR-0006 amendment; to deploy).

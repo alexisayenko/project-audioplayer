@@ -1,11 +1,12 @@
 import { el } from './dom.js';
+import { loadingNote } from './loading-note.js';
 
 export function lazyRoute(load, exportName) {
   return (root) => {
     let dispose = null;
     let gone = false;
     const attempt = () => {
-      root.replaceChildren(el('p', { class: 'muted t-subhead state', role: 'status' }, 'Loading...'));
+      root.replaceChildren(loadingNote());
       load().then((mod) => {
         if (gone) return;
         root.replaceChildren();

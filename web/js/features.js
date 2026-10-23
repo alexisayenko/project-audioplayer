@@ -1,4 +1,5 @@
 import { el } from './dom.js';
+import { loadingNote } from './loading-note.js';
 
 export const DATA_URL = 'features/data';
 export const TASK_URL = 'https://github.com/alexisayenko/project-audioplayer/blob/main/docs/tasks/';
@@ -96,7 +97,7 @@ function readTab() {
 function saveTab(v) { try { globalThis.localStorage?.setItem(TAB_KEY, v); } catch { /* storage may be blocked */ } }
 
 export function renderFeatures(root) {
-  const panel = el('div', { class: 'ft-panel', role: 'tabpanel', tabindex: '0' }, el('p', { class: 'muted t-body', role: 'status' }, 'Loading...'));
+  const panel = el('div', { class: 'ft-panel', role: 'tabpanel', tabindex: '0' }, loadingNote());
   let data = null;
   let failed = false;
   let current = readTab();

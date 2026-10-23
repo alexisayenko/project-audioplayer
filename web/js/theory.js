@@ -1,4 +1,5 @@
 import { el } from './dom.js';
+import { loadingNote } from './loading-note.js';
 import { icon } from './icons.js';
 
 export const TERMS_URL = 'data/theory-terms.json';
@@ -130,8 +131,8 @@ export function renderAnatomy(data) {
 
 export function renderTheory(root) {
   let dead = false;
-  const body = el('div', { class: 'th-body' }, el('p', { class: 'muted t-body', role: 'status' }, 'Loading...'));
-  const anatomyBody = el('div', { class: 'th-body' }, el('p', { class: 'muted t-body', role: 'status' }, 'Loading...'));
+  const body = el('div', { class: 'th-body' }, loadingNote());
+  const anatomyBody = el('div', { class: 'th-body' }, loadingNote());
   root.append(
     el('header', { class: 'page-head' },
       el('p', { class: 't-eyebrow' }, 'ELECTROPHONE'),
