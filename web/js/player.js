@@ -23,6 +23,7 @@ import { can, isGuest } from './guest.js';
 import { createPlayRecorder } from './play-recorder.js';
 import { createQueueFollow } from './queue-follow.js';
 import { createMediaRetry } from './media-retry.js';
+import { createEndGuard, nearEnd } from './end-guard.js';
 import { openSongCard, openTagPicker, loadUi } from './lazy-ui.js';
 import { cachedListening, getListening, listeningStale } from './listening-stats.js';
 import { createShuffleRank, countsFromListening, localPlayCounts, mergeCounts } from './shuffle-pick.js';
@@ -35,8 +36,15 @@ import { fadeSettings } from './fade-settings.js';
 const audio = document.getElementById('audio');
 const loop = createLoop(audio, undefined, createGapless({ audio }));
 const fader = createFader({ audio, settings: fadeSettings, loop, volumeOk: () => volumeOk });
-const retry = createMediaRetry({ audio, onChange: () => { paintConn(); render(true); }, onGone: () => fail() });
-const shownPlaying = () => !audio.paused && !retry.stalled();
+let endGuard = null;
+const retry = createMediaRetry({
+  audio,
+  onChange: () => { paintConn(); render(true); },
+  onGone: () => { audio.pause(); fail(); },
+  nearEnd: () => nearEnd(audio),
+  onEnd: () => endGuard?.finish(),
+});
+const shownPlaying = () => !audio.paused && !audio.error && !retry.stalled();
 let followQueue = null;
 
 const REPEAT_NEXT = { off: 'all', all: 'one' };
@@ -361,7 +369,7 @@ export const player = {
       const step = Q.nextPlayable({ ...logic(), played }, !auto, hasAudioId, false);
       if (!step) { toast(shuffle ? 'No downloaded songs to shuffle' : 'No more downloaded songs in the playlist'); render(); return; }
       played = step.played;
-      if (step.index === qs.index) { audio.currentTime = 0; audio.play().catch(fail); render(); return; }
+      if (step.index === qs.index) { replayCurrent(); render(); return; }
       skipNote(step.skipped);
       jumpTo(step.index);
       return;
@@ -373,7 +381,7 @@ export const player = {
       const step = Q.nextStep({ ...logic(), index: at, played: seen }, !auto);
       if (!step) break;
       seen = step.played;
-      if (step.index === qs.index) { played = seen; audio.currentTime = 0; audio.play().catch(fail); render(); return; }
+      if (step.index === qs.index) { played = seen; replayCurrent(); render(); return; }
       if (usable(qs.items[step.index])) { played = seen; skipNote(skipped); jumpTo(step.index); return; }
       skipped += 1;
       at = step.index;
@@ -469,6 +477,12 @@ function startDownload(song) {
   const k = autodl.view(song.id).kind;
   if (k === 'failed') autodl.retry(song.id);
   else autodl.request([song.id], { front: true });
+}
+
+function replayCurrent() {
+  if (audio.error) { load(true); return; }
+  audio.currentTime = 0;
+  audio.play().catch(fail);
 }
 
 function load(autoplay) {
@@ -641,7 +655,7 @@ function renderProgress() {
 
 export function initPlayer() {
   setupMediaSession({
-    play: () => audio.play().catch(fail),
+    play: () => { if (retry.state === 'failed') retry.retryNow(); else audio.play().catch(fail); },
     pause: () => audio.pause(),
     previoustrack: () => player.prev(),
     nexttrack: () => player.next(),
@@ -658,6 +672,8 @@ export function initPlayer() {
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') saveResume(true); });
   audio.addEventListener('durationchange', renderProgress);
   audio.addEventListener('ended', () => { resume.clear(); window.dispatchEvent(new Event('song-ended')); if (!loop.onEnded()) player.next(true); });
+  for (const ev of ['playing', 'error', 'emptied', 'abort', 'loadstart']) audio.addEventListener(ev, () => render(true));
+  endGuard = createEndGuard({ audio });
   initLoopChip($('mini-loop'), loop);
   const recorder = createPlayRecorder({
     audio,

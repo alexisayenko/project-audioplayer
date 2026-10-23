@@ -24,8 +24,8 @@ function rig({ probe = async () => 'retry' } = {}) {
   return { audio, retry, timers, states, gone, fail, fire };
 }
 
-test('the retry window totals about 5 seconds', () => {
-  assert.equal(MEDIA_RETRY_DELAYS_MS.reduce((a, b) => a + b, 0), 5000);
+test('the retry window totals about 31 seconds', () => {
+  assert.equal(MEDIA_RETRY_DELAYS_MS.reduce((a, b) => a + b, 0), 31000);
 });
 
 test('fails twice, then succeeds: reloads the same source, resumes the position, reports ok', async () => {
@@ -78,6 +78,7 @@ test('pausing or changing the song cancels the retry', async () => {
   const a = rig();
   a.fail();
   await flush();
+  a.audio.error = null;
   a.audio.dispatchEvent(new Event('pause'));
   assert.equal(a.retry.state, 'ok');
   const b = rig();

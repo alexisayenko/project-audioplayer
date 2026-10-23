@@ -254,7 +254,8 @@ function shufflePlayable({ queue, index, repeat, shuffleRank = null }, ok, seen0
   let seen = seen0;
   let fresh = false;
   if (!cand.length) {
-    if (repeat !== 'all' || !playable.length) return null;
+    if (repeat !== 'all') return null;
+    if (!playable.length) return ok(queue[index]) ? { index, played: [queue[index]], skipped: 0 } : null;
     seen = [queue[index]];
     cand = playable;
     fresh = true;

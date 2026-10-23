@@ -33,5 +33,5 @@ export const PREFETCH_BATCH_WAIT_MS = 2500;
 export const PREFETCH_IDLE_MS = 1500;
 export const PREFETCH_RESUME_MS = 600;
 
-/** Waits before each reload of a media source that failed to load; the sum (about 5 s) is the whole retry window. */
-export const MEDIA_RETRY_DELAYS_MS = [500, 1000, 1500, 2000];
+/** Waits before each reload of a media source that failed to load; the sum (about 31 s) is the whole retry window, long enough for a server restart. */
+export const MEDIA_RETRY_DELAYS_MS = [500, 1000, 1500, 2000, 3000, 4000, 5000, 6000, 8000];
