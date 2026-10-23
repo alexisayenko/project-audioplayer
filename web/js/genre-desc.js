@@ -1,6 +1,7 @@
 import { el } from './dom.js';
 
 const TEMPO = /^tempo\s*:\s*(.+)$/i;
+const BPM_VALUE = /^(about|around|approx\.?|approximately|circa|roughly|~)?\s*(\d+(?:\s*[-\u2013]\s*\d+)?)\s*(?:bpm)?$/i;
 
 export function parseDescription(text) {
   const lines = String(text || '').split('\n').map((s) => s.trim()).filter(Boolean);
@@ -18,9 +19,15 @@ function tempoFact(value) {
   const cut = value.indexOf(',');
   const main = cut > 0 ? value.slice(0, cut) : value;
   const note = cut > 0 ? value.slice(cut + 1).trim() : '';
+  const bpm = BPM_VALUE.exec(main.trim());
+  const shown = bpm
+    ? el('span', { class: 'bpm-badge', title: 'Beats per minute', 'aria-label': `${bpm[1] ? `${bpm[1]} ` : ''}${bpm[2]} BPM` },
+      bpm[2].replace(/\s+/g, ''), el('small', { 'aria-hidden': 'true' }, 'BPM'))
+    : el('span', { class: 'gc-tempo-value' }, main);
   return el('p', { class: 'gc-tempo' },
     el('span', { class: 'gc-tempo-label' }, 'Tempo'),
-    el('span', { class: 'gc-tempo-value' }, main),
+    bpm && bpm[1] ? el('span', { class: 'gc-tempo-qual' }, bpm[1]) : null,
+    shown,
     note ? el('span', { class: 'gc-tempo-note' }, note) : null);
 }
 
