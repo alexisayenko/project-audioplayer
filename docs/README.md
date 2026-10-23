@@ -133,6 +133,7 @@ and rules):
 - [`tasks/README.md`](tasks/README.md) — task spec + frontmatter
 - [`tech/README.md`](tech/README.md) — stack + decisions frame
 - [`tech/genre-terminology.md`](tech/genre-terminology.md) — what "genre", "family" and "style" mean here and elsewhere, and the aspects of describing music (ADR-0034)
+- [`tech/microgenre-candidates.md`](tech/microgenre-candidates.md) — proposal: which genres could carry a `microgenre` flag, with criteria and a phase 2 sketch (task-0100)
 - [`tech/genre-references-library-candidates.md`](tech/genre-references-library-candidates.md) — proposal: songs of the owner library that could serve as genre reference tracks (task-0093)
 - [`tech/genre-references-goa-trance.md`](tech/genre-references-goa-trance.md) — verified goa trance reference-track review with sources (task-0093)
 - [`tech/genre-references-psytrance.md`](tech/genre-references-psytrance.md) — verified psytrance reference-track review with sources (task-0093)

@@ -22,6 +22,7 @@ Don't pre-create — extract on first real entry. See
 - **`ddex-terminology.md`** — which DDEX words Electrophone adopts and which it does not, checked against the official allowed-value file (ADR-0025).
 - **`metadata-model-decisions-AR.md`** — decision AR: where the release year may come from.
 - **`genre-terminology.md`** — glossary, the genre model (genres, groups, modifiers, four axes), tests and open decisions (ADR-0038, ADR-0034).
+- **`microgenre-candidates.md`** — PROPOSAL: criteria, a review table of 53 microgenre candidates and what a `microgenre` flag would do (task-0100, phase 1).
 - **`genre-references-library-candidates.md`** — PROPOSAL (nothing saved): owner library songs that could be reference tracks per genre, by role and confidence (task-0093, ADR-0044).
 - **`genre-references-goa-trance.md`** — verified goa trance reference-track review: picks by role and era with sources and confidence; supersedes the goa rows of the candidates file (task-0093, ADR-0044).
 - **`genre-references-psytrance.md`** — verified psytrance reference-track review (read-only, nothing saved): picks by role with sources and confidence; supersedes the psytrance row of the candidates file (task-0093, ADR-0044).

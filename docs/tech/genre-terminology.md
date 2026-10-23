@@ -133,7 +133,7 @@ All owner decisions of 2026-10-20 (the full list with letter ids is at the end).
 - **epic** is removed as a genre (a descriptor, like lo-fi).
 - **Modifier kinds.** dark, deep, uplifting are mood.
 - **witch house.** Stays under experimental. Defaults, unconfirmed: BV `related` synthwave, darksynth, vaporwave; BU synonyms drag, screwgaze, haunted house, crunk shoegaze. BT: no `related` link to house.
-- **Depth (AD, my pick, unconfirmed).** Level is computed; no "subgenre" or "microgenre" names. Wikipedia uses "microgenre" only descriptively.
+- **Depth (AD, my pick, unconfirmed).** Level is computed; no "subgenre" or "microgenre" names. Wikipedia uses "microgenre" only descriptively. A separate `microgenre` boolean flag (not a depth name) is under review: [microgenre-candidates.md](microgenre-candidates.md) (task-0100, CH1).
 
 ## Worked examples
 
