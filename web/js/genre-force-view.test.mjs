@@ -417,7 +417,7 @@ test('parent lines get an arrowhead at the child end; none below the zoom thresh
   assert.equal(arrowFills.length, 0);
 });
 
-test('rigid (v2): dragging a child moves only it; dragging a parent carries its descendants rigidly; nothing else moves; drops stay put', () => {
+test('rigid (v2): dragging a child moves only it; dragging a parent makes its descendants spring after it and settle at their offsets; nothing else moves; drops stay put', () => {
   const { canvas, view, graph, picked } = setup({ rigid: true });
   settle();
   const house = graph.byId.get('s:house');
@@ -434,11 +434,40 @@ test('rigid (v2): dragging a child moves only it; dragging a parent carries its 
   for (const o of others) assert.ok(Math.hypot(o.n.x - o.x, o.n.y - o.y) < 1e-6, 'nobody else moved');
   const off = { x: kid.x - house.x, y: kid.y - house.y };
   const ph = at(view, 's:house');
-  dragTo(canvas, ph, { x: ph.x - 90, y: ph.y + 40 });
-  assert.ok(Math.abs(kid.x - house.x - off.x) < 1e-6 && Math.abs(kid.y - house.y - off.y) < 1e-6, 'offset kept during the drag');
+  canvas.fire('pointerdown', { clientX: ph.x, clientY: ph.y });
+  canvas.fire('pointermove', { clientX: ph.x + 20, clientY: ph.y });
+  canvas.fire('pointermove', { clientX: ph.x - 90, clientY: ph.y + 40 });
+  run(1);
+  const gap = () => Math.hypot(kid.x - house.x - off.x, kid.y - house.y - off.y);
+  assert.ok(gap() > 20, 'the descendant lags behind the parent during the drag');
+  let peak = 0, passed = false, prev = gap();
+  for (let i = 0; i < 400 && frames.length; i++) {
+    run(1);
+    const g = gap();
+    if (g > prev + 1e-9 && passed === false && i > 3) passed = true;
+    prev = g; peak = Math.max(peak, g);
+  }
+  assert.ok(passed, 'the spring overshoots and swings back');
   canvas.fire('pointerup', { clientX: ph.x - 90, clientY: ph.y + 40, buttons: 0 });
+  settle(600);
+  assert.ok(Math.abs(kid.x - house.x - off.x) < 1e-9 && Math.abs(kid.y - house.y - off.y) < 1e-9, 'at rest the descendant sits at its original offset');
   const dropped = { hx: house.x, hy: house.y, kx: kid.x, ky: kid.y };
-  settle(300); run(100);
-  assert.ok(Math.hypot(house.x - dropped.hx, house.y - dropped.hy) < 1e-6 && Math.hypot(kid.x - dropped.kx, kid.y - dropped.ky) < 1e-6, 'both stay where dropped');
+  run(100);
+  assert.ok(Math.hypot(house.x - dropped.hx, house.y - dropped.hy) < 1e-9 && Math.hypot(kid.x - dropped.kx, kid.y - dropped.ky) < 1e-9, 'both stay where dropped');
   assert.deepEqual(picked, [], 'dragging does not select');
+});
+
+test('rigid (v2): every descendant springs to parent position plus its own offset, whatever its depth', () => {
+  const { canvas, view, graph } = setup({ rigid: true });
+  settle();
+  const root = graph.byId.get('s:house');
+  const sub = graph.nodes.filter((n) => n !== root && n.target === 1 && Math.hypot(n.x - root.x, n.y - root.y) > 0);
+  const offs = sub.map((n) => ({ n, x: n.x - root.x, y: n.y - root.y }));
+  const p = at(view, 's:house');
+  dragTo(canvas, p, { x: p.x + 100, y: p.y - 70 });
+  canvas.fire('pointerup', { clientX: p.x + 100, clientY: p.y - 70, buttons: 0 });
+  settle(800);
+  const moved = offs.filter((o) => Math.abs(o.n.x - root.x - o.x) < 1e-9 && Math.abs(o.n.y - root.y - o.y) < 1e-9);
+  assert.ok(moved.length >= 2, 'descendants at several depths rest at their own offsets');
+  assert.equal(frames.length, 0, 'the loop stops once everything is at rest');
 });

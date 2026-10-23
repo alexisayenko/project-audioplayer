@@ -24,6 +24,11 @@ const SETTLE_STATIC = 400;
 const CHILD_FOLLOW_MS = 300;
 const CHILD_FOLLOW_TAU = CHILD_FOLLOW_MS / 3;
 const FOLLOW_EPS = 0.05;
+const FOLLOW_STIFFNESS = 90;
+const FOLLOW_DAMPING = 8;
+const FOLLOW_STEP_MS = 8;
+const FOLLOW_REST_DIST = 0.02;
+const FOLLOW_REST_SPEED = 0.05;
 const PARENT_REACTION = 0;
 const REVEAL_ALPHA = 0.25;
 const RING_GAP = 6;
@@ -86,6 +91,8 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
   let colors = {};
   let drag = null;
   let pull = null;
+  const springs = new Map();
+  let springAcc = 0;
   let pinch = null;
   let hoverRaf = 0;
   let hoverAt = null;
@@ -259,6 +266,7 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
       again = true;
     }
     if (pull && stepPull(dt)) again = true;
+    if (springs.size && stepSprings(dt)) again = true;
     if (sim && awake && !reducedMotion && !(rigid && drag?.moved)) {
       awake = sim.tick();
       perf.ticks++;
@@ -649,6 +657,38 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
     return busy;
   }
 
+  function stepSprings(dt) {
+    springAcc = Math.min(springAcc + dt, 100);
+    const h = FOLLOW_STEP_MS / 1000;
+    while (springAcc >= FOLLOW_STEP_MS) {
+      springAcc -= FOLLOW_STEP_MS;
+      for (const [c, sp] of springs) {
+        const ex = sp.root.x + sp.ox - sp.px;
+        const ey = sp.root.y + sp.oy - sp.py;
+        sp.vx += (FOLLOW_STIFFNESS * ex - FOLLOW_DAMPING * sp.vx) * h;
+        sp.vy += (FOLLOW_STIFFNESS * ey - FOLLOW_DAMPING * sp.vy) * h;
+        const dx = sp.vx * h, dy = sp.vy * h;
+        sp.px += dx; sp.py += dy;
+        shift(c, dx, dy);
+      }
+    }
+    for (const [c, sp] of springs) {
+      const ex = sp.root.x + sp.ox - sp.px;
+      const ey = sp.root.y + sp.oy - sp.py;
+      if (Math.hypot(ex, ey) < FOLLOW_REST_DIST && Math.hypot(sp.vx, sp.vy) < FOLLOW_REST_SPEED && !(drag?.moved && drag.node === sp.root)) {
+        shift(c, ex, ey);
+        springs.delete(c);
+      }
+    }
+    hashDirty = true;
+    return springs.size > 0;
+  }
+
+  function snapSprings() {
+    for (const [c, sp] of springs) shift(c, sp.root.x + sp.ox - sp.px, sp.root.y + sp.oy - sp.py);
+    springs.clear();
+  }
+
   function stepPull(dt) {
     return stepFollow(1 - Math.exp(-dt / CHILD_FOLLOW_TAU));
   }
@@ -661,7 +701,12 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
     drag.ax = drag.node.x;
     drag.ay = drag.node.y;
     if (rigid) {
-      for (const { c } of drag.sub) if (c.target === 1) { c.fx = c.x; c.fy = c.y; }
+      const root = drag.node;
+      springs.delete(root);
+      for (const { c } of drag.sub) {
+        if (c.target === 1) { c.fx = c.x; c.fy = c.y; }
+        springs.set(c, { root, ox: c.x - root.x, oy: c.y - root.y, px: c.x, py: c.y, vx: 0, vy: 0 });
+      }
       follow = false;
       userMoved = true;
       return;
@@ -686,8 +731,8 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
     drag.ax = w.x; drag.ay = w.y;
     hashDirty = true;
     if (rigid) {
-      for (const { c } of drag.sub) shift(c, w.x - px, w.y - py);
       n.x = w.x; n.y = w.y; n.fx = w.x; n.fy = w.y;
+      if (reducedMotion) snapSprings();
       setHover(n, null);
       request();
       return;
@@ -971,6 +1016,7 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
   return {
     setGraph(graph, { saved = null } = {}) {
       rawGraph = graph;
+      springs.clear();
       shadeIdx = graph.subIdx ?? -1;
       if (colors.ink) colors.shades = shadeIdx >= 0 ? shadeTable(colors.fam[shadeIdx]) : [];
       savedMap = saved;

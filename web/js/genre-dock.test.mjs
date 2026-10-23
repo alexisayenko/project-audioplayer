@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { installDom, stubFetch, flush } from './test-dom.mjs';
 import { VOCAB } from './genre-levels-fixture.mjs';
 
-installDom({ ids: ['toast'] });
+installDom({ ids: ['toast', 'audio', 'mini-viz'] });
 stubFetch(() => ({ body: {} }));
 const { createGenreDock, loadDockCollapsed, saveDockCollapsed, DOCK_KEY, DOCK_SHEET_KEY, DOCK_EMPTY, DOCK_COLLAPSE, DOCK_EXPAND } = await import('./genre-dock.js');
 const { buildTree } = await import('./genre-levels.js');
