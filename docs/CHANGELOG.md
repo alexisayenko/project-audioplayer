@@ -2,9 +2,9 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
-## 2026-10-23 (psytrance sub-genres, trimmed to hi-tech, to deploy)
+## 2026-10-23 (psytrance sub-genres, trimmed to hi-tech, deployed)
 
-- Server and web data: `twilight psytrance` and `psycore` are removed again from the vocabulary, with their synonyms, `related` links, descriptions, sources rows and test assertions (owner decision 2026-10-23: only styles attested on Rate Your Music, Discogs or Musicmap become genres, and Rate Your Music lists only Dark, Progressive, Forest, Full-On and Hi-Tech Psytrance under psytrance; GEN-056, DATA-196; no tests run, test assertions edited; no library song carried either name). `hi-tech psytrance` stays. The vocabulary is now 533 genres and 578 memberships; the web fixture `genre_payload_levels.json` is regenerated. Details and the candidates not added: [genre-levels.md](tech/genre-levels.md#psytrance-sub-genres-added-owner-2026-10-23).
+- Server and web data: `twilight psytrance` and `psycore` are removed again from the vocabulary, with their synonyms, `related` links, descriptions, sources rows and test assertions (owner decision 2026-10-23: only styles attested on Rate Your Music, Discogs or Musicmap become genres, and Rate Your Music lists only Dark, Progressive, Forest, Full-On and Hi-Tech Psytrance under psytrance; GEN-056, DATA-196; deployed 2026-10-23, no tests run, test assertions edited; no library song carried either name). `hi-tech psytrance` stays. The vocabulary is now 533 genres and 578 memberships; the web fixture `genre_payload_levels.json` is regenerated. Details and the candidates not added: [genre-levels.md](tech/genre-levels.md#psytrance-sub-genres-added-owner-2026-10-23).
 
 ## 2026-10-23 (psytrance sub-genres, deployed)
 
