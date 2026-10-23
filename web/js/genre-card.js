@@ -3,6 +3,7 @@ import { icon } from './icons.js';
 import { cachedTree, loadGenreTree } from './genre-tree.js';
 import { resolveNode, libraryTags, genreDescription } from './genre-levels.js';
 import { familyIndex, dotClass, OTHER_COLOR } from './genre-data.js';
+import { descriptionNode } from './genre-desc.js';
 import { shownSourceLinks } from './genre-source-links.js';
 import { createReferencesPanel } from './genre-references.js';
 import { filterByTags, prefs, saveLibraryView } from './library-data.js';
@@ -77,7 +78,7 @@ export function renderGenreInfo(name, { onNavigate, container, onLibrary, onMap,
     const desc = genreDescription(n);
     const links = n.group ? [] : shownSourceLinks(n.sourceLinks);
     return el('section', { class: 'gc-about', 'aria-label': 'Description' },
-      el('p', { class: `gc-desc t-body${desc ? '' : ' muted'}` }, desc || NO_DESCRIPTION),
+      descriptionNode(desc, NO_DESCRIPTION),
       links.length ? el('div', { class: 'gmr-links gc-links t-caption', role: 'group', 'aria-label': 'Genre sources' }, ...links.map((l) => el('a', {
         href: l.url, target: '_blank', rel: 'noopener noreferrer', 'data-source': l.source, title: `${l.label}: ${n.label}`, 'aria-label': `${l.label}: ${n.label} (opens in a new tab)`,
       }, icon(l.icon, 'inline'), l.short || l.label))) : null);

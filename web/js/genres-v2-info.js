@@ -1,6 +1,7 @@
 import { el } from './dom.js';
 import { icon } from './icons.js';
 import { familyIndex, dotClass } from './genre-data.js';
+import { descriptionNode } from './genre-desc.js';
 import { shownSourceLinks } from './genre-source-links.js';
 import { createReferencesPanel } from './genre-references.js';
 
@@ -37,7 +38,7 @@ export function createV2InfoRenderer(getData) {
       }, icon(l.icon, 'inline'), l.label));
       if (mm) anchors.push(el('a', { href: mm, target: '_blank', rel: 'noopener noreferrer', 'data-source': 'musicmap', 'aria-label': `Musicmap: ${g.name} (opens in a new tab)` }, icon('externalLink', 'inline'), 'Musicmap'));
       return el('section', { class: 'gc-about', 'aria-label': 'Description' },
-        el('p', { class: `gc-desc t-body${g.description ? '' : ' muted'}` }, g.description || V2_NO_DESCRIPTION),
+        descriptionNode(g.description, V2_NO_DESCRIPTION),
         anchors.length ? el('div', { class: 'gmr-links gc-links t-caption', role: 'group', 'aria-label': 'Genre sources' }, ...anchors) : null);
     }
 
