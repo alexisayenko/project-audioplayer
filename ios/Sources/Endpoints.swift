@@ -15,6 +15,7 @@ enum Endpoints {
     static let metadata = path("metadata")
     static let genres = path("genres")
     static let statsListening = path("stats", "listening")
+    static let plays = path("plays")
     static let coversPrefix = path("covers") + "/"
 
     static let anonSession = path("anon", "session")

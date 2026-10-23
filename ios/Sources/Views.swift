@@ -29,6 +29,7 @@ struct RootView: View {
     @EnvironmentObject var server: ServerLink
     @EnvironmentObject var library: LibraryStore
     @EnvironmentObject var anon: AnonDownloader
+    @EnvironmentObject var listening: ListeningStore
     @Environment(\.scenePhase) private var scenePhase
     @State private var tab = AppTab.library
     @State private var menuOpen = false
@@ -70,9 +71,13 @@ struct RootView: View {
         .sensoryFeedback(.selection, trigger: selectTick)
         .dynamicTypeSize(...DynamicTypeSize.accessibility2)
         .task {
+            PlayQueue.shared.configure(settings: settings)
             anon.resumePending(library: library)
             await server.check(settings: settings)
             await server.syncCatalog(settings: settings, library: library)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .playsUploaded)) { _ in
+            Task { await listening.load(settings: settings, signedIn: ServerLink.hasCredentials(settings)) }
         }
         .onChange(of: scenePhase) { _, p in
             if p == .active {

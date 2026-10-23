@@ -88,6 +88,14 @@ struct APIClient {
         return data
     }
 
+    /// Sends one play batch (API-196) and returns the HTTP status, so the caller can tell a refusal that drops the batch from one worth retrying.
+    func postPlays(_ body: Data) async throws -> Int {
+        var req = try await request(Endpoints.plays, method: "POST", body: body)
+        req.timeoutInterval = 30
+        let (_, response) = try await URLSession.shared.data(for: req)
+        return (response as? HTTPURLResponse)?.statusCode ?? 0
+    }
+
     /// The whole catalog, or nil when the server answers 304 to the stored ETag.
     func catalog(etag: String?) async throws -> (catalog: CatalogResponse, etag: String?)? {
         var req = try await request(Endpoints.catalog)

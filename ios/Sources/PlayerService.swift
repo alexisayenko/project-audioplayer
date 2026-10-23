@@ -66,6 +66,8 @@ final class PlayerService: ObservableObject {
     var itemObserver: ((AVPlayerItem?) -> Void)?
 
     private let player = AVPlayer()
+    private let recorder = PlayRecorder()
+    private var attachedID: String?
     private var timeObserver: Any?
     private var endObserver: NSObjectProtocol?
     private var played: [String] = []
@@ -90,6 +92,7 @@ final class PlayerService: ObservableObject {
             Task { @MainActor in
                 guard let self else { return }
                 self.position = time.seconds.isFinite ? time.seconds : 0
+                self.recorder.tick(songID: self.isPlaying && self.player.rate > 0 ? self.attachedID : nil, position: self.position)
                 self.updateNowPlaying()
             }
         }
@@ -271,7 +274,9 @@ final class PlayerService: ObservableObject {
     }
 
     func pause() {
+        let heard = isPlaying && player.rate > 0 ? player.currentTime().seconds : nil
         player.pause()
+        recorder.paused(position: heard)
         isPlaying = false
         updateNowPlaying()
     }
@@ -313,6 +318,7 @@ final class PlayerService: ObservableObject {
     }
 
     func seek(to seconds: Double) {
+        recorder.seeked()
         player.seek(to: CMTime(seconds: seconds, preferredTimescale: 600))
         position = seconds
         updateNowPlaying()
@@ -364,6 +370,8 @@ final class PlayerService: ObservableObject {
     }
 
     private func detach() {
+        recorder.songChanged()
+        attachedID = nil
         itemTask?.cancel()
         needsItem = false
         statusObserver = nil
@@ -375,12 +383,19 @@ final class PlayerService: ObservableObject {
 
     private func attach(_ item: AVPlayerItem) {
         failedTrackID = nil
+        recorder.songChanged()
+        attachedID = current.flatMap { $0.localOnly == true ? nil : $0.id }
         player.replaceCurrentItem(with: item)
         itemObserver?(item)
         if let endObserver { NotificationCenter.default.removeObserver(endObserver) }
         endObserver = NotificationCenter.default.addObserver(
             forName: .AVPlayerItemDidPlayToEndTime, object: item, queue: .main
-        ) { [weak self] _ in Task { @MainActor in self?.advance(manual: false) } }
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.itemEnded(item)
+                self?.advance(manual: false)
+            }
+        }
         let id = current?.id
         statusObserver = item.publisher(for: \.status).receive(on: DispatchQueue.main).sink { [weak self] status in
             guard status == .failed else { return }
@@ -396,6 +411,11 @@ final class PlayerService: ObservableObject {
                 self.updateNowPlaying()
             }
         }
+    }
+
+    private func itemEnded(_ item: AVPlayerItem) {
+        let length = item.duration.seconds
+        recorder.ended(position: length.isFinite ? length : nil)
     }
 
     /// Whether Next would go somewhere.

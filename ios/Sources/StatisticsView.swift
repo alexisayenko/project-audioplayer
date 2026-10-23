@@ -78,6 +78,7 @@ struct StatisticsView: View {
         .dsGround()
         .dynamicTypeSize(...DynamicTypeSize.accessibility2)
         .task(id: signedIn ? attempt : -1) { await loadListening() }
+        .onReceive(NotificationCenter.default.publisher(for: .playsUploaded)) { _ in attempt += 1 }
     }
 
     private var listeningDisplay: ListeningDisplay {

@@ -23,7 +23,7 @@ struct MacRootView: View {
         .overlay { if viz.isOpen { MacVisualizerView().transition(.opacity) } }
         .sheet(isPresented: $nav.showSignIn) { MacSignInSheet() }
         .onAppear { MacKeys.install(player) }
-        .task { await server.check(settings: settings); await server.syncCatalog(settings: settings, library: library, auto: false) }
+        .task { PlayQueue.shared.configure(settings: settings); await server.check(settings: settings); await server.syncCatalog(settings: settings, library: library, auto: false) }
         .onChange(of: scenePhase) { _, p in
             if p == .active { Task { await server.syncCatalog(settings: settings, library: library, auto: false) } }
         }

@@ -101,6 +101,8 @@ targets:
           - LibraryStore.swift
           - LocalCover.swift
           - PlayerService.swift
+          - PlayQueue.swift
+          - PlayRecorder.swift
           - ServerLink.swift
           - ServiceIcons.swift
           - SongFormState.swift
