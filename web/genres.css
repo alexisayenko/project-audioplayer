@@ -317,11 +317,8 @@ body[data-route="genres"] main, body[data-route="genres2"] main { max-width: non
 .genre-card .gc-about { margin-bottom: var(--space-4); }
 .genre-card .gc-desc { margin: 0; white-space: pre-line; }
 .gc-desc-rich { display: grid; gap: var(--space-3); }
-.gc-tempo { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-1) var(--space-2); padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); background: var(--surface-sunken); border-left: var(--space-1) solid var(--accent-strong); }
-.gc-tempo-label { font: var(--font-eyebrow); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-muted); }
-.gc-tempo-value { font: var(--font-subhead-strong); color: var(--ink); }
-.gc-tempo-qual { font: var(--font-caption); color: var(--ink-muted); }
 .gc-prose { margin: 0; padding: 0 var(--space-1); font: var(--font-subhead); color: var(--ink); text-align: justify; hyphens: auto; overflow-wrap: break-word; text-wrap: pretty; }
+.gc-prose .bpm-badge { display: inline-flex; vertical-align: baseline; min-width: 0; white-space: nowrap; text-align: start; hyphens: none; }
 .genre-card .gc-sits { margin-bottom: var(--space-4); display: grid; gap: var(--space-2); }
 .genre-card .gc-h { margin: 0; }
 .genre-card .gc-chips { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
