@@ -3,7 +3,7 @@ import { icon } from './icons.js';
 import { cachedTree, loadGenreTree } from './genre-tree.js';
 import { resolveNode, libraryTags, genreDescription } from './genre-levels.js';
 import { familyIndex, dotClass, OTHER_COLOR } from './genre-data.js';
-import { descriptionNode } from './genre-desc.js';
+import { descriptionNode, tempoBadge } from './genre-desc.js';
 import { shownSourceLinks } from './genre-source-links.js';
 import { createReferencesPanel } from './genre-references.js';
 import { filterByTags, prefs, saveLibraryView } from './library-data.js';
@@ -69,7 +69,7 @@ export function renderGenreInfo(name, { onNavigate, container, onLibrary, onMap,
     const meta = [el('span', { class: 'gc-level t-caption' }, levelText(n))];
     if (n.fusion) meta.push(el('span', { class: 'gc-fusion t-caption', title: 'A blend of genres from more than one family' }, 'Fusion'));
     return el('div', { class: 'gc-head' },
-      el('div', { class: 'gc-title' }, el('span', { class: dotClass(slot < 0 ? OTHER_COLOR : slot), 'aria-hidden': 'true' }), el('h2', { id: titleId, class: 't-title', tabindex: '-1' }, n.label)),
+      el('div', { class: 'gc-title' }, el('span', { class: dotClass(slot < 0 ? OTHER_COLOR : slot), 'aria-hidden': 'true' }), el('h2', { id: titleId, class: 't-title', tabindex: '-1' }, n.label), tempoBadge(genreDescription(n))),
       el('p', { class: 'gc-meta' }, ...meta),
       n.synonyms?.length ? el('p', { class: 'gc-synonyms t-caption muted' }, `Also called: ${n.synonyms.join(', ')}`) : null);
   }

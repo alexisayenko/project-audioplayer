@@ -253,6 +253,7 @@ export const api = {
   patchReference: (name, id, body) => request('PATCH', `/genres/${q(name)}/references/${q(id)}`, body),
   deleteReference: (name, id) => request('DELETE', `/genres/${q(name)}/references/${q(id)}`),
   preview: (url, signal, onEvent) => (onEvent ? previewStream(url, signal, onEvent) : request('POST', '/preview', { url }, signal)),
+  search: (text, signal) => request('GET', `/search?q=${q(text)}&limit=5`, undefined, signal),
   metadata: (body, signal) => request('POST', '/metadata', body, signal),
   playlist: (url, signal) => request('POST', '/import/youtube-playlist', { url }, signal),
   playlistDetails: (ids, signal) => request('POST', '/import/youtube-playlist/details', { ids }, signal),

@@ -27,23 +27,32 @@ function tempoMain(value) {
   return (cut > 0 ? value.slice(0, cut) : value).trim().replace(/[.!?\u2026]+$/, '').trim();
 }
 
-function tempoLine(main) {
-  const bpm = BPM_VALUE.exec(main);
-  if (!bpm) return el('p', { class: 'gc-tempo' }, main.charAt(0).toUpperCase() + main.slice(1));
+function tempoMainOf(text) {
+  const { tempo } = parseDescription(text);
+  return tempo ? tempoMain(tempo) : '';
+}
+
+export function tempoBadge(text) {
+  const bpm = BPM_VALUE.exec(tempoMainOf(text));
+  if (!bpm) return null;
   const spoken = `${bpm[1] ? `${bpm[1]} ` : ''}${bpm[2]} BPM`;
-  const chip = el('span', { class: 'bpm-badge', title: 'Beats per minute', 'aria-label': spoken },
+  return el('span', { class: 'bpm-badge gc-bpm', role: 'img', title: 'Beats per minute', 'aria-label': `Tempo ${spoken}` },
     bpm[2].replace(/\s+/g, ''), el('small', { 'aria-hidden': 'true' }, 'BPM'));
-  return el('p', { class: 'gc-tempo', role: 'group', 'aria-label': `Tempo ${spoken}` }, chip);
+}
+
+function tempoText(main) {
+  return el('p', { class: 'gc-tempo' }, main.charAt(0).toUpperCase() + main.slice(1));
 }
 
 export function descriptionNode(text, emptyText) {
-  const { tempo, rest } = parseDescription(text);
-  if (!tempo && !rest.length) {
+  const { rest } = parseDescription(text);
+  const main = tempoMainOf(text);
+  const plain = main && !BPM_VALUE.test(main) ? main : '';
+  const prose = rest.map(sentence).filter(Boolean).join(' ');
+  if (!plain && !prose) {
     return el('p', { class: 'gc-desc t-body muted' }, emptyText);
   }
-  const main = tempo ? tempoMain(tempo) : '';
-  const prose = rest.map(sentence).filter(Boolean).join(' ');
   return el('div', { class: 'gc-desc gc-desc-rich' },
-    main ? tempoLine(main) : null,
+    plain ? tempoText(plain) : null,
     prose ? el('p', { class: 'gc-prose' }, prose) : null);
 }

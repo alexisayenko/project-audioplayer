@@ -22,13 +22,18 @@ test('sources: list, legacy source_url and count', () => {
   assert.equal(R.sourceCount({ source_count: 3 }), 3);
 });
 
-test('addLinkFor prefers a non-chart YouTube or SoundCloud link, then the first link', () => {
+test('addLinkFor returns only a non-chart YouTube or SoundCloud link, addPrefillFor falls back to "Artist - Title"', () => {
   const yt = 'https://www.youtube.com/watch?v=abc';
   assert.equal(R.addLinkFor({ sources: [{ type: 'wikipedia', url: 'https://en.wikipedia.org/x' }, { type: 'chart', url: yt }, { type: 'other', url: 'https://soundcloud.com/a/b' }] }), 'https://soundcloud.com/a/b');
   assert.equal(R.addLinkFor({ sources: [{ type: 'discogs', url: 'https://discogs.test/1' }, { type: 'other', url: yt }] }), yt);
-  assert.equal(R.addLinkFor({ sources: [{ type: 'chart', url: yt }, { type: 'discogs', url: 'https://discogs.test/1' }] }), yt);
-  assert.equal(R.addLinkFor({ sources: [{ type: 'wikipedia', url: 'https://en.wikipedia.org/x' }] }), 'https://en.wikipedia.org/x');
+  assert.equal(R.addLinkFor({ sources: [{ type: 'chart', url: yt }, { type: 'discogs', url: 'https://discogs.test/1' }] }), null);
+  assert.equal(R.addLinkFor({ sources: [{ type: 'wikipedia', url: 'https://en.wikipedia.org/x' }] }), null);
   assert.equal(R.addLinkFor({ sources: [] }), null);
+  const named = { artist: 'Astral Projection', title: 'Dancing Galaxy' };
+  assert.deepEqual(R.addPrefillFor({ ...named, sources: [{ type: 'other', url: yt }] }), { url: yt });
+  assert.deepEqual(R.addPrefillFor({ ...named, sources: [{ type: 'wikipedia', url: 'https://en.wikipedia.org/x' }, { type: 'musicbrainz', url: 'https://musicbrainz.org/x' }] }), { query: 'Astral Projection - Dancing Galaxy' });
+  assert.deepEqual(R.addPrefillFor({ ...named, sources: [] }), { query: 'Astral Projection - Dancing Galaxy' });
+  assert.equal(R.addPrefillFor({ artist: ' ', title: 'X', sources: [] }), null);
   assert.equal(R.isPlayableLink('https://notyoutube.com/x'), false);
 });
 

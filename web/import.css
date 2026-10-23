@@ -70,3 +70,13 @@ dialog.import { width: min(calc(var(--dialog-width-wide) * 1.5), calc(100vw - 2 
 @media (hover: hover) {
   .imp-row:hover { background-image: linear-gradient(var(--hover-wash), var(--hover-wash)); }
 }
+.add-hits { list-style: none; margin: 0; padding: 0; display: grid; }
+.add-hits li { border-bottom: var(--stroke-hairline) solid var(--line); }
+.add-hits li:last-child { border-bottom: 0; }
+.add-hits-status { margin: 0; }
+.add-hit { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--space-3); width: 100%; min-height: var(--hit); padding: var(--space-2) 0; border: 0; background: none; color: var(--ink); font: inherit; text-align: start; cursor: pointer; }
+.add-hit .cover { --cover-size: var(--cover-sm); }
+.add-hit-info { display: grid; min-width: 0; }
+.add-hit-title, .add-hit-sub { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.add-hit:focus-visible { outline: var(--stroke-focus) solid var(--accent-strong); outline-offset: calc(-1 * var(--stroke-focus)); }
+@media (hover: hover) { .add-hit:hover { background-image: linear-gradient(var(--hover-wash), var(--hover-wash)); } }

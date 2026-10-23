@@ -33,9 +33,15 @@ export function isPlayableLink(url) {
 }
 
 export function addLinkFor(entry) {
-  const list = entrySources(entry);
-  const playable = list.find((s) => s.type !== 'chart' && isPlayableLink(s.url));
-  return (playable || list[0])?.url || null;
+  return entrySources(entry).find((s) => s.type !== 'chart' && isPlayableLink(s.url))?.url || null;
+}
+
+export function addPrefillFor(entry) {
+  const url = addLinkFor(entry);
+  if (url) return { url };
+  const artist = String(entry?.artist || '').trim();
+  const title = String(entry?.title || '').trim();
+  return artist && title ? { query: `${artist} - ${title}` } : null;
 }
 
 export function eraYears(era) {

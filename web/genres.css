@@ -304,7 +304,8 @@ body[data-route="genres"] main, body[data-route="genres2"] main { max-width: non
 .genre-card .card-back { position: absolute; top: var(--space-2); left: var(--space-2); z-index: 2; }
 .genre-card .card-back[hidden] { display: none; }
 .genre-card .gc-title { display: flex; align-items: center; gap: var(--space-2); }
-.genre-card .gc-title h2 { margin: 0; overflow-wrap: anywhere; }
+.genre-card .gc-title h2 { flex: 1 1 auto; min-width: 0; margin: 0; overflow-wrap: anywhere; }
+.genre-card .gc-title .gc-bpm { flex: none; margin-inline-start: auto; white-space: nowrap; }
 .genre-card .gc-title h2:focus { outline: none; }
 .genre-card .gc-head { margin-bottom: var(--space-3); }
 .genre-card .gc-meta { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: var(--space-1) 0 0; color: var(--ink-muted); }
@@ -315,7 +316,6 @@ body[data-route="genres"] main, body[data-route="genres2"] main { max-width: non
 .gc-desc-rich { display: grid; gap: var(--space-3); }
 .gc-prose { margin: 0; padding: 0 var(--space-1); font: var(--font-subhead); color: var(--ink); text-align: justify; hyphens: auto; overflow-wrap: break-word; text-wrap: pretty; }
 .gc-tempo { margin: 0; padding: 0 var(--space-1); font: var(--font-subhead); color: var(--ink); }
-.gc-tempo .bpm-badge { display: inline-flex; vertical-align: baseline; min-width: 0; white-space: nowrap; text-align: start; hyphens: none; }
 .genre-card .gc-sits { margin-bottom: var(--space-4); display: grid; gap: var(--space-2); }
 .genre-card .gc-h { margin: 0; }
 .genre-card .gc-chips { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
@@ -377,6 +377,7 @@ body[data-route="genres"] main, body[data-route="genres2"] main { max-width: non
   .gmr-dock .gc-head { margin-bottom: var(--space-2); }
   .gmr-dock .gc-title { align-items: flex-start; }
   .gmr-dock .gc-title .gm-dot { margin-top: var(--space-2); }
+  .gmr-dock .gc-title .gc-bpm { margin-top: var(--space-1); }
   .gmr-dock .gc-about { margin-bottom: var(--space-3); }
   .gmr-dock .gc-prose, .gmr-dock .gc-tempo { padding: 0; }
   .gmr-dock .gc-prose { text-align: start; hyphens: manual; }

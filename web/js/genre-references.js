@@ -5,7 +5,7 @@ import { openAdd, openSongCard } from './lazy-ui.js';
 import { store } from './store.js';
 import { api } from './api.js';
 import {
-  roleLabel, sourceTypeLabel, entrySources, addLinkFor, entryLine,
+  roleLabel, sourceTypeLabel, entrySources, addPrefillFor, entryLine,
   loadReferences, genreReferenceData, onReferencesChange, sortEras, sortEntries,
 } from './references.js';
 
@@ -79,15 +79,15 @@ export function createReferencesPanel({ compact = false } = {}) {
 
   function actionNode(e) {
     if (e.in_library && (e.song?.id || e.song_id)) return null;
-    const url = addLinkFor(e);
+    const prefill = addPrefillFor(e);
+    const open = (ev) => openAdd({ ...prefill, note: `Reference track: ${entryLine(e)}.` }, ev.currentTarget);
     if (compact) {
-      if (!url) return null;
+      if (!prefill) return null;
       return el('button', {
-        class: 'icon sq-btn ref-add-lib ref-add-quick', type: 'button', title: 'Add to library', 'aria-label': `Add to library: ${entryLine(e)}`,
-        onclick: (ev) => openAdd({ url, note: `Reference track: ${entryLine(e)}.` }, ev.currentTarget),
+        class: 'icon sq-btn ref-add-lib ref-add-quick', type: 'button', title: 'Add to library', 'aria-label': `Add to library: ${entryLine(e)}`, onclick: open,
       }, icon('plus', 'inline'));
     }
-    if (url) return el('button', { class: 'btn outline small ref-add-lib', type: 'button', onclick: (ev) => openAdd({ url, note: `Reference track: ${entryLine(e)}.` }, ev.currentTarget) }, 'Add to library');
+    if (prefill) return el('button', { class: 'btn outline small ref-add-lib', type: 'button', onclick: open }, 'Add to library');
     return el('span', { class: 'muted t-caption ref-none' }, NOT_IN_LIBRARY);
   }
 

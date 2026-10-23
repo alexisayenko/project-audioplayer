@@ -1,7 +1,7 @@
 import { el } from './dom.js';
 import { icon } from './icons.js';
 import { familyIndex, dotClass } from './genre-data.js';
-import { descriptionNode } from './genre-desc.js';
+import { descriptionNode, tempoBadge } from './genre-desc.js';
 import { shownSourceLinks } from './genre-source-links.js';
 import { createReferencesPanel } from './genre-references.js';
 
@@ -26,7 +26,7 @@ export function createV2InfoRenderer(getData, dotFor = (name) => dotClass(family
       const meta = [el('span', { class: 'gc-level t-caption' }, v2LevelText(g))];
       if (g.clusterName) meta.unshift(el('span', { class: 'gc-cluster t-caption' }, g.clusterName));
       return el('div', { class: 'gc-head' },
-        el('div', { class: 'gc-title' }, el('span', { class: dotFor(g.name), 'aria-hidden': 'true' }), el('h2', { id: titleId, class: 't-title', tabindex: '-1' }, g.name)),
+        el('div', { class: 'gc-title' }, el('span', { class: dotFor(g.name), 'aria-hidden': 'true' }), el('h2', { id: titleId, class: 't-title', tabindex: '-1' }, g.name), tempoBadge(g.description)),
         el('p', { class: 'gc-meta' }, ...meta));
     }
 

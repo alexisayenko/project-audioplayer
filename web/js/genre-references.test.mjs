@@ -66,8 +66,8 @@ test('entries: role badge, line, note, add to library, marks, read-only for non-
   assert.match(srcs[0].title, /^Wikipedia:/);
   assert.equal(byClass(items[1], 'ref-add-lib').length, 1);
   assert.doesNotMatch(text(items[1]), /To review/);
-  assert.equal(byClass(items[2], 'ref-add-lib').length, 0);
-  assert.match(text(items[2]), new RegExp(NOT_IN_LIBRARY));
+  assert.equal(byClass(items[2], 'ref-add-lib').length, 1);
+  assert.doesNotMatch(text(items[2]), new RegExp(NOT_IN_LIBRARY));
   assert.equal(byClass(items[2], 'ref-src').length, 0);
   assert.equal(byClass(p.node, 'ref-owner').length, 0);
 });

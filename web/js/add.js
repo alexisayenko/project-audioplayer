@@ -23,6 +23,8 @@ export function openAdd(opts) {
   if (!can('add')) return;
   const draft = opts?.draft ?? null;
   const plan = draft ? addPlan(draft) : opts?.url ? { url: opts.url, credits: null, note: opts.note || '' } : null;
+  const query = !plan && typeof opts?.query === 'string' ? opts.query.trim() : '';
+  const note = plan?.note ?? (query ? opts.note || '' : '');
   const dlg = document.getElementById('add-dialog');
   let preview = null;
   let sf = null;
@@ -109,6 +111,45 @@ export function openAdd(opts) {
         fetchBtn.textContent = 'Fetch';
         checkKnown();
       }
+    }
+  }
+
+  function pickHit(hit) {
+    body.replaceChildren();
+    say('');
+    url.value = watchUrl(hit.id);
+    checkKnown();
+    form.dispatchEvent(new Event('submit', { cancelable: true }));
+  }
+
+  function hitRow(hit) {
+    const cover = el('img', { class: 'cover', alt: '', loading: 'lazy' });
+    if (hit.thumbnail) cover.src = hit.thumbnail;
+    cover.addEventListener('error', () => cover.removeAttribute('src'));
+    return el('li', {},
+      el('button', { class: 'add-hit', type: 'button', onclick: () => pickHit(hit) },
+        cover,
+        el('span', { class: 'add-hit-info' },
+          el('span', { class: 'add-hit-title t-subhead' }, hit.title || 'Untitled'),
+          el('span', { class: 'add-hit-sub t-caption muted' }, hit.artist || '')),
+        hit.duration ? el('span', { class: 'add-hit-dur t-time muted' }, fmtTime(hit.duration)) : null));
+  }
+
+  async function runSearch(text) {
+    const req = begin();
+    body.replaceChildren(el('p', { class: 'add-hits-status t-caption muted', role: 'status' }, `Searching YouTube for "${text}"...`));
+    try {
+      const hits = await api.search(text, req.signal);
+      if (!req.live()) return;
+      body.replaceChildren(hits?.length
+        ? el('ul', { class: 'add-hits', 'aria-label': `YouTube results for ${text}` }, ...hits.map(hitRow))
+        : el('p', { class: 'add-hits-status t-caption muted' }, 'No YouTube results. Paste a link above.'));
+    } catch (ex) {
+      if (!req.live()) return;
+      body.replaceChildren();
+      say(ex.message, 'error');
+    } finally {
+      req.done();
     }
   }
 
@@ -235,7 +276,7 @@ export function openAdd(opts) {
   };
   dlg.replaceChildren(
     dialogHead('Add from YouTube or SoundCloud', 'Save the song\'s details; play it from the original link or on your iPhone.', () => dlg.close()),
-    ...(plan?.note ? [el('p', { class: 'msg draft-note t-caption', role: 'note' }, plan.note)] : []),
+    ...(note ? [el('p', { class: 'msg draft-note t-caption', role: 'note' }, note)] : []),
     form, known, message, body);
   dlg.onclick = (e) => { if (e.target === dlg) dlg.close(); };
   dlg.showModal();
@@ -244,6 +285,8 @@ export function openAdd(opts) {
     url.value = plan.url;
     checkKnown();
     form.dispatchEvent(new Event('submit', { cancelable: true }));
+  } else if (query) {
+    void runSearch(query);
   }
   if (!store.loaded) store.refresh().then(checkKnown).catch(() => {});
 }
