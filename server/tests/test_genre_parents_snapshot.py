@@ -16,7 +16,7 @@ RELATED_MOVED = {
     "neurofunk": ["industrial"], "darksynth": ["industrial"], "hardcore techno": ["Rock"], "noise": ["Rock"], "grime": ["Hip Hop"], "trap": ["Others"], "acid jazz": ["Others"],
     "new wave": ["Others"], "modern classical": ["Others"], "gospel": ["Funk / Soul"], "electro house": ["electro"],
 }
-ADDED = {"edm", "hardcore punk", "experimental rock", "extreme metal", "noise rock", "roots rock", "neo-psychedelia", "glam metal", "college rock", "death-doom", "hardcore techno", "chillstep", "outrun", "ambient techno", "twilight psytrance", "hi-tech psytrance", "psycore"}
+ADDED = {"edm", "hardcore punk", "experimental rock", "extreme metal", "noise rock", "roots rock", "neo-psychedelia", "glam metal", "college rock", "death-doom", "hardcore techno", "chillstep", "outrun", "ambient techno", "hi-tech psytrance"}
 # Rock hierarchy (ADR-0030 note, GEN-067): every Rock genre whose parents changed from [Rock] or the old pair; the 20 held genres and everything else are unchanged.
 ROCK_EDITED = {
     "acid rock", "alternative metal", "anarcho-punk", "atmospheric black metal", "black metal", "blackgaze", "britpop", "brutal death metal", "coldwave", "crust",
@@ -114,7 +114,7 @@ def test_the_tree_changes_only_by_the_links_moved_to_related():
         assert lv.get("related", []) == expected_related, name
         assert len(lv["parents"]) == len(set(lv["parents"])) and lv["parents"], name
     assert body["levels"]["gospel"]["families"] == ["Others"] and families >= {"Others"}
-    assert {n for n, lv in body["levels"].items() if lv.get("related")} == set(RELATED_MOVED) - {"witch house", "neurofunk", "darksynth"} | ROCK_RELATED | {"outrun", "ambient techno", "spacesynth", "chillstep", "twilight psytrance", "hi-tech psytrance", "psycore"}
+    assert {n for n, lv in body["levels"].items() if lv.get("related")} == set(RELATED_MOVED) - {"witch house", "neurofunk", "darksynth"} | ROCK_RELATED | {"outrun", "ambient techno", "spacesynth", "chillstep", "hi-tech psytrance"}
 
 
 def test_the_second_family_additions_left_are_the_only_other_differences():

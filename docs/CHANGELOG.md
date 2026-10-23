@@ -2,9 +2,13 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-23 (psytrance sub-genres, trimmed to hi-tech, to deploy)
+
+- Server and web data: `twilight psytrance` and `psycore` are removed again from the vocabulary, with their synonyms, `related` links, descriptions, sources rows and test assertions (owner decision 2026-10-23: only styles attested on Rate Your Music, Discogs or Musicmap become genres, and Rate Your Music lists only Dark, Progressive, Forest, Full-On and Hi-Tech Psytrance under psytrance; GEN-056, DATA-196; no tests run, test assertions edited; no library song carried either name). `hi-tech psytrance` stays. The vocabulary is now 533 genres and 578 memberships; the web fixture `genre_payload_levels.json` is regenerated. Details and the candidates not added: [genre-levels.md](tech/genre-levels.md#psytrance-sub-genres-added-owner-2026-10-23).
+
 ## 2026-10-23 (psytrance sub-genres, deployed)
 
-- Server and web data: three psytrance sub-genres join the vocabulary as approved extras under `psytrance` (owner request 2026-10-23; not in Discogs; verified against Wikipedia, Musicmap, Last.fm and four community guides; GEN-056, DATA-196; deployed 2026-10-23, no tests run, test assertions edited): `twilight psytrance` (about 145-150 BPM, synonyms twilight, night full-on), `hi-tech psytrance` (about 170-200 BPM, synonyms hi-tech, hitech) and `psycore` (about 190-250 BPM), each with an own-words description and a `Tempo:` line, `related` links to the neighbouring styles and no change elsewhere. The vocabulary is now 535 genres and 580 memberships; the web fixture `genre_payload_levels.json` is regenerated. Details and the candidates not added: [genre-levels.md](tech/genre-levels.md#psytrance-sub-genres-added-owner-2026-10-23).
+- Server and web data: three psytrance sub-genres joined the vocabulary as approved extras under `psytrance` (owner request 2026-10-23; not in Discogs; GEN-056, DATA-196; deployed 2026-10-23, no tests run, test assertions edited): `twilight psytrance`, `hi-tech psytrance` and `psycore`, each with an own-words description and a `Tempo:` line (the vocabulary was 535 genres and 580 memberships). The first and the last were removed again, see the entry above.
 
 ## 2026-10-23 (web brand lockup, deployed)
 

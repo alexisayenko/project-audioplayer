@@ -2,9 +2,9 @@
  "_meta": {
   "generated_at": "2026-10-19T13:49:24.071Z",
   "counts": {
-   "genres": 548,
+   "genres": 546,
    "discogs_true": 480,
-   "discogs_false": 68,
+   "discogs_false": 66,
    "musicbrainz": 450,
    "wikipedia": 467,
    "apple_music": 139
@@ -5451,9 +5451,6 @@
    "match": "name"
   }
  },
- "psycore": {
-  "discogs": false
- },
  "psytrance": {
   "discogs": true,
   "musicbrainz": {
@@ -6777,9 +6774,6 @@
    "wikidata": "Q1046801",
    "match": "name"
   }
- },
- "twilight psytrance": {
-  "discogs": false
  },
  "uk garage": {
   "discogs": true,

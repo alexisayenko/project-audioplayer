@@ -44,9 +44,9 @@
     "level4": 0
    },
    "trance": {
-    "total": 23,
+    "total": 21,
     "level2": 14,
-    "level3": 9,
+    "level3": 7,
     "level4": 0
    },
    "drum and bass": {
@@ -104,13 +104,13 @@
     "level4": 0
    }
   },
-  "total": 535,
+  "total": 533,
   "non_discogs": {
    "Blues": 0,
    "Classical": 0,
    "house": 2,
    "techno": 2,
-   "trance": 14,
+   "trance": 12,
    "drum and bass": 2,
    "synthwave": 6,
    "Others": 8,
@@ -3496,19 +3496,6 @@
   "provisional": true,
   "discogs": true
  },
- "psycore": {
-  "parents": [
-   "psytrance"
-  ],
-  "related": [
-   "hi-tech psytrance"
-  ],
-  "synonyms": [
-   "psy core"
-  ],
-  "discogs": false,
-  "status": "approved"
- },
  "psytrance": {
   "parents": [
    "trance"
@@ -4235,26 +4222,6 @@
   ],
   "provisional": true,
   "discogs": true
- },
- "twilight psytrance": {
-  "parents": [
-   "psytrance"
-  ],
-  "related": [
-   "full-on psytrance",
-   "dark psytrance"
-  ],
-  "display": "twilight psy-trance",
-  "synonyms": [
-   "twilight",
-   "twilight psy",
-   "twilight psy-trance",
-   "night full-on",
-   "night full on",
-   "dark full-on"
-  ],
-  "discogs": false,
-  "status": "approved"
  },
  "uk garage": {
   "parents": [
