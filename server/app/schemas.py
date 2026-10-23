@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from . import genre_layout
 
 MAX_ID_TOKEN_LEN = 8192
 MIN_BPM, MAX_BPM = 20, 300
@@ -155,6 +157,32 @@ class DraftLinesRequest(BaseModel):
 class DraftPatchRequest(BaseModel):
     text: str | None = Field(default=None, max_length=300)
     url: str | None = Field(default=None, max_length=300)
+
+
+class GenreLayoutRequest(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    positions: dict[str, Any] = Field(default_factory=dict)
+    families: dict[str, Any] = Field(default_factory=dict)
+
+    @field_validator("positions", "families")
+    @classmethod
+    def _points(cls, table: dict[str, Any]) -> dict[str, tuple[int, int]]:
+        out: dict[str, tuple[int, int]] = {}
+        for name, value in table.items():
+            if not 0 < len(name) <= genre_layout.NAME_MAX:
+                raise ValueError(f"a genre name needs 1 to {genre_layout.NAME_MAX} characters")
+            p = genre_layout.point(value)
+            if p is None:
+                raise ValueError(f"a position is [x, y], two finite numbers within {genre_layout.COORD_MAX}")
+            out[name] = p
+        return out
+
+    @model_validator(mode="after")
+    def _bounded(self) -> "GenreLayoutRequest":
+        if len(self.positions) + len(self.families) > genre_layout.MAX_ENTRIES:
+            raise ValueError(f"at most {genre_layout.MAX_ENTRIES} positions")
+        return self
 
 
 class PlayIn(BaseModel):
