@@ -4,6 +4,8 @@ Read-only proposal for [task-0093](../tasks/task-0093.md) / [ADR-0044](decisions
 
 Superseded for goa trance: the goa trance rows below are replaced by the verified review [genre-references-goa-trance](genre-references-goa-trance.md).
 
+Superseded for psytrance: the psytrance row below (from memory) is replaced by the verified review [genre-references-psytrance](genre-references-psytrance.md).
+
 ## Method and counts
 
 - Source: the owner `library.json` as synced to the data repo on 2026-10-23, plus `genre_references.json` (what is saved already) and `server/data/genre_levels.json` (which names are genres).

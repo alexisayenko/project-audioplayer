@@ -135,6 +135,7 @@ and rules):
 - [`tech/genre-terminology.md`](tech/genre-terminology.md) — what "genre", "family" and "style" mean here and elsewhere, and the aspects of describing music (ADR-0034)
 - [`tech/genre-references-library-candidates.md`](tech/genre-references-library-candidates.md) — proposal: songs of the owner library that could serve as genre reference tracks (task-0093)
 - [`tech/genre-references-goa-trance.md`](tech/genre-references-goa-trance.md) — verified goa trance reference-track review with sources (task-0093)
+- [`tech/genre-references-psytrance.md`](tech/genre-references-psytrance.md) — verified psytrance reference-track review with sources (task-0093)
 - [`tech/deploy.md`](tech/deploy.md) — deploy runbook for the live
   server (where things live, deploy, rollback, verify, signup off)
 - [`tech/domain-migration.md`](tech/domain-migration.md) — runbook for moving

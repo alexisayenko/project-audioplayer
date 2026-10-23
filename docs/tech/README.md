@@ -24,6 +24,7 @@ Don't pre-create — extract on first real entry. See
 - **`genre-terminology.md`** — glossary, the genre model (genres, groups, modifiers, four axes), tests and open decisions (ADR-0038, ADR-0034).
 - **`genre-references-library-candidates.md`** — PROPOSAL (nothing saved): owner library songs that could be reference tracks per genre, by role and confidence (task-0093, ADR-0044).
 - **`genre-references-goa-trance.md`** — verified goa trance reference-track review: picks by role and era with sources and confidence; supersedes the goa rows of the candidates file (task-0093, ADR-0044).
+- **`genre-references-psytrance.md`** — verified psytrance reference-track review (read-only, nothing saved): picks by role with sources and confidence; supersedes the psytrance row of the candidates file (task-0093, ADR-0044).
 - **`genre-electronic-forms.md`** — PROPOSAL (not applied): where the 146 Electronic genres go when Electronic becomes a group and the forms move to level 1 (task-0066).
 - **`genre-levels.md`**, **`genre-flavours-proposal.md`** — the genre tree (no depth cap since ADR-0037) and the modifiers (formerly flavours; the proposal file keeps its name) (ADR-0023).
 - **`decisions.md`** (or **`decisions/adr-NNNN-<slug>.md`** once a
