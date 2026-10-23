@@ -267,6 +267,10 @@ body[data-route="genres"] main { max-width: none; padding: 0; }
 .gmr-links[hidden] { display: none; }
 .gmr-links a { display: inline-flex; align-items: center; gap: var(--space-1); color: var(--ink-muted); text-decoration: none; }
 .gmr-links a:hover, .gmr-links a:focus-visible { color: var(--ink); text-decoration: underline; }
+.gmr-seealso { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-3); flex: none; padding: var(--space-2) var(--space-3); border-top: var(--stroke-hairline) solid var(--line); color: var(--ink-muted); }
+.gmr-seealso a { display: inline-flex; align-items: center; gap: var(--space-1); color: var(--ink-muted); text-decoration: none; }
+.gmr-seealso a:hover, .gmr-seealso a:focus-visible { color: var(--ink); text-decoration: underline; }
+.gmr-seealso a:focus-visible { outline: var(--stroke-focus) solid var(--ring-color); outline-offset: 2px; }
 
 :root { --chart-rim: #8A8F93; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --chart-rim: var(--line); } }

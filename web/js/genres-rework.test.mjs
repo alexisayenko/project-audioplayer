@@ -556,3 +556,14 @@ globalThis.cancelAnimationFrame = () => {};
 globalThis.getComputedStyle ??= () => ({ getPropertyValue: () => '#123456', fontFamily: 'sans-serif' });
 const runFrames = () => { for (let i = 0; i < 20 && frames.length; i += 1) frames.splice(0).forEach((fn) => fn()); };
 
+
+test('See also row links to Rate Your Music and Musicmap in a new tab', async () => {
+  const { root, cleanup } = await mount();
+  const links = root.querySelectorAll('.gmr-seealso a');
+  assert.deepEqual(links.map((a) => a.getAttribute('href')), ['https://rateyourmusic.com/genres/', 'https://musicmap.info/']);
+  for (const a of links) {
+    assert.equal(a.getAttribute('target'), '_blank');
+    assert.equal(a.getAttribute('rel'), 'noopener noreferrer');
+  }
+  cleanup();
+});

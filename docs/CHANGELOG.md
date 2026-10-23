@@ -4,6 +4,11 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## 2026-10-23 (web brand lockup, to deploy)
 
+- Docs: external genre resources listed (to deploy).
+- Docs: ADR and task for genre reference tracks (analysis, to deploy) ([ADR-0044](tech/decisions.md), [task-0093](tasks/task-0093.md)).
+
+- Web: the Genres screen has a "See also" row under the Outline with links to Rate Your Music genres and Musicmap (GEN-086, to deploy; not seen in a browser).
+
 - Web: the sidebar brand block shows the vinyl mark with the two-line Electrophone / Vega 108 lockup, as in the iOS drawer; the text title and "Offline music player" tagline are gone, and the collapsed rail shows the mark alone (WEB-050, task-0092).
 
 ## 2026-10-22 (iOS Library refinements, simulator built; not uploaded)

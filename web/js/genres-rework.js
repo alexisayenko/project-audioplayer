@@ -129,6 +129,12 @@ export function renderGenresRework(root, opts = {}) {
 
   const linksRow = el('div', { class: 'gmr-links t-caption', role: 'group', 'aria-label': 'Genre sources', hidden: true });
 
+  const seeAlso = el('div', { class: 'gmr-seealso t-caption', role: 'group', 'aria-label': 'See also' },
+    el('span', { class: 'gmr-seealso-label' }, 'See also'),
+    ...[['Rate Your Music genres', 'https://rateyourmusic.com/genres/', 'Genre tree and descriptions'], ['Musicmap', 'https://musicmap.info/', 'Genealogy of popular music genres']].map(([label, href, tip]) => el('a', {
+      href, target: '_blank', rel: 'noopener noreferrer', title: tip, 'aria-label': `${label}: ${tip} (opens in a new tab)`,
+    }, label, icon('externalLink', 'inline'))));
+
   function renderLinks(n) {
     const shown = n && !n.group ? shownSourceLinks(n.sourceLinks) : [];
     linksRow.hidden = !shown.length;
@@ -843,7 +849,8 @@ export function renderGenresRework(root, opts = {}) {
   side.append(
     el('div', { class: 'gm-outline-head' }, el('h2', { class: 't-headline' }, 'Outline'), closeBtn),
     el('div', { class: 'gmr-bar' }, status, el('div', { class: 'gmr-btns' }, legendBtn, nowBtn, reload), el('div', { class: 'gmr-btns' }, viewRow, libBtn, drillBtn, collapseMapBtn, fusionBtn, relatedBtn, resetLayoutBtn, useSavedBtn, exportBtn), familyRow, subRow, groupNote, linksRow),
-    outlineEl);
+    outlineEl,
+    seeAlso);
   work.append(canvas, graphCanvas, side, outlineBtn, zoomBar, legend);
   wrap.append(pageHead('Genres map'), work);
   root.append(wrap);

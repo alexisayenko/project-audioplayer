@@ -241,3 +241,9 @@ Owner decisions from the chat of 2026-10-20 ("Decided" = owner decision; "Defaul
 | axes | Four axes | Form, Medium, Purpose, Tradition (+ personal Mood) |
 | epic | Is epic a genre? | No, removed |
 | kinds | dark, deep, uplifting | mood |
+
+## Useful external resources
+
+- Rate Your Music genres (https://rateyourmusic.com/genres/): genre tree and descriptions.
+- Musicmap (https://musicmap.info/): genealogy of popular music genres.
+- Trance Classics Official (YouTube channel, https://www.youtube.com/@TranceClassicsOfficial): classic trance tracks.
