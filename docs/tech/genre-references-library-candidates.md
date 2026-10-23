@@ -2,6 +2,8 @@
 
 Read-only proposal for [task-0093](../tasks/task-0093.md) / [ADR-0044](decisions.md), built from the owner library, not from the catalogue. Nothing here is saved in `genre_references.json`; the owner picks rows and Claude saves them (see [How to adopt](#how-to-adopt)). Companion of [genre-references-wave1](genre-references-wave1.md).
 
+Superseded for goa trance: the goa trance rows below are replaced by the verified review [genre-references-goa-trance](genre-references-goa-trance.md).
+
 ## Method and counts
 
 - Source: the owner `library.json` as synced to the data repo on 2026-10-23, plus `genre_references.json` (what is saved already) and `server/data/genre_levels.json` (which names are genres).
