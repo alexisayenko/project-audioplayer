@@ -127,7 +127,7 @@ export function createReferencesPanel({ compact = false } = {}) {
         el('div', { class: 'title-line' }, titleNode(e), lengthNode(e) || actionNode(e)),
         el('div', { class: 'sub-line' },
           el('small', { class: 'sub t-subhead', title: `${e.artist}${e.year ? ` · ${e.year}` : ''}` }, el('span', { class: 'ref-artist' }, e.artist), e.year ? el('span', { class: 'ref-year' }, ` · ${e.year}`) : null),
-          el('span', { class: `ref-role t-caption role-${e.role}` }, roleLabel(e.role)))));
+          el('span', { class: 'ref-role t-caption' }, roleLabel(e.role)))));
   }
 
   function item(e) {
@@ -139,7 +139,7 @@ export function createReferencesPanel({ compact = false } = {}) {
         el('div', { class: 'sub-line' }, el('small', { class: 'sub t-subhead' }, `${e.artist}${e.year ? ` · ${e.year}` : ''}`)),
         actionNode(e),
         e.note ? el('p', { class: 'ref-note t-caption muted' }, e.note) : null),
-      el('span', { class: `ref-role t-caption role-${e.role}` }, roleLabel(e.role)));
+      el('span', { class: 'ref-role t-caption' }, roleLabel(e.role)));
   }
 
   function phase(era) {

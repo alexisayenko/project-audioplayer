@@ -290,8 +290,7 @@ body[data-route="genres"] main, body[data-route="genres2"] main { max-width: non
 .ref-era-years { white-space: nowrap; }
 .ref-era-name { margin: 0; color: var(--ink); }
 .ref-era-note { margin: 0; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
-.ref-role { flex: none; white-space: nowrap; padding: var(--stroke-hairline) var(--space-2); border-radius: var(--radius-pill); border: var(--stroke-hairline) solid var(--line); color: var(--ink); }
-.ref-role.role-archetype { background: var(--fill); color: var(--on-fill); border-color: transparent; }
+.ref-role.t-caption { flex: none; white-space: nowrap; padding: var(--stroke-hairline) var(--space-3); border: var(--stroke-hairline) solid transparent; border-radius: var(--radius-sm); background: var(--surface-sunken); color: var(--ink); font-weight: 500; }
 .ref-src { display: inline-flex; color: var(--ink-muted); }
 .ref-src:hover, .ref-src:focus-visible { color: var(--ink); }
 .ref-src:focus-visible { outline: var(--stroke-focus) solid var(--ring-color); outline-offset: 2px; }
