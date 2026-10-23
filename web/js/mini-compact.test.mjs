@@ -71,7 +71,10 @@ test('css: the sidebar mini-player shows only when collapsed and a song is loade
   assert.ok(!/border-bottom/.test(open));
   assert.match(css, /body\.mini-compact\.has-mini \.side-mini \{ display: flex;[^}]*border-top: var\(--stroke-hairline\) solid var\(--line\)/);
   assert.ok(!/\.side-mini \{[^}]*overflow: hidden/.test(css.slice(css.indexOf('side mini-player: the dock'))));
-  assert.match(css, /\.sm-line \{[^}]*height: var\(--stroke-progress\); border-radius: var\(--radius-pill\)/);
+  assert.match(css, /\.sm-line \{[^}]*height: var\(--stroke-medium\); border-radius: var\(--radius-pill\)/);
+  assert.match(css, /\.sm-play \{ --sm-size: var\(--control\); --sm-face: var\(--control\); align-self: flex-start; \}/);
+  assert.match(css, /\.mini-text b \{ font: var\(--font-eyebrow\); \}/);
+  assert.match(css, /\.mini-text small \{ font: var\(--font-micro\); \}/);
   assert.match(css, /\.sm-line::after \{[^}]*width: calc\(var\(--ring-p, 0\) \* 1%\)/);
 });
 
