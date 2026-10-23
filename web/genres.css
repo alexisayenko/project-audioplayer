@@ -293,25 +293,17 @@ body[data-route="genres"] main, body[data-route="genres2"] main { max-width: non
 .ref-cite { color: var(--ink-muted); text-decoration: none; }
 .ref-cite:hover, .ref-cite:focus-visible { color: var(--ink); text-decoration: underline; }
 .ref-era-note { margin: 0; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
-.ref-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
-.ref-item { display: grid; gap: var(--space-1); }
-.ref-main { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-2); }
 .ref-role { flex: none; white-space: nowrap; padding: var(--stroke-hairline) var(--space-2); border-radius: var(--radius-pill); border: var(--stroke-hairline) solid var(--line); color: var(--ink); }
 .ref-role.role-archetype { background: var(--fill); color: var(--on-fill); border-color: transparent; }
-.ref-main { flex-wrap: nowrap; }
-.ref-text { flex: 1 1 0; min-width: 0; display: grid; gap: var(--space-1); }
-.ref-title { color: var(--ink); font-weight: 700; min-width: 0; overflow-wrap: anywhere; justify-self: start; }
-.ref-title.ref-line-btn { appearance: none; background: none; border: 0; padding: 0; margin: 0; font: inherit; font-weight: 700; text-align: left; cursor: pointer; text-decoration: none; }
-.ref-title.ref-line-btn:hover { text-decoration: none; }
-.ref-title.ref-line-btn:focus-visible { outline: var(--stroke-focus) solid var(--ring-color); outline-offset: 2px; }
-.ref-sub { color: var(--muted); }
-.ref-cover { --cover-size: var(--hit); }
-.ref-todo { color: var(--ink-muted); font-style: italic; }
 .ref-src { display: inline-flex; color: var(--ink-muted); }
 .ref-src:hover, .ref-src:focus-visible { color: var(--ink); }
 .ref-src:focus-visible, .ref-cite:focus-visible { outline: var(--stroke-focus) solid var(--ring-color); outline-offset: 2px; }
-.ref-note { margin: 0; }
-.ref-text > .ref-add-lib { justify-self: start; }
+.ref-list { list-style: none; margin: 0; padding: 0; }
+.ref-list .song { grid-template-columns: var(--row-cover-size) minmax(0, 1fr) auto; }
+.ref-list button.open { cursor: pointer; text-decoration: none; }
+.ref-list .info > .ref-add-lib { align-self: flex-start; margin-top: var(--space-1); }
+.ref-list .info > .ref-none { margin-top: var(--space-1); }
+.ref-note { margin: var(--space-1) 0 0; }
 .genre-card .gc-bar { min-height: var(--hit); }
 .genre-card .card-back { position: absolute; top: var(--space-2); left: var(--space-2); z-index: 2; }
 .genre-card .card-back[hidden] { display: none; }

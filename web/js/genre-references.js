@@ -93,30 +93,28 @@ export function createReferencesPanel() {
   function titleNode(e) {
     const id = e.in_library ? (e.song?.id || e.song_id) : null;
     const song = id ? (store.get(id) || e.song) : null;
-    if (!song) return el('span', { class: 'ref-title t-subhead' }, e.title);
-    return el('button', { class: 'ref-title ref-line-btn t-subhead', type: 'button', onclick: (ev) => { void openSongCard(song, ev.currentTarget); } }, e.title);
+    if (!song) return el('span', { class: 'open ref-title t-headline' }, el('span', { class: 'ttl' }, e.title));
+    return el('button', { class: 'open ref-title t-headline', type: 'button', onclick: (ev) => { void openSongCard(song, ev.currentTarget); } }, el('span', { class: 'ttl' }, e.title));
   }
 
   function coverNode(e) {
     const id = e.in_library ? (e.song?.id || e.song_id) : null;
     const s = id ? (store.get(id) || e.song) : null;
-    const img = el('img', { class: 'cover ref-cover', alt: '', loading: 'lazy' });
+    const img = el('img', { class: 'cover', alt: '', loading: 'lazy' });
     if (s?.cover) img.src = api.coverUrl(s.id, s.cover_v);
     img.addEventListener('error', () => img.removeAttribute('src'));
-    return img;
+    return el('div', { class: 'row-cover' }, img);
   }
 
   function item(e) {
-    return el('li', { class: 'ref-item', 'data-id': e.id, 'data-role': e.role },
-      el('div', { class: 'ref-main' },
-        coverNode(e),
-        el('div', { class: 'ref-text' },
-          titleNode(e),
-          el('div', { class: 'ref-sub t-caption' }, `${e.artist}${e.year ? ` · ${e.year}` : ''}`),
-          actionNode(e)),
-        ...srcLinks(e),
-        el('span', { class: `ref-role t-caption role-${e.role}` }, roleLabel(e.role))),
-      e.note ? el('p', { class: 'ref-note t-caption muted' }, e.note) : null);
+    return el('li', { class: 'song ref-item', 'data-id': e.id, 'data-role': e.role },
+      coverNode(e),
+      el('div', { class: 'info' },
+        el('div', { class: 'title-line' }, titleNode(e), ...srcLinks(e)),
+        el('div', { class: 'sub-line' }, el('small', { class: 'sub t-subhead' }, `${e.artist}${e.year ? ` · ${e.year}` : ''}`)),
+        actionNode(e),
+        e.note ? el('p', { class: 'ref-note t-caption muted' }, e.note) : null),
+      el('span', { class: `ref-role t-caption role-${e.role}` }, roleLabel(e.role)));
   }
 
   function phase(era) {
