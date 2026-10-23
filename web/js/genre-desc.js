@@ -27,12 +27,13 @@ function tempoMain(value) {
   return (cut > 0 ? value.slice(0, cut) : value).trim().replace(/[.!?\u2026]+$/, '').trim();
 }
 
-function tempoParts(main) {
+function tempoLine(main) {
   const bpm = BPM_VALUE.exec(main);
-  if (!bpm) return [sentence(`Tempo ${main}`)];
-  const chip = el('span', { class: 'bpm-badge', title: 'Beats per minute', 'aria-label': `${bpm[1] ? `${bpm[1]} ` : ''}${bpm[2]} BPM` },
+  if (!bpm) return el('p', { class: 'gc-tempo' }, main.charAt(0).toUpperCase() + main.slice(1));
+  const spoken = `${bpm[1] ? `${bpm[1]} ` : ''}${bpm[2]} BPM`;
+  const chip = el('span', { class: 'bpm-badge', title: 'Beats per minute', 'aria-label': spoken },
     bpm[2].replace(/\s+/g, ''), el('small', { 'aria-hidden': 'true' }, 'BPM'));
-  return [`Tempo ${bpm[1] ? `${bpm[1]} ` : ''}`, chip, '.'];
+  return el('p', { class: 'gc-tempo', role: 'group', 'aria-label': `Tempo ${spoken}` }, chip);
 }
 
 export function descriptionNode(text, emptyText) {
@@ -43,6 +44,6 @@ export function descriptionNode(text, emptyText) {
   const main = tempo ? tempoMain(tempo) : '';
   const prose = rest.map(sentence).filter(Boolean).join(' ');
   return el('div', { class: 'gc-desc gc-desc-rich' },
-    main ? el('p', { class: 'gc-tempo' }, ...tempoParts(main)) : null,
+    main ? tempoLine(main) : null,
     prose ? el('p', { class: 'gc-prose' }, prose) : null);
 }
