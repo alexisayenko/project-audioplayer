@@ -5,6 +5,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 ## 2026-10-23 (web brand lockup, to deploy)
 
 - Docs: external genre resources listed (to deploy).
+- Server: the genre `ambient techno` (level 2 under techno and ambient, fusion, synonyms ambient techno music and intelligent techno, Rate Your Music link) joins the vocabulary (to deploy, tests not run).
 - Docs: ADR and task for genre reference tracks (analysis, to deploy) ([ADR-0044](tech/decisions.md), [task-0093](tasks/task-0093.md)).
 
 - Web: the Genres screen has a "See also" row under the Outline with links to Rate Your Music genres and Musicmap (GEN-086, to deploy; not seen in a browser).

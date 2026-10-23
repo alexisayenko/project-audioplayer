@@ -38,8 +38,8 @@
     "level4": 0
    },
    "techno": {
-    "total": 10,
-    "level2": 10,
+    "total": 11,
+    "level2": 11,
     "level3": 0,
     "level4": 0
    },
@@ -62,8 +62,8 @@
     "level4": 0
    },
    "Others": {
-    "total": 204,
-    "level2": 173,
+    "total": 205,
+    "level2": 174,
     "level3": 30,
     "level4": 1
    },
@@ -104,16 +104,16 @@
     "level4": 0
    }
   },
-  "total": 531,
+  "total": 532,
   "non_discogs": {
    "Blues": 0,
    "Classical": 0,
    "house": 2,
-   "techno": 1,
+   "techno": 2,
    "trance": 11,
    "drum and bass": 2,
    "synthwave": 6,
-   "Others": 7,
+   "Others": 8,
    "Funk / Soul": 8,
    "Hip Hop": 1,
    "Jazz": 0,
@@ -508,6 +508,24 @@
    "ambient"
   ],
   "discogs": true
+ },
+ "ambient techno": {
+  "parents": [
+   "techno",
+   "ambient"
+  ],
+  "related": [
+   "idm",
+   "dub techno",
+   "ambient house"
+  ],
+  "synonyms": [
+   "ambient techno music",
+   "intelligent techno"
+  ],
+  "discogs": false,
+  "status": "approved",
+  "fusion": true
  },
  "anarcho-punk": {
   "parents": [

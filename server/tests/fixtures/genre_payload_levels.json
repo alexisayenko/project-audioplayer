@@ -781,6 +781,35 @@
    "subfamily": "House",
    "synonyms": []
   },
+  "ambient techno": {
+   "discogs": false,
+   "display": null,
+   "families": [
+    "techno",
+    "Others"
+   ],
+   "family": "techno",
+   "flavours": [],
+   "fusion": true,
+   "level": 2,
+   "modifiers": [],
+   "parents": [
+    "techno",
+    "ambient"
+   ],
+   "provisional": false,
+   "related": [
+    "idm",
+    "dub techno",
+    "ambient house"
+   ],
+   "status": "approved",
+   "subfamily": "Techno",
+   "synonyms": [
+    "ambient techno music",
+    "intelligent techno"
+   ]
+  },
   "anarcho-punk": {
    "discogs": true,
    "display": null,

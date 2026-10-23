@@ -2,9 +2,9 @@
  "_meta": {
   "generated_at": "2026-10-19T13:49:24.071Z",
   "counts": {
-   "genres": 544,
+   "genres": 545,
    "discogs_true": 480,
-   "discogs_false": 64,
+   "discogs_false": 65,
    "musicbrainz": 450,
    "wikipedia": 467,
    "apple_music": 139
@@ -266,6 +266,9 @@
    "wikidata": "Q2465085",
    "match": "name"
   }
+ },
+ "ambient techno": {
+  "discogs": false
  },
  "anarcho-punk": {
   "discogs": true,

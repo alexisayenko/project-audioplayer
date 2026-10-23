@@ -139,6 +139,8 @@ Added 2026-10-21: `outrun` (extras, level 2 under synthwave, approved, not Disco
 
 Added 2026-10-21: `chillstep` (extras, level 4 under dubstep, which is level 3 under bass music, so the only level 4 genre; approved, not Discogs; synonym chill step, also `ALIASES`; `related`: downtempo, ambient; source Alex and https://rateyourmusic.com/genre/chillstep/ in `genre_rym.json`, which now also links `downtempo`). No Wikipedia link yet: `genre_sources.json` lists it with `discogs: false` only.
 
+Added 2026-10-23: `ambient techno` (extras, level 2 under techno and ambient, two families: techno and Others, `fusion` true; approved, not Discogs; synonyms ambient techno music, intelligent techno, both also `ALIASES`; `related`: idm, dub techno, ambient house; source Alex and https://rateyourmusic.com/genre/ambient-techno/ in `genre_rym.json`). `intelligent techno` is the early name of the style and is deliberately not a synonym of the related `idm`. `genre_sources.json` lists it with `discogs: false` and no Wikipedia link yet (no network lookup).
+
 Added 2026-10-18: `anthem trance`, `epic trance` and `euphoric trance` are synonyms of `uplifting trance` (also `ALIASES`); `commercial trance` and `stadium trance` stay out as too broad; the separate `epic` (Classical since 2026-10-18, see Removed families) is unaffected.
 
 Added: `liquid drum and bass` (extras, level 3 under drum and bass, approved, display "liquid drum & bass"; synonyms liquid dnb, liquid d&b, liquid drum & bass, liquid drum n bass, liquid drum'n'bass, liquid drum and bass music, liquid drum & bass music, liquid funk).
@@ -386,9 +388,9 @@ The bare word is ambiguous (hardcore punk, hardcore hip hop, hardcore techno), s
 
 ## Current vocabulary snapshot (2026-10-22)
 
-The preceding dated counts describe the state at the time of those decisions. The current source of truth is `server/data/genre_levels.json`; the current vocabulary has 531 genres, 575 family memberships, and shortest-path levels of 419 at level 2, 111 at level 3, and one at level 4 (`chillstep`, under `dubstep`). The maximum observed depth is four; this is a data count, not a depth cap. Thirty-seven genres descend from more than one family.
+The preceding dated counts describe the state at the time of those decisions. The current source of truth is `server/data/genre_levels.json`; the current vocabulary has 532 genres, 577 family memberships, and shortest-path levels of 420 at level 2, 111 at level 3, and one at level 4 (`chillstep`, under `dubstep`). The maximum observed depth is four; this is a data count, not a depth cap. Thirty-eight genres descend from more than one family.
 
-Current family membership counts (`total / level 2 / level 3 / level 4`) are: Blues 17/17/0/0; Classical 24/24/0/0; house 26/25/1/0; techno 10/10/0/0; trance 20/14/6/0; drum and bass 2/2/0/0; synthwave 8/8/0/0; Others 204/173/30/1; Funk / Soul 34/27/7/0; Hip Hop 29/28/1/0; Jazz 27/27/0/0; Pop 38/35/3/0; Reggae 13/13/0/0; Rock 123/48/75/0. These membership totals overlap for multi-family genres and sum to 575.
+Current family membership counts (`total / level 2 / level 3 / level 4`) are: Blues 17/17/0/0; Classical 24/24/0/0; house 26/25/1/0; techno 11/11/0/0; trance 20/14/6/0; drum and bass 2/2/0/0; synthwave 8/8/0/0; Others 205/174/30/1; Funk / Soul 34/27/7/0; Hip Hop 29/28/1/0; Jazz 27/27/0/0; Pop 38/35/3/0; Reggae 13/13/0/0; Rock 123/48/75/0. These membership totals overlap for multi-family genres and sum to 577.
 
 Others is a temporary, non-assignable organizational group, not a genre. It has 165 direct members in the `groups.Others.members` payload; its 204 family members also include genres that descend from Others and another family. Its current family count is 173 at level 2, 30 at level 3, and one at level 4. The five promoted level-1 forms are house, techno, trance, drum and bass, and synthwave.
 

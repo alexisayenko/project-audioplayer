@@ -143,6 +143,8 @@ ALIASES: dict[str, str] = {
     "dream house": "dream trance",
     "chill step": "chillstep",
     "outrun music": "outrun",
+    "ambient techno music": "ambient techno",
+    "intelligent techno": "ambient techno",
     "outrun electro": "outrun",
     "space synth": "spacesynth",
     "synthdance": "spacesynth",

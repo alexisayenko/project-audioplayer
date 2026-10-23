@@ -124,7 +124,7 @@ REMOVED = {
     "liquid funk": "liquid drum and bass", "breakbeat hardcore": "breakbeat", "jersey club": "breakbeat",
     "techno pop": "synthpop", "electropop": "synthpop", "melodic house": "house",
 }
-APPROVED = {"dark psytrance", "forest psytrance", "progressive psytrance", "full-on psytrance", "vocal trance", "melodic techno", "psybient", "darksynth", "uplifting trance", "sunshine house", "dreamsynth", "dreamwave", "outrun", "chillstep", "neurofunk",
+APPROVED = {"dark psytrance", "forest psytrance", "progressive psytrance", "full-on psytrance", "vocal trance", "melodic techno", "psybient", "darksynth", "uplifting trance", "sunshine house", "dreamsynth", "dreamwave", "outrun", "chillstep", "ambient techno", "neurofunk",
             "spacesynth", "nu-nrg", "liquid drum and bass", "sovietwave", "dream trance", "space disco"} | {"hardcore punk", "experimental rock", "extreme metal", "noise rock", "roots rock", "neo-psychedelia", "glam metal", "college rock", "death-doom", "edm"}
 QUESTION = {"deep trance", "acid trance"}
 
@@ -591,7 +591,7 @@ def test_space_disco_is_an_approved_extra_level_three_under_disco_in_electronic(
     assert "space disco" not in DISCOGS["genres"]
     assert genre_vocab.entry("space-disco").name == "space disco"
     assert genre_vocab.entry("space disco").parents == ("disco",)
-    assert len(EXTRAS) == 64
+    assert len(EXTRAS) == 65
 
 
 def test_electronic_counts_in_the_meta_block_match_the_data():
@@ -599,27 +599,27 @@ def test_electronic_counts_in_the_meta_block_match_the_data():
     for family in counts:
         mine = [v for v in ENTRIES.values() if family in v["families"]]
         assert counts[family] == {"total": len(mine), "level2": sum(v["level"] == 2 for v in mine), "level3": sum(v["level"] == 3 for v in mine), "level4": sum(v["level"] == 4 for v in mine)}, family
-    assert (counts["Others"]["level2"], counts["Others"]["level3"], counts["Others"]["level4"]) == (173, 30, 1)
-    assert LEVELS["_meta"]["total"] == len(ENTRIES) == 531
-    assert sum(c["total"] for c in counts.values()) == sum(len(v["families"]) for v in ENTRIES.values()) == 575
+    assert (counts["Others"]["level2"], counts["Others"]["level3"], counts["Others"]["level4"]) == (174, 30, 1)
+    assert LEVELS["_meta"]["total"] == len(ENTRIES) == 532
+    assert sum(c["total"] for c in counts.values()) == sum(len(v["families"]) for v in ENTRIES.values()) == 577
 
 
 ROCK_FUSION = {"rap metal", "electronic rock"}
-FUSION = {"eurodance", "blues rock", "funk metal", "jazz funk", "soul jazz", "hip house", "trip hop"} | ROCK_FUSION
+FUSION = {"eurodance", "blues rock", "funk metal", "jazz funk", "soul jazz", "hip house", "trip hop", "ambient techno"} | ROCK_FUSION
 TWO_SCENES = {"disco", "dub", "experimental", "electro", "rhythm and blues"}
 MOVED_TO_RELATED = {"hardcore techno": "Rock", "noise": "Rock", "grime": "Hip Hop", "trap": "Others", "acid jazz": "Others", "new wave": "Others", "modern classical": "Others", "gospel": "Funk / Soul"}
 
 
-def test_fusion_genres_are_the_nine_blends_and_each_belongs_to_two_families():
+def test_fusion_genres_are_the_ten_blends_and_each_belongs_to_two_families():
     flagged = {k for k, v in ENTRIES.items() if v.get("fusion")}
-    assert flagged == FUSION and len(flagged) == 9 and "synthpop" not in flagged
+    assert flagged == FUSION and len(flagged) == 10 and "synthpop" not in flagged
     assert all(len(ENTRIES[k]["families"]) >= 2 for k in flagged)
     assert all(v.get("fusion", True) is True for v in ENTRIES.values())
 
 
 def test_the_two_family_genres_of_the_vocabulary_are_the_20_blends_plus_the_descent_ones():
     multi = {k for k, v in ENTRIES.items() if len(v["families"]) > 1}
-    assert (FUSION | (TWO_SCENES - {"disco"})) <= multi and len(multi) == 37
+    assert (FUSION | (TWO_SCENES - {"disco"})) <= multi and len(multi) == 38
     for k, fam in MOVED_TO_RELATED.items():
         assert fam in ENTRIES[k]["related"] and fam not in ENTRIES[k]["parents"] and k not in multi, k
     assert {k for k in multi if k not in FUSION | TWO_SCENES and len(family_parents(k)) < 2 and k not in {"post-disco"}} >= {"spacesynth"}, "the disco kids are Funk / Soul only since disco left Others"
@@ -683,7 +683,7 @@ def test_the_19_remaining_reviewed_associations_are_related_and_no_longer_parent
     for k, rel in RELATED_MOVES.items():
         assert ENTRIES[k]["related"] == rel, k
         assert not set(rel) & set(ENTRIES[k]["parents"]), k
-    assert {k for k, v in ENTRIES.items() if v.get("related")} == set(RELATED_MOVES) | set(ROCK_RELATED) | {"outrun", "spacesynth", "chillstep", "electro house"}
+    assert {k for k, v in ENTRIES.items() if v.get("related")} == set(RELATED_MOVES) | set(ROCK_RELATED) | {"outrun", "ambient techno", "spacesynth", "chillstep", "electro house"}
     assert ENTRIES["chillwave"]["parents"] == ["synthwave"] and ENTRIES["vaporwave"]["parents"] == ["synthwave"]
     assert ENTRIES["jungle"]["parents"] == ["breakbeat"] and ENTRIES["trap"]["parents"] == ["Hip Hop"] and "fusion" not in ENTRIES["trap"] and "fusion" not in ENTRIES["acid jazz"]
 
