@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-24 (forest psytrance review updated with Fandom wiki leads, docs only)
+
+- Docs (owner request 2026-10-24; nothing saved, no deploy, no tests): [tech/genre-references-forest-psytrance.md](tech/genre-references-forest-psytrance.md) checks the artists and example track from the Electronic Music Wiki (Fandom) page on forest. One new proposed pick, Noctilus - Sick Loose Animals (archetype, 2016, medium); Mark Day, Confo, Arjuna, Archaic and Jotunn stay leads, Awwen and Baba Yaga were not found as forest. New open point: the wiki calls forest a dark psy sub-genre, the tree makes it a child of psytrance.
+
 ## 2026-10-24 (forest psytrance reference review, docs only)
 
 - Docs (owner request 2026-10-24, decision EX; nothing saved, no deploy, no tests): [tech/genre-references-forest-psytrance.md](tech/genre-references-forest-psytrance.md) is a verified review of reference tracks for `forest psytrance`. The owner library holds no forest song (Bamboo Forest is full-on, not forest); five proposed picks, none in the library: Derango - Deranged (landmark) and The Poisonous Square (breakthrough), Atriohm & Encephalopaticys - Close to Nowhere (archetype), Battle of the Future Buddhas - Battlebong and Ka-Sol - Waspnest (origin, low confidence). The Gemini leads are checked and mostly not confirmed. The psytrance review links to it.
