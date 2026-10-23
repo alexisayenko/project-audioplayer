@@ -220,7 +220,7 @@ export function renderGenresRework(root, opts = {}) {
 
   const viewOpts = {
     reducedMotion: reduced,
-    rigid: v2,
+    rigid: true,
     onSelect: (id) => {
       if (id && drill && kind === 'graph') { drillClick(id); select(id, { reveal: true, map: true }); } else if (id) select(id, { reveal: true }); else if (drill && kind === 'graph') { collapseMap(); deselect(); } else deselect();
     },

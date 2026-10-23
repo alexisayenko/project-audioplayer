@@ -184,3 +184,29 @@ def test_api_200_version_route_is_public_no_store_and_matches_the_served_page(tm
     finally:
         monkeypatch.delenv("AUDIO_WEB_DIR")
         importlib.reload(main)
+
+
+def test_web_every_root_level_css_gets_a_versioned_url_that_serves(tmp_path, monkeypatch):
+    web_root = tmp_path / "web"
+    _tree(web_root, {
+        "index.html": '<html><head><link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="genres.css"><link rel="stylesheet" href="viz-synth.css"></head><body><script type="module" src="js/app.js"></script></body></html>',
+        "tokens.css": ":root{}",
+        "genres.css": ".g{}",
+        "viz-synth.css": ".v{}",
+        "js/app.js": "export {};",
+    })
+    monkeypatch.setenv("AUDIO_API_TOKEN", "secret")
+    monkeypatch.setenv("AUDIO_WEB_DIR", str(web_root))
+    monkeypatch.setenv("PUBLIC_VIEW", "0")
+    m = importlib.reload(main)
+    try:
+        client = TestClient(m.app)
+        page = client.get("/").text
+        version = web_version()
+        for name in ("tokens.css", "genres.css", "viz-synth.css"):
+            assert f'href="_v/{version}/{name}"' in page
+        res = client.get(f"/_v/{version}/genres.css")
+        assert res.status_code == 200 and res.headers["content-type"].startswith("text/css")
+    finally:
+        monkeypatch.delenv("AUDIO_WEB_DIR")
+        importlib.reload(main)

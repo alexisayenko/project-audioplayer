@@ -15,7 +15,7 @@ from starlette.types import Scope
 
 from .safepath import safe_join
 
-_ASSET_REF = re.compile(r'(href|src)="(tokens\.css|style\.css|favicon\.svg|js/app\.js)"')
+_ASSET_REF = re.compile(r'(href|src)="([a-z0-9-]+\.css|favicon\.svg|js/app\.js)"')
 _ENTRY = "js/app.js"
 _STATIC_IMPORT = re.compile(r"""(?:^|[\n;])\s*(?:import|export)\b[^;'"]*?\bfrom\s*['"](\.{1,2}/[^'"]+)['"]""")
 _BARE_IMPORT = re.compile(r"""(?:^|[\n;])\s*import\s*['"](\.{1,2}/[^'"]+)['"]""")
