@@ -2744,6 +2744,7 @@
    "synonyms": []
   },
   "dark psytrance": {
+   "description": "Tempo: about 140-180 BPM.\nA nocturnal, unsettling kind of psychedelic trance where mood matters more than melody. Eerie atmospheres, heavy basslines and sometimes glitchy, intricate rhythms sit on bold sound design that draws on minimal, industrial and dark ambient music. Horror-film samples and an alien feel are common, and the pace can run well past ordinary psytrance speed. The style took shape at the end of the 1990s.",
    "discogs": false,
    "display": "dark psy-trance",
    "families": [
@@ -2762,7 +2763,9 @@
    "synonyms": [
     "darkpsy",
     "dark psy",
-    "dark psy-trance"
+    "dark psy-trance",
+    "dark psychedelic trance",
+    "horror trance"
    ]
   },
   "darksynth": {
@@ -3966,6 +3969,7 @@
    "synonyms": []
   },
   "forest psytrance": {
+   "description": "Tempo: about 140-160 BPM.\nAn earthy, intricate kind of psychedelic trance with a dark mood like dark psytrance but a more organic sound and stronger resonance. Swarming effects, tribal percussion and natural samples such as animal calls, birdsong, rustling leaves and running water fill the mix. Melodies are simple and repetitive, mostly in minor scales, with few breakdowns. A slower strand known as swamp rarely goes above 135 BPM.",
    "discogs": false,
    "display": "forest psy-trance",
    "families": [
@@ -3983,7 +3987,8 @@
    "subfamily": "Trance",
    "synonyms": [
     "forest psy",
-    "forest psy-trance"
+    "forest psy-trance",
+    "forest psychedelic"
    ]
   },
   "forró": {
@@ -4093,6 +4098,7 @@
    ]
   },
   "full-on psytrance": {
+   "description": "Tempo: about 145-150 BPM.\nFaster and more intense psytrance driven by harder rolling basslines: two or three 16th-note bass hits per bar, each cut off after the kick. Vocal samples and spacey effects ride on top, and melodic basslines that leap across several octaves are also frequent. It comes in a bright, uplifting morning flavour and a darker, more synthetic, cyberpunk night flavour, also called twilight psytrance. It is one of the most popular psytrance styles.",
    "discogs": false,
    "display": "full-on psy-trance",
    "families": [
@@ -4113,7 +4119,11 @@
     "fullon",
     "full-on psy",
     "full on psytrance",
-    "full-on psy-trance"
+    "full-on psy-trance",
+    "full-on",
+    "night full-on",
+    "twilight psytrance",
+    "morning full-on"
    ]
   },
   "funeral doom metal": {
@@ -5118,7 +5128,7 @@
    "synonyms": []
   },
   "hi-tech psytrance": {
-   "description": "Tempo: about 170-200 BPM.\nAn extremely fast, synthetic branch of psytrance built on glitchy, computer-made sounds, dense rhythms and futuristic basslines. It was shaped by dark psy and full-on, and is usually playful and unpredictable rather than brooding. Tempos can climb well past 200 BPM.",
+   "description": "Tempo: about 160-200 BPM.\nExtremely fast psytrance that mixes dark psytrance and full-on elements. Glitchy, jittering sound design and complex rolling basslines that keep changing within a track make it dense and chaotic, yet the production stays clean and clear. The feel is lighter and bouncier than dark psytrance, with sharp, punchy percussion, and tempos often pass 200 BPM.",
    "discogs": false,
    "display": "hi-tech psy-trance",
    "families": [
@@ -5143,7 +5153,9 @@
     "hitech",
     "hi-tech psy",
     "hitech psy",
-    "hi-tech psy-trance"
+    "hi-tech psy-trance",
+    "hitek",
+    "hi tech psy"
    ]
   },
   "highlife": {
@@ -7882,6 +7894,7 @@
    "synonyms": []
   },
   "progressive psytrance": {
+   "description": "Tempo: about 130-140 BPM.\nA cleaner, slower and more restrained kind of psytrance, with a groove closer to minimal techno, tech house and house than to the usual driving rush. Early tracks were dark and stripped-down, while from the mid-2000s the sound grew lighter and more atmospheric. Production is polished and the pace leaves room for long, gradual builds.",
    "discogs": false,
    "display": "progressive psy-trance",
    "families": [
@@ -7900,7 +7913,11 @@
    "synonyms": [
     "prog psy",
     "progressive psy",
-    "progressive psy-trance"
+    "progressive psy-trance",
+    "minimal psytrance",
+    "progpsy",
+    "psyprog",
+    "psygressive"
    ]
   },
   "progressive rock": {
@@ -8010,8 +8027,33 @@
    "status": null,
    "synonyms": []
   },
+  "psycore": {
+   "description": "Tempo: about 200-400 BPM.\nA form of dark psytrance from the early 2010s, close to hi-tech in speed and dense sound design but darker and more experimental. The sound is static and hypnotic: a single-pitch bassline pulsing in very fast note divisions, like a rumble, over light percussion with simple sine kicks and often no snares. Pads with heavy reverb and swirling layers build complex but atmospheric soundscapes that borrow from dark ambient, glitch, hardcore and speedcore. Tracks above 200 BPM are very common, and it is most popular in Latin America.",
+   "discogs": false,
+   "display": null,
+   "families": [
+    "trance"
+   ],
+   "family": "trance",
+   "flavours": [],
+   "level": 4,
+   "modifiers": [],
+   "parents": [
+    "dark psytrance"
+   ],
+   "provisional": false,
+   "related": [
+    "hi-tech psytrance",
+    "forest psytrance"
+   ],
+   "status": "approved",
+   "subfamily": "Trance",
+   "synonyms": [
+    "psy core"
+   ]
+  },
   "psytrance": {
-   "description": "Psychedelic trance: fast, driving electronic music with a rolling bassline and layered, twisting synth sounds, built for long, trance-like dancing.",
+   "description": "Tempo: about 140-150 BPM.\nPsychedelic trance: energetic electronic music with pounding bass riffs, often acid-style 303 lines, and constant filter modulation. Tracks are layered and evolve in steps, with elements added or removed about every eight bars, and they usually run past six minutes. It grew out of Goa trance with a strong acid trance influence, and has since split into many styles and fusions.",
    "discogs": true,
    "display": "psy-trance",
    "families": [

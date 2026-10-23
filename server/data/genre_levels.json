@@ -44,10 +44,10 @@
     "level4": 0
    },
    "trance": {
-    "total": 21,
+    "total": 22,
     "level2": 14,
     "level3": 7,
-    "level4": 0
+    "level4": 1
    },
    "drum and bass": {
     "total": 2,
@@ -104,13 +104,13 @@
     "level4": 0
    }
   },
-  "total": 533,
+  "total": 534,
   "non_discogs": {
    "Blues": 0,
    "Classical": 0,
    "house": 2,
    "techno": 2,
-   "trance": 12,
+   "trance": 13,
    "drum and bass": 2,
    "synthwave": 6,
    "Others": 8,
@@ -1325,7 +1325,9 @@
   "synonyms": [
    "darkpsy",
    "dark psy",
-   "dark psy-trance"
+   "dark psy-trance",
+   "dark psychedelic trance",
+   "horror trance"
   ],
   "discogs": false,
   "status": "approved"
@@ -1834,7 +1836,8 @@
   "display": "forest psy-trance",
   "synonyms": [
    "forest psy",
-   "forest psy-trance"
+   "forest psy-trance",
+   "forest psychedelic"
   ],
   "discogs": false,
   "status": "approved"
@@ -1893,7 +1896,11 @@
    "fullon",
    "full-on psy",
    "full on psytrance",
-   "full-on psy-trance"
+   "full-on psy-trance",
+   "full-on",
+   "night full-on",
+   "twilight psytrance",
+   "morning full-on"
   ],
   "discogs": false,
   "status": "approved"
@@ -2308,7 +2315,9 @@
    "hitech",
    "hi-tech psy",
    "hitech psy",
-   "hi-tech psy-trance"
+   "hi-tech psy-trance",
+   "hitek",
+   "hi tech psy"
   ],
   "discogs": false,
   "status": "approved"
@@ -3451,7 +3460,11 @@
   "synonyms": [
    "prog psy",
    "progressive psy",
-   "progressive psy-trance"
+   "progressive psy-trance",
+   "minimal psytrance",
+   "progpsy",
+   "psyprog",
+   "psygressive"
   ],
   "discogs": false,
   "status": "approved"
@@ -3495,6 +3508,20 @@
   ],
   "provisional": true,
   "discogs": true
+ },
+ "psycore": {
+  "parents": [
+   "dark psytrance"
+  ],
+  "related": [
+   "hi-tech psytrance",
+   "forest psytrance"
+  ],
+  "synonyms": [
+   "psy core"
+  ],
+  "discogs": false,
+  "status": "approved"
  },
  "psytrance": {
   "parents": [

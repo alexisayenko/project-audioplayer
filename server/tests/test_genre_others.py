@@ -82,7 +82,7 @@ def test_the_five_level_1_forms_are_listed_and_the_level_counts_moved_as_recorde
     assert list(body["forms"]) == ["house", "techno", "trance", "drum and bass", "synthwave"]
     assert [f for f in body["families"] if f in body["forms"]] == list(body["forms"])
     levels = genre_vocab.load_levels()[0]
-    assert sum(v["level"] == 2 for v in levels.values()) == 419 and sum(v["level"] == 3 for v in levels.values()) == 111 and sum(v["level"] == 4 for v in levels.values()) == 1
+    assert sum(v["level"] == 2 for v in levels.values()) == 420 and sum(v["level"] == 3 for v in levels.values()) == 112 and sum(v["level"] == 4 for v in levels.values()) == 2
     assert genre_vocab.load().entries["trance"].level == "family" and genre_vocab.family_of("goa trance") == "trance"
 
 

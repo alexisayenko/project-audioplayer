@@ -2,9 +2,9 @@
  "_meta": {
   "generated_at": "2026-10-19T13:49:24.071Z",
   "counts": {
-   "genres": 546,
+   "genres": 547,
    "discogs_true": 480,
-   "discogs_false": 66,
+   "discogs_false": 67,
    "musicbrainz": 450,
    "wikipedia": 467,
    "apple_music": 139
@@ -5450,6 +5450,9 @@
    "wikidata": "Q13627677",
    "match": "name"
   }
+ },
+ "psycore": {
+  "discogs": false
  },
  "psytrance": {
   "discogs": true,
