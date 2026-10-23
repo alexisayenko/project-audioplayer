@@ -57,7 +57,7 @@ test('css: the collapsed dock is not displayed and frees its page space, from 48
 });
 
 test('css: the sidebar mini-player shows only when collapsed and a song is loaded, from 480px', () => {
-  assert.match(css, /\.side-mini \{ display: none; position: relative; margin-top: auto;/);
+  assert.match(css, /\.side-mini \{ display: none; position: relative; flex: none; margin-top: auto;/);
   assert.match(css, /@media \(min-width: 480px\) \{\n  body\.mini-compact\.has-mini \.side-mini \{ display: flex;/);
   assert.match(css, /body\.mini-compact\.has-mini:not\(\.side-collapsed\) \.side-mini \{[^}]*background: var\(--surface-key\)/);
 });
