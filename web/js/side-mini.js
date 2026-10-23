@@ -1,4 +1,4 @@
-import { $, setIcon } from './player-ui.js';
+import { $, setIcon, setCover } from './player-ui.js';
 import { marquee } from './marquee.js';
 import { titleLine, artistLine, titleNodes, tooltipLine } from './credits.js';
 
@@ -10,6 +10,7 @@ export function paintSideMini(song, playing) {
   play.setAttribute('aria-label', label);
   play.title = label;
   setIcon('side-mini-icon', playing ? 'pause' : 'play', 'action');
+  setCover($('side-mini-cover'), song);
   const tip = tooltipLine(song);
   if ($('side-mini-title').title !== tip) {
     $('side-mini-title').replaceChildren(...titleNodes(song));
@@ -32,7 +33,8 @@ export function paintSideRing(cur, dur) {
   $('side-mini').style.setProperty('--ring-p', String(v));
 }
 
-export function initSideMini({ toggle, openCard }) {
+export function initSideMini({ toggle }) {
   $('side-mini-play').addEventListener('click', toggle);
-  $('side-mini-open').addEventListener('click', openCard);
+  const cover = $('side-mini-cover');
+  cover.addEventListener('error', () => { cover.removeAttribute('src'); cover.dataset.src = ''; });
 }

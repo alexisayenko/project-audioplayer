@@ -25,7 +25,7 @@
   :root:not([data-theme="light"]) { --tint-muted: var(--ink); --cover-ink: var(--ink); }
 }
 [data-theme="dark"] { --tint-muted: var(--ink); --cover-ink: var(--ink); }
-@media (min-width: 480px) { :root { --mini-h: 92px; --rail-w: 64px; --gutter: var(--space-6); --dock-b: var(--space-4); --mini-handle-w: var(--space-5); } }
+@media (min-width: 480px) { :root { --mini-h: 92px; --rail-w: 64px; --gutter: var(--space-6); --dock-b: var(--space-4); --mini-handle-w: calc(var(--control-sm) + var(--space-2)); } }
 @media (min-width: 480px) { body.mini-compact { --mini-h: 0px; } }
 @media (min-width: 720px) { :root { --rail-w: 220px; --gutter: var(--space-8); } }
 
@@ -692,18 +692,26 @@ body.signed-out main { padding-bottom: var(--space-6); }
   .mini-progress .scrub-rail { top: 50%; bottom: auto; margin-top: calc(var(--track-seek) / -2); height: var(--track-seek); border-radius: var(--radius-pill); }
   .mini-progress .scrub-thumb { display: block; }
   .mini-handle {
-    position: absolute; left: 0; top: 0; bottom: 0; width: var(--mini-handle-w); display: grid; place-items: center; padding: 0;
-    border: 0; border-right: var(--stroke-hairline) solid var(--line); border-radius: var(--radius-tray) 0 0 var(--radius-tray);
-    background-color: transparent; color: var(--ink-muted); transition: background-image var(--dur-fast) var(--ease-out);
+    position: absolute; z-index: 1; left: var(--space-1); top: 0; bottom: 0; margin-block: auto; width: var(--control-sm); height: var(--control-sm); display: grid; place-items: center; padding: 0;
+    border: 0; border-radius: var(--radius-pill); background-color: transparent; color: var(--ink); transition: background-image var(--dur-fast) var(--ease-out);
   }
-  .mini-handle::after { content: ""; position: absolute; top: 0; bottom: 0; left: calc(-1 * var(--space-3)); width: var(--space-3); }
-  @media (hover: hover) { .mini-handle:hover { background-image: linear-gradient(var(--hover-wash), var(--hover-wash)); color: var(--ink); } }
+  .mini-handle svg { stroke-width: var(--stroke-thin); }
+  .mini-handle::after {
+    content: attr(aria-label); position: absolute; top: calc(100% + var(--space-1)); left: 0; padding: var(--space-1) var(--space-3); border-radius: var(--radius-key);
+    background: var(--surface-sunken); color: var(--ink); font: var(--font-caption); white-space: nowrap; box-shadow: var(--shadow-key); opacity: 0; pointer-events: none; transition: opacity var(--dur-fast) var(--ease-out);
+  }
+  .mini-handle:focus-visible { background-image: linear-gradient(var(--hover-wash), var(--hover-wash)); }
+  .mini-handle:focus-visible::after { opacity: 1; }
+  @media (hover: hover) {
+    .mini-handle:hover { background-image: linear-gradient(var(--hover-wash), var(--hover-wash)); }
+    .mini-handle:hover::after { opacity: 1; transition-delay: var(--dur-base); }
+  }
   .mini-handle:active { background-image: linear-gradient(var(--pressed-wash), var(--pressed-wash)); }
   .mini.compact { display: none; }
 }
 @media (min-width: 640px) { .mini .opt { display: inline-grid; } }
 
-/* side mini-player: the dock folded into the sidebar footer (PLY-149, PLY-199); the open sidebar shows a card with title, artist, a round play button and a thin progress line, the icon rail a larger round play button with a progress ring and a quiet expand chevron above it */
+/* side mini-player: the dock folded into the sidebar footer (PLY-149, PLY-199); the open sidebar shows a flat row between two hairlines with the cover and text as one expand button, a thin progress line and a round play button, the icon rail a larger round play button with a progress ring and a quiet expand chevron above it */
 .side-mini { display: none; position: relative; flex: none; margin-top: auto; min-width: 0; }
 .build-line:not([hidden]) + .side-mini { margin-top: 0; }
 .sm-play { --sm-size: var(--control-xl); --sm-face: var(--hit); position: relative; flex: none; display: grid; place-items: center; width: var(--sm-size); height: var(--sm-size); padding: 0; border: 0; border-radius: var(--radius-pill); background: transparent; color: var(--on-accent); }
@@ -725,14 +733,27 @@ body.guest-noaudio .sm-play { display: none; }
   body.mini-compact.has-mini .side-mini { display: flex; flex-direction: column; align-items: center; padding-top: var(--space-3); border-top: var(--stroke-hairline) solid var(--line); }
 }
 @media (min-width: 720px) {
-  body.mini-compact.has-mini:not(.side-collapsed) .side-mini { align-items: stretch; padding: 0; overflow: hidden; border: var(--stroke-hairline) solid var(--line); border-radius: var(--radius-card); background: var(--surface-key); }
-  body.mini-compact:not(.side-collapsed) .sm-row { padding: var(--space-2); }
-  body.mini-compact:not(.side-collapsed) .sm-open { display: block; }
-  body.mini-compact:not(.side-collapsed) .sm-play { --sm-size: var(--hit); --sm-face: var(--hit); }
+  body.mini-compact.has-mini:not(.side-collapsed) .side { padding-bottom: var(--space-3); }
+  body.mini-compact.has-mini:not(.side-collapsed) #nav { margin-bottom: var(--space-3); }
+  body.mini-compact.has-mini:not(.side-collapsed) .side-mini { align-items: stretch; padding: var(--space-3) 0; border-bottom: var(--stroke-hairline) solid var(--line); }
+  body.mini-compact:not(.side-collapsed) .sm-handle { display: none; }
+  body.mini-compact:not(.side-collapsed) .sm-row { --sm-cover: calc(var(--hit) + var(--space-1)); --sm-gap: var(--space-2); position: relative; justify-content: flex-start; align-items: center; gap: var(--sm-gap); }
+  body.mini-compact:not(.side-collapsed) .sm-open { position: relative; display: flex; align-items: center; gap: var(--sm-gap); margin: calc(-1 * var(--space-1)); padding: var(--space-1); border-radius: var(--radius-key); background-color: transparent; transition: background-image var(--dur-fast) var(--ease-out); }
+  body.mini-compact:not(.side-collapsed) .sm-cover { --cover-size: var(--sm-cover); border-radius: var(--radius-sm); }
+  body.mini-compact:not(.side-collapsed) .sm-open .mini-text { flex: 1; padding-bottom: calc(var(--stroke-progress) + var(--space-2)); }
+  body.mini-compact:not(.side-collapsed) .sm-open:focus-visible { background-image: linear-gradient(var(--hover-wash), var(--hover-wash)); }
+  body.mini-compact:not(.side-collapsed) .sm-open:active { background-image: linear-gradient(var(--pressed-wash), var(--pressed-wash)); }
+  body.mini-compact:not(.side-collapsed) .sm-open::after { content: attr(aria-label); position: absolute; z-index: var(--z-menu); left: var(--space-1); bottom: calc(100% + var(--space-2)); padding: var(--space-1) var(--space-3); border-radius: var(--radius-key); background: var(--surface-sunken); color: var(--ink); font: var(--font-caption); white-space: nowrap; box-shadow: var(--shadow-key); opacity: 0; pointer-events: none; transition: opacity var(--dur-fast) var(--ease-out); }
+  body.mini-compact:not(.side-collapsed) .sm-open:focus-visible::after { opacity: 1; }
+  @media (hover: hover) {
+    body.mini-compact:not(.side-collapsed) .sm-open:hover { background-image: linear-gradient(var(--hover-wash), var(--hover-wash)); }
+    body.mini-compact:not(.side-collapsed) .sm-open:hover::after { opacity: 1; transition-delay: var(--dur-base); }
+  }
+  body.mini-compact:not(.side-collapsed) .sm-play { --sm-size: var(--hit); --sm-face: var(--hit); align-self: flex-start; }
   body.mini-compact:not(.side-collapsed) .sm-ring { display: none; }
-  body.mini-compact:not(.side-collapsed) .sm-line { display: block; position: absolute; left: 0; right: 0; bottom: 0; height: var(--stroke-medium); background: var(--line); }
-  body.mini-compact:not(.side-collapsed) .sm-line::after { content: ""; position: absolute; inset: 0; background: var(--accent); transform: scaleX(calc(var(--ring-p, 0) / 100)); transform-origin: left; }
-  body.mini-compact:not(.side-collapsed) .sm-handle { width: auto; height: var(--space-5); margin: 0; border-radius: 0; border-bottom: var(--stroke-hairline) solid var(--line); opacity: 1; }
+  body.mini-compact:not(.side-collapsed) .sm-face { box-shadow: none; }
+  body.mini-compact:not(.side-collapsed) .sm-line { display: block; position: absolute; left: calc(var(--sm-cover) + var(--sm-gap)); right: 0; bottom: 0; height: var(--stroke-progress); border-radius: var(--radius-pill); background: var(--surface-sunken); }
+  body.mini-compact:not(.side-collapsed) .sm-line::after { content: ""; position: absolute; inset: 0 auto 0 0; width: calc(var(--ring-p, 0) * 1%); border-radius: inherit; background: var(--accent); }
 }
 
 /* sliders: the volume slider is thinner and neutral, distinct from the seek bar */

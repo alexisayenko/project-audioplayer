@@ -670,7 +670,7 @@ export function initPlayer() {
   listeners.add(() => recorder.sync());
 
   initMiniCompact();
-  initSideMini({ toggle: () => player.toggle(), openCard: (e) => { if (player.current) openSongCard(player.current, e.currentTarget); } });
+  initSideMini({ toggle: () => player.toggle() });
   initTimeToggle();
   setIcon('mini-prev', 'prev', 'action');
   setIcon('mini-next', 'next', 'action');

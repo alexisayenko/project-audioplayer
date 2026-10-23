@@ -21,7 +21,7 @@ export const setIcon = (id, name, size) => $(id).replaceChildren(icon(name, size
 
 export const MINI_COMPACT_KEY = 'ap2.miniCompact';
 
-const COMPACT_BUTTONS = ['mini-compact', 'side-mini-expand'];
+const COMPACT_BUTTONS = ['mini-compact', 'side-mini-expand', 'side-mini-open'];
 
 export function setMiniCompact(on) {
   $('mini').classList.toggle('compact', on);
@@ -32,7 +32,7 @@ export function setMiniCompact(on) {
 const shown = (node) => (node.getClientRects?.().length ?? 0) > 0;
 
 export function initMiniCompact() {
-  setIcon('mini-compact', 'chevronRight', 'inline');
+  setIcon('mini-compact', 'chevronLeft', 'inline');
   setIcon('side-mini-expand', 'chevronUp', 'inline');
   let on = storeGet(MINI_COMPACT_KEY) === '1';
   setMiniCompact(on);
@@ -40,7 +40,7 @@ export function initMiniCompact() {
     on = !on;
     setMiniCompact(on);
     storeSet(MINI_COMPACT_KEY, on ? '1' : '0');
-    const next = on ? $(shown($('side-mini-open')) ? 'side-mini-expand' : 'side-mini-play') : $('mini-compact');
+    const next = on ? $(shown($('side-mini-open')) ? 'side-mini-open' : 'side-mini-play') : $('mini-compact');
     next?.focus();
   };
   for (const id of COMPACT_BUTTONS) $(id).addEventListener('click', flip);

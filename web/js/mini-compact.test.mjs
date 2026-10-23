@@ -18,19 +18,19 @@ const KEY = 'ap2.miniCompact';
 test('stored collapsed state is applied at init, before any song loads', () => {
   assert.equal($('mini').classList.contains('compact'), true);
   assert.equal(document.body.classList.contains('mini-compact'), true);
-  for (const id of ['mini-compact', 'side-mini-expand']) assert.equal($(id).getAttribute('aria-expanded'), 'false');
-  assert.equal($('mini-compact').firstChild.innerHTML, '<path d="m9 18 6-6-6-6"/>');
+  for (const id of ['mini-compact', 'side-mini-expand', 'side-mini-open']) assert.equal($(id).getAttribute('aria-expanded'), 'false');
+  assert.equal($('mini-compact').firstChild.innerHTML, '<path d="m15 18-6-6 6-6"/>');
   assert.equal($('side-mini-expand').firstChild.innerHTML, '<path d="m18 15-6-6-6 6"/>');
 });
 
 test('either arrow flips state, class, aria-expanded and storage', () => {
   $('side-mini-expand').click();
-  for (const id of ['mini-compact', 'side-mini-expand']) assert.equal($(id).getAttribute('aria-expanded'), 'true');
+  for (const id of ['mini-compact', 'side-mini-expand', 'side-mini-open']) assert.equal($(id).getAttribute('aria-expanded'), 'true');
   assert.equal($('mini').classList.contains('compact'), false);
   assert.equal(document.body.classList.contains('mini-compact'), false);
   assert.equal(localStorage.getItem(KEY), '0');
   $('mini-compact').click();
-  for (const id of ['mini-compact', 'side-mini-expand']) assert.equal($(id).getAttribute('aria-expanded'), 'false');
+  for (const id of ['mini-compact', 'side-mini-expand', 'side-mini-open']) assert.equal($(id).getAttribute('aria-expanded'), 'false');
   assert.equal($('mini').classList.contains('compact'), true);
   assert.equal(localStorage.getItem(KEY), '1');
 });
@@ -44,7 +44,10 @@ test('markup: the dock handle and the sidebar footer arrow are real buttons with
   assert.ok(side.indexOf('id="server-build"') < side.indexOf('id="side-mini"'));
   assert.match(side, /<button class="sm-play" id="side-mini-play" type="button" aria-label="Play"/);
   assert.match(side, /<circle class="sm-prog" pathLength="100">/);
-  assert.ok(!side.includes('side-mini-cover'));
+  assert.match(side, /<button class="sm-open" id="side-mini-open" type="button" aria-expanded="false" aria-label="Expand player"><span class="row-cover sm-cover">/);
+  assert.match(side, /<img id="side-mini-cover" alt="" class="cover">/);
+  assert.ok(side.indexOf('id="side-mini-open"') < side.indexOf('id="side-mini-play"'));
+  assert.ok(!html.includes('title="Collapse player"'));
   assert.match(side, /<span class="sm-line" aria-hidden="true"><\/span>/);
 });
 
@@ -59,7 +62,10 @@ test('css: the collapsed dock is not displayed and frees its page space, from 48
 test('css: the sidebar mini-player shows only when collapsed and a song is loaded, from 480px', () => {
   assert.match(css, /\.side-mini \{ display: none; position: relative; flex: none; margin-top: auto;/);
   assert.match(css, /@media \(min-width: 480px\) \{\n  body\.mini-compact\.has-mini \.side-mini \{ display: flex;/);
-  assert.match(css, /body\.mini-compact\.has-mini:not\(\.side-collapsed\) \.side-mini \{[^}]*background: var\(--surface-key\)/);
+  assert.match(css, /body\.mini-compact\.has-mini:not\(\.side-collapsed\) \.side-mini \{[^}]*border-bottom: var\(--stroke-hairline\) solid var\(--line\)/);
+  assert.ok(!/\.side-mini \{[^}]*overflow: hidden/.test(css.slice(css.indexOf('side mini-player: the dock'))));
+  assert.match(css, /\.sm-line \{[^}]*height: var\(--stroke-progress\); border-radius: var\(--radius-pill\)/);
+  assert.match(css, /\.sm-line::after \{[^}]*width: calc\(var\(--ring-p, 0\) \* 1%\)/);
 });
 
 test('css: the rail play button is the 56px control-xl target with a token-coloured ring', () => {
@@ -75,9 +81,11 @@ test('css: the handle is not displayed below 480px and is styled only inside the
   const i = css.indexOf('@media (min-width: 480px) {\n  .mini {');
   const j = css.indexOf('@media (min-width: 640px) { .mini .opt');
   const block = css.slice(i, j);
-  assert.match(block, /\.mini-handle \{[^}]*position: absolute; left: 0; top: 0; bottom: 0; width: var\(--mini-handle-w\)/);
-  assert.match(block, /border-radius: var\(--radius-tray\) 0 0 var\(--radius-tray\)/);
+  assert.match(block, /\.mini-handle \{[^}]*position: absolute;[^}]*margin-block: auto; width: var\(--control-sm\); height: var\(--control-sm\)/);
+  assert.match(block, /\.mini-handle \{[^}]*border: 0; border-radius: var\(--radius-pill\)[^}]*background-color: transparent/);
   assert.match(block, /\.mini-handle:hover[^}]*--hover-wash/);
+  assert.match(block, /\.mini-handle::after \{\s*content: attr\(aria-label\);/);
+  assert.match(block, /\.mini-handle:focus-visible \{ background-image/);
   assert.match(block, /\.mini-handle:active[^}]*--pressed-wash/);
   assert.ok(!/\.mini-handle[^{]*\{[^}]*display: none/.test(block));
 });
