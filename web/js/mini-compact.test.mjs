@@ -41,7 +41,8 @@ test('markup: the dock handle and the sidebar footer arrow are real buttons with
   const dock = html.slice(html.indexOf('<section id="mini"'), html.indexOf('</section>', html.indexOf('<section id="mini"')));
   assert.ok(dock.indexOf('id="mini-compact"') > 0 && dock.indexOf('id="mini-compact"') < dock.indexOf('class="mini-lead"'));
   const side = html.slice(html.indexOf('<aside class="side">'), html.indexOf('</aside>'));
-  assert.ok(side.indexOf('id="server-build"') < side.indexOf('id="side-mini"'));
+  assert.ok(side.indexOf('id="server-build"') > side.indexOf('id="side-mini"'));
+  assert.ok(side.indexOf('class="nav-sep"') > side.indexOf('data-route="studio"') && side.indexOf('class="nav-sep"') < side.indexOf('id="nav-help"'));
   assert.match(side, /<button class="sm-play" id="side-mini-play" type="button" aria-label="Play"/);
   assert.match(side, /<circle class="sm-prog" pathLength="100">/);
   assert.match(side, /<button class="sm-open" id="side-mini-open" type="button" aria-expanded="false" aria-label="Expand player"><span class="row-cover sm-cover">/);
