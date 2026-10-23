@@ -296,14 +296,14 @@ body[data-route="genres"] main, body[data-route="genres2"] main { max-width: non
 .ref-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
 .ref-item { display: grid; gap: var(--space-1); }
 .ref-main { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-2); }
-.ref-role { padding: var(--stroke-hairline) var(--space-2); border-radius: var(--radius-pill); border: var(--stroke-hairline) solid var(--line); color: var(--ink); }
+.ref-role { flex: none; white-space: nowrap; padding: var(--stroke-hairline) var(--space-2); border-radius: var(--radius-pill); border: var(--stroke-hairline) solid var(--line); color: var(--ink); }
 .ref-role.role-archetype { background: var(--fill); color: var(--on-fill); border-color: transparent; }
 .ref-main { flex-wrap: nowrap; }
-.ref-text { flex: 1 1 8em; min-width: 0; display: grid; gap: var(--space-1); }
+.ref-text { flex: 1 1 0; min-width: 0; display: grid; gap: var(--space-1); }
 .ref-title { color: var(--ink); font-weight: 700; min-width: 0; overflow-wrap: anywhere; justify-self: start; }
-.ref-title.ref-line-btn { appearance: none; background: none; border: 0; padding: 0; margin: 0; font: inherit; font-weight: 700; text-align: left; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.ref-title.ref-line-btn { appearance: none; background: none; border: 0; padding: 0; margin: 0; font: inherit; font-weight: 700; text-align: left; cursor: pointer; text-decoration: none; }
+.ref-title.ref-line-btn:hover { text-decoration: none; }
 .ref-title.ref-line-btn:focus-visible { outline: var(--stroke-focus) solid var(--ring-color); outline-offset: 2px; }
-.ref-sub-line { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-2); }
 .ref-sub { color: var(--muted); }
 .ref-cover { --cover-size: var(--hit); }
 .ref-todo { color: var(--ink-muted); font-style: italic; }
@@ -311,8 +311,7 @@ body[data-route="genres"] main, body[data-route="genres2"] main { max-width: non
 .ref-src:hover, .ref-src:focus-visible { color: var(--ink); }
 .ref-src:focus-visible, .ref-cite:focus-visible { outline: var(--stroke-focus) solid var(--ring-color); outline-offset: 2px; }
 .ref-note { margin: 0; }
-.ref-actions { display: inline-flex; align-items: center; gap: var(--space-2); margin-left: auto; }
-.ref-none { margin-right: auto; }
+.ref-text > .ref-add-lib { justify-self: start; }
 .genre-card .gc-bar { min-height: var(--hit); }
 .genre-card .card-back { position: absolute; top: var(--space-2); left: var(--space-2); z-index: 2; }
 .genre-card .card-back[hidden] { display: none; }
@@ -324,7 +323,7 @@ body[data-route="genres"] main, body[data-route="genres2"] main { max-width: non
 .genre-card .gc-fusion { padding: var(--stroke-hairline) var(--space-2); border-radius: var(--radius-pill); border: var(--stroke-hairline) solid var(--line); color: var(--ink); }
 .genre-card .gc-synonyms { margin: var(--space-1) 0 0; overflow-wrap: anywhere; }
 .genre-card .gc-about { margin-bottom: var(--space-4); }
-.genre-card .gc-desc { margin: 0; }
+.genre-card .gc-desc { margin: 0; white-space: pre-line; }
 .genre-card .gc-sits { margin-bottom: var(--space-4); display: grid; gap: var(--space-2); }
 .genre-card .gc-h { margin: 0; }
 .genre-card .gc-chips { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }

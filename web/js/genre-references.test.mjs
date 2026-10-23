@@ -42,7 +42,7 @@ test('empty state', async () => {
   assert.equal(byClass(p.node, 'ref-add-btn').length, 0);
 });
 
-test('entries: role badge, line, note, play, add to library, marks, read-only for non-owners', async () => {
+test('entries: role badge, line, note, add to library, marks, read-only for non-owners', async () => {
   const p = await shown([lib, wish, bare], false);
   const items = byClass(p.node, 'ref-item');
   assert.equal(items.length, 3);
@@ -51,7 +51,12 @@ test('entries: role badge, line, note, play, add to library, marks, read-only fo
   assert.equal(text(byClass(items[0], 'ref-sub')[0]), 'Frankie Knuckles · 1987');
   assert.equal(byClass(items[0], 'ref-cover').length, 1);
   assert.match(text(items[0]), /First deep house hit/);
-  assert.equal(byClass(items[0], 'ref-play').length, 1);
+  assert.equal(byClass(p.node, 'ref-play').length, 0);
+  const pill = byClass(items[0], 'ref-role')[0];
+  assert.equal(pill.parentNode.className, 'ref-main');
+  assert.equal(pill.parentNode.childNodes.at(-1), pill);
+  assert.equal(byClass(items[0], 'ref-sub-line').length, 0);
+  assert.doesNotMatch(text(byClass(items[0], 'ref-sub')[0]), /Origin/);
   assert.equal(byClass(items[0], 'ref-todo').length, 0);
   const srcs = byClass(items[0], 'ref-src');
   assert.equal(srcs.length, 2);
@@ -160,55 +165,6 @@ test('the owner sees no empty eras and no era tools', async () => {
   assert.equal(find(p.node, (x) => x.tagName === 'FORM').length, 0);
 });
 
-test('play button mirrors playback: pause when current and playing, resume on click, live updates, no leaks', async () => {
-  const { player } = await import('./player.js');
-  const subs = new Set();
-  let cur = null;
-  let isPlaying = false;
-  const calls2 = [];
-  const saved = ['currentId', 'playing', 'onChange', 'toggle', 'playNow'].map((k) => [k, Object.getOwnPropertyDescriptor(player, k)]);
-  Object.defineProperty(player, 'currentId', { get: () => cur, configurable: true });
-  Object.defineProperty(player, 'playing', { get: () => isPlaying, configurable: true });
-  Object.defineProperty(player, 'onChange', { value: (fn) => { subs.add(fn); return () => subs.delete(fn); }, configurable: true });
-  Object.defineProperty(player, 'toggle', { value: () => calls2.push('toggle'), configurable: true });
-  Object.defineProperty(player, 'playNow', { value: (id) => calls2.push(`now:${id}`), configurable: true });
-  try {
-    const p = await shown([lib, wish], false);
-    const btn = () => byClass(p.node, 'ref-play')[0];
-    assert.equal(btn().getAttribute('aria-label'), 'Play Frankie Knuckles - Your Love (1987)');
-    assert.equal(btn().title, 'Play');
-    btn().click();
-    assert.deepEqual(calls2, ['now:s1']);
-    cur = 's1'; isPlaying = true;
-    subs.forEach((f) => f());
-    assert.equal(btn().title, 'Pause');
-    assert.match(btn().getAttribute('aria-label'), /^Pause /);
-    btn().click();
-    assert.equal(calls2.at(-1), 'toggle');
-    isPlaying = false;
-    subs.forEach((f) => f());
-    assert.equal(btn().title, 'Play');
-    btn().click();
-    assert.equal(calls2.at(-1), 'toggle');
-    cur = 'other'; isPlaying = true;
-    subs.forEach((f) => f());
-    assert.equal(btn().title, 'Play');
-    cur = 's1';
-    p.show('house');
-    for (let i = 0; i < 4; i += 1) await flush();
-    assert.equal(btn().title, 'Pause');
-    assert.equal(subs.size, 1);
-    p.show(null);
-    assert.equal(subs.size, 0);
-    p.show('house');
-    for (let i = 0; i < 4; i += 1) await flush();
-    p.destroy();
-    assert.equal(subs.size, 0);
-  } finally {
-    for (const [k, d] of saved) { if (d) Object.defineProperty(player, k, d); else delete player[k]; }
-  }
-});
-
 test('eraNoteText strips a leading date that repeats the years label', () => {
   assert.equal(eraNoteText('c. 1983-1991. New beat and EBM.'), 'New beat and EBM.');
   assert.equal(eraNoteText('1991-1993. The first records.'), 'The first records.');
@@ -234,7 +190,7 @@ test('a library track caption is a button that opens the song card; others stay 
   const btn = byClass(items[0], 'ref-title')[0];
   assert.equal(btn.tagName, 'BUTTON');
   assert.equal(btn.type, 'button');
-  assert.equal(byClass(items[0], 'ref-play').length, 1);
+  assert.equal(byClass(items[0], 'ref-play').length, 0);
   for (const i of [1, 2]) assert.notEqual(byClass(items[i], 'ref-title')[0].tagName, 'BUTTON');
   const card = document.getElementById('song-card');
   btn.click();

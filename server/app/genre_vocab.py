@@ -23,7 +23,7 @@ DISCOGS_FILE = DATA_DIR / "genre_discogs.json"
 EXTRAS_FILE = DATA_DIR / "genre_extras.json"
 LEVELS_FILE = DATA_DIR / "genre_levels.json"
 DESCRIPTIONS_FILE = DATA_DIR / "genre_descriptions.json"
-DESCRIPTION_MAX = 400
+DESCRIPTION_MAX = 1000
 SUGGESTIONS = 5
 MIN_CUTOFF = 0.6
 

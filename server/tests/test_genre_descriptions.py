@@ -59,3 +59,13 @@ def test_the_vocabulary_serves_description_on_rows_levels_and_forms(client):
     assert body["levels"]["outrun"]["description"] == rows["outrun"]["description"]
     assert body["forms"]["house"]["description"] == rows["house"]["description"]
     assert {r["name"] for r in body["genres"] if "description" in r} == set(genre_vocab.load_descriptions())
+
+
+def test_goa_trance_description_is_a_ten_line_summary():
+    t = genre_vocab.load_descriptions()["goa trance"]
+    assert len(t.split("\n")) == 10
+    assert t.startswith("Tempo: about 135-150 BPM")
+
+
+def test_a_multi_line_text_is_accepted():
+    assert genre_vocab.parse_descriptions({"house": "a\nb"}, ["house"]) == {"house": "a\nb"}

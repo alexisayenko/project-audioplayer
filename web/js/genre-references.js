@@ -1,6 +1,5 @@
 import { el } from './dom.js';
 import { icon } from './icons.js';
-import { player } from './player.js';
 import { isGuest } from './guest.js';
 import { openAdd, openSongCard } from './lazy-ui.js';
 import { store } from './store.js';
@@ -12,17 +11,6 @@ import {
 
 export const EMPTY_REFERENCES = 'No reference tracks yet.';
 export const NOT_IN_LIBRARY = 'Not in library';
-
-const isCurrent = (id) => player.currentId === id;
-
-function paintPlay(btn, e) {
-  const on = isCurrent(btn.getAttribute('data-song')) && player.playing;
-  const label = on ? 'Pause' : 'Play';
-  btn.title = label;
-  btn.setAttribute('aria-label', `${label} ${entryLine(e)}`);
-  btn.setAttribute('data-state', on ? 'playing' : 'idle');
-  btn.replaceChildren(icon(on ? 'pause' : 'play', 'inline'));
-}
 
 export function eraSelect(eras, value = '') {
   return el('select', { 'aria-label': 'Era' },
@@ -71,18 +59,6 @@ export function createReferencesPanel() {
   let eras = [];
   let seq = 0;
   let ready = false;
-  let unsubPlayer = null;
-  const playing = new Map();
-
-  function syncPlay() {
-    for (const [btn, e] of playing) paintPlay(btn, e);
-  }
-
-  function stopPlayer() {
-    if (unsubPlayer) { unsubPlayer(); unsubPlayer = null; }
-    playing.clear();
-  }
-
   async function refresh(force = false) {
     const mine = ++seq;
     const name = genre;
@@ -101,13 +77,7 @@ export function createReferencesPanel() {
   }
 
   function actionNode(e) {
-    if (e.in_library && (e.song?.id || e.song_id)) {
-      const id = e.song?.id || e.song_id;
-      const btn = el('button', { class: 'icon sq-btn ref-play', type: 'button', 'data-song': id, onclick: () => (isCurrent(id) ? player.toggle() : player.playNow(id)) });
-      paintPlay(btn, e);
-      playing.set(btn, e);
-      return btn;
-    }
+    if (e.in_library && (e.song?.id || e.song_id)) return null;
     const url = addLinkFor(e);
     if (url) return el('button', { class: 'btn outline small ref-add-lib', type: 'button', onclick: (ev) => openAdd({ url, note: `Reference track: ${entryLine(e)}.` }, ev.currentTarget) }, 'Add to library');
     return el('span', { class: 'muted t-caption ref-none' }, NOT_IN_LIBRARY);
@@ -142,11 +112,10 @@ export function createReferencesPanel() {
         coverNode(e),
         el('div', { class: 'ref-text' },
           titleNode(e),
-          el('div', { class: 'ref-sub-line' },
-            el('span', { class: `ref-role t-caption role-${e.role}` }, roleLabel(e.role)),
-            el('span', { class: 'ref-sub t-caption' }, `${e.artist}${e.year ? ` · ${e.year}` : ''}`))),
+          el('div', { class: 'ref-sub t-caption' }, `${e.artist}${e.year ? ` · ${e.year}` : ''}`),
+          actionNode(e)),
         ...srcLinks(e),
-        el('span', { class: 'ref-actions' }, actionNode(e))),
+        el('span', { class: `ref-role t-caption role-${e.role}` }, roleLabel(e.role))),
       e.note ? el('p', { class: 'ref-note t-caption muted' }, e.note) : null);
   }
 
@@ -175,11 +144,8 @@ export function createReferencesPanel() {
   }
 
   function paint() {
-    playing.clear();
     node.hidden = !genre || !ready;
     node.replaceChildren(...(node.hidden ? [] : paintParts()));
-    if (playing.size && !unsubPlayer) unsubPlayer = player.onChange(syncPlay);
-    else if (!playing.size) stopPlayer();
   }
 
   const unsub = onReferencesChange(() => { if (genre) paint(); });
@@ -191,11 +157,11 @@ export function createReferencesPanel() {
       if (next !== genre) { entries = []; eras = []; }
       genre = next;
       seq += 1;
-      if (!genre || isGuest()) { genre = null; ready = false; node.hidden = true; node.replaceChildren(); stopPlayer(); return; }
+      if (!genre || isGuest()) { genre = null; ready = false; node.hidden = true; node.replaceChildren(); return; }
       ready = true;
       void loadReferences().then(() => { if (genre === next) paint(); });
       void refresh();
     },
-    destroy() { genre = null; unsub(); stopPlayer(); },
+    destroy() { genre = null; unsub(); },
   };
 }
