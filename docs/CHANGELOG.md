@@ -4,7 +4,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## 2026-10-23 (web brand lockup, to deploy)
 
-- Web: the plain "Loading..." state (page route loader, Features and Music theory panels) is a compact dark pill with a small spinner, the look of the "new version" update bar (WEB-117, WEB-134; deployed 2026-10-23, static browser check only, no tests run).
+- Web: the plain "Loading..." state (page route loader, Features and Music theory panels) is a compact dark pill with a small spinner, the look of the "new version" update bar (WEB-117, WEB-134; deployed 2026-10-23, static browser check only, no tests run). It floats at the same top-centre spot as the update bar (below it when both show) instead of sitting in the page flow (to deploy, static browser check only, no tests run).
 - Web: Genres map v2 remembers the selected genre per browser (`electrophone.genresV2Selected`) and selects it again after leaving the page or reloading; deselecting clears it, a genre missing from the payload is ignored (GEN-108; deployed 2026-10-23, no tests run).
 - Web: genre info panel description is one justified paragraph instead of a bulleted list (GEN-088; hyphenated, `text-wrap: pretty`; deployed 2026-10-23, no tests run).
 - Web: genre info panel has no Tempo panel: the BPM chip sits inline at the start of the description paragraph ("Tempo about [135-150 BPM]. ..."), the beat pattern after the first comma is hidden for now, a non-numeric tempo is plain prose (GEN-088; deployed 2026-10-23, no tests run, static browser check only).
