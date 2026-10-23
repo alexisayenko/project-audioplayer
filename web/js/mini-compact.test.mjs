@@ -15,62 +15,55 @@ const css = readFileSync(new URL('../style.css', import.meta.url), 'utf8');
 const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const KEY = 'ap2.miniCompact';
 
-test('stored compact state is applied at init, before any song loads', () => {
-  const b = $('mini-compact');
+test('stored collapsed state is applied at init, before any song loads', () => {
   assert.equal($('mini').classList.contains('compact'), true);
   assert.equal(document.body.classList.contains('mini-compact'), true);
-  assert.equal(b.getAttribute('aria-pressed'), 'true');
-  assert.equal(b.getAttribute('aria-label'), 'Expand player');
-  assert.equal(b.title, 'Expand player');
-  assert.equal(b.firstChild.innerHTML, '<path d="m15 18-6-6 6-6"/>');
+  for (const id of ['mini-compact', 'side-mini-expand']) assert.equal($(id).getAttribute('aria-expanded'), 'false');
+  assert.equal($('mini-compact').firstChild.innerHTML, '<path d="m9 18 6-6-6-6"/>');
+  assert.equal($('side-mini-expand').firstChild.innerHTML, '<path d="m18 15-6-6-6 6"/>');
 });
 
-test('clicking the handle flips state, class, label, chevron and storage', () => {
-  const b = $('mini-compact');
-  b.click();
-  assert.equal(b.getAttribute('aria-pressed'), 'false');
-  assert.equal(b.getAttribute('aria-label'), 'Compact player');
-  assert.equal(b.title, 'Compact player');
+test('either arrow flips state, class, aria-expanded and storage', () => {
+  $('side-mini-expand').click();
+  for (const id of ['mini-compact', 'side-mini-expand']) assert.equal($(id).getAttribute('aria-expanded'), 'true');
   assert.equal($('mini').classList.contains('compact'), false);
   assert.equal(document.body.classList.contains('mini-compact'), false);
-  assert.equal(b.firstChild.innerHTML, '<path d="m9 18 6-6-6-6"/>');
   assert.equal(localStorage.getItem(KEY), '0');
-  b.click();
-  assert.equal(b.getAttribute('aria-pressed'), 'true');
-  assert.equal(b.getAttribute('aria-label'), 'Expand player');
+  $('mini-compact').click();
+  for (const id of ['mini-compact', 'side-mini-expand']) assert.equal($(id).getAttribute('aria-expanded'), 'false');
   assert.equal($('mini').classList.contains('compact'), true);
   assert.equal(localStorage.getItem(KEY), '1');
 });
 
-test('the handle is a real button inside the dock, expanded by default markup', () => {
-  assert.match(html, /<button class="mini-handle" id="mini-compact" type="button" aria-pressed="false" aria-label="Compact player"/);
+test('markup: the dock handle and the sidebar footer arrow are real buttons with labels', () => {
+  assert.match(html, /<button class="mini-handle" id="mini-compact" type="button" aria-expanded="true" aria-label="Collapse player"/);
+  assert.match(html, /<button class="sm-handle" id="side-mini-expand" type="button" aria-expanded="false" aria-label="Expand player"/);
   const dock = html.slice(html.indexOf('<section id="mini"'), html.indexOf('</section>', html.indexOf('<section id="mini"')));
   assert.ok(dock.indexOf('id="mini-compact"') > 0 && dock.indexOf('id="mini-compact"') < dock.indexOf('class="mini-lead"'));
+  const side = html.slice(html.indexOf('<aside class="side">'), html.indexOf('</aside>'));
+  assert.ok(side.indexOf('id="server-build"') < side.indexOf('id="side-mini"'));
+  assert.match(side, /<button class="sm-play" id="side-mini-play" type="button" aria-label="Play"/);
+  assert.match(side, /<circle class="sm-prog" pathLength="100">/);
 });
 
-test('css: compact shows only play, next and the volume slider', () => {
-  const hide = css.match(/\.mini\.compact \.mini-lead, \.mini\.compact :is\(([^)]*)\), \.mini\.compact \.mini-foot > :not\(#mini-volume\) \{ display: none; \}/);
-  assert.ok(hide);
-  for (const id of ['#mini-viz', '#mini-shuffle', '#mini-prev', '#mini-repeat']) assert.ok(hide[1].includes(id));
-  for (const id of ['#mini-play', '#mini-next']) assert.ok(!hide[1].includes(id));
-  assert.match(css, /\.mini\.compact \.mini-foot > \.slider \{ width: 100%; \}/);
-  assert.match(css, /\.mini\.compact \{ margin: 0 var\(--space-4\) 0 auto; grid-template-columns: var\(--mini-keys-w\); grid-template-rows: var\(--hit\) var\(--control-sm\); \}/);
-});
-
-test('css: compact docks to the right edge of the stage with the dock padding token, only from 480px', () => {
+test('css: the collapsed dock is not displayed and frees its page space, from 480px only', () => {
   const i = css.indexOf('@media (min-width: 480px) {\n  .mini {');
   const j = css.indexOf('@media (min-width: 640px) { .mini .opt');
-  assert.match(css.slice(i, j), /\.mini\.compact \{ margin: 0 var\(--space-4\) 0 auto;/);
-  assert.ok(!/\.mini\.compact[^{]*\{[^}]*margin/.test(css.slice(0, i) + css.slice(j)));
+  assert.match(css.slice(i, j), /\.mini\.compact \{ display: none; \}/);
+  assert.match(css, /@media \(min-width: 480px\) \{ body\.mini-compact \{ --mini-h: 0px; \} \}/);
+  assert.ok(!/--mini-keys-w/.test(css));
 });
 
-test('css: compact sets the dock height and width through --mini-h and --mini-w, from 480px only', () => {
-  const m = css.match(/@media \(min-width: 480px\) \{ body\.mini-compact \{ --mini-h: ([^;]+); --mini-w: ([^;]+); \} \}/);
-  assert.ok(m);
-  assert.equal(m[1], 'calc(var(--hit) + var(--control-sm) + 2 * var(--space-2))');
-  assert.match(m[2], /--mini-keys-w/);
-  assert.match(css, /--mini-keys-w: calc\(var\(--control-xl\) \+ var\(--space-2\) \+ var\(--hit\)\)/);
-  assert.match(css, /transition: width var\(--dur-base\) var\(--ease-io\), height var\(--dur-base\) var\(--ease-io\)/);
+test('css: the sidebar mini-player shows only when collapsed and a song is loaded, from 480px', () => {
+  assert.match(css, /\.side-mini \{ display: none; margin-top: auto;/);
+  assert.match(css, /@media \(min-width: 480px\) \{\n  body\.mini-compact\.has-mini \.side-mini \{ display: flex;/);
+  assert.match(css, /body\.mini-compact\.has-mini:not\(\.side-collapsed\) \.side-mini \{[^}]*background: var\(--surface-key\)/);
+});
+
+test('css: the rail play button is the 44px hit target with a token-coloured ring', () => {
+  assert.match(css, /\.sm-play \{[^}]*width: var\(--hit\); height: var\(--hit\);[^}]*border-radius: var\(--radius-pill\)/);
+  assert.match(css, /\.sm-ring circle \{ cx: 50%; cy: 50%; r: calc\(50% - var\(--stroke-medium\) \/ 2\); fill: none; stroke-width: var\(--stroke-medium\); \}/);
+  assert.match(css, /\.sm-prog \{ stroke: var\(--fill\); stroke-dasharray: var\(--ring-p, 0\) 100; \}/);
 });
 
 test('css: the handle is not displayed below 480px and is styled only inside the 480px media rule', () => {

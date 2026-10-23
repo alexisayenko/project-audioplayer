@@ -21,26 +21,29 @@ export const setIcon = (id, name, size) => $(id).replaceChildren(icon(name, size
 
 export const MINI_COMPACT_KEY = 'ap2.miniCompact';
 
+const COMPACT_BUTTONS = ['mini-compact', 'side-mini-expand'];
+
 export function setMiniCompact(on) {
-  const label = on ? 'Expand player' : 'Compact player';
-  const b = $('mini-compact');
   $('mini').classList.toggle('compact', on);
   document.body.classList.toggle('mini-compact', on);
-  b.setAttribute('aria-pressed', String(on));
-  b.setAttribute('aria-label', label);
-  b.title = label;
-  b.replaceChildren(icon(on ? 'chevronLeft' : 'chevronRight', 'inline'));
+  for (const id of COMPACT_BUTTONS) $(id).setAttribute('aria-expanded', String(!on));
 }
 
+const shown = (node) => (node.getClientRects?.().length ?? 0) > 0;
+
 export function initMiniCompact() {
-  const b = $('mini-compact');
+  setIcon('mini-compact', 'chevronRight', 'inline');
+  setIcon('side-mini-expand', 'chevronUp', 'inline');
   let on = storeGet(MINI_COMPACT_KEY) === '1';
   setMiniCompact(on);
-  b.addEventListener('click', () => {
+  const flip = () => {
     on = !on;
     setMiniCompact(on);
     storeSet(MINI_COMPACT_KEY, on ? '1' : '0');
-  });
+    const next = on ? [$('side-mini-expand'), $('side-mini-play')].find(shown) : $('mini-compact');
+    next?.focus();
+  };
+  for (const id of COMPACT_BUTTONS) $(id).addEventListener('click', flip);
 }
 
 export function setToggle(ids, on, label, iconName) {
@@ -109,6 +112,11 @@ function paintDl(node, id) {
   }
 }
 
+function setMiniArtist(text) {
+  $('mini-artist').textContent = text;
+  $('side-mini-artist').textContent = text;
+}
+
 export function updateDl(song) {
   const box = $('player-dl');
   const missing = !!song && !hasAudio(song);
@@ -119,9 +127,9 @@ export function updateDl(song) {
     const btn = $('player-dl-btn');
     btn.hidden = !(v.kind === 'none' || v.kind === 'failed') || !can('fetch');
     btn.textContent = v.kind === 'failed' ? 'Retry' : 'Download';
-    $('mini-artist').textContent = v.kind === 'none' ? artistLine(song) : dlText(v, true);
+    setMiniArtist(v.kind === 'none' ? artistLine(song) : dlText(v, true));
   } else if (song) {
-    $('mini-artist').textContent = artistLine(song);
+    setMiniArtist(artistLine(song));
   }
   for (const node of $('queue-list').querySelectorAll('[data-dl]')) paintDl(node, node.dataset.dl);
 }

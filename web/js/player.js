@@ -13,6 +13,7 @@ import { storeGet, storeSet, storeRemove } from './storage.js';
 import { createResumePosition } from './resume-position.js';
 import { paintCover, currentCoverModel, paintQueueCovers } from './row-cover.js';
 import { $, setIcon, setToggle, setCover, queueRow, updateDl, paintTimes, initTimeToggle, initMiniCompact } from './player-ui.js';
+import { paintSideMini, paintSideRing, initSideMini } from './side-mini.js';
 import { updateMediaSession, setupMediaSession, updatePositionState, setVolume, storedVolume } from './player-media.js';
 import { canSetVolume } from './volume-logic.js';
 import { attachDockWheel } from './dock-wheel.js';
@@ -527,6 +528,7 @@ function renderTransport(song, playing) {
   paintCover(cover, cm, name, { size: 28, extra: 'cover-btn' });
   paintCover($('mini-cover-btn'), cm, name, { size: 27 });
   $('mini-play').setAttribute('aria-label', label);
+  if (song) paintSideMini(song, playing);
 }
 
 function renderIdle() {
@@ -633,6 +635,7 @@ function renderProgress() {
   const cur = audio.currentTime;
   for (const x of scrubbers) x.sync();
   if (!isScrubbing()) paintTimes(cur, dur);
+  paintSideRing(cur, dur);
   updatePositionState(audio);
 }
 
@@ -667,6 +670,7 @@ export function initPlayer() {
   listeners.add(() => recorder.sync());
 
   initMiniCompact();
+  initSideMini({ toggle: () => player.toggle(), openCard: (e) => { if (player.current) openSongCard(player.current, e.currentTarget); } });
   initTimeToggle();
   setIcon('mini-prev', 'prev', 'action');
   setIcon('mini-next', 'next', 'action');
