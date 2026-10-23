@@ -650,7 +650,7 @@ body.signed-out main { padding-bottom: var(--space-6); }
 .mini-text small { color: var(--ink-muted); }
 .mini-keys { display: flex; align-items: center; gap: var(--space-2); }
 .mini .opt { display: none; }
-.mini-handle { display: none; }
+.mini-handle, .mini-edge { display: none; }
 .mini-foot { display: contents; }
 @media (max-width: 479px) {
   .mini { gap: var(--space-2); padding: 0 var(--space-2); }
@@ -701,6 +701,7 @@ body.signed-out main { padding-bottom: var(--space-6); }
   .mini-progress { position: relative; flex: 1; left: auto; right: auto; bottom: auto; border-radius: 0; overflow: visible; --fill-min: calc(var(--thumb-seek) * .7); }
   .mini-progress .scrub-rail { top: 50%; bottom: auto; margin-top: calc(var(--track-seek) / -2); height: var(--track-seek); border-radius: var(--radius-pill); }
   .mini-progress .scrub-thumb { display: block; }
+  .mini-edge { position: absolute; display: block; top: 0; bottom: 0; left: calc(-1 * var(--control-sm) / 2); width: calc(var(--control-sm) / 2 + var(--space-4)); }
   .mini-handle {
     position: absolute; z-index: 1; left: calc(-1 * var(--control-sm) / 2); top: 0; bottom: 0; margin-block: auto; width: var(--control-sm); height: var(--control-sm); display: grid; place-items: center; padding: 0;
     border: 0; border-radius: var(--radius-pill); background-color: var(--surface); color: var(--ink); box-shadow: var(--shadow-float);
@@ -716,13 +717,14 @@ body.signed-out main { padding-bottom: var(--space-6); }
   .mini-handle:focus-visible { background-image: linear-gradient(var(--hover-wash), var(--hover-wash)); }
   .mini-handle:focus-visible::after { opacity: 1; transition-delay: var(--dur-base); }
   @media (hover: hover) {
-    .mini:hover .mini-handle { opacity: 1; pointer-events: auto; transform: none; transition-delay: 0s; }
+    .mini-edge:hover + .mini-handle, .mini-handle:hover { opacity: 1; pointer-events: auto; transform: none; transition-delay: 0s; }
     .mini-handle:hover { background-image: linear-gradient(var(--hover-wash), var(--hover-wash)); }
     .mini-handle:hover::after { opacity: 1; transition-delay: var(--dur-base); }
   }
   @media (hover: none) {
     .mini-handle { opacity: 1; pointer-events: auto; transform: none; }
     .mini-handle::after { display: none; }
+    .mini-edge { display: none; }
   }
   @media (prefers-reduced-motion: reduce) {
     .mini-handle, .mini:has(:focus-visible) .mini-handle { transform: none; transition-delay: 0s; }

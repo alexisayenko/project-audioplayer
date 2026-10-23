@@ -44,6 +44,7 @@ test('markup: the dock handle, the sidebar footer expand button and the 480-719p
   assert.match(html, /<button class="sm-handle" id="side-mini-expand" type="button" aria-expanded="false" aria-label="Expand player" title="Expand player">/);
   const dock = html.slice(html.indexOf('<section id="mini"'), html.indexOf('</section>', html.indexOf('<section id="mini"')));
   assert.ok(dock.indexOf('id="mini-compact"') > 0 && dock.indexOf('id="mini-compact"') < dock.indexOf('class="mini-lead"'));
+  assert.match(dock, /<span class="mini-edge" aria-hidden="true"><\/span>\s*<button class="mini-handle"/);
   const side = html.slice(html.indexOf('<aside class="side">'), html.indexOf('</aside>'));
   assert.ok(side.indexOf('id="server-build"') > side.indexOf('id="side-mini"'));
   assert.ok(side.indexOf('class="nav-sep"') > side.indexOf('data-route="studio"') && side.indexOf('class="nav-sep"') < side.indexOf('id="nav-help"'));
@@ -87,7 +88,7 @@ test('css: the rail play button is the 56px control-xl target with a token-colou
 });
 
 test('css: the handle is not displayed below 480px and is styled only inside the 480px media rule', () => {
-  assert.match(css, /\n\.mini-handle \{ display: none; \}\n/);
+  assert.match(css, /\n\.mini-handle, \.mini-edge \{ display: none; \}\n/);
   const i = css.indexOf('@media (min-width: 480px) {\n  .mini {');
   const j = css.indexOf('@media (min-width: 640px) { .mini .opt');
   const block = css.slice(i, j);
@@ -95,7 +96,9 @@ test('css: the handle is not displayed below 480px and is styled only inside the
   assert.match(block, /\.mini-handle \{[^}]*left: calc\(-1 \* var\(--control-sm\) \/ 2\)/);
   assert.match(block, /\.mini-handle \{[^}]*border: 0; border-radius: var\(--radius-pill\); background-color: var\(--surface\); color: var\(--ink\); box-shadow: var\(--shadow-float\)/);
   assert.match(block, /\.mini-handle \{[^}]*opacity: 0; pointer-events: none; transform: translateX\(calc\(var\(--control-sm\) \/ 2\)\)/);
-  assert.match(block, /\.mini:hover \.mini-handle \{ opacity: 1; pointer-events: auto; transform: none; transition-delay: 0s; \}/);
+  assert.match(block, /\.mini-edge \{[^}]*position: absolute;[^}]*top: 0; bottom: 0; left: calc\(-1 \* var\(--control-sm\) \/ 2\); width: calc\(var\(--control-sm\) \/ 2 \+ var\(--space-4\)\)/);
+  assert.match(block, /\.mini-edge:hover \+ \.mini-handle, \.mini-handle:hover \{ opacity: 1; pointer-events: auto; transform: none; transition-delay: 0s; \}/);
+  assert.ok(!/\.mini:hover \.mini-handle/.test(block));
   assert.match(block, /\.mini:has\(:focus-visible\) \.mini-handle \{ opacity: 1;/);
   assert.match(block, /@media \(hover: none\) \{\n    \.mini-handle \{ opacity: 1; pointer-events: auto; transform: none; \}/);
   assert.match(block, /\.mini-handle:hover[^}]*--hover-wash/);
