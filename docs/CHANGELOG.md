@@ -4,7 +4,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## 2026-10-23 (web brand lockup, to deploy)
 
-- Web: genre info panel description is one justified paragraph instead of a bulleted list (GEN-088; hyphenated, `text-wrap: pretty`; the tempo caption, such as "Steady four-on-the-floor.", opens the paragraph; the BPM chip row is unchanged; no tests run; to deploy).
+- Web: genre info panel description is one justified paragraph instead of a bulleted list (GEN-088; hyphenated, `text-wrap: pretty`; the tempo caption, such as "Steady four-on-the-floor.", opens the paragraph; the BPM chip row is unchanged; deployed 2026-10-23, no tests run).
 - Server: the web session cookie lasts 30 days (was 12 h) and any signed-in request past half of its life renews it, so open tabs and overnight gaps no longer sign the owner out (API-020, API-143, ADR-0006 amendment; to deploy).
 - Web: Genres map link lines are clipped to the circle edges, so a line no longer shows through a semi-transparent parent circle (GEN-107; to deploy, focused test only).
 - Web: genre info panel eras timeline no longer repeats the dates in the era note (leading date prefix stripped on render, seed notes cleaned; GEN-088), and reference track rows no longer show "To review" (the `reviewed` field stays; to deploy, focused tests only). Reference track rows use the standard song format (cover thumbnail, bold title that opens the song card for library tracks, muted "Artist · year"; GEN-088; to deploy, focused tests only).
