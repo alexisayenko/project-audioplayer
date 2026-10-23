@@ -10,7 +10,7 @@ from ..schemas import SessionRequest
 
 router = APIRouter()
 
-_COOKIE_FLAGS = {"path": "/", "httponly": True, "secure": True, "samesite": "strict"}
+_COOKIE_FLAGS = session.COOKIE_FLAGS
 
 
 def _require_csrf(request: Request) -> None:

@@ -173,7 +173,7 @@ def test_session_cookie_flags_and_use(web, key, tmp_path):
     assert res.status_code == 200
     assert res.json()["email"] == OWNER
     cookie = res.headers["set-cookie"]
-    for part in ("HttpOnly", "Secure", "SameSite=strict", "Max-Age=43200", "Path=/"):
+    for part in ("HttpOnly", "Secure", "SameSite=strict", "Max-Age=2592000", "Path=/"):
         assert part.lower() in cookie.lower()
     assert "__Host-session=" in cookie
     assert web.get("/tags").status_code == 200
@@ -193,7 +193,7 @@ def test_auth_me_renews_a_cookie_past_half_its_life(web, key, monkeypatch):
     web.cookies.set("__Host-session", aged)
     res = web.get("/auth/me")
     assert res.status_code == 200
-    assert "Max-Age=43200" in res.headers["set-cookie"]
+    assert "Max-Age=2592000" in res.headers["set-cookie"]
     renewed = res.headers["set-cookie"].split("__Host-session=")[1].split(";")[0]
     assert session.renewable(aged)
     assert not session.renewable(renewed)

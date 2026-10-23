@@ -11,7 +11,8 @@ from collections.abc import Mapping
 from urllib.parse import urlparse
 
 COOKIE = "__Host-session"
-LIFETIME = 12 * 3600
+LIFETIME = 30 * 24 * 3600
+COOKIE_FLAGS = {"path": "/", "httponly": True, "secure": True, "samesite": "strict"}
 CSRF_HEADER = "x-requested-with"
 CSRF_VALUE = "audioplayer"
 
@@ -64,7 +65,7 @@ def read(value: str, now: float | None = None) -> dict | None:
 
 
 def renewable(value: str, now: float | None = None) -> bool:
-    """A valid cookie past half its life: /auth/me re-issues it so a regular user is not signed out by the clock."""
+    """A valid cookie past half its life: any signed-in request re-issues it (sliding window) so a regular user is not signed out by the clock."""
     try:
         left = int(json.loads(_unb64(value.partition(".")[0]))["x"]) - (now or time.time())
     except Exception:

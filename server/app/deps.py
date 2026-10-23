@@ -231,12 +231,15 @@ def authenticate(request: Request, x_api_token: str, authorization: str, query_t
         return _owner_principal("token")
     if bearer:
         return admit("bearer", identity_of(oauth.verify_identity(bearer)))
-    who = session.read(request.cookies.get(session.COOKIE, ""))
+    cookie = request.cookies.get(session.COOKIE, "")
+    who = session.read(cookie)
     if who:
         if request.method not in SAFE_METHODS and not session.csrf_ok(
             request.headers, request.headers.get("host", "")
         ):
             raise HTTPException(status_code=403, detail=CSRF_DETAIL)
+        if session.renewable(cookie):
+            request.state.session_renew = who
         uid = who["uid"] or users.uid_for_email(who["email"])
         return admit("session", {"provider": who["provider"], "email": who["email"], "sub": "", "uid": uid})
     _check_token(query_token)

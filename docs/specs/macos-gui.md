@@ -322,7 +322,7 @@ Each phase ends in a state where playback works with the screen unlocked or lock
 
 ## 6. Ambiguities and open decisions
 
-- A. Auth transport: web uses the session cookie (`__Host-session`, 12 h, CSRF header), iOS uses `Authorization: Bearer <ID token>` with a Keychain refresh token (Apple cannot refresh silently). Recommendation: copy iOS; the Mac needs its own Google OAuth client and Apple audience accepted by the server (API-007 comma lists, `GOOGLE_CLIENT_ID`, `APPLE_AUDIENCE`). Not decided in any ADR.
+- A. Auth transport: web uses the session cookie (`__Host-session`, 30 days, CSRF header), iOS uses `Authorization: Bearer <ID token>` with a Keychain refresh token (Apple cannot refresh silently). Recommendation: copy iOS; the Mac needs its own Google OAuth client and Apple audience accepted by the server (API-007 comma lists, `GOOGLE_CLIENT_ID`, `APPLE_AUDIENCE`). Not decided in any ADR.
 - B. Where audio lives on a Mac: the web only streams audio that is already on the server (it never downloads to the device; "Download" there means save a file, "Auto-download" means fetch to the server), while iOS keeps audio on the phone (`audio_state` `phone`). The key principle is "on my phone". Recommendation: the Mac behaves like iOS (catalog + local files + server fetch) because it shares iOS code; v1 minimum is stream-from-server like the web. The words "download" and "audio state" must be defined for the Mac before building Library status and the Settings card.
 - C. "Playlist" in labels means the play queue today (LIB-012 vs PLS-008); renaming is planned with Playlists. Mac keeps the web labels.
 - D. App name: UI says "Electrophone", the brand README says the full name is "Electrophone Vega 108", rebrand pending.

@@ -132,7 +132,7 @@ and `<img>` cannot send headers; the token therefore can appear in URLs
 and access logs, so keep logs private and use HTTPS. The static UI
 files are served without auth.
 The web UI signs in with Google or Apple (ID token to `POST /auth/session`,
-then an HttpOnly `__Host-session` cookie, 12 h; ADR-0006, API-020..024), so
+then an HttpOnly `__Host-session` cookie, 30 days, renewed on any signed-in request; ADR-0006, API-020..024), so
 its audio and cover URLs carry no token; cookie writes need `X-Requested-With`.
 Video ids are validated against `^[A-Za-z0-9_-]{11}$` (blocks path
 traversal and yt-dlp option injection).

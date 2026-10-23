@@ -275,7 +275,7 @@ Status: Accepted, implemented in `server/` and `ios/`; not yet tested live on a 
   Services and the Apple JS SDK (popup), loaded from their CDNs on the
   Settings screen only. The ID token is sent once to `POST /auth/session`;
   the server verifies it as above and sets an HttpOnly, Secure,
-  SameSite=Strict cookie `__Host-session` (HMAC-signed, 12 h, key from
+  SameSite=Strict cookie `__Host-session` (HMAC-signed, 30 days since the 2026-10-23 amendment below, key from
   `AUDIO_SESSION_SECRET` or derived from `AUDIO_API_TOKEN`). The cookie is
   accepted by `require_token` and `require_token_or_query`, so `<audio>` and
   `<img>` work with no token in any URL; ID tokens never go in query strings.
@@ -290,6 +290,15 @@ Status: Accepted, implemented in `server/` and `ios/`; not yet tested live on a 
   responses carry `Cache-Control: no-store`, files and covers `private,
   no-cache`, so nothing authenticated survives sign-out. The web client must
   not reuse the iOS client id.
+- Amendment 2026-10-23, session lifetime: a hard 12 h limit signed the owner
+  out of open tabs and after a night away. The web session is now 30 days and
+  slides: any session-authenticated request past half of the life re-issues
+  the cookie with a fresh 30 days (a middleware in `main.py` sets it, flagged
+  by `deps.authenticate`; not on failed, anonymous or `X-API-Token` requests).
+  Security: HttpOnly, Secure, SameSite=Strict and a server-side secret are
+  unchanged, but a stolen cookie is now valid for its remaining life (up to
+  30 days) and cannot be revoked short of rotating the secret; accepted for
+  this single-owner app. iOS and Mac token handling is untouched.
 
 ## ADR-0007 iOS app: Vega 108 look, web-matching screen flow
 
