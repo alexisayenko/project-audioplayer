@@ -144,16 +144,11 @@ export function createReferencesPanel({ compact = false } = {}) {
 
   function phase(era) {
     const years = eraSpan(era);
-    const srcs = entrySources(era);
     return el('li', { class: 'ref-phase', 'data-era': era.id },
       el('span', { class: 'ref-node', 'aria-hidden': 'true' }),
       el('div', { class: 'ref-phase-title' },
         years ? el('span', { class: 'ref-era-years t-caption muted' }, years) : null,
-        el('h4', { class: 'ref-era-name t-subhead' }, era.name),
-        srcs.length ? el('span', { class: 'ref-cites t-caption', role: 'group', 'aria-label': 'Sources' }, ...srcs.map((s, i) => el('a', {
-          class: 'ref-cite', href: s.url, target: '_blank', rel: 'noopener noreferrer', title: `${sourceTypeLabel(s.type)}: ${linkText(s.url)}`,
-          'aria-label': `Source ${i + 1}: ${sourceTypeLabel(s.type)} (opens in a new tab)`,
-        }, `[${i + 1}]`))) : null),
+        el('h4', { class: 'ref-era-name t-subhead' }, era.name)),
       eraNoteText(era.note) ? el('p', { class: 'ref-era-note t-caption muted' }, eraNoteText(era.note)) : null);
   }
 

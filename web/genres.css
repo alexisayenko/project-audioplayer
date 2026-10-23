@@ -289,15 +289,12 @@ body[data-route="genres"] main, body[data-route="genres2"] main { max-width: non
 .ref-phase-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-1) var(--space-2); }
 .ref-era-years { white-space: nowrap; }
 .ref-era-name { margin: 0; color: var(--ink); }
-.ref-cites { display: inline-flex; gap: var(--space-1); margin-left: auto; vertical-align: super; }
-.ref-cite { color: var(--ink-muted); text-decoration: none; }
-.ref-cite:hover, .ref-cite:focus-visible { color: var(--ink); text-decoration: underline; }
 .ref-era-note { margin: 0; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
 .ref-role { flex: none; white-space: nowrap; padding: var(--stroke-hairline) var(--space-2); border-radius: var(--radius-pill); border: var(--stroke-hairline) solid var(--line); color: var(--ink); }
 .ref-role.role-archetype { background: var(--fill); color: var(--on-fill); border-color: transparent; }
 .ref-src { display: inline-flex; color: var(--ink-muted); }
 .ref-src:hover, .ref-src:focus-visible { color: var(--ink); }
-.ref-src:focus-visible, .ref-cite:focus-visible { outline: var(--stroke-focus) solid var(--ring-color); outline-offset: 2px; }
+.ref-src:focus-visible { outline: var(--stroke-focus) solid var(--ring-color); outline-offset: 2px; }
 .ref-list { list-style: none; margin: 0; padding: 0; }
 .ref-list .song { grid-template-columns: var(--row-cover-size) minmax(0, 1fr) auto; }
 .ref-list button.open { cursor: pointer; text-decoration: none; }

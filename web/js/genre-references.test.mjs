@@ -118,25 +118,11 @@ test('eras form a timeline, tracks a flat list after it', async () => {
   assert.equal(byClass(phases[0], 'ref-node').length, 1);
   assert.equal(byClass(phases[0], 'ref-era-note').length, 0);
   assert.equal(text(byClass(phases[2], 'ref-era-note')[0]), 'Back again');
-  assert.equal(byClass(phases[2], 'ref-cite').length, 0);
   assert.equal(byClass(p.node, 'ref-rule').length, 2);
   assert.equal(byClass(p.node, 'ref-item').length, 3);
   assert.equal(byClass(p.node, 'ref-era').length, 0);
   const order = p.node.children.map((c) => c.className.split(' ')[0]);
   assert.deepEqual(order, ['ref-rule', 'ref-timeline', 'ref-rule', 'ref-head', 'ref-list']);
-});
-
-test('era sources are numbered links that open in a new tab', async () => {
-  R.resetReferences();
-  entries = [lib];
-  erasData = [{ id: 'x', name: 'Chicago', start: 1986, end: 1990, sources: [{ type: 'wikipedia', url: 'https://w.test/c' }, { type: 'rym', url: 'https://r.test/c' }] }];
-  const p = createReferencesPanel();
-  p.show('house');
-  for (let i = 0; i < 4; i += 1) await flush();
-  const cites = byClass(p.node, 'ref-cite');
-  assert.deepEqual(cites.map(text), ['[1]', '[2]']);
-  assert.deepEqual(cites.map((c) => c.getAttribute('href')), ['https://w.test/c', 'https://r.test/c']);
-  for (const c of cites) { assert.equal(c.getAttribute('target'), '_blank'); assert.match(c.getAttribute('rel'), /noopener/); }
 });
 
 test('only eras: no tracks heading; only tracks: no timeline', async () => {
