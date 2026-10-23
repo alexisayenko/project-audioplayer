@@ -37,9 +37,8 @@ function tempoParts(main) {
 
 export function descriptionNode(text, emptyText) {
   const { tempo, rest } = parseDescription(text);
-  if (!tempo && rest.length <= 1) {
-    const one = rest[0] || '';
-    return el('p', { class: `gc-desc t-body${one ? '' : ' muted'}` }, one || emptyText);
+  if (!tempo && !rest.length) {
+    return el('p', { class: 'gc-desc t-body muted' }, emptyText);
   }
   const main = tempo ? tempoMain(tempo) : '';
   const prose = rest.map(sentence).filter(Boolean).join(' ');
