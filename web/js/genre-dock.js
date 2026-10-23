@@ -57,7 +57,7 @@ export function createGenreDock({ storage = null, narrow = () => false, onNaviga
     toggle.title = text;
     toggle.setAttribute('aria-label', collapsed && label ? `${text}: ${label} is selected` : text);
     toggle.setAttribute('aria-expanded', String(!collapsed));
-    const glyph = sheet ? (collapsed ? 'chevronUp' : 'chevron') : (collapsed ? 'chevronRight' : 'chevronLeft');
+    const glyph = sheet ? (collapsed ? 'chevronUp' : 'chevron') : (collapsed ? 'chevron' : 'chevronLeft');
     toggle.replaceChildren(icon(glyph, 'nav'), dot);
   }
 

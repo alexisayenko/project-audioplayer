@@ -43,13 +43,13 @@ test('a selected genre shows its info in the dock', async () => {
 test('collapsed state is saved and restored', () => {
   const storage = memory();
   const dock = createGenreDock({ storage, narrow: () => false });
-  toggle(dock).onclick();
+  toggle(dock).click();
   assert.equal(storage.data[DOCK_KEY], '1');
   assert.equal(dock.isCollapsed(), true);
   assert.equal(toggle(dock).title, DOCK_EXPAND);
   assert.equal(toggle(dock).getAttribute('aria-expanded'), 'false');
   assert.equal(createGenreDock({ storage, narrow: () => false }).isCollapsed(), true);
-  toggle(dock).onclick();
+  toggle(dock).click();
   assert.equal(storage.data[DOCK_KEY], '0');
 });
 
@@ -72,7 +72,7 @@ test('storage that throws falls back to the default', () => {
 
 test('selecting while collapsed stays collapsed and shows the badge', async () => {
   const dock = make();
-  toggle(dock).onclick();
+  toggle(dock).click();
   const dot = dock.node.querySelector('.gmr-dock-dot');
   assert.equal(dot.hidden, true);
   await dock.show('house', 'House');
@@ -81,7 +81,7 @@ test('selecting while collapsed stays collapsed and shows the badge', async () =
   assert.equal(dot.hidden, false);
   assert.equal(dock.node.querySelector('.gmr-dock-title').textContent, 'House');
   assert.match(toggle(dock).getAttribute('aria-label'), /House is selected/);
-  toggle(dock).onclick();
+  toggle(dock).click();
   await flush();
   assert.equal(dock.node.querySelector('.gmr-dock-body').hidden, false);
   assert.equal(dot.hidden, true);
@@ -95,12 +95,12 @@ test('a chip selects that genre through the host and the back arrow returns', as
   await dock.show('house', 'house');
   const back = dock.node.querySelector('.gmr-dock-back');
   assert.equal(back.hidden, true);
-  chip(dock, 'deep house').onclick();
+  chip(dock, 'deep house').click();
   await flush();
   assert.deepEqual(asked, ['deep house']);
   assert.equal(dock.node.querySelector('#gmr-dock-title').textContent, 'deep house');
   assert.equal(back.hidden, false);
-  back.onclick();
+  back.click();
   await flush();
   assert.deepEqual(asked, ['deep house', 'house']);
   assert.equal(dock.node.querySelector('#gmr-dock-title').textContent, 'house');
@@ -111,7 +111,7 @@ test('a selection made on the map resets the back stack', async () => {
   let dock;
   dock = make({ onNavigate: (name) => dock.show(name, name) });
   await dock.show('house', 'house');
-  chip(dock, 'deep house').onclick();
+  chip(dock, 'deep house').click();
   await flush();
   await dock.show('breakbeat', 'breakbeat');
   assert.equal(dock.node.querySelector('.gmr-dock-back').hidden, true);
@@ -120,7 +120,7 @@ test('a selection made on the map resets the back stack', async () => {
 test('a chip the host cannot select leaves the stack alone', async () => {
   const dock = make({ onNavigate: () => {} });
   await dock.show('house', 'house');
-  chip(dock, 'deep house').onclick();
+  chip(dock, 'deep house').click();
   await flush();
   assert.equal(dock.current(), 'house');
   assert.equal(dock.node.querySelector('.gmr-dock-back').hidden, true);

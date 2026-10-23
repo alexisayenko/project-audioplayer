@@ -45,7 +45,7 @@ const inert = () => ({
 
 const clampK = (k) => Math.min(MAX_K, Math.max(MIN_K, k));
 
-export function createForceView(canvas, { onSelect, onHover, reducedMotion = false, simOptions = {} } = {}) {
+export function createForceView(canvas, { onSelect, onHover, reducedMotion = false, simOptions = {}, rigid = false } = {}) {
   const ctx = canvas.getContext?.('2d');
   if (!ctx) return inert();
   let W = 1;
@@ -259,7 +259,7 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
       again = true;
     }
     if (pull && stepPull(dt)) again = true;
-    if (sim && awake && !reducedMotion) {
+    if (sim && awake && !reducedMotion && !(rigid && drag?.moved)) {
       awake = sim.tick();
       perf.ticks++;
       hashDirty = true;
@@ -660,6 +660,12 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
     drag.sub = subtreeOf(drag.node);
     drag.ax = drag.node.x;
     drag.ay = drag.node.y;
+    if (rigid) {
+      for (const { c } of drag.sub) if (c.target === 1) { c.fx = c.x; c.fy = c.y; }
+      follow = false;
+      userMoved = true;
+      return;
+    }
     pull = reducedMotion ? null : followItems(drag.node, drag.sub);
     drag.held = [];
     for (const l of parentLinks.get(drag.node.id) || []) {
@@ -676,8 +682,16 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
   function moveDragNode(p) {
     const w = toWorld(p.x, p.y);
     const n = drag.node;
+    const px = drag.ax, py = drag.ay;
     drag.ax = w.x; drag.ay = w.y;
     hashDirty = true;
+    if (rigid) {
+      for (const { c } of drag.sub) shift(c, w.x - px, w.y - py);
+      n.x = w.x; n.y = w.y; n.fx = w.x; n.fy = w.y;
+      setHover(n, null);
+      request();
+      return;
+    }
     if (reducedMotion || !sim) {
       n.x = w.x; n.y = w.y; n.fx = w.x; n.fy = w.y;
       if (pull) stepFollow(1);
@@ -694,7 +708,8 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
       releaseGhosts();
       if (d.moved) { d.node.hx = d.ax; d.node.hy = d.ay; syncLinkLength(); }
       if (d.moved) { d.node.dropped = true; d.node.fx = d.ax; d.node.fy = d.ay; } else if (!d.node.dropped) unpin(d.node);
-      if (sim && d.moved && !reducedMotion) { sim.setAlphaTarget(sim.restTarget()); sim.reheat(RELEASE_ALPHA); awake = true; }
+      if (rigid && d.moved) for (const { c } of d.sub || []) if (c.target === 1) { c.dropped = true; c.fx = c.x; c.fy = c.y; }
+      if (sim && d.moved && !reducedMotion && !rigid) { sim.setAlphaTarget(sim.restTarget()); sim.reheat(RELEASE_ALPHA); awake = true; }
       if (!d.moved && ev.type === 'pointerup') onSelect?.(d.node.id);
     } else if (!d.moved && ev.type === 'pointerup') onSelect?.(null);
     if (ev.pointerType === 'touch') setHover(null);

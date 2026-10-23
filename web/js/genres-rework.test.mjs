@@ -594,14 +594,36 @@ test('the dock overlays the map: collapsing it leaves the map and its wrapper cl
   v2.cleanup();
 });
 
-test('Genres map v2 (v2 flag) has no outline panel, toggle or tree, but keeps search and See also', async () => {
+test('Genres map v2 (v2 flag) has no side panel, outline, legend or tree, but keeps the dock and zoom bar', async () => {
   const { root, cleanup } = await mount({ view: 'radial', dock: true, v2: true });
   assert.equal(root.querySelector('#gmr-outline'), null);
   assert.equal(root.querySelector('.gmr-outline-btn'), null);
   assert.equal(root.querySelector('[role="tree"]'), null);
-  assert.equal(root.querySelectorAll('button').find((b) => b.getAttribute('aria-label') === 'Close outline'), undefined);
-  assert.ok(root.querySelector('.gmr-search'));
-  assert.ok(root.querySelector('.gmr-seealso'));
+  assert.equal(root.querySelector('.gmr-side'), null);
+  assert.equal(root.querySelector('#gmr-legend'), null);
+  assert.equal(btn(root, 'Show legend'), undefined);
+  assert.equal(root.querySelector('.gmr-search'), null);
+  assert.ok(root.querySelector('.gm-zoom'));
+  assert.ok(root.querySelector('.gmr-dock'));
   assert.ok(!root.querySelector('.gm').classList.contains('outline-open'));
+  cleanup();
+});
+
+test('Genres map v2 collapsed dock is a bar with the Genre info text', async () => {
+  const { root, cleanup } = await mount({ view: 'radial', dock: true, v2: true });
+  const dock = root.querySelector('.gmr-dock');
+  const toggle = root.querySelector('.gmr-dock-toggle');
+  if (!dock.classList.contains('collapsed')) toggle.click();
+  assert.ok(dock.classList.contains('collapsed'));
+  assert.equal(dock.querySelector('.gmr-dock-title').textContent, 'Genre info');
+  toggle.click();
+  assert.ok(!dock.classList.contains('collapsed'));
+  cleanup();
+});
+
+test('Genres screen (v1) still mounts the side panel and legend', async () => {
+  const { root, cleanup } = await mount({ view: 'radial' });
+  assert.ok(root.querySelector('.gmr-side'));
+  assert.ok(root.querySelector('#gmr-legend'));
   cleanup();
 });

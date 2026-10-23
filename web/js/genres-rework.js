@@ -220,6 +220,7 @@ export function renderGenresRework(root, opts = {}) {
 
   const viewOpts = {
     reducedMotion: reduced,
+    rigid: v2,
     onSelect: (id) => {
       if (id && drill && kind === 'graph') { drillClick(id); select(id, { reveal: true, map: true }); } else if (id) select(id, { reveal: true }); else if (drill && kind === 'graph') { collapseMap(); deselect(); } else deselect();
     },
@@ -898,7 +899,7 @@ export function renderGenresRework(root, opts = {}) {
       outlineEl,
       seeAlso);
   }
-  work.append(canvas, graphCanvas, ...(dock ? [dock.node] : []), side, ...(v2 ? [] : [outlineBtn]), zoomBar, legend);
+  work.append(canvas, graphCanvas, ...(dock ? [dock.node] : []), ...(v2 ? [] : [side, outlineBtn]), zoomBar, ...(v2 ? [] : [legend]));
   wrap.append(pageHead(v2 ? 'Genres map v2' : dock ? 'Genres map v2' : 'Genres map'), work);
   root.append(wrap);
   setOutline(outlineOpen);

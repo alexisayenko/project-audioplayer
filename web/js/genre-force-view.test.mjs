@@ -56,12 +56,12 @@ function fixtureGraph() {
   return buildMapGraph(tree);
 }
 
-function setup({ graph = fixtureGraph(), reducedMotion = false, saved = null } = {}) {
+function setup({ graph = fixtureGraph(), reducedMotion = false, saved = null, rigid = false } = {}) {
   frames = []; fills = []; texts = [];
   const canvas = makeCanvas();
   const picked = [];
   const hovered = [];
-  const view = createForceView(canvas, { onSelect: (id) => picked.push(id), onHover: (n, pt) => hovered.push(n ? { id: n.id, pt } : null), reducedMotion });
+  const view = createForceView(canvas, { onSelect: (id) => picked.push(id), onHover: (n, pt) => hovered.push(n ? { id: n.id, pt } : null), reducedMotion, rigid });
   view.setGraph(graph, { saved });
   view.resize();
   return { canvas, view, graph, picked, hovered };
@@ -415,4 +415,30 @@ test('parent lines get an arrowhead at the child end; none below the zoom thresh
   arrowFills = []; view.zoomBy(1); run(1);
   assert.ok(ARROW_MIN_K > 0.05);
   assert.equal(arrowFills.length, 0);
+});
+
+test('rigid (v2): dragging a child moves only it; dragging a parent carries its descendants rigidly; nothing else moves; drops stay put', () => {
+  const { canvas, view, graph, picked } = setup({ rigid: true });
+  settle();
+  const house = graph.byId.get('s:house');
+  const kid = graph.byId.get('s:deep house');
+  const others = graph.nodes.filter((n) => n !== house && n !== kid).map((n) => ({ n, x: n.x, y: n.y }));
+  const hs = { x: house.x, y: house.y };
+  const ks = { x: kid.x, y: kid.y };
+  const pk = at(view, 's:deep house');
+  dragTo(canvas, pk, { x: pk.x + 120, y: pk.y + 60 });
+  canvas.fire('pointerup', { clientX: pk.x + 120, clientY: pk.y + 60, buttons: 0 });
+  settle(300);
+  assert.ok(Math.hypot(kid.x - ks.x, kid.y - ks.y) > 10, 'the child moved');
+  assert.equal(house.x, hs.x); assert.equal(house.y, hs.y);
+  for (const o of others) assert.ok(Math.hypot(o.n.x - o.x, o.n.y - o.y) < 1e-6, 'nobody else moved');
+  const off = { x: kid.x - house.x, y: kid.y - house.y };
+  const ph = at(view, 's:house');
+  dragTo(canvas, ph, { x: ph.x - 90, y: ph.y + 40 });
+  assert.ok(Math.abs(kid.x - house.x - off.x) < 1e-6 && Math.abs(kid.y - house.y - off.y) < 1e-6, 'offset kept during the drag');
+  canvas.fire('pointerup', { clientX: ph.x - 90, clientY: ph.y + 40, buttons: 0 });
+  const dropped = { hx: house.x, hy: house.y, kx: kid.x, ky: kid.y };
+  settle(300); run(100);
+  assert.ok(Math.hypot(house.x - dropped.hx, house.y - dropped.hy) < 1e-6 && Math.hypot(kid.x - dropped.kx, kid.y - dropped.ky) < 1e-6, 'both stay where dropped');
+  assert.deepEqual(picked, [], 'dragging does not select');
 });

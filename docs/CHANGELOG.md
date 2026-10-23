@@ -4,6 +4,8 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## 2026-10-23 (web brand lockup, to deploy)
 
+- Web: Genres map v2 circle dragging is rigid (task-0096, GEN-106; to deploy, focused tests only): a child moves alone, a parent carries its descendants with fixed offsets, dropped circles stay put with no wobble, nothing unrelated is pushed; v1 `#/genres` unchanged.
+- Web: Genres map v2 drops the right-hand panel (task-0096; to deploy, focused tests only): no family chips, search, See also, legend, Now playing or Reload on `#/genres2`, the map uses the full width; the zoom buttons are a horizontal row at the top right; the collapsed genre dock is a horizontal "Genre info" bar with a chevron at the top left; v1 `#/genres` unchanged.
 - Genres v2: Alex approved two children of Trance (task-0096; to deploy, focused tests only): Psytrance (level 2, parent Trance, synonyms psychedelic trance, psy-trance) and Goa Trance (level 3, parent Psytrance, synonym goa), mapped to the v1 names `psytrance` and `goa trance`; `genres_v2.json` rows may now carry `synonyms` and `details` (history in `details`; hierarchy is grouping, not lineage).
 - Web: Genres map v2 has no outline panel (task-0096; to deploy): the outline list, its toggle and Expand/Collapse all are not built on `#/genres2`; family chips, search, legend and See also stay; `#/genres` unchanged.
 - Web: Genres map v2 genre dock overlays the map without resizing or moving it (GEN-097, task-0096; to deploy, tests not run, not seen in a browser): the canvas offsets and the `dock-rail` class are removed, the zoom bar and legend sit left of the right panel, the dock is a semi-opaque floating box.
