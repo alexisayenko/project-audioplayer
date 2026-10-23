@@ -2,9 +2,9 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
-## 2026-10-24 (genres map zoom bar at the bottom, built, not deployed)
+## 2026-10-24 (genres map zoom bar at the bottom, deployed)
 
-- Web: on the phone layout (under 720 px) the Genres map v2 zoom bar stays at the bottom left with the Genre info sheet open too (GEN-110; owner request "place bottom in both cases", two pictures; built, not deployed; node syntax check and measurements with getBoundingClientRect in iframes only, no tests run, none edited): the open sheet now ends above the bar (`--space-3` above it, so the bar is never covered) instead of the bar sitting in a strip above the sheet; collapsed and from 720 px nothing changes. `web/genres.css`.
+- Web: on the phone layout (under 720 px) the Genres map v2 zoom bar stays at the bottom left with the Genre info sheet open too (GEN-110; owner request "place bottom in both cases", two pictures; deployed 2026-10-24; node syntax check and measurements with getBoundingClientRect in iframes only, no tests run, none edited): the open sheet now ends above the bar (`--space-3` above it, so the bar is never covered) instead of the bar sitting in a strip above the sheet; collapsed and from 720 px nothing changes. `web/genres.css`.
 
 ## 2026-10-24 (Genres map v2 psytrance styles, deployed)
 
