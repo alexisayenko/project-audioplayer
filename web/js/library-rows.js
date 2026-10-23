@@ -6,6 +6,7 @@ import { hasAudio, sourceLink } from './playable.js';
 import { autoDownloadOn, autodl } from './autodl.js';
 import { ringModel } from './dl-progress.js';
 import { rowActions } from './row-actions.js';
+import { downloadButton, fetchAudio } from './dl-control.js';
 import { ringNode, lineNode } from './dl-ring.js';
 import { bpmLabel } from './bpm-label.js';
 import { genreText } from './genre-cell.js';
@@ -21,12 +22,8 @@ function cover(s) {
   return img;
 }
 
-function fetchAudio(s) {
-  autodl.request([s.id], { front: true });
-}
-
 function dlButton(s) {
-  return el('button', { class: 'icon sq-btn', type: 'button', title: 'Download to the server', 'aria-label': `Download: ${titleLine(s)}`, onclick: (e) => { e.stopPropagation(); fetchAudio(s); } }, icon('download', 'inline'));
+  return downloadButton(s.id, titleLine(s));
 }
 
 function bpmBadge(s) {
@@ -63,7 +60,7 @@ function runCover(s, action, link) {
   if (action === 'source') window.open(link.url, '_blank', 'noopener');
   else if (action === 'play') player.playNow(s.id);
   else if (action === 'pause' || action === 'resume') player.toggle();
-  else if (action === 'download') fetchAudio(s);
+  else if (action === 'download') fetchAudio(s.id);
 }
 
 function coverCell(s, full, { audio, queueable, here, link, queued }) {

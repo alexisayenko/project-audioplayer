@@ -418,5 +418,5 @@ body[data-route="genres"] main, body[data-route="genres2"] main { max-width: non
 .is-compact .ref-artist { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .is-compact .ref-year { flex: none; white-space: pre; }
 .is-compact .ref-list .ref-role { margin-left: auto; }
-.is-compact .ref-list .sq-btn.ref-add-quick { opacity: 1; visibility: visible; cursor: pointer; }
-.is-compact .ref-list .sq-btn.ref-add-quick:focus-visible { outline-offset: calc(-1 * var(--stroke-focus)); }
+.is-compact .ref-list .sq-btn { opacity: 1; visibility: visible; cursor: pointer; }
+.is-compact .ref-list .sq-btn:focus-visible { outline-offset: calc(-1 * var(--stroke-focus)); }

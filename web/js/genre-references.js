@@ -4,6 +4,11 @@ import { isGuest } from './guest.js';
 import { openAdd, openSongCard } from './lazy-ui.js';
 import { store } from './store.js';
 import { api } from './api.js';
+import { hasAudio } from './playable.js';
+import { autodl } from './autodl.js';
+import { ringModel } from './dl-progress.js';
+import { paintRing } from './dl-ring.js';
+import { fetchControl } from './dl-control.js';
 import {
   roleLabel, sourceTypeLabel, entrySources, addPrefillFor, entryLine,
   loadReferences, genreReferenceData, onReferencesChange, sortEras, sortEntries,
@@ -120,11 +125,28 @@ export function createReferencesPanel({ compact = false } = {}) {
     return Number.isFinite(duration) && duration > 0 ? el('span', { class: 'title-len t-time', title: 'Length' }, fmtTime(duration)) : null;
   }
 
+  function librarySong(e) {
+    const id = e.in_library ? (e.song?.id || e.song_id) : null;
+    return id ? (store.get(id) || e.song || null) : null;
+  }
+
+  function needsAudio(e) {
+    const song = librarySong(e);
+    if (!song) return false;
+    return song.audio_state ? song.audio_state === 'none' : !hasAudio(song);
+  }
+
+  function trailingNode(e) {
+    if (!e.in_library || !(e.song?.id || e.song_id)) return actionNode(e);
+    if (needsAudio(e)) return fetchControl(e.song?.id || e.song_id, entryLine(e));
+    return lengthNode(e);
+  }
+
   function compactItem(e) {
-    return el('li', { class: 'song ref-item', 'data-id': e.id, 'data-role': e.role, title: e.note || null },
+    return el('li', { class: 'song ref-item', 'data-id': e.id, 'data-role': e.role, 'data-song': needsAudio(e) ? (e.song?.id || e.song_id) : null, title: e.note || null },
       coverNode(e),
       el('div', { class: 'info' },
-        el('div', { class: 'title-line' }, titleNode(e), lengthNode(e) || actionNode(e)),
+        el('div', { class: 'title-line' }, titleNode(e), trailingNode(e)),
         el('div', { class: 'sub-line' },
           el('small', { class: 'sub t-subhead', title: `${e.artist}${e.year ? ` · ${e.year}` : ''}` }, el('span', { class: 'ref-artist' }, e.artist), e.year ? el('span', { class: 'ref-year' }, ` · ${e.year}`) : null),
           el('span', { class: 'ref-role t-caption' }, roleLabel(e.role)))));
@@ -184,7 +206,20 @@ export function createReferencesPanel({ compact = false } = {}) {
     node.replaceChildren(...(node.hidden ? [] : paintParts()));
   }
 
-  const unsub = onReferencesChange(() => { if (genre) paint(); });
+  function paintDownloads() {
+    if (!genre || !ready) return;
+    for (const row of node.querySelectorAll('.ref-item[data-song]')) {
+      const model = ringModel(autodl.view(row.dataset.song));
+      const ring = row.querySelector('.dl-ring');
+      if (!model && !ring) continue;
+      if (!model || !ring || !paintRing(ring, model)) { paint(); return; }
+    }
+  }
+
+  const unsubRefs = onReferencesChange(() => { if (genre) paint(); });
+  const unsubStore = compact ? store.subscribe(() => { if (genre && ready) paint(); }) : null;
+  const unsubDl = compact ? autodl.onChange(paintDownloads) : null;
+  const unsub = () => { unsubRefs(); unsubStore?.(); unsubDl?.(); };
 
   return {
     node,
