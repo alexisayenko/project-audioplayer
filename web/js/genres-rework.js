@@ -44,6 +44,16 @@ export function clearSubfamilies(storage) {
 }
 export const RELATED_KEY = 'electrophone.genresRelated';
 export const FUSION_KEY = 'electrophone.genresFusion';
+export const SELECTED_KEY = 'electrophone.genresV2Selected';
+export function loadSelected(storage) {
+  try { return storage?.getItem(SELECTED_KEY) || null; } catch { return null; }
+}
+export function saveSelected(storage, name) {
+  try {
+    if (name) storage?.setItem(SELECTED_KEY, name);
+    else storage?.removeItem(SELECTED_KEY);
+  } catch { /* storage unavailable */ }
+}
 export { loadDrill, saveDrill, DRILL_KEY } from './genre-drill.js';
 export const loadRelated = (storage) => loadFlag(storage, RELATED_KEY);
 export const saveRelated = (storage, on) => saveFlag(storage, RELATED_KEY, on);
@@ -111,6 +121,7 @@ export function renderGenresRework(root, opts = {}) {
   let fusion = loadFusion(globalThis.localStorage);
   let related = loadRelated(globalThis.localStorage);
   let lastData = null;
+  let pendingSelected = v2 ? loadSelected(globalThis.localStorage) : null;
   const subSel = new Set();
   clearSubfamilies(globalThis.localStorage);
   let savedLayout = null;
@@ -652,6 +663,7 @@ export function renderGenresRework(root, opts = {}) {
     if (family) setFamily(family);
     selectedId = id;
     activeId = id;
+    if (v2) saveSelected(globalThis.localStorage, tree?.byId.get(id)?.name);
     renderGroupNote();
     radialView.select(id);
     graphView.select(id);
@@ -665,6 +677,7 @@ export function renderGenresRework(root, opts = {}) {
 
   function deselect() {
     selectedId = null;
+    if (v2) saveSelected(globalThis.localStorage, null);
     renderGroupNote();
     radialView.select(null);
     graphView.select(null);
@@ -858,7 +871,16 @@ export function renderGenresRework(root, opts = {}) {
     renderTree();
     renderStatus();
     refreshNow();
+    restoreSelected();
     applyFocusRequest();
+  }
+
+  function restoreSelected() {
+    const name = pendingSelected;
+    pendingSelected = null;
+    if (!name || selectedId) return;
+    const n = resolveNode(name, tree);
+    if (n) select(n.id, { reveal: true });
   }
 
   const zoomBar = el('div', { class: 'gm-zoom', role: 'group', 'aria-label': 'Zoom' },
