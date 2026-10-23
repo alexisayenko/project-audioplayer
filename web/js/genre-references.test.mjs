@@ -14,7 +14,7 @@ const calls = stubFetch((url, opts) => {
   return { body: {} };
 });
 const R = await import('./references.js');
-const { createReferencesPanel, EMPTY_REFERENCES, NOT_IN_LIBRARY, linkText, eraSpan } = await import('./genre-references.js');
+const { createReferencesPanel, EMPTY_REFERENCES, NOT_IN_LIBRARY, linkText, eraSpan, eraNoteText } = await import('./genre-references.js');
 
 const text = (n) => n.textContent;
 const find = (n, pred, out = []) => { if (pred(n)) out.push(n); for (const c of n.children || []) find(c, pred, out); return out; };
@@ -47,7 +47,9 @@ test('entries: role badge, line, note, play, add to library, marks, read-only fo
   const items = byClass(p.node, 'ref-item');
   assert.equal(items.length, 3);
   assert.match(text(items[0]), /Origin/);
-  assert.match(text(items[0]), /Frankie Knuckles - Your Love \(1987\)/);
+  assert.match(text(items[0]), /Your Love/);
+  assert.equal(text(byClass(items[0], 'ref-sub')[0]), 'Frankie Knuckles · 1987');
+  assert.equal(byClass(items[0], 'ref-cover').length, 1);
   assert.match(text(items[0]), /First deep house hit/);
   assert.equal(byClass(items[0], 'ref-play').length, 1);
   assert.equal(byClass(items[0], 'ref-todo').length, 0);
@@ -58,7 +60,7 @@ test('entries: role badge, line, note, play, add to library, marks, read-only fo
   assert.match(srcs[0].getAttribute('rel'), /noopener/);
   assert.match(srcs[0].title, /^Wikipedia:/);
   assert.equal(byClass(items[1], 'ref-add-lib').length, 1);
-  assert.match(text(items[1]), /To review/);
+  assert.doesNotMatch(text(items[1]), /To review/);
   assert.equal(byClass(items[2], 'ref-add-lib').length, 0);
   assert.match(text(items[2]), new RegExp(NOT_IN_LIBRARY));
   assert.equal(byClass(items[2], 'ref-src').length, 0);
@@ -69,7 +71,7 @@ test('the owner sees no editing controls', async () => {
   const p = await shown([wish], true);
   for (const c of ['ref-edit', 'ref-del', 'ref-review', 'ref-add-btn', 'ref-eras-btn', 'ref-owner']) assert.equal(byClass(p.node, c).length, 0);
   assert.doesNotMatch(text(p.node), /Add a track|Edit eras/);
-  assert.match(text(p.node), /To review/);
+  assert.doesNotMatch(text(p.node), /To review/);
   assert.equal(byClass(p.node, 'ref-item').length, 1);
 });
 
@@ -156,4 +158,87 @@ test('the owner sees no empty eras and no era tools', async () => {
   assert.doesNotMatch(text(p.node), /No tracks yet./);
   assert.equal(byClass(p.node, 'ref-eras-btn').length, 0);
   assert.equal(find(p.node, (x) => x.tagName === 'FORM').length, 0);
+});
+
+test('play button mirrors playback: pause when current and playing, resume on click, live updates, no leaks', async () => {
+  const { player } = await import('./player.js');
+  const subs = new Set();
+  let cur = null;
+  let isPlaying = false;
+  const calls2 = [];
+  const saved = ['currentId', 'playing', 'onChange', 'toggle', 'playNow'].map((k) => [k, Object.getOwnPropertyDescriptor(player, k)]);
+  Object.defineProperty(player, 'currentId', { get: () => cur, configurable: true });
+  Object.defineProperty(player, 'playing', { get: () => isPlaying, configurable: true });
+  Object.defineProperty(player, 'onChange', { value: (fn) => { subs.add(fn); return () => subs.delete(fn); }, configurable: true });
+  Object.defineProperty(player, 'toggle', { value: () => calls2.push('toggle'), configurable: true });
+  Object.defineProperty(player, 'playNow', { value: (id) => calls2.push(`now:${id}`), configurable: true });
+  try {
+    const p = await shown([lib, wish], false);
+    const btn = () => byClass(p.node, 'ref-play')[0];
+    assert.equal(btn().getAttribute('aria-label'), 'Play Frankie Knuckles - Your Love (1987)');
+    assert.equal(btn().title, 'Play');
+    btn().click();
+    assert.deepEqual(calls2, ['now:s1']);
+    cur = 's1'; isPlaying = true;
+    subs.forEach((f) => f());
+    assert.equal(btn().title, 'Pause');
+    assert.match(btn().getAttribute('aria-label'), /^Pause /);
+    btn().click();
+    assert.equal(calls2.at(-1), 'toggle');
+    isPlaying = false;
+    subs.forEach((f) => f());
+    assert.equal(btn().title, 'Play');
+    btn().click();
+    assert.equal(calls2.at(-1), 'toggle');
+    cur = 'other'; isPlaying = true;
+    subs.forEach((f) => f());
+    assert.equal(btn().title, 'Play');
+    cur = 's1';
+    p.show('house');
+    for (let i = 0; i < 4; i += 1) await flush();
+    assert.equal(btn().title, 'Pause');
+    assert.equal(subs.size, 1);
+    p.show(null);
+    assert.equal(subs.size, 0);
+    p.show('house');
+    for (let i = 0; i < 4; i += 1) await flush();
+    p.destroy();
+    assert.equal(subs.size, 0);
+  } finally {
+    for (const [k, d] of saved) { if (d) Object.defineProperty(player, k, d); else delete player[k]; }
+  }
+});
+
+test('eraNoteText strips a leading date that repeats the years label', () => {
+  assert.equal(eraNoteText('c. 1983-1991. New beat and EBM.'), 'New beat and EBM.');
+  assert.equal(eraNoteText('1991-1993. The first records.'), 'The first records.');
+  assert.equal(eraNoteText('c. 1991-93 — first records'), 'First records');
+  assert.equal(eraNoteText('From 1994 to 1997: London labels.'), 'London labels.');
+  assert.equal(eraNoteText('c. 1998-early 2000s. Sound turns metallic.'), 'Sound turns metallic.');
+  assert.equal(eraNoteText('c. 2000s onward. Revival.'), 'Revival.');
+});
+
+test('eraNoteText keeps notes without a date prefix and drops date-only notes', () => {
+  assert.equal(eraNoteText('New beat from 1983-1991.'), 'New beat from 1983-1991.');
+  assert.equal(eraNoteText('  Plain note  '), 'Plain note');
+  assert.equal(eraNoteText('c. 1983-1991.'), '');
+  assert.equal(eraNoteText(''), '');
+  assert.equal(eraNoteText(null), '');
+});
+
+test('a library track caption is a button that opens the song card; others stay plain text', async () => {
+  const { store } = await import('./store.js');
+  store.set?.([{ id: 's1', title: 'Your Love', artist: 'Frankie Knuckles', tags: [], genres: [] }]);
+  const p = await shown([lib, wish, bare], false);
+  const items = byClass(p.node, 'ref-item');
+  const btn = byClass(items[0], 'ref-title')[0];
+  assert.equal(btn.tagName, 'BUTTON');
+  assert.equal(btn.type, 'button');
+  assert.equal(byClass(items[0], 'ref-play').length, 1);
+  for (const i of [1, 2]) assert.notEqual(byClass(items[i], 'ref-title')[0].tagName, 'BUTTON');
+  const card = document.getElementById('song-card');
+  btn.click();
+  for (let i = 0; i < 4; i += 1) await flush();
+  assert.equal(card.open, true);
+  card.close();
 });

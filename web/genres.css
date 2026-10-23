@@ -298,7 +298,14 @@ body[data-route="genres"] main, body[data-route="genres2"] main { max-width: non
 .ref-main { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-2); }
 .ref-role { padding: var(--stroke-hairline) var(--space-2); border-radius: var(--radius-pill); border: var(--stroke-hairline) solid var(--line); color: var(--ink); }
 .ref-role.role-archetype { background: var(--fill); color: var(--on-fill); border-color: transparent; }
-.ref-line { color: var(--ink); flex: 1 1 8em; min-width: 0; overflow-wrap: anywhere; }
+.ref-main { flex-wrap: nowrap; }
+.ref-text { flex: 1 1 8em; min-width: 0; display: grid; gap: var(--space-1); }
+.ref-title { color: var(--ink); font-weight: 700; min-width: 0; overflow-wrap: anywhere; justify-self: start; }
+.ref-title.ref-line-btn { appearance: none; background: none; border: 0; padding: 0; margin: 0; font: inherit; font-weight: 700; text-align: left; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.ref-title.ref-line-btn:focus-visible { outline: var(--stroke-focus) solid var(--ring-color); outline-offset: 2px; }
+.ref-sub-line { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-2); }
+.ref-sub { color: var(--muted); }
+.ref-cover { --cover-size: var(--hit); }
 .ref-todo { color: var(--ink-muted); font-style: italic; }
 .ref-src { display: inline-flex; color: var(--ink-muted); }
 .ref-src:hover, .ref-src:focus-visible { color: var(--ink); }

@@ -2,7 +2,9 @@ import { el } from './dom.js';
 import { icon } from './icons.js';
 import { player } from './player.js';
 import { isGuest } from './guest.js';
-import { openAdd } from './lazy-ui.js';
+import { openAdd, openSongCard } from './lazy-ui.js';
+import { store } from './store.js';
+import { api } from './api.js';
 import {
   roleLabel, sourceTypeLabel, entrySources, addLinkFor, entryLine,
   loadReferences, genreReferenceData, onReferencesChange, sortEras, sortEntries,
@@ -10,6 +12,17 @@ import {
 
 export const EMPTY_REFERENCES = 'No reference tracks yet.';
 export const NOT_IN_LIBRARY = 'Not in library';
+
+const isCurrent = (id) => player.currentId === id;
+
+function paintPlay(btn, e) {
+  const on = isCurrent(btn.getAttribute('data-song')) && player.playing;
+  const label = on ? 'Pause' : 'Play';
+  btn.title = label;
+  btn.setAttribute('aria-label', `${label} ${entryLine(e)}`);
+  btn.setAttribute('data-state', on ? 'playing' : 'idle');
+  btn.replaceChildren(icon(on ? 'pause' : 'play', 'inline'));
+}
 
 export function eraSelect(eras, value = '') {
   return el('select', { 'aria-label': 'Era' },
@@ -26,6 +39,16 @@ export function linkText(url) {
   } catch {
     return url;
   }
+}
+
+const DATE_PREFIX = /^\s*(?:c\.?\s*|circa\s+|from\s+|since\s+)?\d{4}s?(?:\s*(?:-|–|—|to|until)\s*(?:(?:early|late|mid)\s+)?(?:\d{2,4}s?|present|now)|\s+onward)?\s*[.:;,–—-]*\s*/i;
+
+export function eraNoteText(note) {
+  const text = typeof note === 'string' ? note.trim() : '';
+  if (!text) return '';
+  const rest = text.replace(DATE_PREFIX, '').trim();
+  if (rest === text) return text;
+  return rest.charAt(0).toUpperCase() + rest.slice(1);
 }
 
 export function eraSpan(era) {
@@ -48,6 +71,17 @@ export function createReferencesPanel() {
   let eras = [];
   let seq = 0;
   let ready = false;
+  let unsubPlayer = null;
+  const playing = new Map();
+
+  function syncPlay() {
+    for (const [btn, e] of playing) paintPlay(btn, e);
+  }
+
+  function stopPlayer() {
+    if (unsubPlayer) { unsubPlayer(); unsubPlayer = null; }
+    playing.clear();
+  }
 
   async function refresh(force = false) {
     const mine = ++seq;
@@ -69,7 +103,10 @@ export function createReferencesPanel() {
   function actionNode(e) {
     if (e.in_library && (e.song?.id || e.song_id)) {
       const id = e.song?.id || e.song_id;
-      return el('button', { class: 'icon sq-btn ref-play', type: 'button', title: 'Play', 'aria-label': `Play ${entryLine(e)}`, onclick: () => player.playNow(id) }, icon('play', 'inline'));
+      const btn = el('button', { class: 'icon sq-btn ref-play', type: 'button', 'data-song': id, onclick: () => (isCurrent(id) ? player.toggle() : player.playNow(id)) });
+      paintPlay(btn, e);
+      playing.set(btn, e);
+      return btn;
     }
     const url = addLinkFor(e);
     if (url) return el('button', { class: 'btn outline small ref-add-lib', type: 'button', onclick: (ev) => openAdd({ url, note: `Reference track: ${entryLine(e)}.` }, ev.currentTarget) }, 'Add to library');
@@ -83,12 +120,31 @@ export function createReferencesPanel() {
     }, icon('externalLink', 'inline')));
   }
 
+  function titleNode(e) {
+    const id = e.in_library ? (e.song?.id || e.song_id) : null;
+    const song = id ? (store.get(id) || e.song) : null;
+    if (!song) return el('span', { class: 'ref-title t-subhead' }, e.title);
+    return el('button', { class: 'ref-title ref-line-btn t-subhead', type: 'button', onclick: (ev) => { void openSongCard(song, ev.currentTarget); } }, e.title);
+  }
+
+  function coverNode(e) {
+    const id = e.in_library ? (e.song?.id || e.song_id) : null;
+    const s = id ? (store.get(id) || e.song) : null;
+    const img = el('img', { class: 'cover ref-cover', alt: '', loading: 'lazy' });
+    if (s?.cover) img.src = api.coverUrl(s.id, s.cover_v);
+    img.addEventListener('error', () => img.removeAttribute('src'));
+    return img;
+  }
+
   function item(e) {
     return el('li', { class: 'ref-item', 'data-id': e.id, 'data-role': e.role },
       el('div', { class: 'ref-main' },
-        el('span', { class: `ref-role t-caption role-${e.role}` }, roleLabel(e.role)),
-        el('span', { class: 'ref-line t-subhead' }, entryLine(e)),
-        e.reviewed ? null : el('span', { class: 'ref-todo t-caption', title: 'Not reviewed yet' }, 'To review'),
+        coverNode(e),
+        el('div', { class: 'ref-text' },
+          titleNode(e),
+          el('div', { class: 'ref-sub-line' },
+            el('span', { class: `ref-role t-caption role-${e.role}` }, roleLabel(e.role)),
+            el('span', { class: 'ref-sub t-caption' }, `${e.artist}${e.year ? ` · ${e.year}` : ''}`))),
         ...srcLinks(e),
         el('span', { class: 'ref-actions' }, actionNode(e))),
       e.note ? el('p', { class: 'ref-note t-caption muted' }, e.note) : null);
@@ -106,7 +162,7 @@ export function createReferencesPanel() {
           class: 'ref-cite', href: s.url, target: '_blank', rel: 'noopener noreferrer', title: `${sourceTypeLabel(s.type)}: ${linkText(s.url)}`,
           'aria-label': `Source ${i + 1}: ${sourceTypeLabel(s.type)} (opens in a new tab)`,
         }, `[${i + 1}]`))) : null),
-      era.note ? el('p', { class: 'ref-era-note t-caption muted' }, era.note) : null);
+      eraNoteText(era.note) ? el('p', { class: 'ref-era-note t-caption muted' }, eraNoteText(era.note)) : null);
   }
 
   function paintParts() {
@@ -119,8 +175,11 @@ export function createReferencesPanel() {
   }
 
   function paint() {
+    playing.clear();
     node.hidden = !genre || !ready;
     node.replaceChildren(...(node.hidden ? [] : paintParts()));
+    if (playing.size && !unsubPlayer) unsubPlayer = player.onChange(syncPlay);
+    else if (!playing.size) stopPlayer();
   }
 
   const unsub = onReferencesChange(() => { if (genre) paint(); });
@@ -132,11 +191,11 @@ export function createReferencesPanel() {
       if (next !== genre) { entries = []; eras = []; }
       genre = next;
       seq += 1;
-      if (!genre || isGuest()) { genre = null; ready = false; node.hidden = true; node.replaceChildren(); return; }
+      if (!genre || isGuest()) { genre = null; ready = false; node.hidden = true; node.replaceChildren(); stopPlayer(); return; }
       ready = true;
       void loadReferences().then(() => { if (genre === next) paint(); });
       void refresh();
     },
-    destroy() { genre = null; unsub(); },
+    destroy() { genre = null; unsub(); stopPlayer(); },
   };
 }
