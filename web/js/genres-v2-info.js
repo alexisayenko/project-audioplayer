@@ -50,7 +50,7 @@ export function createV2InfoRenderer(getData, dotFor = (name) => dotClass(family
         return;
       }
       refs.show(g.v1 || null);
-      container.replaceChildren(header(g), about(g), g.v1 ? refs.node : null);
+      container.replaceChildren(...[header(g), about(g), g.v1 ? refs.node : null].filter(Boolean));
     }
 
     paint(name);

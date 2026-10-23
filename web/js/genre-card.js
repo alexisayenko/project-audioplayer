@@ -103,7 +103,7 @@ export function renderGenreInfo(name, { onNavigate, container, onLibrary, onMap,
     const n = resolveNode(current, tree);
     if (!n) { message(NOT_FOUND); return; }
     refs.show(n.group ? null : n.name);
-    container.replaceChildren(header(n), about(n), sits(n), n.group ? null : refs.node, actions(n));
+    container.replaceChildren(...[header(n), about(n), sits(n), n.group ? null : refs.node, actions(n)].filter(Boolean));
   }
 
   function show(next) {
