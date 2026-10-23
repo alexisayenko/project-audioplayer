@@ -94,7 +94,7 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + var(--dock-b) + var(--m
   body.has-mini main { padding-bottom: calc(var(--mini-h) + var(--dock-b) + var(--space-8)); }
 }
 @media (min-width: 720px) {
-  .side { --side-lockup-gap: var(--space-4); padding: var(--space-2) var(--space-4) var(--space-6); }
+  .side { --side-lockup-gap: var(--space-4); padding: var(--space-2) var(--space-4) var(--space-4); }
   .brand { flex: none; align-items: flex-start; padding: 0 var(--space-2); }
   .brand-mark .ic { width: var(--icon-nav); height: var(--icon-nav); }
   .brand-wordmark { display: block; height: var(--icon-button); margin-left: 0; }
@@ -753,7 +753,6 @@ body.guest-noaudio .sm-play { display: none; }
   body.mini-compact.has-mini .side-mini { display: flex; flex-direction: column; align-items: center; padding-top: var(--space-3); border-top: var(--stroke-hairline) solid var(--line); }
 }
 @media (min-width: 720px) {
-  body.mini-compact.has-mini:not(.side-collapsed) .side { padding-bottom: var(--space-4); }
   body.mini-compact.has-mini:not(.side-collapsed) #nav { margin-bottom: var(--space-6); }
   body.mini-compact.has-mini:not(.side-collapsed) .side-mini { align-items: stretch; padding: var(--space-4) 0 var(--space-2); }
   body.mini-compact:not(.side-collapsed) .sm-row { position: relative; justify-content: flex-start; align-items: center; gap: var(--space-2); }

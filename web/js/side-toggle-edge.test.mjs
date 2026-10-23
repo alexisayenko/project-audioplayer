@@ -38,7 +38,8 @@ test('the toggle exists only from 720px', () => {
 
 test('the open sidebar has the tight proposal top and the small lockup, the rail keeps its padding and the hidden 44px wordmark box', () => {
   assert.match(rule('body.side-collapsed .side'), /padding: var\(--space-6\) var\(--space-2\)/);
-  assert.match(css, /^\s*\.side \{ --side-lockup-gap: var\(--space-4\); padding: var\(--space-2\) var\(--space-4\) var\(--space-6\); \}/m);
+  assert.match(css, /^\s*\.side \{ --side-lockup-gap: var\(--space-4\); padding: var\(--space-2\) var\(--space-4\) var\(--space-4\); \}/m);
+  assert.doesNotMatch(css, /has-mini:not\(\.side-collapsed\) \.side \{ padding-bottom/);
   assert.match(css, /\.brand \{ flex: none; align-items: flex-start; padding: 0 var\(--space-2\); \}/);
   assert.match(rule('.brand-mark .ic'), /width: var\(--icon-nav\); height: var\(--icon-nav\)/);
   assert.match(rule('body.side-collapsed .brand-mark .ic'), /width: var\(--icon-play\); height: var\(--icon-play\)/);
