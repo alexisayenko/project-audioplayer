@@ -14,6 +14,7 @@ import { findRowIndex, scrollTarget, registerRevealer } from './reveal.js';
 import { tagLabel, categoryOf, CATEGORIES } from './tagname.js';
 import { prefs, readLibraryView, saveLibraryView, SORTS, visibleSongs, selectedIn, isUnsetKey, unsetCount, setListening, hasListening, neverCount, listeningData } from './library-data.js';
 import { songRow } from './library-rows.js';
+import { loadReferences, onReferencesChange, cachedReferences, referenceSongIds, ROLES, roleLabel } from './references.js';
 import { disposeAll } from './marquee.js';
 import { isRowControl, keepCovers } from './row-cover.js';
 import { mountScrollTop } from './scroll-top.js';
@@ -22,7 +23,7 @@ import { countText } from './drafts-model.js';
 
 export { filterByTags, visibleSongs } from './library-data.js';
 
-if (typeof window !== 'undefined') window.addEventListener('auth-changed', () => { prefs.view = 'songs'; setListening(null); });
+if (typeof window !== 'undefined') window.addEventListener('auth-changed', () => { prefs.view = 'songs'; setListening(null); prefs.refs = ''; });
 
 let flashId = null;
 let flashTimer;
@@ -196,7 +197,25 @@ export function renderLibrary(root) {
       }, c.name, el('small', { class: 't-caption' }, n || values));
       b.setAttribute('aria-label', n ? `${c.name}, ${n} selected` : `${c.name}, ${values}`);
       return b;
-    }), ...(neverBtn ? [neverBtn] : []));
+    }), ...(neverBtn ? [neverBtn] : []), ...refsControls());
+  }
+
+  function refsControls() {
+    if (isGuest() || (!cachedReferences() && !prefs.refs)) return [];
+    const have = new Set(store.songs.map((s) => s.id));
+    const count = [...referenceSongIds()].filter((id) => have.has(id)).length;
+    if (!count && !prefs.refs) return [];
+    const on = !!prefs.refs;
+    const chip = el('button', {
+      class: `cat-chip${on ? ' on' : ''}`, type: 'button', 'aria-pressed': String(on), 'data-cat': 'refs',
+      title: 'Songs that are reference tracks for a genre',
+      onclick: () => { prefs.refs = on ? '' : 'any'; renderAll(); },
+    }, 'Reference tracks', el('small', { class: 't-caption' }, count));
+    if (!on) return [chip];
+    const role = el('select', { class: 'refs-role', 'aria-label': 'Reference role', onchange: (e) => { prefs.refs = e.target.value; renderAll(); } },
+      el('option', { value: 'any', selected: prefs.refs === 'any' }, 'All roles'),
+      ...ROLES.map((r) => el('option', { value: r, selected: prefs.refs === r }, roleLabel(r))));
+    return [chip, role];
   }
 
   function selectedNames() {
@@ -207,7 +226,7 @@ export function renderLibrary(root) {
   function renderList() {
     const songs = visibleSongs();
     const cur = player.current;
-    const filtered = !!(prefs.sel.size || prefs.never || prefs.query.trim());
+    const filtered = !!(prefs.sel.size || prefs.never || prefs.refs || prefs.query.trim());
     paintTotal();
     summary.textContent = store.loaded && store.songs.length && filtered ? matchSummary(songs.length) : '';
     playAll.hidden = !(store.loaded && songs.length);
@@ -259,6 +278,7 @@ export function renderLibrary(root) {
     prefs.query = '';
     prefs.sel.clear();
     prefs.never = false;
+    prefs.refs = '';
     search.value = '';
     paintClear();
     renderAll();
@@ -336,6 +356,8 @@ export function renderLibrary(root) {
   const onStarting = () => { if (!store.loaded && !gone) renderList(); };
   window.addEventListener('server-starting', onStarting);
   void load();
+  const unsubRefs = onReferencesChange(() => { if (!gone) renderAll(); });
+  if (!isGuest()) void loadReferences();
   renderAll();
   if (!isGuest()) {
     void getListening().then((d) => {
@@ -348,5 +370,5 @@ export function renderLibrary(root) {
 
   const unmountScrollTop = mountScrollTop();
 
-  return () => { gone = true; window.removeEventListener('server-starting', onStarting); unmountScrollTop(); unsub(); unsubDrafts?.(); unmountDrafts?.(); unsubPlayer(); unsubDl(); unregister(); clearTimeout(flashTimer); flashId = null; const d = document.getElementById('filter-sheet'); if (d.open) d.close(); };
+  return () => { gone = true; window.removeEventListener('server-starting', onStarting); unmountScrollTop(); unsub(); unsubDrafts?.(); unmountDrafts?.(); unsubPlayer(); unsubRefs(); unsubDl(); unregister(); clearTimeout(flashTimer); flashId = null; const d = document.getElementById('filter-sheet'); if (d.open) d.close(); };
 }

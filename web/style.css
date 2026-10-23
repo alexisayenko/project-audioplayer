@@ -1004,3 +1004,16 @@ body:has(.legal:not([hidden])) main, body:has(.legal:not([hidden])) .player { pa
 .t-time { white-space: nowrap; }
 .t-elapsed { padding: 0; border: 0; border-radius: var(--radius-key); background: none; color: inherit; font: inherit; font-variant-numeric: tabular-nums; display: inline-block; min-width: 6ch; text-align: right; white-space: nowrap; cursor: pointer; -webkit-user-select: none; user-select: none; }
 .t-elapsed:disabled { cursor: default; }
+
+/* reference tracks */
+.ref-star { display: inline-flex; flex: none; width: 16px; height: 16px; margin-left: var(--space-1); color: var(--accent-ink); }
+.ref-star svg { width: 16px; height: 16px; fill: currentColor; }
+.song .title-line .open + .ref-star { margin-left: var(--space-1); }
+.song .title-line .ref-star + * { margin-left: auto; }
+.ref-badge { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-2); margin: var(--space-2) 0 0; color: var(--accent-ink); }
+.ref-badge svg { fill: currentColor; }
+.ref-badge-item { padding: var(--stroke-hairline) var(--space-2); border-radius: var(--radius-pill); border: var(--stroke-hairline) solid var(--line); color: var(--ink); }
+.refs-role { width: auto; min-width: 0; }
+.ref-mark { display: inline-flex; align-items: center; gap: var(--space-1); }
+.ref-hits:empty { display: none; }
+.ref-hits { margin-top: var(--space-2); }

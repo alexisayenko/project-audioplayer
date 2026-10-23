@@ -8,12 +8,12 @@ import { cachedListening, getListening, invalidateListening, hasListening, liste
 import { autodl, autoDownloadOn } from './autodl.js';
 import { downloadSong } from './download.js';
 import { editDialog } from './edit-dialog.js';
-import { changeCover } from './lazy-ui.js';
+import { changeCover, openGenreCard } from './lazy-ui.js';
 import { creditParts, subtitle, titleNodes, detailsLines, yearFact, albumOf, albumsOf, displayLine } from './credits.js';
 import { icon } from './icons.js';
 import { bpmLabel } from './bpm-label.js';
 import { visibleTags, tagGroups, tagLabel, splitTag } from './tagname.js';
-import { genreLines } from './genre-levels.js';
+import { genreLines, resolveNode } from './genre-levels.js';
 import { cachedTree, loadGenreTree } from './genre-tree.js';
 import { serviceIcons } from './service-icons.js';
 import { storedLinkStates } from './song-links.js';
@@ -24,6 +24,8 @@ import { togglePartPopover, closePartPopover, initPartPopovers } from './part-po
 import { prefs, saveLibraryView } from './library-data.js';
 import * as audioGraph from './audio-graph.js';
 import { createLiveBpmController } from './live-bpm-ctl.js';
+import { loadReferences, onReferencesChange, isReferenceOwner, songMarks, marksTip, roleLabel } from './references.js';
+import { openReferenceDialog } from './reference-dialog.js';
 
 export function cardTags(tags) {
   const counts = visibleTags(tags).map((tag) => ({ tag, count: 1 }));
@@ -122,9 +124,21 @@ function headBlock(song, m) {
   return [art, full ? el('div', { class: 'card-head' }, full) : null];
 }
 
+export function referenceBadge(songId) {
+  const marks = songMarks(songId);
+  if (!marks.length) return null;
+  return el('p', { class: 'ref-badge t-caption', title: `Reference track for ${marksTip(marks)}` }, icon('star', 'inline'), ...marks.map((m) => el('span', { class: 'ref-badge-item' }, `${m.genre}: ${roleLabel(m.role)}`)));
+}
+
+function genreChip(g) {
+  if (!resolveNode(g, cachedTree())) return el('span', { class: 'tag ns t-caption', title: `genre:${g}` }, g);
+  const chip = el('button', { class: 'tag ns t-caption genre-chip-btn', type: 'button', title: `Open the genre card: ${g}`, 'data-genre': g, onclick: () => openGenreCard(g, chip) }, g);
+  return chip;
+}
+
 function genreRows(lines) {
   return el('div', { class: 'chip-groups', role: 'group', 'aria-label': 'Genres' }, lines.map((line) => el('div', { class: 'chip-group card-genre-line' },
-    line.genres.map((g) => el('span', { class: 'tag ns t-caption', title: `genre:${g}` }, g)))));
+    line.genres.map((g) => genreChip(g)))));
 }
 
 function tagBlock(groups, lines) {
@@ -163,6 +177,7 @@ function actionRow(song) {
     ib('Share link', 'share', () => openShareDialog(song)),
     downloadIcon(song, audio, view, ib),
     can('edit') ? ib('Edit', 'pencil', () => editDialog(song)) : null,
+    isReferenceOwner() ? ib('Mark as reference', 'star', () => openReferenceDialog(song)) : null,
   ].filter(Boolean);
   return el('div', { class: 'card-actions' },
     icons.length ? el('div', { class: 'card-icons' }, ...icons) : null,
@@ -280,6 +295,7 @@ function paint(dlg, song, close, m) {
     art.classList.contains('card-art') ? null : closeBtn,
     art,
     head,
+    referenceBadge(song.id),
     detailsBlock(m, song.id),
     tagBlock(rest, m.genreLines),
     linkBlock(m.links),
@@ -324,7 +340,7 @@ export function openSongCard(song, opener = null) {
     repaint(dlg, fresh, close);
   };
   const paintBadges = () => { for (const b of dlg.querySelectorAll('.bpm-toggle')) paintBpmBadge(b); };
-  const unsubs = [store.subscribe(() => render(true)), player.onChange(render), autodl.onChange(render), liveBpm().onChange(paintBadges)];
+  const unsubs = [onReferencesChange(() => { if (live) render(true); }), store.subscribe(() => render(true)), player.onChange(render), autodl.onChange(render), liveBpm().onChange(paintBadges)];
   initPartPopovers();
   dlg.onclick = (e) => { if (e.target === dlg) close(); };
   dlg.addEventListener('close', () => {
@@ -335,6 +351,7 @@ export function openSongCard(song, opener = null) {
     focusRow(id, opener);
   }, { once: true });
   render(true);
+  void loadReferences();
   if (!cachedTree()) loadGenreTree().then((t) => { if (t && live) render(true); });
   if (!dlg.open) dlg.showModal();
   dlg.focus();

@@ -12,6 +12,7 @@ import { genreText } from './genre-cell.js';
 import { coverModel, coverButton, queueNote } from './row-cover.js';
 import { tooltipLine, subtitle, titleLine, titleNodes } from './credits.js';
 import { marquee } from './marquee.js';
+import { songMarks, marksTip } from './references.js';
 
 function cover(s) {
   const img = el('img', { class: 'cover', alt: '', loading: 'lazy' });
@@ -98,11 +99,18 @@ export function songRow(s, cur, flashId, listened = null) {
   const row = el('li', { class: `song${here ? ' current' : ''}${audio ? '' : ' no-audio'}${flashId === s.id ? ' flash' : ''}`, 'aria-current': here ? 'true' : null, 'data-id': s.id },
     coverCell(s, full, { audio, queueable, here, link, queued: queued ? player.queuePosition(s.id) : null }),
     el('div', { class: 'info' },
-      el('div', { class: 'title-line' }, open, stateControl(s, { audio, queueable, queued, dl }), audio && s.duration ? el('span', { class: 'title-len t-time', title: 'Length' }, fmtTime(s.duration)) : null),
+      el('div', { class: 'title-line' }, open, refStar(s), stateControl(s, { audio, queueable, queued, dl }), audio && s.duration ? el('span', { class: 'title-len t-time', title: 'Length' }, fmtTime(s.duration)) : null),
       subLine(s)),
     el('div', { class: 'c-genres t-subhead' }, el('span', { class: 'g-txt', title: genres || null }, genres)),
     listened == null ? null : statsCell(listened),
     dl ? lineNode(dl) : null);
   marquee(open, { auto: !!here, host: row });
   return row;
+}
+
+export function refStar(s) {
+  const marks = songMarks(s.id);
+  if (!marks.length) return null;
+  const tip = `Reference track for ${marksTip(marks)}`;
+  return el('span', { class: 'ref-star', title: tip, role: 'img', 'aria-label': tip }, icon('star', 'inline'));
 }

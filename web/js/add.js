@@ -22,7 +22,7 @@ const PREVIEW_ONLY = 'Preview only \u2014 SoundCloud Go+ track, can\'t be downlo
 export function openAdd(opts) {
   if (!can('add')) return;
   const draft = opts?.draft ?? null;
-  const plan = draft ? addPlan(draft) : null;
+  const plan = draft ? addPlan(draft) : opts?.url ? { url: opts.url, credits: null, note: opts.note || '' } : null;
   const dlg = document.getElementById('add-dialog');
   let preview = null;
   let sf = null;
@@ -235,7 +235,7 @@ export function openAdd(opts) {
   };
   dlg.replaceChildren(
     dialogHead('Add from YouTube or SoundCloud', 'Save the song\'s details; play it from the original link or on your iPhone.', () => dlg.close()),
-    ...(plan ? [el('p', { class: 'msg draft-note t-caption', role: 'note' }, plan.note)] : []),
+    ...(plan?.note ? [el('p', { class: 'msg draft-note t-caption', role: 'note' }, plan.note)] : []),
     form, known, message, body);
   dlg.onclick = (e) => { if (e.target === dlg) dlg.close(); };
   dlg.showModal();

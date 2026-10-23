@@ -13,7 +13,7 @@ const effectiveStatus = (v) => (v.status === 'question' || (v.status === 'approv
 
 function makeNode(id, name, level, family, extra = {}) {
   return {
-    id, name, level, family, parent: null, parents: [], parentNames: [], fams: [], children: [], subfamily: null, discogs: true, fusion: false, related: [], sourceLinks: [], synonyms: [], provisional: false, status: null, modifiers: [], display: null, label: name,
+    id, name, level, family, parent: null, parents: [], parentNames: [], fams: [], children: [], subfamily: null, discogs: true, fusion: false, related: [], sourceLinks: [], description: '', synonyms: [], provisional: false, status: null, modifiers: [], display: null, label: name,
     own: new Set(), all: new Set(), ...extra,
   };
 }
@@ -24,7 +24,7 @@ function genreNode(k, v) {
   const display = typeof v.display === 'string' && v.display.trim() ? v.display.trim() : null;
   const n = makeNode(`s:${k}`, k, 0, null, {
     subfamily: typeof v.subfamily === 'string' && v.subfamily.trim() ? v.subfamily.trim() : null,
-    discogs: v.discogs !== false, fusion: v.fusion === true, related: Array.isArray(v.related) ? v.related.filter((r) => typeof r === 'string' && r) : [], sourceLinks: cleanSourceLinks(v.source_links), synonyms: [...(v.synonyms || [])], provisional: v.provisional === true, status: effectiveStatus(v), display, modifiers: Array.isArray(v.modifiers) ? [...v.modifiers] : Array.isArray(v.flavours) ? [...v.flavours] : [],
+    discogs: v.discogs !== false, fusion: v.fusion === true, related: Array.isArray(v.related) ? v.related.filter((r) => typeof r === 'string' && r) : [], sourceLinks: cleanSourceLinks(v.source_links), description: typeof (v.description ?? v.note) === 'string' ? (v.description ?? v.note).trim() : '', synonyms: [...(v.synonyms || [])], provisional: v.provisional === true, status: effectiveStatus(v), display, modifiers: Array.isArray(v.modifiers) ? [...v.modifiers] : Array.isArray(v.flavours) ? [...v.flavours] : [],
   });
   n.label = n.display || k;
   return n;
@@ -89,7 +89,7 @@ function rootNode(g, vocab, gsyn) {
   const n = makeNode(`g:${g}`, g, 1, g, {
     form: true, display, discogs: form.discogs !== false, fusion: form.fusion === true, colourName: text(form.colour), modifiers, parentNames: [],
     related: Array.isArray(form.related) ? form.related.filter((r) => typeof r === 'string' && r) : [], synonyms: [...new Set([...(gsyn[g] || []), ...(Array.isArray(form.synonyms) ? form.synonyms : [])])],
-    sourceLinks: cleanSourceLinks(form.source_links), provisional: form.provisional === true, status: effectiveStatus(form),
+    sourceLinks: cleanSourceLinks(form.source_links), description: typeof (form.description ?? form.note) === 'string' ? (form.description ?? form.note).trim() : '', provisional: form.provisional === true, status: effectiveStatus(form),
   });
   n.label = display || g;
   return n;
@@ -192,6 +192,8 @@ export function resolveNode(text, tree) {
 }
 
 export const isGroup = (n) => n?.group === true;
+
+export const genreDescription = (n) => (n?.group ? n.note || '' : n?.description || '');
 
 export function assignableNode(text, tree) {
   const n = resolveNode(text, tree);

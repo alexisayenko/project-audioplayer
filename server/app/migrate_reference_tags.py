@@ -1,0 +1,129 @@
+"""One-off pass (task-0093, ADR-0044): on the OWNER's library only, every song tag `classical <genre>` (bare, or `genre:classical <genre>`) whose `<genre>` resolves to a vocabulary genre becomes a reference track of that genre (role `archetype`, `reviewed` false, sources empty, `song_id`, artist, title and year from the song), and the tag is removed from the song. Unresolvable tags stay and are logged; a tag that is itself a genre (`modern classical` is not touched, nor is `classical music`). Idempotent, with a one-time backup of the library and the catalogue and a marker; `AUDIO_REFERENCE_TAGS=0` disables it."""
+
+from __future__ import annotations
+
+import json
+import logging
+import os
+import shutil
+from pathlib import Path
+from typing import Any
+
+from . import deps, genre_references as refs, library, users
+from .jsonio import write_json_atomic
+from .problems import Problem
+from .tags import namespace
+
+BACKUP_DIR = "backups-reference-tags"
+MARKER_VERSION = 1
+PREFIX = "classical "
+_log = logging.getLogger(__name__)
+
+
+def enabled() -> bool:
+    return os.environ.get("AUDIO_REFERENCE_TAGS", "1").strip() != "0"
+
+
+def base_dir() -> Path:
+    return deps.SYNC.data_repo if deps.SYNC else deps.data_root()
+
+
+def backup_path(uid: str) -> Path:
+    """`<repo root>/backups-reference-tags/<uid>/library.json`: beside, not inside, the git-added `audioplayer/` tree; the catalogue backup sits next to it."""
+    return base_dir() / BACKUP_DIR / uid / "library.json"
+
+
+def marker_path(uid: str) -> Path:
+    return backup_path(uid).parent / "applied.json"
+
+
+def _done(uid: str) -> bool:
+    try:
+        return json.loads(marker_path(uid).read_text(encoding="utf-8")).get("marker") == MARKER_VERSION
+    except (OSError, ValueError, AttributeError):
+        return False
+
+
+def parse_tag(tag: Any) -> str | None:
+    """The genre spelling after `classical ` in a bare or `genre:` tag, else None."""
+    text = str(tag)
+    ns = namespace(text)
+    if ns not in ("", "genre"):
+        return None
+    value = " ".join((text.partition(":")[2] if ns else text).split())
+    if not value.casefold().startswith(PREFIX) or refs.resolve_genre(value):
+        return None
+    rest = value[len(PREFIX):].strip()
+    return rest or None
+
+
+def convert(songs: list[dict[str, Any]], doc: dict[str, list[dict[str, Any]]]) -> tuple[int, int, int]:
+    """Convert in place: returns (converted tags, tags already a reference, left unresolved). Songs get the tag removed; `doc` gets the entries."""
+    converted = existing = left = 0
+    for song in songs:
+        tags = song.get("tags") or []
+        keep: list[Any] = []
+        for tag in tags:
+            rest = parse_tag(tag)
+            genre = refs.resolve_genre(rest) if rest else None
+            if rest is None:
+                keep.append(tag)
+                continue
+            if genre is None:
+                _log.info("reference tag left untouched (no such genre): %r on %s", str(tag), song.get("id"))
+                left += 1
+                keep.append(tag)
+                continue
+            facts = refs.song_facts(song)
+            try:
+                entry = refs.make_entry(doc, genre, {**facts, "role": "archetype", "song_id": str(song.get("id"))}, reviewed=False)
+            except Problem as exc:
+                if exc.status != 409:
+                    _log.info("reference tag left untouched (%s): %r on %s", exc.code, str(tag), song.get("id"))
+                    left += 1
+                    keep.append(tag)
+                    continue
+                existing += 1
+            else:
+                doc.setdefault(genre, []).append(entry)
+                converted += 1
+        if len(keep) != len(tags):
+            song["tags"] = keep
+            song["updated_at"] = library.now_utc()
+    return converted, existing, left
+
+
+def _apply(uid: str, lib: Path) -> tuple[int, int, int]:
+    with deps.tx(uid, "convert reference tags"):
+        doc = library.load_doc(lib)
+        catalogue = refs.load()
+        counts = convert(doc["songs"], catalogue)
+        if counts[0] or counts[1]:
+            backup = backup_path(uid)
+            backup.parent.mkdir(parents=True, exist_ok=True)
+            if not backup.exists():
+                shutil.copy2(lib, backup)
+            if refs.path().exists() and not (backup.parent / refs.FILE_NAME).exists():
+                shutil.copy2(refs.path(), backup.parent / refs.FILE_NAME)
+            refs.save(catalogue)
+            library.save_doc(lib, doc)
+        write_json_atomic(marker_path(uid), {"marker": MARKER_VERSION, "converted": counts[0], "existing": counts[1], "left": counts[2]})
+    return counts
+
+
+def run() -> int:
+    """Convert the owner's `classical <genre>` tags once; returns the number of entries created. Never raises."""
+    if not enabled():
+        _log.info("reference tag conversion disabled (AUDIO_REFERENCE_TAGS=0)")
+        return 0
+    uid = users.owner_uid()
+    lib = deps.library_path(uid)
+    try:
+        if _done(uid) or not lib.is_file():
+            return 0
+        converted, existing, left = _apply(uid, lib)
+        _log.info("reference tags for %s: %d converted, %d already references, %d left untouched", uid[:8], converted, existing, left)
+        return converted
+    except Exception:
+        _log.exception("reference tag conversion failed for %s; the library is unchanged", uid[:8])
+        return 0

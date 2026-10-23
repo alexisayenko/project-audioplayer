@@ -1,7 +1,6 @@
 import { api } from './api.js';
 import { el, plural, pageHead, toast } from './dom.js';
 import { icon } from './icons.js';
-import { shownSourceLinks } from './genre-source-links.js';
 import { familyIndex, isHiddenFamily, dotClass } from './genre-data.js';
 import { filterByTags } from './library-data.js';
 import { outlineDefaultOpen } from './genre-view.js';
@@ -14,9 +13,11 @@ import { isGuest } from './guest.js';
 import { buildMapGraph, visibleIds, libraryCount, genreCount } from './genre-map-graph.js';
 import { loadDrill, saveDrill, newDrill, drillEmpty, pruneDrill, drillVisible, clickDrill, revealDrill, collapseDrill, drillMarks } from './genre-drill.js';
 import { player } from './player.js';
+import { openGenreCard } from './lazy-ui.js';
+import { onGenreFocus, takeGenreFocus } from './genre-focus.js';
 import { songGenres } from './genre-playing.js';
 import {
-  hasLevels, buildTree, applyCounts, count, populatedFamilies, genresWithSongs, ancestorIds, assignableNode, libraryTags, otherGenres, searchMatches, visibleRows, allExpandable, treeKey, filterIds, modifierCount, STATUS_FILTERS, STATUS_LABELS,
+  hasLevels, buildTree, resolveNode, genreDescription, applyCounts, count, populatedFamilies, genresWithSongs, ancestorIds, assignableNode, libraryTags, otherGenres, searchMatches, visibleRows, allExpandable, treeKey, filterIds, modifierCount, STATUS_FILTERS, STATUS_LABELS,
 } from './genre-levels.js';
 
 const songs = (n) => `${n} ${plural(n, 'song', 'songs')}`;
@@ -127,7 +128,33 @@ export function renderGenresRework(root, opts = {}) {
   const legendSub = el('div', { class: 'gmr-legend-sub', hidden: true });
   const groupNote = el('p', { class: 'gmr-group-note t-caption', role: 'note', hidden: true });
 
-  const linksRow = el('div', { class: 'gmr-links t-caption', role: 'group', 'aria-label': 'Genre sources', hidden: true });
+  const previewName = el('button', { class: 'gmr-preview-name t-headline', type: 'button', title: 'Open the genre card', onclick: (e) => openCard(e.currentTarget) });
+  const previewDesc = el('p', { class: 'gmr-preview-desc t-caption muted' });
+  const previewOpen = el('button', { class: 'gm-tbtn gmr-preview-open', type: 'button', onclick: (e) => openCard(e.currentTarget) }, 'Open card');
+  const preview = el('div', { class: 'gmr-preview', role: 'group', 'aria-label': 'Selected genre', hidden: true }, previewName, previewDesc, previewOpen);
+
+  function openCard(opener) {
+    const n = tree && selectedId ? tree.byId.get(selectedId) : null;
+    if (n && !n.group) void openGenreCard(n.name, opener);
+  }
+
+  function renderPreview(n) {
+    const on = !!n && !n.group;
+    preview.hidden = !on;
+    if (!on) return;
+    previewName.textContent = n.label;
+    previewDesc.textContent = genreDescription(n) || 'No description yet.';
+  }
+
+  function applyFocusRequest() {
+    if (!tree) return;
+    const want = takeGenreFocus();
+    if (!want) return;
+    const n = resolveNode(want, tree);
+    if (!n) { toast(`${want} is not on the map`); return; }
+    if (!outlineOpen) setOutline(true);
+    select(n.id, { reveal: true, center: true });
+  }
 
   const seeAlso = el('div', { class: 'gmr-seealso t-caption', role: 'group', 'aria-label': 'See also' },
     el('span', { class: 'gmr-seealso-label' }, 'See also'),
@@ -145,7 +172,7 @@ export function renderGenresRework(root, opts = {}) {
 
   function renderGroupNote() {
     const n = tree && selectedId ? tree.byId.get(selectedId) : null;
-    renderLinks(n);
+    renderPreview(n);
     groupNote.hidden = !n?.group;
     groupNote.textContent = n?.group ? GROUP_TEXT(n) : '';
   }
@@ -813,6 +840,7 @@ export function renderGenresRework(root, opts = {}) {
     renderTree();
     renderStatus();
     refreshNow();
+    applyFocusRequest();
   }
 
   const zoomBar = el('div', { class: 'gm-zoom', role: 'group', 'aria-label': 'Zoom' },
@@ -848,7 +876,7 @@ export function renderGenresRework(root, opts = {}) {
 
   side.append(
     el('div', { class: 'gm-outline-head' }, el('h2', { class: 't-headline' }, 'Outline'), closeBtn),
-    el('div', { class: 'gmr-bar' }, status, el('div', { class: 'gmr-btns' }, legendBtn, nowBtn, reload), el('div', { class: 'gmr-btns' }, viewRow, libBtn, drillBtn, collapseMapBtn, fusionBtn, relatedBtn, resetLayoutBtn, useSavedBtn, exportBtn), familyRow, subRow, groupNote, linksRow),
+    el('div', { class: 'gmr-bar' }, status, el('div', { class: 'gmr-btns' }, legendBtn, nowBtn, reload), el('div', { class: 'gmr-btns' }, viewRow, libBtn, drillBtn, collapseMapBtn, fusionBtn, relatedBtn, resetLayoutBtn, useSavedBtn, exportBtn), familyRow, subRow, groupNote, preview),
     outlineEl,
     seeAlso);
   work.append(canvas, graphCanvas, side, outlineBtn, zoomBar, legend);
@@ -860,12 +888,14 @@ export function renderGenresRework(root, opts = {}) {
     if (drillOn() && !drillEmpty(drillState)) collapseMap();
   });
   const unsubPlayer = player.onChange(refreshNow);
+  const unsubFocus = onGenreFocus(applyFocusRequest);
   if (!isGuest()) api.me().then((m) => { if (!dead) { isOwner = m?.owner === true; syncLayoutButtons(); } }).catch(() => {});
   start();
   return () => {
     dead = true;
     clearTimeout(flashTimer);
     unsubPlayer();
+    unsubFocus();
     radialView.destroy();
     graphView.destroy();
   };

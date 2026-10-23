@@ -3,6 +3,7 @@ import { storeGet, storeSet } from './storage.js';
 import { sortKey, compareKeys, displayYear } from './credits.js';
 import { songSearchText } from './search-text.js';
 import { matchesQuery } from './search-query.js';
+import { referenceSongIds } from './references.js';
 import { filterableTags, canonicalTag, tagSearchText, categoryOf, withRuntimeDecade } from './tagname.js';
 
 const UNSET_KEYS = { genres: 'genre', years: 'decade', countries: 'country' };
@@ -24,7 +25,7 @@ export function unsetCount(catId, songs = store.songs) {
   return unsetKey(catId) ? songs.filter((s) => !hasValueIn(s, catId)).length : 0;
 }
 
-export const prefs = { query: '', sel: new Set(), sort: 'added', view: 'songs', never: false, reverse: false };
+export const prefs = { query: '', sel: new Set(), sort: 'added', view: 'songs', never: false, reverse: false, refs: '' };
 
 let listening = null;
 
@@ -86,7 +87,9 @@ function matchesSelection(song, sel) {
 
 export function visibleSongs(sel = prefs.sel) {
   const q = prefs.query.trim().toLocaleLowerCase();
+  const refIds = prefs.refs ? referenceSongIds(prefs.refs === 'any' ? '' : prefs.refs) : null;
   const list = store.songs.filter((s) => {
+    if (refIds && !refIds.has(s.id)) return false;
     if (!matchesSelection(s, sel)) return false;
     if (prefs.never && listening && !neverListened(s)) return false;
     if (!q) return true;

@@ -4,6 +4,10 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## 2026-10-23 (web brand lockup, to deploy)
 
+- Server: reference tracks per genre (task-0093 phase 2, ADR-0044; to deploy, own tests run only): shared owner-curated catalogue `genre_references.json` in the data root, API `GET /genres/references`, `GET|POST /genres/{name}/references`, `PATCH|DELETE /genres/{name}/references/{id}` (API-216..API-222, DATA-194), four roles, several typed sources per entry, startup migration `migrate_reference_tags` (owner `classical <genre>` tags become unreviewed archetype entries).
+
+- Task: genre card infobox (to deploy) ([task-0094](tasks/task-0094.md)).
+- Web: genre card phase 1 (GEN-089..GEN-097, task-0094; to deploy, tests not run, not seen in a browser): a popup card for a genre (header, description, source links, parents, subgenres, groups and related chips with a back arrow, reference tracks, View in Library, Show on map), opened from the Genres map side panel (name or "Open card") and from genre chips in the song card; the side panel now shows only a short preview.
 - Docs: external genre resources listed (to deploy).
 - Server: the genre `ambient techno` (level 2 under techno and ambient, fusion, synonyms ambient techno music and intelligent techno, Rate Your Music link) joins the vocabulary (to deploy, tests not run).
 - Docs: ADR and task for genre reference tracks (analysis, to deploy) ([ADR-0044](tech/decisions.md), [task-0093](tasks/task-0093.md)).
@@ -1030,3 +1034,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 - Web: "Could not load. Try again." was the lazy-UI failure note (song card chunk), inserted after the dock title button and breaking the dock grid; inside the dock it is now a toast (WEB-158). Not seen in a browser.
 - Web: a failed lazy UI load (song card from the dock title) retries once, then asks `GET /version`; a stale tab after a deploy shows the toast "This page is out of date. Reload to continue." with Reload (the update bar also shows), otherwise "Could not load. Try again." (WEB-158). Tests not run.
+
+## 2026-10-23 (reference tracks per genre, web, to deploy)
+
+- Web: reference tracks (ADR-0044, task-0093 phase 3): a "Reference tracks" section in the Genres side panel (role badge, note, play or "Add to library", sources with a verified tick from 2 sources, owner editing), the song card action "Mark as reference" with a star badge, and a Library filter chip "Reference tracks" with a role select and row stars (GEN-087, GEN-088, LIB-211, LIB-212). The Add dialog accepts a prefilled link. Server contract assumed, tests not run, not seen in a browser.

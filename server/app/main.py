@@ -7,10 +7,10 @@ from collections.abc import Awaitable, Callable
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
 
-from . import anon, deps, features, genre_vocab, guest, hosts, legal, migrate_model2, migrate_model3, migrate_removals, migrate_renames, migrate_retired, migrate_sources, migrate_tags, migrate_version_norm, plays, readiness, web
+from . import anon, deps, features, genre_vocab, guest, hosts, legal, migrate_model2, migrate_model3, migrate_removals, migrate_renames, migrate_retired, migrate_sources, migrate_tags, migrate_version_norm, migrate_reference_tags, plays, readiness, web
 from .problems import Problem
 from .routes import playlist_import as playlist_import_routes
-from .routes import analyze, anon as anon_routes, auth, backfill, catalog, covers, drafts, features as features_routes, files, genres, health, legacy, legal as legal_routes, lookup, me, metafill, peaks as peaks_routes, plays as plays_routes, removal, songs
+from .routes import analyze, anon as anon_routes, auth, backfill, catalog, covers, drafts, features as features_routes, files, genre_references as genre_references_routes, genres, health, legacy, legal as legal_routes, lookup, me, metafill, peaks as peaks_routes, plays as plays_routes, removal, songs
 
 app = FastAPI(title="Electrophone")
 
@@ -54,7 +54,7 @@ def _startup_steps() -> list[tuple[str, Callable[[], object]]]:
         steps.append(("git recovery", deps.SYNC.recover_on_startup))
     steps += [
         ("migrate model 2", migrate_model2.run), ("migrate model 3", migrate_model3.run), ("migrate tags", migrate_tags.run),
-        ("migrate removals", migrate_removals.run), ("migrate renames", migrate_renames.run), ("migrate retired", migrate_retired.run), ("migrate version norm", migrate_version_norm.run), ("migrate sources", migrate_sources.run),
+        ("migrate removals", migrate_removals.run), ("migrate renames", migrate_renames.run), ("migrate retired", migrate_retired.run), ("migrate version norm", migrate_version_norm.run), ("migrate sources", migrate_sources.run), ("migrate reference tags", migrate_reference_tags.run),
         ("record startup", features.record_startup),
     ]
     return steps
@@ -80,7 +80,7 @@ def _shutdown() -> None:
 
 app.add_middleware(readiness.ReadinessMiddleware)
 
-for _module in (auth, me, health, legal_routes, legacy, features_routes, files, peaks_routes, plays_routes, catalog, covers, genres, lookup, playlist_import_routes, drafts, songs, analyze, backfill, metafill, removal, anon_routes):
+for _module in (auth, me, health, legal_routes, legacy, features_routes, files, peaks_routes, plays_routes, catalog, covers, genre_references_routes, genres, lookup, playlist_import_routes, drafts, songs, analyze, backfill, metafill, removal, anon_routes):
     app.include_router(_module.router)
 
 web.mount(app)

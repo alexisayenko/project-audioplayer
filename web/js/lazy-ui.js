@@ -14,6 +14,7 @@ export const UI_LOADERS = {
   add: () => import('./add.js'),
   edit: () => import('./edit-dialog.js'),
   cover: () => import('./cover-dialog.js'),
+  genreCard: () => import('./genre-card.js'),
   share: () => import('./share-ui.js'),
   shareOpen: () => import('./share-open.js'),
   tagPicker: () => import('./player-tag-picker.js'),
@@ -79,3 +80,4 @@ export const changeCover = (song, opener = null) => withUi('cover', opener, (m) 
 export const openShareDialog = (song, opener = null) => withUi('share', opener, (m) => m.openShareDialog(song));
 export const openTagPicker = (player, currentTags, opener = null) => withUi('tagPicker', opener, (m) => m.openTagPicker(player, currentTags));
 export const openFilterSheet = (cat, opener, onApply) => withUi('filters', opener, (m) => m.openFilterSheet(cat, opener, onApply));
+export const openGenreCard = (name, opener = null) => withUi('genreCard', opener, (m) => m.openGenreCard(name, opener));
