@@ -40,7 +40,7 @@ export function initMiniCompact() {
     on = !on;
     setMiniCompact(on);
     storeSet(MINI_COMPACT_KEY, on ? '1' : '0');
-    const next = on ? [$('side-mini-expand'), $('side-mini-play')].find(shown) : $('mini-compact');
+    const next = on ? $(shown($('side-mini-open')) ? 'side-mini-expand' : 'side-mini-play') : $('mini-compact');
     next?.focus();
   };
   for (const id of COMPACT_BUTTONS) $(id).addEventListener('click', flip);

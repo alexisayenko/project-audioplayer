@@ -44,6 +44,8 @@ test('markup: the dock handle and the sidebar footer arrow are real buttons with
   assert.ok(side.indexOf('id="server-build"') < side.indexOf('id="side-mini"'));
   assert.match(side, /<button class="sm-play" id="side-mini-play" type="button" aria-label="Play"/);
   assert.match(side, /<circle class="sm-prog" pathLength="100">/);
+  assert.ok(!side.includes('side-mini-cover'));
+  assert.match(side, /<span class="sm-line" aria-hidden="true"><\/span>/);
 });
 
 test('css: the collapsed dock is not displayed and frees its page space, from 480px only', () => {
@@ -55,13 +57,15 @@ test('css: the collapsed dock is not displayed and frees its page space, from 48
 });
 
 test('css: the sidebar mini-player shows only when collapsed and a song is loaded, from 480px', () => {
-  assert.match(css, /\.side-mini \{ display: none; margin-top: auto;/);
+  assert.match(css, /\.side-mini \{ display: none; position: relative; margin-top: auto;/);
   assert.match(css, /@media \(min-width: 480px\) \{\n  body\.mini-compact\.has-mini \.side-mini \{ display: flex;/);
   assert.match(css, /body\.mini-compact\.has-mini:not\(\.side-collapsed\) \.side-mini \{[^}]*background: var\(--surface-key\)/);
 });
 
-test('css: the rail play button is the 44px hit target with a token-coloured ring', () => {
-  assert.match(css, /\.sm-play \{[^}]*width: var\(--hit\); height: var\(--hit\);[^}]*border-radius: var\(--radius-pill\)/);
+test('css: the rail play button is the 56px control-xl target with a token-coloured ring', () => {
+  assert.match(css, /\.sm-play \{ --sm-size: var\(--control-xl\);[^}]*width: var\(--sm-size\); height: var\(--sm-size\);[^}]*border-radius: var\(--radius-pill\)/);
+  assert.match(css, /\.sm-handle \{[^}]*width: var\(--control-sm\);[^}]*opacity: 0;/);
+  assert.match(css, /\.side-mini:hover \.sm-handle, \.side-mini:focus-within \.sm-handle \{ opacity: 1; \}/);
   assert.match(css, /\.sm-ring circle \{ cx: 50%; cy: 50%; r: calc\(50% - var\(--stroke-medium\) \/ 2\); fill: none; stroke-width: var\(--stroke-medium\); \}/);
   assert.match(css, /\.sm-prog \{ stroke: var\(--fill\); stroke-dasharray: var\(--ring-p, 0\) 100; \}/);
 });

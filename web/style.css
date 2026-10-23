@@ -703,30 +703,35 @@ body.signed-out main { padding-bottom: var(--space-6); }
 }
 @media (min-width: 640px) { .mini .opt { display: inline-grid; } }
 
-/* side mini-player: the dock folded into the sidebar footer (PLY-149); in the icon rail only the round play button with a progress ring remains */
-.side-mini { display: none; margin-top: auto; min-width: 0; }
+/* side mini-player: the dock folded into the sidebar footer (PLY-149, PLY-199); the open sidebar shows a card with title, artist, a round play button and a thin progress line, the icon rail a larger round play button with a progress ring and a quiet expand chevron above it */
+.side-mini { display: none; position: relative; margin-top: auto; min-width: 0; }
 .build-line:not([hidden]) + .side-mini { margin-top: 0; }
-.sm-play { position: relative; flex: none; display: grid; place-items: center; width: var(--hit); height: var(--hit); padding: 0; border: 0; border-radius: var(--radius-pill); background: transparent; color: var(--on-accent); }
+.sm-play { --sm-size: var(--control-xl); --sm-face: var(--hit); position: relative; flex: none; display: grid; place-items: center; width: var(--sm-size); height: var(--sm-size); padding: 0; border: 0; border-radius: var(--radius-pill); background: transparent; color: var(--on-accent); }
 .sm-ring { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); pointer-events: none; }
 .sm-ring circle { cx: 50%; cy: 50%; r: calc(50% - var(--stroke-medium) / 2); fill: none; stroke-width: var(--stroke-medium); }
 .sm-track { stroke: var(--line); }
 .sm-prog { stroke: var(--fill); stroke-dasharray: var(--ring-p, 0) 100; }
-.sm-face { display: grid; place-items: center; width: var(--control); height: var(--control); border-radius: var(--radius-pill); background: var(--accent); box-shadow: var(--glow-accent); }
-.sm-handle, .sm-cover, .sm-open { display: none; }
+.sm-face { display: grid; place-items: center; width: var(--sm-face); height: var(--sm-face); border-radius: var(--radius-pill); background: var(--accent); box-shadow: var(--glow-accent); }
+.sm-open, .sm-line { display: none; }
+.sm-handle { display: grid; place-items: center; width: var(--control-sm); height: var(--control-sm); margin-bottom: var(--space-1); padding: 0; border: 0; border-radius: var(--radius-sm); background-color: transparent; color: var(--ink-muted); opacity: 0; transition: opacity var(--dur-fast) var(--ease-out), background-image var(--dur-fast) var(--ease-out); }
+.side-mini:hover .sm-handle, .side-mini:focus-within .sm-handle { opacity: 1; }
+@media (hover: none) { .sm-handle { opacity: 1; } }
+@media (hover: hover) { .sm-handle:hover { background-image: linear-gradient(var(--hover-wash), var(--hover-wash)); color: var(--ink); } }
+.sm-handle:active { background-image: linear-gradient(var(--pressed-wash), var(--pressed-wash)); }
 .sm-row { display: flex; align-items: center; justify-content: center; gap: var(--space-2); width: 100%; min-width: 0; }
-.sm-cover { --cover-size: var(--control); }
 .sm-open { min-width: 0; flex: 1; padding: 0; border: 0; background: none; text-align: left; color: inherit; }
 body.guest-noaudio .sm-play { display: none; }
 @media (min-width: 480px) {
-  body.mini-compact.has-mini .side-mini { display: flex; flex-direction: column; align-items: center; }
+  body.mini-compact.has-mini .side-mini { display: flex; flex-direction: column; align-items: center; padding-top: var(--space-3); border-top: var(--stroke-hairline) solid var(--line); }
 }
 @media (min-width: 720px) {
-  body.mini-compact.has-mini:not(.side-collapsed) .side-mini { align-items: stretch; overflow: hidden; border: var(--stroke-hairline) solid var(--line); border-radius: var(--radius-card); background: var(--surface-key); }
+  body.mini-compact.has-mini:not(.side-collapsed) .side-mini { align-items: stretch; padding: 0; overflow: hidden; border: var(--stroke-hairline) solid var(--line); border-radius: var(--radius-card); background: var(--surface-key); }
   body.mini-compact:not(.side-collapsed) .sm-row { padding: var(--space-2); }
-  body.mini-compact:not(.side-collapsed) :is(.sm-cover, .sm-open) { display: block; }
-  body.mini-compact:not(.side-collapsed) .sm-handle { display: grid; place-items: center; height: var(--space-5); padding: 0; border: 0; border-bottom: var(--stroke-hairline) solid var(--line); background-color: transparent; color: var(--ink-muted); transition: background-image var(--dur-fast) var(--ease-out); }
-  @media (hover: hover) { body.mini-compact:not(.side-collapsed) .sm-handle:hover { background-image: linear-gradient(var(--hover-wash), var(--hover-wash)); color: var(--ink); } }
-  body.mini-compact:not(.side-collapsed) .sm-handle:active { background-image: linear-gradient(var(--pressed-wash), var(--pressed-wash)); }
+  body.mini-compact:not(.side-collapsed) .sm-open { display: block; }
+  body.mini-compact:not(.side-collapsed) .sm-play { --sm-size: var(--hit); --sm-face: var(--control); }
+  body.mini-compact:not(.side-collapsed) .sm-line { display: block; position: absolute; left: 0; right: 0; bottom: 0; height: var(--stroke-medium); background: var(--line); }
+  body.mini-compact:not(.side-collapsed) .sm-line::after { content: ""; position: absolute; inset: 0; background: var(--accent); transform: scaleX(calc(var(--ring-p, 0) / 100)); transform-origin: left; }
+  body.mini-compact:not(.side-collapsed) .sm-handle { width: auto; height: var(--space-5); margin: 0; border-radius: 0; border-bottom: var(--stroke-hairline) solid var(--line); opacity: 1; }
 }
 
 /* sliders: the volume slider is thinner and neutral, distinct from the seek bar */
