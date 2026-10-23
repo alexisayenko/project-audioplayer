@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
-from .. import deps, genre_graph, genre_vocab, genres
+from .. import deps, genre_graph, genre_vocab, genres, genres_v2
 from ..tags import namespaced_values
 
 router = APIRouter()
@@ -37,3 +37,12 @@ def get_genre_graph(user: Annotated[dict[str, Any], Depends(deps.read_user)]):
 def get_genre_vocabulary(user: Annotated[dict[str, Any], Depends(deps.read_user)]):
     """The canonical genre list for the picker (TAG-077, TAG-080): `genres` with name, family, level (family or genre), parents, extra; `families` in display order. Same for every user, built once."""
     return genre_vocab.vocabulary()
+
+
+@router.get("/genres/v2", responses=deps.responses(503))
+def get_genres_v2(user: Annotated[dict[str, Any], Depends(deps.read_user)]):
+    """Genres structure v2 (GEN-102): `{version, clusters, genres}`, separate from the v1 vocabulary."""
+    try:
+        return genres_v2.payload()
+    except ValueError as e:
+        raise HTTPException(503, detail=str(e)) from e

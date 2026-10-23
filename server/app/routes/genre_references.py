@@ -6,13 +6,13 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Response
 
-from .. import deps, genre_references as refs
+from .. import deps, genre_eras as eras, genre_references as refs
 from ..problems import Problem
 
 router = APIRouter()
 
 User = Annotated[dict[str, Any], Depends(deps.require_token)]
-PATCHABLE = ("role", "note", "year", "reviewed", "sources", "source_url")
+PATCHABLE = ("role", "era", "note", "year", "reviewed", "sources", "source_url")
 
 
 def _genre(name: str) -> str:
@@ -25,6 +25,14 @@ def _genre(name: str) -> str:
 def _owner(user: dict[str, Any]) -> None:
     if not user["owner"]:
         raise Problem(403, "owner_only", "Only the owner edits reference tracks.")
+
+
+def _era_id(genre: str, value: Any) -> str | None:
+    if value is None or value == "":
+        return None
+    if not isinstance(value, str) or not any(e["id"] == value for e in eras.load().get(genre, [])):
+        raise Problem(422, "unknown_era", "era is not one of this genre's eras.")
+    return value
 
 
 def _song_card(uid: str, song: dict[str, Any]) -> dict[str, Any]:
@@ -53,10 +61,36 @@ def get_genre_references(name: str, user: User):
     genre = _genre(name)
     uid = user["uid"]
     songs = {str(s.get("id")): s for s in deps.load_songs(uid)}
-    return {"genre": genre, "references": [_view(r, songs, uid) for r in refs.load().get(genre, [])]}
+    return {"genre": genre, "eras": [eras.public(e) for e in eras.ordered(eras.load().get(genre, []))], "references": [_view(r, songs, uid) for r in refs.load().get(genre, [])]}
 
 
-@router.post("/genres/{name}/references", status_code=201, responses=deps.responses(403, 404, 409, 422))
+@router.put("/genres/{name}/eras", responses=deps.responses(403, 404, 422))
+def put_eras(name: str, body: dict[str, Any], user: User):
+    """Owner only: `{eras: [{id?, name, start?, end?, note?, sources?}]}` replaces the genre's whole list (ids kept when given; at most 12). Entries whose era is gone get `era` null in the same transaction. Returns `{genre, eras}` sorted by start."""
+    _owner(user)
+    genre = _genre(name)
+    unknown = sorted(set(body) - {"eras"})
+    if unknown or "eras" not in body:
+        raise Problem(422, "bad_era", "Send {eras: [...]}.")
+    new = eras.clean_all(body["eras"])
+    with deps.tx(user["uid"], f"eras set {genre}"):
+        doc = eras.load()
+        if new:
+            doc[genre] = new
+        else:
+            doc.pop(genre, None)
+        eras.save(doc)
+        refdoc = refs.load()
+        live = {e["id"] for e in new}
+        stale = [r for r in refdoc.get(genre, []) if r.get("era") and r["era"] not in live]
+        for row in stale:
+            row.pop("era", None)
+        if stale:
+            refs.save(refdoc)
+    return {"genre": genre, "eras": [eras.public(e) for e in eras.ordered(new)]}
+
+
+@router.post("/genres/{name}/references",status_code=201, responses=deps.responses(403, 404, 409, 422))
 def add_reference(name: str, body: dict[str, Any], user: User):
     """`{artist, title, year?, role, note?, sources?, song_id?}` or `{song_id, role, note?}` (artist, title and year come from the owner's library song)."""
     _owner(user)
@@ -75,7 +109,7 @@ def add_reference(name: str, body: dict[str, Any], user: User):
         fields["song_id"] = str(song["id"])
     with deps.tx(uid, f"reference add {genre}"):
         doc = refs.load()
-        entry = refs.make_entry(doc, genre, fields)
+        entry = refs.make_entry(doc, genre, fields, era_id=_era_id(genre, fields.get("era")))
         doc.setdefault(genre, []).append(entry)
         refs.save(doc)
     return _view(entry, {str(song["id"]): song} if song else {}, uid)
@@ -102,6 +136,8 @@ def patch_reference(name: str, ref_id: str, body: dict[str, Any], user: User):
         row = _find(doc, genre, ref_id)
         if "role" in body:
             row["role"] = refs.clean_role(body["role"])
+        if "era" in body:
+            _set(row, "era", _era_id(genre, body["era"]))
         if "year" in body:
             _set(row, "year", refs.clean_year(body["year"]))
         if "note" in body:

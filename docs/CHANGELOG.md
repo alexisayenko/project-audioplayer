@@ -5,10 +5,17 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 ## 2026-10-23 (web brand lockup, to deploy)
 
 - Server: reference tracks per genre (task-0093 phase 2, ADR-0044; to deploy, own tests run only): shared owner-curated catalogue `genre_references.json` in the data root, API `GET /genres/references`, `GET|POST /genres/{name}/references`, `PATCH|DELETE /genres/{name}/references/{id}` (API-216..API-222, DATA-194), four roles, several typed sources per entry, startup migration `migrate_reference_tags` (owner `classical <genre>` tags become unreviewed archetype entries).
+- Server: eras per genre (GF1, task-0093, ADR-0044; to deploy, own tests run only): `genre_eras.json` in the data root, `eras` in `GET /genres/{name}/references`, `era` on entries and summaries, owner-only `PUT /genres/{name}/eras`, 422 `unknown_era`; goa trance eras seeded once at start (`AUDIO_GENRE_ERAS_SEED=0` disables) (API-223..API-225, DATA-195).
+- Server: own-words genre descriptions (GD1, task-0094; to deploy, own tests run only): `server/data/genre_descriptions.json` (DATA-196, 18 first drafts to be reviewed by Alex), served as `description` on `GET /genres/vocabulary` rows, `levels` and `forms`.
 
 - Task: genre card infobox (to deploy) ([task-0094](tasks/task-0094.md)).
+- Task: standard identifiers for songs (analysis, to deploy) ([task-0095](tasks/task-0095.md)).
+- Docs: goa trance eras with references (to deploy).
+- Docs: wave 1 working document for reference tracks (to deploy) ([genre-references-wave1](tech/genre-references-wave1.md)).
 - Web: genre card phase 1 (GEN-089..GEN-097, task-0094; to deploy, tests not run, not seen in a browser): a popup card for a genre (header, description, source links, parents, subgenres, groups and related chips with a back arrow, reference tracks, View in Library, Show on map), opened from the Genres map side panel (name or "Open card") and from genre chips in the song card; the side panel now shows only a short preview.
 - Docs: external genre resources listed (to deploy).
+- Docs: Musicmap findings for goa trance (to deploy).
+- Docs: Musicmap super-genres compared with our level 1 (to deploy).
 - Server: the genre `ambient techno` (level 2 under techno and ambient, fusion, synonyms ambient techno music and intelligent techno, Rate Your Music link) joins the vocabulary (to deploy, tests not run).
 - Docs: ADR and task for genre reference tracks (analysis, to deploy) ([ADR-0044](tech/decisions.md), [task-0093](tasks/task-0093.md)).
 
@@ -1038,3 +1045,20 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 ## 2026-10-23 (reference tracks per genre, web, to deploy)
 
 - Web: reference tracks (ADR-0044, task-0093 phase 3): a "Reference tracks" section in the Genres side panel (role badge, note, play or "Add to library", sources with a verified tick from 2 sources, owner editing), the song card action "Mark as reference" with a star badge, and a Library filter chip "Reference tracks" with a role select and row stars (GEN-087, GEN-088, LIB-211, LIB-212). The Add dialog accepts a prefilled link. Server contract assumed, tests not run, not seen in a browser.
+
+## 2026-10-23 (reference tracks eras, web, to deploy)
+
+- Web: per-genre eras for reference tracks (GF1, ADR-0044, task-0093): the reference list is grouped by era (name, "c. 1994-1997" years, note, "N sources" toggle, entries by year then title, "Other" last), the owner gets "Edit eras" and an optional "Era" select in the track form and the "Mark as reference" dialog (GEN-098..GEN-100). Server contract (eras in `GET /genres/{name}/references`, `PUT /genres/{name}/eras`, `era` on entries) assumed, tests not run, not seen in a browser.
+
+## 2026-10-23 (genre info dock on the map, web, to deploy)
+
+- Web: on the Genres map the genre info is a collapsible left dock (selected genre, chips select on the map with a back arrow, collapsed rail with a dot when a genre is selected, state saved, bottom sheet on phones) instead of the short preview with "Open card"; the popup stays for other entry points; the info is one reusable `renderGenreInfo` (GEN-097, task-0094). Tests not run, not seen in a browser.
+
+- Web: second screen "Genres map v2" (`#/genres2`, nav item under "Genres map", GEN-101, task-0094): the Genres map with the left genre info dock; the Genres screen stays as deployed with the right-hand preview and "Open card"; both share the stored map preferences; "Show on map" selects on the screen the user is on (to deploy).
+
+## 2026-10-23 (genres structure v2, docs, to deploy)
+
+- Docs: ADR-0045 and task-0096 for genres structure v2 in parallel with v1 (Musicmap super-genres and clusters; first step the six EDM / Dance super-genres; GEN-102..GEN-105, DATA-197).
+
+- Web and server: genres structure v2, a separate structure built in parallel (task-0094, GEN-102 to GEN-105, API-226, DATA-197): `GET /genres/v2` serves `server/data/genres_v2.json` (first only the six Musicmap EDM / Dance super-genres: Breakbeat, Drum 'n' Bass, Hardcore, House, Techno, Trance, no children); `#/genres2` shows only these circles in one cluster colour with the dock showing the mapped v1 description, sources and reference tracks; v1 vocabulary, graph and `#/genres` unchanged (to deploy).
+- Genres structure v2: clusters carry Musicmap colours (`colour`, EDM / Dance #D52633); the six circles, chips and dock dot use the cluster colour in light and dark mode instead of the Rock chart slot (to deploy).

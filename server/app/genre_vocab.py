@@ -22,6 +22,8 @@ DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 DISCOGS_FILE = DATA_DIR / "genre_discogs.json"
 EXTRAS_FILE = DATA_DIR / "genre_extras.json"
 LEVELS_FILE = DATA_DIR / "genre_levels.json"
+DESCRIPTIONS_FILE = DATA_DIR / "genre_descriptions.json"
+DESCRIPTION_MAX = 400
 SUGGESTIONS = 5
 MIN_CUTOFF = 0.6
 
@@ -164,6 +166,10 @@ def check() -> int:
         load_levels()
     except ValueError as e:
         raise RuntimeError(f"genre levels invalid: {e}") from e
+    try:
+        load_descriptions()
+    except ValueError as e:
+        raise RuntimeError(f"genre descriptions invalid: {e}") from e
     return n
 
 
@@ -641,22 +647,53 @@ def load_levels() -> tuple[dict[str, dict[str, Any]], dict[str, list[str]], dict
         raise ValueError(f"{LEVELS_FILE.name}: unreadable ({e})") from e
 
 
+def parse_descriptions(doc: Any, names: Iterable[str], name: str = DESCRIPTIONS_FILE.name) -> dict[str, str]:
+    """The own-words genre descriptions (`{canonical genre name: text}`): trimmed, non-empty, at most DESCRIPTION_MAX characters; a key that is not a canonical genre of the vocabulary is rejected."""
+    if not isinstance(doc, dict):
+        raise ValueError(f"{name}: not a JSON object")
+    known = set(names)
+    out: dict[str, str] = {}
+    for k, v in doc.items():
+        if k not in known:
+            raise ValueError(f"{name}: unknown genre {k!r}")
+        if not isinstance(v, str) or not v.strip():
+            raise ValueError(f"{name}: description of {k!r} must be a non-empty string")
+        text = v.strip()
+        if len(text) > DESCRIPTION_MAX:
+            raise ValueError(f"{name}: description of {k!r} is {len(text)} characters (limit {DESCRIPTION_MAX})")
+        out[k] = text
+    return out
+
+
+def load_descriptions() -> dict[str, str]:
+    try:
+        doc = _read(DESCRIPTIONS_FILE)
+    except FileNotFoundError:
+        return {}
+    except (OSError, json.JSONDecodeError) as e:
+        raise ValueError(f"{DESCRIPTIONS_FILE.name}: unreadable ({e})") from e
+    return parse_descriptions(doc, load().entries)
+
+
 def _with_aliases(levels: dict[str, dict[str, Any]]) -> dict[str, dict[str, Any]]:
     return {k: {**v, DEPRECATED_ALIASES["modifiers"]: list(v["modifiers"])} for k, v in levels.items()}
 
 
 def vocabulary() -> dict[str, Any]:
-    """Payload of `GET /genres/vocabulary`: every canonical name with family (the first of `families`; a promoted genre is its own), `families` (every level 1 name in the fixed order, the groups included), level and parents, plus `aliases`, the `levels` per genre below level 1 (any depth) and `family_synonyms` per level 1 name (GEN-051), the `forms` (promoted genres: level 1 genres with their parents, related, synonyms) and the `groups` (level 1 nodes that are never entries or assignable: `Others`, temporary, with its direct children as `members`); built once. Raises ValueError when genre_levels.json is malformed."""
+    """Payload of `GET /genres/vocabulary`: every canonical name with family (the first of `families`; a promoted genre is its own), `families` (every level 1 name in the fixed order, the groups included), level and parents, plus `aliases`, the `levels` per genre below level 1 (any depth) and `family_synonyms` per level 1 name (GEN-051), the `forms` (promoted genres: level 1 genres with their parents, related, synonyms) and the `groups` (level 1 nodes that are never entries or assignable: `Others`, temporary, with its direct children as `members`); built once. A genre with an own-words text in genre_descriptions.json carries `description` on its row, its `levels` entry and its `forms` entry. Raises ValueError when genre_levels.json or genre_descriptions.json is malformed."""
     global _payload
     v = load()
+    descriptions = load_descriptions()
     with _lock:
         if _payload is None:
             rows = sorted(
-                ({"name": e.name, "family": e.family, "families": list(e.families), "level": e.level, "parents": list(e.parents), "extra": e.extra, **genre_sources.payload_fields(e.name, e.level == "family" and not e.form)} for e in v.entries.values()),
+                ({"name": e.name, "family": e.family, "families": list(e.families), "level": e.level, "parents": list(e.parents), "extra": e.extra, **genre_sources.payload_fields(e.name, e.level == "family" and not e.form), **({"description": descriptions[e.name]} if e.name in descriptions else {})} for e in v.entries.values()),
                 key=lambda r: r["name"],
             )
             raw = _read(LEVELS_FILE)
             levels, form_nodes, family_synonyms, modifiers = parse_all(raw)
+            levels = {k: ({**lv, "description": descriptions[k]} if k in descriptions else lv) for k, lv in levels.items()}
+            form_nodes = {k: ({**f, "description": descriptions[k]} if k in descriptions else f) for k, f in form_nodes.items()}
             groups = parse_groups(raw)
             subfamilies = list(parse_subfamilies(raw).values())
             direct = {n: [k for k, lv in {**levels, **form_nodes}.items() if n in lv["parents"]] for n in groups}

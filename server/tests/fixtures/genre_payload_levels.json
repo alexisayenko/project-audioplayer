@@ -144,6 +144,7 @@
  "forms": {
   "drum and bass": {
    "colour": "Others",
+   "description": "Fast electronic dance music from the 1990s: breakbeats at around 160 to 180 beats per minute over deep sub-bass lines.",
    "discogs": true,
    "display": "drum & bass",
    "families": [
@@ -170,6 +171,7 @@
   },
   "house": {
    "colour": "Others",
+   "description": "Four-on-the-floor dance music at a steady tempo, with a pulsing kick, repeating grooves and a warm bassline. It emerged in the 1980s.",
    "discogs": true,
    "display": null,
    "families": [
@@ -194,6 +196,7 @@
   },
   "synthwave": {
    "colour": "Others",
+   "description": "Electronic music inspired by 1980s film scores, arcade games and synth-pop, with analog-style synthesizers, drum machines and a nostalgic, cinematic mood.",
    "discogs": true,
    "display": null,
    "families": [
@@ -213,6 +216,7 @@
   },
   "techno": {
    "colour": "Others",
+   "description": "Repetitive, machine-driven electronic dance music built on a steady kick drum and layered rhythms. It emerged in the 1980s.",
    "discogs": true,
    "display": null,
    "families": [
@@ -230,6 +234,7 @@
   },
   "trance": {
    "colour": "Others",
+   "description": "Melodic electronic dance music with repeating, hypnotic phrases and long builds towards an emotional peak. It emerged in the 1990s.",
    "discogs": true,
    "display": null,
    "families": [
@@ -744,6 +749,7 @@
    "synonyms": []
   },
   "ambient": {
+   "description": "Music built on atmosphere and texture rather than rhythm or melody: slow, spacious sound meant to be heard in the background as much as listened to. It took shape in the 1970s.",
    "discogs": true,
    "display": null,
    "families": [
@@ -782,6 +788,7 @@
    "synonyms": []
   },
   "ambient techno": {
+   "description": "Techno with ambient textures: a steady but understated beat at slower tempos, built for home listening, often melodic or emotive.",
    "discogs": false,
    "display": null,
    "families": [
@@ -2046,6 +2053,7 @@
    "synonyms": []
   },
   "chillstep": {
+   "description": "A calm, melodic offshoot of dubstep with ambient and chillout colours: half-time beats, soft pads and emotional melodies.",
    "discogs": false,
    "display": null,
    "families": [
@@ -2992,6 +3000,7 @@
    "synonyms": []
   },
   "disco": {
+   "description": "Dance music of the 1970s built on a steady four-on-the-floor beat, a prominent bassline, strings and brass, and groove-heavy vocals.",
    "discogs": true,
    "display": null,
    "families": [
@@ -3137,6 +3146,7 @@
    "synonyms": []
   },
   "downtempo": {
+   "description": "Relaxed electronic music at a slow to moderate pace, with a laid-back beat and warm, atmospheric sound. It grew out of the chillout scene of the 1990s.",
    "discogs": true,
    "display": null,
    "families": [
@@ -4540,6 +4550,7 @@
    "synonyms": []
   },
   "goa trance": {
+   "description": "An early, hypnotic form of psychedelic trance from the early 1990s, with rolling basslines, layered melodic synth lines and an upbeat, spiritual feel.",
    "discogs": true,
    "display": null,
    "families": [
@@ -6796,6 +6807,7 @@
    "synonyms": []
   },
   "neurofunk": {
+   "description": "A dark, technical style of drum and bass with heavy, twisting basslines, tight sound design and a cold, mechanical edge.",
    "discogs": false,
    "display": null,
    "families": [
@@ -7177,6 +7189,7 @@
    "synonyms": []
   },
   "outrun": {
+   "description": "A synthwave subgenre named after the 1986 arcade game Out Run, tied to the retro 1980s look.",
    "discogs": false,
    "display": null,
    "families": [
@@ -7782,6 +7795,7 @@
    "synonyms": []
   },
   "progressive house": {
+   "description": "A melodic, gradual style of house that builds slowly with layered synths and long transitions, usually at a mid-tempo pace. It emerged in the 1990s.",
    "discogs": true,
    "display": null,
    "families": [
@@ -7878,6 +7892,7 @@
    "synonyms": []
   },
   "progressive trance": {
+   "description": "Trance that evolves slowly: gradual builds, layered melodies and a smoother, less abrupt structure than classic trance.",
    "discogs": true,
    "display": null,
    "families": [
@@ -7967,6 +7982,7 @@
    "synonyms": []
   },
   "psytrance": {
+   "description": "Psychedelic trance: fast, driving electronic music with a rolling bassline and layered, twisting synth sounds, built for long, trance-like dancing.",
    "discogs": true,
    "display": "psy-trance",
    "families": [
@@ -8681,6 +8697,7 @@
    "synonyms": []
   },
   "singer-songwriter": {
+   "description": "A performer writing and singing their own songs, usually with just a guitar or piano; lyrics matter more than production. Includes the Russian author song (bard) tradition.",
    "discogs": false,
    "display": null,
    "families": [
@@ -9080,6 +9097,7 @@
    "synonyms": []
   },
   "spacesynth": {
+   "description": "A melodic, synth-led strain of Italo disco from the early 1980s, with a steady dance beat, euphoric arpeggios and vocoder, mostly instrumental.",
    "discogs": false,
    "display": null,
    "families": [

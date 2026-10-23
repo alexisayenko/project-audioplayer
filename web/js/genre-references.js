@@ -5,12 +5,20 @@ import { isGuest } from './guest.js';
 import { openAdd } from './lazy-ui.js';
 import {
   ROLES, SOURCE_TYPES, MAX_SOURCES, roleLabel, sourceTypeLabel, entrySources, sourceCount, sourcesTip, addLinkFor, entryLine,
-  loadReferences, genreReferences, isReferenceOwner, onReferencesChange,
+  loadReferences, genreReferenceData, isReferenceOwner, onReferencesChange, sortEras, groupByEra, eraYears, cleanEras, saveEras,
   addReference, patchReference, deleteReference, cleanSources, buildBody, patchBodyFor,
 } from './references.js';
 
 export const EMPTY_REFERENCES = 'No reference tracks yet.';
 export const NOT_IN_LIBRARY = 'Not in library';
+export const NO_ERA_TRACKS = 'No tracks yet.';
+export const OTHER_ERA = 'Other';
+
+export function eraSelect(eras, value = '') {
+  return el('select', { 'aria-label': 'Era' },
+    el('option', { value: '' }, 'None'),
+    ...sortEras(eras).map((e) => el('option', { value: e.id, selected: e.id === value }, e.name)));
+}
 
 const roleSelect = (value) => el('select', { 'aria-label': 'Role' }, ROLES.map((r) => el('option', { value: r, selected: r === value }, roleLabel(r))));
 
@@ -39,19 +47,21 @@ export function sourcesEditor(initial = []) {
   return { node: el('div', {}, box, add), values: () => rows.map((r) => r.value()) };
 }
 
-function referenceForm(genre, entry, done) {
+function referenceForm(genre, entry, eras, done) {
   const editing = !!entry;
   const artist = el('input', { type: 'text', placeholder: 'Artist', 'aria-label': 'Artist', value: entry?.artist || '', readonly: editing, autocomplete: 'off' });
   const title = el('input', { type: 'text', placeholder: 'Title', 'aria-label': 'Title', value: entry?.title || '', readonly: editing, autocomplete: 'off' });
   const year = el('input', { type: 'number', placeholder: 'Year', 'aria-label': 'Year', value: entry?.year ?? '', min: '1900', max: '2100' });
   const role = roleSelect(entry?.role || 'archetype');
   const note = el('input', { type: 'text', placeholder: 'Note (optional)', 'aria-label': 'Note', value: entry?.note || '', autocomplete: 'off' });
+  const era = eraSelect(eras, entry?.era || '');
   const sources = sourcesEditor(entry ? entrySources(entry) : []);
   const err = el('p', { class: 'msg error t-caption', role: 'alert', hidden: true });
   const save = el('button', { class: 'btn small', type: 'submit' }, editing ? 'Save' : 'Add track');
   const form = el('form', { class: 'ref-form', novalidate: true },
     editing ? null : el('div', { class: 'ref-form-row' }, artist, title),
     el('div', { class: 'ref-form-row' }, year, role),
+    eras.length ? era : null,
     note, sources.node, err,
     el('div', { class: 'row end' }, el('button', { class: 'btn outline small', type: 'button', onclick: () => done(false) }, 'Cancel'), save));
   const fail = (text) => { err.textContent = text; err.hidden = false; save.disabled = false; };
@@ -59,7 +69,7 @@ function referenceForm(genre, entry, done) {
     e.preventDefault();
     const cleaned = cleanSources(sources.values());
     if (cleaned.error) { fail(cleaned.error); return; }
-    const values = { artist: artist.value, title: title.value, year: year.value, role: role.value, note: note.value, sources: cleaned.sources };
+    const values = { artist: artist.value, title: title.value, year: year.value, role: role.value, note: note.value, sources: cleaned.sources, era: eras.length ? era.value : undefined };
     if (!editing && (!values.artist.trim() || !values.title.trim())) { fail('Artist and title are required.'); return; }
     save.disabled = true;
     try {
@@ -84,6 +94,70 @@ function sourcesList(entry) {
     s.note ? el('span', { class: 'muted' }, ` ${s.note}`) : null)));
 }
 
+function sourcesToggle(item, extra = '') {
+  const n = sourceCount(item);
+  if (!n) return { toggle: null, wrap: null };
+  const wrap = el('div', { class: 'ref-sources-wrap', hidden: true }, sourcesList(item));
+  const toggle = el('button', {
+    class: `ref-src-toggle t-caption${extra}`, type: 'button', title: sourcesTip(item), 'aria-expanded': 'false',
+    onclick: () => { wrap.hidden = !wrap.hidden; toggle.setAttribute('aria-expanded', String(!wrap.hidden)); },
+  }, `${n} ${n === 1 ? 'source' : 'sources'}`);
+  return { toggle, wrap };
+}
+
+function erasEditor(genre, eras, entries, confirmFn, done) {
+  const rows = [];
+  const box = el('div', { class: 'era-rows' });
+  const err = el('p', { class: 'msg error t-caption', role: 'alert', hidden: true });
+  const save = el('button', { class: 'btn small', type: 'submit' }, 'Save eras');
+  function push(era) {
+    const name = el('input', { type: 'text', placeholder: 'Era name', 'aria-label': 'Era name', value: era?.name || '', autocomplete: 'off' });
+    const start = el('input', { type: 'number', placeholder: 'Start year', 'aria-label': 'Start year', value: era?.start ?? '', min: '1900', max: '2100' });
+    const end = el('input', { type: 'number', placeholder: 'End year', 'aria-label': 'End year', value: era?.end ?? '', min: '1900', max: '2100' });
+    const note = el('input', { type: 'text', placeholder: 'Note (optional)', 'aria-label': 'Era note', value: era?.note || '', autocomplete: 'off' });
+    const sources = sourcesEditor(entrySources(era || {}));
+    const rm = el('button', {
+      class: 'btn outline small era-remove',
+      type: 'button',
+      onclick: () => {
+        const used = era?.id ? entries.filter((e) => e.era === era.id).length : 0;
+        if (used && !confirmFn(`${used} reference ${used === 1 ? 'track uses' : 'tracks use'} "${era.name}". Remove the era and leave ${used === 1 ? 'it' : 'them'} without one?`)) return;
+        rows.splice(rows.indexOf(row), 1);
+        row.node.remove();
+      },
+    }, icon('clear', 'inline'), 'Remove era');
+    const row = {
+      node: el('div', { class: 'era-row' }, name, el('div', { class: 'ref-form-row' }, start, end), note, sources.node, el('div', { class: 'row end' }, rm)),
+      value: () => ({
+        id: era?.id, name: name.value, start: start.value, end: end.value, note: note.value, sources: sources.values(),
+      }),
+    };
+    rows.push(row);
+    box.append(row.node);
+  }
+  for (const e of sortEras(eras)) push(e);
+  const form = el('form', { class: 'ref-form era-editor', novalidate: true },
+    box,
+    el('button', { class: 'btn outline small', type: 'button', onclick: () => push() }, icon('plus', 'inline'), 'Add era'),
+    err,
+    el('div', { class: 'row end' }, el('button', { class: 'btn outline small', type: 'button', onclick: () => done(false) }, 'Cancel'), save));
+  form.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const cleaned = cleanEras(rows.map((r) => r.value()));
+    if (cleaned.error) { err.textContent = cleaned.error; err.hidden = false; return; }
+    save.disabled = true;
+    try {
+      await saveEras(genre, cleaned.eras);
+      done(true);
+    } catch (ex) {
+      err.textContent = ex.message || 'Could not save.';
+      err.hidden = false;
+      save.disabled = false;
+    }
+  });
+  return form;
+}
+
 export function linkText(url) {
   try {
     const u = new URL(url);
@@ -102,6 +176,8 @@ export function createReferencesPanel({ confirmFn = (t) => globalThis.confirm(t)
   const node = el('section', { class: 'ref-panel', 'aria-label': 'Reference tracks', hidden: true }, head, list, adder);
   let genre = null;
   let entries = [];
+  let eras = [];
+  let editingEras = false;
   let editingId = null;
   let adding = false;
   let seq = 0;
@@ -112,12 +188,14 @@ export function createReferencesPanel({ confirmFn = (t) => globalThis.confirm(t)
     const name = genre;
     if (!name) return;
     try {
-      const got = await genreReferences(name, { force });
+      const got = await genreReferenceData(name, { force });
       if (mine !== seq || name !== genre) return;
-      entries = got;
+      entries = got.references;
+      eras = got.eras;
     } catch {
       if (mine !== seq) return;
       entries = [];
+      eras = [];
     }
     paint();
   }
@@ -151,14 +229,10 @@ export function createReferencesPanel({ confirmFn = (t) => globalThis.confirm(t)
 
   function item(e, owner) {
     if (owner && editingId === e.id) {
-      return el('li', { class: 'ref-item editing', 'data-id': e.id }, el('p', { class: 't-subhead ref-line' }, entryLine(e)), referenceForm(genre, e, (saved) => { editingId = null; if (saved) void refresh(true); else paint(); }));
+      return el('li', { class: 'ref-item editing', 'data-id': e.id }, el('p', { class: 't-subhead ref-line' }, entryLine(e)), referenceForm(genre, e, eras, (saved) => { editingId = null; if (saved) void refresh(true); else paint(); }));
     }
     const n = sourceCount(e);
-    const srcs = el('div', { class: 'ref-sources-wrap', hidden: true }, sourcesList(e));
-    const toggle = n ? el('button', {
-      class: 'ref-src-toggle t-caption', type: 'button', title: sourcesTip(e), 'aria-expanded': 'false',
-      onclick: () => { srcs.hidden = !srcs.hidden; toggle.setAttribute('aria-expanded', String(!srcs.hidden)); },
-    }, `${n} ${n === 1 ? 'source' : 'sources'}`) : null;
+    const { toggle, wrap: srcs } = sourcesToggle(e);
     const tick = n >= 2 ? el('span', { class: 'ref-verified t-caption', title: `Backed by ${n} independent sources`, 'aria-label': `Verified by ${n} sources` }, icon('check', 'inline')) : null;
     return el('li', { class: 'ref-item', 'data-id': e.id, 'data-role': e.role },
       el('div', { class: 'ref-main' },
@@ -173,17 +247,45 @@ export function createReferencesPanel({ confirmFn = (t) => globalThis.confirm(t)
 
   function paintAdder(owner) {
     if (!owner) { adder.replaceChildren(); return; }
-    if (adding) {
-      adder.replaceChildren(referenceForm(genre, null, (saved) => { adding = false; if (saved) void refresh(true); else paint(); }));
+    if (editingEras) {
+      adder.replaceChildren(erasEditor(genre, eras, entries, confirmFn, (saved) => { editingEras = false; if (saved) void refresh(true); else paint(); }));
       return;
     }
-    adder.replaceChildren(el('button', { class: 'btn outline small ref-add-btn', type: 'button', onclick: () => { adding = true; paint(); } }, icon('plus', 'inline'), 'Add a track'));
+    if (adding) {
+      adder.replaceChildren(referenceForm(genre, null, eras, (saved) => { adding = false; if (saved) void refresh(true); else paint(); }));
+      return;
+    }
+    adder.replaceChildren(
+      el('button', { class: 'btn outline small ref-add-btn', type: 'button', onclick: () => { adding = true; paint(); } }, icon('plus', 'inline'), 'Add a track'),
+      el('button', { class: 'btn outline small ref-eras-btn', type: 'button', onclick: () => { editingEras = true; paint(); } }, icon('pencil', 'inline'), 'Edit eras'));
+  }
+
+  function eraHeading(era, owner, hasEntries) {
+    const years = eraYears(era);
+    const { toggle, wrap } = sourcesToggle(era);
+    return el('div', { class: 'ref-era-head' },
+      el('div', { class: 'ref-era-title' },
+        el('h4', { class: 'ref-era-name t-subhead' }, era.name),
+        years ? el('span', { class: 'ref-era-years t-caption muted' }, years) : null,
+        toggle),
+      era.note ? el('p', { class: 'ref-era-note t-caption muted' }, era.note) : null,
+      wrap,
+      owner && !hasEntries ? el('p', { class: 'ref-era-empty t-caption muted' }, NO_ERA_TRACKS) : null);
+  }
+
+  function paintList(owner) {
+    const empty = () => [el('li', { class: 'ref-empty muted t-caption' }, EMPTY_REFERENCES)];
+    if (!eras.length) return entries.length ? entries.map((e) => item(e, owner)) : empty();
+    if (!entries.length && !owner) return empty();
+    return groupByEra(entries, eras, { owner }).map((g) => el('li', { class: 'ref-era', 'data-era': g.era?.id || '' },
+      g.era ? eraHeading(g.era, owner, g.entries.length > 0) : el('div', { class: 'ref-era-head' }, el('h4', { class: 'ref-era-name t-subhead' }, OTHER_ERA)),
+      g.entries.length ? el('ul', { class: 'ref-list' }, g.entries.map((e) => item(e, owner))) : null));
   }
 
   function paint() {
     const owner = isReferenceOwner();
     node.hidden = !genre || !ready;
-    list.replaceChildren(...(entries.length ? entries.map((e) => item(e, owner)) : [el('li', { class: 'ref-empty muted t-caption' }, EMPTY_REFERENCES)]));
+    list.replaceChildren(...paintList(owner));
     paintAdder(owner);
   }
 
@@ -193,7 +295,7 @@ export function createReferencesPanel({ confirmFn = (t) => globalThis.confirm(t)
     node,
     show(name) {
       const next = name || null;
-      if (next !== genre) { editingId = null; adding = false; entries = []; }
+      if (next !== genre) { editingId = null; adding = false; editingEras = false; entries = []; eras = []; }
       genre = next;
       seq += 1;
       if (!genre || isGuest()) { genre = null; ready = false; node.hidden = true; list.replaceChildren(); adder.replaceChildren(); return; }

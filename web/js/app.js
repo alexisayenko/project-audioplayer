@@ -27,6 +27,7 @@ const routes = {
   playback: renderPlayback,
   playlists: lazyRoute(() => import('./playlists.js'), 'renderPlaylists'),
   genres: lazyRoute(() => import('./genres-rework.js'), 'renderGenresRework'),
+  genres2: lazyRoute(() => import('./genres-rework.js'), 'renderGenresMapV2'),
   'genres-classic': lazyRoute(() => import('./genres.js'), 'renderGenres'),
   stats: lazyRoute(() => import('./stats.js'), 'renderStats'),
   theory: lazyRoute(() => import('./theory.js'), 'renderTheory'),

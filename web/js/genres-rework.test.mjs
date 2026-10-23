@@ -567,3 +567,19 @@ test('See also row links to Rate Your Music and Musicmap in a new tab', async ()
   }
   cleanup();
 });
+
+test('Genres screen has the right-hand preview and no dock; Genres map v2 has the dock and no preview', async () => {
+  const old = await mount();
+  assert.ok(old.root.querySelector('.gmr-preview'));
+  assert.equal(old.root.querySelector('.gmr-dock'), null);
+  assert.ok(!old.root.querySelector('.gmr').classList.contains('has-dock'));
+  assert.equal(old.root.querySelector('h1').textContent, 'Genres map');
+  old.cleanup();
+  const v2 = await mount({ view: 'radial', dock: true });
+  assert.ok(v2.root.querySelector('.gmr-dock'));
+  assert.equal(v2.root.querySelector('.gmr-preview'), null);
+  assert.ok(v2.root.querySelector('.gmr').classList.contains('has-dock'));
+  assert.equal(v2.root.querySelector('h1').textContent, 'Genres map v2');
+  assert.ok(v2.root.querySelector('.gmr-seealso'));
+  v2.cleanup();
+});

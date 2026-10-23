@@ -75,3 +75,49 @@ test('the store loads once, answers by song and refreshes after a write', async 
   const post = calls.find((c) => c.opts.method === 'POST');
   assert.deepEqual(JSON.parse(post.opts.body), { song_id: 's1', role: 'origin' });
 });
+
+test('eras: years, sorting and grouping', () => {
+  assert.equal(R.eraYears({ start: 1994, end: 1997 }), 'c. 1994-1997');
+  assert.equal(R.eraYears({ start: 2000, end: null }), 'since 2000');
+  assert.equal(R.eraYears({ name: 'x' }), '');
+  const eras = [{ id: 'b', name: 'Late', start: 2000 }, { id: 'a', name: 'Early', start: 1987, end: 1992 }, { id: 'c', name: 'Empty', start: 2010 }];
+  const entries = [
+    { id: '1', title: 'Z', year: 2001, era: 'b' }, { id: '2', title: 'B', year: 1989, era: 'a' }, { id: '3', title: 'A', year: 1989, era: 'a' },
+    { id: '4', title: 'Q', year: 1999, era: null }, { id: '5', title: 'R', year: 1990, era: 'gone' },
+  ];
+  const owner = R.groupByEra(entries, eras, { owner: true });
+  assert.deepEqual(owner.map((g) => g.era?.id || null), ['a', 'b', 'c', null]);
+  assert.deepEqual(owner[0].entries.map((e) => e.id), ['3', '2']);
+  assert.deepEqual(owner[3].entries.map((e) => e.id), ['5', '4']);
+  assert.deepEqual(R.groupByEra(entries, eras).map((g) => g.era?.id || null), ['a', 'b', null]);
+  const flat = R.groupByEra(entries, []);
+  assert.equal(flat.length, 1);
+  assert.equal(flat[0].era, null);
+});
+
+test('eras editor payload: ids kept, years validated, empty rows dropped', () => {
+  const ok = R.cleanEras([
+    { id: 'a', name: ' Early ', start: '1987', end: '1992', note: ' n ', sources: [{ type: 'wikipedia', url: 'https://w.test/x', note: '' }] },
+    { name: 'Late', start: '2000', end: '', note: '', sources: [] },
+    { name: '', start: '', end: '', note: '', sources: [{ url: '' }] },
+  ]);
+  assert.equal(ok.error, '');
+  assert.deepEqual(ok.eras, [
+    { id: 'a', name: 'Early', start: 1987, end: 1992, note: 'n', sources: [{ type: 'wikipedia', url: 'https://w.test/x' }] },
+    { name: 'Late', start: 2000, end: null, sources: [] },
+  ]);
+  assert.match(R.cleanEras([{ name: '', start: '1990' }]).error, /needs a name/);
+  assert.match(R.cleanEras([{ name: 'A', start: '99' }]).error, /four digits/);
+  assert.match(R.cleanEras([{ name: 'A', start: '2000', end: '1990' }]).error, /ends before/);
+  assert.match(R.cleanEras([{ name: 'A' }, { name: 'a' }]).error, /different/);
+});
+
+test('era in the entry bodies', () => {
+  assert.equal(R.buildBody({ artist: 'a', title: 't', role: 'origin', era: 'e1' }).era, 'e1');
+  assert.equal('era' in R.buildBody({ artist: 'a', title: 't', role: 'origin', era: '' }), false);
+  const entry = { role: 'origin', era: 'e1', sources: [] };
+  assert.deepEqual(R.patchBodyFor(entry, { role: 'origin', era: '', sources: [] }), { era: null });
+  assert.deepEqual(R.patchBodyFor(entry, { role: 'origin', era: 'e1', sources: [] }), {});
+  assert.deepEqual(R.patchBodyFor({ role: 'origin', sources: [] }, { role: 'origin', era: 'e2', sources: [] }), { era: 'e2' });
+  assert.deepEqual(R.markBody({ role: 'origin', era: 'e1' }), { role: 'origin', era: 'e1' });
+});

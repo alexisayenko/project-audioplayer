@@ -1,7 +1,7 @@
 let pending = null;
 const listeners = new Set();
 
-const onMapRoute = (hash) => /^#?\/?genres\/?$/.test(hash || '');
+const onMapRoute = (hash) => /^#?\/?genres2?\/?$/.test(hash || '');
 
 export function takeGenreFocus() {
   const name = pending;

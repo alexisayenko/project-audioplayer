@@ -247,3 +247,71 @@ Owner decisions from the chat of 2026-10-20 ("Decided" = owner decision; "Defaul
 - Rate Your Music genres (https://rateyourmusic.com/genres/): genre tree and descriptions.
 - Musicmap (https://musicmap.info/): genealogy of popular music genres.
 - Trance Classics Official (YouTube channel, https://www.youtube.com/@TranceClassicsOfficial): classic trance tracks.
+
+## Musicmap super-genres compared with our level 1
+
+Observation, not a decision. Source: the blueprint image and method note on https://musicmap.info/ (paraphrased).
+
+### Musicmap's method
+
+- More than 230 genres need one overarching framework; a super-genre is the parent family of a genre.
+- Boundaries between super-genres are fluid; the map shows 23 of them, grouped into three primary clusters by colour.
+  - Blue Note (blue): gospel and pioneers, blues, jazz.
+  - Rock (yellow): rock 'n' roll, golden age, punk/wave, hardcore punk, alternative/indie, contemporary.
+  - EDM/Dance (red): breakbeat, drum 'n' bass/jungle, hardcore techno, techno, house, trance.
+  - Others: industrial and gothic, (heavy) metal, pop, country, rhythm 'n' blues, Jamaican/reggae, rap/hip-hop, downtempo/ambient.
+- Blueprint arrows: straight line = important evolution, dotted = weaker influence, double arrow = strong mutual influence.
+- Musicmap says UK garage and UK bass might become a 24th super-genre.
+- EDM keeps its original broad meaning (all electronic dance music), as in our group EDM.
+- The picture also shows faint FOLK, CLASSICAL and WORLD columns outside the 23.
+
+### Our level 1 today
+
+Genres: Blues, Classical, Funk / Soul, Hip Hop, Jazz, Pop, Reggae, Rock, and the promoted house, techno, trance, drum and bass, synthwave. Group: Others (holds the rest, including ambient, breakbeat, country, folk, gospel, latin and world genres).
+
+### Comparison
+
+| Musicmap super-genre | Our node today | Fit |
+|---|---|---|
+| Gospel and pioneers | `gospel`, parent Others, `related` Funk / Soul | Missing at level 1; provisional |
+| Blues | Blues | Exact |
+| Jazz | Jazz | Exact |
+| Rock 'n' roll | `rock and roll`, under Rock | Level 2 |
+| Golden age | none | No equivalent (a period, not a form) |
+| Punk/wave | `punk` and `new wave`, under Rock | Level 2 |
+| Hardcore punk | `hardcore punk`, under `punk` | Level 3 |
+| Alternative/indie | `alternative rock`, `indie rock`, under Rock | Level 2 |
+| Contemporary (rock) | Rock and its subgenres | Covered by Rock, no node |
+| Breakbeat | `breakbeat`, parent Others | Missing at level 1 (CB1 lists it as a form) |
+| Drum 'n' bass/jungle | drum and bass (level 1); `jungle` under `breakbeat`, `related` drum and bass | Exact; jungle sits on the breakbeat side |
+| Hardcore techno | `hardcore techno`, parent Others, subfamily Techno | Missing; not under techno |
+| Techno | techno | Exact |
+| House | house | Exact |
+| Trance | trance | Exact |
+| Industrial and gothic | `industrial rock` and `goth rock` under Rock and `post-punk`; EBM under synthpop; industrial is a modifier | Missing |
+| (Heavy) metal | `heavy metal` (synonym metal), under Rock | Level 2, not its own |
+| Pop | Pop | Exact |
+| Country | `country`, parent Others, provisional | Missing at level 1 |
+| Rhythm 'n' blues | `rhythm and blues` under Funk / Soul and Blues; `contemporary r&b` under Funk / Soul | Merged into Funk / Soul |
+| Jamaican/reggae | Reggae | Exact |
+| Rap/hip-hop | Hip Hop | Exact |
+| Downtempo/ambient | `ambient`, `downtempo`, `new age`, parent Others | Missing at level 1 |
+| (outside the 23) Folk, Classical, World | `folk`, parent Others; Classical level 1; world genres under Others | Classical exact; Folk and World are Others |
+
+Net: the gaps are mostly forms we hold in Others (gospel, country, breakbeat, hardcore techno, industrial and gothic, downtempo/ambient) plus metal buried under Rock (level 2).
+
+### Ideas to consider (not decided)
+
+1. Colour the level 1 nodes in three Musicmap-style clusters (blue note, rock, EDM/dance) plus a neutral rest.
+2. Promote metal, industrial and downtempo/ambient to level 1 (each has a clear etalon, see the etalon test).
+3. Use straight, dotted and double arrows for lineage in [task-0076](../tasks/task-0076.md): important evolution, weaker influence, strong mutual influence.
+
+## Structure v2
+
+Decided 2026-10-23 (ADR-0045, [task-0096](../tasks/task-0096.md)): a new hierarchy v2 is built beside v1 on Musicmap's terms. Super-genre = top-level family (level 1, no parents); cluster = a group of super-genres (primary: Blue Note, Rock, EDM / Dance), stored on the genre, not as a parent. Alex curates it; the first step is the six EDM / Dance super-genres (Breakbeat, Drum 'n' Bass, Hardcore, House, Techno, Trance) without children. v1 stays as is until a migration is decided.
+
+### Structure v2
+
+Built in parallel (2026-10-23): a separate structure v2 (`server/data/genres_v2.json`, `GET /genres/v2`, screen `#/genres2`, GEN-102) follows Musicmap's method with super-genres as top-level families and clusters as colour groups; v1 stays untouched, and everything below the top level is curated by Alex. First step: the six EDM / Dance super-genres without children.
+
+Colours (2026-10-23, Alex: use the Musicmap colours for now): a cluster carries one `colour` and all its circles use it. In use: EDM / Dance red #D52633. Reserved for later clusters, not in the data yet: Blue Note blue #4364B3, Rock yellow #DCB250 (read from musicmap.info CSS; its blueprint paints each super-genre in a darker shade of the cluster colour, which we skip for now).

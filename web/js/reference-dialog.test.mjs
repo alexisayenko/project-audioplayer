@@ -23,3 +23,8 @@ test('no badge without marks', () => {
   R.resetReferences();
   assert.equal(referenceBadge('none'), null);
 });
+
+test('the mark payload carries the era only when one is chosen', () => {
+  assert.deepEqual(referenceBody({ id: 's1' }, { role: 'origin', note: '', era: 'e1' }), { song_id: 's1', role: 'origin', era: 'e1' });
+  assert.deepEqual(referenceBody({ id: 's1' }, { role: 'origin', note: '', era: '' }), { song_id: 's1', role: 'origin' });
+});

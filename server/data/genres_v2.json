@@ -1,0 +1,14 @@
+{
+ "version": 2,
+ "clusters": [
+  {"id": "edm-dance", "name": "EDM / Dance", "colour": "#D52633", "note": "Musicmap's red cluster of electronic dance music."}
+ ],
+ "genres": [
+  {"id": "breakbeat", "name": "Breakbeat", "level": 1, "cluster": "edm-dance", "parents": [], "v1": "breakbeat"},
+  {"id": "drum-n-bass", "name": "Drum 'n' Bass", "level": 1, "cluster": "edm-dance", "parents": [], "v1": "drum and bass"},
+  {"id": "hardcore", "name": "Hardcore", "level": 1, "cluster": "edm-dance", "parents": [], "v1": "hardcore techno"},
+  {"id": "house", "name": "House", "level": 1, "cluster": "edm-dance", "parents": [], "v1": "house"},
+  {"id": "techno", "name": "Techno", "level": 1, "cluster": "edm-dance", "parents": [], "v1": "techno"},
+  {"id": "trance", "name": "Trance", "level": 1, "cluster": "edm-dance", "parents": [], "v1": "trance"}
+ ]
+}

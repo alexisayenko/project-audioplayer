@@ -49,40 +49,18 @@ function viewInLibrary(n, tree) {
   else location.hash = '#/library';
 }
 
-export function openGenreCard(name, opener = null) {
-  const dlg = el('dialog', { class: 'sheet card-dlg genre-card', 'aria-labelledby': 'genre-card-title', tabindex: '-1' });
-  const stack = [];
+export function renderGenreInfo(name, { onNavigate, container, onLibrary, onMap, titleId = 'genre-card-title' } = {}) {
   const refs = createReferencesPanel();
   let current = name;
   let tree = cachedTree();
   let failed = false;
   let live = true;
 
-  const close = () => dlg.close();
-
-  function go(next) {
-    stack.push(current);
-    current = next;
-    paint();
-    dlg.querySelector('#genre-card-title')?.focus();
-  }
-
-  function back() {
-    if (!stack.length) return;
-    current = stack.pop();
-    paint();
-    dlg.querySelector('#genre-card-title')?.focus();
-  }
-
-  function topBar() {
-    const backBtn = el('button', { type: 'button', class: 'card-back icon round', title: 'Back', 'aria-label': 'Back', hidden: !stack.length, onclick: back }, icon('chevronLeft', 'nav'));
-    const closeBtn = el('button', { type: 'button', class: 'card-close', title: 'Close', 'aria-label': 'Close', onclick: close }, icon('clear', 'nav'));
-    return el('div', { class: 'gc-bar' }, backBtn, el('span', { class: 'grab', 'aria-hidden': 'true' }), closeBtn);
-  }
+  const go = (next) => { if (onNavigate) onNavigate(next); else show(next); };
 
   function message(text) {
     refs.show(null);
-    dlg.replaceChildren(topBar(), el('h2', { id: 'genre-card-title', class: 't-title', tabindex: '-1' }, text));
+    container.replaceChildren(el('h2', { id: titleId, class: 't-title', tabindex: '-1' }, text));
   }
 
   function header(n) {
@@ -90,7 +68,7 @@ export function openGenreCard(name, opener = null) {
     const meta = [el('span', { class: 'gc-level t-caption' }, levelText(n))];
     if (n.fusion) meta.push(el('span', { class: 'gc-fusion t-caption', title: 'A blend of genres from more than one family' }, 'Fusion'));
     return el('div', { class: 'gc-head' },
-      el('div', { class: 'gc-title' }, el('span', { class: dotClass(slot < 0 ? OTHER_COLOR : slot), 'aria-hidden': 'true' }), el('h2', { id: 'genre-card-title', class: 't-title', tabindex: '-1' }, n.label)),
+      el('div', { class: 'gc-title' }, el('span', { class: dotClass(slot < 0 ? OTHER_COLOR : slot), 'aria-hidden': 'true' }), el('h2', { id: titleId, class: 't-title', tabindex: '-1' }, n.label)),
       el('p', { class: 'gc-meta' }, ...meta),
       n.synonyms?.length ? el('p', { class: 'gc-synonyms t-caption muted' }, `Also called: ${n.synonyms.join(', ')}`) : null);
   }
@@ -113,9 +91,10 @@ export function openGenreCard(name, opener = null) {
   }
 
   function actions(n) {
-    return el('div', { class: 'card-actions gc-actions' },
-      el('button', { class: 'btn outline', type: 'button', onclick: () => { close(); viewInLibrary(n, tree); } }, icon('library', 'inline'), 'View in Library'),
-      el('button', { class: 'btn outline', type: 'button', onclick: () => { close(); showGenreOnMap(n.name); } }, icon('genresMap', 'inline'), 'Show on map'));
+    const library = onLibrary || (() => viewInLibrary(n, tree));
+    const buttons = [el('button', { class: 'btn outline', type: 'button', onclick: () => library(n) }, icon('library', 'inline'), 'View in Library')];
+    if (onMap) buttons.push(el('button', { class: 'btn outline', type: 'button', onclick: () => onMap(n) }, icon('genresMap', 'inline'), 'Show on map'));
+    return el('div', { class: 'card-actions gc-actions' }, ...buttons);
   }
 
   function paint() {
@@ -123,23 +102,71 @@ export function openGenreCard(name, opener = null) {
     const n = resolveNode(current, tree);
     if (!n) { message(NOT_FOUND); return; }
     refs.show(n.group ? null : n.name);
-    dlg.replaceChildren(topBar(), header(n), about(n), sits(n), n.group ? null : refs.node, actions(n));
+    container.replaceChildren(header(n), about(n), sits(n), n.group ? null : refs.node, actions(n));
   }
 
+  function show(next) {
+    current = next;
+    paint();
+  }
+
+  paint();
+  if (!tree) loadGenreTree().then((t) => { tree = t; failed = !t; if (live) paint(); });
+
+  return {
+    show,
+    focusTitle: () => container.querySelector(`#${titleId}`)?.focus(),
+    destroy: () => { live = false; refs.destroy(); },
+  };
+}
+
+export function openGenreCard(name, opener = null) {
+  const dlg = el('dialog', { class: 'sheet card-dlg genre-card', 'aria-labelledby': 'genre-card-title', tabindex: '-1' });
+  const body = el('div', { class: 'gc-body' });
+  const stack = [];
+  let current = name;
+
+  const close = () => dlg.close();
+
+  const backBtn = el('button', { type: 'button', class: 'card-back icon round', title: 'Back', 'aria-label': 'Back', hidden: true, onclick: () => back() }, icon('chevronLeft', 'nav'));
+  const closeBtn = el('button', { type: 'button', class: 'card-close', title: 'Close', 'aria-label': 'Close', onclick: close }, icon('clear', 'nav'));
+  const bar = el('div', { class: 'gc-bar' }, backBtn, el('span', { class: 'grab', 'aria-hidden': 'true' }), closeBtn);
+
+  const info = renderGenreInfo(name, {
+    container: body,
+    onNavigate: (next) => {
+      stack.push(current);
+      current = next;
+      sync();
+    },
+    onMap: (n) => { close(); showGenreOnMap(n.name); },
+    onLibrary: (n) => { close(); viewInLibrary(n, cachedTree()); },
+  });
+
+  function sync() {
+    backBtn.hidden = !stack.length;
+    info.show(current);
+    info.focusTitle();
+  }
+
+  function back() {
+    if (!stack.length) return;
+    current = stack.pop();
+    sync();
+  }
+
+  dlg.append(bar, body);
   dlg.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') { e.preventDefault?.(); close(); }
   });
   dlg.onclick = (e) => { if (e.target === dlg) close(); };
   dlg.addEventListener('close', () => {
-    live = false;
-    refs.destroy();
+    info.destroy();
     dlg.remove();
     if (opener?.isConnected) opener.focus();
   }, { once: true });
 
   document.body.append(dlg);
-  paint();
-  if (!tree) loadGenreTree().then((t) => { tree = t; failed = !t; if (live) paint(); });
   dlg.showModal();
   dlg.focus();
   return dlg;

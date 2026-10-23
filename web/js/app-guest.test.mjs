@@ -8,7 +8,7 @@ globalThis.history = { replaceState: (a, b, url) => { location.hash = url; } };
 globalThis.setInterval = () => 0;
 const nav = document.createElement('nav');
 nav.setAttribute('id', 'nav');
-for (const r of ['library', 'playback', 'playlists', 'genres', 'settings']) {
+for (const r of ['library', 'playback', 'playlists', 'genres', 'genres2', 'settings']) {
   const a = document.createElement('a');
   a.dataset.route = r;
   nav.append(a);
@@ -83,5 +83,21 @@ test('#/genres opens the radial Genres map, #/genres-rework redirects to it', as
   await flush();
   assert.equal(location.hash, '#/genres');
   assert.equal(document.body.dataset.route, 'genres');
+  assert.deepEqual(activeRoute(), ['genres']);
+});
+
+test('#/genres2 opens Genres map v2 with the dock; #/genres stays without it', async () => {
+  const activeRoute = () => [...document.querySelectorAll('#nav a')].filter((a) => a.classList.contains('active')).map((a) => a.dataset.route);
+  location.hash = '#/genres2';
+  dom.window.dispatch('hashchange');
+  await flush();
+  assert.equal(document.body.dataset.route, 'genres2');
+  assert.ok(document.getElementById('view').querySelector('.gmr-dock'));
+  assert.equal(document.getElementById('view').querySelector('h1').textContent, 'Genres map v2');
+  assert.deepEqual(activeRoute(), ['genres2']);
+  location.hash = '#/genres';
+  dom.window.dispatch('hashchange');
+  await flush();
+  assert.equal(document.getElementById('view').querySelector('.gmr-dock'), null);
   assert.deepEqual(activeRoute(), ['genres']);
 });

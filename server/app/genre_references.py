@@ -1,4 +1,4 @@
-"""Reference tracks per genre (ADR-0044, task-0093): one shared, owner-curated catalogue `genre_references.json` beside `users/` in the data root (`audioplayer/` of the data repo, so it is git-synced like the libraries), `{genre: [entry]}`, an entry being `{id, artist, title, year?, role, note?, sources?: [{type, url, note?}], song_id?, reviewed}`. Entries are only changed under `deps.tx` by the owner."""
+"""Reference tracks per genre (ADR-0044, task-0093): one shared, owner-curated catalogue `genre_references.json` beside `users/` in the data root (`audioplayer/` of the data repo, so it is git-synced like the libraries), `{genre: [entry]}`, an entry being `{id, artist, title, year?, role, era?, note?, sources?: [{type, url, note?}], song_id?, reviewed}`. Entries are only changed under `deps.tx` by the owner."""
 
 from __future__ import annotations
 
@@ -176,8 +176,8 @@ def song_facts(song: dict[str, Any]) -> dict[str, Any]:
     return {"artist": artist, "title": str(song.get("title") or ""), "year": credits.display_year(work)}
 
 
-def make_entry(doc: dict[str, list[dict[str, Any]]], genre: str, fields: dict[str, Any], reviewed: bool = True) -> dict[str, Any]:
-    """Validate and build a new entry; raises Problem 422 for a bad field and 409 `reference_exists` for a duplicate in the genre."""
+def make_entry(doc: dict[str, list[dict[str, Any]]], genre: str, fields: dict[str, Any], reviewed: bool = True, era_id: str | None = None) -> dict[str, Any]:
+    """Validate and build a new entry (`era_id` already checked against the genre's eras); raises Problem 422 for a bad field and 409 `reference_exists` for a duplicate in the genre."""
     entry: dict[str, Any] = {
         "id": new_id(doc),
         "artist": _text(fields.get("artist"), "artist", MAX_ARTIST, required=True),
@@ -191,6 +191,8 @@ def make_entry(doc: dict[str, list[dict[str, Any]]], genre: str, fields: dict[st
     sources = sources_from(fields)
     if sources:
         entry["sources"] = sources
+    if era_id:
+        entry["era"] = era_id
     rows = doc.get(genre, [])
     if len(rows) >= MAX_ENTRIES_PER_GENRE:
         raise Problem(422, "too_many_references", f"A genre holds at most {MAX_ENTRIES_PER_GENRE} reference tracks.")
@@ -214,11 +216,13 @@ def public(entry: dict[str, Any]) -> dict[str, Any]:
     out = {k: v for k, v in entry.items() if k != "source_url"}
     sources = out.get("sources") or []
     out["sources"] = sources
+    out["era"] = out.get("era") or None
     out["source_count"] = len({s["url"] for s in sources})
     return out
 
 
 def summary(entry: dict[str, Any]) -> dict[str, Any]:
     out = {k: entry[k] for k in ("id", "artist", "title", "year", "role", "song_id", "reviewed") if k in entry}
+    out["era"] = entry.get("era") or None
     out["source_count"] = public(entry)["source_count"]
     return out

@@ -13,6 +13,9 @@ import { isGuest } from './guest.js';
 import { buildMapGraph, visibleIds, libraryCount, genreCount } from './genre-map-graph.js';
 import { loadDrill, saveDrill, newDrill, drillEmpty, pruneDrill, drillVisible, clickDrill, revealDrill, collapseDrill, drillMarks } from './genre-drill.js';
 import { player } from './player.js';
+import { createGenreDock } from './genre-dock.js';
+import { adaptGenresV2, hasStructure } from './genres-v2-adapter.js';
+import { createV2InfoRenderer } from './genres-v2-info.js';
 import { openGenreCard } from './lazy-ui.js';
 import { onGenreFocus, takeGenreFocus } from './genre-focus.js';
 import { songGenres } from './genre-playing.js';
@@ -63,6 +66,12 @@ function failureText(v, vocab) {
   return 'Library unavailable: song counts are needed to show genres';
 }
 
+function failureTextV2(v, vocab) {
+  if (v.status === 'rejected') return 'Genres structure v2 unavailable';
+  if (!vocab) return 'Genres structure v2 is empty: the server has no genres in it yet';
+  return 'Library unavailable: song counts are needed to show genres';
+}
+
 function loadFlag(storage, key) {
   try { return storage?.getItem(key) === '1'; } catch { return false; }
 }
@@ -91,11 +100,12 @@ export function renderGenresRework(root, opts = {}) {
   let legendOpen = loadLegend(globalThis.localStorage);
   let flashTimer = 0;
   let outlineOpen = outlineDefaultOpen(window.innerWidth || 1200);
-  let kind = VIEWS.includes(opts?.view) ? opts.view : loadView(globalThis.localStorage);
+  const v2 = opts?.v2 === true;
+  let kind = v2 ? 'graph' : VIEWS.includes(opts?.view) ? opts.view : loadView(globalThis.localStorage);
   let graph = null;
   let graphFamily = null;
-  let allGenres = false;
-  let drill = loadDrill(globalThis.localStorage);
+  let allGenres = v2;
+  let drill = v2 ? false : loadDrill(globalThis.localStorage);
   const drillState = newDrill();
   let fusion = loadFusion(globalThis.localStorage);
   let related = loadRelated(globalThis.localStorage);
@@ -121,7 +131,7 @@ export function renderGenresRework(root, opts = {}) {
   const outlineBtn = el('button', {
     class: 'gm-tbtn gmr-outline-btn', type: 'button', 'aria-controls': 'gmr-panel', 'aria-expanded': 'false', onclick: () => setOutline(true),
   }, 'Outline');
-  const wrap = el('div', { class: 'gm gmr' });
+  const wrap = el('div', { class: ['gm gmr', opts?.dock === true ? 'has-dock' : '', v2 ? 'gm-v2' : ''].filter(Boolean).join(' ') });
   const work = el('div', { class: 'gm-work' });
   const familyRow = el('div', { class: 'gmr-family-row', role: 'group', 'aria-label': 'Genre family', hidden: true });
   const subRow = el('div', { class: 'gmr-sub-row', role: 'group', 'aria-label': 'Subfamily', hidden: true });
@@ -162,17 +172,10 @@ export function renderGenresRework(root, opts = {}) {
       href, target: '_blank', rel: 'noopener noreferrer', title: tip, 'aria-label': `${label}: ${tip} (opens in a new tab)`,
     }, label, icon('externalLink', 'inline'))));
 
-  function renderLinks(n) {
-    const shown = n && !n.group ? shownSourceLinks(n.sourceLinks) : [];
-    linksRow.hidden = !shown.length;
-    linksRow.replaceChildren(...shown.map((l) => el('a', {
-      href: l.url, target: '_blank', rel: 'noopener noreferrer', 'data-source': l.source, title: `${l.label}: ${n.label}`, 'aria-label': `${l.label}: ${n.label}`,
-    }, icon(l.icon, 'inline'), l.label)));
-  }
-
   function renderGroupNote() {
     const n = tree && selectedId ? tree.byId.get(selectedId) : null;
-    renderPreview(n);
+    if (dock) dock.show(n ? n.name : null, n?.label);
+    else renderPreview(n);
     groupNote.hidden = !n?.group;
     groupNote.textContent = n?.group ? GROUP_TEXT(n) : '';
   }
@@ -263,6 +266,16 @@ export function renderGenresRework(root, opts = {}) {
 
   const narrow = () => (window.innerWidth || 1200) < NARROW_PX;
 
+  const dock = opts?.dock === true ? createGenreDock({
+    renderInfo: v2 ? createV2InfoRenderer(() => lastData?.vocab?.v2) : undefined,
+    storage: globalThis.localStorage,
+    narrow,
+    onNavigate: (name) => { const n = tree && resolveNode(name, tree); if (n) select(n.id, { reveal: true, center: true }); },
+    onMap: (n) => { const x = tree && resolveNode(n.name, tree); if (x) select(x.id, { reveal: true, center: true }); },
+    onChange: (on) => wrap.classList.toggle('dock-rail', on),
+    onExpand: () => { if (narrow() && outlineOpen) setOutline(false); },
+  }) : null;
+
   function setOutline(open) {
     outlineOpen = open;
     side.hidden = !open;
@@ -272,6 +285,7 @@ export function renderGenresRework(root, opts = {}) {
     closeBtn.setAttribute('aria-expanded', String(open));
     wrap.classList.toggle('outline-open', open);
     if (open && narrow() && legendOpen) setLegend(false);
+    if (dock && open && narrow() && !dock.isCollapsed()) dock.setCollapsed(true);
     syncInset();
   }
 
@@ -789,12 +803,13 @@ export function renderGenresRework(root, opts = {}) {
   async function load() {
     status.textContent = 'Loading...';
     reload.disabled = true;
-    const [v, l, lay] = await Promise.allSettled([api.genreVocabulary(), api.library(), loadLayoutFile()]);
+    const [v, l, lay] = await Promise.allSettled([v2 ? api.genresV2() : api.genreVocabulary(), api.library(), v2 ? Promise.resolve(null) : loadLayoutFile()]);
     savedLayout = lay.status === 'fulfilled' ? lay.value : null;
     if (dead) return;
     reload.disabled = false;
-    const vocab = v.status === 'fulfilled' ? v.value : null;
-    const failed = !hasLevels(vocab) || l.status !== 'fulfilled';
+    const raw = v.status === 'fulfilled' ? v.value : null;
+    const vocab = v2 ? (hasStructure(raw) ? adaptGenresV2(raw) : null) : raw;
+    const failed = (v2 ? !vocab : !hasLevels(vocab)) || l.status !== 'fulfilled';
     if (failed) {
       tree = null;
       layout = null;
@@ -805,7 +820,7 @@ export function renderGenresRework(root, opts = {}) {
       graphView.setGraph({ nodes: [], links: [] });
       renderTree();
       refreshNow();
-      status.textContent = failureText(v, vocab);
+      status.textContent = v2 ? failureTextV2(v, vocab) : failureText(v, vocab);
       return;
     }
     lastData = { vocab, lib: l.value };
@@ -876,11 +891,11 @@ export function renderGenresRework(root, opts = {}) {
 
   side.append(
     el('div', { class: 'gm-outline-head' }, el('h2', { class: 't-headline' }, 'Outline'), closeBtn),
-    el('div', { class: 'gmr-bar' }, status, el('div', { class: 'gmr-btns' }, legendBtn, nowBtn, reload), el('div', { class: 'gmr-btns' }, viewRow, libBtn, drillBtn, collapseMapBtn, fusionBtn, relatedBtn, resetLayoutBtn, useSavedBtn, exportBtn), familyRow, subRow, groupNote, preview),
+    el('div', { class: 'gmr-bar' }, status, el('div', { class: 'gmr-btns' }, legendBtn, nowBtn, reload), el('div', { class: 'gmr-btns' }, viewRow, libBtn, drillBtn, collapseMapBtn, fusionBtn, relatedBtn, resetLayoutBtn, useSavedBtn, exportBtn), familyRow, subRow, groupNote, dock ? null : preview),
     outlineEl,
     seeAlso);
-  work.append(canvas, graphCanvas, side, outlineBtn, zoomBar, legend);
-  wrap.append(pageHead('Genres map'), work);
+  work.append(canvas, graphCanvas, ...(dock ? [dock.node] : []), side, outlineBtn, zoomBar, legend);
+  wrap.append(pageHead(v2 ? 'Genres map v2' : dock ? 'Genres map v2' : 'Genres map'), work);
   root.append(wrap);
   setOutline(outlineOpen);
   wrap.addEventListener('keydown', (e) => {
@@ -896,7 +911,10 @@ export function renderGenresRework(root, opts = {}) {
     clearTimeout(flashTimer);
     unsubPlayer();
     unsubFocus();
+    dock?.destroy();
     radialView.destroy();
     graphView.destroy();
   };
 }
+
+export const renderGenresMapV2 = (root) => renderGenresRework(root, { dock: true, v2: true });

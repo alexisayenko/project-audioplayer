@@ -114,3 +114,17 @@ test('cardSections splits parents, groups, subgenres and related', () => {
   assert.deepEqual(s.children, []);
   assert.deepEqual(s.groups, []);
 });
+
+test('showGenreOnMap on the Genres map v2 route notifies instead of navigating', () => {
+  const loc = { hash: '#/genres2' };
+  showGenreOnMap('jungle', loc);
+  assert.equal(loc.hash, '#/genres2');
+  assert.equal(takeGenreFocus(), 'jungle');
+});
+
+test('showGenreOnMap from another screen goes to the Genres screen', () => {
+  const loc = { hash: '#/library' };
+  showGenreOnMap('jungle', loc);
+  assert.equal(loc.hash, '#/genres');
+  assert.equal(takeGenreFocus(), 'jungle');
+});
