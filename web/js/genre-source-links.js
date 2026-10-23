@@ -1,9 +1,9 @@
 export const SOURCES = [
-  { key: 'wikipedia', label: 'Wikipedia', icon: 'srcWikipedia' },
+  { key: 'wikipedia', label: 'Wikipedia', short: 'Wiki', icon: 'srcWikipedia' },
   { key: 'apple-music', label: 'Apple Music', icon: 'srcAppleMusic' },
   { key: 'spotify', label: 'Spotify', icon: 'srcSpotify' },
   { key: 'discogs', label: 'Discogs', icon: 'srcDiscogs' },
-  { key: 'rym', label: 'Rate Your Music', icon: 'srcRym' },
+  { key: 'rym', label: 'Rate Your Music', short: 'RYM', icon: 'srcRym' },
   { key: 'musicbrainz', label: 'MusicBrainz', icon: 'srcMusicbrainz' },
 ];
 
@@ -23,6 +23,6 @@ export function shownSourceLinks(list) {
   return SHOWN_SOURCES.map((key) => {
     const link = links.find((l) => norm(l.source) === key);
     const meta = SOURCES.find((s) => s.key === key);
-    return link ? { ...link, label: meta.label, icon: meta.icon } : null;
+    return link ? { ...link, label: meta.label, short: meta.short || meta.label, icon: meta.icon } : null;
   }).filter(Boolean);
 }

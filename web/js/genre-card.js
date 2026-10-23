@@ -80,7 +80,7 @@ export function renderGenreInfo(name, { onNavigate, container, onLibrary, onMap,
       el('p', { class: `gc-desc t-body${desc ? '' : ' muted'}` }, desc || NO_DESCRIPTION),
       links.length ? el('div', { class: 'gmr-links gc-links t-caption', role: 'group', 'aria-label': 'Genre sources' }, ...links.map((l) => el('a', {
         href: l.url, target: '_blank', rel: 'noopener noreferrer', 'data-source': l.source, title: `${l.label}: ${n.label}`, 'aria-label': `${l.label}: ${n.label} (opens in a new tab)`,
-      }, icon(l.icon, 'inline'), l.label))) : null);
+      }, icon(l.icon, 'inline'), l.short || l.label))) : null);
   }
 
   function sits(n) {

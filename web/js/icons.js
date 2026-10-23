@@ -20,7 +20,7 @@ export const ICONS = {
   help: { d: '<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>' },
   features: { d: '<rect x="3.4" y="3.4" width="7.2" height="7.2" rx="1.8"/><rect x="3.4" y="13.4" width="7.2" height="7.2" rx="1.8"/><rect x="13.4" y="13.4" width="7.2" height="7.2" rx="1.8"/><path d="M17.5 1.46L19.25 5L23.15 5.57L20.33 8.32L20.99 12.21L17.5 10.37L14.01 12.21L14.68 8.32L11.85 5.57L15.75 5z"/>' },
   settings: { d: '<path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/>' },
-  srcWikipedia: { d: '<path d="M2.5 5.5 7 19l5-10.5L17 19l4.5-13.5"/>' },
+  srcWikipedia: { d: '<image href="img/wikipedia.png" x="0" y="0" width="24" height="24" stroke="none"/>' },
   srcAppleMusic: { d: '<rect x="3" y="3" width="18" height="18" rx="5"/><path d="M15.5 7v8"/><circle cx="13" cy="15.5" r="2.5"/><path d="m15.5 7-5 1.2V16"/>' },
   srcSpotify: { d: '<circle cx="12" cy="12" r="10"/><path d="M6.5 9.5c3.7-1.1 7.5-.8 11 1"/><path d="M7.3 13c3-.8 6-.5 8.7.9"/><path d="M8 16.2c2.3-.6 4.6-.4 6.5.6"/>' },
   srcDiscogs: { d: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3.2"/><circle cx="12" cy="12" r=".4"/>' },

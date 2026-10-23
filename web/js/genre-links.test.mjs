@@ -18,6 +18,7 @@ const { shownSourceLinks } = await import('./genre-source-links.js');
 
 test('shownSourceLinks keeps Wikipedia and Rate Your Music in that order and drops unsafe urls', () => {
   assert.deepEqual(shownSourceLinks(LINKS).map((l) => [l.label, l.kind]), [['Wikipedia', 'page'], ['Rate Your Music', 'page']]);
+  assert.deepEqual(shownSourceLinks(LINKS).map((l) => l.short), ['Wiki', 'RYM']);
   assert.deepEqual(shownSourceLinks([{ source: 'wikipedia', url: 'javascript:alert(1)' }]), []);
   assert.deepEqual(shownSourceLinks(undefined), []);
 });
