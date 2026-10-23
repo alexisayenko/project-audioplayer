@@ -1,4 +1,4 @@
-import { api } from './api.js';
+import { api, isSignedIn } from './api.js';
 import { el, plural, pageHead, toast } from './dom.js';
 import { icon } from './icons.js';
 import { familyIndex, isHiddenFamily, dotClass } from './genre-data.js';
@@ -10,6 +10,7 @@ import { createForceView } from './genre-force-view.js';
 import { shadeTable } from './genre-shade.js';
 import { loadLayoutFile, exportLayout } from './genre-layout-io.js';
 import { isGuest } from './guest.js';
+import { createLayoutStore } from './genre-layout-store.js';
 import { buildMapGraph, visibleIds, libraryCount, genreCount } from './genre-map-graph.js';
 import { loadDrill, saveDrill, newDrill, drillEmpty, pruneDrill, drillVisible, clickDrill, revealDrill, collapseDrill, drillMarks } from './genre-drill.js';
 import { player } from './player.js';
@@ -126,6 +127,8 @@ export function renderGenresRework(root, opts = {}) {
   clearSubfamilies(globalThis.localStorage);
   let savedLayout = null;
   let isOwner = false;
+  const layoutStore = v2 && !isGuest() && isSignedIn() ? createLayoutStore() : null;
+  let userLayout = null;
 
   const status = el('p', { class: 'gm-status t-caption', role: 'status' }, 'Loading...');
   const reload = el('button', { class: 'gm-tbtn', type: 'button', onclick: () => start() }, 'Reload');
@@ -233,6 +236,7 @@ export function renderGenresRework(root, opts = {}) {
   const viewOpts = {
     reducedMotion: reduced,
     rigid: true,
+    onMoved: () => layoutStore?.touch(),
     onSelect: (id) => {
       if (id && drill && kind === 'graph') { drillClick(id); select(id, { reveal: true, map: true }); } else if (id) select(id, { reveal: true }); else if (drill && kind === 'graph') { collapseMap(); deselect(); } else deselect();
     },
@@ -262,7 +266,7 @@ export function renderGenresRework(root, opts = {}) {
   }, 'Fusion genres');
   const resetLayoutBtn = el('button', {
     class: 'gm-tbtn gmr-layout', type: 'button', hidden: kind !== 'graph', title: 'Place the circles again with the fewest crossing lines',
-    onclick: () => graphView.resetLayout?.(),
+    onclick: () => { graphView.resetLayout?.(); void layoutStore?.clear(); },
   }, 'Reset layout');
   const useSavedBtn = el('button', {
     class: 'gm-tbtn gmr-layout', type: 'button', hidden: true, title: 'Go back to the layout saved in the layout file',
@@ -818,8 +822,9 @@ export function renderGenresRework(root, opts = {}) {
   async function load() {
     status.textContent = 'Loading...';
     reload.disabled = true;
-    const [v, l, lay] = await Promise.allSettled([v2 ? api.genresV2() : api.genreVocabulary(), api.library(), v2 ? Promise.resolve(null) : loadLayoutFile()]);
-    savedLayout = lay.status === 'fulfilled' ? lay.value : null;
+    const [v, l, lay] = await Promise.allSettled([v2 ? api.genresV2() : api.genreVocabulary(), api.library(), v2 ? (layoutStore ? layoutStore.sync() : Promise.resolve(null)) : loadLayoutFile()]);
+    if (v2) userLayout = lay.status === 'fulfilled' ? lay.value : null;
+    else savedLayout = lay.status === 'fulfilled' ? lay.value : null;
     if (dead) return;
     reload.disabled = false;
     const raw = v.status === 'fulfilled' ? v.value : null;
@@ -855,7 +860,8 @@ export function renderGenresRework(root, opts = {}) {
     graph = buildMapGraph(tree);
     pruneDrill(drillState, graph);
     if (graphFamily && !tree.byId.has(`g:${graphFamily}`)) graphFamily = null;
-    graphView.setGraph(graph, { saved: savedLayout });
+    if (layoutStore) userLayout = layoutStore.current();
+    graphView.setGraph(graph, v2 ? { saved: userLayout?.size ? userLayout : null, moved: userLayout } : { saved: savedLayout });
     graphView.setRelated?.(related);
     syncLayoutButtons();
     dropStale();
@@ -934,9 +940,11 @@ export function renderGenresRework(root, opts = {}) {
   const unsubPlayer = player.onChange(refreshNow);
   const unsubFocus = onGenreFocus(applyFocusRequest);
   if (!isGuest()) api.me().then((m) => { if (!dead) { isOwner = m?.owner === true; syncLayoutButtons(); } }).catch(() => {});
+  layoutStore?.attach({ collect: () => graphView.movedPositions?.() || new Map(), known: (id) => !!graph?.nodes.some((n) => n.id === id) });
   start();
   return () => {
     dead = true;
+    layoutStore?.dispose();
     clearTimeout(flashTimer);
     unsubPlayer();
     unsubFocus();

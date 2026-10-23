@@ -244,6 +244,8 @@ export const api = {
   genres: () => request('GET', '/genres').then((d) => (Array.isArray(d?.genres) ? d.genres : [])),
   genreVocabulary: () => request('GET', '/genres/vocabulary'),
   genresV2: () => request('GET', '/genres/v2'),
+  genreLayout: () => request('GET', '/me/genre-layout'),
+  putGenreLayout: (doc, keepalive = false) => request('PUT', '/me/genre-layout', doc, undefined, false, keepalive),
   genreReferences: (name) => request('GET', `/genres/${q(name)}/references`),
   allReferences: () => request('GET', '/genres/references'),
   putGenreEras: (name, body) => request('PUT', `/genres/${q(name)}/eras`, body),

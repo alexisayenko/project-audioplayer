@@ -45,12 +45,12 @@ const LAYOUT_STATIC_MS = 1500;
 const PAD = { t: 16, r: 0, b: 16, l: 16 };
 
 const inert = () => ({
-  setGraph() {}, setVisible() {}, setMarks() {}, setRelated() {}, resetLayout() {}, useSavedLayout() {}, exportPositions: () => [], select() {}, setMatches() {}, focusNode() {}, flash() {}, setFocusInset() {}, reset() {}, zoomBy() {}, resize() {}, destroy() {}, stats: () => ({}), nodeScreen: () => null,
+  setGraph() {}, setVisible() {}, setMarks() {}, setRelated() {}, resetLayout() {}, useSavedLayout() {}, exportPositions: () => [], movedPositions: () => new Map(), select() {}, setMatches() {}, focusNode() {}, flash() {}, setFocusInset() {}, reset() {}, zoomBy() {}, resize() {}, destroy() {}, stats: () => ({}), nodeScreen: () => null,
 });
 
 const clampK = (k) => Math.min(MAX_K, Math.max(MIN_K, k));
 
-export function createForceView(canvas, { onSelect, onHover, reducedMotion = false, simOptions = {}, rigid = false } = {}) {
+export function createForceView(canvas, { onSelect, onHover, onMoved, reducedMotion = false, simOptions = {}, rigid = false } = {}) {
   const ctx = canvas.getContext?.('2d');
   if (!ctx) return inert();
   let W = 1;
@@ -65,6 +65,7 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
   let layout = null;
   let rawGraph = null;
   let savedMap = null;
+  let movedIds = new Set();
   let showRelated = false;
   let byId = new Map();
   let adj = new Map();
@@ -758,6 +759,11 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
       if (d.moved) { d.node.dropped = true; d.node.fx = d.ax; d.node.fy = d.ay; } else if (!d.node.dropped) unpin(d.node);
       if (rigid && d.moved) for (const { c } of d.sub || []) if (c.target === 1) { c.dropped = true; c.fx = c.x; c.fy = c.y; }
       if (sim && d.moved && !reducedMotion && !rigid) { sim.setAlphaTarget(sim.restTarget()); sim.reheat(RELEASE_ALPHA); awake = true; }
+      if (d.moved) {
+        movedIds.add(d.node.id);
+        for (const { c } of d.sub || []) movedIds.add(c.id);
+        onMoved?.();
+      }
       if (!d.moved && ev.type === 'pointerup') onSelect?.(d.node.id);
     } else if (!d.moved && ev.type === 'pointerup') onSelect?.(null);
     if (ev.pointerType === 'touch') setHover(null);
@@ -1017,7 +1023,7 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
   }
 
   return {
-    setGraph(graph, { saved = null } = {}) {
+    setGraph(graph, { saved = null, moved = null } = {}) {
       rawGraph = graph;
       springs.clear();
       shadeIdx = graph.subIdx ?? -1;
@@ -1034,6 +1040,7 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
         if (p) { n.x = p.x; n.y = p.y; n.vx = p.vx; n.vy = p.vy; n.vis = p.vis; n.target = p.target; }
       }
       const idx = new Map(nodes.map((n) => [n.id, n]));
+      movedIds = new Set(moved instanceof Map ? [...moved.keys()].filter((id) => idx.has(id)) : []);
       allLinks = graph.links.map((l) => ({ s: idx.get(l.source), t: idx.get(l.target), related: l.kind === 'related', assoc: l.kind === 'assoc' })).filter((l) => l.s && l.t);
       links = allLinks.filter((l) => showRelated || !l.assoc);
       index();
@@ -1080,9 +1087,19 @@ export function createForceView(canvas, { onSelect, onHover, reducedMotion = fal
       moveTo({ k, x: PAD.l + w / 2 - n.x * k, y: PAD.t + h / 2 - n.y * k });
     },
     zoomToNode,
-    resetLayout() { startLayout(null); wakeLayout(0.6); },
+    resetLayout() { movedIds.clear(); startLayout(null); wakeLayout(0.6); },
     useSavedLayout() { if (savedMap) { startLayout(savedMap); wakeLayout(0.6); } },
     exportPositions() { return nodes.map((n) => ({ id: n.id, x: n.hx ?? n.x, y: n.hy ?? n.y })); },
+    movedPositions() {
+      const out = new Map();
+      for (const id of movedIds) {
+        const n = byId.get(id);
+        const x = n ? n.hx ?? n.x : NaN;
+        const y = n ? n.hy ?? n.y : NaN;
+        if (Number.isFinite(x) && Number.isFinite(y)) out.set(id, [Math.round(x), Math.round(y)]);
+      }
+      return out;
+    },
     setRelated(on) {
       showRelated = !!on;
       links = allLinks.filter((l) => showRelated || !l.assoc);
