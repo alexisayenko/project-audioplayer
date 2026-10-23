@@ -1,8 +1,29 @@
 # Genre reference tracks: psytrance (verified review)
 
-Verified review for [task-0093](../tasks/task-0093.md) / [ADR-0044](decisions.md), 2026-10-24, the genre `psytrance` itself (owner request 2026-10-24: "run agent to propose reference tracks for psytrance"). Read-only: nothing is saved in `genre_references.json`. It supersedes the psytrance row of [genre-references-library-candidates](genre-references-library-candidates.md) (Pure Energy, from memory). Same method as [genre-references-goa-trance](genre-references-goa-trance.md).
+Verified review for [task-0093](../tasks/task-0093.md) / [ADR-0044](decisions.md), 2026-10-24, the genre `psytrance` itself (owner request 2026-10-24: "run agent to propose reference tracks for psytrance"). Four whole-genre picks are saved (see [Saved](#saved)); the rest is not saved. It supersedes the psytrance row of [genre-references-library-candidates](genre-references-library-candidates.md) (Pure Energy, from memory). Same method as [genre-references-goa-trance](genre-references-goa-trance.md).
 
 Scope: `psytrance` has parent trance; goa trance is its child with its own review, so no goa picks are repeated here. The children dark psytrance, progressive psytrance, forest psytrance, full-on psytrance, hi-tech psytrance and psybient get their own reviews later; picks here are not made for them, but songs that clearly belong to one carry a note. Psybient is also a child of psytrance (`genre_extras.json`) and psycore a level 4 child of dark psytrance (back as an approved extra on 2026-10-24); both get their own reviews, so library songs tagged psybient are only listed.
+
+## Saved
+
+2026-10-24, data change only (no deploy): four entries under `psytrance` in `genre_references.json` (`reviewed: true`, no `era`, readable MusicBrainz pages as sources); the file was edited in the data repo (commit `82034c2`) and the server picks it up by its inbound fast-forward (STO-057). Owner decision (2026-10-24): the umbrella `psytrance` gets only whole-genre roles; the children (dark, progressive, forest, full-on, hi-tech psytrance, psybient) get their own reviews later.
+
+| Entry id | Pick | Role | Year | Song |
+| --- | --- | --- | --- | --- |
+| `4e47211a` | Hallucinogen - LSD | origin | 1994 | `iIsVzSMRw8E` (same track as goa trance entry `6d7d0ba3`, which keeps its archetype role there) |
+| `4ca23cd5` | Astrix - Deep Jungle Walk | archetype | 2016 | not in the library |
+| `20da8ed4` | Vini Vici - The Tribe | landmark | 2015 | not in the library |
+| `ec5de958` | Armin van Buuren, Vini Vici feat. Hilight Tribe - Great Spirit | breakthrough | 2016 | not in the library |
+
+Skipped:
+
+- Infected Mushroom - Symphonatic (suggested as a second landmark): not a track of Classical Mushroom. The MusicBrainz release page of Classical Mushroom (2000-02-01, IL) lists nine tracks without it. MusicBrainz places Symphonatic on the US compilation-album Tsunami (2000-09-05) and on the Symphonatic EP (IL, 2001-02); the two Wikipedia pages (Classical Mushroom is a section of Infected Mushroom) never name it, and the Last.fm track page has no wiki. No source supports a standing, so it is not saved.
+- Pure Energy, Xplorer, Breath, Sian, State of Mind, Psycho, Bust a Move: not saved (child reviews or weak). Bust a Move rests on one unsourced Wikipedia sentence.
+- Child fit left to the child reviews: Breath, Xplorer, Sian, State of Mind, and Deep Jungle Walk (possibly progressive or full-on psytrance as well; Astrix is described as progressive psytrance with full-on influence).
+
+LSD verification (origin): the lead of the Wikipedia page on Hallucinogen (musician) says the album Twisted (1995) is considered one of the most influential albums in the genre, and the page labels him psychedelic trance (goa trance is only a "See also" link). The Wikipedia page on Twisted calls it one of the most successful psychedelic trance albums (over 85,000 copies worldwide), labels it psychedelic trance and goa trance, and says "LSD" was widely played; the Psychedelic trance page names Hallucinogen among early contributors. No source says "LSD" itself is foundational, so the origin role rests on the album-level statement plus the track's opening spot and 1994 first release; it is a judgement. MusicBrainz (recording `86d0af45-...`) dates the first release 14 Jul 1994 (Order Odonata Vol. 1), the Twisted album 14 Sep 1995, and the live mix 1995. The note names the 1995 Live Mix and album.
+
+Source notes: MusicBrainz human pages answer a bot check to the fetch tool; the ids in the saved URLs were confirmed through the ws/2 JSON lookups (recordings of Deep Jungle Walk, The Tribe, LSD; releases He.art, Future Classics, Tomorrowland 2017). Viberate lists The Tribe (2015) as a track that brought psytrance into mainstream EDM and Deep Jungle Walk (2016) as the mystical side of the genre; DoubleBlind describes Deep Jungle Walk but does not list The Tribe or Great Spirit.
 
 ## Method
 
@@ -57,7 +78,7 @@ Source codes are in [Sources](#sources). All years verified on at least one Musi
 | 6 | Armin van Buuren, Vini Vici feat. Hilight Tribe - Great Spirit | breakthrough | 2016 | no | W6, W5, M3, O4 | high | digital single of 12 Dec 2016 (Armind/Armada), the first psytrance release of the trance DJ Armin van Buuren; gold or platinum in five countries (per Wikipedia); on Tomorrowland 2017 (compilation, 20 Jul 2017) and in the A State of Trance Year Mix 2016; no source states "brought psytrance to a wide audience" outright, the role is inferred from reach |
 | 7 | Infected Mushroom - Psycho | breakthrough | 1999 | no | W3, M2, M11, O2 | medium | album The Gathering (cassette 1 Mar 1999, IL); Wikipedia: The Gathering was among the first albums to bring Israeli psytrance to a mainstream audience, and "Psycho" is its popular track; MusicBrainz also holds a 1998 compilation, Forest of the Saints, and a live mix on Full On 4 (Feb 2000), so the year conflicts (see open points); child full-on is plausible |
 
-No origin pick. Reasons are in [Origin role](#origin-role).
+No origin pick in this table. Reasons are in [Origin role](#origin-role); the owner later chose Hallucinogen - LSD (a goa-era track, 1994) as the umbrella origin, see [Saved](#saved). Only #1, #4 and #6 of this table were saved.
 
 Reserve (not picks, in library, optional): Static Movement - Sian (`pX8dL4BXqK0`, 2016), Antinomy - State of Mind (`9VpW8Atlj7k`, 2022), Bamboo Forest - Breath (`Lud-4oFlEms`, 2003). All are minor acts found on MusicBrainz only; no source gives them a role.
 

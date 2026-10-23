@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-24 (psytrance reference tracks saved, data only)
+
+- Data (owner request 2026-10-24, no deploy; the server picks the file up by its inbound fast-forward, STO-057): four whole-genre `psytrance` references in `genre_references.json` of the data repo (commit `82034c2`): Hallucinogen - LSD (origin, 1994, library song), Astrix - Deep Jungle Walk (archetype, 2016), Vini Vici - The Tribe (landmark, 2015), Armin van Buuren, Vini Vici feat. Hilight Tribe - Great Spirit (breakthrough, 2016). Infected Mushroom - Symphonatic was checked and skipped (not on Classical Mushroom). Details: [tech/genre-references-psytrance.md](tech/genre-references-psytrance.md#saved).
+
 ## 2026-10-24 (goa trance reference re-check, docs only)
 
 - Docs: owner report that the goa trance origin pick "Total Eclipse - Total Eclipse" is a band name, not a song, was checked against MusicBrainz, Last.fm, PsyDB and Psynews: the self-titled track exists on Project II Trance (Dragonfly, August 1993), so the data entry `a62572c8` is unchanged (no data change); a tracklist-reading method note was added to [tech/genre-references-goa-trance.md](tech/genre-references-goa-trance.md).
