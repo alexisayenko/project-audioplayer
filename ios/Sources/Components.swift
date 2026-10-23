@@ -494,6 +494,7 @@ struct DSSlider: View {
     var range: ClosedRange<Double> = 0...1
     var label: String
     var disabled = false
+    var tapStep: Double? = nil
     var valueText: ((Double) -> String)?
     @Environment(\.colorScheme) private var scheme
 
@@ -512,9 +513,16 @@ struct DSSlider: View {
             }
             .frame(height: geo.size.height)
             .contentShape(Rectangle())
-            .gesture(DragGesture(minimumDistance: 0).onChanged { g in
+            .gesture(DragGesture(minimumDistance: tapStep == nil ? 0 : 10).onChanged { g in
                 guard !disabled, geo.size.width > 0 else { return }
                 value = range.lowerBound + span * min(1, max(0, (g.location.x - 8) / track))
+            })
+            .simultaneousGesture(SpatialTapGesture().onEnded { tap in
+                guard !disabled, let tapStep, geo.size.width > 0 else { return }
+                let tapped = range.lowerBound + span * min(1, max(0, (tap.location.x - 8) / track))
+                guard let target = PlaybackSeek.tapTarget(current: value, duration: range.upperBound,
+                                                          tapped: tapped, step: tapStep) else { return }
+                value = max(range.lowerBound, target)
             })
         }
         .frame(height: DS.Space.hit)

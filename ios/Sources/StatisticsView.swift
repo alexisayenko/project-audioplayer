@@ -48,6 +48,8 @@ private struct ListeningPayload: Decodable {
 struct StatisticsView: View {
     let songs: [Track]
     let signedIn: Bool
+    var isVisible = true
+    var isActive = true
     var loaded = true
     var hasAudio: (Track) -> Bool = { $0.onServer != false }
     let fetchListening: () async throws -> Data
@@ -77,7 +79,17 @@ struct StatisticsView: View {
         }
         .dsGround()
         .dynamicTypeSize(...DynamicTypeSize.accessibility2)
-        .task(id: signedIn ? attempt : -1) { await loadListening() }
+        .task(id: signedIn && isVisible && isActive ? attempt : -1) {
+            guard signedIn, isVisible, isActive else { return }
+            while !Task.isCancelled {
+                await loadListening()
+                do {
+                    try await Task.sleep(for: .seconds(30))
+                } catch {
+                    return
+                }
+            }
+        }
         .onReceive(NotificationCenter.default.publisher(for: .playsUploaded)) { _ in attempt += 1 }
     }
 
@@ -91,7 +103,7 @@ struct StatisticsView: View {
 
     private func loadListening() async {
         guard signedIn else { return }
-        listening = .loading
+        if case .loaded = listening {} else { listening = .loading }
         do {
             let payload = try JSONDecoder().decode(ListeningPayload.self, from: try await fetchListening())
             listening = .loaded(payload)
@@ -100,6 +112,7 @@ struct StatisticsView: View {
         } catch let error as URLError where error.code == .cancelled {
             return
         } catch {
+            if case .loaded = listening { return }
             listening = .failed
         }
     }
