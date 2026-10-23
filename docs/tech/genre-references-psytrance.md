@@ -4,6 +4,8 @@ Verified review for [task-0093](../tasks/task-0093.md) / [ADR-0044](decisions.md
 
 Scope: `psytrance` has parent trance; goa trance is its child with its own review, so no goa picks are repeated here. The children dark psytrance, progressive psytrance, forest psytrance, full-on psytrance, hi-tech psytrance and psybient get their own reviews later; picks here are not made for them, but songs that clearly belong to one carry a note. Psybient is also a child of psytrance (`genre_extras.json`) and psycore a level 4 child of dark psytrance (back as an approved extra on 2026-10-24); both get their own reviews, so library songs tagged psybient are only listed.
 
+Child reviews: [forest psytrance](genre-references-forest-psytrance.md) (Bamboo Forest is not forest; its songs stay full-on psytrance).
+
 ## Saved
 
 2026-10-24, data change only (no deploy): four entries under `psytrance` in `genre_references.json` (`reviewed: true`, no `era`, readable MusicBrainz pages as sources); the file was edited in the data repo (commit `82034c2`) and the server picks it up by its inbound fast-forward (STO-057). Owner decision (2026-10-24): the umbrella `psytrance` gets only whole-genre roles; the children (dark, progressive, forest, full-on, hi-tech psytrance, psybient) get their own reviews later.
