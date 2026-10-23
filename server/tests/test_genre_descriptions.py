@@ -61,9 +61,9 @@ def test_the_vocabulary_serves_description_on_rows_levels_and_forms(client):
     assert {r["name"] for r in body["genres"] if "description" in r} == set(genre_vocab.load_descriptions())
 
 
-def test_goa_trance_description_is_a_ten_line_summary():
+def test_goa_trance_description_is_a_tempo_line_and_a_paragraph():
     t = genre_vocab.load_descriptions()["goa trance"]
-    assert len(t.split("\n")) == 10
+    assert len(t.split("\n")) == 2
     assert t.startswith("Tempo: about 135-150 BPM")
 
 

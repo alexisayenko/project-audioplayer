@@ -4,6 +4,8 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 ## 2026-10-23 (web brand lockup, to deploy)
 
+- Server and web: the `goa trance` genre description is Alex's new two-line text (`Tempo: about 135-150 BPM.` and one prose paragraph, DATA-196), and the genre info panel shows the Tempo line with its BPM chip on its own line above the justified paragraph instead of inline inside it (GEN-088; to deploy, no tests run).
+- Web: the sidebar and drawer brand lockup is the refreshed Electrophone Vega 108 master with the full lower edge and the `p` descender; the web copy `web/img/electrophone-lockup.png` is regenerated from it (task-0097, `docs/brand/logo`; to deploy, no tests run, not seen in a browser).
 - Server and web: the `goa trance` genre description is Alex's own prose, one paragraph with no Tempo line, so its card shows no BPM chip; a one-line description now renders as the same justified prose (`.gc-prose`) as a multi-line one (GEN-088, DATA-196; deployed 2026-10-23, no tests run).
 - Web: the plain "Loading..." state (page route loader, Features and Music theory panels) is a compact dark pill with a small spinner, the look of the "new version" update bar (WEB-117, WEB-134; deployed 2026-10-23, static browser check only, no tests run). It floats at the same top-centre spot as the update bar (below it when both show) instead of sitting in the page flow (deployed 2026-10-23, static browser check only, no tests run).
 - Web: Genres map v2 remembers the selected genre per browser (`electrophone.genresV2Selected`) and selects it again after leaving the page or reloading; deselecting clears it, a genre missing from the payload is ignored (GEN-108; deployed 2026-10-23, no tests run).

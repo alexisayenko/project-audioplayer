@@ -24,7 +24,7 @@ function sentence(text) {
 
 function tempoMain(value) {
   const cut = value.indexOf(',');
-  return (cut > 0 ? value.slice(0, cut) : value).trim();
+  return (cut > 0 ? value.slice(0, cut) : value).trim().replace(/[.!?\u2026]+$/, '').trim();
 }
 
 function tempoParts(main) {
@@ -42,7 +42,7 @@ export function descriptionNode(text, emptyText) {
   }
   const main = tempo ? tempoMain(tempo) : '';
   const prose = rest.map(sentence).filter(Boolean).join(' ');
-  const parts = [...(main ? tempoParts(main) : []), prose ? `${main ? ' ' : ''}${prose}` : ''].filter(Boolean);
   return el('div', { class: 'gc-desc gc-desc-rich' },
-    parts.length ? el('p', { class: 'gc-prose' }, ...parts) : null);
+    main ? el('p', { class: 'gc-tempo' }, ...tempoParts(main)) : null,
+    prose ? el('p', { class: 'gc-prose' }, prose) : null);
 }
