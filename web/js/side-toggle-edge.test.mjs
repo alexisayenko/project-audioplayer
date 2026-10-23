@@ -15,9 +15,11 @@ test('the sidebar toggle is a small rounded-square surface button straddling the
   assert.match(rule('body.side-collapsed .side-toggle'), /margin-right: calc\(-1 \* \(var\(--space-2\)/);  assert.match(r, /margin-block: 0 calc\(-1 \* var\(--space-1\)\)/);
 });
 
-test('the toggle sits one space-2 below the brand block and one space-1 above the first menu item, in both states', () => {
+test('the toggle sits one space-2 below the brand block, and the first menu item sits 50px under the lockup ink, in both states', () => {
   assert.match(css, /^\.side \{[^}]*gap: var\(--space-2\)/m);
   assert.match(css, /#nav \{[^}]*gap: var\(--space-2\)/);
+  assert.match(css, /\.side \{ --side-lockup-gap: 41px;/);
+  assert.match(css, /#nav \{ gap: var\(--space-1\); margin-top: calc\(var\(--side-lockup-gap\) - 2 \* var\(--space-2\) - var\(--control-sm\)\); \}/);
   assert.doesNotMatch(rule('body.side-collapsed .side-toggle'), /margin-block/);
   assert.doesNotMatch(rule('body:not(.side-collapsed) .side-toggle'), /margin-block/);
 });
@@ -33,7 +35,7 @@ test('the toggle exists only from 720px', () => {
 
 test('collapsed and expanded sidebars share vertical padding and keep the brand wordmark box so nothing moves', () => {
   assert.match(rule('body.side-collapsed .side'), /padding: var\(--space-6\) var\(--space-2\)/);
-  assert.match(css, /^\s*\.side \{ padding: var\(--space-6\) var\(--space-4\); \}/m);
+  assert.match(css, /^\s*\.side \{ --side-lockup-gap: 41px; padding: var\(--space-6\) var\(--space-4\); \}/m);
   const hidden = rule('body.side-collapsed .brand .brand-wordmark');
   assert.match(hidden, /display: block/);
   assert.match(hidden, /visibility: hidden/);

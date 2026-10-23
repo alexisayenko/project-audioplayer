@@ -94,9 +94,13 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + var(--dock-b) + var(--m
   body.has-mini main { padding-bottom: calc(var(--mini-h) + var(--dock-b) + var(--space-8)); }
 }
 @media (min-width: 720px) {
-  .side { padding: var(--space-6) var(--space-4); }
-  .brand { align-items: flex-start; padding: var(--space-1) var(--space-3) 0; }
+  .side { --side-lockup-gap: 41px; padding: var(--space-6) var(--space-4); }
+  .brand { flex: none; align-items: flex-start; padding: var(--space-1) var(--space-3) 0; }
   .brand-wordmark { display: block; }
+  #nav { gap: var(--space-1); margin-top: calc(var(--side-lockup-gap) - 2 * var(--space-2) - var(--control-sm)); }
+  #nav > a, #nav > .nav-group > .nav-parent { min-height: var(--icon-button); border-radius: var(--radius-sm); }
+  body:not(.side-collapsed) #nav > a, body:not(.side-collapsed) #nav > .nav-group > .nav-parent { gap: var(--space-2); padding: 0 var(--space-2); }
+  .nav-sep { margin: var(--space-2) 0; }
   #nav :where(a, .nav-parent) { justify-content: flex-start; }
   #nav :where(a, .nav-parent) .nav-label { position: static; width: auto; height: auto; clip-path: none; overflow: visible; font: var(--font-caption); text-align: left; white-space: nowrap; }
   body:not(.side-collapsed) .build-line:not([hidden]) { display: block; }
@@ -713,7 +717,7 @@ body.signed-out main { padding-bottom: var(--space-6); }
 }
 @media (min-width: 640px) { .mini .opt { display: inline-grid; } }
 
-/* side mini-player: the dock folded into the sidebar footer (PLY-149, PLY-199); the open sidebar shows a flat row between two hairlines with the title and artist as one expand button, a thin progress line and a round play button, no cover; the icon rail only a larger round play button with a progress ring */
+/* side mini-player: the dock folded into the sidebar footer (PLY-149, PLY-199); the open sidebar shows a flat row between two hairlines with the title and artist as one expand button, a thin progress line and a round play button, no cover; the icon rail only a larger round play button with a progress ring, plus an expand chevron above it at 480-719px only, where the sidebar cannot widen */
 .side-mini { display: none; position: relative; flex: none; margin-top: auto; min-width: 0; }
 body.mini-compact.has-mini .side-mini + .build-line { margin-top: 0; }
 .sm-play { --sm-size: var(--control-xl); --sm-face: var(--hit); position: relative; flex: none; display: grid; place-items: center; width: var(--sm-size); height: var(--sm-size); padding: 0; border: 0; border-radius: var(--radius-pill); background: transparent; color: var(--on-accent); }
@@ -722,7 +726,12 @@ body.mini-compact.has-mini .side-mini + .build-line { margin-top: 0; }
 .sm-track { stroke: var(--line); }
 .sm-prog { stroke: var(--fill); stroke-dasharray: var(--ring-p, 0) 100; }
 .sm-face { display: grid; place-items: center; width: var(--sm-face); height: var(--sm-face); border-radius: var(--radius-pill); background: var(--accent); box-shadow: var(--glow-accent); }
-.sm-open, .sm-line { display: none; }
+.sm-open, .sm-line, .sm-handle { display: none; }
+@media (min-width: 480px) and (max-width: 719px) {
+  .sm-handle { display: grid; place-items: center; width: var(--control-sm); height: var(--control-sm); margin-bottom: var(--space-1); padding: 0; border: 0; border-radius: var(--radius-sm); background-color: transparent; color: var(--ink-muted); transition: background-image var(--dur-fast) var(--ease-out); }
+  .sm-handle:active { background-image: linear-gradient(var(--pressed-wash), var(--pressed-wash)); }
+  @media (hover: hover) { .sm-handle:hover { background-image: linear-gradient(var(--hover-wash), var(--hover-wash)); color: var(--ink); } }
+}
 .sm-row { display: flex; align-items: center; justify-content: center; gap: var(--space-2); width: 100%; min-width: 0; }
 .sm-open { min-width: 0; flex: 1; padding: 0; border: 0; background: none; text-align: left; color: inherit; }
 body.guest-noaudio .sm-play { display: none; }
@@ -730,9 +739,9 @@ body.guest-noaudio .sm-play { display: none; }
   body.mini-compact.has-mini .side-mini { display: flex; flex-direction: column; align-items: center; padding-top: var(--space-3); border-top: var(--stroke-hairline) solid var(--line); }
 }
 @media (min-width: 720px) {
-  body.mini-compact.has-mini:not(.side-collapsed) .side { padding-bottom: var(--space-3); }
-  body.mini-compact.has-mini:not(.side-collapsed) #nav { margin-bottom: var(--space-3); }
-  body.mini-compact.has-mini:not(.side-collapsed) .side-mini { align-items: stretch; padding: var(--space-5) 0 var(--space-3); border-bottom: var(--stroke-hairline) solid var(--line); }
+  body.mini-compact.has-mini:not(.side-collapsed) .side { padding-bottom: var(--space-4); }
+  body.mini-compact.has-mini:not(.side-collapsed) #nav { margin-bottom: var(--space-6); }
+  body.mini-compact.has-mini:not(.side-collapsed) .side-mini { align-items: stretch; padding: var(--space-4) 0 var(--space-2); border-bottom: var(--stroke-hairline) solid var(--line); }
   body.mini-compact:not(.side-collapsed) .sm-row { position: relative; justify-content: flex-start; align-items: center; gap: var(--space-2); }
   body.mini-compact:not(.side-collapsed) .sm-open { position: relative; display: flex; align-items: center; margin: calc(-1 * var(--space-1)); padding: var(--space-1); border-radius: var(--radius-key); background-color: transparent; transition: background-image var(--dur-fast) var(--ease-out); }
   body.mini-compact:not(.side-collapsed) .sm-open .mini-text { flex: 1; padding-bottom: calc(var(--stroke-progress) + var(--space-2)); }

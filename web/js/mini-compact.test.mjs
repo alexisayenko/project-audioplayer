@@ -18,26 +18,30 @@ const KEY = 'ap2.miniCompact';
 test('stored collapsed state is applied at init, before any song loads', () => {
   assert.equal($('mini').classList.contains('compact'), true);
   assert.equal(document.body.classList.contains('mini-compact'), true);
-  for (const id of ['mini-compact', 'side-mini-open']) assert.equal($(id).getAttribute('aria-expanded'), 'false');
+  for (const id of ['mini-compact', 'side-mini-expand', 'side-mini-open']) assert.equal($(id).getAttribute('aria-expanded'), 'false');
   assert.equal($('mini-compact').firstChild.innerHTML, '<path d="m15 18-6-6 6-6"/>');
-  assert.equal($('side-mini-expand'), null);
+  assert.equal($('side-mini-expand').firstChild.innerHTML, '<path d="m18 15-6-6-6 6"/>');
 });
 
-test('either button flips state, class, aria-expanded and storage', () => {
+test('each button flips state, class, aria-expanded and storage', () => {
   $('side-mini-open').click();
-  for (const id of ['mini-compact', 'side-mini-open']) assert.equal($(id).getAttribute('aria-expanded'), 'true');
+  for (const id of ['mini-compact', 'side-mini-expand', 'side-mini-open']) assert.equal($(id).getAttribute('aria-expanded'), 'true');
   assert.equal($('mini').classList.contains('compact'), false);
   assert.equal(document.body.classList.contains('mini-compact'), false);
   assert.equal(localStorage.getItem(KEY), '0');
   $('mini-compact').click();
-  for (const id of ['mini-compact', 'side-mini-open']) assert.equal($(id).getAttribute('aria-expanded'), 'false');
+  for (const id of ['mini-compact', 'side-mini-expand', 'side-mini-open']) assert.equal($(id).getAttribute('aria-expanded'), 'false');
   assert.equal($('mini').classList.contains('compact'), true);
   assert.equal(localStorage.getItem(KEY), '1');
+  $('side-mini-expand').click();
+  assert.equal($('mini').classList.contains('compact'), false);
+  assert.equal(localStorage.getItem(KEY), '0');
+  $('mini-compact').click();
 });
 
-test('markup: the dock handle and the sidebar footer expand button are real buttons with labels, and the rail has no chevron', () => {
+test('markup: the dock handle, the sidebar footer expand button and the 480-719px rail chevron are real buttons with labels', () => {
   assert.match(html, /<button class="mini-handle" id="mini-compact" type="button" aria-expanded="true" aria-label="Collapse player"/);
-  assert.ok(!html.includes('side-mini-expand') && !html.includes('sm-handle'));
+  assert.match(html, /<button class="sm-handle" id="side-mini-expand" type="button" aria-expanded="false" aria-label="Expand player" title="Expand player">/);
   const dock = html.slice(html.indexOf('<section id="mini"'), html.indexOf('</section>', html.indexOf('<section id="mini"')));
   assert.ok(dock.indexOf('id="mini-compact"') > 0 && dock.indexOf('id="mini-compact"') < dock.indexOf('class="mini-lead"'));
   const side = html.slice(html.indexOf('<aside class="side">'), html.indexOf('</aside>'));
@@ -71,7 +75,8 @@ test('css: the sidebar mini-player shows only when collapsed and a song is loade
 
 test('css: the rail play button is the 56px control-xl target with a token-coloured ring', () => {
   assert.match(css, /\.sm-play \{ --sm-size: var\(--control-xl\);[^}]*width: var\(--sm-size\); height: var\(--sm-size\);[^}]*border-radius: var\(--radius-pill\)/);
-  assert.ok(!/sm-handle|sm-cover/.test(css));
+  assert.ok(!/sm-cover/.test(css));
+  assert.match(css, /\.sm-open, \.sm-line, \.sm-handle \{ display: none; \}\n@media \(min-width: 480px\) and \(max-width: 719px\) \{\n  \.sm-handle \{ display: grid;[^}]*width: var\(--control-sm\); height: var\(--control-sm\);/);
   assert.match(css, /\.sm-ring circle \{ cx: 50%; cy: 50%; r: calc\(50% - var\(--stroke-medium\) \/ 2\); fill: none; stroke-width: var\(--stroke-medium\); \}/);
   assert.match(css, /\.sm-prog \{ stroke: var\(--fill\); stroke-dasharray: var\(--ring-p, 0\) 100; \}/);
 });

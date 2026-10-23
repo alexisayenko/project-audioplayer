@@ -21,7 +21,7 @@ export const setIcon = (id, name, size) => $(id).replaceChildren(icon(name, size
 
 export const MINI_COMPACT_KEY = 'ap2.miniCompact';
 
-const COMPACT_BUTTONS = ['mini-compact', 'side-mini-open'];
+const COMPACT_BUTTONS = ['mini-compact', 'side-mini-expand', 'side-mini-open'];
 
 export function setMiniCompact(on) {
   $('mini').classList.toggle('compact', on);
@@ -33,6 +33,7 @@ const shown = (node) => (node.getClientRects?.().length ?? 0) > 0;
 
 export function initMiniCompact() {
   setIcon('mini-compact', 'chevronLeft', 'inline');
+  setIcon('side-mini-expand', 'chevronUp', 'inline');
   let on = storeGet(MINI_COMPACT_KEY) === '1';
   setMiniCompact(on);
   const flip = () => {
