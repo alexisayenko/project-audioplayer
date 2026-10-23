@@ -24,7 +24,7 @@ export function saveDockCollapsed(storage, narrow, on) {
   try { storage?.setItem(keyFor(narrow), on ? '1' : '0'); } catch { /* storage unavailable */ }
 }
 
-export function createGenreDock({ storage = null, narrow = () => false, onNavigate, onMap, onChange, onExpand, renderInfo } = {}) {
+export function createGenreDock({ storage = null, narrow = () => false, onNavigate, onMap, onChange, onExpand, renderInfo, dotFor } = {}) {
   let collapsed = loadDockCollapsed(storage, narrow());
   let name = null;
   let label = '';
@@ -42,9 +42,11 @@ export function createGenreDock({ storage = null, narrow = () => false, onNaviga
   const empty = el('p', { class: 'gmr-dock-empty muted t-body' }, DOCK_EMPTY);
   const infoBox = el('div', { class: 'gmr-dock-info', hidden: true });
   const body = el('div', { class: 'gmr-dock-body genre-card', id: 'gmr-dock-body' }, empty, infoBox);
-  const node = el('aside', { class: 'gmr-dock', 'aria-label': 'Genre info' },
-    el('div', { class: 'gmr-dock-head' }, el('span', { class: 'gmr-dock-grab', 'aria-hidden': 'true' }), back, title, toggle),
-    body);
+  const head = el('div', { class: 'gmr-dock-head' }, el('span', { class: 'gmr-dock-grab', 'aria-hidden': 'true' }), back, dot, title, toggle);
+  const node = el('aside', { class: 'gmr-dock', 'aria-label': 'Genre info' }, head, body);
+  head.addEventListener('click', (e) => {
+    if (collapsed && !e.target?.closest?.('button')) setCollapsed(false, { save: true });
+  });
 
   function sync() {
     const sheet = narrow();
@@ -54,11 +56,12 @@ export function createGenreDock({ storage = null, narrow = () => false, onNaviga
     back.hidden = collapsed || !stack.length;
     title.textContent = collapsed && label ? label : DOCK_TITLE;
     dot.hidden = !(collapsed && name);
+    dot.className = `gmr-dock-dot ${name && dotFor ? dotFor(name) : ''}`.trim();
     toggle.title = text;
     toggle.setAttribute('aria-label', collapsed && label ? `${text}: ${label} is selected` : text);
     toggle.setAttribute('aria-expanded', String(!collapsed));
-    const glyph = sheet ? (collapsed ? 'chevronUp' : 'chevron') : (collapsed ? 'chevron' : 'chevronLeft');
-    toggle.replaceChildren(icon(glyph, 'nav'), dot);
+    const glyph = sheet ? (collapsed ? 'chevronUp' : 'chevron') : (collapsed ? 'chevron' : 'chevronUp');
+    toggle.replaceChildren(icon(glyph, 'nav'));
   }
 
   function ensureInfo() {
@@ -121,10 +124,26 @@ export function createGenreDock({ storage = null, narrow = () => false, onNaviga
     return paint();
   }
 
+  function glide(from) {
+    const reduced = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+    if (typeof node.animate !== 'function' || reduced || !from?.width) return;
+    const to = node.getBoundingClientRect();
+    if (!to.width || (to.width === from.width && to.height === from.height)) return;
+    const css = globalThis.getComputedStyle?.(globalThis.document.documentElement);
+    const ms = parseFloat(css?.getPropertyValue('--dur-base')) || 0;
+    if (!ms) return;
+    node.animate(
+      [{ width: `${from.width}px`, height: `${from.height}px` }, { width: `${to.width}px`, height: `${to.height}px` }],
+      { duration: ms, easing: css.getPropertyValue('--ease-io').trim() || 'ease' },
+    );
+  }
+
   function setCollapsed(on, { save = false } = {}) {
+    const from = on === collapsed ? null : node.getBoundingClientRect?.();
     collapsed = on;
     if (save) saveDockCollapsed(storage, narrow(), on);
     sync();
+    if (from) glide(from);
     if (!on) onExpand?.();
     onChange?.(on);
     return paint();

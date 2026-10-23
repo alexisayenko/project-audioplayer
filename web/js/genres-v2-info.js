@@ -10,9 +10,9 @@ export const V2_NO_DESCRIPTION = 'No description yet.';
 
 export const v2LevelText = (g) => (g.level === 1 ? 'Level 1 (super-genre)' : `Level ${g.level}`);
 
-export function createV2InfoRenderer(getData) {
+export function createV2InfoRenderer(getData, dotFor = (name) => dotClass(familyIndex(name))) {
   return function renderV2Info(name, { container, titleId = 'genre-card-title' } = {}) {
-    const refs = createReferencesPanel();
+    const refs = createReferencesPanel({ compact: true });
     let live = true;
 
     const find = (text) => {
@@ -26,7 +26,7 @@ export function createV2InfoRenderer(getData) {
       const meta = [el('span', { class: 'gc-level t-caption' }, v2LevelText(g))];
       if (g.clusterName) meta.unshift(el('span', { class: 'gc-cluster t-caption' }, g.clusterName));
       return el('div', { class: 'gc-head' },
-        el('div', { class: 'gc-title' }, el('span', { class: dotClass(familyIndex(g.name)), 'aria-hidden': 'true' }), el('h2', { id: titleId, class: 't-title', tabindex: '-1' }, g.name)),
+        el('div', { class: 'gc-title' }, el('span', { class: dotFor(g.name), 'aria-hidden': 'true' }), el('h2', { id: titleId, class: 't-title', tabindex: '-1' }, g.name)),
         el('p', { class: 'gc-meta' }, ...meta));
     }
 

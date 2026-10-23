@@ -1,4 +1,4 @@
-import { el } from './dom.js';
+import { el, fmtTime } from './dom.js';
 import { icon } from './icons.js';
 import { isGuest } from './guest.js';
 import { openAdd, openSongCard } from './lazy-ui.js';
@@ -52,9 +52,10 @@ export function eraSpan(era) {
   return '';
 }
 
-export function createReferencesPanel() {
-  const node = el('section', { class: 'ref-panel', 'aria-label': 'Eras and reference tracks', hidden: true });
+export function createReferencesPanel({ compact = false } = {}) {
+  const node = el('section', { class: compact ? 'ref-panel is-compact' : 'ref-panel', 'aria-label': 'Eras and reference tracks', hidden: true });
   let genre = null;
+  let historyOpen = false;
   let entries = [];
   let eras = [];
   let seq = 0;
@@ -79,6 +80,13 @@ export function createReferencesPanel() {
   function actionNode(e) {
     if (e.in_library && (e.song?.id || e.song_id)) return null;
     const url = addLinkFor(e);
+    if (compact) {
+      if (!url) return null;
+      return el('button', {
+        class: 'ref-add-lib ref-add-quick t-caption', type: 'button', title: 'Add to library', 'aria-label': `Add to library: ${entryLine(e)}`,
+        onclick: (ev) => openAdd({ url, note: `Reference track: ${entryLine(e)}.` }, ev.currentTarget),
+      }, 'Add');
+    }
     if (url) return el('button', { class: 'btn outline small ref-add-lib', type: 'button', onclick: (ev) => openAdd({ url, note: `Reference track: ${entryLine(e)}.` }, ev.currentTarget) }, 'Add to library');
     return el('span', { class: 'muted t-caption ref-none' }, NOT_IN_LIBRARY);
   }
@@ -103,10 +111,27 @@ export function createReferencesPanel() {
     const img = el('img', { class: 'cover', alt: '', loading: 'lazy' });
     if (s?.cover) img.src = api.coverUrl(s.id, s.cover_v);
     img.addEventListener('error', () => img.removeAttribute('src'));
-    return el('div', { class: 'row-cover' }, img);
+    return el('div', { class: 'row-cover' }, compact ? el('span', { class: 'cover-mark', 'aria-hidden': 'true' }, icon('coverPlaceholder')) : null, img);
+  }
+
+  function lengthNode(e) {
+    const id = e.in_library ? (e.song?.id || e.song_id) : null;
+    const duration = id ? (store.get(id) || e.song)?.duration : null;
+    return Number.isFinite(duration) && duration > 0 ? el('span', { class: 'title-len t-time', title: 'Length' }, fmtTime(duration)) : null;
+  }
+
+  function compactItem(e) {
+    return el('li', { class: 'song ref-item', 'data-id': e.id, 'data-role': e.role, title: e.note || null },
+      coverNode(e),
+      el('div', { class: 'info' },
+        el('div', { class: 'title-line' }, titleNode(e), lengthNode(e) || actionNode(e)),
+        el('div', { class: 'sub-line' },
+          el('small', { class: 'sub t-subhead', title: `${e.artist}${e.year ? ` · ${e.year}` : ''}` }, el('span', { class: 'ref-artist' }, e.artist), e.year ? el('span', { class: 'ref-year' }, ` · ${e.year}`) : null),
+          el('span', { class: `ref-role t-caption role-${e.role}` }, roleLabel(e.role)))));
   }
 
   function item(e) {
+    if (compact) return compactItem(e);
     return el('li', { class: 'song ref-item', 'data-id': e.id, 'data-role': e.role },
       coverNode(e),
       el('div', { class: 'info' },
@@ -132,7 +157,25 @@ export function createReferencesPanel() {
       eraNoteText(era.note) ? el('p', { class: 'ref-era-note t-caption muted' }, eraNoteText(era.note)) : null);
   }
 
+  function historyNode(phases) {
+    const details = el('details', { class: 'ref-history', open: historyOpen },
+      el('summary', { class: 'ref-history-head t-caption' }, el('span', {}, 'History'), icon('chevron', 'inline')),
+      el('ol', { class: 'ref-timeline', 'aria-label': 'Eras' }, phases.map(phase)));
+    details.addEventListener('toggle', () => { historyOpen = details.open; });
+    return details;
+  }
+
+  function paintCompact() {
+    const phases = sortEras(eras);
+    if (!phases.length && !entries.length) return [el('p', { class: 'ref-empty muted t-caption' }, EMPTY_REFERENCES)];
+    const parts = [];
+    if (phases.length) parts.push(historyNode(phases));
+    if (entries.length) parts.push(el('h3', { class: 'ref-head t-caption' }, `Reference tracks · ${entries.length}`), el('ul', { class: 'ref-list' }, sortEntries(entries).map(item)));
+    return parts;
+  }
+
   function paintParts() {
+    if (compact) return paintCompact();
     const phases = sortEras(eras);
     if (!phases.length && !entries.length) return [el('p', { class: 'ref-empty muted t-caption' }, EMPTY_REFERENCES)];
     const parts = [el('hr', { class: 'ref-rule' })];
@@ -155,6 +198,7 @@ export function createReferencesPanel() {
       if (next !== genre) { entries = []; eras = []; }
       genre = next;
       seq += 1;
+      historyOpen = false;
       if (!genre || isGuest()) { genre = null; ready = false; node.hidden = true; node.replaceChildren(); return; }
       ready = true;
       void loadReferences().then(() => { if (genre === next) paint(); });

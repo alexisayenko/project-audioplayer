@@ -283,8 +283,11 @@ export function renderGenresRework(root, opts = {}) {
 
   const narrow = () => (window.innerWidth || 1200) < NARROW_PX;
 
+  const dotFor = (name) => dotClass(familyIndex((tree && resolveNode(name, tree))?.family || name));
+
   const dock = opts?.dock === true ? createGenreDock({
-    renderInfo: v2 ? createV2InfoRenderer(() => lastData?.vocab?.v2) : undefined,
+    renderInfo: v2 ? createV2InfoRenderer(() => lastData?.vocab?.v2, dotFor) : undefined,
+    dotFor: v2 ? dotFor : undefined,
     storage: globalThis.localStorage,
     narrow,
     onNavigate: (name) => { const n = tree && resolveNode(name, tree); if (n) select(n.id, { reveal: true, center: true }); },
