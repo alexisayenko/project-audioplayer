@@ -59,8 +59,8 @@ a { color: var(--accent-ink); }
 .brand-mark { position: relative; display: grid; flex: none; }
 .brand-mark .ic { width: var(--icon-play); height: var(--icon-play); }
 .brand-wordmark { display: none; height: var(--hit); width: auto; max-width: 100%; min-width: 0; margin-left: auto; object-fit: contain; object-position: right center; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .brand-wordmark { padding: 0 var(--space-1); border-radius: var(--radius-sm); background: var(--ink); } }
-[data-theme="dark"] .brand-wordmark { padding: 0 var(--space-1); border-radius: var(--radius-sm); background: var(--ink); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .brand-wordmark { border-radius: var(--radius-sm); background: var(--ink); } }
+[data-theme="dark"] .brand-wordmark { border-radius: var(--radius-sm); background: var(--ink); }
 #nav { display: flex; height: 100%; justify-content: space-around; align-items: stretch; padding: var(--space-1); gap: var(--space-1); }
 #nav :where(a, .nav-parent) {
   position: relative; display: flex; align-items: center; min-height: var(--hit);
@@ -94,10 +94,11 @@ body.has-mini main { padding-bottom: calc(var(--tab-h) + var(--dock-b) + var(--m
   body.has-mini main { padding-bottom: calc(var(--mini-h) + var(--dock-b) + var(--space-8)); }
 }
 @media (min-width: 720px) {
-  .side { --side-lockup-gap: var(--space-4); padding: var(--space-2) var(--space-4) var(--space-4); }
-  .brand { flex: none; align-items: flex-start; padding: 0 var(--space-2); }
-  .brand-mark .ic { width: var(--icon-nav); height: var(--icon-nav); }
-  .brand-wordmark { display: block; height: var(--icon-button); margin-left: 0; }
+  .side { --side-lockup-gap: var(--space-3); padding: var(--space-2) var(--space-4) var(--space-4); }
+  .brand { flex: none; align-items: flex-start; padding: 0 0 0 var(--space-2); }
+  .brand-lockup { gap: var(--space-1); }
+  .brand-mark .ic { width: calc(var(--icon-nav) * 1.5); height: calc(var(--icon-nav) * 1.5); }
+  .brand-wordmark { display: block; flex: none; height: calc(var(--icon-button) * 1.5); margin-left: 0; }
   #nav { gap: var(--space-1); margin-top: calc(var(--side-lockup-gap) - 2 * var(--space-2) - var(--space-1)); }
   #nav > a, #nav > .nav-group > .nav-parent { min-height: var(--icon-button); border-radius: var(--radius-sm); }
   body:not(.side-collapsed) #nav > a, body:not(.side-collapsed) #nav > .nav-group > .nav-parent { gap: var(--space-2); padding: 0 var(--space-2); }
