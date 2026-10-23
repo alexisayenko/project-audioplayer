@@ -16,7 +16,7 @@ export function cleanSourceLinks(list) {
     .map((l) => ({ source: norm(l.source), url: l.url, kind: l.kind === 'search' ? 'search' : 'page' }));
 }
 
-export const SHOWN_SOURCES = ['wikipedia', 'apple-music', 'discogs', 'rym'];
+export const SHOWN_SOURCES = ['wikipedia', 'rym'];
 
 export function shownSourceLinks(list) {
   const links = cleanSourceLinks(list);

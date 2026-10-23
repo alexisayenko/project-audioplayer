@@ -1028,6 +1028,7 @@ platform audio interruption handling remain open; see the playback spec.
 - Open: none (A to E answered, see task-0093).
 - Consequences if accepted: tags stop carrying the etalon meaning; reference data is catalogue data, so it lives in git with the genre files and is not part of a user's library or quota; other users read it only; offline playback is unaffected (references are metadata).
 - Consequences of GF1 (eras): per-genre eras are a second shared file `genre_eras.json` beside the catalogue (DATA-195, API-223..API-225); an entry points at an era by id, removing an era clears the link, and the goa trance eras are seeded once from `server/data/genre_eras_seed.json`.
+- Consequence (2026-10-23, Alex): curation happens through Claude and the API only; the web UI has no editor for reference tracks or eras (no add, edit, review, delete or "Edit eras" controls). Server writes stay owner-only.
 
 ## ADR-0045 Genres structure v2 in parallel with v1: Musicmap super-genres and clusters
 

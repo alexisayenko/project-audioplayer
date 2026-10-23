@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { installDom, makeEvent, stubFetch, flush } from './test-dom.mjs';
 import { VOCAB } from './genre-levels-fixture.mjs';
 
-installDom({ ids: ['toast'] });
+installDom({ ids: ['toast', 'audio', 'mini-viz'] });
 stubFetch(() => ({ body: {} }));
 const { openGenreCard, NOT_FOUND, NO_DESCRIPTION, cardSections } = await import('./genre-card.js');
 const { buildTree, resolveNode } = await import('./genre-levels.js');
@@ -60,14 +60,14 @@ test('a chip swaps the card to that genre and the back arrow pops the stack', ()
   const dlg = open('house');
   const back = () => dlg.querySelector('.card-back');
   assert.equal(back().hidden, true);
-  chip(dlg, 'deep house').onclick();
+  chip(dlg, 'deep house').click();
   assert.equal(title(dlg), 'deep house');
   assert.equal(back().hidden, false);
-  chip(dlg, 'house').onclick();
+  chip(dlg, 'house').click();
   assert.equal(title(dlg), 'house');
-  back().onclick();
+  back().click();
   assert.equal(title(dlg), 'deep house');
-  back().onclick();
+  back().click();
   assert.equal(title(dlg), 'house');
   assert.equal(back().hidden, true);
   dlg.close();
@@ -93,7 +93,7 @@ test('Show on map stores the genre for the map and closes the card', async () =>
   const loc = { hash: '#/library' };
   globalThis.location = loc;
   const dlg = open('house');
-  dlg.querySelectorAll('.gc-actions button')[1].onclick();
+  dlg.querySelectorAll('.gc-actions button')[1].click();
   await flush();
   assert.equal(dlg.open, false);
   assert.equal(loc.hash, '#/genres');

@@ -277,46 +277,35 @@ body[data-route="genres"] main, body[data-route="genres2"] main { max-width: non
 :root[data-theme="dark"] { --chart-rim: var(--line); }
 .gm-dot.w, .gmr-key.w { box-shadow: inset 0 0 0 1.25px var(--chart-rim); }
 
-.ref-panel { margin: var(--space-3) 0 0; display: grid; gap: var(--space-2); }
+.ref-panel { margin: var(--space-3) 0 0; display: grid; gap: var(--space-3); }
 .ref-panel[hidden] { display: none; }
+.ref-rule { border: 0; border-top: var(--stroke-hairline) solid var(--line); margin: 0; width: 100%; }
 .ref-head { margin: 0; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.ref-empty { margin: 0; }
+.ref-timeline { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-3); position: relative; }
+.ref-timeline::before { content: ''; position: absolute; left: calc(var(--space-2) / 2); top: var(--space-2); bottom: var(--space-2); border-left: var(--stroke-hairline) solid var(--line); }
+.ref-phase { position: relative; padding-left: var(--space-4); display: grid; gap: var(--space-1); }
+.ref-node { position: absolute; left: 0; top: var(--space-1); width: var(--space-2); height: var(--space-2); border-radius: 50%; background: var(--fill); }
+.ref-phase-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-1) var(--space-2); }
+.ref-era-years { white-space: nowrap; }
+.ref-era-name { margin: 0; color: var(--ink); }
+.ref-cites { display: inline-flex; gap: var(--space-1); margin-left: auto; vertical-align: super; }
+.ref-cite { color: var(--ink-muted); text-decoration: none; }
+.ref-cite:hover, .ref-cite:focus-visible { color: var(--ink); text-decoration: underline; }
+.ref-era-note { margin: 0; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
 .ref-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
-.ref-item { display: grid; gap: var(--space-1); padding: var(--space-2) var(--space-3); border-radius: var(--radius-key); background: var(--surface-sunken); }
+.ref-item { display: grid; gap: var(--space-1); }
 .ref-main { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-2); }
 .ref-role { padding: var(--stroke-hairline) var(--space-2); border-radius: var(--radius-pill); border: var(--stroke-hairline) solid var(--line); color: var(--ink); }
 .ref-role.role-archetype { background: var(--fill); color: var(--on-fill); border-color: transparent; }
-.ref-line { color: var(--ink); }
+.ref-line { color: var(--ink); flex: 1 1 8em; min-width: 0; overflow-wrap: anywhere; }
 .ref-todo { color: var(--ink-muted); font-style: italic; }
-.ref-verified { display: inline-flex; color: var(--accent-ink); }
-.ref-src-toggle { background: none; border: 0; padding: 0; color: var(--ink-muted); text-decoration: underline dotted; cursor: pointer; }
-.ref-src-toggle:hover, .ref-src-toggle:focus-visible { color: var(--ink); }
-.ref-src-toggle:focus-visible { outline: var(--stroke-focus) solid var(--ring-color); outline-offset: 2px; }
+.ref-src { display: inline-flex; color: var(--ink-muted); }
+.ref-src:hover, .ref-src:focus-visible { color: var(--ink); }
+.ref-src:focus-visible, .ref-cite:focus-visible { outline: var(--stroke-focus) solid var(--ring-color); outline-offset: 2px; }
 .ref-note { margin: 0; }
-.ref-sources { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-1); }
-.ref-sources li { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-2); align-items: center; }
-.ref-src-type { color: var(--ink-muted); }
-.ref-sources a { display: inline-flex; align-items: center; gap: var(--space-1); color: var(--ink); overflow-wrap: anywhere; }
-.ref-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
-.ref-owner { display: inline-flex; gap: var(--space-1); margin-left: auto; }
+.ref-actions { display: inline-flex; align-items: center; gap: var(--space-2); margin-left: auto; }
 .ref-none { margin-right: auto; }
-.ref-form { display: grid; gap: var(--space-2); }
-.ref-form-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
-.ref-sources-edit { display: grid; gap: var(--space-2); margin-bottom: var(--space-2); }
-.ref-sources-edit:empty { display: none; }
-.ref-src-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-1); }
-.ref-src-row select, .ref-src-row input { grid-column: 1; }
-.ref-src-row .sq-btn { grid-column: 2; grid-row: 1; }
-.ref-form .row.end { margin-top: var(--space-2); }
-.ref-era { display: grid; gap: var(--space-2); list-style: none; }
-.ref-era-head { display: grid; gap: var(--space-1); }
-.ref-era-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-1) var(--space-2); }
-.ref-era-name { margin: 0; color: var(--ink); }
-.ref-era-note, .ref-era-empty { margin: 0; }
-.ref-era > .ref-list { padding-left: var(--space-3); }
-.ref-panel .ref-add { display: flex; flex-wrap: wrap; gap: var(--space-2); }
-.ref-add .ref-form, .ref-add .era-editor { flex: 1 1 100%; }
-.era-rows { display: grid; gap: var(--space-3); }
-.era-row { display: grid; gap: var(--space-2); padding: var(--space-2); border-radius: var(--radius-key); background: var(--surface-sunken); }
 .genre-card .gc-bar { min-height: var(--hit); }
 .genre-card .card-back { position: absolute; top: var(--space-2); left: var(--space-2); z-index: 2; }
 .genre-card .card-back[hidden] { display: none; }
@@ -371,7 +360,7 @@ body[data-route="genres"] main, body[data-route="genres2"] main { max-width: non
   .gmr.has-dock:not(.gm-v2) .gm-zoom { left: auto; right: calc(min(360px, 100% - 2 * var(--space-3)) + 2 * var(--space-3)); }
   .gmr.has-dock:not(.gm-v2) .gmr-legend { left: auto; right: calc(min(360px, 100% - 2 * var(--space-3)) + 3 * var(--space-3) + var(--control)); max-width: calc(100% - min(360px, 100% - 2 * var(--space-3)) - 4 * var(--space-3) - var(--control)); }
   .gmr-dock { top: var(--space-3); right: auto; height: auto; width: clamp(340px, 28vw, 380px); }
-  .gmr-dock.collapsed { width: auto; max-width: min(320px, calc(100% - 2 * var(--space-3))); height: auto; }
+  .gmr-dock.collapsed { bottom: auto; width: auto; max-width: min(320px, calc(100% - 2 * var(--space-3))); height: auto; min-height: 0; }
   .gmr-dock-grab { display: none; }
   .gmr-dock.collapsed .gmr-dock-head { padding: var(--space-1) var(--space-1) var(--space-1) var(--space-3); }
   .gmr-dock.collapsed .gmr-dock-title { flex: 0 1 auto; font: var(--font-body); }

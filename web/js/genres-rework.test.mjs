@@ -627,3 +627,13 @@ test('Genres screen (v1) still mounts the side panel and legend', async () => {
   assert.ok(root.querySelector('#gmr-legend'));
   cleanup();
 });
+
+test('collapsed dock on wide screens releases the bottom inset so it is a compact pill', async () => {
+  const { readFileSync } = await import('node:fs');
+  const css = readFileSync(new URL('../genres.css', import.meta.url), 'utf8');
+  const rule = css.match(/@media \(min-width: 720px\) \{[^]*?\n\}/g).join('\n').match(/\.gmr-dock\.collapsed \{([^}]*)\}/)[1];
+  assert.match(rule, /bottom:\s*auto/);
+  assert.match(rule, /height:\s*auto/);
+  assert.match(rule, /min-height:\s*0/);
+  assert.match(rule, /width:\s*auto/);
+});
