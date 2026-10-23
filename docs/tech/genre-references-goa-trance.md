@@ -10,6 +10,7 @@ Verified review for [task-0093](../tasks/task-0093.md) / [ADR-0044](decisions.md
 - Confidence: high = identity, year and role backed by 3+ sources; medium = identity and year backed by 2, role by 1-2; low = one weak source or conflicting dates.
 - Roles follow ADR-0044: archetype (typical), origin (early song that started the genre), landmark (defining release), breakthrough (brought it to a wide audience). Cap: 3 picks per role per era. Eras are the five in `server/data/genre_eras_seed.json` (ids in brackets).
 - Copyrighted text is not reproduced; notes are paraphrased.
+- Tracklist lines on compilation pages (Psynews, PsyDB, the MusicBrainz release page) are written "artist: title". An artist equal to the title is a red flag (a title read from the wrong side of the colon, or a band name taken for a song): re-check it against the track's own page before saving. The Total Eclipse case below was checked this way.
 
 ## Saved
 
@@ -30,6 +31,8 @@ Verified review for [task-0093](../tasks/task-0093.md) / [ADR-0044](decisions.md
 Owner decisions (2026-10-23): LSD is dated 1994, its first release, with the 1995 Live Mix and the 1995 Twisted album named in the note; Teleport is dated 1994; Sugar Rush is dated 1994 (first on a compilation, closing Oakenfold's Goa Mix on 18 Dec 1994) and the note says the single is from 1996; Filteria is not an origin (#12 dropped).
 
 Source URLs (2026-10-23, data change only, no deploy): the ten MusicBrainz sources of the saved entries were JSON web-service queries; they are now readable pages (`https://musicbrainz.org/recording/<mbid>` or `/release/<mbid>`), with the source type and note kept. The ids were read from the JSON the queries returned; the full map is in [Saved MusicBrainz pages](#saved-musicbrainz-pages). The Dragonfly label in the Total Eclipse note is kept: MusicBrainz names "Dragonfly Records" (catalogue number blfcd4) on the Project II Trance release of August 1993.
+
+Total Eclipse re-check (2026-10-24, owner report: "there's no such song or album, it's a band name"): the title stays. Track 4 of Project II Trance (Dragonfly, August 1993) is a self-titled track, "Total Eclipse" by the French act Total Eclipse (about 4:45); the MusicBrainz release JSON gives the same string as track title, recording title and artist credit, and four independent listings agree: the MusicBrainz recording page, Last.fm (album page Dragonfly - Project II - Trance), PsyDB (release 7043, catalogue BFLLP04) and Psynews (topic 35459). The entry was not changed. If the owner still wants no self-titled pick, remove `a62572c8` and use a 1993-94 Total Eclipse single instead; the 1994 singles "Waiting for a New Life" and "Aliens / Sound Is Solid" are on MusicBrainz but their years and roles are not verified here. In the other eight saved entries no artist equals its title and no doubt about an artist/title pair was found (checked against their MusicBrainz pages from the earlier research, not re-fetched).
 
 Still open and unverified: swapping Kabalah for Pleiadians - Alcyone, and the extras suggested by Gemini (Maya, Trash Box, Hyperscale, We Came in Peace, What Time Is Love?, Stardiver).
 

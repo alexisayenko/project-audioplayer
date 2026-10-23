@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-24 (goa trance reference re-check, docs only)
+
+- Docs: owner report that the goa trance origin pick "Total Eclipse - Total Eclipse" is a band name, not a song, was checked against MusicBrainz, Last.fm, PsyDB and Psynews: the self-titled track exists on Project II Trance (Dragonfly, August 1993), so the data entry `a62572c8` is unchanged (no data change); a tracklist-reading method note was added to [tech/genre-references-goa-trance.md](tech/genre-references-goa-trance.md).
+
 ## 2026-10-24 (download button on library reference tracks without audio, deployed)
 
 - Web: in the Genres map v2 Genre info panel a Reference track that is in the library but has no audio on the server (`audio_state` `none`) shows the Library's download button (`icon sq-btn`, `download` icon, "Download to the server") in the right-aligned slot instead of the length; the (+) stays for tracks not in the library and the length for tracks with audio on the server or the phone (GEN-087, GEN-088, GEN-111; owner request "when it's in lib, but not downloaded - display download button instead of add"; deployed 2026-10-24; node syntax check and static browser check at 340 px only, no tests run, none edited): the click requests the download through the same `autodl.request` as the Library row, the Library's progress ring replaces the button while it is queued, running or failed, and the row turns into the length when the download finishes; the button and `fetchAudio` moved to the shared `web/js/dl-control.js` (`library-rows.js` uses it too), and the compact rows now repaint on web store and download changes.
