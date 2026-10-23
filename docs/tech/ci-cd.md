@@ -258,7 +258,7 @@ used (ADR-0008, steps in [`architecture.md`](architecture.md#testflight)).
 `destination=upload` in the export options, signed by Xcode's signed-in
 account; no `altool`, no ASC API key. Build number: date-based
 `CURRENT_PROJECT_VERSION` in `ios/project.yml`, strictly higher than the
-last upload (20261030 on 2026-10-22). `ios/Config/Secrets.xcconfig`
+last upload (20261031 on 2026-10-23). `ios/Config/Secrets.xcconfig`
 (Google client IDs, git-ignored) must exist before `xcodegen`.
 
 ## Secrets and credentials
