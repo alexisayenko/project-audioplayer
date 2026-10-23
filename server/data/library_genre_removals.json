@@ -614,9 +614,13 @@
   },
   "9VpW8Atlj7k": {
    "remove": [
-    "psychedelic rock"
+    "psychedelic rock",
+    "psytrance"
    ],
-   "title": "Antinomy - State of Mind"
+   "title": "Antinomy - State of Mind",
+   "add": [
+    "progressive psytrance"
+   ]
   },
   "0FSE57u58rs": {
    "remove": [
@@ -899,6 +903,33 @@
     "singer-songwriter"
    ],
    "title": "Тимур Муцураев - Погасли свечи"
+  },
+  "TiNx0-TshOg": {
+   "remove": [
+    "psytrance"
+   ],
+   "add": [
+    "full-on psytrance"
+   ],
+   "title": "Bamboo Forest - Xplorer"
+  },
+  "Lud-4oFlEms": {
+   "remove": [
+    "psytrance"
+   ],
+   "add": [
+    "full-on psytrance"
+   ],
+   "title": "Bamboo Forest - Breath"
+  },
+  "pX8dL4BXqK0": {
+   "remove": [
+    "psytrance"
+   ],
+   "add": [
+    "progressive psytrance"
+   ],
+   "title": "Static Movement - Sian"
   }
  }
 }

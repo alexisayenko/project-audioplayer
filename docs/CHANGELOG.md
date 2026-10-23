@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-24 (four psytrance songs retagged to child genres, to deploy)
+
+- Data (owner decision EW, 2026-10-24; TAG-109; load checks only, no tests run, test fixture and assertions edited): `server/data/library_genre_removals.json` gains three rows and extends one (now 131 songs, 213 removals, 25 additions): Bamboo Forest - Xplorer and Breath go from `psytrance` to `full-on psytrance`; Static Movement - Sian and Antinomy - State of Mind go from `psytrance` to `progressive psytrance`, and Sian keeps `progressive trance`. Applied once at the next server start for the owner library (the file hash changed, so the whole plan runs again); `removal_songs.json` gains the three new songs and `test_the_real_file_owner_requested_rows` the four expected genre lists. Details: [tech/library-genre-cleanup.md](tech/library-genre-cleanup.md).
+
 ## 2026-10-24 (psytrance reference tracks saved, data only)
 
 - Data (owner request 2026-10-24, no deploy; the server picks the file up by its inbound fast-forward, STO-057): four whole-genre `psytrance` references in `genre_references.json` of the data repo (commit `82034c2`): Hallucinogen - LSD (origin, 1994, library song), Astrix - Deep Jungle Walk (archetype, 2016), Vini Vici - The Tribe (landmark, 2015), Armin van Buuren, Vini Vici feat. Hilight Tribe - Great Spirit (breakthrough, 2016). Infected Mushroom - Symphonatic was checked and skipped (not on Classical Mushroom). Details: [tech/genre-references-psytrance.md](tech/genre-references-psytrance.md#saved).

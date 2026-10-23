@@ -7636,6 +7636,92 @@
 "folk"
 ],
 "audio_state": "none"
+},
+{
+"id": "TiNx0-TshOg",
+"title": "Xplorer",
+"mainArtists": [
+"Bamboo Forest"
+],
+"featuredArtists": [],
+"releaseYear": null,
+"version": null,
+"albums": [],
+"bpm": null,
+"source_url": "https://www.youtube.com/watch?v=TiNx0-TshOg",
+"added_at": "2026-10-24T00:00:00Z",
+"updated_at": "2026-10-24T00:00:00Z",
+"tags": [
+"genre:psytrance",
+"country:es"
+],
+"artist": "Bamboo Forest",
+"remixer": null,
+"year": null,
+"remix_year": null,
+"album": null,
+"genres": [
+"psytrance"
+],
+"audio_state": "none"
+},
+{
+"id": "Lud-4oFlEms",
+"title": "Breath",
+"mainArtists": [
+"Bamboo Forest"
+],
+"featuredArtists": [],
+"releaseYear": null,
+"version": null,
+"albums": [],
+"bpm": null,
+"source_url": "https://www.youtube.com/watch?v=Lud-4oFlEms",
+"added_at": "2026-10-24T00:00:00Z",
+"updated_at": "2026-10-24T00:00:00Z",
+"tags": [
+"genre:psytrance",
+"country:es"
+],
+"artist": "Bamboo Forest",
+"remixer": null,
+"year": null,
+"remix_year": null,
+"album": null,
+"genres": [
+"psytrance"
+],
+"audio_state": "none"
+},
+{
+"id": "pX8dL4BXqK0",
+"title": "Sian",
+"mainArtists": [
+"Static Movement"
+],
+"featuredArtists": [],
+"releaseYear": null,
+"version": null,
+"albums": [],
+"bpm": null,
+"source_url": "https://www.youtube.com/watch?v=pX8dL4BXqK0",
+"added_at": "2026-10-24T00:00:00Z",
+"updated_at": "2026-10-24T00:00:00Z",
+"tags": [
+"genre:psytrance",
+"genre:progressive trance",
+"country:il"
+],
+"artist": "Static Movement",
+"remixer": null,
+"year": null,
+"remix_year": null,
+"album": null,
+"genres": [
+"psytrance",
+"progressive trance"
+],
+"audio_state": "none"
 }
 ]
 }

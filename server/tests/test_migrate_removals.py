@@ -244,3 +244,7 @@ def test_the_real_file_owner_requested_rows():
     assert after["jxDZ-1sf9Bg"] == ["drum and bass", "electronic"]
     assert after["waS3top6nzs"] == ["gothic metal", "industrial metal", "death metal", "heavy metal"]
     assert after["sVx1mJDeUjY"] == ["synthwave", "synthpop", "witch house", "darkwave"]
+    assert after["TiNx0-TshOg"] == ["full-on psytrance"]
+    assert after["Lud-4oFlEms"] == ["full-on psytrance"]
+    assert after["pX8dL4BXqK0"] == ["progressive trance", "progressive psytrance"]
+    assert after["9VpW8Atlj7k"] == ["electronic", "progressive psytrance"]
