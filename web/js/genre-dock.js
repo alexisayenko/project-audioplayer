@@ -45,7 +45,8 @@ export function createGenreDock({ storage = null, narrow = () => false, onNaviga
   const head = el('div', { class: 'gmr-dock-head' }, el('span', { class: 'gmr-dock-grab', 'aria-hidden': 'true' }), back, dot, title, toggle);
   const node = el('aside', { class: 'gmr-dock', 'aria-label': 'Genre info' }, head, body);
   head.addEventListener('click', (e) => {
-    if (collapsed && !e.target?.closest?.('button')) setCollapsed(false, { save: true });
+    const hit = e.target;
+    if (collapsed && head.contains(hit) && !hit.closest?.('button')) setCollapsed(false, { save: true });
   });
 
   function sync() {
