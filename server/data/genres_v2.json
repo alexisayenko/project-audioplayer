@@ -11,6 +11,11 @@
   {"id": "techno", "name": "Techno", "level": 1, "cluster": "edm-dance", "parents": [], "v1": "techno"},
   {"id": "trance", "name": "Trance", "level": 1, "cluster": "edm-dance", "parents": [], "v1": "trance"},
   {"id": "psytrance", "name": "Psytrance", "level": 2, "cluster": "edm-dance", "parents": ["trance"], "v1": "psytrance", "synonyms": ["psychedelic trance", "psy-trance"]},
-  {"id": "goa-trance", "name": "Goa Trance", "level": 3, "cluster": "edm-dance", "parents": ["psytrance"], "v1": "goa trance", "synonyms": ["goa"]}
+  {"id": "goa-trance", "name": "Goa Trance", "level": 3, "cluster": "edm-dance", "parents": ["psytrance"], "v1": "goa trance", "synonyms": ["goa"]},
+  {"id": "dark-psytrance", "name": "Dark Psytrance", "level": 3, "cluster": "edm-dance", "parents": ["psytrance"], "v1": "dark psytrance", "synonyms": ["darkpsy"]},
+  {"id": "progressive-psytrance", "name": "Progressive Psytrance", "level": 3, "cluster": "edm-dance", "parents": ["psytrance"], "v1": "progressive psytrance"},
+  {"id": "forest-psytrance", "name": "Forest Psytrance", "level": 3, "cluster": "edm-dance", "parents": ["psytrance"], "v1": "forest psytrance"},
+  {"id": "full-on-psytrance", "name": "Full-On Psytrance", "level": 3, "cluster": "edm-dance", "parents": ["psytrance"], "v1": "full-on psytrance"},
+  {"id": "hi-tech-psytrance", "name": "Hi-Tech Psytrance", "level": 3, "cluster": "edm-dance", "parents": ["psytrance"], "v1": "hi-tech psytrance"}
  ]
 }

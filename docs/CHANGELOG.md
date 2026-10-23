@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-24 (Genres map v2 psytrance styles, built, not deployed)
+
+- Server data (owner request 2026-10-24; task-0096, GEN-105, DATA-197; no tests run, test assertions edited): `genres_v2.json` gains five level 3 children of Psytrance beside Goa Trance, the styles Rate Your Music lists under it: Dark Psytrance (synonym darkpsy), Progressive Psytrance, Forest Psytrance, Full-On Psytrance and Hi-Tech Psytrance, each mapped by `v1` to the v1 genre of the same name, so the dock shows its v1 description, sources and reference tracks. The map code needed no change; v1 untouched.
+
 ## 2026-10-24 (web playback end and reconnect fix, deployed)
 
 - Web fix: a song that reached its end no longer sits at 7:42 / 7:42 with the pause icon after a server restart, and a lone song with Shuffle and Repeat whole list loops (PLY-200 to PLY-203, WEB-140; owner report 2026-10-23; deployed 2026-10-24, checked in the Chrome browser pane against a local API with an injected cut stream, Safari and a device not tried, no tests run, test assertions edited): a watchdog and a near-end rule (`web/js/end-guard.js`) run the normal end-of-song path when the browser never fires `ended` (stalled tail, media error in the last 3 s or 2 %); the pause icon follows the element (a failure that is not retried now pauses it); the media retry window is about 31 s instead of 5 s, remembers that the user wanted playback (Chrome pauses before `error`, so the reload used to stay silent on "Reconnecting...") and backs off when the stream breaks again at once; Shuffle + Repeat whole list on a single playable song restarts it instead of stopping with "No downloaded songs to shuffle" (`shufflePlayable` in `queue-logic.js`).
