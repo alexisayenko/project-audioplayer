@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-24 (genres map zoom bar at the bottom, built, not deployed)
+
+- Web: on the phone layout (under 720 px) the Genres map v2 zoom bar stays at the bottom left with the Genre info sheet open too (GEN-110; owner request "place bottom in both cases", two pictures; built, not deployed; node syntax check and measurements with getBoundingClientRect in iframes only, no tests run, none edited): the open sheet now ends above the bar (`--space-3` above it, so the bar is never covered) instead of the bar sitting in a strip above the sheet; collapsed and from 720 px nothing changes. `web/genres.css`.
+
 ## 2026-10-24 (Genres map v2 psytrance styles, deployed)
 
 - Server data (owner request 2026-10-24; task-0096, GEN-105, DATA-197; deployed 2026-10-24, checked in the browser pane against a local API (dock of Hi-Tech Psytrance with its v1 description; circles were tiny dots because the throwaway library was empty), no tests run, test assertions edited): `genres_v2.json` gains five level 3 children of Psytrance beside Goa Trance, the styles Rate Your Music lists under it: Dark Psytrance (synonym darkpsy), Progressive Psytrance, Forest Psytrance, Full-On Psytrance and Hi-Tech Psytrance, each mapped by `v1` to the v1 genre of the same name, so the dock shows its v1 description, sources and reference tracks. The map code needed no change; v1 untouched.
