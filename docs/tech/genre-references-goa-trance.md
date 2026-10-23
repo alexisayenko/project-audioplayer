@@ -5,7 +5,7 @@ Verified review for [task-0093](../tasks/task-0093.md) / [ADR-0044](decisions.md
 ## Method
 
 - Library: owner `library.json` and `genre_references.json` / `genre_eras.json` from `origin/main` of the data repo (read-only, `git show`; 497 songs). A song counts as goa trance when its `genres` contain "goa trance"; other songs were scanned by genre (psytrance, trance, full-on, psybient) and by artist name.
-- Verification: Wikipedia (article pages opened), MusicBrainz (web-service search results opened), plus one personal blog and one Last.fm wiki, each labelled as weak. Discogs, Rate Your Music and AllMusic answered 403 and MusicBrainz human pages showed a bot check, so none of those was read; the MusicBrainz URLs below are the exact search queries that were opened (JSON). Where a fact has one source only it is marked.
+- Verification: Wikipedia (article pages opened), MusicBrainz (web-service search results opened), plus one personal blog and one Last.fm wiki, each labelled as weak. Discogs, Rate Your Music and AllMusic answered 403 and MusicBrainz human pages showed a bot check during the research, so none of those was read; the MusicBrainz URLs in the Sources table are the exact search queries that were opened (JSON). The saved entries use readable MusicBrainz pages instead ([Saved](#saved)). Where a fact has one source only it is marked.
 - Years are the first release found (single or compilation), not the library year. Library years often come from the album or a re-release.
 - Confidence: high = identity, year and role backed by 3+ sources; medium = identity and year backed by 2, role by 1-2; low = one weak source or conflicting dates.
 - Roles follow ADR-0044: archetype (typical), origin (early song that started the genre), landmark (defining release), breakthrough (brought it to a wide audience). Cap: 3 picks per role per era. Eras are the five in `server/data/genre_eras_seed.json` (ids in brackets).
@@ -28,6 +28,8 @@ Verified review for [task-0093](../tasks/task-0093.md) / [ADR-0044](decisions.md
 | #10 Total Eclipse | `a62572c8` | created |
 
 Owner decisions (2026-10-23): LSD is dated 1994, its first release, with the 1995 Live Mix and the 1995 Twisted album named in the note; Teleport is dated 1994; Sugar Rush is dated 1994 (first on a compilation, closing Oakenfold's Goa Mix on 18 Dec 1994) and the note says the single is from 1996; Filteria is not an origin (#12 dropped).
+
+Source URLs (2026-10-23, data change only, no deploy): the ten MusicBrainz sources of the saved entries were JSON web-service queries; they are now readable pages (`https://musicbrainz.org/recording/<mbid>` or `/release/<mbid>`), with the source type and note kept. The ids were read from the JSON the queries returned; the full map is in [Saved MusicBrainz pages](#saved-musicbrainz-pages). The Dragonfly label in the Total Eclipse note is kept: MusicBrainz names "Dragonfly Records" (catalogue number blfcd4) on the Project II Trance release of August 1993.
 
 Still open and unverified: swapping Kabalah for Pleiadians - Alcyone, and the extras suggested by Gemini (Maya, Trash Box, Hyperscale, We Came in Peace, What Time Is Love?, Stardiver).
 
@@ -121,7 +123,7 @@ Counts: 13 picks = 3 archetype, 4 origin, 3 landmark, 3 breakthrough, plus 4 res
 5. Era 1, 4 and 5 are thin: an Israeli full-on pick (Astral Projection - Mahadeva '99, 1999; verified only as a release) and a real new school track (Filteria, Mindsphere, Khetzal and Suntrip artists appear in sources but no track) need Alex's choice or a Discogs/RYM check from a machine that can open them.
 6. Bamboo Forest songs (`TiNx0-TshOg`, `Lud-4oFlEms`) are tagged psytrance; "Bamboo Forest" is also the name of an early Goa party site (Wikipedia, Goa trance), so check the artist before retagging.
 7. Library hygiene (not in scope): `Transwave - Land of Freedom` has two copies; the remix copy is tagged psytrance.
-8. Saving: unique per genre by normalised artist and title, so a role change for the same track means PATCH, not a second entry. Source URLs are the exact ones below; the MusicBrainz ones are web-service queries, replace them with human pages if Alex prefers.
+8. Saving: unique per genre by normalised artist and title, so a role change for the same track means PATCH, not a second entry. Saved source URLs are readable pages; the web-service queries in the Sources table are only what the research opened.
 
 ## Sources
 
@@ -164,3 +166,20 @@ All opened on 2026-10-23. Type is the API source type. W = Wikipedia, M = MusicB
 | M21 | musicbrainz | https://musicbrainz.org/ws/2/release-group?query=releasegroup:%22Sky%20Input%22%20AND%20artist:Filteria&fmt=json&limit=5 | Sky Input album, 22 Nov 2004 |
 | K1 | other | https://www.karangill.com/the-best-of-goa-trance-top-artists-albums-and-tracks/ | personal blog (Karan Gill): notable tracks and recommended albums; one person's taste, weak |
 | L1 | other | https://www.last.fm/music/Transwave/+wiki | user-written Last.fm wiki on Transwave; weak |
+
+### Saved MusicBrainz pages
+
+The M-rows above are the JSON queries the research opened. The saved entries link these readable pages instead (ids taken from the query results, none invented):
+
+| Code | Saved page | What it is |
+| --- | --- | --- |
+| M1 | https://musicbrainz.org/recording/adbc15c5-d6d2-4535-95e5-09bd7c62ca97 | Mahadeva on Trancemaster: Goahead XL-Mix 2, 17 Oct 1995 |
+| M2 | https://musicbrainz.org/recording/86d0af45-e2b3-47cb-b2b6-1225c2a09946 | LSD, first release 14 Jul 1994 |
+| M4 | https://musicbrainz.org/recording/996f10a2-40ff-403d-ab59-7f7e74611fd1 | Kabalah on Perfecto Fluoro, 28 Oct 1996 |
+| M18 | https://musicbrainz.org/release/ca99d9f8-8dab-4274-b162-1018be8c5bff | Let's Turn On, TIP Records single, 1994 |
+| M5 | https://musicbrainz.org/recording/7ca23f33-2e78-46b7-9c20-abddd075b2ad | Liquid Sun on Dancing Galaxy, 1997 |
+| M11 | https://musicbrainz.org/recording/2793f685-831c-4e12-a20b-381632451845 | Angelic Particles single, 24 Apr 1995 |
+| M6 | https://musicbrainz.org/recording/ead3191e-ab5d-44f3-9bb7-4e64a31e890e | Teleport on the 1996 "Teleport / Sugar Rush" single (the query found no 1994 recording) |
+| M12 | https://musicbrainz.org/recording/aba8e2aa-7153-4c6b-97fa-6828f085fa80 | Sugar Rush on Digital Alchemy, 1 Oct 1994 |
+| M14 | https://musicbrainz.org/recording/79fc42b8-908c-4e9f-9e71-1bdd67a1a9c0 | Total Eclipse on Project II Trance, Aug 1993 |
+| M16 | https://musicbrainz.org/release/7cbfa929-c6c9-4a04-8563-527091023f1b | Project II Trance release (Dragonfly Records, 1993-08) |
