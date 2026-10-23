@@ -16,7 +16,7 @@ Derived files (regenerate from the masters, never edit by hand):
 
 - iOS: `ios/Sources/Assets.xcassets/AppIcon.appiconset/AppIcon.png`, `DrawerLogo.imageset/DrawerLogo@2x.png` (84 px) and `@3x.png` (126 px); the drawer shows the logo in a circle at 42 pt; `VinylRecord.imageset/electrophone-vinyl.png` is an unchanged copy of the transparent 1024 px master retained from the first missing-cover placeholder iteration.
 - The drawer lockup master is copied unchanged to `ios/Sources/Assets.xcassets/ElectrophoneVega108Lockup.imageset/electrophone-vega108-lockup.png` and displayed to the right of the circular vinyl mark, trailing-aligned and aspect-fit. Electrophone is emphasized over the smaller Vega 108 line. It replaces the earlier standalone Vega 108 wordmark; that supplied image remains unused in the asset catalog.
-- Web: `web/favicon-32.png`, `web/favicon.svg` (embeds a 128 px vinyl PNG), `web/apple-touch-icon.png`, `web/img/electrophone-vinyl.png` (192 px, the `mark` icon in `web/js/icons.js`: sidebar brand and login).
+- Web: `web/favicon-32.png`, `web/favicon.svg` (embeds a 128 px vinyl PNG), `web/apple-touch-icon.png`, `web/img/electrophone-vinyl.png` (192 px, the `mark` icon in `web/js/icons.js`: sidebar brand and login), `web/img/electrophone-lockup.png` (396x132, 23 KB, the lockup master scaled for the web sidebar; regenerate from the master).
 
 ## Usage rules
 

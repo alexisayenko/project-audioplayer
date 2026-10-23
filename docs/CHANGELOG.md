@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-23 (web brand lockup, to deploy)
+
+- Web: the sidebar brand block shows the vinyl mark with the two-line Electrophone / Vega 108 lockup, as in the iOS drawer; the text title and "Offline music player" tagline are gone, and the collapsed rail shows the mark alone (WEB-050, task-0092).
+
 ## 2026-10-22 (iOS Library refinements, simulator built; not uploaded)
 
 - iOS: keep a visible plain-text match count on the right with an adjacent ellipsis menu for Play all matched, Show currently playing song and Clear all filters, remove the separate playback/Clear buttons, and group Era chips chronologically under century headings, and show Pause/Play on the current cover like the web. Simulator build and code review passed; these refinements are newer than TestFlight build 20261028.
