@@ -31,19 +31,29 @@ export const ALIASES = { synthesize: 'synthesize/simple', analyze: 'analyze/list
 
 const pathOf = (hash) => String(hash || '').replace(/^#\/?/, '').replace(/\/+$/, '');
 
-export const glossaryTermFromHash = (hash) => {
-  const m = pathOf(hash).match(/^glossary\/([^/]+)$/);
-  if (!m) return '';
+const decode = (s) => {
   try {
-    return decodeURIComponent(m[1]);
+    return decodeURIComponent(s);
   } catch {
     return '';
   }
 };
 
+export const glossaryViewFromHash = (hash) => (/^glossary\/map(\/[^/]+)?$/.test(pathOf(hash)) ? 'map' : 'list');
+
+export const glossaryTermFromHash = (hash) => {
+  const m = pathOf(hash).match(/^glossary\/([^/]+)$/);
+  return m && m[1] !== 'map' ? decode(m[1]) : '';
+};
+
+export const glossaryMapTermFromHash = (hash) => {
+  const m = pathOf(hash).match(/^glossary\/map\/([^/]+)$/);
+  return m ? decode(m[1]) : '';
+};
+
 export const pageFromHash = (hash) => {
   const path = pathOf(hash);
   if (PAGES.some((p) => p.id === path)) return path;
-  if (/^glossary\/[^/]+$/.test(path)) return 'glossary';
+  if (/^glossary\/[^/]+$/.test(path) || /^glossary\/map\/[^/]+$/.test(path)) return 'glossary';
   return Object.hasOwn(ALIASES, path) ? ALIASES[path] : DEFAULT_PAGE;
 };
