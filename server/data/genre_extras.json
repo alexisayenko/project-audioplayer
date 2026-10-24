@@ -385,6 +385,12 @@
    ],
    "note": "manual parent, GEN-045"
   },
+  "suomisaundi": {
+   "parents": [
+    "psytrance"
+   ],
+   "note": "added 2026-10-24 (owner: Rate Your Music page Suomisaundi, 175 releases, described as a Finnish-based deviation of Psytrance; the breadcrumb was not shown, so the parent is inferred from that text; not in Discogs)"
+  },
   "synth-funk": {
    "parents": [
     "funk"
@@ -414,6 +420,12 @@
     "folk"
    ],
    "note": "live library tag, reviewed 2026-10-16"
+  },
+  "zenonesque": {
+   "parents": [
+    "progressive psytrance"
+   ],
+   "note": "added 2026-10-24 (owner: Rate Your Music page Zenonesque, 48 releases, described as a form of Progressive Psytrance; the breadcrumb was not shown, so the parent is inferred from that text; not in Discogs)"
   }
  }
 }

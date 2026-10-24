@@ -6414,6 +6414,9 @@
    "match": "name"
   }
  },
+ "suomisaundi": {
+  "discogs": false
+ },
  "surf": {
   "discogs": true,
   "musicbrainz": {
@@ -6934,6 +6937,9 @@
    "wikidata": "Q1636684",
    "match": "name"
   }
+ },
+ "zenonesque": {
+  "discogs": false
  },
  "zouk": {
   "discogs": true,

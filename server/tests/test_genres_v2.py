@@ -8,7 +8,7 @@ from tests.test_library import H, client  # noqa: F401
 NAMES = {"house", "techno", "trance", "drum and bass", "breakbeat", "hardcore techno"}
 SIX = ["Breakbeat", "Drum 'n' Bass", "Hardcore", "House", "Techno", "Trance"]
 PSY_CHILDREN = ["Dark Psytrance", "Progressive Psytrance", "Forest Psytrance", "Full-On Psytrance", "Hi-Tech Psytrance"]
-ALL = SIX + ["Psytrance", "Goa Trance"] + PSY_CHILDREN + ["Psycore", "Nitzhonot"]
+ALL = SIX + ["Psytrance", "Goa Trance"] + PSY_CHILDREN + ["Psycore", "Nitzhonot", "Suomisaundi", "Zenonesque"]
 
 
 def doc(**over):
@@ -28,15 +28,15 @@ def test_the_shipped_file_has_the_six_super_genres_psytrance_and_its_six_childre
     out = genres_v2.parse(json.loads(genres_v2.FILE.read_text(encoding="utf-8")), set(genre_vocab.load().entries))
     assert [g["name"] for g in out["genres"]] == ALL
     by = {g["id"]: g for g in out["genres"]}
-    assert [g["level"] for g in out["genres"]] == [1] * 6 + [2] + [3] * 5 + [4] * 3
+    assert [g["level"] for g in out["genres"]] == [1] * 6 + [2] + [3] * 5 + [4] * 3 + [3, 4]
     assert all(g["parents"] == [] for g in out["genres"][:6]) and all(g["cluster"] == "edm-dance" for g in out["genres"])
     assert by["psytrance"]["parents"] == ["trance"] and by["goa-trance"]["parents"] == ["psytrance"]
     assert all(by[i]["parents"] == ["psytrance"] for i in ["dark-psytrance", "progressive-psytrance", "forest-psytrance", "full-on-psytrance"])
-    assert by["dark-psytrance"]["synonyms"] == ["darkpsy", "dark psychedelic trance", "horror trance"] and by["psycore"]["parents"] == ["dark-psytrance"] and by["hi-tech-psytrance"]["parents"] == ["dark-psytrance"] and by["nitzhonot"]["parents"] == ["goa-trance"]
+    assert by["dark-psytrance"]["synonyms"] == ["darkpsy", "dark psychedelic trance", "horror trance"] and by["psycore"]["parents"] == ["dark-psytrance"] and by["hi-tech-psytrance"]["parents"] == ["dark-psytrance"] and by["nitzhonot"]["parents"] == ["goa-trance"] and by["suomisaundi"]["parents"] == ["psytrance"] and by["zenonesque"]["parents"] == ["progressive-psytrance"]
     assert by["psytrance"]["synonyms"] == ["psychedelic trance", "psy-trance"] and by["goa-trance"]["synonyms"] == ["goa"]
     assert [c["name"] for c in out["clusters"]] == ["EDM / Dance"]
     assert out["clusters"][0]["colour"] == "#D52633"
-    assert {g["v1"] for g in out["genres"]} == NAMES | {"psytrance", "goa trance", "dark psytrance", "progressive psytrance", "forest psytrance", "full-on psytrance", "hi-tech psytrance", "psycore", "nitzhonot"}
+    assert {g["v1"] for g in out["genres"]} == NAMES | {"psytrance", "goa trance", "dark psytrance", "progressive psytrance", "forest psytrance", "full-on psytrance", "hi-tech psytrance", "psycore", "nitzhonot", "suomisaundi", "zenonesque"}
 
 
 def test_a_valid_document_parses():

@@ -8,13 +8,13 @@ Idea (owner backlog): a boolean `microgenre` on a genre for very narrow styles, 
 
 | Source | Count |
 |---|---|
-| Vocabulary (`server/data/genre_levels.json`) | 540 entries: 535 genres below level 1 plus 5 promoted level 1 forms |
-| Approved or unreviewed extras (`discogs: false`, not in `genre_discogs.json`) | 68 |
+| Vocabulary (`server/data/genre_levels.json`) | 542 entries: 537 genres below level 1 plus 5 promoted level 1 forms |
+| Approved or unreviewed extras (`discogs: false`, not in `genre_discogs.json`) | 70 |
 | Owner library (synced data repo, read only, not copied here) | 498 songs, 453 with genre tags, 161 distinct tags (154 vocabulary genres, 7 family names: pop, rock, hip hop, blues, jazz, classical, reggae) |
 | Library genres with 1 song / 2 songs | 40 / 26 (38 / 25 vocabulary genres) |
 | The 13 unsure one-song genres from the backlog | all 13 reviewed; today `dreamsynth` and `folk pop` have 2 songs, the other 11 have 1 |
-| Names outside the vocabulary (psytrance review leftovers plus twilight psytrance) | 8 (nitzhonot is no longer one: it is a Rate Your Music genre and in the vocabulary since 2026-10-24) |
-| Rows below | 52 (the rest of the 540 are trivial keeps: broad, regional or era genres with no microgenre signal) |
+| Names outside the vocabulary (psytrance review leftovers plus twilight psytrance) | 6 (nitzhonot, suomisaundi and zenonesque are no longer among them: they are Rate Your Music genres and in the vocabulary since 2026-10-24) |
+| Rows below | 50 (the rest of the 542 are trivial keeps: broad, regional or era genres with no microgenre signal) |
 
 Library counts are the owner's songs on 2026-10-24 and are supporting evidence only. A genre can be narrow and well loved (chillwave, 18 songs) or broad and absent from the library.
 
@@ -31,7 +31,7 @@ A genre is a microgenre candidate when most of these hold. C1 and C5 are the cor
 
 Recommendation words: **microgenre** (flag it), **keep** (full genre, no flag), **synonym of X** (fold into X), **drop** (leave out of the vocabulary; descriptor, ambiguous or unsupported).
 
-The flag is about narrowness, not attestation. Two kinds of microgenre appear below: attested ones (RYM or Discogs list them: vaporwave, witch house, dungeon synth) where the flag is only a visibility cue, and unattested ones (twilight psytrance, suomisaundi) where the flag is what lets the name stay in the vocabulary at all (see the proposal).
+The flag is about narrowness, not attestation. Two kinds of microgenre appear below: attested ones (RYM or Discogs list them: vaporwave, witch house, dungeon synth) where the flag is only a visibility cue, and unattested ones (twilight psytrance) where the flag is what lets the name stay in the vocabulary at all (see the proposal).
 
 ## Relation to AD and the source policy
 
@@ -96,13 +96,11 @@ Columns: parents and level are today's data (`-` = not in the vocabulary). Songs
 
 ### D. Names outside the vocabulary (proposed additions)
 
-Parent of each proposed addition is a proposal. None is in RYM under psytrance (2026-10-24 review); whether any has an RYM page elsewhere is for the owner to check. `nitzhonot` was in this table (goa trance, L4, "check") and is removed from it: the owner found its RYM page (2026-10-24, 549 releases, breadcrumb All genres > Goa Trance > Nitzhonot), so it is an attested genre, now a level 4 approved extra under goa trance, not a microgenre candidate.
+Parent of each proposed addition is a proposal. None is in RYM under psytrance (2026-10-24 review); whether any has an RYM page elsewhere is for the owner to check. `nitzhonot` was in this table (goa trance, L4, "check") and is removed from it: the owner found its RYM page (2026-10-24, 549 releases, breadcrumb All genres > Goa Trance > Nitzhonot), so it is an attested genre, now a level 4 approved extra under goa trance, not a microgenre candidate. `suomisaundi` (psytrance, L3) and `zenonesque` (psytrance, L3 as proposed) were in this table too and are removed for the same reason: the owner pasted their RYM pages (2026-10-24, 175 and 48 releases), so they are attested genres, now approved extras (`suomisaundi` level 3 under psytrance, `zenonesque` level 4 under progressive psytrance; parents inferred from the RYM text, no breadcrumb shown), not microgenre candidates.
 
 | Genre | Proposed parent, level | Songs | Discogs | RYM | Rationale | Recommendation | Conf. |
 |---|---|---|---|---|---|---|---|
 | twilight psytrance | full-on psytrance, L4 | 0 | no | no (owner: variant inside Full-On) | Dusk-set variant of full-on with a recognised scene name; a synonym hides it from filters | microgenre | medium |
-| suomisaundi | psytrance, L3 | 0 | no | check | Finnish scene, own Wikipedia article | microgenre | medium |
-| zenonesque | psytrance, L3 | 0 | no | check | Label-bound sound (Zenon Records), thin sources | microgenre | low |
 | psybreaks | psytrance, L3 | 0 | no | check | Psy over breakbeats; narrow, scene-bound | microgenre | low |
 | psydub | psybient, L4 | 0 | no | check | Dub-leaning psychill; narrow | microgenre | low |
 | psychill | psybient | 0 | no | check | Another name for psybient | synonym of psybient | medium |
@@ -127,15 +125,15 @@ Scanned and left as full genres without a row (no microgenre signal): the broad 
 
 | Recommendation | Rows |
 |---|---|
-| microgenre | 24 (A 8, B 4, C 2, D 5, E 5) |
+| microgenre | 22 (A 8, B 4, C 2, D 3, E 5) |
 | keep | 19 |
 | synonym of X | 4 (dreamsynth, orchestral pop, psychill, hard psy) |
 | drop | 5 (sunshine house, deep trance, worldbeat, vocal, psystep) |
-| Total | 52 |
+| Total | 50 |
 
 Strongest microgenre cases (high confidence or the owner's first candidate): twilight psytrance, witch house, vaporwave, sovietwave, dungeon synth.
 
-Effect if all 24 were flagged: 24 of 535 genres (4 percent); 54 library songs (12 percent of the 453 tagged songs) carry at least one flagged genre that exists in the library; 7 of the 8 children of synthwave would be microgenres (only dreamsynth is not, and it would become a synonym), so a map that hides microgenres by default would leave synthwave with almost no visible children.
+Effect if all 22 were flagged: 22 of 537 genres (4 percent); 54 library songs (12 percent of the 453 tagged songs) carry at least one flagged genre that exists in the library; 7 of the 8 children of synthwave would be microgenres (only dreamsynth is not, and it would become a synonym), so a map that hides microgenres by default would leave synthwave with almost no visible children.
 
 ## What the flag would do (PROPOSAL for the owner, phase 2, not implemented)
 
@@ -147,14 +145,14 @@ Effect if all 24 were flagged: 24 of 535 genres (4 percent); 54 library songs (1
 6. Filter: optional Library filter "microgenres only / exclude" (later, with the modifier filter of task-0065).
 7. Source policy: the policy gains one clause. An unattested narrow style may be added only as a flagged microgenre, always a leaf, with owner approval and at least a Wikipedia article or two independent scene or label sources recorded in the genre's note. Attested microgenres (vaporwave, witch house) just carry the flag. `twilight psytrance` would move from a synonym of `full-on psytrance` to its own level 4 genre with `microgenre: true` (no migration: no library song carries it; the RYM name "night full-on" stays a synonym of it).
 8. AD: unchanged. Add a line: "microgenre is an attribute (narrowness), not a depth name; level stays computed".
-9. Not done in phase 2: no audio or distance rules, no new RYM data field, no change to the tree or to the 535 genres other than setting the flag on approved rows and adding approved new names.
+9. Not done in phase 2: no audio or distance rules, no new RYM data field, no change to the tree or to the 537 genres other than setting the flag on approved rows and adding approved new names.
 
 ## Open points for the owner
 
-1. Policy: may an unattested but real scene style enter the vocabulary only as a flagged microgenre (twilight psytrance, suomisaundi)? Recommended: yes, with the Wikipedia or two-source rule above.
-2. Which rows get the flag? The 25 "microgenre" rows are a proposal; the doubtful ones are low-confidence (nu-nrg, ghettotech, zenonesque, psybreaks, psydub, lowercase, illbient, spacesynth).
+1. Policy: may an unattested but real scene style enter the vocabulary only as a flagged microgenre (twilight psytrance)? Recommended: yes, with the Wikipedia or two-source rule above.
+2. Which rows get the flag? The 22 "microgenre" rows are a proposal; the doubtful ones are low-confidence (nu-nrg, ghettotech, psybreaks, psydub, lowercase, illbient, spacesynth).
 3. Map default: hide all microgenres, or only those without songs in the viewer's library, or show dimmed?
-4. Names to check on RYM (owner, since RYM cannot be fetched): sovietwave, dreamwave, dreamsynth, sunshine house, orchestral pop, worldbeat, estrada, deep trance, beat, vocal, and for the new names suomisaundi, zenonesque, psybreaks, psydub, psychill, hard psy, psystep. Also confirm my "likely" rows if it matters (witch house, darksynth, nu-nrg, dream trance, dungeon synth, harsh noise wall, skweee, lowercase, illbient, moombahton, ghettotech).
+4. Names to check on RYM (owner, since RYM cannot be fetched): sovietwave, dreamwave, dreamsynth, sunshine house, orchestral pop, worldbeat, estrada, deep trance, beat, vocal, and for the new names psybreaks, psydub, psychill, hard psy, psystep. Also confirm my "likely" rows if it matters (witch house, darksynth, nu-nrg, dream trance, dungeon synth, harsh noise wall, skweee, lowercase, illbient, moombahton, ghettotech).
 5. dreamsynth: same style as dreamwave (fold it) or separate?
 6. Label: "Microgenre", "Micro" or "Niche" in the UI.
 7. Drops: sunshine house, deep trance, worldbeat and vocal are existing vocabulary names (psystep is only a new name, nothing to remove); removing them needs a phase 2 step (`REMOVED_GENRES` and the tag migration, one library song each for sunshine house, worldbeat and vocal), so confirm each.

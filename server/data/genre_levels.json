@@ -44,10 +44,10 @@
     "level4": 0
    },
    "trance": {
-    "total": 23,
+    "total": 25,
     "level2": 14,
-    "level3": 6,
-    "level4": 3
+    "level3": 7,
+    "level4": 4
    },
    "drum and bass": {
     "total": 2,
@@ -104,13 +104,13 @@
     "level4": 0
    }
   },
-  "total": 535,
+  "total": 537,
   "non_discogs": {
    "Blues": 0,
    "Classical": 0,
    "house": 2,
    "techno": 2,
-   "trance": 14,
+   "trance": 16,
    "drum and bass": 2,
    "synthwave": 6,
    "Others": 8,
@@ -4066,6 +4066,21 @@
   "provisional": true,
   "discogs": true
  },
+ "suomisaundi": {
+  "parents": [
+   "psytrance"
+  ],
+  "related": [
+   "goa trance"
+  ],
+  "synonyms": [
+   "spugedelic trance",
+   "suomisoundi",
+   "suomistyge"
+  ],
+  "discogs": false,
+  "status": "approved"
+ },
  "surf": {
   "parents": [
    "rock and roll"
@@ -4364,6 +4379,21 @@
   ],
   "provisional": true,
   "discogs": true
+ },
+ "zenonesque": {
+  "parents": [
+   "progressive psytrance"
+  ],
+  "related": [
+   "minimal techno",
+   "tech trance"
+  ],
+  "synonyms": [
+   "zenon",
+   "zenon sound"
+  ],
+  "discogs": false,
+  "status": "approved"
  },
  "zouk": {
   "parents": [

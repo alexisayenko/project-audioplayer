@@ -18,6 +18,8 @@
   {"id": "full-on-psytrance", "name": "Full-On Psytrance", "level": 3, "cluster": "edm-dance", "parents": ["psytrance"], "v1": "full-on psytrance"},
   {"id": "hi-tech-psytrance", "name": "Hi-Tech Psytrance", "level": 4, "cluster": "edm-dance", "parents": ["dark-psytrance"], "v1": "hi-tech psytrance"},
   {"id": "psycore", "name": "Psycore", "level": 4, "cluster": "edm-dance", "parents": ["dark-psytrance"], "v1": "psycore"},
-  {"id": "nitzhonot", "name": "Nitzhonot", "level": 4, "cluster": "edm-dance", "parents": ["goa-trance"], "v1": "nitzhonot"}
+  {"id": "nitzhonot", "name": "Nitzhonot", "level": 4, "cluster": "edm-dance", "parents": ["goa-trance"], "v1": "nitzhonot"},
+  {"id": "suomisaundi", "name": "Suomisaundi", "level": 3, "cluster": "edm-dance", "parents": ["psytrance"], "v1": "suomisaundi"},
+  {"id": "zenonesque", "name": "Zenonesque", "level": 4, "cluster": "edm-dance", "parents": ["progressive-psytrance"], "v1": "zenonesque"}
  ]
 }
