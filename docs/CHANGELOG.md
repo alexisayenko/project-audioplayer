@@ -2,7 +2,7 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
-## 2026-10-25 (Studio Spectrum Trails switch, built, not deployed; the main app is unchanged)
+## 2026-10-25 (Studio Spectrum Trails switch, deployed to studio.electrophone.cc as `cb8a9b6`; the main app is unchanged)
 
 - Web (WEB-205, STU-028; owner: "make a switch to turn on trails on spectrum, like what we had in the visualizer (photoluminescence: the trail stays)"; no tests run, `node --check`, the build and the Browser pane at desktop and 375 px with a faked analyser and microphone only): on Listen and Chordophones the Spectrum has a "Trails" checkbox (off by default): a faint ghost of recent peaks falls 20 dB per second behind the live curve (per bin on Listen, per harmonic bar on Chordophones), stays aligned across Linear and Log, and is cleared on every click of the switch, on stop and on a change of harmonics. New glossary entry "Trails (afterglow)". `listen-views.test.mjs` extended, not run.
 
