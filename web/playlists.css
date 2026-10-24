@@ -1,4 +1,4 @@
-/* Playlists (PLS-001, PLS-005, PLS-008..PLS-014, PLS-129..PLS-133): the list, the playlist page, its add-by-search box and the Add to playlist picker */
+/* Playlists (PLS-001, PLS-005, PLS-008..PLS-014, PLS-129..PLS-134): the list, the playlist page, its add-by-search box and the Add to playlist picker */
 body.guest #nav a[data-route="playlists"] { display: none; }
 
 .pl-back { display: inline-flex; align-items: center; gap: var(--space-1); align-self: flex-start; padding-left: 0; margin-bottom: var(--space-1); text-decoration: none; }
@@ -14,12 +14,15 @@ body.guest #nav a[data-route="playlists"] { display: none; }
 
 .pl-row { cursor: pointer; }
 .pl-row .open { text-decoration: none; }
-.songs .song.pl-row, .songs .song.pl-song { padding-right: calc(2 * var(--control)); }
+.songs .song.pl-row { padding-right: calc(3 * var(--control)); }
+.songs .song.pl-song { padding-right: calc(2 * var(--control)); }
 .songs .song.pl-song.current { padding-right: calc(2 * var(--control) + var(--row-pad)); }
 .pl-ctl { position: absolute; right: 0; top: 50%; transform: translateY(-50%); display: flex; align-items: center; }
 .songs .song.pl-song.current .pl-ctl { right: var(--row-pad); }
 .pl-ctl .icon { width: var(--control); height: var(--control); }
 .pl-ctl .icon:hover, .pl-ctl .icon:focus-visible { color: var(--ink); }
+.pl-row .pl-ctl .icon { position: relative; }
+.pl-row .pl-ctl .icon::after { content: ''; position: absolute; inset: calc((var(--control) - var(--hit)) / 2); border-radius: 50%; }
 .pl-remove:hover, .pl-remove:focus-visible { color: var(--power-text); }
 .pl-grip { cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 .pl-grip:active { cursor: grabbing; }

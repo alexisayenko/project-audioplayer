@@ -12,7 +12,7 @@ import { disposeAll } from './marquee.js';
 import { LIBRARY_FRESH_MS } from './constants.js';
 import { songRow, coverTile, paintDownloadRows } from './library-rows.js';
 import { playlistStore } from './playlists-store.js';
-import { totalText, moveId, insertId, exportName, queueNotes, addedText } from './playlists-model.js';
+import { totalText, moveId, insertId, exportName, queueNotes, addedText, wantsAddSongs, playlistHashOf } from './playlists-model.js';
 import { addSongsPanel } from './playlist-add.js';
 import { createOrderSync, attachDrag } from './playlist-order.js';
 import { playlistForm } from './playlist-dialogs.js';
@@ -40,6 +40,7 @@ export function renderPlaylistPage(root, id) {
   let loadError = null;
   let missing = false;
   let gone = false;
+  let wantsAdd = wantsAddSongs(location.hash);
 
   const head = el('header', { class: 'page-head pl-head' });
   const actions = el('div', { class: 'pl-actions' });
@@ -147,6 +148,15 @@ export function renderPlaylistPage(root, id) {
     paintStatus();
     adder.node.hidden = !detail;
     adder.refresh();
+    if (detail) openAddBox();
+  }
+
+  function openAddBox() {
+    if (!wantsAdd) return;
+    wantsAdd = false;
+    history.replaceState(null, '', playlistHashOf(location.hash));
+    adder.input.focus();
+    adder.node.scrollIntoView({ block: 'nearest' });
   }
 
   function adopt(next) {
