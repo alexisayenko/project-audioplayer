@@ -30,8 +30,27 @@ test('harmonicList keeps the summed gain at 0.3 and skips harmonics above 20 kHz
 });
 
 test('clampParams keeps every control in range', () => {
-  assert.deepEqual(h.clampParams({ freq: 1, count: 99, rolloff: -90 }), { freq: 20, count: 32, rolloff: -24 });
+  assert.deepEqual(h.clampParams({ freq: 1, count: 99, rolloff: -90, tau: 99, repeat: 0 }), { freq: 20, count: 32, rolloff: -24, decay: false, tau: 5, repeat: 1 });
   assert.deepEqual(h.clampParams({}), h.DEFAULTS);
+  assert.deepEqual(h.DEFAULTS, { freq: 220, count: 10, rolloff: -12, decay: false, tau: 1.2, repeat: 3 });
+});
+
+test('higher harmonics fade faster: tau_n = tau1 / n^0.8', () => {
+  assert.equal(h.tauOf(1, 1.2), 1.2);
+  assert.ok(Math.abs(h.tauOf(2, 1.2) - 1.2 / 2 ** 0.8) < 1e-12);
+  assert.ok(h.tauOf(10, 1.2) < h.tauOf(3, 1.2));
+});
+
+test('envelopeValue holds before the decay starts and falls exponentially after', () => {
+  const env = { t0: 1, gain: 0.2, tau: 0.5 };
+  assert.equal(h.envelopeValue(env, 0.5), 0.2);
+  assert.ok(Math.abs(h.envelopeValue(env, 1.5) - 0.2 * Math.exp(-1)) < 1e-12);
+  assert.equal(h.envelopeValue({ t0: 0, gain: 0.1, tau: Infinity }, 9), 0.1);
+});
+
+test('isSilent tells a quiet buffer from a sounding one', () => {
+  assert.equal(h.isSilent(new Float32Array(64)), true);
+  assert.equal(h.isSilent(Float32Array.of(0, 0, 0.01)), false);
 });
 
 test('labels use the H-number and Hz', () => {

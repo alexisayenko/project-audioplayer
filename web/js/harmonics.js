@@ -7,7 +7,17 @@ export const MIN_HZ = 20;
 export const MAX_HZ = 4000;
 export const MAX_COUNT = 32;
 export const MIN_ROLLOFF = -24;
-export const DEFAULTS = { freq: 220, count: 8, rolloff: -6 };
+export const DEFAULTS = { freq: 220, count: 10, rolloff: -12, decay: false, tau: 1.2, repeat: 3 };
+export const MIN_TAU = 0.2;
+export const MAX_TAU = 5;
+export const MIN_REPEAT = 1;
+export const MAX_REPEAT = 6;
+export const DECAY_EXP = 0.8;
+export const ATTACK_S = 0.005;
+export const RELEASE_S = 0.004;
+export const LOOKAHEAD_S = 0.2;
+export const TICK_MS = 50;
+export const SILENT = 1e-4;
 export const TOTAL_GAIN = 0.3;
 export const FADE_S = 0.03;
 export const SMOOTH_S = 0.015;
@@ -49,7 +59,23 @@ export function clampParams(p = {}) {
     freq: clamp(num(p.freq, DEFAULTS.freq), MIN_HZ, MAX_HZ),
     count: clamp(Math.round(num(p.count, DEFAULTS.count)), 1, MAX_COUNT),
     rolloff: clamp(num(p.rolloff, DEFAULTS.rolloff), MIN_ROLLOFF, 0),
+    decay: p.decay === true,
+    tau: clamp(num(p.tau, DEFAULTS.tau), MIN_TAU, MAX_TAU),
+    repeat: clamp(num(p.repeat, DEFAULTS.repeat), MIN_REPEAT, MAX_REPEAT),
   };
+}
+
+export function tauOf(n, tau1) {
+  return tau1 / n ** DECAY_EXP;
+}
+
+export function envelopeValue(env, t) {
+  return t <= env.t0 ? env.gain : env.gain * Math.exp(-(t - env.t0) / env.tau);
+}
+
+export function isSilent(samples) {
+  for (let i = 0; i < samples.length; i += 1) if (Math.abs(samples[i]) >= SILENT) return false;
+  return true;
 }
 
 export function noteInfo(freq) {
@@ -226,12 +252,70 @@ export function createSynth(env = {}) {
       const hz = Math.min((i + 1) * clampParams(params).freq, limit);
       if (initial) {
         v.osc.frequency.value = hz;
-        v.gain.gain.value = gain;
+        v.gain.gain.value = live.decay ? 0 : gain;
       } else {
         v.osc.frequency.setTargetAtTime(hz, t, SMOOTH_S);
-        v.gain.gain.setTargetAtTime(gain, t, SMOOTH_S);
+        if (!live.decay) v.gain.gain.setTargetAtTime(gain, t, SMOOTH_S);
       }
     });
+  }
+
+  function strike(at, params) {
+    const now = live.ctx.currentTime;
+    const rows = harmonicList(params, live.ctx.sampleRate);
+    const tau1 = clampParams(params).tau;
+    const from = Math.max(now, at - RELEASE_S);
+    live.voices.forEach((v, i) => {
+      const p = v.gain.gain;
+      const gain = rows[i]?.played ? rows[i].gain : 0;
+      const tau = tauOf(i + 1, tau1);
+      p.cancelScheduledValues(from);
+      p.setValueAtTime(envelopeValue(v.env, from), from);
+      p.linearRampToValueAtTime(0, at);
+      if (gain > 0) {
+        p.linearRampToValueAtTime(gain, at + ATTACK_S);
+        p.setTargetAtTime(0, at + ATTACK_S, tau);
+      }
+      v.env = { t0: at + ATTACK_S, gain, tau };
+    });
+  }
+
+  function pump() {
+    if (!live?.decay) return;
+    const now = live.ctx.currentTime;
+    if (live.next < now) live.next = now + RELEASE_S + 0.005;
+    while (live.next <= now + LOOKAHEAD_S) {
+      strike(live.next, live.params);
+      live.next += live.params.repeat;
+    }
+    live.timer = setTimeout(pump, TICK_MS);
+  }
+
+  function enterDecay(params) {
+    const t = live.ctx.currentTime;
+    for (const v of live.voices) {
+      const p = v.gain.gain;
+      const held = p.value;
+      p.cancelScheduledValues(t);
+      p.setValueAtTime(held, t);
+      v.env = { t0: 0, gain: held, tau: Infinity };
+    }
+    live.decay = true;
+    live.params = clampParams(params);
+    live.next = t + 0.02;
+    pump();
+  }
+
+  function leaveDecay() {
+    clearTimeout(live.timer);
+    live.decay = false;
+    const t = live.ctx.currentTime;
+    for (const v of live.voices) {
+      const p = v.gain.gain;
+      const held = p.value;
+      p.cancelScheduledValues(t);
+      p.setValueAtTime(held, t);
+    }
   }
 
   return {
@@ -258,23 +342,34 @@ export function createSynth(env = {}) {
         gain.gain.value = 0;
         osc.connect(gain);
         gain.connect(master);
-        voices.push({ osc, gain });
+        voices.push({ osc, gain, env: { t0: 0, gain: 0, tau: Infinity } });
       }
-      live = { ctx, master, analyser, voices };
+      const clamped = clampParams(params);
+      live = { ctx, master, analyser, voices, decay: clamped.decay, params: clamped, next: 0, timer: 0 };
       apply(params, true);
       const t = ctx.currentTime;
       master.gain.setValueAtTime(0, t);
       master.gain.linearRampToValueAtTime(1, t + FADE_S);
       for (const v of voices) v.osc.start(t);
+      if (live.decay) {
+        live.next = t + FADE_S;
+        pump();
+      }
       return live;
     },
     update(params) {
-      if (live) apply(params, false);
+      if (!live) return;
+      const next = clampParams(params);
+      if (next.decay && !live.decay) enterDecay(params);
+      else if (!next.decay && live.decay) leaveDecay();
+      live.params = next;
+      apply(params, false);
     },
     stop() {
       const r = live;
       if (!r) return;
       live = null;
+      clearTimeout(r.timer);
       const t = r.ctx.currentTime;
       r.master.gain.cancelScheduledValues(t);
       r.master.gain.setValueAtTime(r.master.gain.value, t);
@@ -487,6 +582,17 @@ export function createHarmonicsCard(env = {}) {
   const countOut = el('output', { class: 'hm-val t-subhead', htmlFor: `${uid}-cr` }, String(params.count));
   const rollRange = el('input', { id: `${uid}-dr`, class: 'slider hm-range', type: 'range', min: String(MIN_ROLLOFF), max: '0', step: '0.5', value: String(params.rolloff) });
   const rollOut = el('output', { class: 'hm-val t-subhead', htmlFor: `${uid}-dr` }, '');
+  const decayBox = el('input', { id: `${uid}-dk`, type: 'checkbox', checked: params.decay, onchange: () => change({ decay: decayBox.checked }) });
+  const tauRange = el('input', { id: `${uid}-tr`, class: 'slider hm-range', type: 'range', min: String(MIN_TAU), max: String(MAX_TAU), step: '0.1', value: String(params.tau) });
+  const tauOut = el('output', { class: 'hm-val t-subhead', htmlFor: `${uid}-tr` }, '');
+  const repeatRange = el('input', { id: `${uid}-rr`, class: 'slider hm-range', type: 'range', min: String(MIN_REPEAT), max: String(MAX_REPEAT), step: '0.5', value: String(params.repeat) });
+  const repeatOut = el('output', { class: 'hm-val t-subhead', htmlFor: `${uid}-rr` }, '');
+  const tauField = el('div', { class: 'hm-field', hidden: true },
+    el('label', { htmlFor: `${uid}-tr` }, 'Fade time (H1)'),
+    el('div', { class: 'hm-pair' }, tauRange, tauOut));
+  const repeatField = el('div', { class: 'hm-field', hidden: true },
+    el('label', { htmlFor: `${uid}-rr` }, 'Repeat every'),
+    el('div', { class: 'hm-pair' }, repeatRange, repeatOut));
   const label = el('span', {}, 'Play');
   const toggleIcon = el('span', { class: 'hm-ic' }, icon('play', 'action'));
   const button = el('button', { class: 'btn primary hm-toggle', type: 'button', onclick: () => { if (running) stop('idle'); else start(); } }, toggleIcon, label);
@@ -518,7 +624,11 @@ export function createHarmonicsCard(env = {}) {
         el('div', { class: 'hm-pair' }, countRange, countOut)),
       el('div', { class: 'hm-field' },
         el('label', { htmlFor: `${uid}-dr` }, 'Decay across harmonics (dB per octave; -6 is about 1/n)'),
-        el('div', { class: 'hm-pair' }, rollRange, rollOut))),
+        el('div', { class: 'hm-pair' }, rollRange, rollOut)),
+      el('div', { class: 'hm-field' },
+        el('span', { class: 'hm-check' }, decayBox, el('label', { htmlFor: `${uid}-dk` }, 'Piano-like decay'))),
+      tauField,
+      repeatField),
     el('div', { class: 'hm-play' }, button, state),
     skipNote,
     el('div', { class: 'hm-block' },
@@ -549,7 +659,8 @@ export function createHarmonicsCard(env = {}) {
 
   function describe() {
     const note = noteInfo(params.freq);
-    const base = `${params.count} harmonics of ${fmtHz(params.freq)}, ${note.name}, decay ${params.rolloff} dB per octave`;
+    const piano = params.decay ? `, piano-like decay, fade ${params.tau} s, repeat every ${params.repeat} s` : '';
+    const base = `${params.count} harmonics of ${fmtHz(params.freq)}, ${note.name}, decay ${params.rolloff} dB per octave${piano}`;
     waveCanvas.setAttribute('aria-label', `Waveform of the synthesized tone, 3.5 cycles: ${base}`);
     specCanvas.setAttribute('aria-label', `Spectrum of the synthesized tone, one bar per harmonic: ${base}`);
     gramCanvas.setAttribute('aria-label', `Spectrogram of the synthesized tone, last 10 seconds: ${base}`);
@@ -568,9 +679,15 @@ export function createHarmonicsCard(env = {}) {
     fill(freqRange, hzToSlider(params.freq), 0, 1000);
     fill(countRange, params.count, 1, MAX_COUNT);
     fill(rollRange, params.rolloff, MIN_ROLLOFF, 0);
+    fill(tauRange, params.tau, MIN_TAU, MAX_TAU);
+    fill(repeatRange, params.repeat, MIN_REPEAT, MAX_REPEAT);
     noteOut.textContent = noteInfo(params.freq).text;
     countOut.textContent = String(params.count);
     rollOut.textContent = `${params.rolloff} dB/oct`;
+    tauOut.textContent = `${params.tau} s`;
+    repeatOut.textContent = `${params.repeat} s`;
+    tauField.hidden = !params.decay;
+    repeatField.hidden = !params.decay;
     describe();
     paintList();
   }
@@ -595,7 +712,7 @@ export function createHarmonicsCard(env = {}) {
     const b = running ? liveBuffers() : null;
     if (b) {
       synth.analyser.getFloatTimeDomainData(b.time);
-      sum = liveWave(b.time, rate(), params.freq, points) ?? sum;
+      sum = liveWave(b.time, rate(), params.freq, points) ?? (params.decay && isSilent(b.time) ? new Float32Array(points) : sum);
     }
     drawWaveView(g, currentColors(), { sum, parts: data.parts, rows, cycles: CYCLES, freq: params.freq }, showParts);
   }
@@ -760,6 +877,8 @@ export function createHarmonicsCard(env = {}) {
   });
   countRange.addEventListener('input', () => change({ count: Number(countRange.value) }));
   rollRange.addEventListener('input', () => change({ rolloff: Number(rollRange.value) }));
+  tauRange.addEventListener('input', () => change({ tau: Number(tauRange.value) }));
+  repeatRange.addEventListener('input', () => change({ repeat: Number(repeatRange.value) }));
 
   let ro = null;
   if (typeof ResizeObserver !== 'undefined') {
