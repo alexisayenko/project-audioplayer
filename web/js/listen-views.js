@@ -29,9 +29,9 @@ export const METER_WINDOW_S = 0.1;
 export const METER_EVERY_MS = 100;
 export const METER_FALL_DB_S = 40;
 export const TRAIL_FADE_DB = 40;
-export const TRAIL_LENGTH_S = 2;
+export const TRAIL_LENGTH_S = 10;
 export const TRAIL_LENGTH_MIN_S = 0.5;
-export const TRAIL_LENGTH_MAX_S = 10;
+export const TRAIL_LENGTH_MAX_S = 60;
 export const TRAIL_LENGTH_STEP_S = 0.5;
 export const TRAIL_DECAY_DB_S = TRAIL_FADE_DB / TRAIL_LENGTH_S;
 export const trailRate = (seconds) => TRAIL_FADE_DB / seconds;
@@ -301,7 +301,7 @@ export function holdTrail(shown, peaks, peakTimes, current, now, rate = TRAIL_DE
 let trailSeconds = TRAIL_LENGTH_S;
 
 export function createTrails() {
-  let on = false;
+  let on = true;
   let buf = null;
   let keys = null;
   let scratch = null;
