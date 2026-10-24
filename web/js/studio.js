@@ -1,6 +1,7 @@
 import { api as defaultApi } from './api.js';
 import { store } from './store.js';
 import { el, pageHead } from './dom.js';
+import { studioTabs, tabFromHash } from './studio-tabs.js';
 import { icon } from './icons.js';
 import { hasAudio } from './playable.js';
 import { can } from './guest.js';
@@ -29,6 +30,27 @@ const SIDES = {
 const nudgeText = (d) => `${d > 0 ? '+' : '-'}${Math.abs(d)} s`;
 const nudgeLabel = (side, d) => `${SIDES[side].text} ${d > 0 ? 'later' : 'earlier'} by ${Math.abs(d)} s`;
 
+export const TOOLS_FAILED = 'The tools could not be loaded. Check the connection and try again.';
+
+function mountToolsTab(pane, env) {
+  const loadTools = env.loadTools ?? (() => import('./studio-tools.js'));
+  let stop = null;
+  let gone = false;
+  const attempt = () => {
+    Promise.resolve(loadTools()).then((m) => {
+      if (gone) return;
+      stop = m.mountTools(pane, env.tools);
+    }, () => {
+      if (gone) return;
+      pane.replaceChildren(el('div', { class: 'state card' },
+        el('p', { class: 'msg error', role: 'alert' }, TOOLS_FAILED),
+        el('button', { class: 'btn', type: 'button', onclick: attempt }, 'Retry')));
+    });
+  };
+  attempt();
+  return () => { gone = true; stop?.(); };
+}
+
 function readColors(node) {
   const css = node.ownerDocument?.defaultView?.getComputedStyle?.(node);
   const get = (name, fallback) => css?.getPropertyValue(name).trim() || fallback;
@@ -46,10 +68,15 @@ export function renderStudio(root, env = {}) {
   const load = env.load ?? loadPeaks;
   const raf = env.raf ?? ((fn) => globalThis.requestAnimationFrame?.(fn) ?? 0);
   const caf = env.caf ?? ((id) => globalThis.cancelAnimationFrame?.(id));
-  const loop = player.loop;
+  const tab = env.tab ?? tabFromHash(globalThis.location?.hash);
   const head = pageHead('Studio', TAGLINE);
-  const body = el('div', { class: 'stu' });
-  root.append(head, body);
+  const tabs = studioTabs(tab);
+  const body = el('div', { class: 'stu', id: 'stu-track', role: 'tabpanel', 'aria-labelledby': 'stu-tab-track', hidden: tab !== 'track' });
+  const toolsPane = el('div', { class: 'stu', id: 'stu-tools', role: 'tabpanel', 'aria-labelledby': 'stu-tab-tools', hidden: tab !== 'tools' });
+  root.append(head, tabs.bar, body, toolsPane);
+  tabs.restoreFocus();
+  if (tab === 'tools') return mountToolsTab(toolsPane, env);
+  const loop = player.loop;
 
   let shownId = null;
   let shownAudio = false;

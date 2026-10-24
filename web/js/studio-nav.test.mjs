@@ -46,3 +46,43 @@ test('WEB-012: below 400 px the tab bar drops its gaps and side margins so eight
   assert.match(rule, /#nav \{ gap: 0; padding-inline: 0; \}/);
   assert.match(rule, /\.side \{ left: clamp\(var\(--space-1\), calc\(\(100vw - 8 \* var\(--hit\)\) \/ 2\), var\(--space-4\)\)/);
 });
+
+const { studioTabs, tabFromHash, TABS } = await import('./studio-tabs.js');
+const { fire, makeEvent } = await import('./test-dom.mjs');
+
+test('WEB-175: #/studio is the Track tab, #/studio/tools the Tools tab, and app.js maps both to the studio route', () => {
+  assert.equal(tabFromHash(''), 'track');
+  assert.equal(tabFromHash('#/studio'), 'track');
+  assert.equal(tabFromHash('#/studio/tools'), 'tools');
+  assert.equal(tabFromHash('#/studio/other'), 'track');
+  assert.deepEqual(TABS.map((t) => [t.label, t.hash]), [['Track', '#/studio'], ['Tools', '#/studio/tools']]);
+  assert.match(read('./app.js'), /if \(name === 'studio\/tools'\) name = 'studio';/);
+});
+
+test('WEB-175: the tabs reuse the Library switch classes with the tablist pattern and a roving tabindex', () => {
+  const t = studioTabs('tools', () => {});
+  assert.equal(t.bar.getAttribute('role'), 'tablist');
+  assert.match(t.bar.className, /\bseg\b/);
+  const tabs = t.bar.querySelectorAll('[role=tab]');
+  assert.deepEqual(tabs.map((b) => b.textContent), ['Track', 'Tools']);
+  assert.deepEqual(tabs.map((b) => b.getAttribute('aria-selected')), ['false', 'true']);
+  assert.deepEqual(tabs.map((b) => b.getAttribute('tabindex')), ['-1', '0']);
+  assert.deepEqual(tabs.map((b) => b.getAttribute('aria-controls')), ['stu-track', 'stu-tools']);
+  assert.ok(tabs.every((b) => /\bseg-btn\b/.test(b.className)));
+});
+
+test('WEB-175: a click and the arrow keys change the hash; the active tab does nothing', () => {
+  const seen = [];
+  const t = studioTabs('track', (h) => seen.push(h));
+  const [track, tools] = t.bar.querySelectorAll('[role=tab]');
+  fire(track, 'click');
+  assert.deepEqual(seen, []);
+  fire(tools, 'click');
+  assert.deepEqual(seen, ['#/studio/tools']);
+  const ev = makeEvent('keydown', { key: 'ArrowRight', bubbles: true });
+  t.bar.dispatchEvent(ev);
+  assert.equal(ev.defaultPrevented, true);
+  assert.deepEqual(seen, ['#/studio/tools', '#/studio/tools']);
+  t.bar.dispatchEvent(makeEvent('keydown', { key: 'Home', bubbles: true }));
+  assert.equal(seen.length, 2);
+});
