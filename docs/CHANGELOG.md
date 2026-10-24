@@ -2,7 +2,7 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
-## 2026-10-24 (harmonics lab: linear frequency axis, web, built, not deployed)
+## 2026-10-24 (harmonics lab: linear frequency axis, web, deployed as `65501e6`)
 
 - Web (task-0106, WEB-188, ADR-0048 amended; owner decision FZ1, 2026-10-24: the log axis is too crowded at the top; no tests run, `node --check` and a local Chromium page with the real `AudioContext` only): the "Pitch and harmonics" card has a "Frequency axis" switch, Linear (default) or Log, for the spectrum and the spectrogram. Linear runs from 0 Hz to a round value at or above `(Hn + 1) x f` (at least `4 x f`, at most 20 kHz), so the harmonics are evenly spaced; the spectrogram labels the harmonics themselves ("H3 · 660 Hz"). Log is unchanged. A changed axis or range clears the spectrogram; captions and `aria-label`s name the axis. Checked: evenly spaced harmonics in Linear, Log as before, arrow keys, no horizontal scroll at 375 px. Not verified: the Mac app.
 
