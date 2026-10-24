@@ -1,4 +1,4 @@
-/* Playlists (PLS-001, PLS-005, PLS-008..PLS-014, PLS-129..PLS-134): the list, the playlist page, its add-by-search box and the Add to playlist picker */
+/* Playlists (PLS-001, PLS-005, PLS-008..PLS-014, PLS-129..PLS-133, PLS-139): the list, the playlist page, its add-by-search box and the Add to playlist picker */
 body.guest #nav a[data-route="playlists"] { display: none; }
 
 .pl-back { display: inline-flex; align-items: center; gap: var(--space-1); align-self: flex-start; padding-left: 0; margin-bottom: var(--space-1); text-decoration: none; }

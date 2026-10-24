@@ -4,7 +4,8 @@ import { icon } from './icons.js';
 import { LIBRARY_FRESH_MS } from './constants.js';
 import { coverTile } from './library-rows.js';
 import { playlistStore } from './playlists-store.js';
-import { changedText, songCount, suggestName, playlistAddHash } from './playlists-model.js';
+import { changedText, songCount, suggestName } from './playlists-model.js';
+import { playPlaylist } from './playlist-play.js';
 import { playlistForm, confirmDeletePlaylist } from './playlist-dialogs.js';
 
 export async function restorePlaylist(saved) {
@@ -71,6 +72,18 @@ export function renderPlaylistList(root) {
     onSubmit: (name, description) => playlistStore.patch(p.id, { name, description }),
   });
 
+  function playButton(p) {
+    const button = el('button', { class: 'icon pl-play', type: 'button', title: `Play playlist ${p.name}`, 'aria-label': `Play playlist ${p.name}` }, icon('play', 'inline'));
+    button.addEventListener('click', async () => {
+      button.disabled = true;
+      button.setAttribute('aria-busy', 'true');
+      await playPlaylist(p.id);
+      button.disabled = false;
+      button.removeAttribute('aria-busy');
+    });
+    return button;
+  }
+
   function row(p) {
     const open = () => { location.hash = `#/playlists/${encodeURIComponent(p.id)}`; };
     const sub = [songCount(p.count), changedText(p.updated)].filter(Boolean).join(' · ');
@@ -80,7 +93,7 @@ export function renderPlaylistList(root) {
         el('div', { class: 'title-line' }, el('a', { class: 'open t-headline', href: `#/playlists/${encodeURIComponent(p.id)}`, title: p.name }, p.name)),
         el('div', { class: 'sub-line' }, el('small', { class: 'sub t-subhead' }, p.description ? `${sub} · ${p.description}` : sub))),
       el('div', { class: 'pl-ctl' },
-        el('button', { class: 'icon pl-add-songs', type: 'button', title: `Add songs to ${p.name}`, 'aria-label': `Add songs to ${p.name}`, onclick: () => { location.hash = playlistAddHash(p.id); } }, icon('plus', 'inline')),
+        playButton(p),
         el('button', { class: 'icon', type: 'button', title: 'Edit playlist', 'aria-label': `Edit playlist: ${p.name}`, onclick: () => edit(p) }, icon('pencil', 'inline')),
         el('button', { class: 'icon', type: 'button', title: 'Delete playlist', 'aria-label': `Delete playlist: ${p.name}`, onclick: () => deleteWithUndo(p) }, icon('trash', 'inline'))));
     node.addEventListener('click', (e) => { if (!e.target.closest('a, button')) open(); });

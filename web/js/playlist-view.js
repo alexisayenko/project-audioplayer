@@ -2,7 +2,7 @@ import { api } from './api.js';
 import { store } from './store.js';
 import { player } from './player.js';
 import { autodl } from './autodl.js';
-import { el, toast, plural } from './dom.js';
+import { el, toast } from './dom.js';
 import { icon } from './icons.js';
 import { titleLine } from './credits.js';
 import { saveText } from './download.js';
@@ -12,7 +12,8 @@ import { disposeAll } from './marquee.js';
 import { LIBRARY_FRESH_MS } from './constants.js';
 import { songRow, coverTile, paintDownloadRows } from './library-rows.js';
 import { playlistStore } from './playlists-store.js';
-import { totalText, moveId, insertId, exportName, queueNotes, addedText, wantsAddSongs, playlistHashOf } from './playlists-model.js';
+import { totalText, moveId, insertId, exportName, queueNotes, addedText } from './playlists-model.js';
+import { playSongs } from './playlist-play.js';
 import { addSongsPanel } from './playlist-add.js';
 import { createOrderSync, attachDrag } from './playlist-order.js';
 import { playlistForm } from './playlist-dialogs.js';
@@ -40,7 +41,6 @@ export function renderPlaylistPage(root, id) {
   let loadError = null;
   let missing = false;
   let gone = false;
-  let wantsAdd = wantsAddSongs(location.hash);
 
   const head = el('header', { class: 'page-head pl-head' });
   const actions = el('div', { class: 'pl-actions' });
@@ -148,15 +148,6 @@ export function renderPlaylistPage(root, id) {
     paintStatus();
     adder.node.hidden = !detail;
     adder.refresh();
-    if (detail) openAddBox();
-  }
-
-  function openAddBox() {
-    if (!wantsAdd) return;
-    wantsAdd = false;
-    history.replaceState(null, '', playlistHashOf(location.hash));
-    adder.input.focus();
-    adder.node.scrollIntoView({ block: 'nearest' });
   }
 
   function adopt(next) {
@@ -177,18 +168,7 @@ export function renderPlaylistPage(root, id) {
   }
 
   function playAll(shuffled) {
-    const songs = songsNow();
-    const wasShuffle = player.shuffleOn;
-    if (shuffled !== wasShuffle) player.setShuffle(shuffled);
-    const r = songs.length ? player.playListed(songs, []) : { count: 0, skipped: 0 };
-    if (!r.count) {
-      if (shuffled !== wasShuffle) player.setShuffle(wasShuffle);
-      toast('No playable songs');
-      return;
-    }
-    const mode = shuffled ? ' (shuffled)' : (wasShuffle ? ' (shuffle off)' : '');
-    if (r.skipped) toast(`${r.skipped} ${plural(r.skipped, 'song', 'songs')} without audio skipped`);
-    else toast(`Playing ${r.count} ${plural(r.count, 'song', 'songs')}${mode}${r.fetching ? `, ${r.fetching} downloading` : ''}`);
+    playSongs(songsNow(), shuffled);
   }
 
   function addAllToQueue() {

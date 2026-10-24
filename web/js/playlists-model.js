@@ -17,14 +17,6 @@ export function playlistIdOf(hash) {
   try { return decodeURIComponent(hit[1]); } catch { return ''; }
 }
 
-const HASH_ADD = /^#\/?playlists\/[^/?#]+\?(?:[^#]*&)?add=1(?:&|$)/;
-
-export const playlistAddHash = (id) => `#/playlists/${encodeURIComponent(id)}?add=1`;
-
-export const wantsAddSongs = (hash) => HASH_ADD.test(hash || '');
-
-export const playlistHashOf = (hash) => (hash || '').replace(/\?.*$/, '');
-
 export const songCount =(n) => `${n} ${plural(n, 'song', 'songs')}`;
 
 export function suggestName(name, taken) {
