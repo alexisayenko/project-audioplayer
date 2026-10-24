@@ -98,6 +98,22 @@ export const NEEDS_TWO = 'Needs 2 or more harmonics.';
 export const HAMMER_NOTE ='Hammer position: partials with a node at the strike point are very quiet.';
 export const STRINGS_NOTE = 'A real piano note has up to 3 strings; here you can try up to 8.';
 export const BEAT_HINT = 'With detuned strings the loudness swells slowly: beats';
+export const STRINGS_HINT = 'Strings are only slightly apart, so you need the Beating view below to see the difference.';
+export const VIEW_NAMES = {
+  wave: 'Oscilloscope view: time across, amplitude up.',
+  spectrum: 'Spectrum analyzer (FFT): frequency across, level up.',
+  gram: 'Spectrogram (sonogram): time across, frequency up, colour = level.',
+  bands: 'Band-energy / onset view: which frequency range carries the beat.',
+  beating: 'Amplitude envelope view: the slow swell when two strings are slightly out of tune.',
+};
+export const BEATING_MIN_S = 2;
+export const BEATING_MAX_S = 30;
+export const ENVELOPE_PER_CYCLE = 16;
+export const ENVELOPE_MIN_SAMPLES = 16;
+export const ENVELOPE_MAX_SAMPLES = 96;
+export const BEATING_ONE = 'One string: no beating. Set Strings to 2 or more.';
+export const BEATING_ZERO = 'Detune is 0 cents: no beating. Raise the detune.';
+export const BEATING_SOURCE = 'Beating shows the synth strings.';
 export const ABOUT_TITLE ='What are harmonics?';
 export const ABOUT = [
   ['Fundamental (H1)', 'is the lowest frequency, f. It sets the pitch you hear.'],
@@ -275,10 +291,11 @@ export function hzToSlider(f) {
   return Math.round((1000 * Math.log(clamp(f, MIN_HZ, MAX_HZ) / MIN_HZ)) / Math.log(MAX_HZ / MIN_HZ));
 }
 
-export function computedWave(rows, points, cycles = CYCLES, offsets = [0]) {
+export function computedWave(rows, points, cycles = CYCLES, offsets = [0], withStrings = false) {
   const f = rows[0]?.freq ?? DEFAULTS.freq;
   const sum = new Float32Array(points);
   const parts = rows.map(() => new Float32Array(points));
+  const strings = withStrings ? offsets.map(() => new Float32Array(points)) : [];
   const span = cycles / f;
   const ratios = offsets.map(centsRatio);
   for (let i = 0; i < points; i += 1) {
@@ -288,14 +305,87 @@ export function computedWave(rows, points, cycles = CYCLES, offsets = [0]) {
       const r = rows[k];
       if (!r.played) continue;
       let v = 0;
-      for (const q of ratios) v += Math.sin(2 * Math.PI * r.freq * q * t);
+      for (let q = 0; q < ratios.length; q += 1) {
+        const x = Math.sin(2 * Math.PI * r.freq * ratios[q] * t);
+        v += x;
+        if (withStrings) strings[q][i] += x * r.gain;
+      }
       v *= r.gain / ratios.length;
       parts[k][i] = v;
       s += v;
     }
     sum[i] = s;
   }
-  return { sum, parts };
+  return { sum, parts, strings };
+}
+
+export function swellPeriod(freq, strings, detune) {
+  const beat = beatRate(freq, strings, detune);
+  return beat > 0 ? 1 / beat : 0;
+}
+
+export function beatingWindow(period) {
+  if (!(period > 0)) return BEATING_MIN_S;
+  return clamp(Math.ceil(period * 2) / 2, BEATING_MIN_S, BEATING_MAX_S);
+}
+
+export function fmtSwell(s) {
+  return s < 10 ? s.toFixed(2) : s.toFixed(1);
+}
+
+export function beatText(beat) {
+  return `H1 beats about ${fmtBeat(beat)} Hz`;
+}
+
+export function swellText(beat) {
+  return `${beatText(beat)}: one swell every ${fmtSwell(1 / beat)} s`;
+}
+
+export function beatingH1(rows, offsets, windowS, cols) {
+  const out = new Float32Array(cols);
+  const r = rows[0];
+  if (!r?.played) return out;
+  const rel = offsets.map((o) => 2 * Math.PI * r.freq * (centsRatio(o) - 1));
+  for (let i = 0; i < cols; i += 1) {
+    const t = (i / (cols - 1)) * windowS;
+    let re = 0;
+    let im = 0;
+    for (const w of rel) { re += Math.cos(w * t); im += Math.sin(w * t); }
+    out[i] = (r.gain * Math.hypot(re, im)) / rel.length;
+  }
+  return out;
+}
+
+export function beatingEnvelope(rows, offsets, windowS, cols) {
+  const lo = new Float32Array(cols);
+  const hi = new Float32Array(cols);
+  const played = rows.filter((r) => r.played);
+  if (!played.length) return { lo, hi };
+  const ratios = offsets.map(centsRatio);
+  const w = played.map((r) => 2 * Math.PI * r.freq);
+  const f = played[0].freq;
+  const half = Math.max(windowS / cols, 1 / f) / 2;
+  const n = clamp(Math.ceil(2 * half * f * ENVELOPE_PER_CYCLE), ENVELOPE_MIN_SAMPLES, ENVELOPE_MAX_SAMPLES);
+  for (let c = 0; c < cols; c += 1) {
+    const tc = (c / (cols - 1)) * windowS;
+    let top = -Infinity;
+    let bottom = Infinity;
+    for (let j = 0; j < n; j += 1) {
+      const t = tc - half + (j / (n - 1)) * 2 * half;
+      let s = 0;
+      for (let k = 0; k < played.length; k += 1) {
+        let v = 0;
+        for (let q = 0; q < ratios.length; q += 1) v += Math.sin(w[k] * ratios[q] * t);
+        s += v * played[k].gain;
+      }
+      s /= ratios.length;
+      if (s > top) top = s;
+      if (s < bottom) bottom = s;
+    }
+    hi[c] = top;
+    lo[c] = bottom;
+  }
+  return { lo, hi };
 }
 
 export function fundamentalOffset(samples, period) {
@@ -528,7 +618,7 @@ export const ONSET_MIN_DB = 2;
 export const ONSET_GAP_S = 0.12;
 export const ONSET_FLOOR_DB = -70;
 export const LANE_MIN_SPAN_DB = 6;
-export const BEAT_NOTE = 'Each lane is one frequency range over the last 10 s. Regular ticks show which range carries the beat (usually Sub and Bass: the kick).';
+export const BEAT_NOTE = `${VIEW_NAMES.bands} Each lane is one frequency range over the last 10 s. Regular ticks show which range carries the beat (usually Sub and Bass: the kick).`;
 
 export function bandRangeText(band) {
   const k = (f) => +(f / 1000).toFixed(2);
@@ -981,7 +1071,101 @@ function drawWaveView(g, colors, data, showParts) {
     ctx.stroke();
   };
   if (showParts && data.parts) data.parts.forEach((p, i) => { if (data.rows[i].played) trace(p, css(colors.muted, 0.35), 1); });
+  const own = data.strings ?? [];
+  own.forEach((s, k) => trace(s, css(stringColor(colors, k, own.length), stringAlpha(own.length)), 4));
   trace(data.sum, css(colors.fill), 2);
+}
+
+function stringColor(colors, k, n) {
+  return mixColor(colors.stops[1], colors.stops[3], n > 1 ? k / (n - 1) : 0);
+}
+
+function stringAlpha(n) {
+  return clamp(1.6 / n, 0.22, 0.6);
+}
+
+function drawBeatingView(g, colors, data) {
+  const { ctx, w, h } = g;
+  const left = 36;
+  const bottom = 18;
+  const pad = 8;
+  const plotW = Math.max(1, w - left - pad);
+  const mid = (h - bottom) / 2;
+  const amp = mid - pad;
+  const xOf = (i, n) => left + (i / (n - 1)) * plotW;
+  const yOf = (v) => mid - clamp(v / TOTAL_GAIN, -1.2, 1.2) * amp;
+  ctx.clearRect(0, 0, w, h);
+  ctx.font = `10px ${colors.font}`;
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'right';
+  ctx.fillStyle = css(colors.muted);
+  ctx.strokeStyle = css(colors.line);
+  ctx.lineWidth = 1;
+  for (const [v, text] of [[TOTAL_GAIN, `+${TOTAL_GAIN}`], [0, '0'], [-TOTAL_GAIN, `-${TOTAL_GAIN}`]]) {
+    const y = yOf(v);
+    ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(w - pad, y); ctx.stroke();
+    ctx.fillText(text, left - 4, y);
+  }
+  ctx.textBaseline = 'top';
+  for (const t of linearTicks(data.windowS, Math.floor(plotW / 70))) {
+    const x = left + (t / data.windowS) * plotW;
+    ctx.beginPath(); ctx.moveTo(x, mid - amp); ctx.lineTo(x, mid + amp); ctx.stroke();
+    ctx.textAlign = t === 0 ? 'left' : t >= data.windowS ? 'right' : 'center';
+    ctx.fillText(`${+t.toFixed(2)} s`, x, h - bottom + 3);
+  }
+  const n = data.hi.length;
+  if (data.period > 0) {
+    ctx.save();
+    ctx.setLineDash([2, 3]);
+    ctx.strokeStyle = css(colors.muted, 0.7);
+    for (let k = 1; k * data.period < data.windowS * (1 - 1e-9); k += 1) {
+      const x = left + ((k * data.period) / data.windowS) * plotW;
+      ctx.beginPath(); ctx.moveTo(x, mid - amp); ctx.lineTo(x, mid + amp); ctx.stroke();
+    }
+    ctx.restore();
+  }
+  ctx.beginPath();
+  for (let i = 0; i < n; i += 1) { const x = xOf(i, n); if (i === 0) ctx.moveTo(x, yOf(data.hi[i])); else ctx.lineTo(x, yOf(data.hi[i])); }
+  for (let i = n - 1; i >= 0; i -= 1) ctx.lineTo(xOf(i, n), yOf(data.lo[i]));
+  ctx.closePath();
+  ctx.fillStyle = css(colors.fill, 0.22);
+  ctx.fill();
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = 1;
+  for (let k = 0; k < data.strings; k += 1) {
+    ctx.strokeStyle = css(stringColor(colors, k, data.strings), stringAlpha(data.strings));
+    for (const sign of [1, -1]) {
+      ctx.beginPath(); ctx.moveTo(left, yOf(sign * data.own)); ctx.lineTo(left + plotW, yOf(sign * data.own)); ctx.stroke();
+    }
+  }
+  if (data.strings > 1) {
+    ctx.strokeStyle = css(colors.ink, 0.45);
+    for (const sign of [1, -1]) {
+      ctx.beginPath();
+      for (let i = 0; i < n; i += 1) { const x = xOf(i, n); if (i === 0) ctx.moveTo(x, yOf(sign * data.h1[i])); else ctx.lineTo(x, yOf(sign * data.h1[i])); }
+      ctx.stroke();
+    }
+  }
+  ctx.strokeStyle = css(colors.fill);
+  ctx.lineWidth = 2;
+  for (const series of [data.hi, data.lo]) {
+    ctx.beginPath();
+    for (let i = 0; i < n; i += 1) { const x = xOf(i, n); if (i === 0) ctx.moveTo(x, yOf(series[i])); else ctx.lineTo(x, yOf(series[i])); }
+    ctx.stroke();
+  }
+  if (data.message) {
+    ctx.font = `600 12px ${colors.font}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const lines = data.message.split(/(?<=\.) /);
+    const tw = Math.min(plotW - 8, Math.max(...lines.map((s) => ctx.measureText(s).width)));
+    const bx = left + plotW / 2;
+    const boxH = 8 + lines.length * 16;
+    ctx.fillStyle = css(colors.sunken, 0.85);
+    ctx.fillRect(bx - tw / 2 - 6, mid - boxH / 2, tw + 12, boxH);
+    ctx.fillStyle = css(colors.ink);
+    lines.forEach((s, i) => ctx.fillText(s, bx, mid - boxH / 2 + 4 + 8 + i * 16, plotW - 8));
+  }
 }
 
 function drawLiveWaveView(g, colors, scope, scale) {
@@ -1250,6 +1434,9 @@ export function createHarmonicsCard(env = {}) {
   const synth = env.synth ?? createSynth(env);
   let params = { ...DEFAULTS };
   let showParts = false;
+  let showStrings = false;
+  let beatingKey = '';
+  let beatingData = null;
   let running = false;
   let frame = 0;
   let safety = 0;
@@ -1397,12 +1584,20 @@ export function createHarmonicsCard(env = {}) {
   const normBox = el('input', { id: `${uid}-nb`, type: 'checkbox', checked: true, onchange: () => { normalize = normBox.checked; paintBands(); } });
   const normField = el('span', { class: 'hm-check' }, normBox, el('label', { htmlFor: `${uid}-nb` }, 'Normalize per band'));
   const bandsCap = el('p', { class: 'hm-cap muted t-caption' }, BEAT_NOTE);
+  const beatCanvas = el('canvas', { class: 'hm-canvas', role: 'img' });
+  const beatCap = el('p', { class: 'hm-cap muted t-caption' });
+  const beatingOut = el('p', { class: 'hm-beat t-subhead', hidden: true });
+  const beatingNote = el('p', { class: 'hm-cap muted t-caption', hidden: true }, BEATING_SOURCE);
   const partsBox = el('input', { id: `${uid}-ip`, type: 'checkbox', onchange: () => { showParts = partsBox.checked; paintWave(); } });
+  const eachBox = el('input', { id: `${uid}-es`, type: 'checkbox', onchange: () => { showStrings = eachBox.checked; paintOutputs(); paintWave(); } });
+  const eachField = el('span', { class: 'hm-check', hidden: true }, eachBox, el('label', { htmlFor: `${uid}-es` }, 'Show each string'));
+  const stringsHint = el('p', { class: 'hm-cap muted t-caption', hidden: true }, STRINGS_HINT);
   const scaleBar = el('span', { class: 'hm-scale', 'aria-hidden': 'true' });
   const list = el('ul', { class: 'hm-list t-caption', 'aria-label': 'Harmonics' });
 
   const beatHint = el('p', { class: 'hm-cap muted t-caption', hidden: true }, BEAT_HINT);
   const view = (canvas, cls, ...extra) => el('div', { class: `hm-view ${cls}` }, canvas, ...extra);
+  const beatView = view(beatCanvas, 'hm-beating');
   const about = el('details', { class: 'hm-about', open: true },
     el('summary', { class: 't-subhead' }, ABOUT_TITLE),
     el('dl', { class: 'hm-defs' }, ...ABOUT.flatMap(([term, text]) => [el('dt', { class: 't-subhead' }, term), el('dd', { class: 't-subhead muted' }, text)])));
@@ -1436,9 +1631,10 @@ export function createHarmonicsCard(env = {}) {
     el('div', { class: 'hm-play' }, button, state),
     skipNote,
     el('div', { class: 'hm-block' },
-      el('div', { class: 'hm-head' }, el('h3', { class: 't-subhead' }, 'Waveform'), partsField),
+      el('div', { class: 'hm-head' }, el('h3', { class: 't-subhead' }, 'Waveform'), el('div', { class: 'hm-checks' }, partsField, eachField)),
       view(waveCanvas, 'hm-wave'),
       waveCap,
+      stringsHint,
       beatHint),
     el('div', { class: 'hm-block' },
       el('div', { class: 'hm-head' }, el('h3', { class: 't-subhead' }, 'Spectrum'), axisField),
@@ -1455,6 +1651,12 @@ export function createHarmonicsCard(env = {}) {
       el('div', { class: 'hm-head' }, el('h3', { class: 't-subhead' }, 'Beat bands'), normField),
       view(bandsCanvas, 'hm-bands'),
       bandsCap),
+    el('div', { class: 'hm-block' },
+      el('h3', { class: 't-subhead' }, 'Beating'),
+      beatView,
+      beatCap,
+      beatingOut,
+      beatingNote),
     about);
 
   function currentColors() {
@@ -1488,19 +1690,29 @@ export function createHarmonicsCard(env = {}) {
       specCanvas.setAttribute('aria-label', `Spectrum of ${what} signal, ${where}`);
       gramCanvas.setAttribute('aria-label', `Spectrogram of ${what} signal, ${where}, last 10 seconds`);
       bandsCanvas.setAttribute('aria-label', bandsLabel(`${what} signal`));
-      waveCap.textContent = `Time across (${WAVE_MS} ms), amplitude up, scaled to the signal. It starts at a rising zero crossing so the shape holds still.`;
-      specCap.textContent = `Frequency across (${axisCaption()}), level in dBFS up. The dot marks the loudest frequency.`;
-      gramCap.textContent = `The last 10 seconds: time across, frequency up (${axisCaption()}), colour is level. It fills while ${what} is heard and clears when the axis or source changes.`;
+      waveCap.textContent = `${VIEW_NAMES.wave} Window ${WAVE_MS} ms, scaled to the signal. It starts at a rising zero crossing so the shape holds still.`;
+      specCap.textContent = `${VIEW_NAMES.spectrum} Frequency axis ${axisCaption()}, level in dBFS. The dot marks the loudest frequency.`;
+      gramCap.textContent = `${VIEW_NAMES.gram} The last 10 seconds, frequency axis ${axisCaption()}. It fills while ${what} is heard and clears when the axis or source changes.`;
+      beatCanvas.setAttribute('aria-label', 'Beating view, not shown for this source');
+      beatCap.textContent = VIEW_NAMES.beating;
       return;
     }
     waveCanvas.setAttribute('aria-label', `Waveform of the synthesized tone, 3.5 cycles: ${base}`);
     specCanvas.setAttribute('aria-label', `Spectrum of the synthesized tone, ${where}, one bar per harmonic: ${base}`);
     gramCanvas.setAttribute('aria-label', `Spectrogram of the synthesized tone, ${where}, last 10 seconds: ${base}`);
     bandsCanvas.setAttribute('aria-label', bandsLabel('the synthesized tone'));
-    waveCap.textContent = 'Time across, amplitude up, 3.5 cycles of the fundamental. The bright line is the sum.';
-    specCap.textContent = `Frequency across (${axisCaption()}), level in dBFS up, one bar per harmonic.`;
-    gramCap.textContent = `The last 10 seconds: time across, frequency up (${axisCaption()}), colour is level. It fills while the tone plays and clears when the axis changes.`;
+    const own = eachShown() ? ' The faint coloured lines are single strings played alone.' : '';
+    waveCap.textContent = `${VIEW_NAMES.wave} 3.5 cycles of the fundamental; the bright line is the sum.${own}`;
+    specCap.textContent = `${VIEW_NAMES.spectrum} Frequency axis ${axisCaption()}, level in dBFS, one bar per harmonic.`;
+    gramCap.textContent = `${VIEW_NAMES.gram} The last 10 seconds, frequency axis ${axisCaption()}. It fills while the tone plays and clears when the axis changes.`;
+    const beat = beatRate(params.freq, params.strings, params.detune);
+    const win = beatingWindow(beat > 0 ? 1 / beat : 0);
+    const kind = beat > 0 ? `${swellText(beat)}` : params.strings < 2 ? BEATING_ONE : BEATING_ZERO;
+    beatCanvas.setAttribute('aria-label', `Beating of the synthesized strings, ${win} seconds: amplitude envelope of ${params.strings} string${params.strings === 1 ? '' : 's'}, ${kind}`);
+    beatCap.textContent = `${VIEW_NAMES.beating} Time across (${win} s), amplitude up, shown at full level without the piano decay. The bright lines are the envelope of the sum; the faint lines are the level of each string's H1 and the envelope of the H1s added together.`;
   }
+
+  const eachShown = () => source === 'synth' && params.strings > 1 && showStrings;
 
   const rangeNow = () => (source === 'synth' ? axisRange(axis, params.freq, synthCount(params.strings, params.count), realism(params).inharmB) : liveAxisRange(axis, liveMax));
 
@@ -1562,7 +1774,7 @@ export function createHarmonicsCard(env = {}) {
     const beat = beatRate(params.freq, params.strings, params.detune);
     detuneField.hidden = params.strings < 2;
     beatOut.hidden = !(beat > 0);
-    beatOut.textContent = beat > 0 ? `H1 beats about ${fmtBeat(beat)} Hz` : '';
+    beatOut.textContent = beat > 0 ? beatText(beat) : '';
     beatHint.hidden = source !== 'synth' || !(beat > 0);
     fill(stringsRange, params.strings, 1, MAX_STRINGS);
     stringsOut.textContent = String(params.strings);
@@ -1581,6 +1793,13 @@ export function createHarmonicsCard(env = {}) {
     ctlBox.hidden = !synthOn;
     stringsNote.hidden = !synthOn;
     partsField.hidden = !synthOn;
+    eachField.hidden = !synthOn || params.strings < 2;
+    stringsHint.hidden = !eachShown();
+    beatView.hidden = !synthOn;
+    beatingNote.hidden = synthOn;
+    beatCap.hidden = !synthOn;
+    beatingOut.hidden = !synthOn || !(beat > 0);
+    beatingOut.textContent = beat > 0 ? swellText(beat) : '';
     sourceNote.hidden = synthOn;
     peakOut.hidden = synthOn;
     rangeSeg.group.hidden = synthOn || axis !== 'linear';
@@ -1641,13 +1860,42 @@ export function createHarmonicsCard(env = {}) {
     if (source !== 'synth') { paintLiveWave(f, g); return; }
     const rows = rowsNow();
     const points = Math.max(32, Math.round(g.w - 44));
-    const data = computedWave(rows, points, CYCLES, stringOffsets(params.strings, params.detune));
+    const withStrings = eachShown();
+    const data = computedWave(rows, points, CYCLES, stringOffsets(params.strings, params.detune), withStrings);
     let sum = data.sum;
     if (f) {
       f.an.getFloatTimeDomainData(f.b.time);
       sum = liveWave(f.b.time, f.sr, params.freq, points) ?? (params.decay && isSilent(f.b.time) ? new Float32Array(points) : sum);
     }
-    drawWaveView(g, currentColors(), { sum, parts: data.parts, rows, cycles: CYCLES, freq: params.freq }, showParts);
+    drawWaveView(g, currentColors(), { sum, parts: data.parts, strings: withStrings ? data.strings : [], rows, cycles: CYCLES, freq: params.freq }, showParts);
+  }
+
+  function beatingFor(cols) {
+    const real = realism(params);
+    const key = [cols, params.freq, params.count, params.rolloff, params.strings, params.detune, real.inharmB, real.strike, rate()].join('|');
+    if (key === beatingKey && beatingData) return beatingData;
+    const rows = rowsNow();
+    const offsets = stringOffsets(params.strings, params.detune);
+    const beat = beatRate(params.freq, params.strings, params.detune);
+    const period = beat > 0 ? 1 / beat : 0;
+    const windowS = beatingWindow(period);
+    const { lo, hi } = beatingEnvelope(rows, offsets, windowS, cols);
+    const first = rows[0];
+    beatingKey = key;
+    beatingData = {
+      lo, hi, windowS, period, strings: params.strings,
+      h1: beatingH1(rows, offsets, windowS, cols),
+      own: first?.played ? first.gain / params.strings : 0,
+      message: beat > 0 ? '' : params.strings < 2 ? BEATING_ONE : BEATING_ZERO,
+    };
+    return beatingData;
+  }
+
+  function paintBeating() {
+    if (source !== 'synth') return;
+    const g = fit(beatCanvas);
+    if (!g) return;
+    drawBeatingView(g, currentColors(), beatingFor(Math.max(32, Math.round(g.w - 44))));
   }
 
   function paintSpectrum() {
@@ -1745,6 +1993,7 @@ export function createHarmonicsCard(env = {}) {
     paintSpectrum();
     paintGramAxes();
     paintBands();
+    paintBeating();
   }
 
   function tick() {
@@ -1888,7 +2137,7 @@ export function createHarmonicsCard(env = {}) {
     params = clampParams({ ...params, ...next });
     synth.update(params);
     paintOutputs();
-    if (running) paintGramAxes(); else paintStatic();
+    if (running) { paintGramAxes(); paintBeating(); } else paintStatic();
   }
 
   function refreshAxis() {
@@ -1965,7 +2214,7 @@ export function createHarmonicsCard(env = {}) {
     ro = new ResizeObserver(() => {
       if (gone) return;
       paintGramAxes();
-      if (!running) paintStatic();
+      if (running) paintBeating(); else paintStatic();
     });
     ro.observe(node);
   }

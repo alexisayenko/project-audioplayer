@@ -138,6 +138,58 @@ test('strings keep the total wave amplitude and skip partials that detune past t
   assert.equal(h.harmonicList({ freq: 19990, count: 1, rolloff: 0, strings: 3, detune: 5 }, 48000)[0].played, false);
 });
 
+test('computedWave can return each string alone and their mean is the sum', () => {
+  const rows = h.harmonicList({ freq: 220, count: 3, rolloff: -6 });
+  const w = h.computedWave(rows, 64, 3.5, h.stringOffsets(3, 2), true);
+  assert.equal(w.strings.length, 3);
+  assert.equal(h.computedWave(rows, 64, 3.5, [0]).strings.length, 0);
+  for (const i of [5, 20, 47]) assert.ok(Math.abs((w.strings[0][i] + w.strings[1][i] + w.strings[2][i]) / 3 - w.sum[i]) < 1e-6);
+});
+
+test('the beating window fits one swell and the swell text reuses the beat readout', () => {
+  assert.equal(h.beatingWindow(0), 2);
+  assert.equal(h.beatingWindow(1.97), 2);
+  assert.equal(h.beatingWindow(3.94), 4);
+  assert.equal(h.beatingWindow(99), 30);
+  assert.equal(h.swellPeriod(220, 1, 2), 0);
+  assert.ok(Math.abs(h.swellPeriod(220, 2, 2) - 1 / (220 * (2 ** (4 / 1200) - 1))) < 1e-9);
+  assert.equal(h.swellText(h.beatRate(220, 2, 2)), 'H1 beats about 0.51 Hz: one swell every 1.97 s');
+});
+
+test('the H1 envelope of two strings swells and cancels once per beat period', () => {
+  const rows = h.harmonicList({ freq: 220, count: 1, rolloff: 0 });
+  const period = h.swellPeriod(220, 2, 2);
+  const cols = 401;
+  const env = h.beatingH1(rows, h.stringOffsets(2, 2), 2, cols);
+  const at = (t) => env[Math.round((t / 2) * (cols - 1))];
+  assert.ok(Math.abs(at(0) - h.TOTAL_GAIN) < 1e-6);
+  assert.ok(at(period / 2) < 0.01 * h.TOTAL_GAIN);
+  assert.ok(at(period) > 0.95 * h.TOTAL_GAIN);
+});
+
+test('three strings give the same swell period as the beat readout', () => {
+  const rows = h.harmonicList({ freq: 220, count: 1, rolloff: 0 });
+  const period = h.swellPeriod(220, 3, 2);
+  const win = h.beatingWindow(period);
+  const cols = 801;
+  const env = h.beatingH1(rows, h.stringOffsets(3, 2), win, cols);
+  const at = (t) => env[Math.round((t / win) * (cols - 1))];
+  assert.ok(Math.abs(at(0) - h.TOTAL_GAIN) < 1e-6);
+  assert.ok(at(period) > 0.98 * h.TOTAL_GAIN);
+  assert.ok(at(period / 2) < 0.4 * h.TOTAL_GAIN);
+});
+
+test('the sum envelope is flat for one string and dips between swells for two', () => {
+  const rows = h.harmonicList({ freq: 220, count: 1, rolloff: 0 });
+  const one = h.beatingEnvelope(rows, [0], 2, 100);
+  assert.ok(Math.max(...one.hi) - Math.min(...one.hi) < 0.03 * h.TOTAL_GAIN);
+  const period = h.swellPeriod(220, 2, 2);
+  const two = h.beatingEnvelope(rows, h.stringOffsets(2, 2), 2, 401);
+  assert.ok(two.hi[0] > 0.9 * h.TOTAL_GAIN);
+  assert.ok(two.hi[Math.round((period / 2 / 2) * 400)] < 0.2 * h.TOTAL_GAIN);
+  assert.ok(two.lo[0] < -0.9 * h.TOTAL_GAIN);
+});
+
 test('higher harmonics fade faster: tau_n = tau1 / n^0.8', () => {
   assert.equal(h.tauOf(1, 1.2), 1.2);
   assert.ok(Math.abs(h.tauOf(2, 1.2) - 1.2 / 2 ** 0.8) < 1e-12);
