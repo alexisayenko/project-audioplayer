@@ -2,7 +2,7 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
-## 2026-10-25 (Studio two-column layout for long regions, built, not deployed; the main app is unchanged)
+## 2026-10-25 (Studio two-column layout for long regions, deployed to studio.electrophone.cc as `5b67eeb`; the main app is unchanged, its bundle did not change)
 
 - Web (STU-040, task-0114; owner request "some rect regions are long - organize two columns for them"; no tests run, the build and the Browser pane at 1440, 1000, 720 and 375 px only): the studio pages lay long regions out in columns by the width of the content area (a CSS container query on `.stu`, declared in `studio/site.css` only, so collapsing the menu re-flows them; old browsers keep the earlier media queries). Chordophones controls: 1, 2 or 3 columns at 560 and 880 px (a narrow content area no longer squeezes three columns); Primitive controls: 2 from 560 px; Glossary List (about 4200 px tall instead of 7200 at 1440 px) and the "About" definitions: 2 columns from 800 px; the harmonics list and the piano-realism features use the full width. Canvases are unchanged and still resize; one column below those widths and at 375 px (no horizontal scroll); tab order follows the DOM.
 
