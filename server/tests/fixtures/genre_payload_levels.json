@@ -6956,6 +6956,32 @@
    "status": null,
    "synonyms": []
   },
+  "nitzhonot": {
+   "description": "Tempo: about 145-160 BPM.\nAn Israeli offshoot of Goa trance from the mid-1990s, with a simpler structure and a faster pace. Loud, high-pitched laser-like kicks meet quick Eastern-sounding melodies into a catchy, easy-to-hum sound, and early tracks often had heavy basslines and cartoon samples. It grew from mixes of Goa trance and uplifting trance on Israeli compilations, and became popular enough to sell well at home. Later strands include the harder, epic Greek Uplifting and a more layered, psychedelic revival from the late 2000s.",
+   "discogs": false,
+   "display": null,
+   "families": [
+    "trance"
+   ],
+   "family": "trance",
+   "flavours": [],
+   "level": 4,
+   "modifiers": [],
+   "parents": [
+    "goa trance"
+   ],
+   "provisional": false,
+   "related": [
+    "full-on psytrance",
+    "uplifting trance"
+   ],
+   "status": "approved",
+   "subfamily": "Trance",
+   "synonyms": [
+    "nitzonot",
+    "nizhonot"
+   ]
+  },
   "no wave": {
    "discogs": true,
    "display": null,

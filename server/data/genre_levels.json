@@ -44,10 +44,10 @@
     "level4": 0
    },
    "trance": {
-    "total": 22,
+    "total": 23,
     "level2": 14,
     "level3": 6,
-    "level4": 2
+    "level4": 3
    },
    "drum and bass": {
     "total": 2,
@@ -104,13 +104,13 @@
     "level4": 0
    }
   },
-  "total": 534,
+  "total": 535,
   "non_discogs": {
    "Blues": 0,
    "Classical": 0,
    "house": 2,
    "techno": 2,
-   "trance": 13,
+   "trance": 14,
    "drum and bass": 2,
    "synthwave": 6,
    "Others": 8,
@@ -3065,6 +3065,21 @@
    "Others"
   ],
   "discogs": true
+ },
+ "nitzhonot": {
+  "parents": [
+   "goa trance"
+  ],
+  "related": [
+   "full-on psytrance",
+   "uplifting trance"
+  ],
+  "synonyms": [
+   "nitzonot",
+   "nizhonot"
+  ],
+  "discogs": false,
+  "status": "approved"
  },
  "no wave": {
   "parents": [

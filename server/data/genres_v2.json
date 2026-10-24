@@ -17,6 +17,7 @@
   {"id": "forest-psytrance", "name": "Forest Psytrance", "level": 3, "cluster": "edm-dance", "parents": ["psytrance"], "v1": "forest psytrance"},
   {"id": "full-on-psytrance", "name": "Full-On Psytrance", "level": 3, "cluster": "edm-dance", "parents": ["psytrance"], "v1": "full-on psytrance"},
   {"id": "hi-tech-psytrance", "name": "Hi-Tech Psytrance", "level": 4, "cluster": "edm-dance", "parents": ["dark-psytrance"], "v1": "hi-tech psytrance"},
-  {"id": "psycore", "name": "Psycore", "level": 4, "cluster": "edm-dance", "parents": ["dark-psytrance"], "v1": "psycore"}
+  {"id": "psycore", "name": "Psycore", "level": 4, "cluster": "edm-dance", "parents": ["dark-psytrance"], "v1": "psycore"},
+  {"id": "nitzhonot", "name": "Nitzhonot", "level": 4, "cluster": "edm-dance", "parents": ["goa-trance"], "v1": "nitzhonot"}
  ]
 }
