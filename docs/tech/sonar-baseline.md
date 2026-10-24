@@ -181,3 +181,26 @@ Owner decision FG1. Each of the 13 open vulnerabilities was checked against the 
 | 13 | `server/app/extractor.py:365` | pythonsecurity:S7044 | FALSE POSITIVE for exploitability, hardened anyway | the URL was already `https://i.ytimg.com/vi/<id>/hqdefault.jpg` with a validated id, or SoundCloud artwork that passed an `https` plus `sndcdn.com` host check; no user-chosen host reached `urlopen` | hardened in `088e160`: `_is_cover_address` re-checks the final address (https, port 443, no credentials, exact ytimg path with an 11-character id or an `sndcdn.com` host) before the request; mark in UI |
 
 Not changed: redirects of `urlopen` are still followed (both hosts are fixed CDNs), and the CLI scripts keep their arguments as they are. To do by the owner in the SonarCloud UI (no token here): set rows 2, 4, 5, 6, 7, 10, 11, 12 and 13 to "Won't fix" / "False positive" with the reason above; rows 1, 3, 8 and 9 close by themselves on the next analysis of `main`.
+
+## Bug review 2026-10-24
+
+Owner decision FH1, step 2. The 27 open bugs were re-read against `origin/main` after the scope file and the vulnerability fixes (still 27; Sonar lines are those of the analysed revision `c61777b`, the files have moved by a line or two since). Result: 20 fixed, 7 false positives (documented here, not suppressed). No tests were run; the fixes were exercised in a local server with a throwaway data directory and fixture songs with generated audio (play, skip, pause and resume, song end, shuffle, song info, drafts, both genre maps; no `unhandledrejection` event, `POST /plays` answered 200 after a play).
+
+| File:line (Sonar) | Rule | Verdict | Reason / fix |
+|---|---|---|---|
+| `web/js/drafts-model.js:24`, `:25` | javascript:S2189 | FALSE POSITIVE | `start` and `end` are the on/off flags of `trimSet`; the loops advance `from` and `to`, which are in the condition and bounded by each other, so every call ends (an input of only trim characters stops at `from == to`); mark in UI |
+| `web/js/playlist-add.js:92` | javascript:S7727 | FALSE POSITIVE | `row(s, i)` takes exactly the song and the index that `.map` passes; the third argument is ignored; mark in UI |
+| `web/js/library-data.js:101` | javascript:S7727 | FALSE POSITIVE | `missing` is a one-parameter predicate of `SORTS`; the extra `.filter` arguments are ignored; mark in UI |
+| `server/app/loops.py:16` | python:S1764 | FALSE POSITIVE | `v == v` is the NaN test (NaN is the only value not equal to itself), next to the infinity test; mark in UI |
+| `scripts/genre-hierarchy-lib.mjs:47` | javascript:S6324 | FALSE POSITIVE | `\u0001` is a private placeholder that hides the dots inside `[[links]]` while the first sentence is cut, then maps back to `.`; wikitext does not contain it; mark in UI |
+| `web/js/genre-data.js:105` | javascript:S4158 | FALSE POSITIVE | `HIDDEN_FAMILY_NODES` is an exported configuration list that is empty on purpose (no family hidden today); `isHiddenFamily` must keep working when it is filled; mark in UI |
+| `web/js/player.js:261`, `:358` | javascript:S6544 | TRUE (style) | the queue wait is a promise or `null` and was tested as a boolean; now compared with `=== null` (`fa01e9a`) |
+| `web/js/player.js:261`, `:361` | javascript:S9383 | TRUE (low) | the wait promise had no handler; a throw in the continuation was an unhandled rejection; now `void wait.then(...).catch(fail)`, which shows the existing "Cannot play this song" toast (`fa01e9a`) |
+| `web/js/player.js:721`, `:722` | javascript:S9383 | TRUE (low) | `openSongCard` returns the lazy-load promise (load failures are already reported inside `withUi`); now `void`, as in the other callers (`fa01e9a`) |
+| `web/js/play-recorder.js:117`, `:163`, `:168`, `:175`, `:188`, `:204`, `:206` | javascript:S9383 | TRUE (low) | `flush` is async and was called without a handler; the post errors are handled inside, anything thrown before it was lost; all internal calls now go through `flushQuiet`, which writes a rejection to the play diagnostics log (`fa01e9a`) |
+| `web/js/media-retry.js:73` | javascript:S9383 | TRUE (low) | a rejecting probe or a throwing continuation was an unhandled rejection; a rejecting probe now counts as `retry` (as the default probe does) and a throwing continuation sets the state to `failed` (`fa01e9a`) |
+| `web/js/gapless-loop.js:13`, `web/js/peaks.js:117` | javascript:S9383 | TRUE (low) | `res.body.cancel()` returns a promise that can reject; now caught (`fa01e9a`) |
+| `web/js/genre-force-view.js:285` | javascript:S930 | TRUE (low) | `draw(now)` passed an argument to `draw()`, which takes none; the argument is gone (`837a008`) |
+| `web/js/genre-map-graph.js:43`, `web/js/genre-radial.js:97`, `web/js/genre-tree-facts.mjs:4` | javascript:S2871 | TRUE (low) | `sort()` on string ids without a compare function; new `byCode` (code-unit order, the old default) and `pairKey` in `genre-levels.js`, so the edge keys and the fact lists are identical (`837a008`) |
+
+The bundle was regenerated in `8785a32` (ADR-0047). To do by the owner in the SonarCloud UI (no token here): set the 7 false positives above to "False positive" with the reason; the 20 fixed ones close by themselves on the next analysis of `main`.
