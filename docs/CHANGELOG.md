@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-24 (harmonics lab: controls disabled at 1 harmonic, web, built, not deployed)
+
+- Web (task-0106, WEB-192; owner request 2026-10-24; no tests run): with 1 harmonic, "Decay across harmonics" and "Strike position" are disabled and dimmed with the hint "Needs 2 or more harmonics.", keep their values and re-enable from 2 harmonics; Inharmonicity B stays enabled (it still shifts H1).
+
 ## 2026-10-24 (iOS Tools screen with Live BPM, built, not on a device, not uploaded)
 
 - iOS (task-0113, IOS-091 to IOS-095; owner request 2026-10-24, lifting the iOS hold: "add bpm meter to iOS; create another menu, call it Tools"; no tests run, both schemes `AudioPlayer` and `ElectrophoneMac` build, no simulator or device run): a new drawer entry "Tools" (after Statistics) opens a Tools screen with a "Live BPM (microphone)" card: Start/Stop, a BPM badge (one decimal up to 200 BPM, "- - -" when idle or silent), a level meter and a state line, with the hint "Hears the phone speaker through the microphone. Not headphones." `LiveBPM.swift` ports the web engine (same constants and steps); `MicBPMModel.swift` listens through an `AVAudioEngine` tap in a `.playAndRecord` / `.measurement` session that mixes with other apps, asks for the microphone with an "Open Settings" button when denied, and restores the player's session on Stop, on leaving the screen, in the background, on an interruption or route change, and after 10 minutes. `NSMicrophoneUsageDescription` added. Settings is unchanged; the Mac app is unchanged. Not verified: the real microphone, music from the speaker, the permission prompt, session restore with background playback.

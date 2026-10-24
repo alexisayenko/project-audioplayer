@@ -93,7 +93,8 @@ export const LIVE_TEXT = {
 export const THUMP_NOTE ='Hammer thump: the felt hammer hitting the strings makes a short burst of noise.';
 export const TWO_NOTE = 'Two-stage decay: a quick fade first, then a long quiet tail called the aftersound.';
 export const INHARM_NOTE = 'Inharmonicity: partials are slightly sharp, because a stiff string resists bending.';
-export const HAMMER_NOTE = 'Hammer position: partials with a node at the strike point are very quiet.';
+export const NEEDS_TWO = 'Needs 2 or more harmonics.';
+export const HAMMER_NOTE ='Hammer position: partials with a node at the strike point are very quiet.';
 export const STRINGS_NOTE = 'A real piano note has up to 3 strings tuned a hair apart; their slow beating gives the shimmer.';
 export const BEAT_HINT = 'With detuned strings the loudness swells slowly: beats';
 export const ABOUT_TITLE ='What are harmonics?';
@@ -1314,6 +1315,21 @@ export function createHarmonicsCard(env = {}) {
   const inharmCtl = realRange('inharm', 'Inharmonicity B', 0, MAX_INHARM, 0.00005, params.inharmB);
   const hammerBox = realBox('hammer', 'Hammer position');
   const strikeCtl = realRange('strike', 'Strike position (fraction of the string)', 0, 8, 1, strikeToSlider(params.strike));
+  const needsHint = (id) => el('p', { id, class: 'hm-cap muted t-caption', hidden: true }, NEEDS_TWO);
+  const strikeHint = needsHint(`${uid}-sh`);
+  strikeCtl.field.append(strikeHint);
+  const rollHint = needsHint(`${uid}-dh`);
+  const rollField = el('div', { class: 'hm-field' },
+    el('label', { htmlFor: `${uid}-dr` }, 'Decay across harmonics (dB per octave; -6 is about 1/n)'),
+    el('div', { class: 'hm-pair' }, rollRange, rollOut),
+    rollHint);
+  const setNeeds = (range, field, hint, off) => {
+    range.disabled = off;
+    field.classList.toggle('is-off', off);
+    hint.hidden = !off;
+    if (off) range.setAttribute('aria-describedby', hint.id);
+    else range.removeAttribute('aria-describedby');
+  };
   const feat = (box, note, field) => el('div', { class: 'hm-feat' }, box.row, el('p', { class: 'hm-cap muted t-caption' }, note), ...(field ? [field] : []));
   const realGroup = el('div', { class: 'hm-real', role: 'group', 'aria-labelledby': `${uid}-pl`, hidden: true },
     el('h3', { id: `${uid}-pl`, class: 't-subhead' }, 'Piano realism'),
@@ -1382,9 +1398,7 @@ export function createHarmonicsCard(env = {}) {
       el('div', { class: 'hm-field' },
         el('label', { htmlFor: `${uid}-cr` }, 'Number of harmonics (H1 is the fundamental)'),
         el('div', { class: 'hm-pair' }, countRange, countOut)),
-      el('div', { class: 'hm-field' },
-        el('label', { htmlFor: `${uid}-dr` }, 'Decay across harmonics (dB per octave; -6 is about 1/n)'),
-        el('div', { class: 'hm-pair' }, rollRange, rollOut)),
+      rollField,
       el('div', { class: 'hm-field' },
         el('span', { class: 'hm-check' }, decayBox, el('label', { htmlFor: `${uid}-dk` }, 'Piano-like decay'))),
       tauField,
@@ -1521,6 +1535,9 @@ export function createHarmonicsCard(env = {}) {
     thumpCtl.out.textContent = fmtThump(params.thumpDb);
     inharmCtl.out.textContent = `B ${+params.inharmB.toFixed(5)}`;
     strikeCtl.out.textContent = fmtStrike(params.strike);
+    const single = params.count < 2;
+    setNeeds(rollRange, rollField, rollHint, single);
+    setNeeds(strikeCtl.range, strikeCtl.field, strikeHint, single);
     fill(detuneRange, params.detune, 0, MAX_DETUNE);
     detuneOut.textContent = `${params.detune} cents`;
     const beat = beatRate(params.freq, params.strings, params.detune);
