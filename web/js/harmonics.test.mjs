@@ -185,3 +185,58 @@ test('pickLabels drops overlapping and out-of-range labels', () => {
   const items = [{ x: 20, w: 30 }, { x: 40, w: 30 }, { x: 80, w: 30 }, { x: 118, w: 30 }];
   assert.deepEqual(h.pickLabels(items, 4, 0, 120).map((i) => i.x), [20, 80]);
 });
+
+test('liveScope triggers at a rising zero crossing and returns null for a short buffer', () => {
+  const sr = 48000;
+  const x = new Float32Array(16384);
+  for (let i = 0; i < x.length; i += 1) x[i] = 0.5 * Math.sin((2 * Math.PI * 440 * i) / sr + 0.7);
+  const s = h.liveScope(x, sr, 200);
+  assert.equal(s.triggered, true);
+  assert.ok(Math.abs(s.out[0]) < 0.02 && s.out[3] > 0);
+  assert.ok(Math.abs(s.peak - 0.5) < 0.01);
+  const quiet = h.liveScope(new Float32Array(16384), sr, 200);
+  assert.equal(quiet.triggered, false);
+  assert.equal(quiet.peak, 0);
+  assert.equal(h.liveScope(new Float32Array(100), sr, 200), null);
+});
+
+test('niceScale grows at once and shrinks only when the signal is clearly smaller', () => {
+  assert.equal(h.niceScale(0.26, 1), 0.3);
+  assert.equal(h.niceScale(0.9, 0.1), 1);
+  assert.equal(h.niceScale(0.09, 0.2), 0.2);
+  assert.equal(h.niceScale(0.02, 0.2), 0.05);
+  assert.equal(h.niceScale(5, 1), 1);
+});
+
+test('peakOf interpolates the loudest bin and gives up on a quiet signal', () => {
+  const bins = 8192;
+  const bw = 48000 / (2 * bins);
+  const d = new Float32Array(bins).fill(-120);
+  d[74] = -40; d[75] = -20; d[76] = -35;
+  const p = h.peakOf(d, 48000);
+  assert.ok(Math.abs(p.freq - 75.07 * bw) < 0.5);
+  assert.ok(Math.abs(p.db - (-20 + h.ANALYSER_DB_OFFSET)) < 1e-9);
+  assert.equal(h.peakOf(new Float32Array(bins).fill(-120), 48000), null);
+  assert.equal(h.peakText(null), 'Peak: -');
+  assert.equal(h.peakText({ freq: 220, db: -10 }), 'Peak: 220 Hz (A3 +0 cents)');
+});
+
+test('curveLevels takes the loudest bin per column on a linear or log axis', () => {
+  const bins = 8192;
+  const bw = 48000 / (2 * bins);
+  const d = new Float32Array(bins).fill(-100);
+  d[Math.round(1000 / bw)] = -10;
+  const lin = h.curveLevels(d, 48000, h.liveAxisRange('linear', 5000), 100);
+  assert.equal(lin.length, 100);
+  assert.ok([19, 20].includes(lin.indexOf(Math.max(...lin))));
+  const log = h.curveLevels(d, 48000, h.liveAxisRange('log'), 200);
+  assert.ok(Math.abs(log.indexOf(Math.max(...log)) / 200 - h.logPos(1000)) < 0.01);
+  assert.ok(Math.abs(Math.max(...lin) - (-10 + h.ANALYSER_DB_OFFSET)) < 1e-4);
+});
+
+test('liveAxisRange keeps the chosen range and the log range fixed', () => {
+  assert.deepEqual(h.liveAxisRange('linear', 2000), { axis: 'linear', min: 0, max: 2000, live: true });
+  assert.equal(h.liveAxisRange('linear', 777).max, 5000);
+  assert.deepEqual(h.liveAxisRange('log', 2000), { axis: 'log', min: 20, max: 20000, live: true });
+  assert.deepEqual(h.gramTicks([], h.liveAxisRange('linear', 2000), 180).map((t) => t[0]), [500, 1000, 1500]);
+});

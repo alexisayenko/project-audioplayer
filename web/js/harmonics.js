@@ -1,6 +1,7 @@
 import { el } from './dom.js';
 import { icon } from './icons.js';
 import { parseColor, mixColor } from './viz-color.js';
+import { createMicInput, createPlayerInput, errorKey } from './harmonics-input.js';
 
 export const TITLE = 'Pitch and harmonics';
 export const MIN_HZ = 20;
@@ -60,7 +61,36 @@ export const TEXT = {
   unsupported: 'This browser cannot play audio',
   failed: 'Could not start the sound',
 };
-export const THUMP_NOTE = 'Hammer thump: the felt hammer hitting the strings makes a short burst of noise.';
+export const SOURCES = ['synth', 'mic', 'player'];
+export const SOURCE_LABELS = { synth: 'Synth', mic: 'Microphone', player: 'Player' };
+export const SOURCE_NOTE = 'The frequency, harmonics, decay, piano and string controls apply to the Synth source only.';
+export const LIVE_RANGES = [2000, 5000, 10000];
+export const DEFAULT_LIVE_MAX = 5000;
+export const WAVE_MS = 40;
+export const WAVE_SCALES = [0.01, 0.02, 0.05, 0.1, 0.2, 0.3, 0.5, 0.7, 1];
+export const PEAK_MIN_HZ = 30;
+export const PEAK_FLOOR_DB = -70;
+export const PEAK_EVERY_MS = 200;
+export const ENSURE_EVERY_MS = 500;
+export const LIVE_TEXT = {
+  idle: 'Tap Listen to start',
+  asking: 'Waiting for microphone permission...',
+  listening: 'Listening to the microphone',
+  denied: 'Microphone access is off: allow it in the browser settings for this site',
+  none: 'No microphone found',
+  busy: 'The microphone is in use by another app',
+  unsupported: 'This browser cannot use the microphone on this page',
+  failed: 'Could not start the microphone',
+  hidden: 'Stopped: the page was hidden',
+  timeout: 'Stopped: 10 minutes reached',
+  ended: 'Stopped: the microphone was disconnected',
+  devices: 'Stopped: the audio devices changed',
+  nothing: 'Nothing is playing',
+  player: 'Listening to the player',
+  playerWait: 'Waiting for the player audio...',
+  playerFailed: 'This browser cannot analyse the player audio',
+};
+export const THUMP_NOTE ='Hammer thump: the felt hammer hitting the strings makes a short burst of noise.';
 export const TWO_NOTE = 'Two-stage decay: a quick fade first, then a long quiet tail called the aftersound.';
 export const INHARM_NOTE = 'Inharmonicity: partials are slightly sharp, because a stiff string resists bending.';
 export const HAMMER_NOTE = 'Hammer position: partials with a node at the strike point are very quiet.';
@@ -370,6 +400,99 @@ export function gramRows(rowCount, sampleRate, bins, axis = 'log', max = SPECTRU
     rows.push([a, b]);
   }
   return rows;
+}
+
+export function liveAxisRange(axis, max = DEFAULT_LIVE_MAX) {
+  return axis === 'log'
+    ? { axis, min: SPECTRUM_MIN_HZ, max: SPECTRUM_MAX_HZ, live: true }
+    : { axis, min: 0, max: LIVE_RANGES.includes(max) ? max : DEFAULT_LIVE_MAX, live: true };
+}
+
+export function niceScale(peak, current = 1) {
+  const target = WAVE_SCALES.find((s) => s >= peak * 1.05) ?? WAVE_SCALES.at(-1);
+  if (target >= current) return target;
+  return peak * 1.05 < current * 0.4 ? target : current;
+}
+
+export function liveScope(samples, sampleRate, points, ms = WAVE_MS) {
+  const win = (sampleRate * ms) / 1000;
+  const len = samples.length;
+  if (!(win > 2) || points < 2 || len < win * 2 + 4) return null;
+  const last = len - Math.ceil(win) - 2;
+  const first = Math.max(1, last - Math.floor(win));
+  let peak = 0;
+  for (let i = first; i < len; i += 1) peak = Math.max(peak, Math.abs(samples[i]));
+  const hyst = peak * 0.1;
+  let armed = false;
+  let pos = first;
+  let triggered = false;
+  for (let i = first; i <= last; i += 1) {
+    const x = samples[i];
+    if (x < -hyst) armed = true;
+    else if (armed && x >= 0) {
+      pos = i - 1 + (-samples[i - 1]) / (x - samples[i - 1]);
+      triggered = true;
+      break;
+    }
+  }
+  const out = new Float32Array(points);
+  let top = 0;
+  for (let k = 0; k < points; k += 1) {
+    const p = pos + (k / (points - 1)) * win;
+    const i0 = Math.floor(p);
+    const frac = p - i0;
+    const v = samples[i0] * (1 - frac) + samples[i0 + 1] * frac;
+    out[k] = v;
+    top = Math.max(top, Math.abs(v));
+  }
+  return { out, peak: top, triggered };
+}
+
+export function peakOf(freqData, sampleRate) {
+  const bins = freqData.length;
+  if (bins < 4 || !(sampleRate > 0)) return null;
+  const bw = sampleRate / (2 * bins);
+  const lo = Math.max(1, Math.ceil(PEAK_MIN_HZ / bw));
+  const hi = Math.min(bins - 2, Math.floor(AUDIBLE_MAX_HZ / bw));
+  let k = -1;
+  let top = -Infinity;
+  for (let b = lo; b <= hi; b += 1) if (freqData[b] > top) { top = freqData[b]; k = b; }
+  if (k < 0 || top + ANALYSER_DB_OFFSET < PEAK_FLOOR_DB) return null;
+  const a = freqData[k - 1];
+  const c = freqData[k + 1];
+  const den = a - 2 * top + c;
+  const delta = Number.isFinite(a) && Number.isFinite(c) && den < 0 ? clamp((0.5 * (a - c)) / den, -0.5, 0.5) : 0;
+  return { freq: (k + delta) * bw, db: top + ANALYSER_DB_OFFSET };
+}
+
+export function peakText(peak) {
+  return peak ? `Peak: ${fmtHz(peak.freq)} (${noteInfo(peak.freq).text})` : 'Peak: -';
+}
+
+export function curveLevels(freqData, sampleRate, range, count) {
+  const bins = freqData.length;
+  const bw = sampleRate / (2 * bins);
+  const out = new Float32Array(count);
+  const edge = (t) => (range.axis === 'log' ? SPECTRUM_MIN_HZ * (SPECTRUM_MAX_HZ / SPECTRUM_MIN_HZ) ** t : range.max * t);
+  for (let i = 0; i < count; i += 1) {
+    const lo = edge(i / count);
+    const hi = edge((i + 1) / count);
+    let db;
+    if (hi - lo < bw) {
+      const pos = clamp((lo + hi) / (2 * bw), 0, bins - 1);
+      const k = Math.min(bins - 2, Math.floor(pos));
+      const p = freqData[k];
+      const q = freqData[k + 1];
+      db = Number.isFinite(p) && Number.isFinite(q) ? p * (1 - (pos - k)) + q * (pos - k) : Math.max(p, q);
+    } else {
+      const a = clamp(Math.floor(lo / bw), 0, bins - 1);
+      const b = clamp(Math.ceil(hi / bw), a, bins - 1);
+      db = -Infinity;
+      for (let k = a; k <= b; k += 1) if (freqData[k] > db) db = freqData[k];
+    }
+    out[i] = db + ANALYSER_DB_OFFSET;
+  }
+  return out;
 }
 
 export function levelColor(stops, t) {
@@ -696,6 +819,9 @@ export function specTicks(range, plotW) {
 }
 
 export function gramTicks(rows, range, h, minGap = 18) {
+  if (range.live && range.axis === 'linear') {
+    return linearTicks(range.max, Math.floor(h / 30)).filter((f) => f > 0 && f < range.max).map((f) => [f, fmtTick(f)]);
+  }
   if (range.axis === 'log') return FREQ_TICKS;
   const played = rows.filter((r) => r.played);
   if (!played.length) return [];
@@ -749,7 +875,49 @@ function drawWaveView(g, colors, data, showParts) {
   trace(data.sum, css(colors.fill), 2);
 }
 
-function drawSpectrumView(g, colors, rows, levels, range) {
+function drawLiveWaveView(g, colors, scope, scale) {
+  const { ctx, w, h } = g;
+  const left = 36;
+  const bottom = 18;
+  const pad = 8;
+  const plotW = Math.max(1, w - left - pad);
+  const mid = (h - bottom) / 2;
+  const amp = mid - pad;
+  ctx.clearRect(0, 0, w, h);
+  ctx.font = `10px ${colors.font}`;
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'right';
+  ctx.fillStyle = css(colors.muted);
+  ctx.strokeStyle = css(colors.line);
+  ctx.lineWidth = 1;
+  for (const v of [scale, 0, -scale]) {
+    const y = mid - (v / scale) * amp;
+    ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(w - pad, y); ctx.stroke();
+    ctx.fillText(v === 0 ? '0' : `${v > 0 ? '+' : '-'}${scale}`, left - 4, y);
+  }
+  ctx.textBaseline = 'top';
+  const step = WAVE_MS / 4;
+  for (let k = 0; k <= 4; k += 1) {
+    const x = left + (k / 4) * plotW;
+    ctx.beginPath(); ctx.moveTo(x, mid - amp); ctx.lineTo(x, mid + amp); ctx.stroke();
+    ctx.textAlign = k === 0 ? 'left' : k === 4 ? 'right' : 'center';
+    ctx.fillText(`${k * step} ms`, x, h - bottom + 3);
+  }
+  if (!scope) return;
+  ctx.strokeStyle = css(colors.fill);
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  const n = scope.length;
+  for (let i = 0; i < n; i += 1) {
+    const x = left + (i / (n - 1)) * plotW;
+    const y = mid - clamp(scope[i] / scale, -1.2, 1.2) * amp;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+}
+
+function drawSpecGrid(g, colors, range) {
   const { ctx, w, h } = g;
   const left = 34;
   const right = 8;
@@ -779,6 +947,42 @@ function drawSpectrumView(g, colors, rows, levels, range) {
     const half = ctx.measureText(text).width / 2;
     ctx.fillText(text, Math.min(x, w - 2 - half), top + plotH + 3);
   }
+  return { left, plotW, plotH, yOf, xOf };
+}
+
+function drawLiveSpectrumView(g, colors, freqData, sampleRate, range, peak) {
+  const { ctx } = g;
+  const geo = drawSpecGrid(g, colors, range);
+  if (!freqData) return;
+  const count = Math.max(2, Math.round(geo.plotW));
+  const levels = curveLevels(freqData, sampleRate, range, count);
+  const base = geo.yOf(DB_MIN);
+  ctx.beginPath();
+  ctx.moveTo(geo.left, base);
+  for (let i = 0; i < count; i += 1) ctx.lineTo(geo.left + ((i + 0.5) / count) * geo.plotW, geo.yOf(levels[i]));
+  ctx.lineTo(geo.left + geo.plotW, base);
+  ctx.closePath();
+  ctx.fillStyle = css(colors.fill, 0.28);
+  ctx.fill();
+  ctx.beginPath();
+  for (let i = 0; i < count; i += 1) {
+    const x = geo.left + ((i + 0.5) / count) * geo.plotW;
+    if (i === 0) ctx.moveTo(x, geo.yOf(levels[i])); else ctx.lineTo(x, geo.yOf(levels[i]));
+  }
+  ctx.strokeStyle = css(colors.fill);
+  ctx.lineWidth = 1.5;
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+  if (peak && peak.freq <= range.max) {
+    const x = geo.xOf(peak.freq);
+    ctx.fillStyle = css(colors.ink);
+    ctx.beginPath(); ctx.arc(x, geo.yOf(peak.db), 3, 0, 2 * Math.PI); ctx.fill();
+  }
+}
+
+function drawSpectrumView(g, colors, rows, levels, range) {
+  const { ctx, w } = g;
+  const { yOf, xOf } = drawSpecGrid(g, colors, range);
   const bars = [];
   rows.forEach((r, i) => {
     if (r.played && levels[i] > DB_MIN) bars.push({ r, db: levels[i], x: xOf(r.freq) });
@@ -837,6 +1041,30 @@ function drawGramAxes(g, colors, range, ticks) {
   }
 }
 
+function segmented(items, current, pick, attrs) {
+  const btns = items.map(([key, text]) => el('button', {
+    class: 'seg-btn', type: 'button', role: 'radio', 'aria-checked': 'false', onclick: () => pick(key),
+  }, text));
+  const group = el('div', {
+    class: 'seg hm-seg', role: 'radiogroup', ...attrs,
+    onkeydown: (ev) => {
+      const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[ev.key];
+      if (!step) return;
+      ev.preventDefault();
+      const i = clamp(items.findIndex(([key]) => key === current()) + step, 0, items.length - 1);
+      pick(items[i][0]);
+      btns[i].focus();
+    },
+  }, ...btns);
+  const paint = () => btns.forEach((b, i) => {
+    const on = items[i][0] === current();
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-checked', String(on));
+    b.tabIndex = on ? 0 : -1;
+  });
+  return { group, paint };
+}
+
 export function createHarmonicsCard(env = {}) {
   const doc = env.document ?? globalThis.document;
   const raf = env.raf ?? ((fn) => globalThis.requestAnimationFrame?.(fn) ?? 0);
@@ -857,6 +1085,18 @@ export function createHarmonicsCard(env = {}) {
   let gramMap = [];
   let axis = 'linear';
   let gramAxisKey = '';
+  let source = 'synth';
+  let liveMax = DEFAULT_LIVE_MAX;
+  let starting = false;
+  let paused = false;
+  let waveScale = 1;
+  let peakAt = 0;
+  let peakShown = '';
+  let ensureAt = 0;
+  let playerKey = '';
+  let attempt = 0;
+  const micIn = env.mic ?? createMicInput(env);
+  const playerIn = env.player ?? createPlayerInput(env);
   const buffers = { time: null, freq: null };
   const off = [];
 
@@ -944,14 +1184,21 @@ export function createHarmonicsCard(env = {}) {
       axisBtns[i].focus();
     },
   }, ...axisBtns);
+  const rangeSeg = segmented(LIVE_RANGES.map((m) => [m, fmtTick(m)]), () => liveMax, (m) => setLiveMax(m), { 'aria-label': 'Linear frequency range' });
   const axisField = el('div', { class: 'hm-axis' },
     el('span', { id: `${uid}-al`, class: 'hm-lbl' }, 'Frequency axis'),
-    axisGroup);
+    axisGroup, rangeSeg.group);
+  const sourceSeg = segmented(SOURCES.map((s) => [s, SOURCE_LABELS[s]]), () => source, (s) => setSource(s), { 'aria-labelledby': `${uid}-ol` });
+  const sourceField = el('div', { class: 'hm-axis' },
+    el('span', { id: `${uid}-ol`, class: 'hm-lbl' }, 'Source'),
+    sourceSeg.group);
+  const sourceNote = el('p', { class: 'hm-cap muted t-caption', hidden: true }, SOURCE_NOTE);
   const specCap = el('p', { class: 'hm-cap muted t-caption' });
   const gramCap = el('p', { class: 'hm-cap muted t-caption' });
+  const peakOut = el('p', { class: 'hm-peak t-subhead', hidden: true });
   const label = el('span', {}, 'Play');
   const toggleIcon = el('span', { class: 'hm-ic' }, icon('play', 'action'));
-  const button = el('button', { class: 'btn primary hm-toggle', type: 'button', onclick: () => { if (running) stop('idle'); else start(); } }, toggleIcon, label);
+  const button = el('button', { class: 'btn primary hm-toggle', type: 'button', onclick: () => { if (running) stop('idle'); else void start(); } }, toggleIcon, label);
   const state = el('p', { class: 'hm-state t-subhead' }, TEXT.idle);
   const skipNote = el('p', { class: 'hm-skip muted t-caption', hidden: true });
 
@@ -969,9 +1216,9 @@ export function createHarmonicsCard(env = {}) {
     el('summary', { class: 't-subhead' }, ABOUT_TITLE),
     el('dl', { class: 'hm-defs' }, ...ABOUT.flatMap(([term, text]) => [el('dt', { class: 't-subhead' }, term), el('dd', { class: 't-subhead muted' }, text)])));
 
-  const node = el('section', { class: 'card hm-card', 'aria-label': TITLE },
-    el('h2', { class: 't-headline' }, TITLE),
-    el('div', { class: 'hm-ctl' },
+  const stringsNote = el('p', { class: 'hm-cap muted t-caption' }, STRINGS_NOTE);
+  const partsField = el('span', { class: 'hm-check' }, partsBox, el('label', { htmlFor: `${uid}-ip` }, 'Show individual harmonics'));
+  const ctlBox = el('div', { class: 'hm-ctl' },
       el('div', { class: 'hm-field' },
         el('label', { htmlFor: `${uid}-fn` }, 'Frequency (Hz)'),
         el('div', { class: 'hm-freq' }, freqNum, noteOut),
@@ -988,20 +1235,27 @@ export function createHarmonicsCard(env = {}) {
       repeatField,
       stringsField,
       detuneField,
-      realGroup),
-    el('p', { class: 'hm-cap muted t-caption' }, STRINGS_NOTE),
+      realGroup);
+  const waveCap = el('p', { class: 'hm-cap muted t-caption' });
+
+  const node = el('section', { class: 'card hm-card', 'aria-label': TITLE },
+    el('h2', { class: 't-headline' }, TITLE),
+    sourceField,
+    sourceNote,
+    ctlBox,
+    stringsNote,
     el('div', { class: 'hm-play' }, button, state),
     skipNote,
     el('div', { class: 'hm-block' },
-      el('div', { class: 'hm-head' }, el('h3', { class: 't-subhead' }, 'Waveform'),
-        el('span', { class: 'hm-check' }, partsBox, el('label', { htmlFor: `${uid}-ip` }, 'Show individual harmonics'))),
+      el('div', { class: 'hm-head' }, el('h3', { class: 't-subhead' }, 'Waveform'), partsField),
       view(waveCanvas, 'hm-wave'),
-      el('p', { class: 'hm-cap muted t-caption' }, 'Time across, amplitude up, 3.5 cycles of the fundamental. The bright line is the sum.'),
+      waveCap,
       beatHint),
     el('div', { class: 'hm-block' },
       el('div', { class: 'hm-head' }, el('h3', { class: 't-subhead' }, 'Spectrum'), axisField),
       view(specCanvas, 'hm-spec'),
       specCap,
+      peakOut,
       list),
     el('div', { class: 'hm-block' },
       el('h3', { class: 't-subhead' }, 'Spectrogram'),
@@ -1033,14 +1287,25 @@ export function createHarmonicsCard(env = {}) {
     const extra = parts.length ? `, ${parts.join(', ')}` : '';
     const base = `${params.count} harmonics of ${fmtHz(params.freq)}, ${note.name}, decay ${params.rolloff} dB per octave${piano}${multi}${extra}`;
     const where = axisText();
+    if (source !== 'synth') {
+      const what = source === 'mic' ? 'the microphone' : 'the player';
+      waveCanvas.setAttribute('aria-label', `Waveform of ${what} signal, last ${WAVE_MS} ms`);
+      specCanvas.setAttribute('aria-label', `Spectrum of ${what} signal, ${where}`);
+      gramCanvas.setAttribute('aria-label', `Spectrogram of ${what} signal, ${where}, last 10 seconds`);
+      waveCap.textContent = `Time across (${WAVE_MS} ms), amplitude up, scaled to the signal. It starts at a rising zero crossing so the shape holds still.`;
+      specCap.textContent = `Frequency across (${axisCaption()}), level in dBFS up. The dot marks the loudest frequency.`;
+      gramCap.textContent = `The last 10 seconds: time across, frequency up (${axisCaption()}), colour is level. It fills while ${what} is heard and clears when the axis or source changes.`;
+      return;
+    }
     waveCanvas.setAttribute('aria-label', `Waveform of the synthesized tone, 3.5 cycles: ${base}`);
     specCanvas.setAttribute('aria-label', `Spectrum of the synthesized tone, ${where}, one bar per harmonic: ${base}`);
     gramCanvas.setAttribute('aria-label', `Spectrogram of the synthesized tone, ${where}, last 10 seconds: ${base}`);
+    waveCap.textContent = 'Time across, amplitude up, 3.5 cycles of the fundamental. The bright line is the sum.';
     specCap.textContent = `Frequency across (${axisCaption()}), level in dBFS up, one bar per harmonic.`;
     gramCap.textContent = `The last 10 seconds: time across, frequency up (${axisCaption()}), colour is level. It fills while the tone plays and clears when the axis changes.`;
   }
 
-  const rangeNow = () => axisRange(axis, params.freq, params.count, realism(params).inharmB);
+  const rangeNow = () => (source === 'synth' ? axisRange(axis, params.freq, params.count, realism(params).inharmB) : liveAxisRange(axis, liveMax));
 
   function axisText() {
     const r = rangeNow();
@@ -1049,10 +1314,14 @@ export function createHarmonicsCard(env = {}) {
 
   function axisCaption() {
     const r = rangeNow();
-    return r.axis === 'log' ? 'log, 20 Hz to 20 kHz' : `linear, 0 Hz to ${fmtHz(r.max)}, harmonics evenly spaced`;
+    if (r.axis === 'log') return 'log, 20 Hz to 20 kHz';
+    return `linear, 0 Hz to ${fmtHz(r.max)}${r.live ? '' : ', harmonics evenly spaced'}`;
   }
 
   function paintList() {
+    const synthOn = source === 'synth';
+    list.hidden = !synthOn;
+    if (!synthOn) { skipNote.hidden = true; return; }
     const rows = rowsNow();
     list.replaceChildren(...rows.filter((r) => r.played).map((r) => el('li', {}, `${harmonicLabel(r)} · ${r.db.toFixed(1)} dB`)));
     const skipped = rows.filter((r) => !r.played);
@@ -1094,7 +1363,7 @@ export function createHarmonicsCard(env = {}) {
     detuneField.hidden = params.strings < 2;
     beatOut.hidden = !(beat > 0);
     beatOut.textContent = beat > 0 ? `H1 beats about ${fmtBeat(beat)} Hz` : '';
-    beatHint.hidden = !(beat > 0);
+    beatHint.hidden = source !== 'synth' || !(beat > 0);
     stringBtns.forEach((b, i) => {
       const on = i + 1 === params.strings;
       b.classList.toggle('on', on);
@@ -1107,31 +1376,77 @@ export function createHarmonicsCard(env = {}) {
       b.setAttribute('aria-checked', String(on));
       b.tabIndex = on ? 0 : -1;
     });
+    sourceSeg.paint();
+    rangeSeg.paint();
+    const synthOn = source === 'synth';
+    ctlBox.hidden = !synthOn;
+    stringsNote.hidden = !synthOn;
+    partsField.hidden = !synthOn;
+    sourceNote.hidden = synthOn;
+    peakOut.hidden = synthOn;
+    rangeSeg.group.hidden = synthOn || axis !== 'linear';
     describe();
     paintList();
   }
 
-  function liveBuffers() {
-    const an = synth.analyser;
-    if (!an) return null;
-    if (!buffers.time || buffers.time.length !== an.fftSize) {
+  function feed() {
+    if (!running) return null;
+    let an = null;
+    let sr = 0;
+    if (source === 'synth') { an = synth.analyser; sr = rate(); }
+    else if (source === 'mic') { an = micIn.analyser; sr = micIn.sampleRate; }
+    else if (playerIn.playing) { an = playerIn.analyser; sr = playerIn.sampleRate; }
+    if (!an || !(sr > 0)) return null;
+    if (!buffers.time || buffers.time.length !== an.fftSize || buffers.freq.length !== an.frequencyBinCount) {
       buffers.time = new Float32Array(an.fftSize);
       buffers.freq = new Float32Array(an.frequencyBinCount);
     }
-    return buffers;
+    return { an, sr, b: buffers };
+  }
+
+  function paintLiveWave(f, g) {
+    const points = Math.max(32, Math.round(g.w - 44));
+    let scope = null;
+    if (f) {
+      f.an.getFloatTimeDomainData(f.b.time);
+      const s = liveScope(f.b.time, f.sr, points);
+      if (s) { waveScale = niceScale(s.peak, waveScale); scope = s.out; }
+    }
+    drawLiveWaveView(g, currentColors(), scope, waveScale);
+  }
+
+  function paintPeak(peak) {
+    const t = now();
+    if (t - peakAt < PEAK_EVERY_MS && peak !== null) return;
+    peakAt = t;
+    const text = peakText(peak);
+    if (text !== peakShown) { peakShown = text; peakOut.textContent = text; }
+  }
+
+  function paintLiveSpectrum(f, g) {
+    let peak = null;
+    let data = null;
+    if (f) {
+      f.an.getFloatFrequencyData(f.b.freq);
+      data = f.b.freq;
+      peak = peakOf(data, f.sr);
+    }
+    paintPeak(peak);
+    drawLiveSpectrumView(g, currentColors(), data, f?.sr ?? 0, rangeNow(), peak);
   }
 
   function paintWave() {
     const g = fit(waveCanvas);
     if (!g) return;
+    const f = feed();
+    if (source !== 'synth') { paintLiveWave(f, g); return; }
     const rows = rowsNow();
     const points = Math.max(32, Math.round(g.w - 44));
     const data = computedWave(rows, points, CYCLES, stringOffsets(params.strings, params.detune));
     let sum = data.sum;
-    const b = running ? liveBuffers() : null;
-    if (b) {
-      synth.analyser.getFloatTimeDomainData(b.time);
-      sum = liveWave(b.time, rate(), params.freq, points) ?? (params.decay && isSilent(b.time) ? new Float32Array(points) : sum);
+    if (f) {
+      f.an.getFloatTimeDomainData(f.b.time);
+      sum = liveWave(f.b.time, f.sr, params.freq, points) ?? (params.decay && isSilent(f.b.time) ? new Float32Array(points) : sum);
     }
     drawWaveView(g, currentColors(), { sum, parts: data.parts, rows, cycles: CYCLES, freq: params.freq }, showParts);
   }
@@ -1139,12 +1454,13 @@ export function createHarmonicsCard(env = {}) {
   function paintSpectrum() {
     const g = fit(specCanvas);
     if (!g) return;
+    const f = feed();
+    if (source !== 'synth') { paintLiveSpectrum(f, g); return; }
     const rows = rowsNow();
     let levels = rows.map((r) => r.db);
-    const b = running ? liveBuffers() : null;
-    if (b) {
-      synth.analyser.getFloatFrequencyData(b.freq);
-      levels = barLevels(rows, b.freq, rate(), params.strings > 1 ? params.detune : 0);
+    if (f) {
+      f.an.getFloatFrequencyData(f.b.freq);
+      levels = barLevels(rows, f.b.freq, f.sr, params.strings > 1 ? params.detune : 0);
     }
     drawSpectrumView(g, currentColors(), rows, levels, rangeNow());
   }
@@ -1170,8 +1486,9 @@ export function createHarmonicsCard(env = {}) {
   function stepGram(dt) {
     const g = fit(gramCanvas);
     if (!g) return;
-    const b = liveBuffers();
-    if (!b) return;
+    const f = feed();
+    if (!f) return;
+    const b = f.b;
     if (g.resized) paintGramAxes();
     if (axisKey() !== gramAxisKey) clearGram();
     const { ctx } = g;
@@ -1181,11 +1498,11 @@ export function createHarmonicsCard(env = {}) {
     const dx = Math.floor(pending);
     if (dx < 1) return;
     pending -= dx;
-    synth.analyser.getFloatFrequencyData(b.freq);
+    f.an.getFloatFrequencyData(b.freq);
     const rowCount = Math.min(ph, 160);
     const range = rangeNow();
-    const key = `${rowCount}|${rate()}|${b.freq.length}|${range.axis}|${range.max}`;
-    if (key !== gramRowsKey) { gramRowsKey = key; gramMap = gramRows(rowCount, rate(), b.freq.length, range.axis, range.max); }
+    const key = `${rowCount}|${f.sr}|${b.freq.length}|${range.axis}|${range.max}`;
+    if (key !== gramRowsKey) { gramRowsKey = key; gramMap = gramRows(rowCount, f.sr, b.freq.length, range.axis, range.max); }
     const c = currentColors();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     if (dx < pw) ctx.drawImage(gramCanvas, -dx, 0);
@@ -1214,21 +1531,42 @@ export function createHarmonicsCard(env = {}) {
     const t = now();
     const dt = Math.min(0.25, Math.max(0, (t - lastTick) / 1000));
     lastTick = t;
+    if (source === 'player' && !watchPlayer()) return;
     paintWave();
     paintSpectrum();
     stepGram(dt);
   }
 
-  function paintButton() {
-    label.textContent = running ? 'Stop' : 'Play';
-    button.classList.toggle('primary', !running);
-    button.classList.toggle('outline', running);
-    toggleIcon.replaceChildren(icon(running ? 'clear' : 'play', 'action'));
+  function watchPlayer() {
+    const t = now();
+    const playing = playerIn.playing;
+    if (playing && !playerIn.analyser && t - ensureAt >= ENSURE_EVERY_MS) { ensureAt = t; playerIn.ensure(); }
+    const live = playing && playerIn.analyser !== null;
+    const key = !playing ? 'nothing' : live ? 'player' : playerIn.failed ? 'playerFailed' : 'playerWait';
+    if (key !== playerKey) {
+      playerKey = key;
+      say(key);
+      clearGram();
+      if (!live) paintStatic();
+    }
+    return live;
   }
 
+  function paintButton() {
+    const verb = source === 'mic' ? 'Listen' : 'Play';
+    label.textContent = running ? 'Stop' : verb;
+    button.hidden = source === 'player';
+    button.disabled = starting;
+    button.classList.toggle('primary', !running);
+    button.classList.toggle('outline', running);
+    toggleIcon.replaceChildren(icon(running ? 'clear' : source === 'mic' ? 'mic' : 'play', 'action'));
+  }
+
+  const CALM = new Set(['idle', 'playing', 'asking', 'listening', 'nothing', 'player', 'playerWait']);
+
   function say(key) {
-    state.textContent = TEXT[key];
-    state.classList.toggle('error', key !== 'idle' && key !== 'playing');
+    state.textContent = (source === 'synth' ? TEXT : LIVE_TEXT)[key];
+    state.classList.toggle('error', !CALM.has(key));
   }
 
   function listen(target, type, fn) {
@@ -1243,11 +1581,16 @@ export function createHarmonicsCard(env = {}) {
     while (off.length) off.pop()();
   }
 
+  function endSource() {
+    synth.stop();
+    micIn.stop();
+  }
+
   function stop(key = 'idle') {
     if (!running) return;
     running = false;
     release();
-    synth.stop();
+    endSource();
     if (gone) return;
     paintButton();
     say(key);
@@ -1255,14 +1598,7 @@ export function createHarmonicsCard(env = {}) {
     paintStatic();
   }
 
-  function start() {
-    if (running || gone) return;
-    try {
-      synth.start(params);
-    } catch (ex) {
-      say(ex?.name === 'NotSupportedError' ? 'unsupported' : 'failed');
-      return;
-    }
+  function engage(key) {
     running = true;
     pending = 0;
     lastTick = now();
@@ -1270,8 +1606,55 @@ export function createHarmonicsCard(env = {}) {
     safety = setTimeout(() => stop('timeout'), MAX_RUN_MS);
     listen(doc, 'visibilitychange', () => { if (doc.hidden) stop('hidden'); });
     paintButton();
-    say('playing');
+    say(key);
     frame = raf(tick);
+  }
+
+  async function startMic() {
+    const mine = attempt;
+    starting = true;
+    say('asking');
+    paintButton();
+    try {
+      if (!(await micIn.start((key) => stop(key)))) return;
+    } catch (ex) {
+      if (mine !== attempt || gone) return;
+      starting = false;
+      say(ex?.name === 'NotSupportedError' ? 'unsupported' : errorKey(ex));
+      paintButton();
+      return;
+    }
+    if (mine !== attempt || gone) return;
+    starting = false;
+    engage('listening');
+  }
+
+  function startPlayer() {
+    paused = false;
+    playerKey = '';
+    running = true;
+    pending = 0;
+    lastTick = now();
+    clearGram();
+    listen(doc, 'visibilitychange', () => {
+      if (doc.hidden) { paused = true; caf(frame); frame = 0; } else if (paused) { paused = false; lastTick = now(); frame = raf(tick); }
+    });
+    paintButton();
+    playerIn.ensure();
+    watchPlayer();
+    frame = raf(tick);
+  }
+
+  async function start() {
+    if (running || starting || gone || source === 'player') return;
+    if (source === 'mic') { await startMic(); return; }
+    try {
+      synth.start(params);
+    } catch (ex) {
+      say(ex?.name === 'NotSupportedError' ? 'unsupported' : 'failed');
+      return;
+    }
+    engage('playing');
   }
 
   function change(next) {
@@ -1281,14 +1664,42 @@ export function createHarmonicsCard(env = {}) {
     if (running) paintGramAxes(); else paintStatic();
   }
 
-  function setAxis(next) {
-    if (next === axis) return;
-    axis = next;
+  function refreshAxis() {
     gramRowsKey = '';
     paintOutputs();
     clearGram();
     paintGramAxes();
     paintSpectrum();
+  }
+
+  function setAxis(next) {
+    if (next === axis) return;
+    axis = next;
+    refreshAxis();
+  }
+
+  function setLiveMax(next) {
+    if (next === liveMax || !LIVE_RANGES.includes(next)) return;
+    liveMax = next;
+    refreshAxis();
+  }
+
+  function setSource(next) {
+    if (next === source || !SOURCES.includes(next) || gone) return;
+    attempt += 1;
+    starting = false;
+    if (running) stop('idle');
+    micIn.stop();
+    source = next;
+    gramRowsKey = '';
+    waveScale = 1;
+    peakShown = '';
+    paintOutputs();
+    paintButton();
+    clearGram();
+    paintGramAxes();
+    paintStatic();
+    if (source === 'player') startPlayer(); else say('idle');
   }
 
   function setFreq(f, { text = true, slider = true } = {}) {
@@ -1339,13 +1750,19 @@ export function createHarmonicsCard(env = {}) {
     get running() { return running; },
     get params() { return { ...params }; },
     get axis() { return axis; },
+    get source() { return source; },
+    get liveMax() { return liveMax; },
     setAxis,
+    setSource,
+    setLiveMax,
     start,
     stop: () => stop('idle'),
     dispose() {
       gone = true;
+      attempt += 1;
       ro?.disconnect();
-      if (running) { running = false; release(); synth.stop(); }
+      if (running) { running = false; release(); }
+      endSource();
     },
   };
 }

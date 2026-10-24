@@ -15,6 +15,8 @@ body[data-route="studio"] main { max-width: none; }
 .mt-state.error { color: var(--power-text); }
 .mt-caption { margin: 0; }
 .hm-card { min-width: 0; }
+.hm-card [hidden] { display: none; }
+.hm-peak { margin: 0; color: var(--ink); font-variant-numeric: tabular-nums; }
 .hm-ctl { display: grid; gap: var(--space-4); min-width: 0; }
 .hm-field { min-width: 0; display: grid; gap: var(--space-1); }
 .hm-field[hidden] { display: none; }
