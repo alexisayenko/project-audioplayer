@@ -54,6 +54,7 @@ input.hm-num { width: 7.5rem; flex: none; }
 .hm-wave { height: 160px; }
 .hm-spec { height: 210px; }
 .hm-gram { height: 180px; }
+.hm-bands { height: 240px; }
 .hm-canvas { display: block; width: 100%; height: 100%; }
 .hm-axes { position: absolute; inset: 0; pointer-events: none; }
 .hm-cap { margin: 0; }

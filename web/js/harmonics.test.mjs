@@ -240,3 +240,57 @@ test('liveAxisRange keeps the chosen range and the log range fixed', () => {
   assert.deepEqual(h.liveAxisRange('log', 2000), { axis: 'log', min: 20, max: 20000, live: true });
   assert.deepEqual(h.gramTicks([], h.liveAxisRange('linear', 2000), 180).map((t) => t[0]), [500, 1000, 1500]);
 });
+
+test('bandBins splits the spectrum into Sub, Bass, Mids and Highs and keeps one bin at least', () => {
+  const bins = 8192;
+  const bw = 48000 / (2 * bins);
+  const map = h.bandBins(48000, bins);
+  assert.equal(map.length, 4);
+  assert.deepEqual(map.map((m) => [Math.round(m[0] * bw / 10), Math.round(m[1] * bw / 10)]), [[2, 6], [6, 25], [25, 200], [200, 1000]]);
+  assert.ok(map.every(([a, z]) => a >= 1 && z >= a && z <= bins - 1));
+  const low = h.bandBins(16000, 256);
+  assert.ok(low[3][0] <= low[3][1] && low[3][1] <= 255);
+  assert.deepEqual(h.BANDS.map((b) => h.bandRangeText(b)), ['20-60 Hz', '60-250 Hz', '250-2000 Hz', '2-10 kHz']);
+});
+
+test('bandLevels gives the mean power per band in dB, clamped to -90 .. 0', () => {
+  const d = new Float32Array(100).fill(-Infinity);
+  assert.deepEqual(h.bandLevels(d, [[10, 20]]), [h.DB_MIN]);
+  d.fill(-30);
+  assert.ok(Math.abs(h.bandLevels(d, [[10, 20]])[0] - (-30 + h.ANALYSER_DB_OFFSET)) < 1e-9);
+  d[10] = 0;
+  const mixed = h.bandLevels(d, [[10, 11]])[0];
+  assert.ok(Math.abs(mixed - (10 * Math.log10((10 ** 1.356 + 10 ** ((-30 + h.ANALYSER_DB_OFFSET) / 10)) / 2))) < 1e-9);
+  d.fill(40);
+  assert.equal(h.bandLevels(d, [[1, 5]])[0], h.DB_MAX);
+});
+
+test('laneRange normalizes to the recent min and max with a minimum span', () => {
+  assert.deepEqual(h.laneRange([-60, -20, -40], true), { lo: -60, hi: -20 });
+  assert.deepEqual(h.laneRange([-60, -59], true), { lo: -60, hi: -54 });
+  assert.deepEqual(h.laneRange([-60, -20], false), { lo: h.DB_MIN, hi: h.DB_MAX });
+  assert.deepEqual(h.laneRange([], true), { lo: h.DB_MIN, hi: h.DB_MAX });
+});
+
+test('createBeatTracker marks a regular kick pattern and ignores a steady or quiet band', () => {
+  const tracker = h.createBeatTracker(2);
+  const hits = [];
+  for (let i = 0; i < 600; i += 1) {
+    const t = i / 60;
+    const phase = t % 0.5;
+    const kick = phase < 0.05 ? -20 : -20 - 40 * Math.min(1, (phase - 0.05) / 0.2);
+    const out = tracker.push(t, [kick, -30]);
+    if (out[0]) hits.push(t);
+    assert.equal(out[1], false);
+  }
+  assert.ok(hits.length >= 18 && hits.length <= 20);
+  for (let i = 1; i < hits.length; i += 1) assert.ok(Math.abs(hits[i] - hits[i - 1] - 0.5) < 0.05);
+  assert.ok(tracker.lanes[0].points.every((p) => 599 / 60 - p.t <= h.BEAT_SECONDS));
+  assert.equal(tracker.lanes[0].points.length, 600);
+  const quiet = h.createBeatTracker(1);
+  const jumps = [];
+  for (let i = 0; i < 120; i += 1) jumps.push(quiet.push(i / 60, [i % 30 < 15 ? -90 : -78])[0]);
+  assert.ok(jumps.every((j) => j === false));
+  tracker.reset();
+  assert.equal(tracker.lanes[0].points.length, 0);
+});

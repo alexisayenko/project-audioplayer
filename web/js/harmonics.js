@@ -501,6 +501,85 @@ export function levelColor(stops, t) {
   return mixColor(stops[i], stops[i + 1], x - i);
 }
 
+export const BANDS = [
+  { key: 'sub', name: 'Sub', lo: 20, hi: 60 },
+  { key: 'bass', name: 'Bass', lo: 60, hi: 250 },
+  { key: 'mids', name: 'Mids', lo: 250, hi: 2000 },
+  { key: 'highs', name: 'Highs', lo: 2000, hi: 10000 },
+];
+export const BEAT_SECONDS = 10;
+export const ONSET_AVG_S = 0.3;
+export const ONSET_MEAN_S = 2;
+export const ONSET_MULT = 1.5;
+export const ONSET_MIN_DB = 2;
+export const ONSET_GAP_S = 0.12;
+export const ONSET_FLOOR_DB = -70;
+export const LANE_MIN_SPAN_DB = 6;
+export const BEAT_NOTE = 'Each lane is one frequency range over the last 10 s. Regular ticks show which range carries the beat (usually Sub and Bass: the kick).';
+
+export function bandRangeText(band) {
+  const k = (f) => +(f / 1000).toFixed(2);
+  return band.lo >= 1000 && band.hi >= 1000 ? `${k(band.lo)}-${k(band.hi)} kHz` : `${band.lo}-${band.hi} Hz`;
+}
+
+export function bandBins(sampleRate, bins, bands = BANDS) {
+  const bw = sampleRate / (2 * bins);
+  return bands.map((b) => {
+    const a = clamp(Math.ceil(b.lo / bw), 1, bins - 1);
+    return [a, clamp(Math.max(a, Math.floor(b.hi / bw)), a, bins - 1)];
+  });
+}
+
+export function bandLevels(freqData, map) {
+  return map.map(([a, z]) => {
+    let sum = 0;
+    for (let k = a; k <= z; k += 1) {
+      const d = freqData[k];
+      if (d > -Infinity) sum += 10 ** ((d + ANALYSER_DB_OFFSET) / 10);
+    }
+    return sum > 0 ? clamp(10 * Math.log10(sum / (z - a + 1)), DB_MIN, DB_MAX) : DB_MIN;
+  });
+}
+
+export function laneRange(levels, normalize) {
+  if (!normalize || !levels.length) return { lo: DB_MIN, hi: DB_MAX };
+  let lo = Infinity;
+  let hi = -Infinity;
+  for (const v of levels) { if (v < lo) lo = v; if (v > hi) hi = v; }
+  return { lo, hi: Math.max(hi, lo + LANE_MIN_SPAN_DB) };
+}
+
+export function createBeatTracker(count = BANDS.length) {
+  const blank = () => ({ points: [], recent: [], mean: 0, last: -Infinity, above: false, level: DB_MIN, t: -1 });
+  const lanes = Array.from({ length: count }, blank);
+  return {
+    lanes,
+    reset() { lanes.forEach((_, i) => { lanes[i] = blank(); }); },
+    push(t, levels) {
+      return levels.map((db, i) => {
+        const lane = lanes[i];
+        while (lane.recent.length && t - lane.recent[0].t > ONSET_AVG_S) lane.recent.shift();
+        let avg = db;
+        if (lane.recent.length) avg = lane.recent.reduce((s, r) => s + r.db, 0) / lane.recent.length;
+        const strength = Math.max(0, db - avg);
+        const threshold = Math.max(ONSET_MIN_DB, ONSET_MULT * lane.mean);
+        const above = strength > threshold && db > ONSET_FLOOR_DB;
+        const onset = above && !lane.above && t - lane.last >= ONSET_GAP_S;
+        const dt = lane.t >= 0 ? t - lane.t : 0;
+        lane.mean += (1 - Math.exp(-dt / ONSET_MEAN_S)) * (strength - lane.mean);
+        lane.above = above;
+        if (onset) lane.last = t;
+        lane.t = t;
+        lane.level = db;
+        lane.recent.push({ t, db });
+        lane.points.push({ t, db, onset });
+        while (lane.points.length && t - lane.points[0].t > BEAT_SECONDS) lane.points.shift();
+        return onset;
+      });
+    },
+  };
+}
+
 export function createSynth(env = {}) {
   const Ctx = env.AudioContext ?? globalThis.AudioContext ?? globalThis.webkitAudioContext;
   let live = null;
@@ -1041,6 +1120,74 @@ function drawGramAxes(g, colors, range, ticks) {
   }
 }
 
+function drawBandsView(g, colors, lanes, nowT, normalize) {
+  const { ctx, w, h } = g;
+  const left = 74;
+  const right = 22;
+  const bottom = 16;
+  const plotW = Math.max(1, w - left - right);
+  const laneH = (h - bottom) / BANDS.length;
+  const pad = 4;
+  ctx.clearRect(0, 0, w, h);
+  ctx.lineWidth = 1;
+  ctx.lineJoin = 'round';
+  BANDS.forEach((band, i) => {
+    const lane = lanes[i];
+    const y0 = i * laneH;
+    const top = y0 + pad;
+    const ph = laneH - 2 * pad;
+    ctx.strokeStyle = css(colors.line);
+    ctx.beginPath(); ctx.moveTo(0, y0 + laneH - 0.5); ctx.lineTo(w, y0 + laneH - 0.5); ctx.stroke();
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    ctx.font = `600 11px ${colors.font}`;
+    ctx.fillStyle = css(colors.ink);
+    ctx.fillText(band.name, 6, y0 + laneH / 2 - 1);
+    ctx.font = `10px ${colors.font}`;
+    ctx.fillStyle = css(colors.muted);
+    ctx.fillText(bandRangeText(band), 6, y0 + laneH / 2 + 11);
+    const xOf = (t) => left + plotW - ((nowT - t) / BEAT_SECONDS) * plotW;
+    const pts = lane.points.filter((p) => nowT - p.t <= BEAT_SECONDS);
+    const { lo, hi } = laneRange(pts.map((p) => p.db), normalize);
+    const yOf = (db) => top + (1 - clamp((db - lo) / (hi - lo), 0, 1)) * ph;
+    if (pts.length > 1) {
+      ctx.beginPath();
+      ctx.moveTo(xOf(pts[0].t), top + ph);
+      for (const p of pts) ctx.lineTo(xOf(p.t), yOf(p.db));
+      ctx.lineTo(xOf(pts.at(-1).t), top + ph);
+      ctx.closePath();
+      ctx.fillStyle = css(colors.fill, 0.3);
+      ctx.fill();
+      ctx.beginPath();
+      pts.forEach((p, k) => { if (k === 0) ctx.moveTo(xOf(p.t), yOf(p.db)); else ctx.lineTo(xOf(p.t), yOf(p.db)); });
+      ctx.strokeStyle = css(colors.fill);
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+    ctx.strokeStyle = css(colors.stops[3]);
+    ctx.lineWidth = 2;
+    for (const p of pts) {
+      if (!p.onset) continue;
+      const x = Math.round(xOf(p.t));
+      ctx.beginPath(); ctx.moveTo(x, y0 + 2); ctx.lineTo(x, y0 + laneH - 2); ctx.stroke();
+    }
+    const barX = w - right + 8;
+    const barH = ph * ((lane.level - DB_MIN) / (DB_MAX - DB_MIN));
+    ctx.fillStyle = css(colors.line);
+    ctx.fillRect(barX, top, 8, ph);
+    ctx.fillStyle = css(colors.fill);
+    ctx.fillRect(barX, top + ph - barH, 8, barH);
+  });
+  ctx.lineWidth = 1;
+  ctx.font = `10px ${colors.font}`;
+  ctx.fillStyle = css(colors.muted);
+  ctx.textBaseline = 'top';
+  for (const [text, x, align] of [['-10 s', left, 'left'], ['now', left + plotW, 'right']]) {
+    ctx.textAlign = align;
+    ctx.fillText(text, x, h - bottom + 3);
+  }
+}
+
 function segmented(items, current, pick, attrs) {
   const btns = items.map(([key, text]) => el('button', {
     class: 'seg-btn', type: 'button', role: 'radio', 'aria-checked': 'false', onclick: () => pick(key),
@@ -1095,6 +1242,11 @@ export function createHarmonicsCard(env = {}) {
   let ensureAt = 0;
   let playerKey = '';
   let attempt = 0;
+  let normalize = true;
+  let beatKey = '';
+  let beatMap = [];
+  let beatAt = 0;
+  const bands = createBeatTracker();
   const micIn = env.mic ?? createMicInput(env);
   const playerIn = env.player ?? createPlayerInput(env);
   const buffers = { time: null, freq: null };
@@ -1206,6 +1358,10 @@ export function createHarmonicsCard(env = {}) {
   const specCanvas = el('canvas', { class: 'hm-canvas', role: 'img' });
   const gramCanvas = el('canvas', { class: 'hm-canvas', role: 'img' });
   const gramAxes = el('canvas', { class: 'hm-canvas hm-axes', 'aria-hidden': 'true' });
+  const bandsCanvas = el('canvas', { class: 'hm-canvas', role: 'img' });
+  const normBox = el('input', { id: `${uid}-nb`, type: 'checkbox', checked: true, onchange: () => { normalize = normBox.checked; paintBands(); } });
+  const normField = el('span', { class: 'hm-check' }, normBox, el('label', { htmlFor: `${uid}-nb` }, 'Normalize per band'));
+  const bandsCap = el('p', { class: 'hm-cap muted t-caption' }, BEAT_NOTE);
   const partsBox = el('input', { id: `${uid}-ip`, type: 'checkbox', onchange: () => { showParts = partsBox.checked; paintWave(); } });
   const scaleBar = el('span', { class: 'hm-scale', 'aria-hidden': 'true' });
   const list = el('ul', { class: 'hm-list t-caption', 'aria-label': 'Harmonics' });
@@ -1262,6 +1418,10 @@ export function createHarmonicsCard(env = {}) {
       view(gramCanvas, 'hm-gram', gramAxes),
       el('div', { class: 'hm-legend t-caption muted' }, el('span', {}, `${GRAM_DB_MIN} dB`), scaleBar, el('span', {}, `${GRAM_DB_MAX} dB`)),
       gramCap),
+    el('div', { class: 'hm-block' },
+      el('div', { class: 'hm-head' }, el('h3', { class: 't-subhead' }, 'Beat bands'), normField),
+      view(bandsCanvas, 'hm-bands'),
+      bandsCap),
     about);
 
   function currentColors() {
@@ -1272,6 +1432,8 @@ export function createHarmonicsCard(env = {}) {
 
   const rate = () => synth.ctx?.sampleRate ?? 48000;
   const rowsNow = () => harmonicList(params, rate());
+
+  const bandsLabel = (what) => `Beat bands of ${what}, last 10 seconds: four lanes, ${BANDS.map((b) => `${b.name} ${bandRangeText(b)}`).join(', ')}, each with its level and the detected beats marked`;
 
   function describe() {
     const note = noteInfo(params.freq);
@@ -1292,6 +1454,7 @@ export function createHarmonicsCard(env = {}) {
       waveCanvas.setAttribute('aria-label', `Waveform of ${what} signal, last ${WAVE_MS} ms`);
       specCanvas.setAttribute('aria-label', `Spectrum of ${what} signal, ${where}`);
       gramCanvas.setAttribute('aria-label', `Spectrogram of ${what} signal, ${where}, last 10 seconds`);
+      bandsCanvas.setAttribute('aria-label', bandsLabel(`${what} signal`));
       waveCap.textContent = `Time across (${WAVE_MS} ms), amplitude up, scaled to the signal. It starts at a rising zero crossing so the shape holds still.`;
       specCap.textContent = `Frequency across (${axisCaption()}), level in dBFS up. The dot marks the loudest frequency.`;
       gramCap.textContent = `The last 10 seconds: time across, frequency up (${axisCaption()}), colour is level. It fills while ${what} is heard and clears when the axis or source changes.`;
@@ -1300,6 +1463,7 @@ export function createHarmonicsCard(env = {}) {
     waveCanvas.setAttribute('aria-label', `Waveform of the synthesized tone, 3.5 cycles: ${base}`);
     specCanvas.setAttribute('aria-label', `Spectrum of the synthesized tone, ${where}, one bar per harmonic: ${base}`);
     gramCanvas.setAttribute('aria-label', `Spectrogram of the synthesized tone, ${where}, last 10 seconds: ${base}`);
+    bandsCanvas.setAttribute('aria-label', bandsLabel('the synthesized tone'));
     waveCap.textContent = 'Time across, amplitude up, 3.5 cycles of the fundamental. The bright line is the sum.';
     specCap.textContent = `Frequency across (${axisCaption()}), level in dBFS up, one bar per harmonic.`;
     gramCap.textContent = `The last 10 seconds: time across, frequency up (${axisCaption()}), colour is level. It fills while the tone plays and clears when the axis changes.`;
@@ -1519,10 +1683,33 @@ export function createHarmonicsCard(env = {}) {
     ctx.setTransform(g.dpr, 0, 0, g.dpr, 0, 0);
   }
 
+  function paintBands() {
+    const g = fit(bandsCanvas);
+    if (g) drawBandsView(g, currentColors(), bands.lanes, beatAt, normalize);
+  }
+
+  function resetBands() {
+    bands.reset();
+    beatAt = 0;
+  }
+
+  function stepBands(t) {
+    const f = feed();
+    if (f) {
+      f.an.getFloatFrequencyData(f.b.freq);
+      const key = `${f.sr}|${f.b.freq.length}`;
+      if (key !== beatKey) { beatKey = key; beatMap = bandBins(f.sr, f.b.freq.length); }
+      beatAt = t / 1000;
+      bands.push(beatAt, bandLevels(f.b.freq, beatMap));
+    }
+    paintBands();
+  }
+
   function paintStatic() {
     paintWave();
     paintSpectrum();
     paintGramAxes();
+    paintBands();
   }
 
   function tick() {
@@ -1535,6 +1722,7 @@ export function createHarmonicsCard(env = {}) {
     paintWave();
     paintSpectrum();
     stepGram(dt);
+    stepBands(t);
   }
 
   function watchPlayer() {
@@ -1547,6 +1735,7 @@ export function createHarmonicsCard(env = {}) {
       playerKey = key;
       say(key);
       clearGram();
+      resetBands();
       if (!live) paintStatic();
     }
     return live;
@@ -1595,6 +1784,7 @@ export function createHarmonicsCard(env = {}) {
     paintButton();
     say(key);
     clearGram();
+    resetBands();
     paintStatic();
   }
 
@@ -1603,6 +1793,7 @@ export function createHarmonicsCard(env = {}) {
     pending = 0;
     lastTick = now();
     clearGram();
+    resetBands();
     safety = setTimeout(() => stop('timeout'), MAX_RUN_MS);
     listen(doc, 'visibilitychange', () => { if (doc.hidden) stop('hidden'); });
     paintButton();
@@ -1636,6 +1827,7 @@ export function createHarmonicsCard(env = {}) {
     pending = 0;
     lastTick = now();
     clearGram();
+    resetBands();
     listen(doc, 'visibilitychange', () => {
       if (doc.hidden) { paused = true; caf(frame); frame = 0; } else if (paused) { paused = false; lastTick = now(); frame = raf(tick); }
     });
@@ -1697,6 +1889,7 @@ export function createHarmonicsCard(env = {}) {
     paintOutputs();
     paintButton();
     clearGram();
+    resetBands();
     paintGramAxes();
     paintStatic();
     if (source === 'player') startPlayer(); else say('idle');
