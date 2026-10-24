@@ -71,7 +71,7 @@ input.hm-step-num:disabled { opacity: var(--disabled-opacity); }
 .hm-view { position: relative; width: 100%; border-radius: var(--radius-key); background: var(--surface-sunken); overflow: hidden; }
 .hm-wave { height: 160px; }
 .sm-cone { height: 140px; }
-.hm-spec { height: 210px; }
+.hm-spec { height: clamp(210px, 60vh, 420px); }
 .hm-gram { height: 180px; }
 .hm-bands { height: 240px; }
 .hm-beating { height: 220px; }

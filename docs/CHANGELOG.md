@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-25 (Studio Spectrum twice as tall, built, not deployed; the main app is not redeployed, only an unused CSS rule changed in its bundle)
+
+- Web (STU-028 area; owner: "make the spectrum field 2x taller"; no tests run, `node --check`, the build and the Browser pane only): the Spectrum plot on Listen and Chordophones is 420 px tall instead of 210 px (`.hm-spec` in `web/studio.css`: `clamp(210px, 60vh, 420px)`, so on a short window it stays under 60% of the viewport height and never below the old 210 px); the canvas is sized from its box at the device pixel ratio, so the dB axis, hover crosshair label, harmonic ticks, Trails and Mark harmonics follow; checked in the Browser pane at desktop width and 375x812 (420 px = 52% of the phone height, no horizontal scroll, no console error; the other views are unchanged).
+
 ## 2026-10-25 (Studio Spectrum Trail length, deployed to studio.electrophone.cc as `a4b66af`; the main app is not redeployed, only an unused CSS rule changed in its bundle)
 
 - Web (WEB-205, STU-028; owner: "allow to configure trails time"; no tests run, `node --check`, the build and the Browser pane only): while Trails is on, a "Trail length" counter (minus, number, plus, unit s; 0.5 to 10 s in steps of 0.5, default 2 s) sits next to the switch in the Spectrum header on Listen and Chordophones and is hidden while Trails is off. The decay rate is 40 dB divided by the length, so 2 s is today's 20 dB per second; a change applies live without clearing the ghost. The caption states the length and the glossary entry "Trails (afterglow)" gains "You can set how long the glow lasts." `listen-views.test.mjs` extended, not run.
