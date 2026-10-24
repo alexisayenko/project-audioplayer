@@ -57,6 +57,24 @@ test('STU-025: the filter matches aliases and the new terms are present', () => 
   assert.deepEqual(termById('interval').see, ['octave', 'cent', 'harmony']);
 });
 
+test('STU-025: the waveform, noise, analysis, rhythm and volume entries are present with their aliases', () => {
+  for (const id of ['sawtooth-wave', 'square-wave', 'triangle-wave', 'pulse-wave', 'duty-cycle', 'white-noise', 'pink-noise', 'fourier-transform', 'spectrum-analyzer', 'rhythm', 'beat', 'tempo', 'meter', 'bar', 'downbeat', 'onset', 'syncopation', 'subdivision', 'swing']) assert.ok(termById(id), id);
+  assert.equal(termByAnchor('saw').id, 'sawtooth-wave');
+  assert.equal(termByAnchor('meander').id, 'square-wave');
+  assert.equal(termByAnchor('меандр').id, 'square-wave');
+  assert.equal(termByAnchor('fft').id, 'fourier-transform');
+  assert.equal(termByAnchor('spectrometer').id, 'spectrum-analyzer');
+  assert.equal(termByAnchor('spectral-analyzer').id, 'spectrum-analyzer');
+  assert.equal(termByAnchor('time-signature').id, 'meter');
+  assert.equal(termByAnchor('measure').id, 'bar');
+  assert.equal(termByAnchor('volume').id, 'loudness');
+  assert.equal(termByAnchor('tempo').id, 'tempo');
+  assert.equal(termByAnchor('beats-per-minute').id, 'bpm');
+  assert.ok(termById('spectrum') && termById('spectrum-analyzer'));
+  assert.match(termById('loudness').text, /Doubling the amplitude means 4x the power \(\+6 dB\) but sounds only somewhat louder: about \+10 dB sounds twice as loud\./);
+  assert.ok(termById('power').see.includes('loudness'));
+});
+
 test('STU-025: filterTerms matches every word in the term or the text, ignoring case', () => {
   assert.equal(filterTerms(TERMS, ''), TERMS);
   assert.equal(filterTerms(TERMS, '   '), TERMS);

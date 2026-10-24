@@ -18,8 +18,8 @@ test('STU-037: every relation ends at an existing term, with a label, no self lo
     assert.ok(!seen.has(key), `duplicate ${key}`);
     seen.add(key);
   }
-  assert.equal(RELATIONS.length, 76);
-  assert.equal(TERMS.length, 54);
+  assert.equal(RELATIONS.length, 106);
+  assert.equal(TERMS.length, 73);
 });
 
 test('STU-037: every term is in exactly one domain, every domain is non-empty and every term has a relation', () => {
@@ -58,6 +58,30 @@ test('STU-037: the relations asked for are present', () => {
   assert.match(termById('loudness').text, /follows the amplitude/);
 });
 
+test('STU-037: the waveform, noise, analysis and rhythm terms sit in their domains with their links', () => {
+  const has = (from, to, part) => RELATIONS.some((r) => r.from === from && r.to === to && r.label.includes(part));
+  for (const id of ['sawtooth-wave', 'square-wave', 'triangle-wave', 'pulse-wave', 'duty-cycle', 'white-noise', 'pink-noise']) assert.equal(DOMAIN_OF[id], 'physics', id);
+  for (const id of ['spectrum-analyzer', 'fourier-transform']) assert.equal(DOMAIN_OF[id], 'analysis', id);
+  for (const id of ['rhythm', 'beat', 'tempo', 'meter', 'bar', 'downbeat', 'onset', 'syncopation', 'subdivision', 'swing']) assert.equal(DOMAIN_OF[id], 'music', id);
+  assert.ok(has('sawtooth-wave', 'harmonics', 'all'));
+  assert.ok(has('square-wave', 'harmonics', 'only odd'));
+  assert.ok(has('triangle-wave', 'harmonics', 'only odd'));
+  assert.ok(has('pulse-wave', 'duty-cycle', 'width'));
+  assert.ok(has('square-wave', 'duty-cycle', '50 percent'));
+  assert.ok(has('pink-noise', 'white-noise', 'filtered'));
+  assert.ok(has('spectrum-analyzer', 'spectrum', 'shows'));
+  assert.ok(has('fourier-transform', 'spectrum-analyzer', 'used by'));
+  assert.ok(has('beat', 'tempo', 'repeats'));
+  assert.ok(has('tempo', 'bpm', 'measured in'));
+  assert.ok(has('meter', 'beat', 'sets how many') && has('meter', 'bar', 'groups'));
+  assert.ok(has('bar', 'downbeat', 'starts'));
+  assert.ok(has('onset', 'beat-bands', 'detected'));
+  assert.ok(has('swing', 'subdivision', 'uneven'));
+  assert.ok(has('tempo-grid', 'beat', 'marks'));
+  assert.ok(has('power', 'loudness', 'not the same'));
+  assert.ok(has('amplitude', 'loudness', 'perceived'));
+});
+
 test('STU-037: buildGraph gives one node per mapped term and keeps only edges between them', () => {
   const { nodes, edges } = buildGraph();
   assert.equal(nodes.length, TERMS.length);
@@ -67,8 +91,8 @@ test('STU-037: buildGraph gives one node per mapped term and keeps only edges be
   assert.ok(sub.edges.every((e) => e.from !== 'frequency' && e.to !== 'frequency'));
   assert.equal(mapLabel(termById('spectrum')), 'Spectrum');
   assert.equal(mapLabel(termById('frequency')), 'Frequency');
-  assert.equal(nodes.length, 54);
-  assert.equal(edges.length, 76);
+  assert.equal(nodes.length, 73);
+  assert.equal(edges.length, 106);
   assert.deepEqual(nodes.find((n) => n.id === 'timbre').aliases, termById('timbre').aliases);
   assert.deepEqual(nodes.find((n) => n.id === 'bpm').aliases, termById('bpm').aliases);
   assert.deepEqual(nodes.find((n) => n.id === 'sound').aliases, []);

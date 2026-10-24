@@ -9,11 +9,11 @@ export const DOMAINS = [
 ];
 
 const MEMBERS = {
-  physics: ['sound', 'oscillation', 'vibration', 'cycle-and-period', 'frequency', 'wavelength', 'amplitude', 'power', 'speed-of-sound', 'sine-wave', 'infrasound-and-ultrasound', 'soundboard', 'bridge', 'length'],
+  physics: ['sound', 'oscillation', 'vibration', 'cycle-and-period', 'frequency', 'wavelength', 'amplitude', 'power', 'speed-of-sound', 'sine-wave', 'sawtooth-wave', 'square-wave', 'triangle-wave', 'pulse-wave', 'duty-cycle', 'white-noise', 'pink-noise', 'infrasound-and-ultrasound', 'soundboard', 'bridge', 'length'],
   perception: ['pitch', 'timbre', 'missing-fundamental', 'cent', 'loudness'],
-  music: ['note', 'tone', 'fundamental', 'harmonic-1', 'harmonics', 'overtone', 'partial', 'inharmonicity', 'beating', 'hammer-strike-position', 'strings-per-note', 'decay-across-harmonics', 'harmony', 'octave', 'interval'],
+  music: ['note', 'tone', 'fundamental', 'harmonic-1', 'harmonics', 'overtone', 'partial', 'inharmonicity', 'beating', 'hammer-strike-position', 'strings-per-note', 'decay-across-harmonics', 'harmony', 'octave', 'interval', 'rhythm', 'beat', 'tempo', 'meter', 'bar', 'downbeat', 'onset', 'syncopation', 'subdivision', 'swing'],
   instruments: ['chordophones', 'aerophones', 'membranophones', 'idiophones', 'electrophones', 'primitive'],
-  analysis: ['waveform', 'oscilloscope', 'spectrum', 'spectrogram', 'beat-bands', 'tempo-grid', 'bpm', 'trails', 'harmonic-markers', 'pitch-detection', 'octave-error', 'dbfs', 'db-spl', 'time-window'],
+  analysis: ['waveform', 'oscilloscope', 'spectrum', 'spectrogram', 'beat-bands', 'tempo-grid', 'bpm', 'trails', 'harmonic-markers', 'pitch-detection', 'octave-error', 'dbfs', 'db-spl', 'time-window', 'spectrum-analyzer', 'fourier-transform'],
 };
 
 export const DOMAIN_OF = Object.fromEntries(Object.entries(MEMBERS).flatMap(([domain, ids]) => ids.map((id) => [id, domain])));
@@ -97,6 +97,36 @@ export const RELATIONS = [
   rel('trails', 'keep a fading ghost on the', 'spectrum'),
   rel('harmonic-markers', 'are ticks on the', 'spectrum'),
   rel('harmonic-markers', 'sit at multiples found by', 'pitch-detection'),
+  rel('sawtooth-wave', 'has all', 'harmonics'),
+  rel('square-wave', 'has only odd', 'harmonics'),
+  rel('triangle-wave', 'has only odd', 'harmonics'),
+  rel('sawtooth-wave', 'is a shape of the', 'waveform'),
+  rel('square-wave', 'is a shape of the', 'waveform'),
+  rel('triangle-wave', 'is a shape of the', 'waveform'),
+  rel('pulse-wave', 'has a width called the', 'duty-cycle'),
+  rel('square-wave', 'is a pulse wave with 50 percent', 'duty-cycle'),
+  rel('square-wave', 'is a special case of the', 'pulse-wave'),
+  rel('white-noise', 'has equal power at every', 'frequency'),
+  rel('pink-noise', 'is filtered from', 'white-noise'),
+  rel('pink-noise', 'falls 3 dB per', 'octave'),
+  rel('spectrum-analyzer', 'shows the', 'spectrum'),
+  rel('fourier-transform', 'is used by the', 'spectrum-analyzer'),
+  rel('fourier-transform', 'splits any wave into', 'sine-wave'),
+  rel('rhythm', 'is built from', 'beat'),
+  rel('beat', 'repeats at the', 'tempo'),
+  rel('tempo', 'is measured in', 'bpm'),
+  rel('meter', 'groups beats into', 'bar'),
+  rel('meter', 'sets how many', 'beat'),
+  rel('bar', 'starts with the', 'downbeat'),
+  rel('downbeat', 'is the first and strongest', 'beat'),
+  rel('onset', 'is detected by', 'beat-bands'),
+  rel('onset', 'is the start of a', 'sound'),
+  rel('syncopation', 'puts accents off the', 'beat'),
+  rel('subdivision', 'splits the', 'beat'),
+  rel('swing', 'makes uneven the', 'subdivision'),
+  rel('tempo-grid', 'marks the', 'beat'),
+  rel('power', 'is not the same as', 'loudness'),
+  rel('loudness', 'also depends on', 'frequency'),
 ];
 
 const LABELS = {
@@ -163,6 +193,7 @@ export const BOX = {
   rowGap: 8,
   gap: 28,
   maxCols: 3,
+  tallCols: 2,
   goal: 1.15,
   lo: 0.9,
   hi: 1.5,
@@ -170,11 +201,11 @@ export const BOX = {
   max: 1.6,
 };
 
-export function domainGrid(sizes) {
+export function domainGrid(sizes, maxCols = BOX.maxCols, lo = BOX.lo) {
   const n = sizes.w.length;
   const colW = Math.max(...sizes.w);
   let best = null;
-  for (let cols = 1; cols <= Math.min(BOX.maxCols, n); cols++) {
+  for (let cols = 1; cols <= Math.min(maxCols, n); cols++) {
     const rows = Math.ceil(n / cols);
     const w = cols * colW + (cols - 1) * BOX.colGap + 2 * BOX.pad;
     const h = BOX.head + rows * sizes.h + (rows - 1) * BOX.rowGap + BOX.pad;
@@ -192,8 +223,8 @@ export function domainGrid(sizes) {
     const left = extra - inGaps * (rows - 1);
     top += left / 2;
     h += extra;
-  } else if (w / h < BOX.lo) {
-    const extra = h * BOX.lo - w;
+  } else if (w / h < lo) {
+    const extra = h * lo - w;
     side += extra / 2;
     w += extra;
   }
@@ -281,7 +312,7 @@ export function layoutDomains(nodes, edges, shape = 'wide') {
     const flow = MEMBERS[d.id];
     list.sort((a, b) => flow.indexOf(a.id) - flow.indexOf(b.id));
     for (const n of list) n.w = nodeWidth(n.label);
-    const grid = domainGrid({ w: list.map((n) => n.w), h: NODE_H });
+    const grid = domainGrid({ w: list.map((n) => n.w), h: NODE_H }, shape === 'tall' ? BOX.tallCols : BOX.maxCols, shape === 'tall' ? BOX.min : BOX.lo);
     boxes.push({ id: d.id, label: d.label, count: list.length, ...grid, cx: 0, cy: 0 });
   }
   const boxOf = new Map(boxes.map((b) => [b.id, b]));
