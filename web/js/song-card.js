@@ -198,7 +198,12 @@ export function liveBpm() {
       audio: document.getElementById('audio'),
       player,
       getAnalyser: () => audioGraph.getAnalyser(),
-      getSampleRate: () => audioGraph.getContext()?.sampleRate,
+      getContext: () => audioGraph.getContext(),
+      ensureGraph: () => {
+        const state = audioGraph.getState();
+        if (state === 'running' || state === 'failed' || state === 'unsupported' || !audioGraph.isSupported()) return;
+        audioGraph.unlock(document.getElementById('audio'));
+      },
     });
   }
   return liveCtl;

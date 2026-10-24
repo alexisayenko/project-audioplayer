@@ -2,20 +2,16 @@ import { createLiveBpm } from './live-bpm.js';
 import { storeGet, storeSet } from './storage.js';
 
 export const LIVE_BPM_KEY = 'ap.liveBpm';
-const SAMPLE_MS = 25;
+const SAMPLE_MS = 40;
 const PUBLISH_MS = 1000;
-const LOW_HZ = [40, 160];
+const SMOOTH_COUNT = 3;
 
-export function lowBandEnergy(bytes, sampleRate, binCount) {
-  const hzPerBin = sampleRate / 2 / binCount;
-  const from = Math.max(1, Math.floor(LOW_HZ[0] / hzPerBin));
-  const to = Math.min(binCount - 1, Math.ceil(LOW_HZ[1] / hzPerBin));
-  let sum = 0;
-  for (let i = from; i <= to; i += 1) sum += bytes[i];
-  return sum / ((to - from + 1) * 255);
+function median(values) {
+  const sorted = values.slice().sort((a, b) => a - b);
+  return sorted[sorted.length >> 1];
 }
 
-export function createLiveBpmController({ audio, player, getAnalyser, getSampleRate, now = () => performance.now() / 1000, timers = { setInterval: (fn, ms) => setInterval(fn, ms), clearInterval: (id) => clearInterval(id) }, read = () => storeGet(LIVE_BPM_KEY), write = (v) => storeSet(LIVE_BPM_KEY, v) }) {
+export function createLiveBpmController({ audio, player, getAnalyser, getContext, ensureGraph = () => {}, timers = { setInterval: (fn, ms) => setInterval(fn, ms), clearInterval: (id) => clearInterval(id) }, read = () => storeGet(LIVE_BPM_KEY), write = (v) => storeSet(LIVE_BPM_KEY, v) }) {
   const det = createLiveBpm();
   const listeners = new Set();
   let on = read() === '1';
@@ -23,25 +19,44 @@ export function createLiveBpmController({ audio, player, getAnalyser, getSampleR
   let songId = null;
   let sampleTimer = null;
   let publishTimer = null;
-  let bytes = null;
+  let buffer = null;
+  let lastTime = null;
+  let recent = [];
 
   const emit = () => { for (const fn of listeners) fn(); };
 
   const publish = () => {
-    const next = det.estimate();
+    if (!getAnalyser()) ensureGraph();
+    const exact = det.estimateExact();
+    if (exact !== null) recent.push(exact);
+    else recent.shift();
+    if (recent.length > SMOOTH_COUNT) recent.shift();
+    const next = recent.length ? Math.round(median(recent)) : null;
     if (next !== value) { value = next; emit(); }
   };
 
   const sample = () => {
     const analyser = getAnalyser();
-    if (!analyser) return;
-    if (!bytes || bytes.length !== analyser.frequencyBinCount) bytes = new Uint8Array(analyser.frequencyBinCount);
-    analyser.getByteFrequencyData(bytes);
-    det.push(now(), lowBandEnergy(bytes, getSampleRate() || 44100, analyser.frequencyBinCount));
+    const ctx = getContext();
+    if (!analyser || !ctx) { lastTime = null; return; }
+    const rate = ctx.sampleRate;
+    const size = analyser.fftSize;
+    if (!buffer || buffer.length !== size) buffer = new Float32Array(size);
+    analyser.getFloatTimeDomainData(buffer);
+    const t = ctx.currentTime;
+    const before = lastTime;
+    lastTime = t;
+    if (before === null) return;
+    const fresh = Math.round((t - before) * rate);
+    if (fresh <= 0) return;
+    if (fresh > size) { det.reset(); recent = []; return; }
+    det.pushSamples(buffer.subarray(size - fresh), rate);
   };
 
   const clearValue = () => {
     det.reset();
+    recent = [];
+    lastTime = null;
     if (value !== null) { value = null; emit(); }
   };
 
@@ -55,6 +70,7 @@ export function createLiveBpmController({ audio, player, getAnalyser, getSampleR
   const start = () => {
     if (sampleTimer !== null) return;
     det.setHint(player.current?.bpm);
+    lastTime = null;
     sampleTimer = timers.setInterval(sample, SAMPLE_MS);
     publishTimer = timers.setInterval(publish, PUBLISH_MS);
   };
@@ -62,8 +78,10 @@ export function createLiveBpmController({ audio, player, getAnalyser, getSampleR
   const sync = () => {
     const id = player.current?.id ?? null;
     if (id !== songId) { songId = id; clearValue(); stop(); }
-    if (on && player.playing && id) start();
-    else { stop(); if (!on) clearValue(); }
+    if (on && player.playing && id) {
+      ensureGraph();
+      start();
+    } else { stop(); if (!on) clearValue(); }
   };
 
   const unsubscribe = player.onChange(sync);
