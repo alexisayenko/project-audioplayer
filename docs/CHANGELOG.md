@@ -2,7 +2,7 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
-## 2026-10-24 (harmonics lab: 1 to 8 strings, web, built, not deployed)
+## 2026-10-24 (harmonics lab: 1 to 8 strings, web, deployed as `5c7c3c7`)
 
 - Web (task-0109, WEB-193, ADR-0048 amended; owner decision GH2, 2026-10-24; no tests run, `node --check` and a local Chromium page with a hook on oscillator creation only): "Strings per note" is a slider from 1 to 8 (default 1), the detune offsets spread evenly from -d to +d, the "H1 beats about X Hz" readout follows the adjacent-string spacing 2d/(N-1), and the synth builds only as many oscillators as there are harmonics (8 strings x 10 harmonics = 80), capped at 256 with the note "Using N harmonics per string (limit 256 oscillators)."; the explainer line reads "A real piano note has up to 3 strings; here you can try up to 8."
 
