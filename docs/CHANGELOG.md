@@ -2,7 +2,7 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
-## 2026-10-25 (Primitive slow motion factor switch, default 2000×, built, not deployed)
+## 2026-10-25 (Primitive slow motion factor switch, default 2000×, deployed to studio.electrophone.cc as `d162711`)
 
 - Web (WEB-204; owner question "does the animation go too fast?"; no tests run, `node --check`, the build and the Browser pane with a real clock): the Primitive cone block gets a "Slow motion factor" switch (1000×, 2000×, 5000×, 10000×), default 2000× (the air bunch crossed the 904 px area in 2.27 s, 398 px/s at 440 Hz on a 1440 px window; 2000× is 199 px/s); the "Slowed N×" readout, caption and aria-label follow, the oscilloscope correspondence is unchanged. Measured periods 2.273 s, 1.000 s, 0.500 s at 440, 1000, 2000 Hz at 1000×; no second animation loop after Pause/Play, frequency changes or route changes. `simple-tone.test.mjs` extended, not run.
 
