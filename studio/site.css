@@ -18,6 +18,17 @@
 .site-nav { display: flex; flex-direction: column; flex: 1 1 100%; min-width: 0; gap: var(--space-2); }
 .site-group { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); min-width: 0; }
 .site-group-title { flex: none; margin: 0 var(--space-1) 0 0; color: var(--ink-muted); font-weight: 600; }
+.stu { container: stu / inline-size; }
+.stu .hm-list, .stu .hm-defs { max-width: none; }
+.hm-defs dt { break-after: avoid-column; }
+.hm-defs dd { break-before: avoid-column; break-inside: avoid; }
+@container stu (max-width: 559px) { .hm-ctl, .sm-ctl { grid-template-columns: minmax(0, 1fr); } }
+@container stu (min-width: 560px) { .hm-ctl, .sm-ctl { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4) var(--space-5); } }
+@container stu (min-width: 880px) { .hm-ctl { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@container stu (min-width: 800px) {
+  .hm-defs { display: block; columns: 2; column-gap: var(--space-6); }
+  .hm-defs > dt, .hm-defs > dd { margin: 0 0 var(--space-2); }
+}
 .stu-soon p { margin: 0; }
 .hm-spec .hm-canvas { touch-action: pan-y; }
 .gl-link, .gl-more a { display: inline-flex; align-items: center; min-height: var(--hit); color: var(--accent-ink); }
@@ -29,6 +40,10 @@
 .gl-item dd { margin: 0; }
 .gl-text::first-letter { text-transform: uppercase; }
 .gl-item.gl-hit { background: var(--accent-tint); }
+@container stu (min-width: 800px) {
+  .stu .gl-list { display: block; max-width: none; columns: 2; column-gap: var(--space-6); }
+  .gl-item { break-inside: avoid; margin-bottom: var(--space-2); }
+}
 .gl-more { display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--space-4); }
 .gl-label { color: var(--ink-muted); }
 .gl-also { color: var(--ink-muted); font-weight: 400; }
