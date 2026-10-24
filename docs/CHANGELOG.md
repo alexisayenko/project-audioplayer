@@ -2,7 +2,7 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
-## 2026-10-24 (harmonics lab: Beating view, per-string waveform and view names, web, built, not deployed)
+## 2026-10-24 (harmonics lab: Beating view, per-string waveform and view names, web, deployed as `ad8337e`)
 
 - Web (task-0109, task-0106, WEB-194 to WEB-196, ADR-0048 amended; owner decisions GI3 and GJ, 2026-10-24; no tests run, `node --check`, the pure functions called in a local Chromium page and a 375 px check only): the Waveform has "Show each string" (from 2 strings) that draws every string alone as a faint line under the bright sum, with the hint "Strings are only slightly apart, so you need the Beating view below to see the difference."; a fifth view "Beating" after "Beat bands" shows the amplitude envelope of the sum over about 2 s (longer when the swell is slower), computed from the settings so it works while stopped, with faint per-string H1 and summed-H1 lines and the label "H1 beats about 0.51 Hz: one swell every 1.97 s" (2 strings, 2 cents, 220 Hz), a flat band with "One string: no beating. Set Strings to 2 or more." for 1 string, and "Beating shows the synth strings." for the other sources; every view caption now starts with its technical name (oscilloscope, spectrum analyzer (FFT), spectrogram (sonogram), band-energy / onset view, amplitude envelope view).
 
