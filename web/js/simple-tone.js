@@ -27,18 +27,20 @@ export const MAX_FRAME_MS = 100;
 export const SOUND_SPEED = 343;
 export const NARROW_PX = 480;
 export const SCOPE_TITLE = 'Oscilloscope';
-export const SCOPE_SUB = 'Waveform of the tone: time across, amplitude up, one cycle.';
+export const SCOPE_SUB = 'Waveform of the tone: time across, amplitude up, one cycle; the dot is the pressure now.';
 export const SCOPE_NOTE = 'The bracket: one cycle in time is one wavelength in space (speed of sound 343 m/s divided by the frequency, in air at 20 °C).';
 export const AIR_ROWS = 5;
 export const AIR_GAP = 12;
 export const AIR_MAX_COLS = 56;
-export const AIR_SHIFT_FRAC = 0.12;
+export const AIR_SHIFT_FRAC = 0.07;
 export const AIR_SHIFT_MIN = 16;
-export const AIR_SHIFT_MAX = 48;
+export const AIR_K = 0.45;
+export const AIR_CURVE_H = 44;
 export const AIR_NOW_TEXT = 'now';
 export const AIR_AGO_TEXT = 'one cycle ago';
+export const AIR_CURVE_TEXT = 'air density';
 export const CONE_TITLE = 'Slow motion: the speaker cone';
-export const coneNote = (slow = SLOW) => `Swing exaggerated. The real cone moves a fraction of a millimetre. Here its sine motion runs ${slow} times slower, and each position of the cone matches a position in time on the sine wave above (the dot).`;
+export const coneNote = (slow = SLOW) => `Swing exaggerated. The real cone moves a fraction of a millimetre. Here its motion runs ${slow} times slower. The cone is a quarter cycle behind the pressure: the air is squeezed hardest when the cone moves fastest, in the middle of its swing.`;
 export const CONE_NOTE = coneNote();
 export const PAUSE_TEXT = 'Pause animation';
 export const PLAY_ANIM_TEXT = 'Play animation';
@@ -128,11 +130,11 @@ export function slowReadout(freq, slow = SLOW) {
   return `Slowed ${slow}×: real ${hz} Hz = ${fmtSig(rate)} ${swings} per second (one swing every ${fmtSig(1 / rate)} s); the real cone makes ${hz} swings each second.${fast}`;
 }
 
-export const coneOffset = (phase, amp) => (amp / MAX_AMP) * Math.sin(2 * Math.PI * phase);
+export const coneOffset = (phase, amp) => -(amp / MAX_AMP) * Math.cos(2 * Math.PI * phase);
 
 export const scopeMarker = (phase, amp) => ({ frac: phase, level: amp * Math.sin(2 * Math.PI * phase) });
 
-export const waveShift = (phase, dist, wavelength) => Math.sin(2 * Math.PI * (phase - dist / wavelength));
+export const pressureAt = (phase, dist, wavelength) => Math.sin(2 * Math.PI * (phase - dist / wavelength));
 
 export function wavelengthM(freq) {
   return SOUND_SPEED / freq;
@@ -177,11 +179,11 @@ export function scopeGeometry(w, h) {
   return { left, bottom, pad, row, mid, scale: mid - pad, plotW: Math.max(1, w - left - pad), rowTop: h - bottom - row };
 }
 
-export const airNote =(freq) => `The dots are the air in front of the cone: one dense bunch (high pressure) and one thin gap (low pressure) are one cycle of the wave; the dot on the oscilloscope is the cone's present position. The spacing is schematic: the real wavelength of ${trim(freq, 2)} Hz is about ${fmtWavelength(freq)}.`;
+export const airNote = (freq) => `The dots are the air in front of the cone: one dense bunch (high pressure) and one thin gap (low pressure) are one cycle of the wave; the curve above them is the oscilloscope curve mirrored in time, and the dot on the oscilloscope is the pressure now. The spacing is schematic: the real wavelength of ${trim(freq, 2)} Hz is about ${fmtWavelength(freq)}.`;
 
 export function airGeometry(base, right) {
   const avail = Math.max(0, right - base);
-  const shift = clamp(avail * AIR_SHIFT_FRAC, AIR_SHIFT_MIN, AIR_SHIFT_MAX);
+  const shift = Math.max(AIR_SHIFT_MIN, avail * AIR_SHIFT_FRAC);
   const wavelength = Math.max(1, avail - 2 * shift);
   const cols = clamp(Math.round(wavelength / AIR_GAP), 1, AIR_MAX_COLS);
   return { start: base + shift, wavelength, shift, cols, gap: wavelength / cols };
@@ -189,13 +191,24 @@ export function airGeometry(base, right) {
 
 export const airRest = (geo, col, row) => (col + 0.25 + 0.5 * (row % 2)) * geo.gap;
 
-export const airX = (phase, amp, geo, dist) => geo.start + dist + (amp / MAX_AMP) * geo.shift * waveShift(phase, dist, geo.wavelength);
+export const airK = (amp) => AIR_K * (amp / MAX_AMP);
 
-export const airBunchFrac = (phase) => phase - Math.floor(phase);
+export const airShift = (phase, amp, geo, dist) => -((geo.wavelength / (2 * Math.PI)) * airK(amp)) * Math.cos(2 * Math.PI * (phase - dist / geo.wavelength));
+
+export const airX = (phase, amp, geo, dist) => geo.start + dist + airShift(phase, amp, geo, dist);
+
+export const airBunchFrac = (phase) => {
+  const u = (phase - 0.25) % 1;
+  return u < 0 ? u + 1 : u;
+};
 
 export const airSpeedPx = (geo, freq, slow = SLOW) => (geo.wavelength * slowedHz(freq, slow));
 
-export const airSpacing = (phase, amp, geo, dist) => 1 - ((amp / MAX_AMP) * geo.shift * 2 * Math.PI / geo.wavelength) * Math.cos(2 * Math.PI * (phase - dist / geo.wavelength));
+export const airSpacing = (phase, amp, geo, dist) => 1 - airK(amp) * pressureAt(phase, dist, geo.wavelength);
+
+export const airDensity = (phase, amp, geo, dist) => 1 + airK(amp) * pressureAt(phase, dist, geo.wavelength);
+
+export const airCurve = (phase, amp, frac) => (amp / MAX_AMP) * pressureAt(phase, frac, 1);
 
 export function scopeSeries(amp, points, cycles = CYCLES) {
   const out = new Array(points);
@@ -272,16 +285,53 @@ function drawMarker(g, colors, marker) {
   ctx.restore();
 }
 
+function drawAirCurve(g, colors, geo, phase, amp) {
+  const { ctx } = g;
+  const mid = AIR_CURVE_H / 2;
+  const half = mid - 6;
+  const x0 = geo.start;
+  const steps = clamp(Math.round(geo.wavelength / 2), 24, 400);
+  ctx.save();
+  ctx.strokeStyle = colors.line;
+  ctx.lineWidth = 1;
+  ctx.setLineDash?.([2, 3]);
+  ctx.beginPath(); ctx.moveTo(x0, mid); ctx.lineTo(x0 + geo.wavelength, mid); ctx.stroke();
+  ctx.setLineDash?.([]);
+  ctx.strokeStyle = colors.fill;
+  ctx.fillStyle = colors.fill;
+  ctx.lineWidth = 1.5;
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  for (let i = 0; i <= steps; i += 1) {
+    const frac = i / steps;
+    const x = x0 + frac * geo.wavelength;
+    const y = mid - airCurve(phase, amp, frac) * half;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  const level = airCurve(phase, amp, 0);
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(x0, mid); ctx.lineTo(x0, mid - level * half); ctx.stroke();
+  ctx.beginPath(); ctx.arc(x0, mid - level * half, 4, 0, 2 * Math.PI); ctx.fill();
+  ctx.font = `10px ${colors.font}`;
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = colors.muted;
+  ctx.fillText(AIR_CURVE_TEXT, x0 - 10, mid);
+  ctx.restore();
+}
+
 function drawCone(g, colors, phase, amp) {
   const { ctx, w, h } = g;
-  const cy = h / 2;
+  const top = AIR_CURVE_H;
+  const cy = top + (h - top) / 2;
   const travel = clamp(w * 0.07, 16, 28);
   const swing = coneOffset(phase, amp) * travel;
   const magnetX = 10;
   const magnetW = 26;
   const magnetH = 44;
   const restX = magnetX + magnetW + 54;
-  const radius = Math.max(20, Math.min(50, h / 2 - 12));
+  const radius = Math.max(20, Math.min(50, (h - top) / 2 - 12));
   const rimX = restX + swing;
   const apexX = rimX - 22;
   ctx.clearRect(0, 0, w, h);
@@ -348,6 +398,7 @@ function drawCone(g, colors, phase, amp) {
   ctx.fillText(AIR_NOW_TEXT, areaL, legendY + 5);
   ctx.textAlign = 'right';
   ctx.fillText(AIR_AGO_TEXT, areaR, legendY + 5);
+  drawAirCurve(g, colors, geo, phase, amp);
   ctx.fillStyle = colors.fill;
   ctx.globalAlpha = 0.85;
   for (let r = 0; r < AIR_ROWS; r += 1) {
@@ -539,7 +590,7 @@ export function createSimpleCard(env = {}) {
     readoutOut.textContent = readout(p);
     canvas.setAttribute('aria-label', `Oscilloscope: sine wave, ${p.freq} Hz, amplitude ${fmtPct(p.amp * 100)} % of full scale, one cycle; ${cycleLabels(p.freq)[0]}, at 20 °C`);
     canvas.setAttribute('title', `${cycleLabels(p.freq)[0]} (speed of sound 343 m/s at 20 °C)`);
-    coneCanvas.setAttribute('aria-label', `Side view of a speaker cone moving ${slow} times slower than real, matching the ${p.freq} Hz sine wave above, swing in proportion to the amplitude, ${fmtPct(p.amp * 100)} % of full scale; the air dots in front of the cone show one cycle of the wave as one dense bunch and one thin gap`);
+    coneCanvas.setAttribute('aria-label', `Side view of a speaker cone moving ${slow} times slower than real at ${p.freq} Hz, swing in proportion to the amplitude, ${fmtPct(p.amp * 100)} % of full scale; the cone is a quarter cycle behind the pressure on the oscilloscope above; the air dots in front of the cone show one cycle of the wave as one dense bunch and one thin gap, and the curve above them is the oscilloscope curve mirrored in time, the air density`);
     slowOut.textContent = slowReadout(p.freq, slow);
     coneNoteOut.textContent = coneNote(slow);
     airOut.textContent = airNote(p.freq);

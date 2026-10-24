@@ -122,23 +122,71 @@ test('WEB-204: the readout states the slowed rate and warns above 5 swings per s
   assert.match(s.slowReadout(1000), /= 1 swing per second \(one swing every 1 s\)/);
 });
 
-test('WEB-204: the cone and the oscilloscope dot share one phase: far point on the peak, middle on a zero crossing', () => {
-  assert.ok(near(s.coneOffset(0.25, 0.8), 1));
-  assert.ok(near(s.coneOffset(0.25, 0.3), 0.375));
-  assert.ok(near(s.coneOffset(0.5, 0.3), 0, 1e-12));
+test('WEB-204: the cone is a quarter cycle behind the pressure: mid-swing at the pressure peak, at an extreme at zero pressure', () => {
+  assert.ok(near(s.coneOffset(0.25, 0.8), 0, 1e-12));
+  assert.ok(near(s.coneOffset(0, 0.8), -1));
+  assert.ok(near(s.coneOffset(0.5, 0.8), 1));
+  assert.ok(near(s.coneOffset(0.5, 0.3), 0.375));
+  assert.ok(near(s.coneOffset(0.75, 0.3), 0, 1e-12));
   const peak = s.scopeMarker(0.25, 0.3);
   assert.ok(near(peak.level, 0.3) && peak.frac === 0.25);
   assert.ok(near(s.scopeMarker(0.5, 0.3).level, 0, 1e-12));
-  assert.ok(near(s.waveShift(0.25, 0, 200), 1));
-  assert.ok(near(s.waveShift(0.25, 50, 200), 0, 1e-12));
+  assert.ok(near(s.pressureAt(0.25, 0, 200), 1));
+  assert.ok(near(s.pressureAt(0.25, 50, 200), 0, 1e-12));
+  const dt = 1e-6;
+  for (const phase of [0.1, 0.25, 0.4, 0.5, 0.8]) {
+    const velocity = (s.coneOffset(phase + dt, 0.8) - s.coneOffset(phase - dt, 0.8)) / (2 * dt);
+    assert.ok(near(velocity / (2 * Math.PI), Math.sin(2 * Math.PI * phase), 1e-6));
+  }
+});
+
+test('WEB-204: the air density at distance x is the oscilloscope pressure at time t - x/c, mirrored in time across the area', () => {
+  const geo = s.airGeometry(122, 367);
+  for (const phase of [0, 0.1, 0.25, 0.6, 0.75]) {
+    for (const u of [0, 0.2, 0.5, 0.85]) {
+      const scope = Math.sin(2 * Math.PI * (phase - u));
+      assert.ok(near(s.airDensity(phase, 0.8, geo, u * geo.wavelength) - 1, s.airK(0.8) * scope, 1e-12));
+      assert.ok(near(s.airCurve(phase, 0.3, u) * 0.8, 0.3 * scope, 1e-12));
+    }
+  }
+  assert.ok(near(s.airCurve(0.25, 0.8, 0), 1));
+  assert.ok(near(s.airCurve(0.75, 0.8, 0), -1));
+  assert.ok(near(s.airCurve(0.6, 0.3, 0) * 0.8, s.scopeMarker(0.6, 0.3).level, 1e-12));
+  assert.ok(s.airDensity(0.25, 0.8, geo, 0) > s.airDensity(0.25, 0.8, geo, 0.5 * geo.wavelength));
+  assert.ok(s.airSpacing(0.25, 0.8, geo, 0) < 1 && s.airSpacing(0.75, 0.8, geo, 0) > 1);
+  assert.ok(s.airSpacing(0.25, 0.8, geo, 0) < s.airSpacing(0, 0.8, geo, 0));
+});
+
+test('WEB-204: the dot displacement field gives density 1 - ds/dx and the dots never cross', () => {
+  const geo = s.airGeometry(122, 367);
+  const h = 1e-4;
+  for (const phase of [0, 0.3, 0.7]) {
+    for (const u of [0.1, 0.4, 0.9]) {
+      const x = u * geo.wavelength;
+      const dsdx = (s.airShift(phase, 0.8, geo, x + h) - s.airShift(phase, 0.8, geo, x - h)) / (2 * h);
+      assert.ok(near(1 - dsdx, s.airDensity(phase, 0.8, geo, x), 1e-6));
+    }
+  }
+  for (const phase of [0, 0.2, 0.45, 0.8]) {
+    let last = -Infinity;
+    for (let i = 0; i < 400; i += 1) {
+      const x = s.airX(phase, 0.8, geo, (i / 400) * geo.wavelength);
+      assert.ok(x > last);
+      last = x;
+    }
+  }
+  assert.ok(s.airGeometry(122, 5000).shift >= (s.airGeometry(122, 5000).wavelength / (2 * Math.PI)) * s.AIR_K);
+  assert.ok(s.airGeometry(122, 367).shift >= (s.airGeometry(122, 367).wavelength / (2 * Math.PI)) * s.AIR_K);
 });
 
 test('WEB-204: the air pattern is exactly one wavelength across the visible area, matching the one-cycle oscilloscope', () => {
   const geo = s.airGeometry(122, 367);
   assert.ok(near(geo.start + geo.wavelength + geo.shift, 367, 1e-9));
-  assert.ok(near(s.waveShift(0.3, 0, geo.wavelength), s.waveShift(0.3, geo.wavelength, geo.wavelength), 1e-12));
+  assert.ok(near(s.pressureAt(0.3, 0, geo.wavelength), s.pressureAt(0.3, geo.wavelength, geo.wavelength), 1e-12));
   assert.ok(near(s.airX(0.3, 0.8, geo, 0) - geo.start, s.airX(0.3, 0.8, geo, geo.wavelength) - geo.start - geo.wavelength, 1e-9));
-  assert.ok(near(s.airBunchFrac(1.25), 0.25, 1e-12));
+  assert.ok(near(s.airBunchFrac(1.25), 0, 1e-12));
+  assert.ok(near(s.airBunchFrac(0.75), 0.5, 1e-12));
+  assert.ok(near(s.airBunchFrac(0.1), 0.85, 1e-12));
   assert.ok(near(s.airBunchFrac(0.25), s.airBunchFrac(1.25), 1e-12));
   for (const phase of [0, 0.25, 0.6, 0.9]) {
     let best = 0;
@@ -154,8 +202,8 @@ test('WEB-204: the air pattern is exactly one wavelength across the visible area
     assert.equal(count, 1);
     assert.ok(Math.abs(found / n - s.airBunchFrac(phase)) < 1.5 / n || Math.abs(found / n - s.airBunchFrac(phase)) > 1 - 1.5 / n);
   }
-  assert.ok(s.airSpacing(0.25, 0.8, geo, 0.25 * geo.wavelength) < 1);
-  assert.ok(s.airSpacing(0.25, 0.8, geo, 0.75 * geo.wavelength) > 1);
+  assert.ok(s.airSpacing(0.25, 0.8, geo, 0.1 * geo.wavelength) < 1);
+  assert.ok(s.airSpacing(0.25, 0.8, geo, 0.6 * geo.wavelength) > 1);
   assert.ok(s.airGeometry(122, 367).cols * s.AIR_ROWS < 300);
   assert.ok(s.airGeometry(122, 5000).cols * s.AIR_ROWS < 300);
 });
@@ -195,7 +243,10 @@ test('WEB-197: the bracket row lies below the curve area and above the axis labe
 test('WEB-197: the Primitive oscilloscope block is titled Oscilloscope with a waveform subtitle', () => {
   const card = s.createSimpleCard(fakeCtx().env);
   assert.ok(card.node.querySelectorAll('h3').some((h) => h.textContent === 'Oscilloscope'));
-  assert.ok(card.node.textContent.includes('Waveform of the tone: time across, amplitude up, one cycle.'));
+  assert.ok(card.node.textContent.includes('Waveform of the tone: time across, amplitude up, one cycle; the dot is the pressure now.'));
+  assert.ok(card.node.textContent.includes('The cone is a quarter cycle behind the pressure: the air is squeezed hardest when the cone moves fastest, in the middle of its swing.'));
+  assert.ok(card.node.textContent.includes('the curve above them is the oscilloscope curve mirrored in time, and the dot on the oscilloscope is the pressure now'));
+  assert.ok(!card.node.textContent.includes("the cone's present position"));
   card.dispose();
 });
 
