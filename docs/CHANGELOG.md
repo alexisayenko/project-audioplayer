@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-24 (save queue as playlist follow-up task note, docs only)
+
+- Docs: follow-up task note (owner request 2026-10-24): [task-0105](tasks/task-0105.md) "Save queue as playlist" (phase 3 of task-0058, PLS-013: the button, naming, caps, toast, open questions A to C); nothing built.
+
 ## 2026-10-24 (Play button on the playlist list rows, web, deployed)
 
 - Web (owner, 2026-10-24, screenshot of a list row: "replace the + button with 'play now the whole playlist' - replace the queue"; [task-0058](tasks/task-0058.md), PLS-139, PLS-134 withdrawn; deployed 2026-10-24 as `cb13ef8`; no tests run or written, `node --check` and a browser check at 500 and 375 px against a local server with fixture songs, one without audio, and two playlists): the plus of each Playlists row is now a play button ("Play playlist <name>", same slot, size and 44 px hit area). It replaces the queue with the whole playlist and starts the first song, with the same toasts as "Play playlist" on the playlist page ("N songs without audio skipped", "No playable songs", Shuffle turned off), and stays on the list; the button is disabled while the playlist loads and a failure shows a toast. Both buttons share one function (`playSongs` in `web/js/playlist-play.js`). The `?add=1` shortcut and its focus code are removed; the add-songs box is still on the playlist page.
