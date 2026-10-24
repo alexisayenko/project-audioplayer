@@ -1,6 +1,7 @@
 import { el } from './dom.js';
 import { createMicCard } from './mic-tool.js';
 import { createHarmonicsCard } from './harmonics.js';
+import { createListenCard } from './listen.js';
 
 export const TOOLS_NOTE = 'Temporary home for audio tools.';
 
@@ -11,7 +12,9 @@ function mountCards(panel, cards, note) {
 
 export const mountMic = (panel, env = {}) => mountCards(panel, [createMicCard(env)]);
 
-export const mountChordophones = (panel, env = {}) => mountCards(panel, [createHarmonicsCard(env.harmonics)]);
+export const mountListen = (panel, env = {}) => mountCards(panel, [createListenCard(env.listen)]);
+
+export const mountChordophones =(panel, env = {}) => mountCards(panel, [createHarmonicsCard(env.harmonics)]);
 
 export function mountTools(panel, env = {}) {
   const cards = [createMicCard(env), createHarmonicsCard(env.harmonics)];

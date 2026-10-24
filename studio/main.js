@@ -1,5 +1,5 @@
 import { el } from '../web/js/dom.js';
-import { mountMic, mountChordophones } from '../web/js/studio-tools.js';
+import { mountMic, mountListen, mountChordophones } from '../web/js/studio-tools.js';
 import { mountSimple } from '../web/js/simple-tone.js';
 import { PAGES, pageFromHash } from './routes.js';
 import { mountPlaceholder } from './placeholders.js';
@@ -10,7 +10,8 @@ const MOUNT = {
   'synthesize/aerophones': (pane) => mountPlaceholder(pane, 'synthesize/aerophones'),
   'synthesize/membranophones': (pane) => mountPlaceholder(pane, 'synthesize/membranophones'),
   'synthesize/idiophones': (pane) => mountPlaceholder(pane, 'synthesize/idiophones'),
-  'analyze/bpm': (pane) => mountMic(pane, { standalone: true }),
+  'analyze/listen': (pane) => mountListen(pane),
+  'analyze/bpm':(pane) => mountMic(pane, { standalone: true }),
 };
 
 const root = document.getElementById('app');
