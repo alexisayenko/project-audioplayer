@@ -28,12 +28,15 @@ export function createMicBpm({ create = createLiveBpm } = {}) {
   let quietS = 0;
   let silent = true;
   let recent = [];
+  let levelDb = -Infinity;
 
   return {
     get silent() { return silent; },
     push(samples, sampleRate) {
       if (!samples.length || !(sampleRate > 0)) return;
-      quietS = rmsOf(samples) < SILENT_RMS ? quietS + samples.length / sampleRate : 0;
+      const rms = rmsOf(samples);
+      levelDb = rms > 0 ? 20 * Math.log10(rms) : -Infinity;
+      quietS = rms < SILENT_RMS ? quietS + samples.length / sampleRate : 0;
       const quiet = quietS >= SILENT_HOLD_S;
       if (quiet && !silent) { det.reset(); recent = []; }
       silent = quiet;
@@ -48,7 +51,12 @@ export function createMicBpm({ create = createLiveBpm } = {}) {
       if (!recent.length) return null;
       return Math.round(recent.slice().sort((a, b) => a - b)[recent.length >> 1]);
     },
+    details() {
+      const d = silent ? null : det.details?.();
+      return { levelDb, silent, windowS: d?.windowS ?? 0, candidates: d?.candidates ?? [] };
+    },
     reset() {
+      levelDb = -Infinity;
       det.reset();
       recent = [];
       quietS = 0;

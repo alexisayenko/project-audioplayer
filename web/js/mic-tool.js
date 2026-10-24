@@ -48,15 +48,36 @@ export function createMicCard(env = {}) {
   const bar = el('div', { class: 'mt-meter-bar' });
   const meter = el('div', { class: 'mt-meter', role: 'meter', 'aria-label': 'Microphone level', 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': '0' }, bar);
   const state = el('p', { class: 'mt-state t-subhead', role: 'status', 'aria-live': 'polite' }, TEXT.idle);
+  const dLevel = el('p', { class: 'mt-detail' });
+  const dWindow = el('p', { class: 'mt-detail' });
+  const dList = el('ol', { class: 'mt-candidates' });
+  const details = el('details', { class: 'mt-details' },
+    el('summary', {}, 'Details'),
+    dLevel, dWindow,
+    el('p', { class: 'mt-detail' }, 'Top candidates (score 0 to 1):'),
+    dList);
   const node = el('section', { class: 'card mt-card', 'aria-label': TITLE },
     el('h2', { class: 't-headline' }, TITLE),
     el('div', { class: 'mt-row' }, badge, button),
+    details,
     meter, state,
     el('p', { class: 'mt-caption muted t-caption' }, env.standalone ? CAPTION_STANDALONE : CAPTION));
 
   function paintBpm(bpm) {
     value.textContent = bpm == null ? IDLE_VALUE : String(bpm);
     badge.setAttribute('aria-label', bpm == null ? 'BPM not detected' : `BPM ${bpm}`);
+  }
+
+  function paintDetails(info) {
+    const db = info?.levelDb;
+    dLevel.textContent = `Level: ${Number.isFinite(db) ? db.toFixed(1) : '-'} dBFS`;
+    dWindow.textContent = `Window: ${info?.windowS ? info.windowS.toFixed(1) : '-'} s`;
+    const rows = (info?.candidates ?? []).map((c) => el('li', {}, `${Math.round(c.bpm)} BPM (${c.score.toFixed(2)})`));
+    dList.replaceChildren(...(rows.length ? rows : [el('li', {}, 'none')]));
+  }
+
+  function refreshDetails() {
+    if (details.open) paintDetails(run ? run.bpm.details?.() : null);
   }
 
   function paintLevel(fraction) {
@@ -95,6 +116,7 @@ export function createMicCard(env = {}) {
     if (gone) return;
     paintBpm(null);
     paintLevel(0);
+    refreshDetails();
     paintButton();
     say(key);
   }
@@ -154,14 +176,14 @@ export function createMicCard(env = {}) {
     const listen = (target, type, fn) => { target?.addEventListener?.(type, fn); off.push(() => target?.removeEventListener?.(type, fn)); };
     const startedAt = Date.now();
     run = {
-      ctx, stream, proc, nodes: [source, analyser, proc, mute], off,
+      ctx, stream, proc, bpm, nodes: [source, analyser, proc, mute], off,
       timers: [
         setInterval(() => {
           analyser.getFloatTimeDomainData(buf);
           held = Math.max(levelFraction(rmsOf(buf)), held - METER_FALL);
           paintLevel(held);
         }, METER_MS),
-        setInterval(() => paintBpm(bpm.value()), PUBLISH_MS),
+        setInterval(() => { paintBpm(bpm.value()); refreshDetails(); }, PUBLISH_MS),
         setTimeout(() => stop('timeout'), MAX_RUN_MS),
       ],
     };
@@ -172,6 +194,9 @@ export function createMicCard(env = {}) {
     say('listening');
     paintButton();
   }
+
+  details.addEventListener('toggle', refreshDetails);
+  paintDetails(null);
 
   return {
     node,

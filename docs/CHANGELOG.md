@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-25 (Live BPM fast-tempo fix and Details row, built, not deployed)
+
+- Web (task-0073, WEB-177, STU-023; owner: "live bpm cant detect moby thousand"; no tests run, synthetic node checks of the engine, the build and the Browser pane with a fake 1000 BPM microphone only): the shared engine `live-bpm.js` accepts a weaker pulse above 250 BPM (peak-to-mean 4 instead of 6, lock 0.5) and lets the 3 s window override the 6 s one only with a lock of 0.45, which fixes 1000 BPM beats masked by vocal-like and horn-like sound on synthetic mixes; the studio Live BPM card has a collapsed "Details" row (level in dBFS, window, top 3 candidates). The real track was not tested.
+
 ## 2026-10-25 (Studio Listen page, deployed to studio.electrophone.cc as `141f22c`; the main app is unchanged)
 
 - Web (task-0108, task-0111, task-0114, STU-005, STU-006, STU-009, STU-018 to STU-022, WEB-190; owner decision GX1 2026-10-24 and "remove player for now"; no tests run, `node --check`, the build and the Browser pane at desktop and 375 px with a fake microphone only): new Analyze page "Listen" (`#/analyze/listen`, first Analyze item, target of `#/analyze`) with Start/Stop for the microphone, a dBFS level meter (big RMS readout, RMS and Peak bars, a "Peak hold" button that resets on click, the note that dBFS is not dB SPL), the waveform with a 40 ms or 1, 2, 4 cycles window, the spectrum with the peak readout, the spectrogram and Beat bands; Chordophones lost its Source switch (synth only); no Player source is offered on the site; the drawing moved to the shared `web/js/listen-views.js`. `studio-site.test.mjs` updated and `listen-views.test.mjs` added, not run.

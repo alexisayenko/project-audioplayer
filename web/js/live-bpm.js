@@ -10,6 +10,10 @@ export const TIE_MARGIN = 0.15;
 export const FUNDAMENTAL_TIE = 0.05;
 export const LOCK_MIN = 0.3;
 export const CREST_MIN = 6;
+export const CREST_FAST_MIN = 4;
+export const FAST_BPM = 250;
+export const FAST_LOCK = 0.5;
+export const SHORT_LOCK = 0.45;
 
 const LOW_HZ = 150;
 const MID_HZ = 1500;
@@ -28,6 +32,7 @@ const USUAL_MIN_BPM = 60;
 const USUAL_MAX_BPM = 200;
 const MATCH_TOLERANCE = 0.03;
 const HARMONIC_FLOOR = 0.5;
+const DEBUG_CANDIDATES = 3;
 
 export function createOnsetExtractor(sampleRate) {
   const hop = Math.max(1, Math.round(sampleRate / ENV_RATE));
@@ -190,8 +195,20 @@ function refine(peaks, first, maxLag) {
   return current;
 }
 
-function pick(r, w, minLag, maxLag, rate, hint, sigmaS) {
+function listCandidates(peaks, bpmOf) {
+  const out = [];
+  for (const p of peaks.slice().sort((a, b) => b.h - a.h)) {
+    const bpm = bpmOf(p.lag);
+    if (out.some((c) => Math.abs(c.bpm / bpm - 1) < MATCH_TOLERANCE)) continue;
+    out.push({ bpm, score: p.h });
+    if (out.length === DEBUG_CANDIDATES) break;
+  }
+  return out;
+}
+
+function pick(r, w, minLag, maxLag, rate, hint, sigmaS, trace) {
   const peaks = findPeaks(smoothed(r, minLag, maxLag, sigmaS * rate), minLag, maxLag, w);
+  if (trace) trace.candidates = listCandidates(peaks, (lag) => (60 * rate) / lag);
   if (!peaks.length) return null;
   let top = 0;
   for (const p of peaks) if (p.h > top) top = p.h;
@@ -216,7 +233,7 @@ function pick(r, w, minLag, maxLag, rate, hint, sigmaS) {
     }
   }
   const bpm = bpmOf(refine(peaks, chosen, maxLag));
-  return bpm >= MIN_BPM * 0.97 && bpm <= MAX_BPM * 1.03 ? bpm : null;
+  return bpm >= MIN_BPM * 0.97 && bpm <= MAX_BPM * 1.03 ? { bpm, top } : null;
 }
 
 function crest(env) {
@@ -229,10 +246,12 @@ function crest(env) {
   return total > 0 ? top / count / (total / sorted.length) : 0;
 }
 
-export function estimateFromEnvelope(env, rate, hint = null, minSpanS = MIN_SPAN_S) {
+export function estimateFromEnvelope(env, rate, hint = null, minSpanS = MIN_SPAN_S, trace = null) {
   const n = env.length;
   if (n < minSpanS * rate) return null;
-  if (crest(env) < CREST_MIN) return null;
+  const peakiness = crest(env);
+  if (peakiness < CREST_FAST_MIN) return null;
+  const accept = (res) => res !== null && (peakiness >= CREST_MIN || (res.bpm > FAST_BPM && res.top >= FAST_LOCK)) ? res.bpm : null;
   const w = taperWindow(n, rate);
   let weight = 0;
   let total = 0;
@@ -246,11 +265,14 @@ export function estimateFromEnvelope(env, rate, hint = null, minSpanS = MIN_SPAN
   const { r, power } = autocorrelation(x, minLag - half, maxLag + half, half);
   if (power === 0) return null;
   let found = null;
+  let foundTop = 0;
   for (const [sigma, limit] of SMOOTHING_LADDER) {
-    const bpm = pick(r, w, minLag, maxLag, rate, hint, sigma);
-    if (bpm !== null) found = bpm;
-    if (bpm !== null && bpm <= limit) return bpm;
+    const res = pick(r, w, minLag, maxLag, rate, hint, sigma, trace);
+    const bpm = accept(res);
+    if (bpm !== null) { found = bpm; foundTop = res.top; }
+    if (bpm !== null && bpm <= limit) break;
   }
+  if (trace) trace.top = foundTop;
   return found;
 }
 
@@ -301,16 +323,25 @@ export function createLiveBpm({ windowS = WINDOW_S, shortS = SHORT_S } = {}) {
       filled += add;
     },
     envelopeLength() { return filled; },
-    estimateExact() {
+    estimateExact() { return this.analyse(null); },
+    analyse(trace) {
       if (!extractor) return null;
       const rate = extractor.rate;
       const all = env.subarray(0, filled);
-      const long = estimateFromEnvelope(all, rate, hint);
+      const t = trace ?? { long: {}, short: {} };
+      const long = estimateFromEnvelope(all, rate, hint, MIN_SPAN_S, t.long);
       const recentN = Math.round(shortS * rate);
+      t.windowS = filled / rate;
       if (filled < recentN) return long;
-      const short = estimateFromEnvelope(all.subarray(filled - recentN), rate, hint, shortS);
+      const short = estimateFromEnvelope(all.subarray(filled - recentN), rate, hint, shortS, t.short);
       if (short === null || long === null) return long === null && filled < MIN_SPAN_S * rate ? short : long;
-      return sameTempo(short, long) ? long : short;
+      if (sameTempo(short, long)) return long;
+      return t.short.top >= SHORT_LOCK ? short : long;
+    },
+    details() {
+      const trace = { long: {}, short: {}, windowS: 0 };
+      const bpm = this.analyse(trace);
+      return { bpm, windowS: trace.windowS, candidates: trace.long.candidates ?? [], shortCandidates: trace.short.candidates ?? [] };
     },
     estimate() {
       const exact = this.estimateExact();
