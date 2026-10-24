@@ -75,3 +75,67 @@ test('STU-021: the lab keeps exporting the shared live-analysis helpers from one
   assert.equal(h.SOURCES, undefined);
   assert.equal(h.createMicInput, undefined);
 });
+
+test('STU-027: freqAt is the inverse of freqPos on the linear and the log axis, with the exact axis ends', () => {
+  assert.equal(v.freqAt(0, 'linear', 5000), 0);
+  assert.equal(v.freqAt(1, 'linear', 5000), 5000);
+  assert.equal(v.freqAt(0.25, 'linear', 2000), 500);
+  assert.ok(Math.abs(v.freqAt(0, 'log', 0) - 20) < 1e-9);
+  assert.ok(Math.abs(v.freqAt(1, 'log', 0) - 20000) < 1e-6);
+  assert.equal(v.freqAt(-1, 'linear', 5000), 0);
+  assert.equal(v.freqAt(2, 'log', 0), 20000);
+  for (const [axis, max] of [['linear', 2000], ['linear', 10000], ['log', 20000]]) {
+    for (const f of [30, 220, 880, 1500, 1900]) {
+      assert.ok(Math.abs(v.freqAt(v.freqPos(f, axis, max), axis, max) - f) < 1e-6, `${axis} ${max} ${f}`);
+    }
+  }
+});
+
+test('STU-027: specX and specFreq map a pixel to a frequency and back with the same geometry as the grid', () => {
+  const geo = v.specGeo(375, 210);
+  assert.deepEqual(geo, { left: 34, top: 30, plotW: 333, plotH: 162 });
+  const lin = { axis: 'linear', max: 5000 };
+  const log = { axis: 'log', max: 20000 };
+  assert.equal(v.specX(0, lin, geo), 34);
+  assert.equal(v.specX(5000, lin, geo), 367);
+  assert.equal(v.specFreq(200.5, lin, geo), 2500);
+  assert.ok(Math.abs(v.specFreq(v.specX(220, log, geo), log, geo) - 220) < 1e-6);
+  assert.ok(Math.abs(v.specFreq(v.specX(220, lin, geo), lin, geo) - 220) < 1e-6);
+});
+
+test('STU-027: fmtHoverHz uses whole Hz below 1 kHz and two decimals in kHz', () => {
+  assert.equal(v.fmtHoverHz(220.4), '220 Hz');
+  assert.equal(v.fmtHoverHz(999.6), '1.00 kHz');
+  assert.equal(v.fmtHoverHz(1234.5), '1.23 kHz');
+  assert.equal(v.fmtHoverHz(12000), '12.00 kHz');
+  assert.equal(v.fmtHoverHz(NaN), '-');
+});
+
+test('STU-027: specHover reads frequency, note and level at the pointer, outside the plot it is null', () => {
+  const geo = v.specGeo(375, 210);
+  const lin = { axis: 'linear', max: 5000 };
+  const levels = new Float32Array(333).fill(-40);
+  const x = v.specX(220, lin, geo);
+  const hit = v.specHover(x, geo, lin, { levels });
+  assert.equal(hit.x, x);
+  assert.equal(hit.title, '220 Hz');
+  assert.equal(hit.sub, 'A3 +0 cents · -40.0 dB');
+  assert.equal(v.specHover(x, geo, lin, {}).sub, 'A3 +0 cents · -');
+  assert.equal(v.specHover(10, geo, lin, { levels }), null);
+  assert.equal(v.specHover(geo.left + geo.plotW + 1, geo, lin, { levels }), null);
+  const quiet = new Float32Array(333).fill(-95);
+  assert.ok(v.specHover(x, geo, lin, { levels: quiet }).sub.endsWith('· -'));
+});
+
+test('STU-027: specHover snaps to a harmonic bar within 8 px and keeps the line on the bar', () => {
+  const geo = v.specGeo(375, 210);
+  const log = { axis: 'log', max: 20000 };
+  const bars = [220, 440, 660].map((freq, i) => ({ x: v.specX(freq, log, geo), freq, name: `H${i + 1}`, db: -20 - i }));
+  const snapped = v.specHover(bars[2].x + 5, geo, log, { bars });
+  assert.equal(snapped.x, bars[2].x);
+  assert.equal(snapped.title, 'H3 · 660 Hz');
+  assert.equal(snapped.sub, 'E5 +2 cents · -22.0 dB');
+  const far = v.specHover(bars[2].x + 9, geo, log, { bars });
+  assert.equal(far.x, bars[2].x + 9);
+  assert.ok(!far.title.startsWith('H'));
+});

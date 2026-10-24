@@ -6,6 +6,7 @@ import { mixColor } from './viz-color.js';
 import {
   MAX_RUN_MS, AUDIBLE_MAX_HZ, ANALYSER_DB_OFFSET, SPECTRUM_MIN_HZ, SPECTRUM_MAX_HZ, DB_MIN,
   LIVE_VIEW_NAMES, clamp, noteInfo, fmtHz, axisText, axisCaption, linearTicks, pickLabels, gramTicks, fit, css, drawSpecGrid,
+  specHover, drawSpecHover, trackHover,
   createFeeder, createColors, createAxisControl, createGramView, createBandsView, view,
 } from './listen-views.js';
 
@@ -925,9 +926,10 @@ function drawBeatingView(g, colors, data) {
   }
 }
 
-function drawSpectrumView(g, colors, rows, levels, range) {
+function drawSpectrumView(g, colors, rows, levels, range, hoverX = null) {
   const { ctx, w } = g;
-  const { yOf, xOf } = drawSpecGrid(g, colors, range);
+  const geo = drawSpecGrid(g, colors, range);
+  const { yOf, xOf } = geo;
   const bars = [];
   rows.forEach((r, i) => {
     if (r.played && levels[i] > DB_MIN) bars.push({ r, db: levels[i], x: xOf(r.freq) });
@@ -956,6 +958,10 @@ function drawSpectrumView(g, colors, rows, levels, range) {
     ctx.fillText(it.name, it.x, y - 11);
   }
   for (const r of rows) if (r.played && r.muted) drawMutedMark(g, colors, r, xOf(r.freq), base);
+  if (hoverX !== null) {
+    const hits = bars.map((b) => ({ x: b.x, freq: b.r.freq, name: `H${b.r.n}`, db: b.db }));
+    drawSpecHover(g, colors, geo, specHover(hoverX, geo, range, { bars: hits }));
+  }
 }
 
 function drawMutedMark(g, colors, row, x0, base) {
@@ -1104,6 +1110,7 @@ export function createHarmonicsCard(env = {}) {
 
   const waveCanvas = el('canvas', { class: 'hm-canvas', role: 'img' });
   const specCanvas = el('canvas', { class: 'hm-canvas', role: 'img' });
+  const specPointer = trackHover(specCanvas, paintSpectrum);
   const beatCanvas = el('canvas', { class: 'hm-canvas', role: 'img' });
   const beatCap = el('p', { class: 'hm-cap muted t-caption' });
   const beatingOut = el('p', { class: 'hm-beat t-subhead', hidden: true });
@@ -1332,7 +1339,7 @@ export function createHarmonicsCard(env = {}) {
       f.an.getFloatFrequencyData(f.b.freq);
       levels = barLevels(rows, f.b.freq, f.sr, params.strings > 1 ? params.detune : 0);
     }
-    drawSpectrumView(g, colors(), rows, levels, rangeNow());
+    drawSpectrumView(g, colors(), rows, levels, rangeNow(), specPointer.x);
   }
 
   function paintStatic() {

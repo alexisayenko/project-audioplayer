@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-25 (Studio Spectrum hover readout, built, not deployed)
+
+- Web (WEB-203, STU-027; owner: "in Spectrum, when the mouse hovers, show a vertical line and the frequency value where the mouse is"; no tests run, `node --check`, the build and the Browser pane at desktop and 375 px with a fake 220 Hz microphone only): on Listen and Chordophones the Spectrum shows a vertical line and a label (frequency, nearest note with cents, level in dB) at the pointer or finger; on Linear and Log it uses the same frequency mapping as the drawing (`freqAt`, `specFreq`, `specX`), Chordophones snaps to a harmonic bar within 8 px ("H3 · 660 Hz"). `listen-views.test.mjs` extended, not run.
+
 ## 2026-10-25 (Live BPM fast-tempo fix and Details row, deployed to studio.electrophone.cc and the main app as `cb9aef4`)
 
 - Web (task-0073, WEB-177, STU-023; owner: "live bpm cant detect moby thousand"; no tests run, synthetic node checks of the engine, the build and the Browser pane with a fake 1000 BPM microphone only): the shared engine `live-bpm.js` accepts a weaker pulse above 250 BPM (peak-to-mean 4 instead of 6, lock 0.5) and lets the 3 s window override the 6 s one only with a lock of 0.45, which fixes 1000 BPM beats masked by vocal-like and horn-like sound on synthetic mixes; the studio Live BPM card has a collapsed "Details" row (level in dBFS, window, top 3 candidates). The real track was not tested.

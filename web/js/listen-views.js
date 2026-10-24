@@ -66,6 +66,21 @@ export function freqPos(f, axis, max) {
   return axis === 'log' ? logPos(f) : clamp(f / max, 0, 1);
 }
 
+export function freqAt(pos, axis, max) {
+  const p = clamp(pos, 0, 1);
+  return axis === 'log' ? SPECTRUM_MIN_HZ * (SPECTRUM_MAX_HZ / SPECTRUM_MIN_HZ) ** p : max * p;
+}
+
+export const SPEC_PAD = { left: 34, right: 8, top: 30, bottom: 18 };
+
+export function specGeo(w, h) {
+  const { left, right, top, bottom } = SPEC_PAD;
+  return { left, top, plotW: Math.max(1, w - left - right), plotH: Math.max(1, h - top - bottom) };
+}
+
+export const specX = (f, range, geo) => geo.left + freqPos(f, range.axis, range.max) * geo.plotW;
+export const specFreq = (x, range, geo) => freqAt((x - geo.left) / geo.plotW, range.axis, range.max);
+
 export function fmtTick(f) {
   return f >= 1000 ? `${+(f / 1000).toFixed(2)} kHz` : `${+f.toFixed(1)} Hz`;
 }
@@ -93,7 +108,7 @@ export function pickLabels(items, minGap, lo = -Infinity, hi = Infinity) {
 export function gramRows(rowCount, sampleRate, bins, axis = 'log', max = SPECTRUM_MAX_HZ) {
   const bw = sampleRate / (2 * bins);
   const rows = [];
-  const edge = (t) => (axis === 'log' ? SPECTRUM_MIN_HZ * (SPECTRUM_MAX_HZ / SPECTRUM_MIN_HZ) ** t : max * t);
+  const edge = (t) => freqAt(t, axis, max);
   for (let r = 0; r < rowCount; r += 1) {
     const lo = edge(1 - (r + 1) / rowCount);
     const hi = edge(1 - r / rowCount);
@@ -189,7 +204,7 @@ export function curveLevels(freqData, sampleRate, range, count) {
   const bins = freqData.length;
   const bw = sampleRate / (2 * bins);
   const out = new Float32Array(count);
-  const edge = (t) => (range.axis === 'log' ? SPECTRUM_MIN_HZ * (SPECTRUM_MAX_HZ / SPECTRUM_MIN_HZ) ** t : range.max * t);
+  const edge = (t) => freqAt(t, range.axis, range.max);
   for (let i = 0; i < count; i += 1) {
     const lo = edge(i / count);
     const hi = edge((i + 1) / count);
@@ -340,6 +355,7 @@ export function readColors(node) {
     muted: rgb('--ink-muted', '#5f6669'),
     line: rgb('--line', '#ddd5c6'),
     sunken: rgb('--surface-sunken', '#e9e3d6'),
+    surface: rgb('--surface', '#fbf8f2'),
     fill: rgb('--fill', '#2298b1'),
     stops: [
       rgb('--surface-sunken', '#e9e3d6'), rgb('--chart-6', '#3558c4'), rgb('--chart-3', '#7a4fc2'),
@@ -428,14 +444,10 @@ export function drawLiveWaveView(g, colors, scope, scale, ms = WAVE_MS) {
 
 export function drawSpecGrid(g, colors, range) {
   const { ctx, w, h } = g;
-  const left = 34;
-  const right = 8;
-  const top = 30;
-  const bottom = 18;
-  const plotW = Math.max(1, w - left - right);
-  const plotH = Math.max(1, h - top - bottom);
+  const geo = specGeo(w, h);
+  const { left, top, plotW, plotH } = geo;
   const yOf = (db) => top + ((DB_MAX - clamp(db, DB_MIN, DB_MAX)) / (DB_MAX - DB_MIN)) * plotH;
-  const xOf = (f) => left + freqPos(f, range.axis, range.max) * plotW;
+  const xOf = (f) => specX(f, range, geo);
   ctx.clearRect(0, 0, w, h);
   ctx.font = `10px ${colors.font}`;
   ctx.lineWidth = 1;
@@ -445,7 +457,7 @@ export function drawSpecGrid(g, colors, range) {
   ctx.textBaseline = 'middle';
   for (const db of [0, -30, -60, -90]) {
     const y = yOf(db);
-    ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(w - right, y); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(left + plotW, y); ctx.stroke();
     ctx.fillText(String(db), left - 4, y);
   }
   ctx.textBaseline = 'top';
@@ -456,13 +468,86 @@ export function drawSpecGrid(g, colors, range) {
     const half = ctx.measureText(text).width / 2;
     ctx.fillText(text, Math.min(x, w - 2 - half), top + plotH + 3);
   }
-  return { left, plotW, plotH, yOf, xOf };
+  return { left, top, plotW, plotH, yOf, xOf };
 }
 
-export function drawLiveSpectrumView(g, colors, freqData, sampleRate, range, peak) {
+export const HOVER_SNAP_PX = 8;
+
+export function fmtHoverHz(f) {
+  if (!Number.isFinite(f)) return '-';
+  return Math.round(f) < 1000 ? `${Math.round(f)} Hz` : `${(f / 1000).toFixed(2)} kHz`;
+}
+
+export function specHover(px, geo, range, { levels = null, bars = [] } = {}) {
+  if (!(px >= geo.left && px <= geo.left + geo.plotW)) return null;
+  let near = null;
+  for (const b of bars) {
+    const d = Math.abs(b.x - px);
+    if (d <= HOVER_SNAP_PX && (!near || d < near.d)) near = { b, d };
+  }
+  let x = px;
+  let freq;
+  let db = -Infinity;
+  let title;
+  if (near) {
+    x = near.b.x;
+    freq = near.b.freq;
+    db = near.b.db;
+    title = `${near.b.name} · ${fmtHoverHz(freq)}`;
+  } else {
+    freq = specFreq(px, range, geo);
+    title = fmtHoverHz(freq);
+    if (levels?.length) db = levels[clamp(Math.floor(((px - geo.left) / geo.plotW) * levels.length), 0, levels.length - 1)];
+  }
+  const r = Math.round(db * 10) / 10;
+  const level = db > DB_MIN ? `${(r === 0 ? 0 : r).toFixed(1)} dB` : '-';
+  return { x, freq, title, sub: `${noteInfo(freq).text} · ${level}` };
+}
+
+export function drawSpecHover(g, colors, geo, hover) {
+  if (!hover) return;
+  const { ctx, w } = g;
+  const x = Math.round(hover.x) + 0.5;
+  ctx.save();
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = css(colors.ink, 0.55);
+  ctx.beginPath(); ctx.moveTo(x, 2); ctx.lineTo(x, geo.top + geo.plotH); ctx.stroke();
+  ctx.font = `10px ${colors.font}`;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+  const bw = Math.ceil(Math.max(ctx.measureText(hover.title).width, ctx.measureText(hover.sub).width)) + 10;
+  const bh = 30;
+  const bx = x + 6 + bw <= w - 2 ? x + 6 : Math.max(2, x - 6 - bw);
+  ctx.fillStyle = css(colors.surface, 0.94);
+  ctx.fillRect(bx, 2, bw, bh);
+  ctx.strokeStyle = css(colors.line);
+  ctx.strokeRect(bx + 0.5, 2.5, bw - 1, bh - 1);
+  ctx.fillStyle = css(colors.ink);
+  ctx.fillText(hover.title, bx + 5, 14);
+  ctx.fillText(hover.sub, bx + 5, 27);
+  ctx.restore();
+}
+
+export function trackHover(canvas, onChange) {
+  const state = { x: null };
+  const move = (e) => { state.x = e.clientX - canvas.getBoundingClientRect().left; onChange(); };
+  const clear = () => { if (state.x === null) return; state.x = null; onChange(); };
+  const release = (e) => { if (e.pointerType && e.pointerType !== 'mouse') clear(); };
+  canvas.addEventListener('pointerdown', move);
+  canvas.addEventListener('pointermove', move);
+  canvas.addEventListener('pointerup', release);
+  canvas.addEventListener('pointercancel', clear);
+  canvas.addEventListener('pointerleave', clear);
+  return state;
+}
+
+export function drawLiveSpectrumView(g, colors, freqData, sampleRate, range, peak, hoverX = null) {
   const { ctx } = g;
   const geo = drawSpecGrid(g, colors, range);
-  if (!freqData) return;
+  if (!freqData) {
+    if (hoverX !== null) drawSpecHover(g, colors, geo, specHover(hoverX, geo, range));
+    return;
+  }
   const count = Math.max(2, Math.round(geo.plotW));
   const levels = curveLevels(freqData, sampleRate, range, count);
   const base = geo.yOf(DB_MIN);
@@ -487,6 +572,7 @@ export function drawLiveSpectrumView(g, colors, freqData, sampleRate, range, pea
     ctx.fillStyle = css(colors.ink);
     ctx.beginPath(); ctx.arc(x, geo.yOf(peak.db), 3, 0, 2 * Math.PI); ctx.fill();
   }
+  if (hoverX !== null) drawSpecHover(g, colors, geo, specHover(hoverX, geo, range, { levels }));
 }
 
 export function drawGramAxes(g, colors, range, ticks) {
@@ -791,24 +877,28 @@ export function createLiveSpectrum({ uid, colors, now, feed, range, axisControl,
     if (text !== peakShown) { peakShown = text; peakOut.textContent = text; }
   }
 
+  function paint() {
+    const g = fit(canvas);
+    if (!g) return;
+    const f = feed();
+    let data = null;
+    peak = null;
+    if (f) {
+      f.an.getFloatFrequencyData(f.b.freq);
+      data = f.b.freq;
+      peak = peakOf(data, f.sr);
+    }
+    showPeak(peak);
+    drawLiveSpectrumView(g, colors(), data, f?.sr ?? 0, range(), peak, hover.x);
+  }
+
+  const hover = trackHover(canvas, paint);
+
   return {
     node,
     get peak() { return peak; },
     describe,
-    paint() {
-      const g = fit(canvas);
-      if (!g) return;
-      const f = feed();
-      let data = null;
-      peak = null;
-      if (f) {
-        f.an.getFloatFrequencyData(f.b.freq);
-        data = f.b.freq;
-        peak = peakOf(data, f.sr);
-      }
-      showPeak(peak);
-      drawLiveSpectrumView(g, colors(), data, f?.sr ?? 0, range(), peak);
-    },
+    paint,
     reset() {
       peak = null;
       peakShown = '';
