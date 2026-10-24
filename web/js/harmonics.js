@@ -102,6 +102,20 @@ export const TWO_NOTE = 'Two-stage decay: a quick fade first, then a long quiet 
 export const INHARM_NOTE = 'Inharmonicity: partials are slightly sharp, because a stiff string resists bending.';
 export const NEEDS_TWO = 'Needs 2 or more harmonics.';
 export const HAMMER_NOTE ='Hammer position: partials with a node at the strike point are very quiet.';
+export const STRIKE_MORE_TITLE = 'Why the strike position matters';
+
+function ordinal(n) {
+  const r = n % 100;
+  if (r >= 11 && r <= 13) return `${n}th`;
+  return `${n}${{ 1: 'st', 2: 'nd', 3: 'rd' }[n % 10] || 'th'}`;
+}
+
+export function strikeMore(p) {
+  const d = Math.round(1 / p);
+  const alt = d === 10 ? 8 : 10;
+  return `The hammer hits the string at 1/${d} of its length, so the ${ordinal(d)} harmonic has a node right there and almost disappears (H${2 * d} too). Piano makers put the hammer at about 1/7 to 1/9 of the string, so a weak 7th, 8th or 9th harmonic is typical, because those harmonics clash with the musical scale. The exact fraction varies by maker and register (smaller toward the treble). Try 1/${alt}: the weak harmonic becomes H${alt}.`;
+}
+
 export const STRINGS_NOTE = 'A real piano note has up to 3 strings; here you can try up to 8.';
 export const BEAT_HINT = 'With detuned strings the loudness swells slowly: beats';
 export const STRINGS_HINT = 'Strings are only slightly apart, so you need the Beating view below to see the difference.';
@@ -1590,7 +1604,11 @@ export function createHarmonicsCard(env = {}) {
   const strikeCtl = realRange('strike', 'Strike position (fraction of the string)', 0, 8, 1, strikeToSlider(params.strike));
   const needsHint = (id) => el('p', { id, class: 'hm-cap muted t-caption', hidden: true }, NEEDS_TWO);
   const strikeHint = needsHint(`${uid}-sh`);
-  strikeCtl.field.append(strikeHint);
+  const strikeMoreText = el('p', { class: 'hm-cap muted t-caption' }, '');
+  const strikeMoreBox = el('details', { class: 'hm-more' },
+    el('summary', { class: 'hm-cap muted t-caption' }, STRIKE_MORE_TITLE),
+    strikeMoreText);
+  strikeCtl.field.append(strikeHint, strikeMoreBox);
   const rollHint = needsHint(`${uid}-dh`);
   const rollField = el('div', { class: 'hm-field' },
     el('label', { htmlFor: `${uid}-dr` }, 'Decay across harmonics (dB per octave; -6 is about 1/n)'),
@@ -1856,6 +1874,7 @@ export function createHarmonicsCard(env = {}) {
     thumpCtl.out.textContent = fmtThump(params.thumpDb);
     inharmCtl.out.textContent = `B ${+params.inharmB.toFixed(5)}`;
     strikeCtl.out.textContent = fmtStrike(params.strike);
+    strikeMoreText.textContent = strikeMore(params.strike);
     const single = params.count < 2;
     muteBox.checked = params.mute;
     setNeeds(muteBox, muteField, muteHint, single);
