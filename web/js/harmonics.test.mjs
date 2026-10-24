@@ -106,6 +106,28 @@ test('liveWave finds the fundamental phase and returns null for silence', () => 
   assert.equal(h.liveWave(new Float32Array(16384), sr, f, 200), null);
 });
 
+test('the linear frequency axis fits the highest harmonic and spaces harmonics evenly', () => {
+  assert.equal(h.linearMax(220, 10), 2500);
+  assert.equal(h.linearMax(220, 1), 1000);
+  assert.equal(h.linearMax(1000, 32), 20000);
+  const rows = h.harmonicList({ freq: 220, count: 10 });
+  const xs = rows.map((r) => h.freqPos(r.freq, 'linear', 2500));
+  for (let i = 2; i < xs.length; i += 1) assert.ok(Math.abs(xs[i] - xs[i - 1] - (xs[1] - xs[0])) < 1e-12);
+  assert.ok(xs.at(-1) < 1);
+  assert.equal(h.freqPos(220, 'log', 2500), h.logPos(220));
+  assert.deepEqual(h.linearTicks(2500, 5), [0, 500, 1000, 1500, 2000, 2500]);
+  assert.equal(h.fmtTick(2500), '2.5 kHz');
+  assert.equal(h.fmtTick(500), '500 Hz');
+});
+
+test('gramRows maps spectrogram rows to linear or log bands', () => {
+  const lin = h.gramRows(4, 48000, 8192, 'linear', 2400);
+  const bw = 48000 / (2 * 8192);
+  assert.equal(lin.length, 4);
+  assert.ok(lin[3][0] === 0 && Math.abs(lin[0][1] * bw - 2400) < bw * 2);
+  assert.deepEqual(h.gramRows(4, 48000, 8192), h.gramRows(4, 48000, 8192, 'log', 20000));
+});
+
 test('pickLabels drops overlapping and out-of-range labels', () => {
   const items = [{ x: 20, w: 30 }, { x: 40, w: 30 }, { x: 80, w: 30 }, { x: 118, w: 30 }];
   assert.deepEqual(h.pickLabels(items, 4, 0, 120).map((i) => i.x), [20, 80]);

@@ -238,6 +238,43 @@ export function logPos(f, lo = SPECTRUM_MIN_HZ, hi = SPECTRUM_MAX_HZ) {
   return clamp(Math.log(f / lo) / Math.log(hi / lo), 0, 1);
 }
 
+export const AXES = ['linear', 'log'];
+export const AXIS_LABELS = { linear: 'Linear', log: 'Log' };
+export const AXIS_MIN_MULT = 4;
+const AXIS_NICE = [1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10];
+const TICK_STEPS = [1, 2, 2.5, 5, 10];
+
+export function niceCeil(v) {
+  const e = 10 ** Math.floor(Math.log10(v));
+  const m = AXIS_NICE.find((k) => k * e >= v * (1 - 1e-9));
+  return (m ?? 10) * e;
+}
+
+export function linearMax(freq, count) {
+  return Math.min(AUDIBLE_MAX_HZ, niceCeil(Math.max(AXIS_MIN_MULT, count + 1) * freq));
+}
+
+export function freqPos(f, axis, max) {
+  return axis === 'log' ? logPos(f) : clamp(f / max, 0, 1);
+}
+
+export function axisRange(axis, freq, count) {
+  return axis === 'log' ? { axis, min: SPECTRUM_MIN_HZ, max: SPECTRUM_MAX_HZ } : { axis, min: 0, max: linearMax(freq, count) };
+}
+
+export function fmtTick(f) {
+  return f >= 1000 ? `${+(f / 1000).toFixed(2)} kHz` : `${+f.toFixed(1)} Hz`;
+}
+
+export function linearTicks(max, target) {
+  const raw = max / clamp(Math.round(target), 1, 20);
+  const e = 10 ** Math.floor(Math.log10(raw));
+  const step = TICK_STEPS.map((m) => m * e).find((s) => s >= raw * 0.8);
+  const out = [];
+  for (let k = 0; k * step <= max * (1 + 1e-9); k += 1) out.push(+(k * step).toFixed(6));
+  return out;
+}
+
 export function pickLabels(items, minGap, lo = -Infinity, hi = Infinity) {
   const shown = [];
   let edge = lo;
@@ -249,12 +286,13 @@ export function pickLabels(items, minGap, lo = -Infinity, hi = Infinity) {
   return shown;
 }
 
-export function gramRows(rowCount, sampleRate, bins) {
+export function gramRows(rowCount, sampleRate, bins, axis = 'log', max = SPECTRUM_MAX_HZ) {
   const bw = sampleRate / (2 * bins);
   const rows = [];
+  const edge = (t) => (axis === 'log' ? SPECTRUM_MIN_HZ * (SPECTRUM_MAX_HZ / SPECTRUM_MIN_HZ) ** t : max * t);
   for (let r = 0; r < rowCount; r += 1) {
-    const lo = SPECTRUM_MIN_HZ * (SPECTRUM_MAX_HZ / SPECTRUM_MIN_HZ) ** (1 - (r + 1) / rowCount);
-    const hi = SPECTRUM_MIN_HZ * (SPECTRUM_MAX_HZ / SPECTRUM_MIN_HZ) ** (1 - r / rowCount);
+    const lo = edge(1 - (r + 1) / rowCount);
+    const hi = edge(1 - r / rowCount);
     const a = clamp(Math.floor(lo / bw), 0, bins - 1);
     const b = clamp(Math.max(a, Math.ceil(hi / bw)), 0, bins - 1);
     rows.push([a, b]);
@@ -509,6 +547,19 @@ function fit(canvas) {
 
 const FREQ_TICKS = [[100, '100 Hz'], [1000, '1 kHz'], [10000, '10 kHz']];
 
+export function specTicks(range, plotW) {
+  if (range.axis === 'log') return FREQ_TICKS;
+  return linearTicks(range.max, Math.floor(plotW / 80)).map((f) => [f, fmtTick(f)]);
+}
+
+export function gramTicks(rows, range, h, minGap = 18) {
+  if (range.axis === 'log') return FREQ_TICKS;
+  const played = rows.filter((r) => r.played);
+  if (!played.length) return [];
+  const stride = Math.max(1, Math.ceil(minGap / (h * (played[0].freq / range.max))));
+  return played.filter((_, i) => i % stride === 0).map((r) => [r.freq, `H${r.n} · ${fmtHz(r.freq)}`]);
+}
+
 function drawWaveView(g, colors, data, showParts) {
   const { ctx, w, h } = g;
   const left = 36;
@@ -555,7 +606,7 @@ function drawWaveView(g, colors, data, showParts) {
   trace(data.sum, css(colors.fill), 2);
 }
 
-function drawSpectrumView(g, colors, rows, levels) {
+function drawSpectrumView(g, colors, rows, levels, range) {
   const { ctx, w, h } = g;
   const left = 34;
   const right = 8;
@@ -564,7 +615,7 @@ function drawSpectrumView(g, colors, rows, levels) {
   const plotW = Math.max(1, w - left - right);
   const plotH = Math.max(1, h - top - bottom);
   const yOf = (db) => top + ((DB_MAX - clamp(db, DB_MIN, DB_MAX)) / (DB_MAX - DB_MIN)) * plotH;
-  const xOf = (f) => left + logPos(f) * plotW;
+  const xOf = (f) => left + freqPos(f, range.axis, range.max) * plotW;
   ctx.clearRect(0, 0, w, h);
   ctx.font = `10px ${colors.font}`;
   ctx.lineWidth = 1;
@@ -578,11 +629,12 @@ function drawSpectrumView(g, colors, rows, levels) {
     ctx.fillText(String(db), left - 4, y);
   }
   ctx.textBaseline = 'top';
-  for (const [f, text] of FREQ_TICKS) {
+  for (const [f, text] of specTicks(range, plotW)) {
     const x = xOf(f);
     ctx.beginPath(); ctx.moveTo(x, top); ctx.lineTo(x, top + plotH); ctx.stroke();
     ctx.textAlign = 'center';
-    ctx.fillText(text, x, top + plotH + 3);
+    const half = ctx.measureText(text).width / 2;
+    ctx.fillText(text, Math.min(x, w - 2 - half), top + plotH + 3);
   }
   const bars = [];
   rows.forEach((r, i) => {
@@ -613,22 +665,23 @@ function drawSpectrumView(g, colors, rows, levels) {
   }
 }
 
-function drawGramAxes(g, colors) {
+function drawGramAxes(g, colors, range, ticks) {
   const { ctx, w, h } = g;
   ctx.clearRect(0, 0, w, h);
   ctx.font = `10px ${colors.font}`;
   ctx.textBaseline = 'middle';
   ctx.textAlign = 'left';
   ctx.lineWidth = 1;
-  for (const [f, text] of FREQ_TICKS) {
-    const y = h * (1 - logPos(f));
+  for (const [f, text] of ticks) {
+    const y = h * (1 - freqPos(f, range.axis, range.max));
     ctx.strokeStyle = css(colors.ink, 0.25);
     ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
     const tw = ctx.measureText(text).width;
+    const x = y + 7 > h - 17 ? 38 : 4;
     ctx.fillStyle = css(colors.sunken, 0.8);
-    ctx.fillRect(2, y - 7, tw + 4, 14);
+    ctx.fillRect(x - 2, y - 7, tw + 4, 14);
     ctx.fillStyle = css(colors.ink);
-    ctx.fillText(text, 4, y);
+    ctx.fillText(text, x, y);
   }
   ctx.textBaseline = 'bottom';
   for (const [text, x, align] of [['-10 s', 4, 'left'], ['now', w - 4, 'right']]) {
@@ -659,6 +712,8 @@ export function createHarmonicsCard(env = {}) {
   let pending = 0;
   let gramRowsKey = '';
   let gramMap = [];
+  let axis = 'linear';
+  let gramAxisKey = '';
   const buffers = { time: null, freq: null };
   const off = [];
 
@@ -705,6 +760,25 @@ export function createHarmonicsCard(env = {}) {
     el('label', { htmlFor: `${uid}-ur` }, 'Detune between strings (cents)'),
     el('div', { class: 'hm-pair' }, detuneRange, detuneOut),
     beatOut);
+  const axisBtns = AXES.map((a) => el('button', {
+    class: 'seg-btn', type: 'button', role: 'radio', 'aria-checked': 'false', onclick: () => setAxis(a),
+  }, AXIS_LABELS[a]));
+  const axisGroup = el('div', {
+    class: 'seg hm-seg', role: 'radiogroup', 'aria-labelledby': `${uid}-al`,
+    onkeydown: (ev) => {
+      const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[ev.key];
+      if (!step) return;
+      ev.preventDefault();
+      const i = clamp(AXES.indexOf(axis) + step, 0, AXES.length - 1);
+      setAxis(AXES[i]);
+      axisBtns[i].focus();
+    },
+  }, ...axisBtns);
+  const axisField = el('div', { class: 'hm-axis' },
+    el('span', { id: `${uid}-al`, class: 'hm-lbl' }, 'Frequency axis'),
+    axisGroup);
+  const specCap = el('p', { class: 'hm-cap muted t-caption' });
+  const gramCap = el('p', { class: 'hm-cap muted t-caption' });
   const label = el('span', {}, 'Play');
   const toggleIcon = el('span', { class: 'hm-ic' }, icon('play', 'action'));
   const button = el('button', { class: 'btn primary hm-toggle', type: 'button', onclick: () => { if (running) stop('idle'); else start(); } }, toggleIcon, label);
@@ -754,15 +828,15 @@ export function createHarmonicsCard(env = {}) {
       el('p', { class: 'hm-cap muted t-caption' }, 'Time across, amplitude up, 3.5 cycles of the fundamental. The bright line is the sum.'),
       beatHint),
     el('div', { class: 'hm-block' },
-      el('h3', { class: 't-subhead' }, 'Spectrum'),
+      el('div', { class: 'hm-head' }, el('h3', { class: 't-subhead' }, 'Spectrum'), axisField),
       view(specCanvas, 'hm-spec'),
-      el('p', { class: 'hm-cap muted t-caption' }, 'Frequency across (log), level in dBFS up, one bar per harmonic.'),
+      specCap,
       list),
     el('div', { class: 'hm-block' },
       el('h3', { class: 't-subhead' }, 'Spectrogram'),
       view(gramCanvas, 'hm-gram', gramAxes),
       el('div', { class: 'hm-legend t-caption muted' }, el('span', {}, `${GRAM_DB_MIN} dB`), scaleBar, el('span', {}, `${GRAM_DB_MAX} dB`)),
-      el('p', { class: 'hm-cap muted t-caption' }, 'The last 10 seconds: time across, frequency up (log), colour is level. It fills while the tone plays.')),
+      gramCap),
     about);
 
   function currentColors() {
@@ -779,9 +853,24 @@ export function createHarmonicsCard(env = {}) {
     const piano = params.decay ? `, piano-like decay, fade ${params.tau} s, repeat every ${params.repeat} s` : '';
     const multi = params.strings > 1 ? `, ${params.strings} strings detuned by ${params.detune} cents` : '';
     const base = `${params.count} harmonics of ${fmtHz(params.freq)}, ${note.name}, decay ${params.rolloff} dB per octave${piano}${multi}`;
+    const where = axisText();
     waveCanvas.setAttribute('aria-label', `Waveform of the synthesized tone, 3.5 cycles: ${base}`);
-    specCanvas.setAttribute('aria-label', `Spectrum of the synthesized tone, one bar per harmonic: ${base}`);
-    gramCanvas.setAttribute('aria-label', `Spectrogram of the synthesized tone, last 10 seconds: ${base}`);
+    specCanvas.setAttribute('aria-label', `Spectrum of the synthesized tone, ${where}, one bar per harmonic: ${base}`);
+    gramCanvas.setAttribute('aria-label', `Spectrogram of the synthesized tone, ${where}, last 10 seconds: ${base}`);
+    specCap.textContent = `Frequency across (${axisCaption()}), level in dBFS up, one bar per harmonic.`;
+    gramCap.textContent = `The last 10 seconds: time across, frequency up (${axisCaption()}), colour is level. It fills while the tone plays and clears when the axis changes.`;
+  }
+
+  const rangeNow = () => axisRange(axis, params.freq, params.count);
+
+  function axisText() {
+    const r = rangeNow();
+    return r.axis === 'log' ? 'log frequency axis from 20 Hz to 20 kHz' : `linear frequency axis from 0 Hz to ${fmtHz(r.max)}`;
+  }
+
+  function axisCaption() {
+    const r = rangeNow();
+    return r.axis === 'log' ? 'log, 20 Hz to 20 kHz' : `linear, 0 Hz to ${fmtHz(r.max)}, harmonics evenly spaced`;
   }
 
   function paintList() {
@@ -815,6 +904,12 @@ export function createHarmonicsCard(env = {}) {
     beatHint.hidden = !(beat > 0);
     stringBtns.forEach((b, i) => {
       const on = i + 1 === params.strings;
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-checked', String(on));
+      b.tabIndex = on ? 0 : -1;
+    });
+    axisBtns.forEach((b, i) => {
+      const on = AXES[i] === axis;
       b.classList.toggle('on', on);
       b.setAttribute('aria-checked', String(on));
       b.tabIndex = on ? 0 : -1;
@@ -858,15 +953,20 @@ export function createHarmonicsCard(env = {}) {
       synth.analyser.getFloatFrequencyData(b.freq);
       levels = barLevels(rows, b.freq, rate(), params.strings > 1 ? params.detune : 0);
     }
-    drawSpectrumView(g, currentColors(), rows, levels);
+    drawSpectrumView(g, currentColors(), rows, levels, rangeNow());
   }
 
   function paintGramAxes() {
     const g = fit(gramAxes);
-    if (g) drawGramAxes(g, currentColors());
+    if (!g) return;
+    const range = rangeNow();
+    drawGramAxes(g, currentColors(), range, gramTicks(rowsNow(), range, g.h));
   }
 
+  const axisKey = () => { const r = rangeNow(); return `${r.axis}|${r.max}`; };
+
   function clearGram() {
+    gramAxisKey = axisKey();
     const g = fit(gramCanvas);
     if (!g) return;
     g.ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -880,6 +980,7 @@ export function createHarmonicsCard(env = {}) {
     const b = liveBuffers();
     if (!b) return;
     if (g.resized) paintGramAxes();
+    if (axisKey() !== gramAxisKey) clearGram();
     const { ctx } = g;
     const pw = gramCanvas.width;
     const ph = gramCanvas.height;
@@ -889,8 +990,9 @@ export function createHarmonicsCard(env = {}) {
     pending -= dx;
     synth.analyser.getFloatFrequencyData(b.freq);
     const rowCount = Math.min(ph, 160);
-    const key = `${rowCount}|${rate()}|${b.freq.length}`;
-    if (key !== gramRowsKey) { gramRowsKey = key; gramMap = gramRows(rowCount, rate(), b.freq.length); }
+    const range = rangeNow();
+    const key = `${rowCount}|${rate()}|${b.freq.length}|${range.axis}|${range.max}`;
+    if (key !== gramRowsKey) { gramRowsKey = key; gramMap = gramRows(rowCount, rate(), b.freq.length, range.axis, range.max); }
     const c = currentColors();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     if (dx < pw) ctx.drawImage(gramCanvas, -dx, 0);
@@ -983,7 +1085,17 @@ export function createHarmonicsCard(env = {}) {
     params = clampParams({ ...params, ...next });
     synth.update(params);
     paintOutputs();
-    if (!running) paintStatic();
+    if (running) paintGramAxes(); else paintStatic();
+  }
+
+  function setAxis(next) {
+    if (next === axis) return;
+    axis = next;
+    gramRowsKey = '';
+    paintOutputs();
+    clearGram();
+    paintGramAxes();
+    paintSpectrum();
   }
 
   function setFreq(f, { text = true, slider = true } = {}) {
@@ -1030,6 +1142,8 @@ export function createHarmonicsCard(env = {}) {
     node,
     get running() { return running; },
     get params() { return { ...params }; },
+    get axis() { return axis; },
+    setAxis,
     start,
     stop: () => stop('idle'),
     dispose() {
