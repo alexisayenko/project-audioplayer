@@ -1,4 +1,4 @@
-"""The web UI: index.html with versioned asset URLs and module preload hints, immutable versioned files and a revalidating static mount."""
+"""The web UI: index.html with versioned asset URLs and module preload hints (or the pre-built bundle of webbundle), immutable versioned files and a revalidating static mount."""
 
 from __future__ import annotations
 
@@ -13,6 +13,7 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.types import Scope
 
+from . import webbundle
 from .safepath import safe_join
 
 _ASSET_REF = re.compile(r'(href|src)="([a-z0-9-]+\.css|favicon\.svg|favicon-32\.png|apple-touch-icon\.png|img/[a-z0-9-]+\.png|js/app\.js)"')
@@ -147,9 +148,11 @@ def _index_response(request: Request) -> Response:
     if request.headers.get("if-none-match") == etag:
         return Response(status_code=304, headers=headers)
     page = (web_dir() / "index.html").read_text(encoding="utf-8")
-    page = _ASSET_REF.sub(lambda m: f'{m.group(1)}="_v/{version}/{m.group(2)}"', page)
+    manifest = webbundle.manifest_for(web_dir(), version)
+    bundled = webbundle.rewrite_page(page, version, manifest) if manifest else None
+    page = _ASSET_REF.sub(lambda m: f'{m.group(1)}="_v/{version}/{m.group(2)}"', bundled or page)
     page = _INLINE_IMPORT.sub(lambda m: f"{m.group(1)}./_v/{version}/{m.group(2)}", page)
-    if "</head>" in page:
+    if bundled is None and "</head>" in page:
         page = page.replace("</head>", _preload_links(version) + "</head>", 1)
     return HTMLResponse(page, headers=headers)
 

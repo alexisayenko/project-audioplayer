@@ -57,6 +57,7 @@ Code: `server/app/gitstore.py`, `server/app/library.py`, `server/app/deps.py`, `
 | `AUDIO_DOWNLOAD_DIR` | `downloads` | fallback audio dir |
 | `AUDIO_DATA_DIR` | `.` | plain-file `library.json` and `covers/` (no git store) |
 | `AUDIO_WEB_DIR` | `<repo>/web` | static UI dir, read at call time (`server/app/web.py`), so a test or a restart-free change takes effect |
+| `AUDIO_WEB_BUNDLE` | `1` | serve the pre-built `web/dist/` bundle while it matches the sources (`server/app/webbundle.py`, WEB-171, ADR-0047); `0`/`false`/`no`/`off` serves the unbundled files |
 | `OWNER_EMAIL` (alias `ALLOWED_EMAIL`) | `alex.isayenko@gmail.com` | the owner: quota-exempt; the `X-API-Token` and `?token=` act as this user |
 | `ALLOWED_APPLE_SUB` | unset | Apple `sub` values (comma list) mapped to the owner when Apple hides the email |
 | `SIGNUP_OPEN` | `1` | `0`: only existing users and the owner may sign in |

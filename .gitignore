@@ -21,6 +21,7 @@ desktop.ini
 # Common build artifacts
 node_modules/
 dist/
+!web/dist/
 build/
 out/
 .cache/
