@@ -109,18 +109,21 @@ def datadir(tmp_path, monkeypatch):
     return tmp_path
 
 
-def test_seed_creates_the_five_goa_eras_once(datadir):
-    assert seedmod.run() == 5
+def test_seed_creates_the_goa_and_forest_eras_once(datadir):
+    assert seedmod.run() == 8
     doc = json.loads((datadir / "genre_eras.json").read_text(encoding="utf-8"))
     names = [e["name"] for e in doc["goa trance"]]
     assert names == ["Proto-goa", "Origins", "Golden era", "Transition to psytrance", "New school goa"]
     assert "end" not in doc["goa trance"][4] and doc["goa trance"][0]["start"] == 1983 and all(len(e["id"]) == 8 and e["sources"] for e in doc["goa trance"])
+    forest = doc["forest psytrance"]
+    assert [e["name"] for e in forest] == ["Nordic roots", "Tumult and the dark turn", "Swamp psytrance"]
+    assert "start" not in forest[2] and "end" not in forest[1] and all(len(e["id"]) == 8 and e["sources"] for e in forest)
     assert seedmod.run() == 0
     assert json.loads((datadir / "genre_eras.json").read_text(encoding="utf-8")) == doc
 
 
 def test_seed_does_not_overwrite_existing_eras(datadir):
-    original = {"goa trance": [{"id": "aaaaaaaa", "name": "Mine"}], "trance": [{"id": "bbbbbbbb", "name": "T"}]}
+    original = {"goa trance": [{"id": "aaaaaaaa", "name": "Mine"}], "forest psytrance": [{"id": "cccccccc", "name": "Mine too"}], "trance": [{"id": "bbbbbbbb", "name": "T"}]}
     (datadir / "genre_eras.json").write_text(json.dumps(original), encoding="utf-8")
     assert seedmod.run() == 0
     assert json.loads((datadir / "genre_eras.json").read_text(encoding="utf-8")) == original
@@ -128,13 +131,33 @@ def test_seed_does_not_overwrite_existing_eras(datadir):
 
 def test_seed_keeps_other_genres_backs_up_and_a_deleted_set_does_not_return(datadir):
     (datadir / "genre_eras.json").write_text(json.dumps({"trance": [{"id": "bbbbbbbb", "name": "T"}]}), encoding="utf-8")
-    assert seedmod.run() == 5
+    assert seedmod.run() == 8
     assert (datadir / "backups-genre-eras-seed" / "genre_eras.json").is_file()
     doc = json.loads((datadir / "genre_eras.json").read_text(encoding="utf-8"))
-    assert set(doc) == {"goa trance", "trance"}
+    assert set(doc) == {"goa trance", "forest psytrance", "trance"}
     del doc["goa trance"]
+    del doc["forest psytrance"]
     (datadir / "genre_eras.json").write_text(json.dumps(doc), encoding="utf-8")
-    assert seedmod.run() == 0 and "goa trance" not in json.loads((datadir / "genre_eras.json").read_text(encoding="utf-8"))
+    assert seedmod.run() == 0 and set(json.loads((datadir / "genre_eras.json").read_text(encoding="utf-8"))) == {"trance"}
+
+
+def test_seed_after_the_old_marker_adds_only_forest(datadir):
+    goa = [{"id": "aaaaaaaa", "name": "Mine"}]
+    (datadir / "genre_eras.json").write_text(json.dumps({"goa trance": goa}), encoding="utf-8")
+    seedmod.marker_path().parent.mkdir(parents=True)
+    seedmod.marker_path().write_text(json.dumps({"marker": 1, "eras": 5}), encoding="utf-8")
+    assert seedmod.run() == 3
+    doc = json.loads((datadir / "genre_eras.json").read_text(encoding="utf-8"))
+    assert doc["goa trance"] == goa and len(doc["forest psytrance"]) == 3
+    assert json.loads(seedmod.marker_path().read_text(encoding="utf-8"))["genres"] == ["forest psytrance", "goa trance"]
+    assert seedmod.run() == 0
+
+
+def test_seed_after_the_old_marker_does_not_bring_goa_back(datadir):
+    seedmod.marker_path().parent.mkdir(parents=True)
+    seedmod.marker_path().write_text(json.dumps({"marker": 1, "eras": 5}), encoding="utf-8")
+    assert seedmod.run() == 3
+    assert set(json.loads((datadir / "genre_eras.json").read_text(encoding="utf-8"))) == {"forest psytrance"}
 
 
 def test_seed_disabled_by_env(datadir, monkeypatch):

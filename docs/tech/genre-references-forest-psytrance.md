@@ -15,7 +15,7 @@ Scope: `forest psytrance` is a level 3 child of `psytrance` (`genres_v2.json`, v
 
 - Library: owner `library.json` (506 songs) and `genre_references.json` from `origin/main` of the data repo, read-only via `git show`. Scanned by genre (anything with psytrance, psybient, goa, full-on, forest), by artist and title against a list of forest names (incl. all names from the Gemini leads and RYM-trend artists), by BPM 136-160 with electronic tags, and all 45 untagged songs.
 - Existing references: `genre_references.json` holds goa trance 9, progressive house 6, progressive trance 7 and psytrance 4; no `forest psytrance` key, so nothing duplicates a saved entry.
-- Eras: none exist for psytrance or forest; none invented, see [Periods](#periods-informal-no-era-ids).
+- Eras: none existed for forest at review time; three are now seeded, see [Periods](#periods-seeded-as-eras).
 - Verification: Wikipedia (opened), MusicBrainz ws/2 JSON (opened, one request at a time; 503 on parallel use), Last.fm artist and tag pages, Psynews.org review threads, SunTrip Records, a Bandcamp label page. Years are the first release found. A song counts as forest only when at least one source labels it so; MusicBrainz tags are user votes (count 1-2), Psynews reviews are fan-written.
 - Confidence: high = identity, year and role backed by 3+ sources; medium = 2; low = one weak source or conflicting dates. No pick reaches high: no source states a role outright.
 - Roles follow ADR-0044 (archetype, origin, landmark, breakthrough; cap 3 each); a pick is one song, album-level claims are flagged. A song takes one role in a genre (saving is unique per normalised artist and title).
@@ -101,9 +101,9 @@ The Electronic Music Wiki page on forest (F1, opened 2026-10-24 in the browser p
 | "Deranfo" | resolved | a typo of Derango (#1, #2) |
 | Progressive Forest, Swamp | no pick | styles named by the wiki; no song found for either (swamp matches RYM's third trend) |
 
-## Periods (informal, no era ids)
+## Periods (seeded as eras)
 
-Only as a note; no era ids exist and none are proposed. RYM (owner-pasted) names three trends; dates found:
+Owner decision FB (2026-10-24): "mention them in history timeline, as we did with goa". The three trends below are seeded as the eras of `forest psytrance` (GEN-112) from `server/data/genre_eras_seed.json`: "Nordic roots" 1997-2004, "Tumult and the dark turn" 2005 onward, "Swamp psytrance" with no years (no start is documented). Years are the nearest whole years to RYM's "late 1990s" and 2005. No saved forest reference track exists, so none links to an era. RYM (owner-pasted) names three trends; dates found:
 
 1. Late 1990s experimental, chaotic strand, tied to Schlabbaduerst: Buddhas formed 1994 with releases from 1997 (MusicBrainz), Twin Sharkfins 1998; the label planned in 1999 and sold CDs from 2000 (Schlab 001 and 002, about 50 and 30 copies sold per the 2000 interview); its sound then was called dark psychedelic trance.
 2. 2005 onward, nearer dark psytrance, effects over melody: Tumult (Oct 2005); in the 2010 Psynews thread posters call 2005 a possible origin of the word "forest" and treat Tumult as the benchmark.

@@ -52,5 +52,36 @@
         {"type": "rym", "url": "https://rateyourmusic.com/genre/goa-trance/"}
       ]
     }
+  ],
+  "forest psytrance": [
+    {
+      "name": "Nordic roots",
+      "start": 1997,
+      "end": 2004,
+      "note": "Late 1990s and early 2000s in northern Europe: experimental, chaotic music inspired by goa trance and industrial sound, around the Swedish label Schlabbaduerst ReKkords.",
+      "sources": [
+        {"type": "rym", "url": "https://rateyourmusic.com/genre/forest-psytrance/", "note": "late 1990s origin and the label"},
+        {"type": "other", "url": "https://electronicmusic.fandom.com/wiki/Forest", "note": "late 1990s Scandinavian origin"},
+        {"type": "other", "url": "https://www.psynews.org/forums/topic/37622-label-schlabbaduerst/", "note": "2000 label interview"}
+      ]
+    },
+    {
+      "name": "Tumult and the dark turn",
+      "start": 2005,
+      "note": "Popularised by Derango's album Tumult (2005); closer to dark psytrance, with sound effects ahead of melody.",
+      "sources": [
+        {"type": "rym", "url": "https://rateyourmusic.com/genre/forest-psytrance/", "note": "2005 onward, Tumult"},
+        {"type": "musicbrainz", "url": "https://musicbrainz.org/release/0513ef85-0623-4cb4-8772-6bed4b202401", "note": "Tumult, 2005-10-20"},
+        {"type": "other", "url": "https://www.psynews.org/forums/topic/29058-derango-%E2%80%93-tumult/", "note": "2005 review thread"}
+      ]
+    },
+    {
+      "name": "Swamp psytrance",
+      "note": "A slower strand influenced by downtempo, rarely above 135 BPM; no start year is documented.",
+      "sources": [
+        {"type": "rym", "url": "https://rateyourmusic.com/genre/forest-psytrance/", "note": "swamp strand, tempo"},
+        {"type": "other", "url": "https://electronicmusic.fandom.com/wiki/Forest", "note": "swamp named as a related style"}
+      ]
+    }
   ]
 }

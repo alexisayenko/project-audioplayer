@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-24 (forest psytrance eras in the History timeline, server data, built, not deployed)
+
+- Server and data (owner decision FB, 2026-10-24: "mention them in history timeline, as we did with goa"; GEN-112, DATA-195; no tests run, `server/tests/test_genre_eras.py` assertions edited; load checks and a throwaway data-dir run only): three `forest psytrance` eras are seeded once from `server/data/genre_eras_seed.json` (Nordic roots 1997-2004, Tumult and the dark turn 2005 onward, Swamp psytrance with no years) so they show in the Genre info History timeline like the goa trance ones. `migrate_genre_eras_seed` now keeps a per-genre marker (`applied.json` version 2 with a `genres` list; the old version 1 marker counts for `goa trance`, so goa is never reseeded) and seeds a genre only while `genre_eras.json` has no entry for it; the backup and `AUDIO_GENRE_ERAS_SEED=0` stay. [`tech/genre-references-forest-psytrance.md`](tech/genre-references-forest-psytrance.md) says "seeded as eras".
+
 ## 2026-10-24 (playlist page: Add to queue before Shuffle, web, deployed)
 
 - Web (owner, 2026-10-24: "swap shuffle and add to queue"; PLS-124; deployed 2026-10-24 as `8487026`; `node --check` only, no tests run, no test assertions affected): the playlist page actions are now Play playlist, Add to queue, Shuffle, Export, Edit, Delete (`web/js/playlist-view.js`; the buttons are built in one place, so keyboard Tab order follows; the row menu has no such actions).
