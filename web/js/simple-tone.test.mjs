@@ -87,6 +87,33 @@ test('WEB-204: the phase of the slowed cone accumulates f/1000 cycles per second
   assert.equal(s.advancePhase(0.3, 440, -5), 0.3);
 });
 
+test('WEB-204: the slow motion factor is 1000, 2000, 5000 or 10000, defaults to 2000 and divides the phase rate', () => {
+  assert.deepEqual(s.SLOW_CHOICES, [1000, 2000, 5000, 10000]);
+  assert.equal(s.SLOW_DEFAULT, 2000);
+  assert.ok(near(s.advancePhase(0, 440, 1000, 2000), 0.22));
+  assert.ok(near(s.advancePhase(0, 440, 1000, 10000), 0.044));
+  assert.equal(s.slowReadout(440, 2000), 'Slowed 2000×: real 440 Hz = 0.22 swings per second (one swing every 4.55 s); the real cone makes 440 swings each second.');
+  assert.match(s.coneNote(5000), /runs 5000 times slower/);
+  const geo = s.airGeometry(124, 1124);
+  assert.ok(s.airSpeedPx(geo, 440, 1000) > 250);
+  assert.ok(s.airSpeedPx(geo, 440, s.SLOW_DEFAULT) <= 250);
+});
+
+test('WEB-204: the Slow motion factor switch changes the readout, the note and the phase rate, not the phase', () => {
+  const card = s.createSimpleCard(fakeCtx().env);
+  assert.equal(card.slow, 2000);
+  assert.ok(card.node.textContent.includes('Slowed 2000×'));
+  const before = card.phase;
+  card.setSlow(5000);
+  assert.equal(card.slow, 5000);
+  assert.equal(card.phase, before);
+  assert.ok(card.node.textContent.includes('Slowed 5000×'));
+  assert.ok(card.node.textContent.includes('runs 5000 times slower'));
+  card.setSlow(123);
+  assert.equal(card.slow, 5000);
+  card.dispose();
+});
+
 test('WEB-204: the readout states the slowed rate and warns above 5 swings per second', () => {
   assert.equal(s.slowReadout(440), 'Slowed 1000×: real 440 Hz = 0.44 swings per second (one swing every 2.27 s); the real cone makes 440 swings each second.');
   assert.ok(s.slowReadout(20000).endsWith('Too fast to follow at this frequency.'));

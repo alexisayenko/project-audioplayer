@@ -1,5 +1,6 @@
 import { el } from './dom.js';
 import { icon } from './icons.js';
+import { segmented } from './segmented.js';
 
 export const TITLE = 'Primitive';
 export const PRIMITIVE_NOTE = 'A primitive sound: one sine wave, one frequency, H1 only. It models a speaker cone driven by an electrical signal.';
@@ -18,6 +19,9 @@ export const FFT_SIZE = 32768;
 export const CYCLES = 1;
 export const SCOPE_TICKS = 4;
 export const SLOW = 1000;
+export const SLOW_CHOICES = [1000, 2000, 5000, 10000];
+export const SLOW_DEFAULT = 2000;
+export const SLOW_LABEL = 'Slow motion factor';
 export const FAST_SLOWED_HZ = 5;
 export const MAX_FRAME_MS = 100;
 export const SOUND_SPEED = 343;
@@ -34,7 +38,8 @@ export const AIR_SHIFT_MAX = 48;
 export const AIR_NOW_TEXT = 'now';
 export const AIR_AGO_TEXT = 'one cycle ago';
 export const CONE_TITLE = 'Slow motion: the speaker cone';
-export const CONE_NOTE = 'Swing exaggerated. The real cone moves a fraction of a millimetre. Here its sine motion runs 1000 times slower, and each position of the cone matches a position in time on the sine wave above (the dot).';
+export const coneNote = (slow = SLOW) => `Swing exaggerated. The real cone moves a fraction of a millimetre. Here its sine motion runs ${slow} times slower, and each position of the cone matches a position in time on the sine wave above (the dot).`;
+export const CONE_NOTE = coneNote();
 export const PAUSE_TEXT = 'Pause animation';
 export const PLAY_ANIM_TEXT = 'Play animation';
 export const POWER_NOTE = 'Power grows with the square of the amplitude: double the amplitude, four times the power.';
@@ -106,21 +111,21 @@ export function readout(p) {
   return `Period ${fmtMs(periodMs(p.freq))} ms = 1/f; pressure swings ±${fmtPct(p.amp * 100)} % of full scale; power ${fmtPct(powerPct(p.amp))} %; sound lasts ${lasts}.`;
 }
 
-export const slowedHz = (freq) => freq / SLOW;
+export const slowedHz = (freq, slow = SLOW) => freq / slow;
 
-export function advancePhase(phase, freq, dtMs) {
-  const next = phase + (slowedHz(freq) * Math.max(0, dtMs)) / 1000;
+export function advancePhase(phase, freq, dtMs, slow = SLOW) {
+  const next = phase + (slowedHz(freq, slow) * Math.max(0, dtMs)) / 1000;
   return next - Math.floor(next);
 }
 
 export const fmtSig = (v) => String(+v.toPrecision(3));
 
-export function slowReadout(freq) {
-  const rate = slowedHz(freq);
+export function slowReadout(freq, slow = SLOW) {
+  const rate = slowedHz(freq, slow);
   const hz = trim(freq, 2);
   const swings = rate === 1 ? 'swing' : 'swings';
   const fast = rate > FAST_SLOWED_HZ ? ' Too fast to follow at this frequency.' : '';
-  return `Slowed ${SLOW}×: real ${hz} Hz = ${fmtSig(rate)} ${swings} per second (one swing every ${fmtSig(1 / rate)} s); the real cone makes ${hz} swings each second.${fast}`;
+  return `Slowed ${slow}×: real ${hz} Hz = ${fmtSig(rate)} ${swings} per second (one swing every ${fmtSig(1 / rate)} s); the real cone makes ${hz} swings each second.${fast}`;
 }
 
 export const coneOffset = (phase, amp) => (amp / MAX_AMP) * Math.sin(2 * Math.PI * phase);
@@ -187,6 +192,8 @@ export const airRest = (geo, col, row) => (col + 0.25 + 0.5 * (row % 2)) * geo.g
 export const airX = (phase, amp, geo, dist) => geo.start + dist + (amp / MAX_AMP) * geo.shift * waveShift(phase, dist, geo.wavelength);
 
 export const airBunchFrac = (phase) => phase - Math.floor(phase);
+
+export const airSpeedPx = (geo, freq, slow = SLOW) => (geo.wavelength * slowedHz(freq, slow));
 
 export const airSpacing = (phase, amp, geo, dist) => 1 - ((amp / MAX_AMP) * geo.shift * 2 * Math.PI / geo.wavelength) * Math.cos(2 * Math.PI * (phase - dist / geo.wavelength));
 
@@ -442,6 +449,7 @@ export function createSimpleCard(env = {}) {
   const reduced = typeof matchMedia === 'function' && !!matchMedia.call(globalThis, '(prefers-reduced-motion: reduce)')?.matches;
   let phase = reduced ? 0.25 : 0;
   let paused = reduced;
+  let slow = SLOW_DEFAULT;
   let inView = true;
   let animLast = 0;
   let colors = null;
@@ -472,6 +480,11 @@ export function createSimpleCard(env = {}) {
   const slowOut = el('p', { class: 'hm-cap muted t-caption' });
   const airOut = el('p', { class: 'hm-cap muted t-caption sm-air' });
   const pauseButton = el('button', { class: 'btn outline small', type: 'button', onclick: () => togglePause() }, reduced ? PLAY_ANIM_TEXT : PAUSE_TEXT);
+  const coneNoteOut = el('p', { class: 'hm-cap muted t-caption' });
+  const slowSeg = segmented(SLOW_CHOICES.map((n) => [n, `${n}×`]), () => slow, (n) => setSlow(n), { 'aria-labelledby': `${uid}-sl` });
+  const slowField = el('div', { class: 'hm-axis' },
+    el('span', { id: `${uid}-sl`, class: 'hm-lbl' }, SLOW_LABEL),
+    slowSeg.group);
 
   const field = (id, title, ...rest) => el('div', { class: 'hm-field' }, el('label', { htmlFor: id }, title), ...rest);
   const cap = (id, text) => el('p', { id, class: 'hm-cap muted t-caption' }, text);
@@ -495,9 +508,10 @@ export function createSimpleCard(env = {}) {
       el('p', { class: 'hm-cap muted t-caption' }, SINE_NOTE)),
     el('div', { class: 'hm-block' },
       el('div', { class: 'hm-head' }, el('h3', { class: 't-subhead' }, CONE_TITLE), pauseButton),
+      slowField,
       el('div', { class: 'hm-view sm-cone' }, coneCanvas),
       slowOut,
-      el('p', { class: 'hm-cap muted t-caption' }, CONE_NOTE),
+      coneNoteOut,
       airOut),
     el('a', { class: 'gl-link t-subhead', href: GLOSSARY_HREF }, GLOSSARY_LINK));
 
@@ -525,9 +539,17 @@ export function createSimpleCard(env = {}) {
     readoutOut.textContent = readout(p);
     canvas.setAttribute('aria-label', `Oscilloscope: sine wave, ${p.freq} Hz, amplitude ${fmtPct(p.amp * 100)} % of full scale, one cycle; ${cycleLabels(p.freq)[0]}, at 20 °C`);
     canvas.setAttribute('title', `${cycleLabels(p.freq)[0]} (speed of sound 343 m/s at 20 °C)`);
-    coneCanvas.setAttribute('aria-label', `Side view of a speaker cone moving ${SLOW} times slower than real, matching the ${p.freq} Hz sine wave above, swing in proportion to the amplitude, ${fmtPct(p.amp * 100)} % of full scale; the air dots in front of the cone show one cycle of the wave as one dense bunch and one thin gap`);
-    slowOut.textContent = slowReadout(p.freq);
+    coneCanvas.setAttribute('aria-label', `Side view of a speaker cone moving ${slow} times slower than real, matching the ${p.freq} Hz sine wave above, swing in proportion to the amplitude, ${fmtPct(p.amp * 100)} % of full scale; the air dots in front of the cone show one cycle of the wave as one dense bunch and one thin gap`);
+    slowOut.textContent = slowReadout(p.freq, slow);
+    coneNoteOut.textContent = coneNote(slow);
     airOut.textContent = airNote(p.freq);
+    slowSeg.paint();
+  }
+
+  function setSlow(n) {
+    if (!SLOW_CHOICES.includes(n) || n === slow) return;
+    slow = n;
+    paintOutputs();
   }
 
   function say(key) {
@@ -593,7 +615,7 @@ export function createSimpleCard(env = {}) {
     if (gone) return;
     const t = now();
     const running = animOn();
-    if (running) phase = advancePhase(phase, params.freq, Math.min(t - animLast, MAX_FRAME_MS));
+    if (running) phase = advancePhase(phase, params.freq, Math.min(t - animLast, MAX_FRAME_MS), slow);
     animLast = t;
     if (running) paintAll(); else paintScope();
     if (live || running) schedule();
@@ -779,6 +801,8 @@ export function createSimpleCard(env = {}) {
     get phase() { return phase; },
     get animating() { return looping && animOn(); },
     get paused() { return paused; },
+    get slow() { return slow; },
+    setSlow,
     start,
     stop: () => stop('stopped'),
     change,
