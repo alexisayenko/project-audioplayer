@@ -24,6 +24,8 @@ EXCLUDE = (
 TASK_REF = re.compile(r"\btask-(\d{4})\b")
 TASK_ID = re.compile(r"^task-\d{4}$")
 HASH_KEY = re.compile(r"^[0-9a-f]{7,40}$")
+REVISION = re.compile(r"HEAD|[0-9a-f]{7,40}(?:\.\.[0-9a-f]{7,40})?")
+DEPLOY_DAY = re.compile(r"\d{4}-\d{2}-\d{2}")
 MAP_KEYS = {"exclude", "items"}
 TASK_FILE = re.compile(r"^docs/tasks/(task-\d{4})\.md$")
 PLANNED = "to do"
@@ -62,7 +64,21 @@ def parse_log(text: str) -> list[dict[str, Any]]:
     return commits
 
 
+def clean_deploys(raw: Any) -> list[dict[str, str]]:
+    """The recorded deploys with a hex commit hash (7 to 40 chars) and a YYYY-MM-DD date; anything else is dropped so no stored value reaches git as an option."""
+    if not isinstance(raw, list):
+        return []
+    return [
+        {"hash": d["hash"], "date": d["date"]}
+        for d in raw
+        if isinstance(d, dict) and isinstance(d.get("hash"), str) and isinstance(d.get("date"), str)
+        and HASH_KEY.fullmatch(d["hash"]) and DEPLOY_DAY.fullmatch(d["date"])
+    ]
+
+
 def read_log(repo: Path, rev: str) -> list[dict[str, Any]]:
+    if not REVISION.fullmatch(rev):
+        raise ValueError("not a commit hash or range")
     fmt = f"{REC}%H{SEP}%ct{SEP}%s{SEP}%b{SEP}"
     return parse_log(git(repo, "log", "--topo-order", f"--format={fmt}", "--name-only", rev))
 
@@ -254,7 +270,7 @@ def build(repo: Path, deploys: list[dict[str, str]], rmap: dict[str, str | None]
     """Releases and planned tasks of the checkout `repo`; `unavailable` when its git history cannot be read."""
     tasks = read_tasks(repo / "docs" / "tasks")
     try:
-        releases = _releases(repo, deploys, tasks, rmap)
+        releases = _releases(repo, clean_deploys(deploys), tasks, rmap)
     except (OSError, subprocess.SubprocessError):
         return {"releases": [], "planned": planned(tasks), "in_progress": in_progress(tasks), "unavailable": True}
     return {"releases": releases, "planned": planned(tasks), "in_progress": in_progress(tasks), "unavailable": False}
