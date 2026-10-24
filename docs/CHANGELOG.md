@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-24 (harmonics lab counters, web, built, not deployed)
+
+- Web (WEB-180; owner request 2026-10-24; no tests run): "Number of harmonics" and "Decay across harmonics" are counters (minus, number input, plus; new `stepper.js`) instead of sliders, the decay one with "dB/oct" beside it and whole-dB steps.
+
 ## 2026-10-24 (Studio site left menu, deployed to studio.electrophone.cc)
 
 - Web (task-0114, STU-005 to STU-007; owner request 2026-10-24; no tests run, `node --check`, the build and the Browser pane at desktop and 375 px only): the studio site's top tab bar is replaced by a left menu with the title "Electrophone Studio", the items Synthesize and Analyze (in this order, `aria-current` on the open one, nav named "Studio") and a "Back to Electrophone" link at the bottom; the default route is now `#/synthesize` (unknown hashes fall back to it, old links keep working); at 720 px and below it becomes a compact top bar with no horizontal scroll at 375 px. The main app is unchanged.

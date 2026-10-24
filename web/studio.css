@@ -40,6 +40,13 @@ input.hm-num { width: 7.5rem; flex: none; }
 .hm-note { color: var(--ink-muted); font-variant-numeric: tabular-nums; }
 .hm-pair { display: flex; align-items: center; gap: var(--space-3); }
 .hm-range { width: 100%; }
+.hm-stepper { display: inline-flex; align-items: center; gap: var(--space-2); justify-self: start; max-width: 100%; }
+.hm-step-btn { flex: none; width: var(--hit); padding: 0; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+.hm-step-btn:disabled { opacity: var(--disabled-opacity); cursor: not-allowed; }
+input.hm-step-num { width: 5rem; min-width: 0; flex: none; text-align: center; font-variant-numeric: tabular-nums; -moz-appearance: textfield; appearance: textfield; }
+input.hm-step-num::-webkit-outer-spin-button, input.hm-step-num::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+input.hm-step-num:disabled { opacity: var(--disabled-opacity); }
+.hm-step-unit { flex: none; }
 .hm-val { flex: none; min-width: 5.5rem; text-align: right; color: var(--ink); font-variant-numeric: tabular-nums; }
 .hm-play { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
 .hm-toggle { gap: var(--space-2); flex: none; }

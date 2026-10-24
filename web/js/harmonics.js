@@ -1,6 +1,7 @@
 import { el } from './dom.js';
 import { icon } from './icons.js';
 import { segmented } from './segmented.js';
+import { stepper } from './stepper.js';
 import { parseColor, mixColor } from './viz-color.js';
 import { createMicInput, createPlayerInput, errorKey } from './harmonics-input.js';
 
@@ -9,6 +10,8 @@ export const MIN_HZ = 20;
 export const MAX_HZ = 4000;
 export const MAX_COUNT = 32;
 export const MIN_ROLLOFF = -24;
+const COUNT_LABEL = 'Number of harmonics (H1 is the fundamental)';
+const ROLL_LABEL = 'Decay across harmonics (dB per octave; -6 is about 1/n)';
 export const MAX_STRINGS = 8;
 export const MAX_OSCILLATORS = 256;
 export const MAX_DETUNE = 5;
@@ -1554,10 +1557,14 @@ export function createHarmonicsCard(env = {}) {
   const freqNum = el('input', { id: `${uid}-fn`, class: 'hm-num', type: 'number', min: MIN_HZ, max: MAX_HZ, step: 'any', inputmode: 'decimal', value: String(params.freq) });
   const freqRange = el('input', { id: `${uid}-fr`, class: 'slider hm-range', type: 'range', min: '0', max: '1000', step: '1', value: String(hzToSlider(params.freq)), 'aria-label': 'Frequency slider' });
   const noteOut = el('output', { class: 'hm-note t-subhead', htmlFor: `${uid}-fn ${uid}-fr` }, noteInfo(params.freq).text);
-  const countRange = el('input', { id: `${uid}-cr`, class: 'slider hm-range', type: 'range', min: '1', max: String(MAX_COUNT), step: '1', value: String(params.count) });
-  const countOut = el('output', { class: 'hm-val t-subhead', htmlFor: `${uid}-cr` }, String(params.count));
-  const rollRange = el('input', { id: `${uid}-dr`, class: 'slider hm-range', type: 'range', min: String(MIN_ROLLOFF), max: '0', step: '0.5', value: String(params.rolloff) });
-  const rollOut = el('output', { class: 'hm-val t-subhead', htmlFor: `${uid}-dr` }, '');
+  const countStep = stepper({
+    id: `${uid}-cr`, label: COUNT_LABEL, min: 1, max: MAX_COUNT, get: () => params.count, set: (v) => change({ count: v }),
+    inputmode: 'numeric', decLabel: 'Fewer harmonics', incLabel: 'More harmonics',
+  });
+  const rollStep = stepper({
+    id: `${uid}-dr`, label: ROLL_LABEL, min: MIN_ROLLOFF, max: 0, get: () => params.rolloff, set: (v) => change({ rolloff: v }),
+    unit: 'dB/oct', decLabel: 'Steeper decay', incLabel: 'Gentler decay',
+  });
   const decayBox = el('input', { id: `${uid}-dk`, type: 'checkbox', checked: params.decay, onchange: () => change({ decay: decayBox.checked }) });
   const tauRange = el('input', { id: `${uid}-tr`, class: 'slider hm-range', type: 'range', min: String(MIN_TAU), max: String(MAX_TAU), step: '0.1', value: String(params.tau) });
   const tauOut = el('output', { class: 'hm-val t-subhead', htmlFor: `${uid}-tr` }, '');
@@ -1611,8 +1618,8 @@ export function createHarmonicsCard(env = {}) {
   strikeCtl.field.append(strikeHint, strikeMoreBox);
   const rollHint = needsHint(`${uid}-dh`);
   const rollField = el('div', { class: 'hm-field' },
-    el('label', { htmlFor: `${uid}-dr` }, 'Decay across harmonics (dB per octave; -6 is about 1/n)'),
-    el('div', { class: 'hm-pair' }, rollRange, rollOut),
+    el('label', { htmlFor: `${uid}-dr` }, ROLL_LABEL),
+    rollStep.group,
     rollHint);
   const muteBox = el('input', { id: `${uid}-mu`, type: 'checkbox', checked: params.mute, onchange: () => change({ mute: muteBox.checked }) });
   const muteHint = needsHint(`${uid}-mh`);
@@ -1713,8 +1720,8 @@ export function createHarmonicsCard(env = {}) {
         el('div', { class: 'hm-freq' }, freqNum, noteOut),
         freqRange),
       el('div', { class: 'hm-field' },
-        el('label', { htmlFor: `${uid}-cr` }, 'Number of harmonics (H1 is the fundamental)'),
-        el('div', { class: 'hm-pair' }, countRange, countOut)),
+        el('label', { htmlFor: `${uid}-cr` }, COUNT_LABEL),
+        countStep.group),
       muteField,
       rollField,
       el('div', { class: 'hm-field' },
@@ -1849,13 +1856,9 @@ export function createHarmonicsCard(env = {}) {
   function paintOutputs() {
     const fill = (range, v, lo, hi) => range.style.setProperty('--p', ((v - lo) / (hi - lo)).toFixed(4));
     fill(freqRange, hzToSlider(params.freq), 0, 1000);
-    fill(countRange, params.count, 1, MAX_COUNT);
-    fill(rollRange, params.rolloff, MIN_ROLLOFF, 0);
     fill(tauRange, params.tau, MIN_TAU, MAX_TAU);
     fill(repeatRange, params.repeat, MIN_REPEAT, MAX_REPEAT);
     noteOut.textContent = noteInfo(params.freq).text;
-    countOut.textContent = String(params.count);
-    rollOut.textContent = `${params.rolloff} dB/oct`;
     tauOut.textContent = `${params.tau} s`;
     repeatOut.textContent = `${params.repeat} s`;
     tauField.hidden = !params.decay;
@@ -1880,7 +1883,9 @@ export function createHarmonicsCard(env = {}) {
     setNeeds(muteBox, muteField, muteHint, single);
     muteNote.hidden = !isMuted(params);
     muteNote.textContent = muteNote.hidden ? '' : muteText(partialFreq(1, params.freq, realism(params).inharmB));
-    setNeeds(rollRange, rollField, rollHint, single);
+    setNeeds(rollStep.input, rollField, rollHint, single);
+    countStep.sync();
+    rollStep.sync();
     setNeeds(strikeCtl.range, strikeCtl.field, strikeHint, single);
     fill(detuneRange, params.detune, 0, MAX_DETUNE);
     detuneOut.textContent = `${params.detune} cents`;
@@ -2325,9 +2330,7 @@ export function createHarmonicsCard(env = {}) {
     const v = Number.parseFloat(freqNum.value);
     setFreq(Number.isFinite(v) ? v : params.freq);
   });
-  countRange.addEventListener('input', () => change({ count: Number(countRange.value) }));
   stringsRange.addEventListener('input', () => change({ strings: Number(stringsRange.value) }));
-  rollRange.addEventListener('input', () => change({ rolloff: Number(rollRange.value) }));
   tauRange.addEventListener('input', () => change({ tau: Number(tauRange.value) }));
   repeatRange.addEventListener('input', () => change({ repeat: Number(repeatRange.value) }));
   detuneRange.addEventListener('input', () => change({ detune: Number(detuneRange.value) }));
