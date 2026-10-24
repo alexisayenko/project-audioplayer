@@ -21,6 +21,10 @@ export const SLOW = 1000;
 export const FAST_SLOWED_HZ = 5;
 export const MAX_FRAME_MS = 100;
 export const SOUND_SPEED = 343;
+export const NARROW_PX = 480;
+export const SCOPE_TITLE = 'Oscilloscope';
+export const SCOPE_SUB = 'Waveform of the tone: time across, amplitude up, one cycle.';
+export const SCOPE_NOTE = 'The bracket: one cycle in time is one wavelength in space (speed of sound 343 m/s divided by the frequency, in air at 20 °C).';
 export const AIR_ROWS = 5;
 export const AIR_GAP = 12;
 export const AIR_MAX_COLS = 56;
@@ -135,7 +139,40 @@ export function fmtWavelength(freq) {
   return `${+(m * 100).toPrecision(2)} cm`;
 }
 
-export const airNote = (freq) => `The dots are the air in front of the cone: one dense bunch (high pressure) and one thin gap (low pressure) are one cycle of the wave; the dot on the oscilloscope is the cone's present position. The spacing is schematic: the real wavelength of ${trim(freq, 2)} Hz is about ${fmtWavelength(freq)}.`;
+export function fmtWavelengthLabel(freq) {
+  const m = wavelengthM(freq);
+  if (m >= 0.995) return `${m.toFixed(2)} m`;
+  return `${+(m * 100).toFixed(m * 100 < 9.95 ? 1 : 0)} cm`;
+}
+
+export function cycleLabels(freq) {
+  const hz = trim(freq, 2);
+  const ms = fmtMs(periodMs(freq));
+  const wave = fmtWavelengthLabel(freq);
+  return [
+    `1 cycle = ${ms} ms = ${hz} Hz = ${wave} in air`,
+    `1 cycle · ${ms} ms · ${hz} Hz · ${wave}`,
+    `1 cycle · ${ms} ms · ${hz} Hz`,
+  ];
+}
+
+export function pickCycleLabel(freq, maxWidth, measure, narrow) {
+  const all = cycleLabels(freq);
+  const from = narrow ? 1 : 0;
+  for (let i = from; i < all.length; i += 1) if (measure(all[i]) <= maxWidth) return all[i];
+  return all[all.length - 1];
+}
+
+export function scopeGeometry(w, h) {
+  const left = 40;
+  const bottom = 18;
+  const pad = 8;
+  const row = 26;
+  const mid = (h - bottom - row) / 2;
+  return { left, bottom, pad, row, mid, scale: mid - pad, plotW: Math.max(1, w - left - pad), rowTop: h - bottom - row };
+}
+
+export const airNote =(freq) => `The dots are the air in front of the cone: one dense bunch (high pressure) and one thin gap (low pressure) are one cycle of the wave; the dot on the oscilloscope is the cone's present position. The spacing is schematic: the real wavelength of ${trim(freq, 2)} Hz is about ${fmtWavelength(freq)}.`;
 
 export function airGeometry(base, right) {
   const avail = Math.max(0, right - base);
@@ -216,12 +253,9 @@ function fit(canvas) {
 
 function drawMarker(g, colors, marker) {
   const { ctx, w, h } = g;
-  const left = 40;
-  const bottom = 18;
-  const pad = 8;
-  const mid = (h - bottom) / 2;
-  const x = left + marker.frac * Math.max(1, w - left - pad);
-  const y = mid - marker.level * (mid - pad);
+  const { left, plotW, mid, scale } = scopeGeometry(w, h);
+  const x = left + marker.frac * plotW;
+  const y = mid - marker.level * scale;
   ctx.save();
   ctx.strokeStyle = colors.fill;
   ctx.fillStyle = colors.fill;
@@ -321,12 +355,7 @@ function drawCone(g, colors, phase, amp) {
 
 function drawScope(g, colors, series, need, p, cycles, marker) {
   const { ctx, w, h } = g;
-  const left = 40;
-  const bottom = 18;
-  const pad = 8;
-  const plotW = Math.max(1, w - left - pad);
-  const mid = (h - bottom) / 2;
-  const scale = mid - pad;
+  const { left, bottom, pad, mid, scale, plotW } = scopeGeometry(w, h);
   ctx.clearRect(0, 0, w, h);
   ctx.font = `10px ${colors.font}`;
   ctx.textBaseline = 'middle';
@@ -371,7 +400,30 @@ function drawScope(g, colors, series, need, p, cycles, marker) {
     }
     ctx.stroke();
   }
+  drawCycleBracket(g, colors, p.freq);
   if (marker) drawMarker(g, colors, marker);
+}
+
+function drawCycleBracket(g, colors, freq) {
+  const { ctx, w, h } = g;
+  const { left, plotW, rowTop } = scopeGeometry(w, h);
+  const x0 = left;
+  const x1 = left + plotW;
+  const y = rowTop + 7;
+  ctx.save();
+  ctx.strokeStyle = colors.muted;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(x0, y); ctx.lineTo(x1, y);
+  for (const x of [x0, x1]) { ctx.moveTo(x, y - 4); ctx.lineTo(x, y + 4); }
+  ctx.stroke();
+  ctx.font = `11px ${colors.font}`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillStyle = colors.fill;
+  const text = pickCycleLabel(freq, plotW - 8, (s) => ctx.measureText(s).width, w <= NARROW_PX);
+  ctx.fillText(text, (x0 + x1) / 2, y + 5);
+  ctx.restore();
 }
 
 export function createSimpleCard(env = {}) {
@@ -435,9 +487,11 @@ export function createSimpleCard(env = {}) {
       field(`${uid}-ln`, 'Length (seconds)', el('div', { class: 'hm-freq' }, lenNum, el('span', { class: 'hm-check' }, contBox, el('label', { htmlFor: `${uid}-cb` }, 'Continuous (until Stop)'))), cap(`${uid}-ld`, LENGTH_NOTE))),
     el('div', { class: 'hm-play' }, button, stateOut),
     el('div', { class: 'hm-block' },
-      el('h3', { class: 't-subhead' }, 'Waveform'),
-      el('div', { class: 'hm-view hm-wave' }, canvas),
+      el('h3', { class: 't-subhead' }, SCOPE_TITLE),
+      el('p', { class: 'hm-cap muted t-caption' }, SCOPE_SUB),
+      el('div', { class: 'hm-view hm-wave sm-wave' }, canvas),
       readoutOut,
+      el('p', { class: 'hm-cap muted t-caption' }, SCOPE_NOTE),
       el('p', { class: 'hm-cap muted t-caption' }, SINE_NOTE)),
     el('div', { class: 'hm-block' },
       el('div', { class: 'hm-head' }, el('h3', { class: 't-subhead' }, CONE_TITLE), pauseButton),
@@ -469,7 +523,8 @@ export function createSimpleCard(env = {}) {
     lenNum.disabled = p.continuous;
     contBox.checked = p.continuous;
     readoutOut.textContent = readout(p);
-    canvas.setAttribute('aria-label', `Sine wave, ${p.freq} Hz, amplitude ${fmtPct(p.amp * 100)} % of full scale, one cycle`);
+    canvas.setAttribute('aria-label', `Oscilloscope: sine wave, ${p.freq} Hz, amplitude ${fmtPct(p.amp * 100)} % of full scale, one cycle; ${cycleLabels(p.freq)[0]}, at 20 °C`);
+    canvas.setAttribute('title', `${cycleLabels(p.freq)[0]} (speed of sound 343 m/s at 20 °C)`);
     coneCanvas.setAttribute('aria-label', `Side view of a speaker cone moving ${SLOW} times slower than real, matching the ${p.freq} Hz sine wave above, swing in proportion to the amplitude, ${fmtPct(p.amp * 100)} % of full scale; the air dots in front of the cone show one cycle of the wave as one dense bunch and one thin gap`);
     slowOut.textContent = slowReadout(p.freq);
     airOut.textContent = airNote(p.freq);

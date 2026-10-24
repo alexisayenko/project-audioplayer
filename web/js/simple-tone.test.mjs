@@ -142,6 +142,36 @@ test('WEB-204: the real wavelength is 343 m/s over the live frequency', () => {
   assert.match(s.airNote(440), /the real wavelength of 440 Hz is about 78 cm\.$/);
 });
 
+test('WEB-197: the oscilloscope bracket label states the live period, frequency and wavelength', () => {
+  assert.equal(s.cycleLabels(440)[0], '1 cycle = 2.27 ms = 440 Hz = 78 cm in air');
+  assert.equal(s.cycleLabels(220)[0], '1 cycle = 4.55 ms = 220 Hz = 1.56 m in air');
+  assert.equal(s.cycleLabels(4000)[0], '1 cycle = 0.25 ms = 4000 Hz = 8.6 cm in air');
+  assert.equal(s.cycleLabels(440)[1], '1 cycle · 2.27 ms · 440 Hz · 78 cm');
+  assert.equal(s.cycleLabels(440)[2], '1 cycle · 2.27 ms · 440 Hz');
+  assert.equal(s.fmtWavelengthLabel(343.1), '1.00 m');
+  assert.equal(s.fmtWavelengthLabel(20), '17.15 m');
+  const width = (t) => t.length * 6;
+  assert.equal(s.pickCycleLabel(440, 400, width, false), s.cycleLabels(440)[0]);
+  assert.equal(s.pickCycleLabel(440, 400, width, true), s.cycleLabels(440)[1]);
+  assert.equal(s.pickCycleLabel(440, 150, width, true), s.cycleLabels(440)[2]);
+  assert.equal(s.pickCycleLabel(440, 10, width, true), s.cycleLabels(440)[2]);
+});
+
+test('WEB-197: the bracket row lies below the curve area and above the axis labels, clear of the dot', () => {
+  const geo = s.scopeGeometry(400, 190);
+  assert.ok(geo.mid + geo.scale <= geo.rowTop);
+  assert.ok(geo.rowTop + geo.row <= 190 - geo.bottom);
+  const dotLow = geo.mid + 0.8 * geo.scale + 5;
+  assert.ok(dotLow < geo.rowTop);
+});
+
+test('WEB-197: the Primitive oscilloscope block is titled Oscilloscope with a waveform subtitle', () => {
+  const card = s.createSimpleCard(fakeCtx().env);
+  assert.ok(card.node.querySelectorAll('h3').some((h) => h.textContent === 'Oscilloscope'));
+  assert.ok(card.node.textContent.includes('Waveform of the tone: time across, amplitude up, one cycle.'));
+  card.dispose();
+});
+
 test('WEB-204: Primitive has no Cycles shown selector, a Pause animation control and honours reduced motion', () => {
   const env = { ...fakeCtx().env, matchMedia: () => ({ matches: true }) };
   const card = s.createSimpleCard(env);
