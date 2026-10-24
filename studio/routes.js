@@ -18,14 +18,32 @@ export const GROUPS = [
       { id: 'analyze/bpm', label: 'Live BPM' },
     ],
   },
+  {
+    id: 'reference',
+    label: 'Reference',
+    pages: [{ id: 'glossary', label: 'Glossary' }],
+  },
 ];
 
 export const PAGES = GROUPS.flatMap((g) => g.pages.map((p) => ({ ...p, group: g.label, hash: `#/${p.id}` })));
 export const DEFAULT_PAGE = 'synthesize/simple';
 export const ALIASES = { synthesize: 'synthesize/simple', analyze: 'analyze/listen' };
 
+const pathOf = (hash) => String(hash || '').replace(/^#\/?/, '').replace(/\/+$/, '');
+
+export const glossaryTermFromHash = (hash) => {
+  const m = pathOf(hash).match(/^glossary\/([^/]+)$/);
+  if (!m) return '';
+  try {
+    return decodeURIComponent(m[1]);
+  } catch {
+    return '';
+  }
+};
+
 export const pageFromHash = (hash) => {
-  const path = String(hash || '').replace(/^#\/?/, '').replace(/\/+$/, '');
+  const path = pathOf(hash);
   if (PAGES.some((p) => p.id === path)) return path;
+  if (/^glossary\/[^/]+$/.test(path)) return 'glossary';
   return Object.hasOwn(ALIASES, path) ? ALIASES[path] : DEFAULT_PAGE;
 };

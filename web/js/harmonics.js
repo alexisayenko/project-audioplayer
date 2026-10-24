@@ -106,6 +106,8 @@ export const ENVELOPE_MIN_SAMPLES = 16;
 export const ENVELOPE_MAX_SAMPLES = 96;
 export const BEATING_ONE = 'One string: no beating. Set Strings to 2 or more.';
 export const BEATING_ZERO = 'Detune is 0 cents: no beating. Raise the detune.';
+export const GLOSSARY_LINK = 'More terms in the Glossary →';
+export const GLOSSARY_HREF = '#/glossary';
 export const ABOUT_TITLE ='What are harmonics?';
 export const ABOUT = [
   ['Fundamental (H1)', 'is the lowest frequency, f. It sets the pitch you hear.'],
@@ -1115,7 +1117,8 @@ export function createHarmonicsCard(env = {}) {
   const beatView = view(beatCanvas, 'hm-beating');
   const about = el('details', { class: 'hm-about', open: true },
     el('summary', { class: 't-subhead' }, ABOUT_TITLE),
-    el('dl', { class: 'hm-defs' }, ...ABOUT.flatMap(([term, text]) => [el('dt', { class: 't-subhead' }, term), el('dd', { class: 't-subhead muted' }, text)])));
+    el('dl', { class: 'hm-defs' }, ...ABOUT.flatMap(([term, text]) => [el('dt', { class: 't-subhead' }, term), el('dd', { class: 't-subhead muted' }, text)])),
+    el('a', { class: 'gl-link t-subhead', href: GLOSSARY_HREF }, GLOSSARY_LINK));
 
   const stringsNote = el('p', { class: 'hm-cap muted t-caption' }, STRINGS_NOTE);
   const partsField = el('span', { class: 'hm-check' }, partsBox, el('label', { htmlFor: `${uid}-ip` }, 'Show individual harmonics'));

@@ -25,25 +25,8 @@ export const DB_NOTE = 'In decibels of full scale: dBFS = 20 x log10(amplitude).
 export const AMP_NOTE = 'How far the speaker cone moves.';
 export const LIMIT_NOTE = 'Limited to 80 % of full scale to protect your hearing and the speaker.';
 export const LENGTH_NOTE = 'A new length applies the next time you press Play. Continuous stops after 10 minutes.';
-export const ABOUT_TITLE = 'What do these mean?';
-export const ABOUT = [
-  ['Frequency', 'is how many pressure swings the speaker makes each second, in hertz (Hz). It sets the pitch.'],
-  ['Amplitude (strength)', 'is how far the speaker cone moves, so how strong each swing is. It sets the loudness.'],
-  ['Power', 'is the energy per second the sound carries. It is proportional to the amplitude squared.'],
-  ['Length', 'is how long the cone keeps moving, in seconds.'],
-];
-export const GLOSSARY_TITLE = 'Sound, tone, note: what is what?';
-export const GLOSSARY = [
-  ['Sound', 'any air pressure vibration you can hear.'],
-  ['Oscillation', 'any repeating back-and-forth change, such as a pendulum, a voltage or air pressure. From Latin oscillare, "to swing" (English since about 1726).'],
-  ['Vibration', 'an oscillation of a physical object, such as a string or a speaker cone. The cone vibrates; the air pressure it creates oscillates.'],
-  ['Frequency', 'how many swings per second (Hz), a number you can measure and set.'],
-  ['Pitch', 'how high or low a sound seems to you; it follows the fundamental frequency.'],
-  ['Tone', 'a sound with a clear pitch; a pure tone is a single sine wave.'],
-  ['Harmonic 1 (H1)', 'the lowest frequency inside a tone, its fundamental. H2 = 2 x H1, H3 = 3 x H1, and so on.'],
-  ['Note', 'the musical name of a pitch (A4 = 440 Hz). It is named after the fundamental (H1); the other harmonics only colour the sound (timbre).'],
-  ['Timbre', 'the mix of harmonics; why a flute and a piano playing the same note sound different.'],
-];
+export const GLOSSARY_LINK = 'Terms: see the Glossary →';
+export const GLOSSARY_HREF = '#/glossary';
 export const SINE_NOTE = 'One sine wave = one frequency = H1 only.';
 export const TEXT = {
   idle: 'Ready',
@@ -279,12 +262,7 @@ export function createSimpleCard(env = {}) {
       el('div', { class: 'hm-view hm-wave' }, canvas),
       readoutOut,
       el('p', { class: 'hm-cap muted t-caption' }, SINE_NOTE)),
-    el('details', { class: 'hm-about', open: true },
-      el('summary', { class: 't-subhead' }, ABOUT_TITLE),
-      el('dl', { class: 'hm-defs' }, ...ABOUT.flatMap(([term, text]) => [el('dt', { class: 't-subhead' }, term), el('dd', { class: 't-subhead muted' }, text)]))),
-    el('details', { class: 'hm-about', open: true },
-      el('summary', { class: 't-subhead' }, GLOSSARY_TITLE),
-      el('dl', { class: 'hm-defs' }, ...GLOSSARY.flatMap(([term, text]) => [el('dt', { class: 't-subhead' }, term), el('dd', { class: 't-subhead muted' }, text)]))));
+    el('a', { class: 'gl-link t-subhead', href: GLOSSARY_HREF }, GLOSSARY_LINK));
 
   const active = () => doc?.activeElement;
 

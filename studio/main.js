@@ -3,6 +3,7 @@ import { mountMic, mountListen, mountChordophones } from '../web/js/studio-tools
 import { mountSimple } from '../web/js/simple-tone.js';
 import { PAGES, pageFromHash } from './routes.js';
 import { mountPlaceholder } from './placeholders.js';
+import { mountGlossary } from './glossary.js';
 
 const MOUNT = {
   'synthesize/simple': (pane) => mountSimple(pane),
@@ -12,6 +13,7 @@ const MOUNT = {
   'synthesize/idiophones': (pane) => mountPlaceholder(pane, 'synthesize/idiophones'),
   'analyze/listen': (pane) => mountListen(pane),
   'analyze/bpm':(pane) => mountMic(pane, { standalone: true }),
+  glossary: (pane) => mountGlossary(pane),
 };
 
 const root = document.getElementById('app');
