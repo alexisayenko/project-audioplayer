@@ -2,9 +2,12 @@ import { createSim } from './genre-sim.js';
 import { fitTransform, recenterOnResize, placeLabels, isDragMove } from './genre-view.js';
 import { createHash } from './genre-spatial.js';
 import { createCrossingLayout } from './genre-layout.js';
-import { FAMILY_PALETTE_SIZE, arrowHead, clipLink, onSlotColours, isOutlinedSlot } from './genre-data.js';
+import { FAMILY_PALETTE_SIZE, onSlotColours, isOutlinedSlot } from './genre-data.js';
 import { fillDisc, outlineDisc } from './genre-disc.js';
 import { shadeTable } from './genre-shade.js';
+import { enterNodes } from './genre-force-enter.js';
+import { focusState } from './genre-force-focus.js';
+import { drawLinks, FADE_STEP } from './genre-force-links.js';
 
 const MIN_K = 0.08;
 const MAX_K = 8;
@@ -12,8 +15,6 @@ const FOCUS_K = 1.8;
 const FONT_PX = 12;
 const EMPHASIS_ALPHA = [0.34, 0.72, 1];
 const DIM = 0.2;
-const ANCESTOR_LEVELS = 12;
-const FADE_STEP = 0.12;
 const fadeAt = (d, floor) => (d > 1 ? Math.max(floor, 1 - FADE_STEP * (d - 1)) : 1);
 const FADE_MS = 130;
 const MOVE_MS = 380;
@@ -31,14 +32,6 @@ const FOLLOW_REST_DIST = 0.02;
 const FOLLOW_REST_SPEED = 0.05;
 const PARENT_REACTION = 0;
 const REVEAL_ALPHA = 0.25;
-const RING_GAP = 6;
-const RING_SCALE = 3;
-const RING_MAX = 70 * RING_SCALE;
-const RING_PITCH = 6;
-const RING_MULTI_MIN = 14;
-const RING_STEP = 0.85;
-const NEAR_STEP = 0.5;
-const RING_ARC = (300 * Math.PI) / 180;
 const SIM = { charge: 6, linkDistance: 20, gravity: 0, home: 0.05, velocityDecay: 0.34, parentStrength: 1.4, linkFloor: 0.15, parentReaction: PARENT_REACTION };
 const LAYOUT_SLICE_MS = 6;
 const LAYOUT_STATIC_MS = 1500;
@@ -49,6 +42,11 @@ const inert = () => ({
 });
 
 const clampK = (k) => Math.min(MAX_K, Math.max(MIN_K, k));
+
+function linkKind(l) {
+  if (l.assoc) return 'assoc';
+  return l.related ? 'related' : 'parent';
+}
 
 export function createForceView(canvas, { onSelect, onHover, onMoved, reducedMotion = false, simOptions = {}, rigid = false } = {}) {
   const ctx = canvas.getContext?.('2d');
@@ -181,7 +179,7 @@ export function createForceView(canvas, { onSelect, onHover, onMoved, reducedMot
   function rebuildSim(heat) {
     const act = liveNodes();
     const ids = new Set(act.map((n) => n.id));
-    const ls = links.filter((l) => ids.has(l.s.id) && ids.has(l.t.id)).map((l) => ({ source: l.s.id, target: l.t.id, kind: l.assoc ? 'assoc' : l.related ? 'related' : 'parent' }));
+    const ls = links.filter((l) => ids.has(l.s.id) && ids.has(l.t.id)).map((l) => ({ source: l.s.id, target: l.t.id, kind: linkKind(l) }));
     sim = createSim({ nodes: act, links: ls, seed: 1, breathing: false, ...SIM, ...simOptions });
     syncLinkLength();
     sim.alpha = heat;
@@ -290,85 +288,7 @@ export function createForceView(canvas, { onSelect, onHover, onMoved, reducedMot
     if (again) request(); else last = 0;
   }
 
-  function focusState(n) {
-    if (!n) return null;
-    const set = new Set([n]);
-    const edges = new Set(incident.get(n.id) || []);
-    const depth = new Map();
-    const edgeDepth = new Map();
-    for (const id of adj.get(n.id) || []) set.add(byId.get(id));
-    if (n === sel) {
-      const seen = new Map([[n.id, 0]]);
-      const queue = [n];
-      for (let i = 0; i < queue.length && seen.get(queue[i].id) < ANCESTOR_LEVELS; i++) {
-        const d = seen.get(queue[i].id) + 1;
-        for (const l of parentLinks.get(queue[i].id) || []) {
-          set.add(l.s); edges.add(l);
-          if (!edgeDepth.has(l)) edgeDepth.set(l, d);
-          if (!seen.has(l.s.id)) { seen.set(l.s.id, d); depth.set(l.s, d); queue.push(l.s); }
-        }
-      }
-    }
-    return { n, set, edges, depth, edgeDepth };
-  }
-
-  function refocus() { focus = focusState(sel); }
-
-  function strokeLinks(list, k, alpha, color, width, dotted = false) {
-    if (!list.length) return;
-    ctx.globalAlpha = alpha;
-    ctx.strokeStyle = color;
-    ctx.lineWidth = width / k;
-    ctx.setLineDash(dotted ? [1 / k, 3 / k] : []);
-    ctx.beginPath();
-    for (const l of list) {
-      const c = clipLink(l.s.x, l.s.y, l.s.r * (0.4 + 0.6 * l.s.vis), l.t.x, l.t.y, l.t.r * (0.4 + 0.6 * l.t.vis));
-      if (c) { ctx.moveTo(c.x1, c.y1); ctx.lineTo(c.x2, c.y2); }
-    }
-    ctx.stroke();
-  }
-
-  function arrowLinks(list, k, alpha, color) {
-    let any = false;
-    for (const l of list) {
-      if (l.related) continue;
-      const a = arrowHead(l.s.x, l.s.y, l.s.r, l.t.x, l.t.y, l.t.r * (0.4 + 0.6 * l.t.vis), k);
-      if (!a) continue;
-      if (!any) { ctx.globalAlpha = alpha; ctx.fillStyle = color; ctx.beginPath(); any = true; }
-      ctx.moveTo(a.tx, a.ty); ctx.lineTo(a.ax, a.ay); ctx.lineTo(a.bx, a.by); ctx.closePath();
-    }
-    if (any) ctx.fill();
-  }
-
-  function drawLinks(k) {
-    const plain = [];
-    const lit = [];
-    const litFar = new Map();
-    const dotted = [];
-    const litDotted = [];
-    const fading = [];
-    for (const l of links) {
-      const v = Math.min(l.s.vis, l.t.vis);
-      if (v < 0.02) continue;
-      if (v < 0.99) { fading.push(l); continue; }
-      const on = focus?.edges.has(l);
-      const d = on ? focus.edgeDepth.get(l) || 1 : 1;
-      if (on && d > 1 && !l.assoc) litFar.set(d, [...(litFar.get(d) || []), l]);
-      else if (l.assoc) (on ? litDotted : dotted).push(l); else (on ? lit : plain).push(l);
-    }
-    const base = focus ? 0.06 : 0.2;
-    strokeLinks(plain, k, base, colors.edge, 1);
-    for (const l of fading) strokeLinks([l], k, 0.3 * Math.min(l.s.vis, l.t.vis), colors.edge, 1, l.assoc);
-    strokeLinks(dotted, k, base * 0.8, colors.edge, 0.7, true);
-    strokeLinks(lit, k, 0.95, colors.accent, 1.8);
-    for (const [d, list] of litFar) strokeLinks(list, k, Math.max(0.45, 0.95 - FADE_STEP * (d - 1)), colors.accent, 1.8);
-    strokeLinks(litDotted, k, 0.95, colors.accent, 1.2, true);
-    ctx.setLineDash([]);
-    arrowLinks(plain, k, base, colors.edge);
-    for (const l of fading) if (!l.assoc) arrowLinks([l], k, 0.3 * Math.min(l.s.vis, l.t.vis), colors.edge);
-    arrowLinks(lit, k, 0.95, colors.accent);
-    for (const [d, list] of litFar) arrowLinks(list, k, Math.max(0.45, 0.95 - FADE_STEP * (d - 1)), colors.accent);
-  }
+  function refocus() { focus = focusState(sel, sel, { incident, adj, byId, parentLinks }); }
 
   function ring(n, extra, w, color, k) {
     ctx.globalAlpha = 1;
@@ -516,7 +436,7 @@ export function createForceView(canvas, { onSelect, onHover, onMoved, reducedMot
     if (!nodes.length) return;
     const k = tf.k;
     ctx.setTransform(dpr * k, 0, 0, dpr * k, dpr * tf.x, dpr * tf.y);
-    drawLinks(k);
+    drawLinks(ctx, links, focus, colors, k);
     for (const n of order) {
       if (n.vis >= 0.02 && onScreen(n, k, n.r * k + 12)) drawNode(n, k);
     }
@@ -901,126 +821,7 @@ export function createForceView(canvas, { onSelect, onHover, onMoved, reducedMot
     refocus();
   }
 
-  function fanSlots(rs, par, center, arc) {
-    const count = rs.length;
-    const maxR = Math.max(...rs);
-    const pitch = 2 * (rs.reduce((s, r) => s + r, 0) / count) + RING_PITCH;
-    const first = RING_SCALE * (par.r + maxR + RING_GAP);
-    const at = (ang, rad) => ({ ang, rad });
-    if (count <= RING_MULTI_MIN) {
-      const rad = Math.min(RING_MAX, Math.max(first, (RING_SCALE * count * pitch) / arc));
-      return rs.map((_, i) => at(center - arc / 2 + (arc * (i + 0.5)) / count, rad));
-    }
-    const step = RING_SCALE * pitch * RING_STEP;
-    const radii = [];
-    for (let cap = 0, k = 0; cap < count && k < 24; k++) {
-      radii.push(first + k * step);
-      cap += (arc * radii[k]) / pitch;
-    }
-    const total = radii.reduce((s, r) => s + r, 0);
-    const per = radii.map((r) => Math.floor((count * r) / total));
-    const order = radii.map((r, k) => ({ k, rem: (count * r) / total - per[k] })).sort((a, b) => b.rem - a.rem);
-    for (let left = count - per.reduce((s, c) => s + c, 0), i = 0; left > 0; left--, i++) per[order[i % order.length].k]++;
-    const slots = [];
-    radii.forEach((rad, k) => {
-      for (let j = 0; j < per[k]; j++) slots.push(at(center - arc / 2 + (arc * (j + (k % 2 ? 0.25 : 0.75))) / per[k], rad));
-    });
-    return slots.sort((a, b) => a.ang - b.ang || a.rad - b.rad);
-  }
-
-  function fanCenter(par, ready) {
-    const ups = (parentLinks.get(par.id) || []).map((l) => l.s).filter(ready);
-    if (!ups.length) return { center: (par.id.length % 11) * 0.3, arc: 2 * Math.PI };
-    const gx = ups.reduce((s, m) => s + m.x, 0) / ups.length;
-    const gy = ups.reduce((s, m) => s + m.y, 0) / ups.length;
-    if (Math.hypot(par.x - gx, par.y - gy) < 1) return { center: (par.id.length % 11) * 0.3, arc: 2 * Math.PI };
-    return { center: Math.atan2(par.y - gy, par.x - gx), arc: RING_ARC };
-  }
-
-  function enterNodes(entering, chained = false) {
-    const fresh = new Set(entering);
-    const placed = new Set();
-    const ready = (m) => m.target === 1 && ((chained && placed.has(m)) || (!fresh.has(m) && m.vis > 0.3));
-    const pending = new Set(entering);
-    const fan = (par, kids) => {
-      const { center, arc } = fanCenter(par, ready);
-      const slots = fanSlots(kids.map((n) => n.r), par, center, arc);
-      kids.forEach((n, i) => {
-        const { ang, rad } = slots[i];
-        n.x = par.x + Math.cos(ang) * rad;
-        n.y = par.y + Math.sin(ang) * rad;
-        n.vx = 0; n.vy = 0;
-        n.hx = n.x; n.hy = n.y;
-        n.ringPar = par.id; n.ringRad = rad;
-        placed.add(n);
-        pending.delete(n);
-      });
-    };
-    const seeds = new Map(entering.map((n) => [n, { x: n.hx ?? n.x, y: n.hy ?? n.y }]));
-    const anchored = new Map();
-    const reach = (a, n) => {
-      const rings = nodes.filter((m) => m.ringPar === a.id && m.target === 1 && !fresh.has(m)).map((m) => m.ringRad);
-      const kids = [...pending].filter((m) => (parentLinks.get(m.id) || []).some((l) => l.s === a));
-      if (kids.length) {
-        const { center, arc } = fanCenter(a, ready);
-        rings.push(...fanSlots(kids.map((m) => m.r), a, center, arc).map((o) => o.rad));
-      }
-      return rings.length ? Math.max(...rings) + RING_SCALE * RING_GAP + n.r : RING_SCALE * (a.r + n.r + RING_GAP);
-    };
-    const nearArc = (n, a) => {
-      const from = seeds.get(a) || { x: a.hx ?? a.x, y: a.hy ?? a.y };
-      const to = seeds.get(n) || { x: n.hx ?? n.x, y: n.hy ?? n.y };
-      const k = anchored.get(a) || 0;
-      anchored.set(a, k + 1);
-      const base = Math.hypot(to.x - from.x, to.y - from.y) > 1 ? Math.atan2(to.y - from.y, to.x - from.x) : (n.id.length % 11) * 0.6;
-      const ang = base + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * NEAR_STEP;
-      const rad = reach(a, n);
-      n.x = a.x + Math.cos(ang) * rad;
-      n.y = a.y + Math.sin(ang) * rad;
-      n.vx = 0; n.vy = 0;
-      n.hx = n.x; n.hy = n.y;
-      n.ringPar = null;
-    };
-    const near = (n) => {
-      const nb = [...(adj.get(n.id) || [])].map((id) => byId.get(id)).filter(ready);
-      if (!nb.length) return false;
-      n.x = nb.reduce((s, m) => s + m.x, 0) / nb.length + ((n.id.length % 7) - 3);
-      n.y = nb.reduce((s, m) => s + m.y, 0) / nb.length + ((n.id.length % 5) - 2);
-      n.vx = 0; n.vy = 0;
-      n.ringPar = null;
-      placed.add(n);
-      pending.delete(n);
-      return true;
-    };
-    const lift = () => {
-      let any = false;
-      for (let again = true; again; ) {
-        again = false;
-        for (const n of [...pending]) {
-          const kid = (childrenOf.get(n.id) || []).find(ready);
-          if (!kid) continue;
-          nearArc(n, kid);
-          placed.add(n);
-          pending.delete(n);
-          again = true;
-          any = true;
-        }
-      }
-      return any;
-    };
-    for (let moved = true; moved && pending.size; ) {
-      moved = false;
-      if (chained && lift()) moved = true;
-      const groups = new Map();
-      for (const n of pending) {
-        const par = (parentLinks.get(n.id) || []).map((l) => l.s).find(ready);
-        if (par) groups.set(par, [...(groups.get(par) || []), n]);
-      }
-      for (const [par, kids] of groups) { fan(par, kids); moved = true; }
-      for (const n of [...pending]) if (near(n)) moved = true;
-      if (!chained) break;
-    }
-  }
+  const enter = (entering, chained) => enterNodes(entering, chained, { nodes, byId, adj, parentLinks, childrenOf });
 
   return {
     setGraph(graph, { saved = null, moved = null } = {}) {
@@ -1061,7 +862,7 @@ export function createForceView(canvas, { onSelect, onHover, onMoved, reducedMot
       const entering = nodes.filter((n) => n.target === 1 && before.get(n.id) === 0);
       const changed = entering.length > 0 || nodes.some((n) => n.target === 0 && before.get(n.id) === 1);
       if (!changed) return;
-      enterNodes(entering, chained);
+      enter(entering, chained);
       rebuildSim(chained ? Math.min(heat, REVEAL_ALPHA) : heat);
       const hold = keepCamera && (userMoved || (chained && inView()));
       if (hold && !userMoved) follow = false;
