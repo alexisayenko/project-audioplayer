@@ -2,7 +2,7 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
-## 2026-10-25 (Studio Trail length acts on the existing ghost at once, built, not yet deployed; the main app is unchanged)
+## 2026-10-25 (Studio Trail length acts on the existing ghost at once, deployed to studio.electrophone.cc as `3723245`; the main app is unchanged, its bundle did not change)
 
 - Web (WEB-205, STU-028; owner: "trail length is not live"; no tests run, `node --check`, the build and the Browser pane with a faked analyser only): each bin now stores its last peak and the time of the peak, and the ghost is `peak - rate x (now - t_peak)` with the current rate every frame (`trailLevel`, `holdTrail`), so moving the counter reshapes the ghost already on screen in the same frame instead of changing only its future fall. Cause: the old buffer fell incrementally, so a new length only changed the later fall (the counter was present on the live site and reached the draw loop). 440 Hz burst, 5 s to 1 s by minus clicks or typing, ghost 1 s later: -70.8 dB before the fix (-30.5 right after the change), -97.2 dB after (-56.9 right after); one frame is no longer capped at 250 ms, a long pause now fades the ghost by real time. `listen-views.test.mjs` adjusted, not run.
 
