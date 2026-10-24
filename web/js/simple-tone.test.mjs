@@ -240,10 +240,57 @@ test('WEB-197: the bracket row lies below the curve area and above the axis labe
   assert.ok(dotLow < geo.rowTop);
 });
 
-test('WEB-197: the Primitive oscilloscope block is titled Oscilloscope with a waveform subtitle', () => {
+test('WEB-207: the time window covers frequency x window cycles, with a caption, a many-cycles hint and sensible ms ticks', () => {
+  assert.deepEqual(s.WINDOW_CHOICES, [10, 20, 50, 200]);
+  assert.equal(s.WINDOW_DEFAULT, 20);
+  assert.ok(near(s.windowCycles(440, 20), 8.8));
+  assert.ok(near(s.windowCycles(1000, 10), 10));
+  assert.equal(s.windowCaption(440, 20), 'about 8.8 cycles in 20 ms');
+  assert.equal(s.windowCaption(440, 200), 'about 88 cycles in 200 ms');
+  assert.equal(s.windowCaption(100, 10), 'about 1 cycle in 10 ms');
+  assert.equal(s.windowCaption(20, 10), 'about 0.2 cycles in 10 ms');
+  assert.equal(s.tooManyCycles(s.windowCycles(440, 20)), false);
+  assert.equal(s.tooManyCycles(s.windowCycles(440, 200)), true);
+  assert.equal(s.tooManyCycles(60), false);
+  assert.equal(s.tooManyCycles(60.5), true);
+  assert.deepEqual(s.windowTicks(20).map((t) => t.ms), [0, 5, 10, 15, 20]);
+  assert.deepEqual(s.windowTicks(10).map((t) => t.ms), [0, 2, 4, 6, 8, 10]);
+  assert.deepEqual(s.windowTicks(50).map((t) => t.ms), [0, 10, 20, 30, 40, 50]);
+  assert.deepEqual(s.windowTicks(200).map((t) => t.frac), [0, 0.25, 0.5, 0.75, 1]);
+  assert.ok(near(s.scopeSeries(0.3, 801, s.windowCycles(440, 20))[400], 0.3 * Math.sin(Math.PI * 8.8), 1e-9));
+  assert.ok(s.windowPoints(300, 5000) <= s.WINDOW_MAX_POINTS);
+  assert.ok(s.windowPoints(300, 1) >= 600);
+  assert.equal(s.scopeGeometry(400, 160, false).row, 0);
+  assert.equal(s.scopeGeometry(400, 190).row, 26);
+});
+
+test('WEB-207: Primitive has a second oscilloscope below the first with a Time window switch that follows the settings', () => {
   const card = s.createSimpleCard(fakeCtx().env);
-  assert.ok(card.node.querySelectorAll('h3').some((h) => h.textContent === 'Oscilloscope'));
-  assert.ok(card.node.textContent.includes('Waveform of the tone: time across, amplitude up, one cycle; the dot is the pressure now.'));
+  const heads = card.node.querySelectorAll('h3').map((h) => h.textContent);
+  assert.ok(heads.indexOf('Oscilloscope: one cycle') >= 0);
+  assert.equal(heads.indexOf('Oscilloscope: time window'), heads.indexOf('Oscilloscope: one cycle') + 1);
+  assert.ok(card.node.textContent.includes('Oscilloscope: one cycle. Waveform of the tone over one cycle: time across, amplitude up; the dot is the pressure now.'));
+  assert.ok(card.node.textContent.includes('Oscilloscope: time window. Waveform over a period of time: time across, amplitude up.'));
+  assert.equal(card.window, 20);
+  assert.ok(card.node.textContent.includes('about 8.8 cycles in 20 ms'));
+  const many = card.node.querySelectorAll('p').find((p) => p.textContent === 'Too many cycles to see the shape: shorten the window');
+  assert.equal(many.hidden, true);
+  card.setWindow(200);
+  assert.equal(card.window, 200);
+  assert.ok(card.node.textContent.includes('about 88 cycles in 200 ms'));
+  assert.equal(many.hidden, false);
+  card.setWindow(123);
+  assert.equal(card.window, 200);
+  card.change({ freq: 100 });
+  assert.ok(card.node.textContent.includes('about 20 cycles in 200 ms'));
+  assert.equal(many.hidden, true);
+  card.dispose();
+});
+
+test('WEB-197: the Primitive oscilloscope block is titled Oscilloscope: one cycle with a waveform subtitle', () => {
+  const card = s.createSimpleCard(fakeCtx().env);
+  assert.ok(card.node.querySelectorAll('h3').some((h) => h.textContent === 'Oscilloscope: one cycle'));
+  assert.ok(card.node.textContent.includes('Waveform of the tone over one cycle: time across, amplitude up; the dot is the pressure now.'));
   assert.ok(card.node.textContent.includes('The cone is a quarter cycle behind the pressure: the air is squeezed hardest when the cone moves fastest, in the middle of its swing.'));
   assert.ok(card.node.textContent.includes('the curve above them is the oscilloscope curve mirrored in time, and the dot on the oscilloscope is the pressure now'));
   assert.ok(!card.node.textContent.includes("the cone's present position"));

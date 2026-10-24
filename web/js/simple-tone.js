@@ -26,9 +26,18 @@ export const FAST_SLOWED_HZ = 5;
 export const MAX_FRAME_MS = 100;
 export const SOUND_SPEED = 343;
 export const NARROW_PX = 480;
-export const SCOPE_TITLE = 'Oscilloscope';
-export const SCOPE_SUB = 'Waveform of the tone: time across, amplitude up, one cycle; the dot is the pressure now.';
+export const SCOPE_TITLE = 'Oscilloscope: one cycle';
+export const SCOPE_SUB = 'Oscilloscope: one cycle. Waveform of the tone over one cycle: time across, amplitude up; the dot is the pressure now.';
 export const SCOPE_NOTE = 'The bracket: one cycle in time is one wavelength in space (speed of sound 343 m/s divided by the frequency, in air at 20 °C).';
+export const WINDOW_TITLE = 'Oscilloscope: time window';
+export const WINDOW_SUB = 'Oscilloscope: time window. Waveform over a period of time: time across, amplitude up.';
+export const WINDOW_LABEL = 'Time window';
+export const WINDOW_CHOICES = [10, 20, 50, 200];
+export const WINDOW_DEFAULT = 20;
+export const WINDOW_STEPS = { 10: 2, 20: 5, 50: 10, 200: 50 };
+export const MANY_CYCLES = 60;
+export const MANY_TEXT = 'Too many cycles to see the shape: shorten the window';
+export const WINDOW_MAX_POINTS = 8000;
 export const AIR_ROWS = 5;
 export const AIR_GAP = 12;
 export const AIR_MAX_COLS = 56;
@@ -170,11 +179,11 @@ export function pickCycleLabel(freq, maxWidth, measure, narrow) {
   return all[all.length - 1];
 }
 
-export function scopeGeometry(w, h) {
+export function scopeGeometry(w, h, bracket = true) {
   const left = 40;
   const bottom = 18;
   const pad = 8;
-  const row = 26;
+  const row = bracket ? 26 : 0;
   const mid = (h - bottom - row) / 2;
   return { left, bottom, pad, row, mid, scale: mid - pad, plotW: Math.max(1, w - left - pad), rowTop: h - bottom - row };
 }
@@ -209,6 +218,27 @@ export const airSpacing = (phase, amp, geo, dist) => 1 - airK(amp) * pressureAt(
 export const airDensity = (phase, amp, geo, dist) => 1 + airK(amp) * pressureAt(phase, dist, geo.wavelength);
 
 export const airCurve = (phase, amp, frac) => (amp / MAX_AMP) * pressureAt(phase, frac, 1);
+
+export const windowCycles = (freq, windowMs) => (freq * windowMs) / 1000;
+
+export function fmtCycles(cycles) {
+  return cycles < 10 ? String(+cycles.toFixed(1)) : String(Math.round(cycles));
+}
+
+export function windowCaption(freq, windowMs) {
+  const text = fmtCycles(windowCycles(freq, windowMs));
+  return `about ${text} ${text === '1' ? 'cycle' : 'cycles'} in ${windowMs} ms`;
+}
+
+export const tooManyCycles = (cycles) => cycles > MANY_CYCLES;
+
+export function windowTicks(windowMs) {
+  const step = WINDOW_STEPS[windowMs] ?? windowMs / 4;
+  const n = Math.max(1, Math.round(windowMs / step));
+  return Array.from({ length: n + 1 }, (_, k) => ({ frac: k / n, ms: k * step }));
+}
+
+export const windowPoints = (width, cycles) => clamp(Math.round(cycles * 12), Math.max(64, Math.round(width * 2)), WINDOW_MAX_POINTS);
 
 export function scopeSeries(amp, points, cycles = CYCLES) {
   const out = new Array(points);
@@ -411,9 +441,10 @@ function drawCone(g, colors, phase, amp) {
   ctx.globalAlpha = 1;
 }
 
-function drawScope(g, colors, series, need, p, cycles, marker) {
+function drawScope(g, colors, series, need, p, view) {
   const { ctx, w, h } = g;
-  const { left, bottom, pad, mid, scale, plotW } = scopeGeometry(w, h);
+  const { ticks, bracket = true, marker = null } = view;
+  const { left, bottom, pad, mid, scale, plotW } = scopeGeometry(w, h, bracket);
   ctx.clearRect(0, 0, w, h);
   ctx.font = `10px ${colors.font}`;
   ctx.textBaseline = 'middle';
@@ -427,7 +458,7 @@ function drawScope(g, colors, series, need, p, cycles, marker) {
     ctx.fillText(text, left - 4, y);
   }
   ctx.textBaseline = 'top';
-  for (const t of scopeTicks(cycles, p.freq)) {
+  for (const t of ticks) {
     const x = left + t.frac * plotW;
     ctx.beginPath(); ctx.moveTo(x, mid - scale); ctx.lineTo(x, mid + scale); ctx.stroke();
     ctx.textAlign = t.frac === 0 ? 'left' : t.frac >= 1 ? 'right' : 'center';
@@ -458,7 +489,7 @@ function drawScope(g, colors, series, need, p, cycles, marker) {
     }
     ctx.stroke();
   }
-  drawCycleBracket(g, colors, p.freq);
+  if (bracket) drawCycleBracket(g, colors, p.freq);
   if (marker) drawMarker(g, colors, marker);
 }
 
@@ -501,6 +532,7 @@ export function createSimpleCard(env = {}) {
   let phase = reduced ? 0.25 : 0;
   let paused = reduced;
   let slow = SLOW_DEFAULT;
+  let win = WINDOW_DEFAULT;
   let inView = true;
   let animLast = 0;
   let colors = null;
@@ -537,6 +569,14 @@ export function createSimpleCard(env = {}) {
     el('span', { id: `${uid}-sl`, class: 'hm-lbl' }, SLOW_LABEL),
     slowSeg.group);
 
+  const windowCanvas = el('canvas', { class: 'hm-canvas', role: 'img' });
+  const windowCapOut = el('p', { class: 'hm-cap muted t-caption' });
+  const manyOut = el('p', { class: 'hm-cap t-caption sm-many', role: 'status' }, MANY_TEXT);
+  const winSeg = segmented(WINDOW_CHOICES.map((n) => [n, `${n} ms`]), () => win, (n) => setWin(n), { 'aria-labelledby': `${uid}-wl` });
+  const winField = el('div', { class: 'hm-axis' },
+    el('span', { id: `${uid}-wl`, class: 'hm-lbl' }, WINDOW_LABEL),
+    winSeg.group);
+
   const field = (id, title, ...rest) => el('div', { class: 'hm-field' }, el('label', { htmlFor: id }, title), ...rest);
   const cap = (id, text) => el('p', { id, class: 'hm-cap muted t-caption' }, text);
 
@@ -557,6 +597,13 @@ export function createSimpleCard(env = {}) {
       readoutOut,
       el('p', { class: 'hm-cap muted t-caption' }, SCOPE_NOTE),
       el('p', { class: 'hm-cap muted t-caption' }, SINE_NOTE)),
+    el('div', { class: 'hm-block' },
+      el('h3', { class: 't-subhead' }, WINDOW_TITLE),
+      el('p', { class: 'hm-cap muted t-caption' }, WINDOW_SUB),
+      winField,
+      el('div', { class: 'hm-view hm-wave' }, windowCanvas),
+      windowCapOut,
+      manyOut),
     el('div', { class: 'hm-block' },
       el('div', { class: 'hm-head' }, el('h3', { class: 't-subhead' }, CONE_TITLE), pauseButton),
       slowField,
@@ -588,13 +635,25 @@ export function createSimpleCard(env = {}) {
     lenNum.disabled = p.continuous;
     contBox.checked = p.continuous;
     readoutOut.textContent = readout(p);
-    canvas.setAttribute('aria-label', `Oscilloscope: sine wave, ${p.freq} Hz, amplitude ${fmtPct(p.amp * 100)} % of full scale, one cycle; ${cycleLabels(p.freq)[0]}, at 20 °C`);
+    canvas.setAttribute('aria-label', `Oscilloscope: one cycle, sine wave, ${p.freq} Hz, amplitude ${fmtPct(p.amp * 100)} % of full scale; ${cycleLabels(p.freq)[0]}, at 20 °C`);
+    const cyc = windowCycles(p.freq, win);
+    windowCapOut.textContent = windowCaption(p.freq, win);
+    manyOut.hidden = !tooManyCycles(cyc);
+    windowCanvas.setAttribute('aria-label', `Oscilloscope: time window, sine wave, ${p.freq} Hz, amplitude ${fmtPct(p.amp * 100)} % of full scale, ${windowCaption(p.freq, win)}`);
+    winSeg.paint();
     canvas.setAttribute('title', `${cycleLabels(p.freq)[0]} (speed of sound 343 m/s at 20 °C)`);
     coneCanvas.setAttribute('aria-label', `Side view of a speaker cone moving ${slow} times slower than real at ${p.freq} Hz, swing in proportion to the amplitude, ${fmtPct(p.amp * 100)} % of full scale; the cone is a quarter cycle behind the pressure on the oscilloscope above; the air dots in front of the cone show one cycle of the wave as one dense bunch and one thin gap, and the curve above them is the oscilloscope curve mirrored in time, the air density`);
     slowOut.textContent = slowReadout(p.freq, slow);
     coneNoteOut.textContent = coneNote(slow);
     airOut.textContent = airNote(p.freq);
     slowSeg.paint();
+  }
+
+  function setWin(n) {
+    if (!WINDOW_CHOICES.includes(n) || n === win) return;
+    win = n;
+    paintOutputs();
+    paintWindow();
   }
 
   function setSlow(n) {
@@ -630,13 +689,23 @@ export function createSimpleCard(env = {}) {
     const c = currentColors();
     const points = Math.max(64, Math.round(g.w * 2));
     const marker = scopeMarker(phase, params.amp);
+    const view = { ticks: scopeTicks(cycles, params.freq), marker };
     if (live) {
       live.analyser.getFloatTimeDomainData(live.buf);
-      const win = liveWindow(live.buf, live.ctx.sampleRate, params.freq, cycles, points);
-      drawScope(g, c, win.samples, win.need, params, cycles, marker);
+      const lw = liveWindow(live.buf, live.ctx.sampleRate, params.freq, cycles, points);
+      drawScope(g, c, lw.samples, lw.need, params, view);
     } else {
-      drawScope(g, c, scopeSeries(params.amp, points, cycles), points, params, cycles, marker);
+      drawScope(g, c, scopeSeries(params.amp, points, cycles), points, params, view);
     }
+  }
+
+  function paintWindow() {
+    if (gone) return;
+    const g = fit(windowCanvas);
+    if (!g) return;
+    const cyc = windowCycles(params.freq, win);
+    const points = windowPoints(g.w, cyc);
+    drawScope(g, currentColors(), scopeSeries(params.amp, points, cyc), points, params, { ticks: windowTicks(win), bracket: false });
   }
 
   function paintCone() {
@@ -651,6 +720,7 @@ export function createSimpleCard(env = {}) {
   function paintAll() {
     paintScope();
     paintCone();
+    paintWindow();
   }
 
   const animOn = () => !gone && !paused && inView && !doc?.hidden;
@@ -668,7 +738,7 @@ export function createSimpleCard(env = {}) {
     const running = animOn();
     if (running) phase = advancePhase(phase, params.freq, Math.min(t - animLast, MAX_FRAME_MS), slow);
     animLast = t;
-    if (running) paintAll(); else paintScope();
+    if (running) { paintScope(); paintCone(); } else paintScope();
     if (live || running) schedule();
   }
 
@@ -805,7 +875,8 @@ export function createSimpleCard(env = {}) {
     params = clampParams({ ...params, ...next });
     paintOutputs();
     applyLive(params.amp !== before);
-    if (!looping) paintAll();
+    paintWindow();
+    if (!looping) { paintScope(); paintCone(); }
   }
 
   const typed = (input, apply) => {
@@ -823,7 +894,11 @@ export function createSimpleCard(env = {}) {
 
   let ro = null;
   if (typeof ResizeObserver !== 'undefined') {
-    ro = new ResizeObserver(() => { if (!gone && !looping) paintAll(); });
+    ro = new ResizeObserver(() => {
+      if (gone) return;
+      paintWindow();
+      if (!looping) { paintScope(); paintCone(); }
+    });
     ro.observe(node);
   }
 
@@ -853,7 +928,9 @@ export function createSimpleCard(env = {}) {
     get animating() { return looping && animOn(); },
     get paused() { return paused; },
     get slow() { return slow; },
+    get window() { return win; },
     setSlow,
+    setWindow: setWin,
     start,
     stop: () => stop('stopped'),
     change,
