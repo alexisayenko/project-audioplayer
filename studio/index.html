@@ -15,11 +15,17 @@
 <!--STUDIO_CSS-->
 </head>
 <body class="t-body" data-route="studio">
-<header class="site-head">
+<div class="site-shell">
+<header class="site-side">
   <h1 class="t-headline site-title">Electrophone Studio</h1>
-  <a class="site-home t-subhead" href="https://electrophone.cc/">Electrophone</a>
+  <nav class="site-nav" aria-label="Studio">
+    <a class="t-subhead" href="#/synthesize" data-page="synthesize">Synthesize</a>
+    <a class="t-subhead" href="#/analyze" data-page="analyze">Analyze</a>
+  </nav>
+  <a class="site-home t-caption" href="https://electrophone.cc/">Back to Electrophone</a>
 </header>
 <main id="app"></main>
+</div>
 <noscript><p class="site-noscript">Electrophone Studio needs JavaScript.</p></noscript>
 <!--STUDIO_JS-->
 </body>

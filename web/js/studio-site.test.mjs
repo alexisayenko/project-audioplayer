@@ -4,8 +4,7 @@ import { readFileSync } from 'node:fs';
 import { installDom, fire } from './test-dom.mjs';
 
 installDom();
-const { TABS, tabFromHash, DEFAULT_TAB } = await import('../../studio/routes.js');
-const { studioTabs } = await import('./studio-tabs.js');
+const { PAGES, pageFromHash, DEFAULT_PAGE } = await import('../../studio/routes.js');
 const { createHarmonicsCard, PLAYER_NEEDS_APP, APP_URL } = await import('./harmonics.js');
 const { createMicCard, CAPTION, CAPTION_STANDALONE } = await import('./mic-tool.js');
 const { mountTools, TOOLS_NOTE } = await import('./studio-tools.js');
@@ -13,25 +12,23 @@ const read = (rel) => readFileSync(new URL(rel, import.meta.url), 'utf8');
 
 const player = (available) => ({ available, playing: false, analyser: null, sampleRate: 0, failed: false, ensure() {} });
 
-test('STU-006: #/analyze is the default, #/synthesize the second route, anything else falls back to Analyze', () => {
-  assert.equal(DEFAULT_TAB, 'analyze');
-  assert.equal(tabFromHash('#/synthesize'), 'synthesize');
-  assert.equal(tabFromHash('#/analyze'), 'analyze');
-  assert.equal(tabFromHash(''), 'analyze');
-  assert.equal(tabFromHash('#/bogus'), 'analyze');
-  assert.equal(tabFromHash('#/studio/simple'), 'analyze');
-  assert.deepEqual(TABS.map((t) => [t.label, t.hash]), [['Analyze', '#/analyze'], ['Synthesize', '#/synthesize']]);
+test('STU-006: #/synthesize is the default, #/analyze the second route, anything else falls back to Synthesize', () => {
+  assert.equal(DEFAULT_PAGE, 'synthesize');
+  assert.equal(pageFromHash('#/synthesize'), 'synthesize');
+  assert.equal(pageFromHash('#/analyze'), 'analyze');
+  assert.equal(pageFromHash(''), 'synthesize');
+  assert.equal(pageFromHash('#/bogus'), 'synthesize');
+  assert.equal(pageFromHash('#/studio/tools'), 'synthesize');
+  assert.deepEqual(PAGES.map((p) => [p.label, p.hash]), [['Synthesize', '#/synthesize'], ['Analyze', '#/analyze']]);
 });
 
-test('STU-005: the shared tab bar takes the site tab list and keeps the arrow keys', () => {
-  const seen = [];
-  const t = studioTabs('analyze', (h) => seen.push(h), TABS);
-  const tabs = t.bar.querySelectorAll('[role=tab]');
-  assert.deepEqual(tabs.map((b) => b.textContent), ['Analyze', 'Synthesize']);
-  assert.deepEqual(tabs.map((b) => b.getAttribute('aria-controls')), ['stu-analyze', 'stu-synthesize']);
-  fire(t.bar, 'keydown', { key: 'ArrowRight' });
-  fire(t.bar, 'keydown', { key: 'End' });
-  assert.deepEqual(seen, ['#/synthesize']);
+test('STU-005: the left menu is a nav named Studio with Synthesize then Analyze and a link back to the main app', () => {
+  const html = read('../../studio/index.html');
+  assert.match(html, /<nav class="site-nav" aria-label="Studio">\s*<a [^>]*href="#\/synthesize"[^>]*>Synthesize<\/a>\s*<a [^>]*href="#\/analyze"[^>]*>Analyze<\/a>\s*<\/nav>/);
+  assert.ok(html.indexOf('class="site-nav"') < html.indexOf('class="site-home'));
+  assert.match(html, /<a class="site-home[^"]*" href="https:\/\/electrophone\.cc\/">Back to Electrophone<\/a>/);
+  assert.doesNotMatch(read('../../studio/main.js'), /studio-tabs|role: 'tab/);
+  assert.match(read('../../studio/main.js'), /setAttribute\('aria-current', 'page'\)/);
 });
 
 test('STU-009: without a player the Player source is disabled and explained, not hidden', () => {
@@ -77,7 +74,6 @@ test('STU-001, STU-014: the site page and headers match the spec', () => {
   assert.match(html, /<meta name="robots" content="noindex,nofollow">/);
   assert.match(html, /<title>Electrophone Studio<\/title>/);
   assert.match(html, /<body[^>]*data-route="studio"/);
-  assert.match(html, /<a class="site-home[^"]*" href="https:\/\/electrophone\.cc\/">/);
   assert.doesNotMatch(html, /<script(?![^>]*src=)|\sstyle=|\son[a-z]+=/);
   const headers = read('../../studio/_headers');
   for (const h of ["script-src 'self'", "style-src 'self'", "frame-ancestors 'none'", 'microphone=(self)', 'nosniff', 'Referrer-Policy: no-referrer', 'X-Robots-Tag: noindex', 'max-age=31536000, immutable']) assert.ok(headers.includes(h), h);
@@ -89,7 +85,7 @@ test('STU-002, STU-012: the entry imports the shared tool modules and none of th
   const main = read('../../studio/main.js');
   assert.match(main, /from '\.\.\/web\/js\/studio-tools\.js'/);
   assert.match(main, /from '\.\.\/web\/js\/simple-tone\.js'/);
-  for (const name of ['studio-tools', 'simple-tone', 'mic-tool', 'harmonics', 'harmonics-input', 'studio-tabs']) {
+  for (const name of ['studio-tools', 'simple-tone', 'mic-tool', 'harmonics', 'harmonics-input']) {
     assert.doesNotMatch(read(`./${name}.js`), /from '\.\/(api|store|guest|storage)\.js'|localStorage|sessionStorage|fetch\(/, name);
   }
 });
