@@ -55,5 +55,7 @@ test('the open sidebar has the tight proposal top and the 1.5x lockup, the rail 
   assert.doesNotMatch(hidden, /display: none/);
   assert.match(hidden, /padding: 0/);
   assert.equal(rule('body.side-collapsed .brand'), '');
-  assert.match(rule('body.side-collapsed .build-line:not([hidden])'), /display: block; visibility: hidden; white-space: nowrap/);
+  assert.match(rule('body.side-collapsed .build-line:not([hidden])'), /display: block; visibility: hidden;/);
+  assert.match(css, /\.build-line \{[^}]*white-space: nowrap;/);
+  assert.doesNotMatch(css, /\.build-line \{[^}]*overflow-wrap/);
 });
