@@ -90,8 +90,8 @@ export function renderPlaylistPage(root, id) {
     const none = !ids.length;
     actions.replaceChildren(
       el('button', { class: 'btn primary glow', type: 'button', disabled: none, onclick: () => playAll(false) }, icon('play', 'action'), 'Play playlist'),
-      el('button', { class: 'btn outline', type: 'button', disabled: none, onclick: () => playAll(true) }, icon('shuffle', 'action'), 'Shuffle'),
       el('button', { class: 'btn outline', type: 'button', disabled: none, onclick: addAllToQueue }, icon('listAdd', 'action'), 'Add to queue'),
+      el('button', { class: 'btn outline', type: 'button', disabled: none, onclick: () => playAll(true) }, icon('shuffle', 'action'), 'Shuffle'),
       el('button', { class: 'btn outline', type: 'button', onclick: (e) => exportList(e.currentTarget) }, icon('download', 'action'), 'Export'),
       el('button', { class: 'btn outline', type: 'button', onclick: editDetails }, icon('pencil', 'action'), 'Edit'),
       el('button', { class: 'btn danger', type: 'button', onclick: removePlaylist }, icon('trash', 'action'), 'Delete'));
