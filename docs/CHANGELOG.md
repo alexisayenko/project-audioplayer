@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-24 (Lighthouse wins 1 and 4: pre-built web bundle and one stylesheet, web and server, built, not deployed)
+
+- Web and server (owner decision FF2, 2026-10-24; [ADR-0047](tech/decisions.md), WEB-171, API-051; `node --check`, a local server and a browser check only, no tests run): the committed `web/dist/` (made by `node scripts/build-web.mjs`, esbuild 0.27.7) replaces 14 stylesheets with one `app.css` and 131 modules with `app.js`, `icons.js`, 6 shared startup chunks and two lazy groups (dialogs, pages and visualizer; both Genres maps); the server uses it only while its manifest hash equals the current sources and `AUDIO_WEB_BUNDLE` is not `0`, otherwise it serves the unbundled files as before, so editing `web/js` and reloading needs no build. `scripts/deploy.sh` stops when `web/dist` is stale ([deploy.md](tech/deploy.md#web-bundle)). Local desktop Lighthouse against the unbundled and the bundled server behind the same gzip proxy (median of 3): requests 126 to 25, first contentful paint 737 ms to 501 ms, largest contentful paint 2749 ms to 642 ms, performance 0.85 to 1.00; computed styles of every element equal on 12 views at 1280 px and 2 at 390 px.
+
 ## 2026-10-24 (save queue as playlist follow-up task note, docs only)
 
 - Docs: follow-up task note (owner request 2026-10-24): [task-0105](tasks/task-0105.md) "Save queue as playlist" (phase 3 of task-0058, PLS-013: the button, naming, caps, toast, open questions A to C); nothing built.
