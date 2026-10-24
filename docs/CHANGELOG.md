@@ -10,7 +10,7 @@ What shipped, newest first. One line each; the web UI and server are live at htt
 
 - Web (WEB-150, WEB-175 to WEB-179, WEB-197 to WEB-201; owner request 2026-10-24; no tests run, `node --check` and a local check at desktop and 375 px only): the Studio tabs read Modify, Analyze and Synthesize (were Track, Tools and Simple), in the same order; the routes `#/studio`, `#/studio/tools` and `#/studio/simple` and the code names are unchanged, so existing links keep working.
 
-## 2026-10-24 (waveform "Cycles shown" switch, web, built, not deployed)
+## 2026-10-24 (waveform "Cycles shown" switch, web, deployed as `7253b9c`)
 
 - Web (task-0106, WEB-182, WEB-187, WEB-201; owner decision GP1, 2026-10-24; no tests run, `node --check`, a local Chromium page and a 375 px check only; test assertions edited in `harmonics.test.mjs` and `simple-tone.test.mjs`, not run): the harmonics-lab Waveform and the Synthesize tab (Simple) oscilloscope show 1 cycle by default instead of 3.5, with a "Cycles shown" switch 1 | 2 | 4 (same switch as Linear | Log, arrow keys; hidden for the microphone and player sources of the lab). The time axis has five ticks across the window (220 Hz, one cycle: 0, 1.14, 2.27, 3.41, 4.55 ms), the captions and aria-labels say "one cycle of the fundamental", and the live trace is interpolated to exactly the chosen cycles after the zero-crossing trigger. The switch code moved to `web/js/segmented.js` and both cards use it.
 
