@@ -187,6 +187,10 @@ Check after saving (anonymous request): `curl -sI https://electrophone.cc/` twic
 
 `X-Forwarded-Host` is trusted only from a loopback or LAN peer. Sessions are host-only cookies: sign in again on each host. Steps: [domain-migration.md](domain-migration.md).
 
+## Studio site (planned)
+
+Not built, not deployed ([ADR-0049](decisions.md), [task-0114](../tasks/task-0114.md), [studio-site.md](../specs/studio-site.md)). `https://studio.electrophone.cc` is a Cloudflare Pages project (Direct Upload) `electrophone-studio`, independent of perkunas and the tunnel. Plan: `scripts/deploy-studio.sh` runs `node scripts/build-studio.mjs`, then `wrangler pages deploy studio/dist --project-name electrophone-studio --branch main` with `CLOUDFLARE_API_TOKEN` sourced from `~/.config/cloudflare/token.env` (never printed). Needs the token permissions Account > Cloudflare Pages: Edit and Zone > DNS: Edit (not present on 2026-10-24). One-time setup, with owner approval: create the project, add the custom domain, a proxied CNAME `studio` -> `electrophone-studio.pages.dev`. Rollback: promote the previous deployment in Workers & Pages > electrophone-studio > Deployments. The zone's WAF custom rules and Browser Cache TTL also apply to this host.
+
 ## Git sync timer
 
 Built, not deployed (ADR-0026, [task-0021](../tasks/task-0021.md), [design](git-sync-design.md)); the timer is NOT yet installed on perkunas. Saves commit locally (no pull, no push in a request); `audioplayer-gitsync.timer` only pushes. Unit files are in `deploy/systemd/` (`audioplayer-gitsync.service`, `audioplayer-gitsync.timer`, `README.md`). The deploy user `claude` cannot write `/etc/systemd`, so root installs them once; `scripts/deploy.sh` does not.

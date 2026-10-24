@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-24 (Studio tools site: plan, docs only)
+
+- Docs (task-0114, ADR-0049 proposed, STU-001 to STU-016; owner decision GR1, 2026-10-24; nothing built, deployed or changed at Cloudflare): Analyze and Synthesize are planned to move to a static site at https://studio.electrophone.cc on Cloudflare Pages, built from the shared `web/js` modules; Modify stays in the main app.
+
 ## 2026-10-24 (Studio tabs renamed, web, built, not deployed)
 
 - Web (WEB-150, WEB-175 to WEB-179, WEB-197 to WEB-201; owner request 2026-10-24; no tests run, `node --check` and a local check at desktop and 375 px only): the Studio tabs read Modify, Analyze and Synthesize (were Track, Tools and Simple), in the same order; the routes `#/studio`, `#/studio/tools` and `#/studio/simple` and the code names are unchanged, so existing links keep working.
