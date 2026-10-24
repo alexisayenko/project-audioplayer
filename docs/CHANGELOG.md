@@ -2,7 +2,7 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
-## 2026-10-24 (harmonics lab: piano-like decay mode, web, built, not deployed)
+## 2026-10-24 (harmonics lab: piano-like decay mode, web, deployed as `7e3055a`)
 
 - Web (task-0109, WEB-184, WEB-185, ADR-0048; owner decision FW2, 2026-10-24: the steady tone "sounds like a chainsaw, never like a piano"; no tests run, `node --check` and a local Chromium page with the real `AudioContext` only): the "Pitch and harmonics" card has a "Piano-like decay" checkbox (off by default, off is the steady tone). On, the tone strikes by itself every "Repeat every" seconds (1 to 6, default 3): a 5 ms attack, then each harmonic fades exponentially with `tau_n = tau1 / n^0.8` ("Fade time (H1)" 0.2 to 5 s, default 1.2), so the high ones die first; a re-strike ramps to zero over 4 ms first, and everything is scheduled on the `AudioParam` timeline (a 50 ms timer only enqueues strikes 0.2 s ahead). The views show the real signal. Measured: H1, H3, H6 and H10 gains and analyser levels fell at different rates (in 0.4 s the H10 level fell about 16 dB, H1 about 1.3 dB) and jumped back at each strike about 3 s apart. Defaults are now 10 harmonics and -12 dB/oct. Code: `web/js/harmonics.js`, `web/studio.css`. Not verified: how it sounds, and the Mac app.
 
