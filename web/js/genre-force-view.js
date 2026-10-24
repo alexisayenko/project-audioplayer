@@ -8,6 +8,9 @@ import { shadeTable } from './genre-shade.js';
 import { enterNodes } from './genre-force-enter.js';
 import { focusState } from './genre-force-focus.js';
 import { drawLinks, FADE_STEP } from './genre-force-links.js';
+import { DISCOGS_RING, GROUP_RING, strokeRing, dashedRing, drawBadge, drawMark, paintFlash } from './genre-force-draw.js';
+import { bounds, unpin } from './genre-force-body.js';
+import { FOLLOW_STEP_MS, subtreeOf, followItems, stepTethers, integrateSprings, restSprings, snapSprings } from './genre-force-follow.js';
 
 const MIN_K = 0.08;
 const MAX_K = 8;
@@ -24,12 +27,6 @@ const RELEASE_ALPHA = 0.35;
 const SETTLE_STATIC = 400;
 const CHILD_FOLLOW_MS = 300;
 const CHILD_FOLLOW_TAU = CHILD_FOLLOW_MS / 3;
-const FOLLOW_EPS = 0.05;
-const FOLLOW_STIFFNESS = 90;
-const FOLLOW_DAMPING = 8;
-const FOLLOW_STEP_MS = 8;
-const FOLLOW_REST_DIST = 0.02;
-const FOLLOW_REST_SPEED = 0.05;
 const PARENT_REACTION = 0;
 const REVEAL_ALPHA = 0.25;
 const SIM = { charge: 6, linkDistance: 20, gravity: 0, home: 0.05, velocityDecay: 0.34, parentStrength: 1.4, linkFloor: 0.15, parentReaction: PARENT_REACTION };
@@ -118,17 +115,6 @@ export function createForceView(canvas, { onSelect, onHover, onMoved, reducedMot
   const shown = (n) => n.target === 1 && n.vis > 0.5;
   const toWorld = (px, py) => ({ x: (px - tf.x) / tf.k, y: (py - tf.y) / tf.k });
   const local = (ev) => { const r = canvas.getBoundingClientRect(); return { x: ev.clientX - r.left, y: ev.clientY - r.top }; };
-
-  function bounds(list) {
-    let x0 = Infinity; let y0 = Infinity; let x1 = -Infinity; let y1 = -Infinity;
-    for (const n of list) {
-      if (n.x - n.r < x0) x0 = n.x - n.r;
-      if (n.x + n.r > x1) x1 = n.x + n.r;
-      if (n.y - n.r < y0) y0 = n.y - n.r;
-      if (n.y + n.r > y1) y1 = n.y + n.r;
-    }
-    return { x0, y0, x1, y1 };
-  }
 
   function fitFor(list, { maxK = 1.6, pad = 24 } = {}) {
     if (!list.length) return null;
@@ -290,13 +276,6 @@ export function createForceView(canvas, { onSelect, onHover, onMoved, reducedMot
 
   function refocus() { focus = focusState(sel, sel, { incident, adj, byId, parentLinks }); }
 
-  function ring(n, extra, w, color, k) {
-    ctx.globalAlpha = 1;
-    ctx.strokeStyle = color;
-    ctx.lineWidth = w / k;
-    ctx.beginPath(); ctx.arc(n.x, n.y, n.r + extra / k, 0, 2 * Math.PI); ctx.stroke();
-  }
-
   function nodeAlpha(n) {
     let a = n.level === 1 ? 1 : EMPHASIS_ALPHA[n.em];
     if (focus && !focus.set.has(n)) a *= DIM;
@@ -316,76 +295,28 @@ export function createForceView(canvas, { onSelect, onHover, onMoved, reducedMot
     }
     outlineDisc(ctx, n.x, n.y, r, n.fis, isOutlinedSlot, colors.rim, k);
     if (n.vis < 0.99) return;
-    if (!n.node.discogs && n.level > 1 && r * k >= 3) {
-      ctx.globalAlpha = a;
-      ctx.strokeStyle = colors.ink;
-      ctx.lineWidth = 1.2 / k;
-      ctx.setLineDash([3 / k, 2.5 / k]);
-      ctx.beginPath(); ctx.arc(n.x, n.y, r + 2.5 / k, 0, 2 * Math.PI); ctx.stroke();
-      ctx.setLineDash([]);
-    }
-    if (n.node.group) {
-      ctx.globalAlpha = a;
-      ctx.strokeStyle = colors.ink;
-      ctx.lineWidth = 1.5 / k;
-      ctx.setLineDash([4 / k, 3 / k]);
-      ctx.beginPath(); ctx.arc(n.x, n.y, r + 4 / k, 0, 2 * Math.PI); ctx.stroke();
-      ctx.setLineDash([]);
-    }
-    if (n === sel) ring(n, 3.5, 3, colors.accent, k);
-    else if (n === hover) ring(n, 3, 2, colors.accent, k);
-    else if (matches.has(n.id)) ring(n, 3, 2.5, colors.accent, k);
-    if (n.node.status === 'question' && r * k >= 4) drawBadge(n, r, a, k);
-    if (marks.has(n.id) && r * k >= 4) drawMark(n, r, a, k, marks.get(n.id));
+    drawAdornments(n, r, a, k);
+  }
+
+  function drawAdornments(n, r, a, k) {
+    if (!n.node.discogs && n.level > 1 && r * k >= 3) dashedRing(ctx, colors, n, r, a, k, DISCOGS_RING);
+    if (n.node.group) dashedRing(ctx, colors, n, r, a, k, GROUP_RING);
+    drawHighlight(n, k);
+    if (n.node.status === 'question' && r * k >= 4) drawBadge(ctx, colors, n, r, a, k);
+    if (marks.has(n.id) && r * k >= 4) drawMark(ctx, colors, n, r, a, k, marks.get(n.id));
     if (flashing && flashing.id === n.id) drawFlash(n, k);
   }
 
-  function drawBadge(n, r, a, k) {
-    ctx.globalAlpha = Math.max(a, 0.6);
-    const br = 5.5 / k;
-    const off = (r + 4 / k) * 0.72;
-    const bx = n.x + off;
-    const by = n.y - off;
-    ctx.fillStyle = colors.warn;
-    ctx.beginPath(); ctx.arc(bx, by, br, 0, 2 * Math.PI); ctx.fill();
-    ctx.strokeStyle = colors.halo;
-    ctx.lineWidth = 1.5 / k;
-    ctx.stroke();
-    ctx.fillStyle = colors.halo;
-    ctx.font = `bold ${8 / k}px ${colors.font}`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('?', bx, by + 0.5 / k);
-  }
-
-  function drawMark(n, r, a, k, state) {
-    ctx.globalAlpha = Math.max(a, 0.7);
-    const br = 5 / k;
-    const off = (r + 3 / k) * 0.72;
-    const bx = n.x + off;
-    const by = n.y + off;
-    ctx.fillStyle = colors.ink;
-    ctx.beginPath(); ctx.arc(bx, by, br, 0, 2 * Math.PI); ctx.fill();
-    ctx.strokeStyle = colors.halo;
-    ctx.lineWidth = 1.5 / k;
-    ctx.stroke();
-    ctx.strokeStyle = colors.halo;
-    ctx.lineWidth = 1.4 / k;
-    const d = 2.4 / k;
-    ctx.beginPath();
-    ctx.moveTo(bx - d, by); ctx.lineTo(bx + d, by);
-    if (state === 'closed') { ctx.moveTo(bx, by - d); ctx.lineTo(bx, by + d); }
-    ctx.stroke();
+  function drawHighlight(n, k) {
+    if (n === sel) strokeRing(ctx, n, 3.5, 3, colors.accent, k);
+    else if (n === hover) strokeRing(ctx, n, 3, 2, colors.accent, k);
+    else if (matches.has(n.id)) strokeRing(ctx, n, 3, 2.5, colors.accent, k);
   }
 
   function drawFlash(n, k) {
     const t = (performance.now() - flashing.t0) / FLASH_MS;
     if (t >= 1) { flashing = null; return; }
-    const phase = reducedMotion ? 0 : (t * 3) % 1;
-    ctx.globalAlpha = 1 - (reducedMotion ? t : phase);
-    ctx.strokeStyle = colors.accent;
-    ctx.lineWidth = 3 / k;
-    ctx.beginPath(); ctx.arc(n.x, n.y, n.r + (6 + 16 * phase) / k, 0, 2 * Math.PI); ctx.stroke();
+    paintFlash(ctx, colors, n, k, t, reducedMotion);
   }
 
   const onScreen = (n, k, m = 24) => {
@@ -491,57 +422,6 @@ export function createForceView(canvas, { onSelect, onHover, onMoved, reducedMot
     request();
   }
 
-  function unpin(n) { n.fx = null; n.fy = null; }
-
-  const pinnedOutside = (c, inside) => (parentLinks.get(c.id) || []).some((l) => l.s.target === 1 && l.s.fx != null && !l.s.dropped && !inside.has(l.s.id));
-
-  function subtreeOf(root) {
-    const seen = new Set([root.id]);
-    const out = [];
-    let level = [root];
-    for (let depth = 1; level.length; depth++) {
-      const next = [];
-      for (const p of level) {
-        for (const c of childrenOf.get(p.id) || []) {
-          if (seen.has(c.id) || pinnedOutside(c, seen)) continue;
-          seen.add(c.id);
-          out.push({ c, depth });
-          next.push(c);
-        }
-      }
-      level = next;
-    }
-    return out;
-  }
-
-  function shift(c, dx, dy) {
-    if (c.hx !== undefined) { c.hx += dx; c.hy += dy; }
-    if (c.target !== 1) return;
-    c.x += dx; c.y += dy;
-    c.fx = c.x; c.fy = c.y;
-  }
-
-  function followItems(root, sub) {
-    const inside = new Set(sub.map((it) => it.c.id));
-    const muted = [];
-    for (const sl of sim?.links || []) {
-      if (sl.tree && inside.has(sl.t.id)) { sl.mute = true; muted.push(sl); }
-    }
-    const items = sub.map(({ c }) => ({ c, px: c.x, py: c.y, parent: null, len: 0, tethered: false }));
-    const byItem = new Map(items.map((it) => [it.c.id, it]));
-    for (const it of items) {
-      const l = (parentLinks.get(it.c.id) || []).find((pl) => pl.s === root || byItem.has(pl.s.id));
-      if (!l) continue;
-      it.parent = l.s === root ? null : byItem.get(l.s.id);
-      const o = it.parent || root;
-      it.len = Math.hypot(it.px - (it.parent ? o.px : o.x), it.py - (it.parent ? o.py : o.y));
-      it.tethered = true;
-    }
-    for (const n of [root, ...items.map((it) => it.c)]) n.ghost = true;
-    for (const it of items) if (it.c.target === 1) { it.c.fx = it.c.x; it.c.fy = it.c.y; }
-    return { root, items, muted };
-  }
-
   function releaseGhosts() {
     if (!pull) return;
     pull.root.ghost = false;
@@ -559,58 +439,23 @@ export function createForceView(canvas, { onSelect, onHover, onMoved, reducedMot
   }
 
   function stepFollow(f) {
-    const root = pull.root;
-    const rx = root.fx ?? root.x;
-    const ry = root.fy ?? root.y;
-    let busy = false;
-    for (const it of pull.items) {
-      if (!it.tethered) continue;
-      const ox = it.parent ? it.parent.px : rx;
-      const oy = it.parent ? it.parent.py : ry;
-      const dx = ox - it.px;
-      const dy = oy - it.py;
-      const d = Math.hypot(dx, dy);
-      const excess = d - it.len;
-      if (excess <= 0) continue;
-      const k = (excess < FOLLOW_EPS ? 1 : f) * (excess / d);
-      shift(it.c, dx * k, dy * k);
-      it.px += dx * k; it.py += dy * k;
-      if (excess >= FOLLOW_EPS) busy = true;
-    }
+    const busy = stepTethers(pull, f);
     if (busy) hashDirty = true;
     return busy;
   }
+
+  const springHeld = (root) => !!(drag?.moved && drag.node === root);
 
   function stepSprings(dt) {
     springAcc = Math.min(springAcc + dt, 100);
     const h = FOLLOW_STEP_MS / 1000;
     while (springAcc >= FOLLOW_STEP_MS) {
       springAcc -= FOLLOW_STEP_MS;
-      for (const [c, sp] of springs) {
-        const ex = sp.root.x + sp.ox - sp.px;
-        const ey = sp.root.y + sp.oy - sp.py;
-        sp.vx += (FOLLOW_STIFFNESS * ex - FOLLOW_DAMPING * sp.vx) * h;
-        sp.vy += (FOLLOW_STIFFNESS * ey - FOLLOW_DAMPING * sp.vy) * h;
-        const dx = sp.vx * h, dy = sp.vy * h;
-        sp.px += dx; sp.py += dy;
-        shift(c, dx, dy);
-      }
+      integrateSprings(springs, h);
     }
-    for (const [c, sp] of springs) {
-      const ex = sp.root.x + sp.ox - sp.px;
-      const ey = sp.root.y + sp.oy - sp.py;
-      if (Math.hypot(ex, ey) < FOLLOW_REST_DIST && Math.hypot(sp.vx, sp.vy) < FOLLOW_REST_SPEED && !(drag?.moved && drag.node === sp.root)) {
-        shift(c, ex, ey);
-        springs.delete(c);
-      }
-    }
+    restSprings(springs, springHeld);
     hashDirty = true;
     return springs.size > 0;
-  }
-
-  function snapSprings() {
-    for (const [c, sp] of springs) shift(c, sp.root.x + sp.ox - sp.px, sp.root.y + sp.oy - sp.py);
-    springs.clear();
   }
 
   function stepPull(dt) {
@@ -621,7 +466,7 @@ export function createForceView(canvas, { onSelect, onHover, onMoved, reducedMot
     drag.node.fx = drag.node.x;
     drag.node.fy = drag.node.y;
     clearPull();
-    drag.sub = subtreeOf(drag.node);
+    drag.sub = subtreeOf(drag.node, { childrenOf, parentLinks });
     drag.ax = drag.node.x;
     drag.ay = drag.node.y;
     if (rigid) {
@@ -635,7 +480,7 @@ export function createForceView(canvas, { onSelect, onHover, onMoved, reducedMot
       userMoved = true;
       return;
     }
-    pull = reducedMotion ? null : followItems(drag.node, drag.sub);
+    pull = reducedMotion ? null : followItems(drag.node, drag.sub, sim?.links || [], parentLinks);
     drag.held = [];
     for (const l of parentLinks.get(drag.node.id) || []) {
       const p = l.s;
@@ -656,7 +501,7 @@ export function createForceView(canvas, { onSelect, onHover, onMoved, reducedMot
     hashDirty = true;
     if (rigid) {
       n.x = w.x; n.y = w.y; n.fx = w.x; n.fy = w.y;
-      if (reducedMotion) snapSprings();
+      if (reducedMotion) snapSprings(springs);
       setHover(n, null);
       request();
       return;
