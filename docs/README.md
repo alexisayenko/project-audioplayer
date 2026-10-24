@@ -148,6 +148,8 @@ and rules):
 - [`CHANGELOG.md`](CHANGELOG.md) — what shipped, newest first
 - [`tech/ci-cd.md`](tech/ci-cd.md) — CI/CD playbook (manual
   workflows, test layers, deploy and release paths)
+- [`tech/sonar-baseline.md`](tech/sonar-baseline.md) — SonarCloud baseline
+  (2026-10-24): quality gate, issue counts, hotspots, refactor candidates
 - [`tech/decisions.md`](tech/decisions.md) — tech decisions (ADRs):
   components, server, Cloudflare Tunnel, storage, open signup (ADR-0012), music-database lookups and identification (ADR-0013), Genres map (ADR-0014), pill tokenizer and title cleaning (ADR-0015), web player chrome (ADR-0016), server module structure and test strategy (ADR-0017), public read-only guest view (ADR-0018), domain migration to electrophone.cc (ADR-0019), Connect YouTube (ADR-0020), genre families and vocabulary (ADR-0021, ADR-0023), playlists (ADR-0022), structured credits and versions (ADR-0024), data model v2 and the versions concept (ADR-0025), per-save local commit with a timer push (ADR-0026)
 - [`ui-ux/README.md`](ui-ux/README.md) — screen + journey spec,

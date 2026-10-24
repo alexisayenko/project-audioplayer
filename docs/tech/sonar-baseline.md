@@ -1,0 +1,142 @@
+# SonarCloud baseline (2026-10-24)
+
+Read-only baseline taken before the refactoring and architecture pass, so the refactor targets real findings. No code was changed, no tests were run.
+
+## How it was taken
+
+- Setup: SonarCloud, organisation `alexisayenko`, project `alexisayenko_project-audioplayer` (public). **Automatic Analysis** runs on every push to `main`; there is no `sonar-project.properties`, no CI workflow, no scanner in the repo ([ci-cd.md](ci-cd.md#this-project-audioplayer)). 150 analyses so far.
+- Snapshot: analysis of 2026-10-24 09:05 UTC, revision `c61777b` = `origin/main` HEAD at the time. Read from the public SonarCloud web API (`/api/measures`, `/api/issues/search`, `/api/hotspots/search`, `/api/duplications`), anonymous.
+- No new scan was started: a scanner run would clash with Automatic Analysis, and the stored `SONAR_TOKEN` (`~/.config/sonar/token.env`) is rejected by `/api/authentication/validate` (`valid: false`, expired or revoked). A new token is the owner's step (sonarcloud.io, My Account, Security). Public reads do not need it; writes (marking issues won't-fix) do.
+- Coverage: none imported (Automatic Analysis cannot read coverage reports). The "server about 99%, web about 96%" figures in the docs are manual measurements and are not in Sonar.
+- Scope caveat: Automatic Analysis uses default scope. `server/tests`, `*.test.mjs`, and the big `server/data/*.json` files are counted as source; `web/dist/*.js` (generated bundle) is not (only `web/dist/manifest.json` shows up). This inflates lines of code and the issue count.
+
+## Headline
+
+| Item | Value |
+|---|---|
+| Quality gate | **ERROR**: `new_reliability_rating` E (needs A), `new_security_rating` E (needs A); duplication 0.7% (limit 3), hotspots reviewed 100%, new maintainability A pass |
+| New-code period | "previous version", never set (`projectVersion: not provided`), so the whole project counts as new code and the gate cannot go green until the bugs and vulnerabilities below are fixed or resolved |
+| Bugs | 27 (2 blocker, 4 critical, 20 major, 1 minor); effort 182 min |
+| Vulnerabilities | 13 (3 blocker, 9 major, 1 minor); effort 355 min |
+| Security hotspots | 0 to review |
+| Code smells | 754: 1 blocker, 103 critical, 539 major, 111 minor; debt 5083 min (about 85 h) |
+| Ratings | reliability E, security E, maintainability A, security review A |
+| Duplication | 0.7% (1276 lines, 80 blocks); no block over 100 lines (largest 40) |
+| Coverage | not available |
+| Size | 886 files, 159,482 ncloc, 17,055 functions, 515 classes, cognitive complexity 22,373, cyclomatic 37,524 |
+
+Trend (open issues, from analysis history): 244 on 10-13, 595 on 10-17, 48 on 10-19, 303 on 10-20, 794 on 10-24. The jump follows new code (genre work) and new rules (`python:S9073`); ncloc grew from 10k to 159k, mostly JSON data and tests entering scope. The 87-issue figure in [ci-cd.md](ci-cd.md) is stale.
+
+## Lines of code per language
+
+| Language | ncloc | Note |
+|---|---|---|
+| JavaScript | 63,359 | `web/js` 62,325 incl. `*.test.mjs` |
+| JSON | 40,832 | `server/data` 38,389 (data, not code) |
+| Python | 35,054 | `server/tests` 19,433, `server/app` 14,969, scripts |
+| Swift | 17,088 | `ios/Sources`, `ios/MacSources` |
+| CSS | 2,434 | `web/style.css` 1,053 |
+| HTML / shell / YAML | 335 / 235 / 145 | |
+
+## Issues by area
+
+| Area | Issues | Main cause |
+|---|---|---|
+| `server/tests` | 349 | `python:S9073` split composite assertions (344 in total, nearly all tests) |
+| `web/js` | 232 | nested ternaries, cognitive complexity, unhandled promises, regex backtracking |
+| `server/app` | 64 | cognitive complexity, path-traversal flow findings |
+| `scripts` | 52+14 | `genre-ops.py`, `genre-hierarchy-lib.mjs` |
+| `ios/Sources` + `MacSources` | 62 | nested ternary, empty closures, hardcoded URIs |
+| `web` (css, html) | 21 | duplicate selectors (`css:S4666` 13), accessibility (`Web:S6819`) |
+
+## Dominant rule families (code smells)
+
+| Count | Rule | What |
+|---|---|---|
+| 344 | python:S9073 | composite assertions should be split (tests) |
+| 41 + 13 | javascript:S3358, swift:S3358 | nested ternaries |
+| 38 + 37 | javascript:S3776, python:S3776 | cognitive complexity over 15 |
+| 20 | javascript:S9382 | promises awaited sequentially in a loop |
+| 19 | javascript:S2681 | multiline blocks without braces |
+| 19 | javascript:S8786 | regex with non-linear backtracking |
+| 15 | javascript:S6582 | prefer optional chaining |
+| 14 | javascript:S9383 | promise left unhandled (also the main bug rule) |
+| 13 | css:S4666 | duplicate selectors |
+| 11 / 11 / 10 | swift:S1186 / S1075 / S1172 | empty closures, hardcoded URIs, unused parameters |
+| 10 | javascript:S4624 | nested template literals |
+
+Worst cognitive complexity per function (limit 15): `scripts/genre-ops.py:135` 49, `scripts/build-genre-sources.mjs:151` 47, `web/js/genre-crossing-anneal.js:79` 38, `scripts/genre-ops.py:194` 38, `web/js/genre-sim.js:56` 35, `web/js/genre-force-view.js:751` 34, `server/app/genre_vocab.py:349` 34, `scripts/genre-hierarchy-lib.mjs:145` 34, `server/app/genre_eras.py:79` 33, `server/app/migrate_removals.py:83` 32, `server/app/genre_vocab.py:504` and `:101` 32.
+
+## Vulnerabilities (13)
+
+| File:line | Rule | Description |
+|---|---|---|
+| `server/app/downloads.py:106` | pythonsecurity:S2083 (blocker) | path traversal via HTTP request in `_fetch_cover()` |
+| `server/app/jsonio.py:51` | pythonsecurity:S2083 (blocker) | path traversal via HTTP request in `write_bytes_atomic()` |
+| `server/app/features.py:309` | pythonsecurity:S2083 (blocker) | path traversal via file content in `record_deploy()` |
+| `server/app/extractor.py:365` | pythonsecurity:S7044 | API traversal via HTTP request in `fetch_cover()` |
+| `server/app/features.py:43` | pythonsecurity:S6350, S8705 | command argument injection (file content, LLM-supplied args) in `git()` |
+| `server/app/features.py:248` | pythonsecurity:S8707 | path traversal via CLI args in `load_json()` |
+| `scripts/genre-ops.py:41` | pythonsecurity:S8705 | command argument injection via CLI args |
+| `scripts/genre-ops.py:244`, `:247` | pythonsecurity:S8707 | path traversal via CLI args |
+| `scripts/gen-features.py:25` | pythonsecurity:S8707 | path traversal via CLI args |
+| `web/js/play-recorder.js:22` | javascript:S2245 | pseudorandom generator; check it is not security-relevant |
+| `scripts/build-web.mjs:45` | javascript:S4036 (minor) | `PATH` may contain writable directories |
+
+Earlier `pythonsecurity:S2083` findings were fixed on 2026-10-13/14 ([ci-cd.md](ci-cd.md)); these are new flows. The `S8705`/`S8707` "LLM-supplied CLI arguments" findings are CLI scripts reading `sys.argv` (owner-only tools), likely resolvable as won't-fix after review.
+
+## Bugs (27)
+
+| File:line | Rule | Description |
+|---|---|---|
+| `web/js/drafts-model.js:24`, `:25` | javascript:S2189 (blocker) | `start` and `end` never modified in the loop (possible infinite loop) |
+| `web/js/genre-force-view.js:285` | javascript:S930 (critical) | function called with an argument it does not take |
+| `web/js/genre-map-graph.js:43`, `genre-radial.js:97`, `genre-tree-facts.mjs:4` | javascript:S2871 (critical) | `sort()` without a compare function |
+| `web/js/player.js:261`, `:358` | javascript:S6544 | Promise used as a boolean condition |
+| `web/js/player.js:261`, `:361`, `:721`, `:722` | javascript:S9383 | promise not awaited or caught |
+| `web/js/play-recorder.js:117`, `:163`, `:168`, `:175`, `:188`, `:204`, `:206` | javascript:S9383 | promise not awaited or caught |
+| `web/js/gapless-loop.js:13`, `media-retry.js:73`, `peaks.js:117` | javascript:S9383 | promise not awaited or caught |
+| `web/js/playlist-add.js:92`, `library-data.js:101` | javascript:S7727 | function passed directly to `.map` or `.filter` |
+| `server/app/loops.py:16` | python:S1764 | identical sub-expressions on both sides of `==` |
+| `scripts/genre-hierarchy-lib.mjs:47` | javascript:S6324 | control character in a regex |
+| `web/js/genre-data.js:105` | javascript:S4158 | `HIDDEN_FAMILY_NODES` can only be empty there |
+
+## Top 15 files
+
+By cognitive complexity (cog), with size (ncloc) and open issues (iss):
+
+| File | ncloc | cog | iss |
+|---|---|---|---|
+| `web/js/genre-force-view.js` | 1085 | 758 | 26 |
+| `web/js/genres-rework.js` | 883 | 567 | 18 |
+| `server/app/wiki_lookup.py` | 784 | 387 | 2 |
+| `web/js/genre-graph.js` | 535 | 328 | 0 |
+| `web/js/viz-bars-baseline.test.mjs` | 577 | 326 | 0 |
+| `server/app/genre_vocab.py` | 564 | 324 | 10 |
+| `web/js/viz-terrain-math.js` | 999 | 321 | 0 |
+| `server/app/genre_graph.py` | 512 | 264 | 1 |
+| `web/js/viz-terrain-gl.js` | 1044 | 253 | 0 |
+| `server/app/gitstore.py` | 771 | 249 | 0 |
+| `web/js/viz-bars.js` | 710 | 247 | 0 |
+| `web/js/viz-canvas.js` | 548 | 246 | 0 |
+| `web/js/genre-levels.js` | 398 | 240 | 3 |
+| `web/js/genre-data.js` | 440 | 216 | 2 |
+| `web/js/player.js` | 713 | 207 | 7 |
+
+By issue count: `server/tests/test_genre_levels.py` 65, `test_genre_others.py` 45, `test_anon.py` 33, `web/js/genre-force-view.js` 26, `scripts/genre-hierarchy-lib.mjs` 20, `web/js/genres-rework.js` 18. Largest non-data files: `web/style.css` 1053, `ios/Sources/Components.swift` 753.
+
+## Duplication
+
+0.7%, no block over 100 lines. Largest blocks (lines): `ios/Sources/Components.swift` against `ios/MacSources/LibComponents.swift` 40 and 26, against `LibTagFields.swift` 20 and 21; three regex tests `credit-title-regex.test.mjs`, `credits-split-regex.test.mjs`, `song-form-credits-regex.test.mjs` 64 each; `viz-mirror-panel.js` and `viz-synth-panel.js` 49; `metafill.py` and `backfill.py` 36; `build-genre-sources.mjs` and `build-genre-hierarchy.mjs` 32.
+
+## Refactor and architecture candidates (a list, not changes)
+
+1. Scope first: add a committed `sonar-project.properties` (exclude `server/data/*.json`, `docs/`, generated files; mark tests as tests) and set a real new-code baseline, so the gate and counts mean something. Needs a new token if the scan moves to CI.
+2. Fix the 27 bugs and 13 vulnerabilities (small, concrete); this alone turns reliability and security from E to the target and clears the gate. Most bugs are unhandled promises in `player.js` and `play-recorder.js`.
+3. Path handling: one validated-path helper (resolve inside a base directory) used by `downloads.py`, `jsonio.py`, `extractor.py`, `features.py` and the scripts, to retire the traversal family at the source.
+4. Genre map code: `genre-force-view.js` (758) and `genres-rework.js` (567) carry about a third of the web cognitive complexity; split into layout, simulation and rendering modules; same for `genre_vocab.py`, `genre-ops.py`, `build-genre-sources.mjs`.
+5. `wiki_lookup.py`, `gitstore.py`, `genre_graph.py`: split by responsibility (fetch, parse, rank / commit, push, read).
+6. Visualizer modules (`viz-terrain-*`, `viz-bars`, `viz-canvas`): long functions with zero open issues; refactor only if they are touched.
+7. Mechanical sweeps: split composite assertions in tests (344), flatten nested ternaries (54), add braces (19), linearise regexes (19), optional chaining (15), duplicate CSS selectors (13).
+8. Shared UI code between iOS and macOS (`Components.swift` vs `LibComponents.swift`/`LibTagFields.swift`), the two panel files `viz-mirror-panel.js`/`viz-synth-panel.js`, `metafill.py`/`backfill.py`, and the two genre build scripts.
+9. `web/style.css` (1053 lines) after the one-stylesheet change: check for dead rules and duplicate selectors.

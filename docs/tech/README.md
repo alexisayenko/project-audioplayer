@@ -18,6 +18,7 @@ Don't pre-create — extract on first real entry. See
 - **`ci-cd.md`** (scaffolded) — CI/CD playbook: manual workflows, test layers,
   cost model, deploy and mobile release paths, secrets, setup
   checklist, starter workflow files.
+- **`sonar-baseline.md`** — SonarCloud baseline of 2026-10-24: gate, counts, ratings, vulnerabilities and bugs, hotspot files, refactor candidates.
 - **`metadata-model-design.md`** — design of the structured credits and versions (ADR-0024, task-0036): schema, compatibility projection, migration, API and test plan. Data model v2 (final names, version block, Artist table): ADR-0025 and [task-0043](../tasks/task-0043.md).
 - **`ddex-terminology.md`** — which DDEX words Electrophone adopts and which it does not, checked against the official allowed-value file (ADR-0025).
 - **`metadata-model-decisions-AR.md`** — decision AR: where the release year may come from.
