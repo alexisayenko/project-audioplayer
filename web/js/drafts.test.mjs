@@ -49,7 +49,7 @@ async function mount(initial = [], handlers = {}) {
   const q = (sel) => host.querySelector(sel);
   const qa = (sel) => host.querySelectorAll(sel);
   const rows = () => qa('li.draft');
-  const button = (re, within = host) => within.querySelectorAll('button').find((b) => re.test(b.textContent));
+  const button = (re, within = host) => within.querySelectorAll('button').find((b) => re.test(b.textContent) || re.test(b.getAttribute('title') || ''));
   const paste = async (text, how = 'submit') => {
     q('textarea').value = text;
     if (how === 'submit') q('form.drafts-paste').dispatchEvent(makeEvent('submit'));
@@ -206,13 +206,13 @@ test('Edit re-parses: the box holds the raw line, Save sends text and link, Canc
       return { body: { ...row, text: body.text, url: body.url, title: 'Edited', mainArtists: ['Foo'] } };
     },
   });
-  v.button(/^Edit$/).click();
+  v.button(/^Edit draft$/).click();
   const input = v.q('.draft-edit-input');
   assert.equal(input.value, `Foo - Bar ${YT}`);
   assert.equal(document.activeElement, input);
   v.button(/^Cancel$/).click();
   assert.equal(v.qa('.draft-edit-input').length, 0);
-  v.button(/^Edit$/).click();
+  v.button(/^Edit draft$/).click();
   v.q('.draft-edit-input').value = 'New Artist - New Title https://youtu.be/dQw4w9WgXcQ?si=zz';
   v.q('.draft-edit-input').dispatchEvent(makeEvent('input'));
   v.q('form.draft-edit').dispatchEvent(makeEvent('submit'));
@@ -228,7 +228,7 @@ test('Edit re-parses: the box holds the raw line, Save sends text and link, Canc
 test('Edit shows a server error inline and rejects an empty line without a request', async () => {
   const row = draft('a', { text: 'Foo - Bar' });
   const v = await mount([row], { 'PATCH /drafts/a': () => ({ status: 409, body: { detail: 'this link is already in your drafts' } }) });
-  v.button(/^Edit$/).click();
+  v.button(/^Edit draft$/).click();
   v.q('.draft-edit-input').value = '   ';
   v.q('.draft-edit-input').dispatchEvent(makeEvent('input'));
   v.q('form.draft-edit').dispatchEvent(makeEvent('submit'));
@@ -246,7 +246,7 @@ test('Edit shows a server error inline and rejects an empty line without a reque
 
 test('Delete hides the row at once with an Undo toast; Undo brings it back without any request', async () => {
   const v = await mount([draft('a'), draft('b')]);
-  v.button(/^Delete$/, v.rows()[0]).click();
+  v.button(/^Delete draft$/, v.rows()[0]).click();
   assert.equal(v.rows().length, 1);
   assert.equal(draftStore.count, 1);
   assert.match(toast().textContent, /Draft deleted/);
@@ -259,12 +259,12 @@ test('Delete hides the row at once with an Undo toast; Undo brings it back witho
 
 test('an unundone delete is sent when the undo window ends, on leaving the view, and a failure restores the row', async () => {
   const v = await mount([draft('a'), draft('b'), draft('c')], { 'DELETE /drafts/c': () => ({ status: 500, body: { detail: 'nope' } }) });
-  v.button(/^Delete$/, v.rows()[0]).click();
+  v.button(/^Delete draft$/, v.rows()[0]).click();
   assert.equal(draftStore.timers.size, 1);
   await draftStore.commitDelete('a');
   assert.ok(v.calls.some((c) => c.url === '/drafts/a' && c.opts.method === 'DELETE'));
   assert.equal(v.rows().length, 2);
-  v.button(/^Delete$/, v.rows()[0]).click();
+  v.button(/^Delete draft$/, v.rows()[0]).click();
   v.unmount();
   await flush();
   await flush();

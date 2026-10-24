@@ -219,8 +219,9 @@ export function mountDrafts(host) {
         ? el('button', { class: 'btn fill small', type: 'button', disabled: working, 'aria-label': `Add to playlist ${d.playlist.title}: ${name}`, onclick: () => { void addToPlaylist(d); } }, icon('plus', 'inline'), 'Add to playlist')
         : el('button', { class: 'btn fill small', type: 'button', 'aria-label': `Add to Library: ${name}`, onclick: () => addToLibrary(d) }, icon('plus', 'inline'), 'Add to Library'),
       canRefresh(d) ? el('button', { class: 'link-btn', type: 'button', disabled: working, 'aria-label': `Refresh: ${name}`, onclick: () => { void refresh(d); } }, working ? 'Fetching...' : 'Refresh') : null,
-      el('button', { class: 'link-btn', type: 'button', 'aria-label': `Edit: ${name}`, onclick: () => startEdit(d) }, 'Edit'),
-      el('button', { class: 'link-btn danger-text', type: 'button', 'aria-label': `Delete: ${name}`, onclick: () => remove(d) }, 'Delete'));
+      el('span', { class: 'draft-tools' },
+        el('button', { class: 'icon', type: 'button', title: 'Edit draft', 'aria-label': `Edit draft: ${name}`, onclick: () => startEdit(d) }, icon('pencil', 'inline')),
+        el('button', { class: 'icon danger', type: 'button', title: 'Delete draft', 'aria-label': `Delete draft: ${name}`, onclick: () => remove(d) }, icon('trash', 'inline'))));
   }
 
   function row(d) {

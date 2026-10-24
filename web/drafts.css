@@ -54,7 +54,10 @@
 .draft .src-logo { display: inline-grid; place-items: center; width: var(--control-sm); height: var(--control-sm); border-radius: var(--radius-sm); color: var(--ink-muted); }
 .draft .src-youtube { color: var(--brand-youtube); }
 .draft .src-soundcloud { color: var(--brand-soundcloud); }
-.link-btn.danger-text { color: var(--power-text); }
+.draft-actions .icon { position: relative; width: var(--control); height: var(--control); }
+.draft-actions .icon::after { content: ''; position: absolute; inset: calc((var(--control) - var(--hit)) / 2); border-radius: 50%; }
+.draft-actions .icon.danger { color: var(--power-text); }
+.draft-tools { display: flex; flex: none; align-items: center; gap: var(--space-3); margin-left: auto; }
 .draft-edit .row { flex-wrap: wrap; }
 .draft-edit-input { flex: 1 1 14rem; min-width: 0; }
 .draft-edit .msg { margin-top: var(--space-2); }
