@@ -278,14 +278,24 @@ export function smoothDown(prev, next, dt, rate = METER_FALL_DB_S) {
   return next >= prev ? next : Math.max(next, prev - rate * dt);
 }
 
-export function decayTrail(trail, current, dt, rate = TRAIL_DECAY_DB_S, floor = TRAIL_FLOOR_DB) {
-  const fall = rate * dt;
-  for (let i = 0; i < trail.length; i += 1) {
-    const kept = trail[i] - fall;
-    const now = current[i];
-    trail[i] = Math.max(now > kept ? now : kept, floor);
+export function trailLevel(peak, peakAt, now, rate = TRAIL_DECAY_DB_S, floor = TRAIL_FLOOR_DB) {
+  const fell = peak - rate * (Math.max(0, now - peakAt) / 1000);
+  return fell > floor ? fell : floor;
+}
+
+export function holdTrail(shown, peaks, peakTimes, current, now, rate = TRAIL_DECAY_DB_S, floor = TRAIL_FLOOR_DB) {
+  for (let i = 0; i < shown.length; i += 1) {
+    const ghost = trailLevel(peaks[i], peakTimes[i], now, rate, floor);
+    const level = current[i];
+    if (level >= ghost) {
+      peaks[i] = level;
+      peakTimes[i] = now;
+      shown[i] = level > floor ? level : floor;
+    } else {
+      shown[i] = ghost;
+    }
   }
-  return trail;
+  return shown;
 }
 
 let trailSeconds = TRAIL_LENGTH_S;
@@ -295,30 +305,41 @@ export function createTrails() {
   let buf = null;
   let keys = null;
   let scratch = null;
+  let peaks = null;
+  let peakTimes = null;
   let at = null;
-  const clear = () => { buf?.fill(TRAIL_FLOOR_DB); at = null; };
+  const clear = () => { buf?.fill(TRAIL_FLOOR_DB); peaks?.fill(TRAIL_FLOOR_DB); at = null; };
   return {
     get on() { return on; },
     get buf() { return on ? buf : null; },
     get length() { return trailSeconds; },
     setLength(next) {
       const n = Number(next);
-      if (Number.isFinite(n)) trailSeconds = clamp(n, TRAIL_LENGTH_MIN_S, TRAIL_LENGTH_MAX_S);
+      if (!Number.isFinite(n)) return;
+      trailSeconds = clamp(n, TRAIL_LENGTH_MIN_S, TRAIL_LENGTH_MAX_S);
+      if (!buf || at === null) return;
+      const rate = trailRate(trailSeconds);
+      for (let i = 0; i < buf.length; i += 1) buf[i] = trailLevel(peaks[i], peakTimes[i], at, rate);
     },
     set(next) { on = Boolean(next); clear(); },
     clear,
     step(current, t, items = null) {
       if (!on) return null;
-      if (!buf || buf.length !== current.length) { buf = new Float32Array(current.length).fill(TRAIL_FLOOR_DB); keys = null; at = null; }
+      if (!buf || buf.length !== current.length) {
+        buf = new Float32Array(current.length).fill(TRAIL_FLOOR_DB);
+        peaks = new Float32Array(current.length).fill(TRAIL_FLOOR_DB);
+        peakTimes = new Float64Array(current.length);
+        keys = null;
+        at = null;
+      }
       if (items) {
         if (!keys || keys.length !== items.length) { keys = new Float64Array(items.length).fill(NaN); }
         let same = true;
         for (let i = 0; i < items.length; i += 1) if (keys[i] !== items[i].freq) { same = false; keys[i] = items[i].freq; }
-        if (!same) { buf.fill(TRAIL_FLOOR_DB); at = null; }
+        if (!same) clear();
       }
-      const dt = at === null ? 0 : clamp((t - at) / 1000, 0, 0.25);
       at = t;
-      return decayTrail(buf, current, dt, trailRate(trailSeconds));
+      return holdTrail(buf, peaks, peakTimes, current, t, trailRate(trailSeconds));
     },
     levels(count) {
       if (!scratch || scratch.length !== count) scratch = new Float32Array(count);

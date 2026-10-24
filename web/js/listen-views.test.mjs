@@ -140,20 +140,24 @@ test('STU-027: specHover snaps to a harmonic bar within 8 px and keeps the line 
   assert.ok(!far.title.startsWith('H'));
 });
 
-test('WEB-205: decayTrail keeps the louder of the live level and the trail falling 20 dB per second', () => {
-  const trail = Float32Array.from([-20, -50, -90]);
-  v.decayTrail(trail, Float32Array.from([-60, -45, -Infinity]), 0.5);
-  assert.deepEqual([...trail], [-30, -45, -100]);
-  v.decayTrail(trail, new Float32Array(3).fill(-Infinity), 2);
-  assert.deepEqual([...trail], [-70, -85, -140]);
-  const deep = new Float32Array(1).fill(v.TRAIL_FLOOR_DB);
-  v.decayTrail(deep, new Float32Array(1).fill(-Infinity), 10);
-  assert.equal(deep[0], v.TRAIL_FLOOR_DB);
-  const same = v.decayTrail(trail, trail, 0);
-  assert.equal(same, trail);
+test('WEB-205: trailLevel falls from the stored peak at the current rate and holdTrail keeps the louder of the live level and the ghost', () => {
+  assert.equal(v.trailLevel(-20, 0, 500), -30);
+  assert.equal(v.trailLevel(-20, 0, 500, 40), -40);
+  assert.equal(v.trailLevel(-20, 1000, 0), -20);
+  assert.equal(v.trailLevel(-20, 0, 60000), v.TRAIL_FLOOR_DB);
+  const shown = new Float32Array(3);
+  const peaks = Float32Array.from([-20, -50, -90]);
+  const times = new Float64Array(3);
+  v.holdTrail(shown, peaks, times, Float32Array.from([-60, -45, -Infinity]), 500);
+  assert.deepEqual([...shown], [-30, -45, -100]);
+  assert.deepEqual([...peaks], [-20, -45, -90]);
+  assert.deepEqual([...times], [0, 500, 0]);
+  v.holdTrail(shown, peaks, times, new Float32Array(3).fill(-Infinity), 2500);
+  assert.deepEqual([...shown], [-65, -85, -140]);
+  assert.equal(v.holdTrail(shown, peaks, times, shown, 2500), shown);
 });
 
-test('WEB-205: createTrails is off by default, clears on every toggle, caps dt and resets when the bar set changes', () => {
+test('WEB-205: createTrails is off by default, clears on every toggle, falls with real time and resets when the bar set changes', () => {
   const t = v.createTrails();
   assert.equal(t.on, false);
   assert.equal(t.step(new Float32Array(2).fill(-10), 0), null);
@@ -162,7 +166,7 @@ test('WEB-205: createTrails is off by default, clears on every toggle, caps dt a
   assert.deepEqual([...t.step(live, 0)], [-10, -80]);
   const low = new Float32Array(2).fill(-Infinity);
   assert.deepEqual([...t.step(low, 1000)], [-30, -100]);
-  assert.deepEqual([...t.step(low, 60000)], [-35, -105]);
+  assert.deepEqual([...t.step(low, 60000)], [v.TRAIL_FLOOR_DB, v.TRAIL_FLOOR_DB]);
   t.set(false);
   assert.equal(t.buf, null);
   t.set(true);
@@ -187,6 +191,12 @@ test('WEB-205: the trail length sets the decay rate (40 dB over the length), is 
   t.setLength(1);
   assert.equal(t.buf[0], -10);
   assert.deepEqual([...t.step(low, 250)], [-20]);
+  t.setLength(5);
+  assert.equal(t.buf[0], -12);
+  assert.deepEqual([...t.step(low, 1000)], [-18]);
+  t.setLength(1);
+  assert.equal(t.buf[0], -50);
+  assert.deepEqual([...t.step(low, 1000)], [-50]);
   t.setLength(100);
   assert.equal(t.length, 10);
   t.setLength(0.1);
