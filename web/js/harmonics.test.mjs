@@ -31,7 +31,7 @@ test('harmonicList keeps the summed gain at 0.3 and skips harmonics above 20 kHz
 
 test('clampParams keeps every control in range', () => {
   const wild = h.clampParams({ freq: 1, count: 99, rolloff: -90, tau: 99, repeat: 0, strings: 9, detune: 40, thumpDb: 5, inharmB: 1, strike: 0.9 });
-  assert.deepEqual(wild, { ...h.DEFAULTS, freq: 20, count: 32, rolloff: -24, tau: 5, repeat: 1, strings: 3, detune: 5, thumpDb: -12, inharmB: 0.002, strike: 0.25 });
+  assert.deepEqual(wild, { ...h.DEFAULTS, freq: 20, count: 32, rolloff: -24, tau: 5, repeat: 1, strings: 8, detune: 5, thumpDb: -12, inharmB: 0.002, strike: 0.25 });
   assert.deepEqual(h.clampParams({}), h.DEFAULTS);
   assert.deepEqual(h.DEFAULTS, {
     freq: 220, count: 10, rolloff: -12, decay: false, tau: 1.2, repeat: 3, strings: 1, detune: 2,
@@ -97,11 +97,33 @@ test('strings are detuned symmetrically by cents', () => {
   assert.ok(Math.abs(hz[0] - 439.492) < 0.001 && hz[1] === 440 && Math.abs(hz[2] - 440.508) < 0.001);
 });
 
+test('up to 8 strings are spread evenly from -d to +d', () => {
+  assert.equal(h.MAX_STRINGS, 8);
+  assert.deepEqual(h.stringOffsets(5, 2), [-2, -1, 0, 1, 2]);
+  const eight = h.stringOffsets(8, 3.5);
+  assert.equal(eight.length, 8);
+  assert.equal(eight[0], -3.5);
+  assert.equal(eight[7], 3.5);
+  for (let k = 1; k < 8; k += 1) assert.ok(Math.abs(eight[k] - eight[k - 1] - 1) < 1e-9);
+  assert.equal(h.clampParams({ strings: 12 }).strings, 8);
+});
+
+test('strings x harmonics is capped at 256 oscillators', () => {
+  assert.equal(h.MAX_OSCILLATORS, 256);
+  assert.equal(h.synthCount(8, 10), 10);
+  assert.equal(h.synthCount(8, 32), 32);
+  assert.equal(h.synthCount(8, 40), 32);
+  assert.equal(h.synthCount(3, 100), 85);
+  assert.equal(h.capText(8, 10), '');
+  assert.equal(h.capText(8, 40), 'Using 32 harmonics per string (limit 256 oscillators).');
+});
+
 test('beatRate is the frequency gap of adjacent strings', () => {
   assert.equal(h.beatRate(440, 1, 2), 0);
   assert.equal(h.beatRate(440, 3, 0), 0);
   assert.ok(Math.abs(h.beatRate(440, 3, 2) - 440 * (2 ** (2 / 1200) - 1)) < 1e-9);
   assert.ok(Math.abs(h.beatRate(440, 2, 2) - 440 * (2 ** (4 / 1200) - 1)) < 1e-9);
+  assert.ok(Math.abs(h.beatRate(440, 8, 3.5) - 440 * (2 ** (1 / 1200) - 1)) < 1e-9);
   assert.equal(h.fmtBeat(0.509), '0.51');
   assert.equal(h.fmtBeat(23.04), '23.0');
 });

@@ -8,7 +8,8 @@ export const MIN_HZ = 20;
 export const MAX_HZ = 4000;
 export const MAX_COUNT = 32;
 export const MIN_ROLLOFF = -24;
-export const MAX_STRINGS = 3;
+export const MAX_STRINGS = 8;
+export const MAX_OSCILLATORS = 256;
 export const MAX_DETUNE = 5;
 export const DEFAULTS = {
   freq: 220, count: 10, rolloff: -12, decay: false, tau: 1.2, repeat: 3, strings: 1, detune: 2,
@@ -95,7 +96,7 @@ export const TWO_NOTE = 'Two-stage decay: a quick fade first, then a long quiet 
 export const INHARM_NOTE = 'Inharmonicity: partials are slightly sharp, because a stiff string resists bending.';
 export const NEEDS_TWO = 'Needs 2 or more harmonics.';
 export const HAMMER_NOTE ='Hammer position: partials with a node at the strike point are very quiet.';
-export const STRINGS_NOTE = 'A real piano note has up to 3 strings tuned a hair apart; their slow beating gives the shimmer.';
+export const STRINGS_NOTE = 'A real piano note has up to 3 strings; here you can try up to 8.';
 export const BEAT_HINT = 'With detuned strings the loudness swells slowly: beats';
 export const ABOUT_TITLE ='What are harmonics?';
 export const ABOUT = [
@@ -175,7 +176,16 @@ export function fmtThump(db) {
 
 export function stringOffsets(strings, detune) {
   if (strings <= 1) return [0];
-  return strings === 2 ? [-detune, detune] : [-detune, 0, detune];
+  return Array.from({ length: strings }, (_, k) => (2 * detune * k) / (strings - 1) - detune);
+}
+
+export function synthCount(strings, count) {
+  return Math.max(1, Math.min(count, Math.floor(MAX_OSCILLATORS / Math.max(1, strings))));
+}
+
+export function capText(strings, count) {
+  const used = synthCount(strings, count);
+  return used < count ? `Using ${used} harmonics per string (limit ${MAX_OSCILLATORS} oscillators).` : '';
 }
 
 export function centsRatio(cents) {
@@ -184,7 +194,7 @@ export function centsRatio(cents) {
 
 export function beatRate(freq, strings, detune) {
   if (strings < 2 || !(detune > 0)) return 0;
-  return freq * (centsRatio(strings === 2 ? 2 * detune : detune) - 1);
+  return freq * (centsRatio((2 * detune) / (strings - 1)) - 1);
 }
 
 export function fmtBeat(hz) {
@@ -222,7 +232,9 @@ export function playableLimit(sampleRate = 48000) {
 }
 
 export function harmonicList(params, sampleRate = 48000) {
-  const { freq, count, rolloff, strings, detune } = clampParams(params);
+  const p = clampParams(params);
+  const { freq, rolloff, strings, detune } = p;
+  const count = synthCount(strings, p.count);
   const real = realism(params);
   const limit = playableLimit(sampleRate);
   const widest = centsRatio(strings > 1 ? detune : 0);
@@ -587,25 +599,27 @@ export function createSynth(env = {}) {
 
   const voicesOf = (strings) => strings.flatMap((s) => s.voices);
 
-  function buildString(t) {
+  function buildVoice(trim, t) {
+    const osc = live.ctx.createOscillator();
+    osc.type = 'sine';
+    const gain = live.ctx.createGain();
+    gain.gain.value = 0;
+    const gain2 = live.ctx.createGain();
+    gain2.gain.value = 0;
+    osc.connect(gain);
+    osc.connect(gain2);
+    gain.connect(trim);
+    gain2.connect(trim);
+    osc.start(t);
+    return { osc, gain, gain2, fresh: true, env: { t0: 0, gain: 0, tau: Infinity }, env2: { t0: 0, gain: 0, tau: Infinity } };
+  }
+
+  function buildString(t, harmonics) {
     const trim = live.ctx.createGain();
     trim.gain.value = 0;
     trim.connect(live.master);
     const voices = [];
-    for (let n = 1; n <= MAX_COUNT; n += 1) {
-      const osc = live.ctx.createOscillator();
-      osc.type = 'sine';
-      const gain = live.ctx.createGain();
-      gain.gain.value = 0;
-      const gain2 = live.ctx.createGain();
-      gain2.gain.value = 0;
-      osc.connect(gain);
-      osc.connect(gain2);
-      gain.connect(trim);
-      gain2.connect(trim);
-      osc.start(t);
-      voices.push({ osc, gain, gain2, env: { t0: 0, gain: 0, tau: Infinity }, env2: { t0: 0, gain: 0, tau: Infinity } });
-    }
+    for (let n = 1; n <= harmonics; n += 1) voices.push(buildVoice(trim, t));
     return { trim, voices, fresh: true };
   }
 
@@ -662,12 +676,24 @@ export function createSynth(env = {}) {
     src.stop(end);
   }
 
-  function syncStrings(n) {
+  function fitVoices(s, harmonics, t) {
+    while (s.voices.length < harmonics) s.voices.push(buildVoice(s.trim, t));
+    if (s.voices.length <= harmonics) return;
+    const dropped = s.voices.splice(harmonics);
+    for (const v of dropped) {
+      for (const g of [v.gain.gain, v.gain2.gain]) {
+        hold(g, t);
+        g.linearRampToValueAtTime(0, t + FADE_S);
+      }
+    }
+    setTimeout(() => dropped.forEach(release), FADE_S * 1000 + 40);
+  }
+
+  function syncStrings(n, harmonics) {
     const t = live.ctx.currentTime;
-    const before = live.strings.length;
-    while (live.strings.length < n) live.strings.push(buildString(t));
+    while (live.strings.length < n) live.strings.push(buildString(t, harmonics));
     while (live.strings.length > n) retire(live.strings.pop(), t);
-    return live.strings.length > before;
+    for (const s of live.strings) fitVoices(s, harmonics, t);
   }
 
   function apply(params, initial) {
@@ -685,18 +711,20 @@ export function createSynth(env = {}) {
       s.voices.forEach((v, i) => {
         const gain = rows[i]?.played ? rows[i].gain : 0;
         const hz = Math.min(partialFreq(i + 1, p.freq, B), limit);
-        if (direct) {
+        if (direct || v.fresh) {
           v.osc.frequency.value = hz;
           v.osc.detune.value = offsets[k];
-          v.gain.gain.value = live.decay ? 0 : gain;
-          v.gain2.gain.value = 0;
         } else {
           v.osc.frequency.setTargetAtTime(hz, t, SMOOTH_S);
           v.osc.detune.setTargetAtTime(offsets[k], t, SMOOTH_S);
-          if (!live.decay) {
-            v.gain.gain.setTargetAtTime(gain, t, SMOOTH_S);
-            v.gain2.gain.setTargetAtTime(0, t, SMOOTH_S);
-          }
+        }
+        v.fresh = false;
+        if (direct) {
+          v.gain.gain.value = live.decay ? 0 : gain;
+          v.gain2.gain.value = 0;
+        } else if (!live.decay) {
+          v.gain.gain.setTargetAtTime(gain, t, SMOOTH_S);
+          v.gain2.gain.setTargetAtTime(0, t, SMOOTH_S);
         }
       });
     });
@@ -710,14 +738,15 @@ export function createSynth(env = {}) {
     const rows = harmonicList(p, live.ctx.sampleRate);
     const limit = playableLimit(live.ctx.sampleRate) - 1;
     const from = Math.max(now, at - RELEASE_S);
-    voicesOf(strings).forEach((v, j) => {
-      const i = j % MAX_COUNT;
-      const gain = rows[i]?.played ? rows[i].gain : 0;
-      const tau = tauOf(i + 1, p.tau);
-      v.osc.frequency.setValueAtTime(Math.min(partialFreq(i + 1, p.freq, real.inharmB), limit), at);
-      v.env = shape(v.gain.gain, v.env, at, from, gain * weights.fast, tau);
-      v.env2 = shape(v.gain2.gain, v.env2, at, from, gain * weights.slow, tau * SLOW_MULT);
-    });
+    for (const s of strings) {
+      s.voices.forEach((v, i) => {
+        const gain = rows[i]?.played ? rows[i].gain : 0;
+        const tau = tauOf(i + 1, p.tau);
+        v.osc.frequency.setValueAtTime(Math.min(partialFreq(i + 1, p.freq, real.inharmB), limit), at);
+        v.env = shape(v.gain.gain, v.env, at, from, gain * weights.fast, tau);
+        v.env2 = shape(v.gain2.gain, v.env2, at, from, gain * weights.slow, tau * SLOW_MULT);
+      });
+    }
     if (strings === live.strings) {
       live.struckB = real.inharmB;
       if (real.thumpGain > 0 && rows[0]?.played) thump(at, rows[0].gain * real.thumpGain * THUMP_NORM);
@@ -810,7 +839,7 @@ export function createSynth(env = {}) {
         ctx, master, analyser, strings: [], decay: clamped.decay, params: clamped, next: 0, last: 0, timer: 0,
         struckB: realism(clamped).inharmB, noise, thump: { hp, lp, gain: tg },
       };
-      syncStrings(clamped.strings);
+      syncStrings(clamped.strings, synthCount(clamped.strings, clamped.count));
       apply(params, true);
       master.gain.setValueAtTime(0, t);
       master.gain.linearRampToValueAtTime(1, t + FADE_S);
@@ -825,7 +854,7 @@ export function createSynth(env = {}) {
       const next = clampParams(params);
       const wasDecay = live.decay;
       const known = new Set(live.strings);
-      syncStrings(next.strings);
+      syncStrings(next.strings, synthCount(next.strings, next.count));
       const added = live.strings.filter((s) => !known.has(s));
       if (next.decay && !wasDecay) enterDecay(params);
       else if (!next.decay && wasDecay) leaveDecay();
@@ -1272,26 +1301,16 @@ export function createHarmonicsCard(env = {}) {
   const repeatField = el('div', { class: 'hm-field', hidden: true },
     el('label', { htmlFor: `${uid}-rr` }, 'Repeat every'),
     el('div', { class: 'hm-pair' }, repeatRange, repeatOut));
-  const stringBtns = Array.from({ length: MAX_STRINGS }, (_, i) => el('button', {
-    class: 'seg-btn', type: 'button', role: 'radio', 'aria-checked': 'false', onclick: () => change({ strings: i + 1 }),
-  }, String(i + 1)));
-  const stringsGroup = el('div', {
-    class: 'seg hm-seg', role: 'radiogroup', 'aria-labelledby': `${uid}-sl`,
-    onkeydown: (ev) => {
-      const step = { ArrowRight: 1, ArrowUp: 1, ArrowLeft: -1, ArrowDown: -1 }[ev.key];
-      if (!step) return;
-      ev.preventDefault();
-      const n = clamp(params.strings + step, 1, MAX_STRINGS);
-      change({ strings: n });
-      stringBtns[n - 1].focus();
-    },
-  }, ...stringBtns);
+  const stringsRange = el('input', { id: `${uid}-sr`, class: 'slider hm-range', type: 'range', min: '1', max: String(MAX_STRINGS), step: '1', value: String(params.strings) });
+  const stringsOut = el('output', { class: 'hm-val t-subhead', htmlFor: `${uid}-sr` }, String(params.strings));
+  const capOut = el('p', { class: 'hm-cap muted t-caption', hidden: true });
   const detuneRange = el('input', { id: `${uid}-ur`, class: 'slider hm-range', type: 'range', min: '0', max: String(MAX_DETUNE), step: '0.1', value: String(params.detune) });
   const detuneOut = el('output', { class: 'hm-val t-subhead', htmlFor: `${uid}-ur` }, '');
   const beatOut = el('p', { class: 'hm-beat muted t-caption' });
   const stringsField = el('div', { class: 'hm-field' },
-    el('span', { id: `${uid}-sl`, class: 'hm-lbl' }, 'Strings per note'),
-    stringsGroup);
+    el('label', { htmlFor: `${uid}-sr` }, 'Strings per note'),
+    el('div', { class: 'hm-pair' }, stringsRange, stringsOut),
+    capOut);
   const detuneField = el('div', { class: 'hm-field', hidden: true },
     el('label', { htmlFor: `${uid}-ur` }, 'Detune between strings (cents)'),
     el('div', { class: 'hm-pair' }, detuneRange, detuneOut),
@@ -1461,7 +1480,7 @@ export function createHarmonicsCard(env = {}) {
       real.strike > 0 ? `hammer at ${fmtStrike(real.strike)} of the string` : '',
     ].filter(Boolean);
     const extra = parts.length ? `, ${parts.join(', ')}` : '';
-    const base = `${params.count} harmonics of ${fmtHz(params.freq)}, ${note.name}, decay ${params.rolloff} dB per octave${piano}${multi}${extra}`;
+    const base = `${synthCount(params.strings, params.count)} harmonics of ${fmtHz(params.freq)}, ${note.name}, decay ${params.rolloff} dB per octave${piano}${multi}${extra}`;
     const where = axisText();
     if (source !== 'synth') {
       const what = source === 'mic' ? 'the microphone' : 'the player';
@@ -1483,7 +1502,7 @@ export function createHarmonicsCard(env = {}) {
     gramCap.textContent = `The last 10 seconds: time across, frequency up (${axisCaption()}), colour is level. It fills while the tone plays and clears when the axis changes.`;
   }
 
-  const rangeNow = () => (source === 'synth' ? axisRange(axis, params.freq, params.count, realism(params).inharmB) : liveAxisRange(axis, liveMax));
+  const rangeNow = () => (source === 'synth' ? axisRange(axis, params.freq, synthCount(params.strings, params.count), realism(params).inharmB) : liveAxisRange(axis, liveMax));
 
   function axisText() {
     const r = rangeNow();
@@ -1545,12 +1564,11 @@ export function createHarmonicsCard(env = {}) {
     beatOut.hidden = !(beat > 0);
     beatOut.textContent = beat > 0 ? `H1 beats about ${fmtBeat(beat)} Hz` : '';
     beatHint.hidden = source !== 'synth' || !(beat > 0);
-    stringBtns.forEach((b, i) => {
-      const on = i + 1 === params.strings;
-      b.classList.toggle('on', on);
-      b.setAttribute('aria-checked', String(on));
-      b.tabIndex = on ? 0 : -1;
-    });
+    fill(stringsRange, params.strings, 1, MAX_STRINGS);
+    stringsOut.textContent = String(params.strings);
+    const capped = capText(params.strings, params.count);
+    capOut.hidden = !capped;
+    capOut.textContent = capped;
     axisBtns.forEach((b, i) => {
       const on = AXES[i] === axis;
       b.classList.toggle('on', on);
@@ -1933,6 +1951,7 @@ export function createHarmonicsCard(env = {}) {
     setFreq(Number.isFinite(v) ? v : params.freq);
   });
   countRange.addEventListener('input', () => change({ count: Number(countRange.value) }));
+  stringsRange.addEventListener('input', () => change({ strings: Number(stringsRange.value) }));
   rollRange.addEventListener('input', () => change({ rolloff: Number(rollRange.value) }));
   tauRange.addEventListener('input', () => change({ tau: Number(tauRange.value) }));
   repeatRange.addEventListener('input', () => change({ repeat: Number(repeatRange.value) }));
