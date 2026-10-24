@@ -19,7 +19,7 @@ Status: Accepted design for build (ADR-0026, [task-0021](../tasks/task-0021.md))
 Callers (grep-verified):
 
 - `deps.tx(uid, verb)` is the ONLY caller of `transaction()` and `commit()`: user lock (`users.user_lock`) -> `SYNC.transaction()` -> body -> `SYNC.commit(f"audioplayer: {uid[:8]} {verb}")`. Lock order: user lock, then git lock; the git lock is never held while taking a user lock.
-- `tx` call sites (each is one commit per save): `routes/songs.py` (edit), `routes/removal.py` (delete, delete audio), `routes/covers.py` (cover set `_store`, cover off), `routes/analyze.py` (bpm), `downloads.py` (add, audio, add) , `metafill.py` (get metadata), `backfill.py` (bpm batch), `deps.admit` (signup, writes `profile.json`), `migrate_tags.py` and `migrate_credits.py` (startup, per user).
+- `tx` call sites (each is one commit per save): `routes/songs.py` (edit), `routes/removal.py` (delete, delete audio; delete also drops the id from `playlists.json`), `routes/playlists.py` (create, edit, delete, add, remove, order), `routes/covers.py` (cover set `_store`, cover off), `routes/analyze.py` (bpm), `downloads.py` (add, audio, add) , `metafill.py` (get metadata), `backfill.py` (bpm batch), `deps.admit` (signup, writes `profile.json`), `migrate_tags.py` and `migrate_credits.py` (startup, per user).
 - `routes/health.py`: `{"status":"ok","sync": SYNC.status()}` (string). Web: `web/js/app.js` `checkSync()` (top banner `#sync-warn`, polls every `SYNC_POLL_MS` = 30 s) and `web/js/settings.js` `libraryCard()` ("Sync" cell, `SYNC_TEXT`).
 - Other `SYNC` users: `deps.data_root()` / `covers_root()` (paths), `migrate_*.backup_path()` (`SYNC.data_repo`).
 

@@ -73,6 +73,10 @@ def genre_layout_path(uid: str) -> Path:
     return data_root() / "users" / uid / "genre_layout.json"
 
 
+def playlists_path(uid: str) -> Path:
+    return data_root() / "users" / uid / "playlists.json"
+
+
 def profile_path(uid: str) -> Path:
     return data_root() / "users" / uid / "profile.json"
 

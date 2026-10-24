@@ -6,7 +6,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from . import genre_layout
+from . import genre_layout, playlists
 
 MAX_ID_TOKEN_LEN = 8192
 MIN_BPM, MAX_BPM = 20, 300
@@ -157,6 +157,37 @@ class DraftLinesRequest(BaseModel):
 class DraftPatchRequest(BaseModel):
     text: str | None = Field(default=None, max_length=300)
     url: str | None = Field(default=None, max_length=300)
+
+
+def _song_ids(ids: list[str]) -> list[str]:
+    if any(not sid or len(sid) > 64 for sid in ids):
+        raise ValueError("a song id has 1 to 64 characters")
+    return ids
+
+
+class PlaylistCreateRequest(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    name: str = Field(max_length=2000)
+    description: str | None = Field(default=None, max_length=20000)
+    song_ids: list[str] = Field(default_factory=list, max_length=playlists.MAX_REQUEST_IDS)
+
+    _ids = field_validator("song_ids")(_song_ids)
+
+
+class PlaylistPatchRequest(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    name: str | None = Field(default=None, max_length=2000)
+    description: str | None = Field(default=None, max_length=20000)
+
+
+class PlaylistSongsRequest(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    song_ids: list[str] = Field(max_length=playlists.MAX_REQUEST_IDS)
+
+    _ids = field_validator("song_ids")(_song_ids)
 
 
 class GenreLayoutRequest(BaseModel):

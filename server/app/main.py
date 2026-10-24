@@ -10,7 +10,7 @@ from fastapi.responses import JSONResponse
 from . import anon, deps, features, genre_vocab, guest, hosts, legal, migrate_model2, migrate_model3, migrate_removals, migrate_renames, migrate_retired, migrate_sources, migrate_tags, migrate_version_norm, migrate_reference_tags, migrate_genre_eras_seed, plays, readiness, session, web
 from .problems import Problem
 from .routes import playlist_import as playlist_import_routes
-from .routes import analyze, anon as anon_routes, auth, backfill, catalog, covers, drafts, features as features_routes, files, genre_layout as genre_layout_routes, genre_references as genre_references_routes, genres, health, legacy, legal as legal_routes, lookup, me, metafill, peaks as peaks_routes, plays as plays_routes, removal, songs
+from .routes import analyze, anon as anon_routes, auth, backfill, catalog, covers, drafts, features as features_routes, files, genre_layout as genre_layout_routes, genre_references as genre_references_routes, genres, health, legacy, legal as legal_routes, lookup, me, metafill, peaks as peaks_routes, playlists as playlists_routes, plays as plays_routes, removal, songs
 
 app = FastAPI(title="Electrophone")
 
@@ -91,7 +91,7 @@ def _shutdown() -> None:
 
 app.add_middleware(readiness.ReadinessMiddleware)
 
-for _module in (auth, me, health, legal_routes, legacy, features_routes, files, peaks_routes, plays_routes, catalog, covers, genre_layout_routes, genre_references_routes, genres, lookup, playlist_import_routes, drafts, songs, analyze, backfill, metafill, removal, anon_routes):
+for _module in (auth, me, health, legal_routes, legacy, features_routes, files, peaks_routes, plays_routes, catalog, covers, genre_layout_routes, genre_references_routes, genres, lookup, playlist_import_routes, playlists_routes, drafts, songs, analyze, backfill, metafill, removal, anon_routes):
     app.include_router(_module.router)
 
 web.mount(app)

@@ -4,7 +4,7 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from .. import deps, identify, library
+from .. import deps, identify, library, playlists
 
 router = APIRouter()
 
@@ -19,6 +19,7 @@ def delete_song(video_id: str, user: Annotated[dict[str, Any], Depends(deps.requ
         if song is None:
             raise HTTPException(status_code=404, detail=deps.UNKNOWN_SONG)
         deps.save_songs(uid, [s for s in songs if s["id"] != video_id])
+        playlists.remove_song(deps.playlists_path(uid), video_id)
         (deps.covers_dir(uid) / f"{video_id}.jpg").unlink(missing_ok=True)
         if library.has_file(song):
             try:
