@@ -1,0 +1,39 @@
+{
+  "esbuild": "0.27.7",
+  "sources": "1e226afd058178878a0859272fbd3d96f951eda3b9be9fcb42f155c1aee954b9",
+  "stylesheets": [
+    "tokens.css",
+    "style.css",
+    "genres.css",
+    "drafts.css",
+    "playlists.css",
+    "stats.css",
+    "progress.css",
+    "import.css",
+    "theory.css",
+    "features.css",
+    "about.css",
+    "studio.css",
+    "viz.css",
+    "viz-synth.css"
+  ],
+  "css": "dist/app.css",
+  "entry": "dist/app.js",
+  "icons": "dist/icons.js",
+  "tier1": [
+    "dist/app.js",
+    "dist/icons.js",
+    "dist/chunk-IAVME5CP.js",
+    "dist/chunk-MS2G2NOA.js",
+    "dist/chunk-VHOL7PJO.js",
+    "dist/chunk-CGKF3NB7.js",
+    "dist/chunk-EEQXK5JZ.js",
+    "dist/chunk-WOT6VMZA.js"
+  ],
+  "tier2": [
+    "dist/lazy-ui-CDT3OVW5.js",
+    "dist/chunk-N44TH7US.js",
+    "dist/chunk-YQSEU7L6.js",
+    "dist/lazy-genres-XQ23DLBK.js"
+  ]
+}
