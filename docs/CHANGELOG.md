@@ -2,7 +2,7 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
-## 2026-10-25 (Studio Spectrum hover readout, built, not deployed)
+## 2026-10-25 (Studio Spectrum hover readout, deployed to studio.electrophone.cc as `d0e5b27`; the main app is unchanged)
 
 - Web (WEB-203, STU-027; owner: "in Spectrum, when the mouse hovers, show a vertical line and the frequency value where the mouse is"; no tests run, `node --check`, the build and the Browser pane at desktop and 375 px with a fake 220 Hz microphone only): on Listen and Chordophones the Spectrum shows a vertical line and a label (frequency, nearest note with cents, level in dB) at the pointer or finger; on Linear and Log it uses the same frequency mapping as the drawing (`freqAt`, `specFreq`, `specX`), Chordophones snaps to a harmonic bar within 8 px ("H3 · 660 Hz"). `listen-views.test.mjs` extended, not run.
 
