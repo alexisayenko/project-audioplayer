@@ -2,7 +2,7 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
-## 2026-10-25 (Studio collapsible menu and full-width content, built, not deployed yet)
+## 2026-10-25 (Studio collapsible menu and full-width content, deployed to studio.electrophone.cc as `37d6d2c`; the main app is unchanged)
 
 - Web (task-0114, STU-030, STU-031; owner: "make the menu panel collapsible; make the page take the whole screen width"; no tests run, `node --check`, the build and the Browser pane at 1440 and 375 px only): a chevron button beside the title collapses the menu (the sidebar slides to width 0; on the phone the top bar folds up) and a fixed "Expand menu" button at the top-left of the content restores it; focus moves to the other button, the hidden menu is out of the Tab order, the animation is off under reduced motion, and the state is remembered in `localStorage` (`studio.menu.collapsed`, in try/catch, so the menu still works when storage throws). The content column is no longer capped at 1100 px: cards, controls and canvases use the whole width (24 px padding, 16 px on the phone); the canvases redraw crisply on resize and on collapse (the Spectrum hover read 2.5 kHz at mid-width before and after), while paragraphs and lists stay at most 75ch wide. The main app is unchanged.
 
