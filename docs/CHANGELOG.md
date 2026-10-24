@@ -2,6 +2,10 @@
 
 What shipped, newest first. One line each; the web UI and server are live at https://electrophone.cc. Everything listed here is deployed except the sections marked "built, not deployed" (the 2026-10-14 release went out once the SSH access in [task-0027](tasks/task-0027.md) was restored; the live visualizer files match `origin/main` as of 2026-10-15). Why: [tech/decisions.md](tech/decisions.md); runbook: [tech/deploy.md](tech/deploy.md).
 
+## 2026-10-24 (genre research sources page, docs only)
+
+- Docs (owner request 2026-10-24: "store somewhere this one"; nothing saved, no deploy, no tests): new [tech/genre-research-sources.md](tech/genre-research-sources.md) lists the links used for genre research with their trust level (RYM, Musicmap and Discogs as reference; guides, wikis and Wikipedia as corroborating or weak), including the neurotrance.org psytrance sub-genres guide.
+
 ## 2026-10-24 (playlist add by search, web, deployed)
 
 - Web (owner request 2026-10-24: "in playlist editing - allow adding song by searching it name, artist - basically similar textbox as in Library"; deployed 2026-10-24 as `9931e3d`, [task-0058](tasks/task-0058.md), PLS-129 to PLS-133; no tests run or written by the owner's rule, `node --check` and a browser check at 1200 and 375 px against a local server with fixture songs): the playlist page has an "Add songs by title or artist" search box under the action buttons. Typing lists the library songs that match (the Library's matcher: case and accents ignored, title, artists, version, tags) and are not in the playlist yet, with a "N songs found, K already in this playlist" line; Up and Down move, Enter or a click adds, the song appears in the list at once with the toast "Added to <name>" and focus stays in the box for the next one; a failed add is rolled back with a toast. The search textbox and the matcher were extracted from the Library (`search-box.js`, `song-match.js`) and both pages use them.
